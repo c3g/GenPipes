@@ -10,7 +10,6 @@ root/tool_shed - dir containing all tools used by the pipelines (usually written
 
 root/pipelines - dir containing the pipelines itself. An addtional dir should be created in this dir with the pipeline name (root/pipeline/Pipeline_name)
 
-root/package   - This dir should contain a *.tar.gz file with all libs, scripts and wrapper necessary to run a pipeline. The package name should be versioned and ready for distribution. 
 
 
 Documentation:
