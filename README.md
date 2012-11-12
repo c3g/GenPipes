@@ -2,7 +2,7 @@ This repo holds perl libs, wrappers and scripts of several bioinformatics pipeli
 
 The main repo dir organization is:
 
-Genome_Quebec  -  root dir
+mugqic_pipeline  -  root dir
 
 root/lib       - dir containing all libraries of all pipelines. 
 
