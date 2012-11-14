@@ -45,6 +45,7 @@ use SubmitToCluster;
 use Trimmomatic;
 use BWA;
 use MergeBAMs;
+use IndelRealigner;
 #--------------------
 
 
@@ -93,16 +94,17 @@ sub printUsage {
 }
 
 sub main {
-  my %opts = (c=>undef, m=>undef);
+  my %opts;
   getopts('c:s:e:n:', \%opts);
   
   if (!defined($opts{'c'}) || !defined($opts{'s'}) || !defined($opts{'e'}) || !defined($opts{'n'})) {
     printUsage();
     exit(1);
   }
-  
+
   my %cfg = LoadConfig->readConfigFile($opts{'c'});
   my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($opts{'n'});
+  my $rH_seqDictionary = SequenceDictionaryParser::readDictFile(\%cfg);
 
   my $latestBam;
   for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
@@ -114,7 +116,7 @@ sub main {
        my $subref = \&$fname;
 
        # Tests for the first step in the list. Used for dependencies.
-       &$subref($current == ($opts{'s'}-1), \%cfg, $sampleName, $rAoH_sampleLanes); 
+       &$subref($current != ($opts{'s'}-1), \%cfg, $sampleName, $rAoH_sampleLanes, $rH_seqDictionary); 
     }
   }  
 }
@@ -124,6 +126,7 @@ sub trimAndAlign {
   my $rH_cfg = shift;
   my $sampleName = shift;
   my $rAoH_sampleLanes  = shift;
+  my $rH_seqDictionary = shift;
 
   print "BWA_JOB_IDS=\"\"\n";
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
@@ -131,22 +134,29 @@ sub trimAndAlign {
     my $trimJobIdVarName=undef;
     if(length($rH_trimDetails->{'command'}) > 0) {
       $trimJobIdVarName = SubmitToCluster::printSubmitCmd($rH_cfg, "trim", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'TRIM', undef, $sampleName, $rH_trimDetails->{'command'});
+      $trimJobIdVarName = '$'.$trimJobIdVarName;
       #TODO calcReadCounts.sh
     }
 
     my $rA_commands = BWA::aln($rH_cfg, $sampleName, $rH_laneInfo, $rH_trimDetails->{'pair1'}, $rH_trimDetails->{'pair2'}, $rH_trimDetails->{'single1'}, $rH_trimDetails->{'single2'});
     if(@{$rA_commands} == 3) {
-      my $read1JobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", undef, 'READ1ALN', $trimJobIdVarName, $sampleName, $rA_commands->{0});
-      my $read2JobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", undef, 'READ2ALN', $trimJobIdVarName, $sampleName, $rA_commands->{1});
-      my $bwaJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", undef, 'BWA', $read1JobId.LoadConfig::getParam($rH_cfg, 'aln', 'clusterDependencySep').$read2JobId, $sampleName, $rA_commands->{2});
+      my $read1JobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READ1ALN', $trimJobIdVarName, $sampleName, $rA_commands->[0]);
+      $read1JobId = '$'.$read1JobId;
+      my $read2JobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READ2ALN', $trimJobIdVarName, $sampleName, $rA_commands->[1]);
+      $read2JobId = '$'.$read2JobId;
+      my $bwaJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA', $read1JobId.LoadConfig::getParam($rH_cfg, 'aln', 'clusterDependencySep').$read2JobId, $sampleName, $rA_commands->[2]);
+      $bwaJobId = '$'.$bwaJobId;
       print 'BWA_JOB_IDS=${BWA_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'aln', 'clusterDependencySep').$bwaJobId."\n";
     }
     else {
-      my $readJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", undef, 'READALN', $trimJobIdVarName, $sampleName, $rA_commands->{0});
-      my $bwaJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", undef, 'BWA',  $readJobId, $sampleName, $rA_commands->{1});
+      my $readJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", undef, 'READALN', $trimJobIdVarName, $sampleName, $rA_commands->[0]);
+      $readJobId = '$'.$readJobId;
+      my $bwaJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", undef, 'BWA',  $readJobId, $sampleName, $rA_commands->[1]);
+      $bwaJobId = '$'.$bwaJobId;
       print 'BWA_JOB_IDS=${BWA_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'aln', 'clusterDependencySep').$bwaJobId."\n";
     } 
   }
+  return '$BWA_JOB_IDS';
 }
 
 sub mergeLanes {
@@ -154,17 +164,42 @@ sub mergeLanes {
   my $rH_cfg = shift;
   my $sampleName = shift;
   my $rAoH_sampleLanes  = shift;
-  
-  
-  my $jobDependency = "";
+  my $rH_seqDictionary = shift;
+
+  my $jobDependency = undef;
   if($depends > 0) {
     $jobDependency = '$BWA_JOB_IDS';
   }
 
   my $command = MergeBAMs::merge($rH_cfg, $sampleName, $rAoH_sampleLanes);
   my $mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "merge", undef, 'MERGELANES', $jobDependency, $sampleName, $command);
+  return $mergeJobId;
 }
-#push(@steps, {'name' => 'indelRealigner'});
+
+sub indelRealigner {
+  my $depends = shift;
+  my $rH_cfg = shift;
+  my $sampleName = shift;
+  my $rAoH_sampleLanes  = shift;
+  my $rH_seqDictionary = shift;
+
+  my $jobDependency = undef;
+  if($depends > 0) {
+    $jobDependency = '$MERGELANES_JOB_ID';
+  }
+
+  my $processUnmapped = 1;
+  for my $seqName (%{$rH_seqDictionary}) {
+    my $command = IndelRealigner::realign($rH_cfg, $sampleName, $processUnmapped);
+    my $mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "merge", undef, 'MERGELANES', $jobDependency, $sampleName, $command);
+    if($processUnmapped == 1) {
+      $processUnmapped = 0;
+    }
+  }
+  
+  return $mergeJobId;
+}
+
 #push(@steps, {'name' => 'mergeRealigned'});
 #push(@steps, {'name' => 'fixmate'});
 #push(@steps, {'name' => 'sortFixed'});
