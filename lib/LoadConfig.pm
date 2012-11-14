@@ -116,7 +116,10 @@ sub getParam {
   
   my $retVal = $rH_cfg->{$section.'.'.$value};
   if(!defined($retVal)) {
-    $retVal = $rH_cfg->{'default'.$value};
+    $retVal = $rH_cfg->{'default.'.$value};
+    if(ref($retVal) eq "ARRAY" && scalar(@{$retVal}) == 0) {
+      $retVal = undef;
+    }
   }
   
   return $retVal;

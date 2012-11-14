@@ -1,4 +1,4 @@
-#!/usr/env/perl
+#!/usr/bin/perl
 
 =head1 NAME
 
@@ -38,12 +38,11 @@ use warnings;
 
 # Dependencies
 #--------------------
-use lib '../../lib';
 use Getopt::Std;
 use LoadConfig;
-use LoadModules;
-use SampleSheet qw(parseSampleSheet);
+use SampleSheet;
 use SubmitToCluster;
+use Trimmomatic;
 use BWA;
 use MergeBAMs;
 #--------------------
@@ -51,7 +50,6 @@ use MergeBAMs;
 
 # SUB
 #--------------------
-&main();
 
 my @steps;
 push(@steps, {'name' => 'trimAndAlign'});
@@ -77,6 +75,9 @@ push(@steps, {'name' => 'countTelomere'});
 #  print "Strp 19: dbNSFP annotations\n";
 #  print "Step 20: Cosmic annotations\n";
 
+
+&main();
+
 sub printUsage {
   print "\nUsage: perl ".$0." project.csv first_step last_step\n";
   print "\t-c  config file\n";
@@ -85,35 +86,35 @@ sub printUsage {
   print "\t-n  nanuq sample sheet\n";
   print "\n";
   print "Steps:\n";
-  for(my $idx=1; $idx <= @steps; $idx++) {
-    print $idx."- ".$steps[$idx]->{'name'}."\n";
+  for(my $idx=0; $idx < @steps; $idx++) {
+    print "".($idx+1).'- '.$steps[$idx]->{'name'}."\n";
   }
-  print "Steps:\n";
+  print "\n";
 }
 
 sub main {
   my %opts = (c=>undef, m=>undef);
-  getopts('c:m:s:en:', \%opts);
+  getopts('c:s:e:n:', \%opts);
   
   if (!defined($opts{'c'}) || !defined($opts{'s'}) || !defined($opts{'e'}) || !defined($opts{'n'})) {
     printUsage();
     exit(1);
   }
   
-  my %cfg = readConfigFile($opts{'c'});
-  my $rHoAoH_sampleInfo = parseSampleSheetAsHash($opts{'n'});
+  my %cfg = LoadConfig->readConfigFile($opts{'c'});
+  my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($opts{'n'});
 
   my $latestBam;
   for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
     my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sampleName};
 
     SubmitToCluster::initSubmit(\%cfg, $sampleName);
-    for(my $current = $opts{'s'}; $current <= $opts{'e'}; $current++) {
+    for(my $current = $opts{'s'}-1; $current <= ($opts{'e'}-1); $current++) {
        my $fname = $steps[$current]->{'name'};
        my $subref = \&$fname;
 
        # Tests for the first step in the list. Used for dependencies.
-       &$subref($current == $opts{'s'}, \%cfg, $sampleName, $rAoH_sampleLanes); 
+       &$subref($current == ($opts{'s'}-1), \%cfg, $sampleName, $rAoH_sampleLanes); 
     }
   }  
 }
@@ -129,7 +130,7 @@ sub trimAndAlign {
     my $rH_trimDetails = Trimmomatic::trim($rH_cfg, $sampleName, $rH_laneInfo);
     my $trimJobIdVarName=undef;
     if(length($rH_trimDetails->{'command'}) > 0) {
-      $trimJobIdVarName = SubmitToCluster::printSubmitCmd($rH_cfg, "trim", undef, 'TRIM', undef, $sampleName, $rH_trimDetails->{'command'});
+      $trimJobIdVarName = SubmitToCluster::printSubmitCmd($rH_cfg, "trim", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'TRIM', undef, $sampleName, $rH_trimDetails->{'command'});
       #TODO calcReadCounts.sh
     }
 

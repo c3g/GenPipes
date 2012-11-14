@@ -52,7 +52,7 @@ sub trim {
   if ( $rH_laneInfo->{'runType'} eq "SINGLE_END" ) {
     $rH_retVal = singleCommand($rH_cfg, $sampleName, $rH_laneInfo);
   }
-  elsif($rH_laneInfo->{' runType '} eq "PAIRED_END") {
+  elsif($rH_laneInfo->{'runType'} eq "PAIRED_END") {
     $rH_retVal = pairCommand($rH_cfg, $sampleName, $rH_laneInfo);
   }
   else {
@@ -80,12 +80,12 @@ sub pairCommand {
   my $pair2FileDate = -M $outputFastqPair2Name;
 
   my $currentFileDate = $pair2FileDate;
-  if($pair1FileDate > $pair2FileDate) {
+  if(defined($pair1FileDate) && $pair1FileDate > $pair2FileDate) {
      $currentFileDate = $pair1FileDate;
   }
 
   my $command = "";
-  if ($currentFileDate < -M $rH_laneInfo->{'read1File'}) {
+  if (!defined($currentFileDate) || $currentFileDate < -M $rH_laneInfo->{'read1File'}) {
     $command .= 'module load mugqic/trimmomatic/0.22 ; java -cp $TRIMMOMATIC_JAR org.usadellab.trimmomatic.TrimmomaticPE';
     $command .= ' -threads ' . $rH_cfg->{'trim.nbThreads'};
     if ($rH_laneInfo->{'qualOffset'} eq "64") {

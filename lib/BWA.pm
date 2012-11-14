@@ -55,7 +55,7 @@ sub aln {
   if ( $rH_laneInfo->{'runType'} eq "SINGLE_END" ) {
     $command = singleCommand($rH_cfg, $sampleName, $rH_laneInfo, $single1);
   }
-  elsif($rH_laneInfo->{' runType '} eq "PAIRED_END") {
+  elsif($rH_laneInfo->{'runType'} eq "PAIRED_END") {
     $command = pairCommand($rH_cfg, $sampleName, $rH_laneInfo, $pair1, $pair2);
   }
   else {
@@ -79,7 +79,7 @@ sub pairCommand {
   my $bamFileDate = -M $outputBAM;
 
   my @commands;
-  if ($bamFileDate < -M $pair1 || $bamFileDate < -M $pair2) {
+  if (!defined($bamFileDate) || !defined($pair1) || !defined($pair2) || $bamFileDate < -M $pair1 || $bamFileDate < -M $pair2) {
     my $sai1Command = "";
     my $sai2Command = "";
     my $bwaCommand = "";
