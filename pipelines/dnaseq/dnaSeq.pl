@@ -114,7 +114,7 @@ sub main {
        my $subref = \&$fname;
 
        # Tests for the first step in the list. Used for dependencies.
-       &$subref($current == ($opts{'s'}-1), \%cfg, $sampleName, $rAoH_sampleLanes); 
+       &$subref($current != ($opts{'s'}-1), \%cfg, $sampleName, $rAoH_sampleLanes); 
     }
   }  
 }
@@ -131,19 +131,25 @@ sub trimAndAlign {
     my $trimJobIdVarName=undef;
     if(length($rH_trimDetails->{'command'}) > 0) {
       $trimJobIdVarName = SubmitToCluster::printSubmitCmd($rH_cfg, "trim", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'TRIM', undef, $sampleName, $rH_trimDetails->{'command'});
+      $trimJobIdVarName = '$'.$trimJobIdVarName;
       #TODO calcReadCounts.sh
     }
 
     my $rA_commands = BWA::aln($rH_cfg, $sampleName, $rH_laneInfo, $rH_trimDetails->{'pair1'}, $rH_trimDetails->{'pair2'}, $rH_trimDetails->{'single1'}, $rH_trimDetails->{'single2'});
     if(@{$rA_commands} == 3) {
-      my $read1JobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", undef, 'READ1ALN', $trimJobIdVarName, $sampleName, $rA_commands->{0});
-      my $read2JobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", undef, 'READ2ALN', $trimJobIdVarName, $sampleName, $rA_commands->{1});
-      my $bwaJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", undef, 'BWA', $read1JobId.LoadConfig::getParam($rH_cfg, 'aln', 'clusterDependencySep').$read2JobId, $sampleName, $rA_commands->{2});
+      my $read1JobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READ1ALN', $trimJobIdVarName, $sampleName, $rA_commands->[0]);
+      $read1JobId = '$'.$read1JobId;
+      my $read2JobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READ2ALN', $trimJobIdVarName, $sampleName, $rA_commands->[1]);
+      $read2JobId = '$'.$read2JobId;
+      my $bwaJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA', $read1JobId.LoadConfig::getParam($rH_cfg, 'aln', 'clusterDependencySep').$read2JobId, $sampleName, $rA_commands->[2]);
+      $bwaJobId = '$'.$bwaJobId;
       print 'BWA_JOB_IDS=${BWA_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'aln', 'clusterDependencySep').$bwaJobId."\n";
     }
     else {
-      my $readJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", undef, 'READALN', $trimJobIdVarName, $sampleName, $rA_commands->{0});
-      my $bwaJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", undef, 'BWA',  $readJobId, $sampleName, $rA_commands->{1});
+      my $readJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", undef, 'READALN', $trimJobIdVarName, $sampleName, $rA_commands->[0]);
+      $readJobId = '$'.$readJobId;
+      my $bwaJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", undef, 'BWA',  $readJobId, $sampleName, $rA_commands->[1]);
+      $bwaJobId = '$'.$bwaJobId;
       print 'BWA_JOB_IDS=${BWA_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'aln', 'clusterDependencySep').$bwaJobId."\n";
     } 
   }
@@ -156,7 +162,7 @@ sub mergeLanes {
   my $rAoH_sampleLanes  = shift;
   
   
-  my $jobDependency = "";
+  my $jobDependency = undef;
   if($depends > 0) {
     $jobDependency = '$BWA_JOB_IDS';
   }

@@ -79,7 +79,7 @@ sub pairCommand {
   my $bamFileDate = -M $outputBAM;
 
   my @commands;
-  if (!defined($bamFileDate) || !defined($pair1) || !defined($pair2) || $bamFileDate < -M $pair1 || $bamFileDate < -M $pair2) {
+  if (!defined($bamFileDate) || !defined(-M $pair1) || !defined(-M $pair2) || $bamFileDate < -M $pair1 || $bamFileDate < -M $pair2) {
     my $sai1Command = "";
     my $sai2Command = "";
     my $bwaCommand = "";
