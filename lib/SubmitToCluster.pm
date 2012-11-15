@@ -69,7 +69,7 @@ sub printSubmitCmd {
       print ' '.LoadConfig::getParam($rH_cfg, $stepName, 'clusterDependencyArg') . $dependancyName;
     }
     print ' '.LoadConfig::getParam($rH_cfg, $stepName, 'clusterSubmitCmdSuffix');
-    print "\n";
+    print "\n\n";
     
     my $jobIdVarName = uc($jobIdPrefix).'_JOB_ID';
     if(LoadConfig::getParam($rH_cfg, $stepName, 'clusterCmdProducesJobId') eq "false") {
