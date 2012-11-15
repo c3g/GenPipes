@@ -61,7 +61,6 @@ sub realign {
   $command .= ' -o '.$intervalOutput;
   $command .= ' -I '.$sortedBAM;
   $command .= ' -L '.$seqName;
-  $command .= ' --maxReadsInRam '.LoadConfig::getParam($rH_cfg, 'indelRealigner', 'realignReadsInRam');
   $command .= ' ; ';
   $command .= ' java -Xmx'.LoadConfig::getParam($rH_cfg, 'indelRealigner', 'realignRam').' -jar \${GATK_JAR}';
   $command .= ' -T IndelRealigner';
@@ -70,7 +69,7 @@ sub realign {
   $command .= ' -o '.$intervalOutput;
   $command .= ' -I '.$sortedBAM;
   $command .= ' -L '.$seqName;
-  $command .= ' --maxReadsInRam '.LoadConfig::getParam($rH_cfg, 'indelRealigner', 'realignReadsInRam');
+  $command .= ' --maxReadsInMemory '.LoadConfig::getParam($rH_cfg, 'indelRealigner', 'realignReadsInRam');
   if($processUnmapped == 1) {
     $command .= ' -L unmapped';
   }
