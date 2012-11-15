@@ -45,6 +45,7 @@ use GATK;
 use LoadConfig;
 use Picard;
 use SampleSheet;
+use SequenceDictionaryParser;
 use SubmitToCluster;
 use Trimmomatic;
 #--------------------
@@ -140,18 +141,18 @@ sub trimAndAlign {
 
     my $rA_commands = BWA::aln($rH_cfg, $sampleName, $rH_laneInfo, $rH_trimDetails->{'pair1'}, $rH_trimDetails->{'pair2'}, $rH_trimDetails->{'single1'}, $rH_trimDetails->{'single2'});
     if(@{$rA_commands} == 3) {
-      my $read1JobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READ1ALN', $trimJobIdVarName, $sampleName, $rA_commands->[0]);
+      my $read1JobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'read1.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READ1ALN', $trimJobIdVarName, $sampleName, $rA_commands->[0]);
       $read1JobId = '$'.$read1JobId;
-      my $read2JobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READ2ALN', $trimJobIdVarName, $sampleName, $rA_commands->[1]);
+      my $read2JobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'read2.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READ2ALN', $trimJobIdVarName, $sampleName, $rA_commands->[1]);
       $read2JobId = '$'.$read2JobId;
-      my $bwaJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA', $read1JobId.LoadConfig::getParam($rH_cfg, 'aln', 'clusterDependencySep').$read2JobId, $sampleName, $rA_commands->[2]);
+      my $bwaJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'sampe.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA', $read1JobId.LoadConfig::getParam($rH_cfg, 'aln', 'clusterDependencySep').$read2JobId, $sampleName, $rA_commands->[2]);
       $bwaJobId = '$'.$bwaJobId;
       print 'BWA_JOB_IDS=${BWA_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'aln', 'clusterDependencySep').$bwaJobId."\n";
     }
     else {
-      my $readJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", undef, 'READALN', $trimJobIdVarName, $sampleName, $rA_commands->[0]);
+      my $readJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READALN', $trimJobIdVarName, $sampleName, $rA_commands->[0]);
       $readJobId = '$'.$readJobId;
-      my $bwaJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", undef, 'BWA',  $readJobId, $sampleName, $rA_commands->[1]);
+      my $bwaJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'samse.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA',  $readJobId, $sampleName, $rA_commands->[1]);
       $bwaJobId = '$'.$bwaJobId;
       print 'BWA_JOB_IDS=${BWA_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$bwaJobId."\n";
     } 
@@ -188,11 +189,13 @@ sub indelRealigner {
     $jobDependency = '$MERGELANES_JOB_ID';
   }
 
+  print "mkdir -p $sampleName/realign\n";
   print "REALIGN_JOB_IDS=\"\"\n";
   my $processUnmapped = 1;
-  for my $seqName (%{$rH_seqDictionary}) {
-    my $command = GATK::realign($rH_cfg, $sampleName, $processUnmapped);
+  for my $seqName (keys(%{$rH_seqDictionary})) {
+    my $command = GATK::realign($rH_cfg, $sampleName, $seqName, $processUnmapped);
     my $intervalJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "indelRealigner", $seqName, 'REALIGN', $jobDependency, $sampleName, $command);
+    $intervalJobId = '$'.$intervalJobId;
     print 'REALIGN_JOB_IDS=${REALIGN_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$intervalJobId."\n";
     if($processUnmapped == 1) {
       $processUnmapped = 0;
@@ -214,7 +217,7 @@ sub mergeRealigned {
     $jobDependency = '${REALIGN_JOB_IDS}';
   }
 
-  my @seqNames = keys(%{$rAoH_sampleLanes});
+  my @seqNames = keys(%{$rH_seqDictionary});
   my $command = Picard::mergeRealigned($rH_cfg, $sampleName, \@seqNames);
   my $mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mergeRealigned", undef, 'MERGEREALIGN', $jobDependency, $sampleName, $command);
   return $mergeJobId;

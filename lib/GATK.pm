@@ -48,9 +48,6 @@ sub realign {
   my $seqName         = shift;
   my $processUnmapped = shift;
 
-  print "mkdir -p $sampleName/realign\n";
-  print "JOB_IDS=\"\"\n";
-
   my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta');
   my $sortedBAM = $sampleName.'/'.$sampleName.'.sorted.bam';
   my $intervalOutput = $sampleName.'/realign/'.$seqName.'.intervals';
@@ -58,7 +55,7 @@ sub realign {
   
   my $command;
   $command .= 'module load mugqic/GenomeAnalysisTKLite/2.1-13 ;';
-  $command .= ' java -Xmx'.LoadConfig::getParam($rH_cfg, 'indelRealigner', 'realignRam').'  -jar ${GATK_JAR}';
+  $command .= ' java -Xmx'.LoadConfig::getParam($rH_cfg, 'indelRealigner', 'realignRam').'  -jar \${GATK_JAR}';
   $command .= ' -T RealignerTargetCreator';
   $command .= ' -R '.$refGenome;
   $command .= ' -o '.$intervalOutput;
@@ -66,7 +63,7 @@ sub realign {
   $command .= ' -L '.$seqName;
   $command .= ' --maxReadsInRam '.LoadConfig::getParam($rH_cfg, 'indelRealigner', 'realignReadsInRam');
   $command .= ' ; ';
-  $command .= ' java -Xmx'.LoadConfig::getParam($rH_cfg, 'indelRealigner', 'realignRam').' -jar ${GATK_JAR}';
+  $command .= ' java -Xmx'.LoadConfig::getParam($rH_cfg, 'indelRealigner', 'realignRam').' -jar \${GATK_JAR}';
   $command .= ' -T IndelRealigner';
   $command .= ' -R '.$refGenome;
   $command .= ' -targetIntervals '.$intervalOutput;
@@ -90,7 +87,7 @@ sub genomeCoverage {
   
   my $command;
   $command .= 'module load mugqic/GenomeAnalysisTKLite/2.1-13 ;';
-  $command .= ' java -Xmx'.LoadConfig::getParam($rH_cfg, 'genomeCoverage', 'genomeCoverageRam').'  -jar ${GATK_JAR}';
+  $command .= ' java -Xmx'.LoadConfig::getParam($rH_cfg, 'genomeCoverage', 'genomeCoverageRam').'  -jar \${GATK_JAR}';
   $command .= ' -T DepthOfCoverage --omitDepthOutputAtEachBase --logging_level ERROR';
   $command .= ' --summaryCoverageThreshold 10 --summaryCoverageThreshold 20 --summaryCoverageThreshold 30 --summaryCoverageThreshold 40 --summaryCoverageThreshold 50 --summaryCoverageThreshold 75 --summaryCoverageThreshold 100';
   $command .= ' --start 1 --stop 1000 --nBins 999 -dt NONE';

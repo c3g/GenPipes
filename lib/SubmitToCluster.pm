@@ -56,14 +56,15 @@ sub printSubmitCmd {
     print 'echo "'.$command.'" | ';
     print LoadConfig::getParam($rH_cfg, $stepName, 'clusterSubmitCmd');
     print ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterOtherArg');
-    print ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterWorkDirArg') . '`pwd`';
-    print ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterOutputDirArg') . $sampleName.'/output_jobs/';
+    print ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterWorkDirArg') . ' `pwd`';
+    print ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterOutputDirArg') . ' ' . $sampleName.'/output_jobs/';
     my $jobName = $stepName.'.'.$sampleName;
     if(defined($jobNameSuffix) && length($jobNameSuffix) > 0) {
       $jobName .= '.'.$jobNameSuffix;
     }
-    print ' '.LoadConfig::getParam($rH_cfg, $stepName, 'clusterJobNameArg') . $jobName;
+    print ' '.LoadConfig::getParam($rH_cfg, $stepName, 'clusterJobNameArg') . ' ' . $jobName;
     print ' '.LoadConfig::getParam($rH_cfg, $stepName, 'clusterWalltime');
+    print ' '.LoadConfig::getParam($rH_cfg, $stepName, 'clusterQueue');
     print ' '.LoadConfig::getParam($rH_cfg, $stepName, 'clusterCPU');
     if(defined($dependancyName)) {
       print ' '.LoadConfig::getParam($rH_cfg, $stepName, 'clusterDependencyArg') . $dependancyName;

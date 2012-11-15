@@ -84,14 +84,14 @@ sub pairCommand {
     my $sai2Command = "";
     my $bwaCommand = "";
 
-    $sai1Command .= 'module load mugqic/bwa/0.22 ; bwa aln';
+    $sai1Command .= 'module load mugqic/bwa/0.6.2 ; bwa aln';
     $sai1Command .= ' -t '.LoadConfig::getParam($rH_cfg, 'aln', 'bwaAlnThreads');
     $sai1Command .= ' '.LoadConfig::getParam($rH_cfg, 'aln', 'bwaRefIndex');
     $sai1Command .= ' '.$pair1;
     $sai1Command .= ' -f '.$outputSai1Name;
     push(@commands, $sai1Command);
     
-    $sai2Command .= 'module load mugqic/bwa/0.22 ; bwa aln';
+    $sai2Command .= 'module load mugqic/bwa/0.6.2 ; bwa aln';
     $sai2Command .= ' -t '.LoadConfig::getParam($rH_cfg, 'aln', 'bwaAlnThreads');
     $sai2Command .= ' '.LoadConfig::getParam($rH_cfg, 'aln', 'bwaRefIndex');
     $sai2Command .= ' '.$pair2;
@@ -99,15 +99,15 @@ sub pairCommand {
     push(@commands, $sai2Command);
     
     my $rgId = $rH_laneInfo->{'libraryBarcode'}."_".$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'};
-    my $rgTag = '@RG\tID:'.$rgId.'\tSM:'.$rH_laneInfo->{'name'}.'\tLB:'.$rH_laneInfo->{'libraryBarcode'}.'\tPU:run'.$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'}.'\tCN:'.LoadConfig::getParam($rH_cfg, 'aln', 'bwaInstitution').'\tPL:Illumina';
-    $bwaCommand .= 'module load mugqic/bwa/0.22 ;module load mugqic/picard/1.77 ; bwa sampe';
+    my $rgTag = '\"@RG\tID:'.$rgId.'\tSM:'.$rH_laneInfo->{'name'}.'\tLB:'.$rH_laneInfo->{'libraryBarcode'}.'\tPU:run'.$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'}.'\tCN:'.LoadConfig::getParam($rH_cfg, 'aln', 'bwaInstitution').'\tPL:Illumina\"';
+    $bwaCommand .= 'module load mugqic/bwa/0.6.2 ;module load mugqic/picard/1.77 ; bwa sampe';
     $bwaCommand .= ' -r '.$rgTag;
     $bwaCommand .= ' '.LoadConfig::getParam($rH_cfg, 'aln', 'bwaRefIndex');
     $bwaCommand .= ' '.$outputSai1Name;
     $bwaCommand .= ' '.$outputSai2Name;
     $bwaCommand .= ' '.$pair1;
     $bwaCommand .= ' '.$pair2;
-    $bwaCommand .= ' | java -Xmx'.LoadConfig::getParam($rH_cfg, 'aln', 'sortSamRam').' -jar ${PICARD_HOME}/SortSam.jar INPUT=/dev/stdin CREATE_INDEX=true VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate';
+    $bwaCommand .= ' | java -Xmx'.LoadConfig::getParam($rH_cfg, 'aln', 'sortSamRam').' -jar \${PICARD_HOME}/SortSam.jar INPUT=/dev/stdin CREATE_INDEX=true VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate';
     $bwaCommand .= ' OUTPUT='.$outputBAM;
     $bwaCommand .= ' MAX_RECORDS_IN_RAM='.LoadConfig::getParam($rH_cfg, 'aln', 'sortSamRecInRam');
     push(@commands, $bwaCommand);
@@ -132,7 +132,7 @@ sub singleCommand {
     my $saiCommand = "";
     my $bwaCommand = "";
 
-    $saiCommand .= 'module load mugqic/bwa/0.22 ; bwa aln';
+    $saiCommand .= 'module load mugqic/bwa/0.6.2 ; bwa aln';
     $saiCommand .= ' -t '.LoadConfig::getParam($rH_cfg, 'aln', 'bwaAlnThreads');
     $saiCommand .= ' '.LoadConfig::getParam($rH_cfg, 'aln', 'bwaRefIndex');
     $saiCommand .= ' '.$single;
@@ -140,13 +140,13 @@ sub singleCommand {
     push(@commands, $saiCommand);
     
     my $rgId = $rH_laneInfo->{'libraryBarcode'}."_".$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'};
-    my $rgTag = '@RG\tID:'.$rgId.'\tSM:'.$rH_laneInfo->{'name'}.'\tLB:'.$rH_laneInfo->{'libraryBarcode'}.'\tPU:run'.$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'}.'\tCN:'.LoadConfig::getParam($rH_cfg, 'aln', 'bwaInstitution').'\tPL:Illumina';
-    $bwaCommand .= 'module load mugqic/bwa/0.22 ;module load mugqic/picard/1.77 ; bwa samse';
+    my $rgTag = '\"@RG\tID:'.$rgId.'\tSM:'.$rH_laneInfo->{'name'}.'\tLB:'.$rH_laneInfo->{'libraryBarcode'}.'\tPU:run'.$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'}.'\tCN:'.LoadConfig::getParam($rH_cfg, 'aln', 'bwaInstitution').'\tPL:Illumina\"';
+    $bwaCommand .= 'module load mugqic/bwa/0.6.2 ;module load mugqic/picard/1.77 ; bwa samse';
     $bwaCommand .= ' -r '.$rgTag;
     $bwaCommand .= ' '.LoadConfig::getParam($rH_cfg, 'aln', 'bwaRefIndex');
     $bwaCommand .= ' '.$outputSaiName;
     $bwaCommand .= ' '.$single;
-    $bwaCommand .= ' | java -Xmx'.LoadConfig::getParam($rH_cfg, 'aln', 'sortSamRam').' -jar ${PICARD_HOME}/SortSam.jar INPUT=/dev/stdin CREATE_INDEX=true VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate';
+    $bwaCommand .= ' | java -Xmx'.LoadConfig::getParam($rH_cfg, 'aln', 'sortSamRam').' -jar \${PICARD_HOME}/SortSam.jar INPUT=/dev/stdin CREATE_INDEX=true VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate';
     $bwaCommand .= ' OUTPUT='.$outputBAM;
     $bwaCommand .= ' MAX_RECORDS_IN_RAM='.LoadConfig::getParam($rH_cfg, 'aln', 'sortSamRecInRam');
     push(@commands, $bwaCommand);

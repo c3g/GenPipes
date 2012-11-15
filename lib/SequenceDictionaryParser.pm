@@ -47,7 +47,7 @@ sub readDictFile {
   if ( -e $refDictFile ) {
     open(FILE, $refDictFile) or die "Cannot open ".$refDictFile."\n";
     while(my $line = <FILE>) {
-      if($line =~ /^\@SQ\tSN:([^\t]+)\tLN:(\d\+)/) {
+      if($line =~ /^\@SQ\tSN:([^\t]+)\tLN:(\d+)/) {
         $dictionary{$1} = {'name' => $1, 'size' => $2};
       }
     }
