@@ -66,7 +66,7 @@ sub realign {
   $command .= ' -T IndelRealigner';
   $command .= ' -R '.$refGenome;
   $command .= ' -targetIntervals '.$intervalOutput;
-  $command .= ' -o '.$intervalOutput;
+  $command .= ' -o '.$realignOutput;
   $command .= ' -I '.$sortedBAM;
   $command .= ' -L '.$seqName;
   $command .= ' --maxReadsInMemory '.LoadConfig::getParam($rH_cfg, 'indelRealigner', 'realignReadsInRam');
