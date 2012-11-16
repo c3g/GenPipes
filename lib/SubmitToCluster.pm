@@ -41,7 +41,7 @@ sub initSubmit {
   my $rH_cfg = shift;
   my $sampleName = shift;
 
-  print "mkdir -p ".$sampleName.'/job_outputs/'."\n";
+  print "mkdir -p ".$sampleName.'/output_jobs/'."\n";
 }
 
 sub printSubmitCmd {
