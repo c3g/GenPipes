@@ -36,6 +36,18 @@ use strict;
 use warnings;
 #---------------------
 
+BEGIN{
+    #Makesure we can find the GetConfig::LoadModules module relative to this script install
+    use File::Basename;
+    use Cwd 'abs_path';
+    my ( undef, $mod_path, undef ) = fileparse( abs_path(__FILE__) );
+    unshift @INC, $mod_path;
+
+}
+
+
+
+
 # Dependencies
 #--------------------
 use Getopt::Std;
