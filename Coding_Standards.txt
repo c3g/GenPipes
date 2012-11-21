@@ -1,0 +1,151 @@
+Coding Standards
+
+----------------------------------
+
+This document is a compilation of best practices based on what have been implemented
+by Louis in his first modules.
+
+The main objective here is to be consistent with the code already implemented.
+
+
+----------------------------------------------
+
+Variables and Variable Nomenclature
+
+1- Give your variables (scalars, hashs and arrays) meaningful names. 
+
+This should be true even for indexes, counters etc... 
+
+Variable names should start in lower case letter and any follow word should start with an upper case letter. 
+
+
+
+2- Use references as much as possible. Specially when passing arrays and hashes to a function.
+
+This avoids copying the variable unecessarily. 
+
+
+
+
+3- Reference nomenclature should follow this rule:
+
+$rH_variableName   -> reference to a hash
+
+$rA_variableName   -> reference to an array
+
+$rHoH_variableName -> reference to hash of hashes
+
+$rAoH_variableName -> reference to an array of hashes
+
+$rHoAoH_variableName -> reference to hash of array of hashes
+
+
+
+---------------------------------------------------
+
+Libs
+
+1- Libs should be named after the step they execute. If more
+than one word is used both should start with a capital letter.
+
+Lib versions should not be used on its name. If you modify a Lib to an 
+extent where previous codes will no longer work with it. 
+You must before adding your modified lib to the main repo,
+package the 'old' version with its pipeline (see package below for
+more details).
+
+2- You can choose between OO libs or non-OO libs but you should comply 
+with all standards of each model. For example if you write an OO lib, you should
+use new, EXPORT and @ISA whenever necessary (and use the proper notation on the wrapper).
+
+
+
+
+
+----------------------------------------
+
+Packages
+
+1- Packages should be put in the Release_packages repository. It should be a tarball file.
+each package should have a README explaining how to run it and alerting for any external dependency.
+
+
+2- Packages should contain all the libs, wrappers and scripts for a given
+pipeline to run. It should also have a version (DenovoAssembly-v1.tar.gz).
+
+3- We should never modify a package that is already done, just create another instead.
+
+-----------------------------------------
+
+
+
+Perl hacks
+
+------------------------------------------
+
+A few hacks in perl that help when writing a lib/wrapper.
+
+Please few free to contribute
+
+
+=======================================================================
+
+1- Making a script read from a lib folder, placed in the same folder of the script, without export PERL5LIB.
+
+Place this at the beginning of you script (right after use strict)
+
+
+
+
+BEGIN{
+
+    use File::Basename;
+
+    use Cwd 'abs_path';
+
+    my ( undef, $mod_path, undef ) = fileparse( abs_path(__FILE__) );
+
+    unshift @INC, $mod_pat . "lib";
+
+}
+
+
+
+=======================================================================
+
+2- Convert a list of range (steps) passed as arguments into a range of ints.
+
+example perl script.pl 1-5, 8-10
+
+Make the script execute steps 1 2 3 4 5 8 9 10 
+
+
+
+
+#parse range of steps
+
+#----------------------------
+
+my $num = "@range";             # at this point @range=(1-5,8-10)
+
+$num=~s/\s+//g;
+
+push @STEPS, (rangex($num));    # at this point @STEPs = (1 2 3 4 5 8 9 10)
+
+#-------------------------------
+
+
+
+
+sub rangex {
+
+
+        map { /^(.*\d)-(.+)$/ ? $1..$2 : $_ } split /,/, shift;
+}
+
+=====================================================================
+
+
+
+
+
