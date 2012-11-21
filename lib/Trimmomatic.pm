@@ -94,13 +94,13 @@ sub pairCommand {
     else {
       $command .= ' -phred33';
     }
-    $command .= ' ' . $laneDirectory.$rH_laneInfo->{'read1File'} . ' ' . $laneDirectory.$rH_laneInfo->{'read1File'};
+    $command .= ' ' . $laneDirectory.$rH_laneInfo->{'read1File'} . ' ' . $laneDirectory.$rH_laneInfo->{'read2File'};
     $command .= ' ' . $outputFastqPair1Name . ' ' . $outputFastqSingle1Name;
     $command .= ' ' . $outputFastqPair2Name . ' ' . $outputFastqSingle2Name;
     if ($rH_laneInfo->{'qualOffset'} eq "64") {
       $command .= ' TOPHRED33';
     }
-    $command .= ' ILLUMINACLIP:'.$adapterFile.':2:30:15 TRAILING:'.$minQuality.' MINLEN:'.$minLength;
+    $command .= ' ILLUMINACLIP:'.$adapterFile.$rH_cfg->{'trim.clipSettings'}.' TRAILING:'.$minQuality.' MINLEN:'.$minLength;
     $command .= ' > ' . $laneDirectory . $sampleName . '.trim.out';
   }
   
