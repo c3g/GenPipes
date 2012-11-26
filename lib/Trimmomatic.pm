@@ -85,7 +85,8 @@ sub pairCommand {
   }
 
   my $command = "";
-  if (!defined($currentFileDate) || $currentFileDate < -M $rH_laneInfo->{'read1File'}) {
+  # -M gives modified date relative to now. The bigger the older.
+  if (!defined($currentFileDate) || $currentFileDate > -M $rH_laneInfo->{'read1File'}) {
     $command .= 'module load mugqic/trimmomatic/0.22 ; java -cp \$TRIMMOMATIC_JAR org.usadellab.trimmomatic.TrimmomaticPE';
     $command .= ' -threads ' . $rH_cfg->{'trim.nbThreads'};
     if ($rH_laneInfo->{'qualOffset'} eq "64") {
@@ -127,7 +128,8 @@ sub singleCommand {
   my $currentFileDate = -M $outputFastqName;
   
   my $command = "";
-  if ($currentFileDate < -M $rH_laneInfo->{'read1File'}) {
+  # -M gives modified date relative to now. The bigger the older.
+  if ($currentFileDate > -M $rH_laneInfo->{'read1File'}) {
     $command .= 'module load mugqic/trimmomatic/0.22 ; java -cp \$TRIMMOMATIC_JAR org.usadellab.trimmomatic.TrimmomaticSE';
     $command .= ' -threads ' . $rH_cfg->{'trim.nbThreads'};
     if ($rH_laneInfo->{'qualOffset'} eq "64") {

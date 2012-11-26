@@ -183,7 +183,10 @@ sub mergeLanes {
   }
 
   my $command = Picard::merge($rH_cfg, $sampleName, $rAoH_sampleLanes);
-  my $mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "merge", undef, 'MERGELANES', $jobDependency, $sampleName, $command);
+  my $mergeJobId = undef;
+  if(defined($command) && length($command) > 0) {
+    $mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "merge", undef, 'MERGELANES', $jobDependency, $sampleName, $command);
+  }
   return $mergeJobId;
 }
 
