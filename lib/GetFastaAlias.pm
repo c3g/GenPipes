@@ -6,7 +6,7 @@ I<GetFastaAlias>
 
 =head1 SYNOPSIS
 
-GetFastaAlias::sampleInfo(File_path, %Config_hash, $baseOutput_Dir)
+GetFastaAlias::sampleInfo(File_path, %Config_hash_ref, %rHoA0H_sampleSheetInfo_ref)
 
 =head1 DESCRIPTION
 
@@ -26,9 +26,7 @@ B<Pod::Usage> Usage and help output.
 
 B<Data::Dumper> Used to debbug
 
-B<File::Basename> Path parsing
 
-B<Cwd> Path parsing
 
 =cut
 
@@ -45,14 +43,12 @@ use warnings;
 #-----------------------
 use Data::Dumper;
 use Config::Simple;
-use File::Basename;
-use Cwd 'abs_path';
 
 sub sampleInfo {
-    my $file        = shift;
-    my $rH_cfg      = shift;
-    my $outDir      = shift;
-    my $pairCounter = 1;
+    my $file                   = shift;
+    my $rH_cfg                 = shift;
+    my $rHoA0H_sampleSheetInfo = shift;
+    my $pairType;
     my %sampleInfo;
     my %groupInfo;
 
@@ -60,38 +56,46 @@ sub sampleInfo {
     while (<IN>) {
         chomp;
         my @line = split /\,/, $_;
+        my $defaultDir;
+        
+        foreach my $sampleName ( keys %{$rHoA0H_sampleSheetInfo} ) {
+            my $rAoH_sampleLanes = $rHoA0H_sampleSheetInfo->{$sampleName};
+            foreach my $rH_laneInfo (@$rAoH_sampleLanes) {
+                if ( $line[0] eq $rH_laneInfo->{'name'} ) {
 
-        $sampleInfo{ $line[1] }->{"path"}        = dirname( $line[0] );
-        $sampleInfo{ $line[1] }->{"group_name"}  = $line[2];
-        $sampleInfo{ $line[1] }->{"sample_name"} = $line[1];
+                    $defaultDir = $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . '/';
+                    $pairType   = $rH_laneInfo->{'runType'};
+
+                    if ( $rH_laneInfo->{'runType'} eq "PAIRED_END" ) {
+                        $sampleInfo{ $line[0] }->{'pair1'} = $rH_laneInfo->{'read1File'};
+                        $sampleInfo{ $line[0] }->{'pair2'} = $rH_laneInfo->{'read2File'};
+                    }
+                    else {
+                        $sampleInfo{ $line[0] }->{'single'} = $rH_laneInfo->{'read1File'};
+                    }
+
+                }
+            }
+        }
+
+        my $minQuality = $rH_cfg->{'trim.minQuality'};
+        my $minLength  = $rH_cfg->{'trim.minLength'};
+
+        $sampleInfo{ $line[0] }->{'path'}        = $line[0] . '/' . $defaultDir;
+        $sampleInfo{ $line[0] }->{'group_name'}  = $line[1];
+        $sampleInfo{ $line[0] }->{'sample_name'} = $line[0];
 
         #Pair 1
-        if ( $pairCounter == 1 ) {
-            $sampleInfo{ $line[1] }->{"pair1"} = basename( $line[0] );
+        if ( $pairType eq "PAIRED_END" ) {
 
             #----------------------------------------------------------------
             # $groupInfo{genome}{-left} = --left sample1 --left sample2 ...
+            # $groupInfo{genome}{-right} = --right sample1 --right sample2 ..
             #-----------------------------------------------------------------
-            $groupInfo{ $line[2] }->{"left"} .= " --left " . "$outDir/reads/$sampleInfo{$line[1]}->{'sample_name'}_t$rH_cfg->{'trim.minQuality'}l$rH_cfg->{'trim.minLength'}.phred33.pair1.fastq.gz";
-            $pairCounter = 2;
-        }
+            $groupInfo{ $line[1] }->{'left'} .= ' --left ' . $sampleInfo{ $line[0] }->{'sample_name'} . '/' . $defaultDir . $sampleInfo{ $line[0] }->{'sample_name'} . '.t' . $minQuality . 'l' . $minLength . '.phred33.pair1.fastq.gz';
+            $groupInfo{ $line[1] }->{'right'} .= ' --right ' . $sampleInfo{ $line[0] }->{'sample_name'} . '/' . $defaultDir . $sampleInfo{ $line[0] }->{'sample_name'} . '.t' . $minQuality . 'l' . $minLength . '.phred33.pair2.fastq.gz';
 
-        # Pair 2
-        elsif ( $pairCounter == 2 )
-        {
-            $sampleInfo{ $line[1] }->{"pair2"} = basename( $line[0] );
 
-            #----------------------------------------------------------------
-            # $groupInfo{genome}{-right} = --right sample1 --right sample2 ...
-            #-----------------------------------------------------------------
-            $groupInfo{ $line[2] }->{"right"} .= " --right " . "$outDir/reads/$sampleInfo{$line[1]}->{'sample_name'}_t$rH_cfg->{'trim.minQuality'}l$rH_cfg->{'trim.minLength'}.phred33.pair2.fastq.gz";
-            $pairCounter = 1;
-
-        }
-
-        # Single end
-        else {
-            $sampleInfo{ $line[1] }->{"single"} = basename( $line[0] );
         }
 
     }
