@@ -63,7 +63,7 @@ sub merge {
     }
     else {
       my $modDate = -M $sortedLaneBamFile;
-      if($modDate > $latestBam) {
+      if($modDate < $latestBam) {
         $latestBam = $modDate;
       }
     }
@@ -72,14 +72,15 @@ sub merge {
   }
 
   my $command;
-  if(!defined($latestBam) || !defined(-M $outputBAM) || $latestBam > -M $outputBAM) {
+  # -M gives modified date relative to now. The bigger the older.
+  if(!defined($latestBam) || !defined(-M $outputBAM) || $latestBam < -M $outputBAM) {
     $command .= 'module load mugqic/picard/1.77 ;';
     $command .= ' java -Xmx'.LoadConfig::getParam($rH_cfg, 'mergeLanes', 'mergeRam').' -jar \${PICARD_HOME}/MergeSamFiles.jar';
     $command .= ' VALIDATION_STRINGENCY=SILENT ASSUME_SORTED=true CREATE_INDEX=true';
     $command .= ' '.$bamInputs;
     $command .= ' OUTPUT='.$outputBAM;
     $command .= ' MAX_RECORDS_IN_RAM='.LoadConfig::getParam($rH_cfg, 'mergeLanes', 'mergeRecInRam');
-    $command .= ' ; cat '.$countInputs.' > $sampleName/$sampleName.runLane.counts';
+    $command .= ' ; grep \'^Input Read\' '.$countInputs.' > $sampleName/$sampleName.runLane.counts';
   }
   return $command;
 }

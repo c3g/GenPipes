@@ -79,7 +79,8 @@ sub pairCommand {
   my $bamFileDate = -M $outputBAM;
 
   my @commands;
-  if (!defined($bamFileDate) || !defined(-M $pair1) || !defined(-M $pair2) || $bamFileDate < -M $pair1 || $bamFileDate < -M $pair2) {
+  # -M gives modified date relative to now. The bigger the older.
+  if (!defined($bamFileDate) || !defined(-M $pair1) || !defined(-M $pair2) || $bamFileDate > -M $pair1 || $bamFileDate > -M $pair2) {
     my $sai1Command = "";
     my $sai2Command = "";
     my $bwaCommand = "";
@@ -128,7 +129,8 @@ sub singleCommand {
   my $bamFileDate = -M $outputBAM;
 
   my @commands;
-  if ($bamFileDate < -M $single) {
+  # -M gives modified date relative to now. The bigger the older.
+  if ($bamFileDate > -M $single) {
     my $saiCommand = "";
     my $bwaCommand = "";
 

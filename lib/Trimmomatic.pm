@@ -85,7 +85,8 @@ sub pairCommand {
   }
 
   my $command = "";
-  if (!defined($currentFileDate) || $currentFileDate < -M $rH_laneInfo->{'read1File'}) {
+  # -M gives modified date relative to now. The bigger the older.
+  if (!defined($currentFileDate) || $currentFileDate > -M $rH_laneInfo->{'read1File'}) {
     $command .= 'module load mugqic/trimmomatic/0.22 ; java -cp \$TRIMMOMATIC_JAR org.usadellab.trimmomatic.TrimmomaticPE';
     $command .= ' -threads ' . $rH_cfg->{'trim.nbThreads'};
     if ($rH_laneInfo->{'qualOffset'} eq "64") {
@@ -94,13 +95,13 @@ sub pairCommand {
     else {
       $command .= ' -phred33';
     }
-    $command .= ' ' . $laneDirectory.$rH_laneInfo->{'read1File'} . ' ' . $laneDirectory.$rH_laneInfo->{'read1File'};
+    $command .= ' ' . $laneDirectory.$rH_laneInfo->{'read1File'} . ' ' . $laneDirectory.$rH_laneInfo->{'read2File'};
     $command .= ' ' . $outputFastqPair1Name . ' ' . $outputFastqSingle1Name;
     $command .= ' ' . $outputFastqPair2Name . ' ' . $outputFastqSingle2Name;
     if ($rH_laneInfo->{'qualOffset'} eq "64") {
       $command .= ' TOPHRED33';
     }
-    $command .= ' ILLUMINACLIP:'.$adapterFile.':2:30:15 TRAILING:'.$minQuality.' MINLEN:'.$minLength;
+    $command .= ' ILLUMINACLIP:'.$adapterFile.$rH_cfg->{'trim.clipSettings'}.' TRAILING:'.$minQuality.' MINLEN:'.$minLength;
     $command .= ' > ' . $laneDirectory . $sampleName . '.trim.out';
   }
   
@@ -127,7 +128,8 @@ sub singleCommand {
   my $currentFileDate = -M $outputFastqName;
   
   my $command = "";
-  if ($currentFileDate < -M $rH_laneInfo->{'read1File'}) {
+  # -M gives modified date relative to now. The bigger the older.
+  if ($currentFileDate > -M $rH_laneInfo->{'read1File'}) {
     $command .= 'module load mugqic/trimmomatic/0.22 ; java -cp \$TRIMMOMATIC_JAR org.usadellab.trimmomatic.TrimmomaticSE';
     $command .= ' -threads ' . $rH_cfg->{'trim.nbThreads'};
     if ($rH_laneInfo->{'qualOffset'} eq "64") {
