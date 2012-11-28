@@ -104,7 +104,7 @@ sub mergeRealigned {
   my $command;
   $command .= 'module load mugqic/picard/1.77 ;';
   $command .= ' java -Xmx'.LoadConfig::getParam($rH_cfg, 'mergeRealigned', 'mergeRam').' -jar \${PICARD_HOME}/MergeSamFiles.jar';
-  $command .= ' VALIDATION_STRINGENCY=SILENT ASSUME_SORTED=false CREATE_INDEX=true SORT_ORDER=queryname';
+  $command .= ' VALIDATION_STRINGENCY=SILENT ASSUME_SORTED=false SORT_ORDER=queryname';
   $command .= ' '.$bamInputs;
   $command .= ' OUTPUT='.$outputBAM;
   $command .= ' MAX_RECORDS_IN_RAM='.LoadConfig::getParam($rH_cfg, 'mergeRealigned', 'mergeRecInRam');
