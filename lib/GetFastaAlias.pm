@@ -57,13 +57,14 @@ sub sampleInfo {
         chomp;
         my @line = split /\,/, $_;
         my $defaultDir;
-        
+        my $qualOffSet;
         foreach my $sampleName ( keys %{$rHoA0H_sampleSheetInfo} ) {
             my $rAoH_sampleLanes = $rHoA0H_sampleSheetInfo->{$sampleName};
             foreach my $rH_laneInfo (@$rAoH_sampleLanes) {
                 if ( $line[0] eq $rH_laneInfo->{'name'} ) {
 
                     $defaultDir = $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . '/';
+                    $qualOffSet = $rH_laneInfo->{'qualOffset'};
                     $pairType   = $rH_laneInfo->{'runType'};
 
                     if ( $rH_laneInfo->{'runType'} eq "PAIRED_END" ) {
@@ -84,6 +85,8 @@ sub sampleInfo {
         $sampleInfo{ $line[0] }->{'path'}        = $line[0] . '/' . $defaultDir;
         $sampleInfo{ $line[0] }->{'group_name'}  = $line[1];
         $sampleInfo{ $line[0] }->{'sample_name'} = $line[0];
+        $sampleInfo{'defaultDir'}                = $defaultDir;
+        $sampleInfo{'runType'}                   =  $pairType; 
 
         #Pair 1
         if ( $pairType eq "PAIRED_END" ) {
@@ -92,10 +95,13 @@ sub sampleInfo {
             # $groupInfo{genome}{-left} = --left sample1 --left sample2 ...
             # $groupInfo{genome}{-right} = --right sample1 --right sample2 ..
             #-----------------------------------------------------------------
-            $groupInfo{ $line[1] }->{'left'} .= ' --left ' . $sampleInfo{ $line[0] }->{'sample_name'} . '/' . $defaultDir . $sampleInfo{ $line[0] }->{'sample_name'} . '.t' . $minQuality . 'l' . $minLength . '.phred33.pair1.fastq.gz';
-            $groupInfo{ $line[1] }->{'right'} .= ' --right ' . $sampleInfo{ $line[0] }->{'sample_name'} . '/' . $defaultDir . $sampleInfo{ $line[0] }->{'sample_name'} . '.t' . $minQuality . 'l' . $minLength . '.phred33.pair2.fastq.gz';
+            $groupInfo{'group'}{$line[1] }->{'left'} .= ' --left ' . $sampleInfo{ $line[0] }->{'sample_name'} . '/' . $defaultDir . $sampleInfo{ $line[0] }->{'sample_name'} . '.t' . $minQuality . 'l' . $minLength . '.phred' . $qualOffSet . '.pair1.fastq.gz.dup.gz ';
+            $groupInfo{'group'}{ $line[1] }->{'right'} .= ' --right ' . $sampleInfo{ $line[0] }->{'sample_name'} . '/' . $defaultDir . $sampleInfo{ $line[0] }->{'sample_name'} . '.t' . $minQuality . 'l' . $minLength . '.phred' . $qualOffSet . '.pair1.fastq.gz.dup.gz ';
 
 
+        }
+        elsif ( $pairType eq "SINGLE_END"){
+        	$groupInfo{'group'}{$line[1] }->{'single'} .= ' --single ' .  $sampleInfo{ $line[0] }->{'sample_name'} . '/' . $defaultDir . $sampleInfo{ $line[0] }->{'sample_name'} . '.t' . $minQuality . 'l' . $minLength . '.phred' . $qualOffSet . '.single.fastq.gz';
         }
 
     }
