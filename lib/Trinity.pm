@@ -121,6 +121,29 @@ sub butterfly {
 
 }
 
+sub concatFastaCreateGtf {
+    $rH_cfg      = shift;
+    $sampleName  = shift;
+    $rH_laneInfo = shift;
+
+    my $command = '';
+    my %retVal;
+    my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
+
+    $command .= 'module add jdk64/6u35; ';
+    $command .= ' module add mugqic/trinity/2012-06-18 ;';
+    $command .= ' find ' . $laneDirectory . 'chrysalis';
+    $command .= ' -name "*allProbPaths.fasta" -exec cat {} + >' . $laneDirectory . 'Trinity.fasta ;';
+    $command .= ' sh ' . $rH_cfg->{'trinity.createGtf'} . ' ' . $laneDirectory . 'Trinity.fasta';
+    $command .= ' ' . $laneDirectory . $sampleName . '.gtf ;';
+    $command .= ' awk \'{print $1}\' ' . $laneDirectory . 'Trinity.fasta ';
+    $command .= ' >' . $laneDirectory . 'Trinity.2.fasta';
+
+    $retVal{'command'} = $command;
+    return ( \%retVal );
+
+}
+
 sub _chrysalisPairCommand {
 
     my $command = '';
@@ -152,28 +175,7 @@ sub _chrysalisPairCommand {
 
 }
 
-sub concatFastaCreateGtf {
-    $rH_cfg      = shift;
-    $sampleName  = shift;
-    $rH_laneInfo = shift;
 
-    my $command = '';
-    my %retVal;
-    my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
-
-    $command .= 'module add jdk64/6u35; ';
-    $command .= ' module add mugqic/trinity/2012-06-18 ;';
-    $command .= ' find ' . $laneDirectory . 'chrysalis';
-    $command .= ' -name "*allProbPaths.fasta" -exec cat {} + >' . $laneDirectory . 'Trinity.fasta ;';
-    $command .= ' sh ' . $rH_cfg->{'trinity.createGtf'} . ' ' . $laneDirectory . 'Trinity.fasta';
-    $command .= ' ' . $laneDirectory . $sampleName . '.gtf ;';
-    $command .= ' awk \'{print $1}\' ' . $laneDirectory . 'Trinity.fasta ';
-    $command .= ' >' . $laneDirectory . 'Trinity.2.fasta';
-
-    $retVal{'command'} = $command;
-    return ( \%retVal );
-
-}
 
 sub _chrysalisSingleCommand {
 
