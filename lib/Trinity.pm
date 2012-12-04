@@ -87,7 +87,7 @@ sub chrysalis {
     $pair2        = shift;
     $rH_groupInfo = shift;
 
-    print $sampleName, "SAMPLE \n\n";
+    print $sampleName, " SAMPLE \n\n";
     my $rH_retVal;
     if ( $rH_laneInfo->{'runType'} eq "SINGLE_END" ) {
         $rH_retVal = _chrysalisSingleCommand();
@@ -150,7 +150,7 @@ sub _chrysalisPairCommand {
     my %retVal;
 
     if ( exists $rH_groupInfo->{'left'} ) {
-        my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'defaultDir'};
+        my $laneDirectory = $sampleName . "/run" . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
         $command .= 'module add jdk64/6u35; ';
         $command .= ' module add mugqic/trinity/2012-06-18 ;';
         $command .= ' Trinity.pl --seqType fq --JM 100G';
