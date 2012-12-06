@@ -95,8 +95,8 @@ sub sampleInfo {
             # $groupInfo{genome}{-left} = --left sample1 --left sample2 ...
             # $groupInfo{genome}{-right} = --right sample1 --right sample2 ..
             #-----------------------------------------------------------------
-            $groupInfo{'group'}{$line[1] }->{'left'} .= ' --left ' . $sampleInfo{ $line[0] }->{'sample_name'} . '/' . $defaultDir . $sampleInfo{ $line[0] }->{'sample_name'} . '.t' . $minQuality . 'l' . $minLength . '.phred' . $qualOffSet . '.pair1.fastq.gz.dup.gz ';
-            $groupInfo{'group'}{ $line[1] }->{'right'} .= ' --right ' . $sampleInfo{ $line[0] }->{'sample_name'} . '/' . $defaultDir . $sampleInfo{ $line[0] }->{'sample_name'} . '.t' . $minQuality . 'l' . $minLength . '.phred' . $qualOffSet . '.pair1.fastq.gz.dup.gz ';
+            $groupInfo{'group'}{$line[1] }->{'left'} .= '  ' . $sampleInfo{ $line[0] }->{'sample_name'} . '/' . $defaultDir . $sampleInfo{ $line[0] }->{'sample_name'} . '.t' . $minQuality . 'l' . $minLength . '.phred' . $qualOffSet . '.pair1.fastq.gz.dup.gz ';
+            $groupInfo{'group'}{ $line[1] }->{'right'} .= '  ' . $sampleInfo{ $line[0] }->{'sample_name'} . '/' . $defaultDir . $sampleInfo{ $line[0] }->{'sample_name'} . '.t' . $minQuality . 'l' . $minLength . '.phred' . $qualOffSet . '.pair1.fastq.gz.dup.gz ';
 
 
         }
