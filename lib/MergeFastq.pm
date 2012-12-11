@@ -56,8 +56,11 @@ sub mergeFiles {
     my $fileAlias   = shift;
     my $outDir      = dirname($fileAlias); 
     
+    my $command='';
+    my %retVal;
     
 	$runType = ($runType eq "PAIRED_END") ? 1 : 0;
+	
     my $mergeStatus = `$rH_cfg->{'python.merge'} -f $fileAlias -d $runType -o $outDir`;
     if ($mergeStatus == 0 ) {
 
@@ -65,13 +68,17 @@ sub mergeFiles {
         # Todo
         # Need to Implement command line merge
         #--------------------------------------
-        return 2;
+        $command = ' pyhton Do a merge';
+        
     }
     else {
         print "No Merge step necessary\n";
-        return 0;
+        $command = 'No merge';
+        
 
     }
+    $retVal{'command'} = $command;
+    return (\%retVal);
 
 }
 
