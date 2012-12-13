@@ -92,16 +92,16 @@ sub sampleInfo {
         if ( $pairType eq "PAIRED_END" ) {
 
             #----------------------------------------------------------------
-            # $groupInfo{genome}{-left} = --left sample1 --left sample2 ...
-            # $groupInfo{genome}{-right} = --right sample1 --right sample2 ..
+            # $groupInfo{genome}{-left} =  sample1 t sample2 ...
+            # $groupInfo{genome}{-right} =  sample1  sample2 ..
             #-----------------------------------------------------------------
-            $groupInfo{'group'}{$line[1] }->{'left'} .= '  ' . $sampleInfo{ $line[0] }->{'sample_name'} . '/' . $defaultDir . $sampleInfo{ $line[0] }->{'sample_name'} . '.t' . $minQuality . 'l' . $minLength . '.phred' . $qualOffSet . '.pair1.fastq.gz.dup.gz ';
-            $groupInfo{'group'}{ $line[1] }->{'right'} .= '  ' . $sampleInfo{ $line[0] }->{'sample_name'} . '/' . $defaultDir . $sampleInfo{ $line[0] }->{'sample_name'} . '.t' . $minQuality . 'l' . $minLength . '.phred' . $qualOffSet . '.pair1.fastq.gz.dup.gz ';
+            $groupInfo{'group'}{$line[1] }->{'left'} .= '  ' . $sampleInfo{ $line[0] }->{'sample_name'} . '/' . $defaultDir . $sampleInfo{ $line[0] }->{'sample_name'} . '.t' . $minQuality . 'l' . $minLength .  '.pair1.fastq.gz.dup.gz ';
+            $groupInfo{'group'}{ $line[1] }->{'right'} .= '  ' . $sampleInfo{ $line[0] }->{'sample_name'} . '/' . $defaultDir . $sampleInfo{ $line[0] }->{'sample_name'} . '.t' . $minQuality . 'l' . $minLength . '.pair1.fastq.gz.dup.gz ';
 
 
         }
         elsif ( $pairType eq "SINGLE_END"){
-        	$groupInfo{'group'}{$line[1] }->{'single'} .= ' --single ' .  $sampleInfo{ $line[0] }->{'sample_name'} . '/' . $defaultDir . $sampleInfo{ $line[0] }->{'sample_name'} . '.t' . $minQuality . 'l' . $minLength . '.phred' . $qualOffSet . '.single.fastq.gz';
+        	$groupInfo{'group'}{$line[1] }->{'single'} .= ' --single ' .  $sampleInfo{ $line[0] }->{'sample_name'} . '/' . $defaultDir . $sampleInfo{ $line[0] }->{'sample_name'} . '.t' . $minQuality . 'l' . $minLength . '.single.fastq.gz';
         }
 
     }
