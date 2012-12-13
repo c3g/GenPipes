@@ -157,4 +157,33 @@ sub singleCommand {
   return \@commands;
 }
 
+sub index{
+	my $rH_cfg      = shift;
+	my $sampleName  = shift;
+	my $rH_laneInfo = shift;
+	
+	my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
+    my %retVal;
+    
+    my $command = 'module add mugqic/bwa/0.6.2;';
+    $command .= ' bwa index ' . $laneDirectory . $rH_cfg->{'aln.bwaRefIndex'};
+    
+    $retVal{'command'} = $command;
+    return (\%retVal);
+    
+}
+
+
+
 1;
+
+
+
+
+
+
+
+
+
+
+
