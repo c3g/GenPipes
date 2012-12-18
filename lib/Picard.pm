@@ -2,20 +2,19 @@
 
 =head1 NAME
 
-I<Trimmomatic>
+I<Picard>
 
 =head1 SYNOPSIS
 
-Trimmomatic->trim()
+Picard->merge()
 
 =head1 DESCRIPTION
 
-B<Trimmomatic> is a library that trims fastqs
+B<Picard> is a library to manipulate and compute stats off of BAMs
 
 Input = file_name
 
 Output = array
-
 
 =head1 AUTHOR
 
