@@ -143,7 +143,6 @@ sub mergeFiles {
     $command .= ' '.$bamInputs;
     $command .= ' OUTPUT='.$outputBAM;
     $command .= ' MAX_RECORDS_IN_RAM='.LoadConfig::getParam($rH_cfg, 'mergeLanes', 'mergeRecInRam');
-    $command .= ' ; grep \'^Input Read\' '.$countInputs.' > $sampleName/$sampleName.runLane.counts';
   }
   return $command;
 }

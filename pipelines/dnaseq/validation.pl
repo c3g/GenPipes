@@ -100,13 +100,14 @@ sub main {
     my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sampleName};
 
     SubmitToCluster::initSubmit(\%cfg, $sampleName);
-    for(my $current = $opts{'s'}-1; $current <= ($opts{'e'}-1); $current++) {
-       my $fname = $steps[$current]->{'name'};
-       my $subref = \&$fname;
-       for my $rH_laneInfo (@$rAoH_sampleLanes) {
-         # Tests for the first step in the list. Used for dependencies.
-         &$subref($current != ($opts{'s'}-1), \%cfg, $sampleName, $rH_laneInfo, $rH_seqDictionary);
-       } 
+    for my $rH_laneInfo (@$rAoH_sampleLanes) {
+      my %ctx;
+      for(my $current = $opts{'s'}-1; $current <= ($opts{'e'}-1); $current++) {
+        my $fname = $steps[$current]->{'name'};
+        my $subref = \&$fname;
+        # Tests for the first step in the list. Used for dependencies.
+        &$subref($current != ($opts{'s'}-1), \%cfg, \%ctx, $sampleName, $rH_laneInfo, $rH_seqDictionary);
+      } 
     }
   }  
 }
@@ -114,28 +115,34 @@ sub main {
 sub trim {
   my $depends = shift;
   my $rH_cfg = shift;
+  my $rH_ctx = shift;
   my $sampleName = shift;
   my $rH_laneInfo  = shift;
   my $rH_seqDictionary = shift;
 
-    my $rH_trimDetails = Trimmomatic::trim($rH_cfg, $sampleName, $rH_laneInfo);
-    my $trimJobIdVarName=undef;
-    if(length($rH_trimDetails->{'command'}) > 0) {
-      $trimJobIdVarName = SubmitToCluster::printSubmitCmd($rH_cfg, "trim", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'TRIM', undef, $sampleName, $rH_trimDetails->{'command'});
-    }
+  my $rH_trimDetails = Trimmomatic::trim($rH_cfg, $sampleName, $rH_laneInfo);
+  $rH_ctx->{'trim'} = $rH_trimDetails;
+  my $trimJobIdVarName=undef;
+  if(length($rH_trimDetails->{'command'}) > 0) {
+    $trimJobIdVarName = SubmitToCluster::printSubmitCmd($rH_cfg, "trim", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'TRIM', undef, $sampleName, $rH_ctx->{'trim'}->{'command'});
+  }
+  $rH_ctx->{'trim'}->{'jobid'} = $trimJobIdVarName;
   return $trimJobIdVarName;
 }
 
 sub align {
   my $depends = shift;
   my $rH_cfg = shift;
+  my $rH_ctx = shift;
   my $sampleName = shift;
   my $rH_laneInfo  = shift;
   my $rH_seqDictionary = shift;
 
   my $jobDep = "";
+  print "BWA_JOB_IDS=\"\"\n";
+  my $trimJobIdVarName = '$'.$rH_ctx->{'trim'}->{'jobid'};
   if($rH_laneInfo->{'runType'} eq "PAIRED_END") {
-    my $rA_commands = BWA::aln($rH_cfg, $sampleName, $rH_laneInfo, $rH_trimDetails->{'pair1'}, $rH_trimDetails->{'pair2'}, $rH_trimDetails->{'single1'}, $rH_trimDetails->{'single2'}, '.paired.');
+    my $rA_commands = BWA::aln($rH_cfg, $sampleName, $rH_laneInfo, $rH_ctx->{'trim'}->{'pair1'}, $rH_ctx->{'trim'}->{'pair2'}, $rH_ctx->{'trim'}->{'single1'}, $rH_ctx->{'trim'}->{'single2'}, '.paired');
 
     my $read1JobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'read1.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READ1ALN', $trimJobIdVarName, $sampleName, $rA_commands->[0]);
     $read1JobId = '$'.$read1JobId;
@@ -147,10 +154,10 @@ sub align {
     
     # fake it and take the single1 end
     $rH_laneInfo->{'runType'} = 'SINGLE_END';
-    my $rA_commands = BWA::aln($rH_cfg, $sampleName, $rH_laneInfo, $rH_trimDetails->{'pair1'}, $rH_trimDetails->{'pair2'}, $rH_trimDetails->{'single1'}, $rH_trimDetails->{'single2'}, '.single.');
+    $rA_commands = BWA::aln($rH_cfg, $sampleName, $rH_laneInfo, $rH_ctx->{'trim'}->{'pair1'}, $rH_ctx->{'trim'}->{'pair2'}, $rH_ctx->{'trim'}->{'single1'}, $rH_ctx->{'trim'}->{'single2'}, '.single');
     my $readJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READALN', $trimJobIdVarName, $sampleName, $rA_commands->[0]);
     $readJobId = '$'.$readJobId;
-    my $bwaJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'samse.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA',  $readJobId, $sampleName, $rA_commands->[1]);
+    $bwaJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'samse.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA',  $readJobId, $sampleName, $rA_commands->[1]);
     $bwaJobId = '$'.$bwaJobId;
     print 'BWA_JOB_IDS=${BWA_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$bwaJobId."\n";
 
@@ -167,7 +174,7 @@ sub align {
     $jobDep = $mergeJobId;
   }
   else {
-    my $rA_commands = BWA::aln($rH_cfg, $sampleName, $rH_laneInfo, $rH_trimDetails->{'pair1'}, $rH_trimDetails->{'pair2'}, $rH_trimDetails->{'single1'}, $rH_trimDetails->{'single2'});
+    my $rA_commands = BWA::aln($rH_cfg, $sampleName, $rH_laneInfo, $rH_ctx->{'trim'}->{'pair1'}, $rH_ctx->{'trim'}->{'pair2'}, $rH_ctx->{'trim'}->{'single1'}, $rH_ctx->{'trim'}->{'single2'});
     my $readJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READALN', $trimJobIdVarName, $sampleName, $rA_commands->[0]);
     $readJobId = '$'.$readJobId;
     my $bwaJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'samse.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA',  $readJobId, $sampleName, $rA_commands->[1]);
@@ -177,26 +184,6 @@ sub align {
   }
 
   return $jobDep;
-}
-
-sub mergeLanes {
-  my $depends = shift;
-  my $rH_cfg = shift;
-  my $sampleName = shift;
-  my $rAoH_sampleLanes  = shift;
-  my $rH_seqDictionary = shift;
-
-  my $jobDependency = undef;
-  if($depends > 0) {
-    $jobDependency = '$BWA_JOB_IDS';
-  }
-
-  my $command = Picard::merge($rH_cfg, $sampleName, $rAoH_sampleLanes);
-  my $mergeJobId = undef;
-  if(defined($command) && length($command) > 0) {
-    $mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "merge", undef, 'MERGELANES', $jobDependency, $sampleName, $command);
-  }
-  return $mergeJobId;
 }
 
 1;

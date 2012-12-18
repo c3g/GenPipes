@@ -133,7 +133,7 @@ sub singleCommand {
 
   my @commands;
   # -M gives modified date relative to now. The bigger the older.
-  if ($bamFileDate > -M $single) {
+  if (!defined($single) || !defined(-M $single) || $bamFileDate > -M $single) {
     my $saiCommand = "";
     my $bwaCommand = "";
 
