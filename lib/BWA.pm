@@ -42,21 +42,22 @@ use LoadConfig;
 # SUB
 #-----------------------
 sub aln {
-  my $rH_cfg      = shift;
-  my $sampleName  = shift;
-  my $rH_laneInfo = shift;
-  my $pair1       = shift;
-  my $pair2       = shift;
-  my $single1     = shift;
-  my $single2     = shift;
+  my $rH_cfg        = shift;
+  my $sampleName    = shift;
+  my $rH_laneInfo   = shift;
+  my $pair1         = shift;
+  my $pair2         = shift;
+  my $single1       = shift;
+  my $single2       = shift;
+  my $optOutputTag  = shift;
 
   my $command = "";
 
   if ( $rH_laneInfo->{'runType'} eq "SINGLE_END" ) {
-    $command = singleCommand($rH_cfg, $sampleName, $rH_laneInfo, $single1);
+    $command = singleCommand($rH_cfg, $sampleName, $rH_laneInfo, $single1, $optOutputTag);
   }
   elsif($rH_laneInfo->{'runType'} eq "PAIRED_END") {
-    $command = pairCommand($rH_cfg, $sampleName, $rH_laneInfo, $pair1, $pair2);
+    $command = pairCommand($rH_cfg, $sampleName, $rH_laneInfo, $pair1, $pair2, $optOutputTag);
   }
   else {
     die "Unknown runType: ".$rH_laneInfo->{' runType '}."\n";
@@ -66,16 +67,17 @@ sub aln {
 }
 
 sub pairCommand {
-  my $rH_cfg = shift;
-  my $sampleName = shift;
+  my $rH_cfg      = shift;
+  my $sampleName  = shift;
   my $rH_laneInfo = shift;
   my $pair1       = shift;
   my $pair2       = shift;
+  my $optOutputTag= shift;
 
   my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
   my $outputSai1Name = $laneDirectory . $sampleName.'.pair1.sai';
   my $outputSai2Name = $laneDirectory . $sampleName.'.pair2.sai';
-  my $outputBAM = $laneDirectory . $sampleName.'.sorted.bam';
+  my $outputBAM = $laneDirectory . $sampleName.$optOutputTag.'.sorted.bam';
   my $bamFileDate = -M $outputBAM;
 
   my @commands;
@@ -122,10 +124,11 @@ sub singleCommand {
   my $sampleName  = shift;
   my $rH_laneInfo = shift;
   my $single      = shift;
+  my $optOutputTag= shift;
 
   my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
   my $outputSaiName = $laneDirectory . $sampleName.'.single.sai';
-  my $outputBAM = $laneDirectory . $sampleName.'.sorted.bam';
+  my $outputBAM = $laneDirectory . $sampleName.$optOutputTag.'.sorted.bam';
   my $bamFileDate = -M $outputBAM;
 
   my @commands;

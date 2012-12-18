@@ -101,7 +101,11 @@ sub pairCommand {
     if ($rH_laneInfo->{'qualOffset'} eq "64") {
       $command .= ' TOPHRED33';
     }
-    $command .= ' ILLUMINACLIP:'.$adapterFile.$rH_cfg->{'trim.clipSettings'}.' TRAILING:'.$minQuality.' MINLEN:'.$minLength;
+    $command .= ' ILLUMINACLIP:'.$adapterFile.$rH_cfg->{'trim.clipSettings'};
+    if($minQuality > 0) {
+      $command .=' TRAILING:'.$minQuality;
+    }
+    $command .= ' MINLEN:'.$minLength;
     $command .= ' > ' . $laneDirectory . $sampleName . '.trim.out';
   }
   
@@ -139,7 +143,11 @@ sub singleCommand {
       $command .= ' -phred33';
     }
     $command .= ' ' . $laneDirectory . $rH_laneInfo->{'read1File'} . ' ' . $outputFastqName;
-    $command .= ' ILLUMINACLIP:'.$adapterFile.':2:30:15 TRAILING:'.$minQuality.' MINLEN:'.$minLength;
+    $command .= ' ILLUMINACLIP:'.$adapterFile.':2:30:15';
+    if($minQuality > 0) {
+      $command .= ' TRAILING:'.$minQuality;
+    }
+    $command .=' MINLEN:'.$minLength;
     $command .= ' > ' . $laneDirectory . $sampleName . '.trim.out';
   }
   

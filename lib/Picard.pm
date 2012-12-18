@@ -111,6 +111,43 @@ sub mergeRealigned {
   return $command;
 }
 
+# Generic merge
+sub mergeFiles {
+  my $rH_cfg        = shift;
+  my $sampleName    = shift;
+  my $rA_inputFiles = shift;
+  my $outputBAM    = shift;
+
+  my $latestBam;
+  my $bamInputs;
+  my $countInputs;
+  for my $file (@$rA_inputFiles) {
+    if(!defined($latestBam)) {
+      $latestBam = -M $file;
+    }
+    else {
+      my $modDate = -M $file;
+      if($modDate < $latestBam) {
+        $latestBam = $modDate;
+      }
+    }
+    $bamInputs .= 'INPUT='.$file.' ';
+  }
+
+  my $command;
+  # -M gives modified date relative to now. The bigger the older.
+  if(!defined($latestBam) || !defined(-M $outputBAM) || $latestBam < -M $outputBAM) {
+    $command .= 'module load mugqic/picard/1.77 ;';
+    $command .= ' java -Xmx'.LoadConfig::getParam($rH_cfg, 'mergeLanes', 'mergeRam').' -jar \${PICARD_HOME}/MergeSamFiles.jar';
+    $command .= ' VALIDATION_STRINGENCY=SILENT ASSUME_SORTED=true CREATE_INDEX=true';
+    $command .= ' '.$bamInputs;
+    $command .= ' OUTPUT='.$outputBAM;
+    $command .= ' MAX_RECORDS_IN_RAM='.LoadConfig::getParam($rH_cfg, 'mergeLanes', 'mergeRecInRam');
+    $command .= ' ; grep \'^Input Read\' '.$countInputs.' > $sampleName/$sampleName.runLane.counts';
+  }
+  return $command;
+}
+
 sub fixmate {
   my $rH_cfg     = shift;
   my $sampleName = shift;
