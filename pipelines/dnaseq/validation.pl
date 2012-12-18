@@ -65,6 +65,7 @@ use Trimmomatic;
 my @steps;
 push(@steps, {'name' => 'trim'});
 push(@steps, {'name' => 'align'});
+push(@steps, {'name' => 'metrics'});
 
 &main();
 
@@ -138,6 +139,8 @@ sub align {
   my $rH_laneInfo  = shift;
   my $rH_seqDictionary = shift;
 
+  $rH_ctx->{'aln'} = {};
+  
   my $jobDep = "";
   print "BWA_JOB_IDS=\"\"\n";
   my $trimJobIdVarName = '$'.$rH_ctx->{'trim'}->{'jobid'};
@@ -171,7 +174,8 @@ sub align {
     if(defined($command) && length($command) > 0) {
       $mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mergePairs", undef, 'MERGEPAIRS', '$BWA_JOB_IDS', $sampleName, $command);
     }
-    $jobDep = $mergeJobId;
+    $jobDep = '$'.$mergeJobId;
+    $rH_ctx->{'aln'}->{'output'} = $outputBAM;
   }
   else {
     my $rA_commands = BWA::aln($rH_cfg, $sampleName, $rH_laneInfo, $rH_ctx->{'trim'}->{'pair1'}, $rH_ctx->{'trim'}->{'pair2'}, $rH_ctx->{'trim'}->{'single1'}, $rH_ctx->{'trim'}->{'single2'});
@@ -181,9 +185,39 @@ sub align {
     $bwaJobId = '$'.$bwaJobId;
     print 'BWA_JOB_IDS=${BWA_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$bwaJobId."\n";
     $jobDep = '$BWA_JOB_IDS';
+    
+    my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
+    $rH_ctx->{'aln'}->{'output'} = $laneDirectory . $sampleName.'.sorted.bam';
   }
 
+  $rH_ctx->{'aln'}->{'jobid'} = $jobDep;
   return $jobDep;
+}
+
+sub metrics {
+  my $depends = shift;
+  my $rH_cfg = shift;
+  my $rH_ctx = shift;
+  my $sampleName = shift;
+  my $rH_laneInfo  = shift;
+  my $rH_seqDictionary = shift;
+
+  my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
+  # Compute target coverage
+  $command = GATK::targetCoverage($rH_cfg, $sampleName, $rH_ctx->{'aln'}->{'output'}, laneDirectory . $sampleName.'.sorted.targetCoverage');
+  my $genomeCoverageJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "targetCoverage", undef, 'TARGETCOVERAGE', $rH_ctx->{'aln'}->{'jobid'}, $sampleName, $command);
+
+  # Generate IGV track
+#  unless (-e "$sampleName/$sampleName.sorted.dup.tdf.done") {
+#   my $IGV_MOAB_COMMAND="msub -d $CURRENT_DIR -V -l walltime=48:00:0 -q sw -l nodes=1:ppn=6 -j oe -o $output_jobs -N igv.$sampleName $dependency -m ae -M $EMAIL_NOTIFICATION";
+#   print "echo \"rm -f $sampleName/$sampleName.sorted.dup.tdf.done ; $JAVA_BIN -Djava.io.tmpdir=$TMP_DIR -Xmx12G -Djava.awt.headless=true -jar $IGV_TOOLS_JAR count -f min,max,mean $sampleName/$sampleName.sorted.dup.bam $sampleName/$sampleName.sorted.dup.tdf b37 && touch $sampleName/$sampleName.sorted.dup.tdf.done\" | $IGV_MOAB_COMMAND\n";
+#  }
+
+  # Compute flags
+#  unless (-e "$sampleName/$sampleName.sorted.dup.flagstat.done") {
+#   my $FLAGS_MOAB_COMMAND="msub -d $CURRENT_DIR -V -l walltime=48:00:0 -q sw -l nodes=1:ppn=1 -j oe -o $output_jobs -N flag.$sampleName $dependency -m ae -M $EMAIL_NOTIFICATION";
+#   print "echo \"rm -f $sampleName/$sampleName.sorted.dup.flagstat.done ; $SAMTOOLS_HOME/samtools flagstat $sampleName/$sampleName.sorted.dup.bam > $sampleName/$sampleName.sorted.dup.flagstat && touch $sampleName/$sampleName.sorted.dup.flagstat.done\" | $FLAGS_MOAB_COMMAND\n";
+#  }  
 }
 
 1;

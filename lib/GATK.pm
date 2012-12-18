@@ -2,23 +2,21 @@
 
 =head1 NAME
 
-I<Trimmomatic>
+I<GATK>
 
 =head1 SYNOPSIS
 
-Trimmomatic->trim()
+GATK->trim()
 
 =head1 DESCRIPTION
 
-B<Trimmomatic> is a library that trims fastqs
+B<GATK> is a library to manipulate and compute stats off of BAMs
 
 Input = file_name
 
 Output = array
 
-
 =head1 AUTHOR
-
 
 =head1 DEPENDENCY
 
@@ -93,6 +91,37 @@ sub genomeCoverage {
   $command .= ' -R '.$refGenome;
   $command .= ' -o '.$output;
   $command .= ' -I '.$sortedBAM;
+  
+  return $command;
+}
+
+sub targetCoverage {
+  my $rH_cfg        = shift;
+  my $sampleName    = shift;
+  my $inputBam      = shift;
+  my $outputPrefix  = shift;
+
+  my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta');
+  my $targets = LoadConfig::getParam($rH_cfg, 'targetCoverage', 'coverageTargets');
+  my @thresholds = split(',', LoadConfig::getParam($rH_cfg, 'targetCoverage', 'percentThresholds'));
+
+  my $command = "";
+  $command .= 'module load mugqic/GenomeAnalysisTKLite/2.1-13 ;';
+  $command .= ' java -Xmx'.LoadConfig::getParam($rH_cfg, 'targetCoverage', 'coverageRam').'  -jar \${GATK_JAR}';
+  $command .= ' -T DepthOfCoverage --omitDepthOutputAtEachBase --logging_level ERROR';
+  my $highestThreshold = 0;
+  for my $threshold (@thresholds) {
+    $command .= ' --summaryCoverageThreshold '.$threshold;
+    if($highestThreshold > $threshold) {
+      die "Tresholds must be ascending: ".join(',', @thresholds);
+    }
+    $highestThreshold = $threshold;
+  }
+  $command .= ' --start 1 --stop '.$highestThreshold.' --nBins '.($highestThreshold-1).' -dt NONE';
+  $command .= ' -R '.$refGenome;
+  $command .= ' -o '.$outputPrefix;
+  $command .= ' -I '.$inputBam;
+  $command .= ' -L '.$targets;
   
   return $command;
 }
