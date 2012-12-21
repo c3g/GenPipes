@@ -74,7 +74,7 @@ sub merge {
   # -M gives modified date relative to now. The bigger the older.
   if(!defined($latestBam) || !defined(-M $outputBAM) || $latestBam < -M $outputBAM) {
     $command .= 'module load mugqic/picard/1.77 ;';
-    $command .= ' java -Xmx'.LoadConfig::getParam($rH_cfg, 'mergeLanes', 'mergeRam').' -jar \${PICARD_HOME}/MergeSamFiles.jar';
+    $command .= ' java '.LoadConfig::getParam($rH_cfg, 'mergeLanes', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'mergeLanes', 'mergeRam').' -jar \${PICARD_HOME}/MergeSamFiles.jar';
     $command .= ' VALIDATION_STRINGENCY=SILENT ASSUME_SORTED=true CREATE_INDEX=true';
     $command .= ' '.$bamInputs;
     $command .= ' OUTPUT='.$outputBAM;
@@ -102,8 +102,9 @@ sub mergeRealigned {
 
   my $command;
   $command .= 'module load mugqic/picard/1.77 ;';
-  $command .= ' java -Xmx'.LoadConfig::getParam($rH_cfg, 'mergeRealigned', 'mergeRam').' -jar \${PICARD_HOME}/MergeSamFiles.jar';
+  $command .= ' java '.LoadConfig::getParam($rH_cfg, 'mergeRealigned', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'mergeRealigned', 'mergeRam').' -jar \${PICARD_HOME}/MergeSamFiles.jar';
   $command .= ' VALIDATION_STRINGENCY=SILENT ASSUME_SORTED=false SORT_ORDER=queryname';
+  $command .= ' TMP_DIR='.LoadConfig::getParam($rH_cfg, 'mergeRealigned', 'tmpDir');
   $command .= ' '.$bamInputs;
   $command .= ' OUTPUT='.$outputBAM;
   $command .= ' MAX_RECORDS_IN_RAM='.LoadConfig::getParam($rH_cfg, 'mergeRealigned', 'mergeRecInRam');
@@ -137,11 +138,11 @@ sub mergeFiles {
   # -M gives modified date relative to now. The bigger the older.
   if(!defined($latestBam) || !defined(-M $outputBAM) || $latestBam < -M $outputBAM) {
     $command .= 'module load mugqic/picard/1.77 ;';
-    $command .= ' java -Xmx'.LoadConfig::getParam($rH_cfg, 'mergeLanes', 'mergeRam').' -jar \${PICARD_HOME}/MergeSamFiles.jar';
+    $command .= ' java '.LoadConfig::getParam($rH_cfg, 'mergeFiles', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'mergeFiles', 'mergeRam').' -jar \${PICARD_HOME}/MergeSamFiles.jar';
     $command .= ' VALIDATION_STRINGENCY=SILENT ASSUME_SORTED=true CREATE_INDEX=true';
     $command .= ' '.$bamInputs;
     $command .= ' OUTPUT='.$outputBAM;
-    $command .= ' MAX_RECORDS_IN_RAM='.LoadConfig::getParam($rH_cfg, 'mergeLanes', 'mergeRecInRam');
+    $command .= ' MAX_RECORDS_IN_RAM='.LoadConfig::getParam($rH_cfg, 'mergeFiles', 'mergeRecInRam');
   }
   return $command;
 }
@@ -155,7 +156,7 @@ sub fixmate {
 
   my $command;
   $command .= 'module load mugqic/picard/1.77 ;';
-  $command .= ' java -Xmx'.LoadConfig::getParam($rH_cfg, 'fixmate', 'fixmateRam').' -jar \${PICARD_HOME}/FixMateInformation.jar';
+  $command .= ' java '.LoadConfig::getParam($rH_cfg, 'fixmate', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'fixmate', 'fixmateRam').' -jar \${PICARD_HOME}/FixMateInformation.jar';
   $command .= ' VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true SORT_ORDER=coordinate';
   $command .= ' INPUT='.$inputBAM;
   $command .= ' OUTPUT='.$outputBAM;
@@ -173,7 +174,7 @@ sub markDup {
   
   my $command;
   $command .= 'module load mugqic/picard/1.77 ;';
-  $command .= ' java -Xmx'.LoadConfig::getParam($rH_cfg, 'markDup', 'markDupRam').' -jar \${PICARD_HOME}/MarkDuplicates.jar';
+  $command .= ' java '.LoadConfig::getParam($rH_cfg, 'markDupRam', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'markDup', 'markDupRam').' -jar \${PICARD_HOME}/MarkDuplicates.jar';
   $command .= ' REMOVE_DUPLICATES=false CREATE_MD5_FILE=true VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true';
   $command .= ' INPUT='.$inputBAM;
   $command .= ' OUTPUT='.$outputBAM;
@@ -192,7 +193,7 @@ sub collectMetrics {
   
   my $command;
   $command .= 'module load mugqic/picard/1.77 ;';
-  $command .= ' java -Xmx'.LoadConfig::getParam($rH_cfg, 'collectMetrics', 'collectMetricsRam').' -jar \${PICARD_HOME}/CollectMultipleMetrics.jar';
+  $command .= ' java '.LoadConfig::getParam($rH_cfg, 'collectMetrics', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'collectMetrics', 'collectMetricsRam').' -jar \${PICARD_HOME}/CollectMultipleMetrics.jar';
   $command .= ' PROGRAM=CollectAlignmentSummaryMetrics PROGRAM=CollectInsertSizeMetrics  VALIDATION_STRINGENCY=SILENT';
   $command .= ' REFERENCE_SEQUENCE='.LoadConfig::getParam($rH_cfg, 'collectMetrics', 'referenceFasta');
   $command .= ' INPUT='.$inputBAM;

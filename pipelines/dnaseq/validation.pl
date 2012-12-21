@@ -102,12 +102,11 @@ sub main {
 
     SubmitToCluster::initSubmit(\%cfg, $sampleName);
     for my $rH_laneInfo (@$rAoH_sampleLanes) {
-      my %ctx;
       for(my $current = $opts{'s'}-1; $current <= ($opts{'e'}-1); $current++) {
         my $fname = $steps[$current]->{'name'};
         my $subref = \&$fname;
         # Tests for the first step in the list. Used for dependencies.
-        &$subref($current != ($opts{'s'}-1), \%cfg, \%ctx, $sampleName, $rH_laneInfo, $rH_seqDictionary);
+        &$subref($current != ($opts{'s'}-1), \%cfg, $sampleName, $rH_laneInfo, $rH_seqDictionary);
       } 
     }
   }  
@@ -116,36 +115,43 @@ sub main {
 sub trim {
   my $depends = shift;
   my $rH_cfg = shift;
-  my $rH_ctx = shift;
   my $sampleName = shift;
   my $rH_laneInfo  = shift;
   my $rH_seqDictionary = shift;
 
   my $rH_trimDetails = Trimmomatic::trim($rH_cfg, $sampleName, $rH_laneInfo);
-  $rH_ctx->{'trim'} = $rH_trimDetails;
   my $trimJobIdVarName=undef;
   if(length($rH_trimDetails->{'command'}) > 0) {
-    $trimJobIdVarName = SubmitToCluster::printSubmitCmd($rH_cfg, "trim", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'TRIM', undef, $sampleName, $rH_ctx->{'trim'}->{'command'});
+    $trimJobIdVarName = SubmitToCluster::printSubmitCmd($rH_cfg, "trim", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'TRIM', undef, $sampleName, $rH_trimDetails->{'command'});
   }
-  $rH_ctx->{'trim'}->{'jobid'} = $trimJobIdVarName;
   return $trimJobIdVarName;
 }
 
 sub align {
   my $depends = shift;
   my $rH_cfg = shift;
-  my $rH_ctx = shift;
   my $sampleName = shift;
   my $rH_laneInfo  = shift;
   my $rH_seqDictionary = shift;
 
-  $rH_ctx->{'aln'} = {};
-  
+  my $minQuality = $rH_cfg->{'trim.minQuality'};
+  my $minLength = $rH_cfg->{'trim.minLength'};
+  my $adapterFile = $rH_cfg->{'trim.adapterFile'};
+
+  my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
+  my $outputFastqPair1Name = $laneDirectory . $sampleName.'.t'.$minQuality.'l'.$minLength.'.pair1.fastq.gz';
+  my $outputFastqPair2Name = $laneDirectory . $sampleName.'.t'.$minQuality.'l'.$minLength.'.pair2.fastq.gz';
+  my $outputFastqSingle1Name = $laneDirectory . $sampleName.'.t'.$minQuality.'l'.$minLength.'.single1.fastq.gz';
+  my $outputFastqSingle2Name = $laneDirectory . $sampleName.'.t'.$minQuality.'l'.$minLength.'.single2.fastq.gz';
+
   my $jobDep = "";
   print "BWA_JOB_IDS=\"\"\n";
-  my $trimJobIdVarName = '$'.$rH_ctx->{'trim'}->{'jobid'};
+  my $trimJobIdVarName = undef;
+  if($depends) {
+    $trimJobIdVarName = '$TRIM_JOB_ID';
+  }
   if($rH_laneInfo->{'runType'} eq "PAIRED_END") {
-    my $rA_commands = BWA::aln($rH_cfg, $sampleName, $rH_laneInfo, $rH_ctx->{'trim'}->{'pair1'}, $rH_ctx->{'trim'}->{'pair2'}, $rH_ctx->{'trim'}->{'single1'}, $rH_ctx->{'trim'}->{'single2'}, '.paired');
+    my $rA_commands = BWA::aln($rH_cfg, $sampleName, $rH_laneInfo, $outputFastqPair1Name, $outputFastqPair2Name, $outputFastqSingle1Name, $outputFastqSingle2Name, '.paired');
 
     my $read1JobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'read1.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READ1ALN', $trimJobIdVarName, $sampleName, $rA_commands->[0]);
     $read1JobId = '$'.$read1JobId;
@@ -157,7 +163,7 @@ sub align {
     
     # fake it and take the single1 end
     $rH_laneInfo->{'runType'} = 'SINGLE_END';
-    $rA_commands = BWA::aln($rH_cfg, $sampleName, $rH_laneInfo, $rH_ctx->{'trim'}->{'pair1'}, $rH_ctx->{'trim'}->{'pair2'}, $rH_ctx->{'trim'}->{'single1'}, $rH_ctx->{'trim'}->{'single2'}, '.single');
+    $rA_commands = BWA::aln($rH_cfg, $sampleName, $rH_laneInfo, $outputFastqPair1Name, $outputFastqPair2Name, $outputFastqSingle1Name, $outputFastqSingle2Name, '.single');
     my $readJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READALN', $trimJobIdVarName, $sampleName, $rA_commands->[0]);
     $readJobId = '$'.$readJobId;
     $bwaJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'samse.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA',  $readJobId, $sampleName, $rA_commands->[1]);
@@ -175,10 +181,9 @@ sub align {
       $mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mergePairs", undef, 'MERGEPAIRS', '$BWA_JOB_IDS', $sampleName, $command);
     }
     $jobDep = '$'.$mergeJobId;
-    $rH_ctx->{'aln'}->{'output'} = $outputBAM;
   }
   else {
-    my $rA_commands = BWA::aln($rH_cfg, $sampleName, $rH_laneInfo, $rH_ctx->{'trim'}->{'pair1'}, $rH_ctx->{'trim'}->{'pair2'}, $rH_ctx->{'trim'}->{'single1'}, $rH_ctx->{'trim'}->{'single2'});
+    my $rA_commands = BWA::aln($rH_cfg, $sampleName, $rH_laneInfo, $outputFastqPair1Name, $outputFastqPair2Name, $outputFastqSingle1Name, $outputFastqSingle2Name);
     my $readJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READALN', $trimJobIdVarName, $sampleName, $rA_commands->[0]);
     $readJobId = '$'.$readJobId;
     my $bwaJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'samse.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA',  $readJobId, $sampleName, $rA_commands->[1]);
@@ -187,25 +192,26 @@ sub align {
     $jobDep = '$BWA_JOB_IDS';
     
     my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
-    $rH_ctx->{'aln'}->{'output'} = $laneDirectory . $sampleName.'.sorted.bam';
   }
 
-  $rH_ctx->{'aln'}->{'jobid'} = $jobDep;
   return $jobDep;
 }
 
 sub metrics {
   my $depends = shift;
   my $rH_cfg = shift;
-  my $rH_ctx = shift;
   my $sampleName = shift;
   my $rH_laneInfo  = shift;
   my $rH_seqDictionary = shift;
 
+  my $bwaJobId = undef;
+  if($depends) {
+    $bwaJobId = '$BWA_JOB_IDS';
+  }
   my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
   # Compute target coverage
-  $command = GATK::targetCoverage($rH_cfg, $sampleName, $rH_ctx->{'aln'}->{'output'}, laneDirectory . $sampleName.'.sorted.targetCoverage');
-  my $genomeCoverageJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "targetCoverage", undef, 'TARGETCOVERAGE', $rH_ctx->{'aln'}->{'jobid'}, $sampleName, $command);
+  my $command = GATK::targetCoverage($rH_cfg, $sampleName, $laneDirectory . $sampleName.'.sorted.bam', $laneDirectory . $sampleName.'.sorted.targetCoverage');
+  my $genomeCoverageJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "targetCoverage", undef, 'TARGETCOVERAGE', $bwaJobId, $sampleName, $command);
 
   # Generate IGV track
 #  unless (-e "$sampleName/$sampleName.sorted.dup.tdf.done") {

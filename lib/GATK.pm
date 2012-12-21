@@ -53,14 +53,14 @@ sub realign {
   
   my $command;
   $command .= 'module load mugqic/GenomeAnalysisTKLite/2.1-13 ;';
-  $command .= ' java -Xmx'.LoadConfig::getParam($rH_cfg, 'indelRealigner', 'realignRam').'  -jar \${GATK_JAR}';
+  $command .= ' java '.LoadConfig::getParam($rH_cfg, 'indelRealigner', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'indelRealigner', 'realignRam').'  -jar \${GATK_JAR}';
   $command .= ' -T RealignerTargetCreator';
   $command .= ' -R '.$refGenome;
   $command .= ' -o '.$intervalOutput;
   $command .= ' -I '.$sortedBAM;
   $command .= ' -L '.$seqName;
   $command .= ' ; ';
-  $command .= ' java -Xmx'.LoadConfig::getParam($rH_cfg, 'indelRealigner', 'realignRam').' -jar \${GATK_JAR}';
+  $command .= ' java '.LoadConfig::getParam($rH_cfg, 'indelRealigner', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'indelRealigner', 'realignRam').' -jar \${GATK_JAR}';
   $command .= ' -T IndelRealigner';
   $command .= ' -R '.$refGenome;
   $command .= ' -targetIntervals '.$intervalOutput;
@@ -84,7 +84,7 @@ sub genomeCoverage {
   
   my $command;
   $command .= 'module load mugqic/GenomeAnalysisTKLite/2.1-13 ;';
-  $command .= ' java -Xmx'.LoadConfig::getParam($rH_cfg, 'genomeCoverage', 'genomeCoverageRam').'  -jar \${GATK_JAR}';
+  $command .= ' java '.LoadConfig::getParam($rH_cfg, 'genomeCoverage', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'genomeCoverage', 'genomeCoverageRam').'  -jar \${GATK_JAR}';
   $command .= ' -T DepthOfCoverage --omitDepthOutputAtEachBase --logging_level ERROR';
   $command .= ' --summaryCoverageThreshold 10 --summaryCoverageThreshold 20 --summaryCoverageThreshold 30 --summaryCoverageThreshold 40 --summaryCoverageThreshold 50 --summaryCoverageThreshold 75 --summaryCoverageThreshold 100';
   $command .= ' --start 1 --stop 1000 --nBins 999 -dt NONE';
@@ -103,17 +103,17 @@ sub targetCoverage {
 
   my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta');
   my $targets = LoadConfig::getParam($rH_cfg, 'targetCoverage', 'coverageTargets');
-  my @thresholds = split(',', LoadConfig::getParam($rH_cfg, 'targetCoverage', 'percentThresholds'));
+  my $rA_thresholds = LoadConfig::getParam($rH_cfg, 'targetCoverage', 'percentThresholds');
 
   my $command = "";
   $command .= 'module load mugqic/GenomeAnalysisTKLite/2.1-13 ;';
-  $command .= ' java -Xmx'.LoadConfig::getParam($rH_cfg, 'targetCoverage', 'coverageRam').'  -jar \${GATK_JAR}';
+  $command .= ' java '.LoadConfig::getParam($rH_cfg, 'targetCoverage', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'targetCoverage', 'coverageRam').'  -jar \${GATK_JAR}';
   $command .= ' -T DepthOfCoverage --omitDepthOutputAtEachBase --logging_level ERROR';
   my $highestThreshold = 0;
-  for my $threshold (@thresholds) {
+  for my $threshold (@$rA_thresholds) {
     $command .= ' --summaryCoverageThreshold '.$threshold;
     if($highestThreshold > $threshold) {
-      die "Tresholds must be ascending: ".join(',', @thresholds);
+      die "Tresholds must be ascending: ".join(',', @$rA_thresholds);
     }
     $highestThreshold = $threshold;
   }

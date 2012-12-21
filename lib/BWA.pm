@@ -74,6 +74,9 @@ sub pairCommand {
   my $pair2       = shift;
   my $optOutputTag= shift;
 
+  if(!defined($optOutputTag)) {
+    $optOutputTag = "";
+  }
   my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
   my $outputSai1Name = $laneDirectory . $sampleName.'.pair1.sai';
   my $outputSai2Name = $laneDirectory . $sampleName.'.pair2.sai';
@@ -126,6 +129,9 @@ sub singleCommand {
   my $single      = shift;
   my $optOutputTag= shift;
 
+  if(!defined($optOutputTag)) {
+    $optOutputTag = "";
+  }
   my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
   my $outputSaiName = $laneDirectory . $sampleName.'.single.sai';
   my $outputBAM = $laneDirectory . $sampleName.$optOutputTag.'.sorted.bam';
@@ -133,7 +139,7 @@ sub singleCommand {
 
   my @commands;
   # -M gives modified date relative to now. The bigger the older.
-  if (!defined($single) || !defined(-M $single) || $bamFileDate > -M $single) {
+  if (!defined($single) || !defined(-M $single) || !defined($bamFileDate) || $bamFileDate > -M $single) {
     my $saiCommand = "";
     my $bwaCommand = "";
 
