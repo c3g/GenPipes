@@ -82,7 +82,7 @@ sub printUsage {
   print "\t-c  config file\n";
   print "\t-s  start step, inclusive\n";
   print "\t-e  end step, inclusive\n";
-  print "\t-n  nanuq sample sheet\n";
+  print "\t-n  paired sample sheet. Format: 'SAMPLE,NORMAL,TUMOR'\n";
   print "\n";
   print "Steps:\n";
   for(my $idx=0; $idx < @steps; $idx++) {
