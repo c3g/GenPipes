@@ -57,7 +57,7 @@ sub printSubmitCmd {
     print LoadConfig::getParam($rH_cfg, $stepName, 'clusterSubmitCmd');
     print ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterOtherArg');
     print ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterWorkDirArg') . ' `pwd`';
-    print ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterOutputDirArg') . ' ' . $sampleName.'/output_jobs/';
+    print ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterOutputDirArg') . ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'sampleOutputRoot') . $sampleName.'/output_jobs/';
     my $jobName = $stepName.'.'.$sampleName;
     if(defined($jobNameSuffix) && length($jobNameSuffix) > 0) {
       $jobName .= '.'.$jobNameSuffix;
