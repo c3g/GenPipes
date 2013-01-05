@@ -102,7 +102,7 @@ sub main {
 
   my %cfg = LoadConfig->readConfigFile($opts{'c'});
   my $rAoH_samplePairs = SampleSheet::parsePairedSampleSheet($opts{'n'});
-  my $rH_seqDictionary = SequenceDictionaryParser::readDictFile(\%cfg);
+  my $rAoH_seqDictionary = SequenceDictionaryParser::readDictFile(\%cfg);
 
   my $latestBam;
   for my $rH_samplePair  (@$rAoH_samplePairs) {
@@ -112,7 +112,7 @@ sub main {
        my $subref = \&$fname;
 
        # Tests for the first step in the list. Used for dependencies.
-       &$subref($current != ($opts{'s'}-1), \%cfg, $rH_samplePair, $rH_seqDictionary); 
+       &$subref($current != ($opts{'s'}-1), \%cfg, $rH_samplePair, $rAoH_seqDictionary); 
     }
   }  
 }
@@ -121,7 +121,7 @@ sub snpAndIndelBCF {
   my $depends = shift;
   my $rH_cfg = shift;
   my $rH_samplePair = shift;
-  my $rH_seqDictionary = shift;
+  my $rAoH_seqDictionary = shift;
 
   my $sampleName = $rH_samplePair->{'sample'};
   my $normalBam = $rH_samplePair->{'normal'}.'/'.$rH_samplePair->{'normal'}.'.sorted.dup.bam';
@@ -130,7 +130,8 @@ sub snpAndIndelBCF {
 
   print 'mkdir -p '.$outputDir."\n";
   print "MPILEUP_JOB_IDS=\"\"\n";
-  for my $seqName (keys(%{$rH_seqDictionary})) {
+  for my $rH_seqInfo (@$rAoH_seqDictionary) {
+    my $seqName = $rH_seqInfo->{'name'};
     my $command = SAMtools::mpileupPaired($rH_cfg, $sampleName, $normalBam, $tumorBam, $seqName, $outputDir);
     my $mpileupJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mpileup", $seqName, 'MPILEUP', undef, $sampleName, $command);
     $mpileupJobId = '$'.$mpileupJobId;
@@ -144,7 +145,7 @@ sub mergeFilterBCF {
   my $depends = shift;
   my $rH_cfg = shift;
   my $rH_samplePair = shift;
-  my $rH_seqDictionary = shift;
+  my $rAoH_seqDictionary = shift;
 
   my $jobDependency = undef;
   if($depends > 0) {
@@ -154,7 +155,10 @@ sub mergeFilterBCF {
   my $bcfDir = LoadConfig::getParam($rH_cfg, "mergeFilterBCF", 'sampleOutputRoot') . $sampleName."/rawBCF/";
   my $outputDir = LoadConfig::getParam($rH_cfg, "mergeFilterBCF", 'sampleOutputRoot') . $sampleName.'/'; 
 
-  my @seqNames = keys(%{$rH_seqDictionary});
+  my @seqNames;
+  for my $rH_seqInfo (@$rAoH_seqDictionary) {
+    push(@seqNames, $rH_seqInfo->{'name'});
+  }
   my $command = SAMtools::mergeFilterBCF($rH_cfg, $sampleName, $bcfDir, $outputDir, \@seqNames);
   my $mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mergeFilterBCF", undef, 'MERGEBCF', $jobDependency, $sampleName, $command);
   return $mergeJobId;

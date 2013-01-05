@@ -115,7 +115,7 @@ sub main {
 
   my %cfg = LoadConfig->readConfigFile($opts{'c'});
   my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($opts{'n'});
-  my $rH_seqDictionary = SequenceDictionaryParser::readDictFile(\%cfg);
+  my $rAoH_seqDictionary = SequenceDictionaryParser::readDictFile(\%cfg);
 
   my $latestBam;
   for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
@@ -127,7 +127,7 @@ sub main {
        my $subref = \&$fname;
 
        # Tests for the first step in the list. Used for dependencies.
-       &$subref($current != ($opts{'s'}-1), \%cfg, $sampleName, $rAoH_sampleLanes, $rH_seqDictionary); 
+       &$subref($current != ($opts{'s'}-1), \%cfg, $sampleName, $rAoH_sampleLanes, $rAoH_seqDictionary); 
     }
   }  
 }
@@ -137,7 +137,7 @@ sub trimAndAlign {
   my $rH_cfg = shift;
   my $sampleName = shift;
   my $rAoH_sampleLanes  = shift;
-  my $rH_seqDictionary = shift;
+  my $rAoH_seqDictionary = shift;
 
   print "BWA_JOB_IDS=\"\"\n";
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
@@ -175,7 +175,7 @@ sub mergeLanes {
   my $rH_cfg = shift;
   my $sampleName = shift;
   my $rAoH_sampleLanes  = shift;
-  my $rH_seqDictionary = shift;
+  my $rAoH_seqDictionary = shift;
 
   my $jobDependency = undef;
   if($depends > 0) {
@@ -195,7 +195,7 @@ sub indelRealigner {
   my $rH_cfg = shift;
   my $sampleName = shift;
   my $rAoH_sampleLanes  = shift;
-  my $rH_seqDictionary = shift;
+  my $rAoH_seqDictionary = shift;
 
   my $jobDependency = undef;
   if($depends > 0) {
@@ -205,7 +205,8 @@ sub indelRealigner {
   print "mkdir -p $sampleName/realign\n";
   print "REALIGN_JOB_IDS=\"\"\n";
   my $processUnmapped = 1;
-  for my $seqName (keys(%{$rH_seqDictionary})) {
+  for my $rH_seqInfo (@$rAoH_seqDictionary) {
+    my $seqName = $rH_seqInfo->{'name'};
     my $command = GATK::realign($rH_cfg, $sampleName, $seqName, $processUnmapped);
     my $intervalJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "indelRealigner", $seqName, 'REALIGN', $jobDependency, $sampleName, $command);
     $intervalJobId = '$'.$intervalJobId;
@@ -223,14 +224,17 @@ sub mergeRealigned {
   my $rH_cfg = shift;
   my $sampleName = shift;
   my $rAoH_sampleLanes  = shift;
-  my $rH_seqDictionary = shift;
+  my $rAoH_seqDictionary = shift;
 
   my $jobDependency = undef;
   if($depends > 0) {
     $jobDependency = '${REALIGN_JOB_IDS}';
   }
 
-  my @seqNames = keys(%{$rH_seqDictionary});
+  my @seqNames;
+  for my $rH_seqInfo (@$rAoH_seqDictionary) {
+    push(@seqNames, $rH_seqInfo->{'name'});
+  }
   my $command = Picard::mergeRealigned($rH_cfg, $sampleName, \@seqNames);
   my $mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mergeRealigned", undef, 'MERGEREALIGN', $jobDependency, $sampleName, $command);
   return $mergeJobId;
@@ -241,7 +245,7 @@ sub fixmate {
   my $rH_cfg = shift;
   my $sampleName = shift;
   my $rAoH_sampleLanes  = shift;
-  my $rH_seqDictionary = shift;
+  my $rAoH_seqDictionary = shift;
 
   my $jobDependency = undef;
   if($depends > 0) {
@@ -258,7 +262,7 @@ sub markDup {
   my $rH_cfg = shift;
   my $sampleName = shift;
   my $rAoH_sampleLanes  = shift;
-  my $rH_seqDictionary = shift;
+  my $rAoH_seqDictionary = shift;
 
   my $jobDependency = undef;
   if($depends > 0) {
@@ -275,7 +279,7 @@ sub metrics {
   my $rH_cfg = shift;
   my $sampleName = shift;
   my $rAoH_sampleLanes  = shift;
-  my $rH_seqDictionary = shift;
+  my $rAoH_seqDictionary = shift;
 
   my $jobDependency = undef;
   if($depends > 0) {

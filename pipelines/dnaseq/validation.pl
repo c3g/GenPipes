@@ -94,7 +94,7 @@ sub main {
 
   my %cfg = LoadConfig->readConfigFile($opts{'c'});
   my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($opts{'n'});
-  my $rH_seqDictionary = SequenceDictionaryParser::readDictFile(\%cfg);
+  my $rAoH_seqDictionary = SequenceDictionaryParser::readDictFile(\%cfg);
 
   my $latestBam;
   for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
@@ -106,7 +106,7 @@ sub main {
         my $fname = $steps[$current]->{'name'};
         my $subref = \&$fname;
         # Tests for the first step in the list. Used for dependencies.
-        &$subref($current != ($opts{'s'}-1), \%cfg, $sampleName, $rH_laneInfo, $rH_seqDictionary);
+        &$subref($current != ($opts{'s'}-1), \%cfg, $sampleName, $rH_laneInfo, $rAoH_seqDictionary);
       } 
     }
   }  
@@ -117,7 +117,7 @@ sub trim {
   my $rH_cfg = shift;
   my $sampleName = shift;
   my $rH_laneInfo  = shift;
-  my $rH_seqDictionary = shift;
+  my $rAoH_seqDictionary = shift;
 
   my $rH_trimDetails = Trimmomatic::trim($rH_cfg, $sampleName, $rH_laneInfo);
   my $trimJobIdVarName=undef;
@@ -132,7 +132,7 @@ sub align {
   my $rH_cfg = shift;
   my $sampleName = shift;
   my $rH_laneInfo  = shift;
-  my $rH_seqDictionary = shift;
+  my $rAoH_seqDictionary = shift;
 
   my $minQuality = $rH_cfg->{'trim.minQuality'};
   my $minLength = $rH_cfg->{'trim.minLength'};
@@ -202,7 +202,7 @@ sub metrics {
   my $rH_cfg = shift;
   my $sampleName = shift;
   my $rH_laneInfo  = shift;
-  my $rH_seqDictionary = shift;
+  my $rAoH_seqDictionary = shift;
 
   my $bwaJobId = undef;
   if($depends) {
