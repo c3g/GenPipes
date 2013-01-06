@@ -48,7 +48,7 @@ sub mpileupPaired {
   my $seqName     = shift;
   my $outputDir   = shift;
 
-  return mpileupBuilder($rH_cfg, $seqName, $outputDir, $normalBam, $tumorBam);
+  return mpileupBuilder($rH_cfg, $seqName, $outputDir, $sampleName, $normalBam, $tumorBam);
 }
 
 sub mpileup {
@@ -59,7 +59,7 @@ sub mpileup {
   my $seqName     = shift;
   my $outputDir   = shift;
 
-  return mpileupBuilder($rH_cfg, $seqName, $outputDir, $normalBam);
+  return mpileupBuilder($rH_cfg, $seqName, $outputDir, $sampleName, $normalBam);
 }
 
 sub mpileupBuilder {

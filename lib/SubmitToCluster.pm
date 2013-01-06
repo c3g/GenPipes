@@ -41,7 +41,7 @@ sub initSubmit {
   my $rH_cfg = shift;
   my $sampleName = shift;
 
-  print "mkdir -p ".$sampleName.'/output_jobs/'."\n";
+  print "mkdir -p ".LoadConfig::getParam($rH_cfg, "default", 'sampleOutputRoot').$sampleName.'/output_jobs/'."\n";
 }
 
 sub printSubmitCmd {
