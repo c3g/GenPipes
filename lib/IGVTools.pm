@@ -45,7 +45,6 @@ sub computeTDF {
   my $rH_cfg      = shift;
   my $sampleName  = shift;
   my $inputBAM    = shift;
-# DOES NOT WORK YET!!!
 
   my $command;
   $command .= 'module load mugqic/igvtools/2.1.24 ;';

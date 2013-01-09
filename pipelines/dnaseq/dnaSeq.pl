@@ -52,9 +52,11 @@ use Getopt::Std;
 
 use BWA;
 use GATK;
+use IGVTools;
 use LoadConfig;
 use Picard;
 use SampleSheet;
+use SAMtools;
 use SequenceDictionaryParser;
 use SubmitToCluster;
 use Trimmomatic;
@@ -72,11 +74,11 @@ push(@steps, {'name' => 'mergeRealigned'});
 push(@steps, {'name' => 'fixmate'});
 push(@steps, {'name' => 'markDup'});
 push(@steps, {'name' => 'metrics'});
-push(@steps, {'name' => 'crestSClip'});
+#push(@steps, {'name' => 'crestSClip'});
 push(@steps, {'name' => 'sortQname'});
-push(@steps, {'name' => 'countTelomere'});
+#push(@steps, {'name' => 'countTelomere'});
 push(@steps, {'name' => 'fullPileup'});
-push(@steps, {'name' => 'countTelomere'});
+#push(@steps, {'name' => 'countTelomere'});
 #  print "Step 12: snp and indel calling\n";
 #  print "Step 13: merge snp calls\n";
 #  print "Step 14: filter N streches\n";
@@ -287,6 +289,7 @@ sub metrics {
   }
 
   my $command;
+  my $bamFile = $sampleName.'/'.$sampleName.'.sorted.dup.bam';
 
   # Collect metrics
   $command = Picard::collectMetrics($rH_cfg, $sampleName);
@@ -297,30 +300,69 @@ sub metrics {
   my $genomeCoverageJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "genomeCoverage", undef, 'GENOMECOVERAGE', $jobDependency, $sampleName, $command);
 
   # Compute CCDS coverage
-#  unless (-e "$sampleName/$sampleName.sorted.dup.CCDS.coverage.done") {
-#   my $CCDS_OPTIONS="-T DepthOfCoverage -R $GENOME_FASTA_PATH -I $sampleName/$sampleName.sorted.dup.bam --omitDepthOutputAtEachBase --logging_level ERROR -geneList $REFGENE_FILE --summaryCoverageThreshold 10 --summaryCoverageThreshold 20 --summaryCoverageThreshold 30 --summaryCoverageThreshold 40 --summaryCoverageThreshold 50 --summaryCoverageThreshold 100  --start 1 --stop 500 --nBins 499 -dt NONE -L $CCDS_FILE -o $sampleName/$sampleName.sorted.dup.CCDS.coverage --read_buffer_size 17500000";
-#   my $CCDS_MOAB_COMMAND="msub -d $CURRENT_DIR -V -l walltime=168:00:0 -q sw -l nodes=1:ppn=6 -j oe -o $output_jobs -N covEx$sampleName -m ae $dependency -m ae -M $EMAIL_NOTIFICATION";
-#   print "echo \"rm -f $sampleName/$sampleName.sorted.dup.CCDS.coverage.done ; $JAVA_BIN -Djava.io.tmpdir=$TMP_DIR -Xmx12G -jar $GATK_JAR $CCDS_OPTIONS && touch $sampleName/$sampleName.sorted.dup.CCDS.coverage.done\" | $CCDS_MOAB_COMMAND\n";
-#  }
+  my $outputPrefix = $sampleName.'/'.$sampleName.'.sorted.dup.CCDS.coverage';
+  $command = GATK::targetCoverage($rH_cfg, $sampleName, $bamFile, $outputPrefix);
+  my $targetCoverageJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "targetCoverage", undef, 'TARGETCOVERAGE', $jobDependency, $sampleName, $command);
 
   # Generate IGV track
-#  unless (-e "$sampleName/$sampleName.sorted.dup.tdf.done") {
-#   my $IGV_MOAB_COMMAND="msub -d $CURRENT_DIR -V -l walltime=48:00:0 -q sw -l nodes=1:ppn=6 -j oe -o $output_jobs -N igv.$sampleName $dependency -m ae -M $EMAIL_NOTIFICATION";
-#   print "echo \"rm -f $sampleName/$sampleName.sorted.dup.tdf.done ; $JAVA_BIN -Djava.io.tmpdir=$TMP_DIR -Xmx12G -Djava.awt.headless=true -jar $IGV_TOOLS_JAR count -f min,max,mean $sampleName/$sampleName.sorted.dup.bam $sampleName/$sampleName.sorted.dup.tdf b37 && touch $sampleName/$sampleName.sorted.dup.tdf.done\" | $IGV_MOAB_COMMAND\n";
-#  }
+  $command = IGVTools::computeTDF($rH_cfg, $sampleName, $bamFile);
+  my $igvtoolsTDFJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "computeTDF", undef, 'IGVTOOLS', $jobDependency, $sampleName, $command);
 
   # Compute flags
-#  unless (-e "$sampleName/$sampleName.sorted.dup.flagstat.done") {
-#   my $FLAGS_MOAB_COMMAND="msub -d $CURRENT_DIR -V -l walltime=48:00:0 -q sw -l nodes=1:ppn=1 -j oe -o $output_jobs -N flag.$sampleName $dependency -m ae -M $EMAIL_NOTIFICATION";
-#   print "echo \"rm -f $sampleName/$sampleName.sorted.dup.flagstat.done ; $SAMTOOLS_HOME/samtools flagstat $sampleName/$sampleName.sorted.dup.bam > $sampleName/$sampleName.sorted.dup.flagstat && touch $sampleName/$sampleName.sorted.dup.flagstat.done\" | $FLAGS_MOAB_COMMAND\n";
-#  }  
+  my $output = $sampleName.'/'.$sampleName.'.sorted.dup.bam.flagstat';
+  $command = SAMTools::flagstat($rH_cfg, $sampleName, $bamFile, $output);
+  my $flagstatJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "flagstat", undef, 'FLAGSTAT', $jobDependency, $sampleName, $command);
+
+  # return the longest one...not ideal
+  return $genomeCoverageJobId;
 }
 
-#push(@steps, {'name' => 'crestSClip'});
-#push(@steps, {'name' => 'sortQname'});
+sub sortQname {
+  my $depends = shift;
+  my $rH_cfg = shift;
+  my $sampleName = shift;
+  my $rAoH_sampleLanes  = shift;
+  my $rAoH_seqDictionary = shift;
+
+  my $jobDependency = undef;
+  if($depends > 0) {
+    $jobDependency = '${MARKDUP_JOB_ID}';
+  }
+}
+
 #push(@steps, {'name' => 'countTelomere'});
-#push(@steps, {'name' => 'fullPileup'});
-#push(@steps, {'name' => 'countTelomere'});
-#  print "Step 12: snp and indel calling\n";
+sub fullPileup {
+  my $depends = shift;
+  my $rH_cfg = shift;
+  my $sampleName = shift;
+  my $rAoH_sampleLanes  = shift;
+  my $rAoH_seqDictionary = shift;
+
+  my $jobDependency = undef;
+  if($depends > 0) {
+    $jobDependency = '${MARKDUP_JOB_ID}';
+  }
+
+  my $bamFile = $sampleName.'/'.$sampleName.'.sorted.dup.bam';
+  print 'mkdir -p '.$sampleName.'/mpileup/'."\n";
+  print "RAW_MPILEUP_JOB_IDS=\"\"\n";
+  my $catCommand = 'zcat ';
+  for my $rH_seqInfo (@$rAoH_seqDictionary) {
+    my $seqName = $rH_seqInfo->{'name'};
+    my $outputPerSeq = $sampleName.'/mpileup/'.$sampleName.'.'.$seqName.'.mpileup.gz';
+    my $command = SAMtools::rawmpileup($rH_cfg, $sampleName, $bamFile, $seqName, $outputPerSeq);
+    my $mpileupJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "rawmpileup", $seqName, 'RAW_MPILEUP', $jobDependency, $sampleName, $command);
+    $mpileupJobId = '$'.$mpileupJobId;
+    print 'RAW_MPILEUP_JOB_IDS=${RAW_MPILEUP_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$mpileupJobId."\n";
+
+    $catCommand .= $outputPerSeq .' ';
+  }
+
+  my $output = $sampleName.'/mpileup/'.$sampleName.'.mpileup.gz';
+  $catCommand .= '| gzip -c --best > '.$output;
+
+  my $catJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "rawmpileup_cat", undef, 'RAW_MPILEUP_CAT', undef, "\$RAW_MPILEUP_JOB_IDS", $catCommand);
+  return $catJobId;
+}
 
 1;

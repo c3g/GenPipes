@@ -121,4 +121,37 @@ sub mergeFilterBCF {
 
   return $command;
 }
+
+sub flagstat {
+  my $rH_cfg     = shift;
+  my $sampleName = shift;
+  my $bamFile    = shift;
+  my $output     = shift;
+
+  my $command;
+  $command .= 'module load mugqic/samtools/0.1.18 ;';
+  $command .= ' samtools flagstat';
+  $command .= ' '.$bamFile;
+  $command .= ' > '.$output;
+}
+
+sub rawpileup {
+  my $rH_cfg      = shift;
+  my $sampleName  = shift;
+  my $bamFile     = shift;
+  my $seqName     = shift;
+  my $output      = shift;
+
+  my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta');
+
+  my $command;
+  $command .= 'module load mugqic/samtools/0.1.18 ;';
+  $command .= ' samtools mpileup';
+  $command .= ' '.LoadConfig::getParam($rH_cfg, 'rawpileup', 'mpileupExtraFlags');
+  $command .= ' -f '.$refGenome;
+  $command .= ' -r '.$seqName;
+  $command .= ' '.$bamFile;
+  $command .= ' | gzip -1 -c > '.$output;
+}
+
 1;
