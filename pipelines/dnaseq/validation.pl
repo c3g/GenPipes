@@ -206,7 +206,7 @@ sub metrics {
 
   my $bwaJobId = undef;
   if($depends) {
-    $bwaJobId = '$BWA_JOB_IDS';
+    $bwaJobId = '$MERGEPAIRS';
   }
   my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
   # Compute target coverage

@@ -105,7 +105,7 @@ sub pairCommand {
     push(@commands, $sai2Command);
     
     my $rgId = $rH_laneInfo->{'libraryBarcode'}."_".$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'};
-    my $rgTag = '\"@RG\tID:'.$rgId.'\tSM:'.$rH_laneInfo->{'name'}.'\tLB:'.$rH_laneInfo->{'libraryBarcode'}.'\tPU:run'.$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'}.'\tCN:'.LoadConfig::getParam($rH_cfg, 'aln', 'bwaInstitution').'\tPL:Illumina\"';
+    my $rgTag = "'".'@RG\tID:'.$rgId.'\tSM:'.$rH_laneInfo->{'name'}.'\tLB:'.$rH_laneInfo->{'libraryBarcode'}.'\tPU:run'.$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'}.'\tCN:'.LoadConfig::getParam($rH_cfg, 'aln', 'bwaInstitution').'\tPL:Illumina'."'";
     $bwaCommand .= 'module load mugqic/bwa/0.6.2 ;module load mugqic/picard/1.77 ; bwa sampe';
     $bwaCommand .= ' -r '.$rgTag;
     $bwaCommand .= ' '.LoadConfig::getParam($rH_cfg, 'aln', 'bwaRefIndex');
@@ -151,7 +151,7 @@ sub singleCommand {
     push(@commands, $saiCommand);
     
     my $rgId = $rH_laneInfo->{'libraryBarcode'}."_".$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'};
-    my $rgTag = '\"@RG\tID:'.$rgId.'\tSM:'.$rH_laneInfo->{'name'}.'\tLB:'.$rH_laneInfo->{'libraryBarcode'}.'\tPU:run'.$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'}.'\tCN:'.LoadConfig::getParam($rH_cfg, 'aln', 'bwaInstitution').'\tPL:Illumina\"';
+    my $rgTag = "'".'@RG\tID:'.$rgId.'\tSM:'.$rH_laneInfo->{'name'}.'\tLB:'.$rH_laneInfo->{'libraryBarcode'}.'\tPU:run'.$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'}.'\tCN:'.LoadConfig::getParam($rH_cfg, 'aln', 'bwaInstitution').'\tPL:Illumina'."'";
     $bwaCommand .= 'module load mugqic/bwa/0.6.2 ;module load mugqic/picard/1.77 ; bwa samse';
     $bwaCommand .= ' -r '.$rgTag;
     $bwaCommand .= ' '.LoadConfig::getParam($rH_cfg, 'aln', 'bwaRefIndex');
