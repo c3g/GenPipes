@@ -70,7 +70,7 @@ push(@steps, {'name' => 'metrics'});
 &main();
 
 sub printUsage {
-  print "\nUsage: perl ".$0." project.csv first_step last_step\n";
+  print "\nUsage: perl ".$0." -c config.ini -s start -e end -n SampleSheet.csv\n";
   print "\t-c  config file\n";
   print "\t-s  start step, inclusive\n";
   print "\t-e  end step, inclusive\n";
