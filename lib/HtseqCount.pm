@@ -20,7 +20,7 @@ All subroutines return a ref_hash with the command line
 
 =head1 DESCRIPTION
 
-B<readStats> is a library to generate basic statistics on raw read count.
+B<HtseqCount> is a library to generate basic statistics on raw read count.
 
 =head1 AUTHOR
 
