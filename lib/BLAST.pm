@@ -38,7 +38,7 @@ David Morais dmorais@cs.bris.ac.uk
 
 B<Pod::Usage> Usage and help output.
 
-B<Data::Dumper> Used to debbug
+B<Data::Dumper> Used to debbug.
 
 
 
