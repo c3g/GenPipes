@@ -310,7 +310,7 @@ sub metrics {
 
   # Compute flags
   my $output = $sampleName.'/'.$sampleName.'.sorted.dup.bam.flagstat';
-  $command = SAMTools::flagstat($rH_cfg, $sampleName, $bamFile, $output);
+  $command = SAMtools::flagstat($rH_cfg, $sampleName, $bamFile, $output);
   my $flagstatJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "flagstat", undef, 'FLAGSTAT', $jobDependency, $sampleName, $command);
 
   # return the longest one...not ideal

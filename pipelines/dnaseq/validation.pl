@@ -159,7 +159,7 @@ sub align {
     $read2JobId = '$'.$read2JobId;
     my $bwaJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'sampe.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA', $read1JobId.LoadConfig::getParam($rH_cfg, 'aln', 'clusterDependencySep').$read2JobId, $sampleName, $rA_commands->[2]);
     $bwaJobId = '$'.$bwaJobId;
-    print 'BWA_JOB_IDS=${BWA_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'aln', 'clusterDependencySep').$bwaJobId."\n";
+    print 'BWA_JOB_IDS='.$bwaJobId.LoadConfig::getParam($rH_cfg, 'aln', 'clusterDependencySep').'${BWA_JOB_IDS}'."\n";
     
     # fake it and take the single1 end
     $rH_laneInfo->{'runType'} = 'SINGLE_END';
@@ -168,7 +168,7 @@ sub align {
     $readJobId = '$'.$readJobId;
     $bwaJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'samse.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA',  $readJobId, $sampleName, $rA_commands->[1]);
     $bwaJobId = '$'.$bwaJobId;
-    print 'BWA_JOB_IDS=${BWA_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$bwaJobId."\n";
+    print 'BWA_JOB_IDS='.$bwaJobId.LoadConfig::getParam($rH_cfg, 'aln', 'clusterDependencySep').'${BWA_JOB_IDS}'."\n";
 
     my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
     my $outputPairedBAM = $laneDirectory . $sampleName.'.paired.sorted.bam';
@@ -188,7 +188,7 @@ sub align {
     $readJobId = '$'.$readJobId;
     my $bwaJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'samse.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA',  $readJobId, $sampleName, $rA_commands->[1]);
     $bwaJobId = '$'.$bwaJobId;
-    print 'BWA_JOB_IDS=${BWA_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$bwaJobId."\n";
+    print 'BWA_JOB_IDS='.$bwaJobId.LoadConfig::getParam($rH_cfg, 'aln', 'clusterDependencySep').'${BWA_JOB_IDS}'."\n";
     $jobDep = '$BWA_JOB_IDS';
     
     my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
@@ -206,7 +206,7 @@ sub metrics {
 
   my $bwaJobId = undef;
   if($depends) {
-    $bwaJobId = '$MERGEPAIRS';
+    $bwaJobId = '$MERGEPAIRS_JOB_ID';
   }
   my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
   # Compute target coverage

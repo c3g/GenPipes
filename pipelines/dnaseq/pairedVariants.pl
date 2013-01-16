@@ -131,14 +131,44 @@ sub snpAndIndelBCF {
   print 'mkdir -p '.$outputDir."\n";
   print "MPILEUP_JOB_IDS=\"\"\n";
   for my $rH_seqInfo (@$rAoH_seqDictionary) {
+    my $snvWindow = LoadConfig::getParam($rH_cfg, 'mpileup', 'snvCallingWindow');
     my $seqName = $rH_seqInfo->{'name'};
-    my $command = SAMtools::mpileupPaired($rH_cfg, $sampleName, $normalBam, $tumorBam, $seqName, $outputDir);
-    my $mpileupJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mpileup", $seqName, 'MPILEUP', undef, $sampleName, $command);
-    $mpileupJobId = '$'.$mpileupJobId;
-    print 'MPILEUP_JOB_IDS=${MPILEUP_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$mpileupJobId."\n";
+    if($snvWindow ne "") {
+      my $rA_regions = generateWindows($rH_seqInfo, $snvWindow);
+      for my $region (@{$rA_regions}) {
+        my $command = SAMtools::mpileupPaired($rH_cfg, $sampleName, $normalBam, $tumorBam, $region, $outputDir);
+        my $mpileupJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mpileup", $region, 'MPILEUP', undef, $sampleName, $command);
+        $mpileupJobId = '$'.$mpileupJobId;
+        print 'MPILEUP_JOB_IDS=${MPILEUP_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$mpileupJobId."\n";
+      } 
+    }
+    else {
+      my $command = SAMtools::mpileupPaired($rH_cfg, $sampleName, $normalBam, $tumorBam, $seqName, $outputDir);
+      my $mpileupJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mpileup", $seqName, 'MPILEUP', undef, $sampleName, $command);
+      $mpileupJobId = '$'.$mpileupJobId;
+      print 'MPILEUP_JOB_IDS=${MPILEUP_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$mpileupJobId."\n";
+    }
   }
   
   return '${MPILEUP_JOB_IDS}';
+}
+
+sub generateWindows {
+  my $rH_seqInfo = shift;
+  my $snvWindow = shift;
+
+  my @retVal;
+  for(my $idx=1; $idx <= $rH_seqInfo->{'size'}; $idx += $snvWindow) {
+    my $end = $idx+$snvWindow-1;
+    if($end > $rH_seqInfo->{'size'}) {
+      $end = $rH_seqInfo->{'size'};
+    }
+
+    my $region = $rH_seqInfo->{'name'}.':'.$idx.'-'.$end;
+    push(@retVal, $region);
+  }
+
+  return \@retVal;
 }
 
 sub mergeFilterBCF {
@@ -151,13 +181,24 @@ sub mergeFilterBCF {
   if($depends > 0) {
     $jobDependency = '${MPILEUP_JOB_IDS}';
   }
+
+  my $snvWindow = LoadConfig::getParam($rH_cfg, 'mpileup', 'snvCallingWindow');
+
   my $sampleName = $rH_samplePair->{'sample'};
   my $bcfDir = LoadConfig::getParam($rH_cfg, "mergeFilterBCF", 'sampleOutputRoot') . $sampleName."/rawBCF/";
   my $outputDir = LoadConfig::getParam($rH_cfg, "mergeFilterBCF", 'sampleOutputRoot') . $sampleName.'/'; 
 
   my @seqNames;
-  for my $rH_seqInfo (@$rAoH_seqDictionary) {
-    push(@seqNames, $rH_seqInfo->{'name'});
+  if($snvWindow ne "") {
+    for my $rH_seqInfo (@$rAoH_seqDictionary) {
+      my $rA_regions = generateWindows($rH_seqInfo, $snvWindow);
+      push(@seqNames, @{$rA_regions});
+    }
+  }
+  else {
+    for my $rH_seqInfo (@$rAoH_seqDictionary) {
+      push(@seqNames, $rH_seqInfo->{'name'});
+    }
   }
   my $command = SAMtools::mergeFilterBCF($rH_cfg, $sampleName, $bcfDir, $outputDir, \@seqNames);
   my $mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mergeFilterBCF", undef, 'MERGEBCF', $jobDependency, $sampleName, $command);
