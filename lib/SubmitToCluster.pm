@@ -41,7 +41,7 @@ sub initSubmit {
   my $rH_cfg = shift;
   my $sampleName = shift;
 
-  print "mkdir -p ".$sampleName.'/output_jobs/'."\n";
+  print "mkdir -p ".LoadConfig::getParam($rH_cfg, "default", 'sampleOutputRoot').$sampleName.'/output_jobs/'."\n";
 }
 
 sub printSubmitCmd {
@@ -53,11 +53,19 @@ sub printSubmitCmd {
     my $sampleName = shift;
     my $command = shift;
 
+    my $jobIdVarName = uc($jobIdPrefix).'_JOB_ID';
+
+    my $currentDirCommand = '`pwd`';
+    if(LoadConfig::getParam($rH_cfg, $stepName, 'clusterCmdProducesJobId') eq "true") {
+      $command =~ s/\\\$/\\\\\\\$/g;
+      print $jobIdVarName.'=`';
+      $currentDirCommand = '\`pwd\`';
+    }
     print 'echo "'.$command.'" | ';
     print LoadConfig::getParam($rH_cfg, $stepName, 'clusterSubmitCmd');
     print ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterOtherArg');
-    print ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterWorkDirArg') . ' `pwd`';
-    print ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterOutputDirArg') . ' ' . $sampleName.'/output_jobs/';
+    print ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterWorkDirArg') . ' '.$currentDirCommand;
+    print ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterOutputDirArg') . ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'sampleOutputRoot') . $sampleName.'/output_jobs/';
     my $jobName = $stepName.'.'.$sampleName;
     if(defined($jobNameSuffix) && length($jobNameSuffix) > 0) {
       $jobName .= '.'.$jobNameSuffix;
@@ -70,9 +78,11 @@ sub printSubmitCmd {
       print ' '.LoadConfig::getParam($rH_cfg, $stepName, 'clusterDependencyArg') . $dependancyName;
     }
     print ' '.LoadConfig::getParam($rH_cfg, $stepName, 'clusterSubmitCmdSuffix');
+    if(LoadConfig::getParam($rH_cfg, $stepName, 'clusterCmdProducesJobId') eq "true") {
+      print '`';
+    }
     print "\n\n";
     
-    my $jobIdVarName = uc($jobIdPrefix).'_JOB_ID';
     if(LoadConfig::getParam($rH_cfg, $stepName, 'clusterCmdProducesJobId') eq "false") {
       print $jobIdVarName.'='.$jobName."\n";
     }

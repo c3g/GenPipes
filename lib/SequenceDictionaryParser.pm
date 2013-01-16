@@ -40,7 +40,7 @@ use LoadConfig;
 #--------------------
 sub readDictFile {
   my $rH_cfg = shift;
-  my %dictionary;
+  my @dictionary;
 
   my $refDictFile = LoadConfig::getParam( $rH_cfg, 'default', 'referenceSequenceDictionary' );
 
@@ -48,11 +48,11 @@ sub readDictFile {
     open(FILE, $refDictFile) or die "Cannot open ".$refDictFile."\n";
     while(my $line = <FILE>) {
       if($line =~ /^\@SQ\tSN:([^\t]+)\tLN:(\d+)/) {
-        $dictionary{$1} = {'name' => $1, 'size' => $2};
+        push(@dictionary, {'name' => $1, 'size' => $2});
       }
     }
     close(FILE);
-    return \%dictionary;
+    return \@dictionary;
 
   }
   else {
@@ -60,5 +60,4 @@ sub readDictFile {
     exit 1;
   }
 }
-
 1;

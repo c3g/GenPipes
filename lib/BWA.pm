@@ -42,21 +42,22 @@ use LoadConfig;
 # SUB
 #-----------------------
 sub aln {
-  my $rH_cfg      = shift;
-  my $sampleName  = shift;
-  my $rH_laneInfo = shift;
-  my $pair1       = shift;
-  my $pair2       = shift;
-  my $single1     = shift;
-  my $single2     = shift;
+  my $rH_cfg        = shift;
+  my $sampleName    = shift;
+  my $rH_laneInfo   = shift;
+  my $pair1         = shift;
+  my $pair2         = shift;
+  my $single1       = shift;
+  my $single2       = shift;
+  my $optOutputTag  = shift;
 
   my $command = "";
 
   if ( $rH_laneInfo->{'runType'} eq "SINGLE_END" ) {
-    $command = singleCommand($rH_cfg, $sampleName, $rH_laneInfo, $single1);
+    $command = singleCommand($rH_cfg, $sampleName, $rH_laneInfo, $single1, $optOutputTag);
   }
   elsif($rH_laneInfo->{'runType'} eq "PAIRED_END") {
-    $command = pairCommand($rH_cfg, $sampleName, $rH_laneInfo, $pair1, $pair2);
+    $command = pairCommand($rH_cfg, $sampleName, $rH_laneInfo, $pair1, $pair2, $optOutputTag);
   }
   else {
     die "Unknown runType: ".$rH_laneInfo->{' runType '}."\n";
@@ -66,16 +67,20 @@ sub aln {
 }
 
 sub pairCommand {
-  my $rH_cfg = shift;
-  my $sampleName = shift;
+  my $rH_cfg      = shift;
+  my $sampleName  = shift;
   my $rH_laneInfo = shift;
   my $pair1       = shift;
   my $pair2       = shift;
+  my $optOutputTag= shift;
 
+  if(!defined($optOutputTag)) {
+    $optOutputTag = "";
+  }
   my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
   my $outputSai1Name = $laneDirectory . $sampleName.'.pair1.sai';
   my $outputSai2Name = $laneDirectory . $sampleName.'.pair2.sai';
-  my $outputBAM = $laneDirectory . $sampleName.'.sorted.bam';
+  my $outputBAM = $laneDirectory . $sampleName.$optOutputTag.'.sorted.bam';
   my $bamFileDate = -M $outputBAM;
 
   my @commands;
@@ -100,7 +105,7 @@ sub pairCommand {
     push(@commands, $sai2Command);
     
     my $rgId = $rH_laneInfo->{'libraryBarcode'}."_".$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'};
-    my $rgTag = '\"@RG\tID:'.$rgId.'\tSM:'.$rH_laneInfo->{'name'}.'\tLB:'.$rH_laneInfo->{'libraryBarcode'}.'\tPU:run'.$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'}.'\tCN:'.LoadConfig::getParam($rH_cfg, 'aln', 'bwaInstitution').'\tPL:Illumina\"';
+    my $rgTag = "'".'@RG\tID:'.$rgId.'\tSM:'.$rH_laneInfo->{'name'}.'\tLB:'.$rH_laneInfo->{'libraryBarcode'}.'\tPU:run'.$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'}.'\tCN:'.LoadConfig::getParam($rH_cfg, 'aln', 'bwaInstitution').'\tPL:Illumina'."'";
     $bwaCommand .= 'module load mugqic/bwa/0.6.2 ;module load mugqic/picard/1.77 ; bwa sampe';
     $bwaCommand .= ' -r '.$rgTag;
     $bwaCommand .= ' '.LoadConfig::getParam($rH_cfg, 'aln', 'bwaRefIndex');
@@ -122,15 +127,19 @@ sub singleCommand {
   my $sampleName  = shift;
   my $rH_laneInfo = shift;
   my $single      = shift;
+  my $optOutputTag= shift;
 
+  if(!defined($optOutputTag)) {
+    $optOutputTag = "";
+  }
   my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
   my $outputSaiName = $laneDirectory . $sampleName.'.single.sai';
-  my $outputBAM = $laneDirectory . $sampleName.'.sorted.bam';
+  my $outputBAM = $laneDirectory . $sampleName.$optOutputTag.'.sorted.bam';
   my $bamFileDate = -M $outputBAM;
 
   my @commands;
   # -M gives modified date relative to now. The bigger the older.
-  if ($bamFileDate > -M $single) {
+  if (!defined($single) || !defined(-M $single) || !defined($bamFileDate) || $bamFileDate > -M $single) {
     my $saiCommand = "";
     my $bwaCommand = "";
 
@@ -142,7 +151,7 @@ sub singleCommand {
     push(@commands, $saiCommand);
     
     my $rgId = $rH_laneInfo->{'libraryBarcode'}."_".$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'};
-    my $rgTag = '\"@RG\tID:'.$rgId.'\tSM:'.$rH_laneInfo->{'name'}.'\tLB:'.$rH_laneInfo->{'libraryBarcode'}.'\tPU:run'.$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'}.'\tCN:'.LoadConfig::getParam($rH_cfg, 'aln', 'bwaInstitution').'\tPL:Illumina\"';
+    my $rgTag = "'".'@RG\tID:'.$rgId.'\tSM:'.$rH_laneInfo->{'name'}.'\tLB:'.$rH_laneInfo->{'libraryBarcode'}.'\tPU:run'.$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'}.'\tCN:'.LoadConfig::getParam($rH_cfg, 'aln', 'bwaInstitution').'\tPL:Illumina'."'";
     $bwaCommand .= 'module load mugqic/bwa/0.6.2 ;module load mugqic/picard/1.77 ; bwa samse';
     $bwaCommand .= ' -r '.$rgTag;
     $bwaCommand .= ' '.LoadConfig::getParam($rH_cfg, 'aln', 'bwaRefIndex');

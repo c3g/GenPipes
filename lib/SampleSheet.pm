@@ -67,6 +67,33 @@ sub parseSampleSheetAsHash {
   return \%sampleInfo;
 }
 
+sub parsePairedSampleSheet {
+  my $fileName = shift;
+
+  my @retVal;
+  open(SAMPLE_SHEET, "$fileName") or die "Can't open $fileName\n";
+
+  while(<SAMPLE_SHEET>) {
+    chomp;
+
+    my $line = $_;
+    if($line =~ /^#/) {
+      next;
+    }
+
+    $line =~ s/"//g;
+    my @values = split(/,/, $line);
+
+    my %sampleInfo;
+    $sampleInfo{'sample'} = $values[0];
+    $sampleInfo{'normal'} = $values[1];
+    $sampleInfo{'tumor'} = $values[2];
+    push(@retVal, \%sampleInfo);
+  }
+
+  return \@retVal;
+}
+
 sub parseSampleSheet {
   my $fileName = shift;
 
