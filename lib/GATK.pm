@@ -81,13 +81,21 @@ sub genomeCoverage {
   my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta');
   my $sortedBAM = $sampleName.'/'.$sampleName.'.sorted.dup.bam';
   my $output = $sampleName.'.sorted.dup.coverage';
+  my $rA_thresholds = LoadConfig::getParam($rH_cfg, 'genomeCoverage', 'percentThresholds');
   
   my $command;
   $command .= 'module load mugqic/GenomeAnalysisTKLite/2.1-13 ;';
   $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'genomeCoverage', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'genomeCoverage', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'genomeCoverage', 'genomeCoverageRam').'  -jar \${GATK_JAR}';
   $command .= ' -T DepthOfCoverage --omitDepthOutputAtEachBase --logging_level ERROR';
-  $command .= ' --summaryCoverageThreshold 10 --summaryCoverageThreshold 20 --summaryCoverageThreshold 30 --summaryCoverageThreshold 40 --summaryCoverageThreshold 50 --summaryCoverageThreshold 75 --summaryCoverageThreshold 100';
-  $command .= ' --start 1 --stop 1000 --nBins 999 -dt NONE';
+  my $highestThreshold = 0;
+  for my $threshold (@$rA_thresholds) {
+    $command .= ' --summaryCoverageThreshold '.$threshold;
+    if($highestThreshold > $threshold) {
+      die "Tresholds must be ascending: ".join(',', @$rA_thresholds);
+    }
+    $highestThreshold = $threshold;
+  }
+  $command .= ' --start 1 --stop '.$highestThreshold.' --nBins '.($highestThreshold-1).' -dt NONE';
   $command .= ' -R '.$refGenome;
   $command .= ' -o '.$output;
   $command .= ' -I '.$sortedBAM;
