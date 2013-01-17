@@ -41,7 +41,7 @@ use LoadConfig;
 
 # SUB
 #-----------------------
-sub aln {
+sub align {
   my $rH_cfg      = shift;
   my $sampleName  = shift;
   my $rH_laneInfo = shift;
@@ -72,19 +72,20 @@ sub pairCommand {
   my $pair1       = shift;
   my $pair2       = shift;
 
-  my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
-  my $outputSai1Name = $laneDirectory . $sampleName.'.pair1.sai';
-  my $outputSai2Name = $laneDirectory . $sampleName.'.pair2.sai';
-  my $outputBAM = $laneDirectory . $sampleName.'.sorted.bam';
+  my $laneDirectory = "alignment/" . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
+  my $outputBAM = $laneDirectory . 'accepted_hits.bam';
   my $bamFileDate = -M $outputBAM;
 
-  my @commands;
+  my $commands;
   if (!defined($bamFileDate) || !defined(-M $pair1) || !defined(-M $pair2) || $bamFileDate < -M $pair1 || $bamFileDate < -M $pair2) {
-    my $sai1Command = "";
-    my $sai2Command = "";
-    my $bwaCommand = "";
+    my $BTCommand = "";
 
-    $sai1Command .= 'module load mugqic/bwa/0.22 ; bwa aln';
+    $BTCommand .= 'module load mugqic/tophat/XX ; module load mugqic/botwie/YY ; tophat';
+    $BTCommand .= ' --rg-library \"' . $rH_laneInfo->{'libraryBarcode'} .'\"';
+    $BTCommand .= '  --rg-platform \"' .LoadConfig::getParam($rH_cfg, 'align','platform') .'\"';
+    $BTCommand .= '  --rg-platform-unit \"' .$rH_laneInfo->{'lane'} .'\"';
+    $BTCommand .= '  --rg-center \"'. LoadConfig::getParam($rH_cfg, 'align','TBInstitution') .'\"';
+
     $sai1Command .= ' -t '.LoadConfig::getParam($rH_cfg, 'aln', 'bwaAlnThreads');
     $sai1Command .= ' '.LoadConfig::getParam($rH_cfg, 'aln', 'bwaRefIndex');
     $sai1Command .= ' '.$pair1;
