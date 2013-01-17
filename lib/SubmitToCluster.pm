@@ -41,7 +41,7 @@ sub initSubmit {
   my $rH_cfg = shift;
   my $sampleName = shift;
 
-  print "mkdir -p ".$sampleName.'/job_outputs/'."\n";
+  print "mkdir -p ".$sampleName.'/output_jobs/'."\n";
 }
 
 sub printSubmitCmd {
@@ -63,18 +63,20 @@ sub printSubmitCmd {
     print ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterOtherArg');
     print ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterWorkDirArg') . $workDirectory;
     print ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterOutputDirArg') . $sampleName.'/output_jobs/';
+
     my $jobName = $stepName.'.'.$sampleName;
     if(defined($jobNameSuffix) && length($jobNameSuffix) > 0) {
       $jobName .= '.'.$jobNameSuffix;
     }
-    print ' '.LoadConfig::getParam($rH_cfg, $stepName, 'clusterJobNameArg') . $jobName;
+    print ' '.LoadConfig::getParam($rH_cfg, $stepName, 'clusterJobNameArg') . ' ' . $jobName;
     print ' '.LoadConfig::getParam($rH_cfg, $stepName, 'clusterWalltime');
+    print ' '.LoadConfig::getParam($rH_cfg, $stepName, 'clusterQueue');
     print ' '.LoadConfig::getParam($rH_cfg, $stepName, 'clusterCPU');
     if(defined($dependancyName)) {
       print ' '.LoadConfig::getParam($rH_cfg, $stepName, 'clusterDependencyArg') . $dependancyName;
     }
     print ' '.LoadConfig::getParam($rH_cfg, $stepName, 'clusterSubmitCmdSuffix');
-    print "\n";
+    print "\n\n";
     
     my $jobIdVarName = uc($jobIdPrefix).'_JOB_ID';
     if(LoadConfig::getParam($rH_cfg, $stepName, 'clusterCmdProducesJobId') eq "false") {

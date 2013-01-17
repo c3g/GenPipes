@@ -50,7 +50,7 @@ BEGIN{
 #--------------------
 use Getopt::Std;
 
-use Tophat;
+
 use GATK;
 use IGVTools;
 use LoadConfig;
@@ -59,6 +59,7 @@ use SampleSheet;
 use SAMtools;
 use SequenceDictionaryParser;
 use SubmitToCluster;
+use TophatBowtie;
 use Trimmomatic;
 #--------------------
 
@@ -177,7 +178,11 @@ sub aligning {
   my $rAoH_seqDictionary = shift;
 
   my $alignmentJobIdVarNameSample = undef;
-    my $rA_commands = BWA::aln($rH_cfg, $sampleName, $rH_laneInfo, $rH_trimDetails->{'pair1'}, $rH_trimDetails->{'pair2'}, $rH_trimDetails->{'single1'}, $rH_trimDetails->{'single2'});
+  my $jobDependency = undef;
+  if($depends > 0) {
+    $jobDependency = $globalDep{'trimming'}{$sampleName};
+  }
+    my $rA_commands = Tophat::aln($rH_cfg, $sampleName, $rH_laneInfo, $rH_trimDetails->{'pair1'}, $rH_trimDetails->{'pair2'}, $rH_trimDetails->{'single1'}, $rH_trimDetails->{'single2'});
     if(@{$rA_commands} == 3) {
       my $read1JobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'read1.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READ1ALN', $trimJobIdVarName, $sampleName, $rA_commands->[0]);
       $read1JobId = '$'.$read1JobId;
