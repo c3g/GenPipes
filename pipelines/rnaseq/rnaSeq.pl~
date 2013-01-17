@@ -50,7 +50,7 @@ BEGIN{
 #--------------------
 use Getopt::Std;
 
-use BWA;
+use Tophat;
 use GATK;
 use IGVTools;
 use LoadConfig;
@@ -67,37 +67,35 @@ use Trimmomatic;
 #--------------------
 
 my @steps;
-push(@steps, {'name' => 'trimAndAlign'});
-push(@steps, {'name' => 'mergeLanes'});
-push(@steps, {'name' => 'indelRealigner'});
-push(@steps, {'name' => 'mergeRealigned'});
-push(@steps, {'name' => 'fixmate'});
-push(@steps, {'name' => 'markDup'});
-push(@steps, {'name' => 'metrics'});
-#push(@steps, {'name' => 'crestSClip'});
-push(@steps, {'name' => 'sortQname'});
-#push(@steps, {'name' => 'countTelomere'});
-push(@steps, {'name' => 'fullPileup'});
-#push(@steps, {'name' => 'countTelomere'});
-#  print "Step 12: snp and indel calling\n";
-#  print "Step 13: merge snp calls\n";
-#  print "Step 14: filter N streches\n";
-#  print "Step 15: flag mappability\n";
-#  print "Step 16: snp annotation\n";
-#  print "Step 17: snp effect prediction\n";
-#  print "Step 18: gene descriptions and GO terms\n";
-#  print "Strp 19: dbNSFP annotations\n";
-#  print "Step 20: Cosmic annotations\n";
+push(@steps, {'name' => 'trimming' , 'stepLoop' => 'sample'});
+push(@steps, {'name' => 'aligning' , 'stepLoop' => 'sample'});
+push(@steps, {'name' => 'merging' , 'stepLoop' => 'sample'});
+push(@steps, {'name' => 'metrics' , 'stepLoop' => 'sample'});
+push(@steps, {'name' => 'wiggle' , 'stepLoop' => 'sample'});
+push(@steps, {'name' => 'rawCounts' , 'stepLoop' => 'sample'});
+push(@steps, {'name' => 'fpkm' , 'stepLoop' => 'sample'});
+push(@steps, {'name' => 'saturationRpkm' , 'stepLoop' => 'group'});
+push(@steps, {'name' => 'cuffdif' , 'stepLoop' => 'group'});
+push(@steps, {'name' => 'dge' , 'stepLoop' => 'group'});
+push(@steps, {'name' => 'delivrable' , 'stepLoop' => 'group'});
+
+
+my %globalDep;
+for my $stepName (@steps) { 
+	$globalDep{$stepName -> {'name'} } ={};
+}
+
 
 
 &main();
 
 sub printUsage {
-  print "\nUsage: perl ".$0." project.csv first_step last_step\n";
+  print "\nUsage: perl ".$0." \n";
   print "\t-c  config file\n";
   print "\t-s  start step, inclusive\n";
   print "\t-e  end step, inclusive\n";
   print "\t-n  nanuq sample sheet\n";
+  print "\t-d  design file\n";
   print "\n";
   print "Steps:\n";
   for(my $idx=0; $idx < @steps; $idx++) {
@@ -108,9 +106,9 @@ sub printUsage {
 
 sub main {
   my %opts;
-  getopts('c:s:e:n:', \%opts);
+  getopts('c:s:e:n:d:', \%opts);
   
-  if (!defined($opts{'c'}) || !defined($opts{'s'}) || !defined($opts{'e'}) || !defined($opts{'n'})) {
+  if (!defined($opts{'c'}) || !defined($opts{'s'}) || !defined($opts{'e'}) || !defined($opts{'n'}) || !defined($opts{'d'}) ) {
     printUsage();
     exit(1);
   }
@@ -120,21 +118,27 @@ sub main {
   my $rAoH_seqDictionary = SequenceDictionaryParser::readDictFile(\%cfg);
 
   my $latestBam;
-  for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
-    my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sampleName};
 
-    SubmitToCluster::initSubmit(\%cfg, $sampleName);
+    
     for(my $current = $opts{'s'}-1; $current <= ($opts{'e'}-1); $current++) {
        my $fname = $steps[$current]->{'name'};
+       my $loopType = steps[$current]->{'stepLoop'};
        my $subref = \&$fname;
-
-       # Tests for the first step in the list. Used for dependencies.
-       &$subref($current != ($opts{'s'}-1), \%cfg, $sampleName, $rAoH_sampleLanes, $rAoH_seqDictionary); 
-    }
-  }  
+       if ($loopType == 'sample') {
+	for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
+          my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sampleName};
+	  SubmitToCluster::initSubmit(\%cfg, $sampleName);
+          # Tests for the first step in the list. Used for dependencies.
+          &$subref($current != ($opts{'s'}-1), \%cfg, $sampleName, $rAoH_sampleLanes, $rAoH_seqDictionary); 
+        }
+       }
+       else {
+	
+       }
+    }  
 }
 
-sub trimAndAlign {
+sub trimming {
   my $depends = shift;
   my $rH_cfg = shift;
   my $sampleName = shift;

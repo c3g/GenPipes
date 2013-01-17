@@ -10,7 +10,7 @@ rnaSeq.pl
 
 =head1 DESCRIPTION
 
-B<rnaSeq> Is the main variant discovery pipeline.
+B<rnaSeq> Is the main RNAseq pipeline.
 
 =head1 AUTHOR
 
@@ -67,17 +67,24 @@ use Trimmomatic;
 #--------------------
 
 my @steps;
-push(@steps, {'name' => 'trimming'});
-push(@steps, {'name' => 'aligning'});
-push(@steps, {'name' => 'merging'});
-push(@steps, {'name' => 'metrics'});
-push(@steps, {'name' => 'wiggle'});
-push(@steps, {'name' => 'rawCounts'});
-push(@steps, {'name' => 'saturationRpkm'});
-push(@steps, {'name' => 'fpkm'});
-push(@steps, {'name' => 'cuffdif'});
-push(@steps, {'name' => 'dge'});
-push(@steps, {'name' => 'delivrable'});
+push(@steps, {'name' => 'trimming' , 'stepLoop' => 'sample' , 'output' => 'reads'});
+push(@steps, {'name' => 'aligning' , 'stepLoop' => 'sample' , 'output' => 'alignment'});
+push(@steps, {'name' => 'merging' , 'stepLoop' => 'sample' , 'output' => 'alignment'});
+push(@steps, {'name' => 'metrics' , 'stepLoop' => 'sample' , 'output' => 'stats'});
+push(@steps, {'name' => 'wiggle' , 'stepLoop' => 'sample' , 'output' => 'tracks'});
+push(@steps, {'name' => 'rawCounts' , 'stepLoop' => 'sample' , 'output' => 'reads_count'});
+push(@steps, {'name' => 'fpkm' , 'stepLoop' => 'sample' , 'output' => 'fpkm'});
+push(@steps, {'name' => 'saturationRpkm' , 'stepLoop' => 'group' , 'output' => 'reads_count'});
+push(@steps, {'name' => 'cuffdif' , 'stepLoop' => 'group' , 'output' => 'DGE'});
+push(@steps, {'name' => 'dge' , 'stepLoop' => 'group' , 'output' => 'DGE'});
+push(@steps, {'name' => 'delivrable' , 'stepLoop' => 'group' , 'output' => 'Delivrable'});
+
+
+my %globalDep;
+for my $stepName (@steps) { 
+	$globalDep{$stepName -> {'name'} } ={};
+}
+
 
 
 &main();
@@ -89,6 +96,7 @@ sub printUsage {
   print "\t-e  end step, inclusive\n";
   print "\t-n  nanuq sample sheet\n";
   print "\t-d  design file\n";
+  print "\t-w  work directory\n";
   print "\n";
   print "Steps:\n";
   for(my $idx=0; $idx < @steps; $idx++) {
@@ -99,9 +107,9 @@ sub printUsage {
 
 sub main {
   my %opts;
-  getopts('c:s:e:n:d:', \%opts);
+  getopts('c:s:e:n:d:w:', \%opts);
   
-  if (!defined($opts{'c'}) || !defined($opts{'s'}) || !defined($opts{'e'}) || !defined($opts{'n'}) || !defined($opts{'d'}) ) {
+  if (!defined($opts{'c'}) || !defined($opts{'s'}) || !defined($opts{'e'}) || !defined($opts{'n'}) || !defined($opts{'d'}|| !defined($opts{'w'} ) ) {
     printUsage();
     exit(1);
   }
@@ -109,39 +117,66 @@ sub main {
   my %cfg = LoadConfig->readConfigFile($opts{'c'});
   my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($opts{'n'});
   my $rAoH_seqDictionary = SequenceDictionaryParser::readDictFile(\%cfg);
+  my $designFilePath = $opts{'d'};
+  my $workDirectory = $opts{'w'};
 
   my $latestBam;
-  for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
-    my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sampleName};
 
-    SubmitToCluster::initSubmit(\%cfg, $sampleName);
+    
     for(my $current = $opts{'s'}-1; $current <= ($opts{'e'}-1); $current++) {
        my $fname = $steps[$current]->{'name'};
+       my $loopType = $steps[$current]->{'stepLoop'};
+       my $outputStep = $steps[$current]->{'output'};
        my $subref = \&$fname;
-
-       # Tests for the first step in the list. Used for dependencies.
-       &$subref($current != ($opts{'s'}-1), \%cfg, $sampleName, $rAoH_sampleLanes, $rAoH_seqDictionary); 
-    }
-  }  
+       if ($loopType == 'sample') {
+	for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
+          my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sampleName};
+	  my $outputLocation = $outputStep. "/" .$sampleName
+	  SubmitToCluster::initSubmit(\%cfg, $outputLocation);
+          # Tests for the first step in the list. Used for dependencies.
+          my $jobIdVar = &$subref($current != ($opts{'s'}-1), \%cfg, $sampleName, $rAoH_sampleLanes, $rAoH_seqDictionary);
+	  $globalDep{$fname}{$sampleName -> {$jobIdVar}};
+        }
+       }
+       else {
+	SubmitToCluster::initSubmit(\%cfg, $outputLocation);
+          # Tests for the first step in the list. Used for dependencies.
+          my $jobIdVar = &$subref($current != ($opts{'s'}-1), \%cfg, undef, undef $rAoH_seqDictionary);
+	  $globalDep{$fname}{$fname -> {$jobIdVar}};
+       }
+    }  
 }
 
-sub trimAndAlign {
+sub trimming {
   my $depends = shift;
   my $rH_cfg = shift;
   my $sampleName = shift;
   my $rAoH_sampleLanes  = shift;
   my $rAoH_seqDictionary = shift;
 
-  print "BWA_JOB_IDS=\"\"\n";
+  my $trimJobIdVarNameSample = undef;
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
     my $rH_trimDetails = Trimmomatic::trim($rH_cfg, $sampleName, $rH_laneInfo);
-    my $trimJobIdVarName=undef;
+    my $trimJobIdVarNameLane=undef;
     if(length($rH_trimDetails->{'command'}) > 0) {
-      $trimJobIdVarName = SubmitToCluster::printSubmitCmd($rH_cfg, "trim", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'TRIM', undef, $sampleName, $rH_trimDetails->{'command'});
-      $trimJobIdVarName = '$'.$trimJobIdVarName;
+      $trimJobIdVarNameLane = SubmitToCluster::printSubmitCmd($rH_cfg, "trim", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'TRIM', undef, $sampleName, $rH_trimDetails->{'command'}, $workDirectory);
+      $trimJobIdVarNameSample .= '$'.$trimJobIdVarNameLane.':';
       #TODO calcReadCounts.sh
     }
+   }
+    $trimJobIdVarNameSample = substr $trimJobIdVarNameSample 0 -1;
+  return $trimJobIdVarNameSample;	
+}
 
+
+sub aligning {
+  my $depends = shift;
+  my $rH_cfg = shift;
+  my $sampleName = shift;
+  my $rAoH_sampleLanes  = shift;
+  my $rAoH_seqDictionary = shift;
+
+  my $alignmentJobIdVarNameSample = undef;
     my $rA_commands = BWA::aln($rH_cfg, $sampleName, $rH_laneInfo, $rH_trimDetails->{'pair1'}, $rH_trimDetails->{'pair2'}, $rH_trimDetails->{'single1'}, $rH_trimDetails->{'single2'});
     if(@{$rA_commands} == 3) {
       my $read1JobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'read1.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READ1ALN', $trimJobIdVarName, $sampleName, $rA_commands->[0]);

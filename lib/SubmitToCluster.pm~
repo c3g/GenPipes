@@ -52,16 +52,11 @@ sub printSubmitCmd {
     my $dependancyName = shift;
     my $sampleName = shift;
     my $command = shift;
-    my $workDirectory = shift;
-
-    if(!(defined $workDirectory)){
-      $workDirectory = '`pwd`';
-    }
 
     print 'echo "'.$command.'" | ';
     print LoadConfig::getParam($rH_cfg, $stepName, 'clusterSubmitCmd');
     print ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterOtherArg');
-    print ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterWorkDirArg') . $workDirectory;
+    print ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterWorkDirArg') . '`pwd`';
     print ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterOutputDirArg') . $sampleName.'/output_jobs/';
     my $jobName = $stepName.'.'.$sampleName;
     if(defined($jobNameSuffix) && length($jobNameSuffix) > 0) {
