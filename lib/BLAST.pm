@@ -87,8 +87,9 @@ sub align {
     my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
 
     $command .= 'module add mugqic/BLAST/2.2.26+;';
+    $command .= ' mkdir -p ' . $laneDirectory . 'fasta_split/' . $rH_cfg->{'blast.db'} . ';';
     $command .= ' ' . $rH_cfg->{'blast.program'} . ' -num_threads ' . $rH_cfg->{'blast.nbThreads'};
-    $command .= ' -query ' . $laneDirectory . 'fasta_split/' . $fileFasta;
+    $command .= ' -query ' . $laneDirectory . 'fasta_split/' . $rH_cfg->{'blast.db'} . '/' . $fileFasta;
     $command .= ' -db ' . $rH_cfg->{'blast.db'} . ' -out ' . $laneDirectory . 'fasta_split/' . $outFile . '_BLASTOUT.txt';
     $command .= ' ' . $rH_cfg->{'blast.options'};
 
@@ -116,8 +117,9 @@ sub alignParallel {
     my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
 
     $command .= 'module add mugqic/BLAST/2.2.26+;';
+    $command .= ' mkdir -p ' . $laneDirectory . 'fasta_split/' . $rH_cfg->{'blast.db'} . ';';
     $command .= ' ' . $rH_cfg->{'blast.parallelBlast'} . ' --file ' . $laneDirectory . 'fasta_split/' . $fileFasta;
-    $command .= ' --OUT ' . $laneDirectory . 'fasta_split/' . $outFile . '_BLASTOUT.txt';
+    $command .= ' --OUT ' . $laneDirectory . 'fasta_split/' . $rH_cfg->{'blast.db'} . '/' . $outFile . '_BLASTOUT.txt';
     $command .= ' -n ' . $rH_cfg->{'blast.nbThreads'} . ' --BLAST ' . '\'' . $rH_cfg->{'blast.program'};
     $command .= ' -db ' . $rH_cfg->{'blast.db'} . ' ' . $rH_cfg->{'blast.options'} . '\'';
 
@@ -125,6 +127,23 @@ sub alignParallel {
     return ( \%retVal );
 
 }
+
+sub bestHit{
+	$rH_cfg      = shift;
+    $sampleName  = shift;
+    $rH_laneInfo = shift;
+	
+	my $db          = shift;
+	# option used if more than one db was specified on the config file.
+	# In this case $db should be passed as an argument
+	#------------------------------------------------------------------
+	$rH_cfg->{'blast.db'} = defined ($db) ? $db : $rH_cfg->{'blast.db'};
+	my $command = '';
+    my %retVal;
+    
+    my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
+}
+
 
 1;
 
