@@ -70,8 +70,10 @@ sub pairCommand {
   my $minQuality = $rH_cfg->{'trim.minQuality'};
   my $minLength = $rH_cfg->{'trim.minLength'};
   my $adapterFile = $rH_cfg->{'trim.adapterFile'};
-
-  my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
+  
+  my $rawReadDir = $rH_cfg->{'default.rawReadDir'} . '/';
+  my $laneDirectory =  "reads/";
+  
   my $outputFastqPair1Name = $laneDirectory . $sampleName.'.t'.$minQuality.'l'.$minLength.'.pair1.fastq.gz';
   my $outputFastqPair2Name = $laneDirectory . $sampleName.'.t'.$minQuality.'l'.$minLength.'.pair2.fastq.gz';
   my $outputFastqSingle1Name = $laneDirectory . $sampleName.'.t'.$minQuality.'l'.$minLength.'.single1.fastq.gz';
@@ -95,7 +97,7 @@ sub pairCommand {
     else {
       $command .= ' -phred33';
     }
-    $command .= ' ' . $laneDirectory.$rH_laneInfo->{'read1File'} . ' ' . $laneDirectory.$rH_laneInfo->{'read2File'};
+    $command .= ' ' . $rawReadDir.$rH_laneInfo->{'read1File'} . ' ' . $rawReadDir.$rH_laneInfo->{'read2File'};
     $command .= ' ' . $outputFastqPair1Name . ' ' . $outputFastqSingle1Name;
     $command .= ' ' . $outputFastqPair2Name . ' ' . $outputFastqSingle2Name;
     if ($rH_laneInfo->{'qualOffset'} eq "64") {
@@ -127,7 +129,9 @@ sub singleCommand {
   my $minLength = $rH_cfg->{'trim.minLength'};
   my $adapterFile = $rH_cfg->{'trim.adapterFile'};
 
-  my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
+  my $rawReadDir = $rH_cfg->{'default.rawReadDir'} . '/';
+  my $laneDirectory =  "reads/";
+  
   my $outputFastqName = $laneDirectory . $sampleName.'.t'.$minQuality.'l'.$minLength.'.single.fastq.gz';
   my $currentFileDate = -M $outputFastqName;
   
