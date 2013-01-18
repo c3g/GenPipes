@@ -63,7 +63,7 @@ sub sampleInfo {
             foreach my $rH_laneInfo (@$rAoH_sampleLanes) {
                 if ( $line[0] eq $rH_laneInfo->{'name'} ) {
 
-                    $defaultDir = $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . '/';
+                    $defaultDir = 'reads/';
                     $qualOffSet = $rH_laneInfo->{'qualOffset'};
                     $pairType   = $rH_laneInfo->{'runType'};
 
@@ -95,13 +95,13 @@ sub sampleInfo {
             # $groupInfo{genome}{-left} =  sample1 t sample2 ...
             # $groupInfo{genome}{-right} =  sample1  sample2 ..
             #-----------------------------------------------------------------
-            $groupInfo{'group'}{$line[1] }->{'left'} .= '  ' . $sampleInfo{ $line[0] }->{'sample_name'} . '/' . $defaultDir . $sampleInfo{ $line[0] }->{'sample_name'} . '.t' . $minQuality . 'l' . $minLength .  '.pair1.fastq.gz.dup.gz ';
-            $groupInfo{'group'}{ $line[1] }->{'right'} .= '  ' . $sampleInfo{ $line[0] }->{'sample_name'} . '/' . $defaultDir . $sampleInfo{ $line[0] }->{'sample_name'} . '.t' . $minQuality . 'l' . $minLength . '.pair1.fastq.gz.dup.gz ';
+            $groupInfo{'group'}{$line[1] }->{'left'} .= '  ' .  $defaultDir . $sampleInfo{ $line[0] }->{'sample_name'} . '.t' . $minQuality . 'l' . $minLength .  '.pair1.fastq.gz.dup.gz ';
+            $groupInfo{'group'}{ $line[1] }->{'right'} .= '  ' .  $defaultDir . $sampleInfo{ $line[0] }->{'sample_name'} . '.t' . $minQuality . 'l' . $minLength . '.pair1.fastq.gz.dup.gz ';
 
 
         }
         elsif ( $pairType eq "SINGLE_END"){
-        	$groupInfo{'group'}{$line[1] }->{'single'} .= ' --single ' .  $sampleInfo{ $line[0] }->{'sample_name'} . '/' . $defaultDir . $sampleInfo{ $line[0] }->{'sample_name'} . '.t' . $minQuality . 'l' . $minLength . '.single.fastq.gz';
+        	$groupInfo{'group'}{$line[1] }->{'single'} .= ' --single ' . $defaultDir . $sampleInfo{ $line[0] }->{'sample_name'} . '.t' . $minQuality . 'l' . $minLength . '.single.fastq.gz';
         }
 
     }
