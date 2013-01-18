@@ -78,7 +78,7 @@ sub _pairCommand {
     my $minLength  = $rH_cfg->{'trim.minLength'};
 
     my $command       = '';
-    my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
+    my $laneDirectory =  "reads/";
     my $inputFastqPair1Name = $laneDirectory . $sampleName . '.t' . $minQuality . 'l' . $minLength .  '.pair1.fastq.gz';
     my $inputFastqPair2Name = $laneDirectory . $sampleName . '.t' . $minQuality . 'l' . $minLength .  '.pair2.fastq.gz';
     my $outputFastqPair1Name = $laneDirectory . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.pair1.dup.fastq.gz';
@@ -112,7 +112,7 @@ sub _singleCommand {
     my $minLength  = $rH_cfg->{'trim.minLength'};
 
     my $command       = '';
-    my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
+    my $laneDirectory =  "reads/";
     my $inputFastqName = $laneDirectory . $sampleName . '.t' . $minQuality . 'l' . $minLength .  '.single.fastq.gz';
     my $outputFastqName = $laneDirectory . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.single.dup.fastq.gz';
 	my $currentFileDate = -M $outputFastqName;
