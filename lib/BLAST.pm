@@ -6,10 +6,14 @@ I<BLAST>
 
 =head1 SYNOPSIS
 
-B<BLAST::align>(%ref_hash_config, $sample_name, %ref_hash_laneInfo, $FastaFile)
+B<BLAST::align>(%ref_hash_config, $sample_name, %ref_hash_laneInfo, $FastaFile, $db)
 
 
-B<BLAST::alignParallel>(%ref_hash_config, $sample_name, %ref_hash_laneInfo, $FastaFile)
+B<BLAST::alignParallel>(%ref_hash_config, $sample_name, %ref_hash_laneInfo, $FastaFile, $db)
+
+B<BLAST::bestHit>(%ref_hash_config, $sample_name, %ref_hash_laneInfo, $db)
+
+I<B<The $db arg is optional, made to be used if more than one database was specified in the config file>>
 
 B<BLAST::alignParallel> will depend on two scripts and their paths must be put on the config file
 
