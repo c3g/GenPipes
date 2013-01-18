@@ -84,7 +84,7 @@ sub align {
     $outFile =~ s/\*_//;
     my $command = '';
     my %retVal;
-    my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
+    my $laneDirectory = "assembly/" . $sampleName . "/";
 
     $command .= 'module add mugqic/BLAST/2.2.26+;';
     $command .= ' mkdir -p ' . $laneDirectory . 'fasta_split/' . $rH_cfg->{'blast.db'} . ';';
@@ -114,7 +114,7 @@ sub alignParallel {
     $outFile =~ s/\*_//;
     my $command = '';
     my %retVal;
-    my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
+    my $laneDirectory = "assembly/" . $sampleName . "/";
 
     $command .= 'module add mugqic/BLAST/2.2.26+;';
     $command .= ' mkdir -p ' . $laneDirectory . 'fasta_split/' . $rH_cfg->{'blast.db'} . ';';
@@ -141,7 +141,17 @@ sub bestHit{
 	my $command = '';
     my %retVal;
     
-    my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
+	my $laneDirectory = "assembly/" . $sampleName . "/";
+    $command .= 'cat ' . $laneDirectory . 'fasta_split/' .  $rH_cfg->{'blast.db'} . '/' . '*.txt ';
+    $command .= ' >' . $laneDirectory . 'fasta_split/' .  $rH_cfg->{'blast.db'} . '/blastRes.txt ;';  
+    $command .= ' sh ' . $rH_cfg->{'blast.blastHq'} . ' '.  $laneDirectory .  'fasta_split/' .  $rH_cfg->{'blast.db'} . '/blastRes.txt '; 
+    $command .= ' >' . $laneDirectory . 'fasta_split/' .  $rH_cfg->{'blast.db'} . '/blastRes_HQ.txt ;'; 
+    $command .= ' ' . $rH_cfg->{'blast.BestHit'} . ' '. $laneDirectory .  'fasta_split/' .  $rH_cfg->{'blast.db'} . '/blastRes_HQ.txt ' ;
+    $command .= ' >' . $laneDirectory . 'fasta_split/' .  $rH_cfg->{'blast.db'} . '/blast_BestHit.txt ;';
+    
+    
+    $retVal{'command'} = $command;
+    return ( \%retVal );
 }
 
 
