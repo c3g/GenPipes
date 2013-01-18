@@ -71,8 +71,6 @@ use LoadConfig;
 our $rH_cfg;
 our $sampleName;
 our $rH_laneInfo;
-#our $pair1;
-#our $pair2;
 our $rH_dupDetails;
 our $rH_groupInfo;    # used only if assembling multiple samples into one transcriptome (per group)
 our $fileButterflyComand;
@@ -82,11 +80,9 @@ sub chrysalis {
     $sampleName   = shift;
     $rH_laneInfo  = shift;
     $rH_dupDetails = shift;
-#    $pair1        = shift;
-#    $pair2        = shift;
     $rH_groupInfo = shift;
 
-#    print $sampleName, " SAMPLE \n\n";
+
     my $rH_retVal;
     if ( $rH_laneInfo->{'runType'} eq "SINGLE_END" ) {
         $rH_retVal = _chrysalisSingleCommand();
@@ -106,7 +102,7 @@ sub butterfly {
     $rH_laneInfo         = shift;
     $fileButterflyComand = shift;
 
-    my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
+    my $laneDirectory = "alignment/" . $sampleName . "/chrysalis/";
     my $command       = ' ';
     my %retVal;
 
@@ -127,7 +123,7 @@ sub concatFastaCreateGtf {
 
     my $command = '';
     my %retVal;
-    my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
+    my $laneDirectory = "alignment/" . $sampleName . "/";
 
     $command .= 'module add jdk64/6u35; ';
     $command .= ' module add mugqic/trinity/2012-06-18 ;';
@@ -149,7 +145,8 @@ sub _chrysalisPairCommand {
     my %retVal;
 
     if ( exists $rH_groupInfo->{'left'} ) {
-        my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
+
+        my $laneDirectory =  'alignment/'. $sampleName . '/';
         $command .= 'module add jdk64/6u35; ';
         $command .= ' module add mugqic/trinity/2012-06-18 ;';
         $command .= ' Trinity.pl --seqType fq --JM 100G';
@@ -160,7 +157,7 @@ sub _chrysalisPairCommand {
     }
 
     else {
-        my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
+        my $laneDirectory =  'alignment/'. $sampleName . '/';
         $command .= 'module add jdk64/6u35; ';
         $command .= ' module add mugqic/trinity/2012-06-18 ;';
         $command .= ' Trinity.pl --seqType fq --JM 100G';
