@@ -66,7 +66,7 @@ sub splitFasta {
 
     my %retVal;
     my $command        = '';
-    my $laneDirectory  = 'alignment/' . $sampleName . "/";
+    my $laneDirectory  = 'assembly/' . $sampleName . "/";
     my $splitDirectory = $laneDirectory . "fasta_split/";
 
     $command .= ' mkdir -p ' . $splitDirectory . ' ; ';
@@ -85,7 +85,7 @@ sub splitButterfly {
 
     my %retVal;
     my $command        = '';
-    my $laneDirectory  = 'alignment/' . $sampleName . '/chrysalis/';
+    my $laneDirectory  = 'assembly/' . $sampleName . '/chrysalis/';
     my $splitDirectory = $laneDirectory . "butterfly_split";
 
     $command .= ' mkdir -p ' . $splitDirectory . ' ; ';
