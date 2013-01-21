@@ -1,0 +1,154 @@
+#!/usr/bin/perl 
+
+=head1 NAME
+
+I<Parallelize>
+
+=head1 SYNOPSIS
+
+Parallelize [command [arguments]]
+
+=head1 DESCRIPTION
+
+B<Parallelize> is a script that parallelize multiple systems calls.
+
+B<Parallelize> will try to guess the number of cores 
+on a linux machine, splits the command lines list into the number of cpus 
+(or any value specified by the user) and run in the command lines in  parallel 
+
+
+B<Parallelize> also accepts an specific number of jobs.
+
+
+=head1 OPTIONS
+
+B<--help or -h >I< help>
+
+=over 10
+
+Print this POD. 
+
+=back
+
+
+B<--file or -f >I<command line file>
+
+=over 10
+
+Fullpath to a file containning a list of command lines.
+
+=back 
+
+
+B<--nthreads or -n >I<number of threads>
+
+=over 10
+
+Number of threads running simultaneosly. 
+
+=back
+ 
+=head1 USAGE
+
+
+B<I<EXAMPLE>> Run Parallelize launching one job per CPU
+
+B<Parallelize -f file_with_list_of_commands>
+
+B<I<EXAMPLE>> Run Parallelize launching 10 jobs
+
+B<Parallelize -f file_with_list_of_commands -n 10 >
+
+
+=head1 AUTHOR
+
+B<David Morais> - I<dmorais@cs.bris.ac.uk>
+
+=head1 DEPENDENCY
+
+B<Proc::ParallelLoop> parallel jobs 
+
+B<Pod::Usage> Usage and help output.
+
+B<Data::Dumper> Used to debbug
+
+=cut
+
+
+# Strict Pragmas
+#--------------------------
+use strict;
+use warnings;
+
+# INCLUDES
+#--------------------------
+use Data::Dumper;
+use Proc::ParallelLoop;
+use Pod::Usage;
+use Getopt::Long;
+#-------------------------
+
+# GLOBAL VARIABLES
+#------------------------
+my $usage;
+my $command;
+my @file;
+my @array;
+my $number_of_threads;
+my $nthreads;
+my $help;
+
+#-------------------------------------
+GetOptions(
+    'help|h!'           => \$help,
+	'file|f=s'          => \$command,
+	'nthreads|n=i'      => \$nthreads
+
+) or die "Fatal Error: Problem parsing command-line " . $!;
+pod2usage( -exitstatus => 0, -verbose => 2 ) if $help;
+
+
+# Get Number of CPUs is number of threads is not specified
+$number_of_threads = $nthreads ? $nthreads : `cat /proc/cpuinfo | grep "processor" | awk '{print \$NF}' | sort -u | wc -l`;
+chomp $number_of_threads; 
+
+
+open (IN, "$ARGV[0]") || die "could not open file $ARGV[0], $!\n";
+while (<IN>){
+	chomp;
+	push (@file, $_);
+
+}
+
+@array= getThreadJobs(@file);
+#print Dumper (@array);
+
+pareach [@array], sub {
+ my $ref = shift;
+ foreach my $i( @{$ref}){
+ 	system @{$i};
+ }
+}, {"Max_Workers" => scalar($number_of_threads)};
+
+
+############# S U B R O U T I N E S ####################
+sub  getThreadJobs{
+	my @list = @_;
+	my @AoA;
+
+	# split a list of command lines and put it inside @AoA
+	while (scalar (@list) >0){
+		for (my $i=0; $i < $number_of_threads; $i++){
+			push @{ $AoA[$i]}, [splice (@list,0,1)];
+		
+		}
+	}
+
+	return @AoA;
+}
+
+
+
+
+
+
