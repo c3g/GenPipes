@@ -76,12 +76,11 @@ our $rH_groupInfo;    # used only if assembling multiple samples into one transc
 our $fileButterflyComand;
 
 sub chrysalis {
-    $rH_cfg       = shift;
-    $sampleName   = shift;
-    $rH_laneInfo  = shift;
+    $rH_cfg        = shift;
+    $sampleName    = shift;
+    $rH_laneInfo   = shift;
     $rH_dupDetails = shift;
-    $rH_groupInfo = shift;
-
+    $rH_groupInfo  = shift;
 
     my $rH_retVal;
     if ( $rH_laneInfo->{'runType'} eq "SINGLE_END" ) {
@@ -146,22 +145,22 @@ sub _chrysalisPairCommand {
 
     if ( exists $rH_groupInfo->{'left'} ) {
 
-        my $laneDirectory =  'alignment/'. $sampleName . '/';
+        my $laneDirectory = 'alignment/' . $sampleName . '/';
         $command .= 'module add jdk64/6u35; ';
         $command .= ' module add mugqic/trinity/2012-06-18 ;';
         $command .= ' Trinity.pl --seqType fq --JM 100G';
-        $command .= ' --left' . ' " ' . $rH_groupInfo->{'left'} . ' " ' . '--right'. ' " ' . $rH_groupInfo->{'right'} . ' " ';
+        $command .= ' --left' . ' " ' . $rH_groupInfo->{'left'} . ' " ' . '--right' . ' " ' . $rH_groupInfo->{'right'} . ' " ';
         $command .= ' --CPU 22 --output ' . $laneDirectory;
         $command .= ' --min_kmer_cov 31 --max_reads_per_loop 200000000 --no_run_butterfly ';
 
     }
 
     else {
-        my $laneDirectory =  'alignment/'. $sampleName . '/';
+        my $laneDirectory = 'alignment/' . $sampleName . '/';
         $command .= 'module add jdk64/6u35; ';
         $command .= ' module add mugqic/trinity/2012-06-18 ;';
         $command .= ' Trinity.pl --seqType fq --JM 100G';
-        $command .= ' --left' . ' " '. $rH_dupDetails->{'pair1'} . ' " ' . '--right ' . ' " ' . $rH_dupDetails->{'pair2'} . ' " ';
+        $command .= ' --left' . ' " ' . $rH_dupDetails->{'pair1'} . ' " ' . '--right ' . ' " ' . $rH_dupDetails->{'pair2'} . ' " ';
         $command .= ' --CPU 22 --output ' . $laneDirectory;
         $command .= ' --min_kmer_cov 31 --max_reads_per_loop 200000000 --no_run_butterfly ';
 
@@ -170,8 +169,6 @@ sub _chrysalisPairCommand {
     return ( \%retVal );
 
 }
-
-
 
 sub _chrysalisSingleCommand {
 
