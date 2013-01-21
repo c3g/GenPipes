@@ -43,122 +43,124 @@ use warnings;
 # SUB
 #-----------------------
 sub trim {
-  my $rH_cfg      = shift;
-  my $sampleName  = shift;
-  my $rH_laneInfo = shift;
+    my $rH_cfg      = shift;
+    my $sampleName  = shift;
+    my $rH_laneInfo = shift;
 
-  my $rH_retVal;
+    my $rH_retVal;
 
-  if ( $rH_laneInfo->{'runType'} eq "SINGLE_END" ) {
-    $rH_retVal = singleCommand($rH_cfg, $sampleName, $rH_laneInfo);
-  }
-  elsif($rH_laneInfo->{'runType'} eq "PAIRED_END") {
-    $rH_retVal = pairCommand($rH_cfg, $sampleName, $rH_laneInfo);
-  }
-  else {
-    die "Unknown runType: ".$rH_laneInfo->{' runType '}."\n";
-  }
-    
-  return $rH_retVal;
+    if ( $rH_laneInfo->{'runType'} eq "SINGLE_END" ) {
+        $rH_retVal = singleCommand( $rH_cfg, $sampleName, $rH_laneInfo );
+    }
+    elsif ( $rH_laneInfo->{'runType'} eq "PAIRED_END" ) {
+        $rH_retVal = pairCommand( $rH_cfg, $sampleName, $rH_laneInfo );
+    }
+    else {
+        die "Unknown runType: " . $rH_laneInfo->{' runType '} . "\n";
+    }
+
+    return $rH_retVal;
 }
 
 sub pairCommand {
-  my $rH_cfg = shift;
-  my $sampleName = shift;
-  my $rH_laneInfo = shift;
+    my $rH_cfg      = shift;
+    my $sampleName  = shift;
+    my $rH_laneInfo = shift;
 
-  my $minQuality = $rH_cfg->{'trim.minQuality'};
-  my $minLength = $rH_cfg->{'trim.minLength'};
-  my $adapterFile = $rH_cfg->{'trim.adapterFile'};
-  
-  my $rawReadDir = $rH_cfg->{'default.rawReadDir'} . '/';
-  my $laneDirectory =  "reads/";
-  
-  my $outputFastqPair1Name = $laneDirectory . $sampleName.'.t'.$minQuality.'l'.$minLength.'.pair1.fastq.gz';
-  my $outputFastqPair2Name = $laneDirectory . $sampleName.'.t'.$minQuality.'l'.$minLength.'.pair2.fastq.gz';
-  my $outputFastqSingle1Name = $laneDirectory . $sampleName.'.t'.$minQuality.'l'.$minLength.'.single1.fastq.gz';
-  my $outputFastqSingle2Name = $laneDirectory . $sampleName.'.t'.$minQuality.'l'.$minLength.'.single2.fastq.gz';
-  my $pair1FileDate = -M $outputFastqPair1Name;
-  my $pair2FileDate = -M $outputFastqPair2Name;
+    my $minQuality  = $rH_cfg->{'trim.minQuality'};
+    my $minLength   = $rH_cfg->{'trim.minLength'};
+    my $adapterFile = $rH_cfg->{'trim.adapterFile'};
 
-  my $currentFileDate = $pair2FileDate;
-  if(defined($pair1FileDate) && $pair1FileDate > $pair2FileDate) {
-     $currentFileDate = $pair1FileDate;
-  }
+    my $rawReadDir    = $rH_cfg->{'default.rawReadDir'} . '/';
+    my $laneDirectory = "reads/";
 
-  my $command = "";
-  # -M gives modified date relative to now. The bigger the older.
-  if (!defined($currentFileDate) || $currentFileDate > -M $laneDirectory.$rH_laneInfo->{'read1File'}) {
-    $command .= 'module load mugqic/trimmomatic/0.22 ; java -cp \$TRIMMOMATIC_JAR org.usadellab.trimmomatic.TrimmomaticPE';
-    $command .= ' -threads ' . $rH_cfg->{'trim.nbThreads'};
-    if ($rH_laneInfo->{'qualOffset'} eq "64") {
-      $command .= ' -phred64';
+    my $outputFastqPair1Name = $laneDirectory . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.pair1.fastq.gz';
+    my $outputFastqPair2Name = $laneDirectory . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.pair2.fastq.gz';
+    my $outputFastqSingle1Name = $laneDirectory . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.single1.fastq.gz';
+    my $outputFastqSingle2Name = $laneDirectory . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.single2.fastq.gz';
+    my $pair1FileDate = -M $outputFastqPair1Name;
+    my $pair2FileDate = -M $outputFastqPair2Name;
+
+    my $currentFileDate = $pair2FileDate;
+    if ( defined($pair1FileDate) && $pair1FileDate > $pair2FileDate ) {
+        $currentFileDate = $pair1FileDate;
     }
-    else {
-      $command .= ' -phred33';
+
+    my $command = "";
+
+    # -M gives modified date relative to now. The bigger the older.
+    if ( !defined($currentFileDate) || $currentFileDate > -M $laneDirectory . $rH_laneInfo->{'read1File'} ) {
+        $command .= 'module load mugqic/trimmomatic/0.22 ; java -cp \$TRIMMOMATIC_JAR org.usadellab.trimmomatic.TrimmomaticPE';
+        $command .= ' -threads ' . $rH_cfg->{'trim.nbThreads'};
+        if ( $rH_laneInfo->{'qualOffset'} eq "64" ) {
+            $command .= ' -phred64';
+        }
+        else {
+            $command .= ' -phred33';
+        }
+        $command .= ' ' . $rawReadDir . $rH_laneInfo->{'read1File'} . ' ' . $rawReadDir . $rH_laneInfo->{'read2File'};
+        $command .= ' ' . $outputFastqPair1Name . ' ' . $outputFastqSingle1Name;
+        $command .= ' ' . $outputFastqPair2Name . ' ' . $outputFastqSingle2Name;
+        if ( $rH_laneInfo->{'qualOffset'} eq "64" ) {
+            $command .= ' TOPHRED33';
+        }
+        $command .= ' ILLUMINACLIP:' . $adapterFile . $rH_cfg->{'trim.clipSettings'};
+        if ( $minQuality > 0 ) {
+            $command .= ' TRAILING:' . $minQuality;
+        }
+        $command .= ' MINLEN:' . $minLength;
+        $command .= ' > ' . $laneDirectory . $sampleName . '.trim.out';
     }
-    $command .= ' ' . $rawReadDir.$rH_laneInfo->{'read1File'} . ' ' . $rawReadDir.$rH_laneInfo->{'read2File'};
-    $command .= ' ' . $outputFastqPair1Name . ' ' . $outputFastqSingle1Name;
-    $command .= ' ' . $outputFastqPair2Name . ' ' . $outputFastqSingle2Name;
-    if ($rH_laneInfo->{'qualOffset'} eq "64") {
-      $command .= ' TOPHRED33';
-    }
-    $command .= ' ILLUMINACLIP:'.$adapterFile.$rH_cfg->{'trim.clipSettings'};
-    if($minQuality > 0) {
-      $command .=' TRAILING:'.$minQuality;
-    }
-    $command .= ' MINLEN:'.$minLength;
-    $command .= ' > ' . $laneDirectory . $sampleName . '.trim.out';
-  }
-  
-  my %retVal;
-  $retVal{'command'} = $command;
-  $retVal{'pair1'} = $outputFastqPair1Name;
-  $retVal{'pair2'} = $outputFastqPair2Name;
-  $retVal{'single1'} = $outputFastqSingle1Name;
-  $retVal{'single2'} = $outputFastqSingle2Name;
-  return \%retVal;
+
+    my %retVal;
+    $retVal{'command'} = $command;
+    $retVal{'pair1'}   = $outputFastqPair1Name;
+    $retVal{'pair2'}   = $outputFastqPair2Name;
+    $retVal{'single1'} = $outputFastqSingle1Name;
+    $retVal{'single2'} = $outputFastqSingle2Name;
+    return \%retVal;
 }
 
 sub singleCommand {
-  my $rH_cfg = shift;
-  my $sampleName = shift;
-  my $rH_laneInfo = shift;
+    my $rH_cfg      = shift;
+    my $sampleName  = shift;
+    my $rH_laneInfo = shift;
 
-  my $minQuality = $rH_cfg->{'trim.minQuality'};
-  my $minLength = $rH_cfg->{'trim.minLength'};
-  my $adapterFile = $rH_cfg->{'trim.adapterFile'};
+    my $minQuality  = $rH_cfg->{'trim.minQuality'};
+    my $minLength   = $rH_cfg->{'trim.minLength'};
+    my $adapterFile = $rH_cfg->{'trim.adapterFile'};
 
-  my $rawReadDir = $rH_cfg->{'default.rawReadDir'} . '/';
-  my $laneDirectory =  "reads/";
-  
-  my $outputFastqName = $laneDirectory . $sampleName.'.t'.$minQuality.'l'.$minLength.'.single.fastq.gz';
-  my $currentFileDate = -M $outputFastqName;
-  
-  my $command = "";
-  # -M gives modified date relative to now. The bigger the older.
-  if ($currentFileDate > -M $laneDirectory.$rH_laneInfo->{'read1File'}) {
-    $command .= 'module load mugqic/trimmomatic/0.22 ; java -cp \$TRIMMOMATIC_JAR org.usadellab.trimmomatic.TrimmomaticSE';
-    $command .= ' -threads ' . $rH_cfg->{'trim.nbThreads'};
-    if ($rH_laneInfo->{'qualOffset'} eq "64") {
-      $command .= ' -phred64';
+    my $rawReadDir    = $rH_cfg->{'default.rawReadDir'} . '/';
+    my $laneDirectory = "reads/";
+
+    my $outputFastqName = $laneDirectory . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.single.fastq.gz';
+    my $currentFileDate = -M $outputFastqName;
+
+    my $command = "";
+
+    # -M gives modified date relative to now. The bigger the older.
+    if ( $currentFileDate > -M $laneDirectory . $rH_laneInfo->{'read1File'} ) {
+        $command .= 'module load mugqic/trimmomatic/0.22 ; java -cp \$TRIMMOMATIC_JAR org.usadellab.trimmomatic.TrimmomaticSE';
+        $command .= ' -threads ' . $rH_cfg->{'trim.nbThreads'};
+        if ( $rH_laneInfo->{'qualOffset'} eq "64" ) {
+            $command .= ' -phred64';
+        }
+        else {
+            $command .= ' -phred33';
+        }
+        $command .= ' ' . $laneDirectory . $rH_laneInfo->{'read1File'} . ' ' . $outputFastqName;
+        $command .= ' ILLUMINACLIP:' . $adapterFile . ':2:30:15';
+        if ( $minQuality > 0 ) {
+            $command .= ' TRAILING:' . $minQuality;
+        }
+        $command .= ' MINLEN:' . $minLength;
+        $command .= ' > ' . $laneDirectory . $sampleName . '.trim.out';
     }
-    else {
-      $command .= ' -phred33';
-    }
-    $command .= ' ' . $laneDirectory . $rH_laneInfo->{'read1File'} . ' ' . $outputFastqName;
-    $command .= ' ILLUMINACLIP:'.$adapterFile.':2:30:15';
-    if($minQuality > 0) {
-      $command .= ' TRAILING:'.$minQuality;
-    }
-    $command .=' MINLEN:'.$minLength;
-    $command .= ' > ' . $laneDirectory . $sampleName . '.trim.out';
-  }
-  
-  my %retVal;
-  $retVal{'command'} = $command;
-  $retVal{'single1'} = $outputFastqName;
-  return \%retVal;
+
+    my %retVal;
+    $retVal{'command'} = $command;
+    $retVal{'single1'} = $outputFastqName;
+    return \%retVal;
 }
 
 1;
