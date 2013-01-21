@@ -53,116 +53,75 @@ our $rH_cfg;
 our $sampleName;
 our $rH_laneInfo;
 our $readFile;
-our $group; 
+our $group;
 
-sub matrixMake{
+sub matrixMake {
     $rH_cfg      = shift;
     $sampleName  = shift;
     $rH_laneInfo = shift;
-	$group         = shift;
-	
-	my $db          = shift; # blast database
-	# option used if more than one db was specified on the config file.
-	# In this case $db should be passed as an argument
-	#------------------------------------------------------------------
-	$rH_cfg->{'blast.db'} = defined ($db) ? $db : $rH_cfg->{'blast.db'};
-	
+    $group       = shift;
+
+    my $db = shift;    # blast database
+
+    # option used if more than one db was specified on the config file.
+    # In this case $db should be passed as an argument
+    #------------------------------------------------------------------
+    $rH_cfg->{'blast.db'} = defined($db) ? $db : $rH_cfg->{'blast.db'};
+
     my %retVal;
-    my $command = '';
-    my $laneDirectory = "read_count/" . $group.  "/";
-    
-    $command .= ' sh ' . $rH_cfg->{'htseq.tempMatrix'} . ' ' . 'alignment/' . $group . '/' . $group . '.gtf' ;
-    $command .= ' ' . 'assembly/'. $group . '/fasta_split/' .  $rH_cfg->{'blast.db'} . '/blast_BestHit.txt ' ;
+    my $command       = '';
+    my $laneDirectory = "read_count/" . $group . "/";
+
+    $command .= ' sh ' . $rH_cfg->{'htseq.tempMatrix'} . ' ' . 'alignment/' . $group . '/' . $group . '.gtf';
+    $command .= ' ' . 'assembly/' . $group . '/fasta_split/' . $rH_cfg->{'blast.db'} . '/blast_BestHit.txt ';
     $command .= ' ' . $laneDirectory . 'tmpmatrix.csv ;';
-    $command .= ' sh ' . $rH_cfg->{'htseq.fullMatrix'} . ' '. $laneDirectory. ' ;';
-    $command .= ' cp ' . $laneDirectory . 'tmpmatrix.csv DGE/' . $group . '/matrix.csv ;' ; 
-    
+    $command .= ' sh ' . $rH_cfg->{'htseq.fullMatrix'} . ' ' . $laneDirectory . ' ;';
+    $command .= ' cp ' . $laneDirectory . 'tmpmatrix.csv DGE/' . $group . '/matrix.csv ;';
+
     $retVal{'command'} = $command;
-	return ( \%retVal );
+    return ( \%retVal );
 }
 
-sub readCount{
-	$rH_cfg      = shift;
+sub readCount {
+    $rH_cfg      = shift;
     $sampleName  = shift;
     $rH_laneInfo = shift;
-	$group         = shift;
-	
-	my %retVal;
-	my $command = '';
-	my $laneDirectory = "read_count/" . $group .  "/";
-	
-	$command .= ' module add mugqic/samtools/0.1.6; ';
-	$command .= ' samtools view ' . $laneDirectory . $sampleName . '.QueryName.bam | ' ;
-	$command .= ' htseq-count - ' . 'alignment/' . $group . '/' . $group . '.gtf ' ;
-	$command .= ' -s no >' . $laneDirectory .  $sampleName . '.readcount.cvs' ;
-	
-	$retVal{'command'} = $command;
-	return ( \%retVal );
+    $group       = shift;
+
+    my %retVal;
+    my $command       = '';
+    my $laneDirectory = "read_count/" . $group . "/";
+
+    $command .= ' module add mugqic/samtools/0.1.6; ';
+    $command .= ' samtools view ' . $laneDirectory . $sampleName . '.QueryName.bam | ';
+    $command .= ' htseq-count - ' . 'alignment/' . $group . '/' . $group . '.gtf ';
+    $command .= ' -s no >' . $laneDirectory . $sampleName . '.readcount.cvs';
+
+    $retVal{'command'} = $command;
+    return ( \%retVal );
 }
 
-
-sub sortRead{
-	$rH_cfg      = shift;
+sub sortRead {
+    $rH_cfg      = shift;
     $sampleName  = shift;
     $rH_laneInfo = shift;
-	$group         = shift;
-	
-	my %retVal;
-	my $command = '';
-	my $laneDirectory = "alignment/" . $group . "/";
-	
-	$command .= ' mkdir -p  read_count/' . $group. ' ;' ;	
-	$command .= ' mkdir -p  DGE/' . $group . ';' ;	
-	$command .= ' module add jdk64 ; module add mugqic/picard/1.64/ ; ';
-	$command .= ' java -Xmx30g -jar SortSam.jar ';
-	$command .= ' VALIDATION_STRINGENCY=SILENT MAX_RECORDS_IN_RAM=5000000 CREATE_INDEX=true TMP_DIR=/mnt/scratch_mp2/bourque/bourque_group/tmpDir/ ';
-	$command .= ' INPUT=' . $laneDirectory .  $sampleName . '.sorted.bam ' ;
-	$command .= ' OUTPUT=read_count/' . $group . '/'.  $sampleName . '.QueryName.bam ' ;
-	$command .= ' SORT_ORDER=queryname ';
-	
-	$retVal{'command'} = $command;
-	return ( \%retVal );
+    $group       = shift;
+
+    my %retVal;
+    my $command       = '';
+    my $laneDirectory = "alignment/" . $group . "/";
+
+    $command .= ' mkdir -p  read_count/' . $group . ' ;';
+    $command .= ' mkdir -p  DGE/' . $group . ';';
+    $command .= ' module add jdk64 ; module add mugqic/picard/1.64/ ; ';
+    $command .= ' java -Xmx30g -jar SortSam.jar ';
+    $command .= ' VALIDATION_STRINGENCY=SILENT MAX_RECORDS_IN_RAM=5000000 CREATE_INDEX=true TMP_DIR=/mnt/scratch_mp2/bourque/bourque_group/tmpDir/ ';
+    $command .= ' INPUT=' . $laneDirectory . $sampleName . '.sorted.bam ';
+    $command .= ' OUTPUT=read_count/' . $group . '/' . $sampleName . '.QueryName.bam ';
+    $command .= ' SORT_ORDER=queryname ';
+
+    $retVal{'command'} = $command;
+    return ( \%retVal );
 }
 1;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
