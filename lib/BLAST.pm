@@ -73,7 +73,13 @@ sub align {
     $sampleName  = shift;
     $rH_laneInfo = shift;
     $fileFasta   = shift;
-
+    
+	my $db          = shift;
+	# option used if more than one db was specified on the config file.
+	# In this case $db should be passed as an argument
+	#-----------------------------------------------------------------
+	$rH_cfg->{'blast.db'} = defined ($db) ? $db : $rH_cfg->{'blast.db'}; 
+	
     my $outFile = $fileFasta;
     $outFile =~ s/\*_//;
     my $command = '';
@@ -96,7 +102,13 @@ sub alignParallel {
     $sampleName  = shift;
     $rH_laneInfo = shift;
     $fileFasta   = shift;
-
+    
+	my $db          = shift;
+	# option used if more than one db was specified on the config file.
+	# In this case $db should be passed as an argument
+	#------------------------------------------------------------------
+	$rH_cfg->{'blast.db'} = defined ($db) ? $db : $rH_cfg->{'blast.db'};
+	
     my $outFile = $fileFasta;
     $outFile =~ s/\*_//;
     my $command = '';
