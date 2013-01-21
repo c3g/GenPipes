@@ -80,41 +80,25 @@ sub pairCommand {
   if (!defined($bamFileDate) || !defined(-M $pair1) || !defined(-M $pair2) || $bamFileDate < -M $pair1 || $bamFileDate < -M $pair2) {
     my $BTCommand = "";
 
-    $BTCommand .= 'module load mugqic/tophat/XX ; module load mugqic/botwie/YY ; tophat';
+    $BTCommand .= 'module load ' .LoadConfig::getParam($rH_cfg, 'align','bowtieModule') .' ;'; 
+    $BTCommand .= '  module load ' .LoadConfig::getParam($rH_cfg, 'align','bowtieModule') .' ;'; 
+    $BTCommand .= ' tophat';
     $BTCommand .= ' --rg-library \"' . $rH_laneInfo->{'libraryBarcode'} .'\"';
-    $BTCommand .= '  --rg-platform \"' .LoadConfig::getParam($rH_cfg, 'align','platform') .'\"';
-    $BTCommand .= '  --rg-platform-unit \"' .$rH_laneInfo->{'lane'} .'\"';
-    $BTCommand .= '  --rg-center \"'. LoadConfig::getParam($rH_cfg, 'align','TBInstitution') .'\"';
-
-    $sai1Command .= ' -t '.LoadConfig::getParam($rH_cfg, 'aln', 'bwaAlnThreads');
-    $sai1Command .= ' '.LoadConfig::getParam($rH_cfg, 'aln', 'bwaRefIndex');
-    $sai1Command .= ' '.$pair1;
-    $sai1Command .= ' -f '.$outputSai1Name;
-    push(@commands, $sai1Command);
-    
-    $sai2Command .= 'module load mugqic/bwa/0.22 ; bwa aln';
-    $sai2Command .= ' -t '.LoadConfig::getParam($rH_cfg, 'aln', 'bwaAlnThreads');
-    $sai2Command .= ' '.LoadConfig::getParam($rH_cfg, 'aln', 'bwaRefIndex');
-    $sai2Command .= ' '.$pair2;
-    $sai2Command .= ' -f '.$outputSai2Name;
-    push(@commands, $sai2Command);
-    
-    my $rgId = $rH_laneInfo->{'libraryBarcode'}."_".$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'};
-    my $rgTag = '@RG\tID:'.$rgId.'\tSM:'.$rH_laneInfo->{'name'}.'\tLB:'.$rH_laneInfo->{'libraryBarcode'}.'\tPU:run'.$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'}.'\tCN:'.LoadConfig::getParam($rH_cfg, 'aln', 'bwaInstitution').'\tPL:Illumina';
-    $bwaCommand .= 'module load mugqic/bwa/0.22 ;module load mugqic/picard/1.77 ; bwa sampe';
-    $bwaCommand .= ' -r '.$rgTag;
-    $bwaCommand .= ' '.LoadConfig::getParam($rH_cfg, 'aln', 'bwaRefIndex');
-    $bwaCommand .= ' '.$outputSai1Name;
-    $bwaCommand .= ' '.$outputSai2Name;
-    $bwaCommand .= ' '.$pair1;
-    $bwaCommand .= ' '.$pair2;
-    $bwaCommand .= ' | java -Xmx'.LoadConfig::getParam($rH_cfg, 'aln', 'sortSamRam').' -jar ${PICARD_HOME}/SortSam.jar INPUT=/dev/stdin CREATE_INDEX=true VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate';
-    $bwaCommand .= ' OUTPUT='.$outputBAM;
-    $bwaCommand .= ' MAX_RECORDS_IN_RAM='.LoadConfig::getParam($rH_cfg, 'aln', 'sortSamRecInRam');
-    push(@commands, $bwaCommand);
+    $BTCommand .= ' --rg-platform \"' .LoadConfig::getParam($rH_cfg, 'align','platform') .'\"';
+    $BTCommand .= ' --rg-platform-unit \"' .$rH_laneInfo->{'lane'} .'\"';
+    $BTCommand .= ' --rg-center \"'. LoadConfig::getParam($rH_cfg, 'align','TBInstitution') .'\"';
+    $BTCommand .= ' --rg-sample '. $sampleName;
+    $BTCommand .= ' --rg-platform ' .$rH_laneInfo->{'runId'};
+    $BTCommand .= ' --library-type '. LoadConfig::getParam($rH_cfg, 'align','strandInfo');
+    $BTCommand .= ' --fusion-search '. LoadConfig::getParam($rH_cfg, 'align','fusionOption');
+    $BTCommand .= ' -o ' .$laneDirectory;
+    $BTCommand .= ' -p '. LoadConfig::getParam($rH_cfg, 'align','TBAlnThreads') .' -G '. LoadConfig::getParam($rH_cfg, 'align','referenceGtf');
+    $BTCommand .= ' '. LoadConfig::getParam($rH_cfg, 'align','referenceFasta');
+    $BTCommand .= ' '. $pair1 .' '. $pair2;
+    $commands= $BTCommand;
   }
 
-  return \@commands;
+  return $commands;
 }
 
 sub singleCommand {
@@ -123,37 +107,34 @@ sub singleCommand {
   my $rH_laneInfo = shift;
   my $single      = shift;
 
-  my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
-  my $outputSaiName = $laneDirectory . $sampleName.'.single.sai';
-  my $outputBAM = $laneDirectory . $sampleName.'.sorted.bam';
+  my $laneDirectory = "alignment/" . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
+  my $outputBAM = $laneDirectory . 'accepted_hits.bam';
   my $bamFileDate = -M $outputBAM;
 
-  my @commands;
-  if ($bamFileDate < -M $single) {
-    my $saiCommand = "";
-    my $bwaCommand = "";
+  my $commands;
+  if (!defined($bamFileDate) || !defined(-M $pair1) || !defined(-M $pair2) || $bamFileDate < -M $pair1 || $bamFileDate < -M $pair2) {
+    my $BTCommand = "";
 
-    $saiCommand .= 'module load mugqic/bwa/0.22 ; bwa aln';
-    $saiCommand .= ' -t '.LoadConfig::getParam($rH_cfg, 'aln', 'bwaAlnThreads');
-    $saiCommand .= ' '.LoadConfig::getParam($rH_cfg, 'aln', 'bwaRefIndex');
-    $saiCommand .= ' '.$single;
-    $saiCommand .= ' -f '.$outputSaiName;
-    push(@commands, $saiCommand);
-    
-    my $rgId = $rH_laneInfo->{'libraryBarcode'}."_".$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'};
-    my $rgTag = '@RG\tID:'.$rgId.'\tSM:'.$rH_laneInfo->{'name'}.'\tLB:'.$rH_laneInfo->{'libraryBarcode'}.'\tPU:run'.$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'}.'\tCN:'.LoadConfig::getParam($rH_cfg, 'aln', 'bwaInstitution').'\tPL:Illumina';
-    $bwaCommand .= 'module load mugqic/bwa/0.22 ;module load mugqic/picard/1.77 ; bwa samse';
-    $bwaCommand .= ' -r '.$rgTag;
-    $bwaCommand .= ' '.LoadConfig::getParam($rH_cfg, 'aln', 'bwaRefIndex');
-    $bwaCommand .= ' '.$outputSaiName;
-    $bwaCommand .= ' '.$single;
-    $bwaCommand .= ' | java -Xmx'.LoadConfig::getParam($rH_cfg, 'aln', 'sortSamRam').' -jar ${PICARD_HOME}/SortSam.jar INPUT=/dev/stdin CREATE_INDEX=true VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate';
-    $bwaCommand .= ' OUTPUT='.$outputBAM;
-    $bwaCommand .= ' MAX_RECORDS_IN_RAM='.LoadConfig::getParam($rH_cfg, 'aln', 'sortSamRecInRam');
-    push(@commands, $bwaCommand);
+    $BTCommand .= 'module load ' .LoadConfig::getParam($rH_cfg, 'align','bowtieModule') .' ;'; 
+    $BTCommand .= '  module load ' .LoadConfig::getParam($rH_cfg, 'align','bowtieModule') .' ;'; 
+    $BTCommand .= ' tophat';
+    $BTCommand .= ' --rg-library \"' . $rH_laneInfo->{'libraryBarcode'} .'\"';
+    $BTCommand .= ' --rg-platform \"' .LoadConfig::getParam($rH_cfg, 'align','platform') .'\"';
+    $BTCommand .= ' --rg-platform-unit \"' .$rH_laneInfo->{'lane'} .'\"';
+    $BTCommand .= ' --rg-center \"'. LoadConfig::getParam($rH_cfg, 'align','TBInstitution') .'\"';
+    $BTCommand .= ' --rg-sample '. $sampleName;
+    $BTCommand .= ' --rg-platform ' .$rH_laneInfo->{'runId'};
+    $BTCommand .= ' --library-type '. LoadConfig::getParam($rH_cfg, 'align','strandInfo');
+    $BTCommand .= ' --fusion-search '. LoadConfig::getParam($rH_cfg, 'align','fusionOption');
+    $BTCommand .= ' -o ' .$laneDirectory;
+    $BTCommand .= ' -p '. LoadConfig::getParam($rH_cfg, 'align','TBAlnThreads') .' -G '. LoadConfig::getParam($rH_cfg, 'align','referenceGtf');
+    $BTCommand .= ' '. LoadConfig::getParam($rH_cfg, 'align','referenceFasta');
+    $BTCommand .= ' '. $single;
+    $commands= $BTCommand;
   }
 
-  return \@commands;
+  return $commands;
 }
+ 
 
 1;

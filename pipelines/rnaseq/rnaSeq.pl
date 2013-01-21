@@ -161,7 +161,7 @@ sub trimming {
     my $trimJobIdVarNameLane=undef;
     if(length($rH_trimDetails->{'command'}) > 0) {
       $trimJobIdVarNameLane = SubmitToCluster::printSubmitCmd($rH_cfg, "trim", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'TRIM', undef, $sampleName, $rH_trimDetails->{'command'}, $workDirectory);
-      $trimJobIdVarNameSample .= '$'.$trimJobIdVarNameLane.':';
+      $trimJobIdVarNameSample .= '$'.$trimJobIdVarNameLane .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
       #TODO calcReadCounts.sh
     }
    }
@@ -177,33 +177,24 @@ sub aligning {
   my $rAoH_sampleLanes  = shift;
   my $rAoH_seqDictionary = shift;
 
-  my $alignmentJobIdVarNameSample = undef;
+  my $alignJobIdVarNameSample = undef;
   my $jobDependency = undef;
   if($depends > 0) {
     $jobDependency = $globalDep{'trimming'}{$sampleName};
   }
-    my $rA_commands = Tophat::aln($rH_cfg, $sampleName, $rH_laneInfo, $rH_trimDetails->{'pair1'}, $rH_trimDetails->{'pair2'}, $rH_trimDetails->{'single1'}, $rH_trimDetails->{'single2'});
-    if(@{$rA_commands} == 3) {
-      my $read1JobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'read1.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READ1ALN', $trimJobIdVarName, $sampleName, $rA_commands->[0]);
-      $read1JobId = '$'.$read1JobId;
-      my $read2JobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'read2.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READ2ALN', $trimJobIdVarName, $sampleName, $rA_commands->[1]);
-      $read2JobId = '$'.$read2JobId;
-      my $bwaJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'sampe.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA', $read1JobId.LoadConfig::getParam($rH_cfg, 'aln', 'clusterDependencySep').$read2JobId, $sampleName, $rA_commands->[2]);
-      $bwaJobId = '$'.$bwaJobId;
-      print 'BWA_JOB_IDS=${BWA_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'aln', 'clusterDependencySep').$bwaJobId."\n";
-    }
-    else {
-      my $readJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READALN', $trimJobIdVarName, $sampleName, $rA_commands->[0]);
-      $readJobId = '$'.$readJobId;
-      my $bwaJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'samse.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA',  $readJobId, $sampleName, $rA_commands->[1]);
-      $bwaJobId = '$'.$bwaJobId;
-      print 'BWA_JOB_IDS=${BWA_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$bwaJobId."\n";
+  for my $rH_laneInfo (@$rAoH_sampleLanes) {
+    my $alignJobIdVarNameLane=undef;
+    my $commands = Tophat::aln($rH_cfg, $sampleName, $rH_laneInfo, $rH_trimDetails->{'pair1'}, $rH_trimDetails->{'pair2'}, $rH_trimDetails->{'single1'}, $rH_trimDetails->{'single2'});
+    if(defined $commands){
+      my $alignJobIdVarNameLane = SubmitToCluster::printSubmitCmd($rH_cfg, "align", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'ALIGN', $jobDependency, $sampleName, $commands);
+      $alignJobIdVarNameSample .= '$'. $alignJobIdVarNameLane .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep'); 
     } 
+    $alignJobIdVarNameSample = substr $alignJobIdVarNameSample 0 -1;
   }
-  return '$BWA_JOB_IDS';
+  return $alignJobIdVarNameSample;
 }
 
-sub mergeLanes {
+sub merging {
   my $depends = shift;
   my $rH_cfg = shift;
   my $sampleName = shift;
@@ -212,13 +203,13 @@ sub mergeLanes {
 
   my $jobDependency = undef;
   if($depends > 0) {
-    $jobDependency = '$BWA_JOB_IDS';
+    $jobDependency = $globalDep{'aligning'}{$sampleName};
   }
 
   my $command = Picard::merge($rH_cfg, $sampleName, $rAoH_sampleLanes);
   my $mergeJobId = undef;
   if(defined($command) && length($command) > 0) {
-    $mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "merge", undef, 'MERGELANES', $jobDependency, $sampleName, $command);
+    $mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "merging", undef, 'MERGELANES', $jobDependency, $sampleName, $command);
   }
   return $mergeJobId;
 }
