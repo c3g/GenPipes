@@ -34,9 +34,10 @@ B<Data::Dumper> Used to debbug
 package  LoadModules;
 
 # Strict Pragmas
-#-------------------------- 
+#--------------------------
 use strict;
 use warnings;
+
 #--------------------------
 
 # Dependencies
@@ -44,20 +45,19 @@ use warnings;
 use Data::Dumper;
 use Pod::Usage;
 
-
 # SUB
 #-----------------------
-sub getModules{
-	my ($self,$file)=@_;
-	my @modules;
-	
-	open (IN, $file) || die "could not open $file, $!\n";
-	while (<IN>){
-		chomp;
-		push(@modules, "module add $_\n");
-		
-	}
-	return @modules;
+sub getModules {
+    my ( $self, $file ) = @_;
+    my @modules;
+
+    open( IN, $file ) || die "could not open $file, $!\n";
+    while (<IN>) {
+        chomp;
+        push( @modules, "module add $_\n" );
+
+    }
+    return @modules;
 }
 
 1;
