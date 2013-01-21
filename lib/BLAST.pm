@@ -77,13 +77,14 @@ sub align {
     $sampleName  = shift;
     $rH_laneInfo = shift;
     $fileFasta   = shift;
-    
-	my $db          = shift;
-	# option used if more than one db was specified on the config file.
-	# In this case $db should be passed as an argument
-	#-----------------------------------------------------------------
-	$rH_cfg->{'blast.db'} = defined ($db) ? $db : $rH_cfg->{'blast.db'}; 
-	
+
+    my $db = shift;
+
+    # option used if more than one db was specified on the config file.
+    # In this case $db should be passed as an argument
+    #-----------------------------------------------------------------
+    $rH_cfg->{'blast.db'} = defined($db) ? $db : $rH_cfg->{'blast.db'};
+
     my $outFile = $fileFasta;
     $outFile =~ s/\*_//;
     my $command = '';
@@ -107,13 +108,14 @@ sub alignParallel {
     $sampleName  = shift;
     $rH_laneInfo = shift;
     $fileFasta   = shift;
-    
-	my $db          = shift;
-	# option used if more than one db was specified on the config file.
-	# In this case $db should be passed as an argument
-	#------------------------------------------------------------------
-	$rH_cfg->{'blast.db'} = defined ($db) ? $db : $rH_cfg->{'blast.db'};
-	
+
+    my $db = shift;
+
+    # option used if more than one db was specified on the config file.
+    # In this case $db should be passed as an argument
+    #------------------------------------------------------------------
+    $rH_cfg->{'blast.db'} = defined($db) ? $db : $rH_cfg->{'blast.db'};
+
     my $outFile = $fileFasta;
     $outFile =~ s/\*_//;
     my $command = '';
@@ -132,32 +134,31 @@ sub alignParallel {
 
 }
 
-sub bestHit{
-	$rH_cfg      = shift;
+sub bestHit {
+    $rH_cfg      = shift;
     $sampleName  = shift;
     $rH_laneInfo = shift;
-	
-	my $db          = shift;
-	# option used if more than one db was specified on the config file.
-	# In this case $db should be passed as an argument
-	#------------------------------------------------------------------
-	$rH_cfg->{'blast.db'} = defined ($db) ? $db : $rH_cfg->{'blast.db'};
-	my $command = '';
+
+    my $db = shift;
+
+    # option used if more than one db was specified on the config file.
+    # In this case $db should be passed as an argument
+    #------------------------------------------------------------------
+    $rH_cfg->{'blast.db'} = defined($db) ? $db : $rH_cfg->{'blast.db'};
+    my $command = '';
     my %retVal;
-    
-	my $laneDirectory = "assembly/" . $sampleName . "/";
-    $command .= 'cat ' . $laneDirectory . 'fasta_split/' .  $rH_cfg->{'blast.db'} . '/' . '*.txt ';
-    $command .= ' >' . $laneDirectory . 'fasta_split/' .  $rH_cfg->{'blast.db'} . '/blastRes.txt ;';  
-    $command .= ' sh ' . $rH_cfg->{'blast.blastHq'} . ' '.  $laneDirectory .  'fasta_split/' .  $rH_cfg->{'blast.db'} . '/blastRes.txt '; 
-    $command .= ' >' . $laneDirectory . 'fasta_split/' .  $rH_cfg->{'blast.db'} . '/blastRes_HQ.txt ;'; 
-    $command .= ' ' . $rH_cfg->{'blast.BestHit'} . ' '. $laneDirectory .  'fasta_split/' .  $rH_cfg->{'blast.db'} . '/blastRes_HQ.txt ' ;
-    $command .= ' >' . $laneDirectory . 'fasta_split/' .  $rH_cfg->{'blast.db'} . '/blast_BestHit.txt ;';
-    
-    
+
+    my $laneDirectory = "assembly/" . $sampleName . "/";
+    $command .= 'cat ' . $laneDirectory . 'fasta_split/' . $rH_cfg->{'blast.db'} . '/' . '*.txt ';
+    $command .= ' >' . $laneDirectory . 'fasta_split/' . $rH_cfg->{'blast.db'} . '/blastRes.txt ;';
+    $command .= ' sh ' . $rH_cfg->{'blast.blastHq'} . ' ' . $laneDirectory . 'fasta_split/' . $rH_cfg->{'blast.db'} . '/blastRes.txt ';
+    $command .= ' >' . $laneDirectory . 'fasta_split/' . $rH_cfg->{'blast.db'} . '/blastRes_HQ.txt ;';
+    $command .= ' ' . $rH_cfg->{'blast.BestHit'} . ' ' . $laneDirectory . 'fasta_split/' . $rH_cfg->{'blast.db'} . '/blastRes_HQ.txt ';
+    $command .= ' >' . $laneDirectory . 'fasta_split/' . $rH_cfg->{'blast.db'} . '/blast_BestHit.txt ;';
+
     $retVal{'command'} = $command;
     return ( \%retVal );
 }
-
 
 1;
 
