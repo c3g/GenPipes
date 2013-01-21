@@ -59,33 +59,27 @@ sub matrixMake{
     $rH_cfg      = shift;
     $sampleName  = shift;
     $rH_laneInfo = shift;
-	$readFile      = shift;
 	$group         = shift;
-    my $rH_retVal;
-    if ( $rH_laneInfo->{'runType'} eq "SINGLE_END" ) {
-        $rH_retVal = _singleCommand();
-    }
-    elsif ( $rH_laneInfo->{'runType'} eq "PAIRED_END" ) {
-        $rH_retVal = _pairCommand();
-    }
-    else {
-        die "Unknown runType: " . $rH_laneInfo->{' runType '} . "\n";
-    }
-
-    return $rH_retVal;
+	
+	my $db          = shift; # blast database
+	# option used if more than one db was specified on the config file.
+	# In this case $db should be passed as an argument
+	#------------------------------------------------------------------
+	$rH_cfg->{'blast.db'} = defined ($db) ? $db : $rH_cfg->{'blast.db'};
+	
+    my %retVal;
+    my $command = '';
+    my $laneDirectory = "read_count/" . $group.  "/";
+    
+    $command .= ' sh ' . $rH_cfg->{'htseq.tempMatrix'} . ' ' . 'alignment/' . $group . '/' . $group . '.gtf' ;
+    $command .= ' ' . 'assembly/'. $group . '/fasta_split/' .  $rH_cfg->{'blast.db'} . '/blast_BestHit.txt ' ;
+    $command .= ' ' . $laneDirectory . 'tmpmatrix.csv ;';
+    $command .= ' sh ' . $rH_cfg->{'htseq.fullMatrix'} . ' '. $laneDirectory. ' ;';
+    $command .= ' cp ' . $laneDirectory . 'tmpmatrix.csv DGE/' . $group . '/matrix.csv ;' ; 
+    
+    $retVal{'command'} = $command;
+	return ( \%retVal );
 }
-
-
-
-sub _singleCommand{
-	next;
-}
-
-
-sub _pairCommand{
-	next;
-}
-
 
 sub readCount{
 	$rH_cfg      = shift;
@@ -95,12 +89,12 @@ sub readCount{
 	
 	my %retVal;
 	my $command = '';
-	my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/stats" . $group . "/";
+	my $laneDirectory = "read_count/" . $group .  "/";
 	
 	$command .= ' module add mugqic/samtools/0.1.6; ';
-	$command .= ' samtools view ' . $laneDirectory . 'alignment/' . $group . '/' . $sampleName . '.QueryName.bam | ' ;
-	$command .= ' htseq-count - ' .  $laneDirectory . 'assembly/' . $group . '/' . $group . '.gtf ' ;
-	$command .= ' -s no >' . $laneDirectory . 'read_counts/' . $group . '/' . $sampleName . '.readcount.cvs' ;
+	$command .= ' samtools view ' . $laneDirectory . $sampleName . '.QueryName.bam | ' ;
+	$command .= ' htseq-count - ' . 'alignment/' . $group . '/' . $group . '.gtf ' ;
+	$command .= ' -s no >' . $laneDirectory .  $sampleName . '.readcount.cvs' ;
 	
 	$retVal{'command'} = $command;
 	return ( \%retVal );
@@ -115,15 +109,15 @@ sub sortRead{
 	
 	my %retVal;
 	my $command = '';
-	my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/stats" . $group . "/";
+	my $laneDirectory = "alignment/" . $group . "/";
 	
-	$command .= ' mkdir -p ' . $laneDirectory . 'read_counts/ ;' ;	
-	$command .= ' mkdir -p ' . $laneDirectory . 'DGE/ ;' ;	
+	$command .= ' mkdir -p  read_count/' . $group. ' ;' ;	
+	$command .= ' mkdir -p  DGE/' . $group . ';' ;	
 	$command .= ' module add jdk64 ; module add mugqic/picard/1.64/ ; ';
 	$command .= ' java -Xmx30g -jar SortSam.jar ';
 	$command .= ' VALIDATION_STRINGENCY=SILENT MAX_RECORDS_IN_RAM=5000000 CREATE_INDEX=true TMP_DIR=/mnt/scratch_mp2/bourque/bourque_group/tmpDir/ ';
-	$command .= ' INPUT=' . $laneDirectory . 'alignment/' . $group . '/' . $sampleName . '.sorted.bam ' ;
-	$command .= ' OUTPUT=' . $laneDirectory . 'alignment/' . $group . '/' . $sampleName . '.QueryName.bam ' ;
+	$command .= ' INPUT=' . $laneDirectory .  $sampleName . '.sorted.bam ' ;
+	$command .= ' OUTPUT=read_count/' . $group . '/'.  $sampleName . '.QueryName.bam ' ;
 	$command .= ' SORT_ORDER=queryname ';
 	
 	$retVal{'command'} = $command;
