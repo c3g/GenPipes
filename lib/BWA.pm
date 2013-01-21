@@ -129,11 +129,11 @@ sub singleCommand {
   my $rH_laneInfo = shift;
   my $single      = shift;
   my $optOutputTag= shift;
-
+  my $group       = shift;
   if(!defined($optOutputTag)) {
     $optOutputTag = "";
   }
-  my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
+  my $laneDirectory = "alignment/" . $group;
   my $outputSaiName = $laneDirectory . $sampleName.'.single.sai';
   my $outputBAM = $laneDirectory . $sampleName.$optOutputTag.'.sorted.bam';
   my $bamFileDate = -M $outputBAM;
@@ -146,7 +146,7 @@ sub singleCommand {
 
     $saiCommand .= 'module load mugqic/bwa/0.6.2 ; bwa aln';
     $saiCommand .= ' -t '.LoadConfig::getParam($rH_cfg, 'aln', 'bwaAlnThreads');
-    $saiCommand .= ' '.LoadConfig::getParam($rH_cfg, 'aln', 'bwaRefIndex');
+    $saiCommand .= ' '. $laneDirectory .LoadConfig::getParam($rH_cfg, 'aln', 'bwaRefIndex');
     $saiCommand .= ' '.$single;
     $saiCommand .= ' -f '.$outputSaiName;
     push(@commands, $saiCommand);
@@ -155,7 +155,7 @@ sub singleCommand {
     my $rgTag = "'".'@RG\tID:'.$rgId.'\tSM:'.$rH_laneInfo->{'name'}.'\tLB:'.$rH_laneInfo->{'libraryBarcode'}.'\tPU:run'.$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'}.'\tCN:'.LoadConfig::getParam($rH_cfg, 'aln', 'bwaInstitution').'\tPL:Illumina'."'";
     $bwaCommand .= 'module load mugqic/bwa/0.6.2 ;module load mugqic/picard/1.77 ; bwa samse';
     $bwaCommand .= ' -r '.$rgTag;
-    $bwaCommand .= ' '.LoadConfig::getParam($rH_cfg, 'aln', 'bwaRefIndex');
+    $bwaCommand .= ' '. $laneDirectory .LoadConfig::getParam($rH_cfg, 'aln', 'bwaRefIndex');
     $bwaCommand .= ' '.$outputSaiName;
     $bwaCommand .= ' '.$single;
     $bwaCommand .= ' | java -Xmx'.LoadConfig::getParam($rH_cfg, 'aln', 'sortSamRam').' -jar \${PICARD_HOME}/SortSam.jar INPUT=/dev/stdin CREATE_INDEX=true VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate';
