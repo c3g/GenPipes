@@ -61,7 +61,7 @@ sub mergeFiles {
 
     $runType = ( $runType eq "PAIRED_END" ) ? 1 : 0;
 
-    my $mergeStatus = `$rH_cfg->{'python.merge'} -f $fileAlias -d $runType -o $outDir`;
+    my $mergeStatus = `$rH_cfg->{'merge.python'} -f $fileAlias -d $runType -o $outDir`;
     if ( $mergeStatus == 0 ) {
 
         #---------------------------------------
