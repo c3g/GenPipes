@@ -185,8 +185,8 @@ sub aligning {
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
     my $alignJobIdVarNameLane=undef;
     my $commands = Tophat::aln($rH_cfg, $sampleName, $rH_laneInfo, $rH_trimDetails->{'pair1'}, $rH_trimDetails->{'pair2'}, $rH_trimDetails->{'single1'}, $rH_trimDetails->{'single2'});
-    if(defined $commands){
-      my $alignJobIdVarNameLane = SubmitToCluster::printSubmitCmd($rH_cfg, "align", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'ALIGN', $jobDependency, $sampleName, $commands);
+    if(defined $commands && length($command) > 0){
+      my $alignJobIdVarNameLane = SubmitToCluster::printSubmitCmd($rH_cfg, "align", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'ALIGN', $jobDependency, $sampleName, $commands, $workDirectory);
       $alignJobIdVarNameSample .= '$'. $alignJobIdVarNameLane .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep'); 
     } 
     $alignJobIdVarNameSample = substr $alignJobIdVarNameSample 0 -1;
@@ -205,8 +205,14 @@ sub merging {
   if($depends > 0) {
     $jobDependency = $globalDep{'aligning'}{$sampleName};
   }
-
-  my $command = Picard::merge($rH_cfg, $sampleName, $rAoH_sampleLanes);
+  
+  my $outputBAM = "alignment/" . $sampleName . "/" . $sampleName . ".merged.bam" 
+  my @alignFiles;
+  for my $rH_laneInfo (@$rAoH_sampleLanes) {
+    my $laneDirectory = "alignment/" . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
+    my $inputBAM = $laneDirectory . 'accepted_hits.bam';
+    push(@alignFiles, $inputBAM) ;
+  my $command = Picard::mergeFiles($rH_cfg, $sampleName, $rAoH_sampleLanes, $outputBAM);
   my $mergeJobId = undef;
   if(defined($command) && length($command) > 0) {
     $mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "merging", undef, 'MERGELANES', $jobDependency, $sampleName, $command);
@@ -214,7 +220,7 @@ sub merging {
   return $mergeJobId;
 }
 
-sub indelRealigner {
+sub metrics {
   my $depends = shift;
   my $rH_cfg = shift;
   my $sampleName = shift;
