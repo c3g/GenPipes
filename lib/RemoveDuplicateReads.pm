@@ -77,27 +77,27 @@ sub _pairCommand {
     my $minQuality = $rH_cfg->{'trim.minQuality'};
     my $minLength  = $rH_cfg->{'trim.minLength'};
 
-    my $command       = '';
-    my $laneDirectory =  "reads/";
-    my $inputFastqPair1Name = $laneDirectory . $sampleName . '.t' . $minQuality . 'l' . $minLength .  '.pair1.fastq.gz';
-    my $inputFastqPair2Name = $laneDirectory . $sampleName . '.t' . $minQuality . 'l' . $minLength .  '.pair2.fastq.gz';
+    my $command             = '';
+    my $laneDirectory       = "reads/";
+    my $inputFastqPair1Name = $laneDirectory . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.pair1.fastq.gz';
+    my $inputFastqPair2Name = $laneDirectory . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.pair2.fastq.gz';
     my $outputFastqPair1Name = $laneDirectory . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.pair1.dup.fastq.gz';
     my $outputFastqPair2Name = $laneDirectory . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.pair2.dup.fastq.gz';
-	my $pair1FileDate = -M $outputFastqPair1Name;
- 	my $pair2FileDate = -M $outputFastqPair2Name;
- 	
- 	my $currentFileDate = $pair2FileDate;
-  	if(defined($pair1FileDate) && $pair1FileDate > $pair2FileDate) {
-    	 $currentFileDate = $pair1FileDate;
-  	}
-	
-	if (!defined($currentFileDate) || $currentFileDate > -M $rH_laneInfo->{'read1File'}) {
-    $command .= 'module add jdk;';
-    $command .= ' ' . $rH_cfg->{'duplicate.javaProgram'} . ' -i ' . $inputFastqPair1Name . ' -i2 ' . $inputFastqPair2Name;
-    $command .= ' -k 20 -o 15;';
-    $command .= ' mv ' . $laneDirectory . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.pair1.fastq.gz.dup.read1.gz ' . $outputFastqPair1Name . ';';
-    $command .= ' mv ' . $laneDirectory . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.pair2.fastq.gz.dup.read1.gz ' . $outputFastqPair2Name . ';';
-	}
+    my $pair1FileDate = -M $outputFastqPair1Name;
+    my $pair2FileDate = -M $outputFastqPair2Name;
+
+    my $currentFileDate = $pair2FileDate;
+    if ( defined($pair1FileDate) && $pair1FileDate > $pair2FileDate ) {
+        $currentFileDate = $pair1FileDate;
+    }
+
+    if ( !defined($currentFileDate) || $currentFileDate > -M $rH_laneInfo->{'read1File'} ) {
+        $command .= 'module add jdk;';
+        $command .= ' ' . $rH_cfg->{'duplicate.javaProgram'} . ' -i ' . $inputFastqPair1Name . ' -i2 ' . $inputFastqPair2Name;
+        $command .= ' -k 20 -o 15;';
+        $command .= ' mv ' . $laneDirectory . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.pair1.fastq.gz.dup.read1.gz ' . $outputFastqPair1Name . ';';
+        $command .= ' mv ' . $laneDirectory . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.pair2.fastq.gz.dup.read1.gz ' . $outputFastqPair2Name . ';';
+    }
     $retVal{'command'} = $command;
     $retVal{'pair1'}   = $outputFastqPair1Name;
     $retVal{'pair2'}   = $outputFastqPair2Name;
@@ -111,18 +111,18 @@ sub _singleCommand {
     my $minQuality = $rH_cfg->{'trim.minQuality'};
     my $minLength  = $rH_cfg->{'trim.minLength'};
 
-    my $command       = '';
-    my $laneDirectory =  "reads/";
-    my $inputFastqName = $laneDirectory . $sampleName . '.t' . $minQuality . 'l' . $minLength .  '.single.fastq.gz';
+    my $command         = '';
+    my $laneDirectory   = "reads/";
+    my $inputFastqName  = $laneDirectory . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.single.fastq.gz';
     my $outputFastqName = $laneDirectory . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.single.dup.fastq.gz';
-	my $currentFileDate = -M $outputFastqName;
-	
-	if ($currentFileDate > -M $rH_laneInfo->{'read1File'}) {
-    $command .= 'module add jdk;';
-    $command .= ' ' . $rH_cfg->{'duplicate.javaProgram'} . ' -i ' . $inputFastqName;
-    $command .= ' -k 20 -o 15;';
-    $command .= ' mv ' . $laneDirectory . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.single.fastq.gz.dup.read1.gz ' . $outputFastqName . ';';
-	}
+    my $currentFileDate = -M $outputFastqName;
+
+    if ( $currentFileDate > -M $rH_laneInfo->{'read1File'} ) {
+        $command .= 'module add jdk;';
+        $command .= ' ' . $rH_cfg->{'duplicate.javaProgram'} . ' -i ' . $inputFastqName;
+        $command .= ' -k 20 -o 15;';
+        $command .= ' mv ' . $laneDirectory . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.single.fastq.gz.dup.read1.gz ' . $outputFastqName . ';';
+    }
     $retVal{'command'} = $command;
     $retVal{'single1'} = $outputFastqName;
 
