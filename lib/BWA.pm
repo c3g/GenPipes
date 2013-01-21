@@ -50,14 +50,14 @@ sub aln {
   my $single1       = shift;
   my $single2       = shift;
   my $optOutputTag  = shift;
-
+  my $group         = shift;
   my $command = "";
 
   if ( $rH_laneInfo->{'runType'} eq "SINGLE_END" ) {
-    $command = singleCommand($rH_cfg, $sampleName, $rH_laneInfo, $single1, $optOutputTag);
+    $command = singleCommand($rH_cfg, $sampleName, $rH_laneInfo, $single1, $optOutputTag, $group);
   }
   elsif($rH_laneInfo->{'runType'} eq "PAIRED_END") {
-    $command = pairCommand($rH_cfg, $sampleName, $rH_laneInfo, $pair1, $pair2, $optOutputTag);
+    $command = pairCommand($rH_cfg, $sampleName, $rH_laneInfo, $pair1, $pair2, $optOutputTag, $group);
   }
   else {
     die "Unknown runType: ".$rH_laneInfo->{' runType '}."\n";
@@ -73,11 +73,12 @@ sub pairCommand {
   my $pair1       = shift;
   my $pair2       = shift;
   my $optOutputTag= shift;
-
+  my $group          = shift;  # Variable used by deNovoAssembly pipeline   
+    
   if(!defined($optOutputTag)) {
     $optOutputTag = "";
   }
-  my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
+  my $laneDirectory = "alignment/" . $group;
   my $outputSai1Name = $laneDirectory . $sampleName.'.pair1.sai';
   my $outputSai2Name = $laneDirectory . $sampleName.'.pair2.sai';
   my $outputBAM = $laneDirectory . $sampleName.$optOutputTag.'.sorted.bam';
@@ -92,14 +93,14 @@ sub pairCommand {
 
     $sai1Command .= 'module load mugqic/bwa/0.6.2 ; bwa aln';
     $sai1Command .= ' -t '.LoadConfig::getParam($rH_cfg, 'aln', 'bwaAlnThreads');
-    $sai1Command .= ' '.LoadConfig::getParam($rH_cfg, 'aln', 'bwaRefIndex');
+    $sai1Command .= ' '. $laneDirectory . LoadConfig::getParam($rH_cfg, 'aln', 'bwaRefIndex');
     $sai1Command .= ' '.$pair1;
     $sai1Command .= ' -f '.$outputSai1Name;
     push(@commands, $sai1Command);
     
     $sai2Command .= 'module load mugqic/bwa/0.6.2 ; bwa aln';
     $sai2Command .= ' -t '.LoadConfig::getParam($rH_cfg, 'aln', 'bwaAlnThreads');
-    $sai2Command .= ' '.LoadConfig::getParam($rH_cfg, 'aln', 'bwaRefIndex');
+    $sai2Command .= ' ' . $laneDirectory . LoadConfig::getParam($rH_cfg, 'aln', 'bwaRefIndex');
     $sai2Command .= ' '.$pair2;
     $sai2Command .= ' -f '.$outputSai2Name;
     push(@commands, $sai2Command);
@@ -108,7 +109,7 @@ sub pairCommand {
     my $rgTag = "'".'@RG\tID:'.$rgId.'\tSM:'.$rH_laneInfo->{'name'}.'\tLB:'.$rH_laneInfo->{'libraryBarcode'}.'\tPU:run'.$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'}.'\tCN:'.LoadConfig::getParam($rH_cfg, 'aln', 'bwaInstitution').'\tPL:Illumina'."'";
     $bwaCommand .= 'module load mugqic/bwa/0.6.2 ;module load mugqic/picard/1.77 ; bwa sampe';
     $bwaCommand .= ' -r '.$rgTag;
-    $bwaCommand .= ' '.LoadConfig::getParam($rH_cfg, 'aln', 'bwaRefIndex');
+    $bwaCommand .= ' '. $laneDirectory . LoadConfig::getParam($rH_cfg, 'aln', 'bwaRefIndex');
     $bwaCommand .= ' '.$outputSai1Name;
     $bwaCommand .= ' '.$outputSai2Name;
     $bwaCommand .= ' '.$pair1;
@@ -171,7 +172,7 @@ sub index{
 	my $sampleName  = shift;
 	my $rH_laneInfo = shift;
 	
-	my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
+	my $laneDirectory = "assembly/" . $sampleName . "/";
     my %retVal;
     
     my $command = 'module add mugqic/bwa/0.6.2;';
