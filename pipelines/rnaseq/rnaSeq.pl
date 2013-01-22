@@ -71,11 +71,11 @@ my @steps;
 push(@steps, {'name' => 'trimming' , 'stepLoop' => 'sample' , 'output' => 'reads'});
 push(@steps, {'name' => 'aligning' , 'stepLoop' => 'sample' , 'output' => 'alignment'});
 push(@steps, {'name' => 'merging' , 'stepLoop' => 'sample' , 'output' => 'alignment'});
-push(@steps, {'name' => 'metrics' , 'stepLoop' => 'sample' , 'output' => 'stats'});
 push(@steps, {'name' => 'wiggle' , 'stepLoop' => 'sample' , 'output' => 'tracks'});
 push(@steps, {'name' => 'rawCounts' , 'stepLoop' => 'sample' , 'output' => 'reads_count'});
 push(@steps, {'name' => 'fpkm' , 'stepLoop' => 'sample' , 'output' => 'fpkm'});
-push(@steps, {'name' => 'saturationRpkm' , 'stepLoop' => 'group' , 'output' => 'reads_count'});
+push(@steps, {'name' => 'metrics' , 'stepLoop' => 'group' , 'output' => 'stats'});
+#push(@steps, {'name' => 'saturationRpkm' , 'stepLoop' => 'group' , 'output' => 'reads_count'}); included in metrics
 push(@steps, {'name' => 'cuffdif' , 'stepLoop' => 'group' , 'output' => 'DGE'});
 push(@steps, {'name' => 'dge' , 'stepLoop' => 'group' , 'output' => 'DGE'});
 push(@steps, {'name' => 'delivrable' , 'stepLoop' => 'group' , 'output' => 'Delivrable'});
@@ -142,7 +142,7 @@ sub main {
        else {
 	SubmitToCluster::initSubmit(\%cfg, $outputLocation);
           # Tests for the first step in the list. Used for dependencies.
-          my $jobIdVar = &$subref($current != ($opts{'s'}-1), \%cfg, undef, undef $rAoH_seqDictionary);
+          my $jobIdVar = &$subref($current != ($opts{'s'}-1), \%cfg, $rHoAoH_sampleInfo, undef $rAoH_seqDictionary);
 	  $globalDep{$fname}{$fname -> {$jobIdVar}};
        }
     }  
@@ -182,6 +182,8 @@ sub aligning {
   if($depends > 0) {
     $jobDependency = $globalDep{'trimming'}{$sampleName};
   }
+  
+  print "mkdir -p alignment\n";
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
     my $alignJobIdVarNameLane=undef;
     my $commands = Tophat::aln($rH_cfg, $sampleName, $rH_laneInfo, $rH_trimDetails->{'pair1'}, $rH_trimDetails->{'pair2'}, $rH_trimDetails->{'single1'}, $rH_trimDetails->{'single2'});
@@ -205,6 +207,54 @@ sub merging {
   if($depends > 0) {
     $jobDependency = $globalDep{'aligning'}{$sampleName};
   }
+
+  ##Merging
+  my $inputBAM ; 
+  my $outputBAM = "alignment/" . $sampleName . "/" . $sampleName . ".merged.bam" 
+  my @alignFiles;
+  for my $rH_laneInfo (@$rAoH_sampleLanes) {
+    my $laneDirectory = "alignment/" . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
+    $inputBAM = $laneDirectory . 'accepted_hits.bam';
+    push(@alignFiles, $inputBAM) ;
+  }
+  my $command = Picard::mergeFiles($rH_cfg, $sampleName, $rAoH_sampleLanes, $outputBAM);
+  my $mergeJobId = undef;
+  if(defined($command) && length($command) > 0) {
+    $mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mergFiles", undef, 'MERGELANES', $jobDependency, $sampleName, $command);
+  }
+  ## reorder
+  $inputBAM = $outputBAM
+  $outputBAM = "alignment/" . $sampleName . "/" . $sampleName . ".merged.karyotypic.bam"
+  $command = Picard::mergeFiles($rH_cfg, $sampleName, $inputBAM, $outputBAM);
+  my $reorderJobId = undef;
+  if(defined($command) && length($command) > 0) {
+    $reorderJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "reorderSam", undef, 'REORDER', $mergeJobId, $sampleName, $command);
+  }
+  ## mark duplicates
+  $inputBAM = $outputBAM
+  $outputBAM = "alignment/" . $sampleName . "/" . $sampleName . ".merged.mdup.bam"
+  my $duplicatesMetricsFile = "alignment/" . $sampleName . "/" . $sampleName . ".merged.mdup.metrics"
+  $command = Picard::markDup($rH_cfg, $sampleName, $inputBAM, $outputBAM);
+  my $markDupJobId = undef;
+  if(defined($command) && length($command) > 0) {
+    $markDupJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "markDup", undef, 'MARKDUP', $reorderJobId, $sampleName, $command);
+  }
+  return $markDupJobId;
+}
+
+
+sub wiggle {
+  my $depends = shift;
+  my $rH_cfg = shift;
+  my $sampleName = shift;
+  my $rAoH_sampleLanes  = shift;
+  my $rAoH_seqDictionary = shift;
+
+  my $jobDependency = undef;
+  if($depends > 0) {
+    $jobDependency = $globalDep{'aligning'}{$sampleName};
+  }
+
   ##Merging
   my $inputBAM ; 
   my $outputBAM = "alignment/" . $sampleName . "/" . $sampleName . ".merged.bam" 
@@ -242,32 +292,38 @@ sub merging {
 sub metrics {
   my $depends = shift;
   my $rH_cfg = shift;
-  my $sampleName = shift;
+  my $rHoAoH_sampleInfo = shift;
   my $rAoH_sampleLanes  = shift;
   my $rAoH_seqDictionary = shift;
 
   my $jobDependency = undef;
   if($depends > 0) {
-    $jobDependency = $globalDep{'merging'}{$sampleName};
+    $jobDependency = join(':',values(%{$globalDep ->{'merging'}}));
   }
-
-  print "mkdir -p $sampleName/realign\n";
-  print "REALIGN_JOB_IDS=\"\"\n";
-  my $processUnmapped = 1;
-  for my $rH_seqInfo (@$rAoH_seqDictionary) {
-    my $seqName = $rH_seqInfo->{'name'};
-    my $command = GATK::realign($rH_cfg, $sampleName, $seqName, $processUnmapped);
-    my $intervalJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "indelRealigner", $seqName, 'REALIGN', $jobDependency, $sampleName, $command);
-    $intervalJobId = '$'.$intervalJobId;
-    print 'REALIGN_JOB_IDS=${REALIGN_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$intervalJobId."\n";
-    if($processUnmapped == 1) {
-      $processUnmapped = 0;
-    }
+  ## RNAseQC metrics
+  print "echo -e \"Sample\tBamFile\tNote\" >  alignment/rnaseqc.samples.txt"
+  for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
+    print 'echo -e \"' .$sampleName .'\talignment/' .$sampleName. '/'. $sampleName .'.merged.mdup.bam\t' .LoadConfig::getParam($rH_cfg, 'metricsRNA', 'projectName'). '\" >>  alignment/rnaseqc.samples.txt'
   }
   
-  return '${REALIGN_JOB_IDS}';
-}
+  print "mkdir -p metrics\n";
+  my $sampleList = "alignment/rnaseqc.samples.txt"
+  my $outputFolder = "metrics"
+  my $command = Metrics::rnaQc($rH_cfg, $sampleList, $outputFolder);
+  my $metricsJobId = undef;
+  if(defined($command) && length($command) > 0) {
+    $metricsJobId= SubmitToCluster::printSubmitCmd($rH_cfg, "metricsRNA", undef, 'METRICSRNA', $jobDependency, undef, $command);
+  }
 
+  ##Saturation
+
+
+  ##sample Correlation
+
+
+  return $metrics;
+}
+  
 
 sub realign {
   print "mkdir -p $sampleName/realign\n";

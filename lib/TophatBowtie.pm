@@ -81,7 +81,7 @@ sub pairCommand {
     my $BTCommand = "";
 
     $BTCommand .= 'module load ' .LoadConfig::getParam($rH_cfg, 'align','bowtieModule') .' ;'; 
-    $BTCommand .= '  module load ' .LoadConfig::getParam($rH_cfg, 'align','bowtieModule') .' ;'; 
+    $BTCommand .= ' module load ' .LoadConfig::getParam($rH_cfg, 'align','bowtieModule') .' ;'; 
     $BTCommand .= ' tophat';
     $BTCommand .= ' --rg-library \"' . $rH_laneInfo->{'libraryBarcode'} .'\"';
     $BTCommand .= ' --rg-platform \"' .LoadConfig::getParam($rH_cfg, 'align','platform') .'\"';
@@ -111,29 +111,26 @@ sub singleCommand {
   my $outputBAM = $laneDirectory . 'accepted_hits.bam';
   my $bamFileDate = -M $outputBAM;
 
-  my $commands;
-  if (!defined($bamFileDate) || !defined(-M $pair1) || !defined(-M $pair2) || $bamFileDate < -M $pair1 || $bamFileDate < -M $pair2) {
-    my $BTCommand = "";
-
-    $BTCommand .= 'module load ' .LoadConfig::getParam($rH_cfg, 'align','bowtieModule') .' ;'; 
-    $BTCommand .= '  module load ' .LoadConfig::getParam($rH_cfg, 'align','bowtieModule') .' ;'; 
-    $BTCommand .= ' tophat';
-    $BTCommand .= ' --rg-library \"' . $rH_laneInfo->{'libraryBarcode'} .'\"';
-    $BTCommand .= ' --rg-platform \"' .LoadConfig::getParam($rH_cfg, 'align','platform') .'\"';
-    $BTCommand .= ' --rg-platform-unit \"' .$rH_laneInfo->{'lane'} .'\"';
-    $BTCommand .= ' --rg-center \"'. LoadConfig::getParam($rH_cfg, 'align','TBInstitution') .'\"';
-    $BTCommand .= ' --rg-sample '. $sampleName;
-    $BTCommand .= ' --rg-platform ' .$rH_laneInfo->{'runId'};
-    $BTCommand .= ' --library-type '. LoadConfig::getParam($rH_cfg, 'align','strandInfo');
-    $BTCommand .= ' --fusion-search '. LoadConfig::getParam($rH_cfg, 'align','fusionOption');
-    $BTCommand .= ' -o ' .$laneDirectory;
-    $BTCommand .= ' -p '. LoadConfig::getParam($rH_cfg, 'align','TBAlnThreads') .' -G '. LoadConfig::getParam($rH_cfg, 'align','referenceGtf');
-    $BTCommand .= ' '. LoadConfig::getParam($rH_cfg, 'align','referenceFasta');
-    $BTCommand .= ' '. $single;
-    $commands= $BTCommand;
+  my $command;
+  if (!defined($bamFileDate) || !defined(-M $ingle)  || $bamFileDate < -M $single) {
+    $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'align','bowtieModule') .' ;'; 
+    $command .= '  module load ' .LoadConfig::getParam($rH_cfg, 'align','bowtieModule') .' ;'; 
+    $command .= ' tophat';
+    $command .= ' --rg-library \"' . $rH_laneInfo->{'libraryBarcode'} .'\"';
+    $command .= ' --rg-platform \"' .LoadConfig::getParam($rH_cfg, 'align','platform') .'\"';
+    $command .= ' --rg-platform-unit \"' .$rH_laneInfo->{'lane'} .'\"';
+    $command .= ' --rg-center \"'. LoadConfig::getParam($rH_cfg, 'align','TBInstitution') .'\"';
+    $command .= ' --rg-sample '. $sampleName;
+    $command .= ' --rg-platform ' .$rH_laneInfo->{'runId'};
+    $command .= ' --library-type '. LoadConfig::getParam($rH_cfg, 'align','strandInfo');
+    $command .= ' --fusion-search '. LoadConfig::getParam($rH_cfg, 'align','fusionOption');
+    $command .= ' -o ' .$laneDirectory;
+    $command .= ' -p '. LoadConfig::getParam($rH_cfg, 'align','TBAlnThreads') .' -G '. LoadConfig::getParam($rH_cfg, 'align','referenceGtf');
+    $command .= ' '. LoadConfig::getParam($rH_cfg, 'align','referenceFasta');
+    $command .= ' '. $single;
   }
 
-  return $commands;
+  return $command;
 }
  
 
