@@ -72,7 +72,7 @@ B<DiffExpression>
 =head1 Scripts
 
 This pipeline uses a set of scripts. 
-You should create a dir called scripts
+You should create a dir called B<script>
 and place it in the same dir as the 
 pipeline.
 
