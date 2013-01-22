@@ -168,13 +168,22 @@ sub fixmate {
 }
 
 sub markDup {
-  my $rH_cfg     = shift;
-  my $sampleName = shift;
+  my $rH_cfg        = shift;
+  my $sampleName    = shift;
+  my $inputBAM      = shift;
+  my $outputBAM     = shift;
+  my $outputMetrics = shift;
 
-  my $inputBAM = $sampleName.'/'.$sampleName.'.matefixed.sorted.bam';
-  my $outputBAM = $sampleName.'/'.$sampleName.'.sorted.dup.bam';
-  my $outputMetrics = $sampleName.'/'.$sampleName.'.sorted.dup.metrics';
-  
+#   if (!(defined $inputBAM)) {
+#     $inputBAM = $sampleName.'/'.$sampleName.'.matefixed.sorted.bam';
+#   }
+#   if (!(defined $outputBAM)) {
+#     $outputBAM = $sampleName.'/'.$sampleName.'.sorted.dup.bam';
+#   }
+#   if (!(defined $outputMetrics)) {
+#     $outputMetrics = $sampleName.'/'.$sampleName.'.sorted.dup.metrics';
+#   }
+
   my $command;
   $command .= 'module load mugqic/picard/1.82 ;';
   $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'markDup', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'markDupRam', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'markDup', 'markDupRam').' -jar \${PICARD_HOME}/MarkDuplicates.jar';
@@ -207,4 +216,56 @@ sub collectMetrics {
 
   return $command;
 }
+
+# Sort BAM/SAM files
+sub sortSam {
+  my $rH_cfg        = shift;
+  my $sampleName    = shift;
+  my $inputBAM    = shift;
+  my $outputBAM     = shift;
+  my $order         = shift;
+
+  my $latestBam = -M $inputBAM;
+
+  my $command;
+  # -M gives modified date relative to now. The bigger the older.
+  if(!defined($latestBam) || !defined(-M $outputBAM) || $latestBam < -M $outputBAM) {
+    $command .= 'module load mugqic/picard/1.82 ;';
+    $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'sortSam', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'sortSam', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'sortSam', 'sortRam').' -jar \${PICARD_HOME}/SortSam.jar';
+    $command .= ' VALIDATION_STRINGENCY=SILENT ASSUME_SORTED=true CREATE_INDEX=true';
+    $command .= ' TMP_DIR='.LoadConfig::getParam($rH_cfg, 'sortSam', 'tmpDir');
+    $command .= ' INPUT='.$InputBAM;
+    $command .= ' OUTPUT='.$outputBAM;
+    $command .= ' SORT_ORDER='.$order;
+    $command .= ' MAX_RECORDS_IN_RAM='.LoadConfig::getParam($rH_cfg, 'sortSam', 'sortRecInRam');
+  }
+  return $command;
+}
+
+
+# reorder BAM/SAM files based on reference/dictionary
+sub reorderSam {
+  my $rH_cfg        = shift;
+  my $sampleName    = shift;
+  my $inputBAM      = shift;
+  my $outputBAM     = shift;
+
+
+  my $latestBam = -M $inputBAM;
+
+  my $command;
+  # -M gives modified date relative to now. The bigger the older.
+  if(!defined($latestBam) || !defined(-M $outputBAM) || $latestBam < -M $outputBAM) {
+    $command .= 'module load mugqic/picard/1.82 ;';
+    $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'reorderSam', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'reorderSam', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'reorderSamm', 'reorderRam').' -jar \${PICARD_HOME}/ReorderSam.jar';
+    $command .= ' VALIDATION_STRINGENCY=SILENT ASSUME_SORTED=true CREATE_INDEX=true';
+    $command .= ' TMP_DIR='.LoadConfig::getParam($rH_cfg, 'reorderSam', 'tmpDir');
+    $command .= ' INPUT='.$InputBAM;
+    $command .= ' OUTPUT='.$outputBAM;
+    $command .= ' REFERENCE='.LoadConfig::getParam($rH_cfg, 'reorderSam', 'referenceSequenceDictionary');
+    $command .= ' MAX_RECORDS_IN_RAM='.LoadConfig::getParam($rH_cfg, 'reorderSam', 'reorderRecInRam');
+  }
+  return $command;
+}
+
 1;

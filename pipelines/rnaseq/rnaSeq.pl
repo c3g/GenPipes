@@ -205,19 +205,38 @@ sub merging {
   if($depends > 0) {
     $jobDependency = $globalDep{'aligning'}{$sampleName};
   }
-  
+  ##Merging
+  my $inputBAM ; 
   my $outputBAM = "alignment/" . $sampleName . "/" . $sampleName . ".merged.bam" 
   my @alignFiles;
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
     my $laneDirectory = "alignment/" . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
-    my $inputBAM = $laneDirectory . 'accepted_hits.bam';
+    $inputBAM = $laneDirectory . 'accepted_hits.bam';
     push(@alignFiles, $inputBAM) ;
+  }
   my $command = Picard::mergeFiles($rH_cfg, $sampleName, $rAoH_sampleLanes, $outputBAM);
   my $mergeJobId = undef;
   if(defined($command) && length($command) > 0) {
-    $mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "merging", undef, 'MERGELANES', $jobDependency, $sampleName, $command);
+    $mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mergFiles", undef, 'MERGELANES', $jobDependency, $sampleName, $command);
   }
-  return $mergeJobId;
+  ## reorder
+  $inputBAM = $outputBAM
+  $outputBAM = "alignment/" . $sampleName . "/" . $sampleName . ".merged.karyotypic.bam"
+  $command = Picard::mergeFiles($rH_cfg, $sampleName, $inputBAM, $outputBAM);
+  my $reorderJobId = undef;
+  if(defined($command) && length($command) > 0) {
+    $reorderJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "reorderSam", undef, 'REORDER', $mergeJobId, $sampleName, $command);
+  }
+  ## mark duplicates
+  $inputBAM = $outputBAM
+  $outputBAM = "alignment/" . $sampleName . "/" . $sampleName . ".merged.mdup.bam"
+  my $duplicatesMetricsFile = "alignment/" . $sampleName . "/" . $sampleName . ".merged.mdup.metrics"
+  $command = Picard::markDup($rH_cfg, $sampleName, $inputBAM, $outputBAM);
+  my $markDupJobId = undef;
+  if(defined($command) && length($command) > 0) {
+    $markDupJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "markDup", undef, 'MARKDUP', $reorderJobId, $sampleName, $command);
+  }
+  return $markDupJobId;
 }
 
 sub metrics {
@@ -229,9 +248,28 @@ sub metrics {
 
   my $jobDependency = undef;
   if($depends > 0) {
-    $jobDependency = '$MERGELANES_JOB_ID';
+    $jobDependency = $globalDep{'merging'}{$sampleName};
   }
 
+  print "mkdir -p $sampleName/realign\n";
+  print "REALIGN_JOB_IDS=\"\"\n";
+  my $processUnmapped = 1;
+  for my $rH_seqInfo (@$rAoH_seqDictionary) {
+    my $seqName = $rH_seqInfo->{'name'};
+    my $command = GATK::realign($rH_cfg, $sampleName, $seqName, $processUnmapped);
+    my $intervalJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "indelRealigner", $seqName, 'REALIGN', $jobDependency, $sampleName, $command);
+    $intervalJobId = '$'.$intervalJobId;
+    print 'REALIGN_JOB_IDS=${REALIGN_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$intervalJobId."\n";
+    if($processUnmapped == 1) {
+      $processUnmapped = 0;
+    }
+  }
+  
+  return '${REALIGN_JOB_IDS}';
+}
+
+
+sub realign {
   print "mkdir -p $sampleName/realign\n";
   print "REALIGN_JOB_IDS=\"\"\n";
   my $processUnmapped = 1;
