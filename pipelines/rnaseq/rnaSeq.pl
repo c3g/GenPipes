@@ -210,7 +210,7 @@ sub merging {
 
   ##Merging
   my $inputBAM ; 
-  my $outputBAM = "alignment/" . $sampleName . "/" . $sampleName . ".merged.bam" 
+  my $outputBAM = "alignment/" . $sampleName . "/" . $sampleName . ".merged.bam" ;
   my @alignFiles;
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
     my $laneDirectory = "alignment/" . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
@@ -221,23 +221,26 @@ sub merging {
   my $mergeJobId = undef;
   if(defined($command) && length($command) > 0) {
     $mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mergFiles", undef, 'MERGELANES', $jobDependency, $sampleName, $command);
+    $mergeJobId = '$'.$mergeJobId;
   }
   ## reorder
   $inputBAM = $outputBAM
-  $outputBAM = "alignment/" . $sampleName . "/" . $sampleName . ".merged.karyotypic.bam"
+  $outputBAM = "alignment/" . $sampleName . "/" . $sampleName . ".merged.karyotypic.bam";
   $command = Picard::mergeFiles($rH_cfg, $sampleName, $inputBAM, $outputBAM);
   my $reorderJobId = undef;
   if(defined($command) && length($command) > 0) {
     $reorderJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "reorderSam", undef, 'REORDER', $mergeJobId, $sampleName, $command);
+    $reorderJobId = '$'.$reorderJobId;
   }
   ## mark duplicates
   $inputBAM = $outputBAM
   $outputBAM = "alignment/" . $sampleName . "/" . $sampleName . ".merged.mdup.bam"
-  my $duplicatesMetricsFile = "alignment/" . $sampleName . "/" . $sampleName . ".merged.mdup.metrics"
+  my $duplicatesMetricsFile = "alignment/" . $sampleName . "/" . $sampleName . ".merged.mdup.metrics";
   $command = Picard::markDup($rH_cfg, $sampleName, $inputBAM, $outputBAM);
   my $markDupJobId = undef;
   if(defined($command) && length($command) > 0) {
     $markDupJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "markDup", undef, 'MARKDUP', $reorderJobId, $sampleName, $command);
+    $markDupJobId = '$'.$markDupJobId
   }
   return $markDupJobId;
 }
@@ -255,39 +258,44 @@ sub wiggle {
     $jobDependency = $globalDep{'aligning'}{$sampleName};
   }
 
-  ##Merging
-  my $inputBAM ; 
-  my $outputBAM = "alignment/" . $sampleName . "/" . $sampleName . ".merged.bam" 
-  my @alignFiles;
-  for my $rH_laneInfo (@$rAoH_sampleLanes) {
-    my $laneDirectory = "alignment/" . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
-    $inputBAM = $laneDirectory . 'accepted_hits.bam';
-    push(@alignFiles, $inputBAM) ;
+  my $inputBAM = "alignment/" . $sampleName . "/" . $sampleName . ".merged.mdup.bam" ; 
+  #testing for strand-specificity
+
+  my $strandSPecificityInfo = LoadConfig::getParam($rH_cfg, 'align', 'strandInfo');
+  my @strandJobId ;
+  if($strandSPecificityInfo != "fr-unstranded") {
+    ## strand specific 
+      my @outputBAM = {'alignment/' . $sampleName . '/' . $sampleName . '.merged.mdup.forward.bam' ,  'alignment/' . $sampleName . '/' . $sampleName . '.merged.mdup.reverse.bam'};
+      my @command = Wiggle::strandBam($rH_cfg, $sampleName, $inputBAM, \@outputBAM);
+      if(defined(@command) && length(@command) > 1) { 
+        my $strandJobIdF = SubmitToCluster::printSubmitCmd($rH_cfg, "wiggle", 'FORWARD', 'STRANDSPEC', $jobDependency, $sampleName, @command->[0]);
+        push(@strandJobId, '$'.$strandJobIdF );
+        my $strandJobIdR = SubmitToCluster::printSubmitCmd($rH_cfg, "wiggle", 'REVERSE', 'STRANDSPEC', $jobDependency, $sampleName, @command->[1]);
+        push(@strandJobId, '$'.$strandJobIdR );
+      }
+      my @outputBedGraph = {'alignment/' . $sampleName . '/' . $sampleName . '.forward.bedGraph' ,  'alignment/' . $sampleName . '/' . $sampleName . '.reverse.bedGraph'};
+      my @outputWiggle = {'alignment/' . $sampleName . '/' . $sampleName . '.forward.bw' ,  'alignment/' . $sampleName . '/' . $sampleName . '.reverse.bw'};
+      my @prefixJobName = { 'FORWARD', 'REVERSE'};
   }
-  my $command = Picard::mergeFiles($rH_cfg, $sampleName, $rAoH_sampleLanes, $outputBAM);
-  my $mergeJobId = undef;
-  if(defined($command) && length($command) > 0) {
-    $mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mergFiles", undef, 'MERGELANES', $jobDependency, $sampleName, $command);
+  else {
+      my @outputBAM = {$inputBAM};
+      push(@strandJobId, $jobDependency);
+      my @outputBedGraph = {'alignment/' . $sampleName . '/' . $sampleName . '.bedGraph'};
+      my @outputWiggle = {'alignment/' . $sampleName . '/' . $sampleName . '.bw' };
+      my @prefixJobName = { undef } ;
   }
-  ## reorder
-  $inputBAM = $outputBAM
-  $outputBAM = "alignment/" . $sampleName . "/" . $sampleName . ".merged.karyotypic.bam"
-  $command = Picard::mergeFiles($rH_cfg, $sampleName, $inputBAM, $outputBAM);
-  my $reorderJobId = undef;
-  if(defined($command) && length($command) > 0) {
-    $reorderJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "reorderSam", undef, 'REORDER', $mergeJobId, $sampleName, $command);
-  }
-  ## mark duplicates
-  $inputBAM = $outputBAM
-  $outputBAM = "alignment/" . $sampleName . "/" . $sampleName . ".merged.mdup.bam"
-  my $duplicatesMetricsFile = "alignment/" . $sampleName . "/" . $sampleName . ".merged.mdup.metrics"
-  $command = Picard::markDup($rH_cfg, $sampleName, $inputBAM, $outputBAM);
-  my $markDupJobId = undef;
-  if(defined($command) && length($command) > 0) {
-    $markDupJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "markDup", undef, 'MARKDUP', $reorderJobId, $sampleName, $command);
-  }
-  return $markDupJobId;
+  my $wiggleJobId ;
+  for(my $i = 0; $i <@outputBAM; $i++) {
+      my $command = Wiggle::strandBam($rH_cfg, $sampleName, $inputBAM, @outputBedGraph->[$i], @outputWiggle->[$i]);
+      if(defined($command) && length($command) > 0) {
+        my $tmpJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "wiggle", @prefixJobName->[$i], 'WIGGLE', @strandJobId->[$i], $sampleName, $command);
+        $wiggleJobId .= '$'.$tmpJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
+  } 
+  $wiggleJobId = substr $wiggleJobId 0 -1;
+  return $wiggleJobId;	
 }
+
+ 
 
 sub metrics {
   my $depends = shift;
@@ -320,6 +328,8 @@ sub metrics {
 
   ##sample Correlation
 
+
+  ##BamContent
 
   return $metrics;
 }

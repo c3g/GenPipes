@@ -48,7 +48,7 @@ sub rnaQc{
 
 
   my $latestFile = -M $inputFile;
-  my $outputIndexFile= $outputFolder. 'index.html'
+  my $outputIndexFile= $outputFolder. 'index.html';
 
   my $command;
   # -M gives modified date relative to now. The bigger the older.
