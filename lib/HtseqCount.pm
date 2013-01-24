@@ -48,7 +48,7 @@ use warnings;
 #-----------------------
 use Data::Dumper;
 use Config::Simple;
-
+use File::Basename;
 our $rH_cfg;
 our $sampleName;
 our $rH_laneInfo;
@@ -59,9 +59,11 @@ sub matrixMake {
     $rH_cfg      = shift;
     $sampleName  = shift;
     $rH_laneInfo = shift;
-    $group       = shift;
-
     my $db = shift;    # blast database
+    $group       = shift;
+    
+	$group = ( !defined $group ) ? $sampleName : $group;
+    
 
     # option used if more than one db was specified on the config file.
     # In this case $db should be passed as an argument
@@ -73,7 +75,7 @@ sub matrixMake {
     my $laneDirectory = "read_count/" . $group . "/";
 
     $command .= ' sh ' . $rH_cfg->{'htseq.tempMatrix'} . ' ' . 'alignment/' . $group . '/' . $group . '.gtf';
-    $command .= ' ' . 'assembly/' . $group . '/fasta_split/' . $rH_cfg->{'blast.db'} . '/blast_BestHit.txt ';
+    $command .= ' ' . 'assembly/' . $group . '/fasta_split/' . basename($rH_cfg->{'blast.db'}) . '/blast_BestHit.txt ';
     $command .= ' ' . $laneDirectory . 'tmpmatrix.csv ;';
     $command .= ' sh ' . $rH_cfg->{'htseq.fullMatrix'} . ' ' . $laneDirectory . ' ;';
     $command .= ' cp ' . $laneDirectory . 'tmpmatrix.csv DGE/' . $group . '/matrix.csv ;';
@@ -87,7 +89,8 @@ sub readCount {
     $sampleName  = shift;
     $rH_laneInfo = shift;
     $group       = shift;
-
+	$group = ( !defined $group ) ? $sampleName : $group;
+	
     my %retVal;
     my $command       = '';
     my $laneDirectory = "read_count/" . $group . "/";
@@ -106,7 +109,8 @@ sub sortRead {
     $sampleName  = shift;
     $rH_laneInfo = shift;
     $group       = shift;
-
+	
+	$group = ( !defined $group ) ? $sampleName : $group;
     my %retVal;
     my $command       = '';
     my $laneDirectory = "alignment/" . $group . "/";
