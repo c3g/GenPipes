@@ -682,7 +682,7 @@ sub htseqCount {
     foreach my $db (@database) {
         for my $rH_laneInfo (@$rAoH_sampleLanes) {
 
-            my $rH_htseqMatrixDetails = HtseqCount::matrixMake( $rH_cfg, $sampleName, $rH_laneInfo, $group, $db );
+            my $rH_htseqMatrixDetails = HtseqCount::matrixMake( $rH_cfg, $sampleName, $rH_laneInfo, $db, $group );
             my $htseqMatrixJobId = undef;
 
             if ( length( $rH_htseqMatrixDetails->{'command'} ) > 0 ) {
