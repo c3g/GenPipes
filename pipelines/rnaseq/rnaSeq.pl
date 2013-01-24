@@ -76,7 +76,7 @@ push(@steps, {'name' => 'rawCounts' , 'stepLoop' => 'sample' , 'output' => 'read
 push(@steps, {'name' => 'fpkm' , 'stepLoop' => 'sample' , 'output' => 'fpkm'});
 push(@steps, {'name' => 'metrics' , 'stepLoop' => 'group' , 'output' => 'stats'});
 #push(@steps, {'name' => 'saturationRpkm' , 'stepLoop' => 'group' , 'output' => 'reads_count'}); included in metrics
-push(@steps, {'name' => 'cuffdif' , 'stepLoop' => 'group' , 'output' => 'DGE'});
+push(@steps, {'name' => 'cuffdiff' , 'stepLoop' => 'group' , 'output' => 'DGE'});
 push(@steps, {'name' => 'dge' , 'stepLoop' => 'group' , 'output' => 'DGE'});
 push(@steps, {'name' => 'delivrable' , 'stepLoop' => 'group' , 'output' => 'Delivrable'});
 
@@ -169,7 +169,6 @@ sub trimming {
   return $trimJobIdVarNameSample;	
 }
 
-
 sub aligning {
   my $depends = shift;
   my $rH_cfg = shift;
@@ -245,256 +244,187 @@ sub merging {
   return $markDupJobId;
 }
 
-
 sub wiggle {
-  my $depends = shift;
-  my $rH_cfg = shift;
-  my $sampleName = shift;
-  my $rAoH_sampleLanes  = shift;
-  my $rAoH_seqDictionary = shift;
+	my $depends = shift;
+	my $rH_cfg = shift;
+	my $sampleName = shift;
+	my $rAoH_sampleLanes  = shift;
+	my $rAoH_seqDictionary = shift;
 
-  my $jobDependency = undef;
-  if($depends > 0) {
-    $jobDependency = $globalDep{'aligning'}{$sampleName};
-  }
+	my $jobDependency = undef;
+	if($depends > 0) {
+		$jobDependency = $globalDep{'merging'}{$sampleName};
+	}
 
-  my $inputBAM = "alignment/" . $sampleName . "/" . $sampleName . ".merged.mdup.bam" ; 
-  #testing for strand-specificity
+	my $inputBAM = "alignment/" . $sampleName . "/" . $sampleName . ".merged.mdup.bam" ; 
+	#testing for strand-specificity
 
-  my $strandSPecificityInfo = LoadConfig::getParam($rH_cfg, 'align', 'strandInfo');
-  my @strandJobId ;
-  if($strandSPecificityInfo != "fr-unstranded") {
-    ## strand specific 
-      my @outputBAM = {'alignment/' . $sampleName . '/' . $sampleName . '.merged.mdup.forward.bam' ,  'alignment/' . $sampleName . '/' . $sampleName . '.merged.mdup.reverse.bam'};
-      my @command = Wiggle::strandBam($rH_cfg, $sampleName, $inputBAM, \@outputBAM);
-      if(defined(@command) && length(@command) > 1) { 
-        my $strandJobIdF = SubmitToCluster::printSubmitCmd($rH_cfg, "wiggle", 'FORWARD', 'STRANDSPEC', $jobDependency, $sampleName, @command->[0]);
-        push(@strandJobId, '$'.$strandJobIdF );
-        my $strandJobIdR = SubmitToCluster::printSubmitCmd($rH_cfg, "wiggle", 'REVERSE', 'STRANDSPEC', $jobDependency, $sampleName, @command->[1]);
-        push(@strandJobId, '$'.$strandJobIdR );
-      }
-      my @outputBedGraph = {'alignment/' . $sampleName . '/' . $sampleName . '.forward.bedGraph' ,  'alignment/' . $sampleName . '/' . $sampleName . '.reverse.bedGraph'};
-      my @outputWiggle = {'alignment/' . $sampleName . '/' . $sampleName . '.forward.bw' ,  'alignment/' . $sampleName . '/' . $sampleName . '.reverse.bw'};
-      my @prefixJobName = { 'FORWARD', 'REVERSE'};
-  }
-  else {
-      my @outputBAM = {$inputBAM};
-      push(@strandJobId, $jobDependency);
-      my @outputBedGraph = {'alignment/' . $sampleName . '/' . $sampleName . '.bedGraph'};
-      my @outputWiggle = {'alignment/' . $sampleName . '/' . $sampleName . '.bw' };
-      my @prefixJobName = { undef } ;
-  }
-  my $wiggleJobId ;
-  for(my $i = 0; $i <@outputBAM; $i++) {
-      my $command = Wiggle::strandBam($rH_cfg, $sampleName, $inputBAM, @outputBedGraph->[$i], @outputWiggle->[$i]);
-      if(defined($command) && length($command) > 0) {
-        my $tmpJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "wiggle", @prefixJobName->[$i], 'WIGGLE', @strandJobId->[$i], $sampleName, $command);
-        $wiggleJobId .= '$'.$tmpJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
-  } 
-  $wiggleJobId = substr $wiggleJobId 0 -1;
-  return $wiggleJobId;	
+	my $strandSPecificityInfo = LoadConfig::getParam($rH_cfg, 'align', 'strandInfo');
+	my @strandJobId ;
+	if($strandSPecificityInfo != "fr-unstranded") {
+	## strand specific 
+		my @outputBAM = {'alignment/' . $sampleName . '/' . $sampleName . '.merged.mdup.forward.bam' ,  'alignment/' . $sampleName . '/' . $sampleName . '.merged.mdup.reverse.bam'};
+		my @command = Wiggle::strandBam($rH_cfg, $sampleName, $inputBAM, \@outputBAM);
+		if(defined(@command) && length(@command) > 1) { 
+			my $strandJobIdF = SubmitToCluster::printSubmitCmd($rH_cfg, "wiggle", 'FORWARD', 'STRANDSPEC', $jobDependency, $sampleName, @command->[0]);
+			push(@strandJobId, '$'.$strandJobIdF );
+			my $strandJobIdR = SubmitToCluster::printSubmitCmd($rH_cfg, "wiggle", 'REVERSE', 'STRANDSPEC', $jobDependency, $sampleName, @command->[1]);
+			push(@strandJobId, '$'.$strandJobIdR );
+		}
+		my @outputBedGraph = {'alignment/' . $sampleName . '/' . $sampleName . '.forward.bedGraph' ,  'alignment/' . $sampleName . '/' . $sampleName . '.reverse.bedGraph'};
+		my @outputWiggle = {'alignment/' . $sampleName . '/' . $sampleName . '.forward.bw' ,  'alignment/' . $sampleName . '/' . $sampleName . '.reverse.bw'};
+		my @prefixJobName = { 'FORWARD', 'REVERSE'};
+	}
+	else {
+		my @outputBAM = {$inputBAM};
+		push(@strandJobId, $jobDependency);
+		my @outputBedGraph = {'alignment/' . $sampleName . '/' . $sampleName . '.bedGraph'};
+		my @outputWiggle = {'alignment/' . $sampleName . '/' . $sampleName . '.bw' };
+		my @prefixJobName = { undef } ;
+	}
+	my $wiggleJobId ;
+	for(my $i = 0; $i <@outputBAM; $i++) {
+		my $command = Wiggle::strandBam($rH_cfg, $sampleName, $inputBAM, @outputBedGraph->[$i], @outputWiggle->[$i]);
+		if(defined($command) && length($command) > 0) {
+			my $tmpJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "wiggle", @prefixJobName->[$i], 'WIGGLE', @strandJobId->[$i], $sampleName, $command);
+			$wiggleJobId .= '$'.$tmpJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
+		}
+	} 
+	$wiggleJobId = substr $wiggleJobId 0 -1;
+	return $wiggleJobId;	
 }
 
- 
+sub rawCounts {
+	my $depends = shift;
+	my $rH_cfg = shift;
+	my $rHoAoH_sampleInfo = shift;
+	my $rAoH_sampleLanes  = shift;
+	my $rAoH_seqDictionary = shift;
 
-sub metrics {
-  my $depends = shift;
-  my $rH_cfg = shift;
-  my $rHoAoH_sampleInfo = shift;
-  my $rAoH_sampleLanes  = shift;
-  my $rAoH_seqDictionary = shift;
-
-  my $jobDependency = undef;
-  if($depends > 0) {
-    $jobDependency = join(':',values(%{$globalDep ->{'merging'}}));
-  }
-  ## RNAseQC metrics
-  print "echo -e \"Sample\tBamFile\tNote\" >  alignment/rnaseqc.samples.txt"
-  for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
-    print 'echo -e \"' .$sampleName .'\talignment/' .$sampleName. '/'. $sampleName .'.merged.mdup.bam\t' .LoadConfig::getParam($rH_cfg, 'metricsRNA', 'projectName'). '\" >>  alignment/rnaseqc.samples.txt'
-  }
-  
-  print "mkdir -p metrics\n";
-  my $sampleList = "alignment/rnaseqc.samples.txt"
-  my $outputFolder = "metrics"
-  my $command = Metrics::rnaQc($rH_cfg, $sampleList, $outputFolder);
-  my $metricsJobId = undef;
-  if(defined($command) && length($command) > 0) {
-    $metricsJobId= SubmitToCluster::printSubmitCmd($rH_cfg, "metricsRNA", undef, 'METRICSRNA', $jobDependency, undef, $command);
-  }
-
-  ##Saturation
-
-
-  ##sample Correlation
-
-
-  ##BamContent
-
-  return $metrics;
-}
-  
-
-sub realign {
-  print "mkdir -p $sampleName/realign\n";
-  print "REALIGN_JOB_IDS=\"\"\n";
-  my $processUnmapped = 1;
-  for my $rH_seqInfo (@$rAoH_seqDictionary) {
-    my $seqName = $rH_seqInfo->{'name'};
-    my $command = GATK::realign($rH_cfg, $sampleName, $seqName, $processUnmapped);
-    my $intervalJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "indelRealigner", $seqName, 'REALIGN', $jobDependency, $sampleName, $command);
-    $intervalJobId = '$'.$intervalJobId;
-    print 'REALIGN_JOB_IDS=${REALIGN_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$intervalJobId."\n";
-    if($processUnmapped == 1) {
-      $processUnmapped = 0;
-    }
-  }
-  
-  return '${REALIGN_JOB_IDS}';
+	my $jobDependency = undef;
+	if($depends > 0) {
+		$jobDependency = $globalDep{'merging'}{$sampleName};
+	}
+	print "mkdir -p raw_counts\n";
+	my $inputBam = 'alignment/' . $sampleName . '/' . $sampleName . '.merged.mdup.bam' ;
+        my $sortedBAM = 'alignment/' . $sampleName . '/' . $sampleName . '.queryNameSorted.bam' ;
+	my $inputGtf = LoadConfig::getParam($rH_cfg, 'htseq', 'referenceGtf');
+	my $outputCount = 'raw_counts/' . $sampleName . '.readcounts.csv';
+	my $sortOrder = 'queryname';
+	my $strandInfo;
+	my $strandSPecificityInfo = LoadConfig::getParam($rH_cfg, 'align', 'strandInfo');
+	if($strandSPecificityInfo != "fr-unstranded") {
+		 $strandInfo= 'yes';
+	}
+	else {
+		$strandInfo= 'no';
+	}
+	## query sort the bam
+	my $sortJobId;
+	my $command = Picard::sortSam($rH_cfg, $sampleName, $inputBAM, $sortedBAM, $sortOrder);
+	if(defined($command) && length($command) > 0) {
+		$sortJobId=SubmitToCluster::printSubmitCmd($rH_cfg, "sortSam", undef, 'QNSORT', $jobDependency, $sampleName, $command);
+		$sortJobId='$'.$sortJobId
+	}
+	## count reads
+        my $countJobId;
+	my $command = HtseqCount::readCount($rH_cfg, $sortedBAM, $inputGtf, $outputCount, $strandInfo); 
+	if(defined($command) && length($command) > 0) {
+		$countJobId=SubmitToCluster::printSubmitCmd($rH_cfg, "htseq", undef, 'RAWCOUNT', $sortJobId, $sampleName, $command);
+		$countJobId='$'.$countJobId
+	}
+	return $countJobId;
 }
 
-sub mergeRealigned {
-  my $depends = shift;
-  my $rH_cfg = shift;
-  my $sampleName = shift;
-  my $rAoH_sampleLanes  = shift;
-  my $rAoH_seqDictionary = shift;
+sub fpkm {
+	my $depends = shift;
+	my $rH_cfg = shift;
+	my $rHoAoH_sampleInfo = shift;
+	my $rAoH_sampleLanes  = shift;
+	my $rAoH_seqDictionary = shift;
 
-  my $jobDependency = undef;
-  if($depends > 0) {
-    $jobDependency = '${REALIGN_JOB_IDS}';
-  }
-
-  my @seqNames;
-  for my $rH_seqInfo (@$rAoH_seqDictionary) {
-    push(@seqNames, $rH_seqInfo->{'name'});
-  }
-  my $command = Picard::mergeRealigned($rH_cfg, $sampleName, \@seqNames);
-  my $mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mergeRealigned", undef, 'MERGEREALIGN', $jobDependency, $sampleName, $command);
-  return $mergeJobId;
+	my $jobDependency = undef;
+	if($depends > 0) {
+		$jobDependency = $globalDep{'merging'}{$sampleName};
+	}
+	
+	print "mkdir -p fpkm/known fpkm/denovo\n";
+	my $inputBam = 'alignment/' . $sampleName . '/' . $sampleName . '.merged.mdup.bam' ;
+	my $outputKnown = 'fpkm/known/' . $sampleName;
+	my $outputDeNovo = 'fpkm/denovo' . $sampleName;
+	my $gtfOption = '-G ' .LoadConfig::getParam($rH_cfg, 'fpkm','referenceGtf');
+	
+	
+	## known FPKM
+	my $fpkmJobId;
+	my $command = Cufflinks::fpkm($rH_cfg, $sampleName, $inputBAM, $outputKnown, $gtfOption);
+	if(defined($command) && length($command) > 0) {
+		my $fpkmKnownJobId=SubmitToCluster::printSubmitCmd($rH_cfg, "fpkm", "KNOWN", 'FPKM', $jobDependency, $sampleName, $command);
+		$fpkmJobId='$'.$fpkmKnownJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
+	}
+	## denovo FPKM
+	my $command = Cufflinks::fpkm($rH_cfg, $sampleName, $inputBAM, $outputDeNovo, undef);
+	if(defined($command) && length($command) > 0) {
+		my $fpkmDeNovoJobId=SubmitToCluster::printSubmitCmd($rH_cfg, "fpkm", "DENOVO", 'FPKM', $jobDependency, $sampleName, $command);
+		$fpkmJobId .='$' .$fpkmDeNovoJobId;
+	}
+	return $fpkmJobId;
 }
 
-sub fixmate {
-  my $depends = shift;
-  my $rH_cfg = shift;
-  my $sampleName = shift;
-  my $rAoH_sampleLanes  = shift;
-  my $rAoH_seqDictionary = shift;
-
-  my $jobDependency = undef;
-  if($depends > 0) {
-    $jobDependency = '${MERGEREALIGN_JOB_ID}';
-  }
-
-  my $command = Picard::fixmate($rH_cfg, $sampleName);
-  my $fixmateJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "fixmate", undef, 'FIXMATE', $jobDependency, $sampleName, $command);
-  return $fixmateJobId;
-}
-
-sub markDup {
-  my $depends = shift;
-  my $rH_cfg = shift;
-  my $sampleName = shift;
-  my $rAoH_sampleLanes  = shift;
-  my $rAoH_seqDictionary = shift;
-
-  my $jobDependency = undef;
-  if($depends > 0) {
-    $jobDependency = '${FIXMATE_JOB_ID}';
-  }
-
-  my $command = Picard::markDup($rH_cfg, $sampleName);
-  my $markDupJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "markDup", undef, 'MARKDUP', $jobDependency, $sampleName, $command);
-  return $markDupJobId;
+sub cuffdiff {
+	my $depends = shift;
+	my $rH_cfg = shift;
+	my $rHoAoH_sampleInfo = shift;
+	my $rAoH_sampleLanes  = shift;
+	my $rAoH_seqDictionary = shift;
+	
+	my $jobDependency = undef;
+	if($depends > 0) {
+		$jobDependency = join(':',values(%{$globalDep ->{'fpkm'}}));
+	}
+	print "mkdir -p cuffdiff/Known cuffdiff/denovo\n";
+	##get design groups
+	my $rHoAoA_command = Cufflinks::getDesign($rH_cfg,$designFilePath);
 }
 
 sub metrics {
-  my $depends = shift;
-  my $rH_cfg = shift;
-  my $sampleName = shift;
-  my $rAoH_sampleLanes  = shift;
-  my $rAoH_seqDictionary = shift;
+	my $depends = shift;
+	my $rH_cfg = shift;
+	my $rHoAoH_sampleInfo = shift;
+	my $rAoH_sampleLanes  = shift;
+	my $rAoH_seqDictionary = shift;
 
-  my $jobDependency = undef;
-  if($depends > 0) {
-    $jobDependency = '${MARKDUP_JOB_ID}';
-  }
+	my $jobDependency = undef;
+	if($depends > 0) {
+		$jobDependency = join(':',values(%{$globalDep ->{'merging'}}));
+	}
+	## RNAseQC metrics
+	print "echo -e \"Sample\tBamFile\tNote\" >  alignment/rnaseqc.samples.txt\n"
+	for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
+		print 'echo -e \"' .$sampleName .'\talignment/' .$sampleName. '/'. $sampleName .'.merged.mdup.bam\t' .LoadConfig::getParam($rH_cfg, 'metricsRNA', 'projectName'). '\" >>  alignment/rnaseqc.samples.txt'
+	}
+	
+	print "mkdir -p metrics\n";
+	my $sampleList = "alignment/rnaseqc.samples.txt"
+	my $outputFolder = "metrics"
+	my $command = Metrics::rnaQc($rH_cfg, $sampleList, $outputFolder);
+	my $metricsJobId = undef;
+	if(defined($command) && length($command) > 0) {
+		$metricsJobId= SubmitToCluster::printSubmitCmd($rH_cfg, "metricsRNA", undef, 'METRICSRNA', $jobDependency, undef, $command);
+	}
+	
 
-  my $command;
-  my $bamFile = $sampleName.'/'.$sampleName.'.sorted.dup.bam';
 
-  # Collect metrics
-  $command = Picard::collectMetrics($rH_cfg, $sampleName);
-  my $collectMetricsJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "collectMetrics", undef, 'COLLECTMETRICS', $jobDependency, $sampleName, $command);
+	##Saturation
+
+
+	##fpkm Stats & Correlation
+
+
+	##BamContent
+
+	return $metrics;
+}
   
-  # Compute genome coverage
-  $command = GATK::genomeCoverage($rH_cfg, $sampleName);
-  my $genomeCoverageJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "genomeCoverage", undef, 'GENOMECOVERAGE', $jobDependency, $sampleName, $command);
-
-  # Compute CCDS coverage
-  my $outputPrefix = $sampleName.'/'.$sampleName.'.sorted.dup.CCDS.coverage';
-  $command = GATK::targetCoverage($rH_cfg, $sampleName, $bamFile, $outputPrefix);
-  my $targetCoverageJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "targetCoverage", undef, 'TARGETCOVERAGE', $jobDependency, $sampleName, $command);
-
-  # Generate IGV track
-  $command = IGVTools::computeTDF($rH_cfg, $sampleName, $bamFile);
-  my $igvtoolsTDFJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "computeTDF", undef, 'IGVTOOLS', $jobDependency, $sampleName, $command);
-
-  # Compute flags
-  my $output = $sampleName.'/'.$sampleName.'.sorted.dup.bam.flagstat';
-  $command = SAMTools::flagstat($rH_cfg, $sampleName, $bamFile, $output);
-  my $flagstatJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "flagstat", undef, 'FLAGSTAT', $jobDependency, $sampleName, $command);
-
-  # return the longest one...not ideal
-  return $genomeCoverageJobId;
-}
-
-sub sortQname {
-  my $depends = shift;
-  my $rH_cfg = shift;
-  my $sampleName = shift;
-  my $rAoH_sampleLanes  = shift;
-  my $rAoH_seqDictionary = shift;
-
-  my $jobDependency = undef;
-  if($depends > 0) {
-    $jobDependency = '${MARKDUP_JOB_ID}';
-  }
-}
-
-#push(@steps, {'name' => 'countTelomere'});
-sub fullPileup {
-  my $depends = shift;
-  my $rH_cfg = shift;
-  my $sampleName = shift;
-  my $rAoH_sampleLanes  = shift;
-  my $rAoH_seqDictionary = shift;
-
-  my $jobDependency = undef;
-  if($depends > 0) {
-    $jobDependency = '${MARKDUP_JOB_ID}';
-  }
-
-  my $bamFile = $sampleName.'/'.$sampleName.'.sorted.dup.bam';
-  print 'mkdir -p '.$sampleName.'/mpileup/'."\n";
-  print "RAW_MPILEUP_JOB_IDS=\"\"\n";
-  my $catCommand = 'zcat ';
-  for my $rH_seqInfo (@$rAoH_seqDictionary) {
-    my $seqName = $rH_seqInfo->{'name'};
-    my $outputPerSeq = $sampleName.'/mpileup/'.$sampleName.'.'.$seqName.'.mpileup.gz';
-    my $command = SAMtools::rawmpileup($rH_cfg, $sampleName, $bamFile, $seqName, $outputPerSeq);
-    my $mpileupJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "rawmpileup", $seqName, 'RAW_MPILEUP', $jobDependency, $sampleName, $command);
-    $mpileupJobId = '$'.$mpileupJobId;
-    print 'RAW_MPILEUP_JOB_IDS=${RAW_MPILEUP_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$mpileupJobId."\n";
-
-    $catCommand .= $outputPerSeq .' ';
-  }
-
-  my $output = $sampleName.'/mpileup/'.$sampleName.'.mpileup.gz';
-  $catCommand .= '| gzip -c --best > '.$output;
-
-  my $catJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "rawmpileup_cat", undef, 'RAW_MPILEUP_CAT', undef, "\$RAW_MPILEUP_JOB_IDS", $catCommand);
-  return $catJobId;
-}
 
 1;

@@ -25,6 +25,7 @@ B<HtseqCount> is a library to generate basic statistics on raw read count.
 =head1 AUTHOR
 
 David Morais dmorais@cs.bris.ac.uk
+Mathieu Bourgey mbourgey@genomequebec.com
 
 =head1 DEPENDENCY
 
@@ -89,28 +90,33 @@ sub _pairCommand{
 
 sub readCount{
 	$rH_cfg      = shift;
-    $sampleName  = shift;
-    $rH_laneInfo = shift;
-	$group         = shift;
+        my $inputBam  = shift;
+	my $inputGtf  = shift;
+	my $outputFile  = shift;
+	my $strandInfo = shift;
+
+	if (!(defined $strandInfo)) {
+		$strandInfo='no'
+	}
 	
-	my %retVal;
-	my $command = '';
-	my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/stats" . $group . "/";
-	
-	$command .= ' module add mugqic/samtools/0.1.6; ';
-	$command .= ' samtools view ' . $laneDirectory . 'alignment/' . $group . '/' . $sampleName . '.QueryName.bam | ' ;
-	$command .= ' htseq-count - ' .  $laneDirectory . 'assembly/' . $group . '/' . $group . '.gtf ' ;
-	$command .= ' -s no >' . $laneDirectory . 'read_counts/' . $group . '/' . $sampleName . '.readcount.cvs' ;
-	
-	$retVal{'command'} = $command;
-	return ( \%retVal );
+	my $command = ;
+	my $latestBam = -M $inputBam;
+	my $output1 = -M $outputFile;
+	if(!defined($latestBam) || !defined($output1) || $latestBam < $output1) {
+		$command .= ' module load' .LoadConfig::getParam($rH_cfg, 'htseq','samtoolsModule') .' ' .LoadConfig::getParam($rH_cfg, 'htseq','pythonModule') .' ' .LoadConfig::getParam($rH_cfg, 'htseq','htseqModule') .' ; ';
+		$command .= ' samtools view ' . $inputBam ;
+		$command .= ' | htseq-count - ' .  $inputGtf ;
+		$command .= ' -s ' .$strandInfo;
+		$command .= ' >' . $outputFile ;
+	}
+	return $command;
 }
 
 
 sub sortRead{
 	$rH_cfg      = shift;
-    $sampleName  = shift;
-    $rH_laneInfo = shift;
+	$sampleName  = shift;
+	$rH_laneInfo = shift;
 	$group         = shift;
 	
 	my %retVal;

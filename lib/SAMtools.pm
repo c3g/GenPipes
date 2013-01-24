@@ -154,4 +154,22 @@ sub rawpileup {
   $command .= ' | gzip -1 -c > '.$output;
 }
 
+sub sort {
+  my $rH_cfg      = shift;
+  my $sampleName  = shift;
+  my $option      = shift;
+  my $bamFile     = shift;
+  my $output      = shift;
+
+ 
+  my $command;
+  $command .= 'module load mugqic/samtools/0.1.18 ;';
+  $command .= ' samtools sort';
+  $command .= ' '.$option;
+  $command .= ' '.$bamFile;
+  $command .= ' '.$output;
+
+  return $command;
+}
+
 1;
