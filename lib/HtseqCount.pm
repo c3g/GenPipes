@@ -87,9 +87,28 @@ sub _pairCommand{
 	next;
 }
 
+sub readCount {
+    $rH_cfg      = shift;
+    $sampleName  = shift;
+    $rH_laneInfo = shift;
+    $group       = shift;
+        $group = ( !defined $group ) ? $sampleName : $group;
+        
+    my %retVal;
+    my $command       = '';
+    my $laneDirectory = "read_count/" . $group . "/";
 
-sub readCount{
-	$rH_cfg      = shift;
+    $command .= ' module add mugqic/samtools/0.1.6; ';
+    $command .= ' samtools view ' . $laneDirectory . $sampleName . '.QueryName.bam | ';
+    $command .= ' htseq-count - ' . 'alignment/' . $group . '/' . $group . '.gtf ';
+    $command .= ' -s no >' . $laneDirectory . $sampleName . '.readcount.cvs';
+
+    $retVal{'command'} = $command;
+    return ( \%retVal );
+}
+
+sub readCountPortable{
+	my $rH_cfg      = shift;
         my $inputBam  = shift;
 	my $inputGtf  = shift;
 	my $outputFile  = shift;

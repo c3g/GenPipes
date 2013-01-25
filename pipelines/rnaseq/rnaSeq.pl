@@ -294,6 +294,7 @@ sub wiggle {
 	return $wiggleJobId;	
 }
 
+
 sub rawCounts {
 	my $depends = shift;
 	my $rH_cfg = shift;
@@ -328,13 +329,14 @@ sub rawCounts {
 	}
 	## count reads
         my $countJobId;
-	my $command = HtseqCount::readCount($rH_cfg, $sortedBAM, $inputGtf, $outputCount, $strandInfo); 
+	my $command = HtseqCount::readCountPortable($rH_cfg, $sortedBAM, $inputGtf, $outputCount, $strandInfo); 
 	if(defined($command) && length($command) > 0) {
 		$countJobId=SubmitToCluster::printSubmitCmd($rH_cfg, "htseq", undef, 'RAWCOUNT', $sortJobId, $sampleName, $command);
 		$countJobId='$'.$countJobId
 	}
 	return $countJobId;
 }
+
 
 sub fpkm {
 	my $depends = shift;
@@ -351,7 +353,7 @@ sub fpkm {
 	print "mkdir -p fpkm/known fpkm/denovo\n";
 	my $inputBam = 'alignment/' . $sampleName . '/' . $sampleName . '.merged.mdup.bam' ;
 	my $outputKnown = 'fpkm/known/' . $sampleName;
-	my $outputDeNovo = 'fpkm/denovo' . $sampleName;
+	my $outputDeNovo = 'fpkm/denovo/' . $sampleName;
 	my $gtfOption = '-G ' .LoadConfig::getParam($rH_cfg, 'fpkm','referenceGtf');
 	
 	
@@ -371,6 +373,7 @@ sub fpkm {
 	return $fpkmJobId;
 }
 
+
 sub cuffdiff {
 	my $depends = shift;
 	my $rH_cfg = shift;
@@ -382,10 +385,109 @@ sub cuffdiff {
 	if($depends > 0) {
 		$jobDependency = join(':',values(%{$globalDep ->{'fpkm'}}));
 	}
-	print "mkdir -p cuffdiff/Known cuffdiff/denovo\n";
+	print "mkdir -p cuffdiff/known cuffdiff/denovo\n";
 	##get design groups
-	my $rHoAoA_command = Cufflinks::getDesign($rH_cfg,$designFilePath);
+	my $rHoAoA_designGroup = Cufflinks::getDesign($rH_cfg,$designFilePath);
+	##iterate over design
+	my $dir = getcwd();
+	my $cuffddiffJobId;
+	for my $design (keys %{$rHoAoA_designGroup}) {
+		print "mkdir -p cuffdiff/known/$design cuffdiff/denovo/$design\n";
+		## create the list of deNovo gtf to merge
+		my $mergeListFile = 'cuffdiff/denovo/' .$design .'/gtfMerge.list';
+		open(MERGEF, ">$mergeListFile") or  die ("Unable to open $mergeListFile for wrtting") ;
+		my $numberGroups = @{$rHoAoA_designGroup->{$design}} ;
+		##iterate over group
+		my @groupInuptFiles;
+		for (my $i = 0;   $i < $numberDesigns; $i++) {
+			##iterate over samples in the design
+			my $numberSample =  @{$rHoAoA_designGroup->{$design}->[$i]};
+			my $gtfFile ;
+			my $bamfile = ' ';
+			for (my $j = 0;   $i <= $numberDesigns; $i++) {
+				$gtfFile = $dir. 'fpkm/denovo/' .$rHoAoA_designGroup->{$design}->[$i]->[$j] .'/transcripts.gtf' ;
+				print MERGEF $gtfFile;
+				$bamfile .= 'alignment/' .$rHoAoA_designGroup->{$design}->[$i]->[$j] . '/' .$rHoAoA_designGroup->{$design}->[$i]->[$j] . '.merged.mdup.bam' .',' ;
+			}
+			chomp($bamfile);
+			push(@groupInuptFiles,$bamfile);
+		}
+		close($mergeListFile);
+
+		my $outputPathKnown = 'cuffdiff/known/' .$design;
+		my $outputPathDeNovo = 'cuffdiff/denovo/' .$design;
+		
+		my $command = Cufflinks::cuffmerge($rH_cfg, $mergeListFile, $outputPathDeNov);
+		my $cuffmergeJobId ;
+		if(defined($command) && length($command) > 0) {
+			$cuffmergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "cuffmerge", "DENOVO", 'GTFMERGE', $jobDependency, $design, $command);
+			$cuffmergeJobId = '$' .$cuffmergeJobId 
+		}
+		
+		my $gtfDnMerged = 'cuffdiff/denovo/' .$design .'/merged.gtf';
+		my $gtfDnFormatMerged = 'cuffdiff/denovo/' .$design .'/formated.merged.gtf';
+		$command = Cufflinks::mergeGtfFormat($rH_cfg, $gtfDNmerged, $gtfDnFormatMerged);
+		my $formatJobId;
+		if(defined($command) && length($command) > 0) {
+			$formatJobId= SubmitToCluster::printSubmitCmd($rH_cfg, "default", "FORMAT", 'GTFMERGE', $cuffmergeJobId, $design, $command);
+			$formatJobId= '$' .$formatJobId
+		}
+
+		##cuffdiff known
+		$command = Cufflinks::cuffdiff($rH_cfg,\@groupInuptFiles,$outputPathKnown,LoadConfig::getParam($rH_cfg, 'cuffdiff','referenceGtf'));
+		if(defined($command) && length($command) > 0) {
+			my $cuffdiffKnownJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "cuffdiff", "KNOWN", 'CUFFDIFF', $jobDependency, $design, $command);
+			$cuffddiffJobId .= '$' .$cuffdiffKnownJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
+		}
+		
+		##cuffdiff de novo
+		$command = Cufflinks::cuffdiff($rH_cfg,\@groupInuptFiles,$outputPathKnown,LoadConfig::getParam($rH_cfg, 'cuffdiff','referenceGtf'));
+		if(defined($command) && length($command) > 0) {
+			my $cuffdiffKnownJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "cuffdiff", "DENOVO", 'CUFFDIFF', $formatJobId, $design, $command);
+			$cuffddiffJobId .= '$' .$cuffdiffKnownJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
+		}
+	}
+	chomp($cuffddiffJobId)
+	my $command = Cufflinks::mergeCuffdiffRes($rH_cfg,$designFilePath,'cuffdiff');
+	my $mergeCuffdiffResJobID;
+	if(defined($command) && length($command) > 0) {
+		my $mergeCuffdiffResJobI = SubmitToCluster::printSubmitCmd($rH_cfg, "default", "MERGE", 'CUFFDIFF', $cuffddiffJobId, undef, $command);
+		$mergeCuffdiffResJobID .= '$' .$mergeCuffdiffResJobID;
+	}
+	
+	$command = Cufflinks::filterResults($rH_cfg,'cuffdiff/known/') ;
+	my $filterCuffdiffResJobID;
+	if(defined($command) && length($command) > 0) {
+		my $filterKCuffdiffResJobI = SubmitToCluster::printSubmitCmd($rH_cfg, "default", "FILTERK", 'CUFFDIFF', $mergeCuffdiffResJobID, undef, $command);
+		$filterCuffdiffResJobID .= '$' .$filterKCuffdiffResJobI .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
+	}
+	$command = Cufflinks::filterResults($rH_cfg,'cuffdiff/denovo/') ;
+	if(defined($command) && length($command) > 0) {
+		my $filterDCuffdiffResJobI = SubmitToCluster::printSubmitCmd($rH_cfg, "default", "FILTERD", 'CUFFDIFF', $mergeCuffdiffResJobID, undef, $command);
+		$filterCuffdiffResJobID .= '$' .$filterDCuffdiffResJobI ;
+	}
+	
+	return $filterCuffdiffResJobID;
 }
+
+sub dge {
+	my $depends = shift;
+	my $rH_cfg = shift;
+	my $rHoAoH_sampleInfo = shift;
+	my $rAoH_sampleLanes  = shift;
+	my $rAoH_seqDictionary = shift;
+
+	my $jobDependency = undef;
+	if($depends > 0) {
+		$jobDependency = join(':',values(%{$globalDep ->{'rawCounts'}}));
+	}
+	
+	print "mkdir -p DGE";
+	
+	my $CountMatrix = 'DGE/rawCountMatrix.csv';
+	
+}
+
 
 sub metrics {
 	my $depends = shift;

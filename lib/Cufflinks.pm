@@ -104,9 +104,91 @@ sub getDesign {
 			}	
 
 		}
-		$design{$designName}=[@group1,@group2]
+		$design{$designName}=[\@group1,\@group2];
 	}
-	return \%design
+	return \%design;
+}
+
+sub cuffdiff {
+	my $rH_cfg        = shift;
+	my $rA_groupInputFiles        = shift;
+	my $outputDir     = shift;
+	my $referenceGtf     = shift;
+	
+	my $groupCmd;
+	my $numberGroup = @{$rA_groupInputFiles};
+	for (my $i=0 ; $i <  $numberGroup; $i++) {
+		$groupCmd .= ' ' $rA_groupInputFiles->[$i];
+	}
+	
+	my $command;
+	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'cuffdiff','cufflinksModule') .' ;';
+	$command .= ' cuffdiff -p' .LoadConfig::getParam($rH_cfg, 'cuffdiff','numThreads');
+	$command .= ' -o ' .$outputDir;
+	$command .= ' ' .$referenceGtf;
+	$command .= ' ' .$groupCmd;
+	$command .= ' ' .LoadConfig::getParam($rH_cfg, 'cuffdiff','options');
+	$command .= ' -b ' .LoadConfig::getParam($rH_cfg, 'cuffdiff','referenceFasta');
+
+	return $command;
+}
+
+sub cuffmerge {
+	my $rH_cfg        = shift;
+	my $mergeListFile = shift;
+	my $outputDir     = shift;
+	
+	my $command;
+	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'cuffmerge','cufflinksModule') .' ;';
+	$command .= ' cuffmerge -p' .LoadConfig::getParam($rH_cfg, 'cuffmerge','numThreads');
+	$command .= ' -o ' .$outputDir;
+	$command .= ' -g ' .LoadConfig::getParam($rH_cfg, 'cuffmerge','referenceGtf');
+	$command .= ' -s ' .LoadConfig::getParam($rH_cfg, 'fpkm','referenceFasta');
+	$command .= ' ' .$mergeListFile;
+
+	return $command;
+}
+
+
+sub mergeGtfFormat {
+	my $rH_cfg        = shift;
+	my $inputFile     = shift;
+	my $outputFile    = shift;
+	
+	my $command;
+	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'cuffmerge','toolsModule') .' ;';
+	$command .= ' perl formatGtfCufflinks.pl' .$inputFile .' ' .$outputFile ;
+	
+	return $command;
+}
+
+sub mergeCuffdiffRes {
+	my $rH_cfg        = shift;
+	my $designFile    = shift;
+	my $outputDir     = shift;
+
+	### TO DO : re-write mergecuffdiff_known.R and mergecuffdiff_denovo.R to be more portable
+	my $command;
+	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'cuffmerge','toolsModule') .' ' .LoadConfig::getParam($rH_cfg, 'cuffdiff','cranRModule') .' ;';
+	$command .= ' Rscript $R_TOOLS/mergecuffdiff_known.R ' .$outputDir .$designFile .' ;';
+	$command .= ' Rscript $R_TOOLS/mergecuffdiff_denovo.R ' .$outputDir .$designFile .' ;';
+
+	return $command;
+}
+
+sub filterResults {
+	my $rH_cfg        = shift;
+	my $outputDir     = shift;
+	
+	### TO DO : make it more portable when the mergeCuffdiffRes R script will be re-write
+	my $command;
+	$command .= 'for i in \`ls ' .$outputDir .'/*/isoform_exp.diff.with.fpkm.csv\` ;' ;
+	$command .= ' do head -1 \$i > ' .$outputDir .'/tmp ;' ;
+	$command .= ' sed 1d \$i | grep -v \"NOTEST\" | grep -v \"FAIL\" | sort -k 12 -g >> ' .$outputDir .'/tmp ;' ;
+	$command .= ' mv ' .$outputDir .'/tmp \$i ;' ;
+	$command .= ' done' ;
+
+	return $command;
 }
 
 1;

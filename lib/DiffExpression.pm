@@ -20,6 +20,7 @@ B<DiffExpression> is a library to create differencial expression analysis.
 =head1 AUTHOR
 
 David Morais dmorais@cs.bris.ac.uk
+B<Mathieu Bourgey> - I<mbourgey@genomequebec.com>
 
 =head1 DEPENDENCY
 
@@ -73,6 +74,41 @@ sub edger{
 	$retVal{'command'} = $command;
 	return ( \%retVal );
 		
+	
+}
+
+sub edgerPortable {
+	my $rH_cfg        = shift;
+	my $designFile    = shift;
+	my $countMatrix   = shift;
+	my $outputDir     = shift;
+	
+	my $command;
+	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'diffExpress','toolsModule') .' ' .LoadConfig::getParam($rH_cfg, 'diffExpress','cranRModule') .' ;';
+	$command .= ' Rscript $R_TOOLS/edger.R -d' .$designFile;
+	$command .= ' -c' .$countMatrix;
+	$command .= ' -o' .$outputDir;
+
+	return $command;
+}
+
+sub deseq {
+	my $rH_cfg        = shift;
+	my $designFile    = shift;
+	my $countMatrix   = shift;
+	my $outputDir     = shift;
+	
+	my $command;
+	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'diffExpress','toolsModule') .' ' .LoadConfig::getParam($rH_cfg, 'diffExpress','cranRModule') .' ;';
+	$command .= ' Rscript $R_TOOLS/deseq.R -d' .$designFile;
+	$command .= ' -c' .$countMatrix;
+	$command .= ' -o' .$outputDir;
+
+	return $command;
+}
+
+sub matrix {
+	my $rH_cfg        = shift;
 	
 }
 
