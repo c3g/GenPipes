@@ -383,7 +383,7 @@ sub cuffdiff {
 	
 	my $jobDependency = undef;
 	if($depends > 0) {
-		$jobDependency = join(':',values(%{$globalDep ->{'fpkm'}}));
+		$jobDependency = join(LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep'),values(%{$globalDep ->{'fpkm'}}));
 	}
 	print "mkdir -p cuffdiff/known cuffdiff/denovo\n";
 	##get design groups
@@ -478,9 +478,9 @@ sub metrics {
 	my $rAoH_sampleLanes  = shift;
 	my $rAoH_seqDictionary = shift;
 
-	my $jobDependency = undef;
+	my $mergingDependency = undef;
 	if($depends > 0) {
-		$jobDependency = join(':',values(%{$globalDep ->{'merging'}}));
+		$mergingDependency = join(LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep'),values(%{$globalDep ->{'merging'}}));
 	}
 	## RNAseQC metrics
 	print "echo -e \"Sample\tBamFile\tNote\" >  alignment/rnaseqc.samples.txt\n"
@@ -489,19 +489,19 @@ sub metrics {
 	}
 	
 	print "mkdir -p metrics\n";
-	my $sampleList = "alignment/rnaseqc.samples.txt"
-	my $outputFolder = "metrics"
+	my $sampleList = 'alignment/rnaseqc.samples.txt'
+	my $outputFolder = 'metrics'
 	my $command = Metrics::rnaQc($rH_cfg, $sampleList, $outputFolder);
 	my $metricsJobId = undef;
 	if(defined($command) && length($command) > 0) {
-		$metricsJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "metricsRNA", undef, 'METRICSRNA', $jobDependency, undef, $command);
+		$metricsJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", undef, 'METRICSRNA', $mergingDependency, undef, $command);
 		$metricsJobId = .'$' .$metricsJobId;
 	}
 	
 	##rawcount Matrix
-	my $jobDependency = undef;
+	my $countDependency = undef;
 	if($depends > 0) {
-		$jobDependency = join(':',values(%{$globalDep ->{'rawCounts'}}));
+		$countDependency = join(LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep'),values(%{$globalDep ->{'rawCounts'}}));
 	}
 	
 	print "mkdir -p DGE\n";
@@ -512,17 +512,40 @@ sub metrics {
 	$command = HtseqCount::refGtf2matrix($rH_cfg, LoadConfig::getParam($rH_cfg, 'htseq', 'referenceGtf'), $readCountDir, $readcountExtension, $outputDir, $outputMatrix);
 	my $matrixJobId = undef;
 	if(defined($command) && length($command) > 0) {
-		$matrixJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "metricsRNA", undef, 'MATRIX', $jobDependency, undef, $command);
+		$matrixJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", undef, 'MATRIX', $countDependency, undef, $command);
 		$matrixJobId = .'$' .$matrixJobId;
 	}
 	
 	##Saturation
+	my $countFile   = 'DGE/rawCountMatrix.csv';
+	my $gtfFile     = LoadConfig::getParam($rH_cfg, 'saturation', 'referenceGtf');
+	my $rpkmDir = 'raw_counts';
+	my $saturationDir = 'metrics';
 	
-
-
+	$command =  Metrics::saturation($rH_cfg, $countFile, $gtfFile, $rpkmDir, $saturationDir);
+	my $saturationJobId = undef;
+	if(defined($command) && length($command) > 0) {
+		$saturationJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "saturation", undef, 'SATURATION', $matrixJobId, undef, $command);
+		$saturationJobId = .'$' .$saturationJobId;
+	}
+	
 	##fpkm Stats & Correlation
+	my $fpkmDependency = undef;
+	if($depends > 0) {
+		$fpkmDependency = join(LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep'),values(%{$globalDep ->{'fpkm'}}));
+	}
 
+	my $patern = '.fpkm_tracking';
+	my $folder = 'fpkm/known/';
+	my $outputBaseName = 'metrics/fpkm';
 
+	$command =  Metrics::fpkmCor($rH_cfg, $patern, $folder, $outputBaseName);
+	my $fpkmJobId = undef;
+	if(defined($command) && length($command) > 0) {
+		$fpkmJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", undef, 'STATS_COR', $fpkmDependency, undef, $command);
+		$fpkmJobId = .'$' .$fpkmJobId;
+	}
+	
 	##BamContent
 
 	return $matrixJobId;
