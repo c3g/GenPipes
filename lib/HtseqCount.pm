@@ -154,6 +154,30 @@ sub sortRead{
 	$retVal{'command'} = $command;
 	return ( \%retVal );
 }
+
+sub refGtf2matrix {
+        my $rH_cfg      = shift;
+	my $refGtf  = shift;
+	my $readCountDir = shift;
+	my $readcountExtension = shift;
+	my $outputDir = shift;
+	my $outputMatrix  = shift;
+	
+        my $command = ;
+        $command .= 'awk \' BEGIN {FS=\";\"} { split($1,ens,\"\\"\"); split($4,na,\"\\"\") ; print ens[2] \"\t\" na[2]} \'' ;
+        $command .= ' ' .$refGtf ;
+        $command .= ' | sort -u > ' .$outputDir .'/tmpMatrix.txt ;';
+        $command .= ' for i in \` ls ' .$readCountDir .'/*' .$readcountExtension .' \` ;';
+        $command .= ' do sort -k1,1 \$i > ' .$outputDir .'/tmpSort.txt ;';
+        $command .= ' join -1 1 -2 1' .$outputDir .'/tmpMatrix.txt ' .$outputDir .'/tmpSort.txt > ' .$outputDir .'/tmpMatrix.txt ;';
+        $command .= ' done ; rm ' .$outputDir .'/tmpSort.txt ;';
+        $command .= ' mv ' .$outputDir .'/tmpMatrix.txt ' .$outputDir .'/' .$outputMatrix .' ;' ;
+        $command .= ' rm ' .$outputDir .'/tmpMatrix.txt ';
+        
+        return $command;
+               
+}
+
 1;
 
 

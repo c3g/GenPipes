@@ -74,9 +74,9 @@ push(@steps, {'name' => 'merging' , 'stepLoop' => 'sample' , 'output' => 'alignm
 push(@steps, {'name' => 'wiggle' , 'stepLoop' => 'sample' , 'output' => 'tracks'});
 push(@steps, {'name' => 'rawCounts' , 'stepLoop' => 'sample' , 'output' => 'reads_count'});
 push(@steps, {'name' => 'fpkm' , 'stepLoop' => 'sample' , 'output' => 'fpkm'});
-push(@steps, {'name' => 'metrics' , 'stepLoop' => 'group' , 'output' => 'stats'});
 #push(@steps, {'name' => 'saturationRpkm' , 'stepLoop' => 'group' , 'output' => 'reads_count'}); included in metrics
 push(@steps, {'name' => 'cuffdiff' , 'stepLoop' => 'group' , 'output' => 'DGE'});
+push(@steps, {'name' => 'metrics' , 'stepLoop' => 'group' , 'output' => 'stats'});
 push(@steps, {'name' => 'dge' , 'stepLoop' => 'group' , 'output' => 'DGE'});
 push(@steps, {'name' => 'delivrable' , 'stepLoop' => 'group' , 'output' => 'Delivrable'});
 
@@ -470,24 +470,6 @@ sub cuffdiff {
 	return $filterCuffdiffResJobID;
 }
 
-sub dge {
-	my $depends = shift;
-	my $rH_cfg = shift;
-	my $rHoAoH_sampleInfo = shift;
-	my $rAoH_sampleLanes  = shift;
-	my $rAoH_seqDictionary = shift;
-
-	my $jobDependency = undef;
-	if($depends > 0) {
-		$jobDependency = join(':',values(%{$globalDep ->{'rawCounts'}}));
-	}
-	
-	print "mkdir -p DGE";
-	
-	my $CountMatrix = 'DGE/rawCountMatrix.csv';
-	
-}
-
 
 sub metrics {
 	my $depends = shift;
@@ -512,12 +494,30 @@ sub metrics {
 	my $command = Metrics::rnaQc($rH_cfg, $sampleList, $outputFolder);
 	my $metricsJobId = undef;
 	if(defined($command) && length($command) > 0) {
-		$metricsJobId= SubmitToCluster::printSubmitCmd($rH_cfg, "metricsRNA", undef, 'METRICSRNA', $jobDependency, undef, $command);
+		$metricsJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "metricsRNA", undef, 'METRICSRNA', $jobDependency, undef, $command);
+		$metricsJobId = .'$' .$metricsJobId;
 	}
 	
-
-
+	##rawcount Matrix
+	my $jobDependency = undef;
+	if($depends > 0) {
+		$jobDependency = join(':',values(%{$globalDep ->{'rawCounts'}}));
+	}
+	
+	print "mkdir -p DGE\n";
+	my $readCountDir = 'raw_counts' ;
+	my $readcountExtension = '.readcounts.csv';
+	my $outputDir = 'DGE';
+	my $outputMatrix = 'rawCountMatrix.csv';
+	$command = HtseqCount::refGtf2matrix($rH_cfg, LoadConfig::getParam($rH_cfg, 'htseq', 'referenceGtf'), $readCountDir, $readcountExtension, $outputDir, $outputMatrix);
+	my $matrixJobId = undef;
+	if(defined($command) && length($command) > 0) {
+		$matrixJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "metricsRNA", undef, 'MATRIX', $jobDependency, undef, $command);
+		$matrixJobId = .'$' .$matrixJobId;
+	}
+	
 	##Saturation
+	
 
 
 	##fpkm Stats & Correlation
@@ -525,8 +525,43 @@ sub metrics {
 
 	##BamContent
 
-	return $metrics;
+	return $matrixJobId;
 }
-  
+ 
+sub dge {
+	my $depends = shift;
+	my $rH_cfg = shift;
+	my $rHoAoH_sampleInfo = shift;
+	my $rAoH_sampleLanes  = shift;
+	my $rAoH_seqDictionary = shift;
+
+	my $jobDependency = undef;
+	if($depends > 0) {
+		$jobDependency = $globalDep{'metrics'}{'metrics'};;
+	}
+	
+	print "mkdir -p DGE";
+	
+	my $countMatrix = 'DGE/rawCountMatrix.csv';
+	my $outputDir = 'DGE';
+	
+	## edgeR
+	my $command = DiffExpression::edgerPortable($rH_cfg, $designFilePath, $countMatrix, $outputDir);
+	my $edgerJobId = undef;
+	if(defined($command) && length($command) > 0) {
+		$edgerJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "diffExpress", undef, 'EDGER', $jobDependency, undef, $command);
+		$edgerJobId = .'$' .$edgerJobId;
+	}
+	
+	## DESeq
+	$command = DiffExpression::deseq($rH_cfg, $designFilePath, $countMatrix, $outputDir);
+	my $deseqJobId = undef;
+	if(defined($command) && length($command) > 0) {
+		$deseqJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "diffExpress", undef, 'EDGER', $jobDependency, undef, $command);
+		$deseqJobId = .'$' .$deseqJobId;
+	}
+	
+	return $deseqJobId;
+} 
 
 1;

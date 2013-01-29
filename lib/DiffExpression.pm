@@ -107,10 +107,7 @@ sub deseq {
 	return $command;
 }
 
-sub matrix {
-	my $rH_cfg        = shift;
-	
-}
+
 
 1;
 
