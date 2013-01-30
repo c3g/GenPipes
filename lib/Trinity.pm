@@ -125,7 +125,7 @@ sub concatFastaCreateGtf {
     my $laneDirectory = "alignment/" . $sampleName . "/";
 
     $command .= 'module add jdk64/6u35; ';
-    $command .= ' module add mugqic/trinity/2012-06-18 ;';
+    $command .= ' module add mugqic/trinity/r2012-10-05 ;';
     $command .= ' find ' . $laneDirectory . 'chrysalis';
     $command .= ' -name "*allProbPaths.fasta" -exec cat {} + >' . $laneDirectory . 'Trinity.fasta ;';
     $command .= ' sh ' . $rH_cfg->{'trinity.createGtf'} . ' ' . $laneDirectory . 'Trinity.fasta';
@@ -147,7 +147,7 @@ sub _chrysalisPairCommand {
 
         my $laneDirectory = 'alignment/' . $sampleName . '/';
         $command .= 'module add jdk64/6u35; ';
-        $command .= ' module add mugqic/trinity/2012-06-18 ;';
+        $command .= ' module add mugqic/trinity/r2012-10-05 ;';
         $command .= ' Trinity.pl --seqType fq --JM 100G';
         $command .= ' --left' . ' " ' . $rH_groupInfo->{'left'} . ' " ' . '--right' . ' " ' . $rH_groupInfo->{'right'} . ' " ';
         $command .= ' --CPU 22 --output ' . $laneDirectory;
@@ -158,7 +158,7 @@ sub _chrysalisPairCommand {
     else {
         my $laneDirectory = 'alignment/' . $sampleName . '/';
         $command .= 'module add jdk64/6u35; ';
-        $command .= ' module add mugqic/trinity/2012-06-18 ;';
+        $command .= ' module add mugqic/trinity/r2012-10-05 ;';
         $command .= ' Trinity.pl --seqType fq --JM 100G';
         $command .= ' --left' . ' " ' . $rH_dupDetails->{'pair1'} . ' " ' . '--right ' . ' " ' . $rH_dupDetails->{'pair2'} . ' " ';
         $command .= ' --CPU 22 --output ' . $laneDirectory;
@@ -179,7 +179,7 @@ sub _chrysalisSingleCommand {
 
         my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
         $command .= 'module add jdk64/6u35; ';
-        $command .= ' module add mugqic/trinity/2012-06-18 ;';
+        $command .= ' module add mugqic/trinity/r2012-10-05 ;';
         $command .= ' Trinity.pl --seqType fq --JM 100G';
         $command .= ' ' . $rH_dupDetails->{'single1'};
         $command .= ' --CPU 22 --output ' . $laneDirectory;
@@ -189,7 +189,7 @@ sub _chrysalisSingleCommand {
     else {
         my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
         $command .= 'module add jdk64/6u35; ';
-        $command .= ' module add mugqic/trinity/2012-06-18 ;';
+        $command .= ' module add mugqic/trinity/r2012-10-05 ;';
         $command .= ' Trinity.pl --seqType fq --JM 100G';
         $command .= ' --single ' . $rH_dupDetails->{'single1'};
         $command .= ' --CPU 22 --output ' . $laneDirectory;
