@@ -122,7 +122,7 @@ sub alignParallel {
     my %retVal;
     my $laneDirectory = "assembly/" . $sampleName . "/";
 
-    $command .= 'module add mugqic/BLAST/2.2.26+;';
+    $command .= 'module add mugqic/blast/2.2.27+;';
     $command .= ' mkdir -p ' . $laneDirectory . 'fasta_split/' . basename($rH_cfg->{'blast.db'}) . ';';
     $command .= ' ' . $rH_cfg->{'blast.parallelBlast'} . ' --file ' . $laneDirectory . 'fasta_split/' . $fileFasta;
     $command .= ' --OUT ' . $laneDirectory . 'fasta_split/' . basename($rH_cfg->{'blast.db'})  . '/' . $outFile . '_BLASTOUT.txt';
