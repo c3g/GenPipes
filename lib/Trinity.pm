@@ -106,7 +106,7 @@ sub butterfly {
     my %retVal;
 
     $command .= 'module add jdk64/6u35; ';
-    $command .= ' module add mugqic/trinity/2012-06-18 ;';
+    $command .= ' module add mugqic/trinity/r2012-10-05 ;';
     $command .= ' ' . $rH_cfg->{'trinity.parallel'} . ' -f ' . $laneDirectory . 'butterfly_split/' . $fileButterflyComand;
     $command .= ' -n ' . $rH_cfg->{'trinity.nbThreads'};
 
