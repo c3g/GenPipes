@@ -32,6 +32,7 @@ package Metrics;
 #--------------------------
 use strict;
 use warnings;
+use SAMtools;
 
 #--------------------------
 
@@ -96,6 +97,30 @@ sub fpkmCor {
 	return $command;
 }
 
+sub readStats {
+	my $rH_cfg = shift;
+	my $inputFile = shift;
+	my $outputFile = shift;
+	my $fileType = shift;
 	
+	my $latestInputFile = -M $inputFile;
+	my $latestOutputFile = -M $outputFile;
+	
+	my $command;
+	if(!defined($latestInputFile) || !defined($latestOutputFile) || $latestInputFile <  $latestOutputFile) {
+		if ((lc $fileType) eq "fastq") {
+			$command .= 'zcat ' .$inputFile;
+			$command .= ' | wc -l | awk \'{print \$1}\'';
+			$command .= ' > ' .$outputFile;
+		}
+		elsif  ((lc $fileType) eq "bam") {
+			my $unmapOption = '-F4 -F256';
+			$command .= SAMtools::viewFilter($rH_cfg, $inputFile, $unmapOption, undef);
+			$command .= ' | wc -l  > ' .$outputFile;
+		}
+	}
+
+	return $command;
+}
 
 1;

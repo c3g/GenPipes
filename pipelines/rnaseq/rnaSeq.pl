@@ -149,50 +149,95 @@ sub main {
 }
 
 sub trimming {
-  my $depends = shift;
-  my $rH_cfg = shift;
-  my $sampleName = shift;
-  my $rAoH_sampleLanes  = shift;
-  my $rAoH_seqDictionary = shift;
+	my $depends = shift;
+	my $rH_cfg = shift;
+	my $sampleName = shift;
+	my $rAoH_sampleLanes  = shift;
+	my $rAoH_seqDictionary = shift;
 
-  my $trimJobIdVarNameSample = undef;
-  for my $rH_laneInfo (@$rAoH_sampleLanes) {
-    my $rH_trimDetails = Trimmomatic::trim($rH_cfg, $sampleName, $rH_laneInfo);
-    my $trimJobIdVarNameLane=undef;
-    if(length($rH_trimDetails->{'command'}) > 0) {
-      $trimJobIdVarNameLane = SubmitToCluster::printSubmitCmd($rH_cfg, "trim", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'TRIM', undef, $sampleName, $rH_trimDetails->{'command'}, $workDirectory);
-      $trimJobIdVarNameSample .= '$'.$trimJobIdVarNameLane .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
-      #TODO calcReadCounts.sh
-    }
-   }
-    $trimJobIdVarNameSample = substr $trimJobIdVarNameSample 0 -1;
-  return $trimJobIdVarNameSample;	
+	my $trimJobIdVarNameSample = undef;
+	for my $rH_laneInfo (@$rAoH_sampleLanes) {
+		print "mkdir -p metrics reads\n";
+		##get raw read count
+		my $inputFile = LoadConfig::getParam($rH_cfg, 'default', 'rawReadDir') .'/' .$rH_laneInfo->{'read1File'};
+		my $outputFile= 'metrics/' .$sampleName .'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . 'readstats.raw.csv' ;
+		my $command = Metrics::readStats($rH_cfg,$inputFile,$outputFile,'fastq');
+		my $rawReadStatJobID = undef;
+		if(defined($command) && length($command) > 0) {
+			$rawReadStatJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", undef, 'RAWREADSTAT', undef, $sampleName, $command);
+			$rawReadStatJobID = '$'.$rawReadStatJobID;
+		}
+		
+		## trimming - TO DO should be modified to the new rawread location (cf. David modif) and portability
+		my $laneDirectory = 'reads/' .$sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
+		my $outputFastqPair1Name = $laneDirectory . $sampleName.'.t'.$minQuality.'l'.$minLength.'.pair1.fastq.gz';
+		my $rH_trimDetails = Trimmomatic::trim($rH_cfg, $sampleName, $rH_laneInfo);
+		my $trimJobIdVarNameLane=undef;
+		if(length($rH_trimDetails->{'command'}) > 0) {
+			$trimJobIdVarNameLane = SubmitToCluster::printSubmitCmd($rH_cfg, "trim", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'TRIM', undef, $sampleName, $rH_trimDetails->{'command'}, $workDirectory);
+			$trimJobIdVarNameLane = '$' .$trimJobIdVarNameLane ;
+		}
+		
+		##get trimmed read count
+		my $inputFile = $outputFastqPair1Name;
+		my $outputFile= 'metrics/' .$sampleName .'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . 'readstats.filtered.csv' ;
+		$command = Metrics::readStats($rH_cfg,$inputFile,$outputFile,'fastq');
+		my $filteredReadStatJobID = undef;
+		if(defined($command) && length($command) > 0) {
+			$filteredReadStatJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", undef, 'FILTERREADSTAT',$trimJobIdVarNameLane, $sampleName, $command);
+			$filteredReadStatJobID = '$'.$filteredReadStatJobID;
+		}
+		$trimJobIdVarNameSample .= $filteredReadStatJobID .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
+	}
+	chomp($trimJobIdVarNameSample);
+	return $trimJobIdVarNameSample;	
 }
 
 sub aligning {
-  my $depends = shift;
-  my $rH_cfg = shift;
-  my $sampleName = shift;
-  my $rAoH_sampleLanes  = shift;
-  my $rAoH_seqDictionary = shift;
+	my $depends = shift;
+	my $rH_cfg = shift;
+	my $sampleName = shift;
+	my $rAoH_sampleLanes  = shift;
+	my $rAoH_seqDictionary = shift;
 
-  my $alignJobIdVarNameSample = undef;
-  my $jobDependency = undef;
-  if($depends > 0) {
-    $jobDependency = $globalDep{'trimming'}{$sampleName};
-  }
-  
-  print "mkdir -p alignment\n";
-  for my $rH_laneInfo (@$rAoH_sampleLanes) {
-    my $alignJobIdVarNameLane=undef;
-    my $commands = Tophat::aln($rH_cfg, $sampleName, $rH_laneInfo, $rH_trimDetails->{'pair1'}, $rH_trimDetails->{'pair2'}, $rH_trimDetails->{'single1'}, $rH_trimDetails->{'single2'});
-    if(defined $commands && length($command) > 0){
-      my $alignJobIdVarNameLane = SubmitToCluster::printSubmitCmd($rH_cfg, "align", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'ALIGN', $jobDependency, $sampleName, $commands, $workDirectory);
-      $alignJobIdVarNameSample .= '$'. $alignJobIdVarNameLane .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep'); 
-    } 
-    $alignJobIdVarNameSample = substr $alignJobIdVarNameSample 0 -1;
-  }
-  return $alignJobIdVarNameSample;
+	my $alignJobIdVarNameSample = undef;
+	my $jobDependency = undef;
+	if($depends > 0) {
+	$jobDependency = $globalDep{'trimming'}{$sampleName};
+	}
+	
+	print "mkdir -p alignment\n";
+	for my $rH_laneInfo (@$rAoH_sampleLanes) {
+		my $alignJobIdVarNameLane=undef;
+		my $pair1;
+		my $pair2;
+		my $single;
+		my $commands;
+		if ( $rH_laneInfo->{'runType'} eq "SINGLE_END" ) {
+			$single =  'reads/' .$sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName .'.t' .LoadConfig::getParam($rH_cfg,'trim','minQuality') .'l' .LoadConfig::getParam($rH_cfg,'trim','minLength') .'.single.fastq.gz';
+			$commands = Tophat::align($rH_cfg, $sampleName, $rH_laneInfo, $single );
+		}
+		elsif($rH_laneInfo->{'runType'} eq "PAIRED_END") {
+			$pair1 =  'reads/' .$sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName .'.t' .LoadConfig::getParam($rH_cfg,'trim','minQuality') .'l' .LoadConfig::getParam($rH_cfg,'trim','minLength') .'.pair1.fastq.gz';
+			$pair2 =  'reads/' .$sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName .'.t' .LoadConfig::getParam($rH_cfg,'trim','minQuality') .'l' .LoadConfig::getParam($rH_cfg,'trim','minLength') .'.pair2.fastq.gz';
+			$commands = Tophat::align($rH_cfg, $sampleName, $rH_laneInfo, $pair1, $pair2);
+		}
+		if(defined $commands && length($command) > 0){
+			my $alignJobIdVarNameLane = SubmitToCluster::printSubmitCmd($rH_cfg, "align", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'ALIGN', $jobDependency, $sampleName, $commands, $workDirectory);
+			$alignJobIdVarNameLane .= '$'. $alignJobIdVarNameLane ; 
+		} 
+		my $inputFile = 'alignment/' . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . 'accepted_hits.bam';
+		my $outputFile= 'metrics/' .$sampleName .'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . 'readstats.aligned.csv' ;
+		$command = Metrics::readStats($rH_cfg,$inputFile,$outputFile,'bam');
+		my $alignedReadStatJobID = undef;
+		if(defined($command) && length($command) > 0) {
+			$alignedReadStatJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", undef, 'ALIGNEDREADSTAT',$alignJobIdVarNameLane, $sampleName, $command);
+			$alignedReadStatJobID = '$'.$alignedReadStatJobID;
+		}
+		$alignJobIdVarNameSample .= $alignedReadStatJobID .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
+	}
+	chomp($alignJobIdVarNameSample);
+	return $alignJobIdVarNameSample;
 }
 
 sub merging {
@@ -546,8 +591,17 @@ sub metrics {
 		$fpkmJobId = .'$' .$fpkmJobId;
 	}
 	
-	##BamContent
-
+	##readStats merge all files together and remove individuals ones
+	#itarate over each sample
+	for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
+		#raw read stats
+		
+		$command =  Metrics::readStats($rH_cfg,$inputFile,$outputFile,'fastq')
+		my $trimDependency = undef;
+		if($depends > 0) {
+			$mergingDependency
+	
+	$command =  Metrics::readStats($rH_cfg,$inputFile,$outputFile,'fastq')
 	return $matrixJobId;
 }
  

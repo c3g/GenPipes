@@ -163,13 +163,33 @@ sub sort {
 
  
   my $command;
-  $command .= 'module load mugqic/samtools/0.1.18 ;';
+  $command .= 'module load ' .LoadConfig::getParam($rH_cfg,'default','samtoolsModule') .' ;';
   $command .= ' samtools sort';
   $command .= ' '.$option;
   $command .= ' '.$bamFile;
   $command .= ' '.$output;
 
   return $command;
+}
+
+sub viewFilter {
+	my $rH_cfg      = shift;
+	my $bamFile     = shift;
+	my $option      = shift;
+	my $output      = shift;
+
+	my $returnOutput;
+	if (defined($output)) {
+		$returnOutput = ' > ' .$output;
+	}
+	
+	my $command;
+	$command .= 'module load ' .LoadConfig::getParam($rH_cfg,'default','samtoolsModule') .' ;';
+	$command .= ' samtools view';
+	$command .= ' ' .$option;
+	$command .= $returnOutput;
+
+	return $command;
 }
 
 1;
