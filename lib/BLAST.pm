@@ -91,7 +91,7 @@ sub align {
     my %retVal;
     my $laneDirectory = "assembly/" . $sampleName . "/";
 
-    $command .= 'module add mugqic/BLAST/2.2.26+;';
+    $command .= 'module add mugqic/blast/2.2.27+;';
     $command .= ' mkdir -p ' . $laneDirectory . 'fasta_split/' . basename($rH_cfg->{'blast.db'}) . ';';
     $command .= ' ' . $rH_cfg->{'blast.program'} . ' -num_threads ' . $rH_cfg->{'blast.nbThreads'};
     $command .= ' -query ' . $laneDirectory . 'fasta_split/' . basename($rH_cfg->{'blast.db'})  . '/' . $fileFasta;
