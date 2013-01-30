@@ -95,7 +95,7 @@ sub readCount {
     my $command       = '';
     my $laneDirectory = "read_count/" . $group . "/";
 
-    $command .= ' module add mugqic/samtools/0.1.6; ';
+    $command .= ' module add mugqic/samtools/0.1.8; ';
     $command .= ' samtools view ' . $laneDirectory . $sampleName . '.QueryName.bam | ';
     $command .= ' htseq-count - ' . 'alignment/' . $group . '/' . $group . '.gtf ';
     $command .= ' -s no >' . $laneDirectory . $sampleName . '.readcount.cvs';
@@ -117,8 +117,8 @@ sub sortRead {
 
     $command .= ' mkdir -p  read_count/' . $group . ' ;';
     $command .= ' mkdir -p  DGE/' . $group . ';';
-    $command .= ' module add jdk64 ; module add mugqic/picard/1.64/ ; ';
-    $command .= ' java -Xmx30g -jar SortSam.jar ';
+    $command .= ' module add jdk64 ; module add mugqic/picard/1.84/ ; ';
+    $command .= ' java -Xmx30g -jar ${PICARD_HOME}/SortSam.jar ';
     $command .= ' VALIDATION_STRINGENCY=SILENT MAX_RECORDS_IN_RAM=5000000 CREATE_INDEX=true TMP_DIR=/mnt/scratch_mp2/bourque/bourque_group/tmpDir/ ';
     $command .= ' INPUT=' . $laneDirectory . $sampleName . '.sorted.bam ';
     $command .= ' OUTPUT=read_count/' . $group . '/' . $sampleName . '.QueryName.bam ';
