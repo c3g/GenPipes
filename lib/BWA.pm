@@ -108,7 +108,7 @@ sub pairCommand {
 
         my $rgId = $rH_laneInfo->{'libraryBarcode'} . "_" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
         my $rgTag = "'" . '@RG\tID:' . $rgId . '\tSM:' . $rH_laneInfo->{'name'} . '\tLB:' . $rH_laneInfo->{'libraryBarcode'} . '\tPU:run' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . '\tCN:' . LoadConfig::getParam( $rH_cfg, 'aln', 'bwaInstitution' ) . '\tPL:Illumina' . "'";
-        $bwaCommand .= 'module load mugqic/bwa/0.6.2 ;module load mugqic/picard/1.77 ; bwa sampe';
+        $bwaCommand .= 'module load mugqic/bwa/0.6.2 ;module load mugqic/picard/1.84 ; bwa sampe';
         $bwaCommand .= ' -r ' . $rgTag;
         $bwaCommand .= ' ' . $laneDirectory . LoadConfig::getParam( $rH_cfg, 'aln', 'bwaRefIndex' );
         $bwaCommand .= ' ' . $outputSai1Name;
@@ -146,7 +146,7 @@ sub singleCommand {
         my $saiCommand = "";
         my $bwaCommand = "";
 
-        $saiCommand .= 'module load mugqic/bwa/0.6.2 ; bwa aln';
+        $saiCommand .= 'module load mugqic/bwa/0.6.2 ; module add ; bwa aln';
         $saiCommand .= ' -t ' . LoadConfig::getParam( $rH_cfg, 'aln', 'bwaAlnThreads' );
         $saiCommand .= ' ' . $laneDirectory . LoadConfig::getParam( $rH_cfg, 'aln', 'bwaRefIndex' );
         $saiCommand .= ' ' . $single;
@@ -155,7 +155,7 @@ sub singleCommand {
 
         my $rgId = $rH_laneInfo->{'libraryBarcode'} . "_" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
         my $rgTag = "'" . '@RG\tID:' . $rgId . '\tSM:' . $rH_laneInfo->{'name'} . '\tLB:' . $rH_laneInfo->{'libraryBarcode'} . '\tPU:run' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . '\tCN:' . LoadConfig::getParam( $rH_cfg, 'aln', 'bwaInstitution' ) . '\tPL:Illumina' . "'";
-        $bwaCommand .= 'module load mugqic/bwa/0.6.2 ;module load mugqic/picard/1.77 ; bwa samse';
+        $bwaCommand .= 'module load mugqic/bwa/0.6.2 ;module load mugqic/picard/1.84 ; bwa samse';
         $bwaCommand .= ' -r ' . $rgTag;
         $bwaCommand .= ' ' . $laneDirectory . LoadConfig::getParam( $rH_cfg, 'aln', 'bwaRefIndex' );
         $bwaCommand .= ' ' . $outputSaiName;
