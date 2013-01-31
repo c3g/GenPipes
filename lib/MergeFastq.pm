@@ -51,34 +51,33 @@ use File::Basename;
 use Cwd 'abs_path';
 
 sub mergeFiles {
-	my $rH_cfg      = shift;
-    my $runType     = shift;
-    my $fileAlias   = shift;
-    my $outDir      = dirname($fileAlias); 
-    
-    my $command='';
+    my $rH_cfg    = shift;
+    my $runType   = shift;
+    my $fileAlias = shift;
+    my $outDir    = dirname($fileAlias);
+
+    my $command = '';
     my %retVal;
-    
-	$runType = ($runType eq "PAIRED_END") ? 1 : 0;
-	
-    my $mergeStatus = `$rH_cfg->{'python.merge'} -f $fileAlias -d $runType -o $outDir`;
-    if ($mergeStatus == 0 ) {
+
+    $runType = ( $runType eq "PAIRED_END" ) ? 1 : 0;
+
+    my $mergeStatus = `$rH_cfg->{'merge.python'} -f $fileAlias -d $runType -o $outDir`;
+    if ( $mergeStatus == 0 ) {
 
         #---------------------------------------
         # Todo
         # Need to Implement command line merge
         #--------------------------------------
         $command = ' pyhton Do a merge';
-        
+
     }
     else {
         print "No Merge step necessary\n";
         $command = 'No merge';
-        
 
     }
     $retVal{'command'} = $command;
-    return (\%retVal);
+    return ( \%retVal );
 
 }
 

@@ -66,8 +66,8 @@ sub splitFasta {
 
     my %retVal;
     my $command        = '';
-    my $laneDirectory  = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
-    my $splitDirectory = $laneDirectory . "fasta_split";
+    my $laneDirectory  = 'assembly/' . $sampleName . "/";
+    my $splitDirectory = $laneDirectory . "fasta_split/";
 
     $command .= ' mkdir -p ' . $splitDirectory . ' ; ';
     $command .= $rH_cfg->{'blast.split'} . ' -c ' . $rH_cfg->{'blast.chunks'};
@@ -85,11 +85,11 @@ sub splitButterfly {
 
     my %retVal;
     my $command        = '';
-    my $laneDirectory  = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
+    my $laneDirectory  = 'assembly/' . $sampleName . '/chrysalis/';
     my $splitDirectory = $laneDirectory . "butterfly_split";
 
     $command .= ' mkdir -p ' . $splitDirectory . ' ; ';
-    $command .= ' split -a 4 -d -l ' . $rH_cfg->{'trinity.splitLines'} . ' ' . $laneDirectory . 'chrysalis/butterfly_commands.adj '; # split numerically with a 4 digits padding
+    $command .= ' split -a 4 -d -l ' . $rH_cfg->{'trinity.splitLines'} . ' ' . $laneDirectory . 'butterfly_commands.adj '; # split numerically with a 4 digits padding
     $command .= $splitDirectory . '/cmd.';
 
     $retVal{'command'} = $command;
