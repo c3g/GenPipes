@@ -163,7 +163,7 @@ sub sort {
 
  
   my $command;
-  $command .= 'module load ' .LoadConfig::getParam($rH_cfg,'default','samtoolsModule') .' ;';
+  $command .= 'module load ' .LoadConfig::getParam($rH_cfg,'default','moduleVersion.samtools') .' ;';
   $command .= ' samtools sort';
   $command .= ' '.$option;
   $command .= ' '.$bamFile;
@@ -184,9 +184,10 @@ sub viewFilter {
 	}
 	
 	my $command;
-	$command .= 'module load ' .LoadConfig::getParam($rH_cfg,'default','samtoolsModule') .' ;';
+	$command .= 'module load ' .LoadConfig::getParam($rH_cfg,'default','moduleVersion.samtools') .' ;';
 	$command .= ' samtools view';
 	$command .= ' ' .$option;
+	$command .= ' ' .$bamFile;
 	$command .= $returnOutput;
 
 	return $command;

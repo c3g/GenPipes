@@ -54,9 +54,9 @@ sub align {
   my $bamFileDate = -M $outputBAM;
 
   my $command;
-  if (!defined($bamFileDate) || !defined(-M $ingle)  || $bamFileDate < -M $single) {
-    $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'align','bowtieModule') .' ;'; 
-    $command .= '  module load ' .LoadConfig::getParam($rH_cfg, 'align','bowtieModule') .' ;'; 
+  if (!defined($bamFileDate) || !defined(-M $pair1)  || $bamFileDate < -M $pair1) {
+    $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'align','moduleVersion.bowtie') .' ;'; 
+    $command .= '  module load ' .LoadConfig::getParam($rH_cfg, 'align','moduleVersion.tophat') .' ;'; 
     $command .= ' tophat';
     $command .= ' --rg-library \"' . $rH_laneInfo->{'libraryBarcode'} .'\"';
     $command .= ' --rg-platform \"' .LoadConfig::getParam($rH_cfg, 'align','platform') .'\"';

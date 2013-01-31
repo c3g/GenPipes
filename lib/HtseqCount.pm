@@ -49,6 +49,7 @@ use warnings;
 #-----------------------
 use Data::Dumper;
 use Config::Simple;
+use SAMtools
 
 our $rH_cfg;
 our $sampleName;
@@ -122,8 +123,8 @@ sub readCountPortable{
 	my $latestBam = -M $inputBam;
 	my $output1 = -M $outputFile;
 	if(!defined($latestBam) || !defined($output1) || $latestBam < $output1) {
-		$command .= ' module load' .LoadConfig::getParam($rH_cfg, 'htseq','samtoolsModule') .' ' .LoadConfig::getParam($rH_cfg, 'htseq','pythonModule') .' ' .LoadConfig::getParam($rH_cfg, 'htseq','htseqModule') .' ; ';
-		$command .= ' samtools view ' . $inputBam ;
+		$command .= ' module load ' .LoadConfig::getParam($rH_cfg, 'htseq','moduleVersion.python') .' ' .LoadConfig::getParam($rH_cfg, 'htseq','moduleVersion.htseq') .' ; ';
+		$command .= ' ; ' .SAMtools::viewFilter($rH_cfg, $inputBam) ;
 		$command .= ' | htseq-count - ' .  $inputGtf ;
 		$command .= ' -s ' .$strandInfo;
 		$command .= ' >' . $outputFile ;
@@ -175,7 +176,6 @@ sub refGtf2matrix {
         $command .= ' rm ' .$outputDir .'/tmpMatrix.txt ';
         
         return $command;
-               
 }
 
 1;

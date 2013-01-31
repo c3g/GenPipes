@@ -56,7 +56,7 @@ sub strandBam{
   my @command;
   # -M gives modified date relative to now. The bigger the older.
   if(!defined($latestFile) || !defined($output1) || !defined($output2) || $latestFile > $output1 || $latestFile > $output2) {
-    my $Fcommand = 'module load ' .LoadConfig::getParam($rH_cfg, 'wiggle','samtoolsModule') .' ;';
+    my $Fcommand = 'module load ' .LoadConfig::getParam($rH_cfg, 'wiggle','moduleVersion.samtools') .' ;';
     $Fcommand .= ' samtools view -h -F 256 -f 81 ' . $inputBAM;
     $Fcommand .= ' > alignment/' .$ampleName .'/' .$ampleName .'.tmp1.forward.sam ;';
     $Fcommand .= ' samtools view -h -F 256 -f 161 ' . $inputBAM;
@@ -71,7 +71,7 @@ sub strandBam{
     $Fcommand .= ' rm alignment/' .$ampleName .'/' .$ampleName .'.tmp*.forward.*am';
     push(@command,$Fcommand);
 
-    my $Rcommand = 'module load ' .LoadConfig::getParam($rH_cfg, 'wiggle','samtoolsModule') .' ;';
+    my $Rcommand = 'module load ' .LoadConfig::getParam($rH_cfg, 'wiggle','moduleVersion.samtools') .' ;';
     $Rcommand .= ' samtools view -h -F 256 -f 97 ' . $inputBAM;
     $Rcommand .= ' > alignment/' .$ampleName .'/' .$ampleName .'.tmp1.reverse.sam ;';
     $Rcommand .= ' samtools view -h -F 256 -f 145 ' . $inputBAM;
@@ -105,7 +105,7 @@ sub graph{
   my $command;
   # -M gives modified date relative to now. The bigger the older.
   if(!defined($latestFile) || !defined($output1) || !defined($output2) || $latestFile > $output1 || $latestFile > $output2) {
-    $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'wiggle','samtoolsModule') .' ' .LoadConfig::getParam($rH_cfg, 'wiggle','bedtoolsModule')  .' ' .LoadConfig::getParam($rH_cfg, 'wiggle','bed2wigModule') .' ;';
+    $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'wiggle','moduleVersion.samtools') .' ' .LoadConfig::getParam($rH_cfg, 'wiggle','moduleVersion.bedtools')  .' ' .LoadConfig::getParam($rH_cfg, 'wiggle','moduleVersion.bed2wig') .' ;';
     $command .= ' nmblines=\$(samtools view -F 256 -f 81 ' . $inputBAM .' | wc -l) ;';
     $command .= ' scalefactor=0\$(echo \"scale=2; 1 / (\$nmblines / 10000000);\" | bc) ;';   
     $command .= ' genomeCoverageBed -bg -ibam ' . $inputBAM;

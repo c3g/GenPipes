@@ -53,7 +53,7 @@ sub fpkm{
 	my $command;
 	# -M gives modified date relative to now. The bigger the older.
 	if(!defined($latestFile) || !defined(-M $outputIndexFile) || $latestFile < -M $outputIndexFile) {
-		$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'fpkm','cufflinksModule') .' ;';
+		$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'fpkm','moduleVersion.cufflinks') .' ;';
 		$command .= ' cufflinks -q';
 		$command .= ' ' .$transcriptOption; 
 		$command .= ' --max-bundle-frags ' .LoadConfig::getParam($rH_cfg, 'fpkm','cufflinksMaxFargs');
@@ -122,7 +122,7 @@ sub cuffdiff {
 	}
 	
 	my $command;
-	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'cuffdiff','cufflinksModule') .' ;';
+	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'cuffdiff','moduleVersion.cufflinks') .' ;';
 	$command .= ' cuffdiff -p' .LoadConfig::getParam($rH_cfg, 'cuffdiff','numThreads');
 	$command .= ' -o ' .$outputDir;
 	$command .= ' ' .$referenceGtf;
@@ -139,7 +139,7 @@ sub cuffmerge {
 	my $outputDir     = shift;
 	
 	my $command;
-	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'cuffmerge','cufflinksModule') .' ;';
+	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'cuffmerge','moduleVersion.cufflinks') .' ;';
 	$command .= ' cuffmerge -p' .LoadConfig::getParam($rH_cfg, 'cuffmerge','numThreads');
 	$command .= ' -o ' .$outputDir;
 	$command .= ' -g ' .LoadConfig::getParam($rH_cfg, 'cuffmerge','referenceGtf');
@@ -156,7 +156,7 @@ sub mergeGtfFormat {
 	my $outputFile    = shift;
 	
 	my $command;
-	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'cuffmerge','toolsModule') .' ;';
+	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'cuffmerge','moduleVersion.tools') .' ;';
 	$command .= ' perl formatGtfCufflinks.pl' .$inputFile .' ' .$outputFile ;
 	
 	return $command;
@@ -169,7 +169,7 @@ sub mergeCuffdiffRes {
 
 	### TO DO : re-write mergecuffdiff_known.R and mergecuffdiff_denovo.R to be more portable
 	my $command;
-	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'cuffmerge','toolsModule') .' ' .LoadConfig::getParam($rH_cfg, 'cuffdiff','cranRModule') .' ;';
+	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'cuffmerge','moduleVersion.tools') .' ' .LoadConfig::getParam($rH_cfg, 'cuffdiff','moduleVersion.cranR') .' ;';
 	$command .= ' Rscript $R_TOOLS/mergecuffdiff_known.R ' .$outputDir .$designFile .' ;';
 	$command .= ' Rscript $R_TOOLS/mergecuffdiff_denovo.R ' .$outputDir .$designFile .' ;';
 

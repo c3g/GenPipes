@@ -84,7 +84,7 @@ sub edgerPortable {
 	my $outputDir     = shift;
 	
 	my $command;
-	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'diffExpress','toolsModule') .' ' .LoadConfig::getParam($rH_cfg, 'diffExpress','cranRModule') .' ;';
+	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'diffExpress','moduleVersion.tools') .' ' .LoadConfig::getParam($rH_cfg, 'diffExpress','moduleVersion.cranR') .' ;';
 	$command .= ' Rscript $R_TOOLS/edger.R -d' .$designFile;
 	$command .= ' -c' .$countMatrix;
 	$command .= ' -o' .$outputDir;
@@ -99,7 +99,7 @@ sub deseq {
 	my $outputDir     = shift;
 	
 	my $command;
-	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'diffExpress','toolsModule') .' ' .LoadConfig::getParam($rH_cfg, 'diffExpress','cranRModule') .' ;';
+	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'diffExpress','moduleVersion.tools') .' ' .LoadConfig::getParam($rH_cfg, 'diffExpress','moduleVersion.cranR') .' ;';
 	$command .= ' Rscript $R_TOOLS/deseq.R -d' .$designFile;
 	$command .= ' -c' .$countMatrix;
 	$command .= ' -o' .$outputDir;
