@@ -85,9 +85,9 @@ sub edgerPortable {
 	
 	my $command;
 	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'diffExpress','moduleVersion.tools') .' ' .LoadConfig::getParam($rH_cfg, 'diffExpress','moduleVersion.cranR') .' ;';
-	$command .= ' Rscript $R_TOOLS/edger.R -d' .$designFile;
-	$command .= ' -c' .$countMatrix;
-	$command .= ' -o' .$outputDir;
+	$command .= ' Rscript $R_TOOLS/edger.R -d ' .$designFile;
+	$command .= ' -c ' .$countMatrix;
+	$command .= ' -o ' .$outputDir;
 
 	return $command;
 }
@@ -100,14 +100,41 @@ sub deseq {
 	
 	my $command;
 	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'diffExpress','moduleVersion.tools') .' ' .LoadConfig::getParam($rH_cfg, 'diffExpress','moduleVersion.cranR') .' ;';
-	$command .= ' Rscript $R_TOOLS/deseq.R -d' .$designFile;
-	$command .= ' -c' .$countMatrix;
-	$command .= ' -o' .$outputDir;
+	$command .= ' Rscript $R_TOOLS/deseq.R -d ' .$designFile;
+	$command .= ' -c ' .$countMatrix;
+	$command .= ' -o ' .$outputDir;
 
 	return $command;
 }
 
+sub goseq {
+	my $rH_cfg        = shift;
+	my $resultFile    = shift;
+	my $outputFile    = shift;
+	my $columns       = shift;
+	
+	my $latestInputFile = -M $resultFile;
+	my $latestOutputFile = -M $outputFile;
 
+	my $maxResult = LoadConfig::getParam($rH_cfg, 'diffExpress','maxGoResult');
+	my $option;
+	if (defined($maxResult) && $maxResult ne "") {
+		$option = ' -m ' .$maxResult;
+	}
+	
+	my $command;
+	if(!defined($latestInputFile) || !defined($latestOutputFile) || $latestInputFile <  $latestOutputFile) {
+		$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'diffExpress','moduleVersion.tools') .' ' .LoadConfig::getParam($rH_cfg, 'diffExpress','moduleVersion.cranR') .' ;';
+		$command .= ' Rscript $R_TOOLS/goseq.R -d ' .$resultFile;
+		$command .= ' -c ' .$columns;
+		$command .= ' -t ' .LoadConfig::getParam($rH_cfg, 'diffExpress','goAnnotation');
+		$command .= ' -k ' .LoadConfig::getParam($rH_cfg, 'diffExpress','referenceEnsemble2symbol');
+		$command .= $option;
+		$command .= ' -o ' .$outputFile;
+	}
+
+	return $command;
+}
 
 1;
 
