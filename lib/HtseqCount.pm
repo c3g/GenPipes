@@ -141,10 +141,10 @@ sub readCountPortable{
 	my $strandInfo = shift;
 
 	if (!(defined $strandInfo)) {
-		$strandInfo='no'
+		$strandInfo='no';
 	}
 	
-	my $command = ;
+	my $command ;
 	my $latestBam = -M $inputBam;
 	my $output1 = -M $outputFile;
 	if(!defined($latestBam) || !defined($output1) || $latestBam < $output1) {
@@ -166,7 +166,7 @@ sub refGtf2matrix {
 	my $outputDir = shift;
 	my $outputMatrix  = shift;
 	
-        my $command = ;
+        my $command ;
         $command .= 'awk \' BEGIN {FS=\";\"} { split($1,ens,\"\\"\"); split($4,na,\"\\"\") ; print ens[2] \"\t\" na[2]} \'' ;
         $command .= ' ' .$refGtf ;
         $command .= ' | sort -u > ' .$outputDir .'/tmpMatrix.txt ;';

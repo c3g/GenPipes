@@ -58,32 +58,32 @@ sub strandBam{
   if(!defined($latestFile) || !defined($output1) || !defined($output2) || $latestFile > $output1 || $latestFile > $output2) {
     my $Fcommand = 'module load ' .LoadConfig::getParam($rH_cfg, 'wiggle','moduleVersion.samtools') .' ;';
     $Fcommand .= ' samtools view -h -F 256 -f 81 ' . $inputBAM;
-    $Fcommand .= ' > alignment/' .$sampleName .'/' .$sampleName .'.tmp1.forward.sam ;';
+    $Fcommand .= ' > ' .$inputBAM .'tmp1.forward.sam ;';
     $Fcommand .= ' samtools view -h -F 256 -f 161 ' . $inputBAM;
-    $Fcommand .= ' > alignment/' .$sampleName .'/' .$sampleName .'.tmp2.forward.sam ;';
-    $Fcommand .= ' cat alignment/' .$sampleName .'/' .$sampleName .'.tmp1.forward.sam';
-    $Fcommand .= ' alignment/' .$sampleName .'/' .$sampleName .'.tmp2.forward.sam';
+    $Fcommand .= ' > ' .$inputBAM .'tmp2.forward.sam ;';
+    $Fcommand .= ' cat ' .$inputBAM .'tmp1.forward.sam';
+    $Fcommand .= ' ' .$inputBAM .'tmp2.forward.sam';
     $Fcommand .= ' | samtools view -Sb -';
-    $Fcommand .= ' > alignment/' .$sampleName .'/' .$sampleName .'.tmp1.forward.bam ;';
-    $Fcommand .= ' samtools sort alignment/' .$sampleName .'/' .$sampleName .'.tmp1.forward.bam';
+    $Fcommand .= ' > ' .$inputBAM .'tmp1.forward.bam ;';
+    $Fcommand .= ' samtools sort ' .$inputBAM .'tmp1.forward.bam';
     $Fcommand .= ' ' .$rA_outputBAM->[0] .' ; ';
     $Fcommand .= ' samtools index ' .$rA_outputBAM->[0] .' ; ';
-    $Fcommand .= ' rm alignment/' .$sampleName .'/' .$sampleName .'.tmp*.forward.*am';
+    $Fcommand .= ' rm ' .$inputBAM .'tmp*.forward.*am';
     push(@command,$Fcommand);
 
     my $Rcommand = 'module load ' .LoadConfig::getParam($rH_cfg, 'wiggle','moduleVersion.samtools') .' ;';
     $Rcommand .= ' samtools view -h -F 256 -f 97 ' . $inputBAM;
-    $Rcommand .= ' > alignment/' .$sampleName .'/' .$sampleName .'.tmp1.reverse.sam ;';
+    $Rcommand .= ' > ' .$inputBAM .'tmp1.reverse.sam ;';
     $Rcommand .= ' samtools view -h -F 256 -f 145 ' . $inputBAM;
-    $Rcommand .= ' > alignment/' .$sampleName .'/' .$sampleName .'.tmp2.reverse.sam ;';
-    $Rcommand .= ' cat alignment/' .$sampleName .'/' .$sampleName .'.tmp1.reverse.sam';
-    $Rcommand .= ' alignment/' .$sampleName .'/' .$sampleName .'.tmp2.reverse.sam';
+    $Rcommand .= ' > ' .$inputBAM .'tmp2.reverse.sam ;';
+    $Rcommand .= ' cat ' .$inputBAM .'tmp1.reverse.sam';
+    $Rcommand .= ' ' .$inputBAM .'tmp2.reverse.sam';
     $Rcommand .= ' | samtools view -Sb -';
-    $Rcommand .= ' > alignment/' .$sampleName .'/' .$sampleName .'.tmp1.reverse.bam ;';
-    $Rcommand .= ' samtools sort alignment/' .$sampleName .'/' .$sampleName .'.tmp1.reverse.bam';
+    $Rcommand .= ' > ' .$inputBAM .'tmp1.reverse.bam ;';
+    $Rcommand .= ' samtools sort ' .$inputBAM .'tmp1.reverse.bam';
     $Rcommand .= ' ' .$rA_outputBAM->[1] .' ; ';
     $Rcommand .= ' samtools index ' .$rA_outputBAM->[1] .' ; ';
-    $Rcommand .= ' rm alignment/' .$sampleName .'/' .$sampleName .'.tmp*.reverse.*am';
+    $Rcommand .= ' rm ' .$inputBAM .'tmp*.reverse.*am';
     push(@command,$Rcommand);
   }
     
