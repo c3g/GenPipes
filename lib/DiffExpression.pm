@@ -50,30 +50,27 @@ our $rH_laneInfo;
 our $readFile;
 our $group;
 
-sub edger{
-	$rH_cfg      = shift;
+sub edger {
+    $rH_cfg      = shift;
     $sampleName  = shift;
     $rH_laneInfo = shift;
-	$group         = shift;
+    $group       = shift;
     my %retVal;
-    
-    my $laneDirectory = 'DGE/';
-	my $command = '';
-	
-	
-	$command .= ' module add gcc/4.7.0 ; module add R ;';
-	$command .= ' mkdir -p DGE/' . $group . ';';
-	$command .= ' Rscript ' . $rH_cfg->{'diffExpress.edger'} . ' -d ' . $rH_cfg->{'diffExpress.designFile'} ;
-	$command .= ' -c ' .  $laneDirectory . $group . '/matrix.csv ';
-	$command .= ' -o ' . $laneDirectory . $group . '/ ;' ;
-	$command .= ' Rscript ' . $rH_cfg->{'diffExpress.deseq'} . ' -d ' . $rH_cfg->{'diffExpress.designFile'} ;
-	$command .= ' -c ' .  $laneDirectory . $group . '/matrix.csv ';
-	$command .= ' -o ' . $laneDirectory . $group . '/ ;' ;
-	
-	$retVal{'command'} = $command;
-	return ( \%retVal );
-		
-	
+
+    my $laneDirectory = 'DGE/' . $group . "/";
+    my $command       = '';
+
+    $command .= ' module add gcc/4.7.0 ; module add R ;';
+    $command .= ' Rscript ' . $rH_cfg->{'diffExpress.edger'} . ' -d ' . $rH_cfg->{'diffExpress.designFile'};
+    $command .= ' -c ' . $laneDirectory . 'matrix.csv ';
+    $command .= ' -o ' . $laneDirectory . ' ;';
+    $command .= ' Rscript ' . $rH_cfg->{'diffExpress.deseq'} . ' -d ' . $rH_cfg->{'diffExpress.designFile'};
+    $command .= ' -c ' . $laneDirectory . 'matrix.csv ';
+    $command .= ' -o ' . $laneDirectory . ' ;';
+
+    $retVal{'command'} = $command;
+    return ( \%retVal );
+
 }
 
 1;

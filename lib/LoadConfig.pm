@@ -68,6 +68,7 @@ package LoadConfig;
 #---------------------
 use strict;
 use warnings;
+
 #---------------------
 
 # Dependencies
@@ -76,8 +77,8 @@ use Data::Dumper;
 use Config::Simple;
 use File::Basename;
 use Cwd 'abs_path';
-#--------------------
 
+#--------------------
 
 # SUB
 #--------------------
@@ -85,7 +86,6 @@ sub readConfigFile {
     my ( $self, $file ) = @_;
     my %config;
 
-	
     #Load in the local config for the invoking script if it exists.
     #---------------------------------------------------------------
     if ( -e "$file" ) {
@@ -95,7 +95,6 @@ sub readConfigFile {
 
     }
 
-	
     #Prompt an error message othewise
     #---------------------------------
     else {
@@ -110,21 +109,22 @@ sub readConfigFile {
 }
 
 sub getParam {
-  my $rH_cfg = shift;
-  my $section = shift;
-  my $value = shift;
-  
-  my $retVal = $rH_cfg->{$section.'.'.$value};
-  if(!defined($retVal)) {
-    $retVal = $rH_cfg->{'default.'.$value};
-    if(!defined($retVal)) {
-      $retVal = "";
+    my $rH_cfg  = shift;
+    my $section = shift;
+    my $value   = shift;
+
+    my $retVal = $rH_cfg->{ $section . '.' . $value };
+    if ( !defined($retVal) ) {
+        $retVal = $rH_cfg->{ 'default.' . $value };
+        if ( !defined($retVal) ) {
+            $retVal = "";
+        }
+
+        #    if(ref($retVal) eq "ARRAY" && scalar(@{$retVal}) == 0) {
+        #      $retVal = undef;
+        #    }
     }
-#    if(ref($retVal) eq "ARRAY" && scalar(@{$retVal}) == 0) {
-#      $retVal = undef;
-#    }
-  }
-  
-  return $retVal;
+
+    return $retVal;
 }
 1;
