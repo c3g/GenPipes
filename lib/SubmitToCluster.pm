@@ -51,18 +51,15 @@ sub printSubmitCmd {
     my $jobNameSuffix  = shift;
     my $jobIdPrefix    = shift;
     my $dependancyName = shift;
-<<<<<<< HEAD
     my $sampleName = shift;
     my $command = shift;
     my $workDirectory = shift;
-=======
-    my $sampleName     = shift;
-    my $command        = shift;
->>>>>>> 26201201869edf380313f3e0dbe689139bb0019a
+
+
 
     my $jobIdVarName = uc($jobIdPrefix) . '_JOB_ID';
 
-<<<<<<< HEAD
+
     if(!(defined $workDirectory)){
       $workDirectory = '`pwd`';
       if(LoadConfig::getParam($rH_cfg, $stepName, 'clusterCmdProducesJobId') eq "true") {
@@ -79,22 +76,6 @@ sub printSubmitCmd {
     my $jobName = $stepName.'.'.$sampleName;
     if(defined($jobNameSuffix) && length($jobNameSuffix) > 0) {
       $jobName .= '.'.$jobNameSuffix;
-=======
-    my $currentDirCommand = '`pwd`';
-    if ( LoadConfig::getParam( $rH_cfg, $stepName, 'clusterCmdProducesJobId' ) eq "true" ) {
-        $command =~ s/\\\$/\\\\\\\$/g;
-        print $jobIdVarName. '=`';
-        $currentDirCommand = '\`pwd\`';
-    }
-    print 'echo "' . $command . '" | ';
-    print LoadConfig::getParam( $rH_cfg, $stepName, 'clusterSubmitCmd' );
-    print ' ' . LoadConfig::getParam( $rH_cfg, $stepName, 'clusterOtherArg' );
-    print ' ' . LoadConfig::getParam( $rH_cfg, $stepName, 'clusterWorkDirArg' ) . ' ' . $currentDirCommand;
-    print ' ' . LoadConfig::getParam( $rH_cfg, $stepName, 'clusterOutputDirArg' ) . ' ' . LoadConfig::getParam( $rH_cfg, $stepName, 'sampleOutputRoot' ) . $sampleName . '/output_jobs/';
-    my $jobName = $stepName . '.' . $sampleName;
-    if ( defined($jobNameSuffix) && length($jobNameSuffix) > 0 ) {
-        $jobName .= '.' . $jobNameSuffix;
->>>>>>> 26201201869edf380313f3e0dbe689139bb0019a
     }
     print ' ' . LoadConfig::getParam( $rH_cfg, $stepName, 'clusterJobNameArg' ) . ' ' . $jobName;
     print ' ' . LoadConfig::getParam( $rH_cfg, $stepName, 'clusterWalltime' );
