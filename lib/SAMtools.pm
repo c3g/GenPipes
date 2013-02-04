@@ -178,10 +178,14 @@ sub viewFilter {
 	my $option      = shift;
 	my $output      = shift;
 
-	my $returnOutput;
+	my $returnOutput = '';
 	if (defined($output)) {
 		$returnOutput = ' > ' .$output;
 	}
+	if (!(defined($option))) {
+		$option = '';
+	}
+	
 	
 	my $command;
 	$command .= 'module load ' .LoadConfig::getParam($rH_cfg,'default','moduleVersion.samtools') .' ;';

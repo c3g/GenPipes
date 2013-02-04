@@ -26,7 +26,7 @@ B<Pod::Usage> Usage and help output.
 
 =cut
 
-package TopHatBowtie;
+package TophatBowtie;
 
 # Strict Pragmas
 #--------------------------

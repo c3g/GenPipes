@@ -90,7 +90,8 @@ for my $stepName (@steps) {
 	$globalDep{$stepName -> {'name'} } ={};
 }
 
-my $designFilePath
+my $designFilePath;
+my $workDirectory;
 
 &main();
 
@@ -125,7 +126,9 @@ sub main {
 	$designFilePath = $opts{'d'};
 	##get design groups
 	my $rHoAoA_designGroup = Cufflinks::getDesign(\%cfg,$designFilePath);
-	my $workDirectory = $opts{'w'};
+	$workDirectory = $opts{'w'};
+
+	print "cd $workDirectory \n";
 
 	my $latestBam;
 
@@ -135,7 +138,7 @@ sub main {
 		my $loopType = $steps[$current]->{'stepLoop'};
 		my $outputStep = $steps[$current]->{'output'};
 		my $subref = \&$fname;
-		if ($loopType == 'sample') {
+		if ($loopType eq 'sample') {
 			for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
 			my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sampleName};
 			my $outputLocation = $outputStep. "/" .$sampleName;
@@ -168,7 +171,7 @@ sub trimming {
 		print "mkdir -p metrics reads\n";
 		##get raw read count
 		my $inputFile = LoadConfig::getParam($rH_cfg, 'default', 'rawReadDir') .'/' .$rH_laneInfo->{'read1File'};
-		my $outputFile= 'metrics/' .$sampleName .'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . 'readstats.raw.csv' ;
+		my $outputFile= 'metrics/' .$sampleName .'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . '.readstats.raw.csv' ;
 		my $command = Metrics::readStats($rH_cfg,$inputFile,$outputFile,'fastq');
 		my $rawReadStatJobID = undef;
 		if(defined($command) && length($command) > 0) {
@@ -190,7 +193,7 @@ sub trimming {
 		
 		##get trimmed read count
 		$inputFile = $outputFastqPair1Name;
-		$outputFile= 'metrics/' .$sampleName .'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . 'readstats.filtered.csv' ;
+		$outputFile= 'metrics/' .$sampleName .'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . '.readstats.filtered.csv' ;
 		$command = Metrics::readStats($rH_cfg,$inputFile,$outputFile,'fastq');
 		my $filteredReadStatJobID = undef;
 		if(defined($command) && length($command) > 0) {
@@ -240,7 +243,7 @@ sub aligning {
 		} 
 		##generate aigment stats
 		my $inputFile = 'alignment/' . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . 'accepted_hits.bam';
-		my $outputFile= 'metrics/' .$sampleName .'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . 'readstats.aligned.csv' ;
+		my $outputFile= 'metrics/' .$sampleName .'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . '.readstats.aligned.csv' ;
 		$command = Metrics::readStats($rH_cfg,$inputFile,$outputFile,'bam');
 		my $alignedReadStatJobID = undef;
 		if(defined($command) && length($command) > 0) {
@@ -248,11 +251,11 @@ sub aligning {
 			$alignedReadStatJobID = '$'.$alignedReadStatJobID;
 		}
 		##merge read stats
-		my $rawFile = 'metrics/' .$sampleName .'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . 'readstats.raw.csv' ;
-		my $filterFile = 'metrics/' .$sampleName .'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . 'readstats.filtered.csv' ;
+		my $rawFile = 'metrics/' .$sampleName .'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . '.readstats.raw.csv' ;
+		my $filterFile = 'metrics/' .$sampleName .'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . '.readstats.filtered.csv' ;
 		my $alignFile = $outputFile ;
 		my $sampleNameFull = $sampleName .'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
-		$outputFile= 'metrics/' .$sampleName .'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . 'readstats.csv' ;
+		$outputFile= 'metrics/' .$sampleName .'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . '.readstats.csv' ;
 		$command = Metrics::mergeIndvidualReadStats($rH_cfg, $sampleNameFull, $rawFile, $filterFile, $alignFile, $outputFile);
 		my $mergeReadStatJobID = undef;
 		if(defined($command) && length($command) > 0) {
@@ -287,7 +290,7 @@ sub merging {
 		$inputBAM = $laneDirectory . 'accepted_hits.bam';
 		push(@alignFiles, $inputBAM) ;
 	}
-	my $command = Picard::mergeFiles($rH_cfg, $sampleName, $rAoH_sampleLanes, $outputBAM);
+	my $command = Picard::mergeFiles($rH_cfg, $sampleName, \@alignFiles, $outputBAM);
 	my $mergeJobId = undef;
 	if(defined($command) && length($command) > 0) {
 		$mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mergFiles", undef, 'MERGELANES', $jobDependency, $sampleName, $command, $workDir);
@@ -296,7 +299,7 @@ sub merging {
 	## reorder
 	$inputBAM = $outputBAM;
 	$outputBAM = 'alignment/' .$sampleName .'/' .$sampleName .'.merged.karyotypic.bam';
-	$command = Picard::mergeFiles($rH_cfg, $sampleName, $inputBAM, $outputBAM);
+	$command = Picard::reorderSam($rH_cfg, $sampleName, $inputBAM, $outputBAM);
 	my $reorderJobId = undef;
 	if(defined($command) && length($command) > 0) {
 		$reorderJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "reorderSam", undef, 'REORDER', $mergeJobId, $sampleName, $command, $workDir);
@@ -306,7 +309,7 @@ sub merging {
 	$inputBAM = $outputBAM;
 	$outputBAM = 'alignment/' .$sampleName .'/' .$sampleName .'.merged.mdup.bam';
 	my $duplicatesMetricsFile = 'alignment/' .$sampleName .'/' .$sampleName .'.merged.mdup.metrics';
-	$command = Picard::markDup($rH_cfg, $sampleName, $inputBAM, $outputBAM);
+	$command = Picard::markDup($rH_cfg, $sampleName, $inputBAM, $outputBAM,$duplicatesMetricsFile );
 	my $markDupJobId = undef;
 	if(defined($command) && length($command) > 0) {
 		$markDupJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "markDup", undef, 'MARKDUP', $reorderJobId, $sampleName, $command, $workDir);
@@ -353,7 +356,7 @@ sub wiggle {
 	my @outputBedGraph;
 	my @outputWiggle;
 	my @prefixJobName;
-	if($strandSPecificityInfo != "fr-unstranded") {
+	if($strandSPecificityInfo ne "fr-unstranded") {
 	## strand specific 
 		@outputBAM = {'alignment/' . $sampleName . '/' . $sampleName . '.merged.mdup.forward.bam' ,  'alignment/' . $sampleName . '/' . $sampleName . '.merged.mdup.reverse.bam'};
 		my $rA_command = Wiggle::strandBam($rH_cfg, $sampleName, $inputBAM, \@outputBAM);
@@ -368,11 +371,11 @@ sub wiggle {
 		@prefixJobName = { 'FORWARD', 'REVERSE'};
 	}
 	else {
-		@outputBAM = {$inputBAM};
+		push(@outputBAM,$inputBAM);
 		push(@strandJobId, $jobDependency);
-		@outputBedGraph = {'tracks/' . $sampleName . '/' . $sampleName . '.bedGraph'};
-		@outputWiggle = {'tracks/' . $sampleName . '/' . $sampleName . '.bw' };
-		@prefixJobName = { undef } ;
+		push(@outputBedGraph,'tracks/' . $sampleName . '/' . $sampleName . '.bedGraph');
+		push(@outputWiggle,'tracks/' . $sampleName . '/' . $sampleName . '.bw' );
+		push(@prefixJobName , undef ) ;
 	}
 	my $wiggleJobId ;
 	for(my $i = 0; $i <@outputBAM; $i++) {
@@ -406,7 +409,7 @@ sub rawCounts {
 	my $sortOrder = 'queryname';
 	my $strandInfo;
 	my $strandSPecificityInfo = LoadConfig::getParam($rH_cfg, 'align', 'strandInfo');
-	if($strandSPecificityInfo != "fr-unstranded") {
+	if($strandSPecificityInfo ne "fr-unstranded") {
 		 $strandInfo= 'yes';
 	}
 	else {
@@ -479,12 +482,15 @@ sub cuffdiff {
 	}
 	print "mkdir -p cuffdiff/known cuffdiff/denovo\n";
 	##iterate over design
-	my $dir = getcwd();
 	my $cuffddiffJobId;
 	for my $design (keys %{$rHoAoA_designGroup}) {
+		mkdir  $workDirectory ;
+		mkdir  $workDirectory .'cuffdiff';
+		mkdir  $workDirectory .'cuffdiff/denovo/' ;
+		mkdir  $workDirectory .'cuffdiff/denovo/' .$design ;
 		print "mkdir -p cuffdiff/known/$design cuffdiff/denovo/$design\n";
 		## create the list of deNovo gtf to merge
-		my $mergeListFile = 'cuffdiff/denovo/' .$design .'/gtfMerge.list';
+		my $mergeListFile = $workDirectory .'cuffdiff/denovo/' .$design .'/gtfMerge.list';
 		open(MERGEF, ">$mergeListFile") or  die ("Unable to open $mergeListFile for wrtting") ;
 		my $numberGroups = @{$rHoAoA_designGroup->{$design}} ;
 		##iterate over group
@@ -495,7 +501,7 @@ sub cuffdiff {
 			my $gtfFile ;
 			my $bamfile = ' ';
 			for (my $j = 0;   $i <= $numberSample; $i++) {
-				$gtfFile = $dir. 'fpkm/denovo/' .$rHoAoA_designGroup->{$design}->[$i]->[$j] .'/transcripts.gtf' ;
+				$gtfFile = 'fpkm/denovo/' .$rHoAoA_designGroup->{$design}->[$i]->[$j] .'/transcripts.gtf' ;
 				print MERGEF $gtfFile;
 				$bamfile .= 'alignment/' .$rHoAoA_designGroup->{$design}->[$i]->[$j] . '/' .$rHoAoA_designGroup->{$design}->[$i]->[$j] . '.merged.mdup.bam' .',' ;
 			}
@@ -643,7 +649,7 @@ sub metrics {
 		$mergeDependency = join(LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep'),values(%{$globalDep{'aligning'}}));
 	}
 
-	$patern = 'readstats.csv';
+	$patern = '.readstats.csv';
 	$folder = 'metrics';
 	$outputBaseName = 'metrics/readstats.AllSample.csv';
 	
