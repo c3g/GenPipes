@@ -57,7 +57,7 @@ sub rnaQc{
     $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'metrics','moduleVersion.bwa') .' ;';
     $command .= ' module load ' .LoadConfig::getParam($rH_cfg, 'metrics','moduleVersion.rnaseq') .' ;';
     $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'metrics', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'metrics', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'metrics', 'metricsRam').' -jar \${RNASEQC_JAR}';
-    $command .= ' -n ' .LoadConfig::getParam($rH_cfg, 'metrics','topTranscript')
+    $command .= ' -n ' .LoadConfig::getParam($rH_cfg, 'metrics','topTranscript');
     $command .= ' -s ' .$inputFile;
     $command .= ' -t ' .LoadConfig::getParam($rH_cfg, 'metrics','referenceGtf');
     $command .= ' -r ' .LoadConfig::getParam($rH_cfg, 'metrics','referenceFasta');

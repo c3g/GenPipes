@@ -67,8 +67,8 @@ sub fpkm{
 }
 
 sub getDesign {
-	my $rH_cfg        = shift;
-	my $designFilePath = shitf;
+	my $rH_cfg  = shift;
+	my $designFilePath = shift;
 
 	my %design;
 	open(INFO, $designFilePath) or die "Can't find file $designFilePath\n";
@@ -118,7 +118,7 @@ sub cuffdiff {
 	my $groupCmd;
 	my $numberGroup = @{$rA_groupInputFiles};
 	for (my $i=0 ; $i <  $numberGroup; $i++) {
-		$groupCmd .= ' ' $rA_groupInputFiles->[$i];
+		$groupCmd .= ' ' .$rA_groupInputFiles->[$i];
 	}
 	
 	my $command;

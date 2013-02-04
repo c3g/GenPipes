@@ -50,9 +50,6 @@ BEGIN{
 #--------------------
 use Getopt::Std;
 
-
-use GATK;
-use IGVTools;
 use LoadConfig;
 use Picard;
 use SampleSheet;
@@ -61,6 +58,12 @@ use SequenceDictionaryParser;
 use SubmitToCluster;
 use TophatBowtie;
 use Trimmomatic;
+use Metrics;
+use Cufflinks;
+use Wiggle;
+use HtseqCount;
+use DiffExpression;
+
 #--------------------
 
 
@@ -219,12 +222,12 @@ sub aligning {
 		#align lanes
 		if ( $rH_laneInfo->{'runType'} eq "SINGLE_END" ) {
 			$single =  'reads/' .$sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName .'.t' .LoadConfig::getParam($rH_cfg,'trim','minQuality') .'l' .LoadConfig::getParam($rH_cfg,'trim','minLength') .'.single.fastq.gz';
-			$commands = Tophat::align($rH_cfg, $sampleName, $rH_laneInfo, $single );
+			$commands = TophatBowtie::align($rH_cfg, $sampleName, $rH_laneInfo, $single );
 		}
 		elsif($rH_laneInfo->{'runType'} eq "PAIRED_END") {
 			$pair1 =  'reads/' .$sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName .'.t' .LoadConfig::getParam($rH_cfg,'trim','minQuality') .'l' .LoadConfig::getParam($rH_cfg,'trim','minLength') .'.pair1.fastq.gz';
 			$pair2 =  'reads/' .$sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName .'.t' .LoadConfig::getParam($rH_cfg,'trim','minQuality') .'l' .LoadConfig::getParam($rH_cfg,'trim','minLength') .'.pair2.fastq.gz';
-			$commands = Tophat::align($rH_cfg, $sampleName, $rH_laneInfo, $pair1, $pair2);
+			$commands = TophatBowtie::align($rH_cfg, $sampleName, $rH_laneInfo, $pair1, $pair2);
 		}
 		if(defined $commands && length($command) > 0){
 			my $alignJobIdVarNameLane = SubmitToCluster::printSubmitCmd($rH_cfg, "align", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'ALIGN', $jobDependency, $sampleName, $commands, $workDirectory);
