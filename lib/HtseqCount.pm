@@ -167,14 +167,15 @@ sub refGtf2matrix {
 	my $outputMatrix  = shift;
 	
         my $command ;
-        $command .= 'awk \' BEGIN {FS=\";\"} { split($1,ens,\"\\"\"); split($4,na,\"\\"\") ; print ens[2] \"\t\" na[2]} \'' ;
+        $command .= 'awk \' BEGIN {FS=\";\"} { split(\$1,ens,\"\\"\"); split(\$4,na,\"\\"\") ; print ens[2] \"\t\" na[2]} \'' ;
         $command .= ' ' .$refGtf ;
-        $command .= ' | sort -u > ' .$outputDir .'/tmpMatrix.txt ;';
+        $command .= ' | sort -u > ' .$outputDir .'/tmpMatrix.txt &&';
         $command .= ' for i in \` ls ' .$readCountDir .'/*' .$readcountExtension .' \` ;';
         $command .= ' do sort -k1,1 \$i > ' .$outputDir .'/tmpSort.txt ;';
         $command .= ' join -1 1 -2 1' .$outputDir .'/tmpMatrix.txt ' .$outputDir .'/tmpSort.txt > ' .$outputDir .'/tmpMatrix.txt ;';
-        $command .= ' done ; rm ' .$outputDir .'/tmpSort.txt ;';
-        $command .= ' mv ' .$outputDir .'/tmpMatrix.txt ' .$outputDir .'/' .$outputMatrix .' ;' ;
+        $command .= ' done &&';
+	$command .= ' rm ' .$outputDir .'/tmpSort.txt &&';
+        $command .= ' mv ' .$outputDir .'/tmpMatrix.txt ' .$outputDir .'/' .$outputMatrix .' &&' ;
         $command .= ' rm ' .$outputDir .'/tmpMatrix.txt ';
         
         return $command;

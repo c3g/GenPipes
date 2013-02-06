@@ -54,15 +54,15 @@ sub rnaQc{
   my $command;
   # -M gives modified date relative to now. The bigger the older.
   if(!defined($latestFile) || !defined(-M $outputIndexFile) || $latestFile < -M $outputIndexFile) {
-    $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'metrics','moduleVersion.bwa') .' ;';
-    $command .= ' module load ' .LoadConfig::getParam($rH_cfg, 'metrics','moduleVersion.rnaseq') .' ;';
-    $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'metrics', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'metrics', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'metrics', 'metricsRam').' -jar \${RNASEQC_JAR}';
-    $command .= ' -n ' .LoadConfig::getParam($rH_cfg, 'metrics','topTranscript');
+    $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'rnaQc','moduleVersion.bwa') .' ;';
+    $command .= ' module load ' .LoadConfig::getParam($rH_cfg, 'rnaQc','moduleVersion.rnaseq') .' ;';
+    $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'rnaQc', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'rnaQc', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'rnaQc', 'metricsRam').' -jar \${RNASEQC_JAR}';
+    $command .= ' -n ' .LoadConfig::getParam($rH_cfg, 'rnaQc','topTranscript');
     $command .= ' -s ' .$inputFile;
-    $command .= ' -t ' .LoadConfig::getParam($rH_cfg, 'metrics','referenceGtf');
-    $command .= ' -r ' .LoadConfig::getParam($rH_cfg, 'metrics','referenceFasta');
+    $command .= ' -t ' .LoadConfig::getParam($rH_cfg, 'rnaQc','referenceGtf');
+    $command .= ' -r ' .LoadConfig::getParam($rH_cfg, 'rnaQc','referenceFasta');
     $command .= ' -o ' .$outputFolder ;
-    $command .= ' -BWArRNA ' .LoadConfig::getParam($rH_cfg, 'metrics','ribosomalGtf');
+    $command .= ' -BWArRNA ' .LoadConfig::getParam($rH_cfg, 'rnaQc','ribosomalGtf');
   }
     
   return $command;
@@ -138,8 +138,8 @@ sub mergeIndvidualReadStats{
 	if(!defined($latestInputFile) || !defined($latestOutputFile) || $latestInputFile <  $latestOutputFile) {
 		$command .= 'echo \"' .$sampleName .'\"' ;
 		$command .= ' | cat - ' .$rawFile .' ' .$filterFile .' ' .$alignFile;
-		$command .= ' | tr \'\n\' \',\' >> ' .$outputFile; 
-		$command .= ' ; rm  ' .$rawFile .' ' .$filterFile .' ' .$alignFile;
+		$command .= ' | tr \'\n\' \',\' >> ' .$outputFile .' &&'; 
+		$command .= ' rm  ' .$rawFile .' ' .$filterFile .' ' .$alignFile;
 	}
 
 	return $command;
@@ -153,7 +153,7 @@ sub mergeReadStats{
 	
 	my $command;
 	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.cranR') .' ' . LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.tools') . ' ;';
-	$command .= ' Rscript $R_TOOLS/mergeReadStat.R ' .$paternFile .' ' .$folderFile .' ' .$outputFile .' ;';
+	$command .= ' Rscript $R_TOOLS/mergeReadStat.R ' .$paternFile .' ' .$folderFile .' ' .$outputFile .' &&';
 	$command .= ' rm ' .$folderFile .'/*' .$paternFile;
 	
 	return $command;

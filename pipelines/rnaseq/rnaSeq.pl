@@ -93,6 +93,7 @@ for my $stepName (@steps) {
 my $designFilePath;
 my $workDirectory;
 
+
 &main();
 
 sub printUsage {
@@ -119,7 +120,8 @@ sub main {
 		printUsage();
 		exit(1);
 	}
-
+	
+	my %jobIdVarPrefix;
 	my %cfg = LoadConfig->readConfigFile($opts{'c'});
 	my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($opts{'n'});
 	my $rAoH_seqDictionary = SequenceDictionaryParser::readDictFile(\%cfg);
@@ -127,7 +129,26 @@ sub main {
 	##get design groups
 	my $rHoAoA_designGroup = Cufflinks::getDesign(\%cfg,$designFilePath);
 	$workDirectory = $opts{'w'};
-
+	
+	#generate sample jobIdprefix
+	my $cpt = 1;
+	
+	for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
+		my $cpt2=1;
+		$jobIdVarPrefix{$sampleName} = $cpt;
+		my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sampleName};
+		for my $rH_laneInfo (@$rAoH_sampleLanes) {
+			$jobIdVarPrefix{$sampleName .'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} = $cpt.'_'.$cpt2;
+			$cpt2++;
+		}
+		$cpt++;
+	}
+	#generate design jobIdprefix
+	for my $designName (keys %{$rHoAoA_designGroup}) {
+		$jobIdVarPrefix{$designName} = $cpt;
+		$cpt++;
+	}
+	
 	print "cd $workDirectory \n";
 
 	my $latestBam;
@@ -144,7 +165,7 @@ sub main {
 			my $outputLocation = $outputStep. "/" .$sampleName;
 			SubmitToCluster::initSubmit(\%cfg, $outputLocation);
 			# Tests for the first step in the list. Used for dependencies.
-			my $jobIdVar = &$subref($current != ($opts{'s'}-1), \%cfg, $sampleName, $rAoH_sampleLanes, $rAoH_seqDictionary);
+			my $jobIdVar = &$subref($current != ($opts{'s'}-1), \%cfg, $sampleName, $rAoH_sampleLanes, $rAoH_seqDictionary, \%jobIdVarPrefix);
 			$globalDep{$fname}->{$sampleName} = $jobIdVar;
 			}
 		}
@@ -152,7 +173,7 @@ sub main {
 			my $outputLocation = $outputStep;
 			SubmitToCluster::initSubmit(\%cfg, $outputLocation);
 			# Tests for the first step in the list. Used for dependencies.
-			my $jobIdVar = &$subref($current != ($opts{'s'}-1), \%cfg, $rHoAoH_sampleInfo, $rHoAoA_designGroup, $rAoH_seqDictionary);
+			my $jobIdVar = &$subref($current != ($opts{'s'}-1), \%cfg, $rHoAoH_sampleInfo, $rHoAoA_designGroup, $rAoH_seqDictionary, \%jobIdVarPrefix);
 			$globalDep{$fname}->{$fname} = $jobIdVar;
 		}
 	}  
@@ -164,18 +185,18 @@ sub trimming {
 	my $sampleName = shift;
 	my $rAoH_sampleLanes  = shift;
 	my $rAoH_seqDictionary = shift;
-	
+	my $rH_jobIdPrefixe = shift;
 
 	my $trimJobIdVarNameSample = undef;
 	for my $rH_laneInfo (@$rAoH_sampleLanes) {
-		print "mkdir -p metrics reads\n";
+		print "mkdir -p metrics/$sampleName/output_jobs reads/$sampleName/output_jobs\n";
 		##get raw read count
-		my $inputFile = LoadConfig::getParam($rH_cfg, 'default', 'rawReadDir') .'/' .$rH_laneInfo->{'read1File'};
+		my $inputFile = LoadConfig::getParam($rH_cfg, 'default', 'rawReadDir') .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' .$rH_laneInfo->{'read1File'};
 		my $outputFile= 'metrics/' .$sampleName .'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . '.readstats.raw.csv' ;
 		my $command = Metrics::readStats($rH_cfg,$inputFile,$outputFile,'fastq');
 		my $rawReadStatJobID = undef;
 		if(defined($command) && length($command) > 0) {
-			$rawReadStatJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", undef, 'RAWREADSTAT', undef, $sampleName, $command, 'metrics/');
+			$rawReadStatJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", undef, 'RAWREADSTAT' .$rH_jobIdPrefixe ->{$sampleName .'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} , undef, $sampleName, $command, 'metrics/');
 			$rawReadStatJobID = '$'.$rawReadStatJobID;
 		}
 		
@@ -183,11 +204,12 @@ sub trimming {
 		my $minQuality  = $rH_cfg->{'trim.minQuality'};
 		my $minLength   = $rH_cfg->{'trim.minLength'};
 		my $laneDirectory = 'reads/' .$sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
+		print "mkdir -p $laneDirectory\n";
 		my $outputFastqPair1Name = $laneDirectory . $sampleName.'.t'.$minQuality.'l'.$minLength.'.pair1.fastq.gz';
 		my $rH_trimDetails = Trimmomatic::trim($rH_cfg, $sampleName, $rH_laneInfo);
 		my $trimJobIdVarNameLane=undef;
 		if(length($rH_trimDetails->{'command'}) > 0) {
-			$trimJobIdVarNameLane = SubmitToCluster::printSubmitCmd($rH_cfg, "trim", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'TRIM', undef, $sampleName, $rH_trimDetails->{'command'}, $laneDirectory);
+			$trimJobIdVarNameLane = SubmitToCluster::printSubmitCmd($rH_cfg, "trim", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'TRIM' .$rH_jobIdPrefixe ->{$sampleName.'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} , undef, $sampleName, $rH_trimDetails->{'command'}, 'reads');
 			$trimJobIdVarNameLane = '$' .$trimJobIdVarNameLane ;
 		}
 		
@@ -197,12 +219,12 @@ sub trimming {
 		$command = Metrics::readStats($rH_cfg,$inputFile,$outputFile,'fastq');
 		my $filteredReadStatJobID = undef;
 		if(defined($command) && length($command) > 0) {
-			$filteredReadStatJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", undef, 'FILTERREADSTAT',$trimJobIdVarNameLane, $sampleName, $command,'metrics/' );
+			$filteredReadStatJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", undef, 'FILTERREADSTAT' .$rH_jobIdPrefixe ->{$sampleName.'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} ,$trimJobIdVarNameLane, $sampleName, $command,'metrics/' );
 			$filteredReadStatJobID = '$'.$filteredReadStatJobID;
 		}
 		$trimJobIdVarNameSample .= $filteredReadStatJobID .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 	}
-	chomp($trimJobIdVarNameSample);
+	$trimJobIdVarNameSample = substr $trimJobIdVarNameSample, 0, -1 ;
 	return $trimJobIdVarNameSample;	
 }
 
@@ -212,6 +234,7 @@ sub aligning {
 	my $sampleName = shift;
 	my $rAoH_sampleLanes  = shift;
 	my $rAoH_seqDictionary = shift;
+	my $rH_jobIdPrefixe = shift;
 
 	my $alignJobIdVarNameSample = undef;
 	my $jobDependency = undef;
@@ -219,15 +242,15 @@ sub aligning {
 	$jobDependency = $globalDep{'trimming'}{$sampleName};
 	}
 	
-	print "mkdir -p alignment\n";
+	print "mkdir -p reads/$sampleName/output_jobs metrics/$sampleName/output_jobs alignment/$sampleName/output_jobs\n";
 	for my $rH_laneInfo (@$rAoH_sampleLanes) {
-		my $alignJobIdVarNameLane=undef;
+		my $alignJobIdVarNameLane;
 		my $pair1;
 		my $pair2;
 		my $single;
 		my $command;
 		#align lanes
-		my $workDir = 'reads/' .$sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
+		my $workDir = 'reads' ;
 		if ( $rH_laneInfo->{'runType'} eq "SINGLE_END" ) {
 			$single =  'reads/' .$sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName .'.t' .LoadConfig::getParam($rH_cfg,'trim','minQuality') .'l' .LoadConfig::getParam($rH_cfg,'trim','minLength') .'.single.fastq.gz';
 			$command = TophatBowtie::align($rH_cfg, $sampleName, $rH_laneInfo, $single );
@@ -238,8 +261,8 @@ sub aligning {
 			$command = TophatBowtie::align($rH_cfg, $sampleName, $rH_laneInfo, $pair1, $pair2);
 		}
 		if(defined $command && length($command) > 0){
-			my $alignJobIdVarNameLane = SubmitToCluster::printSubmitCmd($rH_cfg, "align", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'ALIGN', $jobDependency, $sampleName, $command, $workDir);
-			$alignJobIdVarNameLane .= '$'. $alignJobIdVarNameLane ; 
+			$alignJobIdVarNameLane = SubmitToCluster::printSubmitCmd($rH_cfg, "align", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'ALIGN' .$rH_jobIdPrefixe ->{$sampleName.'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} .'ALIGN', $jobDependency, $sampleName, $command, $workDir);
+			$alignJobIdVarNameLane = '$'. $alignJobIdVarNameLane ; 
 		} 
 		##generate aigment stats
 		my $inputFile = 'alignment/' . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . 'accepted_hits.bam';
@@ -247,7 +270,7 @@ sub aligning {
 		$command = Metrics::readStats($rH_cfg,$inputFile,$outputFile,'bam');
 		my $alignedReadStatJobID = undef;
 		if(defined($command) && length($command) > 0) {
-			$alignedReadStatJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", undef, 'ALIGNEDREADSTAT',$alignJobIdVarNameLane, $sampleName, $command, 'metrics/');
+			$alignedReadStatJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", undef, 'ALIGNEDREADSTAT' .$rH_jobIdPrefixe ->{$sampleName.'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} ,$alignJobIdVarNameLane, $sampleName, $command, 'metrics/');
 			$alignedReadStatJobID = '$'.$alignedReadStatJobID;
 		}
 		##merge read stats
@@ -259,12 +282,12 @@ sub aligning {
 		$command = Metrics::mergeIndvidualReadStats($rH_cfg, $sampleNameFull, $rawFile, $filterFile, $alignFile, $outputFile);
 		my $mergeReadStatJobID = undef;
 		if(defined($command) && length($command) > 0) {
-			$mergeReadStatJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", undef, 'MERGEREADSTAT',$alignedReadStatJobID, $sampleName, $command, 'metrics/');
+			$mergeReadStatJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", undef, 'MERGEREADSTAT' .$rH_jobIdPrefixe ->{$sampleName.'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} ,$alignedReadStatJobID, $sampleName, $command, 'metrics/');
 			$mergeReadStatJobID = '$'.$mergeReadStatJobID;
 		}
 		$alignJobIdVarNameSample .= $mergeReadStatJobID .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 	}
-	chomp($alignJobIdVarNameSample);
+	$alignJobIdVarNameSample = substr $alignJobIdVarNameSample, 0, -1 ;
 	return $alignJobIdVarNameSample;
 }
 
@@ -274,17 +297,18 @@ sub merging {
 	my $sampleName = shift;
 	my $rAoH_sampleLanes  = shift;
 	my $rAoH_seqDictionary = shift;
+	my $rH_jobIdPrefixe = shift;
 
 	my $jobDependency = undef;
 	if($depends > 0) {
 		$jobDependency = $globalDep{'aligning'}{$sampleName};
 	}
-
 	##Merging
 	my $inputBAM ; 
 	my $outputBAM = 'alignment/' .$sampleName .'/' .$sampleName .'.merged.bam' ;
-	my $workDir = 'alignment/' .$sampleName .'/';
+	my $workDir = 'alignment' ;
 	my @alignFiles;
+	print "mkdir -p alignment/$sampleName/output_jobs\n";
 	for my $rH_laneInfo (@$rAoH_sampleLanes) {
 		my $laneDirectory = "alignment/" . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
 		$inputBAM = $laneDirectory . 'accepted_hits.bam';
@@ -293,7 +317,7 @@ sub merging {
 	my $command = Picard::mergeFiles($rH_cfg, $sampleName, \@alignFiles, $outputBAM);
 	my $mergeJobId = undef;
 	if(defined($command) && length($command) > 0) {
-		$mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mergFiles", undef, 'MERGELANES', $jobDependency, $sampleName, $command, $workDir);
+		$mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mergFiles", undef, 'MERGELANES' .$rH_jobIdPrefixe ->{$sampleName} , $jobDependency, $sampleName, $command, $workDir);
 		$mergeJobId = '$'.$mergeJobId;
 	}
 	## reorder
@@ -302,7 +326,7 @@ sub merging {
 	$command = Picard::reorderSam($rH_cfg, $sampleName, $inputBAM, $outputBAM);
 	my $reorderJobId = undef;
 	if(defined($command) && length($command) > 0) {
-		$reorderJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "reorderSam", undef, 'REORDER', $mergeJobId, $sampleName, $command, $workDir);
+		$reorderJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "reorderSam", undef, 'REORDER' .$rH_jobIdPrefixe ->{$sampleName} .'REORDER', $mergeJobId, $sampleName, $command, $workDir);
 		$reorderJobId = '$'.$reorderJobId;
 	}
 	## mark duplicates
@@ -312,7 +336,7 @@ sub merging {
 	$command = Picard::markDup($rH_cfg, $sampleName, $inputBAM, $outputBAM,$duplicatesMetricsFile );
 	my $markDupJobId = undef;
 	if(defined($command) && length($command) > 0) {
-		$markDupJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "markDup", undef, 'MARKDUP', $reorderJobId, $sampleName, $command, $workDir);
+		$markDupJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "markDup", undef, 'MARKDUP' .$rH_jobIdPrefixe ->{$sampleName} , $reorderJobId, $sampleName, $command, $workDir);
 		$markDupJobId = '$'.$markDupJobId
 	}
 	return $markDupJobId;
@@ -324,7 +348,7 @@ sub merging {
 # 	my $sampleName = shift;
 # 	my $rAoH_sampleLanes  = shift;
 # 	my $rAoH_seqDictionary = shift;
-# 
+# ALIGNEDREADSTAT_JOB_ID
 # 	my $jobDependency = undef;
 # 	if($depends > 0) {
 # 		$jobDependency = $globalDep{'merging'}{$sampleName};
@@ -341,6 +365,7 @@ sub wiggle {
 	my $sampleName = shift;
 	my $rAoH_sampleLanes  = shift;
 	my $rAoH_seqDictionary = shift;
+	my $rH_jobIdPrefixe = shift;
 
 	my $jobDependency = undef;
 	if($depends > 0) {
@@ -356,14 +381,15 @@ sub wiggle {
 	my @outputBedGraph;
 	my @outputWiggle;
 	my @prefixJobName;
+	print "mkdir -p alignment/$sampleName/output_jobs tracks/$sampleName/output_jobs\n";
 	if($strandSPecificityInfo ne "fr-unstranded") {
 	## strand specific 
 		@outputBAM = {'alignment/' . $sampleName . '/' . $sampleName . '.merged.mdup.forward.bam' ,  'alignment/' . $sampleName . '/' . $sampleName . '.merged.mdup.reverse.bam'};
 		my $rA_command = Wiggle::strandBam($rH_cfg, $sampleName, $inputBAM, \@outputBAM);
 		if(defined($rA_command) && @{$rA_command} > 1) {
-			my $strandJobIdF = SubmitToCluster::printSubmitCmd($rH_cfg, "wiggle", 'FORWARD', 'STRANDSPEC', $jobDependency, $sampleName, $rA_command->[0], 'alignment/');
+			my $strandJobIdF = SubmitToCluster::printSubmitCmd($rH_cfg, "wiggle", 'FORWARD', 'FSTRANDSPEC' .$rH_jobIdPrefixe ->{$sampleName} , $jobDependency, $sampleName, $rA_command->[0], 'alignment/');
 			push(@strandJobId, '$'.$strandJobIdF );
-			my $strandJobIdR = SubmitToCluster::printSubmitCmd($rH_cfg, "wiggle", 'REVERSE', 'STRANDSPEC', $jobDependency, $sampleName, $rA_command->[1], 'alignment/');
+			my $strandJobIdR = SubmitToCluster::printSubmitCmd($rH_cfg, "wiggle", 'REVERSE', 'RSTRANDSPEC' .$rH_jobIdPrefixe ->{$sampleName} , $jobDependency, $sampleName, $rA_command->[1], 'alignment/');
 			push(@strandJobId, '$'.$strandJobIdR );
 		}
 		@outputBedGraph = {'tracks/' . $sampleName . '/' . $sampleName . '.forward.bedGraph' ,  'tracks/' . $sampleName . '/' . $sampleName . '.reverse.bedGraph'};
@@ -381,11 +407,11 @@ sub wiggle {
 	for(my $i = 0; $i <@outputBAM; $i++) {
 		my $command = Wiggle::graph($rH_cfg, $sampleName, $inputBAM, $outputBedGraph[$i], $outputWiggle[$i]);
 		if(defined($command) && length($command) > 0) {
-			my $tmpJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "wiggle", $prefixJobName[$i], 'WIGGLE', $strandJobId[$i], $sampleName, $command, 'tracks/');
+			my $tmpJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "wiggle", $prefixJobName[$i], 'WIGGLE' .$rH_jobIdPrefixe ->{$sampleName} , $strandJobId[$i], $sampleName, $command, 'tracks/');
 			$wiggleJobId .= '$'.$tmpJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 		}
 	} 
-	chomp($wiggleJobId);
+	$wiggleJobId = substr $wiggleJobId, 0, -1 ;
 	return $wiggleJobId;	
 }
 
@@ -396,12 +422,13 @@ sub rawCounts {
 	my $sampleName = shift;
 	my $rAoH_sampleLanes  = shift;
 	my $rAoH_seqDictionary = shift;
+	my $rH_jobIdPrefixe = shift;
 
 	my $jobDependency = undef;
 	if($depends > 0) {
 		$jobDependency = $globalDep{'merging'}{$sampleName};
 	}
-	print "mkdir -p raw_counts\n";
+	print "mkdir -p alignment/$sampleName/output_jobs raw_counts/$sampleName/output_jobs\n";
 	my $inputBAM = 'alignment/' . $sampleName . '/' . $sampleName . '.merged.mdup.bam' ;
         my $sortedBAM = 'alignment/' . $sampleName . '/' . $sampleName . '.queryNameSorted.bam' ;
 	my $inputGtf = LoadConfig::getParam($rH_cfg, 'htseq', 'referenceGtf');
@@ -419,14 +446,14 @@ sub rawCounts {
 	my $sortJobId;
 	my $command = Picard::sortSam($rH_cfg, $sampleName, $inputBAM, $sortedBAM, $sortOrder);
 	if(defined($command) && length($command) > 0) {
-		$sortJobId=SubmitToCluster::printSubmitCmd($rH_cfg, "sortSam", undef, 'QNSORT', $jobDependency, $sampleName, $command, 'alignment/');
+		$sortJobId=SubmitToCluster::printSubmitCmd($rH_cfg, "sortSam", undef, 'QNSORT' .$rH_jobIdPrefixe ->{$sampleName} , $jobDependency, $sampleName, $command, 'alignment/');
 		$sortJobId='$'.$sortJobId
 	}
 	## count reads
         my $countJobId;
 	$command = HtseqCount::readCountPortable($rH_cfg, $sortedBAM, $inputGtf, $outputCount, $strandInfo); 
 	if(defined($command) && length($command) > 0) {
-		$countJobId=SubmitToCluster::printSubmitCmd($rH_cfg, "htseq", undef, 'RAWCOUNT', $sortJobId, $sampleName, $command, 'raw_counts/');
+		$countJobId=SubmitToCluster::printSubmitCmd($rH_cfg, "htseq", undef, 'RAWCOUNT' .$rH_jobIdPrefixe ->{$sampleName} , $sortJobId, $sampleName, $command, 'raw_counts/');
 		$countJobId='$'.$countJobId
 	}
 	return $countJobId;
@@ -439,13 +466,13 @@ sub fpkm {
 	my $sampleName = shift;
 	my $rAoH_sampleLanes  = shift;
 	my $rAoH_seqDictionary = shift;
+	my $rH_jobIdPrefixe = shift;
 
 	my $jobDependency = undef;
 	if($depends > 0) {
 		$jobDependency = $globalDep{'merging'}{$sampleName};
 	}
-	
-	print "mkdir -p fpkm/known fpkm/denovo\n";
+	print "mkdir -p fpkm/known fpkm/denovo fpkm/$sampleName/output_jobs\n";
 	my $inputBAM = 'alignment/' . $sampleName . '/' . $sampleName . '.merged.mdup.bam' ;
 	my $outputKnown = 'fpkm/known/' . $sampleName;
 	my $outputDeNovo = 'fpkm/denovo/' . $sampleName;
@@ -456,15 +483,16 @@ sub fpkm {
 	my $fpkmJobId;
 	my $command = Cufflinks::fpkm($rH_cfg, $sampleName, $inputBAM, $outputKnown, $gtfOption);
 	if(defined($command) && length($command) > 0) {
-		my $fpkmKnownJobId=SubmitToCluster::printSubmitCmd($rH_cfg, "fpkm", "KNOWN", 'FPKM', $jobDependency, $sampleName, $command, 'fpkm/');
-		$fpkmJobId='$'.$fpkmKnownJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
+		my $fpkmKnownJobId=SubmitToCluster::printSubmitCmd($rH_cfg, "fpkm", "KNOWN", 'FPKMK' .$rH_jobIdPrefixe ->{$sampleName} .'FPKM', $jobDependency, $sampleName, $command, 'fpkm/');
+		$fpkmJobId = '$' .$fpkmKnownJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 	}
 	## denovo FPKM
 	$command = Cufflinks::fpkm($rH_cfg, $sampleName, $inputBAM, $outputDeNovo, undef);
 	if(defined($command) && length($command) > 0) {
-		my $fpkmDeNovoJobId=SubmitToCluster::printSubmitCmd($rH_cfg, "fpkm", "DENOVO", 'FPKM', $jobDependency, $sampleName, $command, 'fpkm/');
-		$fpkmJobId .='$' .$fpkmDeNovoJobId;
+		my $fpkmDeNovoJobId=SubmitToCluster::printSubmitCmd($rH_cfg, "fpkm", "DENOVO", 'FPKMD' .$rH_jobIdPrefixe ->{$sampleName} , $jobDependency, $sampleName, $command, 'fpkm/');
+		$fpkmJobId .= '$' .$fpkmDeNovoJobId  .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 	}
+	$fpkmJobId = substr $fpkmJobId, 0, -1 ;
 	return $fpkmJobId;
 }
 
@@ -475,12 +503,13 @@ sub cuffdiff {
 	my $rHoAoH_sampleInfo = shift;
 	my $rHoAoA_designGroup  = shift;
 	my $rAoH_seqDictionary = shift;
+	my $rH_jobIdPrefixe = shift;
 	
 	my $jobDependency = undef;
 	if($depends > 0) {
 		$jobDependency = join(LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep'),values(%{$globalDep{'fpkm'}}));
 	}
-	print "mkdir -p cuffdiff/known cuffdiff/denovo\n";
+	print "mkdir -p cuffdiff/known cuffdiff/denovo cuffdiff/output_jobs\n";
 	##iterate over design
 	my $cuffddiffJobId;
 	for my $design (keys %{$rHoAoA_designGroup}) {
@@ -488,8 +517,8 @@ sub cuffdiff {
 		mkdir  $workDirectory .'cuffdiff';
 		mkdir  $workDirectory .'cuffdiff/denovo/' ;
 		mkdir  $workDirectory .'cuffdiff/denovo/' .$design ;
-		print "mkdir -p cuffdiff/known/$design cuffdiff/denovo/$design\n";
 		## create the list of deNovo gtf to merge
+		print "mkdir -p cuffdiff/$design/output_jobs\n";
 		my $mergeListFile = $workDirectory .'cuffdiff/denovo/' .$design .'/gtfMerge.list';
 		open(MERGEF, ">$mergeListFile") or  die ("Unable to open $mergeListFile for wrtting") ;
 		my $numberGroups = @{$rHoAoA_designGroup->{$design}} ;
@@ -498,14 +527,14 @@ sub cuffdiff {
 		for (my $i = 0;   $i < $numberGroups; $i++) {
 			##iterate over samples in the design
 			my $numberSample =  @{$rHoAoA_designGroup->{$design}->[$i]};
-			my $gtfFile ;
+			my $gtfFile = '';
 			my $bamfile = ' ';
-			for (my $j = 0;   $i <= $numberSample; $i++) {
+			for (my $j = 0;   $j < $numberSample; $j++) {
 				$gtfFile = 'fpkm/denovo/' .$rHoAoA_designGroup->{$design}->[$i]->[$j] .'/transcripts.gtf' ;
 				print MERGEF $gtfFile;
 				$bamfile .= 'alignment/' .$rHoAoA_designGroup->{$design}->[$i]->[$j] . '/' .$rHoAoA_designGroup->{$design}->[$i]->[$j] . '.merged.mdup.bam' .',' ;
 			}
-			chomp($bamfile);
+			$bamfile = substr $bamfile, 0, -1 ;
 			push(@groupInuptFiles,$bamfile);
 		}
 		close($mergeListFile);
@@ -516,7 +545,7 @@ sub cuffdiff {
 		my $command = Cufflinks::cuffmerge($rH_cfg, $mergeListFile, $outputPathDeNovo);
 		my $cuffmergeJobId ;
 		if(defined($command) && length($command) > 0) {
-			$cuffmergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "cuffmerge", "DENOVO", 'GTFMERGE', $jobDependency, $design, $command);
+			$cuffmergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "cuffmerge", "MERGE", 'GTFMERGE' .$rH_jobIdPrefixe ->{$design} , $jobDependency, $design, $command, 'cuffdiff');
 			$cuffmergeJobId = '$' .$cuffmergeJobId 
 		}
 		
@@ -525,42 +554,42 @@ sub cuffdiff {
 		$command = Cufflinks::mergeGtfFormat($rH_cfg, $gtfDnMerged, $gtfDnFormatMerged);
 		my $formatJobId;
 		if(defined($command) && length($command) > 0) {
-			$formatJobId= SubmitToCluster::printSubmitCmd($rH_cfg, "default", "FORMAT", 'GTFMERGE', $cuffmergeJobId, $design, $command, 'cuffdiff/');
+			$formatJobId= SubmitToCluster::printSubmitCmd($rH_cfg, "default", "FORMAT", 'GTFFORMAT' .$rH_jobIdPrefixe ->{$design} , $cuffmergeJobId, $design, $command, 'cuffdiff');
 			$formatJobId= '$' .$formatJobId
 		}
 
 		##cuffdiff known
 		$command = Cufflinks::cuffdiff($rH_cfg,\@groupInuptFiles,$outputPathKnown,LoadConfig::getParam($rH_cfg, 'cuffdiff','referenceGtf'));
 		if(defined($command) && length($command) > 0) {
-			my $cuffdiffKnownJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "cuffdiff", "KNOWN", 'CUFFDIFF', $jobDependency, $design, $command, 'cuffdiff/known/');
+			my $cuffdiffKnownJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "cuffdiff", "KNOWN",  'CUFFDIFFK' .$rH_jobIdPrefixe ->{$design} , $jobDependency, $design, $command, 'cuffdiff');
 			$cuffddiffJobId .= '$' .$cuffdiffKnownJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 		}
 		
 		##cuffdiff de novo
 		$command = Cufflinks::cuffdiff($rH_cfg,\@groupInuptFiles,$outputPathKnown,LoadConfig::getParam($rH_cfg, 'cuffdiff','referenceGtf'));
 		if(defined($command) && length($command) > 0) {
-			my $cuffdiffKnownJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "cuffdiff", "DENOVO", 'CUFFDIFF', $formatJobId, $design, $command, 'cuffdiff/denovo/');
+			my $cuffdiffKnownJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "cuffdiff", "DENOVO", 'CUFFDIFFD' .$rH_jobIdPrefixe ->{$design} , $formatJobId, $design, $command, 'cuffdiff');
 			$cuffddiffJobId .= '$' .$cuffdiffKnownJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 		}
 	}
-	chomp($cuffddiffJobId);
+	$cuffddiffJobId = substr $cuffddiffJobId, 0, -1 ;
 	my $command = Cufflinks::mergeCuffdiffRes($rH_cfg,$designFilePath,'cuffdiff');
 	my $mergeCuffdiffResJobID;
 	if(defined($command) && length($command) > 0) {
-		my $mergeCuffdiffResJobI = SubmitToCluster::printSubmitCmd($rH_cfg, "default", "MERGE", 'CUFFDIFF', $cuffddiffJobId, undef, $command, 'cuffdiff/');
-		$mergeCuffdiffResJobID .= '$' .$mergeCuffdiffResJobID;
+		my $mergeCuffdiffResJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "default", "MERGE_RES", 'CUFF_MERGE_RES', $cuffddiffJobId, '', $command, 'cuffdiff');
+		$mergeCuffdiffResJobID = '$' .$mergeCuffdiffResJobID;
 	}
 	
 	$command = Cufflinks::filterResults($rH_cfg,'cuffdiff/known/') ;
 	my $filterCuffdiffResJobID;
 	if(defined($command) && length($command) > 0) {
-		my $filterKCuffdiffResJobI = SubmitToCluster::printSubmitCmd($rH_cfg, "default", "FILTERK", 'CUFFDIFF', $mergeCuffdiffResJobID, undef, $command, 'cuffdiff/known/');
-		$filterCuffdiffResJobID .= '$' .$filterKCuffdiffResJobI .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
+		my $filterKCuffdiffResJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "default", "FILTERK", 'KFILT_CUFFDIFF', $mergeCuffdiffResJobID, '', $command, 'cuffdiff');
+		$filterCuffdiffResJobID .= '$' .$filterKCuffdiffResJobID .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 	}
 	$command = Cufflinks::filterResults($rH_cfg,'cuffdiff/denovo/') ;
 	if(defined($command) && length($command) > 0) {
-		my $filterDCuffdiffResJobI = SubmitToCluster::printSubmitCmd($rH_cfg, "default", "FILTERD", 'CUFFDIFF', $mergeCuffdiffResJobID, undef, $command, 'cuffdiff/denovo/');
-		$filterCuffdiffResJobID .= '$' .$filterDCuffdiffResJobI ;
+		my $filterDCuffdiffResJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "default", "FILTERD", 'DFILT_CUFFDIFF', $mergeCuffdiffResJobID, '', $command, 'cuffdiff');
+		$filterCuffdiffResJobID .= '$' .$filterDCuffdiffResJobID ;
 	}
 	
 	return $filterCuffdiffResJobID;
@@ -573,6 +602,7 @@ sub metrics {
 	my $rHoAoH_sampleInfo = shift;
 	my $rHoAoA_designGroup  = shift;
 	my $rAoH_seqDictionary = shift;
+	my $rH_jobIdPrefixe = shift;
 
 	my $mergingDependency = undef;
 	if($depends > 0) {
@@ -584,14 +614,14 @@ sub metrics {
 		print 'echo -e \"' .$sampleName .'\talignment/' .$sampleName. '/'. $sampleName .'.merged.mdup.bam\t' .LoadConfig::getParam($rH_cfg, 'metricsRNA', 'projectName'). '\" >>  alignment/rnaseqc.samples.txt';
 	}
 	
-	print "mkdir -p metrics\n";
+	print "mkdir -p metrics/output_jobs\n";
 	my $sampleList = 'alignment/rnaseqc.samples.txt';
 	my $outputFolder = 'metrics/';
 	my $command = Metrics::rnaQc($rH_cfg, $sampleList, $outputFolder);
 	my $rnaqcJobId = undef;
 	my $metricsJobId = undef;
 	if(defined($command) && length($command) > 0) {
-		$rnaqcJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", undef, 'METRICSRNA', $mergingDependency, undef, $command, 'metrics/');
+		$rnaqcJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "rnaQc", undef, 'METRICSRNA', $mergingDependency, '', $command, 'metrics/');
 		$metricsJobId .= '$' .$rnaqcJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 	}
 	
@@ -609,7 +639,7 @@ sub metrics {
 	$command = HtseqCount::refGtf2matrix($rH_cfg, LoadConfig::getParam($rH_cfg, 'htseq', 'referenceGtf'), $readCountDir, $readcountExtension, $outputDir, $outputMatrix);
 	my $matrixJobId = undef;
 	if(defined($command) && length($command) > 0) {
-		$matrixJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", undef, 'MATRIX', $countDependency, undef, $command, 'metrics/');
+		$matrixJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", undef, 'MATRIX', $countDependency, '', $command, 'metrics/');
 		$metricsJobId .= '$' .$matrixJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 	}
 	
@@ -622,7 +652,7 @@ sub metrics {
 	$command =  Metrics::saturation($rH_cfg, $countFile, $gtfFile, $rpkmDir, $saturationDir);
 	my $saturationJobId = undef;
 	if(defined($command) && length($command) > 0) {
-		$saturationJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "saturation", undef, 'SATURATION', $matrixJobId, undef, $command, 'metrics/');
+		$saturationJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "saturation", undef, 'SATURATION', $matrixJobId, '', $command, 'metrics/');
 		$metricsJobId .= '$' .$saturationJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 	}
 	
@@ -639,7 +669,7 @@ sub metrics {
 	$command =  Metrics::fpkmCor($rH_cfg, $patern, $folder, $outputBaseName);
 	my $fpkmJobId = undef;
 	if(defined($command) && length($command) > 0) {
-		$fpkmJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", undef, 'STATS_COR', $fpkmDependency, undef, $command, 'metrics/');
+		$fpkmJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", undef, 'STATS_COR', $fpkmDependency, '', $command, 'metrics');
 		$metricsJobId .= '$' .$fpkmJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 	}
 	
@@ -656,11 +686,10 @@ sub metrics {
 	$command =  Metrics::fpkmCor($rH_cfg, $patern, $folder, $outputBaseName);
 	my $mergeJobId = undef;
 	if(defined($command) && length($command) > 0) {
-		$mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", undef, 'MERGEREADSTAT', $fpkmDependency, undef, $command, 'metrics/');
+		$mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", undef, 'MERGEREADSTAT', $fpkmDependency, '', $command, 'metrics');
 		$metricsJobId .= '$' .$mergeJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 	}
-	
-	chomp($metricsJobId);
+	$metricsJobId = substr $metricsJobId, 0, -1 ;
 	return $metricsJobId;
 }
  
@@ -670,13 +699,14 @@ sub dge {
 	my $rHoAoH_sampleInfo = shift;
 	my $rHoAoA_designGroup  = shift;
 	my $rAoH_seqDictionary = shift;
+	my $rH_jobIdPrefixe = shift;
 
 	my $jobDependency = undef;
 	if($depends > 0) {
 		$jobDependency = $globalDep{'metrics'}{'metrics'};
 	}
 	
-	print "mkdir -p DGE";
+	print "mkdir -p DGE/output_jobs\n";
 	
 	my $countMatrix = 'DGE/rawCountMatrix.csv';
 	my $outputDir = 'DGE';
@@ -685,7 +715,7 @@ sub dge {
 	my $command = DiffExpression::edgerPortable($rH_cfg, $designFilePath, $countMatrix, $outputDir);
 	my $edgerJobId = undef;
 	if(defined($command) && length($command) > 0) {
-		$edgerJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "diffExpress", undef, 'EDGER', $jobDependency, undef, $command);
+		$edgerJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "diffExpress", undef, 'EDGER', $jobDependency, '', $command, 'DGE/');
 		$edgerJobId = '$' .$edgerJobId;
 	}
 	
@@ -693,7 +723,7 @@ sub dge {
 	$command = DiffExpression::deseq($rH_cfg, $designFilePath, $countMatrix, $outputDir);
 	my $deseqJobId = undef;
 	if(defined($command) && length($command) > 0) {
-		$deseqJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "diffExpress", undef, 'EDGER', $jobDependency, undef, $command);
+		$deseqJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "diffExpress", undef, 'DESEQ', $jobDependency, '',$command, 'DGE/');
 		$deseqJobId = '$' .$deseqJobId;
 	}
 	
@@ -706,6 +736,7 @@ sub goseq {
 	my $rHoAoH_sampleInfo = shift;
 	my $rHoAoA_designGroup  = shift;
 	my $rAoH_seqDictionary = shift;
+	my $rH_jobIdPrefixe = shift;
 
 	
 	my $cuffdiffDependency = undef;
@@ -721,12 +752,13 @@ sub goseq {
 	my $goseqJobId;
 	for my $design (keys %{$rHoAoA_designGroup}) {
 		## goseq for cuffdiff known results
+		print "mkdir -p DGE/$design/output_jobs cuffdiff/$design/output_jobs\n";
 		my $resultFileCuff = 'cuffdiff/known/' .$design .'/isoform_exp.diff' ;
 		my $outputFileCuff = 'cuffdiff/known/' .$design .'/gene_ontology_results.csv';
 		$command = DiffExpression::goseq($rH_cfg, $resultFileCuff, $outputFileCuff, $columnsCuff);
 		my $goCuffJobId = undef;
 		if(defined($command) && length($command) > 0) {
-			$goCuffJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "diffExpress", undef, 'GOCUFFDIFF', $cuffdiffDependency, undef, $command, 'DGE');
+			$goCuffJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "diffExpress", undef, 'GOCUFFDIFF' .$rH_jobIdPrefixe ->{$design} , $cuffdiffDependency, $design, $command, 'cuffdiff');
 			$goseqJobId .= '$' .$goCuffJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 		}
 		## goseq for dge results
@@ -735,11 +767,11 @@ sub goseq {
 		$command = DiffExpression::goseq($rH_cfg, $resultFileDge, $outputFileDge, $columnsDge);
 		my $goDgeJobId = undef;
 		if(defined($command) && length($command) > 0) {
-			$goDgeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "diffExpress", undef, 'GODGE', $dgeDependency, undef, $command, 'DGE');
+			$goDgeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "diffExpress", undef, 'GODGE' .$rH_jobIdPrefixe ->{$design} , $dgeDependency, $design, $command, 'DGE');
 			$goseqJobId .= '$' .$goDgeJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 		}
 	}
-	chomp($goseqJobId);
+	$goseqJobId = substr $goseqJobId, 0, -1 ;
 	return $goseqJobId;
 }
 
@@ -749,6 +781,7 @@ sub delivrable {
 	my $rHoAoH_sampleInfo = shift;
 	my $rHoAoA_designGroup   = shift;
 	my $rAoH_seqDictionary = shift;
+	my $rH_jobIdPrefixe = shift;
 
 	
 	my $goDependency ;

@@ -114,7 +114,7 @@ sub goseq {
 	my $latestOutputFile = -M $outputFile;
 
 	my $maxResult = LoadConfig::getParam($rH_cfg, 'diffExpress','maxGoResult');
-	my $option;
+	my $option = '';
 	if (defined($maxResult) && $maxResult ne "") {
 		$option = ' -m ' .$maxResult;
 	}
