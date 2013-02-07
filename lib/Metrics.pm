@@ -71,14 +71,14 @@ sub rnaQc{
 sub saturation {
 	my $rH_cfg      = shift;
 	my $countFile   = shift;
-	my $gtfFile     = shift;
+	my $geneSizeFile     = shift;
 	my $rpkmDir = shift;
 	my $saturationDir = shift;
 	
 
 	my $command;
 	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'saturation' , 'moduleVersion.cranR') .' ' . LoadConfig::getParam($rH_cfg, 'saturation' , 'moduleVersion.tools') . ' ;';
-	$command .= ' Rscript $R_TOOLS/rpkmSaturation.R ' .$countFile .' ' .$gtfFile .' ' .$rpkmDir .' ' .$saturationDir;
+	$command .= ' Rscript $R_TOOLS/rpkmSaturation.R ' .$countFile .' ' .$geneSizeFile .' ' .$rpkmDir .' ' .$saturationDir;
 	$command .= ' ' .LoadConfig::getParam($rH_cfg, 'saturation' , 'optionR');
 
 	return $command;

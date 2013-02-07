@@ -251,6 +251,8 @@ sub aligning {
 		my $command;
 		#align lanes
 		my $workDir = 'reads' ;
+		my $outputDirPath = 'alignment/' .$sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
+		print "mkdir -p $outputDirPath \n" ;
 		if ( $rH_laneInfo->{'runType'} eq "SINGLE_END" ) {
 			$single =  'reads/' .$sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName .'.t' .LoadConfig::getParam($rH_cfg,'trim','minQuality') .'l' .LoadConfig::getParam($rH_cfg,'trim','minLength') .'.single.fastq.gz';
 			$command = TophatBowtie::align($rH_cfg, $sampleName, $rH_laneInfo, $single );
@@ -264,7 +266,7 @@ sub aligning {
 			$alignJobIdVarNameLane = SubmitToCluster::printSubmitCmd($rH_cfg, "align", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'ALIGN' .$rH_jobIdPrefixe ->{$sampleName.'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} .'ALIGN', $jobDependency, $sampleName, $command, $workDir .'/' .$sampleName, $workDirectory);
 			$alignJobIdVarNameLane = '$'. $alignJobIdVarNameLane ; 
 		} 
-		##generate aigment stats
+		##generate aligment stats
 		my $inputFile = 'alignment/' . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . 'accepted_hits.bam';
 		my $outputFile= 'metrics/' .$sampleName .'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . '.readstats.aligned.csv' ;
 		$command = Metrics::readStats($rH_cfg,$inputFile,$outputFile,'bam');
@@ -646,11 +648,11 @@ sub metrics {
 	
 	##Saturation
 	my $countFile   = 'DGE/rawCountMatrix.csv';
-	my $gtfFile     = LoadConfig::getParam($rH_cfg, 'saturation', 'referenceGtf');
+	my $geneSizeFile     = LoadConfig::getParam($rH_cfg, 'saturation', 'geneSizeFile');
 	my $rpkmDir = 'raw_counts';
 	my $saturationDir = 'metrics';
 	
-	$command =  Metrics::saturation($rH_cfg, $countFile, $gtfFile, $rpkmDir, $saturationDir);
+	$command =  Metrics::saturation($rH_cfg, $countFile, $geneSizeFile, $rpkmDir, $saturationDir);
 	my $saturationJobId = undef;
 	if(defined($command) && length($command) > 0) {
 		$saturationJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "saturation", undef, 'SATURATION', $matrixJobId, undef, $command, 'metrics/' , $workDirectory);
