@@ -51,41 +51,41 @@ use Data::Dumper;
 use Config::Simple;
 use SAMtools
 
+=======
+use File::Basename;
 our $rH_cfg;
 our $sampleName;
 our $rH_laneInfo;
 our $readFile;
-our $group; 
+our $group;
 
-sub matrixMake{
+sub matrixMake {
     $rH_cfg      = shift;
     $sampleName  = shift;
     $rH_laneInfo = shift;
-	$readFile      = shift;
-	$group         = shift;
-    my $rH_retVal;
-    if ( $rH_laneInfo->{'runType'} eq "SINGLE_END" ) {
-        $rH_retVal = _singleCommand();
-    }
-    elsif ( $rH_laneInfo->{'runType'} eq "PAIRED_END" ) {
-        $rH_retVal = _pairCommand();
-    }
-    else {
-        die "Unknown runType: " . $rH_laneInfo->{' runType '} . "\n";
-    }
+    my $db = shift;    # blast database
+    $group       = shift;
+    
+	$group = ( !defined $group ) ? $sampleName : $group;
+    
 
-    return $rH_retVal;
-}
+    # option used if more than one db was specified on the config file.
+    # In this case $db should be passed as an argument
+    #------------------------------------------------------------------
+    $rH_cfg->{'blast.db'} = defined($db) ? $db : $rH_cfg->{'blast.db'};
 
+    my %retVal;
+    my $command       = '';
+    my $laneDirectory = "read_count/" . $group . "/";
 
+    $command .= ' sh ' . $rH_cfg->{'htseq.tempMatrix'} . ' ' . 'alignment/' . $group . '/' . $group . '.gtf';
+    $command .= ' ' . 'assembly/' . $group . '/fasta_split/' . basename($rH_cfg->{'blast.db'}) . '/blast_BestHit.txt ';
+    $command .= ' ' . $laneDirectory . 'tmpmatrix.csv ;';
+    $command .= ' sh ' . $rH_cfg->{'htseq.fullMatrix'} . ' ' . $laneDirectory . ' ;';
+    $command .= ' cp ' . $laneDirectory . 'tmpmatrix.csv DGE/' . $group . '/matrix.csv ;';
 
-sub _singleCommand{
-	next;
-}
-
-
-sub _pairCommand{
-	next;
+    $retVal{'command'} = $command;
+    return ( \%retVal );
 }
 
 sub readCount {
@@ -93,6 +93,7 @@ sub readCount {
     $sampleName  = shift;
     $rH_laneInfo = shift;
     $group       = shift;
+
         $group = ( !defined $group ) ? $sampleName : $group;
         
     my %retVal;
@@ -133,27 +134,30 @@ sub readCountPortable{
 }
 
 
-sub sortRead{
-	$rH_cfg      = shift;
-	$sampleName  = shift;
-	$rH_laneInfo = shift;
-	$group         = shift;
+
+sub sortRead {
+    $rH_cfg      = shift;
+    $sampleName  = shift;
+    $rH_laneInfo = shift;
+    $group       = shift;
+
 	
-	my %retVal;
-	my $command = '';
-	my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/stats" . $group . "/";
-	
-	$command .= ' mkdir -p ' . $laneDirectory . 'read_counts/ ;' ;	
-	$command .= ' mkdir -p ' . $laneDirectory . 'DGE/ ;' ;	
-	$command .= ' module add jdk64 ; module add mugqic/picard/1.64/ ; ';
-	$command .= ' java -Xmx30g -jar SortSam.jar ';
-	$command .= ' VALIDATION_STRINGENCY=SILENT MAX_RECORDS_IN_RAM=5000000 CREATE_INDEX=true TMP_DIR=/mnt/scratch_mp2/bourque/bourque_group/tmpDir/ ';
-	$command .= ' INPUT=' . $laneDirectory . 'alignment/' . $group . '/' . $sampleName . '.sorted.bam ' ;
-	$command .= ' OUTPUT=' . $laneDirectory . 'alignment/' . $group . '/' . $sampleName . '.QueryName.bam ' ;
-	$command .= ' SORT_ORDER=queryname ';
-	
-	$retVal{'command'} = $command;
-	return ( \%retVal );
+	$group = ( !defined $group ) ? $sampleName : $group;
+    my %retVal;
+    my $command       = '';
+    my $laneDirectory = "alignment/" . $group . "/";
+
+    $command .= ' mkdir -p  read_count/' . $group . ' ;';
+    $command .= ' mkdir -p  DGE/' . $group . ';';
+    $command .= ' module add jdk64 ; module add mugqic/picard/1.84/ ; ';
+    $command .= ' java -Xmx30g -jar ${PICARD_HOME}/SortSam.jar ';
+    $command .= ' VALIDATION_STRINGENCY=SILENT MAX_RECORDS_IN_RAM=5000000 CREATE_INDEX=true TMP_DIR=/mnt/scratch_mp2/bourque/bourque_group/tmpDir/ ';
+    $command .= ' INPUT=' . $laneDirectory . $sampleName . '.sorted.bam ';
+    $command .= ' OUTPUT=read_count/' . $group . '/' . $sampleName . '.QueryName.bam ';
+    $command .= ' SORT_ORDER=queryname ';
+
+    $retVal{'command'} = $command;
+    return ( \%retVal );
 }
 
 sub refGtf2matrix {
@@ -179,45 +183,4 @@ sub refGtf2matrix {
 }
 
 1;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
