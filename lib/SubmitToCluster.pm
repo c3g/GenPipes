@@ -53,7 +53,9 @@ sub printSubmitCmd {
     my $dependancyName = shift;
     my $sampleName = shift;
     my $command = shift;
+    my $outputDir = shift;
     my $workDirectory = shift;
+	
 
 
 
@@ -76,8 +78,14 @@ sub printSubmitCmd {
     print LoadConfig::getParam($rH_cfg, $stepName, 'clusterSubmitCmd');
     print ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterOtherArg');
     print ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterWorkDirArg') . ' ' . $workDirectory;
-    print ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterOutputDirArg') .' ' .$workDirectory .'/'  .$sampleName .'/output_jobs/';
-    my $jobName = $stepName.'.'.$sampleName;
+    print ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterOutputDirArg') .' '  .$outputDir .'/output_jobs/';
+    my $jobName ;
+    if(defined($sampleName) && length($sampleName) > 0) {
+        $jobName = $stepName.'.'.$sampleName;
+    }
+    else {
+        $jobName = $stepName;
+    }
     if(defined($jobNameSuffix) && length($jobNameSuffix) > 0) {
       $jobName .= '.'.$jobNameSuffix;
     }
