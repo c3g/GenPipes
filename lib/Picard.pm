@@ -230,11 +230,11 @@ sub sortSam {
   my $command;
   # -M gives modified date relative to now. The bigger the older.
   if(!defined($latestBam) || !defined(-M $outputBAM) || $latestBam < -M $outputBAM) {
-    $command .= 'module load mugqic/picard/1.82 ;';
+    $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.picard') .' ;';
     $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'sortSam', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'sortSam', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'sortSam', 'sortRam').' -jar \${PICARD_HOME}/SortSam.jar';
     $command .= ' VALIDATION_STRINGENCY=SILENT ASSUME_SORTED=true CREATE_INDEX=true';
     $command .= ' TMP_DIR='.LoadConfig::getParam($rH_cfg, 'sortSam', 'tmpDir');
-    $command .= ' INPUT='.$InputBAM;
+    $command .= ' INPUT='.$inputBAM;
     $command .= ' OUTPUT='.$outputBAM;
     $command .= ' SORT_ORDER='.$order;
     $command .= ' MAX_RECORDS_IN_RAM='.LoadConfig::getParam($rH_cfg, 'sortSam', 'sortRecInRam');
@@ -256,11 +256,11 @@ sub reorderSam {
   my $command;
   # -M gives modified date relative to now. The bigger the older.
   if(!defined($latestBam) || !defined(-M $outputBAM) || $latestBam < -M $outputBAM) {
-    $command .= 'module load mugqic/picard/1.82 ;';
+    $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.picard') .' ;';
     $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'reorderSam', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'reorderSam', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'reorderSamm', 'reorderRam').' -jar \${PICARD_HOME}/ReorderSam.jar';
     $command .= ' VALIDATION_STRINGENCY=SILENT ASSUME_SORTED=true CREATE_INDEX=true';
     $command .= ' TMP_DIR='.LoadConfig::getParam($rH_cfg, 'reorderSam', 'tmpDir');
-    $command .= ' INPUT='.$InputBAM;
+    $command .= ' INPUT='.$inputBAM;
     $command .= ' OUTPUT='.$outputBAM;
     $command .= ' REFERENCE='.LoadConfig::getParam($rH_cfg, 'reorderSam', 'referenceSequenceDictionary');
     $command .= ' MAX_RECORDS_IN_RAM='.LoadConfig::getParam($rH_cfg, 'reorderSam', 'reorderRecInRam');

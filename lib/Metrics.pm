@@ -32,6 +32,7 @@ package Metrics;
 #--------------------------
 use strict;
 use warnings;
+use SAMtools;
 
 #--------------------------
 
@@ -42,99 +43,120 @@ use LoadConfig;
 # SUB
 #-----------------------
 sub rnaQc{
-  my $rH_cfg      = shift;
-  my $sampleName  = shift;
-  my $rH_laneInfo = shift;
-  my $pair1       = shift;
-  my $pair2       = shift;
-  my $single1     = shift;
-  my $single2     = shift;
+  my $rH_cfg        = shift;
+  my $inputFile      = shift;
+  my $outputFolder     = shift;
 
-  my $command = "";
 
-  if ( $rH_laneInfo->{'runType'} eq "SINGLE_END" ) {
-    $command = singleCommand($rH_cfg, $sampleName, $rH_laneInfo, $single1);
-  }
-  elsif($rH_laneInfo->{'runType'} eq "PAIRED_END") {
-    $command = pairCommand($rH_cfg, $sampleName, $rH_laneInfo, $pair1, $pair2);
-  }
-  else {
-    die "Unknown runType: ".$rH_laneInfo->{' runType '}."\n";
+  my $latestFile = -M $inputFile;
+  my $outputIndexFile= $outputFolder. 'index.html';
+
+  my $command;
+  # -M gives modified date relative to now. The bigger the older.
+  if(!defined($latestFile) || !defined(-M $outputIndexFile) || $latestFile < -M $outputIndexFile) {
+    $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'rnaQc','moduleVersion.bwa') .' ;';
+    $command .= ' module load ' .LoadConfig::getParam($rH_cfg, 'rnaQc','moduleVersion.rnaseq') .' ;';
+    $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'rnaQc', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'rnaQc', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'rnaQc', 'metricsRam').' -jar \${RNASEQC_JAR}';
+    $command .= ' -n ' .LoadConfig::getParam($rH_cfg, 'rnaQc','topTranscript');
+    $command .= ' -s ' .$inputFile;
+    $command .= ' -t ' .LoadConfig::getParam($rH_cfg, 'rnaQc','referenceGtf');
+    $command .= ' -r ' .LoadConfig::getParam($rH_cfg, 'rnaQc','referenceFasta');
+    $command .= ' -o ' .$outputFolder ;
+    $command .= ' -BWArRNA ' .LoadConfig::getParam($rH_cfg, 'rnaQc','ribosomalGtf');
   }
     
   return $command;
 }
 
-sub pairCommand {
-  my $rH_cfg = shift;
-  my $sampleName = shift;
-  my $rH_laneInfo = shift;
-  my $pair1       = shift;
-  my $pair2       = shift;
+sub saturation {
+	my $rH_cfg      = shift;
+	my $countFile   = shift;
+	my $geneSizeFile     = shift;
+	my $rpkmDir = shift;
+	my $saturationDir = shift;
+	
 
-  my $laneDirectory = "alignment/" . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
-  my $outputBAM = $laneDirectory . 'accepted_hits.bam';
-  my $bamFileDate = -M $outputBAM;
+	my $command;
+	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'saturation' , 'moduleVersion.cranR') .' ' . LoadConfig::getParam($rH_cfg, 'saturation' , 'moduleVersion.tools') . ' ;';
+	$command .= ' Rscript $R_TOOLS/rpkmSaturation.R ' .$countFile .' ' .$geneSizeFile .' ' .$rpkmDir .' ' .$saturationDir;
+	$command .= ' ' .LoadConfig::getParam($rH_cfg, 'saturation' , 'optionR');
 
-  my $commands;
-  if (!defined($bamFileDate) || !defined(-M $pair1) || !defined(-M $pair2) || $bamFileDate < -M $pair1 || $bamFileDate < -M $pair2) {
-    my $BTCommand = "";
-
-    $BTCommand .= 'module load ' .LoadConfig::getParam($rH_cfg, 'align','bowtieModule') .' ;'; 
-    $BTCommand .= '  module load ' .LoadConfig::getParam($rH_cfg, 'align','bowtieModule') .' ;'; 
-    $BTCommand .= ' tophat';
-    $BTCommand .= ' --rg-library \"' . $rH_laneInfo->{'libraryBarcode'} .'\"';
-    $BTCommand .= ' --rg-platform \"' .LoadConfig::getParam($rH_cfg, 'align','platform') .'\"';
-    $BTCommand .= ' --rg-platform-unit \"' .$rH_laneInfo->{'lane'} .'\"';
-    $BTCommand .= ' --rg-center \"'. LoadConfig::getParam($rH_cfg, 'align','TBInstitution') .'\"';
-    $BTCommand .= ' --rg-sample '. $sampleName;
-    $BTCommand .= ' --rg-platform ' .$rH_laneInfo->{'runId'};
-    $BTCommand .= ' --library-type '. LoadConfig::getParam($rH_cfg, 'align','strandInfo');
-    $BTCommand .= ' --fusion-search '. LoadConfig::getParam($rH_cfg, 'align','fusionOption');
-    $BTCommand .= ' -o ' .$laneDirectory;
-    $BTCommand .= ' -p '. LoadConfig::getParam($rH_cfg, 'align','TBAlnThreads') .' -G '. LoadConfig::getParam($rH_cfg, 'align','referenceGtf');
-    $BTCommand .= ' '. LoadConfig::getParam($rH_cfg, 'align','referenceFasta');
-    $BTCommand .= ' '. $pair1 .' '. $pair2;
-    $commands= $BTCommand;
-  }
-
-  return $commands;
+	return $command;
 }
 
-sub singleCommand {
-  my $rH_cfg      = shift;
-  my $sampleName  = shift;
-  my $rH_laneInfo = shift;
-  my $single      = shift;
-
-  my $laneDirectory = "alignment/" . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
-  my $outputBAM = $laneDirectory . 'accepted_hits.bam';
-  my $bamFileDate = -M $outputBAM;
-
-  my $commands;
-  if (!defined($bamFileDate) || !defined(-M $pair1) || !defined(-M $pair2) || $bamFileDate < -M $pair1 || $bamFileDate < -M $pair2) {
-    my $BTCommand = "";
-
-    $BTCommand .= 'module load ' .LoadConfig::getParam($rH_cfg, 'align','bowtieModule') .' ;'; 
-    $BTCommand .= '  module load ' .LoadConfig::getParam($rH_cfg, 'align','bowtieModule') .' ;'; 
-    $BTCommand .= ' tophat';
-    $BTCommand .= ' --rg-library \"' . $rH_laneInfo->{'libraryBarcode'} .'\"';
-    $BTCommand .= ' --rg-platform \"' .LoadConfig::getParam($rH_cfg, 'align','platform') .'\"';
-    $BTCommand .= ' --rg-platform-unit \"' .$rH_laneInfo->{'lane'} .'\"';
-    $BTCommand .= ' --rg-center \"'. LoadConfig::getParam($rH_cfg, 'align','TBInstitution') .'\"';
-    $BTCommand .= ' --rg-sample '. $sampleName;
-    $BTCommand .= ' --rg-platform ' .$rH_laneInfo->{'runId'};
-    $BTCommand .= ' --library-type '. LoadConfig::getParam($rH_cfg, 'align','strandInfo');
-    $BTCommand .= ' --fusion-search '. LoadConfig::getParam($rH_cfg, 'align','fusionOption');
-    $BTCommand .= ' -o ' .$laneDirectory;
-    $BTCommand .= ' -p '. LoadConfig::getParam($rH_cfg, 'align','TBAlnThreads') .' -G '. LoadConfig::getParam($rH_cfg, 'align','referenceGtf');
-    $BTCommand .= ' '. LoadConfig::getParam($rH_cfg, 'align','referenceFasta');
-    $BTCommand .= ' '. $single;
-    $commands= $BTCommand;
-  }
-
-  return $commands;
+sub fpkmCor {
+	my $rH_cfg         = shift;
+	my $paternFile     = shift;
+	my $folderFile     = shift;
+	my $outputBaseName = shift;
+	
+	my $command;
+	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.cranR') .' ' . LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.tools') . ' ;';
+	$command .= ' Rscript $R_TOOLS/fpkmStats.R ' .$paternFile .' ' .$folderFile .' ' .$outputBaseName;
+	
+	return $command;
 }
- 
+
+sub readStats {
+	my $rH_cfg = shift;
+	my $inputFile = shift;
+	my $outputFile = shift;
+	my $fileType = shift;
+	
+	my $latestInputFile = -M $inputFile;
+	my $latestOutputFile = -M $outputFile;
+	
+	my $command;
+	if(!defined($latestInputFile) || !defined($latestOutputFile) || $latestInputFile <  $latestOutputFile) {
+		if ((lc $fileType) eq "fastq") {
+			$command .= 'zcat ' .$inputFile;
+			$command .= ' | wc -l | awk \'{print \$1}\'';
+			$command .= ' > ' .$outputFile;
+		}
+		elsif  ((lc $fileType) eq "bam") {
+			my $unmapOption = '-F4 -F256';
+			$command .= SAMtools::viewFilter($rH_cfg, $inputFile, $unmapOption, undef);
+			$command .= ' | wc -l  > ' .$outputFile;
+		}
+	}
+
+	return $command;
+}
+
+sub mergeIndvidualReadStats{
+	my $rH_cfg = shift;
+	my $sampleName = shift;
+	my $rawFile  = shift;
+	my $filterFile = shift;
+	my $alignFile = shift;
+	my $outputFile =shift;
+	
+	my $latestInputFile = -M $alignFile;
+	my $latestOutputFile = -M $outputFile;
+	
+	my $command;
+	if(!defined($latestInputFile) || !defined($latestOutputFile) || $latestInputFile <  $latestOutputFile) {
+		$command .= 'echo \"' .$sampleName .'\"' ;
+		$command .= ' | cat - ' .$rawFile .' ' .$filterFile .' ' .$alignFile;
+		$command .= ' | tr \'\n\' \',\' >> ' .$outputFile .' &&'; 
+		$command .= ' rm  ' .$rawFile .' ' .$filterFile .' ' .$alignFile;
+	}
+
+	return $command;
+}
+
+sub mergeReadStats{
+	my $rH_cfg         = shift;
+	my $paternFile     = shift;
+	my $folderFile     = shift;
+	my $outputFile     = shift;
+	
+	my $command;
+	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.cranR') .' ' . LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.tools') . ' ;';
+	$command .= ' Rscript $R_TOOLS/mergeReadStat.R ' .$paternFile .' ' .$folderFile .' ' .$outputFile .' &&';
+	$command .= ' rm ' .$folderFile .'/*' .$paternFile;
+	
+	return $command;
+}
 
 1;

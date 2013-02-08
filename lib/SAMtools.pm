@@ -154,4 +154,47 @@ sub rawpileup {
   $command .= ' | gzip -1 -c > '.$output;
 }
 
+sub sort {
+  my $rH_cfg      = shift;
+  my $sampleName  = shift;
+  my $option      = shift;
+  my $bamFile     = shift;
+  my $output      = shift;
+
+ 
+  my $command;
+  $command .= 'module load ' .LoadConfig::getParam($rH_cfg,'default','moduleVersion.samtools') .' ;';
+  $command .= ' samtools sort';
+  $command .= ' '.$option;
+  $command .= ' '.$bamFile;
+  $command .= ' '.$output;
+
+  return $command;
+}
+
+sub viewFilter {
+	my $rH_cfg      = shift;
+	my $bamFile     = shift;
+	my $option      = shift;
+	my $output      = shift;
+
+	my $returnOutput = '';
+	if (defined($output)) {
+		$returnOutput = ' > ' .$output;
+	}
+	if (!(defined($option))) {
+		$option = '';
+	}
+	
+	
+	my $command;
+	$command .= 'module load ' .LoadConfig::getParam($rH_cfg,'default','moduleVersion.samtools') .' ;';
+	$command .= ' samtools view';
+	$command .= ' ' .$option;
+	$command .= ' ' .$bamFile;
+	$command .= $returnOutput;
+
+	return $command;
+}
+
 1;

@@ -25,6 +25,7 @@ B<HtseqCount> is a library to generate basic statistics on raw read count.
 =head1 AUTHOR
 
 David Morais dmorais@cs.bris.ac.uk
+Mathieu Bourgey mbourgey@genomequebec.com
 
 =head1 DEPENDENCY
 
@@ -48,7 +49,9 @@ use warnings;
 #-----------------------
 use Data::Dumper;
 use Config::Simple;
+use SAMtools;
 use File::Basename;
+
 our $rH_cfg;
 our $sampleName;
 our $rH_laneInfo;
@@ -89,6 +92,7 @@ sub readCount {
     $sampleName  = shift;
     $rH_laneInfo = shift;
     $group       = shift;
+
 	$group = ( !defined $group ) ? $sampleName : $group;
 	
     my %retVal;
@@ -127,5 +131,55 @@ sub sortRead {
     $retVal{'command'} = $command;
     return ( \%retVal );
 }
+
+
+sub readCountPortable{
+	my $rH_cfg      = shift;
+        my $inputBam  = shift;
+	my $inputGtf  = shift;
+	my $outputFile  = shift;
+	my $strandInfo = shift;
+
+	if (!(defined $strandInfo)) {
+		$strandInfo='no';
+	}
+	
+	my $command ;
+	my $latestBam = -M $inputBam;
+	my $output1 = -M $outputFile;
+	if(!defined($latestBam) || !defined($output1) || $latestBam < $output1) {
+		$command .= ' module load ' .LoadConfig::getParam($rH_cfg, 'htseq','moduleVersion.python') .' ' .LoadConfig::getParam($rH_cfg, 'htseq','moduleVersion.htseq') .' ; ';
+		$command .= ' ; ' .SAMtools::viewFilter($rH_cfg, $inputBam) ;
+		$command .= ' | htseq-count - ' .  $inputGtf ;
+		$command .= ' -s ' .$strandInfo;
+		$command .= ' >' . $outputFile ;
+	}
+	return $command;
+}
+
+
+sub refGtf2matrix {
+        my $rH_cfg      = shift;
+	my $refGtf  = shift;
+	my $readCountDir = shift;
+	my $readcountExtension = shift;
+	my $outputDir = shift;
+	my $outputMatrix  = shift;
+	
+        my $command ;
+        $command .= 'awk \' BEGIN {FS=\";\"} { split(\$1,ens,\"\\"\"); split(\$4,na,\"\\"\") ; print ens[2] \"\t\" na[2]} \'' ;
+        $command .= ' ' .$refGtf ;
+        $command .= ' | sort -u > ' .$outputDir .'/tmpMatrix.txt &&';
+        $command .= ' for i in \` ls ' .$readCountDir .'/*' .$readcountExtension .' \` ;';
+        $command .= ' do sort -k1,1 \$i > ' .$outputDir .'/tmpSort.txt ;';
+        $command .= ' join -1 1 -2 1' .$outputDir .'/tmpMatrix.txt ' .$outputDir .'/tmpSort.txt > ' .$outputDir .'/tmpMatrix.txt ;';
+        $command .= ' done &&';
+	$command .= ' rm ' .$outputDir .'/tmpSort.txt &&';
+        $command .= ' mv ' .$outputDir .'/tmpMatrix.txt ' .$outputDir .'/' .$outputMatrix .' &&' ;
+        $command .= ' rm ' .$outputDir .'/tmpMatrix.txt ';
+        
+        return $command;
+}
+
 1;
 

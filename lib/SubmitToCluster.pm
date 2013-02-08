@@ -53,27 +53,39 @@ sub printSubmitCmd {
     my $dependancyName = shift;
     my $sampleName = shift;
     my $command = shift;
+    my $outputDir = shift;
     my $workDirectory = shift;
+	
 
 
 
     my $jobIdVarName = uc($jobIdPrefix) . '_JOB_ID';
 
 
+    ### TO DO modify the output dir to be more portable
+
     if(!(defined $workDirectory)){
       $workDirectory = '`pwd`';
-      if(LoadConfig::getParam($rH_cfg, $stepName, 'clusterCmdProducesJobId') eq "true") {
-        $command =~ s/\\\$/\\\\\\\$/g;
-        print $jobIdVarName.'=`';
-        $workDirectory = '\`pwd\`';
-      }
+    }
+    if(LoadConfig::getParam($rH_cfg, $stepName, 'clusterCmdProducesJobId') eq "true") {
+        #$command =~ s/\\\$/\\\\\\\$/g;
+        print $jobIdVarName.'=$(';
+        #if ($workDirectory eq '`pwd`') {
+       #       $workDirectory = '\`pwd\`';
+        #}
     }
     print 'echo "'.$command.'" | ';
     print LoadConfig::getParam($rH_cfg, $stepName, 'clusterSubmitCmd');
     print ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterOtherArg');
-    print ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterWorkDirArg') . $workDirectory;
-    print ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterOutputDirArg') . $sampleName.'/output_jobs/';
-    my $jobName = $stepName.'.'.$sampleName;
+    print ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterWorkDirArg') . ' ' . $workDirectory;
+    print ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterOutputDirArg') .' '  .$outputDir .'/output_jobs/';
+    my $jobName ;
+    if(defined($sampleName) && length($sampleName) > 0) {
+        $jobName = $stepName.'.'.$sampleName;
+    }
+    else {
+        $jobName = $stepName;
+    }
     if(defined($jobNameSuffix) && length($jobNameSuffix) > 0) {
       $jobName .= '.'.$jobNameSuffix;
     }
@@ -86,7 +98,7 @@ sub printSubmitCmd {
     }
     print ' ' . LoadConfig::getParam( $rH_cfg, $stepName, 'clusterSubmitCmdSuffix' );
     if ( LoadConfig::getParam( $rH_cfg, $stepName, 'clusterCmdProducesJobId' ) eq "true" ) {
-        print '`';
+        print ')';
     }
     print "\n\n";
 

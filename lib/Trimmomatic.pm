@@ -74,10 +74,10 @@ sub pairCommand {
     my $rawReadDir    = $rH_cfg->{'default.rawReadDir'} . '/';
     my $laneDirectory = "reads/";
 
-    my $outputFastqPair1Name = $laneDirectory . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.pair1.fastq.gz';
-    my $outputFastqPair2Name = $laneDirectory . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.pair2.fastq.gz';
-    my $outputFastqSingle1Name = $laneDirectory . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.single1.fastq.gz';
-    my $outputFastqSingle2Name = $laneDirectory . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.single2.fastq.gz';
+    my $outputFastqPair1Name = $laneDirectory .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.pair1.fastq.gz';
+    my $outputFastqPair2Name = $laneDirectory .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.pair2.fastq.gz';
+    my $outputFastqSingle1Name = $laneDirectory .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.single1.fastq.gz';
+    my $outputFastqSingle2Name = $laneDirectory .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.single2.fastq.gz';
     my $pair1FileDate = -M $outputFastqPair1Name;
     my $pair2FileDate = -M $outputFastqPair2Name;
 
@@ -89,7 +89,7 @@ sub pairCommand {
     my $command = "";
 
     # -M gives modified date relative to now. The bigger the older.
-    if ( !defined($currentFileDate) || $currentFileDate > -M $laneDirectory . $rH_laneInfo->{'read1File'} ) {
+    if ( !defined($currentFileDate) || $currentFileDate > -M $rawReadDir .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' .$rH_laneInfo->{'read1File'} ) {
         $command .= 'module load mugqic/trimmomatic/0.22 ; java -cp \$TRIMMOMATIC_JAR org.usadellab.trimmomatic.TrimmomaticPE';
         $command .= ' -threads ' . $rH_cfg->{'trim.nbThreads'};
         if ( $rH_laneInfo->{'qualOffset'} eq "64" ) {
@@ -98,7 +98,7 @@ sub pairCommand {
         else {
             $command .= ' -phred33';
         }
-        $command .= ' ' . $rawReadDir . $rH_laneInfo->{'read1File'} . ' ' . $rawReadDir . $rH_laneInfo->{'read2File'};
+        $command .= ' ' . $rawReadDir .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' .$rH_laneInfo->{'read1File'} . ' ' . $rawReadDir .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' .$rH_laneInfo->{'read2File'};
         $command .= ' ' . $outputFastqPair1Name . ' ' . $outputFastqSingle1Name;
         $command .= ' ' . $outputFastqPair2Name . ' ' . $outputFastqSingle2Name;
         if ( $rH_laneInfo->{'qualOffset'} eq "64" ) {
@@ -139,7 +139,7 @@ sub singleCommand {
     my $command = "";
 
     # -M gives modified date relative to now. The bigger the older.
-    if ( $currentFileDate > -M $laneDirectory . $rH_laneInfo->{'read1File'} ) {
+    if ( !defined($currentFileDate) || $currentFileDate > -M $rawReadDir .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' .$rH_laneInfo->{'read1File'} ) {
         $command .= 'module load mugqic/trimmomatic/0.22 ; java -cp \$TRIMMOMATIC_JAR org.usadellab.trimmomatic.TrimmomaticSE';
         $command .= ' -threads ' . $rH_cfg->{'trim.nbThreads'};
         if ( $rH_laneInfo->{'qualOffset'} eq "64" ) {
@@ -148,7 +148,7 @@ sub singleCommand {
         else {
             $command .= ' -phred33';
         }
-        $command .= ' ' . $laneDirectory . $rH_laneInfo->{'read1File'} . ' ' . $outputFastqName;
+        $command .= ' ' . $rawReadDir .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' .$rH_laneInfo->{'read1File'} . ' ' . $outputFastqName;
         $command .= ' ILLUMINACLIP:' . $adapterFile . ':2:30:15';
         if ( $minQuality > 0 ) {
             $command .= ' TRAILING:' . $minQuality;
