@@ -93,13 +93,13 @@ sub readCount {
     $rH_laneInfo = shift;
     $group       = shift;
 
-	$group = ( !defined $group ) ? $sampleName : $group;
-	
+        $group = ( !defined $group ) ? $sampleName : $group;
+        
     my %retVal;
     my $command       = '';
     my $laneDirectory = "read_count/" . $group . "/";
 
-    $command .= ' module add mugqic/samtools/0.1.8; ';
+    $command .= ' module add mugqic/samtools/0.1.6; ';
     $command .= ' samtools view ' . $laneDirectory . $sampleName . '.QueryName.bam | ';
     $command .= ' htseq-count - ' . 'alignment/' . $group . '/' . $group . '.gtf ';
     $command .= ' -s no >' . $laneDirectory . $sampleName . '.readcount.cvs';
@@ -107,6 +107,7 @@ sub readCount {
     $retVal{'command'} = $command;
     return ( \%retVal );
 }
+
 
 sub sortRead {
     $rH_cfg      = shift;
