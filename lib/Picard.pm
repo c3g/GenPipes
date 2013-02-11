@@ -257,12 +257,12 @@ sub reorderSam {
   # -M gives modified date relative to now. The bigger the older.
   if(!defined($latestBam) || !defined(-M $outputBAM) || $latestBam < -M $outputBAM) {
     $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.picard') .' ;';
-    $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'reorderSam', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'reorderSam', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'reorderSamm', 'reorderRam').' -jar \${PICARD_HOME}/ReorderSam.jar';
-    $command .= ' VALIDATION_STRINGENCY=SILENT ASSUME_SORTED=true CREATE_INDEX=true';
+    $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'reorderSam', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'reorderSam', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'reorderSam', 'reorderRam').' -jar \${PICARD_HOME}/ReorderSam.jar';
+    $command .= ' VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true';
     $command .= ' TMP_DIR='.LoadConfig::getParam($rH_cfg, 'reorderSam', 'tmpDir');
     $command .= ' INPUT='.$inputBAM;
     $command .= ' OUTPUT='.$outputBAM;
-    $command .= ' REFERENCE='.LoadConfig::getParam($rH_cfg, 'reorderSam', 'referenceSequenceDictionary');
+    $command .= ' REFERENCE='.LoadConfig::getParam($rH_cfg, 'reorderSam', 'referenceFasta');
     $command .= ' MAX_RECORDS_IN_RAM='.LoadConfig::getParam($rH_cfg, 'reorderSam', 'reorderRecInRam');
   }
   return $command;

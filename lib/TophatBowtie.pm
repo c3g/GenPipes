@@ -69,6 +69,7 @@ sub align {
     $command .= ' --fusion-search '. LoadConfig::getParam($rH_cfg, 'align','fusionOption');
     $command .= ' -o ' .$laneDirectory;
     $command .= ' -p '. LoadConfig::getParam($rH_cfg, 'align','TBAlnThreads') .' -G '. LoadConfig::getParam($rH_cfg, 'align','referenceGtf');
+    $command .= ' -g '. LoadConfig::getParam($rH_cfg, 'align','maxReadLocation');
     $command .= ' '. LoadConfig::getParam($rH_cfg, 'align','referenceFasta');
     $command .= ' '. $pair1 .' ' .$pair2;
   }
