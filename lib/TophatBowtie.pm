@@ -66,15 +66,27 @@ sub align {
     $command .= ' --rg-sample '. $sampleName;
     $command .= ' --rg-id ' .$rH_laneInfo->{'runId'};
     $command .= ' --library-type '. LoadConfig::getParam($rH_cfg, 'align','strandInfo');
-    $command .= ' --fusion-search '. LoadConfig::getParam($rH_cfg, 'align','fusionOption');
+#     $command .= ' --fusion-search '. LoadConfig::getParam($rH_cfg, 'align','fusionOption');
     $command .= ' -o ' .$laneDirectory;
     $command .= ' -p '. LoadConfig::getParam($rH_cfg, 'align','TBAlnThreads') .' -G '. LoadConfig::getParam($rH_cfg, 'align','referenceGtf');
-    $command .= ' -g '. LoadConfig::getParam($rH_cfg, 'align','maxReadLocation');
+#     $command .= ' -g '. LoadConfig::getParam($rH_cfg, 'align','maxReadLocation');
     $command .= ' '. LoadConfig::getParam($rH_cfg, 'align','referenceFasta');
     $command .= ' '. $pair1 .' ' .$pair2;
   }
 
   return $command;
+}
+
+sub fusion {
+	 my $rH_cfg      = shift;
+	my $sampleName  = shift;
+	my $rH_laneInfo = shift;
+	my $pair1       = shift;
+	my $pair2       = shift;
+
+	my $laneDirectory = "alignment/" . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
+	my $outputBAM = $laneDirectory . 'accepted_hits.bam';
+	my $bamFileDate = -M $outputBAM;
 }
  
 
