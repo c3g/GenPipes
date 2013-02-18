@@ -232,7 +232,7 @@ sub sortSam {
   if(!defined($latestBam) || !defined(-M $outputBAM) || $latestBam < -M $outputBAM) {
     $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.picard') .' ;';
     $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'sortSam', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'sortSam', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'sortSam', 'sortRam').' -jar \${PICARD_HOME}/SortSam.jar';
-    $command .= ' VALIDATION_STRINGENCY=SILENT ASSUME_SORTED=true CREATE_INDEX=true';
+    $command .= ' VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true';
     $command .= ' TMP_DIR='.LoadConfig::getParam($rH_cfg, 'sortSam', 'tmpDir');
     $command .= ' INPUT='.$inputBAM;
     $command .= ' OUTPUT='.$outputBAM;

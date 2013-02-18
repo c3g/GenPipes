@@ -166,7 +166,9 @@ sub main {
 			SubmitToCluster::initSubmit(\%cfg, $outputLocation);
 			# Tests for the first step in the list. Used for dependencies.
 			my $jobIdVar = &$subref($current != ($opts{'s'}-1), \%cfg, $sampleName, $rAoH_sampleLanes, $rAoH_seqDictionary, \%jobIdVarPrefix);
-			$globalDep{$fname}->{$sampleName} = $jobIdVar;
+			if (defined($jobIdVar)) {
+				$globalDep{$fname}->{$sampleName} = $jobIdVar;
+			}
 			}
 		}
 		else {
@@ -174,7 +176,9 @@ sub main {
 			SubmitToCluster::initSubmit(\%cfg, $outputLocation);
 			# Tests for the first step in the list. Used for dependencies.
 			my $jobIdVar = &$subref($current != ($opts{'s'}-1), \%cfg, $rHoAoH_sampleInfo, $rHoAoA_designGroup, $rAoH_seqDictionary, \%jobIdVarPrefix);
-			$globalDep{$fname}->{$fname} = $jobIdVar;
+			if (defined($jobIdVar)) {
+				$globalDep{$fname}->{$fname} = $jobIdVar;
+			}
 		}
 	}  
 }
@@ -475,7 +479,7 @@ sub fpkm {
 	if($depends > 0) {
 		$jobDependency = $globalDep{'merging'}{$sampleName};
 	}
-	print "mkdir -p fpkm/known fpkm/denovo fpkm/$sampleName/output_jobs\n";
+	print "mkdir -p fpkm/known/$sampleName fpkm/denovo/$sampleName fpkm/$sampleName/output_jobs\n";
 	my $inputBAM = 'alignment/' . $sampleName . '/' . $sampleName . '.merged.mdup.bam' ;
 	my $outputKnown = 'fpkm/known/' . $sampleName;
 	my $outputDeNovo = 'fpkm/denovo/' . $sampleName;
@@ -483,19 +487,21 @@ sub fpkm {
 	
 	
 	## known FPKM
-	my $fpkmJobId;
-	my $command = Cufflinks::fpkm($rH_cfg, $sampleName, $inputBAM, $outputKnown, $gtfOption);
+	my $fpkmJobId = undef;
+	my $command = Cufflinks::fpkm($rH_cfg, $inputBAM, $outputKnown, $gtfOption);
 	if(defined($command) && length($command) > 0) {
 		my $fpkmKnownJobId=SubmitToCluster::printSubmitCmd($rH_cfg, "fpkm", "KNOWN", 'FPKMK' .$rH_jobIdPrefixe ->{$sampleName} .'FPKM', $jobDependency, $sampleName, $command, 'fpkm/' .$sampleName, $workDirectory);
 		$fpkmJobId = '$' .$fpkmKnownJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 	}
 	## denovo FPKM
-	$command = Cufflinks::fpkm($rH_cfg, $sampleName, $inputBAM, $outputDeNovo, undef);
+	$command = Cufflinks::fpkm($rH_cfg, $inputBAM, $outputDeNovo, undef);
 	if(defined($command) && length($command) > 0) {
 		my $fpkmDeNovoJobId=SubmitToCluster::printSubmitCmd($rH_cfg, "fpkm", "DENOVO", 'FPKMD' .$rH_jobIdPrefixe ->{$sampleName} , $jobDependency, $sampleName, $command, 'fpkm/' .$sampleName, $workDirectory);
 		$fpkmJobId .= '$' .$fpkmDeNovoJobId  .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 	}
-	$fpkmJobId = substr $fpkmJobId, 0, -1 ;
+	if (defined($fpkmJobId)) {
+		$fpkmJobId = substr $fpkmJobId, 0, -1 ;
+	}
 	return $fpkmJobId;
 }
 
@@ -509,7 +515,7 @@ sub cuffdiff {
 	my $rH_jobIdPrefixe = shift;
 	
 	my $jobDependency = undef;
-	if($depends > 0) {
+	if($depends > 0 and values(%{$globalDep{'fpkm'}}) > 0) {
 		$jobDependency = join(LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep'),values(%{$globalDep{'fpkm'}}));
 	}
 	print "mkdir -p cuffdiff/known cuffdiff/denovo cuffdiff/output_jobs\n";
@@ -535,6 +541,7 @@ sub cuffdiff {
 			for (my $j = 0;   $j < $numberSample; $j++) {
 				$gtfFile = 'fpkm/denovo/' .$rHoAoA_designGroup->{$design}->[$i]->[$j] .'/transcripts.gtf' ;
 				print MERGEF $gtfFile;
+				print MERGEF "\n";
 				$bamfile .= 'alignment/' .$rHoAoA_designGroup->{$design}->[$i]->[$j] . '/' .$rHoAoA_designGroup->{$design}->[$i]->[$j] . '.merged.mdup.bam' .',' ;
 			}
 			$bamfile = substr $bamfile, 0, -1 ;

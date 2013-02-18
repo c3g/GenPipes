@@ -49,7 +49,10 @@ sub fpkm{
 
 	my $latestFile = -M $inputBAM;
 	my $outputIndexFile= $outputFolder. '/transcripts.gtf';
-
+	
+	if(!defined($transcriptOption)) {
+		$transcriptOption = '';
+	}
 	my $command;
 	# -M gives modified date relative to now. The bigger the older.
 	if(!defined($latestFile) || !defined(-M $outputIndexFile) || $latestFile < -M $outputIndexFile) {
