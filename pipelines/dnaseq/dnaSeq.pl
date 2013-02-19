@@ -278,7 +278,11 @@ sub markDup {
     $jobDependency = '${FIXMATE_JOB_ID}';
   }
 
-  my $command = Picard::markDup($rH_cfg, $sampleName);
+  my $inputBAM = $sampleName.'/'.$sampleName.'.matefixed.sorted.bam';
+  my $outputBAM = $sampleName.'/'.$sampleName.'.sorted.dup.bam';
+  my $outputMetrics = $sampleName.'/'.$sampleName.'.sorted.dup.metrics';
+
+  my $command = Picard::markDup($rH_cfg, $sampleName, $inputBAM, $outputBAM, $outputMetrics);
   my $markDupJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "markDup", undef, 'MARKDUP', $jobDependency, $sampleName, $command);
   return $markDupJobId;
 }
