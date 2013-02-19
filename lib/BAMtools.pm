@@ -22,7 +22,7 @@ B<Data::Dumper> Used to debbug
 
 =cut
 
-package Picard;
+package BAMtools;
 
 # Strict Pragmas
 #--------------------------
@@ -50,19 +50,19 @@ sub countBins {
   
     my $command;
     # -M gives modified date relative to now. The bigger the older.
-    if(!defined($outDate) || !defined($inDate) || $inDate < $outDate) {
+    #if(!defined($outDate) || !defined($inDate) || $inDate < $outDate) {
         $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'countBins', 'moduleVersion.bamtools').' ; ';
         $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'countBins', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'countBins', 'extraJavaFlags');
         $command .= ' -Xmx1500M -jar \${BAMTOOLS_JAR} bincounter';
         $command .= ' --norm '.$normType;
-        $command .= ' --minMapQ'.LoadConfig::getParam($rH_cfg, 'countBins', 'minMapQ');
-        $command .= ' --bam'.$tumorBam;
+        $command .= ' --minMapQ '.LoadConfig::getParam($rH_cfg, 'countBins', 'minMapQ');
+        $command .= ' --bam '.$tumorBam;
         if(defined($normalBam)) {
-            $command .= ' --refbam'.$normalBam;
+            $command .= ' --refbam '.$normalBam;
         }
         $command .= ' --window '.$window;
         $command .= ' > '.$outputFile;
-    }
+    #}
     return $command;
 }
 1;

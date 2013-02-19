@@ -22,7 +22,7 @@ B<Data::Dumper> Used to debbug
 
 =cut
 
-package Picard;
+package SVtools;
 
 # Strict Pragmas
 #--------------------------
@@ -48,14 +48,14 @@ sub runPairedDNAC {
   
     my $command;
     # -M gives modified date relative to now. The bigger the older.
-    if(!defined($outDate) || !defined($inDate) || $inDate < $outDate) {
+    #if(!defined($outDate) || !defined($inDate) || $inDate < $outDate) {
         $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'runPairedDNAC', 'moduleVersion.cranR').' ;';
         $command .= ' module load '.LoadConfig::getParam($rH_cfg, 'runPairedDNAC', 'moduleVersion.svtools').' ;';
         $command .= ' Rscript \${SVTOOLS_HOME}/Cancer/RunDNAC.6.0.R';
         $command .= ' -f '.$inputBins;
         $command .= ' -b '.$window;
         $command .= ' -o '.$outputPrefix;
-    }
+    #}
     return $command;
 }
 
@@ -71,27 +71,27 @@ sub filterDNAC {
   
     my $command;
     # -M gives modified date relative to now. The bigger the older.
-    if(!defined($outDate) || !defined($inDate) || $inDate < $outDate) {
+    #if(!defined($outDate) || !defined($inDate) || $inDate < $outDate) {
         $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'runPairedDNAC', 'moduleVersion.svtools').' ;';
         $command .= ' \${SVTOOLS_HOME}/Cancer/filterOutDNAC.sh';
         $command .= ' '.$inputDNACCalls;
-        $command .= ' '.$outputPrefix.'.filteredSV.txt';
+        $command .= ' '.$outputPrefix.'.txt';
         $command .= ' '.$sampleName;
         $command .= ' 5';
         $command .= ' && ';
         $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'runPairedDNAC', 'moduleVersion.svtools').' ;';
         $command .= ' \${SVTOOLS_HOME}/Cancer/filterBedResults.sh';
-        $command .= ' '.$outputPrefix.'.filteredSV.txt';
+        $command .= ' '.$outputPrefix.'.txt';
         $command .= ' '.LoadConfig::getParam($rH_cfg, 'filterDNAC', 'referenceMappabilityBed');
         $command .= ' '.LoadConfig::getParam($rH_cfg, 'filterDNAC', 'referenceGeneCoordinates');
         $command .= ' '.LoadConfig::getParam($rH_cfg, 'filterDNAC', 'referenceDGVCoordinates');
         $command .= ' '.LoadConfig::getParam($rH_cfg, 'filterDNAC', 'referenceMicrosatellitesCoordinates');
         $command .= ' '.LoadConfig::getParam($rH_cfg, 'filterDNAC', 'referenceRepeatMaskerCoordinates');
         $command .= ' '.LoadConfig::getParam($rH_cfg, 'filterDNAC', 'referenceGenomeLengths');
-        $command .= ' '.$outputPrefix;
+        $command .= ' '.$outputPrefix.'.bed';
         $command .= ' '.$outputPrefix.'.tmp';
         $command .= ' '.$cnvProx;
-    }
+    #}
     return $command;
 }
 1;
