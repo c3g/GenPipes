@@ -82,7 +82,7 @@ sub edgerPortable {
 	
 	my $command;
 	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'diffExpress','moduleVersion.tools') .' ' .LoadConfig::getParam($rH_cfg, 'diffExpress','moduleVersion.cranR') .' ;';
-	$command .= ' Rscript $R_TOOLS/edger.R -d ' .$designFile;
+	$command .= ' Rscript \$R_TOOLS/edger.R -d ' .$designFile;
 	$command .= ' -c ' .$countMatrix;
 	$command .= ' -o ' .$outputDir;
 
@@ -97,7 +97,7 @@ sub deseq {
 	
 	my $command;
 	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'diffExpress','moduleVersion.tools') .' ' .LoadConfig::getParam($rH_cfg, 'diffExpress','moduleVersion.cranR') .' ;';
-	$command .= ' Rscript $R_TOOLS/deseq.R -d ' .$designFile;
+	$command .= ' Rscript \$R_TOOLS/deseq.R -d ' .$designFile;
 	$command .= ' -c ' .$countMatrix;
 	$command .= ' -o ' .$outputDir;
 
@@ -109,6 +109,7 @@ sub goseq {
 	my $resultFile    = shift;
 	my $outputFile    = shift;
 	my $columns       = shift;
+	my $method        = shift;
 	
 	my $latestInputFile = -M $resultFile;
 	my $latestOutputFile = -M $outputFile;
@@ -121,11 +122,13 @@ sub goseq {
 	
 	my $command;
 	if(!defined($latestInputFile) || !defined($latestOutputFile) || $latestInputFile <  $latestOutputFile) {
-		$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'diffExpress','moduleVersion.tools') .' ' .LoadConfig::getParam($rH_cfg, 'diffExpress','moduleVersion.cranR') .' ;';
-		$command .= ' Rscript $R_TOOLS/goseq.R -d ' .$resultFile;
+		$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'goseq','moduleVersion.tools') .' ' .LoadConfig::getParam($rH_cfg, 'goseq','moduleVersion.cranR') .' &&';
+		$command .= ' Rscript \$R_TOOLS/goseq.R -d ' .$resultFile;
 		$command .= ' -c ' .$columns;
-		$command .= ' -t ' .LoadConfig::getParam($rH_cfg, 'diffExpress','goAnnotation');
-		$command .= ' -k ' .LoadConfig::getParam($rH_cfg, 'diffExpress','referenceEnsemble2symbol');
+		$command .= ' -t ' .LoadConfig::getParam($rH_cfg, 'goseq','goAnnotation');
+		$command .= ' -k ' .LoadConfig::getParam($rH_cfg, 'goseq','referenceEnsemble2symbol');
+		$command .= ' -s ' .LoadConfig::getParam($rH_cfg, 'goseq','referenceUCSCname');
+		$command .= ' -m ' .$method;
 		$command .= $option;
 		$command .= ' -o ' .$outputFile;
 	}

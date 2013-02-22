@@ -76,7 +76,7 @@ push(@steps, {'name' => 'aligning' , 'stepLoop' => 'sample' , 'output' => 'align
 push(@steps, {'name' => 'merging' , 'stepLoop' => 'sample' , 'output' => 'alignment'});
 #push(@steps, {'name' => 'mutation' , 'stepLoop' => 'sample' , 'output' => 'mpileup'});
 push(@steps, {'name' => 'wiggle' , 'stepLoop' => 'sample' , 'output' => 'tracks'});
-push(@steps, {'name' => 'rawCounts' , 'stepLoop' => 'sample' , 'output' => 'reads_count'});
+push(@steps, {'name' => 'rawCounts' , 'stepLoop' => 'sample' , 'output' => 'raw_count'});
 push(@steps, {'name' => 'fpkm' , 'stepLoop' => 'sample' , 'output' => 'fpkm'});
 push(@steps, {'name' => 'cuffdiff' , 'stepLoop' => 'group' , 'output' => 'DGE'});
 push(@steps, {'name' => 'metrics' , 'stepLoop' => 'group' , 'output' => 'metrics'});
@@ -618,11 +618,12 @@ sub metrics {
 		$mergingDependency = join(LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep'),values(%{$globalDep{'merging'}}));
 	}
 	## RNAseQC metrics
-	print "echo -e \"Sample\tBamFile\tNote\" >  alignment/rnaseqc.samples.txt\n";
+	open(RNASAMPLE, ">alignment/rnaseqc.samples.txt") or  die ("Unable to open alignment/rnaseqc.samples.txt for wrtting") ;
+	print RNASAMPLE "Sample\tBamFile\tNote\n";
+	my $projectName = LoadConfig::getParam($rH_cfg, 'metricsRNA', 'projectName');
 	for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
-		print 'echo -e \"' .$sampleName .'\talignment/' .$sampleName. '/'. $sampleName .'.merged.mdup.bam\t' .LoadConfig::getParam($rH_cfg, 'metricsRNA', 'projectName'). '\" >>  alignment/rnaseqc.samples.txt';
+		print RNASAMPLE "$sampleName\talignment/$sampleName/$sampleName.merged.mdup.bam\t$projectName";
 	}
-	
 	print "mkdir -p metrics/output_jobs\n";
 	my $sampleList = 'alignment/rnaseqc.samples.txt';
 	my $outputFolder = 'metrics/';
@@ -648,7 +649,7 @@ sub metrics {
 	$command = HtseqCount::refGtf2matrix($rH_cfg, LoadConfig::getParam($rH_cfg, 'htseq', 'referenceGtf'), $readCountDir, $readcountExtension, $outputDir, $outputMatrix);
 	my $matrixJobId = undef;
 	if(defined($command) && length($command) > 0) {
-		$matrixJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", undef, 'MATRIX', $countDependency, undef, $command, 'metrics/' , $workDirectory);
+		$matrixJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", 'matrix', 'MATRIX', $countDependency, undef, $command, 'metrics/' , $workDirectory);
 		$matrixJobId = '$' .$matrixJobId;
 		$metricsJobId .= $matrixJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 	}
@@ -679,7 +680,7 @@ sub metrics {
 	$command =  Metrics::fpkmCor($rH_cfg, $patern, $folder, $outputBaseName);
 	my $fpkmJobId = undef;
 	if(defined($command) && length($command) > 0) {
-		$fpkmJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", undef, 'STATS_COR', $fpkmDependency, undef, $command, 'metrics/' , $workDirectory);
+		$fpkmJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", 'fpkmStat', 'STATS_COR', $fpkmDependency, undef, $command, 'metrics/' , $workDirectory);
 		$metricsJobId .= '$' .$fpkmJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 	}
 	
@@ -693,10 +694,10 @@ sub metrics {
 	$folder = 'metrics';
 	$outputBaseName = 'metrics/readstats.AllSample.csv';
 	
-	$command =  Metrics::fpkmCor($rH_cfg, $patern, $folder, $outputBaseName);
+	$command =  Metrics::mergeReadStats($rH_cfg, $patern, $folder, $outputBaseName);
 	my $mergeJobId = undef;
 	if(defined($command) && length($command) > 0) {
-		$mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", undef, 'MERGEREADSTAT', $fpkmDependency, undef, $command, 'metrics/' , $workDirectory);
+		$mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", 'mergeRS', 'MERGEREADSTAT', $fpkmDependency, undef, $command, 'metrics/' , $workDirectory);
 		$metricsJobId .= '$' .$mergeJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 	}
 	$metricsJobId = substr $metricsJobId, 0, -1 ;
@@ -725,7 +726,7 @@ sub dge {
 	my $command = DiffExpression::edgerPortable($rH_cfg, $designFilePath, $countMatrix, $outputDir);
 	my $edgerJobId = undef;
 	if(defined($command) && length($command) > 0) {
-		$edgerJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "diffExpress", undef, 'EDGER', $jobDependency, undef, $command, 'DGE/' , $workDirectory);
+		$edgerJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "diffExpress", 'edger', 'EDGER', $jobDependency, undef, $command, 'DGE/' , $workDirectory);
 		$edgerJobId = '$' .$edgerJobId;
 	}
 	
@@ -733,7 +734,7 @@ sub dge {
 	$command = DiffExpression::deseq($rH_cfg, $designFilePath, $countMatrix, $outputDir);
 	my $deseqJobId = undef;
 	if(defined($command) && length($command) > 0) {
-		$deseqJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "diffExpress", undef, 'DESEQ', $jobDependency, undef,$command, 'DGE/' , $workDirectory);
+		$deseqJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "diffExpress", 'deseq', 'DESEQ', $jobDependency, undef,$command, 'DGE/' , $workDirectory);
 		$deseqJobId = '$' .$deseqJobId;
 	}
 	
@@ -765,7 +766,7 @@ sub goseq {
 		print "mkdir -p DGE/$design/output_jobs cuffdiff/$design/output_jobs\n";
 		my $resultFileCuff = 'cuffdiff/known/' .$design .'/isoform_exp.diff' ;
 		my $outputFileCuff = 'cuffdiff/known/' .$design .'/gene_ontology_results.csv';
-		$command = DiffExpression::goseq($rH_cfg, $resultFileCuff, $outputFileCuff, $columnsCuff);
+		$command = DiffExpression::goseq($rH_cfg, $resultFileCuff, $outputFileCuff, $columnsCuff, '1');
 		my $goCuffJobId = undef;
 		if(defined($command) && length($command) > 0) {
 			$goCuffJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "goseq","CUFFLINKS", 'GOCUFFDIFF' .$rH_jobIdPrefixe ->{$design} , $cuffdiffDependency, $design, $command, 'cuffdiff/' .$design, $workDirectory);
@@ -774,7 +775,7 @@ sub goseq {
 		## goseq for dge results
 		my $resultFileDge = 'DGE/' .$design .'/dge_results.csv' ;
 		my $outputFileDge = 'DGE/' .$design .'/gene_ontology_results.csv';
-		$command = DiffExpression::goseq($rH_cfg, $resultFileDge, $outputFileDge, $columnsDge);
+		$command = DiffExpression::goseq($rH_cfg, $resultFileDge, $outputFileDge, $columnsDge, '0');
 		my $goDgeJobId = undef;
 		if(defined($command) && length($command) > 0) {
 			$goDgeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "goseq", "DESEQ", 'GODGE' .$rH_jobIdPrefixe ->{$design} , $dgeDependency, $design, $command, 'DGE/' .$design, $workDirectory);

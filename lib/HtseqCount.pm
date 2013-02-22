@@ -168,16 +168,19 @@ sub refGtf2matrix {
 	my $outputMatrix  = shift;
 	
         my $command ;
-        $command .= 'awk \' BEGIN {FS=\";\"} { split(\$1,ens,\"\\"\"); split(\$4,na,\"\\"\") ; print ens[2] \"\t\" na[2]} \'' ;
-        $command .= ' ' .$refGtf ;
-        $command .= ' | sort -u > ' .$outputDir .'/tmpMatrix.txt &&';
-        $command .= ' for i in \` ls ' .$readCountDir .'/*' .$readcountExtension .' \` ;';
-        $command .= ' do sort -k1,1 \$i > ' .$outputDir .'/tmpSort.txt ;';
-        $command .= ' join -1 1 -2 1' .$outputDir .'/tmpMatrix.txt ' .$outputDir .'/tmpSort.txt > ' .$outputDir .'/tmpMatrix.txt ;';
-        $command .= ' done &&';
-	$command .= ' rm ' .$outputDir .'/tmpSort.txt &&';
-        $command .= ' mv ' .$outputDir .'/tmpMatrix.txt ' .$outputDir .'/' .$outputMatrix .' &&' ;
-        $command .= ' rm ' .$outputDir .'/tmpMatrix.txt ';
+	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'htseq','moduleVersion.tools') .' &&';
+	$command .= ' gtf2tmpMatrix.awk ' .$refGtf;
+	$command .= ' ' .$outputDir .'/tmpMatrix.txt &&';
+	$command .= ' HEAD=\"Gene\tSymbol\" &&';
+	$command .= ' for i in \` ls ' .$readCountDir .'/*' .$readcountExtension .' \` ;';
+	$command .= ' do sort -k1,1 \$i > ' .$outputDir .'/tmpSort.txt ;';
+	$command .= ' join -1 1 -2 1 ' .$outputDir .'/tmpMatrix.txt ' .$outputDir .'/tmpSort.txt > ' .$outputDir .'/tmpMatrix.2.txt ;';
+	$command .= ' mv ' .$outputDir .'/tmpMatrix.2.txt ' .$outputDir .'/tmpMatrix.txt ;';
+	$command .= ' na=\$(basename \$i | cut -d\. -f1) ;';
+	$command .= ' HEAD=\"\$HEAD\t\$na\" ;';
+	$command .= ' done &&';
+	$command .= ' echo -e \$HEAD | cat - ' .$outputDir .'/tmpMatrix.txt | tr \' \' \'\t\' > ' .$outputDir .'/' .$outputMatrix .' &&';
+	$command .= ' rm ' .$outputDir .'/tmpSort.txt ' .$outputDir .'/tmpMatrix.txt ';
         
         return $command;
 }

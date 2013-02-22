@@ -54,8 +54,8 @@ sub rnaQc{
   my $command;
   # -M gives modified date relative to now. The bigger the older.
   if(!defined($latestFile) || !defined(-M $outputIndexFile) || $latestFile < -M $outputIndexFile) {
-    $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'rnaQc','moduleVersion.bwa') .' ;';
-    $command .= ' module load ' .LoadConfig::getParam($rH_cfg, 'rnaQc','moduleVersion.rnaseq') .' ;';
+    $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'rnaQc','moduleVersion.bwa') ;
+    $command .= ' ' .LoadConfig::getParam($rH_cfg, 'rnaQc','moduleVersion.rnaseqc') .' &&';
     $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'rnaQc', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'rnaQc', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'rnaQc', 'metricsRam').' -jar \${RNASEQC_JAR}';
     $command .= ' -n ' .LoadConfig::getParam($rH_cfg, 'rnaQc','topTranscript');
     $command .= ' -s ' .$inputFile;
@@ -77,8 +77,8 @@ sub saturation {
 	
 
 	my $command;
-	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'saturation' , 'moduleVersion.cranR') .' ' . LoadConfig::getParam($rH_cfg, 'saturation' , 'moduleVersion.tools') . ' ;';
-	$command .= ' Rscript $R_TOOLS/rpkmSaturation.R ' .$countFile .' ' .$geneSizeFile .' ' .$rpkmDir .' ' .$saturationDir;
+	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'saturation' , 'moduleVersion.cranR') .' ' . LoadConfig::getParam($rH_cfg, 'saturation' , 'moduleVersion.tools') . ' &&';
+	$command .= ' Rscript \$R_TOOLS/rpkmSaturation.R ' .$countFile .' ' .$geneSizeFile .' ' .$rpkmDir .' ' .$saturationDir;
 	$command .= ' ' .LoadConfig::getParam($rH_cfg, 'saturation' , 'optionR');
 
 	return $command;
@@ -92,7 +92,7 @@ sub fpkmCor {
 	
 	my $command;
 	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.cranR') .' ' . LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.tools') . ' ;';
-	$command .= ' Rscript $R_TOOLS/fpkmStats.R ' .$paternFile .' ' .$folderFile .' ' .$outputBaseName;
+	$command .= ' Rscript \$R_TOOLS/fpkmStats.R ' .$paternFile .' ' .$folderFile .' ' .$outputBaseName;
 	
 	return $command;
 }
@@ -114,9 +114,10 @@ sub readStats {
 			$command .= ' > ' .$outputFile;
 		}
 		elsif  ((lc $fileType) eq "bam") {
-			my $unmapOption = '-F4 -F256';
+			my $unmapOption = '-F260';
 			$command .= SAMtools::viewFilter($rH_cfg, $inputFile, $unmapOption, undef);
-			$command .= ' | wc -l  > ' .$outputFile;
+			$command .= ' | awk \' { print \$1} \'';
+			$command .= ' | sort -u | wc -l  > ' .$outputFile;
 		}
 	}
 
@@ -138,7 +139,9 @@ sub mergeIndvidualReadStats{
 	if(!defined($latestInputFile) || !defined($latestOutputFile) || $latestInputFile <  $latestOutputFile) {
 		$command .= 'echo \"' .$sampleName .'\"' ;
 		$command .= ' | cat - ' .$rawFile .' ' .$filterFile .' ' .$alignFile;
-		$command .= ' | tr \'\n\' \',\' >> ' .$outputFile .' &&'; 
+		$command .= ' | tr \'\n\' \',\' ';
+		$command .= ' | awk \' BEGIN {FS=\",\"} { print \$1 \",\" \$2 \",\" \$3 \",\" \$4}\''; 
+		$command .= ' > ' .$outputFile .' &&'; 
 		$command .= ' rm  ' .$rawFile .' ' .$filterFile .' ' .$alignFile;
 	}
 
@@ -153,7 +156,7 @@ sub mergeReadStats{
 	
 	my $command;
 	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.cranR') .' ' . LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.tools') . ' ;';
-	$command .= ' Rscript $R_TOOLS/mergeReadStat.R ' .$paternFile .' ' .$folderFile .' ' .$outputFile .' &&';
+	$command .= ' Rscript \$R_TOOLS/mergeReadStat.R ' .$paternFile .' ' .$folderFile .' ' .$outputFile .' &&';
 	$command .= ' rm ' .$folderFile .'/*' .$paternFile;
 	
 	return $command;
