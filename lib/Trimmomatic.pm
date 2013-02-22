@@ -67,11 +67,11 @@ sub pairCommand {
     my $sampleName  = shift;
     my $rH_laneInfo = shift;
 
-    my $minQuality  = $rH_cfg->{'trim.minQuality'};
-    my $minLength   = $rH_cfg->{'trim.minLength'};
-    my $adapterFile = $rH_cfg->{'trim.adapterFile'};
+    my $minQuality  = LoadConfig::getParam($rH_cfg, 'trim','minQuality');
+    my $minLength   = LoadConfig::getParam($rH_cfg, 'trim','minLength');
+    my $adapterFile = LoadConfig::getParam($rH_cfg, 'trim','adapterFile');
 
-    my $rawReadDir    = $rH_cfg->{'default.rawReadDir'} . '/';
+    my $rawReadDir    = LoadConfig::getParam($rH_cfg, 'trim','rawReadDir') . '/';
     my $laneDirectory = "reads/";
 
     my $outputFastqPair1Name = $laneDirectory .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.pair1.fastq.gz';
@@ -90,7 +90,8 @@ sub pairCommand {
 
     # -M gives modified date relative to now. The bigger the older.
     if ( !defined($currentFileDate) || $currentFileDate > -M $rawReadDir .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' .$rH_laneInfo->{'read1File'} ) {
-        $command .= 'module load mugqic/trimmomatic/0.22 ; java -cp \$TRIMMOMATIC_JAR org.usadellab.trimmomatic.TrimmomaticPE';
+        $command .= 'module load ';
+        $command .= LoadConfig::getParam($rH_cfg, 'trim','moduleVersion.java') .' mugqic/trimmomatic/0.22 ; java -cp \$TRIMMOMATIC_JAR org.usadellab.trimmomatic.TrimmomaticPE';
         $command .= ' -threads ' . $rH_cfg->{'trim.nbThreads'};
         if ( $rH_laneInfo->{'qualOffset'} eq "64" ) {
             $command .= ' -phred64';
@@ -126,11 +127,11 @@ sub singleCommand {
     my $sampleName  = shift;
     my $rH_laneInfo = shift;
 
-    my $minQuality  = $rH_cfg->{'trim.minQuality'};
-    my $minLength   = $rH_cfg->{'trim.minLength'};
-    my $adapterFile = $rH_cfg->{'trim.adapterFile'};
+    my $minQuality  = LoadConfig::getParam($rH_cfg, 'trim','minQuality');
+    my $minLength   = LoadConfig::getParam($rH_cfg, 'trim','minLength');
+    my $adapterFile = LoadConfig::getParam($rH_cfg, 'trim','adapterFile');
 
-    my $rawReadDir    = $rH_cfg->{'default.rawReadDir'} . '/';
+    my $rawReadDir    = LoadConfig::getParam($rH_cfg, 'trim','rawReadDir') . '/';
     my $laneDirectory = "reads/";
 
     my $outputFastqName = $laneDirectory . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.single.fastq.gz';
@@ -140,7 +141,8 @@ sub singleCommand {
 
     # -M gives modified date relative to now. The bigger the older.
     if ( !defined($currentFileDate) || $currentFileDate > -M $rawReadDir .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' .$rH_laneInfo->{'read1File'} ) {
-        $command .= 'module load mugqic/trimmomatic/0.22 ; java -cp \$TRIMMOMATIC_JAR org.usadellab.trimmomatic.TrimmomaticSE';
+        $command .= 'module load ';
+        $command .= '  ' .LoadConfig::getParam($rH_cfg, 'trim','moduleVersion.java') .' mugqic/trimmomatic/0.22 ; java -cp \$TRIMMOMATIC_JAR org.usadellab.trimmomatic.TrimmomaticSE';
         $command .= ' -threads ' . $rH_cfg->{'trim.nbThreads'};
         if ( $rH_laneInfo->{'qualOffset'} eq "64" ) {
             $command .= ' -phred64';

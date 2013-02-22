@@ -75,12 +75,12 @@ sub realign {
   return $command;
 }
 sub genomeCoverage {
-  my $rH_cfg          = shift;
-  my $sampleName      = shift;
+  my $rH_cfg        = shift;
+  my $sampleName    = shift;
+  my $inputBam      = shift;
+  my $outputPrefix  = shift;
 
   my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta');
-  my $sortedBAM = $sampleName.'/'.$sampleName.'.sorted.dup.bam';
-  my $output = $sampleName.'.sorted.dup.coverage';
   my $rA_thresholds = LoadConfig::getParam($rH_cfg, 'genomeCoverage', 'percentThresholds');
   
   my $command;
@@ -97,8 +97,8 @@ sub genomeCoverage {
   }
   $command .= ' --start 1 --stop '.$highestThreshold.' --nBins '.($highestThreshold-1).' -dt NONE';
   $command .= ' -R '.$refGenome;
-  $command .= ' -o '.$output;
-  $command .= ' -I '.$sortedBAM;
+  $command .= ' -o '.$outputPrefix;
+  $command .= ' -I '.$inputBam;
   
   return $command;
 }

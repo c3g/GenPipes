@@ -67,6 +67,9 @@ sub printSubmitCmd {
     if(!(defined $workDirectory)){
       $workDirectory = '`pwd`';
     }
+    if(!(defined $outputDir)){
+      $outputDir = $sampleName;
+    }
     if(LoadConfig::getParam($rH_cfg, $stepName, 'clusterCmdProducesJobId') eq "true") {
         #$command =~ s/\\\$/\\\\\\\$/g;
         print $jobIdVarName.'=$(';

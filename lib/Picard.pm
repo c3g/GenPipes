@@ -73,7 +73,7 @@ sub merge {
   my $command;
   # -M gives modified date relative to now. The bigger the older.
   if(!defined($latestBam) || !defined(-M $outputBAM) || $latestBam < -M $outputBAM) {
-    $command .= 'module load mugqic/picard/1.82 ;';
+  $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'mergeLanes', 'moduleVersion.picard').' ;'; 
     $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'mergeLanes', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'mergeLanes', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'mergeLanes', 'mergeRam').' -jar \${PICARD_HOME}/MergeSamFiles.jar';
     $command .= ' VALIDATION_STRINGENCY=SILENT ASSUME_SORTED=true CREATE_INDEX=true';
     $command .= ' TMP_DIR='.LoadConfig::getParam($rH_cfg, 'mergeLanes', 'tmpDir');
@@ -102,7 +102,7 @@ sub mergeRealigned {
   }
 
   my $command;
-  $command .= 'module load mugqic/picard/1.82 ;';
+  $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'mergeRealigned', 'moduleVersion.picard').' ;'; 
   $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'mergeRealigned', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'mergeRealigned', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'mergeRealigned', 'mergeRam').' -jar \${PICARD_HOME}/MergeSamFiles.jar';
   $command .= ' VALIDATION_STRINGENCY=SILENT ASSUME_SORTED=false SORT_ORDER=queryname';
   $command .= ' TMP_DIR='.LoadConfig::getParam($rH_cfg, 'mergeRealigned', 'tmpDir');
@@ -138,7 +138,7 @@ sub mergeFiles {
   my $command;
   # -M gives modified date relative to now. The bigger the older.
   if(!defined($latestBam) || !defined(-M $outputBAM) || $latestBam < -M $outputBAM) {
-    $command .= 'module load mugqic/picard/1.82 ;';
+  $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'mergeFiles', 'moduleVersion.picard').' ;'; 
     $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'mergeFiles', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'mergeFiles', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'mergeFiles', 'mergeRam').' -jar \${PICARD_HOME}/MergeSamFiles.jar';
     $command .= ' VALIDATION_STRINGENCY=SILENT ASSUME_SORTED=true CREATE_INDEX=true';
     $command .= ' TMP_DIR='.LoadConfig::getParam($rH_cfg, 'mergeFiles', 'tmpDir');
@@ -157,7 +157,7 @@ sub fixmate {
   my $outputBAM = $sampleName.'/'.$sampleName.'.matefixed.sorted.bam';
 
   my $command;
-  $command .= 'module load mugqic/picard/1.82 ;';
+  $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'fixmate', 'moduleVersion.picard').' ;'; 
   $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'fixmate', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'fixmate', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'fixmate', 'fixmateRam').' -jar \${PICARD_HOME}/FixMateInformation.jar';
   $command .= ' VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true SORT_ORDER=coordinate';
   $command .= ' TMP_DIR='.LoadConfig::getParam($rH_cfg, 'fixmate', 'tmpDir');
@@ -185,7 +185,7 @@ sub markDup {
 #   }
 
   my $command;
-  $command .= 'module load mugqic/picard/1.82 ;';
+  $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'markDup', 'moduleVersion.picard').' ;'; 
   $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'markDup', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'markDupRam', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'markDup', 'markDupRam').' -jar \${PICARD_HOME}/MarkDuplicates.jar';
   $command .= ' REMOVE_DUPLICATES=false CREATE_MD5_FILE=true VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true';
   $command .= ' TMP_DIR='.LoadConfig::getParam($rH_cfg, 'markDup', 'tmpDir');
@@ -205,7 +205,7 @@ sub collectMetrics {
   my $outputMetrics = $sampleName.'/'.$sampleName.'.sorted.dup.all.metrics';
   
   my $command;
-  $command .= 'module load mugqic/picard/1.82 ;';
+  $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'collectMetrics', 'moduleVersion.picard').' ;'; 
   $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'collectMetrics', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'collectMetrics', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'collectMetrics', 'collectMetricsRam').' -jar \${PICARD_HOME}/CollectMultipleMetrics.jar';
   $command .= ' PROGRAM=CollectAlignmentSummaryMetrics PROGRAM=CollectInsertSizeMetrics  VALIDATION_STRINGENCY=SILENT';
   $command .= ' TMP_DIR='.LoadConfig::getParam($rH_cfg, 'collectMetrics', 'tmpDir');
@@ -232,7 +232,7 @@ sub sortSam {
   if(!defined($latestBam) || !defined(-M $outputBAM) || $latestBam < -M $outputBAM) {
     $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.picard') .' ;';
     $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'sortSam', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'sortSam', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'sortSam', 'sortRam').' -jar \${PICARD_HOME}/SortSam.jar';
-    $command .= ' VALIDATION_STRINGENCY=SILENT ASSUME_SORTED=true CREATE_INDEX=true';
+    $command .= ' VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true';
     $command .= ' TMP_DIR='.LoadConfig::getParam($rH_cfg, 'sortSam', 'tmpDir');
     $command .= ' INPUT='.$inputBAM;
     $command .= ' OUTPUT='.$outputBAM;
@@ -257,12 +257,12 @@ sub reorderSam {
   # -M gives modified date relative to now. The bigger the older.
   if(!defined($latestBam) || !defined(-M $outputBAM) || $latestBam < -M $outputBAM) {
     $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.picard') .' ;';
-    $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'reorderSam', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'reorderSam', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'reorderSamm', 'reorderRam').' -jar \${PICARD_HOME}/ReorderSam.jar';
-    $command .= ' VALIDATION_STRINGENCY=SILENT ASSUME_SORTED=true CREATE_INDEX=true';
+    $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'reorderSam', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'reorderSam', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'reorderSam', 'reorderRam').' -jar \${PICARD_HOME}/ReorderSam.jar';
+    $command .= ' VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true';
     $command .= ' TMP_DIR='.LoadConfig::getParam($rH_cfg, 'reorderSam', 'tmpDir');
     $command .= ' INPUT='.$inputBAM;
     $command .= ' OUTPUT='.$outputBAM;
-    $command .= ' REFERENCE='.LoadConfig::getParam($rH_cfg, 'reorderSam', 'referenceSequenceDictionary');
+    $command .= ' REFERENCE='.LoadConfig::getParam($rH_cfg, 'reorderSam', 'referenceFasta');
     $command .= ' MAX_RECORDS_IN_RAM='.LoadConfig::getParam($rH_cfg, 'reorderSam', 'reorderRecInRam');
   }
   return $command;
