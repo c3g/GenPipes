@@ -67,11 +67,11 @@ sub pairCommand {
     my $sampleName  = shift;
     my $rH_laneInfo = shift;
 
-    my $minQuality  = $rH_cfg->{'trim.minQuality'};
-    my $minLength   = $rH_cfg->{'trim.minLength'};
-    my $adapterFile = $rH_cfg->{'trim.adapterFile'};
+    my $minQuality  = LoadConfig::getParam($rH_cfg, 'trim','minQuality');
+    my $minLength   = LoadConfig::getParam($rH_cfg, 'trim','minLength');
+    my $adapterFile = LoadConfig::getParam($rH_cfg, 'trim','adapterFile');
 
-    my $rawReadDir    = $rH_cfg->{'default.rawReadDir'} . '/';
+    my $rawReadDir    = LoadConfig::getParam($rH_cfg, 'trim','rawReadDir') . '/';
     my $laneDirectory = "reads/";
 
     my $outputFastqPair1Name = $laneDirectory .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.pair1.fastq.gz';
@@ -127,11 +127,11 @@ sub singleCommand {
     my $sampleName  = shift;
     my $rH_laneInfo = shift;
 
-    my $minQuality  = $rH_cfg->{'trim.minQuality'};
-    my $minLength   = $rH_cfg->{'trim.minLength'};
-    my $adapterFile = $rH_cfg->{'trim.adapterFile'};
+    my $minQuality  = LoadConfig::getParam($rH_cfg, 'trim','minQuality');
+    my $minLength   = LoadConfig::getParam($rH_cfg, 'trim','minLength');
+    my $adapterFile = LoadConfig::getParam($rH_cfg, 'trim','adapterFile');
 
-    my $rawReadDir    = $rH_cfg->{'default.rawReadDir'} . '/';
+    my $rawReadDir    = LoadConfig::getParam($rH_cfg, 'trim','rawReadDir') . '/';
     my $laneDirectory = "reads/";
 
     my $outputFastqName = $laneDirectory . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.single.fastq.gz';

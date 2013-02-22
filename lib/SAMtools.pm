@@ -54,12 +54,11 @@ sub mpileupPaired {
 sub mpileup {
   my $rH_cfg      = shift;
   my $sampleName  = shift;
-  my $normalBam   = shift;
-  my $tumorBam    = shift;
+  my $bam         = shift;
   my $seqName     = shift;
   my $outputDir   = shift;
 
-  return mpileupBuilder($rH_cfg, $seqName, $outputDir, $sampleName, $normalBam);
+  return mpileupBuilder($rH_cfg, $seqName, $outputDir, $sampleName, $bam);
 }
 
 sub mpileupBuilder {
@@ -74,7 +73,7 @@ sub mpileupBuilder {
   my $outputBCF = $outputDir.$sampleName.'.'.$seqName.'.bcf'; 
 
   my $command;
-  $command .= 'module load mugqic/samtools/0.1.18 ;';
+  $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'mpileup', 'moduleVersion.samtools').' ;';
   $command .= ' samtools mpileup';
   $command .= ' '.LoadConfig::getParam($rH_cfg, 'mpileup', 'mpileupExtraFlags');
   $command .= ' -f '.$refGenome;
@@ -110,7 +109,7 @@ sub mergeFilterBCF {
   }
   
   my $command;
-  $command .= 'module load mugqic/samtools/0.1.18 ;';
+  $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'mergeFilterBCF', 'moduleVersion.samtools').' ;';
   $command .= ' bcftools cat';
   $command .= ' '.$bcfInputs;
   $command .= ' > '.$outputBCF;
@@ -129,13 +128,13 @@ sub flagstat {
   my $output     = shift;
 
   my $command;
-  $command .= 'module load mugqic/samtools/0.1.18 ;';
+  $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'flagstat', 'moduleVersion.samtools').' ;';
   $command .= ' samtools flagstat';
   $command .= ' '.$bamFile;
   $command .= ' > '.$output;
 }
 
-sub rawpileup {
+sub rawmpileup {
   my $rH_cfg      = shift;
   my $sampleName  = shift;
   my $bamFile     = shift;
@@ -145,9 +144,9 @@ sub rawpileup {
   my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta');
 
   my $command;
-  $command .= 'module load mugqic/samtools/0.1.18 ;';
+  $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'rawmpileup', 'moduleVersion.samtools').' ;';
   $command .= ' samtools mpileup';
-  $command .= ' '.LoadConfig::getParam($rH_cfg, 'rawpileup', 'mpileupExtraFlags');
+  $command .= ' '.LoadConfig::getParam($rH_cfg, 'rawmpileup', 'mpileupExtraFlags');
   $command .= ' -f '.$refGenome;
   $command .= ' -r '.$seqName;
   $command .= ' '.$bamFile;

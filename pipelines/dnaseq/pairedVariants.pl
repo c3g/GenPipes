@@ -36,14 +36,14 @@ use strict;
 use warnings;
 #---------------------
 
-BEGIN{
-    #Makesure we can find the GetConfig::LoadModules module relative to this script install
-    use File::Basename;
-    use Cwd 'abs_path';
-    my ( undef, $mod_path, undef ) = fileparse( abs_path(__FILE__) );
-    unshift @INC, $mod_path."lib";
-
-}
+#BEGIN{
+#    #Makesure we can find the GetConfig::LoadModules module relative to this script install
+#    use File::Basename;
+#    use Cwd 'abs_path';
+#    my ( undef, $mod_path, undef ) = fileparse( abs_path(__FILE__) );
+#    unshift @INC, $mod_path."lib";
+#
+#}
 
 
 # Dependencies
@@ -51,10 +51,17 @@ BEGIN{
 use Getopt::Std;
 
 use LoadConfig;
+use BAMtools;
+use Breakdancer;
 use SampleSheet;
 use SAMtools;
 use SequenceDictionaryParser;
+use SnpEff;
 use SubmitToCluster;
+use SVtools;
+use ToolShed;
+use VCFtools;
+
 #--------------------
 
 
@@ -66,13 +73,12 @@ push(@steps, {'name' => 'snpAndIndelBCF'});
 push(@steps, {'name' => 'mergeFilterBCF'});
 push(@steps, {'name' => 'filterNStretches'});
 push(@steps, {'name' => 'flagMappability'});
-push(@steps, {'name' => 'snpAnnotation'});
+push(@steps, {'name' => 'snpIDAnnotation'});
 push(@steps, {'name' => 'snpEffect'});
-push(@steps, {'name' => 'geneDescriptions'});
-push(@steps, {'name' => 'dbNSFP'});
-push(@steps, {'name' => 'COSMIC'});
+push(@steps, {'name' => 'dbNSFPAnnotation'});
+push(@steps, {'name' => 'indexVCF'});
 push(@steps, {'name' => 'DNAC'});
-push(@steps, {'name' => 'filterDNAC'});
+push(@steps, {'name' => 'Breakdancer'});
 push(@steps, {'name' => 'Control-Freec'});
 
 &main();
@@ -205,4 +211,214 @@ sub mergeFilterBCF {
   return $mergeJobId;
 }
 
+sub filterNStretches {
+  my $depends = shift;
+  my $rH_cfg = shift;
+  my $rH_samplePair = shift;
+  my $rAoH_seqDictionary = shift;
+
+  my $jobDependency = undef;
+  if($depends > 0) {
+    $jobDependency = '${MERGEBCF_JOB_ID}';
+  }
+
+  my $sampleName = $rH_samplePair->{'sample'};
+  # Use mergeFilterBCF to make sure we have the right path
+  my $vcf = LoadConfig::getParam($rH_cfg, "mergeFilterBCF", 'sampleOutputRoot') . $sampleName.'/'.$sampleName.'.merged.flt.vcf';
+  my $vcfOutput = LoadConfig::getParam($rH_cfg, "filterNStretches", 'sampleOutputRoot') . $sampleName.'/'.$sampleName.'.merged.flt.Nfilter.vcf';
+
+  my $command = ToolShed::filterNStretches($rH_cfg, $sampleName, $vcf, $vcfOutput);
+  my $filterNJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "filterNStretches", undef, 'FILTERN', $jobDependency, $sampleName, $command);
+  return $filterNJobId;
+}
+
+sub flagMappability {
+  my $depends = shift;
+  my $rH_cfg = shift;
+  my $rH_samplePair = shift;
+  my $rAoH_seqDictionary = shift;
+
+  my $jobDependency = undef;
+  if($depends > 0) {
+    $jobDependency = '${FILTERN_JOB_ID}';
+  }
+
+  my $sampleName = $rH_samplePair->{'sample'};
+  # Use mergeFilterBCF to make sure we have the right path
+  my $vcf = LoadConfig::getParam($rH_cfg, "filterNStretches", 'sampleOutputRoot') . $sampleName.'/'.$sampleName.'.merged.flt.Nfilter.vcf';
+  my $vcfOutput = LoadConfig::getParam($rH_cfg, "flagMappability", 'sampleOutputRoot') . $sampleName.'/'.$sampleName.'.merged.flt.Nfilter.mil.vcf';
+
+  my $command = VCFtools::annotateMappability($rH_cfg, $sampleName, $vcf, $vcfOutput);
+  my $milJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "flagMappability", undef, 'MAPPABILITY', $jobDependency, $sampleName, $command);
+}
+
+sub snpIDAnnotation {
+  my $depends = shift;
+  my $rH_cfg = shift;
+  my $rH_samplePair = shift;
+  my $rAoH_seqDictionary = shift;
+
+  my $jobDependency = undef;
+  if($depends > 0) {
+    $jobDependency = '${MAPPABILITY_JOB_ID}';
+  }
+
+  my $sampleName = $rH_samplePair->{'sample'};
+  # Use mergeFilterBCF to make sure we have the right path
+  my $vcf = LoadConfig::getParam($rH_cfg, "flagMappability", 'sampleOutputRoot') . $sampleName.'/'.$sampleName.'.merged.flt.Nfilter.mil.vcf';
+  my $vcfOutput = LoadConfig::getParam($rH_cfg, "snpIDAnnotation", 'sampleOutputRoot') . $sampleName.'/'.$sampleName.'.merged.flt.Nfilter.mil.snpid.vcf';
+
+  my $command = SnpEff::annotateDbSnp($rH_cfg, $sampleName, $vcf, $vcfOutput);
+  my $snpEffJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "snpIDAnnotation", undef, 'SNPID', $jobDependency, $sampleName, $command);
+}
+
+sub snpEffect {
+  my $depends = shift;
+  my $rH_cfg = shift;
+  my $rH_samplePair = shift;
+  my $rAoH_seqDictionary = shift;
+
+  my $jobDependency = undef;
+  if($depends > 0) {
+    $jobDependency = '${SNPID_JOB_ID}';
+  }
+
+  my $sampleName = $rH_samplePair->{'sample'};
+  # Use mergeFilterBCF to make sure we have the right path
+  my $vcf = LoadConfig::getParam($rH_cfg, "snpIDAnnotation", 'sampleOutputRoot') . $sampleName.'/'.$sampleName.'.merged.flt.Nfilter.mil.snpid.vcf';
+  my $vcfOutput = LoadConfig::getParam($rH_cfg, "snpEffect", 'sampleOutputRoot') . $sampleName.'/'.$sampleName.'.merged.flt.Nfilter.mil.snpid.snpeff.vcf';
+
+  my $command = SnpEff::computeEffects($rH_cfg, $sampleName, $vcf, $vcfOutput);
+  my $snpEffJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "snpEffect", undef, 'SNPEFF', $jobDependency, $sampleName, $command);
+}
+
+sub dbNSFPAnnotation {
+  my $depends = shift;
+  my $rH_cfg = shift;
+  my $rH_samplePair = shift;
+  my $rAoH_seqDictionary = shift;
+
+  my $jobDependency = undef;
+  if($depends > 0) {
+    $jobDependency = '${SNPEFF_JOB_ID}';
+  }
+
+  my $sampleName = $rH_samplePair->{'sample'};
+  # Use mergeFilterBCF to make sure we have the right path
+  my $vcf = LoadConfig::getParam($rH_cfg, "snpEffect", 'sampleOutputRoot') . $sampleName.'/'.$sampleName.'.merged.flt.Nfilter.mil.snpid.snpeff.vcf';
+  my $vcfOutput = LoadConfig::getParam($rH_cfg, "dbNSFPAnnotation", 'sampleOutputRoot') . $sampleName.'/'.$sampleName.'.merged.flt.Nfilter.mil.snpid.snpeff.dbnsfp.vcf';
+
+  my $command = SnpEff::annotateDbNSFP($rH_cfg, $sampleName, $vcf, $vcfOutput);
+  my $snpEffJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "dbNSFPAnnotation", undef, 'DBNSFP', $jobDependency, $sampleName, $command);
+}
+
+sub indexVCF {
+  my $depends = shift;
+  my $rH_cfg = shift;
+  my $rH_samplePair = shift;
+  my $rAoH_seqDictionary = shift;
+
+  my $jobDependency = undef;
+  if($depends > 0) {
+    $jobDependency = '${DBNSFP_JOB_ID}';
+  }
+
+  my $sampleName = $rH_samplePair->{'sample'};
+  # Use mergeFilterBCF to make sure we have the right path
+  my $vcf = LoadConfig::getParam($rH_cfg, "dbNSFPAnnotation", 'sampleOutputRoot') . $sampleName.'/'.$sampleName.'.merged.flt.Nfilter.mil.snpid.snpeff.dbnsfp.vcf';
+  my $vcfOutput = LoadConfig::getParam($rH_cfg, "indexVCF", 'sampleOutputRoot') . $sampleName.'/'.$sampleName.'.merged.flt.Nfilter.mil.snpid.snpeff.dbnsfp.vcf.gz';
+
+  my $command = VCFtools::indexVCF($rH_cfg, $sampleName, $vcf, $vcfOutput);
+  my $milJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "indexVCF", undef, 'INDEXVCF', $jobDependency, $sampleName, $command);
+}
+
+sub DNAC {
+  my $depends = shift;
+  my $rH_cfg = shift;
+  my $rH_samplePair = shift;
+  my $rAoH_seqDictionary = shift;
+
+  my $jobDependency = undef;
+
+  my $sampleName = $rH_samplePair->{'sample'};
+  my $normalBam = $rH_samplePair->{'normal'}.'/'.$rH_samplePair->{'normal'}.'.sorted.dup.bam';
+  my $tumorBam = $rH_samplePair->{'tumor'}.'/'.$rH_samplePair->{'tumor'}.'.sorted.dup.bam';
+  my $outputDir = LoadConfig::getParam($rH_cfg, "DNAC", 'sampleOutputRoot') . $sampleName.'/DNAC/';
+  
+  print 'mkdir -p '.$outputDir."\n";
+  print "DNAC_JOB_IDS=\"\"\n";
+  
+  my $DNAC500File = $outputDir.$sampleName.'.DNAC_500';
+  my $DNAC1000File = $outputDir.$sampleName.'.DNAC_1000';
+  my $DNAC30000File = $outputDir.$sampleName.'.DNAC_30000';
+  my $bin500File = $DNAC500File.'.bins.tsv';
+  my $bin1000File = $DNAC1000File.'.bins.tsv';
+  my $bin30000File = $DNAC30000File.'.bins.tsv';
+
+  my $command500 = BAMtools::countBins($rH_cfg, $sampleName, $tumorBam, 500, 'chr', $bin500File, $normalBam);
+  my $command1000 = BAMtools::countBins($rH_cfg, $sampleName, $tumorBam, 1000, 'chr', $bin1000File, $normalBam);
+  my $command30000 = BAMtools::countBins($rH_cfg, $sampleName, $tumorBam, 30000, 'genome', $bin30000File, $normalBam);
+
+  $command500 .= ' && '.SVtools::runPairedDNAC($rH_cfg, $sampleName, $bin500File, $DNAC500File, 500);
+  $command1000 .= ' && '.SVtools::runPairedDNAC($rH_cfg, $sampleName, $bin1000File, $DNAC1000File, 1000);
+  $command30000 .= ' && '.SVtools::runPairedDNAC($rH_cfg, $sampleName, $bin30000File, $DNAC30000File, 30000);
+
+  $command500 .= ' && '.SVtools::filterDNAC($rH_cfg, $sampleName, $DNAC500File.'.txt', $DNAC500File.'.filteredSV', 1);
+  $command1000 .= ' && '.SVtools::filterDNAC($rH_cfg, $sampleName, $DNAC1000File.'.txt', $DNAC1000File.'.filteredSV', 1);
+  $command30000 .= ' && '.SVtools::filterDNAC($rH_cfg, $sampleName, $DNAC30000File.'.txt', $DNAC30000File.'.filteredSV', 2);
+
+  my $dnac500JobId = SubmitToCluster::printSubmitCmd($rH_cfg, "DNAC_500", undef, 'DNAC_500', $jobDependency, $sampleName, $command500);
+  print 'DNAC_JOB_IDS=${DNAC_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$dnac500JobId."\n";
+  my $dnac1000JobId = SubmitToCluster::printSubmitCmd($rH_cfg, "DNAC_1000", undef, 'DNAC_1000', $jobDependency, $sampleName, $command1000);
+  print 'DNAC_JOB_IDS=${DNAC_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$dnac1000JobId."\n";
+  my $dnac30000JobId = SubmitToCluster::printSubmitCmd($rH_cfg, "DNAC_30000", undef, 'DNAC_30000', $jobDependency, $sampleName, $command30000);
+  print 'DNAC_JOB_IDS=${DNAC_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$dnac30000JobId."\n";
+
+  return $dnac30000JobId;
+}
+
+sub Breakdancer {
+  my $depends = shift;
+  my $rH_cfg = shift;
+  my $rH_samplePair = shift;
+  my $rAoH_seqDictionary = shift;
+
+  my $jobDependency = undef;
+
+  my $sampleName = $rH_samplePair->{'sample'};
+  my $normalBam = $rH_samplePair->{'normal'}.'/'.$rH_samplePair->{'normal'}.'.sorted.dup.bam';
+  my $tumorBam = $rH_samplePair->{'tumor'}.'/'.$rH_samplePair->{'tumor'}.'.sorted.dup.bam';
+  my $outputDir = LoadConfig::getParam($rH_cfg, "Breakdancer", 'sampleOutputRoot') . $sampleName.'/breakdancer/';
+
+  print 'mkdir -p '.$outputDir."\n";
+  print "BRD_JOB_IDS=\"\"\n";
+
+  my $normalOutput = $outputDir.$sampleName.'.brdN.cfg';
+  my $tumorOutput = $outputDir.$sampleName.'.brdT.cfg';
+  my $sampleCFGOutput = $outputDir.$sampleName.'.brd.cfg';
+  my $command = Breakdancer::bam2cfg($rH_cfg,$sampleName,$normalBam,$normalOutput, LoadConfig::getParam($rH_cfg, 'Breakdancer', 'normalStdDevCutoff'));
+  $command .= ' & '.Breakdancer::bam2cfg($rH_cfg,$sampleName,$tumorBam,$tumorOutput, LoadConfig::getParam($rH_cfg, 'Breakdancer', 'tumorStdDevCutoff'));
+  $command .= ' & wait && cat '.$normalOutput.' '.$tumorOutput. ' > '.$sampleCFGOutput;
+  my $brdCFGJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "Breakdancer", undef, 'BRD_CFG', $jobDependency, $sampleName, $command);
+  $brdCFGJobId = '$'.$brdCFGJobId;
+
+  my $outputTRPrefix = $outputDir.$sampleName.'.brd.TR';
+  $command = Breakdancer::pairedBRDITX($rH_cfg,$sampleName,$sampleCFGOutput,$outputTRPrefix);
+  my $brdTRJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "Breakdancer", 'TR', 'BRD_TR', $brdCFGJobId, $sampleName, $command);
+  $brdTRJobId = '$'.$brdTRJobId;
+
+  print "BRD_JOB_IDS=\"".$brdTRJobId."\"\n";
+  for my $rH_seqInfo (@$rAoH_seqDictionary) {
+    my $seqName = $rH_seqInfo->{'name'};
+
+    my $outputPrefix = $outputDir.$sampleName.'.brd.'.$seqName;
+    $command = Breakdancer::pairedBRD($rH_cfg,$sampleName,$seqName,$sampleCFGOutput,$outputPrefix);
+    my $brdJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "Breakdancer", $seqName, 'BRD', $brdCFGJobId, $sampleName, $command);
+    $brdJobId = '$'.$brdJobId;
+
+    print 'BRD_JOB_IDS=${BRD_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$brdJobId."\n";
+  }
+
+  return '${BRD_JOB_IDS}';
+}
 1;

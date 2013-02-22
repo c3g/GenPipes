@@ -74,13 +74,20 @@ push(@steps, {'name' => 'mergeRealigned'});
 push(@steps, {'name' => 'fixmate'});
 push(@steps, {'name' => 'markDup'});
 push(@steps, {'name' => 'metrics'});
+push(@steps, {'name' => 'snpAndIndelBCF'});
+push(@steps, {'name' => 'mergeFilterBCF'});
+push(@steps, {'name' => 'filterNStretches'});
+push(@steps, {'name' => 'flagMappability'});
+push(@steps, {'name' => 'snpIDAnnotation'});
+push(@steps, {'name' => 'snpEffect'});
+push(@steps, {'name' => 'dbNSFPAnnotation'});
+push(@steps, {'name' => 'indexVCF'});
+
 #push(@steps, {'name' => 'crestSClip'});
 push(@steps, {'name' => 'sortQname'});
 #push(@steps, {'name' => 'countTelomere'});
 push(@steps, {'name' => 'fullPileup'});
 #push(@steps, {'name' => 'countTelomere'});
-#  print "Step 12: snp and indel calling\n";
-#  print "Step 13: merge snp calls\n";
 #  print "Step 14: filter N streches\n";
 #  print "Step 15: flag mappability\n";
 #  print "Step 16: snp annotation\n";
@@ -271,7 +278,11 @@ sub markDup {
     $jobDependency = '${FIXMATE_JOB_ID}';
   }
 
-  my $command = Picard::markDup($rH_cfg, $sampleName);
+  my $inputBAM = $sampleName.'/'.$sampleName.'.matefixed.sorted.bam';
+  my $outputBAM = $sampleName.'/'.$sampleName.'.sorted.dup.bam';
+  my $outputMetrics = $sampleName.'/'.$sampleName.'.sorted.dup.metrics';
+
+  my $command = Picard::markDup($rH_cfg, $sampleName, $inputBAM, $outputBAM, $outputMetrics);
   my $markDupJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "markDup", undef, 'MARKDUP', $jobDependency, $sampleName, $command);
   return $markDupJobId;
 }
@@ -296,11 +307,12 @@ sub metrics {
   my $collectMetricsJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "collectMetrics", undef, 'COLLECTMETRICS', $jobDependency, $sampleName, $command);
   
   # Compute genome coverage
-  $command = GATK::genomeCoverage($rH_cfg, $sampleName);
+  my $outputPrefix = $sampleName.'/'.$sampleName.'.sorted.dup.all.coverage';
+  $command = GATK::genomeCoverage($rH_cfg, $sampleName, $bamFile, $outputPrefix);
   my $genomeCoverageJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "genomeCoverage", undef, 'GENOMECOVERAGE', $jobDependency, $sampleName, $command);
 
   # Compute CCDS coverage
-  my $outputPrefix = $sampleName.'/'.$sampleName.'.sorted.dup.CCDS.coverage';
+  $outputPrefix = $sampleName.'/'.$sampleName.'.sorted.dup.CCDS.coverage';
   $command = GATK::targetCoverage($rH_cfg, $sampleName, $bamFile, $outputPrefix);
   my $targetCoverageJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "targetCoverage", undef, 'TARGETCOVERAGE', $jobDependency, $sampleName, $command);
 
@@ -363,6 +375,99 @@ sub fullPileup {
 
   my $catJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "rawmpileup_cat", undef, 'RAW_MPILEUP_CAT', undef, "\$RAW_MPILEUP_JOB_IDS", $catCommand);
   return $catJobId;
+}
+
+sub snpAndIndelBCF {
+  my $depends = shift;
+  my $rH_cfg = shift;
+  my $sampleName = shift;
+  my $rAoH_sampleLanes  = shift;
+  my $rAoH_seqDictionary = shift;
+
+  my $jobDependency = undef;
+  if($depends > 0) {
+    $jobDependency = '${MARKDUP_JOB_ID}';
+  }
+
+  my $bamFile = $sampleName.'/'.$sampleName.'.sorted.dup.bam';
+  
+  my $outputDir = LoadConfig::getParam($rH_cfg, "mpileup", 'sampleOutputRoot') . $sampleName."/rawBCF/";
+
+  print 'mkdir -p '.$outputDir."\n";
+  print "MPILEUP_JOB_IDS=\"\"\n";
+  for my $rH_seqInfo (@$rAoH_seqDictionary) {
+    my $snvWindow = LoadConfig::getParam($rH_cfg, 'mpileup', 'snvCallingWindow');
+    my $seqName = $rH_seqInfo->{'name'};
+    if($snvWindow ne "") {
+      my $rA_regions = generateWindows($rH_seqInfo, $snvWindow);
+      for my $region (@{$rA_regions}) {
+        my $command = SAMtools::mpileup($rH_cfg, $sampleName, $bamFile, $region, $outputDir);
+        my $mpileupJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mpileup", $region, 'MPILEUP', $jobDependency, $sampleName, $command);
+        $mpileupJobId = '$'.$mpileupJobId;
+        print 'MPILEUP_JOB_IDS=${MPILEUP_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$mpileupJobId."\n";
+      }
+    }
+    else {
+      my $command = SAMtools::mpileup($rH_cfg, $sampleName, $bamFile, $seqName, $outputDir);
+      my $mpileupJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mpileup", $seqName, 'MPILEUP', $jobDependency, $sampleName, $command);
+      $mpileupJobId = '$'.$mpileupJobId;
+      print 'MPILEUP_JOB_IDS=${MPILEUP_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$mpileupJobId."\n";
+    }
+  }
+
+  return '${MPILEUP_JOB_IDS}';
+}
+
+sub generateWindows {
+  my $rH_seqInfo = shift;
+  my $snvWindow = shift;
+
+  my @retVal;
+  for(my $idx=1; $idx <= $rH_seqInfo->{'size'}; $idx += $snvWindow) {
+    my $end = $idx+$snvWindow-1;
+    if($end > $rH_seqInfo->{'size'}) {
+      $end = $rH_seqInfo->{'size'};
+    }
+
+    my $region = $rH_seqInfo->{'name'}.':'.$idx.'-'.$end;
+    push(@retVal, $region);
+  }
+
+  return \@retVal;
+}
+
+sub mergeFilterBCF {
+  my $depends = shift;
+  my $rH_cfg = shift;
+  my $sampleName = shift;
+  my $rAoH_sampleLanes  = shift;
+  my $rAoH_seqDictionary = shift;
+
+  my $jobDependency = undef;
+  if($depends > 0) {
+    $jobDependency = '${MPILEUP_JOB_IDS}';
+  }
+
+  my $snvWindow = LoadConfig::getParam($rH_cfg, 'mpileup', 'snvCallingWindow');
+
+  my $bcfDir = LoadConfig::getParam($rH_cfg, "mergeFilterBCF", 'sampleOutputRoot') . $sampleName."/rawBCF/";
+  my $outputDir = LoadConfig::getParam($rH_cfg, "mergeFilterBCF", 'sampleOutputRoot') . $sampleName.'/';
+
+  my @seqNames;
+  if($snvWindow ne "") {
+    for my $rH_seqInfo (@$rAoH_seqDictionary) {
+      my $rA_regions = generateWindows($rH_seqInfo, $snvWindow);
+      push(@seqNames, @{$rA_regions});
+    }
+  }
+  else {
+    for my $rH_seqInfo (@$rAoH_seqDictionary) {
+      push(@seqNames, $rH_seqInfo->{'name'});
+    }
+  }
+  my $command = SAMtools::mergeFilterBCF($rH_cfg, $sampleName, $bcfDir, $outputDir, \@seqNames);
+  my $mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mergeFilterBCF", undef, 'MERGEBCF', $jobDependency, $sampleName, $command);
+  return $mergeJobId;
 }
 
 1;
