@@ -221,7 +221,7 @@ sub main {
     # Merge Step
     #------------
     my $rH_mergeDetails = MergeFastq::mergeFiles( \%cfg, $runType, $opts{'f'} );
-    if ( $rH_mergeDetails->{'command'} ne "No merge" ) {
+    if ( $rH_mergeDetails->{'command'} ne "#No merge" ) {
         print 'MERGE_JOB_ID=`';
         $merJobId = SubmitToCluster::printSubmitCmd( \%cfg, "merge", "", 'MERGE', undef, "step_0", $rH_mergeDetails->{'command'} );
         $merJobId = '$' . $merJobId;
