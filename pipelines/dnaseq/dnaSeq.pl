@@ -150,7 +150,8 @@ sub trimAndAlign {
 
   print "BWA_JOB_IDS=\"\"\n";
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
-    my $rH_trimDetails = Trimmomatic::trim($rH_cfg, $sampleName, $rH_laneInfo);
+    my $outputDir = $sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
+    my $rH_trimDetails = Trimmomatic::trim($rH_cfg, $sampleName, $rH_laneInfo, $outputDir);
     my $trimJobIdVarName=undef;
     if(length($rH_trimDetails->{'command'}) > 0) {
       $trimJobIdVarName = SubmitToCluster::printSubmitCmd($rH_cfg, "trim", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'TRIM', undef, $sampleName, $rH_trimDetails->{'command'});

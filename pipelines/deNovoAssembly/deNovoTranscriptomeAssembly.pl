@@ -294,7 +294,8 @@ sub trimming {
 
     print "TRIM_JOB_IDS=\"\"\n" unless $step1 > 1;
     for my $rH_laneInfo (@$rAoH_sampleLanes) {
-        my $rH_trimDetails = Trimmomatic::trim( $rH_cfg, $sampleName, $rH_laneInfo );
+        my $outputDir = 'reads/'.$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
+        my $rH_trimDetails = Trimmomatic::trim( $rH_cfg, $sampleName, $rH_laneInfo, $outputDir);
 
         my $trimJobId = undef;
         if ( length( $rH_trimDetails->{'command'} ) > 0 ) {
