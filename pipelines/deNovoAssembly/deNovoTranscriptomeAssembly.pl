@@ -217,12 +217,18 @@ sub main {
             SubmitToCluster::initSubmit( \%cfg, $sampleName );
         }
     }
-
+    
+    # Create Reads dir
+    #----------------
+    print "if [ ! -d reads/ ]; then  mkdir reads/ ; fi\n";
+    
+    
     # Merge Step
     #------------
     my $rH_mergeDetails = MergeFastq::mergeFiles( \%cfg, $runType, $opts{'f'} );
-    if ( $rH_mergeDetails->{'command'} ne "#No merge" ) {
-        print 'MERGE_JOB_ID=`';
+    if ( $rH_mergeDetails->{'command'} ne "No merge" ) {
+        print $rH_mergeDetails->{'command'};
+        print "MERGE_JOB_ID=\"\"\n";
         $merJobId = SubmitToCluster::printSubmitCmd( \%cfg, "merge", "", 'MERGE', undef, "step_0", $rH_mergeDetails->{'command'} );
         $merJobId = '$' . $merJobId;
     }
@@ -294,8 +300,7 @@ sub trimming {
 
     print "TRIM_JOB_IDS=\"\"\n" unless $step1 > 1;
     for my $rH_laneInfo (@$rAoH_sampleLanes) {
-        my $outputDir = 'reads/'.$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
-        my $rH_trimDetails = Trimmomatic::trim( $rH_cfg, $sampleName, $rH_laneInfo, $outputDir);
+        my $rH_trimDetails = Trimmomatic::trim( $rH_cfg, $sampleName, $rH_laneInfo, "reads" );
 
         my $trimJobId = undef;
         if ( length( $rH_trimDetails->{'command'} ) > 0 ) {
@@ -338,7 +343,7 @@ sub removeDuplicateReads {
             $dupJobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "dup", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'DUP', $jobDependency, $sampleName, $rH_dupDetails->{'command'} );
             $dupJobId = '$' . $dupJobId;
             print 'DUP_JOB_IDS=${DUP_JOB_IDS}' . LoadConfig::getParam( $rH_cfg, 'default', 'clusterDependencySep' ) . $dupJobId . "\n";
-            print 'GROUP_JOB_IDS=${DUP_JOB_IDS}' . LoadConfig::getParam( $rH_cfg, 'default', 'clusterDependencySep' ) . $dupJobId . "\n\n";
+            print 'GROUP_JOB_IDS=${GROUP_JOB_IDS}' . LoadConfig::getParam( $rH_cfg, 'default', 'clusterDependencySep' ) . $dupJobId . "\n\n";
         }
     }
 
@@ -354,21 +359,25 @@ sub deNovoAssembly {
     if ( $depends > 0 ) {
         $jobDependency = '$GROUP_JOB_IDS';
     }
-
+    
+     
     # Chrysalis
     #---------------
     for my $rH_laneInfo (@$rAoH_sampleLanes) {
 
         #next if the one sample of the group is already done
         next if ( exists $groupDone{$group} );
+        print "if [ ! -d " . $group . "/output_jobs ] ; then mkdir -p " . $group . "/output_jobs ; fi\n";
+        print "if [ ! -d assembly/" . $group . "/output_jobs ]; then  mkdir -p assembly/" . $group . " ; fi\n";
+        
         print "CHRYSALIS_JOB_IDS=\"\"\n";
 
-        my $rH_chrysalisDetails = Trinity::chrysalis( $rH_cfg, $group, $rH_laneInfo, undef, $rHoH_groupInfo->{'group'}{$group} );
+        my $rH_chrysalisDetails = Trinity::chrysalis( $rH_cfg, $group, $rH_laneInfo, $rHoH_groupInfo->{'group'}{$group}->{'left'} , $rHoH_groupInfo->{'group'}{$group}->{'right'}); 
         $groupDone{$group} = 1;
         my $chrysalisJobId = undef;
 
         if ( length( $rH_chrysalisDetails->{'command'} ) > 0 ) {
-            $chrysalisJobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "chrysalis", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'CHRYSALIS', $jobDependency, $group, $rH_chrysalisDetails->{'command'} );
+            $chrysalisJobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "trinity", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'CHRYSALIS', $jobDependency, $group, $rH_chrysalisDetails->{'command'} );
             $chrysalisJobId = '$' . $chrysalisJobId;
             print 'CHRYSALIS_JOB_IDS=${CHRYSALIS_JOB_IDS}' . LoadConfig::getParam( $rH_cfg, 'default', 'clusterDependencySep' ) . $chrysalisJobId . "\n\n";
             print "GROUP_JOB_IDS=\"\"\n";
@@ -390,8 +399,8 @@ sub deNovoAssembly {
         #----------
         # This puts the files names in the @Files array (with a 4 digits padding)
         my @files;
-        for ( my $i = 1 ; $i <= $rH_cfg->{'trinity.splitLines'} ; $i++ ) {
-            push( @files, 'cmd.' . sprintf( "%04d", $i ) );
+        for ( my $i = 0 ; $i < $rH_cfg->{'trinity.chunks'} ; $i++ ) {
+            push( @files, 'chunk.' . sprintf( "%04d", $i ) . '.txt') ;
         }
 
         print "BUTTERFLY_JOB_IDS=\"\"\n";
@@ -434,8 +443,10 @@ sub blastContig {
     my $jobDependency    = undef;
     my $group            = $rH_aliasSampleInfo->{$sampleName}{'group_name'};
 
+    my $laneDirectory  = 'assembly/' . $group . "/";
+    
     if ( $depends > 0 ) {
-        $jobDependency = '$BUTTERFLY_JOB_IDS';
+        $jobDependency = '$CONCAT_JOB_IDS';
     }
 
     my $fileName = 'Trinity.2.fasta';
@@ -448,7 +459,7 @@ sub blastContig {
         next if ( exists $blastGroupDone{$group} );
 
         print "SPLITFASTA_JOB_IDS=\"\"\n";
-        my $rH_splitFastaDetails = SplitFile::splitFasta( $fileName, $rH_cfg, $group, $rH_laneInfo );
+        my $rH_splitFastaDetails = SplitFile::splitFasta( $fileName, $rH_cfg, $group, $rH_laneInfo, $laneDirectory );
         $blastGroupDone{$group} = 1;
         my $splitFastaJobId = undef;
         if ( length( $rH_splitFastaDetails->{'command'} ) > 0 ) {
@@ -470,7 +481,7 @@ sub blastContig {
         foreach my $db (@database) {
             $jobDependency = '$SPLITFASTA_JOB_IDS';
             foreach my $file (@files) {
-                my $rH_blastDetails = BLAST::alignParallel( $rH_cfg, $group, $rH_laneInfo, $file, $db );
+                my $rH_blastDetails = BLAST::alignParallel( $rH_cfg, $group, $rH_laneInfo, $file, $db, $laneDirectory );
                 my $blastJobId = undef;
                 if ( length( $rH_blastDetails->{'command'} ) > 0 ) {
                     $blastJobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "blast", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BLAST', $jobDependency, $group, $rH_blastDetails->{'command'} );
@@ -485,7 +496,7 @@ sub blastContig {
             #----------------
             $jobDependency = '$BLAST_JOB_IDS';
             print "BLASTBESTHIT_JOB_IDS=\"\"\n";
-            my $rH_blastBestHitDetails = BLAST::bestHit( $rH_cfg, $group, $rH_laneInfo, $db );
+            my $rH_blastBestHitDetails = BLAST::bestHit( $rH_cfg, $group, $rH_laneInfo, $db, $laneDirectory );
             my $blastbesthitJobId = undef;
             if ( length( $rH_blastBestHitDetails->{'command'} ) > 0 ) {
                 $blastbesthitJobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "blastbesthit", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BLASTBESTHIT', $jobDependency, $group, $rH_blastBestHitDetails->{'command'} );
@@ -509,7 +520,7 @@ sub genomeAlign {
     }
 
     # Step needed to get the pair and single names. It only executes this if
-    # the script did not start by the removeDuplicateReads step
+    # the script did not start from the removeDuplicateReads step
     if ( $step1 != 1 ) {
         for my $rH_laneInfo (@$rAoH_sampleLanes) {
             removeDuplicateReads( 0, $rH_cfg, $sampleName, $rAoH_sampleLanes );
@@ -520,6 +531,7 @@ sub genomeAlign {
     #--------------------
     for my $rH_laneInfo (@$rAoH_sampleLanes) {
         next if ( exists $indexGroupDone{$group} );
+        print "if [ ! -d alignment/" . $group . " ]; then  mkdir -p alignment/" . $group . " ; fi\n";
 
         print "INDEX_JOB_IDS=\"\"\n";
         my $rH_indexDetails = BWA::index( $rH_cfg, $group, $rH_laneInfo );
@@ -542,23 +554,25 @@ sub genomeAlign {
         my $rA_commands = BWA::aln( $rH_cfg, $sampleName, $rH_laneInfo, $rH_aliasSampleInfo->{$sampleName}{'bwa_pair1'}, $rH_aliasSampleInfo->{$sampleName}{'bwa_pair2'}, $rH_aliasSampleInfo->{$sampleName}{'bwa_single1'}, $rH_aliasSampleInfo->{$sampleName}{'bwa_single2'}, undef, ( $group . '/' ) );
 
         if ( @{$rA_commands} == 3 ) {
+        	print "READ1ALN_JOB_ID=\"\"\n";
             my $read1JobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "aln", 'read1.' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READ1ALN', $jobDependency, $sampleName, $rA_commands->[0] );
             $read1JobId = '$' . $read1JobId;
-
+            
+            print "READ2ALN_JOB_ID=\"\"\n";
             my $read2JobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "aln", 'read2.' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READ2ALN', $jobDependency, $sampleName, $rA_commands->[1] );
             $read2JobId = '$' . $read2JobId;
 
-            my $bwaJobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "aln", 'sampe.' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA', $read1JobId . LoadConfig::getParam( $rH_cfg, 'aln', 'clusterDependencySep' ) . $read2JobId, $sampleName, $rA_commands->[2] );
+            my $bwaJobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "bwa", 'sampe.' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA', LoadConfig::getParam( $rH_cfg, 'aln', 'clusterDependencySep' ) . $read1JobId . LoadConfig::getParam( $rH_cfg, 'aln', 'clusterDependencySep' ) . $read2JobId, $sampleName, $rA_commands->[2] );
             $bwaJobId = '$' . $bwaJobId;
-            print 'BWA_JOB_IDS=${BWA_JOB_IDS}' . LoadConfig::getParam( $rH_cfg, 'aln', 'clusterDependencySep' ) . $bwaJobId . "\n\n";
+            print 'BWA_JOB_IDS=${BWA_JOB_IDS}' . LoadConfig::getParam( $rH_cfg, 'bwa', 'clusterDependencySep' ) . $bwaJobId . "\n\n";
         }
         else {
             my $readJobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "aln", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READALN', $jobDependency, $sampleName, $rA_commands->[0] );
             $readJobId = '$' . $readJobId;
 
-            my $bwaJobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "aln", 'samse.' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA', $readJobId, $sampleName, $rA_commands->[1] );
+            my $bwaJobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "bwa", 'samse.' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA', $readJobId, $sampleName, $rA_commands->[1] );
             $bwaJobId = '$' . $bwaJobId;
-            print 'BWA_JOB_IDS=${BWA_JOB_IDS}' . LoadConfig::getParam( $rH_cfg, 'default', 'clusterDependencySep' ) . $bwaJobId . "\n\n";
+            print 'BWA_JOB_IDS=${BWA_JOB_IDS}' . LoadConfig::getParam( $rH_cfg, 'bwa', 'clusterDependencySep' ) . $bwaJobId . "\n\n";
         }
     }
 
@@ -578,7 +592,9 @@ sub readStats {
     print "READSTATS_JOB_IDS=\"\"\n";
     for my $rH_laneInfo (@$rAoH_sampleLanes) {
 
-        my $rH_readStatDetails = ReadStats::stats( $rH_cfg, $sampleName, $rH_laneInfo, $group );
+        my $read = 'reads/' . $sampleName . '.t' . $rH_cfg->{'trim.minQuality'} . 'l' . $rH_cfg->{'trim.minLength'} . '.pair1.fastq.gz';
+        my $sortedBam = 'alignment/' . $group . '/' . $sampleName . '.sorted.bam';
+        my $rH_readStatDetails = ReadStats::stats( $rH_cfg, $sampleName, $rH_laneInfo, $read, $sortedBam, $group );
         my $readStatJobId = undef;
 
         my $rH_readStatConcatDetails = ReadStats::concatStats( $rH_cfg, $sampleName, $rH_laneInfo, $group );
@@ -705,7 +721,10 @@ sub diffExpression {
     my $rAoH_sampleLanes = shift;
     my $jobDependency    = undef;
     my $group            = $rH_aliasSampleInfo->{$sampleName}{'group_name'};
-
+    
+    my $outputDir = 'DGE/' . $group . "/";
+    my $matrix = $outputDir . 'matrix.csv';
+    my $desingFile = $rH_cfg->{'diffExpress.designFile'};
     if ( $depends > 0 ) {
         $jobDependency = '$HTSEQMATRIX_JOB_IDS';
     }
@@ -720,7 +739,7 @@ sub diffExpression {
     print "DIFFEXPRESS_JOB_IDS=\"\"\n";
     for my $rH_laneInfo (@$rAoH_sampleLanes) {
 
-        my $rH_diffExpresstDetails = DiffExpression::edger( $rH_cfg, $sampleName, $rH_laneInfo, $group );
+        my $rH_diffExpresstDetails = DiffExpression::edger( $rH_cfg, $desingFile, $matrix, $outputDir );
         my $diffExpressJobId = undef;
 
         if ( length( $rH_diffExpresstDetails->{'command'} ) > 0 ) {
