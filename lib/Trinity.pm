@@ -8,10 +8,8 @@ I<Trinity>
 
 Trinity::sub(args)
 
-B<Trinity::chrysalis>(%ref_hash_config, $sample_name, %ref_hash_laneInfo, $pair1, $pair2) if looping per sample
-
-B<Trinity::chrysalis>(%ref_hash_config, $sample_name, %ref_hash_laneInfo, 'undef', 'undef', %ref_hash_groupInfo) if looping per group.
-%ref_hash_groupInfo is the ref hash outputed by the package GetFastaAlias (this is probably only useful for transcriptome assembly)
+B<Trinity::chrysalis>(%ref_hash_config, $sample_name, %ref_hash_laneInfo, $pair1, $pair2). In the case where there are multiple samples
+the $pair1 and $pair2 will be  string with all the  samples (reads/sample1_left   reads/sample2_left).
  
 B<Trinity::butterfly>(%ref_hash_config, $sample_name, %ref_hash_laneInfo, $fileButterflyComand)
 
@@ -71,16 +69,16 @@ use LoadConfig;
 our $rH_cfg;
 our $sampleName;
 our $rH_laneInfo;
-our $rH_dupDetails;
-our $rH_groupInfo;    # used only if assembling multiple samples into one transcriptome (per group)
+our $pair1;
+our $pair2;
 our $fileButterflyComand;
 
 sub chrysalis {
-    $rH_cfg        = shift;
-    $sampleName    = shift;
-    $rH_laneInfo   = shift;
-    $rH_dupDetails = shift;
-    $rH_groupInfo  = shift;
+    $rH_cfg      = shift;
+    $sampleName  = shift;
+    $rH_laneInfo = shift;
+    $pair1       = shift;    # For single command the left will receive the file.
+    $pair2       = shift;
 
     my $rH_retVal;
     if ( $rH_laneInfo->{'runType'} eq "SINGLE_END" ) {
@@ -101,14 +99,15 @@ sub butterfly {
     $rH_laneInfo         = shift;
     $fileButterflyComand = shift;
 
-    my $laneDirectory = "alignment/" . $sampleName . "/chrysalis/";
+    my $laneDirectory = "assembly/" . $sampleName . "/chrysalis/";
     my $command       = ' ';
     my %retVal;
 
-    $command .= 'module add jdk64/6u35; ';
-    $command .= ' module add mugqic/trinity/r2012-10-05 ;';
+    $command .= 'module add ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.java' );
+    $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.bowtie' )  ;
+    $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.trinity' ) . ' ;';
     $command .= ' ' . $rH_cfg->{'trinity.parallel'} . ' -f ' . $laneDirectory . 'butterfly_split/' . $fileButterflyComand;
-    $command .= ' -n ' . $rH_cfg->{'trinity.nbThreads'};
+    $command .= ' -n ' . $rH_cfg->{'trinity.nbThreads'} . ' ';
 
     $retVal{'command'} = $command;
     return ( \%retVal );
@@ -122,15 +121,15 @@ sub concatFastaCreateGtf {
 
     my $command = '';
     my %retVal;
-    my $laneDirectory = "alignment/" . $sampleName . "/";
+    my $laneDirectory = "assembly/" . $sampleName . "/";
 
-    $command .= 'module add jdk64/6u35; ';
-    $command .= ' module add mugqic/trinity/r2012-10-05 ;';
+    $command .= 'module add ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.java' );
+    $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.trinity' ) . ' ;';
     $command .= ' find ' . $laneDirectory . 'chrysalis';
     $command .= ' -name "*allProbPaths.fasta" -exec cat {} + >' . $laneDirectory . 'Trinity.fasta ;';
     $command .= ' sh ' . $rH_cfg->{'trinity.createGtf'} . ' ' . $laneDirectory . 'Trinity.fasta';
     $command .= ' ' . $laneDirectory . $sampleName . '.gtf ;';
-    $command .= ' awk \'{print $1}\' ' . $laneDirectory . 'Trinity.fasta ';
+    $command .= ' awk \'{print \$1} \' ' . $laneDirectory . 'Trinity.fasta ';
     $command .= ' >' . $laneDirectory . 'Trinity.2.fasta';
 
     $retVal{'command'} = $command;
@@ -143,28 +142,15 @@ sub _chrysalisPairCommand {
     my $command = '';
     my %retVal;
 
-    if ( exists $rH_groupInfo->{'left'} ) {
+    my $laneDirectory = 'assembly/' . $sampleName . '/';
+    $command .= 'module add ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.java' );
+    $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.bowtie' )  ;
+    $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.trinity' ) . ' ;';
+    $command .= ' Trinity.pl --seqType fq --JM 100G';
+    $command .= ' --left' . ' \" ' . $pair1 . ' \" ' . '--right' . ' \" ' . $pair2 . ' \" ';
+    $command .= ' --CPU 22 --output ' . $laneDirectory;
+    $command .= ' --min_kmer_cov 31 --max_reads_per_loop 200000000 --no_run_butterfly ';
 
-        my $laneDirectory = 'alignment/' . $sampleName . '/';
-        $command .= 'module add jdk64/6u35; ';
-        $command .= ' module add mugqic/trinity/r2012-10-05 ;';
-        $command .= ' Trinity.pl --seqType fq --JM 100G';
-        $command .= ' --left' . ' " ' . $rH_groupInfo->{'left'} . ' " ' . '--right' . ' " ' . $rH_groupInfo->{'right'} . ' " ';
-        $command .= ' --CPU 22 --output ' . $laneDirectory;
-        $command .= ' --min_kmer_cov 31 --max_reads_per_loop 200000000 --no_run_butterfly ';
-
-    }
-
-    else {
-        my $laneDirectory = 'alignment/' . $sampleName . '/';
-        $command .= 'module add jdk64/6u35; ';
-        $command .= ' module add mugqic/trinity/r2012-10-05 ;';
-        $command .= ' Trinity.pl --seqType fq --JM 100G';
-        $command .= ' --left' . ' " ' . $rH_dupDetails->{'pair1'} . ' " ' . '--right ' . ' " ' . $rH_dupDetails->{'pair2'} . ' " ';
-        $command .= ' --CPU 22 --output ' . $laneDirectory;
-        $command .= ' --min_kmer_cov 31 --max_reads_per_loop 200000000 --no_run_butterfly ';
-
-    }
     $retVal{'command'} = $command;
     return ( \%retVal );
 
@@ -174,28 +160,15 @@ sub _chrysalisSingleCommand {
 
     my $command = '';
     my %retVal;
-
-    if ( exists $rH_groupInfo->{'single'} ) {
-
-        my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
-        $command .= 'module add jdk64/6u35; ';
-        $command .= ' module add mugqic/trinity/r2012-10-05 ;';
-        $command .= ' Trinity.pl --seqType fq --JM 100G';
-        $command .= ' ' . $rH_dupDetails->{'single1'};
-        $command .= ' --CPU 22 --output ' . $laneDirectory;
-        $command .= ' --min_kmer_cov 31 --max_reads_per_loop 200000000 --no_run_butterfly ';
-    }
-
-    else {
-        my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
-        $command .= 'module add jdk64/6u35; ';
-        $command .= ' module add mugqic/trinity/r2012-10-05 ;';
-        $command .= ' Trinity.pl --seqType fq --JM 100G';
-        $command .= ' --single ' . $rH_dupDetails->{'single1'};
-        $command .= ' --CPU 22 --output ' . $laneDirectory;
-        $command .= ' --min_kmer_cov 31 --max_reads_per_loop 200000000 --no_run_butterfly ';
-
-    }
+    
+    my $laneDirectory = 'assembly/' . $sampleName . '/';
+    $command .= 'module add ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.java' );
+    $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.bowtie' )  ;
+    $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.trinity' ) . ' ;';
+    $command .= ' Trinity.pl --seqType fq --JM 100G';
+    $command .= ' ' . $pair1;
+    $command .= ' --CPU 22 --output ' . $laneDirectory;
+    $command .= ' --min_kmer_cov 31 --max_reads_per_loop 200000000 --no_run_butterfly ';
 
     $retVal{'command'} = $command;
     return ( \%retVal );
