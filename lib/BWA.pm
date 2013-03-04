@@ -78,7 +78,15 @@ sub pairCommand {
 if(!defined($optOutputTag)) {
     $optOutputTag = "";
   }
+  
   my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
+  my $bwaRefIndex = LoadConfig::getParam( $rH_cfg, 'aln', 'bwaRefIndex' );
+  
+  if (defined $group){
+      $laneDirectory = "alignment/" . $group ;
+      $bwaRefIndex = "assembly/" . $group .  $bwaRefIndex;
+  }
+  
   my $outputSai1Name = $laneDirectory . $sampleName.'.pair1.sai';
   my $outputSai2Name = $laneDirectory . $sampleName.'.pair2.sai';
   my $outputBAM = $laneDirectory . $sampleName.$optOutputTag.'.sorted.bam';
@@ -94,14 +102,14 @@ if(!defined($optOutputTag)) {
 
         $sai1Command .= 'module load mugqic/bwa/0.6.2 ; bwa aln';
         $sai1Command .= ' -t ' . LoadConfig::getParam( $rH_cfg, 'aln', 'bwaAlnThreads' );
-        $sai1Command .= ' ' . LoadConfig::getParam( $rH_cfg, 'aln', 'bwaRefIndex' );
+        $sai1Command .= ' ' . $bwaRefIndex;
         $sai1Command .= ' ' . $pair1;
         $sai1Command .= ' -f ' . $outputSai1Name;
         push( @commands, $sai1Command );
 
         $sai2Command .= 'module load mugqic/bwa/0.6.2 ; bwa aln';
         $sai2Command .= ' -t ' . LoadConfig::getParam( $rH_cfg, 'aln', 'bwaAlnThreads' );
-        $sai2Command .= ' ' . LoadConfig::getParam( $rH_cfg, 'aln', 'bwaRefIndex' );
+        $sai2Command .= ' ' . $bwaRefIndex;
         $sai2Command .= ' ' . $pair2;
         $sai2Command .= ' -f ' . $outputSai2Name;
         push( @commands, $sai2Command );
@@ -112,7 +120,7 @@ if(!defined($optOutputTag)) {
         $bwaCommand .= ' module load '.LoadConfig::getParam($rH_cfg, 'aln', 'moduleVersion.picard').' ;';
         $bwaCommand .= ' bwa sampe ';
         $bwaCommand .= ' -r ' . $rgTag;
-        $bwaCommand .= ' ' . LoadConfig::getParam( $rH_cfg, 'aln', 'bwaRefIndex' );
+        $bwaCommand .= ' ' . $bwaRefIndex;
         $bwaCommand .= ' ' . $outputSai1Name;
         $bwaCommand .= ' ' . $outputSai2Name;
         $bwaCommand .= ' ' . $pair1;
@@ -133,12 +141,19 @@ sub singleCommand {
     my $single       = shift;
     my $optOutputTag = shift;
     my $group        = shift;
-
+    
+    my $bwaRefIndex = LoadConfig::getParam( $rH_cfg, 'aln', 'bwaRefIndex' );
 
 if(!defined($optOutputTag)) {
     $optOutputTag = "";
   }
   my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
+  
+  if (defined $group){
+      $laneDirectory = "alignment/" . $group ;
+      $bwaRefIndex = "assembly/" . $group .  $bwaRefIndex;
+  }
+  
   my $outputSaiName = $laneDirectory . $sampleName.'.single.sai';
   my $outputBAM = $laneDirectory . $sampleName.$optOutputTag.'.sorted.bam';
   my $bamFileDate = -M $outputBAM;
@@ -152,7 +167,7 @@ if(!defined($optOutputTag)) {
 
         $saiCommand .= 'module load mugqic/bwa/0.6.2 ; module add ; bwa aln';
         $saiCommand .= ' -t ' . LoadConfig::getParam( $rH_cfg, 'aln', 'bwaAlnThreads' );
-        $saiCommand .= ' ' . LoadConfig::getParam( $rH_cfg, 'aln', 'bwaRefIndex' );
+        $saiCommand .= ' ' . $bwaRefIndex;
         $saiCommand .= ' ' . $single;
         $saiCommand .= ' -f ' . $outputSaiName;
         push( @commands, $saiCommand );
@@ -163,7 +178,7 @@ if(!defined($optOutputTag)) {
         $bwaCommand .= ' module load '.LoadConfig::getParam($rH_cfg, 'aln', 'moduleVersion.picard').' ;';
         $bwaCommand .= ' bwa samse';
         $bwaCommand .= ' -r ' . $rgTag;
-        $bwaCommand .= ' ' . LoadConfig::getParam( $rH_cfg, 'aln', 'bwaRefIndex' );
+        $bwaCommand .= ' ' . $bwaRefIndex;
         $bwaCommand .= ' ' . $outputSaiName;
         $bwaCommand .= ' ' . $single;
         $bwaCommand .= ' | java -Xmx' . LoadConfig::getParam( $rH_cfg, 'aln', 'sortSamRam' ) . ' -jar \${PICARD_HOME}/SortSam.jar INPUT=/dev/stdin CREATE_INDEX=true VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate';
