@@ -8,11 +8,11 @@ I<ReadStats>
 
 ReadStats::sub(args)
 
-B<ReadStats::stats>(%ref_hash_config, $sample_name, %ref_hash_laneInfo, $readFile, $group) 
+B<ReadStats::stats>(%ref_hash_config, $sample_name, %ref_hash_laneInfo, $read, $sortedBam, $group) 
 
-B<ReadStats::concatStats>(%ref_hash_config, $sample_name, %ref_hash_laneInfo, $readFile, $group) 
+B<ReadStats::concatStats>(%ref_hash_config, $sample_name, %ref_hash_laneInfo, $group) 
 
-B<ReadStats::contigStats>(%ref_hash_config, $sample_name, %ref_hash_laneInfo, $readFile, $group)
+B<ReadStats::contigStats>(%ref_hash_config, $sample_name, %ref_hash_laneInfo, $group)
 
 All subroutines return a ref_hash with the command line
 
@@ -51,13 +51,16 @@ use Config::Simple;
 our $rH_cfg;
 our $sampleName;
 our $rH_laneInfo;
-
+our $read;
+our $sortedBam;
 our $group;
 
 sub stats {
     $rH_cfg      = shift;
     $sampleName  = shift;
     $rH_laneInfo = shift;
+    $read        = shift;
+    $sortedBam   = shift;
     $group       = shift;
 
     my $rH_retVal;
@@ -84,18 +87,18 @@ sub _pairCommand {
     my $minQuality    = $rH_cfg->{'trim.minQuality'};
     my $minLength     = $rH_cfg->{'trim.minLength'};
 
-    $command .= ' module add mugqic/samtools/0.1.18 ;';
-    $command .= 'mkdir -p ' . $laneDirectory . ';';
-    $command .= ' zcat ' . $rH_cfg->{'default.rawReadDir'} . '/' . $rH_laneInfo->{'read1File'};
-    $command .= ' | wc -l | awk \'{print$1}\' | echo $[$(</dev/stdin)/4]';
+    $command .= ' module add ' . LoadConfig::getParam($rH_cfg, 'readstats','moduleVersion.samtools') . ' ;';
+    $command .= ' mkdir -p ' . $laneDirectory . ';';
+    $command .= ' zcat ' . $rH_cfg->{'default.rawReadDir'} . '/' . $sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' .$rH_laneInfo->{'read1File'};
+    $command .= ' | wc -l | awk \'{print \$1}\' | echo \$[\$(</dev/stdin)/4]';
     $command .= ' >' . $laneDirectory . $sampleName . '.readstats.raw.csv ; ';
-    $command .= 'zcat ' . 'reads/' . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.pair1.fastq.gz';
-    $command .= '| wc -l | awk \'{print$1}\' | echo $[$(</dev/stdin)/4]';
+    $command .= ' zcat ' . $read;
+    $command .= '| wc -l | awk \'{print \$1}\' | echo \$[\$(</dev/stdin)/4]';
     $command .= ' >' . $laneDirectory . $sampleName . '.readstats.filtered.csv ;';
-    $command .= ' samtools view -F4 -F256 alignment/' . $group . '/' . $sampleName . 'sorted.bam | ';
-    $command .= ' grep -v \"^[@]\" | awk \'BEGIN={si=0;pa=0} {if ($3 !="*" ) ';
-    $command .= ' if {($7=="*") {pa=pa+1} else{si=si+1}}} END {print $si+(pa/1)}\'';
-    $command .= ' >' . $laneDirectory . $sampleName . '.readstata.aligned.csv';
+    $command .= ' samtools view -F4 -F256 ' . $sortedBam . ' | ';
+    $command .= ' grep -v \"^[@]\" | awk \'BEGIN={ si=0;pa=0 } {if (\$3 !="*" ) ';
+    $command .= ' if {(\$7=="*" ) {pa=pa+1} else{ si=si+1 }}} END { print \$si+(pa/1) }\'';
+    $command .= ' >' . $laneDirectory . $sampleName . '.readstats.aligned.csv';
 
     $retVal{'command'} = $command;
     return ( \%retVal );
@@ -111,19 +114,19 @@ sub _singleCommand {
     my $laneDirectory = "stats/" . $group . "/";
     my $minQuality    = $rH_cfg->{'trim.minQuality'};
     my $minLength     = $rH_cfg->{'trim.minLength'};
-
-    $command .= ' module add mugqic/samtools/0.1.18 ;';
-    $command .= 'mkdir -p ' . $laneDirectory . ';';
+    
+    $command .= ' module add ' . LoadConfig::getParam($rH_cfg, 'readstats','moduleVersion.samtools') . ' ;';
+    $command .= ' mkdir -p ' . $laneDirectory . ';';
     $command .= ' zcat ' . $rH_cfg->{'default.rawReadDir'} . '/' . $rH_laneInfo->{'read1File'};
     $command .= ' | wc -l | awk \'{print$1}\' | echo $[$(</dev/stdin)/4]';
     $command .= ' >' . $laneDirectory . $sampleName . '.readstats.raw.csv ; ';
-    $command .= 'zcat ' . 'reads/' . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.single.fastq.gz';
+    $command .= ' zcat ' . $read;
     $command .= '| wc -l | awk \'{print$1}\' | echo $[$(</dev/stdin)/4]';
     $command .= ' >' . $laneDirectory . $sampleName . '.readstats.filtered.csv ;';
-    $command .= ' samtools view -F4 -F256 alignment/' . $group . '/' . $sampleName . 'sorted.bam | ';
+    $command .= ' samtools view -F4 -F256 ' . $sortedBam . ' | ';
     $command .= ' grep -v \"^[@]\" | awk \'BEGIN={si=0} {if ($3 !="*" ) ';
     $command .= ' si=si+1} END {print $si}\'';
-    $command .= ' >' . $laneDirectory . $sampleName . '.readstata.aligned.csv';
+    $command .= ' >' . $laneDirectory . $sampleName . '.readstats.aligned.csv';
 
     $retVal{'command'} = $command;
     return ( \%retVal );
@@ -142,7 +145,7 @@ sub concatStats {
 
     $command .= ' echo ' . $sampleName . ' > ' . $laneDirectory . $sampleName . '_temp.txt ;';
     $command .= ' paste -d "," ' . $laneDirectory . $sampleName . '_temp.txt ' . $laneDirectory . $sampleName . '.readstats.raw.csv  ';
-    $command .= $laneDirectory . $sampleName . '.readstats.filtered.csv ' . $laneDirectory . $sampleName . '.readstata.aligned.csv';
+    $command .= $laneDirectory . $sampleName . '.readstats.filtered.csv ' . $laneDirectory . $sampleName . '.readstats.aligned.csv';
     $command .= ' >>' . $laneDirectory . 'allSamples.' . $group . '.readstats.csv ;';
 
     $retVal{'command'} = $command;
