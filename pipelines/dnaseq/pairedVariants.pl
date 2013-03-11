@@ -418,7 +418,8 @@ sub Breakdancer {
 
     print 'BRD_JOB_IDS=${BRD_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$brdJobId."\n";
   }
-
+  
+  $command = 'rm ' .$outputDir.$sampleName.'.brd.ctx && touch '.$outputDir.$sampleName.'.brd.ctx && ';
   return '${BRD_JOB_IDS}';
 }
 1;

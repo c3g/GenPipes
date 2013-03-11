@@ -108,4 +108,13 @@ sub pairedBRD {
     #}
     return $command;
 }
+
+sub mergeCTX {
+    my $rH_cfg          = shift;
+    my $sampleName      = shift;
+    my $chr             = shift;
+    my $inputCFG        = shift;
+    my $outputPrefix    = shift;
+
+    
 1;
