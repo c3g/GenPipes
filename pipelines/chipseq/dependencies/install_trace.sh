@@ -122,6 +122,7 @@ proc ModulesHelp { } {
  puts stderr \"\tMUGQIC - Adds Model-based Analysis of ChIP-Seq (MACS) tool to your environment \"
 }
 module-whatis \"MUGQIC - Adds Model-based Analysis of ChIP-Seq (MACS) tool to your environment \"
+prereq					 mugqic/python/2.7.3
 set             root            \$::env(MUGQIC_INSTALL_HOME)/software/"$PACKAGE_NAME"/"$VERSION"
 prepend-path    PATH            \$root/bin
 prepend-path    PYTHONPATH      \$root/lib/python2.7/site-packages
