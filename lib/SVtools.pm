@@ -96,7 +96,7 @@ sub filterBrD {
     my $tumorFile    = shift;
 
     my $outDate = -M $outputPrefix.'.filteredSV.txt';
-    my $inDate = -M $inputDNACCalls;
+    my $inDate = -M $inputBrDCalls;
   
     my $command;
     # -M gives modified date relative to now. The bigger the older.
@@ -108,8 +108,8 @@ sub filterBrD {
         $command .= ' -s ' .$sampleName;
         $command .= ' -n ' .LoadConfig::getParam($rH_cfg, 'filterSV', 'minReadSupport');
         $command .= ' -t ' .LoadConfig::getParam($rH_cfg, 'filterSV', 'minReadSupport');
-        $command .= ' -b ' .$normalFile
-        $command .= ' -c ' .$tumorFile
+        $command .= ' -b ' .$normalFile;
+        $command .= ' -c ' .$tumorFile;
         $command .= ' && ';
         $command .= filterResults($rH_cfg,  'filterSV', $outputPrefix, '') ;
         $command .= ' && ';
@@ -127,7 +127,7 @@ sub filterPI {
     my $tumorFile    = shift;
 
     my $outDate = -M $outputPrefix.'.filteredSV.txt';
-    my $inDate = -M $inputDNACCalls;
+#    my $inDate = -M $inputDNACCalls;
   
     my $command;
     # -M gives modified date relative to now. The bigger the older.
@@ -156,7 +156,7 @@ sub filterResults {
     my $cnvProx           = shift;
 
     my $outDate = -M $outputPrefix.'.filteredSV.txt';
-    my $inDate = -M $inputDNACCalls;
+#     my $inDate = -M $inputDNACCalls;
   
     my $command;
     # -M gives modified date relative to now. The bigger the older.
