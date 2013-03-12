@@ -122,7 +122,6 @@ sub filterBrD {
 sub filterPI {
     my $rH_cfg          = shift;
     my $sampleName      = shift;
-    my $inputPICalls  = shift;
     my $outputPrefix    = shift;
     my $normalFile    = shift;
     my $tumorFile    = shift;
@@ -135,7 +134,7 @@ sub filterPI {
     #if(!defined($outDate) || !defined($inDate) || $inDate < $outDate) {
         $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'filterSV', 'moduleVersion.svtools').' ;';
         $command .= ' \${SVTOOLS_HOME}/Cancer/filterOutPI.py';
-        $command .= ' -f ' .$inputPICalls;
+        $command .= ' -f ' .$outputPrefix;
         $command .= ' -o ' .$outputPrefix.'.txt';
         $command .= ' -s ' .$sampleName;
         $command .= ' -n ' .LoadConfig::getParam($rH_cfg, 'filterSV', 'minReadSupport');
