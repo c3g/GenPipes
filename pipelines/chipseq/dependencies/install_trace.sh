@@ -168,8 +168,7 @@ function checkInstallWeblogo {
 		" > $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$PACKAGE_NAME/$VERSION
 
 }
-function InstallBlat {
-}
+
 function InstallHomer {
 	###################
 	################### homer
