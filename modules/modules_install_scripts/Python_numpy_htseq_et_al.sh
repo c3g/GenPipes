@@ -107,6 +107,7 @@ python setup.py install
 echo "#%Module1.0
 proc ModulesHelp { } {
        puts stderr \"\tMUGQIC - HTSeq dummy module \"
+module    load  mugqic/python
 }
 module-whatis \" HTSeq dummy module   \"
 " > $VERSION
