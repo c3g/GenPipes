@@ -74,6 +74,7 @@ bwa index $ROOT/Sequence/AbundantSequences/rRNA.fa
 
 
 ## Gene size file for the gene model + gene id to symbol mapping. Easier to use GenomicRanges 
+cd $ROOT/Annotation/Genes
 R --vanilla <<'EOF'
 	require(stringr)
 	require(rtracklayer)
@@ -90,6 +91,7 @@ R --vanilla <<'EOF'
 	x = as.data.frame(x)
 	write.table(x,file='genes_lengths.txt',col.names=FALSE,row.names=TRUE,sep='\t',quote=FALSE)
 EOF
+cd -
 # OR Alternative is MAthieu's:
 # module load mugqic/tools
 # gtf2geneSize.awk <...>
@@ -103,9 +105,49 @@ EOF
 # mappability
 
 
+
+
+
+
+
+
+
+
+
 ##
 ######### canFam2
-wget ftp://igenome:G3nom3s4u@ussd-ftp.illumina.com/Canis_familiaris/UCSC/canFam2/Canis_familiaris_UCSC_canFam2.tar.gz
+GENOME="canFam2"
+
+## Fetch from iGenomes
+cd $MUGQIC_INSTALL_HOME/genomes
+#wget ftp://igenome:G3nom3s4u@ussd-ftp.illumina.com/Canis_familiaris/UCSC/canFam2/Canis_familiaris_UCSC_canFam2.tar.gz
+#tar -xvf Canis_familiaris_UCSC_canFam2.tar.gz
+ROOT=$MUGQIC_INSTALL_HOME"/genomes/Canis_familiaris/UCSC/canFam2"
+
+
+## Link aligner indices in WholeGenome
+cd $ROOT/Sequence/WholeGenomeFasta
+# BWA
+for fn in `ls  ../BWAIndex/genome.fa.*`
+do
+ln -sf $fn
+done
+# Bowtie2
+for fn in `ls  ../Bowtie2Index/genome.*.*`
+do
+ln -sf $fn
+done
+# Bowtie
+for fn in `ls  ../BowtieIndex/genome.*.*`
+do
+ln -sf $fn
+done
+cd -
+
+
+
+
+
 
 
 
