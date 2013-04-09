@@ -145,8 +145,9 @@ done
 cd -
 
 
-
-
+## rRNA sequence + BWA index them (either from the Broad OR from iGenomes) (ln -s to). Put into $ROOT/Sequence/AbundantSequences/rRNA.fa
+# http://en.wikipedia.org/wiki/RRNA#Eukaryotes
+# TODO: BiomaRt???
 
 
 
