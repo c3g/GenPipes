@@ -1,0 +1,12 @@
+; Config::Simple 4.58_01
+; Tue Sep 12 14:59:11 2006
+
+1=ftp(1):/public_html/mpfcu/lib/MPFCU/Agent.pm
+3=ftp(1):/public_html/mpfcu/lib/MPFCU/EStatements.pm
+0=ftp(1):/public_html/mpfcu/.mpfcu
+Count=4
+Name=MPFCU
+2=ftp(1):/public_html/mpfcu/lib/MPFCU/Base.pm
+Library=Config::Simple
+
+

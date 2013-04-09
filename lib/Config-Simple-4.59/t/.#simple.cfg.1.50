@@ -1,0 +1,24 @@
+# Config::Simple 4.58_01
+# Tue Sep 12 14:59:11 2006
+
+SSI2 /cgi/dmoz_random/dmoz_random.cgi
+PrefixFile txt/prefixes.txt
+Delim -
+MaxImgHeight 200
+PublicUrl http://www.netkauai.com
+TmplFile template.html
+PublicHtml tmp
+ConjFile2 txt/conjunctions2.txt
+SSI1 /cgi/dmoz_random/dmoz_random.cgi
+MinImgHeight 10
+MinImgWidth 10
+FromEmail test@handalak.com
+ConjFile1 txt/conjunctions1.txt
+DBN DBI:mysql:db;host=handalak.com
+DBDir db
+ProjectNames First Name, Second name
+ProjectName Config::Simple
+EmailSubject [SPCP] Your pages
+FileExtension .html
+MaxImgWidth 200
+
