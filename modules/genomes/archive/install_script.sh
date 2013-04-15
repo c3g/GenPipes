@@ -29,8 +29,10 @@ ROOT="$MUGQIC_INSTALL_HOME/genomes/Homo_sapiens/UCSC/hg19"
 #   bwa index -a bwtsw fasta/hg19.fasta # Example Maxime
 # faidx reference (already done for iGenomes)
 #   samtools faidx fasta/hg19.fasta # example Maxime
+
 # reference dictionary (already done for iGenomes)
-#    java -jar $PICARD_HOME/CreateSequenceDictionary.jar REFERENCE=fasta/hg19.fasta OUTPUT=fasta/hg19.dict  # example Maxime
+#cd $ROOT/Sequence/WholeGenomeFasta
+#java -jar $PICARD_HOME/CreateSequenceDictionary.jar REFERENCE=genome.fa  
 
 ## Link aligner indices in WholeGenome
 cd $ROOT/Sequence/WholeGenomeFasta
