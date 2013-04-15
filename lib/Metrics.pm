@@ -82,7 +82,7 @@ sub saturation {
 	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'saturation' , 'moduleVersion.cranR') .' ' . LoadConfig::getParam($rH_cfg, 'saturation' , 'moduleVersion.tools') . ' &&';
 	$command .= ' Rscript \$R_TOOLS/rpkmSaturation.R ' .$countFile .' ' .$geneSizeFile .' ' .$rpkmDir .' ' .$saturationDir;
 	$command .= ' ' .LoadConfig::getParam($rH_cfg, 'saturation' , 'threadNum');
-	$command .= .' ' .LoadConfig::getParam($rH_cfg, 'saturation' , 'optionR');
+	$command .= ' ' .LoadConfig::getParam($rH_cfg, 'saturation' , 'optionR');
 
 	return $command;
 }
