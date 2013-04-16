@@ -117,7 +117,11 @@ sub readStats {
 			my $unmapOption = '-F260';
 			$command .= SAMtools::viewFilter($rH_cfg, $inputFile, $unmapOption, undef);
 			$command .= ' | awk \' { print \$1} \'';
-			$command .= ' | sort -u | wc -l  > ' .$outputFile;
+			#---- flefebvr Tue 16 Apr 13:47:53 2013 
+			#$command .= ' | sort -u | wc -l  > ' .$outputFile;
+			$command .= ' | sort -u -T '.LoadConfig::getParam($rH_cfg, 'metrics' , 'tmpDir');
+			$command .= ' | wc -l  > ' .$outputFile;
+			#----
 		}
 	}
 
