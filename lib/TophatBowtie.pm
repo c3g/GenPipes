@@ -53,6 +53,13 @@ sub align {
   my $outputBAM = $laneDirectory . 'accepted_hits.bam';
   my $bamFileDate = -M $outputBAM;
 
+
+  #------ flefebvr Tue 16 Apr 09:04:33 2013 
+  # Bowtie index basename (assumes reference fasta is named basename.extension) 
+  (my $bwa_idx_basename  = LoadConfig::getParam($rH_cfg, 'align','referenceFasta') ) =~ s/\.[^.]+$//;
+  #------
+
+
   my $command;
   if (!defined($bamFileDate) || !defined(-M $pair1)  || $bamFileDate < -M $pair1) {
     $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'align','moduleVersion.bowtie') ; 
@@ -70,7 +77,12 @@ sub align {
     $command .= ' -o ' .$laneDirectory;
     $command .= ' -p '. LoadConfig::getParam($rH_cfg, 'align','TBAlnThreads') .' -G '. LoadConfig::getParam($rH_cfg, 'align','referenceGtf');
 #     $command .= ' -g '. LoadConfig::getParam($rH_cfg, 'align','maxReadLocation');
-    $command .= ' '. LoadConfig::getParam($rH_cfg, 'align','referenceFasta');
+
+    #------ flefebvr Tue 16 Apr 09:04:54 2013 
+    #$command .= ' '. LoadConfig::getParam($rH_cfg, 'align','referenceFasta');
+    $command .= ' '. $bwa_idx_basename;
+    #------
+
     $command .= ' '. $pair1 .' ' .$pair2;
   }
 
