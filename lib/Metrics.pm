@@ -113,7 +113,7 @@ sub readStats {
 
 			#---- flefebvr Wed 17 Apr 08:40:58 2013 
 			#$command .= ' | wc -l | awk \'{print \$1}\''; 	
-			$command .= ' | echo $((`wc -l`/2))'; 
+			$command .= ' | echo \$((\`wc -l\`/2))'; 
 			#----
 
 			$command .= ' > ' .$outputFile;
