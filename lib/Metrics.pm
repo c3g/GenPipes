@@ -110,7 +110,12 @@ sub readStats {
 	if(!defined($latestInputFile) || !defined($latestOutputFile) || $latestInputFile <  $latestOutputFile) {
 		if ((lc $fileType) eq "fastq") {
 			$command .= 'zcat ' .$inputFile;
-			$command .= ' | wc -l | awk \'{print \$1}\'';
+
+			#---- flefebvr Wed 17 Apr 08:40:58 2013 
+			#$command .= ' | wc -l | awk \'{print \$1}\''; 	
+			$command .= ' | echo $((`wc -l`/2))'; 
+			#----
+
 			$command .= ' > ' .$outputFile;
 		}
 		elsif  ((lc $fileType) eq "bam") {
