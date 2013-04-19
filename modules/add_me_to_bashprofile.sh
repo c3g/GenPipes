@@ -21,7 +21,7 @@ elif [[ $DNSDOMAIN == ferrier.genome.mcgill.ca ]]; then
 elif [[ $DNSDOMAIN == guillimin.clumeq.ca ]]; then
  export MUGQIC_INSTALL_HOME=/software/areas/genomics
 elif [[ $DNSDOMAIN == m ]]; then
- export MUGQIC_INSTALL_HOME=/mnt/scratch_mp2/bourque/bourque_group/opt
+ export MUGQIC_INSTALL_HOME=/mnt/lustre03/bourque/bourque_group/opt
 fi
 
 # Module use
