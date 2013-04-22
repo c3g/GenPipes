@@ -15,7 +15,7 @@ if [[ $HOST == abacus* ]]; then
 elif [[ $HOST == lg-* ]]; then
  export MUGQIC_INSTALL_HOME=/software/areas/genomics
 elif [[ $HOST == ip03 ]]; then
- export MUGQIC_INSTALL_HOME=/mnt/scratch_mp2/bourque/bourque_group/opt
+ export MUGQIC_INSTALL_HOME=/mnt/lustre03/bourque/bourque_group/opt
 elif [[ $DNSDOMAIN == ferrier.genome.mcgill.ca ]]; then
  export MUGQIC_INSTALL_HOME=/sb/programs/analyste
 elif [[ $DNSDOMAIN == guillimin.clumeq.ca ]]; then
