@@ -4,13 +4,13 @@
 ###################
 
 ## Install R itself (libcairo must be installed?s)
-VERSION="2.15.3"
+VERSION="3.0.0"
 
 # DEP_PATH is a URL or path to file with additional packages to be installed
 DEP_PATH="http://bitbucket.org/mugqic/rpackages/raw/8e16c9322318a62ba74872504f0cef120803f1b7/DEPENDENCIES/modules_install_scripts/R_and_Bioconductor_packages.txt" 
 
 # Download and compile and install
-INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/R/R-$VERSION # where to install..
+INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/R/R-$VERSION # where to install.
 mkdir -p $INSTALL_PATH
 wget http://cran.r-project.org/src/base/R-${VERSION:0:1}/R-$VERSION.tar.gz
 tar -xvf R-$VERSION.tar.gz
@@ -21,7 +21,13 @@ make install
 
 ## Install prefered add on packages (takes a loooong time)
 wget $DEP_PATH
-$INSTALL_PATH/bin/Rscript -e "source(\"http://bioconductor.org/biocLite.R\");deps=readLines(\"R_and_Bioconductor_packages.txt\");biocLite(deps,lib=.Library);biocLite(deps,lib=.Library)" # runs twice, sometimes mult attempts necessary
+$INSTALL_PATH/bin/R --vanilla <<'EOF'
+	source("http://bioconductor.org/biocLite.R")
+	deps=readLines("R_and_Bioconductor_packages.txt")
+	biocLite(deps,lib=.Library)
+	biocLite(deps,lib=.Library)
+EOF
+
 
 ## chmod after installtion
 chmod -R g+rw $INSTALL_PATH/lib64/R/library
