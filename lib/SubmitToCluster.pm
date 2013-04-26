@@ -59,8 +59,7 @@ sub printSubmitCmd {
 
 
 
-    my $jobIdVarName = uc($jobIdPrefix) . '_JOB_ID';
-
+		my $jobIdVarName = uc($jobIdPrefix =~ s/[^A-Za-z0-9]/_/g) . '_JOB_ID';
 
     ### TO DO modify the output dir to be more portable
 
