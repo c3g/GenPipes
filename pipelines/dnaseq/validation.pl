@@ -94,7 +94,8 @@ sub main {
 
   my %cfg = LoadConfig->readConfigFile($opts{'c'});
   my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($opts{'n'});
-  my $rAoH_seqDictionary = SequenceDictionaryParser::readDictFile(\%cfg);
+  #my $rAoH_seqDictionary = SequenceDictionaryParser::readDictFile(\%cfg);
+  my $rAoH_seqDictionary = undef;
 
   my $latestBam;
   for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
@@ -144,6 +145,8 @@ sub align {
   my $outputFastqPair2Name = $laneDirectory . $sampleName.'.t'.$minQuality.'l'.$minLength.'.pair2.fastq.gz';
   my $outputFastqSingle1Name = $laneDirectory . $sampleName.'.t'.$minQuality.'l'.$minLength.'.single1.fastq.gz';
   my $outputFastqSingle2Name = $laneDirectory . $sampleName.'.t'.$minQuality.'l'.$minLength.'.single2.fastq.gz';
+  my $outputDir = 'alignment/'.$laneDirectory;
+  my $outputPrefix = $outputDir.'/'.$sampleName.'.sorted';
 
   my $jobDep = "";
   print "BWA_JOB_IDS=\"\"\n";
@@ -151,8 +154,15 @@ sub align {
   if($depends) {
     $trimJobIdVarName = '$TRIM_JOB_ID';
   }
+
+  my $rgId = $rH_laneInfo->{'libraryBarcode'} . "_" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
+  my $rgSampleName = $rH_laneInfo->{'name'};
+  my $rgLibrary = $rH_laneInfo->{'libraryBarcode'};
+  my $rgPlatformUnit = 'run' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
+  my $rgCenter = LoadConfig::getParam( $rH_cfg, 'aln', 'bwaInstitution' ) . '\tPL:Illumina' . "'";
+
   if($rH_laneInfo->{'runType'} eq "PAIRED_END") {
-    my $rA_commands = BWA::aln($rH_cfg, $sampleName, $rH_laneInfo, $outputFastqPair1Name, $outputFastqPair2Name, $outputFastqSingle1Name, $outputFastqSingle2Name, '.paired');
+    my $rA_commands = BWA::aln($rH_cfg, $sampleName, $outputFastqPair1Name, $outputFastqPair2Name, $outputFastqSingle1Name, $outputFastqSingle2Name, $outputPrefix.'.paired');
 
     my $read1JobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'read1.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READ1ALN', $trimJobIdVarName, $sampleName, $rA_commands->[0]);
     $read1JobId = '$'.$read1JobId;
@@ -164,7 +174,7 @@ sub align {
     
     # fake it and take the single1 end
     $rH_laneInfo->{'runType'} = 'SINGLE_END';
-    $rA_commands = BWA::aln($rH_cfg, $sampleName, $rH_laneInfo, $outputFastqPair1Name, $outputFastqPair2Name, $outputFastqSingle1Name, $outputFastqSingle2Name, '.single');
+    $rA_commands = BWA::aln($rH_cfg, $sampleName, $outputFastqPair1Name, $outputFastqPair2Name, $outputFastqSingle1Name, $outputFastqSingle2Name, $outputPrefix.'.single', $rgId, $rgSampleName, $rgLibrary, $rgPlatformUnit, $rgCenter);
     my $readJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READALN', $trimJobIdVarName, $sampleName, $rA_commands->[0]);
     $readJobId = '$'.$readJobId;
     $bwaJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'samse.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA',  $readJobId, $sampleName, $rA_commands->[1]);
@@ -184,7 +194,7 @@ sub align {
     $jobDep = '$'.$mergeJobId;
   }
   else {
-    my $rA_commands = BWA::aln($rH_cfg, $sampleName, $rH_laneInfo, $outputFastqPair1Name, $outputFastqPair2Name, $outputFastqSingle1Name, $outputFastqSingle2Name);
+    my $rA_commands = BWA::aln($rH_cfg, $sampleName, $outputFastqPair1Name, $outputFastqPair2Name, $outputFastqSingle1Name, $outputFastqSingle2Name, $outputPrefix, $rgId, $rgSampleName, $rgLibrary, $rgPlatformUnit, $rgCenter);
     my $readJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READALN', $trimJobIdVarName, $sampleName, $rA_commands->[0]);
     $readJobId = '$'.$readJobId;
     my $bwaJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'samse.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA',  $readJobId, $sampleName, $rA_commands->[1]);

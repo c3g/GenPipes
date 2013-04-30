@@ -43,13 +43,14 @@ use warnings;
 sub realign {
   my $rH_cfg          = shift;
   my $sampleName      = shift;
+  my $sortedBAM       = shift;
   my $seqName         = shift;
+  my $outputPrefix    = shift;
   my $processUnmapped = shift;
 
   my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta');
-  my $sortedBAM = $sampleName.'/'.$sampleName.'.sorted.bam';
-  my $intervalOutput = $sampleName.'/realign/'.$seqName.'.intervals';
-  my $realignOutput = $sampleName.'/realign/'.$seqName.'.bam';
+  my $intervalOutput = $outputPrefix.'/'.$sampleName.'/realign/'.$seqName.'.intervals';
+  my $realignOutput = $outputPrefix.'/'.$sampleName.'/realign/'.$seqName.'.bam';
   
   my $command;
   $command .= 'module load mugqic/GenomeAnalysisTKLite/2.1-13 ;';

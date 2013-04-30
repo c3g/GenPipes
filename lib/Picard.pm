@@ -41,78 +41,6 @@ use warnings;
 
 # SUB
 #-----------------------
-sub merge {
-  my $rH_cfg            = shift;
-  my $sampleName        = shift;
-  my $rAoH_sampleLanes  = shift;
-
-  my $latestBam;
-  my $bamInputs;
-  my $countInputs;
-  my $outputBAM = $sampleName.'/'.$sampleName.'.sorted.bam';
-  for my $rH_laneInfo (@$rAoH_sampleLanes) {
-    my $directory = $sampleName."/run".$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'}."/";
-    my $sortedLaneBamFile = $directory.$rH_laneInfo->{'name'}.".sorted.bam";
-    my $laneStatsFile = $directory.$rH_laneInfo->{'name'}.".counts";
-    my $runName = $sampleName."_run".$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'};
-
-
-    if(!defined($latestBam)) {
-      $latestBam = -M $sortedLaneBamFile;
-    }
-    else {
-      my $modDate = -M $sortedLaneBamFile;
-      if($modDate < $latestBam) {
-        $latestBam = $modDate;
-      }
-    }
-    $bamInputs .= 'INPUT='.$sortedLaneBamFile.' ';
-    $countInputs .= $laneStatsFile.' ';
-  }
-
-  my $command;
-  # -M gives modified date relative to now. The bigger the older.
-  if(!defined($latestBam) || !defined(-M $outputBAM) || $latestBam < -M $outputBAM) {
-  $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'mergeLanes', 'moduleVersion.picard').' ;'; 
-    $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'mergeLanes', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'mergeLanes', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'mergeLanes', 'mergeRam').' -jar \${PICARD_HOME}/MergeSamFiles.jar';
-    $command .= ' VALIDATION_STRINGENCY=SILENT ASSUME_SORTED=true CREATE_INDEX=true';
-    $command .= ' TMP_DIR='.LoadConfig::getParam($rH_cfg, 'mergeLanes', 'tmpDir');
-    $command .= ' '.$bamInputs;
-    $command .= ' OUTPUT='.$outputBAM;
-    $command .= ' MAX_RECORDS_IN_RAM='.LoadConfig::getParam($rH_cfg, 'mergeLanes', 'mergeRecInRam');
-    $command .= ' ; grep \'^Input Read\' '.$countInputs.' > $sampleName/$sampleName.runLane.counts';
-  }
-  return $command;
-}
-
-sub mergeRealigned {
-  my $rH_cfg            = shift;
-  my $sampleName        = shift;
-  my $rA_seqNames  = shift;
-
-  my $latestBam;
-  my $bamInputs;
-  my $countInputs;
-  my $outputBAM = $sampleName.'/'.$sampleName.'.realigned.qsorted.bam';
-  for my $seqName (@$rA_seqNames) {
-    my $directory = $sampleName."/realign/";
-    my $realignedBamFile = $directory.$seqName.'.bam';
-
-    $bamInputs .= 'INPUT='.$realignedBamFile.' ';
-  }
-
-  my $command;
-  $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'mergeRealigned', 'moduleVersion.picard').' ;'; 
-  $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'mergeRealigned', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'mergeRealigned', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'mergeRealigned', 'mergeRam').' -jar \${PICARD_HOME}/MergeSamFiles.jar';
-  $command .= ' VALIDATION_STRINGENCY=SILENT ASSUME_SORTED=false SORT_ORDER=queryname';
-  $command .= ' TMP_DIR='.LoadConfig::getParam($rH_cfg, 'mergeRealigned', 'tmpDir');
-  $command .= ' '.$bamInputs;
-  $command .= ' OUTPUT='.$outputBAM;
-  $command .= ' MAX_RECORDS_IN_RAM='.LoadConfig::getParam($rH_cfg, 'mergeRealigned', 'mergeRecInRam');
-  return $command;
-}
-
-# Generic merge
 sub mergeFiles {
   my $rH_cfg        = shift;
   my $sampleName    = shift;
@@ -151,10 +79,8 @@ sub mergeFiles {
 
 sub fixmate {
   my $rH_cfg     = shift;
-  my $sampleName = shift;
-
-  my $inputBAM = $sampleName.'/'.$sampleName.'.realigned.qsorted.bam';
-  my $outputBAM = $sampleName.'/'.$sampleName.'.matefixed.sorted.bam';
+  my $inputBAM   = shift;
+  my $outputBAM  = shift;
 
   my $command;
   $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'fixmate', 'moduleVersion.picard').' ;'; 
@@ -198,12 +124,10 @@ sub markDup {
 }
 
 sub collectMetrics {
-  my $rH_cfg     = shift;
-  my $sampleName = shift;
+  my $rH_cfg        = shift;
+  my $inputBAM      = shift;
+  my $outputMetrics = shift;
 
-  my $inputBAM = $sampleName.'/'.$sampleName.'.sorted.dup.bam';
-  my $outputMetrics = $sampleName.'/'.$sampleName.'.sorted.dup.all.metrics';
-  
   my $command;
   $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'collectMetrics', 'moduleVersion.picard').' ;'; 
   $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'collectMetrics', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'collectMetrics', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'collectMetrics', 'collectMetricsRam').' -jar \${PICARD_HOME}/CollectMultipleMetrics.jar';

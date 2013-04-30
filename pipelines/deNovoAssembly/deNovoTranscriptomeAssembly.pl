@@ -551,7 +551,14 @@ sub genomeAlign {
     print "BWA_JOB_IDS=\"\"\n";
 
     for my $rH_laneInfo (@$rAoH_sampleLanes) {
-        my $rA_commands = BWA::aln( $rH_cfg, $sampleName, $rH_laneInfo, $rH_aliasSampleInfo->{$sampleName}{'bwa_pair1'}, $rH_aliasSampleInfo->{$sampleName}{'bwa_pair2'}, $rH_aliasSampleInfo->{$sampleName}{'bwa_single1'}, $rH_aliasSampleInfo->{$sampleName}{'bwa_single2'}, undef, ( $group . '/' ) );
+        my $rgId = $rH_laneInfo->{'libraryBarcode'} . "_" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
+        my $rgSampleName = $rH_laneInfo->{'name'};
+        my $rgLibrary = $rH_laneInfo->{'libraryBarcode'};
+        my $rgPlatformUnit = 'run' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
+        my $rgCenter = LoadConfig::getParam( $rH_cfg, 'aln', 'bwaInstitution' ) . '\tPL:Illumina' . "'";
+
+        my $outputDir = "alignment/" . $group.'/';
+        my $rA_commands = BWA::aln( $rH_cfg, $sampleName, $rH_aliasSampleInfo->{$sampleName}{'bwa_pair1'}, $rH_aliasSampleInfo->{$sampleName}{'bwa_pair2'}, $rH_aliasSampleInfo->{$sampleName}{'bwa_single1'}, $rH_aliasSampleInfo->{$sampleName}{'bwa_single2'}, $outputDir, $rgId, $rgSampleName, $rgLibrary, $rgPlatformUnit, $rgCenter, ( $group . '/' ) );
 
         if ( @{$rA_commands} == 3 ) {
         	print "READ1ALN_JOB_ID=\"\"\n";
