@@ -523,12 +523,12 @@ sub cuffdiff {
 	my $cuffddiffJobId;
 	for my $design (keys %{$rHoAoA_designGroup}) {
 		mkdir  $workDirectory ;
-		mkdir  $workDirectory .'cuffdiff';
-		mkdir  $workDirectory .'cuffdiff/denovo/' ;
-		mkdir  $workDirectory .'cuffdiff/denovo/' .$design ;
+		mkdir  $workDirectory .'/cuffdiff';
+		mkdir  $workDirectory .'/cuffdiff/denovo/' ;
+		mkdir  $workDirectory .'/cuffdiff/denovo/' .$design ;
 		## create the list of deNovo gtf to merge
 		print "mkdir -p cuffdiff/$design/output_jobs\n";
-		my $mergeListFile = $workDirectory .'cuffdiff/denovo/' .$design .'/gtfMerge.list';
+		my $mergeListFile = $workDirectory .'/cuffdiff/denovo/' .$design .'/gtfMerge.list';
 		open(MERGEF, ">$mergeListFile") or  die ("Unable to open $mergeListFile for wrtting") ;
 		my $numberGroups = @{$rHoAoA_designGroup->{$design}} ;
 		##iterate over group
@@ -576,7 +576,7 @@ sub cuffdiff {
 		}
 		
 		##cuffdiff de novo
-		$command = Cufflinks::cuffdiff($rH_cfg,\@groupInuptFiles,$outputPathKnown,LoadConfig::getParam($rH_cfg, 'cuffdiff','referenceGtf'));
+		$command = Cufflinks::cuffdiff($rH_cfg,\@groupInuptFiles,$outputPathDeNovo,$gtfDnFormatMerged);
 		if(defined($command) && length($command) > 0) {
 			my $cuffdiffKnownJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "cuffdiff", "DENOVO", 'CUFFDIFFD' .$rH_jobIdPrefixe ->{$design} , $formatJobId, $design, $command, 'cuffdiff/' .$design, $workDirectory);
 			$cuffddiffJobId .= '$' .$cuffdiffKnownJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
