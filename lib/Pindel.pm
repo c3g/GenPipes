@@ -84,9 +84,10 @@ sub pairedPI {
     my $chr             = shift;
     my $inputCFG        = shift;
     my $outputPrefix    = shift;
+    my $outputTest     = shift;
     my $PIOption       = shift;
 
-    my $outDate = -M $outputPrefix .'_SI';
+    my $outDate = -M $outputTest .'_SI';
     my $inDate = -M $inputCFG;
   
     my $command;
@@ -107,18 +108,21 @@ sub mergeChro {
     my $rH_cfg          = shift;
     my $outputPrefix    = shift;
 
+    my $outDate = -M $outputPrefix .'_SI';
+    my $inDate = -M $outputPrefix .'.1_SI';
+
     my $command;
     # -M gives modified date relative to now. The bigger the older.
-    #if(!defined($outDate) || !defined($inDate) || $inDate < $outDate) {
-    $command .= 'rm ' .$outputPrefix .'_BP' .' ' .$outputPrefix .'_D' .' ' .$outputPrefix .'_INV' .' ' .$outputPrefix .'_LI' .' ' .$outputPrefix .'_SI' .' ' .$outputPrefix .'_TD' .' ; ' ;
-    $command .= 'touch ' .$outputPrefix .'_BP' .' ' .$outputPrefix .'_D' .' ' .$outputPrefix .'_INV' .' ' .$outputPrefix .'_LI' .' ' .$outputPrefix .'_SI' .' ' .$outputPrefix .'_TD' .' && ' ;
-    $command .= 'for i in ' .$outputPrefix .'.*_BP ; do cat \$i >> '  .$outputPrefix .'_BP  ; done && ' ;
-    $command .= 'for i in ' .$outputPrefix .'.*_D ; do cat \$i >> '  .$outputPrefix .'_D ; done && ' ;
-    $command .= 'for i in ' .$outputPrefix .'.*_INV ; do cat \$i >> '  .$outputPrefix .'_INV ; done && ' ;
-    $command .= 'for i in ' .$outputPrefix .'.*_LI ; do cat \$i >> '  .$outputPrefix .'_LI ; done && ' ;
-    $command .= 'for i in ' .$outputPrefix .'.*_SI ; do cat \$i >> '  .$outputPrefix .'_SI ; done && ' ;
-    $command .= 'for i in ' .$outputPrefix .'.*_TD ; do cat \$i >> '  .$outputPrefix .'_TD ; done ' ;
-    #}
+    if(!defined($outDate) || !defined($inDate) || $inDate < $outDate) {
+      $command .= 'rm ' .$outputPrefix .'_BP' .' ' .$outputPrefix .'_D' .' ' .$outputPrefix .'_INV' .' ' .$outputPrefix .'_LI' .' ' .$outputPrefix .'_SI' .' ' .$outputPrefix .'_TD' .' ; ' ;
+      $command .= 'touch ' .$outputPrefix .'_BP' .' ' .$outputPrefix .'_D' .' ' .$outputPrefix .'_INV' .' ' .$outputPrefix .'_LI' .' ' .$outputPrefix .'_SI' .' ' .$outputPrefix .'_TD' .' && ' ;
+      $command .= 'for i in ' .$outputPrefix .'.*_BP ; do cat \$i >> '  .$outputPrefix .'_BP  ; done && ' ;
+      $command .= 'for i in ' .$outputPrefix .'.*_D ; do cat \$i >> '  .$outputPrefix .'_D ; done && ' ;
+      $command .= 'for i in ' .$outputPrefix .'.*_INV ; do cat \$i >> '  .$outputPrefix .'_INV ; done && ' ;
+      $command .= 'for i in ' .$outputPrefix .'.*_LI ; do cat \$i >> '  .$outputPrefix .'_LI ; done && ' ;
+      $command .= 'for i in ' .$outputPrefix .'.*_SI ; do cat \$i >> '  .$outputPrefix .'_SI ; done && ' ;
+      $command .= 'for i in ' .$outputPrefix .'.*_TD ; do cat \$i >> '  .$outputPrefix .'_TD ; done ' ;
+    }
     return $command;
 }
 
