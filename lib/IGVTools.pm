@@ -43,7 +43,6 @@ use warnings;
 #-----------------------
 sub computeTDF {
   my $rH_cfg      = shift;
-  my $sampleName  = shift;
   my $inputBAM    = shift;
 
   my $command;

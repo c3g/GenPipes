@@ -123,7 +123,6 @@ sub mergeFilterBCF {
 
 sub flagstat {
   my $rH_cfg     = shift;
-  my $sampleName = shift;
   my $bamFile    = shift;
   my $output     = shift;
 

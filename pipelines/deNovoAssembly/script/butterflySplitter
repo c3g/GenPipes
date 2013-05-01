@@ -1,0 +1,102 @@
+#!/usr/bin/perl 
+
+=head1 NAME
+
+I<butterflySplitter>
+
+=head1 SYNOPSIS
+
+butterflySplitte [options] [command [arguments]]
+
+=head1 DESCRIPTION
+
+B<butterflySplittet> is a script made to split a multiple line 
+file in chuncks with a 4 number padding on the name.
+
+=head1 AUTHOR
+
+B<David Morais> - I<dmorais@cs.bris.ac.uk>
+
+=head1 DEPENDENCY
+
+B<Getopt::Long> Used to parse command line options.
+
+B<Proc::ParallelLoop> parallel jobs 
+
+B<Pod::Usage> Usage and help output.
+
+B<Data::Dumper> Used to debbug
+
+B<File::Path> File path parsing
+
+B<File::Basename> Path parsing
+
+B<use Cwd> Path parsing
+
+=cut
+
+# Strict Pragmas
+#-------------------------- 
+
+use strict;
+use warnings;
+#--------------------------
+
+my $numberOfChunks = $ARGV[0];
+my $inputFile = $ARGV[1];
+my $outputDir = $ARGV[2];
+my $totalNumberOfLines = ` wc -l $inputFile | awk '{print \$1}'`;
+my $numberOfLines = int($totalNumberOfLines/$numberOfChunks);
+my $numb = 0;
+my $chunk = sprintf("%04i", $numb);
+my $line = 1;
+
+open (IN, $inputFile) || die "could not open $inputFile $!\n";
+open (OUT, ">$outputDir/chunk.$chunk.txt") || die "could not open file.$chunk.txt, $!\n";
+
+while(<IN>){
+	
+	if ($chunk == $numberOfChunks && $line >$numberOfLines){
+		print OUT $_;
+	}
+	elsif ($line > $numberOfLines){
+		$chunk=sprintf("%04i", ($chunk+1));
+		close OUT;
+		open (OUT, ">$outputDir/chunk.$chunk.txt") || die "could not open file.$chunk.txt, $!\n";
+		print OUT $_;
+		$line = 1;		
+	}
+	else{
+		print OUT $_;
+		$line++;
+	}
+	
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

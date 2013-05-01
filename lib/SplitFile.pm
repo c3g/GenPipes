@@ -89,8 +89,8 @@ sub splitButterfly {
     my $splitDirectory = $laneDirectory . "butterfly_split";
 
     $command .= ' mkdir -p ' . $splitDirectory . ' ; ';
-    $command .= ' split -a 4 -d -l ' . $rH_cfg->{'trinity.splitLines'} . ' ' . $laneDirectory . 'butterfly_commands.adj '; # split numerically with a 4 digits padding
-    $command .= $splitDirectory . '/cmd.';
+    $command .=  $rH_cfg->{'trinity.split'} . ' ' . $rH_cfg->{'trinity.chunks'} . ' ' . $laneDirectory . 'butterfly_commands.adj '; # split numerically with a 4 digits padding
+    $command .= $splitDirectory . ' ';
 
     $retVal{'command'} = $command;
     return ( \%retVal );
