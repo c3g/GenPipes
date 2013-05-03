@@ -56,35 +56,51 @@ bwa index rRNA.fa
 ## Gene models aka gtf.   (Already done for iGenomes, Annotation/Genes/genes.gtf)
 # ...
 
-## Gene size file for the gene model + gene id to symbol mapping. Easier to use GenomicRanges 
+## Do a bunch of stuff in R :Gene size file for the gene model + gene id to symbol mapping + gene annotation file 
 cd $ROOT/Annotation/Genes
 R --vanilla <<'EOF'
+	require(org.Mm.eg.db) # ORGANISM SPECIFIC!!!!
+	org.prefix = 'org.Mm.eg'
 	require(stringr)
 	require(rtracklayer)
 	options(stringsAsFactors=FALSE)
 	x = import.gff('genes.gtf')
 	x$geneid = gsub('((gene_id |;)|\")','', str_extract(as.character(x$group),'gene_id.*?;') ) # MIGHT DIFFER FOR NON-UCSC GENOMES
+
+	# Write the gene_id to symbol file
 	g2s  = data.frame('ensembl'=unique(x$geneid),'geneSymbol'=unique(x$geneid))
 	write.table(g2s,file='genes_geneid2Symbol.txt',col.names=TRUE,row.names=FALSE,sep='\t',quote=FALSE)
-	x = x[x$type=='exon',]
-	x =  as(x,'GRanges') 		
-	x = split(x,f=factor(x$geneid))	 # split for GRanges signature turns into GRangesList!
-	x = reduce(x) # reduce eliminates overlaps
-	x = sum ( width(x) )
-	x = as.data.frame(x)
-	write.table(x,file='genes_lengths.txt',col.names=FALSE,row.names=TRUE,sep='\t',quote=FALSE)
+
+	# Prepare the gene lengths file
+	gl = gl[gl$type=='exon',]
+	gl =  as(gl,'GRanges') 		
+	gl = split(gl,f=factor(x$geneid))	 # split for GRanges signature turns into GRangesList!
+	gl = reduce(gl) # reduce eliminates overlaps
+	gl = sum ( width(gl) )
+	gl = as.data.frame(gl)
+	write.table(gl,file='genes_lengths.txt',col.names=FALSE,row.names=TRUE,sep='\t',quote=FALSE)
+
+	# Gene Annoation file (Using Bioc USE a different STRATEGY if not org package available!!!)
+	# NOTE: this strategy is not perfect for UCSC iGenomes (some genes unmapped). But then nothing important depends on these annotation
+	ann = data.frame("featureID"=unique(x$geneid),row.names=unique(x$geneid))
+	ann[['Entrez Gene ID']] =  mget(ann$featureID,get( paste0(org.prefix,'SYMBOL2EG') ), ifnotfound=NA)
+	# which(sapply(ann[,2],length)>=2) # ok checked manually
+	ann[['Entrez Gene ID']] = sapply(ann[['Entrez Gene ID']] , function(z)z[1])
+	ann[['Entrez Gene ID']][is.na(ann[['Entrez Gene ID']])] = "NA"
+	for(enviro in c("SYMBOL","CHR","GENENAME","UNIGENE","ENZYME")) # MIGT be specific see e.g. ls("package:org.Mm.eg.db")
+	{
+		print(enviro)
+		ann[[enviro]] =  mget( ann[['Entrez Gene ID']],  get( paste0(org.prefix,enviro) )  , ifnotfound=NA)
+		print(max(sapply(ann[[enviro]],length)))
+		ann[[enviro]] = sapply(ann[[enviro]] ,paste, collapse=', ') # this is kind of slow
+	}
+	write.table(ann,file='genes.txt',col.names=TRUE,row.names=FALSE,sep='\t',quote=FALSE)
+
 EOF
 cd -
 # OR Alternative is MAthieu's:
 # module load mugqic/tools
 # gtf2geneSize.awk <...>
-
-
-
-
-
-
-
 
 
 

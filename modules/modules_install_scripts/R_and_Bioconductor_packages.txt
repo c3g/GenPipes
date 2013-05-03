@@ -1,3 +1,4 @@
+org.Mm.eg.db
 outliers
 plyr
 NBPSeq
@@ -128,7 +129,6 @@ RJSONIO
 roxygen2
 rpart
 Rsamtools
-Rsge
 RSQLite
 rtracklayer
 scales
