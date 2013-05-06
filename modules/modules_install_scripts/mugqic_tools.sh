@@ -6,6 +6,7 @@ git clone git@bitbucket.org:mugqic/mugqic_pipeline.git
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/mugqic_tools # where to install..
 mkdir -p $INSTALL_PATH
 cp -r mugqic_pipeline/tool_shed/* $INSTALL_PATH 
+chmod -R 775 $INSTALL_PATH 
 
 # Module file
 echo "#%Module1.0
@@ -31,7 +32,5 @@ set ModulesVersion \"$VERSION\"
 mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/tools
 mv .version $VERSION $MUGQIC_INSTALL_HOME/modulefiles/mugqic/tools
 
-
-# mugqic/tools
 
 
