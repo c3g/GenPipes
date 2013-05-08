@@ -523,12 +523,12 @@ sub cuffdiff {
 	my $cuffddiffJobId;
 	for my $design (keys %{$rHoAoA_designGroup}) {
 		mkdir  $workDirectory ;
-		mkdir  $workDirectory .'cuffdiff';
-		mkdir  $workDirectory .'cuffdiff/denovo/' ;
-		mkdir  $workDirectory .'cuffdiff/denovo/' .$design ;
+		mkdir  $workDirectory .'/cuffdiff';
+		mkdir  $workDirectory .'/cuffdiff/denovo/' ;
+		mkdir  $workDirectory .'/cuffdiff/denovo/' .$design ;
 		## create the list of deNovo gtf to merge
 		print "mkdir -p cuffdiff/$design/output_jobs\n";
-		my $mergeListFile = $workDirectory .'cuffdiff/denovo/' .$design .'/gtfMerge.list';
+		my $mergeListFile = $workDirectory .'/cuffdiff/denovo/' .$design .'/gtfMerge.list';
 		open(MERGEF, ">$mergeListFile") or  die ("Unable to open $mergeListFile for wrtting") ;
 		my $numberGroups = @{$rHoAoA_designGroup->{$design}} ;
 		##iterate over group
@@ -576,7 +576,7 @@ sub cuffdiff {
 		}
 		
 		##cuffdiff de novo
-		$command = Cufflinks::cuffdiff($rH_cfg,\@groupInuptFiles,$outputPathKnown,LoadConfig::getParam($rH_cfg, 'cuffdiff','referenceGtf'));
+		$command = Cufflinks::cuffdiff($rH_cfg,\@groupInuptFiles,$outputPathDeNovo,$gtfDnFormatMerged);
 		if(defined($command) && length($command) > 0) {
 			my $cuffdiffKnownJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "cuffdiff", "DENOVO", 'CUFFDIFFD' .$rH_jobIdPrefixe ->{$design} , $formatJobId, $design, $command, 'cuffdiff/' .$design, $workDirectory);
 			$cuffddiffJobId .= '$' .$cuffdiffKnownJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
@@ -622,7 +622,7 @@ sub metrics {
 	print RNASAMPLE "Sample\tBamFile\tNote\n";
 	my $projectName = LoadConfig::getParam($rH_cfg, 'metricsRNA', 'projectName');
 	for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
-		print RNASAMPLE "$sampleName\talignment/$sampleName/$sampleName.merged.mdup.bam\t$projectName";
+		print RNASAMPLE "$sampleName\talignment/$sampleName/$sampleName.merged.mdup.bam\t$projectName\n";
 	}
 	print "mkdir -p metrics/output_jobs\n";
 	my $sampleList = 'alignment/rnaseqc.samples.txt';
@@ -654,7 +654,7 @@ sub metrics {
 		$metricsJobId .= $matrixJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 	}
 	
-	##Saturation
+	##RPKM and Saturation
 	my $countFile   = 'DGE/rawCountMatrix.csv';
 	my $geneSizeFile     = LoadConfig::getParam($rH_cfg, 'saturation', 'geneSizeFile');
 	my $rpkmDir = 'raw_counts';
@@ -663,7 +663,7 @@ sub metrics {
 	$command =  Metrics::saturation($rH_cfg, $countFile, $geneSizeFile, $rpkmDir, $saturationDir);
 	my $saturationJobId = undef;
 	if(defined($command) && length($command) > 0) {
-		$saturationJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "saturation", undef, 'SATURATION', $matrixJobId, undef, $command, 'metrics/' , $workDirectory);
+		$saturationJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "saturation", undef, 'RPKM', $matrixJobId, undef, $command, 'metrics/' , $workDirectory);
 		$metricsJobId .= '$' .$saturationJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 	}
 	

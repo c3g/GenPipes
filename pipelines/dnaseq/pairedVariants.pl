@@ -61,6 +61,7 @@ use SubmitToCluster;
 use SVtools;
 use ToolShed;
 use VCFtools;
+use Pindel;
 
 #--------------------
 
@@ -79,6 +80,7 @@ push(@steps, {'name' => 'dbNSFPAnnotation'});
 push(@steps, {'name' => 'indexVCF'});
 push(@steps, {'name' => 'DNAC'});
 push(@steps, {'name' => 'Breakdancer'});
+push(@steps, {'name' => 'Pindel'});
 push(@steps, {'name' => 'Control-Freec'});
 
 &main();
@@ -418,7 +420,76 @@ sub Breakdancer {
 
     print 'BRD_JOB_IDS=${BRD_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$brdJobId."\n";
   }
+  ## merge results
+  my $outputPrefix = $outputDir.$sampleName.'.brd';
+  $command = Breakdancer::mergeCTX($rH_cfg,$outputPrefix) ;
+  ##filter results
+  my $brdCallsFile = $outputPrefix .'.ctx';
+  $command .= ' && '.SVtools::filterBrD($rH_cfg, $sampleName, $brdCallsFile, $outputPrefix.'.filteredSV', $normalBam, $tumorBam);
+  my $brdMergeFilterJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "filterSV", $sampleName, 'FILTBRD', '${BRD_JOB_IDS}', $sampleName, $command);
+  print 'FILTBRD_JOB_IDS=$'.$brdMergeFilterJobId."\n";
+  return '$FILTBRD_JOB_IDS';
+}
 
-  return '${BRD_JOB_IDS}';
+sub Pindel {
+  my $depends = shift;
+  my $rH_cfg = shift;
+  my $rH_samplePair = shift;
+  my $rAoH_seqDictionary = shift;
+
+  my $jobDependency = undef;
+  if($depends > 0) {
+    $jobDependency = '$FILTBRD_JOB_IDS';
+  }
+
+  my $sampleName = $rH_samplePair->{'sample'};
+  my $normalBam = $rH_samplePair->{'normal'}.'/'.$rH_samplePair->{'normal'}.'.sorted.dup.bam';
+  my $normalMetrics = $rH_samplePair->{'normal'}.'/'.$rH_samplePair->{'normal'}.'.sorted.dup.all.metrics.insert_size_metrics';
+  my $tumorBam = $rH_samplePair->{'tumor'}.'/'.$rH_samplePair->{'tumor'}.'.sorted.dup.bam';
+  my $tumorMetrics = $rH_samplePair->{'tumor'}.'/'.$rH_samplePair->{'tumor'}.'.sorted.dup.all.metrics.insert_size_metrics';
+  my $outputDir = LoadConfig::getParam($rH_cfg, "Pindel", 'sampleOutputRoot') . $sampleName.'/pindel/';
+
+  print 'mkdir -p '.$outputDir."\n";
+  print "PI_JOB_IDS=\"\"\n";
+
+  my $sampleCFGOutput = $outputDir.$sampleName.'.Pindel.conf';
+  my $command = Pindel::pairedConfigFile($rH_cfg, $tumorMetrics, $normalMetrics, $tumorBam, $normalBam, $sampleCFGOutput);
+  my $piCFGJobId; 
+  if(defined($command) && length($command) > 0) {
+    $piCFGJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "PindelCfg", undef, 'PI_CFG', $jobDependency, $sampleName, $command, LoadConfig::getParam($rH_cfg, "Pindel", 'sampleOutputRoot') . $sampleName);
+    $piCFGJobId = '$'.$piCFGJobId;
+  }
+  my $pi2filterDep;
+  for my $rH_seqInfo (@$rAoH_seqDictionary) {
+    my $seqName = $rH_seqInfo->{'name'};
+    my $chrFile = LoadConfig::getParam($rH_cfg, "Pindel", 'referenceGenomeByChromosome') .'/chr' .$seqName.'.fa';
+    my $Brdresfile = LoadConfig::getParam($rH_cfg, "Breakdancer", 'sampleOutputRoot') . $sampleName.'/breakdancer/'.$sampleName.'.brd.'.$seqName.'ctx';
+    my $outputPrefix = $outputDir .$sampleName .'.' .$seqName;
+    my $outputTest= $outputDir .$sampleName ;
+    my $BrdOption = '' ;
+    if (-e $Brdresfile) {
+      my $outputBrdPi = $outputDir .$sampleName .'.PI_BrD.calls.txt';
+      $BrdOption .= ' -Q ' .$outputBrdPi .' -b ' .$Brdresfile  ;
+    } 
+    $command = Pindel::pairedPI($rH_cfg, $chrFile, $sampleCFGOutput, $outputPrefix, $outputTest, $BrdOption);
+    my $piJobId ; 
+    if(defined($command) && length($command) > 0) {
+      $piJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "pindel", $seqName, 'PI', $piCFGJobId, $sampleName, $command, LoadConfig::getParam($rH_cfg, "Pindel", 'sampleOutputRoot') . $sampleName);
+      $piJobId = '$'.$piJobId;
+      print 'PI_JOB_IDS=${PI_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$piJobId."\n";
+      $pi2filterDep='${PI_JOB_IDS}';
+    }
+  }
+  ## merge results
+  my $outputPrefix = $outputDir.$sampleName;
+  $command = Pindel::mergeChro($rH_cfg,$outputPrefix) ;
+  ##filter results
+  if(defined($command) && length($command) > 0) {
+     $command .= ' && ';
+  }
+  $command .= SVtools::filterPI($rH_cfg, $sampleName, $outputPrefix, $outputPrefix.'.filteredSV', $normalBam, $tumorBam);
+  my $piMergeFilterJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "filterSV", $sampleName .'PI', 'FILTPI', $pi2filterDep, $sampleName, $command, LoadConfig::getParam($rH_cfg, "Pindel", 'sampleOutputRoot') . $sampleName);
+  print 'FILTPI_JOB_IDS=$'.$piMergeFilterJobId."\n";
+  return '$FILTPI_JOB_IDS';
 }
 1;

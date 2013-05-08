@@ -108,4 +108,20 @@ sub pairedBRD {
     #}
     return $command;
 }
+
+sub mergeCTX {
+    my $rH_cfg          = shift;
+    my $outputPrefix    = shift;
+
+    my $command;
+    # -M gives modified date relative to now. The bigger the older.
+    #if(!defined($outDate) || !defined($inDate) || $inDate < $outDate) {
+    $command .= 'rm ' .$outputPrefix .'.ctx && ' ;
+    $command .= 'touch ' .$outputPrefix .'.ctx && ' ;
+    $command .= 'for i in ' .$outputPrefix .'.*.ctx ; do cat \$i >> '  .$outputPrefix .'.ctx' ;
+    #}
+    return $command;
+}
+
+    
 1;
