@@ -4,8 +4,12 @@
 
 use Switch;
 
+print "Input: $ARGV[0]";
+print "\n********************\n";
+print "Output: $ARGV[1]\n";
+
 open(INFO, $ARGV[0]);
-open(OUT, $ARGV[1]);
+open(OUT, ">".$ARGV[1]);
 
 while(<INFO>) {
 
