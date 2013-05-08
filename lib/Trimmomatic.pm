@@ -46,14 +46,15 @@ sub trim {
     my $rH_cfg      = shift;
     my $sampleName  = shift;
     my $rH_laneInfo = shift;
+    my $outputDir   = shift;
 
     my $rH_retVal;
 
     if ( $rH_laneInfo->{'runType'} eq "SINGLE_END" ) {
-        $rH_retVal = singleCommand( $rH_cfg, $sampleName, $rH_laneInfo );
+        $rH_retVal = singleCommand( $rH_cfg, $sampleName, $rH_laneInfo, $outputDir );
     }
     elsif ( $rH_laneInfo->{'runType'} eq "PAIRED_END" ) {
-        $rH_retVal = pairCommand( $rH_cfg, $sampleName, $rH_laneInfo );
+        $rH_retVal = pairCommand( $rH_cfg, $sampleName, $rH_laneInfo, $outputDir );
     }
     else {
         die "Unknown runType: " . $rH_laneInfo->{' runType '} . "\n";
@@ -66,18 +67,19 @@ sub pairCommand {
     my $rH_cfg      = shift;
     my $sampleName  = shift;
     my $rH_laneInfo = shift;
+    my $outputDir   = shift;
 
     my $minQuality  = LoadConfig::getParam($rH_cfg, 'trim','minQuality');
     my $minLength   = LoadConfig::getParam($rH_cfg, 'trim','minLength');
     my $adapterFile = LoadConfig::getParam($rH_cfg, 'trim','adapterFile');
 
-    my $rawReadDir    = LoadConfig::getParam($rH_cfg, 'trim','rawReadDir') . '/';
-    my $laneDirectory = "reads/";
+    my $rawReadDir    = LoadConfig::getParam($rH_cfg, 'trim','rawReadDir');
 
-    my $outputFastqPair1Name = $laneDirectory .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.pair1.fastq.gz';
-    my $outputFastqPair2Name = $laneDirectory .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.pair2.fastq.gz';
-    my $outputFastqSingle1Name = $laneDirectory .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.single1.fastq.gz';
-    my $outputFastqSingle2Name = $laneDirectory .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.single2.fastq.gz';
+    my $outputFastqPair1Name = $outputDir .'/' . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.pair1.fastq.gz';
+    my $outputFastqPair2Name = $outputDir .'/' . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.pair2.fastq.gz';
+    my $outputFastqSingle1Name = $outputDir .'/' . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.single1.fastq.gz';
+    my $outputFastqSingle2Name = $outputDir .'/' . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.single2.fastq.gz';
+    my $outputTrimLog = $outputDir .'/' . $sampleName . '.trim.out';
     my $pair1FileDate = -M $outputFastqPair1Name;
     my $pair2FileDate = -M $outputFastqPair2Name;
 
@@ -90,8 +92,10 @@ sub pairCommand {
 
     # -M gives modified date relative to now. The bigger the older.
     if ( !defined($currentFileDate) || $currentFileDate > -M $rawReadDir .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' .$rH_laneInfo->{'read1File'} ) {
-        $command .= 'module load ';
-        $command .= LoadConfig::getParam($rH_cfg, 'trim','moduleVersion.java') .' mugqic/trimmomatic/0.22 ; java -cp \$TRIMMOMATIC_JAR org.usadellab.trimmomatic.TrimmomaticPE';
+        $command .= 'module load';
+        $command .= ' '.LoadConfig::getParam($rH_cfg, 'trim','moduleVersion.java');
+        $command .= ' '.LoadConfig::getParam($rH_cfg, 'trim','moduleVersion.trimmomatic');
+        $command .= ' ; java -cp \$TRIMMOMATIC_JAR org.usadellab.trimmomatic.TrimmomaticPE';
         $command .= ' -threads ' . $rH_cfg->{'trim.nbThreads'};
         if ( $rH_laneInfo->{'qualOffset'} eq "64" ) {
             $command .= ' -phred64';
@@ -110,7 +114,7 @@ sub pairCommand {
             $command .= ' TRAILING:' . $minQuality;
         }
         $command .= ' MINLEN:' . $minLength;
-        $command .= ' > ' . $laneDirectory . $sampleName . '.trim.out';
+        $command .= ' > ' . $outputTrimLog;
     }
 
     my %retVal;
@@ -126,23 +130,26 @@ sub singleCommand {
     my $rH_cfg      = shift;
     my $sampleName  = shift;
     my $rH_laneInfo = shift;
+    my $outputDir   = shift;
 
     my $minQuality  = LoadConfig::getParam($rH_cfg, 'trim','minQuality');
     my $minLength   = LoadConfig::getParam($rH_cfg, 'trim','minLength');
     my $adapterFile = LoadConfig::getParam($rH_cfg, 'trim','adapterFile');
 
-    my $rawReadDir    = LoadConfig::getParam($rH_cfg, 'trim','rawReadDir') . '/';
-    my $laneDirectory = "reads/";
+    my $rawReadDir    = LoadConfig::getParam($rH_cfg, 'trim','rawReadDir');
 
-    my $outputFastqName = $laneDirectory . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.single.fastq.gz';
+    my $outputFastqName = $outputDir . '/' . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.single.fastq.gz';
+    my $outputTrimLog = $outputDir . '/' . $sampleName . '.trim.out';
     my $currentFileDate = -M $outputFastqName;
 
     my $command = "";
 
     # -M gives modified date relative to now. The bigger the older.
     if ( !defined($currentFileDate) || $currentFileDate > -M $rawReadDir .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' .$rH_laneInfo->{'read1File'} ) {
-        $command .= 'module load ';
-        $command .= '  ' .LoadConfig::getParam($rH_cfg, 'trim','moduleVersion.java') .' mugqic/trimmomatic/0.22 ; java -cp \$TRIMMOMATIC_JAR org.usadellab.trimmomatic.TrimmomaticSE';
+        $command .= 'module load';
+        $command .= ' '.LoadConfig::getParam($rH_cfg, 'trim','moduleVersion.java');
+        $command .= ' '.LoadConfig::getParam($rH_cfg, 'trim','moduleVersion.trimmomatic');
+        $command .= ' ; java -cp \$TRIMMOMATIC_JAR org.usadellab.trimmomatic.TrimmomaticSE';
         $command .= ' -threads ' . $rH_cfg->{'trim.nbThreads'};
         if ( $rH_laneInfo->{'qualOffset'} eq "64" ) {
             $command .= ' -phred64';
@@ -156,7 +163,7 @@ sub singleCommand {
             $command .= ' TRAILING:' . $minQuality;
         }
         $command .= ' MINLEN:' . $minLength;
-        $command .= ' > ' . $laneDirectory . $sampleName . '.trim.out';
+        $command .= ' > ' . $outputTrimLog;
     }
 
     my %retVal;

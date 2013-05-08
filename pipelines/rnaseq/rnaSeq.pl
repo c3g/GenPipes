@@ -200,7 +200,7 @@ sub trimming {
 		my $command = Metrics::readStats($rH_cfg,$inputFile,$outputFile,'fastq');
 		my $rawReadStatJobID = undef;
 		if(defined($command) && length($command) > 0) {
-			$rawReadStatJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", undef, 'RAWREADSTAT' .$rH_jobIdPrefixe ->{$sampleName .'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} , undef, $sampleName, $command, 'metrics/' .$sampleName, $workDirectory);
+			$rawReadStatJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", 'raw', 'RAWREADSTAT' .$rH_jobIdPrefixe ->{$sampleName .'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} , undef, $sampleName, $command, 'metrics/' .$sampleName, $workDirectory);
 			$rawReadStatJobID = '$'.$rawReadStatJobID;
 		}
 		
@@ -210,7 +210,7 @@ sub trimming {
 		my $laneDirectory = 'reads/' .$sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
 		print "mkdir -p $laneDirectory\n";
 		my $outputFastqPair1Name = $laneDirectory . $sampleName.'.t'.$minQuality.'l'.$minLength.'.pair1.fastq.gz';
-		my $rH_trimDetails = Trimmomatic::trim($rH_cfg, $sampleName, $rH_laneInfo);
+		my $rH_trimDetails = Trimmomatic::trim($rH_cfg, $sampleName, $rH_laneInfo, $laneDirectory);
 		my $trimJobIdVarNameLane=undef;
 		if(length($rH_trimDetails->{'command'}) > 0) {
 			$trimJobIdVarNameLane = SubmitToCluster::printSubmitCmd($rH_cfg, "trim", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'TRIM' .$rH_jobIdPrefixe ->{$sampleName.'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} , undef, $sampleName, $rH_trimDetails->{'command'}, 'reads/' .$sampleName, $workDirectory);
@@ -223,7 +223,7 @@ sub trimming {
 		$command = Metrics::readStats($rH_cfg,$inputFile,$outputFile,'fastq');
 		my $filteredReadStatJobID ;
 		if(defined($command) && length($command) > 0) {
-			$filteredReadStatJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", undef, 'FILTERREADSTAT' .$rH_jobIdPrefixe ->{$sampleName.'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} ,$trimJobIdVarNameLane, $sampleName, $command,'metrics/'  .$sampleName, $workDirectory);
+			$filteredReadStatJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", 'filtered', 'FILTERREADSTAT' .$rH_jobIdPrefixe ->{$sampleName.'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} ,$trimJobIdVarNameLane, $sampleName, $command,'metrics/'  .$sampleName, $workDirectory);
 			$filteredReadStatJobID = '$'.$filteredReadStatJobID;
 			$trimJobIdVarNameSample .= $filteredReadStatJobID .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 		}
@@ -276,7 +276,7 @@ sub aligning {
 		$command = Metrics::readStats($rH_cfg,$inputFile,$outputFile,'bam');
 		my $alignedReadStatJobID = undef;
 		if(defined($command) && length($command) > 0) {
-			$alignedReadStatJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", undef, 'ALIGNEDREADSTAT' .$rH_jobIdPrefixe ->{$sampleName.'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} ,$alignJobIdVarNameLane, $sampleName, $command, 'metrics/' .$sampleName, $workDirectory);
+			$alignedReadStatJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", 'aligned', 'ALIGNEDREADSTAT' .$rH_jobIdPrefixe ->{$sampleName.'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} ,$alignJobIdVarNameLane, $sampleName, $command, 'metrics/' .$sampleName, $workDirectory);
 			$alignedReadStatJobID = '$'.$alignedReadStatJobID;
 		}
 		##merge read stats
@@ -288,7 +288,7 @@ sub aligning {
 		$command = Metrics::mergeIndvidualReadStats($rH_cfg, $sampleNameFull, $rawFile, $filterFile, $alignFile, $outputFile);
 		my $mergeReadStatJobID = undef;
 		if(defined($command) && length($command) > 0) {
-			$mergeReadStatJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", undef, 'MERGEREADSTAT' .$rH_jobIdPrefixe ->{$sampleName.'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} ,$alignedReadStatJobID, $sampleName, $command, 'metrics/' .$sampleName, $workDirectory);
+			$mergeReadStatJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", 'merged', 'MERGEREADSTAT' .$rH_jobIdPrefixe ->{$sampleName.'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} ,$alignedReadStatJobID, $sampleName, $command, 'metrics/' .$sampleName, $workDirectory);
 			$mergeReadStatJobID = '$'.$mergeReadStatJobID;
 			$alignJobIdVarNameSample .= $mergeReadStatJobID .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 		}
@@ -523,12 +523,12 @@ sub cuffdiff {
 	my $cuffddiffJobId;
 	for my $design (keys %{$rHoAoA_designGroup}) {
 		mkdir  $workDirectory ;
-		mkdir  $workDirectory .'cuffdiff';
-		mkdir  $workDirectory .'cuffdiff/denovo/' ;
-		mkdir  $workDirectory .'cuffdiff/denovo/' .$design ;
+		mkdir  $workDirectory .'/cuffdiff';
+		mkdir  $workDirectory .'/cuffdiff/denovo/' ;
+		mkdir  $workDirectory .'/cuffdiff/denovo/' .$design ;
 		## create the list of deNovo gtf to merge
 		print "mkdir -p cuffdiff/$design/output_jobs\n";
-		my $mergeListFile = $workDirectory .'cuffdiff/denovo/' .$design .'/gtfMerge.list';
+		my $mergeListFile = $workDirectory .'/cuffdiff/denovo/' .$design .'/gtfMerge.list';
 		open(MERGEF, ">$mergeListFile") or  die ("Unable to open $mergeListFile for wrtting") ;
 		my $numberGroups = @{$rHoAoA_designGroup->{$design}} ;
 		##iterate over group
@@ -576,7 +576,7 @@ sub cuffdiff {
 		}
 		
 		##cuffdiff de novo
-		$command = Cufflinks::cuffdiff($rH_cfg,\@groupInuptFiles,$outputPathKnown,LoadConfig::getParam($rH_cfg, 'cuffdiff','referenceGtf'));
+		$command = Cufflinks::cuffdiff($rH_cfg,\@groupInuptFiles,$outputPathDeNovo,$gtfDnFormatMerged);
 		if(defined($command) && length($command) > 0) {
 			my $cuffdiffKnownJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "cuffdiff", "DENOVO", 'CUFFDIFFD' .$rH_jobIdPrefixe ->{$design} , $formatJobId, $design, $command, 'cuffdiff/' .$design, $workDirectory);
 			$cuffddiffJobId .= '$' .$cuffdiffKnownJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');

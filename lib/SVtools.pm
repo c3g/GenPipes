@@ -79,9 +79,9 @@ sub filterDNAC {
         $command .= ' '.$sampleName;
         $command .= ' '.LoadConfig::getParam($rH_cfg, 'filterSV', 'minBinCNV');
         $command .= ' && ';
-        $command .= filterResult($rH_cfg,  'filterSV', $outputPrefix, $cnvProx) ;
+        $command .= filterResults($rH_cfg,  'filterSV', $outputPrefix, $cnvProx) ;
         $command .= ' && ';
-        $command .= generateBedResult($rH_cfg, $outputPrefix) ;
+        $command .= generateBedResults($rH_cfg, $outputPrefix) ;
     #}
     return $command;
 }
@@ -155,7 +155,7 @@ sub filterResults {
     my $outputPrefix    = shift;
     my $cnvProx           = shift;
 
-    my $outDate = -M $outputPrefix.'.filteredSV.txt';
+    my $outDate = -M $outputPrefix.'.txt';
 #     my $inDate = -M $inputDNACCalls;
   
     my $command;
@@ -163,7 +163,7 @@ sub filterResults {
     #if(!defined($outDate) || !defined($inDate) || $inDate < $outDate) {
         $command .= 'module load '.LoadConfig::getParam($rH_cfg, $stepIniPrefix, 'moduleVersion.svtools').' ;';
         $command .= ' \${SVTOOLS_HOME}/Cancer/filterBedResults.sh';
-        $command .= ' '.$outputPrefix.'.txt';
+        $command .= ' '.$outputPrefix.'.txt' ;
         $command .= ' '.LoadConfig::getParam($rH_cfg, $stepIniPrefix, 'referenceMappabilityBed');
         $command .= ' '.LoadConfig::getParam($rH_cfg, $stepIniPrefix, 'referenceGeneCoordinates');
         $command .= ' '.LoadConfig::getParam($rH_cfg, $stepIniPrefix, 'referenceDGVCoordinates');
@@ -189,7 +189,8 @@ sub generateBedResults {
         $command .= ' \${SVTOOLS_HOME}/Cancer/rtxt2rbed.sh ';
         $command .= ' '.$outputPrefix.'.bed.other.filteredSV.annotate.txt';
         $command .= ' '.$outputPrefix.'.bed.other.filteredSV.annotate.bed';
-        $command .= ' && '.$outputPrefix.'.bed.TumS.filteredSV.annotate.txt';
+        $command .= ' && \${SVTOOLS_HOME}/Cancer/rtxt2rbed.sh';
+        $command .= ' '.$outputPrefix.'.bed.TumS.filteredSV.annotate.txt';
         $command .= ' '.$outputPrefix.'.bed.TumS.filteredSV.annotate.bed';
     #}
     return $command;

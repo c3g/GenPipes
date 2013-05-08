@@ -82,7 +82,7 @@ sub saturation {
 	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'saturation' , 'moduleVersion.cranR') .' ' . LoadConfig::getParam($rH_cfg, 'saturation' , 'moduleVersion.tools') . ' &&';
 	$command .= ' Rscript \$R_TOOLS/rpkmSaturation.R ' .$countFile .' ' .$geneSizeFile .' ' .$rpkmDir .' ' .$saturationDir;
 	$command .= ' ' .LoadConfig::getParam($rH_cfg, 'saturation' , 'threadNum');
-	$command .= .' ' .LoadConfig::getParam($rH_cfg, 'saturation' , 'optionR');
+	$command .= ' ' .LoadConfig::getParam($rH_cfg, 'saturation' , 'optionR');
 
 	return $command;
 }
@@ -113,14 +113,23 @@ sub readStats {
 	if(!defined($latestInputFile) || !defined($latestOutputFile) || $latestInputFile <  $latestOutputFile) {
 		if ((lc $fileType) eq "fastq") {
 			$command .= 'zcat ' .$inputFile;
-			$command .= ' | wc -l | awk \'{print \$1}\'';
+
+			#---- flefebvr Wed 17 Apr 08:40:58 2013 
+			#$command .= ' | wc -l | awk \'{print \$1}\''; 	
+			$command .= ' | echo \$((\`wc -l\`/2))'; 
+			#----
+
 			$command .= ' > ' .$outputFile;
 		}
 		elsif  ((lc $fileType) eq "bam") {
 			my $unmapOption = '-F260';
 			$command .= SAMtools::viewFilter($rH_cfg, $inputFile, $unmapOption, undef);
 			$command .= ' | awk \' { print \$1} \'';
-			$command .= ' | sort -u | wc -l  > ' .$outputFile;
+			#---- flefebvr Tue 16 Apr 13:47:53 2013 
+			#$command .= ' | sort -u | wc -l  > ' .$outputFile;
+			$command .= ' | sort -u -T '.LoadConfig::getParam($rH_cfg, 'metrics' , 'tmpDir');
+			$command .= ' | wc -l  > ' .$outputFile;
+			#----
 		}
 	}
 

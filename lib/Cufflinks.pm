@@ -160,7 +160,7 @@ sub mergeGtfFormat {
 	
 	my $command;
 	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'cuffmerge','moduleVersion.tools') .' ;';
-	$command .= ' perl formatGtfCufflinks.pl' .$inputFile .' ' .$outputFile ;
+	$command .= ' perl $PERL_TOOLS/formatGtfCufflinks.pl' .' '.$inputFile .' ' .$outputFile ;
 	
 	return $command;
 }

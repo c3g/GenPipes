@@ -56,14 +56,14 @@ sub sampleInfo {
     while (<IN>) {
         chomp;
         my @line = split /\,/, $_;
-        my $defaultDir;
+        my $defaultDir;               # Directory of the trimmed reads
         my $qualOffSet;
         foreach my $sampleName ( keys %{$rHoA0H_sampleSheetInfo} ) {
             my $rAoH_sampleLanes = $rHoA0H_sampleSheetInfo->{$sampleName};
             foreach my $rH_laneInfo (@$rAoH_sampleLanes) {
                 if ( $line[0] eq $rH_laneInfo->{'name'} ) {
 
-                    $defaultDir = 'reads/';
+                    $defaultDir = $defaultDir = $rH_cfg->{'trinity.trimmedReadDir'} . '/';
                     $qualOffSet = $rH_laneInfo->{'qualOffset'};
                     $pairType   = $rH_laneInfo->{'runType'};
 
@@ -95,12 +95,12 @@ sub sampleInfo {
             # $groupInfo{genome}{-left} =  sample1 t sample2 ...
             # $groupInfo{genome}{-right} =  sample1  sample2 ..
             #-----------------------------------------------------------------
-            $groupInfo{'group'}{ $line[1] }->{'left'} .= '  ' . $defaultDir . $sampleInfo{ $line[0] }->{'sample_name'} . '.t' . $minQuality . 'l' . $minLength . '.pair1.fastq.gz.dup.gz ';
-            $groupInfo{'group'}{ $line[1] }->{'right'} .= '  ' . $defaultDir . $sampleInfo{ $line[0] }->{'sample_name'} . '.t' . $minQuality . 'l' . $minLength . '.pair1.fastq.gz.dup.gz ';
+            $groupInfo{'group'}{ $line[1] }->{'left'} .= '  ' . $defaultDir . $sampleInfo{ $line[0] }->{'sample_name'} . '.t' . $minQuality . 'l' . $minLength . '.pair1.dup.fastq.gz ';
+            $groupInfo{'group'}{ $line[1] }->{'right'} .= '  ' . $defaultDir . $sampleInfo{ $line[0] }->{'sample_name'} . '.t' . $minQuality . 'l' . $minLength . '.pair2.dup.fastq.gz ';
 
         }
         elsif ( $pairType eq "SINGLE_END" ) {
-            $groupInfo{'group'}{ $line[1] }->{'single'} .= ' --single ' . $defaultDir . $sampleInfo{ $line[0] }->{'sample_name'} . '.t' . $minQuality . 'l' . $minLength . '.single.fastq.gz';
+            $groupInfo{'group'}{ $line[1] }->{'single'} .= ' --single ' . $defaultDir . $sampleInfo{ $line[0] }->{'sample_name'} . '.t' . $minQuality . 'l' . $minLength . '.single.dup.fastq.gz';
         }
 
     }

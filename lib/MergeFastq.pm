@@ -72,7 +72,7 @@ sub mergeFiles {
 
     }
     else {
-        print "No Merge step necessary\n";
+        print "#No Merge step necessary\n";
         $command = 'No merge';
 
     }
