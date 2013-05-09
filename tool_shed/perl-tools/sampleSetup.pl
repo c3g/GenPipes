@@ -210,8 +210,10 @@ sub parseSheet {
     $sampleInfo{'filePrefix'} = $values[$filePrefixIdx];
 
     my $rootDir;
+    my $isHiSeq = 0;
     if(substr($sampleInfo{'filePrefix'},0,2) eq 'HI') {
       $rootDir = "/lb/robot/hiSeqSequencer/hiSeqRuns/";
+      $isHiSeq = 1;
     }
     elsif(substr($sampleInfo{'filePrefix'},0,2) eq 'MI') {
       $rootDir = "/lb/robot/miSeqSequencer/miSeqRuns/";
@@ -220,10 +222,19 @@ sub parseSheet {
       die "Unknown prefix technology type: ".$sampleInfo{'filePrefix'}."\n";
     }
     opendir(ROOT_DIR, $rootDir) or die "Couldn't open directory ".$rootDir."\n";
-    my @rootFiles =  grep { /.*$sampleInfo{'runId'}/ } readdir(ROOT_DIR);
+    my @rootFiles;
+    if($isHiSeq == 1) {
+      @rootFiles =  grep { /.*[0-9]+_[^_]+_[^_]+_$sampleInfo{'runId'}/ } readdir(ROOT_DIR);
+    }
+    else {
+      @rootFiles =  grep { /.*[0-9]+_$sampleInfo{'runId'}/ } readdir(ROOT_DIR);
+    }
 
-    if(@rootFiles != 1) {
+    if(@rootFiles == 0) {
       die "Run not found: ".$sampleInfo{'runId'}."\n";
+    }
+    elsif(@rootFiles > 1) {
+      die "Many runs found: ".$sampleInfo{'runId'}."\n";
     }
 
     my $runPath  = $rootDir.'/'.$rootFiles[0];
