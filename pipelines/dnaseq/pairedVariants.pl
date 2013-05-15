@@ -62,6 +62,7 @@ use SVtools;
 use ToolShed;
 use VCFtools;
 use Pindel;
+use Cfreec;
 
 #--------------------
 
@@ -81,7 +82,7 @@ push(@steps, {'name' => 'indexVCF'});
 push(@steps, {'name' => 'DNAC'});
 push(@steps, {'name' => 'Breakdancer'});
 push(@steps, {'name' => 'Pindel'});
-push(@steps, {'name' => 'Control-Freec'});
+push(@steps, {'name' => 'ControlFreec'});
 
 &main();
 
@@ -492,4 +493,37 @@ sub Pindel {
   print 'FILTPI_JOB_IDS=$'.$piMergeFilterJobId."\n";
   return '$FILTPI_JOB_IDS';
 }
+
+sub ControlFreec {
+  my $depends = shift;
+  my $rH_cfg = shift;
+  my $rH_samplePair = shift;
+  my $rAoH_seqDictionary = shift;
+
+  my $jobDependency = undef;
+#   if($depends > 0) {
+#     $jobDependency = '$MPILEUP_JOB_IDS';
+#   }
+
+  my $sampleName = $rH_samplePair->{'sample'};
+  my $normalBam = $rH_samplePair->{'normal'}.'/'.$rH_samplePair->{'normal'}.'.sorted.dup.bam';
+  my $tumorBam = $rH_samplePair->{'tumor'}.'/'.$rH_samplePair->{'tumor'}.'.sorted.dup.bam';
+  my $outputDir = LoadConfig::getParam($rH_cfg, "ControlFreec", 'sampleOutputRoot') . $sampleName.'/controlFREEC/';
+  my $sampleConfigFile = $outputDir.'/'.$sampleName.'.freec.cfg';
+  
+
+  print 'mkdir -p '.$outputDir."\n";
+  print "CONTROL_FREEC_JOB_IDS=\"\"\n";
+
+  my $command = Cfreec::pairedFreec($rH_cfg, $tumorBam, $normalBam, $sampleConfigFile, $outputDir);
+  my $cFreecJobId; 
+  if(defined($command) && length($command) > 0) {
+    $cFreecJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "ControlFreec", undef, 'CONTROL_FREEC', $jobDependency, $sampleName, $command, LoadConfig::getParam($rH_cfg, "ControlFreec", 'sampleOutputRoot') . $sampleName);
+    $cFreecJobId = '$'.$cFreecJobId;
+  }
+  return $cFreecJobId;
+
+}
+
 1;
+

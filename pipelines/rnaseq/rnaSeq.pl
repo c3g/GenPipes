@@ -192,12 +192,13 @@ sub trimming {
 	my $rH_jobIdPrefixe = shift;
 
 	my $trimJobIdVarNameSample = undef;
+	my $libraryType = LoadConfig::getParam($rH_cfg, 'default', 'libraryType');
 	for my $rH_laneInfo (@$rAoH_sampleLanes) {
 		print "mkdir -p metrics/$sampleName/output_jobs reads/$sampleName/output_jobs\n";
 		##get raw read count
 		my $inputFile = LoadConfig::getParam($rH_cfg, 'default', 'rawReadDir') .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' .$rH_laneInfo->{'read1File'};
 		my $outputFile= 'metrics/' .$sampleName .'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . '.readstats.raw.csv' ;
-		my $command = Metrics::readStats($rH_cfg,$inputFile,$outputFile,'fastq');
+		my $command = Metrics::readStats($rH_cfg,$inputFile,$outputFile,'fastq',$libraryType);
 		my $rawReadStatJobID = undef;
 		if(defined($command) && length($command) > 0) {
 			$rawReadStatJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", 'raw', 'RAWREADSTAT' .$rH_jobIdPrefixe ->{$sampleName .'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} , undef, $sampleName, $command, 'metrics/' .$sampleName, $workDirectory);
@@ -209,7 +210,16 @@ sub trimming {
 		my $minLength   = $rH_cfg->{'trim.minLength'};
 		my $laneDirectory = 'reads/' .$sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
 		print "mkdir -p $laneDirectory\n";
-		my $outputFastqPair1Name = $laneDirectory . $sampleName.'.t'.$minQuality.'l'.$minLength.'.pair1.fastq.gz';
+		my $outputFastqPair1Name;
+		if ( $rH_laneInfo->{'runType'} eq "SINGLE_END" ) {
+			$outputFastqPair1Name = $laneDirectory . $sampleName.'.t'.$minQuality.'l'.$minLength.'.single.fastq.gz';
+		}
+		elsif ( $rH_laneInfo->{'runType'} eq "PAIRED_END" ) {
+			$outputFastqPair1Name = $laneDirectory . $sampleName.'.t'.$minQuality.'l'.$minLength.'.pair1.fastq.gz';
+		}
+		else {
+			die "Unknown runType: " . $rH_laneInfo->{' runType '} . "\n";
+		}
 		my $rH_trimDetails = Trimmomatic::trim($rH_cfg, $sampleName, $rH_laneInfo, $laneDirectory);
 		my $trimJobIdVarNameLane=undef;
 		if(length($rH_trimDetails->{'command'}) > 0) {
@@ -220,7 +230,7 @@ sub trimming {
 		##get trimmed read count
 		$inputFile = $outputFastqPair1Name;
 		$outputFile= 'metrics/' .$sampleName .'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . '.readstats.filtered.csv' ;
-		$command = Metrics::readStats($rH_cfg,$inputFile,$outputFile,'fastq');
+		$command = Metrics::readStats($rH_cfg,$inputFile,$outputFile,'fastq',$libraryType);
 		my $filteredReadStatJobID ;
 		if(defined($command) && length($command) > 0) {
 			$filteredReadStatJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", 'filtered', 'FILTERREADSTAT' .$rH_jobIdPrefixe ->{$sampleName.'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} ,$trimJobIdVarNameLane, $sampleName, $command,'metrics/'  .$sampleName, $workDirectory);
@@ -259,7 +269,7 @@ sub aligning {
 		print "mkdir -p $outputDirPath \n" ;
 		if ( $rH_laneInfo->{'runType'} eq "SINGLE_END" ) {
 			$single =  'reads/' .$sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName .'.t' .LoadConfig::getParam($rH_cfg,'trim','minQuality') .'l' .LoadConfig::getParam($rH_cfg,'trim','minLength') .'.single.fastq.gz';
-			$command = TophatBowtie::align($rH_cfg, $sampleName, $rH_laneInfo, $single );
+			$command = TophatBowtie::align($rH_cfg, $sampleName, $rH_laneInfo, $single, ' ' );
 		}
 		elsif($rH_laneInfo->{'runType'} eq "PAIRED_END") {
 			$pair1 =  'reads/' .$sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName .'.t' .LoadConfig::getParam($rH_cfg,'trim','minQuality') .'l' .LoadConfig::getParam($rH_cfg,'trim','minLength') .'.pair1.fastq.gz';
