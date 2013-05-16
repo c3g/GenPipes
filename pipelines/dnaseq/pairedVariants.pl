@@ -506,8 +506,8 @@ sub ControlFreec {
 #   }
 
   my $sampleName = $rH_samplePair->{'sample'};
-  my $normalBam = $rH_samplePair->{'normal'}.'/'.$rH_samplePair->{'normal'}.'.sorted.dup.bam';
-  my $tumorBam = $rH_samplePair->{'tumor'}.'/'.$rH_samplePair->{'tumor'}.'.sorted.dup.bam';
+  my $normalBam = $rH_samplePair->{'normal'}.'/'.$rH_samplePair->{'normal'}.'.'.LoadConfig::getParam($rH_cfg, "ControlFreec", 'inputExtension');
+  my $tumorBam = $rH_samplePair->{'tumor'}.'/'.$rH_samplePair->{'tumor'}.'.'.LoadConfig::getParam($rH_cfg, "ControlFreec", 'inputExtension');
   my $outputDir = LoadConfig::getParam($rH_cfg, "ControlFreec", 'sampleOutputRoot') . $sampleName.'/controlFREEC/';
   my $sampleConfigFile = $outputDir.'/'.$sampleName.'.freec.cfg';
   

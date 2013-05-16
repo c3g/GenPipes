@@ -39,22 +39,23 @@ use File::Basename;
 #-----------------------
 sub pairedFreec {
     my $rH_cfg        = shift;
-    my $tumorBam  = shift;
-    my $normalBam = shift;
+    my $tumorPileup  = shift;
+    my $normalPileup = shift;
     my $sampleConfig  = shift;
     my $output        = shift;
 
     my $outDate = -M $sampleConfig;
-    my $inDate = -M $normalBam;
-    my $inDate2 = -M $tumorBam;
+    my $inDate = -M $normalPileup;
+    my $inDate2 = -M $tumorPileup;
   
     my $command;
     # -M gives modified date relative to now. The bigger the older.
     if(!defined($outDate) || !defined($inDate) || $inDate < $outDate || !defined($inDate2) || $inDate2 < $outDate ) {
-        $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'ControlFreec', 'moduleVersion.controlFreec') .' ' .LoadConfig::getParam($rH_cfg, 'ControlFreec', 'moduleVersion.samtools') .' && ';
-        $command .= 'sed \"s|TUMOR_PILEUP|' .$tumorBam .'|g\" ' .'\${FREEC_HOME}/' .LoadConfig::getParam($rH_cfg, 'ControlFreec', 'referenceConfigFile') .' > ' .$sampleConfig .' && ';
-        $command .= 'sed \"s|NORMAL_PILEUP|' .$normalBam .'|g\" -i ' .$sampleConfig .' && ';
+        $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'ControlFreec', 'moduleVersion.controlFreec') .' && ';
+        $command .= 'sed \"s|TUMOR_PILEUP|' .$tumorPileup .'|g\" ' .'\${FREEC_HOME}/' .LoadConfig::getParam($rH_cfg, 'ControlFreec', 'referenceConfigFile') .' > ' .$sampleConfig .' && ';
+        $command .= 'sed \"s|NORMAL_PILEUP|' .$normalPileup .'|g\" -i ' .$sampleConfig .' && ';
         $command .= 'sed \"s|OUTPUT_DIR|' .$output .'|g\"  -i ' .$sampleConfig .' && ';
+        $command .= 'sed \"s|FORMAT_TYPE|' .LoadConfig::getParam($rH_cfg, 'ControlFreec', 'inputType') .'|g\"  -i ' .$sampleConfig .' && ';
         $command .= 'freec -conf ' .$sampleConfig ;
     }
     
