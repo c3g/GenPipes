@@ -133,6 +133,18 @@ sub flagstat {
   $command .= ' > '.$output;
 }
 
+sub idxstats {
+  my $rH_cfg     = shift;
+  my $bamFile    = shift;
+  my $output     = shift;
+
+  my $command;
+  $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'idxstats', 'moduleVersion.samtools').' ;';
+  $command .= ' samtools idxstats';
+  $command .= ' '.$bamFile;
+  $command .= ' > '.$output;
+}
+
 sub rawmpileup {
   my $rH_cfg      = shift;
   my $sampleName  = shift;
