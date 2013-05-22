@@ -58,6 +58,11 @@ sub align {
   # Bowtie index basename (assumes reference fasta is named basename.extension) 
   (my $bwa_idx_basename  = LoadConfig::getParam($rH_cfg, 'align','referenceFasta') ) =~ s/\.[^.]+$//;
   #------
+  my $refFile=LoadConfig::getParam($rH_cfg, 'align','referenceGtf');
+  my $refOption=' ';
+  if ($refFile != ' ') {
+    $refOption .= '-G '.$refFile;
+  }
 
 
   my $command;
@@ -75,7 +80,7 @@ sub align {
     $command .= ' --library-type '. LoadConfig::getParam($rH_cfg, 'align','strandInfo');
 #     $command .= ' --fusion-search '. LoadConfig::getParam($rH_cfg, 'align','fusionOption');
     $command .= ' -o ' .$laneDirectory;
-    $command .= ' -p '. LoadConfig::getParam($rH_cfg, 'align','TBAlnThreads') .' -G '. LoadConfig::getParam($rH_cfg, 'align','referenceGtf');
+    $command .= ' -p '. LoadConfig::getParam($rH_cfg, 'align','TBAlnThreads') .$refOption;
 #     $command .= ' -g '. LoadConfig::getParam($rH_cfg, 'align','maxReadLocation');
 
     #------ flefebvr Tue 16 Apr 09:04:54 2013 
