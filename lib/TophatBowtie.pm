@@ -60,7 +60,7 @@ sub align {
   #------
   my $refFile=LoadConfig::getParam($rH_cfg, 'align','referenceGtf');
   my $refOption=' ';
-  if ($refFile != ' ') {
+  if ($refFile ne ' ') {
     $refOption .= '-G '.$refFile;
   }
 
