@@ -133,8 +133,8 @@ sub snpAndIndelBCF {
   my $rAoH_seqDictionary = shift;
 
   my $sampleName = $rH_samplePair->{'sample'};
-  my $normalBam = $rH_samplePair->{'normal'}.'/'.$rH_samplePair->{'normal'}.'.sorted.dup.bam';
-  my $tumorBam = $rH_samplePair->{'tumor'}.'/'.$rH_samplePair->{'tumor'}.'.sorted.dup.bam';
+  my $normalBam = 'alignment/'.$rH_samplePair->{'normal'}.'/'.$rH_samplePair->{'normal'}.'.sorted.dup.recal.bam';
+  my $tumorBam = 'alignment/'.$rH_samplePair->{'tumor'}.'/'.$rH_samplePair->{'tumor'}.'.sorted.dup.recal.bam';
   my $outputDir = LoadConfig::getParam($rH_cfg, "mpileupPaired", 'sampleOutputRoot') . $sampleName."/rawBCF/";
 
   print 'mkdir -p '.$outputDir."\n";
