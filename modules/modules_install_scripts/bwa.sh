@@ -3,9 +3,10 @@
 ###################
 ################### BWA
 ###################
-VERSION="0.7.3a"
+VERSION="0.7.4"
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/bwa/
 mkdir -p $INSTALL_PATH
+cd $INSTALL_PATH
 
 # Download
 wget http://downloads.sourceforge.net/project/bio-bwa/bwa-$VERSION.tar.bz2
@@ -13,9 +14,7 @@ tar xvjf bwa-$VERSION.tar.bz2
 # Compile
 cd bwa-$VERSION
 make -j8
-cd ..
-# Move to install path
-mv bwa-$VERSION $INSTALL_PATH
+
 # Module file
 echo "#%Module1.0
 proc ModulesHelp { } {
