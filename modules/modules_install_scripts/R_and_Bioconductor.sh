@@ -41,7 +41,7 @@ module-whatis \"MUGQIC - Adds R to your environment \"
                        
 set             root                \$::env(MUGQIC_INSTALL_HOME)/software/R/R-$VERSION
 setenv          R_LIBS             \$root/lib64/R/library
-prepend-path    MANPATH            \$root/share              
+#prepend-path    MANPATH            \$root/share              
 prepend-path    PATH               \$root/bin
 prepend-path    LD_LIBRARY_PATH    \$root/lib64:/software/libraries/GotoBLAS_LAPACK/shared
 #prepend-path   LD_LIBRARY_PATH    \$root/lib64:\$root/standalone:/software/libraries/GotoBLAS_LAPACK/shared
