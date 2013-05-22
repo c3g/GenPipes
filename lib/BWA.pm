@@ -41,13 +41,65 @@ use LoadConfig;
 
 # SUB
 #-----------------------
+sub mem {
+  my $rH_cfg          = shift;
+  my $sampleName      = shift;
+  my $pair1           = shift;
+  my $pair2           = shift;
+  my $single         = shift;
+  my $optOutputPrefix = shift;
+  my $rgId            = shift;
+  my $rgSample        = shift;
+  my $rgLibrary       = shift;
+  my $rgPlatformUnit  = shift;
+  my $rgCenter        = shift;
+
+  my $bwaRefIndex = LoadConfig::getParam( $rH_cfg, 'mem', 'bwaRefIndex' );
+
+  my $outputBAM = $optOutputPrefix.'.sorted.bam';
+  my $bamFileDate = -M $outputBAM;
+
+  my @commands;
+  # -M gives modified date relative to now. The bigger the older.
+  if ( !defined($bamFileDate) || !defined( -M $pair1 ) || !defined( -M $pair2 ) || $bamFileDate > -M $pair1 || $bamFileDate > -M $pair2 ) {
+    my $bwaCommand  = "";
+    my $rgTag = "'" . '@RG\tID:' . $rgId . '\tSM:' . $rgSample . '\tLB:' . $rgLibrary . '\tPU:run' . $rgPlatformUnit . '\tCN:' . $rgCenter . '\tPL:Illumina' . "'";
+    $bwaCommand .= 'module load '.LoadConfig::getParam($rH_cfg, 'mem', 'moduleVersion.bwa').' ;';
+    $bwaCommand .= ' module load '.LoadConfig::getParam($rH_cfg, 'mem', 'moduleVersion.picard').' ;';
+    $bwaCommand .= ' bwa mem ';
+    $bwaCommand .= ' '.LoadConfig::getParam( $rH_cfg, 'mem', 'bwaExtraFlags' );
+    $bwaCommand .= ' -r ' . $rgTag;
+    $bwaCommand .= ' ' . $bwaRefIndex;
+    if ( defined($pair1) && defined($pair2) ) {
+      $bwaCommand .= ' ' . $pair1;
+      $bwaCommand .= ' ' . $pair2;
+    }
+    elsif ( defined($single) ) {
+      $bwaCommand .= ' ' . $single;
+    }
+    else {
+      die "Unknown runType, not paired or single\n";
+    }
+    $bwaCommand .= ' | java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'mem', 'tmpDir');
+    $bwaCommand .= ' '.LoadConfig::getParam($rH_cfg, 'mem', 'extraJavaFlags');
+    $bwaCommand .= ' -Xmx'.LoadConfig::getParam($rH_cfg, 'mem', 'sortRam');
+    $bwaCommand .= ' -jar \${PICARD_HOME}/SortSam.jar';
+    $bwaCommand .= '  INPUT=/dev/stdin CREATE_INDEX=true VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate';
+    $bwaCommand .= ' OUTPUT=' . $outputBAM;
+    $bwaCommand .= ' MAX_RECORDS_IN_RAM=' . LoadConfig::getParam( $rH_cfg, 'mem', 'sortRecInRam' );
+
+    push( @commands, $bwaCommand );
+  }
+
+  return \@commands;
+}
+
 sub aln {
   my $rH_cfg          = shift;
   my $sampleName      = shift;
   my $pair1           = shift;
   my $pair2           = shift;
-  my $single1         = shift;
-  my $single2         = shift;
+  my $single         = shift;
   my $optOutputPrefix = shift;
   my $rgId            = shift;
   my $rgSample        = shift;
@@ -60,8 +112,8 @@ sub aln {
     if ( defined($pair1) && defined($pair2) ) {
         $command = pairCommand( $rH_cfg, $sampleName, $pair1, $pair2, $optOutputPrefix, $rgId, $rgSample, $rgLibrary, $rgPlatformUnit, $rgCenter, $group);
     }
-    elsif ( defined($single1) ) {
-        $command = singleCommand( $rH_cfg, $sampleName, $single1, $optOutputPrefix, $rgId, $rgSample, $rgLibrary, $rgPlatformUnit, $rgCenter, $group);
+    elsif ( defined($single) ) {
+        $command = singleCommand( $rH_cfg, $sampleName, $single, $optOutputPrefix, $rgId, $rgSample, $rgLibrary, $rgPlatformUnit, $rgCenter, $group);
     }
     else {
         die "Unknown runType, not paired or single\n";
@@ -126,9 +178,13 @@ sub pairCommand {
         $bwaCommand .= ' ' . $outputSai2Name;
         $bwaCommand .= ' ' . $pair1;
         $bwaCommand .= ' ' . $pair2;
-        $bwaCommand .= ' | java -Xmx' . LoadConfig::getParam( $rH_cfg, 'aln', 'sortSamRam' ) . ' -jar \${PICARD_HOME}/SortSam.jar INPUT=/dev/stdin CREATE_INDEX=true VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate';
+        $bwaCommand .= ' | java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'aln', 'tmpDir');
+        $bwaCommand .= ' '.LoadConfig::getParam($rH_cfg, 'aln', 'extraJavaFlags');
+        $bwaCommand .= ' -Xmx'.LoadConfig::getParam($rH_cfg, 'aln', 'sortRam');
+        $bwaCommand .= ' -jar \${PICARD_HOME}/SortSam.jar';
+        $bwaCommand .= '  INPUT=/dev/stdin CREATE_INDEX=true VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate';
         $bwaCommand .= ' OUTPUT=' . $outputBAM;
-        $bwaCommand .= ' MAX_RECORDS_IN_RAM=' . LoadConfig::getParam( $rH_cfg, 'aln', 'sortSamRecInRam' );
+        $bwaCommand .= ' MAX_RECORDS_IN_RAM=' . LoadConfig::getParam( $rH_cfg, 'aln', 'sortRecInRam' );
         push( @commands, $bwaCommand );
     }
 
@@ -180,9 +236,9 @@ sub singleCommand {
         $bwaCommand .= ' ' . $bwaRefIndex;
         $bwaCommand .= ' ' . $outputSaiName;
         $bwaCommand .= ' ' . $single;
-        $bwaCommand .= ' | java -Xmx' . LoadConfig::getParam( $rH_cfg, 'aln', 'sortSamRam' ) . ' -jar \${PICARD_HOME}/SortSam.jar INPUT=/dev/stdin CREATE_INDEX=true VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate';
+        $bwaCommand .= ' | java -Xmx' . LoadConfig::getParam( $rH_cfg, 'aln', 'sortRam' ) . ' -jar \${PICARD_HOME}/SortSam.jar INPUT=/dev/stdin CREATE_INDEX=true VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate';
         $bwaCommand .= ' OUTPUT=' . $outputBAM;
-        $bwaCommand .= ' MAX_RECORDS_IN_RAM=' . LoadConfig::getParam( $rH_cfg, 'aln', 'sortSamRecInRam' );
+        $bwaCommand .= ' MAX_RECORDS_IN_RAM=' . LoadConfig::getParam( $rH_cfg, 'aln', 'sortRecInRam' );
         push( @commands, $bwaCommand );
     }
 
