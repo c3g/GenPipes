@@ -73,6 +73,7 @@ push(@steps, {'name' => 'indelRealigner'});
 push(@steps, {'name' => 'mergeRealigned'});
 push(@steps, {'name' => 'fixmate'});
 push(@steps, {'name' => 'markDup'});
+push(@steps, {'name' => 'recalibration'});
 push(@steps, {'name' => 'metrics'});
 push(@steps, {'name' => 'snpAndIndelBCF'});
 push(@steps, {'name' => 'mergeFilterBCF'});
@@ -319,7 +320,7 @@ sub markDup {
   return $markDupJobId;
 }
 
-sub metrics {
+sub recalibration {
   my $depends = shift;
   my $rH_cfg = shift;
   my $sampleName = shift;
@@ -331,21 +332,41 @@ sub metrics {
     $jobDependency = '${MARKDUP_JOB_ID}';
   }
 
+  my $inputBAM = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.bam';
+  my $outputBAM = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup';
+
+  my $command = GATK::recalibration($rH_cfg, $sampleName, $inputBAM, $outputBAM);
+  my $recalibrationJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "recalibration", undef, 'RECAL', $jobDependency, $sampleName, $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
+  return $recalibrationJobId;
+}
+
+sub metrics {
+  my $depends = shift;
+  my $rH_cfg = shift;
+  my $sampleName = shift;
+  my $rAoH_sampleLanes  = shift;
+  my $rAoH_seqDictionary = shift;
+
+  my $jobDependency = undef;
+  if($depends > 0) {
+    $jobDependency = '${RECAL_JOB_ID}';
+  }
+
   my $command;
-  my $bamFile = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.bam';
+  my $bamFile = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.recal.bam';
 
   # Collect metrics
-  my $outputMetrics = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.all.metrics';
+  my $outputMetrics = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.recal.all.metrics';
   $command = Picard::collectMetrics($rH_cfg, $bamFile, $outputMetrics);
   my $collectMetricsJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "collectMetrics", undef, 'COLLECTMETRICS', $jobDependency, $sampleName, $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
   
   # Compute genome coverage
-  my $outputPrefix = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.all.coverage';
+  my $outputPrefix = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.recal.all.coverage';
   $command = GATK::genomeCoverage($rH_cfg, $sampleName, $bamFile, $outputPrefix);
   my $genomeCoverageJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "genomeCoverage", undef, 'GENOMECOVERAGE', $jobDependency, $sampleName, $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
 
   # Compute CCDS coverage
-  $outputPrefix = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.CCDS.coverage';
+  $outputPrefix = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.recal.CCDS.coverage';
   $command = GATK::targetCoverage($rH_cfg, $sampleName, $bamFile, $outputPrefix);
   my $targetCoverageJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "targetCoverage", undef, 'TARGETCOVERAGE', $jobDependency, $sampleName, $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
 
@@ -354,7 +375,7 @@ sub metrics {
   my $igvtoolsTDFJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "computeTDF", undef, 'IGVTOOLS', $jobDependency, $sampleName, $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
 
   # Compute flags
-  my $output = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.bam.flagstat';
+  my $output = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.recal.bam.flagstat';
   $command = SAMtools::flagstat($rH_cfg, $bamFile, $output);
   my $flagstatJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "flagstat", undef, 'FLAGSTAT', $jobDependency, $sampleName, $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
 
@@ -419,10 +440,10 @@ sub snpAndIndelBCF {
 
   my $jobDependency = undef;
   if($depends > 0) {
-    $jobDependency = '${MARKDUP_JOB_ID}';
+    $jobDependency = '${RECAL_JOB_ID}';
   }
 
-  my $bamFile = $sampleName.'/'.$sampleName.'.sorted.dup.bam';
+  my $bamFile = $sampleName.'/'.$sampleName.'.sorted.dup.recal.bam';
   
   my $outputDir = LoadConfig::getParam($rH_cfg, "mpileup", 'sampleOutputRoot') . $sampleName."/rawBCF/";
 
