@@ -184,7 +184,9 @@ sub align {
     if(defined($command) && length($command) > 0) {
       $mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mergePairs", undef, 'MERGEPAIRS', '$BWA_JOB_IDS', $sampleName, $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
     }
-    $jobDep = '$'.$mergeJobId;
+    if(defined($mergeJobId)) {
+      $jobDep = '$'.$mergeJobId;
+    }
   }
   else {
     my $rA_commands = BWA::mem($rH_cfg, $sampleName, $inputFastqPair1Name, $inputFastqPair2Name, $inputFastqSingleName, $outputPrefix, $rgId, $rgSampleName, $rgLibrary, $rgPlatformUnit, $rgCenter);

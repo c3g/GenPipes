@@ -60,8 +60,20 @@ sub mem {
   my $bamFileDate = -M $outputBAM;
 
   my @commands;
+
+  my $dateToTest;
+  if(defined($pair1) && defined($pair2)) {
+    $dateToTest = -M $pair1;
+    if(!defined($dateToTest) || $dateToTest < -M $pair2) {
+      $dateToTest = -M $pair2;
+    }
+  }
+  else {
+    $dateToTest = -M $single;
+  }
+
   # -M gives modified date relative to now. The bigger the older.
-  if ( !defined($bamFileDate) || !defined( -M $pair1 ) || !defined( -M $pair2 ) || $bamFileDate > -M $pair1 || $bamFileDate > -M $pair2 ) {
+  if ( !defined($bamFileDate) || !defined( $dateToTest ) || $bamFileDate < $dateToTest ) {
     my $bwaCommand  = "";
     my $rgTag = "'" . '@RG\tID:' . $rgId . '\tSM:' . $rgSample . '\tLB:' . $rgLibrary . '\tPU:run' . $rgPlatformUnit . '\tCN:' . $rgCenter . '\tPL:Illumina' . "'";
     $bwaCommand .= 'module load '.LoadConfig::getParam($rH_cfg, 'mem', 'moduleVersion.bwa').' ;';
