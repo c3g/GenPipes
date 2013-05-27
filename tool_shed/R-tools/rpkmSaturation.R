@@ -137,7 +137,7 @@ if (DoSat == "1") {
 	boxplot(satRQ2,main="Q2 saturation",xlab="Resampling precentage",ylab="median RPKM")
         boxplot(satRQ3,main="Q3 saturation",xlab="Resampling precentage",ylab="median RPKM")
 	boxplot(satRQ1,main="Q1 saturation",xlab="Resampling precentage",ylab="median RPKM")
-	mtext(paste("Saturation estimate of the mean FPKM - Excluding",as.character(fpkmZP),"perc of genes with fpkm = 0",sep=" "),NORTH<-3, line=2, adj=0.5, cex=1.2, outer=TRUE, col="black")
+	mtext(paste("Saturation estimate of the mean FPKM - Excluding",as.character(fpkmZP),"perc of genes with fpkm = 0",sep=" "),NORTH<-3, line=1, adj=0.5, cex=1.2, outer=TRUE, col="black")
         dev.off()
 	jpeg(paste(path_outS,paste(colnames(coKM)[i],"PRE_saturation.jpeg",sep="_"),sep="/"),1000,1000)
         par(mfcol=c(2,2), mar=c(4,4,0.5,0.5), oma=c(1,1,4,1))
@@ -154,7 +154,7 @@ if (DoSat == "1") {
 	boxplot(satRQ2p,main="Q2 saturation",xlab="Resampling precentage",ylab="mean PRE",ylim=c(0,yl2))
         boxplot(satRQ3p,main="Q3 saturation",xlab="Resampling precentage",ylab="mean PRE",ylim=c(0,yl3))
 	boxplot(satRQ1p,main="Q1 saturation",xlab="Resampling precentage",ylab="mean PRE",ylim=c(0,yl1))
-	mtext(paste("Saturation estimate of the Percent Relative Error - Excluding",as.character(fpkmZP),"perc of genes with fpkm = 0",sep=" "),NORTH<-3, line=2, adj=0.5, cex=1.2, outer=TRUE, col="black")
+	mtext(paste("Saturation estimate of the Percent Relative Error - Excluding",as.character(fpkmZP),"perc of genes with fpkm = 0",sep=" "),NORTH<-3, line=1, adj=0.5, cex=1.2, outer=TRUE, col="black")
         dev.off()
     }
 }
