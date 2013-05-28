@@ -8,11 +8,14 @@ gtf_file=args[2]
 path_outR=args[3]
 path_outS=args[4]
 threadNum=as.integer(args[5])
+if (threadNum > 19) {
+	threadNum=19
+}
 DoSat=args[6]
 ##Do sat values 0=RPKM ; 1=RPKM+SATURATION ; 2=SATURATION
 
 ## open files
-co=read.table(count_file,header=T)
+co=read.table(count_file,header=T,sep="\t")
 gtf=read.table(gtf_file,header=F,sep="\t")
 
 ##rpkm
@@ -59,13 +62,22 @@ if (DoSat == "1") {
 	res4p=colMeans(resP[q4,])
 	return(cbind(res1,res2,res3,res4,res1p,res2p,res3p,res4p))
     }
-    #satM=seq(0.05,0.95,by=0.05)
-    #satMinv=seq(0.95,0.05,by=-0.05)
-    
-    satM=seq(0.2,0.80,by=0.2)
-    satMinv=seq(0.80,0.2,by=-0.2)
-    steps=ceiling(20/threadNum)
-
+    satM=seq(0.05,0.95,by=0.05)
+    satMinv=seq(0.95,0.05,by=-0.05)
+    steps=floor(19/threadNum)
+    subS=list()
+    cpS=1
+    for (i in 1:steps) {
+        subS[[i]]=vector()
+        for (j in 1:threadNum) {
+             subS[[i]]=c(subS[[i]],cpS)
+             cpS=cpS+1
+        }
+    }
+    if (cpS <= 19) {
+        subS[[steps+1]]=cpS:19
+	steps=steps+1
+    }
     for (i in 1:dim(coKM)[2]) { ## iterate over samples
         ## generate saturation empty results vectors
         satRQ1=NULL
@@ -76,35 +88,31 @@ if (DoSat == "1") {
         satRQ2p=NULL
         satRQ3p=NULL
         satRQ4p=NULL
-	pos=1:dim(co)[1]
+	#pos=1:dim(co2)[1]
         ## generate quantile contigs/transcripts set
-        limRPKM=quantile(coKM[,i],p=c(0.25,0.5,0.75))
-        ql1=pos[coKM[,i] <= limRPKM[1]]
-        ql2=pos[coKM[,i] > limRPKM[1] & coKM[,i] <= limRPKM[2]]
-        ql3=pos[coKM[,i] > limRPKM[2] & coKM[,i] <= limRPKM[3]]
-        ql4=pos[coKM[,i] > limRPKM[3]]
+	coKM2=as.numeric(as.vector(coKM[coKM[,i] > 0,i]))
+	coKMZ=as.numeric(as.vector(coKM[coKM[,i] == 0,i]))
+	co2=as.numeric(as.vector(co[coKM[,i] > 0,i+2]))
+	letO2=as.numeric(as.vector(letO[coKM[,i] > 0,1]))
+	pos=1:length(co2)
+	fpkmZP=round(round(length(coKMZ)/(length(coKMZ)+length(coKM2)),2)*100)
+        limRPKM=quantile(coKM2,p=c(0.25,0.5,0.75))
+        ql1=pos[coKM2 <= limRPKM[1]]
+        ql2=pos[coKM2 > limRPKM[1] & coKM2 <= limRPKM[2]]
+        ql3=pos[coKM2 > limRPKM[2] & coKM2 <= limRPKM[3]]
+        ql4=pos[coKM2 > limRPKM[3]]
         ## generate presampling vector ... Warnings: it needs at least 10G of ram
-        testV=rep(as.vector(1:dim(co)[1]),as.numeric(co[,i+1]))
+        testV=rep(as.vector(1:length(co2)),co2)
         ## resampling
 	resAll=NULL
-	startI=1
-	endI=threadNum
-	for (k in 1:(steps-1)) {
-		for (j in 1:length(satM)) { ## iterate over sub-coverage
-			cmd=expression(satModel(testV,satM[j],as.vector(letO[,1]),as.vector(coKM[,i]),ql1,ql2,ql3,ql4))
+	for (k in 1:steps) {
+		for (j in subS[[k]]) { ## iterate over sub-coverage
+			cmd=expression(satModel(testV,satM[j],letO2,coKM2,ql1,ql2,ql3,ql4))
 			mcparallel(cmd)
 		}
 		tmpres=c(mccollect(),resAll)
 		resAll=tmpres
-		startI=startI+threadNum
-		endI=endI+threadNum
 	}
-	for (j in startI:length(satM)) { ## iterate over sub-coverage
-		cmd=expression(satModel(testV,satM[j],as.vector(letO[,1]),as.vector(coKM[,i]),ql1,ql2,ql3,ql4))
-		mcparallel(cmd)
-	}
-	tmpres=c(mccollect(),resAll)
-	resAll=tmpres
 	for (j in 1:length(satM)) {
 		satRQ1=cbind(satRQ1,resAll[[j]][,1])
 		satRQ2=cbind(satRQ2,resAll[[j]][,2])
@@ -115,27 +123,38 @@ if (DoSat == "1") {
 		satRQ3p=cbind(satRQ3p,resAll[[j]][,7])
 		satRQ4p=cbind(satRQ4p,resAll[[j]][,8])
 	}
-	colnames(satRQ1)=as.character(satMinv*100)
-	colnames(satRQ2)=as.character(satMinv*100)
-	colnames(satRQ3)=as.character(satMinv*100)
-	colnames(satRQ4)=as.character(satMinv*100)
-	colnames(satRQ1p)=as.character(satMinv*100)
-	colnames(satRQ2p)=as.character(satMinv*100)
-	colnames(satRQ3p)=as.character(satMinv*100)
-	colnames(satRQ4p)=as.character(satMinv*100)
+	colnames(satRQ1)=as.character(round(satMinv*100))
+	colnames(satRQ2)=as.character(round(satMinv*100))
+	colnames(satRQ3)=as.character(round(satMinv*100))
+	colnames(satRQ4)=as.character(round(satMinv*100))
+	colnames(satRQ1p)=as.character(round(satMinv*100))
+	colnames(satRQ2p)=as.character(round(satMinv*100))
+	colnames(satRQ3p)=as.character(round(satMinv*100))
+	colnames(satRQ4p)=as.character(round(satMinv*100))
         jpeg(paste(path_outS,paste(colnames(coKM)[i],"saturation.jpeg",sep="_"),sep="/"),1000,1000)
-        layout(matrix(1:4,ncol=2,byrow=T))
+	par(mfcol=c(2,2), mar=c(4,4,0.5,0.5), oma=c(1,1,3,1))
         boxplot(satRQ4,main="Q4 saturation",xlab="Resampling precentage",ylab="median RPKM")
-        boxplot(satRQ3,main="Q3 saturation",xlab="Resampling precentage",ylab="median RPKM")
 	boxplot(satRQ2,main="Q2 saturation",xlab="Resampling precentage",ylab="median RPKM")
+        boxplot(satRQ3,main="Q3 saturation",xlab="Resampling precentage",ylab="median RPKM")
 	boxplot(satRQ1,main="Q1 saturation",xlab="Resampling precentage",ylab="median RPKM")
+	mtext(paste("Saturation estimate of the mean FPKM - Excluding",as.character(fpkmZP),"perc of genes with fpkm = 0",sep=" "),NORTH<-3, line=1, adj=0.5, cex=1.2, outer=TRUE, col="black")
         dev.off()
 	jpeg(paste(path_outS,paste(colnames(coKM)[i],"PRE_saturation.jpeg",sep="_"),sep="/"),1000,1000)
-        layout(matrix(1:4,ncol=2,byrow=T))
-        boxplot(satRQ4p,main="Q4 saturation",xlab="Resampling precentage",ylab="mean PRE",ylim=c(0,75))
-        boxplot(satRQ3p,main="Q3 saturation",xlab="Resampling precentage",ylab="mean PRE",ylim=c(0,75))
-	boxplot(satRQ2p,main="Q2 saturation",xlab="Resampling precentage",ylab="mean PRE",ylim=c(0,75))
-	boxplot(satRQ1p,main="Q1 saturation",xlab="Resampling precentage",ylab="mean PRE",ylim=c(0,75))
+        par(mfcol=c(2,2), mar=c(4,4,0.5,0.5), oma=c(1,1,4,1))
+	yl1=yl2=yl3=yl4=1
+	yl1=max(satRQ1p)+5
+	yl2=max(satRQ2p)+5
+	yl3=max(satRQ3p)+5
+	yl4=max(satRQ4p)+5
+	print(max(satRQ1p))
+	print(max(satRQ2p))
+	print(max(satRQ3p))
+	print(max(satRQ4p))
+        boxplot(satRQ4p,main="Q4 saturation",xlab="Resampling precentage",ylab="mean PRE",ylim=c(0,yl4))
+	boxplot(satRQ2p,main="Q2 saturation",xlab="Resampling precentage",ylab="mean PRE",ylim=c(0,yl2))
+        boxplot(satRQ3p,main="Q3 saturation",xlab="Resampling precentage",ylab="mean PRE",ylim=c(0,yl3))
+	boxplot(satRQ1p,main="Q1 saturation",xlab="Resampling precentage",ylab="mean PRE",ylim=c(0,yl1))
+	mtext(paste("Saturation estimate of the Percent Relative Error - Excluding",as.character(fpkmZP),"perc of genes with fpkm = 0",sep=" "),NORTH<-3, line=1, adj=0.5, cex=1.2, outer=TRUE, col="black")
         dev.off()
     }
 }

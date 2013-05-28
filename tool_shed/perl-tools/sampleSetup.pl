@@ -259,13 +259,13 @@ sub parseSheet {
       my $toTest2;
       my $typeRun = $values[$runTypeIdx];
       if($typeRun eq "PAIRED_END") {
-        $toTest1 = $fastqDir.'/'.$sampleInfo{'readSetId'}.'_R1.fastq.gz';
-        $toTest2 = $fastqDir.'/'.$sampleInfo{'readSetId'}.'_R2.fastq.gz';
+        $toTest1 = $fastqDir.'/'.$sampleInfo{'filePrefix'}.'_R1.fastq.gz';
+        $toTest2 = $fastqDir.'/'.$sampleInfo{'filePrefix'}.'_R2.fastq.gz';
         $sampleInfo{'filename1'} = `echo $toTest1`;
         $sampleInfo{'filename2'} = `echo $toTest2`;
       }
       elsif($typeRun eq "SINGLE_END") {
-        $toTest1 = $fastqDir.'/'.$sampleInfo{'lane'}.'_*'.$sampleInfo{'name'}.'_R1.fastq.gz';
+        $toTest1 = $fastqDir.'/'.$sampleInfo{'filePrefix'}.'_R1.fastq.gz';
         $sampleInfo{'filename1'} = `echo $toTest1`;
       } 
     }

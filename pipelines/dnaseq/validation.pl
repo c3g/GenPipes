@@ -120,11 +120,13 @@ sub trim {
   my $rH_laneInfo  = shift;
   my $rAoH_seqDictionary = shift;
 
-  my $outputDir = $sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
+  my $outputDir = 'reads/'.$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
+  print 'mkdir -p '.$outputDir."\n";
+
   my $rH_trimDetails = Trimmomatic::trim($rH_cfg, $sampleName, $rH_laneInfo, $outputDir);
   my $trimJobIdVarName=undef;
   if(length($rH_trimDetails->{'command'}) > 0) {
-    $trimJobIdVarName = SubmitToCluster::printSubmitCmd($rH_cfg, "trim", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'TRIM', undef, $sampleName, $rH_trimDetails->{'command'});
+    $trimJobIdVarName = SubmitToCluster::printSubmitCmd($rH_cfg, "trim", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'TRIM', undef, $sampleName, $rH_trimDetails->{'command'}, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
   }
   return $trimJobIdVarName;
 }
@@ -140,13 +142,13 @@ sub align {
   my $minLength = $rH_cfg->{'trim.minLength'};
   my $adapterFile = $rH_cfg->{'trim.adapterFile'};
 
-  my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
-  my $outputFastqPair1Name = $laneDirectory . $sampleName.'.t'.$minQuality.'l'.$minLength.'.pair1.fastq.gz';
-  my $outputFastqPair2Name = $laneDirectory . $sampleName.'.t'.$minQuality.'l'.$minLength.'.pair2.fastq.gz';
-  my $outputFastqSingle1Name = $laneDirectory . $sampleName.'.t'.$minQuality.'l'.$minLength.'.single1.fastq.gz';
-  my $outputFastqSingle2Name = $laneDirectory . $sampleName.'.t'.$minQuality.'l'.$minLength.'.single2.fastq.gz';
-  my $outputDir = 'alignment/'.$laneDirectory;
-  my $outputPrefix = $outputDir.'/'.$sampleName.'.sorted';
+  my $inputDir = 'reads/'.$sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
+  my $outputDir = 'alignment/'.$sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
+  my $inputFastqPair1Name = $inputDir . $sampleName.'.t'.$minQuality.'l'.$minLength.'.pair1.fastq.gz';
+  my $inputFastqPair2Name = $inputDir . $sampleName.'.t'.$minQuality.'l'.$minLength.'.pair2.fastq.gz';
+  my $inputFastqSingleName = $inputDir . $sampleName.'.t'.$minQuality.'l'.$minLength.'.single1.fastq.gz';
+  my $outputPrefix = $outputDir . $sampleName;
+  print 'mkdir -p '.$outputDir."\n";
 
   my $jobDep = "";
   print "BWA_JOB_IDS=\"\"\n";
@@ -158,51 +160,40 @@ sub align {
   my $rgId = $rH_laneInfo->{'libraryBarcode'} . "_" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
   my $rgSampleName = $rH_laneInfo->{'name'};
   my $rgLibrary = $rH_laneInfo->{'libraryBarcode'};
-  my $rgPlatformUnit = 'run' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
-  my $rgCenter = LoadConfig::getParam( $rH_cfg, 'aln', 'bwaInstitution' ) . '\tPL:Illumina' . "'";
+  my $rgPlatformUnit = $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
+  my $rgCenter = LoadConfig::getParam( $rH_cfg, 'mem', 'bwaInstitution' );
 
   if($rH_laneInfo->{'runType'} eq "PAIRED_END") {
-    my $rA_commands = BWA::aln($rH_cfg, $sampleName, $outputFastqPair1Name, $outputFastqPair2Name, $outputFastqSingle1Name, $outputFastqSingle2Name, $outputPrefix.'.paired');
-
-    my $read1JobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'read1.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READ1ALN', $trimJobIdVarName, $sampleName, $rA_commands->[0]);
-    $read1JobId = '$'.$read1JobId;
-    my $read2JobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'read2.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READ2ALN', $trimJobIdVarName, $sampleName, $rA_commands->[1]);
-    $read2JobId = '$'.$read2JobId;
-    my $bwaJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'sampe.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA', $read1JobId.LoadConfig::getParam($rH_cfg, 'aln', 'clusterDependencySep').$read2JobId, $sampleName, $rA_commands->[2]);
+    my $rA_commands = BWA::mem($rH_cfg, $sampleName, $inputFastqPair1Name, $inputFastqPair2Name, undef, $outputPrefix.'.paired', $rgId, $rgSampleName, $rgLibrary, $rgPlatformUnit, $rgCenter);
+    my $bwaJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mem", 'memPair.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA', $trimJobIdVarName, $sampleName, $rA_commands->[0], LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
     $bwaJobId = '$'.$bwaJobId;
-    print 'BWA_JOB_IDS='.$bwaJobId.LoadConfig::getParam($rH_cfg, 'aln', 'clusterDependencySep').'${BWA_JOB_IDS}'."\n";
+    print 'BWA_JOB_IDS='.$bwaJobId.LoadConfig::getParam($rH_cfg, 'mem', 'clusterDependencySep').'${BWA_JOB_IDS}'."\n";
     
     # fake it and take the single1 end
-    $rH_laneInfo->{'runType'} = 'SINGLE_END';
-    $rA_commands = BWA::aln($rH_cfg, $sampleName, $outputFastqPair1Name, $outputFastqPair2Name, $outputFastqSingle1Name, $outputFastqSingle2Name, $outputPrefix.'.single', $rgId, $rgSampleName, $rgLibrary, $rgPlatformUnit, $rgCenter);
-    my $readJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READALN', $trimJobIdVarName, $sampleName, $rA_commands->[0]);
-    $readJobId = '$'.$readJobId;
-    $bwaJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'samse.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA',  $readJobId, $sampleName, $rA_commands->[1]);
+    $rA_commands = BWA::mem($rH_cfg, $sampleName, undef, undef, $inputFastqSingleName, $outputPrefix.'.single', $rgId, $rgSampleName, $rgLibrary, $rgPlatformUnit, $rgCenter);
+    $bwaJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mem", 'memSingle.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA', $trimJobIdVarName, $sampleName, $rA_commands->[0], LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
     $bwaJobId = '$'.$bwaJobId;
-    print 'BWA_JOB_IDS='.$bwaJobId.LoadConfig::getParam($rH_cfg, 'aln', 'clusterDependencySep').'${BWA_JOB_IDS}'."\n";
+    print 'BWA_JOB_IDS='.$bwaJobId.LoadConfig::getParam($rH_cfg, 'mem', 'clusterDependencySep').'${BWA_JOB_IDS}'."\n";
 
-    my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
-    my $outputPairedBAM = $laneDirectory . $sampleName.'.paired.sorted.bam';
-    my $outputSingleBAM = $laneDirectory . $sampleName.'.single.sorted.bam';
-    my $outputBAM = $laneDirectory . $sampleName.'.sorted.bam';
+    my $outputPairedBAM = $outputDir . $sampleName.'.paired.sorted.bam';
+    my $outputSingleBAM = $outputDir . $sampleName.'.single.sorted.bam';
+    my $outputBAM = $outputDir . $sampleName.'.sorted.bam';
     my @inputBams = ($outputPairedBAM, $outputSingleBAM);
     my $command = Picard::mergeFiles($rH_cfg, $sampleName, \@inputBams, $outputBAM);
     my $mergeJobId = undef;
     if(defined($command) && length($command) > 0) {
-      $mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mergePairs", undef, 'MERGEPAIRS', '$BWA_JOB_IDS', $sampleName, $command);
+      $mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mergePairs", undef, 'MERGEPAIRS', '$BWA_JOB_IDS', $sampleName, $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
     }
-    $jobDep = '$'.$mergeJobId;
+    if(defined($mergeJobId)) {
+      $jobDep = '$'.$mergeJobId;
+    }
   }
   else {
-    my $rA_commands = BWA::aln($rH_cfg, $sampleName, $outputFastqPair1Name, $outputFastqPair2Name, $outputFastqSingle1Name, $outputFastqSingle2Name, $outputPrefix, $rgId, $rgSampleName, $rgLibrary, $rgPlatformUnit, $rgCenter);
-    my $readJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READALN', $trimJobIdVarName, $sampleName, $rA_commands->[0]);
-    $readJobId = '$'.$readJobId;
-    my $bwaJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'samse.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA',  $readJobId, $sampleName, $rA_commands->[1]);
+    my $rA_commands = BWA::mem($rH_cfg, $sampleName, $inputFastqPair1Name, $inputFastqPair2Name, $inputFastqSingleName, $outputPrefix, $rgId, $rgSampleName, $rgLibrary, $rgPlatformUnit, $rgCenter);
+    my $bwaJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mem", 'memSingle.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA', $trimJobIdVarName, $sampleName, $rA_commands->[0], LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
     $bwaJobId = '$'.$bwaJobId;
     print 'BWA_JOB_IDS='.$bwaJobId.LoadConfig::getParam($rH_cfg, 'aln', 'clusterDependencySep').'${BWA_JOB_IDS}'."\n";
     $jobDep = '$BWA_JOB_IDS';
-    
-    my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
   }
 
   return $jobDep;
@@ -219,22 +210,10 @@ sub metrics {
   if($depends) {
     $bwaJobId = '$MERGEPAIRS_JOB_ID';
   }
-  my $laneDirectory = $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
+  my $laneDirectory = 'alignment/'.$sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
   # Compute target coverage
   my $command = GATK::targetCoverage($rH_cfg, $sampleName, $laneDirectory . $sampleName.'.sorted.bam', $laneDirectory . $sampleName.'.sorted.targetCoverage');
-  my $genomeCoverageJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "targetCoverage", undef, 'TARGETCOVERAGE', $bwaJobId, $sampleName, $command);
-
-  # Generate IGV track
-#  unless (-e "$sampleName/$sampleName.sorted.dup.tdf.done") {
-#   my $IGV_MOAB_COMMAND="msub -d $CURRENT_DIR -V -l walltime=48:00:0 -q sw -l nodes=1:ppn=6 -j oe -o $output_jobs -N igv.$sampleName $dependency -m ae -M $EMAIL_NOTIFICATION";
-#   print "echo \"rm -f $sampleName/$sampleName.sorted.dup.tdf.done ; $JAVA_BIN -Djava.io.tmpdir=$TMP_DIR -Xmx12G -Djava.awt.headless=true -jar $IGV_TOOLS_JAR count -f min,max,mean $sampleName/$sampleName.sorted.dup.bam $sampleName/$sampleName.sorted.dup.tdf b37 && touch $sampleName/$sampleName.sorted.dup.tdf.done\" | $IGV_MOAB_COMMAND\n";
-#  }
-
-  # Compute flags
-#  unless (-e "$sampleName/$sampleName.sorted.dup.flagstat.done") {
-#   my $FLAGS_MOAB_COMMAND="msub -d $CURRENT_DIR -V -l walltime=48:00:0 -q sw -l nodes=1:ppn=1 -j oe -o $output_jobs -N flag.$sampleName $dependency -m ae -M $EMAIL_NOTIFICATION";
-#   print "echo \"rm -f $sampleName/$sampleName.sorted.dup.flagstat.done ; $SAMTOOLS_HOME/samtools flagstat $sampleName/$sampleName.sorted.dup.bam > $sampleName/$sampleName.sorted.dup.flagstat && touch $sampleName/$sampleName.sorted.dup.flagstat.done\" | $FLAGS_MOAB_COMMAND\n";
-#  }  
+  my $genomeCoverageJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "targetCoverage", undef, 'TARGETCOVERAGE', $bwaJobId, $sampleName, $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
 }
 
 1;

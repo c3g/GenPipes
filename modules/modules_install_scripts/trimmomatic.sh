@@ -3,12 +3,12 @@
 ###################
 ################### Trimmomatic
 ###################
-VERSION="0.25"
-wget http://www.usadellab.org/cms/uploads/supplementary/Trimmomatic/Trimmomatic-$VERSION.zip 
-unzip Trimmomatic-$VERSION.zip
+VERSION="0.30"
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/trimmomatic
 mkdir -p $INSTALL_PATH
-mv Trimmomatic-$VERSION $INSTALL_PATH
+cd ${INSTALL_PATH}
+wget http://www.usadellab.org/cms/uploads/supplementary/Trimmomatic/Trimmomatic-${VERSION}.zip
+unzip Trimmomatic-$VERSION.zip
 
 # Module file
 echo "#%Module1.0
