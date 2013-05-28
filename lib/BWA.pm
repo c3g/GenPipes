@@ -80,7 +80,7 @@ sub mem {
     $bwaCommand .= ' module load '.LoadConfig::getParam($rH_cfg, 'mem', 'moduleVersion.picard').' ;';
     $bwaCommand .= ' bwa mem ';
     $bwaCommand .= ' '.LoadConfig::getParam( $rH_cfg, 'mem', 'bwaExtraFlags' );
-    $bwaCommand .= ' -r ' . $rgTag;
+    $bwaCommand .= ' -R ' . $rgTag;
     $bwaCommand .= ' ' . $bwaRefIndex;
     if ( defined($pair1) && defined($pair2) ) {
       $bwaCommand .= ' ' . $pair1;
