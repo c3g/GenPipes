@@ -248,7 +248,11 @@ sub singleCommand {
         $bwaCommand .= ' ' . $bwaRefIndex;
         $bwaCommand .= ' ' . $outputSaiName;
         $bwaCommand .= ' ' . $single;
-        $bwaCommand .= ' | java -Xmx' . LoadConfig::getParam( $rH_cfg, 'aln', 'sortRam' ) . ' -jar \${PICARD_HOME}/SortSam.jar INPUT=/dev/stdin CREATE_INDEX=true VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate';
+        $bwaCommand .= ' | java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'aln', 'tmpDir');
+        $bwaCommand .= ' '.LoadConfig::getParam($rH_cfg, 'aln', 'extraJavaFlags');
+        $bwaCommand .= ' -Xmx'.LoadConfig::getParam($rH_cfg, 'aln', 'sortRam');
+        $bwaCommand .= ' -jar \${PICARD_HOME}/SortSam.jar';
+        $bwaCommand .= ' INPUT=/dev/stdin CREATE_INDEX=true VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate';
         $bwaCommand .= ' OUTPUT=' . $outputBAM;
         $bwaCommand .= ' MAX_RECORDS_IN_RAM=' . LoadConfig::getParam( $rH_cfg, 'aln', 'sortRecInRam' );
         push( @commands, $bwaCommand );
