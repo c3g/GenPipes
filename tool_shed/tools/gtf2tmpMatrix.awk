@@ -10,6 +10,7 @@ awk ' BEGIN{
 }
 { 
 	x=split($9,col,";")
+	na="-1"
 	for (i = 1 ; i <= x ; i++) {
 		split(col[i],info,"\"")
 		if (info[1] == " gene_id " || info[1] == "gene_id ") {
@@ -17,6 +18,9 @@ awk ' BEGIN{
 		} else if (info[1] == " gene_name ") {
                         na=info[2]
                 }
+	}
+	if (na == "-1") {
+		na=ens
 	}
 	print ens "\t" na
 } ' $1 | sort -u > $2 
