@@ -1,4 +1,3 @@
-
 ###################
 ################### R
 ###################
@@ -23,7 +22,7 @@ make install
 wget $DEP_PATH
 $INSTALL_PATH/bin/R --vanilla <<'EOF'
 	source("http://bioconductor.org/biocLite.R")
-	deps=readLines("R_and_Bioconductor_packages.txt")
+	deps=unique(readLines("R_and_Bioconductor_packages.txt"))
 	biocLite(deps,lib=.Library)
 	biocLite(deps,lib=.Library)
 EOF
