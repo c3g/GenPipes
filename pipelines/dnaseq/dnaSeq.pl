@@ -443,7 +443,7 @@ sub snpAndIndelBCF {
     $jobDependency = '${RECAL_JOB_ID}';
   }
 
-  my $bamFile = $sampleName.'/'.$sampleName.'.sorted.dup.recal.bam';
+  my $bamFile = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.recal.bam';
   
   my $outputDir = LoadConfig::getParam($rH_cfg, "mpileup", 'sampleOutputRoot') . $sampleName."/rawBCF/";
 
