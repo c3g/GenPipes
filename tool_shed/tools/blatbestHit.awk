@@ -53,6 +53,7 @@ NR >7 {
 				other=nameS 
 			} else {
 				other=other ":" nameS
+			}
 		}
 	}
 }
