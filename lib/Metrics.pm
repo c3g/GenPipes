@@ -62,7 +62,7 @@ sub rnaQc{
     $command .= ' -t ' .LoadConfig::getParam($rH_cfg, 'rnaQc','referenceGtf');
     $command .= ' -r ' .LoadConfig::getParam($rH_cfg, 'rnaQc','referenceFasta');
     $command .= ' -o ' .$outputFolder ;
-    $command .= ' -BWArRNA ' .LoadConfig::getParam($rH_cfg, 'rnaQc','ribosomalGtf');
+    $command .= ' -BWArRNA ' .LoadConfig::getParam($rH_cfg, 'rnaQc','ribosomalFasta');
   }
     
   return $command;
@@ -74,11 +74,14 @@ sub saturation {
 	my $geneSizeFile     = shift;
 	my $rpkmDir = shift;
 	my $saturationDir = shift;
+
+
 	
 
 	my $command;
 	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'saturation' , 'moduleVersion.cranR') .' ' . LoadConfig::getParam($rH_cfg, 'saturation' , 'moduleVersion.tools') . ' &&';
 	$command .= ' Rscript \$R_TOOLS/rpkmSaturation.R ' .$countFile .' ' .$geneSizeFile .' ' .$rpkmDir .' ' .$saturationDir;
+	$command .= ' ' .LoadConfig::getParam($rH_cfg, 'saturation' , 'threadNum');
 	$command .= ' ' .LoadConfig::getParam($rH_cfg, 'saturation' , 'optionR');
 
 	return $command;

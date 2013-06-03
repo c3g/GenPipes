@@ -2,12 +2,11 @@
 ################### MUGQIC TOOLS (hosted on svn for now)
 ###################
 VERSION="0.1"
-screen -S svn
-ssh -l flefebvr  -L9443:esx-svn.genome.mcgill.ca:443 gallium.genome.mcgill.ca
-# ctl+A +D, then enter when asking pwd
+git clone git@bitbucket.org:mugqic/mugqic_pipeline.git
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/mugqic_tools # where to install..
 mkdir -p $INSTALL_PATH
-cp -r bioinformatics/R-tools bioinformatics/perl-tools bioinformatics/java-tools bioinformatics/tools $INSTALL_PATH 
+cp -r mugqic_pipeline/tool_shed/* $INSTALL_PATH 
+chmod -R 775 $INSTALL_PATH 
 
 # Module file
 echo "#%Module1.0
@@ -19,7 +18,8 @@ module-whatis \"MUGQIC - MUGQIC developped tools \"
 set             root            \$::env(MUGQIC_INSTALL_HOME)/software/mugqic_tools
 prepend-path    PATH            \$root/tools
 prepend-path    PATH            \$root/perl-tools
-setenv          R_TOOLS         \$root/R-tools 
+setenv          R_TOOLS         \$root/R-tools
+setenv          PERL_TOOLS      \$root/perl-tools
 
 " > $VERSION
 
@@ -32,7 +32,5 @@ set ModulesVersion \"$VERSION\"
 mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/tools
 mv .version $VERSION $MUGQIC_INSTALL_HOME/modulefiles/mugqic/tools
 
-
-# mugqic/tools
 
 

@@ -114,7 +114,7 @@ sub pairCommand {
             $command .= ' TRAILING:' . $minQuality;
         }
         $command .= ' MINLEN:' . $minLength;
-        $command .= ' > ' . $outputTrimLog;
+        $command .= ' 2> ' . $outputTrimLog;
     }
 
     my %retVal;
@@ -163,7 +163,7 @@ sub singleCommand {
             $command .= ' TRAILING:' . $minQuality;
         }
         $command .= ' MINLEN:' . $minLength;
-        $command .= ' > ' . $outputTrimLog;
+        $command .= ' 2> ' . $outputTrimLog;
     }
 
     my %retVal;

@@ -192,12 +192,13 @@ sub trimming {
 	my $rH_jobIdPrefixe = shift;
 
 	my $trimJobIdVarNameSample = undef;
+	my $libraryType = LoadConfig::getParam($rH_cfg, 'default', 'libraryType');
 	for my $rH_laneInfo (@$rAoH_sampleLanes) {
 		print "mkdir -p metrics/$sampleName/output_jobs reads/$sampleName/output_jobs\n";
 		##get raw read count
 		my $inputFile = LoadConfig::getParam($rH_cfg, 'default', 'rawReadDir') .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' .$rH_laneInfo->{'read1File'};
 		my $outputFile= 'metrics/' .$sampleName .'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . '.readstats.raw.csv' ;
-		my $command = Metrics::readStats($rH_cfg,$inputFile,$outputFile,'fastq');
+		my $command = Metrics::readStats($rH_cfg,$inputFile,$outputFile,'fastq',$libraryType);
 		my $rawReadStatJobID = undef;
 		if(defined($command) && length($command) > 0) {
 			$rawReadStatJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", 'raw', 'RAWREADSTAT' .$rH_jobIdPrefixe ->{$sampleName .'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} , undef, $sampleName, $command, 'metrics/' .$sampleName, $workDirectory);
@@ -209,7 +210,16 @@ sub trimming {
 		my $minLength   = $rH_cfg->{'trim.minLength'};
 		my $laneDirectory = 'reads/' .$sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
 		print "mkdir -p $laneDirectory\n";
-		my $outputFastqPair1Name = $laneDirectory . $sampleName.'.t'.$minQuality.'l'.$minLength.'.pair1.fastq.gz';
+		my $outputFastqPair1Name;
+		if ( $rH_laneInfo->{'runType'} eq "SINGLE_END" ) {
+			$outputFastqPair1Name = $laneDirectory . $sampleName.'.t'.$minQuality.'l'.$minLength.'.single.fastq.gz';
+		}
+		elsif ( $rH_laneInfo->{'runType'} eq "PAIRED_END" ) {
+			$outputFastqPair1Name = $laneDirectory . $sampleName.'.t'.$minQuality.'l'.$minLength.'.pair1.fastq.gz';
+		}
+		else {
+			die "Unknown runType: " . $rH_laneInfo->{' runType '} . "\n";
+		}
 		my $rH_trimDetails = Trimmomatic::trim($rH_cfg, $sampleName, $rH_laneInfo, $laneDirectory);
 		my $trimJobIdVarNameLane=undef;
 		if(length($rH_trimDetails->{'command'}) > 0) {
@@ -220,7 +230,7 @@ sub trimming {
 		##get trimmed read count
 		$inputFile = $outputFastqPair1Name;
 		$outputFile= 'metrics/' .$sampleName .'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . '.readstats.filtered.csv' ;
-		$command = Metrics::readStats($rH_cfg,$inputFile,$outputFile,'fastq');
+		$command = Metrics::readStats($rH_cfg,$inputFile,$outputFile,'fastq',$libraryType);
 		my $filteredReadStatJobID ;
 		if(defined($command) && length($command) > 0) {
 			$filteredReadStatJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", 'filtered', 'FILTERREADSTAT' .$rH_jobIdPrefixe ->{$sampleName.'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} ,$trimJobIdVarNameLane, $sampleName, $command,'metrics/'  .$sampleName, $workDirectory);
@@ -259,7 +269,7 @@ sub aligning {
 		print "mkdir -p $outputDirPath \n" ;
 		if ( $rH_laneInfo->{'runType'} eq "SINGLE_END" ) {
 			$single =  'reads/' .$sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName .'.t' .LoadConfig::getParam($rH_cfg,'trim','minQuality') .'l' .LoadConfig::getParam($rH_cfg,'trim','minLength') .'.single.fastq.gz';
-			$command = TophatBowtie::align($rH_cfg, $sampleName, $rH_laneInfo, $single );
+			$command = TophatBowtie::align($rH_cfg, $sampleName, $rH_laneInfo, $single, ' ' );
 		}
 		elsif($rH_laneInfo->{'runType'} eq "PAIRED_END") {
 			$pair1 =  'reads/' .$sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName .'.t' .LoadConfig::getParam($rH_cfg,'trim','minQuality') .'l' .LoadConfig::getParam($rH_cfg,'trim','minLength') .'.pair1.fastq.gz';
@@ -523,12 +533,12 @@ sub cuffdiff {
 	my $cuffddiffJobId;
 	for my $design (keys %{$rHoAoA_designGroup}) {
 		mkdir  $workDirectory ;
-		mkdir  $workDirectory .'cuffdiff';
-		mkdir  $workDirectory .'cuffdiff/denovo/' ;
-		mkdir  $workDirectory .'cuffdiff/denovo/' .$design ;
+		mkdir  $workDirectory .'/cuffdiff';
+		mkdir  $workDirectory .'/cuffdiff/denovo/' ;
+		mkdir  $workDirectory .'/cuffdiff/denovo/' .$design ;
 		## create the list of deNovo gtf to merge
 		print "mkdir -p cuffdiff/$design/output_jobs\n";
-		my $mergeListFile = $workDirectory .'cuffdiff/denovo/' .$design .'/gtfMerge.list';
+		my $mergeListFile = $workDirectory .'/cuffdiff/denovo/' .$design .'/gtfMerge.list';
 		open(MERGEF, ">$mergeListFile") or  die ("Unable to open $mergeListFile for wrtting") ;
 		my $numberGroups = @{$rHoAoA_designGroup->{$design}} ;
 		##iterate over group
@@ -576,7 +586,7 @@ sub cuffdiff {
 		}
 		
 		##cuffdiff de novo
-		$command = Cufflinks::cuffdiff($rH_cfg,\@groupInuptFiles,$outputPathKnown,LoadConfig::getParam($rH_cfg, 'cuffdiff','referenceGtf'));
+		$command = Cufflinks::cuffdiff($rH_cfg,\@groupInuptFiles,$outputPathDeNovo,$gtfDnFormatMerged);
 		if(defined($command) && length($command) > 0) {
 			my $cuffdiffKnownJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "cuffdiff", "DENOVO", 'CUFFDIFFD' .$rH_jobIdPrefixe ->{$design} , $formatJobId, $design, $command, 'cuffdiff/' .$design, $workDirectory);
 			$cuffddiffJobId .= '$' .$cuffdiffKnownJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
@@ -622,7 +632,7 @@ sub metrics {
 	print RNASAMPLE "Sample\tBamFile\tNote\n";
 	my $projectName = LoadConfig::getParam($rH_cfg, 'metricsRNA', 'projectName');
 	for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
-		print RNASAMPLE "$sampleName\talignment/$sampleName/$sampleName.merged.mdup.bam\t$projectName";
+		print RNASAMPLE "$sampleName\talignment/$sampleName/$sampleName.merged.mdup.bam\t$projectName\n";
 	}
 	print "mkdir -p metrics/output_jobs\n";
 	my $sampleList = 'alignment/rnaseqc.samples.txt';
@@ -654,7 +664,7 @@ sub metrics {
 		$metricsJobId .= $matrixJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 	}
 	
-	##Saturation
+	##RPKM and Saturation
 	my $countFile   = 'DGE/rawCountMatrix.csv';
 	my $geneSizeFile     = LoadConfig::getParam($rH_cfg, 'saturation', 'geneSizeFile');
 	my $rpkmDir = 'raw_counts';
@@ -663,7 +673,7 @@ sub metrics {
 	$command =  Metrics::saturation($rH_cfg, $countFile, $geneSizeFile, $rpkmDir, $saturationDir);
 	my $saturationJobId = undef;
 	if(defined($command) && length($command) > 0) {
-		$saturationJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "saturation", undef, 'SATURATION', $matrixJobId, undef, $command, 'metrics/' , $workDirectory);
+		$saturationJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "saturation", undef, 'RPKM', $matrixJobId, undef, $command, 'metrics/' , $workDirectory);
 		$metricsJobId .= '$' .$saturationJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 	}
 	

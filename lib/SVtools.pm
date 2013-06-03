@@ -72,26 +72,129 @@ sub filterDNAC {
     my $command;
     # -M gives modified date relative to now. The bigger the older.
     #if(!defined($outDate) || !defined($inDate) || $inDate < $outDate) {
-        $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'runPairedDNAC', 'moduleVersion.svtools').' ;';
+        $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'filterSV', 'moduleVersion.svtools').' ;';
         $command .= ' \${SVTOOLS_HOME}/Cancer/filterOutDNAC.sh';
         $command .= ' '.$inputDNACCalls;
         $command .= ' '.$outputPrefix.'.txt';
         $command .= ' '.$sampleName;
-        $command .= ' 5';
+        $command .= ' '.LoadConfig::getParam($rH_cfg, 'filterSV', 'minBinCNV');
         $command .= ' && ';
-        $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'runPairedDNAC', 'moduleVersion.svtools').' ;';
+        $command .= filterResults($rH_cfg,  'filterSV', $outputPrefix, $cnvProx) ;
+        $command .= ' && ';
+        $command .= generateBedResults($rH_cfg, $outputPrefix) ;
+    #}
+    return $command;
+}
+
+
+sub filterBrD {
+    my $rH_cfg          = shift;
+    my $sampleName      = shift;
+    my $inputBrDCalls  = shift;
+    my $outputPrefix    = shift;
+    my $normalFile    = shift;
+    my $tumorFile    = shift;
+
+    my $outDate = -M $outputPrefix.'.filteredSV.txt';
+    my $inDate = -M $inputBrDCalls;
+  
+    my $command;
+    # -M gives modified date relative to now. The bigger the older.
+    #if(!defined($outDate) || !defined($inDate) || $inDate < $outDate) {
+        $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'filterSVC', 'moduleVersion.svtools').' ;';
+        $command .= ' \${SVTOOLS_HOME}/Cancer/filterOutBrD.py';
+        $command .= ' -f ' .$inputBrDCalls;
+        $command .= ' -o ' .$outputPrefix.'.txt';
+        $command .= ' -s ' .$sampleName;
+        $command .= ' -n ' .LoadConfig::getParam($rH_cfg, 'filterSV', 'minReadSupport');
+        $command .= ' -t ' .LoadConfig::getParam($rH_cfg, 'filterSV', 'minReadSupport');
+        $command .= ' -b ' .$normalFile;
+        $command .= ' -c ' .$tumorFile;
+        $command .= ' && ';
+        $command .= filterResults($rH_cfg,  'filterSV', $outputPrefix, '') ;
+        $command .= ' && ';
+        $command .= generateBedResults($rH_cfg, $outputPrefix) ;
+    #}
+    return $command;
+}
+
+
+sub filterPI {
+    my $rH_cfg          = shift;
+    my $sampleName      = shift;
+    my $outputPrefix    = shift;
+    my $normalFile    = shift;
+    my $tumorFile    = shift;
+
+    my $outDate = -M $outputPrefix.'.filteredSV.txt';
+#    my $inDate = -M $inputDNACCalls;
+  
+    my $command;
+    # -M gives modified date relative to now. The bigger the older.
+    #if(!defined($outDate) || !defined($inDate) || $inDate < $outDate) {
+        $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'filterSV', 'moduleVersion.svtools').' ;';
+        $command .= ' \${SVTOOLS_HOME}/Cancer/filterOutPI.py';
+        $command .= ' -f ' .$outputPrefix;
+        $command .= ' -o ' .$outputPrefix.'.txt';
+        $command .= ' -s ' .$sampleName;
+        $command .= ' -n ' .LoadConfig::getParam($rH_cfg, 'filterSV', 'minReadSupport');
+        $command .= ' -t ' .LoadConfig::getParam($rH_cfg, 'filterSV', 'minReadSupport');
+        $command .= ' && ';
+        $command .= filterResults($rH_cfg,  'filterSV', $outputPrefix, '') ;
+        $command .= ' && ';
+        $command .= generateBedResults($rH_cfg, $outputPrefix) ;
+    #}
+    return $command;
+}
+
+
+
+sub filterResults {
+    my $rH_cfg          = shift;
+    my $stepIniPrefix  = shift;
+    my $outputPrefix    = shift;
+    my $cnvProx           = shift;
+
+    my $outDate = -M $outputPrefix.'.txt';
+#     my $inDate = -M $inputDNACCalls;
+  
+    my $command;
+    # -M gives modified date relative to now. The bigger the older.
+    #if(!defined($outDate) || !defined($inDate) || $inDate < $outDate) {
+        $command .= 'module load '.LoadConfig::getParam($rH_cfg, $stepIniPrefix, 'moduleVersion.svtools').' ;';
         $command .= ' \${SVTOOLS_HOME}/Cancer/filterBedResults.sh';
-        $command .= ' '.$outputPrefix.'.txt';
-        $command .= ' '.LoadConfig::getParam($rH_cfg, 'filterDNAC', 'referenceMappabilityBed');
-        $command .= ' '.LoadConfig::getParam($rH_cfg, 'filterDNAC', 'referenceGeneCoordinates');
-        $command .= ' '.LoadConfig::getParam($rH_cfg, 'filterDNAC', 'referenceDGVCoordinates');
-        $command .= ' '.LoadConfig::getParam($rH_cfg, 'filterDNAC', 'referenceMicrosatellitesCoordinates');
-        $command .= ' '.LoadConfig::getParam($rH_cfg, 'filterDNAC', 'referenceRepeatMaskerCoordinates');
-        $command .= ' '.LoadConfig::getParam($rH_cfg, 'filterDNAC', 'referenceGenomeLengths');
+        $command .= ' '.$outputPrefix.'.txt' ;
+        $command .= ' '.LoadConfig::getParam($rH_cfg, $stepIniPrefix, 'referenceMappabilityBed');
+        $command .= ' '.LoadConfig::getParam($rH_cfg, $stepIniPrefix, 'referenceGeneCoordinates');
+        $command .= ' '.LoadConfig::getParam($rH_cfg, $stepIniPrefix, 'referenceDGVCoordinates');
+        $command .= ' '.LoadConfig::getParam($rH_cfg, $stepIniPrefix, 'referenceMicrosatellitesCoordinates');
+        $command .= ' '.LoadConfig::getParam($rH_cfg, $stepIniPrefix, 'referenceRepeatMaskerCoordinates');
+        $command .= ' '.LoadConfig::getParam($rH_cfg, $stepIniPrefix, 'referenceGenomeLengths');
         $command .= ' '.$outputPrefix.'.bed';
         $command .= ' '.$outputPrefix.'.tmp';
         $command .= ' '.$cnvProx;
     #}
     return $command;
 }
+
+sub generateBedResults {
+    my $rH_cfg          = shift;
+    my $outputPrefix    = shift;
+
+
+    my $command;
+    # -M gives modified date relative to now. The bigger the older.
+    #if(!defined($outDate) || !defined($inDate) || $inDate < $outDate) {
+        $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'bedSV', 'moduleVersion.svtools').' ;';
+        $command .= ' \${SVTOOLS_HOME}/Cancer/rtxt2rbed.sh ';
+        $command .= ' '.$outputPrefix.'.bed.other.filteredSV.annotate.txt';
+        $command .= ' '.$outputPrefix.'.bed.other.filteredSV.annotate.bed';
+        $command .= ' && \${SVTOOLS_HOME}/Cancer/rtxt2rbed.sh';
+        $command .= ' '.$outputPrefix.'.bed.TumS.filteredSV.annotate.txt';
+        $command .= ' '.$outputPrefix.'.bed.TumS.filteredSV.annotate.bed';
+    #}
+    return $command;
+}
+
+
 1;
