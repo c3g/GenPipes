@@ -122,9 +122,9 @@ sub sortRead {
 
     $command .= ' mkdir -p  read_count/' . $group . ' ;';
     $command .= ' mkdir -p  DGE/' . $group . ';';
-    $command .= ' module add jdk64 ; module add mugqic/picard/1.84/ ; ';
-    $command .= ' java -Xmx30g -jar ${PICARD_HOME}/SortSam.jar ';
-    $command .= ' VALIDATION_STRINGENCY=SILENT MAX_RECORDS_IN_RAM=5000000 CREATE_INDEX=true TMP_DIR=/mnt/scratch_mp2/bourque/bourque_group/tmpDir/ ';
+    $command .= ' module add '.LoadConfig::getParam($rH_cfg, 'htseq', 'moduleVersion.java') . ' ' . LoadConfig::getParam($rH_cfg, 'htseq', 'moduleVersion.picard') .' ;';
+    $command .= ' java -Xmx30g -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'htseq', 'tmpDir').' -jar ${PICARD_HOME}/SortSam.jar ';
+    $command .= ' VALIDATION_STRINGENCY=SILENT MAX_RECORDS_IN_RAM=5000000 CREATE_INDEX=true TMP_DIR='.LoadConfig::getParam($rH_cfg, 'htseq', 'tmpDir');
     $command .= ' INPUT=' . $laneDirectory . $sampleName . '.sorted.bam ';
     $command .= ' OUTPUT=read_count/' . $group . '/' . $sampleName . '.QueryName.bam ';
     $command .= ' SORT_ORDER=queryname ';

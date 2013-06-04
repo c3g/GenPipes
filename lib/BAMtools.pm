@@ -65,4 +65,90 @@ sub countBins {
     #}
     return $command;
 }
+
+sub deleteDuplicates {
+    my $rH_cfg      = shift;
+    my $sampleName  = shift;
+    my $pair1           = shift;
+    my $pair2           = shift;
+    my $single          = shift;
+    my $optOutputPrefix = shift;
+
+
+    my $rH_retVal;
+    if (defined($pair1) && defined($pair2)) {
+        $rH_retVal = deletePairedDuplicates($rH_cfg, $sampleName, $pair1, $pair2, $optOutputPrefix);
+    }
+    elsif (defined($single)) {
+        $rH_retVal = deleteSingleDuplicates($rH_cfg, $sampleName, $single, $optOutputPrefix);
+    }
+    else {
+        die "Unknown runType. \n";
+    }
+
+    return $rH_retVal;
+}
+
+sub deletePairedDuplicates {
+    my $rH_cfg = shift;
+    my $sampleName = shift;
+    my $pair1           = shift;
+    my $pair2           = shift;
+    my $outputPrefix    = shift;
+    my %retVal;
+	
+    my $command             = '';
+    my $outputFastqPair1Name = $outputPrefix . '.pair1.dup.fastq.gz';
+    my $outputFastqPair2Name = $outputPrefix . '.pair2.dup.fastq.gz';
+    my $pair1FileDate = -M $pair1;
+    my $pair2FileDate = -M $pair2;
+
+    my $currentFileDate = $pair2FileDate;
+    if ( defined($pair1FileDate) && $pair1FileDate > $pair2FileDate ) {
+        $currentFileDate = $pair1FileDate;
+    }
+    my $outDate = -M $outputFastqPair1Name;
+	
+    if ( !defined($currentFileDate) || !defined($outDate) || $currentFileDate > -M $outDate ){
+        $command .= 'module add '. LoadConfig::getParam($rH_cfg, 'default','moduleVersion.java') ;
+        $command .= ' ' . LoadConfig::getParam($rH_cfg, 'duplicate','moduleVersion.bamtools') . ';' ;
+        $command .= ' java '.LoadConfig::getParam($rH_cfg, 'duplicate', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'duplicate', 'dupRam').' -jar  \$BAMTOOLS_JAR filterdups' .  ' --read1 ' . $pair1 . ' --read2 ' . $pair2;
+        $command .= ' -k 20 -o 15;';
+        $command .= ' mv ' . $pair1 . '.dup.read1.gz ' . $outputFastqPair1Name . ';';
+        $command .= ' mv ' . $pair2 . '.dup.read2.gz ' . $outputFastqPair2Name . ';';
+    }
+    $retVal{'command'} = $command;
+    $retVal{'pair1'}   = $outputFastqPair1Name;
+    $retVal{'pair2'}   = $outputFastqPair2Name;
+
+    return ( \%retVal );
+
+}
+
+sub deleteSingleDuplicates {
+    my $rH_cfg = shift;
+    my $sampleName = shift;
+    my $single          = shift;
+    my $outputPrefix    = shift;
+    my %retVal;
+	
+    my $command         = '';
+    my $outputFastqName = $outputPrefix . '.single.dup.fastq.gz';
+    my $currentFileDate = -M $outputFastqName;
+
+    my $outDate = -M $outputFastqName;
+    if ( !defined($currentFileDate) || !defined($outDate) || $currentFileDate > -M $outputFastqName) {
+        $command .= 'module add '. LoadConfig::getParam($rH_cfg, 'default','moduleVersion.java') ;
+        $command .= ' ' . LoadConfig::getParam($rH_cfg, 'duplicate','moduleVersion.bamtools') . ';' ;
+        $command .= ' java '.LoadConfig::getParam($rH_cfg, 'duplicate', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'duplicate', 'dupRam').' -jar \$BAMTOOLS_JAR filterdups' . ' --read1 ' . $single;
+        $command .= ' -k 20 -o 15;';
+        $command .= ' mv ' . $single . '.dup.read1.gz ' . $outputFastqName . ';';
+    }
+    $retVal{'command'} = $command;
+    $retVal{'single1'} = $outputFastqName;
+
+    return ( \%retVal );
+}
+
 1;
+

@@ -5,15 +5,15 @@
 VERSION="2.1.0"
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/bowtie/bowtie-$VERSION
 mkdir -p $INSTALL_PATH
-cd  $INSTALL_PATH
-
 # Download and extract
-wget http://sourceforge.net/projects/bowtie-bio/files/bowtie/${VERSION}/bowtie-${VERSION}-src.zip/download
-
-unzip bowtie-$VERSION-src.zip
+wget http://sourceforge.net/projects/bowtie-bio/files/bowtie2/$VERSION/bowtie2-$VERSION-source.zip/download
+unzip bowtie2-$VERSION-source.zip
 # Compile
-cd bowtie-$VERSION
+cd bowtie2-$VERSION
 make -j8
+mv bowtie2* $INSTALL_PATH
+cd ..
+
 
 # Module file
 echo "#%Module1.0
