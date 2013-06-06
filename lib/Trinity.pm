@@ -67,7 +67,7 @@ use LoadConfig;
 # SUB
 #-------------------
 our $rH_cfg;
-our $sampleName;
+our $groupName;
 our $rH_laneInfo;
 our $pair1;
 our $pair2;
@@ -75,7 +75,7 @@ our $fileButterflyComand;
 
 sub chrysalis {
     $rH_cfg      = shift;
-    $sampleName  = shift;
+    $groupName  = shift;
     $rH_laneInfo = shift;
     $pair1       = shift;    # For single command the left will receive the file.
     $pair2       = shift;
@@ -95,18 +95,18 @@ sub chrysalis {
 
 sub butterfly {
     $rH_cfg              = shift;
-    $sampleName          = shift;
+    $groupName          = shift;
     $rH_laneInfo         = shift;
     $fileButterflyComand = shift;
 
-    my $laneDirectory = "assembly/" . $sampleName . "/chrysalis/";
+    my $laneDirectory = "assembly/" . $groupName . "/chrysalis/";
     my $command       = ' ';
     my %retVal;
 
     $command .= 'module add ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.java' );
     $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.bowtie' );
     $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.trinity' ) . ' ;';
-    $command .= ' ' . $rH_cfg->{'trinity.parallel'} . ' -f ' . $laneDirectory . 'butterfly_split/' . $fileButterflyComand;
+    $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'parallel' ) . ' -f ' . $laneDirectory . 'butterfly_split/' . $fileButterflyComand;
     $command .= ' -n ' . $rH_cfg->{'trinity.nbThreads'} . ' ';
 
     $retVal{'command'} = $command;
@@ -116,12 +116,12 @@ sub butterfly {
 
 sub concatFastaCreateGtf {
     $rH_cfg      = shift;
-    $sampleName  = shift;
+    $groupName  = shift;
     $rH_laneInfo = shift;
 
     my $command = '';
     my %retVal;
-    my $laneDirectory = "assembly/" . $sampleName . "/";
+    my $laneDirectory = "assembly/" . $groupName . "/";
 
     $command .= 'module add ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.java' );
     $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.bowtie' );
@@ -129,7 +129,7 @@ sub concatFastaCreateGtf {
     $command .= ' find ' . $laneDirectory . 'chrysalis';
     $command .= ' -name "*allProbPaths.fasta" -exec cat {} + >' . $laneDirectory . 'Trinity.fasta ;';
     $command .= ' sh ' . $rH_cfg->{'trinity.createGtf'} . ' ' . $laneDirectory . 'Trinity.fasta';
-    $command .= ' ' . $laneDirectory . $sampleName . '.gtf ;';
+    $command .= ' ' . $laneDirectory . $groupName . '.gtf ;';
     $command .= ' awk \'{print \$1} \' ' . $laneDirectory . 'Trinity.fasta ';
     $command .= ' >' . $laneDirectory . 'Trinity.2.fasta';
 
@@ -143,16 +143,19 @@ sub _chrysalisPairCommand {
     my $command = '';
     my %retVal;
 
-    my $laneDirectory = 'assembly/' . $sampleName . '/';
-    $command .= 'module add ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.java' );
-    $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.bowtie' );
-    $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.trinity' ) . ' ;';
-    $command .= ' Trinity.pl --seqType fq --JM 100G';
-    $command .= ' --left' . ' \" ' . $pair1 . ' \" ' . '--right' . ' \" ' . $pair2 . ' \" ';
-    $command .= ' --CPU ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'nbThreads');
-    $command .= ' --output ' . $laneDirectory;
-    $command .= ' --min_kmer_cov 31 --max_reads_per_loop 200000000 --no_run_butterfly ';
-
+    my $laneDirectory = 'assembly/' . $groupName . '/';
+    my $outputFile = $laneDirectory .'/chrysalis/butterfly_commands.adj';
+    my $latestFile = -M $outputFile;
+    if(!defined($latestFile)) {
+      $command .= 'module add ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.java' );
+      $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.bowtie' );
+      $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.trinity' ) . ' ;';
+      $command .= ' Trinity.pl --seqType fq --JM 100G';
+      $command .= ' --left' . ' \" ' . $pair1 . ' \" ' . '--right' . ' \" ' . $pair2 . ' \" ';
+      $command .= ' --CPU ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'nbThreads');
+      $command .= ' --output ' . $laneDirectory;
+      $command .= ' --min_kmer_cov 31 --max_reads_per_loop 200000000 --no_run_butterfly ';
+    }
     $retVal{'command'} = $command;
     return ( \%retVal );
 
@@ -163,15 +166,19 @@ sub _chrysalisSingleCommand {
     my $command = '';
     my %retVal;
     
-    my $laneDirectory = 'assembly/' . $sampleName . '/';
-    $command .= 'module add ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.java' );
-    $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.bowtie' );
-    $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.trinity' ) . ' ;';
-    $command .= ' Trinity.pl --seqType fq --JM 100G';
-    $command .= ' ' . $pair1;
-    $command .= ' --CPU ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'nbThreads');
-    $command .= ' --output ' . $laneDirectory;
-    $command .= ' --min_kmer_cov 31 --max_reads_per_loop 200000000 --no_run_butterfly ';
+    my $laneDirectory = 'assembly/' . $groupName . '/';
+    my $outputFile = $laneDirectory .'/chrysalis/butterfly_commands.adj';
+    my $latestFile = -M $outputFile;
+    if(!defined($latestFile)) {
+      $command .= 'module add ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.java' );
+      $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.bowtie' );
+      $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.trinity' ) . ' ;';
+      $command .= ' Trinity.pl --seqType fq --JM 100G';
+      $command .= ' ' . $pair1;
+      $command .= ' --CPU ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'nbThreads');
+      $command .= ' --output ' . $laneDirectory;
+      $command .= ' --min_kmer_cov 31 --max_reads_per_loop 200000000 --no_run_butterfly ';
+    }
 
     $retVal{'command'} = $command;
     return ( \%retVal );
