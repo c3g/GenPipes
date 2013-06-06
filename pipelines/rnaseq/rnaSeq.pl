@@ -334,7 +334,7 @@ sub merging {
 	my $command = Picard::mergeFiles($rH_cfg, $sampleName, \@alignFiles, $outputBAM);
 	my $mergeJobId = undef;
 	if(defined($command) && length($command) > 0) {
-		$mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mergFiles", undef, 'MERGELANES' .$rH_jobIdPrefixe ->{$sampleName} , $jobDependency, $sampleName, $command, $workDir .'/' .$sampleName, $workDirectory);
+		$mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mergeFiles", undef, 'MERGELANES' .$rH_jobIdPrefixe ->{$sampleName} , $jobDependency, $sampleName, $command, $workDir .'/' .$sampleName, $workDirectory);
 		$mergeJobId = '$'.$mergeJobId;
 	}
 	## reorder
