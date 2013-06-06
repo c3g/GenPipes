@@ -111,31 +111,28 @@ sub readStats {
 	
 	my $command;
 	if(!defined($latestInputFile) || !defined($latestOutputFile) || $latestInputFile <  $latestOutputFile) {
-		if ((lc $fileType) eq "fastq") {
-			$command .= 'zcat ' .$inputFile;
-
-			#---- flefebvr Wed 17 Apr 08:40:58 2013 
-			#$command .= ' | wc -l | awk \'{print \$1}\''; 	
-			$command .= ' | echo \$((\`wc -l\`/2))'; 
-			#----
-
-			$command .= ' > ' .$outputFile;
-		}
-		elsif  ((lc $fileType) eq "bam") {
-			my $unmapOption = '-F260';
-			$command .= SAMtools::viewFilter($rH_cfg, $inputFile, $unmapOption, undef);
-			$command .= ' | awk \' { print \$1} \'';
-			#---- flefebvr Tue 16 Apr 13:47:53 2013 
-			#$command .= ' | sort -u | wc -l  > ' .$outputFile;
-			$command .= ' | sort -u -T '.LoadConfig::getParam($rH_cfg, 'metrics' , 'tmpDir');
-			$command .= ' | wc -l  > ' .$outputFile;
-			#----
-		}
+# 		if ((lc $fileType) eq "trim") {
+		$command .= 'grep \"Input Read Pairs\" ' .$inputFile;
+		$command .= ' | awk \' {print \$4 \"\t\" \$7 \"\t\" \$8 \"\t\" \$12 \"\t\" \$13 \"\t\" \$17  \"\t\" \$18 \"\t\" \$20  \"\t\" \$21} '; 
+		$command .= ' > ' .$outputFile;
+# 		}
+# 		elsif  ((lc $fileType) eq "bam") {
+# 			my $unmapOption = '-F260';
+# 			$command .= SAMtools::viewFilter($rH_cfg, $inputFile, $unmapOption, undef);
+# 			$command .= ' | awk \' { print \$1} \'';
+# 			#---- flefebvr Tue 16 Apr 13:47:53 2013 
+# 			#$command .= ' | sort -u | wc -l  > ' .$outputFile;
+# 			$command .= ' | sort -u -T '.LoadConfig::getParam($rH_cfg, 'metrics' , 'tmpDir');
+# 			$command .= ' | wc -l  > ' .$outputFile;
+# 			#----
+# 		}
 	}
 
 	return $command;
 }
 
+
+##Decrepated everthing should be in the report
 sub mergeIndvidualReadStats{
 	my $rH_cfg = shift;
 	my $sampleName = shift;
