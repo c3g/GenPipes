@@ -67,7 +67,7 @@ use LoadConfig;
 # SUB
 #-------------------
 our $rH_cfg;
-our $groupName;
+our $sampleName;
 our $rH_laneInfo;
 our $pair1;
 our $pair2;
@@ -75,7 +75,7 @@ our $fileButterflyComand;
 
 sub chrysalis {
     $rH_cfg      = shift;
-    $groupName  = shift;
+    $sampleName  = shift;
     $rH_laneInfo = shift;
     $pair1       = shift;    # For single command the left will receive the file.
     $pair2       = shift;
@@ -95,11 +95,11 @@ sub chrysalis {
 
 sub butterfly {
     $rH_cfg              = shift;
-    $groupName          = shift;
+    $sampleName          = shift;
     $rH_laneInfo         = shift;
     $fileButterflyComand = shift;
 
-    my $laneDirectory = "assembly/" . $groupName . "/chrysalis/";
+    my $laneDirectory = "assembly/" . $sampleName . "/chrysalis/";
     my $command       = ' ';
     my %retVal;
 
@@ -116,12 +116,12 @@ sub butterfly {
 
 sub concatFastaCreateGtf {
     $rH_cfg      = shift;
-    $groupName  = shift;
+    $sampleName  = shift;
     $rH_laneInfo = shift;
 
     my $command = '';
     my %retVal;
-    my $laneDirectory = "assembly/" . $groupName . "/";
+    my $laneDirectory = "assembly/" . $sampleName . "/";
 
     $command .= 'module add ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.java' );
     $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.bowtie' );
@@ -129,7 +129,7 @@ sub concatFastaCreateGtf {
     $command .= ' find ' . $laneDirectory . 'chrysalis';
     $command .= ' -name "*allProbPaths.fasta" -exec cat {} + >' . $laneDirectory . 'Trinity.fasta ;';
     $command .= ' sh ' . $rH_cfg->{'trinity.createGtf'} . ' ' . $laneDirectory . 'Trinity.fasta';
-    $command .= ' ' . $laneDirectory . $groupName . '.gtf ;';
+    $command .= ' ' . $laneDirectory . $sampleName . '.gtf ;';
     $command .= ' awk \'{print \$1} \' ' . $laneDirectory . 'Trinity.fasta ';
     $command .= ' >' . $laneDirectory . 'Trinity.2.fasta';
 
@@ -143,7 +143,7 @@ sub _chrysalisPairCommand {
     my $command = '';
     my %retVal;
 
-    my $laneDirectory = 'assembly/' . $groupName . '/';
+    my $laneDirectory = 'assembly/' . $sampleName . '/';
     my $outputFile = $laneDirectory .'/chrysalis/butterfly_commands.adj';
     my $latestFile = -M $outputFile;
     if(!defined($latestFile)) {
@@ -166,7 +166,7 @@ sub _chrysalisSingleCommand {
     my $command = '';
     my %retVal;
     
-    my $laneDirectory = 'assembly/' . $groupName . '/';
+    my $laneDirectory = 'assembly/' . $sampleName . '/';
     my $outputFile = $laneDirectory .'/chrysalis/butterfly_commands.adj';
     my $latestFile = -M $outputFile;
     if(!defined($latestFile)) {
