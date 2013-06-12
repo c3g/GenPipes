@@ -105,6 +105,7 @@ sub readStats {
 	my $inputFile = shift;
 	my $outputFile = shift;
 	my $sampleName = shift;
+	my $fileType = shift;
 	
 	my $latestInputFile = -M $inputFile;
 	my $latestOutputFile = -M $outputFile;
