@@ -113,8 +113,8 @@ sub readStats {
 	my $command;
 	if(!defined($latestInputFile) || !defined($latestOutputFile) || $latestInputFile <  $latestOutputFile) {
 		if ((lc $fileType) eq "trim") {
-			$command .= 'grep \"Input Read Pairs\" ' .$inputFile;
-			$command .= ' | awk -v na='.$sampleName .' \' {print na \"\t\" \$4 \"\t\" \$7 } \''; 
+			$command .= 'grep \"Input Read\" ' .$inputFile;
+			$command .= ' | awk -F\":\" -v na='.$sampleName .' \' BEGIN { OFS=\"\t\" } { split(\$2,a,\" \"); split(\$3,b,\" \"); print na,a[1],b[1]} \''; 
 			$command .= ' > ' .$outputFile;
 		}
 		elsif  ((lc $fileType) eq "bam") {
