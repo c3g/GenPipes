@@ -226,10 +226,10 @@ sub trimming {
 			$trimJobIdVarNameLane = SubmitToCluster::printSubmitCmd($rH_cfg, "trim", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'TRIM' .$rH_jobIdPrefixe ->{$sampleName.'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} , undef, $sampleName, $rH_trimDetails->{'command'}, 'reads/' .$sampleName, $workDirectory);
 			$trimJobIdVarNameLane = '$' .$trimJobIdVarNameLane ;
 		}
-		my $trinityOut = $laneDirectory .'/' . $sampleName . '.trim.out'
+		my $trinityOut = $laneDirectory .'/' . $sampleName . '.trim.out';
 		##get trimmed read count
-		$outputFile= 'metrics/' .$sampleName .'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . '.readstats.triming.tsv' ;
-		$command = Metrics::readStats($rH_cfg,$trinityOut,$outputFile,'trim',$sampleName);
+		my $outputFile= 'metrics/' .$sampleName .'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . '.readstats.triming.tsv' ;
+		my $command = Metrics::readStats($rH_cfg,$trinityOut,$outputFile,$sampleName,'trim');
 		my $filteredReadStatJobID ;
 		if(defined($command) && length($command) > 0) {
 			$filteredReadStatJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", 'filtered', 'FILTERREADSTAT' .$rH_jobIdPrefixe ->{$sampleName.'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} ,$trimJobIdVarNameLane, $sampleName, $command,'metrics/'  .$sampleName, $workDirectory);
@@ -277,7 +277,7 @@ sub aligning {
 		}
 		if(defined $command && length($command) > 0){
 			$alignJobIdVarNameLane = SubmitToCluster::printSubmitCmd($rH_cfg, "align", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'ALIGN' .$rH_jobIdPrefixe ->{$sampleName.'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} .'ALIGN', $jobDependency, $sampleName, $command, 'alignment/' .$sampleName, $workDirectory);
-			$alignJobIdVarNameLane = '$'. $alignJobIdVarNameLane ; 
+			$alignJobIdVarNameSample .= '$'. $alignJobIdVarNameLane .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep'); 
 		} 
 		##generate aligment stats
 # 		my $inputFile = 'alignment/' . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . 'accepted_hits.bam';
@@ -627,6 +627,7 @@ sub metrics {
 		$mergingDependency = join(LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep'),values(%{$globalDep{'merging'}}));
 	}
 	## RNAseQC metrics
+	mkdir  $workDirectory .'/alignment' ;
 	open(RNASAMPLE, ">alignment/rnaseqc.samples.txt") or  die ("Unable to open alignment/rnaseqc.samples.txt for wrtting") ;
 	print RNASAMPLE "Sample\tBamFile\tNote\n";
 	my $projectName = LoadConfig::getParam($rH_cfg, 'metricsRNA', 'projectName');
