@@ -237,7 +237,9 @@ sub trimming {
 			$trimJobIdVarNameSample .= $filteredReadStatJobID .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 		}
 	}
-	$trimJobIdVarNameSample = substr $trimJobIdVarNameSample, 0, -1 ;
+	if(defined($trimJobIdVarNameSample) && length($trimJobIdVarNameSample) > 0) {
+		$trimJobIdVarNameSample = substr $trimJobIdVarNameSample, 0, -1 ;
+	}
 	return $trimJobIdVarNameSample;	
 }
 

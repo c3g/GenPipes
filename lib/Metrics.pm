@@ -114,7 +114,7 @@ sub readStats {
 	if(!defined($latestInputFile) || !defined($latestOutputFile) || $latestInputFile <  $latestOutputFile) {
 		if ((lc $fileType) eq "trim") {
 			$command .= 'grep \"Input Read Pairs\" ' .$inputFile;
-			$command .= ' | awk -v na='.$sampleName .' \' {print na \$4 \"\t\" \$7 } \''; 
+			$command .= ' | awk -v na='.$sampleName .' \' {print na \"\t\" \$4 \"\t\" \$7 } \''; 
 			$command .= ' > ' .$outputFile;
 		}
 		elsif  ((lc $fileType) eq "bam") {
