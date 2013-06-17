@@ -142,14 +142,14 @@ sub generatePeaks {
 	}
 	#Peak calling strategies.
 	my $options = "";
-	# Paired / single end reads
-	if ( $paired eq 1 ){
-			$options .= " -f BAMPE ";
-	}else {
-				$options .= " -f BAM ";
-	}	 
-	
+	my $typeoptions = "";
 	# Specific options for treatment / control pairs
+	# Paired / single end reads
+	if ( defined($paired ) && $paired == 1  ){
+			$typeoptions .= " -f BAMPE ";
+	}else {
+			$typeoptions  .= " -f BAM ";
+	}	 
 	 
 	if( defined($control) && defined($treatment) ) {
 		if( $type eq 'B' ) {
@@ -159,7 +159,7 @@ sub generatePeaks {
 		  $options = " ";
 		}
 		
-		$command .= ' '. LoadConfig::getParam($rH_cfg, 'macs','macsBin') .' callpeak '. '-t ' . $treatment .' -c ' . $control . ' --name=' . $outputDir . '/' . $designName . $genomeSize . $options .' '. $feoptions . ' '. $extraFlags  .' >& ' .  $outputDir . '/' . $designName . '.diag.macs.out ;';
+		$command .= ' '. LoadConfig::getParam($rH_cfg, 'macs','macsBin') .' callpeak '. '-t ' . $treatment .' -c ' . $control . ' --name=' . $outputDir . '/' . $designName . $genomeSize . $options .' '. $typeoptions .' '. $feoptions . ' '. $extraFlags  .' >& ' .  $outputDir . '/' . $designName . '.diag.macs.out ;';
 	}	
 	elsif( !defined($treatment) ) {
 			print $treatment;
@@ -172,7 +172,7 @@ sub generatePeaks {
 		else {
 			$options = ' --nomodel --nolambda';
 		}
-		$command .= ' '. LoadConfig::getParam($rH_cfg, 'macs','macsBin') .' callpeak '. '-t ' . $treatment . ' --name=' . $outputDir . '/' . $designName . $genomeSize .  $options .' '. $feoptions . ' '. $extraFlags  .' >& ' .  $outputDir . '/' . $designName . '.diag.macs.out; ';
+		$command .= ' '. LoadConfig::getParam($rH_cfg, 'macs','macsBin') .' callpeak '. '-t ' . $treatment . ' --name=' . $outputDir . '/' . $designName . $genomeSize .  $options .' '. $typeoptions . ' '. $feoptions . ' '. $extraFlags  .' >& ' .  $outputDir . '/' . $designName . '.diag.macs.out; ';
 	}
 	elsif(!defined($control) && !defined($treatment)) {
 			die "ERROR: Something wrong with design; treatment and control (if available) should be assigned\n";
