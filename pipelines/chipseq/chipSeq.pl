@@ -254,23 +254,28 @@ sub rawCounts {
 		my $command = undef;
 		my $inputFile = undef;
 		my $outputFile = undef;
+		my $filteredReadStatJobID = undef;
+		my $alignedReadStatJobID = undef;
 		## get trimmed read count
 		$inputFile = 'reads/' .$sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName .'.trim.out';
 		$outputFile= 'raw_counts/' .$sampleName .'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . '.readstats.filtered.csv' ;
 		$command = Metrics::readStats($rH_cfg,$inputFile,$outputFile,'trim', $sampleName);
-		my $filteredReadStatJobID ;
-		if( $command ne "" ) {
-			$filteredReadStatJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "rawCounts", "filtered" , 'FILTERREADSTAT' .$rH_jobIdPrefixe ->{$sampleName.'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} ,$jobDependency , $sampleName, $command,'raw_counts/'  .$sampleName, $workDirectory);
+		
+		if( defined($command) ) {
+		  if ($command ne ""){
+			$filteredReadStatJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "rawCounts", "filtered" , 'FILTERREADSTAT' .$rH_jobIdPrefixe ->{$sampleName.'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} ,$jobDependency , $sampleName, $command, 'raw_counts/'  .$sampleName, $workDirectory);
 			$filteredReadStatJobID = '$'.$filteredReadStatJobID;			
+			}
 		}
 		# get aligned read counts
 		$inputFile = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.bam';
 		$outputFile= 'raw_counts/' .$sampleName .'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . '.readstats.aligned.csv' ;
-		$command = Metrics::readStats($rH_cfg,$inputFile,$outputFile,'bam', $sampleName);
-		my $alignedReadStatJobID = undef;
-		if( $command ne "") {
+		$command = Metrics::readStats($rH_cfg,$inputFile,$outputFile,'bam', $sampleName);		
+		if( defined($command)) {
+			if( $command ne "") {
 			$alignedReadStatJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "rawCounts", "aligned", 'ALIGNEDREADSTAT' .$rH_jobIdPrefixe ->{$sampleName.'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} , $jobDependency , $sampleName, $command, 'raw_counts/' .$sampleName, $workDirectory);
 			$alignedReadStatJobID = '$'.$alignedReadStatJobID;
+			}	
 		}
 		## Merge read stats
 		#my $rawFile = 'raw_counts/' .$sampleName .'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . '.readstats.raw.csv' ;
@@ -281,11 +286,13 @@ sub rawCounts {
 		$outputFile= 'raw_counts/' .$sampleName .'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . '.readstats.csv' ;
 		$command = Metrics::mergeIndvidualReadStats($rH_cfg, $sampleNameFull, $rawFile, $filterFile, $alignFile, $outputFile);
 		my $mergeReadStatJobID = undef;
-		if( $command ne "" ) {
+		if( defined($command) ) {
+		  if (defined ($alignedReadStatJobID) && defined ($filteredReadStatJobID) && $command ne "" ){
 			$mergeReadStatJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "mergeCounts", undef, 'MERGEREADSTAT' .$rH_jobIdPrefixe ->{$sampleName.'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} ,$alignedReadStatJobID.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$filteredReadStatJobID, $sampleName, $command, 'raw_counts/' .$sampleName, $workDirectory);
 			$mergeReadStatJobID = '$'.$mergeReadStatJobID;
+			$alignJobIdVarNameSample .= $mergeReadStatJobID .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
+			}
 		}
-		$alignJobIdVarNameSample .= $mergeReadStatJobID .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 	}
 	if(defined($alignJobIdVarNameSample)){
 		$alignJobIdVarNameSample = substr $alignJobIdVarNameSample, 0, -1 ;
@@ -492,7 +499,6 @@ sub peakCall {
 	my $treatment;
 	my $controlBam;
 	my $treatmentBam;
-	my $paired ;
 	if ($numberTreatments >= 1) {
 		# At least one treatment
 		for (my $j = 0;   $j < $numberTreatments; $j++) {
@@ -512,7 +518,7 @@ sub peakCall {
 			my $outputPath = 'peak_call/' .$design. '.' .$j;
 
 			# Run type for treatment
-			$paired = undef ; 
+			my $paired = undef ; 
 			my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$treatment};
 			for my $rH_laneInfo (@$rAoH_sampleLanes) {
 				if ( $rH_laneInfo->{'runType'} eq "SINGLE_END" ) {
@@ -525,7 +531,7 @@ sub peakCall {
 				last if (defined($paired));
 			}
 			# MACS command
-			my $command = MACS2::generatePeaks($rH_cfg, $design, $treatmentBam, $controlBam , $rHoAoA_designGroup->{$design}->[2]->[0], $outputPath, $paired );
+			my $command = MACS2::generatePeaks( $rH_cfg, $design, $treatmentBam, $controlBam , $rHoAoA_designGroup->{$design}->[2]->[0], $outputPath, $paired );
 			if( defined($command) && $command ne "") {
 			  if(defined($control)){
 					if($depends > 0 && defined($globalDep{'aligning'}{ $control }) && defined($globalDep{'aligning'}{ $treatment })) {
