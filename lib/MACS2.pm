@@ -73,7 +73,10 @@ sub getDesign {
 			my @splitB = split(/\t/, $infos[$j]);
 			my $sampleName = $splitB[0];
 			#chomp($sampleName);
-			if($splitB[$i] == 1) {
+			if($splitB[$i] eq "") {
+				die "ERROR: Wrong assignment for a sample; check design file\n";
+			}
+			elsif($splitB[$i] == 1) {
 				push(@group1,$sampleName);
 			}
 			elsif($splitB[$i] == 2) {
