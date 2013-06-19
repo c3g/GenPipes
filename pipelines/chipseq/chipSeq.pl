@@ -259,7 +259,7 @@ sub rawCounts {
 		## get trimmed read count
 		$inputFile = 'reads/' .$sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName .'.trim.out';
 		$outputFile= 'raw_counts/' .$sampleName .'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . '.readstats.filtered.csv' ;
-		$command = Metrics::readStats($rH_cfg,$inputFile,$outputFile,'trim', $sampleName);
+		$command = Metrics::readStats($rH_cfg,$inputFile,$outputFile, $sampleName,'trim');
 		
 		if( defined($command) ) {
 		  if ($command ne ""){
@@ -270,7 +270,7 @@ sub rawCounts {
 		# get aligned read counts
 		$inputFile = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.bam';
 		$outputFile= 'raw_counts/' .$sampleName .'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . '.readstats.aligned.csv' ;
-		$command = Metrics::readStats($rH_cfg,$inputFile,$outputFile,'bam', $sampleName);		
+		$command = Metrics::readStats($rH_cfg,$inputFile,$outputFile, $sampleName,'bam');		
 		if( defined($command)) {
 			if( $command ne "") {
 			$alignedReadStatJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "rawCounts", "aligned", 'ALIGNEDREADSTAT' .$rH_jobIdPrefixe ->{$sampleName.'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} , $jobDependency , $sampleName, $command, 'raw_counts/' .$sampleName, $workDirectory);
@@ -306,6 +306,7 @@ sub aligning{
   my $sampleName = shift;
   my $rAoH_sampleLanes  = shift;
   my $rAoH_seqDictionary = shift;
+  my $rH_jobIdPrefixe = shift;
  	my $jobDependency = undef;
  	my $bwaJobId;
  	
@@ -376,7 +377,7 @@ sub aligning{
   my $command = Picard::mergeFiles($rH_cfg, $sampleName, \@inputBams, $outputBAM);
   my $mergeJobId = undef;
   if( defined($command) && $command ne "" ) {
-    $mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mergeLanes", undef, 'MERGELANES', $jobDependency, $sampleName, $command, $workDirectory.'/'.$sampleName );
+    $mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mergeLanes", undef, 'MERGELANES'.$rH_jobIdPrefixe ->{$sampleName}, $jobDependency, $sampleName, $command, $workDirectory.'/'.$sampleName );
     $mergeJobId  = '$'.$mergeJobId;
   }
   return $mergeJobId;
@@ -499,15 +500,16 @@ sub peakCall {
 	my $treatment;
 	my $controlBam;
 	my $treatmentBam;
+	
 	if ($numberTreatments >= 1) {
 		# At least one treatment
 		for (my $j = 0;   $j < $numberTreatments; $j++) {
-			if( $numberControls == $numberTreatments){
-					$control       = $rHoAoA_designGroup->{$design}->[1]->[$j];
-					$controlBam    = 'alignment/' .$control . '/' .$control . '.sorted.bam' ; 
-				}elsif($numberControls == 1){
+			if($numberControls == 1){
 					$control       = $rHoAoA_designGroup->{$design}->[1]->[0];
 					$controlBam    = 'alignment/' .$control . '/' . $control . '.sorted.bam' ;
+			}elsif( $numberControls == $numberTreatments){
+					$control       = $rHoAoA_designGroup->{$design}->[1]->[$j];
+					$controlBam    = 'alignment/' .$control . '/' .$control . '.sorted.bam' ; 
 			}else{
 					$control       = undef ;
 					$controlBam    = undef;
@@ -516,7 +518,11 @@ sub peakCall {
 			$treatmentBam =  'alignment/' .$treatment . '/' . $treatment . '.sorted.bam' ;
 			
 			my $outputPath = 'peak_call/' .$design. '.' .$j;
-
+			if(defined($control)){
+				print "# design ".$design. ", treatment= ".$treatment.", control=". $control. "\n" ;
+			}else{
+				print "# design ".$design. ", treatment= ".$treatment."". "\n" ;
+			}
 			# Run type for treatment
 			my $paired = undef ; 
 			my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$treatment};
@@ -530,18 +536,21 @@ sub peakCall {
 				}
 				last if (defined($paired));
 			}
+			if(! defined($rHoAoH_sampleInfo->{$treatment}) ){
+				die "ERROR: Sample ".$treatment ." in design file is not present in NANUQ sample file". "\n";
+			}elsif(defined($control) && !defined($rHoAoH_sampleInfo->{$control})){
+				die "ERROR: Sample ".$control ." in design file is not present in NANUQ sample file ". "\n";
+			}
 			# MACS command
 			my $command = MACS2::generatePeaks( $rH_cfg, $design, $treatmentBam, $controlBam , $rHoAoA_designGroup->{$design}->[2]->[0], $outputPath, $paired );
 			if( defined($command) && $command ne "") {
-			  if(defined($control)){
-					if($depends > 0 && defined($globalDep{'aligning'}{ $control }) && defined($globalDep{'aligning'}{ $treatment })) {
-						$jobDependency = $globalDep{'aligning'}{ $control }.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$globalDep{'aligning'}{ $treatment };
-					}
-				}elsif($depends > 0 && defined($globalDep{'aligning'}{ $treatment })) {
+			  if( defined( $control ) && defined($globalDep{'aligning'}{ $control }) && defined($globalDep{'aligning'}{ $treatment })){
+					$jobDependency = $globalDep{'aligning'}{ $control }.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$globalDep{'aligning'}{ $treatment };
+				}elsif( defined($globalDep{'aligning'}{ $treatment })) {
 				  $jobDependency = $globalDep{'aligning'}{ $treatment };
 				}
 				print "mkdir -p " . $outputPath . '/output_jobs/' . "\n";
-				my $peakCallJobId= SubmitToCluster::printSubmitCmd($rH_cfg, 'peakCall', $j, 'MACS2PEAKCALL'. $rH_jobIdPrefixe ->{$design} , $jobDependency, $design, $command, $outputPath , $workDirectory);
+				my $peakCallJobId= SubmitToCluster::printSubmitCmd($rH_cfg, 'peakCall', $j, 'MACS2PEAKCALL'. $rH_jobIdPrefixe ->{$design}. $j , $jobDependency, $design, $command, $outputPath , $workDirectory);
 				$peakCallJobId= '$' .$peakCallJobId;
 				$PeakCallJobIdVarNameSample .= $peakCallJobId.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 			}
