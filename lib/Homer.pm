@@ -120,7 +120,7 @@ sub makeUCSCFile {
   if(!defined($latestOutputFile ))
   {
 	  $command .= ' module load ' .LoadConfig::getParam($rH_cfg, 'default' , 'moduleVersion.python') .' ' . LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.homer'). ';';
-	  $command .= ' makeUCSCfile -i  ' . $tagDirectory .' -o ' . $outputWiggle .';';
+	  $command .= ' makeUCSCfile ' . $tagDirectory .' -o ' . $outputWiggle .';';
 	}
 	
 	return $command;  
