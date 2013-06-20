@@ -169,7 +169,7 @@ sub main {
 			}
 		}elsif ($loopType eq 'design') {
 			for my $design (keys %{$rHoAoA_designGroup}) {
-					my $outputLocation = $outputStep. "/" .$design;
+					my $outputLocation = $outputStep. "/" .$design. '.0';
 					SubmitToCluster::initSubmit(\%cfg, $outputLocation);
 					my $jobIdVar = &$subref($current != ($opts{'s'}-1), \%cfg, $design, $rHoAoA_designGroup, $rHoAoH_sampleInfo , \%jobIdVarPrefix);
 					if (defined($jobIdVar)) {
@@ -313,7 +313,7 @@ sub aligning{
 	if($depends > 0) {
 		$jobDependency = $globalDep{'trimming'}{$sampleName};
 	}
-
+  print "BWA_JOB_IDS=\"\"\n";
 	print "mkdir -p $sampleName/output_jobs reads/$sampleName/output_jobs raw_counts/$sampleName/output_jobs alignment/$sampleName/output_jobs\n";
 	for my $rH_laneInfo (@$rAoH_sampleLanes) {
 		my $alignJobIdVarNameLane;
