@@ -56,7 +56,6 @@ use Picard;
 use HtseqCount;
 use SequenceDictionaryParser;
 use SubmitToCluster;
-use TophatBowtie;
 use Homer;
 use MACS2;
 use BWA;
@@ -79,6 +78,7 @@ push(@steps, {'name' => 'wiggle' , 'stepLoop' => 'sample' , 'output' => 'tracks'
 push(@steps, {'name' => 'peakCall' , 'stepLoop' => 'design' , 'output' => 'peak_call'});
 push(@steps, {'name' => 'annotation' , 'stepLoop' => 'design' , 'output' => 'annotation'});
 push(@steps, {'name' => 'motif' , 'stepLoop' => 'design' , 'output' => 'motif'});
+push(@steps, {'name' => 'qcPlots' , 'stepLoop' => 'general' , 'output' => 'graphs'});
 # push(@steps, {'name' => 'report' , 'stepLoop' => 'group' , 'output' => 'DGE'});
 # push(@steps, {'name' => 'deliverable' , 'stepLoop' => 'group' , 'output' => 'Deliverable'});
 
@@ -180,7 +180,7 @@ sub main {
 			my $outputLocation = $outputStep;
 			SubmitToCluster::initSubmit(\%cfg, $outputLocation);
 			# Tests for the first step in the list. Used for dependencies.
-			my $jobIdVar = &$subref($current != ($opts{'s'}-1), \%cfg, $rHoAoH_sampleInfo, $rHoAoA_designGroup, $rAoH_seqDictionary, \%jobIdVarPrefix);
+			my $jobIdVar = &$subref($current != ($opts{'s'}-1), \%cfg, $designFilePath, $rHoAoA_designGroup, $rHoAoH_sampleInfo , \%jobIdVarPrefix);
 			if (defined($jobIdVar)) {
 				$globalDep{$fname}->{$fname} = $jobIdVar;
 			}
@@ -445,7 +445,7 @@ sub qcTagDirectories {
 		my $qcTagsJobID   = SubmitToCluster::printSubmitCmd($rH_cfg, "qcTags", undef, 'QCTAGS' .$rH_jobIdPrefixe ->{$sampleName} , $jobDependency , $sampleName, $rA_commands->[0], 'tags/' .$sampleName, $workDirectory);
 		$qcTagsJobID   = '$'.$qcTagsJobID ;
 	}
-	
+	print 'QCTAGS_JOB_IDS=${QCTAGS_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$qcTagsJobID."\n";
 	return $qcTagsJobID;    
 }
 sub wiggle {
@@ -478,7 +478,24 @@ sub wiggle {
 
 
 sub qcPlots {
-	return 1;
+	my $depends = shift;
+	my $rH_cfg = shift;
+	my $designFilePath = shift;
+	
+	my $jobDependency = undef;
+	if($depends > 0) {
+			$jobDependency = '$QCTAGS_JOB_IDS';
+	}
+	print "mkdir -p graphs/output_jobs\n";
+	my $qcPlotsJobId = undef ;
+	
+	my $command = HOMER::qcPlotsR($rH_cfg, $designFilePath, $workDirectory);
+	if(defined($command) && $command ne "") {
+		$qcPlotsJobId  = SubmitToCluster::printSubmitCmd($rH_cfg, "qcGraphs", undef, 'QCPLOTS' , $jobDependency, undef, $command, 'graphs/', $workDirectory);
+		$qcPlotsJobId  = '$'.$qcPlotsJobId ;
+	}
+	return $qcPlotsJobId;    
+
 }
 
 sub peakCall {
@@ -544,9 +561,9 @@ sub peakCall {
 			# MACS command
 			my $command = MACS2::generatePeaks( $rH_cfg, $design, $treatmentBam, $controlBam , $rHoAoA_designGroup->{$design}->[2]->[0], $outputPath, $paired );
 			if( defined($command) && $command ne "") {
-			  if( defined( $control ) && defined($globalDep{'aligning'}{ $control }) && defined($globalDep{'aligning'}{ $treatment })){
+			  if( $depends > 0 && defined( $control ) && defined($globalDep{'aligning'}{ $control }) && defined($globalDep{'aligning'}{ $treatment })){
 					$jobDependency = $globalDep{'aligning'}{ $control }.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$globalDep{'aligning'}{ $treatment };
-				}elsif( defined($globalDep{'aligning'}{ $treatment })) {
+				}elsif( $depends > 0 && defined($globalDep{'aligning'}{ $treatment })) {
 				  $jobDependency = $globalDep{'aligning'}{ $treatment };
 				}
 				print "mkdir -p " . $outputPath . '/output_jobs/' . "\n";

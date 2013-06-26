@@ -161,4 +161,16 @@ sub annotatePeaks{
   
 }
 
+sub qcPlotsR {
+  my $rH_cfg        = shift;
+	my $designFile     = shift;
+	my $outputDir      = shift;
+  my $graphDirectory = $outputDir .'/graphs/';
+  my $command       = '';
+  $command .= ' module add '. LoadConfig::getParam($rH_cfg, 'default' , 'moduleVersion.tools') .' '. LoadConfig::getParam($rH_cfg, 'default' , 'moduleVersion.R'). ';';
+  $command .= ' Rscript ' . ' \$R_TOOLS/chipSeqGenerateQCMetrics.R '. $designFile .' '. $outputDir .' ;';
+
+  return $command;
+
+}
 1;
