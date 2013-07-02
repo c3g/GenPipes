@@ -15,7 +15,8 @@ mv exonerate-${VERSION} exonerate-${VERSION}-src
 cd exonerate-${VERSION}-src
 ./configure --prefix ${INSTALL_PATH}/exonerate-${VERSION}
 make -j8
-make install && ../exonerate-${VERSION}-src
+make install && rm -r ../exonerate-${VERSION}-src
+cd ..
 # Module file
 echo "#%Module1.0
 proc ModulesHelp { } {
