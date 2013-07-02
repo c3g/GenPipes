@@ -100,20 +100,18 @@ my $help;
 
 #-------------------------------------
 GetOptions(
-    'help|h!'           => \$help,
+  'help|h!'           => \$help,
 	'file|f=s'          => \$command,
 	'nthreads|n=i'      => \$nthreads
 
 ) or die "Fatal Error: Problem parsing command-line " . $!;
 pod2usage( -exitstatus => 0, -verbose => 2 ) if $help;
 
-
 # Get Number of CPUs is number of threads is not specified
 $number_of_threads = $nthreads ? $nthreads : `cat /proc/cpuinfo | grep "processor" | awk '{print \$NF}' | sort -u | wc -l`;
 chomp $number_of_threads; 
 
-
-open (IN, "$ARGV[0]") || die "could not open file $ARGV[0], $!\n";
+open (IN, $command) || die "could not open file $command, $!\n";
 while (<IN>){
 	chomp;
 	push (@file, $_);

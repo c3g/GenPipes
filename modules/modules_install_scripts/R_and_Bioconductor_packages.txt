@@ -1,4 +1,6 @@
+GEOquery
 org.Mm.eg.db
+org.Rn.eg.db
 outliers
 plyr
 NBPSeq

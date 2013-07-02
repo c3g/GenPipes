@@ -155,7 +155,7 @@ mkpath ("$queryDir/temp_$file") unless (-d "$queryDir/temp_$file");
 
 # Split files
 #---------------------
-system "$splitfasta/fastasplit -c $nthreads -f $queryFile -o $queryDir/temp_$file";
+system "module load mugqic/exonerate && fastasplit -c $nthreads -f $queryFile -o $queryDir/temp_$file";
 
 opendir(DIR, "$queryDir/temp_$file");
 my @job = grep {/chunk/} (readdir(DIR));

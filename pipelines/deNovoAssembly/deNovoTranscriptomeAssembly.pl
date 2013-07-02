@@ -44,7 +44,7 @@ B<LoadConfig>
 
 B<SampleSheet>
 
-B<RemoveDuplicateReads>
+B<BAMtools>
 
 B<SplitFile>
 
@@ -127,7 +127,7 @@ use MergeFastq;
 use LoadConfig;
 use Data::Dumper;
 use SampleSheet;
-use RemoveDuplicateReads;
+use BAMtools;
 use SplitFile;
 use Trinity;
 use BLAST;
@@ -218,11 +218,6 @@ sub main {
         }
     }
     
-    # Create Reads dir
-    #----------------
-    print "if [ ! -d reads/ ]; then  mkdir reads/ ; fi\n";
-    
-    
     # Merge Step
     #------------
     my $rH_mergeDetails = MergeFastq::mergeFiles( \%cfg, $runType, $opts{'f'} );
@@ -300,12 +295,14 @@ sub trimming {
 
     print "TRIM_JOB_IDS=\"\"\n" unless $step1 > 1;
     for my $rH_laneInfo (@$rAoH_sampleLanes) {
-        my $rH_trimDetails = Trimmomatic::trim( $rH_cfg, $sampleName, $rH_laneInfo, "reads" );
+        my $outputDir = 'reads/'.$sampleName;
+        print "mkdir -p ".$outputDir."\n";
+        my $rH_trimDetails = Trimmomatic::trim( $rH_cfg, $sampleName, $rH_laneInfo, $outputDir);
 
         my $trimJobId = undef;
         if ( length( $rH_trimDetails->{'command'} ) > 0 ) {
 
-            $trimJobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "trim", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'TRIM', undef, $sampleName, $rH_trimDetails->{'command'} );
+            $trimJobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "trim", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'TRIM', undef, $sampleName, $rH_trimDetails->{'command'}, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName);
             $trimJobId = '$' . $trimJobId;
             print 'TRIM_JOB_IDS=${TRIM_JOB_IDS}' . LoadConfig::getParam( $rH_cfg, 'default', 'clusterDependencySep' ) . $trimJobId . "\n\n";
 
@@ -324,9 +321,25 @@ sub removeDuplicateReads {
         $jobDependency = '$TRIM_JOB_IDS';
     }
 
+    my $minQuality = $rH_cfg->{'trim.minQuality'};
+    my $minLength = $rH_cfg->{'trim.minLength'};
+
     print "DUP_JOB_IDS=\"\"\n";
     for my $rH_laneInfo (@$rAoH_sampleLanes) {
-        my $rH_dupDetails = RemoveDuplicateReads::deleteDuplicates( $rH_cfg, $sampleName, $rH_laneInfo );
+        my $rH_dupDetails;
+
+        my $workDir = 'reads/'.$sampleName.'/';
+
+        my $inputFastqPair1Name = $workDir . $sampleName . '.t'.$minQuality.'l'.$minLength.'.pair1.fastq.gz';
+        my $inputFastqPair2Name = $workDir . $sampleName . '.t'.$minQuality.'l'.$minLength.'.pair2.fastq.gz';
+        my $inputFastqSingleName = $workDir . $sampleName . '.t'.$minQuality.'l'.$minLength.'.single1.fastq.gz';
+        my $outputPrefix = $workDir . $sampleName;
+
+        if($rH_laneInfo->{'runType'} eq "PAIRED_END") {
+          $rH_dupDetails = BAMtools::deleteDuplicates( $rH_cfg, $sampleName, $inputFastqPair1Name, $inputFastqPair2Name, undef, $outputPrefix);
+        } else {
+          $rH_dupDetails = BAMtools::deleteDuplicates( $rH_cfg, $sampleName, undef, undef, $inputFastqSingleName, $outputPrefix);
+        }
 
         # add the returning value to the hash ref $rH_aliasSampleInfo. To be used by BWA aln
         $rH_aliasSampleInfo->{$sampleName}{'bwa_pair1'}   = $rH_dupDetails->{'pair1'};
@@ -339,8 +352,7 @@ sub removeDuplicateReads {
 
         my $dupJobId = undef;
         if ( length( $rH_dupDetails->{'command'} ) > 0 ) {
-
-            $dupJobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "dup", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'DUP', $jobDependency, $sampleName, $rH_dupDetails->{'command'} );
+            $dupJobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "duplicate", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'DUP', $jobDependency, $sampleName, $rH_dupDetails->{'command'}, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
             $dupJobId = '$' . $dupJobId;
             print 'DUP_JOB_IDS=${DUP_JOB_IDS}' . LoadConfig::getParam( $rH_cfg, 'default', 'clusterDependencySep' ) . $dupJobId . "\n";
             print 'GROUP_JOB_IDS=${GROUP_JOB_IDS}' . LoadConfig::getParam( $rH_cfg, 'default', 'clusterDependencySep' ) . $dupJobId . "\n\n";

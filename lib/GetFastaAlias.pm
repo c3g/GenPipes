@@ -34,6 +34,7 @@ package GetFastaAlias;
 
 # Strict Pragmas
 #--------------------------
+use Cwd;
 use strict;
 use warnings;
 
@@ -63,7 +64,7 @@ sub sampleInfo {
             foreach my $rH_laneInfo (@$rAoH_sampleLanes) {
                 if ( $line[0] eq $rH_laneInfo->{'name'} ) {
 
-                    $defaultDir = $defaultDir = $rH_cfg->{'trinity.trimmedReadDir'} . '/';
+                    $defaultDir = getcwd().'/reads/';
                     $qualOffSet = $rH_laneInfo->{'qualOffset'};
                     $pairType   = $rH_laneInfo->{'runType'};
 
@@ -95,12 +96,12 @@ sub sampleInfo {
             # $groupInfo{genome}{-left} =  sample1 t sample2 ...
             # $groupInfo{genome}{-right} =  sample1  sample2 ..
             #-----------------------------------------------------------------
-            $groupInfo{'group'}{ $line[1] }->{'left'} .= '  ' . $defaultDir . $sampleInfo{ $line[0] }->{'sample_name'} . '.t' . $minQuality . 'l' . $minLength . '.pair1.dup.fastq.gz ';
-            $groupInfo{'group'}{ $line[1] }->{'right'} .= '  ' . $defaultDir . $sampleInfo{ $line[0] }->{'sample_name'} . '.t' . $minQuality . 'l' . $minLength . '.pair2.dup.fastq.gz ';
+            $groupInfo{'group'}{ $line[1] }->{'left'} .= ' '  . $sampleInfo{'defaultDir'} . $line[0] . '/' . $sampleInfo{ $line[0] }->{'sample_name'} . '.pair1.dup.fastq.gz ';
+            $groupInfo{'group'}{ $line[1] }->{'right'} .= ' ' . $sampleInfo{'defaultDir'} . $line[0] . '/' . $sampleInfo{ $line[0] }->{'sample_name'} . '.pair2.dup.fastq.gz ';
 
         }
         elsif ( $pairType eq "SINGLE_END" ) {
-            $groupInfo{'group'}{ $line[1] }->{'single'} .= ' --single ' . $defaultDir . $sampleInfo{ $line[0] }->{'sample_name'} . '.t' . $minQuality . 'l' . $minLength . '.single.dup.fastq.gz';
+            $groupInfo{'group'}{ $line[1] }->{'single'} .= ' --single ' . $defaultDir . $sampleInfo{ $line[0] }->{'sample_name'} . '.single.dup.fastq.gz';
         }
 
     }

@@ -104,6 +104,7 @@ sub readStats {
 	my $rH_cfg = shift;
 	my $inputFile = shift;
 	my $outputFile = shift;
+	my $sampleName = shift;
 	my $fileType = shift;
 	
 	my $latestInputFile = -M $inputFile;
@@ -111,17 +112,13 @@ sub readStats {
 	
 	my $command;
 	if(!defined($latestInputFile) || !defined($latestOutputFile) || $latestInputFile <  $latestOutputFile) {
-		if ((lc $fileType) eq "fastq") {
-			$command .= 'zcat ' .$inputFile;
-
-			#---- flefebvr Wed 17 Apr 08:40:58 2013 
-			#$command .= ' | wc -l | awk \'{print \$1}\''; 	
-			$command .= ' | echo \$((\`wc -l\`/2))'; 
-			#----
-
+		if ((lc $fileType) eq "trim") {
+			$command .= 'grep \"Input Read\" ' .$inputFile;
+			$command .= ' | awk -F\":\" -v na='.$sampleName .' \' BEGIN { OFS=\"\t\" } { split(\$2,a,\" \"); split(\$3,b,\" \"); print na,a[1],b[1]} \''; 
 			$command .= ' > ' .$outputFile;
 		}
 		elsif  ((lc $fileType) eq "bam") {
+			##decrepited
 			my $unmapOption = '-F260';
 			$command .= SAMtools::viewFilter($rH_cfg, $inputFile, $unmapOption, undef);
 			$command .= ' | awk \' { print \$1} \'';
@@ -136,6 +133,8 @@ sub readStats {
 	return $command;
 }
 
+
+##Decrepated everthing should be in the report
 sub mergeIndvidualReadStats{
 	my $rH_cfg = shift;
 	my $sampleName = shift;

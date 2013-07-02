@@ -6,7 +6,8 @@
 
 args <- commandArgs(trailingOnly = TRUE)
 output_dir<-args[1]
-design_file<-args[2]
+input_dir<-args[2]
+design_file<-args[3]
 
 designs<-read.table(design_file, header=F, sep="\t", check.names=F)
 
@@ -21,7 +22,7 @@ for(j in 2:ncol(designs)) {
         	sampleState=designs[i,j]
                 if(sampleState !=0) {
                         sampleName=designs[i,1]
-                        transcriptFile=paste(output_dir,"/known/",sampleName, "/transcripts.gtf",sep="")
+                        transcriptFile=paste(input_dir,"/known/",sampleName, "/transcripts.gtf",sep="")
 			transcripts<-read.table(transcriptFile, header=T, sep="\t", quote='"')
 			transcripts<-as.data.frame(transcripts[agrep("transcript", transcripts[,3]),9])
                         transcripts<-as.data.frame(matrix(unlist(strsplit(as.character(transcripts[,1]), ";")), nrow=nrow(transcripts), byrow=T))
@@ -34,6 +35,6 @@ for(j in 2:ncol(designs)) {
 		}
 	}
 
-write.table(reference, paste(args[1],"/known/", designs[1,j], "/isoform_exp.diff.with.fpkm.csv", sep=""), quote=F, row.names=F, sep="\t")
+write.table(reference, paste(output_dir,"/known/", designs[1,j], "/isoform_exp.diff.with.fpkm.csv", sep=""), quote=F, row.names=F, sep="\t")
 
 }

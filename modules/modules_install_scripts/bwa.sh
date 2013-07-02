@@ -3,7 +3,7 @@
 ###################
 ################### BWA
 ###################
-VERSION="0.7.4"
+VERSION="0.7.5a"
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/bwa/
 mkdir -p $INSTALL_PATH
 cd $INSTALL_PATH

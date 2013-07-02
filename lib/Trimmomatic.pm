@@ -95,7 +95,7 @@ sub pairCommand {
         $command .= 'module load';
         $command .= ' '.LoadConfig::getParam($rH_cfg, 'trim','moduleVersion.java');
         $command .= ' '.LoadConfig::getParam($rH_cfg, 'trim','moduleVersion.trimmomatic');
-        $command .= ' ; java -cp \$TRIMMOMATIC_JAR org.usadellab.trimmomatic.TrimmomaticPE';
+        $command .= ' ; java -XX:ParallelGCThreads=1 -Xmx2G -cp \$TRIMMOMATIC_JAR org.usadellab.trimmomatic.TrimmomaticPE';
         $command .= ' -threads ' . $rH_cfg->{'trim.nbThreads'};
         if ( $rH_laneInfo->{'qualOffset'} eq "64" ) {
             $command .= ' -phred64';
@@ -149,7 +149,7 @@ sub singleCommand {
         $command .= 'module load';
         $command .= ' '.LoadConfig::getParam($rH_cfg, 'trim','moduleVersion.java');
         $command .= ' '.LoadConfig::getParam($rH_cfg, 'trim','moduleVersion.trimmomatic');
-        $command .= ' ; java -cp \$TRIMMOMATIC_JAR org.usadellab.trimmomatic.TrimmomaticSE';
+        $command .= ' ; java -XX:ParallelGCThreads=1 -Xmx2G -cp \$TRIMMOMATIC_JAR org.usadellab.trimmomatic.TrimmomaticSE';
         $command .= ' -threads ' . $rH_cfg->{'trim.nbThreads'};
         if ( $rH_laneInfo->{'qualOffset'} eq "64" ) {
             $command .= ' -phred64';
