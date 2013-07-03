@@ -58,6 +58,7 @@ sub fpkm{
 	if(!defined($latestFile) || !defined(-M $outputIndexFile) || $latestFile < -M $outputIndexFile) {
 		$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'fpkm','moduleVersion.cufflinks') .' ;';
 		$command .= ' cufflinks -q';
+		$command .= ' ' .LoadConfig::getParam($rH_cfg, 'fpkm','cufflinksOtherOption');
 		$command .= ' ' .$transcriptOption; 
 		$command .= ' --max-bundle-frags ' .LoadConfig::getParam($rH_cfg, 'fpkm','cufflinksMaxFargs');
 		$command .= ' --library-type ' .LoadConfig::getParam($rH_cfg, 'align', 'strandInfo');
