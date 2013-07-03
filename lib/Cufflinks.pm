@@ -57,7 +57,7 @@ sub fpkm{
 	# -M gives modified date relative to now. The bigger the older.
 	if(!defined($latestFile) || !defined(-M $outputIndexFile) || $latestFile < -M $outputIndexFile) {
 		$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'fpkm','moduleVersion.cufflinks') .' ;';
-		$command .= ' cufflinks -q';
+		$command .= ' cufflinks ';
 		$command .= ' ' .LoadConfig::getParam($rH_cfg, 'fpkm','cufflinksOtherOption');
 		$command .= ' ' .$transcriptOption; 
 		$command .= ' --max-bundle-frags ' .LoadConfig::getParam($rH_cfg, 'fpkm','cufflinksMaxFargs');
