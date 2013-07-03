@@ -144,15 +144,18 @@ sub _chrysalisPairCommand {
     my %retVal;
 
     my $laneDirectory = 'assembly/' . $sampleName . '/';
-    $command .= 'module add ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.java' );
-    $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.bowtie' );
-    $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.trinity' ) . ' ;';
-    $command .= ' Trinity.pl --seqType fq --JM 100G';
-    $command .= ' --left' . ' \" ' . $pair1 . ' \" ' . '--right' . ' \" ' . $pair2 . ' \" ';
-    $command .= ' --CPU ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'nbThreads');
-    $command .= ' --output ' . $laneDirectory;
-    $command .= ' --min_kmer_cov 31 --max_reads_per_loop 200000000 --no_run_butterfly ';
-
+    my $outputFile = $laneDirectory .'/chrysalis/butterfly_commands.adj';
+    my $latestFile = -M $outputFile;
+    if(!defined($latestFile)) {
+      $command .= 'module add ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.java' );
+      $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.bowtie' );
+      $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.trinity' ) . ' ;';
+      $command .= ' Trinity.pl --seqType fq --JM 100G';
+      $command .= ' --left' . ' \" ' . $pair1 . ' \" ' . '--right' . ' \" ' . $pair2 . ' \" ';
+      $command .= ' --CPU ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'nbThreads');
+      $command .= ' --output ' . $laneDirectory;
+      $command .= ' --min_kmer_cov 31 --max_reads_per_loop 200000000 --no_run_butterfly ';
+    }
     $retVal{'command'} = $command;
     return ( \%retVal );
 
@@ -164,14 +167,18 @@ sub _chrysalisSingleCommand {
     my %retVal;
     
     my $laneDirectory = 'assembly/' . $sampleName . '/';
-    $command .= 'module add ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.java' );
-    $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.bowtie' );
-    $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.trinity' ) . ' ;';
-    $command .= ' Trinity.pl --seqType fq --JM 100G';
-    $command .= ' ' . $pair1;
-    $command .= ' --CPU ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'nbThreads');
-    $command .= ' --output ' . $laneDirectory;
-    $command .= ' --min_kmer_cov 31 --max_reads_per_loop 200000000 --no_run_butterfly ';
+    my $outputFile = $laneDirectory .'/chrysalis/butterfly_commands.adj';
+    my $latestFile = -M $outputFile;
+    if(!defined($latestFile)) {
+      $command .= 'module add ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.java' );
+      $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.bowtie' );
+      $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.trinity' ) . ' ;';
+      $command .= ' Trinity.pl --seqType fq --JM 100G';
+      $command .= ' ' . $pair1;
+      $command .= ' --CPU ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'nbThreads');
+      $command .= ' --output ' . $laneDirectory;
+      $command .= ' --min_kmer_cov 31 --max_reads_per_loop 200000000 --no_run_butterfly ';
+    }
 
     $retVal{'command'} = $command;
     return ( \%retVal );

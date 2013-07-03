@@ -5,7 +5,8 @@
 
 args <- commandArgs(trailingOnly = TRUE)
 output_dir<-args[1]
-designFile<-args[2]
+input_dir<-args[2]
+designFile<-args[3]
 designs<-read.table(designFile, header=F, sep="\t", check.names=F)
 
 # Iterate for each design
@@ -39,7 +40,7 @@ for(j in 2:ncol(designs)) {
 		sampleState=designs[i,j]
 		if(sampleState !=0) {
 			sampleName=designs[i,1]
-			transcriptFile=paste(output_dir,"/denovo/",sampleName, "/transcripts.gtf",sep="")
+			transcriptFile=paste(input_dir,"/denovo/",sampleName, "/transcripts.gtf",sep="")
 			transcripts<-read.table(transcriptFile, header=F, sep="\t", quote='"', stringsAsFactors=F)
 			transcripts<-as.data.frame(transcripts[agrep("transcript", transcripts[,3]),9])
 			transcripts<-as.data.frame(matrix(unlist(strsplit(as.character(transcripts[,1]), ";")), nrow=nrow(transcripts), byrow=T))
