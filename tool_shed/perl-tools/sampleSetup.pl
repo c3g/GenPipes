@@ -14,19 +14,26 @@ sub main {
 
   my $techName;
   my $projectId;
+  my $sampleSheet;
   my $nanuqAuthFile;
+  my $noLinks;
   my $result = GetOptions(
     "tech=s"           => \$techName,
     "projectId=s"      => \$projectId,
+    "useSheet=s"       => \$sampleSheet,
     "nanuqAuthFilei=s" => \$nanuqAuthFile,
+    "noLinks!"         => \$noLinks,
   );
 
   my $errMsg = "";
   if(!defined($nanuqAuthFile) || !-e $nanuqAuthFile) {
     $errMsg .= "Missing nanuqAuthFile\n";
   }
-  if(!defined($projectId) || length($projectId) == 0) {
-    $errMsg .= "Missing prjId\n";
+  if(defined($projectId) && defined($sampleSheet)) {
+    $errMsg .= "You can't set both projectId and useSheet\n";
+  }
+  if((!defined($projectId) || length($projectId) == 0) && (!defined($sampleSheet) || length($sampleSheet) == 0)) {
+    $errMsg .= "Missing projectId or useSheet\n";
   }
   if(!defined($techName) || length($techName) == 0) {
     $errMsg .= "Missing tech\n";
@@ -45,12 +52,20 @@ sub main {
   }
 
   my $projectFile = 'project.nanuq.csv';
-  getSheet($projectFile, $techName, $projectId, $nanuqAuthFile);
+  if(defined($projectId)) {
+    getSheet($projectFile, $techName, $projectId, $nanuqAuthFile);
+  }
+  else {
+    $projectFile = $sampleSheet;
+  }
+
   my $rA_SampleInfos = parseSheet($projectFile);
-  handleSheet($rA_SampleInfos);
+  if(!$noLinks) {
+    createLinks($rA_SampleInfos);
+  }
 }
 
-sub handleSheet {
+sub createLinks {
   my $rA_SampleInfos = shift;
 
   for my $rH_Sample (@$rA_SampleInfos) {
