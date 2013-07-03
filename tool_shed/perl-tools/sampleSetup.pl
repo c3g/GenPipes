@@ -10,6 +10,16 @@ use strict;
 
 &main();
 
+sub printUsage {
+    print "Usage sampleSetup.pl --nanuqAuthFile \$HOME/.nanuqAuth.txt --usesheet project.nanuq.csv --tech hiseq\n";
+    print "\t--nanuqAuthFile <FILE>  Path to nanuq authentication file\n";
+    print "\t--usesheet      <FILE>  Use an already existing sample sheet\n";
+    print "\t--nolinks               Don't create raw_reads directory or symlinks\n";
+    print "\t--projectId     <INT>   Nanuq project id from which to get the sample sheet\n";
+    print "\t--help                  This help\n";
+    exit(0);
+}
+
 sub main {
 
   my $techName;
@@ -17,13 +27,19 @@ sub main {
   my $sampleSheet;
   my $nanuqAuthFile;
   my $noLinks;
+  my $help;
   my $result = GetOptions(
     "tech=s"           => \$techName,
     "projectId=s"      => \$projectId,
-    "useSheet=s"       => \$sampleSheet,
+    "usesheet=s"       => \$sampleSheet,
     "nanuqAuthFilei=s" => \$nanuqAuthFile,
-    "noLinks!"         => \$noLinks,
+    "nolinks!"         => \$noLinks,
+    "help!"         => \$help,
   );
+
+  if($help) {
+    printUsage();
+  }
 
   my $errMsg = "";
   if(!defined($nanuqAuthFile) || !-e $nanuqAuthFile) {
@@ -39,7 +55,8 @@ sub main {
     $errMsg .= "Missing tech\n";
   }
   if(length($errMsg)) {
-    die $errMsg;
+    warn $errMsg;
+    printUsage();
   }
 
   my $isMiseq = 0;
