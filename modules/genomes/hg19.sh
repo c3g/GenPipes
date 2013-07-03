@@ -112,6 +112,19 @@ R --vanilla <<'EOF'
 
 EOF
 cd -
+
+
+
+### Create  rRNA, tRNA, mtRNA mask for cufflinks (paste me to hg19)
+
+# Manual: UCSC, rpsmk with filter repClass tRNA, rRNA
+# Manual get all chrM from UCSCgenes table
+# cat
+cat hg19_rpmsk_rRNA_tRNA.gtf chrM.gtf > hg19_rRNA_tRNA_chrM.gtf
+
+
+
+
 # OR Alternative is MAthieu's:
 # module load mugqic/tools
 # gtf2geneSize.awk <...>
