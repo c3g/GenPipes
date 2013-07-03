@@ -70,7 +70,7 @@ sub splitFasta {
     my $splitDirectory = $laneDirectory . "fasta_split/";
 
     $command .= ' mkdir -p ' . $splitDirectory . ' ;';
-    $command .= ' module load '.LoadConfig::getParam($rH_cfg, 'blast', 'moduleVersion.exonerate');
+    $command .= ' module load '.LoadConfig::getParam($rH_cfg, 'blast', 'moduleVersion.exonerate').' ;';
     $command .= ' fastasplit' . ' -c ' . $rH_cfg->{'blast.chunks'};
     $command .= ' -f ' . $laneDirectory . $fileName . ' -o ' . $splitDirectory;
 
@@ -90,7 +90,7 @@ sub splitButterfly {
     my $splitDirectory = $laneDirectory . "butterfly_split";
 
     $command .= ' mkdir -p ' . $splitDirectory . ' ; ';
-    $command .=  $rH_cfg->{'trinity.split'} . ' ' . $rH_cfg->{'trinity.chunks'} . ' ' . $laneDirectory . 'butterfly_commands.adj '; # split numerically with a 4 digits padding
+    $command .=  LoadConfig::getParam($rH_cfg, 'butterfly', 'split') . ' ' . LoadConfig::getParam($rH_cfg, 'butterfly', 'chunks') . ' ' . $laneDirectory . 'butterfly_commands.adj '; # split numerically with a 4 digits padding
     $command .= $splitDirectory . ' ';
 
     $retVal{'command'} = $command;

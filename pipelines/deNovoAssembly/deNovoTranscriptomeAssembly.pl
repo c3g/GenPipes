@@ -122,6 +122,7 @@ BEGIN {
 # Dependencies
 #-----------------
 use Getopt::Std;
+use File::Basename;
 use GetFastaAlias;
 use MergeFastq;
 use LoadConfig;
@@ -411,7 +412,8 @@ sub deNovoAssembly {
         #----------
         # This puts the files names in the @Files array (with a 4 digits padding)
         my @files;
-        for ( my $i = 0 ; $i < $rH_cfg->{'trinity.chunks'} ; $i++ ) {
+        my $nbChunks = LoadConfig::getParam( $rH_cfg, 'butterfly', 'chunks');
+        for ( my $i = 0 ; $i < $nbChunks ; $i++ ) {
             push( @files, 'chunk.' . sprintf( "%04d", $i ) . '.txt') ;
         }
 
@@ -422,7 +424,7 @@ sub deNovoAssembly {
             my $butterflyJobId = undef;
             if ( length( $rH_splitChrysalisDetails->{'command'} ) > 0 ) {
                 $jobDependency = '$SPLITCHRYS_JOB_IDS';
-                $butterflyJobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "butterfly", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BUTTERFLY', $jobDependency, $group, $rH_butterflyDetails->{'command'} );
+                $butterflyJobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "butterfly", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . '_'. basename($file), 'BUTTERFLY', $jobDependency, $group, $rH_butterflyDetails->{'command'} );
                 $butterflyJobId = '$' . $butterflyJobId;
                 print 'BUTTERFLY_JOB_IDS=${BUTTERFLY_JOB_IDS}' . LoadConfig::getParam( $rH_cfg, 'default', 'clusterDependencySep' ) . $butterflyJobId . "\n\n";
 

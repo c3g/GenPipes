@@ -106,8 +106,8 @@ sub butterfly {
     $command .= 'module add ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.java' );
     $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.bowtie' );
     $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.trinity' ) . ' ;';
-    $command .= ' ' . $rH_cfg->{'trinity.parallel'} . ' -f ' . $laneDirectory . 'butterfly_split/' . $fileButterflyComand;
-    $command .= ' -n ' . $rH_cfg->{'trinity.nbThreads'} . ' ';
+    $command .= ' ' . $rH_cfg->{'butterfly.parallel'} . ' -f ' . $laneDirectory . 'butterfly_split/' . $fileButterflyComand;
+    $command .= ' -n ' . $rH_cfg->{'butterfly.nbThreads'} . ' ';
 
     $retVal{'command'} = $command;
     return ( \%retVal );
