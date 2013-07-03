@@ -1,1 +1,1 @@
-grep ">" $1 |  awk ' { split($1,nam,">") ; split($2,le,"=") ; print nam[2]"\tprotein_coding" "\texon""\t1""\t"le[2]"\t.\t+\t.""\tgene_id " "\042"nam[2]"\042" ";" " transcript_id " "\042"nam[2]"\042" ";" }' > $2
+grep "^>" $1 | perl -ne '$_ =~ /^>((comp\d+_c\d+)_seq\d+).*len=(\d+).*/;print $1,"\tprotein_coding\texon\t1\t".$3."\t.\t+\t.\tgene_id \"".$2."\"; transcript_id \"".$1."\";\n";' > $2

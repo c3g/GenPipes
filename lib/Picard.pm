@@ -56,6 +56,9 @@ sub mergeFiles {
     }
     else {
       my $modDate = -M $file;
+      if(!defined($modDate)) {
+        warn "Input merge file doesn't exist: $file\n";
+      }
       if($modDate < $latestBam) {
         $latestBam = $modDate;
       }

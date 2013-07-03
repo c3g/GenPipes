@@ -72,6 +72,7 @@ sub pairCommand {
     my $minQuality  = LoadConfig::getParam($rH_cfg, 'trim','minQuality');
     my $minLength   = LoadConfig::getParam($rH_cfg, 'trim','minLength');
     my $adapterFile = LoadConfig::getParam($rH_cfg, 'trim','adapterFile');
+    my $headcrop    = LoadConfig::getParam($rH_cfg, 'trim','headcrop');
 
     my $rawReadDir    = LoadConfig::getParam($rH_cfg, 'trim','rawReadDir');
 
@@ -109,6 +110,9 @@ sub pairCommand {
         if ( $rH_laneInfo->{'qualOffset'} eq "64" ) {
             $command .= ' TOPHRED33';
         }
+        if(defined($headcrop) && length($headcrop) > 0 && $headcrop > 0) {
+          $command .= ' HEADCROP:' . $headcrop;
+        }
         $command .= ' ILLUMINACLIP:' . $adapterFile . $rH_cfg->{'trim.clipSettings'};
         if ( $minQuality > 0 ) {
             $command .= ' TRAILING:' . $minQuality;
@@ -135,6 +139,7 @@ sub singleCommand {
     my $minQuality  = LoadConfig::getParam($rH_cfg, 'trim','minQuality');
     my $minLength   = LoadConfig::getParam($rH_cfg, 'trim','minLength');
     my $adapterFile = LoadConfig::getParam($rH_cfg, 'trim','adapterFile');
+    my $headcrop    = LoadConfig::getParam($rH_cfg, 'trim','headcrop');
 
     my $rawReadDir    = LoadConfig::getParam($rH_cfg, 'trim','rawReadDir');
 
@@ -158,6 +163,12 @@ sub singleCommand {
             $command .= ' -phred33';
         }
         $command .= ' ' . $rawReadDir .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' .$rH_laneInfo->{'read1File'} . ' ' . $outputFastqName;
+        if ( $rH_laneInfo->{'qualOffset'} eq "64" ) {
+            $command .= ' TOPHRED33';
+        }
+        if(defined($headcrop) && length($headcrop) > 0 && $headcrop > 0) {
+          $command .= ' HEADCROP:' . $headcrop;
+        }
         $command .= ' ILLUMINACLIP:' . $adapterFile . ':2:30:15';
         if ( $minQuality > 0 ) {
             $command .= ' TRAILING:' . $minQuality;
