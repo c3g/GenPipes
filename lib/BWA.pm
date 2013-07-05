@@ -111,21 +111,21 @@ sub aln {
   my $sampleName      = shift;
   my $pair1           = shift;
   my $pair2           = shift;
-  my $single         = shift;
+  my $single          = shift;
   my $optOutputPrefix = shift;
   my $rgId            = shift;
   my $rgSample        = shift;
   my $rgLibrary       = shift;
   my $rgPlatformUnit  = shift;
   my $rgCenter        = shift;
-  my $group           = shift;
+  my $indexToUse      = shift;
 
     my $command         = "";
     if ( defined($pair1) && defined($pair2) ) {
-        $command = pairCommand( $rH_cfg, $sampleName, $pair1, $pair2, $optOutputPrefix, $rgId, $rgSample, $rgLibrary, $rgPlatformUnit, $rgCenter, $group);
+        $command = pairCommand( $rH_cfg, $sampleName, $pair1, $pair2, $optOutputPrefix, $rgId, $rgSample, $rgLibrary, $rgPlatformUnit, $rgCenter, $indexToUse);
     }
     elsif ( defined($single) ) {
-        $command = singleCommand( $rH_cfg, $sampleName, $single, $optOutputPrefix, $rgId, $rgSample, $rgLibrary, $rgPlatformUnit, $rgCenter, $group);
+        $command = singleCommand( $rH_cfg, $sampleName, $single, $optOutputPrefix, $rgId, $rgSample, $rgLibrary, $rgPlatformUnit, $rgCenter, $indexToUse);
     }
     else {
         die "Unknown runType, not paired or single\n";
@@ -145,11 +145,11 @@ sub pairCommand {
   my $rgLibrary       = shift;
   my $rgPlatformUnit  = shift;
   my $rgCenter        = shift;
-  my $group           = shift;    # Variable used by deNovoAssembly pipeline
+  my $indexToUse      = shift;
 
   my $bwaRefIndex = LoadConfig::getParam( $rH_cfg, 'aln', 'bwaRefIndex' );
-  if (defined $group){
-    $bwaRefIndex = "assembly/" . $group .  $bwaRefIndex;
+  if (defined $indexToUse) {
+    $bwaRefIndex = $indexToUse;
   }
   
   my $outputSai1Name = $optOutputPrefix.'.pair1.sai';
@@ -213,12 +213,11 @@ sub singleCommand {
   my $rgLibrary       = shift;
   my $rgPlatformUnit  = shift;
   my $rgCenter        = shift;
-  my $group           = shift;
+  my $indexToUse      = shift;
     
   my $bwaRefIndex = LoadConfig::getParam( $rH_cfg, 'aln', 'bwaRefIndex' );
-
-  if (defined $group){
-    $bwaRefIndex = "assembly/" . $group .  $bwaRefIndex;
+  if (defined $indexToUse){
+    $bwaRefIndex = $indexToUse;
   }
   
   my $outputSaiName = $optOutputPrefix.'.single.sai';
@@ -262,19 +261,16 @@ sub singleCommand {
 }
 
 sub index {
-    my $rH_cfg      = shift;
-    my $sampleName  = shift;
-    my $rH_laneInfo = shift;
+    my $rH_cfg   = shift;
+    my $toIndex  = shift;
 
-    my $laneDirectory = "assembly/" . $sampleName . "/";
     my %retVal;
 
-    my $command = 'module add mugqic/bwa/0.6.2;';
-    $command .= ' bwa index ' . $laneDirectory . $rH_cfg->{'aln.bwaRefIndex'};
+    my $command = 'module load '.LoadConfig::getParam($rH_cfg, 'index', 'moduleVersion.bwa').' ;';
+    $command .= ' bwa index ' . $toIndex;
 
     $retVal{'command'} = $command;
     return ( \%retVal );
-
 }
 
 1;

@@ -109,7 +109,7 @@ sub deletePairedDuplicates {
     }
     my $outDate = -M $outputFastqPair1Name;
 	
-    if ( !defined($currentFileDate) || !defined($outDate) || $currentFileDate > -M $outDate ){
+    if ( !defined($currentFileDate) || !defined($outDate) || $currentFileDate > $outDate ){
         $command .= 'module add '. LoadConfig::getParam($rH_cfg, 'default','moduleVersion.java') ;
         $command .= ' ' . LoadConfig::getParam($rH_cfg, 'duplicate','moduleVersion.bamtools') . ';' ;
         $command .= ' java '.LoadConfig::getParam($rH_cfg, 'duplicate', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'duplicate', 'dupRam').' -jar  \$BAMTOOLS_JAR filterdups' .  ' --read1 ' . $pair1 . ' --read2 ' . $pair2;

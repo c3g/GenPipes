@@ -338,15 +338,15 @@ sub removeDuplicateReads {
 
         if($rH_laneInfo->{'runType'} eq "PAIRED_END") {
           $rH_dupDetails = BAMtools::deleteDuplicates( $rH_cfg, $sampleName, $inputFastqPair1Name, $inputFastqPair2Name, undef, $outputPrefix);
+          $rH_aliasSampleInfo->{$sampleName}{'bwa_pair1'}   = $rH_dupDetails->{'pair1'};
+          $rH_aliasSampleInfo->{$sampleName}{'bwa_pair2'}   = $rH_dupDetails->{'pair2'};
         } else {
           $rH_dupDetails = BAMtools::deleteDuplicates( $rH_cfg, $sampleName, undef, undef, $inputFastqSingleName, $outputPrefix);
         }
-
-        # add the returning value to the hash ref $rH_aliasSampleInfo. To be used by BWA aln
-        $rH_aliasSampleInfo->{$sampleName}{'bwa_pair1'}   = $rH_dupDetails->{'pair1'};
-        $rH_aliasSampleInfo->{$sampleName}{'bwa_pair2'}   = $rH_dupDetails->{'pair2'};
         $rH_aliasSampleInfo->{$sampleName}{'bwa_single1'} = $rH_dupDetails->{'single1'};
         $rH_aliasSampleInfo->{$sampleName}{'bwa_single2'} = $rH_dupDetails->{'single2'};
+
+        # add the returning value to the hash ref $rH_aliasSampleInfo. To be used by BWA aln
 
         # return 0 if this step was called from BWA step (we are only interested on the $rH_aliasSampleInfo values)
         if ( $step1 > 2 ) {return 0;}
@@ -489,7 +489,7 @@ sub blastContig {
         my @files;
         for ( my $i = 1 ; $i <= $rH_cfg->{'blast.chunks'} ; $i++ ) {
 
-            push( @files, '*_chunk_' . sprintf( "%07d", $i ) );
+            push( @files, $fileName.'_chunk_' . sprintf( "%07d", $i ) );
         }
 
         foreach my $db (@database) {
@@ -548,11 +548,14 @@ sub genomeAlign {
         print "if [ ! -d alignment/" . $group . " ]; then  mkdir -p alignment/" . $group . " ; fi\n";
 
         print "INDEX_JOB_IDS=\"\"\n";
-        my $rH_indexDetails = BWA::index( $rH_cfg, $group, $rH_laneInfo );
+        my $groupFasta = 'alignment/'.$group.'/'.$group.'.fasta';
+        my $rH_indexDetails = BWA::index( $rH_cfg, $groupFasta, $rH_laneInfo );
         $indexGroupDone{$group} = 1;
         my $indexJobId = undef;
 
         if ( length( $rH_indexDetails->{'command'} ) > 0 ) {
+            my $cmd = 'ln -s ../../assembly/' . $group . '/Trinity.2.fasta '.$groupFasta.'; '.$rH_indexDetails->{'command'};
+            $rH_indexDetails->{'command'} = $cmd;
             $indexJobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "index", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'INDEX', $jobDependency, $group, $rH_indexDetails->{'command'} );
             $indexJobId = '$' . $indexJobId;
             print 'INDEX_JOB_IDS=${INDEX_JOB_IDS}' . LoadConfig::getParam( $rH_cfg, 'default', 'clusterDependencySep' ) . $indexJobId . "\n\n";
@@ -565,33 +568,34 @@ sub genomeAlign {
     print "BWA_JOB_IDS=\"\"\n";
 
     for my $rH_laneInfo (@$rAoH_sampleLanes) {
+        my $groupFasta = 'alignment/'.$group.'/'.$group.'.fasta';
         my $rgId = $rH_laneInfo->{'libraryBarcode'} . "_" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
         my $rgSampleName = $rH_laneInfo->{'name'};
         my $rgLibrary = $rH_laneInfo->{'libraryBarcode'};
         my $rgPlatformUnit = 'run' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
         my $rgCenter = LoadConfig::getParam( $rH_cfg, 'aln', 'bwaInstitution' ) . '\tPL:Illumina' . "'";
 
-        my $outputDir = "alignment/" . $group.'/';
-        my $rA_commands = BWA::aln( $rH_cfg, $sampleName, $rH_aliasSampleInfo->{$sampleName}{'bwa_pair1'}, $rH_aliasSampleInfo->{$sampleName}{'bwa_pair2'}, $rH_aliasSampleInfo->{$sampleName}{'bwa_single1'}, $outputDir, $rgId, $rgSampleName, $rgLibrary, $rgPlatformUnit, $rgCenter, ( $group . '/' ) );
+        my $outputPrefix = "alignment/" . $group.'/'.$sampleName;
+        my $rA_commands = BWA::aln( $rH_cfg, $sampleName, $rH_aliasSampleInfo->{$sampleName}{'bwa_pair1'}, $rH_aliasSampleInfo->{$sampleName}{'bwa_pair2'}, $rH_aliasSampleInfo->{$sampleName}{'bwa_single1'}, $outputPrefix, $rgId, $rgSampleName, $rgLibrary, $rgPlatformUnit, $rgCenter, $groupFasta);
 
         if ( @{$rA_commands} == 3 ) {
         	print "READ1ALN_JOB_ID=\"\"\n";
-            my $read1JobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "aln", 'read1.' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READ1ALN', $jobDependency, $sampleName, $rA_commands->[0] );
+            my $read1JobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "aln", 'read1.' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READ1ALN', $jobDependency, $group, $rA_commands->[0] );
             $read1JobId = '$' . $read1JobId;
             
             print "READ2ALN_JOB_ID=\"\"\n";
-            my $read2JobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "aln", 'read2.' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READ2ALN', $jobDependency, $sampleName, $rA_commands->[1] );
+            my $read2JobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "aln", 'read2.' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READ2ALN', $jobDependency, $group, $rA_commands->[1] );
             $read2JobId = '$' . $read2JobId;
 
-            my $bwaJobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "bwa", 'sampe.' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA', LoadConfig::getParam( $rH_cfg, 'aln', 'clusterDependencySep' ) . $read1JobId . LoadConfig::getParam( $rH_cfg, 'aln', 'clusterDependencySep' ) . $read2JobId, $sampleName, $rA_commands->[2] );
+            my $bwaJobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "bwa", 'sampe.' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA', LoadConfig::getParam( $rH_cfg, 'aln', 'clusterDependencySep' ) . $read1JobId . LoadConfig::getParam( $rH_cfg, 'aln', 'clusterDependencySep' ) . $read2JobId, $group, $rA_commands->[2] );
             $bwaJobId = '$' . $bwaJobId;
             print 'BWA_JOB_IDS=${BWA_JOB_IDS}' . LoadConfig::getParam( $rH_cfg, 'bwa', 'clusterDependencySep' ) . $bwaJobId . "\n\n";
         }
         else {
-            my $readJobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "aln", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READALN', $jobDependency, $sampleName, $rA_commands->[0] );
+            my $readJobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "aln", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READALN', $jobDependency, $group, $rA_commands->[0] );
             $readJobId = '$' . $readJobId;
 
-            my $bwaJobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "bwa", 'samse.' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA', $readJobId, $sampleName, $rA_commands->[1] );
+            my $bwaJobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "bwa", 'samse.' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA', $readJobId, $group, $rA_commands->[1] );
             $bwaJobId = '$' . $bwaJobId;
             print 'BWA_JOB_IDS=${BWA_JOB_IDS}' . LoadConfig::getParam( $rH_cfg, 'bwa', 'clusterDependencySep' ) . $bwaJobId . "\n\n";
         }
@@ -622,7 +626,7 @@ sub readStats {
         my $readStatConcatJobId = undef;
 
         if ( length( $rH_readStatDetails->{'command'} ) > 0 ) {
-            $readStatJobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "readstats", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READSTATS', $jobDependency, $sampleName, $rH_readStatDetails->{'command'} );
+            $readStatJobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "readstats", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READSTATS', $jobDependency, $group, $rH_readStatDetails->{'command'} );
             $readStatJobId = '$' . $readStatJobId;
             print 'READSTATS_JOB_IDS=${READSTATS_JOB_IDS}' . LoadConfig::getParam( $rH_cfg, 'default', 'clusterDependencySep' ) . $readStatJobId . "\n\n";
 
@@ -633,7 +637,7 @@ sub readStats {
         $jobDependency = '$READSTATS_JOB_IDS';
         print "READSTATSCONCAT_JOB_IDS=\"\"\n";
         if ( length( $rH_readStatConcatDetails->{'command'} ) > 0 ) {
-            $readStatConcatJobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "readstatsconcat", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READSTATSCONCAT', $jobDependency, $sampleName, $rH_readStatConcatDetails->{'command'} );
+            $readStatConcatJobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "readstatsconcat", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READSTATSCONCAT', $jobDependency, $group, $rH_readStatConcatDetails->{'command'} );
             $readStatConcatJobId = '$' . $readStatConcatJobId;
             print 'READSTATSCONCAT_JOB_IDS=${READSTATSCONCAT_JOB_IDS}' . LoadConfig::getParam( $rH_cfg, 'default', 'clusterDependencySep' ) . $readStatConcatJobId . "\n\n";
         }
@@ -652,7 +656,7 @@ sub readStats {
 
         print "READSTATCONTIG_JOB_IDS=\"\"\n";
         if ( length( $rH_readStatContigDetails->{'command'} ) > 0 ) {
-            $readStatContigJobID = SubmitToCluster::printSubmitCmd( $rH_cfg, "readstatcontig", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READSTATCONTIG', $jobDependency, $sampleName, $rH_readStatContigDetails->{'command'} );
+            $readStatContigJobID = SubmitToCluster::printSubmitCmd( $rH_cfg, "readstatcontig", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READSTATCONTIG', $jobDependency, $group, $rH_readStatContigDetails->{'command'} );
             $readStatContigJobID = '$' . $readStatContigJobID;
             print 'READSTATCONTIG_JOB_IDS=${READSTATCONTIG_JOB_IDS}' . LoadConfig::getParam( $rH_cfg, 'default', 'clusterDependencySep' ) . $readStatContigJobID . "\n\n";
         }
@@ -688,7 +692,7 @@ sub htseqCount {
         my $htseqSortJobId = undef;
 
         if ( length( $rH_htseqSortDetails->{'command'} ) > 0 ) {
-            $htseqSortJobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "htseqsort", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'HTSEQSORT', $jobDependency, $sampleName, $rH_htseqSortDetails->{'command'} );
+            $htseqSortJobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "htseqsort", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'HTSEQSORT', $jobDependency, $group, $rH_htseqSortDetails->{'command'} );
             $htseqSortJobId = '$' . $htseqSortJobId;
             print 'HTSEQSORT_JOB_IDS=${HTSEQSORT_JOB_IDS}' . LoadConfig::getParam( $rH_cfg, 'default', 'clusterDependencySep' ) . $htseqSortJobId . "\n\n";
         }
