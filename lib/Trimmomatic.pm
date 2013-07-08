@@ -81,6 +81,7 @@ sub pairCommand {
     my $outputFastqSingle1Name = $outputDir .'/' . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.single1.fastq.gz';
     my $outputFastqSingle2Name = $outputDir .'/' . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.single2.fastq.gz';
     my $outputTrimLog = $outputDir .'/' . $sampleName . '.trim.out';
+    my $outputTrimStats = $outputDir .'/' . $sampleName . '.trim.stats.csv';
     my $pair1FileDate = -M $outputFastqPair1Name;
     my $pair2FileDate = -M $outputFastqPair2Name;
 
@@ -119,6 +120,8 @@ sub pairCommand {
         }
         $command .= ' MINLEN:' . $minLength;
         $command .= ' 2> ' . $outputTrimLog;
+        $command .= ' ;';
+        $command .= ' grep \"^Input Read\" '.$outputTrimLog.'| sed \'s/Input Read Pairs: \\([0-9]\\+\\).*Both Surviving: \\([0-9]\\+\\).*Forward Only Surviving: \\([0-9]\\+\\).*/Raw Fragments,\\1#Fragment Surviving,\\2#Single Surviving,\\3/g\' | tr \'#\' \'\n\' > '.$outputTrimStats;
     }
 
     my %retVal;
@@ -145,6 +148,7 @@ sub singleCommand {
 
     my $outputFastqName = $outputDir . '/' . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.single.fastq.gz';
     my $outputTrimLog = $outputDir . '/' . $sampleName . '.trim.out';
+    my $outputTrimStats = $outputDir .'/' . $sampleName . '.trim.stats.csv';
     my $currentFileDate = -M $outputFastqName;
 
     my $command = "";
@@ -175,6 +179,8 @@ sub singleCommand {
         }
         $command .= ' MINLEN:' . $minLength;
         $command .= ' 2> ' . $outputTrimLog;
+        $command .= ' ;';
+        $command .= ' grep \"^Input Read\" '.$outputTrimLog.'| sed \'s/Input Reads: \\([0-9]\\+\\).*Surviving: \\([0-9]\\+\\).*/Raw Fragments,\\1#Fragment Surviving,\\2#Single Surviving,\\2/g\' | tr \'#\' \'\n\' > '.$outputTrimStats;
     }
 
     my %retVal;

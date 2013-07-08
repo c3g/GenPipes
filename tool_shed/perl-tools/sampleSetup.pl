@@ -76,7 +76,7 @@ sub main {
     $projectFile = $sampleSheet;
   }
 
-  my $rA_SampleInfos = parseSheet($projectFile);
+  my $rA_SampleInfos = parseSheet($projectFile, $isMiseq);
   if(!$noLinks) {
     createLinks($rA_SampleInfos);
   }
@@ -150,6 +150,7 @@ sub getSheet {
 
 sub parseSheet {
   my $fileName = shift;
+  my  $isMiseq = shift;
 
   my @retVal;
   open(SAMPLE_SHEET, "$fileName") or die "Can't open $fileName\n";
@@ -243,11 +244,11 @@ sub parseSheet {
 
     my $rootDir;
     my $isHiSeq = 0;
-    if(substr($sampleInfo{'filePrefix'},0,2) eq 'HI') {
+    if($isMiseq == 0) {
       $rootDir = "/lb/robot/hiSeqSequencer/hiSeqRuns/";
       $isHiSeq = 1;
     }
-    elsif(substr($sampleInfo{'filePrefix'},0,2) eq 'MI') {
+    elsif($isMiseq == 1) {
       $rootDir = "/lb/robot/miSeqSequencer/miSeqRuns/";
     }
     else {

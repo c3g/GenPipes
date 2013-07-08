@@ -170,7 +170,7 @@ pareach [@job], sub {
 	$BLAST=~s/-db/-query $queryDir\/temp\_$file\/$sample -db /;
 	$BLAST.=" -out $queryDir/temp_$file/$sample.OUT";
 	
-	system $BLAST;
+	print $BLAST."\n";
   
  }, {"Max_Workers" => $nthreads}; 
 
