@@ -573,7 +573,7 @@ sub genomeAlign {
         my $rgSampleName = $rH_laneInfo->{'name'};
         my $rgLibrary = $rH_laneInfo->{'libraryBarcode'};
         my $rgPlatformUnit = 'run' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
-        my $rgCenter = LoadConfig::getParam( $rH_cfg, 'aln', 'bwaInstitution' ) . '\tPL:Illumina' . "'";
+        my $rgCenter = LoadConfig::getParam( $rH_cfg, 'aln', 'bwaInstitution' );
 
         my $outputPrefix = "alignment/" . $group.'/'.$sampleName;
         my $rA_commands = BWA::aln( $rH_cfg, $sampleName, $rH_aliasSampleInfo->{$sampleName}{'bwa_pair1'}, $rH_aliasSampleInfo->{$sampleName}{'bwa_pair2'}, $rH_aliasSampleInfo->{$sampleName}{'bwa_single1'}, $outputPrefix, $rgId, $rgSampleName, $rgLibrary, $rgPlatformUnit, $rgCenter, $groupFasta);
