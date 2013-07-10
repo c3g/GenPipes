@@ -18,8 +18,9 @@ proc ModulesHelp { } {
 }
 module-whatis \"MUGQIC - Trinity  \"
             
-set             root      \$::env(MUGQIC_INSTALL_HOME)/software/trinity/trinityrnaseq_r${VERSION}
-prepend-path    PATH      \$root
+set             root         \$::env(MUGQIC_INSTALL_HOME)/software/trinity/trinityrnaseq_r${VERSION}
+setenv          TRINITY_HOME \$root
+prepend-path    PATH         \$root
 " > $VERSION
 
 # version file
