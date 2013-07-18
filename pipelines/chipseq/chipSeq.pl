@@ -361,6 +361,18 @@ sub aligning{
       $bwaJobId = '$'.$bwaJobId;
       print 'BWA_JOB_IDS=${BWA_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$bwaJobId."\n";
     } 
+   
+    # Filter uniquely mapped reads 
+    my $directory = 'alignment/'.$sampleName."/run".$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'}."/";
+    my $InputBamFile = $directory.$rH_laneInfo->{'name'}.".sorted.bam";
+    my $OutputBamFile = $directory.$rH_laneInfo->{'name'}.".sorted.filtered.bam";
+    $command = SAMtools::viewFilter($rH_cfg, $InputBamFile , " -b -F4 -q 1 " , $OutputBamFile);
+    if( defined($command) && $command ne "" ) {
+     my $filterJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'filter.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'SAMTOOLSFILTER',  $bwaJobId, $sampleName, $command, 'alignment/'. $sampleName , $workDirectory);
+     $filterJobId  = '$'.$filterJobId;
+     print 'BWA_JOB_IDS=${BWA_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$filterJobId."\n";
+    }
+    
 	}	
 	# Merge /sort reads
 	$jobDependency = '$BWA_JOB_IDS';
@@ -369,11 +381,9 @@ sub aligning{
   my $outputBAM = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.bam';
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
     my $directory = 'alignment/'.$sampleName."/run".$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'}."/";
-    my $sortedLaneBamFile = $directory.$rH_laneInfo->{'name'}.".sorted.bam";
-    my $runName = $sampleName."_run".$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'};
+    my $sortedLaneBamFile = $directory.$rH_laneInfo->{'name'}.".sorted.filtered.bam";
     push(@inputBams, $sortedLaneBamFile);
   }
-  
   my $command = Picard::mergeFiles($rH_cfg, $sampleName, \@inputBams, $outputBAM);
   my $mergeJobId = undef;
   if( defined($command) && $command ne "" ) {
