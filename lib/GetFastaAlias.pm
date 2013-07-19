@@ -89,19 +89,23 @@ sub sampleInfo {
         $sampleInfo{'defaultDir'}                = $defaultDir;
         $sampleInfo{'runType'}                   = $pairType;
 
+        if(!defined($groupInfo{ $line[1] })){
+          $groupInfo{ $line[1] } = {};
+        }
+
         #Pair 1
         if ( $pairType eq "PAIRED_END" ) {
 
             #----------------------------------------------------------------
-            # $groupInfo{genome}{-left} =  sample1 t sample2 ...
-            # $groupInfo{genome}{-right} =  sample1  sample2 ..
+            # $groupInfo{genome}->{-left} =  sample1 t sample2 ...
+            # $groupInfo{genome}->{-right} =  sample1  sample2 ..
             #-----------------------------------------------------------------
-            $groupInfo{'group'}{ $line[1] }->{'left'} .= ' '  . $sampleInfo{'defaultDir'} . $line[0] . '/' . $sampleInfo{ $line[0] }->{'sample_name'} . '.pair1.dup.fastq.gz ';
-            $groupInfo{'group'}{ $line[1] }->{'right'} .= ' ' . $sampleInfo{'defaultDir'} . $line[0] . '/' . $sampleInfo{ $line[0] }->{'sample_name'} . '.pair2.dup.fastq.gz ';
+            $groupInfo{ $line[1] }->{'left'} .= ' '  . $sampleInfo{'defaultDir'} . $line[0] . '/' . $sampleInfo{ $line[0] }->{'sample_name'} . '.pair1.dup.fastq.gz ';
+            $groupInfo{ $line[1] }->{'right'} .= ' ' . $sampleInfo{'defaultDir'} . $line[0] . '/' . $sampleInfo{ $line[0] }->{'sample_name'} . '.pair2.dup.fastq.gz ';
 
         }
         elsif ( $pairType eq "SINGLE_END" ) {
-            $groupInfo{'group'}{ $line[1] }->{'single'} .= ' --single ' . $defaultDir . $sampleInfo{ $line[0] }->{'sample_name'} . '.single.dup.fastq.gz';
+            $groupInfo{ $line[1] }->{'single'} .= ' --single ' . $defaultDir . $sampleInfo{ $line[0] }->{'sample_name'} . '.single.dup.fastq.gz';
         }
 
     }
