@@ -162,7 +162,7 @@ my @job = grep {/chunk/} (readdir(DIR));
 
 # Start parallel jobs
 #---------------------
-pareach [@job], sub {
+pareach([@job], sub {
 	my $sample = shift;
 	
 	#Parse BLAST command line
@@ -171,8 +171,9 @@ pareach [@job], sub {
 	$BLAST.=" -out $queryDir/temp_$file/$sample.OUT";
 	
 	print $BLAST."\n";
+  system $BLAST;
   
- }, {"Max_Workers" => $nthreads}; 
+ }, {"Max_Workers" => $nthreads});
 
 
 #Concatenate files
@@ -188,29 +189,3 @@ foreach (@blastResult){
 # remove temp dir
 #--------------------
 system "rm -r $queryDir/temp_$file";
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

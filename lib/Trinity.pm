@@ -62,30 +62,25 @@ use warnings;
 use Data::Dumper;
 use Config::Simple;
 use LoadConfig;
+use Cwd qw(abs_path);
+use File::Basename;
 
 #-------------------
 # SUB
 #-------------------
-our $rH_cfg;
-our $sampleName;
-our $rH_laneInfo;
-our $pair1;
-our $pair2;
-our $fileButterflyComand;
-
 sub chrysalis {
-    $rH_cfg      = shift;
-    $sampleName  = shift;
-    $rH_laneInfo = shift;
-    $pair1       = shift;    # For single command the left will receive the file.
-    $pair2       = shift;
+    my $rH_cfg      = shift;
+    my $sampleName  = shift;
+    my $rH_laneInfo = shift;
+    my $pair1       = shift;    # For single command the left will receive the file.
+    my $pair2       = shift;
 
     my $rH_retVal;
     if ( $rH_laneInfo->{'runType'} eq "SINGLE_END" ) {
-        $rH_retVal = _chrysalisSingleCommand();
+        $rH_retVal = _chrysalisSingleCommand($rH_cfg, $sampleName, $rH_laneInfo, $pair1);
     }
     elsif ( $rH_laneInfo->{'runType'} eq "PAIRED_END" ) {
-        $rH_retVal = _chrysalisPairCommand();
+        $rH_retVal = _chrysalisPairCommand($rH_cfg, $sampleName, $rH_laneInfo, $pair1, $pair2);
     }
     else {
         die "Unknown runType: " . $rH_laneInfo->{' runType '} . "\n";
@@ -94,10 +89,10 @@ sub chrysalis {
 }
 
 sub butterfly {
-    $rH_cfg              = shift;
-    $sampleName          = shift;
-    $rH_laneInfo         = shift;
-    $fileButterflyComand = shift;
+    my $rH_cfg              = shift;
+    my $sampleName          = shift;
+    my $rH_laneInfo         = shift;
+    my $fileButterflyComand = shift;
 
     my $laneDirectory = "assembly/" . $sampleName . "/chrysalis/";
     my $command       = ' ';
@@ -115,9 +110,9 @@ sub butterfly {
 }
 
 sub concatFastaCreateGtf {
-    $rH_cfg      = shift;
-    $sampleName  = shift;
-    $rH_laneInfo = shift;
+    my $rH_cfg      = shift;
+    my $sampleName  = shift;
+    my $rH_laneInfo = shift;
 
     my $command = '';
     my %retVal;
@@ -139,6 +134,11 @@ sub concatFastaCreateGtf {
 }
 
 sub _chrysalisPairCommand {
+    my $rH_cfg = shift;
+    my $sampleName = shift;
+    my $rH_laneInfo = shift;
+    my $pair1 = shift;
+    my $pair2 = shift;
 
     my $command = '';
     my %retVal;
@@ -162,6 +162,10 @@ sub _chrysalisPairCommand {
 }
 
 sub _chrysalisSingleCommand {
+    my $rH_cfg = shift;
+    my $sampleName = shift;
+    my $rH_laneInfo = shift;
+    my $pair1 = shift;
 
     my $command = '';
     my %retVal;
@@ -185,5 +189,102 @@ sub _chrysalisSingleCommand {
 
 }
 
+sub abundance {
+    my $rH_cfg       = shift;
+    my $assembly     = shift;
+    my $outputPrefix = shift;
+    my $pair1        = shift;    # For single command the left will receive the file.
+    my $pair2        = shift;
+
+    my $command = '';
+    my $unzippedPair1;
+    my $unzippedPair2;
+
+    $outputPrefix = abs_path($outputPrefix);
+    $pair1 = abs_path($pair1);
+    $pair1 =~ /(.+)\.gz/;
+    $unzippedPair1 = $1;
+  
+    if(defined($pair2)) {
+      $pair2 = abs_path($pair2);
+      $pair2 =~ /(.+)\.gz/;
+      $unzippedPair2 = $1;
+    }
+
+    my $outputFile = $outputPrefix.'.transcript.bam';
+    my $latestFile = -M $outputFile;
+    my $assemblyDate = -M $assembly;
+    my $readDate = -M $pair1;
+
+    if(!defined($latestFile) || $latestFile < $assemblyDate || $latestFile < $readDate) {
+      $command .= 'module add ' . LoadConfig::getParam( $rH_cfg, 'abundance', 'moduleVersion.java' );
+      $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'abundance', 'moduleVersion.bowtie' );
+      $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'abundance', 'moduleVersion.trinity' ) . ' ;';
+      $command .= ' cd '.dirname($assembly).' ;';
+      # We tried with mkfifo but bowtie keeps giving Broken Pipes
+      $command .= ' gunzip -c '.$pair1.' > '.$unzippedPair1.' ;';
+      if(defined($pair2)) {
+        $command .= ' gunzip -c '.$pair2.' > '.$unzippedPair2.' ;';
+      }
+      $command .= ' \$TRINITY_HOME/util/RSEM_util/run_RSEM_align_n_estimate.pl ';
+      $command .= ' --transcripts ' . basename($assembly);
+      $command .= ' --seqType fq';
+      if(!defined($pair2)) {
+        $command .= ' --single '.$unzippedPair1;
+      }
+      else {
+        $command .= ' --left '.$unzippedPair1;
+        $command .= ' --right '.$unzippedPair2;
+      }
+      $command .= ' --thread_count '. LoadConfig::getParam( $rH_cfg, 'abundance', 'nbThreads' );
+      $command .= ' --prefix ' . $outputPrefix;
+      $command .= ' -- --bowtie-chunkmbs ' . LoadConfig::getParam( $rH_cfg, 'abundance', 'chunkmbs' ).';';
+      $command .= ' rm '.$unzippedPair1.' ;';
+      if(defined($pair2)) {
+        $command .= ' rm '.$unzippedPair2.' ;';
+      }
+    }
+
+    return ( $command );
+}
+
+sub mergeCounts {
+    my $rH_cfg               = shift;
+    my $rA_filePrefixToMerge = shift;
+    my $outputIso            = shift;
+    my $outputGene           = shift;
+
+    my $latestFile = -M $outputIso;
+    my $outputGeneTime = -M $outputGene;
+    if(defined($latestFile) && (!defined($outputGeneTime) || $latestFile <  $outputGeneTime)) {
+      $latestFile = $outputGeneTime;
+    }
+
+    my $readDate = -M $rA_filePrefixToMerge->[0];
+    for my $input (@{$rA_filePrefixToMerge}){
+      my $newDate = -M $input;
+      if($newDate < $readDate) {
+        $readDate = $newDate;
+      }
+    }
+
+    my $command = undef;
+    if(!defined($latestFile) || $latestFile < $readDate) {
+      $command .= 'module load '.LoadConfig::getParam( $rH_cfg, 'mergeCounts', 'moduleVersion.trinity' ) . ' ;';
+      $command .= ' \$TRINITY_HOME/util/RSEM_util/merge_RSEM_frag_counts_single_table.pl ';
+      for my $input (@{$rA_filePrefixToMerge}){
+        $command .= ' '.$input.'.rsem.isoforms.results';
+      }
+      $command .= " | sed 's/\\.rsem\\.isoforms\\.results//g' > ".$outputIso;
+      $command .= ' ; ';
+      $command .= ' \$TRINITY_HOME/util/RSEM_util/merge_RSEM_frag_counts_single_table.pl ';
+      for my $input (@{$rA_filePrefixToMerge}){
+        $command .= ' '.$input.'.rsem.genes.results';
+      }
+      $command .= " | sed 's/\\.rsem\\.genes\\.results//g' > ".$outputGene;
+    }
+}
+
 1;
+
 

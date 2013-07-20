@@ -96,7 +96,7 @@ HtSeq_full_matrix.sh
 
 HtSeq_temp_matrix.sh
 
-ParallelBlast
+ParallelBlast.pl
 
 Parallelize
 
@@ -148,14 +148,11 @@ push( @steps, { 'name' => 'trimming' } );
 push( @steps, { 'name' => 'removeDuplicateReads' } );
 push( @steps, { 'name' => 'deNovoAssembly' } );
 push( @steps, { 'name' => 'blastContig' } );
-push( @steps, { 'name' => 'genomeAlign' } );
-push( @steps, { 'name' => 'readStats' } );
-push( @steps, { 'name' => 'htseqCount' } );
+push( @steps, { 'name' => 'abundance' } );
+push( @steps, { 'name' => 'mergeCounts' } );
 push( @steps, { 'name' => 'diffExpression' } );
 
 my $merJobId = undef;
-my $rH_aliasSampleInfo;
-my $rHoH_groupInfo;
 my %groupCounter;    # counts the number of sample in each group
 
 # These variables allows control over group loop. In other words
@@ -202,7 +199,7 @@ sub main {
 
     my %cfg               = LoadConfig->readConfigFile( $opts{'c'} );
     my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash( $opts{'n'} );
-    ( $rH_aliasSampleInfo, $rHoH_groupInfo ) = GetFastaAlias::sampleInfo( $opts{'f'}, \%cfg, $rHoAoH_sampleInfo );
+    my ($rH_aliasSampleInfo, $rHoH_groupInfo) = GetFastaAlias::sampleInfo( $opts{'f'}, \%cfg, $rHoAoH_sampleInfo );
 
     # If there are more than one database
     @database = split /\s+/, $cfg{'blast.db'};
@@ -235,6 +232,7 @@ sub main {
     %groupCounter = countGroups($rHoH_groupInfo);
     foreach my $key ( keys %groupCounter ) {
         $diffExpressGroupDone{$key} = 1;
+        $rHoH_groupInfo->{$key}->{'mergeSamplesDone'} = 0;
     }
 
     print "GROUP_JOB_IDs=\"\"\n";
@@ -260,7 +258,7 @@ sub main {
 
             if ( $n == 1 && $steps[$current]->{'name'} eq 'removeDuplicateReads' ) {
 
-                &$subref( $current != ( $opts{'s'} - 1 ), \%cfg, $sampleName, $rAoH_sampleLanes );
+                &$subref( $current != ( $opts{'s'} - 1 ), \%cfg, $sampleName, $rAoH_sampleLanes, $rHoH_groupInfo,  $rH_aliasSampleInfo);
 
                 #                print  " ", $sampleName, " ", $fname, "\n";                             # dry run
 
@@ -274,7 +272,7 @@ sub main {
                 # Tests for the first step in the list. Used for dependencies.
                 #--------------------------------------------------------------
 
-                &$subref( $current != ( $opts{'s'} - 1 ), \%cfg, $sampleName, $rAoH_sampleLanes );
+                &$subref( $current != ( $opts{'s'} - 1 ), \%cfg, $sampleName, $rAoH_sampleLanes, $rHoH_groupInfo,  $rH_aliasSampleInfo );
 
                 #                 print  " ", $sampleName, " ", $fname, "\n";                               # dry run
 
@@ -292,6 +290,8 @@ sub trimming {
     my $rH_cfg           = shift;
     my $sampleName       = shift;
     my $rAoH_sampleLanes = shift;
+    my $rHoH_groupInfo   = shift;
+    my $rH_aliasSampleInfo = shift;
     my $jobDependency    = ( defined $merJobId ) ? $merJobId : undef;
 
     print "TRIM_JOB_IDS=\"\"\n" unless $step1 > 1;
@@ -316,6 +316,8 @@ sub removeDuplicateReads {
     my $rH_cfg           = shift;
     my $sampleName       = shift;
     my $rAoH_sampleLanes = shift;
+    my $rHoH_groupInfo   = shift;
+    my $rH_aliasSampleInfo = shift;
     my $jobDependency    = undef;
 
     if ( $depends > 0 ) {
@@ -367,6 +369,8 @@ sub deNovoAssembly {
     my $rH_cfg           = shift;
     my $sampleName       = shift;
     my $rAoH_sampleLanes = shift;
+    my $rHoH_groupInfo   = shift;
+    my $rH_aliasSampleInfo = shift;
     my $jobDependency    = undef;
     my $group            = $rH_aliasSampleInfo->{$sampleName}{'group_name'};
     if ( $depends > 0 ) {
@@ -385,7 +389,7 @@ sub deNovoAssembly {
         
         print "CHRYSALIS_JOB_IDS=\"\"\n";
 
-        my $rH_chrysalisDetails = Trinity::chrysalis( $rH_cfg, $group, $rH_laneInfo, $rHoH_groupInfo->{'group'}{$group}->{'left'} , $rHoH_groupInfo->{'group'}{$group}->{'right'}); 
+        my $rH_chrysalisDetails = Trinity::chrysalis( $rH_cfg, $group, $rH_laneInfo, $rHoH_groupInfo->{$group}->{'left'} , $rHoH_groupInfo->{$group}->{'right'}); 
         $groupDone{$group} = 1;
         my $chrysalisJobId = undef;
 
@@ -454,6 +458,8 @@ sub blastContig {
     my $rH_cfg           = shift;
     my $sampleName       = shift;
     my $rAoH_sampleLanes = shift;
+    my $rHoH_groupInfo   = shift;
+    my $rH_aliasSampleInfo = shift;
     my $jobDependency    = undef;
     my $group            = $rH_aliasSampleInfo->{$sampleName}{'group_name'};
 
@@ -521,11 +527,13 @@ sub blastContig {
     }
 }
 
-sub genomeAlign {
+sub abundance {
     my $depends          = shift;
     my $rH_cfg           = shift;
     my $sampleName       = shift;
     my $rAoH_sampleLanes = shift;
+    my $rHoH_groupInfo   = shift;
+    my $rH_aliasSampleInfo = shift;
     my $jobDependency    = undef;
     my $group            = $rH_aliasSampleInfo->{$sampleName}{'group_name'};
 
@@ -537,70 +545,70 @@ sub genomeAlign {
     # the script did not start from the removeDuplicateReads step
     if ( $step1 != 1 ) {
         for my $rH_laneInfo (@$rAoH_sampleLanes) {
-            removeDuplicateReads( 0, $rH_cfg, $sampleName, $rAoH_sampleLanes );
+            removeDuplicateReads( 0, $rH_cfg, $sampleName, $rAoH_sampleLanes, $rHoH_groupInfo, $rH_aliasSampleInfo);
         }
     }
 
-    # BWA indexing
-    #--------------------
+    print 'mkdir -p ' . "alignment/" . $group . "\n";
+    my $assembly = 'assembly/' . $group . '/Trinity.fasta';
     for my $rH_laneInfo (@$rAoH_sampleLanes) {
-        next if ( exists $indexGroupDone{$group} );
-        print "if [ ! -d alignment/" . $group . " ]; then  mkdir -p alignment/" . $group . " ; fi\n";
+        my $outputPrefix = "alignment/" . $group.'/'.$sampleName.'.rsem';
 
-        print "INDEX_JOB_IDS=\"\"\n";
-        my $groupFasta = 'alignment/'.$group.'/'.$group.'.fasta';
-        my $rH_indexDetails = BWA::index( $rH_cfg, $groupFasta, $rH_laneInfo );
-        $indexGroupDone{$group} = 1;
-        my $indexJobId = undef;
-
-        if ( length( $rH_indexDetails->{'command'} ) > 0 ) {
-            my $cmd = 'ln -s ../../assembly/' . $group . '/Trinity.2.fasta '.$groupFasta.'; '.$rH_indexDetails->{'command'};
-            $rH_indexDetails->{'command'} = $cmd;
-            $indexJobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "index", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'INDEX', $jobDependency, $group, $rH_indexDetails->{'command'} );
-            $indexJobId = '$' . $indexJobId;
-            print 'INDEX_JOB_IDS=${INDEX_JOB_IDS}' . LoadConfig::getParam( $rH_cfg, 'default', 'clusterDependencySep' ) . $indexJobId . "\n\n";
+        my $command = Trinity::abundance($rH_cfg, $assembly, $outputPrefix, $rH_aliasSampleInfo->{$sampleName}{'bwa_pair1'}, $rH_aliasSampleInfo->{$sampleName}{'bwa_pair2'});
+        # One needs to run before others to setup the reference.
+        if(defined($rHoH_groupInfo->{$group}->{'abundancePrepRef'})){
+          $jobDependency = $rHoH_groupInfo->{$group}->{'abundancePrepRef'};
         }
+
+        my $jobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "abundance", $sampleName, 'ABUNDANCE', $jobDependency, $group, $command);
+        if(!defined($rHoH_groupInfo->{$group}->{'abundancePrepRef'})) {
+          my $firstJobId = "FIRST_".$jobId;
+          print $firstJobId.'='.'$'.$jobId."\n";
+          $rHoH_groupInfo->{$group}->{'abundancePrepRef'} = '$'.$firstJobId;
+          print "ABUNDANCE_JOB_IDS=\"\"\n";
+        }
+        print 'ABUNDANCE_JOB_IDS=${ABUNDANCE_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').'$'.$jobId."\n";
     }
 
-    # BWA aln
-    #-------------------
-    $jobDependency = '$INDEX_JOB_IDS';
-    print "BWA_JOB_IDS=\"\"\n";
+    return '$ABUNDANCE_JOB_IDS'
+}
 
+sub mergeCounts {
+    my $depends          = shift;
+    my $rH_cfg           = shift;
+    my $sampleName       = shift;
+    my $rAoH_sampleLanes = shift;
+    my $rHoH_groupInfo   = shift;
+    my $rH_aliasSampleInfo = shift;
+
+    my $jobDependency    = undef;
+    my $group            = $rH_aliasSampleInfo->{$sampleName}{'group_name'};
+
+    # if this is not the last sample in the group next
+    if ( $rHoH_groupInfo->{$group}->{'mergeSamplesDone'} < $groupCounter{$group} ) {
+      $rHoH_groupInfo->{$group}->{'mergeSamplesDone'}++;
+      return;
+    }
+
+    if ( $depends > 0 ) {
+        $jobDependency = '$ABUNDANCE_JOB_IDS';
+    }
+
+    my %inputs;
     for my $rH_laneInfo (@$rAoH_sampleLanes) {
-        my $groupFasta = 'alignment/'.$group.'/'.$group.'.fasta';
-        my $rgId = $rH_laneInfo->{'libraryBarcode'} . "_" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
-        my $rgSampleName = $rH_laneInfo->{'name'};
-        my $rgLibrary = $rH_laneInfo->{'libraryBarcode'};
-        my $rgPlatformUnit = 'run' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
-        my $rgCenter = LoadConfig::getParam( $rH_cfg, 'aln', 'bwaInstitution' );
-
-        my $outputPrefix = "alignment/" . $group.'/'.$sampleName;
-        my $rA_commands = BWA::aln( $rH_cfg, $sampleName, $rH_aliasSampleInfo->{$sampleName}{'bwa_pair1'}, $rH_aliasSampleInfo->{$sampleName}{'bwa_pair2'}, $rH_aliasSampleInfo->{$sampleName}{'bwa_single1'}, $outputPrefix, $rgId, $rgSampleName, $rgLibrary, $rgPlatformUnit, $rgCenter, $groupFasta);
-
-        if ( @{$rA_commands} == 3 ) {
-        	print "READ1ALN_JOB_ID=\"\"\n";
-            my $read1JobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "aln", 'read1.' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READ1ALN', $jobDependency, $group, $rA_commands->[0] );
-            $read1JobId = '$' . $read1JobId;
-            
-            print "READ2ALN_JOB_ID=\"\"\n";
-            my $read2JobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "aln", 'read2.' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READ2ALN', $jobDependency, $group, $rA_commands->[1] );
-            $read2JobId = '$' . $read2JobId;
-
-            my $bwaJobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "bwa", 'sampe.' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA', LoadConfig::getParam( $rH_cfg, 'aln', 'clusterDependencySep' ) . $read1JobId . LoadConfig::getParam( $rH_cfg, 'aln', 'clusterDependencySep' ) . $read2JobId, $group, $rA_commands->[2] );
-            $bwaJobId = '$' . $bwaJobId;
-            print 'BWA_JOB_IDS=${BWA_JOB_IDS}' . LoadConfig::getParam( $rH_cfg, 'bwa', 'clusterDependencySep' ) . $bwaJobId . "\n\n";
-        }
-        else {
-            my $readJobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "aln", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READALN', $jobDependency, $group, $rA_commands->[0] );
-            $readJobId = '$' . $readJobId;
-
-            my $bwaJobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "bwa", 'samse.' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA', $readJobId, $group, $rA_commands->[1] );
-            $bwaJobId = '$' . $bwaJobId;
-            print 'BWA_JOB_IDS=${BWA_JOB_IDS}' . LoadConfig::getParam( $rH_cfg, 'bwa', 'clusterDependencySep' ) . $bwaJobId . "\n\n";
-        }
+      $inputs{$rH_laneInfo->{'name'}} = 1;
     }
 
+    my @inputList = keys(%inputs);
+    my $output = "bad";
+    my $command = Trinity::mergeCounts($rH_cfg, \@inputList, $output);
+    my $jobId = undef;
+    if(defined($command)) {
+      $jobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "mergeCounts", $group, 'MERGECNT', $jobDependency, $group, $command);
+      $jobId = '$'. $jobId;
+    }
+
+    return $jobId;
 }
 
 sub readStats {
@@ -608,6 +616,8 @@ sub readStats {
     my $rH_cfg           = shift;
     my $sampleName       = shift;
     my $rAoH_sampleLanes = shift;
+    my $rHoH_groupInfo   = shift;
+    my $rH_aliasSampleInfo = shift;
     my $jobDependency    = undef;
     my $group            = $rH_aliasSampleInfo->{$sampleName}{'group_name'};
 
@@ -671,6 +681,8 @@ sub htseqCount {
     my $rH_cfg           = shift;
     my $sampleName       = shift;
     my $rAoH_sampleLanes = shift;
+    my $rHoH_groupInfo   = shift;
+    my $rH_aliasSampleInfo = shift;
     my $jobDependency    = undef;
     my $group            = $rH_aliasSampleInfo->{$sampleName}{'group_name'};
 
@@ -744,6 +756,8 @@ sub diffExpression {
     my $rH_cfg           = shift;
     my $sampleName       = shift;
     my $rAoH_sampleLanes = shift;
+    my $rHoH_groupInfo   = shift;
+    my $rH_aliasSampleInfo = shift;
     my $jobDependency    = undef;
     my $group            = $rH_aliasSampleInfo->{$sampleName}{'group_name'};
     
@@ -775,20 +789,16 @@ sub diffExpression {
         }
 
     }
-
 }
 
 sub countGroups {
-
     # Counts the number of samples per group
     my $rHoH_group = shift;
     my %group_count;
 
-    foreach my $key ( keys %{$rHoH_group} ) {
-        foreach my $e ( keys %{ $rHoH_group->{$key} } ) {
-            my @aux = split /\s+/, ${ $rHoH_group->{$key} }{$e}{'left'};
-            $group_count{$e} = scalar(@aux) - 1;
-        }
+    foreach my $group ( keys(%{ $rHoH_group }) ) {
+        my @aux = split(/\s+/, $rHoH_group->{$group}->{'left'});
+        $group_count{$group} = scalar(@aux) - 1;
     }
 
     return %group_count;
