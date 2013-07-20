@@ -2,7 +2,7 @@
 ###################
 ################### Cufflinks
 ###################
-VERSION="2.0.2"
+VERSION="2.1.1"
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/cufflinks
 mkdir -p $INSTALL_PATH
 wget http://cufflinks.cbcb.umd.edu/downloads/cufflinks-$VERSION.Linux_x86_64.tar.gz
