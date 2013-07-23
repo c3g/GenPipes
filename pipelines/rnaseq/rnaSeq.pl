@@ -692,22 +692,22 @@ sub dgeMetrics {
 		$metricsJobId .= '$' .$saturationJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 	}
 	
-	##fpkm Stats & Correlation
-	my $fpkmDependency = undef;
-	if($depends > 0) {
-		$fpkmDependency = join(LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep'),values(%{$globalDep{'fpkm'}}));
-	}
-
-	my $patern = '.fpkm_tracking';
-	my $folder = 'fpkm/known';
-	my $outputBaseName = 'metrics/fpkm';
-
-	$command =  Metrics::fpkmCor($rH_cfg, $patern, $folder, $outputBaseName);
-	my $fpkmJobId = undef;
-	if(defined($command) && length($command) > 0) {
-		$fpkmJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", 'fpkmStat', 'STATS_COR', $fpkmDependency, undef, $command, 'metrics/' , $workDirectory);
-		$metricsJobId .= '$' .$fpkmJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
-	}
+# 	##fpkm Stats & Correlation
+# 	my $fpkmDependency = undef;
+# 	if($depends > 0) {
+# 		$fpkmDependency = join(LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep'),values(%{$globalDep{'fpkm'}}));
+# 	}
+# 
+# 	my $patern = '.fpkm_tracking';
+# 	my $folder = 'fpkm/known';
+# 	my $outputBaseName = 'metrics/fpkm';
+# 
+# 	$command =  Metrics::fpkmCor($rH_cfg, $patern, $folder, $outputBaseName);
+# 	my $fpkmJobId = undef;
+# 	if(defined($command) && length($command) > 0) {
+# 		$fpkmJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", 'fpkmStat', 'STATS_COR', $fpkmDependency, undef, $command, 'metrics/' , $workDirectory);
+# 		$metricsJobId .= '$' .$fpkmJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
+# 	}
 	
 	##readStats merge all files together and remove individuals ones
 # 	my $mergeDependency = undef;

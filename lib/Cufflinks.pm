@@ -127,7 +127,7 @@ sub cuffdiff {
 	
 	my $command;
 	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'cuffdiff','moduleVersion.cufflinks') .' ;';
-	$command .= ' cuffdiff -p' .LoadConfig::getParam($rH_cfg, 'cuffdiff','numThreads');
+	$command .= ' cuffdiff -p ' .LoadConfig::getParam($rH_cfg, 'cuffdiff','numThreads');
 	$command .= ' -o ' .$outputDir;
 	$command .= ' ' .$referenceGtf;
 	$command .= ' ' .$groupCmd;
