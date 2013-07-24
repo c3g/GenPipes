@@ -44,7 +44,7 @@ print(de.common)
 summary_TMM=summary(decideTestsDGE(de.common))
 top_TMM=topTags(de.common, n=dim(d)[1], sort.by = "logFC")
 if(numb == 1) {
-count_order_pseudo=dTMM3$pseudo.alt[match(rownames(top_TMM$table), rownames(d$count)),]
+count_order_pseudo=dTMM3$pseudo.counts[match(rownames(top_TMM$table), rownames(d$count)),]
 colnames(count_order_pseudo)=paste(colnames(count_order_pseudo),"norm",sep=".")
 }
 count_order_real=d$count[match(rownames(top_TMM$table), rownames(d$count)),]
