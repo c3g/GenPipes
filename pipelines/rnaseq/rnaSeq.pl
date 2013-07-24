@@ -229,7 +229,7 @@ sub trimming {
 		my $trinityOut = $laneDirectory .'/' . $sampleName . '.trim.out';
 		##get trimmed read count
 		my $outputFile= 'metrics/' .$sampleName .'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . '.readstats.triming.tsv' ;
-		my $command = Metrics::readStats($rH_cfg,$trinityOut,$outputFile,$sampleName,'trim');
+		my $command = Metrics::readStats($rH_cfg,$trinityOut,$outputFile,$sampleName.'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'},'trim');
 		my $filteredReadStatJobID ;
 		if(defined($command) && length($command) > 0) {
 			$filteredReadStatJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", 'filtered', 'FILTERREADSTAT' .$rH_jobIdPrefixe ->{$sampleName.'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} ,$trimJobIdVarNameLane, $sampleName, $command,'metrics/'  .$sampleName, $workDirectory);
@@ -739,7 +739,7 @@ sub dge {
 
 	my $jobDependency = undef;
 	if($depends > 0) {
-		$jobDependency = $globalDep{'metrics'}{'metrics'};
+		$jobDependency = $globalDep{'dgeMetrics'}{'dgeMetrics'};
 	}
 	
 	print "mkdir -p DGE/output_jobs\n";
