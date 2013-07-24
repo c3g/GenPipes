@@ -452,7 +452,7 @@ sub qcTagDirectories {
 		$qcTagsJobID3  = '$'.$qcTagsJobID3 ;
 		$qcTagsJobID   = $qcTagsJobID3;
 	}elsif(@{$rA_commands} == 1){
-		my $qcTagsJobID   = SubmitToCluster::printSubmitCmd($rH_cfg, "qcTags", undef, 'QCTAGS' .$rH_jobIdPrefixe ->{$sampleName} , $jobDependency , $sampleName, $rA_commands->[0], 'tags/' .$sampleName, $workDirectory);
+		$qcTagsJobID   = SubmitToCluster::printSubmitCmd($rH_cfg, "qcTags", undef, 'QCTAGS' .$rH_jobIdPrefixe ->{$sampleName} , $jobDependency , $sampleName, $rA_commands->[0], 'tags/' .$sampleName, $workDirectory);
 		$qcTagsJobID   = '$'.$qcTagsJobID ;
 	}
 	print 'QCTAGS_JOB_IDS=${QCTAGS_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$qcTagsJobID."\n";
