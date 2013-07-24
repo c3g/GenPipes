@@ -1,10 +1,12 @@
 #!/bin/bash 
-# Install software needed to run the ChIPSEQ pipeline
+# Install software needed to run the Freebayes 
 # Dependency of MUGQIC_HOME environment variable is assumed
 
 
 main() {
-  prologue
+  if [ ! -d "$MUGQIC_INSTALL_HOME" ];then
+		prologue
+	fi;
   InstallFreeBayes 
 }
 
@@ -56,7 +58,7 @@ function InstallFreeBayes()  {
 	#and complex events (composite insertion and substitution events) smaller than the length of a short-read sequencing alignment.
 	curDir=`pwd`;
 	VERSION="v9.9.2-9-gfbf46fc"
-	PACKAGE_NAME="FreeBayes"
+	PACKAGE_NAME="freeBayes"
 
 	
 	# 1 - Install software
@@ -65,27 +67,28 @@ function InstallFreeBayes()  {
 	mkdir -p $INSTALL_PATH
 	cd $INSTALL_PATH
 	
-	# A lot of complexity due to firewall restrictions on ABACUS :-p
-	git clone https://github.com/ekg/freebayes.git
+	# change git config due to restrictions on ABACUS :-p
+	git config --global url."https://".insteadOf git://
+	git clone --recursive https://github.com/ekg/freebayes.git
 	cd freebayes
-	https://github.com/pezmaster31/bamtools.github
-	#Submodule 'bamtools' (git://github.com/pezmaster31/bamtools.git) registered for path 'bamtools'
-	git clone https://github.com/pezmaster31/bamtools.git
-  #Submodule 'intervaltree' (git://github.com/ekg/intervaltree.git) registered for path 'intervaltree'
-  git clone https://github.com/ekg/intervaltree.git
-  #Submodule 'vcflib' (git://github.com/ekg/vcflib.git) registered for path 'vcflib' and all its dependencies :-|
-	git clone https://github.com/ekg/vcflib.git
-	cd vcflib
-	git clone https://github.com/ekg/fastahack.git
-	git clone https://github.com/ekg/fsom.git
-	git clone https://github.com/ekg/multichoose.git 
-	git clone https://github.com/ekg/smithwaterman.git
-	git clone https://github.com/ekg/tabixpp.git
-	make CFLAGS="-O3 -D_FILE_OFFSET_BITS=64 -std=c++0x"
-	make install CFLAGS="-O3 -D_FILE_OFFSET_BITS=64 -std=c++0x"
-	cd $INSTALL_PATH/freebayes
-  make CFLAGS="-O3 -D_FILE_OFFSET_BITS=64 -std=c++0x"
-  make install CFLAGS="-O3 -D_FILE_OFFSET_BITS=64 -std=c++0x"
+	case $MUGQIC_INSTALL_HOME in
+      "/sb/programs/analyste")  
+				make CFLAGS="-O3 -D_FILE_OFFSET_BITS=64 -std=c++0x"
+				make install CFLAGS="-O3 -D_FILE_OFFSET_BITS=64 -std=c++0x"
+		  ;;
+			"/software/areas/genomics")
+				module load  gcc/4.7.2 ifort_icc/13.0 cmake
+				cat src/Makefile | sed -e 's/cmake/cmake -D CMAKE_C_COMPILER\=\/software\/compilers\/Intel\/2011\-4\-12\.0\.4\/bin\/icc -D CMAKE\_CXX\_COMPILER\=\/software\/compilers\/Intel\/2011\-4\-12\.0\.4\/bin\/icpc/g' > src/tmpMake
+ 				mv src/tmpMake src/Makefile
+				make
+				make install
+			;;
+        *)  	
+				make
+				make install
+    ;;
+  esac
+
 	
 	# 2- Create module file
 	mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$PACKAGE_NAME/ 
