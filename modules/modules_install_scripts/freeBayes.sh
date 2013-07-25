@@ -72,22 +72,32 @@ function InstallFreeBayes()  {
 	git clone --recursive https://github.com/ekg/freebayes.git
 	cd freebayes
 	case $MUGQIC_INSTALL_HOME in
-      "/sb/programs/analyste")  
-				make CFLAGS="-O3 -D_FILE_OFFSET_BITS=64 -std=c++0x"
-				make install CFLAGS="-O3 -D_FILE_OFFSET_BITS=64 -std=c++0x"
-		  ;;
-			"/software/areas/genomics")
-				module load  gcc/4.7.2 ifort_icc/13.0 cmake
-				cat src/Makefile | sed -e 's/cmake/cmake -D CMAKE_C_COMPILER\=\/software\/compilers\/Intel\/2011\-4\-12\.0\.4\/bin\/icc -D CMAKE\_CXX\_COMPILER\=\/software\/compilers\/Intel\/2011\-4\-12\.0\.4\/bin\/icpc/g' > src/tmpMake
- 				mv src/tmpMake src/Makefile
-				make
-				make install
-			;;
+      	"/sb/programs/analyste")  
+		make CFLAGS="-O3 -D_FILE_OFFSET_BITS=64 -std=c++0x"
+		make install CFLAGS="-O3 -D_FILE_OFFSET_BITS=64 -std=c++0x"
+	;;
+	"/software/areas/genomics")
+		module load cmake ifort_icc/12.0.4
+		cat src/Makefile | sed -e 's/cmake/cmake -D CMAKE_C_COMPILER\=icc -D CMAKE\_CXX\_COMPILER\=icpc/g' | sed -e 's/CC\=g[+][+]/CC\=icpc/g' | sed -e 's/C\=gcc/\C\=icc/g'> src/tmpMake
+ 		mv src/tmpMake src/Makefile
+		# some specific package's Makefiles need to be changed
+		cat vcflib/tabixpp/Makefile | sed -e 's/CC\=gcc/CC\=icc/g' | sed -e 's/CPP\=g[+][+]/CPP\=icpc/g' > vcflib/tabixpp/tmpMake
+		mv vcflib/tabixpp/tmpMake vcflib/tabixpp/Makefile		
+		make CFLAGS="-O3 -D_FILE_OFFSET_BITS=64"
+		cd vcflib/smithwaterman
+		cat Makefile |  sed -e 's/CFLAGS\=/#CFLAGS\=/g' > tmpMake
+		mv tmpMake Makefile
+		make clean
+		make CFLAGS="-O3 -D_FILE_OFFSET_BITS=64"
+		cd $INSTALL_PATH/freebayes
+		make
+		make install
+	;;
         *)  	
 				make
 				make install
-    ;;
-  esac
+    	;;
+  	esac
 
 	
 	# 2- Create module file
