@@ -143,7 +143,7 @@ sub cuffmerge {
 	
 	my $command;
 	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'cuffmerge','moduleVersion.cufflinks') .' ;';
-	$command .= ' cuffmerge -p' .LoadConfig::getParam($rH_cfg, 'cuffmerge','numThreads');
+	$command .= ' cuffmerge -p ' .LoadConfig::getParam($rH_cfg, 'cuffmerge','numThreads');
 	$command .= ' -o ' .$outputDir;
 	$command .= ' -g ' .LoadConfig::getParam($rH_cfg, 'cuffmerge','referenceGtf');
 	$command .= ' -s ' .LoadConfig::getParam($rH_cfg, 'fpkm','referenceFasta');
