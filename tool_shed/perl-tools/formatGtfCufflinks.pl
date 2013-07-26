@@ -17,7 +17,8 @@ while(<INFO>) {
 	if($_ =~ "exon_number \"1\"") {
 	@splitA = split(/\t/, $_);
 	@splitB = split(";", $splitA[8]);
-	$sizeB = @splitB;	
+	$sizeB = @splitB;
+	my $splitOUT= $splitA[0] ."\t".$splitA[1] ."\t".$splitA[2] ."\t".$splitA[3] ."\t".$splitA[4] ."\t".$splitA[5] ."\t".$splitA[6];
 
 	
 	
@@ -25,26 +26,26 @@ while(<INFO>) {
 		@splitCode = split(/\s+/, $splitB[6]);
 		$splitCode[2] =~ s/"//g;
 		$code = &classify_code($splitCode[2]);
-		print OUT $splitB[1] ."\t".$splitB[4]."\t".$splitB[5]."\t".$code."\n";	
+		print OUT $splitOUT ."\t". $splitB[1] ."\t".$splitB[4]."\t".$splitB[5]."\tinfo \"".$code." \"\n";	
 	}
 	elsif($sizeB == 7) {
 		@splitCode = split(/\s+/, $splitB[5]);
 		$splitCode[2] =~ s/"//g;
 		$code = &classify_code($splitCode[2]);
-		print OUT $splitB[1] ."\t".$splitB[3]."\t".$splitB[4]."\t".$code."\n";
+		print OUT $splitOUT ."\t".$splitB[1] ."\t".$splitB[3]."\t".$splitB[4]."\tinfo \"".$code." \"\n";
 	}
 	elsif($sizeB == 6) {
 		@splitCode = split(/\s+/, $splitB[4]);
 		$splitCode[2] =~ s/"//g;
 		$code = &classify_code($splitCode[2]);
-                print OUT $splitB[1] ."\t".$splitB[3]."\t - - \t".$code."\n";
+                print OUT $splitOUT ."\t".$splitB[1] ."\t".$splitB[3]."\t - - \tinfo \"".$code." \"\n";
         }
 	else {
 		@splitCode = split(/\s+/, $splitB[7]);
 		$splitCode[2] =~ s/"//g;
 		$code = &classify_code($splitCode[2]);
 		$splitB[7] = &classify_code($splitB[7]);
-		print OUT $splitB[1] ."\t".$splitB[4]."\t".$splitB[6]."\t".$code."\n";
+		print OUT $splitOUT ."\t".$splitB[1] ."\t".$splitB[4]."\t".$splitB[6]."\tinfo \"".$code." \"\n";
 	}
 }
 
