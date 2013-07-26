@@ -1,6 +1,8 @@
 ###################
 ################### MUGQIC TOOLS (hosted on svn for now)
 ###################
+mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/tools/tmp
+cd $MUGQIC_INSTALL_HOME/modulefiles/mugqic/tools/tmp
 VERSION="0.1"
 git clone git@bitbucket.org:mugqic/mugqic_pipeline.git
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/mugqic_tools # where to install..
@@ -29,8 +31,9 @@ set ModulesVersion \"$VERSION\"
 
 " > .version
 
-mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/tools
 mv .version $VERSION $MUGQIC_INSTALL_HOME/modulefiles/mugqic/tools
+cd ..
+rm -rf tmp
 
 
 
