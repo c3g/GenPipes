@@ -1,6 +1,7 @@
 # Formats a denovo cufflinks merged.gtf to get rid of redundant info
 # Maxime Caron - Jan 2012
 #Mathieu Bourgey - Jan 2013
+#Mathieu Bourgey - July 2013
 
 use Switch;
 
