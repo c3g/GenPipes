@@ -19,14 +19,17 @@ for(j in 2:ncol(designs)) {
 	mergedFile<-paste(output_dir,"/denovo/",designName,"/formated.merged.gtf", sep="")
 	result<-read.table(resultFile, header=T, sep="\t", stringsAsFactors=F)
 	merged<-read.table(mergedFile, header=F, sep="\t", quote='"', stringsAsFactors=F)
-	tconsmerged<-as.data.frame(matrix(unlist(strsplit(as.character(merged[,1]), " ")), nrow=nrow(merged), byrow=T))
-	oId<-as.data.frame(matrix(unlist(strsplit(as.character(merged[,2]), " ")), nrow=nrow(merged), byrow=T))
-	ref_id<-as.data.frame(matrix(unlist(strsplit(as.character(merged[,3]), " ")), nrow=nrow(merged), byrow=T))
-	tconsmerged<-as.data.frame(tconsmerged[,3])
-	oId<-as.data.frame(oId[,3])
-	ref_id<-as.data.frame(ref_id[,3])
-	classcode<-merged[,4]
-	mergedFinal<-cbind(tconsmerged, oId, ref_id, classcode)
+	tconsmerged<-as.data.frame(matrix(unlist(strsplit(as.character(merged[,8]), " ")), nrow=nrow(merged), byrow=T))
+	oId<-as.data.frame(matrix(unlist(strsplit(as.character(merged[,9]), " ")), nrow=nrow(merged), byrow=T))
+	ref_id<-as.data.frame(matrix(unlist(strsplit(as.character(merged[,10]), " ")), nrow=nrow(merged), byrow=T))
+	#gene_Name<-as.data.frame(matrix(unlist(strsplit(as.character(merged[,11]), " ")), nrow=nrow(merged), byrow=T))
+	classcode<-as.data.frame(matrix(unlist(strsplit(as.character(merged[,12]), "info ")), nrow=nrow(merged), byrow=T))
+	tconsmerged<-as.data.frame(tconsmerged[,2])
+	oId<-as.data.frame(oId[,2])
+	ref_id<-as.data.frame(ref_id[,2])
+	#gene_Name<-as.data.frame(gene_Name[,2])
+	classcode<-as.data.frame(classcode[,2])
+	mergedFinal<-cbind(tconsmerged, oId, ref_id,  classcode)
 	colnames(mergedFinal)=c("transcript_id", "oId", "nearest_ref", "classcode")
 
 	# Merge with result file (isoform_exp.diff)
@@ -54,6 +57,7 @@ for(j in 2:ncol(designs)) {
 			#print(head(writeIt))
 		}
 	}
-	write.table(writeIt, paste(args[1],"/denovo/", designs[1,j], "/isoform_exp.diff.with.fpkm.csv", sep=""), quote=F, row.names=F, sep="\t")
+	writeItSign=writeIt[writeIt$q_value <= 0.05,]
+	write.table(writeItSign, paste(args[1],"/denovo/", designs[1,j], "/isoform_exp.diff.with.fpkm.csv", sep=""), quote=F, row.names=F, sep="\t")
 	
 }
