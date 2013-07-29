@@ -600,19 +600,21 @@ sub cuffdiff {
 		$mergeCuffdiffResJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "default", "MERGE_RES", 'CUFF_MERGE_RES', $cuffddiffJobId, undef, $command, 'cuffdiff/', $workDirectory);
 		$mergeCuffdiffResJobID = '$' .$mergeCuffdiffResJobID;
 	}
-	$command = Cufflinks::filterResults($rH_cfg,'cuffdiff/known/') ;
-	my $filterCuffdiffResJobID;
-	if(defined($command) && length($command) > 0) {
-		my $filterKCuffdiffResJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "default", "FILTERK", 'KFILT_CUFFDIFF', $mergeCuffdiffResJobID, undef, $command, 'cuffdiff/', $workDirectory);
-		$filterCuffdiffResJobID .= '$' .$filterKCuffdiffResJobID .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
-	}
-	$command = Cufflinks::filterResults($rH_cfg,'cuffdiff/denovo/') ;
-	if(defined($command) && length($command) > 0) {
-		my $filterDCuffdiffResJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "default", "FILTERD", 'DFILT_CUFFDIFF', $mergeCuffdiffResJobID, undef, $command, 'cuffdiff/', $workDirectory);
-		$filterCuffdiffResJobID .= '$' .$filterDCuffdiffResJobID .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
-	}
-	$filterCuffdiffResJobID= substr $filterCuffdiffResJobID, 0, -1 ;
-	return $filterCuffdiffResJobID;
+	### mbourgey filtering now included in the R script that merge cuffdiff res with fpkm
+	return $mergeCuffdiffResJobID;
+# 	$command = Cufflinks::filterResults($rH_cfg,'cuffdiff/known/') ;
+# 	my $filterCuffdiffResJobID;
+# 	if(defined($command) && length($command) > 0) {
+# 		my $filterKCuffdiffResJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "default", "FILTERK", 'KFILT_CUFFDIFF', $mergeCuffdiffResJobID, undef, $command, 'cuffdiff/', $workDirectory);
+# 		$filterCuffdiffResJobID .= '$' .$filterKCuffdiffResJobID .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
+# 	}
+# 	$command = Cufflinks::filterResults($rH_cfg,'cuffdiff/denovo/') ;
+# 	if(defined($command) && length($command) > 0) {
+# 		my $filterDCuffdiffResJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "default", "FILTERD", 'DFILT_CUFFDIFF', $mergeCuffdiffResJobID, undef, $command, 'cuffdiff/', $workDirectory);
+# 		$filterCuffdiffResJobID .= '$' .$filterDCuffdiffResJobID .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
+# 	}
+# 	$filterCuffdiffResJobID= substr $filterCuffdiffResJobID, 0, -1 ;
+# 	return $filterCuffdiffResJobID;
 }
 
 
