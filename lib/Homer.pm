@@ -79,6 +79,30 @@ sub makeTagDirectory {
   my $command;
   if ( defined $refGenome ) {
 		
+ 		$command  = ' module load '. LoadConfig::getParam($rH_cfg, 'qcTags', 'moduleVersion.python').' '.LoadConfig::getParam($rH_cfg, 'qcTags', 'moduleVersion.homer').' '.LoadConfig::getParam($rH_cfg, 'qcTags', 'moduleVersion.samtools'). ';';
+ 		$command .= ' makeTagDirectory '.$outputDir.'/'. $sampleName.' '. $sortedBAM.' -checkGC -genome '.$refGenome.' ; ';
+ 		push (@commands, $command);
+
+  }else{
+		@commands=();
+		print STDERR "\n#WARNING: Genome $refGenome not defined \n#QC, annotations and Motif analysis will not be executed\n\n";
+  }  
+  return \@commands;
+}
+
+sub makeTagDirectoryTmp {
+  my $rH_cfg          = shift;
+  my $sampleName      = shift;
+  my $sortedBAM       = shift;
+  my $outputDir       = shift;
+  my $processUnmapped = shift;
+
+  my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'genomeName');
+  #my $refGenome = parseGenome( $rH_cfg );
+  my @commands;
+  my $command;
+  if ( defined $refGenome ) {
+		
 		my $tmpSampleFile = LoadConfig::getParam($rH_cfg, 'qcTags', 'tmpDir').'/dmp-XXXXXX.'.$sampleName;
 		my $tmpSampleFileName = LoadConfig::getParam($rH_cfg, 'qcTags', 'tmpDir').'/filename.'.$sampleName;
  		#$command .= ' rm  -f '.$tmpSampleFile.' ;'; 

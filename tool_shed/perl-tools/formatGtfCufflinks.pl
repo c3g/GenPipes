@@ -1,6 +1,7 @@
 # Formats a denovo cufflinks merged.gtf to get rid of redundant info
 # Maxime Caron - Jan 2012
 #Mathieu Bourgey - Jan 2013
+#Mathieu Bourgey - July 2013
 
 use Switch;
 
@@ -17,35 +18,34 @@ while(<INFO>) {
 	if($_ =~ "exon_number \"1\"") {
 	@splitA = split(/\t/, $_);
 	@splitB = split(";", $splitA[8]);
-	$sizeB = @splitB;	
+	$sizeB = @splitB;
+	my $splitOUT= $splitA[0] ."\t".$splitA[1] ."\t".$splitA[2] ."\t".$splitA[3] ."\t".$splitA[4] ."\t".$splitA[5] ."\t".$splitA[6];
 
-	
-	
-	if($sizeB == 8) {
-		@splitCode = split(/\s+/, $splitB[6]);
-		$splitCode[2] =~ s/"//g;
-		$code = &classify_code($splitCode[2]);
-		print OUT $splitB[1] ."\t".$splitB[4]."\t".$splitB[5]."\t".$code."\n";	
+	my $transID = '.' ;
+	my $oId = '.' ;
+	my $nearRef = '.' ;
+	my $geneName = '.' ;
+	my $infoCode = '.' ;
+	for (my $i = 0 ; $i < $sizeB ; $i++) {
+		@splitInfo = split("\"", $splitB[$i]);
+		$splitInfo[0] =~  s/ //g;
+		if($splitInfo[0] eq "transcript_id") {
+			$transID = $splitInfo[1] ;
+		}
+		elsif($splitInfo[0] eq "oId") {
+			$oId = $splitInfo[1] ;
+		}
+		elsif($splitInfo[0] eq "nearest_ref") {
+			$nearRef = $splitInfo[1] ;
+		}
+		elsif($splitInfo[0] eq "gene_name") {
+			$geneName = $splitInfo[1] ;
+		}
+		elsif($splitInfo[0] eq "class_code") {
+			$infoCode = &classify_code($splitInfo[1]) ;
+		}
 	}
-	elsif($sizeB == 7) {
-		@splitCode = split(/\s+/, $splitB[5]);
-		$splitCode[2] =~ s/"//g;
-		$code = &classify_code($splitCode[2]);
-		print OUT $splitB[1] ."\t".$splitB[3]."\t".$splitB[4]."\t".$code."\n";
-	}
-	elsif($sizeB == 6) {
-		@splitCode = split(/\s+/, $splitB[4]);
-		$splitCode[2] =~ s/"//g;
-		$code = &classify_code($splitCode[2]);
-                print OUT $splitB[1] ."\t".$splitB[3]."\t - - \t".$code."\n";
-        }
-	else {
-		@splitCode = split(/\s+/, $splitB[7]);
-		$splitCode[2] =~ s/"//g;
-		$code = &classify_code($splitCode[2]);
-		$splitB[7] = &classify_code($splitB[7]);
-		print OUT $splitB[1] ."\t".$splitB[4]."\t".$splitB[6]."\t".$code."\n";
-	}
+	print OUT $splitOUT ."\ttranscript_id \"".$transID ."\"\toId \"".$oId."\"\tnearest_ref \"".$nearRef."\"\tgene_name \"".$geneName."\"\tinfo \"".$infoCode." \"\n";	
 }
 
 }

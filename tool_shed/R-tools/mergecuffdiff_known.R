@@ -34,7 +34,7 @@ for(j in 2:ncol(designs)) {
 			reference<-merge(reference, finalSample, by.x=1, by.y=1)
 		}
 	}
-
-write.table(reference, paste(output_dir,"/known/", designs[1,j], "/isoform_exp.diff.with.fpkm.csv", sep=""), quote=F, row.names=F, sep="\t")
+referenceSign=reference[reference$q_value <= 0.05,]
+write.table(referenceSign, paste(output_dir,"/known/", designs[1,j], "/isoform_exp.diff.with.fpkm.csv", sep=""), quote=F, row.names=F, sep="\t")
 
 }

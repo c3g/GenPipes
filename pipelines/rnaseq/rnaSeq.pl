@@ -229,7 +229,7 @@ sub trimming {
 		my $trinityOut = $laneDirectory .'/' . $sampleName . '.trim.out';
 		##get trimmed read count
 		my $outputFile= 'metrics/' .$sampleName .'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . '.readstats.triming.tsv' ;
-		my $command = Metrics::readStats($rH_cfg,$trinityOut,$outputFile,$sampleName,'trim');
+		my $command = Metrics::readStats($rH_cfg,$trinityOut,$outputFile,$sampleName.'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'},'trim');
 		my $filteredReadStatJobID ;
 		if(defined($command) && length($command) > 0) {
 			$filteredReadStatJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", 'filtered', 'FILTERREADSTAT' .$rH_jobIdPrefixe ->{$sampleName.'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} ,$trimJobIdVarNameLane, $sampleName, $command,'metrics/'  .$sampleName, $workDirectory);
@@ -587,7 +587,7 @@ sub cuffdiff {
 		}
 		
 		##cuffdiff de novo
-		$command = Cufflinks::cuffdiff($rH_cfg,\@groupInuptFiles,$outputPathDeNovo,$gtfDnFormatMerged);
+		$command = Cufflinks::cuffdiff($rH_cfg,\@groupInuptFiles,$outputPathDeNovo,$gtfDnMerged);
 		if(defined($command) && length($command) > 0) {
 			my $cuffdiffKnownJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "cuffdiff", "DENOVO", 'CUFFDIFFD' .$rH_jobIdPrefixe ->{$design} , $formatJobId, $design, $command, 'cuffdiff/' .$design, $workDirectory);
 			$cuffddiffJobId .= '$' .$cuffdiffKnownJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
@@ -600,19 +600,21 @@ sub cuffdiff {
 		$mergeCuffdiffResJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "default", "MERGE_RES", 'CUFF_MERGE_RES', $cuffddiffJobId, undef, $command, 'cuffdiff/', $workDirectory);
 		$mergeCuffdiffResJobID = '$' .$mergeCuffdiffResJobID;
 	}
-	$command = Cufflinks::filterResults($rH_cfg,'cuffdiff/known/') ;
-	my $filterCuffdiffResJobID;
-	if(defined($command) && length($command) > 0) {
-		my $filterKCuffdiffResJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "default", "FILTERK", 'KFILT_CUFFDIFF', $mergeCuffdiffResJobID, undef, $command, 'cuffdiff/', $workDirectory);
-		$filterCuffdiffResJobID .= '$' .$filterKCuffdiffResJobID .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
-	}
-	$command = Cufflinks::filterResults($rH_cfg,'cuffdiff/denovo/') ;
-	if(defined($command) && length($command) > 0) {
-		my $filterDCuffdiffResJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "default", "FILTERD", 'DFILT_CUFFDIFF', $mergeCuffdiffResJobID, undef, $command, 'cuffdiff/', $workDirectory);
-		$filterCuffdiffResJobID .= '$' .$filterDCuffdiffResJobID .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
-	}
-	$filterCuffdiffResJobID= substr $filterCuffdiffResJobID, 0, -1 ;
-	return $filterCuffdiffResJobID;
+	### mbourgey filtering now included in the R script that merge cuffdiff res with fpkm
+	return $mergeCuffdiffResJobID;
+# 	$command = Cufflinks::filterResults($rH_cfg,'cuffdiff/known/') ;
+# 	my $filterCuffdiffResJobID;
+# 	if(defined($command) && length($command) > 0) {
+# 		my $filterKCuffdiffResJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "default", "FILTERK", 'KFILT_CUFFDIFF', $mergeCuffdiffResJobID, undef, $command, 'cuffdiff/', $workDirectory);
+# 		$filterCuffdiffResJobID .= '$' .$filterKCuffdiffResJobID .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
+# 	}
+# 	$command = Cufflinks::filterResults($rH_cfg,'cuffdiff/denovo/') ;
+# 	if(defined($command) && length($command) > 0) {
+# 		my $filterDCuffdiffResJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "default", "FILTERD", 'DFILT_CUFFDIFF', $mergeCuffdiffResJobID, undef, $command, 'cuffdiff/', $workDirectory);
+# 		$filterCuffdiffResJobID .= '$' .$filterDCuffdiffResJobID .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
+# 	}
+# 	$filterCuffdiffResJobID= substr $filterCuffdiffResJobID, 0, -1 ;
+# 	return $filterCuffdiffResJobID;
 }
 
 
@@ -739,7 +741,7 @@ sub dge {
 
 	my $jobDependency = undef;
 	if($depends > 0) {
-		$jobDependency = $globalDep{'metrics'}{'metrics'};
+		$jobDependency = $globalDep{'dgeMetrics'}{'dgeMetrics'};
 	}
 	
 	print "mkdir -p DGE/output_jobs\n";
