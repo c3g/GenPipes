@@ -114,10 +114,22 @@ sub goseq {
 	my $latestInputFile = -M $resultFile;
 	my $latestOutputFile = -M $outputFile;
 
-	my $maxResult = LoadConfig::getParam($rH_cfg, 'diffExpress','maxGoResult');
+	my $maxResult = LoadConfig::getParam($rH_cfg, 'goseq','maxGoResult');
+	my $geneSizeFile = LoadConfig::getParam($rH_cfg, 'goseq','geneSizeFile');
+	my $goLinkFile = LoadConfig::getParam($rH_cfg, 'goseq','goLinkFile');
+	my $geneIdType = LoadConfig::getParam($rH_cfg, 'goseq','geneIdType');
 	my $option = '';
 	if (defined($maxResult) && $maxResult ne "") {
 		$option = ' -m ' .$maxResult;
+	}
+	if (defined($geneSizeFile) && $geneSizeFile ne "") {
+		$option .= ' -a ' .$geneSizeFile;
+	}
+	if (defined($goLinkFile) && $goLinkFile ne "") {
+		$option .= ' -G ' .$goLinkFile;
+	}
+	if (defined($geneIdType) && $geneIdType ne "") {
+		$option .= ' -i ' .$geneIdType;
 	}
 	
 	my $command;

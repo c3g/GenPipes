@@ -585,7 +585,7 @@ sub cuffdiff {
 			my $cuffdiffKnownJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "cuffdiff", "KNOWN",  'CUFFDIFFK' .$rH_jobIdPrefixe ->{$design} , $jobDependency, $design, $command, 'cuffdiff/' .$design, $workDirectory);
 			$cuffddiffJobId .= '$' .$cuffdiffKnownJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 		}
-		
+		### mbourgey 29/07/2013 - only report de novo discovery but keep this step in case of no reference gtf
 		##cuffdiff de novo
 		$command = Cufflinks::cuffdiff($rH_cfg,\@groupInuptFiles,$outputPathDeNovo,$gtfDnMerged);
 		if(defined($command) && length($command) > 0) {
@@ -600,7 +600,7 @@ sub cuffdiff {
 		$mergeCuffdiffResJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "default", "MERGE_RES", 'CUFF_MERGE_RES', $cuffddiffJobId, undef, $command, 'cuffdiff/', $workDirectory);
 		$mergeCuffdiffResJobID = '$' .$mergeCuffdiffResJobID;
 	}
-	### mbourgey filtering now included in the R script that merge cuffdiff res with fpkm
+	### mbourgey 29/07/2013 - filtering now included in the R script that merge cuffdiff res with fpkm
 	return $mergeCuffdiffResJobID;
 # 	$command = Cufflinks::filterResults($rH_cfg,'cuffdiff/known/') ;
 # 	my $filterCuffdiffResJobID;

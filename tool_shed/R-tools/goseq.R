@@ -3,7 +3,7 @@
 # Borrowed some argument code from Mathieu Bourgey
 # usage : Rscript goseq.R -d path_dge_results_file -c comma_delimited_columns -g organism -k known_reference -o output_dir
 # modified  by Mathieu Bourgey Feb 2013
-
+# modified  by Mathieu Bourgey July 2013
 
 
 usage=function(errM) {
@@ -15,6 +15,9 @@ usage=function(errM) {
 	cat("       -k        : known genome reference file\n")
 	cat("       -m        : maximum number of pathway return (default all)\n")
 	cat("       -v        : DGE method 0: edger/deseq ; 1: cuffdiff (default 0)\n")
+	cat("       -i        : gene Name ID (default geneSymbol)\n")
+	cat("       -G        : optional: Nonnative Go file path (default NULL)\n")
+	cat("       -a        : optional: gene length file path (default NULL)\n")
 	cat("       -o        : output directory\n")
         cat("       -h        : this help\n\n")
         stop(errM)
@@ -33,10 +36,14 @@ file=""
 columns=""
 organism=""
 out_path=""
-known_ref="org.Hs.eg.db"
+annotation="org.Hs.eg.db"
 maxP= -1
 method=0
 specie="hg19"
+gene_path=NULL
+go_path=NULL
+gene_type="geneSymbol"
+useNNgo=FALSE
 
 ## get arg variables
 for (i in 1:length(ARG)) {
@@ -56,6 +63,12 @@ for (i in 1:length(ARG)) {
                 maxP=as.numeric(ARG[i+1])
 	} else if (ARG[i] == "-v") {
                 method=as.numeric(ARG[i+1])
+	} else if (ARG[i] == "-G") {
+                go_path=ARG[i+1]
+	} else if (ARG[i] == "-a") {
+                gene_path=ARG[i+1]
+	} else if (ARG[i] == "-i") {
+                gene_type=ARG[i+1]
 	} else if (ARG[i] == "-h") {
                 usage("")
         }
@@ -76,10 +89,23 @@ library('goseq')
 
 testAnno=find.package(annotation)
 print(testAnno)
-if (length(testAnno)) {
+if (length(testAnno) && (specie %in% supportedGenomes()$db) ) {
 	require(annotation,character.only=T)
+	if (gene_type %in% supportedGenomes()[supportedGenomes()$db %in% specie,]$AvailableGeneIDs) {
+		message(paste("annotation file:",annotation))
+		message(paste("specie:",specie))
+		message(paste("gene ID:",gene_type))
+	} else if (file.exists(go_path) && file.exists(gene_path)) {
+		message(paste("Using Non-native Gene Identifier",gene_path,"and category test",go_path))
+		useNNgo=TRUE
+	} else {
+		stop("Wrong gene ID while no usable Non-native file are provided")
+	}
+} else if (file.exists(go_path) && file.exists(gene_path)) {
+	message(paste("Using Non-native Gene Identifier",gene_path,"and category test",go_path))
+	useNNgo=TRUE
 } else {
-stop("Wrong annotation file")
+stop("Wrong annotation file or specie, while no usable Non-native file are provided")
 }
 
 set.seed(123456789)
@@ -107,8 +133,17 @@ d3<-cbind(d2[,1], is.significant(d2[,2]))
 de<-subset(d3,d3[,2]==1)
 gene.vector = as.integer(unique(d3[,1]) %in% unique(de[,1]))
 names(gene.vector) = unique(d3[,1])
-pwf = nullp(gene.vector, specie, "geneSymbol")
-GO.wall = goseq(pwf, specie, "geneSymbol")
+if (useNNgo) {
+	goTable=read.table(go_path,header=F)
+	geneLenPre=read.table(gene_path,header=F)
+	geneTable=unfactor(geneLenPre[,2])
+	names(geneTable)=unfactor(geneLenPre[,1])
+	pwf = nullp(gene.vector, bias.data=geneTable)
+	GO.wall =  goseq(pwf,gene2cat = goTable)
+} else {
+	pwf = nullp(gene.vector, specie, gene_type)
+	GO.wall = goseq(pwf, specie, gene_type)
+}
 head(GO.wall)
 enriched.GO = cbind(GO.wall$category[p.adjust(GO.wall$over_represented_pvalue, method = "BH") < 0.05], GO.wall$over_represented_pvalue[p.adjust(GO.wall$over_represented_pvalue, method = "BH") < 0.05])
 head(enriched.GO)
