@@ -3,7 +3,7 @@
 ###################
 
 ## Install R itself (libcairo must be installed?s)
-VERSION="3.0.0"
+VERSION="3.0.1"
 
 # DEP_PATH is a URL or path to file with additional packages to be installed
 DEP_PATH="http://bitbucket.org/mugqic/rpackages/raw/8e16c9322318a62ba74872504f0cef120803f1b7/DEPENDENCIES/modules_install_scripts/R_and_Bioconductor_packages.txt" 
@@ -22,7 +22,16 @@ make install
 wget $DEP_PATH
 $INSTALL_PATH/bin/R --vanilla <<'EOF'
 	source("http://bioconductor.org/biocLite.R")
-	deps=unique(readLines("R_and_Bioconductor_packages.txt"))
+	library(BiocInstaller)
+	deps=readLines("R_and_Bioconductor_packages.txt")
+
+	# Programmatically add all the org pacakges
+         contribUrl = contrib.url(biocinstallRepos(), type = 'source')
+         availPkgs  = available.packages(contribUrl, type = 'source')	
+         org.packages = rownames(availPkgs)[grepl("^org", rownames(availPkgs))]
+	deps = c(deps,org.packages)
+
+	deps = unique(deps)
 	biocLite(deps,lib=.Library)
 	biocLite(deps,lib=.Library)
 EOF
