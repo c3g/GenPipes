@@ -75,13 +75,10 @@ for (i in 1:length(ARG)) {
 }
 ## check arg consitency
 if (!(file.exists(file))) {
-	print("Input file not found") 
-	q("no",0)
+	stop("Input file not found") 
 }
 if (out_path == "") {
-	print("Output directory not found")
-
-	q("no",0)
+	stop("Output directory not found")
 }
 
 
@@ -92,17 +89,17 @@ print(testAnno)
 if (length(testAnno) && (specie %in% supportedGenomes()$db) ) {
 	require(annotation,character.only=T)
 	if (gene_type %in% supportedGenomes()[supportedGenomes()$db %in% specie,]$AvailableGeneIDs) {
-		message(paste("annotation file:",annotation))
-		message(paste("specie:",specie))
-		message(paste("gene ID:",gene_type))
+		print(paste("annotation file:",annotation))
+		print(paste("specie:",specie))
+		print(paste("gene ID:",gene_type))
 	} else if (file.exists(go_path) && file.exists(gene_path)) {
-		message(paste("Using Non-native Gene Identifier",gene_path,"and category test",go_path))
+		print(paste("Using Non-native Gene Identifier",gene_path,"and category test",go_path))
 		useNNgo=TRUE
 	} else {
 		stop("Wrong gene ID while no usable Non-native file are provided")
 	}
 } else if (file.exists(go_path) && file.exists(gene_path)) {
-	message(paste("Using Non-native Gene Identifier",gene_path,"and category test",go_path))
+	print(paste("Using Non-native Gene Identifier",gene_path,"and category test",go_path))
 	useNNgo=TRUE
 } else {
 stop("Wrong annotation file or specie, while no usable Non-native file are provided")
@@ -126,8 +123,7 @@ d2<-d2[order(d2[,2]),]
 head(d2)
 is.significant<-function(x) ifelse(x<0.05,1,0)
 if(sum(is.significant(d2[,2])==1) == 0) {
-print("No significant adjusted p-values found")
-q("no",0)
+stop("No significant adjusted p-values found")
 }
 d3<-cbind(d2[,1], is.significant(d2[,2]))
 de<-subset(d3,d3[,2]==1)
