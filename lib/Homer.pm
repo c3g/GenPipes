@@ -90,45 +90,6 @@ sub makeTagDirectory {
   return \@commands;
 }
 
-sub makeTagDirectoryTmp {
-  my $rH_cfg          = shift;
-  my $sampleName      = shift;
-  my $sortedBAM       = shift;
-  my $outputDir       = shift;
-  my $processUnmapped = shift;
-
-  my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'genomeName');
-  #my $refGenome = parseGenome( $rH_cfg );
-  my @commands;
-  my $command;
-  if ( defined $refGenome ) {
-		
-		my $tmpSampleFile = LoadConfig::getParam($rH_cfg, 'qcTags', 'tmpDir').'/dmp-XXXXXX.'.$sampleName;
-		my $tmpSampleFileName = LoadConfig::getParam($rH_cfg, 'qcTags', 'tmpDir').'/filename.'.$sampleName;
- 		#$command .= ' rm  -f '.$tmpSampleFile.' ;'; 
- 		$command .= ' tmpFile=\$(mktemp -u '.$tmpSampleFile.'); echo \$tmpFile > '.$tmpSampleFileName.';'; 
-		push (@commands, $command);
- 		$command = ' module load '.LoadConfig::getParam($rH_cfg, 'qcTags', 'moduleVersion.samtools').' ;'; 
- 		$command .= ' tmpFile=\$(cat '.$tmpSampleFileName.'); '; 
- 		$command .= ' mkfifo \$tmpFile && '.' samtools view -h '.$sortedBAM.' > \$tmpFile ;'; 
- 		push (@commands, $command);
- 		$command  = ' module load '. LoadConfig::getParam($rH_cfg, 'qcTags', 'moduleVersion.python').' '.LoadConfig::getParam($rH_cfg, 'qcTags', 'moduleVersion.homer'). ';';
- 		$command .= ' tmpFile=\$(cat '.$tmpSampleFileName.'); '; 
- 		$command .= ' makeTagDirectory '.$outputDir.'/'. $sampleName.' \$tmpFile -checkGC -genome '.$refGenome.' ; ';
- 		$command .= ' rm  -f '.$tmpSampleFile.'; ';
- 		push (@commands, $command);
-# 		$command .= ' module load '.LoadConfig::getParam($rH_cfg, 'qcTags', 'moduleVersion.samtools').' '. LoadConfig::getParam($rH_cfg, 'qcTags', 'moduleVersion.python').' '.LoadConfig::getParam($rH_cfg, 'qcTags', 'moduleVersion.homer'). ';'; 
-# 		$command .= ' rm  -f '.$tmpSampleFile.' ;'; 
-# 		$command .= ' mktemp -u '.$tmpSampleFile.' && mknod '.$tmpSampleFile.' p && '.' samtools view -h '.$sortedBAM.' > '.$tmpSampleFile.' & '; 
-# 		$command .= ' makeTagDirectory '.$outputDir.'/'. $sampleName.' '.$tmpSampleFile.' -checkGC -genome '.$refGenome.' ;';		
-# 		push (@commands, $command);
-
-  }else{
-		@commands=();
-		print STDERR "\n#WARNING: Genome $refGenome not defined \n#QC, annotations and Motif analysis will not be executed\n\n";
-  }  
-  return \@commands;
-}
 
 
 sub makeUCSCFile {
