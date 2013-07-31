@@ -87,7 +87,7 @@ if (out_path == "") {
 
 library('goseq')
 
-testAnno=find.package(annotation)
+testAnno=find.package(annotation,quiet=T)
 print(testAnno)
 if (length(testAnno) && (specie %in% supportedGenomes()$db) ) {
 	require(annotation,character.only=T)
