@@ -20,6 +20,7 @@ module-whatis \"MUGQIC - MUGQIC developped tools \"
 set             root            \$::env(MUGQIC_INSTALL_HOME)/software/mugqic_tools
 prepend-path    PATH            \$root/tools
 prepend-path    PATH            \$root/perl-tools
+prepend-path    PERL5LIB        \$root/perl-tools
 setenv          R_TOOLS         \$root/R-tools
 setenv          PERL_TOOLS      \$root/perl-tools
 
