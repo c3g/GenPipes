@@ -41,7 +41,7 @@ maxP= -1
 method=0
 specie="hg19"
 gene_path=NULL
-go_path=NULL
+go_path=""
 gene_type="geneSymbol"
 useNNgo=FALSE
 
@@ -86,9 +86,15 @@ library('goseq')
 
 testAnno=find.package(annotation,quiet=T)
 print(testAnno)
-if (length(testAnno) && (specie %in% supportedGenomes()$db) ) {
+repo = grep(".*\\..*\\.LENGTH", as.data.frame(data(package = "geneLenDataBase")$results, stringsAsFactors = FALSE)$Item, ignore.case = TRUE, value = TRUE)
+repo = matrix(unlist(strsplit(repo, "\\.")), ncol = 3, byrow = TRUE)
+valid_ids = sapply(split(repo[, 2], repo[, 1]), paste, collapse = ",")
+supportedSpecies=names(valid_ids)
+supportedGeneIDList=strsplit(valid_ids,",")
+
+if (length(testAnno) && (specie %in% supportedSpecies)) {
 	require(annotation,character.only=T)
-	if (gene_type %in% supportedGenomes()[supportedGenomes()$db %in% specie,]$AvailableGeneIDs) {
+	if (gene_type %in% unlist(supportedGeneIDList[supportedSpecies %in% specie])) {
 		print(paste("annotation file:",annotation))
 		print(paste("specie:",specie))
 		print(paste("gene ID:",gene_type))
