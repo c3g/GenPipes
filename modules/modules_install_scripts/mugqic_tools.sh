@@ -35,6 +35,3 @@ set ModulesVersion \"$VERSION\"
 mv .version $VERSION $MUGQIC_INSTALL_HOME/modulefiles/mugqic/tools
 cd ..
 rm -rf tmp
-
-
-
