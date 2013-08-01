@@ -280,7 +280,7 @@ sub trimMetrics {
 # 	}
 # 
 # 	$metricsJobId = substr $metricsJobId, 0, -1 ;
-	return $metricsJobId;
+#	return $metricsJobId;
 }
 
 sub aligning {
