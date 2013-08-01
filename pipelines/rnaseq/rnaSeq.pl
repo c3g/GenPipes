@@ -587,11 +587,11 @@ sub cuffdiff {
 		}
 		### mbourgey 29/07/2013 - only report de novo discovery but keep this step in case of no reference gtf
 		##cuffdiff de novo
-		$command = Cufflinks::cuffdiff($rH_cfg,\@groupInuptFiles,$outputPathDeNovo,$gtfDnMerged);
-		if(defined($command) && length($command) > 0) {
-			my $cuffdiffKnownJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "cuffdiff", "DENOVO", 'CUFFDIFFD' .$rH_jobIdPrefixe ->{$design} , $formatJobId, $design, $command, 'cuffdiff/' .$design, $workDirectory);
-			$cuffddiffJobId .= '$' .$cuffdiffKnownJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
-		}
+# 		$command = Cufflinks::cuffdiff($rH_cfg,\@groupInuptFiles,$outputPathDeNovo,$gtfDnMerged);
+# 		if(defined($command) && length($command) > 0) {
+# 			my $cuffdiffKnownJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "cuffdiff", "DENOVO", 'CUFFDIFFD' .$rH_jobIdPrefixe ->{$design} , $formatJobId, $design, $command, 'cuffdiff/' .$design, $workDirectory);
+# 			$cuffddiffJobId .= '$' .$cuffdiffKnownJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
+# 		}
 	}
 	$cuffddiffJobId = substr $cuffddiffJobId, 0, -1 ;
 	my $command = Cufflinks::mergeCuffdiffRes($rH_cfg,$designFilePath,'cuffdiff','fpkm');
@@ -784,8 +784,8 @@ sub goseq {
 		$dgeDependency = $globalDep{'dge'}{'dge'};
 	}
 
-	my $columnsCuff = '2,13';
-	my $columnsDge = '2,6';
+	my $columnsCuff = LoadConfig::getParam($rH_cfg, 'diffExpress', 'cuffRescolumns');
+	my $columnsDge = LoadConfig::getParam($rH_cfg, 'diffExpress', 'dgeRescolumns');
 	my $command;
 	my $goseqJobId;
 	for my $design (keys %{$rHoAoA_designGroup}) {
