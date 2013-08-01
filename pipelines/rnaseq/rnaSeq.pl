@@ -71,6 +71,7 @@ use DiffExpression;
 
 my @steps;
 push(@steps, {'name' => 'trimming' , 'stepLoop' => 'sample' , 'output' => 'reads'});
+push(@steps, {'name' => 'trimMetrics' , 'stepLoop' => 'group' , 'output' => 'metrics'});
 push(@steps, {'name' => 'aligning' , 'stepLoop' => 'sample' , 'output' => 'alignment'});
 push(@steps, {'name' => 'merging' , 'stepLoop' => 'sample' , 'output' => 'alignment'});
 push(@steps, {'name' => 'alignMetrics' , 'stepLoop' => 'group' , 'output' => 'metrics'});
@@ -225,22 +226,61 @@ sub trimming {
 		if(length($rH_trimDetails->{'command'}) > 0) {
 			$trimJobIdVarNameLane = SubmitToCluster::printSubmitCmd($rH_cfg, "trim", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'TRIM' .$rH_jobIdPrefixe ->{$sampleName.'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} , undef, $sampleName, $rH_trimDetails->{'command'}, 'reads/' .$sampleName, $workDirectory);
 			$trimJobIdVarNameLane = '$' .$trimJobIdVarNameLane ;
+			$trimJobIdVarNameSample .= $trimJobIdVarNameLane .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 		}
-		my $trinityOut = $laneDirectory .'/' . $sampleName . '.trim.out';
-		##get trimmed read count
-		my $outputFile= 'metrics/' .$sampleName .'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . '.readstats.triming.tsv' ;
-		my $command = Metrics::readStats($rH_cfg,$trinityOut,$outputFile,$sampleName.'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'},'trim');
-		my $filteredReadStatJobID ;
-		if(defined($command) && length($command) > 0) {
-			$filteredReadStatJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", 'filtered', 'FILTERREADSTAT' .$rH_jobIdPrefixe ->{$sampleName.'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} ,$trimJobIdVarNameLane, $sampleName, $command,'metrics/'  .$sampleName, $workDirectory);
-			$filteredReadStatJobID = '$'.$filteredReadStatJobID;
-			$trimJobIdVarNameSample .= $filteredReadStatJobID .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
-		}
+		###mbourgey 2013/08/01 - decrepited since louis parse directly the output of trimmomatic in the Trimmomatic.pm
+		###new output stats file= 'read/' .$sampleName .'/' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/'.$sampleName .'.trim.stats.csv'
+# 			my $trinityOut = $laneDirectory .'/' . $sampleName . '.trim.out';
+# 			##get trimmed read count
+# 			my $outputFile= 'metrics/' .$sampleName .'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . '.readstats.triming.tsv' ;
+# 			my $command = Metrics::readStats($rH_cfg,$trinityOut,$outputFile,$sampleName.'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'},'trim');
+# 			my $filteredReadStatJobID ;
+# 			if(defined($command) && length($command) > 0) {
+# 				$filteredReadStatJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", 'filtered', 'FILTERREADSTAT' .$rH_jobIdPrefixe ->{$sampleName.'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} ,$trimJobIdVarNameLane, $sampleName, $command,'metrics/'  .$sampleName, $workDirectory);
+# 				$filteredReadStatJobID = '$'.$filteredReadStatJobID;
+# 				$trimJobIdVarNameSample .= $filteredReadStatJobID .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
+# 			}
 	}
 	if(defined($trimJobIdVarNameSample) && length($trimJobIdVarNameSample) > 0) {
 		$trimJobIdVarNameSample = substr $trimJobIdVarNameSample, 0, -1 ;
 	}
 	return $trimJobIdVarNameSample;	
+}
+
+
+sub alignMetrics {
+	my $depends = shift;
+	my $rH_cfg = shift;
+	my $rHoAoH_sampleInfo = shift;
+	my $rHoAoA_designGroup  = shift;
+	my $rAoH_seqDictionary = shift;
+	my $rH_jobIdPrefixe = shift;
+
+	my $mergingDependency = undef;
+	if($depends > 0) {
+		$mergingDependency = join(LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep'),values(%{$globalDep{'merging'}}));
+	}
+	## RNAseQC metrics
+	mkdir  $workDirectory .'/alignment' ;
+	open(RNASAMPLE, ">alignment/rnaseqc.samples.txt") or  die ("Unable to open alignment/rnaseqc.samples.txt for wrtting") ;
+	print RNASAMPLE "Sample\tBamFile\tNote\n";
+	my $projectName = LoadConfig::getParam($rH_cfg, 'metricsRNA', 'projectName');
+	for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
+		print RNASAMPLE "$sampleName\talignment/$sampleName/$sampleName.merged.mdup.bam\t$projectName\n";
+	}
+	print "mkdir -p metrics/output_jobs\n";
+	my $sampleList = 'alignment/rnaseqc.samples.txt';
+	my $outputFolder = 'metrics/';
+	my $command = Metrics::rnaQc($rH_cfg, $sampleList, $outputFolder);
+	my $rnaqcJobId = undef;
+	my $metricsJobId = undef;
+	if(defined($command) && length($command) > 0) {
+		$rnaqcJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "rnaQc", undef, 'METRICSRNA', $mergingDependency, undef, $command, 'metrics/' , $workDirectory);
+		$metricsJobId .= '$' .$rnaqcJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
+	}
+
+	$metricsJobId = substr $metricsJobId, 0, -1 ;
+	return $metricsJobId;
 }
 
 sub aligning {
@@ -359,6 +399,44 @@ sub merging {
 	}
 	return $markDupJobId;
 }
+
+
+
+sub alignMetrics {
+	my $depends = shift;
+	my $rH_cfg = shift;
+	my $rHoAoH_sampleInfo = shift;
+	my $rHoAoA_designGroup  = shift;
+	my $rAoH_seqDictionary = shift;
+	my $rH_jobIdPrefixe = shift;
+
+	my $mergingDependency = undef;
+	if($depends > 0) {
+		$mergingDependency = join(LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep'),values(%{$globalDep{'merging'}}));
+	}
+	## RNAseQC metrics
+	mkdir  $workDirectory .'/alignment' ;
+	open(RNASAMPLE, ">alignment/rnaseqc.samples.txt") or  die ("Unable to open alignment/rnaseqc.samples.txt for wrtting") ;
+	print RNASAMPLE "Sample\tBamFile\tNote\n";
+	my $projectName = LoadConfig::getParam($rH_cfg, 'metricsRNA', 'projectName');
+	for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
+		print RNASAMPLE "$sampleName\talignment/$sampleName/$sampleName.merged.mdup.bam\t$projectName\n";
+	}
+	print "mkdir -p metrics/output_jobs\n";
+	my $sampleList = 'alignment/rnaseqc.samples.txt';
+	my $outputFolder = 'metrics/';
+	my $command = Metrics::rnaQc($rH_cfg, $sampleList, $outputFolder);
+	my $rnaqcJobId = undef;
+	my $metricsJobId = undef;
+	if(defined($command) && length($command) > 0) {
+		$rnaqcJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "rnaQc", undef, 'METRICSRNA', $mergingDependency, undef, $command, 'metrics/' , $workDirectory);
+		$metricsJobId .= '$' .$rnaqcJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
+	}
+
+	$metricsJobId = substr $metricsJobId, 0, -1 ;
+	return $metricsJobId;
+}
+
 
 # sub mutation{
 # 	my $depends = shift;
@@ -617,41 +695,6 @@ sub cuffdiff {
 # 	return $filterCuffdiffResJobID;
 }
 
-
-sub alignMetrics {
-	my $depends = shift;
-	my $rH_cfg = shift;
-	my $rHoAoH_sampleInfo = shift;
-	my $rHoAoA_designGroup  = shift;
-	my $rAoH_seqDictionary = shift;
-	my $rH_jobIdPrefixe = shift;
-
-	my $mergingDependency = undef;
-	if($depends > 0) {
-		$mergingDependency = join(LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep'),values(%{$globalDep{'merging'}}));
-	}
-	## RNAseQC metrics
-	mkdir  $workDirectory .'/alignment' ;
-	open(RNASAMPLE, ">alignment/rnaseqc.samples.txt") or  die ("Unable to open alignment/rnaseqc.samples.txt for wrtting") ;
-	print RNASAMPLE "Sample\tBamFile\tNote\n";
-	my $projectName = LoadConfig::getParam($rH_cfg, 'metricsRNA', 'projectName');
-	for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
-		print RNASAMPLE "$sampleName\talignment/$sampleName/$sampleName.merged.mdup.bam\t$projectName\n";
-	}
-	print "mkdir -p metrics/output_jobs\n";
-	my $sampleList = 'alignment/rnaseqc.samples.txt';
-	my $outputFolder = 'metrics/';
-	my $command = Metrics::rnaQc($rH_cfg, $sampleList, $outputFolder);
-	my $rnaqcJobId = undef;
-	my $metricsJobId = undef;
-	if(defined($command) && length($command) > 0) {
-		$rnaqcJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "rnaQc", undef, 'METRICSRNA', $mergingDependency, undef, $command, 'metrics/' , $workDirectory);
-		$metricsJobId .= '$' .$rnaqcJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
-	}
-
-	$metricsJobId = substr $metricsJobId, 0, -1 ;
-	return $metricsJobId;
-}
 
 sub dgeMetrics {
   my $depends = shift;
