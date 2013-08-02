@@ -141,7 +141,7 @@ if (useNNgo) {
 	geneLenPre=read.table(gene_path,header=F)
 	geneTable=unfactor(geneLenPre[,2])
 	names(geneTable)=unfactor(geneLenPre[,1])
-	pwf = nullp(gene.vector, bias.data=geneTable[names(geneTable) %in% names(gene.vector),])
+	pwf = nullp(gene.vector, bias.data=geneTable[names(geneTable) %in% names(gene.vector)])
 	GO.wall =  goseq(pwf,gene2cat = goTable)
 } else {
 	pwf = nullp(gene.vector, specie, gene_type)

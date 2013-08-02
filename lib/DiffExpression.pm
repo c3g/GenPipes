@@ -119,7 +119,7 @@ sub goseq {
 	my $goLinkFile = LoadConfig::getParam($rH_cfg, 'goseq','goLinkFile');
 	my $geneIdType = LoadConfig::getParam($rH_cfg, 'goseq','geneIdType');
 	my $option = '';
-	if (defined($maxResult) && $maxResult ne "") {
+	if (defined($maxResult) && $maxResult ne "" && $maxResult ne "0") {
 		$option = ' -m ' .$maxResult;
 	}
 	if (defined($geneSizeFile) && $geneSizeFile ne "") {
