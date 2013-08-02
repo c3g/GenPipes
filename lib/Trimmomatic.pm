@@ -32,6 +32,7 @@ package Trimmomatic;
 
 # Strict Pragmas
 #--------------------------
+use PipelineUtils;
 use strict;
 use warnings;
 
@@ -48,19 +49,19 @@ sub trim {
     my $rH_laneInfo = shift;
     my $outputDir   = shift;
 
-    my $rH_retVal;
+    my $ro_job;
 
     if ( $rH_laneInfo->{'runType'} eq "SINGLE_END" ) {
-        $rH_retVal = singleCommand( $rH_cfg, $sampleName, $rH_laneInfo, $outputDir );
+        $ro_job = singleCommand( $rH_cfg, $sampleName, $rH_laneInfo, $outputDir );
     }
     elsif ( $rH_laneInfo->{'runType'} eq "PAIRED_END" ) {
-        $rH_retVal = pairCommand( $rH_cfg, $sampleName, $rH_laneInfo, $outputDir );
+        $ro_job = pairCommand( $rH_cfg, $sampleName, $rH_laneInfo, $outputDir );
     }
     else {
         die "Unknown runType: " . $rH_laneInfo->{' runType '} . "\n";
     }
 
-    return $rH_retVal;
+    return $ro_job;
 }
 
 sub pairCommand {
@@ -82,18 +83,17 @@ sub pairCommand {
     my $outputFastqSingle2Name = $outputDir .'/' . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.single2.fastq.gz';
     my $outputTrimLog = $outputDir .'/' . $sampleName . '.trim.out';
     my $outputTrimStats = $outputDir .'/' . $sampleName . '.trim.stats.csv';
-    my $pair1FileDate = -M $outputFastqPair1Name;
-    my $pair2FileDate = -M $outputFastqPair2Name;
 
-    my $currentFileDate = $pair2FileDate;
-    if ( defined($pair1FileDate) && $pair1FileDate > $pair2FileDate ) {
-        $currentFileDate = $pair1FileDate;
-    }
+    my $inputFastqPair1Name = $rawReadDir .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' .$rH_laneInfo->{'read1File'};
+    my $inputFastqPair2Name = $rawReadDir .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' .$rH_laneInfo->{'read2File'};
 
-    my $command = "";
+    my $up2date = PipelineUtils::testInputOutputs([$inputFastqPair1Name, $inputFastqPair2Name], [$outputFastqPair1Name,$outputFastqPair2Name,$outputFastqSingle1Name,$outputFastqSingle2Name,$outputTrimLog,$outputTrimStats]);
+
+    my $ro_job = new Job(!defined($up2date));
 
     # -M gives modified date relative to now. The bigger the older.
-    if ( !defined($currentFileDate) || $currentFileDate > -M $rawReadDir .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' .$rH_laneInfo->{'read1File'} ) {
+    if (!$ro_job->isUp2Date()) {
+        my $command = "";
         $command .= 'module load';
         $command .= ' '.LoadConfig::getParam($rH_cfg, 'trim','moduleVersion.java');
         $command .= ' '.LoadConfig::getParam($rH_cfg, 'trim','moduleVersion.trimmomatic');
@@ -105,7 +105,8 @@ sub pairCommand {
         else {
             $command .= ' -phred33';
         }
-        $command .= ' ' . $rawReadDir .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' .$rH_laneInfo->{'read1File'} . ' ' . $rawReadDir .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' .$rH_laneInfo->{'read2File'};
+        $command .= ' ' . $inputFastqPair1Name;
+        $command .= ' ' . $inputFastqPair2Name;
         $command .= ' ' . $outputFastqPair1Name . ' ' . $outputFastqSingle1Name;
         $command .= ' ' . $outputFastqPair2Name . ' ' . $outputFastqSingle2Name;
         if ( $rH_laneInfo->{'qualOffset'} eq "64" ) {
@@ -120,17 +121,14 @@ sub pairCommand {
         }
         $command .= ' MINLEN:' . $minLength;
         $command .= ' 2> ' . $outputTrimLog;
-        $command .= ' ;';
+        $command .= ' &&';
         $command .= ' grep \"^Input Read\" '.$outputTrimLog.'| sed \'s/Input Read Pairs: \\([0-9]\\+\\).*Both Surviving: \\([0-9]\\+\\).*Forward Only Surviving: \\([0-9]\\+\\).*/Raw Fragments,\\1#Fragment Surviving,\\2#Single Surviving,\\3/g\' | tr \'#\' \'\n\' > '.$outputTrimStats;
+        $command .= ' ' . $up2date;
+
+        $ro_job->addCommand($command);
     }
 
-    my %retVal;
-    $retVal{'command'} = $command;
-    $retVal{'pair1'}   = $outputFastqPair1Name;
-    $retVal{'pair2'}   = $outputFastqPair2Name;
-    $retVal{'single1'} = $outputFastqSingle1Name;
-    $retVal{'single2'} = $outputFastqSingle2Name;
-    return \%retVal;
+    return $ro_job;
 }
 
 sub singleCommand {
@@ -149,12 +147,14 @@ sub singleCommand {
     my $outputFastqName = $outputDir . '/' . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.single.fastq.gz';
     my $outputTrimLog = $outputDir . '/' . $sampleName . '.trim.out';
     my $outputTrimStats = $outputDir .'/' . $sampleName . '.trim.stats.csv';
-    my $currentFileDate = -M $outputFastqName;
+    my $inputFastqName = $rawReadDir .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' .$rH_laneInfo->{'read1File'};
 
-    my $command = "";
+    my $up2date = PipelineUtils::testInputOutputs([$inputFastqName], [$outputFastqName,$outputTrimLog,$outputTrimStats]);
 
-    # -M gives modified date relative to now. The bigger the older.
-    if ( !defined($currentFileDate) || $currentFileDate > -M $rawReadDir .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' .$rH_laneInfo->{'read1File'} ) {
+    my $ro_job = new Job(!defined($up2date));
+
+    if (!$ro_job->isUp2Date()) {
+        my $command = "";
         $command .= 'module load';
         $command .= ' '.LoadConfig::getParam($rH_cfg, 'trim','moduleVersion.java');
         $command .= ' '.LoadConfig::getParam($rH_cfg, 'trim','moduleVersion.trimmomatic');
@@ -166,27 +166,28 @@ sub singleCommand {
         else {
             $command .= ' -phred33';
         }
-        $command .= ' ' . $rawReadDir .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' .$rH_laneInfo->{'read1File'} . ' ' . $outputFastqName;
+        $command .= ' ' . $inputFastqName;
+        $command .= ' ' . $outputFastqName;
         if ( $rH_laneInfo->{'qualOffset'} eq "64" ) {
             $command .= ' TOPHRED33';
         }
         if(defined($headcrop) && length($headcrop) > 0 && $headcrop > 0) {
           $command .= ' HEADCROP:' . $headcrop;
         }
-        $command .= ' ILLUMINACLIP:' . $adapterFile . ':2:30:15';
+        $command .= ' ILLUMINACLIP:' . $adapterFile . $rH_cfg->{'trim.clipSettings'};
         if ( $minQuality > 0 ) {
             $command .= ' TRAILING:' . $minQuality;
         }
         $command .= ' MINLEN:' . $minLength;
         $command .= ' 2> ' . $outputTrimLog;
-        $command .= ' ;';
+        $command .= ' &&';
         $command .= ' grep \"^Input Read\" '.$outputTrimLog.'| sed \'s/Input Reads: \\([0-9]\\+\\).*Surviving: \\([0-9]\\+\\).*/Raw Fragments,\\1#Fragment Surviving,\\2#Single Surviving,\\2/g\' | tr \'#\' \'\n\' > '.$outputTrimStats;
+        $command .= ' ' . $up2date;
+
+        $ro_job->addCommand($command);
     }
 
-    my %retVal;
-    $retVal{'command'} = $command;
-    $retVal{'single1'} = $outputFastqName;
-    return \%retVal;
+    return $ro_job;
 }
 
 1;
