@@ -140,7 +140,6 @@ sub goseq {
 		$command .= ' -t ' .LoadConfig::getParam($rH_cfg, 'goseq','goAnnotation');
 		$command .= ' -k ' .LoadConfig::getParam($rH_cfg, 'goseq','referenceEnsemble2symbol');
 		$command .= ' -s ' .LoadConfig::getParam($rH_cfg, 'goseq','referenceUCSCname');
-		$command .= ' -m ' .$method;
 		$command .= $option;
 		$command .= ' -o ' .$outputFile;
 	}
