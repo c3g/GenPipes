@@ -153,6 +153,7 @@ head(enriched.GO)
 library(GO.db)
 if(dim(enriched.GO)[1] == 0) {
 	print("No significant FDR < 0.05 enriched categories")
+	write.table(paste("Enriched category","FDR < 0.05 filtered p-value","GOID","Term","Ontology","Definition","Synonym", sep="\t"), out_path, append=F, row.names=F, col.names=F, quote=F)
 	q("no",0)
 } else {
 if (maxP == -1) maxP=dim(enriched.GO)[1]
