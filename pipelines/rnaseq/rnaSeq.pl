@@ -415,16 +415,16 @@ sub alignMetrics {
 		$mergingDependency = join(LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep'),values(%{$globalDep{'merging'}}));
 	}
 	## RNAseQC metrics
-	mkdir  $workDirectory .'/alignment' ;
+	mkdir  $workDirectory .'/alignment ' ;
 	open(RNASAMPLE, ">alignment/rnaseqc.samples.txt") or  die ("Unable to open alignment/rnaseqc.samples.txt for wrtting") ;
 	print RNASAMPLE "Sample\tBamFile\tNote\n";
 	my $projectName = LoadConfig::getParam($rH_cfg, 'metricsRNA', 'projectName');
 	for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
 		print RNASAMPLE "$sampleName\talignment/$sampleName/$sampleName.merged.mdup.bam\t$projectName\n";
 	}
-	print "mkdir -p metrics/output_jobs\n";
+	print "mkdir -p metrics/output_jobs metrics/rnaseqRep/\n";
 	my $sampleList = 'alignment/rnaseqc.samples.txt';
-	my $outputFolder = 'metrics/';
+	my $outputFolder = 'metrics/rnaseqRep/';
 	my $command = Metrics::rnaQc($rH_cfg, $sampleList, $outputFolder);
 	my $rnaqcJobId = undef;
 	my $metricsJobId = undef;

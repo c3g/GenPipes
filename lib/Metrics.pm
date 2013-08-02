@@ -62,7 +62,8 @@ sub rnaQc{
     $command .= ' -t ' .LoadConfig::getParam($rH_cfg, 'rnaQc','referenceGtf');
     $command .= ' -r ' .LoadConfig::getParam($rH_cfg, 'rnaQc','referenceFasta');
     $command .= ' -o ' .$outputFolder ;
-    $command .= ' -BWArRNA ' .LoadConfig::getParam($rH_cfg, 'rnaQc','ribosomalFasta');
+    $command .= ' -BWArRNA ' .LoadConfig::getParam($rH_cfg, 'rnaQc','ribosomalFasta') .' &&';
+    $command .= ' zip -r ' .$outputFolder .'.zip ' .$outputFolder
   }
     
   return $command;
