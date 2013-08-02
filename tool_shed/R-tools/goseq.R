@@ -129,7 +129,8 @@ d2<-d2[order(d2[,2]),]
 head(d2)
 is.significant<-function(x) ifelse(x<0.05,1,0)
 if(sum(is.significant(d2[,2])==1) == 0) {
-stop("No significant adjusted p-values found")
+	print("No significant adjusted p-values found")
+	q("no",0)
 }
 d3<-cbind(d2[,1], is.significant(d2[,2]))
 de<-subset(d3,d3[,2]==1)
