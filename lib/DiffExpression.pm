@@ -114,10 +114,22 @@ sub goseq {
 	my $latestInputFile = -M $resultFile;
 	my $latestOutputFile = -M $outputFile;
 
-	my $maxResult = LoadConfig::getParam($rH_cfg, 'diffExpress','maxGoResult');
+	my $maxResult = LoadConfig::getParam($rH_cfg, 'goseq','maxGoResult');
+	my $geneSizeFile = LoadConfig::getParam($rH_cfg, 'goseq','geneSizeFile');
+	my $goLinkFile = LoadConfig::getParam($rH_cfg, 'goseq','goLinkFile');
+	my $geneIdType = LoadConfig::getParam($rH_cfg, 'goseq','geneIdType');
 	my $option = '';
-	if (defined($maxResult) && $maxResult ne "") {
+	if (defined($maxResult) && $maxResult ne "" && $maxResult ne "0") {
 		$option = ' -m ' .$maxResult;
+	}
+	if (defined($geneSizeFile) && $geneSizeFile ne "") {
+		$option .= ' -a ' .$geneSizeFile;
+	}
+	if (defined($goLinkFile) && $goLinkFile ne "") {
+		$option .= ' -G ' .$goLinkFile;
+	}
+	if (defined($geneIdType) && $geneIdType ne "") {
+		$option .= ' -i ' .$geneIdType;
 	}
 	
 	my $command;
@@ -128,7 +140,6 @@ sub goseq {
 		$command .= ' -t ' .LoadConfig::getParam($rH_cfg, 'goseq','goAnnotation');
 		$command .= ' -k ' .LoadConfig::getParam($rH_cfg, 'goseq','referenceEnsemble2symbol');
 		$command .= ' -s ' .LoadConfig::getParam($rH_cfg, 'goseq','referenceUCSCname');
-		$command .= ' -m ' .$method;
 		$command .= $option;
 		$command .= ' -o ' .$outputFile;
 	}

@@ -173,4 +173,26 @@ sub mergeReadStats{
 	return $command;
 }
 
+
+sub mergePrintReadStats{
+	my $rH_cfg 							= shift;
+	my $sampleName         = shift;
+	my $trimOutputFile  		= shift;
+	my $flagStatsFile 			= shift;
+	my $outputFile  				= shift;
+	my $command							= undef;
+
+	my $latestInputFile = -M $flagStatsFile;
+	my $latestOutputFile = -M $outputFile;
+	
+	if(!defined($latestInputFile) || !defined($latestOutputFile) || $latestInputFile <  $latestOutputFile) {
+		$command .= 'module load ' . LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.tools') . ' ;';
+		$command .= ' perl -MReadMetrics -e \' ReadMetrics::mergeStats(\"'.$sampleName.'\",';
+		$command .= ' \"'. $outputFile .'\", ReadMetrics::parseTrimOutput(\"'.$sampleName.'\",';
+		$command .= ' \"'. $trimOutputFile .'\"), ReadMetrics::parseFlagstats(\"'.$sampleName.'\",';
+		$command .= ' \"'. $flagStatsFile .'\"));\'';
+	}
+	return $command;
+}
+
 1;

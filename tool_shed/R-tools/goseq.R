@@ -3,7 +3,7 @@
 # Borrowed some argument code from Mathieu Bourgey
 # usage : Rscript goseq.R -d path_dge_results_file -c comma_delimited_columns -g organism -k known_reference -o output_dir
 # modified  by Mathieu Bourgey Feb 2013
-
+# modified  by Mathieu Bourgey July 2013
 
 
 usage=function(errM) {
@@ -15,6 +15,9 @@ usage=function(errM) {
 	cat("       -k        : known genome reference file\n")
 	cat("       -m        : maximum number of pathway return (default all)\n")
 	cat("       -v        : DGE method 0: edger/deseq ; 1: cuffdiff (default 0)\n")
+	cat("       -i        : gene Name ID (default geneSymbol)\n")
+	cat("       -G        : optional: Nonnative Go file path (default NULL)\n")
+	cat("       -a        : optional: gene length file path (default NULL)\n")
 	cat("       -o        : output directory\n")
         cat("       -h        : this help\n\n")
         stop(errM)
@@ -33,10 +36,14 @@ file=""
 columns=""
 organism=""
 out_path=""
-known_ref="org.Hs.eg.db"
+annotation="org.Hs.eg.db"
 maxP= -1
 method=0
 specie="hg19"
+gene_path=NULL
+go_path=""
+gene_type="geneSymbol"
+useNNgo=FALSE
 
 ## get arg variables
 for (i in 1:length(ARG)) {
@@ -56,30 +63,52 @@ for (i in 1:length(ARG)) {
                 maxP=as.numeric(ARG[i+1])
 	} else if (ARG[i] == "-v") {
                 method=as.numeric(ARG[i+1])
+	} else if (ARG[i] == "-G") {
+                go_path=ARG[i+1]
+	} else if (ARG[i] == "-a") {
+                gene_path=ARG[i+1]
+	} else if (ARG[i] == "-i") {
+                gene_type=ARG[i+1]
 	} else if (ARG[i] == "-h") {
                 usage("")
         }
 }
 ## check arg consitency
 if (!(file.exists(file))) {
-	print("Input file not found") 
-	q("no",0)
+	stop("Input file not found") 
 }
 if (out_path == "") {
-	print("Output directory not found")
-
-	q("no",0)
+	stop("Output directory not found")
 }
 
 
 library('goseq')
 
-testAnno=find.package(annotation)
+testAnno=find.package(annotation,quiet=T)
 print(testAnno)
-if (length(testAnno)) {
+repo = grep(".*\\..*\\.LENGTH", as.data.frame(data(package = "geneLenDataBase")$results, stringsAsFactors = FALSE)$Item, ignore.case = TRUE, value = TRUE)
+repo = matrix(unlist(strsplit(repo, "\\.")), ncol = 3, byrow = TRUE)
+valid_ids = sapply(split(repo[, 2], repo[, 1]), paste, collapse = ",")
+supportedSpecies=names(valid_ids)
+supportedGeneIDList=strsplit(valid_ids,",")
+
+if (length(testAnno) && (specie %in% supportedSpecies)) {
 	require(annotation,character.only=T)
+	if (gene_type %in% unlist(supportedGeneIDList[supportedSpecies %in% specie])) {
+		print(paste("annotation file:",annotation))
+		print(paste("specie:",specie))
+		print(paste("gene ID:",gene_type))
+	} else if (file.exists(go_path) && file.exists(gene_path)) {
+		print(paste("Using Non-native Gene Identifier",gene_path,"and category test",go_path))
+		useNNgo=TRUE
+	} else {
+		stop("Wrong gene ID while no usable Non-native file are provided")
+	}
+} else if (file.exists(go_path) && file.exists(gene_path)) {
+	print(paste("Using Non-native Gene Identifier",gene_path,"and category test",go_path))
+	useNNgo=TRUE
 } else {
-stop("Wrong annotation file")
+stop("Wrong annotation file or specie, while no usable Non-native file are provided")
 }
 
 set.seed(123456789)
@@ -100,21 +129,31 @@ d2<-d2[order(d2[,2]),]
 head(d2)
 is.significant<-function(x) ifelse(x<0.05,1,0)
 if(sum(is.significant(d2[,2])==1) == 0) {
-print("No significant adjusted p-values found")
-q("no",0)
+	print("No significant adjusted p-values found")
+	q("no",0)
 }
 d3<-cbind(d2[,1], is.significant(d2[,2]))
 de<-subset(d3,d3[,2]==1)
 gene.vector = as.integer(unique(d3[,1]) %in% unique(de[,1]))
 names(gene.vector) = unique(d3[,1])
-pwf = nullp(gene.vector, specie, "geneSymbol")
-GO.wall = goseq(pwf, specie, "geneSymbol")
+if (useNNgo) {
+	goTable=read.table(go_path,header=F)
+	geneLenPre=read.table(gene_path,header=F)
+	geneTable=unfactor(geneLenPre[,2])
+	names(geneTable)=unfactor(geneLenPre[,1])
+	pwf = nullp(gene.vector, bias.data=geneTable[names(geneTable) %in% names(gene.vector)])
+	GO.wall =  goseq(pwf,gene2cat = goTable)
+} else {
+	pwf = nullp(gene.vector, specie, gene_type)
+	GO.wall = goseq(pwf, specie, gene_type)
+}
 head(GO.wall)
 enriched.GO = cbind(GO.wall$category[p.adjust(GO.wall$over_represented_pvalue, method = "BH") < 0.05], GO.wall$over_represented_pvalue[p.adjust(GO.wall$over_represented_pvalue, method = "BH") < 0.05])
 head(enriched.GO)
 library(GO.db)
 if(dim(enriched.GO)[1] == 0) {
 	print("No significant FDR < 0.05 enriched categories")
+	write.table(paste("Enriched category","FDR < 0.05 filtered p-value","GOID","Term","Ontology","Definition","Synonym", sep="\t"), out_path, append=F, row.names=F, col.names=F, quote=F)
 	q("no",0)
 } else {
 if (maxP == -1) maxP=dim(enriched.GO)[1]
