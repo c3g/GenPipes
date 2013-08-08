@@ -17,7 +17,7 @@ usage=function(errM) {
 
 
 set.seed(123456789)
-perform_dge=function(d, count_limit=1, path, numb) {
+perform_dge=function(d, count_limit=1, path, numb, genSymbol) {
 
 # Retain row which have > count_limit
 
@@ -53,10 +53,12 @@ colnames(count_order_pseudo)=paste(colnames(count_order_pseudo),"norm",sep=".")
 count_order_real=d$count[match(rownames(top_TMM$table), rownames(d$count)),]
 colnames(count_order_real)=paste(colnames(count_order_real),"raw",sep=".")
 id=rownames(top_TMM$table)
+geneN=genSymbol[names(genSymbol) %in% id]
 colnames(top_TMM$table)=c("gene_symbol", "log_conc","log_fc", "edger.p-value","edger.adj.p-value")
 top_TMM$table[,2:3]=round(top_TMM$table[,2:3], digits=3)
 top_TMM$table[,4]=as.numeric(format(top_TMM$table[,4], digits=2))
 top_TMM$table[,5]=as.numeric(format(top_TMM$table[,5], digits=2))
+top_TMM$table[,1]=geneN[match(names(geneN),id)]
 if(numb == 1) {
 data_externe=cbind(id,top_TMM$table, round(count_order_pseudo, digits=0), round(count_order_real, digits=0))
 }
@@ -133,7 +135,7 @@ for (i in 2:ncol(design)) {
 	 # Create output directory  
         
 	if (!file.exists(name_folder)) { 
-		system(paste("mkdir",name_folder,sep=" "))
+		dir.create(name_folder, showWarnings=F, recursive=T)
 	}
 
         current_design=design[,i]
@@ -149,6 +151,8 @@ for (i in 2:ncol(design)) {
         rownames(current_countMatrix)=rawcount[rowSums(current_countMatrix_tmp) > 0,1]
         libSize <- colSums(current_countMatrix)
         geneSymbol=genL[genL[,1] %in% rownames(current_countMatrix),2]
+	geneID=genL[genL[,1] %in% rownames(current_countMatrix),1]
+	names(geneSymbol)=geneID
 	
         cat("Processing for the design\n")
         cat(paste("Name folder: ",name_folder,"\n",sep=""))
@@ -156,27 +160,27 @@ for (i in 2:ncol(design)) {
 
 	# Both groups have replicates
 
-	dge.list=DGEList(counts=current_countMatrix, group=group , lib.size=libSize, genes=geneSymbol)
+	dge.list=DGEList(counts=current_countMatrix, group=group , lib.size=libSize, genes=geneID)
 
 	if((table(group)[1] > 1) & (table(group)[2] > 1)) {
-        	perform_dge(dge.list, count_limit=1, name_folder, 1)
+        	perform_dge(dge.list, count_limit=length(subsampleN), name_folder, 1, geneSymbol)
         } 
 	
 	# Both groups have no replicates
 
 	else if((table(group)[1] == 1) & (table(group)[2] == 1)) {
-        	perform_dge(dge.list, count_limit,name_folder, 2)
+        	perform_dge(dge.list, count_limit=length(subsampleN),name_folder, 2, geneSymbol)
 	}
 
 	# Group 1 has replicates but not group 2	
 
 	else if((table(group)[1] > 1) & (table(group)[2] == 1)) {
-                perform_dge(dge.list, count_limit,name_folder, 1)
+                perform_dge(dge.list, count_limit=length(subsampleN),name_folder, 1, geneSymbol)
 	}
 
 	# Group 2 has replicates but not group 1
 	
 	else if((table(group)[1] == 1) & (table(group)[2] > 1)) {
-                perform_dge(dge.list, count_limit,name_folder, 1)
+                perform_dge(dge.list, count_limit=length(subsampleN),name_folder, 1, geneSymbol)
         }
 }

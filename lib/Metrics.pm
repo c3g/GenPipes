@@ -77,14 +77,18 @@ sub saturation {
 	my $saturationDir = shift;
 
 
+	my $latestFile = -M $countFile;
+	my $testfile = -M $saturationDir .'.zip ';
 	
-
+	
 	my $command;
-	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'saturation' , 'moduleVersion.cranR') .' ' . LoadConfig::getParam($rH_cfg, 'saturation' , 'moduleVersion.tools') . ' &&';
-	$command .= ' Rscript \$R_TOOLS/rpkmSaturation.R ' .$countFile .' ' .$geneSizeFile .' ' .$rpkmDir .' ' .$saturationDir;
-	$command .= ' ' .LoadConfig::getParam($rH_cfg, 'saturation' , 'threadNum');
-	$command .= ' ' .LoadConfig::getParam($rH_cfg, 'saturation' , 'optionR');
-
+	if(!defined($latestFile) || !defined($testfile) || $latestFile < $testfile) {
+		$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'saturation' , 'moduleVersion.cranR') .' ' . LoadConfig::getParam($rH_cfg, 'saturation' , 'moduleVersion.tools') . ' &&';
+		$command .= ' Rscript \$R_TOOLS/rpkmSaturation.R ' .$countFile .' ' .$geneSizeFile .' ' .$rpkmDir .' ' .$saturationDir;
+		$command .= ' ' .LoadConfig::getParam($rH_cfg, 'saturation' , 'threadNum');
+		$command .= ' ' .LoadConfig::getParam($rH_cfg, 'saturation' , 'optionR').' &&';
+		$command .= ' zip -r ' .$saturationDir .'.zip ' .$saturationDir
+	}
 	return $command;
 }
 

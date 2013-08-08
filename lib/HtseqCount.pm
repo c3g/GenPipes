@@ -166,22 +166,26 @@ sub refGtf2matrix {
 	my $readcountExtension = shift;
 	my $outputDir = shift;
 	my $outputMatrix  = shift;
+
+	my $latestFile = -M $refGtf;
+	my $testFile = -M $outputDir .'/' .$outputMatrix ;
 	
         my $command ;
-	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'htseq','moduleVersion.tools') .' &&';
-	$command .= ' gtf2tmpMatrix.awk ' .$refGtf;
-	$command .= ' ' .$outputDir .'/tmpMatrix.txt &&';
-	$command .= ' HEAD=\"Gene\tSymbol\" &&';
-	$command .= ' for i in \` ls ' .$readCountDir .'/*' .$readcountExtension .' \` ;';
-	$command .= ' do sort -k1,1 \$i > ' .$outputDir .'/tmpSort.txt ;';
-	$command .= ' join -1 1 -2 1 ' .$outputDir .'/tmpMatrix.txt ' .$outputDir .'/tmpSort.txt > ' .$outputDir .'/tmpMatrix.2.txt ;';
-	$command .= ' mv ' .$outputDir .'/tmpMatrix.2.txt ' .$outputDir .'/tmpMatrix.txt ;';
-	$command .= ' na=\$(basename \$i | cut -d\. -f1) ;';
-	$command .= ' HEAD=\"\$HEAD\t\$na\" ;';
-	$command .= ' done &&';
-	$command .= ' echo -e \$HEAD | cat - ' .$outputDir .'/tmpMatrix.txt | tr \' \' \'\t\' > ' .$outputDir .'/' .$outputMatrix .' &&';
-	$command .= ' rm ' .$outputDir .'/tmpSort.txt ' .$outputDir .'/tmpMatrix.txt ';
-        
+	if(!defined($latestFile) || !defined($testFile) || $latestFile < $testFile) {
+		$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'htseq','moduleVersion.tools') .' &&';
+		$command .= ' gtf2tmpMatrix.awk ' .$refGtf;
+		$command .= ' ' .$outputDir .'/tmpMatrix.txt &&';
+		$command .= ' HEAD=\"Gene\tSymbol\" &&';
+		$command .= ' for i in \` ls ' .$readCountDir .'/*' .$readcountExtension .' \` ;';
+		$command .= ' do sort -k1,1 \$i > ' .$outputDir .'/tmpSort.txt ;';
+		$command .= ' join -1 1 -2 1 ' .$outputDir .'/tmpMatrix.txt ' .$outputDir .'/tmpSort.txt > ' .$outputDir .'/tmpMatrix.2.txt ;';
+		$command .= ' mv ' .$outputDir .'/tmpMatrix.2.txt ' .$outputDir .'/tmpMatrix.txt ;';
+		$command .= ' na=\$(basename \$i | cut -d\. -f1) ;';
+		$command .= ' HEAD=\"\$HEAD\t\$na\" ;';
+		$command .= ' done &&';
+		$command .= ' echo -e \$HEAD | cat - ' .$outputDir .'/tmpMatrix.txt | tr \' \' \'\t\' > ' .$outputDir .'/' .$outputMatrix .' &&';
+		$command .= ' rm ' .$outputDir .'/tmpSort.txt ' .$outputDir .'/tmpMatrix.txt ';
+        }
         return $command;
 }
 

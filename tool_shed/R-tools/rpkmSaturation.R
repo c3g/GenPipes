@@ -132,7 +132,7 @@ if (DoSat == "1") {
 	colnames(satRQ3p)=as.character(round(satMinv*100))
 	colnames(satRQ4p)=as.character(round(satMinv*100))
         jpeg(paste(path_outS,paste(colnames(coKM)[i],"saturation.jpeg",sep="_"),sep="/"),1000,1000)
-	par(mfcol=c(2,2), mar=c(4,4,0.5,0.5), oma=c(1,1,3,1))
+	par(mfcol=c(2,2), mar=c(4,4,2,1), oma=c(1,1,4,1))
         boxplot(satRQ4,main="Q4 saturation",xlab="Resampling precentage",ylab="median RPKM")
 	boxplot(satRQ2,main="Q2 saturation",xlab="Resampling precentage",ylab="median RPKM")
         boxplot(satRQ3,main="Q3 saturation",xlab="Resampling precentage",ylab="median RPKM")
@@ -140,7 +140,7 @@ if (DoSat == "1") {
 	mtext(paste("Saturation estimate of the mean FPKM - Excluding",as.character(fpkmZP),"perc of genes with fpkm = 0",sep=" "),NORTH<-3, line=1, adj=0.5, cex=1.2, outer=TRUE, col="black")
         dev.off()
 	jpeg(paste(path_outS,paste(colnames(coKM)[i],"PRE_saturation.jpeg",sep="_"),sep="/"),1000,1000)
-        par(mfcol=c(2,2), mar=c(4,4,0.5,0.5), oma=c(1,1,4,1))
+        par(mfcol=c(2,2), mar=c(4,4,2,1), oma=c(1,1,4,1))
 	yl1=yl2=yl3=yl4=1
 	yl1=max(satRQ1p)+5
 	yl2=max(satRQ2p)+5
@@ -150,10 +150,10 @@ if (DoSat == "1") {
 	print(max(satRQ2p))
 	print(max(satRQ3p))
 	print(max(satRQ4p))
-        boxplot(satRQ4p,main="Q4 saturation",xlab="Resampling precentage",ylab="mean PRE",ylim=c(0,yl4))
-	boxplot(satRQ2p,main="Q2 saturation",xlab="Resampling precentage",ylab="mean PRE",ylim=c(0,yl2))
-        boxplot(satRQ3p,main="Q3 saturation",xlab="Resampling precentage",ylab="mean PRE",ylim=c(0,yl3))
-	boxplot(satRQ1p,main="Q1 saturation",xlab="Resampling precentage",ylab="mean PRE",ylim=c(0,yl1))
+        boxplot(satRQ4p,main="Q4 saturation",xlab="Resampling precentage",ylab="mean PRE",ylim=c(0,100))
+	boxplot(satRQ2p,main="Q2 saturation",xlab="Resampling precentage",ylab="mean PRE",ylim=c(0,100))
+        boxplot(satRQ3p,main="Q3 saturation",xlab="Resampling precentage",ylab="mean PRE",ylim=c(0,100))
+	boxplot(satRQ1p,main="Q1 saturation",xlab="Resampling precentage",ylab="mean PRE",ylim=c(0,100))
 	mtext(paste("Saturation estimate of the Percent Relative Error - Excluding",as.character(fpkmZP),"perc of genes with fpkm = 0",sep=" "),NORTH<-3, line=1, adj=0.5, cex=1.2, outer=TRUE, col="black")
         dev.off()
     }
