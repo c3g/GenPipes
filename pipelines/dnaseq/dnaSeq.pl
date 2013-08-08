@@ -162,6 +162,7 @@ sub trimAndAlign {
     my $rH_trimDetails = Trimmomatic::trim($rH_cfg, $sampleName, $rH_laneInfo, $outputDir);
     my $trimJobIdVarName=undef;
     if(length($rH_trimDetails->{'command'}) > 0) {
+      print $rH_trimDetails->{'command'} . '\n';
       $trimJobIdVarName = SubmitToCluster::printSubmitCmd($rH_cfg, "trim", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'TRIM', undef, $sampleName, $rH_trimDetails->{'command'}, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
       $trimJobIdVarName = '$'.$trimJobIdVarName;
       #TODO calcReadCounts.sh
@@ -172,6 +173,9 @@ sub trimAndAlign {
     my $outputAlnPrefix = $outputAlnDir.'/'.$sampleName;
     my $rA_commands = BWA::aln($rH_cfg, $sampleName, $rH_trimDetails->{'pair1'}, $rH_trimDetails->{'pair2'}, $rH_trimDetails->{'single1'}, $outputAlnPrefix, $rgId, $rgSampleName, $rgLibrary, $rgPlatformUnit, $rgCenter);
     if(@{$rA_commands} == 3) {
+      print $rA_commands->[0] ."\n";
+      print $rA_commands->[1] ."\n";
+      print $rA_commands->[2] ."\n";
       my $read1JobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'read1.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READ1ALN', $trimJobIdVarName, $sampleName, $rA_commands->[0], LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
       $read1JobId = '$'.$read1JobId;
       my $read2JobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'read2.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READ2ALN', $trimJobIdVarName, $sampleName, $rA_commands->[1], LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
