@@ -611,31 +611,31 @@ sub cuffdiff {
 	##iterate over design
 	my $cuffddiffJobId;
 	for my $design (keys %{$rHoAoA_designGroup}) {
-# 		mkdir  $workDirectory ;
-# 		mkdir  $workDirectory .'/cuffdiff';
+		mkdir  $workDirectory ;
+		mkdir  $workDirectory .'/cuffdiff';
 # 		mkdir  $workDirectory .'/cuffdiff/denovo/' ;
 # 		mkdir  $workDirectory .'/cuffdiff/denovo/' .$design ;
 # 		## create the list of deNovo gtf to merge
-# 		print "mkdir -p cuffdiff/$design/output_jobs\n";
+		print "mkdir -p cuffdiff/$design/output_jobs\n";
 # 		my $mergeListFile = $workDirectory .'/cuffdiff/denovo/' .$design .'/gtfMerge.list';
 # 		open(MERGEF, ">$mergeListFile") or  die ("Unable to open $mergeListFile for wrtting") ;
-# 		my $numberGroups = @{$rHoAoA_designGroup->{$design}} ;
-# 		##iterate over group
-# 		my @groupInuptFiles;
-# 		for (my $i = 0;   $i < $numberGroups; $i++) {
-# 			##iterate over samples in the design
-# 			my $numberSample =  @{$rHoAoA_designGroup->{$design}->[$i]};
-# 			my $gtfFile = '';
-# 			my $bamfile = ' ';
-# 			for (my $j = 0;   $j < $numberSample; $j++) {
+		my $numberGroups = @{$rHoAoA_designGroup->{$design}} ;
+		##iterate over group
+		my @groupInuptFiles;
+		for (my $i = 0;   $i < $numberGroups; $i++) {
+			##iterate over samples in the design
+			my $numberSample =  @{$rHoAoA_designGroup->{$design}->[$i]};
+			my $gtfFile = '';
+			my $bamfile = ' ';
+			for (my $j = 0;   $j < $numberSample; $j++) {
 # 				$gtfFile = 'fpkm/denovo/' .$rHoAoA_designGroup->{$design}->[$i]->[$j] .'/transcripts.gtf' ;
 # 				print MERGEF $gtfFile;
 # 				print MERGEF "\n";
-# 				$bamfile .= 'alignment/' .$rHoAoA_designGroup->{$design}->[$i]->[$j] . '/' .$rHoAoA_designGroup->{$design}->[$i]->[$j] . '.merged.mdup.bam' .',' ;
-# 			}
-# 			$bamfile = substr $bamfile, 0, -1 ;
-# 			push(@groupInuptFiles,$bamfile);
-# 		}
+				$bamfile .= 'alignment/' .$rHoAoA_designGroup->{$design}->[$i]->[$j] . '/' .$rHoAoA_designGroup->{$design}->[$i]->[$j] . '.merged.mdup.bam' .',' ;
+			}
+			$bamfile = substr $bamfile, 0, -1 ;
+			push(@groupInuptFiles,$bamfile);
+		}
 # 		close($mergeListFile);
 
 		my $outputPathKnown = 'cuffdiff/known/' .$design;
