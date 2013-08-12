@@ -58,7 +58,7 @@ colnames(top_TMM$table)=c("gene_symbol", "log_conc","log_fc", "edger.p-value","e
 top_TMM$table[,2:3]=round(top_TMM$table[,2:3], digits=3)
 top_TMM$table[,4]=as.numeric(format(top_TMM$table[,4], digits=2))
 top_TMM$table[,5]=as.numeric(format(top_TMM$table[,5], digits=2))
-top_TMM$table[,1]=geneN[match(names(geneN),id)]
+top_TMM$table[,1]=geneN[match(id,names(geneN))]
 if(numb == 1) {
 data_externe=cbind(id,top_TMM$table, round(count_order_pseudo, digits=0), round(count_order_real, digits=0))
 }

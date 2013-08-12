@@ -179,6 +179,27 @@ sub mergeReadStats{
 }
 
 
+sub mergeTrimmomaticStats{
+	my $rH_cfg         = shift;
+	my $paternFile     = shift;
+	my $folderFile     = shift;
+	my $outputFile     = shift;
+
+	my $typeLibrary = 'unknown';
+	if ( $rH_laneInfo->{'runType'} eq "SINGLE_END" ) {
+		$typeLibrary = 'single';
+	}
+	elsif ( $rH_laneInfo->{'runType'} eq "PAIRED_END" ) {
+		$typeLibrary = 'paired';
+	}
+	
+	my $command;
+	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.cranR') .' ' . LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.tools') . ' ;';
+	$command .= ' Rscript \$R_TOOLS/mergeTrimmomaticStat.R ' .$paternFile .' ' .$folderFile .' ' .$outputFile .' ' .$typeLibrary;
+	
+	return $command;
+}
+
 sub mergePrintReadStats{
 	my $rH_cfg 							= shift;
 	my $sampleName         = shift;
