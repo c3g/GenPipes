@@ -794,7 +794,7 @@ sub dge {
 	$command = DiffExpression::deseq($rH_cfg, $designFilePath, $countMatrix, $outputDir);
 	my $deseqJobId = undef;
 	if(defined($command) && length($command) > 0) {
-		$deseqJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "diffExpress", 'deseq', 'DESEQ', $jobDependency, undef,$command, 'DGE/' , $workDirectory);
+		$deseqJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "diffExpress", 'deseq', 'DESEQ', $edgerJobId, undef,$command, 'DGE/' , $workDirectory);
 		$deseqJobId = '$' .$deseqJobId;
 	}
 	
