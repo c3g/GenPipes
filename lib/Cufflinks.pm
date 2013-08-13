@@ -175,9 +175,7 @@ sub mergeCuffdiffRes {
 	### TO DO : re-write mergecuffdiff_known.R and mergecuffdiff_denovo.R to be more portable
 	my $command;
 	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'cuffmerge','moduleVersion.tools') .' ' .LoadConfig::getParam($rH_cfg, 'cuffdiff','moduleVersion.cranR') .' ;';
-	$command .= ' Rscript \$R_TOOLS/mergecuffdiff_known.R ' .$outputDir .' ' .$inputDir .' ' .$designFile .' &&';
-	$command .= ' Rscript \$R_TOOLS/mergecuffdiff_denovo.R ' .$outputDir .' ' .$inputDir .' ' .$designFile ;
-
+	$command .= ' Rscript \$R_TOOLS/mergecuffdiff_known.R ' .$outputDir .' ' .$inputDir .' ' .$designFile ;
 	return $command;
 }
 

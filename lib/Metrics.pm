@@ -62,7 +62,8 @@ sub rnaQc{
     $command .= ' -t ' .LoadConfig::getParam($rH_cfg, 'rnaQc','referenceGtf');
     $command .= ' -r ' .LoadConfig::getParam($rH_cfg, 'rnaQc','referenceFasta');
     $command .= ' -o ' .$outputFolder ;
-    $command .= ' -BWArRNA ' .LoadConfig::getParam($rH_cfg, 'rnaQc','ribosomalFasta');
+    $command .= ' -BWArRNA ' .LoadConfig::getParam($rH_cfg, 'rnaQc','ribosomalFasta') .' &&';
+    $command .= ' zip -r ' .$outputFolder .'.zip ' .$outputFolder
   }
     
   return $command;
@@ -76,14 +77,18 @@ sub saturation {
 	my $saturationDir = shift;
 
 
+	my $latestFile = -M $countFile;
+	my $testfile = -M $saturationDir .'.zip ';
 	
-
+	
 	my $command;
-	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'saturation' , 'moduleVersion.cranR') .' ' . LoadConfig::getParam($rH_cfg, 'saturation' , 'moduleVersion.tools') . ' &&';
-	$command .= ' Rscript \$R_TOOLS/rpkmSaturation.R ' .$countFile .' ' .$geneSizeFile .' ' .$rpkmDir .' ' .$saturationDir;
-	$command .= ' ' .LoadConfig::getParam($rH_cfg, 'saturation' , 'threadNum');
-	$command .= ' ' .LoadConfig::getParam($rH_cfg, 'saturation' , 'optionR');
-
+	if(!defined($latestFile) || !defined($testfile) || $latestFile < $testfile) {
+		$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'saturation' , 'moduleVersion.cranR') .' ' . LoadConfig::getParam($rH_cfg, 'saturation' , 'moduleVersion.tools') . ' &&';
+		$command .= ' Rscript \$R_TOOLS/rpkmSaturation.R ' .$countFile .' ' .$geneSizeFile .' ' .$rpkmDir .' ' .$saturationDir;
+		$command .= ' ' .LoadConfig::getParam($rH_cfg, 'saturation' , 'threadNum');
+		$command .= ' ' .LoadConfig::getParam($rH_cfg, 'saturation' , 'optionR').' &&';
+		$command .= ' zip -r ' .$saturationDir .'.zip ' .$saturationDir
+	}
 	return $command;
 }
 
@@ -173,6 +178,20 @@ sub mergeReadStats{
 	return $command;
 }
 
+
+sub mergeTrimmomaticStats{
+	my $rH_cfg         = shift;
+	my $libraryType    = shift;
+	my $paternFile     = shift;
+	my $folderFile     = shift;
+	my $outputFile     = shift;
+
+	my $command;
+	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.cranR') .' ' . LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.tools') . ' ;';
+	$command .= ' Rscript \$R_TOOLS/mergeTrimmomaticStat.R ' .$paternFile .' ' .$folderFile .' ' .$outputFile .' ' .$libraryType;
+	
+	return $command;
+}
 
 sub mergePrintReadStats{
 	my $rH_cfg 							= shift;

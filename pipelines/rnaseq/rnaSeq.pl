@@ -249,38 +249,29 @@ sub trimming {
 
 
 sub trimMetrics {
-# 	my $depends = shift;
-# 	my $rH_cfg = shift;
-# 	my $rHoAoH_sampleInfo = shift;
-# 	my $rHoAoA_designGroup  = shift;
-# 	my $rAoH_seqDictionary = shift;
-# 	my $rH_jobIdPrefixe = shift;
-# 
-# 	my $mergingDependency = undef;
-# 	if($depends > 0) {
-# 		$mergingDependency = join(LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep'),values(%{$globalDep{'merging'}}));
-# 	}
-# 	## RNAseQC metrics
-# 	mkdir  $workDirectory .'/alignment' ;
-# 	open(RNASAMPLE, ">alignment/rnaseqc.samples.txt") or  die ("Unable to open alignment/rnaseqc.samples.txt for wrtting") ;
-# 	print RNASAMPLE "Sample\tBamFile\tNote\n";
-# 	my $projectName = LoadConfig::getParam($rH_cfg, 'metricsRNA', 'projectName');
-# 	for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
-# 		print RNASAMPLE "$sampleName\talignment/$sampleName/$sampleName.merged.mdup.bam\t$projectName\n";
-# 	}
-# 	print "mkdir -p metrics/output_jobs\n";
-# 	my $sampleList = 'alignment/rnaseqc.samples.txt';
-# 	my $outputFolder = 'metrics/';
-# 	my $command = Metrics::rnaQc($rH_cfg, $sampleList, $outputFolder);
-# 	my $rnaqcJobId = undef;
-# 	my $metricsJobId = undef;
-# 	if(defined($command) && length($command) > 0) {
-# 		$rnaqcJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "rnaQc", undef, 'METRICSRNA', $mergingDependency, undef, $command, 'metrics/' , $workDirectory);
-# 		$metricsJobId .= '$' .$rnaqcJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
-# 	}
-# 
-# 	$metricsJobId = substr $metricsJobId, 0, -1 ;
-#	return $metricsJobId;
+	my $depends = shift;
+	my $rH_cfg = shift;
+	my $rHoAoH_sampleInfo = shift;
+	my $rHoAoA_designGroup  = shift;
+	my $rAoH_seqDictionary = shift;
+	my $rH_jobIdPrefixe = shift;
+
+	my $libraryType = LoadConfig::getParam($rH_cfg, 'default', 'libraryType');
+	my $trimmingDependency = undef;
+	if($depends > 0) {
+		$trimmingDependency = join(LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep'),values(%{$globalDep{'trimming'}}));
+	}
+	my $folder = 'reads';
+	my $pattern = 'trim.stats.csv';
+	my $ouputFile = 'metrics/trimming.stats';
+	my $command;
+	$command = Metrics::mergeTrimmomaticStats($rH_cfg,  $libraryType, $pattern, $folder, $ouputFile);
+	my $metricsJobId = undef;
+	if(defined($command) && length($command) > 0) {
+		my $trimMetricsJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "trimMetrics", undef, 'TRIMMETRICS', $trimmingDependency, undef, $command, 'metrics/' , $workDirectory);
+		$metricsJobId = '$' .$trimMetricsJobId;
+	}
+	return $metricsJobId;
 }
 
 sub aligning {
@@ -422,9 +413,9 @@ sub alignMetrics {
 	for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
 		print RNASAMPLE "$sampleName\talignment/$sampleName/$sampleName.merged.mdup.bam\t$projectName\n";
 	}
-	print "mkdir -p metrics/output_jobs\n";
+	print "mkdir -p metrics/output_jobs metrics/rnaseqRep/\n";
 	my $sampleList = 'alignment/rnaseqc.samples.txt';
-	my $outputFolder = 'metrics/';
+	my $outputFolder = 'metrics/rnaseqRep';
 	my $command = Metrics::rnaQc($rH_cfg, $sampleList, $outputFolder);
 	my $rnaqcJobId = undef;
 	my $metricsJobId = undef;
@@ -613,12 +604,12 @@ sub cuffdiff {
 	for my $design (keys %{$rHoAoA_designGroup}) {
 		mkdir  $workDirectory ;
 		mkdir  $workDirectory .'/cuffdiff';
-		mkdir  $workDirectory .'/cuffdiff/denovo/' ;
-		mkdir  $workDirectory .'/cuffdiff/denovo/' .$design ;
-		## create the list of deNovo gtf to merge
+# 		mkdir  $workDirectory .'/cuffdiff/denovo/' ;
+# 		mkdir  $workDirectory .'/cuffdiff/denovo/' .$design ;
+# 		## create the list of deNovo gtf to merge
 		print "mkdir -p cuffdiff/$design/output_jobs\n";
-		my $mergeListFile = $workDirectory .'/cuffdiff/denovo/' .$design .'/gtfMerge.list';
-		open(MERGEF, ">$mergeListFile") or  die ("Unable to open $mergeListFile for wrtting") ;
+# 		my $mergeListFile = $workDirectory .'/cuffdiff/denovo/' .$design .'/gtfMerge.list';
+# 		open(MERGEF, ">$mergeListFile") or  die ("Unable to open $mergeListFile for wrtting") ;
 		my $numberGroups = @{$rHoAoA_designGroup->{$design}} ;
 		##iterate over group
 		my @groupInuptFiles;
@@ -628,37 +619,37 @@ sub cuffdiff {
 			my $gtfFile = '';
 			my $bamfile = ' ';
 			for (my $j = 0;   $j < $numberSample; $j++) {
-				$gtfFile = 'fpkm/denovo/' .$rHoAoA_designGroup->{$design}->[$i]->[$j] .'/transcripts.gtf' ;
-				print MERGEF $gtfFile;
-				print MERGEF "\n";
+# 				$gtfFile = 'fpkm/denovo/' .$rHoAoA_designGroup->{$design}->[$i]->[$j] .'/transcripts.gtf' ;
+# 				print MERGEF $gtfFile;
+# 				print MERGEF "\n";
 				$bamfile .= 'alignment/' .$rHoAoA_designGroup->{$design}->[$i]->[$j] . '/' .$rHoAoA_designGroup->{$design}->[$i]->[$j] . '.merged.mdup.bam' .',' ;
 			}
 			$bamfile = substr $bamfile, 0, -1 ;
 			push(@groupInuptFiles,$bamfile);
 		}
-		close($mergeListFile);
+# 		close($mergeListFile);
 
 		my $outputPathKnown = 'cuffdiff/known/' .$design;
-		my $outputPathDeNovo = 'cuffdiff/denovo/' .$design;
+# 		my $outputPathDeNovo = 'cuffdiff/denovo/' .$design;
+# 		
+# 		my $command = Cufflinks::cuffmerge($rH_cfg, $mergeListFile, $outputPathDeNovo);
+# 		my $cuffmergeJobId ;
+# 		if(defined($command) && length($command) > 0) {
+# 			$cuffmergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "cuffmerge", "MERGE", 'GTFMERGE' .$rH_jobIdPrefixe ->{$design} , $jobDependency, $design, $command, 'cuffdiff/' .$design, $workDirectory);
+# 			$cuffmergeJobId = '$' .$cuffmergeJobId 
+# 		}
 		
-		my $command = Cufflinks::cuffmerge($rH_cfg, $mergeListFile, $outputPathDeNovo);
-		my $cuffmergeJobId ;
-		if(defined($command) && length($command) > 0) {
-			$cuffmergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "cuffmerge", "MERGE", 'GTFMERGE' .$rH_jobIdPrefixe ->{$design} , $jobDependency, $design, $command, 'cuffdiff/' .$design, $workDirectory);
-			$cuffmergeJobId = '$' .$cuffmergeJobId 
-		}
-		
-		my $gtfDnMerged = 'cuffdiff/denovo/' .$design .'/merged.gtf';
-		my $gtfDnFormatMerged = 'cuffdiff/denovo/' .$design .'/formated.merged.gtf';
-		$command = Cufflinks::mergeGtfFormat($rH_cfg, $gtfDnMerged, $gtfDnFormatMerged);
-		my $formatJobId;
-		if(defined($command) && length($command) > 0) {
-			$formatJobId= SubmitToCluster::printSubmitCmd($rH_cfg, "default", "FORMAT", 'GTFFORMAT' .$rH_jobIdPrefixe ->{$design} , $cuffmergeJobId, $design, $command, 'cuffdiff/' .$design, $workDirectory);
-			$formatJobId= '$' .$formatJobId
-		}
+# 		my $gtfDnMerged = 'cuffdiff/denovo/' .$design .'/merged.gtf';
+# 		my $gtfDnFormatMerged = 'cuffdiff/denovo/' .$design .'/formated.merged.gtf';
+# 		$command = Cufflinks::mergeGtfFormat($rH_cfg, $gtfDnMerged, $gtfDnFormatMerged);
+# 		my $formatJobId;
+# 		if(defined($command) && length($command) > 0) {
+# 			$formatJobId= SubmitToCluster::printSubmitCmd($rH_cfg, "default", "FORMAT", 'GTFFORMAT' .$rH_jobIdPrefixe ->{$design} , $cuffmergeJobId, $design, $command, 'cuffdiff/' .$design, $workDirectory);
+# 			$formatJobId= '$' .$formatJobId
+# 		}
 
 		##cuffdiff known
-		$command = Cufflinks::cuffdiff($rH_cfg,\@groupInuptFiles,$outputPathKnown,LoadConfig::getParam($rH_cfg, 'cuffdiff','referenceGtf'));
+		my $command = Cufflinks::cuffdiff($rH_cfg,\@groupInuptFiles,$outputPathKnown,LoadConfig::getParam($rH_cfg, 'cuffdiff','referenceGtf'));
 		if(defined($command) && length($command) > 0) {
 			my $cuffdiffKnownJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "cuffdiff", "KNOWN",  'CUFFDIFFK' .$rH_jobIdPrefixe ->{$design} , $jobDependency, $design, $command, 'cuffdiff/' .$design, $workDirectory);
 			$cuffddiffJobId .= '$' .$cuffdiffKnownJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
@@ -710,7 +701,7 @@ sub dgeMetrics {
 		$countDependency = join(LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep'),values(%{$globalDep{'rawCounts'}}));
 	}
 	
-	print "mkdir -p DGE\n";
+	print "mkdir -p DGE metrics/saturation\n";
 	my $readCountDir = 'raw_counts' ;
 	my $readcountExtension = '.readcounts.csv';
 	my $outputDir = 'DGE';
@@ -728,7 +719,7 @@ sub dgeMetrics {
 	my $countFile   = 'DGE/rawCountMatrix.csv';
 	my $geneSizeFile     = LoadConfig::getParam($rH_cfg, 'saturation', 'geneSizeFile');
 	my $rpkmDir = 'raw_counts';
-	my $saturationDir = 'metrics';
+	my $saturationDir = 'metrics/saturation';
 	
 	$command =  Metrics::saturation($rH_cfg, $countFile, $geneSizeFile, $rpkmDir, $saturationDir);
 	my $saturationJobId = undef;
@@ -804,7 +795,7 @@ sub dge {
 	$command = DiffExpression::deseq($rH_cfg, $designFilePath, $countMatrix, $outputDir);
 	my $deseqJobId = undef;
 	if(defined($command) && length($command) > 0) {
-		$deseqJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "diffExpress", 'deseq', 'DESEQ', $jobDependency, undef,$command, 'DGE/' , $workDirectory);
+		$deseqJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "diffExpress", 'deseq', 'DESEQ', $edgerJobId, undef,$command, 'DGE/' , $workDirectory);
 		$deseqJobId = '$' .$deseqJobId;
 	}
 	
