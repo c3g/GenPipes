@@ -46,7 +46,7 @@ sub computeTDF {
   my $inputBAM    = shift;
 
   my $command;
-  $command .= 'module load mugqic/igvtools/2.1.24 ;';
+  $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'igvtools', 'moduleVersion.igvtools').' ;';
   $command .= ' igvtools count -f min,max,mean ';
   $command .= $inputBAM.' '.$inputBAM.'.tdf';
   $command .= ' '.LoadConfig::getParam($rH_cfg, 'computeTDF', 'igvGenome');
