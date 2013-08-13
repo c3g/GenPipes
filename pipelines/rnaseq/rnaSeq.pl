@@ -256,6 +256,7 @@ sub trimMetrics {
 	my $rAoH_seqDictionary = shift;
 	my $rH_jobIdPrefixe = shift;
 
+	my $libraryType = LoadConfig::getParam($rH_cfg, 'default', 'libraryType');
 	my $trimmingDependency = undef;
 	if($depends > 0) {
 		$trimmingDependency = join(LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep'),values(%{$globalDep{'trimming'}}));
@@ -264,10 +265,10 @@ sub trimMetrics {
 	my $pattern = 'trim.stats.csv';
 	my $ouputFile = 'metrics/trimming.stats';
 	my $command;
-	$command = Metrics::mergeTrimmomaticStats($rH_cfg, $pattern, $folder, $ouputFile);
+	$command = Metrics::mergeTrimmomaticStats($rH_cfg,  $libraryType, $pattern, $folder, $ouputFile);
 	my $metricsJobId = undef;
 	if(defined($command) && length($command) > 0) {
-		my $trimMetricsJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "trimMetrics", undef, 'TRIMMETRICS', $mergingDependency, undef, $command, 'metrics/' , $workDirectory);
+		my $trimMetricsJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "trimMetrics", undef, 'TRIMMETRICS', $trimmingDependency, undef, $command, 'metrics/' , $workDirectory);
 		$metricsJobId = '$' .$trimMetricsJobId;
 	}
 	return $metricsJobId;
