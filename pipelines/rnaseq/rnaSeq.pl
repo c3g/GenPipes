@@ -480,14 +480,14 @@ sub wiggle {
 			push(@strandJobId, '$'.$strandJobIdR );
 		}
 		@outputBedGraph = {'tracks/' . $sampleName . '/' . $sampleName . '.forward.bedGraph' ,  'tracks/' . $sampleName . '/' . $sampleName . '.reverse.bedGraph'};
-		@outputWiggle = {'tracks/' . $sampleName . '/' . $sampleName . '.forward.bw' ,  'tracks/' . $sampleName . '/' . $sampleName . '.reverse.bw'};
+		@outputWiggle = {'tracks/bigWig/' . $sampleName . '.forward.bw' ,  'tracks/bigWig/' . $sampleName . '.reverse.bw'};
 		@prefixJobName = { 'FORWARD', 'REVERSE'};
 	}
 	else {
 		push(@outputBAM,$inputBAM);
 		push(@strandJobId, $jobDependency);
 		push(@outputBedGraph,'tracks/' . $sampleName . '/' . $sampleName . '.bedGraph');
-		push(@outputWiggle,'tracks/' . $sampleName . '/' . $sampleName . '.bw' );
+		push(@outputWiggle,'tracks/bigWig/' . $sampleName . '.bw' );
 		push(@prefixJobName , undef ) ;
 	}
 	my $wiggleJobId ;
@@ -499,7 +499,15 @@ sub wiggle {
 		}
 	} 
 	$wiggleJobId = substr $wiggleJobId, 0, -1 ;
-	return $wiggleJobId;	
+	my $wigFolder = 'tracks/bigWig/' ;
+	my $wigArchive = 'tracks.zip' ;
+	my $command = Wiggle::zipWig($rH_cfg, $wigFolder, $wigArchive);
+	my $wigZipJobId ;
+	if(defined($command) && length($command) > 0) {
+	    my $tmpJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "wiggle", undef, 'WIGZIP' , $wiggleJobId, undef, $command, 'tracks/' , $workDirectory);
+	    $wigZipJobId = '$'.$tmpJobId ;
+	}
+	return $wigZipJobId;	
 }
 
 
@@ -595,95 +603,82 @@ sub cuffdiff {
 	my $rH_jobIdPrefixe = shift;
 	
 	my $jobDependency = undef;
+	my $cuffJobID ;
 	if($depends > 0 and values(%{$globalDep{'fpkm'}}) > 0) {
 		$jobDependency = join(LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep'),values(%{$globalDep{'fpkm'}}));
 	}
 	print "mkdir -p cuffdiff/known cuffdiff/denovo cuffdiff/output_jobs\n";
+	## create the list of deNovo gtf to merge
+	mkdir $workDirectory .'/fpkm';
+	mkdir $workDirectory .'/fpkm/denovo/';
+	my $mergeListFile = $workDirectory .'/fpkm/denovo/gtfMerge.list';
+	open(MERGEF, ">$mergeListFile") or  die ("Unable to open $mergeListFile for wrtting") ;
+	##iterate over sample
+	for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
+	    my $gtfFile = 'fpkm/denovo/' .$sampleName .'/transcripts.gtf' ;
+ 	    print MERGEF $gtfFile;
+	    print MERGEF "\n";
+	}
+	close($mergeListFile);
+	##merge denovo transcript in one  gtf file
+ 	my $outputPathDeNovo = 'fpkm/denovo/' ;
+ 		
+ 	my $command = Cufflinks::cuffmerge($rH_cfg, $mergeListFile, $outputPathDeNovo);
+ 	my $cuffmergeJobId ;
+ 	if(defined($command) && length($command) > 0) {
+ 	    $cuffmergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "cuffmerge", "MERGE", 'GTFMERGE', $jobDependency, undef, $command, 'fpkm/', $workDirectory);
+ 	    $cuffmergeJobId = '$' .$cuffmergeJobId 
+ 	}
+ 	my $gtfDnMerged = 'fpkm/denovo/merged.gtf';
+ 	my $gtfDnFormatMerged = 'fpkm/denovo/formated.merged.gtf';
+ 	$command = Cufflinks::mergeGtfFormat($rH_cfg, $gtfDnMerged, $gtfDnFormatMerged);
+ 	my $formatJobId;
+ 	if(defined($command) && length($command) > 0) {
+ 	    $formatJobId= SubmitToCluster::printSubmitCmd($rH_cfg, "default", "FORMAT", 'GTFFORMAT', $cuffmergeJobId, undef, $command, 'fpkm/', $workDirectory);
+ 	    $formatJobId= '$' .$formatJobId;
+	    $cuffJobID = $formatJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
+ 	}
 	##iterate over design
 	my $cuffddiffJobId;
 	for my $design (keys %{$rHoAoA_designGroup}) {
 		mkdir  $workDirectory ;
 		mkdir  $workDirectory .'/cuffdiff';
-# 		mkdir  $workDirectory .'/cuffdiff/denovo/' ;
-# 		mkdir  $workDirectory .'/cuffdiff/denovo/' .$design ;
-# 		## create the list of deNovo gtf to merge
 		print "mkdir -p cuffdiff/$design/output_jobs\n";
-# 		my $mergeListFile = $workDirectory .'/cuffdiff/denovo/' .$design .'/gtfMerge.list';
-# 		open(MERGEF, ">$mergeListFile") or  die ("Unable to open $mergeListFile for wrtting") ;
 		my $numberGroups = @{$rHoAoA_designGroup->{$design}} ;
 		##iterate over group
 		my @groupInuptFiles;
 		for (my $i = 0;   $i < $numberGroups; $i++) {
 			##iterate over samples in the design
 			my $numberSample =  @{$rHoAoA_designGroup->{$design}->[$i]};
-			my $gtfFile = '';
 			my $bamfile = ' ';
 			for (my $j = 0;   $j < $numberSample; $j++) {
-# 				$gtfFile = 'fpkm/denovo/' .$rHoAoA_designGroup->{$design}->[$i]->[$j] .'/transcripts.gtf' ;
-# 				print MERGEF $gtfFile;
-# 				print MERGEF "\n";
 				$bamfile .= 'alignment/' .$rHoAoA_designGroup->{$design}->[$i]->[$j] . '/' .$rHoAoA_designGroup->{$design}->[$i]->[$j] . '.merged.mdup.bam' .',' ;
 			}
 			$bamfile = substr $bamfile, 0, -1 ;
 			push(@groupInuptFiles,$bamfile);
 		}
-# 		close($mergeListFile);
 
 		my $outputPathKnown = 'cuffdiff/known/' .$design;
-# 		my $outputPathDeNovo = 'cuffdiff/denovo/' .$design;
-# 		
-# 		my $command = Cufflinks::cuffmerge($rH_cfg, $mergeListFile, $outputPathDeNovo);
-# 		my $cuffmergeJobId ;
-# 		if(defined($command) && length($command) > 0) {
-# 			$cuffmergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "cuffmerge", "MERGE", 'GTFMERGE' .$rH_jobIdPrefixe ->{$design} , $jobDependency, $design, $command, 'cuffdiff/' .$design, $workDirectory);
-# 			$cuffmergeJobId = '$' .$cuffmergeJobId 
-# 		}
-		
-# 		my $gtfDnMerged = 'cuffdiff/denovo/' .$design .'/merged.gtf';
-# 		my $gtfDnFormatMerged = 'cuffdiff/denovo/' .$design .'/formated.merged.gtf';
-# 		$command = Cufflinks::mergeGtfFormat($rH_cfg, $gtfDnMerged, $gtfDnFormatMerged);
-# 		my $formatJobId;
-# 		if(defined($command) && length($command) > 0) {
-# 			$formatJobId= SubmitToCluster::printSubmitCmd($rH_cfg, "default", "FORMAT", 'GTFFORMAT' .$rH_jobIdPrefixe ->{$design} , $cuffmergeJobId, $design, $command, 'cuffdiff/' .$design, $workDirectory);
-# 			$formatJobId= '$' .$formatJobId
-# 		}
-
 		##cuffdiff known
-		my $command = Cufflinks::cuffdiff($rH_cfg,\@groupInuptFiles,$outputPathKnown,LoadConfig::getParam($rH_cfg, 'cuffdiff','referenceGtf'));
+		$command = Cufflinks::cuffdiff($rH_cfg,\@groupInuptFiles,$outputPathKnown,LoadConfig::getParam($rH_cfg, 'cuffdiff','referenceGtf'));
 		if(defined($command) && length($command) > 0) {
 			my $cuffdiffKnownJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "cuffdiff", "KNOWN",  'CUFFDIFFK' .$rH_jobIdPrefixe ->{$design} , $jobDependency, $design, $command, 'cuffdiff/' .$design, $workDirectory);
 			$cuffddiffJobId .= '$' .$cuffdiffKnownJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 		}
-		### mbourgey 29/07/2013 - only report de novo discovery but keep this step in case of no reference gtf
-		##cuffdiff de novo
-# 		$command = Cufflinks::cuffdiff($rH_cfg,\@groupInuptFiles,$outputPathDeNovo,$gtfDnMerged);
-# 		if(defined($command) && length($command) > 0) {
-# 			my $cuffdiffKnownJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "cuffdiff", "DENOVO", 'CUFFDIFFD' .$rH_jobIdPrefixe ->{$design} , $formatJobId, $design, $command, 'cuffdiff/' .$design, $workDirectory);
-# 			$cuffddiffJobId .= '$' .$cuffdiffKnownJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
-# 		}
 	}
 	$cuffddiffJobId = substr $cuffddiffJobId, 0, -1 ;
-	my $command = Cufflinks::mergeCuffdiffRes($rH_cfg,$designFilePath,'cuffdiff','fpkm');
+	$command = Cufflinks::mergeCuffdiffRes($rH_cfg,$designFilePath,'cuffdiff','fpkm');
 	my $mergeCuffdiffResJobID;
 	if(defined($command) && length($command) > 0) {
 		$mergeCuffdiffResJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "default", "MERGE_RES", 'CUFF_MERGE_RES', $cuffddiffJobId, undef, $command, 'cuffdiff/', $workDirectory);
 		$mergeCuffdiffResJobID = '$' .$mergeCuffdiffResJobID;
+		$cuffJobID .= $mergeCuffdiffResJobID .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 	}
-	### mbourgey 29/07/2013 - filtering now included in the R script that merge cuffdiff res with fpkm
-	return $mergeCuffdiffResJobID;
-# 	$command = Cufflinks::filterResults($rH_cfg,'cuffdiff/known/') ;
-# 	my $filterCuffdiffResJobID;
-# 	if(defined($command) && length($command) > 0) {
-# 		my $filterKCuffdiffResJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "default", "FILTERK", 'KFILT_CUFFDIFF', $mergeCuffdiffResJobID, undef, $command, 'cuffdiff/', $workDirectory);
-# 		$filterCuffdiffResJobID .= '$' .$filterKCuffdiffResJobID .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
-# 	}
-# 	$command = Cufflinks::filterResults($rH_cfg,'cuffdiff/denovo/') ;
-# 	if(defined($command) && length($command) > 0) {
-# 		my $filterDCuffdiffResJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "default", "FILTERD", 'DFILT_CUFFDIFF', $mergeCuffdiffResJobID, undef, $command, 'cuffdiff/', $workDirectory);
-# 		$filterCuffdiffResJobID .= '$' .$filterDCuffdiffResJobID .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
-# 	}
-# 	$filterCuffdiffResJobID= substr $filterCuffdiffResJobID, 0, -1 ;
-# 	return $filterCuffdiffResJobID;
+	### mbourgey 29/07/2013 - filtering now included in the R script that merge cuffdiff res with fpkm - remove old filtering 
+	if(defined($cuffJobID) && length($cuffJobID) > 0) {
+	    $cuffJobID = substr $cuffJobID, 0, -1 ;
+	}
+	return $cuffJobID;
 }
 
 
@@ -727,40 +722,6 @@ sub dgeMetrics {
 		$saturationJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "saturation", undef, 'RPKM', $matrixJobId, undef, $command, 'metrics/' , $workDirectory);
 		$metricsJobId .= '$' .$saturationJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 	}
-	
-# 	##fpkm Stats & Correlation
-# 	my $fpkmDependency = undef;
-# 	if($depends > 0) {
-# 		$fpkmDependency = join(LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep'),values(%{$globalDep{'fpkm'}}));
-# 	}
-# 
-# 	my $patern = '.fpkm_tracking';
-# 	my $folder = 'fpkm/known';
-# 	my $outputBaseName = 'metrics/fpkm';
-# 
-# 	$command =  Metrics::fpkmCor($rH_cfg, $patern, $folder, $outputBaseName);
-# 	my $fpkmJobId = undef;
-# 	if(defined($command) && length($command) > 0) {
-# 		$fpkmJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", 'fpkmStat', 'STATS_COR', $fpkmDependency, undef, $command, 'metrics/' , $workDirectory);
-# 		$metricsJobId .= '$' .$fpkmJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
-# 	}
-	
-	##readStats merge all files together and remove individuals ones
-# 	my $mergeDependency = undef;
-# 	if($depends > 0) {
-# 		$mergeDependency = join(LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep'),values(%{$globalDep{'aligning'}}));
-# 	}
-# 
-# 	$patern = '.readstats.csv';
-# 	$folder = 'metrics';
-# 	$outputBaseName = 'metrics/readstats.AllSample.csv';
-# 	
-# 	$command =  Metrics::mergeReadStats($rH_cfg, $patern, $folder, $outputBaseName);
-# 	my $mergeJobId = undef;
-# 	if(defined($command) && length($command) > 0) {
-# 		$mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", 'mergeRS', 'MERGEREADSTAT', $fpkmDependency, undef, $command, 'metrics/' , $workDirectory);
-# 		$metricsJobId .= '$' .$mergeJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
-# 	}
 	$metricsJobId = substr $metricsJobId, 0, -1 ;
 	return $metricsJobId;
 }

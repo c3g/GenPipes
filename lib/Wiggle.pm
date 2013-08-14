@@ -120,7 +120,15 @@ sub graph{
   return $command;
 }
 
-
+sub zipWig {
+  my $rH_cfg         = shift;
+  my $wigFolder     = shift;
+  my $wigArchive       = shift;
+  
+  my $command = ' zip -r ' .$wigArchive .' ' .$wigFolder ;
+  
+  return $command;
+}
  
 
 1;
