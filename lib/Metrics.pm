@@ -186,6 +186,9 @@ sub mergeTrimmomaticStats{
 	my $folderFile     = shift;
 	my $outputFile     = shift;
 
+	if (!defined($libraryType) || $libraryType eq "") {
+		$libraryType= 'unknown';
+	}
 	my $command;
 	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.cranR') .' ' . LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.tools') . ' ;';
 	$command .= ' Rscript \$R_TOOLS/mergeTrimmomaticStat.R ' .$paternFile .' ' .$folderFile .' ' .$outputFile .' ' .$libraryType;

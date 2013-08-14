@@ -21,7 +21,8 @@ for(i in 1:length(listFile)) {
 	} else if (type == "single") {
 		ligne=grep("Single Surviving",stats$V1)
 	} else {
-		stop("unrocognized library type")
+		print("unrocognized library type use of the paired mode")
+		ligne=grep("Fragment Surviving",stats$V1)
 	}
 	rawR=c(rawR,stats[1,2])
 	trimR=c(trimR,stats[ligne,2])
