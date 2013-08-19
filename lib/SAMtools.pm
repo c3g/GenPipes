@@ -48,17 +48,19 @@ sub mpileupPaired {
   my $seqName     = shift;
   my $outputDir   = shift;
 
-  return mpileupBuilder($rH_cfg, $seqName, $outputDir, $sampleName, $normalBam, $tumorBam);
+  my @bams = ($normalBam, $tumorBam);
+
+  return mpileupBuilder($rH_cfg, $seqName, $outputDir, $sampleName, \@bams, 1);
 }
 
 sub mpileup {
   my $rH_cfg      = shift;
   my $sampleName  = shift;
-  my $bam         = shift;
+  my $rA_bams     = shift;
   my $seqName     = shift;
   my $outputDir   = shift;
 
-  return mpileupBuilder($rH_cfg, $seqName, $outputDir, $sampleName, $bam);
+  return mpileupBuilder($rH_cfg, $seqName, $outputDir, $sampleName, $rA_bams);
 }
 
 sub mpileupBuilder {
@@ -66,8 +68,12 @@ sub mpileupBuilder {
   my $seqName     = shift;
   my $outputDir   = shift;
   my $sampleName  = shift;
-  my $normalBam   = shift;
-  my $tumorBam    = shift;
+  my $rA_bams     = shift;
+  my $isPaired    = shift;
+
+  if(defined($isPaired) && $isPaired == 1 && @{$rA_bams} != 2) {
+    die("Paired was asked but there aren't 2 bams given\n");
+  }
 
   my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta');
   my $outputBCF = $outputDir.$sampleName.'.'.$seqName.'.bcf'; 
@@ -78,9 +84,10 @@ sub mpileupBuilder {
   $command .= ' '.LoadConfig::getParam($rH_cfg, 'mpileup', 'mpileupExtraFlags');
   $command .= ' -f '.$refGenome;
   $command .= ' -r '.$seqName;
-  $command .= ' '.$normalBam;
-  if(defined($tumorBam)) {
-    $command .= ' '.$tumorBam;
+  for my $bamFiles (@{$rA_bams}) {
+    $command .= ' '.$bamFiles;
+  }
+  if(defined($isPaired) && $isPaired == 1) {
     $command .= ' | bcftools view -T pair -bvcg - > '.$outputBCF;
   }
   else {
