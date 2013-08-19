@@ -26,9 +26,9 @@ function main {
   InstallGenomes $1
 }
 
-function epilogue {
+function prologue {
 	###################
-	################### Epilogue
+	################### Prologue
 	###################
 	# Set the MUGQIC_INSTALL_HOME environment variable
 	# Load MUGQIC module files
@@ -71,7 +71,7 @@ function loadModules {
 	# Check if a module is available, matching by the module name, 
 	# return the output of module avail command, extracting the latest version if many versions are available 
 	module use $MUGQIC_INSTALL_HOME/modulefiles
-	for mymodule in bwa samtools picard "mugqic\/tools" "mugqic\/R";
+	for mymodule in "mugqic\/bwa" "mugqic\/samtools" "mugqic\/picard"  "mugqic\/bowtie" "mugqic\/tools";
 	do
 		moduleLoad=$( isAvailable $mymodule )
 		if  [[ ! -z "$moduleLoad" ]]; then
@@ -79,7 +79,7 @@ function loadModules {
 				module load $moduleLoad;
 		else 
 				echo "ERROR: Module " $mymodules " is not available";
-				exit 1;				
+				return 0;				
 		fi;
 	done;
 }
@@ -128,17 +128,24 @@ function InstallGenome () {
 					wget $genomeSource -O $genomeAlias.uniq.gz
 				#fi;
  				fastaFiles=`gunzip -l $genomeAlias.uniq.gz | grep "\.uniq" | awk '{print $NF}'`
-				gunzip $genomeAlias.tar.gz
+				gunzip $genomeAlias.uniq.gz
 				# merge all fasta files in a general fasta and add it too the list files to index/faidx,etc
 				cat $fastaFiles > $genomeAlias.fasta
 				fastaFiles=`echo $fastaFiles $genomeAlias.fasta`
 				;;
-				"fasta") 
+			"fasta") 
 			  cp $genomeSource $genomeAlias.fasta
 			  fastaFiles=$genomeAlias.fasta
         ;;
-
-        *)  
+     "gi")  
+				getFastafromGINumbers.pl $genomeSource > $genomeAlias.fasta
+				fastaFiles=$genomeAlias.fasta
+        ;;
+      "acc")  
+			  getFastafromAccessionNumbers.pl $genomeSource > $genomeAlias.fasta
+			  fastaFiles=$genomeAlias.fasta
+        ;;
+        *)  	
 			  echo  "Type of genome file is not yet treated " $gType
 			  return 1
         ;;
@@ -153,7 +160,7 @@ function InstallGenome () {
     dictName=`echo $fa | sed -e 's/\.fasta/\.dict/g' | sed -e 's/\.fa/\.dict/g'`
     chrsize=`echo $fa | sed -e 's/\.fasta/\.dict/g' | sed -e 's/\.fa/\.chromsize\.txt/g'`
     # bowtie-build Index reference (already done for iGenomes)
-		#    bowtie-build /lb/project/mugqic/epigenome/genome_files/hg19/fasta/hg19.fasta /lb/project/mugqic/epigenome/genome_files/hg19/fasta/hg19.fasta # example Maxime
+		bowtie-build fasta/$fa 	fasta/$fa || bowtie2-build fasta/$fa 	fasta/$fa
 		# Index reference with samtools faidx reference (already done for iGenomes)
 		samtools faidx fasta/$fa 	
 		# reference dictionary (already done for iGenomes)
@@ -167,7 +174,7 @@ function InstallGenome () {
 
 function InstallGenomes () {
 	curDir=`pwd`;
-  epilogue
+  prologue
   loadModules  
 	sourceFile=$1
 	while read line
