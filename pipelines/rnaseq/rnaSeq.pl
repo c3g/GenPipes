@@ -804,7 +804,9 @@ sub goseq {
 			$goseqJobId .= '$' .$goDgeJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 		}
 	}
-	$goseqJobId = substr $goseqJobId, 0, -1 ;
+	if(defined($goseqJobId) && length($goseqJobId) > 0) {
+		$goseqJobId = substr $goseqJobId, 0, -1 ;
+	}
 	return $goseqJobId;
 }
 
