@@ -408,7 +408,7 @@ sub alignMetrics {
 	## RNAseQC metrics
 	mkdir  $workDirectory .'/alignment' ;
 	my $sampleList = $workDirectory .'/alignment/rnaseqc.samples.txt';
-	open(RNASAMPLE, '>' .$sampleList) or  die ('Unable to open ' .$sampleList .' for writing') ;
+	open(RNASAMPLE, ">$sampleList") or  die ("Unable to open $sampleList for writing") ;
 	print RNASAMPLE "Sample\tBamFile\tNote\n";
 	my $projectName = LoadConfig::getParam($rH_cfg, 'metricsRNA', 'projectName');
 	for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
