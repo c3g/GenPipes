@@ -1,8 +1,8 @@
 
 ###################
-################### picard
+################### Trinity
 ###################
-VERSION="2013-02-25";
+VERSION="2013_08_14";
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/trinity/
 mkdir -p $INSTALL_PATH
 cd $INSTALL_PATH
@@ -10,7 +10,7 @@ cd $INSTALL_PATH
 wget http://sourceforge.net/projects/trinityrnaseq/files/trinityrnaseq_r${VERSION}.tgz
 tar xzvf trinityrnaseq_r${VERSION}.tgz
 cd trinityrnaseq_r${VERSION}
-make
+make -j8
 # Module file
 echo "#%Module1.0
 proc ModulesHelp { } {
