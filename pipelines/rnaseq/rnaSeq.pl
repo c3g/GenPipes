@@ -407,14 +407,15 @@ sub alignMetrics {
 	}
 	## RNAseQC metrics
 	mkdir  $workDirectory .'/alignment' ;
-	open(RNASAMPLE, ">alignment/rnaseqc.samples.txt") or  die ("Unable to open alignment/rnaseqc.samples.txt for wrtting") ;
+	my $sampleList = $workDirectory .'/alignment/rnaseqc.samples.txt';
+	open(RNASAMPLE, '>' .$sampleList) or  die ('Unable to open ' .$sampleList .' for writing') ;
 	print RNASAMPLE "Sample\tBamFile\tNote\n";
 	my $projectName = LoadConfig::getParam($rH_cfg, 'metricsRNA', 'projectName');
 	for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
 		print RNASAMPLE "$sampleName\talignment/$sampleName/$sampleName.merged.mdup.bam\t$projectName\n";
 	}
 	print "mkdir -p metrics/output_jobs metrics/rnaseqRep/\n";
-	my $sampleList = 'alignment/rnaseqc.samples.txt';
+	$sampleList = '/alignment/rnaseqc.samples.txt';
 	my $outputFolder = 'metrics/rnaseqRep';
 	my $command = Metrics::rnaQc($rH_cfg, $sampleList, $outputFolder);
 	my $rnaqcJobId = undef;
@@ -612,18 +613,19 @@ sub cuffdiff {
 	mkdir $workDirectory .'/fpkm';
 	mkdir $workDirectory .'/fpkm/denovo/';
 	my $mergeListFile = $workDirectory .'/fpkm/denovo/gtfMerge.list';
+	my $compareList = " ";
 	open(MERGEF, ">$mergeListFile") or  die ("Unable to open $mergeListFile for wrtting") ;
 	##iterate over sample
 	for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
 	    my $gtfFile = 'fpkm/denovo/' .$sampleName .'/transcripts.gtf' ;
+	    $compareList .= 'fpkm/denovo/' .$sampleName .'/transcripts.gtf ' ;
  	    print MERGEF $gtfFile;
 	    print MERGEF "\n";
 	}
 	close($mergeListFile);
 	##merge denovo transcript in one  gtf file
- 	my $outputPathDeNovo = 'fpkm/denovo/' ;
- 		
- 	my $command = Cufflinks::cuffmerge($rH_cfg, $mergeListFile, $outputPathDeNovo);
+ 	my $outputPathDeNovo = 'fpkm/denovo/allSample' ;
+ 	my $command = Cufflinks::cuffcompare($rH_cfg, $compareList, $outputPathDeNovo);
  	my $cuffmergeJobId ;
  	if(defined($command) && length($command) > 0) {
  	    $cuffmergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "cuffmerge", "MERGE", 'GTFMERGE', $jobDependency, undef, $command, 'fpkm/', $workDirectory);
