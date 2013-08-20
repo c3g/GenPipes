@@ -625,7 +625,7 @@ sub cuffdiff {
 	close($mergeListFile);
 	##merge denovo transcript in one  gtf file
  	my $outputPathDeNovo = 'fpkm/denovo/allSample' ;
- 	my $command = Cufflinks::cuffcompare($rH_cfg, $compareList, $outputPathDeNovo);
+ 	my $command = Cufflinks::cuffcompare($rH_cfg, $compareList, $outputPathDeNovo, $mergeListFile);
  	my $cuffmergeJobId ;
  	if(defined($command) && length($command) > 0) {
  	    $cuffmergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "cuffmerge", "MERGE", 'GTFMERGE', $jobDependency, undef, $command, 'fpkm/', $workDirectory);
