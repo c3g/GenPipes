@@ -469,7 +469,7 @@ sub wiggle {
 	my @outputBedGraph;
 	my @outputWiggle;
 	my @prefixJobName;
-	print "mkdir -p alignment/$sampleName/output_jobs tracks/$sampleName/output_jobs\n";
+	print "mkdir -p alignment/$sampleName/output_jobs tracks/$sampleName/output_jobs tracks/bigWig/\n";
 	if($strandSPecificityInfo ne "fr-unstranded") {
 	## strand specific 
 		@outputBAM = {'alignment/' . $sampleName . '/' . $sampleName . '.merged.mdup.forward.bam' ,  'alignment/' . $sampleName . '/' . $sampleName . '.merged.mdup.reverse.bam'};
@@ -552,7 +552,19 @@ sub rawCounts {
 		$countJobId=SubmitToCluster::printSubmitCmd($rH_cfg, "htseq", undef, 'RAWCOUNT' .$rH_jobIdPrefixe ->{$sampleName} , $sortJobId, $sampleName, $command, 'raw_counts/' .$sampleName, $workDirectory);
 		$countJobId='$'.$countJobId
 	}
-	return $countJobId;
+	print "mkdir -p DGE \n";
+	my $readCountDir = 'raw_counts' ;
+	my $readcountExtension = '.readcounts.csv';
+	my $outputDir = 'DGE';
+	my $outputMatrix = 'rawCountMatrix.csv';
+	my $command = HtseqCount::refGtf2matrix($rH_cfg, LoadConfig::getParam($rH_cfg, 'htseq', 'referenceGtf'), $readCountDir, $readcountExtension, $outputDir, $outputMatrix);
+	my $matrixJobId = undef;
+	my $metricsJobId;
+	if(defined($command) && length($command) > 0) {
+		$matrixJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", 'matrix', 'MATRIX', $countJobId, undef, $command, 'raw_counts/' , $workDirectory);
+		$matrixJobId = '$' .$matrixJobId;
+	}
+	return $matrixJobId;
 }
 
 
@@ -699,21 +711,23 @@ sub dgeMetrics {
 		$countDependency = join(LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep'),values(%{$globalDep{'rawCounts'}}));
 	}
 	
-	print "mkdir -p DGE metrics/saturation\n";
-	my $readCountDir = 'raw_counts' ;
-	my $readcountExtension = '.readcounts.csv';
-	my $outputDir = 'DGE';
-	my $outputMatrix = 'rawCountMatrix.csv';
-	my $command = HtseqCount::refGtf2matrix($rH_cfg, LoadConfig::getParam($rH_cfg, 'htseq', 'referenceGtf'), $readCountDir, $readcountExtension, $outputDir, $outputMatrix);
-	my $matrixJobId = undef;
-  my $metricsJobId;
-	if(defined($command) && length($command) > 0) {
-		$matrixJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", 'matrix', 'MATRIX', $countDependency, undef, $command, 'metrics/' , $workDirectory);
-		$matrixJobId = '$' .$matrixJobId;
-		$metricsJobId .= $matrixJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
-	}
+# 	print "mkdir -p DGE metrics/saturation\n";
+# 	my $readCountDir = 'raw_counts' ;
+# 	my $readcountExtension = '.readcounts.csv';
+# 	my $outputDir = 'DGE';
+# 	my $outputMatrix = 'rawCountMatrix.csv';
+# 	my $command = HtseqCount::refGtf2matrix($rH_cfg, LoadConfig::getParam($rH_cfg, 'htseq', 'referenceGtf'), $readCountDir, $readcountExtension, $outputDir, $outputMatrix);
+# 	my $matrixJobId = undef;
+#   my $metricsJobId;
+# 	if(defined($command) && length($command) > 0) {
+# 		$matrixJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", 'matrix', 'MATRIX', $countDependency, undef, $command, 'metrics/' , $workDirectory);
+# 		$matrixJobId = '$' .$matrixJobId;
+# 		$metricsJobId .= $matrixJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
+# 	}
 	
 	##RPKM and Saturation
+	print "mkdir -p metrics/saturation\n";
+	my $metricsJobId;
 	my $countFile   = 'DGE/rawCountMatrix.csv';
 	my $geneSizeFile     = LoadConfig::getParam($rH_cfg, 'saturation', 'geneSizeFile');
 	my $rpkmDir = 'raw_counts';
