@@ -103,11 +103,13 @@ sub printSubmitCmd {
     if ( LoadConfig::getParam( $rH_cfg, $stepName, 'clusterCmdProducesJobId' ) eq "true" ) {
         print ')';
     }
-    print "\n\n";
+    print "\n";
 
     if ( LoadConfig::getParam( $rH_cfg, $stepName, 'clusterCmdProducesJobId' ) eq "false" ) {
         print $jobIdVarName. '=' . $jobName . "\n";
     }
+    print "echo \"$jobIdVarName;$outputDir/output_jobs/$jobName.o\$$jobIdVarName\"" ;
+     print "\n\n";
 
     return $jobIdVarName;
 }
