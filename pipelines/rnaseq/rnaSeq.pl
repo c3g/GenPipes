@@ -472,7 +472,7 @@ sub wiggle {
 	my @outputBedGraph;
 	my @outputWiggle;
 	my @prefixJobName;
-	print "mkdir -p alignment/$sampleName/output_jobs tracks/$sampleName/output_jobs\n";
+	print "mkdir -p alignment/$sampleName/output_jobs tracks/$sampleName/output_jobs tracks/bigWig/\n";
 	if($strandSPecificityInfo ne "fr-unstranded") {
 	## strand specific 
 		@outputBAM = {'alignment/' . $sampleName . '/' . $sampleName . '.merged.mdup.forward.bam' ,  'alignment/' . $sampleName . '/' . $sampleName . '.merged.mdup.reverse.bam'};
@@ -503,15 +503,7 @@ sub wiggle {
 		}
 	} 
 	$wiggleJobId = substr $wiggleJobId, 0, -1 ;
-	my $wigFolder = 'tracks/bigWig/' ;
-	my $wigArchive = 'tracks.zip' ;
-	my $command = Wiggle::zipWig($rH_cfg, $wigFolder, $wigArchive);
-	my $wigZipJobId ;
-	if(defined($command) && length($command) > 0) {
-	    my $tmpJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "wiggle", undef, 'WIGZIP' , $wiggleJobId, undef, $command, 'tracks/' , $workDirectory);
-	    $wigZipJobId = '$'.$tmpJobId ;
-	}
-	return $wigZipJobId;	
+	return $wiggleJobId;	
 }
 
 
@@ -555,7 +547,18 @@ sub rawCounts {
 		$countJobId=SubmitToCluster::printSubmitCmd($rH_cfg, "htseq", undef, 'RAWCOUNT' .$rH_jobIdPrefixe ->{$sampleName} , $sortJobId, $sampleName, $command, 'raw_counts/' .$sampleName, $workDirectory);
 		$countJobId='$'.$countJobId
 	}
-	return $countJobId;
+	print "mkdir -p DGE \n";
+	my $readCountDir = 'raw_counts' ;
+	my $readcountExtension = '.readcounts.csv';
+	my $outputDir = 'DGE';
+	my $outputMatrix = 'rawCountMatrix.csv';
+	$command = HtseqCount::refGtf2matrix($rH_cfg, LoadConfig::getParam($rH_cfg, 'htseq', 'referenceGtf'), $readCountDir, $readcountExtension, $outputDir, $outputMatrix);
+	my $matrixJobId = undef;
+	if(defined($command) && length($command) > 0) {
+		$matrixJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", 'matrix', 'MATRIX', $countJobId, undef, $command, 'raw_counts/' , $workDirectory);
+		$matrixJobId = '$' .$matrixJobId;
+	}
+	return $matrixJobId;
 }
 
 
@@ -696,27 +699,25 @@ sub dgeMetrics {
   my $rAoH_seqDictionary = shift;
   my $rH_jobIdPrefixe = shift;
 
-	##rawcount Matrix
+	my $metricsJobId;
 	my $countDependency = undef;
+	my $wiggleDependency = undef;
 	if($depends > 0) {
 		$countDependency = join(LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep'),values(%{$globalDep{'rawCounts'}}));
+		$wiggleDependency = join(LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep'),values(%{$globalDep{'wiggle'}}));
 	}
-	
-	print "mkdir -p DGE metrics/saturation\n";
-	my $readCountDir = 'raw_counts' ;
-	my $readcountExtension = '.readcounts.csv';
-	my $outputDir = 'DGE';
-	my $outputMatrix = 'rawCountMatrix.csv';
-	my $command = HtseqCount::refGtf2matrix($rH_cfg, LoadConfig::getParam($rH_cfg, 'htseq', 'referenceGtf'), $readCountDir, $readcountExtension, $outputDir, $outputMatrix);
-	my $matrixJobId = undef;
-  my $metricsJobId;
+	### to do outside of the wiggle function on time only
+	print "mkdir -p tracks/bigWig/ tracks/output_jobs/";
+	my $wigFolder = 'tracks/bigWig/' ;
+	my $wigArchive = 'tracks.zip' ;
+	my $command = Wiggle::zipWig($rH_cfg, $wigFolder, $wigArchive);
+	my $wigZipJobId ;
 	if(defined($command) && length($command) > 0) {
-		$matrixJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", 'matrix', 'MATRIX', $countDependency, undef, $command, 'metrics/' , $workDirectory);
-		$matrixJobId = '$' .$matrixJobId;
-		$metricsJobId .= $matrixJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
+	    my $tmpJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", undef, 'WIGZIP' , $wiggleDependency, undef, $command, 'tracks/' , $workDirectory);
+	    $metricsJobId .= '$' .$tmpJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 	}
-	
 	##RPKM and Saturation
+	print "mkdir -p metrics/saturation\n";;
 	my $countFile   = 'DGE/rawCountMatrix.csv';
 	my $geneSizeFile     = LoadConfig::getParam($rH_cfg, 'saturation', 'geneSizeFile');
 	my $rpkmDir = 'raw_counts';
@@ -725,7 +726,7 @@ sub dgeMetrics {
 	$command =  Metrics::saturation($rH_cfg, $countFile, $geneSizeFile, $rpkmDir, $saturationDir);
 	my $saturationJobId = undef;
 	if(defined($command) && length($command) > 0) {
-		$saturationJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "saturation", undef, 'RPKM', $matrixJobId, undef, $command, 'metrics/' , $workDirectory);
+		$saturationJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "saturation", undef, 'RPKM', $countDependency, undef, $command, 'metrics/' , $workDirectory);
 		$metricsJobId .= '$' .$saturationJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 	}
 	$metricsJobId = substr $metricsJobId, 0, -1 ;
