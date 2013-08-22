@@ -94,6 +94,7 @@ for my $stepName (@steps) {
 
 # Global scope variables
 my $designFilePath;
+my $configFile;
 my $workDirectory;
 my $readSetSheet;
 
@@ -132,6 +133,7 @@ sub main {
 	##get design groups
 	my $rHoAoA_designGroup = Cufflinks::getDesign(\%cfg,$designFilePath);
 	$workDirectory = $opts{'w'};
+	$configFile = $opts{'c'};
 	$readSetSheet = $opts{'n'}; 
 	
 	#generate sample jobIdprefix
@@ -835,31 +837,22 @@ sub exploratory {
 	
 	# Call gqSeqUtils::exploratoryAnalysis()
 	my $rscript = 'suppressPackageStartupMessages(library(gqSeqUtils));';
-	$rscript .= 'print(getwd());';
-	$rscript .= 'print(\"hahahahaha\")';
-	$rscript .= '';
+	$rscript .= 'initIllmSeqProject(nanuq.file= \"' . $readSetSheet . '\",overwrite.sheets=FALSE,project.path= \"' . $workDirectory . '\" );';
+	$rscript .= 'exploratoryRNAseq(project.path= \"' . $workDirectory . '\",ini.file.path = \"' . $configFile . '\" );';
+	$rscript .= 'print(\"done.\")';
 	my $command = 'module load ' .LoadConfig::getParam($rH_cfg, 'downstreamAnalyses','moduleVersion.cranR') .' ;' . 'Rscript -e ' . '\'' . $rscript .'\'';
 
 	my $exploratoryJobId = undef;
-#	if(defined($command) && length($command) > 0) {
-#		$exploratoryJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "goseq","CUFFLINKS", 'GOCUFFDIFF' .$rH_jobIdPrefixe ->{$design} , $cuffdiffDependency, $design, $command, 'cuffdiff/' .$design, $workDirectory);
-#		$exploratoryJobId .= '$' .$goCuffJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
-#	}
 	if(defined($command) && length($command) > 0) {
 		$exploratoryJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "exploratory", 'exploratoryAnalysis', 'exploratoryAnalysis' , $jobDependency ,undef, $command, 'exploratory'        , $workDirectory);
 		$exploratoryJobId = '$' .$exploratoryJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 	}
 	return $exploratoryJobId;
 
-#    my $rH_cfg         = shift;
-#    my $stepName       = shift;
-#    my $jobNameSuffix  = shift;
-#    my $jobIdPrefix    = shift;
-#    my $dependancyName = shift;
-#    my $sampleName = shift;
-#    my $command = shift;
-#    my $outputDir = shift;
-#    my $workDirectory = shift;
+#        $workDirectory = $opts{'w'};
+#        $configFile = $opts{'c'};
+#        $readSetSheet = $opts{'n'};
+
 } 
 
 sub delivrable {
