@@ -108,7 +108,7 @@ sub printUsage {
   print "\t-n  nanuq sample sheet\n";
   print "\t-d  design file\n";
   print "\t-w  work directory\n";
-  print "\t-r  restart log file\n"
+  print "\t-r  restart log file\n";
   print "\n";
   print "Steps:\n";
   for(my $idx=0; $idx < @steps; $idx++) {
