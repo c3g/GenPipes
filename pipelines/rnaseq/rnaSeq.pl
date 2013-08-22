@@ -848,11 +848,6 @@ sub exploratory {
 		$exploratoryJobId = '$' .$exploratoryJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 	}
 	return $exploratoryJobId;
-
-#        $workDirectory = $opts{'w'};
-#        $configFile = $opts{'c'};
-#        $readSetSheet = $opts{'n'};
-
 } 
 
 sub delivrable {
