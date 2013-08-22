@@ -565,7 +565,7 @@ sub rawCountsMetrics {
 		$wiggleDependency = join(LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep'),values(%{$globalDep{'wiggle'}}));
 	}
 	#create rawcount matrix
-	print "mkdir -p DGE \n";
+	print "mkdir -p DGE raw_counts/output_jobs\n";
 	my $readCountDir = 'raw_counts' ;
 	my $readcountExtension = '.readcounts.csv';
 	my $outputDir = 'DGE';
