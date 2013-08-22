@@ -578,7 +578,7 @@ sub rawCountsMetrics {
 	}
 	
 	### to do outside of the wiggle function on time only
-	print "mkdir -p tracks/bigWig/ tracks/output_jobs/";
+	print "mkdir -p tracks/bigWig/ tracks/output_jobs \n";
 	my $wigFolder = 'tracks/bigWig/' ;
 	my $wigArchive = 'tracks.zip' ;
 	$command = Wiggle::zipWig($rH_cfg, $wigFolder, $wigArchive);
