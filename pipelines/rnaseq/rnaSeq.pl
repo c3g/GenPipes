@@ -834,11 +834,11 @@ sub exploratory {
 	print "mkdir -p exploratory/output_jobs\n";
 	
 	# Call gqSeqUtils::exploratoryAnalysis()
-	my $rscript = 'library(gqSeqUtils);';
+	my $rscript = 'suppressPackageStartupMessages(library(gqSeqUtils));';
 	$rscript .= 'print(getwd());';
-	$rscript .= 'print("hahahahaha")';
+	$rscript .= 'print(\"hahahahaha\")';
 	$rscript .= '';
-	my $command = 'module load ' .LoadConfig::getParam($rH_cfg, 'downstreamAnalyses','moduleVersion.cranR') .' ;' . 'Rscript -e ' . '"' . $rscript .'"';
+	my $command = 'module load ' .LoadConfig::getParam($rH_cfg, 'downstreamAnalyses','moduleVersion.cranR') .' ;' . 'Rscript -e ' . '\'' . $rscript .'\'';
 
 	my $exploratoryJobId = undef;
 #	if(defined($command) && length($command) > 0) {
