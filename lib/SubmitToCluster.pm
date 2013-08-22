@@ -77,7 +77,7 @@ sub printSubmitCmd {
        #       $workDirectory = '\`pwd\`';
         #}
     }
-    print 'echo "'.$command.'" | ';
+    print 'echo "'.$command.' && echo $?" | ';
     print LoadConfig::getParam($rH_cfg, $stepName, 'clusterSubmitCmd');
     print ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterOtherArg');
     print ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterWorkDirArg') . ' ' . $workDirectory;
