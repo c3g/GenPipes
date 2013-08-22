@@ -407,14 +407,15 @@ sub alignMetrics {
 	}
 	## RNAseQC metrics
 	mkdir  $workDirectory .'/alignment' ;
-	open(RNASAMPLE, ">alignment/rnaseqc.samples.txt") or  die ("Unable to open alignment/rnaseqc.samples.txt for wrtting") ;
+	my $sampleList = $workDirectory .'/alignment/rnaseqc.samples.txt';
+	open(RNASAMPLE, ">$sampleList") or  die ("Unable to open $sampleList for writing") ;
 	print RNASAMPLE "Sample\tBamFile\tNote\n";
 	my $projectName = LoadConfig::getParam($rH_cfg, 'metricsRNA', 'projectName');
 	for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
 		print RNASAMPLE "$sampleName\talignment/$sampleName/$sampleName.merged.mdup.bam\t$projectName\n";
 	}
 	print "mkdir -p metrics/output_jobs metrics/rnaseqRep/\n";
-	my $sampleList = 'alignment/rnaseqc.samples.txt';
+	$sampleList = 'alignment/rnaseqc.samples.txt';
 	my $outputFolder = 'metrics/rnaseqRep';
 	my $command = Metrics::rnaQc($rH_cfg, $sampleList, $outputFolder);
 	my $rnaqcJobId = undef;
@@ -468,7 +469,7 @@ sub wiggle {
 	my @outputBedGraph;
 	my @outputWiggle;
 	my @prefixJobName;
-	print "mkdir -p alignment/$sampleName/output_jobs tracks/$sampleName/output_jobs\n";
+	print "mkdir -p alignment/$sampleName/output_jobs tracks/$sampleName/output_jobs tracks/bigWig/\n";
 	if($strandSPecificityInfo ne "fr-unstranded") {
 	## strand specific 
 		@outputBAM = {'alignment/' . $sampleName . '/' . $sampleName . '.merged.mdup.forward.bam' ,  'alignment/' . $sampleName . '/' . $sampleName . '.merged.mdup.reverse.bam'};
@@ -499,15 +500,7 @@ sub wiggle {
 		}
 	} 
 	$wiggleJobId = substr $wiggleJobId, 0, -1 ;
-	my $wigFolder = 'tracks/bigWig/' ;
-	my $wigArchive = 'tracks.zip' ;
-	my $command = Wiggle::zipWig($rH_cfg, $wigFolder, $wigArchive);
-	my $wigZipJobId ;
-	if(defined($command) && length($command) > 0) {
-	    my $tmpJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "wiggle", undef, 'WIGZIP' , $wiggleJobId, undef, $command, 'tracks/' , $workDirectory);
-	    $wigZipJobId = '$'.$tmpJobId ;
-	}
-	return $wigZipJobId;	
+	return $wiggleJobId;	
 }
 
 
@@ -551,7 +544,18 @@ sub rawCounts {
 		$countJobId=SubmitToCluster::printSubmitCmd($rH_cfg, "htseq", undef, 'RAWCOUNT' .$rH_jobIdPrefixe ->{$sampleName} , $sortJobId, $sampleName, $command, 'raw_counts/' .$sampleName, $workDirectory);
 		$countJobId='$'.$countJobId
 	}
-	return $countJobId;
+	print "mkdir -p DGE \n";
+	my $readCountDir = 'raw_counts' ;
+	my $readcountExtension = '.readcounts.csv';
+	my $outputDir = 'DGE';
+	my $outputMatrix = 'rawCountMatrix.csv';
+	$command = HtseqCount::refGtf2matrix($rH_cfg, LoadConfig::getParam($rH_cfg, 'htseq', 'referenceGtf'), $readCountDir, $readcountExtension, $outputDir, $outputMatrix);
+	my $matrixJobId = undef;
+	if(defined($command) && length($command) > 0) {
+		$matrixJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", 'matrix', 'MATRIX', $countJobId, undef, $command, 'raw_counts/' , $workDirectory);
+		$matrixJobId = '$' .$matrixJobId;
+	}
+	return $matrixJobId;
 }
 
 
@@ -612,18 +616,19 @@ sub cuffdiff {
 	mkdir $workDirectory .'/fpkm';
 	mkdir $workDirectory .'/fpkm/denovo/';
 	my $mergeListFile = $workDirectory .'/fpkm/denovo/gtfMerge.list';
+	my $compareList = " ";
 	open(MERGEF, ">$mergeListFile") or  die ("Unable to open $mergeListFile for wrtting") ;
 	##iterate over sample
 	for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
 	    my $gtfFile = 'fpkm/denovo/' .$sampleName .'/transcripts.gtf' ;
+	    $compareList .= 'fpkm/denovo/' .$sampleName .'/transcripts.gtf ' ;
  	    print MERGEF $gtfFile;
 	    print MERGEF "\n";
 	}
 	close($mergeListFile);
 	##merge denovo transcript in one  gtf file
- 	my $outputPathDeNovo = 'fpkm/denovo/' ;
- 		
- 	my $command = Cufflinks::cuffmerge($rH_cfg, $mergeListFile, $outputPathDeNovo);
+ 	my $outputPathDeNovo = 'fpkm/denovo/allSample' ;
+ 	my $command = Cufflinks::cuffcompare($rH_cfg, $compareList, $outputPathDeNovo, $mergeListFile);
  	my $cuffmergeJobId ;
  	if(defined($command) && length($command) > 0) {
  	    $cuffmergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "cuffmerge", "MERGE", 'GTFMERGE', $jobDependency, undef, $command, 'fpkm/', $workDirectory);
@@ -662,11 +667,12 @@ sub cuffdiff {
 		##cuffdiff known
 		$command = Cufflinks::cuffdiff($rH_cfg,\@groupInuptFiles,$outputPathKnown,LoadConfig::getParam($rH_cfg, 'cuffdiff','referenceGtf'));
 		if(defined($command) && length($command) > 0) {
-			my $cuffdiffKnownJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "cuffdiff", "KNOWN",  'CUFFDIFFK' .$rH_jobIdPrefixe ->{$design} , $jobDependency, $design, $command, 'cuffdiff/' .$design, $workDirectory);
-			$cuffddiffJobId .= '$' .$cuffdiffKnownJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
+			my $cuffddiffJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "cuffdiff", "KNOWN",  'CUFFDIFFK' .$rH_jobIdPrefixe ->{$design} , $jobDependency, $design, $command, 'cuffdiff/' .$design, $workDirectory);
 		}
 	}
-	$cuffddiffJobId = substr $cuffddiffJobId, 0, -1 ;
+	if(defined($cuffddiffJobId) && length($cuffddiffJobId) > 0) {
+		$cuffddiffJobId = substr $cuffddiffJobId, 0, -1 ;
+	}
 	$command = Cufflinks::mergeCuffdiffRes($rH_cfg,$designFilePath,'cuffdiff','fpkm');
 	my $mergeCuffdiffResJobID;
 	if(defined($command) && length($command) > 0) {
@@ -690,27 +696,25 @@ sub dgeMetrics {
   my $rAoH_seqDictionary = shift;
   my $rH_jobIdPrefixe = shift;
 
-	##rawcount Matrix
+	my $metricsJobId;
 	my $countDependency = undef;
+	my $wiggleDependency = undef;
 	if($depends > 0) {
 		$countDependency = join(LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep'),values(%{$globalDep{'rawCounts'}}));
+		$wiggleDependency = join(LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep'),values(%{$globalDep{'wiggle'}}));
 	}
-	
-	print "mkdir -p DGE metrics/saturation\n";
-	my $readCountDir = 'raw_counts' ;
-	my $readcountExtension = '.readcounts.csv';
-	my $outputDir = 'DGE';
-	my $outputMatrix = 'rawCountMatrix.csv';
-	my $command = HtseqCount::refGtf2matrix($rH_cfg, LoadConfig::getParam($rH_cfg, 'htseq', 'referenceGtf'), $readCountDir, $readcountExtension, $outputDir, $outputMatrix);
-	my $matrixJobId = undef;
-  my $metricsJobId;
+	### to do outside of the wiggle function on time only
+	print "mkdir -p tracks/bigWig/ tracks/output_jobs/";
+	my $wigFolder = 'tracks/bigWig/' ;
+	my $wigArchive = 'tracks.zip' ;
+	my $command = Wiggle::zipWig($rH_cfg, $wigFolder, $wigArchive);
+	my $wigZipJobId ;
 	if(defined($command) && length($command) > 0) {
-		$matrixJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", 'matrix', 'MATRIX', $countDependency, undef, $command, 'metrics/' , $workDirectory);
-		$matrixJobId = '$' .$matrixJobId;
-		$metricsJobId .= $matrixJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
+	    my $tmpJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", undef, 'WIGZIP' , $wiggleDependency, undef, $command, 'tracks/' , $workDirectory);
+	    $metricsJobId .= '$' .$tmpJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 	}
-	
 	##RPKM and Saturation
+	print "mkdir -p metrics/saturation\n";;
 	my $countFile   = 'DGE/rawCountMatrix.csv';
 	my $geneSizeFile     = LoadConfig::getParam($rH_cfg, 'saturation', 'geneSizeFile');
 	my $rpkmDir = 'raw_counts';
@@ -719,7 +723,7 @@ sub dgeMetrics {
 	$command =  Metrics::saturation($rH_cfg, $countFile, $geneSizeFile, $rpkmDir, $saturationDir);
 	my $saturationJobId = undef;
 	if(defined($command) && length($command) > 0) {
-		$saturationJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "saturation", undef, 'RPKM', $matrixJobId, undef, $command, 'metrics/' , $workDirectory);
+		$saturationJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "saturation", undef, 'RPKM', $countDependency, undef, $command, 'metrics/' , $workDirectory);
 		$metricsJobId .= '$' .$saturationJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 	}
 	$metricsJobId = substr $metricsJobId, 0, -1 ;
