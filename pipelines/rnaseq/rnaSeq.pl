@@ -562,6 +562,8 @@ sub rawCountsMetrics {
 	my $wiggleDependency = undef;
 	if($depends > 0) {
 		$countDependency = join(LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep'),values(%{$globalDep{'rawCounts'}}));
+	}
+	if($depends > 1) {
 		$wiggleDependency = join(LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep'),values(%{$globalDep{'wiggle'}}));
 	}
 	#create rawcount matrix
