@@ -40,7 +40,7 @@ res[,8] = as.numeric(format(res[,8], digits=2))
 colnames(res)[c(1,7,8)] = c("id", "deseq.p-value", "deseq.adj.pvalue")
 write.table(res[order(res[,8]), c(1,7,8)], paste(path,"deseq_results.csv",sep="/"), quote = FALSE, sep = "\t",  eol = "\n", na = "NA", dec = ".", row.names = FALSE, col.names = TRUE)
 fileOpen=paste(path,"edger_results.csv",sep="/")
-d1<-read.table(fileOpen, header=T, sep="\t", quote="")
+d1<-read.table(fileOpen, header=T, sep="\t", quote="", comment.char="")
 d2<-merge(d1, res[, c(1,7,8)], by.x=1, by.y=1, sep="\t")
 d2<-d2[order(d2[,(ncol(d2)-1)]),]
 vecWrite<-c(1:4, (ncol(d2)-1), ncol(d2), 5:6, 7:(ncol(d2)-2))
