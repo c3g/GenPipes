@@ -48,6 +48,7 @@ BEGIN{
 # Dependencies
 #--------------------
 use Getopt::Std;
+use Cwd qw/ abs_path /;
 
 use LoadConfig;
 use Picard;
@@ -127,7 +128,7 @@ sub main {
 	my %cfg = LoadConfig->readConfigFile($opts{'c'});
 	my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($opts{'n'});
 	my $rAoH_seqDictionary = SequenceDictionaryParser::readDictFile(\%cfg);
-	$designFilePath = $opts{'d'};
+	$designFilePath = abs_path($opts{'d'});
 	##get design groups
 	my $rHoAoA_designGroup = Cufflinks::getDesign(\%cfg,$designFilePath);
 	$workDirectory = $opts{'w'};
