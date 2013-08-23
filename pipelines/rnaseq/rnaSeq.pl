@@ -658,7 +658,7 @@ sub cuffdiff {
 	if($depends > 0 and values(%{$globalDep{'fpkm'}}) > 0) {
 		$jobDependency = join(LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep'),values(%{$globalDep{'fpkm'}}));
 	}
-	print "mkdir -p cuffdiff/known cuffdiff/denovo cuffdiff/output_jobs\n";
+	print "mkdir -p cuffdiff/known cuffdiff/output_jobs fpkm/output_jobs\n";
 	## create the list of deNovo gtf to merge
 	mkdir $workDirectory .'/fpkm';
 	mkdir $workDirectory .'/fpkm/denovo/';
