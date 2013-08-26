@@ -84,7 +84,7 @@ push(@steps, {'name' => 'cuffdiff' , 'stepLoop' => 'group' , 'output' => 'DGE'})
 #push(@steps, {'name' => 'dgeMetrics' , 'stepLoop' => 'group' , 'output' => 'metrics'});
 push(@steps, {'name' => 'dge' , 'stepLoop' => 'group' , 'output' => 'DGE'});
 push(@steps, {'name' => 'goseq' , 'stepLoop' => 'group' , 'output' => 'DGE'});
-push(@steps, {'name' => 'delivrable' , 'stepLoop' => 'group' , 'output' => 'Delivrable'});
+push(@steps, {'name' => 'deliverable' , 'stepLoop' => 'group' , 'output' => 'Deliverable'});
 
 
 my %globalDep;
@@ -818,7 +818,7 @@ sub goseq {
 	return $goseqJobId;
 }
 
-sub delivrable {
+sub deliverable {
 	my $depends = shift;
 	my $rH_cfg = shift;
 	my $rHoAoH_sampleInfo = shift;
