@@ -6,7 +6,9 @@
 VERSION="v4"
 NAME=bedGraphToBigWig # same could apply to all ucsc tools
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/$NAME/$NAME-$VERSION
-mkdir -p $INSTALL_PATH
+INSTALL_DOWNLOAD=$MUGQIC_INSTALL_HOME/software/$NAME/tmp
+mkdir -p $INSTALL_PATH $INSTALL_DOWNLOAD
+cd $INSTALL_DOWNLOAD
 wget http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/$NAME
 chmod +x $NAME
 mv $NAME $INSTALL_PATH
@@ -30,6 +32,7 @@ set ModulesVersion \"$VERSION\"
 mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$NAME
 mv .version $VERSION $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$NAME/
 
-
+cd $INSTALL_PATH
+rm -rf $INSTALL_DOWNLOAD
 
 

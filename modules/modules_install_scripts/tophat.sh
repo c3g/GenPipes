@@ -4,7 +4,8 @@
 ###################
 VERSION="2.0.8b"
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/tophat/tophat-$VERSION.Linux_x86_64 # where to install..
-mkdir -p $INSTALL_PATH
+INSTALL_DOWNLOAD=$MUGQIC_INSTALL_HOME/software/tophat/tmp
+mkdir -p $INSTALL_PATH $INSTALL_DOWNLOAD
 wget http://tophat.cbcb.umd.edu/downloads/tophat-$VERSION.Linux_x86_64.tar.gz
 tar -xvf tophat-$VERSION.Linux_x86_64.tar.gz
 mv tophat-$VERSION.Linux_x86_64/* $INSTALL_PATH
@@ -29,4 +30,5 @@ set ModulesVersion \"$VERSION\"
 mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/tophat
 mv .version $VERSION $MUGQIC_INSTALL_HOME/modulefiles/mugqic/tophat
 
-
+cd $INSTALL_PATH
+rm -rf $INSTALL_DOWNLOAD
