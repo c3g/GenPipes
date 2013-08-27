@@ -6,7 +6,7 @@ I<GqSeqUtils>
 
 =head1 SYNOPSIS
 
-GqSeqUtils-> rnaReport()
+GqSeqUtils-> clientReport()
 
 =head1 DESCRIPTION
 
@@ -22,7 +22,7 @@ B<Pod::Usage> Usage and help output.
 
 =cut
 
-package Metrics;
+package GqSeqUtils;
 
 # Strict Pragmas
 #--------------------------
@@ -45,21 +45,45 @@ sub clientReport{
 	
 # 	pipeline=        ini.file.path=   report.title=    report.contact=  
 # project.path=    report.path=     report.author=   report.css=
-	my $pipeline = " ";
+	my $pipeline = "";
 	my $pipelineTMP = LoadConfig::getParam($rH_cfg, 'report','projectName');
-	if (!defined($pipelineTMP) || $pipelineTMP eq "") {
-		$pipeline= 'pipeline=' .$pipelineTMP;
+	if (defined($pipelineTMP) && !($pipelineTMP eq "")) {
+		$pipeline= 'pipeline=\"' .$pipelineTMP .'\",';
 	}
-	my $title = LoadConfig::getParam($rH_cfg, 'report','report.title');
-	my $path = LoadConfig::getParam($rH_cfg, 'report','report.path');
-	my $author = LoadConfig::getParam($rH_cfg, 'report','report.author');
-	
-	
+	my $title = "";
+	my $titleTMP = LoadConfig::getParam($rH_cfg, 'report','report.title');
+	if (defined($titleTMP) && !($titleTMP eq "")) {
+                $title= 'report.title=\"' .$titleTMP .'\",';
+        }
+	my $path = "";
+	my $pathTMP = LoadConfig::getParam($rH_cfg, 'report','report.path');
+        if (defined($pathTMP) && !($pathTMP eq "")) {
+                $path= 'report.path=\"' .$pathTMP .'\",';
+        }
+	my $author = "";
+	my $authorTMP = LoadConfig::getParam($rH_cfg, 'report','report.author');
+	if (defined($authorTMP) && !($authorTMP eq "")) {
+                $author= 'report.author=\"' .$authorTMP .'\",';
+        }
+        my $contact = "";
+        my $contactTMP = LoadConfig::getParam($rH_cfg, 'report','report.contact');
+        if (defined($contactTMP) && !($contactTMP eq "")) {
+                $contact= 'report.contact=\"' .$contactTMP .'\",';
+        }
 
 	my $command;
 	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'report','moduleVersion.cranR') .' &&';
-	$command .= ' R --vanilla -e \"library(gqSeqUtils) ;"';
-	$command .= '' 
+	$command .= ' R --vanilla -e \'library(gqSeqUtils) ;';
+	$command .= ' mugqicPipelineReport(';
+	$command .= ' ' .$pipeline ;
+	$command .= ' ' .$title ;
+        $command .= ' ' .$path ;
+        $command .= ' ' .$author ;
+        $command .= ' ' .$contact ;
+        $command .= ' ini.file.path=\"' .$iniFilePath .'\",' ;
+        $command .= ' project.path=\"' .$projectPath .'\")\'' ;
+
+	return $command 
 }
 
 
