@@ -48,6 +48,7 @@ BEGIN{
 # Dependencies
 #--------------------
 use Getopt::Std;
+use Cwd qw/ abs_path /;
 
 use LoadConfig;
 use Picard;
@@ -84,7 +85,7 @@ push(@steps, {'name' => 'cuffdiff' , 'stepLoop' => 'group' , 'output' => 'DGE'})
 #push(@steps, {'name' => 'dgeMetrics' , 'stepLoop' => 'group' , 'output' => 'metrics'});
 push(@steps, {'name' => 'dge' , 'stepLoop' => 'group' , 'output' => 'DGE'});
 push(@steps, {'name' => 'goseq' , 'stepLoop' => 'group' , 'output' => 'DGE'});
-push(@steps, {'name' => 'delivrable' , 'stepLoop' => 'group' , 'output' => 'Delivrable'});
+push(@steps, {'name' => 'deliverable' , 'stepLoop' => 'group' , 'output' => 'Deliverable'});
 
 
 my %globalDep;
@@ -127,10 +128,10 @@ sub main {
 	my %cfg = LoadConfig->readConfigFile($opts{'c'});
 	my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($opts{'n'});
 	my $rAoH_seqDictionary = SequenceDictionaryParser::readDictFile(\%cfg);
-	$designFilePath = $opts{'d'};
+	$designFilePath = abs_path($opts{'d'});
 	##get design groups
 	my $rHoAoA_designGroup = Cufflinks::getDesign(\%cfg,$designFilePath);
-	$workDirectory = $opts{'w'};
+	$workDirectory = abs_path($opts{'w'});
 	
 	#generate sample jobIdprefix
 	my $cpt = 1;
@@ -817,7 +818,7 @@ sub goseq {
 	return $goseqJobId;
 }
 
-sub delivrable {
+sub deliverable {
 	my $depends = shift;
 	my $rH_cfg = shift;
 	my $rHoAoH_sampleInfo = shift;
