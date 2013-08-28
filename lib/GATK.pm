@@ -80,10 +80,11 @@ sub realign {
   my $seqName         = shift;
   my $outputPrefix    = shift;
   my $processUnmapped = shift;
+  my $rA_exclusions   = shift;
 
   my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta');
-  my $intervalOutput = $outputPrefix.'/'.$sampleName.'/realign/'.$seqName.'.intervals';
-  my $realignOutput = $outputPrefix.'/'.$sampleName.'/realign/'.$seqName.'.bam';
+  my $intervalOutput = $outputPrefix.'.intervals';
+  my $realignOutput = $outputPrefix.'.bam';
   
   my $command;
   $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'indelRealigner', 'moduleVersion.java').' '.LoadConfig::getParam($rH_cfg, 'indelRealigner', 'moduleVersion.gatk').' ;';
@@ -92,7 +93,12 @@ sub realign {
   $command .= ' -R '.$refGenome;
   $command .= ' -o '.$intervalOutput;
   $command .= ' -I '.$sortedBAM;
-  $command .= ' -L '.$seqName;
+  if(defined($seqName)) {
+    $command .= ' -L '.$seqName;
+  }
+  if(defined($rA_exclusions)) {
+    $command .= ' --excludeIntervals '.join(' --excludeIntervals ', @{$rA_exclusions}).' --excludeIntervals unmapped';
+  }
   $command .= ' ; ';
   $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'indelRealigner', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'indelRealigner', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'indelRealigner', 'realignRam').' -jar \${GATK_JAR}';
   $command .= ' -T IndelRealigner';
@@ -100,11 +106,16 @@ sub realign {
   $command .= ' -targetIntervals '.$intervalOutput;
   $command .= ' -o '.$realignOutput;
   $command .= ' -I '.$sortedBAM;
-  $command .= ' -L '.$seqName;
-  $command .= ' --maxReadsInMemory '.LoadConfig::getParam($rH_cfg, 'indelRealigner', 'realignReadsInRam');
-  if($processUnmapped == 1) {
+  if(defined($seqName)) {
+    $command .= ' -L '.$seqName;
+  }
+  if(defined($rA_exclusions)) {
+    $command .= ' --excludeIntervals '.join(' --excludeIntervals ', @{$rA_exclusions}).' --excludeIntervals unmapped';
+  }
+  elsif($processUnmapped == 1) {
     $command .= ' -L unmapped';
   }
+  $command .= ' --maxReadsInMemory '.LoadConfig::getParam($rH_cfg, 'indelRealigner', 'realignReadsInRam');
   
   return $command;
 }

@@ -66,36 +66,26 @@ use Trimmomatic;
 #--------------------
 
 my @steps;
-push(@steps, {'name' => 'trimAndAlign'});
-push(@steps, {'name' => 'mergeLanes'});
-push(@steps, {'name' => 'indelRealigner'});
-push(@steps, {'name' => 'mergeRealigned'});
-push(@steps, {'name' => 'fixmate'});
-push(@steps, {'name' => 'markDup'});
-push(@steps, {'name' => 'recalibration'});
-push(@steps, {'name' => 'metrics'});
-push(@steps, {'name' => 'snpAndIndelBCF'});
-push(@steps, {'name' => 'mergeFilterBCF'});
-push(@steps, {'name' => 'filterNStretches'});
-push(@steps, {'name' => 'flagMappability'});
-push(@steps, {'name' => 'snpIDAnnotation'});
-push(@steps, {'name' => 'snpEffect'});
-push(@steps, {'name' => 'dbNSFPAnnotation'});
-push(@steps, {'name' => 'indexVCF'});
+push(@steps, {'name' => 'trimAndAlign', 'stepLoop' => 'sample', 'parentStep' => undef});
+push(@steps, {'name' => 'mergeLanes', 'stepLoop' => 'sample', 'parentStep' => 'trimAndAlign'});
+push(@steps, {'name' => 'indelRealigner', 'stepLoop' => 'sample', 'parentStep' => 'mergeLanes'});
+push(@steps, {'name' => 'mergeRealigned', 'stepLoop' => 'sample', 'parentStep' => 'indelRealigner'});
+push(@steps, {'name' => 'fixmate', 'stepLoop' => 'sample', 'parentStep' => 'mergeRealigned'});
+push(@steps, {'name' => 'markDup', 'stepLoop' => 'sample', 'parentStep' => 'fixmate'});
+push(@steps, {'name' => 'recalibration', 'stepLoop' => 'sample', 'parentStep' => 'markDup'});
+push(@steps, {'name' => 'metrics', 'stepLoop' => 'sample', 'parentStep' => 'recalibration'});
+push(@steps, {'name' => 'fullPileup', 'stepLoop' => 'sample', 'parentStep' => 'recalibration'});
+push(@steps, {'name' => 'snpAndIndelBCF', 'stepLoop' => 'experiment', 'parentStep' => 'recalibration'});
+push(@steps, {'name' => 'mergeFilterBCF', 'stepLoop' => 'experiment', 'parentStep' => 'snpAndIndelBCF'});
+push(@steps, {'name' => 'filterNStretches', 'stepLoop' => 'experiment', 'parentStep' => 'mergeFilterBCF'});
+push(@steps, {'name' => 'flagMappability', 'stepLoop' => 'experiment', 'parentStep' => 'filterNStretches'});
+push(@steps, {'name' => 'snpIDAnnotation', 'stepLoop' => 'experiment', 'parentStep' => 'flagMappability'});
+push(@steps, {'name' => 'snpEffect', 'stepLoop' => 'experiment', 'parentStep' => 'snpIDAnnotation'});
 
-#push(@steps, {'name' => 'crestSClip'});
-push(@steps, {'name' => 'sortQname'});
-#push(@steps, {'name' => 'countTelomere'});
-push(@steps, {'name' => 'fullPileup'});
-#push(@steps, {'name' => 'countTelomere'});
-#  print "Step 14: filter N streches\n";
-#  print "Step 15: flag mappability\n";
-#  print "Step 16: snp annotation\n";
-#  print "Step 17: snp effect prediction\n";
-#  print "Step 18: gene descriptions and GO terms\n";
-#  print "Strp 19: dbNSFP annotations\n";
-#  print "Step 20: Cosmic annotations\n";
-
+my %globalDep;
+for my $stepName (@steps) {
+  $globalDep{$stepName -> {'name'} } ={};
+}
 
 &main();
 
@@ -128,22 +118,41 @@ sub main {
   my $currentWorkDir = getCwd();
 
   my $latestBam;
-  for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
+  my @sampleNames = keys %{$rHoAoH_sampleInfo};
+
+  print STDERR "Samples: ".scalar(@sampleNames)."\n";
+
+  my $currentStep;
+  for(my $idx=0; $idx < @sampleNames; $idx++){
+    my $sampleName = $sampleNames[$idx];
     my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sampleName};
 
     SubmitToCluster::initSubmit(\%cfg, $sampleName);
-    for(my $current = $opts{'s'}-1; $current <= ($opts{'e'}-1); $current++) {
-       my $fname = $steps[$current]->{'name'};
-       my $subref = \&$fname;
+    for($currentStep = $opts{'s'}-1; $currentStep <= ($opts{'e'}-1); $currentStep++) {
+      my $fname = $steps[$currentStep]->{'name'};
+      my $subref = \&$fname;
 
-       # Tests for the first step in the list. Used for dependencies.
-       &$subref($current != ($opts{'s'}-1), \%cfg, $currentWorkDir, $sampleName, $rAoH_sampleLanes, $rAoH_seqDictionary); 
+      if ($steps[$currentStep]->{'stepLoop'} eq 'sample') {
+        # Tests for the first step in the list. Used for dependencies.
+        my $jobIdVar = &$subref($currentStep, \%cfg, $currentWorkDir, $sampleName, $rAoH_sampleLanes, $rAoH_seqDictionary); 
+        $globalDep{$fname}->{$sampleName} = $jobIdVar;
+      }
     }
   }  
+
+  for($currentStep = $opts{'s'}-1; $currentStep <= ($opts{'e'}-1); $currentStep++) {
+    if($steps[$currentStep]->{'stepLoop'} eq 'experiment') {
+      my $fname = $steps[$currentStep]->{'name'};
+      my $subref = \&$fname;
+
+      my $jobIdVar = &$subref($currentStep, \%cfg, $rHoAoH_sampleInfo, $rAoH_seqDictionary);
+      $globalDep{$fname}->{'experiment'} = $jobIdVar;
+    }
+  }
 }
 
 sub trimAndAlign {
-  my $depends = shift;
+  my $stepId = shift;
   my $rH_cfg = shift;
   my $currentWorkDir = shift;
   my $sampleName = shift;
@@ -186,7 +195,7 @@ sub trimAndAlign {
 }
 
 sub mergeLanes {
-  my $depends = shift;
+  my $stepId = shift;
   my $rH_cfg = shift;
   my $currentWorkDir = shift;
   my $sampleName = shift;
@@ -194,8 +203,9 @@ sub mergeLanes {
   my $rAoH_seqDictionary = shift;
 
   my $jobDependency = undef;
-  if($depends > 0) {
-    $jobDependency = '$BWA_JOB_IDS';
+  my $parentStep = $steps[$stepId]->{'parentStep'};
+  if(defined($globalDep{$parentStep}->{$sampleName})) {
+    $jobDependency = $globalDep{$parentStep}->{$sampleName};
   }
 
   my $latestBam;
@@ -214,11 +224,14 @@ sub mergeLanes {
   if(defined($command) && length($command) > 0) {
     $mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mergeLanes", undef, 'MERGELANES', $jobDependency, $sampleName, $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
   }
-  return $mergeJobId;
+  else {
+    return undef;
+  }
+  return '$'.$mergeJobId;
 }
 
 sub indelRealigner {
-  my $depends = shift;
+  my $stepId = shift;
   my $rH_cfg = shift;
   my $currentWorkDir = shift;
   my $sampleName = shift;
@@ -226,29 +239,56 @@ sub indelRealigner {
   my $rAoH_seqDictionary = shift;
 
   my $jobDependency = undef;
-  if($depends > 0) {
-    $jobDependency = '$MERGELANES_JOB_ID';
+  my $parentStep = $steps[$stepId]->{'parentStep'};
+  if(defined($globalDep{$parentStep}->{$sampleName})) {
+    $jobDependency = $globalDep{$parentStep}->{$sampleName};
+  }
+  print 'mkdir -p alignment/'.$sampleName."/realign\n";
+
+  my $nbRealignJobs = LoadConfig::getParam( $rH_cfg, 'indelRealigner', 'nbRealignJobs' );
+  if($nbRealignJobs > 50) {
+    warn "Number of realign jobs is >50. This is usually much. Anything beyond 20 can be problematic.\n";
   }
 
-  print 'mkdir -p alignment/'.$sampleName."/realign\n";
-  print "REALIGN_JOB_IDS=\"\"\n";
-  my $processUnmapped = 1;
-  for my $rH_seqInfo (@$rAoH_seqDictionary) {
-    my $seqName = $rH_seqInfo->{'name'};
-    my $command = GATK::realign($rH_cfg, $sampleName, 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.bam', $seqName, 'alignment', $processUnmapped);
-    my $intervalJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "indelRealigner", $seqName, 'REALIGN', $jobDependency, $sampleName, $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
-    $intervalJobId = '$'.$intervalJobId;
-    print 'REALIGN_JOB_IDS=${REALIGN_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$intervalJobId."\n";
-    if($processUnmapped == 1) {
-      $processUnmapped = 0;
-    }
+  if($nbRealignJobs <= 1) {
+    my $command = GATK::realign($rH_cfg, $sampleName, 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.bam', undef, 'alignment/'.$sampleName.'/realign/all');
+    my $intervalJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "indelRealigner", undef, 'REALIGN', $jobDependency, $sampleName, $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
+    print 'REALIGN_JOB_IDS=$'.$intervalJobId."\n";
   }
-  
+  else {
+    #Keep space for the exclude realignment at the end.
+    $nbRealignJobs--;
+    my @chrToProcess;
+    for (my $idx=0; $idx < $nbRealignJobs; $idx++) {
+      push(@chrToProcess, $rAoH_seqDictionary->[$idx]->{'name'});
+    }
+
+    print "REALIGN_JOB_IDS=\"\"\n";
+    my $processUnmapped = 1;
+    my @excludeList;
+    for my $seqName (@chrToProcess) {
+      push(@excludeList, $seqName);
+      my $command = GATK::realign($rH_cfg, $sampleName, 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.bam', $seqName, 'alignment/'.$sampleName.'/realign/'.$seqName, $processUnmapped);
+      my $intervalJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "indelRealigner", $seqName, 'REALIGN', $jobDependency, $sampleName, $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
+      $intervalJobId = '$'.$intervalJobId;
+      if($processUnmapped == 1) {
+        print 'REALIGN_JOB_IDS='.$intervalJobId."\n";
+        $processUnmapped = 0;
+      }
+      else {
+        print 'REALIGN_JOB_IDS=${REALIGN_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$intervalJobId."\n";
+      }
+    }
+
+    my $command = GATK::realign($rH_cfg, $sampleName, 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.bam', undef, 'alignment/'.$sampleName.'/realign/others', 1, \@excludeList);
+    my $intervalJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "indelRealigner", 'others', 'REALIGN', $jobDependency, $sampleName, $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
+    print 'REALIGN_JOB_IDS=${REALIGN_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').'$'.$intervalJobId."\n";
+  }
   return '${REALIGN_JOB_IDS}';
 }
 
 sub mergeRealigned {
-  my $depends = shift;
+  my $stepId = shift;
   my $rH_cfg = shift;
   my $currentWorkDir = shift;
   my $sampleName = shift;
@@ -256,28 +296,46 @@ sub mergeRealigned {
   my $rAoH_seqDictionary = shift;
 
   my $jobDependency = undef;
-  if($depends > 0) {
-    $jobDependency = '${REALIGN_JOB_IDS}';
+  my $parentStep = $steps[$stepId]->{'parentStep'};
+  if(defined($globalDep{$parentStep}->{$sampleName})) {
+    $jobDependency = $globalDep{$parentStep}->{$sampleName};
   }
 
   my $latestBam;
   my @inputBams;
   my $outputBAM = 'alignment/'.$sampleName.'/'.$sampleName.'.realigned.qsorted.bam';
-  for my $rH_seqInfo (@$rAoH_seqDictionary) {
-    my $input = 'alignment/'.$sampleName.'/realign/'.$rH_seqInfo->{'name'}.'.bam';
-    push(@inputBams, $input);
+
+  my $command;
+  my $nbRealignJobs = LoadConfig::getParam( $rH_cfg, 'indelRealigner', 'nbRealignJobs' );
+  if($nbRealignJobs <= 1) {
+    my $command = 'echo "ln -s alignment/'.$sampleName.'/realign/all.bam '.$outputBAM.'"';
+  }
+  else {
+    #Keep space for the exclude realignment at the end.
+    $nbRealignJobs--;
+    my @chrToProcess;
+    for (my $idx=0; $idx < $nbRealignJobs; $idx++) {
+      my $input = 'alignment/'.$sampleName.'/realign/'.$rAoH_seqDictionary->[$idx]->{'name'}.'.bam';
+      push(@inputBams, $input);
+    }
+    push(@inputBams, 'alignment/'.$sampleName.'/realign/others.bam');
+
+    $command = Picard::mergeFiles($rH_cfg, $sampleName, \@inputBams, $outputBAM);
   }
 
-  my $command = Picard::mergeFiles($rH_cfg, $sampleName, \@inputBams, $outputBAM);
   my $mergeJobId = undef;
   if(defined($command) && length($command) > 0) {
     $mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mergeRealign", undef, 'MERGEREALIGN', $jobDependency, $sampleName, $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
   }
-  return $mergeJobId;
+
+  if(defined($mergeJobId)){
+    return '$'.$mergeJobId;
+  }
+  return undef;
 }
 
 sub fixmate {
-  my $depends = shift;
+  my $stepId = shift;
   my $rH_cfg = shift;
   my $currentWorkDir = shift;
   my $sampleName = shift;
@@ -285,8 +343,9 @@ sub fixmate {
   my $rAoH_seqDictionary = shift;
 
   my $jobDependency = undef;
-  if($depends > 0) {
-    $jobDependency = '${MERGEREALIGN_JOB_ID}';
+  my $parentStep = $steps[$stepId]->{'parentStep'};
+  if(defined($globalDep{$parentStep}->{$sampleName})) {
+    $jobDependency = $globalDep{$parentStep}->{$sampleName};
   }
 
   my $inputBAM = 'alignment/'.$sampleName.'/'.$sampleName.'.realigned.qsorted.bam';
@@ -294,11 +353,11 @@ sub fixmate {
 
   my $command = Picard::fixmate($rH_cfg, $inputBAM, $outputBAM);
   my $fixmateJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "fixmate", undef, 'FIXMATE', $jobDependency, $sampleName, $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
-  return $fixmateJobId;
+  return '$'.$fixmateJobId;
 }
 
 sub markDup {
-  my $depends = shift;
+  my $stepId = shift;
   my $rH_cfg = shift;
   my $currentWorkDir = shift;
   my $sampleName = shift;
@@ -306,8 +365,9 @@ sub markDup {
   my $rAoH_seqDictionary = shift;
 
   my $jobDependency = undef;
-  if($depends > 0) {
-    $jobDependency = '${FIXMATE_JOB_ID}';
+  my $parentStep = $steps[$stepId]->{'parentStep'};
+  if(defined($globalDep{$parentStep}->{$sampleName})) {
+    $jobDependency = $globalDep{$parentStep}->{$sampleName};
   }
 
   my $inputBAM = 'alignment/'.$sampleName.'/'.$sampleName.'.matefixed.sorted.bam';
@@ -316,11 +376,11 @@ sub markDup {
 
   my $command = Picard::markDup($rH_cfg, $sampleName, $inputBAM, $outputBAM, $outputMetrics);
   my $markDupJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "markDup", undef, 'MARKDUP', $jobDependency, $sampleName, $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
-  return $markDupJobId;
+  return '$'.$markDupJobId;
 }
 
 sub recalibration {
-  my $depends = shift;
+  my $stepId = shift;
   my $rH_cfg = shift;
   my $currentWorkDir = shift;
   my $sampleName = shift;
@@ -328,8 +388,9 @@ sub recalibration {
   my $rAoH_seqDictionary = shift;
 
   my $jobDependency = undef;
-  if($depends > 0) {
-    $jobDependency = '${MARKDUP_JOB_ID}';
+  my $parentStep = $steps[$stepId]->{'parentStep'};
+  if(defined($globalDep{$parentStep}->{$sampleName})) {
+    $jobDependency = $globalDep{$parentStep}->{$sampleName};
   }
 
   my $inputBAM = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.bam';
@@ -337,11 +398,11 @@ sub recalibration {
 
   my $command = GATK::recalibration($rH_cfg, $sampleName, $inputBAM, $outputBAM);
   my $recalibrationJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "recalibration", undef, 'RECAL', $jobDependency, $sampleName, $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
-  return $recalibrationJobId;
+  return '$'.$recalibrationJobId;
 }
 
 sub metrics {
-  my $depends = shift;
+  my $stepId = shift;
   my $rH_cfg = shift;
   my $currentWorkDir = shift;
   my $sampleName = shift;
@@ -349,8 +410,9 @@ sub metrics {
   my $rAoH_seqDictionary = shift;
 
   my $jobDependency = undef;
-  if($depends > 0) {
-    $jobDependency = '${RECAL_JOB_ID}';
+  my $parentStep = $steps[$stepId]->{'parentStep'};
+  if(defined($globalDep{$parentStep}->{$sampleName})) {
+    $jobDependency = $globalDep{$parentStep}->{$sampleName};
   }
 
   my $command;
@@ -381,11 +443,11 @@ sub metrics {
   my $flagstatJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "flagstat", undef, 'FLAGSTAT', $jobDependency, $sampleName, $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
 
   # return the longest one...not ideal
-  return $genomeCoverageJobId;
+  return '$'.$genomeCoverageJobId;
 }
 
 sub sortQname {
-  my $depends = shift;
+  my $stepId = shift;
   my $rH_cfg = shift;
   my $currentWorkDir = shift;
   my $sampleName = shift;
@@ -393,14 +455,15 @@ sub sortQname {
   my $rAoH_seqDictionary = shift;
 
   my $jobDependency = undef;
-  if($depends > 0) {
-    $jobDependency = '${MARKDUP_JOB_ID}';
+  my $parentStep = $steps[$stepId]->{'parentStep'};
+  if(defined($globalDep{$parentStep}->{$sampleName})) {
+    $jobDependency = $globalDep{$parentStep}->{$sampleName};
   }
 }
 
 #push(@steps, {'name' => 'countTelomere'});
 sub fullPileup {
-  my $depends = shift;
+  my $stepId = shift;
   my $rH_cfg = shift;
   my $currentWorkDir = shift;
   my $sampleName = shift;
@@ -408,8 +471,9 @@ sub fullPileup {
   my $rAoH_seqDictionary = shift;
 
   my $jobDependency = undef;
-  if($depends > 0) {
-    $jobDependency = '${MARKDUP_JOB_ID}';
+  my $parentStep = $steps[$stepId]->{'parentStep'};
+  if(defined($globalDep{$parentStep}->{$sampleName})) {
+    $jobDependency = $globalDep{$parentStep}->{$sampleName};
   }
 
   my $bamFile = $sampleName.'/'.$sampleName.'.sorted.dup.bam';
@@ -431,44 +495,47 @@ sub fullPileup {
   $catCommand .= '| gzip -c --best > '.$output;
 
   my $catJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "rawmpileup_cat", undef, 'RAW_MPILEUP_CAT', undef, "\$RAW_MPILEUP_JOB_IDS", $catCommand, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
-  return $catJobId;
+  return '$'.$catJobId;
 }
 
 sub snpAndIndelBCF {
-  my $depends = shift;
+  my $stepId = shift;
   my $rH_cfg = shift;
   my $currentWorkDir = shift;
-  my $sampleName = shift;
-  my $rAoH_sampleLanes  = shift;
+  my $rHoAoH_sampleInfo = shift;
   my $rAoH_seqDictionary = shift;
 
-  my $jobDependency = undef;
-  if($depends > 0) {
-    $jobDependency = '${RECAL_JOB_ID}';
+  my $parentStep = $steps[$stepId]->{'parentStep'};
+
+  my @sampleNames = keys %{$rHoAoH_sampleInfo};
+  my $jobDependencies = "";
+  my @inputFiles;
+  for(my $idx=0; $idx < @sampleNames; $idx++){
+    my $sampleName = $sampleNames[$idx];
+    my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sampleName};
+    if(defined($globalDep{$parentStep}->{$sampleName})){
+      $jobDependencies .= LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$globalDep{$parentStep}->{$sampleName};
+    }
+    push(@inputFiles, 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.recal.bam');
   }
+  $jobDependencies = substr($jobDependencies, 1);
 
-  my $bamFile = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.recal.bam';
-  
-  my $outputDir = LoadConfig::getParam($rH_cfg, "mpileup", 'sampleOutputRoot') . $sampleName."/rawBCF/";
-
+  my $outputDir = 'variants/rawBCF/';
   print 'mkdir -p '.$outputDir."\n";
   print "MPILEUP_JOB_IDS=\"\"\n";
-  for my $rH_seqInfo (@$rAoH_seqDictionary) {
-    my $snvWindow = LoadConfig::getParam($rH_cfg, 'mpileup', 'snvCallingWindow');
-    my $seqName = $rH_seqInfo->{'name'};
-    if($snvWindow ne "") {
-      my $rA_regions = generateWindows($rH_seqInfo, $snvWindow);
-      for my $region (@{$rA_regions}) {
-        my $command = SAMtools::mpileup($rH_cfg, $sampleName, $bamFile, $region, $outputDir);
-        my $mpileupJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mpileup", $region, 'MPILEUP', $jobDependency, $sampleName, $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
-        $mpileupJobId = '$'.$mpileupJobId;
-        print 'MPILEUP_JOB_IDS=${MPILEUP_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$mpileupJobId."\n";
-      }
+
+  my $nbJobs = LoadConfig::getParam( $rH_cfg, 'mpileup', 'approxNbJobs' );
+  my $rA_regions = generateApproximateWindows($nbJobs, $rAoH_seqDictionary);
+  my $isFirst=1;
+  for my $region (@{$rA_regions}) {
+    my $command = SAMtools::mpileup($rH_cfg, 'allSamples', \@inputFiles, $region, $outputDir);
+    my $mpileupJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mpileup", $region, 'MPILEUP', $jobDependencies, 'allSamples', $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/' );
+    $mpileupJobId = '$'.$mpileupJobId;
+    if($isFirst==1) {
+      print 'MPILEUP_JOB_IDS='.$mpileupJobId."\n";
+      $isFirst=0;
     }
     else {
-      my $command = SAMtools::mpileup($rH_cfg, $sampleName, $bamFile, $seqName, $outputDir);
-      my $mpileupJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mpileup", $seqName, 'MPILEUP', $jobDependency, $sampleName, $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
-      $mpileupJobId = '$'.$mpileupJobId;
       print 'MPILEUP_JOB_IDS=${MPILEUP_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$mpileupJobId."\n";
     }
   }
@@ -476,57 +543,88 @@ sub snpAndIndelBCF {
   return '${MPILEUP_JOB_IDS}';
 }
 
-sub generateWindows {
-  my $rH_seqInfo = shift;
-  my $snvWindow = shift;
+sub generateApproximateWindows {
+  my $nbJobs = shift;
+  my $rAoH_seqDictionary = shift;
+
+  my $totalSize = 0;
+  for my $rH_seqInfo (@$rAoH_seqDictionary) {
+    $totalSize += $rH_seqInfo->{'size'};
+  }
+  my $approxWindow = $totalSize / $nbJobs;
 
   my @retVal;
-  for(my $idx=1; $idx <= $rH_seqInfo->{'size'}; $idx += $snvWindow) {
-    my $end = $idx+$snvWindow-1;
-    if($end > $rH_seqInfo->{'size'}) {
-      $end = $rH_seqInfo->{'size'};
-    }
+  for my $rH_seqInfo (@$rAoH_seqDictionary) {
+    for(my $idx=1; $idx <= $rH_seqInfo->{'size'}; $idx += $approxWindow) {
+      my $end = $idx+$approxWindow-1;
+      if($end > $rH_seqInfo->{'size'}) {
+        $end = $rH_seqInfo->{'size'};
+      }
 
-    my $region = $rH_seqInfo->{'name'}.':'.$idx.'-'.$end;
-    push(@retVal, $region);
+      my $region = $rH_seqInfo->{'name'}.':'.$idx.'-'.$end;
+      push(@retVal, $region);
+    }
   }
+
+#  my @retVal;
+#  $totalSize = 0;
+#  my $currentregion = "";
+#  my $approxWindowRemaining = $approxWindow;
+#  for my $rH_seqInfo (@$rAoH_seqDictionary) {
+#    for(my $idx=1; $idx <= $rH_seqInfo->{'size'}; $idx += $approxWindowRemaining) {
+#      my $end = $idx+$snvWindow-1;
+#      my $hitEnd = 0;
+#      if($end > $rH_seqInfo->{'size'}) {
+#        $end = $rH_seqInfo->{'size'};
+#        $hitEnd = 1;
+#        $approxWindowRemaining -= ($end - $idx) +1;
+#      }
+#
+#      my $region = $rH_seqInfo->{'name'}.':'.$idx.'-'.$end;
+#      if(length($currentregion) == 0) {
+#        $currentregion = $region;
+#      }
+#      else {
+#        $currentregion .= ','.$region;
+#      }
+#
+#      if($hitEnd == 0) {
+#        push(@retVal, $currentregion);
+#        $currentregion = "";
+#        $approxWindowRemaining = $approxWindow;
+#      }
+#    }
+#  }
+#
+#  if(length($currentregion) > 0) {
+#    push(@retVal, $currentregion);
+#  }
 
   return \@retVal;
 }
 
 sub mergeFilterBCF {
-  my $depends = shift;
+  my $stepId = shift;
   my $rH_cfg = shift;
   my $currentWorkDir = shift;
-  my $sampleName = shift;
-  my $rAoH_sampleLanes  = shift;
+  my $rHoAoH_sampleInfo = shift;
   my $rAoH_seqDictionary = shift;
 
   my $jobDependency = undef;
-  if($depends > 0) {
-    $jobDependency = '${MPILEUP_JOB_IDS}';
+  my $parentStep = $steps[$stepId]->{'parentStep'};
+  if(defined($globalDep{$parentStep}->{'experiment'})) {
+    $jobDependency = $globalDep{$parentStep}->{'experiment'};
   }
 
-  my $snvWindow = LoadConfig::getParam($rH_cfg, 'mpileup', 'snvCallingWindow');
+  my $nbJobs = LoadConfig::getParam( $rH_cfg, 'mpileup', 'approxNbJobs' );
+  my $rA_regions = generateApproximateWindows($nbJobs, $rAoH_seqDictionary);
 
-  my $bcfDir = LoadConfig::getParam($rH_cfg, "mergeFilterBCF", 'sampleOutputRoot') . $sampleName."/rawBCF/";
-  my $outputDir = LoadConfig::getParam($rH_cfg, "mergeFilterBCF", 'sampleOutputRoot') . $sampleName.'/';
+  my $bcfDir = 'variants/rawBCF/';
+  my $outputDir = 'variants/';
 
-  my @seqNames;
-  if($snvWindow ne "") {
-    for my $rH_seqInfo (@$rAoH_seqDictionary) {
-      my $rA_regions = generateWindows($rH_seqInfo, $snvWindow);
-      push(@seqNames, @{$rA_regions});
-    }
-  }
-  else {
-    for my $rH_seqInfo (@$rAoH_seqDictionary) {
-      push(@seqNames, $rH_seqInfo->{'name'});
-    }
-  }
-  my $command = SAMtools::mergeFilterBCF($rH_cfg, $sampleName, $bcfDir, $outputDir, \@seqNames);
-  my $mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mergeFilterBCF", undef, 'MERGEBCF', $jobDependency, $sampleName, $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
-  return $mergeJobId;
+  my $command = SAMtools::mergeFilterBCF($rH_cfg, 'allSamples', $bcfDir, $outputDir, $rA_regions);
+  my $mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mergeFilterBCF", undef, 'MERGEBCF', $jobDependency, 'allSamples', $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/');
+  return '$'.$mergeJobId;
 }
 
 1;

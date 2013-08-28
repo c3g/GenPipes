@@ -3,7 +3,7 @@
 ###################
 ################### BWA
 ###################
-VERSION="2.3.12"
+VERSION="2.3.14"
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/igvtools/
 mkdir -p $INSTALL_PATH
 cd $INSTALL_PATH

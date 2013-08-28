@@ -61,6 +61,7 @@ sub fpkm{
 		$command .= ' cufflinks -q';
 		$command .= ' ' .$transcriptOption; 
 		$command .= ' --max-bundle-frags ' .LoadConfig::getParam($rH_cfg, 'fpkm','cufflinksMaxFargs');
+		$command .= ' ' .LoadConfig::getParam($rH_cfg, 'fpkm','cufflinksOtherOption');
 		$command .= ' --library-type ' .LoadConfig::getParam($rH_cfg, 'align', 'strandInfo');
 		$command .= ' -p ' .LoadConfig::getParam($rH_cfg, 'fpkm','cufflinksThreads');
 		$command .= ' -o ' .$outputFolder ;
@@ -137,6 +138,27 @@ sub cuffdiff {
 	return $command;
 }
 
+sub cuffcompare {
+	my $rH_cfg        = shift;
+	my $mergeListString = shift;
+	my $outputPrefix     = shift;
+	my $mergeGtfFilePath = shift;
+	
+	my $command;
+	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'cuffcompare','moduleVersion.cufflinks') ;
+	$command .= ' ' .LoadConfig::getParam($rH_cfg, 'cuffcompare','moduleVersion.tools') .' &&';
+	$command .= ' cuffcompare -o ' .$outputPrefix;
+	$command .= ' -r ' .LoadConfig::getParam($rH_cfg, 'cuffcompare','referenceGtf');
+	$command .= ' -R ' .LoadConfig::getParam($rH_cfg, 'fpkm','referenceFasta');
+	$command .= ' ' .$mergeListString .' &&';
+	$command .= ' formatDenovoCombinedGTF.py' ;
+	$command .= ' -c ' .$outputPrefix .'.combined.gtf';
+ 	$command .= ' -t ' .$outputPrefix .'.tracking';
+	$command .= ' -s ' .$mergeGtfFilePath;
+	$command .= ' -o ' .$outputPrefix .'.TranscriptList.tsv';
+	return $command;
+}
+
 sub cuffmerge {
 	my $rH_cfg        = shift;
 	my $mergeListFile = shift;
@@ -149,7 +171,6 @@ sub cuffmerge {
 	$command .= ' -g ' .LoadConfig::getParam($rH_cfg, 'cuffmerge','referenceGtf');
 	$command .= ' -s ' .LoadConfig::getParam($rH_cfg, 'fpkm','referenceFasta');
 	$command .= ' ' .$mergeListFile;
-
 	return $command;
 }
 
@@ -175,9 +196,7 @@ sub mergeCuffdiffRes {
 	### TO DO : re-write mergecuffdiff_known.R and mergecuffdiff_denovo.R to be more portable
 	my $command;
 	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'cuffmerge','moduleVersion.tools') .' ' .LoadConfig::getParam($rH_cfg, 'cuffdiff','moduleVersion.cranR') .' ;';
-	$command .= ' Rscript \$R_TOOLS/mergecuffdiff_known.R ' .$outputDir .' ' .$inputDir .' ' .$designFile .' &&';
-	$command .= ' Rscript \$R_TOOLS/mergecuffdiff_denovo.R ' .$outputDir .' ' .$inputDir .' ' .$designFile ;
-
+	$command .= ' Rscript \$R_TOOLS/mergecuffdiff_known.R ' .$outputDir .' ' .$inputDir .' ' .$designFile ;
 	return $command;
 }
 

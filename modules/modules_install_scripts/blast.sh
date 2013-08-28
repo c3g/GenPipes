@@ -30,5 +30,7 @@ mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/blast
 mv .version $VERSION $MUGQIC_INSTALL_HOME/modulefiles/mugqic/blast/
 
 
-
+# Toxonomy DB
+#  wget ftp://ftp.ncbi.nlm.nih.gov/blast/db/taxdb.tar.gz
+#  tar -xvf taxdb.tar.gz
 

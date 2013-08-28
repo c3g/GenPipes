@@ -61,11 +61,11 @@ sub align {
 #   #------
   ####mbourgey - Francois' change does not works when using hg1k
   my $bwa_idx_basename ;
-  my $bowtieIndexTest = -M LoadConfig::getParam($rH_cfg, 'align','bowtieRefIndex') .'.1.bt2' ;
+  my $bowtieIndexTest = -M LoadConfig::getParam($rH_cfg, 'align','referenceFasta') .'.1.bt2' ;
   if (defined($bowtieIndexTest)) {
-     $bwa_idx_basename  = LoadConfig::getParam($rH_cfg, 'align','bowtieRefIndex');
+     $bwa_idx_basename  = LoadConfig::getParam($rH_cfg, 'align','referenceFasta');
   } else {
-     ($bwa_idx_basename  = LoadConfig::getParam($rH_cfg, 'align','bowtieRefIndex') ) =~ s/\.[^.]+$//;
+     ($bwa_idx_basename  = LoadConfig::getParam($rH_cfg, 'align','referenceFasta') ) =~ s/\.[^.]+$//;
   }
   my $refFile=LoadConfig::getParam($rH_cfg, 'align','referenceGtf');
   my $refOption=' ';

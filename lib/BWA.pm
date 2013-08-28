@@ -47,7 +47,7 @@ sub mem {
   my $sampleName      = shift;
   my $pair1           = shift;
   my $pair2           = shift;
-  my $single         = shift;
+  my $single          = shift;
   my $optOutputPrefix = shift;
   my $rgId            = shift;
   my $rgSample        = shift;
@@ -121,7 +121,7 @@ sub aln {
   my $rgCenter        = shift;
   my $indexToUse      = shift;
 
-    my $command         = "";
+    my $command;
     if ( defined($pair1) && defined($pair2) ) {
         $command = pairCommand( $rH_cfg, $sampleName, $pair1, $pair2, $optOutputPrefix, $rgId, $rgSample, $rgLibrary, $rgPlatformUnit, $rgCenter, $indexToUse);
     }
@@ -201,7 +201,12 @@ sub pairCommand {
         push( @commands, $bwaCommand );
     }
 
-    return \@commands;
+    if(@commands == 0) {
+      return undef;
+    }
+    else {
+      return \@commands;
+    }
 }
 
 sub singleCommand {
@@ -258,7 +263,12 @@ sub singleCommand {
         push( @commands, $bwaCommand );
     }
 
-    return \@commands;
+    if(@commands == 0) {
+      return undef;
+    }
+    else {
+      return \@commands;
+    }
 }
 
 sub index {
