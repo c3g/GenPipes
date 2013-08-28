@@ -32,13 +32,14 @@ package Metrics;
 #--------------------------
 use strict;
 use warnings;
-use SAMtools;
 
 #--------------------------
 
 # Dependencies
 #-----------------------
+use PipelineUtils;
 use LoadConfig;
+use SAMtools;
 
 # SUB
 #-----------------------

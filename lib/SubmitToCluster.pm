@@ -32,6 +32,8 @@ use warnings;
 
 # Dependencies
 #--------------------
+use Scalar::Util 'blessed';
+use Cwd;
 use LoadConfig;
 
 #--------------------
@@ -51,12 +53,26 @@ sub printSubmitCmd {
     my $jobNameSuffix  = shift;
     my $jobIdPrefix    = shift;
     my $dependancyName = shift;
-    my $sampleName = shift;
-    my $command = shift;
-    my $outputDir = shift;
-    my $workDirectory = shift;
-	
+    my $sampleName     = shift;
+    my $command        = shift;
+    my $outputDir      = shift;
+    my $workDirectory  = shift;
+    my $commandIdx     = shift;
 
+    my $isBlessed = defined(blessed( $command ));
+    my $ro_job = undef;
+    if($isBlessed) {
+        $ro_job = $command;
+
+        if($ro_job->isUp2Date()) {
+          return undef;
+        }
+
+        if(!defined($commandIdx)) {
+          $commandIdx = 0;
+        }
+        $command = $ro_job->getCommand($commandIdx);
+    }
 
     my $jobIdVarName = uc( $jobIdPrefix ) . '_JOB_ID';
     $jobIdVarName =~ s/\W/_/g;
@@ -65,17 +81,14 @@ sub printSubmitCmd {
     ### TO DO modify the output dir to be more portable
 
     if(!(defined $workDirectory)){
-      $workDirectory = '`pwd`';
+      $workDirectory = getcwd();
     }
+
     if(!(defined $outputDir)){
       $outputDir = $sampleName;
     }
     if(LoadConfig::getParam($rH_cfg, $stepName, 'clusterCmdProducesJobId') eq "true") {
-        #$command =~ s/\\\$/\\\\\\\$/g;
         print $jobIdVarName.'=$(';
-        #if ($workDirectory eq '`pwd`') {
-       #       $workDirectory = '\`pwd\`';
-        #}
     }
     print 'echo "'.$command.'" | ';
     print LoadConfig::getParam($rH_cfg, $stepName, 'clusterSubmitCmd');
@@ -109,6 +122,9 @@ sub printSubmitCmd {
         print $jobIdVarName. '=' . $jobName . "\n";
     }
 
+    if($isBlessed) {
+      $ro_job->setCommandJobId($commandIdx, '$'.$jobIdVarName);
+    }
     return $jobIdVarName;
 }
 1;

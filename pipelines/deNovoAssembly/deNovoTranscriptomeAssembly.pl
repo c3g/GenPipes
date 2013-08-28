@@ -494,19 +494,16 @@ sub blastContig {
         $jobDependency = '$SPLITFASTA_JOB_IDS';
         my @files;
         for ( my $i = 1 ; $i <= $rH_cfg->{'blast.chunks'} ; $i++ ) {
-
             push( @files, $fileName.'_chunk_' . sprintf( "%07d", $i ) );
         }
 
         foreach my $db (@database) {
             $jobDependency = '$SPLITFASTA_JOB_IDS';
             foreach my $file (@files) {
-                my $rH_blastDetails = BLAST::alignParallel( $rH_cfg, $group, $rH_laneInfo, $file, $db, $laneDirectory );
-                my $blastJobId = undef;
-                if ( length( $rH_blastDetails->{'command'} ) > 0 ) {
-                    $blastJobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "blast", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BLAST', $jobDependency, $group, $rH_blastDetails->{'command'} );
-                    $blastJobId = '$' . $blastJobId;
-                    print 'BLAST_JOB_IDS=${BLAST_JOB_IDS}' . LoadConfig::getParam( $rH_cfg, 'default', 'clusterDependencySep' ) . $blastJobId . "\n\n";
+                my $rO_blastDetailsJob = BLAST::alignParallel( $rH_cfg, $group, $rH_laneInfo, $file, $db, $laneDirectory );
+                if ( $rO_blastDetailsJob->isUp2Date() == 0) {
+                    SubmitToCluster::printSubmitCmd( $rH_cfg, "blast", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BLAST', $jobDependency, $group, $rO_blastDetailsJob);
+                    print 'BLAST_JOB_IDS=${BLAST_JOB_IDS}' . LoadConfig::getParam( $rH_cfg, 'default', 'clusterDependencySep' ) . $rO_blastDetailsJob->getCommandJobId(0) . "\n\n";
 
                 }
 
@@ -516,12 +513,11 @@ sub blastContig {
             #----------------
             $jobDependency = '$BLAST_JOB_IDS';
             print "BLASTBESTHIT_JOB_IDS=\"\"\n";
-            my $rH_blastBestHitDetails = BLAST::bestHit( $rH_cfg, $group, $rH_laneInfo, $db, $laneDirectory );
+            my $rO_blastBestHitDetailsJob = BLAST::bestHit( $rH_cfg, $group, $rH_laneInfo, $db, $laneDirectory );
             my $blastbesthitJobId = undef;
-            if ( length( $rH_blastBestHitDetails->{'command'} ) > 0 ) {
-                $blastbesthitJobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "blastbesthit", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BLASTBESTHIT', $jobDependency, $group, $rH_blastBestHitDetails->{'command'} );
-                $blastbesthitJobId = '$' . $blastbesthitJobId;
-                print 'BLASTBESTHIT_JOB_ID=${BLASTBESTHIT_JOB_IDS}' . LoadConfig::getParam( $rH_cfg, 'default', 'clusterDependencySep' ) . $blastbesthitJobId . "\n\n";
+            if ( $rO_blastBestHitDetailsJob->isUp2Date() == 0) {
+                SubmitToCluster::printSubmitCmd( $rH_cfg, "blastbesthit", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BLASTBESTHIT', $jobDependency, $group, $rO_blastBestHitDetailsJob);
+                print 'BLASTBESTHIT_JOB_ID=${BLASTBESTHIT_JOB_IDS}' . LoadConfig::getParam( $rH_cfg, 'default', 'clusterDependencySep' ) . $rO_blastBestHitDetailsJob->getCommandJobId(0) . "\n\n";
             }
         }
     }

@@ -30,6 +30,7 @@ package GATK;
 
 # Strict Pragmas
 #--------------------------
+use PipelineUtils;
 use strict;
 use warnings;
 

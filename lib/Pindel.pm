@@ -28,12 +28,13 @@ package Pindel;
 #--------------------------
 use strict;
 use warnings;
-use File::Basename;
 
 #--------------------------
 
 # Dependencies
 #-----------------------
+use PipelineUtils;
+use File::Basename;
 
 # SUB
 #-----------------------

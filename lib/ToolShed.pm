@@ -33,6 +33,7 @@ use warnings;
 
 # Dependencies
 #-----------------------
+use PipelineUtils;
 use Cwd 'abs_path';
 use File::Basename;
 

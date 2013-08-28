@@ -42,6 +42,7 @@ use warnings;
 
 # Dependencies
 #-----------------------
+use PipelineUtils;
 use Data::Dumper;
 use Config::Simple;
 

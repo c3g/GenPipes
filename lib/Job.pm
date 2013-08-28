@@ -28,6 +28,7 @@ use warnings;
 
 # Dependencies
 #-----------------------
+use PipelineUtils;
 use LoadConfig;
 
 # SUB
@@ -46,15 +47,51 @@ sub addCommand {
     if(defined($command)) {
       if(!defined($self->{'_commands'})) {
         $self->{'_commands'} = ();
+        $self->{'_commandsJobId'} = ();
       }
       push(@{$self->{'_commands'}}, $command);
     }
-    return $self->{'_commands'};
+}
+
+sub setOutputFileHash {
+  my( $self, $rH_outputFiles ) = @_;
+  $self->{'_outputFiles'} = $rA_outputFiles;
+}
+
+sub getOutputFileHash {
+  my( $self ) = @_;
+  return $self->{'_outputFiles'};
+}
+
+sub setCommandJobId {
+  my( $self, $idx, $jobIdVarName ) = @_;
+  $self->{'_commandsJobId'}->[$idx] = $jobIdVarName;
+}
+
+sub getCommandJobId {
+  my( $self, $idx ) = @_;
+  if(!defined($idx)) {
+    $idx = 0;
+  }
+  return $self->{'_commandsJobId'}->[$idx];
 }
 
 sub getCommands {
     my( $self ) = @_;
     return $self->{'_commands'};
+}
+
+sub getNbCommands {
+    my( $self ) = @_;
+    return scalar(@{$self->{'_commands'}});
+}
+
+sub getCommand {
+    my( $self, $idx ) = @_;
+    if(!defined($idx)) {
+      $idx = 0;
+    }
+    return $self->{'_commands'}->[$idx];
 }
 
 sub setUp2Date {

@@ -38,6 +38,7 @@ use warnings;
 # Dependencies
 #-----------------------
 use LoadConfig;
+use PipelineUtils;
 
 # SUB
 #-----------------------

@@ -33,6 +33,7 @@ use warnings;
 
 # Dependencies
 #-----------------------
+use PipelineUtils;
 
 # SUB
 #-----------------------

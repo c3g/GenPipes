@@ -38,12 +38,11 @@ package HOMER;
 #--------------------------
 use strict;
 use warnings;
-use LoadConfig;
-#use HomerConfig;
-#--------------------------
 
 # Dependencies
 #-----------------------
+use PipelineUtils;
+use LoadConfig;
 
 # SUB
 #-----------------------

@@ -28,12 +28,13 @@ package Cfreec;
 #--------------------------
 use strict;
 use warnings;
-use File::Basename;
 
 #--------------------------
 
 # Dependencies
 #-----------------------
+use File::Basename;
+use PipelineUtils;
 
 # SUB
 #-----------------------

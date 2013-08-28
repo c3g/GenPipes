@@ -44,6 +44,7 @@ use warnings;
 
 # Dependencies
 #--------------------
+use PipelineUtils;
 use File::Basename;
 use Cwd 'abs_path';
 #--------------------

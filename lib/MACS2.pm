@@ -30,11 +30,11 @@ package MACS2;
 #--------------------------
 use strict;
 use warnings;
-use LoadConfig;
-#--------------------------
 
 # Dependencies
 #-----------------------
+use PipelineUtils;
+use LoadConfig;
 
 # SUB
 #-----------------------

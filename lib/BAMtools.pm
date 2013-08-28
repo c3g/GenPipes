@@ -46,7 +46,7 @@ sub countBins {
     my $outputFile  = shift;
     my $normalBam   = shift; # can be undef for non paired run
 
-    my $up2date;11yy
+    my $up2date;
     if(defined($normalBam)) {
         $up2date = PipelineUtils::testInputOutputs([$tumorBam, $normalBam], [$outputFile]);
     }
