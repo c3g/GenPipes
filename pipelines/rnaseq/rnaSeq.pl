@@ -87,7 +87,7 @@ push(@steps, {'name' => 'cuffdiff' , 'stepLoop' => 'group' , 'output' => 'DGE'})
 #push(@steps, {'name' => 'dgeMetrics' , 'stepLoop' => 'group' , 'output' => 'metrics'});
 push(@steps, {'name' => 'dge' , 'stepLoop' => 'group' , 'output' => 'DGE'});
 push(@steps, {'name' => 'goseq' , 'stepLoop' => 'group' , 'output' => 'DGE'});
-push(@steps, {'name' => 'delivrable' , 'stepLoop' => 'group' , 'output' => 'Delivrable'});
+push(@steps, {'name' => 'deliverable' , 'stepLoop' => 'group' , 'output' => 'Delivrable'});
 
 
 my %globalDep;
@@ -868,10 +868,37 @@ sub deliverable {
 	my $rH_jobIdPrefixe = shift;
 
 	
-	my $goDependency ;
+	my $jobDependency ;
 	if($depends > 0) {
-		$goDependency = $globalDep{'goseq'}{'goseq'};
+		my $goDependency = $globalDep{'goseq'}{'goseq'};
+		if (defined($goDependency) && length($goDependency) > 0) {
+			 $jobDependency .= $goDependency .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
+		}
+		my $trimDependency = $globalDep{'trimMetrics'}{'trimMetrics'};
+                if (defined($trimDependency) && length($trimDependency) > 0) {
+                         $jobDependency .= $trimDependency .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
+                }
+		my $alignDependency = $globalDep{'alignMetrics'}{'alignMetrics'};
+		if (defined($alignDependency) && length($alignDependency) > 0) {
+                         $jobDependency .= $alignDependency .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
+                }
 	}
+
+	if (defined($jobDependency) && length($jobDependency) > 0) {
+                 $jobDependency = substr $jobDependency, 0, -1 ;
+        }
+
+
+	my $command = GqSeqUtils::clientReport($rH_cfg,  $configFile, $workDirectory) ;
+
+	my $deliverableJobId = undef;
+        if(defined($command) && length($command) > 0) {
+		print "mkdir -p deliverable/output_jobs\n";
+                $deliverableJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "deliverable", 'REPORT', 'RNAREPORT', $jobDependency , undef, $command, 'deliverable' , $workDirectory);
+                $deliverableJobId = '$' .$deliverableJobId ;
+        }
+
+        return $deliverableJobId;
 
 }
 
