@@ -58,9 +58,9 @@ sub readJobLogListFile {
       my $jobId = $1;
       my $clusterJobLogPath = $workDirectory . $2;
   
+      $rHoH_jobLogList->{$jobId}{'path'} = $clusterJobLogPath;
       # Read the job log file
       if (open(CLUSTER_JOB_LOG_FILE, $clusterJobLogPath)) {
-        $rHoH_jobLogList->{$jobId}{'path'} = $clusterJobLogPath;
         while(my $jobLine = <CLUSTER_JOB_LOG_FILE>) {
           # Job start date
           if($jobLine =~ /^Begin PBS Prologue (.*) (\d+)$/) {
@@ -82,6 +82,7 @@ sub readJobLogListFile {
             $rHoH_jobLogList->{$jobId}{'mem'} = $2;
             $rHoH_jobLogList->{$jobId}{'vmem'} = $3;
             $rHoH_jobLogList->{$jobId}{'walltime'} = $4;
+            # Compute duration from walltime hours, minutes, seconds
             $rHoH_jobLogList->{$jobId}{'duration'} = $5 * 60 * 60 + $6 * 60 + $7;
           # Job end date
           } elsif($jobLine =~ /^End PBS Epilogue (.*) (\d+)$/) {
@@ -90,8 +91,8 @@ sub readJobLogListFile {
           }
         }
         close(CLUSTER_JOB_LOG_FILE);
-      } else {
-        warn "Cannot open $clusterJobLogPath\n";
+      #} else {
+        #warn "Cannot open $clusterJobLogPath\n";
       }
     }
   }
