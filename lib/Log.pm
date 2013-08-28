@@ -73,21 +73,22 @@ sub readJobLogListFile {
           } elsif($jobLine =~ /^Job Name:\s+(\S+)/) {
             $rHoH_jobLogList->{$jobId}{'jobName'} = $1;
           # Job exit status
-          } elsif($jobLine =~ /^MUGQICexitStatus:(\d+)/) {
+          #} elsif($jobLine =~ /^MUGQICexitStatus:(\d+)/) {
+          } elsif($jobLine =~ /^Exit_status:\s+(\d+)/) {
             $rHoH_jobLogList->{$jobId}{'MUGQICexitStatus'} = $1;
           # Job used resources
-          } elsif($jobLine =~ /^Resources:\s+cput=(\S+),mem=(\S+),vmem=(\S+),walltime=(\S+)/) {
+          } elsif($jobLine =~ /^Resources:\s+cput=(\S+),mem=(\S+),vmem=(\S+),walltime=((\d+):(\d+):(\d+))/) {
             $rHoH_jobLogList->{$jobId}{'cput'} = $1;
             $rHoH_jobLogList->{$jobId}{'mem'} = $2;
             $rHoH_jobLogList->{$jobId}{'vmem'} = $3;
             $rHoH_jobLogList->{$jobId}{'walltime'} = $4;
+            $rHoH_jobLogList->{$jobId}{'duration'} = $5 * 60 * 60 + $6 * 60 + $7;
           # Job end date
           } elsif($jobLine =~ /^End PBS Epilogue (.*) (\d+)$/) {
             $rHoH_jobLogList->{$jobId}{'endDate'} = $1;
             $rHoH_jobLogList->{$jobId}{'endSecondsSinceEpoch'} = $2;
           }
         }
-        $rHoH_jobLogList->{$jobId}{'duration'} = $rHoH_jobLogList->{$jobId}{'endSecondsSinceEpoch'} - $rHoH_jobLogList->{$jobId}{'startSecondsSinceEpoch'};
         close(CLUSTER_JOB_LOG_FILE);
       } else {
         warn "Cannot open $clusterJobLogPath\n";
@@ -120,6 +121,7 @@ sub getLogTextReport {
 
   $logTextReport .= join("\t", (
     "JOB_NAME",
+    "EXIT_CODE",
     "WALL_TIME",
     "START_DATE",
     "END_DATE",
@@ -131,6 +133,7 @@ sub getLogTextReport {
   for my $jobLog (sort {$rHoH_jobLogList->{$a}{'startSecondsSinceEpoch'} <=> $rHoH_jobLogList->{$b}{'startSecondsSinceEpoch'}} keys %$rHoH_jobLogList) {
     $logTextReport .= join("\t", (
       $rHoH_jobLogList->{$jobLog}{'jobName'},
+      $rHoH_jobLogList->{$jobLog}{'MUGQICexitStatus'},
       $rHoH_jobLogList->{$jobLog}{'walltime'},
       strftime('%FT%T', localtime($rHoH_jobLogList->{$jobLog}{'startSecondsSinceEpoch'})),
       strftime('%FT%T', localtime($rHoH_jobLogList->{$jobLog}{'endSecondsSinceEpoch'})),
