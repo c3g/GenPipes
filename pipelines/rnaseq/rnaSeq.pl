@@ -48,7 +48,6 @@ BEGIN{
 # Dependencies
 #--------------------
 use Getopt::Std;
-use Cwd qw/ abs_path /;
 
 use LoadConfig;
 use Picard;
@@ -63,7 +62,6 @@ use Cufflinks;
 use Wiggle;
 use HtseqCount;
 use DiffExpression;
-use GqSeqUtils;
 
 #--------------------
 
@@ -82,12 +80,11 @@ push(@steps, {'name' => 'wiggle' , 'stepLoop' => 'sample' , 'output' => 'tracks'
 push(@steps, {'name' => 'rawCounts' , 'stepLoop' => 'sample' , 'output' => 'raw_counts'});
 push(@steps, {'name' => 'rawCountsMetrics' , 'stepLoop' => 'group' , 'output' => 'metrics'});
 push(@steps, {'name' => 'fpkm' , 'stepLoop' => 'sample' , 'output' => 'fpkm'});
-push(@steps, {'name' => 'exploratory' , 'stepLoop' => 'group' , 'output' => 'exploratory'});
 push(@steps, {'name' => 'cuffdiff' , 'stepLoop' => 'group' , 'output' => 'DGE'});
 #push(@steps, {'name' => 'dgeMetrics' , 'stepLoop' => 'group' , 'output' => 'metrics'});
 push(@steps, {'name' => 'dge' , 'stepLoop' => 'group' , 'output' => 'DGE'});
 push(@steps, {'name' => 'goseq' , 'stepLoop' => 'group' , 'output' => 'DGE'});
-push(@steps, {'name' => 'deliverable' , 'stepLoop' => 'group' , 'output' => 'Delivrable'});
+push(@steps, {'name' => 'delivrable' , 'stepLoop' => 'group' , 'output' => 'Delivrable'});
 
 
 my %globalDep;
@@ -95,11 +92,9 @@ for my $stepName (@steps) {
 	$globalDep{$stepName -> {'name'} } ={};
 }
 
-# Global scope variables
 my $designFilePath;
-my $configFile;
 my $workDirectory;
-my $readSetSheet;
+
 
 &main();
 
@@ -132,12 +127,10 @@ sub main {
 	my %cfg = LoadConfig->readConfigFile($opts{'c'});
 	my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($opts{'n'});
 	my $rAoH_seqDictionary = SequenceDictionaryParser::readDictFile(\%cfg);
-	$designFilePath = abs_path($opts{'d'});
+	$designFilePath = $opts{'d'};
 	##get design groups
 	my $rHoAoA_designGroup = Cufflinks::getDesign(\%cfg,$designFilePath);
-	$workDirectory =  abs_path($opts{'w'});
-	$configFile =  abs_path($opts{'c'});
-	$readSetSheet =  abs_path($opts{'n'}); 
+	$workDirectory = $opts{'w'};
 	
 	#generate sample jobIdprefix
 	my $cpt = 1;
@@ -719,7 +712,9 @@ sub cuffdiff {
 		##cuffdiff known
 		$command = Cufflinks::cuffdiff($rH_cfg,\@groupInuptFiles,$outputPathKnown,LoadConfig::getParam($rH_cfg, 'cuffdiff','referenceGtf'));
 		if(defined($command) && length($command) > 0) {
-			$cuffddiffJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "cuffdiff", "KNOWN",  'CUFFDIFFK' .$rH_jobIdPrefixe ->{$design} , $jobDependency, $design, $command, 'cuffdiff/' .$design, $workDirectory);
+			my $cuffDJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "cuffdiff", "KNOWN",  'CUFFDIFFK' .$rH_jobIdPrefixe ->{$design} , $jobDependency, $design, $command, 'cuffdiff/' .$design, $workDirectory);
+			$cuffDJobId = '$' .$cuffDJobId;
+			$cuffddiffJobId .=  $cuffDJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 		}
 	}
 	if(defined($cuffddiffJobId) && length($cuffddiffJobId) > 0) {
@@ -824,41 +819,7 @@ sub goseq {
 	return $goseqJobId;
 }
 
-sub exploratory {
-	my $depends = shift;
-	my $rH_cfg = shift;
-	my $rHoAoH_sampleInfo = shift;
-	my $rHoAoA_designGroup  = shift;
-	my $rAoH_seqDictionary = shift;
-	my $rH_jobIdPrefixe = shift;
-
-	my $jobDependency = undef;
-	if($depends > 0 and values(%{$globalDep{'fpkm'}}) > 0) {
-		$jobDependency   = join(LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep'),values(%{$globalDep{'fpkm'}}));
-		$jobDependency  .= LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep') .$globalDep{'rawCountsMetrics'}{'rawCountsMetrics'} ;
-	}
-
-	print "mkdir -p exploratory/output_jobs\n";
-	
-	# Call gqSeqUtils::exploratoryAnalysis()
-	# sub exploratoryRnaAnalysis{
-	#         my $rH_cfg        = shift;
-	#         my $readSetSheet  = shift;
-	#         my $workDirectory = shift;
-	#         my $configFile    = shift;
-	#
-	my $command = GqSeqUtils::exploratoryRnaAnalysis($rH_cfg, $readSetSheet, $workDirectory, $configFile) ;
-
-	my $exploratoryJobId = undef;
-	if(defined($command) && length($command) > 0) {
-		$exploratoryJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "exploratory", 'exploratoryAnalysis', 'exploratoryAnalysis' , $jobDependency ,undef, $command, 'exploratory'        , $workDirectory);
-		$exploratoryJobId = '$' .$exploratoryJobId ;
-	}
-	
-	return $exploratoryJobId;
-} 
-
-sub deliverable {
+sub delivrable {
 	my $depends = shift;
 	my $rH_cfg = shift;
 	my $rHoAoH_sampleInfo = shift;
@@ -867,38 +828,10 @@ sub deliverable {
 	my $rH_jobIdPrefixe = shift;
 
 	
-	my $jobDependency ;
+	my $goDependency ;
 	if($depends > 0) {
-		my $goDependency = $globalDep{'goseq'}{'goseq'};
-		if (defined($goDependency) && length($goDependency) > 0) {
-			 $jobDependency .= $goDependency .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
-		}
-		my $trimDependency = $globalDep{'trimMetrics'}{'trimMetrics'};
-                if (defined($trimDependency) && length($trimDependency) > 0) {
-                         $jobDependency .= $trimDependency .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
-                }
-		my $alignDependency = $globalDep{'alignMetrics'}{'alignMetrics'};
-		if (defined($alignDependency) && length($alignDependency) > 0) {
-                         $jobDependency .= $alignDependency .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
-                }
+		$goDependency = $globalDep{'goseq'}{'goseq'};
 	}
 
-	if (defined($jobDependency) && length($jobDependency) > 0) {
-                 $jobDependency = substr $jobDependency, 0, -1 ;
-        }
-
-
-	my $command = GqSeqUtils::clientReport($rH_cfg,  $configFile, $workDirectory) ;
-
-	my $deliverableJobId = undef;
-        if(defined($command) && length($command) > 0) {
-		print "mkdir -p deliverable/output_jobs\n";
-                $deliverableJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "deliverable", 'REPORT', 'RNAREPORT', $jobDependency , undef, $command, 'deliverable' , $workDirectory);
-                $deliverableJobId = '$' .$deliverableJobId ;
-        }
-
-        return $deliverableJobId;
-
 }
-
 1;
