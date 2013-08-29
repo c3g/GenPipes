@@ -4,7 +4,9 @@
 ###################
 VERSION="1.88"
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/picard/
-mkdir -p $INSTALL_PATH
+INSTALL_DOWNLOAD=$MUGQIC_INSTALL_HOME/software/picard/tmp
+mkdir -p $INSTALL_PATH $INSTALL_DOWNLOAD
+cd $INSTALL_DOWNLOAD
 # Download
 wget http://downloads.sourceforge.net/project/picard/picard-tools/$VERSION/picard-tools-$VERSION.zip
 unzip picard-tools-$VERSION.zip
@@ -30,6 +32,7 @@ set ModulesVersion \"$VERSION\"
 mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/picard
 mv .version $VERSION $MUGQIC_INSTALL_HOME/modulefiles/mugqic/picard/
 
-
+cd $INSTALL_PATH
+rm -rf $INSTALL_DOWNLOAD 
 
 
