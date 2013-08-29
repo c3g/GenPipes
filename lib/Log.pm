@@ -12,8 +12,6 @@ Log-> readRestartFile()
 
 B<Log> is a library to parse internal log files and produce custom log reports
 
-
-
 =head1 AUTHOR
 B<Joel Fillon> - I<TO_BE_ADDED>
 B<Mathieu Bourgey> - I<mbourgey@genomequebec.com>
@@ -42,13 +40,13 @@ use LoadConfig;
 # SUB
 #-----------------------
 
-# Return a hash indexed by job ID of hash of log values for each job's log file created by the cluster
+# Return an array of hashes of log values for each job's log file created by the cluster
 sub readJobLogListFile {
   my $rH_cfg = shift;
   my $workDirectory = shift;
   my $jobLogListPath = shift;
-  # Return hash of hash of log values
-  my $rHoH_jobLogList = shift;
+  # Return array of hash of log values
+  my $rAoH_jobLogList = shift;
 
   # Read the global list of log files
   open(JOB_LOG_LIST_FILE, $jobLogListPath) or die "Cannot open $jobLogListPath\n";
@@ -57,70 +55,90 @@ sub readJobLogListFile {
     if($line =~ /^(\S+);(\S+)/) {
       my $jobId = $1;
       my $clusterJobLogPath = $workDirectory . $2;
+      my %jobLog;
   
-      $rHoH_jobLogList->{$jobId}{'path'} = $clusterJobLogPath;
+      $jobLog{'jobId'} = $jobId;
+      $jobLog{'path'} = $clusterJobLogPath;
       # Read the job log file
       if (open(CLUSTER_JOB_LOG_FILE, $clusterJobLogPath)) {
         while(my $jobLine = <CLUSTER_JOB_LOG_FILE>) {
           # Job start date
           if($jobLine =~ /^Begin PBS Prologue (.*) (\d+)$/) {
-            $rHoH_jobLogList->{$jobId}{'startDate'} = $1;
-            $rHoH_jobLogList->{$jobId}{'startSecondsSinceEpoch'} = $2;
+            $jobLog{'startDate'} = $1;
+            $jobLog{'startSecondsSinceEpoch'} = $2;
           # Job number
           } elsif($jobLine =~ /^Job ID:\s+(\S+)/) {
-            $rHoH_jobLogList->{$jobId}{'jobNumber'} = $1;
+            $jobLog{'jobNumber'} = $1;
           # Job name
           } elsif($jobLine =~ /^Job Name:\s+(\S+)/) {
-            $rHoH_jobLogList->{$jobId}{'jobName'} = $1;
-          # Job exit status
-          #} elsif($jobLine =~ /^MUGQICexitStatus:(\d+)/) {
+            $jobLog{'jobName'} = $1;
+          # Job MUGQIC exit status
+          } elsif($jobLine =~ /^MUGQICexitStatus:(\d+)/) {
+            $jobLog{'MUGQICexitStatus'} = $1;
+          # Job exit status (should be the same as MUGQIC exit status unless MUGQIC exit status is skipped)
           } elsif($jobLine =~ /^Exit_status:\s+(\d+)/) {
-            $rHoH_jobLogList->{$jobId}{'MUGQICexitStatus'} = $1;
+            $jobLog{'exitStatus'} = $1;
           # Job used resources
           } elsif($jobLine =~ /^Resources:\s+cput=(\S+),mem=(\S+),vmem=(\S+),walltime=((\d+):(\d+):(\d+))/) {
-            $rHoH_jobLogList->{$jobId}{'cput'} = $1;
-            $rHoH_jobLogList->{$jobId}{'mem'} = $2;
-            $rHoH_jobLogList->{$jobId}{'vmem'} = $3;
-            $rHoH_jobLogList->{$jobId}{'walltime'} = $4;
-            # Compute duration from walltime hours, minutes, seconds
-            $rHoH_jobLogList->{$jobId}{'duration'} = $5 * 60 * 60 + $6 * 60 + $7;
+            $jobLog{'cput'} = $1;
+            $jobLog{'mem'} = $2;
+            $jobLog{'vmem'} = $3;
+            $jobLog{'walltime'} = $4;
+            # Compute duration in seconds from walltime hours, minutes, seconds
+            $jobLog{'duration'} = $5 * 60 * 60 + $6 * 60 + $7;
           # Job end date
           } elsif($jobLine =~ /^End PBS Epilogue (.*) (\d+)$/) {
-            $rHoH_jobLogList->{$jobId}{'endDate'} = $1;
-            $rHoH_jobLogList->{$jobId}{'endSecondsSinceEpoch'} = $2;
+            $jobLog{'endDate'} = $1;
+            $jobLog{'endSecondsSinceEpoch'} = $2;
           }
         }
         close(CLUSTER_JOB_LOG_FILE);
-      #} else {
-        #warn "Cannot open $clusterJobLogPath\n";
       }
+      push (@$rAoH_jobLogList, \%jobLog);
     }
   }
   close(JOB_LOG_LIST_FILE);
 }
 
 sub getLogTextReport {
-  my $rHoH_jobLogList = shift;
+  my $rAoH_jobLogList = shift;
   my $logTextReport = "";
 
-  # Retrieve start and dates for the whole job pipeline
-  my @A_jobSortByStartDate = sort {$rHoH_jobLogList->{$a}{'startSecondsSinceEpoch'} <=> $rHoH_jobLogList->{$b}{'startSecondsSinceEpoch'}} keys %$rHoH_jobLogList;
-  my @A_jobSortByEndDate = sort {$rHoH_jobLogList->{$a}{'endSecondsSinceEpoch'} <=> $rHoH_jobLogList->{$b}{'endSecondsSinceEpoch'}} keys %$rHoH_jobLogList;
+  # Retrieve first job start date, last job end date, shortest job, longest job
+  my $firstStartSecondsSinceEpoch;
+  my $lastEndSecondsSinceEpoch;
+  my $shortestJob;
+  my $longestJob;
 
-  my %startJob = %{$rHoH_jobLogList->{$A_jobSortByStartDate[0]}};
-  my $startSecondsSinceEpoch = $startJob{'startSecondsSinceEpoch'};
-  my %endJob = %{$rHoH_jobLogList->{$A_jobSortByEndDate[$#A_jobSortByEndDate]}};
-  my $endSecondsSinceEpoch = $endJob{'endSecondsSinceEpoch'};
-  $logTextReport .= "Execution time: " . strftime('%FT%T', localtime($startSecondsSinceEpoch)) . " - " . strftime('%FT%T', localtime($endSecondsSinceEpoch)) . " (" . formatDuration($endSecondsSinceEpoch - $startSecondsSinceEpoch) . ")\n\n";
+  for my $jobLog (@$rAoH_jobLogList) {
+    if (exists $jobLog->{'startSecondsSinceEpoch'} and (not defined $firstStartSecondsSinceEpoch or $firstStartSecondsSinceEpoch > $jobLog->{'startSecondsSinceEpoch'})) {
+      $firstStartSecondsSinceEpoch = $jobLog->{'startSecondsSinceEpoch'};
+    }
+    if (exists $jobLog->{'endSecondsSinceEpoch'} and (not defined $lastEndSecondsSinceEpoch or $lastEndSecondsSinceEpoch < $jobLog->{'endSecondsSinceEpoch'})) {
+      $lastEndSecondsSinceEpoch = $jobLog->{'endSecondsSinceEpoch'};
+    }
+    if (exists $jobLog->{'duration'}) {
+      if (not defined $shortestJob or $shortestJob->{'duration'} > $jobLog->{'duration'}) {
+        $shortestJob = $jobLog;
+      }
+      if (not defined $longestJob or $longestJob->{'duration'} < $jobLog->{'duration'}) {
+        $longestJob = $jobLog;
+      }
+    }
+  }
 
-  # Retrieve shortest and longest jobs
-  my @A_jobSortByDuration = sort {$rHoH_jobLogList->{$a}{'duration'} <=> $rHoH_jobLogList->{$b}{'duration'}} keys %$rHoH_jobLogList;
-  my %shortestJob = %{$rHoH_jobLogList->{$A_jobSortByDuration[0]}};
-  my %longestJob = %{$rHoH_jobLogList->{$A_jobSortByDuration[$#A_jobSortByDuration]}};
-  $logTextReport .= "Shortest job: " . $shortestJob{'jobName'} . " (" . $shortestJob{'walltime'} . ")\n";
-  $logTextReport .= "Longest job: " . $longestJob{'jobName'} . " (" . $longestJob{'walltime'} . ")\n\n";
+  # Print out execution time
+  my $executionTime = (defined $firstStartSecondsSinceEpoch and defined $lastEndSecondsSinceEpoch) ? formatDuration($lastEndSecondsSinceEpoch - $firstStartSecondsSinceEpoch) : "N/A";
+  my $startDate = defined $firstStartSecondsSinceEpoch ? strftime('%FT%T', localtime($firstStartSecondsSinceEpoch)) : "N/A";
+  my $endDate = defined $lastEndSecondsSinceEpoch ? strftime('%FT%T', localtime($lastEndSecondsSinceEpoch)) : "N/A";
+  $logTextReport .= "Execution time: $startDate - $endDate ($executionTime)\n\n";
+
+  # Print out shortest and longest jobs
+  $logTextReport .= "Shortest job: " . (defined $shortestJob ? $shortestJob->{'jobName'} . " (" . formatDuration($shortestJob->{'duration'}) . ")" : "N/A") . "\n";
+  $logTextReport .= "Longest job: " . (defined $longestJob ? $longestJob->{'jobName'} . " (" . formatDuration($longestJob->{'duration'}) . ")" : "N/A") . "\n\n";
 
   $logTextReport .= join("\t", (
+    "JOB_ID",
     "JOB_NAME",
     "EXIT_CODE",
     "WALL_TIME",
@@ -128,47 +146,48 @@ sub getLogTextReport {
     "END_DATE",
     "CPU_TIME",
     "MEMORY",
-    "VMEMORY",
+    "VMEMORY"
   )) . "\n";
 
-  for my $jobLog (sort {$rHoH_jobLogList->{$a}{'startSecondsSinceEpoch'} <=> $rHoH_jobLogList->{$b}{'startSecondsSinceEpoch'}} keys %$rHoH_jobLogList) {
+  for my $jobLog (@$rAoH_jobLogList) {
     $logTextReport .= join("\t", (
-      $rHoH_jobLogList->{$jobLog}{'jobName'},
-      $rHoH_jobLogList->{$jobLog}{'MUGQICexitStatus'},
-      $rHoH_jobLogList->{$jobLog}{'walltime'},
-      strftime('%FT%T', localtime($rHoH_jobLogList->{$jobLog}{'startSecondsSinceEpoch'})),
-      strftime('%FT%T', localtime($rHoH_jobLogList->{$jobLog}{'endSecondsSinceEpoch'})),
-      $rHoH_jobLogList->{$jobLog}{'cput'},
-      $rHoH_jobLogList->{$jobLog}{'mem'},
-      $rHoH_jobLogList->{$jobLog}{'vmem'}
+      exists $jobLog->{'jobId'} ? $jobLog->{'jobId'} : "N/A",
+      exists $jobLog->{'jobName'} ? $jobLog->{'jobName'} : "N/A",
+      exists $jobLog->{'exitStatus'} ? $jobLog->{'exitStatus'} : "N/A",
+      exists $jobLog->{'walltime'} ? $jobLog->{'walltime'} : "N/A",
+      exists $jobLog->{'startSecondsSinceEpoch'} ? strftime('%FT%T', localtime($jobLog->{'startSecondsSinceEpoch'})) : "N/A",
+      exists $jobLog->{'endSecondsSinceEpoch'} ? strftime('%FT%T', localtime($jobLog->{'endSecondsSinceEpoch'})) : "N/A",
+      exists $jobLog->{'cput'} ? $jobLog->{'cput'} : "N/A",
+      exists $jobLog->{'mem'} ? $jobLog->{'mem'} : "N/A",
+      exists $jobLog->{'vmem'} ? $jobLog->{'vmem'} : "N/A"
     )) . "\n";
   }
 
   return $logTextReport;
 }
 
-sub formatDuration
-{
+# Return duration given in seconds into human readable format
+sub formatDuration {
   my $seconds =  shift;
 
+  # Less than 1 minute
   if ($seconds < 60) {
-    # less than a minute
     return $seconds . " s";
   }
+  # Less than 1 hour
   elsif ($seconds <= (60 * 60)) {
-    # less than an hour
     return int($seconds / 60 ) . " min " . formatDuration($seconds % 60);
   }
+  # Less than 1 day
   elsif ($seconds <= (60 * 60 * 24)) {
-    # less than a day
     return int($seconds / (60 * 60)) . " h " . formatDuration($seconds % (60 * 60));
   }
+  # Less than 1 week
   elsif ($seconds <= (60 * 60 * 24 * 7)) {
-    # less than a week
     return int($seconds / (60 * 60 * 24)) . " day(s) " . formatDuration($seconds % (60 * 60 * 24));
   }
+  # 1 week or more
   else {
-    # fall-back weeks ago
     return int($seconds / (60 * 60 * 24 * 7)) . " week(s) " . formatDuration($seconds % (60 * 60 * 24 * 7));
   }
 }
