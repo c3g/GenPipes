@@ -50,8 +50,8 @@ sub strandBam{
 
 
   my $latestFile = -M $inputBAM;
-  my $output1= -M $rA_outputBAM->[1];
-  my $output2= -M $rA_outputBAM->[2];
+  my $output1= -M $rA_outputBAM->[0];
+  my $output2= -M $rA_outputBAM->[1];
 
   my @command;
   # -M gives modified date relative to now. The bigger the older.
