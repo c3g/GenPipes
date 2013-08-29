@@ -495,7 +495,7 @@ sub wiggle {
 		}
 		@outputBedGraph = ('tracks/' . $sampleName . '/' . $sampleName . '.forward.bedGraph' ,  'tracks/' . $sampleName . '/' . $sampleName . '.reverse.bedGraph');
 		@outputWiggle = ('tracks/bigWig/' . $sampleName . '.forward.bw' ,  'tracks/bigWig/' . $sampleName . '.reverse.bw');
-		@prefixJobName = { 'FORWARD', 'REVERSE'};
+		@prefixJobName = ( 'FORWARD', 'REVERSE');
 	}
 	else {
 		push(@outputBAM,$inputBAM);
@@ -688,18 +688,18 @@ sub cuffdiff {
  	my $command = Cufflinks::cuffcompare($rH_cfg, $compareList, $outputPathDeNovo, $mergeListFile);
  	my $cuffmergeJobId ;
  	if(defined($command) && length($command) > 0) {
- 	    $cuffmergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "cuffmerge", "MERGE", 'GTFMERGE', $jobDependency, undef, $command, 'fpkm/', $workDirectory);
+ 	    $cuffmergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "cuffcompare", "MERGE", 'GTFCOMPARE', $jobDependency, undef, $command, 'fpkm/', $workDirectory);
  	    $cuffmergeJobId = '$' .$cuffmergeJobId 
  	}
  	my $gtfDnMerged = 'fpkm/denovo/merged.gtf';
  	my $gtfDnFormatMerged = 'fpkm/denovo/formated.merged.gtf';
- 	$command = Cufflinks::mergeGtfFormat($rH_cfg, $gtfDnMerged, $gtfDnFormatMerged);
- 	my $formatJobId;
- 	if(defined($command) && length($command) > 0) {
- 	    $formatJobId= SubmitToCluster::printSubmitCmd($rH_cfg, "default", "FORMAT", 'GTFFORMAT', $cuffmergeJobId, undef, $command, 'fpkm/', $workDirectory);
- 	    $formatJobId= '$' .$formatJobId;
-	    $cuffJobID = $formatJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
- 	}
+#	$command = Cufflinks::mergeGtfFormat($rH_cfg, $gtfDnMerged, $gtfDnFormatMerged);
+# 	my $formatJobId;
+# 	if(defined($command) && length($command) > 0) {
+# 	    $formatJobId= SubmitToCluster::printSubmitCmd($rH_cfg, "default", "FORMAT", 'GTFFORMAT', $cuffmergeJobId, undef, $command, 'fpkm/', $workDirectory);
+# 	    $formatJobId= '$' .$formatJobId;
+#	    $cuffJobID = $formatJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
+# 	}
 	##iterate over design
 	my $cuffddiffJobId;
 	for my $design (keys %{$rHoAoA_designGroup}) {
