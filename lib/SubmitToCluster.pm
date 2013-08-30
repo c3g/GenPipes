@@ -42,7 +42,18 @@ sub initSubmit {
     my $rH_cfg     = shift;
     my $sampleName = shift;
 
-    print "mkdir -p " . LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ) . $sampleName . '/output_jobs/' . "\n";
+    my $outputFolder = LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' );
+    if(substr($outputFolder,length($outputFolder)-1) eq "/") {
+      $outputFolder = substr($outputFolder,0 ,length($outputFolder)-1);
+    }
+
+    if(!defined($sampleName) || length($sampleName) == 0) {
+      print "mkdir -p " . $outputFolder . '/output_jobs/' . "\n";
+    }
+    else {
+      print "mkdir -p " . $outputFolder . '/'. $sampleName . '/output_jobs/' . "\n";
+    }
+
     print "TIMESTAMP=`date +%FT%H.%M.%S`\n";
 }
 
@@ -57,7 +68,9 @@ sub printSubmitCmd {
     my $outputDir = shift;
     my $workDirectory = shift;
 	
-
+    if(substr($outputDir,length($outputDir)-1) eq "/") {
+      $outputDir = substr($outputDir,0 ,length($outputDir)-1);
+    }
 
     my $jobIdVarName = uc( $jobIdPrefix ) . '_JOB_ID';
     $jobIdVarName =~ s/\W/_/g;

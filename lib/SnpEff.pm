@@ -38,7 +38,6 @@ use warnings;
 #-----------------------
 sub annotateDbSnp {
     my $rH_cfg      = shift;
-    my $sampleName  = shift;
     my $inputVCF    = shift;
     my $outputVCF   = shift;
 
@@ -49,7 +48,7 @@ sub annotateDbSnp {
 
     # -M gives modified date relative to now. The bigger the older.
     #if(!defined($outDate) || !defined($inDate) || $inDate < $outDate) {
-        $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'annotateDbSnp', 'moduleVersion.snpeff').' ;';
+        $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'annotateDbSnp', 'moduleVersion.java').' '.LoadConfig::getParam($rH_cfg, 'annotateDbSnp', 'moduleVersion.snpeff').' ;';
         $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'annotateDbSnp', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'annotateDbSnp', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'annotateDbSnp', 'siftRam');
         $command .= ' -jar \${SNPEFF_HOME}/SnpSift.jar annotate';
         $command .= ' '.LoadConfig::getParam($rH_cfg, 'annotateDbSnp', 'dbSnp');
@@ -61,7 +60,6 @@ sub annotateDbSnp {
 
 sub computeEffects {
     my $rH_cfg      = shift;
-    my $sampleName  = shift;
     my $inputVCF    = shift;
     my $outputVCF   = shift;
 
@@ -72,7 +70,7 @@ sub computeEffects {
 
     # -M gives modified date relative to now. The bigger the older.
     #if(!defined($outDate) || !defined($inDate) || $inDate < $outDate) {
-        $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'computeEffects', 'moduleVersion.snpeff').' ;';
+        $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'computeEffects', 'moduleVersion.java').' '.LoadConfig::getParam($rH_cfg, 'computeEffects', 'moduleVersion.snpeff').' ;';
         $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'computeEffects', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'computeEffects', 'extraJavaFlags'). ' -Xmx'.LoadConfig::getParam($rH_cfg, 'computeEffects', 'snpeffRam');
         $command .= ' -jar \${SNPEFF_HOME}/snpEff.jar eff';
         $command .= ' -c \${SNPEFF_HOME}/snpEff.config';
@@ -88,7 +86,6 @@ sub computeEffects {
 
 sub annotateDbNSFP {
     my $rH_cfg      = shift;
-    my $sampleName  = shift;
     my $inputVCF    = shift;
     my $outputVCF   = shift;
 
@@ -99,7 +96,7 @@ sub annotateDbNSFP {
 
     # -M gives modified date relative to now. The bigger the older.
     #if(!defined($outDate) || !defined($inDate) || $inDate < $outDate) {
-        $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'annotateDbNSFP', 'moduleVersion.snpeff').' ;';
+        $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'annotateDbNSFP', 'moduleVersion.java').' '.LoadConfig::getParam($rH_cfg, 'annotateDbNSFP', 'moduleVersion.snpeff').' ;';
         $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'annotateDbNSFP', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'annotateDbNSFP', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'annotateDbNSFP', 'siftRam');
         $command .= ' -jar \${SNPEFF_HOME}/SnpSift.jar dbnsfp';
         $command .= ' -v '.LoadConfig::getParam($rH_cfg, 'annotateDbNSFP', 'dbNSFP');
