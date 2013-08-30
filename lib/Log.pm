@@ -104,6 +104,8 @@ sub getLogTextReport {
   my $rAoH_jobLogList = shift;
   my $logTextReport = "";
 
+  $logTextReport .= "Number of jobs: " . ($#$rAoH_jobLogList + 1) . "\n\n";
+
   # Retrieve first job start date, last job end date, shortest job, longest job
   my $firstStartSecondsSinceEpoch;
   my $lastEndSecondsSinceEpoch;
