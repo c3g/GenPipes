@@ -54,15 +54,15 @@ sub parseGenome {
   my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'genomeName');
   
   # Check if genome exists in homer config file. 
-	my $config = HomerConfig::loadConfigFile();
-	
+  my $config = HomerConfig::loadConfigFile();
+  
   if (!exists({$config->{GENOMES}}->{$refGenome} )) {
     print STDERR "\n#WARNING: Genome $refGenome not found in Homer config.txt file \n#QC, annotations and Motif analysis will not be executed\n\n";
     $genomeName = 'none';
-	} else {
-		$genomeName = $refGenome;
-	}
-	return $genomeName;
+  } else {
+    $genomeName = $refGenome;
+  }
+  return $genomeName;
 }
 
 sub makeTagDirectory {
@@ -74,87 +74,120 @@ sub makeTagDirectory {
 
   my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'genomeName');
   #my $refGenome = parseGenome( $rH_cfg );
-  my @commands;
-  my $command;
-  if ( defined $refGenome ) {
-		
- 		$command  = ' module load '. LoadConfig::getParam($rH_cfg, 'qcTags', 'moduleVersion.python').' '.LoadConfig::getParam($rH_cfg, 'qcTags', 'moduleVersion.homer').' '.LoadConfig::getParam($rH_cfg, 'qcTags', 'moduleVersion.samtools'). ';';
- 		$command .= ' makeTagDirectory '.$outputDir.'/'. $sampleName.' '. $sortedBAM.' -checkGC -genome '.$refGenome.' ; ';
- 		push (@commands, $command);
 
-  }else{
-		@commands=();
-		print STDERR "\n#WARNING: Genome $refGenome not defined \n#QC, annotations and Motif analysis will not be executed\n\n";
+  my $ro_job;
+
+  if ( defined $refGenome ) {
+    my $up2date = PipelineUtils::testInputOutputs([$sortedBAM], undef);
+    
+
+    if (!$ro_job->isUp2Date()) {
+      my $command;
+      $ro_job = new Job(!defined($up2date));
+      $command  = ' module load '. LoadConfig::getParam($rH_cfg, 'qcTags', 'moduleVersion.python').' '.LoadConfig::getParam($rH_cfg, 'qcTags', 'moduleVersion.homer').' '.LoadConfig::getParam($rH_cfg, 'qcTags', 'moduleVersion.samtools'). ';';
+      $command .= ' makeTagDirectory '.$outputDir.'/'. $sampleName.' '. $sortedBAM.' -checkGC -genome '.$refGenome.' ; ';
+      $command .= ' ' . $up2date;
+
+      $ro_job->addCommand($command);
+    }
+      
+  } else {
+    $ro_job = new Job(1);
+    print STDERR "\n#WARNING: Genome $refGenome not defined \n#QC, annotations and Motif analysis will not be executed\n\n";
   }  
-  return \@commands;
+  return $ro_job;
 }
 
-
-
 sub makeUCSCFile {
-	my $rH_cfg          = shift;
+  my $rH_cfg          = shift;
   my $sampleName      = shift;
   my $tagDirectory    = shift;
   my $outputWiggle    = shift;
   
-	my $command = undef;
-	
-  my $latestOutputFile = -M $outputWiggle;
+  my $command = undef;
   
-  if(!defined($latestOutputFile ))
-  {
-	  $command .= ' module load ' .LoadConfig::getParam($rH_cfg, 'default' , 'moduleVersion.python') .' ' . LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.homer'). ';';
-	  $command .= ' makeUCSCfile ' . $tagDirectory .' -o ' . $outputWiggle .';';
-	}
-	
-	return $command;  
+  my $up2date = PipelineUtils::testInputOutputs([$tagDirectory], [$outputWiggle]);
+  my $ro_job = new Job(!defined($up2date));
+  if (!$ro_job->isUp2Date()) {
+    $command .= ' module load ' .LoadConfig::getParam($rH_cfg, 'default' , 'moduleVersion.python') .' ' . LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.homer'). ';';
+    $command .= ' makeUCSCfile ' . $tagDirectory .' -o ' . $outputWiggle .';';
+    $command .= ' ' . $up2date;
+
+    $ro_job->addCommand($command);
+  }
+  
+  return $ro_job;
 }
 
 sub annotatePeaks{
-	my $rH_cfg        = shift;
-	my $designName    = shift;
-	my $InputBed   		 = shift;
+  my $rH_cfg        = shift;
+  my $designName    = shift;
+  my $InputBed        = shift;
   my $outputDir     = shift;
   my $command ;
   my $genomeName    = LoadConfig::getParam($rH_cfg, 'annotation', 'genomeName');
   
-  
-	$command .= ' module load ' .LoadConfig::getParam($rH_cfg, 'default' , 'moduleVersion.python') .' ' . LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.homer'). ';';
-	$command .= ' annotatePeaks.pl '.$InputBed.' '. $genomeName . ' -gsize '.$genomeName.' -cons -CpG -go '.$outputDir.'/'.$designName.' -genomeOntology ' .$outputDir.'/'.$designName. ' > '.$outputDir.'/'.$designName.'.annotated.csv'.';';
-	return $command;  
+  my $up2date = PipelineUtils::testInputOutputs([$InputBed], [$outputDir.'/'.$designName]);
+  my $ro_job = new Job(!defined($up2date));
+
+  if (!$ro_job->isUp2Date()) {
+    $command .= ' module load ' .LoadConfig::getParam($rH_cfg, 'default' , 'moduleVersion.python') .' ' . LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.homer'). ';';
+    $command .= ' annotatePeaks.pl '.$InputBed.' '. $genomeName . ' -gsize '.$genomeName.' -cons -CpG -go '.$outputDir.'/'.$designName.' -genomeOntology ' .$outputDir.'/'.$designName. ' > '.$outputDir.'/'.$designName.'.annotated.csv'.';';
+    $command .= ' ' . $up2date;
+
+    $ro_job->addCommand($command);
+  }
+  return $ro_job;
   
 }
 
  sub generateMotif{
-	my $rH_cfg        = shift;
-	my $designName    = shift;
-	my $InputBed   		 = shift;
+  my $rH_cfg        = shift;
+  my $designName    = shift;
+  my $InputBed      = shift;
   my $outputDir     = shift;
-  my $command ;
+
   my $genomeName    = LoadConfig::getParam($rH_cfg, 'motif', 'genomeName');
   
   my $optionsThreads ;
   if (defined(LoadConfig::getParam( $rH_cfg, 'motif', 'homermotifThreads')) &&  LoadConfig::getParam( $rH_cfg, 'motif', 'homermotifThreads') ne "" ){
-			$optionsThreads = '-p '.LoadConfig::getParam( $rH_cfg, 'motif', 'homermotifThreads').' ';
-  }else{
-			$optionsThreads = ' ';
+      $optionsThreads = '-p '.LoadConfig::getParam( $rH_cfg, 'motif', 'homermotifThreads').' ';
+  } else {
+      $optionsThreads = ' ';
   }
-	$command .= ' module load ' .LoadConfig::getParam($rH_cfg, 'default' , 'moduleVersion.python') .' ' . LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.homer'). ' '. LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.weblogo').';';
-	$command .= ' findMotifsGenome.pl '.$InputBed.' '. $genomeName . ' ' .$outputDir. ' ' . $optionsThreads.';';
-	return $command;  
+
+  my $up2date = PipelineUtils::testInputOutputs([$InputBed], undef);
+  my $ro_job = new Job(!defined($up2date));
+
+  if (!$ro_job->isUp2Date()) {
+    my $command;
+    $command .= ' module load ' .LoadConfig::getParam($rH_cfg, 'default' , 'moduleVersion.python') .' ' . LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.homer'). ' '. LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.weblogo').';';
+    $command .= ' findMotifsGenome.pl '.$InputBed.' '. $genomeName . ' ' .$outputDir. ' ' . $optionsThreads.';';
+    $command .= ' ' . $up2date;
+
+    $ro_job->addCommand($command);
+  }
+  return $ro_job;
   
 }
 
 sub qcPlotsR {
-  my $rH_cfg        = shift;
-	my $designFile     = shift;
-	my $outputDir      = shift;
+  my $rH_cfg     = shift;
+  my $designFile = shift;
+  my $outputDir  = shift;
+
   my $graphDirectory = $outputDir .'/graphs/';
-  my $command       = '';
-  $command .= ' module add '. LoadConfig::getParam($rH_cfg, 'default' , 'moduleVersion.tools') .' '. LoadConfig::getParam($rH_cfg, 'default' , 'moduleVersion.R'). ';';
-  $command .= ' Rscript ' . ' \$R_TOOLS/chipSeqGenerateQCMetrics.R '. $designFile .' '. $outputDir .' ;';
+  my $up2date = PipelineUtils::testInputOutputs([$designFile], undef);
+  my $ro_job = new Job(!defined($up2date));
 
-  return $command;
+  if (!$ro_job->isUp2Date()) {
+    my $command;
+    $command .= ' module add '. LoadConfig::getParam($rH_cfg, 'default' , 'moduleVersion.tools') .' '. LoadConfig::getParam($rH_cfg, 'default' , 'moduleVersion.R'). ';';
+    $command .= ' Rscript ' . ' \$R_TOOLS/chipSeqGenerateQCMetrics.R '. $designFile .' '. $outputDir .' ;';
+    $command .= ' ' . $up2date;
 
+    $ro_job->addCommand($command);
+  }
+  return $ro_job;
 }
 1;

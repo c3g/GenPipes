@@ -49,7 +49,7 @@ use constant {
   PAIR2_OUTPUT => 'pair2',
   SINGLE1_OUTPUT => 'single1',
   SINGLE2_OUTPUT => 'single2',
-}
+};
 
 sub trim {
     my $rH_cfg      = shift;
@@ -100,7 +100,6 @@ sub pairCommand {
     my $ro_job = new Job(!defined($up2date));
     $ro_job->setOutputFileHash({PAIR1_OUTPUT => $outputFastqPair1Name, PAIR2_OUTPUT => $outputFastqPair2Name, SINGLE1_OUTPUT => $outputFastqSingle1Name, SINGLE2_OUTPUT => $outputFastqSingle2Name});
 
-    # -M gives modified date relative to now. The bigger the older.
     if (!$ro_job->isUp2Date()) {
         my $command = "";
         $command .= 'module load';
@@ -161,7 +160,7 @@ sub singleCommand {
     my $up2date = PipelineUtils::testInputOutputs([$inputFastqName], [$outputFastqName,$outputTrimLog,$outputTrimStats]);
 
     my $ro_job = new Job(!defined($up2date));
-    $ro_job->setOutputFileHash({SINGLE1_OUTPUT => $outputFastqSingle1Name});
+    $ro_job->setOutputFileHash({SINGLE1_OUTPUT => $outputFastqName});
 
     if (!$ro_job->isUp2Date()) {
         my $command = "";

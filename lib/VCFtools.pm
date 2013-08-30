@@ -43,13 +43,12 @@ sub annotateMappability {
     my $inputVCF    = shift;
     my $outputVCF   = shift;
 
-    my $outDate = -M $outputVCF;
-    my $inDate = -M $inputVCF;
-  
-    my $command;
+    my $up2date = PipelineUtils::testInputOutputs([$inputVCF], [$outputVCF]);
+    my $ro_job = new Job(!defined($up2date));
 
-    # -M gives modified date relative to now. The bigger the older.
-    #if(!defined($outDate) || !defined($inDate) || $inDate < $outDate) {
+    if (!$ro_job->isUp2Date()) {
+        my $command;
+
         $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'annotateMappability', 'moduleVersion.vcftools').' ;';
         $command .= ' module load '.LoadConfig::getParam($rH_cfg, 'annotateMappability', 'moduleVersion.tabix').' ;';
         $command .= ' vcf-annotate -d \"key=INFO,ID=MIL,Number=1,Type=String,Description='."'".'Mappability annotation. 300IS 40SD 1SHI. HC = to high coverage (>400), LC = to high coverage (<50), MQ = to low mean mapQ (<20), ND = no data at the position'."'".'\"';
@@ -57,8 +56,11 @@ sub annotateMappability {
         $command .= ' -a '.LoadConfig::getParam($rH_cfg, 'annotateMappability', 'referenceMappabilityBedIndexed');
         $command .= ' '.$inputVCF;
         $command .= ' > '.$outputVCF;
-    #}
-    return $command;
+        $command .= ' ' . $up2date;
+
+        $ro_job->addCommand($command);
+    }
+    return $ro_job;
 }
 
 sub indexVCF {
@@ -67,13 +69,12 @@ sub indexVCF {
     my $inputVCF    = shift;
     my $outputVCF   = shift;
 
-    my $outDate = -M $outputVCF;
-    my $inDate = -M $inputVCF;
-  
-    my $command;
+    my $up2date = PipelineUtils::testInputOutputs([$inputVCF], [$outputVCF]);
+    my $ro_job = new Job(!defined($up2date));
 
-    # -M gives modified date relative to now. The bigger the older.
-    #if(!defined($outDate) || !defined($inDate) || $inDate < $outDate) {
+    if (!$ro_job->isUp2Date()) {
+        my $command;
+
         $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'indexVCF', 'moduleVersion.tabix').' ;';
         $command .= ' bgzip -c';
         $command .= ' '.$inputVCF;
@@ -81,7 +82,10 @@ sub indexVCF {
         $command .= ' ; ';
         $command .= ' tabix -p vcf -f';
         $command .= ' '.$outputVCF;
-    #}
-    return $command;
+        $command .= ' ' . $up2date;
+
+        $ro_job->addCommand($command);
+    }
+    return $ro_job;
 }
 1;

@@ -55,7 +55,7 @@ sub addCommand {
 
 sub setOutputFileHash {
   my( $self, $rH_outputFiles ) = @_;
-  $self->{'_outputFiles'} = $rA_outputFiles;
+  $self->{'_outputFiles'} = $rH_outputFiles;
 }
 
 sub getOutputFileHash {

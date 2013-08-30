@@ -37,6 +37,11 @@ sub testInputOutputs {
   my $rA_inputs = shift;
   my $rA_outputs = shift;
 
+  if(!defined($rA_inputs) || !defined($rA_outputs) || scalar(@{$rA_inputs}) == 0 || scalar(@{$rA_outputs}) == 0) {
+    # Don't return touch, but return something so undef tests fail
+    return "";
+  }
+
   my $latestInput = ctime(stat($rA_inputs->[0])->mtime);
   for my $inputFile (@{$rA_inputs}) {
     my $inputTime = ctime(stat($inputFile)->mtime);

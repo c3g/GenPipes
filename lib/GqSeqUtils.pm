@@ -39,30 +39,30 @@ use LoadConfig;
 # SUB
 #-----------------------
 sub clientReport{
-	my $rH_cfg        = shift;
-	my $iniFilePath   = shift;
-	my $projectPath   = shift;
-	
-# 	pipeline=        ini.file.path=   report.title=    report.contact=  
+    my $rH_cfg        = shift;
+    my $iniFilePath   = shift;
+    my $projectPath   = shift;
+    
+#     pipeline=        ini.file.path=   report.title=    report.contact=  
 # project.path=    report.path=     report.author=   report.css=
-	my $pipeline = "";
-	my $pipelineTMP = LoadConfig::getParam($rH_cfg, 'report','projectName');
-	if (defined($pipelineTMP) && !($pipelineTMP eq "")) {
-		$pipeline= 'pipeline=\"' .$pipelineTMP .'\",';
-	}
-	my $title = "";
-	my $titleTMP = LoadConfig::getParam($rH_cfg, 'report','report.title');
-	if (defined($titleTMP) && !($titleTMP eq "")) {
+    my $pipeline = "";
+    my $pipelineTMP = LoadConfig::getParam($rH_cfg, 'report','projectName');
+    if (defined($pipelineTMP) && !($pipelineTMP eq "")) {
+        $pipeline= 'pipeline=\"' .$pipelineTMP .'\",';
+    }
+    my $title = "";
+    my $titleTMP = LoadConfig::getParam($rH_cfg, 'report','report.title');
+    if (defined($titleTMP) && !($titleTMP eq "")) {
                 $title= 'report.title=\"' .$titleTMP .'\",';
         }
-	my $path = "";
-	my $pathTMP = LoadConfig::getParam($rH_cfg, 'report','report.path');
+    my $path = "";
+    my $pathTMP = LoadConfig::getParam($rH_cfg, 'report','report.path');
         if (defined($pathTMP) && !($pathTMP eq "")) {
                 $path= 'report.path=\"' .$pathTMP .'\",';
         }
-	my $author = "";
-	my $authorTMP = LoadConfig::getParam($rH_cfg, 'report','report.author');
-	if (defined($authorTMP) && !($authorTMP eq "")) {
+    my $author = "";
+    my $authorTMP = LoadConfig::getParam($rH_cfg, 'report','report.author');
+    if (defined($authorTMP) && !($authorTMP eq "")) {
                 $author= 'report.author=\"' .$authorTMP .'\",';
         }
         my $contact = "";
@@ -71,36 +71,51 @@ sub clientReport{
                 $contact= 'report.contact=\"' .$contactTMP .'\",';
         }
 
-	my $command;
-	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'report','moduleVersion.cranR') .' &&';
-	$command .= ' R --vanilla -e \'library(gqSeqUtils) ;';
-	$command .= ' mugqicPipelineReport(';
-	$command .= ' ' .$pipeline ;
-	$command .= ' ' .$title ;
+    #my $up2date = PipelineUtils::testInputOutputs([$iniFilePath],[$projectPath]]);
+    my $ro_job = new Job(0);
+
+    if (!$ro_job->isUp2Date()) {
+        my $command;
+        $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'report','moduleVersion.cranR') .' &&';
+        $command .= ' R --vanilla -e \'library(gqSeqUtils) ;';
+        $command .= ' mugqicPipelineReport(';
+        $command .= ' ' .$pipeline ;
+        $command .= ' ' .$title ;
         $command .= ' ' .$path ;
         $command .= ' ' .$author ;
         $command .= ' ' .$contact ;
         $command .= ' ini.file.path=\"' .$iniFilePath .'\",' ;
         $command .= ' project.path=\"' .$projectPath .'\")\'' ;
+        #$command .= ' ' . $up2date;
 
-	return $command 
+        $ro_job->addCommand($command);
+    }
+
+    return $ro_job;
 }
 
 
 sub exploratoryRnaAnalysis{
-        my $rH_cfg        = shift;
-        my $readSetSheet  = shift;
-	my $workDirectory = shift;
-        my $configFile    = shift;
+    my $rH_cfg        = shift;
+    my $readSetSheet  = shift;
+    my $workDirectory = shift;
+    my $configFile    = shift;
 
-	my $rscript = 'suppressPackageStartupMessages(library(gqSeqUtils));';
+    #my $up2date = PipelineUtils::testInputOutputs([$configFile],[$workDirectory]]);
+    my $ro_job = new Job(0);
+
+    if (!$ro_job->isUp2Date()) {
+        my $rscript = 'suppressPackageStartupMessages(library(gqSeqUtils));';
         $rscript .= ' initIllmSeqProject(nanuq.file= \"' . $readSetSheet . '\",overwrite.sheets=FALSE,project.path= \"' . $workDirectory . '\" );';
         $rscript .= ' exploratoryRNAseq(project.path= \"' . $workDirectory . '\",ini.file.path = \"' . $configFile . '\" );';
         $rscript .= ' print(\"done.\")';
         my $command = 'module load ' .LoadConfig::getParam($rH_cfg, 'downstreamAnalyses','moduleVersion.cranR') .' &&';
-	$command .= ' Rscript -e ' . '\'' . $rscript .'\'';
+        $command .= ' Rscript -e ' . '\'' . $rscript .'\'';
+        #$command .= ' ' . $up2date;
 
-	return $command;
+        $ro_job->addCommand($command);
+    }
+    return $ro_job;
 }
 
 1;

@@ -668,19 +668,19 @@ sub cuffdiff {
 	mkdir $workDirectory .'/fpkm';
 	mkdir $workDirectory .'/fpkm/denovo/';
 	my $mergeListFile = $workDirectory .'/fpkm/denovo/gtfMerge.list';
-	my $compareList = " ";
+	my @compareList;
 	open(MERGEF, ">$mergeListFile") or  die ("Unable to open $mergeListFile for wrtting") ;
 	##iterate over sample
 	for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
 	    my $gtfFile = 'fpkm/denovo/' .$sampleName .'/transcripts.gtf' ;
-	    $compareList .= 'fpkm/denovo/' .$sampleName .'/transcripts.gtf ' ;
+	    push(@compareList, 'fpkm/denovo/' .$sampleName .'/transcripts.gtf');
  	    print MERGEF $gtfFile;
 	    print MERGEF "\n";
 	}
 	close($mergeListFile);
 	##merge denovo transcript in one  gtf file
  	my $outputPathDeNovo = 'fpkm/denovo/allSample' ;
- 	my $command = Cufflinks::cuffcompare($rH_cfg, $compareList, $outputPathDeNovo, $mergeListFile);
+ 	my $command = Cufflinks::cuffcompare($rH_cfg, \@compareList, $outputPathDeNovo, $mergeListFile);
  	my $cuffmergeJobId ;
  	if(defined($command) && length($command) > 0) {
  	    $cuffmergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "cuffmerge", "MERGE", 'GTFMERGE', $jobDependency, undef, $command, 'fpkm/', $workDirectory);

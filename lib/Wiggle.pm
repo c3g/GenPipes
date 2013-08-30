@@ -49,14 +49,10 @@ sub strandBam{
   my $inputBAM      = shift;
   my $rA_outputBAM  = shift;
 
+  my $up2date = PipelineUtils::testInputOutputs([$inputBAM], [$rA_outputBAM->[1], $rA_outputBAM->[2]]);
+  my $ro_job = new Job(!defined($up2date));
 
-  my $latestFile = -M $inputBAM;
-  my $output1= -M $rA_outputBAM->[1];
-  my $output2= -M $rA_outputBAM->[2];
-
-  my @command;
-  # -M gives modified date relative to now. The bigger the older.
-  if(!defined($latestFile) || !defined($output1) || !defined($output2) || $latestFile > $output1 || $latestFile > $output2) {
+  if (!$ro_job->isUp2Date()) {
     my $Fcommand = 'module load ' .LoadConfig::getParam($rH_cfg, 'wiggle','moduleVersion.samtools') .' ;';
     $Fcommand .= ' samtools view -h -F 256 -f 81 ' . $inputBAM;
     $Fcommand .= ' > ' .$inputBAM .'tmp1.forward.sam &&';
@@ -70,8 +66,9 @@ sub strandBam{
     $Fcommand .= ' ' .$rA_outputBAM->[0] .' && ';
     $Fcommand .= ' samtools index ' .$rA_outputBAM->[0] .' && ';
     $Fcommand .= ' rm ' .$inputBAM .'tmp*.forward.*am';
-    push(@command,$Fcommand);
 
+    $ro_job->addCommand($Fcommand);
+  
     my $Rcommand = 'module load ' .LoadConfig::getParam($rH_cfg, 'wiggle','moduleVersion.samtools') .' ;';
     $Rcommand .= ' samtools view -h -F 256 -f 97 ' . $inputBAM;
     $Rcommand .= ' > ' .$inputBAM .'tmp1.reverse.sam &&';
@@ -85,10 +82,12 @@ sub strandBam{
     $Rcommand .= ' ' .$rA_outputBAM->[1] .' &&';
     $Rcommand .= ' samtools index ' .$rA_outputBAM->[1] .' &&';
     $Rcommand .= ' rm ' .$inputBAM .'tmp*.reverse.*am';
-    push(@command,$Rcommand);
+    $Rcommand .= ' ' . $up2date;
+
+    $ro_job->addCommand($Rcommand);
   }
     
-  return \@command;
+  return $ro_job;
 }
 
 sub graph{
@@ -98,14 +97,11 @@ sub graph{
   my $outputBegGraph = shift;
   my $outputWiggle   = shift;
 
+  my $up2date = PipelineUtils::testInputOutputs([$inputBAM], [$outputBegGraph,$outputWiggle]);
+  my $ro_job = new Job(!defined($up2date));
 
-  my $latestFile = -M $inputBAM;
-  my $output1= -M $outputBegGraph;
-  my $output2= -M $outputWiggle;
-
-  my $command;
-  # -M gives modified date relative to now. The bigger the older.
-  if(!defined($latestFile) || !defined($output1) || !defined($output2) || $latestFile > $output1 || $latestFile > $output2) {
+  if (!$ro_job->isUp2Date()) {
+    my $command;
     $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'wiggle','moduleVersion.samtools') .' ' .LoadConfig::getParam($rH_cfg, 'wiggle','moduleVersion.bedtools')  .' ' .LoadConfig::getParam($rH_cfg, 'wiggle','moduleVersion.bed2wig') .' ;';
     $command .= ' nmblines=\$(samtools view -F 256 -f 81 ' . $inputBAM .' | wc -l) &&';
     $command .= ' scalefactor=0\$(echo \"scale=2; 1 / (\$nmblines / 10000000);\" | bc) &&';   
@@ -116,9 +112,12 @@ sub graph{
     $command .= ' bedGraphToBigWig ' .$outputBegGraph;
     $command .= '  ' .LoadConfig::getParam($rH_cfg, 'wiggle','chromosomeSizeFile');
     $command .= '  ' .$outputWiggle;
+    $command .= ' ' . $up2date;
+
+    $ro_job->addCommand($command);
   }
     
-  return $command;
+  return $ro_job;
 }
 
 sub zipWig {
@@ -126,9 +125,16 @@ sub zipWig {
   my $wigFolder     = shift;
   my $wigArchive       = shift;
   
-  my $command = ' zip -r ' .$wigArchive .' ' .$wigFolder ;
-  
-  return $command;
+  my $up2date = PipelineUtils::testInputOutputs(undef, undef);
+  my $ro_job = new Job(!defined($up2date));
+
+  if (!$ro_job->isUp2Date()) {
+    my $command = ' zip -r ' .$wigArchive .' ' .$wigFolder ;
+    $command .= ' ' . $up2date;
+
+    $ro_job->addCommand($command);
+  }  
+  return $ro_job;
 }
  
 

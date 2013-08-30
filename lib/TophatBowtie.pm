@@ -52,17 +52,15 @@ sub align {
 
   my $laneDirectory = "alignment/" . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
   my $outputBAM = $laneDirectory . 'accepted_hits.bam';
-  my $bamFileDate = -M $outputBAM;
-
 
 #   #------ flefebvr Tue 16 Apr 09:04:33 2013 
 #   # Bowtie index basename (assumes reference fasta is named basename.extension) 
 #   (my $bwa_idx_basename  = LoadConfig::getParam($rH_cfg, 'align','bowtieRefIndex') ) =~ s/\.[^.]+$//;
 #   #------
   ####mbourgey - Francois' change does not works when using hg1k
+
   my $bwa_idx_basename ;
-  my $bowtieIndexTest = -M LoadConfig::getParam($rH_cfg, 'align','referenceFasta') .'.1.bt2' ;
-  if (defined($bowtieIndexTest)) {
+  if (-e LoadConfig::getParam($rH_cfg, 'align','referenceFasta') .'.1.bt2') {
      $bwa_idx_basename  = LoadConfig::getParam($rH_cfg, 'align','referenceFasta');
   } else {
      ($bwa_idx_basename  = LoadConfig::getParam($rH_cfg, 'align','referenceFasta') ) =~ s/\.[^.]+$//;
@@ -73,9 +71,11 @@ sub align {
     $refOption .= '-G '.$refFile;
   }
 
+  my $up2date = PipelineUtils::testInputOutputs([$pair1, $pair2], [$outputBAM]);
+  my $ro_job = new Job(!defined($up2date));
 
-  my $command;
-  if (!defined($bamFileDate) || !defined(-M $pair1)  || $bamFileDate < -M $pair1) {
+  if (!$ro_job->isUp2Date()) {
+    my $command;
     $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'align','moduleVersion.bowtie') ; 
     $command .= ' ' .LoadConfig::getParam($rH_cfg, 'align','moduleVersion.tophat') ;
     $command .= ' ' .LoadConfig::getParam($rH_cfg, 'align','moduleVersion.samtools').' &&'; 
@@ -98,22 +98,12 @@ sub align {
     #------
 
     $command .= ' '. $pair1 .' ' .$pair2;
+    $command .= ' ' . $up2date;
+
+    $ro_job->addCommand($command);
   }
 
-  return $command;
+  return $ro_job;
 }
-
-sub fusion {
-	 my $rH_cfg      = shift;
-	my $sampleName  = shift;
-	my $rH_laneInfo = shift;
-	my $pair1       = shift;
-	my $pair2       = shift;
-
-	my $laneDirectory = "alignment/" . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
-	my $outputBAM = $laneDirectory . 'accepted_hits.bam';
-	my $bamFileDate = -M $outputBAM;
-}
- 
 
 1;

@@ -143,7 +143,7 @@ sub deleteSingleDuplicates {
     my $ro_job = new Job(!defined($up2date));
 
     if (!$ro_job->isUp2Date()) {
-        my $command         = '';
+        my $command;
         $command .= 'module add '. LoadConfig::getParam($rH_cfg, 'default','moduleVersion.java') ;
         $command .= ' ' . LoadConfig::getParam($rH_cfg, 'duplicate','moduleVersion.bamtools') . ';' ;
         $command .= ' java '.LoadConfig::getParam($rH_cfg, 'duplicate', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'duplicate', 'dupRam').' -jar \$BAMTOOLS_JAR filterdups' . ' --read1 ' . $single;

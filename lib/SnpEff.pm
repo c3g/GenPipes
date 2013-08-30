@@ -43,21 +43,22 @@ sub annotateDbSnp {
     my $inputVCF    = shift;
     my $outputVCF   = shift;
 
-    my $outDate = -M $outputVCF;
-    my $inDate = -M $inputVCF;
-  
-    my $command;
+    my $up2date = PipelineUtils::testInputOutputs([$inputVCF],[$outputVCF]);
+    my $ro_job = new Job(!defined($up2date));
 
-    # -M gives modified date relative to now. The bigger the older.
-    #if(!defined($outDate) || !defined($inDate) || $inDate < $outDate) {
+    if (!$ro_job->isUp2Date()) {  
+        my $command;
         $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'annotateDbSnp', 'moduleVersion.snpeff').' ;';
         $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'annotateDbSnp', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'annotateDbSnp', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'annotateDbSnp', 'siftRam');
         $command .= ' -jar \${SNPEFF_HOME}/SnpSift.jar annotate';
         $command .= ' '.LoadConfig::getParam($rH_cfg, 'annotateDbSnp', 'dbSnp');
         $command .= ' '.$inputVCF;
         $command .= ' > '.$outputVCF;
-    #}
-    return $command;
+        $command .= ' ' . $up2date;
+
+        $ro_job->addCommand($command);
+    }
+    return $ro_job;
 }
 
 sub computeEffects {
@@ -65,14 +66,12 @@ sub computeEffects {
     my $sampleName  = shift;
     my $inputVCF    = shift;
     my $outputVCF   = shift;
-
-    my $outDate = -M $outputVCF;
-    my $inDate = -M $inputVCF;
   
-    my $command;
+    my $up2date = PipelineUtils::testInputOutputs([$inputVCF],[$outputVCF]);
+    my $ro_job = new Job(!defined($up2date));
 
-    # -M gives modified date relative to now. The bigger the older.
-    #if(!defined($outDate) || !defined($inDate) || $inDate < $outDate) {
+    if (!$ro_job->isUp2Date()) {
+        my $command;
         $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'computeEffects', 'moduleVersion.snpeff').' ;';
         $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'computeEffects', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'computeEffects', 'extraJavaFlags'). ' -Xmx'.LoadConfig::getParam($rH_cfg, 'computeEffects', 'snpeffRam');
         $command .= ' -jar \${SNPEFF_HOME}/snpEff.jar eff';
@@ -83,8 +82,11 @@ sub computeEffects {
         $command .= ' '.LoadConfig::getParam($rH_cfg, 'computeEffects', 'referenceSnpEffGenome');
         $command .= ' '.$inputVCF;
         $command .= ' > '.$outputVCF;
-    #}
-    return $command;
+        $command .= ' ' . $up2date;
+
+        $ro_job->addCommand($command);
+    }
+    return $ro_job;
 }
 
 sub annotateDbNSFP {
@@ -92,22 +94,23 @@ sub annotateDbNSFP {
     my $sampleName  = shift;
     my $inputVCF    = shift;
     my $outputVCF   = shift;
-
-    my $outDate = -M $outputVCF;
-    my $inDate = -M $inputVCF;
   
-    my $command;
+    my $up2date = PipelineUtils::testInputOutputs([$inputVCF],[$outputVCF]);
+    my $ro_job = new Job(!defined($up2date));
 
-    # -M gives modified date relative to now. The bigger the older.
-    #if(!defined($outDate) || !defined($inDate) || $inDate < $outDate) {
+    if (!$ro_job->isUp2Date()) {
+        my $command;
         $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'annotateDbNSFP', 'moduleVersion.snpeff').' ;';
         $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'annotateDbNSFP', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'annotateDbNSFP', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'annotateDbNSFP', 'siftRam');
         $command .= ' -jar \${SNPEFF_HOME}/SnpSift.jar dbnsfp';
         $command .= ' -v '.LoadConfig::getParam($rH_cfg, 'annotateDbNSFP', 'dbNSFP');
         $command .= ' '.$inputVCF;
         $command .= ' > '.$outputVCF;
-    #}
-    return $command;
+        $command .= ' ' . $up2date;
+
+        $ro_job->addCommand($command);
+    }
+    return $ro_job;
 }
 
 1;

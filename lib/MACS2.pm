@@ -103,7 +103,6 @@ sub generatePeaks {
 	my $type 								= shift;
 	my $outputDir						= shift;
 	my $paired 							= shift;
-	my $command 						= "";
 
 	# Compute Genome size or retrieve from config
   my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'genomeName');
@@ -124,63 +123,78 @@ sub generatePeaks {
 		die "ERROR: Undefined genome name $refGenome or undefined genome size variable in configuration file (genomeSize) \n";
 	}
   # Call peaks command
-	$command .= ' module load ' . LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.python').' '.LoadConfig::getParam($rH_cfg, 'default' , 'moduleVersion.macs').';';
-	my $feoptions = "";
-	my $extraFlags = "";
-	
-	
-	# additional options for MACS must be set in the configuration (ini) file. options --diag femacs femin festep are currently not functional (2013-06-06).
-	# FEMIN and FEMAX are the minimum and maximum fold enrichment to consider, and FESTEP is the interval of fold enrichment.
-	if ( LoadConfig::getParam($rH_cfg, 'macs','femin') eq "" ||  LoadConfig::getParam($rH_cfg, 'macs','femax') eq "" || LoadConfig::getParam($rH_cfg, 'macs','festep') eq "" ){
-	    $feoptions='';
-	}else{
-	    
-   	  if (LoadConfig::getParam($rH_cfg, 'macs','femin') >=0 && LoadConfig::getParam($rH_cfg, 'macs','femax') >= 0 && LoadConfig::getParam($rH_cfg, 'macs','festep')>=0 ){
-			$feoptions=' --fe-min='.LoadConfig::getParam($rH_cfg, 'macs','femin').' --fe-max='.LoadConfig::getParam($rH_cfg, 'macs','femax').' --fe-step='.LoadConfig::getParam($rH_cfg, 'macs','festep');
-		}
+  
+  my @inputs;
+  my $command;
+  $command .= ' module load ' . LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.python').' '.LoadConfig::getParam($rH_cfg, 'default' , 'moduleVersion.macs').';';
+ 	my $feoptions = "";
+ 	my $extraFlags = "";
+ 	
+ 	
+ 	# additional options for MACS must be set in the configuration (ini) file. options --diag femacs femin festep are currently not functional (2013-06-06).
+ 	# FEMIN and FEMAX are the minimum and maximum fold enrichment to consider, and FESTEP is the interval of fold enrichment.
+ 	if ( LoadConfig::getParam($rH_cfg, 'macs','femin') eq "" ||  LoadConfig::getParam($rH_cfg, 'macs','femax') eq "" || LoadConfig::getParam($rH_cfg, 'macs','festep') eq "" ){
+ 	    $feoptions='';
+ 	}else{
+ 	    
+    	  if (LoadConfig::getParam($rH_cfg, 'macs','femin') >=0 && LoadConfig::getParam($rH_cfg, 'macs','femax') >= 0 && LoadConfig::getParam($rH_cfg, 'macs','festep')>=0 ){
+ 			$feoptions=' --fe-min='.LoadConfig::getParam($rH_cfg, 'macs','femin').' --fe-max='.LoadConfig::getParam($rH_cfg, 'macs','femax').' --fe-step='.LoadConfig::getParam($rH_cfg, 'macs','festep');
+ 		}
+ 
+ 	}
+ 	if ( ! LoadConfig::getParam($rH_cfg, 'macs','extraFlags') eq ""){
+ 		$extraFlags = LoadConfig::getParam($rH_cfg, 'macs','extraFlags');
+ 	}
+ 	#Peak calling strategies.
+ 	my $options = "";
+ 	my $typeoptions = "";
+ 	# Specific options for treatment / control pairs
+ 	# Paired / single end reads
+ 	if ( defined($paired ) && $paired == 1  ){
+ 			$typeoptions .= " -f BAMPE ";
+ 	}else {
+ 			$typeoptions  .= " -f BAM ";
+ 	}	 
+ 	 
+ 	if( defined($control) && defined($treatment) ) {
+     push(@inputs, $treatment);
+     push(@inputs, $control);
+ 		if( $type eq 'B' ) {
+ 		  $options = ' --nomodel --broad ';
+ 		}
+ 		else {
+ 		  $options = " ";
+ 		}
+ 		
+ 		$command .= ' '. LoadConfig::getParam($rH_cfg, 'macs','macsBin') .' callpeak '. '-t ' . $treatment .' -c ' . $control . ' --name=' . $outputDir . '/' . $designName . $genomeSize . $options .' '. $typeoptions .' '. $feoptions . ' '. $extraFlags  .' >& ' .  $outputDir . '/' . $designName . '.diag.macs.out ;';
+ 	}	
+ 	elsif( !defined($treatment) ) {
+ 			print $treatment;
+ 			die "ERROR: Something wrong with design; treatment should be assigned\n";
+ 	}
+ 	elsif(!defined($control) && defined($treatment)) {
+     push(@inputs, $treatment);
+ 		if($type eq 'B') {
+ 			$options = ' --nomodel --nolambda --broad ';
+ 		}
+ 		else {
+ 			$options = ' --nomodel --nolambda';
+ 		}
+ 		$command .= ' '. LoadConfig::getParam($rH_cfg, 'macs','macsBin') .' callpeak '. '-t ' . $treatment . ' --name=' . $outputDir . '/' . $designName . $genomeSize .  $options .' '. $typeoptions . ' '. $feoptions . ' '. $extraFlags  .' >& ' .  $outputDir . '/' . $designName . '.diag.macs.out; ';
+ 	}
+ 	elsif(!defined($control) && !defined($treatment)) {
+ 			die "ERROR: Something wrong with design; treatment and control (if available) should be assigned\n";
+ 	}
 
-	}
-	if ( ! LoadConfig::getParam($rH_cfg, 'macs','extraFlags') eq ""){
-		$extraFlags = LoadConfig::getParam($rH_cfg, 'macs','extraFlags');
-	}
-	#Peak calling strategies.
-	my $options = "";
-	my $typeoptions = "";
-	# Specific options for treatment / control pairs
-	# Paired / single end reads
-	if ( defined($paired ) && $paired == 1  ){
-			$typeoptions .= " -f BAMPE ";
-	}else {
-			$typeoptions  .= " -f BAM ";
-	}	 
-	 
-	if( defined($control) && defined($treatment) ) {
-		if( $type eq 'B' ) {
-		  $options = ' --nomodel --broad ';
-		}
-		else {
-		  $options = " ";
-		}
-		
-		$command .= ' '. LoadConfig::getParam($rH_cfg, 'macs','macsBin') .' callpeak '. '-t ' . $treatment .' -c ' . $control . ' --name=' . $outputDir . '/' . $designName . $genomeSize . $options .' '. $typeoptions .' '. $feoptions . ' '. $extraFlags  .' >& ' .  $outputDir . '/' . $designName . '.diag.macs.out ;';
-	}	
-	elsif( !defined($treatment) ) {
-			print $treatment;
-			die "ERROR: Something wrong with design; treatment should be assigned\n";
-	}
-	elsif(!defined($control) && defined($treatment)) {
-		if($type eq 'B') {
-			$options = ' --nomodel --nolambda --broad ';
-		}
-		else {
-			$options = ' --nomodel --nolambda';
-		}
-		$command .= ' '. LoadConfig::getParam($rH_cfg, 'macs','macsBin') .' callpeak '. '-t ' . $treatment . ' --name=' . $outputDir . '/' . $designName . $genomeSize .  $options .' '. $typeoptions . ' '. $feoptions . ' '. $extraFlags  .' >& ' .  $outputDir . '/' . $designName . '.diag.macs.out; ';
-	}
-	elsif(!defined($control) && !defined($treatment)) {
-			die "ERROR: Something wrong with design; treatment and control (if available) should be assigned\n";
-	}
-	return $command;
+  my $up2date = PipelineUtils::testInputOutputs(\@inputs, [$outputDir . '/' . $designName . $genomeSize . $options . '_peaks.xls']);
+  my $ro_job = new Job(!defined($up2date));
+  if (!$ro_job->isUp2Date()) {
+    $command .= ' ' . $up2date;
+
+    $ro_job->addCommand($command);
+  }
+
+	return $ro_job;
 }
 
 1;

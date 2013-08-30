@@ -46,12 +46,20 @@ sub computeTDF {
   my $rH_cfg      = shift;
   my $inputBAM    = shift;
 
-  my $command;
-  $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'igvtools', 'moduleVersion.igvtools').' ;';
-  $command .= ' igvtools count -f min,max,mean ';
-  $command .= $inputBAM.' '.$inputBAM.'.tdf';
-  $command .= ' '.LoadConfig::getParam($rH_cfg, 'computeTDF', 'igvGenome');
-  return $command;
+  my $up2date = PipelineUtils::testInputOutputs([$inputBAM], [$inputBAM.'.tdf']);
+  my $ro_job = new Job(!defined($up2date));
+
+  if (!$ro_job->isUp2Date()) {
+    my $command;
+    $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'igvtools', 'moduleVersion.igvtools').' ;';
+    $command .= ' igvtools count -f min,max,mean ';
+    $command .= $inputBAM.' '.$inputBAM.'.tdf';
+    $command .= ' '.LoadConfig::getParam($rH_cfg, 'computeTDF', 'igvGenome');
+    $command .= ' ' . $up2date;
+
+    $ro_job->addCommand($command);
+  }
+  return $ro_job;
 }
 
 1;

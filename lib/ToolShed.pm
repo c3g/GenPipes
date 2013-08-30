@@ -50,19 +50,21 @@ sub filterNStretches {
     my $inputVCF    = shift;
     my $outputVCF   = shift;
 
-    my $outDate = -M $outputVCF;
-    my $inDate = -M $inputVCF;
-  
     my $toolShedDir = getToolShedDir();
 
-    my $command;
-    # -M gives modified date relative to now. The bigger the older.
-    #if(!defined($outDate) || !defined($inDate) || $inDate < $outDate) {
+    my $up2date = PipelineUtils::testInputOutputs([$inputVCF],[$outputVCF]);
+    my $ro_job = new Job(!defined($up2date));
+
+    if (!$ro_job->isUp2Date()) {
+        my $command;
         $command .= $toolShedDir.'/filterLongIndel.pl ';
         $command .= ' '.$inputVCF;
         $command .= ' > '.$outputVCF;
-    #}
-    return $command;
+        $command .= ' ' . $up2date;
+
+        $ro_job->addCommand($command);
+    }
+    return $ro_job;
 }
 
 1;

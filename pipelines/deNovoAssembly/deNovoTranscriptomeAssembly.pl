@@ -62,8 +62,6 @@ B<Trimmomatic>
 
 B<BWA>
 
-B<ReadStats>
-
 B<HtseqCount>
 
 B<DiffExpression>
@@ -137,7 +135,6 @@ use SequenceDictionaryParser;
 use SubmitToCluster;
 use Trimmomatic;
 use BWA;
-use ReadStats;
 use HtseqCount;
 use DiffExpression;
 
@@ -218,13 +215,13 @@ sub main {
     
     # Merge Step
     #------------
-    my $rH_mergeDetails = MergeFastq::mergeFiles( \%cfg, $runType, $opts{'f'} );
-    if ( $rH_mergeDetails->{'command'} ne "No merge" ) {
-        print $rH_mergeDetails->{'command'};
-        print "MERGE_JOB_ID=\"\"\n";
-        $merJobId = SubmitToCluster::printSubmitCmd( \%cfg, "merge", "", 'MERGE', undef, "step_0", $rH_mergeDetails->{'command'} );
-        $merJobId = '$' . $merJobId;
-    }
+    #my $rH_mergeDetails = MergeFastq::mergeFiles( \%cfg, $runType, $opts{'f'} );
+    #if ( $rH_mergeDetails->{'command'} ne "No merge" ) {
+    #    print $rH_mergeDetails->{'command'};
+    #    print "MERGE_JOB_ID=\"\"\n";
+    #    $merJobId = SubmitToCluster::printSubmitCmd( \%cfg, "merge", "", 'MERGE', undef, "step_0", $rH_mergeDetails->{'command'} );
+    #    $merJobId = '$' . $merJobId;
+    #}
 
     # add to %groupCounter the number of
     # samples per group and initialize %diffExpressGroupDone
@@ -292,7 +289,7 @@ sub trimming {
     my $rAoH_sampleLanes = shift;
     my $rHoH_groupInfo   = shift;
     my $rH_aliasSampleInfo = shift;
-    my $jobDependency    = ( defined $merJobId ) ? $merJobId : undef;
+    my $jobDependency    = undef;
 
     print "TRIM_JOB_IDS=\"\"\n" unless $step1 > 1;
     for my $rH_laneInfo (@$rAoH_sampleLanes) {
@@ -605,146 +602,6 @@ sub mergeCounts {
     }
 
     return $jobId;
-}
-
-sub readStats {
-    my $depends          = shift;
-    my $rH_cfg           = shift;
-    my $sampleName       = shift;
-    my $rAoH_sampleLanes = shift;
-    my $rHoH_groupInfo   = shift;
-    my $rH_aliasSampleInfo = shift;
-    my $jobDependency    = undef;
-    my $group            = $rH_aliasSampleInfo->{$sampleName}{'group_name'};
-
-    if ( $depends > 0 ) {
-        $jobDependency = '$BWA_JOB_IDS';
-    }
-    print "READSTATS_JOB_IDS=\"\"\n";
-    for my $rH_laneInfo (@$rAoH_sampleLanes) {
-
-        my $read = 'reads/' . $sampleName . '.t' . $rH_cfg->{'trim.minQuality'} . 'l' . $rH_cfg->{'trim.minLength'} . '.pair1.fastq.gz';
-        my $sortedBam = 'alignment/' . $group . '/' . $sampleName . '.sorted.bam';
-        my $rH_readStatDetails = ReadStats::stats( $rH_cfg, $sampleName, $rH_laneInfo, $read, $sortedBam, $group );
-        my $readStatJobId = undef;
-
-        my $rH_readStatConcatDetails = ReadStats::concatStats( $rH_cfg, $sampleName, $rH_laneInfo, $group );
-        my $readStatConcatJobId = undef;
-
-        if ( length( $rH_readStatDetails->{'command'} ) > 0 ) {
-            $readStatJobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "readstats", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READSTATS', $jobDependency, $group, $rH_readStatDetails->{'command'} );
-            $readStatJobId = '$' . $readStatJobId;
-            print 'READSTATS_JOB_IDS=${READSTATS_JOB_IDS}' . LoadConfig::getParam( $rH_cfg, 'default', 'clusterDependencySep' ) . $readStatJobId . "\n\n";
-
-        }
-
-        # Concatenate
-        #------------
-        $jobDependency = '$READSTATS_JOB_IDS';
-        print "READSTATSCONCAT_JOB_IDS=\"\"\n";
-        if ( length( $rH_readStatConcatDetails->{'command'} ) > 0 ) {
-            $readStatConcatJobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "readstatsconcat", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READSTATSCONCAT', $jobDependency, $group, $rH_readStatConcatDetails->{'command'} );
-            $readStatConcatJobId = '$' . $readStatConcatJobId;
-            print 'READSTATSCONCAT_JOB_IDS=${READSTATSCONCAT_JOB_IDS}' . LoadConfig::getParam( $rH_cfg, 'default', 'clusterDependencySep' ) . $readStatConcatJobId . "\n\n";
-        }
-
-        # Contig Stats
-        #------------
-
-        $jobDependency = '$CONCAT_JOB_IDS';
-
-        #next if one sample of the group is already done
-        next if ( exists $readStatsGroupDone{$group} );
-
-        my $rH_readStatContigDetails = ReadStats::contigStats( $rH_cfg, $sampleName, $rH_laneInfo, $group );
-        $readStatsGroupDone{$group} = 1;
-        my $readStatContigJobID = undef;
-
-        print "READSTATCONTIG_JOB_IDS=\"\"\n";
-        if ( length( $rH_readStatContigDetails->{'command'} ) > 0 ) {
-            $readStatContigJobID = SubmitToCluster::printSubmitCmd( $rH_cfg, "readstatcontig", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READSTATCONTIG', $jobDependency, $group, $rH_readStatContigDetails->{'command'} );
-            $readStatContigJobID = '$' . $readStatContigJobID;
-            print 'READSTATCONTIG_JOB_IDS=${READSTATCONTIG_JOB_IDS}' . LoadConfig::getParam( $rH_cfg, 'default', 'clusterDependencySep' ) . $readStatContigJobID . "\n\n";
-        }
-
-    }
-
-}
-
-sub htseqCount {
-
-    my $depends          = shift;
-    my $rH_cfg           = shift;
-    my $sampleName       = shift;
-    my $rAoH_sampleLanes = shift;
-    my $rHoH_groupInfo   = shift;
-    my $rH_aliasSampleInfo = shift;
-    my $jobDependency    = undef;
-    my $group            = $rH_aliasSampleInfo->{$sampleName}{'group_name'};
-
-    if ( $depends > 0 ) {
-        $jobDependency = '$READSTATS_JOB_IDS';
-    }
-
-    no warnings;    # disable the warning created by the next
-                    #next if one sample of the group is already done
-    next if ( exists $htSeqGroupDone{$group} );
-
-    # Picard sorting
-    #----------------
-    print "HTSEQSORT_JOB_IDS=\"\"\n";
-    for my $rH_laneInfo (@$rAoH_sampleLanes) {
-
-        my $rH_htseqSortDetails = HtseqCount::sortRead( $rH_cfg, $sampleName, $rH_laneInfo, $group );
-        $htSeqGroupDone{$group} = 1;
-        my $htseqSortJobId = undef;
-
-        if ( length( $rH_htseqSortDetails->{'command'} ) > 0 ) {
-            $htseqSortJobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "htseqsort", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'HTSEQSORT', $jobDependency, $group, $rH_htseqSortDetails->{'command'} );
-            $htseqSortJobId = '$' . $htseqSortJobId;
-            print 'HTSEQSORT_JOB_IDS=${HTSEQSORT_JOB_IDS}' . LoadConfig::getParam( $rH_cfg, 'default', 'clusterDependencySep' ) . $htseqSortJobId . "\n\n";
-        }
-
-    }
-
-    # Htseq-count
-    #-------------
-    $jobDependency = '$HTSEQSORT_JOB_IDS';
-    print "HTSEQCOUNT_JOB_IDS=\"\"\n";
-    for my $rH_laneInfo (@$rAoH_sampleLanes) {
-
-        my $rH_htseqCountDetails = HtseqCount::readCount( $rH_cfg, $sampleName, $rH_laneInfo, $group );
-        my $htseqCountJobId = undef;
-
-        if ( length( $rH_htseqCountDetails->{'command'} ) > 0 ) {
-            $htseqCountJobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "htseqcount", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'HTSEQCOUNT', $jobDependency, $sampleName, $rH_htseqCountDetails->{'command'} );
-            $htseqCountJobId = '$' . $htseqCountJobId;
-            print 'HTSEQCOUNT_JOB_IDS=${HTSEQCOUNT_JOB_IDS}' . LoadConfig::getParam( $rH_cfg, 'default', 'clusterDependencySep' ) . $htseqCountJobId . "\n\n";
-
-        }
-
-    }
-
-    # Htseq-matrixMake
-    #------------------
-    $jobDependency = '$HTSEQCOUNT_JOB_IDS';
-    print "HTSEQMATRIX_JOB_IDS=\"\"\n";
-    foreach my $db (@database) {
-        for my $rH_laneInfo (@$rAoH_sampleLanes) {
-
-            my $rH_htseqMatrixDetails = HtseqCount::matrixMake( $rH_cfg, $sampleName, $rH_laneInfo, $db, $group );
-            my $htseqMatrixJobId = undef;
-
-            if ( length( $rH_htseqMatrixDetails->{'command'} ) > 0 ) {
-                $htseqMatrixJobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "htseqmatrix", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'HTSEQMATRIX', $jobDependency, $sampleName, $rH_htseqMatrixDetails->{'command'} );
-                $htseqMatrixJobId = '$' . $htseqMatrixJobId;
-                print 'HTSEQMATRIX_JOB_IDS=${HTSEQMATRIX_JOB_ID}' . LoadConfig::getParam( $rH_cfg, 'default', 'clusterDependencySep' ) . $htseqMatrixJobId . "\n\n";
-            }
-
-        }
-
-    }
-
 }
 
 sub diffExpression {
