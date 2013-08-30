@@ -76,6 +76,7 @@ sub mpileupBuilder {
   }
 
   my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta');
+  my $outputPileup = $outputDir.$sampleName.'.'.$seqName.'.mpileup.bcf'; 
   my $outputBCF = $outputDir.$sampleName.'.'.$seqName.'.bcf'; 
 
   my $command;
@@ -87,11 +88,12 @@ sub mpileupBuilder {
   for my $bamFiles (@{$rA_bams}) {
     $command .= ' '.$bamFiles;
   }
+  $command .= ' > '.$outputPileup;
   if(defined($isPaired) && $isPaired == 1) {
-    $command .= ' | bcftools view -T pair -bvcg - > '.$outputBCF;
+    $command .= ' && bcftools view -T pair -bvcg '.$outputPileup.' > '.$outputBCF;
   }
   else {
-    $command .= ' | bcftools view -bvcg - > '.$outputBCF;
+    $command .= ' && bcftools view -bvcg '.$outputPileup.' > '.$outputBCF;
   }
 
   return $command;
