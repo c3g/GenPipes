@@ -48,6 +48,7 @@ BEGIN{
 # Dependencies
 #--------------------
 use Getopt::Std;
+use POSIX;
 
 use BWA;
 use GATK;
@@ -57,8 +58,10 @@ use Picard;
 use SampleSheet;
 use SAMtools;
 use SequenceDictionaryParser;
+use SnpEff;
 use SubmitToCluster;
 use Trimmomatic;
+use VCFtools;
 #--------------------
 
 
@@ -139,6 +142,7 @@ sub main {
     }
   }  
 
+  SubmitToCluster::initSubmit(\%cfg, "");
   for($currentStep = $opts{'s'}-1; $currentStep <= ($opts{'e'}-1); $currentStep++) {
     if($steps[$currentStep]->{'stepLoop'} eq 'experiment') {
       my $fname = $steps[$currentStep]->{'name'};
@@ -473,13 +477,15 @@ sub fullPileup {
     $jobDependency = $globalDep{$parentStep}->{$sampleName};
   }
 
-  my $bamFile = $sampleName.'/'.$sampleName.'.sorted.dup.bam';
-  print 'mkdir -p '.$sampleName.'/mpileup/'."\n";
+  my $bamFile = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.recal.bam';
+  my $outputDir = 'alignment/'.$sampleName.'/mpileup/';
+
+  print 'mkdir -p '.$outputDir."\n";
   print "RAW_MPILEUP_JOB_IDS=\"\"\n";
   my $catCommand = 'zcat ';
   for my $rH_seqInfo (@$rAoH_seqDictionary) {
     my $seqName = $rH_seqInfo->{'name'};
-    my $outputPerSeq = $sampleName.'/mpileup/'.$sampleName.'.'.$seqName.'.mpileup.gz';
+    my $outputPerSeq = $outputDir.$sampleName.'.'.$seqName.'.mpileup.gz';
     my $command = SAMtools::rawmpileup($rH_cfg, $sampleName, $bamFile, $seqName, $outputPerSeq);
     my $mpileupJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "rawmpileup", $seqName, 'RAW_MPILEUP', $jobDependency, $sampleName, $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
     $mpileupJobId = '$'.$mpileupJobId;
@@ -488,10 +494,10 @@ sub fullPileup {
     $catCommand .= $outputPerSeq .' ';
   }
 
-  my $output = $sampleName.'/mpileup/'.$sampleName.'.mpileup.gz';
+  my $output = $outputDir.$sampleName.'.mpileup.gz';
   $catCommand .= '| gzip -c --best > '.$output;
 
-  my $catJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "rawmpileup_cat", undef, 'RAW_MPILEUP_CAT', undef, "\$RAW_MPILEUP_JOB_IDS", $catCommand, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
+  my $catJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "rawmpileup_cat", undef, 'RAW_MPILEUP_CAT', "\$RAW_MPILEUP_JOB_IDS", $sampleName, $catCommand, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
   return '$'.$catJobId;
 }
 
@@ -514,7 +520,11 @@ sub snpAndIndelBCF {
     }
     push(@inputFiles, 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.recal.bam');
   }
-  $jobDependencies = substr($jobDependencies, 1);
+  if(length($jobDependencies) == 0) {
+    $jobDependencies = undef;
+  } else {
+    $jobDependencies = substr($jobDependencies, 1);
+  }
 
   my $outputDir = 'variants/rawBCF/';
   print 'mkdir -p '.$outputDir."\n";
@@ -525,7 +535,7 @@ sub snpAndIndelBCF {
   my $isFirst=1;
   for my $region (@{$rA_regions}) {
     my $command = SAMtools::mpileup($rH_cfg, 'allSamples', \@inputFiles, $region, $outputDir);
-    my $mpileupJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mpileup", $region, 'MPILEUP', $jobDependencies, 'allSamples', $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/' );
+    my $mpileupJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mpileup", $region, 'MPILEUP', $jobDependencies, 'allSamples', $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ));
     $mpileupJobId = '$'.$mpileupJobId;
     if($isFirst==1) {
       print 'MPILEUP_JOB_IDS='.$mpileupJobId."\n";
@@ -543,22 +553,30 @@ sub generateApproximateWindows {
   my $nbJobs = shift;
   my $rAoH_seqDictionary = shift;
 
-  my $totalSize = 0;
-  for my $rH_seqInfo (@$rAoH_seqDictionary) {
-    $totalSize += $rH_seqInfo->{'size'};
-  }
-  my $approxWindow = $totalSize / $nbJobs;
-
   my @retVal;
-  for my $rH_seqInfo (@$rAoH_seqDictionary) {
-    for(my $idx=1; $idx <= $rH_seqInfo->{'size'}; $idx += $approxWindow) {
-      my $end = $idx+$approxWindow-1;
-      if($end > $rH_seqInfo->{'size'}) {
-        $end = $rH_seqInfo->{'size'};
-      }
+  if($nbJobs <= scalar(@{$rAoH_seqDictionary})) {
+    for my $rH_seqInfo (@$rAoH_seqDictionary) {
+      push(@retVal, $rH_seqInfo->{'name'}.':1-'.$rH_seqInfo->{'size'});
+    }
+  }
+  else{
+    $nbJobs -= @$rAoH_seqDictionary;
+    my $totalSize = 0;
+    for my $rH_seqInfo (@$rAoH_seqDictionary) {
+      $totalSize += $rH_seqInfo->{'size'};
+    }
+    my $approxWindow = floor($totalSize / $nbJobs);
 
-      my $region = $rH_seqInfo->{'name'}.':'.$idx.'-'.$end;
-      push(@retVal, $region);
+    for my $rH_seqInfo (@$rAoH_seqDictionary) {
+      for(my $idx=1; $idx <= $rH_seqInfo->{'size'}; $idx += $approxWindow) {
+        my $end = $idx+$approxWindow-1;
+        if($end > $rH_seqInfo->{'size'}) {
+          $end = $rH_seqInfo->{'size'};
+        }
+
+        my $region = $rH_seqInfo->{'name'}.':'.$idx.'-'.$end;
+        push(@retVal, $region);
+      }
     }
   }
 
@@ -618,8 +636,46 @@ sub mergeFilterBCF {
   my $outputDir = 'variants/';
 
   my $command = SAMtools::mergeFilterBCF($rH_cfg, 'allSamples', $bcfDir, $outputDir, $rA_regions);
-  my $mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mergeFilterBCF", undef, 'MERGEBCF', $jobDependency, 'allSamples', $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/');
+  my $mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mergeFilterBCF", undef, 'MERGEBCF', $jobDependency, 'allSamples', $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ));
   return '$'.$mergeJobId;
 }
+
+sub flagMappability {
+  my $stepId = shift;
+  my $rH_cfg = shift;
+  my $rHoAoH_sampleInfo = shift;
+  my $rAoH_seqDictionary = shift;
+
+  my $jobDependency = undef;
+  my $parentStep = $steps[$stepId]->{'parentStep'};
+  if(defined($globalDep{$parentStep}->{'experiment'})) {
+    $jobDependency = $globalDep{$parentStep}->{'experiment'};
+  }
+
+  my $outputVCF = 'variants/allSamples.merged.flt.mil.vcf';
+  my $inputVCF = 'variants/allSamples.merged.flt.vcf';
+  my $command = VCFtools::annotateMappability($rH_cfg, $inputVCF, $outputVCF);
+  my $milJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "flagMappability", undef, 'MAPPABILITY', $jobDependency, 'allSamples', $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ));
+  return '$'.$milJobId;
+}
+
+sub snpIDAnnotation {
+  my $stepId = shift;
+  my $rH_cfg = shift;
+  my $rHoAoH_sampleInfo = shift;
+  my $rAoH_seqDictionary = shift;
+
+  my $jobDependency = undef;
+  my $parentStep = $steps[$stepId]->{'parentStep'};
+  if(defined($globalDep{$parentStep}->{'experiment'})) {
+    $jobDependency = $globalDep{$parentStep}->{'experiment'};
+  }
+
+  my $inputVCF = 'variants/allSamples.merged.flt.mil.vcf';
+  my $vcfOutput = 'variants/allSamples.merged.flt.mil.snpId.vcf';
+
+  my $command = SnpEff::annotateDbSnp($rH_cfg, $inputVCF, $vcfOutput);
+  my $snpEffJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "snpIDAnnotation", undef, 'SNPID', $jobDependency, 'allSamples', $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ));
+ }
 
 1;

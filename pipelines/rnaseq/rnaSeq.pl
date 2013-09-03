@@ -434,10 +434,10 @@ sub alignMetrics {
 	my $metricsJobId = undef;
 	if(defined($command) && length($command) > 0) {
 		$rnaqcJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "rnaQc", undef, 'METRICSRNA', $mergingDependency, undef, $command, 'metrics/' , $workDirectory);
-		$metricsJobId .= '$' .$rnaqcJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
+		$metricsJobId .= '$' .$rnaqcJobId ;
 	}
 
-	$metricsJobId = substr $metricsJobId, 0, -1 ;
+	#$metricsJobId = substr $metricsJobId, 0, -1 ;
 	return $metricsJobId;
 }
 
@@ -608,7 +608,7 @@ sub rawCountsMetrics {
 	$command =  Metrics::saturation($rH_cfg, $countFile, $geneSizeFile, $rpkmDir, $saturationDir);
 	my $saturationJobId = undef;
 	if(defined($command) && length($command) > 0) {
-		$saturationJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "saturation", undef, 'RPKM', $countDependency, undef, $command, 'metrics/' , $workDirectory);
+		$saturationJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "saturation", undef, 'RPKM', '$' .$matrixJobId, undef, $command, 'metrics/' , $workDirectory);
 		$metricsJobId .= '$' .$saturationJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 	}
 	$metricsJobId = substr $metricsJobId, 0, -1 ;
@@ -872,10 +872,6 @@ sub deliverable {
 
 	my $jobDependency ;
 	if($depends > 0) {
-		my $goDependency = $globalDep{'goseq'}{'goseq'};
-		if (defined($goDependency) && length($goDependency) > 0) {
-			 $jobDependency .= $goDependency .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
-		}
 		my $trimDependency = $globalDep{'trimMetrics'}{'trimMetrics'};
                 if (defined($trimDependency) && length($trimDependency) > 0) {
                          $jobDependency .= $trimDependency .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
@@ -884,6 +880,10 @@ sub deliverable {
 		if (defined($alignDependency) && length($alignDependency) > 0) {
                          $jobDependency .= $alignDependency .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
                 }
+		my $goDependency = $globalDep{'goseq'}{'goseq'};
+		if (defined($goDependency) && length($goDependency) > 0) {
+			 $jobDependency .= $goDependency .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
+		}
 	}
 
 	if (defined($jobDependency) && length($jobDependency) > 0) {

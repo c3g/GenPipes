@@ -144,16 +144,17 @@ sub snpAndIndelBCF {
     my $seqName = $rH_seqInfo->{'name'};
     if($snvWindow ne "") {
       my $rA_regions = generateWindows($rH_seqInfo, $snvWindow);
+
       for my $region (@{$rA_regions}) {
-        my $command = SAMtools::mpileupPaired($rH_cfg, $sampleName, $normalBam, $tumorBam, $region, $outputDir);
-        my $mpileupJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mpileup", $region, 'MPILEUP', undef, $sampleName, $command);
+        my $command = SAMtools::mpileupPaired($rH_cfg, $sampleName, ($normalBam, $tumorBam), $region, $outputDir);
+        my $mpileupJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mpileup", $region, 'MPILEUP', undef, $sampleName, $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot') . $sampleName);
         $mpileupJobId = '$'.$mpileupJobId;
         print 'MPILEUP_JOB_IDS=${MPILEUP_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$mpileupJobId."\n";
       } 
     }
     else {
-      my $command = SAMtools::mpileupPaired($rH_cfg, $sampleName, $normalBam, $tumorBam, $seqName, $outputDir);
-      my $mpileupJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mpileup", $seqName, 'MPILEUP', undef, $sampleName, $command);
+      my $command = SAMtools::mpileupPaired($rH_cfg, $sampleName, ($normalBam, $tumorBam), $seqName, $outputDir);
+      my $mpileupJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mpileup", $seqName, 'MPILEUP', undef, $sampleName, $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot') . $sampleName);
       $mpileupJobId = '$'.$mpileupJobId;
       print 'MPILEUP_JOB_IDS=${MPILEUP_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$mpileupJobId."\n";
     }
@@ -251,7 +252,7 @@ sub flagMappability {
   my $vcf = LoadConfig::getParam($rH_cfg, "filterNStretches", 'sampleOutputRoot') . $sampleName.'/'.$sampleName.'.merged.flt.Nfilter.vcf';
   my $vcfOutput = LoadConfig::getParam($rH_cfg, "flagMappability", 'sampleOutputRoot') . $sampleName.'/'.$sampleName.'.merged.flt.Nfilter.mil.vcf';
 
-  my $command = VCFtools::annotateMappability($rH_cfg, $sampleName, $vcf, $vcfOutput);
+  my $command = VCFtools::annotateMappability($rH_cfg, $vcf, $vcfOutput);
   my $milJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "flagMappability", undef, 'MAPPABILITY', $jobDependency, $sampleName, $command);
 }
 
@@ -271,7 +272,7 @@ sub snpIDAnnotation {
   my $vcf = LoadConfig::getParam($rH_cfg, "flagMappability", 'sampleOutputRoot') . $sampleName.'/'.$sampleName.'.merged.flt.Nfilter.mil.vcf';
   my $vcfOutput = LoadConfig::getParam($rH_cfg, "snpIDAnnotation", 'sampleOutputRoot') . $sampleName.'/'.$sampleName.'.merged.flt.Nfilter.mil.snpid.vcf';
 
-  my $command = SnpEff::annotateDbSnp($rH_cfg, $sampleName, $vcf, $vcfOutput);
+  my $command = SnpEff::annotateDbSnp($rH_cfg, $vcf, $vcfOutput);
   my $snpEffJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "snpIDAnnotation", undef, 'SNPID', $jobDependency, $sampleName, $command);
 }
 
@@ -291,7 +292,7 @@ sub snpEffect {
   my $vcf = LoadConfig::getParam($rH_cfg, "snpIDAnnotation", 'sampleOutputRoot') . $sampleName.'/'.$sampleName.'.merged.flt.Nfilter.mil.snpid.vcf';
   my $vcfOutput = LoadConfig::getParam($rH_cfg, "snpEffect", 'sampleOutputRoot') . $sampleName.'/'.$sampleName.'.merged.flt.Nfilter.mil.snpid.snpeff.vcf';
 
-  my $command = SnpEff::computeEffects($rH_cfg, $sampleName, $vcf, $vcfOutput);
+  my $command = SnpEff::computeEffects($rH_cfg, $vcf, $vcfOutput);
   my $snpEffJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "snpEffect", undef, 'SNPEFF', $jobDependency, $sampleName, $command);
 }
 
@@ -311,7 +312,7 @@ sub dbNSFPAnnotation {
   my $vcf = LoadConfig::getParam($rH_cfg, "snpEffect", 'sampleOutputRoot') . $sampleName.'/'.$sampleName.'.merged.flt.Nfilter.mil.snpid.snpeff.vcf';
   my $vcfOutput = LoadConfig::getParam($rH_cfg, "dbNSFPAnnotation", 'sampleOutputRoot') . $sampleName.'/'.$sampleName.'.merged.flt.Nfilter.mil.snpid.snpeff.dbnsfp.vcf';
 
-  my $command = SnpEff::annotateDbNSFP($rH_cfg, $sampleName, $vcf, $vcfOutput);
+  my $command = SnpEff::annotateDbNSFP($rH_cfg, $vcf, $vcfOutput);
   my $snpEffJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "dbNSFPAnnotation", undef, 'DBNSFP', $jobDependency, $sampleName, $command);
 }
 
