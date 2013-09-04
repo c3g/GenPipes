@@ -39,6 +39,7 @@ use warnings;
 # Dependencies
 #-----------------------
 use LoadConfig;
+use Picard;
 
 # SUB
 #-----------------------
@@ -54,35 +55,27 @@ sub strandBam{
   my $output2= -M $rA_outputBAM->[1];
 
   my @command;
+  my @mergeBAMFtmp = ($inputBAM .'tmp1.forward.bam' , $inputBAM .'tmp2.forward.bam');
+  my @mergeBAMRtmp = ($inputBAM .'tmp1.reverse.bam' , $inputBAM .'tmp2.reverse.bam');
+  my $mergeF = Picard::mergeFiles($rH_cfg, $sampleName, \@mergeBAMFtmp, $rA_outputBAM->[0]);
+  my $mergeR = Picard::mergeFiles($rH_cfg, $sampleName, \@mergeBAMRtmp, $rA_outputBAM->[1]);
   # -M gives modified date relative to now. The bigger the older.
   if(!defined($latestFile) || !defined($output1) || !defined($output2) || $latestFile > $output1 || $latestFile > $output2) {
     my $Fcommand = 'module load ' .LoadConfig::getParam($rH_cfg, 'wiggle','moduleVersion.samtools') .' ;';
-    $Fcommand .= ' samtools view -h -F 256 -f 81 ' . $inputBAM;
-    $Fcommand .= ' > ' .$inputBAM .'tmp1.forward.sam &&';
-    $Fcommand .= ' samtools view -h -F 256 -f 161 ' . $inputBAM;
-    $Fcommand .= ' > ' .$inputBAM .'tmp2.forward.sam &&';
-    $Fcommand .= ' cat ' .$inputBAM .'tmp1.forward.sam';
-    $Fcommand .= ' ' .$inputBAM .'tmp2.forward.sam';
-    $Fcommand .= ' | samtools view -Sb -';
+    $Fcommand .= ' samtools view -bh -F 256 -f 81 ' . $inputBAM;
     $Fcommand .= ' > ' .$inputBAM .'tmp1.forward.bam &&';
-    $Fcommand .= ' samtools sort ' .$inputBAM .'tmp1.forward.bam';
-    $Fcommand .= ' ' .$rA_outputBAM->[0] .' && ';
-    $Fcommand .= ' samtools index ' .$rA_outputBAM->[0] .' && ';
+    $Fcommand .= ' samtools view -bh -F 256 -f 161 ' . $inputBAM;
+    $Fcommand .= ' > ' .$inputBAM .'tmp2.forward.bam &&';
+    $Fcommand .= ' ' .$mergeF  .' && ';
     $Fcommand .= ' rm ' .$inputBAM .'tmp*.forward.*am';
     push(@command,$Fcommand);
 
     my $Rcommand = 'module load ' .LoadConfig::getParam($rH_cfg, 'wiggle','moduleVersion.samtools') .' ;';
-    $Rcommand .= ' samtools view -h -F 256 -f 97 ' . $inputBAM;
-    $Rcommand .= ' > ' .$inputBAM .'tmp1.reverse.sam &&';
-    $Rcommand .= ' samtools view -h -F 256 -f 145 ' . $inputBAM;
-    $Rcommand .= ' > ' .$inputBAM .'tmp2.reverse.sam &&';
-    $Rcommand .= ' cat ' .$inputBAM .'tmp1.reverse.sam';
-    $Rcommand .= ' ' .$inputBAM .'tmp2.reverse.sam';
-    $Rcommand .= ' | samtools view -Sb -';
+    $Rcommand .= ' samtools view -bh -F 256 -f 97 ' . $inputBAM;
     $Rcommand .= ' > ' .$inputBAM .'tmp1.reverse.bam &&';
-    $Rcommand .= ' samtools sort ' .$inputBAM .'tmp1.reverse.bam';
-    $Rcommand .= ' ' .$rA_outputBAM->[1] .' &&';
-    $Rcommand .= ' samtools index ' .$rA_outputBAM->[1] .' &&';
+    $Rcommand .= ' samtools view -bh -F 256 -f 145 ' . $inputBAM;
+    $Rcommand .= ' > ' .$inputBAM .'tmp2.reverse.bam &&';
+    $Rcommand .= ' ' .$mergeR  .' &&';
     $Rcommand .= ' rm ' .$inputBAM .'tmp*.reverse.*am';
     push(@command,$Rcommand);
   }
