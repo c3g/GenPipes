@@ -124,7 +124,7 @@ sub printSubmitCmd {
         print $jobIdVarName. '=' . $jobName . "\n";
     }
     #print "echo \"$jobIdVarName;$outputDir/output_jobs/$jobName.o\$$jobIdVarName\"" ;
-    print "echo \"$jobIdVarName;$outputDir/output_jobs/$outputLog\"" ;
+    print "echo \"$jobIdVarName\t$workDirectory/$outputDir/output_jobs/$outputLog\"" ;
      print "\n\n";
 
     return $jobIdVarName;

@@ -42,8 +42,6 @@ use LoadConfig;
 
 # Return an array of hashes of log values for each job's log file created by the cluster
 sub readJobLogListFile {
-  my $rH_cfg = shift;
-  my $workDirectory = shift;
   my $jobLogListPath = shift;
   # Return array of hash of log values
   my $rAoH_jobLogList = shift;
@@ -52,9 +50,9 @@ sub readJobLogListFile {
   open(JOB_LOG_LIST_FILE, $jobLogListPath) or die "Cannot open $jobLogListPath\n";
   while(my $line = <JOB_LOG_LIST_FILE>) {
     # Retrieve each job's log file path
-    if($line =~ /^(\S+);(\S+)/) {
+    if($line =~ /^(\S+)\t(\S+)/) {
       my $jobId = $1;
-      my $clusterJobLogPath = $workDirectory . $2;
+      my $clusterJobLogPath = $2;
       my %jobLog;
   
       $jobLog{'jobId'} = $jobId;
@@ -142,13 +140,15 @@ sub getLogTextReport {
   $logTextReport .= join("\t", (
     "JOB_ID",
     "JOB_NAME",
-    "EXIT_CODE",
+    "JOB_EXIT_CODE",
+    "CMD_EXIT_CODE",
     "WALL_TIME",
     "START_DATE",
     "END_DATE",
     "CPU_TIME",
     "MEMORY",
-    "VMEMORY"
+    "VMEMORY",
+    "PATH"
   )) . "\n";
 
   for my $jobLog (@$rAoH_jobLogList) {
@@ -156,12 +156,14 @@ sub getLogTextReport {
       exists $jobLog->{'jobId'} ? $jobLog->{'jobId'} : "N/A",
       exists $jobLog->{'jobName'} ? $jobLog->{'jobName'} : "N/A",
       exists $jobLog->{'exitStatus'} ? $jobLog->{'exitStatus'} : "N/A",
+      exists $jobLog->{'MUGQICexitStatus'} ? $jobLog->{'MUGQICexitStatus'} : "N/A",
       exists $jobLog->{'walltime'} ? $jobLog->{'walltime'} : "N/A",
       exists $jobLog->{'startSecondsSinceEpoch'} ? strftime('%FT%T', localtime($jobLog->{'startSecondsSinceEpoch'})) : "N/A",
       exists $jobLog->{'endSecondsSinceEpoch'} ? strftime('%FT%T', localtime($jobLog->{'endSecondsSinceEpoch'})) : "N/A",
       exists $jobLog->{'cput'} ? $jobLog->{'cput'} : "N/A",
       exists $jobLog->{'mem'} ? $jobLog->{'mem'} : "N/A",
-      exists $jobLog->{'vmem'} ? $jobLog->{'vmem'} : "N/A"
+      exists $jobLog->{'vmem'} ? $jobLog->{'vmem'} : "N/A",
+      exists $jobLog->{'path'} ? $jobLog->{'path'} : "N/A"
     )) . "\n";
   }
 
