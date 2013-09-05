@@ -99,10 +99,16 @@ sub readJobLogListFile {
 }
 
 sub getLogTextReport {
-  my $rAoH_jobLogList = shift;
+
+  my $jobLogListPath = shift;
+  my @AoH_jobLogList;
+
+  # Parse the job log files and get an array of hashes of those logs
+  readJobLogListFile($jobLogListPath, \@AoH_jobLogList);
+
   my $logTextReport = "";
 
-  $logTextReport .= "Number of jobs: " . ($#$rAoH_jobLogList + 1) . "\n\n";
+  $logTextReport .= "Number of jobs: " . ($#AoH_jobLogList + 1) . "\n\n";
 
   # Retrieve first job start date, last job end date, shortest job, longest job
   my $firstStartSecondsSinceEpoch;
@@ -110,7 +116,7 @@ sub getLogTextReport {
   my $shortestJob;
   my $longestJob;
 
-  for my $jobLog (@$rAoH_jobLogList) {
+  for my $jobLog (@AoH_jobLogList) {
     if (exists $jobLog->{'startSecondsSinceEpoch'} and (not defined $firstStartSecondsSinceEpoch or $firstStartSecondsSinceEpoch > $jobLog->{'startSecondsSinceEpoch'})) {
       $firstStartSecondsSinceEpoch = $jobLog->{'startSecondsSinceEpoch'};
     }
@@ -151,7 +157,7 @@ sub getLogTextReport {
     "PATH"
   )) . "\n";
 
-  for my $jobLog (@$rAoH_jobLogList) {
+  for my $jobLog (@AoH_jobLogList) {
     $logTextReport .= join("\t", (
       exists $jobLog->{'jobId'} ? $jobLog->{'jobId'} : "N/A",
       exists $jobLog->{'jobName'} ? $jobLog->{'jobName'} : "N/A",
