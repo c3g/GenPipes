@@ -148,11 +148,13 @@ sub readCountPortable{
 	my $command ;
 	my $latestBam = -M $inputBam;
 	my $output1 = -M $outputFile;
+	my $htseqOptions = LoadConfig::getParam($rH_cfg, 'htseq','options') ;
 	if(!defined($latestBam) || !defined($output1) || $latestBam < $output1) {
 		$command .= ' module load ' .LoadConfig::getParam($rH_cfg, 'htseq','moduleVersion.htseq') .' ; ';
 		$command .= ' ' .SAMtools::viewFilter($rH_cfg, $inputBam) ;
 		$command .= ' | htseq-count - ' .  $inputGtf ;
 		$command .= ' -s ' .$strandInfo;
+		$command .= ' ' .$htseqOptions;
 		$command .= ' >' . $outputFile ;
 	}
 	return $command;

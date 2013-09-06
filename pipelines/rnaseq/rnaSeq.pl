@@ -537,7 +537,7 @@ sub rawCounts {
 	my $strandInfo;
 	my $strandSPecificityInfo = LoadConfig::getParam($rH_cfg, 'align', 'strandInfo');
 	if($strandSPecificityInfo ne "fr-unstranded") {
-		 $strandInfo= 'yes';
+		 $strandInfo= 'reverse';
 	}
 	else {
 		$strandInfo= 'no';
