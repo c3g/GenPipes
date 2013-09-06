@@ -114,6 +114,7 @@ sub printUsage {
   print "\t-n  nanuq sample sheet\n";
   print "\t-d  design file\n";
   print "\t-w  work directory\n";
+  print "\t-r  restart log file\n";
   print "\n";
   print "Steps:\n";
   for(my $idx=0; $idx < @steps; $idx++) {
@@ -673,7 +674,7 @@ sub cuffdiff {
 	mkdir $workDirectory .'/fpkm/denovo/';
 	my $mergeListFile = $workDirectory .'/fpkm/denovo/gtfMerge.list';
 	my $compareList = " ";
-	open(MERGEF, ">$mergeListFile") or  die ("Unable to open $mergeListFile for wrtting") ;
+	open(MERGEF, ">$mergeListFile") or  die ("Unable to open $mergeListFile for writing") ;
 	##iterate over sample
 	for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
 	    my $gtfFile = 'fpkm/denovo/' .$sampleName .'/transcripts.gtf' ;

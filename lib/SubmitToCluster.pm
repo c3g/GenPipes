@@ -53,6 +53,8 @@ sub initSubmit {
     else {
       print "mkdir -p " . $outputFolder . '/'. $sampleName . '/output_jobs/' . "\n";
     }
+
+    print "TIMESTAMP=`date +%FT%H.%M.%S`\n";
 }
 
 sub printSubmitCmd {
@@ -89,11 +91,10 @@ sub printSubmitCmd {
        #       $workDirectory = '\`pwd\`';
         #}
     }
-    print 'echo "'.$command.'" | ';
+    print 'echo "'.$command.' && echo \"MUGQICexitStatus:\$?\"" | ';
     print LoadConfig::getParam($rH_cfg, $stepName, 'clusterSubmitCmd');
     print ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterOtherArg');
     print ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterWorkDirArg') . ' ' . $workDirectory;
-    print ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterOutputDirArg') .' '  .$outputDir .'/output_jobs/';
     my $jobName ;
     if(defined($sampleName) && length($sampleName) > 0) {
         $jobName = $stepName.'.'.$sampleName;
@@ -104,6 +105,8 @@ sub printSubmitCmd {
     if(defined($jobNameSuffix) && length($jobNameSuffix) > 0) {
       $jobName .= '.'.$jobNameSuffix;
     }
+    my $outputLog = $jobName . "_\${TIMESTAMP}.o";
+    print ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterOutputDirArg') .' '  .$outputDir .'/output_jobs/' . $outputLog;
     print ' ' . LoadConfig::getParam( $rH_cfg, $stepName, 'clusterJobNameArg' ) . ' ' . $jobName;
     print ' ' . LoadConfig::getParam( $rH_cfg, $stepName, 'clusterWalltime' );
     print ' ' . LoadConfig::getParam( $rH_cfg, $stepName, 'clusterQueue' );
@@ -115,11 +118,14 @@ sub printSubmitCmd {
     if ( LoadConfig::getParam( $rH_cfg, $stepName, 'clusterCmdProducesJobId' ) eq "true" ) {
         print ')';
     }
-    print "\n\n";
+    print "\n";
 
     if ( LoadConfig::getParam( $rH_cfg, $stepName, 'clusterCmdProducesJobId' ) eq "false" ) {
         print $jobIdVarName. '=' . $jobName . "\n";
     }
+    #print "echo \"$jobIdVarName;$outputDir/output_jobs/$jobName.o\$$jobIdVarName\"" ;
+    print "echo \"$jobIdVarName\t$workDirectory/$outputDir/output_jobs/$outputLog\"" ;
+     print "\n\n";
 
     return $jobIdVarName;
 }
