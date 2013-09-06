@@ -585,7 +585,8 @@ sub rawCountsMetrics {
 	my $matrixJobId = undef;
 	if(defined($command) && length($command) > 0) {
 		$matrixJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", 'matrix', 'MATRIX', $countDependency, undef, $command, 'raw_counts/' , $workDirectory);
-		$metricsJobId .= '$' .$matrixJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
+		$matrixJobId = '$' .$matrixJobId
+		$metricsJobId .= $matrixJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 	}
 	
 	### to do outside of the wiggle function on time only
@@ -608,7 +609,7 @@ sub rawCountsMetrics {
 	$command =  Metrics::saturation($rH_cfg, $countFile, $geneSizeFile, $rpkmDir, $saturationDir);
 	my $saturationJobId = undef;
 	if(defined($command) && length($command) > 0) {
-		$saturationJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "saturation", undef, 'RPKM', '$' .$matrixJobId, undef, $command, 'metrics/' , $workDirectory);
+		$saturationJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "saturation", undef, 'RPKM', $matrixJobId, undef, $command, 'metrics/' , $workDirectory);
 		$metricsJobId .= '$' .$saturationJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 	}
 	$metricsJobId = substr $metricsJobId, 0, -1 ;
