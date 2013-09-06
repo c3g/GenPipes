@@ -114,7 +114,6 @@ sub printUsage {
   print "\t-n  nanuq sample sheet\n";
   print "\t-d  design file\n";
   print "\t-w  work directory\n";
-  print "\t-r  restart log file\n";
   print "\n";
   print "Steps:\n";
   for(my $idx=0; $idx < @steps; $idx++) {
@@ -569,7 +568,7 @@ sub rawCountsMetrics {
   my $rAoH_seqDictionary = shift;
   my $rH_jobIdPrefixe = shift;
 
-	my $metricsJobId;
+	my $metricsJobId  = undef;
 	my $countDependency = undef;
 	my $wiggleDependency = undef;
 	if($depends > 0) {
@@ -674,7 +673,7 @@ sub cuffdiff {
 	mkdir $workDirectory .'/fpkm/denovo/';
 	my $mergeListFile = $workDirectory .'/fpkm/denovo/gtfMerge.list';
 	my $compareList = " ";
-	open(MERGEF, ">$mergeListFile") or  die ("Unable to open $mergeListFile for writing") ;
+	open(MERGEF, ">$mergeListFile") or  die ("Unable to open $mergeListFile for wrtting") ;
 	##iterate over sample
 	for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
 	    my $gtfFile = 'fpkm/denovo/' .$sampleName .'/transcripts.gtf' ;
