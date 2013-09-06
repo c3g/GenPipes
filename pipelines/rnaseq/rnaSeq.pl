@@ -585,7 +585,7 @@ sub rawCountsMetrics {
 	my $matrixJobId = undef;
 	if(defined($command) && length($command) > 0) {
 		$matrixJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", 'matrix', 'MATRIX', $countDependency, undef, $command, 'raw_counts/' , $workDirectory);
-		$matrixJobId = '$' .$matrixJobId
+		$matrixJobId = '$' .$matrixJobId;
 		$metricsJobId .= $matrixJobId .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
 	}
 	
