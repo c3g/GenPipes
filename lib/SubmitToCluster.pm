@@ -71,7 +71,7 @@ sub printSubmitCmd {
 
   # Set job name and job log output directory depending on a global or sample-based step
   my $jobName = $stepName;
-  my $jobOutputDir = $workDir . "/jobs_output/";
+  my $jobOutputDir = $workDir . "/job_output/";
   if (defined($sampleName) and $sampleName ne "") {
     $jobName .= ".$sampleName";
     $jobOutputDir .= $sampleName;
@@ -86,6 +86,9 @@ sub printSubmitCmd {
   my $jobOutputLog = "$jobOutputDir/$jobName" . "_\${TIMESTAMP}.o";
 
   print "mkdir -p $jobOutputDir\n";
+
+  # Write job ID and job log path in job list file
+  print "echo \"$jobIdVarName\t$jobOutputLog\" >> $workDir/job_output/job_list_\${TIMESTAMP}\n\n";
 
   if (LoadConfig::getParam($rH_cfg, $stepName, 'clusterCmdProducesJobId') eq "true") {
     print $jobIdVarName . '=$(';
@@ -111,7 +114,6 @@ sub printSubmitCmd {
   if (LoadConfig::getParam($rH_cfg, $stepName, 'clusterCmdProducesJobId') eq "false") {
     print "$jobIdVarName=$jobName\n";
   }
-  print "echo \"$jobIdVarName\t$jobOutputLog\"\n\n";
 
   return $jobIdVarName;
 }
