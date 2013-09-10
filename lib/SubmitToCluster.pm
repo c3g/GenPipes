@@ -47,7 +47,7 @@ sub initPipeline {
     $workDir = "`pwd`";
   }
   print "cd $workDir\n";
-  print "TIMESTAMP=`date +%FT%H.%M.%S`\n";
+  print "TIMESTAMP=`date +%FT%H.%M.%S`\n\n";
 }
 
 sub printSubmitCmd {
@@ -87,9 +87,6 @@ sub printSubmitCmd {
 
   print "mkdir -p $jobOutputDir\n";
 
-  # Write job ID and job log path in job list file
-  print "echo \"$jobIdVarName\t$jobOutputLog\" >> $workDir/job_output/job_list_\${TIMESTAMP}\n\n";
-
   if (LoadConfig::getParam($rH_cfg, $stepName, 'clusterCmdProducesJobId') eq "true") {
     print $jobIdVarName . '=$(';
   }
@@ -114,6 +111,9 @@ sub printSubmitCmd {
   if (LoadConfig::getParam($rH_cfg, $stepName, 'clusterCmdProducesJobId') eq "false") {
     print "$jobIdVarName=$jobName\n";
   }
+
+  # Write job ID, name and log path in job list file
+  print "echo \"\${$jobIdVarName}\t$jobName\t$jobOutputLog\" >> $workDir/job_output/job_list_\${TIMESTAMP}\n\n";
 
   return $jobIdVarName;
 }

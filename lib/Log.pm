@@ -50,12 +50,14 @@ sub readJobLogListFile {
   open(JOB_LOG_LIST_FILE, $jobLogListPath) or die "Cannot open $jobLogListPath\n";
   while(my $line = <JOB_LOG_LIST_FILE>) {
     # Retrieve each job's log file path
-    if($line =~ /^(\S+)\t(\S+)/) {
+    if($line =~ /^(\S+)\t(\S+)\t(\S+)/) {
       my $jobId = $1;
-      my $clusterJobLogPath = $2;
+      my $jobName = $2;
+      my $clusterJobLogPath = $3;
       my %jobLog;
   
       $jobLog{'jobId'} = $jobId;
+      $jobLog{'jobName'} = $jobName;
       $jobLog{'path'} = $clusterJobLogPath;
       # Read the job log file
       if (open(CLUSTER_JOB_LOG_FILE, $clusterJobLogPath)) {
@@ -66,10 +68,7 @@ sub readJobLogListFile {
             $jobLog{'startSecondsSinceEpoch'} = $2;
           # Job number
           } elsif($jobLine =~ /^Job ID:\s+(\S+)/) {
-            $jobLog{'jobNumber'} = $1;
-          # Job name
-          } elsif($jobLine =~ /^Job Name:\s+(\S+)/) {
-            $jobLog{'jobName'} = $1;
+            $jobLog{'jobFullId'} = $1;
           # Job MUGQIC exit status
           } elsif($jobLine =~ /^MUGQICexitStatus:(\d+)/) {
             $jobLog{'MUGQICexitStatus'} = $1;
@@ -145,6 +144,7 @@ sub getLogTextReport {
 
   $logTextReport .= join("\t", (
     "JOB_ID",
+    "JOB_FULL_ID",
     "JOB_NAME",
     "JOB_EXIT_CODE",
     "CMD_EXIT_CODE",
@@ -160,6 +160,7 @@ sub getLogTextReport {
   for my $jobLog (@AoH_jobLogList) {
     $logTextReport .= join("\t", (
       exists $jobLog->{'jobId'} ? $jobLog->{'jobId'} : "N/A",
+      exists $jobLog->{'jobFullId'} ? $jobLog->{'jobFullId'} : "N/A",
       exists $jobLog->{'jobName'} ? $jobLog->{'jobName'} : "N/A",
       exists $jobLog->{'exitStatus'} ? $jobLog->{'exitStatus'} : "N/A",
       exists $jobLog->{'MUGQICexitStatus'} ? $jobLog->{'MUGQICexitStatus'} : "N/A",
