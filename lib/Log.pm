@@ -50,49 +50,45 @@ sub readJobLogListFile {
   open(JOB_LOG_LIST_FILE, $jobLogListPath) or die "Cannot open $jobLogListPath\n";
   while(my $line = <JOB_LOG_LIST_FILE>) {
     # Retrieve each job's log file path
-    if($line =~ /^(\S+)\t(\S+)\t(\S+)/) {
-      my $jobId = $1;
-      my $jobName = $2;
-      my $clusterJobLogPath = $3;
-      my %jobLog;
-  
-      $jobLog{'jobId'} = $jobId;
-      $jobLog{'jobName'} = $jobName;
-      $jobLog{'path'} = $clusterJobLogPath;
-      # Read the job log file
-      if (open(CLUSTER_JOB_LOG_FILE, $clusterJobLogPath)) {
-        while(my $jobLine = <CLUSTER_JOB_LOG_FILE>) {
-          # Job start date
-          if($jobLine =~ /^Begin PBS Prologue (.*) (\d+)$/) {
-            $jobLog{'startDate'} = $1;
-            $jobLog{'startSecondsSinceEpoch'} = $2;
-          # Job number
-          } elsif($jobLine =~ /^Job ID:\s+(\S+)/) {
-            $jobLog{'jobFullId'} = $1;
-          # Job MUGQIC exit status
-          } elsif($jobLine =~ /^MUGQICexitStatus:(\d+)/) {
-            $jobLog{'MUGQICexitStatus'} = $1;
-          # Job exit status (should be the same as MUGQIC exit status unless MUGQIC exit status is skipped)
-          } elsif($jobLine =~ /^Exit_status:\s+(\d+)/) {
-            $jobLog{'exitStatus'} = $1;
-          # Job used resources
-          } elsif($jobLine =~ /^Resources:\s+cput=(\S+),mem=(\S+),vmem=(\S+),walltime=((\d+):(\d+):(\d+))/) {
-            $jobLog{'cput'} = $1;
-            $jobLog{'mem'} = $2;
-            $jobLog{'vmem'} = $3;
-            $jobLog{'walltime'} = $4;
-            # Compute duration in seconds from walltime hours, minutes, seconds
-            $jobLog{'duration'} = $5 * 60 * 60 + $6 * 60 + $7;
-          # Job end date
-          } elsif($jobLine =~ /^End PBS Epilogue (.*) (\d+)$/) {
-            $jobLog{'endDate'} = $1;
-            $jobLog{'endSecondsSinceEpoch'} = $2;
-          }
+    my ($jobId, $jobName, $clusterJobLogPath) = split(/\t/, $line);
+    my %jobLog;
+
+    $jobLog{'jobId'} = $jobId;
+    $jobLog{'jobName'} = $jobName;
+    $jobLog{'path'} = $clusterJobLogPath;
+    # Read the job log file
+    if (open(CLUSTER_JOB_LOG_FILE, $clusterJobLogPath)) {
+      while(my $jobLine = <CLUSTER_JOB_LOG_FILE>) {
+        # Job start date
+        if($jobLine =~ /^Begin PBS Prologue (.*) (\d+)$/) {
+          $jobLog{'startDate'} = $1;
+          $jobLog{'startSecondsSinceEpoch'} = $2;
+        # Job number
+        } elsif($jobLine =~ /^Job ID:\s+(\S+)/) {
+          $jobLog{'jobFullId'} = $1;
+        # Job MUGQIC exit status
+        } elsif($jobLine =~ /^MUGQICexitStatus:(\d+)/) {
+          $jobLog{'MUGQICexitStatus'} = $1;
+        # Job exit status (should be the same as MUGQIC exit status unless MUGQIC exit status is skipped)
+        } elsif($jobLine =~ /^Exit_status:\s+(\d+)/) {
+          $jobLog{'exitStatus'} = $1;
+        # Job used resources
+        } elsif($jobLine =~ /^Resources:\s+cput=(\S+),mem=(\S+),vmem=(\S+),walltime=((\d+):(\d+):(\d+))/) {
+          $jobLog{'cput'} = $1;
+          $jobLog{'mem'} = $2;
+          $jobLog{'vmem'} = $3;
+          $jobLog{'walltime'} = $4;
+          # Compute duration in seconds from walltime hours, minutes, seconds
+          $jobLog{'duration'} = $5 * 60 * 60 + $6 * 60 + $7;
+        # Job end date
+        } elsif($jobLine =~ /^End PBS Epilogue (.*) (\d+)$/) {
+          $jobLog{'endDate'} = $1;
+          $jobLog{'endSecondsSinceEpoch'} = $2;
         }
-        close(CLUSTER_JOB_LOG_FILE);
       }
-      push (@$rAoH_jobLogList, \%jobLog);
+      close(CLUSTER_JOB_LOG_FILE);
     }
+    push (@$rAoH_jobLogList, \%jobLog);
   }
   close(JOB_LOG_LIST_FILE);
 }
