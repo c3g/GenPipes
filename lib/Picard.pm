@@ -116,7 +116,7 @@ sub markDup {
   my $command;
   $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'markDup','moduleVersion.java') .' ' .LoadConfig::getParam($rH_cfg, 'markDup', 'moduleVersion.picard').' &&'; 
   $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'markDup', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'markDupRam', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'markDup', 'markDupRam').' -jar \${PICARD_HOME}/MarkDuplicates.jar';
-  $command .= ' REMOVE_DUPLICATES=false CREATE_MD5_FILE=true VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true';
+  $command .= ' REMOVE_DUPLICATES=false VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true';
   $command .= ' TMP_DIR='.LoadConfig::getParam($rH_cfg, 'markDup', 'tmpDir');
   $command .= ' INPUT='.$inputBAM;
   $command .= ' OUTPUT='.$outputBAM;

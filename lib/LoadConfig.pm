@@ -98,8 +98,7 @@ sub readConfigFile {
     #Prompt an error message othewise
     #---------------------------------
     else {
-        print "First, create a config file in the same \n" .
-          "The file must be created according to this model\n\n" .
+        print "First, create a config file according to this model:\n\n" .
           "[section]\nNAME= Value\n\nEXAMPLE\n\n[PATH]\nJAVA=/opt/jdk/jdk1.6.0_33/bin/java\n\n" .
           "In this case a hash  \n\$hash{PATH.JAVA}=/opt/jdk/jdk1.6.0_33/bin/java\n\nwill be returned\n";
         exit;
