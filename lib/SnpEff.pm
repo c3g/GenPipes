@@ -39,7 +39,6 @@ use PipelineUtils;
 #-----------------------
 sub annotateDbSnp {
     my $rH_cfg      = shift;
-    my $sampleName  = shift;
     my $inputVCF    = shift;
     my $outputVCF   = shift;
 
@@ -48,7 +47,7 @@ sub annotateDbSnp {
 
     if (!$ro_job->isUp2Date()) {  
         my $command;
-        $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'annotateDbSnp', 'moduleVersion.snpeff').' ;';
+        $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'annotateDbSnp', 'moduleVersion.java').' '.LoadConfig::getParam($rH_cfg, 'annotateDbSnp', 'moduleVersion.snpeff').' ;';
         $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'annotateDbSnp', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'annotateDbSnp', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'annotateDbSnp', 'siftRam');
         $command .= ' -jar \${SNPEFF_HOME}/SnpSift.jar annotate';
         $command .= ' '.LoadConfig::getParam($rH_cfg, 'annotateDbSnp', 'dbSnp');
@@ -63,7 +62,6 @@ sub annotateDbSnp {
 
 sub computeEffects {
     my $rH_cfg      = shift;
-    my $sampleName  = shift;
     my $inputVCF    = shift;
     my $outputVCF   = shift;
   
@@ -72,7 +70,7 @@ sub computeEffects {
 
     if (!$ro_job->isUp2Date()) {
         my $command;
-        $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'computeEffects', 'moduleVersion.snpeff').' ;';
+        $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'computeEffects', 'moduleVersion.java').' '.LoadConfig::getParam($rH_cfg, 'computeEffects', 'moduleVersion.snpeff').' ;';
         $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'computeEffects', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'computeEffects', 'extraJavaFlags'). ' -Xmx'.LoadConfig::getParam($rH_cfg, 'computeEffects', 'snpeffRam');
         $command .= ' -jar \${SNPEFF_HOME}/snpEff.jar eff';
         $command .= ' -c \${SNPEFF_HOME}/snpEff.config';
@@ -91,7 +89,6 @@ sub computeEffects {
 
 sub annotateDbNSFP {
     my $rH_cfg      = shift;
-    my $sampleName  = shift;
     my $inputVCF    = shift;
     my $outputVCF   = shift;
   
@@ -100,7 +97,7 @@ sub annotateDbNSFP {
 
     if (!$ro_job->isUp2Date()) {
         my $command;
-        $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'annotateDbNSFP', 'moduleVersion.snpeff').' ;';
+        $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'annotateDbNSFP', 'moduleVersion.java').' '.LoadConfig::getParam($rH_cfg, 'annotateDbNSFP', 'moduleVersion.snpeff').' ;';
         $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'annotateDbNSFP', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'annotateDbNSFP', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'annotateDbNSFP', 'siftRam');
         $command .= ' -jar \${SNPEFF_HOME}/SnpSift.jar dbnsfp';
         $command .= ' -v '.LoadConfig::getParam($rH_cfg, 'annotateDbNSFP', 'dbNSFP');

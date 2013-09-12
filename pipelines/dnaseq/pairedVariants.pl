@@ -144,16 +144,17 @@ sub snpAndIndelBCF {
     my $seqName = $rH_seqInfo->{'name'};
     if($snvWindow ne "") {
       my $rA_regions = generateWindows($rH_seqInfo, $snvWindow);
+
       for my $region (@{$rA_regions}) {
-        my $command = SAMtools::mpileupPaired($rH_cfg, $sampleName, $normalBam, $tumorBam, $region, $outputDir);
-        my $mpileupJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mpileup", $region, 'MPILEUP', undef, $sampleName, $command);
+        my $command = SAMtools::mpileupPaired($rH_cfg, $sampleName, ($normalBam, $tumorBam), $region, $outputDir);
+        my $mpileupJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mpileup", $region, 'MPILEUP', undef, $sampleName, $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot') . $sampleName);
         $mpileupJobId = '$'.$mpileupJobId;
         print 'MPILEUP_JOB_IDS=${MPILEUP_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$mpileupJobId."\n";
       } 
     }
     else {
-      my $command = SAMtools::mpileupPaired($rH_cfg, $sampleName, $normalBam, $tumorBam, $seqName, $outputDir);
-      my $mpileupJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mpileup", $seqName, 'MPILEUP', undef, $sampleName, $command);
+      my $command = SAMtools::mpileupPaired($rH_cfg, $sampleName, ($normalBam, $tumorBam), $seqName, $outputDir);
+      my $mpileupJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mpileup", $seqName, 'MPILEUP', undef, $sampleName, $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot') . $sampleName);
       $mpileupJobId = '$'.$mpileupJobId;
       print 'MPILEUP_JOB_IDS=${MPILEUP_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$mpileupJobId."\n";
     }
@@ -210,7 +211,7 @@ sub mergeFilterBCF {
     }
   }
   my $command = SAMtools::mergeFilterBCF($rH_cfg, $sampleName, $bcfDir, $outputDir, \@seqNames);
-  my $mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mergeFilterBCF", undef, 'MERGEBCF', $jobDependency, $sampleName, $command);
+  my $mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mergeFilterBCF", undef, 'MERGEBCF', $jobDependency, $sampleName, $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot') . $sampleName);
   return $mergeJobId;
 }
 
@@ -231,7 +232,7 @@ sub filterNStretches {
   my $vcfOutput = LoadConfig::getParam($rH_cfg, "filterNStretches", 'sampleOutputRoot') . $sampleName.'/'.$sampleName.'.merged.flt.Nfilter.vcf';
 
   my $command = ToolShed::filterNStretches($rH_cfg, $sampleName, $vcf, $vcfOutput);
-  my $filterNJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "filterNStretches", undef, 'FILTERN', $jobDependency, $sampleName, $command);
+  my $filterNJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "filterNStretches", undef, 'FILTERN', $jobDependency, $sampleName, $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot') . $sampleName);
   return $filterNJobId;
 }
 
@@ -251,8 +252,8 @@ sub flagMappability {
   my $vcf = LoadConfig::getParam($rH_cfg, "filterNStretches", 'sampleOutputRoot') . $sampleName.'/'.$sampleName.'.merged.flt.Nfilter.vcf';
   my $vcfOutput = LoadConfig::getParam($rH_cfg, "flagMappability", 'sampleOutputRoot') . $sampleName.'/'.$sampleName.'.merged.flt.Nfilter.mil.vcf';
 
-  my $command = VCFtools::annotateMappability($rH_cfg, $sampleName, $vcf, $vcfOutput);
-  my $milJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "flagMappability", undef, 'MAPPABILITY', $jobDependency, $sampleName, $command);
+  my $command = VCFtools::annotateMappability($rH_cfg, $vcf, $vcfOutput);
+  my $milJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "flagMappability", undef, 'MAPPABILITY', $jobDependency, $sampleName, $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot') . $sampleName);
 }
 
 sub snpIDAnnotation {
@@ -271,8 +272,8 @@ sub snpIDAnnotation {
   my $vcf = LoadConfig::getParam($rH_cfg, "flagMappability", 'sampleOutputRoot') . $sampleName.'/'.$sampleName.'.merged.flt.Nfilter.mil.vcf';
   my $vcfOutput = LoadConfig::getParam($rH_cfg, "snpIDAnnotation", 'sampleOutputRoot') . $sampleName.'/'.$sampleName.'.merged.flt.Nfilter.mil.snpid.vcf';
 
-  my $command = SnpEff::annotateDbSnp($rH_cfg, $sampleName, $vcf, $vcfOutput);
-  my $snpEffJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "snpIDAnnotation", undef, 'SNPID', $jobDependency, $sampleName, $command);
+  my $command = SnpEff::annotateDbSnp($rH_cfg, $vcf, $vcfOutput);
+  my $snpEffJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "snpIDAnnotation", undef, 'SNPID', $jobDependency, $sampleName, $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot') . $sampleName);
 }
 
 sub snpEffect {
@@ -291,8 +292,8 @@ sub snpEffect {
   my $vcf = LoadConfig::getParam($rH_cfg, "snpIDAnnotation", 'sampleOutputRoot') . $sampleName.'/'.$sampleName.'.merged.flt.Nfilter.mil.snpid.vcf';
   my $vcfOutput = LoadConfig::getParam($rH_cfg, "snpEffect", 'sampleOutputRoot') . $sampleName.'/'.$sampleName.'.merged.flt.Nfilter.mil.snpid.snpeff.vcf';
 
-  my $command = SnpEff::computeEffects($rH_cfg, $sampleName, $vcf, $vcfOutput);
-  my $snpEffJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "snpEffect", undef, 'SNPEFF', $jobDependency, $sampleName, $command);
+  my $command = SnpEff::computeEffects($rH_cfg, $vcf, $vcfOutput);
+  my $snpEffJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "snpEffect", undef, 'SNPEFF', $jobDependency, $sampleName, $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot') . $sampleName);
 }
 
 sub dbNSFPAnnotation {
@@ -311,8 +312,8 @@ sub dbNSFPAnnotation {
   my $vcf = LoadConfig::getParam($rH_cfg, "snpEffect", 'sampleOutputRoot') . $sampleName.'/'.$sampleName.'.merged.flt.Nfilter.mil.snpid.snpeff.vcf';
   my $vcfOutput = LoadConfig::getParam($rH_cfg, "dbNSFPAnnotation", 'sampleOutputRoot') . $sampleName.'/'.$sampleName.'.merged.flt.Nfilter.mil.snpid.snpeff.dbnsfp.vcf';
 
-  my $command = SnpEff::annotateDbNSFP($rH_cfg, $sampleName, $vcf, $vcfOutput);
-  my $snpEffJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "dbNSFPAnnotation", undef, 'DBNSFP', $jobDependency, $sampleName, $command);
+  my $command = SnpEff::annotateDbNSFP($rH_cfg, $vcf, $vcfOutput);
+  my $snpEffJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "dbNSFPAnnotation", undef, 'DBNSFP', $jobDependency, $sampleName, $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot') . $sampleName);
 }
 
 sub indexVCF {
@@ -332,7 +333,7 @@ sub indexVCF {
   my $vcfOutput = LoadConfig::getParam($rH_cfg, "indexVCF", 'sampleOutputRoot') . $sampleName.'/'.$sampleName.'.merged.flt.Nfilter.mil.snpid.snpeff.dbnsfp.vcf.gz';
 
   my $command = VCFtools::indexVCF($rH_cfg, $sampleName, $vcf, $vcfOutput);
-  my $milJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "indexVCF", undef, 'INDEXVCF', $jobDependency, $sampleName, $command);
+  my $milJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "indexVCF", undef, 'INDEXVCF', $jobDependency, $sampleName, $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot') . $sampleName);
 }
 
 sub DNAC {
@@ -370,11 +371,11 @@ sub DNAC {
   $command1000 .= ' && '.SVtools::filterDNAC($rH_cfg, $sampleName, $DNAC1000File.'.txt', $DNAC1000File.'.filteredSV', 1);
   $command30000 .= ' && '.SVtools::filterDNAC($rH_cfg, $sampleName, $DNAC30000File.'.txt', $DNAC30000File.'.filteredSV', 2);
 
-  my $dnac500JobId = SubmitToCluster::printSubmitCmd($rH_cfg, "DNAC_500", undef, 'DNAC_500', $jobDependency, $sampleName, $command500);
+  my $dnac500JobId = SubmitToCluster::printSubmitCmd($rH_cfg, "DNAC_500", undef, 'DNAC_500', $jobDependency, $sampleName, $command500, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot') . $sampleName);
   print 'DNAC_JOB_IDS=${DNAC_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$dnac500JobId."\n";
-  my $dnac1000JobId = SubmitToCluster::printSubmitCmd($rH_cfg, "DNAC_1000", undef, 'DNAC_1000', $jobDependency, $sampleName, $command1000);
+  my $dnac1000JobId = SubmitToCluster::printSubmitCmd($rH_cfg, "DNAC_1000", undef, 'DNAC_1000', $jobDependency, $sampleName, $command1000, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot') . $sampleName);
   print 'DNAC_JOB_IDS=${DNAC_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$dnac1000JobId."\n";
-  my $dnac30000JobId = SubmitToCluster::printSubmitCmd($rH_cfg, "DNAC_30000", undef, 'DNAC_30000', $jobDependency, $sampleName, $command30000);
+  my $dnac30000JobId = SubmitToCluster::printSubmitCmd($rH_cfg, "DNAC_30000", undef, 'DNAC_30000', $jobDependency, $sampleName, $command30000, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot') . $sampleName);
   print 'DNAC_JOB_IDS=${DNAC_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$dnac30000JobId."\n";
 
   return $dnac30000JobId;
@@ -402,12 +403,12 @@ sub Breakdancer {
   my $command = Breakdancer::bam2cfg($rH_cfg,$sampleName,$normalBam,$normalOutput, LoadConfig::getParam($rH_cfg, 'Breakdancer', 'normalStdDevCutoff'));
   $command .= ' & '.Breakdancer::bam2cfg($rH_cfg,$sampleName,$tumorBam,$tumorOutput, LoadConfig::getParam($rH_cfg, 'Breakdancer', 'tumorStdDevCutoff'));
   $command .= ' & wait && cat '.$normalOutput.' '.$tumorOutput. ' > '.$sampleCFGOutput;
-  my $brdCFGJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "Breakdancer", undef, 'BRD_CFG', $jobDependency, $sampleName, $command);
+  my $brdCFGJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "Breakdancer", undef, 'BRD_CFG', $jobDependency, $sampleName, $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot') . $sampleName);
   $brdCFGJobId = '$'.$brdCFGJobId;
 
   my $outputTRPrefix = $outputDir.$sampleName.'.brd.TR';
   $command = Breakdancer::pairedBRDITX($rH_cfg,$sampleName,$sampleCFGOutput,$outputTRPrefix);
-  my $brdTRJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "Breakdancer", 'TR', 'BRD_TR', $brdCFGJobId, $sampleName, $command);
+  my $brdTRJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "Breakdancer", 'TR', 'BRD_TR', $brdCFGJobId, $sampleName, $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot') . $sampleName);
   $brdTRJobId = '$'.$brdTRJobId;
 
   print "BRD_JOB_IDS=\"".$brdTRJobId."\"\n";
@@ -416,7 +417,7 @@ sub Breakdancer {
 
     my $outputPrefix = $outputDir.$sampleName.'.brd.'.$seqName;
     $command = Breakdancer::pairedBRD($rH_cfg,$sampleName,$seqName,$sampleCFGOutput,$outputPrefix);
-    my $brdJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "Breakdancer", $seqName, 'BRD', $brdCFGJobId, $sampleName, $command);
+    my $brdJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "Breakdancer", $seqName, 'BRD', $brdCFGJobId, $sampleName, $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot') . $sampleName);
     $brdJobId = '$'.$brdJobId;
 
     print 'BRD_JOB_IDS=${BRD_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$brdJobId."\n";
@@ -427,7 +428,7 @@ sub Breakdancer {
   ##filter results
   my $brdCallsFile = $outputPrefix .'.ctx';
   $command .= ' && '.SVtools::filterBrD($rH_cfg, $sampleName, $brdCallsFile, $outputPrefix.'.filteredSV', $normalBam, $tumorBam);
-  my $brdMergeFilterJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "filterSV", $sampleName, 'FILTBRD', '${BRD_JOB_IDS}', $sampleName, $command);
+  my $brdMergeFilterJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "filterSV", $sampleName, 'FILTBRD', '${BRD_JOB_IDS}', $sampleName, $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot') . $sampleName);
   print 'FILTBRD_JOB_IDS=$'.$brdMergeFilterJobId."\n";
   return '$FILTBRD_JOB_IDS';
 }

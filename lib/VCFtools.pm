@@ -39,7 +39,6 @@ use PipelineUtils;
 #-----------------------
 sub annotateMappability {
     my $rH_cfg      = shift;
-    my $sampleName  = shift;
     my $inputVCF    = shift;
     my $outputVCF   = shift;
 

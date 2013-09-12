@@ -20,9 +20,19 @@ gtf=read.table(gtf_file,header=F,sep="\t")
 
 ##rpkm
 leT=cbind(gtf[,2])
-rownames(leT)=gtf[,1]
 coA=cbind(co[,3:dim(co)[2]])
-rownames(coA)=co[,1]
+if (sum(co[,1] %in% gtf[,1]) == dim(coA)[1]) {
+	rownames(leT)=gtf[,1]
+	rownames(coA)=co[,1]
+} else if (sum(co[,1] %in% gtf[,2]) == dim(coA)[1]) {
+	rownames(leT)=gtf[,2]
+	rownames(coA)=co[,1]
+} else if (sum(co[,2] %in% gtf[,2]) == dim(coA)[1]) {
+	rownames(leT)=gtf[,2]
+	rownames(coA)=co[,2]
+} else {
+	stop("ERROR: discrepency match between gene length file and and rawcoutn file\n") 
+}
 leO=match(rownames(coA),rownames(leT))
 letO=cbind(leT[leO,]/1000)
 coK=cbind(coA/letO)

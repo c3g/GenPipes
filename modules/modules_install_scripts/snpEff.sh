@@ -2,8 +2,8 @@
 ###################
 ################### picard
 ###################
-VERSION="3.2"
-VERSION_DL="3_2"
+VERSION="3.3"
+VERSION_DL="3_3"
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/snpEff/
 mkdir -p $INSTALL_PATH
 cd $INSTALL_PATH

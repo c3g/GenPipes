@@ -138,10 +138,11 @@ sub readCountPortable{
   my $ro_job = new Job(!defined($up2date));
 
   if (!$ro_job->isUp2Date()) {
-		$command .= ' module load ' .LoadConfig::getParam($rH_cfg, 'htseq','moduleVersion.htseq') .' ; ';
+		$command .= ' module load '.LoadConfig::getParam($rH_cfg, 'htseq','moduleVersion.python') .' '.LoadConfig::getParam($rH_cfg, 'htseq','moduleVersion.htseq') .' ; ';
 		$command .= ' ' .SAMtools::viewFilter($rH_cfg, $inputBam) ;
 		$command .= ' | htseq-count - ' .  $inputGtf ;
 		$command .= ' -s ' .$strandInfo;
+		$command .= ' ' .$htseqOptions;
 		$command .= ' >' . $outputFile ;
     $command .= ' ' . $up2date;
 

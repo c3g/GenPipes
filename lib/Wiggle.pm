@@ -40,6 +40,7 @@ use warnings;
 #-----------------------
 use PipelineUtils;
 use LoadConfig;
+use Picard;
 
 # SUB
 #-----------------------
@@ -49,38 +50,31 @@ sub strandBam{
   my $inputBAM      = shift;
   my $rA_outputBAM  = shift;
 
-  my $up2date = PipelineUtils::testInputOutputs([$inputBAM], [$rA_outputBAM->[1], $rA_outputBAM->[2]]);
+  my $up2date = PipelineUtils::testInputOutputs([$inputBAM], [$rA_outputBAM->[0], $rA_outputBAM->[1]]);
   my $ro_job = new Job(!defined($up2date));
+
+  my @mergeBAMFtmp = ($inputBAM .'tmp1.forward.bam' , $inputBAM .'tmp2.forward.bam');
+  my @mergeBAMRtmp = ($inputBAM .'tmp1.reverse.bam' , $inputBAM .'tmp2.reverse.bam');
+  my $mergeFJob = Picard::mergeFiles($rH_cfg, $sampleName, \@mergeBAMFtmp, $rA_outputBAM->[0]);
+  my $mergeRJob = Picard::mergeFiles($rH_cfg, $sampleName, \@mergeBAMRtmp, $rA_outputBAM->[1]);
 
   if (!$ro_job->isUp2Date()) {
     my $Fcommand = 'module load ' .LoadConfig::getParam($rH_cfg, 'wiggle','moduleVersion.samtools') .' ;';
-    $Fcommand .= ' samtools view -h -F 256 -f 81 ' . $inputBAM;
-    $Fcommand .= ' > ' .$inputBAM .'tmp1.forward.sam &&';
-    $Fcommand .= ' samtools view -h -F 256 -f 161 ' . $inputBAM;
-    $Fcommand .= ' > ' .$inputBAM .'tmp2.forward.sam &&';
-    $Fcommand .= ' cat ' .$inputBAM .'tmp1.forward.sam';
-    $Fcommand .= ' ' .$inputBAM .'tmp2.forward.sam';
-    $Fcommand .= ' | samtools view -Sb -';
+    $Fcommand .= ' samtools view -bh -F 256 -f 81 ' . $inputBAM;
     $Fcommand .= ' > ' .$inputBAM .'tmp1.forward.bam &&';
-    $Fcommand .= ' samtools sort ' .$inputBAM .'tmp1.forward.bam';
-    $Fcommand .= ' ' .$rA_outputBAM->[0] .' && ';
-    $Fcommand .= ' samtools index ' .$rA_outputBAM->[0] .' && ';
+    $Fcommand .= ' samtools view -bh -F 256 -f 161 ' . $inputBAM;
+    $Fcommand .= ' > ' .$inputBAM .'tmp2.forward.bam &&';
+    $Fcommand .= ' ' .$mergeFJob->getCommand(0) .' && ';
     $Fcommand .= ' rm ' .$inputBAM .'tmp*.forward.*am';
 
     $ro_job->addCommand($Fcommand);
   
     my $Rcommand = 'module load ' .LoadConfig::getParam($rH_cfg, 'wiggle','moduleVersion.samtools') .' ;';
-    $Rcommand .= ' samtools view -h -F 256 -f 97 ' . $inputBAM;
-    $Rcommand .= ' > ' .$inputBAM .'tmp1.reverse.sam &&';
-    $Rcommand .= ' samtools view -h -F 256 -f 145 ' . $inputBAM;
-    $Rcommand .= ' > ' .$inputBAM .'tmp2.reverse.sam &&';
-    $Rcommand .= ' cat ' .$inputBAM .'tmp1.reverse.sam';
-    $Rcommand .= ' ' .$inputBAM .'tmp2.reverse.sam';
-    $Rcommand .= ' | samtools view -Sb -';
+    $Rcommand .= ' samtools view -bh -F 256 -f 97 ' . $inputBAM;
     $Rcommand .= ' > ' .$inputBAM .'tmp1.reverse.bam &&';
-    $Rcommand .= ' samtools sort ' .$inputBAM .'tmp1.reverse.bam';
-    $Rcommand .= ' ' .$rA_outputBAM->[1] .' &&';
-    $Rcommand .= ' samtools index ' .$rA_outputBAM->[1] .' &&';
+    $Rcommand .= ' samtools view -bh -F 256 -f 145 ' . $inputBAM;
+    $Rcommand .= ' > ' .$inputBAM .'tmp2.reverse.bam &&';
+    $Rcommand .= ' ' .$mergeRJob->getCommand(0) .' &&';
     $Rcommand .= ' rm ' .$inputBAM .'tmp*.reverse.*am';
     $Rcommand .= ' ' . $up2date;
 
