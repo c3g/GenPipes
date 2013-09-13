@@ -36,11 +36,11 @@ use strict;
 use warnings;
 #---------------------
 
-BEGIN{
+BEGIN {
   #Makesure we can find the GetConfig::LoadModules module relative to this script install
   use File::Basename;
   use Cwd 'abs_path';
-  my ( undef, $mod_path, undef ) = fileparse( abs_path(__FILE__) );
+  my (undef, $mod_path, undef) = fileparse(abs_path(__FILE__));
   unshift @INC, $mod_path."lib";
 }
 
@@ -70,22 +70,22 @@ use Wiggle;
 #--------------------
 
 my @steps;
-push(@steps, {'name' => 'trimming' , 'stepLoop' => 'sample' , 'output' => 'reads'});
-push(@steps, {'name' => 'aligning' , 'stepLoop' => 'sample' , 'output' => 'alignment'});
-push(@steps, {'name' => 'metrics' , 'stepLoop' => 'sample' , 'output' => 'metrics'});
-push(@steps, {'name' => 'qcTagDirectories' , 'stepLoop' => 'sample' , 'output' => 'tags'});
-push(@steps, {'name' => 'wiggle' , 'stepLoop' => 'sample' , 'output' => 'tracks'});
-push(@steps, {'name' => 'peakCall' , 'stepLoop' => 'design' , 'output' => 'peak_call'});
-push(@steps, {'name' => 'annotation' , 'stepLoop' => 'design' , 'output' => 'annotation'});
-push(@steps, {'name' => 'motif' , 'stepLoop' => 'design' , 'output' => 'motif'});
-push(@steps, {'name' => 'qcPlots' , 'stepLoop' => 'general' , 'output' => 'graphs'});
-# push(@steps, {'name' => 'report' , 'stepLoop' => 'group' , 'output' => 'DGE'});
-# push(@steps, {'name' => 'deliverable' , 'stepLoop' => 'group' , 'output' => 'Deliverable'});
+push(@steps, {'name' => 'trimming', 'stepLoop' => 'sample', 'output' => 'reads'});
+push(@steps, {'name' => 'aligning', 'stepLoop' => 'sample', 'output' => 'alignment'});
+push(@steps, {'name' => 'metrics', 'stepLoop' => 'sample', 'output' => 'metrics'});
+push(@steps, {'name' => 'qcTagDirectories', 'stepLoop' => 'sample', 'output' => 'tags'});
+push(@steps, {'name' => 'wiggle', 'stepLoop' => 'sample', 'output' => 'tracks'});
+push(@steps, {'name' => 'peakCall', 'stepLoop' => 'design', 'output' => 'peak_call'});
+push(@steps, {'name' => 'annotation', 'stepLoop' => 'design', 'output' => 'annotation'});
+push(@steps, {'name' => 'motif', 'stepLoop' => 'design', 'output' => 'motif'});
+push(@steps, {'name' => 'qcPlots', 'stepLoop' => 'general', 'output' => 'graphs'});
+# push(@steps, {'name' => 'report', 'stepLoop' => 'group', 'output' => 'DGE'});
+# push(@steps, {'name' => 'deliverable', 'stepLoop' => 'group', 'output' => 'Deliverable'});
 
 
 my %globalDep;
-for my $stepName (@steps) { 
-  $globalDep{$stepName -> {'name'}} = {};
+for my $stepName (@steps) {
+  $globalDep{$stepName->{'name'}} = {};
 }
 
 my $designFilePath;
@@ -113,12 +113,12 @@ sub printUsage {
 sub main {
   my %opts;
   getopts('c:s:e:n:d:w:', \%opts);
-  
+
   if (!defined($opts{'c'}) || !defined($opts{'s'}) || !defined($opts{'e'}) || !defined($opts{'n'}) || !defined($opts{'d'}) || !defined($opts{'w'})) {
     printUsage();
     exit(1);
   }
-  
+
   my %jobIdVarPrefix;
   my %cfg = LoadConfig->readConfigFile($opts{'c'});
   my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($opts{'n'});
@@ -129,7 +129,7 @@ sub main {
   $workDirectory = $opts{'w'};
   #generate sample jobIdprefix
   my $cpt = 1;
-  
+
   for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
     my $cpt2=1;
     $jobIdVarPrefix{$sampleName} = $cpt;
@@ -146,11 +146,11 @@ sub main {
     $jobIdVarPrefix{$designName} = $cpt;
     $cpt++;
   }
-  
+
   print "cd $workDirectory \n";
 
   my $latestBam;
-  
+
   for (my $current = $opts{'s'}-1; $current <= ($opts{'e'}-1); $current++) {
     my $fname = $steps[$current]->{'name'};
     my $loopType = $steps[$current]->{'stepLoop'};
@@ -180,12 +180,12 @@ sub main {
       my $outputLocation = $outputStep;
       SubmitToCluster::initSubmit(\%cfg, $outputLocation);
       # Tests for the first step in the list. Used for dependencies.
-      my $jobIdVar = &$subref($current != ($opts{'s'}-1), \%cfg, $designFilePath, $rHoAoA_designGroup, $rHoAoH_sampleInfo , \%jobIdVarPrefix);
+      my $jobIdVar = &$subref($current != ($opts{'s'}-1), \%cfg, $designFilePath, $rHoAoA_designGroup, $rHoAoH_sampleInfo, \%jobIdVarPrefix);
       if (defined($jobIdVar)) {
         $globalDep{$fname}->{$fname} = $jobIdVar;
       }
     }
-  }  
+  }
 }
 
 sub trimming {
@@ -199,17 +199,17 @@ sub trimming {
   my $inputFile;
   my $outputFile;
   my $outputFastqPair1Name;
-  
+
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
-      
+
     my $minQuality = $rH_cfg->{'trim.minQuality'};
     my $minLength = $rH_cfg->{'trim.minLength'};
     my $laneDirectory = 'reads/' . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
     print "mkdir -p $laneDirectory\n";
-    
+
     my $rH_trimDetails = Trimmomatic::trim($rH_cfg, $sampleName, $rH_laneInfo, $laneDirectory);
     my $trimJobIdVarNameLane = undef;
-    if( $rH_trimDetails->{'command'} ne "") {
+    if($rH_trimDetails->{'command'} ne "") {
       $trimJobIdVarNameLane = SubmitToCluster::printSubmitCmd($rH_cfg, "trim", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'TRIM' . $rH_jobIdPrefixe->{$sampleName . '.' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}}, undef, $sampleName, $rH_trimDetails->{'command'}, 'reads/' . $sampleName, $workDirectory);
       $trimJobIdVarNameLane = '$' . $trimJobIdVarNameLane;
       $trimJobIdVarNameSample .= $trimJobIdVarNameLane . LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
@@ -218,7 +218,7 @@ sub trimming {
   if (defined($trimJobIdVarNameSample)) {
     $trimJobIdVarNameSample = substr $trimJobIdVarNameSample, 0, -1;
   }
-  return $trimJobIdVarNameSample; 
+  return $trimJobIdVarNameSample;
 }
 
 
@@ -232,27 +232,27 @@ sub metrics {
   my $jobDependency       = undef;
   my $flagstatJobId       = undef;
   my $mergeReadStatJobID  = undef;
-  
+
   if($depends > 0) {
     $jobDependency = $globalDep{'aligning'}{$sampleName};
   }
-  
+
   print "METRICS_JOB_IDS=\"\"\n";
   # Generate alignment stats
-  for my $rH_laneInfo (@$rAoH_sampleLanes) {    
-  
+  for my $rH_laneInfo (@$rAoH_sampleLanes) {
+
    # Get trimmed read count is automatically done by trimmomatic
     my $groupName       = $sampleName . '.' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
     my $command         = undef;
     my $trimStatsFile   =  'reads/' . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName . '.trim.stats.csv';
-    
+
     # Compute flagstats
     my $directory     = 'alignment/' . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
     my $inputBamFile  = $directory . $rH_laneInfo->{'name'} . ".sorted.bam";
     my $flagStatsFile = $directory . $sampleName . '.sorted.bam.flagstat';
-    
-    $command = SAMtools::flagstat($rH_cfg, $inputBamFile, $flagStatsFile );
-    if (defined ($command) && $command ne "" ) {
+
+    $command = SAMtools::flagstat($rH_cfg, $inputBamFile, $flagStatsFile);
+    if (defined ($command) && $command ne "") {
       $flagstatJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "flagstat", undef, 'FLAGSTAT', $jobDependency, $sampleName, $command, 'metrics/' . $sampleName);
       $flagstatJobId = '$' . $flagstatJobId;
     }
@@ -278,7 +278,7 @@ sub aligning{
   my $rH_jobIdPrefixe = shift;
   my $jobDependency = undef;
   my $bwaJobId;
-   
+
   if ($depends > 0) {
     $jobDependency = $globalDep{'trimming'}{$sampleName};
   }
@@ -289,7 +289,7 @@ sub aligning{
     my $pair1;
     my $pair2;
     my $single;
-    my $command;    
+    my $command;
     my $rgId = $rH_laneInfo->{'libraryBarcode'} . "_" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
     my $rgSampleName = $rH_laneInfo->{'name'};
     my $rgLibrary = $rH_laneInfo->{'libraryBarcode'};
@@ -310,12 +310,12 @@ sub aligning{
     } elsif ($rH_laneInfo->{'runType'} eq "PAIRED_END") {
       $single = undef;
       $pair1 = 'reads/' . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName . '.t' . LoadConfig::getParam($rH_cfg, 'trim', 'minQuality') . 'l' . LoadConfig::getParam($rH_cfg, 'trim', 'minLength') . '.pair1.fastq.gz';
-      $pair2 = 'reads/' . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName . '.t' . LoadConfig::getParam($rH_cfg, 'trim', 'minQuality') . 'l' . LoadConfig::getParam($rH_cfg, 'trim', 'minLength') . '.pair2.fastq.gz';        
+      $pair2 = 'reads/' . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName . '.t' . LoadConfig::getParam($rH_cfg, 'trim', 'minQuality') . 'l' . LoadConfig::getParam($rH_cfg, 'trim', 'minLength') . '.pair2.fastq.gz';
     }
 
     my $rA_commands = BWA::aln($rH_cfg, $sampleName, $pair1, $pair2, $single, $outputAlnPrefix, $rgId, $rgSampleName, $rgLibrary, $rgPlatformUnit, $rgCenter);
     if (@{$rA_commands} == 3) {
-      my $read1JobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'read1.' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READ1ALN', $jobDependency, $sampleName, $rA_commands->[0], 'alignment/' . $sampleName , $workDirectory);
+      my $read1JobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'read1.' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READ1ALN', $jobDependency, $sampleName, $rA_commands->[0], 'alignment/' . $sampleName, $workDirectory);
       $read1JobId = '$' . $read1JobId;
       my $read2JobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'read2.' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READ2ALN', $jobDependency, $sampleName, $rA_commands->[1], 'alignment/' . $sampleName, $workDirectory);
       $read2JobId = '$' . $read2JobId;
@@ -325,22 +325,22 @@ sub aligning{
     } else {
       my $readJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READALN', $jobDependency, $sampleName, $rA_commands->[0], 'alignment/' . $sampleName);
       $readJobId = '$' . $readJobId;
-      $bwaJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'samse.' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA',  $readJobId, $sampleName, $rA_commands->[1], 'alignment/' . $sampleName , $workDirectory);
+      $bwaJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'samse.' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA',  $readJobId, $sampleName, $rA_commands->[1], 'alignment/' . $sampleName, $workDirectory);
       $bwaJobId = '$' . $bwaJobId;
       print 'BWA_JOB_IDS=${BWA_JOB_IDS}' . LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep') . $bwaJobId . "\n";
     }
 
-    # Filter uniquely mapped reads 
+    # Filter uniquely mapped reads
     my $directory = 'alignment/' . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
     my $InputBamFile = $directory . $rH_laneInfo->{'name'} . ".sorted.bam";
     my $OutputBamFile = $directory . $rH_laneInfo->{'name'} . ".sorted.filtered.bam";
     $command = SAMtools::viewFilter($rH_cfg, $InputBamFile, " -b -F4 -q 1 ", $OutputBamFile);
     if (defined($command) && $command ne "") {
-     my $filterJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'filter.' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'SAMTOOLSFILTER',  $bwaJobId, $sampleName, $command, 'alignment/' . $sampleName , $workDirectory);
+     my $filterJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'filter.' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'SAMTOOLSFILTER',  $bwaJobId, $sampleName, $command, 'alignment/' . $sampleName, $workDirectory);
      $filterJobId = '$' . $filterJobId;
      print 'BWA_JOB_IDS=${BWA_JOB_IDS}' . LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep') . $filterJobId . "\n";
     }
-    
+
   }
   # Merge /sort reads
   $jobDependency = '$BWA_JOB_IDS';
@@ -360,7 +360,7 @@ sub aligning{
   }
   return $mergeJobId;
 }
-    
+
 sub wiggleRNASEQ {
   my $depends = shift;
   my $rH_cfg = shift;
@@ -374,21 +374,21 @@ sub wiggleRNASEQ {
     $jobDependency = $globalDep{'qcTagDirectories'}{$sampleName};
   }
 
-  my $inputBAM       = 'alignment/' . $sampleName . '/' . $sampleName . '.sorted.bam'; 
+  my $inputBAM       = 'alignment/' . $sampleName . '/' . $sampleName . '.sorted.bam';
   my $outputBAM      = $inputBAM;
   my $outputBedGraph = 'tracks/' . $sampleName . '/' . $sampleName . '.bedGraph';
   my $outputWiggle   = 'tracks/' . $sampleName . '/' . $sampleName . '.bw';
   my $prefixJobName  = undef;
-  
+
   print "mkdir -p tracks/$sampleName/output_jobs\n";
 
-  my $wiggleJobId = undef ;
+  my $wiggleJobId = undef;
   my $command = Wiggle::graph($rH_cfg, $sampleName, $inputBAM, $outputBedGraph, $outputWiggle);
   if ($command ne "") {
     $wiggleJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "wiggle", $prefixJobName, 'WIGGLE' . $rH_jobIdPrefixe->{$sampleName}, $jobDependency, $sampleName, $command, 'tracks/' . $sampleName, $workDirectory);
     $wiggleJobId = '$' . $wiggleJobId;
   }
-  return $wiggleJobId;    
+  return $wiggleJobId;
 }
 
 
@@ -407,10 +407,10 @@ sub qcTagDirectories {
     $jobDependency = $globalDep{'aligning'}{$sampleName};
   }
 
-  my $inputBAM = 'alignment/' . $sampleName . "/" . $sampleName . ".sorted.bam" ; 
-  
+  my $inputBAM = 'alignment/' . $sampleName . "/" . $sampleName . ".sorted.bam";
+
   # Create command
-  my $rA_commands = HOMER::makeTagDirectory($rH_cfg, $sampleName, $inputBAM , 'tags');
+  my $rA_commands = HOMER::makeTagDirectory($rH_cfg, $sampleName, $inputBAM, 'tags');
   if (@{$rA_commands} == 3) {
     my $qcTagsJobID1 = SubmitToCluster::printSubmitCmd($rH_cfg, "qcTags", 1, 'QCTAGSTMP' . $rH_jobIdPrefixe->{$sampleName}, $jobDependency, $sampleName, $rA_commands->[0], 'tags/' . $sampleName, $workDirectory);
     $qcTagsJobID1  = '$' . $qcTagsJobID1;
@@ -443,7 +443,7 @@ sub wiggle {
   my $tagDirectory   =  'tags/' . $sampleName;
   my $outputWiggle   =  'tracks/' . $sampleName . '/' . $sampleName . '.ucsc.bedGraph.gz';
   my $prefixJobName  =  undef;
-  
+
   print "mkdir -p tracks/$sampleName/output_jobs\n";
 
   my $wiggleJobId = undef;
@@ -459,14 +459,14 @@ sub qcPlots {
   my $depends = shift;
   my $rH_cfg = shift;
   my $designFilePath = shift;
-  
+
   my $jobDependency = undef;
   if ($depends > 0) {
     $jobDependency = '$QCTAGS_JOB_IDS';
   }
   print "mkdir -p graphs/output_jobs\n";
   my $qcPlotsJobId = undef;
-  
+
   my $command = HOMER::qcPlotsR($rH_cfg, $designFilePath, $workDirectory);
   if (defined($command) && $command ne "") {
     $qcPlotsJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "qcGraphs", undef, 'QCPLOTS', $jobDependency, undef, $command, 'graphs/', $workDirectory);
@@ -487,9 +487,9 @@ sub peakCall {
   my $PeakCallJobIdVarNameSample = undef;
 
   ## Design
-  # Process Treatments ( and controls when applicable)
-  my $numberTreatments =  @{$rHoAoA_designGroup->{$design}->[0]};  
-  my $numberControls   =  @{$rHoAoA_designGroup->{$design}->[1]};  
+  # Process Treatments (and controls when applicable)
+  my $numberTreatments =  @{$rHoAoA_designGroup->{$design}->[0]};
+  my $numberControls   =  @{$rHoAoA_designGroup->{$design}->[1]};
   my $control;
   my $treatment;
   my $controlBam;
@@ -501,16 +501,16 @@ sub peakCall {
       if ($numberControls == 1) {
           $control       = $rHoAoA_designGroup->{$design}->[1]->[0];
           $controlBam    = 'alignment/' . $control . '/' . $control . '.sorted.bam';
-      } elsif ( $numberControls == $numberTreatments) {
+      } elsif ($numberControls == $numberTreatments) {
           $control       = $rHoAoA_designGroup->{$design}->[1]->[$j];
-          $controlBam    = 'alignment/' . $control . '/' .$control . '.sorted.bam'; 
+          $controlBam    = 'alignment/' . $control . '/' .$control . '.sorted.bam';
       } else {
-          $control       = undef ;
+          $control       = undef;
           $controlBam    = undef;
       }
       $treatment    =  $rHoAoA_designGroup->{$design}->[0]->[$j];
       $treatmentBam =  'alignment/' . $treatment . '/' . $treatment . '.sorted.bam';
-      
+
       my $outputPath = 'peak_call/' . $design. '.' . $j;
       if (defined($control)) {
         print "# design " . $design . ", treatment= " . $treatment . ", control=" . $control . "\n";
@@ -518,7 +518,7 @@ sub peakCall {
         print "# design " . $design . ", treatment= " . $treatment . "" . "\n";
       }
       # Run type for treatment
-      my $paired = undef; 
+      my $paired = undef;
       my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$treatment};
       for my $rH_laneInfo (@$rAoH_sampleLanes) {
         if ($rH_laneInfo->{'runType'} eq "SINGLE_END") {
@@ -569,9 +569,9 @@ sub annotation {
   my $jobDependency = undef;
   if ($depends > 0) {
     $jobDependency = $globalDep{'peakCall'}{$design};
-  }  
+  }
   ##Iterate over design
-  my $numberTreatments =  @{$rHoAoA_designGroup->{$design}->[0]};  
+  my $numberTreatments =  @{$rHoAoA_designGroup->{$design}->[0]};
   my $annotationJobIdGroups = undef;
   if ($numberTreatments >= 1) {
     # At least one treatment
@@ -598,7 +598,7 @@ sub annotation {
   }
   return $annotationJobIdGroups;
 }
-# sub printSubmitCmd $rH_cfg  $stepName       $jobNameSuffix  $jobIdPrefix    $dependancyName $sampleName  $command  $outputDir $workDirectory 
+# sub printSubmitCmd $rH_cfg  $stepName       $jobNameSuffix  $jobIdPrefix    $dependancyName $sampleName  $command  $outputDir $workDirectory
 sub motif {
   my $depends = shift;
   my $rH_cfg = shift;
@@ -608,15 +608,15 @@ sub motif {
   my $rH_jobIdPrefixe = shift;
 
   my $jobDependency = undef;
-  if( $depends > 0) {
+  if($depends > 0) {
     $jobDependency = $globalDep{'peakCall'}{$design};
-  }  
+  }
     ##Iterate over design
-  my $numberTreatments =  @{$rHoAoA_designGroup->{$design}->[0]};  
+  my $numberTreatments =  @{$rHoAoA_designGroup->{$design}->[0]};
   my $motifJobIdGroups = undef;
   if ($numberTreatments >= 1) {
     # At least one treatment
-    for (my $j = 0; $j < $numberTreatments; $j++) {  
+    for (my $j = 0; $j < $numberTreatments; $j++) {
       my $outputPath = 'motif/' . $design . '.' . $j;
       my $peakCallPath = 'peak_call/' . $design . '.' . $j;
       my $peakType =  $rHoAoA_designGroup->{$design}->[2]->[0];
@@ -633,7 +633,7 @@ sub motif {
         ; # do nothing
       }
     }
-  }      
+  }
   if (defined($motifJobIdGroups)) {
     $motifJobIdGroups = substr $motifJobIdGroups, 0, -1;
   }
