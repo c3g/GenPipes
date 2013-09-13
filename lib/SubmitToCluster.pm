@@ -43,7 +43,7 @@ sub initPipeline {
   my $workDir = shift;
 
   # Set working directory to current one by default
-  unless (-d $workDir) {
+  unless (defined $workDir and -d $workDir) {
     $workDir = "`pwd`";
   }
   print "cd $workDir\n";
@@ -65,7 +65,7 @@ sub printSubmitCmd {
   $jobIdVarName =~ s/\W/_/g;
 
   # Set working directory to current one by default
-  unless (-d $workDir) {
+  unless (defined $workDir and -d $workDir) {
     $workDir = "`pwd`";
   }
 
