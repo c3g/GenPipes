@@ -116,8 +116,8 @@ sub printUsage {
   print "\t-w  work directory\n";
   print "\n";
   print "Steps:\n";
-  for(my $idx=0; $idx < @steps; $idx++) {
-    print "".($idx+1).'- '.$steps[$idx]->{'name'}."\n";
+  for(my $idx = 0; $idx < @steps; $idx++) {
+    print "".($idx + 1) . '- ' . $steps[$idx]->{'name'} . "\n";
   }
   print "\n";
 }
