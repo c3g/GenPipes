@@ -332,7 +332,7 @@ sub aligning{
     if (defined($command) && $command ne "") {
      my $filterJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'filter.' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'SAMTOOLSFILTER',  $bwaJobId, $sampleName, $command, $workDir);
      $filterJobId = '$' . $filterJobId;
-     print 'BWA_JOB_IDS=${BWA_JOB_IDS}' . LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep') . $filterJobId . "\n";
+     print 'BWA_JOB_IDS=${BWA_JOB_IDS}' . LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep') . $filterJobId . "\n\n";
     }
 
   }
