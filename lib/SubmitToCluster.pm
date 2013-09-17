@@ -112,8 +112,8 @@ sub printSubmitCmd {
     print "$jobIdVarName=$jobName\n";
   }
 
-  # Write job ID, name and log path in job list file
-  print "echo \"\${$jobIdVarName}\t$jobName\t$jobOutputLog\" >> $workDir/job_output/job_list_\${TIMESTAMP}\n\n";
+  # Write job ID, name, dependency IDs and log path in job list file
+  print "echo \"\$$jobIdVarName\t$jobName\t" . (defined($dependencyName) ? $dependencyName : "") . "\t$jobOutputLog\" >> $workDir/job_output/job_list_\${TIMESTAMP}\n\n";
 
   return $jobIdVarName;
 }
