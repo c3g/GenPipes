@@ -50,13 +50,14 @@ sub readJobLogListFile {
   open(JOB_LOG_LIST_FILE, $jobLogListPath) or die "Cannot open $jobLogListPath\n";
   while(my $line = <JOB_LOG_LIST_FILE>) {
     # Retrieve each job's log file path
-    my ($jobId, $jobName, $clusterJobLogPath) = split(/\t/, $line);
+    my ($jobId, $jobName, $jobDependencies, $clusterJobLogPath) = split(/\t/, $line);
 
     if (defined $jobName and defined $clusterJobLogPath) {
       my %jobLog;
 
       $jobLog{'jobId'} = $jobId;
       $jobLog{'jobName'} = $jobName;
+      $jobLog{'jobDependencies'} = $jobDependencies;
       $jobLog{'path'} = $clusterJobLogPath;
       # Read the job log file
       if (open(CLUSTER_JOB_LOG_FILE, $clusterJobLogPath)) {
@@ -146,6 +147,7 @@ sub getLogTextReport {
     "JOB_ID",
     "JOB_FULL_ID",
     "JOB_NAME",
+    "JOB_DEPENDENCIES",
     "JOB_EXIT_CODE",
     "CMD_EXIT_CODE",
     "WALL_TIME",
@@ -162,6 +164,7 @@ sub getLogTextReport {
       exists $jobLog->{'jobId'} ? $jobLog->{'jobId'} : "N/A",
       exists $jobLog->{'jobFullId'} ? $jobLog->{'jobFullId'} : "N/A",
       exists $jobLog->{'jobName'} ? $jobLog->{'jobName'} : "N/A",
+      exists $jobLog->{'jobDependencies'} ? $jobLog->{'jobDependencies'} : "N/A",
       exists $jobLog->{'exitStatus'} ? $jobLog->{'exitStatus'} : "N/A",
       exists $jobLog->{'MUGQICexitStatus'} ? $jobLog->{'MUGQICexitStatus'} : "N/A",
       exists $jobLog->{'walltime'} ? $jobLog->{'walltime'} : "N/A",

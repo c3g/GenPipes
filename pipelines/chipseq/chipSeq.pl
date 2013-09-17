@@ -277,7 +277,7 @@ sub aligning{
     $jobDependency = $globalDep{'trimming'}{$sampleName};
   }
   print "BWA_JOB_IDS=\"\"\n";
-  print "mkdir -p $sampleName/output_jobs reads/$sampleName/output_jobs metrics/$sampleName/output_jobs alignment/$sampleName/output_jobs\n";
+  print "mkdir -p metrics\n";
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
     my $alignJobIdVarNameLane;
     my $pair1;
@@ -374,7 +374,7 @@ sub wiggleRNASEQ {
   my $outputWiggle   = 'tracks/' . $sampleName . '/' . $sampleName . '.bw';
   my $prefixJobName  = undef;
 
-  print "mkdir -p tracks/$sampleName/output_jobs\n";
+  print "mkdir -p tracks/$sampleName\n";
 
   my $wiggleJobId = undef;
   my $command = Wiggle::graph($rH_cfg, $sampleName, $inputBAM, $outputBedGraph, $outputWiggle);
@@ -438,7 +438,7 @@ sub wiggle {
   my $outputWiggle   =  'tracks/' . $sampleName . '/' . $sampleName . '.ucsc.bedGraph.gz';
   my $prefixJobName  =  undef;
 
-  print "mkdir -p tracks/$sampleName/output_jobs\n";
+  print "mkdir -p tracks/$sampleName\n";
 
   my $wiggleJobId = undef;
   my $command = HOMER::makeUCSCFile($rH_cfg, $sampleName, $tagDir, $outputWiggle);
@@ -458,7 +458,7 @@ sub qcPlots {
   if ($depends > 0) {
     $jobDependency = '$QCTAGS_JOB_IDS';
   }
-  print "mkdir -p graphs/output_jobs\n";
+  print "mkdir -p graphs\n";
   my $qcPlotsJobId = undef;
 
   my $command = HOMER::qcPlotsR($rH_cfg, $designFilePath, $workDir);
@@ -537,7 +537,7 @@ sub peakCall {
         } elsif ($depends > 0 && defined($globalDep{'aligning'}{$treatment})) {
           $jobDependency = $globalDep{'aligning'}{$treatment};
         }
-        print "mkdir -p " . $outputPath . '/output_jobs/' . "\n";
+        print "mkdir -p $outputPath\n";
         my $peakCallJobId = SubmitToCluster::printSubmitCmd($rH_cfg, 'peakCall', $j, 'MACS2PEAKCALL' . $rH_jobIdPrefixe->{$design} . $j, $jobDependency, $design, $command, $workDir);
         $peakCallJobId = '$' . $peakCallJobId;
         $PeakCallJobIdVarNameSample .= $peakCallJobId . LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
@@ -577,7 +577,7 @@ sub annotation {
         my $bedName = $peakCallPath . '/' . $design . '_peaks.bed';
         my $command = HOMER::annotatePeaks($rH_cfg, $design, $bedName, $outputPath);
         if (defined($command) && $command ne "") {
-          print "mkdir -p " . $outputPath . '/output_jobs/' . "\n";
+          print "mkdir -p $outputPath\n";
           my $annotationJobId = SubmitToCluster::printSubmitCmd($rH_cfg, 'annotation', undef, 'HOMERANNOTATION' . $rH_jobIdPrefixe->{$design}, $jobDependency, $design, $command, $workDir);
           $annotationJobId = '$' . $annotationJobId;
           $annotationJobIdGroups .= $annotationJobId . LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
@@ -618,7 +618,7 @@ sub motif {
         my $bedName = $peakCallPath . '/' . $design . '_peaks.bed';
         my $command = HOMER::generateMotif($rH_cfg, $design, $bedName, $outputPath);
         if (defined($command) && length($command) > 0) {
-          print "mkdir -p " . $outputPath . '/output_jobs/' . "\n";
+          print "mkdir -p $outputPath\n";
           my $motifJobId = SubmitToCluster::printSubmitCmd($rH_cfg, 'motif', undef, 'HOMERMOTIF' . $rH_jobIdPrefixe->{$design}, $jobDependency, $design, $command, $workDir);
           $motifJobId = '$' . $motifJobId;
           $motifJobIdGroups .= $motifJobId . LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
