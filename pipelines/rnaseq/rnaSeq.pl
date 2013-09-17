@@ -170,7 +170,6 @@ sub main {
 	for(my $current = $opts{'s'}-1; $current <= ($opts{'e'}-1); $current++) {
 		my $fname = $steps[$current]->{'name'};
 		my $loopType = $steps[$current]->{'stepLoop'};
-		#my $outputStep = $steps[$current]->{'output'};
 		my $subref = \&$fname;
 		if ($loopType eq 'sample') {
 			for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
@@ -296,7 +295,6 @@ sub aligning {
 	$jobDependency = $globalDep{'trimming'}{$sampleName};
 	}
 	
-	#print "mkdir -p reads/$sampleName/output_jobs metrics/$sampleName/output_jobs alignment/$sampleName/output_jobs\n";
 	for my $rH_laneInfo (@$rAoH_sampleLanes) {
 		my $alignJobIdVarNameLane;
 		my $pair1;
@@ -363,7 +361,6 @@ sub merging {
 	my $inputBAM ; 
 	my $outputBAM = 'alignment/' .$sampleName .'/' .$sampleName .'.merged.bam' ;
 	my @alignFiles;
-	#print "mkdir -p alignment/$sampleName/output_jobs\n";
 	for my $rH_laneInfo (@$rAoH_sampleLanes) {
 		my $laneDir = "alignment/" . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
 		$inputBAM = $laneDir . 'accepted_hits.bam';
@@ -699,7 +696,6 @@ sub cuffdiff {
 	for my $design (keys %{$rHoAoA_designGroup}) {
 		mkdir $workDir;
 		mkdir $workDir .'/cuffdiff';
-		#print "mkdir -p cuffdiff/$design/output_jobs\n";
 		my $numberGroups = @{$rHoAoA_designGroup->{$design}} ;
 		##iterate over group
 		my @groupInuptFiles;
@@ -753,8 +749,6 @@ sub dge {
 		$jobDependency = $globalDep{'rawCountsMetrics'}{'rawCountsMetrics'};
 	}
 	
-	#print "mkdir -p DGE/output_jobs\n";
-	
 	my $countMatrix = 'DGE/rawCountMatrix.csv';
 	my $outputDir = 'DGE';
 	
@@ -799,7 +793,6 @@ sub goseq {
 	my $goseqJobId;
 	for my $design (keys %{$rHoAoA_designGroup}) {
 		## goseq for cuffdiff known results
-		#print "mkdir -p DGE/$design/output_jobs cuffdiff/$design/output_jobs\n";
 		my $resultFileCuff = 'cuffdiff/known/' .$design .'/isoform_exp.diff' ;
 		my $outputFileCuff = 'cuffdiff/known/' .$design .'/gene_ontology_results.csv';
 		$command = DiffExpression::goseq($rH_cfg, $resultFileCuff, $outputFileCuff, $columnsCuff);
