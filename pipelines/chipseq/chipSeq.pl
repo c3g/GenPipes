@@ -257,7 +257,7 @@ sub metrics {
     if (defined($command) && $command ne "") {
       $mergeReadStatJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "mergeMetrics", undef, 'MERGEREADSTAT' . $rH_jobIdPrefixe->{$sampleName . '.' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}}, $flagstatJobId, $sampleName, $command, $workDir);
       $mergeReadStatJobID = '$' . $mergeReadStatJobID;
-      print 'METRICS_JOB_IDS=${METRICS_JOB_IDS}' . LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep') . $mergeReadStatJobID . "\n";
+      print 'METRICS_JOB_IDS=${METRICS_JOB_IDS#:}' . LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep') . $mergeReadStatJobID . "\n";
     }
   }
   return '$METRICS_JOB_IDS';
@@ -315,13 +315,13 @@ sub aligning{
       $read2JobId = '$' . $read2JobId;
       $bwaJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'sampe.' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA', $read1JobId . LoadConfig::getParam($rH_cfg, 'aln', 'clusterDependencySep') . $read2JobId, $sampleName, $rA_commands->[2], $workDir);
       $bwaJobId = '$' . $bwaJobId;
-      print 'BWA_JOB_IDS=${BWA_JOB_IDS}' . LoadConfig::getParam($rH_cfg, 'aln', 'clusterDependencySep') . $bwaJobId . "\n";
+      print 'BWA_JOB_IDS=${BWA_JOB_IDS#:}' . LoadConfig::getParam($rH_cfg, 'aln', 'clusterDependencySep') . $bwaJobId . "\n";
     } else {
       my $readJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READALN', $jobDependency, $sampleName, $rA_commands->[0], $workDir);
       $readJobId = '$' . $readJobId;
       $bwaJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'samse.' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA',  $readJobId, $sampleName, $rA_commands->[1], $workDir);
       $bwaJobId = '$' . $bwaJobId;
-      print 'BWA_JOB_IDS=${BWA_JOB_IDS}' . LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep') . $bwaJobId . "\n";
+      print 'BWA_JOB_IDS=${BWA_JOB_IDS#:}' . LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep') . $bwaJobId . "\n";
     }
 
     # Filter uniquely mapped reads
@@ -332,7 +332,7 @@ sub aligning{
     if (defined($command) && $command ne "") {
      my $filterJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'filter.' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'SAMTOOLSFILTER',  $bwaJobId, $sampleName, $command, $workDir);
      $filterJobId = '$' . $filterJobId;
-     print 'BWA_JOB_IDS=${BWA_JOB_IDS}' . LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep') . $filterJobId . "\n\n";
+     print 'BWA_JOB_IDS=${BWA_JOB_IDS#:}' . LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep') . $filterJobId . "\n\n";
     }
 
   }
@@ -417,7 +417,7 @@ sub qcTagDirectories {
     $qcTagsJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "qcTags", undef, 'QCTAGS' . $rH_jobIdPrefixe->{$sampleName}, $jobDependency, $sampleName, $rA_commands->[0], $workDir);
     $qcTagsJobID = '$' . $qcTagsJobID;
   }
-  print 'QCTAGS_JOB_IDS=${QCTAGS_JOB_IDS}' . LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep') . $qcTagsJobID . "\n";
+  print 'QCTAGS_JOB_IDS=${QCTAGS_JOB_IDS#:}' . LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep') . $qcTagsJobID . "\n";
   return $qcTagsJobID;
 }
 
