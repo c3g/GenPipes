@@ -46,6 +46,9 @@ sub initPipeline {
   unless (defined $workDir and -d $workDir) {
     $workDir = "`pwd`";
   }
+
+  # Set pipeline header and global variables
+  print "#!/bin/bash\n\n";
   print "WORK_DIR=$workDir\n";
   print "JOB_OUTPUT_ROOT=\$WORK_DIR/job_output\n";
   print "TIMESTAMP=`date +%FT%H.%M.%S`\n";
