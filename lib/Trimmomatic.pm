@@ -97,7 +97,7 @@ sub pairCommand {
         $command .= 'module load';
         $command .= ' '.LoadConfig::getParam($rH_cfg, 'trim','moduleVersion.java');
         $command .= ' '.LoadConfig::getParam($rH_cfg, 'trim','moduleVersion.trimmomatic');
-        $command .= ' ; java -XX:ParallelGCThreads=1 -Xmx2G -cp \$TRIMMOMATIC_JAR org.usadellab.trimmomatic.TrimmomaticPE';
+        $command .= ' && java -XX:ParallelGCThreads=1 -Xmx2G -cp \$TRIMMOMATIC_JAR org.usadellab.trimmomatic.TrimmomaticPE';
         $command .= ' -threads ' . $rH_cfg->{'trim.nbThreads'};
         if ( $rH_laneInfo->{'qualOffset'} eq "64" ) {
             $command .= ' -phred64';
@@ -120,7 +120,7 @@ sub pairCommand {
         }
         $command .= ' MINLEN:' . $minLength;
         $command .= ' 2> ' . $outputTrimLog;
-        $command .= ' ;';
+        $command .= ' &&';
         $command .= ' grep \"^Input Read\" '.$outputTrimLog.'| sed \'s/Input Read Pairs: \\([0-9]\\+\\).*Both Surviving: \\([0-9]\\+\\).*Forward Only Surviving: \\([0-9]\\+\\).*/Raw Fragments,\\1#Fragment Surviving,\\2#Single Surviving,\\3/g\' | tr \'#\' \'\n\' > '.$outputTrimStats;
     }
 
@@ -158,7 +158,7 @@ sub singleCommand {
         $command .= 'module load';
         $command .= ' '.LoadConfig::getParam($rH_cfg, 'trim','moduleVersion.java');
         $command .= ' '.LoadConfig::getParam($rH_cfg, 'trim','moduleVersion.trimmomatic');
-        $command .= ' ; java -XX:ParallelGCThreads=1 -Xmx2G -cp \$TRIMMOMATIC_JAR org.usadellab.trimmomatic.TrimmomaticSE';
+        $command .= ' && java -XX:ParallelGCThreads=1 -Xmx2G -cp \$TRIMMOMATIC_JAR org.usadellab.trimmomatic.TrimmomaticSE';
         $command .= ' -threads ' . $rH_cfg->{'trim.nbThreads'};
         if ( $rH_laneInfo->{'qualOffset'} eq "64" ) {
             $command .= ' -phred64';
@@ -179,7 +179,7 @@ sub singleCommand {
         }
         $command .= ' MINLEN:' . $minLength;
         $command .= ' 2> ' . $outputTrimLog;
-        $command .= ' ;';
+        $command .= ' &&;';
         $command .= ' grep \"^Input Read\" '.$outputTrimLog.'| sed \'s/Input Reads: \\([0-9]\\+\\).*Surviving: \\([0-9]\\+\\).*/Raw Fragments,\\1#Fragment Surviving,\\2#Single Surviving,\\2/g\' | tr \'#\' \'\n\' > '.$outputTrimStats;
     }
 

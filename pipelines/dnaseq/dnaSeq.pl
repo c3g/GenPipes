@@ -62,6 +62,7 @@ use SnpEff;
 use SubmitToCluster;
 use Trimmomatic;
 use VCFtools;
+use Metrics;
 #--------------------
 
 
@@ -70,6 +71,7 @@ use VCFtools;
 
 my @steps;
 push(@steps, {'name' => 'trimAndAlign', 'stepLoop' => 'sample', 'parentStep' => undef});
+push(@steps, {'name' => 'metricsLanes', 'stepLoop' => 'experiment', 'parentStep' => 'trimAndAlign'});
 push(@steps, {'name' => 'mergeLanes', 'stepLoop' => 'sample', 'parentStep' => 'trimAndAlign'});
 push(@steps, {'name' => 'indelRealigner', 'stepLoop' => 'sample', 'parentStep' => 'mergeLanes'});
 push(@steps, {'name' => 'mergeRealigned', 'stepLoop' => 'sample', 'parentStep' => 'indelRealigner'});
@@ -77,6 +79,7 @@ push(@steps, {'name' => 'fixmate', 'stepLoop' => 'sample', 'parentStep' => 'merg
 push(@steps, {'name' => 'markDup', 'stepLoop' => 'sample', 'parentStep' => 'fixmate'});
 push(@steps, {'name' => 'recalibration', 'stepLoop' => 'sample', 'parentStep' => 'markDup'});
 push(@steps, {'name' => 'metrics', 'stepLoop' => 'sample', 'parentStep' => 'recalibration'});
+push(@steps, {'name' => 'metricsLibrarySample', 'stepLoop' => 'experiment', 'parentStep' => 'metrics'});
 push(@steps, {'name' => 'fullPileup', 'stepLoop' => 'sample', 'parentStep' => 'recalibration'});
 push(@steps, {'name' => 'snpAndIndelBCF', 'stepLoop' => 'experiment', 'parentStep' => 'recalibration'});
 push(@steps, {'name' => 'mergeFilterBCF', 'stepLoop' => 'experiment', 'parentStep' => 'snpAndIndelBCF'});
@@ -84,6 +87,12 @@ push(@steps, {'name' => 'filterNStretches', 'stepLoop' => 'experiment', 'parentS
 push(@steps, {'name' => 'flagMappability', 'stepLoop' => 'experiment', 'parentStep' => 'filterNStretches'});
 push(@steps, {'name' => 'snpIDAnnotation', 'stepLoop' => 'experiment', 'parentStep' => 'flagMappability'});
 push(@steps, {'name' => 'snpEffect', 'stepLoop' => 'experiment', 'parentStep' => 'snpIDAnnotation'});
+push(@steps, {'name' => 'metricsSNV', 'stepLoop' => 'experiment', 'parentStep' => 'snpEffect'});
+# push(@steps, {'name' => 'breakDancer', 'stepLoop' => 'experiment', 'parentStep' => 'recalibration'});
+# push(@steps, {'name' => 'pindel', 'stepLoop' => 'experiment', 'parentStep' => 'breakDancer'});
+# push(@steps, {'name' => 'cnv', 'stepLoop' => 'experiment', 'parentStep' => 'recalibration'});
+# push(@steps, {'name' => 'metricsSV', 'stepLoop' => 'experiment', 'parentStep' => ('cnv','pindel')});
+push(@steps, {'name' => 'deliverable' , 'stepLoop' => 'experiment' , 'parentStep' => ('metricsLanes','metricsSample','metricsSNV')});
 
 my %globalDep;
 for my $stepName (@steps) {
@@ -203,6 +212,56 @@ sub trimAndAlign {
   }
   return '$BWA_JOB_IDS';
 }
+
+
+sub metricsLanes {
+  my $stepId = shift;
+  my $rH_cfg = shift;
+  my $rHoAoH_sampleInfo = shift;
+  my $rAoH_seqDictionary = shift;
+  
+  my $libraryType =  undef;
+  my $fkey =  (keys %{$rHoAoH_sampleInfo})[0] ;
+  my @fvals = @{$rHoAoH_sampleInfo->{$fkey}};
+  my $finfo = $fvals[0];
+  if ( $finfo->{'runType'} eq "SINGLE_END" ) {
+    $libraryType = 'single';
+  } elsif ($finfo->{'runType'} eq "PAIRED_END" ) {
+    $libraryType = 'paired';
+  }
+  my $trimmingDependency = undef;
+  my $parentStep = $steps[$stepId]->{'parentStep'};
+
+  my @sampleNames = keys %{$rHoAoH_sampleInfo};
+  my $jobDependencies = "";
+  for(my $idx=0; $idx < @sampleNames; $idx++){
+    my $sampleName = $sampleNames[$idx];
+    my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sampleName};
+    if(defined($globalDep{$parentStep}->{$sampleName})){
+      $jobDependencies .= LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$globalDep{$parentStep}->{$sampleName};
+    }
+  }
+  if(length($jobDependencies) == 0) {
+    $jobDependencies = undef;
+  } else {
+    $jobDependencies = substr($jobDependencies, 1);
+  }
+  $trimmingDependency = $jobDependencies;
+  
+  my $folder = 'reads';
+  my $pattern = 'trim.stats.csv';
+  my $ouputFile = 'metrics/trimming.stats';
+  print "mkdir -p metrics\n";
+  my $command;
+  $command = Metrics::mergeTrimmomaticStats($rH_cfg,  $libraryType, $pattern, $folder, $ouputFile);
+  my $metricsJobId = undef;
+  if(defined($command) && length($command) > 0) {
+          my $trimMetricsJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "trimMetrics", undef, 'TRIMMETRICS', $trimmingDependency, undef, $command, LoadConfig::getParam($rH_cfg, "default", 'sampleOutputRoot') );
+          $metricsJobId = '$' .$trimMetricsJobId;
+  }
+  return $metricsJobId;
+}
+
 
 sub mergeLanes {
   my $stepId = shift;
@@ -449,6 +508,16 @@ sub metrics {
   return '$'.$genomeCoverageJobId;
 }
 
+
+sub metricsLibrarySample {
+  my $stepId = shift;
+  my $rH_cfg = shift;
+  my $rHoAoH_sampleInfo = shift;
+  my $rAoH_seqDictionary = shift;
+  
+}
+
+
 sub sortQname {
   my $stepId = shift;
   my $rH_cfg = shift;
@@ -677,5 +746,55 @@ sub snpIDAnnotation {
   my $command = SnpEff::annotateDbSnp($rH_cfg, $inputVCF, $vcfOutput);
   my $snpEffJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "snpIDAnnotation", undef, 'SNPID', $jobDependency, 'allSamples', $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ));
  }
+
+
+sub metricsSNV {
+  my $stepId = shift;
+  my $rH_cfg = shift;
+  my $rHoAoH_sampleInfo = shift;
+  my $rAoH_seqDictionary = shift;
+  
+}
+
+
+sub deliverable {
+  my $stepId = shift;
+  my $rH_cfg = shift;
+  my $rHoAoH_sampleInfo = shift;
+  my $rAoH_seqDictionary = shift;
+
+
+#   my $jobDependency ;
+#   if($depends > 0) {
+#     my $trimDependency = $globalDep{'trimMetrics'}{'trimMetrics'};
+#     if (defined($trimDependency) && length($trimDependency) > 0) {
+#       $jobDependency .= $trimDependency .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
+#     }
+#     my $alignDependency = $globalDep{'alignMetrics'}{'alignMetrics'};
+#     if (defined($alignDependency) && length($alignDependency) > 0) {
+#       $jobDependency .= $alignDependency .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
+#     }
+#     my $goDependency = $globalDep{'goseq'}{'goseq'};
+#     if (defined($goDependency) && length($goDependency) > 0) {
+#       $jobDependency .= $goDependency .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
+#     }
+#   }
+# 
+#   if (defined($jobDependency) && length($jobDependency) > 0) {
+#     $jobDependency = substr $jobDependency, 0, -1 ;
+#   }
+# 
+#   my $command = GqSeqUtils::clientReport($rH_cfg,  $configFile, $workDirectory) ;
+# 
+#   my $deliverableJobId = undef;
+#   if(defined($command) && length($command) > 0) {
+#     print "mkdir -p deliverable/output_jobs\n";
+#     $deliverableJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "deliverable", 'REPORT', 'RNAREPORT', $jobDependency , undef, $command, 'deliverable' , $workDirectory);
+#     $deliverableJobId = '$' .$deliverableJobId ;
+#   }
+# 
+#   return $deliverableJobId;
+}
+
 
 1;
