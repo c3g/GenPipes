@@ -196,6 +196,23 @@ sub mergeTrimmomaticStats{
 	return $command;
 }
 
+sub mergeSampleDnaStats{
+        my $rH_cfg         = shift;
+        my $experimentType = shift;
+        my $folderFile     = shift;
+        my $outputFile     = shift;
+
+        if (!defined($experimentType) || $experimentType eq "") {
+                $experimentType= 'unknown';
+        }
+        my $command;
+        $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.cranR') .' ' . LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.tools') . ' &&';
+        $command .= ' Rscript \$R_TOOLS/DNAsampleMetrics.R ' .$folderFile .' ' .$outputFile .' ' .$experimentType;
+        
+        return $command;
+}
+
+
 sub mergePrintReadStats{
 	my $rH_cfg 							= shift;
 	my $sampleName         = shift;

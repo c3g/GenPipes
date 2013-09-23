@@ -83,11 +83,11 @@ push(@steps, {'name' => 'metricsLibrarySample', 'stepLoop' => 'experiment', 'par
 push(@steps, {'name' => 'fullPileup', 'stepLoop' => 'sample', 'parentStep' => 'recalibration'});
 push(@steps, {'name' => 'snpAndIndelBCF', 'stepLoop' => 'experiment', 'parentStep' => 'recalibration'});
 push(@steps, {'name' => 'mergeFilterBCF', 'stepLoop' => 'experiment', 'parentStep' => 'snpAndIndelBCF'});
-push(@steps, {'name' => 'filterNStretches', 'stepLoop' => 'experiment', 'parentStep' => 'mergeFilterBCF'});
-push(@steps, {'name' => 'flagMappability', 'stepLoop' => 'experiment', 'parentStep' => 'filterNStretches'});
+#push(@steps, {'name' => 'filterNStretches', 'stepLoop' => 'experiment', 'parentStep' => 'mergeFilterBCF'});
+push(@steps, {'name' => 'flagMappability', 'stepLoop' => 'experiment', 'parentStep' => 'mergeFilterBCF'});
 push(@steps, {'name' => 'snpIDAnnotation', 'stepLoop' => 'experiment', 'parentStep' => 'flagMappability'});
-push(@steps, {'name' => 'snpEffect', 'stepLoop' => 'experiment', 'parentStep' => 'snpIDAnnotation'});
-push(@steps, {'name' => 'metricsSNV', 'stepLoop' => 'experiment', 'parentStep' => 'snpEffect'});
+#push(@steps, {'name' => 'snpEffect', 'stepLoop' => 'experiment', 'parentStep' => 'snpIDAnnotation'});
+push(@steps, {'name' => 'metricsSNV', 'stepLoop' => 'experiment', 'parentStep' => 'snpIDAnnotation'});
 # push(@steps, {'name' => 'breakDancer', 'stepLoop' => 'experiment', 'parentStep' => 'recalibration'});
 # push(@steps, {'name' => 'pindel', 'stepLoop' => 'experiment', 'parentStep' => 'breakDancer'});
 # push(@steps, {'name' => 'cnv', 'stepLoop' => 'experiment', 'parentStep' => 'recalibration'});
@@ -515,6 +515,38 @@ sub metricsLibrarySample {
   my $rHoAoH_sampleInfo = shift;
   my $rAoH_seqDictionary = shift;
   
+  
+  my $metricsDependency = undef;
+  my $parentStep = $steps[$stepId]->{'parentStep'};
+
+  my @sampleNames = keys %{$rHoAoH_sampleInfo};
+  my $jobDependencies = "";
+  for(my $idx=0; $idx < @sampleNames; $idx++){
+    my $sampleName = $sampleNames[$idx];
+    my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sampleName};
+    if(defined($globalDep{$parentStep}->{$sampleName})){
+      $jobDependencies .= LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$globalDep{$parentStep}->{$sampleName};
+    }
+  }
+  if(length($jobDependencies) == 0) {
+    $jobDependencies = undef;
+  } else {
+    $jobDependencies = substr($jobDependencies, 1);
+  }
+  $metricsDependency = $jobDependencies;
+  
+  my $folder = 'alignment/';
+  my $ouputFile = 'metrics/SampleMetrics.stats';
+  my $experimentType = LoadConfig::getParam($rH_cfg, 'default', 'experimentType');
+  print "mkdir -p metrics\n";
+  my $command;
+  $command = Metrics::mergeSampleDnaStats($rH_cfg,  $experimentType, $folder, $ouputFile);
+  my $metricsJobId = undef;
+  if(defined($command) && length($command) > 0) {
+          my $trimMetricsJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "sampleMetrics", undef, 'SAMPLEMETRICS', $metricsDependency, undef, $command, LoadConfig::getParam($rH_cfg, "default", 'sampleOutputRoot') );
+          $metricsJobId = '$' .$trimMetricsJobId;
+  }
+  return $metricsJobId;
 }
 
 
