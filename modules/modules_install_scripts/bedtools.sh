@@ -3,15 +3,18 @@
 ################### BEDTools
 ###################
 VERSION="2.17.0"
-INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/bedtools/bedtools-$VERSION
+INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/bedtools
+
+# Set umask
+umask 0002
+
 mkdir -p $INSTALL_PATH
+cd $INSTALL_PATH
 wget "http://bedtools.googlecode.com/files/BEDTools.v$VERSION.tar.gz"
 tar -xvf BEDTools.v$VERSION.tar.gz
+chmod -R g+w bedtools-$VERSION
 cd bedtools-$VERSION
 make -j8
-mv ./* $INSTALL_PATH
-
-
 
 # Module file
 echo "#%Module1.0
@@ -24,15 +27,11 @@ set             root               \$::env(MUGQIC_INSTALL_HOME)/software/bedtool
 prepend-path    PATH               \$root
 " > $VERSION
 
-# version file
+# Version file
 echo "#%Module1.0
 set ModulesVersion \"$VERSION\"
 " > .version
 
 mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/bedtools
 mv .version $VERSION $MUGQIC_INSTALL_HOME/modulefiles/mugqic/bedtools/
-
-
-
-
-
+rm $INSTALL_PATH/BEDTools.v$VERSION.tar.gz
