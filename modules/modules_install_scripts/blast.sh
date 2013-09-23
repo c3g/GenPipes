@@ -5,10 +5,15 @@
 ###################
 VERSION="2.2.28"
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/blast/
+
+# Set umask
+umask 0002
+
 mkdir -p $INSTALL_PATH
+cd $INSTALL_PATH
 wget "ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/$VERSION/ncbi-blast-$VERSION+-x64-linux.tar.gz"
 tar -xvf ncbi-blast-$VERSION+-x64-linux.tar.gz
-mv ncbi-blast-$VERSION+ $INSTALL_PATH
+chmod -R g+w ncbi-blast-$VERSION+
 
 # Module file
 echo "#%Module1.0
@@ -19,16 +24,16 @@ module-whatis \" MUGQIC NCBI Blast: blast alignment\"
                       
 set             root               \$::env(MUGQIC_INSTALL_HOME)/software/blast/ncbi-blast-$VERSION+/bin
 prepend-path    PATH               \$root
-" > $VERSION
+" > $VERSION+
 
-# version file
+# Version file
 echo "#%Module1.0
-set ModulesVersion \"$VERSION\"
+set ModulesVersion \"$VERSION+\"
 " > .version
 
 mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/blast
-mv .version $VERSION $MUGQIC_INSTALL_HOME/modulefiles/mugqic/blast/
-
+mv .version $VERSION+ $MUGQIC_INSTALL_HOME/modulefiles/mugqic/blast/
+rm ncbi-blast-$VERSION+-x64-linux.tar.gz
 
 # Toxonomy DB
 #  wget ftp://ftp.ncbi.nlm.nih.gov/blast/db/taxdb.tar.gz

@@ -70,7 +70,7 @@ sub readJobLogListFile {
           } elsif($jobLine =~ /^Job ID:\s+(\S+)/) {
             $jobLog{'jobFullId'} = $1;
           # Job MUGQIC exit status
-          } elsif($jobLine =~ /^MUGQICexitStatus:(\d+)/) {
+          } elsif($jobLine =~ /MUGQICexitStatus:(\d+)/) {
             $jobLog{'MUGQICexitStatus'} = $1;
           # Job exit status (should be the same as MUGQIC exit status unless MUGQIC exit status is skipped)
           } elsif($jobLine =~ /^Exit_status:\s+(\d+)/) {

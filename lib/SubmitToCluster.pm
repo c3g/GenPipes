@@ -39,7 +39,6 @@ use LoadConfig;
 # SUB
 #--------------------
 sub initPipeline {
-  #my $rH_cfg = shift;
   my $workDir = shift;
 
   # Set working directory to current one by default
@@ -64,16 +63,10 @@ sub printSubmitCmd {
   my $dependencies = shift;
   my $sampleName = shift;
   my $command = shift;
-  #my $workDir = shift;
 
   # Set Job ID
   my $jobId = uc($jobIdPrefix) . "_JOB_ID";
   $jobId =~ s/\W/_/g;
-
-  # Set working directory to current one by default
-  #unless (defined $workDir and -d $workDir) {
-    #$workDir = "`pwd`";
-  #}
 
   # Set job name and job output directory depending on a global or sample-based step
   my $jobName = $stepName;
@@ -92,7 +85,6 @@ sub printSubmitCmd {
   unless (defined($dependencies)) {
     $dependencies = "";
   }
-  #my $jobOutputLog = "$jobOutputDir/$jobName" . "_\$TIMESTAMP.o";
 
   # Print out job header and settings nicely
   print "#--------------------------------------------------------------------------------\n";
