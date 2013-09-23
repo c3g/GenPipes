@@ -130,6 +130,10 @@ head(d2)
 is.significant<-function(x) ifelse(x<0.05,1,0)
 if(sum(is.significant(d2[,2])==1) == 0) {
 	print("No significant adjusted p-values found")
+	write.table(paste("Enriched category","FDR < 0.05 filtered p-value","GOID","Term","Ontology","Definition","Synonym", sep="\t"), out_path, append=F, row.names=F, col.names=F, quote=F)
+    q("no",0)
+} else {
+if (maxP == -1) maxP=dim(enriched.GO)[1]
 	q("no",0)
 }
 d3<-cbind(d2[,1], is.significant(d2[,2]))
