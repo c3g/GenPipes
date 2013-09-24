@@ -13,8 +13,8 @@ tar zxvf userApps.src.tgz
 
 # Compile
 cd userApps
-make -j8
-mv bin/* $INSTALL_PATH
+make
+mv bin/* kentUtils.Documentation.txt $INSTALL_PATH
 cd ..
 
 
