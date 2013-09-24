@@ -6,9 +6,6 @@
 VERSION="2.2.28"
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/blast/
 
-# Set umask
-umask 0002
-
 mkdir -p $INSTALL_PATH
 cd $INSTALL_PATH
 wget "ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/$VERSION/ncbi-blast-$VERSION+-x64-linux.tar.gz"
@@ -35,7 +32,6 @@ mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/blast
 mv .version $VERSION+ $MUGQIC_INSTALL_HOME/modulefiles/mugqic/blast/
 rm ncbi-blast-$VERSION+-x64-linux.tar.gz
 
-# Toxonomy DB
+# Taxonomy DB
 #  wget ftp://ftp.ncbi.nlm.nih.gov/blast/db/taxdb.tar.gz
 #  tar -xvf taxdb.tar.gz
-

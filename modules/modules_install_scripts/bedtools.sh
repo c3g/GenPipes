@@ -5,9 +5,6 @@
 VERSION="2.17.0"
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/bedtools
 
-# Set umask
-umask 0002
-
 mkdir -p $INSTALL_PATH
 cd $INSTALL_PATH
 wget "http://bedtools.googlecode.com/files/BEDTools.v$VERSION.tar.gz"
