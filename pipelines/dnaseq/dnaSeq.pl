@@ -80,10 +80,10 @@ push(@steps, {'name' => 'metrics', 'stepLoop' => 'sample', 'parentStep' => 'reca
 push(@steps, {'name' => 'fullPileup', 'stepLoop' => 'sample', 'parentStep' => 'recalibration'});
 push(@steps, {'name' => 'snpAndIndelBCF', 'stepLoop' => 'experiment', 'parentStep' => 'recalibration'});
 push(@steps, {'name' => 'mergeFilterBCF', 'stepLoop' => 'experiment', 'parentStep' => 'snpAndIndelBCF'});
-push(@steps, {'name' => 'filterNStretches', 'stepLoop' => 'experiment', 'parentStep' => 'mergeFilterBCF'});
+#push(@steps, {'name' => 'filterNStretches', 'stepLoop' => 'experiment', 'parentStep' => 'mergeFilterBCF'});
 push(@steps, {'name' => 'flagMappability', 'stepLoop' => 'experiment', 'parentStep' => 'filterNStretches'});
 push(@steps, {'name' => 'snpIDAnnotation', 'stepLoop' => 'experiment', 'parentStep' => 'flagMappability'});
-push(@steps, {'name' => 'snpEffect', 'stepLoop' => 'experiment', 'parentStep' => 'snpIDAnnotation'});
+#push(@steps, {'name' => 'snpEffect', 'stepLoop' => 'experiment', 'parentStep' => 'snpIDAnnotation'});
 
 my %globalDep;
 for my $stepName (@steps) {
@@ -535,6 +535,7 @@ sub snpAndIndelBCF {
   my $isFirst=1;
   for my $region (@{$rA_regions}) {
     my $command = SAMtools::mpileup($rH_cfg, 'allSamples', \@inputFiles, $region, $outputDir);
+    $region =~ s/:/_/g;
     my $mpileupJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mpileup", $region, 'MPILEUP', $jobDependencies, 'allSamples', $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ));
     $mpileupJobId = '$'.$mpileupJobId;
     if($isFirst==1) {
