@@ -1,26 +1,27 @@
-
 ###################
 ################### Bowtie2
 ###################
-VERSION="2.1.0"
-INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/bowtie/bowtie-$VERSION
+VERSION="1.0.0"
+INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/bowtie
 mkdir -p $INSTALL_PATH
-cd  $INSTALL_PATH
+cd $INSTALL_PATH
 
 # Download and extract
 wget http://sourceforge.net/projects/bowtie-bio/files/bowtie/${VERSION}/bowtie-${VERSION}-src.zip/download
-
 unzip bowtie-$VERSION-src.zip
+chmod -R g+w bowtie-$VERSION
+
 # Compile
 cd bowtie-$VERSION
 make -j8
+cd ..
 
 # Module file
 echo "#%Module1.0
 proc ModulesHelp { } {
-       puts stderr \"\tMUGQIC - Bowtie2 aligner \"
+       puts stderr \"\tMUGQIC - Bowtie aligner \"
 }
-module-whatis \"MUGQIC - Bowtie2 aligner \"
+module-whatis \"MUGQIC - Bowtie aligner \"
                       
 set             root               \$::env(MUGQIC_INSTALL_HOME)/software/bowtie/bowtie-$VERSION
 prepend-path    PATH               \$root
@@ -33,6 +34,4 @@ set ModulesVersion \"$VERSION\"
 
 mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/bowtie
 mv .version $VERSION $MUGQIC_INSTALL_HOME/modulefiles/mugqic/bowtie/
-
-
-
+rm bowtie-$VERSION-src.zip

@@ -54,7 +54,8 @@ sub rnaQc{
   my $command;
   # -M gives modified date relative to now. The bigger the older.
   if(!defined($latestFile) || !defined(-M $outputIndexFile) || $latestFile < -M $outputIndexFile) {
-    $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'rnaQc','moduleVersion.bwa') ;
+    $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'mergeFiles','moduleVersion.java') ;
+    $command .= ' ' .LoadConfig::getParam($rH_cfg, 'rnaQc','moduleVersion.bwa') ;
     $command .= ' ' .LoadConfig::getParam($rH_cfg, 'rnaQc','moduleVersion.rnaseqc') .' &&';
     $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'rnaQc', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'rnaQc', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'rnaQc', 'metricsRam').' -jar \${RNASEQC_JAR}';
     $command .= ' -n ' .LoadConfig::getParam($rH_cfg, 'rnaQc','topTranscript');

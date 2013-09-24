@@ -50,12 +50,14 @@ sub readJobLogListFile {
   open(JOB_LOG_LIST_FILE, $jobLogListPath) or die "Cannot open $jobLogListPath\n";
   while(my $line = <JOB_LOG_LIST_FILE>) {
     # Retrieve each job's log file path
-    if($line =~ /^(\S+)\t(\S+)/) {
-      my $jobId = $1;
-      my $clusterJobLogPath = $2;
+    my ($jobId, $jobName, $jobDependencies, $clusterJobLogPath) = split(/\t/, $line);
+
+    if (defined $jobName and defined $clusterJobLogPath) {
       my %jobLog;
-  
+
       $jobLog{'jobId'} = $jobId;
+      $jobLog{'jobName'} = $jobName;
+      $jobLog{'jobDependencies'} = $jobDependencies;
       $jobLog{'path'} = $clusterJobLogPath;
       # Read the job log file
       if (open(CLUSTER_JOB_LOG_FILE, $clusterJobLogPath)) {
@@ -66,12 +68,9 @@ sub readJobLogListFile {
             $jobLog{'startSecondsSinceEpoch'} = $2;
           # Job number
           } elsif($jobLine =~ /^Job ID:\s+(\S+)/) {
-            $jobLog{'jobNumber'} = $1;
-          # Job name
-          } elsif($jobLine =~ /^Job Name:\s+(\S+)/) {
-            $jobLog{'jobName'} = $1;
+            $jobLog{'jobFullId'} = $1;
           # Job MUGQIC exit status
-          } elsif($jobLine =~ /^MUGQICexitStatus:(\d+)/) {
+          } elsif($jobLine =~ /MUGQICexitStatus:(\d+)/) {
             $jobLog{'MUGQICexitStatus'} = $1;
           # Job exit status (should be the same as MUGQIC exit status unless MUGQIC exit status is skipped)
           } elsif($jobLine =~ /^Exit_status:\s+(\d+)/) {
@@ -98,6 +97,7 @@ sub readJobLogListFile {
   close(JOB_LOG_LIST_FILE);
 }
 
+# Print out a log report in simple text format
 sub getLogTextReport {
 
   my $jobLogListPath = shift;
@@ -145,7 +145,9 @@ sub getLogTextReport {
 
   $logTextReport .= join("\t", (
     "JOB_ID",
+    "JOB_FULL_ID",
     "JOB_NAME",
+    "JOB_DEPENDENCIES",
     "JOB_EXIT_CODE",
     "CMD_EXIT_CODE",
     "WALL_TIME",
@@ -160,7 +162,9 @@ sub getLogTextReport {
   for my $jobLog (@AoH_jobLogList) {
     $logTextReport .= join("\t", (
       exists $jobLog->{'jobId'} ? $jobLog->{'jobId'} : "N/A",
+      exists $jobLog->{'jobFullId'} ? $jobLog->{'jobFullId'} : "N/A",
       exists $jobLog->{'jobName'} ? $jobLog->{'jobName'} : "N/A",
+      exists $jobLog->{'jobDependencies'} ? $jobLog->{'jobDependencies'} : "N/A",
       exists $jobLog->{'exitStatus'} ? $jobLog->{'exitStatus'} : "N/A",
       exists $jobLog->{'MUGQICexitStatus'} ? $jobLog->{'MUGQICexitStatus'} : "N/A",
       exists $jobLog->{'walltime'} ? $jobLog->{'walltime'} : "N/A",
