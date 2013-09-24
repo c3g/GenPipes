@@ -7,8 +7,10 @@
 VERSION="20120518"
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/a5/
 mkdir -p $INSTALL_PATH
+cd $INSTALL_PATH
 wget http://ngopt.googlecode.com/files/ngopt_a5pipeline_linux-x64_$VERSION.tar.gz
 tar -xvf ngopt_a5pipeline_linux-x64_$VERSION.tar.gz
+chmod -R g+w ngopt_a5pipeline_linux-x64_$VERSION
 # sh ngopt_a5pipeline_linux-x64_$VERSION/test.a5.sh # only tested on login node
 
 
@@ -18,8 +20,6 @@ tar -xvf ngopt_a5pipeline_linux-x64_$VERSION.tar.gz
 	#my @dummy = `echo "" > empty.fa`;
 	#my $idba_cmd = "idba -r empty.fa -l $reads -o $WD/$outbase --mink ".IDBA_MIN_K." --maxk $maxrdlen";
 	
-
-mv ngopt_a5pipeline_linux-x64_$VERSION $INSTALL_PATH
 
 # Module file
 echo "#%Module1.0
@@ -41,8 +41,4 @@ set ModulesVersion \"$VERSION\"
 
 mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/a5
 mv .version $VERSION $MUGQIC_INSTALL_HOME/modulefiles/mugqic/a5/
-
-
-
-
-
+rm ngopt_a5pipeline_linux-x64_$VERSION.tar.gz

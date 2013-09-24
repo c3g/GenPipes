@@ -78,6 +78,7 @@ sub mem {
     my $rgTag = "'" . '@RG\tID:' . $rgId . '\tSM:' . $rgSample . '\tLB:' . $rgLibrary . '\tPU:run' . $rgPlatformUnit . '\tCN:' . $rgCenter . '\tPL:Illumina' . "'";
     $bwaCommand .= 'module load '.LoadConfig::getParam($rH_cfg, 'mem', 'moduleVersion.bwa').' ;';
     $bwaCommand .= ' module load '.LoadConfig::getParam($rH_cfg, 'mem', 'moduleVersion.picard').' ;';
+    $bwaCommand .= ' module load '.LoadConfig::getParam($rH_cfg, 'mem', 'moduleVersion.java').' ;';
     $bwaCommand .= ' bwa mem ';
     $bwaCommand .= ' '.LoadConfig::getParam( $rH_cfg, 'mem', 'bwaExtraFlags' );
     $bwaCommand .= ' -R ' . $rgTag;
@@ -182,6 +183,7 @@ sub pairCommand {
         my $rgTag = "'" . '@RG\tID:' . $rgId . '\tSM:' . $rgSample . '\tLB:' . $rgLibrary . '\tPU:run' . $rgPlatformUnit . '\tCN:' . $rgCenter . '\tPL:Illumina' . "'";
         $bwaCommand .= 'module load '.LoadConfig::getParam($rH_cfg, 'aln', 'moduleVersion.bwa').' ;';
         $bwaCommand .= ' module load '.LoadConfig::getParam($rH_cfg, 'aln', 'moduleVersion.picard').' ;';
+        $bwaCommand .= ' module load '.LoadConfig::getParam($rH_cfg, 'aln', 'moduleVersion.java').' ;';
         $bwaCommand .= ' bwa sampe ';
         $bwaCommand .= ' '.LoadConfig::getParam( $rH_cfg, 'aln', 'bwaExtraSamXeFlags' );
         $bwaCommand .= ' -r ' . $rgTag;
@@ -246,6 +248,7 @@ sub singleCommand {
         my $rgTag = "'" . '@RG\tID:' . $rgId . '\tSM:' . $rgSample . '\tLB:' . $rgLibrary . '\tPU:run' . $rgPlatformUnit . '\tCN:' . $rgCenter . '\tPL:Illumina' . "'";
         $bwaCommand .= 'module load '.LoadConfig::getParam($rH_cfg, 'aln', 'moduleVersion.bwa').' ;';
         $bwaCommand .= ' module load '.LoadConfig::getParam($rH_cfg, 'aln', 'moduleVersion.picard').' ;';
+        $bwaCommand .= ' module load '.LoadConfig::getParam($rH_cfg, 'aln', 'moduleVersion.java').' ;';
         $bwaCommand .= ' bwa samse';
         $bwaCommand .= ' '.LoadConfig::getParam( $rH_cfg, 'aln', 'bwaExtraSamXeFlags' );
         $bwaCommand .= ' -r ' . $rgTag;

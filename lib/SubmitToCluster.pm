@@ -38,22 +38,21 @@ use LoadConfig;
 
 # SUB
 #--------------------
-sub initSubmit {
-  my $rH_cfg = shift;
-  my $sampleName = shift;
+sub initPipeline {
+  my $workDir = shift;
 
-  my $outputFolder = LoadConfig::getParam($rH_cfg, "default", 'sampleOutputRoot');
-  if(substr($outputFolder,length($outputFolder)-1) eq "/") {
-    $outputFolder = substr($outputFolder,0 ,length($outputFolder)-1);
+  # Set working directory to current one by default
+  unless (defined $workDir and -d $workDir) {
+    $workDir = "`pwd`";
   }
 
-  if(!defined($sampleName) || length($sampleName) == 0) {
-    print "mkdir -p " . $outputFolder . '/output_jobs/' . "\n";
-  } else {
-    print "mkdir -p " . $outputFolder . '/'. $sampleName . '/output_jobs/' . "\n";
-  }
-
+  # Set pipeline header and global variables
+  print "#!/bin/bash\n\n";
+  print "WORK_DIR=$workDir\n";
+  print "JOB_OUTPUT_ROOT=\$WORK_DIR/job_output\n";
   print "TIMESTAMP=`date +%FT%H.%M.%S`\n";
+  print "JOB_LIST=\$JOB_OUTPUT_ROOT/job_list_\$TIMESTAMP\n\n";
+  print "cd \$WORK_DIR\n\n";
 }
 
 sub printSubmitCmd {
@@ -61,68 +60,72 @@ sub printSubmitCmd {
   my $stepName = shift;
   my $jobNameSuffix = shift;
   my $jobIdPrefix = shift;
-  my $dependencyName = shift;
+  my $dependencies = shift;
   my $sampleName = shift;
   my $command = shift;
-  my $outputDir = shift;
-  my $workDir = shift;
 
-  if (substr($outputDir, length($outputDir) - 1) eq "/") {
-    $outputDir = substr($outputDir, 0 ,length($outputDir) - 1);
+  # Set Job ID
+  my $jobId = uc($jobIdPrefix) . "_JOB_ID";
+  $jobId =~ s/\W/_/g;
+
+  # Set job name and job output directory depending on a global or sample-based step
+  my $jobName = $stepName;
+  my $jobOutputDir = "\$JOB_OUTPUT_ROOT/";
+  if (defined($sampleName) and $sampleName ne "") {
+    $jobName .= ".$sampleName";
+    $jobOutputDir .= $sampleName;
+  } else {
+    $jobOutputDir .= "global";
+  }
+  if (defined($jobNameSuffix) and $jobNameSuffix ne "") {
+    $jobName .= ".$jobNameSuffix";
   }
 
-  my $jobIdVarName = uc( $jobIdPrefix ) . '_JOB_ID';
-  $jobIdVarName =~ s/\W/_/g;
-
-  ### TO DO modify the output dir to be more portable
-
-  if (!(defined $workDir)) {
-    $workDir = '`pwd`';
+  # Check if $dependencies is initialized
+  unless (defined($dependencies)) {
+    $dependencies = "";
   }
-  if (!(defined $outputDir)) {
-    $outputDir = $sampleName;
-  }
+
+  # Print out job header and settings nicely
+  print "#--------------------------------------------------------------------------------\n";
+  print "# $jobId $jobName\n";
+  print "#--------------------------------------------------------------------------------\n";
+  print "JOB_NAME=$jobName\n";
+  print "JOB_DEPENDENCIES=$dependencies\n";
+  print "JOB_OUTPUT_DIR=$jobOutputDir\n";
+  # Set job output filename based on job name and timestamp
+  print "JOB_OUTPUT=\$JOB_OUTPUT_DIR/\${JOB_NAME}_\$TIMESTAMP.o\n";
+  print "mkdir -p \$JOB_OUTPUT_DIR\n";
+
+  # Assign job number to job ID if any
   if (LoadConfig::getParam($rH_cfg, $stepName, 'clusterCmdProducesJobId') eq "true") {
-    #$command =~ s/\\\$/\\\\\\\$/g;
-    print $jobIdVarName . '=$(';
-    #if ($workDir eq '`pwd`') {
-    #       $workDir = '\`pwd\`';
-    #}
+    print $jobId . '=$(';
   }
+  # Print out job command
   print 'echo "' . $command . ' && echo \"MUGQICexitStatus:\$?\"" | ';
   print LoadConfig::getParam($rH_cfg, $stepName, 'clusterSubmitCmd');
-  print ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterOtherArg');
-  print ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterWorkDirArg') . ' ' . $workDir;
-  my $jobName;
-  if (defined($sampleName) && length($sampleName) > 0) {
-    $jobName = $stepName . '.' . $sampleName;
-  } else {
-    $jobName = $stepName;
+  print " " . LoadConfig::getParam($rH_cfg, $stepName, 'clusterOtherArg');
+  print " " . LoadConfig::getParam($rH_cfg, $stepName, 'clusterWorkDirArg') . " \$WORK_DIR";
+  print " " . LoadConfig::getParam($rH_cfg, $stepName, 'clusterOutputDirArg') . " \$JOB_OUTPUT";
+  print " " . LoadConfig::getParam($rH_cfg, $stepName, 'clusterJobNameArg') . " \$JOB_NAME";
+  print " " . LoadConfig::getParam($rH_cfg, $stepName, 'clusterWalltime');
+  print " " . LoadConfig::getParam($rH_cfg, $stepName, 'clusterQueue');
+  print " " . LoadConfig::getParam($rH_cfg, $stepName, 'clusterCPU');
+  if ($dependencies ne "") {
+    print " " . LoadConfig::getParam($rH_cfg, $stepName, 'clusterDependencyArg') . "\$JOB_DEPENDENCIES";
   }
-  if (defined($jobNameSuffix) && length($jobNameSuffix) > 0) {
-    $jobName .= '.' . $jobNameSuffix;
-  }
-  my $outputLog = $jobName . "_\${TIMESTAMP}.o";
-  print ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterOutputDirArg') . ' '  . $outputDir . '/output_jobs/' . $outputLog;
-  print ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterJobNameArg') . ' ' . $jobName;
-  print ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterWalltime');
-  print ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterQueue');
-  print ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterCPU');
-  if (defined($dependencyName)) {
-    print ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterDependencyArg') . $dependencyName;
-  }
-  print ' ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterSubmitCmdSuffix');
+  print " " . LoadConfig::getParam($rH_cfg, $stepName, 'clusterSubmitCmdSuffix');
   if (LoadConfig::getParam($rH_cfg, $stepName, 'clusterCmdProducesJobId') eq "true") {
-    print ')';
+    print ")";
   }
   print "\n";
 
   if (LoadConfig::getParam($rH_cfg, $stepName, 'clusterCmdProducesJobId') eq "false") {
-    print $jobIdVarName . '=' . $jobName . "\n";
+    print "$jobId=$jobName\n";
   }
-  print "echo \"$jobIdVarName\t$workDir/$outputDir/output_jobs/$outputLog\"";
-  print "\n\n";
 
-  return $jobIdVarName;
+  # Write job parameters in job list file
+  print "echo \"\$$jobId\t\$JOB_NAME\t\$JOB_DEPENDENCIES\t\$JOB_OUTPUT\" >> \$JOB_LIST\n\n"; 
+  return $jobId;
 }
 1;

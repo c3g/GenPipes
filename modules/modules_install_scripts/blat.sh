@@ -35,7 +35,3 @@ set ModulesVersion \"$VERSION\"
 
 mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/blat
 mv .version $VERSION $MUGQIC_INSTALL_HOME/modulefiles/mugqic/blat/
-
-
-
-
