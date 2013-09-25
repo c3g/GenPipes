@@ -11,13 +11,15 @@ VERSION="0.0.13.2"
 LIBVERSION="0.6.1"
 NAME=fastx_toolkit-$VERSION
 LIBNAME=libgtextutils-$LIBVERSION
+INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/fastx/$NAME
+INSTALL_DOWNLOAD=$MUGQIC_INSTALL_HOME/software/fastx/tmp
+mkdir -p $INSTALL_PATH $INSTALL_DOWNLOAD
+cd $INSTALL_DOWNLOAD
+
 wget http://hannonlab.cshl.edu/fastx_toolkit/$NAME.tar.bz2
 wget http://hannonlab.cshl.edu/fastx_toolkit/$LIBNAME.tar.bz2
 tar -xvf $NAME.tar.bz2
 tar -xvf $LIBNAME.tar.bz2
-
-INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/fastx/$NAME
-mkdir -p $INSTALL_PATH
 
 cd $LIBNAME
 ./configure --prefix=$INSTALL_PATH
@@ -32,6 +34,8 @@ make
 make install
 cd ..
 
+chmod -R g+w $INSTALL_PATH
+
 # Module file
 echo "#%Module1.0
 proc ModulesHelp { } {
@@ -43,14 +47,11 @@ set             root               \$::env(MUGQIC_INSTALL_HOME)/software/fastx/f
 prepend-path    PATH               \$root
 " > $VERSION
 
-# version file
+# Version file
 echo "#%Module1.0
 set ModulesVersion \"$VERSION\"
 " > .version
 
 mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/fastx
 mv .version $VERSION $MUGQIC_INSTALL_HOME/modulefiles/mugqic/fastx/
-
-
-
-
+rm -rf $INSTALL_DOWNLOAD
