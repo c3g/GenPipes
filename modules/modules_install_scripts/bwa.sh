@@ -13,12 +13,12 @@ cd $INSTALL_PATH
 # Download
 wget http://downloads.sourceforge.net/project/bio-bwa/bwa-$VERSION.tar.bz2
 tar xvjf bwa-$VERSION.tar.bz2
-chmod -R g+w bwa-$VERSION
 
 # Compile
 cd bwa-$VERSION
 make -j8
 cd ..
+chmod -R g+w $INSTALL_PATH/bwa-$VERSION
 
 # Module file
 echo "#%Module1.0

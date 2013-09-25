@@ -15,10 +15,10 @@ tar -xvf BEDTools.v$VERSION.tar.gz
 
 # Change the program directory name since different tar.gz archive versions have different names
 mv *-$VERSION $INSTALL_PATH/bedtools-$VERSION
-cd $INSTALL_PATH
-chmod -R g+w bedtools-$VERSION
-cd bedtools-$VERSION
+cd $INSTALL_PATH/bedtools-$VERSION
 make -j8
+cd ..
+chmod -R g+w $INSTALL_PATH/bedtools-$VERSION
 
 # Module file
 echo "#%Module1.0

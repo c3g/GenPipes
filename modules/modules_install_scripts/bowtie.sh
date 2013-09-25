@@ -9,12 +9,12 @@ cd $INSTALL_PATH
 # Download and extract
 wget http://sourceforge.net/projects/bowtie-bio/files/bowtie/${VERSION}/bowtie-${VERSION}-src.zip/download
 unzip bowtie-$VERSION-src.zip
-chmod -R g+w bowtie-$VERSION
 
 # Compile
 cd bowtie-$VERSION
 make -j8
 cd ..
+chmod -R g+w $INSTALL_PATH/bowtie-$VERSION
 
 # Module file
 echo "#%Module1.0

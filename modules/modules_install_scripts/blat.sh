@@ -15,6 +15,7 @@ sed -i 's/ -Werror//g' inc/common.mk
 export MACHTYPE=x86_64
 make BINDIR=${INSTALL_PATH}
 cd ..
+chmod -R g+w $INSTALL_PATH
 rm -r blatSrc
 
 # Module file

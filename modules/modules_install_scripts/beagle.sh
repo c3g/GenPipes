@@ -11,6 +11,7 @@ cd $INSTALL_PATH
 # Download
 wget --content-disposition http://faculty.washington.edu/browning/beagle/b${VERSION}.jar
 wget --content-disposition http://faculty.washington.edu/browning/beagle/b${VERSION_DOC}.pdf
+chmod -R g+w $INSTALL_PATH
 
 # Module file
 echo "#%Module1.0
