@@ -13,9 +13,12 @@ cd $INSTALL_PATH
 # Download
 wget http://downloads.sourceforge.net/project/bio-bwa/bwa-$VERSION.tar.bz2
 tar xvjf bwa-$VERSION.tar.bz2
+chmod -R g+w bwa-$VERSION
+
 # Compile
 cd bwa-$VERSION
 make -j8
+cd ..
 
 # Module file
 echo "#%Module1.0
@@ -35,6 +38,5 @@ set ModulesVersion \"$VERSION\"
 
 mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/bwa
 mv .version $VERSION $MUGQIC_INSTALL_HOME/modulefiles/mugqic/bwa/
-
-
+rm bwa-$VERSION.tar.bz2
 
