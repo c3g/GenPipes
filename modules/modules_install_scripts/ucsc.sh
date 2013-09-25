@@ -16,6 +16,7 @@ cd userApps
 make
 mv bin/* kentUtils.Documentation.txt $INSTALL_PATH
 cd ..
+chmod -R g+w $INSTALL_PATH
 
 
 # Module file
