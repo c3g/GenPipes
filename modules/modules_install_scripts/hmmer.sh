@@ -1,6 +1,6 @@
 
 ###################
-################### HMMER3
+################### HMMER
 ###################
 VERSION=3.0
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/hmmer/hmmer-$VERSION

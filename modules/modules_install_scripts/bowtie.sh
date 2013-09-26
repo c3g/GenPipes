@@ -1,5 +1,5 @@
 ###################
-################### Bowtie2
+################### Bowtie
 ###################
 VERSION="1.0.0"
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/bowtie

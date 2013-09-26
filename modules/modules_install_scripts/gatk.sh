@@ -1,7 +1,7 @@
 
 
 ###################
-################### samtools
+################### GATK
 ###################
 echo "You must download and install GATK manually";
 echo "It can be found here:"
