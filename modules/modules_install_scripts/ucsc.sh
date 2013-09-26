@@ -30,7 +30,7 @@ set             root               \$::env(MUGQIC_INSTALL_HOME)/software/ucsc/uc
 prepend-path    PATH               \$root
 " > $VERSION
 
-# version file
+# Version file
 echo "#%Module1.0
 set ModulesVersion \"$VERSION\"
 " > .version

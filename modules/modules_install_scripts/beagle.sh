@@ -23,7 +23,7 @@ module-whatis \"MUGQIC - beagle \"
 set             root               \$::env(MUGQIC_INSTALL_HOME)/software/beagle/beagle-${VERSION}
 setenv          BEAGLE_HOME        \$root
 " > $VERSION
-# version file
+# Version file
 echo "#%Module1.0
 set ModulesVersion \"$VERSION\"
 " > .version

@@ -29,7 +29,7 @@ set             root               \$::env(MUGQIC_INSTALL_HOME)/software/blat/bl
 prepend-path    PATH               \$root
 " > $VERSION
 
-# version file
+# Version file
 echo "#%Module1.0
 set ModulesVersion \"$VERSION\"
 " > .version
