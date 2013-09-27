@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 
 use File::Path qw(mkpath);
+use Cwd;
 use Text::CSV;
 use Getopt::Long;
 
@@ -86,7 +87,13 @@ sub createLinks {
   my $rA_SampleInfos = shift;
 
   for my $rH_Sample (@$rA_SampleInfos) {
-    my $directory = 'raw_reads/'.$rH_Sample->{'name'}."/run".$rH_Sample->{'runId'}."_".$rH_Sample->{'lane'};
+    my $dirCur = getcwd;
+    my @Foldervalues = split('/', $dirCur);
+    if ( $Foldervalues[-1] eq "raw_reads" ) {
+       my $directory = $rH_Sample->{'name'}."/run".$rH_Sample->{'runId'}."_".$rH_Sample->{'lane'};
+    } else {
+      my $directory = 'raw_reads/'.$rH_Sample->{'name'}."/run".$rH_Sample->{'runId'}."_".$rH_Sample->{'lane'};
+    }
     mkpath($directory);
 
     my $runType = $rH_Sample->{'runType'};
@@ -258,9 +265,17 @@ sub parseSheet {
     my @rootFiles;
     if($isHiSeq == 1) {
       @rootFiles =  grep { /.*[0-9]+_[^_]+_[^_]+_$sampleInfo{'runId'}/ } readdir(ROOT_DIR);
+      if(@rootFiles == 0) {
+        opendir(ROOT_DIR_2013, $rootDir .'/2013') or die "Couldn't open directory ".$rootDir."/2013\n";
+        rootFiles =  grep { /.*[0-9]+_[^_]+_[^_]+_$sampleInfo{'runId'}/ } readdir(ROOT_DIR_2013);
+      }
     }
     else {
       @rootFiles =  grep { /.*[0-9]+_$sampleInfo{'runId'}/ } readdir(ROOT_DIR);
+      if(@rootFiles == 0) {
+        opendir(ROOT_DIR_2013, $rootDir .'/2013') or die "Couldn't open directory ".$rootDir."/2013\n";
+        rootFiles =  grep { /.*[0-9]+_$sampleInfo{'runId'}/ } readdir(ROOT_DIR_2013);
+      }
     }
 
     if(@rootFiles == 0) {
