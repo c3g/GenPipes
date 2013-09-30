@@ -357,22 +357,35 @@ sub merging {
 	if($depends > 0) {
 		$jobDependency = $globalDep{'aligning'}{$sampleName};
 	}
+	
 	##Merging
 	my $inputBAM ; 
 	my $outputBAM = 'alignment/' .$sampleName .'/' .$sampleName .'.merged.bam' ;
 	my @alignFiles;
+	my $merge = 0; # JT : Flag to see if we skip merging step or not.
+
 	for my $rH_laneInfo (@$rAoH_sampleLanes) {
 		my $laneDir = "alignment/" . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
 		$inputBAM = $laneDir . 'accepted_hits.bam';
+		$merge++; # JT: increment flag 
 		push(@alignFiles, $inputBAM) ;
 	}
-	my $command = Picard::mergeFiles($rH_cfg, $sampleName, \@alignFiles, $outputBAM);
+	my $command;
 	my $mergeJobId = undef;
-	if(defined($command) && length($command) > 0) {
-		$mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mergeFiles", undef, 'MERGELANES' .$rH_jobIdPrefixe ->{$sampleName} , $jobDependency, $sampleName, $command);
-		$mergeJobId = '$'.$mergeJobId;
+	if($merge > 1){ # JT: If flag is higher than 1 (so more than one lane / sample), perform merge.
+		$command  = Picard::mergeFiles($rH_cfg, $sampleName, \@alignFiles, $outputBAM);
+		if(defined($command) && length($command) > 0) {
+			$mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mergeFiles", undef, 'MERGELANES' .$rH_jobIdPrefixe ->{$sampleName} , $jobDependency, $sampleName, $command);
+			$mergeJobId = '$'.$mergeJobId;
+		}
+	}else{
+		$mergeJobId = $jobDependency; # JT : update job dependency as well.
 	}
+	
 	## reorder
+	if($merge > 1){ # JT : if merge, update input file accordingly.
+		$inputBAM = $outputBAM; #Update file name if it has been merged.
+	}
 	$inputBAM = $outputBAM;
 	$outputBAM = 'alignment/' .$sampleName .'/' .$sampleName .'.merged.karyotypic.bam';
 	$command = Picard::reorderSam($rH_cfg, $sampleName, $inputBAM, $outputBAM);
