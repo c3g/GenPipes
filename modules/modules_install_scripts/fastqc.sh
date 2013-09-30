@@ -11,6 +11,7 @@ wget http://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v"$VERSION"
 unzip fastqc_v"$VERSION".zip
 rm fastqc_v"$VERSION".zip
 chmod +x FastQC/fastqc
+chmod -R g+w $INSTALL_PATH
 
 # Module file
 echo "#%Module1.0
@@ -23,7 +24,7 @@ set             root                \$::env(MUGQIC_INSTALL_HOME)/software/fastqc
 prepend-path    PATH               \$root
 " > $VERSION
 
-# version file
+# Version file
 echo "#%Module1.0
 set ModulesVersion \"$VERSION\"
 " > .version

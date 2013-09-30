@@ -13,9 +13,10 @@ tar zxvf userApps.src.tgz
 
 # Compile
 cd userApps
-make -j8
-mv bin/* $INSTALL_PATH
+make
+mv bin/* kentUtils.Documentation.txt $INSTALL_PATH
 cd ..
+chmod -R g+w $INSTALL_PATH
 
 
 # Module file
@@ -29,7 +30,7 @@ set             root               \$::env(MUGQIC_INSTALL_HOME)/software/ucsc/uc
 prepend-path    PATH               \$root
 " > $VERSION
 
-# version file
+# Version file
 echo "#%Module1.0
 set ModulesVersion \"$VERSION\"
 " > .version
