@@ -276,16 +276,21 @@ sub parseSheet {
     my @rootFiles;
     my $runPath;
     for my $rootDir (@roots) {
+      my @tmpPaths;
       opendir(ROOT_DIR, $rootDir) or die "Couldn't open directory ".$rootDir."\n";
       if($isHiSeq == 1) {
-        @rootFiles =  grep { /.*[0-9]+_[^_]+_[^_]+_$sampleInfo{'runId'}/ } readdir(ROOT_DIR);
-        $runPath  = $rootDir.'/'.$rootFiles[0];
+        @tmpPaths =  grep { /.*[0-9]+_[^_]+_[^_]+_$sampleInfo{'runId'}/ } readdir(ROOT_DIR);
       }
       else {
-        @rootFiles =  grep { /.*[0-9]+_$sampleInfo{'runId'}/ } readdir(ROOT_DIR);
+        @tmpPaths =  grep { /.*[0-9]+_$sampleInfo{'runId'}/ } readdir(ROOT_DIR);
+      }
+
+      if(@tmpPaths > 0) {
+        push(@rootFiles, @tmpPaths);
         $runPath  = $rootDir.'/'.$rootFiles[0];
       }
     }
+
     if(@rootFiles == 0) {
       die "Run not found: ".$sampleInfo{'runId'}."\n";
     }
