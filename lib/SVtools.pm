@@ -33,7 +33,6 @@ use warnings;
 
 # Dependencies
 #-----------------------
-use PipelineUtils;
 
 # SUB
 #-----------------------
@@ -44,8 +43,8 @@ sub runPairedDNAC {
     my $outputPrefix  = shift;
     my $window        = shift;
 
-    my $up2date = PipelineUtils::testInputOutputs([$inputBins], [$outputPrefix.'.txt']);
-    my $ro_job = new Job(!defined($up2date));
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$inputBins], [$outputPrefix.'.txt']);
 
     if (!$ro_job->isUp2Date()) {
         my $command;
@@ -55,7 +54,6 @@ sub runPairedDNAC {
         $command .= ' -f '.$inputBins;
         $command .= ' -b '.$window;
         $command .= ' -o '.$outputPrefix;
-        $command .= ' ' . $up2date;
 
         $ro_job->addCommand($command);
     }
@@ -69,8 +67,8 @@ sub filterDNAC {
     my $outputPrefix    = shift;
     my $cnvProx           = shift;
 
-    my $up2date = PipelineUtils::testInputOutputs([$inputDNACCalls], [$outputPrefix.'.filteredSV.txt']);
-    my $ro_job = new Job(!defined($up2date));
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$inputDNACCalls], [$outputPrefix.'.filteredSV.txt']);
 
     if (!$ro_job->isUp2Date()) {
         my $command;
@@ -84,7 +82,6 @@ sub filterDNAC {
         $command .= filterResults($rH_cfg,  'filterSV', $outputPrefix, $cnvProx) ;
         $command .= ' && ';
         $command .= generateBedResults($rH_cfg, $outputPrefix) ;
-        $command .= ' ' . $up2date;
 
         $ro_job->addCommand($command);
     }
@@ -100,8 +97,8 @@ sub filterBrD {
     my $normalFile    = shift;
     my $tumorFile    = shift;
 
-    my $up2date = PipelineUtils::testInputOutputs([$inputBrDCalls], [$outputPrefix.'.filteredSV.txt']);
-    my $ro_job = new Job(!defined($up2date));
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$inputBrDCalls], [$outputPrefix.'.filteredSV.txt']);
 
     if (!$ro_job->isUp2Date()) {
         my $command;
@@ -118,7 +115,6 @@ sub filterBrD {
         $command .= filterResults($rH_cfg,  'filterSV', $outputPrefix, '') ;
         $command .= ' && ';
         $command .= generateBedResults($rH_cfg, $outputPrefix) ;
-        $command .= ' ' . $up2date;
 
         $ro_job->addCommand($command);
     }
@@ -133,8 +129,8 @@ sub filterPI {
     my $normalFile    = shift;
     my $tumorFile    = shift;
 
-    my $up2date = PipelineUtils::testInputOutputs([$outputPrefix], [$outputPrefix.'.filteredSV.txt']);
-    my $ro_job = new Job(!defined($up2date));
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$outputPrefix], [$outputPrefix.'.filteredSV.txt']);
 
     if (!$ro_job->isUp2Date()) {
         my $command;
@@ -149,7 +145,6 @@ sub filterPI {
         $command .= filterResults($rH_cfg,  'filterSV', $outputPrefix, '') ;
         $command .= ' && ';
         $command .= generateBedResults($rH_cfg, $outputPrefix);
-        $command .= ' ' . $up2date;
 
         $ro_job->addCommand($command);
     }
@@ -163,8 +158,8 @@ sub filterResults {
     my $outputPrefix    = shift;
     my $cnvProx           = shift;
 
-    my $up2date = PipelineUtils::testInputOutputs([$outputPrefix.'.bed'], [$outputPrefix.'.txt']);
-    my $ro_job = new Job(!defined($up2date));
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$outputPrefix.'.bed'], [$outputPrefix.'.txt']);
 
     if (!$ro_job->isUp2Date()) {
         my $command;
@@ -180,7 +175,6 @@ sub filterResults {
         $command .= ' '.$outputPrefix.'.bed';
         $command .= ' '.$outputPrefix.'.tmp';
         $command .= ' '.$cnvProx;
-        $command .= ' ' . $up2date;
 
         $ro_job->addCommand($command);
     }
@@ -191,8 +185,8 @@ sub generateBedResults {
     my $rH_cfg          = shift;
     my $outputPrefix    = shift;
 
-    my $up2date = PipelineUtils::testInputOutputs([$outputPrefix.'.bed.other.filteredSV.annotate.txt', $outputPrefix.'.bed.TumS.filteredSV.annotate.txt'],[$outputPrefix.'.bed.other.filteredSV.annotate.bed', $outputPrefix.'.bed.TumS.filteredSV.annotate.bed']);
-    my $ro_job = new Job(!defined($up2date));
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$outputPrefix.'.bed.other.filteredSV.annotate.txt', $outputPrefix.'.bed.TumS.filteredSV.annotate.txt'],[$outputPrefix.'.bed.other.filteredSV.annotate.bed', $outputPrefix.'.bed.TumS.filteredSV.annotate.bed']);
 
     if (!$ro_job->isUp2Date()) {
         my $command;
@@ -203,7 +197,6 @@ sub generateBedResults {
         $command .= ' && \${SVTOOLS_HOME}/Cancer/rtxt2rbed.sh';
         $command .= ' '.$outputPrefix.'.bed.TumS.filteredSV.annotate.txt';
         $command .= ' '.$outputPrefix.'.bed.TumS.filteredSV.annotate.bed';
-        $command .= ' ' . $up2date;
 
         $ro_job->addCommand($command);
     }

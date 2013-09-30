@@ -42,7 +42,6 @@ use warnings;
 
 # Dependencies
 #-----------------------
-use PipelineUtils;
 use Data::Dumper;
 use Config::Simple;
 
@@ -60,8 +59,8 @@ sub edger {
     my %retVal;
 
     my $laneDirectory = 'DGE/' . $group . "/";
-    my $up2date = PipelineUtils::testInputOutputs([$laneDirectory . 'matrix.csv '], [$laneDirectory]);
-    my $ro_job = new Job(!defined($up2date));
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$laneDirectory . 'matrix.csv '], [$laneDirectory]);
 
     if (!$ro_job->isUp2Date()) {
         my $command;
@@ -72,7 +71,6 @@ sub edger {
         $command .= ' Rscript ' . $rH_cfg->{'diffExpress.deseq'} . ' -d ' . $rH_cfg->{'diffExpress.designFile'};
         $command .= ' -c ' . $laneDirectory . 'matrix.csv ';
         $command .= ' -o ' . $laneDirectory . ' ;';
-        $command .= ' ' . $up2date;
 
         $ro_job->addCommand($command);
     }
@@ -87,8 +85,8 @@ sub edgerPortable {
       my $countMatrix   = shift;
       my $outputDir     = shift;
 
-    my $up2date = PipelineUtils::testInputOutputs([$countMatrix], [$outputDir]);
-    my $ro_job = new Job(!defined($up2date));
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$countMatrix], [$outputDir]);
 
     if (!$ro_job->isUp2Date()) {
         my $command;
@@ -96,7 +94,6 @@ sub edgerPortable {
         $command .= ' Rscript \$R_TOOLS/edger.R -d ' .$designFile;
         $command .= ' -c ' .$countMatrix;
         $command .= ' -o ' .$outputDir;
-        $command .= ' ' . $up2date;
 
         $ro_job->addCommand($command);
     }
@@ -110,8 +107,8 @@ sub deseq {
     my $countMatrix   = shift;
     my $outputDir     = shift;
     
-    my $up2date = PipelineUtils::testInputOutputs([$countMatrix], [$outputDir]);
-    my $ro_job = new Job(!defined($up2date));
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$countMatrix], [$outputDir]);
 
     if (!$ro_job->isUp2Date()) {
         my $command;
@@ -119,7 +116,6 @@ sub deseq {
         $command .= ' Rscript \$R_TOOLS/deseq.R -d ' .$designFile;
         $command .= ' -c ' .$countMatrix;
         $command .= ' -o ' .$outputDir;
-        $command .= ' ' . $up2date;
 
         $ro_job->addCommand($command);
     }
@@ -152,8 +148,8 @@ sub goseq {
         $option .= ' -i ' .$geneIdType;
     }
     
-    my $up2date = PipelineUtils::testInputOutputs([$resultFile], [$outputFile]);
-    my $ro_job = new Job(!defined($up2date));
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$resultFile], [$outputFile]);
     
     if (!$ro_job->isUp2Date()) {
         my $command;
@@ -165,7 +161,6 @@ sub goseq {
         $command .= ' -s ' .LoadConfig::getParam($rH_cfg, 'goseq','referenceUCSCname');
         $command .= $option;
         $command .= ' -o ' .$outputFile;
-        $command .= ' ' . $up2date;
 
         $ro_job->addCommand($command);
     }

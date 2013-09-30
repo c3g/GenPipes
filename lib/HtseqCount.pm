@@ -47,7 +47,6 @@ use warnings;
 
 # Dependencies
 #-----------------------
-use PipelineUtils;
 use Data::Dumper;
 use Config::Simple;
 use SAMtools;
@@ -79,8 +78,8 @@ sub matrixMake {
     my $laneDirectory = "read_count/" . $group . "/";
     my $input = 'assembly/' . $group . '/fasta_split/' . basename($rH_cfg->{'blast.db'}) . '/blast_BestHit.txt';
 
-    my $up2date = PipelineUtils::testInputOutputs([$input], [$laneDirectory . 'tmpmatrix.csv DGE/' . $group . '/matrix.csv']);
-    my $ro_job = new Job(!defined($up2date));
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$input], [$laneDirectory . 'tmpmatrix.csv DGE/' . $group . '/matrix.csv']);
 
     if (!$ro_job->isUp2Date()) {
       $command .= ' sh ' . $rH_cfg->{'htseq.tempMatrix'} . ' ' . 'alignment/' . $group . '/' . $group . '.gtf';
@@ -88,7 +87,6 @@ sub matrixMake {
       $command .= ' ' . $laneDirectory . 'tmpmatrix.csv ;';
       $command .= ' sh ' . $rH_cfg->{'htseq.fullMatrix'} . ' ' . $laneDirectory . ' ;';
       $command .= ' cp ' . $laneDirectory . 'tmpmatrix.csv DGE/' . $group . '/matrix.csv ';
-      $command .= ' ' . $up2date;
 
       $ro_job->addCommand($command);
     }
@@ -107,15 +105,14 @@ sub readCount {
     my $command       = '';
     my $laneDirectory = "read_count/" . $group . "/";
 
-    my $up2date = PipelineUtils::testInputOutputs([$laneDirectory . $sampleName . '.QueryName.bam'], [$laneDirectory . $sampleName . '.readcount.cvs']);
-    my $ro_job = new Job(!defined($up2date));
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$laneDirectory . $sampleName . '.QueryName.bam'], [$laneDirectory . $sampleName . '.readcount.cvs']);
 
     if (!$ro_job->isUp2Date()) {
       $command .= ' module add mugqic/samtools/0.1.6; ';
       $command .= ' samtools view ' . $laneDirectory . $sampleName . '.QueryName.bam | ';
       $command .= ' htseq-count - ' . 'alignment/' . $group . '/' . $group . '.gtf ';
       $command .= ' -s no >' . $laneDirectory . $sampleName . '.readcount.cvs';
-      $command .= ' ' . $up2date;
 
       $ro_job->addCommand($command);
     }
@@ -134,8 +131,8 @@ sub readCountPortable{
 	}
 	
 	my $command ;
-  my $up2date = PipelineUtils::testInputOutputs([$inputBam], [$outputFile]);
-  my $ro_job = new Job(!defined($up2date));
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$inputBam], [$outputFile]);
 
   if (!$ro_job->isUp2Date()) {
 		$command .= ' module load '.LoadConfig::getParam($rH_cfg, 'htseq','moduleVersion.python') .' '.LoadConfig::getParam($rH_cfg, 'htseq','moduleVersion.htseq') .' ; ';
@@ -144,7 +141,6 @@ sub readCountPortable{
 		$command .= ' -s ' .$strandInfo;
 		$command .= ' ' .$htseqOptions;
 		$command .= ' >' . $outputFile ;
-    $command .= ' ' . $up2date;
 
     $ro_job->addCommand($command);
 	}
@@ -160,8 +156,8 @@ sub refGtf2matrix {
 	my $outputDir = shift;
 	my $outputMatrix  = shift;
 
-  my $up2date = PipelineUtils::testInputOutputs([$refGtf], [$outputDir .'/' .$outputMatrix]);
-  my $ro_job = new Job(!defined($up2date));
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$refGtf], [$outputDir .'/' .$outputMatrix]);
 
   if (!$ro_job->isUp2Date()) {
     my $command ;
@@ -178,7 +174,6 @@ sub refGtf2matrix {
 		$command .= ' done &&';
 		$command .= ' echo -e \$HEAD | cat - ' .$outputDir .'/tmpMatrix.txt | tr \' \' \'\t\' > ' .$outputDir .'/' .$outputMatrix .' &&';
 		$command .= ' rm ' .$outputDir .'/tmpSort.txt ' .$outputDir .'/tmpMatrix.txt ';
-    $command .= ' ' . $up2date;
 
     $ro_job->addCommand($command);
   }

@@ -30,7 +30,6 @@ package GATK;
 
 # Strict Pragmas
 #--------------------------
-use PipelineUtils;
 use strict;
 use warnings;
 
@@ -52,8 +51,8 @@ sub recalibration {
   my $recalOutput = $outputPrefix.'.recalibration_report.grp';
   my $bamOutput = $outputPrefix.'.recal.bam';
 
-  my $up2date = PipelineUtils::testInputOutputs([$sortedBAM], [$bamOutput]);
-  my $ro_job = new Job(!defined($up2date));
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$sortedBAM], [$bamOutput]);
 
   if (!$ro_job->isUp2Date()) {
       my $command;
@@ -73,7 +72,6 @@ sub recalibration {
       $command .= ' -BQSR '.$recalOutput;
       $command .= ' -o '.$bamOutput;
       $command .= ' -I '.$sortedBAM;
-      $command .= ' ' . $up2date;
 
       $ro_job->addCommand($command);
   }
@@ -94,8 +92,8 @@ sub realign {
   my $intervalOutput = $outputPrefix.'.intervals';
   my $realignOutput = $outputPrefix.'.bam';
 
-  my $up2date = PipelineUtils::testInputOutputs([$sortedBAM], [$intervalOutput,$realignOutput]);
-  my $ro_job = new Job(!defined($up2date));
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$sortedBAM], [$intervalOutput,$realignOutput]);
 
   if (!$ro_job->isUp2Date()) {  
       my $command;
@@ -128,7 +126,6 @@ sub realign {
         $command .= ' -L unmapped';
       }
       $command .= ' --maxReadsInMemory '.LoadConfig::getParam($rH_cfg, 'indelRealigner', 'realignReadsInRam');
-      $command .= ' ' . $up2date;
 
       $ro_job->addCommand($command);
   }
@@ -145,8 +142,8 @@ sub genomeCoverage {
   my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta');
   my $rA_thresholds = LoadConfig::getParam($rH_cfg, 'genomeCoverage', 'percentThresholds');
 
-  my $up2date = PipelineUtils::testInputOutputs([$inputBam], [$outputPrefix.'.coverage.sample_summary']);
-  my $ro_job = new Job(!defined($up2date));
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$inputBam], [$outputPrefix.'.coverage.sample_summary']);
 
   if (!$ro_job->isUp2Date()) {  
       my $command;
@@ -165,7 +162,6 @@ sub genomeCoverage {
       $command .= ' -R '.$refGenome;
       $command .= ' -o '.$outputPrefix;
       $command .= ' -I '.$inputBam;
-      $command .= ' ' . $up2date;
 
       $ro_job->addCommand($command);
   }
@@ -183,8 +179,8 @@ sub targetCoverage {
   my $targets = LoadConfig::getParam($rH_cfg, 'targetCoverage', 'coverageTargets');
   my $rA_thresholds = LoadConfig::getParam($rH_cfg, 'targetCoverage', 'percentThresholds');
 
-  my $up2date = PipelineUtils::testInputOutputs([$inputBam], [$outputPrefix.'.coverage.sample_summary']);
-  my $ro_job = new Job(!defined($up2date));
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$inputBam], [$outputPrefix.'.coverage.sample_summary']);
 
   if (!$ro_job->isUp2Date()) {
       my $command = "";
@@ -204,7 +200,6 @@ sub targetCoverage {
       $command .= ' -o '.$outputPrefix;
       $command .= ' -I '.$inputBam;
       $command .= ' -L '.$targets;
-      $command .= ' ' . $up2date;
 
       $ro_job->addCommand($command);
   }

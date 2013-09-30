@@ -33,7 +33,6 @@ use warnings;
 
 # Dependencies
 #-----------------------
-use PipelineUtils;
 
 # SUB
 #-----------------------
@@ -42,8 +41,8 @@ sub annotateDbSnp {
     my $inputVCF    = shift;
     my $outputVCF   = shift;
 
-    my $up2date = PipelineUtils::testInputOutputs([$inputVCF],[$outputVCF]);
-    my $ro_job = new Job(!defined($up2date));
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$inputVCF],[$outputVCF]);
 
     if (!$ro_job->isUp2Date()) {  
         my $command;
@@ -53,7 +52,6 @@ sub annotateDbSnp {
         $command .= ' '.LoadConfig::getParam($rH_cfg, 'annotateDbSnp', 'dbSnp');
         $command .= ' '.$inputVCF;
         $command .= ' > '.$outputVCF;
-        $command .= ' ' . $up2date;
 
         $ro_job->addCommand($command);
     }
@@ -65,8 +63,8 @@ sub computeEffects {
     my $inputVCF    = shift;
     my $outputVCF   = shift;
   
-    my $up2date = PipelineUtils::testInputOutputs([$inputVCF],[$outputVCF]);
-    my $ro_job = new Job(!defined($up2date));
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$inputVCF],[$outputVCF]);
 
     if (!$ro_job->isUp2Date()) {
         my $command;
@@ -80,7 +78,6 @@ sub computeEffects {
         $command .= ' '.LoadConfig::getParam($rH_cfg, 'computeEffects', 'referenceSnpEffGenome');
         $command .= ' '.$inputVCF;
         $command .= ' > '.$outputVCF;
-        $command .= ' ' . $up2date;
 
         $ro_job->addCommand($command);
     }
@@ -92,8 +89,8 @@ sub annotateDbNSFP {
     my $inputVCF    = shift;
     my $outputVCF   = shift;
   
-    my $up2date = PipelineUtils::testInputOutputs([$inputVCF],[$outputVCF]);
-    my $ro_job = new Job(!defined($up2date));
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$inputVCF],[$outputVCF]);
 
     if (!$ro_job->isUp2Date()) {
         my $command;
@@ -103,7 +100,6 @@ sub annotateDbNSFP {
         $command .= ' -v '.LoadConfig::getParam($rH_cfg, 'annotateDbNSFP', 'dbNSFP');
         $command .= ' '.$inputVCF;
         $command .= ' > '.$outputVCF;
-        $command .= ' ' . $up2date;
 
         $ro_job->addCommand($command);
     }

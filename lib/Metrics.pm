@@ -37,7 +37,6 @@ use warnings;
 
 # Dependencies
 #-----------------------
-use PipelineUtils;
 use LoadConfig;
 use SAMtools;
 
@@ -51,8 +50,8 @@ sub rnaQc{
 
   my $outputIndexFile= $outputFolder. 'index.html';
 
-  my $up2date = PipelineUtils::testInputOutputs([$inputFile], [$outputFolder .'.zip', $outputIndexFile]);
-  my $ro_job = new Job(!defined($up2date));
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$inputFile], [$outputFolder .'.zip', $outputIndexFile]);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
@@ -65,7 +64,6 @@ sub rnaQc{
     $command .= ' -o ' .$outputFolder ;
     $command .= ' -BWArRNA ' .LoadConfig::getParam($rH_cfg, 'rnaQc','ribosomalFasta') .' &&';
     $command .= ' zip -r ' .$outputFolder .'.zip ' .$outputFolder;
-    $command .= ' ' . $up2date;
 
     $ro_job->addCommand($command);
   }
@@ -81,8 +79,8 @@ sub saturation {
 	my $saturationDir = shift;
 
 
-	my $up2date = PipelineUtils::testInputOutputs([$countFile], [$saturationDir .'.zip']);
-  my $ro_job = new Job(!defined($up2date));
+  my $ro_job = new Job();
+	$ro_job->testInputOutputs([$countFile], [$saturationDir .'.zip']);
 
   if (!$ro_job->isUp2Date()) {
   	my $command;
@@ -91,7 +89,6 @@ sub saturation {
 		$command .= ' ' .LoadConfig::getParam($rH_cfg, 'saturation' , 'threadNum');
 		$command .= ' ' .LoadConfig::getParam($rH_cfg, 'saturation' , 'optionR').' &&';
 		$command .= ' zip -r ' .$saturationDir .'.zip ' .$saturationDir;
-    $command .= ' ' . $up2date;
 
     $ro_job->addCommand($command);
 	}
@@ -104,14 +101,13 @@ sub fpkmCor {
 	my $folderFile     = shift;
 	my $outputBaseName = shift;
 	
-  my $up2date = PipelineUtils::testInputOutputs([$paternFile], [$outputBaseName]);
-  my $ro_job = new Job(!defined($up2date));
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$paternFile], [$outputBaseName]);
 
   if (!$ro_job->isUp2Date()) {
   	my $command;
 	  $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.cranR') .' ' . LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.tools') . ' ;';
   	$command .= ' Rscript \$R_TOOLS/fpkmStats.R ' .$paternFile .' ' .$folderFile .' ' .$outputBaseName;
-    $command .= ' ' . $up2date;
 
     $ro_job->addCommand($command);
 	}
@@ -125,8 +121,8 @@ sub readStats {
 	my $sampleName = shift;
 	my $fileType = shift;
 	
-  my $up2date = PipelineUtils::testInputOutputs([$inputFile], [$outputFile]);
-  my $ro_job = new Job(!defined($up2date));
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$inputFile], [$outputFile]);
 
   if (!$ro_job->isUp2Date()) {
   	my $command;
@@ -146,7 +142,6 @@ sub readStats {
 			$command .= ' | wc -l  > ' .$outputFile;
 			#----
 		}
-    $command .= ' ' . $up2date;
 
     $ro_job->addCommand($command);
 	}
@@ -164,8 +159,8 @@ sub mergeIndvidualReadStats{
 	my $alignFile = shift;
 	my $outputFile =shift;
 	
-  my $up2date = PipelineUtils::testInputOutputs([$alignFile], [$outputFile]);
-  my $ro_job = new Job(!defined($up2date));
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$alignFile], [$outputFile]);
 
   if (!$ro_job->isUp2Date()) {
 	  my $command;
@@ -175,7 +170,6 @@ sub mergeIndvidualReadStats{
 		$command .= ' | awk \' BEGIN {FS=\",\"} { print \$1 \",\" \$2 \",\" \$3 \",\" \$4}\''; 
 		$command .= ' > ' .$outputFile .' &&'; 
 		$command .= ' rm  ' .$rawFile .' ' .$filterFile .' ' .$alignFile;
-    $command .= ' ' . $up2date;
 
     $ro_job->addCommand($command);
 	}
@@ -189,15 +183,14 @@ sub mergeReadStats{
 	my $folderFile     = shift;
 	my $outputFile     = shift;
 
-  my $up2date = PipelineUtils::testInputOutputs([$paternFile], [$outputFile]);
-  my $ro_job = new Job(!defined($up2date));
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$paternFile], [$outputFile]);
 
   if (!$ro_job->isUp2Date()) {
 	my $command;
   	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.cranR') .' ' . LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.tools') . ' ;';
 	  $command .= ' Rscript \$R_TOOLS/mergeReadStat.R ' .$paternFile .' ' .$folderFile .' ' .$outputFile .' &&';
   	$command .= ' rm ' .$folderFile .'/*' .$paternFile;
-    $command .= ' ' . $up2date;
 
     $ro_job->addCommand($command);
 	}
@@ -216,14 +209,13 @@ sub mergeTrimmomaticStats{
 		$libraryType= 'unknown';
 	}
 
-  my $up2date = PipelineUtils::testInputOutputs([$paternFile], [$outputFile]);
-  my $ro_job = new Job(!defined($up2date));
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$paternFile], [$outputFile]);
 
   if (!$ro_job->isUp2Date()) {
   	my $command;
 	  $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.cranR') .' ' . LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.tools') . ' ;';
   	$command .= ' Rscript \$R_TOOLS/mergeTrimmomaticStat.R ' .$paternFile .' ' .$folderFile .' ' .$outputFile .' ' .$libraryType;
-    $command .= ' ' . $up2date;
 
     $ro_job->addCommand($command);
   }
@@ -239,8 +231,8 @@ sub mergePrintReadStats{
 	my $outputFile  				= shift;
 	my $command							= undef;
 
-  my $up2date = PipelineUtils::testInputOutputs([$flagStatsFile], [$outputFile]);
-  my $ro_job = new Job(!defined($up2date));
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$flagStatsFile], [$outputFile]);
 
   if (!$ro_job->isUp2Date()) {
 		$command .= 'module load ' . LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.tools') . ' ;';
@@ -248,7 +240,6 @@ sub mergePrintReadStats{
 		$command .= ' \"'. $outputFile .'\", ReadMetrics::parseTrimOutput(\"'.$sampleName.'\",';
 		$command .= ' \"'. $trimOutputFile .'\"), ReadMetrics::parseFlagstats(\"'.$sampleName.'\",';
 		$command .= ' \"'. $flagStatsFile .'\"));\'';
-    $command .= ' ' . $up2date;
 
     $ro_job->addCommand($command);
 	}

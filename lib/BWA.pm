@@ -37,7 +37,6 @@ use warnings;
 
 # Dependencies
 #-----------------------
-use PipelineUtils;
 use LoadConfig;
 
 # SUB
@@ -68,8 +67,8 @@ sub mem {
     $rA_inputs = [$single];
   }
 
-  my $up2date = PipelineUtils::testInputOutputs($rA_inputs, [$outputBAM]);
-  my $ro_job = new Job(!defined($up2date));
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs($rA_inputs, [$outputBAM]);
 
   if (!$ro_job->isUp2Date()) {
     my $rgTag = "'" . '@RG\tID:' . $rgId . '\tSM:' . $rgSample . '\tLB:' . $rgLibrary . '\tPU:run' . $rgPlatformUnit . '\tCN:' . $rgCenter . '\tPL:Illumina' . "'";
@@ -98,7 +97,6 @@ sub mem {
     $bwaCommand .= '  INPUT=/dev/stdin CREATE_INDEX=true VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate';
     $bwaCommand .= ' OUTPUT=' . $outputBAM;
     $bwaCommand .= ' MAX_RECORDS_IN_RAM=' . LoadConfig::getParam( $rH_cfg, 'mem', 'sortRecInRam' );
-    $bwaCommand .= ' ' . $up2date;
 
     $ro_job->addCommand($bwaCommand);
   }
@@ -156,8 +154,8 @@ sub pairCommand {
   my $outputSai2Name = $optOutputPrefix.'.pair2.sai';
   my $outputBAM = $optOutputPrefix.'.sorted.bam';
 
-  my $up2date = PipelineUtils::testInputOutputs([$pair1, $pair2], [$outputSai1Name, $outputSai2Name, $outputBAM]);
-  my $ro_job = new Job(!defined($up2date));
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$pair1, $pair2], [$outputSai1Name, $outputSai2Name, $outputBAM]);
 
   if (!$ro_job->isUp2Date()) {
     my $sai1Command = "";
@@ -198,7 +196,6 @@ sub pairCommand {
     $bwaCommand .= '  INPUT=/dev/stdin CREATE_INDEX=true VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate';
     $bwaCommand .= ' OUTPUT=' . $outputBAM;
     $bwaCommand .= ' MAX_RECORDS_IN_RAM=' . LoadConfig::getParam( $rH_cfg, 'aln', 'sortRecInRam' );
-    $bwaCommand .= ' ' . $up2date;
 
     $ro_job->addCommand($bwaCommand);
   }
@@ -226,8 +223,8 @@ sub singleCommand {
   my $outputSaiName = $optOutputPrefix.'.single.sai';
   my $outputBAM = $optOutputPrefix.'.sorted.bam';
 
-  my $up2date = PipelineUtils::testInputOutputs([$single], [$outputSaiName, $outputBAM]);
-  my $ro_job = new Job(!defined($up2date));
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$single], [$outputSaiName, $outputBAM]);
 
   # we could test sai and bam separately...
   if (!$ro_job->isUp2Date()) {
@@ -259,7 +256,6 @@ sub singleCommand {
     $bwaCommand .= ' INPUT=/dev/stdin CREATE_INDEX=true VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate';
     $bwaCommand .= ' OUTPUT=' . $outputBAM;
     $bwaCommand .= ' MAX_RECORDS_IN_RAM=' . LoadConfig::getParam( $rH_cfg, 'aln', 'sortRecInRam' );
-    $bwaCommand .= ' ' . $up2date;
 
     $ro_job->addCommand($bwaCommand);
   }
@@ -271,13 +267,12 @@ sub index {
   my $rH_cfg   = shift;
   my $toIndex  = shift;
 
-  my $up2date = PipelineUtils::testInputOutputs([$toIndex], [$toIndex.'.bwt']);
-  my $ro_job = new Job(!defined($up2date));
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$toIndex], [$toIndex.'.bwt']);
 
   if (!$ro_job->isUp2Date()) {
     my $command = 'module load '.LoadConfig::getParam($rH_cfg, 'index', 'moduleVersion.bwa').' ;';
     $command .= ' bwa index ' . $toIndex;
-    $command .= ' ' . $up2date;
 
     $ro_job->addCommand($command);
   }

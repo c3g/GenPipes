@@ -34,7 +34,6 @@ use warnings;
 # Dependencies
 #-----------------------
 use File::Basename;
-use PipelineUtils;
 
 # SUB
 #-----------------------
@@ -45,8 +44,8 @@ sub pairedFreec {
     my $sampleConfig  = shift;
     my $output        = shift;
 
-    my $up2date = PipelineUtils::testInputOutputs([$normalPileup, $tumorPileup], [$sampleConfig]);
-    my $ro_job = new Job(!defined($up2date));
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$normalPileup, $tumorPileup], [$sampleConfig]);
 
     if (!$ro_job->isUp2Date()) {
         my $command;
@@ -56,13 +55,11 @@ sub pairedFreec {
         $command .= 'sed \"s|OUTPUT_DIR|' .$output .'|g\"  -i ' .$sampleConfig .' && ';
         $command .= 'sed \"s|FORMAT_TYPE|' .LoadConfig::getParam($rH_cfg, 'ControlFreec', 'inputType') .'|g\"  -i ' .$sampleConfig .' && ';
         $command .= 'freec -conf ' .$sampleConfig ;
-        $command .= ' ' . $up2date;
 
         $ro_job->addCommand($command);
     }
     
     return $ro_job;
 }
-
     
 1;

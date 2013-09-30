@@ -71,8 +71,9 @@ sub clientReport{
                 $contact= 'report.contact=\"' .$contactTMP .'\",';
         }
 
-    #my $up2date = PipelineUtils::testInputOutputs([$iniFilePath],[$projectPath]]);
-    my $ro_job = new Job(0);
+    my $ro_job = new Job();
+    #$ro_job->testInputOutputs([$iniFilePath],[$projectPath]]);
+    $ro_job->setUp2Date(0);
 
     if (!$ro_job->isUp2Date()) {
         my $command;
@@ -86,7 +87,6 @@ sub clientReport{
         $command .= ' ' .$contact ;
         $command .= ' ini.file.path=\"' .$iniFilePath .'\",' ;
         $command .= ' project.path=\"' .$projectPath .'\")\'' ;
-        #$command .= ' ' . $up2date;
 
         $ro_job->addCommand($command);
     }
@@ -101,8 +101,9 @@ sub exploratoryRnaAnalysis{
     my $workDirectory = shift;
     my $configFile    = shift;
 
-    #my $up2date = PipelineUtils::testInputOutputs([$configFile],[$workDirectory]]);
-    my $ro_job = new Job(0);
+    my $ro_job = new Job();
+    #$ro_job->testInputOutputs([$configFile],[$workDirectory]]);
+    $ro_job->setUp2Date(0);
 
     if (!$ro_job->isUp2Date()) {
         my $rscript = 'suppressPackageStartupMessages(library(gqSeqUtils));';
@@ -111,7 +112,6 @@ sub exploratoryRnaAnalysis{
         $rscript .= ' print(\"done.\")';
         my $command = 'module load ' .LoadConfig::getParam($rH_cfg, 'downstreamAnalyses','moduleVersion.cranR') .' &&';
         $command .= ' Rscript -e ' . '\'' . $rscript .'\'';
-        #$command .= ' ' . $up2date;
 
         $ro_job->addCommand($command);
     }

@@ -72,7 +72,7 @@ sub printSubmitCmd {
   if(!defined($commandIdx)) {
     $commandIdx = 0;
   }
-  $command = $rO_job->getCommand($commandIdx);
+  my $command = $rO_job->getCommand($commandIdx);
 
   # Set Job ID
   my $jobId = uc($jobIdPrefix) . "_JOB_ID";
@@ -112,8 +112,22 @@ sub printSubmitCmd {
     print $jobId . '=$(';
   }
   # Print out job command
-  print 'echo "' . $command . ' && echo \"MUGQICexitStatus:\$?\"" | ';
-  print LoadConfig::getParam($rH_cfg, $stepName, 'clusterSubmitCmd');
+
+  my $rA_FilesToTest = $rO_job->getFilesToTest();
+  # Erase dones, on all jobs of the series
+  if(@{$rA_FilesToTest} > 0) {
+    print 'echo "rm -f ' . join(' ', @{$rA_FilesToTest}) . ' ; ';
+  }
+  else {
+    print 'echo "';
+  }
+  print $command;
+  print ' && echo \"MUGQICexitStatus:\$?\"" ';
+  # Only add if it's the last job of the series.
+  if(@{$rA_FilesToTest} > 0 && $commandIdx == $rO_job->getNbCommands()-1) {
+    print ' && touch ' . join(' ', @{$rA_FilesToTest});
+  }
+  print ' | ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterSubmitCmd');
   print " " . LoadConfig::getParam($rH_cfg, $stepName, 'clusterOtherArg');
   print " " . LoadConfig::getParam($rH_cfg, $stepName, 'clusterWorkDirArg') . " \$WORK_DIR";
   print " " . LoadConfig::getParam($rH_cfg, $stepName, 'clusterOutputDirArg') . " \$JOB_OUTPUT";

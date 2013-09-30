@@ -33,7 +33,6 @@ use warnings;
 
 # Dependencies
 #-----------------------
-use PipelineUtils;
 use File::Basename;
 
 # SUB
@@ -46,8 +45,8 @@ sub pairedConfigFile {
     my $normalBam      = shift;
     my $output        = shift;
 
-    my $up2date = PipelineUtils::testInputOutputs([$tumorBam,$normalMetrics,$tumorMetrics,$normalBam], [$output]);
-    my $ro_job = new Job(!defined($up2date));
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$tumorBam,$normalMetrics,$tumorMetrics,$normalBam], [$output]);
 
     if (!$ro_job->isUp2Date()) {
         my $command;
@@ -59,7 +58,6 @@ sub pairedConfigFile {
         $command .= ' && rm -f '.$tumorBam .'.bai && ln -s ' .basename($tumorBai) .' ' .$tumorBam .'.bai' ;
         my ($normalBai) = $normalBam =~ s/\.bam/\.bai/g ;
         $command .= ' && rm -f '.$normalBam .'.bai && ln -s ' .basename($normalBai) .' ' .$normalBam .'.bai' ;
-        $command .= ' ' . $up2date;
 
         $ro_job->addCommand($command);
     }
@@ -75,8 +73,8 @@ sub pairedPI {
     my $outputTest     = shift;
     my $PIOption       = shift;
 
-    my $up2date = PipelineUtils::testInputOutputs([$inputCFG], [$outputTest .'_SI']);
-    my $ro_job = new Job(!defined($up2date));
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$inputCFG], [$outputTest .'_SI']);
 
     if (!$ro_job->isUp2Date()) {
       my $command;
@@ -86,7 +84,6 @@ sub pairedPI {
       $command .= ' -i '.$inputCFG;
       $command .= ' -o '.$outputPrefix;
       $command .= ' '.$PIOption;
-      $command .= ' ' . $up2date;
 
       $ro_job->addCommand($command);
 
@@ -98,8 +95,8 @@ sub mergeChro {
     my $rH_cfg          = shift;
     my $outputPrefix    = shift;
 
-    my $up2date = PipelineUtils::testInputOutputs([$outputPrefix .'.1_SI'], [$outputPrefix .'_SI']);
-    my $ro_job = new Job(!defined($up2date));
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$outputPrefix .'.1_SI'], [$outputPrefix .'_SI']);
 
     if (!$ro_job->isUp2Date()) {
       my $command;
@@ -111,7 +108,6 @@ sub mergeChro {
       $command .= 'for i in ' .$outputPrefix .'.*_LI ; do cat \$i >> '  .$outputPrefix .'_LI ; done && ' ;
       $command .= 'for i in ' .$outputPrefix .'.*_SI ; do cat \$i >> '  .$outputPrefix .'_SI ; done && ' ;
       $command .= 'for i in ' .$outputPrefix .'.*_TD ; do cat \$i >> '  .$outputPrefix .'_TD ; done ' ;
-      $command .= ' ' . $up2date;
 
       $ro_job->addCommand($command);
     }

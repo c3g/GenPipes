@@ -60,7 +60,6 @@ use warnings;
 
 # Dependencies
 #-----------------------
-use PipelineUtils;
 use Data::Dumper;
 use Config::Simple;
 use LoadConfig;
@@ -94,8 +93,8 @@ sub align {
     my $input = $laneDirectory . 'fasta_split/' . basename($rH_cfg->{'blast.db'})  . '/' . $fileFasta;
     my $output = $laneDirectory . 'fasta_split/' . $outFile . '_BLASTOUT.txt';
 
-    my $up2date = PipelineUtils::testInputOutputs([$input], [$output]);
-    my $ro_job = new Job(!defined($up2date));
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$input], [$output]);
 
     if (!$ro_job->isUp2Date()) {
       $command .= 'module add mugqic/blast/2.2.27+;';
@@ -104,7 +103,6 @@ sub align {
       $command .= ' -query ' . $input;
       $command .= ' -db ' . $rH_cfg->{'blast.db'} . ' -out ' . $output;
       $command .= ' ' . $rH_cfg->{'blast.options'};
-      $command .= ' ' . $up2date;
 
       $ro_job->addCommand($command);
     }
@@ -133,8 +131,8 @@ sub alignParallel {
     my $input = $laneDirectory . 'fasta_split/' . $fileFasta;
     my $output = $laneDirectory . 'fasta_split/' . basename($rH_cfg->{'blast.db'})  . '/' . $outFile . '_BLASTOUT.txt';
 
-    my $up2date = PipelineUtils::testInputOutputs([$input], [$output]);
-    my $ro_job = new Job(!defined($up2date));
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$input], [$output]);
 
     if (!$ro_job->isUp2Date()) {
       $command .= 'module add mugqic/blast/2.2.27+;';
@@ -143,7 +141,6 @@ sub alignParallel {
       $command .= ' --OUT ' . $output;
       $command .= ' -n ' . $rH_cfg->{'blast.nbThreads'} . ' --BLAST ' . '\'' . $rH_cfg->{'blast.program'};
       $command .= ' -db ' . $rH_cfg->{'blast.db'} . ' ' . $rH_cfg->{'blast.options'} . '\'';
-      $command .= ' ' . $up2date;
 
       $ro_job->addCommand($command);
     }
@@ -166,8 +163,8 @@ sub bestHit {
     my $input = $laneDirectory . 'fasta_split/' . basename($rH_cfg->{'blast.db'})  . '/';
     my $output = $laneDirectory . 'fasta_split/' . basename($rH_cfg->{'blast.db'})  . '/blast_BestHit.txt';
 
-    my $up2date = PipelineUtils::testInputOutputs([$input], [$output]);
-    my $ro_job = new Job(!defined($up2date));
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$input], [$output]);
 
     if (!$ro_job->isUp2Date()) {
       my $command .= 'cat ' . $input . '*.txt ';
@@ -176,7 +173,6 @@ sub bestHit {
       $command .= ' >' . $laneDirectory . 'fasta_split/' . basename($rH_cfg->{'blast.db'})  . '/blastRes_HQ.txt ;';
       $command .= ' ' . $rH_cfg->{'blast.BestHit'} . ' ' . $laneDirectory . 'fasta_split/' . basename($rH_cfg->{'blast.db'})  . '/blastRes_HQ.txt ';
       $command .= ' >' . $output;
-      $command .= ' ' . $up2date;
 
       $ro_job->addCommand($command);
     }

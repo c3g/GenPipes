@@ -33,7 +33,6 @@ use warnings;
 
 # Dependencies
 #-----------------------
-use PipelineUtils;
 
 # SUB
 #-----------------------
@@ -48,8 +47,8 @@ sub bam2cfg {
       $stdDevCutoff = 3;
     }
   
-    my $up2date = PipelineUtils::testInputOutputs([$sampleBAM], [$output]);
-    my $ro_job = new Job(!defined($up2date));
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$sampleBAM], [$output]);
 
     if (!$ro_job->isUp2Date()) {
       my $command;
@@ -59,7 +58,6 @@ sub bam2cfg {
       $command .= ' -c '.$stdDevCutoff;
       $command .= ' '.$sampleBAM;
       $command .= ' > '.$output;
-      $command .= ' ' . $up2date;
 
       $ro_job->addCommand($command);
     }
@@ -72,8 +70,8 @@ sub pairedBRDITX {
     my $inputCFG        = shift;
     my $outputPrefix    = shift;
 
-    my $up2date = PipelineUtils::testInputOutputs([$inputCFG], [$outputPrefix.'.bed', $outputPrefix.'.ctx']);
-    my $ro_job = new Job(!defined($up2date));
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$inputCFG], [$outputPrefix.'.bed', $outputPrefix.'.ctx']);
 
     if (!$ro_job->isUp2Date()) {
       my $command;
@@ -83,7 +81,6 @@ sub pairedBRDITX {
       $command .= ' -d '.$outputPrefix.'.ctx';
       $command .= ' '.$inputCFG;
       $command .= ' > '.$outputPrefix.'.ctx';
-      $command .= ' ' . $up2date;
 
       $ro_job->addCommand($command);
     }
@@ -97,8 +94,8 @@ sub pairedBRD {
     my $inputCFG        = shift;
     my $outputPrefix    = shift;
 
-    my $up2date = PipelineUtils::testInputOutputs([$inputCFG], [$outputPrefix.'.bed', $outputPrefix.'.ctx']);
-    my $ro_job = new Job(!defined($up2date));
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$inputCFG], [$outputPrefix.'.bed', $outputPrefix.'.ctx']);
 
     if (!$ro_job->isUp2Date()) {
       my $command;
@@ -109,7 +106,6 @@ sub pairedBRD {
       $command .= ' -d '.$outputPrefix.'.ctx';
       $command .= ' '.$inputCFG;
       $command .= ' > '.$outputPrefix.'.ctx';
-      $command .= ' ' . $up2date;
 
       $ro_job->addCommand($command);
     }
@@ -120,15 +116,14 @@ sub mergeCTX {
     my $rH_cfg          = shift;
     my $outputPrefix    = shift;
 
-    my $up2date = PipelineUtils::testInputOutputs(undef, [$outputPrefix .'.ctx']);
-    my $ro_job = new Job(!defined($up2date));
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs(undef, [$outputPrefix .'.ctx']);
 
     if (!$ro_job->isUp2Date()) {
       my $command;
       $command .= 'rm ' .$outputPrefix .'.ctx && ' ;
       $command .= 'touch ' .$outputPrefix .'.ctx && ' ;
       $command .= 'for i in ' .$outputPrefix .'.*.ctx ; do cat \$i >> '  .$outputPrefix .'.ctx' ;
-      $command .= ' ' . $up2date;
 
       $ro_job->addCommand($command);
     }

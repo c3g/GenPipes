@@ -26,7 +26,6 @@ package BAMtools;
 
 # Strict Pragmas
 #--------------------------
-use PipelineUtils;
 use strict;
 use warnings;
 
@@ -46,15 +45,13 @@ sub countBins {
     my $outputFile  = shift;
     my $normalBam   = shift; # can be undef for non paired run
 
-    my $up2date;
+    my $ro_job = new Job();
     if(defined($normalBam)) {
-        $up2date = PipelineUtils::testInputOutputs([$tumorBam, $normalBam], [$outputFile]);
+        $ro_job->testInputOutputs([$tumorBam, $normalBam], [$outputFile], $ro_job);
     }
     else {
-        $up2date = PipelineUtils::testInputOutputs([$tumorBam], [$outputFile]);
+        $ro_job->testInputOutputs([$tumorBam], [$outputFile], $ro_job);
     }
-
-    my $ro_job = new Job(!defined($up2date));
 
     if (!$ro_job->isUp2Date()) {
         my $command;
@@ -69,7 +66,6 @@ sub countBins {
         }
         $command .= ' --window '.$window;
         $command .= ' > '.$outputFile;
-        $command .= ' '.$up2date;
 
         $ro_job->addCommand($command);
     }
@@ -111,8 +107,8 @@ sub deletePairedDuplicates {
     my $outputFastqPair1Name = $outputPrefix . '.pair1.dup.fastq.gz';
     my $outputFastqPair2Name = $outputPrefix . '.pair2.dup.fastq.gz';
 
-    my $up2date = PipelineUtils::testInputOutputs([$pair1, $pair2], [$outputFastqPair1Name,$outputFastqPair2Name]);
-    my $ro_job = new Job(!defined($up2date));
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$pair1, $pair2], [$outputFastqPair1Name,$outputFastqPair2Name]);
 
     if (!$ro_job->isUp2Date()) {
         $command .= 'module add '. LoadConfig::getParam($rH_cfg, 'default','moduleVersion.java') ;
@@ -121,7 +117,6 @@ sub deletePairedDuplicates {
         $command .= ' -k 20 -o 15';
         $command .= ' && mv ' . $pair1 . '.dup.read1.gz ' . $outputFastqPair1Name;
         $command .= ' && mv ' . $pair2 . '.dup.read2.gz ' . $outputFastqPair2Name;
-        $command .= ' ' . $up2date;
 
         $ro_job->addCommand($command);
     }
@@ -139,8 +134,8 @@ sub deleteSingleDuplicates {
 	
     my $outputFastqName = $outputPrefix . '.single.dup.fastq.gz';
 
-    my $up2date = PipelineUtils::testInputOutputs([$single], [$outputFastqName]);
-    my $ro_job = new Job(!defined($up2date));
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$single], [$outputFastqName]);
 
     if (!$ro_job->isUp2Date()) {
         my $command;
@@ -149,7 +144,6 @@ sub deleteSingleDuplicates {
         $command .= ' java '.LoadConfig::getParam($rH_cfg, 'duplicate', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'duplicate', 'dupRam').' -jar \$BAMTOOLS_JAR filterdups' . ' --read1 ' . $single;
         $command .= ' -k 20 -o 15';
         $command .= ' && mv ' . $single . '.dup.read1.gz ' . $outputFastqName;
-        $command .= ' ' . $up2date;
 
         $ro_job->addCommand($command);
     }

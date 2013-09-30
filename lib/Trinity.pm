@@ -59,7 +59,6 @@ use warnings;
 
 # Dependencies
 #-----------------------
-use PipelineUtils;
 use Data::Dumper;
 use Config::Simple;
 use LoadConfig;
@@ -97,8 +96,8 @@ sub butterfly {
 
     my $laneDirectory = "assembly/" . $sampleName . "/chrysalis/";
 
-    my $up2date = PipelineUtils::testInputOutputs([$laneDirectory . 'butterfly_split/' . $fileButterflyCommand], undef);
-    my $ro_job = new Job(!defined($up2date));
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$laneDirectory . 'butterfly_split/' . $fileButterflyCommand], undef);
 
     if (!$ro_job->isUp2Date()) {
       my $command;
@@ -107,7 +106,6 @@ sub butterfly {
       $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.trinity' ) . ' ;';
       $command .= ' ' . $rH_cfg->{'butterfly.parallel'} . ' -f ' . $laneDirectory . 'butterfly_split/' . $fileButterflyCommand;
       $command .= ' -n ' . $rH_cfg->{'butterfly.nbThreads'} . ' ';
-      $command .= ' ' . $up2date;
 
       $ro_job->addCommand($command);
     }
@@ -122,8 +120,8 @@ sub concatFastaCreateGtf {
 
     my $laneDirectory = "assembly/" . $sampleName . "/";
 
-    my $up2date = PipelineUtils::testInputOutputs(undef, [$laneDirectory . 'Trinity.fasta', $laneDirectory . 'Trinity.2.fasta']);
-    my $ro_job = new Job(!defined($up2date));
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs(undef, [$laneDirectory . 'Trinity.fasta', $laneDirectory . 'Trinity.2.fasta']);
 
     if (!$ro_job->isUp2Date()) {
       my $command;
@@ -136,7 +134,6 @@ sub concatFastaCreateGtf {
       $command .= ' ' . $laneDirectory . $sampleName . '.gtf &&';
       $command .= ' awk \'{print \$1} \' ' . $laneDirectory . 'Trinity.fasta ';
       $command .= ' >' . $laneDirectory . 'Trinity.2.fasta';
-      $command .= ' ' . $up2date;
 
       $ro_job->addCommand($command);
     }
@@ -157,8 +154,8 @@ sub _chrysalisPairCommand {
     my $laneDirectory = 'assembly/' . $sampleName . '/';
     my $outputFile = $laneDirectory .'/chrysalis/butterfly_commands.adj';
 
-    my $up2date = PipelineUtils::testInputOutputs([$pair1, $pair2],[$outputFile]);
-    my $ro_job = new Job(!defined($up2date));
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$pair1, $pair2],[$outputFile]);
     
     if (!$ro_job->isUp2Date()) {
       $command .= 'module add ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.java' );
@@ -169,7 +166,6 @@ sub _chrysalisPairCommand {
       $command .= ' --CPU ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'nbThreads');
       $command .= ' --output ' . $laneDirectory;
       $command .= ' --min_kmer_cov 31 --max_reads_per_loop 200000000 --no_run_butterfly ';
-      $command .= ' ' . $up2date;
 
       $ro_job->addCommand($command);
     }
@@ -187,8 +183,8 @@ sub _chrysalisSingleCommand {
     
     my $laneDirectory = 'assembly/' . $sampleName . '/';
     my $outputFile = $laneDirectory .'/chrysalis/butterfly_commands.adj';
-    my $up2date = PipelineUtils::testInputOutputs([$pair1],[$outputFile]);
-    my $ro_job = new Job(!defined($up2date));
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$pair1],[$outputFile]);
     
     if (!$ro_job->isUp2Date()) {
       $command .= 'module add ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.java' );
@@ -199,7 +195,6 @@ sub _chrysalisSingleCommand {
       $command .= ' --CPU ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'nbThreads');
       $command .= ' --output ' . $laneDirectory;
       $command .= ' --min_kmer_cov 31 --max_reads_per_loop 200000000 --no_run_butterfly ';
-      $command .= ' ' . $up2date;
 
       $ro_job->addCommand($command);
     }
@@ -234,8 +229,8 @@ sub abundance {
 
     my $outputFile = $outputPrefix.'.transcript.bam';
 
-    my $up2date = PipelineUtils::testInputOutputs([\@inputs],[$assembly]);
-    my $ro_job = new Job(!defined($up2date));
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([\@inputs],[$assembly]);
     
     if (!$ro_job->isUp2Date()) {
       my $command;
@@ -265,7 +260,6 @@ sub abundance {
       if(defined($pair2)) {
         $command .= ' rm '.$unzippedPair2.' ;';
       }
-      $command .= ' ' . $up2date;
 
       $ro_job->addCommand($command);
     }
@@ -279,8 +273,8 @@ sub mergeCounts {
     my $outputIso            = shift;
     my $outputGene           = shift;
 
-    my $up2date = PipelineUtils::testInputOutputs($rA_filePrefixToMerge,[$outputIso, $outputGene]);
-    my $ro_job = new Job(!defined($up2date));
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs($rA_filePrefixToMerge,[$outputIso, $outputGene]);
     
     if (!$ro_job->isUp2Date()) {
       my $command = undef;
@@ -297,7 +291,6 @@ sub mergeCounts {
       }
       $command .= " | sed 's/\\.rsem\\.genes\\.results//g' > ".$outputGene;
 
-      $command .= ' ' . $up2date;
 
       $ro_job->addCommand($command);
     }
@@ -306,5 +299,3 @@ sub mergeCounts {
 }
 
 1;
-
-

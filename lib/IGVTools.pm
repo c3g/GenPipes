@@ -38,7 +38,6 @@ use warnings;
 
 # Dependencies
 #-----------------------
-use PipelineUtils;
 
 # SUB
 #-----------------------
@@ -46,8 +45,8 @@ sub computeTDF {
   my $rH_cfg      = shift;
   my $inputBAM    = shift;
 
-  my $up2date = PipelineUtils::testInputOutputs([$inputBAM], [$inputBAM.'.tdf']);
-  my $ro_job = new Job(!defined($up2date));
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$inputBAM], [$inputBAM.'.tdf']);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
@@ -55,7 +54,6 @@ sub computeTDF {
     $command .= ' igvtools count -f min,max,mean ';
     $command .= $inputBAM.' '.$inputBAM.'.tdf';
     $command .= ' '.LoadConfig::getParam($rH_cfg, 'computeTDF', 'igvGenome');
-    $command .= ' ' . $up2date;
 
     $ro_job->addCommand($command);
   }

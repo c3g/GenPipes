@@ -33,7 +33,6 @@ use warnings;
 
 # Dependencies
 #-----------------------
-use PipelineUtils;
 use Cwd 'abs_path';
 use File::Basename;
 
@@ -52,15 +51,14 @@ sub filterNStretches {
 
     my $toolShedDir = getToolShedDir();
 
-    my $up2date = PipelineUtils::testInputOutputs([$inputVCF],[$outputVCF]);
-    my $ro_job = new Job(!defined($up2date));
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$inputVCF],[$outputVCF]);
 
     if (!$ro_job->isUp2Date()) {
         my $command;
         $command .= $toolShedDir.'/filterLongIndel.pl ';
         $command .= ' '.$inputVCF;
         $command .= ' > '.$outputVCF;
-        $command .= ' ' . $up2date;
 
         $ro_job->addCommand($command);
     }

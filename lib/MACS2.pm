@@ -33,7 +33,6 @@ use warnings;
 
 # Dependencies
 #-----------------------
-use PipelineUtils;
 use LoadConfig;
 
 # SUB
@@ -168,10 +167,9 @@ sub generatePeaks {
     die "ERROR: Something wrong with design; treatment and control (if available) should be assigned\n";
   }
 
-  my $up2date = PipelineUtils::testInputOutputs(\@inputs, [$outputDir . '/' . $designName . $genomeSize . $options . '_peaks.xls']);
-  my $ro_job = new Job(!defined($up2date));
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs(\@inputs, [$outputDir . '/' . $designName . $genomeSize . $options . '_peaks.xls']);
   if (!$ro_job->isUp2Date()) {
-    $command .= ' ' . $up2date;
 
     $ro_job->addCommand($command);
   }

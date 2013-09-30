@@ -37,7 +37,6 @@ use warnings;
 
 # Dependencies
 #-----------------------
-use PipelineUtils;
 
 # SUB
 #-----------------------
@@ -80,8 +79,8 @@ sub mpileupBuilder {
   my $outputPileup = $outputDir.$sampleName.'.'.$seqName.'.mpileup.bcf'; 
   my $outputBCF = $outputDir.$sampleName.'.'.$seqName.'.bcf'; 
 
-  my $up2date = PipelineUtils::testInputOutputs($rA_bams, [$outputBCF]);
-  my $ro_job = new Job(!defined($up2date));
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs($rA_bams, [$outputBCF]);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
@@ -100,7 +99,6 @@ sub mpileupBuilder {
     else {
       $command .= ' && bcftools view -bvcg '.$outputPileup.' > '.$outputBCF;
     }
-    $command .= ' ' . $up2date;
 
     $ro_job->addCommand($command);
   }
@@ -128,8 +126,8 @@ sub mergeFilterBCF {
     $bcfInputs .= $bcfFile.' ';
   }
   
-  my $up2date = PipelineUtils::testInputOutputs(\@inputs, [$outputBCF, $outputVCF]);
-  my $ro_job = new Job(!defined($up2date));
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs(\@inputs, [$outputBCF, $outputVCF]);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
@@ -141,7 +139,6 @@ sub mergeFilterBCF {
     $command .= ' | vcfutils.pl varFilter';
     $command .= ' '.LoadConfig::getParam($rH_cfg, 'mergeFilterBCF', 'varfilterExtraFlags');
     $command .= ' > '.$outputVCF;
-    $command .= ' ' . $up2date;
 
     $ro_job->addCommand($command);
   }
@@ -154,8 +151,8 @@ sub flagstat {
   my $bamFile    = shift;
   my $output     = shift;
 
-  my $up2date = PipelineUtils::testInputOutputs([$bamFile], [$output]);
-  my $ro_job = new Job(!defined($up2date));
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$bamFile], [$output]);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
@@ -163,7 +160,6 @@ sub flagstat {
     $command .= ' samtools flagstat';
     $command .= ' '.$bamFile;
     $command .= ' > '.$output;
-    $command .= ' ' . $up2date;
 
     $ro_job->addCommand($command);
   }
@@ -176,8 +172,8 @@ sub idxstats {
   my $bamFile    = shift;
   my $output     = shift;
 
-  my $up2date = PipelineUtils::testInputOutputs([$bamFile], [$output]);
-  my $ro_job = new Job(!defined($up2date));
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$bamFile], [$output]);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
@@ -185,7 +181,6 @@ sub idxstats {
     $command .= ' samtools idxstats';
     $command .= ' '.$bamFile;
     $command .= ' > '.$output;
-    $command .= ' ' . $up2date;
 
     $ro_job->addCommand($command);
   }
@@ -201,8 +196,8 @@ sub rawmpileup {
 
   my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta');
 
-  my $up2date = PipelineUtils::testInputOutputs([$bamFile], [$output]);
-  my $ro_job = new Job(!defined($up2date));
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$bamFile], [$output]);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
@@ -213,7 +208,6 @@ sub rawmpileup {
     $command .= ' -r '.$seqName;
     $command .= ' '.$bamFile;
     $command .= ' | gzip -1 -c > '.$output;
-    $command .= ' ' . $up2date;
 
     $ro_job->addCommand($command);
   }
@@ -227,8 +221,8 @@ sub sort {
   my $bamFile     = shift;
   my $output      = shift;
 
-  my $up2date = PipelineUtils::testInputOutputs([$bamFile], [$output]);
-  my $ro_job = new Job(!defined($up2date));
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$bamFile], [$output]);
 
   if (!$ro_job->isUp2Date()) { 
     my $command;
@@ -237,7 +231,6 @@ sub sort {
     $command .= ' '.$option;
     $command .= ' '.$bamFile;
     $command .= ' '.$output;
-    $command .= ' ' . $up2date;
 
     $ro_job->addCommand($command);
   }
@@ -259,8 +252,8 @@ sub viewFilter {
 		$option = '';
 	}
 	
-	my $up2date = PipelineUtils::testInputOutputs([$bamFile], [$output]);
-  my $ro_job = new Job(!defined($up2date));
+  my $ro_job = new Job();
+	$ro_job->testInputOutputs([$bamFile], [$output]);
 
   if (!$ro_job->isUp2Date()) {
   	my $command;
@@ -269,7 +262,6 @@ sub viewFilter {
 	  $command .= ' ' .$option;
   	$command .= ' ' .$bamFile;
 	  $command .= $returnOutput;
-    $command .= ' ' . $up2date;
 
     $ro_job->addCommand($command);
   }

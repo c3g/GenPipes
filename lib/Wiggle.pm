@@ -38,7 +38,6 @@ use warnings;
 
 # Dependencies
 #-----------------------
-use PipelineUtils;
 use LoadConfig;
 use Picard;
 
@@ -50,8 +49,8 @@ sub strandBam{
   my $inputBAM      = shift;
   my $rA_outputBAM  = shift;
 
-  my $up2date = PipelineUtils::testInputOutputs([$inputBAM], [$rA_outputBAM->[0], $rA_outputBAM->[1]]);
-  my $ro_job = new Job(!defined($up2date));
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$inputBAM], [$rA_outputBAM->[0], $rA_outputBAM->[1]]);
 
   my @mergeBAMFtmp = ($inputBAM .'tmp1.forward.bam' , $inputBAM .'tmp2.forward.bam');
   my @mergeBAMRtmp = ($inputBAM .'tmp1.reverse.bam' , $inputBAM .'tmp2.reverse.bam');
@@ -76,7 +75,6 @@ sub strandBam{
     $Rcommand .= ' > ' .$inputBAM .'tmp2.reverse.bam &&';
     $Rcommand .= ' ' .$mergeRJob->getCommand(0) .' &&';
     $Rcommand .= ' rm ' .$inputBAM .'tmp*.reverse.*am';
-    $Rcommand .= ' ' . $up2date;
 
     $ro_job->addCommand($Rcommand);
   }
@@ -91,8 +89,8 @@ sub graph{
   my $outputBegGraph = shift;
   my $outputWiggle   = shift;
 
-  my $up2date = PipelineUtils::testInputOutputs([$inputBAM], [$outputBegGraph,$outputWiggle]);
-  my $ro_job = new Job(!defined($up2date));
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$inputBAM], [$outputBegGraph,$outputWiggle]);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
@@ -106,7 +104,6 @@ sub graph{
     $command .= ' bedGraphToBigWig ' .$outputBegGraph;
     $command .= '  ' .LoadConfig::getParam($rH_cfg, 'wiggle','chromosomeSizeFile');
     $command .= '  ' .$outputWiggle;
-    $command .= ' ' . $up2date;
 
     $ro_job->addCommand($command);
   }
@@ -119,12 +116,11 @@ sub zipWig {
   my $wigFolder     = shift;
   my $wigArchive       = shift;
   
-  my $up2date = PipelineUtils::testInputOutputs(undef, undef);
-  my $ro_job = new Job(!defined($up2date));
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs(undef, undef);
 
   if (!$ro_job->isUp2Date()) {
     my $command = ' zip -r ' .$wigArchive .' ' .$wigFolder ;
-    $command .= ' ' . $up2date;
 
     $ro_job->addCommand($command);
   }  

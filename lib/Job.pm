@@ -28,7 +28,8 @@ use warnings;
 
 # Dependencies
 #-----------------------
-use PipelineUtils;
+use File::stat;
+use Time::localtime;
 use LoadConfig;
 
 # SUB
@@ -51,6 +52,21 @@ sub addCommand {
       }
       push(@{$self->{'_commands'}}, $command);
     }
+}
+
+sub addFilesToTest {
+    my ( $self, $rA_filesToTest ) = @_;
+    if(defined($rA_filesToTest)) {
+      if(!defined($self->{'_filesToTest'})) {
+        $self->{'_filesToTest'} = ();
+      }
+      push(@{$self->{'_filesToTest'}}, @{$rA_filesToTest});
+    }
+}
+
+sub getFilesToTest {
+  my ( $self ) = @_;
+  return $self->{'_filesToTest'};
 }
 
 sub setOutputFileHash {
@@ -105,6 +121,53 @@ sub setUp2Date {
 sub isUp2Date {
     my( $self ) = @_;
     return $self->{'_isUp2Date'};
+}
+
+sub testInputOutputs {
+  my( $self, $rA_inputs, $rA_outputs ) = @_;
+
+  if(!defined($rA_inputs) || !defined($rA_outputs) || scalar(@{$rA_inputs}) == 0 || scalar(@{$rA_outputs}) == 0) {
+    # Don't return touch, but return something so undef tests fail
+    return "";
+  }
+
+  my $latestInput = ctime(stat($rA_inputs->[0])->mtime);
+  for my $inputFile (@{$rA_inputs}) {
+    my $inputTime = ctime(stat($inputFile)->mtime);
+    if($inputTime > $latestInput) {
+      $latestInput = $inputTime;
+    }
+  }
+
+  my $retVal = " && touch ";
+  my @filesToTest;
+  my $runIt = 0;
+  for my $outputFile (@{$rA_outputs}) {
+    $retVal .= $outputFile.'.mugqic.done ';
+    push(@filesToTest, $outputFile.'.mugqic.done');
+    if($runIt != 0) {
+      next;
+    }
+
+    if(!(-e $outputFile) || !(-e $outputFile.'.mugqic.done')) {
+      $runIt = 1;
+    }
+    else {
+      my $outputTime = ctime(stat($outputFile)->mtime);
+      if($outputTime < $latestInput) {
+        $runIt = 1;
+      }
+    }
+  }
+
+  if($runIt == 0) {
+    return undef;
+  }
+  else {
+    $self->setUp2Date(0);
+    $self->addFilesToTest(\@filesToTest);
+    return $retVal;
+  }
 }
 
 1;

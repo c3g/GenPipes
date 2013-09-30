@@ -38,7 +38,6 @@ use warnings;
 # Dependencies
 #-----------------------
 use LoadConfig;
-use PipelineUtils;
 
 # SUB
 #-----------------------
@@ -71,8 +70,8 @@ sub align {
     $refOption .= '-G '.$refFile;
   }
 
-  my $up2date = PipelineUtils::testInputOutputs([$pair1, $pair2], [$outputBAM]);
-  my $ro_job = new Job(!defined($up2date));
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$pair1, $pair2], [$outputBAM]);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
@@ -98,7 +97,6 @@ sub align {
     #------
 
     $command .= ' '. $pair1 .' ' .$pair2;
-    $command .= ' ' . $up2date;
 
     $ro_job->addCommand($command);
   }

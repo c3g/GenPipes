@@ -38,7 +38,6 @@ use warnings;
 
 # Dependencies
 #-----------------------
-use PipelineUtils;
 
 # SUB
 #-----------------------
@@ -54,8 +53,8 @@ sub mergeFiles {
     $bamInputs .= 'INPUT='.$file.' ';
   }
 
-  my $up2date = PipelineUtils::testInputOutputs($rA_inputFiles,[$outputBAM]);
-  my $ro_job = new Job(!defined($up2date));
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs($rA_inputFiles,[$outputBAM]);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
@@ -66,7 +65,6 @@ sub mergeFiles {
     $command .= ' '.$bamInputs;
     $command .= ' OUTPUT='.$outputBAM;
     $command .= ' MAX_RECORDS_IN_RAM='.LoadConfig::getParam($rH_cfg, 'mergeFiles', 'mergeRecInRam');
-    $command .= ' ' . $up2date;
 
     $ro_job->addCommand($command);
   }
@@ -78,8 +76,8 @@ sub fixmate {
   my $inputBAM   = shift;
   my $outputBAM  = shift;
 
-  my $up2date = PipelineUtils::testInputOutputs([$inputBAM],[$outputBAM]);
-  my $ro_job = new Job(!defined($up2date));
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$inputBAM],[$outputBAM]);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
@@ -90,7 +88,6 @@ sub fixmate {
     $command .= ' INPUT='.$inputBAM;
     $command .= ' OUTPUT='.$outputBAM;
     $command .= ' MAX_RECORDS_IN_RAM='.LoadConfig::getParam($rH_cfg, 'fixmate', 'fixmateRecInRam');
-    $command .= ' ' . $up2date;
 
     $ro_job->addCommand($command);
   }
@@ -113,8 +110,8 @@ sub markDup {
 #   if (!(defined $outputMetrics)) {
 #     $outputMetrics = $sampleName.'/'.$sampleName.'.sorted.dup.metrics';
 #   }
-  my $up2date = PipelineUtils::testInputOutputs([$inputBAM],[$outputBAM,$outputMetrics]);
-  my $ro_job = new Job(!defined($up2date));
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$inputBAM],[$outputBAM,$outputMetrics]);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
@@ -126,7 +123,6 @@ sub markDup {
     $command .= ' OUTPUT='.$outputBAM;
     $command .= ' METRICS_FILE='.$outputMetrics;
     $command .= ' MAX_RECORDS_IN_RAM='.LoadConfig::getParam($rH_cfg, 'markDup', 'markDupRecInRam');
-    $command .= ' ' . $up2date;
 
     $ro_job->addCommand($command);
   }
@@ -138,8 +134,8 @@ sub collectMetrics {
   my $inputBAM      = shift;
   my $outputMetrics = shift;
 
-  my $up2date = PipelineUtils::testInputOutputs([$inputBAM],[$outputMetrics]);
-  my $ro_job = new Job(!defined($up2date));
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$inputBAM],[$outputMetrics]);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
@@ -151,7 +147,6 @@ sub collectMetrics {
     $command .= ' INPUT='.$inputBAM;
     $command .= ' OUTPUT='.$outputMetrics;
     $command .= ' MAX_RECORDS_IN_RAM='.LoadConfig::getParam($rH_cfg, 'collectMetrics', 'collectMetricsRecInRam');
-    $command .= ' ' . $up2date;
 
     $ro_job->addCommand($command);
   }
@@ -166,8 +161,8 @@ sub sortSam {
   my $outputBAM     = shift;
   my $order         = shift;
 
-  my $up2date = PipelineUtils::testInputOutputs([$inputBAM],[$outputBAM]);
-  my $ro_job = new Job(!defined($up2date));
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$inputBAM],[$outputBAM]);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
@@ -179,7 +174,6 @@ sub sortSam {
     $command .= ' OUTPUT='.$outputBAM;
     $command .= ' SORT_ORDER='.$order;
     $command .= ' MAX_RECORDS_IN_RAM='.LoadConfig::getParam($rH_cfg, 'sortSam', 'sortRecInRam');
-    $command .= ' ' . $up2date;
 
     $ro_job->addCommand($command);
   }
@@ -194,8 +188,8 @@ sub reorderSam {
   my $inputBAM      = shift;
   my $outputBAM     = shift;
 
-  my $up2date = PipelineUtils::testInputOutputs([$inputBAM],[$outputBAM]);
-  my $ro_job = new Job(!defined($up2date));
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$inputBAM],[$outputBAM]);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
@@ -207,7 +201,6 @@ sub reorderSam {
     $command .= ' OUTPUT='.$outputBAM;
     $command .= ' REFERENCE='.LoadConfig::getParam($rH_cfg, 'reorderSam', 'referenceFasta');
     $command .= ' MAX_RECORDS_IN_RAM='.LoadConfig::getParam($rH_cfg, 'reorderSam', 'reorderRecInRam');
-    $command .= ' ' . $up2date;
 
     $ro_job->addCommand($command);
   }

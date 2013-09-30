@@ -37,7 +37,6 @@ use warnings;
 
 # Dependencies
 #-----------------------
-use PipelineUtils;
 use LoadConfig;
 
 # SUB
@@ -54,8 +53,8 @@ sub fpkm{
         $transcriptOption = '';
     }
 
-  my $up2date = PipelineUtils::testInputOutputs([$inputBAM], [$outputIndexFile]);
-  my $ro_job = new Job(!defined($up2date));
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$inputBAM], [$outputIndexFile]);
 
   if (!$ro_job->isUp2Date()) {
       my $command;
@@ -68,7 +67,6 @@ sub fpkm{
         $command .= ' -p ' .LoadConfig::getParam($rH_cfg, 'fpkm','cufflinksThreads');
         $command .= ' -o ' .$outputFolder ;
         $command .= ' ' .$inputBAM;
-        $command .= ' ' . $up2date;
 
         $ro_job->addCommand($command);
     }
@@ -131,8 +129,8 @@ sub cuffdiff {
         $groupCmd .= ' ' .$rA_groupInputFiles->[$i];
     }
 
-    my $up2date = PipelineUtils::testInputOutputs($rA_groupInputFiles, [$outputDir]);
-    my $ro_job = new Job(!defined($up2date));
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs($rA_groupInputFiles, [$outputDir]);
 
     if (!$ro_job->isUp2Date()) {
         my $command;
@@ -143,7 +141,6 @@ sub cuffdiff {
         $command .= ' ' .$groupCmd;
         $command .= ' ' .LoadConfig::getParam($rH_cfg, 'cuffdiff','options');
         $command .= ' -b ' .LoadConfig::getParam($rH_cfg, 'cuffdiff','referenceFasta');
-        $command .= ' ' . $up2date;
 
         $ro_job->addCommand($command);
     }
@@ -156,8 +153,8 @@ sub cuffcompare {
     my $outputPrefix     = shift;
     my $mergeGtfFilePath = shift;
 
-    my $up2date = PipelineUtils::testInputOutputs([$rA_mergeList],[$outputPrefix .'.combined.gtf', $outputPrefix .'.TranscriptList.tsv']);
-    my $ro_job = new Job(!defined($up2date));
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$rA_mergeList],[$outputPrefix .'.combined.gtf', $outputPrefix .'.TranscriptList.tsv']);
 
     if (!$ro_job->isUp2Date()) {
         my $mergeListString = join(' ', @{$rA_mergeList});
@@ -173,7 +170,6 @@ sub cuffcompare {
         $command .= ' -t ' .$outputPrefix .'.tracking';
         $command .= ' -s ' .$mergeGtfFilePath;
         $command .= ' -o ' .$outputPrefix .'.TranscriptList.tsv';
-        $command .= ' ' . $up2date;
 
         $ro_job->addCommand($command);
     }
@@ -185,8 +181,8 @@ sub cuffcompare {
 #    my $mergeListFile = shift;
 #    my $outputDir     = shift;
 #    
-#    my $up2date = PipelineUtils::testInputOutputs([],[]);
-#    my $ro_job = new Job(!defined($up2date));
+#    my $ro_job = new Job();
+#    $ro_job->testInputOutputs([],[]);
 #
 #    if (!$ro_job->isUp2Date()) {
 #        my $command;
@@ -206,14 +202,13 @@ sub mergeGtfFormat {
     my $inputFile     = shift;
     my $outputFile    = shift;
     
-    my $up2date = PipelineUtils::testInputOutputs([$inputFile],[$outputFile]);
-    my $ro_job = new Job(!defined($up2date));
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$inputFile],[$outputFile]);
 
     if (!$ro_job->isUp2Date()) {
         my $command;
         $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'cuffmerge','moduleVersion.tools') .' ;';
         $command .= ' perl \$PERL_TOOLS/formatGtfCufflinks.pl' .' '.$inputFile .' ' .$outputFile ;
-        $command .= ' ' . $up2date;
 
         $ro_job->addCommand($command);
     }
@@ -227,15 +222,14 @@ sub mergeCuffdiffRes {
     my $outputDir     = shift;
     my $inputDir     = shift;
 
-    my $up2date = PipelineUtils::testInputOutputs([$inputDir],[$outputDir]);
-    my $ro_job = new Job(!defined($up2date));
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$inputDir],[$outputDir]);
 
     if (!$ro_job->isUp2Date()) {
         ### TO DO : re-write mergecuffdiff_known.R and mergecuffdiff_denovo.R to be more portable
         my $command;
         $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'cuffmerge','moduleVersion.tools') .' ' .LoadConfig::getParam($rH_cfg, 'cuffdiff','moduleVersion.cranR') .' ;';
         $command .= ' Rscript \$R_TOOLS/mergecuffdiff_known.R ' .$outputDir .' ' .$inputDir .' ' .$designFile ;
-        $command .= ' ' . $up2date;
 
         $ro_job->addCommand($command);
     }
@@ -246,8 +240,8 @@ sub filterResults {
     my $rH_cfg        = shift;
     my $outputDir     = shift;
 
-    my $up2date = PipelineUtils::testInputOutputs(undef, undef);
-    my $ro_job = new Job(!defined($up2date));
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs(undef, undef);
 
     if (!$ro_job->isUp2Date()) {    
         ### TO DO : make it more portable when the mergeCuffdiffRes R script will be re-write
@@ -257,7 +251,6 @@ sub filterResults {
         $command .= ' sed 1d \$i | grep -v \"NOTEST\" | grep -v \"FAIL\" | sort -k 12 -g >> ' .$outputDir .'/tmp ;' ;
         $command .= ' mv ' .$outputDir .'/tmp \$i ;' ;
         $command .= ' done' ;
-        $command .= ' ' . $up2date;
 
         $ro_job->addCommand($command);
     }

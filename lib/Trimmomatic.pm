@@ -32,7 +32,6 @@ package Trimmomatic;
 
 # Strict Pragmas
 #--------------------------
-use PipelineUtils;
 use strict;
 use warnings;
 
@@ -95,9 +94,9 @@ sub pairCommand {
     my $inputFastqPair1Name = $rawReadDir .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' .$rH_laneInfo->{'read1File'};
     my $inputFastqPair2Name = $rawReadDir .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' .$rH_laneInfo->{'read2File'};
 
-    my $up2date = PipelineUtils::testInputOutputs([$inputFastqPair1Name, $inputFastqPair2Name], [$outputFastqPair1Name,$outputFastqPair2Name,$outputFastqSingle1Name,$outputFastqSingle2Name,$outputTrimLog,$outputTrimStats]);
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$inputFastqPair1Name, $inputFastqPair2Name], [$outputFastqPair1Name,$outputFastqPair2Name,$outputFastqSingle1Name,$outputFastqSingle2Name,$outputTrimLog,$outputTrimStats]);
 
-    my $ro_job = new Job(!defined($up2date));
     $ro_job->setOutputFileHash({PAIR1_OUTPUT => $outputFastqPair1Name, PAIR2_OUTPUT => $outputFastqPair2Name, SINGLE1_OUTPUT => $outputFastqSingle1Name, SINGLE2_OUTPUT => $outputFastqSingle2Name});
 
     if (!$ro_job->isUp2Date()) {
@@ -131,7 +130,6 @@ sub pairCommand {
         $command .= ' 2> ' . $outputTrimLog;
         $command .= ' &&';
         $command .= ' grep \"^Input Read\" '.$outputTrimLog.'| sed \'s/Input Read Pairs: \\([0-9]\\+\\).*Both Surviving: \\([0-9]\\+\\).*Forward Only Surviving: \\([0-9]\\+\\).*/Raw Fragments,\\1#Fragment Surviving,\\2#Single Surviving,\\3/g\' | tr \'#\' \'\n\' > '.$outputTrimStats;
-        $command .= ' ' . $up2date;
 
         $ro_job->addCommand($command);
     }
@@ -157,9 +155,9 @@ sub singleCommand {
     my $outputTrimStats = $outputDir .'/' . $sampleName . '.trim.stats.csv';
     my $inputFastqName = $rawReadDir .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' .$rH_laneInfo->{'read1File'};
 
-    my $up2date = PipelineUtils::testInputOutputs([$inputFastqName], [$outputFastqName,$outputTrimLog,$outputTrimStats]);
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$inputFastqName], [$outputFastqName,$outputTrimLog,$outputTrimStats]);
 
-    my $ro_job = new Job(!defined($up2date));
     $ro_job->setOutputFileHash({SINGLE1_OUTPUT => $outputFastqName});
 
     if (!$ro_job->isUp2Date()) {
@@ -191,7 +189,6 @@ sub singleCommand {
         $command .= ' 2> ' . $outputTrimLog;
         $command .= ' &&';
         $command .= ' grep \"^Input Read\" '.$outputTrimLog.'| sed \'s/Input Reads: \\([0-9]\\+\\).*Surviving: \\([0-9]\\+\\).*/Raw Fragments,\\1#Fragment Surviving,\\2#Single Surviving,\\2/g\' | tr \'#\' \'\n\' > '.$outputTrimStats;
-        $command .= ' ' . $up2date;
 
         $ro_job->addCommand($command);
     }
