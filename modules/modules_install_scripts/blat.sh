@@ -15,6 +15,7 @@ sed -i 's/ -Werror//g' inc/common.mk
 export MACHTYPE=x86_64
 make BINDIR=${INSTALL_PATH}
 cd ..
+chmod -R g+w $INSTALL_PATH
 rm -r blatSrc
 
 # Module file
@@ -28,14 +29,10 @@ set             root               \$::env(MUGQIC_INSTALL_HOME)/software/blat/bl
 prepend-path    PATH               \$root
 " > $VERSION
 
-# version file
+# Version file
 echo "#%Module1.0
 set ModulesVersion \"$VERSION\"
 " > .version
 
 mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/blat
 mv .version $VERSION $MUGQIC_INSTALL_HOME/modulefiles/mugqic/blat/
-
-
-
-
