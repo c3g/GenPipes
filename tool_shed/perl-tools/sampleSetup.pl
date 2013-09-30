@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 
 use File::Path qw(mkpath);
+use Cwd;
 use Text::CSV;
 use Getopt::Long;
 
@@ -86,7 +87,15 @@ sub createLinks {
   my $rA_SampleInfos = shift;
 
   for my $rH_Sample (@$rA_SampleInfos) {
-    my $directory = 'raw_reads/'.$rH_Sample->{'name'}."/run".$rH_Sample->{'runId'}."_".$rH_Sample->{'lane'};
+    my $dirCur = getcwd;
+    my $directory;
+    my @Foldervalues = split('/', $dirCur);
+    if ( $Foldervalues[-1] eq "raw_reads" ) {
+       $directory = $rH_Sample->{'name'}."/run".$rH_Sample->{'runId'}."_".$rH_Sample->{'lane'};
+    }
+    else {
+       $directory = 'raw_reads/'.$rH_Sample->{'name'}."/run".$rH_Sample->{'runId'}."_".$rH_Sample->{'lane'};
+    }
     mkpath($directory);
 
     my $runType = $rH_Sample->{'runType'};
@@ -254,15 +263,29 @@ sub parseSheet {
     else {
       die "Unknown prefix technology type: ".$sampleInfo{'filePrefix'}."\n";
     }
-    opendir(ROOT_DIR, $rootDir) or die "Couldn't open directory ".$rootDir."\n";
-    my @rootFiles;
-    if($isHiSeq == 1) {
-      @rootFiles =  grep { /.*[0-9]+_[^_]+_[^_]+_$sampleInfo{'runId'}/ } readdir(ROOT_DIR);
-    }
-    else {
-      @rootFiles =  grep { /.*[0-9]+_$sampleInfo{'runId'}/ } readdir(ROOT_DIR);
-    }
 
+    # Find yearly directories
+    opendir(ROOT_DIR, $rootDir) or die "Couldn't open directory ".$rootDir."\n";
+    my @roots =  grep { /^2\d\d\d/ } readdir(ROOT_DIR);
+    closedir(ROOT_DIR);
+    for(my $i=0; $i < @roots; $i++) {
+      $roots[$i] = $rootDir . '/' . $roots[$i];
+    }
+    push(@roots, $rootDir);
+    
+    my @rootFiles;
+    my $runPath;
+    for my $rootDir (@roots) {
+      opendir(ROOT_DIR, $rootDir) or die "Couldn't open directory ".$rootDir."\n";
+      if($isHiSeq == 1) {
+        @rootFiles =  grep { /.*[0-9]+_[^_]+_[^_]+_$sampleInfo{'runId'}/ } readdir(ROOT_DIR);
+        $runPath  = $rootDir.'/'.$rootFiles[0];
+      }
+      else {
+        @rootFiles =  grep { /.*[0-9]+_$sampleInfo{'runId'}/ } readdir(ROOT_DIR);
+        $runPath  = $rootDir.'/'.$rootFiles[0];
+      }
+    }
     if(@rootFiles == 0) {
       die "Run not found: ".$sampleInfo{'runId'}."\n";
     }
@@ -270,7 +293,6 @@ sub parseSheet {
       die "Many runs found: ".$sampleInfo{'runId'}."\n";
     }
 
-    my $runPath  = $rootDir.'/'.$rootFiles[0];
     my $fastqDir = `echo $runPath/se*`;
     chomp($fastqDir);
     if($fastqDir =~ /\*/){
