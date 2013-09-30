@@ -263,25 +263,29 @@ sub parseSheet {
     else {
       die "Unknown prefix technology type: ".$sampleInfo{'filePrefix'}."\n";
     }
-    opendir(ROOT_DIR, $rootDir) or die "Couldn't open directory ".$rootDir."\n";
-    my @rootFiles;
-    if($isHiSeq == 1) {
-      @rootFiles =  grep { /.*[0-9]+_[^_]+_[^_]+_$sampleInfo{'runId'}/ } readdir(ROOT_DIR);
-      if(@rootFiles == 0) {
-        $rootDir .= '/2013';
-        opendir(ROOT_DIR_2013, $rootDir ) or die "Couldn't open directory ".$rootDir."/2013\n";
-        @rootFiles =  grep { /.*[0-9]+_[^_]+_[^_]+_$sampleInfo{'runId'}/ } readdir(ROOT_DIR_2013);
-      }
-    }
-    else {
-      @rootFiles =  grep { /.*[0-9]+_$sampleInfo{'runId'}/ } readdir(ROOT_DIR);
-      if(@rootFiles == 0) {
-        $rootDir .= '/2013';
-        opendir(ROOT_DIR_2013, $rootDir ) or die "Couldn't open directory ".$rootDir."/2013\n";
-        @rootFiles =  grep { /.*[0-9]+_$sampleInfo{'runId'}/ } readdir(ROOT_DIR_2013);
-      }
-    }
 
+    # Find yearly directories
+    opendir(ROOT_DIR, $rootDir) or die "Couldn't open directory ".$rootDir."\n";
+    my @roots =  grep { /^2\d\d\d/ } readdir(ROOT_DIR);
+    closedir(ROOT_DIR);
+    for(my $i=0; $i < @roots; $i++) {
+      $roots[$i] = $rootDir . '/' . $roots[$i];
+    }
+    push(@roots, $rootDir);
+    
+    my @rootFiles;
+    my $runPath;
+    for my $rootDir (@roots) {
+      opendir(ROOT_DIR, $rootDir) or die "Couldn't open directory ".$rootDir."\n";
+      if($isHiSeq == 1) {
+        @rootFiles =  grep { /.*[0-9]+_[^_]+_[^_]+_$sampleInfo{'runId'}/ } readdir(ROOT_DIR);
+        $runPath  = $rootDir.'/'.$rootFiles[0];
+      }
+      else {
+        @rootFiles =  grep { /.*[0-9]+_$sampleInfo{'runId'}/ } readdir(ROOT_DIR);
+        $runPath  = $rootDir.'/'.$rootFiles[0];
+      }
+    }
     if(@rootFiles == 0) {
       die "Run not found: ".$sampleInfo{'runId'}."\n";
     }
@@ -289,7 +293,6 @@ sub parseSheet {
       die "Many runs found: ".$sampleInfo{'runId'}."\n";
     }
 
-    my $runPath  = $rootDir.'/'.$rootFiles[0];
     my $fastqDir = `echo $runPath/se*`;
     chomp($fastqDir);
     if($fastqDir =~ /\*/){
