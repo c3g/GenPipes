@@ -6,6 +6,7 @@
 VERSION="2.3.14"
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/igvtools/
 mkdir -p $INSTALL_PATH
+mkdir -p $INSTALL_PATH/archive
 cd $INSTALL_PATH
 
 # Download and install
@@ -32,4 +33,4 @@ set ModulesVersion \"$VERSION\"
 
 mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/igvtools
 mv .version $VERSION $MUGQIC_INSTALL_HOME/modulefiles/mugqic/igvtools/
-rm $INSTALL_PATH/igvtools_$VERSION.zip
+mv $INSTALL_PATH/igvtools_$VERSION.zip $INSTALL_PATH/archive
