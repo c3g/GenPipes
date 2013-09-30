@@ -125,12 +125,13 @@ sub main {
 
   print STDERR "Samples: ".scalar(@sampleNames)."\n";
 
+  SubmitToCluster::initPipeline;
+
   my $currentStep;
   for(my $idx=0; $idx < @sampleNames; $idx++){
     my $sampleName = $sampleNames[$idx];
     my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sampleName};
 
-    SubmitToCluster::initSubmit(\%cfg, $sampleName);
     for($currentStep = $opts{'s'}-1; $currentStep <= ($opts{'e'}-1); $currentStep++) {
       my $fname = $steps[$currentStep]->{'name'};
       my $subref = \&$fname;
@@ -143,7 +144,6 @@ sub main {
     }
   }  
 
-  SubmitToCluster::initSubmit(\%cfg, "");
   for($currentStep = $opts{'s'}-1; $currentStep <= ($opts{'e'}-1); $currentStep++) {
     if($steps[$currentStep]->{'stepLoop'} eq 'experiment') {
       my $fname = $steps[$currentStep]->{'name'};
@@ -174,7 +174,7 @@ sub trimAndAlign {
     my $outputDir = 'reads/'.$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
     print 'mkdir -p '.$outputDir."\n";
     my $ro_trimJob = Trimmomatic::trim($rH_cfg, $sampleName, $rH_laneInfo, $outputDir);
-    SubmitToCluster::printSubmitCmd($rH_cfg, "trim", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'TRIM', undef, $sampleName, $ro_trimJob, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName, $currentWorkDir, 0);
+    SubmitToCluster::printSubmitCmd($rH_cfg, "trim", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'TRIM', undef, $sampleName, $ro_trimJob, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName, 0);
 
     my $outputAlnDir = 'alignment/'.$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
     print 'mkdir -p '.$outputAlnDir."\n";
@@ -182,9 +182,9 @@ sub trimAndAlign {
     my $ro_bwaJob = BWA::aln($rH_cfg, $sampleName, $ro_trimJob->getOutputFileHash()->{PAIR1_OUTPUT}, $ro_trimJob->getOutputFileHash()->{PAIR2_OUTPUT},$ro_trimJob->getOutputFileHash()->{SINGLE1_OUTPUT}, $outputAlnPrefix, $rgId, $rgSampleName, $rgLibrary, $rgPlatformUnit, $rgCenter);
     if(!$ro_bwaJob->isUp2Date()) {
       if($ro_bwaJob->getNbCommands() == 3) {
-          SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'read1.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READ1ALN', $ro_trimJob->getCommandJobId(0), $sampleName, $ro_bwaJob, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName, $currentWorkDir, 0 );
-          SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'read2.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READ2ALN', $ro_trimJob->getCommandJobId(0), $sampleName, $ro_bwaJob, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName, $currentWorkDir, 1 );
-          SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'sampe.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA', $ro_bwaJob->getCommandJobId(0).LoadConfig::getParam($rH_cfg, 'aln', 'clusterDependencySep').$ro_bwaJob->getCommandJobId(1), $sampleName, $ro_bwaJob, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName, $currentWorkDir, 2 );
+          SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'read1.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READ1ALN', $ro_trimJob->getCommandJobId(0), $sampleName, $ro_bwaJob, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName, 0 );
+          SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'read2.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READ2ALN', $ro_trimJob->getCommandJobId(0), $sampleName, $ro_bwaJob, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName, 1 );
+          SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'sampe.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA', $ro_bwaJob->getCommandJobId(0).LoadConfig::getParam($rH_cfg, 'aln', 'clusterDependencySep').$ro_bwaJob->getCommandJobId(1), $sampleName, $ro_bwaJob, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName, 2 );
           print 'BWA_JOB_IDS=${BWA_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'aln', 'clusterDependencySep').$ro_bwaJob->getCommandJobId(2)."\n";
       }
       else {
@@ -225,7 +225,7 @@ sub mergeLanes {
 
   my $rO_job = Picard::mergeFiles($rH_cfg, $sampleName, \@inputBams, $outputBAM);
   if(!$rO_job->isUp2Date()) {
-    SubmitToCluster::printSubmitCmd($rH_cfg, "mergeLanes", undef, 'MERGELANES', $jobDependency, $sampleName, $rO_job, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
+    SubmitToCluster::printSubmitCmd($rH_cfg, "mergeLanes", undef, 'MERGELANES', $jobDependency, $sampleName, $rO_job);
   }
   return $rO_job->getCommandJobId(0);
 }
@@ -255,7 +255,7 @@ sub indelRealigner {
   if($nbRealignJobs <= 1) {
     my $rO_job = GATK::realign($rH_cfg, $sampleName, 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.bam', undef, 'alignment/'.$sampleName.'/realign/all');
     if(!$rO_job->isUp2Date()) {
-      SubmitToCluster::printSubmitCmd($rH_cfg, "indelRealigner", undef, 'REALIGN', $jobDependency, $sampleName, $rO_job, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
+      SubmitToCluster::printSubmitCmd($rH_cfg, "indelRealigner", undef, 'REALIGN', $jobDependency, $sampleName, $rO_job);
       print 'REALIGN_JOB_IDS='.$rO_job->getCommandJobId(0)."\n";
       $jobId = '${REALIGN_JOB_IDS}';
     }
@@ -275,7 +275,7 @@ sub indelRealigner {
       push(@excludeList, $seqName);
       my $rO_job = GATK::realign($rH_cfg, $sampleName, 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.bam', $seqName, 'alignment/'.$sampleName.'/realign/'.$seqName, $processUnmapped);
       if(!$rO_job->isUp2Date()) {
-        SubmitToCluster::printSubmitCmd($rH_cfg, "indelRealigner", $seqName, 'REALIGN', $jobDependency, $sampleName, $rO_job, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
+        SubmitToCluster::printSubmitCmd($rH_cfg, "indelRealigner", $seqName, 'REALIGN', $jobDependency, $sampleName, $rO_job);
         if($processUnmapped == 1) {
           print 'REALIGN_JOB_IDS='.$rO_job->getCommandJobId(0)."\n";
           $processUnmapped = 0;
@@ -289,7 +289,7 @@ sub indelRealigner {
 
     my $rO_job = GATK::realign($rH_cfg, $sampleName, 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.bam', undef, 'alignment/'.$sampleName.'/realign/others', 1, \@excludeList);
     if(!$rO_job->isUp2Date()) {
-      SubmitToCluster::printSubmitCmd($rH_cfg, "indelRealigner", 'others', 'REALIGN', $jobDependency, $sampleName, $rO_job, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
+      SubmitToCluster::printSubmitCmd($rH_cfg, "indelRealigner", 'others', 'REALIGN', $jobDependency, $sampleName, $rO_job);
       print 'REALIGN_JOB_IDS=${REALIGN_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$rO_job->getCommandJobId(0)."\n";
       $jobId = '${REALIGN_JOB_IDS}';
     }
@@ -337,7 +337,7 @@ sub mergeRealigned {
   }
 
   if(!$rO_job->isUp2Date()) {
-    SubmitToCluster::printSubmitCmd($rH_cfg, "mergeRealign", undef, 'MERGEREALIGN', $jobDependency, $sampleName, $rO_job, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
+    SubmitToCluster::printSubmitCmd($rH_cfg, "mergeRealign", undef, 'MERGEREALIGN', $jobDependency, $sampleName, $rO_job);
     $jobId = $rO_job->getCommandJobId(0);
   }
 
@@ -363,7 +363,7 @@ sub fixmate {
 
   my $rO_job = Picard::fixmate($rH_cfg, $inputBAM, $outputBAM);
   if(!$rO_job->isUp2Date()) {
-    SubmitToCluster::printSubmitCmd($rH_cfg, "fixmate", undef, 'FIXMATE', $jobDependency, $sampleName, $rO_job, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
+    SubmitToCluster::printSubmitCmd($rH_cfg, "fixmate", undef, 'FIXMATE', $jobDependency, $sampleName, $rO_job);
   }
   return $rO_job->getCommandJobId(0);
 }
@@ -388,7 +388,7 @@ sub markDup {
 
   my $rO_job = Picard::markDup($rH_cfg, $sampleName, $inputBAM, $outputBAM, $outputMetrics);
   if(!$rO_job->isUp2Date()) {
-    SubmitToCluster::printSubmitCmd($rH_cfg, "markDup", undef, 'MARKDUP', $jobDependency, $sampleName, $rO_job, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
+    SubmitToCluster::printSubmitCmd($rH_cfg, "markDup", undef, 'MARKDUP', $jobDependency, $sampleName, $rO_job);
   }
   return $rO_job->getCommandJobId(0);
 }
@@ -412,7 +412,7 @@ sub recalibration {
 
   my $rO_job = GATK::recalibration($rH_cfg, $sampleName, $inputBAM, $outputBAM);
   if(!$rO_job->isUp2Date()) {
-    SubmitToCluster::printSubmitCmd($rH_cfg, "recalibration", undef, 'RECAL', $jobDependency, $sampleName, $rO_job, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
+    SubmitToCluster::printSubmitCmd($rH_cfg, "recalibration", undef, 'RECAL', $jobDependency, $sampleName, $rO_job);
   }
   return $rO_job->getCommandJobId(0);
 }
@@ -439,7 +439,7 @@ sub metrics {
   my $outputMetrics = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.recal.all.metrics';
   my $rO_collectMetricsJob = Picard::collectMetrics($rH_cfg, $bamFile, $outputMetrics);
   if(!$rO_collectMetricsJob->isUp2Date()) {
-    SubmitToCluster::printSubmitCmd($rH_cfg, "collectMetrics", undef, 'COLLECTMETRICS', $jobDependency, $sampleName, $rO_collectMetricsJob, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
+    SubmitToCluster::printSubmitCmd($rH_cfg, "collectMetrics", undef, 'COLLECTMETRICS', $jobDependency, $sampleName, $rO_collectMetricsJob);
     if(!defined($jobId)) {
       print 'METRICS_JOBS='.$rO_collectMetricsJob->getCommandJobId(0);
     }
@@ -449,7 +449,7 @@ sub metrics {
   my $outputPrefix = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.recal.all.coverage';
   my $rO_genomeCoverageJob = GATK::genomeCoverage($rH_cfg, $sampleName, $bamFile, $outputPrefix);
   if(!$rO_genomeCoverageJob->isUp2Date()) {
-    SubmitToCluster::printSubmitCmd($rH_cfg, "genomeCoverage", undef, 'GENOMECOVERAGE', $jobDependency, $sampleName, $rO_genomeCoverageJob, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
+    SubmitToCluster::printSubmitCmd($rH_cfg, "genomeCoverage", undef, 'GENOMECOVERAGE', $jobDependency, $sampleName, $rO_genomeCoverageJob);
     if(!defined($jobId)) {
       print 'METRICS_JOBS='.$rO_genomeCoverageJob->getCommandJobId(0);
     }
@@ -462,7 +462,7 @@ sub metrics {
   $outputPrefix = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.recal.CCDS.coverage';
   my $rO_targetCoverageJob = GATK::targetCoverage($rH_cfg, $sampleName, $bamFile, $outputPrefix);
   if(!$rO_targetCoverageJob->isUp2Date()) {
-    SubmitToCluster::printSubmitCmd($rH_cfg, "targetCoverage", undef, 'TARGETCOVERAGE', $jobDependency, $sampleName, $rO_targetCoverageJob, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
+    SubmitToCluster::printSubmitCmd($rH_cfg, "targetCoverage", undef, 'TARGETCOVERAGE', $jobDependency, $sampleName, $rO_targetCoverageJob);
     if(!defined($jobId)) {
       print 'METRICS_JOBS='.$rO_targetCoverageJob->getCommandJobId(0);
     }
@@ -474,7 +474,7 @@ sub metrics {
   # Generate IGV track
   my $rO_igvtoolsTDFJob = IGVTools::computeTDF($rH_cfg, $bamFile);
   if(!$rO_igvtoolsTDFJob->isUp2Date()) {
-    SubmitToCluster::printSubmitCmd($rH_cfg, "computeTDF", undef, 'IGVTOOLS', $jobDependency, $sampleName, $rO_igvtoolsTDFJob, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
+    SubmitToCluster::printSubmitCmd($rH_cfg, "computeTDF", undef, 'IGVTOOLS', $jobDependency, $sampleName, $rO_igvtoolsTDFJob);
     if(!defined($jobId)) {
       print 'METRICS_JOBS='.$rO_igvtoolsTDFJob->getCommandJobId(0);
     }
@@ -487,7 +487,7 @@ sub metrics {
   my $output = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.recal.bam.flagstat';
   my $rO_flagstatJob = SAMtools::flagstat($rH_cfg, $bamFile, $output);
   if(!$rO_flagstatJob->isUp2Date()) {
-    SubmitToCluster::printSubmitCmd($rH_cfg, "flagstat", undef, 'FLAGSTAT', $jobDependency, $sampleName, $rO_flagstatJob, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
+    SubmitToCluster::printSubmitCmd($rH_cfg, "flagstat", undef, 'FLAGSTAT', $jobDependency, $sampleName, $rO_flagstatJob);
     if(!defined($jobId)) {
       print 'METRICS_JOBS='.$rO_flagstatJob->getCommandJobId(0);
     }
@@ -541,7 +541,7 @@ sub fullPileup {
     my $outputPerSeq = $outputDir.$sampleName.'.'.$seqName.'.mpileup.gz';
     my $rO_job = SAMtools::rawmpileup($rH_cfg, $sampleName, $bamFile, $seqName, $outputPerSeq);
     if(!$rO_job->isUp2Date()) {
-      SubmitToCluster::printSubmitCmd($rH_cfg, "rawmpileup", $seqName, 'RAW_MPILEUP', $jobDependency, $sampleName, $rO_job, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
+      SubmitToCluster::printSubmitCmd($rH_cfg, "rawmpileup", $seqName, 'RAW_MPILEUP', $jobDependency, $sampleName, $rO_job);
       if(!defined($jobId)) {
         $jobId = '${RAW_MPILEUP_JOB_IDS}';
         print 'RAW_MPILEUP_JOB_IDS='.$rO_job->getCommandJobId(0)."\n";
@@ -561,7 +561,7 @@ sub fullPileup {
     my $rO_job = new Job(0);
     $rO_job->addCommand($catCommand);
 
-    SubmitToCluster::printSubmitCmd($rH_cfg, "rawmpileup_cat", undef, 'RAW_MPILEUP_CAT', undef, "\$RAW_MPILEUP_JOB_IDS", $rO_job, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName );
+    SubmitToCluster::printSubmitCmd($rH_cfg, "rawmpileup_cat", undef, 'RAW_MPILEUP_CAT', undef, "\$RAW_MPILEUP_JOB_IDS", $rO_job);
     return $rO_job->getCommandJobId(0);
   }
   return undef;
@@ -603,7 +603,7 @@ sub snpAndIndelBCF {
   for my $region (@{$rA_regions}) {
     my $rO_job = SAMtools::mpileup($rH_cfg, 'allSamples', \@inputFiles, $region, $outputDir);
     if(!$rO_job->isUp2Date()) {
-      SubmitToCluster::printSubmitCmd($rH_cfg, "mpileup", $region, 'MPILEUP', $jobDependencies, 'allSamples', $rO_job, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ) );
+      SubmitToCluster::printSubmitCmd($rH_cfg, "mpileup", $region, 'MPILEUP', $jobDependencies, 'allSamples', $rO_job);
       if(!defined($jobId)) {
         $jobId = '${MPILEUP_JOB_IDS}';
         print 'MPILEUP_JOB_IDS='.$rO_job->getCommandJobId(0)."\n";
@@ -706,7 +706,7 @@ sub mergeFilterBCF {
 
   my $rO_job = SAMtools::mergeFilterBCF($rH_cfg, 'allSamples', $bcfDir, $outputDir, $rA_regions);
   if(!$rO_job->isUp2Date()) {
-    SubmitToCluster::printSubmitCmd($rH_cfg, "mergeFilterBCF", undef, 'MERGEBCF', $jobDependency, 'allSamples', $rO_job, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ));
+    SubmitToCluster::printSubmitCmd($rH_cfg, "mergeFilterBCF", undef, 'MERGEBCF', $jobDependency, 'allSamples', $rO_job);
   }
   return $rO_job->getCommandJobId(0);
 }
@@ -726,7 +726,7 @@ sub flagMappability {
   my $outputVCF = 'variants/allSamples.merged.flt.mil.vcf';
   my $inputVCF = 'variants/allSamples.merged.flt.vcf';
   my $command = VCFtools::annotateMappability($rH_cfg, $inputVCF, $outputVCF);
-  my $milJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "flagMappability", undef, 'MAPPABILITY', $jobDependency, 'allSamples', $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ));
+  my $milJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "flagMappability", undef, 'MAPPABILITY', $jobDependency, 'allSamples', $command);
   return '$'.$milJobId;
 }
 
@@ -746,7 +746,7 @@ sub snpIDAnnotation {
   my $vcfOutput = 'variants/allSamples.merged.flt.mil.snpId.vcf';
 
   my $command = SnpEff::annotateDbSnp($rH_cfg, $inputVCF, $vcfOutput);
-  my $snpEffJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "snpIDAnnotation", undef, 'SNPID', $jobDependency, 'allSamples', $command, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ));
+  my $snpEffJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "snpIDAnnotation", undef, 'SNPID', $jobDependency, 'allSamples', $command);
  }
 
 1;

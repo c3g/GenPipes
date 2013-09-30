@@ -76,6 +76,7 @@ sub mem {
     my $bwaCommand;
     $bwaCommand .= 'module load '.LoadConfig::getParam($rH_cfg, 'mem', 'moduleVersion.bwa').' ;';
     $bwaCommand .= ' module load '.LoadConfig::getParam($rH_cfg, 'mem', 'moduleVersion.picard').' ;';
+    $bwaCommand .= ' module load '.LoadConfig::getParam($rH_cfg, 'mem', 'moduleVersion.java').' ;';
     $bwaCommand .= ' bwa mem ';
     $bwaCommand .= ' '.LoadConfig::getParam( $rH_cfg, 'mem', 'bwaExtraFlags' );
     $bwaCommand .= ' -R ' . $rgTag;
