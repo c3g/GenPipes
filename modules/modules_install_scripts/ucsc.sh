@@ -4,7 +4,7 @@
 VERSION=`date +%Y%m%d`
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/ucsc/ucsc-$VERSION
 INSTALL_DOWNLOAD=$MUGQIC_INSTALL_HOME/software/ucsc/tmp
-mkdir -p $INSTALL_PATH $INSTALL_DOWNLOAD
+mkdir -p $INSTALL_PATH $INSTALL_DOWNLOAD $MUGQIC_INSTALL_HOME/software/ucsc/archive
 
 # Download and extract
 cd $INSTALL_DOWNLOAD
@@ -37,5 +37,5 @@ set ModulesVersion \"$VERSION\"
 
 mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/ucsc/
 mv .version $VERSION $MUGQIC_INSTALL_HOME/modulefiles/mugqic/ucsc/
-
+mv $INSTALL_DOWNLOAD/userApps.src.tgz $MUGQIC_INSTALL_HOME/software/ucsc/archive/userApps-$VERSION.src.tgz
 rm -rf $INSTALL_DOWNLOAD
