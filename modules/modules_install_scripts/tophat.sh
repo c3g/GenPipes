@@ -2,10 +2,10 @@
 ###################
 ################### Tophat
 ###################
-VERSION="2.0.9"
+VERSION=2.0.9
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/tophat
 INSTALL_DOWNLOAD=$MUGQIC_INSTALL_HOME/software/tophat/tmp
-mkdir -p $INSTALL_PATH $INSTALL_DOWNLOAD
+mkdir -p $INSTALL_PATH/archive $INSTALL_DOWNLOAD
 cd $INSTALL_DOWNLOAD
 
 # Download and extract
@@ -36,4 +36,5 @@ set ModulesVersion \"$VERSION\"
 
 mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/tophat
 mv .version $VERSION $MUGQIC_INSTALL_HOME/modulefiles/mugqic/tophat
+mv $INSTALL_DOWNLOAD/tophat-$VERSION.Linux_x86_64.tar.gz $INSTALL_PATH/archive/
 rm -rf $INSTALL_DOWNLOAD
