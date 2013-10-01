@@ -891,7 +891,7 @@ sub deliverable {
                  $jobDependency = substr $jobDependency, 0, -1 ;
         }
 
-	my $command = GqSeqUtils::clientReport($rH_cfg,  $configFile, $workDir) ;
+	my $command = GqSeqUtils::clientReport($rH_cfg,  $configFile, $workDir, 'RNAseq') ;
 
 	my $deliverableJobId = undef;
         if(defined($command) && length($command) > 0) {
