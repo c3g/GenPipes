@@ -94,6 +94,7 @@ push(@steps, {'name' => 'metricsSNV', 'stepLoop' => 'experiment', 'parentStep' =
 # push(@steps, {'name' => 'metricsSV', 'stepLoop' => 'experiment', 'parentStep' => ('cnv','pindel')});
 push(@steps, {'name' => 'deliverable' , 'stepLoop' => 'experiment' , 'parentStep' => ('metricsLanes','metricsSample','metricsSNV')});
 
+
 my %globalDep;
 for my $stepName (@steps) {
   $globalDep{$stepName -> {'name'} } ={};
@@ -636,6 +637,7 @@ sub snpAndIndelBCF {
   my $isFirst=1;
   for my $region (@{$rA_regions}) {
     my $command = SAMtools::mpileup($rH_cfg, 'allSamples', \@inputFiles, $region, $outputDir);
+    $region =~ s/:/_/g;
     my $mpileupJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mpileup", $region, 'MPILEUP', $jobDependencies, 'allSamples', $command);
     $mpileupJobId = '$'.$mpileupJobId;
     if($isFirst==1) {

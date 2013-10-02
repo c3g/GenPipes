@@ -179,7 +179,7 @@ sub singleCommand {
         }
         $command .= ' MINLEN:' . $minLength;
         $command .= ' 2> ' . $outputTrimLog;
-        $command .= ' &&;';
+        $command .= ' &&';
         $command .= ' grep \"^Input Read\" '.$outputTrimLog.'| sed \'s/Input Reads: \\([0-9]\\+\\).*Surviving: \\([0-9]\\+\\).*/Raw Fragments,\\1#Fragment Surviving,\\2#Single Surviving,\\2/g\' | tr \'#\' \'\n\' > '.$outputTrimStats;
     }
 

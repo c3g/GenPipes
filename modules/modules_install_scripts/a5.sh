@@ -34,7 +34,7 @@ prepend-path    PATH               \$root
 prepend-path    PATH               \$root/SSPACE
 " > $VERSION
 
-# version file
+# Version file
 echo "#%Module1.0
 set ModulesVersion \"$VERSION\"
 " > .version
