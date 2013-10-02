@@ -387,7 +387,7 @@ sub merging {
 	if($merge > 1){ # JT : if merge, update input file accordingly.
 		$inputBAM = $outputBAM; #Update file name if it has been merged.
 	}
-	my $outputKarBAM = 'alignment/' .$sampleName .'/' .$sampleName .'.merged.karyotypic.bam';
+	$outputBAM = 'alignment/' .$sampleName .'/' .$sampleName .'.merged.karyotypic.bam';
 	$command = Picard::reorderSam($rH_cfg, $sampleName, $inputBAM, $outputKarBAM);
 	my $reorderJobId = undef;
 	if(defined($command) && length($command) > 0) {
@@ -395,6 +395,7 @@ sub merging {
 		$reorderJobId = '$'.$reorderJobId;
 	}
 	## mark duplicates
+	$inputBAM = $outputBAM;
 	$outputBAM = 'alignment/' .$sampleName .'/' .$sampleName .'.merged.mdup.bam';
 	my $duplicatesMetricsFile = 'alignment/' .$sampleName .'/' .$sampleName .'.merged.mdup.metrics';
 	$command = Picard::markDup($rH_cfg, $sampleName, $inputBAM, $outputBAM,$duplicatesMetricsFile );
