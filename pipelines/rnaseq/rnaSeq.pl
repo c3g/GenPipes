@@ -268,6 +268,7 @@ sub trimMetrics {
 	if($depends > 0) {
 		$trimmingDependency = join(LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep'),values(%{$globalDep{'trimming'}}));
 	}
+	print "mkdir -p metrics/\n";
 	my $folder = 'reads';
 	my $pattern = 'trim.stats.csv';
 	my $ouputFile = 'metrics/trimming.stats';
