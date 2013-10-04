@@ -7,16 +7,20 @@ VERSION="2.2.0"
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/exonerate/
 mkdir -p $INSTALL_PATH
 cd $INSTALL_PATH
+
 # Download
 wget http://www.ebi.ac.uk/~guy/exonerate/exonerate-${VERSION}.tar.gz
 tar xvzf exonerate-${VERSION}.tar.gz
+
 # Compile
 mv exonerate-${VERSION} exonerate-${VERSION}-src
 cd exonerate-${VERSION}-src
 ./configure --prefix ${INSTALL_PATH}/exonerate-${VERSION}
 make -j8
 make install && rm -r ../exonerate-${VERSION}-src
-cd ..
+cd $INSTALL_PATH
+chmod -R g+w exonerate-${VERSION}
+
 # Module file
 echo "#%Module1.0
 proc ModulesHelp { } {
@@ -29,12 +33,11 @@ prepend-path    PATH               \$root/bin
 prepend-path    MANPATH            \$root/share/man/
 " > $VERSION
 
-# version file
+# Version file
 echo "#%Module1.0
 set ModulesVersion \"$VERSION\"
 " > .version
 
 mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/exonerate
 mv .version $VERSION $MUGQIC_INSTALL_HOME/modulefiles/mugqic/exonerate/
-
-
+rm $INSTALL_PATH/exonerate-${VERSION}.tar.gz

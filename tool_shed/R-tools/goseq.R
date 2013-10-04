@@ -163,7 +163,9 @@ if (maxP == -1) maxP=dim(enriched.GO)[1]
 write.table(paste("Enriched category","FDR < 0.05 filtered p-value","GOID","Term","Ontology","Definition","Synonym", sep="\t"), out_path, append=F, row.names=F, col.names=F, quote=F)
 for (i in 1:maxP) {
 f<-GOTERM[[enriched.GO[i,1]]]
-write.table(paste(i, enriched.GO[i,2], GOID(f), Term(f), Ontology(f), Definition(f), Synonym(f)[i], sep="\t"), out_path, append=T, row.names=F, col.names=F, quote=F)
+if (!is.null(f)){
+	write.table(paste(i, enriched.GO[i,2], GOID(f), Term(f), Ontology(f), Definition(f), Synonym(f)[i], sep="\t"), out_path, append=T, row.names=F, col.names=F, quote=F)
+}
 }
 
 #getgo(d3[1:1000,15], "mm9", "geneSymbol", fetch.cats=c("GO:CC","GO:BP","GO:MF"))

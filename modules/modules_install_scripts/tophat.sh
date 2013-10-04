@@ -1,15 +1,21 @@
 
 ###################
-################### tophat
+################### Tophat
 ###################
-VERSION="2.0.9"
-INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/tophat/tophat-$VERSION.Linux_x86_64 # where to install..
+VERSION=2.0.9
+INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/tophat
 INSTALL_DOWNLOAD=$MUGQIC_INSTALL_HOME/software/tophat/tmp
-mkdir -p $INSTALL_PATH $INSTALL_DOWNLOAD
+mkdir -p $INSTALL_PATH/archive $INSTALL_DOWNLOAD
 cd $INSTALL_DOWNLOAD
+
+# Download and extract
 wget http://tophat.cbcb.umd.edu/downloads/tophat-$VERSION.Linux_x86_64.tar.gz
 tar -xvf tophat-$VERSION.Linux_x86_64.tar.gz
-mv tophat-$VERSION.Linux_x86_64/* $INSTALL_PATH
+
+# Install
+mv tophat-$VERSION.Linux_x86_64/ $INSTALL_PATH
+cd $INSTALL_PATH
+chmod -R g+w tophat-$VERSION.Linux_x86_64/
 
 # Module file
 echo "#%Module1.0
@@ -22,7 +28,7 @@ set             root               \$::env(MUGQIC_INSTALL_HOME)/software/tophat/
 prepend-path    PATH               \$root
 " > $VERSION
 
-# version file
+# Version file
 echo "#%Module1.0
 set ModulesVersion \"$VERSION\"
 
@@ -30,6 +36,5 @@ set ModulesVersion \"$VERSION\"
 
 mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/tophat
 mv .version $VERSION $MUGQIC_INSTALL_HOME/modulefiles/mugqic/tophat
-
-cd $INSTALL_PATH
+mv $INSTALL_DOWNLOAD/tophat-$VERSION.Linux_x86_64.tar.gz $INSTALL_PATH/archive/
 rm -rf $INSTALL_DOWNLOAD

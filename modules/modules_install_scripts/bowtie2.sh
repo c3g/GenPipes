@@ -15,6 +15,7 @@ unzip bowtie2-$VERSION-source.zip
 cd bowtie2-$VERSION
 make -j8
 mv bowtie2* $INSTALL_PATH
+chmod -R g+w $INSTALL_PATH
 cd ..
 
 
@@ -29,7 +30,7 @@ set             root               \$::env(MUGQIC_INSTALL_HOME)/software/bowtie/
 prepend-path    PATH               \$root
 " > $VERSION
 
-# version file
+# Version file
 echo "#%Module1.0
 set ModulesVersion \"$VERSION\"
 " > .version

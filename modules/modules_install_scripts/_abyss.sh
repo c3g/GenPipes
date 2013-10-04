@@ -52,7 +52,7 @@ set             root               \$::env(MUGQIC_INSTALL_HOME)/software/abyss/a
 prepend-path    PATH               \$root
 " > $VERSION
 
-# version file
+# Version file
 echo "#%Module1.0
 set ModulesVersion \"$VERSION\"
 " > .version
@@ -80,7 +80,7 @@ set             root               \$::env(MUGQIC_INSTALL_HOME)/software/ray/ray
 prepend-path    PATH               \$root
 " > $VERSION
 
-# version file
+# Version file
 echo "#%Module1.0
 set ModulesVersion \"$VERSION\"
 " > .version

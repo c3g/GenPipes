@@ -268,6 +268,7 @@ sub trimMetrics {
 	if($depends > 0) {
 		$trimmingDependency = join(LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep'),values(%{$globalDep{'trimming'}}));
 	}
+	print "mkdir -p metrics/\n";
 	my $folder = 'reads';
 	my $pattern = 'trim.stats.csv';
 	my $ouputFile = 'metrics/trimming.stats';
@@ -357,25 +358,37 @@ sub merging {
 	if($depends > 0) {
 		$jobDependency = $globalDep{'aligning'}{$sampleName};
 	}
+	
 	##Merging
 	my $inputBAM ; 
 	my $outputBAM = 'alignment/' .$sampleName .'/' .$sampleName .'.merged.bam' ;
 	my @alignFiles;
+	my $merge = 0; # JT : Flag to see if we skip merging step or not.
+
 	for my $rH_laneInfo (@$rAoH_sampleLanes) {
 		my $laneDir = "alignment/" . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
 		$inputBAM = $laneDir . 'accepted_hits.bam';
+		$merge++; # JT: increment flag 
 		push(@alignFiles, $inputBAM) ;
 	}
-	my $command = Picard::mergeFiles($rH_cfg, $sampleName, \@alignFiles, $outputBAM);
+	my $command;
 	my $mergeJobId = undef;
-	if(defined($command) && length($command) > 0) {
-		$mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mergeFiles", undef, 'MERGELANES' .$rH_jobIdPrefixe ->{$sampleName} , $jobDependency, $sampleName, $command);
-		$mergeJobId = '$'.$mergeJobId;
+	if($merge > 1){ # JT: If flag is higher than 1 (so more than one lane / sample), perform merge.
+		$command  = Picard::mergeFiles($rH_cfg, $sampleName, \@alignFiles, $outputBAM);
+		if(defined($command) && length($command) > 0) {
+			$mergeJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mergeFiles", undef, 'MERGELANES' .$rH_jobIdPrefixe ->{$sampleName} , $jobDependency, $sampleName, $command);
+			$mergeJobId = '$'.$mergeJobId;
+		}
+	}else{
+		$mergeJobId = $jobDependency; # JT : update job dependency as well.
 	}
+	
 	## reorder
-	$inputBAM = $outputBAM;
+	if($merge > 1){ # JT : if merge, update input file accordingly.
+		$inputBAM = $outputBAM; #Update file name if it has been merged.
+	}
 	$outputBAM = 'alignment/' .$sampleName .'/' .$sampleName .'.merged.karyotypic.bam';
-	$command = Picard::reorderSam($rH_cfg, $sampleName, $inputBAM, $outputBAM);
+	$command = Picard::reorderSam($rH_cfg, $sampleName, $inputBAM, $outputKarBAM);
 	my $reorderJobId = undef;
 	if(defined($command) && length($command) > 0) {
 		$reorderJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "reorderSam", undef, 'REORDER' .$rH_jobIdPrefixe ->{$sampleName} .'REORDER', $mergeJobId, $sampleName, $command);
@@ -878,7 +891,7 @@ sub deliverable {
                  $jobDependency = substr $jobDependency, 0, -1 ;
         }
 
-	my $command = GqSeqUtils::clientReport($rH_cfg,  $configFile, $workDir) ;
+	my $command = GqSeqUtils::clientReport($rH_cfg,  $configFile, $workDir, 'RNAseq') ;
 
 	my $deliverableJobId = undef;
         if(defined($command) && length($command) > 0) {
