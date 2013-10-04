@@ -33,7 +33,22 @@ $INSTALL_PATH/bin/R --vanilla <<'EOF'
 	deps = unique(deps)
 	biocLite(deps,lib=.Library)
 	biocLite(deps,lib=.Library)
+
+	# Install Vennerable from RForge
+	install.packages("Vennerable", repos="http://R-Forge.R-project.org",lib=.Library)
+
+	# Install gqSeqUtils
+	# TODO git clone git@bitbucket.org:mugqic/rpackages.git
+	
+
 EOF
+
+# Install gqSeqUtils
+git clone https://bitbucket.org/mugqic/rpackages.git
+$INSTALL_PATH/bin/R CMD INSTALL rpackages/gqUtils
+$INSTALL_PATH/bin/R CMD INSTALL rpackages/gqSeqUtils
+
+
 
 
 ## chmod after installtion
