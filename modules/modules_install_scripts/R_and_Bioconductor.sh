@@ -22,7 +22,6 @@ make install
 wget $DEP_PATH
 $INSTALL_PATH/bin/R --vanilla <<'EOF'
 	source("http://bioconductor.org/biocLite.R")
-	library(BiocInstaller)
 	deps=readLines("R_and_Bioconductor_packages.txt")
 
 	# Programmatically add all the org pacakges
