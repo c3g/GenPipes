@@ -39,6 +39,7 @@ use warnings;
 
 # Dependencies
 #-----------------------
+use Job;
 
 # SUB
 #-----------------------

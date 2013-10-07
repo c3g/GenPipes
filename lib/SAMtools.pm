@@ -253,7 +253,12 @@ sub viewFilter {
 	}
 	
   my $ro_job = new Job();
-	$ro_job->testInputOutputs([$bamFile], [$output]);
+  if(defined($output)) {
+  	$ro_job->testInputOutputs([$bamFile], [$output]);
+  }
+  else {
+    $ro_job->testInputOutputs([$bamFile], undef);
+  }
 
   if (!$ro_job->isUp2Date()) {
   	my $command;

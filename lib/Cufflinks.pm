@@ -154,7 +154,7 @@ sub cuffcompare {
     my $mergeGtfFilePath = shift;
 
     my $ro_job = new Job();
-    $ro_job->testInputOutputs([$rA_mergeList],[$outputPrefix .'.combined.gtf', $outputPrefix .'.TranscriptList.tsv']);
+    $ro_job->testInputOutputs($rA_mergeList,[$outputPrefix .'.combined.gtf', $outputPrefix .'.TranscriptList.tsv']);
 
     if (!$ro_job->isUp2Date()) {
         my $mergeListString = join(' ', @{$rA_mergeList});

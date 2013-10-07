@@ -29,7 +29,6 @@ use warnings;
 # Dependencies
 #-----------------------
 use File::stat;
-use Time::localtime;
 use LoadConfig;
 
 # SUB
@@ -131,9 +130,17 @@ sub testInputOutputs {
     return "";
   }
 
-  my $latestInput = ctime(stat($rA_inputs->[0])->mtime);
+  my $latestInput = -1;
+  my $inputStat = stat($rA_inputs->[0]);
+  if(defined($inputStat)) {
+    $latestInput = $inputStat->mtime;
+  }
   for my $inputFile (@{$rA_inputs}) {
-    my $inputTime = ctime(stat($inputFile)->mtime);
+    $inputStat = stat($inputFile);
+    my $inputTime = -1;
+    if(defined($inputStat)) {
+      $inputTime = $inputStat->mtime;
+    }
     if($inputTime > $latestInput) {
       $latestInput = $inputTime;
     }
@@ -153,18 +160,22 @@ sub testInputOutputs {
       $runIt = 1;
     }
     else {
-      my $outputTime = ctime(stat($outputFile)->mtime);
+      my $outputTime = $latestInput-1; # make it older in case it doesn't exist
+      my $outputStat = stat($outputFile);
+      if(defined($outputStat)) {
+        $outputTime = $outputStat->mtime;
+      }
       if($outputTime < $latestInput) {
         $runIt = 1;
       }
     }
   }
 
+  $self->setUp2Date(!$runIt);
   if($runIt == 0) {
     return undef;
   }
   else {
-    $self->setUp2Date(0);
     $self->addFilesToTest(\@filesToTest);
     return $retVal;
   }

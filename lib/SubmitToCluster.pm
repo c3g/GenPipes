@@ -115,18 +115,19 @@ sub printSubmitCmd {
 
   my $rA_FilesToTest = $rO_job->getFilesToTest();
   # Erase dones, on all jobs of the series
-  if(@{$rA_FilesToTest} > 0) {
+  if(defined($rA_FilesToTest) && @{$rA_FilesToTest} > 0) {
     print 'echo "rm -f ' . join(' ', @{$rA_FilesToTest}) . ' ; ';
   }
   else {
     print 'echo "';
   }
   print $command;
-  print ' && echo \"MUGQICexitStatus:\$?\"" ';
+  print ' && echo \"MUGQICexitStatus:\$?\" ';
   # Only add if it's the last job of the series.
-  if(@{$rA_FilesToTest} > 0 && $commandIdx == $rO_job->getNbCommands()-1) {
+  if(defined($rA_FilesToTest) && @{$rA_FilesToTest} > 0 && $commandIdx == $rO_job->getNbCommands()-1) {
     print ' && touch ' . join(' ', @{$rA_FilesToTest});
   }
+  print '"';
   print ' | ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterSubmitCmd');
   print " " . LoadConfig::getParam($rH_cfg, $stepName, 'clusterOtherArg');
   print " " . LoadConfig::getParam($rH_cfg, $stepName, 'clusterWorkDirArg') . " \$WORK_DIR";

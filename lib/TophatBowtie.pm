@@ -71,7 +71,12 @@ sub align {
   }
 
   my $ro_job = new Job();
-  $ro_job->testInputOutputs([$pair1, $pair2], [$outputBAM]);
+  if(defined($pair2)){
+    $ro_job->testInputOutputs([$pair1, $pair2], [$outputBAM]);
+  }
+  else {
+    $ro_job->testInputOutputs([$pair1], [$outputBAM]);
+  }
 
   if (!$ro_job->isUp2Date()) {
     my $command;
@@ -96,7 +101,10 @@ sub align {
     $command .= ' '. $bwa_idx_basename;
     #------
 
-    $command .= ' '. $pair1 .' ' .$pair2;
+    $command .= ' '. $pair1;
+    if(defined($pair2)){
+      $command .= ' ' .$pair2;
+    }
 
     $ro_job->addCommand($command);
   }

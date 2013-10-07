@@ -121,7 +121,7 @@ sub readCount {
 
 sub readCountPortable{
 	my $rH_cfg      = shift;
-        my $inputBam  = shift;
+  my $inputBam  = shift;
 	my $inputGtf  = shift;
 	my $outputFile  = shift;
 	my $strandInfo = shift;
@@ -135,11 +135,14 @@ sub readCountPortable{
   $ro_job->testInputOutputs([$inputBam], [$outputFile]);
 
   if (!$ro_job->isUp2Date()) {
+    #Just need the command
+    my $rO_viewFilterJob = SAMtools::viewFilter($rH_cfg, $inputBam);
+
 		$command .= ' module load '.LoadConfig::getParam($rH_cfg, 'htseq','moduleVersion.python') .' '.LoadConfig::getParam($rH_cfg, 'htseq','moduleVersion.htseq') .' ; ';
-		$command .= ' ' .SAMtools::viewFilter($rH_cfg, $inputBam) ;
+		$command .= ' ' .$rO_viewFilterJob->getCommand(0);
 		$command .= ' | htseq-count - ' .  $inputGtf ;
 		$command .= ' -s ' .$strandInfo;
-		$command .= ' ' .$htseqOptions;
+		$command .= ' ' .LoadConfig::getParam($rH_cfg, 'htseq','options');
 		$command .= ' >' . $outputFile ;
 
     $ro_job->addCommand($command);

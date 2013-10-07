@@ -48,6 +48,7 @@ BEGIN{
 # Dependencies
 #--------------------
 use Getopt::Std;
+use Cwd;
 use POSIX;
 
 use BWA;
@@ -118,7 +119,7 @@ sub main {
   my %cfg = LoadConfig->readConfigFile($opts{'c'});
   my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($opts{'n'});
   my $rAoH_seqDictionary = SequenceDictionaryParser::readDictFile(\%cfg);
-  my $currentWorkDir = getCwd();
+  my $currentWorkDir = getcwd();
 
   my $latestBam;
   my @sampleNames = keys %{$rHoAoH_sampleInfo};
@@ -174,7 +175,7 @@ sub trimAndAlign {
     my $outputDir = 'reads/'.$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
     print 'mkdir -p '.$outputDir."\n";
     my $ro_trimJob = Trimmomatic::trim($rH_cfg, $sampleName, $rH_laneInfo, $outputDir);
-    SubmitToCluster::printSubmitCmd($rH_cfg, "trim", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'TRIM', undef, $sampleName, $ro_trimJob, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName, 0);
+    SubmitToCluster::printSubmitCmd($rH_cfg, "trim", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'TRIM', undef, $sampleName, $ro_trimJob);
 
     my $outputAlnDir = 'alignment/'.$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
     print 'mkdir -p '.$outputAlnDir."\n";
@@ -182,14 +183,14 @@ sub trimAndAlign {
     my $ro_bwaJob = BWA::aln($rH_cfg, $sampleName, $ro_trimJob->getOutputFileHash()->{PAIR1_OUTPUT}, $ro_trimJob->getOutputFileHash()->{PAIR2_OUTPUT},$ro_trimJob->getOutputFileHash()->{SINGLE1_OUTPUT}, $outputAlnPrefix, $rgId, $rgSampleName, $rgLibrary, $rgPlatformUnit, $rgCenter);
     if(!$ro_bwaJob->isUp2Date()) {
       if($ro_bwaJob->getNbCommands() == 3) {
-          SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'read1.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READ1ALN', $ro_trimJob->getCommandJobId(0), $sampleName, $ro_bwaJob, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName, 0 );
-          SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'read2.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READ2ALN', $ro_trimJob->getCommandJobId(0), $sampleName, $ro_bwaJob, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName, 1 );
-          SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'sampe.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA', $ro_bwaJob->getCommandJobId(0).LoadConfig::getParam($rH_cfg, 'aln', 'clusterDependencySep').$ro_bwaJob->getCommandJobId(1), $sampleName, $ro_bwaJob, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName, 2 );
+          SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'read1.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READ1ALN', $ro_trimJob->getCommandJobId(0), $sampleName, $ro_bwaJob, 0 );
+          SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'read2.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READ2ALN', $ro_trimJob->getCommandJobId(0), $sampleName, $ro_bwaJob, 1 );
+          SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'sampe.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA', $ro_bwaJob->getCommandJobId(0).LoadConfig::getParam($rH_cfg, 'aln', 'clusterDependencySep').$ro_bwaJob->getCommandJobId(1), $sampleName, $ro_bwaJob, 2 );
           print 'BWA_JOB_IDS=${BWA_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'aln', 'clusterDependencySep').$ro_bwaJob->getCommandJobId(2)."\n";
       }
       else {
-        SubmitToCluster::printSubmitCmd($rH_cfg, "aln", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READALN', $ro_trimJob->getCommandJobId(0), $sampleName, $ro_bwaJob, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName, $currentWorkDir, 0 );
-        SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'samse.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA',  $ro_bwaJob->getCommandJobId(1), $sampleName, $ro_bwaJob, LoadConfig::getParam( $rH_cfg, "default", 'sampleOutputRoot' ).'/'.$sampleName, $currentWorkDir, 1 );
+        SubmitToCluster::printSubmitCmd($rH_cfg, "aln", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READALN', $ro_trimJob->getCommandJobId(0), $sampleName, $ro_bwaJob, 0 );
+        SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'samse.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA',  $ro_bwaJob->getCommandJobId(1), $sampleName, $ro_bwaJob, 1 );
         print 'BWA_JOB_IDS=${BWA_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$ro_bwaJob->getCommandJobId(1)."\n";
       } 
     }
@@ -441,7 +442,8 @@ sub metrics {
   if(!$rO_collectMetricsJob->isUp2Date()) {
     SubmitToCluster::printSubmitCmd($rH_cfg, "collectMetrics", undef, 'COLLECTMETRICS', $jobDependency, $sampleName, $rO_collectMetricsJob);
     if(!defined($jobId)) {
-      print 'METRICS_JOBS='.$rO_collectMetricsJob->getCommandJobId(0);
+      $jobId='$METRICS_JOBS';
+      print 'METRICS_JOBS='.$rO_collectMetricsJob->getCommandJobId(0)."\n";
     }
   }
   
@@ -451,10 +453,11 @@ sub metrics {
   if(!$rO_genomeCoverageJob->isUp2Date()) {
     SubmitToCluster::printSubmitCmd($rH_cfg, "genomeCoverage", undef, 'GENOMECOVERAGE', $jobDependency, $sampleName, $rO_genomeCoverageJob);
     if(!defined($jobId)) {
-      print 'METRICS_JOBS='.$rO_genomeCoverageJob->getCommandJobId(0);
+      $jobId='$METRICS_JOBS';
+      print 'METRICS_JOBS='.$rO_genomeCoverageJob->getCommandJobId(0)."\n";;
     }
     else {
-      print 'METRICS_JOBS=${METRICS_JOBS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$rO_genomeCoverageJob->getCommandJobId(0)
+      print 'METRICS_JOBS=${METRICS_JOBS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$rO_genomeCoverageJob->getCommandJobId(0)."\n";
     }
   }
 
@@ -464,10 +467,11 @@ sub metrics {
   if(!$rO_targetCoverageJob->isUp2Date()) {
     SubmitToCluster::printSubmitCmd($rH_cfg, "targetCoverage", undef, 'TARGETCOVERAGE', $jobDependency, $sampleName, $rO_targetCoverageJob);
     if(!defined($jobId)) {
-      print 'METRICS_JOBS='.$rO_targetCoverageJob->getCommandJobId(0);
+      $jobId='$METRICS_JOBS';
+      print 'METRICS_JOBS='.$rO_targetCoverageJob->getCommandJobId(0)."\n";;
     }
     else {
-      print 'METRICS_JOBS=${METRICS_JOBS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$rO_targetCoverageJob->getCommandJobId(0)
+      print 'METRICS_JOBS=${METRICS_JOBS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$rO_targetCoverageJob->getCommandJobId(0)."\n";
     }
   }
 
@@ -476,10 +480,11 @@ sub metrics {
   if(!$rO_igvtoolsTDFJob->isUp2Date()) {
     SubmitToCluster::printSubmitCmd($rH_cfg, "computeTDF", undef, 'IGVTOOLS', $jobDependency, $sampleName, $rO_igvtoolsTDFJob);
     if(!defined($jobId)) {
-      print 'METRICS_JOBS='.$rO_igvtoolsTDFJob->getCommandJobId(0);
+      $jobId='$METRICS_JOBS';
+      print 'METRICS_JOBS='.$rO_igvtoolsTDFJob->getCommandJobId(0)."\n";
     }
     else {
-      print 'METRICS_JOBS=${METRICS_JOBS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$rO_igvtoolsTDFJob->getCommandJobId(0)
+      print 'METRICS_JOBS=${METRICS_JOBS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$rO_igvtoolsTDFJob->getCommandJobId(0)."\n";
     }
   }
 
@@ -489,10 +494,11 @@ sub metrics {
   if(!$rO_flagstatJob->isUp2Date()) {
     SubmitToCluster::printSubmitCmd($rH_cfg, "flagstat", undef, 'FLAGSTAT', $jobDependency, $sampleName, $rO_flagstatJob);
     if(!defined($jobId)) {
-      print 'METRICS_JOBS='.$rO_flagstatJob->getCommandJobId(0);
+      $jobId='$METRICS_JOBS';
+      print 'METRICS_JOBS='.$rO_flagstatJob->getCommandJobId(0)."\n";
     }
     else {
-      print 'METRICS_JOBS=${METRICS_JOBS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$rO_flagstatJob->getCommandJobId(0)
+      print 'METRICS_JOBS=${METRICS_JOBS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$rO_flagstatJob->getCommandJobId(0)."\n";
     }
   }
 
@@ -561,7 +567,7 @@ sub fullPileup {
     my $rO_job = new Job(0);
     $rO_job->addCommand($catCommand);
 
-    SubmitToCluster::printSubmitCmd($rH_cfg, "rawmpileup_cat", undef, 'RAW_MPILEUP_CAT', undef, "\$RAW_MPILEUP_JOB_IDS", $rO_job);
+    SubmitToCluster::printSubmitCmd($rH_cfg, "rawmpileup_cat", undef, 'RAW_MPILEUP_CAT', '${RAW_MPILEUP_JOB_IDS}', $sampleName, $rO_job);
     return $rO_job->getCommandJobId(0);
   }
   return undef;

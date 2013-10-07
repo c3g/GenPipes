@@ -134,7 +134,10 @@ sub readStats {
 		elsif  ((lc $fileType) eq "bam") {
 			##decrepited
 			my $unmapOption = '-F260';
-			$command .= SAMtools::viewFilter($rH_cfg, $inputFile, $unmapOption, undef);
+      #Just need the command
+      my $rO_viewFilterJob = SAMtools::viewFilter($rH_cfg, $inputFile, $unmapOption, undef);
+
+			$command .= $rO_viewFilterJob->getCommand(0);
 			$command .= ' | awk \' { print \$1} \'';
 			#---- flefebvr Tue 16 Apr 13:47:53 2013 
 			#$command .= ' | sort -u | wc -l  > ' .$outputFile;
