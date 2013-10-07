@@ -51,7 +51,7 @@ $INSTALL_PATH/bin/R CMD INSTALL rpackages/gqSeqUtils
 
 
 
-## chmod after installtion
+## Add group permissions after install
 chmod -R g+rw $INSTALL_PATH/lib64/R/library
 
 # Module def file..
