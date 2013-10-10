@@ -388,7 +388,7 @@ sub merging {
 		$inputBAM = $outputBAM; #Update file name if it has been merged.
 	}
 	$outputBAM = 'alignment/' .$sampleName .'/' .$sampleName .'.merged.karyotypic.bam';
-	$command = Picard::reorderSam($rH_cfg, $sampleName, $inputBAM, $outputKarBAM);
+	$command = Picard::reorderSam($rH_cfg, $sampleName, $inputBAM, $outputBAM);
 	my $reorderJobId = undef;
 	if(defined($command) && length($command) > 0) {
 		$reorderJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "reorderSam", undef, 'REORDER' .$rH_jobIdPrefixe ->{$sampleName} .'REORDER', $mergeJobId, $sampleName, $command);
