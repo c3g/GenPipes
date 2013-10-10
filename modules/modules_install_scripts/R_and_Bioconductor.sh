@@ -1,8 +1,8 @@
 ###################
-################### R
+################### R and R packages
 ###################
 
-## Install R itself (libcairo must be installed?s)
+## Install R itself (libcairo must be installed?)
 VERSION="3.0.1"
 
 # DEP_PATH is a URL or path to file with additional packages to be installed
@@ -21,38 +21,32 @@ make install
 ## Install prefered add on packages (takes a loooong time)
 wget $DEP_PATH
 $INSTALL_PATH/bin/R --vanilla <<'EOF'
+
 	source("http://bioconductor.org/biocLite.R")
 	deps=readLines("R_and_Bioconductor_packages.txt")
 
 	# Programmatically add all the org pacakges
-         contribUrl = contrib.url(biocinstallRepos(), type = 'source')
-         availPkgs  = available.packages(contribUrl, type = 'source')	
-         org.packages = rownames(availPkgs)[grepl("^org", rownames(availPkgs))]
+        contribUrl = contrib.url(biocinstallRepos(), type = 'source')
+        availPkgs  = available.packages(contribUrl, type = 'source')	
+        org.packages = rownames(availPkgs)[grepl("^org", rownames(availPkgs))]
 	deps = c(deps,org.packages)
 
 	deps = unique(deps)
 	biocLite(deps,lib=.Library)
 	biocLite(deps,lib=.Library)
 
-	# Install Vennerable from RForge
+	# Install Vennerable, since not yet in CRAN
 	install.packages("Vennerable", repos="http://R-Forge.R-project.org",lib=.Library)
-
-	# Install gqSeqUtils
-	# TODO git clone git@bitbucket.org:mugqic/rpackages.git
-	
-
 EOF
 
-# Install gqSeqUtils
+# Install gqSeqUtils and friends
 git clone https://bitbucket.org/mugqic/rpackages.git
 $INSTALL_PATH/bin/R CMD INSTALL rpackages/gqUtils
 $INSTALL_PATH/bin/R CMD INSTALL rpackages/gqSeqUtils
 
 
-
-
 ## Add group permissions after install
-chmod -R g+rw $INSTALL_PATH
+chmod -R g+rwX $INSTALL_PATH
 
 # Module def file..
 echo "#%Module1.0
