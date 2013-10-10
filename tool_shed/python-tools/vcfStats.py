@@ -1,4 +1,4 @@
-#!/sb/programs/analyste/software/Python-2.7.5/bin/python
+
 
 ### Mathieu Bourgey (2013/10/03)
 ### vcfStats
@@ -130,7 +130,7 @@ def main():
 							region[chr][i]=1
 						else :
 							region[chr][i]=0
-	out=open(outB +".mutFreq.tsv",'w')
+	out=open(outB,'w')
 	out.write("Contig\t"+"\t".join(region[region.keys()[0]].keys())+"\n")
 	for i in region.keys() :
 		clen=vcf_reader.contigs[i][1]

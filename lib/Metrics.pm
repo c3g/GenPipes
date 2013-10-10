@@ -213,6 +213,33 @@ sub mergeSampleDnaStats{
         return $command;
 }
 
+sub svnStatsChangeRate{
+  my $rH_cfg     = shift;
+  my $inputVCF   = shift;
+  my $outputFile = shift;
+
+  
+  my $command;
+  $command = 'module load ' .LoadConfig::getParam($rH_cfg, 'metricsSNV' , 'moduleVersion.python') .' ' . LoadConfig::getParam($rH_cfg, 'metricsSNV' , 'moduleVersion.tools') . ' &&';
+  $command .= ' python $PYTHON_TOOLS/vcfStats.py -v ' .$inputVCF;
+  $command .= ' -d ' .LoadConfig::getParam($rH_cfg, 'metricsSNV' , 'referenceSequenceDictionary');
+  $command .= ' -o ' .$outputFile ;
+
+  return $command;
+}
+
+
+sub svnStatsGetGraph{
+  my $rH_cfg          = shift;
+  my $inputBaseName  = shift;
+
+  my $command;
+  $command = 'module load ' .LoadConfig::getParam($rH_cfg, 'metricsSNV' , 'moduleVersion.cranR') .' ' . LoadConfig::getParam($rH_cfg, 'metricsSNV' , 'moduleVersion.tools') . ' &&';
+  $command .= ' Rscript \$R_TOOLS/snvGraphMetrics.R ' .$inputBaseName;
+
+  return $command;
+}
+
 
 sub mergePrintReadStats{
 	my $rH_cfg 							= shift;

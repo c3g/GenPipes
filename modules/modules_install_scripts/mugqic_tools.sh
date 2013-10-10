@@ -24,6 +24,7 @@ prepend-path    PATH            \$root/python-tools
 prepend-path    PERL5LIB        \$root/perl-tools
 setenv          R_TOOLS         \$root/R-tools
 setenv          PERL_TOOLS      \$root/perl-tools
+setenv          PYTHON_TOOLS    \$root/python-tools
 
 " > $VERSION
 

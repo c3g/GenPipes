@@ -779,6 +779,8 @@ sub snpIDAnnotation {
 
   my $command = SnpEff::annotateDbSnp($rH_cfg, $inputVCF, $vcfOutput);
   my $snpEffJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "snpIDAnnotation", undef, 'SNPID', $jobDependency, 'allSamples', $command);
+
+  return '$'.$snpEffJobId;
  }
 
 
@@ -787,7 +789,34 @@ sub metricsSNV {
   my $rH_cfg = shift;
   my $rHoAoH_sampleInfo = shift;
   my $rAoH_seqDictionary = shift;
+
+  my $vcfDependency = undef;
+  my $parentStep = $steps[$stepId]->{'parentStep'};
+
+  if(defined($globalDep{$parentStep}->{'experiment'})){
+      $vcfDependency .= $globalDep{$parentStep}->{'experiment'};
+  }
   
+  
+  my $inputVCF = 'variants/allSamples.merged.flt.mil.snpId.vcf';
+  my $outputFile = 'metrics/allSamples.PerSample.changeRate.tsv';
+
+  my $command = Metrics::svnStatsChangeRate($rH_cfg, $inputVCF, $outputFile);
+  my $changeRateJobId = undef;
+  if(defined($command) && length($command) > 0) {
+    $changeRateJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "metricsSNV", undef, 'CHANGERATE', $vcfDependency , 'allSamples', $command);
+    $changeRateJobId = '$' .$deliverableJobId ;
+  }
+  
+  my $inputBaseName='metrics/allSamples'
+  $command = Metrics::svnStatsGetGraph($rH_cfg, $inputBaseName);
+  
+  my $snvGraphsJobId = undef;
+  if(defined($command) && length($command) > 0) {
+    $snvGraphsJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "metricsSNV", undef, 'CHANGERATE', $vcfDependency , 'allSamples', $command);
+    $snvGraphsJobId = '$' .$snvGraphsJobId ;
+  }
+  return $snvGraphsJobId
 }
 
 
@@ -798,36 +827,34 @@ sub deliverable {
   my $rAoH_seqDictionary = shift;
 
 
-#   my $jobDependency ;
-#   if($depends > 0) {
-#     my $trimDependency = $globalDep{'trimMetrics'}{'trimMetrics'};
-#     if (defined($trimDependency) && length($trimDependency) > 0) {
-#       $jobDependency .= $trimDependency .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
-#     }
-#     my $alignDependency = $globalDep{'alignMetrics'}{'alignMetrics'};
-#     if (defined($alignDependency) && length($alignDependency) > 0) {
-#       $jobDependency .= $alignDependency .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
-#     }
-#     my $goDependency = $globalDep{'goseq'}{'goseq'};
-#     if (defined($goDependency) && length($goDependency) > 0) {
-#       $jobDependency .= $goDependency .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
-#     }
-#   }
-# 
-#   if (defined($jobDependency) && length($jobDependency) > 0) {
-#     $jobDependency = substr $jobDependency, 0, -1 ;
-#   }
-# 
-#   my $command = GqSeqUtils::clientReport($rH_cfg,  $configFile, $workDirectory) ;
-# 
-#   my $deliverableJobId = undef;
-#   if(defined($command) && length($command) > 0) {
-#     print "mkdir -p deliverable/output_jobs\n";
-#     $deliverableJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "deliverable", 'REPORT', 'RNAREPORT', $jobDependency , undef, $command, 'deliverable' , $workDirectory);
-#     $deliverableJobId = '$' .$deliverableJobId ;
-#   }
-# 
-#   return $deliverableJobId;
+
+  my $reportDependency = undef;
+  my @parentStep = $steps[$stepId]->{'parentStep'};
+
+  my $jobDependencies = "";
+  for(my $idx=0; $idx < @parentStep; $idx++){
+    my $stepName = @parentStep[$idx];
+    if(defined($globalDep{$stepName}->{'experiment'}])){
+      $jobDependencies .= LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$globalDep{$stepName}->{'experiment'};
+    }
+  }
+  if(length($jobDependencies) == 0) {
+    $jobDependencies = undef;
+  } else {
+    $jobDependencies = substr($jobDependencies, 1);
+  }
+  $reportDependency = $jobDependencies;
+
+
+  my $command = GqSeqUtils::clientReport($rH_cfg,  $configFile, $workDirectory, 'DNAseq') ;
+
+  my $deliverableJobId = undef;
+  if(defined($command) && length($command) > 0) {
+    $deliverableJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "deliverable", 'REPORT', 'DNAREPORT', $reportDependency , 'allSamples', $command);
+    $deliverableJobId = '$' .$deliverableJobId ;
+  }
+
+  return $deliverableJobId;
 }
 
 
