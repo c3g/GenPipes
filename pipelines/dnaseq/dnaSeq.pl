@@ -49,6 +49,7 @@ BEGIN{
 #--------------------
 use Getopt::Std;
 use POSIX;
+use Cwd;
 
 use BWA;
 use GATK;
@@ -63,6 +64,7 @@ use SubmitToCluster;
 use Trimmomatic;
 use VCFtools;
 use Metrics;
+use GqSeqUtils;
 #--------------------
 
 
@@ -100,6 +102,12 @@ for my $stepName (@steps) {
   $globalDep{$stepName -> {'name'} } ={};
 }
 
+
+# Global scope variables
+my $configFile;
+my $workDirectory = getcwd();
+
+
 &main();
 
 sub printUsage {
@@ -128,6 +136,7 @@ sub main {
   my %cfg = LoadConfig->readConfigFile($opts{'c'});
   my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($opts{'n'});
   my $rAoH_seqDictionary = SequenceDictionaryParser::readDictFile(\%cfg);
+  $configFile =  abs_path($opts{'c'});
 
   my $latestBam;
   my @sampleNames = keys %{$rHoAoH_sampleInfo};
@@ -805,12 +814,12 @@ sub metricsSNV {
   my $changeRateJobId = undef;
   if(defined($command) && length($command) > 0) {
     $changeRateJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "metricsSNV", undef, 'CHANGERATE', $vcfDependency , 'allSamples', $command);
-    $changeRateJobId = '$' .$deliverableJobId ;
+    $changeRateJobId = '$' .$changeRateJobId ;
   }
   
   my $inputBaseName='variants/allSamples.merged.flt.mil.snpId.snpeff.vcf.part';
-  my $onputBaseName='metrics/allSamples.SNV'
-  $command = Metrics::svnStatsGetGraph($rH_cfg, $inputBaseName,$onputBaseName);
+  my $outputBaseName='metrics/allSamples.SNV';
+  $command = Metrics::svnStatsGetGraph($rH_cfg, $inputBaseName,$outputBaseName);
   
   my $snvGraphsJobId = undef;
   if(defined($command) && length($command) > 0) {
@@ -834,8 +843,8 @@ sub deliverable {
 
   my $jobDependencies = "";
   for(my $idx=0; $idx < @parentStep; $idx++){
-    my $stepName = @parentStep[$idx];
-    if(defined($globalDep{$stepName}->{'experiment'}])){
+    my $stepName = $parentStep[$idx];
+    if(defined($globalDep{$stepName}->{'experiment'})){
       $jobDependencies .= LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$globalDep{$stepName}->{'experiment'};
     }
   }
