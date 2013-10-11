@@ -130,7 +130,7 @@ sub cuffdiff {
     }
 
     my $ro_job = new Job();
-    $ro_job->testInputOutputs($rA_groupInputFiles, [$outputDir]);
+    $ro_job->testInputOutputs($rA_groupInputFiles, undef);
 
     if (!$ro_job->isUp2Date()) {
         my $command;
@@ -223,7 +223,8 @@ sub mergeCuffdiffRes {
     my $inputDir     = shift;
 
     my $ro_job = new Job();
-    $ro_job->testInputOutputs([$inputDir],[$outputDir]);
+    # Can't test directories!
+    #$ro_job->testInputOutputs([$inputDir],[$outputDir]);
 
     if (!$ro_job->isUp2Date()) {
         ### TO DO : re-write mergecuffdiff_known.R and mergecuffdiff_denovo.R to be more portable

@@ -60,7 +60,7 @@ sub edger {
 
     my $laneDirectory = 'DGE/' . $group . "/";
     my $ro_job = new Job();
-    $ro_job->testInputOutputs([$laneDirectory . 'matrix.csv '], [$laneDirectory]);
+    $ro_job->testInputOutputs([$laneDirectory . 'matrix.csv '], undef);
 
     if (!$ro_job->isUp2Date()) {
         my $command;
@@ -86,7 +86,7 @@ sub edgerPortable {
       my $outputDir     = shift;
 
     my $ro_job = new Job();
-    $ro_job->testInputOutputs([$countMatrix], [$outputDir]);
+    $ro_job->testInputOutputs([$countMatrix], undef);
 
     if (!$ro_job->isUp2Date()) {
         my $command;
@@ -108,7 +108,7 @@ sub deseq {
     my $outputDir     = shift;
     
     my $ro_job = new Job();
-    $ro_job->testInputOutputs([$countMatrix], [$outputDir]);
+    $ro_job->testInputOutputs([$countMatrix], undef);
 
     if (!$ro_job->isUp2Date()) {
         my $command;
