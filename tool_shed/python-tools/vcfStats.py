@@ -21,7 +21,8 @@ import matplotlib.pyplot as plt
 def getarg(argument):
 	vcfF=""
 	dico="null"
-	optli,arg = getopt.getopt(argument[1:],"v:d:o:h",['vcf','dico','output','help'])
+	fil=""
+	optli,arg = getopt.getopt(argument[1:],"v:d:o:f:h",['vcf','dico','output','file','help'])
 	for option, value in optli:
 		if option in ("-v","--vcf"):
 			vcfF=str(value)
@@ -29,12 +30,14 @@ def getarg(argument):
 			dico=str(value)	
 		if option in ("-o","--output"):
 			out=str(value)
+		if option in ("-f","--file"):
+                        fil=str(value)
 		if option in ("-h","--help"):
 			usage()
 			sys.exit()
 	if not os.path.exists(vcfF) :
 		sys.exit("Error - vcf file not found:\n"+vcfF)
-	return vcfF, dico, out
+	return vcfF, dico, out, fil
 
 
 
@@ -103,7 +106,7 @@ def getRegion(x,r):
 	#plt.savefig(out+"_SampleMutationRate.pdf", format='pdf')
 
 def main():
-	vcfF, dicF, outB = getarg(sys.argv)
+	vcfF, dicF, outB, fil = getarg(sys.argv)
 	vcf_reader = vcf.Reader(open(vcfF,'r'))
 	if dicF != "null" and os.path.exists(dicF) :
 		contigList=getRegion(open(dicF,'r'),vcf_reader.contigs.keys())
@@ -138,6 +141,9 @@ def main():
 			region[i][j]=str(int(round(clen/region[i][j])))
 		out.write(i+"\t"+"\t".join(region[i].values())+"\n")
 	out.close()
+	f=open(fil,'a')
+	f.write(outB+"\n")
+	f.close()
 	### generate the graph (png and pdf) for the report
 	#generateGraphs(region,samples,outB)
 

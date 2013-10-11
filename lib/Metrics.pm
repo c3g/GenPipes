@@ -217,6 +217,7 @@ sub svnStatsChangeRate{
   my $rH_cfg     = shift;
   my $inputVCF   = shift;
   my $outputFile = shift;
+  my $listFile   = shift;
 
   
   my $command;
@@ -224,6 +225,7 @@ sub svnStatsChangeRate{
   $command .= ' python $PYTHON_TOOLS/vcfStats.py -v ' .$inputVCF;
   $command .= ' -d ' .LoadConfig::getParam($rH_cfg, 'metricsSNV' , 'referenceSequenceDictionary');
   $command .= ' -o ' .$outputFile ;
+  $command .= ' -f ' .$listFile ;
 
   return $command;
 }
@@ -231,12 +233,12 @@ sub svnStatsChangeRate{
 
 sub svnStatsGetGraph{
   my $rH_cfg          = shift;
-  my $inputBaseName   = shift;
-  my $outputBaseName   = shift;
+  my $listFile        = shift;
+  my $outputBaseName  = shift;
 
   my $command;
   $command = 'module load ' .LoadConfig::getParam($rH_cfg, 'metricsSNV' , 'moduleVersion.cranR') .' ' . LoadConfig::getParam($rH_cfg, 'metricsSNV' , 'moduleVersion.tools') . ' &&';
-  $command .= ' Rscript \$R_TOOLS/snvGraphMetrics.R ' .$inputBaseName .' ' .$outputBaseName;
+  $command .= ' Rscript \$R_TOOLS/snvGraphMetrics.R ' .$listFile .' ' .$outputBaseName;
 
   return $command;
 }

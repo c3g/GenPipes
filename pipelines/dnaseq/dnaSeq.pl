@@ -809,17 +809,17 @@ sub metricsSNV {
   
   my $inputVCF = 'variants/allSamples.merged.flt.mil.snpId.vcf';
   my $outputFile = 'metrics/allSamples.merged.flt.mil.snpId.snpeff.vcf.part.changeRate.tsv';
+  my $listFiles='variants/allSamples.merged.flt.mil.snpId.snpeff.vcf.statsFile.txt';
 
-  my $command = Metrics::svnStatsChangeRate($rH_cfg, $inputVCF, $outputFile);
+  my $command = Metrics::svnStatsChangeRate($rH_cfg, $inputVCF, $outputFile, $listFiles);
   my $changeRateJobId = undef;
   if(defined($command) && length($command) > 0) {
     $changeRateJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "metricsSNV", undef, 'CHANGERATE', $vcfDependency , 'allSamples', $command);
     $changeRateJobId = '$' .$changeRateJobId ;
   }
   
-  my $inputBaseName='variants/allSamples.merged.flt.mil.snpId.snpeff.vcf.part';
   my $outputBaseName='metrics/allSamples.SNV';
-  $command = Metrics::svnStatsGetGraph($rH_cfg, $inputBaseName,$outputBaseName);
+  $command = Metrics::svnStatsGetGraph($rH_cfg, $listFiles,$outputBaseName);
   
   my $snvGraphsJobId = undef;
   if(defined($command) && length($command) > 0) {
