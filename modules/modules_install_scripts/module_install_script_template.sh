@@ -48,13 +48,14 @@ setenv          ${SOFTWARE}_JAR     \$root/$SOFTWARE-$VERSION.jar ## TO BE ADDED
 ################################################################################
 # Everything below this line should be generic and not modified
 
-# Version file
+# Default module version file
 echo "#%Module1.0
 set ModulesVersion \"$VERSION\"" > .version
 
-# Install module
+# Add permissions and install module
 mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
-mv .version $VERSION $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
+chmod -R ug+rwX $VERSION .version
+mv $VERSION .version $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
 
 # Clean up temporary installation files if any
 rm -rf $INSTALL_DOWNLOAD
