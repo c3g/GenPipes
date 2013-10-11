@@ -24,8 +24,9 @@ module load mugqic/mummer mugqic/ucsc
 ./configure --prefix $MUGQIC_INSTALL_HOME/software/amos/amos-${VERSION} --with-qmake-qt4=/usr/lib64/qt4/bin/qmake
 make
 make install && \
+cd .. && \
 chmod -R ug+rwX $MUGQIC_INSTALL_HOME/software/amos/amos-${VERSION} && \
-rm -rf ../amos-${VERSION}-src
+rm -rf amos-${VERSION}-src
 
 # Module file
 echo "#%Module1.0
