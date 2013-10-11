@@ -94,8 +94,8 @@ done
 gtf2geneSize.awk Homo_sapiens.GRCh37.66.gtf Homo_sapiens.GRCh37.66_geneSize.tsv
 
 # get dbSnp variant file
-wget ftp://ftp.ncbi.nih.gov/snp/organisms/human_9606/VCF/00-All.vcf.gz.tbi -O dbSnp-137.vcf.gz.tbi
-wget ftp://ftp.ncbi.nih.gov/snp/organisms/human_9606/VCF/00-All.vcf.gz -O dbSnp-137.vcf.gz
+wget ftp://ftp.ncbi.nih.gov/snp/organisms/human_9606/VCF/00-All.vcf.gz.tbi -O dbSnp-138.vcf.gz.tbi
+wget ftp://ftp.ncbi.nih.gov/snp/organisms/human_9606/VCF/00-All.vcf.gz -O dbSnp-138.vcf.gz
 
 # get the dbnsfp annotations
 wget http://dbnsfp.houstonbioinformatics.org/dbNSFPzip/dbNSFP2.0.zip
