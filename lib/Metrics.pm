@@ -231,11 +231,12 @@ sub svnStatsChangeRate{
 
 sub svnStatsGetGraph{
   my $rH_cfg          = shift;
-  my $inputBaseName  = shift;
+  my $inputBaseName   = shift;
+  my $outputBaseName   = shift;
 
   my $command;
   $command = 'module load ' .LoadConfig::getParam($rH_cfg, 'metricsSNV' , 'moduleVersion.cranR') .' ' . LoadConfig::getParam($rH_cfg, 'metricsSNV' , 'moduleVersion.tools') . ' &&';
-  $command .= ' Rscript \$R_TOOLS/snvGraphMetrics.R ' .$inputBaseName;
+  $command .= ' Rscript \$R_TOOLS/snvGraphMetrics.R ' .$inputBaseName .' ' .$outputBaseName;
 
   return $command;
 }

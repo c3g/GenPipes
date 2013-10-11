@@ -808,8 +808,9 @@ sub metricsSNV {
     $changeRateJobId = '$' .$deliverableJobId ;
   }
   
-  my $inputBaseName='metrics/allSamples'
-  $command = Metrics::svnStatsGetGraph($rH_cfg, $inputBaseName);
+  my $inputBaseName='variants/allSamples.merged.flt.mil.snpId.snpeff.vcf.part';
+  my $onputBaseName='metrics/allSamples.SNV'
+  $command = Metrics::svnStatsGetGraph($rH_cfg, $inputBaseName,$onputBaseName);
   
   my $snvGraphsJobId = undef;
   if(defined($command) && length($command) > 0) {
