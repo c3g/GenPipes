@@ -230,7 +230,7 @@ sub trimming {
 		}
 
 		my $rO_job = Trimmomatic::trim($rH_cfg, $sampleName, $rH_laneInfo, $laneDir);
-		if($rO_job->isUp2Date()) {
+		if(!$rO_job->isUp2Date()) {
 			SubmitToCluster::printSubmitCmd($rH_cfg, "trim", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'TRIM' .$rH_jobIdPrefixe ->{$sampleName.'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} , undef, $sampleName, $rO_job);
       if(!defined($trimJobIdVarNameSample)) {
 			  $trimJobIdVarNameSample = $rO_job->getCommandJobId(0);
@@ -273,7 +273,7 @@ sub trimMetrics {
 	my $ouputFile = 'metrics/trimming.stats';
 	my $rO_job = Metrics::mergeTrimmomaticStats($rH_cfg,  $libraryType, $pattern, $folder, $ouputFile);
 	my $metricsJobId = undef;
-	if($rO_job->isUp2Date()) {
+	if(!$rO_job->isUp2Date()) {
 		SubmitToCluster::printSubmitCmd($rH_cfg, "trimMetrics", undef, 'TRIMMETRICS', $trimmingDependency, undef, $rO_job);
 	}
 	return $rO_job->getCommandJobId(0);
@@ -741,13 +741,13 @@ sub dge {
 	
 	## edgeR
 	my $rO_job = DiffExpression::edgerPortable($rH_cfg, $designFilePath, $countMatrix, $outputDir);
-	if($rO_job->isUp2Date()) {
+	if(!$rO_job->isUp2Date()) {
 		SubmitToCluster::printSubmitCmd($rH_cfg, "diffExpress", 'edger', 'EDGER', $jobDependency, undef, $rO_job);
 	}
 	
 	## DESeq
 	my $rO_deseqJob = DiffExpression::deseq($rH_cfg, $designFilePath, $countMatrix, $outputDir);
-	if($rO_deseqJob->isUp2Date()) {
+	if(!$rO_deseqJob->isUp2Date()) {
 		SubmitToCluster::printSubmitCmd($rH_cfg, "diffExpress", 'deseq', 'DESEQ', $rO_job->getCommandJobId(0), undef, $rO_deseqJob);
 	}
 	
@@ -863,7 +863,7 @@ sub deliverable {
 
 	my $rO_job = GqSeqUtils::clientReport($rH_cfg,  $configFile, $workDir) ;
 	my $deliverableJobId = undef;
-  if($rO_job->isUp2Date()) {
+  if(!$rO_job->isUp2Date()) {
     print "mkdir -p deliverable\n";
     SubmitToCluster::printSubmitCmd($rH_cfg, "deliverable", 'REPORT', 'RNAREPORT', $jobDependency , undef, $rO_job);
   }
