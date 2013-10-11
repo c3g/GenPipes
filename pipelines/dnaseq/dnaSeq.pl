@@ -808,7 +808,7 @@ sub metricsSNV {
   
   
   my $inputVCF = 'variants/allSamples.merged.flt.mil.snpId.vcf';
-  my $outputFile = 'metrics/allSamples.PerSample.changeRate.tsv';
+  my $outputFile = 'metrics/allSamples.merged.flt.mil.snpId.snpeff.vcf.part.changeRate.tsv';
 
   my $command = Metrics::svnStatsChangeRate($rH_cfg, $inputVCF, $outputFile);
   my $changeRateJobId = undef;
