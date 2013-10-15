@@ -100,6 +100,8 @@ sub generatePeaks {
   my $paired     = shift;
   my $command    = "";
 
+  my @inputs;
+  push(@inputs, $treatment);
   # Compute Genome size or retrieve from config
   my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'genomeName');
   my $genomeSize = '';
@@ -146,6 +148,7 @@ sub generatePeaks {
   }
 
   if (defined($control) && defined($treatment)) {
+    push(@inputs, $control);
     if ($type eq 'B') {
       $options = ' --nomodel --broad ';
     } else {
@@ -170,7 +173,6 @@ sub generatePeaks {
   my $ro_job = new Job();
   $ro_job->testInputOutputs(\@inputs, [$outputDir . '/' . $designName . $genomeSize . $options . '_peaks.xls']);
   if (!$ro_job->isUp2Date()) {
-
     $ro_job->addCommand($command);
   }
 

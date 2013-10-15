@@ -42,16 +42,14 @@ sub clientReport{
     my $rH_cfg        = shift;
     my $iniFilePath   = shift;
     my $projectPath   = shift;
+	  my $pipelineType      = shift;
     
 #     pipeline=        ini.file.path=   report.title=    report.contact=  
 # project.path=    report.path=     report.author=   report.css=
-    my $pipeline = "";
-    my $pipelineTMP = LoadConfig::getParam($rH_cfg, 'report','projectName');
-    if (defined($pipelineTMP) && !($pipelineTMP eq "")) {
-        $pipeline= 'pipeline=\"' .$pipelineTMP .'\",';
-    }
+    my $pipeline= 'pipeline=\"' .$pipelineType .'\",';
+
     my $title = "";
-    my $titleTMP = LoadConfig::getParam($rH_cfg, 'report','report.title');
+    my $titleTMP = LoadConfig::getParam($rH_cfg, 'report','projectName');
     if (defined($titleTMP) && !($titleTMP eq "")) {
                 $title= 'report.title=\"' .$titleTMP .'\",';
         }

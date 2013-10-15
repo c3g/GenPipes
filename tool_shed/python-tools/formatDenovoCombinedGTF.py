@@ -106,7 +106,7 @@ def usage():
 	print "For more information, contact: mbourgey@genomequebec.com"
 	print "----------------------------------------------------------------------------------\n"
 	print "USAGE : GetRecurenceSV.py [option] "
-	print "       -c :        combined gtf"
+	print "       -c :        combioned gtf"
 	print "       -t :        tracking file"
 	print "       -s :        sample list"
 	print "       -o :        output gtf"
@@ -135,7 +135,8 @@ def getSampleOrder(x):
 	sample=[]
 	while l != "" :
 		co=l.split()
-		sample.append("FPKM_"+co[0])
+		na=co[0].split("/")
+		sample.append("FPKM_"+na[-2])
 		l=f.readline()
 	order="\t".join(sample)
 	f.close()
@@ -160,7 +161,7 @@ def getTransTracking(x) :
 		else :
 			trans[c[0]].geneName=c[2]
 		trans[c[0]].RefInfo=codeC[c[3]]
-		for i in range(4,len(c),1) :
+		for i in range(5,len(c),1) :
 			if c[i] != "-" :
 				si=c[i].split("|")
 				trans[c[0]].fpkm.append(si[3])
@@ -199,7 +200,9 @@ def main():
 	transID=trans.keys()
 	transID.sort()
 	of=open(out,'w')
-	header=["transcript_ID","method","chromosome","start","end","strand","exon_starts","exon_ends","gene_ID","nearest_ref",sampOrd,"reference_match"]
+	header=["transcript_ID","method","chromosome","start","end","strand","exon_starts","exon_ends","gene_ID","nearest_ref"]
+	header.append(sampOrd)
+	header.append("reference_match")
 	of.write("\t".join(header) + "\n")
 	for i in transID:
 		trans[i].getoutput(i,of) ##output transcipts

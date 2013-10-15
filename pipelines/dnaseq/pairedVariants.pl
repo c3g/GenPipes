@@ -148,6 +148,7 @@ sub snpAndIndelBCF {
 
       for my $region (@{$rA_regions}) {
         my $command = SAMtools::mpileupPaired($rH_cfg, $sampleName, ($normalBam, $tumorBam), $region, $outputDir);
+        $region =~ s/:/_/g;
         my $mpileupJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mpileup", $region, 'MPILEUP', undef, $sampleName, $command);
         $mpileupJobId = '$'.$mpileupJobId;
         print 'MPILEUP_JOB_IDS=${MPILEUP_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$mpileupJobId."\n";
