@@ -62,10 +62,10 @@ sub matrixMake {
     $rH_cfg      = shift;
     $sampleName  = shift;
     $rH_laneInfo = shift;
-    my $db = shift;    # blast database
+    my $db       = shift;    # blast database
     $group       = shift;
     
-	$group = ( !defined $group ) ? $sampleName : $group;
+	  $group = ( !defined $group ) ? $sampleName : $group;
     
 
     # option used if more than one db was specified on the config file.
@@ -76,15 +76,21 @@ sub matrixMake {
     my %retVal;
     my $command       = '';
     my $laneDirectory = "read_count/" . $group . "/";
+    my $input = 'assembly/' . $group . '/fasta_split/' . basename($rH_cfg->{'blast.db'}) . '/blast_BestHit.txt';
 
-    $command .= ' sh ' . $rH_cfg->{'htseq.tempMatrix'} . ' ' . 'alignment/' . $group . '/' . $group . '.gtf';
-    $command .= ' ' . 'assembly/' . $group . '/fasta_split/' . basename($rH_cfg->{'blast.db'}) . '/blast_BestHit.txt ';
-    $command .= ' ' . $laneDirectory . 'tmpmatrix.csv ;';
-    $command .= ' sh ' . $rH_cfg->{'htseq.fullMatrix'} . ' ' . $laneDirectory . ' ;';
-    $command .= ' cp ' . $laneDirectory . 'tmpmatrix.csv DGE/' . $group . '/matrix.csv ;';
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$input], [$laneDirectory . 'tmpmatrix.csv DGE/' . $group . '/matrix.csv']);
 
-    $retVal{'command'} = $command;
-    return ( \%retVal );
+    if (!$ro_job->isUp2Date()) {
+      $command .= ' sh ' . $rH_cfg->{'htseq.tempMatrix'} . ' ' . 'alignment/' . $group . '/' . $group . '.gtf';
+      $command .= ' ' . $input;
+      $command .= ' ' . $laneDirectory . 'tmpmatrix.csv ;';
+      $command .= ' sh ' . $rH_cfg->{'htseq.fullMatrix'} . ' ' . $laneDirectory . ' ;';
+      $command .= ' cp ' . $laneDirectory . 'tmpmatrix.csv DGE/' . $group . '/matrix.csv ';
+
+      $ro_job->addCommand($command);
+    }
+    return $ro_job;
 }
 
 sub readCount {
@@ -93,50 +99,29 @@ sub readCount {
     $rH_laneInfo = shift;
     $group       = shift;
 
-        $group = ( !defined $group ) ? $sampleName : $group;
+    $group = ( !defined $group ) ? $sampleName : $group;
         
     my %retVal;
     my $command       = '';
     my $laneDirectory = "read_count/" . $group . "/";
 
-    $command .= ' module add mugqic/samtools/0.1.6; ';
-    $command .= ' samtools view ' . $laneDirectory . $sampleName . '.QueryName.bam | ';
-    $command .= ' htseq-count - ' . 'alignment/' . $group . '/' . $group . '.gtf ';
-    $command .= ' -s no >' . $laneDirectory . $sampleName . '.readcount.cvs';
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$laneDirectory . $sampleName . '.QueryName.bam'], [$laneDirectory . $sampleName . '.readcount.cvs']);
 
-    $retVal{'command'} = $command;
-    return ( \%retVal );
+    if (!$ro_job->isUp2Date()) {
+      $command .= ' module add mugqic/samtools/0.1.6; ';
+      $command .= ' samtools view ' . $laneDirectory . $sampleName . '.QueryName.bam | ';
+      $command .= ' htseq-count - ' . 'alignment/' . $group . '/' . $group . '.gtf ';
+      $command .= ' -s no >' . $laneDirectory . $sampleName . '.readcount.cvs';
+
+      $ro_job->addCommand($command);
+    }
+    return $ro_job;
 }
-
-
-sub sortRead {
-    $rH_cfg      = shift;
-    $sampleName  = shift;
-    $rH_laneInfo = shift;
-    $group       = shift;
-	
-	$group = ( !defined $group ) ? $sampleName : $group;
-    my %retVal;
-    my $command       = '';
-    my $laneDirectory = "alignment/" . $group . "/";
-
-    $command .= ' mkdir -p  read_count/' . $group . ' ;';
-    $command .= ' mkdir -p  DGE/' . $group . ';';
-    $command .= ' module add '.LoadConfig::getParam($rH_cfg, 'htseq', 'moduleVersion.java') . ' ' . LoadConfig::getParam($rH_cfg, 'htseq', 'moduleVersion.picard') .' ;';
-    $command .= ' java -Xmx30g -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'htseq', 'tmpDir').' -jar ${PICARD_HOME}/SortSam.jar ';
-    $command .= ' VALIDATION_STRINGENCY=SILENT MAX_RECORDS_IN_RAM=5000000 CREATE_INDEX=true TMP_DIR='.LoadConfig::getParam($rH_cfg, 'htseq', 'tmpDir');
-    $command .= ' INPUT=' . $laneDirectory . $sampleName . '.sorted.bam ';
-    $command .= ' OUTPUT=read_count/' . $group . '/' . $sampleName . '.QueryName.bam ';
-    $command .= ' SORT_ORDER=queryname ';
-
-    $retVal{'command'} = $command;
-    return ( \%retVal );
-}
-
 
 sub readCountPortable{
 	my $rH_cfg      = shift;
-        my $inputBam  = shift;
+  my $inputBam  = shift;
 	my $inputGtf  = shift;
 	my $outputFile  = shift;
 	my $strandInfo = shift;
@@ -146,34 +131,39 @@ sub readCountPortable{
 	}
 	
 	my $command ;
-	my $latestBam = -M $inputBam;
-	my $output1 = -M $outputFile;
-	my $htseqOptions = LoadConfig::getParam($rH_cfg, 'htseq','options') ;
-	if(!defined($latestBam) || !defined($output1) || $latestBam < $output1) {
-		$command .= ' module load ' .LoadConfig::getParam($rH_cfg, 'htseq','moduleVersion.python') .' '.LoadConfig::getParam($rH_cfg, 'htseq','moduleVersion.htseq') .' ; ';
-		$command .= ' ' .SAMtools::viewFilter($rH_cfg, $inputBam) ;
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$inputBam], [$outputFile]);
+
+  if (!$ro_job->isUp2Date()) {
+    #Just need the command
+    my $rO_viewFilterJob = SAMtools::viewFilter($rH_cfg, $inputBam);
+
+		$command .= ' module load '.LoadConfig::getParam($rH_cfg, 'htseq','moduleVersion.python') .' '.LoadConfig::getParam($rH_cfg, 'htseq','moduleVersion.htseq') .' ; ';
+		$command .= ' ' .$rO_viewFilterJob->getCommand(0);
 		$command .= ' | htseq-count - ' .  $inputGtf ;
 		$command .= ' -s ' .$strandInfo;
-		$command .= ' ' .$htseqOptions;
+		$command .= ' ' .LoadConfig::getParam($rH_cfg, 'htseq','options');
 		$command .= ' >' . $outputFile ;
+
+    $ro_job->addCommand($command);
 	}
-	return $command;
+	return $ro_job;
 }
 
 
 sub refGtf2matrix {
-        my $rH_cfg      = shift;
+  my $rH_cfg      = shift;
 	my $refGtf  = shift;
 	my $readCountDir = shift;
 	my $readcountExtension = shift;
 	my $outputDir = shift;
 	my $outputMatrix  = shift;
 
-	my $latestFile = -M $refGtf;
-	my $testFile = -M $outputDir .'/' .$outputMatrix ;
-	
-        my $command ;
-	if(!defined($latestFile) || !defined($testFile) || $latestFile < $testFile) {
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$refGtf], [$outputDir .'/' .$outputMatrix]);
+
+  if (!$ro_job->isUp2Date()) {
+    my $command ;
 		$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'htseq','moduleVersion.tools') .' &&';
 		$command .= ' gtf2tmpMatrix.awk ' .$refGtf;
 		$command .= ' ' .$outputDir .'/tmpMatrix.txt &&';
@@ -187,8 +177,10 @@ sub refGtf2matrix {
 		$command .= ' done &&';
 		$command .= ' echo -e \$HEAD | cat - ' .$outputDir .'/tmpMatrix.txt | tr \' \' \'\t\' > ' .$outputDir .'/' .$outputMatrix .' &&';
 		$command .= ' rm ' .$outputDir .'/tmpSort.txt ' .$outputDir .'/tmpMatrix.txt ';
-        }
-        return $command;
+
+    $ro_job->addCommand($command);
+  }
+  return $ro_job;
 }
 
 1;

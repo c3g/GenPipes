@@ -42,7 +42,6 @@ use warnings;
 
 # Dependencies
 #-----------------------
-use Data::Dumper;
 use Config::Simple;
 
 sub sampleInfo {

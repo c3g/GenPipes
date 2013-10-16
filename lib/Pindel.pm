@@ -28,12 +28,12 @@ package Pindel;
 #--------------------------
 use strict;
 use warnings;
-use File::Basename;
 
 #--------------------------
 
 # Dependencies
 #-----------------------
+use File::Basename;
 
 # SUB
 #-----------------------
@@ -45,37 +45,23 @@ sub pairedConfigFile {
     my $normalBam      = shift;
     my $output        = shift;
 
-    my $outDate = -M $output;
-    my $inDate = -M $tumorBam;
-    my $inDate2 = -M $normalMetrics;
-    my $inDate3 = -M $tumorMetrics;
-    my $inDate4 = -M $normalBam;
-  
-    my $command;
-    # -M gives modified date relative to now. The bigger the older.
-    if(!defined($outDate) || !defined($inDate) || $inDate < $outDate || !defined($inDate2) || $inDate2 < $outDate || !defined($inDate3) || $inDate3 < $outDate || !defined($inDate4) || $inDate4 < $outDate) {
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$tumorBam,$normalMetrics,$tumorMetrics,$normalBam], [$output]);
+
+    if (!$ro_job->isUp2Date()) {
+        my $command;
         $command .= 'TinS=\$(grep -A 1 \"MEDIAN\"  ' .$tumorMetrics .' | awk \' NR == 2 {print \$1} \') && ';
         $command .= 'NinS=\$(grep -A 1 \"MEDIAN\"  ' .$normalMetrics .' | awk \' NR == 2 {print \$1} \') && ';
         $command .= 'echo -e \"' .$tumorBam .'\t\${TinS}\tTUMOR\n' .$normalBam .'\t\${NinS}\tBLOOD\n\" > ' . $output ;
-    }
     
-    my $bai1Date = -M $tumorBam .'.bai';
-    if(!defined($bai1Date) ) {
-        (my $tumorBai = $tumorBam) =~ s/\.bam/\.bai/g ;
-        if(defined($command) && length($command) > 0) {
-            $command .= ' &&';
-        }
-        $command .= ' ln -s ' .basename($tumorBai) .' ' .$tumorBam .'.bai' ;
+        my ($tumorBai) = $tumorBam =~ s/\.bam/\.bai/g ;
+        $command .= ' && rm -f '.$tumorBam .'.bai && ln -s ' .basename($tumorBai) .' ' .$tumorBam .'.bai' ;
+        my ($normalBai) = $normalBam =~ s/\.bam/\.bai/g ;
+        $command .= ' && rm -f '.$normalBam .'.bai && ln -s ' .basename($normalBai) .' ' .$normalBam .'.bai' ;
+
+        $ro_job->addCommand($command);
     }
-    my $bai2Date = -M $normalBam .'.bai';
-    if(!defined($bai2Date) ) {
-        if(defined($command) && length($command) > 0) {
-            $command .= ' &&';
-        }
-        (my $normalBai = $normalBam) =~ s/\.bam/\.bai/g ;
-        $command .= ' ln -s ' .basename($normalBai) .' ' .$normalBam .'.bai' ;
-    }
-    return $command;
+    return $ro_job;
 }
 
 
@@ -87,12 +73,11 @@ sub pairedPI {
     my $outputTest     = shift;
     my $PIOption       = shift;
 
-    my $outDate = -M $outputTest .'_SI';
-    my $inDate = -M $inputCFG;
-  
-    my $command;
-    # -M gives modified date relative to now. The bigger the older.
-    if(!defined($outDate) || !defined($inDate) || $inDate < $outDate) {
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$inputCFG], [$outputTest .'_SI']);
+
+    if (!$ro_job->isUp2Date()) {
+      my $command;
       $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'pindel', 'moduleVersion.pindel').' ;';
       $command .= ' pindel '.LoadConfig::getParam($rH_cfg, 'pindel', 'piParameters');
       $command .= ' -f '.$chr;
@@ -100,20 +85,21 @@ sub pairedPI {
       $command .= ' -o '.$outputPrefix;
       $command .= ' '.$PIOption;
 
+      $ro_job->addCommand($command);
+
     }
-    return $command;
+    return $ro_job;
 }
 
 sub mergeChro {
     my $rH_cfg          = shift;
     my $outputPrefix    = shift;
 
-    my $outDate = -M $outputPrefix .'_SI';
-    my $inDate = -M $outputPrefix .'.1_SI';
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$outputPrefix .'.1_SI'], [$outputPrefix .'_SI']);
 
-    my $command;
-    # -M gives modified date relative to now. The bigger the older.
-    if(!defined($outDate) || !defined($inDate) || $inDate < $outDate) {
+    if (!$ro_job->isUp2Date()) {
+      my $command;
       $command .= 'rm ' .$outputPrefix .'_BP' .' ' .$outputPrefix .'_D' .' ' .$outputPrefix .'_INV' .' ' .$outputPrefix .'_LI' .' ' .$outputPrefix .'_SI' .' ' .$outputPrefix .'_TD' .' ; ' ;
       $command .= 'touch ' .$outputPrefix .'_BP' .' ' .$outputPrefix .'_D' .' ' .$outputPrefix .'_INV' .' ' .$outputPrefix .'_LI' .' ' .$outputPrefix .'_SI' .' ' .$outputPrefix .'_TD' .' && ' ;
       $command .= 'for i in ' .$outputPrefix .'.*_BP ; do cat \$i >> '  .$outputPrefix .'_BP  ; done && ' ;
@@ -122,9 +108,10 @@ sub mergeChro {
       $command .= 'for i in ' .$outputPrefix .'.*_LI ; do cat \$i >> '  .$outputPrefix .'_LI ; done && ' ;
       $command .= 'for i in ' .$outputPrefix .'.*_SI ; do cat \$i >> '  .$outputPrefix .'_SI ; done && ' ;
       $command .= 'for i in ' .$outputPrefix .'.*_TD ; do cat \$i >> '  .$outputPrefix .'_TD ; done ' ;
-    }
-    return $command;
-}
 
+      $ro_job->addCommand($command);
+    }
+    return $ro_job;
+}
     
 1;

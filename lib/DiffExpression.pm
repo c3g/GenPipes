@@ -59,92 +59,113 @@ sub edger {
     my %retVal;
 
     my $laneDirectory = 'DGE/' . $group . "/";
-    my $command       = '';
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$laneDirectory . 'matrix.csv '], undef);
 
-    $command .= ' module add gcc/4.7.0 ; module add R ;';
-    $command .= ' Rscript ' . $rH_cfg->{'diffExpress.edger'} . ' -d ' . $rH_cfg->{'diffExpress.designFile'};
-    $command .= ' -c ' . $laneDirectory . 'matrix.csv ';
-    $command .= ' -o ' . $laneDirectory . ' ;';
-    $command .= ' Rscript ' . $rH_cfg->{'diffExpress.deseq'} . ' -d ' . $rH_cfg->{'diffExpress.designFile'};
-    $command .= ' -c ' . $laneDirectory . 'matrix.csv ';
-    $command .= ' -o ' . $laneDirectory . ' ;';
+    if (!$ro_job->isUp2Date()) {
+        my $command;
+        $command .= ' module add gcc/4.7.0 ; module add R ;';
+        $command .= ' Rscript ' . $rH_cfg->{'diffExpress.edger'} . ' -d ' . $rH_cfg->{'diffExpress.designFile'};
+        $command .= ' -c ' . $laneDirectory . 'matrix.csv ';
+        $command .= ' -o ' . $laneDirectory . ' ;';
+        $command .= ' Rscript ' . $rH_cfg->{'diffExpress.deseq'} . ' -d ' . $rH_cfg->{'diffExpress.designFile'};
+        $command .= ' -c ' . $laneDirectory . 'matrix.csv ';
+        $command .= ' -o ' . $laneDirectory . ' ;';
 
-    $retVal{'command'} = $command;
-    return ( \%retVal );
+        $ro_job->addCommand($command);
+    }
+
+    return $ro_job;
 
 }
 
 sub edgerPortable {
-	my $rH_cfg        = shift;
-	my $designFile    = shift;
-	my $countMatrix   = shift;
-	my $outputDir     = shift;
-	
-	my $command;
-	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'diffExpress','moduleVersion.tools') .' ' .LoadConfig::getParam($rH_cfg, 'diffExpress','moduleVersion.cranR') .' ;';
-	$command .= ' Rscript \$R_TOOLS/edger.R -d ' .$designFile;
-	$command .= ' -c ' .$countMatrix;
-	$command .= ' -o ' .$outputDir;
+      my $rH_cfg        = shift;
+      my $designFile    = shift;
+      my $countMatrix   = shift;
+      my $outputDir     = shift;
 
-	return $command;
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$countMatrix], undef);
+
+    if (!$ro_job->isUp2Date()) {
+        my $command;
+        $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'diffExpress','moduleVersion.tools') .' ' .LoadConfig::getParam($rH_cfg, 'diffExpress','moduleVersion.cranR') .' ;';
+        $command .= ' Rscript \$R_TOOLS/edger.R -d ' .$designFile;
+        $command .= ' -c ' .$countMatrix;
+        $command .= ' -o ' .$outputDir;
+
+        $ro_job->addCommand($command);
+    }
+
+    return $ro_job;
 }
 
 sub deseq {
-	my $rH_cfg        = shift;
-	my $designFile    = shift;
-	my $countMatrix   = shift;
-	my $outputDir     = shift;
-	
-	my $command;
-	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'diffExpress','moduleVersion.tools') .' ' .LoadConfig::getParam($rH_cfg, 'diffExpress','moduleVersion.cranR') .' ;';
-	$command .= ' Rscript \$R_TOOLS/deseq.R -d ' .$designFile;
-	$command .= ' -c ' .$countMatrix;
-	$command .= ' -o ' .$outputDir;
+    my $rH_cfg        = shift;
+    my $designFile    = shift;
+    my $countMatrix   = shift;
+    my $outputDir     = shift;
+    
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$countMatrix], undef);
 
-	return $command;
+    if (!$ro_job->isUp2Date()) {
+        my $command;
+        $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'diffExpress','moduleVersion.tools') .' ' .LoadConfig::getParam($rH_cfg, 'diffExpress','moduleVersion.cranR') .' ;';
+        $command .= ' Rscript \$R_TOOLS/deseq.R -d ' .$designFile;
+        $command .= ' -c ' .$countMatrix;
+        $command .= ' -o ' .$outputDir;
+
+        $ro_job->addCommand($command);
+    }
+
+    return $ro_job;
 }
 
 sub goseq {
-	my $rH_cfg        = shift;
-	my $resultFile    = shift;
-	my $outputFile    = shift;
-	my $columns       = shift;
-	my $method        = shift;
-	
-	my $latestInputFile = -M $resultFile;
-	my $latestOutputFile = -M $outputFile;
+    my $rH_cfg        = shift;
+    my $resultFile    = shift;
+    my $outputFile    = shift;
+    my $columns       = shift;
+    my $method        = shift;
+    
+    my $maxResult = LoadConfig::getParam($rH_cfg, 'goseq','maxGoResult');
+    my $geneSizeFile = LoadConfig::getParam($rH_cfg, 'goseq','geneSizeFile');
+    my $goLinkFile = LoadConfig::getParam($rH_cfg, 'goseq','goLinkFile');
+    my $geneIdType = LoadConfig::getParam($rH_cfg, 'goseq','geneIdType');
+    my $option = '';
+    if (defined($maxResult) && $maxResult ne "" && $maxResult ne "0") {
+        $option = ' -m ' .$maxResult;
+    }
+    if (defined($geneSizeFile) && $geneSizeFile ne "") {
+        $option .= ' -a ' .$geneSizeFile;
+    }
+    if (defined($goLinkFile) && $goLinkFile ne "") {
+        $option .= ' -G ' .$goLinkFile;
+    }
+    if (defined($geneIdType) && $geneIdType ne "") {
+        $option .= ' -i ' .$geneIdType;
+    }
+    
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$resultFile], [$outputFile]);
+    
+    if (!$ro_job->isUp2Date()) {
+        my $command;
+        $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'goseq','moduleVersion.tools') .' ' .LoadConfig::getParam($rH_cfg, 'goseq','moduleVersion.cranR') .' &&';
+        $command .= ' Rscript \$R_TOOLS/goseq.R -d ' .$resultFile;
+        $command .= ' -c ' .$columns;
+        $command .= ' -t ' .LoadConfig::getParam($rH_cfg, 'goseq','goAnnotation');
+        $command .= ' -k ' .LoadConfig::getParam($rH_cfg, 'goseq','referenceEnsemble2symbol');
+        $command .= ' -s ' .LoadConfig::getParam($rH_cfg, 'goseq','referenceUCSCname');
+        $command .= $option;
+        $command .= ' -o ' .$outputFile;
 
-	my $maxResult = LoadConfig::getParam($rH_cfg, 'goseq','maxGoResult');
-	my $geneSizeFile = LoadConfig::getParam($rH_cfg, 'goseq','geneSizeFile');
-	my $goLinkFile = LoadConfig::getParam($rH_cfg, 'goseq','goLinkFile');
-	my $geneIdType = LoadConfig::getParam($rH_cfg, 'goseq','geneIdType');
-	my $option = '';
-	if (defined($maxResult) && $maxResult ne "" && $maxResult ne "0") {
-		$option = ' -m ' .$maxResult;
-	}
-	if (defined($geneSizeFile) && $geneSizeFile ne "") {
-		$option .= ' -a ' .$geneSizeFile;
-	}
-	if (defined($goLinkFile) && $goLinkFile ne "") {
-		$option .= ' -G ' .$goLinkFile;
-	}
-	if (defined($geneIdType) && $geneIdType ne "") {
-		$option .= ' -i ' .$geneIdType;
-	}
-	
-	my $command;
-	if(!defined($latestInputFile) || !defined($latestOutputFile) || $latestInputFile <  $latestOutputFile) {
-		$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'goseq','moduleVersion.tools') .' ' .LoadConfig::getParam($rH_cfg, 'goseq','moduleVersion.cranR') .' &&';
-		$command .= ' Rscript \$R_TOOLS/goseq.R -d ' .$resultFile;
-		$command .= ' -c ' .$columns;
-		$command .= ' -t ' .LoadConfig::getParam($rH_cfg, 'goseq','goAnnotation');
-		$command .= ' -k ' .LoadConfig::getParam($rH_cfg, 'goseq','referenceEnsemble2symbol');
-		$command .= ' -s ' .LoadConfig::getParam($rH_cfg, 'goseq','referenceUCSCname');
-		$command .= $option;
-		$command .= ' -o ' .$outputFile;
-	}
+        $ro_job->addCommand($command);
+    }
 
-	return $command;
+    return $ro_job;
 }
 
 1;

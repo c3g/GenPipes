@@ -43,20 +43,21 @@ sub runPairedDNAC {
     my $outputPrefix  = shift;
     my $window        = shift;
 
-    my $outDate = -M $outputPrefix.'.txt';
-    my $inDate = -M $inputBins;
-  
-    my $command;
-    # -M gives modified date relative to now. The bigger the older.
-    #if(!defined($outDate) || !defined($inDate) || $inDate < $outDate) {
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$inputBins], [$outputPrefix.'.txt']);
+
+    if (!$ro_job->isUp2Date()) {
+        my $command;
         $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'runPairedDNAC', 'moduleVersion.cranR').' ;';
         $command .= ' module load '.LoadConfig::getParam($rH_cfg, 'runPairedDNAC', 'moduleVersion.svtools').' ;';
         $command .= ' Rscript \${SVTOOLS_HOME}/Cancer/RunDNAC.6.0.R';
         $command .= ' -f '.$inputBins;
         $command .= ' -b '.$window;
         $command .= ' -o '.$outputPrefix;
-    #}
-    return $command;
+
+        $ro_job->addCommand($command);
+    }
+    return $ro_job;
 }
 
 sub filterDNAC {
@@ -66,12 +67,11 @@ sub filterDNAC {
     my $outputPrefix    = shift;
     my $cnvProx           = shift;
 
-    my $outDate = -M $outputPrefix.'.filteredSV.txt';
-    my $inDate = -M $inputDNACCalls;
-  
-    my $command;
-    # -M gives modified date relative to now. The bigger the older.
-    #if(!defined($outDate) || !defined($inDate) || $inDate < $outDate) {
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$inputDNACCalls], [$outputPrefix.'.filteredSV.txt']);
+
+    if (!$ro_job->isUp2Date()) {
+        my $command;
         $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'filterSV', 'moduleVersion.svtools').' ;';
         $command .= ' \${SVTOOLS_HOME}/Cancer/filterOutDNAC.sh';
         $command .= ' '.$inputDNACCalls;
@@ -82,8 +82,10 @@ sub filterDNAC {
         $command .= filterResults($rH_cfg,  'filterSV', $outputPrefix, $cnvProx) ;
         $command .= ' && ';
         $command .= generateBedResults($rH_cfg, $outputPrefix) ;
-    #}
-    return $command;
+
+        $ro_job->addCommand($command);
+    }
+    return $ro_job;
 }
 
 
@@ -95,12 +97,11 @@ sub filterBrD {
     my $normalFile    = shift;
     my $tumorFile    = shift;
 
-    my $outDate = -M $outputPrefix.'.filteredSV.txt';
-    my $inDate = -M $inputBrDCalls;
-  
-    my $command;
-    # -M gives modified date relative to now. The bigger the older.
-    #if(!defined($outDate) || !defined($inDate) || $inDate < $outDate) {
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$inputBrDCalls], [$outputPrefix.'.filteredSV.txt']);
+
+    if (!$ro_job->isUp2Date()) {
+        my $command;
         $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'filterSVC', 'moduleVersion.svtools').' ;';
         $command .= ' \${SVTOOLS_HOME}/Cancer/filterOutBrD.py';
         $command .= ' -f ' .$inputBrDCalls;
@@ -114,8 +115,10 @@ sub filterBrD {
         $command .= filterResults($rH_cfg,  'filterSV', $outputPrefix, '') ;
         $command .= ' && ';
         $command .= generateBedResults($rH_cfg, $outputPrefix) ;
-    #}
-    return $command;
+
+        $ro_job->addCommand($command);
+    }
+    return $ro_job;
 }
 
 
@@ -126,12 +129,11 @@ sub filterPI {
     my $normalFile    = shift;
     my $tumorFile    = shift;
 
-    my $outDate = -M $outputPrefix.'.filteredSV.txt';
-#    my $inDate = -M $inputDNACCalls;
-  
-    my $command;
-    # -M gives modified date relative to now. The bigger the older.
-    #if(!defined($outDate) || !defined($inDate) || $inDate < $outDate) {
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$outputPrefix], [$outputPrefix.'.filteredSV.txt']);
+
+    if (!$ro_job->isUp2Date()) {
+        my $command;
         $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'filterSV', 'moduleVersion.svtools').' ;';
         $command .= ' \${SVTOOLS_HOME}/Cancer/filterOutPI.py';
         $command .= ' -f ' .$outputPrefix;
@@ -142,11 +144,12 @@ sub filterPI {
         $command .= ' && ';
         $command .= filterResults($rH_cfg,  'filterSV', $outputPrefix, '') ;
         $command .= ' && ';
-        $command .= generateBedResults($rH_cfg, $outputPrefix) ;
-    #}
-    return $command;
-}
+        $command .= generateBedResults($rH_cfg, $outputPrefix);
 
+        $ro_job->addCommand($command);
+    }
+    return $ro_job;
+}
 
 
 sub filterResults {
@@ -155,12 +158,11 @@ sub filterResults {
     my $outputPrefix    = shift;
     my $cnvProx           = shift;
 
-    my $outDate = -M $outputPrefix.'.txt';
-#     my $inDate = -M $inputDNACCalls;
-  
-    my $command;
-    # -M gives modified date relative to now. The bigger the older.
-    #if(!defined($outDate) || !defined($inDate) || $inDate < $outDate) {
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$outputPrefix.'.bed'], [$outputPrefix.'.txt']);
+
+    if (!$ro_job->isUp2Date()) {
+        my $command;
         $command .= 'module load '.LoadConfig::getParam($rH_cfg, $stepIniPrefix, 'moduleVersion.svtools').' ;';
         $command .= ' \${SVTOOLS_HOME}/Cancer/filterBedResults.sh';
         $command .= ' '.$outputPrefix.'.txt' ;
@@ -173,18 +175,21 @@ sub filterResults {
         $command .= ' '.$outputPrefix.'.bed';
         $command .= ' '.$outputPrefix.'.tmp';
         $command .= ' '.$cnvProx;
-    #}
-    return $command;
+
+        $ro_job->addCommand($command);
+    }
+    return $ro_job;
 }
 
 sub generateBedResults {
     my $rH_cfg          = shift;
     my $outputPrefix    = shift;
 
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$outputPrefix.'.bed.other.filteredSV.annotate.txt', $outputPrefix.'.bed.TumS.filteredSV.annotate.txt'],[$outputPrefix.'.bed.other.filteredSV.annotate.bed', $outputPrefix.'.bed.TumS.filteredSV.annotate.bed']);
 
-    my $command;
-    # -M gives modified date relative to now. The bigger the older.
-    #if(!defined($outDate) || !defined($inDate) || $inDate < $outDate) {
+    if (!$ro_job->isUp2Date()) {
+        my $command;
         $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'bedSV', 'moduleVersion.svtools').' ;';
         $command .= ' \${SVTOOLS_HOME}/Cancer/rtxt2rbed.sh ';
         $command .= ' '.$outputPrefix.'.bed.other.filteredSV.annotate.txt';
@@ -192,9 +197,10 @@ sub generateBedResults {
         $command .= ' && \${SVTOOLS_HOME}/Cancer/rtxt2rbed.sh';
         $command .= ' '.$outputPrefix.'.bed.TumS.filteredSV.annotate.txt';
         $command .= ' '.$outputPrefix.'.bed.TumS.filteredSV.annotate.bed';
-    #}
-    return $command;
-}
 
+        $ro_job->addCommand($command);
+    }
+    return $ro_job;
+}
 
 1;

@@ -30,7 +30,6 @@ package MACS2;
 #--------------------------
 use strict;
 use warnings;
-#--------------------------
 
 # Dependencies
 #-----------------------
@@ -101,6 +100,8 @@ sub generatePeaks {
   my $paired     = shift;
   my $command    = "";
 
+  my @inputs;
+  push(@inputs, $treatment);
   # Compute Genome size or retrieve from config
   my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'genomeName');
   my $genomeSize = '';
@@ -122,7 +123,6 @@ sub generatePeaks {
   $command .= ' module load ' . LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.python') . ' ' . LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.macs') . ';';
   my $feoptions = "";
   my $extraFlags = "";
-
 
   # additional options for MACS must be set in the configuration (ini) file. options --diag femacs femin festep are currently not functional (2013-06-06).
   # FEMIN and FEMAX are the minimum and maximum fold enrichment to consider, and FESTEP is the interval of fold enrichment.
@@ -148,6 +148,7 @@ sub generatePeaks {
   }
 
   if (defined($control) && defined($treatment)) {
+    push(@inputs, $control);
     if ($type eq 'B') {
       $options = ' --nomodel --broad ';
     } else {
@@ -168,7 +169,14 @@ sub generatePeaks {
   } elsif (!defined($control) && !defined($treatment)) {
     die "ERROR: Something wrong with design; treatment and control (if available) should be assigned\n";
   }
-  return $command;
+
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs(\@inputs, [$outputDir . '/' . $designName . $genomeSize . $options . '_peaks.xls']);
+  if (!$ro_job->isUp2Date()) {
+    $ro_job->addCommand($command);
+  }
+
+  return $ro_job;
 }
 
 1;

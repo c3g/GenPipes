@@ -49,38 +49,37 @@ sub strandBam{
   my $inputBAM      = shift;
   my $rA_outputBAM  = shift;
 
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$inputBAM], [$rA_outputBAM->[0], $rA_outputBAM->[1]]);
 
-  my $latestFile = -M $inputBAM;
-  my $output1= -M $rA_outputBAM->[0];
-  my $output2= -M $rA_outputBAM->[1];
-
-  my @command;
   my @mergeBAMFtmp = ($inputBAM .'tmp1.forward.bam' , $inputBAM .'tmp2.forward.bam');
   my @mergeBAMRtmp = ($inputBAM .'tmp1.reverse.bam' , $inputBAM .'tmp2.reverse.bam');
-  my $mergeF = Picard::mergeFiles($rH_cfg, $sampleName, \@mergeBAMFtmp, $rA_outputBAM->[0]);
-  my $mergeR = Picard::mergeFiles($rH_cfg, $sampleName, \@mergeBAMRtmp, $rA_outputBAM->[1]);
-  # -M gives modified date relative to now. The bigger the older.
-  if(!defined($latestFile) || !defined($output1) || !defined($output2) || $latestFile > $output1 || $latestFile > $output2) {
+  my $mergeFJob = Picard::mergeFiles($rH_cfg, $sampleName, \@mergeBAMFtmp, $rA_outputBAM->[0]);
+  my $mergeRJob = Picard::mergeFiles($rH_cfg, $sampleName, \@mergeBAMRtmp, $rA_outputBAM->[1]);
+
+  if (!$ro_job->isUp2Date()) {
     my $Fcommand = 'module load ' .LoadConfig::getParam($rH_cfg, 'wiggle','moduleVersion.samtools') .' ;';
     $Fcommand .= ' samtools view -bh -F 256 -f 81 ' . $inputBAM;
     $Fcommand .= ' > ' .$inputBAM .'tmp1.forward.bam &&';
     $Fcommand .= ' samtools view -bh -F 256 -f 161 ' . $inputBAM;
     $Fcommand .= ' > ' .$inputBAM .'tmp2.forward.bam &&';
-    $Fcommand .= ' ' .$mergeF  .' && ';
+    $Fcommand .= ' ' .$mergeFJob->getCommand(0) .' && ';
     $Fcommand .= ' rm ' .$inputBAM .'tmp*.forward.*am';
-    push(@command,$Fcommand);
 
+    $ro_job->addCommand($Fcommand);
+  
     my $Rcommand = 'module load ' .LoadConfig::getParam($rH_cfg, 'wiggle','moduleVersion.samtools') .' ;';
     $Rcommand .= ' samtools view -bh -F 256 -f 97 ' . $inputBAM;
     $Rcommand .= ' > ' .$inputBAM .'tmp1.reverse.bam &&';
     $Rcommand .= ' samtools view -bh -F 256 -f 145 ' . $inputBAM;
     $Rcommand .= ' > ' .$inputBAM .'tmp2.reverse.bam &&';
-    $Rcommand .= ' ' .$mergeR  .' &&';
+    $Rcommand .= ' ' .$mergeRJob->getCommand(0) .' &&';
     $Rcommand .= ' rm ' .$inputBAM .'tmp*.reverse.*am';
-    push(@command,$Rcommand);
+
+    $ro_job->addCommand($Rcommand);
   }
     
-  return \@command;
+  return $ro_job;
 }
 
 sub graph{
@@ -90,14 +89,11 @@ sub graph{
   my $outputBegGraph = shift;
   my $outputWiggle   = shift;
 
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$inputBAM], [$outputBegGraph,$outputWiggle]);
 
-  my $latestFile = -M $inputBAM;
-  my $output1= -M $outputBegGraph;
-  my $output2= -M $outputWiggle;
-
-  my $command;
-  # -M gives modified date relative to now. The bigger the older.
-  if(!defined($latestFile) || !defined($output1) || !defined($output2) || $latestFile > $output1 || $latestFile > $output2) {
+  if (!$ro_job->isUp2Date()) {
+    my $command;
     $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'wiggle','moduleVersion.samtools') .' ' .LoadConfig::getParam($rH_cfg, 'wiggle','moduleVersion.bedtools')  .' ' .LoadConfig::getParam($rH_cfg, 'wiggle','moduleVersion.bed2wig') .' ;';
     $command .= ' nmblines=\$(samtools view -F 256 -f 81 ' . $inputBAM .' | wc -l) &&';
     $command .= ' scalefactor=0\$(echo \"scale=2; 1 / (\$nmblines / 10000000);\" | bc) &&';   
@@ -108,9 +104,11 @@ sub graph{
     $command .= ' bedGraphToBigWig ' .$outputBegGraph;
     $command .= '  ' .LoadConfig::getParam($rH_cfg, 'wiggle','chromosomeSizeFile');
     $command .= '  ' .$outputWiggle;
+
+    $ro_job->addCommand($command);
   }
     
-  return $command;
+  return $ro_job;
 }
 
 sub zipWig {
@@ -118,9 +116,15 @@ sub zipWig {
   my $wigFolder     = shift;
   my $wigArchive       = shift;
   
-  my $command = ' zip -r ' .$wigArchive .' ' .$wigFolder ;
-  
-  return $command;
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs(undef, undef);
+
+  if (!$ro_job->isUp2Date()) {
+    my $command = ' zip -r ' .$wigArchive .' ' .$wigFolder ;
+
+    $ro_job->addCommand($command);
+  }  
+  return $ro_job;
 }
  
 
