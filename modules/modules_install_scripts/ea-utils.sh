@@ -15,6 +15,12 @@ cd $INSTALL_DOWNLOAD
 wget http://ea-utils.googlecode.com/files/$SOFTWARE.$VERSION.tar.gz
 tar zxvf $SOFTWARE.$VERSION.tar.gz
 cd $SOFTWARE.$VERSION
+# Guillimin requires GSL module and g++ version 4.7 to compile
+if [[ `hostname` == lg-* || `dnsdomainname` == guillimin.clumeq.ca ]]
+then
+  source /etc/profile.d/modules.sh
+  module load gcc/4.7.2 GSL/1.15
+fi
 PREFIX=$INSTALL_PATH/$SOFTWARE.$VERSION make install
 
 # Add permissions and install software
