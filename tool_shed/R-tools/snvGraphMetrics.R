@@ -2,6 +2,9 @@
 ## Mathieu bourgey 
 ## 2013/01/31
 
+##load libraries
+library(pheatmap)
+
 args=commandArgs(TRUE)
 listFiles=scan(args[1],sep="\n",what='character')
 outputBaseName=args[2]
@@ -29,8 +32,6 @@ outputBaseName=args[2]
 ## Chromosome.change.table.csv
 ## changeRate.tsv
 ##
-## Effects by impact
-## 
 ## Effects by functional class
 ## 
 ## Count by effects
@@ -98,6 +99,21 @@ write.table(t(summaryTable),paste(outputBaseName,"Summary.table.tsv",sep="."),se
 ## change rate
 ##   * graphs
 ##
+chR=read.table(listFiles[grep(fileExtensionRetained[3],listFiles)],header=T,check.names=F,row.names=1)
+cn=as.numeric(gsub("chr","",rownames(chR)))
+cnpos=1:length(cn)
+cnNu=order(cn[cnpos[!(is.na(cn))]])
+cnNuV=chR[!(is.na(cn)),]
+cnCh=order(rownames(chR)[cnpos[is.na(cn)]])
+cnChV=chR[is.na(cn),]
+chR.ord=rbind(cnNuV[cnNu,],cnChV[cnCh,])
+jpeg(paste(outputBaseName,"changeRate.jpeg",sep="."),800,800)
+pheatmap(t(as.matrix(chR.ord)),cluster_cols =F,cluster_rows =F,fontsize = 14,main="Change rate by sample and by chromosome")
+dev.off()
+
+
+
+
 
 
 ## Effects by impact
@@ -109,4 +125,12 @@ for (i in 2:length(effectIlist)){
 }
 write.table(t(effectITable),paste(outputBaseName,"Effects.by.impact.tsv",sep="."),sep="\t",col.names=F,row.names=F,quote=F)
 
+## Effects by functional class
+## 
+effectIlist=strsplit(gsub("%","",gsub(" ","",scan(listFiles[grep(fileExtensionRetained[4],listFiles)],sep="\n",what='character'))),",")
+effectITable=NULL
+for (i in 2:length(effectIlist)){
+	effectITable=c(effectITable,effectIlist[[i]][1:2])
+}
+write.table(t(effectITable),paste(outputBaseName,"Effects.by.impact.tsv",sep="."),sep="\t",col.names=F,row.names=F,quote=F)
 
