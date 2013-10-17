@@ -1,38 +1,48 @@
+#!/bin/sh
 
-###################
-################### Picard
-###################
-VERSION="1.98"
-INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/picard/
-INSTALL_DOWNLOAD=$MUGQIC_INSTALL_HOME/software/picard/tmp
-mkdir -p $INSTALL_PATH $INSTALL_PATH/archive $INSTALL_DOWNLOAD
+#
+# Picard
+#
+
+SOFTWARE=picard
+VERSION=1.100
+INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/$SOFTWARE
+INSTALL_DOWNLOAD=$INSTALL_PATH/tmp
+mkdir -p $INSTALL_DOWNLOAD
 cd $INSTALL_DOWNLOAD
 
-# Download
-wget http://downloads.sourceforge.net/project/picard/picard-tools/$VERSION/picard-tools-$VERSION.zip
-unzip picard-tools-$VERSION.zip
+# Download, extract, build
+wget http://downloads.sourceforge.net/project/picard/picard-tools/$VERSION/$SOFTWARE-tools-$VERSION.zip
+unzip $SOFTWARE-tools-$VERSION.zip
 
-# Move to install path
-mv picard-tools-$VERSION $INSTALL_PATH
-chmod -R g+w $INSTALL_PATH/picard-tools-$VERSION
+# Add permissions and install software
+cd $INSTALL_DOWNLOAD
+chmod -R ug+rwX .
+mv -i $SOFTWARE-tools-$VERSION $INSTALL_PATH
+mv -i $SOFTWARE-tools-$VERSION.zip $MUGQIC_INSTALL_HOME/archive
 
 # Module file
 echo "#%Module1.0
 proc ModulesHelp { } {
-       puts stderr \"\tMUGQIC - Java tool to manipulate BAMs \"
+       puts stderr \"\tMUGQIC - $SOFTWARE \" ;
 }
-module-whatis \"MUGQIC - picard  \"
-            
-set             root               \$::env(MUGQIC_INSTALL_HOME)/software/picard/picard-tools-$VERSION
-setenv          PICARD_HOME        \$root
+module-whatis \"$SOFTWARE  \" ;
+                      
+set             root                \$::env(MUGQIC_INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE-tools-$VERSION ;
+setenv          PICARD_HOME         \$root ;
 " > $VERSION
 
-# Version file
-echo "#%Module1.0
-set ModulesVersion \"$VERSION\"
-" > .version
+################################################################################
+# Everything below this line should be generic and not modified
 
-mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/picard
-mv .version $VERSION $MUGQIC_INSTALL_HOME/modulefiles/mugqic/picard/
-mv $INSTALL_DOWNLOAD/picard-tools-$VERSION.zip $INSTALL_PATH/archive/
+# Default module version file
+echo "#%Module1.0
+set ModulesVersion \"$VERSION\"" > .version
+
+# Add permissions and install module
+mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
+chmod -R ug+rwX $VERSION .version
+mv $VERSION .version $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
+
+# Clean up temporary installation files if any
 rm -rf $INSTALL_DOWNLOAD
