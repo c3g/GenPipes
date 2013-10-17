@@ -36,14 +36,15 @@ mv -i $SOFTWARE-$VERSION.(zip|tar.gz|tar.bz2) $MUGQIC_INSTALL_HOME/archive  ## T
 # Module file
 echo "#%Module1.0
 proc ModulesHelp { } {
-       puts stderr \"\tMUGQIC - $SOFTWARE \"  ## TO BE MODIFIED WITH DETAILED DESCRIPTION IF ANY
+       puts stderr \"\tMUGQIC - $SOFTWARE \" ;  ## TO BE MODIFIED WITH DETAILED DESCRIPTION IF ANY
 }
-module-whatis \"$SOFTWARE  \"  ## TO BE MODIFIED WITH DETAILED DESCRIPTION IF ANY
+module-whatis \"$SOFTWARE  \" ;  ## TO BE MODIFIED WITH DETAILED DESCRIPTION IF ANY
                       
-set             root                \$::env(MUGQIC_INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE-$VERSION ## TO BE MODIFIED WITH SPECIFIC $SOFTWARE-$VERSION IF DIFFERENT
-prepend-path    PATH                \$root/bin  ## TO BE ADDED IF NECESSARY
-prepend-path    PATH                \$root/other_tools/bin  ## TO BE ADDED AND MODIFIED IF NECESSARY
-setenv          ${SOFTWARE}_JAR     \$root/$SOFTWARE-$VERSION.jar ## TO BE ADDED AND MODIFIED IF NECESSARY
+prereq          mugqic/python/2.7.3 ;  ## TO BE ADDED WITH SPECIFIC PREREQUISITE IF NECESSARY
+set             root                \$::env(MUGQIC_INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE-$VERSION ;  ## TO BE MODIFIED WITH SPECIFIC $SOFTWARE-$VERSION IF DIFFERENT
+prepend-path    PATH                \$root/bin ;  ## TO BE ADDED IF NECESSARY
+prepend-path    PATH                \$root/other_tools/bin ;  ## TO BE ADDED AND MODIFIED IF NECESSARY
+setenv          ${SOFTWARE}_JAR     \$root/$SOFTWARE-$VERSION.jar ;  ## TO BE ADDED AND MODIFIED IF NECESSARY
 " > $VERSION
 
 ################################################################################

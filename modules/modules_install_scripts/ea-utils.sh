@@ -25,7 +25,7 @@ PREFIX=$INSTALL_PATH/$SOFTWARE.$VERSION make install
 
 # Add permissions and install software
 cd $INSTALL_DOWNLOAD
-chmod -R ug+rwX .
+chmod -R ug+rwX $INSTALL_PATH/$SOFTWARE.$VERSION .
 mv -i $SOFTWARE.$VERSION.tar.gz $MUGQIC_INSTALL_HOME/archive
 
 # Module file
