@@ -20,7 +20,7 @@ tar xvzf $MUGQIC_INSTALL_HOME/archive/amos-${VERSION}.tar.gz
 mv amos-${VERSION} amos-${VERSION}-src
 cd amos-${VERSION}-src
 # with-qmake seems to work on guillimin and mammouth as well as abacus
-module load mugqic/mummer mugqic/ucsc
+module load mugqic/MUMmer mugqic/ucsc
 ./configure --prefix $MUGQIC_INSTALL_HOME/software/amos/amos-${VERSION} --with-qmake-qt4=/usr/lib64/qt4/bin/qmake
 make
 make install && \
@@ -36,7 +36,7 @@ proc ModulesHelp { } {
 module-whatis \"MUGQIC - Amos  \"
             
 set             root               \$::env(MUGQIC_INSTALL_HOME)/software/amos/amos-${VERSION}
-prepend-path    PATH               \$root
+prepend-path    PATH               \$root/bin
 " > $VERSION
 
 # Version file
