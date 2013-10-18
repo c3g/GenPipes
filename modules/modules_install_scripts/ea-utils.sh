@@ -15,11 +15,17 @@ cd $INSTALL_DOWNLOAD
 wget http://ea-utils.googlecode.com/files/$SOFTWARE.$VERSION.tar.gz
 tar zxvf $SOFTWARE.$VERSION.tar.gz
 cd $SOFTWARE.$VERSION
+# Guillimin requires GSL module and g++ version 4.7 to compile
+if [[ `hostname` == lg-* || `dnsdomainname` == guillimin.clumeq.ca ]]
+then
+  source /etc/profile.d/modules.sh
+  module load gcc/4.7.2 GSL/1.15
+fi
 PREFIX=$INSTALL_PATH/$SOFTWARE.$VERSION make install
 
 # Add permissions and install software
 cd $INSTALL_DOWNLOAD
-chmod -R ug+rwX .
+chmod -R ug+rwX $INSTALL_PATH/$SOFTWARE.$VERSION .
 mv -i $SOFTWARE.$VERSION.tar.gz $MUGQIC_INSTALL_HOME/archive
 
 # Module file

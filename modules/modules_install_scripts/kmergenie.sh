@@ -16,6 +16,8 @@ cd $INSTALL_DOWNLOAD
 wget "http://kmergenie.bx.psu.edu/kmergenie-$VERSION.tar.gz" ## TO BE MODIFIED WITH SPECIFIC URL
 tar zxvf $SOFTWARE-$VERSION.tar.gz  ## TO BE MODIFIED WITH SPECIFIC ARCHIVE
 cd $SOFTWARE-$VERSION  ## TO BE MODIFIED WITH SPECIFIC $SOFTWARE-$VERSION IF DIFFERENT
+source /etc/profile.d/modules.sh
+module load mugqic/R/3.0.0
 make  ## TO BE ADDED AND MODIFIED IF NECESSARY
 
 # Add permissions and install software
@@ -31,7 +33,6 @@ proc ModulesHelp { } {
 }
 module-whatis \"$SOFTWARE  \"  ## TO BE MODIFIED WITH DETAILED DESCRIPTION IF ANY
 
-prereq          mugqic/python/2.7.3                       
 set             root                \$::env(MUGQIC_INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE-$VERSION 
 prepend-path    PATH                \$root
 prepend-path    PATH                \$root/script  
@@ -51,6 +52,3 @@ mv $VERSION .version $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
 
 # Clean up temporary installation files if any
 rm -rf $INSTALL_DOWNLOAD
-
-
-
