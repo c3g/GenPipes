@@ -32,15 +32,7 @@ outputBaseName=args[2]
 ## Chromosome.change.table.csv
 ## changeRate.tsv
 ##
-## Effects by functional class
-## 
-## Count by effects
-##  * deleting:
-##     CODON_CHANGE_PLUS_CODON_DELETION
-##     CODON_CHANGE_PLUS_CODON_INSERTION
-##     CODON_DELETION
-##     CODON_INSERTION
-## 
+
 ## Count by genomic region
 ## 
 ## Quality
@@ -94,7 +86,7 @@ for ( i in 1:length(sumTs)) {
 	summaryTable=rbind(summaryTable,sumTs[[i]][1:2])
 }
 colnames(summaryTable)=c("Summary_stats","Value")
-write.table(t(summaryTable),paste(outputBaseName,"Summary.table.tsv",sep="."),sep="\t",col.names=F,row.names=F,quote=F)
+write.table(t(summaryTable),paste(outputBaseName,"SummaryTable.tsv",sep="."),sep="\t",col.names=F,row.names=F,quote=F)
 
 ## change rate
 ##   * graphs
@@ -108,29 +100,94 @@ cnCh=order(rownames(chR)[cnpos[is.na(cn)]])
 cnChV=chR[is.na(cn),]
 chR.ord=rbind(cnNuV[cnNu,],cnChV[cnCh,])
 jpeg(paste(outputBaseName,"changeRate.jpeg",sep="."),800,800)
-pheatmap(t(as.matrix(chR.ord)),cluster_cols =F,cluster_rows =F,fontsize = 14,main="Change rate by sample and by chromosome")
+pheatmap(t(as.matrix(chR.ord)),cluster_cols =F,cluster_rows =F,main="Change rate by sample and by chromosome",fontsize_row=6,fontsize_col=10)
 dev.off()
-
-
-
-
+pdf(paste(outputBaseName,"changeRate.pdf",sep="."),title="Change rate by sample and by chromosome",pointsize=5,paper='special')
+pheatmap(t(as.matrix(chR.ord)),cluster_cols =F,cluster_rows =F,main="Change rate by sample and by chromosome",fontsize_row=3,fontsize_col=8)
+dev.off()
+write.table(t(as.matrix(chR.ord)),paste(outputBaseName,"changeRate.tsv",sep="."),quote=F,row.names=T,col.names=T,sep="\t")
 
 
 ## Effects by impact
 ## 
 effectIlist=strsplit(gsub("%","",gsub(" ","",scan(listFiles[grep(fileExtensionRetained[4],listFiles)],sep="\n",what='character'))),",")
 effectITable=NULL
+nameEffect=NULL
 for (i in 2:length(effectIlist)){
-	effectITable=c(effectITable,effectIlist[[i]][1:2])
+	effectITable=c(effectITable,effectIlist[[i]][2])
+	nameEffect=c(nameEffect,effectIlist[[i]][1])
 }
-write.table(t(effectITable),paste(outputBaseName,"Effects.by.impact.tsv",sep="."),sep="\t",col.names=F,row.names=F,quote=F)
+effectITable=rbind(nameEffect,effectITable)
+write.table(effectITable,paste(outputBaseName,"EffectsImpact.tsv",sep="."),sep="\t",col.names=T,row.names=F,quote=F)
 
 ## Effects by functional class
 ## 
-effectIlist=strsplit(gsub("%","",gsub(" ","",scan(listFiles[grep(fileExtensionRetained[4],listFiles)],sep="\n",what='character'))),",")
-effectITable=NULL
-for (i in 2:length(effectIlist)){
-	effectITable=c(effectITable,effectIlist[[i]][1:2])
+effectFlist=strsplit(gsub("%","",gsub(" ","",scan(listFiles[grep(fileExtensionRetained[5],listFiles)],sep="\n",what='character'))),",")
+effectFTable=NULL
+nameEffect=NULL
+for (i in 2:length(effectFlist)){
+	effectFTable=c(effectFTable,effectFlist[[i]][2])
+	nameEffect=c(nameEffect,effectFlist[[i]][1])
 }
-write.table(t(effectITable),paste(outputBaseName,"Effects.by.impact.tsv",sep="."),sep="\t",col.names=F,row.names=F,quote=F)
+effectFTable=rbind(nameEffect,effectFTable)
+write.table(effectFTable,paste(outputBaseName,"EffectsFunctionalClass.csv",sep="."),sep="\t",col.names=F,row.names=F,quote=F)
 
+## Count by effects
+##  * deleting:
+##     CODON_CHANGE_PLUS_CODON_DELETION
+##     CODON_CHANGE_PLUS_CODON_INSERTION
+##     CODON_DELETION
+##     CODON_INSERTION
+## 
+
+countByEffect=strsplit(gsub(" ","",scan(listFiles[grep(fileExtensionRetained[6],listFiles)],sep="\n",what='character')),",")
+removeINDEL=c("CODON_CHANGE_PLUS_CODON_DELETION","CODON_CHANGE_PLUS_CODON_INSERTION","CODON_DELETION","CODON_INSERTION")
+countTable=NULL
+countName=NULL
+for (i in 2:length(countByEffect)){
+	if (!(countByEffect[[i]][1] %in% removeINDEL)){
+		countTable=c(countTable,countByEffect[[i]][2])
+		countName=c(countName,countByEffect[[i]][1])
+	}
+}
+countTableF=rbind(countName,countTable)
+write.table(countTableF,paste(outputBaseName,"CountEffects.csv",sep="."),sep="\t",col.names=F,row.names=F,quote=F)
+jpeg(paste(outputBaseName,"CountEffects.jpeg",sep="."),800,800)
+par(las=2)
+par(oma=c(10,4,4,1))
+barplot(as.numeric(countTable),names.arg=countName,col=rainbow(length(countTable)),main="Total number of variant by effect type")
+dev.off()
+pdf(paste(outputBaseName,"CountEffects.pdf",sep="."),title="Total number of variant by effect type",paper='special')
+par(las=2)
+par(oma=c(10,4,4,1))
+barplot(as.numeric(countTable),names.arg=countName,col=rainbow(length(countTable)),main="Total number of variant by effect type")
+dev.off()
+
+
+
+
+## Count by genomic region
+## 
+
+countByRegion=strsplit(gsub(" ","",scan(listFiles[grep(fileExtensionRetained[7],listFiles)],sep="\n",what='character')),",")
+regionOrder=c("UPSTREAM","UTR_5_PRIME","SPLICE_SITE_ACCEPTOR","EXON","SPLICE_SITE_DONOR","INTRON","UTR_3_PRIME","DOWNSTREAM","INTERGENIC")
+regionName=c("Up","5'","Splicing acceptor","Exon","Splicing donor","intron","3'","Down","Intergenic")
+countTable=NULL
+countName=NULL
+for (i in 2:length(countByRegion)){
+		countTable=c(countTable,countByRegion[[i]][2])
+		countName=c(countName,countByRegion[[i]][1])
+}
+orderR=match(regionOrder,countName)
+countTableF=rbind(countName[orderR],countTable[orderR])
+write.table(countTableF,paste(outputBaseName,"CountRegions.csv",sep="."),sep="\t",col.names=F,row.names=F,quote=F)
+jpeg(paste(outputBaseName,"CountRegions.jpeg",sep="."),800,800)
+par(las=2)
+par(oma=c(10,4,4,1))
+barplot(as.numeric(countTable),names.arg=regionName,col=rainbow(length(countTable)),main="Total number of variant by region type")
+dev.off()
+pdf(paste(outputBaseName,"CountRegions.pdf",sep="."),title="Total number of variant by region type",paper='special')
+par(las=2)
+par(oma=c(10,4,4,1))
+barplot(as.numeric(countTable),names.arg=regionName,col=rainbow(length(countTable)),main="Total number of variant by region type")
+dev.off()

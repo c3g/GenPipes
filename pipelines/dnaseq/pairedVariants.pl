@@ -59,7 +59,7 @@ use SequenceDictionaryParser;
 use SnpEff;
 use SubmitToCluster;
 use SVtools;
-use ToolShed;
+use Tools;
 use VCFtools;
 use Pindel;
 use Cfreec;
@@ -233,7 +233,7 @@ sub filterNStretches {
   my $vcf = LoadConfig::getParam($rH_cfg, "mergeFilterBCF", 'sampleOutputRoot') . $sampleName.'/'.$sampleName.'.merged.flt.vcf';
   my $vcfOutput = LoadConfig::getParam($rH_cfg, "filterNStretches", 'sampleOutputRoot') . $sampleName.'/'.$sampleName.'.merged.flt.Nfilter.vcf';
 
-  my $command = ToolShed::filterNStretches($rH_cfg, $sampleName, $vcf, $vcfOutput);
+  my $command = Tools::filterNStretches($rH_cfg, $sampleName, $vcf, $vcfOutput);
   my $filterNJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "filterNStretches", undef, 'FILTERN', $jobDependency, $sampleName, $command);
   return $filterNJobId;
 }

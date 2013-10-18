@@ -22,7 +22,7 @@ B<Data::Dumper> Used to debbug
 
 =cut
 
-package ToolShed;
+package Tools;
 
 # Strict Pragmas
 #--------------------------
@@ -56,7 +56,8 @@ sub filterNStretches {
 
     if (!$ro_job->isUp2Date()) {
         my $command;
-        $command .= $toolShedDir.'/filterLongIndel.pl ';
+        $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.tools') ' &&';
+	$command .= ' $PERL_TOOLS/filterLongIndel.pl ';
         $command .= ' '.$inputVCF;
         $command .= ' > '.$outputVCF;
 

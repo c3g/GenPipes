@@ -63,7 +63,7 @@ use SequenceDictionaryParser;
 use SnpEff;
 use SubmitToCluster;
 use Trimmomatic;
-use ToolShed;
+use Tools;
 use VCFtools;
 use Metrics;
 use GqSeqUtils;
@@ -887,7 +887,7 @@ sub filterNStretches {
   my $inputVCF = 'variants/allSamples.merged.flt.vcf';
   my $outputVCF = 'variants/allSamples.merged.flt.NFiltered.vcf';
 
-  my $rO_job = ToolShed::filterNStretches($rH_cfg, 'allSamples', $inputVCF, $outputVCF);
+  my $rO_job = Tools::filterNStretches($rH_cfg, 'allSamples', $inputVCF, $outputVCF);
   if(!$rO_job->isUp2Date()) {
     SubmitToCluster::printSubmitCmd($rH_cfg, "filterNStretches", undef, 'FILTERN', $jobDependency, 'allSamples', $rO_job);
   }
