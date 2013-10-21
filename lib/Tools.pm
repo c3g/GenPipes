@@ -57,7 +57,7 @@ sub filterNStretches {
     if (!$ro_job->isUp2Date()) {
         my $command;
         $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.tools') ' &&';
-	$command .= ' $PERL_TOOLS/filterLongIndel.pl ';
+	$command .= ' \$PERL_TOOLS/filterLongIndel.pl ';
         $command .= ' '.$inputVCF;
         $command .= ' > '.$outputVCF;
 
