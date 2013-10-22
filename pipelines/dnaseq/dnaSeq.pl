@@ -660,14 +660,13 @@ sub metricsLibrarySample {
   my $ouputFile = 'metrics/SampleMetrics.stats';
   my $experimentType = LoadConfig::getParam($rH_cfg, 'default', 'experimentType');
   print "mkdir -p metrics\n";
-  my $command;
-  $command = Metrics::mergeSampleDnaStats($rH_cfg,  $experimentType, $folder, $ouputFile);
+
+  my $rO_job = Metrics::mergeSampleDnaStats($rH_cfg,  $experimentType, $folder, $ouputFile);
   my $metricsJobId = undef;
-  if(defined($command) && length($command) > 0) {
-          my $trimMetricsJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "sampleMetrics", undef, 'SAMPLEMETRICS', $metricsDependency, undef, $command, LoadConfig::getParam($rH_cfg, "default", 'sampleOutputRoot') );
-          $metricsJobId = '$' .$trimMetricsJobId;
+  if(!$rO_job->isUp2Date()) {
+    SubmitToCluster::printSubmitCmd($rH_cfg, "sampleMetrics", undef, 'SAMPLEMETRICS', $metricsDependency, undef, $rO_job);
   }
-  return $metricsJobId;
+  return $rO_job->getCommandJobId(0);
 }
 
 

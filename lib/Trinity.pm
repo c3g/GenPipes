@@ -68,6 +68,26 @@ use File::Basename;
 #-------------------
 # SUB
 #-------------------
+sub normalize_by_kmer_coverage {
+    my $rH_cfg      = shift;
+    my $sampleName  = shift;
+    my $rH_laneInfo = shift;
+    my $pair1       = shift;    # For single command the left will receive the file.
+    my $pair2       = shift;
+
+    my $ro_job;
+    if ( $rH_laneInfo->{'runType'} eq "SINGLE_END" ) {
+        $ro_job = _chrysalisSingleCommand($rH_cfg, $sampleName, $rH_laneInfo, $pair1);
+    }
+    elsif ( $rH_laneInfo->{'runType'} eq "PAIRED_END" ) {
+        $ro_job = _chrysalisPairCommand($rH_cfg, $sampleName, $rH_laneInfo, $pair1, $pair2);
+    }
+    else {
+        die "Unknown runType: " . $rH_laneInfo->{' runType '} . "\n";
+    }
+    return $ro_job;
+}
+
 sub chrysalis {
     my $rH_cfg      = shift;
     my $sampleName  = shift;

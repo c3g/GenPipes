@@ -235,11 +235,17 @@ sub mergeSampleDnaStats{
         if (!defined($experimentType) || $experimentType eq "") {
                 $experimentType= 'unknown';
         }
-        my $command;
-        $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.cranR') .' ' . LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.tools') . ' &&';
-        $command .= ' Rscript \$R_TOOLS/DNAsampleMetrics.R ' .$folderFile .' ' .$outputFile .' ' .$experimentType;
+        my $ro_job = new Job();
+        $ro_job->testInputOutputs([$folderFile], [$outputFile]);
+
+        if (!$ro_job->isUp2Date()) {
+          my $command;
+          $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.cranR') .' ' . LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.tools') . ' &&';
+          $command .= ' Rscript \$R_TOOLS/DNAsampleMetrics.R ' .$folderFile .' ' .$outputFile .' ' .$experimentType;
+          $ro_job->addCommand($command);
+        }
         
-        return $command;
+        return $ro_job;
 }
 
 sub svnStatsChangeRate{
@@ -248,15 +254,21 @@ sub svnStatsChangeRate{
   my $outputFile = shift;
   my $listFile   = shift;
 
-  
-  my $command;
-  $command = 'module load ' .LoadConfig::getParam($rH_cfg, 'metricsSNV' , 'moduleVersion.python') .' ' . LoadConfig::getParam($rH_cfg, 'metricsSNV' , 'moduleVersion.tools') . ' &&';
-  $command .= ' python $PYTHON_TOOLS/vcfStats.py -v ' .$inputVCF;
-  $command .= ' -d ' .LoadConfig::getParam($rH_cfg, 'metricsSNV' , 'referenceSequenceDictionary');
-  $command .= ' -o ' .$outputFile ;
-  $command .= ' -f ' .$listFile ;
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$inputVCF], [$outputFile]);
 
-  return $command;
+  if (!$ro_job->isUp2Date()) {
+    my $command;
+    $command = 'module load ' .LoadConfig::getParam($rH_cfg, 'metricsSNV' , 'moduleVersion.python') .' ' . LoadConfig::getParam($rH_cfg, 'metricsSNV' , 'moduleVersion.tools') . ' &&';
+    $command .= ' python $PYTHON_TOOLS/vcfStats.py -v ' .$inputVCF;
+    $command .= ' -d ' .LoadConfig::getParam($rH_cfg, 'metricsSNV' , 'referenceSequenceDictionary');
+    $command .= ' -o ' .$outputFile ;
+    $command .= ' -f ' .$listFile ;
+
+    $ro_job->addCommand($command);
+  }
+
+  return $ro_job;
 }
 
 
@@ -265,11 +277,14 @@ sub svnStatsGetGraph{
   my $listFile        = shift;
   my $outputBaseName  = shift;
 
+  my $ro_job = new Job();
+  
   my $command;
   $command = 'module load ' .LoadConfig::getParam($rH_cfg, 'metricsSNV' , 'moduleVersion.cranR') .' ' . LoadConfig::getParam($rH_cfg, 'metricsSNV' , 'moduleVersion.tools') . ' &&';
   $command .= ' Rscript \$R_TOOLS/snvGraphMetrics.R ' .$listFile .' ' .$outputBaseName;
+  $ro_job->addCommand($command);
 
-  return $command;
+  return $ro_job;
 }
 
 

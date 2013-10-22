@@ -140,6 +140,7 @@ sub cuffdiff {
         $command .= ' ' .$referenceGtf;
         $command .= ' ' .$groupCmd;
         $command .= ' ' .LoadConfig::getParam($rH_cfg, 'cuffdiff','options');
+	$command .= ' --library-type ' .LoadConfig::getParam($rH_cfg, 'align', 'strandInfo');
         $command .= ' -b ' .LoadConfig::getParam($rH_cfg, 'cuffdiff','referenceFasta');
 
         $ro_job->addCommand($command);
