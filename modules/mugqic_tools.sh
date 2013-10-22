@@ -1,14 +1,17 @@
 ###################
 ################### MUGQIC TOOLS (hosted on svn for now)
 ###################
-mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/tools/tmp
+mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/tools/tmp $MUGQIC_INSTALL_HOME/modulefiles/mugqic/tools/tmp/untar/
 cd $MUGQIC_INSTALL_HOME/modulefiles/mugqic/tools/tmp
-VERSION="0.1"
-git clone git@bitbucket.org:mugqic/mugqic_pipeline.git
+VERSION="1.0"
+wget https://bitbucket.org/mugqic/mugqic_tools/get/v${VERSION}.tar.gz
+tar -xvf v${VERSION}.tar.gz -C untar/
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/mugqic_tools # where to install..
+ARCHIVE_PATH=$MUGQIC_INSTALL_HOME/archive/mugqic_tools
 mkdir -p $INSTALL_PATH
-cp -r mugqic_pipeline/tool_shed/* $INSTALL_PATH 
+cp untar/mugqic-mugqic_tools-*/*  $INSTALL_PATH
 chmod -R 775 $INSTALL_PATH 
+mv v${VERSION}.tar.gz $ARCHIVE_PATH
 
 # Module file
 echo "#%Module1.0
