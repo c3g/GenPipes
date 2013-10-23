@@ -36,12 +36,12 @@ use strict;
 use warnings;
 #---------------------
 
-BEGIN{
-    #Makesure we can find the GetConfig::LoadModules module relative to this script install
+BEGIN {
+    # Add the mugqic_pipeline/lib/ path relative to this Perl script to @INC library search variable
     use File::Basename;
     use Cwd 'abs_path';
-    my ( undef, $mod_path, undef ) = fileparse( abs_path(__FILE__) );
-    unshift @INC, $mod_path."lib";
+    my (undef, $mod_path, undef) = fileparse(abs_path(__FILE__));
+    unshift @INC, $mod_path . "../../lib";
 }
 
 
