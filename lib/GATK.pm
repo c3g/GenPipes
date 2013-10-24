@@ -143,7 +143,7 @@ sub genomeCoverage {
   my $rA_thresholds = LoadConfig::getParam($rH_cfg, 'genomeCoverage', 'percentThresholds');
 
   my $ro_job = new Job();
-  $ro_job->testInputOutputs([$inputBam], [$outputPrefix.'.coverage.sample_summary']);
+  $ro_job->testInputOutputs([$inputBam], [$outputPrefix.'.sample_summary']);
 
   if (!$ro_job->isUp2Date()) {  
       my $command;
@@ -180,7 +180,7 @@ sub targetCoverage {
   my $rA_thresholds = LoadConfig::getParam($rH_cfg, 'targetCoverage', 'percentThresholds');
 
   my $ro_job = new Job();
-  $ro_job->testInputOutputs([$inputBam], [$outputPrefix.'.coverage.sample_summary']);
+  $ro_job->testInputOutputs([$inputBam], [$outputPrefix.'.sample_summary']);
 
   if (!$ro_job->isUp2Date()) {
       my $command = "";

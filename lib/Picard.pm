@@ -135,7 +135,7 @@ sub collectMetrics {
   my $outputMetrics = shift;
 
   my $ro_job = new Job();
-  $ro_job->testInputOutputs([$inputBAM],[$outputMetrics]);
+  $ro_job->testInputOutputs([$inputBAM],[$outputMetrics.'.quality_by_cycle.pdf']);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
