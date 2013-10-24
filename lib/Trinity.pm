@@ -79,8 +79,8 @@ sub normalize_by_kmer_coverage {
   $ro_job->testInputOutputs([$leftList, $rightList], ["$workDir/normalized_reads/both.fa"]);
 
   if (!$ro_job->isUp2Date()) {
-    my $ram = "50G";
-    my $ncores = "4";
+    my $ram = "200G";
+    my $ncores = "10";
     my $command;
     $command .= 'module load ' . LoadConfig::getParam($rH_cfg, 'trinity', 'moduleVersion.Trinity') . '; ';
     $command .= "normalize_by_kmer_coverage.pl \\
