@@ -138,8 +138,13 @@ use BWA;
 # Globals
 #---------------------------------
 my @steps;
-push(@steps, {'name' => 'normalization'});
-push(@steps, {'name' => 'deNovoAssembly'});
+push(@steps, {'name' => 'normalization', 'stepLoop' => 'experiment', 'parentStep' => undef});
+push(@steps, {'name' => 'deNovoAssembly', 'stepLoop' => 'experiment', 'parentStep' => 'normalization'});
+
+my %globalDep;
+for my $step (@steps) {
+  $globalDep{$step->{'name'}} = {};
+}
 
 my %groupDone;
 my $workDir;
@@ -185,6 +190,7 @@ sub main {
     my $subref = \&$fname;
 
     my $jobIdVar = &$subref($currentStep, \%cfg, $rHoAoH_sampleInfo);
+    $globalDep{$fname}->{'experiment'} = $jobIdVar;
   }
 }
 
@@ -200,23 +206,47 @@ sub normalization {
 
   my $rO_job = Trinity::normalize_by_kmer_coverage($rH_cfg, $workDir, $leftList, $rightList);
 
-  SubmitToCluster::printSubmitCmd($rH_cfg, "normalize", undef, 'NORMALIZE', undef, undef, $rO_job);
+  SubmitToCluster::printSubmitCmd($rH_cfg, "normalization", undef, 'NORMALIZATION', undef, undef, $rO_job);
 }
 
 sub deNovoAssembly {
-  my $depends          = shift;
-  my $rH_cfg           = shift;
-  my $sampleName       = shift;
-  my $rAoH_sampleLanes = shift;
-  my $rHoH_groupInfo   = shift;
-  my $rH_aliasSampleInfo = shift;
-  my $jobDependency    = undef;
-  my $group            = $rH_aliasSampleInfo->{$sampleName}{'group_name'};
-  if ( $depends > 0 ) {
-      $jobDependency = '$GROUP_JOB_IDS';
+  my $depends = shift;
+  my $rH_cfg = shift;
+
+  my $leftList = "$workDir/reads/left_pair1.fastq.gz.list";
+  my $rightList = "$workDir/reads/right_pair2.fastq.gz.list";
+
+  my $rO_job = Trinity::trinity($rH_cfg, $workDir, $leftList, $rightList);
+  SubmitToCluster::printSubmitCmd($rH_cfg, "deNovoAssembly_trinity_no_butterfly", undef, 'TRINITY_NO_BUTTERFLY', undef, undef, $rO_job);
+
+  my $butterflyCommandChunksNumber = 100;
+  $rO_job = Trinity::splitButterfly($rH_cfg, $workDir, $butterflyCommandChunksNumber);
+  SubmitToCluster::printSubmitCmd($rH_cfg, "deNovoAssembly_split_butterfly", undef, 'SPLIT_BUTTERFLY', '$TRINITY_NO_BUTTERFLY_JOB_ID', undef, $rO_job);
+
+  for (my $i = 0; $i < $butterflyCommandChunksNumber; $i++) {
+    my $butterflyCommandsChunk = $workDir . "/assembly/chrysalis/butterfly_commands_chunks/butterfly_commands." . sprintf("%03d", $i);
+    $rO_job = Trinity::butterfly($rH_cfg, $butterflyCommandsChunk);
+    SubmitToCluster::printSubmitCmd($rH_cfg, "deNovoAssembly_butterfly", "$i", "BUTTERFLY_$i", '$SPLIT_BUTTERFLY_JOB_ID', undef, $rO_job);
   }
-  
-   
+
+  my $rO_job = Trinity::concatFastaCreateGTF($rH_cfg, $workDir);
+  SubmitToCluster::printSubmitCmd($rH_cfg, "deNovoAssembly_concatFastaCreateGTF", undef, 'CONCAT_FASTA_CREATE_GTF', undef, undef, $rO_job);
+}
+
+sub deNovoAssembly_old {
+  my $depends            = shift;
+  my $rH_cfg             = shift;
+  my $sampleName         = shift;
+  my $rAoH_sampleLanes   = shift;
+  my $rHoH_groupInfo     = shift;
+  my $rH_aliasSampleInfo = shift;
+  my $jobDependency      = undef;
+  my $group              = $rH_aliasSampleInfo->{$sampleName}{'group_name'};
+  if ($depends > 0) {
+    $jobDependency = '$GROUP_JOB_IDS';
+  }
+
+
   # Chrysalis
   #---------------
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
