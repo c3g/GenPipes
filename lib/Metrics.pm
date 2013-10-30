@@ -260,7 +260,7 @@ sub svnStatsChangeRate{
   if (!$ro_job->isUp2Date()) {
     my $command;
     $command = 'module load ' .LoadConfig::getParam($rH_cfg, 'metricsSNV' , 'moduleVersion.python') .' ' . LoadConfig::getParam($rH_cfg, 'metricsSNV' , 'moduleVersion.tools') . ' &&';
-    $command .= ' python $PYTHON_TOOLS/vcfStats.py -v ' .$inputVCF;
+    $command .= ' python \$PYTHON_TOOLS/vcfStats.py -v ' .$inputVCF;
     $command .= ' -d ' .LoadConfig::getParam($rH_cfg, 'metricsSNV' , 'referenceSequenceDictionary');
     $command .= ' -o ' .$outputFile ;
     $command .= ' -f ' .$listFile ;

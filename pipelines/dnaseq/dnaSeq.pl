@@ -36,12 +36,12 @@ use strict;
 use warnings;
 #---------------------
 
-BEGIN {
-    # Add the mugqic_pipeline/lib/ path relative to this Perl script to @INC library search variable
+BEGIN{
+    #Makesure we can find the GetConfig::LoadModules module relative to this script install
     use File::Basename;
     use Cwd 'abs_path';
-    my (undef, $mod_path, undef) = fileparse(abs_path(__FILE__));
-    unshift @INC, $mod_path . "../../lib";
+    my ( undef, $mod_path, undef ) = fileparse( abs_path(__FILE__) );
+    unshift @INC, $mod_path."lib";
 }
 
 
@@ -94,7 +94,7 @@ push(@steps, {'name' => 'snpIDAnnotation', 'stepLoop' => 'experiment', 'parentSt
 push(@steps, {'name' => 'snpEffect', 'stepLoop' => 'experiment', 'parentStep' => 'snpIDAnnotation'});
 push(@steps, {'name' => 'dbNSFPAnnotation', 'stepLoop' => 'experiment', 'parentStep' => 'snpEffect'});
 push(@steps, {'name' => 'metricsSNV', 'stepLoop' => 'experiment', 'parentStep' => 'snpIDAnnotation'});
-push(@steps, {'name' => 'deliverable' , 'stepLoop' => 'experiment' , 'parentStep' => ('metricsLanes','metricsSample','metricsSNV')});
+push(@steps, {'name' => 'deliverable' , 'stepLoop' => 'experiment' , 'parentStep' => ['mergeTrimStats','metricsLibrarySample','metricsSNV']});
 
 my %globalDep;
 for my $stepName (@steps) {
@@ -971,15 +971,17 @@ sub snpEffect {
 }
 
 sub dbNSFPAnnotation {
-  my $depends = shift;
+  my $stepId = shift;
   my $rH_cfg = shift;
   my $rH_samplePair = shift;
   my $rAoH_seqDictionary = shift;
 
   my $jobDependency = undef;
-  if($depends > 0) {
-    $jobDependency = '${SNPEFF_JOB_ID}';
+  my $parentStep = $steps[$stepId]->{'parentStep'};
+  if(defined($globalDep{$parentStep}->{'experiment'})) {
+    $jobDependency = $globalDep{$parentStep}->{'experiment'};
   }
+  
 
   my $inputVCF = 'variants/allSamples.merged.flt.mil.snpId.snpeff.vcf';
   my $vcfOutput = 'variants/allSamples.merged.flt.mil.snpId.snpeff.dbnsfp.vcf';
@@ -1010,22 +1012,17 @@ sub metricsSNV {
   my $outputFile = 'metrics/allSamples.merged.flt.mil.snpId.snpeff.vcf.part.changeRate.tsv';
   my $listFiles='variants/allSamples.merged.flt.mil.snpId.snpeff.vcf.statsFile.txt';
 
-  my $command = Metrics::svnStatsChangeRate($rH_cfg, $inputVCF, $outputFile, $listFiles);
-  my $changeRateJobId = undef;
-  if(defined($command) && length($command) > 0) {
-    $changeRateJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "metricsSNV", undef, 'CHANGERATE', $vcfDependency , 'allSamples', $command);
-    $changeRateJobId = '$' .$changeRateJobId ;
+  my $rO_job_changeRate = Metrics::svnStatsChangeRate($rH_cfg, $inputVCF, $outputFile, $listFiles);
+  if(!$rO_job_changeRate->isUp2Date()) {
+    SubmitToCluster::printSubmitCmd($rH_cfg, "metricsSNV", undef, 'CHANGERATE', $vcfDependency , 'allSamples', $rO_job_changeRate);
   }
   
   my $outputBaseName='metrics/allSamples.SNV';
-  $command = Metrics::svnStatsGetGraph($rH_cfg, $listFiles,$outputBaseName);
-  
-  my $snvGraphsJobId = undef;
-  if(defined($command) && length($command) > 0) {
-    $snvGraphsJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "metricsSNV", undef, 'CHANGERATE', $vcfDependency , 'allSamples', $command);
-    $snvGraphsJobId = '$' .$snvGraphsJobId ;
+  my $rO_job_Graph = Metrics::svnStatsGetGraph($rH_cfg, $listFiles,$outputBaseName);
+  if(!$rO_job_Graph->isUp2Date()) {
+    SubmitToCluster::printSubmitCmd($rH_cfg, "metricsSNV", "2", 'SNV_GRAPH', $rO_job_changeRate->getCommandJobId(0) , 'allSamples', $rO_job_Graph);
   }
-  return $snvGraphsJobId
+  return $rO_job_Graph->getCommandJobId(0);
 }
 
 
@@ -1036,13 +1033,11 @@ sub deliverable {
   my $rAoH_seqDictionary = shift;
 
 
-
   my $reportDependency = undef;
-  my @parentStep = $steps[$stepId]->{'parentStep'};
+  my $parentStep = $steps[$stepId]->{'parentStep'};
 
   my $jobDependencies = "";
-  for(my $idx=0; $idx < @parentStep; $idx++){
-    my $stepName = $parentStep[$idx];
+  foreach my $stepName (@{$parentStep}) {
     if(defined($globalDep{$stepName}->{'experiment'})){
       $jobDependencies .= LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$globalDep{$stepName}->{'experiment'};
     }
@@ -1055,15 +1050,13 @@ sub deliverable {
   $reportDependency = $jobDependencies;
 
 
-  my $command = GqSeqUtils::clientReport($rH_cfg,  $configFile, $workDirectory, 'DNAseq') ;
+  my $rO_job = GqSeqUtils::clientReport($rH_cfg,  $configFile, $workDirectory, 'DNAseq') ;
 
-  my $deliverableJobId = undef;
-  if(defined($command) && length($command) > 0) {
-    $deliverableJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "deliverable", 'REPORT', 'DNAREPORT', $reportDependency , 'allSamples', $command);
-    $deliverableJobId = '$' .$deliverableJobId ;
+  if(!$rO_job->isUp2Date()) {
+    SubmitToCluster::printSubmitCmd($rH_cfg, "deliverable", 'REPORT', 'DNAREPORT', $reportDependency , 'allSamples', $rO_job);
   }
 
-  return $deliverableJobId;
+  return $rO_job->getCommandJobId(0);
 }
 
 
