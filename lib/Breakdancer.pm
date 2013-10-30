@@ -47,20 +47,21 @@ sub bam2cfg {
       $stdDevCutoff = 3;
     }
   
-    my $outDate = -M $output;
-    my $inDate = -M $sampleBAM;
-  
-    my $command;
-    # -M gives modified date relative to now. The bigger the older.
-    #if(!defined($outDate) || !defined($inDate) || $inDate < $outDate) {
-        $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'bam2cfg', 'moduleVersion.breakdancer').' ;';
-        $command .= ' module load '.LoadConfig::getParam($rH_cfg, 'bam2cfg', 'moduleVersion.samtools').' ;';
-        $command .= ' bam2cfg.pl -g -h ';
-        $command .= ' -c '.$stdDevCutoff;
-        $command .= ' '.$sampleBAM;
-        $command .= ' > '.$output;
-    #}
-    return $command;
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$sampleBAM], [$output]);
+
+    if (!$ro_job->isUp2Date()) {
+      my $command;
+      $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'bam2cfg', 'moduleVersion.breakdancer').' ;';
+      $command .= ' module load '.LoadConfig::getParam($rH_cfg, 'bam2cfg', 'moduleVersion.samtools').' ;';
+      $command .= ' bam2cfg.pl -g -h ';
+      $command .= ' -c '.$stdDevCutoff;
+      $command .= ' '.$sampleBAM;
+      $command .= ' > '.$output;
+
+      $ro_job->addCommand($command);
+    }
+    return $ro_job;
 }
 
 sub pairedBRDITX {
@@ -69,20 +70,21 @@ sub pairedBRDITX {
     my $inputCFG        = shift;
     my $outputPrefix    = shift;
 
-    my $outDate = -M $outputPrefix.'.ctx';
-    my $inDate = -M $inputCFG;
-  
-    my $command;
-    # -M gives modified date relative to now. The bigger the older.
-    #if(!defined($outDate) || !defined($inDate) || $inDate < $outDate) {
-        $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'pairedBRDITX', 'moduleVersion.breakdancer').' ;';
-        $command .= ' breakdancer_max '.LoadConfig::getParam($rH_cfg, 'pairedBRDITX', 'brdParameters');
-        $command .= ' -g '.$outputPrefix.'.bed';
-        $command .= ' -d '.$outputPrefix.'.ctx';
-        $command .= ' '.$inputCFG;
-        $command .= ' > '.$outputPrefix.'.ctx';
-    #}
-    return $command;
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$inputCFG], [$outputPrefix.'.bed', $outputPrefix.'.ctx']);
+
+    if (!$ro_job->isUp2Date()) {
+      my $command;
+      $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'pairedBRDITX', 'moduleVersion.breakdancer').' ;';
+      $command .= ' breakdancer_max '.LoadConfig::getParam($rH_cfg, 'pairedBRDITX', 'brdParameters');
+      $command .= ' -g '.$outputPrefix.'.bed';
+      $command .= ' -d '.$outputPrefix.'.ctx';
+      $command .= ' '.$inputCFG;
+      $command .= ' > '.$outputPrefix.'.ctx';
+
+      $ro_job->addCommand($command);
+    }
+    return $ro_job;
 }
 
 sub pairedBRD {
@@ -92,36 +94,40 @@ sub pairedBRD {
     my $inputCFG        = shift;
     my $outputPrefix    = shift;
 
-    my $outDate = -M $outputPrefix.'.ctx';
-    my $inDate = -M $inputCFG;
-  
-    my $command;
-    # -M gives modified date relative to now. The bigger the older.
-    #if(!defined($outDate) || !defined($inDate) || $inDate < $outDate) {
-    $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'pairedBRD', 'moduleVersion.breakdancer').' ;';
-    $command .= ' breakdancer_max '.LoadConfig::getParam($rH_cfg, 'pairedBRD', 'brdParameters');
-    $command .= ' -o '.$chr;
-    $command .= ' -g '.$outputPrefix.'.bed';
-    $command .= ' -d '.$outputPrefix.'.ctx';
-    $command .= ' '.$inputCFG;
-    $command .= ' > '.$outputPrefix.'.ctx';
-    #}
-    return $command;
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$inputCFG], [$outputPrefix.'.bed', $outputPrefix.'.ctx']);
+
+    if (!$ro_job->isUp2Date()) {
+      my $command;
+      $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'pairedBRD', 'moduleVersion.breakdancer').' ;';
+      $command .= ' breakdancer_max '.LoadConfig::getParam($rH_cfg, 'pairedBRD', 'brdParameters');
+      $command .= ' -o '.$chr;
+      $command .= ' -g '.$outputPrefix.'.bed';
+      $command .= ' -d '.$outputPrefix.'.ctx';
+      $command .= ' '.$inputCFG;
+      $command .= ' > '.$outputPrefix.'.ctx';
+
+      $ro_job->addCommand($command);
+    }
+    return $ro_job;
 }
 
 sub mergeCTX {
     my $rH_cfg          = shift;
     my $outputPrefix    = shift;
 
-    my $command;
-    # -M gives modified date relative to now. The bigger the older.
-    #if(!defined($outDate) || !defined($inDate) || $inDate < $outDate) {
-    $command .= 'rm ' .$outputPrefix .'.ctx && ' ;
-    $command .= 'touch ' .$outputPrefix .'.ctx && ' ;
-    $command .= 'for i in ' .$outputPrefix .'.*.ctx ; do cat \$i >> '  .$outputPrefix .'.ctx' ;
-    #}
-    return $command;
-}
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs(undef, [$outputPrefix .'.ctx']);
 
-    
+    if (!$ro_job->isUp2Date()) {
+      my $command;
+      $command .= 'rm ' .$outputPrefix .'.ctx && ' ;
+      $command .= 'touch ' .$outputPrefix .'.ctx && ' ;
+      $command .= 'for i in ' .$outputPrefix .'.*.ctx ; do cat \$i >> '  .$outputPrefix .'.ctx' ;
+
+      $ro_job->addCommand($command);
+    }
+    return $ro_job;
+}
+ 
 1;

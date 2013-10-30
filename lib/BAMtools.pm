@@ -45,12 +45,16 @@ sub countBins {
     my $outputFile  = shift;
     my $normalBam   = shift; # can be undef for non paired run
 
-    my $outDate = -M $outputFile;
-    my $inDate = -M $tumorBam;
-  
-    my $command;
-    # -M gives modified date relative to now. The bigger the older.
-    #if(!defined($outDate) || !defined($inDate) || $inDate < $outDate) {
+    my $ro_job = new Job();
+    if(defined($normalBam)) {
+        $ro_job->testInputOutputs([$tumorBam, $normalBam], [$outputFile], $ro_job);
+    }
+    else {
+        $ro_job->testInputOutputs([$tumorBam], [$outputFile], $ro_job);
+    }
+
+    if (!$ro_job->isUp2Date()) {
+        my $command;
         $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'countBins', 'moduleVersion.java').' ' .LoadConfig::getParam($rH_cfg, 'countBins', 'moduleVersion.bamtools').' ; ';
         $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'countBins', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'countBins', 'extraJavaFlags');
         $command .= ' -Xmx1500M -jar \${BAMTOOLS_JAR} bincounter';
@@ -62,8 +66,10 @@ sub countBins {
         }
         $command .= ' --window '.$window;
         $command .= ' > '.$outputFile;
-    #}
-    return $command;
+
+        $ro_job->addCommand($command);
+    }
+    return $ro_job;
 }
 
 sub deleteDuplicates {
@@ -75,18 +81,18 @@ sub deleteDuplicates {
     my $optOutputPrefix = shift;
 
 
-    my $rH_retVal;
+    my $ro_job;
     if (defined($pair1) && defined($pair2)) {
-        $rH_retVal = deletePairedDuplicates($rH_cfg, $sampleName, $pair1, $pair2, $optOutputPrefix);
+        $ro_job = deletePairedDuplicates($rH_cfg, $sampleName, $pair1, $pair2, $optOutputPrefix);
     }
     elsif (defined($single)) {
-        $rH_retVal = deleteSingleDuplicates($rH_cfg, $sampleName, $single, $optOutputPrefix);
+        $ro_job = deleteSingleDuplicates($rH_cfg, $sampleName, $single, $optOutputPrefix);
     }
     else {
         die "Unknown runType. \n";
     }
 
-    return $rH_retVal;
+    return $ro_job;
 }
 
 sub deletePairedDuplicates {
@@ -100,28 +106,22 @@ sub deletePairedDuplicates {
     my $command             = '';
     my $outputFastqPair1Name = $outputPrefix . '.pair1.dup.fastq.gz';
     my $outputFastqPair2Name = $outputPrefix . '.pair2.dup.fastq.gz';
-    my $pair1FileDate = -M $pair1;
-    my $pair2FileDate = -M $pair2;
 
-    my $currentFileDate = $pair2FileDate;
-    if ( defined($pair1FileDate) && $pair1FileDate > $pair2FileDate ) {
-        $currentFileDate = $pair1FileDate;
-    }
-    my $outDate = -M $outputFastqPair1Name;
-	
-    if ( !defined($currentFileDate) || !defined($outDate) || $currentFileDate > $outDate ){
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$pair1, $pair2], [$outputFastqPair1Name,$outputFastqPair2Name]);
+
+    if (!$ro_job->isUp2Date()) {
         $command .= 'module add '. LoadConfig::getParam($rH_cfg, 'default','moduleVersion.java') ;
         $command .= ' ' . LoadConfig::getParam($rH_cfg, 'duplicate','moduleVersion.bamtools') . ';' ;
         $command .= ' java '.LoadConfig::getParam($rH_cfg, 'duplicate', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'duplicate', 'dupRam').' -jar  \$BAMTOOLS_JAR filterdups' .  ' --read1 ' . $pair1 . ' --read2 ' . $pair2;
-        $command .= ' -k 20 -o 15;';
-        $command .= ' mv ' . $pair1 . '.dup.read1.gz ' . $outputFastqPair1Name . ';';
-        $command .= ' mv ' . $pair2 . '.dup.read2.gz ' . $outputFastqPair2Name . ';';
-    }
-    $retVal{'command'} = $command;
-    $retVal{'pair1'}   = $outputFastqPair1Name;
-    $retVal{'pair2'}   = $outputFastqPair2Name;
+        $command .= ' -k 20 -o 15';
+        $command .= ' && mv ' . $pair1 . '.dup.read1.gz ' . $outputFastqPair1Name;
+        $command .= ' && mv ' . $pair2 . '.dup.read2.gz ' . $outputFastqPair2Name;
 
-    return ( \%retVal );
+        $ro_job->addCommand($command);
+    }
+
+    return $ro_job;
 
 }
 
@@ -132,22 +132,23 @@ sub deleteSingleDuplicates {
     my $outputPrefix    = shift;
     my %retVal;
 	
-    my $command         = '';
     my $outputFastqName = $outputPrefix . '.single.dup.fastq.gz';
-    my $currentFileDate = -M $outputFastqName;
 
-    my $outDate = -M $outputFastqName;
-    if ( !defined($currentFileDate) || !defined($outDate) || $currentFileDate > -M $outputFastqName) {
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$single], [$outputFastqName]);
+
+    if (!$ro_job->isUp2Date()) {
+        my $command;
         $command .= 'module add '. LoadConfig::getParam($rH_cfg, 'default','moduleVersion.java') ;
         $command .= ' ' . LoadConfig::getParam($rH_cfg, 'duplicate','moduleVersion.bamtools') . ';' ;
         $command .= ' java '.LoadConfig::getParam($rH_cfg, 'duplicate', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'duplicate', 'dupRam').' -jar \$BAMTOOLS_JAR filterdups' . ' --read1 ' . $single;
-        $command .= ' -k 20 -o 15;';
-        $command .= ' mv ' . $single . '.dup.read1.gz ' . $outputFastqName . ';';
-    }
-    $retVal{'command'} = $command;
-    $retVal{'single1'} = $outputFastqName;
+        $command .= ' -k 20 -o 15';
+        $command .= ' && mv ' . $single . '.dup.read1.gz ' . $outputFastqName;
 
-    return ( \%retVal );
+        $ro_job->addCommand($command);
+    }
+
+    return $ro_job;
 }
 
 1;

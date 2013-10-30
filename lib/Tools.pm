@@ -22,7 +22,7 @@ B<Data::Dumper> Used to debbug
 
 =cut
 
-package ToolShed;
+package Tools;
 
 # Strict Pragmas
 #--------------------------
@@ -49,19 +49,21 @@ sub filterNStretches {
     my $inputVCF    = shift;
     my $outputVCF   = shift;
 
-    my $outDate = -M $outputVCF;
-    my $inDate = -M $inputVCF;
-  
     my $toolShedDir = getToolShedDir();
 
-    my $command;
-    # -M gives modified date relative to now. The bigger the older.
-    #if(!defined($outDate) || !defined($inDate) || $inDate < $outDate) {
-        $command .= $toolShedDir.'/filterLongIndel.pl ';
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$inputVCF],[$outputVCF]);
+
+    if (!$ro_job->isUp2Date()) {
+        my $command;
+        $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.tools') .' &&';
+	$command .= ' \$PERL_TOOLS/filterLongIndel.pl ';
         $command .= ' '.$inputVCF;
         $command .= ' > '.$outputVCF;
-    #}
-    return $command;
+
+        $ro_job->addCommand($command);
+    }
+    return $ro_job;
 }
 
 1;

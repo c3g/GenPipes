@@ -28,12 +28,12 @@ package Cfreec;
 #--------------------------
 use strict;
 use warnings;
-use File::Basename;
 
 #--------------------------
 
 # Dependencies
 #-----------------------
+use File::Basename;
 
 # SUB
 #-----------------------
@@ -44,23 +44,22 @@ sub pairedFreec {
     my $sampleConfig  = shift;
     my $output        = shift;
 
-    my $outDate = -M $sampleConfig;
-    my $inDate = -M $normalPileup;
-    my $inDate2 = -M $tumorPileup;
-  
-    my $command;
-    # -M gives modified date relative to now. The bigger the older.
-    if(!defined($outDate) || !defined($inDate) || $inDate < $outDate || !defined($inDate2) || $inDate2 < $outDate ) {
+    my $ro_job = new Job();
+    $ro_job->testInputOutputs([$normalPileup, $tumorPileup], [$sampleConfig]);
+
+    if (!$ro_job->isUp2Date()) {
+        my $command;
         $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'ControlFreec', 'moduleVersion.controlFreec') .' && ';
         $command .= 'sed \"s|TUMOR_PILEUP|' .$tumorPileup .'|g\" ' .'\${FREEC_HOME}/' .LoadConfig::getParam($rH_cfg, 'ControlFreec', 'referenceConfigFile') .' > ' .$sampleConfig .' && ';
         $command .= 'sed \"s|NORMAL_PILEUP|' .$normalPileup .'|g\" -i ' .$sampleConfig .' && ';
         $command .= 'sed \"s|OUTPUT_DIR|' .$output .'|g\"  -i ' .$sampleConfig .' && ';
         $command .= 'sed \"s|FORMAT_TYPE|' .LoadConfig::getParam($rH_cfg, 'ControlFreec', 'inputType') .'|g\"  -i ' .$sampleConfig .' && ';
         $command .= 'freec -conf ' .$sampleConfig ;
+
+        $ro_job->addCommand($command);
     }
     
-    return $command;
+    return $ro_job;
 }
-
     
 1;

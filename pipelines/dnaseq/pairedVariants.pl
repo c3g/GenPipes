@@ -36,14 +36,13 @@ use strict;
 use warnings;
 #---------------------
 
-#BEGIN{
-#    #Makesure we can find the GetConfig::LoadModules module relative to this script install
-#    use File::Basename;
-#    use Cwd 'abs_path';
-#    my ( undef, $mod_path, undef ) = fileparse( abs_path(__FILE__) );
-#    unshift @INC, $mod_path."lib";
-#
-#}
+BEGIN {
+  # Add the mugqic_pipeline/lib/ path relative to this Perl script to @INC library search variable
+  use File::Basename;
+  use Cwd 'abs_path';
+  my (undef, $mod_path, undef) = fileparse(abs_path(__FILE__));
+  unshift @INC, $mod_path . "../../lib";
+}
 
 
 # Dependencies
@@ -59,7 +58,7 @@ use SequenceDictionaryParser;
 use SnpEff;
 use SubmitToCluster;
 use SVtools;
-use ToolShed;
+use Tools;
 use VCFtools;
 use Pindel;
 use Cfreec;
@@ -148,6 +147,7 @@ sub snpAndIndelBCF {
 
       for my $region (@{$rA_regions}) {
         my $command = SAMtools::mpileupPaired($rH_cfg, $sampleName, ($normalBam, $tumorBam), $region, $outputDir);
+        $region =~ s/:/_/g;
         my $mpileupJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mpileup", $region, 'MPILEUP', undef, $sampleName, $command);
         $mpileupJobId = '$'.$mpileupJobId;
         print 'MPILEUP_JOB_IDS=${MPILEUP_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$mpileupJobId."\n";
@@ -232,7 +232,7 @@ sub filterNStretches {
   my $vcf = LoadConfig::getParam($rH_cfg, "mergeFilterBCF", 'sampleOutputRoot') . $sampleName.'/'.$sampleName.'.merged.flt.vcf';
   my $vcfOutput = LoadConfig::getParam($rH_cfg, "filterNStretches", 'sampleOutputRoot') . $sampleName.'/'.$sampleName.'.merged.flt.Nfilter.vcf';
 
-  my $command = ToolShed::filterNStretches($rH_cfg, $sampleName, $vcf, $vcfOutput);
+  my $command = Tools::filterNStretches($rH_cfg, $sampleName, $vcf, $vcfOutput);
   my $filterNJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "filterNStretches", undef, 'FILTERN', $jobDependency, $sampleName, $command);
   return $filterNJobId;
 }
