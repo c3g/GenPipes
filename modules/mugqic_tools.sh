@@ -3,7 +3,7 @@
 ###################
 mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/tools/tmp $MUGQIC_INSTALL_HOME/modulefiles/mugqic/tools/tmp/untar/
 cd $MUGQIC_INSTALL_HOME/modulefiles/mugqic/tools/tmp
-VERSION="1.1"
+VERSION="1.2"
 wget https://bitbucket.org/mugqic/mugqic_tools/get/${VERSION}.tar.gz
 tar -xvf ${VERSION}.tar.gz -C untar/
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/mugqic_tools # where to install..
