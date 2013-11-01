@@ -197,7 +197,7 @@ sub trimAndAlign {
 
     my $outputAlnDir = 'alignment/'.$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
     print 'mkdir -p '.$outputAlnDir."\n";
-    my $outputAlnPrefix = $outputAlnDir.'/'.$sampleName;
+    my $outputAlnPrefix = $outputAlnDir.'/'.$sampleName.'.'.$rH_laneInfo->{'libraryBarcode'};
 
     my $useMem = LoadConfig::getParam($rH_cfg, 'aln', 'aligner') eq 'mem';
     if(!$useMem) {
@@ -256,9 +256,9 @@ sub laneMetrics {
   my $first=1;
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
     my $directory = 'alignment/'.$sampleName."/run".$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'}."/";
-    my $sortedLaneBamFile = $directory.$rH_laneInfo->{'name'}.".sorted.bam";
-    my $sortedLaneDupBamFile = $directory.$rH_laneInfo->{'name'}.".sorted.dup.bam";
-    my $outputMetrics = $directory.$rH_laneInfo->{'name'}.".sorted.dup.metrics";
+    my $sortedLaneBamFile = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.bam';
+    my $sortedLaneDupBamFile = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.dup.bam';
+    my $outputMetrics = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.dup.metrics';
     my $runName = $sampleName."_run".$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'};
 
     my $rO_job = Picard::markDup($rH_cfg, $sampleName, $sortedLaneBamFile, $sortedLaneDupBamFile, $outputMetrics);
@@ -342,7 +342,7 @@ sub mergeLanes {
   my $outputBAM = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.bam';
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
     my $directory = 'alignment/'.$sampleName."/run".$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'}."/";
-    my $sortedLaneBamFile = $directory.$rH_laneInfo->{'name'}.".sorted.bam";
+    my $sortedLaneBamFile = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.bam';
     my $runName = $sampleName."_run".$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'};
 
     push(@inputBams, $sortedLaneBamFile);

@@ -238,12 +238,12 @@ sub metrics {
    # Get trimmed read count is automatically done by trimmomatic
     my $groupName       = $sampleName . '.' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
     my $command         = undef;
-    my $trimStatsFile   =  'reads/' . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName . '.trim.stats.csv';
+    my $trimStatsFile   =  'reads/' . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName . '.'.$rH_laneInfo->{'libraryBarcode'}.'.trim.stats.csv';
 
     # Compute flagstats
     my $dir           = 'alignment/' . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
-    my $inputBamFile  = $dir . $rH_laneInfo->{'name'} . ".sorted.bam";
-    my $flagStatsFile = $dir . $sampleName . '.sorted.bam.flagstat';
+    my $inputBamFile  = $dir . $rH_laneInfo->{'name'} . '.'.$rH_laneInfo->{'libraryBarcode'}.".sorted.bam";
+    my $flagStatsFile = $dir . $sampleName . '.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.bam.flagstat';
 
     $command = SAMtools::flagstat($rH_cfg, $inputBamFile, $flagStatsFile);
     if (defined ($command) && $command ne "") {
@@ -297,14 +297,14 @@ sub aligning{
     my $bwaJobId = undef;
 
     if ($rH_laneInfo->{'runType'} eq "SINGLE_END") {
-      $single = 'reads/' . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName . '.t' . LoadConfig::getParam($rH_cfg, 'trim','minQuality') . 'l' . LoadConfig::getParam($rH_cfg, 'trim', 'minLength') . '.single.fastq.gz';
+      $single = 'reads/' . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName . '.'.$rH_laneInfo->{'libraryBarcode'}.'.t' . LoadConfig::getParam($rH_cfg, 'trim','minQuality') . 'l' . LoadConfig::getParam($rH_cfg, 'trim', 'minLength') . '.single.fastq.gz';
       $pair1 = undef;
       $pair2 = undef;
 
     } elsif ($rH_laneInfo->{'runType'} eq "PAIRED_END") {
       $single = undef;
-      $pair1 = 'reads/' . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName . '.t' . LoadConfig::getParam($rH_cfg, 'trim', 'minQuality') . 'l' . LoadConfig::getParam($rH_cfg, 'trim', 'minLength') . '.pair1.fastq.gz';
-      $pair2 = 'reads/' . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName . '.t' . LoadConfig::getParam($rH_cfg, 'trim', 'minQuality') . 'l' . LoadConfig::getParam($rH_cfg, 'trim', 'minLength') . '.pair2.fastq.gz';
+      $pair1 = 'reads/' . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName . '.'.$rH_laneInfo->{'libraryBarcode'}.'.t' . LoadConfig::getParam($rH_cfg, 'trim', 'minQuality') . 'l' . LoadConfig::getParam($rH_cfg, 'trim', 'minLength') . '.pair1.fastq.gz';
+      $pair2 = 'reads/' . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName . '.'.$rH_laneInfo->{'libraryBarcode'}.'.t' . LoadConfig::getParam($rH_cfg, 'trim', 'minQuality') . 'l' . LoadConfig::getParam($rH_cfg, 'trim', 'minLength') . '.pair2.fastq.gz';
     }
 
     my $rA_commands = BWA::aln($rH_cfg, $sampleName, $pair1, $pair2, $single, $outputAlnPrefix, $rgId, $rgSampleName, $rgLibrary, $rgPlatformUnit, $rgCenter);
@@ -326,8 +326,8 @@ sub aligning{
 
     # Filter uniquely mapped reads
     my $dir = 'alignment/' . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
-    my $InputBamFile = $dir . $rH_laneInfo->{'name'} . ".sorted.bam";
-    my $OutputBamFile = $dir . $rH_laneInfo->{'name'} . ".sorted.filtered.bam";
+    my $InputBamFile = $dir . $rH_laneInfo->{'name'} . '.'.$rH_laneInfo->{'libraryBarcode'}.".sorted.bam";
+    my $OutputBamFile = $dir . $rH_laneInfo->{'name'} . '.'.$rH_laneInfo->{'libraryBarcode'}.".sorted.filtered.bam";
     $command = SAMtools::viewFilter($rH_cfg, $InputBamFile, " -b -F4 -q 1 ", $OutputBamFile);
     if (defined($command) && $command ne "") {
      my $filterJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'filter.' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'SAMTOOLSFILTER',  $bwaJobId, $sampleName, $command);
@@ -343,7 +343,7 @@ sub aligning{
   my $outputBAM = 'alignment/' . $sampleName . '/' . $sampleName . '.sorted.bam';
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
     my $dir = 'alignment/' . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
-    my $sortedLaneBamFile = $dir . $rH_laneInfo->{'name'} . ".sorted.filtered.bam";
+    my $sortedLaneBamFile = $dir . $rH_laneInfo->{'name'} . '.'.$rH_laneInfo->{'libraryBarcode'}.".sorted.filtered.bam";
     push(@inputBams, $sortedLaneBamFile);
   }
   my $command = Picard::mergeFiles($rH_cfg, $sampleName, \@inputBams, $outputBAM);

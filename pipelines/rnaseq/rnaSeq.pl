@@ -220,10 +220,10 @@ sub trimming {
 		print "mkdir -p $laneDir\n";
 		my $outputFastqPair1Name;
 		if ( $rH_laneInfo->{'runType'} eq "SINGLE_END" ) {
-			$outputFastqPair1Name = $laneDir . $sampleName.'.t'.$minQuality.'l'.$minLength.'.single.fastq.gz';
+			$outputFastqPair1Name = $laneDir . $sampleName.'.'.$rH_laneInfo->{'libraryBarcode'}.'.t'.$minQuality.'l'.$minLength.'.single.fastq.gz';
 		}
 		elsif ( $rH_laneInfo->{'runType'} eq "PAIRED_END" ) {
-			$outputFastqPair1Name = $laneDir . $sampleName.'.t'.$minQuality.'l'.$minLength.'.pair1.fastq.gz';
+			$outputFastqPair1Name = $laneDir . $sampleName.'.'.$rH_laneInfo->{'libraryBarcode'}.'.t'.$minQuality.'l'.$minLength.'.pair1.fastq.gz';
 		}
 		else {
 			die "Unknown runType: " . $rH_laneInfo->{' runType '} . "\n";
@@ -303,12 +303,12 @@ sub aligning {
 		print "mkdir -p $outputDirPath \n" ;
     my $rO_job;
 		if ( $rH_laneInfo->{'runType'} eq "SINGLE_END" ) {
-			$single =  'reads/' .$sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName .'.t' .LoadConfig::getParam($rH_cfg,'trim','minQuality') .'l' .LoadConfig::getParam($rH_cfg,'trim','minLength') .'.single.fastq.gz';
+			$single =  'reads/' .$sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName .'.'.$rH_laneInfo->{'libraryBarcode'}.'.t' .LoadConfig::getParam($rH_cfg,'trim','minQuality') .'l' .LoadConfig::getParam($rH_cfg,'trim','minLength') .'.single.fastq.gz';
 			$rO_job = TophatBowtie::align($rH_cfg, $sampleName, $rH_laneInfo, $single, undef);
 		}
 		elsif($rH_laneInfo->{'runType'} eq "PAIRED_END") {
-			$pair1 =  'reads/' .$sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName .'.t' .LoadConfig::getParam($rH_cfg,'trim','minQuality') .'l' .LoadConfig::getParam($rH_cfg,'trim','minLength') .'.pair1.fastq.gz';
-			$pair2 =  'reads/' .$sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName .'.t' .LoadConfig::getParam($rH_cfg,'trim','minQuality') .'l' .LoadConfig::getParam($rH_cfg,'trim','minLength') .'.pair2.fastq.gz';
+			$pair1 =  'reads/' .$sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName .'.'.$rH_laneInfo->{'libraryBarcode'}.'.t' .LoadConfig::getParam($rH_cfg,'trim','minQuality') .'l' .LoadConfig::getParam($rH_cfg,'trim','minLength') .'.pair1.fastq.gz';
+			$pair2 =  'reads/' .$sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName .'.'.$rH_laneInfo->{'libraryBarcode'}.'.t' .LoadConfig::getParam($rH_cfg,'trim','minQuality') .'l' .LoadConfig::getParam($rH_cfg,'trim','minLength') .'.pair2.fastq.gz';
 			$rO_job = TophatBowtie::align($rH_cfg, $sampleName, $rH_laneInfo, $pair1, $pair2);
 		}
 
