@@ -85,12 +85,12 @@ sub pairCommand {
 
     my $rawReadDir    = LoadConfig::getParam($rH_cfg, 'trim','rawReadDir');
 
-    my $outputFastqPair1Name = $outputDir .'/' . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.pair1.fastq.gz';
-    my $outputFastqPair2Name = $outputDir .'/' . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.pair2.fastq.gz';
-    my $outputFastqSingle1Name = $outputDir .'/' . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.single1.fastq.gz';
-    my $outputFastqSingle2Name = $outputDir .'/' . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.single2.fastq.gz';
-    my $outputTrimLog = $outputDir .'/' . $sampleName . '.trim.out';
-    my $outputTrimStats = $outputDir .'/' . $sampleName . '.trim.stats.csv';
+    my $outputFastqPair1Name = $outputDir .'/' . $sampleName . '.' . $rH_laneInfo->{'libraryBarcode'} . '.t' . $minQuality . 'l' . $minLength . '.pair1.fastq.gz';
+    my $outputFastqPair2Name = $outputDir .'/' . $sampleName . '.' . $rH_laneInfo->{'libraryBarcode'} . '.t' . $minQuality . 'l' . $minLength . '.pair2.fastq.gz';
+    my $outputFastqSingle1Name = $outputDir .'/' . $sampleName . '.' . $rH_laneInfo->{'libraryBarcode'} . '.t' . $minQuality . 'l' . $minLength . '.single1.fastq.gz';
+    my $outputFastqSingle2Name = $outputDir .'/' . $sampleName . '.' . $rH_laneInfo->{'libraryBarcode'} . '.t' . $minQuality . 'l' . $minLength . '.single2.fastq.gz';
+    my $outputTrimLog = $outputDir .'/' . $sampleName . '.' . $rH_laneInfo->{'libraryBarcode'} . '.trim.out';
+    my $outputTrimStats = $outputDir .'/' . $sampleName . '.' . $rH_laneInfo->{'libraryBarcode'} . '.trim.stats.csv';
 
     my $inputFastqPair1Name = $rawReadDir .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' .$rH_laneInfo->{'read1File'};
     my $inputFastqPair2Name = $rawReadDir .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' .$rH_laneInfo->{'read2File'};
@@ -151,9 +151,9 @@ sub singleCommand {
 
     my $rawReadDir    = LoadConfig::getParam($rH_cfg, 'trim','rawReadDir');
 
-    my $outputFastqName = $outputDir . '/' . $sampleName . '.t' . $minQuality . 'l' . $minLength . '.single.fastq.gz';
-    my $outputTrimLog = $outputDir . '/' . $sampleName . '.trim.out';
-    my $outputTrimStats = $outputDir .'/' . $sampleName . '.trim.stats.csv';
+    my $outputFastqName = $outputDir . '/' . $sampleName . '.' . $rH_laneInfo->{'libraryBarcode'} . '.t' . $minQuality . 'l' . $minLength . '.single.fastq.gz';
+    my $outputTrimLog = $outputDir . '/' . $sampleName . '.' . $rH_laneInfo->{'libraryBarcode'} . '.trim.out';
+    my $outputTrimStats = $outputDir .'/' . $sampleName . '.' . $rH_laneInfo->{'libraryBarcode'} . '.trim.stats.csv';
     my $inputFastqName = $rawReadDir .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' .$rH_laneInfo->{'read1File'};
 
     my $ro_job = new Job();

@@ -94,7 +94,7 @@ push(@steps, {'name' => 'snpIDAnnotation', 'stepLoop' => 'experiment', 'parentSt
 push(@steps, {'name' => 'snpEffect', 'stepLoop' => 'experiment', 'parentStep' => 'snpIDAnnotation'});
 push(@steps, {'name' => 'dbNSFPAnnotation', 'stepLoop' => 'experiment', 'parentStep' => 'snpEffect'});
 push(@steps, {'name' => 'metricsSNV', 'stepLoop' => 'experiment', 'parentStep' => 'snpIDAnnotation'});
-push(@steps, {'name' => 'deliverable' , 'stepLoop' => 'experiment' , 'parentStep' => ('metricsLanes','metricsSample','metricsSNV')});
+push(@steps, {'name' => 'deliverable' , 'stepLoop' => 'experiment' , 'parentStep' => ['metricsLanes','metricsSample','metricsSNV']});
 
 my %globalDep;
 for my $stepName (@steps) {
@@ -197,7 +197,7 @@ sub trimAndAlign {
 
     my $outputAlnDir = 'alignment/'.$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
     print 'mkdir -p '.$outputAlnDir."\n";
-    my $outputAlnPrefix = $outputAlnDir.'/'.$sampleName;
+    my $outputAlnPrefix = $outputAlnDir.'/'.$sampleName.'.'.$rH_laneInfo->{'libraryBarcode'};
 
     my $useMem = LoadConfig::getParam($rH_cfg, 'aln', 'aligner') eq 'mem';
     if(!$useMem) {
@@ -256,9 +256,9 @@ sub laneMetrics {
   my $first=1;
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
     my $directory = 'alignment/'.$sampleName."/run".$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'}."/";
-    my $sortedLaneBamFile = $directory.$rH_laneInfo->{'name'}.".sorted.bam";
-    my $sortedLaneDupBamFile = $directory.$rH_laneInfo->{'name'}.".sorted.dup.bam";
-    my $outputMetrics = $directory.$rH_laneInfo->{'name'}.".sorted.dup.metrics";
+    my $sortedLaneBamFile = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.bam';
+    my $sortedLaneDupBamFile = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.dup.bam';
+    my $outputMetrics = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.dup.metrics';
     my $runName = $sampleName."_run".$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'};
 
     my $rO_job = Picard::markDup($rH_cfg, $sampleName, $sortedLaneBamFile, $sortedLaneDupBamFile, $outputMetrics);
@@ -342,7 +342,7 @@ sub mergeLanes {
   my $outputBAM = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.bam';
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
     my $directory = 'alignment/'.$sampleName."/run".$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'}."/";
-    my $sortedLaneBamFile = $directory.$rH_laneInfo->{'name'}.".sorted.bam";
+    my $sortedLaneBamFile = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.bam';
     my $runName = $sampleName."_run".$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'};
 
     push(@inputBams, $sortedLaneBamFile);
@@ -1038,11 +1038,9 @@ sub deliverable {
 
 
   my $reportDependency = undef;
-  my @parentStep = $steps[$stepId]->{'parentStep'};
 
   my $jobDependencies = "";
-  for(my $idx=0; $idx < @parentStep; $idx++){
-    my $stepName = $parentStep[$idx];
+  for my $stepName (@{$steps[$stepId]->{'parentStep'}}) {
     if(defined($globalDep{$stepName}->{'experiment'})){
       $jobDependencies .= LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$globalDep{$stepName}->{'experiment'};
     }
