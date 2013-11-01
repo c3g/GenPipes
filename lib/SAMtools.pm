@@ -78,6 +78,11 @@ sub mpileupBuilder {
   my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta');
   my $outputBCF = $outputDir.$sampleName.'.'.$seqName.'.bcf'; 
 
+  my $regionCmd = ' ';
+  if (defined($seqName)) {
+    $regionCmd =' -r '.$seqName;
+  }
+
   my $ro_job = new Job();
   $ro_job->testInputOutputs($rA_bams, [$outputBCF]);
 
@@ -87,7 +92,7 @@ sub mpileupBuilder {
     $command .= ' samtools mpileup';
     $command .= ' '.LoadConfig::getParam($rH_cfg, 'mpileup', 'mpileupExtraFlags');
     $command .= ' -f '.$refGenome;
-    $command .= ' -r '.$seqName;
+    $command .= $regionCmd;
     for my $bamFiles (@{$rA_bams}) {
       $command .= ' '.$bamFiles;
     }
