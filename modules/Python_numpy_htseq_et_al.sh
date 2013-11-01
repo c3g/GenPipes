@@ -5,7 +5,7 @@
 ###################
 ################### Python 
 ###################
-VERSION="2.7.3"
+VERSION="2.7.5"
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/python/Python-$VERSION
 mkdir -p $INSTALL_PATH
 wget "http://www.python.org/ftp/python/$VERSION/Python-$VERSION.tgz"
@@ -68,37 +68,53 @@ mv .version $VERSION $MUGQIC_INSTALL_HOME/modulefiles/mugqic/python/
 
 
 
+
 ###################
 ################### Python Packages
 ###################
 # Typically in e.g. /software/areas/genomics/software/python/Python-2.7.3/lib/python2.7/site-packages/
+mkdir -p $INSTALL_PATH/lib/python2.7/site-packages/
+cd $INSTALL_PATH/lib/python2.7/site-packages/
 
 ## numpy
-module load mugqic/python
-VERSION="1.7.0"
+module load mugqic/python/python-$VERSION
+VERSION="1.8.0"
 wget http://downloads.sourceforge.net/project/numpy/NumPy/$VERSION/numpy-$VERSION.tar.gz
 tar -xvf numpy-$VERSION.tar.gz
 cd numpy-$VERSION
 python setup.py build
 python setup.py install
+cd ..
 
+##biopython
+VERSION="1.62"
+wget http://biopython.org/DIST/biopython-${VERSION}.tar.gz
+tar -xvf biopython-${VERSION}.tar.gz
+cd biopython-${VERSION}
+python setup.py build
+python setup.py install
+cd ..
+
+##toto
 ## matplotlib
-module load mugqic/python
 VERSION="1.2.1"
 wget "http://downloads.sourceforge.net/project/matplotlib/matplotlib/matplotlib-"$VERSION"/matplotlib-"$VERSION".tar.gz"
 tar -xvf matplotlib-$VERSION.tar.gz
 cd matplotlib-$VERSION
 python setup.py build # NOTE: no ssh -X from MacOS when building this
 python setup.py install
+cd ..
 
 ## Install HTSeq (HTseq is special, it creates an executalbe in python/bin)
-module load mugqic/python
 VERSION="0.5.4p1"
 wget http://pypi.python.org/packages/source/H/HTSeq/HTSeq-$VERSION.tar.gz
 tar -xvf  HTSeq-$VERSION.tar.gz
 cd HTSeq-$VERSION
 python setup.py build
 python setup.py install
+
+
+
 #module-whatis	 HTSeq: Analysing high-throughput sequencing data with Python 
 #prepend-path	 PATH /sb/programs/analyste/software/Python-2.7.3/bin/  # hmmm already done by python!!
 # hmmm HT-Seq is just a python module and no two versions can co-exist. So more or less non-sensical to have a module.
