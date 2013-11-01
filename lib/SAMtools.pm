@@ -76,11 +76,12 @@ sub mpileupBuilder {
   }
 
   my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta');
-  my $outputBCF = $outputDir.$sampleName.'.'.$seqName.'.bcf'; 
+  my $outputBCF = $outputDir.$sampleName.'.bcf'; 
 
   my $regionCmd = ' ';
   if (defined($seqName)) {
     $regionCmd =' -r '.$seqName;
+     my $outputBCF = $outputDir.$sampleName.'.'.$seqName.'.bcf'; 
   }
 
   my $ro_job = new Job();
