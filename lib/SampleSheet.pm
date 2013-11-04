@@ -120,11 +120,11 @@ sub parseSampleSheet {
     $sampleInfo{'qualOffset'} = $values[$qualOffsetIdx];
 
     if($values[$runTypeIdx] eq "PAIRED_END") {
-      $sampleInfo{'read1File'} = $sampleInfo{'name'}.'.'.$sampleInfo{'qualOffset'}.".pair1.fastq.gz";
-      $sampleInfo{'read2File'} = $sampleInfo{'name'}.'.'.$sampleInfo{'qualOffset'}.".pair2.fastq.gz";
+      $sampleInfo{'read1File'} = $sampleInfo{'name'}.'.'.$sampleInfo{'libraryBarcode'}.'.'.$sampleInfo{'qualOffset'}.".pair1.fastq.gz";
+      $sampleInfo{'read2File'} = $sampleInfo{'name'}.'.'.$sampleInfo{'libraryBarcode'}.'.'.$sampleInfo{'qualOffset'}.".pair2.fastq.gz";
     }
     elsif($values[4] eq "SINGLE_END") {
-      $sampleInfo{'read1File'} = $sampleInfo{'name'}.'.'.$sampleInfo{'qualOffset'}.".single.fastq.gz";
+      $sampleInfo{'read1File'} = $sampleInfo{'name'}.'.'.$sampleInfo{'libraryBarcode'}.'.'.$sampleInfo{'qualOffset'}.".single.fastq.gz";
     }
     else {
       print "Unrecognized run type $values[$runTypeIdx] \n";

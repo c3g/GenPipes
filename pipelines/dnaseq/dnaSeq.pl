@@ -85,7 +85,6 @@ push(@steps, {'name' => 'markDup', 'stepLoop' => 'sample', 'parentStep' => 'fixm
 push(@steps, {'name' => 'recalibration', 'stepLoop' => 'sample', 'parentStep' => 'markDup'});
 push(@steps, {'name' => 'metrics', 'stepLoop' => 'sample', 'parentStep' => 'recalibration'});
 push(@steps, {'name' => 'metricsLibrarySample', 'stepLoop' => 'experiment', 'parentStep' => 'metrics'});
-push(@steps, {'name' => 'fullPileup', 'stepLoop' => 'sample', 'parentStep' => 'recalibration'});
 push(@steps, {'name' => 'snpAndIndelBCF', 'stepLoop' => 'experiment', 'parentStep' => 'recalibration'});
 push(@steps, {'name' => 'mergeFilterBCF', 'stepLoop' => 'experiment', 'parentStep' => 'snpAndIndelBCF'});
 push(@steps, {'name' => 'filterNStretches', 'stepLoop' => 'experiment', 'parentStep' => 'mergeFilterBCF'});
@@ -95,6 +94,7 @@ push(@steps, {'name' => 'snpEffect', 'stepLoop' => 'experiment', 'parentStep' =>
 push(@steps, {'name' => 'dbNSFPAnnotation', 'stepLoop' => 'experiment', 'parentStep' => 'snpEffect'});
 push(@steps, {'name' => 'metricsSNV', 'stepLoop' => 'experiment', 'parentStep' => 'snpIDAnnotation'});
 push(@steps, {'name' => 'deliverable' , 'stepLoop' => 'experiment' , 'parentStep' => ['mergeTrimStats','metricsLibrarySample','metricsSNV']});
+push(@steps, {'name' => 'fullPileup', 'stepLoop' => 'sample', 'parentStep' => 'recalibration'});
 
 my %globalDep;
 for my $stepName (@steps) {
@@ -197,7 +197,7 @@ sub trimAndAlign {
 
     my $outputAlnDir = 'alignment/'.$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
     print 'mkdir -p '.$outputAlnDir."\n";
-    my $outputAlnPrefix = $outputAlnDir.'/'.$sampleName;
+    my $outputAlnPrefix = $outputAlnDir.'/'.$sampleName.'.'.$rH_laneInfo->{'libraryBarcode'};
 
     my $useMem = LoadConfig::getParam($rH_cfg, 'aln', 'aligner') eq 'mem';
     if(!$useMem) {
@@ -256,9 +256,9 @@ sub laneMetrics {
   my $first=1;
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
     my $directory = 'alignment/'.$sampleName."/run".$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'}."/";
-    my $sortedLaneBamFile = $directory.$rH_laneInfo->{'name'}.".sorted.bam";
-    my $sortedLaneDupBamFile = $directory.$rH_laneInfo->{'name'}.".sorted.dup.bam";
-    my $outputMetrics = $directory.$rH_laneInfo->{'name'}.".sorted.dup.metrics";
+    my $sortedLaneBamFile = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.bam';
+    my $sortedLaneDupBamFile = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.dup.bam';
+    my $outputMetrics = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.dup.metrics';
     my $runName = $sampleName."_run".$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'};
 
     my $rO_job = Picard::markDup($rH_cfg, $sampleName, $sortedLaneBamFile, $sortedLaneDupBamFile, $outputMetrics);
@@ -342,7 +342,7 @@ sub mergeLanes {
   my $outputBAM = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.bam';
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
     my $directory = 'alignment/'.$sampleName."/run".$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'}."/";
-    my $sortedLaneBamFile = $directory.$rH_laneInfo->{'name'}.".sorted.bam";
+    my $sortedLaneBamFile = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.bam';
     my $runName = $sampleName."_run".$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'};
 
     push(@inputBams, $sortedLaneBamFile);
@@ -767,13 +767,29 @@ sub snpAndIndelBCF {
   print 'mkdir -p '.$outputDir."\n";
   print "MPILEUP_JOB_IDS=\"\"\n";
 
-  my $nbJobs = LoadConfig::getParam( $rH_cfg, 'mpileup', 'approxNbJobs' );
-  my $rA_regions = generateApproximateWindows($nbJobs, $rAoH_seqDictionary);
   my $jobId;
-  for my $region (@{$rA_regions}) {
+  my $nbJobs = LoadConfig::getParam( $rH_cfg, 'mpileup', 'approxNbJobs' );
+  if (defined($nbJobs) && $nbJobs > 1) {
+    my $rA_regions = generateApproximateWindows($nbJobs, $rAoH_seqDictionary);
+    for my $region (@{$rA_regions}) {
+      my $rO_job = SAMtools::mpileup($rH_cfg, 'allSamples', \@inputFiles, $region, $outputDir);
+      if(!$rO_job->isUp2Date()) {
+        $region =~ s/:/_/g;
+        SubmitToCluster::printSubmitCmd($rH_cfg, "mpileup", $region, 'MPILEUP', $jobDependencies, 'allSamples', $rO_job);
+        if(!defined($jobId)) {
+          $jobId = '${MPILEUP_JOB_IDS}';
+          print 'MPILEUP_JOB_IDS='.$rO_job->getCommandJobId(0)."\n";
+        }
+        else {
+          print 'MPILEUP_JOB_IDS=${MPILEUP_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$rO_job->getCommandJobId(0)."\n";
+        }
+      }
+    }
+  } 
+  else {
+    my $region = undef;
     my $rO_job = SAMtools::mpileup($rH_cfg, 'allSamples', \@inputFiles, $region, $outputDir);
     if(!$rO_job->isUp2Date()) {
-      $region =~ s/:/_/g;
       SubmitToCluster::printSubmitCmd($rH_cfg, "mpileup", $region, 'MPILEUP', $jobDependencies, 'allSamples', $rO_job);
       if(!defined($jobId)) {
         $jobId = '${MPILEUP_JOB_IDS}';
