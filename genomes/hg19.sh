@@ -85,9 +85,10 @@ R --vanilla <<'EOF'
 	write.table(g2s,file='genes_geneid2Symbol.txt',col.names=TRUE,row.names=FALSE,sep='\t',quote=FALSE)
 
 	# Prepare the gene lengths file
+	gl = x
 	gl = gl[gl$type=='exon',]
 	gl =  as(gl,'GRanges') 		
-	gl = split(gl,f=factor(x$geneid))	 # split for GRanges signature turns into GRangesList!
+	gl = split(gl,f=factor(gl$geneid))	 # split for GRanges signature turns into GRangesList!
 	gl = reduce(gl) # reduce eliminates overlaps
 	gl = sum ( width(gl) )
 	gl = as.data.frame(gl)
