@@ -30,8 +30,13 @@ use warnings;
 
 #---------------------
 
+# Add the mugqic_pipeline/lib/ path relative to this Perl script to @INC library search variable
+use FindBin;
+use lib $FindBin::Bin;
+
 # Dependencies
 #--------------------
+use Cwd 'abs_path';
 use LoadConfig;
 
 #--------------------
@@ -41,18 +46,28 @@ use LoadConfig;
 sub initPipeline {
   my $workDir = shift;
 
-  # Set working directory to current one by default
-  unless (defined $workDir and -d $workDir) {
+  # Check working directory and set it to current one if not defined
+  if (defined $workDir) {
+    if (-d $workDir) {
+      $workDir = abs_path($workDir);
+    } else {
+      die "Error: $workDir does not exist or is not a directory";
+    }
+  } else {
     $workDir = "`pwd`";
   }
 
   # Set pipeline header and global variables
-  print "#!/bin/bash\n\n";
-  print "WORK_DIR=$workDir\n";
-  print "JOB_OUTPUT_ROOT=\$WORK_DIR/job_output\n";
-  print "TIMESTAMP=`date +%FT%H.%M.%S`\n";
-  print "JOB_LIST=\$JOB_OUTPUT_ROOT/job_list_\$TIMESTAMP\n\n";
-  print "cd \$WORK_DIR\n\n";
+  print <<END;
+#!/bin/bash
+
+WORK_DIR=$workDir
+JOB_OUTPUT_ROOT=\$WORK_DIR/job_output
+TIMESTAMP=`date +%FT%H.%M.%S`
+JOB_LIST=\$JOB_OUTPUT_ROOT/job_list_\$TIMESTAMP
+cd \$WORK_DIR
+
+END
 }
 
 sub printSubmitCmd {

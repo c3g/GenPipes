@@ -107,90 +107,107 @@ use warnings;
 
 #---------------------
 
-BEGIN {
-  #Makesure we can find the GetConfig::LoadModules module relative to this script install
-  use File::Basename;
-  use Cwd 'abs_path';
-
-  my ( undef, $mod_path, undef ) = fileparse( abs_path(__FILE__) );
-  unshift @INC, $mod_path . "lib";
-
-}
+# Add the mugqic_pipeline/lib/ path relative to this Perl script to @INC library search variable
+use FindBin;
+use lib "$FindBin::Bin/../../lib";
 
 # Dependencies
 #-----------------
 use Getopt::Std;
-use File::Basename;
-use GetFastaAlias;
-#use MergeFastq;
 use LoadConfig;
-use Data::Dumper;
+#use Data::Dumper;
 use SampleSheet;
-use BAMtools;
-use SplitFile;
 use Trinity;
-use BLAST;
-use SampleSheet;
-use SequenceDictionaryParser;
 use SubmitToCluster;
-use BWA;
 
 # Globals
 #---------------------------------
-my @steps;
-push(@steps, {'name' => 'normalization', 'stepLoop' => 'experiment', 'parentStep' => undef});
-push(@steps, {'name' => 'deNovoAssembly', 'stepLoop' => 'experiment', 'parentStep' => 'normalization'});
+my @steps = (
+  {
+    'name'   => 'normalization',
+    'loop'   => 'global',
+    'parent' => undef
+  },
+  {
+    'name'   => 'rnaSeqDeNovoAssembly',
+    'loop'   => 'global',
+    'parent' => 'normalization'
+  },
+  {
+    'name'   => 'abundance',
+    'loop'   => 'sample',
+    'parent' => 'rnaSeqDeNovoAssembly'
+  }
+);
 
 my %globalDep;
-for my $step (@steps) {
+foreach my $step (@steps) {
   $globalDep{$step->{'name'}} = {};
 }
 
 my %groupDone;
-my $workDir;
 
-&main();
+main();
 
 # SUB
 #-----------------
-sub printUsage {
-  print "\nUsage: perl " . $0 . " args [-f -c -s -e -n]\n";
-  print "\t-h  help and usage\n";
-  print "\t-c  config file\n";
-  print "\t-s  start step, inclusive\n";
-  print "\t-e  end step, inclusive\n";
-  print "\t-n  nanuq sample sheet\n";
-  print "\t-w  work directory\n";
-  print "\n";
-  print "Steps:\n";
+sub getUsage {
+  my $usage = <<END;
+Usage: perl $0 -h | -c FILE -s number -e number -n FILE [-w DIR]
+  -h  help and usage
+  -c  .ini config file
+  -s  start step, inclusive
+  -e  end step, inclusive
+  -n  nanuq sample sheet
+  -w  work directory (default current)
 
-  for (my $idx = 0; $idx < @steps; $idx++) {
-    print "" . ($idx + 1) . '- ' . $steps[$idx]->{'name'} . "\n";
+Steps:
+END
+
+  # List and number step names
+  for (my $i = 1; $i <= @steps; $i++) {
+    $usage .= $i . "- " . $steps[$i - 1]->{'name'} . "\n";
   }
-  print "\n";
+
+  return $usage;
 }
 
 sub main {
+  # Check options
   my %opts;
   getopts('hc:s:e:n:w:', \%opts);
 
-  if (defined($opts{'h'}) || !defined($opts{'c'}) || !defined($opts{'s'}) || !defined($opts{'e'}) || !defined($opts{'n'}) || !defined($opts{'w'})) {
-    printUsage();
-    exit(1);
+  if (defined($opts{'h'}) ||
+     !defined($opts{'c'}) ||
+     !defined($opts{'s'}) ||
+     !defined($opts{'e'}) ||
+     !defined($opts{'n'})) {
+    die (getUsage());
   }
 
-  my %cfg = LoadConfig->readConfigFile($opts{'c'});
-  my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($opts{'n'});
-  $workDir = abs_path($opts{'w'});
+  my $configFile = $opts{'c'};
+  my $startStep = $opts{'s'};
+  my $endStep = $opts{'e'};
+  my $nanuqSampleSheet = $opts{'n'};
+  my $workDirectory = $opts{'w'};
 
-  SubmitToCluster::initPipeline($workDir);
+  # Get config and sample values
+  my %cfg = LoadConfig->readConfigFile($configFile);
+  my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($nanuqSampleSheet);
 
-  for (my $currentStep = $opts{'s'} - 1; $currentStep <= ($opts{'e'} - 1); $currentStep++) {
-    my $fname = $steps[$currentStep]->{'name'};
-    my $subref = \&$fname;
+  SubmitToCluster::initPipeline($workDirectory);
 
-    my $jobIdVar = &$subref($currentStep, \%cfg, $rHoAoH_sampleInfo);
-    $globalDep{$fname}->{'experiment'} = $jobIdVar;
+  foreach my $step (@steps) {
+    my $stepName = $step->{'name'};
+    my $rSub_step = \&$stepName;
+    my $stepLoop = $step->{'loop'};
+
+    if ($stepLoop eq 'sample') {
+      
+    } elsif ($stepLoop eq 'global') {
+      my $jobIdVar = &$rSub_step($step, \%cfg, $rHoAoH_sampleInfo);
+      $globalDep{$rSub_step}->{'global'} = $jobIdVar;
+    }
   }
 }
 
@@ -198,40 +215,27 @@ sub normalization {
   my $depends = shift;
   my $rH_cfg = shift;
 
-  my $leftList = "$workDir/reads/left_pair1.fastq.gz.list";
-  my $rightList = "$workDir/reads/right_pair2.fastq.gz.list";
-
-  print "find $workDir/reads/ -name *pair1.*.fastq.gz > $leftList\n";
-  print "find $workDir/reads/ -name *pair2.*.fastq.gz > $rightList\n";
-
-  my $rO_job = Trinity::normalize_by_kmer_coverage($rH_cfg, $workDir, $leftList, $rightList);
-
+  my $rO_job = Trinity::normalize_by_kmer_coverage($rH_cfg);
   SubmitToCluster::printSubmitCmd($rH_cfg, "normalization", undef, 'NORMALIZATION', undef, undef, $rO_job);
 }
 
-sub deNovoAssembly {
+sub rnaSeqDeNovoAssembly {
   my $depends = shift;
   my $rH_cfg = shift;
 
-  my $leftList = "$workDir/reads/left_pair1.fastq.gz.list";
-  my $rightList = "$workDir/reads/right_pair2.fastq.gz.list";
-
-  my $rO_job = Trinity::trinity($rH_cfg, $workDir, $leftList, $rightList);
+  my $rO_job = Trinity::trinity($rH_cfg);
   SubmitToCluster::printSubmitCmd($rH_cfg, "deNovoAssembly_trinity_no_butterfly", undef, 'TRINITY_NO_BUTTERFLY', undef, undef, $rO_job);
 
-  my $butterflyCommandChunksNumber = 100;
-  $rO_job = Trinity::splitButterfly($rH_cfg, $workDir, $butterflyCommandChunksNumber);
-  SubmitToCluster::printSubmitCmd($rH_cfg, "deNovoAssembly_split_butterfly", undef, 'SPLIT_BUTTERFLY', '$TRINITY_NO_BUTTERFLY_JOB_ID', undef, $rO_job);
-
-  for (my $i = 0; $i < $butterflyCommandChunksNumber; $i++) {
-    my $butterflyCommandsChunk = $workDir . "/assembly/chrysalis/butterfly_commands_chunks/butterfly_commands." . sprintf("%03d", $i);
-    $rO_job = Trinity::butterfly($rH_cfg, $butterflyCommandsChunk);
-    SubmitToCluster::printSubmitCmd($rH_cfg, "deNovoAssembly_butterfly", "$i", "BUTTERFLY_$i", '$SPLIT_BUTTERFLY_JOB_ID', undef, $rO_job);
-  }
-
-  my $rO_job = Trinity::concatFastaCreateGTF($rH_cfg, $workDir);
-  SubmitToCluster::printSubmitCmd($rH_cfg, "deNovoAssembly_concatFastaCreateGTF", undef, 'CONCAT_FASTA_CREATE_GTF', undef, undef, $rO_job);
 }
+
+sub abundance {
+  my $depends = shift;
+  my $rH_cfg = shift;
+
+  my $rO_job = Trinity::abundance($rH_cfg, "$workDirectory/results/assembly/Trinity.fasta", "rsem", $leftList, $rightList);
+  SubmitToCluster::printSubmitCmd($rH_cfg, "abundance_rsem", undef, 'ABUNDANCE_RSEM', undef, undef, $rO_job);
+}
+
 
 sub deNovoAssembly_old {
   my $depends            = shift;

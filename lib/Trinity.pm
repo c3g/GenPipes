@@ -57,6 +57,10 @@ use warnings;
 
 #--------------------------
 
+# Add the mugqic_pipeline/lib/ path relative to this Perl script to @INC library search variable
+use FindBin;
+use lib $FindBin::Bin;
+
 # Dependencies
 #-----------------------
 use Data::Dumper;
@@ -71,17 +75,23 @@ use Job;
 #-------------------
 sub normalize_by_kmer_coverage {
   my $rH_cfg    = shift;
-  my $workDir   = shift;
-  my $leftList  = shift;    # For single command the left will receive the file.
-  my $rightList = shift;
 
   my $rO_job = new Job();
-  $rO_job->testInputOutputs([$leftList, $rightList], ["$workDir/normalized_reads/both.fa"]);
+#  $rO_job->testInputOutputs([$leftList, $rightList], ["$workDir/normalized_reads/both.fa"]);
 
   if (!$rO_job->isUp2Date()) {
     my $ram = "200G";
-    my $ncores = "10";
+    my $CPU = "10";
     my $command;
+
+    my $leftList = "\$WORK_DIR/reads/left_pair1.fastq.gz.list";
+    my $rightList = "\$WORK_DIR/reads/right_pair2.fastq.gz.list";
+
+    # Create left/right lists of fastq.gz files
+    $command .= "find \$WORK_DIR/reads/ -name *pair1.*.fastq.gz > $leftList; ";
+    $command .= "find \$WORK_DIR/reads/ -name *pair2.*.fastq.gz > $rightList; ";
+
+    # Load modules and run Trinity normalization
     $command .= 'module load ' . LoadConfig::getParam($rH_cfg, 'trinity', 'moduleVersion.trinity') . '; ';
     $command .= "normalize_by_kmer_coverage.pl \\
       --seqType fq \\
@@ -92,7 +102,7 @@ sub normalize_by_kmer_coverage {
       --pairs_together \\
       --SS_lib_type RF \\
       --output normalized_reads \\
-      --JELLY_CPU $ncores \\
+      --JELLY_CPU $CPU \\
       --PARALLEL_STATS \\
       --KMER_SIZE 25 \\
       --max_pct_stdev 100";
@@ -104,17 +114,19 @@ sub normalize_by_kmer_coverage {
 
 sub trinity {
   my $rH_cfg  = shift;
-  my $workDir = shift;
-  my $leftList  = shift;    # For single command the left will receive the file.
-  my $rightList = shift;
 
   my $rO_job = new Job();
-  $rO_job->testInputOutputs(["$workDir/normalized_reads/pairs.K25.stats.C30.pctSD100.accs"], []);
+#  $rO_job->testInputOutputs(["$workDir/normalized_reads/pairs.K25.stats.C30.pctSD100.accs"], []);
 
   if (!$rO_job->isUp2Date()) {
-    my $ram = "500G";
-    my $ncores = "20";
+    my $ram = "50G";
+    my $CPU = 10;
+    my $bflyCPU = int($CPU / 2);
     my $command;
+
+    my $leftList = "\$WORK_DIR/reads/left_pair1.fastq.gz.list";
+    my $rightList = "\$WORK_DIR/reads/right_pair2.fastq.gz.list";
+
     $command .= 'module load ' . LoadConfig::getParam($rH_cfg, 'trinity', 'moduleVersion.trinity') . ' ' .
       LoadConfig::getParam($rH_cfg, 'bowtie', 'moduleVersion.bowtie') . ' ' .
       LoadConfig::getParam($rH_cfg, 'samtools', 'moduleVersion.samtools') . '; ';
@@ -124,14 +136,15 @@ sub trinity {
       --left   $leftList.normalized_K25_C30_pctSD100.fq \\
       --right  $rightList.normalized_K25_C30_pctSD100.fq \\
       --SS_lib_type RF \\
-      --output $workDir/assembly \\
-      --CPU $ncores \\
+      --output \$WORK_DIR/assembly \\
+      --CPU $CPU \\
       --min_contig_length 200 \\
       --jaccard_clip \\
       --min_kmer_cov 2 \\
-      --inchworm_cpu $ncores \\
-      --bflyCPU $ncores \\
-      --no_run_butterfly";
+      --inchworm_cpu $CPU \\
+      --bflyHeapSpaceMax 10G \\
+      --bflyGCThreads 1 \\
+      --bflyCPU $bflyCPU";
 
     $rO_job->addCommand($command);
   }
@@ -171,7 +184,7 @@ sub splitButterfly {
   if (!$rO_job->isUp2Date()) {
     my $butterflyCommandsChunksDir = "$workDir/assembly/chrysalis/butterfly_commands_chunks";
     my $command = "mkdir -p $butterflyCommandsChunksDir; ";
-    $command .= "split -d -a 3 -l \\`awk \'END{print int((NR - 1) / $butterflyCommandChunksNumber + 1)}\' $butterflyCommands\\` $butterflyCommands $butterflyCommandsChunksDir/butterfly_commands.";
+    $command .= "shuf $butterflyCommands | split -d -a 3 -l \\`awk \'END{print int((NR - 1) / $butterflyCommandChunksNumber + 1)}\' $butterflyCommands\\` - $butterflyCommandsChunksDir/butterfly_commands.";
 
     $rO_job->addCommand($command);
   }
@@ -215,10 +228,10 @@ sub concatFastaCreateGtf {
     $command .= "find $assemblyDir/chrysalis -name *allProbPaths.fasta -exec cat {} + > $assemblyDir/Trinity.fasta && ";
 
     # Convert fasta to gtf
-    $command .= "grep '^>' $assemblyDir/Trinity.fasta | perl -pe 's/^>((\\S+)_seq\\d+)\\s+len=(\\d+).*/\1\tprotein_coding\texon\t1\t\3\t.\t+\t.\tgene_id \"\2\"; transcript_id \"\1\";/' > $assemblyDir/Trinity.gtf && ";
+    $command .= "grep '^>' $assemblyDir/Trinity.fasta | perl -pe 's/^>((\\S+)_seq\\d+)\\s+len=(\\d+).*/\\1\\tprotein_coding\\texon\\t1\\t\\3\\t.\\t+\\t.\\tgene_id \\\"\\2\\\"; transcript_id \\\"\\1\\\";/' > $assemblyDir/Trinity.gtf && ";
 
     # Create fasta with no description
-    $command .= "awk '{print \$1}' $assemblyDir/Trinity.fasta > $assemblyDir/Trinity.no_desc.fasta";
+    $command .= "awk '{print \\\$1}' $assemblyDir/Trinity.fasta > $assemblyDir/Trinity.no_desc.fasta";
 
     $rO_job->addCommand($command);
   }
