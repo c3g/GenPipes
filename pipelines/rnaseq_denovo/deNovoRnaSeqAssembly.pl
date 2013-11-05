@@ -18,6 +18,8 @@ B<David Morais> - I<dmorais@cs.bris.ac.uk>
 
 B<Mathieu Bourgey> - I<mbourgey@genomequebec.com>
 
+B<Joel Fillon> - I<joel.fillon@mcgill.ca>
+
 =head1 DEPENDENCY
 
 B<Pod::Usage> Usage and help output.
@@ -115,10 +117,9 @@ use lib "$FindBin::Bin/../../lib";
 #-----------------
 use Getopt::Std;
 use LoadConfig;
-#use Data::Dumper;
 use SampleSheet;
-use Trinity;
 use SubmitToCluster;
+use Trinity;
 
 # Globals
 #---------------------------------
@@ -129,23 +130,17 @@ my @steps = (
     'parent' => undef
   },
   {
-    'name'   => 'rnaSeqDeNovoAssembly',
+    'name'   => 'trinity',
     'loop'   => 'global',
     'parent' => 'normalization'
   },
   {
     'name'   => 'abundance',
     'loop'   => 'sample',
-    'parent' => 'rnaSeqDeNovoAssembly'
+    'parent' => 'trinity'
   }
 );
 
-my %globalDep;
-foreach my $step (@steps) {
-  $globalDep{$step->{'name'}} = {};
-}
-
-my %groupDone;
 
 main();
 
@@ -197,131 +192,108 @@ sub main {
 
   SubmitToCluster::initPipeline($workDirectory);
 
-  foreach my $step (@steps) {
+  for (my $i = $startStep; $i <= $endStep; $i++) {
+    my $step = $steps[$i - 1];
     my $stepName = $step->{'name'};
     my $rSub_step = \&$stepName;
-    my $stepLoop = $step->{'loop'};
+    $step->{'jobIds'} = ();
 
-    if ($stepLoop eq 'sample') {
-      
-    } elsif ($stepLoop eq 'global') {
-      my $jobIdVar = &$rSub_step($step, \%cfg, $rHoAoH_sampleInfo);
-      $globalDep{$rSub_step}->{'global'} = $jobIdVar;
+    if ($step->{'loop'} eq 'sample') {
+      foreach my $sample (keys %$rHoAoH_sampleInfo) {
+        &$rSub_step(\%cfg, $step, $workDirectory, $sample);
+      }
+    } else {
+      &$rSub_step(\%cfg, $step, $workDirectory);
     }
   }
 }
 
-sub normalization {
-  my $depends = shift;
-  my $rH_cfg = shift;
+sub getStepParent {
+  my $stepParentName = shift;
 
-  my $rO_job = Trinity::normalize_by_kmer_coverage($rH_cfg);
-  SubmitToCluster::printSubmitCmd($rH_cfg, "normalization", undef, 'NORMALIZATION', undef, undef, $rO_job);
+  my $stepParent = undef;
+  if (defined($stepParentName)) {
+    foreach my $step (@steps) {
+      if ($step->{'name'} eq $stepParentName) {
+        $stepParent = $step;
+      }
+    }
+  }
+  return $stepParent;
 }
 
-sub rnaSeqDeNovoAssembly {
-  my $depends = shift;
+sub submitJob {
   my $rH_cfg = shift;
+  my $step = shift;
+  my $sample = shift;
+  my $rO_job = shift;
 
-  my $rO_job = Trinity::trinity($rH_cfg);
-  SubmitToCluster::printSubmitCmd($rH_cfg, "deNovoAssembly_trinity_no_butterfly", undef, 'TRINITY_NO_BUTTERFLY', undef, undef, $rO_job);
+  my $stepName = $step->{'name'};
+  my $stepLoop = $step->{'loop'};
+  my $jobIdPrefix = uc($stepName);
+  my $jobIds = $jobIdPrefix . "_JOB_IDS";
+  if (defined $sample) {
+    $jobIdPrefix .= "_" . $sample;
+  }
 
+  my $dependencies = "";
+
+  my $stepParentName = $step->{'parent'};
+  my $stepParent = getStepParent($stepParentName);
+  if (defined($stepParent)) {
+#    if ($stepParent->{'loop'} eq 'global') {
+#      $dependencies = $stepParent->{'globalJobId'};
+#    } elsif ($stepLoop eq 'global') {
+#      $dependencies = $stepParent->{'globalJobId'};
+#    }
+#
+#    my $stepParentJobId = $stepParent->{$sample . 'JobId'};
+#    if (defined($stepParentJobIdPrefix)) {
+#      my $stepParentLoop = $stepParent->{'loop'};
+#      $dependencies = "\$" . $stepParentJobIdPrefix . "_JOB_ID";
+#      if ($stepParentLoop eq 'sample') {
+#        $dependencies .= "S";
+#      }
+#    }
+    $dependencies = join (":", map {"\$" . $_} @{$stepParent->{'jobIds'}});
+  }
+
+  my $jobId = SubmitToCluster::printSubmitCmd($rH_cfg, $stepName, undef, $jobIdPrefix, $dependencies, $sample, $rO_job);
+
+#  if (defined $sample) {
+#    print "$jobIds=\$$jobIds:\$$jobId\n\n";
+#    $step->{$sample . 'JobId'} = $jobId;
+#  } else {
+#    $step->{'globalJobId'} = $jobId;
+#  }
+
+  push (@{$step->{'jobIds'}}, $jobId);
+}
+
+sub normalization {
+  my $rH_cfg = shift;
+  my $step = shift;
+  my $workDirectory = shift;
+
+  my $rO_job = Trinity::normalize_by_kmer_coverage($rH_cfg, $workDirectory);
+  submitJob($rH_cfg, $step, undef, $rO_job);
+}
+
+sub trinity {
+  my $rH_cfg = shift;
+  my $step = shift;
+  my $workDirectory = shift;
+
+  my $rO_job = Trinity::trinity($rH_cfg, $workDirectory);
+  submitJob($rH_cfg, $step, undef, $rO_job);
 }
 
 sub abundance {
-  my $depends = shift;
   my $rH_cfg = shift;
+  my $step = shift;
+  my $workDirectory = shift;
+  my $sample = shift;
 
-  my $rO_job = Trinity::abundance($rH_cfg, "$workDirectory/results/assembly/Trinity.fasta", "rsem", $leftList, $rightList);
-  SubmitToCluster::printSubmitCmd($rH_cfg, "abundance_rsem", undef, 'ABUNDANCE_RSEM', undef, undef, $rO_job);
-}
-
-
-sub deNovoAssembly_old {
-  my $depends            = shift;
-  my $rH_cfg             = shift;
-  my $sampleName         = shift;
-  my $rAoH_sampleLanes   = shift;
-  my $rHoH_groupInfo     = shift;
-  my $rH_aliasSampleInfo = shift;
-  my $jobDependency      = undef;
-  my $group              = $rH_aliasSampleInfo->{$sampleName}{'group_name'};
-  if ($depends > 0) {
-    $jobDependency = '$GROUP_JOB_IDS';
-  }
-
-
-  # Chrysalis
-  #---------------
-  for my $rH_laneInfo (@$rAoH_sampleLanes) {
-
-      #next if the one sample of the group is already done
-      next if ( exists $groupDone{$group} );
-      print "if [ ! -d " . $group . "/output_jobs ] ; then mkdir -p " . $group . "/output_jobs ; fi\n";
-      print "if [ ! -d assembly/" . $group . "/output_jobs ]; then  mkdir -p assembly/" . $group . " ; fi\n";
-      
-      print "CHRYSALIS_JOB_IDS=\"\"\n";
-
-      my $rH_chrysalisDetails = Trinity::chrysalis( $rH_cfg, $group, $rH_laneInfo, $rHoH_groupInfo->{$group}->{'left'} , $rHoH_groupInfo->{$group}->{'right'}); 
-      $groupDone{$group} = 1;
-      my $chrysalisJobId = undef;
-
-      if ( length( $rH_chrysalisDetails->{'command'} ) > 0 ) {
-          $chrysalisJobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "trinity", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'CHRYSALIS', $jobDependency, $group, $rH_chrysalisDetails->{'command'} );
-          $chrysalisJobId = '$' . $chrysalisJobId;
-          print 'CHRYSALIS_JOB_IDS=${CHRYSALIS_JOB_IDS}' . LoadConfig::getParam( $rH_cfg, 'default', 'clusterDependencySep' ) . $chrysalisJobId . "\n\n";
-          print "GROUP_JOB_IDS=\"\"\n";
-      }
-
-      # Split Chrysalis file
-      #---------------------------
-      print "SPLITCHRYS_JOB_IDS=\"\"\n";
-      my $rH_splitChrysalisDetails = SplitFile::splitButterfly( $rH_cfg, $group, $rH_laneInfo );
-      my $splitChrysalisJobId = undef;
-      if ( length( $rH_splitChrysalisDetails->{'command'} ) > 0 ) {
-          $jobDependency = '$CHRYSALIS_JOB_IDS';
-          $splitChrysalisJobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "splitchrysalis", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'SPLITCHRYSALIS', $jobDependency, $group, $rH_splitChrysalisDetails->{'command'} );
-          $splitChrysalisJobId = '$' . $splitChrysalisJobId;
-          print 'SPLITCHRYS_JOB_IDS=${SPLITCHRYS_JOB_IDS}' . LoadConfig::getParam( $rH_cfg, 'default', 'clusterDependencySep' ) . $splitChrysalisJobId . "\n\n";
-      }
-
-      #ButterFly
-      #----------
-      # This puts the files names in the @Files array (with a 4 digits padding)
-      my @files;
-      my $nbChunks = LoadConfig::getParam( $rH_cfg, 'butterfly', 'chunks');
-      for ( my $i = 0 ; $i < $nbChunks ; $i++ ) {
-          push( @files, 'chunk.' . sprintf( "%04d", $i ) . '.txt') ;
-      }
-
-      print "BUTTERFLY_JOB_IDS=\"\"\n";
-
-      foreach my $file (@files) {
-          my $rH_butterflyDetails = Trinity::butterfly( $rH_cfg, $group, $rH_laneInfo, $file );
-          my $butterflyJobId = undef;
-          if ( length( $rH_splitChrysalisDetails->{'command'} ) > 0 ) {
-              $jobDependency = '$SPLITCHRYS_JOB_IDS';
-              $butterflyJobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "butterfly", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . '_'. basename($file), 'BUTTERFLY', $jobDependency, $group, $rH_butterflyDetails->{'command'} );
-              $butterflyJobId = '$' . $butterflyJobId;
-              print 'BUTTERFLY_JOB_IDS=${BUTTERFLY_JOB_IDS}' . LoadConfig::getParam( $rH_cfg, 'default', 'clusterDependencySep' ) . $butterflyJobId . "\n\n";
-
-          }
-
-      }
-
-      # Concatenate files and create gft
-      #-----------------------------------
-      print "CONCAT_JOB_IDS=\"\"\n";
-      my $rH_concatDetails = Trinity::concatFastaCreateGtf( $rH_cfg, $group, $rH_laneInfo );
-      my $concatJobId = undef;
-      if ( length( $rH_splitChrysalisDetails->{'command'} ) > 0 ) {
-          $jobDependency = '$BUTTERFLY_JOB_IDS';
-          $concatJobId = SubmitToCluster::printSubmitCmd( $rH_cfg, "concat", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'CONCAT', $jobDependency, $group, $rH_concatDetails->{'command'} );
-          $concatJobId = '$' . $concatJobId;
-          print 'CONCAT_JOB_IDS=${CONCAT_JOB_IDS}' . LoadConfig::getParam( $rH_cfg, 'default', 'clusterDependencySep' ) . $concatJobId . "\n\n";
-
-      }
-
-  }
-
+  my $rO_job = Trinity::abundance($rH_cfg, $workDirectory, $sample);
+  submitJob($rH_cfg, $step, $sample, $rO_job);
 }
