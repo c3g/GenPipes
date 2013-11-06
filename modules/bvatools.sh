@@ -4,8 +4,8 @@
 # BVATools
 #
 
-SOFTWARE=bvatools  ## TO BE MODIFIED WITH e.g. blast, hmmer, samtools, etc.
-VERSION=1.0
+SOFTWARE=bvatools
+VERSION=1.1
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/$SOFTWARE
 INSTALL_DOWNLOAD=$INSTALL_PATH/tmp
 cd $MUGQIC_INSTALL_HOME/archive
