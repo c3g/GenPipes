@@ -37,6 +37,7 @@ use warnings;
 
 # Dependencies
 #-----------------------
+use Job;
 
 # SUB
 #-----------------------
@@ -81,7 +82,7 @@ sub mpileupBuilder {
   my $regionCmd = ' ';
   if (defined($seqName)) {
     $regionCmd =' -r '.$seqName;
-     my $outputBCF = $outputDir.$sampleName.'.'.$seqName.'.bcf'; 
+    $outputBCF = $outputDir.$sampleName.'.'.$seqName.'.bcf'; 
   }
 
   my $ro_job = new Job();
