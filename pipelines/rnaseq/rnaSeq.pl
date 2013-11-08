@@ -64,6 +64,7 @@ use Wiggle;
 use HtseqCount;
 use DiffExpression;
 use GqSeqUtils;
+use Version;
 
 #--------------------
 
@@ -107,6 +108,7 @@ my $readSetSheet;
 &main();
 
 sub printUsage {
+  print "Version: ".$Version::version."\n";
   print "\nUsage: perl ".$0." \n";
   print "\t-c  config file\n";
   print "\t-s  start step, inclusive\n";

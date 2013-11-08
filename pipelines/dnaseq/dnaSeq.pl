@@ -50,7 +50,6 @@ BEGIN{
 use Getopt::Std;
 use Cwd;
 use POSIX;
-use Cwd;
 
 use BWA;
 use GATK;
@@ -64,6 +63,7 @@ use SnpEff;
 use SubmitToCluster;
 use Trimmomatic;
 use Tools;
+use Version;
 use VCFtools;
 use Metrics;
 use GqSeqUtils;
@@ -110,6 +110,7 @@ my $workDirectory = getcwd();
 &main();
 
 sub printUsage {
+  print "Version: ".$Version::version."\n";
   print "\nUsage: perl ".$0." -c config.ini -s start -e end -n SampleSheet.csv\n";
   print "\t-c  config file\n";
   print "\t-s  start step, inclusive\n";
