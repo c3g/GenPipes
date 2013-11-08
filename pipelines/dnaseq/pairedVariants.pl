@@ -145,7 +145,7 @@ sub snpAndIndelBCF {
   my $sampleName = $rH_samplePair->{'sample'};
   my $normalBam = 'alignment/'.$rH_samplePair->{'normal'}.'/'.$rH_samplePair->{'normal'}.'.sorted.dup.recal.bam';
   my $tumorBam = 'alignment/'.$rH_samplePair->{'tumor'}.'/'.$rH_samplePair->{'tumor'}.'.sorted.dup.recal.bam';
-  my $outputDir = LoadConfig::getParam($rH_cfg, "mpileupPaired", 'sampleOutputRoot') . $sampleName."/rawBCF/";
+  my $outputDir = 'pairedVariants/' . $sampleName."/rawBCF/";
 
   print 'mkdir -p '.$outputDir."\n";
   print "MPILEUP_JOB_IDS=\"\"\n";
@@ -167,7 +167,7 @@ sub snpAndIndelBCF {
           print 'MPILEUP_JOB_IDS=${MPILEUP_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$rO_job->getCommandJobId(0)."\n";
         }
       }
-    } 
+    }
   }
   else {
     my $rO_job = SAMtools::mpileupPaired($rH_cfg, $sampleName, $normalBam, $tumorBam, undef, $outputDir);
@@ -180,7 +180,7 @@ sub snpAndIndelBCF {
       print 'MPILEUP_JOB_IDS=${MPILEUP_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$rO_job->getCommandJobId(0)."\n";
     }
   }
-  
+
   return $jobId;
 }
 
@@ -242,33 +242,23 @@ sub mergeFilterBCF {
   my $rH_samplePair = shift;
   my $rAoH_seqDictionary = shift;
 
-
   my $jobDependency = undef;
   my $parentStep = $steps[$stepId]->{'parentStep'};
   if(defined($globalDep{$parentStep}->{$rH_samplePair->{'sample'}})) {
     $jobDependency = $globalDep{$parentStep}->{$rH_samplePair->{'sample'}};
   }
 
-  my $snvWindow = LoadConfig::getParam($rH_cfg, 'mpileup', 'snvCallingWindow');
+  my $nbJobs = LoadConfig::getParam( $rH_cfg, 'mpileup', 'approxNbJobs' );
+  my $rA_regions = generateApproximateWindows($nbJobs, $rAoH_seqDictionary);
 
   my $sampleName = $rH_samplePair->{'sample'};
-  my $bcfDir = LoadConfig::getParam($rH_cfg, "mergeFilterBCF", 'sampleOutputRoot') . $sampleName."/rawBCF/";
-  my $outputDir = LoadConfig::getParam($rH_cfg, "mergeFilterBCF", 'sampleOutputRoot') . $sampleName.'/'; 
+  my $bcfDir = 'pairedVariants/' . $sampleName."/rawBCF/";
+  my $outputDir = 'pairedVariants/' . $sampleName.'/'; 
 
-  my @seqNames;
-  if($snvWindow ne "") {
-    for my $rH_seqInfo (@$rAoH_seqDictionary) {
-      my $rA_regions = generateWindows($rH_seqInfo, $snvWindow);
-      push(@seqNames, @{$rA_regions});
-    }
+  my $rO_job = SAMtools::mergeFilterBCF($rH_cfg, '$sampleName', $bcfDir, $outputDir, $rA_regions);
+  if(!$rO_job->isUp2Date()) {
+    SubmitToCluster::printSubmitCmd($rH_cfg, "mergeFilterBCF", undef, 'MERGEBCF', $jobDependency, $sampleName, $rO_job);
   }
-  else {
-    for my $rH_seqInfo (@$rAoH_seqDictionary) {
-      push(@seqNames, $rH_seqInfo->{'name'});
-    }
-  }
-  my $rO_job = SAMtools::mergeFilterBCF($rH_cfg, $sampleName, $bcfDir, $outputDir, \@seqNames);
-  SubmitToCluster::printSubmitCmd($rH_cfg, "mergeFilterBCF", undef, 'MERGEBCF', $jobDependency, $sampleName, $rO_job);
   return $rO_job->getCommandJobId(0);
 }
 
@@ -285,13 +275,14 @@ sub filterNStretches {
   }
 
   my $sampleName = $rH_samplePair->{'sample'};
-  # Use mergeFilterBCF to make sure we have the right path
-  my $vcf = LoadConfig::getParam($rH_cfg, "mergeFilterBCF", 'sampleOutputRoot') . $sampleName.'/'.$sampleName.'.merged.flt.vcf';
-  my $vcfOutput = LoadConfig::getParam($rH_cfg, "filterNStretches", 'sampleOutputRoot') . $sampleName.'/'.$sampleName.'.merged.flt.Nfilter.vcf';
+  my $inputVCF = 'pairedVariants/'.$sampleName.'.merged.flt.vcf';
+  my $outputVCF = 'pairedVariants/'.$sampleName.'.merged.flt.NFiltered.vcf';
 
-  my $command = Tools::filterNStretches($rH_cfg, $sampleName, $vcf, $vcfOutput);
-  my $filterNJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "filterNStretches", undef, 'FILTERN', $jobDependency, $sampleName, $command);
-  return $filterNJobId;
+  my $rO_job = Tools::filterNStretches($rH_cfg, $sampleName, $inputVCF, $outputVCF);
+  if(!$rO_job->isUp2Date()) {
+    SubmitToCluster::printSubmitCmd($rH_cfg, "filterNStretches", undef, 'FILTERN', $jobDependency, $sampleName, $rO_job);
+  }
+  return $rO_job->getCommandJobId(0);
 }
 
 sub flagMappability {
@@ -307,12 +298,15 @@ sub flagMappability {
   }
 
   my $sampleName = $rH_samplePair->{'sample'};
-  # Use mergeFilterBCF to make sure we have the right path
-  my $vcf = LoadConfig::getParam($rH_cfg, "filterNStretches", 'sampleOutputRoot') . $sampleName.'/'.$sampleName.'.merged.flt.Nfilter.vcf';
-  my $vcfOutput = LoadConfig::getParam($rH_cfg, "flagMappability", 'sampleOutputRoot') . $sampleName.'/'.$sampleName.'.merged.flt.Nfilter.mil.vcf';
+  my $inputVCF = 'pairedVariants/'.$sampleName.'.merged.flt.NFiltered.vcf';
+  my $outputVCF = 'pairedVariants/'.$sampleName.'.merged.flt.mil.vcf';
 
-  my $command = VCFtools::annotateMappability($rH_cfg, $vcf, $vcfOutput);
-  my $milJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "flagMappability", undef, 'MAPPABILITY', $jobDependency, $sampleName, $command);
+  # Use mergeFilterBCF to make sure we have the right path
+  my $rO_job = VCFtools::annotateMappability($rH_cfg, $inputVCF, $outputVCF);
+  if(!$rO_job->isUp2Date()) {
+    SubmitToCluster::printSubmitCmd($rH_cfg, "flagMappability", undef, 'MAPPABILITY', $jobDependency, $sampleName, $rO_job);
+  }
+  return $rO_job->getCommandJobId(0);
 }
 
 sub snpIDAnnotation {
@@ -328,12 +322,14 @@ sub snpIDAnnotation {
   }
 
   my $sampleName = $rH_samplePair->{'sample'};
-  # Use mergeFilterBCF to make sure we have the right path
-  my $vcf = LoadConfig::getParam($rH_cfg, "flagMappability", 'sampleOutputRoot') . $sampleName.'/'.$sampleName.'.merged.flt.Nfilter.mil.vcf';
-  my $vcfOutput = LoadConfig::getParam($rH_cfg, "snpIDAnnotation", 'sampleOutputRoot') . $sampleName.'/'.$sampleName.'.merged.flt.Nfilter.mil.snpid.vcf';
+  my $inputVCF = 'pairedVariants/'.$sampleName.'.merged.flt.mil.vcf';
+  my $vcfOutput = 'pairedVariants/'.$sampleName.'.merged.flt.mil.snpId.vcf';
+  my $rO_job = SnpEff::annotateDbSnp($rH_cfg, $inputVCF, $vcfOutput);
+  if(!$rO_job->isUp2Date()) {
+    SubmitToCluster::printSubmitCmd($rH_cfg, "snpIDAnnotation", undef, 'SNPID', $jobDependency, $sampleName, $rO_job);
+  }
 
-  my $command = SnpEff::annotateDbSnp($rH_cfg, $vcf, $vcfOutput);
-  my $snpEffJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "snpIDAnnotation", undef, 'SNPID', $jobDependency, $sampleName, $command);
+  return $rO_job->getCommandJobId(0);
 }
 
 sub snpEffect {
@@ -349,12 +345,16 @@ sub snpEffect {
   }
 
   my $sampleName = $rH_samplePair->{'sample'};
-  # Use mergeFilterBCF to make sure we have the right path
-  my $vcf = LoadConfig::getParam($rH_cfg, "snpIDAnnotation", 'sampleOutputRoot') . $sampleName.'/'.$sampleName.'.merged.flt.Nfilter.mil.snpid.vcf';
-  my $vcfOutput = LoadConfig::getParam($rH_cfg, "snpEffect", 'sampleOutputRoot') . $sampleName.'/'.$sampleName.'.merged.flt.Nfilter.mil.snpid.snpeff.vcf';
+  my $inputVCF = 'pairedVariants/'.$sampleName.'.merged.flt.mil.snpId.vcf';
+  my $vcfOutput = 'pairedVariants/'.$sampleName.'.merged.flt.mil.snpId.snpeff.vcf';
 
-  my $command = SnpEff::computeEffects($rH_cfg, $vcf, $vcfOutput);
-  my $snpEffJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "snpEffect", undef, 'SNPEFF', $jobDependency, $sampleName, $command);
+
+  my $rO_job = SnpEff::computeEffects($rH_cfg, $inputVCF, $vcfOutput, 1);
+  if(!$rO_job->isUp2Date()) {
+    SubmitToCluster::printSubmitCmd($rH_cfg, "snpEffect", undef, 'SNPEFF', $jobDependency, $sampleName, $rO_job);
+  }
+
+  return $rO_job->getCommandJobId(0);
 }
 
 sub dbNSFPAnnotation {
@@ -370,12 +370,14 @@ sub dbNSFPAnnotation {
   }
 
   my $sampleName = $rH_samplePair->{'sample'};
-  # Use mergeFilterBCF to make sure we have the right path
-  my $vcf = LoadConfig::getParam($rH_cfg, "snpEffect", 'sampleOutputRoot') . $sampleName.'/'.$sampleName.'.merged.flt.Nfilter.mil.snpid.snpeff.vcf';
-  my $vcfOutput = LoadConfig::getParam($rH_cfg, "dbNSFPAnnotation", 'sampleOutputRoot') . $sampleName.'/'.$sampleName.'.merged.flt.Nfilter.mil.snpid.snpeff.dbnsfp.vcf';
+  my $inputVCF = 'pairedVariants/'.$sampleName.'.merged.flt.mil.snpId.snpeff.vcf';
+  my $vcfOutput = 'pairedVariants/'.$sampleName.'.merged.flt.mil.snpId.snpeff.dbnsfp.vcf';
+  my $rO_job = SnpEff::annotateDbNSFP($rH_cfg, $inputVCF, $vcfOutput);
+  if(!$rO_job->isUp2Date()) {
+    SubmitToCluster::printSubmitCmd($rH_cfg, "dbNSFPAnnotation", undef, 'DBNSFP', $jobDependency, 'allSamples', $rO_job);
+  }
 
-  my $command = SnpEff::annotateDbNSFP($rH_cfg, $vcf, $vcfOutput);
-  my $snpEffJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "dbNSFPAnnotation", undef, 'DBNSFP', $jobDependency, $sampleName, $command);
+  return $rO_job->getCommandJobId(0);
 }
 
 sub DNAC {
@@ -393,7 +395,7 @@ sub DNAC {
   my $sampleName = $rH_samplePair->{'sample'};
   my $normalBam = $rH_samplePair->{'normal'}.'/'.$rH_samplePair->{'normal'}.'.sorted.dup.bam';
   my $tumorBam = $rH_samplePair->{'tumor'}.'/'.$rH_samplePair->{'tumor'}.'.sorted.dup.bam';
-  my $outputDir = LoadConfig::getParam($rH_cfg, "DNAC", 'sampleOutputRoot') . $sampleName.'/DNAC/';
+  my $outputDir = 'pairedVariants/' . $sampleName.'/DNAC/';
   
   print 'mkdir -p '.$outputDir."\n";
   print "DNAC_JOB_IDS=\"\"\n";
@@ -442,7 +444,7 @@ sub Breakdancer {
   my $sampleName = $rH_samplePair->{'sample'};
   my $normalBam = $rH_samplePair->{'normal'}.'/'.$rH_samplePair->{'normal'}.'.sorted.dup.bam';
   my $tumorBam = $rH_samplePair->{'tumor'}.'/'.$rH_samplePair->{'tumor'}.'.sorted.dup.bam';
-  my $outputDir = LoadConfig::getParam($rH_cfg, "Breakdancer", 'sampleOutputRoot') . $sampleName.'/breakdancer/';
+  my $outputDir = 'pairedVariants/' . $sampleName.'/breakdancer/';
 
   print 'mkdir -p '.$outputDir."\n";
   print "BRD_JOB_IDS=\"\"\n";
@@ -500,7 +502,7 @@ sub Pindel {
   my $normalMetrics = $rH_samplePair->{'normal'}.'/'.$rH_samplePair->{'normal'}.'.sorted.dup.all.metrics.insert_size_metrics';
   my $tumorBam = $rH_samplePair->{'tumor'}.'/'.$rH_samplePair->{'tumor'}.'.sorted.dup.bam';
   my $tumorMetrics = $rH_samplePair->{'tumor'}.'/'.$rH_samplePair->{'tumor'}.'.sorted.dup.all.metrics.insert_size_metrics';
-  my $outputDir = LoadConfig::getParam($rH_cfg, "Pindel", 'sampleOutputRoot') . $sampleName.'/pindel/';
+  my $outputDir = 'pairedVariants/' . $sampleName.'/pindel/';
 
   print 'mkdir -p '.$outputDir."\n";
   print "PI_JOB_IDS=\"\"\n";
@@ -516,7 +518,7 @@ sub Pindel {
   for my $rH_seqInfo (@$rAoH_seqDictionary) {
     my $seqName = $rH_seqInfo->{'name'};
     my $chrFile = LoadConfig::getParam($rH_cfg, "Pindel", 'referenceGenomeByChromosome') .'/chr' .$seqName.'.fa';
-    my $Brdresfile = LoadConfig::getParam($rH_cfg, "Breakdancer", 'sampleOutputRoot') . $sampleName.'/breakdancer/'.$sampleName.'.brd.'.$seqName.'ctx';
+    my $Brdresfile = 'pairedVariants/' . $sampleName.'/breakdancer/'.$sampleName.'.brd.'.$seqName.'ctx';
     my $outputPrefix = $outputDir .$sampleName .'.' .$seqName;
     my $outputTest= $outputDir .$sampleName ;
     my $BrdOption = '' ;
@@ -561,7 +563,7 @@ sub ControlFreec {
   my $sampleName = $rH_samplePair->{'sample'};
   my $normalBam = $rH_samplePair->{'normal'}.'/'.$rH_samplePair->{'normal'}.'.'.LoadConfig::getParam($rH_cfg, "ControlFreec", 'inputExtension');
   my $tumorBam = $rH_samplePair->{'tumor'}.'/'.$rH_samplePair->{'tumor'}.'.'.LoadConfig::getParam($rH_cfg, "ControlFreec", 'inputExtension');
-  my $outputDir = LoadConfig::getParam($rH_cfg, "ControlFreec", 'sampleOutputRoot') . $sampleName.'/controlFREEC/';
+  my $outputDir = 'pairedVariants/' . $sampleName.'/controlFREEC/';
   my $sampleConfigFile = $outputDir.'/'.$sampleName.'.freec.cfg';
   
 
