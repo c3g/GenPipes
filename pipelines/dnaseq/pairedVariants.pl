@@ -255,7 +255,7 @@ sub mergeFilterBCF {
   my $bcfDir = 'pairedVariants/' . $sampleName."/rawBCF/";
   my $outputDir = 'pairedVariants/' . $sampleName.'/'; 
 
-  my $rO_job = SAMtools::mergeFilterBCF($rH_cfg, '$sampleName', $bcfDir, $outputDir, $rA_regions);
+  my $rO_job = SAMtools::mergeFilterBCF($rH_cfg, $sampleName, $bcfDir, $outputDir, $rA_regions);
   if(!$rO_job->isUp2Date()) {
     SubmitToCluster::printSubmitCmd($rH_cfg, "mergeFilterBCF", undef, 'MERGEBCF', $jobDependency, $sampleName, $rO_job);
   }
@@ -275,8 +275,8 @@ sub filterNStretches {
   }
 
   my $sampleName = $rH_samplePair->{'sample'};
-  my $inputVCF = 'pairedVariants/'.$sampleName.'.merged.flt.vcf';
-  my $outputVCF = 'pairedVariants/'.$sampleName.'.merged.flt.NFiltered.vcf';
+  my $inputVCF = 'pairedVariants/' . $sampleName.'/'.$sampleName.'.merged.flt.vcf';
+  my $outputVCF = 'pairedVariants/' . $sampleName.'/'.$sampleName.'.merged.flt.NFiltered.vcf';
 
   my $rO_job = Tools::filterNStretches($rH_cfg, $sampleName, $inputVCF, $outputVCF);
   if(!$rO_job->isUp2Date()) {
@@ -298,8 +298,8 @@ sub flagMappability {
   }
 
   my $sampleName = $rH_samplePair->{'sample'};
-  my $inputVCF = 'pairedVariants/'.$sampleName.'.merged.flt.NFiltered.vcf';
-  my $outputVCF = 'pairedVariants/'.$sampleName.'.merged.flt.mil.vcf';
+  my $inputVCF = 'pairedVariants/' . $sampleName.'/'.$sampleName.'.merged.flt.NFiltered.vcf';
+  my $outputVCF = 'pairedVariants/' . $sampleName.'/'.$sampleName.'.merged.flt.mil.vcf';
 
   # Use mergeFilterBCF to make sure we have the right path
   my $rO_job = VCFtools::annotateMappability($rH_cfg, $inputVCF, $outputVCF);
@@ -322,8 +322,8 @@ sub snpIDAnnotation {
   }
 
   my $sampleName = $rH_samplePair->{'sample'};
-  my $inputVCF = 'pairedVariants/'.$sampleName.'.merged.flt.mil.vcf';
-  my $vcfOutput = 'pairedVariants/'.$sampleName.'.merged.flt.mil.snpId.vcf';
+  my $inputVCF = 'pairedVariants/' . $sampleName.'/'.$sampleName.'.merged.flt.mil.vcf';
+  my $vcfOutput = 'pairedVariants/' . $sampleName.'/'.$sampleName.'.merged.flt.mil.snpId.vcf';
   my $rO_job = SnpEff::annotateDbSnp($rH_cfg, $inputVCF, $vcfOutput);
   if(!$rO_job->isUp2Date()) {
     SubmitToCluster::printSubmitCmd($rH_cfg, "snpIDAnnotation", undef, 'SNPID', $jobDependency, $sampleName, $rO_job);
@@ -345,8 +345,8 @@ sub snpEffect {
   }
 
   my $sampleName = $rH_samplePair->{'sample'};
-  my $inputVCF = 'pairedVariants/'.$sampleName.'.merged.flt.mil.snpId.vcf';
-  my $vcfOutput = 'pairedVariants/'.$sampleName.'.merged.flt.mil.snpId.snpeff.vcf';
+  my $inputVCF = 'pairedVariants/' . $sampleName.'/'.$sampleName.'.merged.flt.mil.snpId.vcf';
+  my $vcfOutput = 'pairedVariants/' . $sampleName.'/'.$sampleName.'.merged.flt.mil.snpId.snpeff.vcf';
 
 
   my $rO_job = SnpEff::computeEffects($rH_cfg, $inputVCF, $vcfOutput, 1);
@@ -370,8 +370,8 @@ sub dbNSFPAnnotation {
   }
 
   my $sampleName = $rH_samplePair->{'sample'};
-  my $inputVCF = 'pairedVariants/'.$sampleName.'.merged.flt.mil.snpId.snpeff.vcf';
-  my $vcfOutput = 'pairedVariants/'.$sampleName.'.merged.flt.mil.snpId.snpeff.dbnsfp.vcf';
+  my $inputVCF = 'pairedVariants/' . $sampleName.'/'.$sampleName.'.merged.flt.mil.snpId.snpeff.vcf';
+  my $vcfOutput = 'pairedVariants/' . $sampleName.'/'.$sampleName.'.merged.flt.mil.snpId.snpeff.dbnsfp.vcf';
   my $rO_job = SnpEff::annotateDbNSFP($rH_cfg, $inputVCF, $vcfOutput);
   if(!$rO_job->isUp2Date()) {
     SubmitToCluster::printSubmitCmd($rH_cfg, "dbNSFPAnnotation", undef, 'DBNSFP', $jobDependency, 'allSamples', $rO_job);
