@@ -52,24 +52,45 @@ use constant {
 };
 
 sub trim {
-    my $rH_cfg      = shift;
-    my $sampleName  = shift;
-    my $rH_laneInfo = shift;
-    my $outputDir   = shift;
+  my $rH_cfg      = shift;
+  my $sampleName  = shift;
+  my $rH_laneInfo = shift;
+  my $outputDir   = shift;
 
-    my $ro_job;
+  my $ro_job;
 
-    if ( $rH_laneInfo->{'runType'} eq "SINGLE_END" ) {
-        $ro_job = singleCommand( $rH_cfg, $sampleName, $rH_laneInfo, $outputDir );
-    }
-    elsif ( $rH_laneInfo->{'runType'} eq "PAIRED_END" ) {
-        $ro_job = pairCommand( $rH_cfg, $sampleName, $rH_laneInfo, $outputDir );
+  my $rawReadDir    = LoadConfig::getParam($rH_cfg, 'trim','rawReadDir');
+  my $inputFastqPair1Name = $rawReadDir .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' .$rH_laneInfo->{'read1File'};
+  my $inputFastqPair2Name = $rawReadDir .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' .$rH_laneInfo->{'read2File'};
+
+  my $skipTrimming = LoadConfig::getParam($rH_cfg, 'trim','skip');
+
+  if ( $rH_laneInfo->{'runType'} eq "SINGLE_END" ) {
+    if(defined($skipTrimming) && $skipTrimming eq '1') {
+      $ro_job = new Job();
+      $ro_job->setOutputFileHash(SINGLE1_OUTPUT => $inputFastqPair1Name);
+      $ro_job->setUp2Date(1);
     }
     else {
-        die "Unknown runType: " . $rH_laneInfo->{' runType '} . "\n";
+      $ro_job = singleCommand( $rH_cfg, $sampleName, $rH_laneInfo, $outputDir );
     }
+  }
+  elsif ( $rH_laneInfo->{'runType'} eq "PAIRED_END" ) {
+    if(defined($skipTrimming) && $skipTrimming eq '1') {
+      $ro_job = new Job();
+      $ro_job->setOutputFileHash(SINGLE1_OUTPUT => $inputFastqPair1Name);
+      $ro_job->setOutputFileHash({PAIR1_OUTPUT => $inputFastqPair1Name, PAIR2_OUTPUT => $inputFastqPair2Name});
+      $ro_job->setUp2Date(1);
+    }
+    else {
+      $ro_job = pairCommand( $rH_cfg, $sampleName, $rH_laneInfo, $outputDir );
+    }
+  }
+  else {
+    die "Unknown runType: " . $rH_laneInfo->{' runType '} . "\n";
+  }
 
-    return $ro_job;
+  return $ro_job;
 }
 
 sub pairCommand {

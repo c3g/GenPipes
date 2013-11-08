@@ -88,7 +88,7 @@ push(@steps, {'name' => 'metricsLibrarySample', 'stepLoop' => 'experiment', 'par
 push(@steps, {'name' => 'snpAndIndelBCF', 'stepLoop' => 'experiment', 'parentStep' => 'recalibration'});
 push(@steps, {'name' => 'mergeFilterBCF', 'stepLoop' => 'experiment', 'parentStep' => 'snpAndIndelBCF'});
 push(@steps, {'name' => 'filterNStretches', 'stepLoop' => 'experiment', 'parentStep' => 'mergeFilterBCF'});
-push(@steps, {'name' => 'flagMappability', 'stepLoop' => 'experiment', 'parentStep' => 'mergeFilterBCF'});
+push(@steps, {'name' => 'flagMappability', 'stepLoop' => 'experiment', 'parentStep' => 'filterNStretches'});
 push(@steps, {'name' => 'snpIDAnnotation', 'stepLoop' => 'experiment', 'parentStep' => 'flagMappability'});
 push(@steps, {'name' => 'snpEffect', 'stepLoop' => 'experiment', 'parentStep' => 'snpIDAnnotation'});
 push(@steps, {'name' => 'dbNSFPAnnotation', 'stepLoop' => 'experiment', 'parentStep' => 'snpEffect'});
