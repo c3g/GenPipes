@@ -135,9 +135,14 @@ my @steps = (
     'parent' => 'normalization'
   },
   {
-    'name'   => 'abundance',
-    'loop'   => 'sample',
+    'name'   => 'rsemPrepareReference',
+    'loop'   => 'global',
     'parent' => 'trinity'
+  },
+  {
+    'name'   => 'rsem',
+    'loop'   => 'sample',
+    'parent' => 'rsemPrepareReference'
   }
 );
 
@@ -288,12 +293,21 @@ sub trinity {
   submitJob($rH_cfg, $step, undef, $rO_job);
 }
 
-sub abundance {
+sub rsemPrepareReference {
+  my $rH_cfg = shift;
+  my $step = shift;
+  my $workDirectory = shift;
+
+  my $rO_job = Trinity::rsemPrepareReference($rH_cfg, $workDirectory);
+  submitJob($rH_cfg, $step, undef, $rO_job);
+}
+
+sub rsem {
   my $rH_cfg = shift;
   my $step = shift;
   my $workDirectory = shift;
   my $sample = shift;
 
-  my $rO_job = Trinity::abundance($rH_cfg, $workDirectory, $sample);
+  my $rO_job = Trinity::rsem($rH_cfg, $workDirectory, $sample);
   submitJob($rH_cfg, $step, $sample, $rO_job);
 }

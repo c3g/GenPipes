@@ -89,8 +89,8 @@ sub normalize_by_kmer_coverage {
     my $rightList = "\$WORK_DIR/reads/right_pair2.fastq.gz.list";
 
     # Create left/right lists of fastq.gz files
-    $command .= "find \$WORK_DIR/reads/ -name *pair1.fastq.gz > $leftList; ";
-    $command .= "find \$WORK_DIR/reads/ -name *pair2.fastq.gz > $rightList; ";
+    $command .= "find \$WORK_DIR/reads/ -name *pair1*.fastq.gz > $leftList; ";
+    $command .= "find \$WORK_DIR/reads/ -name *pair2*.fastq.gz > $rightList; ";
 
     # Load modules and run Trinity normalization
     $command .= 'module load ' . LoadConfig::getParam($rH_cfg, 'trinity', 'moduleVersion.trinity') . '; ';
@@ -139,7 +139,7 @@ sub trinity {
       --left  $leftList.normalized_K25_C30_pctSD100.fq \\
       --right $rightList.normalized_K25_C30_pctSD100.fq \\
       --SS_lib_type RF \\
-      --output \$WORK_DIR/trinity \\
+      --output \$WORK_DIR/trinity_out_dir \\
       --CPU $CPU \\
       --min_contig_length 200 \\
       --jaccard_clip \\
@@ -175,8 +175,29 @@ sub splitButterfly {
   return $rO_job;
 }
 
+sub rsemPrepareReference {
+  my $rH_cfg = shift;
+  my $workDirectory = shift;
 
-sub abundance {
+  my $rO_job = new Job();
+
+  if (!$rO_job->isUp2Date()) {
+    my $command;
+
+    $command .= 'module load ' . LoadConfig::getParam($rH_cfg, 'trinity', 'moduleVersion.trinity') . ' ' .
+      LoadConfig::getParam($rH_cfg, 'bowtie', 'moduleVersion.bowtie') . ' ' .
+      LoadConfig::getParam($rH_cfg, 'rsem', 'moduleVersion.rsem') . '; ';
+
+    $command .= "run_RSEM_align_n_estimate.pl \\
+      --transcripts \$WORK_DIR/trinity_out_dir/Trinity.fasta \\
+      --just_prep_reference ";
+
+    $rO_job->addCommand($command);
+  }
+  return $rO_job;
+}
+
+sub rsem {
   my $rH_cfg = shift;
   my $workDirectory = shift;
   my $sample = shift;
@@ -187,25 +208,21 @@ sub abundance {
     my $CPU = 4;
     my $command;
 
-    my $left  = "\$WORK_DIR/reads/$sample/run*/$sample.*.pair1.fastq.gz";
-    my $right = "\$WORK_DIR/reads/$sample/run*/$sample.*.pair2.fastq.gz";
+    my $left  = "\\`find \$WORK_DIR/reads -name $sample*pair1*.fastq.gz | paste -s -d,\\`";
+    my $right  = "\\`find \$WORK_DIR/reads -name $sample*pair2*.fastq.gz | paste -s -d,\\`";
 
     $command .= 'module load ' . LoadConfig::getParam($rH_cfg, 'trinity', 'moduleVersion.trinity') . ' ' .
       LoadConfig::getParam($rH_cfg, 'bowtie', 'moduleVersion.bowtie') . ' ' .
       LoadConfig::getParam($rH_cfg, 'rsem', 'moduleVersion.rsem') . '; ';
 
-    my $outputDirectory = "\$WORK_DIR/rsem/$sample";
-    my $transcripts = "$outputDirectory/Trinity.fasta";
-    $command .= "mkdir -p $outputDirectory; ";
-    $command .= "ln -s \$WORK_DIR/trinity/Trinity.fasta $transcripts; ";
-
     $command .= "run_RSEM_align_n_estimate.pl \\
-      --transcripts $transcripts \\
+      --transcripts \$WORK_DIR/trinity_out_dir/Trinity.fasta \\
       --left $left \\
       --right $right \\
       --seqType fq \\
       --SS_lib_type RF \\
-      --output_dir $outputDirectory \\
+      --prefix $sample \\
+      --output_dir \$WORK_DIR/rsem/$sample \\
       --thread_count $CPU";
 
     $rO_job->addCommand($command);
