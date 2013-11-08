@@ -6,7 +6,7 @@
 VERSION="3.0.1"
 
 # DEP_PATH is a URL or path to file with additional packages to be installed
-DEP_PATH="http://bitbucket.org/mugqic/rpackages/raw/8e16c9322318a62ba74872504f0cef120803f1b7/DEPENDENCIES/modules_install_scripts/R_and_Bioconductor_packages.txt" 
+DEP_PATH="https://bitbucket.org/mugqic/mugqic_resources/raw/master/modules/R_and_Bioconductor_packages.txt" 
 
 # Download and compile and install
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/R/R-$VERSION # where to install.
