@@ -1,39 +1,50 @@
+#!/bin/sh
 
-###################
-################### RSEM (http://deweylab.biostat.wisc.edu/rsem/)
-###################
-VERSION="1.2.6"
-INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/rsem/
-mkdir -p $INSTALL_PATH
-cd  $INSTALL_PATH
+#
+# RSEM
+#
 
-# Download and extract
-wget http://deweylab.biostat.wisc.edu/rsem/src/rsem-$VERSION.tar.gz
-tar -xvf rsem-$VERSION.tar.gz
-rm rsem-$VERSION.tar.gz 
+SOFTWARE=rsem
+VERSION=1.2.6
+INSTALL_PATH=$MUGQIC_INSTALL_HOME_DEV/software/$SOFTWARE
+INSTALL_DOWNLOAD=$INSTALL_PATH/tmp
+mkdir -p $INSTALL_DOWNLOAD
+cd $INSTALL_DOWNLOAD
 
-# Compile
-cd rsem-$VERSION
-make -j8
+# Download, extract, build
+wget http://deweylab.biostat.wisc.edu/rsem/src/$SOFTWARE-$VERSION.tar.gz
+tar zxvf $SOFTWARE-$VERSION.tar.gz
+cd $SOFTWARE-$VERSION
+make
+
+# Add permissions and install software
+cd $INSTALL_DOWNLOAD
+chmod -R ug+rwX .
+mv -i $SOFTWARE-$VERSION $INSTALL_PATH
+mv -i $SOFTWARE-$VERSION.tar.gz $MUGQIC_INSTALL_HOME_DEV/archive
 
 # Module file
 echo "#%Module1.0
 proc ModulesHelp { } {
-       puts stderr \"\tMUGQIC - RSEM (RNA-Seq by Expectation-Maximization) \"
+       puts stderr \"\tMUGQIC - $SOFTWARE \" ;
 }
-module-whatis \"MUGQIC - RSEM \"
+module-whatis \"$SOFTWARE  \" ;
                       
-set             root               \$::env(MUGQIC_INSTALL_HOME)/software/rsem/rsem-$VERSION
-prepend-path    PATH               \$root
+set             root                \$::env(MUGQIC_INSTALL_HOME_DEV)/software/$SOFTWARE/$SOFTWARE-$VERSION ;
+prepend-path    PATH                \$root ;
 " > $VERSION
 
-# version file
+################################################################################
+# Everything below this line should be generic and not modified
+
+# Default module version file
 echo "#%Module1.0
-set ModulesVersion \"$VERSION\"
-" > .version
+set ModulesVersion \"$VERSION\"" > .version
 
-mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/rsem
-mv .version $VERSION $MUGQIC_INSTALL_HOME/modulefiles/mugqic/rsem/
+# Add permissions and install module
+mkdir -p $MUGQIC_INSTALL_HOME_DEV/modulefiles/mugqic_dev/$SOFTWARE
+chmod -R ug+rwX $VERSION .version
+mv $VERSION .version $MUGQIC_INSTALL_HOME_DEV/modulefiles/mugqic_dev/$SOFTWARE
 
-
-
+# Clean up temporary installation files if any
+rm -rf $INSTALL_DOWNLOAD

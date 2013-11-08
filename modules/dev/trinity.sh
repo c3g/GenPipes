@@ -1,45 +1,53 @@
+#!/bin/sh
 
-###################
-################### Trinity
-###################
+#
+# Trinity
+#
+
+SOFTWARE=trinity
 VERSION=2013_08_14
-INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/trinity/
+INSTALL_PATH=$MUGQIC_INSTALL_HOME_DEV/software/$SOFTWARE
 INSTALL_DOWNLOAD=$INSTALL_PATH/tmp
-mkdir -p $INSTALL_PATH/archive $INSTALL_DOWNLOAD
+mkdir -p $INSTALL_DOWNLOAD
 cd $INSTALL_DOWNLOAD
 
-# Download and extract
-wget http://sourceforge.net/projects/trinityrnaseq/files/trinityrnaseq_r$VERSION.tgz
-tar xzvf trinityrnaseq_r$VERSION.tgz
-
-# Compile
+# Download, extract, build
+#wget http://sourceforge.net/projects/trinityrnaseq/files/trinityrnaseq_r$VERSION.tgz
+tar zxvf trinityrnaseq_r$VERSION.tgz
 cd trinityrnaseq_r$VERSION
-make -j8
-cd ..
+make
 
-# Install
-mv trinityrnaseq_r$VERSION $INSTALL_PATH
-cd $INSTALL_PATH
-chmod -R g+w trinityrnaseq_r$VERSION
+# Add permissions and install software
+cd $INSTALL_DOWNLOAD
+chmod -R ug+rwX .
+mv -i trinityrnaseq_r$VERSION $INSTALL_PATH
+mv -i trinityrnaseq_r$VERSION.tgz $MUGQIC_INSTALL_HOME_DEV/archive
 
 # Module file
 echo "#%Module1.0
 proc ModulesHelp { } {
-       puts stderr \"\tMUGQIC - Trinity RNA assembler \"
+       puts stderr \"\tMUGQIC - $SOFTWARE \" ;
 }
-module-whatis \"MUGQIC - Trinity  \"
-            
-set             root         \$::env(MUGQIC_INSTALL_HOME)/software/trinity/trinityrnaseq_r$VERSION
-setenv          TRINITY_HOME \$root
-prepend-path    PATH         \$root
+module-whatis \"$SOFTWARE  \" ;
+                      
+set             root                \$::env(MUGQIC_INSTALL_HOME_DEV)/software/$SOFTWARE/trinityrnaseq_r$VERSION ;
+setenv          TRINITY_HOME        \$root ;
+prepend-path    PATH                \$root ;
+prepend-path    PATH                \$root/util ;
+prepend-path    PATH                \$root/util/RSEM_util ;
 " > $VERSION
 
-# Version file
-echo "#%Module1.0
-set ModulesVersion \"$VERSION\"
-" > .version
+################################################################################
+# Everything below this line should be generic and not modified
 
-mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/trinity
-mv .version $VERSION $MUGQIC_INSTALL_HOME/modulefiles/mugqic/trinity/
-mv $INSTALL_DOWNLOAD/trinityrnaseq_r$VERSION.tgz $INSTALL_PATH/archive/
+# Default module version file
+echo "#%Module1.0
+set ModulesVersion \"$VERSION\"" > .version
+
+# Add permissions and install module
+mkdir -p $MUGQIC_INSTALL_HOME_DEV/modulefiles/mugqic_dev/$SOFTWARE
+chmod -R ug+rwX $VERSION .version
+mv $VERSION .version $MUGQIC_INSTALL_HOME_DEV/modulefiles/mugqic_dev/$SOFTWARE
+
+# Clean up temporary installation files if any
 rm -rf $INSTALL_DOWNLOAD
