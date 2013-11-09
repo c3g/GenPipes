@@ -88,9 +88,9 @@ sub normalize_by_kmer_coverage {
     my $leftList = "\$WORK_DIR/reads/left_pair1.fastq.gz.list";
     my $rightList = "\$WORK_DIR/reads/right_pair2.fastq.gz.list";
 
-    # Create left/right lists of fastq.gz files
-    $command .= "find \$WORK_DIR/reads/ -name *pair1*.fastq.gz > $leftList; ";
-    $command .= "find \$WORK_DIR/reads/ -name *pair2*.fastq.gz > $rightList; ";
+    # Create sorted left/right lists of fastq.gz files
+    $command .= "find \$WORK_DIR/reads/ -name *pair1*.fastq.gz | sort > $leftList; ";
+    $command .= "find \$WORK_DIR/reads/ -name *pair2*.fastq.gz | sort > $rightList; ";
 
     # Load modules and run Trinity normalization
     $command .= 'module load ' . LoadConfig::getParam($rH_cfg, 'trinity', 'moduleVersion.trinity') . '; ';
@@ -208,8 +208,8 @@ sub rsem {
     my $CPU = 4;
     my $command;
 
-    my $left  = "\\`find \$WORK_DIR/reads -name $sample*pair1*.fastq.gz | paste -s -d,\\`";
-    my $right  = "\\`find \$WORK_DIR/reads -name $sample*pair2*.fastq.gz | paste -s -d,\\`";
+    my $left  = "\\`find \$WORK_DIR/reads -name $sample*pair1*.fastq.gz | sort | paste -s -d,\\`";
+    my $right  = "\\`find \$WORK_DIR/reads -name $sample*pair2*.fastq.gz | sort | paste -s -d,\\`";
 
     $command .= 'module load ' . LoadConfig::getParam($rH_cfg, 'trinity', 'moduleVersion.trinity') . ' ' .
       LoadConfig::getParam($rH_cfg, 'bowtie', 'moduleVersion.bowtie') . ' ' .
