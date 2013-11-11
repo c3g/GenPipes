@@ -12,7 +12,7 @@ mkdir -p $INSTALL_DOWNLOAD
 cd $INSTALL_DOWNLOAD
 
 # Download, extract, build
-#wget http://sourceforge.net/projects/trinityrnaseq/files/trinityrnaseq_r$VERSION.tgz
+wget http://sourceforge.net/projects/trinityrnaseq/files/trinityrnaseq_r$VERSION.tgz
 tar zxvf trinityrnaseq_r$VERSION.tgz
 cd trinityrnaseq_r$VERSION
 make
