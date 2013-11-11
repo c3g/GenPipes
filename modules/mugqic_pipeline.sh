@@ -1,5 +1,5 @@
 ###################
-################### MUGQIC TOOLS (hosted on svn for now)
+################### MUGQIC pipeline 
 ###################
 mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/pipeline/tmp $MUGQIC_INSTALL_HOME/modulefiles/mugqic/pipeline/tmp/untar/
 cd $MUGQIC_INSTALL_HOME/modulefiles/mugqic/pipeline/tmp
