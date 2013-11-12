@@ -51,6 +51,9 @@ module-whatis \"Breakdancer Structural Variant analyser\"
 set             root               \$::env(MUGQIC_INSTALL_HOME)/software/breakdancer/breakdancer-${VERSION}
 prepend-path    PATH               \$root/cpp/
 prepend-path    PATH               \$root/perl/
+setenv          BRD_CPP            \$root/cpp/
+setenv          BRD_PERL            \$root/perl/
+
 " > $VERSION
 
 # Version file
