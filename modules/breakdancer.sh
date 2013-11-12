@@ -37,14 +37,14 @@ make -j8
 #install
 cd ../cpp
 mv Makefile originalMakefile
-sed "s|/Users/kchen3/pkg/samtools/samtools-0\.1\.6|${INSTALL_PATH}/breakdancer-${VERSION}/samtools-0\.1\.6|g" originalMakefile > Makefile
+echo -e "all:\n\tg++ -g -Wall -O2 -I${INSTALL_PATH}/breakdancer-${VERSION}/samtools-0.1.6/ BreakDancerMax.cpp AlnParser.cpp Poisson.cpp -o breakdancer_max -lm -lz -L${INSTALL_PATH}/breakdancer-${VERSION}/samtools-0.1.6/ -lbam\n" > Makefile
 
 make
 
 
 cd ../perl
 mv bam2cfg.pl originalBam2cfg.pl 
-sed "s|/opt/local/bin/perl|/usr/bin/perl|g" originalBam2cfg.pl > bam2cfg.pl
+awk ' BEGIN {print "#!/usr/bin/perl"} NR>1 {print $0} ' originalBam2cfg.pl > bam2cfg.pl
 chmod 775 bam2cfg.pl
 
 cd $MUGQIC_INSTALL_HOME/modulefiles/mugqic/breakdancer/tmp
