@@ -4,7 +4,7 @@
 ################### IGV
 ###################
 VERSION="2.3.23"
-mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/igv/tmp $MUGQIC_INSTALL_HOME/modulefiles/mugqic/igv/tmp/unzip/
+mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/igv/tmp/unzip/
 cd $MUGQIC_INSTALL_HOME/modulefiles/mugqic/igv/tmp
 
 # Download and install

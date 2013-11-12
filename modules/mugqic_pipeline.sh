@@ -1,7 +1,7 @@
 ###################
 ################### MUGQIC pipeline 
 ###################
-mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/pipeline/tmp $MUGQIC_INSTALL_HOME/modulefiles/mugqic/pipeline/tmp/untar/
+mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/pipeline/tmp/untar/
 cd $MUGQIC_INSTALL_HOME/modulefiles/mugqic/pipeline/tmp
 VERSION="1.0"
 wget https://bitbucket.org/mugqic/mugqic_pipeline/get/${VERSION}.tar.gz
