@@ -36,12 +36,12 @@ use strict;
 use warnings;
 #---------------------
 
-BEGIN {
-    # Add the mugqic_pipeline/lib/ path relative to this Perl script to @INC library search variable
+BEGIN{
+    #Makesure we can find the GetConfig::LoadModules module relative to this script install
     use File::Basename;
     use Cwd 'abs_path';
-    my (undef, $mod_path, undef) = fileparse(abs_path(__FILE__));
-    unshift @INC, $mod_path . "../../lib";
+    my ( undef, $mod_path, undef ) = fileparse( abs_path(__FILE__) );
+    unshift @INC, $mod_path."lib";
 }
 
 
@@ -85,7 +85,6 @@ push(@steps, {'name' => 'markDup', 'stepLoop' => 'sample', 'parentStep' => 'fixm
 push(@steps, {'name' => 'recalibration', 'stepLoop' => 'sample', 'parentStep' => 'markDup'});
 push(@steps, {'name' => 'metrics', 'stepLoop' => 'sample', 'parentStep' => 'recalibration'});
 push(@steps, {'name' => 'metricsLibrarySample', 'stepLoop' => 'experiment', 'parentStep' => 'metrics'});
-push(@steps, {'name' => 'fullPileup', 'stepLoop' => 'sample', 'parentStep' => 'recalibration'});
 push(@steps, {'name' => 'snpAndIndelBCF', 'stepLoop' => 'experiment', 'parentStep' => 'recalibration'});
 push(@steps, {'name' => 'mergeFilterBCF', 'stepLoop' => 'experiment', 'parentStep' => 'snpAndIndelBCF'});
 push(@steps, {'name' => 'filterNStretches', 'stepLoop' => 'experiment', 'parentStep' => 'mergeFilterBCF'});
@@ -94,7 +93,8 @@ push(@steps, {'name' => 'snpIDAnnotation', 'stepLoop' => 'experiment', 'parentSt
 push(@steps, {'name' => 'snpEffect', 'stepLoop' => 'experiment', 'parentStep' => 'snpIDAnnotation'});
 push(@steps, {'name' => 'dbNSFPAnnotation', 'stepLoop' => 'experiment', 'parentStep' => 'snpEffect'});
 push(@steps, {'name' => 'metricsSNV', 'stepLoop' => 'experiment', 'parentStep' => 'snpIDAnnotation'});
-push(@steps, {'name' => 'deliverable' , 'stepLoop' => 'experiment' , 'parentStep' => ('metricsLanes','metricsSample','metricsSNV')});
+push(@steps, {'name' => 'deliverable' , 'stepLoop' => 'experiment' , 'parentStep' => ['mergeTrimStats','metricsLibrarySample','metricsSNV']});
+push(@steps, {'name' => 'fullPileup', 'stepLoop' => 'sample', 'parentStep' => 'recalibration'});
 
 my %globalDep;
 for my $stepName (@steps) {
@@ -197,7 +197,7 @@ sub trimAndAlign {
 
     my $outputAlnDir = 'alignment/'.$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
     print 'mkdir -p '.$outputAlnDir."\n";
-    my $outputAlnPrefix = $outputAlnDir.'/'.$sampleName;
+    my $outputAlnPrefix = $outputAlnDir.'/'.$sampleName.'.'.$rH_laneInfo->{'libraryBarcode'};
 
     my $useMem = LoadConfig::getParam($rH_cfg, 'aln', 'aligner') eq 'mem';
     if(!$useMem) {
@@ -256,9 +256,9 @@ sub laneMetrics {
   my $first=1;
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
     my $directory = 'alignment/'.$sampleName."/run".$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'}."/";
-    my $sortedLaneBamFile = $directory.$rH_laneInfo->{'name'}.".sorted.bam";
-    my $sortedLaneDupBamFile = $directory.$rH_laneInfo->{'name'}.".sorted.dup.bam";
-    my $outputMetrics = $directory.$rH_laneInfo->{'name'}.".sorted.dup.metrics";
+    my $sortedLaneBamFile = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.bam';
+    my $sortedLaneDupBamFile = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.dup.bam';
+    my $outputMetrics = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.dup.metrics';
     my $runName = $sampleName."_run".$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'};
 
     my $rO_job = Picard::markDup($rH_cfg, $sampleName, $sortedLaneBamFile, $sortedLaneDupBamFile, $outputMetrics);
@@ -342,7 +342,7 @@ sub mergeLanes {
   my $outputBAM = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.bam';
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
     my $directory = 'alignment/'.$sampleName."/run".$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'}."/";
-    my $sortedLaneBamFile = $directory.$rH_laneInfo->{'name'}.".sorted.bam";
+    my $sortedLaneBamFile = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.bam';
     my $runName = $sampleName."_run".$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'};
 
     push(@inputBams, $sortedLaneBamFile);
@@ -767,13 +767,29 @@ sub snpAndIndelBCF {
   print 'mkdir -p '.$outputDir."\n";
   print "MPILEUP_JOB_IDS=\"\"\n";
 
-  my $nbJobs = LoadConfig::getParam( $rH_cfg, 'mpileup', 'approxNbJobs' );
-  my $rA_regions = generateApproximateWindows($nbJobs, $rAoH_seqDictionary);
   my $jobId;
-  for my $region (@{$rA_regions}) {
+  my $nbJobs = LoadConfig::getParam( $rH_cfg, 'mpileup', 'approxNbJobs' );
+  if (defined($nbJobs) && $nbJobs > 1) {
+    my $rA_regions = generateApproximateWindows($nbJobs, $rAoH_seqDictionary);
+    for my $region (@{$rA_regions}) {
+      my $rO_job = SAMtools::mpileup($rH_cfg, 'allSamples', \@inputFiles, $region, $outputDir);
+      if(!$rO_job->isUp2Date()) {
+        $region =~ s/:/_/g;
+        SubmitToCluster::printSubmitCmd($rH_cfg, "mpileup", $region, 'MPILEUP', $jobDependencies, 'allSamples', $rO_job);
+        if(!defined($jobId)) {
+          $jobId = '${MPILEUP_JOB_IDS}';
+          print 'MPILEUP_JOB_IDS='.$rO_job->getCommandJobId(0)."\n";
+        }
+        else {
+          print 'MPILEUP_JOB_IDS=${MPILEUP_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$rO_job->getCommandJobId(0)."\n";
+        }
+      }
+    }
+  } 
+  else {
+    my $region = undef;
     my $rO_job = SAMtools::mpileup($rH_cfg, 'allSamples', \@inputFiles, $region, $outputDir);
     if(!$rO_job->isUp2Date()) {
-      $region =~ s/:/_/g;
       SubmitToCluster::printSubmitCmd($rH_cfg, "mpileup", $region, 'MPILEUP', $jobDependencies, 'allSamples', $rO_job);
       if(!defined($jobId)) {
         $jobId = '${MPILEUP_JOB_IDS}';
@@ -971,15 +987,17 @@ sub snpEffect {
 }
 
 sub dbNSFPAnnotation {
-  my $depends = shift;
+  my $stepId = shift;
   my $rH_cfg = shift;
   my $rH_samplePair = shift;
   my $rAoH_seqDictionary = shift;
 
   my $jobDependency = undef;
-  if($depends > 0) {
-    $jobDependency = '${SNPEFF_JOB_ID}';
+  my $parentStep = $steps[$stepId]->{'parentStep'};
+  if(defined($globalDep{$parentStep}->{'experiment'})) {
+    $jobDependency = $globalDep{$parentStep}->{'experiment'};
   }
+  
 
   my $inputVCF = 'variants/allSamples.merged.flt.mil.snpId.snpeff.vcf';
   my $vcfOutput = 'variants/allSamples.merged.flt.mil.snpId.snpeff.dbnsfp.vcf';
@@ -1010,22 +1028,17 @@ sub metricsSNV {
   my $outputFile = 'metrics/allSamples.merged.flt.mil.snpId.snpeff.vcf.part.changeRate.tsv';
   my $listFiles='variants/allSamples.merged.flt.mil.snpId.snpeff.vcf.statsFile.txt';
 
-  my $command = Metrics::svnStatsChangeRate($rH_cfg, $inputVCF, $outputFile, $listFiles);
-  my $changeRateJobId = undef;
-  if(defined($command) && length($command) > 0) {
-    $changeRateJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "metricsSNV", undef, 'CHANGERATE', $vcfDependency , 'allSamples', $command);
-    $changeRateJobId = '$' .$changeRateJobId ;
+  my $rO_job_changeRate = Metrics::svnStatsChangeRate($rH_cfg, $inputVCF, $outputFile, $listFiles);
+  if(!$rO_job_changeRate->isUp2Date()) {
+    SubmitToCluster::printSubmitCmd($rH_cfg, "metricsSNV", undef, 'CHANGERATE', $vcfDependency , 'allSamples', $rO_job_changeRate);
   }
   
   my $outputBaseName='metrics/allSamples.SNV';
-  $command = Metrics::svnStatsGetGraph($rH_cfg, $listFiles,$outputBaseName);
-  
-  my $snvGraphsJobId = undef;
-  if(defined($command) && length($command) > 0) {
-    $snvGraphsJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "metricsSNV", undef, 'CHANGERATE', $vcfDependency , 'allSamples', $command);
-    $snvGraphsJobId = '$' .$snvGraphsJobId ;
+  my $rO_job_Graph = Metrics::svnStatsGetGraph($rH_cfg, $listFiles,$outputBaseName);
+  if(!$rO_job_Graph->isUp2Date()) {
+    SubmitToCluster::printSubmitCmd($rH_cfg, "metricsSNV", "2", 'SNV_GRAPH', $rO_job_changeRate->getCommandJobId(0) , 'allSamples', $rO_job_Graph);
   }
-  return $snvGraphsJobId
+  return $rO_job_Graph->getCommandJobId(0);
 }
 
 
@@ -1036,13 +1049,11 @@ sub deliverable {
   my $rAoH_seqDictionary = shift;
 
 
-
   my $reportDependency = undef;
-  my @parentStep = $steps[$stepId]->{'parentStep'};
+  my $parentStep = $steps[$stepId]->{'parentStep'};
 
   my $jobDependencies = "";
-  for(my $idx=0; $idx < @parentStep; $idx++){
-    my $stepName = $parentStep[$idx];
+  foreach my $stepName (@{$parentStep}) {
     if(defined($globalDep{$stepName}->{'experiment'})){
       $jobDependencies .= LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$globalDep{$stepName}->{'experiment'};
     }
@@ -1055,15 +1066,13 @@ sub deliverable {
   $reportDependency = $jobDependencies;
 
 
-  my $command = GqSeqUtils::clientReport($rH_cfg,  $configFile, $workDirectory, 'DNAseq') ;
+  my $rO_job = GqSeqUtils::clientReport($rH_cfg,  $configFile, $workDirectory, 'DNAseq') ;
 
-  my $deliverableJobId = undef;
-  if(defined($command) && length($command) > 0) {
-    $deliverableJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "deliverable", 'REPORT', 'DNAREPORT', $reportDependency , 'allSamples', $command);
-    $deliverableJobId = '$' .$deliverableJobId ;
+  if(!$rO_job->isUp2Date()) {
+    SubmitToCluster::printSubmitCmd($rH_cfg, "deliverable", 'REPORT', 'DNAREPORT', $reportDependency , 'allSamples', $rO_job);
   }
 
-  return $deliverableJobId;
+  return $rO_job->getCommandJobId(0);
 }
 
 
