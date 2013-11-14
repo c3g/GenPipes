@@ -63,6 +63,7 @@ use MACS2;
 use BWA;
 use Trimmomatic;
 use Metrics;
+use Version;
 use Wiggle;
 use GqSeqUtils;
 use ReadMetrics;
@@ -103,6 +104,7 @@ my $configFile;
 &main();
 
 sub printUsage {
+  print "Version: ".$Version::version."\n";
   print "\nUsage: perl ".$0." \n";
   print "\t-c  config file\n";
   print "\t-s  start step, inclusive\n";
