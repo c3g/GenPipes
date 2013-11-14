@@ -6,6 +6,7 @@ I<MACS2>
 
 =head1 SYNOPSIS
 
+MACS2->getDesign()
 MACS2->generateMacs()
 
 =head1 DESCRIPTION
