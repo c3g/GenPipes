@@ -128,7 +128,7 @@ sub main {
 	my %opts;
 	getopts('c:s:e:n:d:w:', \%opts);
 	
-	if (!defined($opts{'c'}) || !defined($opts{'s'}) || !defined($opts{'e'}) || !defined($opts{'n'}) || !defined($opts{'d'}) || !defined($opts{'w'} ) ) {
+	if (!defined($opts{'c'}) || !defined($opts{'s'}) || !defined($opts{'e'}) || !defined($opts{'n'}) || !defined($opts{'w'} ) ) {
 		printUsage();
 		exit(1);
 	}
@@ -137,9 +137,14 @@ sub main {
 	my %cfg = LoadConfig->readConfigFile($opts{'c'});
 	my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($opts{'n'});
 	my $rAoH_seqDictionary = SequenceDictionaryParser::readDictFile(\%cfg);
-	$designFilePath = abs_path($opts{'d'});
-	##get design groups
-	my $rHoAoA_designGroup = Cufflinks::getDesign(\%cfg,$designFilePath);
+  
+	$designFilePath = $opts{'d'};
+  my $rHoAoA_designGroup;
+  if(defined($designFilePath)) {
+    $designFilePath = abs_path($designFilePath);
+	  ##get design groups
+	  $rHoAoA_designGroup = Cufflinks::getDesign(\%cfg,$designFilePath);
+  }
 	$workDir = abs_path($opts{'w'});
 	$configFile =  abs_path($opts{'c'});
 	$readSetSheet =  abs_path($opts{'n'}); 
@@ -159,10 +164,12 @@ sub main {
 		$cpt++;
 	}
 	#generate design jobIdprefix
-	for my $designName (keys %{$rHoAoA_designGroup}) {
-		$jobIdVarPrefix{$designName} = $cpt;
-		$cpt++;
-	}
+	if(defined($rHoAoA_designGroup)) {
+  	for my $designName (keys %{$rHoAoA_designGroup}) {
+	  	$jobIdVarPrefix{$designName} = $cpt;
+		  $cpt++;
+  	}
+  }
 	
 	SubmitToCluster::initPipeline($workDir);
 
@@ -431,6 +438,7 @@ sub alignMetrics {
 		print RNASAMPLE "$sampleName\talignment/$sampleName/$sampleName.merged.mdup.bam\t$projectName\n";
 	}
 	print "mkdir -p metrics/rnaseqRep/\n";
+  close(RNASAMPLE);
 	$sampleList = 'alignment/rnaseqc.samples.txt';
 	my $outputFolder = 'metrics/rnaseqRep';
 	my $rO_job = Metrics::rnaQc($rH_cfg, $sampleList, $outputFolder);
@@ -671,6 +679,11 @@ sub cuffdiff {
 	if($depends > 0 and values(%{$globalDep{'fpkm'}}) > 0) {
 		$jobDependency = join(LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep'),values(%{$globalDep{'fpkm'}}));
 	}
+
+  if(!defined($rHoAoA_designGroup)) {
+    die ("A design is needed for the cuffdiff step\n");
+  }
+
 	print "mkdir -p cuffdiff/known cuffdiff/denovo\n";
 	## create the list of deNovo gtf to merge
 	mkdir $workDir .'/fpkm';
@@ -756,6 +769,10 @@ sub dge {
 	my $countMatrix = 'DGE/rawCountMatrix.csv';
 	my $outputDir = 'DGE';
 	
+  if(!defined($rHoAoA_designGroup)) {
+    die ("A design is needed for the dge step\n");
+  }
+
 	## edgeR
 	my $rO_job = DiffExpression::edgerPortable($rH_cfg, $designFilePath, $countMatrix, $outputDir);
 	if(!$rO_job->isUp2Date()) {
@@ -786,6 +803,10 @@ sub goseq {
 		$cuffdiffDependency = $globalDep{'cuffdiff'}{'cuffdiff'};
 		$dgeDependency = $globalDep{'dge'}{'dge'};
 	}
+
+  if(!defined($rHoAoA_designGroup)) {
+    die ("A design is needed for the goseq step\n");
+  }
 
 	my $columnsCuff = LoadConfig::getParam($rH_cfg, 'diffExpress', 'cuffRescolumns');
 	my $columnsDge = LoadConfig::getParam($rH_cfg, 'diffExpress', 'dgeRescolumns');
