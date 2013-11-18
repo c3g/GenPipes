@@ -143,6 +143,11 @@ my @steps = (
     'name'   => 'rsem',
     'loop'   => 'sample',
     'parent' => 'rsemPrepareReference'
+  },
+  {
+    'name'   => 'edgeR',
+    'loop'   => 'global',
+    'parent' => 'rsem'
   }
 );
 
@@ -310,4 +315,13 @@ sub rsem {
 
   my $rO_job = Trinity::rsem($rH_cfg, $workDirectory, $sample);
   submitJob($rH_cfg, $step, $sample, $rO_job);
+}
+
+sub edgeR {
+  my $rH_cfg = shift;
+  my $step = shift;
+  my $workDirectory = shift;
+
+  my $rO_job = Trinity::edgeR($rH_cfg, $workDirectory);
+  submitJob($rH_cfg, $step, undef, $rO_job);
 }
