@@ -61,7 +61,7 @@ sub trim {
 
   my $rawReadDir    = LoadConfig::getParam($rH_cfg, 'trim','rawReadDir');
   my $inputFastqPair1Name = $rawReadDir .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' .$rH_laneInfo->{'read1File'};
-  my $inputFastqPair2Name = $rawReadDir .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' .$rH_laneInfo->{'read2File'};
+  my $inputFastqPair2Name = undef;
 
   my $skipTrimming = LoadConfig::getParam($rH_cfg, 'trim','skip');
 
@@ -77,6 +77,7 @@ sub trim {
   }
   elsif ( $rH_laneInfo->{'runType'} eq "PAIRED_END" ) {
     if(defined($skipTrimming) && $skipTrimming eq '1') {
+      $inputFastqPair2Name = $rawReadDir .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' .$rH_laneInfo->{'read2File'};
       $ro_job = new Job();
       $ro_job->setOutputFileHash(SINGLE1_OUTPUT => $inputFastqPair1Name);
       $ro_job->setOutputFileHash({PAIR1_OUTPUT => $inputFastqPair1Name, PAIR2_OUTPUT => $inputFastqPair2Name});
