@@ -3,7 +3,7 @@
 ###################
 
 ## Install R itself (libcairo must be installed?)
-VERSION="3.0.1"
+VERSION="3.0.2"
 
 # DEP_PATH is a URL or path to file with additional packages to be installed
 DEP_PATH="https://bitbucket.org/mugqic/mugqic_resources/raw/master/modules/R_and_Bioconductor_packages.txt" 
@@ -11,12 +11,14 @@ DEP_PATH="https://bitbucket.org/mugqic/mugqic_resources/raw/master/modules/R_and
 # Download and compile and install
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/R/R-$VERSION # where to install.
 mkdir -p $INSTALL_PATH
+cd $INSTALL_PATH
 wget http://cran.r-project.org/src/base/R-${VERSION:0:1}/R-$VERSION.tar.gz
 tar -xvf R-$VERSION.tar.gz
 cd R-$VERSION
 ./configure --prefix=$INSTALL_PATH  # TEMP s--with-readline=yes --with-readline=no
 make -j8
 make install
+rm -rf  R-$VERSION*
 
 ## Install prefered add on packages (takes a loooong time)
 wget $DEP_PATH
@@ -43,10 +45,12 @@ EOF
 git clone https://bitbucket.org/mugqic/rpackages.git
 $INSTALL_PATH/bin/R CMD INSTALL rpackages/gqUtils
 $INSTALL_PATH/bin/R CMD INSTALL rpackages/gqSeqUtils
+$INSTALL_PATH/bin/R CMD INSTALL rpackages/gqData
+$INSTALL_PATH/bin/R CMD INSTALL rpackages/gqMicroarrays
 
 
 ## Add group permissions after install
-chmod -R g+rwX $INSTALL_PATH
+chmod -R g+rwX $INSTALL_PATH &
 
 # Module def file..
 echo "#%Module1.0
