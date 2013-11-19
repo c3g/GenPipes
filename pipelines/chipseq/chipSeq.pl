@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+  #!/usr/bin/perl
 
 =head1 NAME
 
@@ -66,7 +66,6 @@ use Metrics;
 use Version;
 use Wiggle;
 use GqSeqUtils;
-use ReadMetrics;
 
 
 
@@ -406,7 +405,8 @@ sub metrics {
 
     ## Merge read stats
     my $outputFile= 'metrics/' . $groupName . '.readstats.csv';
-    $ro_job  = Metrics::mergePrintReadStats($rH_cfg, $groupName, $trimStatsFile, $flagStatsFile, $outputFile);
+    my $sampleColumnName       = $sampleName . ' ' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}.' ' .$rH_laneInfo->{'libraryBarcode'};
+    $ro_job  = Metrics::mergePrintReadStats($rH_cfg, $sampleColumnName, $trimStatsFile, $flagStatsFile, $outputFile);
     if(!$ro_job->isUp2Date()) {  
       SubmitToCluster::printSubmitCmd($rH_cfg, "mergeMetrics", undef, 'MERGEREADSTAT' . $rH_jobIdPrefixe->{$sampleName . '.' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}}, $flagstatJobId, $sampleName,  $ro_job);
       $metricsJobIDs=$ro_job->getCommandJobId(0);    
