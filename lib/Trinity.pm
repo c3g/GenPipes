@@ -251,11 +251,12 @@ sub edgeR {
     $command .= "run_DE_analysis.pl \\
       --matrix \$WORK_DIR/edgeR/genes.counts.matrix \\
       --method edgeR \\
-      --output \$WORK_DIR/edgeR; ";
+      --output \$WORK_DIR/edgeR ";
 
 
     $rO_job->addCommand($command);
   }
+  return $rO_job;
 }
 
 sub mergeCounts {
