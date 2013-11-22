@@ -122,18 +122,17 @@ my $queryFile;
 my $nthreads;
 my $queryDir;
 my $file;
-my $splitfasta=dirname(abs_path($0));
+my $splitfasta = dirname(abs_path($0));
 #--------------------------
 
 
 
 GetOptions(
-    'help|h!'           => \$help,
-	'file|f=s'          => \$queryFile,
-	'OUT|O=s'			=> \$outFile,
-	'BLAST|b=s'         => \$BLAST,
-	'nthreads|n=i'      => \$nthreads
-
+  'help|h!'      => \$help,
+  'file|f=s'     => \$queryFile,
+  'OUT|O=s'      => \$outFile,
+  'BLAST|b=s'    => \$BLAST,
+  'nthreads|n=i' => \$nthreads
 ) or die "Fatal Error: Problem parsing command-line " . $!;
 pod2usage( -exitstatus => 0, -verbose => 2 ) if $help;
 
@@ -143,7 +142,7 @@ pod2usage( -exitstatus => 0, -verbose => 2 ) if $help;
 $nthreads = $nthreads ? $nthreads : `cat /proc/cpuinfo | grep "processor" | awk '{print \$NF}' | sort -u | wc -l`;
 chomp $nthreads; 
 
-#  M A I N
+#  MAIN
 #--------------------
 
 # Create temp dir
@@ -163,29 +162,29 @@ my @job = grep {/chunk/} (readdir(DIR));
 # Start parallel jobs
 #---------------------
 pareach([@job], sub {
-	my $sample = shift;
-	
-	#Parse BLAST command line
-	#--------------------------
-	$BLAST=~s/-db/-query $queryDir\/temp\_$file\/$sample -db /;
-	$BLAST.=" -out $queryDir/temp_$file/$sample.OUT";
-	
-	print $BLAST."\n";
+  my $sample = shift;
+  
+  # Parse BLAST command line
+  #--------------------------
+  $BLAST =~ s/-db/-query $queryDir\/temp\_$file\/$sample -db /;
+  $BLAST .= " -out $queryDir/temp_$file/$sample.OUT";
+  
+  print $BLAST . "\n";
   system $BLAST;
   
  }, {"Max_Workers" => $nthreads});
 
 
-#Concatenate files
+# Concatenate files
 #-------------------
 
 opendir(DIR, "$queryDir/temp_$file");
 my @blastResult = grep {/OUT/} (readdir(DIR));
 
 foreach (@blastResult){
-	system "cat $queryDir/temp_$file/$_ >>$outFile";
+  system "cat $queryDir/temp_$file/$_ >>$outFile";
 }
 
-# remove temp dir
+# Remove temp dir
 #--------------------
 system "rm -r $queryDir/temp_$file";

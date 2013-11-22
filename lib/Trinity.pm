@@ -81,32 +81,24 @@ sub normalize_by_kmer_coverage {
 #  $rO_job->testInputOutputs([$leftList, $rightList], ["$workDir/normalized_reads/both.fa"]);
 
   if (!$rO_job->isUp2Date()) {
-    my $ram = "200G";
-    my $CPU = "10";
-    my $command;
+    my $command = "\n";
 
     my $leftList = "\$WORK_DIR/reads/left_pair1.fastq.gz.list";
     my $rightList = "\$WORK_DIR/reads/right_pair2.fastq.gz.list";
 
     # Create sorted left/right lists of fastq.gz files
-    $command .= "find \$WORK_DIR/reads/ -name *pair1*.fastq.gz | sort > $leftList; ";
-    $command .= "find \$WORK_DIR/reads/ -name *pair2*.fastq.gz | sort > $rightList; ";
+    $command .= "find \$WORK_DIR/reads/ -name *pair1*.fastq.gz | sort > $leftList\n";
+    $command .= "find \$WORK_DIR/reads/ -name *pair2*.fastq.gz | sort > $rightList\n";
 
     # Load modules and run Trinity normalization
-    $command .= 'module load ' . LoadConfig::getParam($rH_cfg, 'trinity', 'moduleVersion.trinity') . '; ';
+    $command .= "module load " . LoadConfig::getParam($rH_cfg, 'trinity', 'moduleVersion.trinity') . "\n";
     $command .= "normalize_by_kmer_coverage.pl \\
-      --seqType fq \\
-      --JM $ram \\
-      --max_cov 30 \\
-      --left_list $leftList \\
-      --right_list $rightList \\
-      --pairs_together \\
-      --SS_lib_type RF \\
-      --output \$WORK_DIR/normalization \\
-      --JELLY_CPU $CPU \\
-      --PARALLEL_STATS \\
-      --KMER_SIZE 25 \\
-      --max_pct_stdev 100";
+ --left_list $leftList \\
+ --right_list $rightList \\
+ --output \$WORK_DIR/normalization \\\n";
+    $command .= " --JM " . LoadConfig::getParam($rH_cfg, 'normalization', 'jellyfishMemory') . " \\\n";
+    $command .= " --JELLY_CPU " . LoadConfig::getParam($rH_cfg, 'normalization', 'jellyfishCPU') . " \\\n";
+    $command .= " " . LoadConfig::getParam($rH_cfg, 'normalization', 'normalizationOptions') . " \\\n";
 
     $rO_job->addCommand($command);
   }
@@ -132,22 +124,25 @@ sub trinity {
     $command .= 'module load ' . LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.java') . ' ' .
       LoadConfig::getParam($rH_cfg, 'trinity', 'moduleVersion.trinity') . ' ' .
       LoadConfig::getParam($rH_cfg, 'bowtie', 'moduleVersion.bowtie') . ' ' .
-      LoadConfig::getParam($rH_cfg, 'samtools', 'moduleVersion.samtools') . '; ';
+      LoadConfig::getParam($rH_cfg, 'samtools', 'moduleVersion.samtools') . '\n';
+
     $command .= "Trinity.pl \\
-      --seqType fq \\
-      --JM $ram \\
-      --left  $leftList.normalized_K25_C30_pctSD100.fq \\
-      --right $rightList.normalized_K25_C30_pctSD100.fq \\
-      --SS_lib_type RF \\
-      --output \$WORK_DIR/trinity_out_dir \\
-      --CPU $CPU \\
-      --min_contig_length 200 \\
-      --jaccard_clip \\
-      --min_kmer_cov 2 \\
-      --inchworm_cpu $CPU \\
-      --bflyHeapSpaceMax 10G \\
-      --bflyGCThreads 1 \\
-      --bflyCPU $bflyCPU";
+ --seqType fq \\
+ --JM $ram \\
+ --left  $leftList.normalized_K25_C30_pctSD100.fq \\
+ --right $rightList.normalized_K25_C30_pctSD100.fq \\
+ --SS_lib_type RF \\
+ --output \$WORK_DIR/trinity_out_dir \\
+ --CPU $CPU \\
+ --min_contig_length 200 \\
+ --jaccard_clip \\
+ --min_kmer_cov 2 \\
+ --inchworm_cpu $CPU \\
+ --bflyHeapSpaceMax 10G \\
+ --bflyGCThreads 1 \\
+ --bflyCPU $bflyCPU\n";
+
+    $command .= "TrinityStats.pl \$WORK_DIR/trinity_out_dir/Trinity.fasta > \$WORK_DIR/trinity_out_dir/Trinity.stats \\\n";
 
     $rO_job->addCommand($command);
   }
