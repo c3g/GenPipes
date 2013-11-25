@@ -73,9 +73,7 @@ sub mem {
   if (!$ro_job->isUp2Date()) {
     my $rgTag = "'" . '@RG\tID:' . $rgId . '\tSM:' . $rgSample . '\tLB:' . $rgLibrary . '\tPU:run' . $rgPlatformUnit . '\tCN:' . $rgCenter . '\tPL:Illumina' . "'";
     my $bwaCommand;
-    $bwaCommand .= 'module load '.LoadConfig::getParam($rH_cfg, 'mem', 'moduleVersion.bwa').' ;';
-    $bwaCommand .= ' module load '.LoadConfig::getParam($rH_cfg, 'mem', 'moduleVersion.picard').' ;';
-    $bwaCommand .= ' module load '.LoadConfig::getParam($rH_cfg, 'mem', 'moduleVersion.java').' ;';
+    $bwaCommand .= 'module load '.LoadConfig::getParam($rH_cfg, 'mem', 'moduleVersion.bwa').' '.LoadConfig::getParam($rH_cfg, 'mem', 'moduleVersion.picard').' '.LoadConfig::getParam($rH_cfg, 'mem', 'moduleVersion.java').' &&';
     $bwaCommand .= ' bwa mem ';
     $bwaCommand .= ' '.LoadConfig::getParam( $rH_cfg, 'mem', 'bwaExtraFlags' );
     $bwaCommand .= ' -R ' . $rgTag;
@@ -161,7 +159,7 @@ sub pairCommand {
     my $sai1Command = "";
     my $sai2Command = "";
     my $bwaCommand  = "";
-    $sai1Command .= 'module load '.LoadConfig::getParam($rH_cfg, 'aln', 'moduleVersion.bwa').' ;';
+    $sai1Command .= 'module load '.LoadConfig::getParam($rH_cfg, 'aln', 'moduleVersion.bwa').' &&';
     $sai1Command .= 'bwa aln';
     $sai1Command .= ' -t ' . LoadConfig::getParam( $rH_cfg, 'aln', 'bwaAlnThreads' );
     $sai1Command .= ' ' . $bwaRefIndex;
@@ -169,7 +167,7 @@ sub pairCommand {
     $sai1Command .= ' -f ' . $outputSai1Name;
     $ro_job->addCommand($sai1Command);
 
-    $sai2Command .= 'module load '.LoadConfig::getParam($rH_cfg, 'aln', 'moduleVersion.bwa').' ;';
+    $sai2Command .= 'module load '.LoadConfig::getParam($rH_cfg, 'aln', 'moduleVersion.bwa').' &&';
     $sai2Command .= 'bwa aln';
     $sai2Command .= ' -t ' . LoadConfig::getParam( $rH_cfg, 'aln', 'bwaAlnThreads' );
     $sai2Command .= ' ' . $bwaRefIndex;
@@ -178,9 +176,7 @@ sub pairCommand {
     $ro_job->addCommand($sai2Command);
 
     my $rgTag = "'" . '@RG\tID:' . $rgId . '\tSM:' . $rgSample . '\tLB:' . $rgLibrary . '\tPU:run' . $rgPlatformUnit . '\tCN:' . $rgCenter . '\tPL:Illumina' . "'";
-    $bwaCommand .= 'module load '.LoadConfig::getParam($rH_cfg, 'aln', 'moduleVersion.bwa').' ;';
-    $bwaCommand .= ' module load '.LoadConfig::getParam($rH_cfg, 'aln', 'moduleVersion.picard').' ;';
-    $bwaCommand .= ' module load '.LoadConfig::getParam($rH_cfg, 'aln', 'moduleVersion.java').' ;';
+    $bwaCommand .= 'module load '.LoadConfig::getParam($rH_cfg, 'aln', 'moduleVersion.bwa').' '.LoadConfig::getParam($rH_cfg, 'aln', 'moduleVersion.picard').' '.LoadConfig::getParam($rH_cfg, 'aln', 'moduleVersion.java').' &&';
     $bwaCommand .= ' bwa sampe ';
     $bwaCommand .= ' '.LoadConfig::getParam( $rH_cfg, 'aln', 'bwaExtraSamXeFlags' );
     $bwaCommand .= ' -r ' . $rgTag;
@@ -230,7 +226,7 @@ sub singleCommand {
   if (!$ro_job->isUp2Date()) {
     my $saiCommand = "";
 
-    $saiCommand .= 'module load '.LoadConfig::getParam($rH_cfg, 'aln', 'moduleVersion.bwa').' ;';
+    $saiCommand .= 'module load '.LoadConfig::getParam($rH_cfg, 'aln', 'moduleVersion.bwa').' &&';
     $saiCommand .= 'bwa aln';
     $saiCommand .= ' -t ' . LoadConfig::getParam( $rH_cfg, 'aln', 'bwaAlnThreads' );
     $saiCommand .= ' ' . $bwaRefIndex;
@@ -240,9 +236,7 @@ sub singleCommand {
 
     my $rgTag = "'" . '@RG\tID:' . $rgId . '\tSM:' . $rgSample . '\tLB:' . $rgLibrary . '\tPU:run' . $rgPlatformUnit . '\tCN:' . $rgCenter . '\tPL:Illumina' . "'";
     my $bwaCommand = "";
-    $bwaCommand .= 'module load '.LoadConfig::getParam($rH_cfg, 'aln', 'moduleVersion.bwa').' ;';
-    $bwaCommand .= ' module load '.LoadConfig::getParam($rH_cfg, 'aln', 'moduleVersion.picard').' ;';
-    $bwaCommand .= ' module load '.LoadConfig::getParam($rH_cfg, 'aln', 'moduleVersion.java').' ;';
+    $bwaCommand .= 'module load '.LoadConfig::getParam($rH_cfg, 'aln', 'moduleVersion.bwa').' '.LoadConfig::getParam($rH_cfg, 'aln', 'moduleVersion.picard').' '.LoadConfig::getParam($rH_cfg, 'aln', 'moduleVersion.java').' &&';
     $bwaCommand .= ' bwa samse';
     $bwaCommand .= ' '.LoadConfig::getParam( $rH_cfg, 'aln', 'bwaExtraSamXeFlags' );
     $bwaCommand .= ' -r ' . $rgTag;
@@ -271,7 +265,7 @@ sub index {
   $ro_job->testInputOutputs([$toIndex], [$toIndex.'.bwt']);
 
   if (!$ro_job->isUp2Date()) {
-    my $command = 'module load '.LoadConfig::getParam($rH_cfg, 'index', 'moduleVersion.bwa').' ;';
+    my $command = 'module load '.LoadConfig::getParam($rH_cfg, 'index', 'moduleVersion.bwa').' &&';
     $command .= ' bwa index ' . $toIndex;
 
     $ro_job->addCommand($command);

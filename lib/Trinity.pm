@@ -103,7 +103,7 @@ sub butterfly {
       my $command;
       $command .= 'module add ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.java' );
       $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.bowtie' );
-      $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.trinity' ) . ' ;';
+      $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.trinity' ) . ' &&';
       $command .= ' ' . $rH_cfg->{'butterfly.parallel'} . ' -f ' . $laneDirectory . 'butterfly_split/' . $fileButterflyCommand;
       $command .= ' -n ' . $rH_cfg->{'butterfly.nbThreads'} . ' ';
 
@@ -127,7 +127,7 @@ sub concatFastaCreateGtf {
       my $command;
       $command .= 'module add ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.java' );
       $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.bowtie' );
-      $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.trinity' ) . ' ;';
+      $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.trinity' ) . ' &&';
       $command .= ' find ' . $laneDirectory . 'chrysalis';
       $command .= ' -name "*allProbPaths.fasta" -exec cat {} + >' . $laneDirectory . 'Trinity.fasta &&';
       $command .= ' sh ' . $rH_cfg->{'trinity.createGtf'} . ' ' . $laneDirectory . 'Trinity.fasta';
@@ -160,7 +160,7 @@ sub _chrysalisPairCommand {
     if (!$ro_job->isUp2Date()) {
       $command .= 'module add ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.java' );
       $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.bowtie' );
-      $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.trinity' ) . ' ;';
+      $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.trinity' ) . ' &&';
       $command .= ' Trinity.pl --seqType fq --JM 100G';
       $command .= ' --left' . ' \" ' . $pair1 . ' \" ' . '--right' . ' \" ' . $pair2 . ' \" ';
       $command .= ' --CPU ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'nbThreads');
@@ -189,7 +189,7 @@ sub _chrysalisSingleCommand {
     if (!$ro_job->isUp2Date()) {
       $command .= 'module add ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.java' );
       $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.bowtie' );
-      $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.trinity' ) . ' ;';
+      $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.trinity' ) . ' &&';
       $command .= ' Trinity.pl --seqType fq --JM 100G';
       $command .= ' ' . $pair1;
       $command .= ' --CPU ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'nbThreads');
@@ -236,7 +236,7 @@ sub abundance {
       my $command;
       $command .= 'module add ' . LoadConfig::getParam( $rH_cfg, 'abundance', 'moduleVersion.java' );
       $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'abundance', 'moduleVersion.bowtie' );
-      $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'abundance', 'moduleVersion.trinity' ) . ' ;';
+      $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'abundance', 'moduleVersion.trinity' ) . ' &&';
       $command .= ' cd '.dirname($assembly).' ;';
       # We tried with mkfifo but bowtie keeps giving Broken Pipes
       $command .= ' gunzip -c '.$pair1.' > '.$unzippedPair1.' ;';
@@ -255,10 +255,10 @@ sub abundance {
       }
       $command .= ' --thread_count '. LoadConfig::getParam( $rH_cfg, 'abundance', 'nbThreads' );
       $command .= ' --prefix ' . $outputPrefix;
-      $command .= ' -- --bowtie-chunkmbs ' . LoadConfig::getParam( $rH_cfg, 'abundance', 'chunkmbs' ).';';
-      $command .= ' rm '.$unzippedPair1.' ;';
+      $command .= ' -- --bowtie-chunkmbs ' . LoadConfig::getParam( $rH_cfg, 'abundance', 'chunkmbs' ).' &&';
+      $command .= ' rm '.$unzippedPair1.' &&';
       if(defined($pair2)) {
-        $command .= ' rm '.$unzippedPair2.' ;';
+        $command .= ' rm '.$unzippedPair2.' ';
       }
 
       $ro_job->addCommand($command);
@@ -278,7 +278,7 @@ sub mergeCounts {
     
     if (!$ro_job->isUp2Date()) {
       my $command = undef;
-      $command .= 'module load '.LoadConfig::getParam( $rH_cfg, 'mergeCounts', 'moduleVersion.trinity' ) . ' ;';
+      $command .= 'module load '.LoadConfig::getParam( $rH_cfg, 'mergeCounts', 'moduleVersion.trinity' ) . ' &&';
       $command .= ' \$TRINITY_HOME/util/RSEM_util/merge_RSEM_frag_counts_single_table.pl ';
       for my $input (@{$rA_filePrefixToMerge}){
         $command .= ' '.$input.'.rsem.isoforms.results';

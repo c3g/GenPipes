@@ -106,7 +106,7 @@ sub fpkmCor {
 
   if (!$ro_job->isUp2Date()) {
   	my $command;
-	  $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.cranR') .' ' . LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.tools') . ' ;';
+	  $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.cranR') .' ' . LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.tools') . ' &&';
   	$command .= ' Rscript \$R_TOOLS/fpkmStats.R ' .$paternFile .' ' .$folderFile .' ' .$outputBaseName;
 
     $ro_job->addCommand($command);
@@ -191,7 +191,7 @@ sub mergeReadStats{
 
   if (!$ro_job->isUp2Date()) {
 	my $command;
-  	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.cranR') .' ' . LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.tools') . ' ;';
+  	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.cranR') .' ' . LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.tools') . ' &&';
 	  $command .= ' Rscript \$R_TOOLS/mergeReadStat.R ' .$paternFile .' ' .$folderFile .' ' .$outputFile .' &&';
   	$command .= ' rm ' .$folderFile .'/*' .$paternFile;
 
@@ -303,7 +303,7 @@ sub mergePrintReadStats{
   $ro_job->testInputOutputs([$flagStatsFile], [$outputFile]);
 
   if (!$ro_job->isUp2Date()) {
-		$command .= 'module load ' . LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.tools') . ' ;';
+		$command .= 'module load ' . LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.tools') . ' &&';
 		$command .= ' perl -MReadMetrics -e \' ReadMetrics::mergeStats(\"'.$sampleName.'\",';
 		$command .= ' \"'. $outputFile .'\", ReadMetrics::parseTrimOutput(\"'.$sampleName.'\",';
 		$command .= ' \"'. $trimOutputFile .'\"), ReadMetrics::parseFlagstats(\"'.$sampleName.'\",';

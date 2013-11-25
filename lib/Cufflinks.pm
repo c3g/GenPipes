@@ -58,7 +58,7 @@ sub fpkm{
 
   if (!$ro_job->isUp2Date()) {
       my $command;
-        $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'fpkm','moduleVersion.cufflinks') .' ;';
+        $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'fpkm','moduleVersion.cufflinks') .' &&';
         $command .= ' cufflinks -q';
         $command .= ' ' .$transcriptOption; 
         $command .= ' --max-bundle-frags ' .LoadConfig::getParam($rH_cfg, 'fpkm','cufflinksMaxFargs');
@@ -134,7 +134,7 @@ sub cuffdiff {
 
     if (!$ro_job->isUp2Date()) {
         my $command;
-        $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'cuffdiff','moduleVersion.cufflinks') .' ;';
+        $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'cuffdiff','moduleVersion.cufflinks') .' &&';
         $command .= ' cuffdiff -p ' .LoadConfig::getParam($rH_cfg, 'cuffdiff','numThreads');
         $command .= ' -o ' .$outputDir;
         $command .= ' ' .$referenceGtf;
@@ -208,7 +208,7 @@ sub mergeGtfFormat {
 
     if (!$ro_job->isUp2Date()) {
         my $command;
-        $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'cuffmerge','moduleVersion.tools') .' ;';
+        $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'cuffmerge','moduleVersion.tools') .' &&';
         $command .= ' perl \$PERL_TOOLS/formatGtfCufflinks.pl' .' '.$inputFile .' ' .$outputFile ;
 
         $ro_job->addCommand($command);
@@ -230,7 +230,7 @@ sub mergeCuffdiffRes {
     if (!$ro_job->isUp2Date()) {
         ### TO DO : re-write mergecuffdiff_known.R and mergecuffdiff_denovo.R to be more portable
         my $command;
-        $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'cuffmerge','moduleVersion.tools') .' ' .LoadConfig::getParam($rH_cfg, 'cuffdiff','moduleVersion.cranR') .' ;';
+        $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'cuffmerge','moduleVersion.tools') .' ' .LoadConfig::getParam($rH_cfg, 'cuffdiff','moduleVersion.cranR') .' &&';
         $command .= ' Rscript \$R_TOOLS/mergecuffdiff_known.R ' .$outputDir .' ' .$inputDir .' ' .$designFile ;
 
         $ro_job->addCommand($command);
