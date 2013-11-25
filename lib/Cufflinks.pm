@@ -83,6 +83,10 @@ sub getDesign {
     my @infos = <INFO>;
     close(INFO);
 
+    if(@infos == 0) {
+      return undef;
+    }
+
     my @splitA = split(/\t/, $infos[0]);
     my $numberDesigns = @splitA-1;
     for(my $i = 1; $i <= $numberDesigns; $i++) {
