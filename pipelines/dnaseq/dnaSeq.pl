@@ -408,7 +408,7 @@ sub indelRealigner {
       if(!$rO_job->isUp2Date()) {
         SubmitToCluster::printSubmitCmd($rH_cfg, "indelRealigner", $seqName, 'REALIGN', $jobDependency, $sampleName, $rO_job);
         if($firstJob) {
-          $jobIds = $rO_job->getCommandJobId(0);
+          $jobId = $rO_job->getCommandJobId(0);
           print 'REALIGN_JOB_IDS='.$rO_job->getCommandJobId(0)."\n";
           $firstJob = 0;
         }
