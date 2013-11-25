@@ -135,6 +135,21 @@ my @steps = (
     'parent' => 'normalization'
   },
   {
+    'name'   => 'trinityQC',
+    'loop'   => 'global',
+    'parent' => 'trinity'
+  },
+  {
+    'name'   => 'blastSplitQuery',
+    'loop'   => 'global',
+    'parent' => 'trinity'
+  },
+  {
+    'name'   => 'blast',
+    'loop'   => 'global',
+    'parent' => 'blastSplitQuery'
+  },
+  {
     'name'   => 'rsemPrepareReference',
     'loop'   => 'global',
     'parent' => 'trinity'
@@ -204,16 +219,18 @@ sub main {
 
   for (my $i = $startStep; $i <= $endStep; $i++) {
     my $step = $steps[$i - 1];
-    my $stepName = $step->{'name'};
-    my $rSub_step = \&$stepName;
+    my $stepSubName = "Trinity::" . $step->{'name'};
+    my $rS_stepSub = \&$stepSubName;
     $step->{'jobIds'} = ();
 
     if ($step->{'loop'} eq 'sample') {
       foreach my $sample (keys %$rHoAoH_sampleInfo) {
-        &$rSub_step(\%cfg, $step, $workDirectory, $sample);
+        my $rO_job = &$rS_stepSub(\%cfg, $workDirectory, $sample);
+        submitJob(\%cfg, $step, $sample, $rO_job);
       }
     } else {
-      &$rSub_step(\%cfg, $step, $workDirectory);
+      my $rO_job = &$rS_stepSub(\%cfg, $workDirectory);
+      submitJob(\%cfg, $step, undef, $rO_job);
     }
   }
 }
@@ -251,77 +268,10 @@ sub submitJob {
   my $stepParentName = $step->{'parent'};
   my $stepParent = getStepParent($stepParentName);
   if (defined($stepParent)) {
-#    if ($stepParent->{'loop'} eq 'global') {
-#      $dependencies = $stepParent->{'globalJobId'};
-#    } elsif ($stepLoop eq 'global') {
-#      $dependencies = $stepParent->{'globalJobId'};
-#    }
-#
-#    my $stepParentJobId = $stepParent->{$sample . 'JobId'};
-#    if (defined($stepParentJobIdPrefix)) {
-#      my $stepParentLoop = $stepParent->{'loop'};
-#      $dependencies = "\$" . $stepParentJobIdPrefix . "_JOB_ID";
-#      if ($stepParentLoop eq 'sample') {
-#        $dependencies .= "S";
-#      }
-#    }
     $dependencies = join (":", map {"\$" . $_} @{$stepParent->{'jobIds'}});
   }
 
   my $jobId = SubmitToCluster::printSubmitCmd($rH_cfg, $stepName, undef, $jobIdPrefix, $dependencies, $sample, $rO_job);
 
-#  if (defined $sample) {
-#    print "$jobIds=\$$jobIds:\$$jobId\n\n";
-#    $step->{$sample . 'JobId'} = $jobId;
-#  } else {
-#    $step->{'globalJobId'} = $jobId;
-#  }
-
   push (@{$step->{'jobIds'}}, $jobId);
-}
-
-sub normalization {
-  my $rH_cfg = shift;
-  my $step = shift;
-  my $workDirectory = shift;
-
-  my $rO_job = Trinity::normalize_by_kmer_coverage($rH_cfg, $workDirectory);
-  submitJob($rH_cfg, $step, undef, $rO_job);
-}
-
-sub trinity {
-  my $rH_cfg = shift;
-  my $step = shift;
-  my $workDirectory = shift;
-
-  my $rO_job = Trinity::trinity($rH_cfg, $workDirectory);
-  submitJob($rH_cfg, $step, undef, $rO_job);
-}
-
-sub rsemPrepareReference {
-  my $rH_cfg = shift;
-  my $step = shift;
-  my $workDirectory = shift;
-
-  my $rO_job = Trinity::rsemPrepareReference($rH_cfg, $workDirectory);
-  submitJob($rH_cfg, $step, undef, $rO_job);
-}
-
-sub rsem {
-  my $rH_cfg = shift;
-  my $step = shift;
-  my $workDirectory = shift;
-  my $sample = shift;
-
-  my $rO_job = Trinity::rsem($rH_cfg, $workDirectory, $sample);
-  submitJob($rH_cfg, $step, $sample, $rO_job);
-}
-
-sub edgeR {
-  my $rH_cfg = shift;
-  my $step = shift;
-  my $workDirectory = shift;
-
-  my $rO_job = Trinity::edgeR($rH_cfg, $workDirectory);
-  submitJob($rH_cfg, $step, undef, $rO_job);
 }
