@@ -273,6 +273,18 @@ sub laneMetrics {
         print 'LANE_METRICS_JOB_IDS=${LANE_METRICS_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'laneMarkDup', 'clusterDependencySep').$rO_job->getCommandJobId(0)."\n";
       }
     }
+
+    $outputMetrics = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.dup.recal.all.metrics';
+    my $rO_collectMetricsJob = Picard::collectMetrics($rH_cfg, $sortedLaneBamFile, $outputMetrics);
+    if(!$rO_collectMetricsJob->isUp2Date()) {
+      SubmitToCluster::printSubmitCmd($rH_cfg, "collectMetrics", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'COLLECTMETRICS', $jobDependency, $sampleName, $rO_collectMetricsJob);
+      if($first == 1) {
+        print 'LANE_METRICS_JOB_IDS='.$rO_collectMetricsJob->getCommandJobId(0)."\n";
+      }
+      else {
+        print 'LANE_METRICS_JOB_IDS=${LANE_METRICS_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'collectMetrics', 'clusterDependencySep').$rO_collectMetricsJob->getCommandJobId(0)."\n";
+      }
+    }
   }
 
   return '${LANE_METRICS_JOB_IDS}';
