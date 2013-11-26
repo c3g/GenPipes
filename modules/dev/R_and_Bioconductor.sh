@@ -9,7 +9,7 @@ VERSION="3.0.2"
 DEP_PATH="https://bitbucket.org/mugqic/mugqic_resources/raw/master/modules/R_and_Bioconductor_packages.txt" 
 
 # Download and compile and install
-INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/R/R-$VERSION # where to install.
+INSTALL_PATH=$MUGQIC_INSTALL_HOME_DEV/software/R/R-$VERSION # where to install.
 mkdir -p $INSTALL_PATH
 cd $INSTALL_PATH
 wget http://cran.r-project.org/src/base/R-${VERSION:0:1}/R-$VERSION.tar.gz
@@ -27,7 +27,7 @@ $INSTALL_PATH/bin/R --vanilla <<'EOF'
 	source("http://bioconductor.org/biocLite.R")
 	deps=readLines("R_and_Bioconductor_packages.txt")
 
-	# Programmatically add all the org pacakges
+	# Programmatically add all the org packages
         contribUrl = contrib.url(biocinstallRepos(), type = 'source')
         availPkgs  = available.packages(contribUrl, type = 'source')	
         org.packages = rownames(availPkgs)[grepl("^org", rownames(availPkgs))]
@@ -55,11 +55,11 @@ chmod -R g+rwX $INSTALL_PATH &
 # Module def file..
 echo "#%Module1.0
 proc ModulesHelp { } {
-       puts stderr \"\tMUGQIC - Adds R to your environment \"
+       puts stderr \"\tMUGQIC - Adds R to your test environment \"
 }
 module-whatis \"MUGQIC - Adds R to your environment \"
                        
-set             root                \$::env(MUGQIC_INSTALL_HOME)/software/R/R-$VERSION
+set             root                \$::env(MUGQIC_INSTALL_HOME_DEV)/software/R/R-$VERSION
 setenv          R_LIBS             \$root/lib64/R/library
 #prepend-path    MANPATH            \$root/share              
 prepend-path    PATH               \$root/bin
@@ -75,8 +75,8 @@ set ModulesVersion \"$VERSION\"
 
 " > .version
 
-mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/R
-mv .version $VERSION $MUGQIC_INSTALL_HOME/modulefiles/mugqic/R
+mkdir -p $MUGQIC_INSTALL_HOME_DEV/modulefiles/mugqic/R
+mv .version $VERSION $MUGQIC_INSTALL_HOME_DEV/modulefiles/mugqic/R
 
 
 

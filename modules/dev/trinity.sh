@@ -35,6 +35,7 @@ setenv          TRINITY_HOME        \$root ;
 prepend-path    PATH                \$root ;
 prepend-path    PATH                \$root/util ;
 prepend-path    PATH                \$root/util/RSEM_util ;
+prepend-path    PATH                \$root/Analysis/DifferentialExpression ;
 " > $VERSION
 
 ################################################################################
