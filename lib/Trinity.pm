@@ -66,7 +66,7 @@ sub moduleLoad {
 }
 
 
-sub normalization {
+sub normalize_by_kmer_coverage {
   my $rH_cfg = shift;
   my $workDirectory = shift;
 
@@ -119,8 +119,8 @@ sub trinity {
     ]);
 
     $command .= "Trinity.pl \\
- --left  $leftList.normalized_K25_C30_pctSD100.fq \\
- --right $rightList.normalized_K25_C30_pctSD100.fq \\
+ --left  $leftList.normalized_*.fq \\
+ --right $rightList.normalized_*.fq \\
  --output \$WORK_DIR/trinity_out_dir \\\n";
     $command .= " --JM " . getParam($rH_cfg, 'trinity', 'jellyfishMemory') . " \\\n";
     $command .= " --CPU " . getParam($rH_cfg, 'trinity', 'trinityCPU') . " \\\n";
@@ -148,7 +148,7 @@ sub trinityQC {
     ]);
 
     $command .= "Rscript -e 'library(gqSeqUtils); dnaFastaStats(filename = \\\"\$WORK_DIR/trinity_out_dir/Trinity.fasta\\\", type = \\\"trinity\\\", output.prefix = \\\"\$WORK_DIR/trinity_out_dir/Trinity.stats\\\")' \n";
-    $command .= "alignReads.pl --seqType fa --left \$WORK_DIR/normalization/left.fa --right \$WORK_DIR/normalization/right.fa --SS_lib_type RF --retain_intermediate_files --aligner bowtie --target \$WORK_DIR/trinity_out_dir/Trinity.fasta \\\n";
+    $command .= "alignReads.pl --seqType fa --left \$WORK_DIR/normalization/left.fa --right \$WORK_DIR/normalization/right.fa --SS_lib_type RF --retain_intermediate_files --aligner bowtie --target \$WORK_DIR/trinity_out_dir/Trinity.fasta -- -p 4 \\\n";
 
     $rO_job->addCommand($command);
   }
@@ -162,6 +162,14 @@ sub blastSplitQuery {
   my $rO_job = new Job();
   if (!$rO_job->isUp2Date()) {
     my $command = "\n";
+
+    $command .= moduleLoad($rH_cfg, [
+      ['blast', 'moduleVersion.exonerate']
+    ]);
+
+    my $blastQueryChunksDir = "\$WORK_DIR/blast/blast_query_chunks";
+    $command = "mkdir -p $blastQueryChunksDir\n";
+    $command .= "fastasplit -f \$WORK_DIR/trinity_out_dir/Trinity.fasta -o $blastQueryChunksDir -c " . getParam($rH_cfg, 'blast', 'blastNodes') . " \\\n";
 
     $rO_job->addCommand($command);
   }

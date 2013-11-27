@@ -2,24 +2,24 @@
 
 =head1 NAME
 
-I<ParallelBlast>
+I<parallelBlast>
 
 =head1 SYNOPSIS
 
-ParallelBlast [options] [command [arguments]]
+parallelBlast [options] [command [arguments]]
 
 =head1 DESCRIPTION
 
-B<ParallelBlast> is a script made to do multiple BLAST
+B<parallelBlast> is a script made to do multiple BLAST
 system calls in a multicore machine.
 
-B<ParallelBlast> will try to guess the number of cores 
+B<parallelBlast> will try to guess the number of cores 
 on a linux machine, split the <query file> in 'number_of_core - 1' 
 (using the program fastasplit) and  run in parallel one BLAST job 
 per splitted <query file>.
 
 
-B<ParallelBlast> also accepts an specific number of jobs.
+B<parallelBlast> also accepts an specific number of jobs.
  
 =head1 OPTIONS
 
@@ -66,7 +66,7 @@ the initial <query file>. Instead use the option B<--OUT or -O> explained above.
 
 B<I<EXAMPLE>> Run BLASTx with 20 threads.
 
-B<ParallelBlast -file query_file.txt --OUT final_blast_results.txt -n 20 --BLAST 'blastx -db nr -outfmt 6 -evalue e-10'> 
+B<parallelBlast -file query_file.txt --OUT final_blast_results.txt -n 20 --BLAST 'blastx -db nr -outfmt 6 -evalue e-10'> 
 
 
 =head1 AUTHOR

@@ -33,42 +33,6 @@ B<File::Basename> path parsing
 B<Cwd> path parsing
 
 
-
-B<The pipeline specific libs should be in a dir called lib/ placed in the same dir this as this script.>
-
-I<Pipeline specific Libs:>
-
-B<GetFastaAlias>
-
-B<MergeFastq>
-
-B<LoadConfig>
-
-B<SampleSheet>
-
-B<BAMtools>
-
-B<SplitFile>
-
-B<Trinity>
-
-B<BLAST>
-
-B<SampleSheet>
-
-B<SequenceDictionaryParser>
-
-B<SubmitToCluster>
-
-B<Trimmomatic>
-
-B<BWA>
-
-B<HtseqCount>
-
-B<DiffExpression>
-
-
 =head1 Scripts
 
 This pipeline uses a set of scripts. 
@@ -92,10 +56,6 @@ generate_BLAST_HQ.sh
 
 getStat.sh
 
-HtSeq_full_matrix.sh
-
-HtSeq_temp_matrix.sh
-
 ParallelBlast.pl
 
 Parallelize
@@ -104,7 +64,7 @@ Parallelize
 
 # Strict Pragmas
 #---------------------
-use strict;
+use strict qw(vars subs);
 use warnings;
 
 #---------------------
@@ -219,18 +179,15 @@ sub main {
 
   for (my $i = $startStep; $i <= $endStep; $i++) {
     my $step = $steps[$i - 1];
-    my $stepSubName = "Trinity::" . $step->{'name'};
-    my $rS_stepSub = \&$stepSubName;
+    my $stepName = $step->{'name'};
     $step->{'jobIds'} = ();
 
     if ($step->{'loop'} eq 'sample') {
       foreach my $sample (keys %$rHoAoH_sampleInfo) {
-        my $rO_job = &$rS_stepSub(\%cfg, $workDirectory, $sample);
-        submitJob(\%cfg, $step, $sample, $rO_job);
+        &$stepName(\%cfg, $step, $workDirectory, $sample);
       }
-    } else {
-      my $rO_job = &$rS_stepSub(\%cfg, $workDirectory);
-      submitJob(\%cfg, $step, undef, $rO_job);
+    } else {  # Global step
+      &$stepName(\%cfg, $step, $workDirectory);
     }
   }
 }
@@ -256,7 +213,6 @@ sub submitJob {
   my $rO_job = shift;
 
   my $stepName = $step->{'name'};
-  my $stepLoop = $step->{'loop'};
   my $jobIdPrefix = uc($stepName);
   my $jobIds = $jobIdPrefix . "_JOB_IDS";
   if (defined $sample) {
@@ -274,4 +230,81 @@ sub submitJob {
   my $jobId = SubmitToCluster::printSubmitCmd($rH_cfg, $stepName, undef, $jobIdPrefix, $dependencies, $sample, $rO_job);
 
   push (@{$step->{'jobIds'}}, $jobId);
+}
+
+
+# Step sub
+#---------
+
+sub normalization {
+  my $rH_cfg = shift;
+  my $step = shift;
+  my $workDirectory = shift;
+
+  my $rO_job = Trinity::normalize_by_kmer_coverage($rH_cfg, $workDirectory);
+  submitJob($rH_cfg, $step, undef, $rO_job);
+}
+
+sub trinity {
+  my $rH_cfg = shift;
+  my $step = shift;
+  my $workDirectory = shift;
+
+  my $rO_job = Trinity::trinity($rH_cfg, $workDirectory);
+  submitJob($rH_cfg, $step, undef, $rO_job);
+}
+
+sub trinityQC {
+  my $rH_cfg = shift;
+  my $step = shift;
+  my $workDirectory = shift;
+
+  $rO_job = Trinity::trinityQC($rH_cfg, $workDirectory);
+  submitJob($rH_cfg, $step, undef, $rO_job);
+}
+
+sub blastSplitQuery {
+  my $rH_cfg = shift;
+  my $step = shift;
+  my $workDirectory = shift;
+
+  my $rO_job = Trinity::blast($rH_cfg, $workDirectory);
+  submitJob($rH_cfg, $step, undef, $rO_job);
+}
+
+sub blast {
+  my $rH_cfg = shift;
+  my $step = shift;
+  my $workDirectory = shift;
+
+  my $rO_job = Trinity::blast($rH_cfg, $workDirectory);
+  submitJob($rH_cfg, $step, undef, $rO_job);
+}
+
+sub rsemPrepareReference {
+  my $rH_cfg = shift;
+  my $step = shift;
+  my $workDirectory = shift;
+
+  my $rO_job = Trinity::rsemPrepareReference($rH_cfg, $workDirectory);
+  submitJob($rH_cfg, $step, undef, $rO_job);
+}
+
+sub rsem {
+  my $rH_cfg = shift;
+  my $step = shift;
+  my $workDirectory = shift;
+  my $sample = shift;
+
+  my $rO_job = Trinity::rsem($rH_cfg, $workDirectory, $sample);
+  submitJob($rH_cfg, $step, $sample, $rO_job);
+}
+
+sub edgeR {
+  my $rH_cfg = shift;
+  my $step = shift;
+  my $workDirectory = shift;
+
+  my $rO_job = Trinity::edgeR($rH_cfg, $workDirectory);
+  submitJob($rH_cfg, $step, undef, $rO_job);
 }
