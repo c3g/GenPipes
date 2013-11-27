@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<smrtpipeSettings>
+	<protocol version="1.4" id="hgap_settings.xml">
+	</protocol>
+	<module name="P_Fetch"/>
+	<module name="P_Filter">
+		<param name="minLength">        <value>50</value>    </param>
+		<param name="minSubReadLength"> <value>50</value>    </param>
+		<param name="readScore">        <value>0.75</value>  </param>
+		<param name="artifact">         <value>-1000</value> </param> <!-- remove subreads with self-match (missed adapters)-->
+	</module>
+
+	<module name="P_PreAssemblerDagcon" label="PreAssembler v2" editableInJob="true">
+		<title>Using DAG-based consensus algorithm, pre-assemble long reads as the first step of the Hierarchical Genome Assembly process (HGAP). Version 2 is a stepping stone for scaling to much larger genomes.</title>
+		<param name="computeLengthCutoff" label="Compute Minimum Seed Read Length" editable="true">
+			<title>Compute "Minimum Seed Read Length"</title>
+			<value>False</value>
+			<input type="checkbox" />
+		</param>
+		<param name="minLongReadLength">
+			<value>8831</value>
+		</param>
+		<param name="targetChunks" label="Split Target into Chunks" required="true"><value>1</value></param>
+		<param name="splitBestn" label="Alignment Candidates Per Chunk" required="true"><value>24</value></param>
+		<param name="totalBestn" lable="Total Alignment Candidates"><value>24</value></param>
+		<param name="blasrOpts" label="BLASR Options (Advanced)">
+			<title>The -bestn and -nCandidates options should be approximately equal to the expected seed read coverage</title>
+			<value> -noSplitSubreads -minReadLength 200 -maxScore -1000 -maxLCPLength 16 </value>
+			<input type="text" />
+		</param>
+	</module>
+<fileName>settings.xml</fileName>
+</smrtpipeSettings>  
