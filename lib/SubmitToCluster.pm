@@ -127,7 +127,6 @@ sub printSubmitCmd {
   if (LoadConfig::getParam($rH_cfg, $stepName, 'clusterCmdProducesJobId') eq "true") {
     print $jobId . '=$(';
   }
-  # Print out job command
 
   my $rA_FilesToTest = $rO_job->getFilesToTest();
   # Erase dones, on all jobs of the series
@@ -136,6 +135,8 @@ sub printSubmitCmd {
   } else {
     print 'echo "';
   }
+
+  # Print out job command
   print $command;
   print ' && echo \"MUGQICexitStatus:\$?\" ';
   # Only add if it's the last job of the series.
