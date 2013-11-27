@@ -1,3 +1,4 @@
+maps
 GEOquery
 org.Mm.eg.db
 org.Rn.eg.db
@@ -17,6 +18,7 @@ affyPLM
 akima
 annotate
 AnnotationDbi
+ape
 ash
 base
 beanplot
@@ -42,6 +44,7 @@ colorspace
 compiler
 corpcor
 crlmm
+ctc
 datasets
 DBI
 dichromat
