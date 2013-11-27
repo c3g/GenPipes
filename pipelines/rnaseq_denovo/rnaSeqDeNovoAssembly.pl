@@ -259,7 +259,7 @@ sub trinityQC {
   my $step = shift;
   my $workDirectory = shift;
 
-  $rO_job = Trinity::trinityQC($rH_cfg, $workDirectory);
+  my $rO_job = Trinity::trinityQC($rH_cfg, $workDirectory);
   submitJob($rH_cfg, $step, undef, $rO_job);
 }
 
