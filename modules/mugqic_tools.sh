@@ -21,11 +21,12 @@ tar zxvf $SOFTWARE-$VERSION.tar.gz
 mv mugqic-mugqic_tools* $SOFTWARE-$VERSION
 
 # Add permissions and install software
-cd $INSTALL_DOWNLOAD
-chmod -R ug+rwX .
-chmod -R o+rX .
+cd $INSTALL_DOWNLOAD 
+rm -rf ${INSTALL_PATH}/${SOFTWARE}-${VERSION}
 mv -i $SOFTWARE-$VERSION $INSTALL_PATH
 mv -i $SOFTWARE-$VERSION.tar.gz $MUGQIC_INSTALL_HOME/archive
+
+chmod -R 775 ${INSTALL_PATH}/${SOFTWARE}-${VERSION}
 
 # Module file
 echo "#%Module1.0
