@@ -179,5 +179,57 @@ sub bestHit {
     return $ro_job;
 }
 
+sub dcmegablast{ #JT: Initially for for PacBio pipeline
+	my $rH_cfg      = shift;
+	my $gunzipCmd   = shift;
+	my $infileFasta = shift; 
+	my $outfmt      = shift;
+	my $outfile     = shift;
+
+	my $ro_job = new Job();
+    $ro_job->testInputOutputs([$infileFasta], [$outfile]);
+    
+	if (!$ro_job->isUp2Date()) {
+		my $cmd;
+		
+		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'blast', 'moduleVersion.blast').' ; ';
+		$cmd .= $gunzipCmd . ' &&';
+		$cmd .= ' blastn';
+		$cmd .= ' -task dc-megablast';
+		$cmd .= ' -query ' . $infileFasta;
+		$cmd .= ' -outfmt ' . $outfmt;
+		$cmd .= ' -out ' .$outfile;
+		$cmd .= ' -num_threads ' .LoadConfig::getParam($rH_cfg, 'blast', 'num_threads');
+		$cmd .= ' -db ' .LoadConfig::getParam($rH_cfg, 'blast', 'blastdb');
+
+
+      $ro_job->addCommand($cmd);
+    }
+    return $ro_job;
+}
+
+sub blastdbcmd{ # JT: Initially for PacBio pipeline
+	my $rH_cfg      = shift;
+	my $entryCmd    = shift;
+	my $outfile     = shift;
+
+	my $ro_job = new Job();
+    $ro_job->testInputOutputs(undef, [$outfile]);
+    
+	if (!$ro_job->isUp2Date()) {
+		my $cmd;
+		
+		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'blast', 'moduleVersion.blast').' ; ';
+		$cmd .= ' blastdbcmd';
+		$cmd .= ' -db ' . LoadConfig::getParam($rH_cfg, 'blast', 'blastdb');
+		$cmd .= ' -entry ' . $entryCmd;
+		$cmd .= ' -outfmt %f';
+		$cmd .= ' > ' . $outfile;
+
+      $ro_job->addCommand($cmd);
+    }
+    return $ro_job;
+}
+
 1;
 

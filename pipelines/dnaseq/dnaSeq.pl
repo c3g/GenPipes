@@ -305,6 +305,18 @@ sub laneMetrics {
         print 'LANE_METRICS_JOB_IDS=${LANE_METRICS_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'laneMarkDup', 'clusterDependencySep').$rO_job->getCommandJobId(0)."\n";
       }
     }
+
+    $outputMetrics = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.dup.recal.all.metrics';
+    my $rO_collectMetricsJob = Picard::collectMetrics($rH_cfg, $sortedLaneBamFile, $outputMetrics);
+    if(!$rO_collectMetricsJob->isUp2Date()) {
+      SubmitToCluster::printSubmitCmd($rH_cfg, "collectMetrics", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'COLLECTMETRICS', $jobDependency, $sampleName, $rO_collectMetricsJob);
+      if($first == 1) {
+        print 'LANE_METRICS_JOB_IDS='.$rO_collectMetricsJob->getCommandJobId(0)."\n";
+      }
+      else {
+        print 'LANE_METRICS_JOB_IDS=${LANE_METRICS_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'collectMetrics', 'clusterDependencySep').$rO_collectMetricsJob->getCommandJobId(0)."\n";
+      }
+    }
   }
 
   return '${LANE_METRICS_JOB_IDS}';
@@ -429,14 +441,20 @@ sub indelRealigner {
     print "REALIGN_JOB_IDS=\"\"\n";
     my $processUnmapped = 1;
     my @excludeList;
+    my $firstJob = 1;
     for my $seqName (@chrToProcess) {
       push(@excludeList, $seqName);
       my $rO_job = GATK::realign($rH_cfg, $sampleName, 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.bam', $seqName, 'alignment/'.$sampleName.'/realign/'.$seqName, $processUnmapped);
+      if($processUnmapped == 1) {
+        $processUnmapped = 0;
+      }
+
       if(!$rO_job->isUp2Date()) {
         SubmitToCluster::printSubmitCmd($rH_cfg, "indelRealigner", $seqName, 'REALIGN', $jobDependency, $sampleName, $rO_job);
-        if($processUnmapped == 1) {
+        if($firstJob) {
+          $jobId = $rO_job->getCommandJobId(0);
           print 'REALIGN_JOB_IDS='.$rO_job->getCommandJobId(0)."\n";
-          $processUnmapped = 0;
+          $firstJob = 0;
         }
         else {
           print 'REALIGN_JOB_IDS=${REALIGN_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$rO_job->getCommandJobId(0)."\n";
