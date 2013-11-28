@@ -146,9 +146,8 @@ sub main {
 
   print STDERR "Samples: ".scalar(@sampleNames)."\n";
   if(defined($firstDependency) && length($firstDependency) > 0) {
-    my $firstStepName = $steps[0]->{'name'};
     for my $sampleName (@sampleNames) {
-      $globalDep{$firstStepName}->{$sampleName} = $firstDependency;
+      $globalDep{"default"}->{$sampleName} = $firstDependency;
     }
   }
 
@@ -168,6 +167,10 @@ sub main {
         # Tests for the first step in the list. Used for dependencies.
         my $jobIdVar = &$subref($currentStep, \%cfg, $currentWorkDir, $sampleName, $rAoH_sampleLanes, $rAoH_seqDictionary); 
         $globalDep{$fname}->{$sampleName} = $jobIdVar;
+
+        if($currentStep == $lastStepId) {
+          print "FINAL_STEP_".$idx.'_JOB_IDS='.$jobIdVar."\n";
+        }
       }
     }
   }
@@ -185,12 +188,13 @@ sub main {
   
   if($steps[$lastStepId]->{'stepLoop'} eq 'experiment') {
     print 'export FINAL_STEP_JOB_IDS='.$globalDep{$steps[$lastStepId]->{'name'}}->{'experiment'}."\n";
-    print 'echo "FINAL'."\t".'experiment'."\t".$globalDep{$steps[$lastStepId]->{'name'}}->{'experiment'}.'"'."\n";
   }
   else {
-    for my $sampleName (@sampleNames) {
-      print 'echo "FINAL'."\t".$sampleName."\t".$globalDep{$steps[$lastStepId]->{'name'}}->{$sampleName}.'"'."\n";
+    my @finalIds;
+    for(my $idx=0; $idx < @sampleNames; $idx++){
+      push(@finalIds, '${FINAL_STEP_'.$idx.'_JOB_IDS}');
     }
+    print 'export FINAL_STEP_JOB_IDS='.join(':', @finalIds)."\n";
   }
   
 }
@@ -204,7 +208,7 @@ sub trimAndAlign {
   my $rAoH_seqDictionary = shift;
 
   my $jobDependency = undef;
-  my $parentStep = $steps[$stepId]->{'parentStep'};
+  my $parentStep = 'default';
   if(defined($parentStep) && defined($globalDep{$parentStep}->{$sampleName})) {
     $jobDependency = $globalDep{$parentStep}->{$sampleName};
   }
