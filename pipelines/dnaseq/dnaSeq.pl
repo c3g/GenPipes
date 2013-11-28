@@ -310,7 +310,7 @@ sub laneMetrics {
       }
     }
 
-    $outputMetrics = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.dup.recal.all.metrics';
+    $outputMetrics = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.dup.metrics';
     my $rO_collectMetricsJob = Picard::collectMetrics($rH_cfg, $sortedLaneBamFile, $outputMetrics);
     if(!$rO_collectMetricsJob->isUp2Date()) {
       SubmitToCluster::printSubmitCmd($rH_cfg, "collectMetrics", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'COLLECTMETRICS', $jobDependency, $sampleName, $rO_collectMetricsJob);
