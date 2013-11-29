@@ -232,6 +232,29 @@ sub submitJob {
   push (@{$step->{'jobIds'}}, $jobId);
 }
 
+# Return parameter value from configuration file or die if this parameter is not defined
+sub getParam {
+  my $rH_cfg = shift;
+  my $section = shift;
+  my $paramName = shift;
+
+  my $paramValue = LoadConfig::getParam($rH_cfg, $section, $paramName);
+
+  if ($paramValue) {
+    return $paramValue;
+  } else {
+    die "Error: parameter \"[" . $section . "] " . $paramName . "\" is not defined in the configuration .ini file";
+  }
+}
+
+# Return module load command string from the given list of modules as [section, moduleVersion] from configuration file
+sub moduleLoad {
+  my $rH_cfg = shift;
+  my $rA_modules = shift;
+
+  return "module load " . join(" ", map {getParam($rH_cfg, $_->[0], $_->[1])} @$rA_modules) . "\n";
+}
+
 
 # Step sub
 #---------
@@ -268,7 +291,20 @@ sub blastSplitQuery {
   my $step = shift;
   my $workDirectory = shift;
 
-  my $rO_job = Trinity::blast($rH_cfg, $workDirectory);
+  my $rO_job = new Job();
+  if (!$rO_job->isUp2Date()) {
+    my $command = "\n";
+
+    $command .= moduleLoad($rH_cfg, [
+      ['blast', 'moduleVersion.exonerate']
+    ]);
+
+    my $blastQueryChunksDir = "\$WORK_DIR/blast/blast_query_chunks";
+    $command .= "mkdir -p $blastQueryChunksDir\n";
+    $command .= "fastasplit -f \$WORK_DIR/trinity_out_dir/Trinity.fasta -o $blastQueryChunksDir -c " . getParam($rH_cfg, 'blast', 'blastJobs') . " \\\n";
+
+    $rO_job->addCommand($command);
+  }
   submitJob($rH_cfg, $step, undef, $rO_job);
 }
 
@@ -277,8 +313,35 @@ sub blast {
   my $step = shift;
   my $workDirectory = shift;
 
-  my $rO_job = Trinity::blast($rH_cfg, $workDirectory);
-  submitJob($rH_cfg, $step, undef, $rO_job);
+  my $numJobs = getParam($rH_cfg, 'blast', 'blastJobs');
+
+  for (my $jobIndex = 0; $jobIndex < $numJobs; $jobIndex++) {
+    my $chunkIndex = sprintf("%07d", $jobIndex);
+
+    my $rO_job = new Job();
+    if (!$rO_job->isUp2Date()) {
+      my $command = "\n";
+
+      $command .= moduleLoad($rH_cfg, [
+        ['blast', 'moduleVersion.tools'],
+        ['blast', 'moduleVersion.exonerate'],
+        ['blast', 'moduleVersion.blast']
+      ]);
+
+      my $cores = getParam($rH_cfg, 'blast', 'clusterCPU');
+      $cores =~ s/^.*:ppn=(\d+).*$/$1/;
+      my $db = getParam($rH_cfg, 'blast', 'blastDb');
+      my $options = getParam($rH_cfg, 'blast', 'blastOptions');
+      my $blastDir = "\$WORK_DIR/blast/blast_query_chunks";
+      my $queryChunk = "$blastDir/Trinity.fasta_chunk_$chunkIndex";
+      my $resultChunk = "$blastDir/blastx_Trinity_$db" . "_chunk_$chunkIndex";
+
+      $command .= "parallelBlast.pl -file $queryChunk --OUT $resultChunk -n $cores --BLAST \'blastx -db $db $options\'";
+
+      $rO_job->addCommand($command);
+    }
+    submitJob($rH_cfg, $step, "blast_chunk_$jobIndex", $rO_job);
+  }
 }
 
 sub rsemPrepareReference {

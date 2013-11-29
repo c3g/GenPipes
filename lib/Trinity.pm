@@ -155,60 +155,6 @@ sub trinityQC {
   return $rO_job;
 }
 
-sub blastSplitQuery {
-  my $rH_cfg  = shift;
-  my $workDirectory = shift;
-
-  my $rO_job = new Job();
-  if (!$rO_job->isUp2Date()) {
-    my $command = "\n";
-
-    $command .= moduleLoad($rH_cfg, [
-      ['blast', 'moduleVersion.exonerate']
-    ]);
-
-    my $blastQueryChunksDir = "\$WORK_DIR/blast/blast_query_chunks";
-    $command = "mkdir -p $blastQueryChunksDir\n";
-    $command .= "fastasplit -f \$WORK_DIR/trinity_out_dir/Trinity.fasta -o $blastQueryChunksDir -c " . getParam($rH_cfg, 'blast', 'blastNodes') . " \\\n";
-
-    $rO_job->addCommand($command);
-  }
-  return $rO_job;
-}
-
-sub blast {
-  my $rH_cfg  = shift;
-  my $workDirectory = shift;
-
-  my $rO_job = new Job();
-  if (!$rO_job->isUp2Date()) {
-    my $command = "\n";
-
-    $rO_job->addCommand($command);
-  }
-  return $rO_job;
-}
-
-sub splitButterfly {
-  my $rH_cfg  = shift;
-  my $workDir = shift;
-  my $butterflyCommandChunksNumber = shift;
-
-  my $rO_job = new Job();
-  my $butterflyCommands = "$workDir/trinity/chrysalis/butterfly_commands";
-
-  $rO_job->testInputOutputs([$butterflyCommands], []);
-
-  if (!$rO_job->isUp2Date()) {
-    my $butterflyCommandsChunksDir = "$workDir/trinity/chrysalis/butterfly_commands_chunks";
-    my $command = "mkdir -p $butterflyCommandsChunksDir; ";
-    $command .= "shuf $butterflyCommands | split -d -a 3 -l \\`awk \'END{print int((NR - 1) / $butterflyCommandChunksNumber + 1)}\' $butterflyCommands\\` - $butterflyCommandsChunksDir/butterfly_commands.";
-
-    $rO_job->addCommand($command);
-  }
-  return $rO_job;
-}
-
 sub rsemPrepareReference {
   my $rH_cfg = shift;
   my $workDirectory = shift;
@@ -294,37 +240,6 @@ sub edgeR {
 
     $rO_job->addCommand($command);
   }
-  return $rO_job;
-}
-
-sub mergeCounts {
-  my $rH_cfg               = shift;
-  my $rA_filePrefixToMerge = shift;
-  my $outputIso            = shift;
-  my $outputGene           = shift;
-
-  my $rO_job = new Job();
-  $rO_job->testInputOutputs($rA_filePrefixToMerge,[$outputIso, $outputGene]);
-  
-  if (!$rO_job->isUp2Date()) {
-    my $command = undef;
-    $command .= 'module load '.getParam( $rH_cfg, 'mergeCounts', 'moduleVersion.trinity' ) . ' ;';
-    $command .= ' \$TRINITY_HOME/util/RSEM_util/merge_RSEM_frag_counts_single_table.pl ';
-    for my $input (@{$rA_filePrefixToMerge}){
-      $command .= ' '.$input.'.rsem.isoforms.results';
-    }
-    $command .= " | sed 's/\\.rsem\\.isoforms\\.results//g' > ".$outputIso;
-    $command .= ' ; ';
-    $command .= ' \$TRINITY_HOME/util/RSEM_util/merge_RSEM_frag_counts_single_table.pl ';
-    for my $input (@{$rA_filePrefixToMerge}){
-      $command .= ' '.$input.'.rsem.genes.results';
-    }
-    $command .= " | sed 's/\\.rsem\\.genes\\.results//g' > ".$outputGene;
-
-
-    $rO_job->addCommand($command);
-  }
-
   return $rO_job;
 }
 
