@@ -110,6 +110,11 @@ my @steps = (
     'parent' => 'blastSplitQuery'
   },
   {
+    'name'   => 'blastMergeResults',
+    'loop'   => 'global',
+    'parent' => 'blast'
+  },
+  {
     'name'   => 'rsemPrepareReference',
     'loop'   => 'global',
     'parent' => 'trinity'
@@ -299,9 +304,9 @@ sub blastSplitQuery {
       ['blast', 'moduleVersion.exonerate']
     ]);
 
-    my $blastQueryChunksDir = "\$WORK_DIR/blast/blast_query_chunks";
-    $command .= "mkdir -p $blastQueryChunksDir\n";
-    $command .= "fastasplit -f \$WORK_DIR/trinity_out_dir/Trinity.fasta -o $blastQueryChunksDir -c " . getParam($rH_cfg, 'blast', 'blastJobs') . " \\\n";
+    my $chunkDir = "\$WORK_DIR/blast/chunks";
+    $command .= "mkdir -p $chunkDir\n";
+    $command .= "fastasplit -f \$WORK_DIR/trinity_out_dir/Trinity.fasta -o $chunkDir -c " . getParam($rH_cfg, 'blast', 'blastJobs') . " \\\n";
 
     $rO_job->addCommand($command);
   }
@@ -330,18 +335,43 @@ sub blast {
 
       my $cores = getParam($rH_cfg, 'blast', 'clusterCPU');
       $cores =~ s/^.*:ppn=(\d+).*$/$1/;
+      my $program = getParam($rH_cfg, 'blast', 'blastProgram');
       my $db = getParam($rH_cfg, 'blast', 'blastDb');
       my $options = getParam($rH_cfg, 'blast', 'blastOptions');
-      my $blastDir = "\$WORK_DIR/blast/blast_query_chunks";
-      my $queryChunk = "$blastDir/Trinity.fasta_chunk_$chunkIndex";
-      my $resultChunk = "$blastDir/blastx_Trinity_$db" . "_chunk_$chunkIndex";
+      my $chunkDir = "\$WORK_DIR/blast/chunks";
+      my $chunkQuery = "$chunkDir/Trinity.fasta_chunk_$chunkIndex";
+      my $chunkResult = "$chunkDir/$program" . "_Trinity_$db" . "_chunk_$chunkIndex.tsv";
 
-      $command .= "parallelBlast.pl -file $queryChunk --OUT $resultChunk -n $cores --BLAST \'blastx -db $db $options\'";
+      $command .= "parallelBlast.pl -file $chunkQuery --OUT $chunkResult -n $cores --BLAST \'$program -db $db $options\'";
 
       $rO_job->addCommand($command);
     }
     submitJob($rH_cfg, $step, "blast_chunk_$jobIndex", $rO_job);
   }
+}
+
+sub blastMergeResults {
+  my $rH_cfg = shift;
+  my $step = shift;
+  my $workDirectory = shift;
+
+  my $numJobs = getParam($rH_cfg, 'blast', 'blastJobs');
+
+  my $rO_job = new Job();
+  if (!$rO_job->isUp2Date()) {
+    my $command = "\n";
+
+    my $program = getParam($rH_cfg, 'blast', 'blastProgram');
+    my $db = getParam($rH_cfg, 'blast', 'blastDb');
+    my $blastDir = "\$WORK_DIR/blast";
+    my $chunkResults = "$blastDir/chunks/$program" . "_Trinity_$db" . "_chunk_*.tsv";
+    my $result = "$blastDir/$program" . "_Trinity_$db.tsv";
+
+    $command .= "cat $chunkResults > $result";
+
+    $rO_job->addCommand($command);
+  }
+  submitJob($rH_cfg, $step, undef, $rO_job);
 }
 
 sub rsemPrepareReference {
