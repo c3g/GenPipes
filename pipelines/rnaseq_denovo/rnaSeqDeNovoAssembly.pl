@@ -333,8 +333,7 @@ sub blast {
         ['blast', 'moduleVersion.blast']
       ]);
 
-      my $cores = getParam($rH_cfg, 'blast', 'clusterCPU');
-      $cores =~ s/^.*:ppn=(\d+).*$/$1/;
+      my $cores = getParam($rH_cfg, 'blast', 'blastCPUperJob');
       my $program = getParam($rH_cfg, 'blast', 'blastProgram');
       my $db = getParam($rH_cfg, 'blast', 'blastDb');
       my $options = getParam($rH_cfg, 'blast', 'blastOptions');
