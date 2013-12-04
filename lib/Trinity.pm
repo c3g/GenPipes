@@ -206,7 +206,7 @@ sub rsem {
       --SS_lib_type RF \\
       --prefix $sample \\
       --output_dir \$WORK_DIR/rsem/$sample \\
-      --thread_count " . getParam($rH_cfg, 'rsem', 'rsemCPU') . " \n";
+      --thread_count " . getParam($rH_cfg, 'rsem', 'rsemCPU') . " \\\n";
 
     $rO_job->addCommand($command);
   }
