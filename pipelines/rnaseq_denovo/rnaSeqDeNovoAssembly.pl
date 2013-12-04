@@ -125,7 +125,7 @@ my @steps = (
     'parent' => 'rsemPrepareReference'
   },
   {
-    'name'   => 'edgeR',
+    'name'   => 'DGE',
     'loop'   => 'global',
     'parent' => 'rsem'
   }
