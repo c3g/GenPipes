@@ -20,12 +20,12 @@ proc ModulesHelp { } {
 }
 module-whatis \"MUGQIC - MUGQIC developped tools \"
                        
-set             root            \$::env(MUGQIC_INSTALL_HOME)/software/mugqic_pipeline
-prepend-path    PATH            \$root/pipelines/chipseq
-prepend-path    PATH            \$root/pipelines/dnaseq
-prepend-path    PATH            \$root/pipelines/rnaseq
-prepend-path    PERL5LIB        \$root/lib
-
+set             root                   \$::env(MUGQIC_INSTALL_HOME)/software/mugqic_pipeline
+setenv          MUGQIC_PIPELINE_HOME   \$root
+prepend-path    PATH                   \$root/pipelines/chipseq
+prepend-path    PATH                   \$root/pipelines/dnaseq
+prepend-path    PATH                   \$root/pipelines/rnaseq
+prepend-path    PERL5LIB               \$root/lib
 
 " > $VERSION
 
