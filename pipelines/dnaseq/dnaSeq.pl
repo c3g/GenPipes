@@ -116,6 +116,7 @@ sub printUsage {
   print "\t-s  start step, inclusive\n";
   print "\t-e  end step, inclusive\n";
   print "\t-n  nanuq sample sheet\n";
+  #print "\t-d  First dependency (optional)\n";
   print "\n";
   print "Steps:\n";
   for(my $idx=0; $idx < @steps; $idx++) {
@@ -126,13 +127,14 @@ sub printUsage {
 
 sub main {
   my %opts;
-  getopts('c:s:e:n:', \%opts);
+  getopts('c:s:e:n:d:', \%opts);
   
   if (!defined($opts{'c'}) || !defined($opts{'s'}) || !defined($opts{'e'}) || !defined($opts{'n'})) {
     printUsage();
     exit(1);
   }
 
+  my $firstDependency = $opts{'d'};
   my %cfg = LoadConfig->readConfigFile($opts{'c'});
   my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($opts{'n'});
   my $rAoH_seqDictionary = SequenceDictionaryParser::readDictFile(\%cfg);
@@ -143,15 +145,21 @@ sub main {
   my @sampleNames = keys %{$rHoAoH_sampleInfo};
 
   print STDERR "Samples: ".scalar(@sampleNames)."\n";
+  if(defined($firstDependency) && length($firstDependency) > 0) {
+    for my $sampleName (@sampleNames) {
+      $globalDep{"default"}->{$sampleName} = $firstDependency;
+    }
+  }
 
   SubmitToCluster::initPipeline;
 
   my $currentStep;
+  my $lastStepId = $opts{'e'}-1;
   for(my $idx=0; $idx < @sampleNames; $idx++){
     my $sampleName = $sampleNames[$idx];
     my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sampleName};
 
-    for($currentStep = $opts{'s'}-1; $currentStep <= ($opts{'e'}-1); $currentStep++) {
+    for($currentStep = $opts{'s'}-1; $currentStep <= $lastStepId; $currentStep++) {
       my $fname = $steps[$currentStep]->{'name'};
       my $subref = \&$fname;
 
@@ -159,11 +167,15 @@ sub main {
         # Tests for the first step in the list. Used for dependencies.
         my $jobIdVar = &$subref($currentStep, \%cfg, $currentWorkDir, $sampleName, $rAoH_sampleLanes, $rAoH_seqDictionary); 
         $globalDep{$fname}->{$sampleName} = $jobIdVar;
+
+        if($currentStep == $lastStepId) {
+          print "FINAL_STEP_".$idx.'_JOB_IDS='.$jobIdVar."\n";
+        }
       }
     }
-  }  
+  }
 
-  for($currentStep = $opts{'s'}-1; $currentStep <= ($opts{'e'}-1); $currentStep++) {
+  for($currentStep = $opts{'s'}-1; $currentStep <= $lastStepId; $currentStep++) {
     if($steps[$currentStep]->{'stepLoop'} eq 'experiment') {
       my $fname = $steps[$currentStep]->{'name'};
       my $subref = \&$fname;
@@ -172,6 +184,19 @@ sub main {
       $globalDep{$fname}->{'experiment'} = $jobIdVar;
     }
   }
+  
+  
+  if($steps[$lastStepId]->{'stepLoop'} eq 'experiment') {
+    print 'export FINAL_STEP_JOB_IDS='.$globalDep{$steps[$lastStepId]->{'name'}}->{'experiment'}."\n";
+  }
+  else {
+    my @finalIds;
+    for(my $idx=0; $idx < @sampleNames; $idx++){
+      push(@finalIds, '${FINAL_STEP_'.$idx.'_JOB_IDS}');
+    }
+    print 'export FINAL_STEP_JOB_IDS='.join(':', @finalIds)."\n";
+  }
+  
 }
 
 sub trimAndAlign {
@@ -181,6 +206,12 @@ sub trimAndAlign {
   my $sampleName = shift;
   my $rAoH_sampleLanes  = shift;
   my $rAoH_seqDictionary = shift;
+
+  my $jobDependency = undef;
+  my $parentStep = 'default';
+  if(defined($parentStep) && defined($globalDep{$parentStep}->{$sampleName})) {
+    $jobDependency = $globalDep{$parentStep}->{$sampleName};
+  }
 
   print "BWA_JOB_IDS=\"\"\n";
   my $setJobId = 0;
@@ -194,7 +225,12 @@ sub trimAndAlign {
     my $outputDir = 'reads/'.$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
     print 'mkdir -p '.$outputDir."\n";
     my $ro_trimJob = Trimmomatic::trim($rH_cfg, $sampleName, $rH_laneInfo, $outputDir);
-    SubmitToCluster::printSubmitCmd($rH_cfg, "trim", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'TRIM', undef, $sampleName, $ro_trimJob);
+    SubmitToCluster::printSubmitCmd($rH_cfg, "trim", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'TRIM', $jobDependency, $sampleName, $ro_trimJob);
+    
+    my $trimDependency = $ro_trimJob->getCommandJobId(0);
+    if(defined($jobDependency) && (!defined($trimDependency) || length ($trimDependency) == 0)) {
+      $trimDependency = $jobDependency;
+    }
 
     my $outputAlnDir = 'alignment/'.$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
     print 'mkdir -p '.$outputAlnDir."\n";
@@ -205,14 +241,14 @@ sub trimAndAlign {
       my $ro_bwaJob = BWA::aln($rH_cfg, $sampleName, $ro_trimJob->getOutputFileHash()->{PAIR1_OUTPUT}, $ro_trimJob->getOutputFileHash()->{PAIR2_OUTPUT},$ro_trimJob->getOutputFileHash()->{SINGLE1_OUTPUT}, $outputAlnPrefix, $rgId, $rgSampleName, $rgLibrary, $rgPlatformUnit, $rgCenter);
       if(!$ro_bwaJob->isUp2Date()) {
         if($ro_bwaJob->getNbCommands() == 3) {
-            SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'read1.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READ1ALN', $ro_trimJob->getCommandJobId(0), $sampleName, $ro_bwaJob, 0 );
-            SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'read2.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READ2ALN', $ro_trimJob->getCommandJobId(0), $sampleName, $ro_bwaJob, 1 );
+            SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'read1.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READ1ALN', $trimDependency, $sampleName, $ro_bwaJob, 0 );
+            SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'read2.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READ2ALN', $trimDependency, $sampleName, $ro_bwaJob, 1 );
             SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'sampe.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA', $ro_bwaJob->getCommandJobId(0).LoadConfig::getParam($rH_cfg, 'aln', 'clusterDependencySep').$ro_bwaJob->getCommandJobId(1), $sampleName, $ro_bwaJob, 2 );
             print 'BWA_JOB_IDS=${BWA_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'aln', 'clusterDependencySep').$ro_bwaJob->getCommandJobId(2)."\n";
             $setJobId = 1;
         }
         else {
-          SubmitToCluster::printSubmitCmd($rH_cfg, "aln", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READALN', $ro_trimJob->getCommandJobId(0), $sampleName, $ro_bwaJob, 0 );
+          SubmitToCluster::printSubmitCmd($rH_cfg, "aln", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READALN', $trimDependency, $sampleName, $ro_bwaJob, 0 );
           SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'samse.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA',  $ro_bwaJob->getCommandJobId(1), $sampleName, $ro_bwaJob, 1 );
           print 'BWA_JOB_IDS=${BWA_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$ro_bwaJob->getCommandJobId(1)."\n";
           $setJobId = 1;
@@ -222,7 +258,7 @@ sub trimAndAlign {
     else {
       my $ro_bwaJob = BWA::mem($rH_cfg, $sampleName, $ro_trimJob->getOutputFileHash()->{PAIR1_OUTPUT}, $ro_trimJob->getOutputFileHash()->{PAIR2_OUTPUT},$ro_trimJob->getOutputFileHash()->{SINGLE1_OUTPUT}, $outputAlnPrefix, $rgId, $rgSampleName, $rgLibrary, $rgPlatformUnit, $rgCenter);
       if(!$ro_bwaJob->isUp2Date()) {
-        SubmitToCluster::printSubmitCmd($rH_cfg, "mem", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA_MEM', $ro_trimJob->getCommandJobId(0), $sampleName, $ro_bwaJob);
+        SubmitToCluster::printSubmitCmd($rH_cfg, "mem", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA_MEM', $trimDependency, $sampleName, $ro_bwaJob);
         print 'BWA_JOB_IDS='.$ro_bwaJob->getCommandJobId(0)."\n";
         $setJobId = 1;
       }
@@ -271,6 +307,18 @@ sub laneMetrics {
       }
       else {
         print 'LANE_METRICS_JOB_IDS=${LANE_METRICS_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'laneMarkDup', 'clusterDependencySep').$rO_job->getCommandJobId(0)."\n";
+      }
+    }
+
+    $outputMetrics = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.dup.metrics';
+    my $rO_collectMetricsJob = Picard::collectMetrics($rH_cfg, $sortedLaneBamFile, $outputMetrics);
+    if(!$rO_collectMetricsJob->isUp2Date()) {
+      SubmitToCluster::printSubmitCmd($rH_cfg, "collectMetrics", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'COLLECTMETRICS', $jobDependency, $sampleName, $rO_collectMetricsJob);
+      if($first == 1) {
+        print 'LANE_METRICS_JOB_IDS='.$rO_collectMetricsJob->getCommandJobId(0)."\n";
+      }
+      else {
+        print 'LANE_METRICS_JOB_IDS=${LANE_METRICS_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'collectMetrics', 'clusterDependencySep').$rO_collectMetricsJob->getCommandJobId(0)."\n";
       }
     }
   }

@@ -123,7 +123,7 @@ sub parseSampleSheet {
       $sampleInfo{'read1File'} = $sampleInfo{'name'}.'.'.$sampleInfo{'libraryBarcode'}.'.'.$sampleInfo{'qualOffset'}.".pair1.fastq.gz";
       $sampleInfo{'read2File'} = $sampleInfo{'name'}.'.'.$sampleInfo{'libraryBarcode'}.'.'.$sampleInfo{'qualOffset'}.".pair2.fastq.gz";
     }
-    elsif($values[4] eq "SINGLE_END") {
+    elsif($values[$runTypeIdx] eq "SINGLE_END") {
       $sampleInfo{'read1File'} = $sampleInfo{'name'}.'.'.$sampleInfo{'libraryBarcode'}.'.'.$sampleInfo{'qualOffset'}.".single.fastq.gz";
     }
     else {

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?><smrtpipeSettings>
+  <protocol id="RS_Modification_and_Motif_Analysis.1.JT" version="1.3.0" editable="false">
+    <param name="name" label="Protocol Name" >
+      <value>RS_Modification_and_Motif_Analysis</value>
+      <input type="text" />
+      <rule required="true" />
+    </param>
+    <param name="description" >
+      <value>A resequencing analysis that identifies common bacterial base modifications (6-mA, 4-mC, and optionally TET-converted 5-mC) and then analyzes the methyltransferase recognition motifs. Reads are filtered by length and quality, mapped against a specified reference sequence, and then variants are called. The input xml have to contain the .cmp.h5 file obtained previously.</value>
+      <textarea />
+    </param>
+    <param name="version" hidden="true">
+      <value>1</value>
+      <input type="text" />
+      <rule required="true" type="digits" min="1" />
+    </param>
+    <param name="state" >
+      <value>active</value>
+      <input type="radio" value="active" />
+      <input type="radio" value="inactive" />
+    </param>
+    <param name="reference" editableInJob="true">
+      <value>REFERENCE</value>
+      <select>
+        <import contentType="text/xml" element="reference" name="name" value="directory" filter="state='active' type='sample'" isPath="true">common/references/index.xml</import>
+      </select>
+	</param>
+    <param name="control" hidden="true">
+      <value></value>
+    </param>
+    <param name="fetch" hidden="true">
+      <value>common/protocols/preprocessing/Fetch.1.xml</value>
+    </param>
+    <param name="postprocessing">
+      <value>common/protocols/postprocessing/ModificationAndMotifDetection.1.xml</value>
+      <select multiple="true">
+        <import contentType="text/directory" extension="xml">common/protocols/postprocessing</import>
+      </select>
+    </param>
+  </protocol>
+  <moduleStage name="fetch" editable="false" />
+  <moduleStage name="postprocessing" editable="false" />
+</smrtpipeSettings>
