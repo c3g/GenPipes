@@ -48,11 +48,10 @@ sub rnaQc{
   my $outputFolder     = shift;
 
 
-  my $outputIndexFile= $outputFolder. 'index.html';
+  my $outputIndexFile= $outputFolder. '/index.html';
 
   my $ro_job = new Job();
   $ro_job->testInputOutputs([$inputFile], [$outputFolder .'.zip', $outputIndexFile]);
-
   if (!$ro_job->isUp2Date()) {
     my $command;
     $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'mergeFiles','moduleVersion.java').' '.LoadConfig::getParam($rH_cfg, 'rnaQc','moduleVersion.bwa').' '.LoadConfig::getParam($rH_cfg, 'rnaQc','moduleVersion.rnaseqc') .' &&';
