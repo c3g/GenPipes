@@ -5,15 +5,15 @@
 #
 
 SOFTWARE=trinity
-VERSION=2013_08_14
+VERSION=20131110
 INSTALL_PATH=$MUGQIC_INSTALL_HOME_DEV/software/$SOFTWARE
 INSTALL_DOWNLOAD=$INSTALL_PATH/tmp
 mkdir -p $INSTALL_DOWNLOAD
 cd $INSTALL_DOWNLOAD
 
 # Download, extract, build
-wget http://sourceforge.net/projects/trinityrnaseq/files/trinityrnaseq_r$VERSION.tgz
-tar zxvf trinityrnaseq_r$VERSION.tgz
+wget http://sourceforge.net/projects/trinityrnaseq/files/trinityrnaseq_r$VERSION.tar.gz
+tar zxvf trinityrnaseq_r$VERSION.tar.gz
 cd trinityrnaseq_r$VERSION
 make
 
@@ -21,7 +21,7 @@ make
 cd $INSTALL_DOWNLOAD
 chmod -R ug+rwX .
 mv -i trinityrnaseq_r$VERSION $INSTALL_PATH
-mv -i trinityrnaseq_r$VERSION.tgz $MUGQIC_INSTALL_HOME_DEV/archive
+mv -i trinityrnaseq_r$VERSION.tar.gz $MUGQIC_INSTALL_HOME_DEV/archive
 
 # Module file
 echo "#%Module1.0
