@@ -6,6 +6,7 @@ I<MACS2>
 
 =head1 SYNOPSIS
 
+MACS2->getDesign()
 MACS2->generateMacs()
 
 =head1 DESCRIPTION
@@ -120,7 +121,7 @@ sub generatePeaks {
     die "ERROR: Undefined genome name $refGenome or undefined genome size variable in configuration file (genomeSize) \n";
   }
   # Call peaks command
-  $command .= ' module load ' . LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.python') . ' ' . LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.macs') . ';';
+  $command .= ' module load ' . LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.python') . ' ' . LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.macs') . ' && ';
   my $feoptions = "";
   my $extraFlags = "";
 
@@ -171,7 +172,7 @@ sub generatePeaks {
   }
 
   my $ro_job = new Job();
-  $ro_job->testInputOutputs(\@inputs, [$outputDir . '/' . $designName . $genomeSize . $options . '_peaks.xls']);
+  $ro_job->testInputOutputs(\@inputs, [$outputDir . '/' . $designName. '_peaks.xls']);
   if (!$ro_job->isUp2Date()) {
     $ro_job->addCommand($command);
   }
