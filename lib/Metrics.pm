@@ -65,7 +65,7 @@ sub rnaQc{
     $command .= ' -r ' .LoadConfig::getParam($rH_cfg, 'rnaQc','referenceFasta');
     $command .= ' -o ' .$outputFolder ;
     if (defined($libraryType) && $libraryType eq "single"){
-      $command .= ' -singleEnd ';
+      $command .= ' -singleEnd';
     }
     $command .= ' -BWArRNA ' .LoadConfig::getParam($rH_cfg, 'rnaQc','ribosomalFasta') .' &&';
     $command .= ' zip -r ' .$outputFolder .'.zip ' .$outputFolder;
