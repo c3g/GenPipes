@@ -46,8 +46,11 @@ sub rnaQc{
   my $rH_cfg        = shift;
   my $inputFile      = shift;
   my $outputFolder     = shift;
-
-
+  my $libraryType    = shift;
+  
+  if (!defined($libraryType) || $libraryType eq "") {
+    $libraryType= 'unknown';
+  }
   my $outputIndexFile= $outputFolder. '/index.html';
 
   my $ro_job = new Job();
@@ -61,6 +64,9 @@ sub rnaQc{
     $command .= ' -t ' .LoadConfig::getParam($rH_cfg, 'rnaQc','referenceGtf');
     $command .= ' -r ' .LoadConfig::getParam($rH_cfg, 'rnaQc','referenceFasta');
     $command .= ' -o ' .$outputFolder ;
+    if (defined($libraryType) && $libraryType eq "single"){
+      $command .= ' -singleEnd ';
+    }
     $command .= ' -BWArRNA ' .LoadConfig::getParam($rH_cfg, 'rnaQc','ribosomalFasta') .' &&';
     $command .= ' zip -r ' .$outputFolder .'.zip ' .$outputFolder;
 

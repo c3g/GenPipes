@@ -441,7 +441,8 @@ sub alignMetrics {
 	print "mkdir -p metrics/rnaseqRep/\n";
 	$sampleList = 'alignment/rnaseqc.samples.txt';
 	my $outputFolder = 'metrics/rnaseqRep';
-	my $rO_job = Metrics::rnaQc($rH_cfg, $sampleList, $outputFolder);
+	my $libraryType = LoadConfig::getParam($rH_cfg, 'default', 'libraryType');
+	my $rO_job = Metrics::rnaQc($rH_cfg, $sampleList, $outputFolder, $libraryType);
 	if(!$rO_job->isUp2Date()) {
 		SubmitToCluster::printSubmitCmd($rH_cfg, "rnaQc", LoadConfig::getParam($rH_cfg, 'rnaQc','projectName'), 'METRICSRNA', $mergingDependency, undef, $rO_job);
 	}
