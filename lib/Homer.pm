@@ -79,7 +79,7 @@ sub makeTagDirectory {
     $ro_job->testInputOutputs([$sortedBAM], undef);
 
     my $command;
-    $command = ' module load ' . LoadConfig::getParam($rH_cfg, 'qcTags', 'moduleVersion.python') . ' ' . LoadConfig::getParam($rH_cfg, 'qcTags', 'moduleVersion.homer') . ' ' . LoadConfig::getParam($rH_cfg, 'qcTags', 'moduleVersion.samtools') . ';';
+    $command = ' module load ' . LoadConfig::getParam($rH_cfg, 'qcTags', 'moduleVersion.python') . ' ' . LoadConfig::getParam($rH_cfg, 'qcTags', 'moduleVersion.homer') . ' ' . LoadConfig::getParam($rH_cfg, 'qcTags', 'moduleVersion.samtools') . ' &&';
     $command .= ' makeTagDirectory ' . $outputDir . '/' . $sampleName . ' ' . $sortedBAM . ' -checkGC -genome ' . $refGenome;
 
     $ro_job->addCommand($command);
@@ -103,7 +103,7 @@ sub makeUCSCFile {
   $ro_job->testInputOutputs([$tagDirectory], [$outputWiggle]);
 
   if (!$ro_job->isUp2Date()) {
-    $command .= ' module load ' . LoadConfig::getParam($rH_cfg, 'default' , 'moduleVersion.python') . ' ' . LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.homer') . ';';
+    $command .= ' module load ' . LoadConfig::getParam($rH_cfg, 'default' , 'moduleVersion.python') . ' ' . LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.homer') . ' &&';
     $command .= ' makeUCSCfile ' . $tagDirectory . ' -o ' . $outputWiggle;
     $ro_job->addCommand($command);
   }
@@ -123,7 +123,7 @@ sub annotatePeaks {
   $ro_job->testInputOutputs([$InputBed], [$outputDir.'/'.$designName]);
 
   if (!$ro_job->isUp2Date()) {
-    $command .= ' module load ' . LoadConfig::getParam($rH_cfg, 'default' , 'moduleVersion.python') . ' ' . LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.homer') . ';';
+    $command .= ' module load ' . LoadConfig::getParam($rH_cfg, 'default' , 'moduleVersion.python') . ' ' . LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.homer') . ' &&';
     $command .= ' annotatePeaks.pl ' . $InputBed . ' ' . $genomeName . ' -gsize ' . $genomeName . ' -cons -CpG -go ' . $outputDir . '/' . $designName . ' -genomeOntology ' . $outputDir . '/' . $designName . ' > ' . $outputDir . '/' . $designName . '.annotated.csv';
     $ro_job->addCommand($command);
   }
@@ -149,7 +149,7 @@ sub generateMotif {
 
   if (!$ro_job->isUp2Date()) {
     my $command;
-    $command .= ' module load ' . LoadConfig::getParam($rH_cfg, 'default' , 'moduleVersion.python') . ' ' . LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.homer') . ' ' . LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.weblogo') . ';';
+    $command .= ' module load ' . LoadConfig::getParam($rH_cfg, 'default' , 'moduleVersion.python') . ' ' . LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.homer') . ' ' . LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.weblogo') . ' &&';
     $command .= ' findMotifsGenome.pl ' . $InputBed . ' ' . $genomeName . ' ' . $outputDir . ' ' . $optionsThreads;
 
     $ro_job->addCommand($command);
@@ -169,7 +169,7 @@ sub qcPlotsR {
 
   if (!$ro_job->isUp2Date()) {
     my $command;
-    $command .= ' module add ' . LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.tools') . ' ' . LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.R') . ';';
+    $command .= ' module add ' . LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.tools') . ' ' . LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.R') . ' &&';
     $command .= ' Rscript ' . ' \$R_TOOLS/chipSeqGenerateQCMetrics.R ' . $designFile . ' ' . $outputDir;
 
     $ro_job->addCommand($command);

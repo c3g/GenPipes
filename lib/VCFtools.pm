@@ -47,8 +47,7 @@ sub annotateMappability {
     if (!$ro_job->isUp2Date()) {
         my $command;
 
-        $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'annotateMappability', 'moduleVersion.vcftools').' ;';
-        $command .= ' module load '.LoadConfig::getParam($rH_cfg, 'annotateMappability', 'moduleVersion.tabix').' ;';
+        $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'annotateMappability', 'moduleVersion.vcftools').' '.LoadConfig::getParam($rH_cfg, 'annotateMappability', 'moduleVersion.tabix').' &&';
         $command .= ' vcf-annotate -d \"key=INFO,ID=MIL,Number=1,Type=String,Description='."'".'Mappability annotation. 300IS 40SD 1SHI. HC = to high coverage (>400), LC = to high coverage (<50), MQ = to low mean mapQ (<20), ND = no data at the position'."'".'\"';
         $command .= ' -c CHROM,FROM,TO,INFO/MIL ';
         $command .= ' -a '.LoadConfig::getParam($rH_cfg, 'annotateMappability', 'referenceMappabilityBedIndexed');
@@ -72,11 +71,11 @@ sub indexVCF {
     if (!$ro_job->isUp2Date()) {
         my $command;
 
-        $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'indexVCF', 'moduleVersion.tabix').' ;';
+        $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'indexVCF', 'moduleVersion.tabix').' &&';
         $command .= ' bgzip -c';
         $command .= ' '.$inputVCF;
         $command .= ' > '.$outputVCF;
-        $command .= ' ; ';
+        $command .= ' && ';
         $command .= ' tabix -p vcf -f';
         $command .= ' '.$outputVCF;
 

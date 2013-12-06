@@ -78,7 +78,7 @@ sub pairedPI {
 
     if (!$ro_job->isUp2Date()) {
       my $command;
-      $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'pindel', 'moduleVersion.pindel').' ;';
+      $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'pindel', 'moduleVersion.pindel').' &&';
       $command .= ' pindel '.LoadConfig::getParam($rH_cfg, 'pindel', 'piParameters');
       $command .= ' -f '.$chr;
       $command .= ' -i '.$inputCFG;
@@ -100,7 +100,7 @@ sub mergeChro {
 
     if (!$ro_job->isUp2Date()) {
       my $command;
-      $command .= 'rm ' .$outputPrefix .'_BP' .' ' .$outputPrefix .'_D' .' ' .$outputPrefix .'_INV' .' ' .$outputPrefix .'_LI' .' ' .$outputPrefix .'_SI' .' ' .$outputPrefix .'_TD' .' ; ' ;
+      $command .= 'rm -rf ' .$outputPrefix .'_BP' .' ' .$outputPrefix .'_D' .' ' .$outputPrefix .'_INV' .' ' .$outputPrefix .'_LI' .' ' .$outputPrefix .'_SI' .' ' .$outputPrefix .'_TD' .' && ' ;
       $command .= 'touch ' .$outputPrefix .'_BP' .' ' .$outputPrefix .'_D' .' ' .$outputPrefix .'_INV' .' ' .$outputPrefix .'_LI' .' ' .$outputPrefix .'_SI' .' ' .$outputPrefix .'_TD' .' && ' ;
       $command .= 'for i in ' .$outputPrefix .'.*_BP ; do cat \$i >> '  .$outputPrefix .'_BP  ; done && ' ;
       $command .= 'for i in ' .$outputPrefix .'.*_D ; do cat \$i >> '  .$outputPrefix .'_D ; done && ' ;

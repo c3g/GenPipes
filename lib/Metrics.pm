@@ -46,13 +46,15 @@ sub rnaQc{
   my $rH_cfg        = shift;
   my $inputFile      = shift;
   my $outputFolder     = shift;
-
-
-  my $outputIndexFile= $outputFolder. 'index.html';
+  my $libraryType    = shift;
+  
+  if (!defined($libraryType) || $libraryType eq "") {
+    $libraryType= 'unknown';
+  }
+  my $outputIndexFile= $outputFolder. '/index.html';
 
   my $ro_job = new Job();
   $ro_job->testInputOutputs([$inputFile], [$outputFolder .'.zip', $outputIndexFile]);
-
   if (!$ro_job->isUp2Date()) {
     my $command;
     $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'mergeFiles','moduleVersion.java').' '.LoadConfig::getParam($rH_cfg, 'rnaQc','moduleVersion.bwa').' '.LoadConfig::getParam($rH_cfg, 'rnaQc','moduleVersion.rnaseqc') .' &&';
@@ -62,6 +64,9 @@ sub rnaQc{
     $command .= ' -t ' .LoadConfig::getParam($rH_cfg, 'rnaQc','referenceGtf');
     $command .= ' -r ' .LoadConfig::getParam($rH_cfg, 'rnaQc','referenceFasta');
     $command .= ' -o ' .$outputFolder ;
+    if (defined($libraryType) && $libraryType eq "single"){
+      $command .= ' -singleEnd ';
+    }
     $command .= ' -BWArRNA ' .LoadConfig::getParam($rH_cfg, 'rnaQc','ribosomalFasta') .' &&';
     $command .= ' zip -r ' .$outputFolder .'.zip ' .$outputFolder;
 
@@ -106,7 +111,7 @@ sub fpkmCor {
 
   if (!$ro_job->isUp2Date()) {
   	my $command;
-	  $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.cranR') .' ' . LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.tools') . ' ;';
+	  $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.cranR') .' ' . LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.tools') . ' &&';
   	$command .= ' Rscript \$R_TOOLS/fpkmStats.R ' .$paternFile .' ' .$folderFile .' ' .$outputBaseName;
 
     $ro_job->addCommand($command);
@@ -191,7 +196,7 @@ sub mergeReadStats{
 
   if (!$ro_job->isUp2Date()) {
 	my $command;
-  	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.cranR') .' ' . LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.tools') . ' ;';
+  	$command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.cranR') .' ' . LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.tools') . ' &&';
 	  $command .= ' Rscript \$R_TOOLS/mergeReadStat.R ' .$paternFile .' ' .$folderFile .' ' .$outputFile .' &&';
   	$command .= ' rm ' .$folderFile .'/*' .$paternFile;
 
@@ -303,7 +308,7 @@ sub mergePrintReadStats{
   $ro_job->testInputOutputs([$flagStatsFile], [$outputFile]);
 
   if (!$ro_job->isUp2Date()) {
-		$command .= 'module load ' . LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.tools') . ' ;';
+		$command .= 'module load ' . LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.tools') . ' &&';
 		$command .= ' perl -MReadMetrics -e \' ReadMetrics::mergeStats(\"'.$sampleName.'\",';
 		$command .= ' \"'. $outputFile .'\", ReadMetrics::parseTrimOutput(\"'.$sampleName.'\",';
 		$command .= ' \"'. $trimOutputFile .'\"), ReadMetrics::parseFlagstats(\"'.$sampleName.'\",';
