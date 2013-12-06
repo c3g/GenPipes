@@ -79,25 +79,26 @@ use Getopt::Std;
 use LoadConfig;
 use SampleSheet;
 use SubmitToCluster;
+use Trimmomatic;
 use Trinity;
 
 # Globals
 #---------------------------------
 my @steps = (
   {
+    'name'   => 'trim',
+    'loop'   => 'sample',
+    'parent' => undef
+  },
+  {
     'name'   => 'normalization',
     'loop'   => 'global',
-    'parent' => undef
+    'parent' => 'trimming'
   },
   {
     'name'   => 'trinity',
     'loop'   => 'global',
     'parent' => 'normalization'
-  },
-  {
-    'name'   => 'trinityQC',
-    'loop'   => 'global',
-    'parent' => 'trinity'
   },
   {
     'name'   => 'blastSplitQuery',
@@ -125,7 +126,7 @@ my @steps = (
     'parent' => 'rsemPrepareReference'
   },
   {
-    'name'   => 'DGE',
+    'name'   => 'differentialGeneExpression',
     'loop'   => 'global',
     'parent' => 'rsem'
   }
@@ -189,7 +190,8 @@ sub main {
 
     if ($step->{'loop'} eq 'sample') {
       foreach my $sample (keys %$rHoAoH_sampleInfo) {
-        &$stepName(\%cfg, $step, $workDirectory, $sample);
+        my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sample};
+        &$stepName(\%cfg, $step, $workDirectory, $sample, $rAoH_sampleLanes);
       }
     } else {  # Global step
       &$stepName(\%cfg, $step, $workDirectory);
@@ -229,7 +231,7 @@ sub submitJob {
   my $stepParentName = $step->{'parent'};
   my $stepParent = getStepParent($stepParentName);
   if (defined($stepParent)) {
-    $dependencies = join (":", map {"\$" . $_} @{$stepParent->{'jobIds'}});
+    $dependencies = join (getParam($rH_cfg, 'default', 'clusterDependencySep'), map {"\$" . $_} @{$stepParent->{'jobIds'}});
   }
 
   my $jobId = SubmitToCluster::printSubmitCmd($rH_cfg, $stepName, undef, $jobIdPrefix, $dependencies, $sample, $rO_job);
@@ -264,6 +266,23 @@ sub moduleLoad {
 # Step sub
 #---------
 
+sub trim {
+  my $rH_cfg = shift;
+  my $step = shift;
+  my $workDirectory = shift;
+  my $sample = shift;
+  my $rAoH_sampleLanes = shift;
+
+  for my $rH_laneInfo (@$rAoH_sampleLanes) {
+
+    my $trimDirectory = "\$WORK_DIR/reads/$sample/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
+    print 'mkdir -p ' . $trimDirectory . "\n";
+    my $rO_job = Trimmomatic::trim($rH_cfg, $sample, $rH_laneInfo, $trimDirectory);
+
+    submitJob($rH_cfg, $step, $sample, $rO_job);
+  }
+}
+
 sub normalization {
   my $rH_cfg = shift;
   my $step = shift;
@@ -279,15 +298,6 @@ sub trinity {
   my $workDirectory = shift;
 
   my $rO_job = Trinity::trinity($rH_cfg, $workDirectory);
-  submitJob($rH_cfg, $step, undef, $rO_job);
-}
-
-sub trinityQC {
-  my $rH_cfg = shift;
-  my $step = shift;
-  my $workDirectory = shift;
-
-  my $rO_job = Trinity::trinityQC($rH_cfg, $workDirectory);
   submitJob($rH_cfg, $step, undef, $rO_job);
 }
 
@@ -392,7 +402,7 @@ sub rsem {
   submitJob($rH_cfg, $step, $sample, $rO_job);
 }
 
-sub edgeR {
+sub differentialGeneExpression {
   my $rH_cfg = shift;
   my $step = shift;
   my $workDirectory = shift;
