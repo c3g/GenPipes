@@ -3,6 +3,10 @@ set -e
 umask 0002
 me=`basename $0`
 
+
+## Neutralize $R_LIBS
+export R_LIBS=
+
 ## Default arg values
 VERSION="latest"
 MODULEFILE_DIR="$MUGQIC_INSTALL_HOME_DEV/modulefiles/mugqic_dev/R"
@@ -92,13 +96,13 @@ then
 	cd $TEMPDIR
 	
 	# Create module files
-	cat > $MODULEFILE <<EOF	
+	cat > $MODULEFILE <<-EOF	
 		#%Module1.0
 		proc ModulesHelp { } {
-       	puts stderr "MUGQIC - Adds R to your environment"
+		puts stderr "MUGQIC - Adds R to your environment"
 		}
 		module-whatis "MUGQIC - Adds R to your environment"
-                       
+		
 		set             root               $INSTALL_DIR
 		setenv          R_LIBS             \$root/lib64/R/library
 		#prepend-path   MANPATH            \$root/share              
@@ -106,17 +110,17 @@ then
 		prepend-path    LD_LIBRARY_PATH    \$root/lib64:/software/libraries/GotoBLAS_LAPACK/shared
 		#prepend-path   LD_LIBRARY_PATH    \$root/lib64:\$root/standalone:/software/libraries/GotoBLAS_LAPACK/shared
 		#prepend-path   CPATH              \$root/include
-EOF
-	cat > $MODULEVERSIONFILE <<EOF
+		EOF
+	cat > $MODULEVERSIONFILE <<-EOF
 		#%Module1.0
 		set ModulesVersion $VERSION
-EOF
+		EOF
 fi
 
 
 
 ## Finally, update/install library!
-$INSTALL_DIR/bin/R --vanilla  <<'EOF'
+$INSTALL_DIR/bin/R --vanilla  <<-'EOF'
 
 	#' This script:
 	#' 1) Installs or update all packages hard-coded below
@@ -166,6 +170,7 @@ $INSTALL_DIR/bin/R --vanilla  <<'EOF'
 	deps = setdiff(deps,rownames(installed.packages()))
 
 	## Install pkgs not already installed, with ask=FALSE biocLite() takes care of updating if necessary
+	biocLite(ask=FALSE)
 	biocLite(deps,lib=.Library,ask=FALSE)
 	biocLite(deps,lib=.Library,ask=FALSE) # twice, just to make sure
 
@@ -186,7 +191,7 @@ $INSTALL_DIR/bin/R --vanilla  <<'EOF'
 	## chmod
 	system(paste("chmod -R a+rX",  .Library))
 	system(paste("chmod -R g+w", .Library))
-EOF
+	EOF
 
 
 exit 1;
@@ -194,6 +199,7 @@ exit 1;
 
 
 # TODO:
+# - Test X working?? wtf abacus
 # - Test update only modes 
 # - Test variants, e.g. latest, or with -m -i specified
 # - Need solution: should crash if any permi denied deal with cases of permission denied! (chmod could make script fail?)
