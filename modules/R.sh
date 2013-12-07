@@ -166,12 +166,11 @@ $INSTALL_DIR/bin/R --vanilla  <<-'EOF'
 	org.packages = rownames(availPkgs)[grepl("^org", rownames(availPkgs))]
 	deps = c(deps,org.packages)
 
-	## Define packages that need actual install
-	deps = setdiff(deps,rownames(installed.packages()))
-
 	## Install pkgs not already installed, with ask=FALSE biocLite() takes care of updating if necessary
 	biocLite(ask=FALSE)
+	deps = setdiff(deps,rownames(installed.packages())) # Define packages that need actual install
 	biocLite(deps,lib=.Library,ask=FALSE)
+	deps = setdiff(deps,rownames(installed.packages()))
 	biocLite(deps,lib=.Library,ask=FALSE) # twice, just to make sure
 
 	## Install Vennerable, since not yet in CRAN
