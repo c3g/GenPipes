@@ -193,17 +193,4 @@ $INSTALL_DIR/bin/R --vanilla  <<-'EOF'
 	EOF
 
 
-exit 1;
-
-
-
-# TODO:
-# - Test X working?? wtf abacus
-# - Test update only modes 
-# - Test variants, e.g. latest, or with -m -i specified
-# - Need solution: should crash if any permi denied deal with cases of permission denied! (chmod could make script fail?)
-# - no longe refering to INSTALL_HOME??? would it be possible to?
-# - figure out different  way to get latest version number, otherwise pkg downloaded twice
-# - Improve verbosity for log: too much and too few steps traking
-# - prod mode?
-
+exit
