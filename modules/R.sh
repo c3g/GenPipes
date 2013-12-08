@@ -68,7 +68,7 @@ echo "Working in $TEMPDIR"
 ## If latest is requested, determine version number. Unfort., only way seem to download R-latest tar.gz!
 if [  $VERSION = "latest" ]
 then
-	wget http://cran.r-project.org/src/base/R-latest.tar.gz
+	wget --no-verbose http://cran.r-project.org/src/base/R-latest.tar.gz
 	tar -xvf R-latest.tar.gz
 	VERSION=`cat ./*/VERSION`
 	rm -r R*
@@ -87,9 +87,10 @@ then
 	rm -rf $INSTALL_DIR
 
 	# Download, compile, install
-	wget http://cran.r-project.org/src/base/R-${VERSION:0:1}/R-$VERSION.tar.gz
-	tar -xvf R-$VERSION.tar.gz
+	wget --no-verbose http://cran.r-project.org/src/base/R-${VERSION:0:1}/R-$VERSION.tar.gz
+	tar -xf R-$VERSION.tar.gz
 	cd R-$VERSION
+	sed -i 's/Sys.umask("022")/Sys\.umask("002")/g' src/library/tools/R/build.R # hack to force umask 0002
 	./configure --prefix=$INSTALL_DIR  # TEMP s--with-readline=yes --with-readline=no
 	make -j8
 	make install

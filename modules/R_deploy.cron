@@ -1,0 +1,14 @@
+MAILTO="francois.lefebvre3@mail.mcgill.ca"
+0 3 * * * wget https://bitbucket.org/mugqic/mugqic_resources/raw/master/modules/R.sh -O R.sh
+
+
+
+* * * * * command to be executed
+- - - - -
+| | | | |
+| | | | ----- Day of week (0 - 7) (Sunday=0 or 7)
+| | | ------- Month (1 - 12)
+| | --------- Day of month (1 - 31)
+| ----------- Hour (0 - 23)
+------------- Minute (0 - 59)
+
