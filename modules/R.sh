@@ -74,7 +74,7 @@ then
 fi
 
 ## Paths, mkdirs
-INSTALL_DIR=$INSTALL_DIR/R-$VERSION 
+INSTALL_DIR=$INSTALL_DIR/R-$VERSION
 MODULEFILE="$MODULEFILE_DIR/$VERSION"
 MODULEVERSIONFILE="$MODULEFILE_DIR/.version"
 mkdir -p $MODULEFILE_DIR $INSTALL_DIR
@@ -83,8 +83,8 @@ mkdir -p $MODULEFILE_DIR $INSTALL_DIR
 if  [ ! -f $MODULEFILE ] || $FORCE_INSTALL
 then
 	# Prelim. cleanup
-	rm -rf $INSTALL_DIR
-
+	rm -rf $INSTALL_DIR $MODULEFILE $MODULEVERSIONFILE
+ 
 	# Download, compile, install
 	wget --no-verbose http://cran.r-project.org/src/base/R-${VERSION:0:1}/R-$VERSION.tar.gz
 	tar -xf R-$VERSION.tar.gz
@@ -191,7 +191,7 @@ $INSTALL_DIR/bin/R --vanilla  <<-'EOF'
 	EOF
 
 ## Adjust permissions
-chmod -R ug+rwX  $INSTALL_DIR $MODULEFILE
-chmod -R o+rX    $INSTALL_DIR $MODULEVERSIONFILE
+chmod -R ug+rwX  $INSTALL_DIR $MODULEFILE $MODULEVERSIONFILE
+chmod -R o+rX    $INSTALL_DIR $MODULEFILE $MODULEVERSIONFILE
 
 exit
