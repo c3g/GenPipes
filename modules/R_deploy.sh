@@ -18,6 +18,7 @@ exit
 
 # wget https://bitbucket.org/mugqic/mugqic_resources/raw/master/modules/R_deploy.sh -O R_deploy.sh && wget https://bitbucket.org/mugqic/mugqic_resources/raw/master/modules/R.sh -O R.sh
 # sh R_deploy.sh -f -v 3.0.0
+# sh R_deploy.sh -f -v 3.0.2
 # sh R.sh -f -m $MUGQIC_INSTALL_HOME/modulefiles/mugqic/R -i $MUGQIC_INSTALL_HOME/software/R -v 3.0.0
 # sh R.sh -f -m $MUGQIC_INSTALL_HOME/modulefiles/mugqic/R -i $MUGQIC_INSTALL_HOME/software/R -v 3.0.2
 
