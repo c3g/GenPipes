@@ -3,7 +3,6 @@ set -e
 umask 0002
 me=`basename $0`
 
-
 ## Neutralize $R_LIBS
 export R_LIBS=
 
@@ -69,12 +68,12 @@ echo "Working in $TEMPDIR"
 if [  $VERSION = "latest" ]
 then
 	wget --no-verbose http://cran.r-project.org/src/base/R-latest.tar.gz
-	tar -xvf R-latest.tar.gz
+	tar -xf R-latest.tar.gz
 	VERSION=`cat ./*/VERSION`
 	rm -r R*
 fi
 
-# Paths, mkdirs
+## Paths, mkdirs
 INSTALL_DIR=$INSTALL_DIR/R-$VERSION 
 MODULEFILE="$MODULEFILE_DIR/$VERSION"
 MODULEVERSIONFILE="$MODULEFILE_DIR/.version"
@@ -117,8 +116,6 @@ then
 		set ModulesVersion $VERSION
 		EOF
 fi
-
-
 
 ## Finally, update/install library!
 $INSTALL_DIR/bin/R --vanilla  <<-'EOF'
@@ -189,9 +186,12 @@ $INSTALL_DIR/bin/R --vanilla  <<-'EOF'
 	unlink(c(".packages.zip",".packages"),recursive=TRUE)
 
 	## chmod
-	system(paste("chmod -R a+rX",  .Library))
-	system(paste("chmod -R g+w", .Library))
+	#system(paste("chmod -R ug+rwX",  .Library))
+	#system(paste("chmod -R o+rX", .Library))
 	EOF
 
+## Adjust permissions
+chmod -R ug+rwX  $INSTALL_DIR $MODULEFILE_DIR
+chmod -R o+rX    $INSTALL_DIR $MODULEFILE_DIR
 
 exit
