@@ -175,13 +175,13 @@ $INSTALL_DIR/bin/R --vanilla  <<-'EOF'
 	install.packages("Vennerable", repos="http://R-Forge.R-project.org",lib=.Library, type='source')
 
 	## Install homebrew packages
-	require(roxygen2)
+#	require(roxygen2)
 	require(devtools)
 	deps = c("gqUtils","gqSeqUtils","gqData","gqMicroarrays")
 	download.file("https://bitbucket.org/mugqic/rpackages/get/master.zip",destfile='.packages.zip',method='wget')
 	unzip(".packages.zip",exdir='.packages')
 	deps = file.path( list.files(".packages",full.names=TRUE), deps )
-	sapply(deps,roxygenize)
+#	sapply(deps,roxygenize) # msg sent to R-help; roxygen2 not available R 3.0.0 or 3.0.1 !!!
 	install_local(deps)
 	unlink(c(".packages.zip",".packages"),recursive=TRUE)
 
