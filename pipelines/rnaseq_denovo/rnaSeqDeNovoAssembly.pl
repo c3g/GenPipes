@@ -66,7 +66,7 @@ Parallelize
 #---------------------
 use strict qw(vars subs);
 use warnings;
-
+use Data::Dumper;
 #---------------------
 
 # Add the mugqic_pipeline/lib/ path relative to this Perl script to @INC library search variable
@@ -84,54 +84,56 @@ use Trinity;
 
 # Globals
 #---------------------------------
-my @steps = (
+my @A_steps = (
   {
     'name'   => 'trim',
     'loop'   => 'sample',
-    'parent' => undef
+    'parent' => []
   },
   {
     'name'   => 'normalization',
     'loop'   => 'global',
-    'parent' => 'trimming'
+    'parent' => ['trim']
   },
   {
     'name'   => 'trinity',
     'loop'   => 'global',
-    'parent' => 'normalization'
+    'parent' => ['normalization']
   },
   {
     'name'   => 'blastSplitQuery',
     'loop'   => 'global',
-    'parent' => 'trinity'
+    'parent' => ['trinity']
   },
   {
     'name'   => 'blast',
     'loop'   => 'global',
-    'parent' => 'blastSplitQuery'
+    'parent' => ['blastSplitQuery']
   },
   {
     'name'   => 'blastMergeResults',
     'loop'   => 'global',
-    'parent' => 'blast'
+    'parent' => ['blast']
   },
   {
     'name'   => 'rsemPrepareReference',
     'loop'   => 'global',
-    'parent' => 'trinity'
+    'parent' => ['trinity']
   },
   {
     'name'   => 'rsem',
     'loop'   => 'sample',
-    'parent' => 'rsemPrepareReference'
+    'parent' => ['rsemPrepareReference']
   },
   {
     'name'   => 'differentialGeneExpression',
     'loop'   => 'global',
-    'parent' => 'rsem'
+    'parent' => ['rsem', 'blastMergeResults']
   }
 );
 
+# Create step hash indexed by step name for easy step retrieval
+my %H_steps =  map {$_->{'name'} => $_} @A_steps;
 
 main();
 
@@ -151,8 +153,8 @@ Steps:
 END
 
   # List and number step names
-  for (my $i = 1; $i <= @steps; $i++) {
-    $usage .= $i . "- " . $steps[$i - 1]->{'name'} . "\n";
+  for (my $i = 1; $i <= @A_steps; $i++) {
+    $usage .= $i . "- " . $A_steps[$i - 1]->{'name'} . "\n";
   }
 
   return $usage;
@@ -184,7 +186,7 @@ sub main {
   SubmitToCluster::initPipeline($workDirectory);
 
   for (my $i = $startStep; $i <= $endStep; $i++) {
-    my $step = $steps[$i - 1];
+    my $step = $A_steps[$i - 1];
     my $stepName = $step->{'name'};
     $step->{'jobIds'} = ();
 
@@ -197,20 +199,6 @@ sub main {
       &$stepName(\%cfg, $step, $workDirectory);
     }
   }
-}
-
-sub getStepParent {
-  my $stepParentName = shift;
-
-  my $stepParent = undef;
-  if (defined($stepParentName)) {
-    foreach my $step (@steps) {
-      if ($step->{'name'} eq $stepParentName) {
-        $stepParent = $step;
-      }
-    }
-  }
-  return $stepParent;
 }
 
 sub submitJob {
@@ -228,11 +216,17 @@ sub submitJob {
 
   my $dependencies = "";
 
-  my $stepParentName = $step->{'parent'};
-  my $stepParent = getStepParent($stepParentName);
-  if (defined($stepParent)) {
-    $dependencies = join (getParam($rH_cfg, 'default', 'clusterDependencySep'), map {"\$" . $_} @{$stepParent->{'jobIds'}});
-  }
+  # Retrieve the list of step parents
+  my @A_stepParents = map {$H_steps{$_}} @{$step->{'parent'}};
+
+  # Retrieve the list of lists of step parent job IDs
+  my @AoA_stepParentJobIds = map {$_->{'jobIds'}} @A_stepParents;
+
+  # Flatten this list
+  my @A_stepParentJobIds = map {@$_} @AoA_stepParentJobIds;
+
+  # Concatenate all job IDs with cluster dependency separator
+  $dependencies = join (getParam($rH_cfg, 'default', 'clusterDependencySep'), map {"\$" . $_} @A_stepParentJobIds);
 
   my $jobId = SubmitToCluster::printSubmitCmd($rH_cfg, $stepName, undef, $jobIdPrefix, $dependencies, $sample, $rO_job);
 
