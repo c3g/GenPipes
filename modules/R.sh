@@ -191,7 +191,7 @@ $INSTALL_DIR/bin/R --vanilla  <<-'EOF'
 	EOF
 
 ## Adjust permissions
-chmod -R ug+rwX  $INSTALL_DIR $MODULEFILE_DIR
-chmod -R o+rX    $INSTALL_DIR $MODULEFILE_DIR
+chmod -R ug+rwX  $INSTALL_DIR $MODULEFILE
+chmod -R o+rX    $INSTALL_DIR $MODULEVERSIONFILE
 
 exit
