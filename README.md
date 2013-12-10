@@ -17,7 +17,9 @@ Perl documentation on *.pm and *.pl files should \(as much as possible\) be crea
 # Documentation 
 -------------
 
-Visit our [wiki](https://biowiki.atlassian.net/wiki/display/PS/Pipeline+Space+Home) for an overview of the pipelines included in the mugqic_pipeline repository. To automatically generate documentation for perl wrappers and libraries, use [pod2html](http://perldoc.perl.org/Pod/Html.html). For instance, 
+Visit our [wiki](https://biowiki.atlassian.net/wiki/display/PS/Pipeline+Space+Home) for an overview of the pipelines included in the mugqic_pipeline repository. 
+
+To automatically generate documentation for perl wrappers and libraries, use [pod2html](http://perldoc.perl.org/Pod/Html.html). For instance, 
 
     pod2html --infile=src/mugqic_pipeline/pipelines/chipseq/chipSeq.pl --outfile=chipSeq.html
 
@@ -73,14 +75,14 @@ will generate a bash script for steps 1 to 21. This script can then be executed:
 
 #### Options
 
-> -c dna.abacus.ini the standard configuration file for the pipeline. Templates for some cluster systems like Abacus or Guillimin may already be available  [here](https://bitbucket.org/mugqic/mugqic_pipeline/src/31db440f92036e3bae7e7a9676fdb57c3a9f3112/pipelines/dnaseq/?at=master)
-> -s The start step
-> -e The end step
-> -n project.nanuq.csv the read set sheet, prepared as described above.
+  -c dna.abacus.ini the standard configuration file for the pipeline. Templates for some cluster systems like Abacus or Guillimin may already be available  [here](https://bitbucket.org/mugqic/mugqic_pipeline/src/31db440f92036e3bae7e7a9676fdb57c3a9f3112/pipelines/dnaseq/?at=master)
+  -s The start step
+  -e The end step
+  -n project.nanuq.csv the read set sheet, prepared as described above.
 
 ### RNAseq pipeline
 
-    perl rnaSeq.pl -c rnaSeq.abacus.ini -s 1 -e 14 -n project.nanuq.csv -d design.txt -w  `` `pwd` ``  > toRun.sh
+    perl rnaSeq.pl -c rnaSeq.abacus.ini -s 1 -e 14 -n project.nanuq.csv -d design.txt -w  `pwd`  > toRun.sh
 
 will generate a bash script for steps 1 to 14. This script can then be executed:
 
@@ -88,16 +90,16 @@ will generate a bash script for steps 1 to 14. This script can then be executed:
 
 #### Options
 
-> -c rnaSeq.abacus.ini the standard configuration file for the pipeline. Templates for some cluster systems like Abacus or Guillimin may already be available  [here] (https://bitbucket.org/mugqic/mugqic_pipeline/src/31db440f92036e3bae7e7a9676fdb57c3a9f3112/pipelines/rnaseq/?at=master)
-> -s The start step
-> -e The end step
-> -n project.nanuq.csv  the NANUQ project read set sheet, prepared as described above.
-> -d design.txt the design file. A tab separated value file that specifies the experimental design information of the project. The first column lists the sample names, which should match elements the column Name in the read set sheet. Subsequent columns specify > all the pairwise comparisons which should be undertaken: values should be either "2" (nominator), "1" (denominator) or "0" (exclude from comparison). See example here. 
-> -w The project's working directory. All job outputs will be sent to this directory.
+ -c rnaSeq.abacus.ini the standard configuration file for the pipeline. Templates for some cluster systems like Abacus or Guillimin may already be available  [here] (https://bitbucket.org/mugqic/mugqic_pipeline/src/31db440f92036e3bae7e7a9676fdb57c3a9f3112/pipelines/rnaseq/?at=master)
+ -s The start step
+ -e The end step
+ -n project.nanuq.csv  the NANUQ project read set sheet, prepared as described above.
+ -d design.txt the design file. A tab separated value file that specifies the experimental design information of the project. The first column lists the sample names, which should match elements the column Name in the read set sheet. Subsequent columns specify > all the pairwise comparisons which should be undertaken: values should be either "2" (nominator), "1" (denominator) or "0" (exclude from comparison). See example here. 
+ -w The project's working directory. All job outputs will be sent to this directory.
 
 ### CHIPseq pipeline
 
-    perl bin/chipSeq.pl -c chipSeq.abacus.ini -n project.nanuq.csv -d design.csv -w  `` `pwd`` ` -s 1 -e 11 > toRun.sh
+    perl bin/chipSeq.pl -c chipSeq.abacus.ini -n project.nanuq.csv -d design.csv -w  `pwd` -s 1 -e 11 > toRun.sh
 
 will generate a bash script for steps 1 to 11. This script can then be executed:
 
@@ -105,9 +107,9 @@ will generate a bash script for steps 1 to 11. This script can then be executed:
 
 #### Options
 
-> -c chipSeq.abacus.ini the standard configuration file for the pipeline. Templates for some cluster systems like Abacus or Guillimin may already be available  [here](https://bitbucket.org/mugqic/mugqic_pipeline/src/31db440f92036e3bae7e7a9676fdb57c3a9f3112/pipelines/chipseq/?at=master)
-> -s The start step
-> -e The end step
-> -n project.nanuq.csv the NANUQ Project sample file, generated automatically from the Read Set Search tab.
-> -d design.csv the design file. A tab separated value file that specifies the experimental design information of the project.
-> -w The current working directory. All job outputs will be sent to this directory.
+  -c chipSeq.abacus.ini the standard configuration file for the pipeline. Templates for some cluster systems like Abacus or Guillimin may already be available  [here](https://bitbucket.org/mugqic/mugqic_pipeline/src/31db440f92036e3bae7e7a9676fdb57c3a9f3112/pipelines/chipseq/?at=master)
+  -s The start step
+  -e The end step
+  -n project.nanuq.csv the NANUQ Project sample file, generated automatically from the Read Set Search tab.
+  -d design.csv the design file. A tab separated value file that specifies the experimental design information of the project.
+  -w The current working directory. All job outputs will be sent to this directory.
