@@ -1,5 +1,5 @@
 # MUGQIC PIPELINES
-================
+-------------
 
 This repository holds perl libs, wrappers and scripts of several bioinformatics pipelines.
 
@@ -17,7 +17,7 @@ Perl documentation on *.pm and *.pl files should \(as much as possible\) be crea
 # Documentation 
 -------------
 
-Visit our [wiki] (https://biowiki.atlassian.net/wiki/display/PS/Pipeline+Space+Home) for an overview of the pipelines included in the mugqic_pipeline repository. To automatically generate documentation for perl wrappers and libraries, use [pod2html] (http://perldoc.perl.org/Pod/Html.html). For instance, 
+Visit our [wiki](https://biowiki.atlassian.net/wiki/display/PS/Pipeline+Space+Home) for an overview of the pipelines included in the mugqic_pipeline repository. To automatically generate documentation for perl wrappers and libraries, use [pod2html](http://perldoc.perl.org/Pod/Html.html). For instance, 
 
 `pod2html --infile=src/mugqic_pipeline/pipelines/chipseq/chipSeq.pl --outfile=chipSeq.html`
 
@@ -28,7 +28,7 @@ MUGQIC pipelines are perl programs that write to the standard output a list of b
 
 1. Download and setup
 
-In order to make pipelines that work anywhere, regardless of user path settings, and to control for versions of third party software and data associated to the analysis, the pipelines depend on environment modules. The modules created by the bioinformatics team in Compute Canada&#39;s Guillimin and Mammouth clusters are located in the &#36;MUGCIC_INSTALL_HOME/modulefiles path and use the notation: mugqic/&#60software&#62/&#60version&#62 . Click [here] (https://biowiki.atlassian.net/wiki/display/CS/Software+and+Data+Dependencies) to setup modules on Guillimin and Mammouth clusters.
+In order to make pipelines that work anywhere, regardless of user path settings, and to control for versions of third party software and data associated to the analysis, the pipelines depend on environment modules. The modules created by the bioinformatics team in Compute Canada&#39;s Guillimin and Mammouth clusters are located in the &#36;MUGCIC_INSTALL_HOME/modulefiles path and use the notation: mugqic/&#60software&#62/&#60version&#62 . Click [here](https://biowiki.atlassian.net/wiki/display/CS/Software+and+Data+Dependencies) to setup modules on Guillimin and Mammouth clusters.
 
 
 To download the pipeline use git to obtain the most recent development version. Mugqic pipelines are hosted on github, and can be obtained via:
@@ -56,7 +56,7 @@ In its general operation all the mugqic pipelines require two input files: a pro
 
 ## The project&#39;s read set sheet 
 
-Is the project read set sheet, generated from [NANUQ] (http://gqinnovationcenter.com/index.aspx). See [this] (https://biowiki.atlassian.net/wiki/display/PS/Read+Set+Files+%28FastQ%29+Setup) page to learn how to properly setup your fastq files and your project read set sheet.
+Is the project read set sheet, generated from [NANUQ](http://gqinnovationcenter.com/index.aspx). See [this](https://biowiki.atlassian.net/wiki/display/PS/Read+Set+Files+%28FastQ%29+Setup) page to learn how to properly setup your fastq files and your project read set sheet.
 
 
 ## The configuration (ini) file. 
@@ -73,7 +73,7 @@ will generate a bash script for steps 1 to 21. This script can then be executed:
 
 ### Options
 
-    -c dna.abacus.ini the standard configuration file for the pipeline. Templates for some cluster systems like Abacus or Guillimin may already be available  [here] (https://bitbucket.org/mugqic/mugqic_pipeline/src/31db440f92036e3bae7e7a9676fdb57c3a9f3112/pipelines/dnaseq/?at=master)
+    -c dna.abacus.ini the standard configuration file for the pipeline. Templates for some cluster systems like Abacus or Guillimin may already be available  [here](https://bitbucket.org/mugqic/mugqic_pipeline/src/31db440f92036e3bae7e7a9676fdb57c3a9f3112/pipelines/dnaseq/?at=master)
     -s The start step
     -e The end step
     -n project.nanuq.csv the read set sheet, prepared as described above.
@@ -88,7 +88,7 @@ will generate a bash script for steps 1 to 14. This script can then be executed:
 
 ### Options
 
-    -c rnaSeq.abacus.ini the standard configuration file for the pipeline. Templates for some cluster systems like Abacus or Guillimin may already be available  [here] (https://bitbucket.org/mugqic/mugqic_pipeline/src/31db440f92036e3bae7e7a9676fdb57c3a9f3112/pipelines/rnaseq/?at=master)
+    -c rnaSeq.abacus.ini the standard configuration file for the pipeline. Templates for some cluster systems like Abacus or Guillimin may already be available  [here](https://bitbucket.org/mugqic/mugqic_pipeline/src/31db440f92036e3bae7e7a9676fdb57c3a9f3112/pipelines/rnaseq/?at=master)
     -s The start step
     -e The end step
     -n project.nanuq.csv  the NANUQ project read set sheet, prepared as described above.
@@ -105,7 +105,7 @@ will generate a bash script for steps 1 to 11. This script can then be executed:
 
 ### Options
 
-    -c chipSeq.abacus.ini the standard configuration file for the pipeline. Templates for some cluster systems like Abacus or Guillimin may already be available  [here] (https://bitbucket.org/mugqic/mugqic_pipeline/src/31db440f92036e3bae7e7a9676fdb57c3a9f3112/pipelines/chipseq/?at=master)
+    -c chipSeq.abacus.ini the standard configuration file for the pipeline. Templates for some cluster systems like Abacus or Guillimin may already be available  [here](https://bitbucket.org/mugqic/mugqic_pipeline/src/31db440f92036e3bae7e7a9676fdb57c3a9f3112/pipelines/chipseq/?at=master)
     -s The start step
     -e The end step
     -n project.nanuq.csv the NANUQ Project sample file, generated automatically from the Read Set Search tab.
