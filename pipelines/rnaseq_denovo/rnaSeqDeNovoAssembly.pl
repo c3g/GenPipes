@@ -20,53 +20,12 @@ B<Mathieu Bourgey> - I<mbourgey@genomequebec.com>
 
 B<Joel Fillon> - I<joel.fillon@mcgill.ca>
 
-=head1 DEPENDENCY
-
-B<Pod::Usage> Usage and help output.
-
-B<Data::Dumper> Used to debbug
-
-B<Config::Simple> Used to parse config file
-
-B<File::Basename> path parsing
-
-B<Cwd> path parsing
-
-
-=head1 Scripts
-
-This pipeline uses a set of scripts. 
-You should create a dir called B<script>
-and place it in the same dir as the 
-pipeline.
-
-B<This is the list of scripts>
-
-AliasFastqMerge.py
-
-create_gtf.sh
-
-fastalength
-
-fastasplit
-
-filter-duplicates-1.0-jar-with-dependencies.jar
-
-generate_BLAST_HQ.sh
-
-getStat.sh
-
-ParallelBlast.pl
-
-Parallelize
-
 =cut
 
 # Strict Pragmas
 #---------------------
 use strict qw(vars subs);
 use warnings;
-use Data::Dumper;
 #---------------------
 
 # Add the mugqic_pipeline/lib/ path relative to this Perl script to @INC library search variable
@@ -75,6 +34,8 @@ use lib "$FindBin::Bin/../../lib";
 
 # Dependencies
 #-----------------
+use Cwd 'abs_path';
+use Data::Dumper; # to delete
 use Getopt::Std;
 use LoadConfig;
 use SampleSheet;
@@ -135,18 +96,24 @@ my @A_steps = (
 # Create step hash indexed by step name for easy step retrieval
 my %H_steps =  map {$_->{'name'} => $_} @A_steps;
 
+my $configFile;
+my $nanuqSampleSheet;
+my $workDirectory;
+my $designFile;
+
 main();
 
 # SUB
 #-----------------
 sub getUsage {
   my $usage = <<END;
-Usage: perl $0 -h | -c FILE -s number -e number -n FILE [-w DIR]
+Usage: perl $0 -h | -c CONFIG_FILE -s start_step_num -e end_step_num -n SAMPLE_SHEET [-d DESIGN_FILE] [-w WORK_DIR]
   -h  help and usage
   -c  .ini config file
   -s  start step, inclusive
   -e  end step, inclusive
   -n  nanuq sample sheet
+  -d  design file
   -w  work directory (default current)
 
 Steps:
@@ -163,7 +130,7 @@ END
 sub main {
   # Check options
   my %opts;
-  getopts('hc:s:e:n:w:', \%opts);
+  getopts('hc:s:e:n:d:w:', \%opts);
 
   if (defined($opts{'h'}) ||
      !defined($opts{'c'}) ||
@@ -173,11 +140,12 @@ sub main {
     die (getUsage());
   }
 
-  my $configFile = $opts{'c'};
   my $startStep = $opts{'s'};
   my $endStep = $opts{'e'};
-  my $nanuqSampleSheet = $opts{'n'};
-  my $workDirectory = $opts{'w'};
+  $configFile = $opts{'c'};
+  $nanuqSampleSheet = $opts{'n'};
+  $designFile = $opts{'d'};
+  $workDirectory = $opts{'w'};
 
   # Get config and sample values
   my %cfg = LoadConfig->readConfigFile($configFile);
@@ -219,8 +187,8 @@ sub submitJob {
   # Retrieve the list of step parents
   my @A_stepParents = map {$H_steps{$_}} @{$step->{'parent'}};
 
-  # Retrieve the list of lists of step parent job IDs
-  my @AoA_stepParentJobIds = map {$_->{'jobIds'}} @A_stepParents;
+  # Retrieve the list of lists of step parent job IDs if any
+  my @AoA_stepParentJobIds = map {defined $_->{'jobIds'} ? $_->{'jobIds'} : []} @A_stepParents;
 
   # Flatten this list
   my @A_stepParentJobIds = map {@$_} @AoA_stepParentJobIds;
@@ -358,8 +326,6 @@ sub blastMergeResults {
   my $step = shift;
   my $workDirectory = shift;
 
-  my $numJobs = getParam($rH_cfg, 'blast', 'blastJobs');
-
   my $rO_job = new Job();
   if (!$rO_job->isUp2Date()) {
     my $command = "\n";
@@ -401,6 +367,44 @@ sub differentialGeneExpression {
   my $step = shift;
   my $workDirectory = shift;
 
-  my $rO_job = Trinity::edgeR($rH_cfg, $workDirectory);
+  my $rO_job = new Job();
+  if (!$rO_job->isUp2Date()) {
+    unless (defined $designFile) {die "Error: design file is not defined! (use -d option)\n" . getUsage()};
+    unless (-f $designFile) {die "Error: design file $designFile does not exist!\n" . getUsage()};
+    $designFile = abs_path($designFile);
+
+    my $command = "\n";
+
+    my $program = getParam($rH_cfg, 'blast', 'blastProgram');
+    my $db = getParam($rH_cfg, 'blast', 'blastDb');
+    my $blastDir = "\$WORK_DIR/blast";
+    my $blastResult = "$blastDir/$program" . "_Trinity_$db.tsv";
+
+    my $dgeDir = "\$WORK_DIR/DGE";
+    my $isoformsMatrix = "$dgeDir/isoforms.counts.matrix";
+    my $isoformsAnnotatedMatrix = "$dgeDir/isoforms.annotated.counts.matrix";
+    my $genesMatrix = "$dgeDir/genes.counts.matrix";
+    my $genesAnnotatedMatrix = "$dgeDir/genes.counts.annotated.matrix";
+
+    $command .= moduleLoad($rH_cfg, [
+      ['differentialGeneExpression', 'moduleVersion.trinity'],
+      ['differentialGeneExpression', 'moduleVersion.cranR']
+    ]);
+
+    $command .= "mkdir -p $dgeDir\n";
+
+    # Create isoforms and genes matrices with counts of RNA-seq fragments per feature using Trinity RSEM utility
+    $command .= "merge_RSEM_frag_counts_single_table.pl \$WORK_DIR/rsem/*/*.isoforms.results > $isoformsMatrix\n";
+    $command .= "merge_RSEM_frag_counts_single_table.pl \$WORK_DIR/rsem/*/*.genes.results > $genesMatrix\n";
+
+    # Merge isoforms and genes matrices with blast annotations if any
+    $command .= "awk '!x[\\\$1]++' $blastResult | awk -F\\\"\\t\\\" 'FNR==NR {a[\\\$1]=\\\$2; next}{OFS=\\\"\\t\\\"; if (a[\\\$1]) {print \\\$1, a[\\\$1]} else {print \\\$1, \\\$1}}' - $isoformsMatrix | sed '1s/^\\t/Isoform\\tSymbol/' | paste - <(cut -f 2- $isoformsMatrix) | sed '1s/\\.isoforms\\.results//g' > $isoformsAnnotatedMatrix\n";
+    $command .= "awk '!x[\\\$1]++' $blastResult | awk -F\\\"\\t\\\" 'FNR==NR {sub(/_seq.*/, \\\"\\\", \\\$1); a[\\\$1]=\\\$2; next}{OFS=\\\"\\t\\\"; if (a[\\\$1]) {print \\\$1, a[\\\$1]} else {print \\\$1, \\\$1}}' - $genesMatrix | sed '1s/^\\t/Gene\\tSymbol/' | paste - <(cut -f 2- $genesMatrix) | sed '1s/\\.genes\\.results//g' > $genesAnnotatedMatrix \\\n";
+
+    $command .= "Rscript \$R_TOOLS/edger.R -d $designFile -c $isoformsAnnotatedMatrix -o $dgeDir \\\n";
+    $command .= "Rscript \$R_TOOLS/edger.R -d $designFile -c $genesAnnotatedMatrix -o $dgeDir \\\n";
+
+    $rO_job->addCommand($command);
+  }
   submitJob($rH_cfg, $step, undef, $rO_job);
 }
