@@ -46,26 +46,27 @@ Whenever the latest snapshot from github is needed, use the command pull
 
     git pull origin
 
-### Setup
+#### Setup
 
 Add the mugqic directory library to your PERL5LIB path.
 
     export PERL5LIB=${PERL5LIB}:/home/user/src/mugqic_pipeline/lib/ 
 
+    
 ## Usage
 
 In its general operation all the mugqic pipelines require two input files: a project's read set sheet and a configuration (ini) file. Fastq files must be properly setup using a specific naming and directory structure. Additionally, the RNAseq and CHIPseq pipelines require a design file and the path for the job output logs. The command line options of the main pipelines are described below. Summaries of usage are printed when a command is run with no arguments. 
 
-### The project's read set sheet 
+###   The project's read set sheet 
 
 Is the project read set sheet, generated from [NANUQ](http://gqinnovationcenter.com/index.aspx). See [this](https://biowiki.atlassian.net/wiki/display/PS/Read+Set+Files+%28FastQ%29+Setup) page to learn how to properly setup your fastq files and your project read set sheet.
 
 
-### The configuration (ini) file. 
-Is the standard configuration file for the pipeline. It's a plain text file composed of sections, keys and values. Section name appears on a line in square brackets ([default]). Every key has a name and a value, separated by an equals sign (=), i.e. clusterSubmitCmd=msub. Semicolons (;) or number signs (#) at the beginning of the line indicate a comment. Comment lines are ignored. Generally sections are associated to specific steps of the pipeline. If a property is associated to a specific step, the program will search for keys in the respective section. If the key is not found, the values in the default section will be used. Templates for Compute Canada's Guillimin and Mammouth clusters may already be available in the pipeline repository.
+###   The configuration (ini) file. 
+Is the standard configuration file for the pipeline. It's a plain text file composed of sections, keys and values. Section name appears on a line in square brackets ([default]). Every key has a name and a value, separated by an equals sign (=), i.e. clusterSubmitCmd=msub. Semicolons (;) or number signs (#) at the beginning of the line indicate a comment. Comment lines are ignored. Generally sections are associated to specific steps of the pipeline. If a property is associated to a specific step, the program will search for keys in the respective section. If the key is not found, the values in the default section will be used. Templates for Compute Canada's Guillimin and Mammouth clusters may already be available in the respective pipeline directory (\(root/pipeline/Pipeline_name\)).
 
 
-### DNAseq pipeline
+###   DNAseq pipeline
 
     perl dnaSeq.pl -c dnaSeq.abacus.ini -s 1 -e 21 -n project.nanuq.csv > toRun.sh
 
@@ -73,14 +74,14 @@ will generate a bash script for steps 1 to 21. This script can then be executed:
 
     sh toRun.sh
 
-#### Options
+####    Options
 
-      -c *dna.abacus.ini* the standard configuration file for the pipeline. Templates for some cluster systems like Abacus or Guillimin may already be available [here](https://bitbucket.org/mugqic/mugqic_pipeline/src/31db440f92036e3bae7e7a9676fdb57c3a9f3112/pipelines/dnaseq/?at=master)
+      -c (dnaSeq.abacus.ini) the standard configuration file for the pipeline. Templates for some cluster systems like Abacus or Guillimin may already be available at https://bitbucket.org/mugqic/mugqic_pipeline/src/31db440f92036e3bae7e7a9676fdb57c3a9f3112/pipelines/dnaseq/?at=master
       -s The start step
       -e The end step
-      -n *project.nanuq.csv* the read set sheet, prepared as described above.
+      -n (project.nanuq.csv) the read set sheet, prepared as described above.
 
-### RNAseq pipeline
+###   RNAseq pipeline
 
     perl rnaSeq.pl -c rnaSeq.abacus.ini -s 1 -e 14 -n project.nanuq.csv -d design.txt -w  `pwd`  > toRun.sh
 
@@ -88,16 +89,16 @@ will generate a bash script for steps 1 to 14. This script can then be executed:
 
     sh toRun.sh
 
-#### Options
+####      Options
 
-      -c *rnaSeq.abacus.ini* the standard configuration file for the pipeline. Templates for some cluster systems like Abacus or Guillimin may already be available  [here](https://bitbucket.org/mugqic/mugqic_pipeline/src/31db440f92036e3bae7e7a9676fdb57c3a9f3112/pipelines/rnaseq/?at=master)
+      -c (rnaSeq.abacus.ini) the standard configuration file for the pipeline. Templates for some cluster systems like Abacus or Guillimin may already be available at https://bitbucket.org/mugqic/mugqic_pipeline/src/31db440f92036e3bae7e7a9676fdb57c3a9f3112/pipelines/rnaseq/?at=master
       -s The start step
       -e The end step
-      -n *project.nanuq.csv*  the NANUQ project read set sheet, prepared as described above.
-      -d *design.txt* the design file. A tab separated value file that specifies the experimental design information of the project. The first column lists the sample names, which should match elements the column Name in the read set sheet. Subsequent columns specify all the pairwise comparisons which should be undertaken: values should be either "2" (nominator), "1" (denominator) or "0" (exclude from comparison). 
+      -n (project.nanuq.csv)  the NANUQ project read set sheet, prepared as described above.
+      -d (design.txt) the design file. A tab separated value file that specifies the experimental design information of the project. The first column lists the sample names, which should match elements the column Name in the read set sheet. Subsequent columns specify all the pairwise comparisons which should be undertaken: values should be either "2" (nominator), "1" (denominator) or "0" (exclude from comparison). 
       -w The project's working directory. All job outputs will be sent to this directory.
 
-### CHIPseq pipeline
+###   CHIPseq pipeline
 
     perl bin/chipSeq.pl -c chipSeq.abacus.ini -n project.nanuq.csv -d design.csv -w  `pwd` -s 1 -e 11 > toRun.sh
 
@@ -105,11 +106,11 @@ will generate a bash script for steps 1 to 11. This script can then be executed:
 
     sh toRun.sh
 
-#### Options
+####      Options
 
-      -c *chipSeq.abacus.ini* the standard configuration file for the pipeline. Templates for some cluster systems like Abacus or Guillimin may already be available  [here](https://bitbucket.org/mugqic/mugqic_pipeline/src/31db440f92036e3bae7e7a9676fdb57c3a9f3112/pipelines/chipseq/?at=master)
+      -c (chipSeq.abacus.ini) the standard configuration file for the pipeline. Templates for some cluster systems like Abacus or Guillimin may already be at https://bitbucket.org/mugqic/mugqic_pipeline/src/31db440f92036e3bae7e7a9676fdb57c3a9f3112/pipelines/chipseq/?at=master
       -s The start step
       -e The end step
-      -n *project.nanuq.csv* the NANUQ Project sample file, prepared as described above.
-      -d *design.csv* the design file. A tab separated value file that specifies the experimental design information of the project.
+      -n (project.nanuq.csv) the NANUQ Project sample file, prepared as described above.
+      -d (design.csv) the design file. A tab separated value file that specifies the experimental design information of the project.
       -w The project's working directory. All job outputs will be sent to this directory.
