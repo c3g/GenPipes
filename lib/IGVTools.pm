@@ -50,7 +50,7 @@ sub computeTDF {
 
   if (!$ro_job->isUp2Date()) {
     my $command;
-    $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'igvtools', 'moduleVersion.igvtools').' ;';
+    $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'igvtools', 'moduleVersion.igvtools').' &&';
     $command .= ' igvtools count -f min,max,mean ';
     $command .= $inputBAM.' '.$inputBAM.'.tdf';
     $command .= ' '.LoadConfig::getParam($rH_cfg, 'computeTDF', 'igvGenome');

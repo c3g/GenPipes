@@ -98,7 +98,7 @@ sub align {
 
     if (!$ro_job->isUp2Date()) {
       $command .= 'module add mugqic/blast/2.2.27+;';
-      $command .= ' mkdir -p ' . $laneDirectory . 'fasta_split/' . basename($rH_cfg->{'blast.db'}) . ';';
+      $command .= ' mkdir -p ' . $laneDirectory . 'fasta_split/' . basename($rH_cfg->{'blast.db'}) . ' &&';
       $command .= ' ' . $rH_cfg->{'blast.program'} . ' -num_threads ' . $rH_cfg->{'blast.nbThreads'};
       $command .= ' -query ' . $input;
       $command .= ' -db ' . $rH_cfg->{'blast.db'} . ' -out ' . $output;
@@ -136,7 +136,7 @@ sub alignParallel {
 
     if (!$ro_job->isUp2Date()) {
       $command .= 'module add mugqic/blast/2.2.27+;';
-      $command .= ' mkdir -p ' . $laneDirectory . 'fasta_split/' . basename($rH_cfg->{'blast.db'}) . ';';
+      $command .= ' mkdir -p ' . $laneDirectory . 'fasta_split/' . basename($rH_cfg->{'blast.db'}) . ' &&';
       $command .= ' ' . $rH_cfg->{'blast.parallelBlast'} . ' --file ' . $input;
       $command .= ' --OUT ' . $output;
       $command .= ' -n ' . $rH_cfg->{'blast.nbThreads'} . ' --BLAST ' . '\'' . $rH_cfg->{'blast.program'};
@@ -168,13 +168,65 @@ sub bestHit {
 
     if (!$ro_job->isUp2Date()) {
       my $command .= 'cat ' . $input . '*.txt ';
-      $command .= ' >' . $laneDirectory . 'fasta_split/' . basename($rH_cfg->{'blast.db'})  . '/blastRes.txt ;';
+      $command .= ' >' . $laneDirectory . 'fasta_split/' . basename($rH_cfg->{'blast.db'})  . '/blastRes.txt &&';
       $command .= ' sh ' . $rH_cfg->{'blast.blastHq'} . ' ' . $laneDirectory . 'fasta_split/' . basename($rH_cfg->{'blast.db'})  . '/blastRes.txt ';
-      $command .= ' >' . $laneDirectory . 'fasta_split/' . basename($rH_cfg->{'blast.db'})  . '/blastRes_HQ.txt ;';
+      $command .= ' >' . $laneDirectory . 'fasta_split/' . basename($rH_cfg->{'blast.db'})  . '/blastRes_HQ.txt &&';
       $command .= ' ' . $rH_cfg->{'blast.BestHit'} . ' ' . $laneDirectory . 'fasta_split/' . basename($rH_cfg->{'blast.db'})  . '/blastRes_HQ.txt ';
       $command .= ' >' . $output;
 
       $ro_job->addCommand($command);
+    }
+    return $ro_job;
+}
+
+sub dcmegablast{ #JT: Initially for for PacBio pipeline
+	my $rH_cfg      = shift;
+	my $gunzipCmd   = shift;
+	my $infileFasta = shift; 
+	my $outfmt      = shift;
+	my $outfile     = shift;
+
+	my $ro_job = new Job();
+    $ro_job->testInputOutputs([$infileFasta], [$outfile]);
+    
+	if (!$ro_job->isUp2Date()) {
+		my $cmd;
+		
+		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'blast', 'moduleVersion.blast').' ; ';
+		$cmd .= $gunzipCmd . ' &&';
+		$cmd .= ' blastn';
+		$cmd .= ' -task dc-megablast';
+		$cmd .= ' -query ' . $infileFasta;
+		$cmd .= ' -outfmt ' . $outfmt;
+		$cmd .= ' -out ' .$outfile;
+		$cmd .= ' -num_threads ' .LoadConfig::getParam($rH_cfg, 'blast', 'num_threads');
+		$cmd .= ' -db ' .LoadConfig::getParam($rH_cfg, 'blast', 'blastdb');
+
+
+      $ro_job->addCommand($cmd);
+    }
+    return $ro_job;
+}
+
+sub blastdbcmd{ # JT: Initially for PacBio pipeline
+	my $rH_cfg      = shift;
+	my $entryCmd    = shift;
+	my $outfile     = shift;
+
+	my $ro_job = new Job();
+    $ro_job->testInputOutputs(undef, [$outfile]);
+    
+	if (!$ro_job->isUp2Date()) {
+		my $cmd;
+		
+		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'blast', 'moduleVersion.blast').' ; ';
+		$cmd .= ' blastdbcmd';
+		$cmd .= ' -db ' . LoadConfig::getParam($rH_cfg, 'blast', 'blastdb');
+		$cmd .= ' -entry ' . $entryCmd;
+		$cmd .= ' -outfmt %f';
+		$cmd .= ' > ' . $outfile;
+
+      $ro_job->addCommand($cmd);
     }
     return $ro_job;
 }

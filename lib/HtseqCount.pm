@@ -84,8 +84,8 @@ sub matrixMake {
     if (!$ro_job->isUp2Date()) {
       $command .= ' sh ' . $rH_cfg->{'htseq.tempMatrix'} . ' ' . 'alignment/' . $group . '/' . $group . '.gtf';
       $command .= ' ' . $input;
-      $command .= ' ' . $laneDirectory . 'tmpmatrix.csv ;';
-      $command .= ' sh ' . $rH_cfg->{'htseq.fullMatrix'} . ' ' . $laneDirectory . ' ;';
+      $command .= ' ' . $laneDirectory . 'tmpmatrix.csv &&';
+      $command .= ' sh ' . $rH_cfg->{'htseq.fullMatrix'} . ' ' . $laneDirectory . ' &&';
       $command .= ' cp ' . $laneDirectory . 'tmpmatrix.csv DGE/' . $group . '/matrix.csv ';
 
       $ro_job->addCommand($command);
@@ -109,7 +109,7 @@ sub readCount {
     $ro_job->testInputOutputs([$laneDirectory . $sampleName . '.QueryName.bam'], [$laneDirectory . $sampleName . '.readcount.cvs']);
 
     if (!$ro_job->isUp2Date()) {
-      $command .= ' module add mugqic/samtools/0.1.6; ';
+      $command .= ' module add mugqic/samtools/0.1.6 && ';
       $command .= ' samtools view ' . $laneDirectory . $sampleName . '.QueryName.bam | ';
       $command .= ' htseq-count - ' . 'alignment/' . $group . '/' . $group . '.gtf ';
       $command .= ' -s no >' . $laneDirectory . $sampleName . '.readcount.cvs';
@@ -138,7 +138,7 @@ sub readCountPortable{
     #Just need the command
     my $rO_viewFilterJob = SAMtools::viewFilter($rH_cfg, $inputBam);
 
-		$command .= ' module load '.LoadConfig::getParam($rH_cfg, 'htseq','moduleVersion.python') .' '.LoadConfig::getParam($rH_cfg, 'htseq','moduleVersion.htseq') .' ; ';
+		$command .= ' module load '.LoadConfig::getParam($rH_cfg, 'htseq','moduleVersion.python') .' '.LoadConfig::getParam($rH_cfg, 'htseq','moduleVersion.htseq') .' && ';
 		$command .= ' ' .$rO_viewFilterJob->getCommand(0);
 		$command .= ' | htseq-count - ' .  $inputGtf ;
 		$command .= ' -s ' .$strandInfo;

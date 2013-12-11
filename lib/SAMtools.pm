@@ -90,7 +90,7 @@ sub mpileupBuilder {
 
   if (!$ro_job->isUp2Date()) {
     my $command;
-    $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'mpileup', 'moduleVersion.samtools').' ;';
+    $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'mpileup', 'moduleVersion.samtools').' &&';
     $command .= ' samtools mpileup';
     $command .= ' '.LoadConfig::getParam($rH_cfg, 'mpileup', 'mpileupExtraFlags');
     $command .= ' -f '.$refGenome;
@@ -136,11 +136,11 @@ sub mergeFilterBCF {
 
   if (!$ro_job->isUp2Date()) {
     my $command;
-    $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'mergeFilterBCF', 'moduleVersion.samtools').' ;';
+    $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'mergeFilterBCF', 'moduleVersion.samtools').' &&';
     $command .= ' bcftools cat';
     $command .= ' '.$bcfInputs;
     $command .= ' > '.$outputBCF;
-    $command .= ' ; bcftools view '.$outputBCF;
+    $command .= ' && bcftools view '.$outputBCF;
     $command .= ' | vcfutils.pl varFilter';
     $command .= ' '.LoadConfig::getParam($rH_cfg, 'mergeFilterBCF', 'varfilterExtraFlags');
     $command .= ' > '.$outputVCF;
@@ -161,7 +161,7 @@ sub flagstat {
 
   if (!$ro_job->isUp2Date()) {
     my $command;
-    $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'flagstat', 'moduleVersion.samtools').' ;';
+    $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'flagstat', 'moduleVersion.samtools').' &&';
     $command .= ' samtools flagstat';
     $command .= ' '.$bamFile;
     $command .= ' > '.$output;
@@ -182,7 +182,7 @@ sub idxstats {
 
   if (!$ro_job->isUp2Date()) {
     my $command;
-    $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'idxstats', 'moduleVersion.samtools').' ;';
+    $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'idxstats', 'moduleVersion.samtools').' &&';
     $command .= ' samtools idxstats';
     $command .= ' '.$bamFile;
     $command .= ' > '.$output;
@@ -206,7 +206,7 @@ sub rawmpileup {
 
   if (!$ro_job->isUp2Date()) {
     my $command;
-    $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'rawmpileup', 'moduleVersion.samtools').' ;';
+    $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'rawmpileup', 'moduleVersion.samtools').' &&';
     $command .= ' samtools mpileup';
     $command .= ' '.LoadConfig::getParam($rH_cfg, 'rawmpileup', 'mpileupExtraFlags');
     $command .= ' -f '.$refGenome;
@@ -231,7 +231,7 @@ sub sort {
 
   if (!$ro_job->isUp2Date()) { 
     my $command;
-    $command .= 'module load ' .LoadConfig::getParam($rH_cfg,'default','moduleVersion.samtools') .' ;';
+    $command .= 'module load ' .LoadConfig::getParam($rH_cfg,'default','moduleVersion.samtools') .' &&';
     $command .= ' samtools sort';
     $command .= ' '.$option;
     $command .= ' '.$bamFile;
@@ -267,7 +267,7 @@ sub viewFilter {
 
   if (!$ro_job->isUp2Date()) {
   	my $command;
-	  $command .= 'module load ' .LoadConfig::getParam($rH_cfg,'default','moduleVersion.samtools') .' ;';
+	  $command .= 'module load ' .LoadConfig::getParam($rH_cfg,'default','moduleVersion.samtools') .' &&';
   	$command .= ' samtools view';
 	  $command .= ' ' .$option;
   	$command .= ' ' .$bamFile;

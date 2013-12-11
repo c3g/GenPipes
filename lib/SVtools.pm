@@ -48,8 +48,7 @@ sub runPairedDNAC {
 
     if (!$ro_job->isUp2Date()) {
         my $command;
-        $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'runPairedDNAC', 'moduleVersion.cranR').' ;';
-        $command .= ' module load '.LoadConfig::getParam($rH_cfg, 'runPairedDNAC', 'moduleVersion.svtools').' ;';
+        $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'runPairedDNAC', 'moduleVersion.cranR').' '.LoadConfig::getParam($rH_cfg, 'runPairedDNAC', 'moduleVersion.svtools').' &&';
         $command .= ' Rscript \${SVTOOLS_HOME}/Cancer/RunDNAC.6.0.R';
         $command .= ' -f '.$inputBins;
         $command .= ' -b '.$window;
@@ -72,7 +71,7 @@ sub filterDNAC {
 
     if (!$ro_job->isUp2Date()) {
         my $command;
-        $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'filterSV', 'moduleVersion.svtools').' ;';
+        $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'filterSV', 'moduleVersion.svtools').' &&';
         $command .= ' \${SVTOOLS_HOME}/Cancer/filterOutDNAC.sh';
         $command .= ' '.$inputDNACCalls;
         $command .= ' '.$outputPrefix.'.txt';
@@ -102,7 +101,7 @@ sub filterBrD {
 
     if (!$ro_job->isUp2Date()) {
         my $command;
-        $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'filterSVC', 'moduleVersion.svtools').' ;';
+        $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'filterSVC', 'moduleVersion.svtools').' &&';
         $command .= ' \${SVTOOLS_HOME}/Cancer/filterOutBrD.py';
         $command .= ' -f ' .$inputBrDCalls;
         $command .= ' -o ' .$outputPrefix.'.txt';
@@ -134,7 +133,7 @@ sub filterPI {
 
     if (!$ro_job->isUp2Date()) {
         my $command;
-        $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'filterSV', 'moduleVersion.svtools').' ;';
+        $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'filterSV', 'moduleVersion.svtools').' &&';
         $command .= ' \${SVTOOLS_HOME}/Cancer/filterOutPI.py';
         $command .= ' -f ' .$outputPrefix;
         $command .= ' -o ' .$outputPrefix.'.txt';
@@ -163,7 +162,7 @@ sub filterResults {
 
     if (!$ro_job->isUp2Date()) {
         my $command;
-        $command .= 'module load '.LoadConfig::getParam($rH_cfg, $stepIniPrefix, 'moduleVersion.svtools').' ;';
+        $command .= 'module load '.LoadConfig::getParam($rH_cfg, $stepIniPrefix, 'moduleVersion.svtools').' &&';
         $command .= ' \${SVTOOLS_HOME}/Cancer/filterBedResults.sh';
         $command .= ' '.$outputPrefix.'.txt' ;
         $command .= ' '.LoadConfig::getParam($rH_cfg, $stepIniPrefix, 'referenceMappabilityBed');
@@ -190,7 +189,7 @@ sub generateBedResults {
 
     if (!$ro_job->isUp2Date()) {
         my $command;
-        $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'bedSV', 'moduleVersion.svtools').' ;';
+        $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'bedSV', 'moduleVersion.svtools').' &&';
         $command .= ' \${SVTOOLS_HOME}/Cancer/rtxt2rbed.sh ';
         $command .= ' '.$outputPrefix.'.bed.other.filteredSV.annotate.txt';
         $command .= ' '.$outputPrefix.'.bed.other.filteredSV.annotate.bed';

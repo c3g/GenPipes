@@ -55,7 +55,7 @@ sub countBins {
 
     if (!$ro_job->isUp2Date()) {
         my $command;
-        $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'countBins', 'moduleVersion.java').' ' .LoadConfig::getParam($rH_cfg, 'countBins', 'moduleVersion.bamtools').' ; ';
+        $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'countBins', 'moduleVersion.java').' ' .LoadConfig::getParam($rH_cfg, 'countBins', 'moduleVersion.bamtools').' && ';
         $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'countBins', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'countBins', 'extraJavaFlags');
         $command .= ' -Xmx1500M -jar \${BAMTOOLS_JAR} bincounter';
         $command .= ' --norm '.$normType;
@@ -112,7 +112,7 @@ sub deletePairedDuplicates {
 
     if (!$ro_job->isUp2Date()) {
         $command .= 'module add '. LoadConfig::getParam($rH_cfg, 'default','moduleVersion.java') ;
-        $command .= ' ' . LoadConfig::getParam($rH_cfg, 'duplicate','moduleVersion.bamtools') . ';' ;
+        $command .= ' ' . LoadConfig::getParam($rH_cfg, 'duplicate','moduleVersion.bamtools') . ' &&' ;
         $command .= ' java '.LoadConfig::getParam($rH_cfg, 'duplicate', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'duplicate', 'dupRam').' -jar  \$BAMTOOLS_JAR filterdups' .  ' --read1 ' . $pair1 . ' --read2 ' . $pair2;
         $command .= ' -k 20 -o 15';
         $command .= ' && mv ' . $pair1 . '.dup.read1.gz ' . $outputFastqPair1Name;
@@ -140,7 +140,7 @@ sub deleteSingleDuplicates {
     if (!$ro_job->isUp2Date()) {
         my $command;
         $command .= 'module add '. LoadConfig::getParam($rH_cfg, 'default','moduleVersion.java') ;
-        $command .= ' ' . LoadConfig::getParam($rH_cfg, 'duplicate','moduleVersion.bamtools') . ';' ;
+        $command .= ' ' . LoadConfig::getParam($rH_cfg, 'duplicate','moduleVersion.bamtools') . ' &&' ;
         $command .= ' java '.LoadConfig::getParam($rH_cfg, 'duplicate', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'duplicate', 'dupRam').' -jar \$BAMTOOLS_JAR filterdups' . ' --read1 ' . $single;
         $command .= ' -k 20 -o 15';
         $command .= ' && mv ' . $single . '.dup.read1.gz ' . $outputFastqName;
