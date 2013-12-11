@@ -59,7 +59,7 @@ In its general operation all the mugqic pipelines require two input files: a pro
 
 ###   The project's read set sheet 
 
-Is csv plain text read set sheet generated from [NANUQ](http://gqinnovationcenter.com/index.aspx). See [this](https://biowiki.atlassian.net/wiki/display/PS/Read+Set+Files+%28FastQ%29+Setup) page to learn how to properly setup your fastq files and your project read set sheet.
+Is a csv plain text read set sheet generated from [NANUQ](http://gqinnovationcenter.com/index.aspx). See [this](https://biowiki.atlassian.net/wiki/display/PS/Read+Set+Files+%28FastQ%29+Setup) page to learn how to properly setup your fastq files and your project read set sheet.
 
 
 ###   The configuration (ini) file. 
