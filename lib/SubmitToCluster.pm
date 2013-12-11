@@ -37,6 +37,7 @@ use lib $FindBin::Bin;
 # Dependencies
 #--------------------
 use Cwd 'abs_path';
+use File::Basename;
 use LoadConfig;
 
 #--------------------
@@ -57,6 +58,9 @@ sub initPipeline {
     $workDir = "`pwd`";
   }
 
+  # Add script name (without suffix) as job list filename prefix (in practice, identical to pipeline name)
+  my $jobListPrefix = fileparse($0, qr/\.[^.]*/) . "_";
+
   # Set pipeline header and global variables
   print <<END;
 #!/bin/bash
@@ -64,7 +68,7 @@ sub initPipeline {
 WORK_DIR=$workDir
 JOB_OUTPUT_ROOT=\$WORK_DIR/job_output
 TIMESTAMP=`date +%FT%H.%M.%S`
-JOB_LIST=\$JOB_OUTPUT_ROOT/job_list_\$TIMESTAMP
+JOB_LIST=\$JOB_OUTPUT_ROOT/${jobListPrefix}job_list_\$TIMESTAMP
 cd \$WORK_DIR
 
 END
