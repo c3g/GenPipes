@@ -5,7 +5,7 @@
 #
 
 SOFTWARE=rsem
-VERSION=1.2.6
+VERSION=1.2.8
 INSTALL_PATH=$MUGQIC_INSTALL_HOME_DEV/software/$SOFTWARE
 INSTALL_DOWNLOAD=$INSTALL_PATH/tmp
 mkdir -p $INSTALL_DOWNLOAD
@@ -20,6 +20,7 @@ make
 # Add permissions and install software
 cd $INSTALL_DOWNLOAD
 chmod -R ug+rwX .
+chmod -R o+rX .
 mv -i $SOFTWARE-$VERSION $INSTALL_PATH
 mv -i $SOFTWARE-$VERSION.tar.gz $MUGQIC_INSTALL_HOME_DEV/archive
 
@@ -44,6 +45,7 @@ set ModulesVersion \"$VERSION\"" > .version
 # Add permissions and install module
 mkdir -p $MUGQIC_INSTALL_HOME_DEV/modulefiles/mugqic_dev/$SOFTWARE
 chmod -R ug+rwX $VERSION .version
+chmod -R o+rX $VERSION .version
 mv $VERSION .version $MUGQIC_INSTALL_HOME_DEV/modulefiles/mugqic_dev/$SOFTWARE
 
 # Clean up temporary installation files if any
