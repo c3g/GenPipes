@@ -103,7 +103,7 @@ sub makeUCSCFile {
   $ro_job->testInputOutputs([$tagDirectory], [$outputWiggle]);
 
   if (!$ro_job->isUp2Date()) {
-    $command .= ' module load ' . LoadConfig::getParam($rH_cfg, 'default' , 'moduleVersion.python') . ' ' . LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.homer') . ';';
+    $command .= ' module load ' . LoadConfig::getParam($rH_cfg, 'default' , 'moduleVersion.python') . ' ' . LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.homer') . ' &&';
     $command .= ' makeUCSCfile ' . $tagDirectory . ' | gzip -1 -c > '. $outputWiggle;
     $ro_job->addCommand($command);
   }

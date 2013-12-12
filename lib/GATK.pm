@@ -56,7 +56,7 @@ sub recalibration {
 
   if (!$ro_job->isUp2Date()) {
       my $command;
-      $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'recalibration', 'moduleVersion.java').' '.LoadConfig::getParam($rH_cfg, 'recalibration', 'moduleVersion.gatk').' ;';
+      $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'recalibration', 'moduleVersion.java').' '.LoadConfig::getParam($rH_cfg, 'recalibration', 'moduleVersion.gatk').' &&';
       $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'recalibration', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'recalibration', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'recalibration', 'recalRam').'  -jar \${GATK_JAR}';
       $command .= ' -T BaseRecalibrator';
       $command .= ' -nct '.LoadConfig::getParam($rH_cfg, 'recalibration', 'threads');
@@ -64,7 +64,7 @@ sub recalibration {
       $command .= ' -knownSites '.$knownSites;
       $command .= ' -o '.$recalOutput;
       $command .= ' -I '.$sortedBAM;
-      $command .= ' ; ';
+      $command .= ' && ';
       $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'recalibration', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'recalibration', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'recalibration', 'recalRam').' -jar \${GATK_JAR}';
       $command .= ' -T PrintReads';
       $command .= ' -nct '.LoadConfig::getParam($rH_cfg, 'recalibration', 'threads');
@@ -97,7 +97,7 @@ sub realign {
 
   if (!$ro_job->isUp2Date()) {  
       my $command;
-      $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'indelRealigner', 'moduleVersion.java').' '.LoadConfig::getParam($rH_cfg, 'indelRealigner', 'moduleVersion.gatk').' ;';
+      $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'indelRealigner', 'moduleVersion.java').' '.LoadConfig::getParam($rH_cfg, 'indelRealigner', 'moduleVersion.gatk').' &&';
       $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'indelRealigner', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'indelRealigner', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'indelRealigner', 'realignRam').'  -jar \${GATK_JAR}';
       $command .= ' -T RealignerTargetCreator';
       $command .= ' -R '.$refGenome;
@@ -109,7 +109,7 @@ sub realign {
       if(defined($rA_exclusions)) {
         $command .= ' --excludeIntervals '.join(' --excludeIntervals ', @{$rA_exclusions}).' --excludeIntervals unmapped';
       }
-      $command .= ' ; ';
+      $command .= ' && ';
       $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'indelRealigner', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'indelRealigner', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'indelRealigner', 'realignRam').' -jar \${GATK_JAR}';
       $command .= ' -T IndelRealigner';
       $command .= ' -R '.$refGenome;
@@ -147,7 +147,7 @@ sub genomeCoverage {
 
   if (!$ro_job->isUp2Date()) {  
       my $command;
-      $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'genomeCoverage', 'moduleVersion.java').' '.LoadConfig::getParam($rH_cfg, 'genomeCoverage', 'moduleVersion.gatk').' ;';
+      $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'genomeCoverage', 'moduleVersion.java').' '.LoadConfig::getParam($rH_cfg, 'genomeCoverage', 'moduleVersion.gatk').' &&';
       $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'genomeCoverage', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'genomeCoverage', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'genomeCoverage', 'genomeCoverageRam').'  -jar \${GATK_JAR}';
       $command .= ' -T DepthOfCoverage --omitDepthOutputAtEachBase --logging_level ERROR';
       my $highestThreshold = 0;
@@ -184,7 +184,7 @@ sub targetCoverage {
 
   if (!$ro_job->isUp2Date()) {
       my $command = "";
-      $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'targetCoverage', 'moduleVersion.java').' '.LoadConfig::getParam($rH_cfg, 'targetCoverage', 'moduleVersion.gatk').' ;';
+      $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'targetCoverage', 'moduleVersion.java').' '.LoadConfig::getParam($rH_cfg, 'targetCoverage', 'moduleVersion.gatk').' &&';
       $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'targetCoverage', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'targetCoverage', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'targetCoverage', 'coverageRam').'  -jar \${GATK_JAR}';
       $command .= ' -T DepthOfCoverage --omitDepthOutputAtEachBase --logging_level ERROR';
       my $highestThreshold = 0;
