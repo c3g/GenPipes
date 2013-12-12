@@ -123,7 +123,7 @@ sub annotatePeaks {
   $ro_job->testInputOutputs([$InputBed], [$outputDir.'/'.$designName]);
 
   if (!$ro_job->isUp2Date()) {
-    $command .= ' module load ' . LoadConfig::getParam($rH_cfg, 'annotation' , 'moduleVersion.python') . ' ' . LoadConfig::getParam($rH_cfg, 'annotation', 'moduleVersion.homer') . ' &&';
+    $command .= ' module load ' . LoadConfig::getParam($rH_cfg, 'annotation' , 'moduleVersion.python') . ' ' . LoadConfig::getParam($rH_cfg, 'annotation', 'moduleVersion.homer') . ' && ';
     $command .= ' annotatePeaks.pl ' . $InputBed . ' ' . $genomeName . ' -gsize ' . $genomeName . ' -cons -CpG -go ' . $outputDir . '/' . $designName . ' -genomeOntology ' . $outputDir . '/' . $designName . ' > ' . $outputDir . '/' . $designName . '.annotated.csv';
     $ro_job->addCommand($command);
   }
@@ -169,7 +169,7 @@ sub qcPlotsR {
 
   if (!$ro_job->isUp2Date()) {
     my $command;
-    $command .= ' module add ' . LoadConfig::getParam($rH_cfg, 'qcTags', 'moduleVersion.tools') . ' ' . LoadConfig::getParam($rH_cfg, 'qcTags', 'moduleVersion.R') . ' &&';
+    $command .= ' module add ' . LoadConfig::getParam($rH_cfg, 'qcTags', 'moduleVersion.tools') . ' ' . LoadConfig::getParam($rH_cfg, 'qcTags', 'moduleVersion.R') . ' && ';
     $command .= ' Rscript ' . ' \$R_TOOLS/chipSeqGenerateQCMetrics.R ' . $designFile . ' ' . $outputDir;
 
     $ro_job->addCommand($command);
