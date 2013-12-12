@@ -1,2 +1,2 @@
 MAILTO="francois.lefebvre3@mail.mcgill.ca"
-0 3 * * * source ~/.bashrc && wget https://bitbucket.org/mugqic/mugqic_resources/raw/master/modules/R_deploy.sh -O R_deploy.sh && sh R_deploy.sh
+4 3 * * * source ~/.bash_profile && wget https://bitbucket.org/mugqic/mugqic_resources/raw/master/modules/R_deploy.sh -O R_deploy.sh && sh R_deploy.sh
