@@ -17,7 +17,7 @@ Perl documentation on *.pm and *.pl files should \(as much as possible\) be crea
 # Documentation 
 -------------
 
-Visit our [wiki](https:\/\/biowiki.atlassian.net/wiki/display/PS/Pipeline+Space+Home) for an overview of the pipelines included in the mugqic_pipeline repository. 
+Visit our [wiki](https://biowiki.atlassian.net/wiki/display/PS/Pipeline+Space+Home) for an overview of the pipelines included in the mugqic_pipeline repository. 
 
 To automatically generate documentation for perl wrappers and libraries, use [pod2html](http://perldoc.perl.org/Pod/Html.html). For instance, 
 
