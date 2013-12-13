@@ -45,6 +45,7 @@ use warnings;
 # Dependencies
 #--------------------
 use File::Basename;
+use Text::CSV;
 use Cwd 'abs_path';
 #--------------------
 
@@ -98,14 +99,16 @@ sub parseSampleSheet {
   my $fileName = shift;
 
   my @retVal;
+  my $csv = Text::CSV->new();
   open(SAMPLE_SHEET, "$fileName") or die "Can't open $fileName\n";
   my $line = <SAMPLE_SHEET>;
-  my @headers = split(/",/, $line);
+  $csv->parse($line);
+  my @headers = $csv->fields();
   my ($nameIdx,$libraryBarcodeIdx,$runIdIdx,$laneIdx,$runTypeIdx,$statusIdx,$qualOffsetIdx) = parseHeaderIndexes(\@headers);
 
   while($line = <SAMPLE_SHEET>) {
-    $line =~ s/"//g;
-    my @values = split(/,/, $line);
+    $csv->parse($line);
+    my @values = $csv->fields();
     if($values[$statusIdx] =~ /invalid/) {
       warn "Invalid: $values[$nameIdx] $values[$runIdIdx] $values[$laneIdx]\n";
       next;
