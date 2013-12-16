@@ -30,8 +30,14 @@ use warnings;
 
 #---------------------
 
+# Add the mugqic_pipeline/lib/ path relative to this Perl script to @INC library search variable
+use FindBin;
+use lib $FindBin::Bin;
+
 # Dependencies
 #--------------------
+use Cwd 'abs_path';
+use File::Basename;
 use LoadConfig;
 
 #--------------------
@@ -41,18 +47,31 @@ use LoadConfig;
 sub initPipeline {
   my $workDir = shift;
 
-  # Set working directory to current one by default
-  unless (defined $workDir and -d $workDir) {
+  # Check working directory and set it to current one if not defined
+  if (defined $workDir) {
+    if (-d $workDir) {
+      $workDir = abs_path($workDir);
+    } else {
+      die "Error: $workDir does not exist or is not a directory";
+    }
+  } else {
     $workDir = "`pwd`";
   }
 
+  # Add script name (without suffix) as job list filename prefix (in practice, identical to pipeline name)
+  my $jobListPrefix = fileparse($0, qr/\.[^.]*/) . "_";
+
   # Set pipeline header and global variables
-  print "#!/bin/bash\n\n";
-  print "WORK_DIR=$workDir\n";
-  print "JOB_OUTPUT_ROOT=\$WORK_DIR/job_output\n";
-  print "TIMESTAMP=`date +%FT%H.%M.%S`\n";
-  print "JOB_LIST=\$JOB_OUTPUT_ROOT/job_list_\$TIMESTAMP\n\n";
-  print "cd \$WORK_DIR\n\n";
+  print <<END;
+#!/bin/bash
+
+WORK_DIR=$workDir
+JOB_OUTPUT_ROOT=\$WORK_DIR/job_output
+TIMESTAMP=`date +%FT%H.%M.%S`
+JOB_LIST=\$JOB_OUTPUT_ROOT/${jobListPrefix}job_list_\$TIMESTAMP
+cd \$WORK_DIR
+
+END
 }
 
 sub printSubmitCmd {
@@ -80,7 +99,7 @@ sub printSubmitCmd {
 
   # Set job name and job output directory depending on a global or sample-based step
   my $jobName = $stepName;
-  my $jobOutputDir = "\$JOB_OUTPUT_ROOT/";
+  my $jobOutputDir;
   if (defined($sampleName) and $sampleName ne "") {
     $jobName .= ".$sampleName";
     $jobOutputDir .= $sampleName;
@@ -97,34 +116,35 @@ sub printSubmitCmd {
   }
 
   # Print out job header and settings nicely
-  print "#--------------------------------------------------------------------------------\n";
+  my $separatorLine = "#" . "-" x 79 . "\n";
+  print $separatorLine;
   print "# $jobId $jobName\n";
-  print "#--------------------------------------------------------------------------------\n";
+  print $separatorLine;
   print "JOB_NAME=$jobName\n";
   print "JOB_DEPENDENCIES=$dependencies\n";
-  print "JOB_OUTPUT_DIR=$jobOutputDir\n";
   # Set job output filename based on job name and timestamp
-  print "JOB_OUTPUT=\$JOB_OUTPUT_DIR/\${JOB_NAME}_\$TIMESTAMP.o\n";
-  print "mkdir -p \$JOB_OUTPUT_DIR\n";
+  print "JOB_OUTPUT_RELATIVE_PATH=$jobOutputDir/\${JOB_NAME}_\$TIMESTAMP.o\n";
+  print "JOB_OUTPUT=\$JOB_OUTPUT_ROOT/\$JOB_OUTPUT_RELATIVE_PATH\n";
+  print "mkdir -p `dirname \$JOB_OUTPUT`\n";
 
   # Assign job number to job ID if any
   if (LoadConfig::getParam($rH_cfg, $stepName, 'clusterCmdProducesJobId') eq "true") {
     print $jobId . '=$(';
   }
-  # Print out job command
 
   my $rA_FilesToTest = $rO_job->getFilesToTest();
   # Erase dones, on all jobs of the series
-  if(defined($rA_FilesToTest) && @{$rA_FilesToTest} > 0) {
+  if (defined($rA_FilesToTest) && @{$rA_FilesToTest} > 0) {
     print 'echo "rm -f ' . join(' ', @{$rA_FilesToTest}) . ' ; ';
-  }
-  else {
+  } else {
     print 'echo "';
   }
+
+  # Print out job command
   print $command;
   print ' && echo \"MUGQICexitStatus:\$?\" ';
   # Only add if it's the last job of the series.
-  if(defined($rA_FilesToTest) && @{$rA_FilesToTest} > 0 && $commandIdx == $rO_job->getNbCommands()-1) {
+  if (defined($rA_FilesToTest) && @{$rA_FilesToTest} > 0 && $commandIdx == $rO_job->getNbCommands() - 1) {
     print ' && touch ' . join(' ', @{$rA_FilesToTest});
   }
   print '"';
@@ -152,7 +172,7 @@ sub printSubmitCmd {
   $rO_job->setCommandJobId($commandIdx, '$'.$jobId);
 
   # Write job parameters in job list file
-  print "echo \"\$$jobId\t\$JOB_NAME\t\$JOB_DEPENDENCIES\t\$JOB_OUTPUT\" >> \$JOB_LIST\n\n"; 
+  print "echo \"\$$jobId\t\$JOB_NAME\t\$JOB_DEPENDENCIES\t\$JOB_OUTPUT_RELATIVE_PATH\" >> \$JOB_LIST\n\n"; 
   return $jobId;
 }
 1;

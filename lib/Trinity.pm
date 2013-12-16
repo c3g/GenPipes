@@ -8,43 +8,15 @@ I<Trinity>
 
 Trinity::sub(args)
 
-B<Trinity::chrysalis>(%ref_hash_config, $sample_name, %ref_hash_laneInfo, $pair1, $pair2). In the case where there are multiple samples
-the $pair1 and $pair2 will be  string with all the  samples (reads/sample1_left   reads/sample2_left).
- 
-B<Trinity::butterfly>(%ref_hash_config, $sample_name, %ref_hash_laneInfo, $fileButterflyComand)
-
-B<Trinity::concatFastaCreateGtf>(%ref_hash_config, $sample_name, %ref_hash_laneInfo)
-
-
-All subroutines return a ref_hash with the command line
-
-
-
 =head1 DESCRIPTION
 
 B<Trinity> is a library to use the
-transcriptome assembly package, Trinity.
-
-The lib has three subroutines: B<chrysalis, butterfly and concatFastaCreateGtf>.
-
-- chrysalis and butterfly are steps of the package trinity.
-
-- concatFastaCreateGtf is used to concatenate the fasta files and 
-to generate de gtf file.
-
-Each sub must be called independently with their set of variables.
+transcriptome assembly package Trinity.
 
 =head1 AUTHOR
 
 David Morais dmorais@cs.bris.ac.uk
-
-=head1 DEPENDENCY
-
-B<Pod::Usage> Usage and help output.
-
-B<Data::Dumper> Used to debbug
-
-
+Joel Fillon joel.fillon@mcgill.ca
 
 =cut
 
@@ -57,245 +29,199 @@ use warnings;
 
 #--------------------------
 
+# Add the mugqic_pipeline/lib/ path relative to this Perl script to @INC library search variable
+use FindBin;
+use lib $FindBin::Bin;
+
 # Dependencies
 #-----------------------
-use Data::Dumper;
-use Config::Simple;
 use LoadConfig;
-use Cwd qw(abs_path);
-use File::Basename;
+use Job;
 
 #-------------------
 # SUB
 #-------------------
-sub chrysalis {
-    my $rH_cfg      = shift;
-    my $sampleName  = shift;
-    my $rH_laneInfo = shift;
-    my $pair1       = shift;    # For single command the left will receive the file.
-    my $pair2       = shift;
 
-    my $ro_job;
-    if ( $rH_laneInfo->{'runType'} eq "SINGLE_END" ) {
-        $ro_job = _chrysalisSingleCommand($rH_cfg, $sampleName, $rH_laneInfo, $pair1);
-    }
-    elsif ( $rH_laneInfo->{'runType'} eq "PAIRED_END" ) {
-        $ro_job = _chrysalisPairCommand($rH_cfg, $sampleName, $rH_laneInfo, $pair1, $pair2);
-    }
-    else {
-        die "Unknown runType: " . $rH_laneInfo->{' runType '} . "\n";
-    }
-    return $ro_job;
+# Return parameter value from configuration file or die if this parameter is not defined
+sub getParam {
+  my $rH_cfg = shift;
+  my $section = shift;
+  my $paramName = shift;
+
+  my $paramValue = LoadConfig::getParam($rH_cfg, $section, $paramName);
+
+  if ($paramValue) {
+    return $paramValue;
+  } else {
+    die "Error: parameter \"[" . $section . "] " . $paramName . "\" is not defined in the configuration .ini file";
+  }
 }
 
-sub butterfly {
-    my $rH_cfg                = shift;
-    my $sampleName            = shift;
-    my $rH_laneInfo           = shift;
-    my $fileButterflyCommand  = shift;
+# Return module load command string from the given list of modules as [section, moduleVersion] from configuration file
+sub moduleLoad {
+  my $rH_cfg = shift;
+  my $rA_modules = shift;
 
-    my $laneDirectory = "assembly/" . $sampleName . "/chrysalis/";
-
-    my $ro_job = new Job();
-    $ro_job->testInputOutputs([$laneDirectory . 'butterfly_split/' . $fileButterflyCommand], undef);
-
-    if (!$ro_job->isUp2Date()) {
-      my $command;
-      $command .= 'module add ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.java' );
-      $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.bowtie' );
-      $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.trinity' ) . ' &&';
-      $command .= ' ' . $rH_cfg->{'butterfly.parallel'} . ' -f ' . $laneDirectory . 'butterfly_split/' . $fileButterflyCommand;
-      $command .= ' -n ' . $rH_cfg->{'butterfly.nbThreads'} . ' ';
-
-      $ro_job->addCommand($command);
-    }
-    return $ro_job;
-
+  return "module load " . join(" ", map {getParam($rH_cfg, $_->[0], $_->[1])} @$rA_modules) . "\n";
 }
 
-sub concatFastaCreateGtf {
-    my $rH_cfg      = shift;
-    my $sampleName  = shift;
-    my $rH_laneInfo = shift;
 
-    my $laneDirectory = "assembly/" . $sampleName . "/";
+sub normalize_by_kmer_coverage {
+  my $rH_cfg = shift;
+  my $workDirectory = shift;
 
-    my $ro_job = new Job();
-    $ro_job->testInputOutputs(undef, [$laneDirectory . 'Trinity.fasta', $laneDirectory . 'Trinity.2.fasta']);
+  my $rO_job = new Job();
+#  $rO_job->testInputOutputs([$leftList, $rightList], ["$workDir/normalized_reads/both.fa"]);
 
-    if (!$ro_job->isUp2Date()) {
-      my $command;
-      $command .= 'module add ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.java' );
-      $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.bowtie' );
-      $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.trinity' ) . ' &&';
-      $command .= ' find ' . $laneDirectory . 'chrysalis';
-      $command .= ' -name "*allProbPaths.fasta" -exec cat {} + >' . $laneDirectory . 'Trinity.fasta &&';
-      $command .= ' sh ' . $rH_cfg->{'trinity.createGtf'} . ' ' . $laneDirectory . 'Trinity.fasta';
-      $command .= ' ' . $laneDirectory . $sampleName . '.gtf &&';
-      $command .= ' awk \'{print \$1} \' ' . $laneDirectory . 'Trinity.fasta ';
-      $command .= ' >' . $laneDirectory . 'Trinity.2.fasta';
+  if (!$rO_job->isUp2Date()) {
+    my $command = "\n";
 
-      $ro_job->addCommand($command);
-    }
-    return $ro_job;
+    my $leftList = "\$WORK_DIR/reads/left_pair1.fastq.gz.list";
+    my $rightList = "\$WORK_DIR/reads/right_pair2.fastq.gz.list";
 
+    # Create sorted left/right lists of fastq.gz files
+    $command .= "find \$WORK_DIR/reads/ -name *pair1*.fastq.gz | sort > $leftList\n";
+    $command .= "find \$WORK_DIR/reads/ -name *pair2*.fastq.gz | sort > $rightList\n";
+
+    # Load modules and run Trinity normalization
+    $command .= moduleLoad($rH_cfg, [['trinity', 'moduleVersion.trinity']]);
+    $command .= "normalize_by_kmer_coverage.pl \\
+ --left_list $leftList \\
+ --right_list $rightList \\
+ --output \$WORK_DIR/normalization \\\n";
+    $command .= " --JM " . getParam($rH_cfg, 'normalization', 'jellyfishMemory') . " \\\n";
+    $command .= " --JELLY_CPU " . getParam($rH_cfg, 'normalization', 'jellyfishCPU') . " \\\n";
+    $command .= " " . getParam($rH_cfg, 'normalization', 'normalizationOptions') . " \\\n";
+
+    $rO_job->addCommand($command);
+  }
+  return $rO_job;
 }
 
-sub _chrysalisPairCommand {
-    my $rH_cfg = shift;
-    my $sampleName = shift;
-    my $rH_laneInfo = shift;
-    my $pair1 = shift;
-    my $pair2 = shift;
+sub trinity {
+  my $rH_cfg  = shift;
+  my $workDirectory = shift;
 
-    my $command = '';
-    my %retVal;
+  my $rO_job = new Job();
+#  $rO_job->testInputOutputs(["$workDir/normalized_reads/pairs.K25.stats.C30.pctSD100.accs"], []);
 
-    my $laneDirectory = 'assembly/' . $sampleName . '/';
-    my $outputFile = $laneDirectory .'/chrysalis/butterfly_commands.adj';
+  if (!$rO_job->isUp2Date()) {
+    my $command = "\n";
 
-    my $ro_job = new Job();
-    $ro_job->testInputOutputs([$pair1, $pair2],[$outputFile]);
-    
-    if (!$ro_job->isUp2Date()) {
-      $command .= 'module add ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.java' );
-      $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.bowtie' );
-      $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.trinity' ) . ' &&';
-      $command .= ' Trinity.pl --seqType fq --JM 100G';
-      $command .= ' --left' . ' \" ' . $pair1 . ' \" ' . '--right' . ' \" ' . $pair2 . ' \" ';
-      $command .= ' --CPU ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'nbThreads');
-      $command .= ' --output ' . $laneDirectory;
-      $command .= ' --min_kmer_cov 31 --max_reads_per_loop 200000000 --no_run_butterfly ';
+    my $leftList = "\$WORK_DIR/reads/left_pair1.fastq.gz.list";
+    my $rightList = "\$WORK_DIR/reads/right_pair2.fastq.gz.list";
 
-      $ro_job->addCommand($command);
-    }
-    return $ro_job;
+    $command .= moduleLoad($rH_cfg, [
+      ['trinity', 'moduleVersion.java'],
+      ['trinity', 'moduleVersion.trinity'],
+      ['trinity', 'moduleVersion.bowtie'],
+      ['trinity', 'moduleVersion.samtools'],
+      ['trinity', 'moduleVersion.cranR']
+    ]);
+
+    $command .= "Trinity.pl \\
+ --left  $leftList.normalized_*.fq \\
+ --right $rightList.normalized_*.fq \\
+ --output \$WORK_DIR/trinity_out_dir \\\n";
+    $command .= " --JM " . getParam($rH_cfg, 'trinity', 'jellyfishMemory') . " \\\n";
+    $command .= " --CPU " . getParam($rH_cfg, 'trinity', 'trinityCPU') . " \\\n";
+    $command .= " --bflyCPU " . getParam($rH_cfg, 'trinity', 'bflyCPU') . " \\\n";
+    $command .= " " . getParam($rH_cfg, 'trinity', 'trinityOptions') . " \n";
+
+    # Compute assembly stats
+    $command .= "Rscript -e 'library(gqSeqUtils); dnaFastaStats(filename = \\\"\$WORK_DIR/trinity_out_dir/Trinity.fasta\\\", type = \\\"trinity\\\", output.prefix = \\\"\$WORK_DIR/trinity_out_dir/Trinity.stats\\\")' \\\n";
+
+    $rO_job->addCommand($command);
+  }
+  return $rO_job;
 }
 
-sub _chrysalisSingleCommand {
-    my $rH_cfg = shift;
-    my $sampleName = shift;
-    my $rH_laneInfo = shift;
-    my $pair1 = shift;
+sub rsemPrepareReference {
+  my $rH_cfg = shift;
+  my $workDirectory = shift;
 
-    my $command = '';
-    my %retVal;
-    
-    my $laneDirectory = 'assembly/' . $sampleName . '/';
-    my $outputFile = $laneDirectory .'/chrysalis/butterfly_commands.adj';
-    my $ro_job = new Job();
-    $ro_job->testInputOutputs([$pair1],[$outputFile]);
-    
-    if (!$ro_job->isUp2Date()) {
-      $command .= 'module add ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.java' );
-      $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.bowtie' );
-      $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'moduleVersion.trinity' ) . ' &&';
-      $command .= ' Trinity.pl --seqType fq --JM 100G';
-      $command .= ' ' . $pair1;
-      $command .= ' --CPU ' . LoadConfig::getParam( $rH_cfg, 'trinity', 'nbThreads');
-      $command .= ' --output ' . $laneDirectory;
-      $command .= ' --min_kmer_cov 31 --max_reads_per_loop 200000000 --no_run_butterfly ';
+  my $rO_job = new Job();
 
-      $ro_job->addCommand($command);
-    }
+  if (!$rO_job->isUp2Date()) {
+    my $command = "\n";
 
-    return $ro_job;
+    $command .= moduleLoad($rH_cfg, [
+      ['trinity', 'moduleVersion.trinity'],
+      ['trinity', 'moduleVersion.bowtie'],
+      ['trinity', 'moduleVersion.rsem']
+    ]);
 
+    $command .= "run_RSEM_align_n_estimate.pl \\
+      --transcripts \$WORK_DIR/trinity_out_dir/Trinity.fasta \\
+      --just_prep_reference ";
+
+    $rO_job->addCommand($command);
+  }
+  return $rO_job;
 }
 
-sub abundance {
-    my $rH_cfg       = shift;
-    my $assembly     = shift;
-    my $outputPrefix = shift;
-    my $pair1        = shift;    # For single command the left will receive the file.
-    my $pair2        = shift;
+sub rsem {
+  my $rH_cfg = shift;
+  my $workDirectory = shift;
+  my $sample = shift;
 
-    my $unzippedPair1;
-    my $unzippedPair2;
-    my @inputs;
+  my $rO_job = new Job();
 
-    $outputPrefix = abs_path($outputPrefix);
-    $pair1 = abs_path($pair1);
-    $pair1 =~ /(.+)\.gz/;
-    $unzippedPair1 = $1;
-    push(@inputs, $pair1);
-    
-    if(defined($pair2)) {
-      $pair2 = abs_path($pair2);
-      $pair2 =~ /(.+)\.gz/;
-      $unzippedPair2 = $1;
-      push(@inputs, $pair2);
-    }
+  if (!$rO_job->isUp2Date()) {
+    my $command = "\n";
 
-    my $outputFile = $outputPrefix.'.transcript.bam';
+    my $left  = "\\`find \$WORK_DIR/reads -name $sample*pair1*.fastq.gz | sort | paste -s -d,\\`";
+    my $right  = "\\`find \$WORK_DIR/reads -name $sample*pair2*.fastq.gz | sort | paste -s -d,\\`";
 
-    my $ro_job = new Job();
-    $ro_job->testInputOutputs([\@inputs],[$assembly]);
-    
-    if (!$ro_job->isUp2Date()) {
-      my $command;
-      $command .= 'module add ' . LoadConfig::getParam( $rH_cfg, 'abundance', 'moduleVersion.java' );
-      $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'abundance', 'moduleVersion.bowtie' );
-      $command .= ' ' . LoadConfig::getParam( $rH_cfg, 'abundance', 'moduleVersion.trinity' ) . ' &&';
-      $command .= ' cd '.dirname($assembly).' ;';
-      # We tried with mkfifo but bowtie keeps giving Broken Pipes
-      $command .= ' gunzip -c '.$pair1.' > '.$unzippedPair1.' ;';
-      if(defined($pair2)) {
-        $command .= ' gunzip -c '.$pair2.' > '.$unzippedPair2.' ;';
-      }
-      $command .= ' \$TRINITY_HOME/util/RSEM_util/run_RSEM_align_n_estimate.pl ';
-      $command .= ' --transcripts ' . basename($assembly);
-      $command .= ' --seqType fq';
-      if(!defined($pair2)) {
-        $command .= ' --single '.$unzippedPair1;
-      }
-      else {
-        $command .= ' --left '.$unzippedPair1;
-        $command .= ' --right '.$unzippedPair2;
-      }
-      $command .= ' --thread_count '. LoadConfig::getParam( $rH_cfg, 'abundance', 'nbThreads' );
-      $command .= ' --prefix ' . $outputPrefix;
-      $command .= ' -- --bowtie-chunkmbs ' . LoadConfig::getParam( $rH_cfg, 'abundance', 'chunkmbs' ).' &&';
-      $command .= ' rm '.$unzippedPair1.' &&';
-      if(defined($pair2)) {
-        $command .= ' rm '.$unzippedPair2.' ';
-      }
+    $command .= moduleLoad($rH_cfg, [
+      ['trinity', 'moduleVersion.trinity'],
+      ['trinity', 'moduleVersion.bowtie'],
+      ['trinity', 'moduleVersion.rsem']
+    ]);
 
-      $ro_job->addCommand($command);
-    }
+    $command .= "run_RSEM_align_n_estimate.pl \\
+      --transcripts \$WORK_DIR/trinity_out_dir/Trinity.fasta \\
+      --left $left \\
+      --right $right \\
+      --seqType fq \\
+      --SS_lib_type RF \\
+      --prefix $sample \\
+      --output_dir \$WORK_DIR/rsem/$sample \\
+      --thread_count " . getParam($rH_cfg, 'rsem', 'rsemCPU') . " \\\n";
 
-    return $ro_job;
+    $rO_job->addCommand($command);
+  }
+  return $rO_job;
 }
 
-sub mergeCounts {
-    my $rH_cfg               = shift;
-    my $rA_filePrefixToMerge = shift;
-    my $outputIso            = shift;
-    my $outputGene           = shift;
+sub edgeR {
+  my $rH_cfg = shift;
+  my $workDirectory = shift;
 
-    my $ro_job = new Job();
-    $ro_job->testInputOutputs($rA_filePrefixToMerge,[$outputIso, $outputGene]);
-    
-    if (!$ro_job->isUp2Date()) {
-      my $command = undef;
-      $command .= 'module load '.LoadConfig::getParam( $rH_cfg, 'mergeCounts', 'moduleVersion.trinity' ) . ' &&';
-      $command .= ' \$TRINITY_HOME/util/RSEM_util/merge_RSEM_frag_counts_single_table.pl ';
-      for my $input (@{$rA_filePrefixToMerge}){
-        $command .= ' '.$input.'.rsem.isoforms.results';
-      }
-      $command .= " | sed 's/\\.rsem\\.isoforms\\.results//g' > ".$outputIso;
-      $command .= ' ; ';
-      $command .= ' \$TRINITY_HOME/util/RSEM_util/merge_RSEM_frag_counts_single_table.pl ';
-      for my $input (@{$rA_filePrefixToMerge}){
-        $command .= ' '.$input.'.rsem.genes.results';
-      }
-      $command .= " | sed 's/\\.rsem\\.genes\\.results//g' > ".$outputGene;
+  my $rO_job = new Job();
 
+  if (!$rO_job->isUp2Date()) {
+    my $command = "\n";
 
-      $ro_job->addCommand($command);
-    }
+    $command .= moduleLoad($rH_cfg, [
+      ['trinity', 'moduleVersion.trinity'],
+      ['trinity', 'moduleVersion.cranR']
+    ]);
 
-    return $ro_job;
+    $command .= "mkdir -p \$WORK_DIR/edgeR; ";
+
+    $command .= "merge_RSEM_frag_counts_single_table.pl \\
+      \$WORK_DIR/rsem/*/*.genes.results \\
+      > \$WORK_DIR/edgeR/genes.counts.matrix; ";
+
+    $command .= "run_DE_analysis.pl \\
+      --matrix \$WORK_DIR/edgeR/genes.counts.matrix \\
+      --method edgeR \\
+      --output \$WORK_DIR/edgeR ";
+
+    $rO_job->addCommand($command);
+  }
+  return $rO_job;
 }
 
 1;
