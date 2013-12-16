@@ -76,7 +76,7 @@ will generate a bash script for steps 1 to 21. This script can then be executed:
 
 ####    Options
 
-      -c (dnaSeq.abacus.ini) the standard configuration file for the pipeline. Templates for some cluster systems like Abacus or Guillimin may already be available at https://bitbucket.org/mugqic/mugqic_pipeline/src/31db440f92036e3bae7e7a9676fdb57c3a9f3112/pipelines/dnaseq/?at=master
+      -c (dnaSeq.abacus.ini) the standard configuration file for the pipeline. Templates for some cluster systems like Abacus or Guillimin may already be available at pipelines/dnaseq
       -s The start step
       -e The end step
       -n (project.nanuq.csv) the read set sheet, prepared as described above.
@@ -91,7 +91,7 @@ will generate a bash script for steps 1 to 14. This script can then be executed:
 
 ####      Options
 
-      -c (rnaSeq.abacus.ini) the standard configuration file for the pipeline. Templates for some cluster systems like Abacus or Guillimin may already be available at https://bitbucket.org/mugqic/mugqic_pipeline/src/31db440f92036e3bae7e7a9676fdb57c3a9f3112/pipelines/rnaseq/?at=master
+      -c (rnaSeq.abacus.ini) the standard configuration file for the pipeline. Templates for some cluster systems like Abacus or Guillimin may already be available at pipelines/rnaseq/
       -s The start step
       -e The end step
       -n (project.nanuq.csv)  the NANUQ project read set sheet, prepared as described above.
@@ -100,7 +100,7 @@ will generate a bash script for steps 1 to 14. This script can then be executed:
 
 ###   CHIPseq pipeline
 
-    perl bin/chipSeq.pl -c chipSeq.abacus.ini -n project.nanuq.csv -d design.csv -w  `pwd` -s 1 -e 11 > toRun.sh
+    perl chipSeq.pl -c chipSeq.abacus.ini -n project.nanuq.csv -d design.csv -w  `pwd` -s 1 -e 11 > toRun.sh
 
 will generate a bash script for steps 1 to 11. This script can then be executed:
 
@@ -108,7 +108,7 @@ will generate a bash script for steps 1 to 11. This script can then be executed:
 
 ####      Options
 
-      -c (chipSeq.abacus.ini) the standard configuration file for the pipeline. Templates for some cluster systems like Abacus or Guillimin may already be at https://bitbucket.org/mugqic/mugqic_pipeline/src/31db440f92036e3bae7e7a9676fdb57c3a9f3112/pipelines/chipseq/?at=master
+      -c (chipSeq.abacus.ini) the standard configuration file for the pipeline. Templates for some cluster systems like Abacus or Guillimin may already be at pipelines/chipseq
       -s The start step
       -e The end step
       -n (project.nanuq.csv) the NANUQ Project sample file, prepared as described above.
