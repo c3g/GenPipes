@@ -31,7 +31,6 @@ use lib "$FindBin::Bin/../../lib";
 # Dependencies
 #-----------------
 use Cwd 'abs_path';
-use Data::Dumper; # to delete
 use Getopt::Std;
 use LoadConfig;
 use SampleSheet;
@@ -39,8 +38,8 @@ use SubmitToCluster;
 use Trimmomatic;
 use Trinity;
 
-# Globals
-#---------------------------------
+# Steps and dependencies
+#-----------------------
 my @A_steps = (
   {
     'name'   => 'trim',
@@ -89,7 +88,7 @@ my @A_steps = (
   }
 );
 
-# Create step hash indexed by step name for easy step retrieval
+# Create step hash indexed by step name for easy retrieval
 my %H_steps =  map {$_->{'name'} => $_} @A_steps;
 
 my $configFile;
@@ -103,7 +102,7 @@ main();
 #-----------------
 sub getUsage {
   my $usage = <<END;
-Usage: perl $0 -h | -c CONFIG_FILE -s start_step_num -e end_step_num -n SAMPLE_SHEET [-d DESIGN_FILE] [-w WORK_DIR]
+Usage: perl $0 -h | -c CONFIG_FILE -s start_step_num -e end_step_num [-n SAMPLE_SHEET] [-d DESIGN_FILE] [-w WORK_DIR]
   -h  help and usage
   -c  .ini config file
   -s  start step, inclusive
@@ -131,11 +130,11 @@ sub main {
   if (defined($opts{'h'}) ||
      !defined($opts{'c'}) ||
      !defined($opts{'s'}) ||
-     !defined($opts{'e'}) ||
-     !defined($opts{'n'})) {
+     !defined($opts{'e'})) {
     die (getUsage());
   }
 
+  # Assign options
   my $startStep = $opts{'s'};
   my $endStep = $opts{'e'};
   $configFile = $opts{'c'};
@@ -143,18 +142,25 @@ sub main {
   $designFile = $opts{'d'};
   $workDirectory = $opts{'w'};
 
-  # Get config and sample values
+  # Get config values
+  unless (defined $configFile) {die "Error: configuration file is not defined! (use -c option)\n" . getUsage()};
+  unless (-f $configFile) {die "Error: configuration file $configFile does not exist!\n" . getUsage()};
   my %cfg = LoadConfig->readConfigFile($configFile);
-  my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($nanuqSampleSheet);
 
   SubmitToCluster::initPipeline($workDirectory);
 
+  # Go through steps and create global or sample jobs accordingly
   for (my $i = $startStep; $i <= $endStep; $i++) {
     my $step = $A_steps[$i - 1];
     my $stepName = $step->{'name'};
     $step->{'jobIds'} = ();
 
     if ($step->{'loop'} eq 'sample') {
+      # Nanuq sample sheet is only necessary for sample steps
+      unless (defined $nanuqSampleSheet) {die "Error: nanuq sample sheet is not defined! (use -n option)\n" . getUsage()};
+      unless (-f $nanuqSampleSheet) {die "Error: nanuq sample sheet $nanuqSampleSheet does not exist!\n" . getUsage()};
+
+      my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($nanuqSampleSheet);
       foreach my $sample (keys %$rHoAoH_sampleInfo) {
         my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sample};
         &$stepName(\%cfg, $step, $workDirectory, $sample, $rAoH_sampleLanes);
@@ -194,6 +200,7 @@ sub submitJob {
 
   my $jobId = SubmitToCluster::printSubmitCmd($rH_cfg, $stepName, undef, $jobIdPrefix, $dependencies, $sample, $rO_job);
 
+  # Store step job ID for future dependencies retrieval
   push (@{$step->{'jobIds'}}, $jobId);
 }
 
@@ -208,7 +215,7 @@ sub getParam {
   if ($paramValue) {
     return $paramValue;
   } else {
-    die "Error: parameter \"[" . $section . "] " . $paramName . "\" is not defined in the configuration .ini file";
+    die "Error: parameter \"[" . $section . "] " . $paramName . "\" is not defined in $configFile";
   }
 }
 
@@ -217,7 +224,16 @@ sub moduleLoad {
   my $rH_cfg = shift;
   my $rA_modules = shift;
 
-  return "module load " . join(" ", map {getParam($rH_cfg, $_->[0], $_->[1])} @$rA_modules) . "\n";
+  # Retrieve module values from the configuration file
+  my @moduleValues = map {getParam($rH_cfg, $_->[0], $_->[1])} @$rA_modules;
+
+  # Check by a system call if module is available
+  for my $moduleValue (@moduleValues) {
+    my $moduleShowOutput = `source /etc/profile.d/modules.sh; module show $moduleValue 2>&1`;
+    $moduleShowOutput !~ /Error/i or die "Error in $configFile:\n$moduleShowOutput";
+  }
+
+  return "module load " . join(" ", @moduleValues) . "\n";
 }
 
 
