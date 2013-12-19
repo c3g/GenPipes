@@ -33,6 +33,7 @@ use lib "$FindBin::Bin/../../lib";
 use Cwd 'abs_path';
 use Getopt::Std;
 use LoadConfig;
+use Metrics;
 use SampleSheet;
 use SubmitToCluster;
 use Trimmomatic;
@@ -45,6 +46,11 @@ my @A_steps = (
     'name'   => 'trim',
     'loop'   => 'sample',
     'parent' => []
+  },
+  {
+    'name'   => 'trimMetrics',
+    'loop'   => 'global',
+    'parent' => ['trim']
   },
   {
     'name'   => 'normalization',
@@ -250,11 +256,28 @@ sub trim {
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
 
     my $trimDirectory = "\$WORK_DIR/reads/$sample/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
-    print 'mkdir -p ' . $trimDirectory . "\n";
+    print "mkdir -p $trimDirectory\n";
     my $rO_job = Trimmomatic::trim($rH_cfg, $sample, $rH_laneInfo, $trimDirectory);
 
     submitJob($rH_cfg, $step, $sample, $rO_job);
   }
+}
+
+sub trimMetrics {
+  my $rH_cfg = shift;
+  my $step = shift;
+  my $workDirectory = shift;
+
+  my $libraryType = getParam($rH_cfg, 'default', 'libraryType');
+  my $trimDirectory = "\$WORK_DIR/reads";
+  my $trimMetricsDirectory = "\$WORK_DIR/metrics";
+  my $pattern = "trim.stats.csv";
+  my $outputFile = "$trimMetricsDirectory/trimming.stats";
+
+  print "mkdir -p $trimMetricsDirectory\n";
+  my $rO_job = Metrics::mergeTrimmomaticStats($rH_cfg, $libraryType, $pattern, $trimDirectory, $outputFile);
+
+  submitJob($rH_cfg, $step, undef, $rO_job);
 }
 
 sub normalization {
@@ -325,7 +348,7 @@ sub blast {
       my $chunkQuery = "$chunkDir/Trinity.fasta_chunk_$chunkIndex";
       my $chunkResult = "$chunkDir/$program" . "_Trinity_$db" . "_chunk_$chunkIndex.tsv";
 
-      $command .= "parallelBlast.pl -file $chunkQuery --OUT $chunkResult -n $cores --BLAST \'$program -db $db $options\'";
+      $command .= "parallelBlast.pl -file $chunkQuery --OUT $chunkResult -n $cores --BLAST \\\"$program -db $db $options\\\"";
 
       $rO_job->addCommand($command);
     }
