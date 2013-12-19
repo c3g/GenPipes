@@ -1,51 +1,62 @@
-MUGQIC_INSTALL_HOME="/sb/programs/analyste" # abacus
+#!/bin/sh
 
-umask 0002
-#cd $MUGQIC_INSTALL_HOME
-##  Software dependencies installtion trace.
+################################################################################
+# This is a module install script template which should be copied and used for
+# consistency between module paths, permissions, etc.
+# Only lines marked as "## TO BE ADDED/MODIFIED" should be, indeed, modified.
+# You should probably also delete this commented-out header and the ## comments
+################################################################################
 
 
-## Prepare
-###################
-################### gnuplot 4.6.4.
-###################
+#
+# Software_name  gnuplot.
+#
 
-## Install gnuplot itself
-VERSION="4.6.4"
-NAME=gnuplot
+SOFTWARE=gnuplot
+VERSION=4.6.4 
+INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/$SOFTWARE
+INSTALL_DOWNLOAD=$INSTALL_PATH/tmp
+mkdir -p $INSTALL_DOWNLOAD
+cd $INSTALL_DOWNLOAD
 
-INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/$NAME/$NAME-$VERSION # where to install.
-mkdir -p $MUGQIC_INSTALL_HOME/software/$NAME
-mkdir -p $INSTALL_PATH
-mkdir -p $INSTALL_PATH/bin
+# Download, extract, build
+# Write here the specific commands to download, extract, build the software, typically similar to:
+wget http://sourceforge.net/projects/$SOFTWARE/files/latest/download?source=dlp  
+tar -xvf $SOFTWARE-$VERSION.tar                                                  
+cd $SOFTWARE-$VERSION                                                            
+./configure --prefix=$INSTALL_PATH/$SOFTWARE-$VERSION                            
+make                                                                             
+make install
 
-#wget http://sourceforge.net/projects/gnuplot/files/latest/download?source=dlp
-#tar -xvf $NAME-$VERSION.tar.gz
-#cd $NAME-$VERSION
-#.configure --prefix=$MUGQIC_INSTALL_HOME/software/$NAME/$NAME-$VERSION
-#make
-#make install
+# Add permissions and install software
+chmod -R 775 *
+cd $INSTALL_DOWNLOAD
+#mv -i $SOFTWARE-$VERSION $INSTALL_PATH                                          
+mv -i $INSTALL_DOWNLOAD/$SOFTWARE-$VERSION.tar $MUGQIC_INSTALL_HOME/archive      
 
-# Module def file..
+# Module file
 echo "#%Module1.0
 proc ModulesHelp { } {
-       puts stderr \"\tMUGQIC - Adds $NAME-$VERSION to your environment \"
+       puts stderr \"\tMUGQIC - $SOFTWARE-$VERSION \" ;
 }
-module-whatis \"MUGQIC - Adds $NAME-$VERSION to your environment \"
-                       
-set             root               \$::env(MUGQIC_INSTALL_HOME)/software/$NAME/$NAME-$VERSION
-prepend-path    PATH               \$root/bin
-
+module-whatis \"$SOFTWARE  \" ; 
+                      
+set             root                \$::env(MUGQIC_INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE-$VERSION ;
+prepend-path    PATH                \$root/bin ;  
 " > $VERSION
 
-## THEN--> Move module definition manually, and edit .version
+################################################################################
+# Everything below this line should be generic and not modified
 
-# version file
+# Default module version file
 echo "#%Module1.0
-set ModulesVersion \"$VERSION\"
+set ModulesVersion \"$VERSION\"" > .version
 
-" > .version
+# Add permissions and install module
+mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
+chmod -R ug+rwX $VERSION .version
+chmod -R o+rX $VERSION .version
+mv $VERSION .version $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
 
-mkdir -p  $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$NAME
-mv .version $VERSION $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$NAME
-
+# Clean up temporary installation files if any
+rm -rf $INSTALL_DOWNLOAD
