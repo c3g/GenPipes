@@ -39,19 +39,19 @@
             <description>This module filters reads based on a minimum read length, subread length and read quality.</description>
             <param name="minLength" label="Minimum Read Length">
                 <title>The minimum read length. Shorter reads will be filtered and excluded from further analysis.</title>
-                <value>50</value>
+                <value>MINREADLENGTH</value>
                 <input type="text" size="3"/>
                 <rule type="number" min="0.0" message="Value must be a positive integer"/>
             </param>
             <param name="minSubReadLength" label="Minimum Subread Length">
                 <title>The minimum subread length. Shorter subreads will be filtered and excluded from further analysis.</title>
-                <value>50</value>
+                <value>MINSUBREADLENGTH</value>
                 <input type="text" size="3"/>
                 <rule type="number" min="0.0" message="Value must be a positive integer"/>
             </param>
             <param name="readScore" label="Minimum Read Quality">
                 <title>The minimum read quality determines the quality cutoff. Reads with lower quality will be filtered and excluded from further analysis.</title>
-                <value>0.75</value>
+                <value>MINQUAL</value>
                 <input type="text" size="3"/>
                 <rule type="number" min="0.0" message="Value must be between 0 and 1" max="1.0"/>
             </param>
