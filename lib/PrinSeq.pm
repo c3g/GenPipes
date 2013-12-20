@@ -2,15 +2,15 @@
 
 =head1 NAME
 
-I<Picard>
+I<PrinSeq>
 
 =head1 SYNOPSIS
 
-SmrtAnalysis->run()
+PrinSeq->fatqToFasta()
 
 =head1 DESCRIPTION
 
-B<Picard> This a library to analyze PAcBio data using the SmrtAnalysis suite.
+B<PrinSeq> This a library to analyze PAcBio data using the SmrtAnalysis suite.
 
 Input = file_name
 
@@ -51,9 +51,11 @@ sub fastqToFasta {
 	$ro_job->testInputOutputs([$infile], [$outfile.".fasta"]);
 
 	if (!$ro_job->isUp2Date()) {
-		my $cmd;
+		my $cmd = '';
 		# Fastq to Fasta 
-		$cmd = 'module load '.LoadConfig::getParam($rH_cfg, 'prinseq', 'moduleVersion.prinseq').' ;';
+		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'prinseq', 'moduleVersion.memtime').' ;';
+		$cmd .= ' module load '.LoadConfig::getParam($rH_cfg, 'prinseq', 'moduleVersion.prinseq').' ;';
+		$cmd .= ' memtime';
 		$cmd .= ' prinseq-lite.pl';
 		$cmd .= ' -verbose';
 		$cmd .= ' -fastq ' . $infile;

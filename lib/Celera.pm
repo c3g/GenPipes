@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-I<Picard>
+I<Celera>
 
 =head1 SYNOPSIS
 
@@ -53,9 +53,11 @@ sub runCelera {
 	$ro_job->testInputOutputs([$infile], [$outdir."/9-terminator/$prefix.ctg.fasta"]); 
 
 	if (!$ro_job->isUp2Date()) {
-		my $cmd;
+		my $cmd = '';
 		$cmd .= ' rm -rf ' . $outdir. '/* && ';
-		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'celera', 'moduleVersion.celera').' ; ';
+		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' ; ';
+		$cmd .= ' module load '.LoadConfig::getParam($rH_cfg, 'celera', 'moduleVersion.celera').' ; ';
+		$cmd .= ' memtime';
 		$cmd .= ' runCA';
 		$cmd .= ' -d ' . $outdir;
 		$cmd .= ' -p ' . $prefix;
@@ -77,9 +79,13 @@ sub fastqToCA {
 	$ro_job->testInputOutputs([$reads], [$outfile]);
 
 	if (!$ro_job->isUp2Date()) {
-		my $cmd;
+		my $cmd = '';
+		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' ; ';
 		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'celera', 'moduleVersion.celera').' ; ';
+		$cmd .= ' memtime';
 		$cmd .= ' fastqToCA';
+		$cmd .= ' -technology sanger';
+		$cmd .= ' -type sanger';
 		$cmd .= ' -libraryname ' . $libraryName;
 		$cmd .= ' -reads ' . $reads;
 		$cmd .= ' > ' . $outfile;
