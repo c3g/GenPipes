@@ -253,6 +253,9 @@ sub trim {
   my $sample = shift;
   my $rAoH_sampleLanes = shift;
 
+  my $rawReadDirectory = getParam($rH_cfg, 'default', 'rawReadDir');
+  unless (-d $rawReadDirectory) {die "Error in $configFile: raw read directory $rawReadDirectory does not exist or is not a directory!\n"};
+
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
 
     my $trimDirectory = "\$WORK_DIR/reads/$sample/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
