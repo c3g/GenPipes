@@ -3,10 +3,10 @@
 ###################
 mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/pipeline/tmp/untar/
 cd $MUGQIC_INSTALL_HOME/modulefiles/mugqic/pipeline/tmp
-VERSION="1.0"
+VERSION="1.1"
 wget https://bitbucket.org/mugqic/mugqic_pipeline/get/${VERSION}.tar.gz
 tar -xvf ${VERSION}.tar.gz -C untar/
-INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/mugqic_pipeline # where to install..
+INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/mugqic_pipeline/v${VERSION}/
 ARCHIVE_PATH=$MUGQIC_INSTALL_HOME/archive/mugqic_pipeline 
 mkdir -p $INSTALL_PATH $ARCHIVE_PATH
 cp -r untar/mugqic-mugqic_pipeline-*/*  $INSTALL_PATH
@@ -20,7 +20,7 @@ proc ModulesHelp { } {
 }
 module-whatis \"MUGQIC - MUGQIC developped tools \"
                        
-set             root                   \$::env(MUGQIC_INSTALL_HOME)/software/mugqic_pipeline
+set             root                   \$::env(MUGQIC_INSTALL_HOME)/software/mugqic_pipeline/v${VERSION}
 setenv          MUGQIC_PIPELINE_HOME   \$root
 prepend-path    PATH                   \$root/pipelines/chipseq
 prepend-path    PATH                   \$root/pipelines/dnaseq
