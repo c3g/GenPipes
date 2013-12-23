@@ -528,7 +528,7 @@ sub qcTagDirectories {
   my $rH_jobIdPrefixe = shift;
 
   my $jobDependency = undef;
-calis  my $qcTagsJobID   = undef;
+  my $qcTagsJobID   = undef;
 
   # Control dependencies
   my $parentStep = $steps[$stepId]->{'parentStep'};

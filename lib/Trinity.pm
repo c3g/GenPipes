@@ -62,6 +62,15 @@ sub moduleLoad {
   my $rH_cfg = shift;
   my $rA_modules = shift;
 
+  # Retrieve module values from the configuration file
+  my @moduleValues = map {getParam($rH_cfg, $_->[0], $_->[1])} @$rA_modules;
+
+  # Check by a system call if module is available
+  for my $moduleValue (@moduleValues) {
+    my $moduleShowOutput = `source /etc/profile.d/modules.sh; module show $moduleValue 2>&1`;
+    $moduleShowOutput !~ /Error/i or die "Error in configuration file:\n$moduleShowOutput";
+  }
+
   return "module load " . join(" ", map {getParam($rH_cfg, $_->[0], $_->[1])} @$rA_modules) . "\n";
 }
 

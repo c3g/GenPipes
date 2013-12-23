@@ -190,10 +190,11 @@ sub dcmegablast{ #JT: Initially for for PacBio pipeline
     $ro_job->testInputOutputs([$infileFasta], [$outfile]);
     
 	if (!$ro_job->isUp2Date()) {
-		my $cmd;
-		
-		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'blast', 'moduleVersion.blast').' ; ';
+		my $cmd = '';	
+		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' ; ';
+		$cmd .= ' module load '.LoadConfig::getParam($rH_cfg, 'blast', 'moduleVersion.blast').' ; ';
 		$cmd .= $gunzipCmd . ' &&';
+		$cmd .= ' memtime ';
 		$cmd .= ' blastn';
 		$cmd .= ' -task dc-megablast';
 		$cmd .= ' -query ' . $infileFasta;
@@ -217,9 +218,10 @@ sub blastdbcmd{ # JT: Initially for PacBio pipeline
     $ro_job->testInputOutputs(undef, [$outfile]);
     
 	if (!$ro_job->isUp2Date()) {
-		my $cmd;
-		
-		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'blast', 'moduleVersion.blast').' ; ';
+		my $cmd = '';	
+		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' ; ';
+		$cmd .= ' module load '.LoadConfig::getParam($rH_cfg, 'blast', 'moduleVersion.blast').' ; ';
+		$cmd .= ' memtime';
 		$cmd .= ' blastdbcmd';
 		$cmd .= ' -db ' . LoadConfig::getParam($rH_cfg, 'blast', 'blastdb');
 		$cmd .= ' -entry ' . $entryCmd;
@@ -232,4 +234,3 @@ sub blastdbcmd{ # JT: Initially for PacBio pipeline
 }
 
 1;
-
