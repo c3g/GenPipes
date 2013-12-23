@@ -10,4 +10,8 @@ git push --tags
 # Version bump the value. Until a realease add '-beta'. Like 1.2-beta
 vim lib/Version.pm
 
-# Create a zipped bundle and load it to bitbucket?
+# Add a blogpost here:
+#  https://biowiki.atlassian.net/wiki/pages/viewrecentblogposts.action?key=PS
+#  Press the CREATE button and choose "Blog Post"
+
+# In JIRA Add a release date to the 'Version' category of the administer project
