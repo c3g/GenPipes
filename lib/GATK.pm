@@ -207,4 +207,53 @@ sub targetCoverage {
   return $ro_job;
 }
 
+sub mutect {
+  my $rH_cfg      = shift;
+  my $sampleName  = shift;
+  my $normalBAM   = shift;
+  my $tumorBAM    = shift;
+  my $seqName     = shift;
+  my $outputDir   = shift;
+
+  my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta');
+  my $dbSnp = LoadConfig::getParam($rH_cfg, 'mutect', 'dbSnp');
+  my $cosmic = LoadConfig::getParam($rH_cfg, 'mutect', 'cosmic');
+  my $outputPrefix = $outputDir.$sampleName;
+
+  my $regionCmd = ' ';
+  if (defined($seqName)) {
+    $regionCmd =' -L '.$seqName;
+    $outputPrefix = $outputDir.$sampleName.'.'.$seqName;
+  }
+  my $outputVCF = $outputPrefix.'.mutect.vcf';
+  my $outputCallStats = $outputPrefix.'.mutect.call_stats.txt';
+  my $outputCoverage = $outputPrefix.'.mutect.wig.txt';
+  my $outputPower = $outputPrefix.'.mutect.power';
+
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$normalBAM, $tumorBAM], [$outputVCF,$outputCallStats,$outputCoverage,$outputPower]);
+
+  if (!$ro_job->isUp2Date()) {
+    my $command;
+    $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'mutect', 'moduleVersion.java').' '.LoadConfig::getParam($rH_cfg, 'mutect', 'moduleVersion.mutect').' &&';
+    $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'mutect', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'mutect', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'mutect', 'mutectRam').' -jar \${MUTECT_JAR}';
+    $command .= ' --analysis_type MuTect';
+    $command .= ' -dt NONE -baq OFF --validation_strictness LENIENT -nt 2 ';
+    $command .= ' --reference_sequence '.$refGenome;
+    $command .= ' --dbsnp '.$dbSnp;
+    $command .= ' --cosmic '.$cosmic;
+    $command .= ' --input_file:normal '.$normalBAM;
+    $command .= ' --input_file:tumor '.$tumorBAM;
+    $command .= ' --out '.$outputCallStats;
+    $command .= ' --coverage_file '.$outputCoverage;
+    $command .= ' -pow '.$outputPower;
+    $command .= ' -vcf '.$outputVCF;
+    $command .= $regionCmd;
+
+    $ro_job->addCommand($command);
+  }
+
+  return $ro_job;
+}
+
 1;
