@@ -18,6 +18,8 @@ cd Ray-$VERSION
 
 # Needed on guillimin
 #module load gcc/4.7.2 openmpi/1.6.3-gcc
+# Mammouth
+# module load gcc/4.7.0 openmpi_gcc64/1.6.4
 # fix readme
 sed 's/ RayPlatform\/README/ RayPlatform\/README.md/g' -i Makefile
 make -j 4 HAVE_LIBZ=y HAVE_LIBBZ2=y MAXKMERLENGTH=64 PREFIX=${INSTALL_PATH}/$SOFTWARE-$VERSION
