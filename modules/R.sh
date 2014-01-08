@@ -93,7 +93,10 @@ then
 	#wget https://dl.dropboxusercontent.com/u/2528754/R-$VERSION.tar.gz # TODO TEMP
 	tar -xf R-$VERSION.tar.gz
 	cd R-$VERSION
-	sed -i 's/Sys.umask("022")/Sys\.umask("002")/g' src/library/tools/R/build.R # hack to force umask 0002
+	
+	# hack to force umask 0002: in a large group, want pkgs installed with write perm.
+	sed -i 's/Sys.umask("022")/Sys\.umask("002")/g' src/library/tools/R/build.R 
+
 	./configure --prefix=$INSTALL_DIR  # TEMP s--with-readline=yes --with-readline=no
 	make -j8
 	make install
@@ -119,7 +122,27 @@ then
 		#%Module1.0
 		set ModulesVersion $VERSION
 		EOF
+		
+		## Define Rprofile.site: 
+		# On headless nodes, can only use cairo backend OR have Xvb running
+		# so we can have cairo-devel.x86_64 installed by admins, and then re-compile R. It should
+		# then have cairo support. There is a weird behavior though. Accoring to the R-doc, cairo
+		# is supposed to be set as the default backend -> getOption("bitmapType") on linux instead
+		# of Xlib if cairo is available.
+		# However it is not always the case. Not sure if this is a bug, might have something to do with pango present or not:
+		# http://r.789695.n4.nabble.com/cairo-is-not-the-default-when-available-td4666691.html
+		# http://r.789695.n4.nabble.com/Xll-options-td3725879.html
+		#  so the only other way is to set options(bitmapType="cairo")
+		# This can be set in R/lib64/etc/Rprofile.site, but then R should not be invked with R --vanilla
+		# because vanilla will ignore Rprofile.site.
+		cat > $INSTALL_DIR/lib64/R/etc/Rprofile.site <<-EOF
+			if(capabilities()["cairo"]){ options(bitmapType="cairo") }
+			Sys.umask("002")
+		EOF
 fi
+
+
+
 
 ## Finally, update/install library!
 $INSTALL_DIR/bin/R --vanilla  <<-'EOF'
