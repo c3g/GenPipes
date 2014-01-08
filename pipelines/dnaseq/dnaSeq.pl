@@ -168,7 +168,7 @@ sub main {
         my $jobIdVar = &$subref($currentStep, \%cfg, $currentWorkDir, $sampleName, $rAoH_sampleLanes, $rAoH_seqDictionary); 
         $globalDep{$fname}->{$sampleName} = $jobIdVar;
 
-        if($currentStep == $lastStepId) {
+        if(defined($jobIdVar) && $currentStep == $lastStepId) {
           print "FINAL_STEP_".$idx.'_JOB_IDS='.$jobIdVar."\n";
         }
       }

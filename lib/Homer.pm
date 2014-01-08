@@ -79,7 +79,7 @@ sub makeTagDirectory {
     $ro_job->testInputOutputs([$sortedBAM], [$outputDir . '/' . $sampleName . '/tagInfo.txt']);
 
     my $command;
-    $command = ' module load ' . LoadConfig::getParam($rH_cfg, 'qcTags', 'moduleVersion.python') . ' ' . LoadConfig::getParam($rH_cfg, 'qcTags', 'moduleVersion.homer') . ' ' . LoadConfig::getParam($rH_cfg, 'qcTags', 'moduleVersion.samtools') . ' && ';
+    $command = ' module load ' . LoadConfig::getParam($rH_cfg, 'qcTags', 'moduleVersion.python') . ' ' . LoadConfig::getParam($rH_cfg, 'qcTags', 'moduleVersion.homer') . ' ' . LoadConfig::getParam($rH_cfg, 'qcTags', 'moduleVersion.samtools') . ' &&';
     $command .= ' makeTagDirectory ' . $outputDir . '/' . $sampleName . ' ' . $sortedBAM . ' -checkGC -genome ' . $refGenome;
 
     $ro_job->addCommand($command);
@@ -103,7 +103,7 @@ sub makeUCSCFile {
   $ro_job->testInputOutputs([$tagDirectory], [$outputWiggle]);
 
   if (!$ro_job->isUp2Date()) {
-    $command .= ' module load ' . LoadConfig::getParam($rH_cfg, 'default' , 'moduleVersion.python') . ' ' . LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.homer') . ';';
+    $command .= ' module load ' . LoadConfig::getParam($rH_cfg, 'default' , 'moduleVersion.python') . ' ' . LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.homer') . ' &&';
     $command .= ' makeUCSCfile ' . $tagDirectory . ' | gzip -1 -c > '. $outputWiggle;
     $ro_job->addCommand($command);
   }
@@ -149,7 +149,7 @@ sub generateMotif {
 
   if (!$ro_job->isUp2Date()) {
     my $command;
-    $command .= ' module load ' . LoadConfig::getParam($rH_cfg, 'motif' , 'moduleVersion.python') . ' ' . LoadConfig::getParam($rH_cfg, 'motif', 'moduleVersion.homer') . ' ' . LoadConfig::getParam($rH_cfg, 'motif', 'moduleVersion.weblogo') . ' && ';
+    $command .= ' module load ' . LoadConfig::getParam($rH_cfg, 'motif' , 'moduleVersion.python') . ' ' . LoadConfig::getParam($rH_cfg, 'motif', 'moduleVersion.homer') . ' ' . LoadConfig::getParam($rH_cfg, 'motif', 'moduleVersion.weblogo') . ' &&';
     $command .= ' findMotifsGenome.pl ' . $InputBed . ' ' . $genomeName . ' ' . $outputDir . ' ' . $optionsThreads;
 
     $ro_job->addCommand($command);

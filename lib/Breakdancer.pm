@@ -52,8 +52,7 @@ sub bam2cfg {
 
     if (!$ro_job->isUp2Date()) {
       my $command;
-      $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'bam2cfg', 'moduleVersion.breakdancer').' ;';
-      $command .= ' module load '.LoadConfig::getParam($rH_cfg, 'bam2cfg', 'moduleVersion.samtools').' ;';
+      $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'bam2cfg', 'moduleVersion.breakdancer').' '.LoadConfig::getParam($rH_cfg, 'bam2cfg', 'moduleVersion.samtools').' &&';
       $command .= ' bam2cfg.pl -g -h ';
       $command .= ' -c '.$stdDevCutoff;
       $command .= ' '.$sampleBAM;
@@ -75,7 +74,7 @@ sub pairedBRDITX {
 
     if (!$ro_job->isUp2Date()) {
       my $command;
-      $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'pairedBRDITX', 'moduleVersion.breakdancer').' ;';
+      $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'pairedBRDITX', 'moduleVersion.breakdancer').' &&';
       $command .= ' breakdancer_max '.LoadConfig::getParam($rH_cfg, 'pairedBRDITX', 'brdParameters');
       $command .= ' -g '.$outputPrefix.'.bed';
       $command .= ' -d '.$outputPrefix.'.ctx';
@@ -99,7 +98,7 @@ sub pairedBRD {
 
     if (!$ro_job->isUp2Date()) {
       my $command;
-      $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'pairedBRD', 'moduleVersion.breakdancer').' ;';
+      $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'pairedBRD', 'moduleVersion.breakdancer').' &&';
       $command .= ' breakdancer_max '.LoadConfig::getParam($rH_cfg, 'pairedBRD', 'brdParameters');
       $command .= ' -o '.$chr;
       $command .= ' -g '.$outputPrefix.'.bed';

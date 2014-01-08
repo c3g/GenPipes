@@ -53,6 +53,7 @@ use POSIX;
 use LoadConfig;
 use BAMtools;
 use Breakdancer;
+use GATK;
 use SampleSheet;
 use SAMtools;
 use SequenceDictionaryParser;
@@ -83,6 +84,8 @@ push(@steps, {'name' => 'DNAC', 'stepLoop' => 'sample', 'parentStep' => undef});
 push(@steps, {'name' => 'Breakdancer', 'stepLoop' => 'sample', 'parentStep' => undef});
 push(@steps, {'name' => 'Pindel', 'stepLoop' => 'sample', 'parentStep' => undef});
 push(@steps, {'name' => 'ControlFreec', 'stepLoop' => 'sample', 'parentStep' => undef});
+push(@steps, {'name' => 'mutect', 'stepLoop' => 'sample', 'parentStep' => undef});
+push(@steps, {'name' => 'mergeMuTect', 'stepLoop' => 'sample', 'parentStep' => 'mutect'});
 
 my %globalDep;
 for my $stepName (@steps) {
@@ -374,7 +377,7 @@ sub dbNSFPAnnotation {
   my $vcfOutput = 'pairedVariants/' . $sampleName.'/'.$sampleName.'.merged.flt.mil.snpId.snpeff.dbnsfp.vcf';
   my $rO_job = SnpEff::annotateDbNSFP($rH_cfg, $inputVCF, $vcfOutput);
   if(!$rO_job->isUp2Date()) {
-    SubmitToCluster::printSubmitCmd($rH_cfg, "dbNSFPAnnotation", undef, 'DBNSFP', $jobDependency, 'allSamples', $rO_job);
+    SubmitToCluster::printSubmitCmd($rH_cfg, "dbNSFPAnnotation", undef, 'DBNSFP', $jobDependency, $sampleName, $rO_job);
   }
 
   return $rO_job->getCommandJobId(0);
@@ -578,6 +581,88 @@ sub ControlFreec {
   }
   return $cFreecJobId;
 
+}
+
+sub mutect {
+  my $stepId = shift;
+  my $rH_cfg = shift;
+  my $rH_samplePair = shift;
+  my $rAoH_seqDictionary = shift;
+
+  my $jobDependency = undef;
+
+  my $sampleName = $rH_samplePair->{'sample'};
+  my $normalBam = 'alignment/'.$rH_samplePair->{'normal'}.'/'.$rH_samplePair->{'normal'}.'.sorted.dup.recal.bam';
+  my $tumorBam = 'alignment/'.$rH_samplePair->{'tumor'}.'/'.$rH_samplePair->{'tumor'}.'.sorted.dup.recal.bam';
+  my $outputDir = 'pairedVariants/' . $sampleName."/rawMuTect/";
+
+  print 'mkdir -p '.$outputDir."\n";
+  print "MUTECT_JOB_IDS=\"\"\n";
+
+  my $nbJobs = LoadConfig::getParam( $rH_cfg, 'mutect', 'approxNbJobs' );
+  my $jobId;
+  if (defined($nbJobs) && $nbJobs > 1) {
+    my $rA_regions = generateApproximateWindows($nbJobs, $rAoH_seqDictionary);
+    for my $region (@{$rA_regions}) {
+      my $rO_job = GATK::mutect($rH_cfg, $sampleName, $normalBam, $tumorBam, $region, $outputDir);
+      if(!$rO_job->isUp2Date()) {
+        $region =~ s/:/_/g;
+        SubmitToCluster::printSubmitCmd($rH_cfg, "mutect", $region, 'MUTECT', $jobDependency, $sampleName, $rO_job);
+        if(!defined($jobId)) {
+          $jobId = '${MUTECT_JOB_IDS}';
+          print 'MUTECT_JOB_IDS='.$rO_job->getCommandJobId(0)."\n";
+        }
+        else {
+          print 'MUTECT_JOB_IDS=${MUTECT_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$rO_job->getCommandJobId(0)."\n";
+        }
+      }
+    }
+  }
+  else {
+    my $rO_job = GATK::mutect($rH_cfg, $sampleName, $normalBam, $tumorBam, undef, $outputDir);
+    SubmitToCluster::printSubmitCmd($rH_cfg, "mutect", undef, 'MUTECT', undef, $sampleName, $rO_job);
+    if(!defined($jobId)) {
+      $jobId = '${MUTECT_JOB_IDS}';
+      print 'MUTECT_JOB_IDS='.$rO_job->getCommandJobId(0)."\n";
+    }
+    else {
+      print 'MUTECT_JOB_IDS=${MUTECT_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$rO_job->getCommandJobId(0)."\n";
+    }
+  }
+
+  return $jobId;
+}
+
+sub mergeMuTect {
+  my $stepId = shift;
+  my $rH_cfg = shift;
+  my $rH_samplePair = shift;
+  my $rAoH_seqDictionary = shift;
+
+  my $jobDependency = undef;
+  my $parentStep = $steps[$stepId]->{'parentStep'};
+  if(defined($globalDep{$parentStep}->{$rH_samplePair->{'sample'}})) {
+    $jobDependency = $globalDep{$parentStep}->{$rH_samplePair->{'sample'}};
+  }
+
+  my $nbJobs = LoadConfig::getParam( $rH_cfg, 'mutect', 'approxNbJobs' );
+  my $rA_regions = generateApproximateWindows($nbJobs, $rAoH_seqDictionary);
+
+  my $sampleName = $rH_samplePair->{'sample'};
+  my $vcfDir = 'pairedVariants/' . $sampleName."/rawMuTect/";
+  my $outputDir = 'pairedVariants/' . $sampleName.'/';
+  my $outputVCF = $outputDir.$sampleName.'.mutect.vcf';
+
+  my @vcfs;
+  for my $region (@{$rA_regions}) {
+    push(@vcfs, $outputDir.'/rawMuTect/'.$sampleName.'.'.$region.'.mutect.vcf');
+  }
+
+  my $rO_job = VCFtools::mergeVCF($rH_cfg, \@vcfs, $outputVCF);
+  if(!$rO_job->isUp2Date()) {
+    SubmitToCluster::printSubmitCmd($rH_cfg, "mergeMuTect", undef, 'MERGEMUTECT', $jobDependency, $sampleName, $rO_job);
+  }
+  return $rO_job->getCommandJobId(0);
 }
 
 1;
