@@ -222,3 +222,16 @@ chmod -R ug+rwX  $INSTALL_DIR $MODULEFILE $MODULEVERSIONFILE
 chmod -R o+rX    $INSTALL_DIR $MODULEFILE $MODULEVERSIONFILE
 
 exit
+
+
+
+### Blurb to test graphics
+# module load mugqic/R/3.0.2
+# R --no-save <<'EOF'
+# capabilities()
+# getOption("bitmapType") # returns default bitmap device: abacus=cairo,guil=cairo,mp2=Xlib
+# jpeg("temp.jpeg")#,type='cairo')
+# plot(1)
+# dev.off()
+# EOF
+
