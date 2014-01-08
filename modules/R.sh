@@ -145,7 +145,7 @@ fi
 
 
 ## Finally, update/install library!
-$INSTALL_DIR/bin/R --vanilla  <<-'EOF'
+$INSTALL_DIR/bin/R  --no-save  <<-'EOF'
 
 	#' This script:
 	#' 1) Installs or update all packages hard-coded below
@@ -228,10 +228,10 @@ exit
 ### Blurb to test graphics
 # module load mugqic/R/3.0.2
 # R --no-save <<'EOF'
-# capabilities()
-# getOption("bitmapType") # returns default bitmap device: abacus=cairo,guil=cairo,mp2=Xlib
-# jpeg("temp.jpeg")#,type='cairo')
-# plot(1)
-# dev.off()
+ capabilities()
+ getOption("bitmapType") # returns default bitmap device: abacus=cairo,guil=cairo,mp2=Xlib
+ jpeg("temp.jpeg")#,type='cairo')
+ plot(1)
+ dev.off()
 # EOF
 
