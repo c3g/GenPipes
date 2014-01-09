@@ -2,7 +2,7 @@
 ###################
 ################### SnpEff
 ###################
-VERSION=3.3
+VERSION=3.4
 # Replace "." in official version number by "_" in archive version number
 ARCHIVE_VERSION=${VERSION//./_}
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/snpEff
