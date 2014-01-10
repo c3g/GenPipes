@@ -3,6 +3,7 @@ MUGQIC - PacBio Assembly pipeline README.
 #########################################################################################################################
 ### 1- Copy Perl wrapper in your working dir. from .../mugqic_pipeline/pipeline/pacBioAssembly/pacBioAssembly.pl
 ###    Copy Perl mugqic_pipeline/lib folder to your working dir.
+###    Copy Perl mugqic_pipeline/protocol folder to your working dir.
 ###    Copy pacBioAssembly.abacus.ini file to your working dir and edit it to enter proper values.      
 ###    Don't forget to update outdir path in the .ini file! Then generate commands for the pipeline
 ###    Copy the sampleSetupPacBio.pl from .../mugqic_tools/perl-tools/
