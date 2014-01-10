@@ -21,7 +21,7 @@ MUGQIC - PacBio Assembly pipeline README.
 
 #########################################################################################################################
 ### 2- Either all commands on one file:
-#./pacBioAssembly.pl -c  ./pacBioAssembly.abacus.ini -s 1 -e 8 -n ./samples.txt > commands_all.sh
+#./pacBioAssembly.pl -c  ./pacBioAssembly.abacus.ini -s 1 -e 9 -n ./samples.txt > commands_all.sh
 
 ## Or run each steps separately:
 
@@ -33,6 +33,7 @@ MUGQIC - PacBio Assembly pipeline README.
 #./pacBioAssembly.pl -c  ./pacBioAssembly.abacus.ini -s 6 -e 6  -n ./samples.txt > commands_step6.sh
 #./pacBioAssembly.pl -c  ./pacBioAssembly.abacus.ini -s 7 -e 7  -n ./samples.txt > commands_step7.sh
 #./pacBioAssembly.pl -c  ./pacBioAssembly.abacus.ini -s 8 -e 8  -n ./samples.txt > commands_step8.sh
+#./pacBioAssembly.pl -c  ./pacBioAssembly.abacus.ini -s 9 -e 9  -n ./samples.txt > commands_step8.sh
 
 #########################################################################################################################
 ## 3- Then source these .sh files. Pray the almighty that all jobs run with no error.
