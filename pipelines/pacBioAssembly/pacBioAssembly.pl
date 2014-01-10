@@ -43,7 +43,7 @@ BEGIN{
     use File::Basename;
     use Cwd 'abs_path';
     my ( undef, $mod_path, undef ) = fileparse( abs_path(__FILE__) );
-    unshift @INC, $mod_path."lib";
+	unshift @INC, $mod_path . "../../lib";
 }
 
 
