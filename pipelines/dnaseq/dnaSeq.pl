@@ -186,16 +186,20 @@ sub main {
   }
   
   
+  my $jobId = "";
   if($steps[$lastStepId]->{'stepLoop'} eq 'experiment') {
-    print 'export FINAL_STEP_JOB_IDS='.$globalDep{$steps[$lastStepId]->{'name'}}->{'experiment'}."\n";
+    if(defined($globalDep{$steps[$lastStepId]->{'name'}}->{'experiment'})) {
+      $jobId = $globalDep{$steps[$lastStepId]->{'name'}}->{'experiment'};
+    }
   }
   else {
     my @finalIds;
     for(my $idx=0; $idx < @sampleNames; $idx++){
       push(@finalIds, '${FINAL_STEP_'.$idx.'_JOB_IDS}');
     }
-    print 'export FINAL_STEP_JOB_IDS='.join(':', @finalIds)."\n";
+    $jobId = join(':', @finalIds);
   }
+  print 'export FINAL_STEP_JOB_IDS='.$jobId."\n";
   
 }
 

@@ -76,7 +76,7 @@ sub clientReport{
     if (!$ro_job->isUp2Date()) {
         my $command;
         $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'report','moduleVersion.cranR') .' &&';
-        $command .= ' R --vanilla -e \'library(gqSeqUtils) ;';
+        $command .= ' R --no-save -e \'library(gqSeqUtils) ;';
         $command .= ' mugqicPipelineReport(';
         $command .= ' ' .$pipeline ;
         $command .= ' ' .$title ;
