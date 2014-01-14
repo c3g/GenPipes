@@ -106,13 +106,14 @@ sub generatePeaks {
   # Compute Genome size or retrieve from config
   my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'genomeName');
   my $genomeSize = '';
+  my $parGenomeSize=LoadConfig::getParam($rH_cfg, 'macs', 'genomeSize');
   if ($refGenome eq 'hg1k_v37' || $refGenome eq 'hg19' || $refGenome eq 'hg18') {
     $genomeSize = ' -g hs ';
   }
   elsif ($refGenome eq 'mm9' || $refGenome eq 'mm10') {
     $genomeSize = ' -g mm ';
-  } elsif (LoadConfig::getParam($rH_cfg, 'macs', 'genomeSize') != "") {
-    if ($genomeSize > 0){
+  } elsif ($parGenomeSize ne "") {
+    if ($parGenomeSize > 0){
       $genomeSize = ' -g '.LoadConfig::getParam($rH_cfg, 'macs', 'genomeSize');
     } else {
       die "ERROR: Undefined genome name $refGenome or wrong definition for genome size variable in configuration file (genomeSize) \n";
