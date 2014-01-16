@@ -60,8 +60,8 @@ sub getCutoff {
 		my $cmd = '';
 	
 		# Choose a subread length threshold such that subreads above the threshold provide about 20x coverage of the genome.
-		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' ;';
-		$cmd .= ' module load '.LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.mugqictools').' ;';
+		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' &&';
+		$cmd .= ' module load '.LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.mugqictools').' &&';
 		$cmd .= ' memtime';
 		$cmd .= ' pacBioGetCutoff.pl';
 		$cmd .= ' --infile ' . $infile;
@@ -90,8 +90,8 @@ sub celeraConfig {
 
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
-		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' ;';
-		$cmd .= ' module load '.LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.mugqictools').' ;';
+		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' &&';
+		$cmd .= ' module load '.LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.mugqictools').' &&';
 		$cmd .= ' memtime';
 		$cmd .= ' pacBioAssemblyCeleraConfig.pl';
 		$cmd .= ' --infile ' . $infile;
@@ -134,9 +134,9 @@ sub assemblyStats{
 
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
-		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' ;';
-		$cmd .= ' module load '.LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.R').' ;';
-		$cmd .= ' module load '.LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.mugqictools').' ;';
+		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' &&';
+		$cmd .= ' module load '.LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.R').' &&';
+		$cmd .= ' module load '.LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.mugqictools').' &&';
 		$cmd .= ' memtime ';
 		$cmd .= ' pacBioAssemblyStats.pl';
 		$cmd .= ' --filteredSummary ' . $filteredSummary;
@@ -166,8 +166,8 @@ sub splitReads{
 
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
-		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' ;';
-		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.mugqictools').' ;';
+		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' &&';
+		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.mugqictools').' &&';
 		$cmd .= ' memtime';
 		$cmd .= ' pacBioSplitReads.pl';
 		$cmd .= ' --infile ' . $subreads;

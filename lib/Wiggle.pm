@@ -58,7 +58,7 @@ sub strandBam{
   my $mergeRJob = Picard::mergeFiles($rH_cfg, $sampleName, \@mergeBAMRtmp, $rA_outputBAM->[1]);
 
   if (!$ro_job->isUp2Date()) {
-    my $Fcommand = 'module load ' .LoadConfig::getParam($rH_cfg, 'wiggle','moduleVersion.samtools') .' ;';
+    my $Fcommand = 'module load ' .LoadConfig::getParam($rH_cfg, 'wiggle','moduleVersion.samtools') .' &&';
     $Fcommand .= ' samtools view -bh -F 256 -f 81 ' . $inputBAM;
     $Fcommand .= ' > ' .$inputBAM .'tmp1.forward.bam &&';
     $Fcommand .= ' samtools view -bh -F 256 -f 161 ' . $inputBAM;
@@ -68,7 +68,7 @@ sub strandBam{
 
     $ro_job->addCommand($Fcommand);
   
-    my $Rcommand = 'module load ' .LoadConfig::getParam($rH_cfg, 'wiggle','moduleVersion.samtools') .' ;';
+    my $Rcommand = 'module load ' .LoadConfig::getParam($rH_cfg, 'wiggle','moduleVersion.samtools') .' &&';
     $Rcommand .= ' samtools view -bh -F 256 -f 97 ' . $inputBAM;
     $Rcommand .= ' > ' .$inputBAM .'tmp1.reverse.bam &&';
     $Rcommand .= ' samtools view -bh -F 256 -f 145 ' . $inputBAM;
@@ -94,7 +94,7 @@ sub graph{
 
   if (!$ro_job->isUp2Date()) {
     my $command;
-    $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'wiggle','moduleVersion.samtools') .' ' .LoadConfig::getParam($rH_cfg, 'wiggle','moduleVersion.bedtools')  .' ' .LoadConfig::getParam($rH_cfg, 'wiggle','moduleVersion.bed2wig') .' ;';
+    $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'wiggle','moduleVersion.samtools') .' ' .LoadConfig::getParam($rH_cfg, 'wiggle','moduleVersion.bedtools')  .' ' .LoadConfig::getParam($rH_cfg, 'wiggle','moduleVersion.bed2wig') .' &&';
     $command .= ' nmblines=\$(samtools view -F 256 -f 81 ' . $inputBAM .' | wc -l) &&';
     $command .= ' scalefactor=0\$(echo \"scale=2; 1 / (\$nmblines / 10000000);\" | bc) &&';   
     $command .= ' genomeCoverageBed -bg -ibam ' . $inputBAM;

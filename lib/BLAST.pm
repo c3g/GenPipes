@@ -97,7 +97,7 @@ sub align {
     $ro_job->testInputOutputs([$input], [$output]);
 
     if (!$ro_job->isUp2Date()) {
-      $command .= 'module add mugqic/blast/2.2.27+;';
+      $command .= 'module add mugqic/blast/2.2.27+ &&';
       $command .= ' mkdir -p ' . $laneDirectory . 'fasta_split/' . basename($rH_cfg->{'blast.db'}) . ' &&';
       $command .= ' ' . $rH_cfg->{'blast.program'} . ' -num_threads ' . $rH_cfg->{'blast.nbThreads'};
       $command .= ' -query ' . $input;
@@ -135,7 +135,7 @@ sub alignParallel {
     $ro_job->testInputOutputs([$input], [$output]);
 
     if (!$ro_job->isUp2Date()) {
-      $command .= 'module add mugqic/blast/2.2.27+;';
+      $command .= 'module add mugqic/blast/2.2.27+ &&';
       $command .= ' mkdir -p ' . $laneDirectory . 'fasta_split/' . basename($rH_cfg->{'blast.db'}) . ' &&';
       $command .= ' ' . $rH_cfg->{'blast.parallelBlast'} . ' --file ' . $input;
       $command .= ' --OUT ' . $output;
@@ -191,8 +191,8 @@ sub dcmegablast{ #JT: Initially for for PacBio pipeline
     
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';	
-		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' ; ';
-		$cmd .= ' module load '.LoadConfig::getParam($rH_cfg, 'blast', 'moduleVersion.blast').' ; ';
+		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' && ';
+		$cmd .= ' module load '.LoadConfig::getParam($rH_cfg, 'blast', 'moduleVersion.blast').' && ';
 		$cmd .= $gunzipCmd . ' &&';
 		$cmd .= ' memtime ';
 		$cmd .= ' blastn';
@@ -219,8 +219,8 @@ sub blastdbcmd{ # JT: Initially for PacBio pipeline
     
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';	
-		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' ; ';
-		$cmd .= ' module load '.LoadConfig::getParam($rH_cfg, 'blast', 'moduleVersion.blast').' ; ';
+		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' && ';
+		$cmd .= ' module load '.LoadConfig::getParam($rH_cfg, 'blast', 'moduleVersion.blast').' && ';
 		$cmd .= ' memtime';
 		$cmd .= ' blastdbcmd';
 		$cmd .= ' -db ' . LoadConfig::getParam($rH_cfg, 'blast', 'blastdb');
