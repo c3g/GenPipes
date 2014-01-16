@@ -43,7 +43,7 @@ BEGIN{
     use File::Basename;
     use Cwd 'abs_path';
     my ( undef, $mod_path, undef ) = fileparse( abs_path(__FILE__) );
-    unshift @INC, $mod_path."lib";
+	unshift @INC, $mod_path."lib";
 }
 
 
@@ -781,7 +781,7 @@ sub polishing{
 			"$outdir/$sampleName/$suffix/$merSize/polishing/data/consensus.fastq.gz"
 		);
 		if(!$rO_jobCallVariants->isUp2Date()) {
-			SubmitToCluster::printSubmitCmd($rH_cfg, "callVariants", $stepName , 'CALLVARIANTS'.'_'.$sampleName.'_'.$suffix.'_'.$merSize, $rO_jobSortH5->getCommandJobId(0), $sampleName."_".$suffix."_$merSize", $rO_jobCallVariants); 
+			SubmitToCluster::printSubmitCmd($rH_cfg, "variantCaller", $stepName , 'CALLVARIANTS'.'_'.$sampleName.'_'.$suffix.'_'.$merSize, $rO_jobSortH5->getCommandJobId(0), $sampleName."_".$suffix."_$merSize", $rO_jobCallVariants); 
 		}
 		
 		my $rO_jobSummarizePolishing = SmrtAnalysis::summarizePolishing(

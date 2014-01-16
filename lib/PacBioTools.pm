@@ -6,11 +6,11 @@ I<PacBioTools>
 
 =head1 SYNOPSIS
 
-PacBioTools->getCutoff()
+PacBioTools->run()
 
 =head1 DESCRIPTION
 
-B<PacBioTools> This a library to analyze PacBio data in complement to SmrtAnalysis suite.
+B<PacBioTools> This a library to analyze PacBio data using the SmrtAnalysis suite.
 
 Input = file_name
 
@@ -54,7 +54,7 @@ sub getCutoff {
 	my $outfile          = shift;
 
   	my $ro_job = new Job();
-	$ro_job->testInputOutputs([$infile], [$outfile.".fasta"]);
+	$ro_job->testInputOutputs([$infile], [$outfile]);
 
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
@@ -180,5 +180,29 @@ sub splitReads{
 	}
 	return $ro_job;
 }
+
+sub compile{
+ 	my $rH_cfg              = shift;
+	my $indir               = shift;
+	my $outfile             = shift;
+
+  	my $ro_job = new Job();
+	$ro_job->testInputOutputs(undef, [$outfile]);
+
+	if (!$ro_job->isUp2Date()) {
+		my $cmd = '';
+		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' ;';
+		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.mugqictools').' ;';
+		$cmd .= ' memtime';
+		$cmd .= ' pacBioCompileStats.pl';
+		$cmd .= ' --indir ' . $indir;
+		$cmd .= ' > ' . $outfile;
+
+		$ro_job->addCommand($cmd);
+
+	}
+	return $ro_job;
+}
+
 
 1;

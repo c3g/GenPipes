@@ -2,12 +2,6 @@
 ### Set your working directory
 #DIR=/path/to/my/working/dir/
 
-cp ~/repos/mugqic_pipeline/pipelines/chipseq/chipSeq.pl bin
-cp ~/repos/mugqic_pipeline/pipelines/chipseq/chipSeq.mammouth.ini bin
-
-#export PERL5LIB=/home/sandoval/repos/mugqic_pipeline/lib/:${PERL5LIB}
-
-perl bin/chipSeq.pl -c bin/chipSeq.mammouth.ini -n dummynanuq2.csv -d design.csv -w `pwd` -s 2 -e 11 > toRun.sh
 
 #########################################################################################################################
 ### 1- Copy Perl wrapper in your working dir. from .../mugqic_pipeline/pipeline/chipseq/chipSeq.pl
@@ -15,8 +9,13 @@ perl bin/chipSeq.pl -c bin/chipSeq.mammouth.ini -n dummynanuq2.csv -d design.csv
 ###    Copy chipSeq.mammouth.ini file to your working dir and edit it to enter proper values.
 
 
+cp ~/repos/mugqic_pipeline/pipelines/chipseq/chipSeq.pl bin
+cp ~/repos/mugqic_pipeline/pipelines/chipseq/chipSeq.mammouth.ini bin
+mkdir -p bin/../../lib
+cp ~/repos/mugqic_pipeline/lib/* bin/../../lib/
+
 #########################################################################################################################
-### 2- Prepare NANUQ sample sheet. Here are 3 examples of how to run the sampleSetup.pl script.
+### 2- Prepare NANUQ sample sheet. Here are 2 examples of how to run the sampleSetup.pl script.
 
 module load mugqic/tools/1.0 && perl sampleSetup.pl --projectId 8968  --nanuqAuthFile ~/nanuq_sample_setup.txt   
 module load mugqic/tools/1.0 && perl sampleSetup.pl --nanuqAuthFile ~/nanuq_sample_setup.txt --sampleSheet ./project.nanuq.csv 
@@ -28,7 +27,7 @@ module load mugqic/tools/1.0 && perl sampleSetup.pl --nanuqAuthFile ~/nanuq_samp
 
 #########################################################################################################################
 ### 4- Generate either all commands on one file:
-# perl bin/chipSeq.pl -c bin/chipSeq.mammouth.ini -n dummynanuq2.csv -d design.csv -w `pwd` -s 2 -e 11 > toRun.sh
+# perl bin/chipSeq.pl -c bin/chipSeq.mammouth.ini -n project.nanuq.csv -d design.csv -w `pwd` -s 2 -e 11 > toRun.sh
 
 ## Or run each step separately:
 

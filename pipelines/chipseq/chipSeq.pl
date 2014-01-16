@@ -460,7 +460,7 @@ sub metrics {
 
    # Get trimmed read count is automatically done by trimmomatic
     my $groupName       = $sampleName . '.' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}.'.' .$rH_laneInfo->{'libraryBarcode'};
-    my $trimStatsFile   =  'reads/' . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName . '.trim.stats.csv';
+    my $trimStatsFile   =  'reads/' . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName . '.' .$rH_laneInfo->{'libraryBarcode'}. '.trim.stats.csv';
 
     # Compute flagstats per sample
     my $dir = 'alignment/' . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
