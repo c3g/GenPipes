@@ -1,4 +1,4 @@
-  #!/usr/bin/perl
+#!/usr/bin/perl
 
 =head1 NAME
 
@@ -298,7 +298,7 @@ sub trimming {
   my $inputFile;
   my $outputFile;
   my $outputFastqPair1Name;
-  my $setJobId = 0;
+  
   
   # Trimming job IDS per sample
   my $trimJobIdVarNameSample = undef;
@@ -344,6 +344,7 @@ sub aligning{
   
   print "BWA_JOB_IDS=\"\"\n";
   print "mkdir -p metrics\n";
+  
   
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
     my $alignJobIdVarNameLane;
@@ -409,7 +410,11 @@ sub aligning{
   }
  
   # Merge /sort reads
-  $jobDependency = '$BWA_JOB_IDS';
+  if($setJobId ==0){
+    $jobDependency = undef;
+  }else{
+    $jobDependency = '$BWA_JOB_IDS';
+  }
   my $mergeJobId = undef ;
   my $latestBam;
   my @inputBams;
