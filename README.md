@@ -44,9 +44,9 @@ To download the pipeline use git to obtain the most recent development version. 
     git clone https://bitbucket.org/mugqic/mugqic_pipeline.git
 
 
-If you encounter issues with the development version (master), or simply wish to obtain the most recent stable revision (1.0) then use:
+If you encounter issues with the development version (master), or simply wish to obtain the most recent stable revision (1.1) then use:
 
-    git fetch && git checkout 1.0
+    git fetch && git checkout 1.1
 
 Whenever the latest snapshot from github is needed, use the command pull
 
