@@ -48,11 +48,6 @@ my @A_steps = (
     'parent' => []
   },
   {
-    'name'   => 'trimMetrics',
-    'loop'   => 'global',
-    'parent' => ['trim']
-  },
-  {
     'name'   => 'normalization',
     'loop'   => 'global',
     'parent' => ['trim']
@@ -91,6 +86,16 @@ my @A_steps = (
     'name'   => 'differentialGeneExpression',
     'loop'   => 'global',
     'parent' => ['rsem', 'blastMergeResults']
+  },
+  {
+    'name'   => 'metrics',
+    'loop'   => 'global',
+    'parent' => ['normalization']
+  },
+  {
+    'name'   => 'deliverable',
+    'loop'   => 'global',
+    'parent' => ['metrics', 'differentialGeneExpression']
   }
 );
 
@@ -277,24 +282,6 @@ sub trim {
   }
 }
 
-# Merge all sample Trimmomatic results
-sub trimMetrics {
-  my $rH_cfg = shift;
-  my $step = shift;
-  my $workDirectory = shift;
-
-  my $libraryType = getParam($rH_cfg, 'default', 'libraryType');
-  my $trimDirectory = "\$WORK_DIR/reads";
-  my $trimMetricsDirectory = "\$WORK_DIR/metrics";
-  my $pattern = "trim.stats.csv";
-  my $outputFile = "$trimMetricsDirectory/trimming.stats";
-
-  print "mkdir -p $trimMetricsDirectory\n";
-  my $rO_job = Metrics::mergeTrimmomaticStats($rH_cfg, $libraryType, $pattern, $trimDirectory, $outputFile);
-
-  submitJob($rH_cfg, $step, undef, $rO_job);
-}
-
 sub normalization {
   my $rH_cfg = shift;
   my $step = shift;
@@ -326,10 +313,21 @@ sub blastSplitQuery {
       ['blast', 'moduleVersion.exonerate']
     ]);
 
+    my $trinityFastaFile = "\$WORK_DIR/trinity_out_dir/Trinity.fasta";
+    my $trinityIndexFile = "\$WORK_DIR/trinity_out_dir/Trinity.idx";
+    my $reducedTrinityFastaFile = "\$WORK_DIR/trinity_out_dir/Trinity.longest_transcript.fasta";
+
+    # Remove previous Trinity assembly FASTA index if present
+    $command .= "rm -f $trinityIndexFile\n";
+    # Create Trinity assembly FASTA index
+    $command .= "fastaindex $trinityFastaFile $trinityIndexFile\n";
+    # Create Trinity assembly FASTA subset with longest transcript per component only
+    $command .= "fastalength $trinityFastaFile | perl -pe 's/ ((\\S+)_seq\\S+)/\\t\\1\\t\\2/' | sort -k3,3 -k1,1gr | uniq -f2 | cut -f2 | fastafetch $trinityFastaFile -i $trinityIndexFile -q stdin > $reducedTrinityFastaFile\n";
+
     # Split Trinity assembly FASTA into chunks for BLAST parallelization
     my $chunkDir = "\$WORK_DIR/blast/chunks";
     $command .= "mkdir -p $chunkDir\n";
-    $command .= "fastasplit -f \$WORK_DIR/trinity_out_dir/Trinity.fasta -o $chunkDir -c " . getParam($rH_cfg, 'blast', 'blastJobs') . " \\\n";
+    $command .= "fastasplit -f $reducedTrinityFastaFile -o $chunkDir -c " . getParam($rH_cfg, 'blast', 'blastJobs') . " \\\n";
 
     $rO_job->addCommand($command);
   }
@@ -391,7 +389,10 @@ sub blastMergeResults {
     my $result = "$blastDir/$program" . "_Trinity_$db.tsv";
 
     # All BLAST chunks are merged into one file named after BLAST program and reference database
-    $command .= "cat $chunkResults > $result";
+    $command .= "cat $chunkResults > $result\n";
+
+    # Create a BLAST results ZIP file for future deliverables
+    $command .= "gzip -c $result > $result.gz";
 
     $rO_job->addCommand($command);
   }
@@ -466,18 +467,53 @@ sub differentialGeneExpression {
     # edger.R requires a matrix with gene/isoform annotation as second column 
     # Keep BLAST best hit only
     # Remove from column headers ".(genes|isoforms).results" created by RSEM
-    $command .= "awk '!x[\\\$1]++' $blastResult | awk -F\\\"\\t\\\" 'FNR==NR {a[\\\$1]=\\\$2; next}{OFS=\\\"\\t\\\"; if (a[\\\$1]) {print \\\$1, a[\\\$1]} else {print \\\$1, \\\$1}}' - $isoformsMatrix | sed '1s/^\\t/Isoform\\tSymbol/' | paste - <(cut -f 2- $isoformsMatrix) | sed '1s/\\.isoforms\\.results//g' > $isoformsAnnotatedMatrix \n";
+    $command .= "grep -v '^#' $blastResult | awk '!x[\\\$1]++' | awk -F\\\"\\t\\\" 'FNR==NR {a[\\\$1]=\\\$2; next}{OFS=\\\"\\t\\\"; if (a[\\\$1]) {print \\\$1, a[\\\$1]} else {print \\\$1, \\\$1}}' - $isoformsMatrix | sed '1s/^\\t/Isoform\\tSymbol/' | paste - <(cut -f 2- $isoformsMatrix) | sed '1s/\\.isoforms\\.results//g' > $isoformsAnnotatedMatrix \n";
     # Remove "_seq" from isoform BLAST query name and keep BLAST isoform best hit as BLAST gene best hit
-    $command .= "awk '!x[\\\$1]++' $blastResult | awk -F\\\"\\t\\\" 'FNR==NR {sub(/_seq.*/, \\\"\\\", \\\$1); a[\\\$1]=\\\$2; next}{OFS=\\\"\\t\\\"; if (a[\\\$1]) {print \\\$1, a[\\\$1]} else {print \\\$1, \\\$1}}' - $genesMatrix | sed '1s/^\\t/Gene\\tSymbol/' | paste - <(cut -f 2- $genesMatrix) | sed '1s/\\.genes\\.results//g' > $genesAnnotatedMatrix \n";
+    $command .= "grep -v '^#' $blastResult | awk '!x[\\\$1]++' | awk -F\\\"\\t\\\" 'FNR==NR {sub(/_seq.*/, \\\"\\\", \\\$1); a[\\\$1]=\\\$2; next}{OFS=\\\"\\t\\\"; if (a[\\\$1]) {print \\\$1, a[\\\$1]} else {print \\\$1, \\\$1}}' - $genesMatrix | sed '1s/^\\t/Gene\\tSymbol/' | paste - <(cut -f 2- $genesMatrix) | sed '1s/\\.genes\\.results//g' > $genesAnnotatedMatrix \n";
 
     # Perform edgeR
     $command .= "Rscript \\\$R_TOOLS/edger.R -d $designFile -c $isoformsAnnotatedMatrix -o $dgeDir/isoforms_$db \n";
     $command .= "Rscript \\\$R_TOOLS/edger.R -d $designFile -c $genesAnnotatedMatrix -o $dgeDir/genes_$db \n";
 
+    # Perform DESeq
+    $command .= "Rscript \\\$R_TOOLS/deseq.R -d $designFile -c $isoformsAnnotatedMatrix -o $dgeDir/isoforms_$db \n";
+    $command .= "Rscript \\\$R_TOOLS/deseq.R -d $designFile -c $genesAnnotatedMatrix -o $dgeDir/genes_$db \n";
+
     # Merge edgeR results with gene/isoform length values and BLAST description
-    $command .= "for gi in genes isoforms; do for f in $dgeDir/\\\${gi}_$db/*/edger_results.csv; do sed '1s/gene_symbol/$db.id/' \\\$f | awk -F\\\"\\t\\\" 'FNR==NR {a[\\\$1]=\\\$2\\\"\\t\\\"\\\$3; next}{OFS=\\\"\\t\\\"; if (a[\\\$1]) {print \\\$0, a[\\\$1]} else {print \\\$0, \\\"\\\", \\\"\\\"}}' \$WORK_DIR/rsem/\\\${gi}.lengths.tsv - | sed '1s/\\t\\\$/length\\teffective_length/' | awk -F\\\"\\t\\\" 'FNR==NR {a[\\\$2]=\\\$NF; next}{OFS=\\\"\\t\\\"; if (a[\\\$2]) {print \\\$0, a[\\\$2]} else {print \\\$0, \\\"\\\"}}' $blastResult - | sed '1s/\\\$/description/' > \\\${f/.csv/_$db.csv}; done; done \\\n";
+    $command .= "for gi in genes isoforms; do for f in $dgeDir/\\\${gi}_$db/*/dge_results.csv; do sed '1s/gene_symbol/$db.id/' \\\$f | awk -F\\\"\\t\\\" 'FNR==NR {a[\\\$1]=\\\$2\\\"\\t\\\"\\\$3; next}{OFS=\\\"\\t\\\"; if (a[\\\$1]) {print \\\$0, a[\\\$1]} else {print \\\$0, \\\"\\\", \\\"\\\"}}' \$WORK_DIR/rsem/\\\${gi}.lengths.tsv - | sed '1s/\\t\\\$/length\\teffective_length/' | awk -F\\\"\\t\\\" 'FNR==NR {a[\\\$2]=\\\$NF; next}{OFS=\\\"\\t\\\"; if (a[\\\$2]) {print \\\$0, a[\\\$2]} else {print \\\$0, \\\"\\\"}}' <(grep -v '^#' $blastResult) - | sed '1s/\\\$/description/' > \\\${f/.csv/_$db.csv}; done; done \\\n";
 
     $rO_job->addCommand($command);
   }
+  submitJob($rH_cfg, $step, undef, $rO_job);
+}
+
+# Merge all sample Trimmomatic results
+sub metrics {
+  my $rH_cfg = shift;
+  my $step = shift;
+  my $workDirectory = shift;
+
+  my $metricsDirectory = "\$WORK_DIR/metrics";
+  print "mkdir -p $metricsDirectory\n";
+
+  my $libraryType = getParam($rH_cfg, 'default', 'libraryType');
+  my $trimDirectory = "\$WORK_DIR/reads";
+  my $pattern = "trim.stats.csv";
+  my $outputFile = "$metricsDirectory/trimming.stats";
+
+  # Merge all sample Trimmomatic results
+  my $rO_job = Metrics::mergeTrimmomaticStats($rH_cfg, $libraryType, $pattern, $trimDirectory, $outputFile);
+
+  $rO_job->addCommand(" && wc -l \$WORK_DIR/normalization/*.accs > $metricsDirectory/normalization.stats");
+
+  submitJob($rH_cfg, $step, undef, $rO_job);
+}
+
+sub deliverable {
+  my $rH_cfg = shift;
+  my $step = shift;
+  my $workDirectory = shift;
+
+  my $rO_job = GqSeqUtils::clientReport($rH_cfg, $configFile, $workDirectory, "RNAseqDeNovo");
   submitJob($rH_cfg, $step, undef, $rO_job);
 }

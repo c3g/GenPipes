@@ -137,6 +137,9 @@ sub trinity {
     $command .= " --bflyCPU " . getParam($rH_cfg, 'trinity', 'bflyCPU') . " \\\n";
     $command .= " " . getParam($rH_cfg, 'trinity', 'trinityOptions') . " \n";
 
+    # Create Trinity FASTA ZIP file for future deliverables
+    $command .= "gzip -c \$WORK_DIR/trinity_out_dir/Trinity.fasta > \$WORK_DIR/trinity_out_dir/Trinity.fasta.gz \n";
+
     # Compute assembly stats
     $command .= "Rscript -e 'library(gqSeqUtils); dnaFastaStats(filename = \\\"\$WORK_DIR/trinity_out_dir/Trinity.fasta\\\", type = \\\"trinity\\\", output.prefix = \\\"\$WORK_DIR/trinity_out_dir/Trinity.stats\\\")' \\\n";
 
