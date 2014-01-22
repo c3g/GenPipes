@@ -14,6 +14,12 @@ root/pipelines - dir containing the pipelines itself. An addtional dir should be
 Perl documentation on *.pm and *.pl files should \(as much as possible\) be created using POD \(Pod::Usage\). 
 
 
+# BUG report
+-------------
+
+Please report bugs, errors or problems by sending an email to bioinformatics.service@mail.mcgill.ca
+
+
 # Documentation 
 -------------
 
