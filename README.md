@@ -17,7 +17,7 @@ Perl documentation on *.pm and *.pl files should \(as much as possible\) be crea
 # BUG report
 -------------
 
-Please report bugs, errors or problems by sending an email to bioinformatics.service@mail.mcgill.ca
+Please report bugs, errors or problems by sending an email to bioinformatics.service@mail.mcgill.ca(mailto:bioinformatics.service@mail.mcgill.ca)
 
 
 # Documentation 
