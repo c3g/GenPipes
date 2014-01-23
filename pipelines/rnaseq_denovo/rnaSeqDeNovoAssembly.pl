@@ -2,11 +2,24 @@
 
 =head1 NAME
 
-I<rnaSeqDeNovoAssembly.pl>
+I<rnaSeqDeNovoAssembly>
+
+=head1 SYNOPSIS
+
+perl rnaSeqDeNovoAssembly.pl -c rnaSeqDeNovo.abacus.ini -n project.nanuq.csv -d design.csv -w  currentDirectory -s 1 -e 11 > toRun.sh
+
+Options:
+
+  -c (rnaSeqDeNovo.abacus.ini) the standard configuration file for the pipeline.
+  -s The start step
+  -e The end step
+  -n (project.nanuq.csv) the NANUQ Project sample file
+  -d (design.csv) the design file. A tab separated value file that specifies the experimental design information of the project.
+  -w The project's working directory. All job outputs will be sent to this directory.
 
 =head1 DESCRIPTION
 
-B<rnaSeqDeNovoAssembly.pl> Is the main de novo RNA assembly pipeline.
+B<rnaSeqDeNovoAssembly.pl> is the main RNA-Seq De Novo assembly pipeline.
 
 =head1 AUTHORS
 
@@ -15,6 +28,28 @@ B<David Morais> - I<dmorais@cs.bris.ac.uk>
 B<Mathieu Bourgey> - I<mbourgey@genomequebec.com>
 
 B<Joel Fillon> - I<joel.fillon@mcgill.ca>
+
+=head1 DEPENDENCY
+
+B<Pod::Usage> Usage and help output.
+
+B<Cwd> Path parsing
+
+B<Getopt::Std>  Options parsing
+
+B<GqSeqUtils>  Deliverable and final report generation
+
+B<LoadConfig> Configuration file parsing
+
+B<Metrics>   Multiple metrics functions (trim/align/annotation)
+
+B<SampleSheet> Sample sheet file parsing
+
+B<SubmitToCluster> Cluster job options submission to the bash command, jobs resuming control
+
+B<Trimmomatic>  Trimmomatic trimming / clipping functions
+
+B<Trinity>  Trinity RNA-Seq De Novo assembly functions
 
 =cut
 
@@ -32,6 +67,7 @@ use lib "$FindBin::Bin/../../lib";
 #-------------------
 use Cwd 'abs_path';
 use Getopt::Std;
+use GqSeqUtils;
 use LoadConfig;
 use Metrics;
 use SampleSheet;
@@ -360,7 +396,7 @@ sub blast {
       my $db = getParam($rH_cfg, 'blast', 'blastDb');
       my $options = getParam($rH_cfg, 'blast', 'blastOptions');
       my $chunkDir = "\$WORK_DIR/blast/chunks";
-      my $chunkQuery = "$chunkDir/Trinity.fasta_chunk_$chunkIndex";
+      my $chunkQuery = "$chunkDir/Trinity.longest_transcript.fasta_chunk_$chunkIndex";
       my $chunkResult = "$chunkDir/$program" . "_Trinity_$db" . "_chunk_$chunkIndex.tsv";
 
       # Each FASTA chunk is further divided in subchunk per CPU per job as a second level of BLAST parallelization
@@ -385,8 +421,8 @@ sub blastMergeResults {
     my $program = getParam($rH_cfg, 'blast', 'blastProgram');
     my $db = getParam($rH_cfg, 'blast', 'blastDb');
     my $blastDir = "\$WORK_DIR/blast";
-    my $chunkResults = "$blastDir/chunks/$program" . "_Trinity_$db" . "_chunk_*.tsv";
-    my $result = "$blastDir/$program" . "_Trinity_$db.tsv";
+    my $chunkResults = "$blastDir/chunks/$program" . "_Trinity.longest_transcript_$db" . "_chunk_*.tsv";
+    my $result = "$blastDir/$program" . "_Trinity.longest_transcript_$db.tsv";
 
     # All BLAST chunks are merged into one file named after BLAST program and reference database
     $command .= "cat $chunkResults > $result\n";
