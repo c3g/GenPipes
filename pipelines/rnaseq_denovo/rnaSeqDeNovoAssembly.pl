@@ -360,8 +360,8 @@ sub blast {
       my $db = getParam($rH_cfg, 'blast', 'blastDb');
       my $options = getParam($rH_cfg, 'blast', 'blastOptions');
       my $chunkDir = "\$WORK_DIR/blast/chunks";
-      my $chunkQuery = "$chunkDir/Trinity.fasta_chunk_$chunkIndex";
-      my $chunkResult = "$chunkDir/$program" . "_Trinity_$db" . "_chunk_$chunkIndex.tsv";
+      my $chunkQuery = "$chunkDir/Trinity.longest_transcript.fasta_chunk_$chunkIndex";
+      my $chunkResult = "$chunkDir/$program" . "_Trinity.longest_transcript_$db" . "_chunk_$chunkIndex.tsv";
 
       # Each FASTA chunk is further divided in subchunk per CPU per job as a second level of BLAST parallelization
       # The user must adjust BLAST configuration to optimize num. jobs vs num. CPUs per job, depending on the cluster
@@ -385,11 +385,14 @@ sub blastMergeResults {
     my $program = getParam($rH_cfg, 'blast', 'blastProgram');
     my $db = getParam($rH_cfg, 'blast', 'blastDb');
     my $blastDir = "\$WORK_DIR/blast";
-    my $chunkResults = "$blastDir/chunks/$program" . "_Trinity_$db" . "_chunk_*.tsv";
-    my $result = "$blastDir/$program" . "_Trinity_$db.tsv";
+    my $chunkResults = "$blastDir/chunks/$program" . "_Trinity.longest_transcript_$db" . "_chunk_*.tsv";
+    my $result = "$blastDir/$program" . "_Trinity.longest_transcript_$db.tsv";
 
     # All BLAST chunks are merged into one file named after BLAST program and reference database
-    $command .= "cat $chunkResults > $result\n";
+    $command .= "cat $chunkResults > $result.tmp\n";
+    # Remove all comment lines except "Fields" one which is placed as first line
+    $command .= "cat <(grep -m1 '^# Fields' $result.tmp) <(grep -v '^#' $result.tmp) > $result\n";
+    $command .= "rm $result.tmp\n";
 
     # Create a BLAST results ZIP file for future deliverables
     $command .= "gzip -c $result > $result.gz";
