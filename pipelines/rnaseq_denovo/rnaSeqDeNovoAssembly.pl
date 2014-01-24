@@ -553,6 +553,6 @@ sub deliverable {
   my $step = shift;
   my $workDirectory = shift;
 
-  my $rO_job = GqSeqUtils::clientReport($rH_cfg, $configFile, $workDirectory, "RNAseqDeNovo");
+  my $rO_job = GqSeqUtils::clientReport($rH_cfg, abs_path($configFile), "\$WORK_DIR", "RNAseqDeNovo");
   submitJob($rH_cfg, $step, undef, $rO_job);
 }
