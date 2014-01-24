@@ -478,13 +478,13 @@ sub differentialGeneExpression {
     my $program = getParam($rH_cfg, 'blast', 'blastProgram');
     my $db = getParam($rH_cfg, 'blast', 'blastDb');
     my $blastDir = "\$WORK_DIR/blast";
-    my $blastResult = "$blastDir/$program" . "_Trinity_$db.tsv";
+    my $blastResult = "$blastDir/$program" . "_Trinity.longest_transcript_$db.tsv";
 
     my $dgeDir = "\$WORK_DIR/DGE";
     my $isoformsMatrix = "$dgeDir/isoforms.counts.matrix";
-    my $isoformsAnnotatedMatrix = "$dgeDir/isoforms.annotated.counts.matrix";
+    my $isoformsAnnotatedMatrix = "$dgeDir/isoforms.counts.$db.matrix";
     my $genesMatrix = "$dgeDir/genes.counts.matrix";
-    my $genesAnnotatedMatrix = "$dgeDir/genes.annotated.counts.matrix";
+    my $genesAnnotatedMatrix = "$dgeDir/genes.counts.$db.matrix";
 
     $command .= moduleLoad($rH_cfg, [
       ['differentialGeneExpression', 'moduleVersion.trinity'],
