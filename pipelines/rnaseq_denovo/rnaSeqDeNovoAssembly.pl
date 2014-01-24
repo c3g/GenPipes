@@ -543,8 +543,6 @@ sub metrics {
   # Merge all sample Trimmomatic results
   my $rO_job = Metrics::mergeTrimmomaticStats($rH_cfg, $libraryType, $pattern, $trimDirectory, $outputFile);
 
-  $rO_job->addCommand(" && wc -l \$WORK_DIR/normalization/*.accs > $metricsDirectory/normalization.stats");
-
   submitJob($rH_cfg, $step, undef, $rO_job);
 }
 
