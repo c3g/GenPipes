@@ -103,7 +103,7 @@ sub normalize_by_kmer_coverage {
     $command .= " " . getParam($rH_cfg, 'normalization', 'normalizationOptions') . " \n";
 
     # Count normalized reads
-    $command .= " wc -l \$WORK_DIR/normalization/*.accs > \$WORK_DIR/normalization/normalization.stats \\\n");
+    $command .= " wc -l \$WORK_DIR/normalization/*.accs > \$WORK_DIR/normalization/normalization.stats \\\n";
 
     $rO_job->addCommand($command);
   }
