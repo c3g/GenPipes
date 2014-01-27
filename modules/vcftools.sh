@@ -2,7 +2,7 @@
 ###################
 ################### Vcftools
 ###################
-VERSION="0.1.9"
+VERSION="0.1.11"
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/vcftools/
 INSTALL_DOWNLOAD=$INSTALL_PATH/tmp
 mkdir -p $INSTALL_PATH/archive $INSTALL_DOWNLOAD

@@ -75,8 +75,8 @@ set ModulesVersion \"$VERSION\"
 
 " > .version
 
-mkdir -p $MUGQIC_INSTALL_HOME_DEV/modulefiles/mugqic/R
-mv .version $VERSION $MUGQIC_INSTALL_HOME_DEV/modulefiles/mugqic/R
+mkdir -p $MUGQIC_INSTALL_HOME_DEV/modulefiles/mugqic_dev/R
+mv .version $VERSION $MUGQIC_INSTALL_HOME_DEV/modulefiles/mugqic_dev/R
 
 
 

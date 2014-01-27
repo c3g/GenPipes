@@ -5,7 +5,7 @@
 #
 
 SOFTWARE=mugqic_tools
-VERSION=1.4
+VERSION=1.6
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/$SOFTWARE
 INSTALL_DOWNLOAD=$INSTALL_PATH/tmp
 mkdir -p $INSTALL_DOWNLOAD
@@ -22,11 +22,10 @@ mv mugqic-mugqic_tools* $SOFTWARE-$VERSION
 
 # Add permissions and install software
 cd $INSTALL_DOWNLOAD 
-rm -rf ${INSTALL_PATH}/${SOFTWARE}-${VERSION}
+chmod -R ug+rwX .
+chmod -R o+rX .
 mv -i $SOFTWARE-$VERSION $INSTALL_PATH
 mv -i $SOFTWARE-$VERSION.tar.gz $MUGQIC_INSTALL_HOME/archive
-
-chmod -R 775 ${INSTALL_PATH}/${SOFTWARE}-${VERSION}
 
 # Module file
 echo "#%Module1.0
@@ -58,6 +57,7 @@ set ModulesVersion \"$VERSION\"" > .version
 MODULE_DIR=$MUGQIC_INSTALL_HOME/modulefiles/mugqic/tools
 mkdir -p $MODULE_DIR
 chmod -R ug+rwX $VERSION .version
+chmod -R o+rX $VERSION .version
 mv $VERSION .version $MODULE_DIR
 
 # Clean up temporary installation files if any
