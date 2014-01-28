@@ -51,7 +51,7 @@ use Getopt::Std;
 use POSIX;
 
 use LoadConfig;
-use BAMtools;
+use BVATools;
 use Breakdancer;
 use GATK;
 use SampleSheet;
@@ -410,9 +410,9 @@ sub DNAC {
   my $bin1000File = $DNAC1000File.'.bins.tsv';
   my $bin30000File = $DNAC30000File.'.bins.tsv';
 
-  my $command500 = BAMtools::countBins($rH_cfg, $sampleName, $tumorBam, 500, 'chr', $bin500File, $normalBam);
-  my $command1000 = BAMtools::countBins($rH_cfg, $sampleName, $tumorBam, 1000, 'chr', $bin1000File, $normalBam);
-  my $command30000 = BAMtools::countBins($rH_cfg, $sampleName, $tumorBam, 30000, 'genome', $bin30000File, $normalBam);
+  my $command500 = BVATools::countBins($rH_cfg, $sampleName, $tumorBam, 500, 'chr', $bin500File, $normalBam);
+  my $command1000 = BVATools::countBins($rH_cfg, $sampleName, $tumorBam, 1000, 'chr', $bin1000File, $normalBam);
+  my $command30000 = BVATools::countBins($rH_cfg, $sampleName, $tumorBam, 30000, 'genome', $bin30000File, $normalBam);
 
   $command500 .= ' && '.SVtools::runPairedDNAC($rH_cfg, $sampleName, $bin500File, $DNAC500File, 500);
   $command1000 .= ' && '.SVtools::runPairedDNAC($rH_cfg, $sampleName, $bin1000File, $DNAC1000File, 1000);
