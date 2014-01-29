@@ -184,10 +184,12 @@ sub splitReads{
 sub compile{
  	my $rH_cfg              = shift;
 	my $indir               = shift;
+	my $sampleName          = shift;
+	my $estimatedGenomeSize = shift;
 	my $outfile             = shift;
 
   	my $ro_job = new Job();
-	$ro_job->testInputOutputs(undef, [$outfile]);
+	$ro_job->testInputOutputs(undef, undef);
 
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
@@ -196,6 +198,8 @@ sub compile{
 		$cmd .= ' memtime';
 		$cmd .= ' pacBioCompileStats.pl';
 		$cmd .= ' --indir ' . $indir;
+		$cmd .= ' --estimatedGenomeSize ' . $estimatedGenomeSize;
+		$cmd .= ' --sampleName ' . $sampleName;
 		$cmd .= ' > ' . $outfile;
 
 		$ro_job->addCommand($cmd);

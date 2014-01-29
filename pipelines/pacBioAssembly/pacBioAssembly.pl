@@ -1101,6 +1101,8 @@ sub compile {
 	my $rO_jobCompile = PacBioTools::compile(
 		$rH_cfg,
 		"$outdir/$sampleName/",
+		$sampleName,
+		$estimatedGenomeSize,
 		"$outdir/$sampleName.compiledStats.tsv"
 	);
 	if(!$rO_jobCompile->isUp2Date()) {

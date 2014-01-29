@@ -100,7 +100,10 @@ sub normalize_by_kmer_coverage {
  --output \$WORK_DIR/normalization \\\n";
     $command .= " --JM " . getParam($rH_cfg, 'normalization', 'jellyfishMemory') . " \\\n";
     $command .= " --JELLY_CPU " . getParam($rH_cfg, 'normalization', 'jellyfishCPU') . " \\\n";
-    $command .= " " . getParam($rH_cfg, 'normalization', 'normalizationOptions') . " \\\n";
+    $command .= " " . getParam($rH_cfg, 'normalization', 'normalizationOptions') . " \n";
+
+    # Count normalized reads
+    $command .= " wc -l \$WORK_DIR/normalization/*.accs > \$WORK_DIR/normalization/normalization.stats \\\n";
 
     $rO_job->addCommand($command);
   }
@@ -136,6 +139,9 @@ sub trinity {
     $command .= " --CPU " . getParam($rH_cfg, 'trinity', 'trinityCPU') . " \\\n";
     $command .= " --bflyCPU " . getParam($rH_cfg, 'trinity', 'bflyCPU') . " \\\n";
     $command .= " " . getParam($rH_cfg, 'trinity', 'trinityOptions') . " \n";
+
+    # Create Trinity FASTA ZIP file for future deliverables
+    $command .= "gzip -c \$WORK_DIR/trinity_out_dir/Trinity.fasta > \$WORK_DIR/trinity_out_dir/Trinity.fasta.gz \n";
 
     # Compute assembly stats
     $command .= "Rscript -e 'library(gqSeqUtils); dnaFastaStats(filename = \\\"\$WORK_DIR/trinity_out_dir/Trinity.fasta\\\", type = \\\"trinity\\\", output.prefix = \\\"\$WORK_DIR/trinity_out_dir/Trinity.stats\\\")' \\\n";

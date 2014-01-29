@@ -298,7 +298,7 @@ sub trimming {
   my $inputFile;
   my $outputFile;
   my $outputFastqPair1Name;
-  my $setJobId = 0;
+  
   
   # Trimming job IDS per sample
   my $trimJobIdVarNameSample = undef;
@@ -345,6 +345,7 @@ sub aligning{
   print "BWA_JOB_IDS=\"\"\n";
   print "mkdir -p metrics\n";
   
+  
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
     my $alignJobIdVarNameLane;
     my $pair1;
@@ -355,7 +356,7 @@ sub aligning{
     my $rgLibrary = $rH_laneInfo->{'libraryBarcode'};
     my $rgPlatformUnit = 'run' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
     my $rgCenter = LoadConfig::getParam($rH_cfg, 'aln', 'bwaInstitution');
-    my $qfilterRead=LoadConfig::getParam($rH_cfg, 'aln', 'filterReadsMAPQ') + 0;
+    my $qfilterRead=LoadConfig::getParam($rH_cfg, 'aln', 'filterReadsMAPQ');
     
     # Threshold for MAPQ to filter reads
     if (!defined($qfilterRead) || $qfilterRead < 1 ){
@@ -409,7 +410,11 @@ sub aligning{
   }
  
   # Merge /sort reads
-  $jobDependency = '$BWA_JOB_IDS';
+  if($setJobId ==0){
+    $jobDependency = undef;
+  }else{
+    $jobDependency = '$BWA_JOB_IDS';
+  }
   my $mergeJobId = undef ;
   my $latestBam;
   my @inputBams;
@@ -462,14 +467,14 @@ sub metrics {
     my $groupName       = $sampleName . '.' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}.'.' .$rH_laneInfo->{'libraryBarcode'};
     my $trimStatsFile   =  'reads/' . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName . '.' .$rH_laneInfo->{'libraryBarcode'}. '.trim.stats.csv';
 
-    # Compute flagstats per sample
+    # Compute flagstats per sample / lane
     my $dir = 'alignment/' . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
     my $inputBamFile = $dir . $sampleName . '.' .$rH_laneInfo->{'libraryBarcode'}. '.sorted.bam';
     my $flagStatsFile = $dir . $sampleName . '.' .$rH_laneInfo->{'libraryBarcode'} . '.sorted.bam.flagstat';
 
     my $ro_job  = SAMtools::flagstat($rH_cfg, $inputBamFile, $flagStatsFile);
     if(!$ro_job->isUp2Date()) {  
-      SubmitToCluster::printSubmitCmd($rH_cfg, "flagstat", undef, 'FLAGSTAT', $jobDependency, $sampleName, $ro_job);
+      SubmitToCluster::printSubmitCmd($rH_cfg, "flagstat", undef, 'FLAGSTAT', $jobDependency, $groupName, $ro_job);
       $flagstatJobId = $ro_job->getCommandJobId(0);
     }
 
@@ -478,10 +483,34 @@ sub metrics {
     my $sampleColumnName       = $sampleName . ' ' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}.' ' .$rH_laneInfo->{'libraryBarcode'};
     $ro_job  = Metrics::mergePrintReadStats($rH_cfg, $sampleColumnName, $trimStatsFile, $flagStatsFile, $outputFile);
     if(!$ro_job->isUp2Date()) {  
-      SubmitToCluster::printSubmitCmd($rH_cfg, "mergeMetrics", undef, 'MERGEREADSTAT' . $rH_jobIdPrefixe->{$sampleName . '.' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}}, $flagstatJobId, $sampleName,  $ro_job);
-      $metricsJobIDs=$ro_job->getCommandJobId(0);    
-  
+      SubmitToCluster::printSubmitCmd($rH_cfg, "mergeMetrics", undef, 'MERGEREADSTATLANE' . $rH_jobIdPrefixe->{$sampleName . '.' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}}, $flagstatJobId, $groupName, $ro_job);
+      if(defined($metricsJobIDs)){
+        $metricsJobIDs=$metricsJobIDs.LoadConfig::getParam($rH_cfg, 'metrics', 'clusterDependencySep').$ro_job->getCommandJobId(0);    
+      }else{
+        $metricsJobIDs=$ro_job->getCommandJobId(0);    
+      }  
     }
+  }
+  # Run general metrics for merged /marked as duplicate bam files
+  my $dir = 'alignment/' . $sampleName . "/";
+  my $inputBamFile = $dir . $sampleName . '.sorted.bam';
+  my $flagStatsFile = $dir . $sampleName . '.sorted.bam.flagstat';
+
+  my $ro_job  = SAMtools::flagstat($rH_cfg, $inputBamFile, $flagStatsFile);
+  if(!$ro_job->isUp2Date()) {
+    SubmitToCluster::printSubmitCmd($rH_cfg, "flagstat", undef, 'FLAGSTAT', $jobDependency, $sampleName, $ro_job);
+    $flagstatJobId = $ro_job->getCommandJobId(0);
+  }
+  ## Parse flagstats
+  my $outputFile= 'metrics/' . $sampleName . '.alnstats.csv';    
+  $ro_job  = Metrics::mergePrintReadStats($rH_cfg, $sampleName , "", $flagStatsFile , $outputFile);
+  if(!$ro_job->isUp2Date()) {  
+    SubmitToCluster::printSubmitCmd($rH_cfg, "mergeMetrics", undef, 'MERGEREADSTATSAMPLE' . $rH_jobIdPrefixe->{$sampleName}, $flagstatJobId, $sampleName,  $ro_job);
+    if(defined($metricsJobIDs)){
+        $metricsJobIDs=$metricsJobIDs.LoadConfig::getParam($rH_cfg, 'metrics', 'clusterDependencySep').$ro_job->getCommandJobId(0);    
+    }else{
+        $metricsJobIDs=$ro_job->getCommandJobId(0);    
+    }  
   }
   return $metricsJobIDs;
 }
@@ -719,6 +748,7 @@ sub annotation {
 
   my $annotationJobIdGroups = undef;
   if ($numberTreatments >= 1) {
+    print 'mkdir -p  annotation/ '.'\n';
     # At least one treatment
     for (my $j = 0; $j < $numberTreatments; $j++) {
       if ($numberControls == 1) {
