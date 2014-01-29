@@ -78,15 +78,47 @@ sub moduleLoad {
 sub normalize_by_kmer_coverage {
   my $rH_cfg = shift;
   my $workDirectory = shift;
+  my $A_leftReads = shift;
+  my $A_rightReads = shift;
+  my $singleReads = shift;
+  my $outputDirectory = shift;
+
+  my $maxCoverage = getParam($rH_cfg, 'normalization', 'maxCoverage');
+  my $kmerSize = getParam($rH_cfg, 'normalization', 'kmerSize');
+  my $maxPctStdev = getParam($rH_cfg, 'normalization', 'maxPctStdev');
+
+  my $outputSuffix = ".normalized_K" . $kmerSize . "_C" . $maxCoverage . "_pctSD" . $maxPctStdev . ".fq";
+
+  my $leftList;
+  my $rightList;
+  my $leftOutput;
+  my $rightOutput;
+  my $singleOutput;
+  my $rA_inputs;
+  my $rA_outputs;
+
+  if (defined($A_leftReads) && defined($A_rightReads)) {
+    $leftList = "$workDirectory/$outputDirectory/left_list";
+    $rightList = "$workDirectory/$outputDirectory/right_list";
+
+    $leftOutput = $leftList . $outputSuffix;
+    $rightOutput = $rightList . $outputSuffix;
+
+    $rA_inputs = [@$A_leftReads, @$A_rightReads];
+    $rA_outputs = [$leftOutput, $rightOutput];
+  }
+  else {
+    $singleOutput = $singleReads . $outputSuffix;
+
+    $rA_inputs = [$singleReads];
+    $rA_outputs = [$singleOutput];
+  }
 
   my $rO_job = new Job();
-#  $rO_job->testInputOutputs([$leftList, $rightList], ["$workDir/normalized_reads/both.fa"]);
+  $rO_job->testInputOutputs($rA_inputs, $rA_outputs);
 
   if (!$rO_job->isUp2Date()) {
     my $command = "\n";
-
-    my $leftList = "\$WORK_DIR/reads/left_pair1.fastq.gz.list";
-    my $rightList = "\$WORK_DIR/reads/right_pair2.fastq.gz.list";
 
     # Create sorted left/right lists of fastq.gz files
     $command .= "find \$WORK_DIR/reads/ -name *pair1*.fastq.gz | sort > $leftList\n";
@@ -117,8 +149,12 @@ sub trinity {
   if (!$rO_job->isUp2Date()) {
     my $command = "\n";
 
-    my $leftList = "\$WORK_DIR/reads/left_pair1.fastq.gz.list";
-    my $rightList = "\$WORK_DIR/reads/right_pair2.fastq.gz.list";
+    #my $leftList = "\$WORK_DIR/reads/left_pair1.fastq.gz.list";
+    #my $rightList = "\$WORK_DIR/reads/right_pair2.fastq.gz.list";
+
+    # Create sorted, comma-separated left/right lists of fastq.gz files
+    my $leftListCommand .= "find \$WORK_DIR/reads/ -name *pair1*.fastq.gz | sort | sed '\\\$!N;s/\\\\n/,/'";
+    my $rightListCommand .= "find \$WORK_DIR/reads/ -name *pair2*.fastq.gz | sort | sed '\\\$!N;s/\\\\n/,/'";
 
     $command .= moduleLoad($rH_cfg, [
       ['trinity', 'moduleVersion.java'],
@@ -129,8 +165,8 @@ sub trinity {
     ]);
 
     $command .= "Trinity.pl \\
- --left  $leftList.normalized_*.fq \\
- --right $rightList.normalized_*.fq \\
+ --left  \\`$leftListCommand\\` \\
+ --right \\`$rightListCommand\\` \\
  --output \$WORK_DIR/trinity_out_dir \\\n";
     $command .= " --JM " . getParam($rH_cfg, 'trinity', 'jellyfishMemory') . " \\\n";
     $command .= " --CPU " . getParam($rH_cfg, 'trinity', 'trinityCPU') . " \\\n";
