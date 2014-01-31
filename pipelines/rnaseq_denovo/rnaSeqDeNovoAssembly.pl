@@ -85,13 +85,18 @@ my @A_steps = (
   },
   {
     'name'   => 'normalization',
-    'loop'   => 'global',
+    'loop'   => 'sample',
     'parent' => ['trim']
+  },
+  {
+    'name'   => 'normalizationMergeResults',
+    'loop'   => 'global',
+    'parent' => ['normalization']
   },
   {
     'name'   => 'trinity',
     'loop'   => 'global',
-    'parent' => ['normalization']
+    'parent' => ['normalizationMergeResults']
   },
   {
     'name'   => 'blastSplitQuery',
@@ -141,7 +146,6 @@ my %H_steps =  map {$_->{'name'} => $_} @A_steps;
 # Global variables passed as script options
 my $configFile;
 my $nanuqSampleSheet;
-my $workDirectory;
 my $designFile;
 
 # Main call
@@ -186,10 +190,10 @@ sub main {
   # Assign options
   my $startStep = $opts{'s'};
   my $endStep = $opts{'e'};
+  my $workDirectory = $opts{'w'};
   $configFile = $opts{'c'};
   $nanuqSampleSheet = $opts{'n'};
   $designFile = $opts{'d'};
-  $workDirectory = $opts{'w'};
 
   # Get config values
   unless (defined $configFile) {die "Error: configuration file is not defined! (use -c option)\n" . getUsage()};
@@ -214,11 +218,11 @@ sub main {
       foreach my $sample (keys %$rHoAoH_sampleInfo) {
         my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sample};
         # Sample step functions need sample and lanes parameters
-        &$stepName(\%cfg, $step, $workDirectory, $sample, $rAoH_sampleLanes);
+        &$stepName(\%cfg, $step, $sample, $rAoH_sampleLanes);
       }
     # Global step creates 1 job only
     } else {
-      &$stepName(\%cfg, $step, $workDirectory);
+      &$stepName(\%cfg, $step);
     }
   }
 }
@@ -299,7 +303,6 @@ sub moduleLoad {
 sub trim {
   my $rH_cfg = shift;
   my $step = shift;
-  my $workDirectory = shift;
   my $sample = shift;
   my $rAoH_sampleLanes = shift;
 
@@ -321,25 +324,89 @@ sub trim {
 sub normalization {
   my $rH_cfg = shift;
   my $step = shift;
-  my $workDirectory = shift;
+  my $sample = shift;
+  my $rAoH_sampleLanes = shift;
 
-  my $rO_job = Trinity::normalize_by_kmer_coverage($rH_cfg, $workDirectory);
+  my $readFilePart = ".t" . getParam($rH_cfg, 'trim', 'minQuality') . "l" . getParam($rH_cfg, 'trim', 'minLength');
+  my $rO_job;
+
+  for my $rH_laneInfo (@$rAoH_sampleLanes) {
+    my $laneDirectory = $sample . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
+    my $readFilePrefix = "\$WORK_DIR/reads/" . $laneDirectory . "/" . $sample . "." . $rH_laneInfo->{'libraryBarcode'} . $readFilePart;
+    my $normDirectory = "\$WORK_DIR/normalization/$laneDirectory";
+
+    if ($rH_laneInfo->{'runType'} eq "SINGLE_END") {
+      my $single = $readFilePrefix . ".single.fastq.gz";
+      $rO_job = Trinity::normalize_by_kmer_coverage($rH_cfg, undef, undef, [$single], $normDirectory);
+    } elsif ($rH_laneInfo->{'runType'} eq "PAIRED_END") {
+      my $pair1 = $readFilePrefix . ".pair1.fastq.gz";
+      my $pair2 = $readFilePrefix . ".pair2.fastq.gz";
+      $rO_job = Trinity::normalize_by_kmer_coverage($rH_cfg, [$pair1], [$pair2], undef, $normDirectory);
+    } else {
+      die "Error in normalization: unknown read type\n";
+    }
+    submitJob($rH_cfg, $step, $sample . "_" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, $rO_job);
+  }
+}
+
+sub normalizationMergeResults {
+  my $rH_cfg = shift;
+  my $step = shift;
+
+  my @A_leftFastq = ();
+  my @A_rightFastq = ();
+  my @A_singleFastq = ();
+
+  my $maxCoverage = getParam($rH_cfg, 'normalization', 'maxCoverage');
+  my $kmerSize = getParam($rH_cfg, 'normalization', 'kmerSize');
+  my $maxPctStdev = getParam($rH_cfg, 'normalization', 'maxPctStdev');
+
+  my $normFileSuffix = ".normalized_K" . $kmerSize . "_C" . $maxCoverage . "_pctSD" . $maxPctStdev . ".fq";
+
+  my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($nanuqSampleSheet);
+
+  # Retrieve single/paired end normalized files for each lane of each sample
+  foreach my $sample (keys %$rHoAoH_sampleInfo) {
+    my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sample};
+
+    for my $rH_laneInfo (@$rAoH_sampleLanes) {
+      my $normDirectory = "\$WORK_DIR/normalization/" . $sample . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
+      if ($rH_laneInfo->{'runType'} eq "SINGLE_END") {
+        push (@A_singleFastq, "$normDirectory/single$normFileSuffix");
+      } elsif ($rH_laneInfo->{'runType'} eq "PAIRED_END") {
+        push (@A_leftFastq, "$normDirectory/left$normFileSuffix");
+        push (@A_rightFastq, "$normDirectory/right$normFileSuffix");
+      }
+    }
+  }
+
+  my $rO_job;
+
+  if (@A_singleFastq > 0) {
+    (@A_leftFastq == 0 and @A_rightFastq == 0) or die "Error: mixed single/paired-end read normalization is not supported!\n";
+    # Single-end reads
+    $rO_job = Trinity::normalize_by_kmer_coverage($rH_cfg, undef, undef, \@A_singleFastq, "\$WORK_DIR/normalization/global");
+  } else {
+    # Paired-end reads
+    (@A_leftFastq > 0 and @A_rightFastq > 0) or die "Error: no normalized file to merge!\n";
+    (@A_leftFastq == @A_rightFastq) or die "Error: left and right normalized files numbers differ!\n";
+    $rO_job = Trinity::normalize_by_kmer_coverage($rH_cfg, \@A_leftFastq, \@A_rightFastq, undef, "\$WORK_DIR/normalization/global");
+  }
+
   submitJob($rH_cfg, $step, undef, $rO_job);
 }
 
 sub trinity {
   my $rH_cfg = shift;
   my $step = shift;
-  my $workDirectory = shift;
 
-  my $rO_job = Trinity::trinity($rH_cfg, $workDirectory);
+  my $rO_job = Trinity::trinity($rH_cfg, "\$WORK_DIR");
   submitJob($rH_cfg, $step, undef, $rO_job);
 }
 
 sub blastSplitQuery {
   my $rH_cfg = shift;
   my $step = shift;
-  my $workDirectory = shift;
 
   my $rO_job = new Job();
   if (!$rO_job->isUp2Date()) {
@@ -373,7 +440,6 @@ sub blastSplitQuery {
 sub blast {
   my $rH_cfg = shift;
   my $step = shift;
-  my $workDirectory = shift;
 
   my $numJobs = getParam($rH_cfg, 'blast', 'blastJobs');
 
@@ -412,7 +478,6 @@ sub blast {
 sub blastMergeResults {
   my $rH_cfg = shift;
   my $step = shift;
-  my $workDirectory = shift;
 
   my $rO_job = new Job();
   if (!$rO_job->isUp2Date()) {
@@ -442,9 +507,8 @@ sub blastMergeResults {
 sub rsemPrepareReference {
   my $rH_cfg = shift;
   my $step = shift;
-  my $workDirectory = shift;
 
-  my $rO_job = Trinity::rsemPrepareReference($rH_cfg, $workDirectory);
+  my $rO_job = Trinity::rsemPrepareReference($rH_cfg, "\$WORK_DIR");
   submitJob($rH_cfg, $step, undef, $rO_job);
 }
 
@@ -452,17 +516,15 @@ sub rsemPrepareReference {
 sub rsem {
   my $rH_cfg = shift;
   my $step = shift;
-  my $workDirectory = shift;
   my $sample = shift;
 
-  my $rO_job = Trinity::rsem($rH_cfg, $workDirectory, $sample);
+  my $rO_job = Trinity::rsem($rH_cfg, "\$WORK_DIR", $sample);
   submitJob($rH_cfg, $step, $sample, $rO_job);
 }
 
 sub differentialGeneExpression {
   my $rH_cfg = shift;
   my $step = shift;
-  my $workDirectory = shift;
 
   my $rO_job = new Job();
   if (!$rO_job->isUp2Date()) {
@@ -530,7 +592,6 @@ sub differentialGeneExpression {
 sub metrics {
   my $rH_cfg = shift;
   my $step = shift;
-  my $workDirectory = shift;
 
   my $metricsDirectory = "\$WORK_DIR/metrics";
   print "mkdir -p $metricsDirectory\n";
@@ -551,7 +612,6 @@ sub metrics {
 sub deliverable {
   my $rH_cfg = shift;
   my $step = shift;
-  my $workDirectory = shift;
 
   my $rO_job = GqSeqUtils::clientReport($rH_cfg, abs_path($configFile), "\$WORK_DIR", "RNAseqDeNovo");
   submitJob($rH_cfg, $step, undef, $rO_job);

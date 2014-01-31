@@ -71,17 +71,26 @@ sub moduleLoad {
     $moduleShowOutput !~ /Error/i or die "Error in configuration file:\n$moduleShowOutput";
   }
 
-  return "module load " . join(" ", map {getParam($rH_cfg, $_->[0], $_->[1])} @$rA_modules) . "\n";
+  return "module load " . join(" ", map {getParam($rH_cfg, $_->[0], $_->[1])} @$rA_modules) . " && \\\n";
 }
 
 
 sub normalize_by_kmer_coverage {
   my $rH_cfg = shift;
-  my $workDirectory = shift;
-  my $A_leftReads = shift;
-  my $A_rightReads = shift;
-  my $singleReads = shift;
+  my $rA_leftReadFiles = shift;
+  my $rA_rightReadFiles = shift;
+  my $rA_singleReadFiles = shift;
   my $outputDirectory = shift;
+
+  # Find out if reads are paired or single-end
+  my $readType;
+  if (defined($rA_leftReadFiles) and defined($rA_rightReadFiles) and not(defined($rA_singleReadFiles))) {
+    $readType = "paired";
+  } elsif (not(defined($rA_leftReadFiles)) and not(defined($rA_rightReadFiles)) and defined($rA_singleReadFiles)) {
+    $readType = "single";
+  } else {
+    die "Error in normalize_by_kmer_coverage: mixed or undefined paired/single reads!\n";
+  }
 
   my $maxCoverage = getParam($rH_cfg, 'normalization', 'maxCoverage');
   my $kmerSize = getParam($rH_cfg, 'normalization', 'kmerSize');
@@ -91,27 +100,21 @@ sub normalize_by_kmer_coverage {
 
   my $leftList;
   my $rightList;
-  my $leftOutput;
-  my $rightOutput;
-  my $singleOutput;
+  my $singleCat;
   my $rA_inputs;
   my $rA_outputs;
+  my $readFileOptions;
 
-  if (defined($A_leftReads) && defined($A_rightReads)) {
-    $leftList = "$workDirectory/$outputDirectory/left_list";
-    $rightList = "$workDirectory/$outputDirectory/right_list";
+  if ($readType eq "paired") {    # Paired reads
+    $leftList = "$outputDirectory/left";
+    $rightList = "$outputDirectory/right";
 
-    $leftOutput = $leftList . $outputSuffix;
-    $rightOutput = $rightList . $outputSuffix;
-
-    $rA_inputs = [@$A_leftReads, @$A_rightReads];
-    $rA_outputs = [$leftOutput, $rightOutput];
-  }
-  else {
-    $singleOutput = $singleReads . $outputSuffix;
-
-    $rA_inputs = [$singleReads];
-    $rA_outputs = [$singleOutput];
+    $rA_inputs = [@$rA_leftReadFiles, @$rA_rightReadFiles];
+    $rA_outputs = [$leftList . $outputSuffix, $rightList . $outputSuffix];
+  } else {    # Single reads
+    $singleCat = "$outputDirectory/single";
+    $rA_inputs = [@$rA_singleReadFiles];
+    $rA_outputs = [$singleCat . $outputSuffix];
   }
 
   my $rO_job = new Job();
@@ -121,18 +124,39 @@ sub normalize_by_kmer_coverage {
     my $command = "\n";
 
     # Create sorted left/right lists of fastq.gz files
-    $command .= "find \$WORK_DIR/reads/ -name *pair1*.fastq.gz | sort > $leftList\n";
-    $command .= "find \$WORK_DIR/reads/ -name *pair2*.fastq.gz | sort > $rightList\n";
+    if ($readType eq "paired") {    # Paired reads
+      # Check if same number of left and right reads
+      @$rA_leftReadFiles == @$rA_rightReadFiles or die "Error in normalization: left and right files numbers differ!"; 
+
+      $command .= "rm -f $leftList $rightList && \\\n";
+      $command .= "mkdir -p $outputDirectory && \\\n";
+      foreach my $leftReadFile (@$rA_leftReadFiles) {
+        $command .= "echo $leftReadFile >> $leftList && \\\n";
+      }
+      foreach my $rightReadFile (@$rA_rightReadFiles) {
+        $command .= "echo $rightReadFile >> $rightList && \\\n";
+      }
+      $readFileOptions = " --left_list $leftList --right_list $rightList ";
+    } else {    # Single reads
+      # Merge all single fastq.gz in one file since trinityrnaseq_r20131110 does not support --single_list!
+      $command .= "zcat " . join(" ", @$rA_singleReadFiles) . " > $singleCat && \\\n";
+      $readFileOptions = " --single $singleCat ";
+    }
 
     # Load modules and run Trinity normalization
     $command .= moduleLoad($rH_cfg, [['trinity', 'moduleVersion.trinity']]);
     $command .= "normalize_by_kmer_coverage.pl \\
- --left_list $leftList \\
- --right_list $rightList \\
- --output \$WORK_DIR/normalization \\\n";
+$readFileOptions \\
+ --output $outputDirectory \\\n";
     $command .= " --JM " . getParam($rH_cfg, 'normalization', 'jellyfishMemory') . " \\\n";
     $command .= " --JELLY_CPU " . getParam($rH_cfg, 'normalization', 'jellyfishCPU') . " \\\n";
-    $command .= " " . getParam($rH_cfg, 'normalization', 'normalizationOptions') . " \\\n";
+    $command .= " --max_cov $maxCoverage \\\n";
+    $command .= " --KMER_SIZE $kmerSize \\\n";
+    $command .= " --max_pct_stdev $maxPctStdev \\\n";
+    $command .= " " . getParam($rH_cfg, 'normalization', 'normalizationOptions') . " && \\\n";
+
+    # Count normalized reads for stats
+    $command .= "wc -l " . @$rA_outputs[0] . " | awk '{print \\\"# normalized $readType reads\\t\\\"\\\$1 / 4}' > $outputDirectory/normalization.stats.csv \\\n";
 
     $rO_job->addCommand($command);
   }
