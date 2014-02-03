@@ -158,6 +158,10 @@ sub main {
 	print STDOUT "mkdir -p $outdir/fofns\n";
 
 	# Loop through samples. Could only use one hash...
+	print STDERR "[DEBUG] **************************************************************** \n";		
+	print STDERR "[DEBUG] **** Generating PacBio HGAP2 assembly pipeline commands... ***** \n";		
+	print STDERR "[DEBUG] **************************************************************** \n";		
+	
 	my %hohSamples;
 	my %hEstimatedGenomeSize;
 	my %hSmrtCells;
@@ -172,7 +176,12 @@ sub main {
 		$hohSamples{$row[0]}{$row[1]}{$row[2]} = $row[2];
 		$hLibType{$row[0]} = $row[3];
 			if($row[2] =~ m/\.bas\.h5/){
-				$hNumberOfBases{$row[0]} = $hNumberOfBases{$row[0]} + $row[4];
+				if(exists $hNumberOfBases{$row[0]}){
+					$hNumberOfBases{$row[0]} = $hNumberOfBases{$row[0]} + $row[4];
+				}else{
+					$hNumberOfBases{$row[0]} = $row[4];
+				}
+				$hSmrtCells{$row[0]}++; # For bas.h5 files, only one .bas.h5 file per sample.
 			}else{
 				$row[2] =~ m/\/(.*)\.\d+\.bax\.h5/;
 				$hSeen{$1}++;
@@ -221,9 +230,7 @@ sub main {
 		# Find coverage range using estmated genome size and number of bases.
 		$estimatedCoverage = int($numberOfBases / $estimatedGenomeSize);
 	
-		print STDERR "[DEBUG] **************************************************************** \n";		
-		print STDERR "[DEBUG] **** Generating PacBio HGAP2 assembly pipeline commands... ***** \n";		
-		print STDERR "[DEBUG] **************************************************************** \n";		
+		print STDERR "[DEBUG] ******* Generating Commands for sample $currSampleName ********* \n";		
 		print STDERR "[DEBUG] EstimatedGenomeSize: ".$estimatedGenomeSize."\n";
 		print STDERR "[DEBUG] smrtCells: ".$smrtCells."\n";
 		print STDERR "[DEBUG] LibType: ".$libType."\n";
