@@ -296,6 +296,37 @@ sub moduleLoad {
   return "module load " . join(" ", @moduleValues) . "\n";
 }
 
+sub getRunType {
+  my $nanuqSampleSheet = shift;
+
+  my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($nanuqSampleSheet);
+
+  my $singleCount = 0;
+  my $pairedCount = 0;
+
+  # Count single/paired run types for each lane of each sample
+  foreach my $sample (keys %$rHoAoH_sampleInfo) {
+    my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sample};
+
+    for my $rH_laneInfo (@$rAoH_sampleLanes) {
+      if ($rH_laneInfo->{'runType'} eq "SINGLE_END") {
+        $singleCount++;
+      } elsif ($rH_laneInfo->{'runType'} eq "PAIRED_END") {
+        $pairedCount++;
+      } else {
+        die "Error in getRunType: unknown runType (can be 'single' or 'paired' only): " . $rH_laneInfo->{'runType'};
+      }
+    }
+  }
+  if ($singleCount > 0 and $pairedCount == 0) {
+    return "single";
+  } elsif ($singleCount == 0 and $pairedCount > 0) {
+    return "paired";
+  } else {
+    die "Error in getRunType: single and paired reads mix not supported!";
+  }
+}
+
 
 # Step functions
 #---------------
@@ -400,7 +431,20 @@ sub trinity {
   my $rH_cfg = shift;
   my $step = shift;
 
-  my $rO_job = Trinity::trinity($rH_cfg, "\$WORK_DIR");
+  my $runType = getRunType($nanuqSampleSheet);
+
+  my $maxCoverage = getParam($rH_cfg, 'normalization', 'maxCoverage');
+  my $kmerSize = getParam($rH_cfg, 'normalization', 'kmerSize');
+  my $maxPctStdev = getParam($rH_cfg, 'normalization', 'maxPctStdev');
+
+  my $normFileSuffix = ".normalized_K" . $kmerSize . "_C" . $maxCoverage . "_pctSD" . $maxPctStdev . ".fq";
+
+  my $rO_job;
+  if ($runType eq "single") {
+    $rO_job = Trinity::trinity($rH_cfg, undef, undef, ["\$WORK_DIR/normalization/global/single$normFileSuffix"], "\$WORK_DIR/trinity_out_dir");
+  } else {
+    $rO_job = Trinity::trinity($rH_cfg, ["\$WORK_DIR/normalization/global/left$normFileSuffix"], ["\$WORK_DIR/normalization/global/right$normFileSuffix"], undef, "\$WORK_DIR/trinity_out_dir");
+  }
   submitJob($rH_cfg, $step, undef, $rO_job);
 }
 
@@ -603,8 +647,6 @@ sub metrics {
 
   # Merge all sample Trimmomatic results
   my $rO_job = Metrics::mergeTrimmomaticStats($rH_cfg, $libraryType, $pattern, $trimDirectory, $outputFile);
-
-  $rO_job->addCommand(" && wc -l \$WORK_DIR/normalization/*.accs > $metricsDirectory/normalization.stats");
 
   submitJob($rH_cfg, $step, undef, $rO_job);
 }

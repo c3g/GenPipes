@@ -156,7 +156,7 @@ $readFileOptions \\
     $command .= " " . getParam($rH_cfg, 'normalization', 'normalizationOptions') . " && \\\n";
 
     # Count normalized reads for stats
-    $command .= "wc -l " . @$rA_outputs[0] . " | awk '{print \\\"# normalized $readType reads\\t\\\"\\\$1 / 4}' > $outputDirectory/normalization.stats.csv \\\n";
+    $command .= "wc -l " . @$rA_outputs[0] . " | awk '{print \\\$1 / 4\\t\\\"# normalized $readType reads\\\"}' > $outputDirectory/normalization.stats.csv \\\n";
 
     $rO_job->addCommand($command);
   }
@@ -165,20 +165,39 @@ $readFileOptions \\
 
 sub trinity {
   my $rH_cfg  = shift;
-  my $workDirectory = shift;
+  my $rA_leftReadFiles = shift;
+  my $rA_rightReadFiles = shift;
+  my $rA_singleReadFiles = shift;
+  my $outputDirectory = shift;
+
+  defined($outputDirectory) or die "Error in trinity: outputDirectory is not defined!";
+
+  # Find out if reads are paired or single-end
+  my $readType;
+  if (defined($rA_leftReadFiles) and defined($rA_rightReadFiles) and not(defined($rA_singleReadFiles))) {
+    $readType = "paired";
+  } elsif (not(defined($rA_leftReadFiles)) and not(defined($rA_rightReadFiles)) and defined($rA_singleReadFiles)) {
+    $readType = "single";
+  } else {
+    die "Error in trinity: mixed or undefined paired/single reads!\n";
+  }
+
+  my $rA_inputs;
+  my $readFileOptions;
+
+  if ($readType eq "paired") {    # Paired reads
+    $rA_inputs = [@$rA_leftReadFiles, @$rA_rightReadFiles];
+    $readFileOptions = " --left " . join(" ", @$rA_leftReadFiles) . " --right " . join(" ", @$rA_rightReadFiles);
+  } else {    # Single reads
+    $rA_inputs = [@$rA_singleReadFiles];
+    $readFileOptions = " --single " . join(" ", @$rA_singleReadFiles);
+  }
 
   my $rO_job = new Job();
-#  $rO_job->testInputOutputs(["$workDir/normalized_reads/pairs.K25.stats.C30.pctSD100.accs"], []);
+  $rO_job->testInputOutputs($rA_inputs, ["$outputDirectory/Trinity.fasta"]);
 
   if (!$rO_job->isUp2Date()) {
     my $command = "\n";
-
-    #my $leftList = "\$WORK_DIR/reads/left_pair1.fastq.gz.list";
-    #my $rightList = "\$WORK_DIR/reads/right_pair2.fastq.gz.list";
-
-    # Create sorted, comma-separated left/right lists of fastq.gz files
-    my $leftListCommand .= "find \$WORK_DIR/reads/ -name *pair1*.fastq.gz | sort | sed '\\\$!N;s/\\\\n/,/'";
-    my $rightListCommand .= "find \$WORK_DIR/reads/ -name *pair2*.fastq.gz | sort | sed '\\\$!N;s/\\\\n/,/'";
 
     $command .= moduleLoad($rH_cfg, [
       ['trinity', 'moduleVersion.java'],
@@ -189,19 +208,18 @@ sub trinity {
     ]);
 
     $command .= "Trinity.pl \\
- --left  \\`$leftListCommand\\` \\
- --right \\`$rightListCommand\\` \\
- --output \$WORK_DIR/trinity_out_dir \\\n";
+$readFileOptions \\
+ --output $outputDirectory \\\n";
     $command .= " --JM " . getParam($rH_cfg, 'trinity', 'jellyfishMemory') . " \\\n";
     $command .= " --CPU " . getParam($rH_cfg, 'trinity', 'trinityCPU') . " \\\n";
     $command .= " --bflyCPU " . getParam($rH_cfg, 'trinity', 'bflyCPU') . " \\\n";
-    $command .= " " . getParam($rH_cfg, 'trinity', 'trinityOptions') . " \n";
+    $command .= " " . getParam($rH_cfg, 'trinity', 'trinityOptions') . " && \\\n";
 
     # Create Trinity FASTA ZIP file for future deliverables
-    $command .= "gzip -c \$WORK_DIR/trinity_out_dir/Trinity.fasta > \$WORK_DIR/trinity_out_dir/Trinity.fasta.gz \n";
+    $command .= "gzip -c $outputDirectory/Trinity.fasta > $outputDirectory/Trinity.fasta.gz && \\\n";
 
     # Compute assembly stats
-    $command .= "Rscript -e 'library(gqSeqUtils); dnaFastaStats(filename = \\\"\$WORK_DIR/trinity_out_dir/Trinity.fasta\\\", type = \\\"trinity\\\", output.prefix = \\\"\$WORK_DIR/trinity_out_dir/Trinity.stats\\\")' \\\n";
+    $command .= "Rscript -e 'library(gqSeqUtils); dnaFastaStats(filename = \\\"$outputDirectory/Trinity.fasta\\\", type = \\\"trinity\\\", output.prefix = \\\"$outputDirectory/Trinity.stats\\\")' \\\n";
 
     $rO_job->addCommand($command);
   }
