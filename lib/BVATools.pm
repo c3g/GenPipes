@@ -175,7 +175,12 @@ sub depthOfCoverage {
   my $coverageBED   = shift;
 
   my $ro_job = new Job();
-  $ro_job->testInputOutputs([$inputBam, $coverageBED], [$outputFile]);
+  if(defined($coverageBED)) {
+    $ro_job->testInputOutputs([$inputBam, $coverageBED], [$outputFile]);
+  }
+  else {
+    $ro_job->testInputOutputs([$inputBam], [$outputFile]);
+  }
 
   my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta');
   my $rA_thresholds = LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'percentThresholds');
