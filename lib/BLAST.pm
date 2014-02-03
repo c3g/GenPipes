@@ -181,7 +181,7 @@ sub bestHit {
 
 sub dcmegablast{ #JT: Initially for for PacBio pipeline
 	my $rH_cfg      = shift;
-	my $gunzipCmd   = shift;
+	#my $gunzipCmd   = shift;
 	my $infileFasta = shift; 
 	my $outfmt      = shift;
 	my $outfile     = shift;
@@ -193,7 +193,7 @@ sub dcmegablast{ #JT: Initially for for PacBio pipeline
 		my $cmd = '';	
 		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' && ';
 		$cmd .= ' module load '.LoadConfig::getParam($rH_cfg, 'blast', 'moduleVersion.blast').' && ';
-		$cmd .= $gunzipCmd . ' &&';
+		#$cmd .= $gunzipCmd . ' &&';
 		$cmd .= ' memtime ';
 		$cmd .= ' blastn';
 		$cmd .= ' -task dc-megablast';

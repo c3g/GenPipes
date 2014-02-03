@@ -118,7 +118,7 @@ sub celeraConfig {
 sub assemblyStats{
  	my $rH_cfg                = shift;
 	my $filteredSummary       = shift;
-	my $assemblyQc            = shift;
+	#my $assemblyQc            = shift;
 	my $contigs               = shift;
 	my $sampleName            = shift;
 	my $suffix                = shift;
@@ -128,7 +128,7 @@ sub assemblyStats{
 
   	my $ro_job = new Job();
 	$ro_job->testInputOutputs(
-		[$assemblyQc, $filteredSummary],
+		[$filteredSummary],
 		[$outdir."/summaryTableAssembly.tsv", $outdir."/summaryTableReads.tsv"]
 	);
 
@@ -140,7 +140,7 @@ sub assemblyStats{
 		$cmd .= ' memtime ';
 		$cmd .= ' pacBioAssemblyStats.pl';
 		$cmd .= ' --filteredSummary ' . $filteredSummary;
-		$cmd .= ' --assemblyQc ' . $assemblyQc;
+		#$cmd .= ' --assemblyQc ' . $assemblyQc;
 		$cmd .= ' --contigs ' . $contigs;
 		$cmd .= ' --sampleName ' . $sampleName;
 		$cmd .= ' --suffix ' . $suffix;
