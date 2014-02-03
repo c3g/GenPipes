@@ -131,7 +131,7 @@ my @A_steps = (
   {
     'name'   => 'metrics',
     'loop'   => 'global',
-    'parent' => ['normalization']
+    'parent' => ['trim']
   },
   {
     'name'   => 'deliverable',
