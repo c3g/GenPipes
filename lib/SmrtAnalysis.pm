@@ -10,7 +10,7 @@ SmrtAnalysis->run()
 
 =head1 DESCRIPTION
 
-B<Picard> This a library to analyze PAcBio data using the SmrtAnalysis suite.
+B<Picard> This a library to analyze PacBio data using the SmrtAnalysis suite.
 
 Input = file_name
 

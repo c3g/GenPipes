@@ -162,7 +162,7 @@ sub reference{
 		
 		$cmd = 'module load '.LoadConfig::getParam($rH_cfg, 'mummer', 'moduleVersion.mummer').' &&';
 		$cmd .= ' module load '.LoadConfig::getParam($rH_cfg, 'gnuplot', 'moduleVersion.gnuplot').' &&';
-		$cmd .= ' nucmer';
+		$cmd .= ' promer';
 		$cmd .= ' -maxmatch';
 		$cmd .= ' -c ' . LoadConfig::getParam($rH_cfg, 'mummer', 'c');
 		$cmd .= ' -p ' . $prefix1;
