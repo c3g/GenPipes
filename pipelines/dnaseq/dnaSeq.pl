@@ -51,6 +51,7 @@ use Getopt::Std;
 use Cwd;
 use POSIX;
 
+use BVATools;
 use BWA;
 use GATK;
 use IGVTools;
@@ -323,6 +324,19 @@ sub laneMetrics {
       }
       else {
         print 'LANE_METRICS_JOB_IDS=${LANE_METRICS_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'collectMetrics', 'clusterDependencySep').$rO_collectMetricsJob->getCommandJobId(0)."\n";
+      }
+    }
+
+    $outputMetrics = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.dup.metrics.nodup.targetCoverage.txt';
+    my $coverageBED = BVATools::resolveSampleBED($rH_cfg, $rH_laneInfo);
+    my $rO_coverageJob = BVATools::depthOfCoverage($rH_cfg, $sortedLaneBamFile, $outputMetrics, $coverageBED);
+    if(!$rO_coverageJob->isUp2Date()) {
+      SubmitToCluster::printSubmitCmd($rH_cfg, "depthOfCoverage", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'LANEDEPTHOFCOVERAGE', $jobDependency, $sampleName, $rO_coverageJob);
+      if($first == 1) {
+        print 'LANE_METRICS_JOB_IDS='.$rO_coverageJob->getCommandJobId(0)."\n";
+      }
+      else {
+        print 'LANE_METRICS_JOB_IDS=${LANE_METRICS_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'clusterDependencySep').$rO_coverageJob->getCommandJobId(0)."\n";
       }
     }
   }

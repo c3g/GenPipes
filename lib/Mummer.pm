@@ -56,7 +56,7 @@ sub nucmer {
 	if (!$ro_job->isUp2Date()) {
 		my $cmd;
 	
-		$cmd = 'module load '.LoadConfig::getParam($rH_cfg, 'mummer', 'moduleVersion.mummer').' ; ';
+		$cmd = 'module load '.LoadConfig::getParam($rH_cfg, 'mummer', 'moduleVersion.mummer').' && ';
 		$cmd .= ' nucmer';
 		$cmd .= ' -maxmatch';
 		$cmd .= ' -c ' . $c;
@@ -81,7 +81,7 @@ sub mummerPlot {
 	if (!$ro_job->isUp2Date()) {
 		my $cmd;
 		
-		$cmd = 'module load '.LoadConfig::getParam($rH_cfg, 'mummer', 'moduleVersion.mummer').' ; ';
+		$cmd = 'module load '.LoadConfig::getParam($rH_cfg, 'mummer', 'moduleVersion.mummer').' && ';
 		$cmd .= ' mummerplot';
 		$cmd .= ' -title ' . $title;
 		$cmd .= ' --png';
@@ -107,7 +107,7 @@ sub dnadiff {
 	if (!$ro_job->isUp2Date()) {
 		my $cmd;
 
-		$cmd = 'module load '.LoadConfig::getParam($rH_cfg, 'mummer', 'moduleVersion.mummer').' ; ';
+		$cmd = 'module load '.LoadConfig::getParam($rH_cfg, 'mummer', 'moduleVersion.mummer').' && ';
 		$cmd .= 'dnadiff';
 		$cmd .= ' -p ' . $prefix;
 		$cmd .= ' ' . $referenceFasta;
@@ -130,7 +130,7 @@ sub showsnp {
 	if (!$ro_job->isUp2Date()) {
 		my $cmd;
 
-		$cmd = 'module load '.LoadConfig::getParam($rH_cfg, 'mummer', 'moduleVersion.mummer').' ; ';
+		$cmd = 'module load '.LoadConfig::getParam($rH_cfg, 'mummer', 'moduleVersion.mummer').' && ';
 		$cmd .= 'show-snps';
 		$cmd .= ' -rlTC';
 		$cmd .= ' -x ' . $x;
@@ -160,9 +160,9 @@ sub reference{
 	if (!$ro_job->isUp2Date()) {
 		my $cmd;
 		
-		$cmd = 'module load '.LoadConfig::getParam($rH_cfg, 'mummer', 'moduleVersion.mummer').' ;';
-		$cmd .= ' module load '.LoadConfig::getParam($rH_cfg, 'gnuplot', 'moduleVersion.gnuplot').' ;';
-		$cmd .= ' nucmer';
+		$cmd = 'module load '.LoadConfig::getParam($rH_cfg, 'mummer', 'moduleVersion.mummer').' &&';
+		$cmd .= ' module load '.LoadConfig::getParam($rH_cfg, 'gnuplot', 'moduleVersion.gnuplot').' &&';
+		$cmd .= ' promer';
 		$cmd .= ' -maxmatch';
 		$cmd .= ' -c ' . LoadConfig::getParam($rH_cfg, 'mummer', 'c');
 		$cmd .= ' -p ' . $prefix1;
@@ -207,8 +207,8 @@ sub self{
 	if (!$ro_job->isUp2Date()) {
 		my $cmd;
 		
-		$cmd = 'module load '.LoadConfig::getParam($rH_cfg, 'mummer', 'moduleVersion.mummer').' ;';
-		$cmd .= ' module load '.LoadConfig::getParam($rH_cfg, 'gnuplot', 'moduleVersion.gnuplot').' ;';
+		$cmd = 'module load '.LoadConfig::getParam($rH_cfg, 'mummer', 'moduleVersion.mummer').' &&';
+		$cmd .= ' module load '.LoadConfig::getParam($rH_cfg, 'gnuplot', 'moduleVersion.gnuplot').' &&';
 		$cmd .= ' nucmer';
 		$cmd .= ' -maxmatch';
 		$cmd .= ' -c ' . LoadConfig::getParam($rH_cfg, 'mummer', 'c');

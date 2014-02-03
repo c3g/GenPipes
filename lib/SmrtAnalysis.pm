@@ -10,7 +10,7 @@ SmrtAnalysis->run()
 
 =head1 DESCRIPTION
 
-B<Picard> This a library to analyze PAcBio data using the SmrtAnalysis suite.
+B<Picard> This a library to analyze PacBio data using the SmrtAnalysis suite.
 
 Input = file_name
 
@@ -56,9 +56,9 @@ sub run {
 	
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
-		$cmd .= 'module load '. LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' ;';
+		$cmd .= 'module load '. LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' &&';
 		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'smrtanalysis','moduleVersion.smrtanalysis') .' &&'; 
-		$cmd .= ' source \${SEYMOUR_HOME}/etc/setup.sh ;';
+		$cmd .= ' source \${SEYMOUR_HOME}/etc/setup.sh &&';
 		$cmd .= ' memtime';
 		$cmd .= ' smrtpipe.py';
 		$cmd .= ' -D NPROC=' . LoadConfig::getParam($rH_cfg, 'smrtanalysis', 'num_threads');
@@ -94,10 +94,10 @@ sub filtering {
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
 		# Fofn
-		$cmd .= 'module load '. LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' ;';
-		$cmd .= ' module load '.LoadConfig::getParam($rH_cfg, 'prinseq', 'moduleVersion.prinseq').' ;';
-		$cmd .= ' module load '. LoadConfig::getParam($rH_cfg, 'smrtanalysis', 'moduleVersion.smrtanalysis').' ;';
-		$cmd .= ' source \${SEYMOUR_HOME}/etc/setup.sh ;';
+		$cmd .= 'module load '. LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' &&';
+		$cmd .= ' module load '.LoadConfig::getParam($rH_cfg, 'prinseq', 'moduleVersion.prinseq').' &&';
+		$cmd .= ' module load '. LoadConfig::getParam($rH_cfg, 'smrtanalysis', 'moduleVersion.smrtanalysis').' &&';
+		$cmd .= ' source \${SEYMOUR_HOME}/etc/setup.sh &&';
 		$cmd .= ' memtime';
 		$cmd .= ' fofnToSmrtpipeInput.py ';
 		$cmd .= $fofn;
@@ -149,9 +149,9 @@ sub fofns {
     	my $cmd = '';
 
 		# Then do smrtpipe to generate input.xml
-		$cmd .= 'module load '. LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' ;';
-		$cmd .= ' module load '. LoadConfig::getParam($rH_cfg, 'smrtanalysis', 'moduleVersion.smrtanalysis').' ;';
-		$cmd .= ' source \${SEYMOUR_HOME}/etc/setup.sh ;';
+		$cmd .= 'module load '. LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' &&';
+		$cmd .= ' module load '. LoadConfig::getParam($rH_cfg, 'smrtanalysis', 'moduleVersion.smrtanalysis').' &&';
+		$cmd .= ' source \${SEYMOUR_HOME}/etc/setup.sh &&';
 		$cmd .= ' memtime';
 		$cmd .= ' fofnToSmrtpipeInput.py ';
 		$cmd .= $fofn;
@@ -177,9 +177,9 @@ sub referenceUploader{
     	my $cmd = '';
 
 		# Preload assembled contigs as reference
-		$cmd .= 'module load '. LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' ;';
-		$cmd .= ' module load '. LoadConfig::getParam($rH_cfg, 'smrtanalysis', 'moduleVersion.smrtanalysis').' ;';
-		$cmd .= ' source \${SEYMOUR_HOME}/etc/setup.sh ; ';
+		$cmd .= 'module load '. LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' &&';
+		$cmd .= ' module load '. LoadConfig::getParam($rH_cfg, 'smrtanalysis', 'moduleVersion.smrtanalysis').' &&';
+		$cmd .= ' source \${SEYMOUR_HOME}/etc/setup.sh && ';
 		$cmd .= ' memtime';
 		$cmd .= ' referenceUploader';
 		$cmd .= ' -c';
@@ -227,9 +227,9 @@ sub blasr  {
 	if (!$ro_job->isUp2Date()) {
 		#blasr filtered_subreads.fa filtered_longreads -out seeds.m4 -m 4 -nproc 8 -bestn 24 -nCandidates 24 -noSplitSubreads -minReadLength 200 -maxScore -1000 -maxLCPLength 16	
 		my $cmd = '';
-		$cmd .= 'module load '. LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' ;';
+		$cmd .= 'module load '. LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' &&';
 		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'default','moduleVersion.smrtanalysis') .' &&'; 
-		$cmd .= ' source \${SEYMOUR_HOME}/etc/setup.sh ;';
+		$cmd .= ' source \${SEYMOUR_HOME}/etc/setup.sh &&';
 		$cmd .= ' memtime';
 		$cmd .= ' blasr';
 		$cmd .= ' ' . $infile;
@@ -265,9 +265,9 @@ sub m4topre  {
 	
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
-		$cmd .= 'module load '. LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' ;';
+		$cmd .= 'module load '. LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' &&';
 		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'smrtanalysis','moduleVersion.smrtanalysis') .' &&'; 
-		$cmd .= ' source \${SEYMOUR_HOME}/etc/setup.sh ;';
+		$cmd .= ' source \${SEYMOUR_HOME}/etc/setup.sh &&';
 		$cmd .= ' memtime';
 		$cmd .= ' m4topre.py';
 		$cmd .= ' ' . $infile;
@@ -292,9 +292,9 @@ sub pbdagcon  {
 
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
-		$cmd .= 'module load '. LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' ;';
+		$cmd .= 'module load '. LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' &&';
 		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'smrtanalysis','moduleVersion.smrtanalysis') .' &&'; 
-		$cmd .= ' source \${SEYMOUR_HOME}/etc/setup.sh ; ';
+		$cmd .= ' source \${SEYMOUR_HOME}/etc/setup.sh && ';
 		$cmd .= ' memtime';
 		$cmd .= ' pbdagcon';
 		$cmd .= ' -a ';
@@ -323,9 +323,9 @@ sub quiver  {
 	
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
-		$cmd .= 'module load '. LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' ;';
+		$cmd .= 'module load '. LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' &&';
 		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'smrtanalysis','moduleVersion.smrtanalysis') .' &&'; 
-		$cmd .= ' source \${SEYMOUR_HOME}/etc/setup.sh ; ';
+		$cmd .= ' source \${SEYMOUR_HOME}/etc/setup.sh && ';
 		$cmd .= ' memtime';
 		$cmd .= ' quiver';
 		$cmd .= ' -j ' . LoadConfig::getParam($rH_cfg, 'quiver', 'num_threads');
@@ -351,9 +351,9 @@ sub callVariants {
 	
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
-		$cmd .= 'module load '. LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' ;';
+		$cmd .= 'module load '. LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' &&';
 		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'smrtanalysis','moduleVersion.smrtanalysis') .' &&'; 
-		$cmd .= ' source \${SEYMOUR_HOME}/etc/setup.sh ;';
+		$cmd .= ' source \${SEYMOUR_HOME}/etc/setup.sh &&';
 		$cmd .= ' memtime';
 		$cmd .= ' variantCaller.py';
 		$cmd .= ' -j ' . LoadConfig::getParam($rH_cfg, 'quiver', 'num_threads');
@@ -380,9 +380,9 @@ sub samtoh5  {
 	
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
-		$cmd .= 'module load ' . LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' ;';
+		$cmd .= 'module load ' . LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' &&';
 		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'smrtanalysis','moduleVersion.smrtanalysis') .' &&'; 
-		$cmd .= ' source \${SEYMOUR_HOME}/etc/setup.sh ;';
+		$cmd .= ' source \${SEYMOUR_HOME}/etc/setup.sh &&';
 		$cmd .= ' memtime';
 		$cmd .= ' samtoh5';
 		$cmd .= ' ' . $infile;
@@ -407,9 +407,9 @@ sub compareSequences  {
 	
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
-		$cmd .= 'module load '. LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' ;';
+		$cmd .= 'module load '. LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' &&';
 		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'smrtanalysis','moduleVersion.smrtanalysis') .' &&'; 
-		$cmd .= ' source \${SEYMOUR_HOME}/etc/setup.sh ;';
+		$cmd .= ' source \${SEYMOUR_HOME}/etc/setup.sh &&';
 		$cmd .= ' memtime';
 		$cmd .= ' compareSequences.py';
 		$cmd .= ' --info --useGuidedAlign --algorithm=blasr';
@@ -438,9 +438,9 @@ sub loadPulses{
 	
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
-		$cmd .= 'module load '. LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' ;';
+		$cmd .= 'module load '. LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' &&';
 		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'smrtanalysis','moduleVersion.smrtanalysis') .' &&'; 
-		$cmd .= ' source \${SEYMOUR_HOME}/etc/setup.sh ;';
+		$cmd .= ' source \${SEYMOUR_HOME}/etc/setup.sh &&';
 		$cmd .= ' memtime';
 		$cmd .= ' loadPulses';
 		$cmd .= ' '.$inputFofn;
@@ -464,9 +464,9 @@ sub variantCaller{
 	
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
-		$cmd .= 'module load '. LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' ;';
+		$cmd .= 'module load '. LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' &&';
 		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'smrtanalysis','moduleVersion.smrtanalysis') .' &&'; 
-		$cmd .= ' source \${SEYMOUR_HOME}/etc/setup.sh ;';
+		$cmd .= ' source \${SEYMOUR_HOME}/etc/setup.sh &&';
 		$cmd .= ' memtime';
 		$cmd .= ' variantCaller.py';
 		$cmd .= ' -P' . LoadConfig::getParam($rH_cfg, 'variantCaller', 'protocol');
@@ -494,9 +494,9 @@ sub sortH5{
 	
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
-		$cmd .= 'module load '. LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' ;';
+		$cmd .= 'module load '. LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' &&';
 		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'smrtanalysis','moduleVersion.smrtanalysis') .' &&'; 
-		$cmd .= ' source \${SEYMOUR_HOME}/etc/setup.sh ;';
+		$cmd .= ' source \${SEYMOUR_HOME}/etc/setup.sh &&';
 		$cmd .= ' memtime';
 		$cmd .= ' cmph5tools.py';
 		$cmd .= ' -vv sort --deep --inPlace --outFile ' . $cmpH5Out;
@@ -520,9 +520,9 @@ sub runCASpecWriter{
 	
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
-		$cmd .= 'module load '. LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' ;';
+		$cmd .= 'module load '. LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' &&';
 		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'smrtanalysis','moduleVersion.smrtanalysis') .' &&'; 
-		$cmd .= ' source \${SEYMOUR_HOME}/etc/setup.sh ;';
+		$cmd .= ' source \${SEYMOUR_HOME}/etc/setup.sh &&';
 		$cmd .= ' memtime';
 		$cmd .= ' runCASpecWriter.py';
 		$cmd .= ' -vv ';
@@ -565,8 +565,8 @@ sub summarizePolishing{
 	
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
-		$cmd .= 'module load '. LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' ;';
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'smrtanalysis','moduleVersion.smrtanalysis') .' && source \${SEYMOUR_HOME}/etc/setup.sh;';
+		$cmd .= 'module load '. LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' &&';
+		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'smrtanalysis','moduleVersion.smrtanalysis') .' && source \${SEYMOUR_HOME}/etc/setup.sh &&';
 		$cmd .= ' memtime';
 		$cmd .= ' summarizeCoverage.py --reference ' . $reference . ' --numRegions=500 ' . $alignedReadsCmpH5 . ' > ' . $alignmentSummary;
 		$cmd .= ' && ';

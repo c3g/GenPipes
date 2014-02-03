@@ -2,11 +2,9 @@
 
 =head1 NAME
 
-I<SVTools>
+I<BVATools>
 
 =head1 SYNOPSIS
-
-Picard->merge()
 
 =head1 DESCRIPTION
 
@@ -18,11 +16,9 @@ B<SVTools> is a library to analyse BAMs for Structural Variants
 
 B<Pod::Usage> Usage and help output.
 
-B<Data::Dumper> Used to debbug
-
 =cut
 
-package BAMtools;
+package BVATools;
 
 # Strict Pragmas
 #--------------------------
@@ -55,9 +51,9 @@ sub countBins {
 
     if (!$ro_job->isUp2Date()) {
         my $command;
-        $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'countBins', 'moduleVersion.java').' ' .LoadConfig::getParam($rH_cfg, 'countBins', 'moduleVersion.bamtools').' && ';
+        $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'countBins', 'moduleVersion.java').' ' .LoadConfig::getParam($rH_cfg, 'countBins', 'moduleVersion.bvatools').' && ';
         $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'countBins', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'countBins', 'extraJavaFlags');
-        $command .= ' -Xmx1500M -jar \${BAMTOOLS_JAR} bincounter';
+        $command .= ' -Xmx1500M -jar \${BVATOOLS_JAR} bincounter';
         $command .= ' --norm '.$normType;
         $command .= ' --minMapQ '.LoadConfig::getParam($rH_cfg, 'countBins', 'minMapQ');
         $command .= ' --bam '.$tumorBam;
@@ -112,8 +108,8 @@ sub deletePairedDuplicates {
 
     if (!$ro_job->isUp2Date()) {
         $command .= 'module add '. LoadConfig::getParam($rH_cfg, 'default','moduleVersion.java') ;
-        $command .= ' ' . LoadConfig::getParam($rH_cfg, 'duplicate','moduleVersion.bamtools') . ' &&' ;
-        $command .= ' java '.LoadConfig::getParam($rH_cfg, 'duplicate', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'duplicate', 'dupRam').' -jar  \$BAMTOOLS_JAR filterdups' .  ' --read1 ' . $pair1 . ' --read2 ' . $pair2;
+        $command .= ' ' . LoadConfig::getParam($rH_cfg, 'duplicate','moduleVersion.bvatools') . ' &&' ;
+        $command .= ' java '.LoadConfig::getParam($rH_cfg, 'duplicate', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'duplicate', 'dupRam').' -jar  \$BVATOOLS_JAR filterdups' .  ' --read1 ' . $pair1 . ' --read2 ' . $pair2;
         $command .= ' -k 20 -o 15';
         $command .= ' && mv ' . $pair1 . '.dup.read1.gz ' . $outputFastqPair1Name;
         $command .= ' && mv ' . $pair2 . '.dup.read2.gz ' . $outputFastqPair2Name;
@@ -140,8 +136,8 @@ sub deleteSingleDuplicates {
     if (!$ro_job->isUp2Date()) {
         my $command;
         $command .= 'module add '. LoadConfig::getParam($rH_cfg, 'default','moduleVersion.java') ;
-        $command .= ' ' . LoadConfig::getParam($rH_cfg, 'duplicate','moduleVersion.bamtools') . ' &&' ;
-        $command .= ' java '.LoadConfig::getParam($rH_cfg, 'duplicate', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'duplicate', 'dupRam').' -jar \$BAMTOOLS_JAR filterdups' . ' --read1 ' . $single;
+        $command .= ' ' . LoadConfig::getParam($rH_cfg, 'duplicate','moduleVersion.bvatools') . ' &&' ;
+        $command .= ' java '.LoadConfig::getParam($rH_cfg, 'duplicate', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'duplicate', 'dupRam').' -jar \$BVATOOLS_JAR filterdups' . ' --read1 ' . $single;
         $command .= ' -k 20 -o 15';
         $command .= ' && mv ' . $single . '.dup.read1.gz ' . $outputFastqName;
 
@@ -149,6 +145,69 @@ sub deleteSingleDuplicates {
     }
 
     return $ro_job;
+}
+
+sub resolveSampleBED {
+  my $rH_cfg      = shift;
+  my $rH_laneInfo = shift;
+
+  my $iniRegions = LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'coverageTargets');
+
+  if(!defined($iniRegions) || length($iniRegions) == 0) {
+    return undef;
+  }
+  elsif($iniRegions eq 'auto') {
+    if(@{$rH_laneInfo->{'bedFiles'}} == 0) {
+      return undef;
+    }
+    else {
+      return $rH_laneInfo->{'bedFiles'}->[0];
+    }
+  }
+
+  return $iniRegions
+}
+
+sub depthOfCoverage {
+  my $rH_cfg        = shift;
+  my $inputBam      = shift;
+  my $outputFile    = shift;
+  my $coverageBED   = shift;
+
+  my $ro_job = new Job();
+  if(defined($coverageBED)) {
+    $ro_job->testInputOutputs([$inputBam, $coverageBED], [$outputFile]);
+  }
+  else {
+    $ro_job->testInputOutputs([$inputBam], [$outputFile]);
+  }
+
+  my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta');
+  my $rA_thresholds = LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'percentThresholds');
+
+  if (!$ro_job->isUp2Date()) {
+      my $command;
+      $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'moduleVersion.java').' '.LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'moduleVersion.bvatools').' &&';
+      $command .= ' java '.LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'ram').'  -jar \${BVATOOLS_JAR}';
+      $command .= ' depthofcoverage';
+      $command .= ' '.LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'extraFlags');
+      $command .= ' --ref '.$refGenome;
+      if(defined($coverageBED) && length($coverageBED) > 0) {
+        $command .= ' --intervals '.$coverageBED;
+      }
+
+      if(defined($rA_thresholds)) {
+        for my $threshold (@{$rA_thresholds}) {
+          $command .= ' --summaryCoverageThresholds '.$threshold;
+        }
+      }
+      $command .= ' --bam '.$inputBam;
+      $command .= ' > '.$outputFile;
+      
+      $ro_job->addCommand($command);
+  }
+
+  return $ro_job;
 }
 
 1;

@@ -64,13 +64,13 @@ sub edger {
 
     if (!$ro_job->isUp2Date()) {
         my $command;
-        $command .= ' module add gcc/4.7.0 ; module add R &&';
+        $command .= ' module add gcc/4.7.0 && module add R &&';
         $command .= ' Rscript ' . $rH_cfg->{'diffExpress.edger'} . ' -d ' . $rH_cfg->{'diffExpress.designFile'};
         $command .= ' -c ' . $laneDirectory . 'matrix.csv ';
         $command .= ' -o ' . $laneDirectory . ' &&';
         $command .= ' Rscript ' . $rH_cfg->{'diffExpress.deseq'} . ' -d ' . $rH_cfg->{'diffExpress.designFile'};
         $command .= ' -c ' . $laneDirectory . 'matrix.csv ';
-        $command .= ' -o ' . $laneDirectory ;
+        $command .= ' -o ' . $laneDirectory;
 
         $ro_job->addCommand($command);
     }
