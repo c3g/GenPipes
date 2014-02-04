@@ -148,7 +148,7 @@ push(@steps, {'name' => 'fullPileup', 'stepLoop' => 'sample', 'parentStep' => 'r
 #--------------------
 ## Here starts the pipeline steps documentation, please change it accordingly any time you add/remove/modify a step
 
-=head1 DNASEQ PIPELINE STEPS
+=head1 RNASEQ PIPELINE STEPS
 
 The standard variant discovery pipeline performs the following steps:
 
@@ -170,7 +170,7 @@ B<markDup> : Marking duplicates. Aligned reads per sample are duplicates if they
 
 B<recalibration> : Recalibrate base quality scores of sequencing-by-synthesis reads in an aligned BAM file. After recalibration, the quality scores in the QUAL field in each read in the output BAM are more accurate in that the reported quality score is closer to its actual probability of mismatching the reference genome. Moreover, the recalibration tool attempts to correct for variation in quality with machine cycle and sequence context, and by doing so provides not only more accurate quality scores but also more widely dispersed ones.
 
-B<metrics> : Compute metrics and generating coverage tracks per sample. Multiple metrics are computed at this stage:Number of raw reads, Number of filtered reads, Number of aligned reads, Number of duplicate reads, Median, mean and standard deviation of insert sizes of reads after alignment, mean coverage over exons (mean number of reads per base position), percentage of bases covered at X reads (%_bases_above_50 means the % of exons bases which have at least 50 reads) whole genome
+B<metrics> : Compute metrics and generate coverage tracks per sample. Multiple metrics are computed at this stage:Number of raw reads, Number of filtered reads, Number of aligned reads, Number of duplicate reads, Median, mean and standard deviation of insert sizes of reads after alignment, mean coverage over exons (mean number of reads per base position), percentage of bases covered at X reads (%_bases_above_50 means the % of exons bases which have at least 50 reads) whole genome
 percentage of bases covered at X reads (%_bases_above_50 means the % of exons bases which have at least 50 reads) for specific targets (CCDS regions are used in human samples). A TDF (.tdf) coverage track is also generated at this step for easy visualization of coverage in the IGV browser.
 
 B<metricsLibrarySample> : Merge metrics. Read metrics per sample are merged at this step.
