@@ -296,7 +296,7 @@ sub moduleLoad {
   return "module load " . join(" ", @moduleValues) . "\n";
 }
 
-sub getRunType {
+sub getReadType {
   my $nanuqSampleSheet = shift;
 
   my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($nanuqSampleSheet);
@@ -384,6 +384,8 @@ sub normalizationMergeResults {
   my $rH_cfg = shift;
   my $step = shift;
 
+  my $readType = getReadType($nanuqSampleSheet);
+
   my @A_leftFastq = ();
   my @A_rightFastq = ();
   my @A_singleFastq = ();
@@ -402,9 +404,9 @@ sub normalizationMergeResults {
 
     for my $rH_laneInfo (@$rAoH_sampleLanes) {
       my $normDirectory = "\$WORK_DIR/normalization/" . $sample . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
-      if ($rH_laneInfo->{'runType'} eq "SINGLE_END") {
+      if ($readType eq "single") {
         push (@A_singleFastq, "$normDirectory/single$normFileSuffix");
-      } elsif ($rH_laneInfo->{'runType'} eq "PAIRED_END") {
+      } elsif ($readType eq "paired") {
         push (@A_leftFastq, "$normDirectory/left$normFileSuffix");
         push (@A_rightFastq, "$normDirectory/right$normFileSuffix");
       }
@@ -413,14 +415,11 @@ sub normalizationMergeResults {
 
   my $rO_job;
 
-  if (@A_singleFastq > 0) {
-    (@A_leftFastq == 0 and @A_rightFastq == 0) or die "Error: mixed single/paired-end read normalization is not supported!\n";
+  if ($readType eq "single") {
     # Single-end reads
     $rO_job = Trinity::normalize_by_kmer_coverage($rH_cfg, undef, undef, \@A_singleFastq, "\$WORK_DIR/normalization/global");
   } else {
     # Paired-end reads
-    (@A_leftFastq > 0 and @A_rightFastq > 0) or die "Error: no normalized file to merge!\n";
-    (@A_leftFastq == @A_rightFastq) or die "Error: left and right normalized files numbers differ!\n";
     $rO_job = Trinity::normalize_by_kmer_coverage($rH_cfg, \@A_leftFastq, \@A_rightFastq, undef, "\$WORK_DIR/normalization/global");
   }
 
@@ -431,7 +430,7 @@ sub trinity {
   my $rH_cfg = shift;
   my $step = shift;
 
-  my $runType = getRunType($nanuqSampleSheet);
+  my $readType = getReadType($nanuqSampleSheet);
 
   my $maxCoverage = getParam($rH_cfg, 'normalization', 'maxCoverage');
   my $kmerSize = getParam($rH_cfg, 'normalization', 'kmerSize');
@@ -440,7 +439,7 @@ sub trinity {
   my $normFileSuffix = ".normalized_K" . $kmerSize . "_C" . $maxCoverage . "_pctSD" . $maxPctStdev . ".fq";
 
   my $rO_job;
-  if ($runType eq "single") {
+  if ($readType eq "single") {
     $rO_job = Trinity::trinity($rH_cfg, undef, undef, ["\$WORK_DIR/normalization/global/single$normFileSuffix"], "\$WORK_DIR/trinity_out_dir");
   } else {
     $rO_job = Trinity::trinity($rH_cfg, ["\$WORK_DIR/normalization/global/left$normFileSuffix"], ["\$WORK_DIR/normalization/global/right$normFileSuffix"], undef, "\$WORK_DIR/trinity_out_dir");

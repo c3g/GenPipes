@@ -206,7 +206,7 @@ sub parseHeaderIndexes {
     $sampleSheetWarnings.="Missing BED Files\n";
   }
   if(length($sampleSheetWarnings) > 0) {
-    warn $sampleSheetErrors;
+    warn $sampleSheetWarnings;
   }
   if(length($sampleSheetErrors) > 0) {
     die $sampleSheetErrors;

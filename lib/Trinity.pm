@@ -122,6 +122,7 @@ sub normalize_by_kmer_coverage {
 
   if (!$rO_job->isUp2Date()) {
     my $command = "\n";
+    $command .= "mkdir -p $outputDirectory && \\\n";
 
     # Create sorted left/right lists of fastq.gz files
     if ($readType eq "paired") {    # Paired reads
@@ -129,7 +130,6 @@ sub normalize_by_kmer_coverage {
       @$rA_leftReadFiles == @$rA_rightReadFiles or die "Error in normalization: left and right files numbers differ!"; 
 
       $command .= "rm -f $leftList $rightList && \\\n";
-      $command .= "mkdir -p $outputDirectory && \\\n";
       foreach my $leftReadFile (@$rA_leftReadFiles) {
         $command .= "echo $leftReadFile >> $leftList && \\\n";
       }
@@ -138,8 +138,12 @@ sub normalize_by_kmer_coverage {
       }
       $readFileOptions = " --left_list $leftList --right_list $rightList ";
     } else {    # Single reads
-      # Merge all single fastq.gz in one file since trinityrnaseq_r20131110 does not support --single_list!
-      $command .= "zcat " . join(" ", @$rA_singleReadFiles) . " > $singleCat && \\\n";
+      $command .= "rm -f $singleCat && \\\n";
+      # Check if fastq are compressed or not
+      my $catCmd;
+      if ($$rA_singleReadFiles[0] =~ /\.gz$/) {$catCmd = "zcat"} else {$catCmd = "cat"};
+      # Merge all single fastq in one file since trinityrnaseq_r20131110 does not support --single_list!
+      $command .= "$catCmd " . join(" ", @$rA_singleReadFiles) . " > $singleCat && \\\n";
       $readFileOptions = " --single $singleCat ";
     }
 
@@ -156,7 +160,7 @@ $readFileOptions \\
     $command .= " " . getParam($rH_cfg, 'normalization', 'normalizationOptions') . " && \\\n";
 
     # Count normalized reads for stats
-    $command .= "wc -l " . @$rA_outputs[0] . " | awk '{print \\\$1 / 4\\t\\\"# normalized $readType reads\\\"}' > $outputDirectory/normalization.stats.csv \\\n";
+    $command .= "wc -l " . @$rA_outputs[0] . " | awk '{print \\\"# normalized $readType reads\\t\\\"\\\$1 / 4}' > $outputDirectory/normalization.stats.tsv \\\n";
 
     $rO_job->addCommand($command);
   }
