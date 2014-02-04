@@ -6,7 +6,18 @@ I<dnaSeq>
 
 =head1 SYNOPSIS
 
-dnaSeq.pl
+  perl dnaSeq.pl -c dnaSeq.guillimin.ini -s 1 -e 21 -n project.nanuq.csv > toRun.sh
+
+  will generate a bash script for steps 1 to 21. This script can then be executed:
+
+  sh toRun.sh
+
+  Options
+
+  -c (dnaSeq.guillimin.ini) the standard configuration file for the pipeline. Templates for some cluster systems like Abacus or Guillimin may already be available at pipelines/dnaseq
+  -s The start step
+  -e The end step
+  -n (project.nanuq.csv) the standard NANUQ read set sheet.
 
 =head1 DESCRIPTION
 
@@ -27,6 +38,41 @@ B<Config::Simple> Used to parse config file
 B<File::Basename> path parsing
 
 B<Cwd> path parsing
+
+B<BVATools> Bam and Variant Analysis Tools
+
+B<BWA> Burrows-Wheeler Aligner
+
+B<GATK> Reads , alignment and metrics tools
+
+B<IGVTools> igv utilities 
+
+B<LoadConfig> Parse configuration (ini) file
+
+B<Picard> Sort, merge tools for bam files
+
+B<SampleSheet> Parse Nanuq sample sheet
+
+B<SAMtools> alignment file tools
+
+B<SequenceDictionaryParser> Parse sequence dictionnary
+
+B<SnpEff> multiple variant annotation tools
+
+B<SubmitToCluster> Create the submit command, control for dependencies
+
+B<Trimmomatic> Trim and filter raw read files
+
+B<Tools> function related to the mugqic tool shed
+
+B<Version> Tracks app version
+
+B<VCFtools> Manage variants vcf files
+
+B<Metrics> Read, alignment and multiple metrics library
+
+B<GqSeqUtils> is a library to access/launch functions from the gqSeqUtils R package
+
 
 =cut
 
@@ -96,6 +142,61 @@ push(@steps, {'name' => 'dbNSFPAnnotation', 'stepLoop' => 'experiment', 'parentS
 push(@steps, {'name' => 'metricsSNV', 'stepLoop' => 'experiment', 'parentStep' => 'snpIDAnnotation'});
 push(@steps, {'name' => 'deliverable' , 'stepLoop' => 'experiment' , 'parentStep' => ['mergeTrimStats','metricsLibrarySample','metricsSNV']});
 push(@steps, {'name' => 'fullPileup', 'stepLoop' => 'sample', 'parentStep' => 'recalibration'});
+
+#--------------------
+# PODS
+#--------------------
+## Here starts the pipeline steps documentation, please change it accordingly any time you add/remove/modify a step
+
+=head1 RNASEQ PIPELINE STEPS
+
+The standard variant discovery pipeline performs the following steps:
+
+B<trimAndAlign> :  Raw reads quality trimming and removing of Illumina adapters is performed using trimmomatic. The filtered reads are aligned to a reference genome. The alignment is done per lane of sequencing. The alignment software used is bwa, two different algorithms are available: bwa aln (backtrack) and bwa mem.
+
+B<laneMetrics> :  Aligned reads are duplicates if they have the same 5' alignment positions (for both mates in the case of paired-end reads). All but the best pair (based on alignment score) will be marked as a duplicate in the .bam file. Marking duplicates is done with picard software. Metrics per lane are produced at this step.
+
+B<mergeTrimStats> : The trim statistics per lane/sample are merged at this step.
+
+B<mergeLanes> : Bam files per sample are merged in one file. Merge is done using the Picard software.
+
+B<indelRealigner> : Insertion and deletion realignment is performed on regions where multiple base mismatches are preferred over indels by the aligner since it can appear to be less costly by the algorithm. Such regions will introduce false positive variant calls which may be filtered out by realigning those regions properly. Realignment is done using the GATK software. The reference genome is divided by a number regions given by the nbRealignJobs parameter.
+
+B<mergeRealigned> : Merging the regions of realigned reads per sample is done using Picard.
+
+B<fixmate> : Fixing the read mates. Once local regions are realigned, the read mate coordinates of the aligned reads need to be recalculated since the reads are realigned at positions that differ from their original alignment. Fixing the read mate positions is done using the Picard software.
+
+B<markDup> : Marking duplicates. Aligned reads per sample are duplicates if they have the same 5' alignment positions (for both mates in the case of paired-end reads). All but the best pair (based on alignment score) will be marked as a duplicate in the .bam file. Marking duplicates is done using the Picard software.
+
+B<recalibration> : Recalibrate base quality scores of sequencing-by-synthesis reads in an aligned BAM file. After recalibration, the quality scores in the QUAL field in each read in the output BAM are more accurate in that the reported quality score is closer to its actual probability of mismatching the reference genome. Moreover, the recalibration tool attempts to correct for variation in quality with machine cycle and sequence context, and by doing so provides not only more accurate quality scores but also more widely dispersed ones.
+
+B<metrics> : Compute metrics and generate coverage tracks per sample. Multiple metrics are computed at this stage:Number of raw reads, Number of filtered reads, Number of aligned reads, Number of duplicate reads, Median, mean and standard deviation of insert sizes of reads after alignment, mean coverage over exons (mean number of reads per base position), percentage of bases covered at X reads (%_bases_above_50 means the % of exons bases which have at least 50 reads) whole genome
+percentage of bases covered at X reads (%_bases_above_50 means the % of exons bases which have at least 50 reads) for specific targets (CCDS regions are used in human samples). A TDF (.tdf) coverage track is also generated at this step for easy visualization of coverage in the IGV browser.
+
+B<metricsLibrarySample> : Merge metrics. Read metrics per sample are merged at this step.
+
+B<snpAndIndelBCF> : Mpileup and Variant calling. Variants (SNPs and INDELs) are called using samtools mpileup. bcftools view is used to produce binary bcf files.  
+
+B<mergeFilterBCF> : bcftools is used to merge the raw binary variants files created in the snpAndIndelBCF step.  The output of bcftools is fed to varfilter, which does an additional filtering of the variants and transforms the output into the VCF (.vcf) format. One vcf file contain the SNP/INDEL calls for all samples in the experiment. 
+
+B<filterNStretches> : The final .vcf files are filtered for long 'N' INDELs which are sometimes introduced and cause excessive memory usage by downstream tools.
+
+B<flagMappability> : Mappability annotation. An in-house database identifies regions in which reads are confidently mapped to the reference genome.
+
+B<snpIDAnnotation>:  dbSNP annotation. The .vcf files are annotated for dbSNP using the software SnpSift (from the SNPEff suite).
+
+B<snpEffect>: Variant effect annotation. The .vcf files are annotated for variant effects using the SnpEff software. SnpEff annotates and predicts the effects of variants on genes (such as amino acid changes).
+
+B<dbNSFPAnnotation> Additional SVN annotations. Provides extra information about SVN by using numerous published databases. Applicable to human samples. Databases available include Biomart (adds GO annotations based on gene information) and dbNSFP (an integrated database of functional annotations from multiple sources for the comprehensive collection of human non-synonymous SNPs. It compiles prediction scores from four prediction algorithms (SIFT, Polyphen2, LRT and MutationTaster), three conservation scores (PhyloP, GERP++ and SiPhy) and other function annotations) .
+
+B<metricsSNV> : Metrics SNV. Multiple metrics associated to annotations and effect prediction are generated at this step: change rate by chromosome, changes by type, effects by impact, effects by functional class, counts by effect, counts by genomic region, SNV quality, coverage, InDel lengths, base changes,  transition-transversion rates, summary of allele frequencies, codon changes, amino acid changes, changes per chromosome, change rates.
+
+B<deliverable> : Generating the standard report. A summary html report is automatically generated by the pipeline. This report contains description of the sequencing experiment as well as a detailed presentation of the pipeline steps and results. Various Quality Control (QC) summary statistics are included in the report and additional QC analysis is accessible for download directly through the report. The report includes also the main references of the software and methods used during the analysis, together with the full list of parameters passed to the pipeline main script.
+
+B<fullPileup>: Full pileup (optional). A raw mpileup file is created using samtools mpileup and compressed in gz format. One packaged mpileup file is created per sample/chromosome.
+
+=cut end of documentation
+
 
 my %globalDep;
 for my $stepName (@steps) {
