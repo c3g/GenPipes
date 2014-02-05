@@ -459,6 +459,9 @@ sub variantCaller{
 	my $outfileFasta       = shift;
 	my $outfileFastq       = shift;
 	
+	my $outfileFastaUncompressed = $outfileFasta;
+	$outfileFastaUncompressed =~ s/\.gz|\.gzip//;
+	
 	my $ro_job = new Job();
 	$ro_job->testInputOutputs([$cmpH5.".loadedPulses"], [$outfileVariants, $outfileFasta, $outfileFastq]);
 	
@@ -478,6 +481,7 @@ sub variantCaller{
 		$cmd .= ' -o ' . $outfileVariants;
 		$cmd .= ' -o ' . $outfileFasta;
 		$cmd .= ' -o ' . $outfileFastq;
+		$cmd .= ' gunzip -c ' . $outfileFasta . ' > ' . $outfileFastaUncompressed;
 		$cmd .= ' > /dev/null';	
 		$ro_job->addCommand($cmd);
 	}
