@@ -20,6 +20,7 @@ make install
 # Add permissions and install software
 cd $INSTALL_PATH
 chmod -R ug+rwX .
+chmod -R o+rX .
 mv -i ${SOFTWARE}${VERSION}.tar.gz $MUGQIC_INSTALL_HOME/archive/
 
 # Module file
@@ -41,6 +42,7 @@ set ModulesVersion \"$VERSION\"" > .version
 # Add permissions and install module
 mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
 chmod -R ug+rwX $VERSION .version
+chmod -R o+rX $VERSION .version
 mv $VERSION .version $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
 
 # Clean up temporary installation files if any
