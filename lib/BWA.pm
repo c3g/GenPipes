@@ -53,9 +53,12 @@ sub mem {
   my $rgLibrary       = shift;
   my $rgPlatformUnit  = shift;
   my $rgCenter        = shift;
+  my $bwaRefIndex     = shift;
 
-  my $bwaRefIndex = LoadConfig::getParam( $rH_cfg, 'mem', 'bwaRefIndex' );
-
+  if (!defined($bwaRefIndex)) {
+    $bwaRefIndex = LoadConfig::getParam( $rH_cfg, 'mem', 'bwaRefIndex' );
+  }
+    
   my $outputBAM = $optOutputPrefix.'.sorted.bam';
 
   my $rA_inputs;

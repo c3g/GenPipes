@@ -133,17 +133,22 @@ sub collectMetrics {
   my $rH_cfg        = shift;
   my $inputBAM      = shift;
   my $outputMetrics = shift;
+  my $reference     = shift;
 
   my $ro_job = new Job();
   $ro_job->testInputOutputs([$inputBAM],[$outputMetrics.'.quality_by_cycle.pdf']);
 
   if (!$ro_job->isUp2Date()) {
+    if (!defined($reference)) {
+      $reference = LoadConfig::getParam($rH_cfg, 'collectMetrics', 'referenceFasta');
+    }
+  
     my $command;
     $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'collectMetrics','moduleVersion.java') .' ' .LoadConfig::getParam($rH_cfg, 'collectMetrics', 'moduleVersion.picard').' &&'; 
     $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'collectMetrics', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'collectMetrics', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'collectMetrics', 'collectMetricsRam').' -jar \${PICARD_HOME}/CollectMultipleMetrics.jar';
     $command .= ' PROGRAM=CollectAlignmentSummaryMetrics PROGRAM=CollectInsertSizeMetrics  VALIDATION_STRINGENCY=SILENT';
     $command .= ' TMP_DIR='.LoadConfig::getParam($rH_cfg, 'collectMetrics', 'tmpDir');
-    $command .= ' REFERENCE_SEQUENCE='.LoadConfig::getParam($rH_cfg, 'collectMetrics', 'referenceFasta');
+    $command .= ' REFERENCE_SEQUENCE='. $reference;
     $command .= ' INPUT='.$inputBAM;
     $command .= ' OUTPUT='.$outputMetrics;
     $command .= ' MAX_RECORDS_IN_RAM='.LoadConfig::getParam($rH_cfg, 'collectMetrics', 'collectMetricsRecInRam');

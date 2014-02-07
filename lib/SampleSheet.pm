@@ -68,6 +68,21 @@ sub parseSampleSheetAsHash {
   return \%sampleInfo;
 }
 
+sub parseSampleSheetAsHashByProcessingId {
+  my $fileName = shift;
+
+  my $rA_SampleLaneInfos = parseSampleSheet($fileName);
+  my %sampleInfo;
+  for my $rH_Sample (@$rA_SampleLaneInfos) {
+    if(!defined $sampleInfo{ $rH_Sample->{'processingSheetId'} }) {
+      $sampleInfo{ $rH_Sample->{'processingSheetId'} } = [];
+    }
+
+    push(@{$sampleInfo{ $rH_Sample->{'processingSheetId'} }}, $rH_Sample);
+  }
+  return \%sampleInfo;
+}
+
 sub parsePairedSampleSheet {
   my $fileName = shift;
 
@@ -104,7 +119,7 @@ sub parseSampleSheet {
   my $line = <SAMPLE_SHEET>;
   $csv->parse($line);
   my @headers = $csv->fields();
-  my ($nameIdx,$libraryBarcodeIdx,$runIdIdx,$laneIdx,$runTypeIdx,$statusIdx,$qualOffsetIdx) = parseHeaderIndexes(\@headers);
+  my ($nameIdx,$libraryBarcodeIdx,$runIdIdx,$laneIdx,$runTypeIdx,$statusIdx,$qualOffsetIdx,$processingSheetIdIdx, $libSourceIdx) = parseHeaderIndexes(\@headers);
 
   while($line = <SAMPLE_SHEET>) {
     $csv->parse($line);
@@ -121,6 +136,8 @@ sub parseSampleSheet {
     $sampleInfo{'lane'} = $values[$laneIdx];
     $sampleInfo{'runType'} = $values[$runTypeIdx];
     $sampleInfo{'qualOffset'} = $values[$qualOffsetIdx];
+    $sampleInfo{'processingSheetId'} = $values[$processingSheetIdIdx];
+    $sampleInfo{'libSource'} = $values[$libSourceIdx];
 
     if($values[$runTypeIdx] eq "PAIRED_END") {
       $sampleInfo{'read1File'} = $sampleInfo{'name'}.'.'.$sampleInfo{'libraryBarcode'}.'.'.$sampleInfo{'qualOffset'}.".pair1.fastq.gz";
@@ -149,6 +166,8 @@ sub parseHeaderIndexes {
   my $runTypeIdx=-1;
   my $statusIdx=-1;
   my $qualOffsetIdx=-1;
+  my $processingSheetIdIdx=-1;
+  my $libSourceIdx = -1;
 	
 	for(my $idx=0; $idx < @{$rA_headers}; $idx++) {
 		my $header = $rA_headers->[$idx];
@@ -174,6 +193,12 @@ sub parseHeaderIndexes {
     elsif($header eq "Quality Offset") {
       $qualOffsetIdx=$idx;
     }
+    elsif($header eq "ProcessingSheetId") {
+      $processingSheetIdIdx=$idx;
+    }
+    elsif($header eq "Library Source") {
+      $libSourceIdx=$idx;
+    }
   }
 
   my $sampleSheetErrors="";
@@ -197,12 +222,18 @@ sub parseHeaderIndexes {
   }
   if($qualOffsetIdx==-1) {
       $sampleSheetErrors.="Missing Quality Offset\n";
-    }
+  }
+  if($processingSheetIdIdx==-1) {
+      $sampleSheetErrors.="Missing Processing Sheet Id\n";
+  }
+  if($libSourceIdx==-1) {
+      $sampleSheetErrors.="Missing Library Source\n";
+  }
   
   if(length($sampleSheetErrors) > 0) {
     die $sampleSheetErrors;
   }
   
-  return ($nameIdx,$libraryBarcodeIdx,$runIdIdx,$laneIdx,$runTypeIdx,$statusIdx,$qualOffsetIdx);
+  return ($nameIdx,$libraryBarcodeIdx,$runIdIdx,$laneIdx,$runTypeIdx,$statusIdx,$qualOffsetIdx,$processingSheetIdIdx,$libSourceIdx);
 }
 1;
