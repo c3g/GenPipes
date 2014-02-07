@@ -7,10 +7,12 @@ me=`basename $0`
 export R_LIBS=
 
 ## Default arg values
-VERSION="latest"
+VERSION="latest" 
+INSTALL_PREFIX_ENV_VARNAME=""
 MODULEFILE_DIR="$MUGQIC_INSTALL_HOME_DEV/modulefiles/mugqic_dev/R"
 INSTALL_DIR="$MUGQIC_INSTALL_HOME_DEV/software/R"
 FORCE_INSTALL=false
+
 
 ## Parse arguments
 usage()
@@ -23,18 +25,24 @@ This script installs R, installs the corresponding module and other dependencies
 OPTIONS:
    -v      Force a specifc R version different than latest, e.g. 3.0.0
    -f      Force re-install, i.e. overwrite module and R installation even if module already exists
-   -m      Where to write the module file, defaults to $MUGQIC_INSTALL_HOME_DEV/modulesfiles/mugqic_dev/R/
-   -i	   R installation directory, defaults to $MUGQIC_INSTALL_HOME_DEV/software/R. Actual install dir will be reassigned to <-i>/R-version
+   -p	   Name of an environnment variable which defines a prefix path to -m and -i. E.g. MUGQIC_INSTALL_HOME
+   -m      Where to write the module file, defaults to modulesfiles/mugqic_dev/R/
+   -i	   R installation directory, defaults to software/R. Actual install dir will be reassigned to <-i>/R-version
    -h      Print this message
 
+EXAMPLE USAGE:
+
+R.sh -f -v 3.0.2 -p MUGQIC_INSTALL_HOME -m modulefiles/mugqic/R -i software/R
+
 NOTES: 
-   On Mammouth, byte compiling of the base package might fail if an R module is already loaded.
-   The problem was not investiguated further except that it might be related 
-   to the gcc compiler there.
+   - On Mammouth, byte compiling of the base package might fail if an R module is already loaded.
+   The problem was not investiguated further except that it might be related to the gcc compiler there.
+   - Frequently missing libraries: libcurl-devel, cairo...
+   - ()...)
 EOF
 }
 
-while getopts “v:m:i:fh” OPTION
+while getopts “v:p:m:i:fh” OPTION
 do
      case $OPTION in
          h)
@@ -43,7 +51,10 @@ do
              ;;
          v)
              VERSION=$OPTARG
-             ;;
+             ;; 
+		 p)
+		     INSTALL_PREFIX_ENV_VARNAME=$OPTARG
+		     ;;
 	     m)
 	         MODULEFILE_DIR=$OPTARG
 	         ;;
@@ -60,6 +71,9 @@ do
      esac
 done
 
+
+
+
 ## Tmp dir to work in
 TEMPDIR=`mktemp -d -t $me.XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX` && cd $TEMPDIR 
 echo "Working in $TEMPDIR"
@@ -68,18 +82,27 @@ echo "Working in $TEMPDIR"
 if [  $VERSION = "latest" ]
 then
 	wget --no-verbose http://cran.r-project.org/src/base/R-latest.tar.gz
-	#wget --no-verbose http://probability.ca/cran/src/base/R-latest.tar.gz
-	#wget https://dl.dropboxusercontent.com/u/2528754/R-latest.tar.gz # TODO TEMP
 	tar -xf R-latest.tar.gz
 	VERSION=`cat ./*/VERSION`
 	rm -r R*
 fi
 
 ## Paths, mkdirs
-INSTALL_DIR=$INSTALL_DIR/R-$VERSION
+INSTALL_DIR="$INSTALL_DIR/R-$VERSION"
 MODULEFILE="$MODULEFILE_DIR/$VERSION"
 MODULEVERSIONFILE="$MODULEFILE_DIR/.version"
+TCLROOT=$INSTALL_DIR
+if [ $INSTALL_PREFIX_ENV_VARNAME != "" ]
+then
+	echo "prefixing..."
+	TCLROOT="\$::env($INSTALL_PREFIX_ENV_VARNAME)/$INSTALL_DIR"
+	INSTALL_DIR=${!INSTALL_PREFIX_ENV_VARNAME}/$INSTALL_DIR
+	MODULEFILE=${!INSTALL_PREFIX_ENV_VARNAME}/$MODULEFILE
+	MODULEVERSIONFILE=${!INSTALL_PREFIX_ENV_VARNAME}/$MODULEVERSIONFILE
+fi
 mkdir -p $MODULEFILE_DIR $INSTALL_DIR
+# NOTE: this is somewhat complicated because we want the ROOT dir MUGQIC_INSTALL_HOME to be resolved at module execution.
+# TCLROOT is just a variable holding the TCL script value for the 'root' variable in the module file.
 
 ## Install if required by force or absence of module files
 if  [ ! -f $MODULEFILE ] || $FORCE_INSTALL
@@ -102,22 +125,21 @@ then
 	make install
 	cd $TEMPDIR
 	
-	# Create module files
+	# Create mechoodule files
 	cat > $MODULEFILE <<-EOF	
 		#%Module1.0
 		proc ModulesHelp { } {
 		puts stderr "MUGQIC - Adds R to your environment"
 		}
-		module-whatis "MUGQIC - Adds R to your environment"
-		
-		set             root               $INSTALL_DIR
+		module-whatis "MUGQIC - Adds R to your environment"	
+		set             root               $TCLROOT
 		setenv          R_LIBS             \$root/lib64/R/library
 		#prepend-path   MANPATH            \$root/share              
 		prepend-path    PATH               \$root/bin
 		prepend-path    LD_LIBRARY_PATH    \$root/lib64:/software/libraries/GotoBLAS_LAPACK/shared
 		#prepend-path   LD_LIBRARY_PATH    \$root/lib64:\$root/standalone:/software/libraries/GotoBLAS_LAPACK/shared
 		#prepend-path   CPATH              \$root/include
-		EOF
+	EOF
 	cat > $MODULEVERSIONFILE <<-EOF
 		#%Module1.0
 		set ModulesVersion $VERSION
@@ -140,8 +162,6 @@ then
 			Sys.umask("002")
 		EOF
 fi
-
-
 
 
 ## Finally, update/install library!
@@ -225,13 +245,28 @@ exit
 
 
 
-### Blurb to test graphics
-# module load mugqic/R/3.0.2
-# R --no-save <<'EOF'
- capabilities()
- getOption("bitmapType") # returns default bitmap device: abacus=cairo,guil=cairo,mp2=Xlib
- jpeg("temp.jpeg")#,type='cairo')
- plot(1)
- dev.off()
-# EOF
+
+
+
+# ## Test
+# me="R.sh"
+# export R_LIBS=
+# VERSION="3.0.1"
+# INSTALL_PREFIX_ENV_VARNAME="MUGQIC_INSTALL_HOME_DEV"
+# MODULEFILE_DIR="modulefiles/mugqic_dev/R"
+# INSTALL_DIR="software/R"
+# #MODULEFILE_DIR="$MUGQIC_INSTALL_HOME_DEV/modulefiles/mugqic_dev/R"
+# #INSTALL_DIR="$MUGQIC_INSTALL_HOME_DEV/software/R"
+# FORCE_INSTALL=true
+# 
+
+# ### Blurb to test graphics
+# # module load mugqic/R/3.0.2
+# # R --no-save <<'EOF'
+#  capabilities()
+#  getOption("bitmapType") # returns default bitmap device: abacus=cairo,guil=cairo,mp2=Xlib
+#  jpeg("temp.jpeg")#,type='cairo')
+#  plot(1)
+#  dev.off()
+# # EOF
 
