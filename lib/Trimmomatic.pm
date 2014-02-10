@@ -37,6 +37,10 @@ use warnings;
 
 #--------------------------
 
+# Add the mugqic_pipeline/lib/ path relative to this Perl script to @INC library search variable
+use FindBin;
+use lib "$FindBin::Bin";
+
 # Dependencies
 #-----------------------
 use Job;
@@ -60,6 +64,7 @@ sub trim {
   my $ro_job;
 
   my $rawReadDir    = LoadConfig::getParam($rH_cfg, 'trim','rawReadDir');
+  unless (-d $rawReadDir) {die "Error in config file: raw read directory $rawReadDir does not exist or is not a directory!\n"};
   my $inputFastqPair1Name = $rawReadDir .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' .$rH_laneInfo->{'read1File'};
   my $inputFastqPair2Name = undef;
 
@@ -102,9 +107,11 @@ sub pairCommand {
     my $minQuality  = LoadConfig::getParam($rH_cfg, 'trim','minQuality');
     my $minLength   = LoadConfig::getParam($rH_cfg, 'trim','minLength');
     my $adapterFile = LoadConfig::getParam($rH_cfg, 'trim','adapterFile');
+    unless (-f $adapterFile) {die "Error in config file: adapter file $adapterFile does not exist or is not a valid file!\n"};
     my $headcrop    = LoadConfig::getParam($rH_cfg, 'trim','headcrop');
 
     my $rawReadDir    = LoadConfig::getParam($rH_cfg, 'trim','rawReadDir');
+    unless (-d $rawReadDir) {die "Error in config file: raw read directory $rawReadDir does not exist or is not a directory!\n"};
 
     my $outputFastqPair1Name = $outputDir .'/' . $sampleName . '.' . $rH_laneInfo->{'libraryBarcode'} . '.t' . $minQuality . 'l' . $minLength . '.pair1.fastq.gz';
     my $outputFastqPair2Name = $outputDir .'/' . $sampleName . '.' . $rH_laneInfo->{'libraryBarcode'} . '.t' . $minQuality . 'l' . $minLength . '.pair2.fastq.gz';
@@ -168,9 +175,11 @@ sub singleCommand {
     my $minQuality  = LoadConfig::getParam($rH_cfg, 'trim','minQuality');
     my $minLength   = LoadConfig::getParam($rH_cfg, 'trim','minLength');
     my $adapterFile = LoadConfig::getParam($rH_cfg, 'trim','adapterFile');
+    unless (-f $adapterFile) {die "Error in config file: adapter file $adapterFile does not exist or is not a valid file!\n"};
     my $headcrop    = LoadConfig::getParam($rH_cfg, 'trim','headcrop');
 
     my $rawReadDir    = LoadConfig::getParam($rH_cfg, 'trim','rawReadDir');
+    unless (-d $rawReadDir) {die "Error in config file: raw read directory $rawReadDir does not exist or is not a directory!\n"};
 
     my $outputFastqName = $outputDir . '/' . $sampleName . '.' . $rH_laneInfo->{'libraryBarcode'} . '.t' . $minQuality . 'l' . $minLength . '.single.fastq.gz';
     my $outputTrimLog = $outputDir . '/' . $sampleName . '.' . $rH_laneInfo->{'libraryBarcode'} . '.trim.out';
