@@ -55,7 +55,7 @@ sub count {
     
     $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'generateIndexCount','moduleVersion.java') . ' &&'; 
     $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'generateIndexCount', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'generateIndexCount', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'generateIndexCount', 'maxRam').' -jar ' . LoadConfig::getParam($rH_cfg, 'generateIndexCount', 'jar');
-    $command .= ' MAX_MISMATCHES=1 NUM_PROCESSORS=12 BARCODE_FILE=' . LoadConfig::getParam($rH_cfg, 'generateIndexCount', 'barcodeFile');
+    $command .= ' MAX_MISMATCHES=1 NUM_PROCESSORS=3 BARCODE_FILE=' . LoadConfig::getParam($rH_cfg, 'generateIndexCount', 'barcodeFile');
     $command .= ' BASECALLS_DIR='.$baseCallDir.' LANE='.$lane.' READ_STRUCTURE='.$mask.' METRICS_FILE='.$outputFile;
     $command .= ' TMP_DIR='.LoadConfig::getParam($rH_cfg, 'generateIndexCount', 'tmpDir');
 

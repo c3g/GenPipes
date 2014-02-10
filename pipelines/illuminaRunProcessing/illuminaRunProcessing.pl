@@ -215,6 +215,8 @@ sub generateIndexCount {
         $mask .= $indexLength.'B';
         $indexPrinted=1;
       }
+    } elsif ($indexPrinted == 1) {
+        last; # Don't write the last read, it saves some time!
     } else {
       $mask .= $rH_readInfo->{'nbCycles'}.'T';
     }
