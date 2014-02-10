@@ -80,7 +80,7 @@ sub align {
 
   if (!$ro_job->isUp2Date()) {
     my $command;
-    $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'align','moduleVersion.bowtie') ; 
+    $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'align','moduleVersion.bowtie') ;
     $command .= ' ' .LoadConfig::getParam($rH_cfg, 'align','moduleVersion.tophat') ;
     $command .= ' ' .LoadConfig::getParam($rH_cfg, 'align','moduleVersion.samtools').' &&'; 
     $command .= ' tophat';

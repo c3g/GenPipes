@@ -53,8 +53,8 @@ sub fastqToFasta {
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
 		# Fastq to Fasta 
-		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'prinseq', 'moduleVersion.memtime').' ;';
-		$cmd .= ' module load '.LoadConfig::getParam($rH_cfg, 'prinseq', 'moduleVersion.prinseq').' ;';
+		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'prinseq', 'moduleVersion.memtime').' &&';
+		$cmd .= ' module load '.LoadConfig::getParam($rH_cfg, 'prinseq', 'moduleVersion.prinseq').' &&';
 		$cmd .= ' memtime';
 		$cmd .= ' prinseq-lite.pl';
 		$cmd .= ' -verbose';

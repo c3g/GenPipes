@@ -169,7 +169,7 @@ sub cuffcompare {
         $command .= ' cuffcompare -o ' .$outputPrefix;
         $command .= ' -r ' .LoadConfig::getParam($rH_cfg, 'cuffcompare','referenceGtf');
         $command .= ' -R ' .LoadConfig::getParam($rH_cfg, 'fpkm','referenceFasta');
-        $command .= ' ' .$mergeListString .' &&';
+        $command .= ' -T ' .$mergeListString .' &&';
         $command .= ' formatDenovoCombinedGTF.py' ;
         $command .= ' -c ' .$outputPrefix .'.combined.gtf';
         $command .= ' -t ' .$outputPrefix .'.tracking';

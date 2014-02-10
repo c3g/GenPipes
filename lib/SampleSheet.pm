@@ -119,7 +119,7 @@ sub parseSampleSheet {
   my $line = <SAMPLE_SHEET>;
   $csv->parse($line);
   my @headers = $csv->fields();
-  my ($nameIdx,$libraryBarcodeIdx,$runIdIdx,$laneIdx,$runTypeIdx,$statusIdx,$qualOffsetIdx,$processingSheetIdIdx, $libSourceIdx) = parseHeaderIndexes(\@headers);
+  my ($nameIdx,$libraryBarcodeIdx,$runIdIdx,$laneIdx,$runTypeIdx,$statusIdx,$qualOffsetIdx,$bedFilesIdx,$processingSheetIdIdx, $libSourceIdx) = parseHeaderIndexes(\@headers);
 
   while($line = <SAMPLE_SHEET>) {
     $csv->parse($line);
@@ -136,6 +136,8 @@ sub parseSampleSheet {
     $sampleInfo{'lane'} = $values[$laneIdx];
     $sampleInfo{'runType'} = $values[$runTypeIdx];
     $sampleInfo{'qualOffset'} = $values[$qualOffsetIdx];
+    my @bedFiles = split(';', $values[$bedFilesIdx]);
+    $sampleInfo{'bedFiles'} = \@bedFiles;
     $sampleInfo{'processingSheetId'} = $values[$processingSheetIdIdx];
     $sampleInfo{'libSource'} = $values[$libSourceIdx];
 
@@ -166,6 +168,7 @@ sub parseHeaderIndexes {
   my $runTypeIdx=-1;
   my $statusIdx=-1;
   my $qualOffsetIdx=-1;
+  my $bedFilesIdx=-1;
   my $processingSheetIdIdx=-1;
   my $libSourceIdx = -1;
 	
@@ -193,6 +196,9 @@ sub parseHeaderIndexes {
     elsif($header eq "Quality Offset") {
       $qualOffsetIdx=$idx;
     }
+    elsif($header eq "BED Files") {
+      $bedFilesIdx=$idx;
+    }
     elsif($header eq "ProcessingSheetId") {
       $processingSheetIdIdx=$idx;
     }
@@ -202,6 +208,7 @@ sub parseHeaderIndexes {
   }
 
   my $sampleSheetErrors="";
+  my $sampleSheetWarnings="";
   if($nameIdx==-1) {
     $sampleSheetErrors.="Missing Sample Name\n";
   }
@@ -223,17 +230,23 @@ sub parseHeaderIndexes {
   if($qualOffsetIdx==-1) {
       $sampleSheetErrors.="Missing Quality Offset\n";
   }
+  if($bedFilesIdx==-1) {
+    $sampleSheetWarnings.="Missing BED Files\n";
+  }
   if($processingSheetIdIdx==-1) {
-      $sampleSheetErrors.="Missing Processing Sheet Id\n";
+    $sampleSheetErrors.="Missing Processing Sheet Id\n";
   }
   if($libSourceIdx==-1) {
-      $sampleSheetErrors.="Missing Library Source\n";
+    $sampleSheetErrors.="Missing Library Source\n";
   }
-  
+  if(length($sampleSheetWarnings) > 0) {
+    warn $sampleSheetWarnings;
+  }
   if(length($sampleSheetErrors) > 0) {
     die $sampleSheetErrors;
   }
-  
-  return ($nameIdx,$libraryBarcodeIdx,$runIdIdx,$laneIdx,$runTypeIdx,$statusIdx,$qualOffsetIdx,$processingSheetIdIdx,$libSourceIdx);
+
+  return ($nameIdx,$libraryBarcodeIdx,$runIdIdx,$laneIdx,$runTypeIdx,$statusIdx,$qualOffsetIdx,$bedFilesIdx,$processingSheetIdIdx,$libSourceIdx);
+
 }
 1;

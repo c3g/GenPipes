@@ -6,11 +6,11 @@ I<PacBioTools>
 
 =head1 SYNOPSIS
 
-PacBioTools->getCutoff()
+PacBioTools->run()
 
 =head1 DESCRIPTION
 
-B<PacBioTools> This a library to analyze PacBio data in complement to SmrtAnalysis suite.
+B<PacBioTools> This a library to analyze PacBio data using the SmrtAnalysis suite.
 
 Input = file_name
 
@@ -54,14 +54,14 @@ sub getCutoff {
 	my $outfile          = shift;
 
   	my $ro_job = new Job();
-	$ro_job->testInputOutputs([$infile], [$outfile.".fasta"]);
+	$ro_job->testInputOutputs([$infile], [$outfile]);
 
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
 	
 		# Choose a subread length threshold such that subreads above the threshold provide about 20x coverage of the genome.
-		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' ;';
-		$cmd .= ' module load '.LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.mugqictools').' ;';
+		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' &&';
+		$cmd .= ' module load '.LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.mugqictools').' &&';
 		$cmd .= ' memtime';
 		$cmd .= ' pacBioGetCutoff.pl';
 		$cmd .= ' --infile ' . $infile;
@@ -90,8 +90,8 @@ sub celeraConfig {
 
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
-		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' ;';
-		$cmd .= ' module load '.LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.mugqictools').' ;';
+		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' &&';
+		$cmd .= ' module load '.LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.mugqictools').' &&';
 		$cmd .= ' memtime';
 		$cmd .= ' pacBioAssemblyCeleraConfig.pl';
 		$cmd .= ' --infile ' . $infile;
@@ -118,7 +118,7 @@ sub celeraConfig {
 sub assemblyStats{
  	my $rH_cfg                = shift;
 	my $filteredSummary       = shift;
-	my $assemblyQc            = shift;
+	#my $assemblyQc            = shift;
 	my $contigs               = shift;
 	my $sampleName            = shift;
 	my $suffix                = shift;
@@ -128,19 +128,19 @@ sub assemblyStats{
 
   	my $ro_job = new Job();
 	$ro_job->testInputOutputs(
-		[$assemblyQc, $filteredSummary],
+		[$filteredSummary],
 		[$outdir."/summaryTableAssembly.tsv", $outdir."/summaryTableReads.tsv"]
 	);
 
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
-		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' ;';
-		$cmd .= ' module load '.LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.R').' ;';
-		$cmd .= ' module load '.LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.mugqictools').' ;';
+		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' &&';
+		$cmd .= ' module load '.LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.R').' &&';
+		$cmd .= ' module load '.LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.mugqictools').' &&';
 		$cmd .= ' memtime ';
 		$cmd .= ' pacBioAssemblyStats.pl';
 		$cmd .= ' --filteredSummary ' . $filteredSummary;
-		$cmd .= ' --assemblyQc ' . $assemblyQc;
+		#$cmd .= ' --assemblyQc ' . $assemblyQc;
 		$cmd .= ' --contigs ' . $contigs;
 		$cmd .= ' --sampleName ' . $sampleName;
 		$cmd .= ' --suffix ' . $suffix;
@@ -166,8 +166,8 @@ sub splitReads{
 
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
-		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' ;';
-		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.mugqictools').' ;';
+		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' &&';
+		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.mugqictools').' &&';
 		$cmd .= ' memtime';
 		$cmd .= ' pacBioSplitReads.pl';
 		$cmd .= ' --infile ' . $subreads;
@@ -180,5 +180,33 @@ sub splitReads{
 	}
 	return $ro_job;
 }
+
+sub compile{
+ 	my $rH_cfg              = shift;
+	my $indir               = shift;
+	my $sampleName          = shift;
+	my $estimatedGenomeSize = shift;
+	my $outfile             = shift;
+
+  	my $ro_job = new Job();
+	$ro_job->testInputOutputs(undef, undef);
+
+	if (!$ro_job->isUp2Date()) {
+		my $cmd = '';
+		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' ;';
+		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.mugqictools').' ;';
+		$cmd .= ' memtime';
+		$cmd .= ' pacBioCompileStats.pl';
+		$cmd .= ' --indir ' . $indir;
+		$cmd .= ' --estimatedGenomeSize ' . $estimatedGenomeSize;
+		$cmd .= ' --sampleName ' . $sampleName;
+		$cmd .= ' > ' . $outfile;
+
+		$ro_job->addCommand($cmd);
+
+	}
+	return $ro_job;
+}
+
 
 1;
