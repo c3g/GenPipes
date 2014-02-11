@@ -214,7 +214,7 @@ sub rsemPrepareReference {
 
     $command .= "run_RSEM_align_n_estimate.pl \\
       --transcripts \$WORK_DIR/trinity_out_dir/Trinity.fasta \\
-      --just_prep_reference ";
+      --just_prep_reference \\\n";
 
     $rO_job->addCommand($command);
   }
@@ -249,36 +249,6 @@ sub rsem {
       --prefix $sample \\
       --output_dir \$WORK_DIR/rsem/$sample \\
       --thread_count " . LoadConfig::getParam($rH_cfg, 'rsem', 'rsemCPU', 1) . " \\\n";
-
-    $rO_job->addCommand($command);
-  }
-  return $rO_job;
-}
-
-sub edgeR {
-  my $rH_cfg = shift;
-  my $workDirectory = shift;
-
-  my $rO_job = new Job();
-
-  if (!$rO_job->isUp2Date()) {
-    my $command = "\n";
-
-    $command .= LoadConfig::moduleLoad($rH_cfg, [
-      ['trinity', 'moduleVersion.trinity'],
-      ['trinity', 'moduleVersion.cranR']
-    ]) . " && \\\n";
-
-    $command .= "mkdir -p \$WORK_DIR/edgeR; ";
-
-    $command .= "merge_RSEM_frag_counts_single_table.pl \\
-      \$WORK_DIR/rsem/*/*.genes.results \\
-      > \$WORK_DIR/edgeR/genes.counts.matrix; ";
-
-    $command .= "run_DE_analysis.pl \\
-      --matrix \$WORK_DIR/edgeR/genes.counts.matrix \\
-      --method edgeR \\
-      --output \$WORK_DIR/edgeR ";
 
     $rO_job->addCommand($command);
   }
