@@ -325,7 +325,7 @@ sub generateMD5 {
       }
 
       $ro_job->addCommand($command);
-      my $jobId = SubmitToCluster::printSubmitCmd($rH_cfg, "generateMD5", "$runID.$lane.$rH_sample->{'name'}", 'md5_'.$rH_sample->{'name'}, $dependencies, $rH_sample->{'name'}, $ro_job);
+      my $jobId = SubmitToCluster::printSubmitCmd($rH_cfg, "generateMD5", "$runID.$lane", 'md5_'.$rH_sample->{'processingSheetId'}, $dependencies, $rH_sample->{'processingSheetId'}, $ro_job);
       push (@{$step->{'jobIds'}->{$GLOBAL_DEP_KEY}}, $jobId);
     }
   }
@@ -357,7 +357,7 @@ sub generateQCGraphs {
     }
     my $ro_job = BVATools::qc($rH_cfg, $read1, $read2, "FASTQ", $regionName, $output);
     if (!$ro_job->isUp2Date()) {
-      my $jobId = SubmitToCluster::printSubmitCmd($rH_cfg, "generateQCGraphs", "$runID.$lane.$rH_sample->{'name'}", 'qc_'.$rH_sample->{'name'}, $dependencies, $rH_sample->{'name'}, $ro_job);
+      my $jobId = SubmitToCluster::printSubmitCmd($rH_cfg, "generateQCGraphs", "$runID.$lane", 'qc_'.$rH_sample->{'processingSheetId'}, $dependencies, $rH_sample->{'processingSheetId'}, $ro_job);
       push (@{$step->{'jobIds'}->{$GLOBAL_DEP_KEY}}, $jobId);
     }
   }
@@ -415,7 +415,7 @@ sub generateBlasts {
         $command .= 'runBlast.sh '.$nbBlastsToDo.' '. $outputPrefix.' '. $read1File . ' ' . $read2File;
       }
       $ro_job->addCommand($command);
-      my $jobId = SubmitToCluster::printSubmitCmd($rH_cfg, "generateBlasts", "$runID.$lane.$rH_sample->{'name'}", 'blast_'.$rH_sample->{'name'}, $dependencies, $rH_sample->{'name'}, $ro_job);
+      my $jobId = SubmitToCluster::printSubmitCmd($rH_cfg, "generateBlasts", "$runID.$lane", 'blast_'.$rH_sample->{'processingSheetId'}, $dependencies, $rH_sample->{'processingSheetId'}, $ro_job);
       push (@{$step->{'jobIds'}->{$GLOBAL_DEP_KEY}}, $jobId);
     }
   }
@@ -464,7 +464,7 @@ sub align {
     my $ro_bwaJob = BWA::mem($rH_cfg, $sampleName, $pair1, $pair2, $pair1, $outputAlnPrefix, $rgId, $rgSampleName, $rgLibrary, $rgPlatformUnit, $rgCenter, $ref);
     if(!$ro_bwaJob->isUp2Date()) {
       print 'mkdir -p '.$outputAlnDir."\n";
-      my $jobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mem", "$runID.$lane.$rH_laneInfo->{'name'}", 'BWA_MEM_'.$sampleName, $jobDependency, $sampleName, $ro_bwaJob);
+      my $jobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mem", "$runID.$lane", 'BWA_MEM_'.$rH_laneInfo->{'processingSheetId'}, $jobDependency, $rH_laneInfo->{'processingSheetId'}, $ro_bwaJob);
       push (@{$step->{'jobIds'}->{$sampleName}}, $jobId);
     }
   }
@@ -503,15 +503,28 @@ sub laneMetrics {
 
     my $rO_job = Picard::markDup($rH_cfg, $sampleName, $sortedLaneBamFile, $sortedLaneDupBamFile, $outputMetrics);
     if(!$rO_job->isUp2Date()) {
-      my $jobId = SubmitToCluster::printSubmitCmd($rH_cfg, "markDup",$runID . "_" . $rH_laneInfo->{'lane'}, 'LANEMARKDUP_'.$rH_laneInfo->{'name'}, $jobDependency, $sampleName, $rO_job);
+      my $jobId = SubmitToCluster::printSubmitCmd($rH_cfg, "markDup",$runID . "_" . $rH_laneInfo->{'lane'}, 'LANEMARKDUP_'.$rH_laneInfo->{'processingSheetId'}, $jobDependency, $rH_laneInfo->{'processingSheetId'}, $rO_job);
       push (@{$step->{'jobIds'}->{$sampleName}}, $jobId);
     }
 
     $outputMetrics = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.dup.metrics';
     my $rO_collectMetricsJob = Picard::collectMetrics($rH_cfg, $sortedLaneBamFile, $outputMetrics, $ref);
     if(!$rO_collectMetricsJob->isUp2Date()) {
-      my $jobId2 = SubmitToCluster::printSubmitCmd($rH_cfg, "collectMetrics", $runID . "_" . $rH_laneInfo->{'lane'}, 'COLLECTMETRICS_'.$rH_laneInfo->{'name'}, $jobDependency, $sampleName, $rO_collectMetricsJob);
+      my $jobId2 = SubmitToCluster::printSubmitCmd($rH_cfg, "collectMetrics", $runID . "_" . $rH_laneInfo->{'lane'}, 'COLLECTMETRICS_'.$rH_laneInfo->{'processingSheetId'}, $jobDependency, $rH_laneInfo->{'processingSheetId'}, $rO_collectMetricsJob);
       push (@{$step->{'jobIds'}->{$sampleName}}, $jobId2);
+    }
+    
+    $outputMetrics = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.dup.metrics.nodup.targetCoverage.txt';
+    my $coverageBED = BVATools::resolveSampleBED($rH_cfg, $rH_laneInfo);
+    my $rO_coverageJob = BVATools::depthOfCoverage($rH_cfg, $sortedLaneBamFile, $outputMetrics, $coverageBED);
+    if(!$rO_coverageJob->isUp2Date()) {
+      SubmitToCluster::printSubmitCmd($rH_cfg, "depthOfCoverage", $runID . "_" . $rH_laneInfo->{'lane'}, 'LANEDEPTHOFCOVERAGE_'.$rH_laneInfo->{'processingSheetId'}, $jobDependency, $rH_laneInfo->{'processingSheetId'}, $rO_coverageJob);
+      if($first == 1) {
+        print 'LANE_METRICS_JOB_IDS='.$rO_coverageJob->getCommandJobId(0)."\n";
+      }
+      else {
+        print 'LANE_METRICS_JOB_IDS=${LANE_METRICS_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'clusterDependencySep').$rO_coverageJob->getCommandJobId(0)."\n";
+      }
     }
   }
 }
@@ -547,7 +560,7 @@ sub generateBamMd5 {
       $command .= '; md5sum -b '.$sortedLaneDupFile . '.bai > ' . $sortedLaneDupFile . '.bai.md5';
 
       $ro_job->addCommand($command);
-      my $jobId = SubmitToCluster::printSubmitCmd($rH_cfg, "generateBamMD5", "$runID.$lane.$sampleName", 'bmd5_'.$sampleName, $dependencies, $sampleName, $ro_job);
+      my $jobId = SubmitToCluster::printSubmitCmd($rH_cfg, "generateBamMD5", "$runID.$lane", 'bmd5_'.$rH_sample->{'processingSheetId'}, $dependencies, $rH_sample->{'processingSheetId'}, $ro_job);
       push (@{$step->{'jobIds'}->{$sampleName}}, $jobId);
       push (@{$step->{'jobIds'}->{$GLOBAL_DEP_KEY}}, $jobId);
     }
