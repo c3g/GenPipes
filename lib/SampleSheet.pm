@@ -74,6 +74,9 @@ sub parseSampleSheetAsHashByProcessingId {
   my $rA_SampleLaneInfos = parseSampleSheet($fileName);
   my %sampleInfo;
   for my $rH_Sample (@$rA_SampleLaneInfos) {
+    if (!defined($rH_Sample->{'processingSheetId'})) {
+      die "Missing processingSheetId";
+    }
     if(!defined $sampleInfo{ $rH_Sample->{'processingSheetId'} }) {
       $sampleInfo{ $rH_Sample->{'processingSheetId'} } = [];
     }
@@ -138,7 +141,9 @@ sub parseSampleSheet {
     $sampleInfo{'qualOffset'} = $values[$qualOffsetIdx];
     my @bedFiles = split(';', $values[$bedFilesIdx]);
     $sampleInfo{'bedFiles'} = \@bedFiles;
-    $sampleInfo{'processingSheetId'} = $values[$processingSheetIdIdx];
+    if ($processingSheetIdIdx > -1) {
+      $sampleInfo{'processingSheetId'} = $values[$processingSheetIdIdx];
+    }
     $sampleInfo{'libSource'} = $values[$libSourceIdx];
 
     if($values[$runTypeIdx] eq "PAIRED_END") {
@@ -232,9 +237,6 @@ sub parseHeaderIndexes {
   }
   if($bedFilesIdx==-1) {
     $sampleSheetWarnings.="Missing BED Files\n";
-  }
-  if($processingSheetIdIdx==-1) {
-    $sampleSheetErrors.="Missing Processing Sheet Id\n";
   }
   if($libSourceIdx==-1) {
     $sampleSheetErrors.="Missing Library Source\n";
