@@ -255,45 +255,13 @@ sub submitJob {
   my @A_stepParentJobIds = map {@$_} @AoA_stepParentJobIds;
 
   # Concatenate all job IDs with cluster dependency separator
-  $dependencies = join (getParam($rH_cfg, 'default', 'clusterDependencySep'), map {"\$" . $_} @A_stepParentJobIds);
+  $dependencies = join (LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep', 1), map {"\$" . $_} @A_stepParentJobIds);
 
   # Write out the job submission
   my $jobId = SubmitToCluster::printSubmitCmd($rH_cfg, $stepName, undef, $jobIdPrefix, $dependencies, $sample, $rO_job);
 
   # Store step job ID for future dependencies retrieval
   push (@{$step->{'jobIds'}}, $jobId);
-}
-
-# Return parameter value from configuration file or die if this parameter is not defined
-sub getParam {
-  my $rH_cfg = shift;
-  my $section = shift;
-  my $paramName = shift;
-
-  my $paramValue = LoadConfig::getParam($rH_cfg, $section, $paramName);
-
-  if ($paramValue) {
-    return $paramValue;
-  } else {
-    die "Error: parameter \"[" . $section . "] " . $paramName . "\" is not defined in $configFile";
-  }
-}
-
-# Return "module load ..." command string from the given list of modules as [[section, moduleVersion], ...]
-sub moduleLoad {
-  my $rH_cfg = shift;
-  my $rA_modules = shift;
-
-  # Retrieve module values from the configuration file
-  my @moduleValues = map {getParam($rH_cfg, $_->[0], $_->[1])} @$rA_modules;
-
-  # Check by a system call if module is available
-  for my $moduleValue (@moduleValues) {
-    my $moduleShowOutput = `source /etc/profile.d/modules.sh; module show $moduleValue 2>&1`;
-    $moduleShowOutput !~ /Error/i or die "Error in $configFile:\n$moduleShowOutput";
-  }
-
-  return "module load " . join(" ", @moduleValues) . "\n";
 }
 
 sub getReadType {
@@ -338,7 +306,7 @@ sub trim {
   my $rAoH_sampleLanes = shift;
 
   # Check raw read directory
-  my $rawReadDirectory = getParam($rH_cfg, 'default', 'rawReadDir');
+  my $rawReadDirectory = LoadConfig::getParam($rH_cfg, 'default', 'rawReadDir', 1);
   unless (-d $rawReadDirectory) {die "Error in $configFile: raw read directory $rawReadDirectory does not exist or is not a directory!\n"};
 
   # Create trim job per sample per lane
@@ -358,7 +326,7 @@ sub normalization {
   my $sample = shift;
   my $rAoH_sampleLanes = shift;
 
-  my $readFilePart = ".t" . getParam($rH_cfg, 'trim', 'minQuality') . "l" . getParam($rH_cfg, 'trim', 'minLength');
+  my $readFilePart = ".t" . LoadConfig::getParam($rH_cfg, 'trim', 'minQuality', 1) . "l" . LoadConfig::getParam($rH_cfg, 'trim', 'minLength', 1);
   my $rO_job;
 
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
@@ -390,9 +358,9 @@ sub normalizationMergeResults {
   my @A_rightFastq = ();
   my @A_singleFastq = ();
 
-  my $maxCoverage = getParam($rH_cfg, 'normalization', 'maxCoverage');
-  my $kmerSize = getParam($rH_cfg, 'normalization', 'kmerSize');
-  my $maxPctStdev = getParam($rH_cfg, 'normalization', 'maxPctStdev');
+  my $maxCoverage = LoadConfig::getParam($rH_cfg, 'normalization', 'maxCoverage', 1);
+  my $kmerSize = LoadConfig::getParam($rH_cfg, 'normalization', 'kmerSize', 1);
+  my $maxPctStdev = LoadConfig::getParam($rH_cfg, 'normalization', 'maxPctStdev', 1);
 
   my $normFileSuffix = ".normalized_K" . $kmerSize . "_C" . $maxCoverage . "_pctSD" . $maxPctStdev . ".fq";
 
@@ -432,9 +400,9 @@ sub trinity {
 
   my $readType = getReadType($nanuqSampleSheet);
 
-  my $maxCoverage = getParam($rH_cfg, 'normalization', 'maxCoverage');
-  my $kmerSize = getParam($rH_cfg, 'normalization', 'kmerSize');
-  my $maxPctStdev = getParam($rH_cfg, 'normalization', 'maxPctStdev');
+  my $maxCoverage = LoadConfig::getParam($rH_cfg, 'normalization', 'maxCoverage', 1);
+  my $kmerSize = LoadConfig::getParam($rH_cfg, 'normalization', 'kmerSize', 1);
+  my $maxPctStdev = LoadConfig::getParam($rH_cfg, 'normalization', 'maxPctStdev', 1);
 
   my $normFileSuffix = ".normalized_K" . $kmerSize . "_C" . $maxCoverage . "_pctSD" . $maxPctStdev . ".fq";
 
@@ -455,9 +423,9 @@ sub blastSplitQuery {
   if (!$rO_job->isUp2Date()) {
     my $command = "\n";
 
-    $command .= moduleLoad($rH_cfg, [
+    $command .= LoadConfig::moduleLoad($rH_cfg, [
       ['blast', 'moduleVersion.exonerate']
-    ]);
+    ]) . " && \\\n";
 
     my $trinityFastaFile = "\$WORK_DIR/trinity_out_dir/Trinity.fasta";
     my $trinityIndexFile = "\$WORK_DIR/trinity_out_dir/Trinity.idx";
@@ -473,7 +441,7 @@ sub blastSplitQuery {
     # Split Trinity assembly FASTA into chunks for BLAST parallelization
     my $chunkDir = "\$WORK_DIR/blast/chunks";
     $command .= "mkdir -p $chunkDir\n";
-    $command .= "fastasplit -f $reducedTrinityFastaFile -o $chunkDir -c " . getParam($rH_cfg, 'blast', 'blastJobs') . " \\\n";
+    $command .= "fastasplit -f $reducedTrinityFastaFile -o $chunkDir -c " . LoadConfig::getParam($rH_cfg, 'blast', 'blastJobs', 1) . " \\\n";
 
     $rO_job->addCommand($command);
   }
@@ -484,7 +452,7 @@ sub blast {
   my $rH_cfg = shift;
   my $step = shift;
 
-  my $numJobs = getParam($rH_cfg, 'blast', 'blastJobs');
+  my $numJobs = LoadConfig::getParam($rH_cfg, 'blast', 'blastJobs', 1);
 
   for (my $jobIndex = 0; $jobIndex < $numJobs; $jobIndex++) {
     # fastasplit creates FASTA chunk files numbered with 7 digits and padded with leading 0s
@@ -494,16 +462,16 @@ sub blast {
     if (!$rO_job->isUp2Date()) {
       my $command = "\n";
 
-      $command .= moduleLoad($rH_cfg, [
+      $command .= LoadConfig::moduleLoad($rH_cfg, [
         ['blast', 'moduleVersion.tools'],
         ['blast', 'moduleVersion.exonerate'],
         ['blast', 'moduleVersion.blast']
-      ]);
+      ]) . " && \\\n";
 
-      my $cores = getParam($rH_cfg, 'blast', 'blastCPUperJob');
-      my $program = getParam($rH_cfg, 'blast', 'blastProgram');
-      my $db = getParam($rH_cfg, 'blast', 'blastDb');
-      my $options = getParam($rH_cfg, 'blast', 'blastOptions');
+      my $cores = LoadConfig::getParam($rH_cfg, 'blast', 'blastCPUperJob', 1);
+      my $program = LoadConfig::getParam($rH_cfg, 'blast', 'blastProgram', 1);
+      my $db = LoadConfig::getParam($rH_cfg, 'blast', 'blastDb', 1);
+      my $options = LoadConfig::getParam($rH_cfg, 'blast', 'blastOptions', 1);
       my $chunkDir = "\$WORK_DIR/blast/chunks";
       my $chunkQuery = "$chunkDir/Trinity.longest_transcript.fasta_chunk_$chunkIndex";
       my $chunkResult = "$chunkDir/$program" . "_Trinity.longest_transcript_$db" . "_chunk_$chunkIndex.tsv";
@@ -526,8 +494,8 @@ sub blastMergeResults {
   if (!$rO_job->isUp2Date()) {
     my $command = "\n";
 
-    my $program = getParam($rH_cfg, 'blast', 'blastProgram');
-    my $db = getParam($rH_cfg, 'blast', 'blastDb');
+    my $program = LoadConfig::getParam($rH_cfg, 'blast', 'blastProgram', 1);
+    my $db = LoadConfig::getParam($rH_cfg, 'blast', 'blastDb', 1);
     my $blastDir = "\$WORK_DIR/blast";
     my $chunkResults = "$blastDir/chunks/$program" . "_Trinity.longest_transcript_$db" . "_chunk_*.tsv";
     my $result = "$blastDir/$program" . "_Trinity.longest_transcript_$db.tsv";
@@ -580,8 +548,8 @@ sub differentialGeneExpression {
     my $command = "\n";
 
     # Retrieve BLAST result file
-    my $program = getParam($rH_cfg, 'blast', 'blastProgram');
-    my $db = getParam($rH_cfg, 'blast', 'blastDb');
+    my $program = LoadConfig::getParam($rH_cfg, 'blast', 'blastProgram', 1);
+    my $db = LoadConfig::getParam($rH_cfg, 'blast', 'blastDb', 1);
     my $blastDir = "\$WORK_DIR/blast";
     my $blastResult = "$blastDir/$program" . "_Trinity.longest_transcript_$db.tsv";
 
@@ -591,11 +559,11 @@ sub differentialGeneExpression {
     my $genesMatrix = "$dgeDir/genes.counts.matrix";
     my $genesAnnotatedMatrix = "$dgeDir/genes.counts.$db.matrix";
 
-    $command .= moduleLoad($rH_cfg, [
+    $command .= LoadConfig::moduleLoad($rH_cfg, [
       ['differentialGeneExpression', 'moduleVersion.trinity'],
       ['differentialGeneExpression', 'moduleVersion.cranR'],
       ['differentialGeneExpression', 'moduleVersion.tools']
-    ]);
+    ]) . " && \\\n";
 
     $command .= "mkdir -p $dgeDir\n";
 
@@ -639,7 +607,7 @@ sub metrics {
   my $metricsDirectory = "\$WORK_DIR/metrics";
   print "mkdir -p $metricsDirectory\n";
 
-  my $libraryType = getParam($rH_cfg, 'default', 'libraryType');
+  my $libraryType = LoadConfig::getParam($rH_cfg, 'default', 'libraryType', 1);
   my $trimDirectory = "\$WORK_DIR/reads";
   my $pattern = "trim.stats.csv";
   my $outputFile = "$metricsDirectory/trimming.stats";
