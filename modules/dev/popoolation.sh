@@ -29,7 +29,7 @@ module-whatis \"$SOFTWARE  is designed to analyze next generation sequencing dat
                       
 set             root                \$::env(MUGQIC_INSTALL_HOME_DEV)/software/$SOFTWARE/$SOFTWARE-$VERSION ;  
 prepend-path    PATH                \$root;  
-setenv          PERL5LIB            \$root/Modules; 
+prepend-path    PERL5LIB            \$root/Modules; 
 setenv          POPOOLATION_PATH    \$root;
 " > $VERSION
 
