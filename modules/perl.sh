@@ -24,7 +24,7 @@ cd $INSTALL_DOWNLOAD
 wget http://www.cpan.org/src/5.0/$SOFTWARE-$VERSION.tar.gz     
 tar -xvf $SOFTWARE-$VERSION.tar.gz                             
 cd $SOFTWARE-$VERSION                                          
-./Configure -des -Dprefix=$INSTALL_PATH/$SOFTWARE-$VERSION     
+./Configure -des -Dusethreads -Dprefix=$INSTALL_PATH/$SOFTWARE-$VERSION     
 make  
 make install
 
@@ -44,6 +44,8 @@ module-whatis \"$SOFTWARE-$VERSION  \" ;
 set             root                \$::env(MUGQIC_INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE-$VERSION
 prepend-path    PATH                \$root/bin                                                           
 prepend-path    PERL5LIB            \$root/lib
+prepend-path    PERL5LIB            \$root/lib/site_perl/5.18.2
+prepend-path    PERL5LIB            \$root/lib/5.18.2
 " > $VERSION
 
 ################################################################################
