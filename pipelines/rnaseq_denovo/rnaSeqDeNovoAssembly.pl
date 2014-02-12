@@ -85,13 +85,18 @@ my @A_steps = (
   },
   {
     'name'   => 'normalization',
-    'loop'   => 'global',
+    'loop'   => 'sample',
     'parent' => ['trim']
+  },
+  {
+    'name'   => 'normalizationMergeResults',
+    'loop'   => 'global',
+    'parent' => ['normalization']
   },
   {
     'name'   => 'trinity',
     'loop'   => 'global',
-    'parent' => ['normalization']
+    'parent' => ['normalizationMergeResults']
   },
   {
     'name'   => 'blastSplitQuery',
@@ -126,7 +131,7 @@ my @A_steps = (
   {
     'name'   => 'metrics',
     'loop'   => 'global',
-    'parent' => ['normalization']
+    'parent' => ['trim']
   },
   {
     'name'   => 'deliverable',
@@ -141,7 +146,6 @@ my %H_steps =  map {$_->{'name'} => $_} @A_steps;
 # Global variables passed as script options
 my $configFile;
 my $nanuqSampleSheet;
-my $workDirectory;
 my $designFile;
 
 # Main call
@@ -186,10 +190,10 @@ sub main {
   # Assign options
   my $startStep = $opts{'s'};
   my $endStep = $opts{'e'};
+  my $workDirectory = $opts{'w'};
   $configFile = $opts{'c'};
   $nanuqSampleSheet = $opts{'n'};
   $designFile = $opts{'d'};
-  $workDirectory = $opts{'w'};
 
   # Get config values
   unless (defined $configFile) {die "Error: configuration file is not defined! (use -c option)\n" . getUsage()};
@@ -214,11 +218,11 @@ sub main {
       foreach my $sample (keys %$rHoAoH_sampleInfo) {
         my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sample};
         # Sample step functions need sample and lanes parameters
-        &$stepName(\%cfg, $step, $workDirectory, $sample, $rAoH_sampleLanes);
+        &$stepName(\%cfg, $step, $sample, $rAoH_sampleLanes);
       }
     # Global step creates 1 job only
     } else {
-      &$stepName(\%cfg, $step, $workDirectory);
+      &$stepName(\%cfg, $step);
     }
   }
 }
@@ -251,7 +255,7 @@ sub submitJob {
   my @A_stepParentJobIds = map {@$_} @AoA_stepParentJobIds;
 
   # Concatenate all job IDs with cluster dependency separator
-  $dependencies = join (getParam($rH_cfg, 'default', 'clusterDependencySep'), map {"\$" . $_} @A_stepParentJobIds);
+  $dependencies = join (LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep', 1), map {"\$" . $_} @A_stepParentJobIds);
 
   # Write out the job submission
   my $jobId = SubmitToCluster::printSubmitCmd($rH_cfg, $stepName, undef, $jobIdPrefix, $dependencies, $sample, $rO_job);
@@ -260,36 +264,35 @@ sub submitJob {
   push (@{$step->{'jobIds'}}, $jobId);
 }
 
-# Return parameter value from configuration file or die if this parameter is not defined
-sub getParam {
-  my $rH_cfg = shift;
-  my $section = shift;
-  my $paramName = shift;
+sub getReadType {
+  my $nanuqSampleSheet = shift;
 
-  my $paramValue = LoadConfig::getParam($rH_cfg, $section, $paramName);
+  my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($nanuqSampleSheet);
 
-  if ($paramValue) {
-    return $paramValue;
+  my $singleCount = 0;
+  my $pairedCount = 0;
+
+  # Count single/paired run types for each lane of each sample
+  foreach my $sample (keys %$rHoAoH_sampleInfo) {
+    my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sample};
+
+    for my $rH_laneInfo (@$rAoH_sampleLanes) {
+      if ($rH_laneInfo->{'runType'} eq "SINGLE_END") {
+        $singleCount++;
+      } elsif ($rH_laneInfo->{'runType'} eq "PAIRED_END") {
+        $pairedCount++;
+      } else {
+        die "Error in getRunType: unknown runType (can be 'single' or 'paired' only): " . $rH_laneInfo->{'runType'};
+      }
+    }
+  }
+  if ($singleCount > 0 and $pairedCount == 0) {
+    return "single";
+  } elsif ($singleCount == 0 and $pairedCount > 0) {
+    return "paired";
   } else {
-    die "Error: parameter \"[" . $section . "] " . $paramName . "\" is not defined in $configFile";
+    die "Error in getRunType: single and paired reads mix not supported!";
   }
-}
-
-# Return "module load ..." command string from the given list of modules as [[section, moduleVersion], ...]
-sub moduleLoad {
-  my $rH_cfg = shift;
-  my $rA_modules = shift;
-
-  # Retrieve module values from the configuration file
-  my @moduleValues = map {getParam($rH_cfg, $_->[0], $_->[1])} @$rA_modules;
-
-  # Check by a system call if module is available
-  for my $moduleValue (@moduleValues) {
-    my $moduleShowOutput = `source /etc/profile.d/modules.sh; module show $moduleValue 2>&1`;
-    $moduleShowOutput !~ /Error/i or die "Error in $configFile:\n$moduleShowOutput";
-  }
-
-  return "module load " . join(" ", @moduleValues) . "\n";
 }
 
 
@@ -299,12 +302,11 @@ sub moduleLoad {
 sub trim {
   my $rH_cfg = shift;
   my $step = shift;
-  my $workDirectory = shift;
   my $sample = shift;
   my $rAoH_sampleLanes = shift;
 
   # Check raw read directory
-  my $rawReadDirectory = getParam($rH_cfg, 'default', 'rawReadDir');
+  my $rawReadDirectory = LoadConfig::getParam($rH_cfg, 'default', 'rawReadDir', 1);
   unless (-d $rawReadDirectory) {die "Error in $configFile: raw read directory $rawReadDirectory does not exist or is not a directory!\n"};
 
   # Create trim job per sample per lane
@@ -321,49 +323,125 @@ sub trim {
 sub normalization {
   my $rH_cfg = shift;
   my $step = shift;
-  my $workDirectory = shift;
+  my $sample = shift;
+  my $rAoH_sampleLanes = shift;
 
-  my $rO_job = Trinity::normalize_by_kmer_coverage($rH_cfg, $workDirectory);
+  my $readFilePart = ".t" . LoadConfig::getParam($rH_cfg, 'trim', 'minQuality', 1) . "l" . LoadConfig::getParam($rH_cfg, 'trim', 'minLength', 1);
+  my $rO_job;
+
+  for my $rH_laneInfo (@$rAoH_sampleLanes) {
+    my $laneDirectory = $sample . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
+    my $readFilePrefix = "\$WORK_DIR/reads/" . $laneDirectory . "/" . $sample . "." . $rH_laneInfo->{'libraryBarcode'} . $readFilePart;
+    my $normDirectory = "\$WORK_DIR/normalization/$laneDirectory";
+
+    if ($rH_laneInfo->{'runType'} eq "SINGLE_END") {
+      my $single = $readFilePrefix . ".single.fastq.gz";
+      $rO_job = Trinity::normalize_by_kmer_coverage($rH_cfg, undef, undef, [$single], $normDirectory);
+    } elsif ($rH_laneInfo->{'runType'} eq "PAIRED_END") {
+      my $pair1 = $readFilePrefix . ".pair1.fastq.gz";
+      my $pair2 = $readFilePrefix . ".pair2.fastq.gz";
+      $rO_job = Trinity::normalize_by_kmer_coverage($rH_cfg, [$pair1], [$pair2], undef, $normDirectory);
+    } else {
+      die "Error in normalization: unknown read type\n";
+    }
+    submitJob($rH_cfg, $step, $sample . "_" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, $rO_job);
+  }
+}
+
+sub normalizationMergeResults {
+  my $rH_cfg = shift;
+  my $step = shift;
+
+  my $readType = getReadType($nanuqSampleSheet);
+
+  my @A_leftFastq = ();
+  my @A_rightFastq = ();
+  my @A_singleFastq = ();
+
+  my $maxCoverage = LoadConfig::getParam($rH_cfg, 'normalization', 'maxCoverage', 1);
+  my $kmerSize = LoadConfig::getParam($rH_cfg, 'normalization', 'kmerSize', 1);
+  my $maxPctStdev = LoadConfig::getParam($rH_cfg, 'normalization', 'maxPctStdev', 1);
+
+  my $normFileSuffix = ".normalized_K" . $kmerSize . "_C" . $maxCoverage . "_pctSD" . $maxPctStdev . ".fq";
+
+  my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($nanuqSampleSheet);
+
+  # Retrieve single/paired end normalized files for each lane of each sample
+  foreach my $sample (keys %$rHoAoH_sampleInfo) {
+    my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sample};
+
+    for my $rH_laneInfo (@$rAoH_sampleLanes) {
+      my $normDirectory = "\$WORK_DIR/normalization/" . $sample . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
+      if ($readType eq "single") {
+        push (@A_singleFastq, "$normDirectory/single$normFileSuffix");
+      } elsif ($readType eq "paired") {
+        push (@A_leftFastq, "$normDirectory/left$normFileSuffix");
+        push (@A_rightFastq, "$normDirectory/right$normFileSuffix");
+      }
+    }
+  }
+
+  my $rO_job;
+
+  if ($readType eq "single") {
+    # Single-end reads
+    $rO_job = Trinity::normalize_by_kmer_coverage($rH_cfg, undef, undef, \@A_singleFastq, "\$WORK_DIR/normalization/global");
+  } else {
+    # Paired-end reads
+    $rO_job = Trinity::normalize_by_kmer_coverage($rH_cfg, \@A_leftFastq, \@A_rightFastq, undef, "\$WORK_DIR/normalization/global");
+  }
+
   submitJob($rH_cfg, $step, undef, $rO_job);
 }
 
 sub trinity {
   my $rH_cfg = shift;
   my $step = shift;
-  my $workDirectory = shift;
 
-  my $rO_job = Trinity::trinity($rH_cfg, $workDirectory);
+  my $readType = getReadType($nanuqSampleSheet);
+
+  my $maxCoverage = LoadConfig::getParam($rH_cfg, 'normalization', 'maxCoverage', 1);
+  my $kmerSize = LoadConfig::getParam($rH_cfg, 'normalization', 'kmerSize', 1);
+  my $maxPctStdev = LoadConfig::getParam($rH_cfg, 'normalization', 'maxPctStdev', 1);
+
+  my $normFileSuffix = ".normalized_K" . $kmerSize . "_C" . $maxCoverage . "_pctSD" . $maxPctStdev . ".fq";
+
+  my $rO_job;
+  if ($readType eq "single") {
+    $rO_job = Trinity::trinity($rH_cfg, undef, undef, ["\$WORK_DIR/normalization/global/single$normFileSuffix"], "\$WORK_DIR/trinity_out_dir");
+  } else {
+    $rO_job = Trinity::trinity($rH_cfg, ["\$WORK_DIR/normalization/global/left$normFileSuffix"], ["\$WORK_DIR/normalization/global/right$normFileSuffix"], undef, "\$WORK_DIR/trinity_out_dir");
+  }
   submitJob($rH_cfg, $step, undef, $rO_job);
 }
 
 sub blastSplitQuery {
   my $rH_cfg = shift;
   my $step = shift;
-  my $workDirectory = shift;
 
   my $rO_job = new Job();
   if (!$rO_job->isUp2Date()) {
     my $command = "\n";
 
-    $command .= moduleLoad($rH_cfg, [
+    $command .= LoadConfig::moduleLoad($rH_cfg, [
       ['blast', 'moduleVersion.exonerate']
-    ]);
+    ]) . " && \\\n";
 
     my $trinityFastaFile = "\$WORK_DIR/trinity_out_dir/Trinity.fasta";
     my $trinityIndexFile = "\$WORK_DIR/trinity_out_dir/Trinity.idx";
     my $reducedTrinityFastaFile = "\$WORK_DIR/trinity_out_dir/Trinity.longest_transcript.fasta";
 
     # Remove previous Trinity assembly FASTA index if present
-    $command .= "rm -f $trinityIndexFile\n";
+    $command .= "rm -f $trinityIndexFile && \\\n";
     # Create Trinity assembly FASTA index
-    $command .= "fastaindex $trinityFastaFile $trinityIndexFile\n";
+    $command .= "fastaindex $trinityFastaFile $trinityIndexFile && \\\n";
     # Create Trinity assembly FASTA subset with longest transcript per component only
-    $command .= "fastalength $trinityFastaFile | perl -pe 's/ ((\\S+)_seq\\S+)/\\t\\1\\t\\2/' | sort -k3,3 -k1,1gr | uniq -f2 | cut -f2 | fastafetch $trinityFastaFile -i $trinityIndexFile -q stdin > $reducedTrinityFastaFile\n";
+    $command .= "fastalength $trinityFastaFile | perl -pe 's/ ((\\S+)_seq\\S+)/\\t\\1\\t\\2/' | sort -k3,3 -k1,1gr | uniq -f2 | cut -f2 | fastafetch $trinityFastaFile -i $trinityIndexFile -q stdin > $reducedTrinityFastaFile && \\\n";
 
     # Split Trinity assembly FASTA into chunks for BLAST parallelization
     my $chunkDir = "\$WORK_DIR/blast/chunks";
-    $command .= "mkdir -p $chunkDir\n";
-    $command .= "fastasplit -f $reducedTrinityFastaFile -o $chunkDir -c " . getParam($rH_cfg, 'blast', 'blastJobs') . " \\\n";
+    $command .= "mkdir -p $chunkDir && \\\n";
+    $command .= "fastasplit -f $reducedTrinityFastaFile -o $chunkDir -c " . LoadConfig::getParam($rH_cfg, 'blast', 'blastJobs', 1) . " \\\n";
 
     $rO_job->addCommand($command);
   }
@@ -373,9 +451,8 @@ sub blastSplitQuery {
 sub blast {
   my $rH_cfg = shift;
   my $step = shift;
-  my $workDirectory = shift;
 
-  my $numJobs = getParam($rH_cfg, 'blast', 'blastJobs');
+  my $numJobs = LoadConfig::getParam($rH_cfg, 'blast', 'blastJobs', 1);
 
   for (my $jobIndex = 0; $jobIndex < $numJobs; $jobIndex++) {
     # fastasplit creates FASTA chunk files numbered with 7 digits and padded with leading 0s
@@ -385,23 +462,23 @@ sub blast {
     if (!$rO_job->isUp2Date()) {
       my $command = "\n";
 
-      $command .= moduleLoad($rH_cfg, [
+      $command .= LoadConfig::moduleLoad($rH_cfg, [
         ['blast', 'moduleVersion.tools'],
         ['blast', 'moduleVersion.exonerate'],
         ['blast', 'moduleVersion.blast']
-      ]);
+      ]) . " && \\\n";
 
-      my $cores = getParam($rH_cfg, 'blast', 'blastCPUperJob');
-      my $program = getParam($rH_cfg, 'blast', 'blastProgram');
-      my $db = getParam($rH_cfg, 'blast', 'blastDb');
-      my $options = getParam($rH_cfg, 'blast', 'blastOptions');
+      my $cores = LoadConfig::getParam($rH_cfg, 'blast', 'blastCPUperJob', 1);
+      my $program = LoadConfig::getParam($rH_cfg, 'blast', 'blastProgram', 1);
+      my $db = LoadConfig::getParam($rH_cfg, 'blast', 'blastDb', 1);
+      my $options = LoadConfig::getParam($rH_cfg, 'blast', 'blastOptions', 1);
       my $chunkDir = "\$WORK_DIR/blast/chunks";
       my $chunkQuery = "$chunkDir/Trinity.longest_transcript.fasta_chunk_$chunkIndex";
       my $chunkResult = "$chunkDir/$program" . "_Trinity.longest_transcript_$db" . "_chunk_$chunkIndex.tsv";
 
       # Each FASTA chunk is further divided in subchunk per CPU per job as a second level of BLAST parallelization
       # The user must adjust BLAST configuration to optimize num. jobs vs num. CPUs per job, depending on the cluster
-      $command .= "parallelBlast.pl -file $chunkQuery --OUT $chunkResult -n $cores --BLAST \\\"$program -db $db $options\\\"";
+      $command .= "parallelBlast.pl -file $chunkQuery --OUT $chunkResult -n $cores --BLAST \\\"$program -db $db $options\\\" \\\n";
 
       $rO_job->addCommand($command);
     }
@@ -412,26 +489,25 @@ sub blast {
 sub blastMergeResults {
   my $rH_cfg = shift;
   my $step = shift;
-  my $workDirectory = shift;
 
   my $rO_job = new Job();
   if (!$rO_job->isUp2Date()) {
     my $command = "\n";
 
-    my $program = getParam($rH_cfg, 'blast', 'blastProgram');
-    my $db = getParam($rH_cfg, 'blast', 'blastDb');
+    my $program = LoadConfig::getParam($rH_cfg, 'blast', 'blastProgram', 1);
+    my $db = LoadConfig::getParam($rH_cfg, 'blast', 'blastDb', 1);
     my $blastDir = "\$WORK_DIR/blast";
     my $chunkResults = "$blastDir/chunks/$program" . "_Trinity.longest_transcript_$db" . "_chunk_*.tsv";
     my $result = "$blastDir/$program" . "_Trinity.longest_transcript_$db.tsv";
 
     # All BLAST chunks are merged into one file named after BLAST program and reference database
-    $command .= "cat $chunkResults > $result.tmp\n";
+    $command .= "cat $chunkResults > $result.tmp && \\\n";
     # Remove all comment lines except "Fields" one which is placed as first line
-    $command .= "cat <(grep -m1 '^# Fields' $result.tmp) <(grep -v '^#' $result.tmp) > $result\n";
-    $command .= "rm $result.tmp\n";
+    $command .= "cat <(grep -m1 '^# Fields' $result.tmp) <(grep -v '^#' $result.tmp) > $result && \\\n";
+    $command .= "rm $result.tmp && \\\n";
 
     # Create a BLAST results ZIP file for future deliverables
-    $command .= "gzip -c $result > $result.gz";
+    $command .= "gzip -c $result > $result.gz \\\n";
 
     $rO_job->addCommand($command);
   }
@@ -442,9 +518,8 @@ sub blastMergeResults {
 sub rsemPrepareReference {
   my $rH_cfg = shift;
   my $step = shift;
-  my $workDirectory = shift;
 
-  my $rO_job = Trinity::rsemPrepareReference($rH_cfg, $workDirectory);
+  my $rO_job = Trinity::rsemPrepareReference($rH_cfg, "\$WORK_DIR");
   submitJob($rH_cfg, $step, undef, $rO_job);
 }
 
@@ -452,17 +527,15 @@ sub rsemPrepareReference {
 sub rsem {
   my $rH_cfg = shift;
   my $step = shift;
-  my $workDirectory = shift;
   my $sample = shift;
 
-  my $rO_job = Trinity::rsem($rH_cfg, $workDirectory, $sample);
+  my $rO_job = Trinity::rsem($rH_cfg, "\$WORK_DIR", $sample);
   submitJob($rH_cfg, $step, $sample, $rO_job);
 }
 
 sub differentialGeneExpression {
   my $rH_cfg = shift;
   my $step = shift;
-  my $workDirectory = shift;
 
   my $rO_job = new Job();
   if (!$rO_job->isUp2Date()) {
@@ -475,48 +548,48 @@ sub differentialGeneExpression {
     my $command = "\n";
 
     # Retrieve BLAST result file
-    my $program = getParam($rH_cfg, 'blast', 'blastProgram');
-    my $db = getParam($rH_cfg, 'blast', 'blastDb');
+    my $program = LoadConfig::getParam($rH_cfg, 'blast', 'blastProgram', 1);
+    my $db = LoadConfig::getParam($rH_cfg, 'blast', 'blastDb', 1);
     my $blastDir = "\$WORK_DIR/blast";
-    my $blastResult = "$blastDir/$program" . "_Trinity_$db.tsv";
+    my $blastResult = "$blastDir/$program" . "_Trinity.longest_transcript_$db.tsv";
 
     my $dgeDir = "\$WORK_DIR/DGE";
     my $isoformsMatrix = "$dgeDir/isoforms.counts.matrix";
-    my $isoformsAnnotatedMatrix = "$dgeDir/isoforms.annotated.counts.matrix";
+    my $isoformsAnnotatedMatrix = "$dgeDir/isoforms.counts.$db.matrix";
     my $genesMatrix = "$dgeDir/genes.counts.matrix";
-    my $genesAnnotatedMatrix = "$dgeDir/genes.annotated.counts.matrix";
+    my $genesAnnotatedMatrix = "$dgeDir/genes.counts.$db.matrix";
 
-    $command .= moduleLoad($rH_cfg, [
+    $command .= LoadConfig::moduleLoad($rH_cfg, [
       ['differentialGeneExpression', 'moduleVersion.trinity'],
       ['differentialGeneExpression', 'moduleVersion.cranR'],
       ['differentialGeneExpression', 'moduleVersion.tools']
-    ]);
+    ]) . " && \\\n";
 
-    $command .= "mkdir -p $dgeDir\n";
+    $command .= "mkdir -p $dgeDir && \\\n";
 
     # Create isoforms and genes matrices with counts of RNA-seq fragments per feature using Trinity RSEM utility
-    $command .= "merge_RSEM_frag_counts_single_table.pl \$WORK_DIR/rsem/*/*.isoforms.results > $isoformsMatrix\n";
-    $command .= "merge_RSEM_frag_counts_single_table.pl \$WORK_DIR/rsem/*/*.genes.results > $genesMatrix\n";
+    $command .= "merge_RSEM_frag_counts_single_table.pl \$WORK_DIR/rsem/*/*.isoforms.results > $isoformsMatrix && \\\n";
+    $command .= "merge_RSEM_frag_counts_single_table.pl \$WORK_DIR/rsem/*/*.genes.results > $genesMatrix && \\\n";
 
     # Extract isoforms and genes length values
-    $command .= "find \$WORK_DIR/rsem/ -name *.isoforms.results -exec cut -f 1,3,4 {} \\; -quit > \$WORK_DIR/rsem/isoforms.lengths.tsv \n";
-    $command .= "find \$WORK_DIR/rsem/ -name *.genes.results -exec cut -f 1,3,4 {} \\; -quit > \$WORK_DIR/rsem/genes.lengths.tsv \n";
+    $command .= "find \$WORK_DIR/rsem/ -name *.isoforms.results -exec cut -f 1,3,4 {} \\; -quit > \$WORK_DIR/rsem/isoforms.lengths.tsv && \\\n";
+    $command .= "find \$WORK_DIR/rsem/ -name *.genes.results -exec cut -f 1,3,4 {} \\; -quit > \$WORK_DIR/rsem/genes.lengths.tsv && \\\n";
 
     # Merge isoforms and genes matrices with BLAST annotations if any:
     # edger.R requires a matrix with gene/isoform annotation as second column 
     # Keep BLAST best hit only
     # Remove from column headers ".(genes|isoforms).results" created by RSEM
-    $command .= "grep -v '^#' $blastResult | awk '!x[\\\$1]++' | awk -F\\\"\\t\\\" 'FNR==NR {a[\\\$1]=\\\$2; next}{OFS=\\\"\\t\\\"; if (a[\\\$1]) {print \\\$1, a[\\\$1]} else {print \\\$1, \\\$1}}' - $isoformsMatrix | sed '1s/^\\t/Isoform\\tSymbol/' | paste - <(cut -f 2- $isoformsMatrix) | sed '1s/\\.isoforms\\.results//g' > $isoformsAnnotatedMatrix \n";
+    $command .= "grep -v '^#' $blastResult | awk '!x[\\\$1]++' | awk -F\\\"\\t\\\" 'FNR==NR {a[\\\$1]=\\\$2; next}{OFS=\\\"\\t\\\"; if (a[\\\$1]) {print \\\$1, a[\\\$1]} else {print \\\$1, \\\$1}}' - $isoformsMatrix | sed '1s/^\\t/Isoform\\tSymbol/' | paste - <(cut -f 2- $isoformsMatrix) | sed '1s/\\.isoforms\\.results//g' > $isoformsAnnotatedMatrix && \\\n";
     # Remove "_seq" from isoform BLAST query name and keep BLAST isoform best hit as BLAST gene best hit
-    $command .= "grep -v '^#' $blastResult | awk '!x[\\\$1]++' | awk -F\\\"\\t\\\" 'FNR==NR {sub(/_seq.*/, \\\"\\\", \\\$1); a[\\\$1]=\\\$2; next}{OFS=\\\"\\t\\\"; if (a[\\\$1]) {print \\\$1, a[\\\$1]} else {print \\\$1, \\\$1}}' - $genesMatrix | sed '1s/^\\t/Gene\\tSymbol/' | paste - <(cut -f 2- $genesMatrix) | sed '1s/\\.genes\\.results//g' > $genesAnnotatedMatrix \n";
+    $command .= "grep -v '^#' $blastResult | awk '!x[\\\$1]++' | awk -F\\\"\\t\\\" 'FNR==NR {sub(/_seq.*/, \\\"\\\", \\\$1); a[\\\$1]=\\\$2; next}{OFS=\\\"\\t\\\"; if (a[\\\$1]) {print \\\$1, a[\\\$1]} else {print \\\$1, \\\$1}}' - $genesMatrix | sed '1s/^\\t/Gene\\tSymbol/' | paste - <(cut -f 2- $genesMatrix) | sed '1s/\\.genes\\.results//g' > $genesAnnotatedMatrix && \\\n";
 
     # Perform edgeR
-    $command .= "Rscript \\\$R_TOOLS/edger.R -d $designFile -c $isoformsAnnotatedMatrix -o $dgeDir/isoforms_$db \n";
-    $command .= "Rscript \\\$R_TOOLS/edger.R -d $designFile -c $genesAnnotatedMatrix -o $dgeDir/genes_$db \n";
+    $command .= "Rscript \\\$R_TOOLS/edger.R -d $designFile -c $isoformsAnnotatedMatrix -o $dgeDir/isoforms_$db && \\\n";
+    $command .= "Rscript \\\$R_TOOLS/edger.R -d $designFile -c $genesAnnotatedMatrix -o $dgeDir/genes_$db && \\\n";
 
     # Perform DESeq
-    $command .= "Rscript \\\$R_TOOLS/deseq.R -d $designFile -c $isoformsAnnotatedMatrix -o $dgeDir/isoforms_$db \n";
-    $command .= "Rscript \\\$R_TOOLS/deseq.R -d $designFile -c $genesAnnotatedMatrix -o $dgeDir/genes_$db \n";
+    $command .= "Rscript \\\$R_TOOLS/deseq.R -d $designFile -c $isoformsAnnotatedMatrix -o $dgeDir/isoforms_$db && \\\n";
+    $command .= "Rscript \\\$R_TOOLS/deseq.R -d $designFile -c $genesAnnotatedMatrix -o $dgeDir/genes_$db && \\\n";
 
     # Merge edgeR results with gene/isoform length values and BLAST description
     $command .= "for gi in genes isoforms; do for f in $dgeDir/\\\${gi}_$db/*/dge_results.csv; do sed '1s/gene_symbol/$db.id/' \\\$f | awk -F\\\"\\t\\\" 'FNR==NR {a[\\\$1]=\\\$2\\\"\\t\\\"\\\$3; next}{OFS=\\\"\\t\\\"; if (a[\\\$1]) {print \\\$0, a[\\\$1]} else {print \\\$0, \\\"\\\", \\\"\\\"}}' \$WORK_DIR/rsem/\\\${gi}.lengths.tsv - | sed '1s/\\t\\\$/length\\teffective_length/' | awk -F\\\"\\t\\\" 'FNR==NR {a[\\\$2]=\\\$NF; next}{OFS=\\\"\\t\\\"; if (a[\\\$2]) {print \\\$0, a[\\\$2]} else {print \\\$0, \\\"\\\"}}' <(grep -v '^#' $blastResult) - | sed '1s/\\\$/description/' > \\\${f/.csv/_$db.csv}; done; done \\\n";
@@ -530,12 +603,11 @@ sub differentialGeneExpression {
 sub metrics {
   my $rH_cfg = shift;
   my $step = shift;
-  my $workDirectory = shift;
 
   my $metricsDirectory = "\$WORK_DIR/metrics";
   print "mkdir -p $metricsDirectory\n";
 
-  my $libraryType = getParam($rH_cfg, 'default', 'libraryType');
+  my $libraryType = LoadConfig::getParam($rH_cfg, 'default', 'libraryType', 1);
   my $trimDirectory = "\$WORK_DIR/reads";
   my $pattern = "trim.stats.csv";
   my $outputFile = "$metricsDirectory/trimming.stats";
@@ -543,16 +615,13 @@ sub metrics {
   # Merge all sample Trimmomatic results
   my $rO_job = Metrics::mergeTrimmomaticStats($rH_cfg, $libraryType, $pattern, $trimDirectory, $outputFile);
 
-  $rO_job->addCommand(" && wc -l \$WORK_DIR/normalization/*.accs > $metricsDirectory/normalization.stats");
-
   submitJob($rH_cfg, $step, undef, $rO_job);
 }
 
 sub deliverable {
   my $rH_cfg = shift;
   my $step = shift;
-  my $workDirectory = shift;
 
-  my $rO_job = GqSeqUtils::clientReport($rH_cfg, $configFile, $workDirectory, "RNAseqDeNovo");
+  my $rO_job = GqSeqUtils::clientReport($rH_cfg, abs_path($configFile), "\$WORK_DIR", "RNAseqDeNovo");
   submitJob($rH_cfg, $step, undef, $rO_job);
 }

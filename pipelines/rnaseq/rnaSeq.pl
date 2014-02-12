@@ -6,7 +6,21 @@ I<rnaSeq>
 
 =head1 SYNOPSIS
 
-rnaSeq.pl
+  perl rnaSeq.pl -c rnaSeq.abacus.ini -s 1 -e 14 -n project.nanuq.csv -d design.txt -w  `pwd`  > toRun.sh
+
+  will generate a bash script for steps 1 to 14. This script can then be executed:
+
+  sh toRun.sh
+
+  Options
+
+  -c (rnaSeq.abacus.ini) the standard configuration file for the pipeline. Templates for some cluster systems like Abacus or Guillimin may already be available at pipelines/rnaseq/
+  -s The start step
+  -e The end step
+  -n (project.nanuq.csv)  the NANUQ project read set sheet, prepared as described above.
+  -d (design.txt) the design file. A tab separated value file that specifies the experimental design information of the project. The first column lists the sample names, which should match elements the column Name in the read set sheet. Subsequent columns specify all the pairwise comparisons which should be undertaken: values should be either "2" (nominator), "1" (denominator) or "0" (exclude from comparison). 
+  -w The project's working directory. All job outputs will be sent to this directory.
+
 
 =head1 DESCRIPTION
 
@@ -20,13 +34,44 @@ B<Mathieu Bourgey> - I<mbourgey@genomequebec.com>
 
 B<Pod::Usage> Usage and help output.
 
-B<Data::Dumper> Used to debbug
+B<Data::Dumper> Used to debug
 
 B<Config::Simple> Used to parse config file
 
 B<File::Basename> path parsing
 
 B<Cwd> path parsing
+
+B<LoadConfig> Parse configuration file
+
+B<Picard> Multiple tools to manage bam files (merge, sort, etc)
+
+B<SampleSheet> Parse sample sheet file
+
+B<SAMtools> alignment files (sam / bam ) tools
+
+B<SequenceDictionaryParser> Parse sequence dictionnary
+
+B<SubmitToCluster> Create the submit command, control for dependencies
+
+B<TophatBowtie> Alignment of RNA-Seq reads to a reference genome 
+
+B<Trimmomatic> Trim and filter raw read files
+
+B<Metrics> Read, alignment and multiple metrics library
+
+B<Cufflinks> Transcript assembly, differential expression, and differential regulation for RNA-Seq
+
+B<Wiggle> Tools to generate wiggle tracks 
+
+B<HtseqCount> htseq is a library to generate basic statistics on aligned read count
+
+B<DiffExpression> is a library to launch differential expression analysis (edgeR, deSeq, goseq)
+
+B<GqSeqUtils>  is a library to access/launch functions from the gqSeqUtils R package
+
+B<Version> Tracks app version
+
 
 =cut
 
@@ -90,6 +135,43 @@ push(@steps, {'name' => 'dge' , 'stepLoop' => 'group' , 'output' => 'DGE'});
 push(@steps, {'name' => 'goseq' , 'stepLoop' => 'group' , 'output' => 'DGE'});
 push(@steps, {'name' => 'deliverable' , 'stepLoop' => 'group' , 'output' => 'deliverable'});
 
+
+#--------------------
+# PODS
+#--------------------
+## Here starts the pipeline steps documentation, please change it accordingly any time you add/remove/modify a step
+
+=head1 RNASEQ PIPELINE STEPS
+
+The standard differential expression analysis for RNAseq data performs the following steps:
+
+B<trimming> :  Raw reads quality trimming and removing of Illumina adapters is performed using trimmomatic. 
+
+B<trimMetrics> : Generates the trimming statistics file
+
+B<aligning> : The filtered reads are aligned to a reference genome. The alignment is done per lane of sequencing using the combination of tophat/bowtie software. It generates a Binary Alignment Map file (.bam).
+
+B<merging> : Bam files per sample are merged in one file. Merge is done using the Picard software. The resulting alignment file is reordered (karyotypic) and resulting reads per sample are marked as duplicates if they have the same 5' alignment positions (for both mates in the case of paired-end reads). All but the best pair (based on alignment score) will be marked as a duplicate in the .bam file. Marking duplicates and reorder are executed using the Picard software.
+
+B<wiggle> : generate wiggle tracks suitable for multiple browsers.
+
+B<rawCounts> : Counting reads in features using htseq-count.
+
+B<rawCountsMetrics> : Create rawcount matrix, zip the wiggle tracks and create the saturation plots based on standardized read counts.
+
+B<fpkm> : Compute FPKM measures for de novo and known transcripts using cufflinks.
+
+B<exploratory> : exploratoryAnalysis using the gqSeqUtils R package
+
+B<cuffdiff> : The transcript quantification engine of Cufflinks (Cuffdiff) is used to calculate transcript expression levels in more than one condition and test them for signficant differences.
+
+B<dge> : Differential gene expression analysis using DESEQ and EDGER. Merge the results of the analysis in a single csv file.
+
+B<goseq>:  Gene Ontology analysis for RNA-seq using the bioconductor's R package goseq. Generates Go annotations for cuffdiff known transcripts differential expression and differential gene expression analysis.
+
+B<deliverable> : Generates the standard report. A summary html report contains the description of the sequencing experiment as well as a detailed presentation of the pipeline steps and results. Various Quality Control (QC) summary statistics are included in the report and additional QC analysis is accessible for download directly through the report. The report includes also the main references of the software and methods used during the analysis, together with the full list of parameters passed to the pipeline main script.
+
+=cut end of documentation
 
 
 my %globalDep;

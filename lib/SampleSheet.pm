@@ -104,7 +104,7 @@ sub parseSampleSheet {
   my $line = <SAMPLE_SHEET>;
   $csv->parse($line);
   my @headers = $csv->fields();
-  my ($nameIdx,$libraryBarcodeIdx,$runIdIdx,$laneIdx,$runTypeIdx,$statusIdx,$qualOffsetIdx) = parseHeaderIndexes(\@headers);
+  my ($nameIdx,$libraryBarcodeIdx,$runIdIdx,$laneIdx,$runTypeIdx,$statusIdx,$qualOffsetIdx,$bedFilesIdx) = parseHeaderIndexes(\@headers);
 
   while($line = <SAMPLE_SHEET>) {
     $csv->parse($line);
@@ -121,6 +121,8 @@ sub parseSampleSheet {
     $sampleInfo{'lane'} = $values[$laneIdx];
     $sampleInfo{'runType'} = $values[$runTypeIdx];
     $sampleInfo{'qualOffset'} = $values[$qualOffsetIdx];
+    my @bedFiles = split(';', $values[$bedFilesIdx]);
+    $sampleInfo{'bedFiles'} = \@bedFiles;
 
     if($values[$runTypeIdx] eq "PAIRED_END") {
       $sampleInfo{'read1File'} = $sampleInfo{'name'}.'.'.$sampleInfo{'libraryBarcode'}.'.'.$sampleInfo{'qualOffset'}.".pair1.fastq.gz";
@@ -149,6 +151,7 @@ sub parseHeaderIndexes {
   my $runTypeIdx=-1;
   my $statusIdx=-1;
   my $qualOffsetIdx=-1;
+  my $bedFilesIdx=-1;
 	
 	for(my $idx=0; $idx < @{$rA_headers}; $idx++) {
 		my $header = $rA_headers->[$idx];
@@ -174,9 +177,13 @@ sub parseHeaderIndexes {
     elsif($header eq "Quality Offset") {
       $qualOffsetIdx=$idx;
     }
+    elsif($header eq "BED Files") {
+      $bedFilesIdx=$idx;
+    }
   }
 
   my $sampleSheetErrors="";
+  my $sampleSheetWarnings="";
   if($nameIdx==-1) {
     $sampleSheetErrors.="Missing Sample Name\n";
   }
@@ -195,14 +202,16 @@ sub parseHeaderIndexes {
   if($statusIdx==-1) {
     $sampleSheetErrors.="Missing Status\n";
   }
-  if($qualOffsetIdx==-1) {
-      $sampleSheetErrors.="Missing Quality Offset\n";
-    }
-  
+  if($bedFilesIdx==-1) {
+    $sampleSheetWarnings.="Missing BED Files\n";
+  }
+  if(length($sampleSheetWarnings) > 0) {
+    warn $sampleSheetWarnings;
+  }
   if(length($sampleSheetErrors) > 0) {
     die $sampleSheetErrors;
   }
   
-  return ($nameIdx,$libraryBarcodeIdx,$runIdIdx,$laneIdx,$runTypeIdx,$statusIdx,$qualOffsetIdx);
+  return ($nameIdx,$libraryBarcodeIdx,$runIdIdx,$laneIdx,$runTypeIdx,$statusIdx,$qualOffsetIdx,$bedFilesIdx);
 }
 1;

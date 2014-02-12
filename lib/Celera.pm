@@ -55,8 +55,8 @@ sub runCelera {
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
 		$cmd .= ' rm -rf ' . $outdir. '/* && ';
-		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' ; ';
-		$cmd .= ' module load '.LoadConfig::getParam($rH_cfg, 'celera', 'moduleVersion.celera').' ; ';
+		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' && ';
+		$cmd .= ' module load '.LoadConfig::getParam($rH_cfg, 'celera', 'moduleVersion.celera').' && ';
 		$cmd .= ' memtime';
 		$cmd .= ' runCA';
 		$cmd .= ' -d ' . $outdir;
@@ -80,8 +80,8 @@ sub fastqToCA {
 
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
-		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' ; ';
-		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'celera', 'moduleVersion.celera').' ; ';
+		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' && ';
+		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'celera', 'moduleVersion.celera').' && ';
 		$cmd .= ' memtime';
 		$cmd .= ' fastqToCA';
 		$cmd .= ' -technology sanger';
@@ -96,3 +96,4 @@ sub fastqToCA {
 }
 
 1;
+
