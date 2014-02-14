@@ -26,7 +26,9 @@ B<Config::Simple> Used to parse config file
 
 B<File::Basename> path parsing
 
-B<Text::CSV;> sample sheets parsing parsing
+B<XML::Simple> for RunInfo.xml file parsing
+
+B<Text::CSV> sample sheets parsing parsing
 
 B<Cwd> path parsing
 
@@ -103,7 +105,7 @@ my $casavaSheet;
 
 sub printUsage {
   print "Version: ".$Version::version."\n";
-  print "\nUsage: perl ".$0." -c config.ini -s start -e end -n SampleSheet.csv\n";
+  print "\nUsage: perl ".$0." -c config.ini -s start -e end -n SampleSheet.csv -i SampleSheet.nanuq.csv\n";
   print "\t-c  config file\n";
   print "\t-s  start step, inclusive\n";
   print "\t-e  end step, inclusive\n";
@@ -439,7 +441,7 @@ sub align {
     my $sampleName = $rH_laneInfo->{'name'};
     $step->{'jobIds'}->{$sampleName} =();
     my $libSource = $rH_laneInfo->{'libSource'}; # gDNA, cDNA, ...
-    my $ref = getGenomeReference($rH_laneInfo->{'referenceMappingSpecies'}, $rH_laneInfo->{'ref'}, $libSource);
+    my $ref = getGenomeReference($rH_laneInfo->{'referenceMappingSpecies'}, $rH_laneInfo->{'ref'}, $libSource, 'bwa');
     if (!defined($ref)) {
       print STDERR "Skipping alignment for sample '$sampleName'; No reference genome found for species '". (defined($rH_laneInfo->{'ref'}) ? $rH_laneInfo->{'ref'} : ""). "'.\n";
       next;
@@ -486,7 +488,7 @@ sub laneMetrics {
   my $first=1;
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
     my $libSource = $rH_laneInfo->{'libSource'}; # gDNA, cDNA, ...
-    my $ref = getGenomeReference($rH_laneInfo->{'referenceMappingSpecies'}, $rH_laneInfo->{'ref'}, $libSource);
+    my $ref = getGenomeReference($rH_laneInfo->{'referenceMappingSpecies'}, $rH_laneInfo->{'ref'}, $libSource, 'fasta');
     if (!defined($ref)) {
       #skipped alignment
       next;
@@ -516,9 +518,16 @@ sub laneMetrics {
     
     $outputMetrics = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.dup.metrics.nodup.targetCoverage.txt';
     my $coverageBED = BVATools::resolveSampleBED($rH_cfg, $rH_laneInfo);
-    my $rO_coverageJob = BVATools::depthOfCoverage($rH_cfg, $sortedLaneBamFile, $outputMetrics, $coverageBED);
+    my $rO_coverageJob = BVATools::depthOfCoverage($rH_cfg, $sortedLaneBamFile, $outputMetrics, $coverageBED, $ref);
     if(!$rO_coverageJob->isUp2Date()) {
-      SubmitToCluster::printSubmitCmd($rH_cfg, "depthOfCoverage", $runID . "." . $rH_laneInfo->{'lane'}, 'LANEDEPTHOFCOVERAGE_'.$rH_laneInfo->{'processingSheetId'}, $jobDependency, $rH_laneInfo->{'processingSheetId'}, $rO_coverageJob);
+      if (LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'fetchBedFiles')) {
+	for my $bedFile (@{$rH_laneInfo->{'bedFiles'}}) {
+	  print formatCommand("config" => $rH_cfg, "command" => LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'fetchBedFileCommand'), "runDirectory" => $runDirectory, "runID" => $runID, "lane" => $lane, "isMiSeq" => $isMiSeq, "bedFile" => $bedFile) . "\n";
+	  print "\n";
+	}
+      }
+    
+      SubmitToCluster::printSubmitCmd($rH_cfg, "depthOfCoverage", $runID . '.' . $rH_laneInfo->{'lane'}, 'LANEDEPTHOFCOVERAGE_'.$rH_laneInfo->{'processingSheetId'}, $jobDependency, $rH_laneInfo->{'processingSheetId'}, $rO_coverageJob);
       if($first == 1) {
         print 'LANE_METRICS_JOB_IDS='.$rO_coverageJob->getCommandJobId(0)."\n";
       }
@@ -543,7 +552,7 @@ sub generateBamMd5 {
   for my $rH_sample (@$rAoH_sample) {
     my $sampleName = $rH_sample->{'name'};
     my $libSource = $rH_sample->{'libSource'}; # gDNA, cDNA, ...
-    my $ref = getGenomeReference($rH_sample->{'referenceMappingSpecies'}, $rH_sample->{'ref'}, $libSource);
+    my $ref = getGenomeReference($rH_sample->{'referenceMappingSpecies'}, $rH_sample->{'ref'}, $libSource, 'bwa');
     if (!defined($ref)) {
       #skipped alignment
       next;
@@ -684,7 +693,7 @@ sub getGenomeList {
       }
       $fasta = "$rootDir/$speciesDir/$buildDir/fasta/$buildDir.fasta";
       if (-r $fasta) {
-        $genomes{$speciesDir}{$buildDir}{"default"}=$fasta;
+        $genomes{$speciesDir}{$buildDir}{"fasta"}=$fasta;
       } else {
         #print STDERR "Available Genomes Scan: No Fasta reference genome found for the build '$buildDir' of the '$speciesDir' species\n";
       }
@@ -702,6 +711,7 @@ sub getGenomeReference {
   my $ref           = shift;
   my $species       = shift;
   my $librarySource = shift;
+  my $program       = shift;
 
   my $refpath;
 
@@ -721,7 +731,7 @@ sub getGenomeReference {
     $refSpecies =~ s/\s/_/g;
     $build =~ s/\s/_/g;
 
-    $refpath =  $rHoH_genomes->{$refSpecies}->{$build}->{"bwa"}
+    $refpath =  $rHoH_genomes->{$refSpecies}->{$build}->{$program}
   }
 
   if (defined($refpath)) {
@@ -733,7 +743,7 @@ sub getGenomeReference {
         if ($species =~ /$defaultGenomeRegexp/i) {
           my $refSpecies = $rHoH_defaultGenomes->{$defaultGenomeRegexp}->{"species"};
           my $build = $rHoH_defaultGenomes->{$defaultGenomeRegexp}->{"build"};
-          $refpath = $rHoH_genomes->{$refSpecies}->{$build}->{"bwa"}
+          $refpath = $rHoH_genomes->{$refSpecies}->{$build}->{$program}
         }
       }
     }
