@@ -165,7 +165,7 @@ fi
 
 
 ## Finally, update/install library!
-$INSTALL_DIR/bin/R  --no-save  <<-'EOF'
+$INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
 
 	#' This script:
 	#' 1) Installs or update all packages hard-coded below
@@ -174,6 +174,9 @@ $INSTALL_DIR/bin/R  --no-save  <<-'EOF'
 	#' 4) Installs "gqUtils","gqSeqUtils","gqData","gqMicroarrays" from the *master* branch of Rpackages i.e.
 	#'	 https://bitbucket.org/mugqic/rpackages/get/master.zip
 	#' 5) Grants +rX permission to all and +w to group on package library (.Library)
+
+	## Install library path
+	.libPaths(.Library) # useful because e.g. devtools::install() installs in .libPaths()[1], and the latter will be ~/R/... if user library exists...
 
 	## biocLite
 	source("http://bioconductor.org/biocLite.R")
