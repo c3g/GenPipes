@@ -227,11 +227,11 @@ sub generateIndexCount {
   if( $indexPrinted == 0) {
     print  "# No Indexes, *NOT* Generating index counts\n";
   } else {
-    print  "# Generating index counts\n";
     my $jobDependency = undef;
     my $ro_job = CountIlluminaBarcodes::count($rH_cfg, $baseCallDir, $lane, $mask, $runDirectory ."/RunInfo.xml", $runDirectory.'/'.$runName.'_'.$lane.'.metrics');
     
     if (!$ro_job->isUp2Date()) {
+      print  "# Generating index counts\n";    
       my $jobId = SubmitToCluster::printSubmitCmd($rH_cfg, "generateIndexCount", "$runID.$lane", 'idx_', $jobDependency, undef, $ro_job);
       push (@{$step->{'jobIds'}->{$GLOBAL_DEP_KEY}}, $jobId);
     }
@@ -348,8 +348,6 @@ sub generateQCGraphs {
   my $dependencies = getDependencies($step, $rH_cfg);
 
   for my $rH_sample (@$rAoH_sample) {
-    print 'mkdir -p '.$runDirectory.'/' . $UNALIGNED_DIR. '.'.$lane.'/Project_nanuq/Sample_'.$rH_sample->{'processingSheetId'}."/qc\n";
-
     my $output = $runDirectory.'/' . $UNALIGNED_DIR . '.'.$lane.'/Project_nanuq/Sample_'.$rH_sample->{'processingSheetId'}.'/qc';
     my $regionName = $rH_sample->{'processingSheetId'}.'_'.$rH_sample->{'index'}.'_L00'.$rH_sample->{'lane'};
     my $read1 = getFastqFilename($runDirectory, $lane, $rH_sample, 1);
@@ -359,6 +357,7 @@ sub generateQCGraphs {
     }
     my $ro_job = BVATools::qc($rH_cfg, $read1, $read2, "FASTQ", $regionName, $output);
     if (!$ro_job->isUp2Date()) {
+      print 'mkdir -p '.$runDirectory.'/' . $UNALIGNED_DIR. '.'.$lane.'/Project_nanuq/Sample_'.$rH_sample->{'processingSheetId'}."/qc\n";
       my $jobId = SubmitToCluster::printSubmitCmd($rH_cfg, "generateQCGraphs", "$runID.$lane", 'qc_'.$rH_sample->{'processingSheetId'}, $dependencies, $rH_sample->{'processingSheetId'}, $ro_job);
       push (@{$step->{'jobIds'}->{$GLOBAL_DEP_KEY}}, $jobId);
     }
