@@ -1,7 +1,7 @@
 ###################
 ################### Bowtie2
 ###################
-VERSION="2.1.0"
+VERSION="2.2.0"
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/bowtie/bowtie-$VERSION
 INSTALL_DOWNLOAD=$MUGQIC_INSTALL_HOME/software/bowtie/tmp
 mkdir -p $INSTALL_PATH $INSTALL_DOWNLOAD

@@ -5,7 +5,7 @@
 ###################
 # tpx patch can be found here:
 # ftp://ftp.conveysupport.com/outgoing/bwa/bwa-0.6.2-tpx.patch
-VERSION="0.7.5a"
+VERSION="0.7.6a"
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/bwa/
 mkdir -p $INSTALL_PATH
 cd $INSTALL_PATH
