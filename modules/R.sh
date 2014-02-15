@@ -3,6 +3,14 @@ set -e
 umask 0002
 me=`basename $0`
 
+## Annoying cluster-specific actions
+
+# Guillimin phase 1 gcc is outdated
+if [[ `hostname` == lg-* ]]; then
+	module load gcc/4.7.2 # otherwise Rarmadillo will not install
+fi
+
+
 ## Neutralize $R_LIBS
 export R_LIBS=
 
@@ -12,7 +20,6 @@ INSTALL_PREFIX_ENV_VARNAME=""
 MODULEFILE_DIR="$MUGQIC_INSTALL_HOME_DEV/modulefiles/mugqic_dev/R"
 INSTALL_DIR="$MUGQIC_INSTALL_HOME_DEV/software/R"
 FORCE_INSTALL=false
-
 
 ## Parse arguments
 usage()
@@ -202,7 +209,7 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
 	,"pd.charm.hg18.example","pheatmap","plotrix","plyr","plyr","preprocessCore"
 	,"proto","quantreg","R2HTML","RBGL","RColorBrewer","Rcpp","RcppEigen","RCurl"
 	,"ReportingTools","reshape","reshape2","rgl","RJSONIO","R.methodsS3","roxygen2"
-	,"rpart","Rsamtools","RSQLite","rtracklayer","scales","siggenes","snow"
+	,"rpart","Rsamtools","RSQLite","rtracklayer","scales","ShortRead","siggenes","snow"
 	,"SNPchip","SortableHTMLTables","spam","SparseM","spatial","splines","SQN"
 	,"statmod","stats","stats4","stringr","survival","sva","tcltk","testthat"
 	,"tools","TxDb.Hsapiens.UCSC.hg19.knownGene","utils","Vennerable","vsn"
