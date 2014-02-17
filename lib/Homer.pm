@@ -39,6 +39,10 @@ package HOMER;
 use strict;
 use warnings;
 
+# Add the mugqic_pipeline/lib/ path relative to this Perl script to @INC library search variable
+use FindBin;
+use lib "$FindBin::Bin";
+
 # Dependencies
 #-----------------------
 use LoadConfig;
@@ -79,7 +83,7 @@ sub makeTagDirectory {
     $ro_job->testInputOutputs([$sortedBAM], [$outputDir . '/' . $sampleName . '/tagInfo.txt']);
 
     my $command;
-    $command = ' module load ' . LoadConfig::getParam($rH_cfg, 'qcTags', 'moduleVersion.python') . ' ' . LoadConfig::getParam($rH_cfg, 'qcTags', 'moduleVersion.homer') . ' ' . LoadConfig::getParam($rH_cfg, 'qcTags', 'moduleVersion.samtools') . ' &&';
+    $command = LoadConfig::moduleLoad($rH_cfg, [['qcTags', 'moduleVersion.python'], ['qcTags', 'moduleVersion.homer'], ['qcTags', 'moduleVersion.samtools']]) . ' &&';
     $command .= ' makeTagDirectory ' . $outputDir . '/' . $sampleName . ' ' . $sortedBAM . ' -checkGC -genome ' . $refGenome;
 
     $ro_job->addCommand($command);
@@ -103,8 +107,8 @@ sub makeUCSCFile {
   $ro_job->testInputOutputs([$tagDirectory], [$outputWiggle]);
 
   if (!$ro_job->isUp2Date()) {
-    $command .= ' module load ' . LoadConfig::getParam($rH_cfg, 'default' , 'moduleVersion.python') . ' ' . LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.homer') . ' &&';
-    $command .= ' makeUCSCfile ' . $tagDirectory . ' | gzip -1 -c > '. $outputWiggle;
+    $command .= LoadConfig::moduleLoad($rH_cfg, [['default', 'moduleVersion.python'], ['default', 'moduleVersion.homer']]) . ' &&';
+    $command .= ' makeUCSCfile ' . $tagDirectory . ' | gzip -1 -c > ' . $outputWiggle;
     $ro_job->addCommand($command);
   }
   
@@ -120,15 +124,15 @@ sub annotatePeaks {
   my $genomeName = LoadConfig::getParam($rH_cfg, 'annotation', 'genomeName');
 
   my $ro_job = new Job();
-  $ro_job->testInputOutputs([$InputBed], [$outputDir.'/'.$designName]);
+  $ro_job->testInputOutputs([$InputBed], [$outputDir . '/' . $designName]);
 
   if (!$ro_job->isUp2Date()) {
-    $command .= ' module load ' . LoadConfig::getParam($rH_cfg, 'annotation' , 'moduleVersion.python') . ' ' . LoadConfig::getParam($rH_cfg, 'annotation', 'moduleVersion.homer') . ' && ';
+    $command .= LoadConfig::moduleLoad($rH_cfg, [['annotation', 'moduleVersion.python'], ['annotation', 'moduleVersion.homer']]) . ' && ';
     $command .= ' annotatePeaks.pl ' . $InputBed . ' ' . $genomeName . ' -gsize ' . $genomeName . ' -cons -CpG -go ' . $outputDir . '/' . $designName . ' -genomeOntology ' . $outputDir . '/' . $designName . ' > ' . $outputDir . '/' . $designName . '.annotated.csv';
     $ro_job->addCommand($command);
   }
+
   return $ro_job;
-  
 }
 
 sub generateMotif {
@@ -139,17 +143,17 @@ sub generateMotif {
   my $genomeName = LoadConfig::getParam($rH_cfg, 'motif', 'genomeName');
 
   my $optionsThreads;
-  if (defined(LoadConfig::getParam($rH_cfg, 'motif', 'homermotifThreads')) &&  LoadConfig::getParam($rH_cfg, 'motif', 'homermotifThreads') ne "") {
-    $optionsThreads = '-p ' . LoadConfig::getParam($rH_cfg, 'motif', 'homermotifThreads') . ' ';
+  if (defined(LoadConfig::getParam($rH_cfg, 'motif', 'homermotifThreads', 0, 'int')) &&  LoadConfig::getParam($rH_cfg, 'motif', 'homermotifThreads', 0, 'int') ne "") {
+    $optionsThreads = '-p ' . LoadConfig::getParam($rH_cfg, 'motif', 'homermotifThreads', 0, 'int') . ' ';
   } else {
     $optionsThreads = ' ';
   }
   my $ro_job = new Job();
-  $ro_job->testInputOutputs([$InputBed], [$outputDir.'/homerResults.html']);
+  $ro_job->testInputOutputs([$InputBed], [$outputDir . '/homerResults.html']);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
-    $command .= ' module load ' . LoadConfig::getParam($rH_cfg, 'motif' , 'moduleVersion.python') . ' ' . LoadConfig::getParam($rH_cfg, 'motif', 'moduleVersion.homer') . ' ' . LoadConfig::getParam($rH_cfg, 'motif', 'moduleVersion.weblogo') . ' &&';
+    $command .= LoadConfig::moduleLoad($rH_cfg, [['motif', 'moduleVersion.python'], ['motif', 'moduleVersion.homer'], ['motif', 'moduleVersion.weblogo']]) . ' &&';
     $command .= ' findMotifsGenome.pl ' . $InputBed . ' ' . $genomeName . ' ' . $outputDir . ' ' . $optionsThreads;
 
     $ro_job->addCommand($command);
@@ -163,13 +167,13 @@ sub qcPlotsR {
   my $designFile     = shift;
   my $outputDir      = shift;
 
-  my $graphDirectory = $outputDir .'/graphs/';
+  my $graphDirectory = $outputDir . '/graphs/';
   my $ro_job = new Job();
-  $ro_job->testInputOutputs([$designFile], [$graphDirectory. 'QC_Metrics.ps' ]);
+  $ro_job->testInputOutputs([$designFile], [$graphDirectory . 'QC_Metrics.ps' ]);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
-    $command .= ' module add ' . LoadConfig::getParam($rH_cfg, 'qcTags', 'moduleVersion.tools') . ' ' . LoadConfig::getParam($rH_cfg, 'qcTags', 'moduleVersion.R') . ' && ';
+    $command .= LoadConfig::moduleLoad($rH_cfg, [['qcTags', 'moduleVersion.tools'], ['qcTags', 'moduleVersion.R']]) . ' && ';
     $command .= ' Rscript ' . ' \$R_TOOLS/chipSeqGenerateQCMetrics.R ' . $designFile . ' ' . $outputDir;
 
     $ro_job->addCommand($command);
@@ -189,55 +193,55 @@ sub annotateStats {
   my $geneDesertSize = 100000;
 
 
-  if (defined($rH_cfg) && !LoadConfig::getParam($rH_cfg, 'annotation', 'proximalDistance') eq "" ){
-    $proximalDistance=LoadConfig::getParam($rH_cfg, 'annotation', 'proximalDistance') + 0;
+  if (defined($rH_cfg) && !LoadConfig::getParam($rH_cfg, 'annotation', 'proximalDistance', 0, 'int') eq "" ) {
+    $proximalDistance=LoadConfig::getParam($rH_cfg, 'annotation', 'proximalDistance', 0, 'int');
   }
-  if (defined($rH_cfg) && !LoadConfig::getParam($rH_cfg, 'annotation', 'distalDistance') eq "" ){
-    $distalDistance=LoadConfig::getParam($rH_cfg, 'annotation', 'distalDistance') + 0;
+  if (defined($rH_cfg) && !LoadConfig::getParam($rH_cfg, 'annotation', 'distalDistance', 0, 'int') eq "" ) {
+    $distalDistance=LoadConfig::getParam($rH_cfg, 'annotation', 'distalDistance', 0, 'int');
   }
-  if (defined($rH_cfg) && !LoadConfig::getParam($rH_cfg, 'annotation', 'distance5dLower') eq "" ){
-    $distance5d1=LoadConfig::getParam($rH_cfg, 'annotation', 'distance5dLower') + 0;
+  if (defined($rH_cfg) && !LoadConfig::getParam($rH_cfg, 'annotation', 'distance5dLower', 0, 'int') eq "" ) {
+    $distance5d1=LoadConfig::getParam($rH_cfg, 'annotation', 'distance5dLower', 0, 'int');
   }
-  if (defined($rH_cfg) && !LoadConfig::getParam($rH_cfg, 'annotation', 'distance5dUpper') eq "" ){
-    $distance5d2=LoadConfig::getParam($rH_cfg, 'annotation', 'distance5dUpper') + 0;
+  if (defined($rH_cfg) && !LoadConfig::getParam($rH_cfg, 'annotation', 'distance5dUpper', 0, 'int') eq "" ) {
+    $distance5d2=LoadConfig::getParam($rH_cfg, 'annotation', 'distance5dUpper', 0, 'int');
   }
-  if (defined($rH_cfg) && !LoadConfig::getParam($rH_cfg, 'annotation', 'geneDesertSize') eq "" ){
-    $geneDesertSize=LoadConfig::getParam($rH_cfg, 'annotation', 'geneDesertSize') + 0;
+  if (defined($rH_cfg) && !LoadConfig::getParam($rH_cfg, 'annotation', 'geneDesertSize', 0, 'int') eq "" ) {
+    $geneDesertSize=LoadConfig::getParam($rH_cfg, 'annotation', 'geneDesertSize', 0, 'int');
   }
 
   # Create a new job 
   my $ro_job = new Job();
-  $ro_job->testInputOutputs([$InputCsv], [$outputPrefix.'.stats']);
+  $ro_job->testInputOutputs([$InputCsv], [$outputPrefix . '.stats']);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
-    $command .= ' module add ' . LoadConfig::getParam($rH_cfg, 'qcTags', 'moduleVersion.tools') . ' && ';
-    $command .= ' perl -MReadMetrics -e \' ReadMetrics::parseHomerAnnotations(\"'. $InputCsv   .'\",';
-    $command .= ' \"'. $outputPrefix .'\","';
-    $command .= ' \"'. $proximalDistance .'\","';
-    $command .= ' \"'. $distalDistance .'\","';
-    $command .= ' \"'. $distance5d1    .'\","';
-    $command .= ' \"'. $distance5d2    .'\","';
-    $command .= ' \"'. $geneDesertSize .'\","';
+    $command .= LoadConfig::moduleLoad($rH_cfg, [['qcTags', 'moduleVersion.tools']]) . ' && ';
+    $command .= ' perl -MReadMetrics -e \' ReadMetrics::parseHomerAnnotations(\"' . $InputCsv . '\",';
+    $command .= ' \"' . $outputPrefix . '\","';
+    $command .= ' \"' . $proximalDistance . '\","';
+    $command .= ' \"' . $distalDistance . '\","';
+    $command .= ' \"' . $distance5d1    . '\","';
+    $command .= ' \"' . $distance5d2    . '\","';
+    $command .= ' \"' . $geneDesertSize . '\","';
     $command .= ');\'';
     $ro_job->addCommand($command);
   }
   return $ro_job;
 }
 
-sub annotatePlotsR{
+sub annotatePlotsR {
   my $rH_cfg         = shift;
   my $designFile     = shift;
   my $outputDir      = shift;
 
-  my $graphDirectory = $outputDir .'/graphs/';
+  my $graphDirectory = $outputDir . '/graphs/';
   my $ro_job = new Job();
   # Create a new job 
   $ro_job->testInputOutputs([$designFile], [$outputDir . '/annotation/peak_stats.csv', $graphDirectory . '/Misc_Graphs.ps']);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
-    $command .= ' module add ' . LoadConfig::getParam($rH_cfg, 'annotation', 'moduleVersion.tools') . ' ' . LoadConfig::getParam($rH_cfg, 'annotation', 'moduleVersion.R') . ' && ';
+    $command .= LoadConfig::moduleLoad($rH_cfg, [['annotation', 'moduleVersion.tools'], ['annotation', 'moduleVersion.R']]) . ' && ';
     $command .= ' Rscript ' . ' \$R_TOOLS/chipSeqgenerateAnnotationGraphs.R ' . $designFile . ' ' . $outputDir;
 
     $ro_job->addCommand($command);

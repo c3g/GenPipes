@@ -1103,7 +1103,7 @@ sub report {
 	my $ro_job = new Job();
 	$ro_job->testInputOutputs(undef, undef);
 
-	$cmd .= 'module load ' .LoadConfig::getParam($rH_cfg, 'report','moduleVersion.cranR') .' &&';
+	$cmd .= LoadConfig::moduleLoad($rH_cfg, [['report','moduleVersion.cranR']]) .' &&';
 	$cmd .= ' R --vanilla -e \'library(gqSeqUtils) ;';
 	$cmd .= ' mugqicPipelineReport(';
 	$cmd .= ' pipeline=\"PacBioAssembly\",';

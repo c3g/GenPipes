@@ -36,8 +36,13 @@ use warnings;
 
 #--------------------------
 
+# Add the mugqic_pipeline/lib/ path relative to this Perl script to @INC library search variable
+use FindBin;
+use lib "$FindBin::Bin";
+
 # Dependencies
 #-----------------------
+use LoadConfig;
 
 # SUB
 #-----------------------
@@ -45,26 +50,26 @@ sub mergeFiles {
   my $rH_cfg        = shift;
   my $sampleName    = shift;
   my $rA_inputFiles = shift;
-  my $outputBAM    = shift;
+  my $outputBAM     = shift;
 
   my $bamInputs;
   my $countInputs;
   for my $file (@$rA_inputFiles) {
-    $bamInputs .= 'INPUT='.$file.' ';
+    $bamInputs .= 'INPUT=' . $file . ' ';
   }
 
   my $ro_job = new Job();
-  $ro_job->testInputOutputs($rA_inputFiles,[$outputBAM]);
+  $ro_job->testInputOutputs($rA_inputFiles, [$outputBAM]);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
-    $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'mergeFiles','moduleVersion.java') .' ' .LoadConfig::getParam($rH_cfg, 'mergeFiles', 'moduleVersion.picard').' &&'; 
-    $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'mergeFiles', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'mergeFiles', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'mergeFiles', 'mergeRam').' -jar \${PICARD_HOME}/MergeSamFiles.jar';
+    $command .= LoadConfig::moduleLoad($rH_cfg, [['mergeFiles', 'moduleVersion.java'], ['mergeFiles', 'moduleVersion.picard']]) . ' &&'; 
+    $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'mergeFiles', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'mergeFiles', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'mergeFiles', 'mergeRam') . ' -jar \${PICARD_HOME}/MergeSamFiles.jar';
     $command .= ' VALIDATION_STRINGENCY=SILENT ASSUME_SORTED=true CREATE_INDEX=true';
-    $command .= ' TMP_DIR='.LoadConfig::getParam($rH_cfg, 'mergeFiles', 'tmpDir');
-    $command .= ' '.$bamInputs;
-    $command .= ' OUTPUT='.$outputBAM;
-    $command .= ' MAX_RECORDS_IN_RAM='.LoadConfig::getParam($rH_cfg, 'mergeFiles', 'mergeRecInRam');
+    $command .= ' TMP_DIR=' . LoadConfig::getParam($rH_cfg, 'mergeFiles', 'tmpDir');
+    $command .= ' ' . $bamInputs;
+    $command .= ' OUTPUT=' . $outputBAM;
+    $command .= ' MAX_RECORDS_IN_RAM=' . LoadConfig::getParam($rH_cfg, 'mergeFiles', 'mergeRecInRam');
 
     $ro_job->addCommand($command);
   }
@@ -77,17 +82,17 @@ sub fixmate {
   my $outputBAM  = shift;
 
   my $ro_job = new Job();
-  $ro_job->testInputOutputs([$inputBAM],[$outputBAM]);
+  $ro_job->testInputOutputs([$inputBAM], [$outputBAM]);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
-    $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'fixmate','moduleVersion.java') .' ' .LoadConfig::getParam($rH_cfg, 'fixmate', 'moduleVersion.picard').' &&'; 
-    $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'fixmate', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'fixmate', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'fixmate', 'fixmateRam').' -jar \${PICARD_HOME}/FixMateInformation.jar';
+    $command .= LoadConfig::moduleLoad($rH_cfg, [['fixmate', 'moduleVersion.java'], ['fixmate', 'moduleVersion.picard']]) . ' &&'; 
+    $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'fixmate', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'fixmate', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'fixmate', 'fixmateRam') . ' -jar \${PICARD_HOME}/FixMateInformation.jar';
     $command .= ' VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true SORT_ORDER=coordinate';
-    $command .= ' TMP_DIR='.LoadConfig::getParam($rH_cfg, 'fixmate', 'tmpDir');
-    $command .= ' INPUT='.$inputBAM;
-    $command .= ' OUTPUT='.$outputBAM;
-    $command .= ' MAX_RECORDS_IN_RAM='.LoadConfig::getParam($rH_cfg, 'fixmate', 'fixmateRecInRam');
+    $command .= ' TMP_DIR=' . LoadConfig::getParam($rH_cfg, 'fixmate', 'tmpDir');
+    $command .= ' INPUT=' . $inputBAM;
+    $command .= ' OUTPUT=' . $outputBAM;
+    $command .= ' MAX_RECORDS_IN_RAM=' . LoadConfig::getParam($rH_cfg, 'fixmate', 'fixmateRecInRam');
 
     $ro_job->addCommand($command);
   }
@@ -102,27 +107,27 @@ sub markDup {
   my $outputMetrics = shift;
 
 #   if (!(defined $inputBAM)) {
-#     $inputBAM = $sampleName.'/'.$sampleName.'.matefixed.sorted.bam';
+#     $inputBAM = $sampleName . '/' . $sampleName . '.matefixed.sorted.bam';
 #   }
 #   if (!(defined $outputBAM)) {
-#     $outputBAM = $sampleName.'/'.$sampleName.'.sorted.dup.bam';
+#     $outputBAM = $sampleName . '/' . $sampleName . '.sorted.dup.bam';
 #   }
 #   if (!(defined $outputMetrics)) {
-#     $outputMetrics = $sampleName.'/'.$sampleName.'.sorted.dup.metrics';
+#     $outputMetrics = $sampleName . '/' . $sampleName . '.sorted.dup.metrics';
 #   }
   my $ro_job = new Job();
-  $ro_job->testInputOutputs([$inputBAM],[$outputBAM,$outputMetrics]);
+  $ro_job->testInputOutputs([$inputBAM], [$outputBAM, $outputMetrics]);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
-    $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'markDup','moduleVersion.java') .' ' .LoadConfig::getParam($rH_cfg, 'markDup', 'moduleVersion.picard').' &&'; 
-    $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'markDup', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'markDup', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'markDup', 'markDupRam').' -jar \${PICARD_HOME}/MarkDuplicates.jar';
+    $command .= LoadConfig::moduleLoad($rH_cfg, [['markDup', 'moduleVersion.java'], ['markDup', 'moduleVersion.picard']]) . ' &&'; 
+    $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'markDup', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'markDup', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'markDup', 'markDupRam') . ' -jar \${PICARD_HOME}/MarkDuplicates.jar';
     $command .= ' REMOVE_DUPLICATES=false CREATE_MD5_FILE=true VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true';
-    $command .= ' TMP_DIR='.LoadConfig::getParam($rH_cfg, 'markDup', 'tmpDir');
-    $command .= ' INPUT='.$inputBAM;
-    $command .= ' OUTPUT='.$outputBAM;
-    $command .= ' METRICS_FILE='.$outputMetrics;
-    $command .= ' MAX_RECORDS_IN_RAM='.LoadConfig::getParam($rH_cfg, 'markDup', 'markDupRecInRam');
+    $command .= ' TMP_DIR=' . LoadConfig::getParam($rH_cfg, 'markDup', 'tmpDir');
+    $command .= ' INPUT=' . $inputBAM;
+    $command .= ' OUTPUT=' . $outputBAM;
+    $command .= ' METRICS_FILE=' . $outputMetrics;
+    $command .= ' MAX_RECORDS_IN_RAM=' . LoadConfig::getParam($rH_cfg, 'markDup', 'markDupRecInRam');
 
     $ro_job->addCommand($command);
   }
@@ -135,18 +140,18 @@ sub collectMetrics {
   my $outputMetrics = shift;
 
   my $ro_job = new Job();
-  $ro_job->testInputOutputs([$inputBAM],[$outputMetrics.'.quality_by_cycle.pdf']);
+  $ro_job->testInputOutputs([$inputBAM], [$outputMetrics . '.quality_by_cycle.pdf']);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
-    $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'collectMetrics','moduleVersion.java') .' ' .LoadConfig::getParam($rH_cfg, 'collectMetrics', 'moduleVersion.picard').' &&'; 
-    $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'collectMetrics', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'collectMetrics', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'collectMetrics', 'collectMetricsRam').' -jar \${PICARD_HOME}/CollectMultipleMetrics.jar';
+    $command .= LoadConfig::moduleLoad($rH_cfg, [['collectMetrics', 'moduleVersion.java'], ['collectMetrics', 'moduleVersion.picard']]) . ' &&'; 
+    $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'collectMetrics', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'collectMetrics', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'collectMetrics', 'collectMetricsRam') . ' -jar \${PICARD_HOME}/CollectMultipleMetrics.jar';
     $command .= ' PROGRAM=CollectAlignmentSummaryMetrics PROGRAM=CollectInsertSizeMetrics  VALIDATION_STRINGENCY=SILENT';
-    $command .= ' TMP_DIR='.LoadConfig::getParam($rH_cfg, 'collectMetrics', 'tmpDir');
-    $command .= ' REFERENCE_SEQUENCE='.LoadConfig::getParam($rH_cfg, 'collectMetrics', 'referenceFasta');
-    $command .= ' INPUT='.$inputBAM;
-    $command .= ' OUTPUT='.$outputMetrics;
-    $command .= ' MAX_RECORDS_IN_RAM='.LoadConfig::getParam($rH_cfg, 'collectMetrics', 'collectMetricsRecInRam');
+    $command .= ' TMP_DIR=' . LoadConfig::getParam($rH_cfg, 'collectMetrics', 'tmpDir');
+    $command .= ' REFERENCE_SEQUENCE=' . LoadConfig::getParam($rH_cfg, 'collectMetrics', 'referenceFasta');
+    $command .= ' INPUT=' . $inputBAM;
+    $command .= ' OUTPUT=' . $outputMetrics;
+    $command .= ' MAX_RECORDS_IN_RAM=' . LoadConfig::getParam($rH_cfg, 'collectMetrics', 'collectMetricsRecInRam');
 
     $ro_job->addCommand($command);
   }
@@ -162,18 +167,18 @@ sub sortSam {
   my $order         = shift;
 
   my $ro_job = new Job();
-  $ro_job->testInputOutputs([$inputBAM],[$outputBAM]);
+  $ro_job->testInputOutputs([$inputBAM], [$outputBAM]);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
-    $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'sortSam','moduleVersion.java') .' ' .LoadConfig::getParam($rH_cfg, 'sortSam', 'moduleVersion.picard') .' &&';
-    $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'sortSam', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'sortSam', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'sortSam', 'sortRam').' -jar \${PICARD_HOME}/SortSam.jar';
+    $command .= LoadConfig::moduleLoad($rH_cfg, [['sortSam', 'moduleVersion.java'], ['sortSam', 'moduleVersion.picard']]) . ' &&';
+    $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'sortSam', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'sortSam', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'sortSam', 'sortRam') . ' -jar \${PICARD_HOME}/SortSam.jar';
     $command .= ' VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true';
-    $command .= ' TMP_DIR='.LoadConfig::getParam($rH_cfg, 'sortSam', 'tmpDir');
-    $command .= ' INPUT='.$inputBAM;
-    $command .= ' OUTPUT='.$outputBAM;
-    $command .= ' SORT_ORDER='.$order;
-    $command .= ' MAX_RECORDS_IN_RAM='.LoadConfig::getParam($rH_cfg, 'sortSam', 'sortRecInRam');
+    $command .= ' TMP_DIR=' . LoadConfig::getParam($rH_cfg, 'sortSam', 'tmpDir');
+    $command .= ' INPUT=' . $inputBAM;
+    $command .= ' OUTPUT=' . $outputBAM;
+    $command .= ' SORT_ORDER=' . $order;
+    $command .= ' MAX_RECORDS_IN_RAM=' . LoadConfig::getParam($rH_cfg, 'sortSam', 'sortRecInRam');
 
     $ro_job->addCommand($command);
   }
@@ -189,18 +194,18 @@ sub reorderSam {
   my $outputBAM     = shift;
 
   my $ro_job = new Job();
-  $ro_job->testInputOutputs([$inputBAM],[$outputBAM]);
+  $ro_job->testInputOutputs([$inputBAM], [$outputBAM]);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
-    $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'reorderSam','moduleVersion.java') .' ' .LoadConfig::getParam($rH_cfg, 'reorderSam', 'moduleVersion.picard') .' &&';
-    $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'reorderSam', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'reorderSam', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'reorderSam', 'reorderRam').' -jar \${PICARD_HOME}/ReorderSam.jar';
+    $command .= LoadConfig::moduleLoad($rH_cfg, [['reorderSam', 'moduleVersion.java'], ['reorderSam', 'moduleVersion.picard']]) . ' &&';
+    $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'reorderSam', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'reorderSam', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'reorderSam', 'reorderRam') . ' -jar \${PICARD_HOME}/ReorderSam.jar';
     $command .= ' VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true';
-    $command .= ' TMP_DIR='.LoadConfig::getParam($rH_cfg, 'reorderSam', 'tmpDir');
-    $command .= ' INPUT='.$inputBAM;
-    $command .= ' OUTPUT='.$outputBAM;
-    $command .= ' REFERENCE='.LoadConfig::getParam($rH_cfg, 'reorderSam', 'referenceFasta');
-    $command .= ' MAX_RECORDS_IN_RAM='.LoadConfig::getParam($rH_cfg, 'reorderSam', 'reorderRecInRam');
+    $command .= ' TMP_DIR=' . LoadConfig::getParam($rH_cfg, 'reorderSam', 'tmpDir');
+    $command .= ' INPUT=' . $inputBAM;
+    $command .= ' OUTPUT=' . $outputBAM;
+    $command .= ' REFERENCE=' . LoadConfig::getParam($rH_cfg, 'reorderSam', 'referenceFasta');
+    $command .= ' MAX_RECORDS_IN_RAM=' . LoadConfig::getParam($rH_cfg, 'reorderSam', 'reorderRecInRam');
 
     $ro_job->addCommand($command);
   }

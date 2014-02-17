@@ -104,27 +104,49 @@ sub readConfigFile {
   }
 }
 
+# Retrive param in config file with optional definition check and type validation
 sub getParam {
   my $rH_cfg  = shift;
   my $section = shift;
-  my $value   = shift;
-  my $validation = shift; # If set to true, raise an error if parameter is not defined in the config file (default: false)
+  my $value = shift;
+  my $required = shift;
+  my $type = shift;
 
+  unless (defined($required)) {$required = 1}; # By default, parameter is required to be defined in the config file
+  unless (defined($type)) {$type = 'string'}; # By default, parameter type is string
+
+  # Search param in specified section
   my $retVal = $rH_cfg->{$section . '.' . $value};
-  if (!defined($retVal)) {
-    $retVal = $rH_cfg->{'default.' . $value};
-    if (!defined($retVal)) {
-      if ($validation) {
-        die "Error: parameter \"[" . $section . "] " . $value . "\" is not defined in config file!";
-      } else {
-        $retVal = "";
+
+  # If not found, search param in default section
+  unless (defined($retVal)) {$retVal = $rH_cfg->{'default.' . $value}};
+
+  if (defined($retVal)) {
+    if (defined($type)) {
+      if ($type eq 'int') {
+        $retVal =~ /^[-+]?\d+$/ or die "Error: parameter \"[" . $section . "] " . $value . "\" value $retVal is not an integer!";
+      } elsif ($type eq 'float') {
+        $retVal =~ /^[-+]?\d*\.?\d+([eE][-+]?\d+)?$/ or die "Error: parameter \"[" . $section . "] " . $value . "\" value $retVal is not a float!";
+      } elsif ($type eq 'path') {
+        my $tmpVal = `echo $retVal`;
+        chomp($tmpVal);
+        -e $tmpVal or die "Error: parameter \"[" . $section . "] " . $value . "\" value $retVal is not a valid path!";
+      } elsif ($type eq 'filepath') {
+        my $tmpVal = `echo $retVal`;
+        chomp($tmpVal);
+        -f $tmpVal or die "Error: parameter \"[" . $section . "] " . $value . "\" value $retVal is not a valid plain file path!";
+      } elsif ($type eq 'dirpath') {
+        my $tmpVal = `echo $retVal`;
+        chomp($tmpVal);
+        -d $tmpVal or die "Error: parameter \"[" . $section . "] " . $value . "\" value $retVal is not a valid directory path!";
       }
     }
-
-    #    if(ref($retVal) eq "ARRAY" && scalar(@{$retVal}) == 0) {
-    #      $retVal = undef;
-    #    }
+  } elsif ($required) {
+    die "Error: parameter \"[" . $section . "] " . $value . "\" is not defined in config file!";
+  } else {
+    $retVal = "";
   }
+
   return $retVal;
 }
 
@@ -138,8 +160,9 @@ sub moduleLoad {
 
   # Check by a system call if module is available
   for my $moduleValue (@moduleValues) {
+    # "module" cmd not found when switching to a different shell so source module.sh is required
     my $moduleShowOutput = `source /etc/profile.d/modules.sh; module show $moduleValue 2>&1`;
-    $moduleShowOutput !~ /Error/i or die "Error in config file:\n$moduleShowOutput";
+    $moduleShowOutput !~ /Error/i or die "Error in config file with $moduleValue:\n$moduleShowOutput";
   }
 
   return "module load " . join(" ", @moduleValues);

@@ -35,6 +35,10 @@ use warnings;
 
 #--------------------------
 
+# Add the mugqic_pipeline/lib/ path relative to this Perl script to @INC library search variable
+use FindBin;
+use lib "$FindBin::Bin";
+
 # Dependencies
 #-----------------------
 use LoadConfig;
@@ -59,51 +63,52 @@ sub align {
   ####mbourgey - Francois' change does not works when using hg1k
 
   my $bwa_idx_basename ;
-  if (-e LoadConfig::getParam($rH_cfg, 'align','referenceFasta') .'.1.bt2') {
-     $bwa_idx_basename  = LoadConfig::getParam($rH_cfg, 'align','referenceFasta');
+  if (-e LoadConfig::getParam($rH_cfg, 'align','referenceFasta') . '.1.bt2') {
+    $bwa_idx_basename = LoadConfig::getParam($rH_cfg, 'align', 'referenceFasta');
   } else {
-     ($bwa_idx_basename  = LoadConfig::getParam($rH_cfg, 'align','referenceFasta') ) =~ s/\.[^.]+$//;
+    ($bwa_idx_basename = LoadConfig::getParam($rH_cfg, 'align', 'referenceFasta')) =~ s/\.[^.]+$//;
   }
-  my $refFile=LoadConfig::getParam($rH_cfg, 'align','referenceGtf');
-  my $refOption=' ';
+  my $refFile = LoadConfig::getParam($rH_cfg, 'align','referenceGtf');
+  my $refOption = ' ';
   if ($refFile ne ' ') {
-    $refOption .= '-G '.$refFile;
+    $refOption .= '-G ' . $refFile;
   }
 
   my $ro_job = new Job();
-  if(defined($pair2)){
+  if (defined($pair2)) {
     $ro_job->testInputOutputs([$pair1, $pair2], [$outputBAM]);
-  }
-  else {
+  } else {
     $ro_job->testInputOutputs([$pair1], [$outputBAM]);
   }
 
   if (!$ro_job->isUp2Date()) {
     my $command;
-    $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'align','moduleVersion.bowtie') ;
-    $command .= ' ' .LoadConfig::getParam($rH_cfg, 'align','moduleVersion.tophat') ;
-    $command .= ' ' .LoadConfig::getParam($rH_cfg, 'align','moduleVersion.samtools').' &&'; 
+    $command .= LoadConfig::moduleLoad($rH_cfg, [
+      ['align', 'moduleVersion.bowtie'],
+      ['align', 'moduleVersion.tophat'],
+      ['align', 'moduleVersion.samtools']
+    ]) . ' &&'; 
     $command .= ' tophat';
-    $command .= ' --rg-library \"' . $rH_laneInfo->{'libraryBarcode'} .'\"';
-    $command .= ' --rg-platform \"' .LoadConfig::getParam($rH_cfg, 'align','platform') .'\"';
-    $command .= ' --rg-platform-unit \"' .$rH_laneInfo->{'lane'} .'\"';
-    $command .= ' --rg-center \"'. LoadConfig::getParam($rH_cfg, 'align','TBInstitution') .'\"';
-    $command .= ' --rg-sample '. $sampleName;
-    $command .= ' --rg-id ' .$rH_laneInfo->{'runId'};
-    $command .= ' --library-type '. LoadConfig::getParam($rH_cfg, 'align','strandInfo');
-#     $command .= ' --fusion-search '. LoadConfig::getParam($rH_cfg, 'align','fusionOption');
-    $command .= ' -o ' .$laneDirectory;
-    $command .= ' -p '. LoadConfig::getParam($rH_cfg, 'align','TBAlnThreads') .$refOption;
-#     $command .= ' -g '. LoadConfig::getParam($rH_cfg, 'align','maxReadLocation');
+    $command .= ' --rg-library \"' . $rH_laneInfo->{'libraryBarcode'} . '\"';
+    $command .= ' --rg-platform \"' . LoadConfig::getParam($rH_cfg, 'align', 'platform') . '\"';
+    $command .= ' --rg-platform-unit \"' . $rH_laneInfo->{'lane'} . '\"';
+    $command .= ' --rg-center \"' . LoadConfig::getParam($rH_cfg, 'align', 'TBInstitution') . '\"';
+    $command .= ' --rg-sample ' . $sampleName;
+    $command .= ' --rg-id ' . $rH_laneInfo->{'runId'};
+    $command .= ' --library-type ' . LoadConfig::getParam($rH_cfg, 'align', 'strandInfo');
+#     $command .= ' --fusion-search ' . LoadConfig::getParam($rH_cfg, 'align', 'fusionOption');
+    $command .= ' -o ' . $laneDirectory;
+    $command .= ' -p ' . LoadConfig::getParam($rH_cfg, 'align', 'TBAlnThreads') . $refOption;
+#     $command .= ' -g ' . LoadConfig::getParam($rH_cfg, 'align', 'maxReadLocation');
 
     #------ flefebvr Tue 16 Apr 09:04:54 2013 
-    #$command .= ' '. LoadConfig::getParam($rH_cfg, 'align','bowtieRefIndex');
-    $command .= ' '. $bwa_idx_basename;
+    #$command .= ' ' . LoadConfig::getParam($rH_cfg, 'align', 'bowtieRefIndex');
+    $command .= ' ' . $bwa_idx_basename;
     #------
 
-    $command .= ' '. $pair1;
-    if(defined($pair2)){
-      $command .= ' ' .$pair2;
+    $command .= ' ' . $pair1;
+    if (defined($pair2)) {
+      $command .= ' ' . $pair2;
     }
 
     $ro_job->addCommand($command);

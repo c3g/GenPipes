@@ -37,176 +37,190 @@ use warnings;
 
 #--------------------------
 
+# Add the mugqic_pipeline/lib/ path relative to this Perl script to @INC library search variable
+use FindBin;
+use lib "$FindBin::Bin";
+
 # Dependencies
 #-----------------------
 use Job;
+use LoadConfig;
 
 # SUB
 #-----------------------
 sub getCutoff {
- 	my $rH_cfg           = shift;
-	my $infile           = shift;
-	my $coverage         = shift;
-	my $genomeSize       = shift;
-	my $coverageFraction = shift;
-	my $xml              = shift;
-	my $xmlOut           = shift;
-	my $outfile          = shift;
+  my $rH_cfg           = shift;
+  my $infile           = shift;
+  my $coverage         = shift;
+  my $genomeSize       = shift;
+  my $coverageFraction = shift;
+  my $xml              = shift;
+  my $xmlOut           = shift;
+  my $outfile          = shift;
 
-  	my $ro_job = new Job();
-	$ro_job->testInputOutputs([$infile], [$outfile]);
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$infile], [$outfile]);
 
-	if (!$ro_job->isUp2Date()) {
-		my $cmd = '';
-	
-		# Choose a subread length threshold such that subreads above the threshold provide about 20x coverage of the genome.
-		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' &&';
-		$cmd .= ' module load '.LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.mugqictools').' &&';
-		$cmd .= ' memtime';
-		$cmd .= ' pacBioGetCutoff.pl';
-		$cmd .= ' --infile ' . $infile;
-		$cmd .= ' --coverage ' . $coverage;
-		$cmd .= ' --genomeSize ' . $genomeSize;
-		$cmd .= ' --coverageCutoff';
-		$cmd .= ' --coverageFraction ' . $coverageFraction;
-		#$cmd .= ' --coverageFraction ' . LoadConfig::getParam($rH_cfg, 'preassembly', 'coverageFraction');
-		$cmd .= ' --xml ' .$xml;
-		$cmd .= ' --xmlOut ' . $xmlOut;
-		$cmd .= ' > '.$outfile;
-	
-		$ro_job->addCommand($cmd);
-	}
-	return $ro_job;
+  if (!$ro_job->isUp2Date()) {
+    my $cmd = '';
+
+    # Choose a subread length threshold such that subreads above the threshold provide about 20x coverage of the genome.
+    $cmd .= LoadConfig::moduleLoad($rH_cfg, [
+      ['memtime', 'moduleVersion.memtime'],
+      ['default', 'moduleVersion.mugqictools']
+    ]) . ' &&';
+    $cmd .= ' memtime';
+    $cmd .= ' pacBioGetCutoff.pl';
+    $cmd .= ' --infile ' . $infile;
+    $cmd .= ' --coverage ' . $coverage;
+    $cmd .= ' --genomeSize ' . $genomeSize;
+    $cmd .= ' --coverageCutoff';
+    $cmd .= ' --coverageFraction ' . $coverageFraction;
+    #$cmd .= ' --coverageFraction ' . LoadConfig::getParam($rH_cfg, 'preassembly', 'coverageFraction');
+    $cmd .= ' --xml ' . $xml;
+    $cmd .= ' --xmlOut ' . $xmlOut;
+    $cmd .= ' > ' . $outfile;
+
+    $ro_job->addCommand($cmd);
+  }
+  return $ro_job;
 }
 
 sub celeraConfig {
- 	my $rH_cfg         = shift;
-	my $merSize        = shift;
-	my $infile         = shift;
-	my $outfile        = shift;
+  my $rH_cfg         = shift;
+  my $merSize        = shift;
+  my $infile         = shift;
+  my $outfile        = shift;
 
-  	my $ro_job = new Job();
-	$ro_job->testInputOutputs([$infile], [$outfile]);
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$infile], [$outfile]);
 
-	if (!$ro_job->isUp2Date()) {
-		my $cmd = '';
-		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' &&';
-		$cmd .= ' module load '.LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.mugqictools').' &&';
-		$cmd .= ' memtime';
-		$cmd .= ' pacBioAssemblyCeleraConfig.pl';
-		$cmd .= ' --infile ' . $infile;
-		$cmd .= ' --merylThreads ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'merylThreads');
-		$cmd .= ' --ovlThreads ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'ovlThreads');
-		$cmd .= ' --overlapper ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'overlapper');
-		$cmd .= ' --merCompression ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'merCompression');
-		$cmd .= ' --merSize ' . $merSize;
-		$cmd .= ' --merylMemory ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'merylMemory');
-		$cmd .= ' --ovlErrorRate ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'ovlErrorRate');
-		$cmd .= ' --ovlMinLen ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'ovlMinLen');
-		$cmd .= ' --frgMinLen ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'frgMinLen');
-		$cmd .= ' --ovlStoreMemory ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'ovlStoreMemory');
-		$cmd .= ' --ovlConcurrency ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'ovlConcurrency');
-		$cmd .= ' --ovlCorrConcurrency ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'ovlCorrConcurrency');
-		$cmd .= ' --cnsConcurrency ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'cnsConcurrency');
-		$cmd .= ' --frgCorrThreads ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'frgCorrThreads');
-		$cmd .= ' > ' . $outfile;
-		$ro_job->addCommand($cmd);
-	}
-	return $ro_job;
+  if (!$ro_job->isUp2Date()) {
+    my $cmd = '';
+    $cmd .= LoadConfig::moduleLoad($rH_cfg, [
+      ['memtime', 'moduleVersion.memtime'],
+      ['default', 'moduleVersion.mugqictools']
+    ]) . ' &&';
+    $cmd .= ' memtime';
+    $cmd .= ' pacBioAssemblyCeleraConfig.pl';
+    $cmd .= ' --infile ' . $infile;
+    $cmd .= ' --merylThreads ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'merylThreads');
+    $cmd .= ' --ovlThreads ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'ovlThreads');
+    $cmd .= ' --overlapper ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'overlapper');
+    $cmd .= ' --merCompression ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'merCompression');
+    $cmd .= ' --merSize ' . $merSize;
+    $cmd .= ' --merylMemory ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'merylMemory');
+    $cmd .= ' --ovlErrorRate ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'ovlErrorRate');
+    $cmd .= ' --ovlMinLen ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'ovlMinLen');
+    $cmd .= ' --frgMinLen ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'frgMinLen');
+    $cmd .= ' --ovlStoreMemory ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'ovlStoreMemory');
+    $cmd .= ' --ovlConcurrency ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'ovlConcurrency');
+    $cmd .= ' --ovlCorrConcurrency ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'ovlCorrConcurrency');
+    $cmd .= ' --cnsConcurrency ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'cnsConcurrency');
+    $cmd .= ' --frgCorrThreads ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'frgCorrThreads');
+    $cmd .= ' > ' . $outfile;
+    $ro_job->addCommand($cmd);
+  }
+  return $ro_job;
 }
 
-sub assemblyStats{
- 	my $rH_cfg                = shift;
-	my $filteredSummary       = shift;
-	#my $assemblyQc            = shift;
-	my $contigs               = shift;
-	my $sampleName            = shift;
-	my $suffix                = shift;
-	my $estimatedGenomeSize   = shift;
-	my $smrtCells             = shift;
-	my $outdir                = shift;
+sub assemblyStats {
+  my $rH_cfg                = shift;
+  my $filteredSummary       = shift;
+  #my $assemblyQc            = shift;
+  my $contigs               = shift;
+  my $sampleName            = shift;
+  my $suffix                = shift;
+  my $estimatedGenomeSize   = shift;
+  my $smrtCells             = shift;
+  my $outdir                = shift;
 
-  	my $ro_job = new Job();
-	$ro_job->testInputOutputs(
-		[$filteredSummary],
-		[$outdir."/summaryTableAssembly.tsv", $outdir."/summaryTableReads.tsv"]
-	);
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs(
+    [$filteredSummary],
+    [$outdir . "/summaryTableAssembly.tsv", $outdir . "/summaryTableReads.tsv"]
+  );
 
-	if (!$ro_job->isUp2Date()) {
-		my $cmd = '';
-		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' &&';
-		$cmd .= ' module load '.LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.R').' &&';
-		$cmd .= ' module load '.LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.mugqictools').' &&';
-		$cmd .= ' memtime ';
-		$cmd .= ' pacBioAssemblyStats.pl';
-		$cmd .= ' --filteredSummary ' . $filteredSummary;
-		#$cmd .= ' --assemblyQc ' . $assemblyQc;
-		$cmd .= ' --contigs ' . $contigs;
-		$cmd .= ' --sampleName ' . $sampleName;
-		$cmd .= ' --suffix ' . $suffix;
-		$cmd .= ' --estimatedGenomeSize ' . $estimatedGenomeSize;
-		$cmd .= ' --smrtCells ' . $smrtCells;
-		$cmd .= ' --outdir ' . $outdir;
+  if (!$ro_job->isUp2Date()) {
+    my $cmd = '';
+    $cmd .= LoadConfig::moduleLoad($rH_cfg, [
+      ['memtime', 'moduleVersion.memtime'],
+      ['default', 'moduleVersion.R'],
+      ['default', 'moduleVersion.mugqictools']
+    ]) . ' &&';
+    $cmd .= ' memtime ';
+    $cmd .= ' pacBioAssemblyStats.pl';
+    $cmd .= ' --filteredSummary ' . $filteredSummary;
+    #$cmd .= ' --assemblyQc ' . $assemblyQc;
+    $cmd .= ' --contigs ' . $contigs;
+    $cmd .= ' --sampleName ' . $sampleName;
+    $cmd .= ' --suffix ' . $suffix;
+    $cmd .= ' --estimatedGenomeSize ' . $estimatedGenomeSize;
+    $cmd .= ' --smrtCells ' . $smrtCells;
+    $cmd .= ' --outdir ' . $outdir;
 
-		$ro_job->addCommand($cmd);
+    $ro_job->addCommand($cmd);
 
-	}
-	return $ro_job;
+  }
+  return $ro_job;
 }
 
 sub splitReads{
- 	my $rH_cfg              = shift;
-	my $subreads            = shift;
-	my $cutoff              = shift; # a file containing the cutoff number is actually passed in arg here.
-	my $shortReads          = shift;
-	my $longReads           = shift;
+  my $rH_cfg              = shift;
+  my $subreads            = shift;
+  my $cutoff              = shift; # a file containing the cutoff number is actually passed in arg here.
+  my $shortReads          = shift;
+  my $longReads           = shift;
 
-  	my $ro_job = new Job();
-	$ro_job->testInputOutputs([$subreads], [$shortReads, $longReads]);
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$subreads], [$shortReads, $longReads]);
 
-	if (!$ro_job->isUp2Date()) {
-		my $cmd = '';
-		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' &&';
-		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.mugqictools').' &&';
-		$cmd .= ' memtime';
-		$cmd .= ' pacBioSplitReads.pl';
-		$cmd .= ' --infile ' . $subreads;
-		$cmd .= ' --cutoff \`cat ' . $cutoff . '\` ';
-		$cmd .= ' --outfileShort ' . $shortReads;
-		$cmd .= ' --outfileLong ' . $longReads;
+  if (!$ro_job->isUp2Date()) {
+    my $cmd = '';
+    $cmd .= LoadConfig::moduleLoad($rH_cfg, [
+      ['memtime', 'moduleVersion.memtime'],
+      ['default', 'moduleVersion.mugqictools']
+    ]) . ' &&';
+    $cmd .= ' memtime';
+    $cmd .= ' pacBioSplitReads.pl';
+    $cmd .= ' --infile ' . $subreads;
+    $cmd .= ' --cutoff \`cat ' . $cutoff . '\` ';
+    $cmd .= ' --outfileShort ' . $shortReads;
+    $cmd .= ' --outfileLong ' . $longReads;
 
-		$ro_job->addCommand($cmd);
+    $ro_job->addCommand($cmd);
 
-	}
-	return $ro_job;
+  }
+  return $ro_job;
 }
 
 sub compile{
- 	my $rH_cfg              = shift;
-	my $indir               = shift;
-	my $sampleName          = shift;
-	my $estimatedGenomeSize = shift;
-	my $outfile             = shift;
+  my $rH_cfg              = shift;
+  my $indir               = shift;
+  my $sampleName          = shift;
+  my $estimatedGenomeSize = shift;
+  my $outfile             = shift;
 
-  	my $ro_job = new Job();
-	$ro_job->testInputOutputs(undef, undef);
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs(undef, undef);
 
-	if (!$ro_job->isUp2Date()) {
-		my $cmd = '';
-		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' ;';
-		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.mugqictools').' ;';
-		$cmd .= ' memtime';
-		$cmd .= ' pacBioCompileStats.pl';
-		$cmd .= ' --indir ' . $indir;
-		$cmd .= ' --estimatedGenomeSize ' . $estimatedGenomeSize;
-		$cmd .= ' --sampleName ' . $sampleName;
-		$cmd .= ' > ' . $outfile;
+  if (!$ro_job->isUp2Date()) {
+    my $cmd = '';
+    $cmd .= LoadConfig::moduleLoad($rH_cfg, [
+      ['memtime', 'moduleVersion.memtime'],
+      ['default', 'moduleVersion.mugqictools']
+    ]) . ' ;';
+    $cmd .= ' memtime';
+    $cmd .= ' pacBioCompileStats.pl';
+    $cmd .= ' --indir ' . $indir;
+    $cmd .= ' --estimatedGenomeSize ' . $estimatedGenomeSize;
+    $cmd .= ' --sampleName ' . $sampleName;
+    $cmd .= ' > ' . $outfile;
 
-		$ro_job->addCommand($cmd);
+    $ro_job->addCommand($cmd);
 
-	}
-	return $ro_job;
+  }
+  return $ro_job;
 }
-
 
 1;

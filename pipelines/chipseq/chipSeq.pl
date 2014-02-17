@@ -356,7 +356,7 @@ sub aligning{
     my $rgLibrary = $rH_laneInfo->{'libraryBarcode'};
     my $rgPlatformUnit = 'run' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
     my $rgCenter = LoadConfig::getParam($rH_cfg, 'aln', 'bwaInstitution');
-    my $qfilterRead=LoadConfig::getParam($rH_cfg, 'aln', 'filterReadsMAPQ');
+    my $qfilterRead=LoadConfig::getParam($rH_cfg, 'aln', 'filterReadsMAPQ', 0, 'int');
     
     # Threshold for MAPQ to filter reads
     if (!defined($qfilterRead) || $qfilterRead < 1 ){

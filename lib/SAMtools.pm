@@ -35,9 +35,14 @@ use warnings;
 
 #--------------------------
 
+# Add the mugqic_pipeline/lib/ path relative to this Perl script to @INC library search variable
+use FindBin;
+use lib "$FindBin::Bin";
+
 # Dependencies
 #-----------------------
 use Job;
+use LoadConfig;
 
 # SUB
 #-----------------------
@@ -72,17 +77,17 @@ sub mpileupBuilder {
   my $rA_bams     = shift;
   my $isPaired    = shift;
 
-  if(defined($isPaired) && $isPaired == 1 && @{$rA_bams} != 2) {
+  if (defined($isPaired) && $isPaired == 1 && @{$rA_bams} != 2) {
     die("Paired was asked but there aren't 2 bams given\n");
   }
 
   my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta');
-  my $outputBCF = $outputDir.$sampleName.'.bcf'; 
+  my $outputBCF = $outputDir . $sampleName . '.bcf';
 
   my $regionCmd = ' ';
   if (defined($seqName)) {
-    $regionCmd =' -r '.$seqName;
-    $outputBCF = $outputDir.$sampleName.'.'.$seqName.'.bcf'; 
+    $regionCmd =' -r ' . $seqName;
+    $outputBCF = $outputDir . $sampleName . '.' . $seqName . '.bcf';
   }
 
   my $ro_job = new Job();
@@ -90,19 +95,18 @@ sub mpileupBuilder {
 
   if (!$ro_job->isUp2Date()) {
     my $command;
-    $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'mpileup', 'moduleVersion.samtools').' &&';
+    $command .= LoadConfig::moduleLoad($rH_cfg, [['mpileup', 'moduleVersion.samtools']]) . ' &&';
     $command .= ' samtools mpileup';
-    $command .= ' '.LoadConfig::getParam($rH_cfg, 'mpileup', 'mpileupExtraFlags');
-    $command .= ' -f '.$refGenome;
+    $command .= ' ' . LoadConfig::getParam($rH_cfg, 'mpileup', 'mpileupExtraFlags');
+    $command .= ' -f ' . $refGenome;
     $command .= $regionCmd;
     for my $bamFiles (@{$rA_bams}) {
-      $command .= ' '.$bamFiles;
+      $command .= ' ' . $bamFiles;
     }
-    if(defined($isPaired) && $isPaired == 1) {
-      $command .= ' | bcftools view -T pair -bvcg - > '.$outputBCF;
-    }
-    else {
-      $command .= ' | bcftools view -bvcg - > '.$outputBCF;
+    if (defined($isPaired) && $isPaired == 1) {
+      $command .= ' | bcftools view -T pair -bvcg - > ' . $outputBCF;
+    } else {
+      $command .= ' | bcftools view -bvcg - > ' . $outputBCF;
     }
 
     $ro_job->addCommand($command);
@@ -115,35 +119,35 @@ sub mergeFilterBCF {
   my $rH_cfg      = shift;
   my $sampleName  = shift;
   my $bcfDir      = shift;
-  my $outputDir   = shift; 
+  my $outputDir   = shift;
   my $rA_seqNames = shift;
 
   my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta');
-  my $outputBCF = $outputDir.$sampleName.'.merged.bcf'; 
-  my $outputVCF = $outputDir.$sampleName.'.merged.flt.vcf'; 
+  my $outputBCF = $outputDir . $sampleName . '.merged.bcf';
+  my $outputVCF = $outputDir . $sampleName . '.merged.flt.vcf';
 
   my $bcfInputs = "";
   my @inputs;
   for my $seqName (@$rA_seqNames) {
-    my $bcfFile = $bcfDir.$sampleName.'.'.$seqName.'.bcf'; 
+    my $bcfFile = $bcfDir . $sampleName . '.' . $seqName . '.bcf';
     push(@inputs, $bcfFile);
 
-    $bcfInputs .= $bcfFile.' ';
+    $bcfInputs .= $bcfFile . ' ';
   }
-  
+
   my $ro_job = new Job();
   $ro_job->testInputOutputs(\@inputs, [$outputBCF, $outputVCF]);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
-    $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'mergeFilterBCF', 'moduleVersion.samtools').' &&';
+    $command .= LoadConfig::moduleLoad($rH_cfg, [['mergeFilterBCF', 'moduleVersion.samtools']]) . ' &&';
     $command .= ' bcftools cat';
-    $command .= ' '.$bcfInputs;
-    $command .= ' > '.$outputBCF;
-    $command .= ' && bcftools view '.$outputBCF;
+    $command .= ' ' . $bcfInputs;
+    $command .= ' > ' . $outputBCF;
+    $command .= ' && bcftools view ' . $outputBCF;
     $command .= ' | vcfutils.pl varFilter';
-    $command .= ' '.LoadConfig::getParam($rH_cfg, 'mergeFilterBCF', 'varfilterExtraFlags');
-    $command .= ' > '.$outputVCF;
+    $command .= ' ' . LoadConfig::getParam($rH_cfg, 'mergeFilterBCF', 'varfilterExtraFlags');
+    $command .= ' > ' . $outputVCF;
 
     $ro_job->addCommand($command);
   }
@@ -161,10 +165,10 @@ sub flagstat {
 
   if (!$ro_job->isUp2Date()) {
     my $command;
-    $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'flagstat', 'moduleVersion.samtools').' &&';
+    $command .= LoadConfig::moduleLoad($rH_cfg, [['flagstat', 'moduleVersion.samtools']]) . ' &&';
     $command .= ' samtools flagstat';
-    $command .= ' '.$bamFile;
-    $command .= ' > '.$output;
+    $command .= ' ' . $bamFile;
+    $command .= ' > ' . $output;
 
     $ro_job->addCommand($command);
   }
@@ -182,10 +186,10 @@ sub idxstats {
 
   if (!$ro_job->isUp2Date()) {
     my $command;
-    $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'idxstats', 'moduleVersion.samtools').' &&';
+    $command .= LoadConfig::moduleLoad($rH_cfg, [['idxstats', 'moduleVersion.samtools']]) . ' &&';
     $command .= ' samtools idxstats';
-    $command .= ' '.$bamFile;
-    $command .= ' > '.$output;
+    $command .= ' ' . $bamFile;
+    $command .= ' > ' . $output;
 
     $ro_job->addCommand($command);
   }
@@ -206,13 +210,13 @@ sub rawmpileup {
 
   if (!$ro_job->isUp2Date()) {
     my $command;
-    $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'rawmpileup', 'moduleVersion.samtools').' &&';
+    $command .= LoadConfig::moduleLoad($rH_cfg, [['rawmpileup', 'moduleVersion.samtools']]) . ' &&';
     $command .= ' samtools mpileup';
-    $command .= ' '.LoadConfig::getParam($rH_cfg, 'rawmpileup', 'mpileupExtraFlags');
-    $command .= ' -f '.$refGenome;
-    $command .= ' -r '.$seqName;
-    $command .= ' '.$bamFile;
-    $command .= ' | gzip -1 -c > '.$output;
+    $command .= ' ' . LoadConfig::getParam($rH_cfg, 'rawmpileup', 'mpileupExtraFlags');
+    $command .= ' -f ' . $refGenome;
+    $command .= ' -r ' . $seqName;
+    $command .= ' ' . $bamFile;
+    $command .= ' | gzip -1 -c > ' . $output;
 
     $ro_job->addCommand($command);
   }
@@ -229,13 +233,13 @@ sub sort {
   my $ro_job = new Job();
   $ro_job->testInputOutputs([$bamFile], [$output]);
 
-  if (!$ro_job->isUp2Date()) { 
+  if (!$ro_job->isUp2Date()) {
     my $command;
-    $command .= 'module load ' .LoadConfig::getParam($rH_cfg,'default','moduleVersion.samtools') .' &&';
+    $command .= LoadConfig::moduleLoad($rH_cfg, [['default', 'moduleVersion.samtools']]) . ' &&';
     $command .= ' samtools sort';
-    $command .= ' '.$option;
-    $command .= ' '.$bamFile;
-    $command .= ' '.$output;
+    $command .= ' ' . $option;
+    $command .= ' ' . $bamFile;
+    $command .= ' ' . $output;
 
     $ro_job->addCommand($command);
   }
@@ -244,39 +248,38 @@ sub sort {
 }
 
 sub viewFilter {
-	my $rH_cfg      = shift;
-	my $bamFile     = shift;
-	my $option      = shift;
-	my $output      = shift;
+  my $rH_cfg      = shift;
+  my $bamFile     = shift;
+  my $option      = shift;
+  my $output      = shift;
 
-	my $returnOutput = '';
-	if (defined($output)) {
-		$returnOutput = ' > ' .$output;
-	}
-	if (!(defined($option))) {
-		$option = '';
-	}
-	
-  my $ro_job = new Job();
-  if(defined($output)) {
-  	$ro_job->testInputOutputs([$bamFile], [$output]);
+  my $returnOutput = '';
+  if (defined($output)) {
+    $returnOutput = ' > ' . $output;
   }
-  else {
+  if (!(defined($option))) {
+    $option = '';
+  }
+
+  my $ro_job = new Job();
+  if (defined($output)) {
+    $ro_job->testInputOutputs([$bamFile], [$output]);
+  } else {
     $ro_job->testInputOutputs([$bamFile], undef);
   }
 
   if (!$ro_job->isUp2Date()) {
-  	my $command;
-	  $command .= 'module load ' .LoadConfig::getParam($rH_cfg,'default','moduleVersion.samtools') .' &&';
-  	$command .= ' samtools view';
-	  $command .= ' ' .$option;
-  	$command .= ' ' .$bamFile;
-	  $command .= $returnOutput;
+    my $command;
+    $command .= LoadConfig::moduleLoad($rH_cfg, [['default', 'moduleVersion.samtools']]) . ' &&';
+    $command .= ' samtools view';
+    $command .= ' ' . $option;
+    $command .= ' ' . $bamFile;
+    $command .= $returnOutput;
 
     $ro_job->addCommand($command);
   }
 
-	return $ro_job;
+  return $ro_job;
 }
 
 1;
