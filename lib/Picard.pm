@@ -144,7 +144,11 @@ sub collectMetrics {
 
   if (!$ro_job->isUp2Date()) {
     my $command;
-    $command .= LoadConfig::moduleLoad($rH_cfg, [['collectMetrics', 'moduleVersion.java'], ['collectMetrics', 'moduleVersion.picard']]) . ' &&'; 
+    $command .= LoadConfig::moduleLoad($rH_cfg, [
+      ['collectMetrics', 'moduleVersion.java'],
+      ['collectMetrics', 'moduleVersion.picard'],
+      ['collectMetrics', 'moduleVersion.cranR']
+    ]) . ' &&'; 
     $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'collectMetrics', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'collectMetrics', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'collectMetrics', 'collectMetricsRam') . ' -jar \${PICARD_HOME}/CollectMultipleMetrics.jar';
     $command .= ' PROGRAM=CollectAlignmentSummaryMetrics PROGRAM=CollectInsertSizeMetrics  VALIDATION_STRINGENCY=SILENT';
     $command .= ' TMP_DIR=' . LoadConfig::getParam($rH_cfg, 'collectMetrics', 'tmpDir');
