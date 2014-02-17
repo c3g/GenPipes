@@ -68,7 +68,7 @@ sub run {
     $cmd .= ' source \${SEYMOUR_HOME}/etc/setup.sh &&';
     $cmd .= ' memtime';
     $cmd .= ' smrtpipe.py';
-    $cmd .= ' -D NPROC=' . LoadConfig::getParam($rH_cfg, 'smrtanalysis', 'num_threads');
+    $cmd .= ' -D NPROC=' . LoadConfig::getParam($rH_cfg, 'smrtanalysis', 'num_threads', 1, 'int');
     $cmd .= ' -D TMP=' . $tmpdir;
     $cmd .= ' --params=' . $paramsXml;
     $cmd .= ' --output=' . $outdir;
@@ -115,14 +115,14 @@ sub filtering {
     $cmd .= ' && ';
     # Xml
     $cmd .= 'memtime';
-    $cmd .= " sed -e \'s/MINSUBREADLENGTH/" . LoadConfig::getParam($rH_cfg, 'filtering', 'minSubReadLength') . "/g\'";
-    $cmd .= " -e \'s/MINREADLENGTH/" . LoadConfig::getParam($rH_cfg, 'filtering', 'minReadLength') . "/g\'";
-    $cmd .= " -e \'s/MINQUAL/" . LoadConfig::getParam($rH_cfg, 'filtering', 'minQual') . "/g\' < " . $refParamsXml . " > " . $currParamsXml;
+    $cmd .= " sed -e \'s/MINSUBREADLENGTH/" . LoadConfig::getParam($rH_cfg, 'filtering', 'minSubReadLength', 1, 'int') . "/g\'";
+    $cmd .= " -e \'s/MINREADLENGTH/" . LoadConfig::getParam($rH_cfg, 'filtering', 'minReadLength', 1, 'int') . "/g\'";
+    $cmd .= " -e \'s/MINQUAL/" . LoadConfig::getParam($rH_cfg, 'filtering', 'minQual', 1, 'float') . "/g\' < " . $refParamsXml . " > " . $currParamsXml;
     $cmd .= ' && ';
     # SmrtPipe
     $cmd .= 'memtime';
     $cmd .= ' smrtpipe.py';
-    $cmd .= ' -D NPROC=' . LoadConfig::getParam($rH_cfg, 'filtering', 'num_threads');
+    $cmd .= ' -D NPROC=' . LoadConfig::getParam($rH_cfg, 'filtering', 'num_threads', 1, 'int');
     $cmd .= ' -D TMP=' . $tmpdir;
     $cmd .= ' --params=' . $currParamsXml;
     $cmd .= ' --output=' . $outdir;
@@ -250,14 +250,14 @@ sub blasr {
     $cmd .= ' ' . $infile;
     $cmd .= ' ' . $infileLong;
     $cmd .= ' -out ' . $outfile;
-    $cmd .= ' -m ' . LoadConfig::getParam($rH_cfg, 'blasr', 'm');
-    $cmd .= ' -nproc ' . LoadConfig::getParam($rH_cfg, 'blasr', 'num_threads');
-    $cmd .= ' -bestn ' . LoadConfig::getParam($rH_cfg, 'blasr', 'bestn');
-    $cmd .= ' -nCandidates ' . LoadConfig::getParam($rH_cfg, 'blasr', 'nCandidates');
+    $cmd .= ' -m ' . LoadConfig::getParam($rH_cfg, 'blasr', 'm', 1, 'int');
+    $cmd .= ' -nproc ' . LoadConfig::getParam($rH_cfg, 'blasr', 'num_threads', 1, 'int');
+    $cmd .= ' -bestn ' . LoadConfig::getParam($rH_cfg, 'blasr', 'bestn', 1, 'int');
+    $cmd .= ' -nCandidates ' . LoadConfig::getParam($rH_cfg, 'blasr', 'nCandidates', 1, 'int');
     $cmd .= ' -noSplitSubreads';
-    $cmd .= ' -minReadLength ' . LoadConfig::getParam($rH_cfg, 'blasr', 'minReadLength');
-    $cmd .= ' -maxScore ' . LoadConfig::getParam($rH_cfg, 'blasr', 'maxScore');
-    $cmd .= ' -maxLCPLength ' . LoadConfig::getParam($rH_cfg, 'blasr', 'maxLCPLength');
+    $cmd .= ' -minReadLength ' . LoadConfig::getParam($rH_cfg, 'blasr', 'minReadLength', 1, 'int');
+    $cmd .= ' -maxScore ' . LoadConfig::getParam($rH_cfg, 'blasr', 'maxScore', 1, 'int');
+    $cmd .= ' -maxLCPLength ' . LoadConfig::getParam($rH_cfg, 'blasr', 'maxLCPLength', 1, 'int');
     if ($sam eq "sam") {
       $cmd .= ' -sam';
     }
@@ -290,7 +290,7 @@ sub m4topre {
     $cmd .= ' ' . $infile;
     $cmd .= ' ' . $allm4;
     $cmd .= ' ' . $subreads;
-    $cmd .= ' ' . LoadConfig::getParam($rH_cfg, 'm4topre', 'bestn');
+    $cmd .= ' ' . LoadConfig::getParam($rH_cfg, 'm4topre', 'bestn', 1, 'int');
     $cmd .= ' > ' . $outfile;
 
     $ro_job->addCommand($cmd);
@@ -317,7 +317,7 @@ sub pbdagcon {
     $cmd .= ' memtime';
     $cmd .= ' pbdagcon';
     $cmd .= ' -a ';
-    $cmd .= ' -j ' . LoadConfig::getParam($rH_cfg, 'pbdagcon', 'num_threads');
+    $cmd .= ' -j ' . LoadConfig::getParam($rH_cfg, 'pbdagcon', 'num_threads', 1, 'int');
     $cmd .= ' ' . $infile;
     $cmd .= ' > ' . $outfile;
     $cmd .= ' && ';
@@ -349,7 +349,7 @@ sub quiver {
     $cmd .= ' source \${SEYMOUR_HOME}/etc/setup.sh && ';
     $cmd .= ' memtime';
     $cmd .= ' quiver';
-    $cmd .= ' -j ' . LoadConfig::getParam($rH_cfg, 'quiver', 'num_threads');
+    $cmd .= ' -j ' . LoadConfig::getParam($rH_cfg, 'quiver', 'num_threads', 1, 'int');
     $cmd .= ' ' . $infile;
     $cmd .= ' -r ' . $ref;
     $cmd .= ' -o ' . $outfileVariants;
@@ -379,7 +379,7 @@ sub callVariants {
     $cmd .= ' source \${SEYMOUR_HOME}/etc/setup.sh &&';
     $cmd .= ' memtime';
     $cmd .= ' variantCaller.py';
-    $cmd .= ' -j ' . LoadConfig::getParam($rH_cfg, 'quiver', 'num_threads');
+    $cmd .= ' -j ' . LoadConfig::getParam($rH_cfg, 'quiver', 'num_threads', 1, 'int');
     $cmd .= ' --algorithm quiver';
     $cmd .= ' --referenceFilename ' . $ref;
     $cmd .= ' --parameters best';
@@ -440,7 +440,7 @@ sub compareSequences {
     $cmd .= ' memtime';
     $cmd .= ' compareSequences.py';
     $cmd .= ' --info --useGuidedAlign --algorithm=blasr';
-    $cmd .= ' --nproc=' . LoadConfig::getParam($rH_cfg, 'compareSequences', 'num_threads');
+    $cmd .= ' --nproc=' . LoadConfig::getParam($rH_cfg, 'compareSequences', 'num_threads', 1, 'int');
     $cmd .= ' --noXML --h5mode=w';
     $cmd .= ' --h5fn=' . $cmpH5;
     $cmd .= ' --seed=1 --minAccuracy=0.75 --minLength=50 --useQuality -x -minMatch 12 -x -bestn 10 -x -minPctIdentity 70.0 --placeRepeatsRandomly';
@@ -503,9 +503,9 @@ sub variantCaller {
     $cmd .= ' source \${SEYMOUR_HOME}/etc/setup.sh &&';
     $cmd .= ' memtime';
     $cmd .= ' variantCaller.py';
-    $cmd .= ' -P' . LoadConfig::getParam($rH_cfg, 'variantCaller', 'protocol');
+    $cmd .= ' -P' . LoadConfig::getParam($rH_cfg, 'variantCaller', 'protocol', 1, 'dirpath');
     $cmd .= ' -v';
-    $cmd .= ' -j' . LoadConfig::getParam($rH_cfg, 'variantCaller', 'num_threads');
+    $cmd .= ' -j' . LoadConfig::getParam($rH_cfg, 'variantCaller', 'num_threads', 1, 'int');
     $cmd .= ' --algorithm=' . LoadConfig::getParam($rH_cfg, 'variantCaller', 'algorithm');;
     $cmd .= ' ' . $cmpH5;
     $cmd .= ' -r ' . $refFasta;
@@ -545,48 +545,48 @@ sub sortH5 {
   return $ro_job;
 }
 
-sub runCASpecWriter {
-  my $rH_cfg             = shift;
-  my $genomeSize         = shift;
-  my $estimatedCoverage  = shift;
-  my $merSize            = shift;
-  my $readsFasta         = shift;
-  my $specOut            = shift;
-
-  my $ro_job = new Job();
-  $ro_job->testInputOutputs(undef, undef);
-
-  if (!$ro_job->isUp2Date()) {
-    my $cmd = '';
-    $cmd .= LoadConfig::moduleLoad($rH_cfg, [
-      ['memtime', 'moduleVersion.memtime'],
-      ['smrtanalysis', 'moduleVersion.smrtanalysis']
-    ]) . ' &&';
-    $cmd .= ' source \${SEYMOUR_HOME}/etc/setup.sh &&';
-    $cmd .= ' memtime';
-    $cmd .= ' runCASpecWriter.py';
-    $cmd .= ' -vv ';
-    $cmd .= ' --bitTable=\${SEYMOUR_HOME}/analysis/etc/celeraAssembler/bitTable';
-    $cmd .= ' --interactiveTmpl=\${SEYMOUR_HOME}/analysis/etc/cluster/SGE/interactive.tmpl';
-    $cmd .= ' --smrtpipeRc=\${SEYMOUR_HOME}/analysis/etc/smrtpipe.rc';
-    $cmd .= ' --genomeSize ' . $genomeSize;
-    $cmd .= ' --defaultFrgMinLen=' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'minReadSize');
-    $cmd .= ' --xCoverage=' . $estimatedCoverage;
-    $cmd .= ' --ovlErrorRate=' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'ovlErrorRate');
-    $cmd .= ' --ovlMinLen=' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'ovlMinLen');
-    $cmd .= ' --corrReadsFasta ' . $readsFasta;
-    $cmd .= ' --specOut=' . $specOut;
-    $cmd .= ' --merSize=' . $merSize;
-    $cmd .= ' --sgeName=pacbioReads';
-    $cmd .= ' --gridParams=\"useGrid:0,scriptOnGrid:0,frgCorrOnGrid:0,ovlCorrOnGrid:0\"';
-    $cmd .= ' --maxSlotPerc=1';
-    $cmd .= ' ' . LoadConfig::getParam($rH_cfg, 'default', 'celeraSettings');
-    #$cmd .= ' \${SEYMOUR_HOME}/analysis/etc/celeraAssembler/template.spec';
-
-    $ro_job->addCommand($cmd);
-  }
-  return $ro_job;
-}
+#sub runCASpecWriter {
+#  my $rH_cfg             = shift;
+#  my $genomeSize         = shift;
+#  my $estimatedCoverage  = shift;
+#  my $merSize            = shift;
+#  my $readsFasta         = shift;
+#  my $specOut            = shift;
+#
+#  my $ro_job = new Job();
+#  $ro_job->testInputOutputs(undef, undef);
+#
+#  if (!$ro_job->isUp2Date()) {
+#    my $cmd = '';
+#    $cmd .= LoadConfig::moduleLoad($rH_cfg, [
+#      ['memtime', 'moduleVersion.memtime'],
+#      ['smrtanalysis', 'moduleVersion.smrtanalysis']
+#    ]) . ' &&';
+#    $cmd .= ' source \${SEYMOUR_HOME}/etc/setup.sh &&';
+#    $cmd .= ' memtime';
+#    $cmd .= ' runCASpecWriter.py';
+#    $cmd .= ' -vv ';
+#    $cmd .= ' --bitTable=\${SEYMOUR_HOME}/analysis/etc/celeraAssembler/bitTable';
+#    $cmd .= ' --interactiveTmpl=\${SEYMOUR_HOME}/analysis/etc/cluster/SGE/interactive.tmpl';
+#    $cmd .= ' --smrtpipeRc=\${SEYMOUR_HOME}/analysis/etc/smrtpipe.rc';
+#    $cmd .= ' --genomeSize ' . $genomeSize;
+#    $cmd .= ' --defaultFrgMinLen=' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'minReadSize');
+#    $cmd .= ' --xCoverage=' . $estimatedCoverage;
+#    $cmd .= ' --ovlErrorRate=' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'ovlErrorRate', 1, 'float');
+#    $cmd .= ' --ovlMinLen=' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'ovlMinLen', 1, 'int');
+#    $cmd .= ' --corrReadsFasta ' . $readsFasta;
+#    $cmd .= ' --specOut=' . $specOut;
+#    $cmd .= ' --merSize=' . $merSize;
+#    $cmd .= ' --sgeName=pacbioReads';
+#    $cmd .= ' --gridParams=\"useGrid:0,scriptOnGrid:0,frgCorrOnGrid:0,ovlCorrOnGrid:0\"';
+#    $cmd .= ' --maxSlotPerc=1';
+#    $cmd .= ' ' . LoadConfig::getParam($rH_cfg, 'default', 'celeraSettings');
+#    #$cmd .= ' \${SEYMOUR_HOME}/analysis/etc/celeraAssembler/template.spec';
+#
+#    $ro_job->addCommand($cmd);
+#  }
+#  return $ro_job;
+#}
 
 sub summarizePolishing {
   my $rH_cfg             = shift;
@@ -616,7 +616,7 @@ sub summarizePolishing {
     $cmd .= ' gffToBed.py --name=meanCoverage --description=\"Mean coverage of genome in fixed interval regions\" coverage ' . $alignmentSummary . ' > ' . $coverageBed;
     $cmd .= ' && ';
     $cmd .= 'memtime';
-    $cmd .= ' loadSequencingChemistryIntoCmpH5.py --xml ' . LoadConfig::getParam($rH_cfg, 'summarizePolishing', 'chemistryMapping') . ' --h5 ' . $alignedReadsCmpH5;
+    $cmd .= ' loadSequencingChemistryIntoCmpH5.py --xml ' . LoadConfig::getParam($rH_cfg, 'summarizePolishing', 'chemistryMapping', 1, 'filepath') . ' --h5 ' . $alignedReadsCmpH5;
     $cmd .= ' && ';
     $cmd .= 'memtime';
     $cmd .= ' h5repack -f GZIP=1 ' . $alignedReadsCmpH5 . ' ' . $alignedReadsCmpH5 . '.repacked && mv ' . $alignedReadsCmpH5 . '.repacked ' . $alignedReadsCmpH5;

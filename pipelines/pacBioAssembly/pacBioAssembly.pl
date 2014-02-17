@@ -38,14 +38,9 @@ use strict;
 use warnings;
 #---------------------
 
-BEGIN{
-    #Makesure we can find the GetConfig::LoadModules module relative to this script install
-    use File::Basename;
-    use Cwd 'abs_path';
-    my ( undef, $mod_path, undef ) = fileparse( abs_path(__FILE__) );
-	unshift @INC, $mod_path."lib";
-}
-
+# Add the mugqic_pipeline/lib/ path relative to this Perl script to @INC library search variable
+use FindBin;
+use lib "$FindBin::Bin/../../lib";
 
 # Dependencies
 #--------------------
@@ -392,7 +387,7 @@ sub filtering{
 		"$outdir/$sampleName/filtering/input.xml",
 		"$outdir/$sampleName/filtering/input.fofn",	
 		# Xml
-		LoadConfig::getParam($rH_cfg, 'default', 'filteringSettings'),
+		LoadConfig::getParam($rH_cfg, 'default', 'filteringSettings', 1, 'filepath'),
 		$outdir."/".$sampleName."/filtering.xml",		
 		# Filtering smrtpipe
 		"$outdir/$sampleName/filtering",
@@ -458,7 +453,7 @@ sub getStats{
 		$estimatedCoverage,
 		$estimatedGenomeSize,
 		$coverageCutoff,
-		LoadConfig::getParam($rH_cfg, 'default', 'preassemblySettings'),
+		LoadConfig::getParam($rH_cfg, 'default', 'preassemblySettings', 1, 'filepath'),
 		"$outdir/$sampleName/$suffix/preassembly.xml",
 		"$outdir/$sampleName/$suffix/preassemblyMinReadSize.txt"
 	);
@@ -522,7 +517,7 @@ sub preassembly{
 		if( $computeCutoffFlag == 1 ){ # do not use default, compute cutoff.
 			$currentParams = "$outdir/$sampleName/$suffix/preassembly.xml"
 		}elsif( $computeCutoffFlag == 0 ){ # use default, do not compute cutoff
-			$currentParams = LoadConfig::getParam($rH_cfg, 'default', 'preassemblySettings')
+			$currentParams = LoadConfig::getParam($rH_cfg, 'default', 'preassemblySettings', 1, 'filepath')
 		}else{ die "Invalid value for -t arg...\n";}
 
 		my $rO_jobPreassembly = SmrtAnalysis::run(
@@ -643,7 +638,7 @@ sub assembly{
 	my $rO_jobCeleraConfig = PacBioTools::celeraConfig(
 		$rH_cfg,
 		$merSizeValue,
-		LoadConfig::getParam($rH_cfg, 'default', 'celeraSettings'),
+		LoadConfig::getParam($rH_cfg, 'default', 'celeraSettings', 1, 'filepath'),
 		"$outdir/$sampleName/$suffix/$merSize/celeraAssembly.ini"
 	);
 	if(!$rO_jobCeleraConfig->isUp2Date()){
@@ -1005,7 +1000,7 @@ sub epigenome{
 	my $cmd;
 
 	# Prepare xml
-	$cmd = "cat ".LoadConfig::getParam($rH_cfg, 'default', 'motifsSettings');
+	$cmd = "cat ".LoadConfig::getParam($rH_cfg, 'default', 'motifsSettings', 1, 'filepath');
 	$cmd .= " | sed \'s|REFERENCE|".$outdir."/".$sampleName.$suffix."/assembly/".$sampleName.$suffix." | g\' > ".$outdir."/".$sampleName.$suffix."/motifs/motifs.xml";
 	my $rO_jobRunCommand = SmrtAnalysis::runCommand(
 		$rH_cfg,
@@ -1090,12 +1085,12 @@ sub report {
 	#	$path= 'report.path=\"' .$pathTMP .'\",';
     #}   
 	my $author = ""; 
-	my $authorTMP = LoadConfig::getParam($rH_cfg, 'report','report.author');
+	my $authorTMP = LoadConfig::getParam($rH_cfg, 'report','report.author', 0);
 	if (defined($authorTMP) && !($authorTMP eq "")) {
 		$author= 'report.author=\"' .$authorTMP .'\",';
 	}   
 	my $contact = ""; 
-	my $contactTMP = LoadConfig::getParam($rH_cfg, 'report','report.contact');
+	my $contactTMP = LoadConfig::getParam($rH_cfg, 'report','report.contact', 0);
 	if (defined($contactTMP) && !($contactTMP eq "")) {
 		$contact= 'report.contact=\"' .$contactTMP .'\",';
 	} 	

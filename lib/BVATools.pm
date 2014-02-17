@@ -172,7 +172,7 @@ sub depthOfCoverage {
     $ro_job->testInputOutputs([$inputBam], [$outputFile]);
   }
 
-  my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta');
+  my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta', 1, 'filepath');
   my $rA_thresholds = LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'percentThresholds');
 
   if (!$ro_job->isUp2Date()) {

@@ -58,7 +58,7 @@ sub annotateMappability {
     ]) . ' &&';
     $command .= ' vcf-annotate -d \"key=INFO,ID=MIL,Number=1,Type=String,Description=' . "'" . 'Mappability annotation. 300IS 40SD 1SHI. HC = to high coverage (>400), LC = to high coverage (<50), MQ = to low mean mapQ (<20), ND = no data at the position' . "'" . '\"';
     $command .= ' -c CHROM,FROM,TO,INFO/MIL ';
-    $command .= ' -a ' . LoadConfig::getParam($rH_cfg, 'annotateMappability', 'referenceMappabilityBedIndexed');
+    $command .= ' -a ' . LoadConfig::getParam($rH_cfg, 'annotateMappability', 'referenceMappabilityBedIndexed', 1, 'filepath');
     $command .= ' ' . $inputVCF;
     $command .= ' > ' . $outputVCF;
 

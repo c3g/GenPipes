@@ -47,7 +47,7 @@ use Picard;
 
 # SUB
 #-----------------------
-sub strandBam{
+sub strandBam {
   my $rH_cfg        = shift;
   my $sampleName    = shift;
   my $inputBAM      = shift;
@@ -86,7 +86,7 @@ sub strandBam{
   return $ro_job;
 }
 
-sub graph{
+sub graph {
   my $rH_cfg         = shift;
   my $sampleName     = shift;
   my $inputBAM       = shift;
@@ -106,11 +106,11 @@ sub graph{
     $command .= ' nmblines=\$(samtools view -F 256 -f 81 ' . $inputBAM . ' | wc -l) &&';
     $command .= ' scalefactor=0\$(echo \"scale=2; 1 / (\$nmblines / 10000000);\" | bc) &&';
     $command .= ' genomeCoverageBed -bg -ibam ' . $inputBAM;
-    $command .= ' -g ' . LoadConfig::getParam($rH_cfg, 'wiggle', 'chromosomeSizeFile');
+    $command .= ' -g ' . LoadConfig::getParam($rH_cfg, 'wiggle', 'chromosomeSizeFile', 1, 'filepath');
     $command .= ' -split -scale \$scalefactor ';
     $command .= ' > ' . $outputBegGraph . ' &&';
     $command .= ' bedGraphToBigWig ' . $outputBegGraph;
-    $command .= '  ' . LoadConfig::getParam($rH_cfg, 'wiggle', 'chromosomeSizeFile');
+    $command .= '  ' . LoadConfig::getParam($rH_cfg, 'wiggle', 'chromosomeSizeFile', 1, 'filepath');
     $command .= '  ' . $outputWiggle;
 
     $ro_job->addCommand($command);
@@ -120,9 +120,9 @@ sub graph{
 }
 
 sub zipWig {
-  my $rH_cfg         = shift;
+  my $rH_cfg        = shift;
   my $wigFolder     = shift;
-  my $wigArchive       = shift;
+  my $wigArchive    = shift;
 
   my $ro_job = new Job();
   $ro_job->testInputOutputs(undef, undef);

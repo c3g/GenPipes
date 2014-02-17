@@ -51,8 +51,8 @@ sub recalibration {
   my $sortedBAM    = shift;
   my $outputPrefix = shift;
 
-  my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta');
-  my $knownSites = LoadConfig::getParam($rH_cfg, 'recalibration', 'knownSites');
+  my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta', 1, 'filepath');
+  my $knownSites = LoadConfig::getParam($rH_cfg, 'recalibration', 'knownSites', 1, 'filepath');
   my $recalOutput = $outputPrefix . '.recalibration_report.grp';
   my $bamOutput = $outputPrefix . '.recal.bam';
 
@@ -64,7 +64,7 @@ sub recalibration {
     $command .= LoadConfig::moduleLoad($rH_cfg, [['recalibration', 'moduleVersion.java'], ['recalibration', 'moduleVersion.gatk']]) . ' &&';
     $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'recalibration', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'recalibration', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'recalibration', 'recalRam') . '  -jar \${GATK_JAR}';
     $command .= ' -T BaseRecalibrator';
-    $command .= ' -nct '. LoadConfig::getParam($rH_cfg, 'recalibration', 'threads');
+    $command .= ' -nct '. LoadConfig::getParam($rH_cfg, 'recalibration', 'threads', 1, 'int');
     $command .= ' -R ' . $refGenome;
     $command .= ' -knownSites ' . $knownSites;
     $command .= ' -o ' . $recalOutput;
@@ -72,7 +72,7 @@ sub recalibration {
     $command .= ' && ';
     $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'recalibration', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'recalibration', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'recalibration', 'recalRam') . ' -jar \${GATK_JAR}';
     $command .= ' -T PrintReads';
-    $command .= ' -nct ' . LoadConfig::getParam($rH_cfg, 'recalibration', 'threads');
+    $command .= ' -nct ' . LoadConfig::getParam($rH_cfg, 'recalibration', 'threads', 1, 'int');
     $command .= ' -R ' . $refGenome;
     $command .= ' -BQSR ' . $recalOutput;
     $command .= ' -o ' . $bamOutput;
@@ -93,7 +93,7 @@ sub realign {
   my $processUnmapped = shift;
   my $rA_exclusions   = shift;
 
-  my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta');
+  my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta', 1, 'filepath');
   my $intervalOutput = $outputPrefix . '.intervals';
   my $realignOutput = $outputPrefix . '.bam';
 
@@ -129,7 +129,7 @@ sub realign {
     } elsif ($processUnmapped == 1) {
       $command .= ' -L unmapped';
     }
-    $command .= ' --maxReadsInMemory ' . LoadConfig::getParam($rH_cfg, 'indelRealigner', 'realignReadsInRam');
+    $command .= ' --maxReadsInMemory ' . LoadConfig::getParam($rH_cfg, 'indelRealigner', 'realignReadsInRam', 1, 'int');
 
     $ro_job->addCommand($command);
   }
@@ -143,7 +143,7 @@ sub genomeCoverage {
   my $inputBam     = shift;
   my $outputPrefix = shift;
 
-  my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta');
+  my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta', 1, 'filepath');
   my $rA_thresholds = LoadConfig::getParam($rH_cfg, 'genomeCoverage', 'percentThresholds');
 
   my $ro_job = new Job();
@@ -179,7 +179,7 @@ sub targetCoverage {
   my $inputBam     = shift;
   my $outputPrefix = shift;
 
-  my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta');
+  my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta', 1, 'filepath');
   my $targets = LoadConfig::getParam($rH_cfg, 'targetCoverage', 'coverageTargets');
   my $rA_thresholds = LoadConfig::getParam($rH_cfg, 'targetCoverage', 'percentThresholds');
 
@@ -219,9 +219,9 @@ sub mutect {
   my $seqName    = shift;
   my $outputDir  = shift;
 
-  my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta');
-  my $dbSnp = LoadConfig::getParam($rH_cfg, 'mutect', 'dbSnp');
-  my $cosmic = LoadConfig::getParam($rH_cfg, 'mutect', 'cosmic');
+  my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta', 1, 'filepath');
+  my $dbSnp = LoadConfig::getParam($rH_cfg, 'mutect', 'dbSnp', 1, 'filepath');
+  my $cosmic = LoadConfig::getParam($rH_cfg, 'mutect', 'cosmic', 1, 'filepath');
   my $outputPrefix = $outputDir . $sampleName;
 
   my $regionCmd = ' ';

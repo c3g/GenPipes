@@ -169,10 +169,11 @@ sub printSubmitCmd {
     print "$jobId=$jobName\n";
   }
 
-  $rO_job->setCommandJobId($commandIdx, '$'.$jobId);
+  $rO_job->setCommandJobId($commandIdx, '$' . $jobId);
 
   # Write job parameters in job list file
   print "echo \"\$$jobId\t\$JOB_NAME\t\$JOB_DEPENDENCIES\t\$JOB_OUTPUT_RELATIVE_PATH\" >> \$JOB_LIST\n\n"; 
   return $jobId;
 }
+
 1;

@@ -69,7 +69,7 @@ sub mergeFiles {
     $command .= ' TMP_DIR=' . LoadConfig::getParam($rH_cfg, 'mergeFiles', 'tmpDir');
     $command .= ' ' . $bamInputs;
     $command .= ' OUTPUT=' . $outputBAM;
-    $command .= ' MAX_RECORDS_IN_RAM=' . LoadConfig::getParam($rH_cfg, 'mergeFiles', 'mergeRecInRam');
+    $command .= ' MAX_RECORDS_IN_RAM=' . LoadConfig::getParam($rH_cfg, 'mergeFiles', 'mergeRecInRam', 1, 'int');
 
     $ro_job->addCommand($command);
   }
@@ -92,7 +92,7 @@ sub fixmate {
     $command .= ' TMP_DIR=' . LoadConfig::getParam($rH_cfg, 'fixmate', 'tmpDir');
     $command .= ' INPUT=' . $inputBAM;
     $command .= ' OUTPUT=' . $outputBAM;
-    $command .= ' MAX_RECORDS_IN_RAM=' . LoadConfig::getParam($rH_cfg, 'fixmate', 'fixmateRecInRam');
+    $command .= ' MAX_RECORDS_IN_RAM=' . LoadConfig::getParam($rH_cfg, 'fixmate', 'fixmateRecInRam', 1, 'int');
 
     $ro_job->addCommand($command);
   }
@@ -127,7 +127,7 @@ sub markDup {
     $command .= ' INPUT=' . $inputBAM;
     $command .= ' OUTPUT=' . $outputBAM;
     $command .= ' METRICS_FILE=' . $outputMetrics;
-    $command .= ' MAX_RECORDS_IN_RAM=' . LoadConfig::getParam($rH_cfg, 'markDup', 'markDupRecInRam');
+    $command .= ' MAX_RECORDS_IN_RAM=' . LoadConfig::getParam($rH_cfg, 'markDup', 'markDupRecInRam', 1, 'int');
 
     $ro_job->addCommand($command);
   }
@@ -152,10 +152,10 @@ sub collectMetrics {
     $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'collectMetrics', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'collectMetrics', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'collectMetrics', 'collectMetricsRam') . ' -jar \${PICARD_HOME}/CollectMultipleMetrics.jar';
     $command .= ' PROGRAM=CollectAlignmentSummaryMetrics PROGRAM=CollectInsertSizeMetrics  VALIDATION_STRINGENCY=SILENT';
     $command .= ' TMP_DIR=' . LoadConfig::getParam($rH_cfg, 'collectMetrics', 'tmpDir');
-    $command .= ' REFERENCE_SEQUENCE=' . LoadConfig::getParam($rH_cfg, 'collectMetrics', 'referenceFasta');
+    $command .= ' REFERENCE_SEQUENCE=' . LoadConfig::getParam($rH_cfg, 'collectMetrics', 'referenceFasta', 1, 'filepath');
     $command .= ' INPUT=' . $inputBAM;
     $command .= ' OUTPUT=' . $outputMetrics;
-    $command .= ' MAX_RECORDS_IN_RAM=' . LoadConfig::getParam($rH_cfg, 'collectMetrics', 'collectMetricsRecInRam');
+    $command .= ' MAX_RECORDS_IN_RAM=' . LoadConfig::getParam($rH_cfg, 'collectMetrics', 'collectMetricsRecInRam', 1, 'int');
 
     $ro_job->addCommand($command);
   }
@@ -182,7 +182,7 @@ sub sortSam {
     $command .= ' INPUT=' . $inputBAM;
     $command .= ' OUTPUT=' . $outputBAM;
     $command .= ' SORT_ORDER=' . $order;
-    $command .= ' MAX_RECORDS_IN_RAM=' . LoadConfig::getParam($rH_cfg, 'sortSam', 'sortRecInRam');
+    $command .= ' MAX_RECORDS_IN_RAM=' . LoadConfig::getParam($rH_cfg, 'sortSam', 'sortRecInRam', 1, 'int');
 
     $ro_job->addCommand($command);
   }
@@ -208,8 +208,8 @@ sub reorderSam {
     $command .= ' TMP_DIR=' . LoadConfig::getParam($rH_cfg, 'reorderSam', 'tmpDir');
     $command .= ' INPUT=' . $inputBAM;
     $command .= ' OUTPUT=' . $outputBAM;
-    $command .= ' REFERENCE=' . LoadConfig::getParam($rH_cfg, 'reorderSam', 'referenceFasta');
-    $command .= ' MAX_RECORDS_IN_RAM=' . LoadConfig::getParam($rH_cfg, 'reorderSam', 'reorderRecInRam');
+    $command .= ' REFERENCE=' . LoadConfig::getParam($rH_cfg, 'reorderSam', 'referenceFasta', 1, 'filepath');
+    $command .= ' MAX_RECORDS_IN_RAM=' . LoadConfig::getParam($rH_cfg, 'reorderSam', 'reorderRecInRam', 1, 'int');
 
     $ro_job->addCommand($command);
   }

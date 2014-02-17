@@ -81,7 +81,7 @@ sub mpileupBuilder {
     die("Paired was asked but there aren't 2 bams given\n");
   }
 
-  my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta');
+  my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta', 1, 'filepath');
   my $outputBCF = $outputDir . $sampleName . '.bcf';
 
   my $regionCmd = ' ';
@@ -122,7 +122,7 @@ sub mergeFilterBCF {
   my $outputDir   = shift;
   my $rA_seqNames = shift;
 
-  my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta');
+  my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta', 1, 'filepath');
   my $outputBCF = $outputDir . $sampleName . '.merged.bcf';
   my $outputVCF = $outputDir . $sampleName . '.merged.flt.vcf';
 
@@ -203,7 +203,7 @@ sub rawmpileup {
   my $seqName     = shift;
   my $output      = shift;
 
-  my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta');
+  my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta', 1, 'filepath');
 
   my $ro_job = new Job();
   $ro_job->testInputOutputs([$bamFile], [$output]);

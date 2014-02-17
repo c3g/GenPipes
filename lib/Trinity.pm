@@ -59,9 +59,9 @@ sub normalize_by_kmer_coverage {
     die "Error in normalize_by_kmer_coverage: mixed or undefined paired/single reads!\n";
   }
 
-  my $maxCoverage = LoadConfig::getParam($rH_cfg, 'normalization', 'maxCoverage', 1);
-  my $kmerSize = LoadConfig::getParam($rH_cfg, 'normalization', 'kmerSize', 1);
-  my $maxPctStdev = LoadConfig::getParam($rH_cfg, 'normalization', 'maxPctStdev', 1);
+  my $maxCoverage = LoadConfig::getParam($rH_cfg, 'normalization', 'maxCoverage', 1, 'int');
+  my $kmerSize = LoadConfig::getParam($rH_cfg, 'normalization', 'kmerSize', 1, 'int');
+  my $maxPctStdev = LoadConfig::getParam($rH_cfg, 'normalization', 'maxPctStdev', 1, 'float');
 
   my $outputSuffix = ".normalized_K" . $kmerSize . "_C" . $maxCoverage . "_pctSD" . $maxPctStdev . ".fq";
 
@@ -120,7 +120,7 @@ sub normalize_by_kmer_coverage {
 $readFileOptions \\
  --output $outputDirectory \\\n";
     $command .= " --JM " . LoadConfig::getParam($rH_cfg, 'normalization', 'jellyfishMemory', 1) . " \\\n";
-    $command .= " --JELLY_CPU " . LoadConfig::getParam($rH_cfg, 'normalization', 'jellyfishCPU', 1) . " \\\n";
+    $command .= " --JELLY_CPU " . LoadConfig::getParam($rH_cfg, 'normalization', 'jellyfishCPU', 1, 'int') . " \\\n";
     $command .= " --max_cov $maxCoverage \\\n";
     $command .= " --KMER_SIZE $kmerSize \\\n";
     $command .= " --max_pct_stdev $maxPctStdev \\\n";
@@ -182,8 +182,8 @@ sub trinity {
 $readFileOptions \\
  --output $outputDirectory \\\n";
     $command .= " --JM " . LoadConfig::getParam($rH_cfg, 'trinity', 'jellyfishMemory', 1) . " \\\n";
-    $command .= " --CPU " . LoadConfig::getParam($rH_cfg, 'trinity', 'trinityCPU', 1) . " \\\n";
-    $command .= " --bflyCPU " . LoadConfig::getParam($rH_cfg, 'trinity', 'bflyCPU', 1) . " \\\n";
+    $command .= " --CPU " . LoadConfig::getParam($rH_cfg, 'trinity', 'trinityCPU', 1, 'int') . " \\\n";
+    $command .= " --bflyCPU " . LoadConfig::getParam($rH_cfg, 'trinity', 'bflyCPU', 1, 'int') . " \\\n";
     $command .= " " . LoadConfig::getParam($rH_cfg, 'trinity', 'trinityOptions', 1) . " && \\\n";
 
     # Create Trinity FASTA ZIP file for future deliverables
@@ -248,7 +248,7 @@ sub rsem {
       --SS_lib_type RF \\
       --prefix $sample \\
       --output_dir \$WORK_DIR/rsem/$sample \\
-      --thread_count " . LoadConfig::getParam($rH_cfg, 'rsem', 'rsemCPU', 1) . " \\\n";
+      --thread_count " . LoadConfig::getParam($rH_cfg, 'rsem', 'rsemCPU', 1, 'int') . " \\\n";
 
     $rO_job->addCommand($command);
   }

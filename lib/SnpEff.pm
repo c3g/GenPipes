@@ -54,7 +54,7 @@ sub annotateDbSnp {
     $command .= LoadConfig::moduleLoad($rH_cfg, [['annotateDbSnp', 'moduleVersion.java'], ['annotateDbSnp', 'moduleVersion.snpeff']]) . ' &&';
     $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'annotateDbSnp', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'annotateDbSnp', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'annotateDbSnp', 'siftRam');
     $command .= ' -jar \${SNPEFF_HOME}/SnpSift.jar annotate';
-    $command .= ' ' . LoadConfig::getParam($rH_cfg, 'annotateDbSnp', 'dbSnp');
+    $command .= ' ' . LoadConfig::getParam($rH_cfg, 'annotateDbSnp', 'dbSnp', 1, 'filepath');
     $command .= ' ' . $inputVCF;
     $command .= ' > ' . $outputVCF;
 
@@ -122,7 +122,7 @@ sub annotateDbNSFP {
     $command .= LoadConfig::moduleLoad($rH_cfg, [['annotateDbNSFP', 'moduleVersion.java'], ['annotateDbNSFP', 'moduleVersion.snpeff']]) . ' &&';
     $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'annotateDbNSFP', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'annotateDbNSFP', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'annotateDbNSFP', 'siftRam');
     $command .= ' -jar \${SNPEFF_HOME}/SnpSift.jar dbnsfp';
-    $command .= ' -v ' . LoadConfig::getParam($rH_cfg, 'annotateDbNSFP', 'dbNSFP');
+    $command .= ' -v ' . LoadConfig::getParam($rH_cfg, 'annotateDbNSFP', 'dbNSFP', 1, 'filepath');
     $command .= ' ' . $inputVCF;
     $command .= ' > ' . $outputVCF;
 

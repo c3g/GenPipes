@@ -81,14 +81,9 @@ use strict;
 use warnings;
 #---------------------
 
-BEGIN {
-  # Add the mugqic_pipeline/lib/ path relative to this Perl script to @INC library search variable
-  use File::Basename;
-  use Cwd 'abs_path';
-  my (undef, $mod_path, undef) = fileparse(abs_path(__FILE__));
-  unshift @INC, $mod_path . "../../lib";
-}
-
+# Add the mugqic_pipeline/lib/ path relative to this Perl script to @INC library search variable
+use FindBin;
+use lib "$FindBin::Bin/../../lib";
 
 # Dependencies
 #--------------------
@@ -295,7 +290,7 @@ sub trimming {
 	for my $rH_laneInfo (@$rAoH_sampleLanes) {
 		#print "mkdir -p metrics/$sampleName/output_jobs reads/$sampleName/output_jobs\n";
 		##get raw read count
-# 		my $inputFile = LoadConfig::getParam($rH_cfg, 'default', 'rawReadDir') .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' .$rH_laneInfo->{'read1File'};
+# 		my $inputFile = LoadConfig::getParam($rH_cfg, 'default', 'rawReadDir', 1, 'dirpath') .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' .$rH_laneInfo->{'read1File'};
 # 		my $outputFile= 'metrics/' .$sampleName .'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . '.readstats.raw.csv' ;
 # 		my $command = Metrics::readStats($rH_cfg,$inputFile,$outputFile,'fastq',$libraryType);
 # 		my $rawReadStatJobID = undef;
@@ -394,12 +389,12 @@ sub aligning {
 		print "mkdir -p $outputDirPath \n" ;
     my $rO_job;
 		if ( $rH_laneInfo->{'runType'} eq "SINGLE_END" ) {
-			$single =  'reads/' .$sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName .'.'.$rH_laneInfo->{'libraryBarcode'}.'.t' .LoadConfig::getParam($rH_cfg,'trim','minQuality') .'l' .LoadConfig::getParam($rH_cfg,'trim','minLength') .'.single.fastq.gz';
+			$single = 'reads/' . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName . '.' . $rH_laneInfo->{'libraryBarcode'} . '.t' . LoadConfig::getParam($rH_cfg,'trim', 'minQuality', 1, 'int') . 'l' .LoadConfig::getParam($rH_cfg, 'trim', 'minLength', 1, 'int') . '.single.fastq.gz';
 			$rO_job = TophatBowtie::align($rH_cfg, $sampleName, $rH_laneInfo, $single, undef);
 		}
 		elsif($rH_laneInfo->{'runType'} eq "PAIRED_END") {
-			$pair1 =  'reads/' .$sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName .'.'.$rH_laneInfo->{'libraryBarcode'}.'.t' .LoadConfig::getParam($rH_cfg,'trim','minQuality') .'l' .LoadConfig::getParam($rH_cfg,'trim','minLength') .'.pair1.fastq.gz';
-			$pair2 =  'reads/' .$sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName .'.'.$rH_laneInfo->{'libraryBarcode'}.'.t' .LoadConfig::getParam($rH_cfg,'trim','minQuality') .'l' .LoadConfig::getParam($rH_cfg,'trim','minLength') .'.pair2.fastq.gz';
+			$pair1 = 'reads/' . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName . '.' . $rH_laneInfo->{'libraryBarcode'} . '.t' . LoadConfig::getParam($rH_cfg, 'trim', 'minQuality', 1, 'int') . 'l' . LoadConfig::getParam($rH_cfg, 'trim', 'minLength', 1, 'int') . '.pair1.fastq.gz';
+			$pair2 = 'reads/' . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName . '.' . $rH_laneInfo->{'libraryBarcode'} . '.t' . LoadConfig::getParam($rH_cfg, 'trim', 'minQuality', 1, 'int') . 'l' . LoadConfig::getParam($rH_cfg, 'trim', 'minLength', 1, 'int') . '.pair2.fastq.gz';
 			$rO_job = TophatBowtie::align($rH_cfg, $sampleName, $rH_laneInfo, $pair1, $pair2);
 		}
 
@@ -625,7 +620,7 @@ sub rawCounts {
 	print "mkdir -p raw_counts\n";
 	my $inputBAM = 'alignment/' . $sampleName . '/' . $sampleName . '.merged.mdup.bam' ;
   my $sortedBAM = 'alignment/' . $sampleName . '/' . $sampleName . '.queryNameSorted.bam' ;
-	my $inputGtf = LoadConfig::getParam($rH_cfg, 'htseq', 'referenceGtf');
+	my $inputGtf = LoadConfig::getParam($rH_cfg, 'htseq', 'referenceGtf', 1, 'filepath');
 	my $outputCount = 'raw_counts/' . $sampleName . '.readcounts.csv';
 	my $sortOrder = 'queryname';
 	my $strandInfo;
@@ -671,7 +666,7 @@ sub rawCountsMetrics {
 	my $readcountExtension = '.readcounts.csv';
 	my $outputDir = 'DGE';
 	my $outputMatrix = 'rawCountMatrix.csv';
-	my $rO_matrixJob = HtseqCount::refGtf2matrix($rH_cfg, LoadConfig::getParam($rH_cfg, 'htseq', 'referenceGtf'), $readCountDir, $readcountExtension, $outputDir, $outputMatrix);
+	my $rO_matrixJob = HtseqCount::refGtf2matrix($rH_cfg, LoadConfig::getParam($rH_cfg, 'htseq', 'referenceGtf', 1, 'filepath'), $readCountDir, $readcountExtension, $outputDir, $outputMatrix);
 	if(!$rO_matrixJob->isUp2Date()) {
 		SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", 'matrix', 'MATRIX', $countDependency, undef, $rO_matrixJob); 
 		$metricsJobId = $rO_matrixJob->getCommandJobId(0);
@@ -694,7 +689,7 @@ sub rawCountsMetrics {
 	##RPKM and Saturation
 	print "mkdir -p metrics/saturation\n";;
 	my $countFile   = 'DGE/rawCountMatrix.csv';
-	my $geneSizeFile     = LoadConfig::getParam($rH_cfg, 'saturation', 'geneSizeFile');
+	my $geneSizeFile     = LoadConfig::getParam($rH_cfg, 'saturation', 'geneSizeFile', 1, 'filepath');
 	my $rpkmDir = 'raw_counts';
 	my $saturationDir = 'metrics/saturation';
 	
@@ -727,7 +722,7 @@ sub fpkm {
 	my $inputBAM = 'alignment/' . $sampleName . '/' . $sampleName . '.merged.mdup.bam' ;
 	my $outputKnown = 'fpkm/known/' . $sampleName;
 	my $outputDeNovo = 'fpkm/denovo/' . $sampleName;
-	my $gtfOption = '-G ' .LoadConfig::getParam($rH_cfg, 'fpkm','referenceGtf');
+	my $gtfOption = '-G ' .LoadConfig::getParam($rH_cfg, 'fpkm','referenceGtf', 1, 'filepath');
 	
 	## known FPKM
   my $fpkmJobId = undef;
@@ -818,7 +813,7 @@ sub cuffdiff {
 
 		my $outputPathKnown = 'cuffdiff/known/' .$design;
 		##cuffdiff known
-		$rO_job = Cufflinks::cuffdiff($rH_cfg,\@groupInuptFiles,$outputPathKnown,LoadConfig::getParam($rH_cfg, 'cuffdiff','referenceGtf'));
+		$rO_job = Cufflinks::cuffdiff($rH_cfg,\@groupInuptFiles,$outputPathKnown,LoadConfig::getParam($rH_cfg, 'cuffdiff','referenceGtf', 1, 'filepath'));
 		if(!$rO_job->isUp2Date()) {
 			my $diffJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "cuffdiff", "KNOWN",  'CUFFDIFFK' .$rH_jobIdPrefixe ->{$design} , $jobDependency, $design, $rO_job);
       if(!defined($cuffddiffJobId)){

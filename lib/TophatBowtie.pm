@@ -58,17 +58,17 @@ sub align {
 
 #   #------ flefebvr Tue 16 Apr 09:04:33 2013 
 #   # Bowtie index basename (assumes reference fasta is named basename.extension) 
-#   (my $bwa_idx_basename  = LoadConfig::getParam($rH_cfg, 'align','bowtieRefIndex') ) =~ s/\.[^.]+$//;
+#   (my $bwa_idx_basename  = LoadConfig::getParam($rH_cfg, 'align', 'bowtieRefIndex')) =~ s/\.[^.]+$//;
 #   #------
   ####mbourgey - Francois' change does not works when using hg1k
 
   my $bwa_idx_basename ;
-  if (-e LoadConfig::getParam($rH_cfg, 'align','referenceFasta') . '.1.bt2') {
-    $bwa_idx_basename = LoadConfig::getParam($rH_cfg, 'align', 'referenceFasta');
+  if (-e LoadConfig::getParam($rH_cfg, 'align','referenceFasta', 1, 'filepath') . '.1.bt2') {
+    $bwa_idx_basename = LoadConfig::getParam($rH_cfg, 'align', 'referenceFasta', 1, 'filepath');
   } else {
-    ($bwa_idx_basename = LoadConfig::getParam($rH_cfg, 'align', 'referenceFasta')) =~ s/\.[^.]+$//;
+    ($bwa_idx_basename = LoadConfig::getParam($rH_cfg, 'align', 'referenceFasta', 1, 'filepath')) =~ s/\.[^.]+$//;
   }
-  my $refFile = LoadConfig::getParam($rH_cfg, 'align','referenceGtf');
+  my $refFile = LoadConfig::getParam($rH_cfg, 'align','referenceGtf', 1, 'filepath');
   my $refOption = ' ';
   if ($refFile ne ' ') {
     $refOption .= '-G ' . $refFile;
@@ -98,7 +98,7 @@ sub align {
     $command .= ' --library-type ' . LoadConfig::getParam($rH_cfg, 'align', 'strandInfo');
 #     $command .= ' --fusion-search ' . LoadConfig::getParam($rH_cfg, 'align', 'fusionOption');
     $command .= ' -o ' . $laneDirectory;
-    $command .= ' -p ' . LoadConfig::getParam($rH_cfg, 'align', 'TBAlnThreads') . $refOption;
+    $command .= ' -p ' . LoadConfig::getParam($rH_cfg, 'align', 'TBAlnThreads', 1, 'int') . $refOption;
 #     $command .= ' -g ' . LoadConfig::getParam($rH_cfg, 'align', 'maxReadLocation');
 
     #------ flefebvr Tue 16 Apr 09:04:54 2013 

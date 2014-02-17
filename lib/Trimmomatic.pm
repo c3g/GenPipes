@@ -100,10 +100,10 @@ sub pairCommand {
   my $rH_laneInfo = shift;
   my $outputDir   = shift;
 
-  my $minQuality  = LoadConfig::getParam($rH_cfg, 'trim', 'minQuality');
-  my $minLength   = LoadConfig::getParam($rH_cfg, 'trim', 'minLength');
+  my $minQuality  = LoadConfig::getParam($rH_cfg, 'trim', 'minQuality', 1, 'int');
+  my $minLength   = LoadConfig::getParam($rH_cfg, 'trim', 'minLength', 1, 'int');
   my $adapterFile = LoadConfig::getParam($rH_cfg, 'trim', 'adapterFile', 1, 'filepath');
-  my $headcrop = LoadConfig::getParam($rH_cfg, 'trim', 'headcrop');
+  my $headcrop = LoadConfig::getParam($rH_cfg, 'trim', 'headcrop', 0, 'int');
 
   my $rawReadDir = LoadConfig::getParam($rH_cfg, 'trim', 'rawReadDir', 1, 'dirpath');
 
@@ -166,10 +166,10 @@ sub singleCommand {
   my $rH_laneInfo = shift;
   my $outputDir   = shift;
 
-  my $minQuality  = LoadConfig::getParam($rH_cfg, 'trim', 'minQuality');
-  my $minLength   = LoadConfig::getParam($rH_cfg, 'trim', 'minLength');
+  my $minQuality  = LoadConfig::getParam($rH_cfg, 'trim', 'minQuality', 1, 'int');
+  my $minLength   = LoadConfig::getParam($rH_cfg, 'trim', 'minLength', 1, 'int');
   my $adapterFile = LoadConfig::getParam($rH_cfg, 'trim', 'adapterFile', 1, 'filepath');
-  my $headcrop    = LoadConfig::getParam($rH_cfg, 'trim', 'headcrop');
+  my $headcrop    = LoadConfig::getParam($rH_cfg, 'trim', 'headcrop', 0, 'int');
 
   my $rawReadDir    = LoadConfig::getParam($rH_cfg, 'trim', 'rawReadDir', 1, 'dirpath');
 

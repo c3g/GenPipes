@@ -36,14 +36,9 @@ use strict;
 use warnings;
 #---------------------
 
-BEGIN {
-  # Add the mugqic_pipeline/lib/ path relative to this Perl script to @INC library search variable
-  use File::Basename;
-  use Cwd 'abs_path';
-  my (undef, $mod_path, undef) = fileparse(abs_path(__FILE__));
-  unshift @INC, $mod_path . "../../lib";
-}
-
+# Add the mugqic_pipeline/lib/ path relative to this Perl script to @INC library search variable
+use FindBin;
+use lib "$FindBin::Bin/../../lib";
 
 # Dependencies
 #--------------------
@@ -153,7 +148,7 @@ sub snpAndIndelBCF {
   print 'mkdir -p '.$outputDir."\n";
   print "MPILEUP_JOB_IDS=\"\"\n";
 
-  my $nbJobs = LoadConfig::getParam( $rH_cfg, 'mpileup', 'approxNbJobs' );
+  my $nbJobs = LoadConfig::getParam($rH_cfg, 'mpileup', 'approxNbJobs', 0, 'int');
   my $jobId;
   if (defined($nbJobs) && $nbJobs > 1) {
     my $rA_regions = generateApproximateWindows($nbJobs, $rAoH_seqDictionary);
@@ -599,7 +594,7 @@ sub mutect {
   print 'mkdir -p '.$outputDir."\n";
   print "MUTECT_JOB_IDS=\"\"\n";
 
-  my $nbJobs = LoadConfig::getParam( $rH_cfg, 'mutect', 'approxNbJobs' );
+  my $nbJobs = LoadConfig::getParam($rH_cfg, 'mutect', 'approxNbJobs', 0, 'int');
   my $jobId;
   if (defined($nbJobs) && $nbJobs > 1) {
     my $rA_regions = generateApproximateWindows($nbJobs, $rAoH_seqDictionary);

@@ -58,7 +58,7 @@ sub mem {
   my $rgPlatformUnit  = shift;
   my $rgCenter        = shift;
 
-  my $bwaRefIndex = LoadConfig::getParam( $rH_cfg, 'mem', 'bwaRefIndex' );
+  my $bwaRefIndex = LoadConfig::getParam($rH_cfg, 'mem', 'bwaRefIndex', 1, 'filepath');
 
   my $outputBAM = $optOutputPrefix . '.sorted.bam';
 
@@ -95,7 +95,7 @@ sub mem {
     $bwaCommand .= ' -jar \${PICARD_HOME}/SortSam.jar';
     $bwaCommand .= '  INPUT=/dev/stdin CREATE_INDEX=true VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate';
     $bwaCommand .= ' OUTPUT=' . $outputBAM;
-    $bwaCommand .= ' MAX_RECORDS_IN_RAM=' . LoadConfig::getParam( $rH_cfg, 'mem', 'sortRecInRam' );
+    $bwaCommand .= ' MAX_RECORDS_IN_RAM=' . LoadConfig::getParam($rH_cfg, 'mem', 'sortRecInRam', 1, 'int');
 
     $ro_job->addCommand($bwaCommand);
   }
@@ -142,7 +142,7 @@ sub pairCommand {
   my $rgCenter        = shift;
   my $indexToUse      = shift;
 
-  my $bwaRefIndex = LoadConfig::getParam($rH_cfg, 'aln', 'bwaRefIndex');
+  my $bwaRefIndex = LoadConfig::getParam($rH_cfg, 'aln', 'bwaRefIndex', 1, 'filepath');
   if (defined $indexToUse) {
     $bwaRefIndex = $indexToUse;
   }
@@ -160,7 +160,7 @@ sub pairCommand {
     my $bwaCommand  = "";
     $sai1Command .= LoadConfig::moduleLoad($rH_cfg, [['aln', 'moduleVersion.bwa']]) . ' &&';
     $sai1Command .= 'bwa aln';
-    $sai1Command .= ' -t ' . LoadConfig::getParam( $rH_cfg, 'aln', 'bwaAlnThreads' );
+    $sai1Command .= ' -t ' . LoadConfig::getParam($rH_cfg, 'aln', 'bwaAlnThreads', 1, 'int');
     $sai1Command .= ' ' . $bwaRefIndex;
     $sai1Command .= ' ' . $pair1;
     $sai1Command .= ' -f ' . $outputSai1Name;
@@ -168,7 +168,7 @@ sub pairCommand {
 
     $sai2Command .= LoadConfig::moduleLoad($rH_cfg, [['aln', 'moduleVersion.bwa']]) . ' &&';
     $sai2Command .= 'bwa aln';
-    $sai2Command .= ' -t ' . LoadConfig::getParam( $rH_cfg, 'aln', 'bwaAlnThreads' );
+    $sai2Command .= ' -t ' . LoadConfig::getParam($rH_cfg, 'aln', 'bwaAlnThreads', 1, 'int');
     $sai2Command .= ' ' . $bwaRefIndex;
     $sai2Command .= ' ' . $pair2;
     $sai2Command .= ' -f ' . $outputSai2Name;
@@ -190,7 +190,7 @@ sub pairCommand {
     $bwaCommand .= ' -jar \${PICARD_HOME}/SortSam.jar';
     $bwaCommand .= ' INPUT=/dev/stdin CREATE_INDEX=true VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate';
     $bwaCommand .= ' OUTPUT=' . $outputBAM;
-    $bwaCommand .= ' MAX_RECORDS_IN_RAM=' . LoadConfig::getParam( $rH_cfg, 'aln', 'sortRecInRam' );
+    $bwaCommand .= ' MAX_RECORDS_IN_RAM=' . LoadConfig::getParam($rH_cfg, 'aln', 'sortRecInRam', 1, 'int');
 
     $ro_job->addCommand($bwaCommand);
   }
@@ -210,7 +210,7 @@ sub singleCommand {
   my $rgCenter        = shift;
   my $indexToUse      = shift;
     
-  my $bwaRefIndex = LoadConfig::getParam($rH_cfg, 'aln', 'bwaRefIndex');
+  my $bwaRefIndex = LoadConfig::getParam($rH_cfg, 'aln', 'bwaRefIndex', 1, 'filepath');
   if (defined $indexToUse) {
     $bwaRefIndex = $indexToUse;
   }
@@ -227,7 +227,7 @@ sub singleCommand {
 
     $saiCommand .= LoadConfig::moduleLoad($rH_cfg, [['aln', 'moduleVersion.bwa']]) . ' &&';
     $saiCommand .= 'bwa aln';
-    $saiCommand .= ' -t ' . LoadConfig::getParam( $rH_cfg, 'aln', 'bwaAlnThreads');
+    $saiCommand .= ' -t ' . LoadConfig::getParam( $rH_cfg, 'aln', 'bwaAlnThreads', 1, 'int');
     $saiCommand .= ' ' . $bwaRefIndex;
     $saiCommand .= ' ' . $single;
     $saiCommand .= ' -f ' . $outputSaiName;
@@ -248,7 +248,7 @@ sub singleCommand {
     $bwaCommand .= ' -jar \${PICARD_HOME}/SortSam.jar';
     $bwaCommand .= ' INPUT=/dev/stdin CREATE_INDEX=true VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate';
     $bwaCommand .= ' OUTPUT=' . $outputBAM;
-    $bwaCommand .= ' MAX_RECORDS_IN_RAM=' . LoadConfig::getParam( $rH_cfg, 'aln', 'sortRecInRam' );
+    $bwaCommand .= ' MAX_RECORDS_IN_RAM=' . LoadConfig::getParam($rH_cfg, 'aln', 'sortRecInRam', 1, 'int');
 
     $ro_job->addCommand($bwaCommand);
   }

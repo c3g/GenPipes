@@ -46,33 +46,33 @@ use SAMtools;
 
 # SUB
 #-----------------------
-sub rnaQc{
+sub rnaQc {
   my $rH_cfg       = shift;
   my $inputFile    = shift;
   my $outputFolder = shift;
   my $libraryType  = shift;
-  
+
   if (!defined($libraryType) || $libraryType eq "") {
     $libraryType= 'unknown';
   }
-  my $outputIndexFile= $outputFolder. '/index.html';
+  my $outputIndexFile= $outputFolder . '/index.html';
 
   my $ro_job = new Job();
-  $ro_job->testInputOutputs([$inputFile], [$outputFolder .'.zip', $outputIndexFile]);
+  $ro_job->testInputOutputs([$inputFile], [$outputFolder . '.zip', $outputIndexFile]);
   if (!$ro_job->isUp2Date()) {
     my $command;
-    $command .= LoadConfig::moduleLoad($rH_cfg, [['mergeFiles','moduleVersion.java'], ['rnaQc','moduleVersion.bwa'], ['rnaQc','moduleVersion.rnaseqc']]) . ' &&';
-    $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'rnaQc', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'rnaQc', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'rnaQc', 'metricsRam').' -jar \${RNASEQC_JAR}';
-    $command .= ' -n ' .LoadConfig::getParam($rH_cfg, 'rnaQc','topTranscript');
-    $command .= ' -s ' .$inputFile;
-    $command .= ' -t ' .LoadConfig::getParam($rH_cfg, 'rnaQc','referenceGtf', 1, 'filepath');
-    $command .= ' -r ' .LoadConfig::getParam($rH_cfg, 'rnaQc','referenceFasta', 1, 'filepath');
-    $command .= ' -o ' .$outputFolder ;
-    if (defined($libraryType) && $libraryType eq "single"){
+    $command .= LoadConfig::moduleLoad($rH_cfg, [['mergeFiles', 'moduleVersion.java'], ['rnaQc', 'moduleVersion.bwa'], ['rnaQc', 'moduleVersion.rnaseqc']]) . ' &&';
+    $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'rnaQc', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'rnaQc', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'rnaQc', 'metricsRam') . ' -jar \${RNASEQC_JAR}';
+    $command .= ' -n ' . LoadConfig::getParam($rH_cfg, 'rnaQc', 'topTranscript', 1, 'int');
+    $command .= ' -s ' . $inputFile;
+    $command .= ' -t ' . LoadConfig::getParam($rH_cfg, 'rnaQc', 'referenceGtf', 1, 'filepath');
+    $command .= ' -r ' . LoadConfig::getParam($rH_cfg, 'rnaQc', 'referenceFasta', 1, 'filepath');
+    $command .= ' -o ' . $outputFolder;
+    if (defined($libraryType) && $libraryType eq "single") {
       $command .= ' -singleEnd';
     }
-    $command .= ' -BWArRNA ' .LoadConfig::getParam($rH_cfg, 'rnaQc','ribosomalFasta', 1, 'filepath') .' &&';
-    $command .= ' zip -r ' .$outputFolder .'.zip ' .$outputFolder;
+    $command .= ' -BWArRNA ' . LoadConfig::getParam($rH_cfg, 'rnaQc', 'ribosomalFasta', 1, 'filepath') . ' &&';
+    $command .= ' zip -r ' . $outputFolder . '.zip ' . $outputFolder;
 
     $ro_job->addCommand($command);
   }
@@ -88,15 +88,15 @@ sub saturation {
   my $saturationDir = shift;
 
   my $ro_job = new Job();
-  $ro_job->testInputOutputs([$countFile], [$saturationDir .'.zip']);
+  $ro_job->testInputOutputs([$countFile], [$saturationDir . '.zip']);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
     $command .= LoadConfig::moduleLoad($rH_cfg, [['saturation', 'moduleVersion.cranR'], ['saturation', 'moduleVersion.tools']]) . ' &&';
-    $command .= ' Rscript \$R_TOOLS/rpkmSaturation.R ' .$countFile .' ' .$geneSizeFile .' ' .$rpkmDir .' ' .$saturationDir;
-    $command .= ' ' .LoadConfig::getParam($rH_cfg, 'saturation', 'threadNum');
-    $command .= ' ' .LoadConfig::getParam($rH_cfg, 'saturation', 'optionR', 0).' &&';
-    $command .= ' zip -r ' .$saturationDir .'.zip ' .$saturationDir;
+    $command .= ' Rscript \$R_TOOLS/rpkmSaturation.R ' . $countFile . ' ' . $geneSizeFile . ' ' . $rpkmDir . ' ' . $saturationDir;
+    $command .= ' ' . LoadConfig::getParam($rH_cfg, 'saturation', 'threadNum', 1, 'int');
+    $command .= ' ' . LoadConfig::getParam($rH_cfg, 'saturation', 'optionR', 0) . ' &&';
+    $command .= ' zip -r ' . $saturationDir . '.zip ' . $saturationDir;
 
     $ro_job->addCommand($command);
   }
@@ -108,14 +108,14 @@ sub fpkmCor {
   my $patternFile    = shift;
   my $folderFile     = shift;
   my $outputBaseName = shift;
-  
+
   my $ro_job = new Job();
   $ro_job->testInputOutputs([$patternFile], [$outputBaseName]);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
     $command .= LoadConfig::moduleLoad($rH_cfg, [['metrics', 'moduleVersion.cranR'], ['metrics', 'moduleVersion.tools']]) . ' &&';
-    $command .= ' Rscript \$R_TOOLS/fpkmStats.R ' .$patternFile .' ' .$folderFile .' ' .$outputBaseName;
+    $command .= ' Rscript \$R_TOOLS/fpkmStats.R ' . $patternFile . ' ' . $folderFile . ' ' . $outputBaseName;
 
     $ro_job->addCommand($command);
   }
@@ -128,18 +128,17 @@ sub readStats {
   my $outputFile = shift;
   my $sampleName = shift;
   my $fileType = shift;
-  
+
   my $ro_job = new Job();
   $ro_job->testInputOutputs([$inputFile], [$outputFile]);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
     if ((lc $fileType) eq "trim") {
-      $command .= 'grep \"Input Read\" ' .$inputFile;
-      $command .= ' | awk -F\":\" -v na='.$sampleName .' \' BEGIN { OFS=\"\t\" } { split(\$2,a,\" \"); split(\$3,b,\" \"); print na,a[1],b[1]} \''; 
-      $command .= ' > ' .$outputFile;
-    }
-    elsif  ((lc $fileType) eq "bam") {
+      $command .= 'grep \"Input Read\" ' . $inputFile;
+      $command .= ' | awk -F\":\" -v na=' . $sampleName . ' \' BEGIN { OFS=\"\t\" } { split(\$2,a,\" \"); split(\$3,b,\" \"); print na,a[1],b[1]} \'';
+      $command .= ' > ' . $outputFile;
+    } elsif  ((lc $fileType) eq "bam") {
       ##decrepited
       my $unmapOption = '-F260';
       #Just need the command
@@ -147,10 +146,10 @@ sub readStats {
 
       $command .= $rO_viewFilterJob->getCommand(0);
       $command .= ' | awk \' { print \$1} \'';
-      #---- flefebvr Tue 16 Apr 13:47:53 2013 
-      #$command .= ' | sort -u | wc -l  > ' .$outputFile;
-      $command .= ' | sort -u -T '.LoadConfig::getParam($rH_cfg, 'metrics', 'tmpDir');
-      $command .= ' | wc -l  > ' .$outputFile;
+      #---- flefebvr Tue 16 Apr 13:47:53 2013
+      #$command .= ' | sort -u | wc -l  > ' . $outputFile;
+      $command .= ' | sort -u -T ' . LoadConfig::getParam($rH_cfg, 'metrics', 'tmpDir');
+      $command .= ' | wc -l  > ' . $outputFile;
       #----
     }
 
@@ -162,25 +161,25 @@ sub readStats {
 
 
 ##Deprecated everything should be in the report
-sub mergeIndvidualReadStats{
+sub mergeIndvidualReadStats {
   my $rH_cfg = shift;
   my $sampleName = shift;
   my $rawFile  = shift;
   my $filterFile = shift;
   my $alignFile = shift;
   my $outputFile =shift;
-  
+
   my $ro_job = new Job();
   $ro_job->testInputOutputs([$alignFile], [$outputFile]);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
-    $command .= 'echo \"' .$sampleName .'\"' ;
-    $command .= ' | cat - ' .$rawFile .' ' .$filterFile .' ' .$alignFile;
+    $command .= 'echo \"' . $sampleName . '\"';
+    $command .= ' | cat - ' . $rawFile . ' ' . $filterFile . ' ' . $alignFile;
     $command .= ' | tr \'\n\' \',\' ';
-    $command .= ' | awk \' BEGIN {FS=\",\"} { print \$1 \",\" \$2 \",\" \$3 \",\" \$4}\''; 
-    $command .= ' > ' .$outputFile .' &&'; 
-    $command .= ' rm  ' .$rawFile .' ' .$filterFile .' ' .$alignFile;
+    $command .= ' | awk \' BEGIN {FS=\",\"} { print \$1 \",\" \$2 \",\" \$3 \",\" \$4}\'';
+    $command .= ' > ' . $outputFile . ' &&';
+    $command .= ' rm  ' . $rawFile . ' ' . $filterFile . ' ' . $alignFile;
 
     $ro_job->addCommand($command);
   }
@@ -188,7 +187,7 @@ sub mergeIndvidualReadStats{
   return $ro_job;
 }
 
-sub mergeReadStats{
+sub mergeReadStats {
   my $rH_cfg      = shift;
   my $patternFile = shift;
   my $folderFile  = shift;
@@ -200,8 +199,8 @@ sub mergeReadStats{
   if (!$ro_job->isUp2Date()) {
   my $command;
     $command .= LoadConfig::moduleLoad($rH_cfg, [['metrics', 'moduleVersion.cranR'], ['metrics', 'moduleVersion.tools']]) . ' &&';
-    $command .= ' Rscript \$R_TOOLS/mergeReadStat.R ' .$patternFile .' ' .$folderFile .' ' .$outputFile .' &&';
-    $command .= ' rm ' .$folderFile .'/*' .$patternFile;
+    $command .= ' Rscript \$R_TOOLS/mergeReadStat.R ' . $patternFile . ' ' . $folderFile . ' ' . $outputFile . ' &&';
+    $command .= ' rm ' . $folderFile . '/*' . $patternFile;
 
     $ro_job->addCommand($command);
   }
@@ -209,7 +208,7 @@ sub mergeReadStats{
 }
 
 
-sub mergeTrimmomaticStats{
+sub mergeTrimmomaticStats {
   my $rH_cfg      = shift;
   my $libraryType = shift;
   my $patternFile = shift;
@@ -226,7 +225,7 @@ sub mergeTrimmomaticStats{
   if (!$ro_job->isUp2Date()) {
     my $command;
     $command .= LoadConfig::moduleLoad($rH_cfg, [['metrics', 'moduleVersion.cranR'], ['metrics', 'moduleVersion.tools']]) . ' &&';
-    $command .= ' Rscript \$R_TOOLS/mergeTrimmomaticStat.R ' .$patternFile .' ' .$folderFile .' ' .$outputFile .' ' .$libraryType;
+    $command .= ' Rscript \$R_TOOLS/mergeTrimmomaticStat.R ' . $patternFile . ' ' . $folderFile . ' ' . $outputFile . ' ' . $libraryType;
 
     $ro_job->addCommand($command);
   }
@@ -234,7 +233,7 @@ sub mergeTrimmomaticStats{
   return $ro_job;
 }
 
-sub mergeSampleDnaStats{
+sub mergeSampleDnaStats {
   my $rH_cfg         = shift;
   my $experimentType = shift;
   my $folderFile     = shift;
@@ -249,14 +248,14 @@ sub mergeSampleDnaStats{
   if (!$ro_job->isUp2Date()) {
     my $command;
     $command .= LoadConfig::moduleLoad($rH_cfg, [['metrics', 'moduleVersion.cranR'], ['metrics', 'moduleVersion.tools']]) . ' &&';
-    $command .= ' Rscript \$R_TOOLS/DNAsampleMetrics.R ' .$folderFile .' ' .$outputFile .' ' .$experimentType;
+    $command .= ' Rscript \$R_TOOLS/DNAsampleMetrics.R ' . $folderFile . ' ' . $outputFile . ' ' . $experimentType;
     $ro_job->addCommand($command);
   }
 
   return $ro_job;
 }
 
-sub svnStatsChangeRate{
+sub svnStatsChangeRate {
   my $rH_cfg     = shift;
   my $inputVCF   = shift;
   my $outputFile = shift;
@@ -268,10 +267,10 @@ sub svnStatsChangeRate{
   if (!$ro_job->isUp2Date()) {
     my $command;
     $command = LoadConfig::moduleLoad($rH_cfg, [['metricsSNV', 'moduleVersion.python'], ['metricsSNV', 'moduleVersion.tools']]) . ' &&';
-    $command .= ' python \$PYTHON_TOOLS/vcfStats.py -v ' .$inputVCF;
-    $command .= ' -d ' .LoadConfig::getParam($rH_cfg, 'metricsSNV', 'referenceSequenceDictionary');
-    $command .= ' -o ' .$outputFile ;
-    $command .= ' -f ' .$listFile ;
+    $command .= ' python \$PYTHON_TOOLS/vcfStats.py -v ' . $inputVCF;
+    $command .= ' -d ' . LoadConfig::getParam($rH_cfg, 'metricsSNV', 'referenceSequenceDictionary', 1, 'filepath');
+    $command .= ' -o ' . $outputFile;
+    $command .= ' -f ' . $listFile;
 
     $ro_job->addCommand($command);
   }
@@ -280,18 +279,18 @@ sub svnStatsChangeRate{
 }
 
 
-sub svnStatsGetGraph{
+sub svnStatsGetGraph {
   my $rH_cfg          = shift;
   my $listFile        = shift;
   my $outputBaseName  = shift;
 
   my $ro_job = new Job();
-  $ro_job->testInputOutputs([$listFile], [$outputBaseName .'snvGraphMetrics_listFiles.txt']);
+  $ro_job->testInputOutputs([$listFile], [$outputBaseName . 'snvGraphMetrics_listFiles.txt']);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
     $command = LoadConfig::moduleLoad($rH_cfg, [['metricsSNV', 'moduleVersion.cranR'], ['metricsSNV', 'moduleVersion.tools']]) . ' &&';
-    $command .= ' Rscript \$R_TOOLS/snvGraphMetrics.R ' .$listFile .' ' .$outputBaseName;
+    $command .= ' Rscript \$R_TOOLS/snvGraphMetrics.R ' . $listFile . ' ' . $outputBaseName;
     $ro_job->addCommand($command);
   }
 
@@ -299,7 +298,7 @@ sub svnStatsGetGraph{
 }
 
 
-sub mergePrintReadStats{
+sub mergePrintReadStats {
   my $rH_cfg         = shift;
   my $sampleName     = shift;
   my $trimOutputFile = shift;
@@ -312,10 +311,10 @@ sub mergePrintReadStats{
 
   if (!$ro_job->isUp2Date()) {
     $command .= LoadConfig::moduleLoad($rH_cfg, [['metrics', 'moduleVersion.tools']]) . ' &&';
-    $command .= ' perl -MReadMetrics -e \' ReadMetrics::mergeStats(\"'.$sampleName.'\",';
-    $command .= ' \"'. $outputFile .'\", ReadMetrics::parseTrimOutput(\"'.$sampleName.'\",';
-    $command .= ' \"'. $trimOutputFile .'\"), ReadMetrics::parseFlagstats(\"'.$sampleName.'\",';
-    $command .= ' \"'. $flagStatsFile .'\"));\'';
+    $command .= ' perl -MReadMetrics -e \' ReadMetrics::mergeStats(\"' . $sampleName . '\",';
+    $command .= ' \"' . $outputFile . '\", ReadMetrics::parseTrimOutput(\"' . $sampleName . '\",';
+    $command .= ' \"' . $trimOutputFile . '\"), ReadMetrics::parseFlagstats(\"' . $sampleName . '\",';
+    $command .= ' \"' . $flagStatsFile . '\"));\'';
 
     $ro_job->addCommand($command);
   }

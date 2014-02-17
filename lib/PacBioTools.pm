@@ -104,20 +104,20 @@ sub celeraConfig {
     $cmd .= ' memtime';
     $cmd .= ' pacBioAssemblyCeleraConfig.pl';
     $cmd .= ' --infile ' . $infile;
-    $cmd .= ' --merylThreads ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'merylThreads');
-    $cmd .= ' --ovlThreads ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'ovlThreads');
+    $cmd .= ' --merylThreads ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'merylThreads', 1, 'int');
+    $cmd .= ' --ovlThreads ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'ovlThreads', 1, 'int');
     $cmd .= ' --overlapper ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'overlapper');
     $cmd .= ' --merCompression ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'merCompression');
     $cmd .= ' --merSize ' . $merSize;
     $cmd .= ' --merylMemory ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'merylMemory');
-    $cmd .= ' --ovlErrorRate ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'ovlErrorRate');
-    $cmd .= ' --ovlMinLen ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'ovlMinLen');
-    $cmd .= ' --frgMinLen ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'frgMinLen');
+    $cmd .= ' --ovlErrorRate ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'ovlErrorRate', 1, 'float');
+    $cmd .= ' --ovlMinLen ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'ovlMinLen', 1, 'int');
+    $cmd .= ' --frgMinLen ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'frgMinLen', 1, 'int');
     $cmd .= ' --ovlStoreMemory ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'ovlStoreMemory');
     $cmd .= ' --ovlConcurrency ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'ovlConcurrency');
-    $cmd .= ' --ovlCorrConcurrency ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'ovlCorrConcurrency');
-    $cmd .= ' --cnsConcurrency ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'cnsConcurrency');
-    $cmd .= ' --frgCorrThreads ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'frgCorrThreads');
+    $cmd .= ' --ovlCorrConcurrency ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'ovlCorrConcurrency', 1, 'int');
+    $cmd .= ' --cnsConcurrency ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'cnsConcurrency', 1, 'int');
+    $cmd .= ' --frgCorrThreads ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'frgCorrThreads', 1, 'int');
     $cmd .= ' > ' . $outfile;
     $ro_job->addCommand($cmd);
   }

@@ -65,10 +65,10 @@ sub fpkm {
     $command .= LoadConfig::moduleLoad($rH_cfg, [['fpkm', 'moduleVersion.cufflinks']]) . ' &&';
     $command .= ' cufflinks -q';
     $command .= ' ' .$transcriptOption; 
-    $command .= ' --max-bundle-frags ' . LoadConfig::getParam($rH_cfg, 'fpkm', 'cufflinksMaxFargs');
+    $command .= ' --max-bundle-frags ' . LoadConfig::getParam($rH_cfg, 'fpkm', 'cufflinksMaxFargs', 1, 'int');
     $command .= ' ' . LoadConfig::getParam($rH_cfg, 'fpkm', 'cufflinksOtherOption');
     $command .= ' --library-type ' . LoadConfig::getParam($rH_cfg, 'align', 'strandInfo');
-    $command .= ' -p ' . LoadConfig::getParam($rH_cfg, 'fpkm', 'cufflinksThreads');
+    $command .= ' -p ' . LoadConfig::getParam($rH_cfg, 'fpkm', 'cufflinksThreads', 1, 'int');
     $command .= ' -o ' . $outputFolder;
     $command .= ' ' . $inputBAM;
 
@@ -138,13 +138,13 @@ sub cuffdiff {
   if (!$ro_job->isUp2Date()) {
     my $command;
     $command .= LoadConfig::moduleLoad($rH_cfg, [['cuffdiff', 'moduleVersion.cufflinks']]) . ' &&';
-    $command .= ' cuffdiff -p ' . LoadConfig::getParam($rH_cfg, 'cuffdiff', 'numThreads');
+    $command .= ' cuffdiff -p ' . LoadConfig::getParam($rH_cfg, 'cuffdiff', 'numThreads', 1, 'int');
     $command .= ' -o ' . $outputDir;
     $command .= ' ' . $referenceGtf;
     $command .= ' ' . $groupCmd;
     $command .= ' ' . LoadConfig::getParam($rH_cfg, 'cuffdiff', 'options');
     $command .= ' --library-type ' . LoadConfig::getParam($rH_cfg, 'align', 'strandInfo');
-    $command .= ' -b ' . LoadConfig::getParam($rH_cfg, 'cuffdiff', 'referenceFasta');
+    $command .= ' -b ' . LoadConfig::getParam($rH_cfg, 'cuffdiff', 'referenceFasta', 1, 'filepath');
 
     $ro_job->addCommand($command);
   }
@@ -165,8 +165,8 @@ sub cuffcompare {
     my $command;
     $command .= LoadConfig::moduleLoad($rH_cfg, [['cuffcompare', 'moduleVersion.cufflinks'], ['cuffcompare', 'moduleVersion.tools']]) . ' &&';
     $command .= ' cuffcompare -o ' . $outputPrefix;
-    $command .= ' -r ' . LoadConfig::getParam($rH_cfg, 'cuffcompare', 'referenceGtf');
-    $command .= ' -R ' . LoadConfig::getParam($rH_cfg, 'fpkm', 'referenceFasta');
+    $command .= ' -r ' . LoadConfig::getParam($rH_cfg, 'cuffcompare', 'referenceGtf', 1, 'filepath');
+    $command .= ' -R ' . LoadConfig::getParam($rH_cfg, 'fpkm', 'referenceFasta', 1, 'filepath');
     $command .= ' -T ' . $mergeListString . ' &&';
     $command .= ' formatDenovoCombinedGTF.py' ;
     $command .= ' -c ' . $outputPrefix . '.combined.gtf';
@@ -190,10 +190,10 @@ sub cuffcompare {
 #  if (!$ro_job->isUp2Date()) {
 #    my $command;
 #    $command .= LoadConfig::moduleLoad($rH_cfg, [['cuffmerge', 'moduleVersion.cufflinks']]) . ';';
-#    $command .= ' cuffmerge -p ' . LoadConfig::getParam($rH_cfg, 'cuffmerge', 'numThreads');
+#    $command .= ' cuffmerge -p ' . LoadConfig::getParam($rH_cfg, 'cuffmerge', 'numThreads', 1, 'int');
 #    $command .= ' -o ' . $outputDir;
-#    $command .= ' -g ' . LoadConfig::getParam($rH_cfg, 'cuffmerge', 'referenceGtf');
-#    $command .= ' -s ' . LoadConfig::getParam($rH_cfg, 'fpkm', 'referenceFasta');
+#    $command .= ' -g ' . LoadConfig::getParam($rH_cfg, 'cuffmerge', 'referenceGtf', 1, 'filepath');
+#    $command .= ' -s ' . LoadConfig::getParam($rH_cfg, 'fpkm', 'referenceFasta', 1, 'filepath');
 #    $command .= ' ' . $mergeListFile;
 #  }
 #  return $command;

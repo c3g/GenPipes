@@ -198,8 +198,8 @@ sub dcmegablast{ #JT: Initially for for PacBio pipeline
     $cmd .= ' -query ' . $infileFasta;
     $cmd .= ' -outfmt ' . $outfmt;
     $cmd .= ' -out ' .$outfile;
-    $cmd .= ' -num_threads ' .LoadConfig::getParam($rH_cfg, 'blast', 'num_threads');
-    $cmd .= ' -db ' .LoadConfig::getParam($rH_cfg, 'blast', 'blastdb');
+    $cmd .= ' -num_threads ' . LoadConfig::getParam($rH_cfg, 'blast', 'num_threads', 1, 'int');
+    $cmd .= ' -db ' . LoadConfig::getParam($rH_cfg, 'blast', 'blastdb');
 
 
     $ro_job->addCommand($cmd);

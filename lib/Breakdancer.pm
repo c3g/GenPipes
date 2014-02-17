@@ -75,7 +75,7 @@ sub pairedBRDITX {
   if (!$ro_job->isUp2Date()) {
     my $command;
     $command .= LoadConfig::moduleLoad($rH_cfg, [['pairedBRDITX', 'moduleVersion.breakdancer']]) . ' &&';
-    $command .= ' breakdancer_max '.LoadConfig::getParam($rH_cfg, 'pairedBRDITX', 'brdParameters');
+    $command .= ' breakdancer_max '. LoadConfig::getParam($rH_cfg, 'pairedBRDITX', 'brdParameters');
     $command .= ' -g ' . $outputPrefix . '.bed';
     $command .= ' -d ' . $outputPrefix . '.ctx';
     $command .= ' ' . $inputCFG;

@@ -134,10 +134,10 @@ sub goseq {
   my $columns    = shift;
   my $method     = shift;
 
-  my $maxResult = LoadConfig::getParam($rH_cfg, 'goseq', 'maxGoResult');
-  my $geneSizeFile = LoadConfig::getParam($rH_cfg, 'goseq', 'geneSizeFile');
-  my $goLinkFile = LoadConfig::getParam($rH_cfg, 'goseq', 'goLinkFile');
-  my $geneIdType = LoadConfig::getParam($rH_cfg, 'goseq', 'geneIdType');
+  my $maxResult = LoadConfig::getParam($rH_cfg, 'goseq', 'maxGoResult', 0);
+  my $geneSizeFile = LoadConfig::getParam($rH_cfg, 'goseq', 'geneSizeFile', 0, 'filepath');
+  my $goLinkFile = LoadConfig::getParam($rH_cfg, 'goseq', 'goLinkFile', 0);
+  my $geneIdType = LoadConfig::getParam($rH_cfg, 'goseq', 'geneIdType', 0);
   my $option = '';
   if (defined($maxResult) && $maxResult ne "" && $maxResult ne "0") {
       $option = ' -m ' . $maxResult;
@@ -161,7 +161,7 @@ sub goseq {
     $command .= ' Rscript \$R_TOOLS/goseq.R -d ' . $resultFile;
     $command .= ' -c ' . $columns;
     $command .= ' -t ' . LoadConfig::getParam($rH_cfg, 'goseq', 'goAnnotation');
-    $command .= ' -k ' . LoadConfig::getParam($rH_cfg, 'goseq', 'referenceEnsemble2symbol');
+    $command .= ' -k ' . LoadConfig::getParam($rH_cfg, 'goseq', 'referenceEnsemble2symbol', 1, 'filepath');
     $command .= ' -s ' . LoadConfig::getParam($rH_cfg, 'goseq', 'referenceUCSCname');
     $command .= $option;
     $command .= ' -o ' . $outputFile;
