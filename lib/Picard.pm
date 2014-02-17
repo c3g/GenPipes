@@ -144,7 +144,7 @@ sub collectMetrics {
     }
   
     my $command;
-    $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'collectMetrics','moduleVersion.java') .' ' .LoadConfig::getParam($rH_cfg, 'collectMetrics', 'moduleVersion.picard').' &&'; 
+    $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'collectMetrics','moduleVersion.java') .' ' .LoadConfig::getParam($rH_cfg, 'collectMetrics', 'moduleVersion.picard').' ' .LoadConfig::getParam($rH_cfg, 'collectMetrics', 'moduleVersion.cranR').' &&'; 
     $command .= ' java -Djava.io.tmpdir='.LoadConfig::getParam($rH_cfg, 'collectMetrics', 'tmpDir').' '.LoadConfig::getParam($rH_cfg, 'collectMetrics', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'collectMetrics', 'collectMetricsRam').' -jar \${PICARD_HOME}/CollectMultipleMetrics.jar';
     $command .= ' PROGRAM=CollectAlignmentSummaryMetrics PROGRAM=CollectInsertSizeMetrics  VALIDATION_STRINGENCY=SILENT';
     $command .= ' TMP_DIR='.LoadConfig::getParam($rH_cfg, 'collectMetrics', 'tmpDir');

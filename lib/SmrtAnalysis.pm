@@ -481,9 +481,9 @@ sub variantCaller{
 		$cmd .= ' -o ' . $outfileVariants;
 		$cmd .= ' -o ' . $outfileFasta;
 		$cmd .= ' -o ' . $outfileFastq;
+		$cmd .= ' > /dev/null';	
 		$cmd .= ' && ';
 		$cmd .= ' gunzip -c ' . $outfileFasta . ' > ' . $outfileFastaUncompressed;
-		$cmd .= ' > /dev/null';	
 		$ro_job->addCommand($cmd);
 	}
 	return $ro_job;
