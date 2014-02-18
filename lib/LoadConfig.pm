@@ -113,7 +113,6 @@ sub getParam {
   my $type = shift;
 
   unless (defined($required)) {$required = 1}; # By default, parameter is required to be defined in the config file
-  unless (defined($type)) {$type = 'string'}; # By default, parameter type is string
 
   # Search param in specified section
   my $retVal = $rH_cfg->{$section . '.' . $value};
@@ -139,6 +138,17 @@ sub getParam {
         my $tmpVal = `echo $retVal`;
         chomp($tmpVal);
         -d $tmpVal or die "Error: parameter \"[" . $section . "] " . $value . "\" value $retVal is not a valid directory path!";
+      } elsif ($type eq 'array') {
+        if (ref($retVal) ne "ARRAY") {
+          if (ref(\$retVal) eq "SCALAR") {
+            # Convert scalar into 1-element array due to "tie" function ambiguity for 1-value list without ","
+            $retVal = [$retVal];
+          } else {
+            die "Error: parameter \"[" . $section . "] " . $value . "\" value $retVal is not an array!";
+          }
+        }
+      } else {
+        die "Error: parameter \"[" . $section . "] " . $value . "\" validation type \"$type\" unknown!";
       }
     }
   } elsif ($required) {

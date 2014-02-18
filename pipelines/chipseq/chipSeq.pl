@@ -84,7 +84,7 @@ use lib "$FindBin::Bin/../../lib";
 use Getopt::Std;
 use Cwd;
 use POSIX;
-use Cwd;
+use Cwd 'abs_path';
 
 use LoadConfig;
 use SampleSheet;

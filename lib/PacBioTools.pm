@@ -113,7 +113,7 @@ sub celeraConfig {
     $cmd .= ' --ovlErrorRate ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'ovlErrorRate', 1, 'float');
     $cmd .= ' --ovlMinLen ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'ovlMinLen', 1, 'int');
     $cmd .= ' --frgMinLen ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'frgMinLen', 1, 'int');
-    $cmd .= ' --ovlStoreMemory ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'ovlStoreMemory');
+    $cmd .= ' --ovlStoreMemory ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'ovlStoreMemory', 1, 'int');
     $cmd .= ' --ovlConcurrency ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'ovlConcurrency');
     $cmd .= ' --ovlCorrConcurrency ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'ovlCorrConcurrency', 1, 'int');
     $cmd .= ' --cnsConcurrency ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'cnsConcurrency', 1, 'int');

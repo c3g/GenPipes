@@ -177,7 +177,7 @@ sub pairCommand {
     my $rgTag = "'" . '@RG\tID:' . $rgId . '\tSM:' . $rgSample . '\tLB:' . $rgLibrary . '\tPU:run' . $rgPlatformUnit . '\tCN:' . $rgCenter . '\tPL:Illumina' . "'";
     $bwaCommand .= LoadConfig::moduleLoad($rH_cfg, [['aln', 'moduleVersion.bwa'], ['aln', 'moduleVersion.picard'], ['aln', 'moduleVersion.java']]) . ' &&';
     $bwaCommand .= ' bwa sampe ';
-    $bwaCommand .= ' ' . LoadConfig::getParam($rH_cfg, 'aln', 'bwaExtraSamXeFlags');
+    $bwaCommand .= ' ' . LoadConfig::getParam($rH_cfg, 'aln', 'bwaExtraSamXeFlags', 0);
     $bwaCommand .= ' -r ' . $rgTag;
     $bwaCommand .= ' ' . $bwaRefIndex;
     $bwaCommand .= ' ' . $outputSai1Name;
@@ -237,7 +237,7 @@ sub singleCommand {
     my $bwaCommand = "";
     $bwaCommand .= LoadConfig::moduleLoad($rH_cfg, [['aln', 'moduleVersion.bwa'], ['aln', 'moduleVersion.picard'], ['aln', 'moduleVersion.java']]) . ' &&';
     $bwaCommand .= ' bwa samse';
-    $bwaCommand .= ' ' . LoadConfig::getParam($rH_cfg, 'aln', 'bwaExtraSamXeFlags');
+    $bwaCommand .= ' ' . LoadConfig::getParam($rH_cfg, 'aln', 'bwaExtraSamXeFlags', 0);
     $bwaCommand .= ' -r ' . $rgTag;
     $bwaCommand .= ' ' . $bwaRefIndex;
     $bwaCommand .= ' ' . $outputSaiName;

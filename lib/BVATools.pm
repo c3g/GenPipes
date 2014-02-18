@@ -173,7 +173,7 @@ sub depthOfCoverage {
   }
 
   my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta', 1, 'filepath');
-  my $rA_thresholds = LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'percentThresholds', 0);
+  my $rA_thresholds = LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'percentThresholds', 0, 'array');
 
   if (!$ro_job->isUp2Date()) {
     my $command;
@@ -186,7 +186,7 @@ sub depthOfCoverage {
       $command .= ' --intervals ' . $coverageBED;
     }
 
-    if (defined($rA_thresholds)) {
+    if (defined($rA_thresholds) and $rA_thresholds ne "") {
       for my $threshold (@{$rA_thresholds}) {
         $command .= ' --summaryCoverageThresholds ' . $threshold;
       }
