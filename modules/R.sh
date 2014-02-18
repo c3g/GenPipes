@@ -86,7 +86,7 @@ TEMPDIR=`mktemp -d -t $me.XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX` && cd $TEM
 echo "Working in $TEMPDIR"
 
 ## If latest is requested, determine version number. Unfort., only way seem to download R-latest tar.gz!
-if [  $VERSION = "latest" ]
+if [[  $VERSION == "latest" ]]
 then
 	wget --no-verbose http://cran.r-project.org/src/base/R-latest.tar.gz
 	tar -xf R-latest.tar.gz
@@ -99,7 +99,7 @@ INSTALL_DIR="$INSTALL_DIR/R-$VERSION"
 MODULEFILE="$MODULEFILE_DIR/$VERSION"
 MODULEVERSIONFILE="$MODULEFILE_DIR/.version"
 TCLROOT=$INSTALL_DIR
-if [ $INSTALL_PREFIX_ENV_VARNAME != "" ]
+if [[ $INSTALL_PREFIX_ENV_VARNAME != "" ]]
 then
 	echo "prefixing..."
 	TCLROOT="\$::env($INSTALL_PREFIX_ENV_VARNAME)/$INSTALL_DIR"
