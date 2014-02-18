@@ -129,7 +129,7 @@ sub pairCommand {
       ['trim', 'moduleVersion.trimmomatic']
     ]);
     $command .= ' && java -XX:ParallelGCThreads=1 -Xmx2G -cp \$TRIMMOMATIC_JAR org.usadellab.trimmomatic.TrimmomaticPE';
-    $command .= ' -threads ' . $rH_cfg->{'trim.nbThreads'};
+    $command .= ' -threads ' . LoadConfig::getParam($rH_cfg, 'trim', 'nbThreads', 1, 'int');
     if ($rH_laneInfo->{'qualOffset'} eq "64") {
       $command .= ' -phred64';
     } else {
@@ -145,7 +145,7 @@ sub pairCommand {
     if (defined($headcrop) && length($headcrop) > 0 && $headcrop > 0) {
       $command .= ' HEADCROP:' . $headcrop;
     }
-    $command .= ' ILLUMINACLIP:' . $adapterFile . $rH_cfg->{'trim.clipSettings'};
+    $command .= ' ILLUMINACLIP:' . $adapterFile . LoadConfig::getParam($rH_cfg, 'trim', 'clipSettings');
     if ($minQuality > 0) {
       $command .= ' TRAILING:' . $minQuality;
     }
@@ -190,7 +190,7 @@ sub singleCommand {
       ['trim', 'moduleVersion.trimmomatic']
     ]);
     $command .= ' && java -XX:ParallelGCThreads=1 -Xmx2G -cp \$TRIMMOMATIC_JAR org.usadellab.trimmomatic.TrimmomaticSE';
-    $command .= ' -threads ' . $rH_cfg->{'trim.nbThreads'};
+    $command .= ' -threads ' . LoadConfig::getParam($rH_cfg, 'trim', 'nbThreads', 1, 'int');
     if ($rH_laneInfo->{'qualOffset'} eq "64") {
       $command .= ' -phred64';
     } else {
@@ -204,7 +204,7 @@ sub singleCommand {
     if (defined($headcrop) && length($headcrop) > 0 && $headcrop > 0) {
       $command .= ' HEADCROP:' . $headcrop;
     }
-    $command .= ' ILLUMINACLIP:' . $adapterFile . $rH_cfg->{'trim.clipSettings'};
+    $command .= ' ILLUMINACLIP:' . $adapterFile . LoadConfig::getParam($rH_cfg, 'trim', 'clipSettings');
     if ($minQuality > 0) {
       $command .= ' TRAILING:' . $minQuality;
     }

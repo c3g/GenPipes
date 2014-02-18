@@ -144,7 +144,7 @@ sub resolveSampleBED {
   my $rH_cfg      = shift;
   my $rH_laneInfo = shift;
 
-  my $iniRegions = LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'coverageTargets');
+  my $iniRegions = LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'coverageTargets', 0);
 
   if (!defined($iniRegions) || length($iniRegions) == 0) {
     return undef;
@@ -173,14 +173,14 @@ sub depthOfCoverage {
   }
 
   my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta', 1, 'filepath');
-  my $rA_thresholds = LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'percentThresholds');
+  my $rA_thresholds = LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'percentThresholds', 0);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
     $command .= LoadConfig::moduleLoad($rH_cfg, [['depthOfCoverage', 'moduleVersion.java'], ['depthOfCoverage', 'moduleVersion.bvatools']]) . ' &&';
     $command .= ' java ' . LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'ram') . ' -jar \${BVATOOLS_JAR}';
     $command .= ' depthofcoverage';
-    $command .= ' ' . LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'extraFlags');
+    $command .= ' ' . LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'extraFlags', 0);
     $command .= ' --ref ' . $refGenome;
     if (defined($coverageBED) && length($coverageBED) > 0) {
       $command .= ' --intervals ' . $coverageBED;

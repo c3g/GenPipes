@@ -91,7 +91,7 @@ sub computeEffects {
     $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'computeEffects', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'computeEffects', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'computeEffects', 'snpeffRam');
     $command .= ' -jar \${SNPEFF_HOME}/snpEff.jar eff';
     $command .= ' -c \${SNPEFF_HOME}/snpEff.config';
-    $command .= ' ' . LoadConfig::getParam($rH_cfg, 'computeEffects', 'snpeffParams');
+    $command .= ' ' . LoadConfig::getParam($rH_cfg, 'computeEffects', 'snpeffParams', 0);
     $command .= ' -o vcf';
     $command .= ' -i vcf';
     $command .= ' -csvStats';

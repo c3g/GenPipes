@@ -89,7 +89,7 @@ use lib "$FindBin::Bin/../../lib";
 # Dependencies
 #--------------------
 use Getopt::Std;
-use Cwd;
+use Cwd 'abs_path';
 use POSIX;
 
 use BVATools;

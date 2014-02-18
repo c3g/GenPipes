@@ -66,7 +66,7 @@ sub fpkm {
     $command .= ' cufflinks -q';
     $command .= ' ' .$transcriptOption; 
     $command .= ' --max-bundle-frags ' . LoadConfig::getParam($rH_cfg, 'fpkm', 'cufflinksMaxFargs', 1, 'int');
-    $command .= ' ' . LoadConfig::getParam($rH_cfg, 'fpkm', 'cufflinksOtherOption');
+    $command .= ' ' . LoadConfig::getParam($rH_cfg, 'fpkm', 'cufflinksOtherOption', 0);
     $command .= ' --library-type ' . LoadConfig::getParam($rH_cfg, 'align', 'strandInfo');
     $command .= ' -p ' . LoadConfig::getParam($rH_cfg, 'fpkm', 'cufflinksThreads', 1, 'int');
     $command .= ' -o ' . $outputFolder;
