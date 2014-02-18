@@ -21,17 +21,16 @@ exit
 
 # wget https://bitbucket.org/mugqic/mugqic_resources/raw/master/modules/R_deploy.sh -O R_deploy.sh && wget https://bitbucket.org/mugqic/mugqic_resources/raw/master/modules/R.sh -O R.sh
 
-# sh R_deploy.sh -f -v 3.0.0
-# sh R_deploy.sh -f -v 3.0.2
+# sh -l R_deploy.sh -f -v 3.0.0
+# sh -l R_deploy.sh -f -v 3.0.2
 
 
-# sh R.sh -f -v 3.0.2 -p MUGQIC_INSTALL_HOME_DEV -i software/R -m modulefiles/mugqic_dev/R >& logdev
-# sh R.sh -f -v 3.0.2 -p MUGQIC_INSTALL_HOME -i software/R -m modulefiles/mugqic/R >& logprod
+# sh -l R.sh -f -v 3.0.2 -p MUGQIC_INSTALL_HOME_DEV -i software/R -m modulefiles/mugqic_dev/R >& logdev
+# sh -l R.sh -f -v 3.0.2 -p MUGQIC_INSTALL_HOME -i software/R -m modulefiles/mugqic/R >& logprod
 
 # wget https://bitbucket.org/mugqic/mugqic_resources/raw/master/modules/R_deploy.sh -O R_deploy.sh && wget https://bitbucket.org/mugqic/mugqic_resources/raw/master/modules/R.sh -O R.sh
 
-# sh R.sh -v 3.0.2 -p MUGQIC_INSTALL_HOME_DEV -i software/R -m modulefiles/mugqic_dev/R >& logdev &
-# sh R.sh -v 3.0.2 -p MUGQIC_INSTALL_HOME -i software/R -m modulefiles/mugqic/R >& logprod &
- 
+#sh -l R.sh -v 3.0.2 -p MUGQIC_INSTALL_HOME_DEV -i software/R -m modulefiles/mugqic_dev/R >& logdev &
+#sh -l R.sh -v 3.0.2 -p MUGQIC_INSTALL_HOME -i software/R -m modulefiles/mugqic/R >& logprod &
  
 
