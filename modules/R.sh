@@ -3,11 +3,13 @@ set -e
 umask 0002
 me=`basename $0`
 
-## Annoying cluster-specific actions
 
+## Annoying cluster-specific actions
 # Guillimin phase 1 gcc is outdated
-if [[ `hostname` == lg-* ]]; then
-	module load gcc/4.7.2 # otherwise Rarmadillo will not install
+GCC_MODULE_CALL=""
+if [[ `hostname` == lg-* ]] && [[ ! $(cat /proc/cpuinfo | grep -Ec 'E5-2650|E5-2670|E5-4620') -gt 0 ]]  ;then # Guillimin phase1
+	GCC_MODULE_CALL="module load gcc/4.7.2" # otherwise Rarmadillo will not install
+	echo $GCC_MODULE_CALL
 fi
 
 
@@ -146,6 +148,7 @@ then
 		prepend-path    LD_LIBRARY_PATH    \$root/lib64:/software/libraries/GotoBLAS_LAPACK/shared
 		#prepend-path   LD_LIBRARY_PATH    \$root/lib64:\$root/standalone:/software/libraries/GotoBLAS_LAPACK/shared
 		#prepend-path   CPATH              \$root/include
+		$GCC_MODULE_CALL
 	EOF
 	cat > $MODULEVERSIONFILE <<-EOF
 		#%Module1.0
