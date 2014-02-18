@@ -9,7 +9,8 @@ me=`basename $0`
 GCC_MODULE_CALL=""
 if [[ `hostname` == lg-* ]] && [[ ! $(cat /proc/cpuinfo | grep -Ec 'E5-2650|E5-2670|E5-4620') -gt 0 ]]  ;then # Guillimin phase1
 	GCC_MODULE_CALL="module load gcc/4.7.2" # otherwise Rarmadillo will not install
-	echo $GCC_MODULE_CALL
+	$GCC_MODULE_CALL
+	#echo $GCC_MODULE_CALL
 fi
 
 
