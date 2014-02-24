@@ -38,9 +38,14 @@ use strict;
 use warnings;
 #---------------------
 
-# Add the mugqic_pipeline/lib/ path relative to this Perl script to @INC library search variable
-use FindBin;
-use lib "$FindBin::Bin/../../lib";
+BEGIN{
+    #Makesure we can find the GetConfig::LoadModules module relative to this script install
+    use File::Basename;
+    use Cwd 'abs_path';
+    my ( undef, $mod_path, undef ) = fileparse( abs_path(__FILE__) );
+	unshift @INC, $mod_path."lib";
+}
+
 
 # Dependencies
 #--------------------
@@ -286,10 +291,12 @@ sub main {
 				}
 			}
 		
-			$dependency3 = $dependency2;
+			#$dependency3 = $dependency2;
 
 			foreach my $merSize(@merSizes){			
-				my $assemblyLoopCounter = 0;	
+				$dependency3 = $dependency2;
+				
+				#my $assemblyLoopCounter = 0;	
 			
 				for(my $currentStep = $opts{'s'}-1; $currentStep <= ($opts{'e'}-1); $currentStep++) {		
 					my $fname = $steps[$currentStep]->{'name'};
@@ -298,13 +305,13 @@ sub main {
 					if($steps[$currentStep]->{'stepLoop'} eq 'assembly') {
 
 						# TODO All this assemblyCounter loop, I'm not even sure its necessary, but if it ain't broken, don't fix it :-)
-						if($assemblyLoopCounter == 0){
-							$dependency3 = $dependency2; 
-
-						}else{
-							$dependency3 = $dependency3; 
-						}	
-						$assemblyLoopCounter++;		
+						#if($assemblyLoopCounter == 0){
+						#	$dependency3 = $dependency2; 
+						#
+						#}else{
+						#	$dependency3 = $dependency3; 
+						#}	
+						#$assemblyLoopCounter++;		
 						
 						# Here manage number of polishing rounds.
 						my $polishingRounds = LoadConfig::getParam(\%cfg, 'default', 'polishingRounds'); 
@@ -387,7 +394,7 @@ sub filtering{
 		"$outdir/$sampleName/filtering/input.xml",
 		"$outdir/$sampleName/filtering/input.fofn",	
 		# Xml
-		LoadConfig::getParam($rH_cfg, 'default', 'filteringSettings', 1, 'filepath'),
+		LoadConfig::getParam($rH_cfg, 'default', 'filteringSettings'),
 		$outdir."/".$sampleName."/filtering.xml",		
 		# Filtering smrtpipe
 		"$outdir/$sampleName/filtering",
@@ -453,7 +460,7 @@ sub getStats{
 		$estimatedCoverage,
 		$estimatedGenomeSize,
 		$coverageCutoff,
-		LoadConfig::getParam($rH_cfg, 'default', 'preassemblySettings', 1, 'filepath'),
+		LoadConfig::getParam($rH_cfg, 'default', 'preassemblySettings'),
 		"$outdir/$sampleName/$suffix/preassembly.xml",
 		"$outdir/$sampleName/$suffix/preassemblyMinReadSize.txt"
 	);
@@ -517,7 +524,7 @@ sub preassembly{
 		if( $computeCutoffFlag == 1 ){ # do not use default, compute cutoff.
 			$currentParams = "$outdir/$sampleName/$suffix/preassembly.xml"
 		}elsif( $computeCutoffFlag == 0 ){ # use default, do not compute cutoff
-			$currentParams = LoadConfig::getParam($rH_cfg, 'default', 'preassemblySettings', 1, 'filepath')
+			$currentParams = LoadConfig::getParam($rH_cfg, 'default', 'preassemblySettings')
 		}else{ die "Invalid value for -t arg...\n";}
 
 		my $rO_jobPreassembly = SmrtAnalysis::run(
@@ -638,7 +645,7 @@ sub assembly{
 	my $rO_jobCeleraConfig = PacBioTools::celeraConfig(
 		$rH_cfg,
 		$merSizeValue,
-		LoadConfig::getParam($rH_cfg, 'default', 'celeraSettings', 1, 'filepath'),
+		LoadConfig::getParam($rH_cfg, 'default', 'celeraSettings'),
 		"$outdir/$sampleName/$suffix/$merSize/celeraAssembly.ini"
 	);
 	if(!$rO_jobCeleraConfig->isUp2Date()){
@@ -718,15 +725,15 @@ sub polishing{
 	my $cmd;
 	
 	# create PacBio input.xml
-	my $rO_jobFofn = SmrtAnalysis::fofns(
-		$rH_cfg,
-		"$outdir/fofns/$sampleName.fofn",
-		"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/input.xml",
-		"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/input.fofn"
-	);
-	if(!$rO_jobFofn->isUp2Date()) {
-		SubmitToCluster::printSubmitCmd($rH_cfg, "fofn", $stepName , 'FOFNS'.'_'.$sampleName.'_'.$suffix.'_'.$merSize.'_ROUND_'.$polishingRound, $dependency, $sampleName."_".$suffix."_".$merSize."_".$polishingRound, $rO_jobFofn); 
-	}
+	#my $rO_jobFofn = SmrtAnalysis::fofns(
+	#	$rH_cfg,
+	#	"$outdir/fofns/$sampleName.fofn",
+	#	"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/input.xml",
+	#	"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/input.fofn"
+	#);
+	#if(!$rO_jobFofn->isUp2Date()) {
+	#	SubmitToCluster::printSubmitCmd($rH_cfg, "fofn", $stepName , 'FOFNS'.'_'.$sampleName.'_'.$suffix.'_'.$merSize.'_ROUND_'.$polishingRound, $dependency, $sampleName."_".$suffix."_".$merSize."_".$polishingRound, $rO_jobFofn); 
+	#}
 
 	# Upload reference. Ref to be uploaded depends on polishing round.
 	my $refOutdir;
@@ -755,7 +762,7 @@ sub polishing{
 		#"$outdir/$sampleName/$suffix/$merSize/assembly/9-terminator/$sampleName"."_".$suffix."_".$merSize.".ctg.fasta"	
 	);
 	if(!$rO_jobRefUpload->isUp2Date()){
-		SubmitToCluster::printSubmitCmd($rH_cfg, "referenceUpload", $stepName , 'REFUPLOAD'.'_'.$sampleName.'_'.$suffix.'_'.$merSize.'_ROUND_'.$polishingRound, $rO_jobFofn->getCommandJobId(0), $sampleName."_".$suffix."_".$merSize."_".$polishingRound, $rO_jobRefUpload); 
+		SubmitToCluster::printSubmitCmd($rH_cfg, "referenceUpload", $stepName , 'REFUPLOAD'.'_'.$sampleName.'_'.$suffix.'_'.$merSize.'_ROUND_'.$polishingRound, $dependency, $sampleName."_".$suffix."_".$merSize."_".$polishingRound, $rO_jobRefUpload); 
 	}
 	
 	if($hgapAlgorithm == 0){
@@ -792,7 +799,9 @@ sub polishing{
 			$rH_cfg,
 			"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/data/aligned_reads.cmp.h5",
 			"$outdir/$sampleName/filtering/data/filtered_regions.fofn", 
-			"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/input.fofn",
+      #"$outdir/fofns/$sampleName.fofn",
+      "$outdir/$sampleName/filtering/input.fofn",
+			#"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/input.fofn",
 			#$outdir."/".$sampleName."/".$suffix."/".$merSize."/assembly/".$sampleName.$suffix.$merSize,
 			$refOutdir.$refPrefix,
 			$tmpdir
@@ -804,7 +813,8 @@ sub polishing{
 		my $rO_jobLoadPulses = SmrtAnalysis::loadPulses(
 			$rH_cfg,
 			"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/data/aligned_reads.cmp.h5",
-			"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/input.fofn"
+      "$outdir/$sampleName/filtering/input.fofn"
+			#"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/input.fofn"
 		);
 		if(!$rO_jobLoadPulses->isUp2Date()) {
 			SubmitToCluster::printSubmitCmd($rH_cfg, "loadPulses", $stepName , 'LOADPULSES'.'_'.$sampleName.'_'.$suffix.'_'.$merSize.'_ROUND_'.$polishingRound, $rO_jobCompareSequences->getCommandJobId(0), $sampleName."_".$suffix."_".$merSize."_".$polishingRound, $rO_jobLoadPulses); 
@@ -1000,7 +1010,7 @@ sub epigenome{
 	my $cmd;
 
 	# Prepare xml
-	$cmd = "cat ".LoadConfig::getParam($rH_cfg, 'default', 'motifsSettings', 1, 'filepath');
+	$cmd = "cat ".LoadConfig::getParam($rH_cfg, 'default', 'motifsSettings');
 	$cmd .= " | sed \'s|REFERENCE|".$outdir."/".$sampleName.$suffix."/assembly/".$sampleName.$suffix." | g\' > ".$outdir."/".$sampleName.$suffix."/motifs/motifs.xml";
 	my $rO_jobRunCommand = SmrtAnalysis::runCommand(
 		$rH_cfg,
@@ -1085,12 +1095,12 @@ sub report {
 	#	$path= 'report.path=\"' .$pathTMP .'\",';
     #}   
 	my $author = ""; 
-	my $authorTMP = LoadConfig::getParam($rH_cfg, 'report','report.author', 0);
+	my $authorTMP = LoadConfig::getParam($rH_cfg, 'report','report.author');
 	if (defined($authorTMP) && !($authorTMP eq "")) {
 		$author= 'report.author=\"' .$authorTMP .'\",';
 	}   
 	my $contact = ""; 
-	my $contactTMP = LoadConfig::getParam($rH_cfg, 'report','report.contact', 0);
+	my $contactTMP = LoadConfig::getParam($rH_cfg, 'report','report.contact');
 	if (defined($contactTMP) && !($contactTMP eq "")) {
 		$contact= 'report.contact=\"' .$contactTMP .'\",';
 	} 	
@@ -1098,7 +1108,7 @@ sub report {
 	my $ro_job = new Job();
 	$ro_job->testInputOutputs(undef, undef);
 
-	$cmd .= LoadConfig::moduleLoad($rH_cfg, [['report','moduleVersion.cranR']]) .' &&';
+	$cmd .= 'module load ' .LoadConfig::getParam($rH_cfg, 'report','moduleVersion.cranR') .' &&';
 	$cmd .= ' R --vanilla -e \'library(gqSeqUtils) ;';
 	$cmd .= ' mugqicPipelineReport(';
 	$cmd .= ' pipeline=\"PacBioAssembly\",';
