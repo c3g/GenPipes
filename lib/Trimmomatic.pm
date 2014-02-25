@@ -88,7 +88,7 @@ sub trim {
       $ro_job = pairCommand($rH_cfg, $sampleName, $rH_laneInfo, $outputDir);
     }
   } else {
-    die "Unknown runType: " . $rH_laneInfo->{' runType '} . "\n";
+    die "Unknown runType: " . $rH_laneInfo->{'runType'} . "\n";
   }
 
   return $ro_job;
