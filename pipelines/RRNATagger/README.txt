@@ -49,14 +49,17 @@
 # report.contact=your.name@mail.mcgill.ca
 #
 # Then run sample setup (from MUGQIC tools repo) if internal libs from MUGQIC.
-/path/to/sampleSetup.pl --nanuqAuthFile ~/nanuq_sample_setup.txt --projectId 9999 --tech miseq
+/path/to/your/mugqic_tools/sampleSetup.pl --nanuqAuthFile ~/nanuq_sample_setup.txt --projectId 9999 --tech miseq
 
+
+# Then get your barcodes (for MUGQIC sequencing libs)
+/path/to/your/mugqic_tools/perl-tools/getMiSeqBarcodes.pl --runId M00833_0173 > barcodes.fasta
 # RRNATagger.pl has been design to support many configurations of sequencing runs (i.e. single, paired end reads). Here are different ways to run the pipeline according 
 # to the type of library that is to be analyzed.
 #
 # Regardless of the type of library you have, 454, PacBio or MiSeq/HiSeq rRNA amplicons library, here is the command line you need to launch and the steps that will be performed:
 # ./RRNATagger.pl --everything --external_infile ./reads_cutadapt_220.fastq --barcodes ./myBarcodes.fasta --config_file ./RRNATagger.abacus.ini --verbose --start_at 1 > commands.sh
-./RRNATagger.pl --sampleSheet ./project.nanuq.csv --barcodes myBarcodes.fasta --bactArch --config_file myInifile.ini --verbose --start_at 1 --end_at 62 > commands_1-62.sh
+./RRNATagger.pl --sampleSheet ./project.nanuq.csv --barcodes barcodes.fasta --bactArch --config_file myInifile.ini --verbose --start_at 1 --end_at 62 > commands_1-62.sh
 
 # Steps in the RRNATagger pipeline can vary depending on the data types you
 # are analyzing. These are the typical steps for a 2x250 MiSeq rRNA analysis:
