@@ -125,23 +125,24 @@ sub main {
   my %opts;
   getopts('c:s:e:n:l:r:i:', \%opts);
 
-  if (!defined($opts{'c'}) || !defined($opts{'s'}) || !defined($opts{'e'}) || !defined($opts{'n'}) || !defined($opts{'l'}) || !defined($opts{'r'}) || !defined($opts{'i'})) {
+  if (!defined($opts{'c'}) || !defined($opts{'s'}) || !defined($opts{'e'}) || !defined($opts{'l'}) || !defined($opts{'r'})) {
     printUsage();
     exit(1);
   }
 
   my $runDirectory = $opts{'r'};
   my $lane = $opts{'l'};
-  $casavaSheet = $opts{'i'};
-
+  $casavaSheet = defined($opts{'i'}) ? $opts{'i'} : $runDirectory . "/SampleSheet.nanuq.csv";
+  my $nanuqSheet = defined($opts{'n'}) ? $opts{'n'} : $runDirectory . "/run.nanuq.csv";
   my %cfg = LoadConfig->readConfigFile($opts{'c'});
+  
   $UNALIGNED_DIR = LoadConfig::getParam(\%cfg, 'default', 'unalignedDirPrefix');
   $ALIGNED_DIR  = LoadConfig::getParam(\%cfg, 'default', 'alignedDirPrefix');
   
   my ($nbReads, $rAoH_readsInfo) = parseRunInfoFile($runDirectory ."/RunInfo.xml" );
 
   my $rAoH_samples = generateIlluminaLaneSampleSheet($lane, $runDirectory, $rAoH_readsInfo);
-  my $rHoAoH_infos = SampleSheet::parseSampleSheetAsHashByProcessingId($opts{'n'});
+  my $rHoAoH_infos = SampleSheet::parseSampleSheetAsHashByProcessingId($nanuqSheet);
 
   $rHoH_genomes = getGenomeList(LoadConfig::getParam(\%cfg, 'default', 'genomesHome'));
   $rHoH_defaultGenomes = getDefaultGenomes(LoadConfig::getParam(\%cfg, 'default', 'defaultSpeciesGenome'));
