@@ -42,15 +42,18 @@ prepend-path    PERL5LIB               \$root/lib
 ################################################################################
 # Everything below this line should be generic and not modified
 
+# Well... here, module directory is named "pipeline" instead of "mugqic_pipeline" for aesthetical reasons
+
 # Default module version file
 echo "#%Module1.0
 set ModulesVersion \"$VERSION\"" > .version
 
 # Add permissions and install module
-mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
+MODULE_DIR=$MUGQIC_INSTALL_HOME/modulefiles/mugqic/pipeline
+mkdir -p $MODULE_DIR
 chmod -R ug+rwX $VERSION .version
 chmod -R o+rX $VERSION .version
-mv $VERSION .version $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
+mv $VERSION .version $MODULE_DIR
 
 # Clean up temporary installation files if any
 rm -rf $INSTALL_DOWNLOAD
