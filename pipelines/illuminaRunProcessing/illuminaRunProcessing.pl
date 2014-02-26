@@ -100,12 +100,13 @@ my $GLOBAL_DEP_KEY = "#global";
 my $rHoH_genomes;
 my $rHoH_defaultGenomes;
 my $casavaSheet;
+my $globalNumberOfMismatch;
 
 &main();
 
 sub printUsage {
   print "Version: ".$Version::version."\n";
-  print "\nUsage: perl ".$0." -c config.ini -s start -e end -n SampleSheet.csv -i SampleSheet.nanuq.csv\n";
+  print "\nUsage: perl ".$0." -c config.ini -s start -e end -l nb -r /path/to/run\n";
   print "\t-c  config file\n";
   print "\t-s  start step, inclusive\n";
   print "\t-e  end step, inclusive\n";
@@ -113,6 +114,7 @@ sub printUsage {
   print "\t-r  run directory\n";
   print "\t-n  nanuq sample sheet\n";
   print "\t-i  Illumina (Casava) sample sheet\n";
+  print "\t-d  Number of mismatches\n";
   print "\n";
   print "Steps:\n";
   for(my $idx=0; $idx < @steps; $idx++) {
@@ -123,7 +125,7 @@ sub printUsage {
 
 sub main {
   my %opts;
-  getopts('c:s:e:n:l:r:i:', \%opts);
+  getopts('c:s:e:d:n:l:r:i:', \%opts);
 
   if (!defined($opts{'c'}) || !defined($opts{'s'}) || !defined($opts{'e'}) || !defined($opts{'l'}) || !defined($opts{'r'})) {
     printUsage();
@@ -132,9 +134,11 @@ sub main {
 
   my $runDirectory = $opts{'r'};
   my $lane = $opts{'l'};
+  my %cfg = LoadConfig->readConfigFile($opts{'c'});
+  $globalNumberOfMismatch = defined($opts{'d'}) ? $opts{'d'} : LoadConfig::getParam(\%cfg, 'default', 'numberMismatches');
   $casavaSheet = defined($opts{'i'}) ? $opts{'i'} : $runDirectory . "/SampleSheet.nanuq.csv";
   my $nanuqSheet = defined($opts{'n'}) ? $opts{'n'} : $runDirectory . "/run.nanuq.csv";
-  my %cfg = LoadConfig->readConfigFile($opts{'c'});
+  
   
   $UNALIGNED_DIR = LoadConfig::getParam(\%cfg, 'default', 'unalignedDirPrefix');
   $ALIGNED_DIR  = LoadConfig::getParam(\%cfg, 'default', 'alignedDirPrefix');
@@ -229,7 +233,7 @@ sub generateIndexCount {
     print  "# No Indexes, *NOT* Generating index counts\n";
   } else {
     my $jobDependency = undef;
-    my $ro_job = CountIlluminaBarcodes::count($rH_cfg, $baseCallDir, $lane, $mask, $runDirectory ."/RunInfo.xml", $runDirectory.'/'.$runName.'_'.$lane.'.metrics');
+    my $ro_job = CountIlluminaBarcodes::count($rH_cfg, $baseCallDir, $lane, $mask, $runDirectory ."/RunInfo.xml", $runDirectory.'/'.$runName.'_'.$lane.'.metrics', $globalNumberOfMismatch);
     
     if (!$ro_job->isUp2Date()) {
       print  "# Generating index counts\n";    
@@ -268,10 +272,9 @@ sub generateFastq {
     my $casavaCmd = LoadConfig::getParam($rH_cfg, 'generateFastq', 'casavaCmd');
     my $baseCallDir = $runDirectory. "/" . LoadConfig::getParam($rH_cfg, 'generateFastq', 'baseCallDir');
     my $casavaSampleSheetPrefix = LoadConfig::getParam($rH_cfg, 'generateFastq', 'casavaSampleSheetPrefix');
-    my $numberMismatches = LoadConfig::getParam($rH_cfg, 'generateFastq', 'numberMismatches');
 
     my $mask = getMask($lane, $rAoH_readsInfo);
-    validateBarcodes($numberMismatches, $rAoH_sample);
+    validateBarcodes($globalNumberOfMismatch, $rAoH_sample);
 
 
     print "# Generate Unaligned directory\n";
@@ -279,10 +282,10 @@ sub generateFastq {
     if($mask !~ /I/) {
       print  "$casavaCmd --input-dir $baseCallDir --output-dir $runDirectory/$UNALIGNED_DIR.$lane --tiles s_$lane --sample-sheet $runDirectory/$casavaSampleSheetPrefix$lane.csv --fastq-cluster-count 0\n";
     } else {
-      print  "$casavaCmd --input-dir $baseCallDir --output-dir $runDirectory/$UNALIGNED_DIR.$lane --tiles s_$lane --sample-sheet $runDirectory/$casavaSampleSheetPrefix$lane.csv --fastq-cluster-count 0 --mismatches $numberMismatches --use-bases-mask $mask\n";
+      print  "$casavaCmd --input-dir $baseCallDir --output-dir $runDirectory/$UNALIGNED_DIR.$lane --tiles s_$lane --sample-sheet $runDirectory/$casavaSampleSheetPrefix$lane.csv --fastq-cluster-count 0 --mismatches $globalNumberOfMismatch --use-bases-mask $mask\n";
     }
     if (LoadConfig::getParam($rH_cfg, 'generateFastq', 'sendNotification')) {
-      print formatCommand("config" => $rH_cfg, "command" => LoadConfig::getParam($rH_cfg, 'generateFastq', 'startNotificationCommand'), "runDirectory" => $runDirectory, "runID" => $runID, "lane" => $lane, "isMiSeq" => $isMiSeq, "mask" => $mask, "mismatches" => $numberMismatches) . "\n";
+      print formatCommand("config" => $rH_cfg, "command" => LoadConfig::getParam($rH_cfg, 'generateFastq', 'startNotificationCommand'), "runDirectory" => $runDirectory, "runID" => $runID, "lane" => $lane, "isMiSeq" => $isMiSeq, "mask" => $mask, "mismatches" => $globalNumberOfMismatch) . "\n";
       print "\n";
     }
 
