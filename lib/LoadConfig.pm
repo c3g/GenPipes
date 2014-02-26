@@ -171,7 +171,7 @@ sub moduleLoad {
   # Check by a system call if module is available
   for my $moduleValue (@moduleValues) {
     # "module" cmd not found when switching to a different shell so source module.sh is required
-    my $moduleShowOutput = `source /etc/profile.d/modules.sh; module show $moduleValue 2>&1`;
+    my $moduleShowOutput = `bash -c 'source /etc/profile.d/modules.sh; module show $moduleValue 2>&1'`;
     $moduleShowOutput !~ /Error/i or die "Error in config file with $moduleValue:\n$moduleShowOutput";
   }
 
