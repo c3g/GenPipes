@@ -65,8 +65,9 @@ OR
 --barcodes <string>        : Barcode file in fasta format. Multiple barcode files can be supplied 
                              if for instance, this is a run having samples from multiple users.
 --config_file <string>     : Configuration file containing paths to the RDP training set, contaminant
-                             database, PhiX fasta reference and chimera fasta reference database. 
---noMsub                   : If you reserved a node and want to run the pipeline "interactively".
+                             database, PhiX fasta reference and chimera fasta reference database.
+                             This ini file also contains all the paramters for the various steps
+                             of the pipeline. 
 
 ONE of the three following flags:
 --fungi_ITS                : Put this flag if analyzing fungi ITS.
@@ -188,7 +189,7 @@ mkdir $compute_cluster_outdir unless -d $compute_cluster_outdir;
 
 SubmitToCluster::initPipeline;
 
-print STDOUT "export PATH=./scripts:\$PATH\n";
+#print STDOUT "export PATH=./scripts:\$PATH\n";
 
 my $infile;
 my $dependency = undef;
