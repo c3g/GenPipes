@@ -38,6 +38,7 @@ set             root                \$::env(MUGQIC_INSTALL_HOME)/software/$SOFTW
 prepend-path    PATH                \$root/tools ;
 prepend-path    PATH                \$root/perl-tools ;
 prepend-path    PATH                \$root/python-tools ;
+prepend-path    PATH                \$root/RRNATagger-tools ;
 prepend-path    PERL5LIB            \$root/perl-tools ;
 setenv          R_TOOLS             \$root/R-tools ;
 setenv          PERL_TOOLS          \$root/perl-tools ;
