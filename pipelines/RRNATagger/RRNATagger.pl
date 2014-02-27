@@ -103,31 +103,22 @@ my (
 my $verbose = 0;
 
 my @cmd = @ARGV;
-die "No tempdir specified, please specify a \$TMPDIR variable in your environment.\n" if(!$TMPDIR);
-
-my $tmpdir = File::Temp->newdir(
-    "tmpDirItaggerXXXXXXX",
-    DIR => $TMPDIR."/",
-    CLEANUP => 0 #Let itagger.pl manage the removal of temp files.
-);
-
-mkdir $tmpdir unless -d $tmpdir;
 
 GetOptions(
-    'external_infile=s' 	=> \$external_infile,
-	'sampleSheet=s'			=> \$sampleSheet,
-	'barcodes=s' 			=> \@barcodes,
-	'config_file=s'			=> \$config_file,
-	'fungi_ITS'				=> \$fungi_ITS,
-	'bactArch'              => \$bactArch,
-	'everything'            => \$everything,
-	'run_on_cluster' 		=> \$run_on_cluster,
-	'start_at=i' 			=> \$start_at,
-	'end_at=i' 				=> \$end_at,
-	'no_clustering' 		=> \$no_clustering,
-	'noMsub'				=> \$noMsub,
-    'verbose' 				=> \$verbose,
-    'help' 					=> \$help
+  'external_infile=s' => \$external_infile,
+	'sampleSheet=s'		  => \$sampleSheet,
+	'barcodes=s' 			  => \@barcodes,
+	'config_file=s'		  => \$config_file,
+	'fungi_ITS'				  => \$fungi_ITS,
+	'bactArch'          => \$bactArch,
+	'everything'        => \$everything,
+	'run_on_cluster' 	  => \$run_on_cluster,
+	'start_at=i' 			  => \$start_at,
+	'end_at=i' 				  => \$end_at,
+	'no_clustering'     => \$no_clustering,
+	'noMsub'				    => \$noMsub,
+  'verbose' 			    => \$verbose,
+  'help' 					    => \$help
 );
 if ($help) { print $usage; exit; }
 
@@ -144,7 +135,16 @@ if($external_infile){
 
 die("--config_file does not exists! Typed wrong filename?\n") if((!-e $config_file) and (!-s $config_file));
 
-my %cfg                = LoadConfig->readConfigFile($config_file);
+my %cfg               = LoadConfig->readConfigFile($config_file);
+my $iniFileTmpDir     = LoadConfig::getParam(\%cfg, 'default', 'tmpDir');
+my $tmpdir = File::Temp->newdir(
+    "tmpDirItaggerXXXXXXX",
+    DIR => $iniFileTmpDir."/",
+    CLEANUP => 0 #Let itagger.pl manage the removal of temp files.
+);
+
+mkdir $tmpdir unless -d $tmpdir;
+
 my $outdir             = LoadConfig::getParam(\%cfg, 'default', 'currentDir');
 my $clusteringMethod   = LoadConfig::getParam(\%cfg, 'clustering', 'clusteringMethod'); 
 my $projectName        = LoadConfig::getParam(\%cfg, 'default', 'projectName');
@@ -1237,7 +1237,7 @@ foreach my $barcodes (@barcodes){
 				$dir."/tax_summary/absolute/"
 			);
 			if(!$rO_jobSummarizeTaxonomyAbsolute->isUp2Date()) {
-				SubmitToCluster::printSubmitCmd(\%cfg, "summarize_taxonomy", "summarize_taxonomy_absolute", "SUMMARIZETAXONOMYABSOLUTE"."_".$loop_counter, $dependency, "global", $rO_jobSummarizeTaxonomyAbsolute) if($start_at <= $currStep && $end_at >= $currStep); 
+				SubmitToCluster::printSubmitCmd(\%cfg, "summarize_taxonomy", "summarize_taxonomy_absolute", "SUMMARIZETAXONOMYABSOLUTE_L$i"."_".$loop_counter, $dependency, "global", $rO_jobSummarizeTaxonomyAbsolute) if($start_at <= $currStep && $end_at >= $currStep); 
 				$dependency = $rO_jobSummarizeTaxonomyAbsolute->getCommandJobId(0) if($start_at <= $currStep && $end_at >= $currStep);
 			}
 			print STDERR "[DEBUG]\t\tStep #".$currStep." summarize_taxonomy_absolute_L".$i."\n";
@@ -1253,7 +1253,7 @@ foreach my $barcodes (@barcodes){
 				$dir."/tax_summary/relative/"
 			);
 			if(!$rO_jobSummarizeTaxonomyRelative->isUp2Date()) {
-				SubmitToCluster::printSubmitCmd(\%cfg, "summarize_taxonomy", "summarize_taxonomy_relative", "SUMMARIZETAXONOMYRELATIVE"."_".$loop_counter, $dependency, "global", $rO_jobSummarizeTaxonomyRelative) if($start_at <= $currStep && $end_at >= $currStep); 
+				SubmitToCluster::printSubmitCmd(\%cfg, "summarize_taxonomy", "summarize_taxonomy_relative", "SUMMARIZETAXONOMYRELATIVE_L$i"."_".$loop_counter, $dependency, "global", $rO_jobSummarizeTaxonomyRelative) if($start_at <= $currStep && $end_at >= $currStep); 
 				$dependency = $rO_jobSummarizeTaxonomyRelative->getCommandJobId(0) if($start_at <= $currStep && $end_at >= $currStep);
 			}
 			print STDERR "[DEBUG]\t\tStep #".$currStep." summarize_taxonomy_relative_L".$i."\n";
