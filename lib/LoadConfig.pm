@@ -91,6 +91,10 @@ sub readConfigFile {
   if (-e "$file") {
     tie %config, "Config::Simple", $file;
     tied(%config)->autosave(1);
+
+    # Check modules availability
+    checkModules(\%config);
+
     return %config;
   }
 
@@ -101,6 +105,22 @@ sub readConfigFile {
       "First, create a config file according to this model:\n\n" .
       "[section]\nNAME= Value\n\nEXAMPLE\n\n[PATH]\nJAVA=/opt/jdk/jdk1.6.0_33/bin/java\n\n" .
       "In this case a hash \n\$hash{PATH.JAVA}=/opt/jdk/jdk1.6.0_33/bin/java\n\nwill be returned\n";
+  }
+}
+
+# Check by a system call if all modules defined in config file are available
+sub checkModules {
+  my $rH_cfg = shift;
+
+  # Retrieve all module values in config file assuming that all module key names contain "moduleVersion"
+  for my $key (keys %$rH_cfg) {
+    if ($key =~ /moduleVersion/) {
+      my $moduleValue = $rH_cfg->{$key};
+
+      # Bash "module" cmd not found when switching to a different shell so source module.sh is required
+      my $moduleShowOutput = `bash -c 'source /etc/profile.d/modules.sh; module show $moduleValue 2>&1'`;
+      $moduleShowOutput !~ /Error/i or die "Error in config file with $moduleValue:\n$moduleShowOutput";
+    }
   }
 }
 
@@ -167,13 +187,6 @@ sub moduleLoad {
 
   # Retrieve module values from the configuration file
   my @moduleValues = map {getParam($rH_cfg, $_->[0], $_->[1], 1)} @$rA_modules;
-
-  # Check by a system call if module is available
-  for my $moduleValue (@moduleValues) {
-    # "module" cmd not found when switching to a different shell so source module.sh is required
-    my $moduleShowOutput = `bash -c 'source /etc/profile.d/modules.sh; module show $moduleValue 2>&1'`;
-    $moduleShowOutput !~ /Error/i or die "Error in config file with $moduleValue:\n$moduleShowOutput";
-  }
 
   return "module load " . join(" ", @moduleValues);
 }
