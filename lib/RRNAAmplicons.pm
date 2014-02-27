@@ -523,6 +523,7 @@ sub txtToPdf{
 		my $cmd = '';
 		$cmd .= 'module load ' . LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' && ';
 		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'perl', 'moduleVersion.perl').' && ';
+		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'tools', 'moduleVersion.tools').' && ';	 
 		$cmd .=	' memtime ';
 		$cmd .= 'txtToPdf.pl';
 		$cmd .= ' --infile ' . $infile;
@@ -546,6 +547,7 @@ sub mergePdf{
 		$cmd .= 'module load ' . LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' && ';
 		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'perl', 'moduleVersion.perl').' && ';
 		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'ghostscript', 'moduleVersion.ghostscript').' && ';
+		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'tools', 'moduleVersion.tools').' && ';	 
 		$cmd .=	' memtime ';
 		$cmd .= ' ' . $command;
 		$cmd .= ' && touch ' . $dummyOutfile; 
@@ -644,13 +646,13 @@ sub clustering3{
 }
 
 sub clientReport{
-    my $rH_cfg        = shift;
-    my $iniFilePath   = shift;
-    my $projectPath   = shift;
-    my $pipelineType  = shift;
-	my $reportPath    = shift;
+  my $rH_cfg        = shift;
+  my $iniFilePath   = shift;
+  my $projectPath   = shift;
+  my $pipelineType  = shift;
+  my $reportPath    = shift;
     
-    my $pipeline = 'pipeline=\"' .$pipelineType .'\",';
+  my $pipeline = 'pipeline=\"' .$pipelineType .'\",';
 	my $titleTMP = LoadConfig::getParam($rH_cfg, 'report','projectName');
 	my $title = 'report.title=\"' .$titleTMP .'\",';
 	my $authorTMP = LoadConfig::getParam($rH_cfg, 'report','report.author');

@@ -112,6 +112,7 @@ sub addTaxToObs{
 		my $cmd = '';
 		$cmd .= 'module load '. LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' && ';
 		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'perl', 'moduleVersion.perl').' && ';
+		$cmd .= 'module load ' . LoadConfig::getParam($rH_cfg, 'tools', 'moduleVersion.tools').' && ';	 
 		$cmd .=	' memtime ';
 		$cmd .= 'addTaxToObs.pl';
 		$cmd .= ' --seqobs ' . $obs;
@@ -138,6 +139,7 @@ sub filterOTUTable{
 		my $cmd = '';
 		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' && ';
 		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'perl', 'moduleVersion.perl').' && ';
+		$cmd .= 'module load ' . LoadConfig::getParam($rH_cfg, 'tools', 'moduleVersion.tools').' && ';	 
 		$cmd .=	' memtime ';
 		$cmd .= ' rmEmptyCol.pl';
 		$cmd .= ' --infile ' . $infile;
@@ -163,6 +165,7 @@ sub filterObsTable{
 		my $cmd = '';
 		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' && ';
 		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'perl', 'moduleVersion.perl').' && ';
+		$cmd .= 'module load ' . LoadConfig::getParam($rH_cfg, 'tools', 'moduleVersion.tools').' && ';	 
 		$cmd .=	' memtime ';
 		$cmd .= ' rmEmptyCol.pl';
 		$cmd .= ' --infile_tab ' . $infileTsv;
@@ -249,6 +252,7 @@ sub rarefy{
 		$cmd .= 'module load ' . LoadConfig::getParam($rH_cfg, 'qiime-dependencies', 'moduleVersion.qiime-dependencies').' && ';	 
 		$cmd .= 'module load ' . LoadConfig::getParam($rH_cfg, 'qiime', 'moduleVersion.qiime').' && ';	 
 		$cmd .= 'module load ' . LoadConfig::getParam($rH_cfg, 'python', 'moduleVersion.python').' && ';	 
+		$cmd .= 'module load ' . LoadConfig::getParam($rH_cfg, 'tools', 'moduleVersion.tools').' && ';	 
 		$cmd .=	' memtime ';
 		$cmd .= 'rarefaction.pl';
 		$cmd .= ' --infile ' . $biom;
@@ -407,6 +411,7 @@ sub calculateAbundanceThresholds{
 		$cmd .= 'module load ' . LoadConfig::getParam($rH_cfg, 'qiime-dependencies', 'moduleVersion.qiime-dependencies').' && ';	 
 		$cmd .= 'module load ' . LoadConfig::getParam($rH_cfg, 'qiime', 'moduleVersion.qiime').' && ';	 
 		$cmd .= 'module load ' . LoadConfig::getParam($rH_cfg, 'python', 'moduleVersion.python').' && ';	 
+		$cmd .= 'module load ' . LoadConfig::getParam($rH_cfg, 'tools', 'moduleVersion.tools').' && ';	 
 		$cmd .=	' memtime ';
 		$cmd .= 'abundanceThreshold.pl';
 		$cmd .= ' --infile ' . $tsv;
@@ -660,7 +665,7 @@ sub multipleRarefaction{
 	my $rootOutdir         = shift;
 	
 	my $ro_job = new Job();
-  my $dummyOutfile = "$outdir/rarefactions.done";
+  my $dummyOutfile = "$rootOutdir/rarefactions.done";
 	$ro_job->testInputOutputs([$biom] , [$dummyOutfile]);
 	
 	if (!$ro_job->isUp2Date()) {
@@ -670,6 +675,7 @@ sub multipleRarefaction{
 		$cmd .= 'module load ' . LoadConfig::getParam($rH_cfg, 'qiime-dependencies', 'moduleVersion.qiime-dependencies').' && ';	 
 		$cmd .= 'module load ' . LoadConfig::getParam($rH_cfg, 'qiime', 'moduleVersion.qiime').' && ';	 
 		$cmd .= 'module load ' . LoadConfig::getParam($rH_cfg, 'python', 'moduleVersion.python').' && ';	 
+		$cmd .= 'module load ' . LoadConfig::getParam($rH_cfg, 'tools', 'moduleVersion.tools').' && ';	 
 		$cmd .= ' rm -rf ' . $rootOutdir . '/rarefaction/* && ';
 		$cmd .= ' rm -rf ' . $rootOutdir . '/alpha_rarefaction/* && ';
 		$cmd .= ' rm -rf ' . $rootOutdir . '/collated/* && ';
@@ -696,10 +702,10 @@ sub alphaDiversity{
 	my $indir              = shift;
 	my $outdir             = shift;
   
-  my $dummyOutfile = "$outdir/alphaDiv.done";
+  my $dummyOutfile = "$outdir/../alphaDiv.done";
 	
 	my $ro_job = new Job();
-	$ro_job->testInputOutputs(undef , [$dummyOutfile]);
+	$ro_job->testInputOutputs([""] , [$dummyOutfile]);
 	
 	my $m = join(',', LoadConfig::getParam($rH_cfg, 'alpha_diversity', 'm'));
 	$m =~ s/:/,/g;
@@ -728,7 +734,7 @@ sub collateAlpha{
 	my $indir              = shift;
 	my $outdir             = shift;
   
-  my $dummyOutfile = "$outdir/collateAlpha.done";
+  my $dummyOutfile = "$outdir/../collateAlpha.done";
 	
 	my $ro_job = new Job();
 	$ro_job->testInputOutputs([""] , [$dummyOutfile]);
@@ -758,7 +764,7 @@ sub rarefactionPlots{
   my $dummyOutfile = "$outdir/rarefactionPlots.done";
 	
   my $ro_job = new Job();
-	$ro_job->testInputOutputs([""] , [$dummyOutfile]);
+	$ro_job->testInputOutputs([""] , [$dummyOutfile, "$outdir/rarefactionPlots.pdf"]);
 	
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
@@ -771,6 +777,11 @@ sub rarefactionPlots{
 		$cmd .= ' -i ' . $indir;
 		$cmd .= ' -m ' . LoadConfig::getParam($rH_cfg, 'default', 'mappingFile');
 		$cmd .= ' -o ' . $outdir;
+    $cmd .= ' && ';
+    $cmd .= 'rarefactionPlots.R';
+    $cmd .= ' -r ' . $outdir . '/average_tables/observed_speciesSampleID.txt';
+    $cmd .= ' -o ' . $outdir;
+    $cmd .= ' -p rarefactionPlots';
     $cmd .= ' && touch ' . $dummyOutfile;
 	
 		$ro_job->addCommand($cmd);
@@ -783,6 +794,8 @@ sub upgmaClustering{
 	my $infile             = shift;
 	my $outfile            = shift;
 	
+  my $outdir = dirname $outfile;
+  my $prefix = basename $outfile;
 	
 	my $ro_job = new Job();
 	$ro_job->testInputOutputs([$infile] , [$outfile]);
@@ -793,10 +806,17 @@ sub upgmaClustering{
 		$cmd .= 'module load ' . LoadConfig::getParam($rH_cfg, 'qiime-dependencies', 'moduleVersion.qiime-dependencies').' && ';	 
 		$cmd .= 'module load ' . LoadConfig::getParam($rH_cfg, 'qiime', 'moduleVersion.qiime').' && ';	 
 		$cmd .= 'module load ' . LoadConfig::getParam($rH_cfg, 'python', 'moduleVersion.python').' && ';	 
+		$cmd .= 'module load ' . LoadConfig::getParam($rH_cfg, 'python', 'moduleVersion.R').' && ';	 
+		$cmd .= 'module load ' . LoadConfig::getParam($rH_cfg, 'tools', 'moduleVersion.tools').' && ';	 
 		$cmd .=	' memtime ';
 		$cmd .= 'upgma_cluster.py';
 		$cmd .= ' -i ' . $infile;
 		$cmd .= ' -o ' . $outfile;
+    $cmd .= ' && memtime ';
+    $cmd .= 'plotTree.R';
+    $cmd .= ' -t ' . $outfile;
+    $cmd .= ' -o ' . $outdir;
+    $cmd .= ' -p ' . $prefix;
 	
 		$ro_job->addCommand($cmd);
 	}
@@ -815,14 +835,14 @@ sub otuHeatMap{
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
 		$cmd .= 'module load ' . LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' && ';
-		$cmd .= 'module load ' . LoadConfig::getParam($rH_cfg, 'perl', 'moduleVersion.perl').' && ';
 		$cmd .= 'module load ' . LoadConfig::getParam($rH_cfg, 'R', 'moduleVersion.R').' && ';	 
+		$cmd .= 'module load ' . LoadConfig::getParam($rH_cfg, 'tools', 'moduleVersion.tools').' && ';	 
 		$cmd .=	' memtime ';
-		$cmd .= 'OTUHeatMap.pl';
-		$cmd .= ' --n_most_abundant ' . LoadConfig::getParam($rH_cfg, 'otu_heatmap', 'n');
-		$cmd .= ' --infile ' . $infile;
-    $cmd .= ' --outdir ' . $outdir;
-		$cmd .= ' --prefix ' . $prefix;
+		$cmd .= 'OTUheatmap.R';
+		$cmd .= ' -t ' . $infile;
+    $cmd .= ' -o ' . $outdir;
+		$cmd .= ' -p ' . $prefix;
+		$cmd .= ' -n ' . LoadConfig::getParam($rH_cfg, 'otu_heatmap', 'n');
 	
 		$ro_job->addCommand($cmd);
 	}
