@@ -460,7 +460,7 @@ sub align {
     my $rgSampleName = $rH_laneInfo->{'name'};
     my $rgLibrary = $rH_laneInfo->{'libraryBarcode'};
     my $rgPlatformUnit = $runID . "_" . $rH_laneInfo->{'lane'};
-    my $rgCenter = LoadConfig::getParam( $rH_cfg, 'aln', 'bwaInstitution' );
+    my $rgCenter = LoadConfig::getParam( $rH_cfg, 'mem', 'bwaInstitution' );
 
     my $outputAlnDir = $runDirectory.'/'. $ALIGNED_DIR . '.'.$lane.'/alignment/'.$sampleName .'/run' .$runID . "_" . $rH_laneInfo->{'lane'};
 
@@ -876,7 +876,7 @@ sub validateBarcodes {
   }
 
   if (scalar(@collisions) > 0) {
-    print STDERR "Barcode collisions: " . join("; ", @collisions) ."\n";
+    die print STDERR "Barcode collisions: " . join("; ", @collisions) ."\n";
   }
 }
 
