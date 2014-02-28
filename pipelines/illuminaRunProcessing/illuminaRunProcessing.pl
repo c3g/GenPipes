@@ -112,9 +112,9 @@ sub printUsage {
   print "\t-e  end step, inclusive\n";
   print "\t-l  lane number\n";
   print "\t-r  run directory\n";
-  print "\t-n  nanuq sample sheet\n";
-  print "\t-i  Illumina (Casava) sample sheet\n";
-  print "\t-d  Number of mismatches\n";
+  print "\t-n  nanuq sample sheet. Optional, default=RUNDIRECTORY/run.nanuq.csv\n";
+  print "\t-i  Illumina (Casava) sample sheet. Optional, default=RUNDIRECTORY/SampleSheet.nanuq.csv\n";
+  print "\t-m  Number of mismatches. Optional, default=1\n";
   print "\n";
   print "Steps:\n";
   for(my $idx=0; $idx < @steps; $idx++) {
@@ -125,7 +125,7 @@ sub printUsage {
 
 sub main {
   my %opts;
-  getopts('c:s:e:d:n:l:r:i:', \%opts);
+  getopts('c:s:e:m:n:l:r:i:', \%opts);
 
   if (!defined($opts{'c'}) || !defined($opts{'s'}) || !defined($opts{'e'}) || !defined($opts{'l'}) || !defined($opts{'r'})) {
     printUsage();
@@ -135,7 +135,7 @@ sub main {
   my $runDirectory = $opts{'r'};
   my $lane = $opts{'l'};
   my %cfg = LoadConfig->readConfigFile($opts{'c'});
-  $globalNumberOfMismatch = defined($opts{'d'}) ? $opts{'d'} : LoadConfig::getParam(\%cfg, 'default', 'numberMismatches');
+  $globalNumberOfMismatch = defined($opts{'m'}) ? $opts{'m'} : LoadConfig::getParam(\%cfg, 'default', 'numberMismatches');
   $casavaSheet = defined($opts{'i'}) ? $opts{'i'} : $runDirectory . "/SampleSheet.nanuq.csv";
   my $nanuqSheet = defined($opts{'n'}) ? $opts{'n'} : $runDirectory . "/run.nanuq.csv";
   
@@ -675,14 +675,14 @@ sub getDefaultGenomes {
 sub getGenomeList {
   my $rootDir = shift;
 
-  opendir(ROOT_DIR, $rootDir) or die "Couldn't open directory ".$rootDir."\n";
+  opendir(ROOT_DIR, $rootDir) or exitWithError("Couldn't open directory ".$rootDir);
   my @speciesDirs =  grep { /^[^\.]/ && -d "$rootDir/$_" } readdir(ROOT_DIR);
   closedir(ROOT_DIR);
 
   my %genomes;
 
   for my $speciesDir (@speciesDirs) {
-    opendir(SPECIES_DIR, "$rootDir/$speciesDir") or die "Couldn't open directory $rootDir/$speciesDir\n";
+    opendir(SPECIES_DIR, "$rootDir/$speciesDir") or exitWithError("Couldn't open directory $rootDir/$speciesDir");
     my @buildDirs = grep { /^[^\.]/ && -d "$rootDir/$speciesDir/$_" } readdir(SPECIES_DIR);
     closedir(SPECIES_DIR);
     for my $buildDir (@buildDirs) {
@@ -876,8 +876,16 @@ sub validateBarcodes {
   }
 
   if (scalar(@collisions) > 0) {
-    die print STDERR "Barcode collisions: " . join("; ", @collisions) ."\n";
+    exitWithError("Barcode collisions: " . join("; ", @collisions));
   }
+}
+
+sub exitWithError {
+  my $message = shift;
+
+  # also print the message to the stdout;
+  print "echo '$message';\n exit 1";
+  die $message;
 }
 
 
@@ -908,7 +916,7 @@ sub getMask {
       } elsif($nbCycles == $rA_laneIdxLengths->[$readIndex]){
         $mask .= 'I'.$nbCycles;
       } else {
-        die("Cycles for index don't match on lane: ".$lane."\n");
+        exitWithError("Cycles for index don't match on lane: ".$lane);
       }
       $readIndex++;
     } else {
@@ -924,7 +932,7 @@ sub getSampleSheetContent{
   my @headers;
 
   #get the sample from nanuq
-  open( SSHEET, $casavaSheet ) or die "Can't open sample sheet: " . $casavaSheet . "\n";
+  open( SSHEET, $casavaSheet ) or exitWithError("Can't open sample sheet: " . $casavaSheet);
 
   #parse header line
   my $header=<SSHEET>;
@@ -934,7 +942,7 @@ sub getSampleSheetContent{
     #data line
     my @values = split( /,/, $line );
     if(@values != @headers){
-      die "Missing data columns in sampleSheet for row: " . join(", " , @values) . "\n";
+      exitWithError("Missing data columns in sampleSheet for row: " . join(", " , @values));
     }
     push(@dataLines, \@values );
   }
@@ -1018,7 +1026,7 @@ sub generateIlluminaLaneSampleSheet {
 
   #validate presence of mandatory columns
   if ( $indexColumnIdx==-1  || $laneColumnIdx==-1  || $sampleIDColumnIdx==-1 || $sampleRefIdx==-1 )  {
-    die "Missing header columns\n";
+    exitWithError("Missing header columns");
   }
 
   my @retVal;
@@ -1028,7 +1036,7 @@ sub generateIlluminaLaneSampleSheet {
   #print sample header
   my $file = $runDirectory.'/nanuqSampleSheet.'.$lane.'.csv';
   my $fh;
-  open( $fh, '>', $file ) or die "Can't write nanuq sample sheet: " . $file ."\n";
+  open( $fh, '>', $file ) or exitWithError("Can't write nanuq sample sheet: " . $file);
   print {$fh} join(',', @$rA_headers);
 
   my $rAoA_laneData = getLaneSampleDatas($lane, $rA_headers, $rAoA_sampleSheetDatas);
