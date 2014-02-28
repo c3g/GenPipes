@@ -1,40 +1,59 @@
-###################
-################### MUGQIC pipeline 
-###################
-mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/pipeline/tmp/untar/
-cd $MUGQIC_INSTALL_HOME/modulefiles/mugqic/pipeline/tmp
-VERSION="1.1"
-wget https://bitbucket.org/mugqic/mugqic_pipeline/get/${VERSION}.tar.gz
-tar -xvf ${VERSION}.tar.gz -C untar/
-INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/mugqic_pipeline/v${VERSION}/
-ARCHIVE_PATH=$MUGQIC_INSTALL_HOME/archive/mugqic_pipeline 
-mkdir -p $INSTALL_PATH $ARCHIVE_PATH
-cp -r untar/mugqic-mugqic_pipeline-*/*  $INSTALL_PATH
-chmod -R 775 $INSTALL_PATH 
-mv ${VERSION}.tar.gz $ARCHIVE_PATH
+#!/bin/sh
+
+#
+# MUGQIC pipeline
+#
+
+SOFTWARE=mugqic_pipeline
+VERSION=1.1
+INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/$SOFTWARE
+INSTALL_DOWNLOAD=$INSTALL_PATH/tmp
+ARCHIVE=$MUGQIC_INSTALL_HOME/archive/$SOFTWARE
+mkdir -p $INSTALL_DOWNLOAD $ARCHIVE
+cd $INSTALL_DOWNLOAD
+
+# Download, extract, build
+wget http://bitbucket.org/mugqic/$SOFTWARE/get/$VERSION.tar.gz
+tar zxvf $VERSION.tar.gz
+mv mugqic-$SOFTWARE-* v$VERSION
+
+# Add permissions and install software
+chmod -R ug+rwX .
+chmod -R o+rX .
+mv -i v$VERSION $INSTALL_PATH
+mv -i $VERSION.tar.gz $ARCHIVE
 
 # Module file
 echo "#%Module1.0
 proc ModulesHelp { } {
-       puts stderr \"\tMUGQIC - MUGQIC developped tools \"
+       puts stderr \"\tMUGQIC - $SOFTWARE \" ;
 }
-module-whatis \"MUGQIC - MUGQIC developped tools \"
-                       
-set             root                   \$::env(MUGQIC_INSTALL_HOME)/software/mugqic_pipeline/v${VERSION}
+module-whatis \"$SOFTWARE  \" ;
+                      
+set             root                   \$::env(MUGQIC_INSTALL_HOME)/software/$SOFTWARE/v$VERSION ;
 setenv          MUGQIC_PIPELINE_HOME   \$root
 prepend-path    PATH                   \$root/pipelines/chipseq
 prepend-path    PATH                   \$root/pipelines/dnaseq
 prepend-path    PATH                   \$root/pipelines/rnaseq
+prepend-path    PATH                   \$root/pipelines/rnaseq_denovo
 prepend-path    PERL5LIB               \$root/lib
-
 " > $VERSION
 
-# version file
+################################################################################
+# Everything below this line should be generic and not modified
+
+# Well... here, module directory is named "pipeline" instead of "mugqic_pipeline" for aesthetical reasons
+
+# Default module version file
 echo "#%Module1.0
-set ModulesVersion \"$VERSION\"
+set ModulesVersion \"$VERSION\"" > .version
 
-" > .version
+# Add permissions and install module
+MODULE_DIR=$MUGQIC_INSTALL_HOME/modulefiles/mugqic/pipeline
+mkdir -p $MODULE_DIR
+chmod -R ug+rwX $VERSION .version
+chmod -R o+rX $VERSION .version
+mv $VERSION .version $MODULE_DIR
 
-mv .version $VERSION $MUGQIC_INSTALL_HOME/modulefiles/mugqic/pipeline
-cd ..
-rm -rf tmp
+# Clean up temporary installation files if any
+rm -rf $INSTALL_DOWNLOAD
