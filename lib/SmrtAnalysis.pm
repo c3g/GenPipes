@@ -182,7 +182,7 @@ sub referenceUploader {
   my $fasta      = shift;
 
   my $ro_job = new Job();
-  $ro_job->testInputOutputs([$fasta], [$prefix . "/reference.info.xml"]);
+  $ro_job->testInputOutputs([$fasta], ["$prefix/$sampleName/reference.info.xml"]);
 
   if (!$ro_job->isUp2Date()) {
   my $cmd = '';
