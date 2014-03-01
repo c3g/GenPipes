@@ -475,6 +475,7 @@ sub loadPulses {
     $cmd .= ' ' . $inputFofn;
     $cmd .= ' ' . $cmpH5;
     $cmd .= ' -metrics DeletionQV,IPD,InsertionQV,PulseWidth,QualityValue,MergeQV,SubstitutionQV,DeletionTag -byread';
+    $cmd .= ' && touch ' . $cmpH5 . '.loadedPulses';
     $ro_job->addCommand($cmd);
   }
   return $ro_job;
