@@ -96,7 +96,7 @@ sub filtering {
   my $tmpdir         = shift;
 
   my $ro_job = new Job();
-  $ro_job->testInputOutputs([$fofn], [$outdir . '/data/filtered_subreads.fastq']);
+  $ro_job->testInputOutputs([""], [$outdir . '/data/filtered_subreads.fastq']);
 
   if (!$ro_job->isUp2Date()) {
     my $cmd = '';
@@ -461,7 +461,7 @@ sub loadPulses {
   my $inputFofn          = shift;
 
   my $ro_job = new Job();
-  $ro_job->testInputOutputs([$cmpH5, $inputFofn], [$cmpH5 . ".loadedPulses"]);
+  $ro_job->testInputOutputs([$cmpH5], [$cmpH5 . ".loadedPulses"]);
 
   if (!$ro_job->isUp2Date()) {
     my $cmd = '';
