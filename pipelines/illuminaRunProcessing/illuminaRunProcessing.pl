@@ -522,7 +522,7 @@ sub laneMetrics {
     }
     
     $outputMetrics = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.dup.metrics.nodup.targetCoverage.txt';
-    my $coverageBED = BVATools::resolveSampleBED($rH_cfg, $rH_laneInfo);
+    my $coverageBED = $runDirectory . "/". BVATools::resolveSampleBED($rH_cfg, $rH_laneInfo);
     my $rO_coverageJob = BVATools::depthOfCoverage($rH_cfg, $sortedLaneBamFile, $outputMetrics, $coverageBED, $ref);
     if(!$rO_coverageJob->isUp2Date()) {
       # download bed files?
