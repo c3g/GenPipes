@@ -214,7 +214,7 @@ sub main {
       unless (defined $nanuqSampleSheet) {die "Error: nanuq sample sheet is not defined! (use -n option)\n" . getUsage()};
       unless (-f $nanuqSampleSheet) {die "Error: nanuq sample sheet $nanuqSampleSheet does not exist!\n" . getUsage()};
 
-      my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($nanuqSampleSheet);
+      my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($nanuqSampleSheet, LoadConfig::getParam(\%cfg, 'default', 'rawReadFormat', 0));
       foreach my $sample (keys %$rHoAoH_sampleInfo) {
         my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sample};
         # Sample step functions need sample and lanes parameters
@@ -315,7 +315,7 @@ sub trim {
     print "mkdir -p $trimDirectory\n";
     my $rO_job = Trimmomatic::trim($rH_cfg, $sample, $rH_laneInfo, $trimDirectory);
 
-    submitJob($rH_cfg, $step, $sample, $rO_job);
+    submitJob($rH_cfg, $step, $sample . "_" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, $rO_job);
   }
 }
 
@@ -363,7 +363,7 @@ sub normalizationMergeResults {
 
   my $normFileSuffix = ".normalized_K" . $kmerSize . "_C" . $maxCoverage . "_pctSD" . $maxPctStdev . ".fq";
 
-  my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($nanuqSampleSheet);
+  my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($nanuqSampleSheet, LoadConfig::getParam($rH_cfg, 'default', 'rawReadFormat', 0));
 
   # Retrieve single/paired end normalized files for each lane of each sample
   foreach my $sample (keys %$rHoAoH_sampleInfo) {

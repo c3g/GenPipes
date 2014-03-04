@@ -216,4 +216,38 @@ sub reorderSam {
   return $ro_job;
 }
 
+# Convert SAM/BAM file to fastq format
+sub samToFastq {
+  my $rH_cfg        = shift;
+  my $sampleName    = shift;
+  my $inputSAMBAM      = shift;
+  my $outputFastq1  = shift;    # If single end reads, $outputFastq1 will store the FASTQ output
+  my $outputFastq2  = shift;    # Used for paired end reads only
+
+  my $ro_job = new Job();
+
+  if (defined($outputFastq2)) {
+    $ro_job->testInputOutputs([$inputSAMBAM], [$outputFastq1, $outputFastq2]);
+  } else {
+    $ro_job->testInputOutputs([$inputSAMBAM], [$outputFastq1]);
+  }
+
+  if (!$ro_job->isUp2Date()) {
+    my $command;
+    $command .= LoadConfig::moduleLoad($rH_cfg, [
+      ['samToFastq', 'moduleVersion.java'],
+      ['samToFastq', 'moduleVersion.picard']
+    ]) . ' &&';
+    $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'samToFastq', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'samToFastq', 'extraJavaFlags') . ' -jar \${PICARD_HOME}/SamToFastq.jar';
+    $command .= ' INPUT=' . $inputSAMBAM;
+    $command .= ' FASTQ=' . $outputFastq1;
+    if (defined($outputFastq2)) {
+      $command .= ' SECOND_END_FASTQ=' . $outputFastq2;
+    }
+
+    $ro_job->addCommand($command);
+  }
+  return $ro_job;
+}
+
 1;

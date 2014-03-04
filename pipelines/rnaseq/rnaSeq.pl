@@ -288,32 +288,12 @@ sub trimming {
 	my $trimJobIdVarNameSample = undef;
 	my $libraryType = LoadConfig::getParam($rH_cfg, 'default', 'libraryType');
 	for my $rH_laneInfo (@$rAoH_sampleLanes) {
-		#print "mkdir -p metrics/$sampleName/output_jobs reads/$sampleName/output_jobs\n";
-		##get raw read count
-# 		my $inputFile = LoadConfig::getParam($rH_cfg, 'default', 'rawReadDir', 1, 'dirpath') .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' .$rH_laneInfo->{'read1File'};
-# 		my $outputFile= 'metrics/' .$sampleName .'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . '.readstats.raw.csv' ;
-# 		my $command = Metrics::readStats($rH_cfg,$inputFile,$outputFile,'fastq',$libraryType);
-# 		my $rawReadStatJobID = undef;
-# 		if(defined($command) && length($command) > 0) {
-# 			$rawReadStatJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", 'raw', 'RAWREADSTAT' .$rH_jobIdPrefixe ->{$sampleName .'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} , undef, $sampleName, $command);
-# 			$rawReadStatJobID = '$'.$rawReadStatJobID;
-# 		}
-# 		
+
 		## trimming - TO DO should be modified to the new rawread location (cf. David modif) and portability
 		my $minQuality  = $rH_cfg->{'trim.minQuality'};
 		my $minLength   = $rH_cfg->{'trim.minLength'};
 		my $laneDir = 'reads/' .$sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
 		print "mkdir -p $laneDir\n";
-		my $outputFastqPair1Name;
-		if ( $rH_laneInfo->{'runType'} eq "SINGLE_END" ) {
-			$outputFastqPair1Name = $laneDir . $sampleName.'.'.$rH_laneInfo->{'libraryBarcode'}.'.t'.$minQuality.'l'.$minLength.'.single.fastq.gz';
-		}
-		elsif ( $rH_laneInfo->{'runType'} eq "PAIRED_END" ) {
-			$outputFastqPair1Name = $laneDir . $sampleName.'.'.$rH_laneInfo->{'libraryBarcode'}.'.t'.$minQuality.'l'.$minLength.'.pair1.fastq.gz';
-		}
-		else {
-			die "Unknown runType: " . $rH_laneInfo->{' runType '} . "\n";
-		}
 
 		my $rO_job = Trimmomatic::trim($rH_cfg, $sampleName, $rH_laneInfo, $laneDir);
 		if(!$rO_job->isUp2Date()) {
@@ -324,18 +304,6 @@ sub trimming {
         $trimJobIdVarNameSample .= LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep') . $rO_job->getCommandJobId(0);
       }
 		}
-		###mbourgey 2013/08/01 - deprecated since louis parse directly the output of trimmomatic in the Trimmomatic.pm
-		###new output stats file= 'read/' .$sampleName .'/' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/'.$sampleName .'.trim.stats.csv'
-# 			my $trinityOut = $laneDir .'/' . $sampleName . '.trim.out';
-# 			##get trimmed read count
-# 			my $outputFile= 'metrics/' .$sampleName .'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . '.readstats.triming.tsv' ;
-# 			my $command = Metrics::readStats($rH_cfg,$trinityOut,$outputFile,$sampleName.'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'},'trim');
-# 			my $filteredReadStatJobID ;
-# 			if(defined($command) && length($command) > 0) {
-# 				$filteredReadStatJobID = SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", 'filtered', 'FILTERREADSTAT' .$rH_jobIdPrefixe ->{$sampleName.'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} ,$trimJobIdVarNameLane, $sampleName, $command);
-# 				$filteredReadStatJobID = '$'.$filteredReadStatJobID;
-# 				$trimJobIdVarNameSample .= $filteredReadStatJobID .LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep');
-# 			}
 	}
 	return $trimJobIdVarNameSample;	
 }

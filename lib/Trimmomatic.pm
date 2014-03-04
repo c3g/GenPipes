@@ -103,31 +103,64 @@ sub pairCommand {
   my $minQuality  = LoadConfig::getParam($rH_cfg, 'trim', 'minQuality', 1, 'int');
   my $minLength   = LoadConfig::getParam($rH_cfg, 'trim', 'minLength', 1, 'int');
   my $adapterFile = LoadConfig::getParam($rH_cfg, 'trim', 'adapterFile', 1, 'filepath');
-  my $headcrop = LoadConfig::getParam($rH_cfg, 'trim', 'headcrop', 0, 'int');
+  my $headcrop    = LoadConfig::getParam($rH_cfg, 'trim', 'headcrop', 0, 'int');
+  my $rawReadDir  = LoadConfig::getParam($rH_cfg, 'trim', 'rawReadDir', 1, 'dirpath');
 
-  my $rawReadDir = LoadConfig::getParam($rH_cfg, 'trim', 'rawReadDir', 1, 'dirpath');
-
-  my $outputFastqPair1Name = $outputDir . '/' . $sampleName . '.' . $rH_laneInfo->{'libraryBarcode'} . '.t' . $minQuality . 'l' . $minLength . '.pair1.fastq.gz';
-  my $outputFastqPair2Name = $outputDir . '/' . $sampleName . '.' . $rH_laneInfo->{'libraryBarcode'} . '.t' . $minQuality . 'l' . $minLength . '.pair2.fastq.gz';
-  my $outputFastqSingle1Name = $outputDir . '/' . $sampleName . '.' . $rH_laneInfo->{'libraryBarcode'} . '.t' . $minQuality . 'l' . $minLength . '.single1.fastq.gz';
-  my $outputFastqSingle2Name = $outputDir . '/' . $sampleName . '.' . $rH_laneInfo->{'libraryBarcode'} . '.t' . $minQuality . 'l' . $minLength . '.single2.fastq.gz';
+  my $outputPrefix = $outputDir . '/' . $sampleName . '.' . $rH_laneInfo->{'libraryBarcode'} . '.t' . $minQuality . 'l' . $minLength;
+  my $outputFastqPair1Name   = $outputPrefix . '.pair1.fastq.gz';
+  my $outputFastqPair2Name   = $outputPrefix . '.pair2.fastq.gz';
+  my $outputFastqSingle1Name = $outputPrefix . '.single1.fastq.gz';
+  my $outputFastqSingle2Name = $outputPrefix . '.single2.fastq.gz';
   my $outputTrimLog = $outputDir . '/' . $sampleName . '.' . $rH_laneInfo->{'libraryBarcode'} . '.trim.out';
   my $outputTrimStats = $outputDir . '/' . $sampleName . '.' . $rH_laneInfo->{'libraryBarcode'} . '.trim.stats.csv';
 
-  my $inputFastqPair1Name = $rawReadDir . '/' . $sampleName . '/run' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . '/' . $rH_laneInfo->{'read1File'};
-  my $inputFastqPair2Name = $rawReadDir . '/' . $sampleName . '/run' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . '/' . $rH_laneInfo->{'read2File'};
+  my $inputDir = $rawReadDir . '/' . $sampleName . '/run' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . '/';
+
+  my $inputBam;
+  my $inputFastqPair1Name;
+  my $inputFastqPair2Name;
+
+  my $rawReadFormat = LoadConfig::getParam($rH_cfg, 'default', 'rawReadFormat', 0);
+  my $rA_inputs;
+
+  if (defined($rawReadFormat) and $rawReadFormat eq "fastq") {
+    $inputFastqPair1Name = $inputDir . $rH_laneInfo->{'read1File'};
+    $inputFastqPair2Name = $inputDir . $rH_laneInfo->{'read2File'};
+
+    $rA_inputs = [$inputFastqPair1Name, $inputFastqPair2Name];
+  } else {    # BAM format by default
+    $inputBam = $inputDir . $rH_laneInfo->{'read1File'};
+    $inputFastqPair1Name = $inputBam;
+    $inputFastqPair1Name =~ s/bam$/pair1.fastq.gz/;
+    $inputFastqPair2Name = $inputBam;
+    $inputFastqPair2Name =~ s/bam$/pair2.fastq.gz/;
+    $rA_inputs = [$inputBam];
+  }
 
   my $ro_job = new Job();
-  $ro_job->testInputOutputs([$inputFastqPair1Name, $inputFastqPair2Name], [$outputFastqPair1Name, $outputFastqPair2Name, $outputFastqSingle1Name, $outputFastqSingle2Name, $outputTrimLog, $outputTrimStats]);
+  $ro_job->testInputOutputs($rA_inputs, [$outputFastqPair1Name, $outputFastqPair2Name, $outputFastqSingle1Name, $outputFastqSingle2Name, $outputTrimLog, $outputTrimStats]);
 
   $ro_job->setOutputFileHash({PAIR1_OUTPUT => $outputFastqPair1Name, PAIR2_OUTPUT => $outputFastqPair2Name, SINGLE1_OUTPUT => $outputFastqSingle1Name, SINGLE2_OUTPUT => $outputFastqSingle2Name});
 
   if (!$ro_job->isUp2Date()) {
     my $command = "";
+
     $command .= LoadConfig::moduleLoad($rH_cfg, [
       ['trim', 'moduleVersion.java'],
       ['trim', 'moduleVersion.trimmomatic']
     ]);
+
+    unless (defined($rawReadFormat) and $rawReadFormat eq "fastq") {   # Assume BAM format by default
+      # Convert BAM file to paired FASTQ files
+      $command .= ' && ' . LoadConfig::moduleLoad($rH_cfg, [
+        ['trim', 'moduleVersion.picard']
+      ]);
+      $command .= ' && java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'trim', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'trim', 'extraJavaFlags') . ' -jar \${PICARD_HOME}/SamToFastq.jar';
+      $command .= ' INPUT=' . $inputBam;
+      $command .= ' FASTQ=' . $inputFastqPair1Name;
+      $command .= ' SECOND_END_FASTQ=' . $inputFastqPair2Name;
+    }
+
     $command .= ' && java -XX:ParallelGCThreads=1 -Xmx2G -cp \$TRIMMOMATIC_JAR org.usadellab.trimmomatic.TrimmomaticPE';
     $command .= ' -threads ' . LoadConfig::getParam($rH_cfg, 'trim', 'nbThreads', 1, 'int');
     if ($rH_laneInfo->{'qualOffset'} eq "64") {
@@ -179,16 +212,31 @@ sub singleCommand {
   my $inputFastqName = $rawReadDir . '/' . $sampleName . '/run' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . '/' . $rH_laneInfo->{'read1File'};
 
   my $ro_job = new Job();
+  # Input can be in FASTQ or BAM format
   $ro_job->testInputOutputs([$inputFastqName], [$outputFastqName, $outputTrimLog, $outputTrimStats]);
 
   $ro_job->setOutputFileHash({SINGLE1_OUTPUT => $outputFastqName});
 
   if (!$ro_job->isUp2Date()) {
     my $command = "";
+
     $command .= LoadConfig::moduleLoad($rH_cfg, [
       ['trim', 'moduleVersion.java'],
       ['trim', 'moduleVersion.trimmomatic']
     ]);
+
+    my $rawReadFormat = LoadConfig::getParam($rH_cfg, 'default', 'rawReadFormat', 0);
+    unless (defined($rawReadFormat) and $rawReadFormat eq "fastq") {   # Assume BAM format by default
+      # Convert BAM file to single FASTQ files
+      $command .= ' && ' . LoadConfig::moduleLoad($rH_cfg, [
+        ['trim', 'moduleVersion.picard']
+      ]);
+      $command .= ' && java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'trim', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'trim', 'extraJavaFlags') . ' -jar \${PICARD_HOME}/SamToFastq.jar';
+      $command .= ' INPUT=' . $inputFastqName;
+      $inputFastqName =~ s/bam$/single.fastq.gz/;
+      $command .= ' FASTQ=' . $inputFastqName;
+    }
+
     $command .= ' && java -XX:ParallelGCThreads=1 -Xmx2G -cp \$TRIMMOMATIC_JAR org.usadellab.trimmomatic.TrimmomaticSE';
     $command .= ' -threads ' . LoadConfig::getParam($rH_cfg, 'trim', 'nbThreads', 1, 'int');
     if ($rH_laneInfo->{'qualOffset'} eq "64") {

@@ -55,8 +55,9 @@ use Cwd 'abs_path';
 
 sub parseSampleSheetAsHash {
   my $fileName = shift;
+  my $rawReadFormat = shift;
 
-  my $rA_SampleLaneInfos = parseSampleSheet($fileName);
+  my $rA_SampleLaneInfos = parseSampleSheet($fileName, $rawReadFormat);
   my %sampleInfo;
   for my $rH_Sample (@$rA_SampleLaneInfos) {
     if (!defined $sampleInfo{$rH_Sample->{'name'}}) {
@@ -97,6 +98,7 @@ sub parsePairedSampleSheet {
 
 sub parseSampleSheet {
   my $fileName = shift;
+  my $rawReadFormat = shift;
 
   my @retVal;
   my $csv = Text::CSV->new();
@@ -124,14 +126,19 @@ sub parseSampleSheet {
     my @bedFiles = split(';', $values[$bedFilesIdx]);
     $sampleInfo{'bedFiles'} = \@bedFiles;
 
-    if ($values[$runTypeIdx] eq "PAIRED_END") {
-      $sampleInfo{'read1File'} = $sampleInfo{'name'} . '.' . $sampleInfo{'libraryBarcode'} . '.' . $sampleInfo{'qualOffset'} . ".pair1.fastq.gz";
-      $sampleInfo{'read2File'} = $sampleInfo{'name'} . '.' . $sampleInfo{'libraryBarcode'} . '.' . $sampleInfo{'qualOffset'} . ".pair2.fastq.gz";
-    } elsif ($values[$runTypeIdx] eq "SINGLE_END") {
-      $sampleInfo{'read1File'} = $sampleInfo{'name'} . '.' . $sampleInfo{'libraryBarcode'} . '.' . $sampleInfo{'qualOffset'} . ".single.fastq.gz";
-    } else {
-      print "Unrecognized run type $values[$runTypeIdx] \n";
-      exit 1;
+    my $rawReadPrefix = $sampleInfo{'name'} . "." . $sampleInfo{'libraryBarcode'} . "." . $sampleInfo{'qualOffset'} . ".";
+
+    if (defined($rawReadFormat) and $rawReadFormat eq "fastq") {
+      if ($values[$runTypeIdx] eq "PAIRED_END") {
+        $sampleInfo{'read1File'} = $rawReadPrefix . "pair1.fastq.gz";
+        $sampleInfo{'read2File'} = $rawReadPrefix . "pair2.fastq.gz";
+      } elsif ($values[$runTypeIdx] eq "SINGLE_END") {
+        $sampleInfo{'read1File'} = $rawReadPrefix . "single.fastq.gz";
+      } else {
+        die "Unrecognized run type $values[$runTypeIdx]";
+      }
+    } else {    # BAM format by default
+      $sampleInfo{'read1File'} = $rawReadPrefix . "bam";
     }
 
     push(@retVal, \%sampleInfo);
