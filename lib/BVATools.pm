@@ -197,7 +197,7 @@ sub depthOfCoverage {
       $command .= ' '.LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'extraFlags');
       $command .= ' --ref '.$refGenome;
       if(defined($coverageBED) && length($coverageBED) > 0) {
-        $command .= ' --intervals '.$coverageBED;
+        $command .= ' --intervals \''.$coverageBED . "'";
       }
 
       if(defined($rA_thresholds)) {
