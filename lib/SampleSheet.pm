@@ -16,7 +16,7 @@ Each row from the sheet is a new hash in the array.
 
 Input = /path/samplesheet_file_name
 
-Output = %hash 
+Output = %hash
 
 
 =head1 AUTHOR
@@ -59,11 +59,11 @@ sub parseSampleSheetAsHash {
   my $rA_SampleLaneInfos = parseSampleSheet($fileName);
   my %sampleInfo;
   for my $rH_Sample (@$rA_SampleLaneInfos) {
-    if(!defined $sampleInfo{ $rH_Sample->{'name'} }) {
-      $sampleInfo{ $rH_Sample->{'name'} } = [];
+    if (!defined $sampleInfo{$rH_Sample->{'name'}}) {
+      $sampleInfo{$rH_Sample->{'name'}} = [];
     }
 
-    push(@{$sampleInfo{ $rH_Sample->{'name'} }}, $rH_Sample);
+    push(@{$sampleInfo{$rH_Sample->{'name'}}}, $rH_Sample);
   }
   return \%sampleInfo;
 }
@@ -92,11 +92,11 @@ sub parsePairedSampleSheet {
   my @retVal;
   open(SAMPLE_SHEET, "$fileName") or die "Can't open $fileName\n";
 
-  while(<SAMPLE_SHEET>) {
+  while (<SAMPLE_SHEET>) {
     chomp;
 
     my $line = $_;
-    if($line =~ /^#/) {
+    if ($line =~ /^#/) {
       next;
     }
 
@@ -122,12 +122,12 @@ sub parseSampleSheet {
   my $line = <SAMPLE_SHEET>;
   $csv->parse($line);
   my @headers = $csv->fields();
-  my ($nameIdx,$libraryBarcodeIdx,$runIdIdx,$laneIdx,$runTypeIdx,$statusIdx,$qualOffsetIdx,$bedFilesIdx,$processingSheetIdIdx, $libSourceIdx) = parseHeaderIndexes(\@headers);
+  my ($nameIdx, $libraryBarcodeIdx, $runIdIdx, $laneIdx, $runTypeIdx, $statusIdx, $qualOffsetIdx, $bedFilesIdx, $processingSheetIdIdx, $libSourceIdx) = parseHeaderIndexes(\@headers);
 
   while($line = <SAMPLE_SHEET>) {
     $csv->parse($line);
     my @values = $csv->fields();
-    if($values[$statusIdx] =~ /invalid/) {
+    if ($values[$statusIdx] =~ /invalid/) {
       warn "Invalid: $values[$nameIdx] $values[$runIdIdx] $values[$laneIdx]\n";
       next;
     }
@@ -146,14 +146,12 @@ sub parseSampleSheet {
     }
     $sampleInfo{'libSource'} = $values[$libSourceIdx];
 
-    if($values[$runTypeIdx] eq "PAIRED_END") {
-      $sampleInfo{'read1File'} = $sampleInfo{'name'}.'.'.$sampleInfo{'libraryBarcode'}.'.'.$sampleInfo{'qualOffset'}.".pair1.fastq.gz";
-      $sampleInfo{'read2File'} = $sampleInfo{'name'}.'.'.$sampleInfo{'libraryBarcode'}.'.'.$sampleInfo{'qualOffset'}.".pair2.fastq.gz";
-    }
-    elsif($values[$runTypeIdx] eq "SINGLE_END") {
-      $sampleInfo{'read1File'} = $sampleInfo{'name'}.'.'.$sampleInfo{'libraryBarcode'}.'.'.$sampleInfo{'qualOffset'}.".single.fastq.gz";
-    }
-    else {
+    if ($values[$runTypeIdx] eq "PAIRED_END") {
+      $sampleInfo{'read1File'} = $sampleInfo{'name'} . '.' . $sampleInfo{'libraryBarcode'} . '.' . $sampleInfo{'qualOffset'} . ".pair1.fastq.gz";
+      $sampleInfo{'read2File'} = $sampleInfo{'name'} . '.' . $sampleInfo{'libraryBarcode'} . '.' . $sampleInfo{'qualOffset'} . ".pair2.fastq.gz";
+    } elsif ($values[$runTypeIdx] eq "SINGLE_END") {
+      $sampleInfo{'read1File'} = $sampleInfo{'name'} . '.' . $sampleInfo{'libraryBarcode'} . '.' . $sampleInfo{'qualOffset'} . ".single.fastq.gz";
+    } else {
       print "Unrecognized run type $values[$runTypeIdx] \n";
       exit 1;
     }
@@ -165,8 +163,8 @@ sub parseSampleSheet {
 }
 
 sub parseHeaderIndexes {
-	my $rA_headers = shift;
-	my $nameIdx=-1;
+  my $rA_headers = shift;
+  my $nameIdx=-1;
   my $libraryBarcodeIdx=-1;
   my $runIdIdx=-1;
   my $laneIdx=-1;
@@ -177,31 +175,24 @@ sub parseHeaderIndexes {
   my $processingSheetIdIdx=-1;
   my $libSourceIdx = -1;
 	
-	for(my $idx=0; $idx < @{$rA_headers}; $idx++) {
-		my $header = $rA_headers->[$idx];
+  for(my $idx=0; $idx < @{$rA_headers}; $idx++) {
+    my $header = $rA_headers->[$idx];
     $header =~ s/"//g;
-    if($header eq "Name") {
+    if ($header eq "Name") {
       $nameIdx=$idx;
-    }
-    elsif($header eq "Library Barcode") {
+    } elsif ($header eq "Library Barcode") {
       $libraryBarcodeIdx=$idx;
-    }
-    elsif($header eq "Run") {
+    } elsif ($header eq "Run") {
       $runIdIdx=$idx;
-    }
-    elsif($header eq "Region") {
+    } elsif ($header eq "Region") {
       $laneIdx=$idx;
-    }
-    elsif($header eq "Run Type") {
+    } elsif ($header eq "Run Type") {
       $runTypeIdx=$idx;
-    }
-    elsif($header eq "Status") {
+    } elsif ($header eq "Status") {
       $statusIdx=$idx;
-    }
-    elsif($header eq "Quality Offset") {
+    } elsif ($header eq "Quality Offset") {
       $qualOffsetIdx=$idx;
-    }
-    elsif($header eq "BED Files") {
+    } elsif ($header eq "BED Files") {
       $bedFilesIdx=$idx;
     }
     elsif($header eq "ProcessingSheetId") {
@@ -214,29 +205,29 @@ sub parseHeaderIndexes {
 
   my $sampleSheetErrors="";
   my $sampleSheetWarnings="";
-  if($nameIdx==-1) {
-    $sampleSheetErrors.="Missing Sample Name\n";
+  if ($nameIdx==-1) {
+    $sampleSheetErrors .= "[Error] Missing Sample Name\n";
   }
-  if($libraryBarcodeIdx==-1) {
-    $sampleSheetErrors.="Missing Library Barcode\n";
+  if ($libraryBarcodeIdx==-1) {
+    $sampleSheetErrors .= "[Error] Missing Library Barcode\n";
   }
-  if($runIdIdx==-1) {
-    $sampleSheetErrors.="Missing Run ID\n";
+  if ($runIdIdx==-1) {
+    $sampleSheetErrors .= "[Error] Missing Run ID\n";
   }
-  if($laneIdx==-1) {
-    $sampleSheetErrors.="Missing Lane\n";
+  if ($laneIdx==-1) {
+    $sampleSheetErrors .= "[Error] Missing Lane\n";
   }
-  if($runTypeIdx==-1) {
-    $sampleSheetErrors.="Missing Run Type\n";
+  if ($runTypeIdx==-1) {
+    $sampleSheetErrors .= "[Error] Missing Run Type\n";
   }
-  if($statusIdx==-1) {
-    $sampleSheetErrors.="Missing Status\n";
+  if ($statusIdx==-1) {
+    $sampleSheetErrors .= "[Error] Missing Status\n";
   }
   if($qualOffsetIdx==-1) {
       $sampleSheetErrors.="Missing Quality Offset\n";
   }
   if($bedFilesIdx==-1) {
-    $sampleSheetWarnings.="Missing BED Files\n";
+    $sampleSheetWarnings.="[Warning] Missing BED Files\n";
   }
   if($libSourceIdx==-1) {
     $sampleSheetErrors.="Missing Library Source\n";
@@ -244,11 +235,10 @@ sub parseHeaderIndexes {
   if(length($sampleSheetWarnings) > 0) {
     warn $sampleSheetWarnings;
   }
-  if(length($sampleSheetErrors) > 0) {
+  if (length($sampleSheetErrors) > 0) {
     die $sampleSheetErrors;
   }
 
-  return ($nameIdx,$libraryBarcodeIdx,$runIdIdx,$laneIdx,$runTypeIdx,$statusIdx,$qualOffsetIdx,$bedFilesIdx,$processingSheetIdIdx,$libSourceIdx);
-
+  return ($nameIdx, $libraryBarcodeIdx, $runIdIdx, $laneIdx, $runTypeIdx, $statusIdx, $qualOffsetIdx, $bedFilesIdx, $processingSheetIdIdx, $libSourceIdx);
 }
 1;

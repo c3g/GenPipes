@@ -30,6 +30,10 @@ use warnings;
 
 #---------------------
 
+# Add the mugqic_pipeline/lib/ path relative to this Perl script to @INC library search variable
+use FindBin;
+use lib "$FindBin::Bin";
+
 # Dependencies
 #--------------------
 use LoadConfig;
@@ -42,22 +46,22 @@ sub readDictFile {
   my $rH_cfg = shift;
   my @dictionary;
 
-  my $refDictFile = LoadConfig::getParam( $rH_cfg, 'default', 'referenceSequenceDictionary' );
+  my $refDictFile = LoadConfig::getParam($rH_cfg, 'default', 'referenceSequenceDictionary', 1, 'filepath');
 
-  if ( -e $refDictFile ) {
-    open(FILE, $refDictFile) or die "Cannot open ".$refDictFile."\n";
-    while(my $line = <FILE>) {
-      if($line =~ /^\@SQ\tSN:([^\t]+)\tLN:(\d+)/) {
+  if (-e $refDictFile) {
+    open(FILE, $refDictFile) or die "Cannot open " . $refDictFile . "\n";
+    while (my $line = <FILE>) {
+      if ($line =~ /^\@SQ\tSN:([^\t]+)\tLN:(\d+)/) {
         push(@dictionary, {'name' => $1, 'size' => $2});
       }
     }
     close(FILE);
     return \@dictionary;
 
-  }
-  else {
+  } else {
     print "Reference dictionary absent. First create one with picard\n";
     exit 1;
   }
 }
+
 1;

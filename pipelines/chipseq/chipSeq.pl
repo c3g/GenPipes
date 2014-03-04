@@ -75,21 +75,16 @@ use strict;
 use warnings;
 #---------------------
 
-BEGIN {
-  # Add the mugqic_pipeline/lib/ path relative to this Perl script to @INC library search variable
-  use File::Basename;
-  use Cwd 'abs_path';
-  my (undef, $mod_path, undef) = fileparse(abs_path(__FILE__));
-  unshift @INC, $mod_path . "../../lib";
-}
-
+# Add the mugqic_pipeline/lib/ path relative to this Perl script to @INC library search variable
+use FindBin;
+use lib "$FindBin::Bin/../../lib";
 
 # Dependencies
 #--------------------
 use Getopt::Std;
 use Cwd;
 use POSIX;
-use Cwd;
+use Cwd 'abs_path';
 
 use LoadConfig;
 use SampleSheet;
@@ -356,7 +351,7 @@ sub aligning{
     my $rgLibrary = $rH_laneInfo->{'libraryBarcode'};
     my $rgPlatformUnit = 'run' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
     my $rgCenter = LoadConfig::getParam($rH_cfg, 'aln', 'bwaInstitution');
-    my $qfilterRead=LoadConfig::getParam($rH_cfg, 'aln', 'filterReadsMAPQ');
+    my $qfilterRead=LoadConfig::getParam($rH_cfg, 'aln', 'filterReadsMAPQ', 0, 'int');
     
     # Threshold for MAPQ to filter reads
     if (!defined($qfilterRead) || $qfilterRead < 1 ){
@@ -370,14 +365,14 @@ sub aligning{
     my $bwaJobId = undef;
 
     if ($rH_laneInfo->{'runType'} eq "SINGLE_END") {
-      $single = 'reads/' . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName . '.' .$rH_laneInfo->{'libraryBarcode'}. '.t' . LoadConfig::getParam($rH_cfg, 'trim','minQuality') . 'l' . LoadConfig::getParam($rH_cfg, 'trim', 'minLength') . '.single.fastq.gz';
+      $single = 'reads/' . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName . '.' .$rH_laneInfo->{'libraryBarcode'}. '.t' . LoadConfig::getParam($rH_cfg, 'trim','minQuality', 1, 'int') . 'l' . LoadConfig::getParam($rH_cfg, 'trim', 'minLength', 1, 'int') . '.single.fastq.gz';
       $pair1 = undef;
       $pair2 = undef;
 
     } elsif ($rH_laneInfo->{'runType'} eq "PAIRED_END") {
       $single = undef;
-      $pair1 = 'reads/' . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName . '.' .$rH_laneInfo->{'libraryBarcode'}. '.t' . LoadConfig::getParam($rH_cfg, 'trim', 'minQuality') . 'l' . LoadConfig::getParam($rH_cfg, 'trim', 'minLength') . '.pair1.fastq.gz';
-      $pair2 = 'reads/' . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName . '.' .$rH_laneInfo->{'libraryBarcode'}. '.t' . LoadConfig::getParam($rH_cfg, 'trim', 'minQuality') . 'l' . LoadConfig::getParam($rH_cfg, 'trim', 'minLength') . '.pair2.fastq.gz';
+      $pair1 = 'reads/' . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName . '.' .$rH_laneInfo->{'libraryBarcode'}. '.t' . LoadConfig::getParam($rH_cfg, 'trim', 'minQuality', 1, 'int') . 'l' . LoadConfig::getParam($rH_cfg, 'trim', 'minLength', 1, 'int') . '.pair1.fastq.gz';
+      $pair2 = 'reads/' . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/" . $sampleName . '.' .$rH_laneInfo->{'libraryBarcode'}. '.t' . LoadConfig::getParam($rH_cfg, 'trim', 'minQuality', 1, 'int') . 'l' . LoadConfig::getParam($rH_cfg, 'trim', 'minLength', 1, 'int') . '.pair2.fastq.gz';
     }
     # BWA 
     my $ro_bwaJob = BWA::aln($rH_cfg, $sampleName, $pair1, $pair2, $single, $outputAlnPrefix, $rgId, $rgSampleName, $rgLibrary, $rgPlatformUnit, $rgCenter);
@@ -620,7 +615,7 @@ sub qcPlots {
   foreach my $stepName (@{$parentStep}) {
     if(defined($globalDep{$stepName}->{'experiment'})){
       my @aOjobIDList=@{$globalDep{$stepName}->{'experiment'}};
-      $jobDependencies .= LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep'). join(LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep'), @aOjobIDList);
+      $jobDependencies .= LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep') . join(LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep'), @aOjobIDList);
     }
   }
   if(length($jobDependencies) == 0) {

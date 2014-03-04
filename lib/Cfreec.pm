@@ -31,35 +31,40 @@ use warnings;
 
 #--------------------------
 
+# Add the mugqic_pipeline/lib/ path relative to this Perl script to @INC library search variable
+use FindBin;
+use lib "$FindBin::Bin";
+
 # Dependencies
 #-----------------------
 use File::Basename;
+use LoadConfig;
 
 # SUB
 #-----------------------
 sub pairedFreec {
-    my $rH_cfg        = shift;
-    my $tumorPileup  = shift;
-    my $normalPileup = shift;
-    my $sampleConfig  = shift;
-    my $output        = shift;
+  my $rH_cfg       = shift;
+  my $tumorPileup  = shift;
+  my $normalPileup = shift;
+  my $sampleConfig = shift;
+  my $output       = shift;
 
-    my $ro_job = new Job();
-    $ro_job->testInputOutputs([$normalPileup, $tumorPileup], [$sampleConfig]);
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$normalPileup, $tumorPileup], [$sampleConfig]);
 
-    if (!$ro_job->isUp2Date()) {
-        my $command;
-        $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'ControlFreec', 'moduleVersion.controlFreec') .' && ';
-        $command .= 'sed \"s|TUMOR_PILEUP|' .$tumorPileup .'|g\" ' .'\${FREEC_HOME}/' .LoadConfig::getParam($rH_cfg, 'ControlFreec', 'referenceConfigFile') .' > ' .$sampleConfig .' && ';
-        $command .= 'sed \"s|NORMAL_PILEUP|' .$normalPileup .'|g\" -i ' .$sampleConfig .' && ';
-        $command .= 'sed \"s|OUTPUT_DIR|' .$output .'|g\"  -i ' .$sampleConfig .' && ';
-        $command .= 'sed \"s|FORMAT_TYPE|' .LoadConfig::getParam($rH_cfg, 'ControlFreec', 'inputType') .'|g\"  -i ' .$sampleConfig .' && ';
-        $command .= 'freec -conf ' .$sampleConfig ;
+  if (!$ro_job->isUp2Date()) {
+    my $command;
+    $command .= LoadConfig::moduleLoad($rH_cfg, [['ControlFreec', 'moduleVersion.controlFreec']]) . ' && ';
+    $command .= 'sed \"s|TUMOR_PILEUP|' . $tumorPileup . '|g\" ' . '\${FREEC_HOME}/' . LoadConfig::getParam($rH_cfg, 'ControlFreec', 'referenceConfigFile') . ' > ' . $sampleConfig . ' && ';
+    $command .= 'sed \"s|NORMAL_PILEUP|' . $normalPileup . '|g\" -i ' . $sampleConfig . ' && ';
+    $command .= 'sed \"s|OUTPUT_DIR|' . $output . '|g\"  -i ' . $sampleConfig . ' && ';
+    $command .= 'sed \"s|FORMAT_TYPE|' . LoadConfig::getParam($rH_cfg, 'ControlFreec', 'inputType') . '|g\"  -i ' . $sampleConfig . ' && ';
+    $command .= 'freec -conf ' . $sampleConfig ;
 
-        $ro_job->addCommand($command);
-    }
-    
-    return $ro_job;
+    $ro_job->addCommand($command);
+  }
+
+  return $ro_job;
 }
-    
+
 1;

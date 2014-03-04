@@ -32,6 +32,10 @@ package MACS2;
 use strict;
 use warnings;
 
+# Add the mugqic_pipeline/lib/ path relative to this Perl script to @INC library search variable
+use FindBin;
+use lib "$FindBin::Bin";
+
 # Dependencies
 #-----------------------
 use LoadConfig;
@@ -106,15 +110,15 @@ sub generatePeaks {
   # Compute Genome size or retrieve from config
   my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'genomeName');
   my $genomeSize = '';
-  my $parGenomeSize=LoadConfig::getParam($rH_cfg, 'macs', 'genomeSize');
+  my $parGenomeSize=LoadConfig::getParam($rH_cfg, 'macs', 'genomeSize', 0);
   if ($refGenome eq 'hg1k_v37' || $refGenome eq 'hg19' || $refGenome eq 'hg18') {
     $genomeSize = ' -g hs ';
   }
   elsif ($refGenome eq 'mm9' || $refGenome eq 'mm10') {
     $genomeSize = ' -g mm ';
   } elsif ($parGenomeSize ne "") {
-    if ($parGenomeSize > 0){
-      $genomeSize = ' -g '.LoadConfig::getParam($rH_cfg, 'macs', 'genomeSize');
+    if ($parGenomeSize > 0) {
+      $genomeSize = ' -g ' . LoadConfig::getParam($rH_cfg, 'macs', 'genomeSize');
     } else {
       die "ERROR: Undefined genome name $refGenome or wrong definition for genome size variable in configuration file (genomeSize) \n";
     }
@@ -122,21 +126,21 @@ sub generatePeaks {
     die "ERROR: Undefined genome name $refGenome or undefined genome size variable in configuration file (genomeSize) \n";
   }
   # Call peaks command
-  $command .= ' module load ' . LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.python') . ' ' . LoadConfig::getParam($rH_cfg, 'default', 'moduleVersion.macs') . ' && ';
+  $command .= LoadConfig::moduleLoad($rH_cfg, [['default', 'moduleVersion.python'], ['default', 'moduleVersion.macs']]) . ' && ';
   my $feoptions = "";
   my $extraFlags = "";
 
   # additional options for MACS must be set in the configuration (ini) file. options --diag femacs femin festep are currently not functional (2013-06-06).
   # FEMIN and FEMAX are the minimum and maximum fold enrichment to consider, and FESTEP is the interval of fold enrichment.
-  if (LoadConfig::getParam($rH_cfg, 'macs', 'femin') eq "" || LoadConfig::getParam($rH_cfg, 'macs', 'femax') eq "" || LoadConfig::getParam($rH_cfg, 'macs', 'festep') eq "") {
+  if (LoadConfig::getParam($rH_cfg, 'macs', 'femin', 0) eq "" || LoadConfig::getParam($rH_cfg, 'macs', 'femax', 0) eq "" || LoadConfig::getParam($rH_cfg, 'macs', 'festep', 0) eq "") {
       $feoptions='';
   } else {
-    if (LoadConfig::getParam($rH_cfg, 'macs', 'femin') >= 0 && LoadConfig::getParam($rH_cfg, 'macs', 'femax') >= 0 && LoadConfig::getParam($rH_cfg, 'macs', 'festep') >= 0) {
-      $feoptions = ' --fe-min=' . LoadConfig::getParam($rH_cfg, 'macs', 'femin') . ' --fe-max=' . LoadConfig::getParam($rH_cfg, 'macs', 'femax') . ' --fe-step=' . LoadConfig::getParam($rH_cfg, 'macs', 'festep');
+    if (LoadConfig::getParam($rH_cfg, 'macs', 'femin', 0) >= 0 && LoadConfig::getParam($rH_cfg, 'macs', 'femax', 0) >= 0 && LoadConfig::getParam($rH_cfg, 'macs', 'festep', 0) >= 0) {
+      $feoptions = ' --fe-min=' . LoadConfig::getParam($rH_cfg, 'macs', 'femin', 0) . ' --fe-max=' . LoadConfig::getParam($rH_cfg, 'macs', 'femax', 0) . ' --fe-step=' . LoadConfig::getParam($rH_cfg, 'macs', 'festep', 0);
     }
   }
-  if (!LoadConfig::getParam($rH_cfg, 'macs', 'extraFlags') eq "") {
-    $extraFlags = LoadConfig::getParam($rH_cfg, 'macs', 'extraFlags');
+  if (!LoadConfig::getParam($rH_cfg, 'macs', 'extraFlags', 0) eq "") {
+    $extraFlags = LoadConfig::getParam($rH_cfg, 'macs', 'extraFlags', 0);
   }
   #Peak calling strategies.
   my $options = "";

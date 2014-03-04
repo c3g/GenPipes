@@ -82,19 +82,14 @@ use strict;
 use warnings;
 #---------------------
 
-BEGIN{
-    #Makesure we can find the GetConfig::LoadModules module relative to this script install
-    use File::Basename;
-    use Cwd 'abs_path';
-    my ( undef, $mod_path, undef ) = fileparse( abs_path(__FILE__) );
-    unshift @INC, $mod_path."lib";
-}
-
+# Add the mugqic_pipeline/lib/ path relative to this Perl script to @INC library search variable
+use FindBin;
+use lib "$FindBin::Bin/../../lib";
 
 # Dependencies
 #--------------------
 use Getopt::Std;
-use Cwd;
+use Cwd 'abs_path';
 use POSIX;
 
 use BVATools;
@@ -326,7 +321,7 @@ sub trimAndAlign {
     my $rgSampleName = $rH_laneInfo->{'name'};
     my $rgLibrary = $rH_laneInfo->{'libraryBarcode'};
     my $rgPlatformUnit = $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
-    my $rgCenter = LoadConfig::getParam( $rH_cfg, 'aln', 'bwaInstitution' );
+    my $rgCenter = undef;
 
     my $outputDir = 'reads/'.$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
     print 'mkdir -p '.$outputDir."\n";
@@ -344,6 +339,7 @@ sub trimAndAlign {
 
     my $useMem = LoadConfig::getParam($rH_cfg, 'aln', 'aligner') eq 'mem';
     if(!$useMem) {
+      $rgCenter = LoadConfig::getParam( $rH_cfg, 'aln', 'bwaInstitution' );
       my $ro_bwaJob = BWA::aln($rH_cfg, $sampleName, $ro_trimJob->getOutputFileHash()->{PAIR1_OUTPUT}, $ro_trimJob->getOutputFileHash()->{PAIR2_OUTPUT},$ro_trimJob->getOutputFileHash()->{SINGLE1_OUTPUT}, $outputAlnPrefix, $rgId, $rgSampleName, $rgLibrary, $rgPlatformUnit, $rgCenter);
       if(!$ro_bwaJob->isUp2Date()) {
         if($ro_bwaJob->getNbCommands() == 3) {
@@ -362,6 +358,7 @@ sub trimAndAlign {
       }
     }
     else {
+      $rgCenter = LoadConfig::getParam( $rH_cfg, 'mem', 'bwaInstitution' );
       my $ro_bwaJob = BWA::mem($rH_cfg, $sampleName, $ro_trimJob->getOutputFileHash()->{PAIR1_OUTPUT}, $ro_trimJob->getOutputFileHash()->{PAIR2_OUTPUT},$ro_trimJob->getOutputFileHash()->{SINGLE1_OUTPUT}, $outputAlnPrefix, $rgId, $rgSampleName, $rgLibrary, $rgPlatformUnit, $rgCenter);
       if(!$ro_bwaJob->isUp2Date()) {
         SubmitToCluster::printSubmitCmd($rH_cfg, "mem", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA_MEM', $trimDependency, $sampleName, $ro_bwaJob);
@@ -538,7 +535,7 @@ sub indelRealigner {
   }
   print 'mkdir -p alignment/'.$sampleName."/realign\n";
 
-  my $nbRealignJobs = LoadConfig::getParam( $rH_cfg, 'indelRealigner', 'nbRealignJobs' );
+  my $nbRealignJobs = LoadConfig::getParam($rH_cfg, 'indelRealigner', 'nbRealignJobs', 1, 'int');
   if($nbRealignJobs > 50) {
     warn "Number of realign jobs is >50. This is usually much. Anything beyond 20 can be problematic.\n";
   }
@@ -615,7 +612,7 @@ sub mergeRealigned {
   my @inputBams;
   my $outputBAM = 'alignment/'.$sampleName.'/'.$sampleName.'.realigned.qsorted.bam';
 
-  my $nbRealignJobs = LoadConfig::getParam( $rH_cfg, 'indelRealigner', 'nbRealignJobs' );
+  my $nbRealignJobs = LoadConfig::getParam($rH_cfg, 'indelRealigner', 'nbRealignJobs', 1, 'int');
   my $rO_job;
   if($nbRealignJobs <= 1) {
     my $command = 'if [ ! -e '.$outputBAM.' ]; then ln -s alignment/'.$sampleName.'/realign/all.bam '.$outputBAM.'; fi;';
@@ -942,7 +939,7 @@ sub snpAndIndelBCF {
   print "MPILEUP_JOB_IDS=\"\"\n";
 
   my $jobId;
-  my $nbJobs = LoadConfig::getParam( $rH_cfg, 'mpileup', 'approxNbJobs' );
+  my $nbJobs = LoadConfig::getParam($rH_cfg, 'mpileup', 'approxNbJobs', 0, 'int');
   if (defined($nbJobs) && $nbJobs > 1) {
     my $rA_regions = generateApproximateWindows($nbJobs, $rAoH_seqDictionary);
     for my $region (@{$rA_regions}) {
@@ -1058,7 +1055,7 @@ sub mergeFilterBCF {
     $jobDependency = $globalDep{$parentStep}->{'experiment'};
   }
 
-  my $nbJobs = LoadConfig::getParam( $rH_cfg, 'mpileup', 'approxNbJobs' );
+  my $nbJobs = LoadConfig::getParam($rH_cfg, 'mpileup', 'approxNbJobs');
   my $rA_regions = generateApproximateWindows($nbJobs, $rAoH_seqDictionary);
 
   my $bcfDir = 'variants/rawBCF/';

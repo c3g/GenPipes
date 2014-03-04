@@ -37,63 +37,65 @@ use warnings;
 
 #--------------------------
 
+# Add the mugqic_pipeline/lib/ path relative to this Perl script to @INC library search variable
+use FindBin;
+use lib "$FindBin::Bin";
+
 # Dependencies
 #-----------------------
+use LoadConfig;
 
 # SUB
 #-----------------------
 sub runCelera {
- 	my $rH_cfg     = shift;
-	my $outdir     = shift;
-	my $prefix     = shift;
-	my $ini        = shift;
-	my $infile     = shift;
+  my $rH_cfg = shift;
+  my $outdir = shift;
+  my $prefix = shift;
+  my $ini    = shift;
+  my $infile = shift;
 
-  	my $ro_job = new Job();
-	$ro_job->testInputOutputs([$infile], [$outdir."/9-terminator/$prefix.ctg.fasta"]); 
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$infile], [$outdir . "/9-terminator/$prefix.ctg.fasta"]); 
 
-	if (!$ro_job->isUp2Date()) {
-		my $cmd = '';
-		$cmd .= ' rm -rf ' . $outdir. '/* && ';
-		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' && ';
-		$cmd .= ' module load '.LoadConfig::getParam($rH_cfg, 'celera', 'moduleVersion.celera').' && ';
-		$cmd .= ' memtime';
-		$cmd .= ' runCA';
-		$cmd .= ' -d ' . $outdir;
-		$cmd .= ' -p ' . $prefix;
-		$cmd .= ' -s ' . $ini;
-		$cmd .= ' ' . $infile;
-		
-		$ro_job->addCommand($cmd);
-	}
-	return $ro_job;
+  if (!$ro_job->isUp2Date()) {
+    my $cmd = '';
+    $cmd .= ' rm -rf ' . $outdir . '/* && ';
+    $cmd .= LoadConfig::moduleLoad($rH_cfg, [['memtime', 'moduleVersion.memtime'], ['celera', 'moduleVersion.celera']]) . ' && ';
+    $cmd .= ' memtime';
+    $cmd .= ' runCA';
+    $cmd .= ' -d ' . $outdir;
+    $cmd .= ' -p ' . $prefix;
+    $cmd .= ' -s ' . $ini;
+    $cmd .= ' ' . $infile;
+
+    $ro_job->addCommand($cmd);
+  }
+  return $ro_job;
 }
 
 sub fastqToCA {
- 	my $rH_cfg      = shift;	
-	my $libraryName = shift;
-	my $reads       = shift;
-	my $outfile     = shift;
-	
-  	my $ro_job = new Job();
-	$ro_job->testInputOutputs([$reads], [$outfile]);
+  my $rH_cfg      = shift;  
+  my $libraryName = shift;
+  my $reads       = shift;
+  my $outfile     = shift;
+  
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$reads], [$outfile]);
 
-	if (!$ro_job->isUp2Date()) {
-		my $cmd = '';
-		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' && ';
-		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'celera', 'moduleVersion.celera').' && ';
-		$cmd .= ' memtime';
-		$cmd .= ' fastqToCA';
-		$cmd .= ' -technology sanger';
-		$cmd .= ' -type sanger';
-		$cmd .= ' -libraryname ' . $libraryName;
-		$cmd .= ' -reads ' . $reads;
-		$cmd .= ' > ' . $outfile;
-		
-		$ro_job->addCommand($cmd);
-	}
-	return $ro_job;
+  if (!$ro_job->isUp2Date()) {
+    my $cmd = '';
+    $cmd .= LoadConfig::moduleLoad($rH_cfg, [['memtime', 'moduleVersion.memtime'], ['celera', 'moduleVersion.celera']]) . ' && ';
+    $cmd .= ' memtime';
+    $cmd .= ' fastqToCA';
+    $cmd .= ' -technology sanger';
+    $cmd .= ' -type sanger';
+    $cmd .= ' -libraryname ' . $libraryName;
+    $cmd .= ' -reads ' . $reads;
+    $cmd .= ' > ' . $outfile;
+
+    $ro_job->addCommand($cmd);
+  }
+  return $ro_job;
 }
 
 1;
-

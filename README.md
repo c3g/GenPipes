@@ -101,7 +101,7 @@ will generate a bash script for steps 1 to 14. This script can then be executed:
       -s The start step
       -e The end step
       -n (project.nanuq.csv)  the NANUQ project read set sheet, prepared as described above.
-      -d (design.txt) the design file. A tab separated value file that specifies the experimental design information of the project. The first column lists the sample names, which should match elements the column Name in the read set sheet. Subsequent columns specify all the pairwise comparisons which should be undertaken: values should be either "2" (nominator), "1" (denominator) or "0" (exclude from comparison). 
+      -d (design.txt) the design file. A tab separated value file that specifies the experimental design information of the project. The first column lists the sample names, which should match elements the column Name in the read set sheet. Subsequent columns specify all the pairwise comparisons which should be undertaken: values should be either "2" (nominator), "1" (denominator) or "0" (exclude from comparison). An example of design file may be available in the respective pipeline directory (pipelines/Pipeline_name/example.design.tsv).
       -w The project's working directory. All job outputs will be sent to this directory.
 
 ###   CHIPseq pipeline
@@ -118,5 +118,5 @@ will generate a bash script for steps 1 to 11. This script can then be executed:
       -s The start step
       -e The end step
       -n (project.nanuq.csv) the NANUQ Project sample file, prepared as described above.
-      -d (design.csv) the design file. A tab separated value file that specifies the experimental design information of the project.
+      -d (design.csv) the design file. A tab separated value file that specifies the experimental design information of the project. An example of design file may be available in the respective pipeline directory (pipelines/Pipeline_name/example.design.tsv)
       -w The project's working directory. All job outputs will be sent to this directory.

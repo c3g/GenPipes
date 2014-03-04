@@ -291,10 +291,12 @@ sub main {
 				}
 			}
 		
-			$dependency3 = $dependency2;
+			#$dependency3 = $dependency2;
 
 			foreach my $merSize(@merSizes){			
-				my $assemblyLoopCounter = 0;	
+				$dependency3 = $dependency2;
+				
+				#my $assemblyLoopCounter = 0;	
 			
 				for(my $currentStep = $opts{'s'}-1; $currentStep <= ($opts{'e'}-1); $currentStep++) {		
 					my $fname = $steps[$currentStep]->{'name'};
@@ -303,13 +305,13 @@ sub main {
 					if($steps[$currentStep]->{'stepLoop'} eq 'assembly') {
 
 						# TODO All this assemblyCounter loop, I'm not even sure its necessary, but if it ain't broken, don't fix it :-)
-						if($assemblyLoopCounter == 0){
-							$dependency3 = $dependency2; 
-
-						}else{
-							$dependency3 = $dependency3; 
-						}	
-						$assemblyLoopCounter++;		
+						#if($assemblyLoopCounter == 0){
+						#	$dependency3 = $dependency2; 
+						#
+						#}else{
+						#	$dependency3 = $dependency3; 
+						#}	
+						#$assemblyLoopCounter++;		
 						
 						# Here manage number of polishing rounds.
 						my $polishingRounds = LoadConfig::getParam(\%cfg, 'default', 'polishingRounds'); 
@@ -723,15 +725,15 @@ sub polishing{
 	my $cmd;
 	
 	# create PacBio input.xml
-	my $rO_jobFofn = SmrtAnalysis::fofns(
-		$rH_cfg,
-		"$outdir/fofns/$sampleName.fofn",
-		"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/input.xml",
-		"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/input.fofn"
-	);
-	if(!$rO_jobFofn->isUp2Date()) {
-		SubmitToCluster::printSubmitCmd($rH_cfg, "fofn", $stepName , 'FOFNS'.'_'.$sampleName.'_'.$suffix.'_'.$merSize.'_ROUND_'.$polishingRound, $dependency, $sampleName."_".$suffix."_".$merSize."_".$polishingRound, $rO_jobFofn); 
-	}
+	#my $rO_jobFofn = SmrtAnalysis::fofns(
+	#	$rH_cfg,
+	#	"$outdir/fofns/$sampleName.fofn",
+	#	"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/input.xml",
+	#	"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/input.fofn"
+	#);
+	#if(!$rO_jobFofn->isUp2Date()) {
+	#	SubmitToCluster::printSubmitCmd($rH_cfg, "fofn", $stepName , 'FOFNS'.'_'.$sampleName.'_'.$suffix.'_'.$merSize.'_ROUND_'.$polishingRound, $dependency, $sampleName."_".$suffix."_".$merSize."_".$polishingRound, $rO_jobFofn); 
+	#}
 
 	# Upload reference. Ref to be uploaded depends on polishing round.
 	my $refOutdir;
@@ -760,7 +762,7 @@ sub polishing{
 		#"$outdir/$sampleName/$suffix/$merSize/assembly/9-terminator/$sampleName"."_".$suffix."_".$merSize.".ctg.fasta"	
 	);
 	if(!$rO_jobRefUpload->isUp2Date()){
-		SubmitToCluster::printSubmitCmd($rH_cfg, "referenceUpload", $stepName , 'REFUPLOAD'.'_'.$sampleName.'_'.$suffix.'_'.$merSize.'_ROUND_'.$polishingRound, $rO_jobFofn->getCommandJobId(0), $sampleName."_".$suffix."_".$merSize."_".$polishingRound, $rO_jobRefUpload); 
+		SubmitToCluster::printSubmitCmd($rH_cfg, "referenceUpload", $stepName , 'REFUPLOAD'.'_'.$sampleName.'_'.$suffix.'_'.$merSize.'_ROUND_'.$polishingRound, $dependency, $sampleName."_".$suffix."_".$merSize."_".$polishingRound, $rO_jobRefUpload); 
 	}
 	
 	if($hgapAlgorithm == 0){
@@ -797,7 +799,9 @@ sub polishing{
 			$rH_cfg,
 			"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/data/aligned_reads.cmp.h5",
 			"$outdir/$sampleName/filtering/data/filtered_regions.fofn", 
-			"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/input.fofn",
+      #"$outdir/fofns/$sampleName.fofn",
+      "$outdir/$sampleName/filtering/input.fofn",
+			#"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/input.fofn",
 			#$outdir."/".$sampleName."/".$suffix."/".$merSize."/assembly/".$sampleName.$suffix.$merSize,
 			$refOutdir.$refPrefix,
 			$tmpdir
@@ -809,7 +813,8 @@ sub polishing{
 		my $rO_jobLoadPulses = SmrtAnalysis::loadPulses(
 			$rH_cfg,
 			"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/data/aligned_reads.cmp.h5",
-			"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/input.fofn"
+      "$outdir/$sampleName/filtering/input.fofn"
+			#"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/input.fofn"
 		);
 		if(!$rO_jobLoadPulses->isUp2Date()) {
 			SubmitToCluster::printSubmitCmd($rH_cfg, "loadPulses", $stepName , 'LOADPULSES'.'_'.$sampleName.'_'.$suffix.'_'.$merSize.'_ROUND_'.$polishingRound, $rO_jobCompareSequences->getCommandJobId(0), $sampleName."_".$suffix."_".$merSize."_".$polishingRound, $rO_jobLoadPulses); 

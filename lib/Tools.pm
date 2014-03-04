@@ -31,39 +31,44 @@ use warnings;
 
 #--------------------------
 
+# Add the mugqic_pipeline/lib/ path relative to this Perl script to @INC library search variable
+use FindBin;
+use lib "$FindBin::Bin";
+
 # Dependencies
 #-----------------------
 use Cwd 'abs_path';
 use File::Basename;
+use LoadConfig;
 
 # SUB
 #-----------------------
 sub getToolShedDir {
-    my $currentDir = dirname(__FILE__);
-    return abs_path($currentDir.'/../tool_shed');
+  my $currentDir = dirname(__FILE__);
+  return abs_path($currentDir.'/../tool_shed');
 }
 
 sub filterNStretches {
-    my $rH_cfg      = shift;
-    my $sampleName  = shift;
-    my $inputVCF    = shift;
-    my $outputVCF   = shift;
+  my $rH_cfg      = shift;
+  my $sampleName  = shift;
+  my $inputVCF    = shift;
+  my $outputVCF   = shift;
 
-    my $toolShedDir = getToolShedDir();
+  my $toolShedDir = getToolShedDir();
 
-    my $ro_job = new Job();
-    $ro_job->testInputOutputs([$inputVCF],[$outputVCF]);
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$inputVCF], [$outputVCF]);
 
-    if (!$ro_job->isUp2Date()) {
-        my $command;
-        $command .= 'module load ' .LoadConfig::getParam($rH_cfg, 'metrics' , 'moduleVersion.tools') .' &&';
-	$command .= ' \$PERL_TOOLS/filterLongIndel.pl ';
-        $command .= ' '.$inputVCF;
-        $command .= ' > '.$outputVCF;
+  if (!$ro_job->isUp2Date()) {
+    my $command;
+    $command .= LoadConfig::moduleLoad($rH_cfg, [['metrics' , 'moduleVersion.tools']]) . ' &&';
+    $command .= ' \$PERL_TOOLS/filterLongIndel.pl ';
+    $command .= ' ' . $inputVCF;
+    $command .= ' > ' . $outputVCF;
 
-        $ro_job->addCommand($command);
-    }
-    return $ro_job;
+    $ro_job->addCommand($command);
+  }
+  return $ro_job;
 }
 
 1;

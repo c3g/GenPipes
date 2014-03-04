@@ -31,8 +31,13 @@ use warnings;
 
 #--------------------------
 
+# Add the mugqic_pipeline/lib/ path relative to this Perl script to @INC library search variable
+use FindBin;
+use lib "$FindBin::Bin";
+
 # Dependencies
 #-----------------------
+use LoadConfig;
 
 # SUB
 #-----------------------
@@ -47,12 +52,15 @@ sub annotateMappability {
   if (!$ro_job->isUp2Date()) {
     my $command;
 
-    $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'annotateMappability', 'moduleVersion.vcftools').' '.LoadConfig::getParam($rH_cfg, 'annotateMappability', 'moduleVersion.tabix').' &&';
-    $command .= ' vcf-annotate -d \"key=INFO,ID=MIL,Number=1,Type=String,Description='."'".'Mappability annotation. 300IS 40SD 1SHI. HC = to high coverage (>400), LC = to high coverage (<50), MQ = to low mean mapQ (<20), ND = no data at the position'."'".'\"';
+    $command .= LoadConfig::moduleLoad($rH_cfg, [
+      ['annotateMappability', 'moduleVersion.vcftools'],
+      ['annotateMappability', 'moduleVersion.tabix']
+    ]) . ' &&';
+    $command .= ' vcf-annotate -d \"key=INFO,ID=MIL,Number=1,Type=String,Description=' . "'" . 'Mappability annotation. 300IS 40SD 1SHI. HC = to high coverage (>400), LC = to high coverage (<50), MQ = to low mean mapQ (<20), ND = no data at the position' . "'" . '\"';
     $command .= ' -c CHROM,FROM,TO,INFO/MIL ';
-    $command .= ' -a '.LoadConfig::getParam($rH_cfg, 'annotateMappability', 'referenceMappabilityBedIndexed');
-    $command .= ' '.$inputVCF;
-    $command .= ' > '.$outputVCF;
+    $command .= ' -a ' . LoadConfig::getParam($rH_cfg, 'annotateMappability', 'referenceMappabilityBedIndexed', 1, 'filepath');
+    $command .= ' ' . $inputVCF;
+    $command .= ' > ' . $outputVCF;
 
     $ro_job->addCommand($command);
   }
@@ -71,13 +79,13 @@ sub indexVCF {
   if (!$ro_job->isUp2Date()) {
     my $command;
 
-    $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'indexVCF', 'moduleVersion.tabix').' &&';
+    $command .= LoadConfig::moduleLoad($rH_cfg, [['indexVCF', 'moduleVersion.tabix']]) . ' &&';
     $command .= ' bgzip -c';
-    $command .= ' '.$inputVCF;
-    $command .= ' > '.$outputVCF;
+    $command .= ' ' . $inputVCF;
+    $command .= ' > ' . $outputVCF;
     $command .= ' && ';
     $command .= ' tabix -p vcf -f';
-    $command .= ' '.$outputVCF;
+    $command .= ' ' . $outputVCF;
 
     $ro_job->addCommand($command);
   }
@@ -85,8 +93,8 @@ sub indexVCF {
 }
 
 sub mergeVCF {
-  my $rH_cfg     = shift;
-  my $rA_vcfs    = shift;
+  my $rH_cfg    = shift;
+  my $rA_vcfs   = shift;
   my $outputVCF = shift;
 
   my $ro_job = new Job();
@@ -94,10 +102,10 @@ sub mergeVCF {
 
   if (!$ro_job->isUp2Date()) {
     my $command;
-    $command .= 'module load '.LoadConfig::getParam($rH_cfg, 'mergeVCF', 'moduleVersion.vcftools').' &&';
+    $command .= LoadConfig::moduleLoad($rH_cfg, [['mergeVCF', 'moduleVersion.vcftools']]) . ' &&';
     $command .= ' vcf-concat';
-    $command .= ' '.join(' ', @{$rA_vcfs});
-    $command .= ' > '.$outputVCF;
+    $command .= ' ' . join(' ', @{$rA_vcfs});
+    $command .= ' > ' . $outputVCF;
 
     $ro_job->addCommand($command);
   }
