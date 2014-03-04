@@ -122,7 +122,7 @@ sub annotateDbNSFP {
     $command .= LoadConfig::moduleLoad($rH_cfg, [['annotateDbNSFP', 'moduleVersion.java'], ['annotateDbNSFP', 'moduleVersion.snpeff']]) . ' &&';
     $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'annotateDbNSFP', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'annotateDbNSFP', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'annotateDbNSFP', 'siftRam');
     $command .= ' -jar \${SNPEFF_HOME}/SnpSift.jar dbnsfp';
-    $command .= ' -v ' . LoadConfig::getParam($rH_cfg, 'annotateDbNSFP', 'dbNSFP', 1, 'filepath');
+    $command .= ' -v ' . LoadConfig::getParam($rH_cfg, 'annotateDbNSFP', 'dbNSFP', 0, 'filepath');
     $command .= ' ' . $inputVCF;
     $command .= ' > ' . $outputVCF;
 

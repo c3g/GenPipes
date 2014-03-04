@@ -28,8 +28,6 @@ use File::Path qw(make_path remove_tree);
 use Job;
 
 # Libraries mugqic
-use Iterator::FastqDb;
-use Iterator::FastaDb;
 use RRNAAmplicons;
 use MicrobialEcology;
 use LoadConfig;
