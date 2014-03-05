@@ -227,7 +227,7 @@ sub qc {
     my $nbThreads = LoadConfig::getParam($rH_cfg, 'generateQCGraphs','nbThreads');
     my $command;
     $command .= LoadConfig::moduleLoad($rH_cfg, [['generateQCGraphs', 'moduleVersion.java'], ['generateQCGraphs', 'moduleVersion.bvatools']]) . ' &&';
-    $command .= ' java ' .LoadConfig::getParam($rH_cfg, 'generateQCGraphs', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'generateQCGraphs', 'maxRam').' -jar $BVATOOLS_JAR';
+    $command .= ' java ' .LoadConfig::getParam($rH_cfg, 'generateQCGraphs', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'generateQCGraphs', 'maxRam').' -jar \${$BVATOOLS_JAR}';
     $command .= ' readsqc --regionName \'' . $regionName . '\' --type ' . $type . ' --output \'' . $outputDirectory . '\' --read1 \'' . $read1 .'\'';
     if (defined($read2)) {
       $command .= ' --read2 \'' . $read2 . '\'';
