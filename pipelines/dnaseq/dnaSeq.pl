@@ -321,7 +321,7 @@ sub trimAndAlign {
     my $rgSampleName = $rH_laneInfo->{'name'};
     my $rgLibrary = $rH_laneInfo->{'libraryBarcode'};
     my $rgPlatformUnit = $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
-    my $rgCenter = LoadConfig::getParam( $rH_cfg, 'aln', 'bwaInstitution' );
+    my $rgCenter = undef;
 
     my $outputDir = 'reads/'.$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
     print 'mkdir -p '.$outputDir."\n";
@@ -339,6 +339,7 @@ sub trimAndAlign {
 
     my $useMem = LoadConfig::getParam($rH_cfg, 'aln', 'aligner') eq 'mem';
     if(!$useMem) {
+      $rgCenter = LoadConfig::getParam( $rH_cfg, 'aln', 'bwaInstitution' );
       my $ro_bwaJob = BWA::aln($rH_cfg, $sampleName, $ro_trimJob->getOutputFileHash()->{PAIR1_OUTPUT}, $ro_trimJob->getOutputFileHash()->{PAIR2_OUTPUT},$ro_trimJob->getOutputFileHash()->{SINGLE1_OUTPUT}, $outputAlnPrefix, $rgId, $rgSampleName, $rgLibrary, $rgPlatformUnit, $rgCenter);
       if(!$ro_bwaJob->isUp2Date()) {
         if($ro_bwaJob->getNbCommands() == 3) {
@@ -357,6 +358,7 @@ sub trimAndAlign {
       }
     }
     else {
+      $rgCenter = LoadConfig::getParam( $rH_cfg, 'mem', 'bwaInstitution' );
       my $ro_bwaJob = BWA::mem($rH_cfg, $sampleName, $ro_trimJob->getOutputFileHash()->{PAIR1_OUTPUT}, $ro_trimJob->getOutputFileHash()->{PAIR2_OUTPUT},$ro_trimJob->getOutputFileHash()->{SINGLE1_OUTPUT}, $outputAlnPrefix, $rgId, $rgSampleName, $rgLibrary, $rgPlatformUnit, $rgCenter);
       if(!$ro_bwaJob->isUp2Date()) {
         SubmitToCluster::printSubmitCmd($rH_cfg, "mem", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA_MEM', $trimDependency, $sampleName, $ro_bwaJob);

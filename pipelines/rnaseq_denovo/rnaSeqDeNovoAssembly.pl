@@ -282,7 +282,7 @@ sub getReadType {
       } elsif ($rH_laneInfo->{'runType'} eq "PAIRED_END") {
         $pairedCount++;
       } else {
-        die "Error in getRunType: unknown runType (can be 'single' or 'paired' only): " . $rH_laneInfo->{'runType'};
+        die "Error in getRunType: unknown run type (can be 'SINGLE_END' or 'PAIRED_END' only): " . $rH_laneInfo->{'runType'};
       }
     }
   }
