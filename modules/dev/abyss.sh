@@ -19,12 +19,12 @@ module add gcc/4.7.2
 module load openmpi/1.6.3-gcc
 PATH_OPENMPI_LIB="/software/CentOS-5/tools/openmpi-1.6.3-gcc"
 #mammouth : TODO error with mpi in configure step
-module add gcc/4.7.0
-module load openmpi_gcc64/1.6.4
+#module add gcc/4.7.0
+#module load openmpi_gcc64/1.6.4
 PATH_OPENMPI_LIB="/opt/mpi/gcc/openmpi-1.6.4"
 #abacus : TODO error with mpi in configure step 
-module add compat-openmpi-x86_64
-PATH_OPENMPI_LIB="/usr/lib64/compat-openmpi/lib"
+#module add compat-openmpi-x86_64
+#PATH_OPENMPI_LIB="/usr/lib64/compat-openmpi/lib"
 
 #TODO : for other cluster
 

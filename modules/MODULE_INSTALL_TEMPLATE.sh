@@ -40,7 +40,7 @@ proc ModulesHelp { } {
        puts stderr \"\tMUGQIC - $SOFTWARE \" ;  ## TO BE MODIFIED WITH DETAILED DESCRIPTION IF ANY
 }
 module-whatis \"$SOFTWARE  \" ;  ## TO BE MODIFIED WITH DETAILED DESCRIPTION IF ANY
-                      
+
 set             root                \$::env(MUGQIC_INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE-$VERSION ;  ## TO BE MODIFIED WITH SPECIFIC $SOFTWARE-$VERSION IF DIFFERENT
 prepend-path    PATH                \$root/bin ;  ## TO BE ADDED IF NECESSARY
 prepend-path    PATH                \$root/other_tools/bin ;  ## TO BE ADDED AND MODIFIED IF NECESSARY

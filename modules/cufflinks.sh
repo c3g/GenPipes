@@ -1,33 +1,50 @@
+#!/bin/sh
 
-###################
-################### Cufflinks
-###################
-VERSION="2.1.1"
-INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/cufflinks
-mkdir -p $INSTALL_PATH
-cd $INSTALL_PATH
+#
+# Cufflinks
+#
 
-# Download and extract
-wget http://cufflinks.cbcb.umd.edu/downloads/cufflinks-$VERSION.Linux_x86_64.tar.gz
-tar zxvf cufflinks-$VERSION.Linux_x86_64.tar.gz
-chmod -R g+w cufflinks-$VERSION.Linux_x86_64
+SOFTWARE=cufflinks
+VERSION=2.1.1
+INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/$SOFTWARE
+INSTALL_DOWNLOAD=$INSTALL_PATH/tmp
+mkdir -p $INSTALL_DOWNLOAD
+cd $INSTALL_DOWNLOAD
+
+# Download, extract, build
+wget http://cufflinks.cbcb.umd.edu/downloads/$SOFTWARE-$VERSION.Linux_x86_64.tar.gz
+tar zxvf $SOFTWARE-$VERSION.Linux_x86_64.tar.gz
+
+# Add permissions and install software
+cd $INSTALL_DOWNLOAD
+chmod -R ug+rwX .
+chmod -R o+rX .
+mv -i $SOFTWARE-$VERSION.Linux_x86_64 $INSTALL_PATH
+mv -i $SOFTWARE-$VERSION.Linux_x86_64.tar.gz $MUGQIC_INSTALL_HOME/archive
 
 # Module file
 echo "#%Module1.0
 proc ModulesHelp { } {
-       puts stderr \"\tMUGQIC - Cufflinks \"
+       puts stderr \"\tMUGQIC - $SOFTWARE \"
 }
-module-whatis \"MUGQIC - Cufflinks \"
-                      
-set             root               \$::env(MUGQIC_INSTALL_HOME)/software/cufflinks/cufflinks-$VERSION.Linux_x86_64
-prepend-path    PATH               \$root
+module-whatis \"$SOFTWARE  \"
+
+set             root                \$::env(MUGQIC_INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE-$VERSION.Linux_x86_64
+prepend-path    PATH                \$root
 " > $VERSION
 
-# Version file
-echo "#%Module1.0
-set ModulesVersion \"$VERSION\"
-" > .version
+################################################################################
+# Everything below this line should be generic and not modified
 
-mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/cufflinks
-mv .version $VERSION $MUGQIC_INSTALL_HOME/modulefiles/mugqic/cufflinks/
-rm cufflinks-$VERSION.Linux_x86_64.tar.gz
+# Default module version file
+echo "#%Module1.0
+set ModulesVersion \"$VERSION\"" > .version
+
+# Add permissions and install module
+mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
+chmod -R ug+rwX $VERSION .version
+chmod -R o+rX $VERSION .version
+mv $VERSION .version $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
+
+# Clean up temporary installation files if any
+rm -rf $INSTALL_DOWNLOAD

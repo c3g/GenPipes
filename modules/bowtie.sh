@@ -1,37 +1,52 @@
-###################
-################### Bowtie
-###################
-VERSION="1.0.0"
-INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/bowtie
-mkdir -p $INSTALL_PATH
-cd $INSTALL_PATH
+#!/bin/sh
 
-# Download and extract
-wget http://sourceforge.net/projects/bowtie-bio/files/bowtie/${VERSION}/bowtie-${VERSION}-src.zip/download
-unzip bowtie-$VERSION-src.zip
+#
+# Bowtie
+#
 
-# Compile
-cd bowtie-$VERSION
-make -j8
-cd ..
-chmod -R g+w $INSTALL_PATH/bowtie-$VERSION
+SOFTWARE=bowtie
+VERSION=1.0.0
+INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/$SOFTWARE
+INSTALL_DOWNLOAD=$INSTALL_PATH/tmp
+mkdir -p $INSTALL_DOWNLOAD
+cd $INSTALL_DOWNLOAD
+
+# Download, extract, build
+wget http://sourceforge.net/projects/bowtie-bio/files/$SOFTWARE/$VERSION/$SOFTWARE-$VERSION-src.zip
+unzip $SOFTWARE-$VERSION-src.zip
+cd $SOFTWARE-$VERSION
+make
+
+# Add permissions and install software
+cd $INSTALL_DOWNLOAD
+chmod -R ug+rwX .
+chmod -R o+rX .
+mv -i $SOFTWARE-$VERSION $INSTALL_PATH
+mv -i $SOFTWARE-$VERSION-src.zip $MUGQIC_INSTALL_HOME/archive
 
 # Module file
 echo "#%Module1.0
 proc ModulesHelp { } {
-       puts stderr \"\tMUGQIC - Bowtie aligner \"
+       puts stderr \"\tMUGQIC - $SOFTWARE \" ;
 }
-module-whatis \"MUGQIC - Bowtie aligner \"
+module-whatis \"$SOFTWARE  \" ;
                       
-set             root               \$::env(MUGQIC_INSTALL_HOME)/software/bowtie/bowtie-$VERSION
-prepend-path    PATH               \$root
+set             root                \$::env(MUGQIC_INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE-$VERSION ;
+prepend-path    PATH                \$root
 " > $VERSION
 
-# Version file
-echo "#%Module1.0
-set ModulesVersion \"$VERSION\"
-" > .version
+################################################################################
+# Everything below this line should be generic and not modified
 
-mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/bowtie
-mv .version $VERSION $MUGQIC_INSTALL_HOME/modulefiles/mugqic/bowtie/
-rm bowtie-$VERSION-src.zip
+# Default module version file
+echo "#%Module1.0
+set ModulesVersion \"$VERSION\"" > .version
+
+# Add permissions and install module
+mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
+chmod -R ug+rwX $VERSION .version
+chmod -R o+rX $VERSION .version
+mv $VERSION .version $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
+
+# Clean up temporary installation files if any
+rm -rf $INSTALL_DOWNLOAD
