@@ -70,6 +70,7 @@ use Getopt::Std;
 use GqSeqUtils;
 use LoadConfig;
 use Metrics;
+use Picard;
 use SampleSheet;
 use SubmitToCluster;
 use Trimmomatic;
@@ -79,9 +80,14 @@ use Trinity;
 #-------------
 my @A_steps = (
   {
-    'name'   => 'trim',
+    'name'   => 'bamToFastq',
     'loop'   => 'readSet',
     'parent' => []
+  },
+  {
+    'name'   => 'trim',
+    'loop'   => 'readSet',
+    'parent' => ['bamToFastq']
   },
   {
     'name'   => 'normalization',
@@ -153,6 +159,14 @@ main();
 
 # General pipeline functions
 #---------------------------
+sub debug {
+  my $message = shift;
+
+  my $debug = 0;    # Set to 1 to display debug messages, 0 to keep output silent
+  
+  $debug and print STDERR "[DEBUG] $message\n";
+}
+
 sub getUsage {
   my $usage = <<END;
 Usage: perl $0 -h | -c CONFIG_FILE -s start_step_num -e end_step_num [-n SAMPLE_SHEET] [-d DESIGN_FILE] [-w WORK_DIR]
@@ -206,6 +220,7 @@ sub main {
   for (my $i = $startStep; $i <= $endStep; $i++) {
     my $step = $A_steps[$i - 1];
     my $stepName = $step->{'name'};
+    debug "main: processing step $stepName";
 
     # Read-set step creates 1 job per read-set
     if ($step->{'loop'} eq 'readSet') {
@@ -215,15 +230,28 @@ sub main {
 
       my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($nanuqSampleSheet, LoadConfig::getParam(\%cfg, 'default', 'rawReadFormat', 0));
       foreach my $sample (keys %$rHoAoH_sampleInfo) {
-        $step->{'jobIds'}{$sample} = ();
         my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sample};
-        # Sample step functions need sample and lanes parameters
-        &$stepName(\%cfg, $step, $sample, $rAoH_sampleLanes);
+        for my $rH_laneInfo (@$rAoH_sampleLanes) {
+          my $readSet = $sample . "_" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
+          debug "main: processing read set $readSet";
+
+          @{$step->{'jobIds'}{$readSet}} = ();
+
+          # Read-set step functions need sample and lane parameters
+          my $rO_job = &$stepName(\%cfg, $sample, $rH_laneInfo);
+          if ($rO_job) {
+            debug "main: submitJob $rO_job";
+            submitJob(\%cfg, $step, $readSet, $rO_job);
+          }
+        }
       }
     # Global step creates 1 job only
     } else {
-      $step->{'jobIds'}{'global'} = ();
-      &$stepName(\%cfg, $step);
+      @{$step->{'jobIds'}{'global'}} = ();
+      my $rO_job = &$stepName(\%cfg);
+      if ($rO_job) {
+        submitJob(\%cfg, $step, undef, $rO_job);
+      }
     }
   }
 }
@@ -240,8 +268,11 @@ sub submitJob {
 
     # Set job name after uppercased step name and, if readSet step, readSet name
     my $stepName = $step->{'name'};
+    debug "submitJob: processing step $stepName";
+
     my $jobIdPrefix = uc($stepName);
     if (defined $readSet) {
+      debug "submitJob: processing read set $readSet";
       $jobIdPrefix .= "_" . $readSet;
     }
   
@@ -252,6 +283,8 @@ sub submitJob {
     my @A_stepParents = map {$H_steps{$_}} @{$step->{'parent'}};
   
     for my $stepParent (@A_stepParents) {
+      debug "submitJob: processing step parent: " . $stepParent->{'name'};
+
       if ($stepParent->{'jobIds'}) {
         # If read-set-only job depends on read-set-only parent job, retrieve job ID dependencies for this read set only
         if ($step->{'loop'} eq 'readSet' and $stepParent->{'loop'} eq 'readSet') {
@@ -313,66 +346,86 @@ sub getRunType {
   }
 }
 
-
 # Step functions
 #---------------
 
+sub bamToFastq {
+  my $rH_cfg = shift;
+  my $sample = shift;
+  my $rH_laneInfo = shift;
+
+  my $rO_job;
+  my $baseDirectory = "$sample/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
+  my $rawDirectory = LoadConfig::getParam($rH_cfg, 'default', 'rawReadDir', 1, 'dirpath') . "/" . $baseDirectory;
+  my $input1 = $rawDirectory . "/" . $rH_laneInfo->{'read1File'};
+
+  if ($input1 =~ /\.bam$/) {
+    if ($rH_laneInfo->{'runType'} eq "SINGLE_END") {
+      my $outputFastq1 = $input1;
+      $outputFastq1 =~ s/\.bam$/.single.fastq.gz/;
+      $rO_job = Picard::samToFastq($rH_cfg, $input1, $outputFastq1);
+      $rH_laneInfo->{'read1File'} = $outputFastq1;
+    } elsif ($rH_laneInfo->{'runType'} eq "PAIRED_END") {
+      my $outputFastq1 = $input1;
+      my $outputFastq2 = $input1;
+      $outputFastq1 =~ s/\.bam$/.pair1.fastq.gz/;
+      $outputFastq2 =~ s/\.bam$/.pair2.fastq.gz/;
+      $rO_job = Picard::samToFastq($rH_cfg, $input1, $outputFastq1, $outputFastq2);
+      $rH_laneInfo->{'read1File'} = $outputFastq1;
+      $rH_laneInfo->{'read2File'} = $outputFastq2;
+    } else {
+      die "Error in rnaSeqDeNovoAssembly::bamToFastq: unknown run type (can be 'SINGLE_END' or 'PAIRED_END' only): " . $rH_laneInfo->{'runType'};
+    }
+  }
+  return $rO_job;
+}
+
 sub trim {
   my $rH_cfg = shift;
-  my $step = shift;
   my $sample = shift;
-  my $rAoH_sampleLanes = shift;
+  my $rH_laneInfo = shift;
 
-  # Create trim job per sample per lane
-  for my $rH_laneInfo (@$rAoH_sampleLanes) {
-
-    my $baseDirectory = "$sample/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
-    my $rawDirectory = LoadConfig::getParam($rH_cfg, 'trim', 'rawReadDir', 1, 'dirpath') . "/$baseDirectory";
-    my $input1 = $rawDirectory . $rH_laneInfo->{'read1File'};
-    my $trimDirectory = "\$WORK_DIR/reads/$baseDirectory";
-    my $rO_job = Trimmomatic::trim(
-      $rH_cfg,
-      $rawDirectory . "/" . $rH_laneInfo->{'read1File'},
-      $rH_laneInfo->{'read2File'} ? $rawDirectory . "/" . $rH_laneInfo->{'read2File'} : undef,
-      $trimDirectory,
-      $rH_laneInfo->{'qualOffset'}
-    );
-
-    submitJob($rH_cfg, $step, $sample . "_" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, $rO_job);
-  }
+  my $baseDirectory = "$sample/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
+  my $rawDirectory = LoadConfig::getParam($rH_cfg, 'trim', 'rawReadDir', 1, 'dirpath') . "/$baseDirectory";
+  my $input1 = $rawDirectory . $rH_laneInfo->{'read1File'};
+  my $trimDirectory = "\$WORK_DIR/reads/$baseDirectory";
+  my $rO_job = Trimmomatic::trim(
+    $rH_cfg,
+    $rawDirectory . "/" . $rH_laneInfo->{'read1File'},
+    $rH_laneInfo->{'read2File'} ? $rawDirectory . "/" . $rH_laneInfo->{'read2File'} : undef,
+    $trimDirectory,
+    $rH_laneInfo->{'qualOffset'}
+  );
+  return $rO_job;
 }
 
 sub normalization {
   my $rH_cfg = shift;
-  my $step = shift;
   my $sample = shift;
-  my $rAoH_sampleLanes = shift;
+  my $rH_laneInfo = shift;
 
   my $readFilePart = ".t" . LoadConfig::getParam($rH_cfg, 'trim', 'minQuality', 1, 'int') . "l" . LoadConfig::getParam($rH_cfg, 'trim', 'minLength', 1, 'int');
   my $rO_job;
 
-  for my $rH_laneInfo (@$rAoH_sampleLanes) {
-    my $laneDirectory = $sample . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
-    my $readFilePrefix = "\$WORK_DIR/reads/" . $laneDirectory . "/" . $sample . "." . $rH_laneInfo->{'libraryBarcode'} . $readFilePart;
-    my $normDirectory = "\$WORK_DIR/normalization/$laneDirectory";
+  my $laneDirectory = $sample . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
+  my $readFilePrefix = "\$WORK_DIR/reads/" . $laneDirectory . "/" . $sample . "." . $rH_laneInfo->{'libraryBarcode'} . $readFilePart;
+  my $normDirectory = "\$WORK_DIR/normalization/$laneDirectory";
 
-    if ($rH_laneInfo->{'runType'} eq "SINGLE_END") {
-      my $single = $readFilePrefix . ".single.fastq.gz";
-      $rO_job = Trinity::normalize_by_kmer_coverage($rH_cfg, undef, undef, [$single], $normDirectory);
-    } elsif ($rH_laneInfo->{'runType'} eq "PAIRED_END") {
-      my $pair1 = $readFilePrefix . ".pair1.fastq.gz";
-      my $pair2 = $readFilePrefix . ".pair2.fastq.gz";
-      $rO_job = Trinity::normalize_by_kmer_coverage($rH_cfg, [$pair1], [$pair2], undef, $normDirectory);
-    } else {
-      die "Error in normalization: unknown read type\n";
-    }
-    submitJob($rH_cfg, $step, $sample . "_" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, $rO_job);
+  if ($rH_laneInfo->{'runType'} eq "SINGLE_END") {
+    my $single = $readFilePrefix . ".single.fastq.gz";
+    $rO_job = Trinity::normalize_by_kmer_coverage($rH_cfg, undef, undef, [$single], $normDirectory);
+  } elsif ($rH_laneInfo->{'runType'} eq "PAIRED_END") {
+    my $pair1 = $readFilePrefix . ".pair1.fastq.gz";
+    my $pair2 = $readFilePrefix . ".pair2.fastq.gz";
+    $rO_job = Trinity::normalize_by_kmer_coverage($rH_cfg, [$pair1], [$pair2], undef, $normDirectory);
+  } else {
+    die "Error in normalization: unknown read type\n";
   }
+  return $rO_job;
 }
 
 sub normalizationMergeResults {
   my $rH_cfg = shift;
-  my $step = shift;
 
   my $runType = getRunType($nanuqSampleSheet);
 
@@ -386,7 +439,7 @@ sub normalizationMergeResults {
 
   my $normFileSuffix = ".normalized_K" . $kmerSize . "_C" . $maxCoverage . "_pctSD" . $maxPctStdev . ".fq";
 
-  my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($nanuqSampleSheet, LoadConfig::getParam($rH_cfg, 'default', 'rawReadFormat', 0));
+  my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($nanuqSampleSheet);
 
   # Retrieve single/paired end normalized files for each lane of each sample
   foreach my $sample (keys %$rHoAoH_sampleInfo) {
@@ -413,12 +466,11 @@ sub normalizationMergeResults {
     $rO_job = Trinity::normalize_by_kmer_coverage($rH_cfg, \@A_leftFastq, \@A_rightFastq, undef, "\$WORK_DIR/normalization/global");
   }
 
-  submitJob($rH_cfg, $step, undef, $rO_job);
+  return $rO_job;
 }
 
 sub trinity {
   my $rH_cfg = shift;
-  my $step = shift;
 
   my $runType = getRunType($nanuqSampleSheet);
 
@@ -434,12 +486,11 @@ sub trinity {
   } else {
     $rO_job = Trinity::trinity($rH_cfg, ["\$WORK_DIR/normalization/global/left$normFileSuffix"], ["\$WORK_DIR/normalization/global/right$normFileSuffix"], undef, "\$WORK_DIR/trinity_out_dir");
   }
-  submitJob($rH_cfg, $step, undef, $rO_job);
+  return $rO_job;
 }
 
 sub blastSplitQuery {
   my $rH_cfg = shift;
-  my $step = shift;
 
   my $rO_job = new Job();
   if (!$rO_job->isUp2Date()) {
@@ -467,12 +518,11 @@ sub blastSplitQuery {
 
     $rO_job->addCommand($command);
   }
-  submitJob($rH_cfg, $step, undef, $rO_job);
+  return $rO_job;
 }
 
 sub blast {
   my $rH_cfg = shift;
-  my $step = shift;
 
   my $numJobs = LoadConfig::getParam($rH_cfg, 'blast', 'blastJobs', 1, 'int');
 
@@ -509,13 +559,12 @@ sub blast {
 
       $rO_job->addCommand($command);
     }
-    submitJob($rH_cfg, $step, "blast_chunk_$jobIndex", $rO_job);
+    submitJob($rH_cfg, $H_steps{"blast"}, "chunk_$jobIndex", $rO_job);
   }
 }
 
 sub blastMergeResults {
   my $rH_cfg = shift;
-  my $step = shift;
 
   my $rO_job = new Job();
   if (!$rO_job->isUp2Date()) {
@@ -538,31 +587,26 @@ sub blastMergeResults {
 
     $rO_job->addCommand($command);
   }
-  submitJob($rH_cfg, $step, undef, $rO_job);
+  return $rO_job;
 }
 
 # The RSEM reference assembly is created once only, and then used by all RSEM read-set jobs in parallel
 sub rsemPrepareReference {
   my $rH_cfg = shift;
-  my $step = shift;
 
-  my $rO_job = Trinity::rsemPrepareReference($rH_cfg, "\$WORK_DIR");
-  submitJob($rH_cfg, $step, undef, $rO_job);
+  return Trinity::rsemPrepareReference($rH_cfg, "\$WORK_DIR");
 }
 
 # RSEM abundance estimation is performed by read-set (there should be 1 read-set / sample for RNA-Seq)
 sub rsem {
   my $rH_cfg = shift;
-  my $step = shift;
   my $sample = shift;
 
-  my $rO_job = Trinity::rsem($rH_cfg, "\$WORK_DIR", $sample);
-  submitJob($rH_cfg, $step, $sample, $rO_job);
+  return Trinity::rsem($rH_cfg, "\$WORK_DIR", $sample);
 }
 
 sub differentialGeneExpression {
   my $rH_cfg = shift;
-  my $step = shift;
 
   my $rO_job = new Job();
   if (!$rO_job->isUp2Date()) {
@@ -623,13 +667,12 @@ sub differentialGeneExpression {
 
     $rO_job->addCommand($command);
   }
-  submitJob($rH_cfg, $step, undef, $rO_job);
+  return $rO_job;
 }
 
 # Merge all sample Trimmomatic results
 sub metrics {
   my $rH_cfg = shift;
-  my $step = shift;
 
   my $metricsDirectory = "\$WORK_DIR/metrics";
   print "mkdir -p $metricsDirectory\n";
@@ -640,15 +683,11 @@ sub metrics {
   my $outputFile = "$metricsDirectory/trimming.stats";
 
   # Merge all sample Trimmomatic results
-  my $rO_job = Metrics::mergeTrimmomaticStats($rH_cfg, $libraryType, $pattern, $trimDirectory, $outputFile);
-
-  submitJob($rH_cfg, $step, undef, $rO_job);
+  return Metrics::mergeTrimmomaticStats($rH_cfg, $libraryType, $pattern, $trimDirectory, $outputFile);
 }
 
 sub deliverable {
   my $rH_cfg = shift;
-  my $step = shift;
 
-  my $rO_job = GqSeqUtils::clientReport($rH_cfg, abs_path($configFile), "\$WORK_DIR", "RNAseqDeNovo");
-  submitJob($rH_cfg, $step, undef, $rO_job);
+  return GqSeqUtils::clientReport($rH_cfg, abs_path($configFile), "\$WORK_DIR", "RNAseqDeNovo");
 }

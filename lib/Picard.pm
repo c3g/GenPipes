@@ -241,12 +241,12 @@ sub samToFastq {
     $command .= LoadConfig::moduleLoad($rH_cfg, [
       ['samToFastq', 'moduleVersion.java'],
       ['samToFastq', 'moduleVersion.picard']
-    ]) . ' &&';
-    $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'samToFastq', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'samToFastq', 'extraJavaFlags') . ' -jar \${PICARD_HOME}/SamToFastq.jar';
-    $command .= ' INPUT=' . $inputSAMBAM;
-    $command .= ' FASTQ=' . $outputFastq1;
+    ]) . " && \\\n";
+    $command .= "java -Djava.io.tmpdir=" . LoadConfig::getParam($rH_cfg, 'samToFastq', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'samToFastq', 'extraJavaFlags') . " -jar \${PICARD_HOME}/SamToFastq.jar \\\n";
+    $command .= "  INPUT=$inputSAMBAM \\\n";
+    $command .= "  FASTQ=$outputFastq1 \\\n";
     if (defined($outputFastq2)) {
-      $command .= ' SECOND_END_FASTQ=' . $outputFastq2;
+      $command .= "  SECOND_END_FASTQ=$outputFastq2 \\\n";
     }
 
     $ro_job->addCommand($command);
