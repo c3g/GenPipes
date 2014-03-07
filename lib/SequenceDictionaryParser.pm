@@ -48,7 +48,7 @@ sub readDictFile {
 
   my $refDictFile = LoadConfig::getParam($rH_cfg, 'default', 'referenceSequenceDictionary', 1, 'filepath');
   # Expand environment variables in filepath if any
-  $refDictFile = `echo $refDictFile`;
+  $refDictFile = `echo -n $refDictFile`;
 
   open(FILE, $refDictFile) or die "Cannot open " . $refDictFile . "\n";
   while (my $line = <FILE>) {

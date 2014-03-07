@@ -218,11 +218,10 @@ sub reorderSam {
 
 # Convert SAM/BAM file to fastq format
 sub samToFastq {
-  my $rH_cfg        = shift;
-  my $sampleName    = shift;
-  my $inputSAMBAM      = shift;
-  my $outputFastq1  = shift;    # If single end reads, $outputFastq1 will store the FASTQ output
-  my $outputFastq2  = shift;    # Used for paired end reads only
+  my $rH_cfg       = shift;
+  my $inputSAMBAM  = shift;
+  my $outputFastq1 = shift;    # If single end reads, $outputFastq1 will store the FASTQ output
+  my $outputFastq2 = shift;    # Used for paired end reads only
 
   my $ro_job = new Job();
 

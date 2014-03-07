@@ -147,16 +147,13 @@ sub getParam {
       } elsif ($type eq 'float') {
         $retVal =~ /^[-+]?\d*\.?\d+([eE][-+]?\d+)?$/ or die "Error: parameter \"[" . $section . "] " . $value . "\" value $retVal is not a float!";
       } elsif ($type eq 'path') {
-        my $tmpVal = `echo $retVal`;
-        chomp($tmpVal);
+        my $tmpVal = `echo -n $retVal`;
         -e $tmpVal or die "Error: parameter \"[" . $section . "] " . $value . "\" value $retVal is not a valid path!";
       } elsif ($type eq 'filepath') {
-        my $tmpVal = `echo $retVal`;
-        chomp($tmpVal);
+        my $tmpVal = `echo -n $retVal`;
         -f $tmpVal or die "Error: parameter \"[" . $section . "] " . $value . "\" value $retVal is not a valid plain file path!";
       } elsif ($type eq 'dirpath') {
-        my $tmpVal = `echo $retVal`;
-        chomp($tmpVal);
+        my $tmpVal = `echo -n $retVal`;
         -d $tmpVal or die "Error: parameter \"[" . $section . "] " . $value . "\" value $retVal is not a valid directory path!";
       } elsif ($type eq 'array') {
         if (ref($retVal) ne "ARRAY") {

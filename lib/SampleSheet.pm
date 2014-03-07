@@ -135,7 +135,7 @@ sub parseSampleSheet {
       } elsif ($values[$runTypeIdx] eq "SINGLE_END") {
         $sampleInfo{'read1File'} = $rawReadPrefix . "single.fastq.gz";
       } else {
-        die "Unrecognized run type $values[$runTypeIdx]";
+        die "Error in SampleSheet::parseSampleSheet: unrecognized run type $values[$runTypeIdx]";
       }
     } else {    # BAM format by default
       $sampleInfo{'read1File'} = $rawReadPrefix . "bam";

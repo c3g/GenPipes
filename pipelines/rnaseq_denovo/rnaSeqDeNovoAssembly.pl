@@ -75,17 +75,17 @@ use SubmitToCluster;
 use Trimmomatic;
 use Trinity;
 
-# Steps array: each step is run globally or per sample and has a list of parent steps defining step job dependencies
+# Steps array: each step is run globally or per read set (bam/paired fastq/single fastq) and has a list of parent steps defining step job dependencies
 #-------------
 my @A_steps = (
   {
     'name'   => 'trim',
-    'loop'   => 'sample',
+    'loop'   => 'readSet',
     'parent' => []
   },
   {
     'name'   => 'normalization',
-    'loop'   => 'sample',
+    'loop'   => 'readSet',
     'parent' => ['trim']
   },
   {
@@ -120,7 +120,7 @@ my @A_steps = (
   },
   {
     'name'   => 'rsem',
-    'loop'   => 'sample',
+    'loop'   => 'readSet',
     'parent' => ['rsemPrepareReference']
   },
   {
@@ -202,69 +202,87 @@ sub main {
 
   SubmitToCluster::initPipeline($workDirectory);
 
-  # Go through steps and create global or sample jobs accordingly
+  # Go through steps and create global or read-set jobs accordingly
   for (my $i = $startStep; $i <= $endStep; $i++) {
     my $step = $A_steps[$i - 1];
     my $stepName = $step->{'name'};
-    $step->{'jobIds'} = ();
 
-    # Sample step creates 1 job per sample
-    if ($step->{'loop'} eq 'sample') {
-      # Nanuq sample sheet is only necessary for sample steps
+    # Read-set step creates 1 job per read-set
+    if ($step->{'loop'} eq 'readSet') {
+      # Nanuq sample sheet is only necessary for read-set steps
       unless (defined $nanuqSampleSheet) {die "Error: nanuq sample sheet is not defined! (use -n option)\n" . getUsage()};
       unless (-f $nanuqSampleSheet) {die "Error: nanuq sample sheet $nanuqSampleSheet does not exist!\n" . getUsage()};
 
       my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($nanuqSampleSheet, LoadConfig::getParam(\%cfg, 'default', 'rawReadFormat', 0));
       foreach my $sample (keys %$rHoAoH_sampleInfo) {
+        $step->{'jobIds'}{$sample} = ();
         my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sample};
         # Sample step functions need sample and lanes parameters
         &$stepName(\%cfg, $step, $sample, $rAoH_sampleLanes);
       }
     # Global step creates 1 job only
     } else {
+      $step->{'jobIds'}{'global'} = ();
       &$stepName(\%cfg, $step);
     }
   }
 }
 
-# Generic job submission function; sample parameter is undefined for global steps
+# Generic job submission function; readSet parameter is undefined for global steps
 sub submitJob {
   my $rH_cfg = shift;
   my $step = shift;
-  my $sample = shift;
+  my $readSet = shift;
   my $rO_job = shift;
 
-  # Set job name after uppercased step name and, if sample step, sample name
-  my $stepName = $step->{'name'};
-  my $jobIdPrefix = uc($stepName);
-  my $jobIds = $jobIdPrefix . "_JOB_IDS";
-  if (defined $sample) {
-    $jobIdPrefix .= "_" . $sample;
+  # If job is up to date, nothing to do
+  unless ($rO_job->isUp2Date()) {
+
+    # Set job name after uppercased step name and, if readSet step, readSet name
+    my $stepName = $step->{'name'};
+    my $jobIdPrefix = uc($stepName);
+    if (defined $readSet) {
+      $jobIdPrefix .= "_" . $readSet;
+    }
+  
+    # Set job dependencies
+    my @dependencyJobIds = ();
+  
+    # Retrieve the list of step parents
+    my @A_stepParents = map {$H_steps{$_}} @{$step->{'parent'}};
+  
+    for my $stepParent (@A_stepParents) {
+      if ($stepParent->{'jobIds'}) {
+        # If read-set-only job depends on read-set-only parent job, retrieve job ID dependencies for this read set only
+        if ($step->{'loop'} eq 'readSet' and $stepParent->{'loop'} eq 'readSet') {
+          push(@dependencyJobIds, @{$stepParent->{'jobIds'}{$readSet}});
+        # Otherwise, retrieve all parent job ID dependencies
+        } else {
+          for my $value (values %{$stepParent->{'jobIds'}}) {
+            if ($value) {
+              push(@dependencyJobIds, @$value);
+            }
+          }
+        }
+      }
+    }
+
+    # Concatenate all job IDs with cluster dependency separator
+    my $dependencies = join (LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep'), map {"\$" . $_} @dependencyJobIds);
+  
+    # Write out the job submission
+    my $jobId = SubmitToCluster::printSubmitCmd($rH_cfg, $stepName, undef, $jobIdPrefix, $dependencies, $readSet, $rO_job);
+  
+    # Store step job ID for future dependencies retrieval
+    if ($readSet) {
+      push (@{$step->{'jobIds'}{$readSet}}, $jobId);
+    } else {
+      push (@{$step->{'jobIds'}{'global'}}, $jobId);
+    }
   }
-
-  # Set job dependencies
-  my $dependencies = "";
-
-  # Retrieve the list of step parents
-  my @A_stepParents = map {$H_steps{$_}} @{$step->{'parent'}};
-
-  # Retrieve the list of lists of step parent job IDs if any
-  my @AoA_stepParentJobIds = map {defined $_->{'jobIds'} ? $_->{'jobIds'} : []} @A_stepParents;
-
-  # Flatten this list
-  my @A_stepParentJobIds = map {@$_} @AoA_stepParentJobIds;
-
-  # Concatenate all job IDs with cluster dependency separator
-  $dependencies = join (LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep'), map {"\$" . $_} @A_stepParentJobIds);
-
-  # Write out the job submission
-  my $jobId = SubmitToCluster::printSubmitCmd($rH_cfg, $stepName, undef, $jobIdPrefix, $dependencies, $sample, $rO_job);
-
-  # Store step job ID for future dependencies retrieval
-  push (@{$step->{'jobIds'}}, $jobId);
 }
 
-sub getReadType {
+sub getRunType {
   my $nanuqSampleSheet = shift;
 
   my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($nanuqSampleSheet);
@@ -305,15 +323,20 @@ sub trim {
   my $sample = shift;
   my $rAoH_sampleLanes = shift;
 
-  # Check raw read directory
-  my $rawReadDirectory = LoadConfig::getParam($rH_cfg, 'default', 'rawReadDir', 1, 'dirpath');
-
   # Create trim job per sample per lane
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
 
-    my $trimDirectory = "\$WORK_DIR/reads/$sample/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
-    print "mkdir -p $trimDirectory\n";
-    my $rO_job = Trimmomatic::trim($rH_cfg, $sample, $rH_laneInfo, $trimDirectory);
+    my $baseDirectory = "$sample/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
+    my $rawDirectory = LoadConfig::getParam($rH_cfg, 'trim', 'rawReadDir', 1, 'dirpath') . "/$baseDirectory";
+    my $input1 = $rawDirectory . $rH_laneInfo->{'read1File'};
+    my $trimDirectory = "\$WORK_DIR/reads/$baseDirectory";
+    my $rO_job = Trimmomatic::trim(
+      $rH_cfg,
+      $rawDirectory . "/" . $rH_laneInfo->{'read1File'},
+      $rH_laneInfo->{'read2File'} ? $rawDirectory . "/" . $rH_laneInfo->{'read2File'} : undef,
+      $trimDirectory,
+      $rH_laneInfo->{'qualOffset'}
+    );
 
     submitJob($rH_cfg, $step, $sample . "_" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, $rO_job);
   }
@@ -351,7 +374,7 @@ sub normalizationMergeResults {
   my $rH_cfg = shift;
   my $step = shift;
 
-  my $readType = getReadType($nanuqSampleSheet);
+  my $runType = getRunType($nanuqSampleSheet);
 
   my @A_leftFastq = ();
   my @A_rightFastq = ();
@@ -371,9 +394,9 @@ sub normalizationMergeResults {
 
     for my $rH_laneInfo (@$rAoH_sampleLanes) {
       my $normDirectory = "\$WORK_DIR/normalization/" . $sample . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
-      if ($readType eq "single") {
+      if ($runType eq "single") {
         push (@A_singleFastq, "$normDirectory/single$normFileSuffix");
-      } elsif ($readType eq "paired") {
+      } elsif ($runType eq "paired") {
         push (@A_leftFastq, "$normDirectory/left$normFileSuffix");
         push (@A_rightFastq, "$normDirectory/right$normFileSuffix");
       }
@@ -382,7 +405,7 @@ sub normalizationMergeResults {
 
   my $rO_job;
 
-  if ($readType eq "single") {
+  if ($runType eq "single") {
     # Single-end reads
     $rO_job = Trinity::normalize_by_kmer_coverage($rH_cfg, undef, undef, \@A_singleFastq, "\$WORK_DIR/normalization/global");
   } else {
@@ -397,7 +420,7 @@ sub trinity {
   my $rH_cfg = shift;
   my $step = shift;
 
-  my $readType = getReadType($nanuqSampleSheet);
+  my $runType = getRunType($nanuqSampleSheet);
 
   my $maxCoverage = LoadConfig::getParam($rH_cfg, 'normalization', 'maxCoverage', 1, 'int');
   my $kmerSize = LoadConfig::getParam($rH_cfg, 'normalization', 'kmerSize', 1, 'int');
@@ -406,7 +429,7 @@ sub trinity {
   my $normFileSuffix = ".normalized_K" . $kmerSize . "_C" . $maxCoverage . "_pctSD" . $maxPctStdev . ".fq";
 
   my $rO_job;
-  if ($readType eq "single") {
+  if ($runType eq "single") {
     $rO_job = Trinity::trinity($rH_cfg, undef, undef, ["\$WORK_DIR/normalization/global/single$normFileSuffix"], "\$WORK_DIR/trinity_out_dir");
   } else {
     $rO_job = Trinity::trinity($rH_cfg, ["\$WORK_DIR/normalization/global/left$normFileSuffix"], ["\$WORK_DIR/normalization/global/right$normFileSuffix"], undef, "\$WORK_DIR/trinity_out_dir");
@@ -518,7 +541,7 @@ sub blastMergeResults {
   submitJob($rH_cfg, $step, undef, $rO_job);
 }
 
-# The RSEM reference assembly is created once only, and then used by all RSEM sample jobs in parallel
+# The RSEM reference assembly is created once only, and then used by all RSEM read-set jobs in parallel
 sub rsemPrepareReference {
   my $rH_cfg = shift;
   my $step = shift;
@@ -527,7 +550,7 @@ sub rsemPrepareReference {
   submitJob($rH_cfg, $step, undef, $rO_job);
 }
 
-# RSEM abundance estimation is performed by sample
+# RSEM abundance estimation is performed by read-set (there should be 1 read-set / sample for RNA-Seq)
 sub rsem {
   my $rH_cfg = shift;
   my $step = shift;

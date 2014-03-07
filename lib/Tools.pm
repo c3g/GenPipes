@@ -43,18 +43,12 @@ use LoadConfig;
 
 # SUB
 #-----------------------
-sub getToolShedDir {
-  my $currentDir = dirname(__FILE__);
-  return abs_path($currentDir.'/../tool_shed');
-}
 
 sub filterNStretches {
   my $rH_cfg      = shift;
   my $sampleName  = shift;
   my $inputVCF    = shift;
   my $outputVCF   = shift;
-
-  my $toolShedDir = getToolShedDir();
 
   my $ro_job = new Job();
   $ro_job->testInputOutputs([$inputVCF], [$outputVCF]);

@@ -58,6 +58,9 @@ sub initPipeline {
     $workDir = "`pwd`";
   }
 
+  # Export WORK_DIR environment variable within Perl script for reuse in file paths
+  $ENV{'WORK_DIR'} = $workDir;
+
   # Add script name (without suffix) as job list filename prefix (in practice, identical to pipeline name)
   my $jobListPrefix = fileparse($0, qr/\.[^.]*/) . "_";
 
@@ -135,7 +138,7 @@ sub printSubmitCmd {
   my $rA_FilesToTest = $rO_job->getFilesToTest();
   # Erase dones, on all jobs of the series
   if (defined($rA_FilesToTest) && @{$rA_FilesToTest} > 0) {
-    print 'echo "rm -f ' . join(' ', @{$rA_FilesToTest}) . ' ; ';
+    print 'echo "rm -f ' . join(' ', @{$rA_FilesToTest}) . " && \\\n";
   } else {
     print 'echo "';
   }
