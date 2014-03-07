@@ -79,3 +79,6 @@ perl -MCPAN -e 'install common::sense'
 perl -MCPAN -e 'install version'
 perl -MCPAN -e 'install Statistics::Descriptive'
 perl -MCPAN -e 'install Module::Build'
+
+chmod -R 775 $MUGQIC_INSTALL_HOME/software/perl
+
