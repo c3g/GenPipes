@@ -354,7 +354,7 @@ sub aligning{
     my $qfilterRead=LoadConfig::getParam($rH_cfg, 'aln', 'filterReadsMAPQ', 0, 'int');
     
     # Threshold for MAPQ to filter reads
-    if (!defined($qfilterRead) || $qfilterRead < 1 ){
+    if (!defined($qfilterRead) || $qfilterRead < 1  || $qfilterRead eq "" ){
       $qfilterRead=15;
     }
 
