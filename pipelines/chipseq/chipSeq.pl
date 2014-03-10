@@ -354,7 +354,7 @@ sub aligning{
     my $qfilterRead=LoadConfig::getParam($rH_cfg, 'aln', 'filterReadsMAPQ', 0, 'int');
     
     # Threshold for MAPQ to filter reads
-    if (!defined($qfilterRead) || $qfilterRead < 1  || $qfilterRead eq "" ){
+    if (!defined($qfilterRead) || $qfilterRead < 1 ){
       $qfilterRead=15;
     }
 
@@ -743,7 +743,7 @@ sub annotation {
 
   my $annotationJobIdGroups = undef;
   if ($numberTreatments >= 1) {
-    print 'mkdir -p  annotation/ '.'\n';
+    print "mkdir -p annotation\n";
     # At least one treatment
     for (my $j = 0; $j < $numberTreatments; $j++) {
       if ($numberControls == 1) {
