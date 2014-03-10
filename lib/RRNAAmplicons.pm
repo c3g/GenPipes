@@ -1,5 +1,5 @@
 
-#!/usr/env/perl
+#!/usr/bin/env perl
 
 =head1 NAME
 
@@ -63,16 +63,20 @@ sub mergeBarcodes{
 		# are in headers.
 		# Loop through each samples in sample sheet
 		#$cmd .= 'module load '. LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' && ';
-		my $rawReadDir  = LoadConfig::getParam($rH_cfg, 'default','rawReadDir');
-		$cmd_R1 .= 'module load ' . LoadConfig::getParam($rH_cfg, 'perl', 'moduleVersion.perl').' && ';
-		$cmd_R1 .= 'module load ' . LoadConfig::getParam($rH_cfg, 'tools', 'moduleVersion.tools').' && ';	 
-		$cmd_R1 .= "module load " . LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime'). " && memtime cat ";
+		my $rawReadDir  = LoadConfig::getParam($rH_cfg, 'default','rawReadDir', 1, 'dirpath');
+    $cmd_R1 .= LoadConfig::moduleLoad($rH_cfg, [
+      ['perl', 'moduleVersion.perl'],
+      ['tools', 'moduleVersion.tools'],
+      ['memtime', 'moduleVersion.memtime']
+    ]) . ' && memtime cat ';
 		$cmd_R2 .= " memtime cat ";
 		for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
 			my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sampleName};
 			for my $rH_laneInfo (@$rAoH_sampleLanes) { #this rH_laneInfo contains the complete line info from the sample sheet for this sample.
-				$cmd_R1 .= " " . $rawReadDir .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' . $sampleName . "." . $rH_laneInfo->{'libraryBarcode'} . "." . LoadConfig::getParam($rH_cfg, 'default','qual') . ".pair1.fastq.gz";
-				$cmd_R2 .= " " . $rawReadDir .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' . $sampleName . "." . $rH_laneInfo->{'libraryBarcode'} . "." . LoadConfig::getParam($rH_cfg, 'default','qual') . ".pair2.fastq.gz";
+				#$cmd_R1 .= " " . $rawReadDir .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' . $sampleName . "." . $rH_laneInfo->{'libraryBarcode'} . "." . LoadConfig::getParam($rH_cfg, 'default','qual', 1, 'int') . ".pair1.fastq.gz";
+				#$cmd_R2 .= " " . $rawReadDir .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' . $sampleName . "." . $rH_laneInfo->{'libraryBarcode'} . "." . LoadConfig::getParam($rH_cfg, 'default','qual', 1, 'int') . ".pair2.fastq.gz";
+				$cmd_R1 .= " " . $rawReadDir .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' . $sampleName . "." . LoadConfig::getParam($rH_cfg, 'default','qual', 1, 'int') . ".pair1.fastq.gz";
+				$cmd_R2 .= " " . $rawReadDir .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' . $sampleName . "." . LoadConfig::getParam($rH_cfg, 'default','qual', 1, 'int') . ".pair2.fastq.gz";
 			}
 		}
 		$cmd_R1 .= " | gunzip -c > ".$outdir."/raw_reads/reads_1.fastq";
@@ -105,10 +109,12 @@ sub dukWrapper{
 	
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'duk', 'moduleVersion.duk').' && ';	 
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'tools', 'moduleVersion.tools').' && ';	 
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' && ';
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'perl', 'moduleVersion.perl').' && ';
+    $cmd .= LoadConfig::moduleLoad($rH_cfg, [
+      ['memtime', 'moduleVersion.memtime'],
+      ['tools', 'moduleVersion.tools'],
+      ['perl', 'moduleVersion.perl'],
+      ['duk', 'moduleVersion.duk']
+    ]) . ' && ';
 		$cmd .= ' memtime ';	 
 		$cmd .= ' contamWrapper.pl';
 		$cmd .= ' --infile ' . $infileFastq;
@@ -116,7 +122,7 @@ sub dukWrapper{
 		$cmd .= ' --outfile_unmatched ' . $ncontam;
 		$cmd .= ' --log ' . $log;
 		$cmd .= ' --db ' . $db;
-		$cmd .= ' --num_threads ' . LoadConfig::getParam($rH_cfg, 'duk_wrapper', 'num_threads');
+		$cmd .= ' --num_threads ' . LoadConfig::getParam($rH_cfg, 'duk_wrapper', 'num_threads', 1, 'int');
 	
 		$ro_job->addCommand($cmd);
 	}
@@ -136,19 +142,21 @@ sub duk{
 	
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'duk', 'moduleVersion.duk').' && ';	 
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'tools', 'moduleVersion.tools').' && ';	 
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').';';	 
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'perl', 'moduleVersion.perl').' && ';
+    $cmd .= LoadConfig::moduleLoad($rH_cfg, [
+      ['memtime', 'moduleVersion.memtime'],
+      ['tools', 'moduleVersion.tools'],
+      ['perl', 'moduleVersion.perl'],
+      ['duk', 'moduleVersion.duk']
+    ]) . ' && ';
 		$cmd .= ' memtime ';
 		$cmd .= ' gunzip -c ' . $infile . ' |' ;	
 		$cmd .= ' duk';
 		$cmd .= ' -o ' . $log;
 		$cmd .= ' -n ' . $ncontam;
 		$cmd .= ' -m ' . $contam;
-		$cmd .= ' -k '.LoadConfig::getParam($rH_cfg, 'duk', 'k');
-		$cmd .= ' -s '.LoadConfig::getParam($rH_cfg, 'duk', 's');
-		$cmd .= ' -c '.LoadConfig::getParam($rH_cfg, 'duk', 'c');
+		$cmd .= ' -k '.LoadConfig::getParam($rH_cfg, 'duk', 'k', 1, 'int');
+		$cmd .= ' -s '.LoadConfig::getParam($rH_cfg, 'duk', 's', 1, 'int');
+		$cmd .= ' -c '.LoadConfig::getParam($rH_cfg, 'duk', 'c', 1, 'int');
 		$cmd .= ' ' . $db;		
 	
 		$ro_job->addCommand($cmd);
@@ -168,15 +176,17 @@ sub splitBarcodes{
 	
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' && ';
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'tools', 'moduleVersion.tools').' && ';	 
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'perl', 'moduleVersion.perl').' && ';
+    $cmd .= LoadConfig::moduleLoad($rH_cfg, [
+      ['memtime', 'moduleVersion.memtime'],
+      ['tools', 'moduleVersion.tools'],
+      ['perl', 'moduleVersion.perl']
+    ]) . ' && ';
 		$cmd .=	' memtime ';
 		$cmd .= ' barcodes.pl';
 		$cmd .= ' --infile ' . $infile;
 		$cmd .= ' --barcodes ' . $barcodes;
 		$cmd .= ' --outfile ' . $outfile;
-		$cmd .= ' --num_threads '. LoadConfig::getParam($rH_cfg, 'barcodes', 'num_threads');
+		$cmd .= ' --num_threads '. LoadConfig::getParam($rH_cfg, 'barcodes', 'num_threads', 1, 'int');
 		$cmd .= ' --log ' . $log;
 
 		$ro_job->addCommand($cmd);
@@ -196,16 +206,18 @@ sub removeUnpairedReads{
 	
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' && ';
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'tools', 'moduleVersion.tools').' && ';	 
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'perl', 'moduleVersion.perl').' && ';
+    $cmd .= LoadConfig::moduleLoad($rH_cfg, [
+      ['memtime', 'moduleVersion.memtime'],
+      ['tools', 'moduleVersion.tools'],
+      ['perl', 'moduleVersion.perl']
+    ]) . ' && ';
 		$cmd .=	' memtime ';
 		$cmd .= ' removeUnpaired.pl';
 		$cmd .= ' --infile '. $infile;
 		$cmd .= ' --outfile_paired ' . $outfilePaired;
 		$cmd .= ' --outfile_1 ' . $unpairedR1;
 		$cmd .= ' --outfile_2 ' . $unpairedR2;
-		$cmd .= ' --num_threads '.LoadConfig::getParam($rH_cfg, 'remove_unpaired', 'num_threads');
+		$cmd .= ' --num_threads '.LoadConfig::getParam($rH_cfg, 'remove_unpaired', 'num_threads', 1, 'int');
 	
 		$ro_job->addCommand($cmd);
 	}
@@ -223,15 +235,17 @@ sub splitPairs{
 	
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' && ';
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'tools', 'moduleVersion.tools').' && ';	 
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'perl', 'moduleVersion.perl').' && ';
+    $cmd .= LoadConfig::moduleLoad($rH_cfg, [
+      ['memtime', 'moduleVersion.memtime'],
+      ['tools', 'moduleVersion.tools'],
+      ['perl', 'moduleVersion.perl']
+    ]) . ' && ';
 		$cmd .=	' memtime ';
 		$cmd .= ' splitPairs.pl';
 		$cmd .= ' --infile ' . $infile;
 		$cmd .= ' --outfile_1 ' . $outfileR1;
 		$cmd .= ' --outfile_2 ' . $outfileR2;
-		$cmd .= ' --num_threads '.LoadConfig::getParam($rH_cfg, 'split_pairs', 'num_threads');
+		$cmd .= ' --num_threads '.LoadConfig::getParam($rH_cfg, 'split_pairs', 'num_threads', 1, 'int');
 	
 		$ro_job->addCommand($cmd);
 	}
@@ -251,21 +265,23 @@ sub generateQscoreSheet{
 	
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' && ';
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'fastx', 'moduleVersion.fastx').' && ';	 
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'tools', 'moduleVersion.tools').' && ';	 
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'perl', 'moduleVersion.perl').' && ';
+    $cmd .= LoadConfig::moduleLoad($rH_cfg, [
+      ['memtime', 'moduleVersion.memtime'],
+      ['fastx', 'moduleVersion.fastx'],
+      ['tools', 'moduleVersion.tools'],
+      ['perl', 'moduleVersion.perl']
+    ]) . ' && ';
 		$cmd .=	' memtime ';
 		$cmd .= 'qscoreSheets.pl ';
 		$cmd .= ' --fastq ' . $infile;
-		$cmd .= ' --tmp ' . LoadConfig::getParam($rH_cfg, 'default', 'tmpDir') ;
+		$cmd .= ' --tmp ' . LoadConfig::getParam($rH_cfg, 'default', 'tmpDir', 1, 'dirpath') ;
 		$cmd .= ' --prefix ' . $prefix;
 		$cmd .= ' --suffix suffix';
 		$cmd .= ' --log ' . $log;
 		$cmd .= ' --outfile ' . $outfile;
-		$cmd .= ' --phred ' . LoadConfig::getParam($rH_cfg, 'default', 'qual') ;
+		$cmd .= ' --phred ' . LoadConfig::getParam($rH_cfg, 'default', 'qual', 1, 'int') ;
 		$cmd .= ' --barcodes ' . $barcodes;
-		$cmd .= ' --num_threads '. LoadConfig::getParam($rH_cfg, 'qscore_sheet', 'num_threads');
+		$cmd .= ' --num_threads '. LoadConfig::getParam($rH_cfg, 'qscore_sheet', 'num_threads', 1, 'int');
 		
 		$ro_job->addCommand($cmd);
 	}
@@ -283,10 +299,12 @@ sub generateQscoreGraphSingle{
 	
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
-		$cmd .= 'module load ' . LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' && ';
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'perl', 'moduleVersion.perl').' && ';
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'tools', 'moduleVersion.tools').' && ';	 
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'R', 'moduleVersion.R').' && ';	 
+    $cmd .= LoadConfig::moduleLoad($rH_cfg, [
+      ['memtime', 'moduleVersion.memtime'],
+      ['R', 'moduleVersion.R'],
+      ['tools', 'moduleVersion.tools'],
+      ['perl', 'moduleVersion.perl']
+    ]) . ' && ';
 		$cmd .=	' memtime ';
 		$cmd .= ' qscorePlots.pl';
 		$cmd .= ' --infile_1 ' . $infile;
@@ -311,10 +329,12 @@ sub generateQscoreGraphPaired{
 	
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
-		$cmd .= 'module load ' . LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' && ';
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'perl', 'moduleVersion.perl').' && ';
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'tools', 'moduleVersion.tools').' && ';	 
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'R', 'moduleVersion.R').' && ';	 
+    $cmd .= LoadConfig::moduleLoad($rH_cfg, [
+      ['memtime', 'moduleVersion.memtime'],
+      ['R', 'moduleVersion.R'],
+      ['tools', 'moduleVersion.tools'],
+      ['perl', 'moduleVersion.perl']
+    ]) . ' && ';
 		$cmd .=	' memtime ';
 		$cmd .= ' qscorePlots.pl';
 		$cmd .= ' --infile_1 ' . $infileR1;
@@ -341,9 +361,11 @@ sub cutReads{
 	
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
-		$cmd .= 'module load ' . LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' && ';
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'perl', 'moduleVersion.perl').' && ';
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'tools', 'moduleVersion.tools').' && ';	 
+    $cmd .= LoadConfig::moduleLoad($rH_cfg, [
+      ['memtime', 'moduleVersion.memtime'],
+      ['tools', 'moduleVersion.tools'],
+      ['perl', 'moduleVersion.perl']
+    ]) . ' && ';
 		$cmd .=	' memtime ';
 		$cmd .= 'cutFastqSeq.pl ';
 		$cmd .= ' --infile ' . $infile;
@@ -368,22 +390,24 @@ sub flash{
 	
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
-		$cmd .= 'module load ' . LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' && ';
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'perl', 'moduleVersion.perl').' && ';
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'tools', 'moduleVersion.tools').' && ';	 
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'flash', 'moduleVersion.flash').' && ';	 
+    $cmd .= LoadConfig::moduleLoad($rH_cfg, [
+      ['memtime', 'moduleVersion.memtime'],
+      ['flash', 'moduleVersion.flash'],
+      ['tools', 'moduleVersion.tools'],
+      ['perl', 'moduleVersion.perl']
+    ]) . ' && ';
 		$cmd .=	' memtime ';
 		$cmd .= ' flash.pl';
 		$cmd .= ' --infile_1 ' . $infileR1;
 		$cmd .= ' --infile_2 ' . $infileR2;
 		$cmd .= ' --prefix ' . $prefix;
 		$cmd .= ' --outdir ' . $outdir;
-		$cmd .= ' --n ' . LoadConfig::getParam($rH_cfg, 'flash', 'sampling');
-		$cmd .= ' --m ' . LoadConfig::getParam($rH_cfg, 'flash', 'minOverlap');
-		$cmd .= ' --M ' . LoadConfig::getParam($rH_cfg, 'flash', 'maxOverlap');
-		$cmd .= ' --x ' . LoadConfig::getParam($rH_cfg, 'flash', 'percentMismatch');
-		$cmd .= ' --p ' . LoadConfig::getParam($rH_cfg, 'flash', 'phred');
-		$cmd .= ' --num_threads ' . LoadConfig::getParam($rH_cfg, 'flash', 'num_threads');
+		$cmd .= ' --n ' . LoadConfig::getParam($rH_cfg, 'flash', 'sampling', 1, 'int');
+		$cmd .= ' --m ' . LoadConfig::getParam($rH_cfg, 'flash', 'minOverlap', 1, 'int');
+		$cmd .= ' --M ' . LoadConfig::getParam($rH_cfg, 'flash', 'maxOverlap', 1, 'int');
+		$cmd .= ' --x ' . LoadConfig::getParam($rH_cfg, 'flash', 'percentMismatch', 1, 'float');
+		$cmd .= ' --p ' . LoadConfig::getParam($rH_cfg, 'flash', 'phred', 1, 'int');
+		$cmd .= ' --num_threads ' . LoadConfig::getParam($rH_cfg, 'flash', 'num_threads', 1, 'int');
 
 		$ro_job->addCommand($cmd);
 	}
@@ -403,27 +427,29 @@ sub removePrimers{
 	
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
-		$cmd .= 'module load ' . LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime') . ' && ';
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'perl', 'moduleVersion.perl').' && ';
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'tools', 'moduleVersion.tools').' && ';	 
+    $cmd .= LoadConfig::moduleLoad($rH_cfg, [
+      ['memtime', 'moduleVersion.memtime'],
+      ['tools', 'moduleVersion.tools'],
+      ['perl', 'moduleVersion.perl']
+    ]) . ' && ';
 		$cmd .=	' memtime ';
 		$cmd .= 'itagsQC.pl';
 		$cmd .= ' --infile ' . $infile;
 		if($revPrimer ne 'null'){
 			$cmd .= ' --primer_3_prime ' . $revPrimer;
-			$cmd .= ' --length_3_prime ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'length3Prime');	
+			$cmd .= ' --length_3_prime ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'length3Prime', 1, 'int');	
 		}if($fwdPrimer ne 'null'){
 			$cmd .= ' --primer_5_prime ' . $fwdPrimer;
-			$cmd .= ' --length_5_prime ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'length5Prime') ;	
+			$cmd .= ' --length_5_prime ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'length5Prime', 1, 'int') ;	
 		}
 		#$cmd .= ' --qscore_1 ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'qscore1');
 		#$cmd .= ' --qscore_2 ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'qscore2');
 		$cmd .= ' --outfile ' . $outfile;
 		$cmd .= ' --outfile_failed ' . $outfileFailed;
-		$cmd .= ' --num_threads ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'num_threads');
-		$cmd .= ' --qual ' . LoadConfig::getParam($rH_cfg, 'default', 'qual');
+		$cmd .= ' --num_threads ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'num_threads', 1, 'int');
+		$cmd .= ' --qual ' . LoadConfig::getParam($rH_cfg, 'default', 'qual', 1, 'int');
 		#$cmd .= ' --lq_threshold ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'lq_threshold');
-		$cmd .= ' --primer_mismatch ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'primerMismatch');
+		$cmd .= ' --primer_mismatch ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'primerMismatch', 1, 'int');
 		#$cmd .= ' --min_length ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'minlength');
 		#$cmd .= ' --N ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'N');
 	
@@ -445,29 +471,31 @@ sub itagsQC{
 	
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
-		$cmd .= 'module load ' . LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime') . ' && ';
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'perl', 'moduleVersion.perl').' && ';
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'tools', 'moduleVersion.tools').' && ';	 
+    $cmd .= LoadConfig::moduleLoad($rH_cfg, [
+      ['memtime', 'moduleVersion.memtime'],
+      ['tools', 'moduleVersion.tools'],
+      ['perl', 'moduleVersion.perl']
+    ]) . ' && ';
 		$cmd .=	' memtime ';
 		$cmd .= 'itagsQC.pl';
 		$cmd .= ' --infile ' . $infile;
 		if($revPrimer ne 'null'){
 			$cmd .= ' --primer_3_prime ' . $revPrimer;
-			$cmd .= ' --length_3_prime ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'length3Prime');	
+			$cmd .= ' --length_3_prime ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'length3Prime', 1, 'int');	
 		}if($fwdPrimer ne 'null'){
 			$cmd .= ' --primer_5_prime ' . $fwdPrimer;
-			$cmd .= ' --length_5_prime ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'length5Prime') ;	
+			$cmd .= ' --length_5_prime ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'length5Prime', 1, 'int') ;	
 		}
-		$cmd .= ' --qscore_1 ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'qscore1');
-		$cmd .= ' --qscore_2 ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'qscore2');
+		$cmd .= ' --qscore_1 ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'qscore1', 1, 'int');
+		$cmd .= ' --qscore_2 ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'qscore2', 1, 'int');
 		$cmd .= ' --outfile ' . $outfile;
 		$cmd .= ' --outfile_failed ' . $outfileFailed;
-		$cmd .= ' --num_threads ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'num_threads');
-		$cmd .= ' --qual ' . LoadConfig::getParam($rH_cfg, 'default', 'qual');
-		$cmd .= ' --lq_threshold ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'lq_threshold');
-		$cmd .= ' --primer_mismatch ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'primerMismatch');
-		$cmd .= ' --min_length ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'minlength');
-		$cmd .= ' --N ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'N');
+		$cmd .= ' --num_threads ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'num_threads', 1, 'int');
+		$cmd .= ' --qual ' . LoadConfig::getParam($rH_cfg, 'default', 'qual', 1, 'int');
+		$cmd .= ' --lq_threshold ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'lq_threshold', 1, 'int');
+		$cmd .= ' --primer_mismatch ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'primerMismatch', 1, 'float');
+		$cmd .= ' --min_length ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'minlength', 1, 'int');
+		$cmd .= ' --N ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'N', 1, 'int');
 	
 		$ro_job->addCommand($cmd);
 	}
@@ -489,9 +517,11 @@ sub countReport{
 	
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
-		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' && ';
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'perl', 'moduleVersion.perl').' && ';
-		$cmd .= ' module load '.LoadConfig::getParam($rH_cfg, 'tools', 'moduleVersion.tools').' && ';	 
+    $cmd .= LoadConfig::moduleLoad($rH_cfg, [
+      ['memtime', 'moduleVersion.memtime'],
+      ['tools', 'moduleVersion.tools'],
+      ['perl', 'moduleVersion.perl']
+    ]) . ' && ';
 		$cmd .=	' memtime ';
 		$cmd .= 'countReport.pl';
 		foreach(@$rA_files){
@@ -521,9 +551,11 @@ sub txtToPdf{
 	
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
-		$cmd .= 'module load ' . LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' && ';
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'perl', 'moduleVersion.perl').' && ';
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'tools', 'moduleVersion.tools').' && ';	 
+    $cmd .= LoadConfig::moduleLoad($rH_cfg, [
+      ['memtime', 'moduleVersion.memtime'],
+      ['tools', 'moduleVersion.tools'],
+      ['perl', 'moduleVersion.perl']
+    ]) . ' && ';
 		$cmd .=	' memtime ';
 		$cmd .= 'txtToPdf.pl';
 		$cmd .= ' --infile ' . $infile;
@@ -544,10 +576,12 @@ sub mergePdf{
 	
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
-		$cmd .= 'module load ' . LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' && ';
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'perl', 'moduleVersion.perl').' && ';
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'ghostscript', 'moduleVersion.ghostscript').' && ';
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'tools', 'moduleVersion.tools').' && ';	 
+    $cmd .= LoadConfig::moduleLoad($rH_cfg, [
+      ['memtime', 'moduleVersion.memtime'],
+      ['ghostscript', 'moduleVersion.ghostscript'],
+      ['tools', 'moduleVersion.tools'],
+      ['perl', 'moduleVersion.perl']
+    ]) . ' && ';
 		$cmd .=	' memtime ';
 		$cmd .= ' ' . $command;
 		$cmd .= ' && touch ' . $dummyOutfile; 
@@ -568,17 +602,19 @@ sub clustering1{
 	
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
-		$cmd .= 'module load ' . LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' && ';
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'perl', 'moduleVersion.perl').' && ';
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'tools', 'moduleVersion.tools').' && ';	 
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'usearch', 'moduleVersion.usearch').' && ';	 
+    $cmd .= LoadConfig::moduleLoad($rH_cfg, [
+      ['memtime', 'moduleVersion.memtime'],
+      ['usearch', 'moduleVersion.usearch'],
+      ['tools', 'moduleVersion.tools'],
+      ['perl', 'moduleVersion.perl']
+    ]) . ' && ';
 		$cmd .=	' memtime ';
 		$cmd .= ' clustering1.pl';
 		$cmd .= ' --infile_fastq ' . $infile;
-		$cmd .= ' --ref_db ' . LoadConfig::getParam($rH_cfg, 'DB', 'chimeras'); 
+		$cmd .= ' --ref_db ' . LoadConfig::getParam($rH_cfg, 'DB', 'chimeras', 1, 'filepath'); 
 		$cmd .= ' --barcodes ' . $barcodes;
 		$cmd .= ' --outdir ' . $outdir;
-		$cmd .= ' --num_threads ' . LoadConfig::getParam($rH_cfg, 'clustering', 'num_threads');
+		$cmd .= ' --num_threads ' . LoadConfig::getParam($rH_cfg, 'clustering', 'num_threads', 1, 'int');
 		#$cmd .= ' --start_at 4';
 	
 		$ro_job->addCommand($cmd);
@@ -597,17 +633,19 @@ sub clustering2{
 	
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
-		$cmd .= 'module load ' . LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' && ';
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'perl', 'moduleVersion.perl').' && ';
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'tools', 'moduleVersion.tools').' && ';	 
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'usearch', 'moduleVersion.usearch').' && ';	 
+    $cmd .= LoadConfig::moduleLoad($rH_cfg, [
+      ['memtime', 'moduleVersion.memtime'],
+      ['usearch', 'moduleVersion.usearch'],
+      ['tools', 'moduleVersion.tools'],
+      ['perl', 'moduleVersion.perl']
+    ]) . ' && ';
 		$cmd .=	' memtime ';
 		$cmd .= ' clustering2.pl';
 		$cmd .= ' --infile_fastq ' . $infile;
-		$cmd .= ' --ref_db ' . LoadConfig::getParam($rH_cfg, 'DB', 'chimeras'); 
+		$cmd .= ' --ref_db ' . LoadConfig::getParam($rH_cfg, 'DB', 'chimeras', 1, 'path'); 
 		$cmd .= ' --barcodes ' . $barcodes;
 		$cmd .= ' --outdir ' . $outdir;
-		$cmd .= ' --num_threads ' . LoadConfig::getParam($rH_cfg, 'clustering', 'num_threads');
+		$cmd .= ' --num_threads ' . LoadConfig::getParam($rH_cfg, 'clustering', 'num_threads', 1, 'int');
 		#$cmd .= ' --start_at 4';
 	
 		$ro_job->addCommand($cmd);
@@ -626,18 +664,20 @@ sub clustering3{
 	
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
-		$cmd .= 'module load ' . LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' && ';
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'perl', 'moduleVersion.perl').' && ';
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'tools', 'moduleVersion.tools').' && ';	 
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'usearch', 'moduleVersion.usearch').' && ';	 
-		$cmd .= ' module load ' . LoadConfig::getParam($rH_cfg, 'dnaclust', 'moduleVersion.dnaclust').' && ';	 
+    $cmd .= LoadConfig::moduleLoad($rH_cfg, [
+      ['memtime', 'moduleVersion.memtime'],
+      ['usearch', 'moduleVersion.usearch'],
+      ['dnaclust', 'moduleVersion.dnaclust'],
+      ['tools', 'moduleVersion.tools'],
+      ['perl', 'moduleVersion.perl']
+    ]) . ' && ';
 		$cmd .=	' memtime ';
 		$cmd .= ' clustering3.pl';
 		$cmd .= ' --infile_fastq ' . $infile;
-		$cmd .= ' --ref_db ' . LoadConfig::getParam($rH_cfg, 'DB', 'chimeras'); 
+		$cmd .= ' --ref_db ' . LoadConfig::getParam($rH_cfg, 'DB', 'chimeras', 1, 'filepath'); 
 		$cmd .= ' --barcodes ' . $barcodes;
 		$cmd .= ' --outdir ' . $outdir;
-		$cmd .= ' --num_threads ' . LoadConfig::getParam($rH_cfg, 'clustering', 'num_threads');
+		$cmd .= ' --num_threads ' . LoadConfig::getParam($rH_cfg, 'clustering', 'num_threads', 1, 'int');
 		#$cmd .= ' --start_at 4';
 	
 		$ro_job->addCommand($cmd);
@@ -666,7 +706,9 @@ sub clientReport{
 
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
-		$cmd .= 'module load ' . LoadConfig::getParam($rH_cfg, 'report','moduleVersion.R') . ' &&';
+    $cmd .= LoadConfig::moduleLoad($rH_cfg, [
+      ['R', 'moduleVersion.R']
+    ]) . ' && ';
 		$cmd .= ' R --no-save -e \'library(gqSeqUtils) ;';
 		$cmd .= ' mugqicPipelineReport(';
 		$cmd .= ' pipeline=\"' . $pipelineType . '\",';
@@ -692,7 +734,9 @@ sub cleanup{
 	
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
-		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' && ';
+    $cmd .= LoadConfig::moduleLoad($rH_cfg, [
+      ['memtime', 'moduleVersion.memtime']
+    ]) . ' && ';
 		$cmd .= ' memtime ';
 		$cmd .= 'rm '.$tmpdir.' -rf';
 	
@@ -710,7 +754,9 @@ sub templateSub{
 	
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
-		$cmd .= 'module load '.LoadConfig::getParam($rH_cfg, 'memtime', 'moduleVersion.memtime').' && ';
+    $cmd .= LoadConfig::moduleLoad($rH_cfg, [
+      ['memtime', 'moduleVersion.memtime']
+    ]) . ' && ';
 		$cmd .=	' memtime ';
 
 	

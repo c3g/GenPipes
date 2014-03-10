@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 =head1 NAME
 
@@ -743,7 +743,7 @@ sub annotation {
 
   my $annotationJobIdGroups = undef;
   if ($numberTreatments >= 1) {
-    print 'mkdir -p  annotation/ '.'\n';
+    print "mkdir -p annotation\n";
     # At least one treatment
     for (my $j = 0; $j < $numberTreatments; $j++) {
       if ($numberControls == 1) {

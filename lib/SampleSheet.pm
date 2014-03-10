@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 =head1 NAME
 
@@ -68,6 +68,24 @@ sub parseSampleSheetAsHash {
   return \%sampleInfo;
 }
 
+sub parseSampleSheetAsHashByProcessingId {
+  my $fileName = shift;
+
+  my $rA_SampleLaneInfos = parseSampleSheet($fileName);
+  my %sampleInfo;
+  for my $rH_Sample (@$rA_SampleLaneInfos) {
+    if (!defined($rH_Sample->{'processingSheetId'})) {
+      die "Missing processingSheetId";
+    }
+    if(!defined $sampleInfo{ $rH_Sample->{'processingSheetId'} }) {
+      $sampleInfo{ $rH_Sample->{'processingSheetId'} } = [];
+    }
+
+    push(@{$sampleInfo{ $rH_Sample->{'processingSheetId'} }}, $rH_Sample);
+  }
+  return \%sampleInfo;
+}
+
 sub parsePairedSampleSheet {
   my $fileName = shift;
 
@@ -104,7 +122,7 @@ sub parseSampleSheet {
   my $line = <SAMPLE_SHEET>;
   $csv->parse($line);
   my @headers = $csv->fields();
-  my ($nameIdx, $libraryBarcodeIdx, $runIdIdx, $laneIdx, $runTypeIdx, $statusIdx, $qualOffsetIdx, $bedFilesIdx) = parseHeaderIndexes(\@headers);
+  my ($nameIdx, $libraryBarcodeIdx, $runIdIdx, $laneIdx, $runTypeIdx, $statusIdx, $qualOffsetIdx, $bedFilesIdx, $processingSheetIdIdx, $libSourceIdx) = parseHeaderIndexes(\@headers);
 
   while($line = <SAMPLE_SHEET>) {
     $csv->parse($line);
@@ -126,6 +144,10 @@ sub parseSampleSheet {
         my @bedFiles = split(';', $values[$bedFilesIdx]);
     }
     $sampleInfo{'bedFiles'} = \@bedFiles;
+    if ($processingSheetIdIdx > -1) {
+      $sampleInfo{'processingSheetId'} = $values[$processingSheetIdIdx];
+    }
+    $sampleInfo{'libSource'} = $values[$libSourceIdx];
 
     if ($values[$runTypeIdx] eq "PAIRED_END") {
       $sampleInfo{'read1File'} = $sampleInfo{'name'} . '.' . $sampleInfo{'libraryBarcode'} . '.' . $sampleInfo{'qualOffset'} . ".pair1.fastq.gz";
@@ -153,7 +175,9 @@ sub parseHeaderIndexes {
   my $statusIdx=-1;
   my $qualOffsetIdx=-1;
   my $bedFilesIdx=-1;
-
+  my $processingSheetIdIdx=-1;
+  my $libSourceIdx = -1;
+	
   for(my $idx=0; $idx < @{$rA_headers}; $idx++) {
     my $header = $rA_headers->[$idx];
     $header =~ s/"//g;
@@ -173,6 +197,12 @@ sub parseHeaderIndexes {
       $qualOffsetIdx=$idx;
     } elsif ($header eq "BED Files") {
       $bedFilesIdx=$idx;
+    }
+    elsif($header eq "ProcessingSheetId") {
+      $processingSheetIdIdx=$idx;
+    }
+    elsif($header eq "Library Source") {
+      $libSourceIdx=$idx;
     }
   }
 
@@ -196,16 +226,22 @@ sub parseHeaderIndexes {
   if ($statusIdx==-1) {
     $sampleSheetErrors .= "[Error] Missing Status\n";
   }
-  if ($bedFilesIdx==-1) {
-    $sampleSheetWarnings .= "[Warning] Missing BED Files\n";
+  if($qualOffsetIdx==-1) {
+      $sampleSheetErrors.="Missing Quality Offset\n";
   }
-  if (length($sampleSheetWarnings) > 0) {
+  if($bedFilesIdx==-1) {
+    $sampleSheetWarnings.="[Warning] Missing BED Files\n";
+  }
+  if($libSourceIdx==-1) {
+    $sampleSheetErrors.="Missing Library Source\n";
+  }
+  if(length($sampleSheetWarnings) > 0) {
     warn $sampleSheetWarnings;
   }
   if (length($sampleSheetErrors) > 0) {
     die $sampleSheetErrors;
   }
 
-  return ($nameIdx, $libraryBarcodeIdx, $runIdIdx, $laneIdx, $runTypeIdx, $statusIdx, $qualOffsetIdx, $bedFilesIdx);
+  return ($nameIdx, $libraryBarcodeIdx, $runIdIdx, $laneIdx, $runTypeIdx, $statusIdx, $qualOffsetIdx, $bedFilesIdx, $processingSheetIdIdx, $libSourceIdx);
 }
 1;

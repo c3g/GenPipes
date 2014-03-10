@@ -1,4 +1,4 @@
-#!/usr/env/perl
+#!/usr/bin/env perl
 
 =head1 NAME
 
@@ -57,10 +57,13 @@ sub mem {
   my $rgLibrary       = shift;
   my $rgPlatformUnit  = shift;
   my $rgCenter        = shift;
+  my $bwaRefIndex     = shift;
 
-  my $bwaRefIndex = LoadConfig::getParam($rH_cfg, 'mem', 'bwaRefIndex', 1, 'filepath');
-
-  my $outputBAM = $optOutputPrefix . '.sorted.bam';
+  if (!defined($bwaRefIndex)) {
+    $bwaRefIndex = LoadConfig::getParam( $rH_cfg, 'mem', 'bwaRefIndex', 1, 'filepath');
+  }
+    
+  my $outputBAM = $optOutputPrefix.'.sorted.bam';
 
   my $rA_inputs;
   my $dateToTest;
