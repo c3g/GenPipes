@@ -1,4 +1,4 @@
-#!/usr/env/perl
+#!/usr/bin/env perl
 
 =head1 NAME
 
@@ -117,8 +117,8 @@ sub checkModules {
     if ($key =~ /moduleVersion/) {
       my $moduleValue = $rH_cfg->{$key};
 
-      # Bash "module" cmd not found when switching to a different shell so source module.sh is required
-      my $moduleShowOutput = `bash -c 'source /etc/profile.d/modules.sh; module show $moduleValue 2>&1'`;
+      # Bash shell must be invoked in order to find "module" cmd
+      my $moduleShowOutput = `bash -c 'module show $moduleValue 2>&1'`;
       $moduleShowOutput !~ /Error/i or die "Error in config file with $moduleValue:\n$moduleShowOutput";
     }
   }
