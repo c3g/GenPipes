@@ -74,6 +74,7 @@ use SampleSheet;
 use SubmitToCluster;
 use Trimmomatic;
 use Trinity;
+use Version;
 
 # Steps array: each step is run globally or per sample and has a list of parent steps defining step job dependencies
 #-------------
@@ -155,6 +156,8 @@ main();
 #---------------------------
 sub getUsage {
   my $usage = <<END;
+MUGQIC Pipeline RNA-Seq De Novo Assembly Version: $Version::version
+
 Usage: perl $0 -h | -c CONFIG_FILE -s start_step_num -e end_step_num [-n SAMPLE_SHEET] [-d DESIGN_FILE] [-w WORK_DIR]
   -h  help and usage
   -c  .ini config file
@@ -237,7 +240,6 @@ sub submitJob {
   # Set job name after uppercased step name and, if sample step, sample name
   my $stepName = $step->{'name'};
   my $jobIdPrefix = uc($stepName);
-  my $jobIds = $jobIdPrefix . "_JOB_IDS";
   if (defined $sample) {
     $jobIdPrefix .= "_" . $sample;
   }
@@ -304,9 +306,6 @@ sub trim {
   my $step = shift;
   my $sample = shift;
   my $rAoH_sampleLanes = shift;
-
-  # Check raw read directory
-  my $rawReadDirectory = LoadConfig::getParam($rH_cfg, 'default', 'rawReadDir', 1, 'dirpath');
 
   # Create trim job per sample per lane
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
