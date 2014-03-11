@@ -21,7 +21,7 @@ unzip ${SOFTWARE}_v${ARCHIVE_VERSION}_core.zip
 cd $INSTALL_DOWNLOAD
 chmod -R ug+rwX .
 chmod -R o+rX .
-mv -i $SOFTWARE $INSTALL_PATH/$SOFTWARE-$VERSION
+mv -i $SOFTWARE $INSTALL_PATH/${SOFTWARE}_$ARCHIVE_VERSION
 mv -i ${SOFTWARE}_v${ARCHIVE_VERSION}_core.zip $MUGQIC_INSTALL_HOME/archive
 
 # Module file
@@ -31,7 +31,7 @@ proc ModulesHelp { } {
 }
 module-whatis \"$SOFTWARE  \"
 
-set             root                \$::env(MUGQIC_INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE-$VERSION
+set             root                \$::env(MUGQIC_INSTALL_HOME)/software/$SOFTWARE/${SOFTWARE}_$ARCHIVE_VERSION
 setenv          SNPEFF_HOME         \$root
 " > $VERSION
 
