@@ -16,22 +16,19 @@ tar -xvf beers.tar
 mv  beers.tar $MUGQIC_INSTALL_HOME/archive
 
 # Get the template config files
-mkdir -p config && cd config
+mkdir -p config_refseq && cd config_refseq
 wget -q http://itmat.rum.s3.amazonaws.com/simulator_config_refseq.tar.gz
 tar -xvf simulator_*
 rm simulator_*.tar.gz
 cd ..
 
-
 # Install necessary perl module
 module load mugqic/perl
 cpan Math::Random
 
-
 # Add permissions and install software
 chmod -R ug+rwX .
 chmod -R o+rX .
-
 
 # Module file
 echo "#%Module1.0

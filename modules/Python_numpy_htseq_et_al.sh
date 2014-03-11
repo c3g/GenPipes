@@ -182,6 +182,20 @@ easy_install http://labix.org/download/python-dateutil/python-dateutil-1.5.tar.g
 easy_install pyparsing
 easy_install matplotlib
 
+## RSeQC (easyinstall won't work)
+# module load mugqic/python/2.7.5
+VERSION=2.3.8  
+wget https://downloads.sourceforge.net/project/rseqc/RSeQC-$VERSION.tar.gz
+tar xvf RSeQC-$VERSION.tar.gz
+cd RSeQC-$VERSION
+module load mugqic/python/2.7.5 # wouldn't work with 2.7.8s
+python setup.py install
+cd ..
+rm -rf RSeQC*
+python -c 'from qcmodule import SAM'
+
+
+
 #module-whatis	 HTSeq: Analysing high-throughput sequencing data with Python 
 #prepend-path	 PATH /sb/programs/analyste/software/Python-2.7.3/bin/  # hmmm already done by python!!
 # hmmm HT-Seq is just a python module and no two versions can co-exist. So more or less non-sensical to have a module.
