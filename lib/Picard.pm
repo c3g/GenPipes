@@ -230,8 +230,10 @@ sub samToFastq {
 
   my $ro_job = new Job();
 
+  # If paired end reads
   if (defined($outputFastq2)) {
     $ro_job->testInputOutputs([$inputSAMBAM], [$outputFastq1, $outputFastq2]);
+  # else single end reads
   } else {
     $ro_job->testInputOutputs([$inputSAMBAM], [$outputFastq1]);
   }
@@ -245,6 +247,8 @@ sub samToFastq {
     $command .= "java -Djava.io.tmpdir=" . LoadConfig::getParam($rH_cfg, 'samToFastq', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'samToFastq', 'extraJavaFlags') . " -jar \${PICARD_HOME}/SamToFastq.jar \\\n";
     $command .= "  INPUT=$inputSAMBAM \\\n";
     $command .= "  FASTQ=$outputFastq1 \\\n";
+
+    # If paired end reads
     if (defined($outputFastq2)) {
       $command .= "  SECOND_END_FASTQ=$outputFastq2 \\\n";
     }

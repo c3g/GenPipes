@@ -95,8 +95,10 @@ use POSIX;
 use BVATools;
 use BWA;
 use GATK;
+use GqSeqUtils;
 use IGVTools;
 use LoadConfig;
+use Metrics;
 use Picard;
 use SampleSheet;
 use SAMtools;
@@ -107,8 +109,6 @@ use Trimmomatic;
 use Tools;
 use Version;
 use VCFtools;
-use Metrics;
-use GqSeqUtils;
 #--------------------
 
 
@@ -116,7 +116,8 @@ use GqSeqUtils;
 #--------------------
 
 my @steps;
-push(@steps, {'name' => 'trimAndAlign', 'stepLoop' => 'sample', 'parentStep' => undef});
+push(@steps, {'name' => 'bamToFastq', 'stepLoop' => 'sample', 'parentStep' => undef});
+push(@steps, {'name' => 'trimAndAlign', 'stepLoop' => 'sample', 'parentStep' => 'bamToFastq'});
 push(@steps, {'name' => 'laneMetrics', 'stepLoop' => 'sample', 'parentStep' => 'trimAndAlign'});
 push(@steps, {'name' => 'mergeTrimStats', 'stepLoop' => 'experiment', 'parentStep' => 'trimAndAlign'});
 push(@steps, {'name' => 'mergeLanes', 'stepLoop' => 'sample', 'parentStep' => 'trimAndAlign'});
@@ -300,7 +301,7 @@ sub main {
   
 }
 
-sub trimAndAlign {
+sub bamToFastq {
   my $stepId = shift;
   my $rH_cfg = shift;
   my $currentWorkDir = shift;
@@ -310,6 +311,48 @@ sub trimAndAlign {
 
   my $jobDependency = undef;
   my $parentStep = 'default';
+  if(defined($parentStep) && defined($globalDep{$parentStep}->{$sampleName})) {
+    $jobDependency = $globalDep{$parentStep}->{$sampleName};
+  }
+
+  for my $rH_laneInfo (@$rAoH_sampleLanes) {
+    my $rO_job;
+    my $baseDirectory = "$sample/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
+    my $rawDirectory = LoadConfig::getParam($rH_cfg, 'default', 'rawReadDir', 1, 'dirpath') . "/" . $baseDirectory;
+    my $input1 = $rawDirectory . "/" . $rH_laneInfo->{'read1File'};
+
+    if ($input1 =~ /\.bam$/) {
+      if ($rH_laneInfo->{'runType'} eq "SINGLE_END") {
+        my $outputFastq1 = $input1;
+        $outputFastq1 =~ s/\.bam$/.single.fastq.gz/;
+        $rO_job = Picard::samToFastq($rH_cfg, $input1, $outputFastq1);
+        $rH_laneInfo->{'read1File'} = $outputFastq1;
+      } elsif ($rH_laneInfo->{'runType'} eq "PAIRED_END") {
+        my $outputFastq1 = $input1;
+        my $outputFastq2 = $input1;
+        $outputFastq1 =~ s/\.bam$/.pair1.fastq.gz/;
+        $outputFastq2 =~ s/\.bam$/.pair2.fastq.gz/;
+        $rO_job = Picard::samToFastq($rH_cfg, $input1, $outputFastq1, $outputFastq2);
+        $rH_laneInfo->{'read1File'} = $outputFastq1;
+        $rH_laneInfo->{'read2File'} = $outputFastq2;
+      } else {
+        die "Error in rnaSeqDeNovoAssembly::bamToFastq: unknown run type (can be 'SINGLE_END' or 'PAIRED_END' only): " . $rH_laneInfo->{'runType'};
+      }
+    }
+    return $rO_job;
+  }
+}
+
+sub trimAndAlign {
+  my $stepId = shift;
+  my $rH_cfg = shift;
+  my $currentWorkDir = shift;
+  my $sampleName = shift;
+  my $rAoH_sampleLanes  = shift;
+  my $rAoH_seqDictionary = shift;
+
+  my $jobDependency = undef;
+  my $parentStep = $steps[$stepId]->{'parentStep'};
   if(defined($parentStep) && defined($globalDep{$parentStep}->{$sampleName})) {
     $jobDependency = $globalDep{$parentStep}->{$sampleName};
   }
@@ -391,7 +434,6 @@ sub laneMetrics {
 
   my $latestBam;
   my @inputBams;
-  my $outputBAM = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.bam';
   print "LANE_METRICS_JOB_IDS=\"\"\n";
   my $first=1;
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
@@ -399,7 +441,6 @@ sub laneMetrics {
     my $sortedLaneBamFile = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.bam';
     my $sortedLaneDupBamFile = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.dup.bam';
     my $outputMetrics = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.dup.metrics';
-    my $runName = $sampleName."_run".$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'};
 
     my $rO_job = Picard::markDup($rH_cfg, $sampleName, $sortedLaneBamFile, $sortedLaneDupBamFile, $outputMetrics);
     if(!$rO_job->isUp2Date()) {
