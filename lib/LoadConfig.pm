@@ -124,7 +124,7 @@ sub checkModules {
   }
 }
 
-# Retrive param in config file with optional definition check and type validation
+# Retrieve param in config file with optional definition check and type validation
 sub getParam {
   my $rH_cfg  = shift;
   my $section = shift;

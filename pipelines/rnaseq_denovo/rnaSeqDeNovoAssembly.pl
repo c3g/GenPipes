@@ -75,6 +75,7 @@ use SampleSheet;
 use SubmitToCluster;
 use Trimmomatic;
 use Trinity;
+use Version;
 
 # Steps array: each step is run globally or per read set (bam/paired fastq/single fastq) and has a list of parent steps defining step job dependencies
 #-------------
@@ -169,6 +170,8 @@ sub debug {
 
 sub getUsage {
   my $usage = <<END;
+MUGQIC Pipeline RNA-Seq De Novo Assembly Version: $Version::version
+
 Usage: perl $0 -h | -c CONFIG_FILE -s start_step_num -e end_step_num [-n SAMPLE_SHEET] [-d DESIGN_FILE] [-w WORK_DIR]
   -h  help and usage
   -c  .ini config file

@@ -825,7 +825,9 @@ sub rarefactionPlots{
       ['memtime', 'moduleVersion.memtime'],
       ['qiime-dependencies', 'moduleVersion.qiime-dependencies'],
       ['qiime', 'moduleVersion.qiime'],
-      ['python', 'moduleVersion.python']
+      ['python', 'moduleVersion.python'],
+      ['R', 'moduleVersion.R'],
+      ['tools', 'moduleVersion.tools']
     ]) . ' && ';
 		$cmd .=	' memtime ';
 		$cmd .= 'make_rarefaction_plots.py';

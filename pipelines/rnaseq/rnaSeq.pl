@@ -250,9 +250,6 @@ sub main {
 
   SubmitToCluster::initPipeline($workDir);
 
-  my $latestBam;
-
-
   for (my $current = $opts{'s'} - 1; $current <= ($opts{'e'} - 1); $current++) {
     my $fname = $steps[$current]->{'name'};
     my $loopType = $steps[$current]->{'stepLoop'};
@@ -753,8 +750,8 @@ sub cuffdiff {
   if (!$rO_job->isUp2Date()) {
     SubmitToCluster::printSubmitCmd($rH_cfg, "cuffcompare", "MERGE", 'GTFCOMPARE', $jobDependency, undef, $rO_job);
   }
-  my $gtfDnMerged = 'fpkm/denovo/merged.gtf';
-  my $gtfDnFormatMerged = 'fpkm/denovo/formated.merged.gtf';
+#  my $gtfDnMerged = 'fpkm/denovo/merged.gtf';
+#  my $gtfDnFormatMerged = 'fpkm/denovo/formated.merged.gtf';
 #  $command = Cufflinks::mergeGtfFormat($rH_cfg, $gtfDnMerged, $gtfDnFormatMerged);
 #  my $formatJobId;
 #  if (defined($command) && length($command) > 0) {

@@ -196,7 +196,6 @@ sub main {
   my %jobIdVarPrefix;
   my %cfg = LoadConfig->readConfigFile($opts{'c'});
   my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($opts{'n'});
-  my $rAoH_seqDictionary = SequenceDictionaryParser::readDictFile(\%cfg);
   $designFilePath = $opts{'d'};
   # get Design groups
   my $rHoAoA_designGroup = MACS2::getDesign(\%cfg,$designFilePath);
@@ -226,13 +225,9 @@ sub main {
 
   SubmitToCluster::initPipeline($workDir);
 
-  my $latestBam;
-  
-  
   for (my $current = $opts{'s'} - 1; $current <= ($opts{'e'} - 1); $current++) {
     my $fname = $steps[$current]->{'name'};
     my $loopType = $steps[$current]->{'stepLoop'};
-    my $outputStep = $steps[$current]->{'output'};
     my $subref = \&$fname;
     my @aOjobIDList=();
     
@@ -240,7 +235,7 @@ sub main {
       for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
         my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sampleName};
         # Tests for the first step in the list. Used for dependencies.
-        my $jobIdVar = &$subref($current , \%cfg, $sampleName, $rAoH_sampleLanes, $rAoH_seqDictionary, \%jobIdVarPrefix);
+        my $jobIdVar = &$subref($current , \%cfg, $sampleName, $rAoH_sampleLanes, \%jobIdVarPrefix);
         if (defined($jobIdVar)) {
           $globalDep{$fname}->{$sampleName} = $jobIdVar;
           # This is for global steps depending on sample / design  steps
@@ -288,20 +283,13 @@ sub trimming {
   my $rH_cfg = shift;
   my $sampleName = shift;
   my $rAoH_sampleLanes  = shift;
-  my $rAoH_seqDictionary = shift;
   my $rH_jobIdPrefixe = shift;  
-  my $inputFile;
-  my $outputFile;
-  my $outputFastqPair1Name;
-  
-  
+
   # Trimming job IDS per sample
   my $trimJobIdVarNameSample = undef;
   
   # samples per lane
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
-    my $minQuality = $rH_cfg->{'trim.minQuality'};
-    my $minLength = $rH_cfg->{'trim.minLength'};
     my $outputDir = 'reads/'.$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
     print 'mkdir -p '.$outputDir."\n";
     # Run trimmomatic  
@@ -314,7 +302,7 @@ sub trimming {
         $trimJobIdVarNameSample .= LoadConfig::getParam($rH_cfg, 'trim', 'clusterDependencySep') . $ro_job->getCommandJobId(0);
       }
     }
-      
+
   }
   return $trimJobIdVarNameSample; 
 }
@@ -325,10 +313,9 @@ sub aligning{
   my $rH_cfg = shift;
   my $sampleName = shift;
   my $rAoH_sampleLanes  = shift;
-  my $rAoH_seqDictionary = shift;
   my $rH_jobIdPrefixe = shift;
+
   my $jobDependency = undef;
-  my $bwaJobId;
   my $setJobId = 0;
   
   # Control dependencies
@@ -342,7 +329,6 @@ sub aligning{
   
   
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
-    my $alignJobIdVarNameLane;
     my $pair1;
     my $pair2;
     my $single;
@@ -354,7 +340,7 @@ sub aligning{
     my $qfilterRead=LoadConfig::getParam($rH_cfg, 'aln', 'filterReadsMAPQ', 0, 'int');
     
     # Threshold for MAPQ to filter reads
-    if (!defined($qfilterRead) || $qfilterRead < 1  || $qfilterRead eq "" ){
+    if (!defined($qfilterRead) || $qfilterRead < 1 ){
       $qfilterRead=15;
     }
 
@@ -411,7 +397,6 @@ sub aligning{
     $jobDependency = '$BWA_JOB_IDS';
   }
   my $mergeJobId = undef ;
-  my $latestBam;
   my @inputBams;
   my $outputBAM = 'alignment/' . $sampleName . '/' . $sampleName . '.merged.bam';
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
@@ -443,8 +428,8 @@ sub metrics {
   my $rH_cfg              = shift;
   my $sampleName          = shift;
   my $rAoH_sampleLanes    = shift;
-  my $rAoH_seqDictionary  = shift;
   my $rH_jobIdPrefixe     = shift;
+
   my $jobDependency       = undef;
   my $flagstatJobId       = undef;
   my $metricsJobIDs  = undef;
@@ -510,45 +495,11 @@ sub metrics {
   return $metricsJobIDs;
 }
 
-sub wiggleRNASEQ {
-  my $stepId = shift;
-  my $rH_cfg = shift;
-  my $sampleName = shift;
-  my $rAoH_sampleLanes = shift;
-  my $rAoH_seqDictionary = shift;
-  my $rH_jobIdPrefixe = shift;
-  my $jobDependency = undef;
-
-  # Control dependencies
-  my $parentStep = $steps[$stepId]->{'parentStep'};
-  if(defined($globalDep{$parentStep}->{$sampleName})) {
-    $jobDependency = $globalDep{$parentStep}->{$sampleName};
-  }
-
-  my $inputBAM       = 'alignment/' . $sampleName . '/' . $sampleName . '.sorted.bam';
-  my $outputBAM      = $inputBAM;
-  my $outputBedGraph = 'tracks/' . $sampleName . '/' . $sampleName . '.bedGraph';
-  my $outputWiggle   = 'tracks/' . $sampleName . '/' . $sampleName . '.bw';
-  my $prefixJobName  = undef;
-
-  print "mkdir -p tracks/$sampleName\n";
-
-  my $wiggleJobId = undef;
-  my $ro_job  = Wiggle::graph($rH_cfg, $sampleName, $inputBAM, $outputBedGraph, $outputWiggle);
-  if(!$ro_job->isUp2Date()) { 
-    SubmitToCluster::printSubmitCmd($rH_cfg, "wiggle", $prefixJobName, 'WIGGLE' . $rH_jobIdPrefixe->{$sampleName}, $jobDependency, $sampleName,  $ro_job);
-    $wiggleJobId = $ro_job->getCommandJobId(0);
-  }
-  return $wiggleJobId;
-}
-
-
 sub qcTagDirectories {
   my $stepId      = shift;
   my $rH_cfg      = shift;
   my $sampleName  = shift;
   my $rAoH_sampleLanes = shift;
-  my $rAoH_seqDictionary = shift;
   my $rH_jobIdPrefixe = shift;
 
   my $jobDependency = undef;
@@ -578,8 +529,8 @@ sub wiggle {
   my $rH_cfg = shift;
   my $sampleName = shift;
   my $rAoH_sampleLanes = shift;
-  my $rAoH_seqDictionary = shift;
   my $rH_jobIdPrefixe = shift;
+
   my $jobDependency = undef;
 
   # Control dependencies
@@ -607,6 +558,7 @@ sub qcPlots {
   my $stepId = shift;
   my $rH_cfg = shift;
   my $designFilePath = shift;
+
   my $jobDependency = undef;
   
   # Control dependencies
@@ -743,7 +695,7 @@ sub annotation {
 
   my $annotationJobIdGroups = undef;
   if ($numberTreatments >= 1) {
-    print 'mkdir -p  annotation/ '.'\n';
+    print "mkdir -p annotation\n";
     # At least one treatment
     for (my $j = 0; $j < $numberTreatments; $j++) {
       if ($numberControls == 1) {
@@ -879,8 +831,6 @@ sub annotationPlots {
 sub deliverable{
   my $stepId = shift;
   my $rH_cfg = shift;
-  my $rHoAoH_sampleInfo = shift;
-  my $rAoH_seqDictionary = shift;
   
   my $parentStep = $steps[$stepId]->{'parentStep'};
   my $jobDependencies = "";

@@ -236,10 +236,8 @@ sub main {
   my %cfg = LoadConfig->readConfigFile($opts{'c'});
   my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($opts{'n'});
   my $rAoH_seqDictionary = SequenceDictionaryParser::readDictFile(\%cfg);
-  my $currentWorkDir = getcwd();
   $configFile =  abs_path($opts{'c'});
 
-  my $latestBam;
   my @sampleNames = keys %{$rHoAoH_sampleInfo};
 
   print STDERR "Samples: ".scalar(@sampleNames)."\n";
@@ -263,7 +261,7 @@ sub main {
 
       if ($steps[$currentStep]->{'stepLoop'} eq 'sample') {
         # Tests for the first step in the list. Used for dependencies.
-        my $jobIdVar = &$subref($currentStep, \%cfg, $currentWorkDir, $sampleName, $rAoH_sampleLanes, $rAoH_seqDictionary); 
+        my $jobIdVar = &$subref($currentStep, \%cfg, $sampleName, $rAoH_sampleLanes, $rAoH_seqDictionary); 
         $globalDep{$fname}->{$sampleName} = $jobIdVar;
 
         if(defined($jobIdVar) && $currentStep == $lastStepId) {
@@ -304,7 +302,6 @@ sub main {
 sub bamToFastq {
   my $stepId = shift;
   my $rH_cfg = shift;
-  my $currentWorkDir = shift;
   my $sampleName = shift;
   my $rAoH_sampleLanes  = shift;
   my $rAoH_seqDictionary = shift;
@@ -346,7 +343,6 @@ sub bamToFastq {
 sub trimAndAlign {
   my $stepId = shift;
   my $rH_cfg = shift;
-  my $currentWorkDir = shift;
   my $sampleName = shift;
   my $rAoH_sampleLanes  = shift;
   my $rAoH_seqDictionary = shift;
@@ -421,7 +417,6 @@ sub trimAndAlign {
 sub laneMetrics {
   my $stepId = shift;
   my $rH_cfg = shift;
-  my $currentWorkDir = shift;
   my $sampleName = shift;
   my $rAoH_sampleLanes  = shift;
   my $rAoH_seqDictionary = shift;
@@ -432,8 +427,6 @@ sub laneMetrics {
     $jobDependency = $globalDep{$parentStep}->{$sampleName};
   }
 
-  my $latestBam;
-  my @inputBams;
   print "LANE_METRICS_JOB_IDS=\"\"\n";
   my $first=1;
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
@@ -505,7 +498,6 @@ sub mergeTrimStats {
   my $jobDependencies = "";
   for(my $idx=0; $idx < @sampleNames; $idx++){
     my $sampleName = $sampleNames[$idx];
-    my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sampleName};
     if(defined($globalDep{$parentStep}->{$sampleName})){
       $jobDependencies .= LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$globalDep{$parentStep}->{$sampleName};
     }
@@ -532,7 +524,6 @@ sub mergeTrimStats {
 sub mergeLanes {
   my $stepId = shift;
   my $rH_cfg = shift;
-  my $currentWorkDir = shift;
   my $sampleName = shift;
   my $rAoH_sampleLanes  = shift;
   my $rAoH_seqDictionary = shift;
@@ -543,13 +534,11 @@ sub mergeLanes {
     $jobDependency = $globalDep{$parentStep}->{$sampleName};
   }
 
-  my $latestBam;
   my @inputBams;
   my $outputBAM = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.bam';
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
     my $directory = 'alignment/'.$sampleName."/run".$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'}."/";
     my $sortedLaneBamFile = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.bam';
-    my $runName = $sampleName."_run".$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'};
 
     push(@inputBams, $sortedLaneBamFile);
   }
@@ -564,7 +553,6 @@ sub mergeLanes {
 sub indelRealigner {
   my $stepId = shift;
   my $rH_cfg = shift;
-  my $currentWorkDir = shift;
   my $sampleName = shift;
   my $rAoH_sampleLanes  = shift;
   my $rAoH_seqDictionary = shift;
@@ -637,7 +625,6 @@ sub indelRealigner {
 sub mergeRealigned {
   my $stepId = shift;
   my $rH_cfg = shift;
-  my $currentWorkDir = shift;
   my $sampleName = shift;
   my $rAoH_sampleLanes  = shift;
   my $rAoH_seqDictionary = shift;
@@ -649,7 +636,6 @@ sub mergeRealigned {
   }
 
   my $jobId;
-  my $latestBam;
   my @inputBams;
   my $outputBAM = 'alignment/'.$sampleName.'/'.$sampleName.'.realigned.qsorted.bam';
 
@@ -663,7 +649,6 @@ sub mergeRealigned {
   else {
     #Keep space for the exclude realignment at the end.
     $nbRealignJobs--;
-    my @chrToProcess;
     for (my $idx=0; $idx < $nbRealignJobs; $idx++) {
       my $input = 'alignment/'.$sampleName.'/realign/'.$rAoH_seqDictionary->[$idx]->{'name'}.'.bam';
       push(@inputBams, $input);
@@ -684,7 +669,6 @@ sub mergeRealigned {
 sub fixmate {
   my $stepId = shift;
   my $rH_cfg = shift;
-  my $currentWorkDir = shift;
   my $sampleName = shift;
   my $rAoH_sampleLanes  = shift;
   my $rAoH_seqDictionary = shift;
@@ -708,7 +692,6 @@ sub fixmate {
 sub markDup {
   my $stepId = shift;
   my $rH_cfg = shift;
-  my $currentWorkDir = shift;
   my $sampleName = shift;
   my $rAoH_sampleLanes  = shift;
   my $rAoH_seqDictionary = shift;
@@ -733,7 +716,6 @@ sub markDup {
 sub recalibration {
   my $stepId = shift;
   my $rH_cfg = shift;
-  my $currentWorkDir = shift;
   my $sampleName = shift;
   my $rAoH_sampleLanes  = shift;
   my $rAoH_seqDictionary = shift;
@@ -757,7 +739,6 @@ sub recalibration {
 sub metrics {
   my $stepId = shift;
   my $rH_cfg = shift;
-  my $currentWorkDir = shift;
   my $sampleName = shift;
   my $rAoH_sampleLanes  = shift;
   my $rAoH_seqDictionary = shift;
@@ -768,7 +749,6 @@ sub metrics {
     $jobDependency = $globalDep{$parentStep}->{$sampleName};
   }
 
-  my $rO_job;
   my $bamFile = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.recal.bam';
   my $jobId;
 
@@ -874,7 +854,6 @@ sub metricsLibrarySample {
   print "mkdir -p metrics\n";
 
   my $rO_job = Metrics::mergeSampleDnaStats($rH_cfg,  $experimentType, $folder, $ouputFile);
-  my $metricsJobId = undef;
   if(!$rO_job->isUp2Date()) {
     SubmitToCluster::printSubmitCmd($rH_cfg, "sampleMetrics", undef, 'SAMPLEMETRICS', $metricsDependency, undef, $rO_job);
   }
@@ -882,26 +861,10 @@ sub metricsLibrarySample {
 }
 
 
-sub sortQname {
-  my $stepId = shift;
-  my $rH_cfg = shift;
-  my $currentWorkDir = shift;
-  my $sampleName = shift;
-  my $rAoH_sampleLanes  = shift;
-  my $rAoH_seqDictionary = shift;
-
-  my $jobDependency = undef;
-  my $parentStep = $steps[$stepId]->{'parentStep'};
-  if(defined($globalDep{$parentStep}->{$sampleName})) {
-    $jobDependency = $globalDep{$parentStep}->{$sampleName};
-  }
-}
-
 #push(@steps, {'name' => 'countTelomere'});
 sub fullPileup {
   my $stepId = shift;
   my $rH_cfg = shift;
-  my $currentWorkDir = shift;
   my $sampleName = shift;
   my $rAoH_sampleLanes  = shift;
   my $rAoH_seqDictionary = shift;
@@ -1201,7 +1164,7 @@ sub snpEffect {
 sub dbNSFPAnnotation {
   my $stepId = shift;
   my $rH_cfg = shift;
-  my $rH_samplePair = shift;
+  my $rHoAoH_sampleInfo = shift;
   my $rAoH_seqDictionary = shift;
 
   my $jobDependency = undef;
