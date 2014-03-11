@@ -1,38 +1,45 @@
-#!/bin/bash
+#!/bin/sh
 
 #
-# SnpEff
+# Java
 #
 
-SOFTWARE=snpEff
-VERSION=3.5
-# Replace "." in official version number by "_" in archive version number
-ARCHIVE_VERSION=${VERSION//./_}
+SOFTWARE=java
+VERSION=jdk1.7.0_60
+#VERSION=jdk1.6.0_38
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/$SOFTWARE
 INSTALL_DOWNLOAD=$INSTALL_PATH/tmp
 mkdir -p $INSTALL_DOWNLOAD
 cd $INSTALL_DOWNLOAD
 
 # Download, extract, build
-wget http://sourceforge.net/projects/snpeff/files/${SOFTWARE}_v${ARCHIVE_VERSION}_core.zip
-unzip ${SOFTWARE}_v${ARCHIVE_VERSION}_core.zip
+
+# JDK 1.7
+ARCHIVE=jdk-7u60-ea-bin-b07-linux-x64-19_feb_2014.tar.gz
+wget http://download.java.net/jdk7u60/archive/b07/binaries/$ARCHIVE
+tar zxvf $ARCHIVE
+
+# JDK 1.6
+#ARCHIVE=jdk-6u38-ea-bin-b04-linux-amd64-31_oct_2012.bin
+#wget http://download.java.net/jdk6/6u38/promoted/b04/binaries/$ARCHIVE
+#sh $ARCHIVE
 
 # Add permissions and install software
 cd $INSTALL_DOWNLOAD
 chmod -R ug+rwX .
 chmod -R o+rX .
-mv -i $SOFTWARE $INSTALL_PATH/$SOFTWARE-$VERSION
-mv -i ${SOFTWARE}_v${ARCHIVE_VERSION}_core.zip $MUGQIC_INSTALL_HOME/archive
+mv -i $VERSION $INSTALL_PATH
+mv -i $ARCHIVE $MUGQIC_INSTALL_HOME/archive
 
 # Module file
 echo "#%Module1.0
 proc ModulesHelp { } {
-       puts stderr \"\tMUGQIC - $SOFTWARE \"
+       puts stderr \"\tMUGQIC - $SOFTWARE from OpenJDK \"
 }
-module-whatis \"$SOFTWARE  \"
+module-whatis \"$SOFTWARE from OpenJDK  \"
 
-set             root                \$::env(MUGQIC_INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE-$VERSION
-setenv          SNPEFF_HOME         \$root
+set             root                \$::env(MUGQIC_INSTALL_HOME)/software/$SOFTWARE/$VERSION
+prepend-path    PATH                \$root/bin
 " > $VERSION
 
 ################################################################################

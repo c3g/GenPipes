@@ -1,42 +1,53 @@
+#!/bin/sh
 
-###################
-################### Vcftools
-###################
-VERSION="0.1.11"
-INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/vcftools/
+#
+# VCFtools
+#
+
+SOFTWARE=vcftools
+VERSION=0.1.11
+INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/$SOFTWARE
 INSTALL_DOWNLOAD=$INSTALL_PATH/tmp
-mkdir -p $INSTALL_PATH/archive $INSTALL_DOWNLOAD
+mkdir -p $INSTALL_DOWNLOAD
 cd $INSTALL_DOWNLOAD
 
-# Download, extract, compile
-wget http://sourceforge.net/projects/vcftools/files/vcftools_$VERSION.tar.gz/download
-tar zxvf vcftools_$VERSION.tar.gz
-cd vcftools_$VERSION
+# Download, extract, build
+wget http://sourceforge.net/projects/$SOFTWARE/files/${SOFTWARE}_$VERSION.tar.gz
+tar zxvf ${SOFTWARE}_$VERSION.tar.gz
+cd ${SOFTWARE}_$VERSION
 make
-cd ..
 
-# Move to install path
-mv vcftools_$VERSION $INSTALL_PATH
-chmod -R g+w $INSTALL_PATH/vcftools_$VERSION
+# Add permissions and install software
+cd $INSTALL_DOWNLOAD
+chmod -R ug+rwX .
+chmod -R o+rX .
+mv -i ${SOFTWARE}_$VERSION $INSTALL_PATH
+mv -i ${SOFTWARE}_$VERSION.tar.gz $MUGQIC_INSTALL_HOME/archive
 
 # Module file
 echo "#%Module1.0
 proc ModulesHelp { } {
-       puts stderr \"\tMUGQIC - vcftools \"
+       puts stderr \"\tMUGQIC - $SOFTWARE \"
 }
-module-whatis \"MUGQIC - vcftools \"
-            
-set             root               \$::env(MUGQIC_INSTALL_HOME)/software/vcftools/vcftools_$VERSION
-prepend-path    PATH               \$root/bin
-prepend-path    PERL5LIB           \$root/lib/perl5/site_perl
+module-whatis \"$SOFTWARE  \"
+
+set             root                \$::env(MUGQIC_INSTALL_HOME)/software/$SOFTWARE/${SOFTWARE}_$VERSION
+prepend-path    PATH                \$root/bin
+prepend-path    PERL5LIB            \$root/lib/perl5/site_perl
 " > $VERSION
 
-# Version file
-echo "#%Module1.0
-set ModulesVersion \"$VERSION\"
-" > .version
+################################################################################
+# Everything below this line should be generic and not modified
 
-mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/vcftools
-mv .version $VERSION $MUGQIC_INSTALL_HOME/modulefiles/mugqic/vcftools
-mv $INSTALL_DOWNLOAD/vcftools_$VERSION.tar.gz $INSTALL_PATH/archive/
+# Default module version file
+echo "#%Module1.0
+set ModulesVersion \"$VERSION\"" > .version
+
+# Add permissions and install module
+mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
+chmod -R ug+rwX $VERSION .version
+chmod -R o+rX $VERSION .version
+mv $VERSION .version $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
+
+# Clean up temporary installation files if any
 rm -rf $INSTALL_DOWNLOAD
