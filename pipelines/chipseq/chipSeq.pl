@@ -295,7 +295,7 @@ sub trimming {
     # Run trimmomatic  
     my $ro_job = Trimmomatic::trim($rH_cfg, $sampleName, $rH_laneInfo, $outputDir);
     if(!$ro_job->isUp2Date()) {
-      SubmitToCluster::printSubmitCmd($rH_cfg, "trim", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'TRIM', undef, $sampleName, $ro_job);
+      SubmitToCluster::printSubmitCmd($rH_cfg, "trim", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, "TRIM".$rH_jobIdPrefixe ->{$sampleName.'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} , undef, $sampleName, $ro_job);
       if(!defined($trimJobIdVarNameSample)) {
         $trimJobIdVarNameSample = $ro_job->getCommandJobId(0);
       } else {
