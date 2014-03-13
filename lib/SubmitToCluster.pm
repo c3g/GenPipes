@@ -87,11 +87,11 @@ sub printSubmitCmd {
   my $rO_job = shift;
   my $commandIdx = shift;
 
-  if($rO_job->isUp2Date()) {
+  if ($rO_job->isUp2Date()) {
     return undef;
   }
 
-  if(!defined($commandIdx)) {
+  if (!defined($commandIdx)) {
     $commandIdx = 0;
   }
   my $command = $rO_job->getCommand($commandIdx);
@@ -144,8 +144,8 @@ sub printSubmitCmd {
   }
 
   # Print out job command
-  print $command;
-  print ' && echo \"MUGQICexitStatus:\$?\" ';
+  print "$command \\\n";
+  print '&& echo \"MUGQICexitStatus:\$?\"';
   # Only add if it's the last job of the series.
   if (defined($rA_FilesToTest) && @{$rA_FilesToTest} > 0 && $commandIdx == $rO_job->getNbCommands() - 1) {
     print " && touch \\\n" . join(" \\\n", @{$rA_FilesToTest});

@@ -95,12 +95,8 @@ sub trim {
 #    die "Error in Trimmomatic::trim: unknown runType: " . $rH_laneInfo->{'runType'} . "!";
 #  }
 
-  my $minQuality  = LoadConfig::getParam($rH_cfg, 'trim', 'minQuality', 1, 'int');
-  my $minLength   = LoadConfig::getParam($rH_cfg, 'trim', 'minLength', 1, 'int');
-
   my $outputPrefix = $outputDir . "/" . basename($input1);
-  $outputPrefix =~ s/\.(single|pair[12]).fastq(.gz)?$//;
-  my $outputFilePrefix = $outputPrefix . ".t" . $minQuality . "l" . $minLength;
+  $outputPrefix =~ s/\.(single|pair[12])\.fastq(\.gz)?$/.trim/;
 
   my $inputs;
   my $outputs;
@@ -108,25 +104,25 @@ sub trim {
   if ($input2) {    # Paired end reads
     $inputs = [$input1, $input2];
     $outputs = [
-      $outputFilePrefix . '.pair1.fastq.gz',
-      $outputFilePrefix . '.single1.fastq.gz',
-      $outputFilePrefix . '.pair2.fastq.gz',
-      $outputFilePrefix . '.single2.fastq.gz'
+      $outputPrefix . '.pair1.fastq.gz',
+      $outputPrefix . '.single1.fastq.gz',
+      $outputPrefix . '.pair2.fastq.gz',
+      $outputPrefix . '.single2.fastq.gz'
     ];
   } else {    # Single end reads
     $inputs = [$input1];
-    $outputs = [$outputFilePrefix . '.single.fastq.gz'];
+    $outputs = [$outputPrefix . '.single.fastq.gz'];
   }
 
-  my $outputTrimLog = "$outputPrefix.trim.out";
-  my $outputTrimStats = "$outputPrefix.trim.stats.csv";
+  my $outputTrimLog = "$outputPrefix.out";
+  my $outputTrimStats = "$outputPrefix.stats.csv";
 
   push(@$outputs, $outputTrimLog, $outputTrimStats);
 
   $ro_job->testInputOutputs($inputs, $outputs);
 
   if (!$ro_job->isUp2Date()) {
-    my $command = "mkdir -p " . dirname($outputPrefix) . " && \\\n";
+    my $command = "mkdir -p " . $outputDir . " && \\\n";
 
     $command .= LoadConfig::moduleLoad($rH_cfg, [
       ['trim', 'moduleVersion.java'],
@@ -139,6 +135,7 @@ sub trim {
     $command .= "  " . join(" \\\n  ", @$inputs) . " \\\n";
     $command .= "  " . join(" \\\n  ", @$outputs) . " \\\n";
     $command .= "  ILLUMINACLIP:" . LoadConfig::getParam($rH_cfg, 'trim', 'adapterFile', 1, 'filepath') . LoadConfig::getParam($rH_cfg, 'trim', 'clipSettings') . " \\\n";
+    my $minQuality  = LoadConfig::getParam($rH_cfg, 'trim', 'minQuality', 1, 'int');
     if ($minQuality > 0) {
       $command .= "  TRAILING:$minQuality \\\n";
     }
@@ -146,15 +143,16 @@ sub trim {
     if ($headcrop and $headcrop > 0) {
       $command .= "  HEADCROP:$headcrop \\\n";
     }
+    my $minLength   = LoadConfig::getParam($rH_cfg, 'trim', 'minLength', 1, 'int');
     $command .= "  MINLEN:$minLength \\\n";
     $command .= $qualOffset eq "64" ? "  TOPHRED33 \\\n" : "";
     $command .= "  2> $outputTrimLog && \\\n";
 
     # Compute trim stats
-    if ($input2) {
-      $command .= ' grep \"^Input Read\" ' . $outputTrimLog . '| sed \'s/Input Read Pairs: \\([0-9]\\+\\).*Both Surviving: \\([0-9]\\+\\).*Forward Only Surviving: \\([0-9]\\+\\).*/Raw Fragments,\\1#Fragment Surviving,\\2#Single Surviving,\\3/g\' | tr \'#\' \'\n\' > ' . $outputTrimStats . " \\\n";
-    } else {
-      $command .= ' grep \"^Input Read\" ' . $outputTrimLog . '| sed \'s/Input Reads: \\([0-9]\\+\\).*Surviving: \\([0-9]\\+\\).*/Raw Fragments,\\1#Fragment Surviving,\\2#Single Surviving,\\2/g\' | tr \'#\' \'\n\' > ' . $outputTrimStats;
+    if ($input2) {    # Paired end reads
+      $command .= 'grep \"^Input Read\" ' . $outputTrimLog . '| sed \'s/Input Read Pairs: \\([0-9]\\+\\).*Both Surviving: \\([0-9]\\+\\).*Forward Only Surviving: \\([0-9]\\+\\).*/Raw Fragments,\\1#Fragment Surviving,\\2#Single Surviving,\\3/g\' | tr \'#\' \'\n\' > ' . $outputTrimStats;
+    } else {    # Single end reads
+      $command .= 'grep \"^Input Read\" ' . $outputTrimLog . '| sed \'s/Input Reads: \\([0-9]\\+\\).*Surviving: \\([0-9]\\+\\).*/Raw Fragments,\\1#Fragment Surviving,\\2#Single Surviving,\\2/g\' | tr \'#\' \'\n\' > ' . $outputTrimStats;
     }
 
     $ro_job->addCommand($command);

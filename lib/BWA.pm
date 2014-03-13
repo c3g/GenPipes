@@ -63,7 +63,7 @@ sub mem {
     $bwaRefIndex = LoadConfig::getParam( $rH_cfg, 'mem', 'bwaRefIndex', 1, 'filepath');
   }
     
-  my $outputBAM = $optOutputPrefix.'.sorted.bam';
+  my $outputBAM = $optOutputPrefix.".sorted.bam";
 
   my $rA_inputs;
   my $dateToTest;
@@ -79,26 +79,30 @@ sub mem {
   if (!$ro_job->isUp2Date()) {
     my $rgTag = "'" . '@RG\tID:' . $rgId . '\tSM:' . $rgSample . '\tLB:' . $rgLibrary . '\tPU:run' . $rgPlatformUnit . '\tCN:' . $rgCenter . '\tPL:Illumina' . "'";
     my $bwaCommand;
-    $bwaCommand .= LoadConfig::moduleLoad($rH_cfg, [['mem', 'moduleVersion.bwa'], ['mem', 'moduleVersion.picard'], ['mem', 'moduleVersion.java']]) . ' &&';
-    $bwaCommand .= ' bwa mem ';
-    $bwaCommand .= ' ' . LoadConfig::getParam($rH_cfg, 'mem', 'bwaExtraFlags');
-    $bwaCommand .= ' -R ' . $rgTag;
-    $bwaCommand .= ' ' . $bwaRefIndex;
+    $bwaCommand .= LoadConfig::moduleLoad($rH_cfg, [
+      ['mem', 'moduleVersion.bwa'],
+      ['mem', 'moduleVersion.picard'],
+      ['mem', 'moduleVersion.java']]
+    ) . " && \\\n";
+    $bwaCommand .= "bwa mem ";
+    $bwaCommand .= LoadConfig::getParam($rH_cfg, 'mem', 'bwaExtraFlags') . " \\\n";
+    $bwaCommand .= "  -R $rgTag \\\n";
+    $bwaCommand .= "  $bwaRefIndex \\\n";
     if (defined($pair1) && defined($pair2)) {
-      $bwaCommand .= ' ' . $pair1;
-      $bwaCommand .= ' ' . $pair2;
+      $bwaCommand .= "  $pair1 \\\n";
+      $bwaCommand .= "  $pair2 \\\n";
     } elsif (defined($single)) {
-      $bwaCommand .= ' ' . $single;
+      $bwaCommand .= " $single \\\n";
     } else {
-      die "Unknown runType, not paired or single\n";
+      die "[Error] BWA::mem: unknown runType, not paired or single";
     }
-    $bwaCommand .= ' | java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'mem', 'tmpDir');
-    $bwaCommand .= ' ' . LoadConfig::getParam($rH_cfg, 'mem', 'extraJavaFlags');
-    $bwaCommand .= ' -Xmx' . LoadConfig::getParam($rH_cfg, 'mem', 'sortRam');
-    $bwaCommand .= ' -jar \${PICARD_HOME}/SortSam.jar';
-    $bwaCommand .= '  INPUT=/dev/stdin CREATE_INDEX=true VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate';
-    $bwaCommand .= ' OUTPUT=' . $outputBAM;
-    $bwaCommand .= ' MAX_RECORDS_IN_RAM=' . LoadConfig::getParam($rH_cfg, 'mem', 'sortRecInRam', 1, 'int');
+    $bwaCommand .= "| java -Djava.io.tmpdir=" . LoadConfig::getParam($rH_cfg, 'mem', 'tmpDir') . " ";
+    $bwaCommand .= LoadConfig::getParam($rH_cfg, 'mem', 'extraJavaFlags');
+    $bwaCommand .= " -Xmx" . LoadConfig::getParam($rH_cfg, 'mem', 'sortRam');
+    $bwaCommand .= " -jar \\\${PICARD_HOME}/SortSam.jar \\\n";
+    $bwaCommand .= "  INPUT=/dev/stdin CREATE_INDEX=true VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate \\\n";
+    $bwaCommand .= "  OUTPUT=$outputBAM \\\n";
+    $bwaCommand .= "  MAX_RECORDS_IN_RAM=" . LoadConfig::getParam($rH_cfg, 'mem', 'sortRecInRam', 1, 'int');
 
     $ro_job->addCommand($bwaCommand);
   }
@@ -150,9 +154,9 @@ sub pairCommand {
     $bwaRefIndex = $indexToUse;
   }
   
-  my $outputSai1Name = $optOutputPrefix . '.pair1.sai';
-  my $outputSai2Name = $optOutputPrefix . '.pair2.sai';
-  my $outputBAM = $optOutputPrefix . '.sorted.bam';
+  my $outputSai1Name = $optOutputPrefix . ".pair1.sai";
+  my $outputSai2Name = $optOutputPrefix . ".pair2.sai";
+  my $outputBAM = $optOutputPrefix . ".sorted.bam";
 
   my $ro_job = new Job();
   $ro_job->testInputOutputs([$pair1, $pair2], [$outputSai1Name, $outputSai2Name, $outputBAM]);
@@ -161,39 +165,39 @@ sub pairCommand {
     my $sai1Command = "";
     my $sai2Command = "";
     my $bwaCommand  = "";
-    $sai1Command .= LoadConfig::moduleLoad($rH_cfg, [['aln', 'moduleVersion.bwa']]) . ' &&';
-    $sai1Command .= 'bwa aln';
-    $sai1Command .= ' -t ' . LoadConfig::getParam($rH_cfg, 'aln', 'bwaAlnThreads', 1, 'int');
-    $sai1Command .= ' ' . $bwaRefIndex;
-    $sai1Command .= ' ' . $pair1;
-    $sai1Command .= ' -f ' . $outputSai1Name;
+    $sai1Command .= LoadConfig::moduleLoad($rH_cfg, [['aln', 'moduleVersion.bwa']]) . " && \\\n";
+    $sai1Command .= "bwa aln";
+    $sai1Command .= " -t " . LoadConfig::getParam($rH_cfg, 'aln', 'bwaAlnThreads', 1, 'int');
+    $sai1Command .= " " . $bwaRefIndex;
+    $sai1Command .= " " . $pair1;
+    $sai1Command .= " -f " . $outputSai1Name;
     $ro_job->addCommand($sai1Command);
 
-    $sai2Command .= LoadConfig::moduleLoad($rH_cfg, [['aln', 'moduleVersion.bwa']]) . ' &&';
-    $sai2Command .= 'bwa aln';
-    $sai2Command .= ' -t ' . LoadConfig::getParam($rH_cfg, 'aln', 'bwaAlnThreads', 1, 'int');
-    $sai2Command .= ' ' . $bwaRefIndex;
-    $sai2Command .= ' ' . $pair2;
-    $sai2Command .= ' -f ' . $outputSai2Name;
+    $sai2Command .= LoadConfig::moduleLoad($rH_cfg, [['aln', 'moduleVersion.bwa']]) . " && \\\n";
+    $sai2Command .= "bwa aln";
+    $sai2Command .= " -t " . LoadConfig::getParam($rH_cfg, 'aln', 'bwaAlnThreads', 1, 'int');
+    $sai2Command .= " " . $bwaRefIndex;
+    $sai2Command .= " " . $pair2;
+    $sai2Command .= " -f " . $outputSai2Name;
     $ro_job->addCommand($sai2Command);
 
     my $rgTag = "'" . '@RG\tID:' . $rgId . '\tSM:' . $rgSample . '\tLB:' . $rgLibrary . '\tPU:run' . $rgPlatformUnit . '\tCN:' . $rgCenter . '\tPL:Illumina' . "'";
-    $bwaCommand .= LoadConfig::moduleLoad($rH_cfg, [['aln', 'moduleVersion.bwa'], ['aln', 'moduleVersion.picard'], ['aln', 'moduleVersion.java']]) . ' &&';
-    $bwaCommand .= ' bwa sampe ';
-    $bwaCommand .= ' ' . LoadConfig::getParam($rH_cfg, 'aln', 'bwaExtraSamXeFlags', 0);
-    $bwaCommand .= ' -r ' . $rgTag;
-    $bwaCommand .= ' ' . $bwaRefIndex;
-    $bwaCommand .= ' ' . $outputSai1Name;
-    $bwaCommand .= ' ' . $outputSai2Name;
-    $bwaCommand .= ' ' . $pair1;
-    $bwaCommand .= ' ' . $pair2;
-    $bwaCommand .= ' | java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'aln', 'tmpDir');
-    $bwaCommand .= ' ' . LoadConfig::getParam($rH_cfg, 'aln', 'extraJavaFlags');
-    $bwaCommand .= ' -Xmx' . LoadConfig::getParam($rH_cfg, 'aln', 'sortRam');
+    $bwaCommand .= LoadConfig::moduleLoad($rH_cfg, [['aln', 'moduleVersion.bwa'], ['aln', 'moduleVersion.picard'], ['aln', 'moduleVersion.java']]) . " && \\\n";
+    $bwaCommand .= " bwa sampe ";
+    $bwaCommand .= " " . LoadConfig::getParam($rH_cfg, 'aln', 'bwaExtraSamXeFlags', 0);
+    $bwaCommand .= " -r " . $rgTag;
+    $bwaCommand .= " " . $bwaRefIndex;
+    $bwaCommand .= " " . $outputSai1Name;
+    $bwaCommand .= " " . $outputSai2Name;
+    $bwaCommand .= " " . $pair1;
+    $bwaCommand .= " " . $pair2;
+    $bwaCommand .= " | java -Djava.io.tmpdir=" . LoadConfig::getParam($rH_cfg, 'aln', 'tmpDir');
+    $bwaCommand .= " " . LoadConfig::getParam($rH_cfg, 'aln', 'extraJavaFlags');
+    $bwaCommand .= " -Xmx" . LoadConfig::getParam($rH_cfg, 'aln', 'sortRam');
     $bwaCommand .= ' -jar \${PICARD_HOME}/SortSam.jar';
-    $bwaCommand .= ' INPUT=/dev/stdin CREATE_INDEX=true VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate';
-    $bwaCommand .= ' OUTPUT=' . $outputBAM;
-    $bwaCommand .= ' MAX_RECORDS_IN_RAM=' . LoadConfig::getParam($rH_cfg, 'aln', 'sortRecInRam', 1, 'int');
+    $bwaCommand .= " INPUT=/dev/stdin CREATE_INDEX=true VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate";
+    $bwaCommand .= " OUTPUT=" . $outputBAM;
+    $bwaCommand .= " MAX_RECORDS_IN_RAM=" . LoadConfig::getParam($rH_cfg, 'aln', 'sortRecInRam', 1, 'int');
 
     $ro_job->addCommand($bwaCommand);
   }
@@ -218,8 +222,8 @@ sub singleCommand {
     $bwaRefIndex = $indexToUse;
   }
   
-  my $outputSaiName = $optOutputPrefix . '.single.sai';
-  my $outputBAM = $optOutputPrefix . '.sorted.bam';
+  my $outputSaiName = $optOutputPrefix . ".single.sai";
+  my $outputBAM = $optOutputPrefix . ".sorted.bam";
 
   my $ro_job = new Job();
   $ro_job->testInputOutputs([$single], [$outputSaiName, $outputBAM]);
@@ -228,30 +232,30 @@ sub singleCommand {
   if (!$ro_job->isUp2Date()) {
     my $saiCommand = "";
 
-    $saiCommand .= LoadConfig::moduleLoad($rH_cfg, [['aln', 'moduleVersion.bwa']]) . ' &&';
-    $saiCommand .= 'bwa aln';
-    $saiCommand .= ' -t ' . LoadConfig::getParam( $rH_cfg, 'aln', 'bwaAlnThreads', 1, 'int');
-    $saiCommand .= ' ' . $bwaRefIndex;
-    $saiCommand .= ' ' . $single;
-    $saiCommand .= ' -f ' . $outputSaiName;
+    $saiCommand .= LoadConfig::moduleLoad($rH_cfg, [['aln', 'moduleVersion.bwa']]) . " &&";
+    $saiCommand .= "bwa aln";
+    $saiCommand .= " -t " . LoadConfig::getParam( $rH_cfg, 'aln', 'bwaAlnThreads', 1, 'int');
+    $saiCommand .= " " . $bwaRefIndex;
+    $saiCommand .= " " . $single;
+    $saiCommand .= " -f " . $outputSaiName;
     $ro_job->addCommand($saiCommand);
 
     my $rgTag = "'" . '@RG\tID:' . $rgId . '\tSM:' . $rgSample . '\tLB:' . $rgLibrary . '\tPU:run' . $rgPlatformUnit . '\tCN:' . $rgCenter . '\tPL:Illumina' . "'";
     my $bwaCommand = "";
-    $bwaCommand .= LoadConfig::moduleLoad($rH_cfg, [['aln', 'moduleVersion.bwa'], ['aln', 'moduleVersion.picard'], ['aln', 'moduleVersion.java']]) . ' &&';
-    $bwaCommand .= ' bwa samse';
-    $bwaCommand .= ' ' . LoadConfig::getParam($rH_cfg, 'aln', 'bwaExtraSamXeFlags', 0);
-    $bwaCommand .= ' -r ' . $rgTag;
-    $bwaCommand .= ' ' . $bwaRefIndex;
-    $bwaCommand .= ' ' . $outputSaiName;
-    $bwaCommand .= ' ' . $single;
-    $bwaCommand .= ' | java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'aln', 'tmpDir');
-    $bwaCommand .= ' ' . LoadConfig::getParam($rH_cfg, 'aln', 'extraJavaFlags');
-    $bwaCommand .= ' -Xmx' . LoadConfig::getParam($rH_cfg, 'aln', 'sortRam');
+    $bwaCommand .= LoadConfig::moduleLoad($rH_cfg, [['aln', 'moduleVersion.bwa'], ['aln', 'moduleVersion.picard'], ['aln', 'moduleVersion.java']]) . " &&";
+    $bwaCommand .= " bwa samse";
+    $bwaCommand .= " " . LoadConfig::getParam($rH_cfg, 'aln', 'bwaExtraSamXeFlags', 0);
+    $bwaCommand .= " -r " . $rgTag;
+    $bwaCommand .= " " . $bwaRefIndex;
+    $bwaCommand .= " " . $outputSaiName;
+    $bwaCommand .= " " . $single;
+    $bwaCommand .= " | java -Djava.io.tmpdir=" . LoadConfig::getParam($rH_cfg, 'aln', 'tmpDir');
+    $bwaCommand .= " " . LoadConfig::getParam($rH_cfg, 'aln', 'extraJavaFlags');
+    $bwaCommand .= " -Xmx" . LoadConfig::getParam($rH_cfg, 'aln', 'sortRam');
     $bwaCommand .= ' -jar \${PICARD_HOME}/SortSam.jar';
-    $bwaCommand .= ' INPUT=/dev/stdin CREATE_INDEX=true VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate';
-    $bwaCommand .= ' OUTPUT=' . $outputBAM;
-    $bwaCommand .= ' MAX_RECORDS_IN_RAM=' . LoadConfig::getParam($rH_cfg, 'aln', 'sortRecInRam', 1, 'int');
+    $bwaCommand .= " INPUT=/dev/stdin CREATE_INDEX=true VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate";
+    $bwaCommand .= " OUTPUT=" . $outputBAM;
+    $bwaCommand .= " MAX_RECORDS_IN_RAM=" . LoadConfig::getParam($rH_cfg, 'aln', 'sortRecInRam', 1, 'int');
 
     $ro_job->addCommand($bwaCommand);
   }
@@ -264,11 +268,11 @@ sub index {
   my $toIndex  = shift;
 
   my $ro_job = new Job();
-  $ro_job->testInputOutputs([$toIndex], [$toIndex . '.bwt']);
+  $ro_job->testInputOutputs([$toIndex], [$toIndex . ".bwt"]);
 
   if (!$ro_job->isUp2Date()) {
-    my $command = LoadConfig::moduleLoad($rH_cfg, [['index', 'moduleVersion.bwa']]) . ' &&';
-    $command .= ' bwa index ' . $toIndex;
+    my $command = LoadConfig::moduleLoad($rH_cfg, [['index', 'moduleVersion.bwa']]) . " &&";
+    $command .= " bwa index " . $toIndex;
 
     $ro_job->addCommand($command);
   }

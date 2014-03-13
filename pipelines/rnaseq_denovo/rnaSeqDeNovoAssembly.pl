@@ -390,13 +390,11 @@ sub trim {
 
   my $baseDirectory = "$sample/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
   my $rawDirectory = LoadConfig::getParam($rH_cfg, 'trim', 'rawReadDir', 1, 'dirpath') . "/$baseDirectory";
-  my $input1 = $rawDirectory . $rH_laneInfo->{'read1File'};
-  my $trimDirectory = "\$WORK_DIR/reads/$baseDirectory";
   my $rO_job = Trimmomatic::trim(
     $rH_cfg,
     $rawDirectory . "/" . $rH_laneInfo->{'read1File'},
     $rH_laneInfo->{'read2File'} ? $rawDirectory . "/" . $rH_laneInfo->{'read2File'} : undef,
-    $trimDirectory,
+    "\$WORK_DIR/reads/$baseDirectory",
     $rH_laneInfo->{'qualOffset'}
   );
   return $rO_job;
