@@ -522,7 +522,8 @@ sub PyNAST{
       ['memtime', 'moduleVersion.memtime'],
       ['qiime-dependencies', 'moduleVersion.qiime-dependencies'],
       ['python', 'moduleVersion.python'],
-      ['pynast', 'moduleVersion.pynast']
+      ['pynast', 'moduleVersion.pynast'],
+      ['openmpi', 'moduleVersion.openmpi']
     ]) . ' && ';
 		$cmd .=	' memtime ';
 		$cmd .= ' mpirun -np ' . LoadConfig::getParam($rH_cfg, 'pynast', 'num_threads', 1, 'int');
