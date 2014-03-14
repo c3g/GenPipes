@@ -606,6 +606,7 @@ sub betaDiversity{
       ['qiime', 'moduleVersion.qiime'],
       ['python', 'moduleVersion.python']
     ]) . ' && ';
+    $cmd .= 'unset LD_LIBRARY_PATH; ';
 		$cmd .=	' memtime ';
 		$cmd .= 'beta_diversity.py';
 		$cmd .= ' -i ' . $biom;
@@ -767,6 +768,7 @@ sub alphaDiversity{
       ['qiime', 'moduleVersion.qiime'],
       ['python', 'moduleVersion.python']
     ]) . ' && ';
+    $cmd .= 'unset LD_LIBRARY_PATH; ';
 		$cmd .=	' memtime ';
 		$cmd .= 'parallel_alpha_diversity.py';
 		$cmd .= ' -i ' . $indir;
