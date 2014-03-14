@@ -1,3 +1,5 @@
+#!/bin/bash
+
 ## Install Perl modules from MCPAN.
 
 export PERL_MM_USE_DEFAULT=1

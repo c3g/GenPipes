@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 #
 # Software_name  ## TO BE MODIFIED WITH e.g. BLAST, HMMER, SAMtools, etc.

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 
 ### NOTE (FL): rnmmer is a pain to install:

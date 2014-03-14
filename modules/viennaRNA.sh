@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 SOFTWARE="ViennaRNA"  ## TO BE MODIFIED WITH e.g. blast, hmmer, samtools, etc.
 VERSION="1.8.3"  

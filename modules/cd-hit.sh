@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # rm -rf /mnt/parallel_scratch_mp2_wipe_on_august_2014/bourque/bourque_group/analyste/software/cd-hit
 SOFTWARE="cd-hit"

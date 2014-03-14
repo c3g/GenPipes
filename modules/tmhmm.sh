@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 ## NOTE (FL): 
 # - Tools from cbs.dtu.dk under some sort of danish license and need to be downloaded manually.

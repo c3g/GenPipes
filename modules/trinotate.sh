@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # NOTE: 
 # - Perl module DB_File is a dependency for the Transdecoder part of Trinotate. This module depends on some version BerkeleyDB which was not present on MAmmouth...

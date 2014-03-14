@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # NOTE:
 # This script is not fully portable because of BLAS and LAPACK. Pay attention to corresponding setenv paths below.
 # TODO: we need to a way to keep track of the list of python packages + their versions for reporting, something a la help('modules')

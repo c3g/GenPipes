@@ -1,4 +1,4 @@
-
+#!/bin/bash
 
 # Prerequisite: gcc; python2.7; numpy; R
 # 
@@ -19,10 +19,6 @@
 # Finally, type: python -c ‘from qcmodule import SAM’. If no error message comes out, RSeQC modules have been installed successfully.
 # 
 
-
-
-
-#!/bin/sh
 
 #
 # Software_name  ## TO BE MODIFIED WITH e.g. BLAST, HMMER, SAMtools, etc.
@@ -78,6 +74,3 @@ mv $VERSION .version $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
 
 # Clean up temporary installation files if any
 rm -rf $INSTALL_DOWNLOAD
-
-
-

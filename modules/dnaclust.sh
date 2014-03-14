@@ -1,4 +1,4 @@
-
+#!/bin/bash
 
 MUGQIC_INSTALL_HOME="/sb/programs/analyste" # abacus
 # MUGQIC_OPT="/mnt/scratch_mp2/bourque/bourque_group/software/areas/genomics/opt/" # Mammouth (NO GOOD for now)
