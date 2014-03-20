@@ -1,6 +1,7 @@
+#!/bin/bash
 
 ###################
-################### picard
+################### mutect
 ###################
 VERSION="1.1.4"
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/mutect/

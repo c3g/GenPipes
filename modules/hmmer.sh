@@ -1,8 +1,9 @@
+#!/bin/bash
 
 ###################
 ################### HMMER
 ###################
-VERSION=3.0
+VERSION="3.1b1"
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/hmmer/hmmer-$VERSION
 INSTALL_DOWNLOAD=$MUGQIC_INSTALL_HOME/software/hmmer/tmp
 mkdir -p $INSTALL_PATH $INSTALL_DOWNLOAD

@@ -1,3 +1,5 @@
+#!/bin/bash
+
 ## Install Perl modules from MCPAN.
 
 export PERL_MM_USE_DEFAULT=1
@@ -79,6 +81,7 @@ perl -MCPAN -e 'install common::sense'
 perl -MCPAN -e 'install version'
 perl -MCPAN -e 'install Statistics::Descriptive'
 perl -MCPAN -e 'install Module::Build'
+perl -MCPAN -e 'install DB_File'
 
 chmod -R 775 $MUGQIC_INSTALL_HOME/software/perl
 

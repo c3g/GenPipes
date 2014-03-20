@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 SOFTWARE=entrezdirect  ## TO BE MODIFIED WITH e.g. blast, hmmer, samtools, etc.
 VERSION=1.0.0  ## TO BE MODIFIED WITH e.g. 2.2.28+, 3.0, 0.1.19, etc.
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/$SOFTWARE

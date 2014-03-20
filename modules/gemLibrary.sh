@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash
 # Install software needed to run the Freebayes 
 # Dependency of MUGQIC_HOME environment variable is assumed
 
