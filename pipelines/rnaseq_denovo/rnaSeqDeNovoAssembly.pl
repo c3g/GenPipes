@@ -66,13 +66,15 @@ use lib "$FindBin::Bin/../../lib";
 # Dependency modules
 #-------------------
 use Cwd 'abs_path';
+use File::Basename;
 use Getopt::Std;
 use GqSeqUtils;
 use LoadConfig;
 use Metrics;
 use Picard;
-use SampleSheet;
-use SubmitToCluster;
+use Pipeline;
+#use SampleSheet;
+#use SubmitToCluster;
 use Trimmomatic;
 use Trinity;
 use Version;
@@ -83,67 +85,67 @@ my @A_steps = (
   {
     'name'   => 'bamToFastq',
     'loop'   => 'readSet',
-    'parent' => []
+    'parentSteps' => []
   },
   {
     'name'   => 'trim',
     'loop'   => 'readSet',
-    'parent' => ['bamToFastq']
+    'parentSteps' => ['bamToFastq']
   },
   {
     'name'   => 'normalization',
     'loop'   => 'readSet',
-    'parent' => ['trim']
+    'parentSteps' => ['trim']
   },
   {
     'name'   => 'normalizationMergeResults',
     'loop'   => 'global',
-    'parent' => ['normalization']
+    'parentSteps' => ['normalization']
   },
   {
     'name'   => 'trinity',
     'loop'   => 'global',
-    'parent' => ['normalizationMergeResults']
+    'parentSteps' => ['normalizationMergeResults']
   },
   {
     'name'   => 'blastSplitQuery',
     'loop'   => 'global',
-    'parent' => ['trinity']
+    'parentSteps' => ['trinity']
   },
   {
     'name'   => 'blast',
     'loop'   => 'global',
-    'parent' => ['blastSplitQuery']
+    'parentSteps' => ['blastSplitQuery']
   },
   {
     'name'   => 'blastMergeResults',
     'loop'   => 'global',
-    'parent' => ['blast']
+    'parentSteps' => ['blast']
   },
   {
     'name'   => 'rsemPrepareReference',
     'loop'   => 'global',
-    'parent' => ['trinity']
+    'parentSteps' => ['trinity']
   },
   {
     'name'   => 'rsem',
     'loop'   => 'readSet',
-    'parent' => ['rsemPrepareReference']
+    'parentSteps' => ['rsemPrepareReference']
   },
   {
     'name'   => 'differentialGeneExpression',
     'loop'   => 'global',
-    'parent' => ['rsem', 'blastMergeResults']
+    'parentSteps' => ['rsem', 'blastMergeResults']
   },
   {
     'name'   => 'metrics',
     'loop'   => 'global',
-    'parent' => ['trim']
+    'parentSteps' => ['trim']
   },
   {
     'name'   => 'deliverable',
     'loop'   => 'global',
-    'parent' => ['metrics', 'differentialGeneExpression']
+    'parentSteps' => ['metrics', 'differentialGeneExpression']
   }
 );
 
@@ -154,6 +156,7 @@ my %H_steps =  map {$_->{'name'} => $_} @A_steps;
 my $configFile;
 my $nanuqSampleSheet;
 my $designFile;
+my $pipeline;
 
 # Main call
 main();
@@ -217,135 +220,44 @@ sub main {
   unless (-f $configFile) {die "Error: configuration file $configFile does not exist!\n" . getUsage()};
   my %cfg = LoadConfig->readConfigFile($configFile);
 
-  SubmitToCluster::initPipeline($workDirectory);
+  $pipeline = Pipeline->new(\@A_steps, $nanuqSampleSheet, $workDirectory);
 
   # Go through steps and create global or read-set jobs accordingly
-  for (my $i = $startStep; $i <= $endStep; $i++) {
-    my $step = $A_steps[$i - 1];
-    my $stepName = $step->{'name'};
+  foreach my $step ($pipeline->getStepsByRange($startStep, $endStep)) {
+    my $stepName = $step->getName();
     debug "main: processing step $stepName";
 
+    my $rO_job;
+
     # Read-set step creates 1 job per read-set
-    if ($step->{'loop'} eq 'readSet') {
+    if ($step->getLoop() eq 'readSet') {
       # Nanuq sample sheet is only necessary for read-set steps
-      unless (defined $nanuqSampleSheet) {die "Error: nanuq sample sheet is not defined! (use -n option)\n" . getUsage()};
-      unless (-f $nanuqSampleSheet) {die "Error: nanuq sample sheet $nanuqSampleSheet does not exist!\n" . getUsage()};
+#      unless (defined $nanuqSampleSheet) {die "Error: nanuq sample sheet is not defined! (use -n option)\n" . getUsage()};
+#      unless (-f $nanuqSampleSheet) {die "Error: nanuq sample sheet $nanuqSampleSheet does not exist!\n" . getUsage()};
+#
+#      my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($nanuqSampleSheet, LoadConfig::getParam(\%cfg, 'default', 'rawReadFormat', 0));
 
-      my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($nanuqSampleSheet, LoadConfig::getParam(\%cfg, 'default', 'rawReadFormat', 0));
-      foreach my $sample (keys %$rHoAoH_sampleInfo) {
-        my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sample};
-        for my $rH_laneInfo (@$rAoH_sampleLanes) {
-          my $readSet = $sample . "_" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
-          debug "main: processing read set $readSet";
-
-          @{$step->{'jobIds'}{$readSet}} = ();
+      foreach my $sample (@{$pipeline->getSamples()}) {
+        foreach my $readSet (@{$sample->getReadSets()}) {
+          debug "main: processing read set " . $readSet->getName();
 
           # Read-set step functions need sample and lane parameters
-          my $rO_job = &$stepName(\%cfg, $sample, $rH_laneInfo);
+          $rO_job = &$stepName(\%cfg, $readSet);
           if ($rO_job) {
-            debug "main: submitJob $rO_job";
-            submitJob(\%cfg, $step, $readSet, $rO_job);
+            $rO_job->setTags([$sample->getName(), $readSet->getName()]);
+            debug "main: readSet job " . join(".", @{$rO_job->getTags()});
+            $step->submitJob(\%cfg, $rO_job);
           }
         }
       }
     # Global step creates 1 job only
     } else {
-      @{$step->{'jobIds'}{'global'}} = ();
-      my $rO_job = &$stepName(\%cfg);
+      $rO_job = &$stepName(\%cfg);
       if ($rO_job) {
-        submitJob(\%cfg, $step, undef, $rO_job);
+        $rO_job->setTags([]);
+        $step->submitJob(\%cfg, $rO_job);
       }
     }
-  }
-}
-
-# Generic job submission function; readSet parameter is undefined for global steps
-sub submitJob {
-  my $rH_cfg = shift;
-  my $step = shift;
-  my $readSet = shift;
-  my $rO_job = shift;
-
-  # If job is up to date, nothing to do
-  unless ($rO_job->isUp2Date()) {
-
-    # Set job name after uppercased step name and, if readSet step, readSet name
-    my $stepName = $step->{'name'};
-    debug "submitJob: processing step $stepName";
-
-    my $jobIdPrefix = uc($stepName);
-    if (defined $readSet) {
-      debug "submitJob: processing read set $readSet";
-      $jobIdPrefix .= "_" . $readSet;
-    }
-  
-    # Set job dependencies
-    my @dependencyJobIds = ();
-  
-    # Retrieve the list of step parents
-    my @A_stepParents = map {$H_steps{$_}} @{$step->{'parent'}};
-  
-    for my $stepParent (@A_stepParents) {
-      debug "submitJob: processing step parent: " . $stepParent->{'name'};
-
-      if ($stepParent->{'jobIds'}) {
-        # If read-set-only job depends on read-set-only parent job, retrieve job ID dependencies for this read set only
-        if ($step->{'loop'} eq 'readSet' and $stepParent->{'loop'} eq 'readSet') {
-          push(@dependencyJobIds, @{$stepParent->{'jobIds'}{$readSet}});
-        # Otherwise, retrieve all parent job ID dependencies
-        } else {
-          for my $value (values %{$stepParent->{'jobIds'}}) {
-            if ($value) {
-              push(@dependencyJobIds, @$value);
-            }
-          }
-        }
-      }
-    }
-
-    # Concatenate all job IDs with cluster dependency separator
-    my $dependencies = join (LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep'), map {"\$" . $_} @dependencyJobIds);
-  
-    # Write out the job submission
-    my $jobId = SubmitToCluster::printSubmitCmd($rH_cfg, $stepName, undef, $jobIdPrefix, $dependencies, $readSet, $rO_job);
-  
-    # Store step job ID for future dependencies retrieval
-    if ($readSet) {
-      push (@{$step->{'jobIds'}{$readSet}}, $jobId);
-    } else {
-      push (@{$step->{'jobIds'}{'global'}}, $jobId);
-    }
-  }
-}
-
-sub getRunType {
-  my $nanuqSampleSheet = shift;
-
-  my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($nanuqSampleSheet);
-
-  my $singleCount = 0;
-  my $pairedCount = 0;
-
-  # Count single/paired run types for each lane of each sample
-  foreach my $sample (keys %$rHoAoH_sampleInfo) {
-    my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sample};
-
-    for my $rH_laneInfo (@$rAoH_sampleLanes) {
-      if ($rH_laneInfo->{'runType'} eq "SINGLE_END") {
-        $singleCount++;
-      } elsif ($rH_laneInfo->{'runType'} eq "PAIRED_END") {
-        $pairedCount++;
-      } else {
-        die "Error in getRunType: unknown run type (can be 'SINGLE_END' or 'PAIRED_END' only): " . $rH_laneInfo->{'runType'};
-      }
-    }
-  }
-  if ($singleCount > 0 and $pairedCount == 0) {
-    return "single";
-  } elsif ($singleCount == 0 and $pairedCount > 0) {
-    return "paired";
-  } else {
-    die "Error in getRunType: single and paired reads mix not supported!";
   }
 }
 
@@ -354,30 +266,21 @@ sub getRunType {
 
 sub bamToFastq {
   my $rH_cfg = shift;
-  my $sample = shift;
-  my $rH_laneInfo = shift;
+  my $readSet = shift;
 
   my $rO_job;
-  my $baseDirectory = "$sample/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
-  my $rawDirectory = LoadConfig::getParam($rH_cfg, 'default', 'rawReadDir', 1, 'dirpath') . "/" . $baseDirectory;
-  my $input1 = $rawDirectory . "/" . $rH_laneInfo->{'read1File'};
 
-  if ($input1 =~ /\.bam$/) {
-    if ($rH_laneInfo->{'runType'} eq "SINGLE_END") {
-      my $outputFastq1 = $input1;
-      $outputFastq1 =~ s/\.bam$/.single.fastq.gz/;
-      $rO_job = Picard::samToFastq($rH_cfg, $input1, $outputFastq1);
-      $rH_laneInfo->{'read1File'} = $outputFastq1;
-    } elsif ($rH_laneInfo->{'runType'} eq "PAIRED_END") {
-      my $outputFastq1 = $input1;
-      my $outputFastq2 = $input1;
-      $outputFastq1 =~ s/\.bam$/.pair1.fastq.gz/;
-      $outputFastq2 =~ s/\.bam$/.pair2.fastq.gz/;
-      $rO_job = Picard::samToFastq($rH_cfg, $input1, $outputFastq1, $outputFastq2);
-      $rH_laneInfo->{'read1File'} = $outputFastq1;
-      $rH_laneInfo->{'read2File'} = $outputFastq2;
-    } else {
-      die "Error in rnaSeqDeNovoAssembly::bamToFastq: unknown run type (can be 'SINGLE_END' or 'PAIRED_END' only): " . $rH_laneInfo->{'runType'};
+  if ($readSet->getBAM()) {
+    if ($readSet->getRunType() eq "PAIRED_END") {
+      $readSet->setFASTQ1($readSet->getBAM());
+      $readSet->getFASTQ1() =~ s/\.bam$/.pair1.fastq.gz/;
+      $readSet->setFASTQ2($readSet->getBAM());
+      $readSet->getFASTQ2() =~ s/\.bam$/.pair2.fastq.gz/;
+      $rO_job = Picard::samToFastq($rH_cfg, $readSet->getBAM(), $readSet->getFASTQ1(), $readSet->getFASTQ2());
+    } elsif ($readSet->getRunType() eq "SINGLE_END") {
+      $readSet->setFASTQ1($readSet->getBAM());
+      $readSet->getFASTQ1() =~ s/\.bam$/.single.fastq.gz/;
+      $rO_job = Picard::samToFastq($rH_cfg, $readSet->getBAM(), $readSet->getFASTQ1());
     }
   }
   return $rO_job;
@@ -385,109 +288,137 @@ sub bamToFastq {
 
 sub trim {
   my $rH_cfg = shift;
-  my $sample = shift;
-  my $rH_laneInfo = shift;
+  my $readSet = shift;
 
-  my $baseDirectory = "$sample/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
-  my $rawDirectory = LoadConfig::getParam($rH_cfg, 'trim', 'rawReadDir', 1, 'dirpath') . "/$baseDirectory";
-  my $rO_job = Trimmomatic::trim(
+  my $trimFilePrefix = "\$WORK_DIR/trim/" . $readSet->getSample()->getName() . "/" . $readSet->getName() . ".trim.";
+
+  my $pairedOutput1;
+  my $unpairedOutput1;
+  my $pairedOutput2;
+  my $unpairedOutput2;
+  my $singleOutput;
+
+  if ($readSet->getRunType() eq "PAIRED_END") {
+    $pairedOutput1 = $trimFilePrefix . "pair1.fastq.gz";
+    $unpairedOutput1 = $trimFilePrefix . "single1.fastq.gz";
+    $pairedOutput2 = $trimFilePrefix . "pair2.fastq.gz";
+    $unpairedOutput2 = $trimFilePrefix . "single2.fastq.gz";
+  } elsif ($readSet->getRunType() eq "SINGLE_END") {
+    $singleOutput = $trimFilePrefix . "single.fastq.gz";
+  }
+
+  return Trimmomatic::trim(
     $rH_cfg,
-    $rawDirectory . "/" . $rH_laneInfo->{'read1File'},
-    $rH_laneInfo->{'read2File'} ? $rawDirectory . "/" . $rH_laneInfo->{'read2File'} : undef,
-    "\$WORK_DIR/reads/$baseDirectory",
-    $rH_laneInfo->{'qualOffset'}
+    $readSet->getFASTQ1(),
+    $readSet->getFASTQ2(),
+    $pairedOutput1,
+    $unpairedOutput1,
+    $pairedOutput2,
+    $unpairedOutput2,
+    $singleOutput,
+    $readSet->getQualityOffset(),
+    $trimFilePrefix . "out",
+    $trimFilePrefix . "stats.csv"
   );
-  return $rO_job;
 }
 
 sub normalization {
   my $rH_cfg = shift;
-  my $sample = shift;
-  my $rH_laneInfo = shift;
+  my $readSet = shift;
 
-  my $readFilePart = ".t" . LoadConfig::getParam($rH_cfg, 'trim', 'minQuality', 1, 'int') . "l" . LoadConfig::getParam($rH_cfg, 'trim', 'minLength', 1, 'int');
-  my $rO_job;
+  my $trimFilePrefix = "\$WORK_DIR/trim/" . $readSet->getSample()->getName() . "/" . $readSet->getName() . ".trim.";
+  my $normalizationDirectory = "\$WORK_DIR/normalization/" . $readSet->getSample()->getName() . "/" . $readSet->getName();
 
-  my $laneDirectory = $sample . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
-  my $readFilePrefix = "\$WORK_DIR/reads/" . $laneDirectory . "/" . $sample . "." . $rH_laneInfo->{'libraryBarcode'} . $readFilePart;
-  my $normDirectory = "\$WORK_DIR/normalization/$laneDirectory";
-
-  if ($rH_laneInfo->{'runType'} eq "SINGLE_END") {
-    my $single = $readFilePrefix . ".single.fastq.gz";
-    $rO_job = Trinity::normalize_by_kmer_coverage($rH_cfg, undef, undef, [$single], $normDirectory);
-  } elsif ($rH_laneInfo->{'runType'} eq "PAIRED_END") {
-    my $pair1 = $readFilePrefix . ".pair1.fastq.gz";
-    my $pair2 = $readFilePrefix . ".pair2.fastq.gz";
-    $rO_job = Trinity::normalize_by_kmer_coverage($rH_cfg, [$pair1], [$pair2], undef, $normDirectory);
-  } else {
-    die "Error in normalization: unknown read type\n";
+  if ($readSet->getRunType() eq "PAIRED_END") {
+    return Trinity::normalize_by_kmer_coverage(
+      $rH_cfg,
+      [$trimFilePrefix . "pair1.fastq.gz"],
+      [$trimFilePrefix . "pair2.fastq.gz"],
+      undef,
+      $normalizationDirectory
+    );
+  } elsif ($readSet->getRunType() eq "SINGLE_END") {
+    return Trinity::normalize_by_kmer_coverage(
+      $rH_cfg,
+      undef,
+      undef,
+      $trimFilePrefix . "single.fastq.gz",
+      $normalizationDirectory
+    );
   }
-  return $rO_job;
 }
 
 sub normalizationMergeResults {
   my $rH_cfg = shift;
 
-  my $runType = getRunType($nanuqSampleSheet);
-
-  my @A_leftFastq = ();
-  my @A_rightFastq = ();
-  my @A_singleFastq = ();
-
-  my $maxCoverage = LoadConfig::getParam($rH_cfg, 'normalization', 'maxCoverage', 1, 'int');
   my $kmerSize = LoadConfig::getParam($rH_cfg, 'normalization', 'kmerSize', 1, 'int');
+  my $maxCoverage = LoadConfig::getParam($rH_cfg, 'normalization', 'maxCoverage', 1, 'int');
   my $maxPctStdev = LoadConfig::getParam($rH_cfg, 'normalization', 'maxPctStdev', 1, 'float');
 
-  my $normFileSuffix = ".normalized_K" . $kmerSize . "_C" . $maxCoverage . "_pctSD" . $maxPctStdev . ".fq";
+  my $normalizedFileSuffix = ".normalized_K" . $kmerSize . "_C" . $maxCoverage . "_pctSD" . $maxPctStdev . ".fq";
 
-  my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($nanuqSampleSheet);
+  my $rA_leftNormalizedFiles;
+  my $rA_rightNormalizedFiles;
+  my $singleNormalizedFile;
 
-  # Retrieve single/paired end normalized files for each lane of each sample
-  foreach my $sample (keys %$rHoAoH_sampleInfo) {
-    my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sample};
+  # Retrieve single/paired end normalized files for each readSet
+  foreach my $sample (@{$pipeline->getSamples()}) {
+    foreach my $readSet (@{$sample->getReadSets()}) {
+      if ($readSet->getRunType() eq "PAIRED_END") {
+        my $normalizationDirectory = "\$WORK_DIR/normalization/" . $sample->getName() . "/" . $readSet->getName();
+        push(@$rA_leftNormalizedFiles, "$normalizationDirectory/left$normalizedFileSuffix");
+        push(@$rA_rightNormalizedFiles, "$normalizationDirectory/right$normalizedFileSuffix");
 
-    for my $rH_laneInfo (@$rAoH_sampleLanes) {
-      my $normDirectory = "\$WORK_DIR/normalization/" . $sample . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
-      if ($runType eq "single") {
-        push (@A_singleFastq, "$normDirectory/single$normFileSuffix");
-      } elsif ($runType eq "paired") {
-        push (@A_leftFastq, "$normDirectory/left$normFileSuffix");
-        push (@A_rightFastq, "$normDirectory/right$normFileSuffix");
+      } elsif ($readSet->getRunType() eq "SINGLE_END") {
+        # Assume only 1 SINGLE_END read file (multiple SINGLE_END read files not supported)
+        die "Error: normalizationMergeResults for multiple SINGLE_END reads is not implemented!";
       }
     }
   }
 
-  my $rO_job;
-
-  if ($runType eq "single") {
-    # Single-end reads
-    $rO_job = Trinity::normalize_by_kmer_coverage($rH_cfg, undef, undef, \@A_singleFastq, "\$WORK_DIR/normalization/global");
-  } else {
-    # Paired-end reads
-    $rO_job = Trinity::normalize_by_kmer_coverage($rH_cfg, \@A_leftFastq, \@A_rightFastq, undef, "\$WORK_DIR/normalization/global");
-  }
-
-  return $rO_job;
+  return Trinity::normalize_by_kmer_coverage(
+    $rH_cfg,
+    $rA_leftNormalizedFiles,
+    $rA_rightNormalizedFiles,
+    $singleNormalizedFile,
+    "\$WORK_DIR/normalization/global"
+  );
 }
 
 sub trinity {
   my $rH_cfg = shift;
 
-  my $runType = getRunType($nanuqSampleSheet);
+  if (scalar(@{$pipeline->getRunTypes()}) > 1) {
+    die "Error in trinity: assembly of multiple run types (" . join(", ", @{$pipeline->getRunTypes()}) . ") is not supported!";
+  }
+  my $runType = @{$pipeline->getRunTypes()}[0];
 
   my $maxCoverage = LoadConfig::getParam($rH_cfg, 'normalization', 'maxCoverage', 1, 'int');
   my $kmerSize = LoadConfig::getParam($rH_cfg, 'normalization', 'kmerSize', 1, 'int');
   my $maxPctStdev = LoadConfig::getParam($rH_cfg, 'normalization', 'maxPctStdev', 1, 'float');
 
-  my $normFileSuffix = ".normalized_K" . $kmerSize . "_C" . $maxCoverage . "_pctSD" . $maxPctStdev . ".fq";
+  my $normalizedFileSuffix = ".normalized_K" . $kmerSize . "_C" . $maxCoverage . "_pctSD" . $maxPctStdev . ".fq";
 
-  my $rO_job;
-  if ($runType eq "single") {
-    $rO_job = Trinity::trinity($rH_cfg, undef, undef, ["\$WORK_DIR/normalization/global/single$normFileSuffix"], "\$WORK_DIR/trinity_out_dir");
-  } else {
-    $rO_job = Trinity::trinity($rH_cfg, ["\$WORK_DIR/normalization/global/left$normFileSuffix"], ["\$WORK_DIR/normalization/global/right$normFileSuffix"], undef, "\$WORK_DIR/trinity_out_dir");
+  my $normalizationDirectory = "\$WORK_DIR/normalization/global";
+  my $trinityDirectory = "\$WORK_DIR/trinity_out_dir";
+
+  if ($runType eq "PAIRED_END") {
+    return Trinity::trinity(
+      $rH_cfg,
+      ["$normalizationDirectory/left$normalizedFileSuffix"],
+      ["$normalizationDirectory/right$normalizedFileSuffix"],
+      undef,
+      $trinityDirectory
+    );
+  } elsif ($runType eq "SINGLE_END") {
+    return Trinity::trinity(
+      $rH_cfg,
+      undef,
+      undef,
+      ["$normalizationDirectory/single$normalizedFileSuffix"],
+      $trinityDirectory
+    );
   }
-  return $rO_job;
 }
 
 sub blastSplitQuery {
@@ -560,7 +491,9 @@ sub blast {
 
       $rO_job->addCommand($command);
     }
-    submitJob($rH_cfg, $H_steps{"blast"}, "chunk_$jobIndex", $rO_job);
+    $rO_job->setStep($H_steps{"blast"});
+    $rO_job->setTags(["chunk_$jobIndex"]);
+    $pipeline->getStepByName("blast")->submitJob($rH_cfg, $rO_job);
   }
 }
 
@@ -584,7 +517,7 @@ sub blastMergeResults {
     $command .= "rm $result.tmp && \\\n";
 
     # Create a BLAST results ZIP file for future deliverables
-    $command .= "gzip -c $result > $result.gz \\\n";
+    $command .= "zip $result.zip $result \\\n";
 
     $rO_job->addCommand($command);
   }
@@ -595,15 +528,36 @@ sub blastMergeResults {
 sub rsemPrepareReference {
   my $rH_cfg = shift;
 
-  return Trinity::rsemPrepareReference($rH_cfg, "\$WORK_DIR");
+  return Trinity::rsemPrepareReference($rH_cfg, "\$WORK_DIR/trinity_out_dir/Trinity.fasta");
 }
 
 # RSEM abundance estimation is performed by read-set (there should be 1 read-set / sample for RNA-Seq)
 sub rsem {
   my $rH_cfg = shift;
-  my $sample = shift;
+  my $readSet = shift;
 
-  return Trinity::rsem($rH_cfg, "\$WORK_DIR", $sample);
+  my $trimFilePrefix = "\$WORK_DIR/trim/" . $readSet->getSample()->getName() . "/" . $readSet->getName() . ".trim.";
+
+  my $rA_input1;
+  my $rA_input2;
+
+  if ($readSet->getRunType() eq "PAIRED_END") {
+    $rA_input1 = [$trimFilePrefix . "pair1.fastq.gz"];
+    $rA_input2 = [$trimFilePrefix . "pair2.fastq.gz"];
+  } elsif ($readSet->getRunType() eq "SINGLE_END") {
+    $rA_input1 = [$trimFilePrefix . "single.fastq.gz"];
+  } else {
+    die "Error in rsem: unknown read type\n";
+  }
+
+  return Trinity::rsem(
+    $rH_cfg,
+    "\$WORK_DIR/trinity_out_dir/Trinity.fasta",
+    $rA_input1,
+    $rA_input2,
+    $readSet->getName(),
+    "\$WORK_DIR/rsem/" . $readSet->getSample()->getName() . "/" . $readSet->getName()
+  );
 }
 
 sub differentialGeneExpression {
@@ -640,8 +594,8 @@ sub differentialGeneExpression {
     $command .= "mkdir -p $dgeDir && \\\n";
 
     # Create isoforms and genes matrices with counts of RNA-seq fragments per feature using Trinity RSEM utility
-    $command .= "merge_RSEM_frag_counts_single_table.pl \$WORK_DIR/rsem/*/*.isoforms.results > $isoformsMatrix && \\\n";
-    $command .= "merge_RSEM_frag_counts_single_table.pl \$WORK_DIR/rsem/*/*.genes.results > $genesMatrix && \\\n";
+    $command .= "merge_RSEM_frag_counts_single_table.pl \$WORK_DIR/rsem/*/*/*.isoforms.results > $isoformsMatrix && \\\n";
+    $command .= "merge_RSEM_frag_counts_single_table.pl \$WORK_DIR/rsem/*/*/*.genes.results > $genesMatrix && \\\n";
 
     # Extract isoforms and genes length values
     $command .= "find \$WORK_DIR/rsem/ -name *.isoforms.results -exec cut -f 1,3,4 {} \\; -quit > \$WORK_DIR/rsem/isoforms.lengths.tsv && \\\n";
@@ -675,16 +629,16 @@ sub differentialGeneExpression {
 sub metrics {
   my $rH_cfg = shift;
 
-  my $metricsDirectory = "\$WORK_DIR/metrics";
-  print "mkdir -p $metricsDirectory\n";
-
-  my $libraryType = LoadConfig::getParam($rH_cfg, 'default', 'libraryType');
-  my $trimDirectory = "\$WORK_DIR/reads";
+  if (scalar(@{$pipeline->getRunTypes()}) > 1) {
+    die "Error in metrics: metrics of multiple run types (" . join(", ", @{$pipeline->getRunTypes()}) . ") is not supported!";
+  }
+  my $runType = @{$pipeline->getRunTypes()}[0];
+  my $trimDirectory = "\$WORK_DIR/trim";
   my $pattern = "trim.stats.csv";
-  my $outputFile = "$metricsDirectory/trimming.stats";
+  my $outputFile = "\$WORK_DIR/metrics/trimming.stats";
 
   # Merge all sample Trimmomatic results
-  return Metrics::mergeTrimmomaticStats($rH_cfg, $libraryType, $pattern, $trimDirectory, $outputFile);
+  return Metrics::mergeTrimmomaticStats($rH_cfg, $runType, $pattern, $trimDirectory, $outputFile);
 }
 
 sub deliverable {

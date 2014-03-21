@@ -48,6 +48,23 @@ sub new {
   return $self;
 }
 
+# Job name reflect job step/tags hierarchy e.g <step>.<sampleTag>.<readSetTag>
+sub getName {
+  my ($self) = @_;
+  return join(".", ($self->getStep()->getName(), @{$self->getTags()}));
+}
+
+sub setId {
+  my ($self, $id) = @_;
+  $self->{'_id'} = $id;
+}
+
+sub getId {
+  my ($self) = @_;
+  return $self->{'_id'};
+}
+
+
 sub addCommand {
   my ($self, $command) = @_;
   if (defined($command)) {
@@ -115,6 +132,26 @@ sub getCommand {
   return $self->{'_commands'}->[$idx];
 }
 
+sub setStep {
+  my ($self, $rH_step) = @_;
+  $self->{'_step'} = $rH_step;
+}
+
+sub getStep {
+  my ($self) = @_;
+  return $self->{'_step'};
+}
+
+sub setTags {
+  my ($self, $rA_tags) = @_;
+  $self->{'_tags'} = $rA_tags;
+}
+
+sub getTags {
+  my ($self) = @_;
+  return $self->{'_tags'};
+}
+
 sub setUp2Date {
   my ($self, $up2date) = @_;
   if (defined($up2date)) {
@@ -171,6 +208,47 @@ sub testInputOutputs {
     $self->addFilesToTest(\@outputDoneFiles);
     return " && touch " . join(" ", @outputDoneFiles);
   }
+}
+
+sub getDependencies {
+  my ($self) = @_;
+
+  my $dependencyJobs = [];
+
+  foreach my $parentStep (@{$self->getStep()->getParentSteps()}) {
+    foreach my $parentJob (@{$parentStep->getJobs()}) {
+      my $isParentJobDependency = 1;    # By default parent job is a dependency
+      
+      # Compare job tags: parent job is a dependency if current job tags are
+      # identical to parent job tags one by one or if tags are missing
+      # on any side e.g:
+
+      # current job tags [sample1, readset2] are dependent of
+      # parent job tags [sample1, readset2] or [sample1] or []
+      # but not dependent of [sample1, readset1] nor [sample2].
+
+      # Current job tags [sample1] are dependent of
+      # parent job tags [sample1, readset2] or [sample1] or []
+      # but not [sample2].
+
+      # Current job empty tags [] are dependent of
+      # every parent job tags [sample1, readset2], [sample1], [sample2], []...
+
+      my @currentJobTags = @{$self->getTags()};
+      my @parentJobTags = @{$parentJob->getTags()};
+      for my $i (0 .. $#currentJobTags) {
+        if ($parentJobTags[$i] and $currentJobTags[$i] ne $parentJobTags[$i]) {
+          $isParentJobDependency = 0;
+        }
+      }
+
+      if ($isParentJobDependency) {
+        push(@$dependencyJobs, $parentJob);
+      }
+    }
+  }
+
+  return $dependencyJobs;
 }
 
 1;

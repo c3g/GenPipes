@@ -46,24 +46,18 @@ sub normalize_by_kmer_coverage {
   my $rH_cfg = shift;
   my $rA_leftReadFiles = shift;
   my $rA_rightReadFiles = shift;
-  my $rA_singleReadFiles = shift;
+  my $singleReadFile = shift;    # Multiple SINGLE_END read files as input is not supported
   my $outputDirectory = shift;
 
   # Find out if reads are paired or single-end
   my $readType;
-  if (defined($rA_leftReadFiles) and defined($rA_rightReadFiles) and not(defined($rA_singleReadFiles))) {
+  if ($rA_leftReadFiles and $rA_rightReadFiles and not($singleReadFile)) {
     $readType = "paired";
-  } elsif (not(defined($rA_leftReadFiles)) and not(defined($rA_rightReadFiles)) and defined($rA_singleReadFiles)) {
+  } elsif (not($rA_leftReadFiles) and not($rA_rightReadFiles) and $singleReadFile) {
     $readType = "single";
   } else {
     die "Error in normalize_by_kmer_coverage: mixed or undefined paired/single reads!\n";
   }
-
-  my $maxCoverage = LoadConfig::getParam($rH_cfg, 'normalization', 'maxCoverage', 1, 'int');
-  my $kmerSize = LoadConfig::getParam($rH_cfg, 'normalization', 'kmerSize', 1, 'int');
-  my $maxPctStdev = LoadConfig::getParam($rH_cfg, 'normalization', 'maxPctStdev', 1, 'float');
-
-  my $outputSuffix = ".normalized_K" . $kmerSize . "_C" . $maxCoverage . "_pctSD" . $maxPctStdev . ".fq";
 
   my $leftList;
   my $rightList;
@@ -72,6 +66,12 @@ sub normalize_by_kmer_coverage {
   my $rA_outputs;
   my $readFileOptions;
 
+  my $kmerSize = LoadConfig::getParam($rH_cfg, 'normalization', 'kmerSize', 1, 'int');
+  my $maxCoverage = LoadConfig::getParam($rH_cfg, 'normalization', 'maxCoverage', 1, 'int');
+  my $maxPctStdev = LoadConfig::getParam($rH_cfg, 'normalization', 'maxPctStdev', 1, 'float');
+
+  my $outputSuffix = ".normalized_K" . $kmerSize . "_C" . $maxCoverage . "_pctSD" . $maxPctStdev . ".fq";
+
   if ($readType eq "paired") {    # Paired reads
     $leftList = "$outputDirectory/left";
     $rightList = "$outputDirectory/right";
@@ -79,9 +79,9 @@ sub normalize_by_kmer_coverage {
     $rA_inputs = [@$rA_leftReadFiles, @$rA_rightReadFiles];
     $rA_outputs = [$leftList . $outputSuffix, $rightList . $outputSuffix];
   } else {    # Single reads
-    $singleCat = "$outputDirectory/single";
-    $rA_inputs = [@$rA_singleReadFiles];
-    $rA_outputs = [$singleCat . $outputSuffix];
+    $singleCat = "$outputDirectory/single.normalized.fq";
+    $rA_inputs = [$singleReadFile];
+    $rA_outputs = [$singleReadFile . $outputSuffix];
   }
 
   my $rO_job = new Job();
@@ -105,13 +105,7 @@ sub normalize_by_kmer_coverage {
       }
       $readFileOptions = " --left_list $leftList --right_list $rightList ";
     } else {    # Single reads
-      $command .= "rm -f $singleCat && \\\n";
-      # Check if fastq are compressed or not
-      my $catCmd;
-      if ($$rA_singleReadFiles[0] =~ /\.gz$/) {$catCmd = "zcat"} else {$catCmd = "cat"};
-      # Merge all single fastq in one file since trinityrnaseq_r20131110 does not support --single_list!
-      $command .= "$catCmd " . join(" ", @$rA_singleReadFiles) . " > $singleCat && \\\n";
-      $readFileOptions = " --single $singleCat ";
+      $readFileOptions = " --single $singleReadFile ";
     }
 
     # Load modules and run Trinity normalization
@@ -187,7 +181,7 @@ $readFileOptions \\
     $command .= " " . LoadConfig::getParam($rH_cfg, 'trinity', 'trinityOptions', 1) . " && \\\n";
 
     # Create Trinity FASTA ZIP file for future deliverables
-    $command .= "gzip -c $outputDirectory/Trinity.fasta > $outputDirectory/Trinity.fasta.gz && \\\n";
+    $command .= "zip $outputDirectory/Trinity.fasta.zip $outputDirectory/Trinity.fasta && \\\n";
 
     # Compute assembly stats
     $command .= "Rscript -e 'library(gqSeqUtils); dnaFastaStats(filename = \\\"$outputDirectory/Trinity.fasta\\\", type = \\\"trinity\\\", output.prefix = \\\"$outputDirectory/Trinity.stats\\\")' \\\n";
@@ -199,7 +193,7 @@ $readFileOptions \\
 
 sub rsemPrepareReference {
   my $rH_cfg = shift;
-  my $workDirectory = shift;
+  my $transcriptFastaFile = shift;
 
   my $rO_job = new Job();
 
@@ -213,8 +207,8 @@ sub rsemPrepareReference {
     ]) . " && \\\n";
 
     $command .= "run_RSEM_align_n_estimate.pl \\
-      --transcripts \$WORK_DIR/trinity_out_dir/Trinity.fasta \\
-      --just_prep_reference \\\n";
+  --transcripts $transcriptFastaFile \\
+  --just_prep_reference \\\n";
 
     $rO_job->addCommand($command);
   }
@@ -223,16 +217,16 @@ sub rsemPrepareReference {
 
 sub rsem {
   my $rH_cfg = shift;
-  my $workDirectory = shift;
-  my $sample = shift;
+  my $transcriptFastaFile = shift;
+  my $rA_input1 = shift;    # FASTQ pair1 list or FASTQ single list
+  my $rA_input2 = shift;    # FASTQ pair2 list if any
+  my $outputPrefix = shift;
+  my $outputDirectory = shift;
 
   my $rO_job = new Job();
 
   if (!$rO_job->isUp2Date()) {
     my $command = "\n";
-
-    my $left  = "\\`find \$WORK_DIR/reads -name $sample*pair1*.fastq.gz | sort | paste -s -d,\\`";
-    my $right  = "\\`find \$WORK_DIR/reads -name $sample*pair2*.fastq.gz | sort | paste -s -d,\\`";
 
     $command .= LoadConfig::moduleLoad($rH_cfg, [
       ['trinity', 'moduleVersion.trinity'],
@@ -241,14 +235,17 @@ sub rsem {
     ]) . " && \\\n";
 
     $command .= "run_RSEM_align_n_estimate.pl \\
-      --transcripts \$WORK_DIR/trinity_out_dir/Trinity.fasta \\
-      --left $left \\
-      --right $right \\
-      --seqType fq \\
-      --SS_lib_type RF \\
-      --prefix $sample \\
-      --output_dir \$WORK_DIR/rsem/$sample \\
-      --thread_count " . LoadConfig::getParam($rH_cfg, 'rsem', 'rsemCPU', 1, 'int') . " \\\n";
+  --transcripts $transcriptFastaFile \\
+  --prefix $outputPrefix \\
+  --output_dir $outputDirectory \\
+  --thread_count " . LoadConfig::getParam($rH_cfg, 'rsem', 'rsemCPU', 1, 'int') . " \\\n";
+    if ($rA_input2) {   # Paired end reads
+      $command .= "  --left " . join(",", @$rA_input1) . " \\\n";
+      $command .= "  --right " . join(",", @$rA_input2) . " \\\n";
+    } else {    # Single end reads
+      $command .= "  --single " . join(",", @$rA_input1) . " \\\n";
+    }
+    $command .= "  " . LoadConfig::getParam($rH_cfg, 'rsem', 'rsemOptions') . " \\\n";
 
     $rO_job->addCommand($command);
   }

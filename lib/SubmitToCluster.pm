@@ -58,9 +58,6 @@ sub initPipeline {
     $workDir = "`pwd`";
   }
 
-  # Export WORK_DIR environment variable within Perl script for reuse in file paths
-  $ENV{'WORK_DIR'} = $workDir;
-
   # Add script name (without suffix) as job list filename prefix (in practice, identical to pipeline name)
   my $jobListPrefix = fileparse($0, qr/\.[^.]*/) . "_";
 

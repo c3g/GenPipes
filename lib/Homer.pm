@@ -77,9 +77,9 @@ sub makeTagDirectory {
 
   my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'genomeName');
   #my $refGenome = parseGenome($rH_cfg);
-  my $ro_job = new Job();
 
   if (defined $refGenome) {
+    my $ro_job = new Job();
     $ro_job->testInputOutputs([$sortedBAM], [$outputDir . '/' . $sampleName . '/tagInfo.txt']);
 
     my $command;
@@ -88,11 +88,11 @@ sub makeTagDirectory {
 
     $ro_job->addCommand($command);
 
+    return $ro_job;
   } else {
-    $ro_job->setUp2Date(1);
     print STDERR "\n#WARNING: Genome $refGenome not defined \n#QC, annotations and Motif analysis will not be executed\n\n";
+    return undef;
   }
-  return $ro_job;
 }
 
 sub makeUCSCFile {

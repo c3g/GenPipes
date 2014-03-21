@@ -74,8 +74,6 @@ sub clientReport {
   }
 
   my $ro_job = new Job();
-  #$ro_job->testInputOutputs([$iniFilePath],[$projectPath]]);
-  $ro_job->setUp2Date(0);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
