@@ -240,7 +240,6 @@ sub submitJob {
   # Set job name after uppercased step name and, if sample step, sample name
   my $stepName = $step->{'name'};
   my $jobIdPrefix = uc($stepName);
-  my $jobIds = $jobIdPrefix . "_JOB_IDS";
   if (defined $sample) {
     $jobIdPrefix .= "_" . $sample;
   }
@@ -307,9 +306,6 @@ sub trim {
   my $step = shift;
   my $sample = shift;
   my $rAoH_sampleLanes = shift;
-
-  # Check raw read directory
-  my $rawReadDirectory = LoadConfig::getParam($rH_cfg, 'default', 'rawReadDir', 1, 'dirpath');
 
   # Create trim job per sample per lane
   for my $rH_laneInfo (@$rAoH_sampleLanes) {

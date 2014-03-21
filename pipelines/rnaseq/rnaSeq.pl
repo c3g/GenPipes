@@ -250,9 +250,6 @@ sub main {
 	
 	SubmitToCluster::initPipeline($workDir);
 
-	my $latestBam;
-
-	
 	for(my $current = $opts{'s'}-1; $current <= ($opts{'e'}-1); $current++) {
 		my $fname = $steps[$current]->{'name'};
 		my $loopType = $steps[$current]->{'stepLoop'};
@@ -359,7 +356,6 @@ sub trimMetrics {
 	my $pattern = 'trim.stats.csv';
 	my $ouputFile = 'metrics/trimming.stats';
 	my $rO_job = Metrics::mergeTrimmomaticStats($rH_cfg,  $libraryType, $pattern, $folder, $ouputFile);
-	my $metricsJobId = undef;
 	if(!$rO_job->isUp2Date()) {
 		SubmitToCluster::printSubmitCmd($rH_cfg, "trimMetrics", undef, 'TRIMMETRICS', $trimmingDependency, undef, $rO_job);
 	}
@@ -677,7 +673,6 @@ sub rawCountsMetrics {
 	my $wigFolder = 'tracks/bigWig/' ;
 	my $wigArchive = 'tracks.zip' ;
 	my $rO_job = Wiggle::zipWig($rH_cfg, $wigFolder, $wigArchive);
-	my $wigZipJobId ;
 	if(!$rO_job->isUp2Date()) {
     SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", undef, 'WIGZIP' , $wiggleDependency, undef, $rO_job);
     if(!defined($metricsJobId)) {
@@ -694,7 +689,6 @@ sub rawCountsMetrics {
 	my $saturationDir = 'metrics/saturation';
 	
 	$rO_job =  Metrics::saturation($rH_cfg, $countFile, $geneSizeFile, $rpkmDir, $saturationDir);
-	my $saturationJobId = undef;
 	if(!$rO_job->isUp2Date()) {
 		SubmitToCluster::printSubmitCmd($rH_cfg, "saturation", undef, 'RPKM', $rO_matrixJob->getCommandJobId(0), undef, $rO_job);
     if(!defined($metricsJobId)) {
@@ -783,8 +777,8 @@ sub cuffdiff {
  	if(!$rO_job->isUp2Date()) {
  	    SubmitToCluster::printSubmitCmd($rH_cfg, "cuffcompare", "MERGE", 'GTFCOMPARE', $jobDependency, undef, $rO_job);
  	}
- 	my $gtfDnMerged = 'fpkm/denovo/merged.gtf';
- 	my $gtfDnFormatMerged = 'fpkm/denovo/formated.merged.gtf';
+# 	my $gtfDnMerged = 'fpkm/denovo/merged.gtf';
+# 	my $gtfDnFormatMerged = 'fpkm/denovo/formated.merged.gtf';
 #	$command = Cufflinks::mergeGtfFormat($rH_cfg, $gtfDnMerged, $gtfDnFormatMerged);
 # 	my $formatJobId;
 # 	if(defined($command) && length($command) > 0) {
@@ -980,7 +974,6 @@ sub deliverable {
   }
 
 	my $rO_job = GqSeqUtils::clientReport($rH_cfg,  $configFile, $workDir, 'RNAseq') ;
-	my $deliverableJobId = undef;
   if(!$rO_job->isUp2Date()) {
     print "mkdir -p deliverable\n";
     SubmitToCluster::printSubmitCmd($rH_cfg, "deliverable", 'REPORT', 'RNAREPORT', $jobDependency , undef, $rO_job);

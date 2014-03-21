@@ -139,9 +139,9 @@ sub parseSampleSheet {
     $sampleInfo{'lane'} = $values[$laneIdx];
     $sampleInfo{'runType'} = $values[$runTypeIdx];
     $sampleInfo{'qualOffset'} = $values[$qualOffsetIdx];
-    my @bedFiles = undef;
+    my @bedFiles = ();
     if ($bedFilesIdx != -1) {
-        my @bedFiles = split(';', $values[$bedFilesIdx]);
+        @bedFiles = split(';', $values[$bedFilesIdx]);
     }
     $sampleInfo{'bedFiles'} = \@bedFiles;
     if ($processingSheetIdIdx > -1) {

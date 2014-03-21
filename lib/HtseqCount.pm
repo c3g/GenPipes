@@ -117,7 +117,7 @@ sub readCountPortable {
     #Just need the command
     my $rO_viewFilterJob = SAMtools::viewFilter($rH_cfg, $inputBam);
 
-    $command .= LoadConfig::moduleLoad($rH_cfg, [['htseq', 'moduleVersion.python'], ['htseq', 'moduleVersion.htseq']]) . ' && ';
+    $command .= LoadConfig::moduleLoad($rH_cfg, [['htseq', 'moduleVersion.python']]) . ' && ';
     $command .= ' ' . $rO_viewFilterJob->getCommand(0);
     $command .= ' | htseq-count - ' .  $inputGtf;
     $command .= ' -s ' . $strandInfo;

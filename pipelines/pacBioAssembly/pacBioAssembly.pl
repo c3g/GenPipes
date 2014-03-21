@@ -1071,6 +1071,9 @@ sub report {
 	# Generate table(s) and figures.
 	my $rO_jobAssemblyStats = PacBioTools::assemblyStats(
 		$rH_cfg,
+    "$outdir/$sampleName/$suffix/preassembly/data/filtered_shortreads.fa",
+    "$outdir/$sampleName/$suffix/preassembly/data/filtered_longreads.fa",
+    "$outdir/$sampleName/$suffix/preassembly/data/corrected.fasta",
 		"$outdir/$sampleName/filtering/data/filtered_summary.csv",
 		"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/data/consensus.fasta",
 		$sampleName,

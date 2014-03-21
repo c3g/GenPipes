@@ -522,7 +522,8 @@ sub PyNAST{
       ['memtime', 'moduleVersion.memtime'],
       ['qiime-dependencies', 'moduleVersion.qiime-dependencies'],
       ['python', 'moduleVersion.python'],
-      ['pynast', 'moduleVersion.pynast']
+      ['pynast', 'moduleVersion.pynast'],
+      ['openmpi', 'moduleVersion.openmpi']
     ]) . ' && ';
 		$cmd .=	' memtime ';
 		$cmd .= ' mpirun -np ' . LoadConfig::getParam($rH_cfg, 'pynast', 'num_threads', 1, 'int');
@@ -606,6 +607,7 @@ sub betaDiversity{
       ['qiime', 'moduleVersion.qiime'],
       ['python', 'moduleVersion.python']
     ]) . ' && ';
+    $cmd .= 'unset LD_LIBRARY_PATH; ';
 		$cmd .=	' memtime ';
 		$cmd .= 'beta_diversity.py';
 		$cmd .= ' -i ' . $biom;
@@ -767,6 +769,7 @@ sub alphaDiversity{
       ['qiime', 'moduleVersion.qiime'],
       ['python', 'moduleVersion.python']
     ]) . ' && ';
+    $cmd .= 'unset LD_LIBRARY_PATH; ';
 		$cmd .=	' memtime ';
 		$cmd .= 'parallel_alpha_diversity.py';
 		$cmd .= ' -i ' . $indir;
