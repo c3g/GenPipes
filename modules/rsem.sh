@@ -8,7 +8,7 @@ SOFTWARE=rsem
 VERSION=1.2.8
 
 # 'MUGQIC_INSTALL_HOME_DEV' for development, 'MUGQIC_INSTALL_HOME' for production (don't write '$' before!)
-INSTALL_HOME=MUGQIC_INSTALL_HOME
+INSTALL_HOME=MUGQIC_INSTALL_HOME_DEV
 
 # Indirection call to use $INSTALL_HOME value as variable name
 INSTALL_DIR=${!INSTALL_HOME}/software/$SOFTWARE
