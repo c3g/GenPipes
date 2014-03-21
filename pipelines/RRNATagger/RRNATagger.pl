@@ -176,8 +176,8 @@ die("--lib_type: Please enter 'ex' or ",
 		and $lib_type ne "nc1",
 );
 
-my $fwd_primer  = LoadConfig::getParam(\%cfg, 'itags_QC', 'forwardPrimer');
-my $rev_primer  = LoadConfig::getParam(\%cfg, 'itags_QC', 'reversePrimer');
+my $fwd_primer  = LoadConfig::getParam(\%cfg, 'itags_QC', 'forwardPrimer', 0, 'filepath');
+my $rev_primer  = LoadConfig::getParam(\%cfg, 'itags_QC', 'reversePrimer', 0, 'filepath');
 
 $start_at = 1 unless $start_at;
 $end_at = 999 unless $end_at;
@@ -835,8 +835,10 @@ foreach my $barcodes (@barcodes){
 		mergePdf(
 			$dependency,
 			"nc1",
-			$curr_dir."/log_barcodes_".$barcodes_filename."_count.pdf",
+			#$curr_dir."/log_barcodes_".$barcodes_filename."_count.pdf",
+			$curr_dir."/countReport.pdf",
 			$curr_dir."/reads_1/tax_summary/taxonomy_phylum_L2.pdf",
+			$curr_dir."/reads_1/tax_summary/taxonomy_phylum_L2_relative.pdf",
 			$qscore_pdf,
 			$curr_dir."/REPORT_".$barcodes_filename.".pdf"
 		);
