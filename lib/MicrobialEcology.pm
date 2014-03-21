@@ -518,6 +518,7 @@ sub PyNAST{
 	
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
+    $cmd .= 'unset LD_LIBRARY_PATH; ';
     $cmd .= LoadConfig::moduleLoad($rH_cfg, [
       ['memtime', 'moduleVersion.memtime'],
       ['qiime-dependencies', 'moduleVersion.qiime-dependencies'],
