@@ -126,6 +126,9 @@ sub celeraConfig {
 
 sub assemblyStats {
   my $rH_cfg                = shift;
+  my $shortReads            = shift;
+  my $longReads             = shift;
+  my $correctedReads        = shift;
   my $filteredSummary       = shift;
   #my $assemblyQc            = shift;
   my $contigs               = shift;
@@ -150,6 +153,9 @@ sub assemblyStats {
     ]) . ' &&';
     $cmd .= ' memtime ';
     $cmd .= ' pacBioAssemblyStats.pl';
+    $cmd .= ' --shortReads ' . $shortReads;
+    $cmd .= ' --longReads ' . $longReads;
+    $cmd .= ' --correctedReads ' . $correctedReads;
     $cmd .= ' --filteredSummary ' . $filteredSummary;
     #$cmd .= ' --assemblyQc ' . $assemblyQc;
     $cmd .= ' --contigs ' . $contigs;
