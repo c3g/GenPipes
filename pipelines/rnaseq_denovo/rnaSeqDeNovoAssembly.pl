@@ -153,7 +153,7 @@ my %H_steps =  map {$_->{'name'} => $_} @A_steps;
 
 # Global variables passed as script options
 my $configFile;
-my $nanuqSampleSheet;
+my $sampleFile;
 my $designFile;
 my $pipeline;
 
@@ -208,7 +208,7 @@ sub main {
   my $stepRange = $opts{'s'};
   my $workDirectory = $opts{'w'};
   $configFile = $opts{'c'};
-  $nanuqSampleSheet = $opts{'n'};
+  $sampleFile = $opts{'n'};
   $designFile = $opts{'d'};
 
   # Get config values
@@ -216,14 +216,14 @@ sub main {
   unless (-f $configFile) {die "Error: configuration file $configFile does not exist!\n" . getUsage()};
   my %cfg = LoadConfig->readConfigFile($configFile);
 
-  $pipeline = Pipeline->new(\@A_steps, $nanuqSampleSheet, $workDirectory);
+  $pipeline = Pipeline->new(\@A_steps, $sampleFile, $workDirectory);
 
   # Go through steps and create global or read-set jobs accordingly
   foreach my $step ($pipeline->getStepsByRange($stepRange)) {
     my $stepName = $step->getName();
     debug "main: processing step $stepName";
 
-    # Read-set step creates 1 job per read-set
+    # ReadSet step creates 1 job per readSet
     if ($step->getLoop() eq 'readSet') {
       foreach my $sample (@{$pipeline->getSamples()}) {
         foreach my $readSet (@{$sample->getReadSets()}) {
@@ -258,7 +258,7 @@ sub bamToFastq {
 
   my $rO_job;
 
-  if ($readSet->getBAM()) {
+  if ($readSet->getBAM() and not($readSet->getFASTQ1())) {
     if ($readSet->getRunType() eq "PAIRED_END") {
       $readSet->setFASTQ1($readSet->getBAM());
       $readSet->getFASTQ1() =~ s/\.bam$/.pair1.fastq.gz/;
