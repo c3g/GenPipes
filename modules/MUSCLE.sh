@@ -12,27 +12,29 @@
 # Software_name  gnuplot.
 #
 
-SOFTWARE=gnuplot
-VERSION=4.6.4 
-INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/$SOFTWARE
-INSTALL_DOWNLOAD=$INSTALL_PATH/tmp
+SOFTWARE=MUSCLE
+VERSION=3.8.31
+INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/$SOFTWARE/$SOFTWARE-$VERSION
+INSTALL_DOWNLOAD=$SCRATCH/tmp
 mkdir -p $INSTALL_DOWNLOAD
 cd $INSTALL_DOWNLOAD
 
 # Download, extract, build
 # Write here the specific commands to download, extract, build the software, typically similar to:
-wget http://sourceforge.net/projects/gnuplot/files/gnuplot/4.6.4/gnuplot-4.6.4.tar.gz/download 
-tar -xvf $SOFTWARE-$VERSION.tar.gz                                             
-cd $SOFTWARE-$VERSION                                                            
-./configure --prefix=$INSTALL_PATH/$SOFTWARE-$VERSION                            
-make                                                                             
-make install
+wget http://www.drive5.com/muscle/downloads${VERSION}/muscle${VERSION}_i86linux64.tar.gz
+tar -xvf muscle${VERSION}_i86linux64.tar.gz   
+mkdir -p $INSTALL_PATH/bin                                       
+cp muscle${VERSION}_i86linux64 $INSTALL_PATH/bin/
+chmod -R 775 $INSTALL_PATH
 
 # Add permissions and install software
 chmod -R 775 *
+
+cd $INSTALL_PATH/bin
+ln -s muscle${VERSION}_i86linux64 muscle 
+
 cd $INSTALL_DOWNLOAD
-#mv -i $SOFTWARE-$VERSION $INSTALL_PATH                                          
-mv -i $INSTALL_DOWNLOAD/$SOFTWARE-$VERSION.tar.gz $MUGQIC_INSTALL_HOME/archive      
+mv -i $INSTALL_DOWNLOAD/muscle${VERSION}_i86linux64.tar.gz $MUGQIC_INSTALL_HOME/archive/ 
 
 # Module file
 echo "#%Module1.0
