@@ -510,7 +510,7 @@ sub blastMergeResults {
     $command .= "rm $result.tmp && \\\n";
 
     # Create a BLAST results ZIP file for future deliverables
-    $command .= "gzip -c $result > $result.gz \\\n";
+    $command .= "zip -j $result.zip $result \\\n";
 
     $rO_job->addCommand($command);
   }
