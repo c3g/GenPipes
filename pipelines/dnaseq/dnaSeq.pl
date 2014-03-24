@@ -118,28 +118,28 @@ use VCFtools;
 #--------------------
 
 my @steps;
-push(@steps, {'name' => 'bamToFastq', 'stepLoop' => 'sample', 'parentStep' => undef});
-push(@steps, {'name' => 'trimAndAlign', 'stepLoop' => 'sample', 'parentStep' => 'bamToFastq'});
-push(@steps, {'name' => 'laneMetrics', 'stepLoop' => 'sample', 'parentStep' => 'trimAndAlign'});
-push(@steps, {'name' => 'mergeTrimStats', 'stepLoop' => 'experiment', 'parentStep' => 'trimAndAlign'});
-push(@steps, {'name' => 'mergeLanes', 'stepLoop' => 'sample', 'parentStep' => 'trimAndAlign'});
-push(@steps, {'name' => 'indelRealigner', 'stepLoop' => 'sample', 'parentStep' => 'mergeLanes'});
-push(@steps, {'name' => 'mergeRealigned', 'stepLoop' => 'sample', 'parentStep' => 'indelRealigner'});
-push(@steps, {'name' => 'fixmate', 'stepLoop' => 'sample', 'parentStep' => 'mergeRealigned'});
-push(@steps, {'name' => 'markDup', 'stepLoop' => 'sample', 'parentStep' => 'fixmate'});
-push(@steps, {'name' => 'recalibration', 'stepLoop' => 'sample', 'parentStep' => 'markDup'});
-push(@steps, {'name' => 'metrics', 'stepLoop' => 'sample', 'parentStep' => 'recalibration'});
-push(@steps, {'name' => 'metricsLibrarySample', 'stepLoop' => 'experiment', 'parentStep' => 'metrics'});
-push(@steps, {'name' => 'snpAndIndelBCF', 'stepLoop' => 'experiment', 'parentStep' => 'recalibration'});
-push(@steps, {'name' => 'mergeFilterBCF', 'stepLoop' => 'experiment', 'parentStep' => 'snpAndIndelBCF'});
-push(@steps, {'name' => 'filterNStretches', 'stepLoop' => 'experiment', 'parentStep' => 'mergeFilterBCF'});
-push(@steps, {'name' => 'flagMappability', 'stepLoop' => 'experiment', 'parentStep' => 'filterNStretches'});
-push(@steps, {'name' => 'snpIDAnnotation', 'stepLoop' => 'experiment', 'parentStep' => 'flagMappability'});
-push(@steps, {'name' => 'snpEffect', 'stepLoop' => 'experiment', 'parentStep' => 'snpIDAnnotation'});
-push(@steps, {'name' => 'dbNSFPAnnotation', 'stepLoop' => 'experiment', 'parentStep' => 'snpEffect'});
-push(@steps, {'name' => 'metricsSNV', 'stepLoop' => 'experiment', 'parentStep' => 'snpEffect'});
-push(@steps, {'name' => 'deliverable', 'stepLoop' => 'experiment', 'parentStep' => ['mergeTrimStats', 'metricsLibrarySample', 'metricsSNV']});
-push(@steps, {'name' => 'fullPileup', 'stepLoop' => 'sample', 'parentStep' => 'recalibration'});
+push(@steps, {'name' => 'bamToFastq', 'loop' => 'sample', 'parentSteps' => []});
+push(@steps, {'name' => 'trimAndAlign', 'loop' => 'sample', 'parentSteps' => ['bamToFastq']});
+push(@steps, {'name' => 'laneMetrics', 'loop' => 'sample', 'parentSteps' => ['trimAndAlign']});
+push(@steps, {'name' => 'mergeTrimStats', 'loop' => 'experiment', 'parentSteps' => ['trimAndAlign']});
+push(@steps, {'name' => 'mergeLanes', 'loop' => 'sample', 'parentSteps' => ['trimAndAlign']});
+push(@steps, {'name' => 'indelRealigner', 'loop' => 'sample', 'parentSteps' => ['mergeLanes']});
+push(@steps, {'name' => 'mergeRealigned', 'loop' => 'sample', 'parentSteps' => ['indelRealigner']});
+push(@steps, {'name' => 'fixmate', 'loop' => 'sample', 'parentSteps' => ['mergeRealigned']});
+push(@steps, {'name' => 'markDup', 'loop' => 'sample', 'parentSteps' => ['fixmate']});
+push(@steps, {'name' => 'recalibration', 'loop' => 'sample', 'parentSteps' => ['markDup']});
+push(@steps, {'name' => 'metrics', 'loop' => 'sample', 'parentSteps' => ['recalibration']});
+push(@steps, {'name' => 'metricsLibrarySample', 'loop' => 'experiment', 'parentSteps' => ['metrics']});
+push(@steps, {'name' => 'snpAndIndelBCF', 'loop' => 'experiment', 'parentSteps' => ['recalibration']});
+push(@steps, {'name' => 'mergeFilterBCF', 'loop' => 'experiment', 'parentSteps' => ['snpAndIndelBCF']});
+push(@steps, {'name' => 'filterNStretches', 'loop' => 'experiment', 'parentSteps' => ['mergeFilterBCF']});
+push(@steps, {'name' => 'flagMappability', 'loop' => 'experiment', 'parentSteps' => ['filterNStretches']});
+push(@steps, {'name' => 'snpIDAnnotation', 'loop' => 'experiment', 'parentSteps' => ['flagMappability']});
+push(@steps, {'name' => 'snpEffect', 'loop' => 'experiment', 'parentSteps' => ['snpIDAnnotation']});
+push(@steps, {'name' => 'dbNSFPAnnotation', 'loop' => 'experiment', 'parentSteps' => ['snpEffect']});
+push(@steps, {'name' => 'metricsSNV', 'loop' => 'experiment', 'parentSteps' => ['snpEffect']});
+push(@steps, {'name' => 'deliverable', 'loop' => 'experiment', 'parentSteps' => ['mergeTrimStats', 'metricsLibrarySample', 'metricsSNV']});
+push(@steps, {'name' => 'fullPileup', 'loop' => 'sample', 'parentSteps' => ['recalibration']});
 
 #--------------------
 # PODS
@@ -234,9 +234,8 @@ sub main {
     exit(1);
   }
 
-  my $firstDependency = $opts{'d'};
   my %cfg = LoadConfig->readConfigFile($opts{'c'});
-  my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($opts{'n'});
+  my $sampleFile = $opts{'n'};
   my $rAoH_seqDictionary = SequenceDictionaryParser::readDictFile(\%cfg);
   $configFile = abs_path($opts{'c'});
 
@@ -261,7 +260,7 @@ sub main {
       my $fname = $steps[$currentStep]->{'name'};
       my $subref = \&$fname;
 
-      if ($steps[$currentStep]->{'stepLoop'} eq 'sample') {
+      if ($steps[$currentStep]->{'loop'} eq 'sample') {
         # Tests for the first step in the list. Used for dependencies.
         my $jobIdVar = &$subref($currentStep, \%cfg, $sampleName, $rAoH_sampleLanes, $rAoH_seqDictionary);
         $globalDep{$fname}->{$sampleName} = $jobIdVar;
@@ -274,7 +273,7 @@ sub main {
   }
 
   for ($currentStep = $opts{'s'}-1; $currentStep <= $lastStepId; $currentStep++) {
-    if ($steps[$currentStep]->{'stepLoop'} eq 'experiment') {
+    if ($steps[$currentStep]->{'loop'} eq 'experiment') {
       my $fname = $steps[$currentStep]->{'name'};
       my $subref = \&$fname;
 
@@ -285,7 +284,7 @@ sub main {
 
 
   my $jobId = "";
-  if ($steps[$lastStepId]->{'stepLoop'} eq 'experiment') {
+  if ($steps[$lastStepId]->{'loop'} eq 'experiment') {
     if (defined($globalDep{$steps[$lastStepId]->{'name'}}->{'experiment'})) {
       $jobId = $globalDep{$steps[$lastStepId]->{'name'}}->{'experiment'};
     }

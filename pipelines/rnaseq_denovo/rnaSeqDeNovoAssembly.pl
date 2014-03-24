@@ -11,8 +11,7 @@ perl rnaSeqDeNovoAssembly.pl -c rnaSeqDeNovo.abacus.ini -n project.nanuq.csv -d 
 Options:
 
   -c (rnaSeqDeNovo.abacus.ini) the standard configuration file for the pipeline.
-  -s The start step
-  -e The end step
+  -s The step range
   -n (project.nanuq.csv) the NANUQ Project sample file
   -d (design.csv) the design file. A tab separated value file that specifies the experimental design information of the project.
   -w The project's working directory. All job outputs will be sent to this directory.
@@ -175,11 +174,10 @@ sub getUsage {
   my $usage = <<END;
 MUGQIC Pipeline RNA-Seq De Novo Assembly Version: $Version::version
 
-Usage: perl $0 -h | -c CONFIG_FILE -s start_step_num -e end_step_num [-n SAMPLE_SHEET] [-d DESIGN_FILE] [-w WORK_DIR]
+Usage: perl $0 -h | -c CONFIG_FILE -s step_range [-n SAMPLE_SHEET] [-d DESIGN_FILE] [-w WORK_DIR]
   -h  help and usage
   -c  .ini config file
-  -s  start step, inclusive
-  -e  end step, inclusive
+  -s  step range e.g. "1-5", "3,6,7", "2,4-8"
   -n  nanuq sample sheet
   -d  design file
   -w  work directory (default current)
@@ -202,14 +200,12 @@ sub main {
 
   if (defined($opts{'h'}) ||
      !defined($opts{'c'}) ||
-     !defined($opts{'s'}) ||
-     !defined($opts{'e'})) {
+     !defined($opts{'s'})) {
     die (getUsage());
   }
 
   # Assign options
-  my $startStep = $opts{'s'};
-  my $endStep = $opts{'e'};
+  my $stepRange = $opts{'s'};
   my $workDirectory = $opts{'w'};
   $configFile = $opts{'c'};
   $nanuqSampleSheet = $opts{'n'};
@@ -223,26 +219,18 @@ sub main {
   $pipeline = Pipeline->new(\@A_steps, $nanuqSampleSheet, $workDirectory);
 
   # Go through steps and create global or read-set jobs accordingly
-  foreach my $step ($pipeline->getStepsByRange($startStep, $endStep)) {
+  foreach my $step ($pipeline->getStepsByRange($stepRange)) {
     my $stepName = $step->getName();
     debug "main: processing step $stepName";
 
-    my $rO_job;
-
     # Read-set step creates 1 job per read-set
     if ($step->getLoop() eq 'readSet') {
-      # Nanuq sample sheet is only necessary for read-set steps
-#      unless (defined $nanuqSampleSheet) {die "Error: nanuq sample sheet is not defined! (use -n option)\n" . getUsage()};
-#      unless (-f $nanuqSampleSheet) {die "Error: nanuq sample sheet $nanuqSampleSheet does not exist!\n" . getUsage()};
-#
-#      my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($nanuqSampleSheet, LoadConfig::getParam(\%cfg, 'default', 'rawReadFormat', 0));
-
       foreach my $sample (@{$pipeline->getSamples()}) {
         foreach my $readSet (@{$sample->getReadSets()}) {
           debug "main: processing read set " . $readSet->getName();
 
           # Read-set step functions need sample and lane parameters
-          $rO_job = &$stepName(\%cfg, $readSet);
+          my $rO_job = &$stepName(\%cfg, $readSet);
           if ($rO_job) {
             $rO_job->setTags([$sample->getName(), $readSet->getName()]);
             debug "main: readSet job " . join(".", @{$rO_job->getTags()});
@@ -252,7 +240,7 @@ sub main {
       }
     # Global step creates 1 job only
     } else {
-      $rO_job = &$stepName(\%cfg);
+      my $rO_job = &$stepName(\%cfg);
       if ($rO_job) {
         $rO_job->setTags([]);
         $step->submitJob(\%cfg, $rO_job);

@@ -34,6 +34,7 @@ use lib "$FindBin::Bin";
 #-----------------------
 use Cwd 'abs_path';
 use File::Basename;
+use Parse::Range qw(parse_range);
 use LoadConfig;
 use Sample;
 use Step;
@@ -110,8 +111,9 @@ sub getSteps {
 }
 
 sub getStepsByRange {
-  my ($self, $startIdx, $endIdx) = @_;
-  return @{$self->getSteps()}[($startIdx - 1)..($endIdx - 1)];
+  my ($self, $range) = @_;
+  # Add undef element to shift 1st step at position 1 instead of 0
+  return (undef, @{$self->getSteps()})[parse_range($range)];
 }
 
 sub getNbSteps {
