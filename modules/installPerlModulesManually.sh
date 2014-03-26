@@ -1,3 +1,5 @@
+#!/bin/bash
+
 mkdir -p packages
 cd packages
 
@@ -37,3 +39,5 @@ for element in "${MODULE[@]}"; do
 done
 
 cd ..
+
+chmod -R 775 $MUGQIC_INSTALL_HOME/software/perl

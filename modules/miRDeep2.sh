@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 #TODO: Not sure if absolutely need to install PDF::API2 in mirdeep2 folder instead of any other $PERL5LIB location.
 #      also not sure if will work with Vienna1.8,3 and newer versions of randfold,squid,PDF::A2...

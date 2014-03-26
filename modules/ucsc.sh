@@ -1,3 +1,5 @@
+#!/bin/bash
+
 ###################
 ################### UCSC genome browser 'kent' bioinformatic utilities
 ###################

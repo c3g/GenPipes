@@ -1,37 +1,40 @@
 #!/bin/bash
 
-#
-# TopHat
-#
-
-SOFTWARE=tophat
-VERSION=2.0.10
+# rm -rf /mnt/parallel_scratch_mp2_wipe_on_august_2014/bourque/bourque_group/analyste/software/cd-hit
+SOFTWARE="cd-hit"
+VERSION="4.5.4-2011-03-07"
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/$SOFTWARE
-INSTALL_DOWNLOAD=$INSTALL_PATH/tmp
-mkdir -p $INSTALL_DOWNLOAD
-cd $INSTALL_DOWNLOAD
+mkdir -p $INSTALL_PATH
+cd $INSTALL_PATH
 
 # Download, extract, build
-wget http://tophat.cbcb.umd.edu/downloads/$SOFTWARE-$VERSION.Linux_x86_64.tar.gz
-tar zxvf $SOFTWARE-$VERSION.Linux_x86_64.tar.gz
+wget http://www.bioinformatics.org/downloads/index.php/cd-hit/cd-hit-v$VERSION.tgz
+tar xvf "cd-hit-v$VERSION.tgz"
+cd "cd-hit-v$VERSION"
+make -j8 openmp=yes
+
+
+cd ..
+
 
 # Add permissions and install software
-cd $INSTALL_DOWNLOAD
 chmod -R ug+rwX .
 chmod -R o+rX .
-mv -i $SOFTWARE-$VERSION.Linux_x86_64 $INSTALL_PATH
-mv -i $SOFTWARE-$VERSION.Linux_x86_64.tar.gz $MUGQIC_INSTALL_HOME/archive
+mv -if cd-hit-v$VERSION.tgz $MUGQIC_INSTALL_HOME/archive/ 
+
+
 
 # Module file
 echo "#%Module1.0
 proc ModulesHelp { } {
-       puts stderr \"\tMUGQIC - $SOFTWARE \"
+       puts stderr \"\tMUGQIC - $SOFTWARE \" ; 
 }
-module-whatis \"$SOFTWARE  \"
+module-whatis \"$SOFTWARE  \" ; 
 
-set             root                \$::env(MUGQIC_INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE-$VERSION.Linux_x86_64
-prepend-path    PATH                \$root
+set             root                \$::env(MUGQIC_INSTALL_HOME)/software/$SOFTWARE/cd-hit-v$VERSION ;  
+prepend-path    PATH                \$root ;
 " > $VERSION
+
 
 ################################################################################
 # Everything below this line should be generic and not modified
@@ -46,5 +49,4 @@ chmod -R ug+rwX $VERSION .version
 chmod -R o+rX $VERSION .version
 mv $VERSION .version $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
 
-# Clean up temporary installation files if any
-rm -rf $INSTALL_DOWNLOAD
+

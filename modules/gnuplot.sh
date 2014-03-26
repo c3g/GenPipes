@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 ################################################################################
 # This is a module install script template which should be copied and used for
@@ -21,8 +21,8 @@ cd $INSTALL_DOWNLOAD
 
 # Download, extract, build
 # Write here the specific commands to download, extract, build the software, typically similar to:
-wget http://sourceforge.net/projects/$SOFTWARE/files/latest/download?source=dlp  
-tar -xvf $SOFTWARE-$VERSION.tar                                                  
+wget http://sourceforge.net/projects/gnuplot/files/gnuplot/4.6.4/gnuplot-4.6.4.tar.gz/download 
+tar -xvf $SOFTWARE-$VERSION.tar.gz                                             
 cd $SOFTWARE-$VERSION                                                            
 ./configure --prefix=$INSTALL_PATH/$SOFTWARE-$VERSION                            
 make                                                                             
@@ -32,7 +32,7 @@ make install
 chmod -R 775 *
 cd $INSTALL_DOWNLOAD
 #mv -i $SOFTWARE-$VERSION $INSTALL_PATH                                          
-mv -i $INSTALL_DOWNLOAD/$SOFTWARE-$VERSION.tar $MUGQIC_INSTALL_HOME/archive      
+mv -i $INSTALL_DOWNLOAD/$SOFTWARE-$VERSION.tar.gz $MUGQIC_INSTALL_HOME/archive      
 
 # Module file
 echo "#%Module1.0

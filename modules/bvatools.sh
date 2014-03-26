@@ -1,11 +1,11 @@
-#!/bin/sh
+#!/bin/bash
 
 #
 # BVATools
 #
 
 SOFTWARE=bvatools
-VERSION=1.1
+VERSION=1.2
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/$SOFTWARE
 INSTALL_DOWNLOAD=$INSTALL_PATH/tmp
 cd $MUGQIC_INSTALL_HOME/archive

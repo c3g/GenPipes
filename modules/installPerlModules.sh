@@ -1,3 +1,5 @@
+#!/bin/bash
+
 ## Install Perl modules from MCPAN.
 
 export PERL_MM_USE_DEFAULT=1
@@ -44,9 +46,11 @@ perl -MCPAN -e 'install Number::Compare'
 perl -MCPAN -e 'install PDF::Create'
 perl -MCPAN -e 'install Parallel::ForkManager'
 perl -MCPAN -e 'install Parse::CPAN::Meta'
+perl -MCPAN -e 'install Parse::Range'
 perl -MCPAN -e 'install Path::Class'
 perl -MCPAN -e 'install Perl'
 perl -MCPAN -e 'install Perl::OSType'
+perl -MCPAN -e 'install PerlIO::gzip'
 perl -MCPAN -e 'install Proc::ParallelLoop'
 perl -MCPAN -e 'install Regexp::Common'
 perl -MCPAN -e 'install Set::Scalar'
@@ -79,3 +83,7 @@ perl -MCPAN -e 'install common::sense'
 perl -MCPAN -e 'install version'
 perl -MCPAN -e 'install Statistics::Descriptive'
 perl -MCPAN -e 'install Module::Build'
+perl -MCPAN -e 'install DB_File'
+
+chmod -R 775 $MUGQIC_INSTALL_HOME/software/perl
+

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 SOFTWARE=seqan  
 VERSION=1.4.1
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/$SOFTWARE

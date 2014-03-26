@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash
 # Install software needed to run the ChIPSEQ pipeline
 # Dependency of MUGQIC_HOME environment variable is assumed
 
@@ -210,6 +210,12 @@ function checkInstallWeblogo282 {
 	tar -xzvf weblogo.2.8.2.tar.gz
 
 
+	# Starting from guillimin Phase 2 (2014-02) you'll need to replace shebang #/usr/bin/perl with #/usr/bin/env perl and change the remaining parameters with the respective perl directives :-(
+	# change /usr/bin/perl -w in /software/areas/genomics/phase2/software/weblogo/2.8.2/weblogo/seqlogo 
+	# sed  -i "s/ perl -w/ perl \\nuse warnings;/" $MUGQIC_INSTALL_HOME/modulefiles/mugqic/weblogo/seqlogo 
+	#	
+
+ 
 	echo "#%Module1.0
 	proc ModulesHelp { } {
 	puts stderr \"\tMUGQIC - Adds WebLogo, a tool for creating sequence logos from biological sequence alignments. \"
@@ -269,7 +275,15 @@ function InstallHomer {
 	perl configureHomer.pl -install mm10
 	perl configureHomer.pl -install mm9
 	perl configureHomer.pl -install rn5
-
+	
+	# Starting from guillimin Phase 2 (2014-02) you'll need to replace shebang #/usr/bin/perl with #/usr/bin/env perl and change the remaining parameters with the respective perl directives :-(
+	#for fi in $(ls  $INSTALL_PATH/bin/*pl); 
+	#do 
+	#	cat $fi | sed -e 's/\/usr\/bin\/perl/\/usr\/bin\/env perl/g' > $fi.bak && mv $fi.bak $fi; 
+	#	echo $fi
+       	#        sed  -i "s/ perl -w/ perl \\nuse warnings;/" $fi
+        #        sed -i "s/-I\/software\/areas\/genomics\/phase2\/software\/homer\/4.1\/.\/\/bin/\\nuse lib \'\/software\/areas\/genomics\/phase2\/software\/homer\/4.1\/bin\';/" $fi
+	# done
 
 	# 2- Create module file
 	mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$PACKAGE_NAME/ 
