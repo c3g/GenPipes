@@ -1,4 +1,4 @@
-#!/usr/env/perl
+#!/usr/bin/env perl
 
 =head1 NAME
 
@@ -128,7 +128,7 @@ sub annotatePeaks {
 
   if (!$ro_job->isUp2Date()) {
     $command .= LoadConfig::moduleLoad($rH_cfg, [['annotation', 'moduleVersion.python'], ['annotation', 'moduleVersion.homer']]) . ' && ';
-    $command .= ' annotatePeaks.pl ' . $InputBed . ' ' . $genomeName . ' -gsize ' . $genomeName . ' -cons -CpG -go ' . $outputDir . '/' . $designName . ' -genomeOntology ' . $outputDir . '/' . $designName . ' > ' . $outputDir . '/' . $designName . '.annotated.csv';
+    $command .= ' perl \$HOMER_HOME/bin/annotatePeaks.pl ' . $InputBed . ' ' . $genomeName . ' -gsize ' . $genomeName . ' -cons -CpG -go ' . $outputDir . '/' . $designName . ' -genomeOntology ' . $outputDir . '/' . $designName . ' > ' . $outputDir . '/' . $designName . '.annotated.csv';
     $ro_job->addCommand($command);
   }
 
@@ -154,7 +154,7 @@ sub generateMotif {
   if (!$ro_job->isUp2Date()) {
     my $command;
     $command .= LoadConfig::moduleLoad($rH_cfg, [['motif', 'moduleVersion.python'], ['motif', 'moduleVersion.homer'], ['motif', 'moduleVersion.weblogo']]) . ' &&';
-    $command .= ' findMotifsGenome.pl ' . $InputBed . ' ' . $genomeName . ' ' . $outputDir . ' ' . $optionsThreads;
+    $command .= ' perl \$HOMER_HOME/bin/findMotifsGenome.pl ' . $InputBed . ' ' . $genomeName . ' ' . $outputDir . ' ' . $optionsThreads;
 
     $ro_job->addCommand($command);
   }

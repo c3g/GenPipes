@@ -1,4 +1,4 @@
-#!/usr/env/perl
+#!/usr/bin/env perl
 
 =head1 NAME
 
@@ -187,7 +187,7 @@ $readFileOptions \\
     $command .= " " . LoadConfig::getParam($rH_cfg, 'trinity', 'trinityOptions', 1) . " && \\\n";
 
     # Create Trinity FASTA ZIP file for future deliverables
-    $command .= "gzip -c $outputDirectory/Trinity.fasta > $outputDirectory/Trinity.fasta.gz && \\\n";
+    $command .= "zip -j $outputDirectory/Trinity.fasta.zip $outputDirectory/Trinity.fasta && \\\n";
 
     # Compute assembly stats
     $command .= "Rscript -e 'library(gqSeqUtils); dnaFastaStats(filename = \\\"$outputDirectory/Trinity.fasta\\\", type = \\\"trinity\\\", output.prefix = \\\"$outputDirectory/Trinity.stats\\\")' \\\n";
