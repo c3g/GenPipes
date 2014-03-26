@@ -18,6 +18,7 @@ module-whatis \"MUGQIC - Broads cancer snp caller  \"
             
 set             root              \$::env(MUGQIC_INSTALL_HOME)/software/mutect/muTect-${VERSION}
 setenv          MUTECT_JAR        \$root/muTect-${VERSION}.jar
+setenv          MUTECT_HOME       \$root/
 " > $VERSION
 
 # version file
