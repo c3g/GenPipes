@@ -220,8 +220,8 @@ sub mutect {
   my $outputDir  = shift;
 
   my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta', 1, 'filepath');
-  my $dbSnp = LoadConfig::getParam($rH_cfg, 'mutect', 'dbSnp', 1, 'filepath');
-  my $cosmic = LoadConfig::getParam($rH_cfg, 'mutect', 'cosmic', 1, 'filepath');
+  my $dbSnp = LoadConfig::getParam($rH_cfg, 'mutect', 'dbSnp');
+  my $cosmic = LoadConfig::getParam($rH_cfg, 'mutect', 'cosmic');
   my $outputPrefix = $outputDir . $sampleName;
 
   my $regionCmd = ' ';
