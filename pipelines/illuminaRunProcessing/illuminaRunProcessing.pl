@@ -927,7 +927,11 @@ sub getMask {
 
     if($rH_readInfo->{'isIndexed'} eq "Y") {
       if($nbCycles > $rA_laneIdxLengths->[$readIndex]) {
-        $mask .= 'I'.$rA_laneIdxLengths->[$readIndex].'n'.($nbCycles-$rA_laneIdxLengths->[$readIndex]);
+	if($rA_laneIdxLengths->[$readIndex] == 0) {
+	  $mask .= 'n'.$nbCycles;
+	} else {
+	  $mask .= 'I'.$rA_laneIdxLengths->[$readIndex].'n'.($nbCycles-$rA_laneIdxLengths->[$readIndex]);
+	}
       } elsif($nbCycles == $rA_laneIdxLengths->[$readIndex]){
         $mask .= 'I'.$nbCycles;
       } else {
@@ -1012,11 +1016,13 @@ sub getSmallestIndexLength{
 
   # find smallest index per index-read per lane
   my $indexColumnIdx = getColumnHeaderIndex('Index', $rA_headers);
+  my $maxSampleIndexRead = 0;
 
   for my $rA_values (@$rAoA_sampleData ) {
     my @libraryIndexes = split('-', $rA_values->[$indexColumnIdx]);
 
     for(my $idx=0; $idx < @libraryIndexes; $idx++) {
+      $maxSampleIndexRead = $idx if ($idx > $maxSampleIndexRead);
       if(length($libraryIndexes[$idx]) > 0) {
         if(length($libraryIndexes[$idx]) < $runIdxLengths[$idx]) {
           $runIdxLengths[$idx] = length($libraryIndexes[$idx]);
@@ -1024,6 +1030,12 @@ sub getSmallestIndexLength{
       }
     }
   }
+  
+  # In the case of single-index lane in a dual index run
+  for (my $idx=$maxSampleIndexRead+1; $idx < @runIdxLengths; $idx++) {
+    $runIdxLengths[$idx] = 0;
+  }
+
   return \@runIdxLengths;
 }
 

@@ -185,6 +185,7 @@ sub depthOfCoverage {
       $command .= LoadConfig::moduleLoad($rH_cfg, [['depthOfCoverage', 'moduleVersion.java'], ['depthOfCoverage', 'moduleVersion.bvatools']]) . ' &&';
       $command .= ' java ' . LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'ram') . ' -jar \${BVATOOLS_JAR}';
       $command .= ' depthofcoverage';
+      $command .= ' --simpleChrName';
       $command .= ' ' . LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'extraFlags', 0);
       $command .= ' --ref ' . $refGenome;
       if (defined($coverageBED) && length($coverageBED) > 0) {
