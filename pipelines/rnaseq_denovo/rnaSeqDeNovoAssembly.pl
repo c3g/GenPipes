@@ -6,15 +6,13 @@ I<rnaSeqDeNovoAssembly>
 
 =head1 SYNOPSIS
 
-perl rnaSeqDeNovoAssembly.pl -c rnaSeqDeNovo.abacus.ini -n project.nanuq.csv -d design.csv -w  currentDirectory -s 1 -e 11 > toRun.sh
-
-Options:
-
-  -c (rnaSeqDeNovo.abacus.ini) the standard configuration file for the pipeline.
-  -s The step range
-  -n (project.nanuq.csv) the NANUQ Project sample file
-  -d (design.csv) the design file. A tab separated value file that specifies the experimental design information of the project.
-  -w The project's working directory. All job outputs will be sent to this directory.
+Usage: perl rnaSeqDeNovoAssembly.pl -h | -c CONFIG_FILE -r step_range [-s SAMPLE_FILE] [-d DESIGN_FILE] [-o OUTPUT_DIR]
+  -h  help and usage
+  -c  .ini config file
+  -r  step range e.g. "1-5", "3,6,7", "2,4-8"
+  -s  sample file
+  -d  design file
+  -o  output directory (default: current)
 
 =head1 DESCRIPTION
 
@@ -27,28 +25,6 @@ B<David Morais> - I<dmorais@cs.bris.ac.uk>
 B<Mathieu Bourgey> - I<mbourgey@genomequebec.com>
 
 B<Joel Fillon> - I<joel.fillon@mcgill.ca>
-
-=head1 DEPENDENCY
-
-B<Pod::Usage> Usage and help output.
-
-B<Cwd> Path parsing
-
-B<Getopt::Std>  Options parsing
-
-B<GqSeqUtils>  Deliverable and final report generation
-
-B<LoadConfig> Configuration file parsing
-
-B<Metrics>   Multiple metrics functions (trim/align/annotation)
-
-B<SampleSheet> Sample sheet file parsing
-
-B<SubmitToCluster> Cluster job options submission to the bash command, jobs resuming control
-
-B<Trimmomatic>  Trimmomatic trimming / clipping functions
-
-B<Trinity>  Trinity RNA-Seq De Novo assembly functions
 
 =cut
 
@@ -72,8 +48,6 @@ use LoadConfig;
 use Metrics;
 use Picard;
 use Pipeline;
-#use SampleSheet;
-#use SubmitToCluster;
 use Trimmomatic;
 use Trinity;
 use Version;
@@ -128,7 +102,7 @@ my @A_steps = (
   },
   {
     'name'   => 'rsem',
-    'loop'   => 'readSet',
+    'loop'   => 'sample',
     'parentSteps' => ['rsemPrepareReference']
   },
   {
@@ -165,7 +139,7 @@ main();
 sub debug {
   my $message = shift;
 
-  my $debug = 0;    # Set to 1 to display debug messages, 0 to keep output silent
+  my $debug = 1;    # Set to 1 to display debug messages, 0 to keep output silent
   
   $debug and print STDERR "[DEBUG] $message\n";
 }
@@ -174,13 +148,13 @@ sub getUsage {
   my $usage = <<END;
 MUGQIC Pipeline RNA-Seq De Novo Assembly Version: $Version::version
 
-Usage: perl $0 -h | -c CONFIG_FILE -s step_range [-n SAMPLE_SHEET] [-d DESIGN_FILE] [-w WORK_DIR]
+Usage: perl $0 -h | -c CONFIG_FILE -r step_range [-s SAMPLE_FILE] [-d DESIGN_FILE] [-o OUTPUT_DIR]
   -h  help and usage
   -c  .ini config file
-  -s  step range e.g. "1-5", "3,6,7", "2,4-8"
-  -n  nanuq sample sheet
+  -r  step range e.g. "1-5", "3,6,7", "2,4-8"
+  -s  sample file
   -d  design file
-  -w  work directory (default current)
+  -o  output directory (default: current)
 
 Steps:
 END
@@ -196,19 +170,19 @@ END
 sub main {
   # Check options
   my %opts;
-  getopts('hc:s:e:n:d:w:', \%opts);
+  getopts('hc:r:s:d:o:', \%opts);
 
   if (defined($opts{'h'}) ||
      !defined($opts{'c'}) ||
-     !defined($opts{'s'})) {
+     !defined($opts{'r'})) {
     die (getUsage());
   }
 
   # Assign options
-  my $stepRange = $opts{'s'};
-  my $workDirectory = $opts{'w'};
+  my $stepRange = $opts{'r'};
+  my $outputDirectory = $opts{'o'};
   $configFile = $opts{'c'};
-  $sampleFile = $opts{'n'};
+  $sampleFile = $opts{'s'};
   $designFile = $opts{'d'};
 
   # Get config values
@@ -216,33 +190,44 @@ sub main {
   unless (-f $configFile) {die "Error: configuration file $configFile does not exist!\n" . getUsage()};
   my %cfg = LoadConfig->readConfigFile($configFile);
 
-  $pipeline = Pipeline->new(\@A_steps, $sampleFile, $workDirectory);
+  $pipeline = Pipeline->new(\@A_steps, $sampleFile, $outputDirectory);
 
   # Go through steps and create global or read-set jobs accordingly
   foreach my $step ($pipeline->getStepsByRange($stepRange)) {
     my $stepName = $step->getName();
     debug "main: processing step $stepName";
 
-    # ReadSet step creates 1 job per readSet
+    # ReadSet step creates 1 job per readSet per sample
     if ($step->getLoop() eq 'readSet') {
       foreach my $sample (@{$pipeline->getSamples()}) {
         foreach my $readSet (@{$sample->getReadSets()}) {
           debug "main: processing read set " . $readSet->getName();
 
-          # Read-set step functions need sample and lane parameters
           my $rO_job = &$stepName(\%cfg, $readSet);
           if ($rO_job) {
-            $rO_job->setTags([$sample->getName(), $readSet->getName()]);
-            debug "main: readSet job " . join(".", @{$rO_job->getTags()});
+            $rO_job->setLoopTags([$sample->getName(), $readSet->getName()]);
+            debug "main: readSet job " . join(".", @{$rO_job->getLoopTags()});
             $step->submitJob(\%cfg, $rO_job);
           }
+        }
+      }
+    # Sample step creates 1 job per sample
+    } elsif ($step->getLoop() eq 'sample') {
+      foreach my $sample (@{$pipeline->getSamples()}) {
+        debug "main: processing sample " . $sample->getName();
+
+        my $rO_job = &$stepName(\%cfg, $sample);
+        if ($rO_job) {
+          $rO_job->setLoopTags([$sample->getName()]);
+          debug "main: sample job " . join(".", @{$rO_job->getLoopTags()});
+          $step->submitJob(\%cfg, $rO_job);
         }
       }
     # Global step creates 1 job only
     } else {
       my $rO_job = &$stepName(\%cfg);
       if ($rO_job) {
-        $rO_job->setTags([]);
+        $rO_job->setLoopTags([]);
         $step->submitJob(\%cfg, $rO_job);
       }
     }
@@ -412,17 +397,18 @@ sub trinity {
 sub blastSplitQuery {
   my $rH_cfg = shift;
 
-  my $rO_job = new Job();
+  my $trinityFastaFile = "\$WORK_DIR/trinity_out_dir/Trinity.fasta";
+  my $trinityIndexFile = "\$WORK_DIR/trinity_out_dir/Trinity.idx";
+  my $reducedTrinityFastaFile = "\$WORK_DIR/trinity_out_dir/Trinity.longest_transcript.fasta";
+  my $numJobs = LoadConfig::getParam($rH_cfg, 'blast', 'blastJobs', 1, 'int');
+
+  my $rO_job = new Job([$trinityFastaFile], ["\$WORK_DIR/blast/chunks/Trinity.longest_transcript.fasta_chunk_" . sprintf("%07d", $numJobs - 1)]);
   if (!$rO_job->isUp2Date()) {
     my $command = "\n";
 
     $command .= LoadConfig::moduleLoad($rH_cfg, [
       ['blast', 'moduleVersion.exonerate']
     ]) . " && \\\n";
-
-    my $trinityFastaFile = "\$WORK_DIR/trinity_out_dir/Trinity.fasta";
-    my $trinityIndexFile = "\$WORK_DIR/trinity_out_dir/Trinity.idx";
-    my $reducedTrinityFastaFile = "\$WORK_DIR/trinity_out_dir/Trinity.longest_transcript.fasta";
 
     # Remove previous Trinity assembly FASTA index if present
     $command .= "rm -f $trinityIndexFile && \\\n";
@@ -480,7 +466,7 @@ sub blast {
       $rO_job->addCommand($command);
     }
     $rO_job->setStep($H_steps{"blast"});
-    $rO_job->setTags(["chunk_$jobIndex"]);
+    $rO_job->setLoopTags(["chunk_$jobIndex"]);
     $pipeline->getStepByName("blast")->submitJob($rH_cfg, $rO_job);
   }
 }
@@ -522,9 +508,13 @@ sub rsemPrepareReference {
 # RSEM abundance estimation is performed by read-set (there should be 1 read-set / sample for RNA-Seq)
 sub rsem {
   my $rH_cfg = shift;
-  my $readSet = shift;
+  my $sample = shift;
 
-  my $trimFilePrefix = "\$WORK_DIR/trim/" . $readSet->getSample()->getName() . "/" . $readSet->getName() . ".trim.";
+  # Trinity wrapper around RSEM only support one readset as input as of 2013-11-10
+  ($sample->getNbReadSets() == 1) or die "Error in rsem: one and only one readset per sample is supported!";
+
+  my $readSet = @{$sample->getReadSets()}[0];
+  my $trimFilePrefix = "\$WORK_DIR/trim/" . $sample->getName() . "/" . $readSet->getName() . ".trim.";
 
   my $rA_input1;
   my $rA_input2;
@@ -543,8 +533,8 @@ sub rsem {
     "\$WORK_DIR/trinity_out_dir/Trinity.fasta",
     $rA_input1,
     $rA_input2,
-    $readSet->getName(),
-    "\$WORK_DIR/rsem/" . $readSet->getSample()->getName() . "/" . $readSet->getName()
+    $sample->getName(),
+    "\$WORK_DIR/rsem/" . $sample->getName()
   );
 }
 
@@ -582,12 +572,13 @@ sub differentialGeneExpression {
     $command .= "mkdir -p $dgeDir && \\\n";
 
     # Create isoforms and genes matrices with counts of RNA-seq fragments per feature using Trinity RSEM utility
-    $command .= "merge_RSEM_frag_counts_single_table.pl \$WORK_DIR/rsem/*/*/*.isoforms.results > $isoformsMatrix && \\\n";
-    $command .= "merge_RSEM_frag_counts_single_table.pl \$WORK_DIR/rsem/*/*/*.genes.results > $genesMatrix && \\\n";
+    $command .= "merge_RSEM_frag_counts_single_table.pl " . join(" ", map("\$WORK_DIR/rsem/" . $_->getName() . "/" . $_->getName() . ".isoforms.results", @{$pipeline->getSamples()})) . " > $isoformsMatrix && \\\n";
+    $command .= "merge_RSEM_frag_counts_single_table.pl " . join(" ", map("\$WORK_DIR/rsem/" . $_->getName() . "/" . $_->getName() . ".genes.results", @{$pipeline->getSamples()})) . " > $genesMatrix && \\\n";
 
-    # Extract isoforms and genes length values
-    $command .= "find \$WORK_DIR/rsem/ -name *.isoforms.results -exec cut -f 1,3,4 {} \\; -quit > \$WORK_DIR/rsem/isoforms.lengths.tsv && \\\n";
-    $command .= "find \$WORK_DIR/rsem/ -name *.genes.results -exec cut -f 1,3,4 {} \\; -quit > \$WORK_DIR/rsem/genes.lengths.tsv && \\\n";
+    # Extract isoforms and genes length values from any one of RSEM's results files
+    my $sampleName = @{$pipeline->getSamples()}[0]->getName();
+    $command .= "cut -f 1,3,4 \$WORK_DIR/rsem/$sampleName/$sampleName.isoforms.results > \$WORK_DIR/rsem/isoforms.lengths.tsv && \\\n";
+    $command .= "cut -f 1,3,4 \$WORK_DIR/rsem/$sampleName/$sampleName.genes.results > \$WORK_DIR/rsem/genes.lengths.tsv && \\\n";
 
     # Merge isoforms and genes matrices with BLAST annotations if any:
     # edger.R requires a matrix with gene/isoform annotation as second column 

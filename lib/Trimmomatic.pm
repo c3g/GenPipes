@@ -63,8 +63,6 @@ sub trim {
   my $trimLog = shift;
   my $trimStats = shift;
 
-  my $ro_job = new Job();
-
   my $inputs;
   my $outputs;
 
@@ -78,7 +76,8 @@ sub trim {
 
   push(@$outputs, $trimLog, $trimStats);
 
-  $ro_job->testInputOutputs($inputs, $outputs);
+#  $ro_job->testInputOutputs($inputs, $outputs);
+  my $ro_job = new Job($inputs, $outputs);
 
   if (!$ro_job->isUp2Date()) {
     # Create output directories (remove duplicates from output directory list if necessary)

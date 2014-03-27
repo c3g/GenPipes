@@ -57,8 +57,8 @@ sub rnaQc {
   }
   my $outputIndexFile= $outputFolder . '/index.html';
 
-  my $ro_job = new Job();
-  $ro_job->testInputOutputs([$inputFile], [$outputFolder . '.zip', $outputIndexFile]);
+  my $ro_job = new Job([$inputFile], [$outputFolder . '.zip', $outputIndexFile]);
+#  $ro_job->testInputOutputs([$inputFile], [$outputFolder . '.zip', $outputIndexFile]);
   if (!$ro_job->isUp2Date()) {
     my $command;
     $command .= LoadConfig::moduleLoad($rH_cfg, [['mergeFiles', 'moduleVersion.java'], ['rnaQc', 'moduleVersion.bwa'], ['rnaQc', 'moduleVersion.rnaseqc']]) . ' &&';
@@ -87,8 +87,8 @@ sub saturation {
   my $rpkmDir = shift;
   my $saturationDir = shift;
 
-  my $ro_job = new Job();
-  $ro_job->testInputOutputs([$countFile], [$saturationDir . '.zip']);
+  my $ro_job = new Job([$countFile], [$saturationDir . '.zip']);
+#  $ro_job->testInputOutputs([$countFile], [$saturationDir . '.zip']);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
@@ -109,8 +109,8 @@ sub fpkmCor {
   my $folderFile     = shift;
   my $outputBaseName = shift;
 
-  my $ro_job = new Job();
-  $ro_job->testInputOutputs([$patternFile], [$outputBaseName]);
+  my $ro_job = new Job([$patternFile], [$outputBaseName]);
+#  $ro_job->testInputOutputs([$patternFile], [$outputBaseName]);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
@@ -129,8 +129,8 @@ sub readStats {
   my $sampleName = shift;
   my $fileType = shift;
 
-  my $ro_job = new Job();
-  $ro_job->testInputOutputs([$inputFile], [$outputFile]);
+  my $ro_job = new Job([$inputFile], [$outputFile]);
+#  $ro_job->testInputOutputs([$inputFile], [$outputFile]);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
@@ -169,8 +169,8 @@ sub mergeIndvidualReadStats {
   my $alignFile = shift;
   my $outputFile =shift;
 
-  my $ro_job = new Job();
-  $ro_job->testInputOutputs([$alignFile], [$outputFile]);
+  my $ro_job = new Job([$alignFile], [$outputFile]);
+#  $ro_job->testInputOutputs([$alignFile], [$outputFile]);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
@@ -193,8 +193,8 @@ sub mergeReadStats {
   my $folderFile  = shift;
   my $outputFile  = shift;
 
-  my $ro_job = new Job();
-  $ro_job->testInputOutputs([$patternFile], [$outputFile]);
+  my $ro_job = new Job([$patternFile], [$outputFile]);
+#  $ro_job->testInputOutputs([$patternFile], [$outputFile]);
 
   if (!$ro_job->isUp2Date()) {
   my $command;
@@ -219,8 +219,8 @@ sub mergeTrimmomaticStats {
     $libraryType= 'unknown';
   }
 
-  my $ro_job = new Job();
-  $ro_job->testInputOutputs([$patternFile], [$outputFile]);
+  my $ro_job = new Job([$patternFile], [$outputFile]);
+#  $ro_job->testInputOutputs([$patternFile], [$outputFile]);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
@@ -242,8 +242,8 @@ sub mergeSampleDnaStats {
   if (!defined($experimentType) || $experimentType eq "") {
     $experimentType= 'unknown';
   }
-  my $ro_job = new Job();
-  $ro_job->testInputOutputs([$folderFile], [$outputFile]);
+  my $ro_job = new Job([$folderFile], [$outputFile]);
+#  $ro_job->testInputOutputs([$folderFile], [$outputFile]);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
@@ -261,8 +261,8 @@ sub svnStatsChangeRate {
   my $outputFile = shift;
   my $listFile   = shift;
 
-  my $ro_job = new Job();
-  $ro_job->testInputOutputs([$inputVCF], [$outputFile]);
+  my $ro_job = new Job([$inputVCF], [$outputFile]);
+#  $ro_job->testInputOutputs([$inputVCF], [$outputFile]);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
@@ -284,8 +284,8 @@ sub svnStatsGetGraph {
   my $listFile        = shift;
   my $outputBaseName  = shift;
 
-  my $ro_job = new Job();
-  $ro_job->testInputOutputs([$listFile], [$outputBaseName . 'snvGraphMetrics_listFiles.txt']);
+  my $ro_job = new Job([$listFile], [$outputBaseName . 'snvGraphMetrics_listFiles.txt']);
+#  $ro_job->testInputOutputs([$listFile], [$outputBaseName . 'snvGraphMetrics_listFiles.txt']);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
@@ -306,8 +306,8 @@ sub mergePrintReadStats {
   my $outputFile     = shift;
   my $command        = undef;
 
-  my $ro_job = new Job();
-  $ro_job->testInputOutputs([$flagStatsFile], [$outputFile]);
+  my $ro_job = new Job([$flagStatsFile], [$outputFile]);
+#  $ro_job->testInputOutputs([$flagStatsFile], [$outputFile]);
 
   if (!$ro_job->isUp2Date()) {
     $command .= LoadConfig::moduleLoad($rH_cfg, [['metrics', 'moduleVersion.tools']]) . ' &&';

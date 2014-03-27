@@ -84,8 +84,8 @@ sub normalize_by_kmer_coverage {
     $rA_outputs = [$singleReadFile . $outputSuffix];
   }
 
-  my $rO_job = new Job();
-  $rO_job->testInputOutputs($rA_inputs, $rA_outputs);
+  my $rO_job = new Job($rA_inputs, $rA_outputs);
+#  $rO_job->testInputOutputs($rA_inputs, $rA_outputs);
 
   if (!$rO_job->isUp2Date()) {
     my $command = "\n";
@@ -158,8 +158,8 @@ sub trinity {
     $readFileOptions = " --single " . join(" ", @$rA_singleReadFiles);
   }
 
-  my $rO_job = new Job();
-  $rO_job->testInputOutputs($rA_inputs, ["$outputDirectory/Trinity.fasta"]);
+  my $rO_job = new Job($rA_inputs, ["$outputDirectory/Trinity.fasta"]);
+#  $rO_job->testInputOutputs($rA_inputs, ["$outputDirectory/Trinity.fasta"]);
 
   if (!$rO_job->isUp2Date()) {
     my $command = "\n";
@@ -195,7 +195,7 @@ sub rsemPrepareReference {
   my $rH_cfg = shift;
   my $transcriptFastaFile = shift;
 
-  my $rO_job = new Job();
+  my $rO_job = new Job([$transcriptFastaFile], ["$transcriptFastaFile.TRANS.ok"]);
 
   if (!$rO_job->isUp2Date()) {
     my $command = "\n";

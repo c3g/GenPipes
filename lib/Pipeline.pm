@@ -45,7 +45,7 @@ sub new {
   my $class = shift;
   my $rA_steps = shift;
   my $sampleFile = shift;
-  my $workDir = shift;
+  my $outputDirectory = shift;
 
   my $self = {
     '_steps' => [],
@@ -54,7 +54,7 @@ sub new {
 
   bless($self, $class);
 
-  for my $rH_step (@$rA_steps) {
+  foreach my $rH_step (@$rA_steps) {
     # Retrieve parent step objects from names; raise error if they don't exist
     my $parentSteps = [];
 
@@ -77,15 +77,18 @@ sub new {
   }
 
   # Check working directory and set it to current one if not defined
-  if (defined $workDir) {
-    if (-d $workDir) {
-      $workDir = abs_path($workDir);
+  if (defined $outputDirectory) {
+    if (-d $outputDirectory) {
+      $outputDirectory = abs_path($outputDirectory);
     } else {
-      die "Error: working directory $workDir does not exist or is not a directory";
+      die "Error: output directory $outputDirectory does not exist or is not a directory";
     }
   } else {
-    $workDir = "`pwd`";
+    $outputDirectory = "`pwd`";
   }
+
+  # Set WORK_DIR environment variable for future use of relative file paths
+  $ENV{'WORK_DIR'} = $outputDirectory;
 
   # Add script name (without suffix) as job list filename prefix (in practice, identical to pipeline name)
   my $jobListPrefix = fileparse($0, qr/\.[^.]*/);
@@ -94,7 +97,7 @@ sub new {
   print <<END;
 #!/bin/bash
 
-WORK_DIR=$workDir
+WORK_DIR=$outputDirectory
 JOB_OUTPUT_ROOT=\$WORK_DIR/job_output
 TIMESTAMP=`date +%FT%H.%M.%S`
 JOB_LIST=\$JOB_OUTPUT_ROOT/${jobListPrefix}_job_list_\$TIMESTAMP
