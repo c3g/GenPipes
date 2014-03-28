@@ -18,6 +18,8 @@ cd $INSTALL_PATH
 wget http://downloads.sourceforge.net/project/trinotate/Trinotate_r$VERSION.tar.gz
 tar xvf Trinotate_r$VERSION.tar.gz 
 #cd Trinotate_r$VERSION 
+wget "http://sourceforge.net/projects/trinotate/files/TRINOTATE_RESOURCES/TrinotateSqlite.sprot.$VERSION.db.gz/download" -O Trinotate_r$VERSION/Trinotate.sqlite.gz
+gunzip Trinotate_r$VERSION/Trinotate.sqlite.gz
 
 ## Uniprot, PFAM : see install scripts for those
 
@@ -35,15 +37,16 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE  \" ; 
 prereq                               mugqic/trinity/$VERSION
 #prereq                              mugqic/sqlite3
-prereq                               mugqic/blast/2.2.29+
-prereq                               mugqic/hmmer/3.1b1
-prereq                               mugqic/signalp/4.1
-prereq                               mugqic/tmhmm/2.0c
-prereq                               mugqic/rnammer/1.2
-prereq                               mugqic/cd-hit/4.5.4-2011-03-07
+#prereq                               mugqic/blast/2.2.29+
+#prereq                               mugqic/hmmer/3.1b1
+#prereq                               mugqic/signalp/4.1
+#prereq                               mugqic/tmhmm/2.0c
+#prereq                               mugqic/rnammer/1.2
+#prereq                               mugqic/cd-hit/4.5.4-2011-03-07
 set             root                \$::env(MUGQIC_INSTALL_HOME)/software/$SOFTWARE/Trinotate_r$VERSION ;
 prepend-path    PATH                \$root ; 
 setenv          TRINOTATE_HOME         \$root;
+setenv         TRINOTATE_SQLITE       \$root/Trinotate.sqlite;
 " > $VERSION
 
 # NOTES:

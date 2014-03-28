@@ -3,7 +3,7 @@
 ## NOTE (FL): 
 # - Tools from cbs.dtu.dk under some sort of danish license and need to be downloaded manually.
 # - Assumes gnuplot, gs and are avail on the system
-# 
+# - Empty output problem: http://sourceforge.net/p/trinotate/mailman/message/31228028/
 # 
 
 SOFTWARE=tmhmm
@@ -22,7 +22,7 @@ ln -s `which ppm2tiff` bin/ppm2gif
 
 # Stupid file tweaks again
 sed -i s,"#\!/usr/local/bin/perl,#\!/usr/bin/env perl,g" bin/tmhmm
-sed -i s,"#\!/usr/local/bin/perl,#\!/usr/bin/env perl,g" bin/tmhmmformat.pl
+sed -i s,"#\!/usr/local/bin/perl -w,#\!/usr/bin/env perl,g" bin/tmhmmformat.pl
 
  # You need an executable of the program decodeanhmm that runs under
  # Unix. The program may already be in bin/decodeanhmm.
