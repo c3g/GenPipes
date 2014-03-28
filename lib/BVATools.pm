@@ -160,7 +160,6 @@ sub resolveSampleBED {
 }
 
 sub depthOfCoverage {
-
   my $rH_cfg        = shift;
   my $inputBam      = shift;
   my $outputFile    = shift;
@@ -178,25 +177,20 @@ sub depthOfCoverage {
     $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta', 1, 'filepath');
   }
   
-  my $rA_thresholds = LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'percentThresholds', 0, 'array');
+  my $maxDepth = LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'maxDepth', 0, 'array');
 
   if (!$ro_job->isUp2Date()) {
-      my $command;
-      $command .= LoadConfig::moduleLoad($rH_cfg, [['depthOfCoverage', 'moduleVersion.java'], ['depthOfCoverage', 'moduleVersion.bvatools']]) . ' &&';
-      $command .= ' java ' . LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'ram') . ' -jar \${BVATOOLS_JAR}';
-      $command .= ' depthofcoverage';
-      $command .= ' --simpleChrName';
-      $command .= ' ' . LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'extraFlags', 0);
-      $command .= ' --ref ' . $refGenome;
-      if (defined($coverageBED) && length($coverageBED) > 0) {
-        $command .= ' --intervals \''.$coverageBED . "'";
-      }
-
-    if (defined($rA_thresholds) and $rA_thresholds ne "") {
-      for my $threshold (@{$rA_thresholds}) {
-        $command .= ' --summaryCoverageThresholds ' . $threshold;
-      }
+    my $command;
+    $command .= LoadConfig::moduleLoad($rH_cfg, [['depthOfCoverage', 'moduleVersion.java'], ['depthOfCoverage', 'moduleVersion.bvatools']]) . ' &&';
+    $command .= ' java ' . LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'ram') . ' -jar \${BVATOOLS_JAR}';
+    $command .= ' depthofcoverage';
+    $command .= ' --simpleChrName';
+    $command .= ' ' . LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'extraFlags', 0);
+    $command .= ' --ref ' . $refGenome;
+    if (defined($coverageBED) && length($coverageBED) > 0) {
+      $command .= ' --intervals \''.$coverageBED . "'";
     }
+
     $command .= ' --bam ' . $inputBam;
     $command .= ' > ' . $outputFile;
 
