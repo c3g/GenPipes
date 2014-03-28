@@ -118,27 +118,30 @@ use VCFtools;
 #--------------------
 
 my @steps;
-push(@steps, {'name' => 'bamToFastq', 'loop' => 'sample', 'parentSteps' => []});
-push(@steps, {'name' => 'trimAndAlign', 'loop' => 'sample', 'parentSteps' => ['bamToFastq']});
-push(@steps, {'name' => 'laneMetrics', 'loop' => 'sample', 'parentSteps' => ['trimAndAlign']});
-push(@steps, {'name' => 'mergeTrimStats', 'loop' => 'experiment', 'parentSteps' => ['trimAndAlign']});
-push(@steps, {'name' => 'mergeLanes', 'loop' => 'sample', 'parentSteps' => ['trimAndAlign']});
+push(@steps, {'name' => 'bamToFastq', 'loop' => 'readSet', 'parentSteps' => []});
+push(@steps, {'name' => 'trim', 'loop' => 'readSet', 'parentSteps' => ['bamToFastq']});
+push(@steps, {'name' => 'bwaAln1', 'loop' => 'readSet', 'parentSteps' => ['trim']});
+push(@steps, {'name' => 'bwaAln2', 'loop' => 'readSet', 'parentSteps' => ['trim']});
+push(@steps, {'name' => 'bwaSam', 'loop' => 'readSet', 'parentSteps' => ['bwaAln1', 'bwaAln2']});
+push(@steps, {'name' => 'laneMetrics', 'loop' => 'sample', 'parentSteps' => ['align']});
+push(@steps, {'name' => 'mergeTrimStats', 'loop' => 'global', 'parentSteps' => ['align']});
+push(@steps, {'name' => 'mergeLanes', 'loop' => 'sample', 'parentSteps' => ['align']});
 push(@steps, {'name' => 'indelRealigner', 'loop' => 'sample', 'parentSteps' => ['mergeLanes']});
 push(@steps, {'name' => 'mergeRealigned', 'loop' => 'sample', 'parentSteps' => ['indelRealigner']});
 push(@steps, {'name' => 'fixmate', 'loop' => 'sample', 'parentSteps' => ['mergeRealigned']});
 push(@steps, {'name' => 'markDup', 'loop' => 'sample', 'parentSteps' => ['fixmate']});
 push(@steps, {'name' => 'recalibration', 'loop' => 'sample', 'parentSteps' => ['markDup']});
 push(@steps, {'name' => 'metrics', 'loop' => 'sample', 'parentSteps' => ['recalibration']});
-push(@steps, {'name' => 'metricsLibrarySample', 'loop' => 'experiment', 'parentSteps' => ['metrics']});
-push(@steps, {'name' => 'snpAndIndelBCF', 'loop' => 'experiment', 'parentSteps' => ['recalibration']});
-push(@steps, {'name' => 'mergeFilterBCF', 'loop' => 'experiment', 'parentSteps' => ['snpAndIndelBCF']});
-push(@steps, {'name' => 'filterNStretches', 'loop' => 'experiment', 'parentSteps' => ['mergeFilterBCF']});
-push(@steps, {'name' => 'flagMappability', 'loop' => 'experiment', 'parentSteps' => ['filterNStretches']});
-push(@steps, {'name' => 'snpIDAnnotation', 'loop' => 'experiment', 'parentSteps' => ['flagMappability']});
-push(@steps, {'name' => 'snpEffect', 'loop' => 'experiment', 'parentSteps' => ['snpIDAnnotation']});
-push(@steps, {'name' => 'dbNSFPAnnotation', 'loop' => 'experiment', 'parentSteps' => ['snpEffect']});
-push(@steps, {'name' => 'metricsSNV', 'loop' => 'experiment', 'parentSteps' => ['snpEffect']});
-push(@steps, {'name' => 'deliverable', 'loop' => 'experiment', 'parentSteps' => ['mergeTrimStats', 'metricsLibrarySample', 'metricsSNV']});
+push(@steps, {'name' => 'metricsLibrarySample', 'loop' => 'global', 'parentSteps' => ['metrics']});
+push(@steps, {'name' => 'snpAndIndelBCF', 'loop' => 'global', 'parentSteps' => ['recalibration']});
+push(@steps, {'name' => 'mergeFilterBCF', 'loop' => 'global', 'parentSteps' => ['snpAndIndelBCF']});
+push(@steps, {'name' => 'filterNStretches', 'loop' => 'global', 'parentSteps' => ['mergeFilterBCF']});
+push(@steps, {'name' => 'flagMappability', 'loop' => 'global', 'parentSteps' => ['filterNStretches']});
+push(@steps, {'name' => 'snpIDAnnotation', 'loop' => 'global', 'parentSteps' => ['flagMappability']});
+push(@steps, {'name' => 'snpEffect', 'loop' => 'global', 'parentSteps' => ['snpIDAnnotation']});
+push(@steps, {'name' => 'dbNSFPAnnotation', 'loop' => 'global', 'parentSteps' => ['snpEffect']});
+push(@steps, {'name' => 'metricsSNV', 'loop' => 'global', 'parentSteps' => ['snpEffect']});
+push(@steps, {'name' => 'deliverable', 'loop' => 'global', 'parentSteps' => ['mergeTrimStats', 'metricsLibrarySample', 'metricsSNV']});
 push(@steps, {'name' => 'fullPileup', 'loop' => 'sample', 'parentSteps' => ['recalibration']});
 
 #--------------------
@@ -241,219 +244,191 @@ sub main {
 
   my @sampleNames = keys %{$rHoAoH_sampleInfo};
 
-  print STDERR "Samples: " . scalar(@sampleNames) . "\n";
-  if (defined($firstDependency) && length($firstDependency) > 0) {
-    for my $sampleName (@sampleNames) {
-      $globalDep{"default"}->{$sampleName} = $firstDependency;
-    }
-  }
+  $pipeline = Pipeline->new(\@steps, $sampleFile);
 
-  SubmitToCluster::initPipeline;
+  # Go through steps and create global or read-set jobs accordingly
+  foreach my $step ($pipeline->getStepsByRange($stepRange)) {
+    my $stepName = $step->getName();
+    debug "main: processing step $stepName";
 
-  my $currentStep;
-  my $lastStepId = $opts{'e'} - 1;
-  for (my $idx = 0; $idx < @sampleNames; $idx++) {
-    my $sampleName = $sampleNames[$idx];
-    my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sampleName};
+    # ReadSet step creates 1 job per readSet per sample
+    if ($step->getLoop() eq 'readSet') {
+      foreach my $sample (@{$pipeline->getSamples()}) {
+        foreach my $readSet (@{$sample->getReadSets()}) {
+          debug "main: processing read set " . $readSet->getName();
 
-    for ($currentStep = $opts{'s'} - 1; $currentStep <= $lastStepId; $currentStep++) {
-      my $fname = $steps[$currentStep]->{'name'};
-      my $subref = \&$fname;
-
-      if ($steps[$currentStep]->{'loop'} eq 'sample') {
-        # Tests for the first step in the list. Used for dependencies.
-        my $jobIdVar = &$subref($currentStep, \%cfg, $sampleName, $rAoH_sampleLanes, $rAoH_seqDictionary);
-        $globalDep{$fname}->{$sampleName} = $jobIdVar;
-
-        if (defined($jobIdVar) && $currentStep == $lastStepId) {
-          print "FINAL_STEP_" . $idx . "_JOB_IDS=" . $jobIdVar . "\n";
+          my $rA_jobs = &$stepName(\%cfg, $readSet, $rAoH_seqDictionary);
+          foreach my $rO_job (@{$rA_jobs}) {
+            if ($rO_job) {
+              $rO_job->setLoopTags([$sample->getName(), $readSet->getName()]);
+              debug "main: readSet job " . join(".", @{$rO_job->getLoopTags()});
+              $step->submitJob(\%cfg, $rO_job);
+            }
+          }
         }
+      }
+    # Sample step creates 1 job per sample
+    } elsif ($step->getLoop() eq 'sample') {
+      foreach my $sample (@{$pipeline->getSamples()}) {
+        debug "main: processing sample " . $sample->getName();
+
+        my $rO_job = &$stepName(\%cfg, $sample, $rAoH_seqDictionary);
+        if ($rO_job) {
+          $rO_job->setLoopTags([$sample->getName()]);
+          debug "main: sample job " . join(".", @{$rO_job->getLoopTags()});
+          $step->submitJob(\%cfg, $rO_job);
+        }
+      }
+    # Global step creates 1 job only
+    } else {
+      my $rO_job = &$stepName(\%cfg, $rAoH_seqDictionary);
+      if ($rO_job) {
+        $rO_job->setLoopTags([]);
+        $step->submitJob(\%cfg, $rO_job);
       }
     }
   }
-
-  for ($currentStep = $opts{'s'}-1; $currentStep <= $lastStepId; $currentStep++) {
-    if ($steps[$currentStep]->{'loop'} eq 'experiment') {
-      my $fname = $steps[$currentStep]->{'name'};
-      my $subref = \&$fname;
-
-      my $jobIdVar = &$subref($currentStep, \%cfg, $rHoAoH_sampleInfo, $rAoH_seqDictionary);
-      $globalDep{$fname}->{'experiment'} = $jobIdVar;
-    }
-  }
-
-
-  my $jobId = "";
-  if ($steps[$lastStepId]->{'loop'} eq 'experiment') {
-    if (defined($globalDep{$steps[$lastStepId]->{'name'}}->{'experiment'})) {
-      $jobId = $globalDep{$steps[$lastStepId]->{'name'}}->{'experiment'};
-    }
-  } else {
-    my @finalIds;
-    for (my $idx = 0; $idx < @sampleNames; $idx++) {
-      push(@finalIds, "\${FINAL_STEP_" . $idx . "_JOB_IDS}");
-    }
-    $jobId = join(':', @finalIds);
-  }
-  print "export FINAL_STEP_JOB_IDS=" . $jobId . "\n";
-
 }
 
 sub bamToFastq {
-  my $stepId = shift;
   my $rH_cfg = shift;
-  my $sampleName = shift;
-  my $rAoH_sampleLanes = shift;
+  my $readSet = shift;
   my $rAoH_seqDictionary = shift;
 
-  my $jobDependency = undef;
-  my $parentStep = 'default';
-  if (defined($parentStep) && defined($globalDep{$parentStep}->{$sampleName})) {
-    $jobDependency = $globalDep{$parentStep}->{$sampleName};
-  }
+  my $rO_job;
 
-  for my $rH_laneInfo (@$rAoH_sampleLanes) {
-    my $rO_job;
-    my $baseDirectory = "$sampleName/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
-    my $rawDirectory = LoadConfig::getParam($rH_cfg, 'default', 'rawReadDir', 1, 'dirpath') . "/" . $baseDirectory;
-    my $input1 = $rawDirectory . "/" . $rH_laneInfo->{'read1File'};
-
-    if ($input1 =~ /\.bam$/) {
-      if ($rH_laneInfo->{'runType'} eq "SINGLE_END") {
-        my $outputFastq1 = $input1;
-        $outputFastq1 =~ s/\.bam$/.single.fastq.gz/;
-        $rO_job = Picard::samToFastq($rH_cfg, $input1, $outputFastq1);
-        $rH_laneInfo->{'read1File'} = basename($outputFastq1);
-      } elsif ($rH_laneInfo->{'runType'} eq "PAIRED_END") {
-        my $outputFastq1 = $input1;
-        my $outputFastq2 = $input1;
-        $outputFastq1 =~ s/\.bam$/.pair1.fastq.gz/;
-        $outputFastq2 =~ s/\.bam$/.pair2.fastq.gz/;
-        $rO_job = Picard::samToFastq($rH_cfg, $input1, $outputFastq1, $outputFastq2);
-        $rH_laneInfo->{'read1File'} = basename($outputFastq1);
-        $rH_laneInfo->{'read2File'} = basename($outputFastq2);
-      } else {
-        die "Error in rnaSeqDeNovoAssembly::bamToFastq: unknown run type (can be 'SINGLE_END' or 'PAIRED_END' only): " . $rH_laneInfo->{'runType'};
-      }
+  if ($readSet->getBAM() and not($readSet->getFASTQ1())) {
+    if ($readSet->getRunType() eq "PAIRED_END") {
+      $readSet->setFASTQ1($readSet->getBAM());
+      $readSet->getFASTQ1() =~ s/\.bam$/.pair1.fastq.gz/;
+      $readSet->setFASTQ2($readSet->getBAM());
+      $readSet->getFASTQ2() =~ s/\.bam$/.pair2.fastq.gz/;
+      $rO_job = Picard::samToFastq($rH_cfg, $readSet->getBAM(), $readSet->getFASTQ1(), $readSet->getFASTQ2());
+    } elsif ($readSet->getRunType() eq "SINGLE_END") {
+      $readSet->setFASTQ1($readSet->getBAM());
+      $readSet->getFASTQ1() =~ s/\.bam$/.single.fastq.gz/;
+      $rO_job = Picard::samToFastq($rH_cfg, $readSet->getBAM(), $readSet->getFASTQ1());
     }
-    SubmitToCluster::printSubmitCmd($rH_cfg, "bamToFastq", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, "BAMTOFASTQ", $jobDependency, $sampleName, $rO_job);
   }
+  return $rO_job;
 }
 
-sub trimAndAlign {
-  my $stepId = shift;
+sub trim {
   my $rH_cfg = shift;
-  my $sampleName = shift;
-  my $rAoH_sampleLanes = shift;
+  my $readSet = shift;
   my $rAoH_seqDictionary = shift;
 
-  my $jobDependency = undef;
-  my $parentStep = $steps[$stepId]->{'parentStep'};
-  if (defined($parentStep) && defined($globalDep{$parentStep}->{$sampleName})) {
-    $jobDependency = $globalDep{$parentStep}->{$sampleName};
+  my $trimFilePrefix = "\$WORK_DIR/read/" . $readSet->getSample()->getName() . "/" . $readSet->getName() . ".trim.";
+
+  my $pairedOutput1;
+  my $unpairedOutput1;
+  my $pairedOutput2;
+  my $unpairedOutput2;
+  my $singleOutput;
+
+  if ($readSet->getRunType() eq "PAIRED_END") {
+    $pairedOutput1 = $trimFilePrefix . "pair1.fastq.gz";
+    $unpairedOutput1 = $trimFilePrefix . "single1.fastq.gz";
+    $pairedOutput2 = $trimFilePrefix . "pair2.fastq.gz";
+    $unpairedOutput2 = $trimFilePrefix . "single2.fastq.gz";
+  } elsif ($readSet->getRunType() eq "SINGLE_END") {
+    $singleOutput = $trimFilePrefix . "single.fastq.gz";
   }
 
-  print "BWA_JOB_IDS=\"\"\n";
-  my $setJobId = 0;
-  for my $rH_laneInfo (@$rAoH_sampleLanes) {
-    my $rgLibrary = $rH_laneInfo->{'libraryBarcode'};
-    my $rgPlatformUnit = $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
-    my $rgId = $rgLibrary . "_" . $rgPlatformUnit;
-    my $rgSampleName = $rH_laneInfo->{'name'};
-    my $rgCenter = undef;
+  return Trimmomatic::trim(
+    $rH_cfg,
+    $readSet->getFASTQ1(),
+    $readSet->getFASTQ2(),
+    $pairedOutput1,
+    $unpairedOutput1,
+    $pairedOutput2,
+    $unpairedOutput2,
+    $singleOutput,
+    $readSet->getQualityOffset(),
+    $trimFilePrefix . "out",
+    $trimFilePrefix . "stats.csv"
+  );
+}
 
-    my $baseDir = $sampleName . "/run" . $rgPlatformUnit;
-    my $rawDir = LoadConfig::getParam($rH_cfg, 'trim', 'rawReadDir', 1, 'dirpath') . "/$baseDir";
-    my $trimDir = "reads/$baseDir";
-    my $rO_trimJob = Trimmomatic::trim(
+sub bwaAln1 {
+  my $rH_cfg = shift;
+  my $readSet = shift;
+  my $rAoH_seqDictionary = shift;
+
+  my $rgLibrary = $readSet->getLibrary();
+  my $rgPlatformUnit = $readSet->getRun() . "_" . $readSet->getLane();
+  my $rgId = $rgLibrary . "_" . $rgPlatformUnit;
+  my $rgSampleName = $readSet->getSample()->getName();
+  my $rgCenter = undef;
+
+
+  my $outputAlnDir = "alignment/" . $readSet->getSample()->getName() . "/" . $readSet->getName();
+  print "mkdir -p " . $outputAlnDir . "\n";
+  my $outputAlnPrefix = $outputAlnDir . "/" . $readSet->getName();
+
+  my $bwaPair1Input = undef;
+  my $bwaPair2Input = undef;
+  my $bwaSingleInput = undef;
+
+  if ($rH_laneInfo->{'read2File'}) {
+    $bwaPair1Input = $trimDir . "/" . basename($rH_laneInfo->{'read1File'});
+    $bwaPair1Input =~ s/\.pair1\.fastq\.gz$/.trim.pair1.fastq.gz/;
+    $bwaPair2Input = $trimDir . "/" . basename($rH_laneInfo->{'read2File'});
+    $bwaPair2Input =~ s/\.pair2\.fastq\.gz$/.trim.pair2.fastq.gz/;
+  } else {
+    $bwaSingleInput = $trimDir . "/" . basename($rH_laneInfo->{'read1File'});
+    $bwaSingleInput =~ s/\.single\.fastq\.gz$/.trim.single.fastq.gz/;
+  }
+
+  my $aligner = LoadConfig::getParam($rH_cfg, 'aln', 'aligner');
+  if ($aligner eq "aln") {
+    $rgCenter = LoadConfig::getParam($rH_cfg, 'aln', 'bwaInstitution');
+    my $rO_bwaJob = BWA::aln(
       $rH_cfg,
-      $rawDir . "/" . $rH_laneInfo->{'read1File'},
-      $rH_laneInfo->{'read2File'} ? $rawDir . "/" . $rH_laneInfo->{'read2File'} : undef,
-      $trimDir,
-      $rH_laneInfo->{'qualOffset'}
+      $sampleName,
+      $bwaPair1Input,
+      $bwaPair2Input,
+      $bwaSingleInput,
+      $outputAlnPrefix,
+      $rgId,
+      $rgSampleName,
+      $rgLibrary,
+      $rgPlatformUnit,
+      $rgCenter
     );
-    SubmitToCluster::printSubmitCmd($rH_cfg, "trim", $rgPlatformUnit, "TRIM", $jobDependency, $sampleName, $rO_trimJob);
-
-    my $trimDependency = $rO_trimJob->getCommandJobId(0);
-    if (defined($jobDependency) && (!defined($trimDependency) || length ($trimDependency) == 0)) {
-      $trimDependency = $jobDependency;
-    }
-
-    my $outputAlnDir = "alignment/" . $baseDir;
-    print "mkdir -p " . $outputAlnDir . "\n";
-    my $outputAlnPrefix = $outputAlnDir . "/" . $sampleName . "." . $rgLibrary;
-
-    my $bwaPair1Input = undef;
-    my $bwaPair2Input = undef;
-    my $bwaSingleInput = undef;
-
-    if ($rH_laneInfo->{'read2File'}) {
-      $bwaPair1Input = $trimDir . "/" . basename($rH_laneInfo->{'read1File'});
-      $bwaPair1Input =~ s/\.pair1\.fastq\.gz$/.trim.pair1.fastq.gz/;
-      $bwaPair2Input = $trimDir . "/" . basename($rH_laneInfo->{'read2File'});
-      $bwaPair2Input =~ s/\.pair2\.fastq\.gz$/.trim.pair2.fastq.gz/;
-    } else {
-      $bwaSingleInput = $trimDir . "/" . basename($rH_laneInfo->{'read1File'});
-      $bwaSingleInput =~ s/\.single\.fastq\.gz$/.trim.single.fastq.gz/;
-    }
-
-    my $aligner = LoadConfig::getParam($rH_cfg, 'aln', 'aligner');
-    if ($aligner eq "aln") {
-      $rgCenter = LoadConfig::getParam($rH_cfg, 'aln', 'bwaInstitution');
-      my $rO_bwaJob = BWA::aln(
-        $rH_cfg,
-        $sampleName,
-        $bwaPair1Input,
-        $bwaPair2Input,
-        $bwaSingleInput,
-        $outputAlnPrefix,
-        $rgId,
-        $rgSampleName,
-        $rgLibrary,
-        $rgPlatformUnit,
-        $rgCenter
-      );
-      if (!$rO_bwaJob->isUp2Date()) {
-        if ($rO_bwaJob->getNbCommands() == 3) {
-          SubmitToCluster::printSubmitCmd($rH_cfg, "aln", "read1." . $rgPlatformUnit, "READ1ALN", $trimDependency, $sampleName, $rO_bwaJob, 0);
-          SubmitToCluster::printSubmitCmd($rH_cfg, "aln", "read2." . $rgPlatformUnit, "READ2ALN", $trimDependency, $sampleName, $rO_bwaJob, 1);
-          SubmitToCluster::printSubmitCmd($rH_cfg, "aln", "sampe." . $rgPlatformUnit, "BWA", $rO_bwaJob->getCommandJobId(0) . LoadConfig::getParam($rH_cfg, 'aln', 'clusterDependencySep') . $rO_bwaJob->getCommandJobId(1), $sampleName, $rO_bwaJob, 2);
-          print "BWA_JOB_IDS=\${BWA_JOB_IDS}" . LoadConfig::getParam($rH_cfg, 'aln', 'clusterDependencySep') . $rO_bwaJob->getCommandJobId(2) . "\n";
-            $setJobId = 1;
-        } else {
-          SubmitToCluster::printSubmitCmd($rH_cfg, "aln", $rgPlatformUnit, "READALN", $trimDependency, $sampleName, $rO_bwaJob, 0);
-          SubmitToCluster::printSubmitCmd($rH_cfg, "aln", "samse." . $rgPlatformUnit, "BWA", $rO_bwaJob->getCommandJobId(1), $sampleName, $rO_bwaJob, 1);
-          print "BWA_JOB_IDS=\${BWA_JOB_IDS}" . LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep') . $rO_bwaJob->getCommandJobId(1) . "\n";
+    if (!$rO_bwaJob->isUp2Date()) {
+      if ($rO_bwaJob->getNbCommands() == 3) {
+        SubmitToCluster::printSubmitCmd($rH_cfg, "aln", "read1." . $rgPlatformUnit, "READ1ALN", $trimDependency, $sampleName, $rO_bwaJob, 0);
+        SubmitToCluster::printSubmitCmd($rH_cfg, "aln", "read2." . $rgPlatformUnit, "READ2ALN", $trimDependency, $sampleName, $rO_bwaJob, 1);
+        SubmitToCluster::printSubmitCmd($rH_cfg, "aln", "sampe." . $rgPlatformUnit, "BWA", $rO_bwaJob->getCommandJobId(0) . LoadConfig::getParam($rH_cfg, 'aln', 'clusterDependencySep') . $rO_bwaJob->getCommandJobId(1), $sampleName, $rO_bwaJob, 2);
+        print "BWA_JOB_IDS=\${BWA_JOB_IDS}" . LoadConfig::getParam($rH_cfg, 'aln', 'clusterDependencySep') . $rO_bwaJob->getCommandJobId(2) . "\n";
           $setJobId = 1;
-        }
-      }
-    } else {
-      $rgCenter = LoadConfig::getParam($rH_cfg, 'mem', 'bwaInstitution');
-      my $rO_bwaJob = BWA::mem(
-        $rH_cfg,
-        $sampleName,
-        $bwaPair1Input,
-        $bwaPair2Input,
-        $bwaSingleInput,
-        $outputAlnPrefix,
-        $rgId,
-        $rgSampleName,
-        $rgLibrary,
-        $rgPlatformUnit,
-        $rgCenter);
-      if (!$rO_bwaJob->isUp2Date()) {
-        SubmitToCluster::printSubmitCmd($rH_cfg, "mem", $rgPlatformUnit, "BWA_MEM", $trimDependency, $sampleName, $rO_bwaJob);
-        print "BWA_JOB_IDS=" . $rO_bwaJob->getCommandJobId(0) . "\n";
-        $setJobId = 1;
+      } else {
+        SubmitToCluster::printSubmitCmd($rH_cfg, "aln", $rgPlatformUnit, "READALN", $trimDependency, $sampleName, $rO_bwaJob, 0);
+        SubmitToCluster::printSubmitCmd($rH_cfg, "aln", "samse." . $rgPlatformUnit, "BWA", $rO_bwaJob->getCommandJobId(1), $sampleName, $rO_bwaJob, 1);
+        print "BWA_JOB_IDS=\${BWA_JOB_IDS}" . LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep') . $rO_bwaJob->getCommandJobId(1) . "\n";
       }
     }
+  } else {
+    $rgCenter = LoadConfig::getParam($rH_cfg, 'mem', 'bwaInstitution');
+    my $rO_bwaJob = BWA::mem(
+      $rH_cfg,
+      $sampleName,
+      $bwaPair1Input,
+      $bwaPair2Input,
+      $bwaSingleInput,
+      $outputAlnPrefix,
+      $rgId,
+      $rgSampleName,
+      $rgLibrary,
+      $rgPlatformUnit,
+      $rgCenter);
+    if (!$rO_bwaJob->isUp2Date()) {
+      SubmitToCluster::printSubmitCmd($rH_cfg, "mem", $rgPlatformUnit, "BWA_MEM", $trimDependency, $sampleName, $rO_bwaJob);
+      print "BWA_JOB_IDS=" . $rO_bwaJob->getCommandJobId(0) . "\n";
+      $setJobId = 1;
+    }
   }
-
-  if ($setJobId == 0) {
-    return undef;
-  }
-
-  return "\$BWA_JOB_IDS";
 }
 
 sub laneMetrics {

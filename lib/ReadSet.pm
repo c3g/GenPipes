@@ -107,6 +107,36 @@ sub getFASTQ2 {
   return $self->{'_FASTQ2'};
 }
 
+sub setLibrary {
+  my ($self, $library) = @_;
+  $self->{'_library'} = $library;
+}
+
+sub getLibrary {
+  my ($self) = @_;
+  return $self->{'_library'};
+}
+
+sub setRun {
+  my ($self, $run) = @_;
+  $self->{'_run'} = $run;
+}
+
+sub getRun {
+  my ($self) = @_;
+  return $self->{'_run'};
+}
+
+sub setLane {
+  my ($self, $lane) = @_;
+  $self->{'_lane'} = $lane;
+}
+
+sub getLane {
+  my ($self) = @_;
+  return $self->{'_lane'};
+}
+
 sub setAdaptor1 {
   my ($self, $adaptor1) = @_;
   $self->{'_adaptor1'} = $adaptor1;

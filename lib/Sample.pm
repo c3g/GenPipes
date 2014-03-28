@@ -131,6 +131,9 @@ sub parseSampleFile {
     $readSet->setBAM($inputRow->{"BAM"});
     $readSet->setFASTQ1($inputRow->{"FASTQ1"});
     $readSet->setFASTQ2($inputRow->{"FASTQ2"});
+    $readSet->setLibrary($inputRow->{"Library"});
+    $readSet->setRun($inputRow->{"Run"});
+    $readSet->setLane($inputRow->{"Lane"});
     $readSet->setAdaptor1($inputRow->{"Adaptor1"});
     $readSet->setAdaptor2($inputRow->{"Adaptor2"});
     $readSet->setQualityOffset($inputRow->{"QualityOffset"});

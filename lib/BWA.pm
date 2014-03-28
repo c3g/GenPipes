@@ -111,30 +111,105 @@ sub mem {
 }
 
 sub aln {
-  my $rH_cfg          = shift;
-  my $sampleName      = shift;
-  my $pair1           = shift;
-  my $pair2           = shift;
-  my $single          = shift;
-  my $optOutputPrefix = shift;
-  my $rgId            = shift;
-  my $rgSample        = shift;
-  my $rgLibrary       = shift;
-  my $rgPlatformUnit  = shift;
-  my $rgCenter        = shift;
-  my $indexToUse      = shift;
+  my $rH_cfg       = shift;
+  my $inDbFasta    = shift;
+  my $inQueryFastq = shift;
+  my $outSai       = shift;
 
-  my $rO_job;
-  if (defined($pair1) && defined($pair2)) {
-    $rO_job = pairCommand($rH_cfg, $sampleName, $pair1, $pair2, $optOutputPrefix, $rgId, $rgSample, $rgLibrary, $rgPlatformUnit, $rgCenter, $indexToUse);
-  } elsif (defined($single)) {
-    $rO_job = singleCommand($rH_cfg, $sampleName, $single, $optOutputPrefix, $rgId, $rgSample, $rgLibrary, $rgPlatformUnit, $rgCenter, $indexToUse);
-  } else {
-    die "Unknown runType, not paired or single\n";
+  my $rO_job = new Job([$inDbFasta, $inQueryFastq], [$outSai]);
+
+  if (!$rO_job->isUp2Date()) {
+    my $command .= LoadConfig::moduleLoad($rH_cfg, [['aln', 'moduleVersion.bwa']]) . " && \\\n";
+    $command .= "bwa aln";
+    $command .= " -t " . LoadConfig::getParam($rH_cfg, 'aln', 'bwaAlnThreads', 1, 'int');
+    $command .= " " . $inDbFasta;
+    $command .= " " . $inQueryFastq;
+    $command .= " -f " . $outSai;
+    $rO_job->addCommand($command);
   }
-
-  return $rO_job;
 }
+
+sub sampe {
+  my $rH_cfg    = shift;
+  my $inDbFasta = shift;
+  my $in1Sai    = shift;
+  my $in2Sai    = shift;
+  my $in1Fastq  = shift;
+  my $in2Fastq  = shift;
+  my $outSam    = shift;
+  my $readGroup = shift;
+
+  my $rO_job = new Job([$inDbFasta, $in1Sai, $in2Sai, $in1Fastq, $in2Fastq], [$outSam]);
+
+  if (!$rO_job->isUp2Date()) {
+    my $command .= LoadConfig::moduleLoad($rH_cfg, [['aln', 'moduleVersion.bwa']]) . " && \\\n";
+    $command .= " bwa sampe ";
+    $command .= " " . LoadConfig::getParam($rH_cfg, 'aln', 'bwaExtraSamXeFlags', 0);
+    if ($readGroup) {
+      $command .= " -r " . $readGroup;
+    }
+    $command .= " " . $inDbFasta;
+    $command .= " " . $in1Sai;
+    $command .= " " . $in2Sai;
+    $command .= " " . $in1Fastq;
+    $command .= " " . $in2Fastq;
+    $command .= " -f " . $outSam;
+
+    $rO_job->addCommand($command);
+  }
+}
+
+sub samse {
+  my $rH_cfg    = shift;
+  my $inDbFasta = shift;
+  my $inSai     = shift;
+  my $inFastq   = shift;
+  my $outSam    = shift;
+  my $readGroup = shift;
+
+  my $rO_job = new Job([$inDbFasta, $inSai, $inFastq], [$outSam]);
+
+  if (!$rO_job->isUp2Date()) {
+    my $command .= LoadConfig::moduleLoad($rH_cfg, [['aln', 'moduleVersion.bwa']]) . " && \\\n";
+    $command .= " bwa samse ";
+    $command .= " " . LoadConfig::getParam($rH_cfg, 'aln', 'bwaExtraSamXeFlags', 0);
+    if ($readGroup) {
+      $command .= " -r " . $readGroup;
+    }
+    $command .= " " . $inDbFasta;
+    $command .= " " . $inSai;
+    $command .= " " . $inFastq;
+    $command .= " -f " . $outSam;
+
+    $rO_job->addCommand($command);
+  }
+}
+
+#sub aln {
+#  my $rH_cfg          = shift;
+#  my $sampleName      = shift;
+#  my $pair1           = shift;
+#  my $pair2           = shift;
+#  my $single          = shift;
+#  my $optOutputPrefix = shift;
+#  my $rgId            = shift;
+#  my $rgSample        = shift;
+#  my $rgLibrary       = shift;
+#  my $rgPlatformUnit  = shift;
+#  my $rgCenter        = shift;
+#  my $indexToUse      = shift;
+#
+#  my $rO_job;
+#  if (defined($pair1) && defined($pair2)) {
+#    $rO_job = pairCommand($rH_cfg, $sampleName, $pair1, $pair2, $optOutputPrefix, $rgId, $rgSample, $rgLibrary, $rgPlatformUnit, $rgCenter, $indexToUse);
+#  } elsif (defined($single)) {
+#    $rO_job = singleCommand($rH_cfg, $sampleName, $single, $optOutputPrefix, $rgId, $rgSample, $rgLibrary, $rgPlatformUnit, $rgCenter, $indexToUse);
+#  } else {
+#    die "Unknown runType, not paired or single\n";
+#  }
+#
+#  return $rO_job;
+#}
 
 sub pairCommand {
   my $rH_cfg          = shift;
