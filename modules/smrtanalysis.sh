@@ -44,7 +44,8 @@ wget http://programs.pacificbiosciences.com/l/1652/2013-11-05/2tqk3c
 ## Once done 
 export SEYMOUR_HOME=$MUGQIC_INSTALL_HOME/software/$NAME/$NAME-$VERSION/
 
-## Then install by running the installation script.
+## Then install by running the installation script. Follow instructions (enter dummy parallel envir. and dummy queues).
+## Installation tested with smrtanalysis 2.1.1 and 2.2.0
 ./smrtanalysis/install/smrtanalysis-2.1.1.128549/etc/scripts/postinstall/configure_smrtanalysis.sh
 mv -i ./smrtanalysis/install/smrtanalysis-2.1.1.128549/* $INSTALL_PATH/$SOFTWARE-$VERSION/
 
