@@ -914,6 +914,31 @@ sub otuHeatMap{
 	return $ro_job;
 }
 
+sub blast{
+	my $rH_cfg             = shift;
+	my $infile             = shift;
+	my $outfile            = shift;
+	
+  my $ro_job = new Job();
+	$ro_job->testInputOutputs([$infile] , [$outfile]);
+	
+	if (!$ro_job->isUp2Date()) {
+		my $cmd = '';
+    $cmd .= LoadConfig::moduleLoad($rH_cfg, [
+      ['memtime', 'moduleVersion.blast'],
+    ]) . ' && ';
+    $cmd .= 'blastn';
+    $cmd .= ' -db ' . LoadConfig::getParam($rH_cfg, 'blast', 'db');
+    $cmd .= ' -query ' . $infile;
+    $cmd .= ' -out ' . $outfile;
+    $cmd .= ' -outfmt "' . LoadConfig::getParam($rH_cfg, 'blast', 'outFmt') . '"';
+    $cmd .= ' -max_target_seqs 1';
+    $cmd .= ' -num_threads ' . LoadConfig::getParam($rH_cfg, 'blast', 'num_threads', 1, 'int');	
+		$ro_job->addCommand($cmd);
+	}
+	return $ro_job;
+}
+
 sub template4{
 	my $rH_cfg             = shift;
 	my $tsv                = shift;
