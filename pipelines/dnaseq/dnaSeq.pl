@@ -90,6 +90,9 @@ use lib "$FindBin::Bin/../../lib";
 #--------------------
 use Getopt::Std;
 use Cwd 'abs_path';
+use File::Basename;
+use File::Path;
+use Parse::Range qw(parse_range);
 use POSIX;
 
 use BVATools;
@@ -116,9 +119,11 @@ use GqSeqUtils;
 #--------------------
 
 my @steps;
-push(@steps, {'name' => 'trimAndAlign', 'stepLoop' => 'sample', 'parentStep' => undef});
+push(@steps, {'name' => 'samToFastq', 'stepLoop' => 'sample', 'parentStep' => undef});
+push(@steps, {'name' => 'trimAndAlign', 'stepLoop' => 'sample', 'parentStep' => 'samToFastq'});
 push(@steps, {'name' => 'laneMetrics', 'stepLoop' => 'sample', 'parentStep' => 'trimAndAlign'});
 push(@steps, {'name' => 'mergeTrimStats', 'stepLoop' => 'experiment', 'parentStep' => 'trimAndAlign'});
+push(@steps, {'name' => 'symlinkRawAlignBam', 'stepLoop' => 'sample', 'parentStep' => undef});
 push(@steps, {'name' => 'mergeLanes', 'stepLoop' => 'sample', 'parentStep' => 'trimAndAlign'});
 push(@steps, {'name' => 'indelRealigner', 'stepLoop' => 'sample', 'parentStep' => 'mergeLanes'});
 push(@steps, {'name' => 'mergeRealigned', 'stepLoop' => 'sample', 'parentStep' => 'indelRealigner'});
@@ -210,8 +215,7 @@ sub printUsage {
   print "Version: ".$Version::version."\n";
   print "\nUsage: perl ".$0." -c config.ini -s start -e end -n SampleSheet.csv\n";
   print "\t-c  config file\n";
-  print "\t-s  start step, inclusive\n";
-  print "\t-e  end step, inclusive\n";
+  print "\t-s  step range e.g. '1,3', '2-5', '1,4-7,10'\n";
   print "\t-n  nanuq sample sheet\n";
   #print "\t-d  First dependency (optional)\n";
   print "\n";
@@ -224,9 +228,9 @@ sub printUsage {
 
 sub main {
   my %opts;
-  getopts('c:s:e:n:d:', \%opts);
+  getopts('c:s:n:d:', \%opts);
   
-  if (!defined($opts{'c'}) || !defined($opts{'s'}) || !defined($opts{'e'}) || !defined($opts{'n'})) {
+  if (!defined($opts{'c'}) || !defined($opts{'s'}) || !defined($opts{'n'})) {
     printUsage();
     exit(1);
   }
@@ -246,15 +250,19 @@ sub main {
     }
   }
 
+  # List user-defined step index range.
+  # Shift 1st position to 0 instead of 1
+  my @stepRange = map($_ - 1, parse_range($opts{'s'}));
+
   SubmitToCluster::initPipeline;
 
   my $currentStep;
-  my $lastStepId = $opts{'e'}-1;
+  my $lastStepId = $stepRange[$#stepRange];
   for(my $idx=0; $idx < @sampleNames; $idx++){
     my $sampleName = $sampleNames[$idx];
     my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sampleName};
 
-    for($currentStep = $opts{'s'}-1; $currentStep <= $lastStepId; $currentStep++) {
+    for $currentStep (@stepRange) {
       my $fname = $steps[$currentStep]->{'name'};
       my $subref = \&$fname;
 
@@ -270,7 +278,7 @@ sub main {
     }
   }
 
-  for($currentStep = $opts{'s'}-1; $currentStep <= $lastStepId; $currentStep++) {
+  for $currentStep (@stepRange) {
     if($steps[$currentStep]->{'stepLoop'} eq 'experiment') {
       my $fname = $steps[$currentStep]->{'name'};
       my $subref = \&$fname;
@@ -298,7 +306,7 @@ sub main {
   
 }
 
-sub trimAndAlign {
+sub samToFastq {
   my $stepId = shift;
   my $rH_cfg = shift;
   my $sampleName = shift;
@@ -307,6 +315,66 @@ sub trimAndAlign {
 
   my $jobDependency = undef;
   my $parentStep = 'default';
+  if(defined($parentStep) && defined($globalDep{$parentStep}->{$sampleName})) {
+    $jobDependency = $globalDep{$parentStep}->{$sampleName};
+  }
+
+  print "SAMTOFASTQ_JOB_IDS=\"\"\n";
+  my $setJobId = 0;
+  my $first = 1;
+
+  for my $rH_laneInfo (@$rAoH_sampleLanes) {
+    my $rO_job;
+    my $baseDirectory = "$sampleName/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
+    my $rawDirectory = LoadConfig::getParam($rH_cfg, 'default', 'rawReadDir', 1, 'dirpath') . "/" . $baseDirectory;
+    my $input1 = $rawDirectory . "/" . $rH_laneInfo->{'bam'};
+
+    if ($input1) {
+      if ($rH_laneInfo->{'runType'} eq "SINGLE_END") {
+        my $outputFastq1 = $input1;
+        $outputFastq1 =~ s/\.bam$/.single.fastq.gz/;
+        $rO_job = Picard::samToFastq($rH_cfg, $input1, $outputFastq1);
+        $rH_laneInfo->{'read1File'} = basename($outputFastq1);
+      } elsif ($rH_laneInfo->{'runType'} eq "PAIRED_END") {
+        my $outputFastq1 = $input1;
+        my $outputFastq2 = $input1;
+        $outputFastq1 =~ s/\.bam$/.pair1.fastq.gz/;
+        $outputFastq2 =~ s/\.bam$/.pair2.fastq.gz/;
+        $rO_job = Picard::samToFastq($rH_cfg, $input1, $outputFastq1, $outputFastq2);
+        $rH_laneInfo->{'read1File'} = basename($outputFastq1);
+        $rH_laneInfo->{'read2File'} = basename($outputFastq2);
+      } else {
+        die "Error in rnaSeqDeNovoAssembly::samToFastq: unknown run type (can be 'SINGLE_END' or 'PAIRED_END' only): " . $rH_laneInfo->{'runType'};
+      }
+    }
+    if (!$rO_job->isUp2Date()) {
+      SubmitToCluster::printSubmitCmd($rH_cfg, "samToFastq", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, "SAMTOFASTQ", $jobDependency, $sampleName, $rO_job);
+      if ($first == 1) {
+        print "SAMTOFASTQ_JOB_IDS=" . $rO_job->getCommandJobId(0) . "\n";
+        $first = 0;
+      } else {
+        print "SAMTOFASTQ_JOB_IDS=\${SAMTOFASTQ_JOB_IDS}" . LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep') . $rO_job->getCommandJobId(0) . "\n";
+      }
+      $setJobId = 1;
+    }
+  }
+
+  if ($setJobId) {
+    return "\${SAMTOFASTQ_JOB_IDS}";
+  } else {
+    return undef;
+  }
+}
+
+sub trimAndAlign {
+  my $stepId = shift;
+  my $rH_cfg = shift;
+  my $sampleName = shift;
+  my $rAoH_sampleLanes  = shift;
+  my $rAoH_seqDictionary = shift;
+
+  my $jobDependency = undef;
+  my $parentStep = $steps[$stepId]->{'parentStep'};
   if(defined($parentStep) && defined($globalDep{$parentStep}->{$sampleName})) {
     $jobDependency = $globalDep{$parentStep}->{$sampleName};
   }
@@ -478,6 +546,38 @@ sub mergeTrimStats {
   return $rO_job->getCommandJobId(0);
 }
 
+
+sub symlinkRawAlignBam {
+  my $stepId = shift;
+  my $rH_cfg = shift;
+  my $sampleName = shift;
+  my $rAoH_sampleLanes  = shift;
+  my $rAoH_seqDictionary = shift;
+
+  my @inputBams;
+
+  
+
+  for my $rH_laneInfo (@$rAoH_sampleLanes) {
+    my $baseDirectory = "$sampleName/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
+    my $rawBam = abs_path(LoadConfig::getParam($rH_cfg, 'default', 'rawReadDir', 1, 'dirpath')) . "/" . $baseDirectory . "/" . $rH_laneInfo->{'bam'};
+
+    my $alignmentDirectory = 'alignment/' . $baseDirectory . "/";
+    my $alignedBam = $alignmentDirectory . "/" . $rH_laneInfo->{'name'} . '.' . $rH_laneInfo->{'libraryBarcode'} . '.sorted.bam';
+
+    mkpath $alignmentDirectory;
+
+    if (-l $alignedBam) {
+      warn "[Warning] Symbolic link $alignedBam already exists! Skipping.\n";
+    } elsif (-e $rawBam and symlink($rawBam, $alignedBam)) {
+      warn "Created symbolic link $alignedBam successfully.\n";
+    } else {
+      die "[Error] Can't create symbolic link $alignedBam to target $rawBam!\n";
+    }
+  }
+
+  return undef;
+}
 
 sub mergeLanes {
   my $stepId = shift;

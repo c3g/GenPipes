@@ -82,9 +82,9 @@ use lib "$FindBin::Bin/../../lib";
 # Dependencies
 #--------------------
 use Getopt::Std;
-use Cwd;
-use POSIX;
 use Cwd 'abs_path';
+use Parse::Range qw(parse_range);
+use POSIX;
 
 use LoadConfig;
 use SampleSheet;
@@ -108,7 +108,8 @@ use GqSeqUtils;
 #--------------------
 
 my @steps;
-push(@steps, {'name' => 'trimming', 'stepLoop' => 'sample', 'output' => 'reads', 'parentStep' => undef});
+push(@steps, {'name' => 'bamToFastq', 'stepLoop' => 'sample', 'output' => 'reads', 'parentStep' => undef});
+push(@steps, {'name' => 'trimming', 'stepLoop' => 'sample', 'output' => 'reads', 'parentStep' => 'bamToFastq'});
 push(@steps, {'name' => 'aligning', 'stepLoop' => 'sample', 'output' => 'alignment', 'parentStep' => 'trimming'});
 push(@steps, {'name' => 'metrics', 'stepLoop' => 'sample', 'output' => 'metrics', 'parentStep' => 'aligning'});
 push(@steps, {'name' => 'qcTagDirectories', 'stepLoop' => 'sample', 'output' => 'tags', 'parentStep' => 'aligning'});
@@ -171,8 +172,7 @@ sub printUsage {
   print "Version: ".$Version::version."\n";
   print "\nUsage: perl ".$0." \n";
   print "\t-c  config file\n";
-  print "\t-s  start step, inclusive\n";
-  print "\t-e  end step, inclusive\n";
+  print "\t-s  step range e.g. '1,3', '2-5', '1,4-7,10'\n";
   print "\t-n  nanuq sample sheet\n";
   print "\t-d  design file\n";
   print "\t-w  work directory\n";
@@ -186,9 +186,9 @@ sub printUsage {
 
 sub main {
   my %opts;
-  getopts('c:s:e:n:d:w:', \%opts);
+  getopts('c:s:n:d:w:', \%opts);
 
-  if (!defined($opts{'c'}) || !defined($opts{'s'}) || !defined($opts{'e'}) || !defined($opts{'n'}) || !defined($opts{'d'}) || !defined($opts{'w'})) {
+  if (!defined($opts{'c'}) || !defined($opts{'s'}) || !defined($opts{'n'}) || !defined($opts{'d'}) || !defined($opts{'w'})) {
     printUsage();
     exit(1);
   }
@@ -223,9 +223,13 @@ sub main {
     $cpt++;
   }
 
+  # List user-defined step index range.
+  # Shift 1st position to 0 instead of 1
+  my @stepRange = map($_ - 1, parse_range($opts{'s'}));
+
   SubmitToCluster::initPipeline($workDir);
 
-  for (my $current = $opts{'s'} - 1; $current <= ($opts{'e'} - 1); $current++) {
+  for my $current (@stepRange) {
     my $fname = $steps[$current]->{'name'};
     my $loopType = $steps[$current]->{'stepLoop'};
     my $subref = \&$fname;
@@ -276,6 +280,54 @@ sub main {
       }
     }
   }
+}
+
+sub bamToFastq {
+  my $stepId = shift;
+  my $rH_cfg = shift;
+  my $sampleName = shift;
+  my $rAoH_sampleLanes  = shift;
+  my $rH_jobIdPrefixe = shift;  
+
+  # BamToFastq job IDS per sample
+  my $bamToFastqJobIdVarNameSample = undef;
+
+  # samples per lane
+  for my $rH_laneInfo (@$rAoH_sampleLanes) {
+    my $rO_job;
+    my $baseDirectory = "$sampleName/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
+    my $rawDirectory = LoadConfig::getParam($rH_cfg, 'default', 'rawReadDir', 1, 'dirpath') . "/" . $baseDirectory;
+    my $input1 = $rawDirectory . "/" . $rH_laneInfo->{'bam'};
+
+    if ($input1) {
+      if ($rH_laneInfo->{'runType'} eq "SINGLE_END") {
+        my $outputFastq1 = $input1;
+        $outputFastq1 =~ s/\.bam$/.single.fastq.gz/;
+        $rO_job = Picard::samToFastq($rH_cfg, $input1, $outputFastq1);
+        $rH_laneInfo->{'read1File'} = basename($outputFastq1);
+      } elsif ($rH_laneInfo->{'runType'} eq "PAIRED_END") {
+        my $outputFastq1 = $input1;
+        my $outputFastq2 = $input1;
+        $outputFastq1 =~ s/\.bam$/.pair1.fastq.gz/;
+        $outputFastq2 =~ s/\.bam$/.pair2.fastq.gz/;
+        $rO_job = Picard::samToFastq($rH_cfg, $input1, $outputFastq1, $outputFastq2);
+        $rH_laneInfo->{'read1File'} = basename($outputFastq1);
+        $rH_laneInfo->{'read2File'} = basename($outputFastq2);
+      } else {
+        die "Error in rnaSeqDeNovoAssembly::bamToFastq: unknown run type (can be 'SINGLE_END' or 'PAIRED_END' only): " . $rH_laneInfo->{'runType'};
+      }
+    }
+    if(!$rO_job->isUp2Date()) {
+      SubmitToCluster::printSubmitCmd($rH_cfg, "bamToFastq", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, "BAMTOFASTQ", $jobDependency, $sampleName, $rO_job);
+
+      if(!defined($bamToFastqJobIdVarNameSample)) {
+        $bamToFastqJobIdVarNameSample = $ro_job->getCommandJobId(0);
+      } else {
+        $bamToFastqJobIdVarNameSample .= LoadConfig::getParam($rH_cfg, 'bamToFastq', 'clusterDependencySep') . $ro_job->getCommandJobId(0);
+      }
+    }
+  }
+  return $bamToFastqJobIdVarNameSample;
 }
 
 sub trimming {
