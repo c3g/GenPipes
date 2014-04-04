@@ -324,6 +324,9 @@ sub samToFastq {
   my $first = 1;
 
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
+    # Check if bam is defined
+    $rH_laneInfo->{'bam'} or die "Error in rnaSeqDeNovoAssembly::samToFastq: BAM file is not defined!";
+
     my $rO_job;
     my $baseDirectory = "$sampleName/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
     my $rawDirectory = LoadConfig::getParam($rH_cfg, 'default', 'rawReadDir', 1, 'dirpath') . "/" . $baseDirectory;
