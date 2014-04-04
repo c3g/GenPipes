@@ -83,6 +83,8 @@ use lib "$FindBin::Bin/../../lib";
 #--------------------
 use Getopt::Std;
 use Cwd 'abs_path';
+use File::Basename;
+use File::Path;
 use Parse::Range qw(parse_range);
 use POSIX;
 
@@ -108,8 +110,8 @@ use GqSeqUtils;
 #--------------------
 
 my @steps;
-push(@steps, {'name' => 'bamToFastq', 'stepLoop' => 'sample', 'output' => 'reads', 'parentStep' => undef});
-push(@steps, {'name' => 'trimming', 'stepLoop' => 'sample', 'output' => 'reads', 'parentStep' => 'bamToFastq'});
+push(@steps, {'name' => 'samToFastq', 'stepLoop' => 'sample', 'output' => 'raw_reads', 'parentStep' => undef});
+push(@steps, {'name' => 'trimming', 'stepLoop' => 'sample', 'output' => 'reads', 'parentStep' => 'samToFastq'});
 push(@steps, {'name' => 'aligning', 'stepLoop' => 'sample', 'output' => 'alignment', 'parentStep' => 'trimming'});
 push(@steps, {'name' => 'metrics', 'stepLoop' => 'sample', 'output' => 'metrics', 'parentStep' => 'aligning'});
 push(@steps, {'name' => 'qcTagDirectories', 'stepLoop' => 'sample', 'output' => 'tags', 'parentStep' => 'aligning'});
@@ -234,7 +236,7 @@ sub main {
     my $loopType = $steps[$current]->{'stepLoop'};
     my $subref = \&$fname;
     my @aOjobIDList=();
-    
+
     if ($loopType eq 'sample') {
       for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
         my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sampleName};
@@ -282,7 +284,7 @@ sub main {
   }
 }
 
-sub bamToFastq {
+sub samToFastq {
   my $stepId = shift;
   my $rH_cfg = shift;
   my $sampleName = shift;
@@ -290,10 +292,11 @@ sub bamToFastq {
   my $rH_jobIdPrefixe = shift;  
 
   # BamToFastq job IDS per sample
-  my $bamToFastqJobIdVarNameSample = undef;
+  my $samToFastqJobIdVarNameSample = undef;
 
   # samples per lane
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
+    $rH_laneInfo->{'bam'} or die "Error in chipSeq::samToFastq: BAM file is not defined for sample run lane $sampleName " . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "!";
     my $rO_job;
     my $baseDirectory = "$sampleName/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
     my $rawDirectory = LoadConfig::getParam($rH_cfg, 'default', 'rawReadDir', 1, 'dirpath') . "/" . $baseDirectory;
@@ -314,20 +317,20 @@ sub bamToFastq {
         $rH_laneInfo->{'read1File'} = basename($outputFastq1);
         $rH_laneInfo->{'read2File'} = basename($outputFastq2);
       } else {
-        die "Error in rnaSeqDeNovoAssembly::bamToFastq: unknown run type (can be 'SINGLE_END' or 'PAIRED_END' only): " . $rH_laneInfo->{'runType'};
+        die "Error in chipSeq::samToFastq: unknown run type (can be 'SINGLE_END' or 'PAIRED_END' only): " . $rH_laneInfo->{'runType'};
       }
     }
     if(!$rO_job->isUp2Date()) {
-      SubmitToCluster::printSubmitCmd($rH_cfg, "bamToFastq", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, "BAMTOFASTQ", $jobDependency, $sampleName, $rO_job);
+      SubmitToCluster::printSubmitCmd($rH_cfg, "samToFastq", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, "SAMTOFASTQ" .$rH_jobIdPrefixe ->{$sampleName.'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}}, undef, $sampleName, $rO_job);
 
-      if(!defined($bamToFastqJobIdVarNameSample)) {
-        $bamToFastqJobIdVarNameSample = $ro_job->getCommandJobId(0);
+      if(!defined($samToFastqJobIdVarNameSample)) {
+        $samToFastqJobIdVarNameSample = $rO_job->getCommandJobId(0);
       } else {
-        $bamToFastqJobIdVarNameSample .= LoadConfig::getParam($rH_cfg, 'bamToFastq', 'clusterDependencySep') . $ro_job->getCommandJobId(0);
+        $samToFastqJobIdVarNameSample .= LoadConfig::getParam($rH_cfg, 'samToFastq', 'clusterDependencySep') . $rO_job->getCommandJobId(0);
       }
     }
   }
-  return $bamToFastqJobIdVarNameSample;
+  return $samToFastqJobIdVarNameSample;
 }
 
 sub trimming {
@@ -336,6 +339,15 @@ sub trimming {
   my $sampleName = shift;
   my $rAoH_sampleLanes  = shift;
   my $rH_jobIdPrefixe = shift;  
+
+  my $jobDependency = undef;
+  my $setJobId = 0;
+  
+  # Control dependencies
+  my $parentStep = $steps[$stepId]->{'parentStep'};
+  if( defined($globalDep{$parentStep}->{$sampleName})) {
+    $jobDependency = $globalDep{$parentStep}->{$sampleName};
+  }
 
   # Trimming job IDS per sample
   my $trimJobIdVarNameSample = undef;
@@ -347,7 +359,7 @@ sub trimming {
     # Run trimmomatic  
     my $ro_job = Trimmomatic::trim($rH_cfg, $sampleName, $rH_laneInfo, $outputDir);
     if(!$ro_job->isUp2Date()) {
-      SubmitToCluster::printSubmitCmd($rH_cfg, "trim", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, "TRIM".$rH_jobIdPrefixe ->{$sampleName.'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} , undef, $sampleName, $ro_job);
+      SubmitToCluster::printSubmitCmd($rH_cfg, "trim", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, "TRIM".$rH_jobIdPrefixe ->{$sampleName.'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} , $jobDependency, $sampleName, $ro_job);
       if(!defined($trimJobIdVarNameSample)) {
         $trimJobIdVarNameSample = $ro_job->getCommandJobId(0);
       } else {
