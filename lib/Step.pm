@@ -135,19 +135,26 @@ sub submitJob {
       print $jobId . '=$(';
     }
 
+    print "echo \"";
+
     my @doneFiles = map("$_.mugqic.done", @{$rO_job->getOutputFiles()});
+
     # Erase dones, on all jobs of the series
-    if ($#doneFiles > 0) {
-      print "echo \"rm -f \\\n" . join(" \\\n", @doneFiles) . " && \\\n";
-    } else {
-      print 'echo "';
+    if (@doneFiles > 0) {
+      print "rm -f \\\n" . join(" \\\n", @doneFiles) . " && \\\n";
+    }
+
+    # Print out job modules
+    if ($rO_job->getNbModules() > 0) {
+      print "module load " . join(" ", @{$rO_job->getModules()}) . " && \\\n";
     }
 
     # Print out job command
     print "$command \\\n";
     print '&& echo \"MUGQICexitStatus:\$?\"';
+
     # Only add if it's the last job of the series.
-    if ($#doneFiles > 0 && $commandIdx == $rO_job->getNbCommands() - 1) {
+    if (@doneFiles > 0 && $commandIdx == $rO_job->getNbCommands() - 1) {
       print " && touch \\\n" . join(" \\\n", @doneFiles);
     }
     print '"';

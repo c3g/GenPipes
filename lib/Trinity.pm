@@ -88,8 +88,7 @@ sub normalize_by_kmer_coverage {
 #  $rO_job->testInputOutputs($rA_inputs, $rA_outputs);
 
   if (!$rO_job->isUp2Date()) {
-    my $command = "\n";
-    $command .= "mkdir -p $outputDirectory && \\\n";
+    my $command = "mkdir -p $outputDirectory && \\\n";
 
     # Create sorted left/right lists of fastq.gz files
     if ($readType eq "paired") {    # Paired reads
@@ -109,7 +108,7 @@ sub normalize_by_kmer_coverage {
     }
 
     # Load modules and run Trinity normalization
-    $command .= LoadConfig::moduleLoad($rH_cfg, [['trinity', 'moduleVersion.trinity']]) . " && \\\n";
+    $rO_job->addModules($rH_cfg, [['trinity', 'moduleVersion.trinity']]);
     $command .= "normalize_by_kmer_coverage.pl \\
 $readFileOptions \\
  --output $outputDirectory \\\n";
@@ -121,7 +120,7 @@ $readFileOptions \\
     $command .= " " . LoadConfig::getParam($rH_cfg, 'normalization', 'normalizationOptions', 1) . " && \\\n";
 
     # Count normalized reads for stats
-    $command .= "wc -l " . @$rA_outputs[0] . " | awk '{print \\\"# normalized $readType reads\\t\\\"\\\$1 / 4}' > $outputDirectory/normalization.stats.tsv \\\n";
+    $command .= "wc -l " . @$rA_outputs[0] . " | awk '{print \\\"# normalized $readType reads\\t\\\"\\\$1 / 4}' > $outputDirectory/normalization.stats.tsv";
 
     $rO_job->addCommand($command);
   }
@@ -162,17 +161,15 @@ sub trinity {
 #  $rO_job->testInputOutputs($rA_inputs, ["$outputDirectory/Trinity.fasta"]);
 
   if (!$rO_job->isUp2Date()) {
-    my $command = "\n";
-
-    $command .= LoadConfig::moduleLoad($rH_cfg, [
+    $rO_job->addModules($rH_cfg, [
       ['trinity', 'moduleVersion.java'],
       ['trinity', 'moduleVersion.trinity'],
       ['trinity', 'moduleVersion.bowtie'],
       ['trinity', 'moduleVersion.samtools'],
       ['trinity', 'moduleVersion.cranR']
-    ]) . " && \\\n";
+    ]);
 
-    $command .= "Trinity.pl \\
+    my $command = "Trinity.pl \\
 $readFileOptions \\
  --output $outputDirectory \\\n";
     $command .= " --JM " . LoadConfig::getParam($rH_cfg, 'trinity', 'jellyfishMemory', 1) . " \\\n";
@@ -184,7 +181,7 @@ $readFileOptions \\
     $command .= "zip -j $outputDirectory/Trinity.fasta.zip $outputDirectory/Trinity.fasta && \\\n";
 
     # Compute assembly stats
-    $command .= "Rscript -e 'library(gqSeqUtils); dnaFastaStats(filename = \\\"$outputDirectory/Trinity.fasta\\\", type = \\\"trinity\\\", output.prefix = \\\"$outputDirectory/Trinity.stats\\\")' \\\n";
+    $command .= "Rscript -e 'library(gqSeqUtils); dnaFastaStats(filename = \\\"$outputDirectory/Trinity.fasta\\\", type = \\\"trinity\\\", output.prefix = \\\"$outputDirectory/Trinity.stats\\\")'";
 
     $rO_job->addCommand($command);
   }
@@ -198,17 +195,15 @@ sub rsemPrepareReference {
   my $rO_job = new Job([$transcriptFastaFile], ["$transcriptFastaFile.TRANS.ok"]);
 
   if (!$rO_job->isUp2Date()) {
-    my $command = "\n";
-
-    $command .= LoadConfig::moduleLoad($rH_cfg, [
+    $rO_job->addModules($rH_cfg, [
       ['trinity', 'moduleVersion.trinity'],
       ['trinity', 'moduleVersion.bowtie'],
       ['trinity', 'moduleVersion.rsem']
-    ]) . " && \\\n";
+    ]);
 
-    $command .= "run_RSEM_align_n_estimate.pl \\
+    my $command = "run_RSEM_align_n_estimate.pl \\
   --transcripts $transcriptFastaFile \\
-  --just_prep_reference \\\n";
+  --just_prep_reference";
 
     $rO_job->addCommand($command);
   }
@@ -226,15 +221,13 @@ sub rsem {
   my $rO_job = new Job();
 
   if (!$rO_job->isUp2Date()) {
-    my $command = "\n";
-
-    $command .= LoadConfig::moduleLoad($rH_cfg, [
+    $rO_job->addModules($rH_cfg, [
       ['trinity', 'moduleVersion.trinity'],
       ['trinity', 'moduleVersion.bowtie'],
       ['trinity', 'moduleVersion.rsem']
-    ]) . " && \\\n";
+    ]);
 
-    $command .= "run_RSEM_align_n_estimate.pl \\
+    my $command = "run_RSEM_align_n_estimate.pl \\
   --transcripts $transcriptFastaFile \\
   --prefix $outputPrefix \\
   --output_dir $outputDirectory \\
@@ -245,7 +238,7 @@ sub rsem {
     } else {    # Single end reads
       $command .= "  --single " . join(",", @$rA_input1) . " \\\n";
     }
-    $command .= "  " . LoadConfig::getParam($rH_cfg, 'rsem', 'rsemOptions') . " \\\n";
+    $command .= "  " . LoadConfig::getParam($rH_cfg, 'rsem', 'rsemOptions');
 
     $rO_job->addCommand($command);
   }

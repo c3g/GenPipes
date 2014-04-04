@@ -121,11 +121,15 @@ sub parseSampleFile {
 
     # Create readSet and add it to sample
     my $readSet = ReadSet->new($inputRow->{"ReadSet"}, $inputRow->{"RunType"});
+
     # ReadSets file paths are either absolute or relative to the sample file
-    # Convert them to absolute paths
+    # Convert them to absolute paths and check if files exist
     foreach my $format ("BAM", "FASTQ1", "FASTQ2") {
-      if ($inputRow->{$format} and not(File::Spec->file_name_is_absolute($inputRow->{$format}))) {
-        $inputRow->{$format} = File::Spec->rel2abs(dirname($sampleFile)) . "/" . $inputRow->{$format};
+      if ($inputRow->{$format}) {
+        if (not(File::Spec->file_name_is_absolute($inputRow->{$format}))) {
+          $inputRow->{$format} = File::Spec->rel2abs(dirname($sampleFile)) . "/" . $inputRow->{$format};
+        }
+        -f $inputRow->{$format} or die "[Error] in parseSampleFile: \"" . $inputRow->{$format} . "\" does not exist or is not a valid plain file!";
       }
     }
     $readSet->setBAM($inputRow->{"BAM"});

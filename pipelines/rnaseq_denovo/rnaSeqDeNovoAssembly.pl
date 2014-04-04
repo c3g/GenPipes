@@ -148,7 +148,7 @@ sub getUsage {
   my $usage = <<END;
 MUGQIC Pipeline RNA-Seq De Novo Assembly Version: $Version::version
 
-Usage: perl $0 -h | -c CONFIG_FILE -r step_range [-s SAMPLE_FILE] [-d DESIGN_FILE] [-o OUTPUT_DIR]
+Usage: perl $0 -h | -c CONFIG_FILE -r STEP_RANGE -s SAMPLE_FILE [-d DESIGN_FILE] [-o OUTPUT_DIR]
   -h  help and usage
   -c  .ini config file
   -r  step range e.g. "1-5", "3,6,7", "2,4-8"
@@ -174,7 +174,8 @@ sub main {
 
   if (defined($opts{'h'}) ||
      !defined($opts{'c'}) ||
-     !defined($opts{'r'})) {
+     !defined($opts{'r'}) ||
+     !defined($opts{'s'})) {
     die (getUsage());
   }
 
@@ -404,14 +405,12 @@ sub blastSplitQuery {
 
   my $rO_job = new Job([$trinityFastaFile], ["\$WORK_DIR/blast/chunks/Trinity.longest_transcript.fasta_chunk_" . sprintf("%07d", $numJobs - 1)]);
   if (!$rO_job->isUp2Date()) {
-    my $command = "\n";
-
-    $command .= LoadConfig::moduleLoad($rH_cfg, [
+    $rO_job->addModules($rH_cfg, [
       ['blast', 'moduleVersion.exonerate']
-    ]) . " && \\\n";
+    ]);
 
     # Remove previous Trinity assembly FASTA index if present
-    $command .= "rm -f $trinityIndexFile && \\\n";
+    my $command = "rm -f $trinityIndexFile && \\\n";
     # Create Trinity assembly FASTA index
     $command .= "fastaindex $trinityFastaFile $trinityIndexFile && \\\n";
     # Create Trinity assembly FASTA subset with longest transcript per component only
@@ -420,7 +419,7 @@ sub blastSplitQuery {
     # Split Trinity assembly FASTA into chunks for BLAST parallelization
     my $chunkDir = "\$WORK_DIR/blast/chunks";
     $command .= "mkdir -p $chunkDir && \\\n";
-    $command .= "fastasplit -f $reducedTrinityFastaFile -o $chunkDir -c " . LoadConfig::getParam($rH_cfg, 'blast', 'blastJobs', 1, 'int') . " \\\n";
+    $command .= "fastasplit -f $reducedTrinityFastaFile -o $chunkDir -c " . LoadConfig::getParam($rH_cfg, 'blast', 'blastJobs', 1, 'int');
 
     $rO_job->addCommand($command);
   }
@@ -438,13 +437,11 @@ sub blast {
 
     my $rO_job = new Job();
     if (!$rO_job->isUp2Date()) {
-      my $command = "\n";
-
-      $command .= LoadConfig::moduleLoad($rH_cfg, [
+      $rO_job->addModules($rH_cfg, [
         ['blast', 'moduleVersion.tools'],
         ['blast', 'moduleVersion.exonerate'],
         ['blast', 'moduleVersion.blast']
-      ]) . " && \\\n";
+      ]);
 
       my $cores = LoadConfig::getParam($rH_cfg, 'blast', 'blastCPUperJob', 1, 'int');
       my $program = LoadConfig::getParam($rH_cfg, 'blast', 'blastProgram');
@@ -461,7 +458,7 @@ sub blast {
 
       # Each FASTA chunk is further divided in subchunk per CPU per job as a second level of BLAST parallelization
       # The user must adjust BLAST configuration to optimize num. jobs vs num. CPUs per job, depending on the cluster
-      $command .= "parallelBlast.pl -file $chunkQuery --OUT $chunkResult -n $cores --BLAST \\\"$program -db $db $options\\\" \\\n";
+      my $command = "parallelBlast.pl -file $chunkQuery --OUT $chunkResult -n $cores --BLAST \\\"$program -db $db $options\\\"";
 
       $rO_job->addCommand($command);
     }
@@ -476,8 +473,6 @@ sub blastMergeResults {
 
   my $rO_job = new Job();
   if (!$rO_job->isUp2Date()) {
-    my $command = "\n";
-
     my $program = LoadConfig::getParam($rH_cfg, 'blast', 'blastProgram');
     my $db = LoadConfig::getParam($rH_cfg, 'blast', 'blastDb');
     my $blastDir = "\$WORK_DIR/blast";
@@ -485,13 +480,13 @@ sub blastMergeResults {
     my $result = "$blastDir/$program" . "_Trinity.longest_transcript_$db.tsv";
 
     # All BLAST chunks are merged into one file named after BLAST program and reference database
-    $command .= "cat $chunkResults > $result.tmp && \\\n";
+    my $command = "cat $chunkResults > $result.tmp && \\\n";
     # Remove all comment lines except "Fields" one which is placed as first line
     $command .= "cat <(grep -m1 '^# Fields' $result.tmp) <(grep -v '^#' $result.tmp) > $result && \\\n";
     $command .= "rm $result.tmp && \\\n";
 
     # Create a BLAST results ZIP file for future deliverables
-    $command .= "zip -j $result.zip $result \\\n";
+    $command .= "zip -j $result.zip $result";
 
     $rO_job->addCommand($command);
   }
@@ -549,8 +544,6 @@ sub differentialGeneExpression {
     unless (-f $designFile) {die "Error: design file $designFile does not exist!\n" . getUsage()};
     $designFile = abs_path($designFile);
 
-    my $command = "\n";
-
     # Retrieve BLAST result file
     my $program = LoadConfig::getParam($rH_cfg, 'blast', 'blastProgram');
     my $db = LoadConfig::getParam($rH_cfg, 'blast', 'blastDb');
@@ -563,13 +556,13 @@ sub differentialGeneExpression {
     my $genesMatrix = "$dgeDir/genes.counts.matrix";
     my $genesAnnotatedMatrix = "$dgeDir/genes.counts.$db.matrix";
 
-    $command .= LoadConfig::moduleLoad($rH_cfg, [
+    $rO_job->addModules($rH_cfg, [
       ['differentialGeneExpression', 'moduleVersion.trinity'],
       ['differentialGeneExpression', 'moduleVersion.cranR'],
       ['differentialGeneExpression', 'moduleVersion.tools']
-    ]) . " && \\\n";
+    ]);
 
-    $command .= "mkdir -p $dgeDir && \\\n";
+    my $command = "mkdir -p $dgeDir && \\\n";
 
     # Create isoforms and genes matrices with counts of RNA-seq fragments per feature using Trinity RSEM utility
     $command .= "merge_RSEM_frag_counts_single_table.pl " . join(" ", map("\$WORK_DIR/rsem/" . $_->getName() . "/" . $_->getName() . ".isoforms.results", @{$pipeline->getSamples()})) . " > $isoformsMatrix && \\\n";
@@ -597,7 +590,7 @@ sub differentialGeneExpression {
     $command .= "Rscript \\\$R_TOOLS/deseq.R -d $designFile -c $genesAnnotatedMatrix -o $dgeDir/genes_$db && \\\n";
 
     # Merge edgeR results with gene/isoform length values and BLAST description
-    $command .= "for gi in genes isoforms; do for f in $dgeDir/\\\${gi}_$db/*/dge_results.csv; do sed '1s/gene_symbol/$db.id/' \\\$f | awk -F\\\"\\t\\\" 'FNR==NR {a[\\\$1]=\\\$2\\\"\\t\\\"\\\$3; next}{OFS=\\\"\\t\\\"; if (a[\\\$1]) {print \\\$0, a[\\\$1]} else {print \\\$0, \\\"\\\", \\\"\\\"}}' \$WORK_DIR/rsem/\\\${gi}.lengths.tsv - | sed '1s/\\t\\\$/length\\teffective_length/' | awk -F\\\"\\t\\\" 'FNR==NR {a[\\\$2]=\\\$NF; next}{OFS=\\\"\\t\\\"; if (a[\\\$2]) {print \\\$0, a[\\\$2]} else {print \\\$0, \\\"\\\"}}' <(grep -v '^#' $blastResult) - | sed '1s/\\\$/description/' > \\\${f/.csv/_$db.csv}; done; done \\\n";
+    $command .= "for gi in genes isoforms; do for f in $dgeDir/\\\${gi}_$db/*/dge_results.csv; do sed '1s/gene_symbol/$db.id/' \\\$f | awk -F\\\"\\t\\\" 'FNR==NR {a[\\\$1]=\\\$2\\\"\\t\\\"\\\$3; next}{OFS=\\\"\\t\\\"; if (a[\\\$1]) {print \\\$0, a[\\\$1]} else {print \\\$0, \\\"\\\", \\\"\\\"}}' \$WORK_DIR/rsem/\\\${gi}.lengths.tsv - | sed '1s/\\t\\\$/length\\teffective_length/' | awk -F\\\"\\t\\\" 'FNR==NR {a[\\\$2]=\\\$NF; next}{OFS=\\\"\\t\\\"; if (a[\\\$2]) {print \\\$0, a[\\\$2]} else {print \\\$0, \\\"\\\"}}' <(grep -v '^#' $blastResult) - | sed '1s/\\\$/description/' > \\\${f/.csv/_$db.csv}; done; done";
 
     $rO_job->addCommand($command);
   }

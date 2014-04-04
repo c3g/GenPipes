@@ -78,7 +78,7 @@ B<GqSeqUtils> is a library to access/launch functions from the gqSeqUtils R pack
 
 # Strict Pragmas
 #---------------------
-use strict;
+use strict qw(vars subs);
 use warnings;
 #---------------------
 
@@ -102,6 +102,7 @@ use IGVTools;
 use LoadConfig;
 use Metrics;
 use Picard;
+use Pipeline;
 use SampleSheet;
 use SAMtools;
 use SequenceDictionaryParser;
@@ -122,10 +123,11 @@ push(@steps, {'name' => 'bamToFastq', 'loop' => 'readSet', 'parentSteps' => []})
 push(@steps, {'name' => 'trim', 'loop' => 'readSet', 'parentSteps' => ['bamToFastq']});
 push(@steps, {'name' => 'bwaAln1', 'loop' => 'readSet', 'parentSteps' => ['trim']});
 push(@steps, {'name' => 'bwaAln2', 'loop' => 'readSet', 'parentSteps' => ['trim']});
-push(@steps, {'name' => 'bwaSam', 'loop' => 'readSet', 'parentSteps' => ['bwaAln1', 'bwaAln2']});
-push(@steps, {'name' => 'laneMetrics', 'loop' => 'sample', 'parentSteps' => ['align']});
-push(@steps, {'name' => 'mergeTrimStats', 'loop' => 'global', 'parentSteps' => ['align']});
-push(@steps, {'name' => 'mergeLanes', 'loop' => 'sample', 'parentSteps' => ['align']});
+push(@steps, {'name' => 'bwaSortSam', 'loop' => 'readSet', 'parentSteps' => ['bwaAln1', 'bwaAln2']});
+push(@steps, {'name' => 'bwaMem', 'loop' => 'readSet', 'parentSteps' => ['trim']});
+push(@steps, {'name' => 'laneMetrics', 'loop' => 'sample', 'parentSteps' => ['bwaSortSam', 'bwaMem']});
+push(@steps, {'name' => 'mergeTrimStats', 'loop' => 'global', 'parentSteps' => ['bwaSortSam', 'bwaMem']});
+push(@steps, {'name' => 'mergeLanes', 'loop' => 'sample', 'parentSteps' => ['bwaSortSam', 'bwaMem']});
 push(@steps, {'name' => 'indelRealigner', 'loop' => 'sample', 'parentSteps' => ['mergeLanes']});
 push(@steps, {'name' => 'mergeRealigned', 'loop' => 'sample', 'parentSteps' => ['indelRealigner']});
 push(@steps, {'name' => 'fixmate', 'loop' => 'sample', 'parentSteps' => ['mergeRealigned']});
@@ -212,41 +214,52 @@ my $workDirectory = getcwd();
 
 &main();
 
-sub printUsage {
-  print "Version: " . $Version::version . "\n";
-  print "\nUsage: perl " . $0 . " -c config.ini -s start -e end -n SampleSheet.csv\n";
-  print "\t-c  config file\n";
-  print "\t-s  start step, inclusive\n";
-  print "\t-e  end step, inclusive\n";
-  print "\t-n  nanuq sample sheet\n";
-  #print "\t-d  First dependency (optional)\n";
-  print "\n";
-  print "Steps:\n";
-  for (my $idx = 1; $idx <= @steps; $idx++) {
-    print $idx . "- " . $steps[$idx - 1]->{'name'} . "\n";
+sub debug {
+  my $message = shift;
+
+  my $debug = 1;    # Set to 1 to display debug messages, 0 to keep output silent
+
+  $debug and print STDERR "[DEBUG] $message\n";
+}
+
+sub getUsage {
+  my $usage = <<END;
+MUGQIC Pipeline DNA-Seq Version: $Version::version
+
+Usage: perl $0 -c CONFIG_FILE -r STEP_RANGE -s SAMPLE_FILE [-o OUTPUT_DIR]
+  -c  config file
+  -r  step range e.g. "1-5", "3,6,7", "2,4-8"
+  -s  sample file
+  -o  output directory (default: current)
+
+Steps:
+END
+
+  # List and number step names
+  for (my $i = 1; $i <= @steps; $i++) {
+    $usage .= $i . "- " . $steps[$i - 1]->{'name'} . "\n";
   }
-  print "\n";
+
+  return $usage;
 }
 
 sub main {
   my %opts;
-  getopts('c:s:e:n:d:', \%opts);
+  getopts('c:r:s:o:', \%opts);
 
-  if (!defined($opts{'c'}) || !defined($opts{'s'}) || !defined($opts{'e'}) || !defined($opts{'n'})) {
-    printUsage();
-    exit(1);
+  if (!defined($opts{'c'}) || !defined($opts{'r'}) || !defined($opts{'s'})) {
+    die getUsage();
   }
 
+  my $stepRange = $opts{'r'};
+  my $outputDirectory = $opts{'o'};
   my %cfg = LoadConfig->readConfigFile($opts{'c'});
-  my $sampleFile = $opts{'n'};
+  my $sampleFile = $opts{'s'};
   my $rAoH_seqDictionary = SequenceDictionaryParser::readDictFile(\%cfg);
-  $configFile = abs_path($opts{'c'});
 
-  my @sampleNames = keys %{$rHoAoH_sampleInfo};
+  my $pipeline = Pipeline->new(\@steps, $sampleFile, $outputDirectory);
 
-  $pipeline = Pipeline->new(\@steps, $sampleFile);
-
-  # Go through steps and create global or read-set jobs accordingly
+  # Go through steps and create global or readSet jobs accordingly
   foreach my $step ($pipeline->getStepsByRange($stepRange)) {
     my $stepName = $step->getName();
     debug "main: processing step $stepName";
@@ -257,13 +270,12 @@ sub main {
         foreach my $readSet (@{$sample->getReadSets()}) {
           debug "main: processing read set " . $readSet->getName();
 
-          my $rA_jobs = &$stepName(\%cfg, $readSet, $rAoH_seqDictionary);
-          foreach my $rO_job (@{$rA_jobs}) {
-            if ($rO_job) {
-              $rO_job->setLoopTags([$sample->getName(), $readSet->getName()]);
-              debug "main: readSet job " . join(".", @{$rO_job->getLoopTags()});
-              $step->submitJob(\%cfg, $rO_job);
-            }
+          my $rO_job = &$stepName(\%cfg, $readSet, $rAoH_seqDictionary);
+          if ($rO_job) {
+            $rO_job->setLoopTags([$sample->getName(), $readSet->getName()]);
+            debug "main: readSet job " . join(".", @{$rO_job->getLoopTags()});
+            #debug "main: readSet job input files " . join(" ", @{$rO_job->getInputFiles()});
+            $step->submitJob(\%cfg, $rO_job);
           }
         }
       }
@@ -299,14 +311,20 @@ sub bamToFastq {
 
   if ($readSet->getBAM() and not($readSet->getFASTQ1())) {
     if ($readSet->getRunType() eq "PAIRED_END") {
-      $readSet->setFASTQ1($readSet->getBAM());
-      $readSet->getFASTQ1() =~ s/\.bam$/.pair1.fastq.gz/;
-      $readSet->setFASTQ2($readSet->getBAM());
-      $readSet->getFASTQ2() =~ s/\.bam$/.pair2.fastq.gz/;
+      my $FASTQ1 = $readSet->getBAM();
+      $FASTQ1 =~ s/\.bam$/.pair1.fastq.gz/;
+      $readSet->setFASTQ1($FASTQ1);
+
+      my $FASTQ2 = $readSet->getBAM();
+      $FASTQ2 =~ s/\.bam$/.pair2.fastq.gz/;
+      $readSet->setFASTQ2($FASTQ2);
+
       $rO_job = Picard::samToFastq($rH_cfg, $readSet->getBAM(), $readSet->getFASTQ1(), $readSet->getFASTQ2());
     } elsif ($readSet->getRunType() eq "SINGLE_END") {
-      $readSet->setFASTQ1($readSet->getBAM());
-      $readSet->getFASTQ1() =~ s/\.bam$/.single.fastq.gz/;
+      my $FASTQ1 = $readSet->getBAM();
+      $FASTQ1 =~ s/\.bam$/.single.fastq.gz/;
+      $readSet->setFASTQ1($FASTQ1);
+
       $rO_job = Picard::samToFastq($rH_cfg, $readSet->getBAM(), $readSet->getFASTQ1());
     }
   }
@@ -316,9 +334,8 @@ sub bamToFastq {
 sub trim {
   my $rH_cfg = shift;
   my $readSet = shift;
-  my $rAoH_seqDictionary = shift;
 
-  my $trimFilePrefix = "\$WORK_DIR/read/" . $readSet->getSample()->getName() . "/" . $readSet->getName() . ".trim.";
+  my $trimFilePrefix = "\$WORK_DIR/trim/" . $readSet->getSample()->getName() . "/" . $readSet->getName() . ".trim.";
 
   my $pairedOutput1;
   my $unpairedOutput1;
@@ -333,6 +350,8 @@ sub trim {
     $unpairedOutput2 = $trimFilePrefix . "single2.fastq.gz";
   } elsif ($readSet->getRunType() eq "SINGLE_END") {
     $singleOutput = $trimFilePrefix . "single.fastq.gz";
+  } else {
+    die "[Error] In trim, unknown runType: \"" . $readSet->getRunType() . "\"!";
   }
 
   return Trimmomatic::trim(
@@ -353,7 +372,118 @@ sub trim {
 sub bwaAln1 {
   my $rH_cfg = shift;
   my $readSet = shift;
-  my $rAoH_seqDictionary = shift;
+
+  my $inDbFasta = LoadConfig::getParam($rH_cfg, 'aln', 'bwaRefIndex', 1, 'filepath');
+  my $inQueryFastq;
+  my $trimFilePrefix = "\$WORK_DIR/trim/" . $readSet->getSample()->getName() . "/" . $readSet->getName() . ".trim.";
+  my $outSai;
+  my $saiFilePrefix = "\$WORK_DIR/alignment/" . $readSet->getSample()->getName() . "/" . $readSet->getName();
+
+  if ($readSet->getRunType() eq "PAIRED_END") {
+    $inQueryFastq = $trimFilePrefix . "pair1.fastq.gz";
+    $outSai = $saiFilePrefix . ".pair1.sai";
+  } elsif ($readSet->getRunType() eq "SINGLE_END") {
+    $inQueryFastq = $trimFilePrefix . "single.fastq.gz";
+    $outSai = $saiFilePrefix . ".single.sai";
+  } else {
+    die "[Error] In bwaAln1, unknown runType: \"" . $readSet->getRunType() . "\"!";
+  }
+
+  return BWA::aln(
+    $rH_cfg,
+    $inDbFasta,
+    $inQueryFastq,
+    $outSai
+  );
+}
+
+sub bwaAln2 {
+  my $rH_cfg = shift;
+  my $readSet = shift;
+
+  my $inDbFasta = LoadConfig::getParam($rH_cfg, 'aln', 'bwaRefIndex', 1, 'filepath');
+  my $inQueryFastq;
+  my $trimFilePrefix = "\$WORK_DIR/trim/" . $readSet->getSample()->getName() . "/" . $readSet->getName() . ".trim.";
+  my $outSai;
+  my $saiFilePrefix = "\$WORK_DIR/alignment/" . $readSet->getSample()->getName() . "/" . $readSet->getName();
+
+  if ($readSet->getRunType() eq "PAIRED_END") {
+    $inQueryFastq = $trimFilePrefix . "pair2.fastq.gz";
+    $outSai = $saiFilePrefix . ".pair2.sai";
+
+    return BWA::aln(
+      $rH_cfg,
+      $inDbFasta,
+      $inQueryFastq,
+      $outSai
+    );
+  } elsif ($readSet->getRunType() eq "SINGLE_END") {
+    # No second alignment for SINGLE_END reads
+    return undef;
+  } else {
+    die "[Error] In bwaAln2, unknown runType: \"" . $readSet->getRunType() . "\"!";
+  }
+}
+
+
+sub bwaSortSam {
+  my $rH_cfg = shift;
+  my $readSet = shift;
+
+  my $inDbFasta = LoadConfig::getParam($rH_cfg, 'aln', 'bwaRefIndex', 1, 'filepath');
+
+  my $trimFilePrefix = "\$WORK_DIR/trim/" . $readSet->getSample()->getName() . "/" . $readSet->getName() . ".trim.";
+  my $alignmentFilePrefix = "\$WORK_DIR/alignment/" . $readSet->getSample()->getName() . "/" . $readSet->getName();
+
+  my $rgLibrary = $readSet->getLibrary();
+  my $rgPlatformUnit = $readSet->getRun() . "_" . $readSet->getLane();
+  my $rgId = $rgLibrary . "_" . $rgPlatformUnit;
+  my $rgSampleName = $readSet->getSample()->getName();
+  my $rgCenter = LoadConfig::getParam($rH_cfg, 'aln', 'bwaInstitution');
+  my $readGroup = "'" . '@RG\tID:' . $rgId . '\tSM:' . $rgSampleName . '\tLB:' . $rgLibrary . '\tPU:run' . $rgPlatformUnit . '\tCN:' . $rgCenter . '\tPL:Illumina' . "'";
+
+
+  my $rO_bwaSamJob;
+  my $rO_sortSamJob;
+
+  if ($readSet->getRunType() eq "PAIRED_END") {
+    $rO_bwaSamJob = BWA::sampe(
+      $rH_cfg,
+      $inDbFasta,
+      $alignmentFilePrefix . ".pair1.sai",
+      $alignmentFilePrefix . ".pair2.sai",
+      $trimFilePrefix . "pair1.fastq.gz",
+      $trimFilePrefix . "pair2.fastq.gz",
+      undef,
+      $readGroup
+    );
+  } elsif ($readSet->getRunType() eq "SINGLE_END") {
+    $rO_bwaSamJob = BWA::samse(
+      $rH_cfg,
+      $inDbFasta,
+      $alignmentFilePrefix . ".single.sai",
+      $trimFilePrefix . "single.fastq.gz",
+      undef,
+      $readGroup
+    );
+  } else {
+    die "[Error] In bwaSortSam, unknown runType: \"" . $readSet->getRunType() . "\"!";
+  }
+
+  $rO_sortSamJob = Picard::sortSam(
+    $rH_cfg,
+    "/dev/stdin",
+    $alignmentFilePrefix . ".sorted.bam",
+    "coordinate"
+  );
+
+  return Job::pipe($rO_bwaSamJob, $rO_sortSamJob);
+}
+
+sub bwaTmp {
+  my $rH_cfg = shift;
+  my $readSet = shift;
+
 
   my $rgLibrary = $readSet->getLibrary();
   my $rgPlatformUnit = $readSet->getRun() . "_" . $readSet->getLane();
@@ -366,6 +496,13 @@ sub bwaAln1 {
   print "mkdir -p " . $outputAlnDir . "\n";
   my $outputAlnPrefix = $outputAlnDir . "/" . $readSet->getName();
 
+
+
+  my $rH_laneInfo = shift;
+  my $trimDir;
+  my $trimDependency;
+  my $sampleName;
+  my $setJobId;
   my $bwaPair1Input = undef;
   my $bwaPair2Input = undef;
   my $bwaSingleInput = undef;

@@ -73,11 +73,11 @@ sub clientReport {
     $contact = 'report.contact=\"' . $contactTMP . '\",';
   }
 
-  my $ro_job = new Job();
+  my $rO_job = new Job();
 
-  if (!$ro_job->isUp2Date()) {
+  if (!$rO_job->isUp2Date()) {
     my $command;
-    $command .= LoadConfig::moduleLoad($rH_cfg, [['report', 'moduleVersion.cranR']]) . ' &&';
+    $rO_job->addModules($rH_cfg, [['report', 'moduleVersion.cranR']]);
     $command .= ' R --no-save -e \'library(gqSeqUtils);';
     $command .= ' mugqicPipelineReport(';
     $command .= ' ' . $pipeline;
@@ -88,10 +88,10 @@ sub clientReport {
     $command .= ' ini.file.path=\"' . $iniFilePath . '\",';
     $command .= ' project.path=\"' . $projectPath . '\")\'';
 
-    $ro_job->addCommand($command);
+    $rO_job->addCommand($command);
   }
 
-  return $ro_job;
+  return $rO_job;
 }
 
 
@@ -101,21 +101,21 @@ sub exploratoryRnaAnalysis {
   my $workDirectory = shift;
   my $configFile    = shift;
 
-  my $ro_job = new Job();
-  $ro_job->testInputOutputs([$configFile], [$workDirectory . '/exploratory/top_sd_heatmap_log2CPM.pdf']);
-  #$ro_job->setUp2Date(0);
+  my $rO_job = new Job();
+  $rO_job->testInputOutputs([$configFile], [$workDirectory . '/exploratory/top_sd_heatmap_log2CPM.pdf']);
+  #$rO_job->setUp2Date(0);
 
-  if (!$ro_job->isUp2Date()) {
+  if (!$rO_job->isUp2Date()) {
     my $rscript = 'suppressPackageStartupMessages(library(gqSeqUtils));';
     $rscript .= ' initIllmSeqProject(nanuq.file= \"' . $readSetSheet . '\",overwrite.sheets=FALSE,project.path= \"' . $workDirectory . '\");';
     $rscript .= ' exploratoryRNAseq(project.path= \"' . $workDirectory . '\",ini.file.path = \"' . $configFile . '\");';
     $rscript .= ' print(\"done.\")';
-    my $command = LoadConfig::moduleLoad($rH_cfg, [['downstreamAnalyses','moduleVersion.cranR']]) . ' &&';
-    $command .= ' Rscript -e ' . '\'' . $rscript . '\'';
+    my $rO_job->addModules($rH_cfg, [['downstreamAnalyses','moduleVersion.cranR']]);
+    my $command .= ' Rscript -e ' . '\'' . $rscript . '\'';
 
-    $ro_job->addCommand($command);
+    $rO_job->addCommand($command);
   }
-  return $ro_job;
+  return $rO_job;
 }
 
 1;

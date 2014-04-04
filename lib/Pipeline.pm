@@ -124,15 +124,6 @@ sub getNbSteps {
   return scalar(@{$self->{'_steps'}});
 }
 
-sub addStep {
-  my ($self, $rO_step) = @_;
-  if ($self->getStepByName($rO_step->getName())) {
-    die "Error: step name \"" . $rO_step->getName() . "\" is not unique for this pipeline!";
-  } else {
-    push(@{$self->getSteps()}, $rO_step);
-  }
-}
-
 sub getStepByName {
   my ($self, $name) = @_;
 
@@ -146,6 +137,15 @@ sub getStepByName {
   }
 }
 
+sub addStep {
+  my ($self, $rO_step) = @_;
+  if ($self->getStepByName($rO_step->getName())) {
+    die "Error: step name \"" . $rO_step->getName() . "\" is not unique for this pipeline!";
+  } else {
+    push(@{$self->getSteps()}, $rO_step);
+  }
+}
+
 sub getSamples {
   my ($self) = @_;
   return $self->{'_samples'};
@@ -154,15 +154,6 @@ sub getSamples {
 sub getNbSamples {
   my ($self) = @_;
   return scalar(@{$self->{'_samples'}});
-}
-
-sub addSample {
-  my ($self, $rO_sample) = @_;
-  if ($self->getSampleByName($rO_sample->getName())) {
-    die "Error: sample name \"" . $rO_sample->getName() . "\" is not unique for this pipeline!";
-  } else {
-    push(@{$self->getSamples()}, $rO_sample);
-  }
 }
 
 sub getSampleByName {
@@ -175,6 +166,15 @@ sub getSampleByName {
     return $namedSamples[0];
   } else {
     return undef;
+  }
+}
+
+sub addSample {
+  my ($self, $rO_sample) = @_;
+  if ($self->getSampleByName($rO_sample->getName())) {
+    die "Error: sample name \"" . $rO_sample->getName() . "\" is not unique for this pipeline!";
+  } else {
+    push(@{$self->getSamples()}, $rO_sample);
   }
 }
 

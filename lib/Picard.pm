@@ -58,12 +58,12 @@ sub mergeFiles {
     $bamInputs .= 'INPUT=' . $file . ' ';
   }
 
-  my $ro_job = new Job();
-  $ro_job->testInputOutputs($rA_inputFiles, [$outputBAM]);
+  my $rO_job = new Job();
+  $rO_job->testInputOutputs($rA_inputFiles, [$outputBAM]);
 
-  if (!$ro_job->isUp2Date()) {
+  if (!$rO_job->isUp2Date()) {
     my $command;
-    $command .= LoadConfig::moduleLoad($rH_cfg, [['mergeFiles', 'moduleVersion.java'], ['mergeFiles', 'moduleVersion.picard']]) . ' &&'; 
+    $rO_job->addModules($rH_cfg, [['mergeFiles', 'moduleVersion.java'], ['mergeFiles', 'moduleVersion.picard']]); 
     $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'mergeFiles', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'mergeFiles', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'mergeFiles', 'mergeRam') . ' -jar \${PICARD_HOME}/MergeSamFiles.jar';
     $command .= ' VALIDATION_STRINGENCY=SILENT ASSUME_SORTED=true CREATE_INDEX=true';
     $command .= ' TMP_DIR=' . LoadConfig::getParam($rH_cfg, 'mergeFiles', 'tmpDir');
@@ -71,9 +71,9 @@ sub mergeFiles {
     $command .= ' OUTPUT=' . $outputBAM;
     $command .= ' MAX_RECORDS_IN_RAM=' . LoadConfig::getParam($rH_cfg, 'mergeFiles', 'mergeRecInRam', 1, 'int');
 
-    $ro_job->addCommand($command);
+    $rO_job->addCommand($command);
   }
-  return $ro_job;
+  return $rO_job;
 }
 
 sub fixmate {
@@ -81,12 +81,12 @@ sub fixmate {
   my $inputBAM   = shift;
   my $outputBAM  = shift;
 
-  my $ro_job = new Job();
-  $ro_job->testInputOutputs([$inputBAM], [$outputBAM]);
+  my $rO_job = new Job();
+  $rO_job->testInputOutputs([$inputBAM], [$outputBAM]);
 
-  if (!$ro_job->isUp2Date()) {
+  if (!$rO_job->isUp2Date()) {
     my $command;
-    $command .= LoadConfig::moduleLoad($rH_cfg, [['fixmate', 'moduleVersion.java'], ['fixmate', 'moduleVersion.picard']]) . ' &&'; 
+    $rO_job->addModules($rH_cfg, [['fixmate', 'moduleVersion.java'], ['fixmate', 'moduleVersion.picard']]); 
     $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'fixmate', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'fixmate', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'fixmate', 'fixmateRam') . ' -jar \${PICARD_HOME}/FixMateInformation.jar';
     $command .= ' VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true SORT_ORDER=coordinate';
     $command .= ' TMP_DIR=' . LoadConfig::getParam($rH_cfg, 'fixmate', 'tmpDir');
@@ -94,9 +94,9 @@ sub fixmate {
     $command .= ' OUTPUT=' . $outputBAM;
     $command .= ' MAX_RECORDS_IN_RAM=' . LoadConfig::getParam($rH_cfg, 'fixmate', 'fixmateRecInRam', 1, 'int');
 
-    $ro_job->addCommand($command);
+    $rO_job->addCommand($command);
   }
-  return $ro_job;
+  return $rO_job;
 }
 
 sub markDup {
@@ -115,12 +115,12 @@ sub markDup {
 #   if (!(defined $outputMetrics)) {
 #     $outputMetrics = $sampleName . '/' . $sampleName . '.sorted.dup.metrics';
 #   }
-  my $ro_job = new Job();
-  $ro_job->testInputOutputs([$inputBAM], [$outputBAM, $outputMetrics]);
+  my $rO_job = new Job();
+  $rO_job->testInputOutputs([$inputBAM], [$outputBAM, $outputMetrics]);
 
-  if (!$ro_job->isUp2Date()) {
+  if (!$rO_job->isUp2Date()) {
     my $command;
-    $command .= LoadConfig::moduleLoad($rH_cfg, [['markDup', 'moduleVersion.java'], ['markDup', 'moduleVersion.picard']]) . ' &&'; 
+    $rO_job->addModules($rH_cfg, [['markDup', 'moduleVersion.java'], ['markDup', 'moduleVersion.picard']]); 
     $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'markDup', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'markDup', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'markDup', 'markDupRam') . ' -jar \${PICARD_HOME}/MarkDuplicates.jar';
     $command .= ' REMOVE_DUPLICATES=false CREATE_MD5_FILE=true VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true';
     $command .= ' TMP_DIR=' . LoadConfig::getParam($rH_cfg, 'markDup', 'tmpDir');
@@ -129,9 +129,9 @@ sub markDup {
     $command .= ' METRICS_FILE=' . $outputMetrics;
     $command .= ' MAX_RECORDS_IN_RAM=' . LoadConfig::getParam($rH_cfg, 'markDup', 'markDupRecInRam', 1, 'int');
 
-    $ro_job->addCommand($command);
+    $rO_job->addCommand($command);
   }
-  return $ro_job;
+  return $rO_job;
 }
 
 sub collectMetrics {
@@ -140,20 +140,20 @@ sub collectMetrics {
   my $outputMetrics = shift;
   my $reference     = shift;
 
-  my $ro_job = new Job();
-  $ro_job->testInputOutputs([$inputBAM], [$outputMetrics . '.quality_by_cycle.pdf']);
+  my $rO_job = new Job();
+  $rO_job->testInputOutputs([$inputBAM], [$outputMetrics . '.quality_by_cycle.pdf']);
 
-  if (!$ro_job->isUp2Date()) {
+  if (!$rO_job->isUp2Date()) {
     if (!defined($reference)) {
       $reference = LoadConfig::getParam($rH_cfg, 'collectMetrics', 'referenceFasta', 1, 'filepath');
     }
   
     my $command;
-    $command .= LoadConfig::moduleLoad($rH_cfg, [
+    $rO_job->addModules($rH_cfg, [
       ['collectMetrics', 'moduleVersion.java'],
       ['collectMetrics', 'moduleVersion.picard'],
       ['collectMetrics', 'moduleVersion.cranR']
-    ]) . ' &&'; 
+    ]); 
     $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'collectMetrics', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'collectMetrics', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'collectMetrics', 'collectMetricsRam') . ' -jar \${PICARD_HOME}/CollectMultipleMetrics.jar';
     $command .= ' PROGRAM=CollectAlignmentSummaryMetrics PROGRAM=CollectInsertSizeMetrics  VALIDATION_STRINGENCY=SILENT';
     $command .= ' TMP_DIR=' . LoadConfig::getParam($rH_cfg, 'collectMetrics', 'tmpDir');
@@ -162,36 +162,35 @@ sub collectMetrics {
     $command .= ' OUTPUT=' . $outputMetrics;
     $command .= ' MAX_RECORDS_IN_RAM=' . LoadConfig::getParam($rH_cfg, 'collectMetrics', 'collectMetricsRecInRam', 1, 'int');
 
-    $ro_job->addCommand($command);
+    $rO_job->addCommand($command);
   }
-  return $ro_job;
+  return $rO_job;
 }
 
 # Sort BAM/SAM files
 sub sortSam {
-  my $rH_cfg        = shift;
-  my $sampleName    = shift;
-  my $inputBAM    = shift;
-  my $outputBAM     = shift;
-  my $order         = shift;
+  my $rH_cfg    = shift;
+  my $input     = shift;
+  my $output    = shift;
+  my $sortOrder = shift;
 
-  my $ro_job = new Job();
-  $ro_job->testInputOutputs([$inputBAM], [$outputBAM]);
+  # If command input/output are stdin/stdout, they are ignored
+  my $rO_job = new Job($input eq "/dev/stdin" ? [] : [$input], $output eq "/dev/stdout" ? [] : [$output]);
+#  $rO_job->testInputOutputs([$input], [$output]);
 
-  if (!$ro_job->isUp2Date()) {
-    my $command;
-    $command .= LoadConfig::moduleLoad($rH_cfg, [['sortSam', 'moduleVersion.java'], ['sortSam', 'moduleVersion.picard']]) . ' &&';
-    $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'sortSam', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'sortSam', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'sortSam', 'sortRam') . ' -jar \${PICARD_HOME}/SortSam.jar';
-    $command .= ' VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true';
-    $command .= ' TMP_DIR=' . LoadConfig::getParam($rH_cfg, 'sortSam', 'tmpDir');
-    $command .= ' INPUT=' . $inputBAM;
-    $command .= ' OUTPUT=' . $outputBAM;
-    $command .= ' SORT_ORDER=' . $order;
-    $command .= ' MAX_RECORDS_IN_RAM=' . LoadConfig::getParam($rH_cfg, 'sortSam', 'sortRecInRam', 1, 'int');
+  if (!$rO_job->isUp2Date()) {
+    $rO_job->addModules($rH_cfg, [['sortSam', 'moduleVersion.java'], ['sortSam', 'moduleVersion.picard']]);
+    my $command .= "java -Djava.io.tmpdir=" . LoadConfig::getParam($rH_cfg, 'sortSam', 'tmpDir') . " " . LoadConfig::getParam($rH_cfg, 'sortSam', 'extraJavaFlags') . " -Xmx" . LoadConfig::getParam($rH_cfg, 'sortSam', 'sortRam') . " -jar \\\${PICARD_HOME}/SortSam.jar";
+    $command .= " \\\n  VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true";
+    $command .= " \\\n  TMP_DIR=" . LoadConfig::getParam($rH_cfg, 'sortSam', 'tmpDir');
+    $command .= " \\\n  INPUT=$input";
+    $command .= " \\\n  OUTPUT=$output";
+    $command .= " \\\n  SORT_ORDER=$sortOrder";
+    $command .= " \\\n  MAX_RECORDS_IN_RAM=" . LoadConfig::getParam($rH_cfg, 'sortSam', 'sortRecInRam', 1, 'int');
 
-    $ro_job->addCommand($command);
+    $rO_job->addCommand($command);
   }
-  return $ro_job;
+  return $rO_job;
 }
 
 
@@ -202,12 +201,12 @@ sub reorderSam {
   my $inputBAM      = shift;
   my $outputBAM     = shift;
 
-  my $ro_job = new Job();
-  $ro_job->testInputOutputs([$inputBAM], [$outputBAM]);
+  my $rO_job = new Job();
+  $rO_job->testInputOutputs([$inputBAM], [$outputBAM]);
 
-  if (!$ro_job->isUp2Date()) {
+  if (!$rO_job->isUp2Date()) {
     my $command;
-    $command .= LoadConfig::moduleLoad($rH_cfg, [['reorderSam', 'moduleVersion.java'], ['reorderSam', 'moduleVersion.picard']]) . ' &&';
+    $rO_job->addModules($rH_cfg, [['reorderSam', 'moduleVersion.java'], ['reorderSam', 'moduleVersion.picard']]);
     $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'reorderSam', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'reorderSam', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'reorderSam', 'reorderRam') . ' -jar \${PICARD_HOME}/ReorderSam.jar';
     $command .= ' VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true';
     $command .= ' TMP_DIR=' . LoadConfig::getParam($rH_cfg, 'reorderSam', 'tmpDir');
@@ -216,9 +215,9 @@ sub reorderSam {
     $command .= ' REFERENCE=' . LoadConfig::getParam($rH_cfg, 'reorderSam', 'referenceFasta', 1, 'filepath');
     $command .= ' MAX_RECORDS_IN_RAM=' . LoadConfig::getParam($rH_cfg, 'reorderSam', 'reorderRecInRam', 1, 'int');
 
-    $ro_job->addCommand($command);
+    $rO_job->addCommand($command);
   }
-  return $ro_job;
+  return $rO_job;
 }
 
 # Convert SAM/BAM file to fastq format
@@ -228,22 +227,22 @@ sub samToFastq {
   my $outputFastq1 = shift;    # If single end reads, $outputFastq1 will store the FASTQ output
   my $outputFastq2 = shift;    # Used for paired end reads only
 
-  my $ro_job = new Job();
+  my $rO_job;
 
   # If paired end reads
-  if (defined($outputFastq2)) {
-    $ro_job->testInputOutputs([$inputSAMBAM], [$outputFastq1, $outputFastq2]);
+  if ($outputFastq2) {
+    $rO_job = Job->new([$inputSAMBAM], [$outputFastq1, $outputFastq2]);
   # else single end reads
   } else {
-    $ro_job->testInputOutputs([$inputSAMBAM], [$outputFastq1]);
+    $rO_job = Job->new([$inputSAMBAM], [$outputFastq1]);
   }
 
-  if (!$ro_job->isUp2Date()) {
+  if (!$rO_job->isUp2Date()) {
     my $command;
-    $command .= LoadConfig::moduleLoad($rH_cfg, [
+    $rO_job->addModules($rH_cfg, [
       ['samToFastq', 'moduleVersion.java'],
       ['samToFastq', 'moduleVersion.picard']
-    ]) . " && \\\n";
+    ]);
     $command .= "java -Djava.io.tmpdir=" . LoadConfig::getParam($rH_cfg, 'samToFastq', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'samToFastq', 'extraJavaFlags') . " -jar \\\${PICARD_HOME}/SamToFastq.jar \\\n";
     $command .= "  INPUT=$inputSAMBAM \\\n";
     $command .= "  FASTQ=$outputFastq1";
@@ -253,9 +252,9 @@ sub samToFastq {
       $command .= " \\\n  SECOND_END_FASTQ=$outputFastq2";
     }
 
-    $ro_job->addCommand($command);
+    $rO_job->addCommand($command);
   }
-  return $ro_job;
+  return $rO_job;
 }
 
 1;

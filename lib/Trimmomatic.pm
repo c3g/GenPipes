@@ -22,10 +22,6 @@ Output = array
 
 =head1 DEPENDENCY
 
-B<Pod::Usage> Usage and help output.
-
-B<Data::Dumper> Used to debbug
-
 =cut
 
 package Trimmomatic;
@@ -76,17 +72,17 @@ sub trim {
 
   push(@$outputs, $trimLog, $trimStats);
 
-#  $ro_job->testInputOutputs($inputs, $outputs);
-  my $ro_job = new Job($inputs, $outputs);
+#  $rO_job->testInputOutputs($inputs, $outputs);
+  my $rO_job = new Job($inputs, $outputs);
 
-  if (!$ro_job->isUp2Date()) {
+  if (!$rO_job->isUp2Date()) {
     # Create output directories (remove duplicates from output directory list if necessary)
     my $command = "mkdir -p " . join(" ", keys(%{{map {$_ => 1} map(dirname($_), @$outputs)}})) . " && \\\n";
 
-    $command .= LoadConfig::moduleLoad($rH_cfg, [
+    $rO_job->addModules($rH_cfg, [
       ['trim', 'moduleVersion.java'],
       ['trim', 'moduleVersion.trimmomatic']
-    ]) . " && \\\n";
+    ]);
 
     $command .= "java -XX:ParallelGCThreads=1 -Xmx2G -jar \\\$TRIMMOMATIC_JAR " . ($input2 ? "PE" : "SE") . " \\\n";
     $command .= "  -threads " . LoadConfig::getParam($rH_cfg, 'trim', 'nbThreads', 1, 'int') . " \\\n";
@@ -114,10 +110,10 @@ sub trim {
       $command .= 'grep \"^Input Read\" ' . $trimLog . '| sed \'s/Input Reads: \\([0-9]\\+\\).*Surviving: \\([0-9]\\+\\).*/Raw Fragments,\\1#Fragment Surviving,\\2#Single Surviving,\\2/g\' | tr \'#\' \'\n\' > ' . $trimStats;
     }
 
-    $ro_job->addCommand($command);
+    $rO_job->addCommand($command);
   }
 
-  return $ro_job;
+  return $rO_job;
 }
 
 1;

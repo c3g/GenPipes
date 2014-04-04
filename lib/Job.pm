@@ -43,10 +43,12 @@ sub new {
   my $class = shift;
   my $rA_inputFiles = shift;
   my $rA_outputFiles = shift;
+  my $rA_modules = shift;
 
   my $self = {
     '_inputFiles' => [],
-    '_outputFiles' => []
+    '_outputFiles' => [],
+    '_modules' => []
   };
   bless($self, $class);
 
@@ -61,6 +63,8 @@ sub new {
       push (@{$self->getOutputFiles()}, $outputFile);
     }
   }
+
+  $self->addModules($rA_modules);
 
   return $self;
 }
@@ -83,6 +87,49 @@ sub getOutputFiles {
 sub getNbOutputFiles {
   my ($self) = @_;
   return scalar(@{$self->{'_outputFiles'}});
+}
+
+sub getModules {
+  my ($self) = @_;
+  return $self->{'_modules'};
+}
+
+sub getNbModules {
+  my ($self) = @_;
+  return scalar(@{$self->{'_modules'}});
+}
+
+sub addModule {
+  my ($self, $rH_cfg, $rA_module) = @_;
+
+  # $rA_module is a pair of [section, moduleVersion]
+  # Retrieve module value from the configuration file
+  my $moduleValue = LoadConfig::getParam($rH_cfg, @$rA_module[0], @$rA_module[1], 1);
+
+  # Add module only if not already present
+  unless (grep($_ eq $moduleValue, @{$self->getModules()})) {
+    push(@{$self->getModules()}, $moduleValue);
+  }
+}
+
+sub addModules {
+  my ($self, $rH_cfg, $rA_modules) = @_;
+
+  # Each element is a pair of [section, moduleVersion]
+  foreach my $rA_module (@$rA_modules) {
+    $self->addModule($rH_cfg, $rA_module);
+  }
+}
+
+# TODO: redesign config integration
+sub addModulesNoCfg {
+  my ($self, $rA_modules) = @_;
+
+  foreach my $module (@$rA_modules) {
+    unless (grep($_ eq $module, @{$self->getModules()})) {
+      push(@{$self->getModules()}, $module);
+    }
+  }
 }
 
 # Job name reflect job step/loopTags hierarchy e.g <step>.<sampleLoopTag>.<readSetLoopTag>
@@ -277,6 +324,21 @@ sub getDependencies {
   }
 
   return $dependencyJobs;
+}
+
+# Static class method (must be called by Job::pipe($rH_cfg, $rO_job1, $rO_job2))
+# Create a new job by merging modules and piping commands of th two specified jobs
+sub pipe {
+  my ($rO_job1, $rO_job2) = @_;
+
+  # Input files come from the first job, output files come from the last job
+  my $rO_job = Job->new($rO_job1->getInputFiles(), $rO_job2->getOutputFiles());
+  $rO_job->addModulesNoCfg($rO_job1->getModules());
+  $rO_job->addModulesNoCfg($rO_job2->getModules());
+
+  $rO_job->addCommand($rO_job1->getCommand(0) . " | \\\n" . $rO_job2->getCommand(0));
+
+  return $rO_job;
 }
 
 1;
