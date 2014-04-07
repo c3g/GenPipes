@@ -67,7 +67,8 @@ sub getCutoff {
     # Choose a subread length threshold such that subreads above the threshold provide about 20x coverage of the genome.
     $cmd .= LoadConfig::moduleLoad($rH_cfg, [
       ['memtime', 'moduleVersion.memtime'],
-      ['default', 'moduleVersion.mugqictools']
+      ['default', 'moduleVersion.mugqictools'],
+      ['default', 'moduleVersion.perl']
     ]) . ' &&';
     $cmd .= ' memtime';
     $cmd .= ' pacBioGetCutoff.pl';
@@ -99,7 +100,8 @@ sub celeraConfig {
     my $cmd = '';
     $cmd .= LoadConfig::moduleLoad($rH_cfg, [
       ['memtime', 'moduleVersion.memtime'],
-      ['default', 'moduleVersion.mugqictools']
+      ['default', 'moduleVersion.mugqictools'],
+      ['default', 'moduleVersion.perl']
     ]) . ' &&';
     $cmd .= ' memtime';
     $cmd .= ' pacBioAssemblyCeleraConfig.pl';
@@ -149,7 +151,8 @@ sub assemblyStats {
     $cmd .= LoadConfig::moduleLoad($rH_cfg, [
       ['memtime', 'moduleVersion.memtime'],
       ['default', 'moduleVersion.R'],
-      ['default', 'moduleVersion.mugqictools']
+      ['default', 'moduleVersion.mugqictools'],
+      ['default', 'moduleVersion.perl']
     ]) . ' &&';
     $cmd .= ' memtime ';
     $cmd .= ' pacBioAssemblyStats.pl';
@@ -185,7 +188,8 @@ sub splitReads{
     my $cmd = '';
     $cmd .= LoadConfig::moduleLoad($rH_cfg, [
       ['memtime', 'moduleVersion.memtime'],
-      ['default', 'moduleVersion.mugqictools']
+      ['default', 'moduleVersion.mugqictools'],
+      ['default', 'moduleVersion.perl']
     ]) . ' &&';
     $cmd .= ' memtime';
     $cmd .= ' pacBioSplitReads.pl';
@@ -214,7 +218,8 @@ sub compile{
     my $cmd = '';
     $cmd .= LoadConfig::moduleLoad($rH_cfg, [
       ['memtime', 'moduleVersion.memtime'],
-      ['default', 'moduleVersion.mugqictools']
+      ['default', 'moduleVersion.mugqictools'],
+      ['default', 'moduleVersion.perl']
     ]) . ' ;';
     $cmd .= ' memtime';
     $cmd .= ' pacBioCompileStats.pl';

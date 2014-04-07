@@ -148,7 +148,6 @@ sub resolveSampleBED {
 }
 
 sub depthOfCoverage {
-
   my $rH_cfg        = shift;
   my $inputBam      = shift;
   my $outputFile    = shift;
@@ -161,7 +160,7 @@ sub depthOfCoverage {
     $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta', 1, 'filepath');
   }
   
-  my $rA_thresholds = LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'percentThresholds', 0, 'array');
+  my $maxDepth = LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'maxDepth', 0, 'array');
 
   my $command;
   $rO_job->addModules($rH_cfg, [['depthOfCoverage', 'moduleVersion.java'], ['depthOfCoverage', 'moduleVersion.bvatools']]);
@@ -174,11 +173,6 @@ sub depthOfCoverage {
     $command .= " \\\n  --intervals \\\'".$coverageBED . "'";
   }
 
-  if (defined($rA_thresholds) and $rA_thresholds ne "") {
-    for my $threshold (@{$rA_thresholds}) {
-      $command .= " \\\n  --summaryCoverageThresholds " . $threshold;
-    }
-  }
   $command .= " \\\n  --bam " . $inputBam;
   $command .= " \\\n  > " . $outputFile;
 

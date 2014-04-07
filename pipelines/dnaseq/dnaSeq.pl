@@ -92,6 +92,7 @@ use Getopt::Std;
 use Cwd 'abs_path';
 use File::Basename;
 use File::Path;
+use Parse::Range qw(parse_range);
 use POSIX;
 
 use BVATools;
