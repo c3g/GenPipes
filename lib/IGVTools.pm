@@ -50,19 +50,16 @@ sub computeTDF {
   my $rH_cfg   = shift;
   my $inputBAM = shift;
 
-  my $ro_job = new Job();
-  $ro_job->testInputOutputs([$inputBAM], [$inputBAM . '.tdf']);
+  my $rO_job = new Job([$inputBAM], [$inputBAM . '.tdf']);
 
-  if (!$ro_job->isUp2Date()) {
-    my $command;
-    $command .= LoadConfig::moduleLoad($rH_cfg, [['igvtools', 'moduleVersion.igvtools']]) . ' &&';
-    $command .= ' igvtools count -f min,max,mean ';
-    $command .= $inputBAM . ' ' . $inputBAM . '.tdf';
-    $command .= ' ' . LoadConfig::getParam($rH_cfg, 'computeTDF', 'igvGenome');
+  $rO_job->addModules($rH_cfg, [['igvtools', 'moduleVersion.igvtools']]);
+  my $command .= 'igvtools count -f min,max,mean ';
+  $command .= $inputBAM . ' ' . $inputBAM . '.tdf';
+  $command .= ' ' . LoadConfig::getParam($rH_cfg, 'computeTDF', 'igvGenome');
 
-    $ro_job->addCommand($command);
-  }
-  return $ro_job;
+  $rO_job->addCommand($command);
+
+  return $rO_job;
 }
 
 1;

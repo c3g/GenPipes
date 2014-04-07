@@ -167,14 +167,14 @@ sub getQualityOffset {
   return $self->{'_qualityOffset'};
 }
 
-sub setBED {
-  my ($self, $BED) = @_;
-  $self->{'_BED'} = $BED;
+sub setBEDs {
+  my ($self, $rA_BEDs) = @_;
+  $self->{'_BEDs'} = $rA_BEDs;
 }
 
-sub getBED {
+sub getBEDs {
   my ($self) = @_;
-  return $self->{'_BED'};
+  return $self->{'_BEDs'};
 }
 
 1;

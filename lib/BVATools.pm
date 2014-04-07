@@ -41,30 +41,24 @@ sub countBins {
   my $outputFile = shift;
   my $normalBam  = shift; # can be undef for non paired run
 
-  my $ro_job = new Job();
+  my $rO_job = new Job([$tumorBam, $normalBam], [$outputFile]);
+
+  my $command;
+  $rO_job->addModules($rH_cfg, [['countBins', 'moduleVersion.java'], ['countBins', 'moduleVersion.bvatools']]);
+  $command .= "java -Djava.io.tmpdir=" . LoadConfig::getParam($rH_cfg, 'countBins', 'tmpDir') . " " . LoadConfig::getParam($rH_cfg, 'countBins', 'extraJavaFlags');
+  $command .= " -Xmx1500M -jar \\\${BVATOOLS_JAR} bincounter";
+  $command .= " \\\n  --norm " . $normType;
+  $command .= " \\\n  --minMapQ " . LoadConfig::getParam($rH_cfg, 'countBins', 'minMapQ');
+  $command .= " \\\n  --bam " . $tumorBam;
   if (defined($normalBam)) {
-    $ro_job->testInputOutputs([$tumorBam, $normalBam], [$outputFile], $ro_job);
-  } else {
-    $ro_job->testInputOutputs([$tumorBam], [$outputFile], $ro_job);
+    $command .= " \\\n  --refbam " . $normalBam;
   }
+  $command .= " \\\n  --window " . $window;
+  $command .= " \\\n  > " . $outputFile;
 
-  if (!$ro_job->isUp2Date()) {
-    my $command;
-    $command .= LoadConfig::moduleLoad($rH_cfg, [['countBins', 'moduleVersion.java'], ['countBins', 'moduleVersion.bvatools']]) . ' && ';
-    $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'countBins', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'countBins', 'extraJavaFlags');
-    $command .= ' -Xmx1500M -jar \${BVATOOLS_JAR} bincounter';
-    $command .= ' --norm ' . $normType;
-    $command .= ' --minMapQ ' . LoadConfig::getParam($rH_cfg, 'countBins', 'minMapQ');
-    $command .= ' --bam ' . $tumorBam;
-    if (defined($normalBam)) {
-      $command .= ' --refbam ' . $normalBam;
-    }
-    $command .= ' --window ' . $window;
-    $command .= ' > ' . $outputFile;
+  $rO_job->addCommand($command);
 
-    $ro_job->addCommand($command);
-  }
-  return $ro_job;
+  return $rO_job;
 }
 
 sub deleteDuplicates {
@@ -75,16 +69,16 @@ sub deleteDuplicates {
   my $single          = shift;
   my $optOutputPrefix = shift;
 
-  my $ro_job;
+  my $rO_job;
   if (defined($pair1) && defined($pair2)) {
-    $ro_job = deletePairedDuplicates($rH_cfg, $sampleName, $pair1, $pair2, $optOutputPrefix);
+    $rO_job = deletePairedDuplicates($rH_cfg, $sampleName, $pair1, $pair2, $optOutputPrefix);
   } elsif (defined($single)) {
-    $ro_job = deleteSingleDuplicates($rH_cfg, $sampleName, $single, $optOutputPrefix);
+    $rO_job = deleteSingleDuplicates($rH_cfg, $sampleName, $single, $optOutputPrefix);
   } else {
     die "Unknown runType. \n";
   }
 
-  return $ro_job;
+  return $rO_job;
 }
 
 sub deletePairedDuplicates {
@@ -95,24 +89,21 @@ sub deletePairedDuplicates {
   my $outputPrefix = shift;
   my %retVal;
 
-  my $command = '';
-  my $outputFastqPair1Name = $outputPrefix . '.pair1.dup.fastq.gz';
-  my $outputFastqPair2Name = $outputPrefix . '.pair2.dup.fastq.gz';
+  my $command = "";
+  my $outputFastqPair1Name = $outputPrefix . ".pair1.dup.fastq.gz";
+  my $outputFastqPair2Name = $outputPrefix . ".pair2.dup.fastq.gz";
 
-  my $ro_job = new Job();
-  $ro_job->testInputOutputs([$pair1, $pair2], [$outputFastqPair1Name, $outputFastqPair2Name]);
+  my $rO_job = new Job([$pair1, $pair2], [$outputFastqPair1Name, $outputFastqPair2Name]);
 
-  if (!$ro_job->isUp2Date()) {
-    $command .= LoadConfig::moduleLoad($rH_cfg, [['default', 'moduleVersion.java'], ['duplicate', 'moduleVersion.bvatools']]) . ' &&';
-    $command .= ' java ' . LoadConfig::getParam($rH_cfg, 'duplicate', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'duplicate', 'dupRam') . ' -jar \$BVATOOLS_JAR filterdups' . ' --read1 ' . $pair1 . ' --read2 ' . $pair2;
-    $command .= ' -k 20 -o 15';
-    $command .= ' && mv ' . $pair1 . '.dup.read1.gz ' . $outputFastqPair1Name;
-    $command .= ' && mv ' . $pair2 . '.dup.read2.gz ' . $outputFastqPair2Name;
+  $rO_job->addModules($rH_cfg, [['default', 'moduleVersion.java'], ['duplicate', 'moduleVersion.bvatools']]);
+  $command .= "java " . LoadConfig::getParam($rH_cfg, 'duplicate', 'extraJavaFlags') . " -Xmx" . LoadConfig::getParam($rH_cfg, 'duplicate', 'dupRam') . " -jar \\\$BVATOOLS_JAR filterdups" . " \\\n  --read1 " . $pair1 . " \\\n  --read2 " . $pair2;
+  $command .= " \\\n  -k 20 -o 15";
+  $command .= " \\\n  && mv " . $pair1 . ".dup.read1.gz " . $outputFastqPair1Name;
+  $command .= " \\\n  && mv " . $pair2 . ".dup.read2.gz " . $outputFastqPair2Name;
 
-    $ro_job->addCommand($command);
-  }
+  $rO_job->addCommand($command);
 
-  return $ro_job;
+  return $rO_job;
 }
 
 sub deleteSingleDuplicates {
@@ -122,37 +113,34 @@ sub deleteSingleDuplicates {
   my $outputPrefix = shift;
   my %retVal;
 
-  my $outputFastqName = $outputPrefix . '.single.dup.fastq.gz';
+  my $outputFastqName = $outputPrefix . ".single.dup.fastq.gz";
 
-  my $ro_job = new Job();
-  $ro_job->testInputOutputs([$single], [$outputFastqName]);
+  my $rO_job = new Job([$single], [$outputFastqName]);
 
-  if (!$ro_job->isUp2Date()) {
-    my $command;
-    $command .= LoadConfig::moduleLoad($rH_cfg, [['default', 'moduleVersion.java'], ['duplicate', 'moduleVersion.bvatools']]) . ' &&';
-    $command .= ' java ' . LoadConfig::getParam($rH_cfg, 'duplicate', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'duplicate', 'dupRam') . ' -jar \$BVATOOLS_JAR filterdups' . ' --read1 ' . $single;
-    $command .= ' -k 20 -o 15';
-    $command .= ' && mv ' . $single . '.dup.read1.gz ' . $outputFastqName;
+  my $command;
+  $rO_job->addModules($rH_cfg, [['default', 'moduleVersion.java'], ['duplicate', 'moduleVersion.bvatools']]);
+  $command .= "java " . LoadConfig::getParam($rH_cfg, 'duplicate', 'extraJavaFlags') . " -Xmx" . LoadConfig::getParam($rH_cfg, 'duplicate', 'dupRam') . " -jar \\\$BVATOOLS_JAR filterdups" . " \\\n  --read1 " . $single;
+  $command .= " \\\n  -k 20 -o 15";
+  $command .= " \\\n  && mv " . $single . ".dup.read1.gz " . $outputFastqName;
 
-    $ro_job->addCommand($command);
-  }
+  $rO_job->addCommand($command);
 
-  return $ro_job;
+  return $rO_job;
 }
 
 sub resolveSampleBED {
   my $rH_cfg      = shift;
-  my $rH_laneInfo = shift;
+  my $readSet = shift;
 
   my $iniRegions = LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'coverageTargets', 0);
 
   if (!defined($iniRegions) || length($iniRegions) == 0) {
     return undef;
-  } elsif ($iniRegions eq 'auto') {
-    if (@{$rH_laneInfo->{'bedFiles'}} == 0) {
+  } elsif ($iniRegions eq "auto") {
+    if (@{$readSet->getBEDs()} == 0) {
       return undef;
     } else {
-      return $rH_laneInfo->{'bedFiles'}->[0];
+      return $readSet->getBEDs()->[0];
     }
   }
 
@@ -167,12 +155,7 @@ sub depthOfCoverage {
   my $coverageBED   = shift;
   my $refGenome     = shift;
 
-  my $ro_job = new Job();
-  if (defined($coverageBED)) {
-    $ro_job->testInputOutputs([$inputBam, $coverageBED], [$outputFile]);
-  } else {
-    $ro_job->testInputOutputs([$inputBam], [$outputFile]);
-  }
+  my $rO_job = new Job([$inputBam, $coverageBED], [$outputFile]);
 
   if (!defined($refGenome)) {
     $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta', 1, 'filepath');
@@ -180,30 +163,28 @@ sub depthOfCoverage {
   
   my $rA_thresholds = LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'percentThresholds', 0, 'array');
 
-  if (!$ro_job->isUp2Date()) {
-      my $command;
-      $command .= LoadConfig::moduleLoad($rH_cfg, [['depthOfCoverage', 'moduleVersion.java'], ['depthOfCoverage', 'moduleVersion.bvatools']]) . ' &&';
-      $command .= ' java ' . LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'ram') . ' -jar \${BVATOOLS_JAR}';
-      $command .= ' depthofcoverage';
-      $command .= ' --simpleChrName';
-      $command .= ' ' . LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'extraFlags', 0);
-      $command .= ' --ref ' . $refGenome;
-      if (defined($coverageBED) && length($coverageBED) > 0) {
-        $command .= ' --intervals \''.$coverageBED . "'";
-      }
-
-    if (defined($rA_thresholds) and $rA_thresholds ne "") {
-      for my $threshold (@{$rA_thresholds}) {
-        $command .= ' --summaryCoverageThresholds ' . $threshold;
-      }
-    }
-    $command .= ' --bam ' . $inputBam;
-    $command .= ' > ' . $outputFile;
-
-    $ro_job->addCommand($command);
+  my $command;
+  $rO_job->addModules($rH_cfg, [['depthOfCoverage', 'moduleVersion.java'], ['depthOfCoverage', 'moduleVersion.bvatools']]);
+  $command .= "java " . LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'extraJavaFlags') . " -Xmx" . LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'ram') . " -jar \\\${BVATOOLS_JAR}";
+  $command .= " depthofcoverage";
+  $command .= " \\\n  --simpleChrName";
+  $command .= " \\\n  " . LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'extraFlags', 0);
+  $command .= " \\\n  --ref " . $refGenome;
+  if (defined($coverageBED) && length($coverageBED) > 0) {
+    $command .= " \\\n  --intervals \\\'".$coverageBED . "'";
   }
 
-  return $ro_job;
+  if (defined($rA_thresholds) and $rA_thresholds ne "") {
+    for my $threshold (@{$rA_thresholds}) {
+      $command .= " \\\n  --summaryCoverageThresholds " . $threshold;
+    }
+  }
+  $command .= " \\\n  --bam " . $inputBam;
+  $command .= " \\\n  > " . $outputFile;
+
+  $rO_job->addCommand($command);
+
+  return $rO_job;
 }
 
 sub qc {
@@ -214,33 +195,22 @@ sub qc {
   my $regionName     = shift;
   my $outputDirectory= shift;
   
-  my $ro_job = new Job();
+  my $rO_job = new Job([$read1, $read2], [$outputDirectory."/mpsQC_".$regionName."_stats.xml"]);
+  
+  my $nbThreads = LoadConfig::getParam($rH_cfg, 'generateQCGraphs','nbThreads');
+  my $command;
+  $rO_job->addModules($rH_cfg, [['generateQCGraphs', 'moduleVersion.java'], ['generateQCGraphs', 'moduleVersion.bvatools']]);
+  $command .= "java " .LoadConfig::getParam($rH_cfg, 'generateQCGraphs', 'extraJavaFlags')." -Xmx".LoadConfig::getParam($rH_cfg, 'generateQCGraphs', 'maxRam')." -jar \\\${BVATOOLS_JAR}";
+  $command .= ' readsqc --regionName \'' . $regionName . '\' --type ' . $type . ' --output \'' . $outputDirectory . '\' --read1 \'' . $read1 .'\'';
+  if (defined($read2)) {
+    $command .= ' --read2 \'' . $read2 . '\'';
+  }
+  if (defined($nbThreads)) {
+    $command .= " --threads " . $nbThreads;
+  }
+  $rO_job->addCommand($command);
 
-  my $rA_inputs;
-  if(defined($read2)) {
-    $rA_inputs = [$read1, $read2];
-  } else {
-    $rA_inputs = [$read1];
-  }
-  $ro_job->testInputOutputs($rA_inputs, [$outputDirectory.'/mpsQC_'.$regionName.'_stats.xml']);
-  
-  if (!$ro_job->isUp2Date()) {
-    my $nbThreads = LoadConfig::getParam($rH_cfg, 'generateQCGraphs','nbThreads');
-    my $command;
-    $command .= LoadConfig::moduleLoad($rH_cfg, [['generateQCGraphs', 'moduleVersion.java'], ['generateQCGraphs', 'moduleVersion.bvatools']]) . ' &&';
-    $command .= ' java ' .LoadConfig::getParam($rH_cfg, 'generateQCGraphs', 'extraJavaFlags').' -Xmx'.LoadConfig::getParam($rH_cfg, 'generateQCGraphs', 'maxRam').' -jar \${BVATOOLS_JAR}';
-    $command .= ' readsqc --regionName \'' . $regionName . '\' --type ' . $type . ' --output \'' . $outputDirectory . '\' --read1 \'' . $read1 .'\'';
-    if (defined($read2)) {
-      $command .= ' --read2 \'' . $read2 . '\'';
-    }
-    if (defined($nbThreads)) {
-      $command .= ' --threads ' . $nbThreads;
-    }
-    $ro_job->addCommand($command);
-  }
-  
-  return $ro_job;
+  return $rO_job;
 }
-
 
 1;

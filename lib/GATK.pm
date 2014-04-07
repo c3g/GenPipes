@@ -41,13 +41,13 @@ use lib "$FindBin::Bin";
 
 # Dependencies
 #-----------------------
+use File::Basename;
 use LoadConfig;
 
 # SUB
 #-----------------------
 sub recalibration {
   my $rH_cfg       = shift;
-  my $sampleName   = shift;
   my $sortedBAM    = shift;
   my $outputPrefix = shift;
 
@@ -56,37 +56,33 @@ sub recalibration {
   my $recalOutput = $outputPrefix . '.recalibration_report.grp';
   my $bamOutput = $outputPrefix . '.recal.bam';
 
-  my $ro_job = new Job();
-  $ro_job->testInputOutputs([$sortedBAM], [$bamOutput]);
+  my $rO_job = new Job([$sortedBAM], [$bamOutput]);
 
-  if (!$ro_job->isUp2Date()) {
-    my $command;
-    $command .= LoadConfig::moduleLoad($rH_cfg, [['recalibration', 'moduleVersion.java'], ['recalibration', 'moduleVersion.gatk']]) . ' &&';
-    $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'recalibration', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'recalibration', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'recalibration', 'recalRam') . '  -jar \${GATK_JAR}';
-    $command .= ' -T BaseRecalibrator';
-    $command .= ' -nct '. LoadConfig::getParam($rH_cfg, 'recalibration', 'threads', 1, 'int');
-    $command .= ' -R ' . $refGenome;
-    $command .= ' -knownSites ' . $knownSites;
-    $command .= ' -o ' . $recalOutput;
-    $command .= ' -I ' . $sortedBAM;
-    $command .= ' && ';
-    $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'recalibration', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'recalibration', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'recalibration', 'recalRam') . ' -jar \${GATK_JAR}';
-    $command .= ' -T PrintReads';
-    $command .= ' -nct ' . LoadConfig::getParam($rH_cfg, 'recalibration', 'threads', 1, 'int');
-    $command .= ' -R ' . $refGenome;
-    $command .= ' -BQSR ' . $recalOutput;
-    $command .= ' -o ' . $bamOutput;
-    $command .= ' -I ' . $sortedBAM;
+  my $command;
+  $rO_job->addModules($rH_cfg, [['recalibration', 'moduleVersion.java'], ['recalibration', 'moduleVersion.gatk']]);
+  $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'recalibration', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'recalibration', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'recalibration', 'recalRam') . '  -jar \${GATK_JAR}';
+  $command .= ' -T BaseRecalibrator';
+  $command .= ' -nct '. LoadConfig::getParam($rH_cfg, 'recalibration', 'threads', 1, 'int');
+  $command .= ' -R ' . $refGenome;
+  $command .= ' -knownSites ' . $knownSites;
+  $command .= ' -o ' . $recalOutput;
+  $command .= ' -I ' . $sortedBAM;
+  $command .= ' && ';
+  $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'recalibration', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'recalibration', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'recalibration', 'recalRam') . ' -jar \${GATK_JAR}';
+  $command .= ' -T PrintReads';
+  $command .= ' -nct ' . LoadConfig::getParam($rH_cfg, 'recalibration', 'threads', 1, 'int');
+  $command .= ' -R ' . $refGenome;
+  $command .= ' -BQSR ' . $recalOutput;
+  $command .= ' -o ' . $bamOutput;
+  $command .= ' -I ' . $sortedBAM;
 
-    $ro_job->addCommand($command);
-  }
+  $rO_job->addCommand($command);
 
-  return $ro_job;
+  return $rO_job;
 }
 
 sub realign {
   my $rH_cfg          = shift;
-  my $sampleName      = shift;
   my $sortedBAM       = shift;
   my $seqName         = shift;
   my $outputPrefix    = shift;
@@ -94,88 +90,80 @@ sub realign {
   my $rA_exclusions   = shift;
 
   my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta', 1, 'filepath');
-  my $intervalOutput = $outputPrefix . '.intervals';
-  my $realignOutput = $outputPrefix . '.bam';
+  my $intervalOutput = $outputPrefix . ".intervals";
+  my $realignOutput = $outputPrefix . ".bam";
 
-  my $ro_job = new Job();
-  $ro_job->testInputOutputs([$sortedBAM], [$intervalOutput,$realignOutput]);
+  my $rO_job = new Job([$sortedBAM], [$intervalOutput,$realignOutput]);
 
-  if (!$ro_job->isUp2Date()) {  
-    my $command;
-    $command .= LoadConfig::moduleLoad($rH_cfg, [['indelRealigner', 'moduleVersion.java'], ['indelRealigner', 'moduleVersion.gatk']]) . ' &&';
-    $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'indelRealigner', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'indelRealigner', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'indelRealigner', 'realignRam') . '  -jar \${GATK_JAR}';
-    $command .= ' -T RealignerTargetCreator';
-    $command .= ' -R ' . $refGenome;
-    $command .= ' -o ' . $intervalOutput;
-    $command .= ' -I ' . $sortedBAM;
-    if (defined($seqName)) {
-      $command .= ' -L ' . $seqName;
-    }
-    if (defined($rA_exclusions)) {
-      $command .= ' --excludeIntervals ' . join(' --excludeIntervals ', @{$rA_exclusions}) . ' --excludeIntervals unmapped';
-    }
-    $command .= ' && ';
-    $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'indelRealigner', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'indelRealigner', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'indelRealigner', 'realignRam') . ' -jar \${GATK_JAR}';
-    $command .= ' -T IndelRealigner';
-    $command .= ' -R ' . $refGenome;
-    $command .= ' -targetIntervals ' . $intervalOutput;
-    $command .= ' -o ' . $realignOutput;
-    $command .= ' -I ' . $sortedBAM;
-    if (defined($seqName)) {
-      $command .= ' -L ' . $seqName;
-    }
-    if (defined($rA_exclusions)) {
-      $command .= ' --excludeIntervals ' . join(' --excludeIntervals ', @{$rA_exclusions}) . ' --excludeIntervals unmapped';
-    } elsif ($processUnmapped == 1) {
-      $command .= ' -L unmapped';
-    }
-    $command .= ' --maxReadsInMemory ' . LoadConfig::getParam($rH_cfg, 'indelRealigner', 'realignReadsInRam', 1, 'int');
-
-    $ro_job->addCommand($command);
+  my $command = "mkdir -p " . dirname($outputPrefix) . " && \\\n";
+  $rO_job->addModules($rH_cfg, [['indelRealigner', 'moduleVersion.java'], ['indelRealigner', 'moduleVersion.gatk']]);
+  $command .= "java -Djava.io.tmpdir=" . LoadConfig::getParam($rH_cfg, 'indelRealigner', 'tmpDir') . " " . LoadConfig::getParam($rH_cfg, 'indelRealigner', 'extraJavaFlags') . " -Xmx" . LoadConfig::getParam($rH_cfg, 'indelRealigner', 'realignRam') . "  -jar \\\${GATK_JAR}";
+  $command .= " \\\n  -T RealignerTargetCreator";
+  $command .= " \\\n  -R " . $refGenome;
+  $command .= " \\\n  -o " . $intervalOutput;
+  $command .= " \\\n  -I " . $sortedBAM;
+  if (defined($seqName)) {
+    $command .= " \\\n  -L " . $seqName;
   }
+  if (defined($rA_exclusions)) {
+    $command .= " \\\n  --excludeIntervals " . join(" --excludeIntervals ", @{$rA_exclusions}) . " --excludeIntervals unmapped";
+  }
+  $command .= " && \\\n";
+  $command .= "java -Djava.io.tmpdir=" . LoadConfig::getParam($rH_cfg, 'indelRealigner', 'tmpDir') . " " . LoadConfig::getParam($rH_cfg, 'indelRealigner', 'extraJavaFlags') . " -Xmx" . LoadConfig::getParam($rH_cfg, 'indelRealigner', 'realignRam') . " -jar \\\${GATK_JAR}";
+  $command .= " \\\n  -T IndelRealigner";
+  $command .= " \\\n  -R " . $refGenome;
+  $command .= " \\\n  -targetIntervals " . $intervalOutput;
+  $command .= " \\\n  -o " . $realignOutput;
+  $command .= " \\\n  -I " . $sortedBAM;
+  if (defined($seqName)) {
+    $command .= " \\\n  -L " . $seqName;
+  }
+  if (defined($rA_exclusions)) {
+    $command .= " \\\n  --excludeIntervals " . join(" --excludeIntervals ", @{$rA_exclusions}) . " --excludeIntervals unmapped";
+  } elsif ($processUnmapped and $processUnmapped == 1) {
+    $command .= " \\\n  -L unmapped";
+  }
+  $command .= " \\\n  --maxReadsInMemory " . LoadConfig::getParam($rH_cfg, 'indelRealigner', 'realignReadsInRam', 1, 'int');
 
-  return $ro_job;
+  $rO_job->addCommand($command);
+
+  return $rO_job;
 }
 
 sub genomeCoverage {
   my $rH_cfg       = shift;
-  my $sampleName   = shift;
   my $inputBam     = shift;
   my $outputPrefix = shift;
 
   my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta', 1, 'filepath');
   my $rA_thresholds = LoadConfig::getParam($rH_cfg, 'genomeCoverage', 'percentThresholds');
 
-  my $ro_job = new Job();
-  $ro_job->testInputOutputs([$inputBam], [$outputPrefix . '.sample_summary']);
+  my $rO_job = new Job([$inputBam], [$outputPrefix . '.sample_summary']);
 
-  if (!$ro_job->isUp2Date()) {  
-    my $command;
-    $command .= LoadConfig::moduleLoad($rH_cfg, [['genomeCoverage', 'moduleVersion.java'], ['genomeCoverage', 'moduleVersion.gatk']]) . ' &&';
-    $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'genomeCoverage', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'genomeCoverage', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'genomeCoverage', 'genomeCoverageRam') . '  -jar \${GATK_JAR}';
-    $command .= ' -T DepthOfCoverage --omitDepthOutputAtEachBase --logging_level ERROR';
-    my $highestThreshold = 0;
-    for my $threshold (@$rA_thresholds) {
-      $command .= ' --summaryCoverageThreshold ' . $threshold;
-      if ($highestThreshold > $threshold) {
-        die "Tresholds must be ascending: " . join(',', @$rA_thresholds);
-      }
-      $highestThreshold = $threshold;
+  my $command;
+  $rO_job->addModules($rH_cfg, [['genomeCoverage', 'moduleVersion.java'], ['genomeCoverage', 'moduleVersion.gatk']]);
+  $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'genomeCoverage', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'genomeCoverage', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'genomeCoverage', 'genomeCoverageRam') . '  -jar \${GATK_JAR}';
+  $command .= ' -T DepthOfCoverage --omitDepthOutputAtEachBase --logging_level ERROR';
+  my $highestThreshold = 0;
+  for my $threshold (@$rA_thresholds) {
+    $command .= ' --summaryCoverageThreshold ' . $threshold;
+    if ($highestThreshold > $threshold) {
+      die "Tresholds must be ascending: " . join(',', @$rA_thresholds);
     }
-    $command .= ' --start 1 --stop ' . $highestThreshold . ' --nBins ' . ($highestThreshold - 1) . ' -dt NONE';
-    $command .= ' -R ' . $refGenome;
-    $command .= ' -o ' . $outputPrefix;
-    $command .= ' -I ' . $inputBam;
-
-    $ro_job->addCommand($command);
+    $highestThreshold = $threshold;
   }
+  $command .= ' --start 1 --stop ' . $highestThreshold . ' --nBins ' . ($highestThreshold - 1) . ' -dt NONE';
+  $command .= ' -R ' . $refGenome;
+  $command .= ' -o ' . $outputPrefix;
+  $command .= ' -I ' . $inputBam;
 
-  return $ro_job;
+  $rO_job->addCommand($command);
+
+  return $rO_job;
 }
 
 sub targetCoverage {
   my $rH_cfg       = shift;
-  my $sampleName   = shift;
   my $inputBam     = shift;
   my $outputPrefix = shift;
 
@@ -183,32 +171,29 @@ sub targetCoverage {
   my $targets = LoadConfig::getParam($rH_cfg, 'targetCoverage', 'coverageTargets');
   my $rA_thresholds = LoadConfig::getParam($rH_cfg, 'targetCoverage', 'percentThresholds');
 
-  my $ro_job = new Job();
-  $ro_job->testInputOutputs([$inputBam], [$outputPrefix . '.sample_summary']);
+  my $rO_job = new Job([$inputBam], [$outputPrefix . '.sample_summary']);
 
-  if (!$ro_job->isUp2Date()) {
-    my $command = "";
-    $command .= LoadConfig::moduleLoad($rH_cfg, [['targetCoverage', 'moduleVersion.java'], ['targetCoverage', 'moduleVersion.gatk']]) . ' &&';
-    $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'targetCoverage', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'targetCoverage', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'targetCoverage', 'coverageRam') . '  -jar \${GATK_JAR}';
-    $command .= ' -T DepthOfCoverage --omitDepthOutputAtEachBase --logging_level ERROR';
-    my $highestThreshold = 0;
-    for my $threshold (@$rA_thresholds) {
-      $command .= ' --summaryCoverageThreshold ' . $threshold;
-      if ($highestThreshold > $threshold) {
-        die "Tresholds must be ascending: " . join(',', @$rA_thresholds);
-      }
-      $highestThreshold = $threshold;
+  my $command = "";
+  $rO_job->addModules($rH_cfg, [['targetCoverage', 'moduleVersion.java'], ['targetCoverage', 'moduleVersion.gatk']]);
+  $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'targetCoverage', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'targetCoverage', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'targetCoverage', 'coverageRam') . '  -jar \${GATK_JAR}';
+  $command .= ' -T DepthOfCoverage --omitDepthOutputAtEachBase --logging_level ERROR';
+  my $highestThreshold = 0;
+  for my $threshold (@$rA_thresholds) {
+    $command .= ' --summaryCoverageThreshold ' . $threshold;
+    if ($highestThreshold > $threshold) {
+      die "Tresholds must be ascending: " . join(',', @$rA_thresholds);
     }
-    $command .= ' --start 1 --stop ' . $highestThreshold . ' --nBins ' . ($highestThreshold - 1) . ' -dt NONE';
-    $command .= ' -R ' . $refGenome;
-    $command .= ' -o ' . $outputPrefix;
-    $command .= ' -I ' . $inputBam;
-    $command .= ' -L ' . $targets;
-
-    $ro_job->addCommand($command);
+    $highestThreshold = $threshold;
   }
+  $command .= ' --start 1 --stop ' . $highestThreshold . ' --nBins ' . ($highestThreshold - 1) . ' -dt NONE';
+  $command .= ' -R ' . $refGenome;
+  $command .= ' -o ' . $outputPrefix;
+  $command .= ' -I ' . $inputBam;
+  $command .= ' -L ' . $targets;
 
-  return $ro_job;
+  $rO_job->addCommand($command);
+
+  return $rO_job;
 }
 
 sub mutect {
@@ -234,30 +219,27 @@ sub mutect {
   my $outputCoverage = $outputPrefix . '.mutect.wig.txt';
   my $outputPower = $outputPrefix . '.mutect.power';
 
-  my $ro_job = new Job();
-  $ro_job->testInputOutputs([$normalBAM, $tumorBAM], [$outputVCF, $outputCallStats, $outputCoverage,$outputPower]);
+  my $rO_job = new Job([$normalBAM, $tumorBAM], [$outputVCF, $outputCallStats, $outputCoverage,$outputPower]);
 
-  if (!$ro_job->isUp2Date()) {
-    my $command;
-    $command .= LoadConfig::moduleLoad($rH_cfg, [['mutect', 'moduleVersion.java'], ['mutect', 'moduleVersion.mutect']]) . ' &&';
-    $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'mutect', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'mutect', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'mutect', 'mutectRam') . ' -jar \${MUTECT_JAR}';
-    $command .= ' --analysis_type MuTect';
-    $command .= ' -dt NONE -baq OFF --validation_strictness LENIENT -nt 2 ';
-    $command .= ' --reference_sequence ' . $refGenome;
-    $command .= ' --dbsnp ' . $dbSnp;
-    $command .= ' --cosmic ' . $cosmic;
-    $command .= ' --input_file:normal ' . $normalBAM;
-    $command .= ' --input_file:tumor ' . $tumorBAM;
-    $command .= ' --out ' . $outputCallStats;
-    $command .= ' --coverage_file ' . $outputCoverage;
-    $command .= ' -pow ' . $outputPower;
-    $command .= ' -vcf ' . $outputVCF;
-    $command .= $regionCmd;
+  my $command;
+  $rO_job->addModules($rH_cfg, [['mutect', 'moduleVersion.java'], ['mutect', 'moduleVersion.mutect']]);
+  $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'mutect', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'mutect', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'mutect', 'mutectRam') . ' -jar \${MUTECT_JAR}';
+  $command .= ' --analysis_type MuTect';
+  $command .= ' -dt NONE -baq OFF --validation_strictness LENIENT -nt 2 ';
+  $command .= ' --reference_sequence ' . $refGenome;
+  $command .= ' --dbsnp ' . $dbSnp;
+  $command .= ' --cosmic ' . $cosmic;
+  $command .= ' --input_file:normal ' . $normalBAM;
+  $command .= ' --input_file:tumor ' . $tumorBAM;
+  $command .= ' --out ' . $outputCallStats;
+  $command .= ' --coverage_file ' . $outputCoverage;
+  $command .= ' -pow ' . $outputPower;
+  $command .= ' -vcf ' . $outputVCF;
+  $command .= $regionCmd;
 
-    $ro_job->addCommand($command);
-  }
+  $rO_job->addCommand($command);
 
-  return $ro_job;
+  return $rO_job;
 }
 
 1;

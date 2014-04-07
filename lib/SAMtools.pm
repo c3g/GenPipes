@@ -41,6 +41,7 @@ use lib "$FindBin::Bin";
 
 # Dependencies
 #-----------------------
+use File::Basename;
 use Job;
 use LoadConfig;
 
@@ -90,29 +91,26 @@ sub mpileupBuilder {
     $outputBCF = $outputDir . $sampleName . '.' . $seqName . '.bcf';
   }
 
-  my $ro_job = new Job();
-  $ro_job->testInputOutputs($rA_bams, [$outputBCF]);
+  my $rO_job = new Job($rA_bams, [$outputBCF]);
 
-  if (!$ro_job->isUp2Date()) {
-    my $command;
-    $command .= LoadConfig::moduleLoad($rH_cfg, [['mpileup', 'moduleVersion.samtools']]) . ' &&';
-    $command .= ' samtools mpileup';
-    $command .= ' ' . LoadConfig::getParam($rH_cfg, 'mpileup', 'mpileupExtraFlags');
-    $command .= ' -f ' . $refGenome;
-    $command .= $regionCmd;
-    for my $bamFiles (@{$rA_bams}) {
-      $command .= ' ' . $bamFiles;
-    }
-    if (defined($isPaired) && $isPaired == 1) {
-      $command .= ' | bcftools view -T pair -bvcg - > ' . $outputBCF;
-    } else {
-      $command .= ' | bcftools view -bvcg - > ' . $outputBCF;
-    }
-
-    $ro_job->addCommand($command);
+  my $command;
+  $rO_job->addModules($rH_cfg, [['mpileup', 'moduleVersion.samtools']]);
+  $command .= ' samtools mpileup';
+  $command .= ' ' . LoadConfig::getParam($rH_cfg, 'mpileup', 'mpileupExtraFlags');
+  $command .= ' -f ' . $refGenome;
+  $command .= $regionCmd;
+  for my $bamFiles (@{$rA_bams}) {
+    $command .= ' ' . $bamFiles;
+  }
+  if (defined($isPaired) && $isPaired == 1) {
+    $command .= ' | bcftools view -T pair -bvcg - > ' . $outputBCF;
+  } else {
+    $command .= ' | bcftools view -bvcg - > ' . $outputBCF;
   }
 
-  return $ro_job;
+  $rO_job->addCommand($command);
+
+  return $rO_job;
 }
 
 sub mergeFilterBCF {
@@ -135,24 +133,21 @@ sub mergeFilterBCF {
     $bcfInputs .= $bcfFile . ' ';
   }
 
-  my $ro_job = new Job();
-  $ro_job->testInputOutputs(\@inputs, [$outputBCF, $outputVCF]);
+  my $rO_job = new Job(\@inputs, [$outputBCF, $outputVCF]);
 
-  if (!$ro_job->isUp2Date()) {
-    my $command;
-    $command .= LoadConfig::moduleLoad($rH_cfg, [['mergeFilterBCF', 'moduleVersion.samtools']]) . ' &&';
-    $command .= ' bcftools cat';
-    $command .= ' ' . $bcfInputs;
-    $command .= ' > ' . $outputBCF;
-    $command .= ' && bcftools view ' . $outputBCF;
-    $command .= ' | vcfutils.pl varFilter';
-    $command .= ' ' . LoadConfig::getParam($rH_cfg, 'mergeFilterBCF', 'varfilterExtraFlags');
-    $command .= ' > ' . $outputVCF;
+  my $command;
+  $rO_job->addModules($rH_cfg, [['mergeFilterBCF', 'moduleVersion.samtools']]);
+  $command .= ' bcftools cat';
+  $command .= ' ' . $bcfInputs;
+  $command .= ' > ' . $outputBCF;
+  $command .= ' && bcftools view ' . $outputBCF;
+  $command .= ' | vcfutils.pl varFilter';
+  $command .= ' ' . LoadConfig::getParam($rH_cfg, 'mergeFilterBCF', 'varfilterExtraFlags');
+  $command .= ' > ' . $outputVCF;
 
-    $ro_job->addCommand($command);
-  }
+  $rO_job->addCommand($command);
 
-  return $ro_job;
+  return $rO_job;
 }
 
 sub flagstat {
@@ -160,20 +155,17 @@ sub flagstat {
   my $bamFile    = shift;
   my $output     = shift;
 
-  my $ro_job = new Job();
-  $ro_job->testInputOutputs([$bamFile], [$output]);
+  my $rO_job = new Job([$bamFile], [$output]);
 
-  if (!$ro_job->isUp2Date()) {
-    my $command;
-    $command .= LoadConfig::moduleLoad($rH_cfg, [['flagstat', 'moduleVersion.samtools']]) . ' &&';
-    $command .= ' samtools flagstat';
-    $command .= ' ' . $bamFile;
-    $command .= ' > ' . $output;
+  my $command;
+  $rO_job->addModules($rH_cfg, [['flagstat', 'moduleVersion.samtools']]);
+  $command .= ' samtools flagstat';
+  $command .= ' ' . $bamFile;
+  $command .= ' > ' . $output;
 
-    $ro_job->addCommand($command);
-  }
+  $rO_job->addCommand($command);
 
-  return $ro_job;
+  return $rO_job;
 }
 
 sub idxstats {
@@ -181,70 +173,61 @@ sub idxstats {
   my $bamFile    = shift;
   my $output     = shift;
 
-  my $ro_job = new Job();
-  $ro_job->testInputOutputs([$bamFile], [$output]);
+  my $rO_job = new Job([$bamFile], [$output]);
 
-  if (!$ro_job->isUp2Date()) {
-    my $command;
-    $command .= LoadConfig::moduleLoad($rH_cfg, [['idxstats', 'moduleVersion.samtools']]) . ' &&';
-    $command .= ' samtools idxstats';
-    $command .= ' ' . $bamFile;
-    $command .= ' > ' . $output;
+  my $command;
+  $rO_job->addModules($rH_cfg, [['idxstats', 'moduleVersion.samtools']]);
+  $command .= ' samtools idxstats';
+  $command .= ' ' . $bamFile;
+  $command .= ' > ' . $output;
 
-    $ro_job->addCommand($command);
-  }
-  return $ro_job;
+  $rO_job->addCommand($command);
+
+  return $rO_job;
 }
 
 sub rawmpileup {
   my $rH_cfg      = shift;
-  my $sampleName  = shift;
   my $bamFile     = shift;
   my $seqName     = shift;
   my $output      = shift;
 
   my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta', 1, 'filepath');
 
-  my $ro_job = new Job();
-  $ro_job->testInputOutputs([$bamFile], [$output]);
+  my $rO_job = new Job([$bamFile], [$output]);
 
-  if (!$ro_job->isUp2Date()) {
-    my $command;
-    $command .= LoadConfig::moduleLoad($rH_cfg, [['rawmpileup', 'moduleVersion.samtools']]) . ' &&';
-    $command .= ' samtools mpileup';
-    $command .= ' ' . LoadConfig::getParam($rH_cfg, 'rawmpileup', 'mpileupExtraFlags');
-    $command .= ' -f ' . $refGenome;
-    $command .= ' -r ' . $seqName;
-    $command .= ' ' . $bamFile;
-    $command .= ' | gzip -1 -c > ' . $output;
+  my $command = "mkdir -p " . dirname($output) . " && \\\n";
+  $rO_job->addModules($rH_cfg, [['rawmpileup', 'moduleVersion.samtools']]);
+  $command .= ' samtools mpileup';
+  $command .= ' ' . LoadConfig::getParam($rH_cfg, 'rawmpileup', 'mpileupExtraFlags');
+  $command .= ' -f ' . $refGenome;
+  $command .= ' -r ' . $seqName;
+  $command .= ' ' . $bamFile;
+  $command .= ' | gzip -1 -c > ' . $output;
 
-    $ro_job->addCommand($command);
-  }
-  return $ro_job;
+  $rO_job->addCommand($command);
+
+  return $rO_job;
 }
 
 sub sort {
   my $rH_cfg      = shift;
-  my $sampleName  = shift;
   my $option      = shift;
   my $bamFile     = shift;
   my $output      = shift;
 
-  my $ro_job = new Job();
-  $ro_job->testInputOutputs([$bamFile], [$output]);
+  my $rO_job = new Job([$bamFile], [$output]);
 
-  if (!$ro_job->isUp2Date()) {
-    my $command;
-    $command .= LoadConfig::moduleLoad($rH_cfg, [['default', 'moduleVersion.samtools']]) . ' &&';
-    $command .= ' samtools sort';
-    $command .= ' ' . $option;
-    $command .= ' ' . $bamFile;
-    $command .= ' ' . $output;
+  my $command;
+  $rO_job->addModules($rH_cfg, [['default', 'moduleVersion.samtools']]);
+  $command .= ' samtools sort';
+  $command .= ' ' . $option;
+  $command .= ' ' . $bamFile;
+  $command .= ' ' . $output;
 
-    $ro_job->addCommand($command);
-  }
+  $rO_job->addCommand($command);
 
-  return $ro_job;
+  return $rO_job;
 }
 
 sub viewFilter {
@@ -261,25 +244,18 @@ sub viewFilter {
     $option = '';
   }
 
-  my $ro_job = new Job();
-  if (defined($output)) {
-    $ro_job->testInputOutputs([$bamFile], [$output]);
-  } else {
-    $ro_job->testInputOutputs([$bamFile], undef);
-  }
+  my $rO_job = new Job([$bamFile], [$output]);
 
-  if (!$ro_job->isUp2Date()) {
-    my $command;
-    $command .= LoadConfig::moduleLoad($rH_cfg, [['default', 'moduleVersion.samtools']]) . ' &&';
-    $command .= ' samtools view';
-    $command .= ' ' . $option;
-    $command .= ' ' . $bamFile;
-    $command .= $returnOutput;
+  my $command;
+  $rO_job->addModules($rH_cfg, [['default', 'moduleVersion.samtools']]);
+  $command .= ' samtools view';
+  $command .= ' ' . $option;
+  $command .= ' ' . $bamFile;
+  $command .= $returnOutput;
 
-    $ro_job->addCommand($command);
-  }
+  $rO_job->addCommand($command);
 
-  return $ro_job;
+  return $rO_job;
 }
 
 1;

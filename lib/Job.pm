@@ -251,14 +251,12 @@ sub isUp2Date {
   # Use 'echo' system command to expand environment variables in input file paths if any
   # Also check if input file exists before calling mtime function, return 0 otherwise
   my $latestInputTime = max(map(-e `echo -n $_` ? stat(`echo -n $_`)->mtime : 0, @{$self->getInputFiles()}));
-#warn "Job.isUp2Date: after latestInputTime $latestInputTime isJobUpToDate $isJobUpToDate\n";
 
   if ($latestInputTime == 0) {    # i.e. if job input files don't exist yet
     $isJobUpToDate = 0;
   } else {
     foreach my $outputFile (@{$self->getOutputFiles()}) {
 
-#warn "Job.isUp2Date: outputFile $outputFile\n";
       # Use 'echo' system command to expand environment variables in output file path if any
       my $outputExpandedFile = `echo -n $outputFile`;
   
@@ -266,23 +264,14 @@ sub isUp2Date {
       if ($isJobUpToDate) {
         # If .done file is missing or if output file is older than latest input file, job is not up to date
         unless ((-e $outputExpandedFile) and (-e $outputExpandedFile . ".mugqic.done") and (stat($outputExpandedFile)->mtime >= $latestInputTime)) {
-#warn "Job.isUp2Date: in unless outputExpandedFile $outputExpandedFile mtime " . stat($outputExpandedFile)->mtime . "\n";
           $isJobUpToDate = 0;
         }
       }
     }
   }
 
-#warn "Job.isUp2Date: isJobUpToDate $isJobUpToDate\n";
   return $isJobUpToDate;
 
-#  if ($isJobUpToDate) {
-#    return undef;
-#  } else {
-#    my @outputDoneFiles = map("$_.mugqic.done", @$rA_outputs);
-#    $self->addFilesToTest(\@outputDoneFiles);
-#    return " && touch " . join(" ", @outputDoneFiles);
-#  }
 }
 
 sub getDependencies {
@@ -326,19 +315,41 @@ sub getDependencies {
   return $dependencyJobs;
 }
 
-# Static class method (must be called by Job::pipe($rH_cfg, $rO_job1, $rO_job2))
-# Create a new job by merging modules and piping commands of th two specified jobs
-sub pipe {
-  my ($rO_job1, $rO_job2) = @_;
+# Static class method
+# Create a new job from a job list by merging their modules and commands with a specified separator
+sub groupJobs {
+  my ($rA_jobs, $separator) = @_;
 
-  # Input files come from the first job, output files come from the last job
-  my $rO_job = Job->new($rO_job1->getInputFiles(), $rO_job2->getOutputFiles());
-  $rO_job->addModulesNoCfg($rO_job1->getModules());
-  $rO_job->addModulesNoCfg($rO_job2->getModules());
+  # At least 2 jobs are required
+  scalar(@$rA_jobs) >= 2 or die "Error in Job::pipe: at least 2 jobs are required!";
 
-  $rO_job->addCommand($rO_job1->getCommand(0) . " | \\\n" . $rO_job2->getCommand(0));
+  # Merge all input/output files
+  my $rO_job = Job->new([map(@{$_->getInputFiles()}, @$rA_jobs)], [map(@{$_->getOutputFiles()}, @$rA_jobs)]);
+
+  # Merge all modules
+  foreach my $rO_jobItem (@$rA_jobs) {
+    $rO_job->addModulesNoCfg($rO_jobItem->getModules());
+  }
+
+  # Merge commands with specified separator
+  $rO_job->addCommand(join($separator, map($_->getCommand(0), @$rA_jobs)));
 
   return $rO_job;
+}
+
+# Static class method
+# Create a new job by piping a list of jobs together
+sub pipeJobs {
+  my ($rA_jobs) = @_;
+
+  return groupJobs($rA_jobs, " | \\\n");
+}
+# Static class method
+# Create a new job by concatenating a list of jobs together
+sub concatJobs {
+  my ($rA_jobs) = @_;
+
+  return groupJobs($rA_jobs, " && \\\n");
 }
 
 1;

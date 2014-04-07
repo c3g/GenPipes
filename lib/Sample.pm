@@ -141,7 +141,12 @@ sub parseSampleFile {
     $readSet->setAdaptor1($inputRow->{"Adaptor1"});
     $readSet->setAdaptor2($inputRow->{"Adaptor2"});
     $readSet->setQualityOffset($inputRow->{"QualityOffset"});
-    $readSet->setBED($inputRow->{"BED"});
+    if ($inputRow->{"BED"}) {
+      my @BEDs = split(";", $inputRow->{"BED"});
+      $readSet->setBEDs(\@BEDs);
+    } else {
+      $readSet->setBEDs([]);
+    }
     $sample->addReadSet($readSet);
   }
 
