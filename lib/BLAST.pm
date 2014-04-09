@@ -213,7 +213,7 @@ sub blastdbcmd{ # JT: Initially for PacBio pipeline
   my $outfile     = shift;
 
   my $ro_job = new Job();
-    $ro_job->testInputOutputs(undef, [$outfile]);
+    $ro_job->testInputOutputs([""], [$outfile]);
     
   if (!$ro_job->isUp2Date()) {
     my $cmd = '';
