@@ -28,8 +28,6 @@ B<File::Basename> path parsing
 
 B<XML::Simple> for RunInfo.xml file parsing
 
-B<Text::CSV> sample sheets parsing parsing
-
 B<Cwd> path parsing
 
 =cut
@@ -57,7 +55,6 @@ use Cwd;
 use POSIX;
 use XML::Simple;
 use Data::Dumper;
-use Text::CSV;
 
 use CountIlluminaBarcodes;
 use BVATools;
