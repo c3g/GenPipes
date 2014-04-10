@@ -838,6 +838,19 @@ sub metrics {
     }
   }
 
+  my $output = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.recal.coverage.tsv';
+  my $coverageBED = BVATools::resolveSampleBED($rH_cfg, $rAoH_sampleLanes->[0]);
+  my $rO_coverageJob = BVATools::depthOfCoverage($rH_cfg, $bamFile, $output, $coverageBED);
+  if(!$rO_coverageJob->isUp2Date()) {
+    SubmitToCluster::printSubmitCmd($rH_cfg, "depthOfCoverage", undef, 'SAMPLE_COVERAGE', $jobDependency, $sampleName, $rO_coverageJob);
+    if(!defined($jobId)) {
+      $jobId='$METRICS_JOBS';
+      print 'METRICS_JOBS='.$rO_coverageJob->getCommandJobId(0)."\n";;
+    }
+    else {
+      print 'METRICS_JOBS=${METRICS_JOBS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$rO_coverageJob->getCommandJobId(0)."\n";
+    }
+  }
   # Compute CCDS coverage
   $outputPrefix = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.recal.CCDS.coverage';
   my $rO_targetCoverageJob = GATK::targetCoverage($rH_cfg, $sampleName, $bamFile, $outputPrefix);
@@ -866,7 +879,7 @@ sub metrics {
   }
 
   # Compute flags
-  my $output = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.recal.bam.flagstat';
+  $output = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.recal.bam.flagstat';
   my $rO_flagstatJob = SAMtools::flagstat($rH_cfg, $bamFile, $output);
   if(!$rO_flagstatJob->isUp2Date()) {
     SubmitToCluster::printSubmitCmd($rH_cfg, "flagstat", undef, 'FLAGSTAT', $jobDependency, $sampleName, $rO_flagstatJob);
@@ -897,7 +910,6 @@ sub metricsLibrarySample {
   my $jobDependencies = "";
   for(my $idx=0; $idx < @sampleNames; $idx++){
     my $sampleName = $sampleNames[$idx];
-    my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sampleName};
     if(defined($globalDep{$parentStep}->{$sampleName})){
       $jobDependencies .= LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$globalDep{$parentStep}->{$sampleName};
     }
