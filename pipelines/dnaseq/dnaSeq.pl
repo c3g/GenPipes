@@ -324,6 +324,9 @@ sub samToFastq {
   my $first = 1;
 
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
+    # Check if bam is defined
+    $rH_laneInfo->{'bam'} or die "Error in dnaSeq::samToFastq: BAM file is not defined for sample run lane $sampleName " . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "!";
+
     my $rO_job;
     my $baseDirectory = "$sampleName/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
     my $rawDirectory = LoadConfig::getParam($rH_cfg, 'default', 'rawReadDir', 1, 'dirpath') . "/" . $baseDirectory;
@@ -344,7 +347,7 @@ sub samToFastq {
         $rH_laneInfo->{'read1File'} = basename($outputFastq1);
         $rH_laneInfo->{'read2File'} = basename($outputFastq2);
       } else {
-        die "Error in rnaSeqDeNovoAssembly::samToFastq: unknown run type (can be 'SINGLE_END' or 'PAIRED_END' only): " . $rH_laneInfo->{'runType'};
+        die "Error in dnaSeq::samToFastq: unknown run type (can be 'SINGLE_END' or 'PAIRED_END' only): " . $rH_laneInfo->{'runType'};
       }
     }
     if (!$rO_job->isUp2Date()) {
