@@ -131,6 +131,7 @@ push(@steps, {'name' => 'fixmate', 'stepLoop' => 'sample', 'parentStep' => 'merg
 push(@steps, {'name' => 'markDup', 'stepLoop' => 'sample', 'parentStep' => 'fixmate'});
 push(@steps, {'name' => 'recalibration', 'stepLoop' => 'sample', 'parentStep' => 'markDup'});
 push(@steps, {'name' => 'metrics', 'stepLoop' => 'sample', 'parentStep' => 'recalibration'});
+push(@steps, {'name' => 'callableBases', 'stepLoop' => 'sample', 'parentStep' => 'recalibration'});
 push(@steps, {'name' => 'metricsLibrarySample', 'stepLoop' => 'experiment', 'parentStep' => 'metrics'});
 push(@steps, {'name' => 'snpAndIndelBCF', 'stepLoop' => 'experiment', 'parentStep' => 'recalibration'});
 push(@steps, {'name' => 'mergeFilterBCF', 'stepLoop' => 'experiment', 'parentStep' => 'snpAndIndelBCF'});
@@ -895,6 +896,31 @@ sub metrics {
   return $jobId;
 }
 
+sub callableBases {
+  my $stepId = shift;
+  my $rH_cfg = shift;
+  my $sampleName = shift;
+  my $rAoH_sampleLanes  = shift;
+  my $rAoH_seqDictionary = shift;
+
+  my $jobDependency = undef;
+  my $parentStep = $steps[$stepId]->{'parentStep'};
+  if(defined($globalDep{$parentStep}->{$sampleName})) {
+    $jobDependency = $globalDep{$parentStep}->{$sampleName};
+  }
+
+  my $bamFile = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.recal.bam';
+  my $jobId=undef;
+
+  my $outputPrefix = 'alignment/'.$sampleName.'/'.$sampleName;
+  my $rO_job = GATK::callableBases($rH_cfg, $bamFile, $outputPrefix);
+  if(!$rO_job->isUp2Date()) {
+    SubmitToCluster::printSubmitCmd($rH_cfg, "callableBases", undef, 'CALLABLE_BASES', $jobDependency, $sampleName, $rO_job);
+    $jobId='$CALLABLE_BASES_JOB='.$rO_job->getCommandJobId(0)."\n";
+  }
+
+  return $jobId;
+}
 
 sub metricsLibrarySample {
   my $stepId = shift;

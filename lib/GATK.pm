@@ -211,6 +211,34 @@ sub targetCoverage {
   return $ro_job;
 }
 
+sub callableBases {
+  my $rH_cfg       = shift;
+  my $inputBam     = shift;
+  my $outputPrefix = shift;
+
+  my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta', 1, 'filepath');
+  my $options = LoadConfig::getParam($rH_cfg, 'callableBases', 'extraFlags');
+
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$inputBam], [$outputPrefix . '.callable.summary.txt', $outputPrefix . '.callable.bed']);
+
+  if (!$ro_job->isUp2Date()) {
+    my $command = "";
+    $command .= LoadConfig::moduleLoad($rH_cfg, [['callableBases', 'moduleVersion.java'], ['callableBases', 'moduleVersion.gatk']]) . ' &&';
+    $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'callableBases', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'callableBases', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'callableBases', 'ram') . '  -jar \${GATK_JAR}';
+    $command .= ' -T CallableLoci ';
+    $command .= ' -R ' . $refGenome;
+    $command .= ' -o ' . $outputPrefix . '.callable.bed';
+    $command .= ' --summary ' . $outputPrefix . '.callable.summary.txt';
+    $command .= ' -I ' . $inputBam;
+    $command .= ' ' . $options;
+
+    $ro_job->addCommand($command);
+  }
+
+  return $ro_job;
+}
+
 sub mutect {
   my $rH_cfg     = shift;
   my $sampleName = shift;
