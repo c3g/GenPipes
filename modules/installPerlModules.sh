@@ -84,6 +84,8 @@ perl -MCPAN -e 'install version'
 perl -MCPAN -e 'install Statistics::Descriptive'
 perl -MCPAN -e 'install Module::Build'
 perl -MCPAN -e 'install DB_File'
+perl -MCPAN -e 'install PerlIO::gzip'
+
 
 chmod -R 775 $MUGQIC_INSTALL_HOME/software/perl
 

@@ -197,7 +197,7 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
 	,"AnnotationForge","ape","ash","base","BatchExperiments","BatchJobs","beanplot","Biobase","BiocGenerics"
 	,"BiocInstaller","bioDist","biomaRt","Biostrings","biovizBase","bit"
 	,"bitops","boot","brew","BSgenome","caTools","charm","charmData","class"
-	,"cluster","codetools","colorspace","compiler","corpcor","crlmm","ctc"
+	,"cluster","clusterProfiler","codetools","colorspace","compiler","corpcor","crlmm","ctc"
 	,"cummeRbund","datasets","DBI","DESeq","devtools","dichromat","digest"
 	,"edgeR","ellipse","evaluate","fastcluster","ff","fields"
 	,"foreach","foreign","gcrma","gdata","genefilter","GenomicFeatures"
