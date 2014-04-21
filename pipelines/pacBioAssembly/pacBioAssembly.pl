@@ -458,8 +458,8 @@ sub getStats{
 		$estimatedCoverage,
 		$estimatedGenomeSize,
 		$coverageCutoff,
-		LoadConfig::getParam($rH_cfg, 'default', 'preassemblySettings'),
-		"$outdir/$sampleName/$suffix/preassembly.xml",
+		#LoadConfig::getParam($rH_cfg, 'default', 'preassemblySettings'),
+		#"$outdir/$sampleName/$suffix/preassembly.xml",
 		"$outdir/$sampleName/$suffix/preassemblyMinReadSize.txt"
 	);
 	if(!$rO_jobGetCutoff->isUp2Date()){
