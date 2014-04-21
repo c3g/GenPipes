@@ -37,6 +37,7 @@ module-whatis \"$SOFTWARE  \" ;
 set             root                \$::env(MUGQIC_INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE-$VERSION ;
 prepend-path    PATH                \$root/tools ;
 prepend-path    PATH                \$root/perl-tools ;
+prepend-path    PATH                \$root/R-tools ;
 prepend-path    PATH                \$root/python-tools ;
 prepend-path    PATH                \$root/RRNATagger-tools ;
 prepend-path    PERL5LIB            \$root/perl-tools ;
