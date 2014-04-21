@@ -85,5 +85,16 @@ perl -MCPAN -e 'install Statistics::Descriptive'
 perl -MCPAN -e 'install Module::Build'
 perl -MCPAN -e 'install DB_File'
 
+# For dev only.
+#perl -MCPAN -e 'install Bit::Vector' # no.
+#perl -MCPAN -e 'install IO::All'     # uptodate
+#perl -MCPAN -e 'install Inline::C'
+#perl -MCPAN -e 'install Perl::Unsafe::Signals'
+#perl -MCPAN -e 'install Want'
+#perl -MCPAN -e 'install forks'
+#perl -MCPAN -e 'install forks::shared'
+#perl -MCPAN -e 'install DBD::Pg'
+
 chmod -R 775 $MUGQIC_INSTALL_HOME/software/perl
+chmod -R 775 $MUGQIC_INSTALL_HOME_DEV/software/perl
 
