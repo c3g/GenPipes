@@ -197,7 +197,7 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
 	,"AnnotationForge","ape","ash","base","BatchExperiments","BatchJobs","beanplot","Biobase","BiocGenerics"
 	,"BiocInstaller","bioDist","biomaRt","Biostrings","biovizBase","bit"
 	,"bitops","boot","brew","BSgenome","caTools","charm","charmData","class"
-	,"cluster","codetools","colorspace","compiler","corpcor","crlmm","ctc"
+	,"cluster","clusterProfiler","codetools","colorspace","compiler","corpcor","crlmm","ctc"
 	,"cummeRbund","datasets","DBI","DESeq","devtools","dichromat","digest"
 	,"edgeR","ellipse","evaluate","fastcluster","ff","fields"
 	,"foreach","foreign","gcrma","gdata","genefilter","GenomicFeatures"
@@ -216,7 +216,7 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
 	,"rpart","Rsamtools","RSQLite","rtracklayer","scales","ShortRead","siggenes","snow"
 	,"SNPchip","SortableHTMLTables","spam","SparseM","spatial","splines","SQN"
 	,"statmod","stats","stats4","stringr","survival","sva","tcltk","testthat"
-	,"tools","TxDb.Hsapiens.UCSC.hg19.knownGene","utils","Vennerable","vsn"
+	,"tools","TxDb.Hsapiens.UCSC.hg19.knownGene","utils","Vennerable","vioplot","vsn"
 	,"WriteXLS","XML","xtable","zlibbioc")
 
 	## Programmatically add all the org pacakges
