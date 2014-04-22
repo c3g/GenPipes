@@ -170,7 +170,7 @@ sub main {
   }
 
   my $isMiSeq = 0;
-  if($runDirectory =~ /_M00/){
+  if($runDirectory =~ /\d{6}_M\d+/){
     $isMiSeq = 1;
   }
 
