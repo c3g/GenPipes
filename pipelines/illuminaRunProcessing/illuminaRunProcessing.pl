@@ -1011,23 +1011,29 @@ sub getSmallestIndexLength{
     }
   }
 
-  # find smallest index per index-read per lane
-  my $indexColumnIdx = getColumnHeaderIndex('Index', $rA_headers);
   my $maxSampleIndexRead = 0;
+  # No indexes read on sequencer
+  if(@runIdxLengths > 0) {
+    # find smallest index per index-read per lane
+    my $indexColumnIdx = getColumnHeaderIndex('Index', $rA_headers);
 
-  for my $rA_values (@$rAoA_sampleData ) {
-    my @libraryIndexes = split('-', $rA_values->[$indexColumnIdx]);
+    for my $rA_values (@$rAoA_sampleData ) {
+      my @libraryIndexes = split('-', $rA_values->[$indexColumnIdx]);
 
-    for(my $idx=0; $idx < @libraryIndexes; $idx++) {
-      $maxSampleIndexRead = $idx if ($idx > $maxSampleIndexRead);
-      if(length($libraryIndexes[$idx]) > 0) {
-        if(length($libraryIndexes[$idx]) < $runIdxLengths[$idx]) {
-          $runIdxLengths[$idx] = length($libraryIndexes[$idx]);
+      for(my $idx=0; $idx < @libraryIndexes; $idx++) {
+        $maxSampleIndexRead = $idx if ($idx > $maxSampleIndexRead);
+        if(length($libraryIndexes[$idx]) > 0) {
+          if(length($libraryIndexes[$idx]) < $runIdxLengths[$idx]) {
+            $runIdxLengths[$idx] = length($libraryIndexes[$idx]);
+          }
         }
       }
     }
   }
-  
+  elsif(@$rAoA_sampleData > 1) {
+    exitWithError("Multiple samples on a lane, but no indexes were read from the sequencer.");
+  }
+
   # In the case of single-index lane in a dual index run
   for (my $idx=$maxSampleIndexRead+1; $idx < @runIdxLengths; $idx++) {
     $runIdxLengths[$idx] = 0;
