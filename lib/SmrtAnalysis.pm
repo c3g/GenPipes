@@ -268,11 +268,11 @@ sub blasr {
     # Then filter .m4
     $cmd .= ' &&';
     $cmd .= ' filterm4.py';
-    $cmd .= ' ' . $outfile . ' > ' . $outfile . '.tmp';
-    $cmd .= ' &&';
-    $cmd .= ' mv ' . $outfile . '.tmp ' . $outfile;
-    $cmd .= ' &&';
-    $cmd .= ' touch ' . $outfile . '.filter'; # From the smrtanalysis logs. I guess this is to tell if filtering occured or not...
+    $cmd .= ' ' . $outfile . ' > ' . $outfile . '.filtered 2> ' . $outfile . '.filtered.log';
+    #$cmd .= ' &&';
+    #$cmd .= ' mv ' . $outfile . '.tmp ' . $outfile;
+    #$cmd .= ' &&';
+    #$cmd .= ' touch ' . $outfile . '.filter'; # From the smrtanalysis logs. I guess this is to tell if filtering occured or not...
 
     $ro_job->addCommand($cmd);
   }

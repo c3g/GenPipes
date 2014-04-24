@@ -532,7 +532,7 @@ sub preassembly{
 	# m4topre
 	my $rO_jobM4topre = SmrtAnalysis::m4topre(
 		$rH_cfg,
-		"$outdir/$sampleName/$suffix/preassembly/data/seeds.m4",
+		"$outdir/$sampleName/$suffix/preassembly/data/seeds.m4.filtered",
 		"$outdir/$sampleName/$suffix/preassembly/data/seeds.m4.fofn",
 		"$outdir/$sampleName/filtering/data/filtered_subreads.fasta",
 		"$outdir/$sampleName/$suffix/preassembly/data/aln.pre"
