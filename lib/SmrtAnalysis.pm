@@ -238,7 +238,7 @@ sub blasr {
   my $sam         = shift;
 
   my $ro_job = new Job();
-  $ro_job->testInputOutputs([$infile, $infileLong], [$outfile, $outfileFofn]);
+  $ro_job->testInputOutputs([$infile, $infileLong], ["$outfile.filtered", $outfileFofn]);
 
   if (!$ro_job->isUp2Date()) {
     #blasr filtered_subreads.fa filtered_longreads -out seeds.m4 -m 4 -nproc 8 -bestn 24 -nCandidates 24 -noSplitSubreads -minReadLength 200 -maxScore -1000 -maxLCPLength 16
@@ -268,11 +268,11 @@ sub blasr {
     # Then filter .m4
     $cmd .= ' &&';
     $cmd .= ' filterm4.py';
-    $cmd .= ' ' . $outfile . ' > ' . $outfile . '.tmp';
-    $cmd .= ' &&';
-    $cmd .= ' mv ' . $outfile . '.tmp ' . $outfile;
-    $cmd .= ' &&';
-    $cmd .= ' touch ' . $outfile . '.filter'; # From the smrtanalysis logs. I guess this is to tell if filtering occured or not...
+    $cmd .= ' ' . $outfile . ' > ' . $outfile . '.filtered 2> ' . $outfile . '.filtered.log';
+    #$cmd .= ' &&';
+    #$cmd .= ' mv ' . $outfile . '.tmp ' . $outfile;
+    #$cmd .= ' &&';
+    #$cmd .= ' touch ' . $outfile . '.filter'; # From the smrtanalysis logs. I guess this is to tell if filtering occured or not...
 
     $ro_job->addCommand($cmd);
   }
