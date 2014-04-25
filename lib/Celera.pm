@@ -47,7 +47,7 @@ use LoadConfig;
 
 # SUB
 #-----------------------
-sub runCelera {
+sub runCelera { # For compatibility issues, I replaced our installation of celera with the one provided in smrtanalysis.
   my $rH_cfg = shift;
   my $outdir = shift;
   my $prefix = shift;
@@ -55,12 +55,17 @@ sub runCelera {
   my $infile = shift;
 
   my $ro_job = new Job();
-  $ro_job->testInputOutputs([$infile], [$outdir . "/9-terminator/$prefix.ctg.fasta"]); 
+  $ro_job->testInputOutputs([$infile], ["$outdir/$prefix.ovlStore.list"]); 
 
   if (!$ro_job->isUp2Date()) {
     my $cmd = '';
     $cmd .= ' rm -rf ' . $outdir . '/* && ';
-    $cmd .= LoadConfig::moduleLoad($rH_cfg, [['memtime', 'moduleVersion.memtime'], ['celera', 'moduleVersion.celera']]) . ' && ';
+    $cmd .= LoadConfig::moduleLoad($rH_cfg, [
+      ['memtime', 'moduleVersion.memtime'], 
+      #['celera', 'moduleVersion.celera']
+      ['smrtanalysis', 'moduleVersion.smrtanalysis']
+      ]) . ' && ';
+    $cmd .= ' source \${SEYMOUR_HOME}/etc/setup.sh && ';
     $cmd .= ' memtime';
     $cmd .= ' runCA';
     $cmd .= ' -d ' . $outdir;

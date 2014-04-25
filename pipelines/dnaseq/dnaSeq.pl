@@ -136,6 +136,7 @@ push(@steps, {'name' => 'fixmate', 'loop' => 'sample', 'parentSteps' => ['mergeR
 push(@steps, {'name' => 'markDup', 'loop' => 'sample', 'parentSteps' => ['fixmate']});
 push(@steps, {'name' => 'recalibration', 'loop' => 'sample', 'parentSteps' => ['markDup']});
 push(@steps, {'name' => 'metrics', 'loop' => 'sample', 'parentSteps' => ['recalibration']});
+push(@steps, {'name' => 'callableBases', 'loop' => 'sample', 'parentStep' => ['recalibration']});
 push(@steps, {'name' => 'metricsLibrarySample', 'loop' => 'global', 'parentSteps' => ['metrics']});
 push(@steps, {'name' => 'fullPileup', 'loop' => 'sample', 'parentSteps' => ['recalibration']});
 push(@steps, {'name' => 'zipPileup', 'loop' => 'sample', 'parentSteps' => ['fullPileup']});
@@ -726,6 +727,19 @@ sub metrics {
   my $outputPrefix = $alignedFilePrefix . ".all.coverage";
   my $rO_genomeCoverageJob = GATK::genomeCoverage($rH_cfg, $bamFile, $outputPrefix);
 
+  my $output = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.recal.coverage.tsv';
+  my $coverageBED = BVATools::resolveSampleBED($rH_cfg, $rAoH_sampleLanes->[0]);
+  my $rO_coverageJob = BVATools::depthOfCoverage($rH_cfg, $bamFile, $output, $coverageBED);
+  if(!$rO_coverageJob->isUp2Date()) {
+    SubmitToCluster::printSubmitCmd($rH_cfg, "depthOfCoverage", undef, 'SAMPLE_COVERAGE', $jobDependency, $sampleName, $rO_coverageJob);
+    if(!defined($jobId)) {
+      $jobId='$METRICS_JOBS';
+      print 'METRICS_JOBS='.$rO_coverageJob->getCommandJobId(0)."\n";;
+    }
+    else {
+      print 'METRICS_JOBS=${METRICS_JOBS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$rO_coverageJob->getCommandJobId(0)."\n";
+    }
+  }
   # Compute CCDS coverage
   $outputPrefix = $alignedFilePrefix . ".CCDS.coverage";
   my $rO_targetCoverageJob = GATK::targetCoverage($rH_cfg, $bamFile, $outputPrefix);
@@ -738,6 +752,32 @@ sub metrics {
   my $rO_flagstatJob = SAMtools::flagstat($rH_cfg, $bamFile, $output);
 
   return Job::concatJobs([$rO_collectMetricsJob, $rO_genomeCoverageJob, $rO_targetCoverageJob, $rO_igvtoolsTDFJob, $rO_flagstatJob]);
+}
+
+sub callableBases {
+  my $stepId = shift;
+  my $rH_cfg = shift;
+  my $sampleName = shift;
+  my $rAoH_sampleLanes  = shift;
+  my $rAoH_seqDictionary = shift;
+
+  my $jobDependency = undef;
+  my $parentStep = $steps[$stepId]->{'parentStep'};
+  if(defined($globalDep{$parentStep}->{$sampleName})) {
+    $jobDependency = $globalDep{$parentStep}->{$sampleName};
+  }
+
+  my $bamFile = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.recal.bam';
+  my $jobId=undef;
+
+  my $outputPrefix = 'alignment/'.$sampleName.'/'.$sampleName;
+  my $rO_job = GATK::callableBases($rH_cfg, $bamFile, $outputPrefix);
+  if(!$rO_job->isUp2Date()) {
+    SubmitToCluster::printSubmitCmd($rH_cfg, "callableBases", undef, 'CALLABLE_BASES', $jobDependency, $sampleName, $rO_job);
+    $jobId='$CALLABLE_BASES_JOB='.$rO_job->getCommandJobId(0)."\n";
+  }
+
+  return $jobId;
 }
 
 sub metricsLibrarySample {

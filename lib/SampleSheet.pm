@@ -45,7 +45,7 @@ use warnings;
 # Dependencies
 #--------------------
 use File::Basename;
-use Text::CSV;
+use Text::CSV::Encoded;
 use Cwd 'abs_path';
 #--------------------
 
@@ -119,7 +119,7 @@ sub parseSampleSheet {
   my $rawReadFormat = shift;
 
   my @retVal;
-  my $csv = Text::CSV->new();
+  my $csv = Text::CSV::Encoded->new ({ encoding => "iso-8859-1" });
   open(SAMPLE_SHEET, "$fileName") or die "Can't open $fileName\n";
   my $line = <SAMPLE_SHEET>;
   $csv->parse($line);

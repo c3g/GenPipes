@@ -43,7 +43,8 @@ BEGIN{
     use File::Basename;
     use Cwd 'abs_path';
     my ( undef, $mod_path, undef ) = fileparse( abs_path(__FILE__) );
-	unshift @INC, $mod_path."lib";
+    unshift @INC, $mod_path."lib";
+    unshift @INC, $mod_path."../../lib";
 }
 
 
@@ -107,10 +108,7 @@ sub printUsage {
   print "\t-c  config file\n";
   print "\t-s  start step, inclusive\n";
   print "\t-e  end step, inclusive\n";
-  print "\t-n  nanuq sample sheet\n";
-  print "\t-m  flag to run job interactively\n";
-  print "\t-a  0: hgap2 legacy(smrtpipe). 1: hgap2, separated commands (Default)\n";
-  print "\t-t  0: Do not compute minReadLength threshold for preassembly (i.e. use smrtpipe default). 1: Compute minReadLength threshold for preassembly. Default=1. Do not use only for development.\n";
+  print "\t-n  sample sheet\n";
   print "\t-v  verbose\n";
   print "\n";
   print "Steps:\n";
@@ -140,14 +138,14 @@ sub main {
 	}
 
 	my %jobIdVarPrefix;
-	my %cfg 				= LoadConfig->readConfigFile($opts{'c'});
+	my %cfg 				  = LoadConfig->readConfigFile($opts{'c'});
 	$TMPDIR				    = LoadConfig::getParam(\%cfg, 'default', 'tmpDir');	
 
 	# Get design groups
 	$configFile 			= abs_path($opts{'c'});
 	$samplesFile			= abs_path($opts{'n'}); 
-	$hgapAlgorithm          = $opts{'a'};
-	$hgapAlgorithm          = 1 if(!defined($hgapAlgorithm));
+	$hgapAlgorithm    = $opts{'a'};
+	$hgapAlgorithm    = 1 if(!defined($hgapAlgorithm));
 	# TODO add a step to validate values found in config file.
 
 	# Define outdir
@@ -369,11 +367,11 @@ Informative run metrics such as loading efficiency, readlengths, and base qualit
 #
 sub filtering{
 	
-	my $stepName	= shift;
-	my $sampleName 	= shift;
-	my $filePath	= shift;
-	my $rH_cfg 		= shift;
-	my $dependency 	= shift;
+	my $stepName    = shift;
+	my $sampleName  = shift;
+	my $filePath    = shift;
+	my $rH_cfg      = shift;
+	my $dependency  = shift;
 	
 	# Define outdir
 	my $outdir = LoadConfig::getParam($rH_cfg, 'default', 'outdir');
@@ -434,13 +432,13 @@ align lower shorter subreads.
 #
 sub getStats{
 	
-	my $stepName	      = shift;
-	my $sampleName 	      = shift;
+	my $stepName          = shift;
+	my $sampleName        = shift;
 	my $estimatedCoverage = shift; #will be ?X coverage value.
 	my $coverageCutoff    = shift;
-	my $filePath	      = shift;
-	my $rH_cfg 		      = shift;
-	my $dependency 	      = shift;
+	my $filePath          = shift;
+	my $rH_cfg            = shift;
+	my $dependency        = shift;
 
 	my $suffix = $coverageCutoff."percent";
 
@@ -487,12 +485,12 @@ are aligned against long reads and consensus (e.g. corrected reads) are generate
 # Will run P_filter protocol followed by P_PreAssembler which includes alignment with BLASR
 #
 sub preassembly{
-	my $stepName	= shift;
-	my $sampleName 	= shift;
-	my $suffix	 	= shift; #will be ?X coverage value.
-	my $filePath	= shift;
-	my $rH_cfg 		= shift;
-	my $dependency 	= shift;
+	my $stepName    = shift;
+	my $sampleName  = shift;
+	my $suffix      = shift; #will be ?X coverage value.
+	my $filePath    = shift;
+	my $rH_cfg      = shift;
+	my $dependency  = shift;
 
 	# Define outdir
 	my $outdir = LoadConfig::getParam($rH_cfg, 'default', 'outdir');
@@ -505,104 +503,56 @@ sub preassembly{
 
 	# Define tmpdir.
 	my $tmpdir = LoadConfig::getParam($rH_cfg, 'smrtanalysis', 'tmpDir')."/".$sampleName."_".$stepName."_".$suffix;
-	print STDOUT "mkdir -p ".$tmpdir."\n";
+	print STDOUT "mkdir -p ".$tmpdir."\n";		
+	# Separate Long reads from other reads.
+	my $rO_jobSplitReads = PacBioTools::splitReads(
+		$rH_cfg,
+		"$outdir/$sampleName/filtering/data/filtered_subreads.fasta",
+		"$outdir/$sampleName/$suffix/preassemblyMinReadSize.txt",
+		"$outdir/$sampleName/$suffix/preassembly/data/filtered_shortreads.fa",	
+		"$outdir/$sampleName/$suffix/preassembly/data/filtered_longreads.fa"
+	);
+	if(!$rO_jobSplitReads->isUp2Date()){
+		SubmitToCluster::printSubmitCmd($rH_cfg, "splitReads", $stepName, 'SPLITREADS'.'_'.$sampleName.'_'.$suffix, $dependency, $sampleName."_".$suffix, $rO_jobSplitReads); 
+	}	
 
-	if($hgapAlgorithm == 0){	
-		# create PacBio input.xml
-		my $rO_jobFofn = SmrtAnalysis::fofns(
-			$rH_cfg,
-			"$outdir/fofns/$sampleName.fofn",
-			"$outdir/$sampleName/$suffix/preassembly/input.xml",
-			"/dev/null"
-		);
-		if(!$rO_jobFofn->isUp2Date()) {
-			SubmitToCluster::printSubmitCmd($rH_cfg, "fofn", $stepName , 'FOFNS'.'_'.$sampleName.'_'.$suffix, $dependency, $sampleName."_".$suffix, $rO_jobFofn); 
-		}
-	
-		# smart pipe to create fastq in --output <dir> arg.
-		my $currentParams;
-		if( $computeCutoffFlag == 1 ){ # do not use default, compute cutoff.
-			$currentParams = "$outdir/$sampleName/$suffix/preassembly.xml"
-		}elsif( $computeCutoffFlag == 0 ){ # use default, do not compute cutoff
-			$currentParams = LoadConfig::getParam($rH_cfg, 'default', 'preassemblySettings')
-		}else{ die "Invalid value for -t arg...\n";}
-
-		my $rO_jobPreassembly = SmrtAnalysis::run(
-			$rH_cfg,
-			$currentParams,
-			"$outdir/$sampleName/$suffix/preassembly/input.xml",
-			"$outdir/$sampleName/$suffix/preassembly",
-			"$outdir/$sampleName/$suffix/preassembly/smrtpipe.log",
-			$tmpdir
-		);
-		if(!$rO_jobPreassembly->isUp2Date()) {
-			SubmitToCluster::printSubmitCmd($rH_cfg, "smrtanalysis", $stepName , 'PREASSEMBLY'.'_'.$sampleName.'_'.$suffix, $rO_jobFofn->getCommandJobId(0), $sampleName."_".$suffix, $rO_jobPreassembly); 
-		}
-	
-		# Fastq to Fasta
-		my $rO_jobPrinSeq = PrinSeq::fastqToFasta(
-			$rH_cfg,
-			"$outdir/$sampleName/$suffix/preassembly/data/corrected.fastq",
-			"$outdir/$sampleName/$suffix/preassembly/data/corrected"
-		);
-		if(!$rO_jobPrinSeq->isUp2Date()){
-			SubmitToCluster::printSubmitCmd($rH_cfg, "fastqToFasta", $stepName, 'FASTQTOFASTA'.'_'.$sampleName.'_'.$suffix, $rO_jobPreassembly->getCommandJobId(0), $sampleName."_".$suffix, $rO_jobPrinSeq); 
-		}
-	
-		return $rO_jobPrinSeq->getCommandJobId(0);	
-	
-	}elsif($hgapAlgorithm == 1){
-		
-		# Separate Long reads from other reads.
-		my $rO_jobSplitReads = PacBioTools::splitReads(
-			$rH_cfg,
-			"$outdir/$sampleName/filtering/data/filtered_subreads.fasta",
-			"$outdir/$sampleName/$suffix/preassemblyMinReadSize.txt",
-			"$outdir/$sampleName/$suffix/preassembly/data/filtered_shortreads.fa",	
-			"$outdir/$sampleName/$suffix/preassembly/data/filtered_longreads.fa"
-		);
-		if(!$rO_jobSplitReads->isUp2Date()){
-			SubmitToCluster::printSubmitCmd($rH_cfg, "splitReads", $stepName, 'SPLITREADS'.'_'.$sampleName.'_'.$suffix, $dependency, $sampleName."_".$suffix, $rO_jobSplitReads); 
-		}	
-	
-		# blasr
-		my $rO_jobBlasr = SmrtAnalysis::blasr(
-			$rH_cfg,
-			"$outdir/$sampleName/filtering/data/filtered_subreads.fasta",
-			"$outdir/$sampleName/$suffix/preassembly/data/filtered_longreads.fa",
-			"$outdir/$sampleName/$suffix/preassembly/data/seeds.m4",
-			"$outdir/$sampleName/$suffix/preassembly/data/seeds.m4.fofn",
-			"nosam"
-		);
-		if(!$rO_jobBlasr->isUp2Date()){
-			SubmitToCluster::printSubmitCmd($rH_cfg, "blasr", $stepName, 'BLASR'.'_'.$sampleName.'_'.$suffix, $rO_jobSplitReads->getCommandJobId(0), $sampleName."_".$suffix, $rO_jobBlasr); 
-		}
-		
-		# m4topre
-		my $rO_jobM4topre = SmrtAnalysis::m4topre(
-			$rH_cfg,
-			"$outdir/$sampleName/$suffix/preassembly/data/seeds.m4",
-			"$outdir/$sampleName/$suffix/preassembly/data/seeds.m4.fofn",
-			"$outdir/$sampleName/filtering/data/filtered_subreads.fasta",
-			"$outdir/$sampleName/$suffix/preassembly/data/aln.pre"
-		);
-		if(!$rO_jobM4topre->isUp2Date()){
-			SubmitToCluster::printSubmitCmd($rH_cfg, "m4topre", $stepName, 'M4TOPRE'.'_'.$sampleName.'_'.$suffix, $rO_jobBlasr->getCommandJobId(0), $sampleName."_".$suffix, $rO_jobM4topre); 
-		}
-		
-		# pbdagcon
-		my $rO_jobPbdagcon = SmrtAnalysis::pbdagcon(
-			$rH_cfg,
-			"$outdir/$sampleName/$suffix/preassembly/data/aln.pre",
-			"$outdir/$sampleName/$suffix/preassembly/data/corrected.fasta",
-			"$outdir/$sampleName/$suffix/preassembly/data/corrected.fastq"
-		);
-		if(!$rO_jobPbdagcon->isUp2Date()){
-			SubmitToCluster::printSubmitCmd($rH_cfg, "pbdagcon", $stepName, 'PBDAGCON'.'_'.$sampleName.'_'.$suffix, $rO_jobM4topre->getCommandJobId(0), $sampleName."_".$suffix, $rO_jobPbdagcon); 
-		}
-	 
-		return $rO_jobPbdagcon->getCommandJobId(0);	
+	# blasr
+	my $rO_jobBlasr = SmrtAnalysis::blasr(
+		$rH_cfg,
+		"$outdir/$sampleName/filtering/data/filtered_subreads.fasta",
+		"$outdir/$sampleName/$suffix/preassembly/data/filtered_longreads.fa",
+		"$outdir/$sampleName/$suffix/preassembly/data/seeds.m4",
+		"$outdir/$sampleName/$suffix/preassembly/data/seeds.m4.fofn",
+		"nosam"
+	);
+	if(!$rO_jobBlasr->isUp2Date()){
+		SubmitToCluster::printSubmitCmd($rH_cfg, "blasr", $stepName, 'BLASR'.'_'.$sampleName.'_'.$suffix, $rO_jobSplitReads->getCommandJobId(0), $sampleName."_".$suffix, $rO_jobBlasr); 
 	}
+	
+	# m4topre
+	my $rO_jobM4topre = SmrtAnalysis::m4topre(
+		$rH_cfg,
+		"$outdir/$sampleName/$suffix/preassembly/data/seeds.m4.filtered",
+		"$outdir/$sampleName/$suffix/preassembly/data/seeds.m4.fofn",
+		"$outdir/$sampleName/filtering/data/filtered_subreads.fasta",
+		"$outdir/$sampleName/$suffix/preassembly/data/aln.pre"
+	);
+	if(!$rO_jobM4topre->isUp2Date()){
+		SubmitToCluster::printSubmitCmd($rH_cfg, "m4topre", $stepName, 'M4TOPRE'.'_'.$sampleName.'_'.$suffix, $rO_jobBlasr->getCommandJobId(0), $sampleName."_".$suffix, $rO_jobM4topre); 
+	}
+	
+	# pbdagcon
+	my $rO_jobPbdagcon = SmrtAnalysis::pbdagcon(
+		$rH_cfg,
+		"$outdir/$sampleName/$suffix/preassembly/data/aln.pre",
+		"$outdir/$sampleName/$suffix/preassembly/data/corrected.fasta",
+		"$outdir/$sampleName/$suffix/preassembly/data/corrected.fastq"
+	);
+	if(!$rO_jobPbdagcon->isUp2Date()){
+		SubmitToCluster::printSubmitCmd($rH_cfg, "pbdagcon", $stepName, 'PBDAGCON'.'_'.$sampleName.'_'.$suffix, $rO_jobM4topre->getCommandJobId(0), $sampleName."_".$suffix, $rO_jobPbdagcon); 
+	}
+ 
+	return $rO_jobPbdagcon->getCommandJobId(0);	
 }
 
 =head2 assembly()
@@ -621,18 +571,22 @@ Quality of assembly seems to be highly sensitive to paramters you give Celera.
 #
 sub assembly{
 	
-	my $stepName	= shift;
-	my $sampleName 	= shift;
-	my $suffix	 	= shift; #will be ?X coverage value.
+	my $stepName    = shift;
+	my $sampleName  = shift;
+	my $suffix      = shift; #will be ?X coverage value.
 	my $merSize     = shift;
-	my $filePath	= shift;
-	my $rH_cfg 		= shift;
-	my $dependency 	= shift;
+	my $filePath    = shift;
+	my $rH_cfg      = shift;
+	my $dependency  = shift;
 	
 	my $cmd;
 
 	my $merSizeValue = $merSize;
 	$merSize = "merSize".$merSize;
+	
+  my $tmpdir = LoadConfig::getParam($rH_cfg, 'smrtanalysis', 'tmpDir')."/".$sampleName."_".$stepName."_".$suffix."_".$merSize;
+	print STDOUT "rm -rf ".$tmpdir."\n";
+	print STDOUT "mkdir -p ".$tmpdir."\n";
 	
 	# Define outdir
 	my $outdir = LoadConfig::getParam($rH_cfg, 'default', 'outdir');
@@ -663,7 +617,7 @@ sub assembly{
 		SubmitToCluster::printSubmitCmd($rH_cfg, "fastqToCA", $stepName , 'FASTQTOCA'.'_'.$sampleName.'_'.$suffix.'_'.$merSize, $rO_jobCeleraConfig->getCommandJobId(0),  $sampleName."_".$suffix."_$merSize", $rO_jobFastqToCA); 
 	}
 
-	# Run Celera	
+	# Run Celera ; stop at unitigger
 	my $rO_jobCelera = Celera::runCelera(
 		$rH_cfg,
 		"$outdir/$sampleName/$suffix/$merSize/assembly/",
@@ -674,8 +628,23 @@ sub assembly{
 	if(!$rO_jobCelera->isUp2Date()){
 		my $rO_jobCelera = SubmitToCluster::printSubmitCmd($rH_cfg, "celeraAssembly", $stepName , 'ASSEMBLY'.'_'.$sampleName.'_'.$suffix.'_'.$merSize, $rO_jobFastqToCA->getCommandJobId(0),  $sampleName."_".$suffix."_$merSize", $rO_jobCelera); 
 	}
+	
+  # Run pbutgcns ; stop at unitigger
+	my $rO_jobPbutgcns = SmrtAnalysis::pbutgcns(
+		$rH_cfg,
+		"$outdir/$sampleName/$suffix/$merSize/assembly/".$sampleName."_".$suffix."_".$merSize.".gkpStore",
+		"$outdir/$sampleName/$suffix/$merSize/assembly/".$sampleName."_".$suffix."_".$merSize.".tigStore",
+		"$outdir/$sampleName/$suffix/$merSize/unitigs.lst",
+		"$outdir/$sampleName/$suffix/$merSize/assembly/".$sampleName."_".$suffix."_".$merSize,
+    "$outdir/$sampleName/$suffix/$merSize/assembly/9-terminator",
+		"$outdir/$sampleName/$suffix/$merSize/assembly/9-terminator/$sampleName"."_".$suffix."_".$merSize.".ctg.fasta",
+    $tmpdir
+	);
+	if(!$rO_jobPbutgcns->isUp2Date()){
+		my $rO_jobPbutgcns = SubmitToCluster::printSubmitCmd($rH_cfg, "pbutgcns", $stepName , 'PBUTGCNS'.'_'.$sampleName.'_'.$suffix.'_'.$merSize, $rO_jobCelera->getCommandJobId(0),  $sampleName."_".$suffix."_$merSize", $rO_jobPbutgcns); 
+	}
 		
-	return $rO_jobCelera->getCommandJobId(0);	
+	return $rO_jobPbutgcns->getCommandJobId(0);	
 }
 
 =head2 polishing()
@@ -724,24 +693,12 @@ sub polishing{
 	
 	my $cmd;
 	
-	# create PacBio input.xml
-	#my $rO_jobFofn = SmrtAnalysis::fofns(
-	#	$rH_cfg,
-	#	"$outdir/fofns/$sampleName.fofn",
-	#	"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/input.xml",
-	#	"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/input.fofn"
-	#);
-	#if(!$rO_jobFofn->isUp2Date()) {
-	#	SubmitToCluster::printSubmitCmd($rH_cfg, "fofn", $stepName , 'FOFNS'.'_'.$sampleName.'_'.$suffix.'_'.$merSize.'_ROUND_'.$polishingRound, $dependency, $sampleName."_".$suffix."_".$merSize."_".$polishingRound, $rO_jobFofn); 
-	#}
-
 	# Upload reference. Ref to be uploaded depends on polishing round.
 	my $refOutdir;
 	my $refPrefix;
 	my $fastaFile;
 			
 	if($polishingRound == 1){
-		#$refOutdir    = "$outdir/$sampleName/$suffix/$merSize/assembly/";
 		$refOutdir    = "$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/";
 		$refPrefix    = $sampleName.$suffix.$merSize."polishingRound".$polishingRound;
 		$fastaFile    = "$outdir/$sampleName/$suffix/$merSize/assembly/9-terminator/$sampleName"."_".$suffix."_".$merSize.".ctg.fasta";
@@ -756,112 +713,70 @@ sub polishing{
 		$refOutdir,
 		$refPrefix,
 		$fastaFile
-
-		#"$outdir/$sampleName/$suffix/$merSize/assembly/",
-		#$sampleName.$suffix.$merSize,
-		#"$outdir/$sampleName/$suffix/$merSize/assembly/9-terminator/$sampleName"."_".$suffix."_".$merSize.".ctg.fasta"	
 	);
 	if(!$rO_jobRefUpload->isUp2Date()){
 		SubmitToCluster::printSubmitCmd($rH_cfg, "referenceUpload", $stepName , 'REFUPLOAD'.'_'.$sampleName.'_'.$suffix.'_'.$merSize.'_ROUND_'.$polishingRound, $dependency, $sampleName."_".$suffix."_".$merSize."_".$polishingRound, $rO_jobRefUpload); 
 	}
 	
-	if($hgapAlgorithm == 0){
-#	
-#		# Prepare xml
-#		$cmd = "cat ".LoadConfig::getParam($rH_cfg, 'default', 'polishingSettings');
-#		$cmd .= " | sed \'s|REFERENCE|".$outdir."/".$sampleName."/".$suffix."/".$merSize."/assembly/".$sampleName.$suffix.$merSize." | g\' > ".$outdir."/".$sampleName."/".$suffix."/".$merSize."/polishing/polishing.xml";
-#		my $rO_jobRunCommand = SmrtAnalysis::runCommand(
-#			$rH_cfg,
-#			$cmd
-#		);
-#		if(!$rO_jobRunCommand->isUp2Date()){
-#			SubmitToCluster::printSubmitCmd($rH_cfg, "XML", $stepName , 'POLISHXML'.'_'.$sampleName.'_'.$suffix.'_'.$merSize.'_ROUND_'.$polishingRound, $rO_jobRefUpload->getCommandJobId(0), $sampleName."_".$suffix."_".$merSize."_".$polishingRound, $rO_jobRunCommand); 
-#		}
-#	
-#		# Run Quiver and motif detection
-#		my $rO_jobPolishing = SmrtAnalysis::run(
-#			$rH_cfg,
-#			"$outdir/$sampleName/$suffix/$merSize/polishing/polishing.xml",
-#			#"$outdir/$sampleName/filtering/input.xml",
-#			"$outdir/$sampleName/$suffix/preassembly/input.xml",
-#			"$outdir/$sampleName/$suffix/$merSize/polishing",
-#			"$outdir/$sampleName/$suffix/$merSize/polishing/smrtpipe.log",
-#			$tmpdir
-#		);
-#		if(!$rO_jobPolishing->isUp2Date()) {
-#			SubmitToCluster::printSubmitCmd($rH_cfg, "smrtanalysis", $stepName , 'POLISHING'.'_'.$sampleName.'_'.$suffix.'_'.$merSize.'_ROUND_'.$polishingRound, $rO_jobRunCommand->getCommandJobId(0), $sampleName."_".$suffix."_".$merSize."_".$polishingRound, $rO_jobPolishing); 
-#		}
-#		return $rO_jobPolishing->getCommandJobId(0);	
-	
-	}elsif($hgapAlgorithm == 1){
-
-		my $rO_jobCompareSequences = SmrtAnalysis::compareSequences(
-			$rH_cfg,
-			"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/data/aligned_reads.cmp.h5",
-			"$outdir/$sampleName/filtering/data/filtered_regions.fofn", 
-      #"$outdir/fofns/$sampleName.fofn",
-      "$outdir/$sampleName/filtering/input.fofn",
-			#"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/input.fofn",
-			#$outdir."/".$sampleName."/".$suffix."/".$merSize."/assembly/".$sampleName.$suffix.$merSize,
-			$refOutdir.$refPrefix,
-			$tmpdir
-		);
-		if(!$rO_jobCompareSequences->isUp2Date()) {
-			SubmitToCluster::printSubmitCmd($rH_cfg, "compareSequences", $stepName , 'POLISH'.'_'.$sampleName.'_'.$suffix.'_'.$merSize.'_ROUND_'.$polishingRound, $rO_jobRefUpload->getCommandJobId(0), $sampleName."_".$suffix."_".$merSize."_".$polishingRound, $rO_jobCompareSequences); 
-		}
-
-		my $rO_jobLoadPulses = SmrtAnalysis::loadPulses(
-			$rH_cfg,
-			"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/data/aligned_reads.cmp.h5",
-      "$outdir/$sampleName/filtering/input.fofn"
-			#"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/input.fofn"
-		);
-		if(!$rO_jobLoadPulses->isUp2Date()) {
-			SubmitToCluster::printSubmitCmd($rH_cfg, "loadPulses", $stepName , 'LOADPULSES'.'_'.$sampleName.'_'.$suffix.'_'.$merSize.'_ROUND_'.$polishingRound, $rO_jobCompareSequences->getCommandJobId(0), $sampleName."_".$suffix."_".$merSize."_".$polishingRound, $rO_jobLoadPulses); 
-		}
-
-		my $rO_jobSortH5 = SmrtAnalysis::sortH5(
-			$rH_cfg,
-			"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/data/aligned_reads.cmp.h5",
-			"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/data/aligned_reads.cmp.h5.sorted",
-		);
-		if(!$rO_jobLoadPulses->isUp2Date()) {
-			SubmitToCluster::printSubmitCmd($rH_cfg, "sortH5", $stepName , 'SORTH5'.'_'.$sampleName.'_'.$suffix.'_'.$merSize.'_ROUND_'.$polishingRound, $rO_jobLoadPulses->getCommandJobId(0), $sampleName."_".$suffix."_".$merSize."_".$polishingRound, $rO_jobSortH5); 
-		}
-
-		my $rO_jobCallVariants = SmrtAnalysis::variantCaller(
-			$rH_cfg,
-			"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/data/aligned_reads.cmp.h5.sorted",  #cmpH5alignedReads
-			#$outdir."/".$sampleName."/".$suffix."/".$merSize."/assembly/".$sampleName.$suffix.$merSize."/sequence/".$sampleName.$suffix.$merSize.".fasta",
-			#$outdir."/".$sampleName."/".$suffix."/".$merSize."/polishing".$polishingRound."/".$sampleName.$suffix.$merSize."polishingRound".$polishingRound."/sequence/".$sampleName.$suffix.$merSize.$polishingRound.".fasta",
-			$refOutdir.$refPrefix."/sequence/".$refPrefix.".fasta",	
-			"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/data/variants.gff",
-			"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/data/consensus.fasta.gz",
-			"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/data/consensus.fastq.gz"
-		);
-		if(!$rO_jobCallVariants->isUp2Date()) {
-			SubmitToCluster::printSubmitCmd($rH_cfg, "variantCaller", $stepName , 'CALLVARIANTS'.'_'.$sampleName.'_'.$suffix.'_'.$merSize.'_ROUND_'.$polishingRound, $rO_jobSortH5->getCommandJobId(0), $sampleName."_".$suffix."_".$merSize."_".$polishingRound, $rO_jobCallVariants); 
-		}
-		
-		my $rO_jobSummarizePolishing = SmrtAnalysis::summarizePolishing(
-			$rH_cfg,
-			$sampleName."_".$suffix."_".$merSize,
-			#$outdir."/".$sampleName."/".$suffix."/".$merSize."/assembly/".$sampleName.$suffix.$merSize,        # REFERENCE
-			$refOutdir.$refPrefix,	
-			"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/data/aligned_reads.cmp.h5.sorted",  # cmpH5alignedReads
-			"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/data/alignment_summary.gff",        # alignment_summary.gff 
-			"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/data/coverage.bed",                 # coverage.bed
-			"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/data/aligned_reads.sam",            # sam file
-			"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/data/variants.gff",                 # alignment_summary2.gff 
-			"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/data/variants.bed",                 # alignment_summary2.gff 
-			"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/data/variants.vcf"                  # alignment_summary2.gff 
-		);
-		if(!$rO_jobSummarizePolishing->isUp2Date()) {
-			SubmitToCluster::printSubmitCmd($rH_cfg, "summarizePolishing", $stepName , 'SUMMARIZE_POLISHING'.'_'.$sampleName.'_'.$suffix.'_'.$merSize.'_ROUND_'.$polishingRound, $rO_jobCallVariants->getCommandJobId(0), $sampleName."_".$suffix."_".$merSize."_".$polishingRound, $rO_jobSummarizePolishing); 
-		}
-		
-		return $rO_jobSummarizePolishing->getCommandJobId(0);	
+	my $rO_jobCompareSequences = SmrtAnalysis::pbAlign(
+		$rH_cfg,
+		"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/data/aligned_reads.cmp.h5",
+		"$outdir/$sampleName/filtering/data/filtered_regions.fofn", 
+    "$outdir/$sampleName/filtering/input.fofn",
+		$refOutdir.$refPrefix,
+		$tmpdir
+	);
+	if(!$rO_jobCompareSequences->isUp2Date()) {
+		SubmitToCluster::printSubmitCmd($rH_cfg, "pbAlign", $stepName , 'POLISH'.'_'.$sampleName.'_'.$suffix.'_'.$merSize.'_ROUND_'.$polishingRound, $rO_jobRefUpload->getCommandJobId(0), $sampleName."_".$suffix."_".$merSize."_".$polishingRound, $rO_jobCompareSequences); 
 	}
+
+	my $rO_jobLoadPulses = SmrtAnalysis::loadPulses(
+		$rH_cfg,
+		"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/data/aligned_reads.cmp.h5",
+    "$outdir/$sampleName/filtering/input.fofn"
+	);
+	if(!$rO_jobLoadPulses->isUp2Date()) {
+		SubmitToCluster::printSubmitCmd($rH_cfg, "loadPulses", $stepName , 'LOADPULSES'.'_'.$sampleName.'_'.$suffix.'_'.$merSize.'_ROUND_'.$polishingRound, $rO_jobCompareSequences->getCommandJobId(0), $sampleName."_".$suffix."_".$merSize."_".$polishingRound, $rO_jobLoadPulses); 
+	}
+
+	my $rO_jobSortH5 = SmrtAnalysis::sortH5(
+		$rH_cfg,
+		"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/data/aligned_reads.cmp.h5",
+		"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/data/aligned_reads.cmp.h5.sorted",
+	);
+	if(!$rO_jobLoadPulses->isUp2Date()) {
+		SubmitToCluster::printSubmitCmd($rH_cfg, "sortH5", $stepName , 'SORTH5'.'_'.$sampleName.'_'.$suffix.'_'.$merSize.'_ROUND_'.$polishingRound, $rO_jobLoadPulses->getCommandJobId(0), $sampleName."_".$suffix."_".$merSize."_".$polishingRound, $rO_jobSortH5); 
+	}
+
+	my $rO_jobCallVariants = SmrtAnalysis::variantCaller(
+		$rH_cfg,
+		"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/data/aligned_reads.cmp.h5.sorted",  #cmpH5alignedReads
+		$refOutdir.$refPrefix."/sequence/".$refPrefix.".fasta",	
+		"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/data/variants.gff",
+		"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/data/consensus.fasta.gz",
+		"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/data/consensus.fastq.gz"
+	);
+	if(!$rO_jobCallVariants->isUp2Date()) {
+		SubmitToCluster::printSubmitCmd($rH_cfg, "variantCaller", $stepName , 'CALLVARIANTS'.'_'.$sampleName.'_'.$suffix.'_'.$merSize.'_ROUND_'.$polishingRound, $rO_jobSortH5->getCommandJobId(0), $sampleName."_".$suffix."_".$merSize."_".$polishingRound, $rO_jobCallVariants); 
+	}
+	
+	my $rO_jobSummarizePolishing = SmrtAnalysis::summarizePolishing(
+		$rH_cfg,
+		$sampleName."_".$suffix."_".$merSize,
+		$refOutdir.$refPrefix,	
+		"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/data/aligned_reads.cmp.h5.sorted",  # cmpH5alignedReads
+		"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/data/alignment_summary.gff",        # alignment_summary.gff 
+		"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/data/coverage.bed",                 # coverage.bed
+		"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/data/aligned_reads.sam",            # sam file
+		"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/data/variants.gff",                 # alignment_summary2.gff 
+		"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/data/variants.bed",                 # alignment_summary2.gff 
+		"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/data/variants.vcf"                  # alignment_summary2.gff 
+	);
+	if(!$rO_jobSummarizePolishing->isUp2Date()) {
+		SubmitToCluster::printSubmitCmd($rH_cfg, "summarizePolishing", $stepName , 'SUMMARIZE_POLISHING'.'_'.$sampleName.'_'.$suffix.'_'.$merSize.'_ROUND_'.$polishingRound, $rO_jobCallVariants->getCommandJobId(0), $sampleName."_".$suffix."_".$merSize."_".$polishingRound, $rO_jobSummarizePolishing); 
+	}
+	
+	return $rO_jobSummarizePolishing->getCommandJobId(0);	
 
 }
 
@@ -876,9 +791,9 @@ Blast polished assembly against nr using dc-megablast.
 #
 sub blast{
 
-	my $stepName	    = shift;
-	my $sampleName 	    = shift;
-	my $suffix	 	    = shift; #will be ?X coverage value.
+	my $stepName        = shift;
+	my $sampleName      = shift;
+	my $suffix          = shift; #will be ?X coverage value.
 	my $merSize         = shift;
 	my $filePath        = shift;
 	my $rH_cfg          = shift;
@@ -898,10 +813,11 @@ sub blast{
 	# Blast contigs against nt
 	my $rO_jobBlast = BLAST::dcmegablast(
 		$rH_cfg,
-		#"gunzip -c $outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/data/consensus.fasta.gz > $outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/data/consensus.fasta",
 		"$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/data/consensus.fasta",
 		"7",
-		"$outdir/$sampleName/$suffix/$merSize/blast/blast_report.csv"
+		"$outdir/$sampleName/$suffix/$merSize/blast/blast_report.csv",
+    "$outdir/$sampleName/$suffix/$merSize/polishing$polishingRound/data/coverage.bed",
+    "$outdir/$sampleName/$suffix/$merSize/blast/"
 	);
 	if(!$rO_jobBlast->isUp2Date()) {
 		SubmitToCluster::printSubmitCmd($rH_cfg, "blast", "dc-megablast" , 'BLAST'.'_'.$sampleName.'_'.$suffix.'_'.$merSize, $dependency,  $sampleName."_".$suffix."_$merSize", $rO_jobBlast); 
@@ -932,13 +848,13 @@ to detect structure variation such as repeats, etc.
 #
 sub mummer{
 	
-	my $stepName	    = shift;
-	my $sampleName 	    = shift;
-	my $suffix	 	    = shift; #will be ?X coverage value.
+	my $stepName        = shift;
+	my $sampleName      = shift;
+	my $suffix          = shift; #will be ?X coverage value.
 	my $merSize         = shift;
-	my $filePath	    = shift;
-	my $rH_cfg 		    = shift;
-	my $dependency 	    = shift;
+	my $filePath        = shift;
+	my $rH_cfg          = shift;
+	my $dependency      = shift;
 	my $polishingRound  = shift; # what round of polishing were at... (1,2 or 3,...)
 
 	my $merSizeValue = $merSize;
@@ -988,13 +904,13 @@ sub mummer{
 #
 sub epigenome{
 	
-	my $stepName	    = shift;
-	my $sampleName 	    = shift;
-	my $suffix	 	    = shift; #will be ?X coverage value.
+	my $stepName        = shift;
+	my $sampleName      = shift;
+	my $suffix          = shift; #will be ?X coverage value.
 	my $merSize         = shift;
-	my $filePath	    = shift;
-	my $rH_cfg 		    = shift;
-	my $dependency 	    = shift;
+	my $filePath        = shift;
+	my $rH_cfg          = shift;
+	my $dependency      = shift;
 	my $polishingRound  = shift; # what round of polishing were at... (1,2 or 3,...)
 
 	my $merSizeValue = $merSize;
@@ -1047,13 +963,13 @@ Generates summary tables and Generates MUGQIC style nozzle report.
 #
 sub report {
 
-	my $stepName	    = shift;
-	my $sampleName 	    = shift;
-	my $suffix	 	    = shift; #will be ?X coverage value.
+	my $stepName        = shift;
+	my $sampleName      = shift;
+	my $suffix          = shift; #will be ?X coverage value.
 	my $merSize         = shift;
-	my $filePath	    = shift;
-	my $rH_cfg 		    = shift;
-	my $dependency 	    = shift;
+	my $filePath        = shift;
+	my $rH_cfg          = shift;
+	my $dependency      = shift;
 	my $polishingRound  = shift; # what round of polishing were at... (1,2 or 3,...)
 
 	my $merSizeValue = $merSize;
@@ -1111,7 +1027,7 @@ sub report {
 	my $ro_job = new Job();
 	$ro_job->testInputOutputs(undef, undef);
 
-	$cmd .= 'module load ' .LoadConfig::getParam($rH_cfg, 'report','moduleVersion.cranR') .' &&';
+	$cmd .= 'module load ' .LoadConfig::getParam($rH_cfg, 'report','moduleVersion.R') .' &&';
 	$cmd .= ' R --vanilla -e \'library(gqSeqUtils) ;';
 	$cmd .= ' mugqicPipelineReport(';
 	$cmd .= ' pipeline=\"PacBioAssembly\",';
@@ -1131,7 +1047,7 @@ sub report {
 
 		# Build command string to submit to cluster.
 	    SubmitToCluster::printSubmitCmd(
-	        $rH_cfg, 
+      $rH_cfg, 
 			$stepName,
 			$sampleName,
 			"NOZZLE_".$sampleName."_".$suffix."_".$merSize,
@@ -1155,11 +1071,11 @@ Compile assembly stats of all conditions used in the pipeline.
 #
 sub compile {
 	
-	my $stepName	= shift;
-	my $sampleName 	= shift;
-	my $filePath	= shift;
-	my $rH_cfg 		= shift;
-	my $dependency 	= shift;
+	my $stepName    = shift;
+	my $sampleName  = shift;
+	my $filePath    = shift;
+	my $rH_cfg      = shift;
+	my $dependency  = shift;
 
 	# Define outdir
 	my $outdir = LoadConfig::getParam($rH_cfg, 'default', 'outdir');

@@ -195,10 +195,13 @@ sub referenceUploader {
     $cmd .= ' source \${SEYMOUR_HOME}/etc/setup.sh && ';
     $cmd .= ' memtime';
     $cmd .= ' referenceUploader';
+    $cmd .= ' --skipIndexUpdate';
     $cmd .= ' -c';
     $cmd .= ' -p ' . $prefix;
     $cmd .= ' -n ' . $sampleName;
     $cmd .= ' -f ' . $fasta;
+    $cmd .= ' --saw=\"sawriter -blt 8 -welter\" --jobId=\"Anonymous\"';
+    $cmd .= ' --samIdx=\"samtools faidx\" --jobId=\"Anonymous\" --verbose';
 
     $ro_job->addCommand($cmd);
   }
@@ -235,7 +238,7 @@ sub blasr {
   my $sam         = shift;
 
   my $ro_job = new Job();
-  $ro_job->testInputOutputs([$infile, $infileLong], [$outfile, $outfileFofn]);
+  $ro_job->testInputOutputs([$infile, $infileLong], ["$outfile.filtered", $outfileFofn]);
 
   if (!$ro_job->isUp2Date()) {
     #blasr filtered_subreads.fa filtered_longreads -out seeds.m4 -m 4 -nproc 8 -bestn 24 -nCandidates 24 -noSplitSubreads -minReadLength 200 -maxScore -1000 -maxLCPLength 16
@@ -262,6 +265,14 @@ sub blasr {
       $cmd .= ' -sam';
     }
     $cmd .= ' && echo ' . $outfile . ' > ' . $outfileFofn;
+    # Then filter .m4
+    $cmd .= ' &&';
+    $cmd .= ' filterm4.py';
+    $cmd .= ' ' . $outfile . ' > ' . $outfile . '.filtered 2> ' . $outfile . '.filtered.log';
+    #$cmd .= ' &&';
+    #$cmd .= ' mv ' . $outfile . '.tmp ' . $outfile;
+    #$cmd .= ' &&';
+    #$cmd .= ' touch ' . $outfile . '.filter'; # From the smrtanalysis logs. I guess this is to tell if filtering occured or not...
 
     $ro_job->addCommand($cmd);
   }
@@ -330,6 +341,47 @@ sub pbdagcon {
   return $ro_job;
 }
 
+sub pbutgcns{
+  my $rH_cfg       = shift;
+  my $gpkStore     = shift;
+  my $tigStore     = shift;
+  my $unitigsList  = shift;
+  my $prefix       = shift;
+  my $outdir       = shift;
+  my $outfile      = shift;
+  my $tmpdir       = shift;
+
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$gpkStore, $tigStore], [$outfile]);
+
+  if (!$ro_job->isUp2Date()) {
+    my $cmd = '';
+    $cmd .= LoadConfig::moduleLoad($rH_cfg, [
+      ['memtime', 'moduleVersion.memtime'],
+      ['smrtanalysis', 'moduleVersion.smrtanalysis'],
+      ['default', 'moduleVersion.mugqictools']
+    ]) . ' &&';
+    $cmd .= ' source \${SEYMOUR_HOME}/etc/setup.sh && ';
+    $cmd .= ' memtime';
+    $cmd .= ' tigStore';
+    $cmd .= ' -g ' . $gpkStore;
+    $cmd .= ' -t ' . $tigStore . ' 1';
+    $cmd .= ' -d properties';
+    $cmd .= ' -U | awk \'BEGIN{t=0}\$1==\"numFrags\"{if(\$2>1){print t, \$2}t++}\' | sort -nrk2,2 > ' . $unitigsList;
+    $cmd .= ' &&';
+    $cmd .= ' mkdir -p ' .$outdir;
+    $cmd .= ' &&';
+    $cmd .= ' tmp=' . $tmpdir;
+    $cmd .= ' cap=' . $prefix;
+    $cmd .= ' utg=' . $unitigsList;
+    $cmd .= ' nprocs=' . LoadConfig::getParam($rH_cfg, 'pbutgcns', 'num_threads', 1, 'int');
+    $cmd .= ' cns=' . $outfile . ' pbutgcns_wf.sh'; 
+
+    $ro_job->addCommand($cmd);
+  }
+  return $ro_job;
+}
+
 sub quiver {
   my $rH_cfg          = shift;
   my $infile          = shift;
@@ -360,37 +412,37 @@ sub quiver {
   return $ro_job;
 }
 
-sub callVariants {
-  my $rH_cfg          = shift;
-  my $infile          = shift;
-  my $ref             = shift;
-  my $outfileFasta    = shift;
-  my $outfileVariants = shift;
-
-  my $ro_job = new Job();
-  $ro_job->testInputOutputs([$infile], [$outfileFasta, $outfileVariants]);
-
-  if (!$ro_job->isUp2Date()) {
-    my $cmd = '';
-    $cmd .= LoadConfig::moduleLoad($rH_cfg, [
-      ['memtime', 'moduleVersion.memtime'],
-      ['smrtanalysis', 'moduleVersion.smrtanalysis']
-    ]) . ' &&';
-    $cmd .= ' source \${SEYMOUR_HOME}/etc/setup.sh &&';
-    $cmd .= ' memtime';
-    $cmd .= ' variantCaller.py';
-    $cmd .= ' -j ' . LoadConfig::getParam($rH_cfg, 'quiver', 'num_threads', 1, 'int');
-    $cmd .= ' --algorithm quiver';
-    $cmd .= ' --referenceFilename ' . $ref;
-    $cmd .= ' --parameters best';
-    $cmd .= ' -o ' . $outfileVariants;
-    $cmd .= ' -o ' . $outfileFasta;
-    $cmd .= ' ' . $infile;
-
-    $ro_job->addCommand($cmd);
-  }
-  return $ro_job;
-}
+#sub callVariants {
+#  my $rH_cfg          = shift;
+#  my $infile          = shift;
+#  my $ref             = shift;
+#  my $outfileFasta    = shift;
+#  my $outfileVariants = shift;
+#
+#  my $ro_job = new Job();
+#  $ro_job->testInputOutputs([$infile], [$outfileFasta, $outfileVariants]);
+#
+#  if (!$ro_job->isUp2Date()) {
+#    my $cmd = '';
+#    $cmd .= LoadConfig::moduleLoad($rH_cfg, [
+#      ['memtime', 'moduleVersion.memtime'],
+#      ['smrtanalysis', 'moduleVersion.smrtanalysis']
+#    ]) . ' &&';
+#    $cmd .= ' source \${SEYMOUR_HOME}/etc/setup.sh &&';
+#    $cmd .= ' memtime';
+#    $cmd .= ' variantCaller.py';
+#    $cmd .= ' -j ' . LoadConfig::getParam($rH_cfg, 'quiver', 'num_threads', 1, 'int');
+#    $cmd .= ' --algorithm quiver';
+#    $cmd .= ' --referenceFilename ' . $ref;
+#    $cmd .= ' --parameters best';
+#    $cmd .= ' -o ' . $outfileVariants;
+#    $cmd .= ' -o ' . $outfileFasta;
+#    $cmd .= ' ' . $infile;
+#
+#    $ro_job->addCommand($cmd);
+#  }
+#  return $ro_job;
+#}
 
 sub samtoh5 {
   my $rH_cfg          = shift;
@@ -450,6 +502,39 @@ sub compareSequences {
     $cmd .= ' \"' . $inputFofn . '\"';
     $cmd .= ' \"' . $refUpload . '\"';
     $cmd .= ' > /dev/null';
+    $ro_job->addCommand($cmd);
+  }
+  return $ro_job;
+}
+
+sub pbAlign{ # Smrtanalysis 2.2.0, in Smrtanalysis 2.1.1, it was compareSequences.py
+  my $rH_cfg             = shift;
+  my $cmpH5              = shift;
+  my $controlRegionsFofn = shift;
+  my $inputFofn          = shift;
+  my $refUpload          = shift;
+  my $tmpdir             = shift;
+
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$inputFofn], [$cmpH5]);
+
+  if (!$ro_job->isUp2Date()) {
+    my $cmd = '';
+    $cmd .= LoadConfig::moduleLoad($rH_cfg, [
+      ['memtime', 'moduleVersion.memtime'],
+      ['smrtanalysis', 'moduleVersion.smrtanalysis']
+    ]) . ' &&';
+    $cmd .= ' source \${SEYMOUR_HOME}/etc/setup.sh &&';
+    $cmd .= ' memtime';
+    $cmd .= ' pbalign.py';
+    $cmd .= ' \"' . $inputFofn . '\"';
+    $cmd .= ' \"' . $refUpload . '\"';
+    $cmd .= ' \"' . $cmpH5 . '\"';
+    $cmd .= ' --seed=1 --minAccuracy=0.75 --minLength=50 --algorithmOptions=\"-useQuality\" --algorithmOptions=\" -minMatch 12 -bestn 10 -minPctIdentity 70.0\" --hitPolicy=randombest';
+    $cmd .= ' --tmpDir=' . $tmpdir;
+    $cmd .= ' -vv';
+    $cmd .= ' --nproc=' . LoadConfig::getParam($rH_cfg, 'compareSequences', 'num_threads', 1, 'int');
+    $cmd .= ' --regionTable=' . $controlRegionsFofn;
     $ro_job->addCommand($cmd);
   }
   return $ro_job;
