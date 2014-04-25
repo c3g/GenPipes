@@ -54,8 +54,8 @@ sub getCutoff {
   my $coverage         = shift;
   my $genomeSize       = shift;
   my $coverageFraction = shift;
-  my $xml              = shift;
-  my $xmlOut           = shift;
+  #my $xml              = shift;
+  #my $xmlOut           = shift;
   my $outfile          = shift;
 
   my $ro_job = new Job();
@@ -78,8 +78,8 @@ sub getCutoff {
     $cmd .= ' --coverageCutoff';
     $cmd .= ' --coverageFraction ' . $coverageFraction;
     #$cmd .= ' --coverageFraction ' . LoadConfig::getParam($rH_cfg, 'preassembly', 'coverageFraction');
-    $cmd .= ' --xml ' . $xml;
-    $cmd .= ' --xmlOut ' . $xmlOut;
+    #$cmd .= ' --xml ' . $xml;
+    #$cmd .= ' --xmlOut ' . $xmlOut;
     $cmd .= ' > ' . $outfile;
 
     $ro_job->addCommand($cmd);
