@@ -28,8 +28,6 @@ B<File::Basename> path parsing
 
 B<XML::Simple> for RunInfo.xml file parsing
 
-B<Text::CSV> sample sheets parsing parsing
-
 B<Cwd> path parsing
 
 =cut
@@ -57,7 +55,6 @@ use Cwd;
 use POSIX;
 use XML::Simple;
 use Data::Dumper;
-use Text::CSV;
 
 use CountIlluminaBarcodes;
 use BVATools;
@@ -85,7 +82,7 @@ push(@steps, {'name' => 'align', 'stepLoop' => 'sample', 'parentStep' => ['gener
 push(@steps, {'name' => 'laneMetrics', 'stepLoop' => 'sample', 'parentStep' => ['align']});
 push(@steps, {'name' => 'generateBamMd5', 'stepLoop' => 'sample', 'parentStep' => ['laneMetrics']});
 push(@steps, {'name' => 'startCopyNotification' , 'stepLoop' => 'lane' , 'parentStep' => ['generateIndexCount','generateMD5','generateQCGraphs','generateBlasts','laneMetrics','generateBamMd5']});
-push(@steps, {'name' => 'copy' , 'stepLoop' => 'lane' , 'parentStep' => ['generateIndexCount','generateMD5','generateQCGraphs','generateBlasts','generateBamMd5']});
+push(@steps, {'name' => 'copy' , 'stepLoop' => 'lane' , 'parentStep' => ['generateIndexCount','generateMD5','generateQCGraphs','generateBlasts','laneMetrics','generateBamMd5']});
 push(@steps, {'name' => 'endCopyNotification' , 'stepLoop' => 'lane' , 'parentStep' => ['copy']});
 
 my $UNALIGNED_DIR="Unaligned";
@@ -173,7 +170,7 @@ sub main {
   }
 
   my $isMiSeq = 0;
-  if($runDirectory =~ /_M00/){
+  if($runDirectory =~ /\d{6}_M\d+/){
     $isMiSeq = 1;
   }
 
@@ -1014,23 +1011,29 @@ sub getSmallestIndexLength{
     }
   }
 
-  # find smallest index per index-read per lane
-  my $indexColumnIdx = getColumnHeaderIndex('Index', $rA_headers);
   my $maxSampleIndexRead = 0;
+  # No indexes read on sequencer
+  if(@runIdxLengths > 0) {
+    # find smallest index per index-read per lane
+    my $indexColumnIdx = getColumnHeaderIndex('Index', $rA_headers);
 
-  for my $rA_values (@$rAoA_sampleData ) {
-    my @libraryIndexes = split('-', $rA_values->[$indexColumnIdx]);
+    for my $rA_values (@$rAoA_sampleData ) {
+      my @libraryIndexes = split('-', $rA_values->[$indexColumnIdx]);
 
-    for(my $idx=0; $idx < @libraryIndexes; $idx++) {
-      $maxSampleIndexRead = $idx if ($idx > $maxSampleIndexRead);
-      if(length($libraryIndexes[$idx]) > 0) {
-        if(length($libraryIndexes[$idx]) < $runIdxLengths[$idx]) {
-          $runIdxLengths[$idx] = length($libraryIndexes[$idx]);
+      for(my $idx=0; $idx < @libraryIndexes; $idx++) {
+        $maxSampleIndexRead = $idx if ($idx > $maxSampleIndexRead);
+        if(length($libraryIndexes[$idx]) > 0) {
+          if(length($libraryIndexes[$idx]) < $runIdxLengths[$idx]) {
+            $runIdxLengths[$idx] = length($libraryIndexes[$idx]);
+          }
         }
       }
     }
   }
-  
+  elsif(@$rAoA_sampleData > 1) {
+    exitWithError("Multiple samples on a lane, but no indexes were read from the sequencer.");
+  }
+
   # In the case of single-index lane in a dual index run
   for (my $idx=$maxSampleIndexRead+1; $idx < @runIdxLengths; $idx++) {
     $runIdxLengths[$idx] = 0;

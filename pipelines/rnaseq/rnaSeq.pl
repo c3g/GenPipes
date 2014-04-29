@@ -89,6 +89,8 @@ use lib "$FindBin::Bin/../../lib";
 #--------------------
 use Getopt::Std;
 use Cwd qw/ abs_path /;
+use File::Basename;
+use Parse::Range qw(parse_range);
 
 use LoadConfig;
 use Picard;
@@ -113,6 +115,7 @@ use Version;
 #--------------------
 
 my @steps;
+push(@steps, {'name' => 'samToFastq' , 'stepLoop' => 'sample' , 'output' => 'raw_reads'});
 push(@steps, {'name' => 'trimming' , 'stepLoop' => 'sample' , 'output' => 'reads'});
 push(@steps, {'name' => 'trimMetrics' , 'stepLoop' => 'group' , 'output' => 'metrics'});
 push(@steps, {'name' => 'aligning' , 'stepLoop' => 'sample' , 'output' => 'alignment'});
@@ -188,8 +191,7 @@ sub printUsage {
   print "Version: ".$Version::version."\n";
   print "\nUsage: perl ".$0." \n";
   print "\t-c  config file\n";
-  print "\t-s  start step, inclusive\n";
-  print "\t-e  end step, inclusive\n";
+  print "\t-s  step range e.g. '1,3', '2-5', '1,4-7,10'\n";
   print "\t-n  nanuq sample sheet\n";
   print "\t-d  design file\n";
   print "\t-w  work directory\n";
@@ -205,7 +207,7 @@ sub main {
 	my %opts;
 	getopts('c:s:e:n:d:w:', \%opts);
 	
-	if (!defined($opts{'c'}) || !defined($opts{'s'}) || !defined($opts{'e'}) || !defined($opts{'n'}) || !defined($opts{'w'} ) ) {
+	if (!defined($opts{'c'}) || !defined($opts{'s'}) || !defined($opts{'n'}) || !defined($opts{'w'} ) ) {
 		printUsage();
 		exit(1);
 	}
@@ -248,9 +250,13 @@ sub main {
   	}
   }
 	
+  # List user-defined step index range.
+  # Shift 1st position to 0 instead of 1
+  my @stepRange = map($_ - 1, parse_range($opts{'s'}));
+
 	SubmitToCluster::initPipeline($workDir);
 
-	for(my $current = $opts{'s'}-1; $current <= ($opts{'e'}-1); $current++) {
+	for my $current (@stepRange) {
 		my $fname = $steps[$current]->{'name'};
 		my $loopType = $steps[$current]->{'stepLoop'};
 		my $subref = \&$fname;
@@ -258,7 +264,7 @@ sub main {
 			for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
 			my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sampleName};
 			# Tests for the first step in the list. Used for dependencies.
-			my $jobIdVar = &$subref($current != ($opts{'s'}-1), \%cfg, $sampleName, $rAoH_sampleLanes, $rAoH_seqDictionary, \%jobIdVarPrefix);
+			my $jobIdVar = &$subref($current != $stepRange[0], \%cfg, $sampleName, $rAoH_sampleLanes, $rAoH_seqDictionary, \%jobIdVarPrefix);
 			if (defined($jobIdVar)) {
 				$globalDep{$fname}->{$sampleName} = $jobIdVar;
 			}
@@ -266,12 +272,60 @@ sub main {
 		}
 		else {
 			# Tests for the first step in the list. Used for dependencies.
-			my $jobIdVar = &$subref($current != ($opts{'s'}-1), \%cfg, $rHoAoH_sampleInfo, $rHoAoA_designGroup, $rAoH_seqDictionary, \%jobIdVarPrefix);
+			my $jobIdVar = &$subref($current != $stepRange[0], \%cfg, $rHoAoH_sampleInfo, $rHoAoA_designGroup, $rAoH_seqDictionary, \%jobIdVarPrefix);
 			if (defined($jobIdVar)) {
 				$globalDep{$fname}->{$fname} = $jobIdVar;
 			}
 		}
-	}  
+	}
+}
+
+sub samToFastq {
+	my $depends = shift;
+	my $rH_cfg = shift;
+	my $sampleName = shift;
+	my $rAoH_sampleLanes  = shift;
+	my $rAoH_seqDictionary = shift;
+	my $rH_jobIdPrefixe = shift;
+
+	my $samToFastqJobIdVarNameSample = undef;
+	my $libraryType = LoadConfig::getParam($rH_cfg, 'default', 'libraryType');
+	for my $rH_laneInfo (@$rAoH_sampleLanes) {
+
+    my $rO_job;
+    my $baseDirectory = "$sampleName/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
+    my $rawDirectory = LoadConfig::getParam($rH_cfg, 'default', 'rawReadDir', 1, 'dirpath') . "/" . $baseDirectory;
+    my $input1 = $rawDirectory . "/" . $rH_laneInfo->{'bam'};
+
+    if ($input1) {
+      if ($rH_laneInfo->{'runType'} eq "SINGLE_END") {
+        my $outputFastq1 = $input1;
+        $outputFastq1 =~ s/\.bam$/.single.fastq.gz/;
+        $rO_job = Picard::samToFastq($rH_cfg, $input1, $outputFastq1);
+        $rH_laneInfo->{'read1File'} = basename($outputFastq1);
+      } elsif ($rH_laneInfo->{'runType'} eq "PAIRED_END") {
+        my $outputFastq1 = $input1;
+        my $outputFastq2 = $input1;
+        $outputFastq1 =~ s/\.bam$/.pair1.fastq.gz/;
+        $outputFastq2 =~ s/\.bam$/.pair2.fastq.gz/;
+        $rO_job = Picard::samToFastq($rH_cfg, $input1, $outputFastq1, $outputFastq2);
+        $rH_laneInfo->{'read1File'} = basename($outputFastq1);
+        $rH_laneInfo->{'read2File'} = basename($outputFastq2);
+      } else {
+        die "Error in rnaSeqDeNovoAssembly::samToFastq: unknown run type (can be 'SINGLE_END' or 'PAIRED_END' only): " . $rH_laneInfo->{'runType'};
+      }
+    }
+
+		if(!$rO_job->isUp2Date()) {
+			SubmitToCluster::printSubmitCmd($rH_cfg, "samToFastq", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'SAMTOFASTQ' .$rH_jobIdPrefixe ->{$sampleName.'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} , undef, $sampleName, $rO_job);
+      if(!defined($samToFastqJobIdVarNameSample)) {
+			  $samToFastqJobIdVarNameSample = $rO_job->getCommandJobId(0);
+      } else {
+        $samToFastqJobIdVarNameSample .= LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep') . $rO_job->getCommandJobId(0);
+      }
+		}
+	}
+	return $samToFastqJobIdVarNameSample;	
 }
 
 sub trimming {
@@ -284,6 +338,10 @@ sub trimming {
 
 	my $trimJobIdVarNameSample = undef;
 	my $libraryType = LoadConfig::getParam($rH_cfg, 'default', 'libraryType');
+	my $jobDependency = undef;
+	if($depends > 0) {
+	  $jobDependency = $globalDep{'samToFastq'}{$sampleName};
+	}
 	for my $rH_laneInfo (@$rAoH_sampleLanes) {
 		#print "mkdir -p metrics/$sampleName/output_jobs reads/$sampleName/output_jobs\n";
 		##get raw read count
@@ -314,7 +372,7 @@ sub trimming {
 
 		my $rO_job = Trimmomatic::trim($rH_cfg, $sampleName, $rH_laneInfo, $laneDir);
 		if(!$rO_job->isUp2Date()) {
-			SubmitToCluster::printSubmitCmd($rH_cfg, "trim", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'TRIM' .$rH_jobIdPrefixe ->{$sampleName.'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} , undef, $sampleName, $rO_job);
+			SubmitToCluster::printSubmitCmd($rH_cfg, "trim", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'TRIM' .$rH_jobIdPrefixe ->{$sampleName.'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} , $jobDependency, $sampleName, $rO_job);
       if(!defined($trimJobIdVarNameSample)) {
 			  $trimJobIdVarNameSample = $rO_job->getCommandJobId(0);
       } else {
