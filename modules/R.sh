@@ -203,7 +203,7 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
 	,"foreach","foreign","gcrma","gdata","genefilter","GenomicFeatures"
 	,"GenomicRanges","genoset","GEOquery","ggplot2","googleVis","goseq"
 	,"gplots","graph","graphics","grDevices","grid","gtable","gtools"
-	,"Gviz","hdrcde","Hmisc","hwriter","igraph","IlluminaHumanMethylation450k.db"
+	,"Gviz","hdrcde","Hmisc","hwriter","HTSFilter","igraph","IlluminaHumanMethylation450k.db"
 	,"IlluminaHumanMethylation450kmanifest","impute","IRanges","iterators"
 	,"KernSmooth","ks","labeling","lattice","latticeExtra","limma","locfit"
 	,"lumi","LVSmiRNA","maps","markdown","MASS","Matrix","matrixStats","mclust"
