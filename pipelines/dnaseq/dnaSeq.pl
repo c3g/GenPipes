@@ -132,6 +132,9 @@ push(@steps, {'name' => 'markDup', 'stepLoop' => 'sample', 'parentStep' => 'fixm
 push(@steps, {'name' => 'recalibration', 'stepLoop' => 'sample', 'parentStep' => 'markDup'});
 push(@steps, {'name' => 'metrics', 'stepLoop' => 'sample', 'parentStep' => 'recalibration'});
 push(@steps, {'name' => 'callableBases', 'stepLoop' => 'sample', 'parentStep' => 'recalibration'});
+push(@steps, {'name' => 'extractCommonSNPFreq', 'stepLoop' => 'sample', 'parentStep' => 'recalibration'});
+push(@steps, {'name' => 'BAFPlot', 'stepLoop' => 'sample', 'parentStep' => 'commonSNPFreq'});
+push(@steps, {'name' => 'haplotypeCaller', 'stepLoop' => 'sample', 'parentStep' => 'recalibration'});
 push(@steps, {'name' => 'metricsLibrarySample', 'stepLoop' => 'experiment', 'parentStep' => 'metrics'});
 push(@steps, {'name' => 'snpAndIndelBCF', 'stepLoop' => 'experiment', 'parentStep' => 'recalibration'});
 push(@steps, {'name' => 'mergeFilterBCF', 'stepLoop' => 'experiment', 'parentStep' => 'snpAndIndelBCF'});
@@ -910,13 +913,121 @@ sub callableBases {
   }
 
   my $bamFile = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.recal.bam';
-  my $jobId=undef;
 
   my $outputPrefix = 'alignment/'.$sampleName.'/'.$sampleName;
   my $rO_job = GATK::callableBases($rH_cfg, $bamFile, $outputPrefix);
   if(!$rO_job->isUp2Date()) {
     SubmitToCluster::printSubmitCmd($rH_cfg, "callableBases", undef, 'CALLABLE_BASES', $jobDependency, $sampleName, $rO_job);
-    $jobId='$CALLABLE_BASES_JOB='.$rO_job->getCommandJobId(0)."\n";
+  }
+
+  return $rO_job->getCommandJobId(0);
+}
+
+sub extractCommonSNPFreq {
+  my $stepId = shift;
+  my $rH_cfg = shift;
+  my $sampleName = shift;
+  my $rAoH_sampleLanes  = shift;
+  my $rAoH_seqDictionary = shift;
+
+  my $jobDependency = undef;
+  my $parentStep = $steps[$stepId]->{'parentStep'};
+  if(defined($globalDep{$parentStep}->{$sampleName})) {
+    $jobDependency = $globalDep{$parentStep}->{$sampleName};
+  }
+
+  my $commonSNPPositions = LoadConfig::getParam($rH_cfg, 'extractCommonSNPFreq', 'commonSNPPos');
+
+  my $bamFile = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.recal.bam';
+
+  my $output = 'alignment/'.$sampleName.'/'.$sampleName.'.commonSNPs.alleleFreq.csv';
+  my $rO_job = BVATools::basefreq($rH_cfg, $bamFile, $output, $commonSNPPositions, 0);
+  if(!$rO_job->isUp2Date()) {
+    SubmitToCluster::printSubmitCmd($rH_cfg, "extractCommonSNPFreq", undef, 'EXTRACT_SNP_FREQ', $jobDependency, $sampleName, $rO_job);
+  }
+
+  return $rO_job->getCommandJobId(0);
+}
+
+sub BAFPlot {
+  my $stepId = shift;
+  my $rH_cfg = shift;
+  my $sampleName = shift;
+  my $rAoH_sampleLanes  = shift;
+  my $rAoH_seqDictionary = shift;
+
+  my $jobDependency = undef;
+  my $parentStep = $steps[$stepId]->{'parentStep'};
+  if(defined($globalDep{$parentStep}->{$sampleName})) {
+    $jobDependency = $globalDep{$parentStep}->{$sampleName};
+  }
+
+  my $commonSNPPositions = LoadConfig::getParam($rH_cfg, 'BAFPlot', 'commonSNPPos');
+
+  my $alleleFreqFile = 'alignment/'.$sampleName.'/'.$sampleName.'.commonSNPs.alleleFreq.csv';
+
+  my $outputPrefix = 'alignment/'.$sampleName.'/'.$sampleName.'.ratioBAF';
+  my $rO_job = BVATools::bafPlot($rH_cfg, $alleleFreqFile, $commonSNPPositions, $outputPrefix);
+  if(!$rO_job->isUp2Date()) {
+    SubmitToCluster::printSubmitCmd($rH_cfg, "BAFPlot", undef, 'BAF_PLOT', $jobDependency, $sampleName, $rO_job);
+  }
+
+  return $rO_job->getCommandJobId(0);
+}
+
+sub haplotypeCaller {
+  my $stepId = shift;
+  my $rH_cfg = shift;
+  my $sampleName = shift;
+  my $rAoH_sampleLanes  = shift;
+  my $rAoH_seqDictionary = shift;
+
+  my $jobDependency = undef;
+  my $parentStep = $steps[$stepId]->{'parentStep'};
+  if(defined($globalDep{$parentStep}->{$sampleName})) {
+    $jobDependency = $globalDep{$parentStep}->{$sampleName};
+  }
+
+  my $outputDir = 'alignment/'.$sampleName.'/rawHaplotypeCaller/';
+  my $outputPrefix = $outputDir . $sampleName;
+  print 'mkdir -p '.$outputDir."\n";
+  print "HAPLOTYPE_CALLER_JOB_IDS=\"\"\n";
+
+  my $bamFile = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.recal.bam';
+  my $nbJobs = LoadConfig::getParam($rH_cfg, 'haplotypeCaller', 'approxNbJobs', 0, 'int');
+  my $jobId=undef;
+
+  my $seqName = undef;
+  if (defined($nbJobs) && $nbJobs > 1) {
+    my $rA_regions = generateApproximateWindows($nbJobs, $rAoH_seqDictionary);
+    for my $region (@{$rA_regions}) {
+      my $rO_job = GATK::haplotypeCaller($rH_cfg, $bamFile, $region, $outputPrefix);
+      if(!$rO_job->isUp2Date()) {
+        $region =~ s/:/_/g;
+        SubmitToCluster::printSubmitCmd($rH_cfg, "haplotypeCaller", $region, 'HAPLOTYPE_CALLER', $jobDependency, $sampleName, $rO_job);
+        if(!defined($jobId)) {
+          $jobId = '${HAPLOTYPE_CALLER_JOB_IDS}';
+          print 'HAPLOTYPE_CALLER_JOB_IDS='.$rO_job->getCommandJobId(0)."\n";
+        }
+        else {
+          print 'HAPLOTYPE_CALLER_JOB_IDS=${HAPLOTYPE_CALLER_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$rO_job->getCommandJobId(0)."\n";
+        }
+      }
+    }
+  }
+  else {
+    my $region = undef;
+    my $rO_job = GATK::haplotypeCaller($rH_cfg, $bamFile, $region, $outputPrefix);
+    if(!$rO_job->isUp2Date()) {
+      SubmitToCluster::printSubmitCmd($rH_cfg, "haplotypeCaller", $region, 'HAPLOTYPE_CALLER', $jobDependency, $sampleName, $rO_job);
+      if(!defined($jobId)) {
+        $jobId = '${HAPLOTYPE_CALLER_JOB_IDS}';
+        print 'HAPLOTYPE_CALLER_JOB_IDS='.$rO_job->getCommandJobId(0)."\n";
+      }
+      else {
+        print 'HAPLOTYPE_CALLER_JOB_IDS=${MPILEUP_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$rO_job->getCommandJobId(0)."\n";
+      }
+    }
   }
 
   return $jobId;
