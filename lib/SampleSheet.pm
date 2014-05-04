@@ -127,7 +127,7 @@ sub parseSampleSheet {
   while($line = <SAMPLE_SHEET>) {
     $csv->parse($line);
     my @values = $csv->fields();
-    if ($values[$statusIdx] =~ /invalid/) {
+    if ($values[$statusIdx] ne 'Data is valid') {
       warn "Invalid: $values[$nameIdx] $values[$runIdIdx] $values[$laneIdx]\n";
       next;
     }
