@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-I<Cufflinks>
+I<Cleaning>
 
 =head1 SYNOPSIS
 
@@ -210,126 +210,13 @@ sub metrics {
     rmtree($name);
   }
    print "\n----------------------------------\n";
-  print "the exploratory folder is now cleaned\n";
+  print "the metrics folder is now cleaned\n";
   print "----------------------------------\n";
 }
   
 sub tracks {
   rmtree('tracks');
   print "the tracks folder is now removed\n";
-}
-
-
-
-
-sub cuffcompare {
-  my $rH_cfg           = shift;
-  my $rA_mergeList     = shift;
-  my $outputPrefix     = shift;
-  my $mergeGtfFilePath = shift;
-
-  my $ro_job = new Job();
-  $ro_job->testInputOutputs($rA_mergeList, [$outputPrefix . '.combined.gtf', $outputPrefix . '.TranscriptList.tsv']);
-
-  if (!$ro_job->isUp2Date()) {
-    my $mergeListString = join(' ', @{$rA_mergeList});
-    my $command;
-    $command .= LoadConfig::moduleLoad($rH_cfg, [['cuffcompare', 'moduleVersion.cufflinks'], ['cuffcompare', 'moduleVersion.tools']]) . ' &&';
-    $command .= ' cuffcompare -o ' . $outputPrefix;
-    $command .= ' -r ' . LoadConfig::getParam($rH_cfg, 'cuffcompare', 'referenceGtf', 1, 'filepath');
-    $command .= ' -R ' . LoadConfig::getParam($rH_cfg, 'fpkm', 'referenceFasta', 1, 'filepath');
-    $command .= ' -T ' . $mergeListString . ' &&';
-    $command .= ' formatDenovoCombinedGTF.py' ;
-    $command .= ' -c ' . $outputPrefix . '.combined.gtf';
-    $command .= ' -t ' . $outputPrefix . '.tracking';
-    $command .= ' -s ' . $mergeGtfFilePath;
-    $command .= ' -o ' . $outputPrefix . '.TranscriptList.tsv';
-
-    $ro_job->addCommand($command);
-  }
-  return $ro_job;
-}
-
-#sub cuffmerge {
-#  my $rH_cfg        = shift;
-#  my $mergeListFile = shift;
-#  my $outputDir     = shift;
-#  
-#  my $ro_job = new Job();
-#  $ro_job->testInputOutputs([], []);
-#
-#  if (!$ro_job->isUp2Date()) {
-#    my $command;
-#    $command .= LoadConfig::moduleLoad($rH_cfg, [['cuffmerge', 'moduleVersion.cufflinks']]) . ';';
-#    $command .= ' cuffmerge -p ' . LoadConfig::getParam($rH_cfg, 'cuffmerge', 'numThreads', 1, 'int');
-#    $command .= ' -o ' . $outputDir;
-#    $command .= ' -g ' . LoadConfig::getParam($rH_cfg, 'cuffmerge', 'referenceGtf', 1, 'filepath');
-#    $command .= ' -s ' . LoadConfig::getParam($rH_cfg, 'fpkm', 'referenceFasta', 1, 'filepath');
-#    $command .= ' ' . $mergeListFile;
-#  }
-#  return $command;
-#}
-
-
-sub mergeGtfFormat {
-  my $rH_cfg     = shift;
-  my $inputFile  = shift;
-  my $outputFile = shift;
-
-  my $ro_job = new Job();
-  $ro_job->testInputOutputs([$inputFile], [$outputFile]);
-
-  if (!$ro_job->isUp2Date()) {
-    my $command;
-    $command .= LoadConfig::moduleLoad($rH_cfg, [['cuffmerge', 'moduleVersion.tools']]) . ' &&';
-    $command .= ' perl \$PERL_TOOLS/formatGtfCufflinks.pl' . ' '. $inputFile . ' ' . $outputFile ;
-
-    $ro_job->addCommand($command);
-  }
-
-  return $ro_job;
-}
-
-sub mergeCuffdiffRes {
-  my $rH_cfg     = shift;
-  my $designFile = shift;
-  my $outputDir  = shift;
-  my $inputDir   = shift;
-
-  my $ro_job = new Job();
-  # Can't test directories!
-  #$ro_job->testInputOutputs([$inputDir], [$outputDir]);
-
-  if (!$ro_job->isUp2Date()) {
-    ### TO DO: re-write mergecuffdiff_known.R and mergecuffdiff_denovo.R to be more portable
-    my $command;
-    $command .= LoadConfig::moduleLoad($rH_cfg, [['cuffmerge', 'moduleVersion.tools'], ['cuffdiff', 'moduleVersion.cranR']]) . ' &&';
-    $command .= ' Rscript \$R_TOOLS/mergecuffdiff_known.R ' . $outputDir . ' ' . $inputDir . ' ' . $designFile ;
-
-    $ro_job->addCommand($command);
-  }
-  return $ro_job;
-}
-
-sub filterResults {
-  my $rH_cfg    = shift;
-  my $outputDir = shift;
-
-  my $ro_job = new Job();
-  $ro_job->testInputOutputs(undef, undef);
-
-  if (!$ro_job->isUp2Date()) {
-    ### TO DO : make it more portable when the mergeCuffdiffRes R script will be re-write
-    my $command;
-    $command .= 'for i in \`ls ' . $outputDir . '/*/isoform_exp.diff.with.fpkm.csv\` ;';
-    $command .= ' do head -1 \$i > ' . $outputDir . '/tmp ;';
-    $command .= ' sed 1d \$i | grep -v \"NOTEST\" | grep -v \"FAIL\" | sort -k 12 -g >> ' . $outputDir . '/tmp ;';
-    $command .= ' mv ' . $outputDir . '/tmp \$i ;';
-    $command .= ' done';
-
-    $ro_job->addCommand($command);
-  }
-  return $ro_job;
 }
 
 1;
