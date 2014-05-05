@@ -55,8 +55,9 @@ use Cwd 'abs_path';
 
 sub parseSampleSheetAsHash {
   my $fileName = shift;
+  my $ignoreStatus = shift;
 
-  my $rA_SampleLaneInfos = parseSampleSheet($fileName);
+  my $rA_SampleLaneInfos = parseSampleSheet($fileName, $ignoreStatus);
   my %sampleInfo;
   for my $rH_Sample (@$rA_SampleLaneInfos) {
     if (!defined $sampleInfo{$rH_Sample->{'name'}}) {
@@ -70,8 +71,9 @@ sub parseSampleSheetAsHash {
 
 sub parseSampleSheetAsHashByProcessingId {
   my $fileName = shift;
+  my $ignoreStatus = shift;
 
-  my $rA_SampleLaneInfos = parseSampleSheet($fileName);
+  my $rA_SampleLaneInfos = parseSampleSheet($fileName, $ignoreStatus);
   my %sampleInfo;
   for my $rH_Sample (@$rA_SampleLaneInfos) {
     if (!defined($rH_Sample->{'processingSheetId'})) {
@@ -115,6 +117,7 @@ sub parsePairedSampleSheet {
 
 sub parseSampleSheet {
   my $fileName = shift;
+  my $ignoreStatus = shift;
 
   my @retVal;
   my $csv = Text::CSV::Encoded->new ({ encoding => "iso-8859-1" });
@@ -127,7 +130,7 @@ sub parseSampleSheet {
   while($line = <SAMPLE_SHEET>) {
     $csv->parse($line);
     my @values = $csv->fields();
-    if ($values[$statusIdx] ne 'Data is valid') {
+    if (!$ignoreStatus && $values[$statusIdx] ne 'Data is valid') {
       warn "Invalid: $values[$nameIdx] $values[$runIdIdx] $values[$laneIdx]\n";
       next;
     }

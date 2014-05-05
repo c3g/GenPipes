@@ -160,7 +160,7 @@ sub main {
   my ($nbReads, $rAoH_readsInfo) = parseRunInfoFile($runDirectory ."/RunInfo.xml" );
 
   my $rAoH_samples = generateIlluminaLaneSampleSheet($lane, $runDirectory, $rAoH_readsInfo);
-  my $rHoAoH_infos = SampleSheet::parseSampleSheetAsHashByProcessingId($nanuqSheet);
+  my $rHoAoH_infos = SampleSheet::parseSampleSheetAsHashByProcessingId($nanuqSheet,1);
 
   $rHoH_genomes = getGenomeList(LoadConfig::getParam(\%cfg, 'default', 'genomesHome'));
   $rHoH_defaultGenomes = getDefaultGenomes(LoadConfig::getParam(\%cfg, 'default', 'defaultSpeciesGenome'));
