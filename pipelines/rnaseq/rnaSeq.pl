@@ -90,6 +90,7 @@ use lib "$FindBin::Bin/../../lib";
 use Getopt::Std;
 use Cwd qw/ abs_path /;
 use File::Basename;
+use File::Path;
 use Parse::Range qw(parse_range);
 
 use LoadConfig;
@@ -107,6 +108,7 @@ use HtseqCount;
 use DiffExpression;
 use GqSeqUtils;
 use Version;
+use Cleaning;
 
 #--------------------
 
@@ -204,77 +206,82 @@ sub printUsage {
 }
 
 sub main {
-	my %opts;
-	getopts('c:s:e:n:d:w:', \%opts);
-	
-	if (!defined($opts{'c'}) || !defined($opts{'s'}) || !defined($opts{'n'}) || !defined($opts{'w'} ) ) {
-		printUsage();
-		exit(1);
-	}
-	
-	my %jobIdVarPrefix;
-	my %cfg = LoadConfig->readConfigFile($opts{'c'});
-	my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($opts{'n'});
-	my $rAoH_seqDictionary = SequenceDictionaryParser::readDictFile(\%cfg);
-  
-	$designFilePath = $opts{'d'};
-  my $rHoAoA_designGroup;
-  if(defined($designFilePath)) {
-    $designFilePath = abs_path($designFilePath);
-	  ##get design groups
-	  $rHoAoA_designGroup = Cufflinks::getDesign(\%cfg,$designFilePath);
-  }
-	$workDir = abs_path($opts{'w'});
-	$configFile =  abs_path($opts{'c'});
-	$readSetSheet =  abs_path($opts{'n'}); 
-
-	
-	#generate sample jobIdprefix
-	my $cpt = 1;
-	
-	for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
-		my $cpt2=1;
-		$jobIdVarPrefix{$sampleName} = $cpt;
-		my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sampleName};
-		for my $rH_laneInfo (@$rAoH_sampleLanes) {
-			$jobIdVarPrefix{$sampleName .'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} = $cpt.'_'.$cpt2;
-			$cpt2++;
+	if ($ARGV[0] eq "--clean") {
+		Cleaning::rna();
+	} 
+	else {
+		my %opts;
+		getopts('c:s:e:n:d:w:', \%opts);
+		
+		if (!defined($opts{'c'}) || !defined($opts{'s'}) || !defined($opts{'n'}) || !defined($opts{'w'} ) ) {
+			printUsage();
+			exit(1);
 		}
-		$cpt++;
-	}
-	#generate design jobIdprefix
-	if(defined($rHoAoA_designGroup)) {
-  	for my $designName (keys %{$rHoAoA_designGroup}) {
-	  	$jobIdVarPrefix{$designName} = $cpt;
-		  $cpt++;
-  	}
-  }
+		
+		my %jobIdVarPrefix;
+		my %cfg = LoadConfig->readConfigFile($opts{'c'});
+		my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($opts{'n'});
+		my $rAoH_seqDictionary = SequenceDictionaryParser::readDictFile(\%cfg);
 	
-  # List user-defined step index range.
-  # Shift 1st position to 0 instead of 1
-  my @stepRange = map($_ - 1, parse_range($opts{'s'}));
+		$designFilePath = $opts{'d'};
+		my $rHoAoA_designGroup;
+		if(defined($designFilePath)) {
+			$designFilePath = abs_path($designFilePath);
+			##get design groups
+			$rHoAoA_designGroup = Cufflinks::getDesign(\%cfg,$designFilePath);
+		}
+		$workDir = abs_path($opts{'w'});
+		$configFile =  abs_path($opts{'c'});
+		$readSetSheet =  abs_path($opts{'n'}); 
 
-	SubmitToCluster::initPipeline($workDir);
-
-	for my $current (@stepRange) {
-		my $fname = $steps[$current]->{'name'};
-		my $loopType = $steps[$current]->{'stepLoop'};
-		my $subref = \&$fname;
-		if ($loopType eq 'sample') {
-			for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
+		
+		#generate sample jobIdprefix
+		my $cpt = 1;
+			
+		for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
+			my $cpt2=1;
+			$jobIdVarPrefix{$sampleName} = $cpt;
 			my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sampleName};
-			# Tests for the first step in the list. Used for dependencies.
-			my $jobIdVar = &$subref($current != $stepRange[0], \%cfg, $sampleName, $rAoH_sampleLanes, $rAoH_seqDictionary, \%jobIdVarPrefix);
-			if (defined($jobIdVar)) {
-				$globalDep{$fname}->{$sampleName} = $jobIdVar;
+			for my $rH_laneInfo (@$rAoH_sampleLanes) {
+				$jobIdVarPrefix{$sampleName .'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} = $cpt.'_'.$cpt2;
+				$cpt2++;
 			}
+			$cpt++;
+		}
+		#generate design jobIdprefix
+		if(defined($rHoAoA_designGroup)) {
+			for my $designName (keys %{$rHoAoA_designGroup}) {
+				$jobIdVarPrefix{$designName} = $cpt;
+				$cpt++;
 			}
 		}
-		else {
-			# Tests for the first step in the list. Used for dependencies.
-			my $jobIdVar = &$subref($current != $stepRange[0], \%cfg, $rHoAoH_sampleInfo, $rHoAoA_designGroup, $rAoH_seqDictionary, \%jobIdVarPrefix);
-			if (defined($jobIdVar)) {
-				$globalDep{$fname}->{$fname} = $jobIdVar;
+			
+		# List user-defined step index range.
+		# Shift 1st position to 0 instead of 1
+		my @stepRange = map($_ - 1, parse_range($opts{'s'}));
+
+		SubmitToCluster::initPipeline($workDir);
+
+		for my $current (@stepRange) {
+			my $fname = $steps[$current]->{'name'};
+			my $loopType = $steps[$current]->{'stepLoop'};
+			my $subref = \&$fname;
+			if ($loopType eq 'sample') {
+				for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
+				my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sampleName};
+				# Tests for the first step in the list. Used for dependencies.
+				my $jobIdVar = &$subref($current != $stepRange[0], \%cfg, $sampleName, $rAoH_sampleLanes, $rAoH_seqDictionary, \%jobIdVarPrefix);
+				if (defined($jobIdVar)) {
+					$globalDep{$fname}->{$sampleName} = $jobIdVar;
+				}
+				}
+			}
+			else {
+				# Tests for the first step in the list. Used for dependencies.
+				my $jobIdVar = &$subref($current != $stepRange[0], \%cfg, $rHoAoH_sampleInfo, $rHoAoA_designGroup, $rAoH_seqDictionary, \%jobIdVarPrefix);
+				if (defined($jobIdVar)) {
+					$globalDep{$fname}->{$fname} = $jobIdVar;
+				}
 			}
 		}
 	}
