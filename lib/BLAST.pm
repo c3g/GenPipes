@@ -180,27 +180,37 @@ sub bestHit {
 
 sub dcmegablast{ #JT: Initially for for PacBio pipeline
   my $rH_cfg      = shift;
-  #my $gunzipCmd   = shift;
   my $infileFasta = shift; 
   my $outfmt      = shift;
   my $outfile     = shift;
+  my $coverageBED = shift;
+  my $outdir      = shift;
 
   my $ro_job = new Job();
     $ro_job->testInputOutputs([$infileFasta], [$outfile]);
     
   if (!$ro_job->isUp2Date()) {
     my $cmd = '';
-    $cmd .= LoadConfig::moduleLoad($rH_cfg, [['memtime', 'moduleVersion.memtime'], ['blast', 'moduleVersion.blast']]) . ' && ';
-    #$cmd .= $gunzipCmd . ' &&';
+    $cmd .= LoadConfig::moduleLoad($rH_cfg, [
+      ['memtime', 'moduleVersion.memtime'], 
+      ['blast', 'moduleVersion.blast'],
+      ['R', 'moduleVersion.R'],
+      ['tools', 'moduleVersion.mugqictools']
+    ]) . ' && ';
     $cmd .= ' memtime ';
     $cmd .= ' blastn';
     $cmd .= ' -task dc-megablast';
     $cmd .= ' -query ' . $infileFasta;
-    $cmd .= ' -outfmt ' . $outfmt;
+    $cmd .= ' -outfmt \"' .$outfmt. ' qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore stitle sskingdoms sscinames scomnames\"';
     $cmd .= ' -out ' .$outfile;
+    $cmd .= ' -max_target_seqs ' . LoadConfig::getParam($rH_cfg, 'blast', 'max_target_seqs', 1, 'int');
     $cmd .= ' -num_threads ' . LoadConfig::getParam($rH_cfg, 'blast', 'num_threads', 1, 'int');
     $cmd .= ' -db ' . LoadConfig::getParam($rH_cfg, 'blast', 'blastdb');
-
+    $cmd .= ' && ';
+    $cmd .= ' pacBioMergeCovToBlast.R';
+    $cmd .= ' -c ' . $coverageBED;
+    $cmd .= ' -b ' . $outfile;
+    $cmd .= ' -o ' . $outdir;
 
     $ro_job->addCommand($cmd);
   }
@@ -213,7 +223,7 @@ sub blastdbcmd{ # JT: Initially for PacBio pipeline
   my $outfile     = shift;
 
   my $ro_job = new Job();
-    $ro_job->testInputOutputs(undef, [$outfile]);
+    $ro_job->testInputOutputs([""], [$outfile]);
     
   if (!$ro_job->isUp2Date()) {
     my $cmd = '';

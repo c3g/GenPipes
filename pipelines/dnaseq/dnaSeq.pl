@@ -90,6 +90,9 @@ use lib "$FindBin::Bin/../../lib";
 #--------------------
 use Getopt::Std;
 use Cwd 'abs_path';
+use File::Basename;
+use File::Path;
+use Parse::Range qw(parse_range);
 use POSIX;
 
 use BVATools;
@@ -116,9 +119,11 @@ use GqSeqUtils;
 #--------------------
 
 my @steps;
-push(@steps, {'name' => 'trimAndAlign', 'stepLoop' => 'sample', 'parentStep' => undef});
+push(@steps, {'name' => 'samToFastq', 'stepLoop' => 'sample', 'parentStep' => undef});
+push(@steps, {'name' => 'trimAndAlign', 'stepLoop' => 'sample', 'parentStep' => 'samToFastq'});
 push(@steps, {'name' => 'laneMetrics', 'stepLoop' => 'sample', 'parentStep' => 'trimAndAlign'});
 push(@steps, {'name' => 'mergeTrimStats', 'stepLoop' => 'experiment', 'parentStep' => 'trimAndAlign'});
+push(@steps, {'name' => 'symlinkRawAlignBam', 'stepLoop' => 'sample', 'parentStep' => undef});
 push(@steps, {'name' => 'mergeLanes', 'stepLoop' => 'sample', 'parentStep' => 'trimAndAlign'});
 push(@steps, {'name' => 'indelRealigner', 'stepLoop' => 'sample', 'parentStep' => 'mergeLanes'});
 push(@steps, {'name' => 'mergeRealigned', 'stepLoop' => 'sample', 'parentStep' => 'indelRealigner'});
@@ -126,6 +131,10 @@ push(@steps, {'name' => 'fixmate', 'stepLoop' => 'sample', 'parentStep' => 'merg
 push(@steps, {'name' => 'markDup', 'stepLoop' => 'sample', 'parentStep' => 'fixmate'});
 push(@steps, {'name' => 'recalibration', 'stepLoop' => 'sample', 'parentStep' => 'markDup'});
 push(@steps, {'name' => 'metrics', 'stepLoop' => 'sample', 'parentStep' => 'recalibration'});
+push(@steps, {'name' => 'callableBases', 'stepLoop' => 'sample', 'parentStep' => 'recalibration'});
+push(@steps, {'name' => 'extractCommonSNPFreq', 'stepLoop' => 'sample', 'parentStep' => 'recalibration'});
+push(@steps, {'name' => 'BAFPlot', 'stepLoop' => 'sample', 'parentStep' => 'commonSNPFreq'});
+push(@steps, {'name' => 'haplotypeCaller', 'stepLoop' => 'sample', 'parentStep' => 'recalibration'});
 push(@steps, {'name' => 'metricsLibrarySample', 'stepLoop' => 'experiment', 'parentStep' => 'metrics'});
 push(@steps, {'name' => 'snpAndIndelBCF', 'stepLoop' => 'experiment', 'parentStep' => 'recalibration'});
 push(@steps, {'name' => 'mergeFilterBCF', 'stepLoop' => 'experiment', 'parentStep' => 'snpAndIndelBCF'});
@@ -134,7 +143,7 @@ push(@steps, {'name' => 'flagMappability', 'stepLoop' => 'experiment', 'parentSt
 push(@steps, {'name' => 'snpIDAnnotation', 'stepLoop' => 'experiment', 'parentStep' => 'flagMappability'});
 push(@steps, {'name' => 'snpEffect', 'stepLoop' => 'experiment', 'parentStep' => 'snpIDAnnotation'});
 push(@steps, {'name' => 'dbNSFPAnnotation', 'stepLoop' => 'experiment', 'parentStep' => 'snpEffect'});
-push(@steps, {'name' => 'metricsSNV', 'stepLoop' => 'experiment', 'parentStep' => 'snpIDAnnotation'});
+push(@steps, {'name' => 'metricsSNV', 'stepLoop' => 'experiment', 'parentStep' => 'snpEffect'});
 push(@steps, {'name' => 'deliverable' , 'stepLoop' => 'experiment' , 'parentStep' => ['mergeTrimStats','metricsLibrarySample','metricsSNV']});
 push(@steps, {'name' => 'fullPileup', 'stepLoop' => 'sample', 'parentStep' => 'recalibration'});
 
@@ -210,8 +219,7 @@ sub printUsage {
   print "Version: ".$Version::version."\n";
   print "\nUsage: perl ".$0." -c config.ini -s start -e end -n SampleSheet.csv\n";
   print "\t-c  config file\n";
-  print "\t-s  start step, inclusive\n";
-  print "\t-e  end step, inclusive\n";
+  print "\t-s  step range e.g. '1,3', '2-5', '1,4-7,10'\n";
   print "\t-n  nanuq sample sheet\n";
   #print "\t-d  First dependency (optional)\n";
   print "\n";
@@ -224,9 +232,9 @@ sub printUsage {
 
 sub main {
   my %opts;
-  getopts('c:s:e:n:d:', \%opts);
+  getopts('c:s:n:d:', \%opts);
   
-  if (!defined($opts{'c'}) || !defined($opts{'s'}) || !defined($opts{'e'}) || !defined($opts{'n'})) {
+  if (!defined($opts{'c'}) || !defined($opts{'s'}) || !defined($opts{'n'})) {
     printUsage();
     exit(1);
   }
@@ -235,10 +243,8 @@ sub main {
   my %cfg = LoadConfig->readConfigFile($opts{'c'});
   my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($opts{'n'});
   my $rAoH_seqDictionary = SequenceDictionaryParser::readDictFile(\%cfg);
-  my $currentWorkDir = getcwd();
   $configFile =  abs_path($opts{'c'});
 
-  my $latestBam;
   my @sampleNames = keys %{$rHoAoH_sampleInfo};
 
   print STDERR "Samples: ".scalar(@sampleNames)."\n";
@@ -248,21 +254,25 @@ sub main {
     }
   }
 
+  # List user-defined step index range.
+  # Shift 1st position to 0 instead of 1
+  my @stepRange = map($_ - 1, parse_range($opts{'s'}));
+
   SubmitToCluster::initPipeline;
 
   my $currentStep;
-  my $lastStepId = $opts{'e'}-1;
+  my $lastStepId = $stepRange[$#stepRange];
   for(my $idx=0; $idx < @sampleNames; $idx++){
     my $sampleName = $sampleNames[$idx];
     my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sampleName};
 
-    for($currentStep = $opts{'s'}-1; $currentStep <= $lastStepId; $currentStep++) {
+    for $currentStep (@stepRange) {
       my $fname = $steps[$currentStep]->{'name'};
       my $subref = \&$fname;
 
       if ($steps[$currentStep]->{'stepLoop'} eq 'sample') {
         # Tests for the first step in the list. Used for dependencies.
-        my $jobIdVar = &$subref($currentStep, \%cfg, $currentWorkDir, $sampleName, $rAoH_sampleLanes, $rAoH_seqDictionary); 
+        my $jobIdVar = &$subref($currentStep, \%cfg, $sampleName, $rAoH_sampleLanes, $rAoH_seqDictionary); 
         $globalDep{$fname}->{$sampleName} = $jobIdVar;
 
         if(defined($jobIdVar) && $currentStep == $lastStepId) {
@@ -272,7 +282,7 @@ sub main {
     }
   }
 
-  for($currentStep = $opts{'s'}-1; $currentStep <= $lastStepId; $currentStep++) {
+  for $currentStep (@stepRange) {
     if($steps[$currentStep]->{'stepLoop'} eq 'experiment') {
       my $fname = $steps[$currentStep]->{'name'};
       my $subref = \&$fname;
@@ -300,16 +310,78 @@ sub main {
   
 }
 
-sub trimAndAlign {
+sub samToFastq {
   my $stepId = shift;
   my $rH_cfg = shift;
-  my $currentWorkDir = shift;
   my $sampleName = shift;
   my $rAoH_sampleLanes  = shift;
   my $rAoH_seqDictionary = shift;
 
   my $jobDependency = undef;
   my $parentStep = 'default';
+  if(defined($parentStep) && defined($globalDep{$parentStep}->{$sampleName})) {
+    $jobDependency = $globalDep{$parentStep}->{$sampleName};
+  }
+
+  print "SAMTOFASTQ_JOB_IDS=\"\"\n";
+  my $setJobId = 0;
+  my $first = 1;
+
+  for my $rH_laneInfo (@$rAoH_sampleLanes) {
+    # Check if bam is defined
+    $rH_laneInfo->{'bam'} or die "Error in dnaSeq::samToFastq: BAM file is not defined for sample run lane $sampleName " . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "!";
+
+    my $rO_job;
+    my $baseDirectory = "$sampleName/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
+    my $rawDirectory = LoadConfig::getParam($rH_cfg, 'default', 'rawReadDir', 1, 'dirpath') . "/" . $baseDirectory;
+    my $input1 = $rawDirectory . "/" . $rH_laneInfo->{'bam'};
+
+    if ($input1) {
+      if ($rH_laneInfo->{'runType'} eq "SINGLE_END") {
+        my $outputFastq1 = $input1;
+        $outputFastq1 =~ s/\.bam$/.single.fastq.gz/;
+        $rO_job = Picard::samToFastq($rH_cfg, $input1, $outputFastq1);
+        $rH_laneInfo->{'read1File'} = basename($outputFastq1);
+      } elsif ($rH_laneInfo->{'runType'} eq "PAIRED_END") {
+        my $outputFastq1 = $input1;
+        my $outputFastq2 = $input1;
+        $outputFastq1 =~ s/\.bam$/.pair1.fastq.gz/;
+        $outputFastq2 =~ s/\.bam$/.pair2.fastq.gz/;
+        $rO_job = Picard::samToFastq($rH_cfg, $input1, $outputFastq1, $outputFastq2);
+        $rH_laneInfo->{'read1File'} = basename($outputFastq1);
+        $rH_laneInfo->{'read2File'} = basename($outputFastq2);
+      } else {
+        die "Error in dnaSeq::samToFastq: unknown run type (can be 'SINGLE_END' or 'PAIRED_END' only): " . $rH_laneInfo->{'runType'};
+      }
+    }
+    if (!$rO_job->isUp2Date()) {
+      SubmitToCluster::printSubmitCmd($rH_cfg, "samToFastq", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, "SAMTOFASTQ", $jobDependency, $sampleName, $rO_job);
+      if ($first == 1) {
+        print "SAMTOFASTQ_JOB_IDS=" . $rO_job->getCommandJobId(0) . "\n";
+        $first = 0;
+      } else {
+        print "SAMTOFASTQ_JOB_IDS=\${SAMTOFASTQ_JOB_IDS}" . LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep') . $rO_job->getCommandJobId(0) . "\n";
+      }
+      $setJobId = 1;
+    }
+  }
+
+  if ($setJobId) {
+    return "\${SAMTOFASTQ_JOB_IDS}";
+  } else {
+    return undef;
+  }
+}
+
+sub trimAndAlign {
+  my $stepId = shift;
+  my $rH_cfg = shift;
+  my $sampleName = shift;
+  my $rAoH_sampleLanes  = shift;
+  my $rAoH_seqDictionary = shift;
+
+  my $jobDependency = undef;
+  my $parentStep = $steps[$stepId]->{'parentStep'};
   if(defined($parentStep) && defined($globalDep{$parentStep}->{$sampleName})) {
     $jobDependency = $globalDep{$parentStep}->{$sampleName};
   }
@@ -378,7 +450,6 @@ sub trimAndAlign {
 sub laneMetrics {
   my $stepId = shift;
   my $rH_cfg = shift;
-  my $currentWorkDir = shift;
   my $sampleName = shift;
   my $rAoH_sampleLanes  = shift;
   my $rAoH_seqDictionary = shift;
@@ -389,9 +460,6 @@ sub laneMetrics {
     $jobDependency = $globalDep{$parentStep}->{$sampleName};
   }
 
-  my $latestBam;
-  my @inputBams;
-  my $outputBAM = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.bam';
   print "LANE_METRICS_JOB_IDS=\"\"\n";
   my $first=1;
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
@@ -399,7 +467,6 @@ sub laneMetrics {
     my $sortedLaneBamFile = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.bam';
     my $sortedLaneDupBamFile = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.dup.bam';
     my $outputMetrics = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.dup.metrics';
-    my $runName = $sampleName."_run".$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'};
 
     my $rO_job = Picard::markDup($rH_cfg, $sampleName, $sortedLaneBamFile, $sortedLaneDupBamFile, $outputMetrics);
     if(!$rO_job->isUp2Date()) {
@@ -464,7 +531,6 @@ sub mergeTrimStats {
   my $jobDependencies = "";
   for(my $idx=0; $idx < @sampleNames; $idx++){
     my $sampleName = $sampleNames[$idx];
-    my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sampleName};
     if(defined($globalDep{$parentStep}->{$sampleName})){
       $jobDependencies .= LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$globalDep{$parentStep}->{$sampleName};
     }
@@ -488,10 +554,41 @@ sub mergeTrimStats {
 }
 
 
+sub symlinkRawAlignBam {
+  my $stepId = shift;
+  my $rH_cfg = shift;
+  my $sampleName = shift;
+  my $rAoH_sampleLanes  = shift;
+  my $rAoH_seqDictionary = shift;
+
+  my @inputBams;
+
+  
+
+  for my $rH_laneInfo (@$rAoH_sampleLanes) {
+    my $baseDirectory = "$sampleName/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
+    my $rawBam = abs_path(LoadConfig::getParam($rH_cfg, 'default', 'rawReadDir', 1, 'dirpath')) . "/" . $baseDirectory . "/" . $rH_laneInfo->{'bam'};
+
+    my $alignmentDirectory = 'alignment/' . $baseDirectory . "/";
+    my $alignedBam = $alignmentDirectory . "/" . $rH_laneInfo->{'name'} . '.' . $rH_laneInfo->{'libraryBarcode'} . '.sorted.bam';
+
+    mkpath $alignmentDirectory;
+
+    if (-l $alignedBam) {
+      warn "[Warning] Symbolic link $alignedBam already exists! Skipping.\n";
+    } elsif (-e $rawBam and symlink($rawBam, $alignedBam)) {
+      warn "Created symbolic link $alignedBam successfully.\n";
+    } else {
+      die "[Error] Can't create symbolic link $alignedBam to target $rawBam!\n";
+    }
+  }
+
+  return undef;
+}
+
 sub mergeLanes {
   my $stepId = shift;
   my $rH_cfg = shift;
-  my $currentWorkDir = shift;
   my $sampleName = shift;
   my $rAoH_sampleLanes  = shift;
   my $rAoH_seqDictionary = shift;
@@ -502,13 +599,11 @@ sub mergeLanes {
     $jobDependency = $globalDep{$parentStep}->{$sampleName};
   }
 
-  my $latestBam;
   my @inputBams;
   my $outputBAM = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.bam';
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
     my $directory = 'alignment/'.$sampleName."/run".$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'}."/";
     my $sortedLaneBamFile = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.bam';
-    my $runName = $sampleName."_run".$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'};
 
     push(@inputBams, $sortedLaneBamFile);
   }
@@ -523,7 +618,6 @@ sub mergeLanes {
 sub indelRealigner {
   my $stepId = shift;
   my $rH_cfg = shift;
-  my $currentWorkDir = shift;
   my $sampleName = shift;
   my $rAoH_sampleLanes  = shift;
   my $rAoH_seqDictionary = shift;
@@ -596,7 +690,6 @@ sub indelRealigner {
 sub mergeRealigned {
   my $stepId = shift;
   my $rH_cfg = shift;
-  my $currentWorkDir = shift;
   my $sampleName = shift;
   my $rAoH_sampleLanes  = shift;
   my $rAoH_seqDictionary = shift;
@@ -608,7 +701,6 @@ sub mergeRealigned {
   }
 
   my $jobId;
-  my $latestBam;
   my @inputBams;
   my $outputBAM = 'alignment/'.$sampleName.'/'.$sampleName.'.realigned.qsorted.bam';
 
@@ -622,7 +714,6 @@ sub mergeRealigned {
   else {
     #Keep space for the exclude realignment at the end.
     $nbRealignJobs--;
-    my @chrToProcess;
     for (my $idx=0; $idx < $nbRealignJobs; $idx++) {
       my $input = 'alignment/'.$sampleName.'/realign/'.$rAoH_seqDictionary->[$idx]->{'name'}.'.bam';
       push(@inputBams, $input);
@@ -643,7 +734,6 @@ sub mergeRealigned {
 sub fixmate {
   my $stepId = shift;
   my $rH_cfg = shift;
-  my $currentWorkDir = shift;
   my $sampleName = shift;
   my $rAoH_sampleLanes  = shift;
   my $rAoH_seqDictionary = shift;
@@ -667,7 +757,6 @@ sub fixmate {
 sub markDup {
   my $stepId = shift;
   my $rH_cfg = shift;
-  my $currentWorkDir = shift;
   my $sampleName = shift;
   my $rAoH_sampleLanes  = shift;
   my $rAoH_seqDictionary = shift;
@@ -692,7 +781,6 @@ sub markDup {
 sub recalibration {
   my $stepId = shift;
   my $rH_cfg = shift;
-  my $currentWorkDir = shift;
   my $sampleName = shift;
   my $rAoH_sampleLanes  = shift;
   my $rAoH_seqDictionary = shift;
@@ -716,7 +804,6 @@ sub recalibration {
 sub metrics {
   my $stepId = shift;
   my $rH_cfg = shift;
-  my $currentWorkDir = shift;
   my $sampleName = shift;
   my $rAoH_sampleLanes  = shift;
   my $rAoH_seqDictionary = shift;
@@ -727,7 +814,6 @@ sub metrics {
     $jobDependency = $globalDep{$parentStep}->{$sampleName};
   }
 
-  my $rO_job;
   my $bamFile = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.recal.bam';
   my $jobId;
 
@@ -756,6 +842,19 @@ sub metrics {
     }
   }
 
+  my $output = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.recal.coverage.tsv';
+  my $coverageBED = BVATools::resolveSampleBED($rH_cfg, $rAoH_sampleLanes->[0]);
+  my $rO_coverageJob = BVATools::depthOfCoverage($rH_cfg, $bamFile, $output, $coverageBED);
+  if(!$rO_coverageJob->isUp2Date()) {
+    SubmitToCluster::printSubmitCmd($rH_cfg, "depthOfCoverage", undef, 'SAMPLE_COVERAGE', $jobDependency, $sampleName, $rO_coverageJob);
+    if(!defined($jobId)) {
+      $jobId='$METRICS_JOBS';
+      print 'METRICS_JOBS='.$rO_coverageJob->getCommandJobId(0)."\n";;
+    }
+    else {
+      print 'METRICS_JOBS=${METRICS_JOBS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$rO_coverageJob->getCommandJobId(0)."\n";
+    }
+  }
   # Compute CCDS coverage
   $outputPrefix = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.recal.CCDS.coverage';
   my $rO_targetCoverageJob = GATK::targetCoverage($rH_cfg, $sampleName, $bamFile, $outputPrefix);
@@ -784,7 +883,7 @@ sub metrics {
   }
 
   # Compute flags
-  my $output = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.recal.bam.flagstat';
+  $output = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.recal.bam.flagstat';
   my $rO_flagstatJob = SAMtools::flagstat($rH_cfg, $bamFile, $output);
   if(!$rO_flagstatJob->isUp2Date()) {
     SubmitToCluster::printSubmitCmd($rH_cfg, "flagstat", undef, 'FLAGSTAT', $jobDependency, $sampleName, $rO_flagstatJob);
@@ -800,6 +899,139 @@ sub metrics {
   return $jobId;
 }
 
+sub callableBases {
+  my $stepId = shift;
+  my $rH_cfg = shift;
+  my $sampleName = shift;
+  my $rAoH_sampleLanes  = shift;
+  my $rAoH_seqDictionary = shift;
+
+  my $jobDependency = undef;
+  my $parentStep = $steps[$stepId]->{'parentStep'};
+  if(defined($globalDep{$parentStep}->{$sampleName})) {
+    $jobDependency = $globalDep{$parentStep}->{$sampleName};
+  }
+
+  my $bamFile = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.recal.bam';
+
+  my $outputPrefix = 'alignment/'.$sampleName.'/'.$sampleName;
+  my $rO_job = GATK::callableBases($rH_cfg, $bamFile, $outputPrefix);
+  if(!$rO_job->isUp2Date()) {
+    SubmitToCluster::printSubmitCmd($rH_cfg, "callableBases", undef, 'CALLABLE_BASES', $jobDependency, $sampleName, $rO_job);
+  }
+
+  return $rO_job->getCommandJobId(0);
+}
+
+sub extractCommonSNPFreq {
+  my $stepId = shift;
+  my $rH_cfg = shift;
+  my $sampleName = shift;
+  my $rAoH_sampleLanes  = shift;
+  my $rAoH_seqDictionary = shift;
+
+  my $jobDependency = undef;
+  my $parentStep = $steps[$stepId]->{'parentStep'};
+  if(defined($globalDep{$parentStep}->{$sampleName})) {
+    $jobDependency = $globalDep{$parentStep}->{$sampleName};
+  }
+
+  my $commonSNPPositions = LoadConfig::getParam($rH_cfg, 'extractCommonSNPFreq', 'commonSNPPos');
+
+  my $bamFile = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.recal.bam';
+
+  my $output = 'alignment/'.$sampleName.'/'.$sampleName.'.commonSNPs.alleleFreq.csv';
+  my $rO_job = BVATools::basefreq($rH_cfg, $bamFile, $output, $commonSNPPositions, 0);
+  if(!$rO_job->isUp2Date()) {
+    SubmitToCluster::printSubmitCmd($rH_cfg, "extractCommonSNPFreq", undef, 'EXTRACT_SNP_FREQ', $jobDependency, $sampleName, $rO_job);
+  }
+
+  return $rO_job->getCommandJobId(0);
+}
+
+sub BAFPlot {
+  my $stepId = shift;
+  my $rH_cfg = shift;
+  my $sampleName = shift;
+  my $rAoH_sampleLanes  = shift;
+  my $rAoH_seqDictionary = shift;
+
+  my $jobDependency = undef;
+  my $parentStep = $steps[$stepId]->{'parentStep'};
+  if(defined($globalDep{$parentStep}->{$sampleName})) {
+    $jobDependency = $globalDep{$parentStep}->{$sampleName};
+  }
+
+  my $commonSNPPositions = LoadConfig::getParam($rH_cfg, 'BAFPlot', 'commonSNPPos');
+
+  my $alleleFreqFile = 'alignment/'.$sampleName.'/'.$sampleName.'.commonSNPs.alleleFreq.csv';
+
+  my $outputPrefix = 'alignment/'.$sampleName.'/'.$sampleName.'.ratioBAF';
+  my $rO_job = BVATools::bafPlot($rH_cfg, $alleleFreqFile, $commonSNPPositions, $outputPrefix);
+  if(!$rO_job->isUp2Date()) {
+    SubmitToCluster::printSubmitCmd($rH_cfg, "BAFPlot", undef, 'BAF_PLOT', $jobDependency, $sampleName, $rO_job);
+  }
+
+  return $rO_job->getCommandJobId(0);
+}
+
+sub haplotypeCaller {
+  my $stepId = shift;
+  my $rH_cfg = shift;
+  my $sampleName = shift;
+  my $rAoH_sampleLanes  = shift;
+  my $rAoH_seqDictionary = shift;
+
+  my $jobDependency = undef;
+  my $parentStep = $steps[$stepId]->{'parentStep'};
+  if(defined($globalDep{$parentStep}->{$sampleName})) {
+    $jobDependency = $globalDep{$parentStep}->{$sampleName};
+  }
+
+  my $outputDir = 'alignment/'.$sampleName.'/rawHaplotypeCaller/';
+  my $outputPrefix = $outputDir . $sampleName;
+  print 'mkdir -p '.$outputDir."\n";
+  print "HAPLOTYPE_CALLER_JOB_IDS=\"\"\n";
+
+  my $bamFile = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.recal.bam';
+  my $nbJobs = LoadConfig::getParam($rH_cfg, 'haplotypeCaller', 'approxNbJobs', 0, 'int');
+  my $jobId=undef;
+
+  my $seqName = undef;
+  if (defined($nbJobs) && $nbJobs > 1) {
+    my $rA_regions = generateApproximateWindows($nbJobs, $rAoH_seqDictionary);
+    for my $region (@{$rA_regions}) {
+      my $rO_job = GATK::haplotypeCaller($rH_cfg, $bamFile, $region, $outputPrefix);
+      if(!$rO_job->isUp2Date()) {
+        $region =~ s/:/_/g;
+        SubmitToCluster::printSubmitCmd($rH_cfg, "haplotypeCaller", $region, 'HAPLOTYPE_CALLER', $jobDependency, $sampleName, $rO_job);
+        if(!defined($jobId)) {
+          $jobId = '${HAPLOTYPE_CALLER_JOB_IDS}';
+          print 'HAPLOTYPE_CALLER_JOB_IDS='.$rO_job->getCommandJobId(0)."\n";
+        }
+        else {
+          print 'HAPLOTYPE_CALLER_JOB_IDS=${HAPLOTYPE_CALLER_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$rO_job->getCommandJobId(0)."\n";
+        }
+      }
+    }
+  }
+  else {
+    my $region = undef;
+    my $rO_job = GATK::haplotypeCaller($rH_cfg, $bamFile, $region, $outputPrefix);
+    if(!$rO_job->isUp2Date()) {
+      SubmitToCluster::printSubmitCmd($rH_cfg, "haplotypeCaller", $region, 'HAPLOTYPE_CALLER', $jobDependency, $sampleName, $rO_job);
+      if(!defined($jobId)) {
+        $jobId = '${HAPLOTYPE_CALLER_JOB_IDS}';
+        print 'HAPLOTYPE_CALLER_JOB_IDS='.$rO_job->getCommandJobId(0)."\n";
+      }
+      else {
+        print 'HAPLOTYPE_CALLER_JOB_IDS=${MPILEUP_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$rO_job->getCommandJobId(0)."\n";
+      }
+    }
+  }
+
+  return $jobId;
+}
 
 sub metricsLibrarySample {
   my $stepId = shift;
@@ -815,7 +1047,6 @@ sub metricsLibrarySample {
   my $jobDependencies = "";
   for(my $idx=0; $idx < @sampleNames; $idx++){
     my $sampleName = $sampleNames[$idx];
-    my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sampleName};
     if(defined($globalDep{$parentStep}->{$sampleName})){
       $jobDependencies .= LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$globalDep{$parentStep}->{$sampleName};
     }
@@ -833,7 +1064,6 @@ sub metricsLibrarySample {
   print "mkdir -p metrics\n";
 
   my $rO_job = Metrics::mergeSampleDnaStats($rH_cfg,  $experimentType, $folder, $ouputFile);
-  my $metricsJobId = undef;
   if(!$rO_job->isUp2Date()) {
     SubmitToCluster::printSubmitCmd($rH_cfg, "sampleMetrics", undef, 'SAMPLEMETRICS', $metricsDependency, undef, $rO_job);
   }
@@ -841,26 +1071,10 @@ sub metricsLibrarySample {
 }
 
 
-sub sortQname {
-  my $stepId = shift;
-  my $rH_cfg = shift;
-  my $currentWorkDir = shift;
-  my $sampleName = shift;
-  my $rAoH_sampleLanes  = shift;
-  my $rAoH_seqDictionary = shift;
-
-  my $jobDependency = undef;
-  my $parentStep = $steps[$stepId]->{'parentStep'};
-  if(defined($globalDep{$parentStep}->{$sampleName})) {
-    $jobDependency = $globalDep{$parentStep}->{$sampleName};
-  }
-}
-
 #push(@steps, {'name' => 'countTelomere'});
 sub fullPileup {
   my $stepId = shift;
   my $rH_cfg = shift;
-  my $currentWorkDir = shift;
   my $sampleName = shift;
   my $rAoH_sampleLanes  = shift;
   my $rAoH_seqDictionary = shift;
@@ -1160,7 +1374,7 @@ sub snpEffect {
 sub dbNSFPAnnotation {
   my $stepId = shift;
   my $rH_cfg = shift;
-  my $rH_samplePair = shift;
+  my $rHoAoH_sampleInfo = shift;
   my $rAoH_seqDictionary = shift;
 
   my $jobDependency = undef;

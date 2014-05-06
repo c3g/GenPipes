@@ -45,7 +45,7 @@ use warnings;
 # Dependencies
 #--------------------
 use File::Basename;
-use Text::CSV;
+use Text::CSV::Encoded;
 use Cwd 'abs_path';
 #--------------------
 
@@ -55,8 +55,9 @@ use Cwd 'abs_path';
 
 sub parseSampleSheetAsHash {
   my $fileName = shift;
+  my $ignoreStatus = shift;
 
-  my $rA_SampleLaneInfos = parseSampleSheet($fileName);
+  my $rA_SampleLaneInfos = parseSampleSheet($fileName, $ignoreStatus);
   my %sampleInfo;
   for my $rH_Sample (@$rA_SampleLaneInfos) {
     if (!defined $sampleInfo{$rH_Sample->{'name'}}) {
@@ -70,8 +71,9 @@ sub parseSampleSheetAsHash {
 
 sub parseSampleSheetAsHashByProcessingId {
   my $fileName = shift;
+  my $ignoreStatus = shift;
 
-  my $rA_SampleLaneInfos = parseSampleSheet($fileName);
+  my $rA_SampleLaneInfos = parseSampleSheet($fileName, $ignoreStatus);
   my %sampleInfo;
   for my $rH_Sample (@$rA_SampleLaneInfos) {
     if (!defined($rH_Sample->{'processingSheetId'})) {
@@ -115,19 +117,20 @@ sub parsePairedSampleSheet {
 
 sub parseSampleSheet {
   my $fileName = shift;
+  my $ignoreStatus = shift;
 
   my @retVal;
-  my $csv = Text::CSV->new();
+  my $csv = Text::CSV::Encoded->new ({ encoding => "iso-8859-1" });
   open(SAMPLE_SHEET, "$fileName") or die "Can't open $fileName\n";
   my $line = <SAMPLE_SHEET>;
   $csv->parse($line);
   my @headers = $csv->fields();
-  my ($nameIdx, $libraryBarcodeIdx, $runIdIdx, $laneIdx, $runTypeIdx, $statusIdx, $qualOffsetIdx, $bedFilesIdx, $processingSheetIdIdx, $libSourceIdx) = parseHeaderIndexes(\@headers);
+  my ($nameIdx, $libraryBarcodeIdx, $runIdIdx, $laneIdx, $runTypeIdx, $statusIdx, $qualOffsetIdx, $bedFilesIdx, $processingSheetIdIdx, $libSourceIdx, $fastq1Idx, $fastq2Idx, $bamIdx) = parseHeaderIndexes(\@headers);
 
   while($line = <SAMPLE_SHEET>) {
     $csv->parse($line);
     my @values = $csv->fields();
-    if ($values[$statusIdx] =~ /invalid/) {
+    if (!$ignoreStatus && $values[$statusIdx] ne 'Data is valid') {
       warn "Invalid: $values[$nameIdx] $values[$runIdIdx] $values[$laneIdx]\n";
       next;
     }
@@ -139,21 +142,32 @@ sub parseSampleSheet {
     $sampleInfo{'lane'} = $values[$laneIdx];
     $sampleInfo{'runType'} = $values[$runTypeIdx];
     $sampleInfo{'qualOffset'} = $values[$qualOffsetIdx];
-    my @bedFiles = split(';', $values[$bedFilesIdx]);
+    my @bedFiles = ();
+    if ($bedFilesIdx != -1) {
+        @bedFiles = split(';', $values[$bedFilesIdx]);
+    }
     $sampleInfo{'bedFiles'} = \@bedFiles;
     if ($processingSheetIdIdx > -1) {
       $sampleInfo{'processingSheetId'} = $values[$processingSheetIdIdx];
     }
     $sampleInfo{'libSource'} = $values[$libSourceIdx];
 
-    if ($values[$runTypeIdx] eq "PAIRED_END") {
-      $sampleInfo{'read1File'} = $sampleInfo{'name'} . '.' . $sampleInfo{'libraryBarcode'} . '.' . $sampleInfo{'qualOffset'} . ".pair1.fastq.gz";
-      $sampleInfo{'read2File'} = $sampleInfo{'name'} . '.' . $sampleInfo{'libraryBarcode'} . '.' . $sampleInfo{'qualOffset'} . ".pair2.fastq.gz";
-    } elsif ($values[$runTypeIdx] eq "SINGLE_END") {
-      $sampleInfo{'read1File'} = $sampleInfo{'name'} . '.' . $sampleInfo{'libraryBarcode'} . '.' . $sampleInfo{'qualOffset'} . ".single.fastq.gz";
-    } else {
-      print "Unrecognized run type $values[$runTypeIdx] \n";
-      exit 1;
+    my $filePrefix = $sampleInfo{'name'} . '.' . $sampleInfo{'libraryBarcode'} . '.' . $sampleInfo{'qualOffset'} . ".";
+
+    if ($values[$fastq1Idx]) {
+      if ($values[$runTypeIdx] eq "PAIRED_END") {
+        $sampleInfo{'read1File'} = $filePrefix . "pair1.fastq.gz";
+        $sampleInfo{'read2File'} = $filePrefix . "pair2.fastq.gz";
+      } elsif ($values[$runTypeIdx] eq "SINGLE_END") {
+        $sampleInfo{'read1File'} = $filePrefix . "single.fastq.gz";
+      } else {
+        print "Unrecognized run type $values[$runTypeIdx] \n";
+        exit 1;
+      }
+    }
+
+    if ($values[$bamIdx]) {
+      $sampleInfo{'bam'} = $filePrefix . "bam";
     }
 
     push(@retVal, \%sampleInfo);
@@ -174,6 +188,9 @@ sub parseHeaderIndexes {
   my $bedFilesIdx=-1;
   my $processingSheetIdIdx=-1;
   my $libSourceIdx = -1;
+  my $fastq1Idx = -1;
+  my $fastq2Idx = -1;
+  my $bamIdx = -1;
 	
   for(my $idx=0; $idx < @{$rA_headers}; $idx++) {
     my $header = $rA_headers->[$idx];
@@ -194,12 +211,16 @@ sub parseHeaderIndexes {
       $qualOffsetIdx=$idx;
     } elsif ($header eq "BED Files") {
       $bedFilesIdx=$idx;
-    }
-    elsif($header eq "ProcessingSheetId") {
+    } elsif($header eq "ProcessingSheetId") {
       $processingSheetIdIdx=$idx;
-    }
-    elsif($header eq "Library Source") {
+    } elsif($header eq "Library Source") {
       $libSourceIdx=$idx;
+    } elsif($header eq "FASTQ1") {
+      $fastq1Idx=$idx;
+    } elsif($header eq "FASTQ2") {
+      $fastq2Idx=$idx;
+    } elsif($header eq "BAM") {
+      $bamIdx=$idx;
     }
   }
 
@@ -232,6 +253,15 @@ sub parseHeaderIndexes {
   if($libSourceIdx==-1) {
     $sampleSheetErrors.="Missing Library Source\n";
   }
+  if($fastq1Idx==-1) {
+    $sampleSheetWarnings.="[Warning] Missing FASTQ1 Files\n";
+  }
+  if($fastq2Idx==-1) {
+    $sampleSheetWarnings.="[Warning] Missing FASTQ2 Files\n";
+  }
+  if($bamIdx==-1) {
+    $sampleSheetWarnings.="[Warning] Missing BAM Files\n";
+  }
   if(length($sampleSheetWarnings) > 0) {
     warn $sampleSheetWarnings;
   }
@@ -239,6 +269,6 @@ sub parseHeaderIndexes {
     die $sampleSheetErrors;
   }
 
-  return ($nameIdx, $libraryBarcodeIdx, $runIdIdx, $laneIdx, $runTypeIdx, $statusIdx, $qualOffsetIdx, $bedFilesIdx, $processingSheetIdIdx, $libSourceIdx);
+  return ($nameIdx, $libraryBarcodeIdx, $runIdIdx, $laneIdx, $runTypeIdx, $statusIdx, $qualOffsetIdx, $bedFilesIdx, $processingSheetIdIdx, $libSourceIdx, $fastq1Idx, $fastq2Idx, $bamIdx);
 }
 1;

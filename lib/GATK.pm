@@ -211,6 +211,70 @@ sub targetCoverage {
   return $ro_job;
 }
 
+sub callableBases {
+  my $rH_cfg       = shift;
+  my $inputBam     = shift;
+  my $outputPrefix = shift;
+
+  my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta', 1, 'filepath');
+  my $options = LoadConfig::getParam($rH_cfg, 'callableBases', 'extraFlags');
+
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$inputBam], [$outputPrefix . '.callable.summary.txt', $outputPrefix . '.callable.bed']);
+
+  if (!$ro_job->isUp2Date()) {
+    my $command = "";
+    $command .= LoadConfig::moduleLoad($rH_cfg, [['callableBases', 'moduleVersion.java'], ['callableBases', 'moduleVersion.gatk']]) . ' &&';
+    $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'callableBases', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'callableBases', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'callableBases', 'ram') . '  -jar \${GATK_JAR}';
+    $command .= ' -T CallableLoci ';
+    $command .= ' -R ' . $refGenome;
+    $command .= ' -o ' . $outputPrefix . '.callable.bed';
+    $command .= ' --summary ' . $outputPrefix . '.callable.summary.txt';
+    $command .= ' -I ' . $inputBam;
+    $command .= ' ' . $options;
+
+    $ro_job->addCommand($command);
+  }
+
+  return $ro_job;
+}
+
+sub haplotypeCaller {
+  my $rH_cfg       = shift;
+  my $bam          = shift;
+  my $seqName      = shift;
+  my $outputPrefix = shift;
+
+  my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta', 1, 'filepath');
+  my $options = LoadConfig::getParam($rH_cfg, 'haplotypeCaller', 'options');
+  my $regionCmd;
+
+  if (defined($seqName)) {
+    $regionCmd =' -L ' . $seqName;
+    $outputPrefix = $outputPrefix . '.' . $seqName;
+  }
+  my $outputGVCF = $outputPrefix . '.hc.gvcf';
+
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$bam], [$outputGVCF]);
+
+  if (!$ro_job->isUp2Date()) {
+    my $command;
+    $command .= LoadConfig::moduleLoad($rH_cfg, [['haplotypeCaller', 'moduleVersion.java'], ['haplotypeCaller', 'moduleVersion.gatk']]) . ' &&';
+    $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'haplotypeCaller', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'haplotypeCaller', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'haplotypeCaller', 'ram') . ' -jar \${GATK_JAR}';
+    $command .= ' --analysis_type HaplotypeCaller';
+    $command .= ' ' . $options;
+    $command .= ' --reference_sequence ' . $refGenome;
+    $command .= ' -I ' . $bam;
+    $command .= ' --out ' . $outputGVCF;
+    $command .= $regionCmd;
+
+    $ro_job->addCommand($command);
+  }
+
+  return $ro_job;
+}
+
 sub mutect {
   my $rH_cfg     = shift;
   my $sampleName = shift;
@@ -220,8 +284,8 @@ sub mutect {
   my $outputDir  = shift;
 
   my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta', 1, 'filepath');
-  my $dbSnp = LoadConfig::getParam($rH_cfg, 'mutect', 'dbSnp', 1, 'filepath');
-  my $cosmic = LoadConfig::getParam($rH_cfg, 'mutect', 'cosmic', 1, 'filepath');
+  my $dbSnp = LoadConfig::getParam($rH_cfg, 'mutect', 'dbSnp');
+  my $cosmic = LoadConfig::getParam($rH_cfg, 'mutect', 'cosmic');
   my $outputPrefix = $outputDir . $sampleName;
 
   my $regionCmd = ' ';

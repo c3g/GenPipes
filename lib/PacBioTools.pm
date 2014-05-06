@@ -54,8 +54,8 @@ sub getCutoff {
   my $coverage         = shift;
   my $genomeSize       = shift;
   my $coverageFraction = shift;
-  my $xml              = shift;
-  my $xmlOut           = shift;
+  #my $xml              = shift;
+  #my $xmlOut           = shift;
   my $outfile          = shift;
 
   my $ro_job = new Job();
@@ -67,7 +67,8 @@ sub getCutoff {
     # Choose a subread length threshold such that subreads above the threshold provide about 20x coverage of the genome.
     $cmd .= LoadConfig::moduleLoad($rH_cfg, [
       ['memtime', 'moduleVersion.memtime'],
-      ['default', 'moduleVersion.mugqictools']
+      ['default', 'moduleVersion.mugqictools'],
+      ['default', 'moduleVersion.perl']
     ]) . ' &&';
     $cmd .= ' memtime';
     $cmd .= ' pacBioGetCutoff.pl';
@@ -77,8 +78,8 @@ sub getCutoff {
     $cmd .= ' --coverageCutoff';
     $cmd .= ' --coverageFraction ' . $coverageFraction;
     #$cmd .= ' --coverageFraction ' . LoadConfig::getParam($rH_cfg, 'preassembly', 'coverageFraction');
-    $cmd .= ' --xml ' . $xml;
-    $cmd .= ' --xmlOut ' . $xmlOut;
+    #$cmd .= ' --xml ' . $xml;
+    #$cmd .= ' --xmlOut ' . $xmlOut;
     $cmd .= ' > ' . $outfile;
 
     $ro_job->addCommand($cmd);
@@ -99,25 +100,28 @@ sub celeraConfig {
     my $cmd = '';
     $cmd .= LoadConfig::moduleLoad($rH_cfg, [
       ['memtime', 'moduleVersion.memtime'],
-      ['default', 'moduleVersion.mugqictools']
+      ['default', 'moduleVersion.mugqictools'],
+      ['default', 'moduleVersion.perl']
     ]) . ' &&';
     $cmd .= ' memtime';
     $cmd .= ' pacBioAssemblyCeleraConfig.pl';
-    $cmd .= ' --infile ' . $infile;
-    $cmd .= ' --merylThreads ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'merylThreads', 1, 'int');
-    $cmd .= ' --ovlThreads ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'ovlThreads', 1, 'int');
-    $cmd .= ' --overlapper ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'overlapper');
-    $cmd .= ' --merCompression ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'merCompression');
-    $cmd .= ' --merSize ' . $merSize;
-    $cmd .= ' --merylMemory ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'merylMemory');
-    $cmd .= ' --ovlErrorRate ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'ovlErrorRate', 1, 'float');
-    $cmd .= ' --ovlMinLen ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'ovlMinLen', 1, 'int');
-    $cmd .= ' --frgMinLen ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'frgMinLen', 1, 'int');
-    $cmd .= ' --ovlStoreMemory ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'ovlStoreMemory', 1, 'int');
-    $cmd .= ' --ovlConcurrency ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'ovlConcurrency');
+    $cmd .= ' --infile '             . $infile;
+    $cmd .= ' --merylThreads '       . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'merylThreads', 1, 'int');
+    $cmd .= ' --ovlThreads '         . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'ovlThreads', 1, 'int');
+    $cmd .= ' --overlapper '         . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'overlapper');
+    $cmd .= ' --merCompression '     . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'merCompression');
+    $cmd .= ' --merSize '            . $merSize;
+    $cmd .= ' --merylMemory '        . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'merylMemory');
+    $cmd .= ' --ovlErrorRate '       . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'ovlErrorRate', 1, 'float');
+    $cmd .= ' --ovlMinLen '          . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'ovlMinLen', 1, 'int');
+    $cmd .= ' --frgMinLen '          . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'frgMinLen', 1, 'int');
+    $cmd .= ' --ovlStoreMemory '     . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'ovlStoreMemory', 1, 'int');
+    $cmd .= ' --ovlConcurrency '     . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'ovlConcurrency');
     $cmd .= ' --ovlCorrConcurrency ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'ovlCorrConcurrency', 1, 'int');
-    $cmd .= ' --cnsConcurrency ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'cnsConcurrency', 1, 'int');
-    $cmd .= ' --frgCorrThreads ' . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'frgCorrThreads', 1, 'int');
+    $cmd .= ' --cnsConcurrency '     . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'cnsConcurrency', 1, 'int');
+    $cmd .= ' --frgCorrThreads '     . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'frgCorrThreads', 1, 'int');
+    $cmd .= ' --stopAfter '          . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'stopAfter');
+    $cmd .= ' --unitigger '          . LoadConfig::getParam($rH_cfg, 'celeraConfig', 'unitigger');
     $cmd .= ' > ' . $outfile;
     $ro_job->addCommand($cmd);
   }
@@ -126,6 +130,9 @@ sub celeraConfig {
 
 sub assemblyStats {
   my $rH_cfg                = shift;
+  my $shortReads            = shift;
+  my $longReads             = shift;
+  my $correctedReads        = shift;
   my $filteredSummary       = shift;
   #my $assemblyQc            = shift;
   my $contigs               = shift;
@@ -146,10 +153,14 @@ sub assemblyStats {
     $cmd .= LoadConfig::moduleLoad($rH_cfg, [
       ['memtime', 'moduleVersion.memtime'],
       ['default', 'moduleVersion.R'],
-      ['default', 'moduleVersion.mugqictools']
+      ['default', 'moduleVersion.mugqictools'],
+      ['default', 'moduleVersion.perl']
     ]) . ' &&';
     $cmd .= ' memtime ';
     $cmd .= ' pacBioAssemblyStats.pl';
+    $cmd .= ' --shortReads ' . $shortReads;
+    $cmd .= ' --longReads ' . $longReads;
+    $cmd .= ' --correctedReads ' . $correctedReads;
     $cmd .= ' --filteredSummary ' . $filteredSummary;
     #$cmd .= ' --assemblyQc ' . $assemblyQc;
     $cmd .= ' --contigs ' . $contigs;
@@ -179,7 +190,8 @@ sub splitReads{
     my $cmd = '';
     $cmd .= LoadConfig::moduleLoad($rH_cfg, [
       ['memtime', 'moduleVersion.memtime'],
-      ['default', 'moduleVersion.mugqictools']
+      ['default', 'moduleVersion.mugqictools'],
+      ['default', 'moduleVersion.perl']
     ]) . ' &&';
     $cmd .= ' memtime';
     $cmd .= ' pacBioSplitReads.pl';
@@ -208,7 +220,8 @@ sub compile{
     my $cmd = '';
     $cmd .= LoadConfig::moduleLoad($rH_cfg, [
       ['memtime', 'moduleVersion.memtime'],
-      ['default', 'moduleVersion.mugqictools']
+      ['default', 'moduleVersion.mugqictools'],
+      ['default', 'moduleVersion.perl']
     ]) . ' ;';
     $cmd .= ' memtime';
     $cmd .= ' pacBioCompileStats.pl';

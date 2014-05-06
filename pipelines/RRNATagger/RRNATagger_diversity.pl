@@ -819,6 +819,25 @@ if(!$rO_jobPhylumBarplotAbsolute->isUp2Date()) {
 print STDERR "[DEBUG]\tStep #".$currStep." phylum_barplot_absolute\n";
 $currStep++;
 
+#####################################################
+## Report / Deliverables
+##
+
+# Generate report with Noozle
+my $date = strftime "%Y-%m-%d", localtime;
+my $rO_jobDeliverables = RRNAAmplicons::clientReport(
+  \%cfg,
+  $config_file,
+  $outdir,
+  "RRNATaggerDiversity",
+  $outdir."/".$date
+);
+if(!$rO_jobDeliverables->isUp2Date()) {
+  SubmitToCluster::printSubmitCmd(\%cfg, "report", "report", "NOZZLEREPORT", $dependency, "global", $rO_jobDeliverables) if($start_at <= $currStep && $end_at >= $currStep); 
+  $dependency = $rO_jobDeliverables->getCommandJobId(0) if($start_at <= $currStep && $end_at >= $currStep);
+}
+print STDERR "[DEBUG]\tStep #".$currStep." Nozzle deliverables\n";
+
 exit;
 
 #################

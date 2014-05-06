@@ -176,8 +176,8 @@ die("--lib_type: Please enter 'ex' or ",
 		and $lib_type ne "nc1",
 );
 
-my $fwd_primer  = LoadConfig::getParam(\%cfg, 'itags_QC', 'forwardPrimer');
-my $rev_primer  = LoadConfig::getParam(\%cfg, 'itags_QC', 'reversePrimer');
+my $fwd_primer  = LoadConfig::getParam(\%cfg, 'itags_QC', 'forwardPrimer', 0, 'filepath');
+my $rev_primer  = LoadConfig::getParam(\%cfg, 'itags_QC', 'reversePrimer', 0, 'filepath');
 
 $start_at = 1 unless $start_at;
 $end_at = 999 unless $end_at;
@@ -835,8 +835,10 @@ foreach my $barcodes (@barcodes){
 		mergePdf(
 			$dependency,
 			"nc1",
-			$curr_dir."/log_barcodes_".$barcodes_filename."_count.pdf",
+			#$curr_dir."/log_barcodes_".$barcodes_filename."_count.pdf",
+			$curr_dir."/countReport.pdf",
 			$curr_dir."/reads_1/tax_summary/taxonomy_phylum_L2.pdf",
+			$curr_dir."/reads_1/tax_summary/taxonomy_phylum_L2_relative.pdf",
 			$qscore_pdf,
 			$curr_dir."/REPORT_".$barcodes_filename.".pdf"
 		);
@@ -1230,7 +1232,9 @@ foreach my $barcodes (@barcodes){
 		my $otu_table_prefix_raw = "otu_table_filtered";
 	
 		# Summarize taxonomy with absolute abundance
-		for(my $i=1; $i<7; $i++){
+    my $taxDepth = LoadConfig::getParam(\%cfg, 'summarize_taxonomy', 'taxonomyDepth', 1, 'int'); 
+    my $plotTaxaStringAbs = "";
+		for(my $i=1; $i<$taxDepth; $i++){
 			my $rO_jobSummarizeTaxonomyAbsolute = MicrobialEcology::summarizeTaxonomyAbsolute(
 				\%cfg,
 				$otu_table,
@@ -1242,11 +1246,16 @@ foreach my $barcodes (@barcodes){
 				$dependency = $rO_jobSummarizeTaxonomyAbsolute->getCommandJobId(0) if($start_at <= $currStep && $end_at >= $currStep);
 			}
 			print STDERR "[DEBUG]\t\tStep #".$currStep." summarize_taxonomy_absolute_L".$i."\n";
+      
+      # construct string for next step
+      $plotTaxaStringAbs .= $dir."/tax_summary/absolute/".$otu_table_prefix."_L".$i.".txt,"; 
 			$currStep++;
 		}
-		
+    chop($plotTaxaStringAbs);
+  	
 		# Summarize taxonomy with relative abundance
-		for(my $i=1; $i<7; $i++){
+    my $plotTaxaStringRel = "";
+		for(my $i=1; $i<$taxDepth; $i++){
 			my $rO_jobSummarizeTaxonomyRelative = MicrobialEcology::summarizeTaxonomyRelative(
 				\%cfg,
 				$otu_table,
@@ -1258,11 +1267,16 @@ foreach my $barcodes (@barcodes){
 				$dependency = $rO_jobSummarizeTaxonomyRelative->getCommandJobId(0) if($start_at <= $currStep && $end_at >= $currStep);
 			}
 			print STDERR "[DEBUG]\t\tStep #".$currStep." summarize_taxonomy_relative_L".$i."\n";
+      
+      # construct string for next step
+      $plotTaxaStringRel .= $dir."/tax_summary/relative/".$otu_table_prefix."_L".$i.".txt,"; 
 			$currStep++;
 		}
+    chop($plotTaxaStringRel);
 		
 		# Summarize taxonomy with absolute abundance - raw
-		for(my $i=1; $i<7; $i++){
+    my $plotTaxaStringAbsRaw = "";
+		for(my $i=1; $i<$taxDepth; $i++){
 			my $rO_jobSummarizeTaxonomyAbsolute = MicrobialEcology::summarizeTaxonomyAbsolute(
 				\%cfg,
 				$otu_table_raw,
@@ -1274,11 +1288,17 @@ foreach my $barcodes (@barcodes){
 				$dependency = $rO_jobSummarizeTaxonomyAbsolute->getCommandJobId(0) if($start_at <= $currStep && $end_at >= $currStep);
 			}
 			print STDERR "[DEBUG]\t\tStep #".$currStep." summarize_taxonomy_absolute_raw_L".$i."\n";
-			$currStep++;
+      
+      # construct string for next step
+      $plotTaxaStringAbsRaw .= $dir."/tax_summary/absolute/".$otu_table_prefix_raw."_L".$i.".txt,"; 
+			
+      $currStep++;
 		}
+    chop($plotTaxaStringAbsRaw);
 		
 		# Summarize taxonomy with relative abundance - raw
-		for(my $i=1; $i<7; $i++){
+    my $plotTaxaStringRelRaw = "";
+		for(my $i=1; $i<$taxDepth; $i++){
 			my $rO_jobSummarizeTaxonomyRelative = MicrobialEcology::summarizeTaxonomyRelative(
 				\%cfg,
 				$otu_table_raw,
@@ -1290,8 +1310,13 @@ foreach my $barcodes (@barcodes){
 				$dependency = $rO_jobSummarizeTaxonomyRelative->getCommandJobId(0) if($start_at <= $currStep && $end_at >= $currStep);
 			}
 			print STDERR "[DEBUG]\t\tStep #".$currStep." summarize_taxonomy_relative_raw_L".$i."\n";
+
+      # construct string for next step
+      $plotTaxaStringRelRaw .= $dir."/tax_summary/relative/".$otu_table_prefix_raw."_L".$i.".txt,"; 
+
 			$currStep++;
 		}
+    chop($plotTaxaStringRelRaw);
 	
 		#####################################################	
 		# Qiime make taxa plot absolute abundance
@@ -1299,7 +1324,8 @@ foreach my $barcodes (@barcodes){
 		#
 		my $rO_jobPlotTaxa = MicrobialEcology::plotTaxa(
 			\%cfg,
-			$dir."/tax_summary/absolute/".$otu_table_prefix."_L1.txt,".$dir."/tax_summary/absolute/".$otu_table_prefix."_L2.txt,".$dir."/tax_summary/absolute/".$otu_table_prefix."_L3.txt,".$dir."/tax_summary/absolute/".$otu_table_prefix."_L4.txt,".$dir."/tax_summary/absolute/".$otu_table_prefix."_L5.txt,".$dir."/tax_summary/absolute/".$otu_table_prefix."_L6.txt",
+			#$dir."/tax_summary/absolute/".$otu_table_prefix."_L1.txt,".$dir."/tax_summary/absolute/".$otu_table_prefix."_L2.txt,".$dir."/tax_summary/absolute/".$otu_table_prefix."_L3.txt,".$dir."/tax_summary/absolute/".$otu_table_prefix."_L4.txt,".$dir."/tax_summary/absolute/".$otu_table_prefix."_L5.txt,".$dir."/tax_summary/absolute/".$otu_table_prefix."_L6.txt",
+			$plotTaxaStringAbs,
 			$dir."/tax_summary/plots"	
 		);
 		if(!$rO_jobPlotTaxa->isUp2Date()) {
@@ -1311,7 +1337,8 @@ foreach my $barcodes (@barcodes){
 		
 		my $rO_jobPlotTaxaRaw = MicrobialEcology::plotTaxa(
 			\%cfg,
-			$dir."/tax_summary/absolute/".$otu_table_prefix_raw."_L1.txt,".$dir."/tax_summary/absolute/".$otu_table_prefix_raw."_L2.txt,".$dir."/tax_summary/absolute/".$otu_table_prefix_raw."_L3.txt,".$dir."/tax_summary/absolute/".$otu_table_prefix_raw."_L4.txt,".$dir."/tax_summary/absolute/".$otu_table_prefix_raw."_L5.txt,".$dir."/tax_summary/absolute/".$otu_table_prefix_raw."_L6.txt",
+			#$dir."/tax_summary/absolute/".$otu_table_prefix_raw."_L1.txt,".$dir."/tax_summary/absolute/".$otu_table_prefix_raw."_L2.txt,".$dir."/tax_summary/absolute/".$otu_table_prefix_raw."_L3.txt,".$dir."/tax_summary/absolute/".$otu_table_prefix_raw."_L4.txt,".$dir."/tax_summary/absolute/".$otu_table_prefix_raw."_L5.txt,".$dir."/tax_summary/absolute/".$otu_table_prefix_raw."_L6.txt",
+      $plotTaxaStringAbsRaw,
 			$dir."/tax_summary/plots"	
 		);
 		if(!$rO_jobPlotTaxaRaw->isUp2Date()) {
@@ -1418,7 +1445,25 @@ foreach my $barcodes (@barcodes){
 			print STDERR "[DEBUG]\t\tStep #".$currStep." phylum_barplot_all_rarefied\n";
 			$currStep++;
 		}
-	
+
+    ###############################
+    # Blastn - raw OTUs. If PacBio only
+    #
+    my $dataType = LoadConfig::getParam(\%cfg, 'default', 'sequencer');
+    if($dataType =~ m/pacbio/i){
+	    my $rO_jobBlast = MicrobialEcology::blast(
+  		  \%cfg,
+  			$dir."/obs/obs_filtered.fasta",
+  			$dir."/blast/obs_filtered.blastout"
+  		);
+  		if(!$rO_jobBlast->isUp2Date()) {
+  			SubmitToCluster::printSubmitCmd(\%cfg, "blast", "blast_raw_otus", "BLASTRAWOTUS"."_".$loop_counter, $dependency, "global", $rO_jobBlast) if($start_at <= $currStep && $end_at >= $currStep); 
+  			$dependency = $rO_jobBlast->getCommandJobId(0) if($start_at <= $currStep && $end_at >= $currStep);
+  		}
+  		print STDERR "[DEBUG]\t\tStep #".$currStep." blast raw OTUs\n";
+  		$currStep++;
+	  }	
+
 		return $dependency;
 	}
 		
@@ -1451,6 +1496,10 @@ foreach my $barcodes (@barcodes){
 		my $otu_table_dir = $prefix."/otu_tables\n";
 		print STDOUT "mkdir -p ".$otu_table_dir;
 		system("mkdir -p ".$otu_table_dir) if $noMsub;
+		
+    my $blast_dir = $prefix."/blast\n";
+		print STDOUT "mkdir -p ".$blast_dir;
+		system("mkdir -p ".$blast_dir) if $noMsub;
 
 		my $tax_dir = $prefix."/tax_summary";
 		print STDOUT "mkdir -p ".$tax_dir."\n";

@@ -518,11 +518,13 @@ sub PyNAST{
 	
 	if (!$ro_job->isUp2Date()) {
 		my $cmd = '';
+    $cmd .= 'unset LD_LIBRARY_PATH; ';
     $cmd .= LoadConfig::moduleLoad($rH_cfg, [
       ['memtime', 'moduleVersion.memtime'],
       ['qiime-dependencies', 'moduleVersion.qiime-dependencies'],
       ['python', 'moduleVersion.python'],
-      ['pynast', 'moduleVersion.pynast']
+      ['pynast', 'moduleVersion.pynast'],
+      ['openmpi', 'moduleVersion.openmpi']
     ]) . ' && ';
 		$cmd .=	' memtime ';
 		$cmd .= ' mpirun -np ' . LoadConfig::getParam($rH_cfg, 'pynast', 'num_threads', 1, 'int');
@@ -606,6 +608,7 @@ sub betaDiversity{
       ['qiime', 'moduleVersion.qiime'],
       ['python', 'moduleVersion.python']
     ]) . ' && ';
+    $cmd .= 'unset LD_LIBRARY_PATH; ';
 		$cmd .=	' memtime ';
 		$cmd .= 'beta_diversity.py';
 		$cmd .= ' -i ' . $biom;
@@ -767,6 +770,7 @@ sub alphaDiversity{
       ['qiime', 'moduleVersion.qiime'],
       ['python', 'moduleVersion.python']
     ]) . ' && ';
+    $cmd .= 'unset LD_LIBRARY_PATH; ';
 		$cmd .=	' memtime ';
 		$cmd .= 'parallel_alpha_diversity.py';
 		$cmd .= ' -i ' . $indir;
@@ -825,7 +829,9 @@ sub rarefactionPlots{
       ['memtime', 'moduleVersion.memtime'],
       ['qiime-dependencies', 'moduleVersion.qiime-dependencies'],
       ['qiime', 'moduleVersion.qiime'],
-      ['python', 'moduleVersion.python']
+      ['python', 'moduleVersion.python'],
+      ['R', 'moduleVersion.R'],
+      ['tools', 'moduleVersion.tools']
     ]) . ' && ';
 		$cmd .=	' memtime ';
 		$cmd .= 'make_rarefaction_plots.py';
@@ -903,6 +909,31 @@ sub otuHeatMap{
 		$cmd .= ' -p ' . $prefix;
 		$cmd .= ' -n ' . LoadConfig::getParam($rH_cfg, 'otu_heatmap', 'n', 1, 'int');
 	
+		$ro_job->addCommand($cmd);
+	}
+	return $ro_job;
+}
+
+sub blast{
+	my $rH_cfg             = shift;
+	my $infile             = shift;
+	my $outfile            = shift;
+	
+  my $ro_job = new Job();
+	$ro_job->testInputOutputs([$infile] , [$outfile]);
+	
+	if (!$ro_job->isUp2Date()) {
+		my $cmd = '';
+    $cmd .= LoadConfig::moduleLoad($rH_cfg, [
+      ['memtime', 'moduleVersion.blast'],
+    ]) . ' && ';
+    $cmd .= 'blastn';
+    $cmd .= ' -db ' . LoadConfig::getParam($rH_cfg, 'blast', 'db');
+    $cmd .= ' -query ' . $infile;
+    $cmd .= ' -out ' . $outfile;
+    $cmd .= ' -outfmt "' . LoadConfig::getParam($rH_cfg, 'blast', 'outFmt') . '"';
+    $cmd .= ' -max_target_seqs 1';
+    $cmd .= ' -num_threads ' . LoadConfig::getParam($rH_cfg, 'blast', 'num_threads', 1, 'int');	
 		$ro_job->addCommand($cmd);
 	}
 	return $ro_job;

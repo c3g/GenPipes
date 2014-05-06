@@ -82,9 +82,11 @@ use lib "$FindBin::Bin/../../lib";
 # Dependencies
 #--------------------
 use Getopt::Std;
-use Cwd;
-use POSIX;
 use Cwd 'abs_path';
+use File::Basename;
+use File::Path;
+use Parse::Range qw(parse_range);
+use POSIX;
 
 use LoadConfig;
 use SampleSheet;
@@ -108,7 +110,8 @@ use GqSeqUtils;
 #--------------------
 
 my @steps;
-push(@steps, {'name' => 'trimming', 'stepLoop' => 'sample', 'output' => 'reads', 'parentStep' => undef});
+push(@steps, {'name' => 'samToFastq', 'stepLoop' => 'sample', 'output' => 'raw_reads', 'parentStep' => undef});
+push(@steps, {'name' => 'trimming', 'stepLoop' => 'sample', 'output' => 'reads', 'parentStep' => 'samToFastq'});
 push(@steps, {'name' => 'aligning', 'stepLoop' => 'sample', 'output' => 'alignment', 'parentStep' => 'trimming'});
 push(@steps, {'name' => 'metrics', 'stepLoop' => 'sample', 'output' => 'metrics', 'parentStep' => 'aligning'});
 push(@steps, {'name' => 'qcTagDirectories', 'stepLoop' => 'sample', 'output' => 'tags', 'parentStep' => 'aligning'});
@@ -171,8 +174,7 @@ sub printUsage {
   print "Version: ".$Version::version."\n";
   print "\nUsage: perl ".$0." \n";
   print "\t-c  config file\n";
-  print "\t-s  start step, inclusive\n";
-  print "\t-e  end step, inclusive\n";
+  print "\t-s  step range e.g. '1,3', '2-5', '1,4-7,10'\n";
   print "\t-n  nanuq sample sheet\n";
   print "\t-d  design file\n";
   print "\t-w  work directory\n";
@@ -186,9 +188,9 @@ sub printUsage {
 
 sub main {
   my %opts;
-  getopts('c:s:e:n:d:w:', \%opts);
+  getopts('c:s:n:d:w:', \%opts);
 
-  if (!defined($opts{'c'}) || !defined($opts{'s'}) || !defined($opts{'e'}) || !defined($opts{'n'}) || !defined($opts{'d'}) || !defined($opts{'w'})) {
+  if (!defined($opts{'c'}) || !defined($opts{'s'}) || !defined($opts{'n'}) || !defined($opts{'d'}) || !defined($opts{'w'})) {
     printUsage();
     exit(1);
   }
@@ -196,7 +198,6 @@ sub main {
   my %jobIdVarPrefix;
   my %cfg = LoadConfig->readConfigFile($opts{'c'});
   my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($opts{'n'});
-  my $rAoH_seqDictionary = SequenceDictionaryParser::readDictFile(\%cfg);
   $designFilePath = $opts{'d'};
   # get Design groups
   my $rHoAoA_designGroup = MACS2::getDesign(\%cfg,$designFilePath);
@@ -224,23 +225,23 @@ sub main {
     $cpt++;
   }
 
+  # List user-defined step index range.
+  # Shift 1st position to 0 instead of 1
+  my @stepRange = map($_ - 1, parse_range($opts{'s'}));
+
   SubmitToCluster::initPipeline($workDir);
 
-  my $latestBam;
-  
-  
-  for (my $current = $opts{'s'} - 1; $current <= ($opts{'e'} - 1); $current++) {
+  for my $current (@stepRange) {
     my $fname = $steps[$current]->{'name'};
     my $loopType = $steps[$current]->{'stepLoop'};
-    my $outputStep = $steps[$current]->{'output'};
     my $subref = \&$fname;
     my @aOjobIDList=();
-    
+
     if ($loopType eq 'sample') {
       for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
         my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sampleName};
         # Tests for the first step in the list. Used for dependencies.
-        my $jobIdVar = &$subref($current , \%cfg, $sampleName, $rAoH_sampleLanes, $rAoH_seqDictionary, \%jobIdVarPrefix);
+        my $jobIdVar = &$subref($current , \%cfg, $sampleName, $rAoH_sampleLanes, \%jobIdVarPrefix);
         if (defined($jobIdVar)) {
           $globalDep{$fname}->{$sampleName} = $jobIdVar;
           # This is for global steps depending on sample / design  steps
@@ -283,38 +284,89 @@ sub main {
   }
 }
 
+sub samToFastq {
+  my $stepId = shift;
+  my $rH_cfg = shift;
+  my $sampleName = shift;
+  my $rAoH_sampleLanes  = shift;
+  my $rH_jobIdPrefixe = shift;  
+
+  # BamToFastq job IDS per sample
+  my $samToFastqJobIdVarNameSample = undef;
+
+  # samples per lane
+  for my $rH_laneInfo (@$rAoH_sampleLanes) {
+    $rH_laneInfo->{'bam'} or die "Error in chipSeq::samToFastq: BAM file is not defined for sample run lane $sampleName " . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "!";
+    my $rO_job;
+    my $baseDirectory = "$sampleName/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
+    my $rawDirectory = LoadConfig::getParam($rH_cfg, 'default', 'rawReadDir', 1, 'dirpath') . "/" . $baseDirectory;
+    my $input1 = $rawDirectory . "/" . $rH_laneInfo->{'bam'};
+
+    if ($input1) {
+      if ($rH_laneInfo->{'runType'} eq "SINGLE_END") {
+        my $outputFastq1 = $input1;
+        $outputFastq1 =~ s/\.bam$/.single.fastq.gz/;
+        $rO_job = Picard::samToFastq($rH_cfg, $input1, $outputFastq1);
+        $rH_laneInfo->{'read1File'} = basename($outputFastq1);
+      } elsif ($rH_laneInfo->{'runType'} eq "PAIRED_END") {
+        my $outputFastq1 = $input1;
+        my $outputFastq2 = $input1;
+        $outputFastq1 =~ s/\.bam$/.pair1.fastq.gz/;
+        $outputFastq2 =~ s/\.bam$/.pair2.fastq.gz/;
+        $rO_job = Picard::samToFastq($rH_cfg, $input1, $outputFastq1, $outputFastq2);
+        $rH_laneInfo->{'read1File'} = basename($outputFastq1);
+        $rH_laneInfo->{'read2File'} = basename($outputFastq2);
+      } else {
+        die "Error in chipSeq::samToFastq: unknown run type (can be 'SINGLE_END' or 'PAIRED_END' only): " . $rH_laneInfo->{'runType'};
+      }
+    }
+    if(!$rO_job->isUp2Date()) {
+      SubmitToCluster::printSubmitCmd($rH_cfg, "samToFastq", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, "SAMTOFASTQ" .$rH_jobIdPrefixe ->{$sampleName.'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}}, undef, $sampleName, $rO_job);
+
+      if(!defined($samToFastqJobIdVarNameSample)) {
+        $samToFastqJobIdVarNameSample = $rO_job->getCommandJobId(0);
+      } else {
+        $samToFastqJobIdVarNameSample .= LoadConfig::getParam($rH_cfg, 'samToFastq', 'clusterDependencySep') . $rO_job->getCommandJobId(0);
+      }
+    }
+  }
+  return $samToFastqJobIdVarNameSample;
+}
+
 sub trimming {
   my $stepId = shift;
   my $rH_cfg = shift;
   my $sampleName = shift;
   my $rAoH_sampleLanes  = shift;
-  my $rAoH_seqDictionary = shift;
   my $rH_jobIdPrefixe = shift;  
-  my $inputFile;
-  my $outputFile;
-  my $outputFastqPair1Name;
+
+  my $jobDependency = undef;
+  my $setJobId = 0;
   
-  
+  # Control dependencies
+  my $parentStep = $steps[$stepId]->{'parentStep'};
+  if( defined($globalDep{$parentStep}->{$sampleName})) {
+    $jobDependency = $globalDep{$parentStep}->{$sampleName};
+  }
+
   # Trimming job IDS per sample
   my $trimJobIdVarNameSample = undef;
   
   # samples per lane
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
-    my $minQuality = $rH_cfg->{'trim.minQuality'};
-    my $minLength = $rH_cfg->{'trim.minLength'};
     my $outputDir = 'reads/'.$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
     print 'mkdir -p '.$outputDir."\n";
     # Run trimmomatic  
     my $ro_job = Trimmomatic::trim($rH_cfg, $sampleName, $rH_laneInfo, $outputDir);
     if(!$ro_job->isUp2Date()) {
-      SubmitToCluster::printSubmitCmd($rH_cfg, "trim", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'TRIM', undef, $sampleName, $ro_job);
+      SubmitToCluster::printSubmitCmd($rH_cfg, "trim", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, "TRIM".$rH_jobIdPrefixe ->{$sampleName.'.' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} , $jobDependency, $sampleName, $ro_job);
       if(!defined($trimJobIdVarNameSample)) {
         $trimJobIdVarNameSample = $ro_job->getCommandJobId(0);
       } else {
         $trimJobIdVarNameSample .= LoadConfig::getParam($rH_cfg, 'trim', 'clusterDependencySep') . $ro_job->getCommandJobId(0);
       }
     }
-      
+
   }
   return $trimJobIdVarNameSample; 
 }
@@ -325,10 +377,9 @@ sub aligning{
   my $rH_cfg = shift;
   my $sampleName = shift;
   my $rAoH_sampleLanes  = shift;
-  my $rAoH_seqDictionary = shift;
   my $rH_jobIdPrefixe = shift;
+
   my $jobDependency = undef;
-  my $bwaJobId;
   my $setJobId = 0;
   
   # Control dependencies
@@ -342,7 +393,6 @@ sub aligning{
   
   
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
-    my $alignJobIdVarNameLane;
     my $pair1;
     my $pair2;
     my $single;
@@ -354,7 +404,7 @@ sub aligning{
     my $qfilterRead=LoadConfig::getParam($rH_cfg, 'aln', 'filterReadsMAPQ', 0, 'int');
     
     # Threshold for MAPQ to filter reads
-    if (!defined($qfilterRead) || $qfilterRead < 1  || $qfilterRead eq "" ){
+    if (!defined($qfilterRead) || $qfilterRead < 1 ){
       $qfilterRead=15;
     }
 
@@ -411,7 +461,6 @@ sub aligning{
     $jobDependency = '$BWA_JOB_IDS';
   }
   my $mergeJobId = undef ;
-  my $latestBam;
   my @inputBams;
   my $outputBAM = 'alignment/' . $sampleName . '/' . $sampleName . '.merged.bam';
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
@@ -443,8 +492,8 @@ sub metrics {
   my $rH_cfg              = shift;
   my $sampleName          = shift;
   my $rAoH_sampleLanes    = shift;
-  my $rAoH_seqDictionary  = shift;
   my $rH_jobIdPrefixe     = shift;
+
   my $jobDependency       = undef;
   my $flagstatJobId       = undef;
   my $metricsJobIDs  = undef;
@@ -510,45 +559,11 @@ sub metrics {
   return $metricsJobIDs;
 }
 
-sub wiggleRNASEQ {
-  my $stepId = shift;
-  my $rH_cfg = shift;
-  my $sampleName = shift;
-  my $rAoH_sampleLanes = shift;
-  my $rAoH_seqDictionary = shift;
-  my $rH_jobIdPrefixe = shift;
-  my $jobDependency = undef;
-
-  # Control dependencies
-  my $parentStep = $steps[$stepId]->{'parentStep'};
-  if(defined($globalDep{$parentStep}->{$sampleName})) {
-    $jobDependency = $globalDep{$parentStep}->{$sampleName};
-  }
-
-  my $inputBAM       = 'alignment/' . $sampleName . '/' . $sampleName . '.sorted.bam';
-  my $outputBAM      = $inputBAM;
-  my $outputBedGraph = 'tracks/' . $sampleName . '/' . $sampleName . '.bedGraph';
-  my $outputWiggle   = 'tracks/' . $sampleName . '/' . $sampleName . '.bw';
-  my $prefixJobName  = undef;
-
-  print "mkdir -p tracks/$sampleName\n";
-
-  my $wiggleJobId = undef;
-  my $ro_job  = Wiggle::graph($rH_cfg, $sampleName, $inputBAM, $outputBedGraph, $outputWiggle);
-  if(!$ro_job->isUp2Date()) { 
-    SubmitToCluster::printSubmitCmd($rH_cfg, "wiggle", $prefixJobName, 'WIGGLE' . $rH_jobIdPrefixe->{$sampleName}, $jobDependency, $sampleName,  $ro_job);
-    $wiggleJobId = $ro_job->getCommandJobId(0);
-  }
-  return $wiggleJobId;
-}
-
-
 sub qcTagDirectories {
   my $stepId      = shift;
   my $rH_cfg      = shift;
   my $sampleName  = shift;
   my $rAoH_sampleLanes = shift;
-  my $rAoH_seqDictionary = shift;
   my $rH_jobIdPrefixe = shift;
 
   my $jobDependency = undef;
@@ -578,8 +593,8 @@ sub wiggle {
   my $rH_cfg = shift;
   my $sampleName = shift;
   my $rAoH_sampleLanes = shift;
-  my $rAoH_seqDictionary = shift;
   my $rH_jobIdPrefixe = shift;
+
   my $jobDependency = undef;
 
   # Control dependencies
@@ -607,6 +622,7 @@ sub qcPlots {
   my $stepId = shift;
   my $rH_cfg = shift;
   my $designFilePath = shift;
+
   my $jobDependency = undef;
   
   # Control dependencies
@@ -743,7 +759,7 @@ sub annotation {
 
   my $annotationJobIdGroups = undef;
   if ($numberTreatments >= 1) {
-    print 'mkdir -p  annotation/ '.'\n';
+    print "mkdir -p annotation\n";
     # At least one treatment
     for (my $j = 0; $j < $numberTreatments; $j++) {
       if ($numberControls == 1) {
@@ -879,8 +895,6 @@ sub annotationPlots {
 sub deliverable{
   my $stepId = shift;
   my $rH_cfg = shift;
-  my $rHoAoH_sampleInfo = shift;
-  my $rAoH_seqDictionary = shift;
   
   my $parentStep = $steps[$stepId]->{'parentStep'};
   my $jobDependencies = "";
