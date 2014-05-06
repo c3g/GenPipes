@@ -41,7 +41,6 @@ use lib "$FindBin::Bin";
 
 # Dependencies
 #-----------------------
-use LoadConfig;
 use File::Path;
 
 # SUB
@@ -58,6 +57,15 @@ sub rna {
   &exploratory;
   &metrics;
   &tracks;
+}
+
+sub rnaseq_denovo {
+  ### clean current directory for RNAseq tempory files
+  &rawReads;
+  &reads;
+  &deliverable;
+  &exploratory;
+  &metrics;
 }
 
 sub rawReads {

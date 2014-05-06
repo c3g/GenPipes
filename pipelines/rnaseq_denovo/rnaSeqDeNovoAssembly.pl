@@ -179,53 +179,57 @@ END
 }
 
 sub main {
-  # Check options
-  my %opts;
-  getopts('hc:s:e:n:d:w:', \%opts);
-
-  if (defined($opts{'h'}) ||
-     !defined($opts{'c'}) ||
-     !defined($opts{'s'}) ||
-     !defined($opts{'e'})) {
-    die (getUsage());
-  }
-
-  # Assign options
-  my $startStep = $opts{'s'};
-  my $endStep = $opts{'e'};
-  my $workDirectory = $opts{'w'};
-  $configFile = $opts{'c'};
-  $nanuqSampleSheet = $opts{'n'};
-  $designFile = $opts{'d'};
-
-  # Get config values
-  unless (defined $configFile) {die "Error: configuration file is not defined! (use -c option)\n" . getUsage()};
-  unless (-f $configFile) {die "Error: configuration file $configFile does not exist!\n" . getUsage()};
-  my %cfg = LoadConfig->readConfigFile($configFile);
-
-  SubmitToCluster::initPipeline($workDirectory);
-
-  # Go through steps and create global or sample jobs accordingly
-  for (my $i = $startStep; $i <= $endStep; $i++) {
-    my $step = $A_steps[$i - 1];
-    my $stepName = $step->{'name'};
-    $step->{'jobIds'} = ();
-
-    # Sample step creates 1 job per sample
-    if ($step->{'loop'} eq 'sample') {
-      # Nanuq sample sheet is only necessary for sample steps
-      unless (defined $nanuqSampleSheet) {die "Error: nanuq sample sheet is not defined! (use -n option)\n" . getUsage()};
-      unless (-f $nanuqSampleSheet) {die "Error: nanuq sample sheet $nanuqSampleSheet does not exist!\n" . getUsage()};
-
-      my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($nanuqSampleSheet);
-      foreach my $sample (keys %$rHoAoH_sampleInfo) {
-        my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sample};
-        # Sample step functions need sample and lanes parameters
-        &$stepName(\%cfg, $step, $sample, $rAoH_sampleLanes);
+  if ($ARGV[0] eq "--clean") {
+    Cleaning::rnaseq_denovo();
+  } else {
+    # Check options
+    my %opts;
+    getopts('hc:s:e:n:d:w:', \%opts);
+  
+    if (defined($opts{'h'}) ||
+       !defined($opts{'c'}) ||
+       !defined($opts{'s'}) ||
+       !defined($opts{'e'})) {
+      die (getUsage());
+    }
+  
+    # Assign options
+    my $startStep = $opts{'s'};
+    my $endStep = $opts{'e'};
+    my $workDirectory = $opts{'w'};
+    $configFile = $opts{'c'};
+    $nanuqSampleSheet = $opts{'n'};
+    $designFile = $opts{'d'};
+  
+    # Get config values
+    unless (defined $configFile) {die "Error: configuration file is not defined! (use -c option)\n" . getUsage()};
+    unless (-f $configFile) {die "Error: configuration file $configFile does not exist!\n" . getUsage()};
+    my %cfg = LoadConfig->readConfigFile($configFile);
+  
+    SubmitToCluster::initPipeline($workDirectory);
+  
+    # Go through steps and create global or sample jobs accordingly
+    for (my $i = $startStep; $i <= $endStep; $i++) {
+      my $step = $A_steps[$i - 1];
+      my $stepName = $step->{'name'};
+      $step->{'jobIds'} = ();
+  
+      # Sample step creates 1 job per sample
+      if ($step->{'loop'} eq 'sample') {
+        # Nanuq sample sheet is only necessary for sample steps
+        unless (defined $nanuqSampleSheet) {die "Error: nanuq sample sheet is not defined! (use -n option)\n" . getUsage()};
+        unless (-f $nanuqSampleSheet) {die "Error: nanuq sample sheet $nanuqSampleSheet does not exist!\n" . getUsage()};
+  
+        my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($nanuqSampleSheet);
+        foreach my $sample (keys %$rHoAoH_sampleInfo) {
+          my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sample};
+          # Sample step functions need sample and lanes parameters
+          &$stepName(\%cfg, $step, $sample, $rAoH_sampleLanes);
+        }
+      # Global step creates 1 job only
+      } else {
+        &$stepName(\%cfg, $step);
       }
-    # Global step creates 1 job only
-    } else {
-      &$stepName(\%cfg, $step);
     }
   }
 }
