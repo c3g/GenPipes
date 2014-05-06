@@ -114,19 +114,19 @@ my @A_steps = (
     'parent' => ['blast']
   },
   {
-    'name'   => 'rsemPrepareReference',
+    'name'   => 'alignEstimateAbundancePrepareReference',
     'loop'   => 'global',
     'parent' => ['trinity']
   },
   {
-    'name'   => 'rsem',
+    'name'   => 'alignEstimateAbundance',
     'loop'   => 'sample',
-    'parent' => ['rsemPrepareReference']
+    'parent' => ['alignEstimateAbundancePrepareReference']
   },
   {
     'name'   => 'differentialGeneExpression',
     'loop'   => 'global',
-    'parent' => ['rsem', 'blastMergeResults']
+    'parent' => ['alignEstimateAbundance', 'blastMergeResults']
   },
   {
     'name'   => 'metrics',
@@ -335,11 +335,27 @@ sub normalization {
 
     if ($rH_laneInfo->{'runType'} eq "SINGLE_END") {
       my $single = $readFilePrefix . ".single.fastq.gz";
-      $rO_job = Trinity::normalize_by_kmer_coverage($rH_cfg, undef, undef, [$single], $normDirectory);
+      $rO_job = Trinity::insilico_read_normalization(
+        $rH_cfg,
+        undef,
+        undef,
+        [$single],
+        $normDirectory,
+        LoadConfig::getParam($rH_cfg, 'normalization', 'jellyfishMemory'),
+        LoadConfig::getParam($rH_cfg, 'normalization', 'CPU')
+      );
     } elsif ($rH_laneInfo->{'runType'} eq "PAIRED_END") {
       my $pair1 = $readFilePrefix . ".pair1.fastq.gz";
       my $pair2 = $readFilePrefix . ".pair2.fastq.gz";
-      $rO_job = Trinity::normalize_by_kmer_coverage($rH_cfg, [$pair1], [$pair2], undef, $normDirectory);
+      $rO_job = Trinity::insilico_read_normalization(
+        $rH_cfg,
+        [$pair1],
+        [$pair2],
+        undef,
+        $normDirectory,
+        LoadConfig::getParam($rH_cfg, 'normalization', 'jellyfishMemory'),
+        LoadConfig::getParam($rH_cfg, 'normalization', 'CPU')
+      );
     } else {
       die "Error in normalization: unknown read type\n";
     }
@@ -357,12 +373,6 @@ sub normalizationMergeResults {
   my @A_rightFastq = ();
   my @A_singleFastq = ();
 
-  my $maxCoverage = LoadConfig::getParam($rH_cfg, 'normalization', 'maxCoverage', 1, 'int');
-  my $kmerSize = LoadConfig::getParam($rH_cfg, 'normalization', 'kmerSize', 1, 'int');
-  my $maxPctStdev = LoadConfig::getParam($rH_cfg, 'normalization', 'maxPctStdev', 1, 'float');
-
-  my $normFileSuffix = ".normalized_K" . $kmerSize . "_C" . $maxCoverage . "_pctSD" . $maxPctStdev . ".fq";
-
   my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($nanuqSampleSheet);
 
   # Retrieve single/paired end normalized files for each lane of each sample
@@ -372,10 +382,10 @@ sub normalizationMergeResults {
     for my $rH_laneInfo (@$rAoH_sampleLanes) {
       my $normDirectory = "\$WORK_DIR/normalization/" . $sample . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
       if ($readType eq "single") {
-        push (@A_singleFastq, "$normDirectory/single$normFileSuffix");
+        push (@A_singleFastq, "$normDirectory/single.norm.fq");
       } elsif ($readType eq "paired") {
-        push (@A_leftFastq, "$normDirectory/left$normFileSuffix");
-        push (@A_rightFastq, "$normDirectory/right$normFileSuffix");
+        push (@A_leftFastq, "$normDirectory/left.norm.fq");
+        push (@A_rightFastq, "$normDirectory/right.norm.fq");
       }
     }
   }
@@ -384,10 +394,26 @@ sub normalizationMergeResults {
 
   if ($readType eq "single") {
     # Single-end reads
-    $rO_job = Trinity::normalize_by_kmer_coverage($rH_cfg, undef, undef, \@A_singleFastq, "\$WORK_DIR/normalization/global");
+    $rO_job = Trinity::insilico_read_normalization(
+      $rH_cfg,
+      undef,
+      undef,
+      \@A_singleFastq,
+      "\$WORK_DIR/normalization/global",
+      LoadConfig::getParam($rH_cfg, 'normalizationMergeResults', 'jellyfishMemory'),
+      LoadConfig::getParam($rH_cfg, 'normalizationMergeResults', 'CPU')
+    );
   } else {
     # Paired-end reads
-    $rO_job = Trinity::normalize_by_kmer_coverage($rH_cfg, \@A_leftFastq, \@A_rightFastq, undef, "\$WORK_DIR/normalization/global");
+    $rO_job = Trinity::insilico_read_normalization(
+      $rH_cfg,
+      \@A_leftFastq,
+      \@A_rightFastq,
+      undef,
+      "\$WORK_DIR/normalization/global",
+      LoadConfig::getParam($rH_cfg, 'normalizationMergeResults', 'jellyfishMemory'),
+      LoadConfig::getParam($rH_cfg, 'normalizationMergeResults', 'CPU')
+    );
   }
 
   submitJob($rH_cfg, $step, undef, $rO_job);
@@ -399,17 +425,11 @@ sub trinity {
 
   my $readType = getReadType($nanuqSampleSheet);
 
-  my $maxCoverage = LoadConfig::getParam($rH_cfg, 'normalization', 'maxCoverage', 1, 'int');
-  my $kmerSize = LoadConfig::getParam($rH_cfg, 'normalization', 'kmerSize', 1, 'int');
-  my $maxPctStdev = LoadConfig::getParam($rH_cfg, 'normalization', 'maxPctStdev', 1, 'float');
-
-  my $normFileSuffix = ".normalized_K" . $kmerSize . "_C" . $maxCoverage . "_pctSD" . $maxPctStdev . ".fq";
-
   my $rO_job;
   if ($readType eq "single") {
-    $rO_job = Trinity::trinity($rH_cfg, undef, undef, ["\$WORK_DIR/normalization/global/single$normFileSuffix"], "\$WORK_DIR/trinity_out_dir");
+    $rO_job = Trinity::trinity($rH_cfg, undef, undef, ["\$WORK_DIR/normalization/global/single.norm.fq"], "\$WORK_DIR/trinity_out_dir");
   } else {
-    $rO_job = Trinity::trinity($rH_cfg, ["\$WORK_DIR/normalization/global/left$normFileSuffix"], ["\$WORK_DIR/normalization/global/right$normFileSuffix"], undef, "\$WORK_DIR/trinity_out_dir");
+    $rO_job = Trinity::trinity($rH_cfg, ["\$WORK_DIR/normalization/global/left.norm.fq"], ["\$WORK_DIR/normalization/global/right.norm.fq"], undef, "\$WORK_DIR/trinity_out_dir");
   }
   submitJob($rH_cfg, $step, undef, $rO_job);
 }
@@ -435,7 +455,7 @@ sub blastSplitQuery {
     # Create Trinity assembly FASTA index
     $command .= "fastaindex $trinityFastaFile $trinityIndexFile && \\\n";
     # Create Trinity assembly FASTA subset with longest transcript per component only
-    $command .= "fastalength $trinityFastaFile | perl -pe 's/ ((\\S+)_seq\\S+)/\\t\\1\\t\\2/' | sort -k3,3 -k1,1gr | uniq -f2 | cut -f2 | fastafetch $trinityFastaFile -i $trinityIndexFile -q stdin > $reducedTrinityFastaFile && \\\n";
+    $command .= "fastalength $trinityFastaFile | perl -pe 's/ ((c\\d+_g\\d+)_i\\d+)/\\t\\1\\t\\2/' | sort -k3,3 -k1,1gr | uniq -f2 | cut -f2 | fastafetch $trinityFastaFile -i $trinityIndexFile -q stdin > $reducedTrinityFastaFile && \\\n";
 
     # Split Trinity assembly FASTA into chunks for BLAST parallelization
     my $chunkDir = "\$WORK_DIR/blast/chunks";
@@ -519,21 +539,21 @@ sub blastMergeResults {
 }
 
 # The RSEM reference assembly is created once only, and then used by all RSEM sample jobs in parallel
-sub rsemPrepareReference {
+sub alignEstimateAbundancePrepareReference {
   my $rH_cfg = shift;
   my $step = shift;
 
-  my $rO_job = Trinity::rsemPrepareReference($rH_cfg, "\$WORK_DIR");
+  my $rO_job = Trinity::alignEstimateAbundancePrepareReference($rH_cfg, "\$WORK_DIR");
   submitJob($rH_cfg, $step, undef, $rO_job);
 }
 
 # RSEM abundance estimation is performed by sample
-sub rsem {
+sub alignEstimateAbundance {
   my $rH_cfg = shift;
   my $step = shift;
   my $sample = shift;
 
-  my $rO_job = Trinity::rsem($rH_cfg, "\$WORK_DIR", $sample);
+  my $rO_job = Trinity::alignEstimateAbundance($rH_cfg, "\$WORK_DIR", $sample);
   submitJob($rH_cfg, $step, $sample, $rO_job);
 }
 
@@ -572,12 +592,12 @@ sub differentialGeneExpression {
     $command .= "mkdir -p $dgeDir && \\\n";
 
     # Create isoforms and genes matrices with counts of RNA-seq fragments per feature using Trinity RSEM utility
-    $command .= "merge_RSEM_frag_counts_single_table.pl \$WORK_DIR/rsem/*/*.isoforms.results > $isoformsMatrix && \\\n";
-    $command .= "merge_RSEM_frag_counts_single_table.pl \$WORK_DIR/rsem/*/*.genes.results > $genesMatrix && \\\n";
+    $command .= "abundance_estimates_to_matrix.pl --est_method RSEM \$WORK_DIR/alignEstimateAbundance/*/*.isoforms.results --out_prefix $dgeDir/isoforms && \\\n";
+    $command .= "abundance_estimates_to_matrix.pl --est_method RSEM \$WORK_DIR/alignEstimateAbundance/*/*.genes.results --out_prefix $dgeDir/genes && \\\n";
 
     # Extract isoforms and genes length values
-    $command .= "find \$WORK_DIR/rsem/ -name *.isoforms.results -exec cut -f 1,3,4 {} \\; -quit > \$WORK_DIR/rsem/isoforms.lengths.tsv && \\\n";
-    $command .= "find \$WORK_DIR/rsem/ -name *.genes.results -exec cut -f 1,3,4 {} \\; -quit > \$WORK_DIR/rsem/genes.lengths.tsv && \\\n";
+    $command .= "find \$WORK_DIR/alignEstimateAbundance/ -name *.isoforms.results -exec cut -f 1,3,4 {} \\; -quit > \$WORK_DIR/alignEstimateAbundance/isoforms.lengths.tsv && \\\n";
+    $command .= "find \$WORK_DIR/alignEstimateAbundance/ -name *.genes.results -exec cut -f 1,3,4 {} \\; -quit > \$WORK_DIR/alignEstimateAbundance/genes.lengths.tsv && \\\n";
 
     # Merge isoforms and genes matrices with BLAST annotations if any:
     # edger.R requires a matrix with gene/isoform annotation as second column 
@@ -596,7 +616,7 @@ sub differentialGeneExpression {
     $command .= "Rscript \\\$R_TOOLS/deseq.R -d $designFile -c $genesAnnotatedMatrix -o $dgeDir/genes_$db && \\\n";
 
     # Merge edgeR results with gene/isoform length values and BLAST description
-    $command .= "for gi in genes isoforms; do for f in $dgeDir/\\\${gi}_$db/*/dge_results.csv; do sed '1s/gene_symbol/$db.id/' \\\$f | awk -F\\\"\\t\\\" 'FNR==NR {a[\\\$1]=\\\$2\\\"\\t\\\"\\\$3; next}{OFS=\\\"\\t\\\"; if (a[\\\$1]) {print \\\$0, a[\\\$1]} else {print \\\$0, \\\"\\\", \\\"\\\"}}' \$WORK_DIR/rsem/\\\${gi}.lengths.tsv - | sed '1s/\\t\\\$/length\\teffective_length/' | awk -F\\\"\\t\\\" 'FNR==NR {a[\\\$2]=\\\$NF; next}{OFS=\\\"\\t\\\"; if (a[\\\$2]) {print \\\$0, a[\\\$2]} else {print \\\$0, \\\"\\\"}}' <(grep -v '^#' $blastResult) - | sed '1s/\\\$/description/' > \\\${f/.csv/_$db.csv}; done; done \\\n";
+    $command .= "for gi in genes isoforms; do for f in $dgeDir/\\\${gi}_$db/*/dge_results.csv; do sed '1s/gene_symbol/$db.id/' \\\$f | awk -F\\\"\\t\\\" 'FNR==NR {a[\\\$1]=\\\$2\\\"\\t\\\"\\\$3; next}{OFS=\\\"\\t\\\"; if (a[\\\$1]) {print \\\$0, a[\\\$1]} else {print \\\$0, \\\"\\\", \\\"\\\"}}' \$WORK_DIR/alignEstimateAbundance/\\\${gi}.lengths.tsv - | sed '1s/\\t\\\$/length\\teffective_length/' | awk -F\\\"\\t\\\" 'FNR==NR {a[\\\$2]=\\\$NF; next}{OFS=\\\"\\t\\\"; if (a[\\\$2]) {print \\\$0, a[\\\$2]} else {print \\\$0, \\\"\\\"}}' <(grep -v '^#' $blastResult) - | sed '1s/\\\$/description/' > \\\${f/.csv/_$db.csv}; done; done \\\n";
 
     $rO_job->addCommand($command);
   }
