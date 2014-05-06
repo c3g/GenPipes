@@ -5,10 +5,10 @@
 #
 
 SOFTWARE=rsem
-VERSION=1.2.8
+VERSION=1.2.12
 
 # 'MUGQIC_INSTALL_HOME_DEV' for development, 'MUGQIC_INSTALL_HOME' for production (don't write '$' before!)
-INSTALL_HOME=MUGQIC_INSTALL_HOME_DEV
+INSTALL_HOME=MUGQIC_INSTALL_HOME
 
 # Indirection call to use $INSTALL_HOME value as variable name
 INSTALL_DIR=${!INSTALL_HOME}/software/$SOFTWARE
@@ -32,8 +32,6 @@ tar zxvf $ARCHIVE
 
 SOFTWARE_DIR=$SOFTWARE-$VERSION
 cd $SOFTWARE_DIR
-# Update script shebang lines to use environment custom Perl instead of default system Perl
-grep -l -r "\#\!\/usr\/bin\/perl" . | while read file; do sed -i '1s/#!\/usr\/bin\/perl.*/#!\/usr\/bin\/env perl/' $file ; done
 make
 
 # Add permissions and install software
