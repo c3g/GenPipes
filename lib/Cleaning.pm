@@ -46,7 +46,7 @@ use File::Path;
 # SUB
 #-----------------------
 sub rna {
-  ### clean current directory for RNAseq tempory files
+  ### clean current directory for RNA-Seq temporary files
   &rawReads;
   &reads;
   &tophat;
@@ -60,12 +60,22 @@ sub rna {
 }
 
 sub rnaseq_denovo {
-  ### clean current directory for RNAseq tempory files
+  ### clean current directory for RNA-Seq De Novo temporary files
   &rawReads;
-  &reads;
-  &deliverable;
-  &exploratory;
-  &metrics;
+  foreach my $folder ((
+    "trim",
+    "normalization",
+    "metrics",
+    "trinity_out_dir",
+    "blast",
+    "rsem",
+    "alignEstimateAbundance",
+    "DGE",
+    "job_output"
+    )) {
+    rmtree($folder);
+    print "the $folder folder is now removed\n";
+  }
 }
 
 sub rawReads {

@@ -67,6 +67,7 @@ use lib "$FindBin::Bin/../../lib";
 #-------------------
 use Cwd 'abs_path';
 use Getopt::Std;
+use Cleaning;
 use GqSeqUtils;
 use LoadConfig;
 use Metrics;
@@ -166,6 +167,7 @@ Usage: perl $0 -h | -c CONFIG_FILE -s start_step_num -e end_step_num [-n SAMPLE_
   -n  nanuq sample sheet
   -d  design file
   -w  work directory (default current)
+  --clean  delete all result files except deliverables (no other option required)
 
 Steps:
 END
