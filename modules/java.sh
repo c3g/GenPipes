@@ -5,8 +5,8 @@
 #
 
 SOFTWARE=java
-VERSION=jdk1.7.0_60
-#VERSION=jdk1.6.0_38
+VERSION=openjdk-jdk1.7.0_60
+#VERSION=openjdk-jdk1.6.0_38
 
 # 'MUGQIC_INSTALL_HOME_DEV' for development, 'MUGQIC_INSTALL_HOME' for production (don't write '$' before!)
 INSTALL_HOME=MUGQIC_INSTALL_HOME
@@ -38,6 +38,8 @@ tar zxvf $ARCHIVE
 #sh $ARCHIVE
 
 SOFTWARE_DIR=$VERSION
+# Prefix default "jdk..." software directory by "openjdk-" to differentiate it from oracle-jdk
+mv ${SOFTWARE_DIR/openjdk-/} $SOFTWARE_DIR
 
 # Add permissions and install software
 cd $INSTALL_DOWNLOAD
