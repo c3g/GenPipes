@@ -458,7 +458,8 @@ sub align {
 
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
     my $sampleName = $rH_laneInfo->{'name'};
-    $step->{'jobIds'}->{$sampleName} =();
+    my $processingId = $rH_laneInfo->{'processingSheetId'};
+    $step->{'jobIds'}->{$processingId} =();
     my $libSource = $rH_laneInfo->{'libSource'}; # gDNA, cDNA, ...
     my $ref = getGenomeReference($rH_laneInfo->{'referenceMappingSpecies'}, $rH_laneInfo->{'ref'}, $libSource, 'bwa');
     if (!defined($ref)) {
@@ -485,8 +486,8 @@ sub align {
     my $ro_bwaJob = BWA::mem($rH_cfg, $sampleName, $pair1, $pair2, $pair1, $outputAlnPrefix, $rgId, $rgSampleName, $rgLibrary, $rgPlatformUnit, $rgCenter, $ref);
     if(!$ro_bwaJob->isUp2Date()) {
       print 'mkdir -p '.$outputAlnDir."\n";
-      my $jobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mem", "$runID.$lane", 'BWA_MEM_'.$rH_laneInfo->{'processingSheetId'}, $jobDependency, $rH_laneInfo->{'processingSheetId'}, $ro_bwaJob);
-      push (@{$step->{'jobIds'}->{$sampleName}}, $jobId);
+      my $jobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mem", "$runID.$lane", 'BWA_MEM_'.$processingId, $jobDependency, $processingId, $ro_bwaJob);
+      push (@{$step->{'jobIds'}->{$processingId}}, $jobId);
     }
   }
   return;
@@ -515,8 +516,9 @@ sub laneMetrics {
     }
 
     my $sampleName = $rH_laneInfo->{'name'};
-    my $jobDependency = getDependencies($step, $rH_cfg, $sampleName);
-    $step->{'jobIds'}->{$sampleName} =();
+    my $processingId = $rH_laneInfo->{'processingSheetId'};
+    my $jobDependency = getDependencies($step, $rH_cfg, $processingId);
+    $step->{'jobIds'}->{$processingId} =();
 
     my $directory = $runDirectory.'/' . $ALIGNED_DIR. '.'.$lane.'/alignment/'.$sampleName."/run".$runID."_".$rH_laneInfo->{'lane'}."/";
     my $sortedLaneBamFile = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.bam';
@@ -525,16 +527,16 @@ sub laneMetrics {
 
     my $rO_job = Picard::markDup($rH_cfg, $sampleName, $sortedLaneBamFile, $sortedLaneDupBamFile, $outputMetrics);
     if(!$rO_job->isUp2Date()) {
-      my $jobId = SubmitToCluster::printSubmitCmd($rH_cfg, "markDup",$runID . "." . $rH_laneInfo->{'lane'}, 'LANEMARKDUP_'.$rH_laneInfo->{'processingSheetId'}, $jobDependency, $rH_laneInfo->{'processingSheetId'}, $rO_job);
-      push (@{$step->{'jobIds'}->{$sampleName}}, $jobId);
+      my $jobId = SubmitToCluster::printSubmitCmd($rH_cfg, "markDup",$runID . "." . $rH_laneInfo->{'lane'}, 'LANEMARKDUP_'.$processingId, $jobDependency, $processingId, $rO_job);
+      push (@{$step->{'jobIds'}->{$processingId}}, $jobId);
       push (@{$step->{'jobIds'}->{$GLOBAL_DEP_KEY}}, $jobId);
     }
 
     $outputMetrics = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.dup.metrics';
     my $rO_collectMetricsJob = Picard::collectMetrics($rH_cfg, $sortedLaneBamFile, $outputMetrics, $ref);
     if(!$rO_collectMetricsJob->isUp2Date()) {
-      my $jobId2 = SubmitToCluster::printSubmitCmd($rH_cfg, "collectMetrics", $runID . "." . $rH_laneInfo->{'lane'}, 'COLLECTMETRICS_'.$rH_laneInfo->{'processingSheetId'}, $jobDependency, $rH_laneInfo->{'processingSheetId'}, $rO_collectMetricsJob);
-      push (@{$step->{'jobIds'}->{$sampleName}}, $jobId2);
+      my $jobId2 = SubmitToCluster::printSubmitCmd($rH_cfg, "collectMetrics", $runID . "." . $rH_laneInfo->{'lane'}, 'COLLECTMETRICS_'.$processingId, $jobDependency, $processingId, $rO_collectMetricsJob);
+      push (@{$step->{'jobIds'}->{$processingId}}, $jobId2);
       push (@{$step->{'jobIds'}->{$GLOBAL_DEP_KEY}}, $jobId2);
     }
     
@@ -549,8 +551,8 @@ sub laneMetrics {
 	  print "\n";
 	}
       }
-      my $jobId3 = SubmitToCluster::printSubmitCmd($rH_cfg, "depthOfCoverage", $runID . '.' . $rH_laneInfo->{'lane'}, 'LANEDEPTHOFCOVERAGE_'.$rH_laneInfo->{'processingSheetId'}, $jobDependency, $rH_laneInfo->{'processingSheetId'}, $rO_coverageJob);
-      push (@{$step->{'jobIds'}->{$sampleName}}, $jobId3);
+      my $jobId3 = SubmitToCluster::printSubmitCmd($rH_cfg, "depthOfCoverage", $runID . '.' . $rH_laneInfo->{'lane'}, 'LANEDEPTHOFCOVERAGE_'.$processingId, $jobDependency, $processingId, $rO_coverageJob);
+      push (@{$step->{'jobIds'}->{$processingId}}, $jobId3);
       push (@{$step->{'jobIds'}->{$GLOBAL_DEP_KEY}}, $jobId3);
     }
   }
@@ -570,6 +572,7 @@ sub generateBamMd5 {
 
   for my $rH_sample (@$rAoH_sample) {
     my $sampleName = $rH_sample->{'name'};
+    my $processingId = $rH_sample->{'processingSheetId'};
     my $libSource = $rH_sample->{'libSource'}; # gDNA, cDNA, ...
     my $ref = getGenomeReference($rH_sample->{'referenceMappingSpecies'}, $rH_sample->{'ref'}, $libSource, 'bwa');
     if (!defined($ref)) {
@@ -577,7 +580,7 @@ sub generateBamMd5 {
       next;
     }
 
-    my $dependencies = getDependencies($step, $rH_cfg, $sampleName);
+    my $dependencies = getDependencies($step, $rH_cfg, $processingId);
     my $directory = $runDirectory.'/' . $ALIGNED_DIR . '.'.$lane.'/alignment/'.$sampleName."/run".$runID."_".$lane."/";
     my $sortedLaneDupFile = $directory . $sampleName.'.'.$rH_sample->{'libraryBarcode'}.'.sorted.dup';
 
@@ -588,8 +591,8 @@ sub generateBamMd5 {
       $command .= '; md5sum -b '.$sortedLaneDupFile . '.bai > ' . $sortedLaneDupFile . '.bai.md5';
 
       $ro_job->addCommand($command);
-      my $jobId = SubmitToCluster::printSubmitCmd($rH_cfg, "generateBamMD5", "$runID.$lane", 'bmd5_'.$rH_sample->{'processingSheetId'}, $dependencies, $rH_sample->{'processingSheetId'}, $ro_job);
-      push (@{$step->{'jobIds'}->{$sampleName}}, $jobId);
+      my $jobId = SubmitToCluster::printSubmitCmd($rH_cfg, "generateBamMD5", "$runID.$lane", 'bmd5_'.$processingId, $dependencies, $processingId, $ro_job);
+      push (@{$step->{'jobIds'}->{$processingId}}, $jobId);
       push (@{$step->{'jobIds'}->{$GLOBAL_DEP_KEY}}, $jobId);
     }
   }
