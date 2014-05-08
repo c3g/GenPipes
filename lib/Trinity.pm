@@ -42,12 +42,14 @@ use Job;
 # SUB
 #-------------------
 
-sub normalize_by_kmer_coverage {
+sub insilico_read_normalization {
   my $rH_cfg = shift;
   my $rA_leftReadFiles = shift;
   my $rA_rightReadFiles = shift;
   my $rA_singleReadFiles = shift;
   my $outputDirectory = shift;
+  my $jellyfishMemory = shift;
+  my $cpu = shift;
 
   # Find out if reads are paired or single-end
   my $readType;
@@ -56,14 +58,12 @@ sub normalize_by_kmer_coverage {
   } elsif (not(defined($rA_leftReadFiles)) and not(defined($rA_rightReadFiles)) and defined($rA_singleReadFiles)) {
     $readType = "single";
   } else {
-    die "Error in normalize_by_kmer_coverage: mixed or undefined paired/single reads!\n";
+    die "Error in insilico_read_normalization: mixed or undefined paired/single reads!\n";
   }
 
   my $maxCoverage = LoadConfig::getParam($rH_cfg, 'normalization', 'maxCoverage', 1, 'int');
   my $kmerSize = LoadConfig::getParam($rH_cfg, 'normalization', 'kmerSize', 1, 'int');
   my $maxPctStdev = LoadConfig::getParam($rH_cfg, 'normalization', 'maxPctStdev', 1, 'float');
-
-  my $outputSuffix = ".normalized_K" . $kmerSize . "_C" . $maxCoverage . "_pctSD" . $maxPctStdev . ".fq";
 
   my $leftList;
   my $rightList;
@@ -77,11 +77,11 @@ sub normalize_by_kmer_coverage {
     $rightList = "$outputDirectory/right";
 
     $rA_inputs = [@$rA_leftReadFiles, @$rA_rightReadFiles];
-    $rA_outputs = [$leftList . $outputSuffix, $rightList . $outputSuffix];
+    $rA_outputs = [$leftList . ".norm.fq", $rightList . ".norm.fq"];
   } else {    # Single reads
     $singleCat = "$outputDirectory/single";
     $rA_inputs = [@$rA_singleReadFiles];
-    $rA_outputs = [$singleCat . $outputSuffix];
+    $rA_outputs = [$singleCat . ".norm.fq"];
   }
 
   my $rO_job = new Job();
@@ -116,11 +116,11 @@ sub normalize_by_kmer_coverage {
 
     # Load modules and run Trinity normalization
     $command .= LoadConfig::moduleLoad($rH_cfg, [['trinity', 'moduleVersion.trinity']]) . " && \\\n";
-    $command .= "normalize_by_kmer_coverage.pl \\
+    $command .= "insilico_read_normalization.pl \\
 $readFileOptions \\
  --output $outputDirectory \\\n";
-    $command .= " --JM " . LoadConfig::getParam($rH_cfg, 'normalization', 'jellyfishMemory', 1) . " \\\n";
-    $command .= " --JELLY_CPU " . LoadConfig::getParam($rH_cfg, 'normalization', 'jellyfishCPU', 1, 'int') . " \\\n";
+    $command .= " --JM " . $jellyfishMemory . " \\\n";
+    $command .= " --CPU " . $cpu . " \\\n";
     $command .= " --max_cov $maxCoverage \\\n";
     $command .= " --KMER_SIZE $kmerSize \\\n";
     $command .= " --max_pct_stdev $maxPctStdev \\\n";
@@ -178,11 +178,11 @@ sub trinity {
       ['trinity', 'moduleVersion.cranR']
     ]) . " && \\\n";
 
-    $command .= "Trinity.pl \\
+    $command .= "Trinity \\
 $readFileOptions \\
  --output $outputDirectory \\\n";
     $command .= " --JM " . LoadConfig::getParam($rH_cfg, 'trinity', 'jellyfishMemory', 1) . " \\\n";
-    $command .= " --CPU " . LoadConfig::getParam($rH_cfg, 'trinity', 'trinityCPU', 1, 'int') . " \\\n";
+    $command .= " --CPU " . LoadConfig::getParam($rH_cfg, 'trinity', 'CPU', 1, 'int') . " \\\n";
     $command .= " --bflyCPU " . LoadConfig::getParam($rH_cfg, 'trinity', 'bflyCPU', 1, 'int') . " \\\n";
     $command .= " " . LoadConfig::getParam($rH_cfg, 'trinity', 'trinityOptions', 1) . " && \\\n";
 
@@ -197,7 +197,7 @@ $readFileOptions \\
   return $rO_job;
 }
 
-sub rsemPrepareReference {
+sub alignEstimateAbundancePrepareReference {
   my $rH_cfg = shift;
   my $workDirectory = shift;
 
@@ -207,21 +207,26 @@ sub rsemPrepareReference {
     my $command = "\n";
 
     $command .= LoadConfig::moduleLoad($rH_cfg, [
-      ['trinity', 'moduleVersion.trinity'],
-      ['trinity', 'moduleVersion.bowtie'],
-      ['trinity', 'moduleVersion.rsem']
+      ['alignEstimateAbundance', 'moduleVersion.bowtie'],
+      ['alignEstimateAbundance', 'moduleVersion.rsem'],
+      ['alignEstimateAbundance', 'moduleVersion.samtools'],
+      ['alignEstimateAbundance', 'moduleVersion.trinity']
     ]) . " && \\\n";
 
-    $command .= "run_RSEM_align_n_estimate.pl \\
+    $command .= "align_and_estimate_abundance.pl \\
       --transcripts \$WORK_DIR/trinity_out_dir/Trinity.fasta \\
-      --just_prep_reference \\\n";
+      --seqType fa \\
+      --est_method RSEM \\
+      --aln_method bowtie \\
+      --trinity_mode \\
+      --prep_reference \\\n";
 
     $rO_job->addCommand($command);
   }
   return $rO_job;
 }
 
-sub rsem {
+sub alignEstimateAbundance {
   my $rH_cfg = shift;
   my $workDirectory = shift;
   my $sample = shift;
@@ -235,20 +240,25 @@ sub rsem {
     my $right  = "\\`find \$WORK_DIR/reads -name $sample*pair2*.fastq.gz | sort | paste -s -d,\\`";
 
     $command .= LoadConfig::moduleLoad($rH_cfg, [
-      ['trinity', 'moduleVersion.trinity'],
-      ['trinity', 'moduleVersion.bowtie'],
-      ['trinity', 'moduleVersion.rsem']
+      ['alignEstimateAbundance', 'moduleVersion.bowtie'],
+      ['alignEstimateAbundance', 'moduleVersion.rsem'],
+      ['alignEstimateAbundance', 'moduleVersion.samtools'],
+      ['alignEstimateAbundance', 'moduleVersion.trinity']
     ]) . " && \\\n";
 
-    $command .= "run_RSEM_align_n_estimate.pl \\
+    $command .= "align_and_estimate_abundance.pl \\
       --transcripts \$WORK_DIR/trinity_out_dir/Trinity.fasta \\
+      --seqType fa \\
       --left $left \\
       --right $right \\
       --seqType fq \\
+      --est_method RSEM \\
+      --aln_method bowtie \\
+      --trinity_mode \\
       --SS_lib_type RF \\
-      --prefix $sample \\
-      --output_dir \$WORK_DIR/rsem/$sample \\
-      --thread_count " . LoadConfig::getParam($rH_cfg, 'rsem', 'rsemCPU', 1, 'int') . " \\\n";
+      --output_prefix $sample \\
+      --output_dir \$WORK_DIR/alignEstimateAbundance/$sample \\
+      --thread_count " . LoadConfig::getParam($rH_cfg, 'alignEstimateAbundance', 'CPU', 1, 'int') . " \\\n";
 
     $rO_job->addCommand($command);
   }

@@ -158,7 +158,7 @@ sub generatePeaks {
     if ($type eq 'B') {
       $options = ' --nomodel --broad ';
     } else {
-      $options = " ";
+      $options = ' --fix-bimodal ';
     }
 
     $command .= ' ' . LoadConfig::getParam($rH_cfg, 'macs', 'macsBin') . ' callpeak ' . '-t ' . $treatment . ' -c ' . $control . ' --name=' . $outputDir . '/' . $designName . $genomeSize . $options . ' ' . $typeoptions . ' ' . $feoptions . ' ' . $extraFlags . ' >& ' . $outputDir . '/' . $designName . '.diag.macs.out';
