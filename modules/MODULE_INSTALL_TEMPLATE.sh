@@ -47,7 +47,7 @@ make  ## TO BE ADDED AND MODIFIED IF NECESSARY
 cd $INSTALL_DOWNLOAD
 chmod -R ug+rwX,o+rX .
 mv -i $SOFTWARE_DIR $INSTALL_DIR
-mv -i $ARCHIVE ${!INSTALL_HOME}/archive
+mv -i $ARCHIVE ${!INSTALL_HOME}/archive/
 
 # Module file
 echo "#%Module1.0
