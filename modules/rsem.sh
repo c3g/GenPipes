@@ -25,9 +25,16 @@ mkdir $INSTALL_DOWNLOAD
 cd $INSTALL_DOWNLOAD
 
 # Download, extract, build
-# Write here the specific commands to download, extract, build the software, typically similar to:
 ARCHIVE=$SOFTWARE-$VERSION.tar.gz
-wget http://deweylab.biostat.wisc.edu/rsem/src/$ARCHIVE
+# If archive was previously downloaded, use the local one, otherwise get it from remote site
+if [[ -f ${!INSTALL_HOME}/archive/$ARCHIVE ]]
+then
+  echo "Archive $ARCHIVE already in ${!INSTALL_HOME}/archive/: using it..."
+  cp -a ${!INSTALL_HOME}/archive/$ARCHIVE .
+else
+  echo "Archive $ARCHIVE not in ${!INSTALL_HOME}/archive/: downloading it..."
+  wget http://deweylab.biostat.wisc.edu/rsem/src/$ARCHIVE
+fi
 tar zxvf $ARCHIVE
 
 SOFTWARE_DIR=$SOFTWARE-$VERSION
@@ -38,7 +45,11 @@ make
 cd $INSTALL_DOWNLOAD
 chmod -R ug+rwX,o+rX .
 mv -i $SOFTWARE_DIR $INSTALL_DIR
-mv -i $ARCHIVE ${!INSTALL_HOME}/archive
+# Store archive if not already present or if different from the previous one
+if [[ ! -f ${!INSTALL_HOME}/archive/$ARCHIVE || `diff ${!INSTALL_HOME}/archive/$ARCHIVE $ARCHIVE` ]]
+then
+  mv -i $ARCHIVE ${!INSTALL_HOME}/archive/
+fi
 
 # Module file
 echo "#%Module1.0
