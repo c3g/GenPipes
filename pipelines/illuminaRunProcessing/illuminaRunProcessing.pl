@@ -80,7 +80,7 @@ push(@steps, {'name' => 'generateQCGraphs', 'stepLoop' => 'sample', 'parentStep'
 push(@steps, {'name' => 'generateBlasts', 'stepLoop' => 'sample', 'parentStep' => ['generateFastq']});
 push(@steps, {'name' => 'align', 'stepLoop' => 'sample', 'parentStep' => ['generateFastq']});
 push(@steps, {'name' => 'laneMetrics', 'stepLoop' => 'sample', 'parentStep' => ['align']});
-push(@steps, {'name' => 'generateBamMd5', 'stepLoop' => 'sample', 'parentStep' => ['laneMetrics']});
+push(@steps, {'name' => 'generateBamMd5', 'stepLoop' => 'sample', 'parentStep' => ['align']});
 push(@steps, {'name' => 'startCopyNotification' , 'stepLoop' => 'lane' , 'parentStep' => ['generateIndexCount','generateMD5','generateQCGraphs','generateBlasts','laneMetrics','generateBamMd5']});
 push(@steps, {'name' => 'copy' , 'stepLoop' => 'lane' , 'parentStep' => ['generateIndexCount','generateMD5','generateQCGraphs','generateBlasts','laneMetrics','generateBamMd5']});
 push(@steps, {'name' => 'endCopyNotification' , 'stepLoop' => 'lane' , 'parentStep' => ['copy']});
@@ -532,7 +532,7 @@ sub laneMetrics {
       push (@{$step->{'jobIds'}->{$GLOBAL_DEP_KEY}}, $jobId);
     }
 
-    $outputMetrics = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.dup.metrics';
+    $outputMetrics = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.metrics';
     my $rO_collectMetricsJob = Picard::collectMetrics($rH_cfg, $sortedLaneBamFile, $outputMetrics, $ref);
     if(!$rO_collectMetricsJob->isUp2Date()) {
       my $jobId2 = SubmitToCluster::printSubmitCmd($rH_cfg, "collectMetrics", $runID . "." . $rH_laneInfo->{'lane'}, 'COLLECTMETRICS_'.$processingId, $jobDependency, $processingId, $rO_collectMetricsJob);
@@ -540,7 +540,7 @@ sub laneMetrics {
       push (@{$step->{'jobIds'}->{$GLOBAL_DEP_KEY}}, $jobId2);
     }
     
-    $outputMetrics = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.dup.metrics.nodup.targetCoverage.txt';
+    $outputMetrics = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.metrics.targetCoverage.txt';
     my $coverageBED = defined(BVATools::resolveSampleBED($rH_cfg, $rH_laneInfo)) ? $runDirectory . "/". BVATools::resolveSampleBED($rH_cfg, $rH_laneInfo) : undef;
     my $rO_coverageJob = BVATools::depthOfCoverage($rH_cfg, $sortedLaneBamFile, $outputMetrics, $coverageBED, $ref);
     if(!$rO_coverageJob->isUp2Date()) {
@@ -582,14 +582,12 @@ sub generateBamMd5 {
 
     my $dependencies = getDependencies($step, $rH_cfg, $processingId);
     my $directory = $runDirectory.'/' . $ALIGNED_DIR . '.'.$lane.'/alignment/'.$sampleName."/run".$runID."_".$lane."/";
-    my $sortedLaneDupFile = $directory . $sampleName.'.'.$rH_sample->{'libraryBarcode'}.'.sorted.dup';
+    my $sortedLaneFile = $directory . $sampleName.'.'.$rH_sample->{'libraryBarcode'}.'.sorted';
 
     my $ro_job = new Job();
-    $ro_job->testInputOutputs([$sortedLaneDupFile.'.bam', $sortedLaneDupFile.'.bai'],[$sortedLaneDupFile.'.bam.md5', $sortedLaneDupFile.'.bai.md5']);
+    $ro_job->testInputOutputs([$sortedLaneFile.'.bai'],[$sortedLaneFile.'.bai.md5']);
     if (!$ro_job->isUp2Date()) {
-      my $command = 'md5sum -b '.$sortedLaneDupFile . '.bam > ' . $sortedLaneDupFile . '.bam.md5';
-      $command .= '; md5sum -b '.$sortedLaneDupFile . '.bai > ' . $sortedLaneDupFile . '.bai.md5';
-
+      my $command = 'md5sum -b '.$sortedLaneFile . '.bai > ' . $sortedLaneFile . '.bai.md5';
       $ro_job->addCommand($command);
       my $jobId = SubmitToCluster::printSubmitCmd($rH_cfg, "generateBamMD5", "$runID.$lane", 'bmd5_'.$processingId, $dependencies, $processingId, $ro_job);
       push (@{$step->{'jobIds'}->{$processingId}}, $jobId);
