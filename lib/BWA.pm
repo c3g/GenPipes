@@ -96,7 +96,7 @@ sub mem {
     $bwaCommand .= ' ' . LoadConfig::getParam($rH_cfg, 'mem', 'extraJavaFlags');
     $bwaCommand .= ' -Xmx' . LoadConfig::getParam($rH_cfg, 'mem', 'sortRam');
     $bwaCommand .= ' -jar \${PICARD_HOME}/SortSam.jar';
-    $bwaCommand .= '  INPUT=/dev/stdin CREATE_INDEX=true VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate';
+    $bwaCommand .= '  INPUT=/dev/stdin CREATE_INDEX=true CREATE_MD5_FILE=true VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate';
     $bwaCommand .= ' OUTPUT=' . $outputBAM;
     $bwaCommand .= ' MAX_RECORDS_IN_RAM=' . LoadConfig::getParam($rH_cfg, 'mem', 'sortRecInRam', 1, 'int');
 
@@ -191,7 +191,7 @@ sub pairCommand {
     $bwaCommand .= ' ' . LoadConfig::getParam($rH_cfg, 'aln', 'extraJavaFlags');
     $bwaCommand .= ' -Xmx' . LoadConfig::getParam($rH_cfg, 'aln', 'sortRam');
     $bwaCommand .= ' -jar \${PICARD_HOME}/SortSam.jar';
-    $bwaCommand .= ' INPUT=/dev/stdin CREATE_INDEX=true VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate';
+    $bwaCommand .= ' INPUT=/dev/stdin CREATE_INDEX=true CREATE_MD5_FILE=true VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate';
     $bwaCommand .= ' OUTPUT=' . $outputBAM;
     $bwaCommand .= ' MAX_RECORDS_IN_RAM=' . LoadConfig::getParam($rH_cfg, 'aln', 'sortRecInRam', 1, 'int');
 
@@ -249,7 +249,7 @@ sub singleCommand {
     $bwaCommand .= ' ' . LoadConfig::getParam($rH_cfg, 'aln', 'extraJavaFlags');
     $bwaCommand .= ' -Xmx' . LoadConfig::getParam($rH_cfg, 'aln', 'sortRam');
     $bwaCommand .= ' -jar \${PICARD_HOME}/SortSam.jar';
-    $bwaCommand .= ' INPUT=/dev/stdin CREATE_INDEX=true VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate';
+    $bwaCommand .= ' INPUT=/dev/stdin CREATE_INDEX=true CREATE_MD5_FILE=true VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate';
     $bwaCommand .= ' OUTPUT=' . $outputBAM;
     $bwaCommand .= ' MAX_RECORDS_IN_RAM=' . LoadConfig::getParam($rH_cfg, 'aln', 'sortRecInRam', 1, 'int');
 

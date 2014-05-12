@@ -80,7 +80,7 @@ push(@steps, {'name' => 'generateQCGraphs', 'stepLoop' => 'sample', 'parentStep'
 push(@steps, {'name' => 'generateBlasts', 'stepLoop' => 'sample', 'parentStep' => ['generateFastq']});
 push(@steps, {'name' => 'align', 'stepLoop' => 'sample', 'parentStep' => ['generateFastq']});
 push(@steps, {'name' => 'laneMetrics', 'stepLoop' => 'sample', 'parentStep' => ['align']});
-push(@steps, {'name' => 'generateBamMd5', 'stepLoop' => 'sample', 'parentStep' => ['laneMetrics']});
+push(@steps, {'name' => 'generateBamMd5', 'stepLoop' => 'sample', 'parentStep' => ['align']});
 push(@steps, {'name' => 'startCopyNotification' , 'stepLoop' => 'lane' , 'parentStep' => ['generateIndexCount','generateMD5','generateQCGraphs','generateBlasts','laneMetrics','generateBamMd5']});
 push(@steps, {'name' => 'copy' , 'stepLoop' => 'lane' , 'parentStep' => ['generateIndexCount','generateMD5','generateQCGraphs','generateBlasts','laneMetrics','generateBamMd5']});
 push(@steps, {'name' => 'endCopyNotification' , 'stepLoop' => 'lane' , 'parentStep' => ['copy']});
@@ -98,6 +98,10 @@ my $rHoH_genomes;
 my $rHoH_defaultGenomes;
 my $casavaSheet;
 my $globalNumberOfMismatch;
+my $mask;
+my $firstIndex;
+my $lastIndex;
+
 
 &main();
 
@@ -112,6 +116,8 @@ sub printUsage {
   print "\t-n  nanuq sample sheet. Optional, default=RUNDIRECTORY/run.nanuq.csv\n";
   print "\t-i  Illumina (Casava) sample sheet. Optional, default=RUNDIRECTORY/SampleSheet.nanuq.csv\n";
   print "\t-m  Number of mismatches. Optional, default=1\n";
+  print "\t-x  First index nucleotide to use. Optional, default=1\n";
+  print "\t-y  Last index nucleotide to use. Optional, default=last\n";
   print "\n";
   print "Steps:\n";
   for(my $idx=0; $idx < @steps; $idx++) {
@@ -123,7 +129,7 @@ sub printUsage {
 
 sub main {
   my %opts;
-  getopts('c:s:e:m:n:l:r:i:', \%opts);
+  getopts('c:s:e:m:n:l:r:i:x:y:', \%opts);
 
   if (!defined($opts{'c'}) || !defined($opts{'s'}) || !defined($opts{'e'}) || !defined($opts{'l'}) || !defined($opts{'r'})) {
     printUsage();
@@ -136,6 +142,16 @@ sub main {
   $globalNumberOfMismatch = defined($opts{'m'}) ? $opts{'m'} : LoadConfig::getParam(\%cfg, 'default', 'numberMismatches');
   $casavaSheet = defined($opts{'i'}) ? $opts{'i'} : $runDirectory . "/SampleSheet.nanuq.csv";
   my $nanuqSheet = defined($opts{'n'}) ? $opts{'n'} : $runDirectory . "/run.nanuq.csv";
+  $firstIndex = $opts{'x'};
+  $lastIndex = $opts{'y'};
+  
+  if (!defined($lastIndex) ||  !($lastIndex > 0)) {
+    $lastIndex = 999;
+  }
+  
+  if (!defined($firstIndex) || !($firstIndex > 0)) {
+    $firstIndex = 1;
+  }
   
   
   $UNALIGNED_DIR = LoadConfig::getParam(\%cfg, 'default', 'unalignedDirPrefix');
@@ -144,7 +160,7 @@ sub main {
   my ($nbReads, $rAoH_readsInfo) = parseRunInfoFile($runDirectory ."/RunInfo.xml" );
 
   my $rAoH_samples = generateIlluminaLaneSampleSheet($lane, $runDirectory, $rAoH_readsInfo);
-  my $rHoAoH_infos = SampleSheet::parseSampleSheetAsHashByProcessingId($nanuqSheet);
+  my $rHoAoH_infos = SampleSheet::parseSampleSheetAsHashByProcessingId($nanuqSheet,1);
 
   $rHoH_genomes = getGenomeList(LoadConfig::getParam(\%cfg, 'default', 'genomesHome'));
   $rHoH_defaultGenomes = getDefaultGenomes(LoadConfig::getParam(\%cfg, 'default', 'defaultSpeciesGenome'));
@@ -173,6 +189,9 @@ sub main {
   if($runDirectory =~ /\d{6}_M\d+/){
     $isMiSeq = 1;
   }
+  
+  $mask = getMask($lane, $rAoH_readsInfo, $firstIndex, $lastIndex);
+  
 
   SubmitToCluster::initPipeline($runDirectory);
 
@@ -185,12 +204,7 @@ sub main {
     my $stepRef = \&$stepName;
     $step->{'jobIds'}->{$GLOBAL_DEP_KEY} = ();
 
-    # Sample step creates 1 job per sample
-    if ($step->{'stepLoop'} eq 'sample') {
-      &$stepRef($step, \%cfg, $runDirectory, $runID, $lane, $isMiSeq, $rAoH_readsInfo, $nbReads, $rAoH_samples);
-    } else { # Global step
-      &$stepRef($step, \%cfg, $runDirectory, $runID, $lane, $isMiSeq, $rAoH_readsInfo, $nbReads, $rAoH_samples);
-    }
+    &$stepRef($step, \%cfg, $runDirectory, $runID, $lane, $isMiSeq, $rAoH_readsInfo, $nbReads, $rAoH_samples);
   }
 
   my $jobIds = join (LoadConfig::getParam(\%cfg, 'default', 'clusterDependencySep'), map {"\$" . $_} @{$steps[$endStep-1]->{'jobIds'}->{$GLOBAL_DEP_KEY}});
@@ -272,7 +286,6 @@ sub generateFastq {
     my $baseCallDir = $runDirectory. "/" . LoadConfig::getParam($rH_cfg, 'generateFastq', 'baseCallDir');
     my $casavaSampleSheetPrefix = LoadConfig::getParam($rH_cfg, 'generateFastq', 'casavaSampleSheetPrefix');
 
-    my $mask = getMask($lane, $rAoH_readsInfo);
     validateBarcodes($globalNumberOfMismatch, $rAoH_sample);
 
 
@@ -445,7 +458,8 @@ sub align {
 
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
     my $sampleName = $rH_laneInfo->{'name'};
-    $step->{'jobIds'}->{$sampleName} =();
+    my $processingId = $rH_laneInfo->{'processingSheetId'};
+    $step->{'jobIds'}->{$processingId} =();
     my $libSource = $rH_laneInfo->{'libSource'}; # gDNA, cDNA, ...
     my $ref = getGenomeReference($rH_laneInfo->{'referenceMappingSpecies'}, $rH_laneInfo->{'ref'}, $libSource, 'bwa');
     if (!defined($ref)) {
@@ -472,8 +486,8 @@ sub align {
     my $ro_bwaJob = BWA::mem($rH_cfg, $sampleName, $pair1, $pair2, $pair1, $outputAlnPrefix, $rgId, $rgSampleName, $rgLibrary, $rgPlatformUnit, $rgCenter, $ref);
     if(!$ro_bwaJob->isUp2Date()) {
       print 'mkdir -p '.$outputAlnDir."\n";
-      my $jobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mem", "$runID.$lane", 'BWA_MEM_'.$rH_laneInfo->{'processingSheetId'}, $jobDependency, $rH_laneInfo->{'processingSheetId'}, $ro_bwaJob);
-      push (@{$step->{'jobIds'}->{$sampleName}}, $jobId);
+      my $jobId = SubmitToCluster::printSubmitCmd($rH_cfg, "mem", "$runID.$lane", 'BWA_MEM_'.$processingId, $jobDependency, $processingId, $ro_bwaJob);
+      push (@{$step->{'jobIds'}->{$processingId}}, $jobId);
     }
   }
   return;
@@ -502,8 +516,9 @@ sub laneMetrics {
     }
 
     my $sampleName = $rH_laneInfo->{'name'};
-    my $jobDependency = getDependencies($step, $rH_cfg, $sampleName);
-    $step->{'jobIds'}->{$sampleName} =();
+    my $processingId = $rH_laneInfo->{'processingSheetId'};
+    my $jobDependency = getDependencies($step, $rH_cfg, $processingId);
+    $step->{'jobIds'}->{$processingId} =();
 
     my $directory = $runDirectory.'/' . $ALIGNED_DIR. '.'.$lane.'/alignment/'.$sampleName."/run".$runID."_".$rH_laneInfo->{'lane'}."/";
     my $sortedLaneBamFile = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.bam';
@@ -512,20 +527,20 @@ sub laneMetrics {
 
     my $rO_job = Picard::markDup($rH_cfg, $sampleName, $sortedLaneBamFile, $sortedLaneDupBamFile, $outputMetrics);
     if(!$rO_job->isUp2Date()) {
-      my $jobId = SubmitToCluster::printSubmitCmd($rH_cfg, "markDup",$runID . "." . $rH_laneInfo->{'lane'}, 'LANEMARKDUP_'.$rH_laneInfo->{'processingSheetId'}, $jobDependency, $rH_laneInfo->{'processingSheetId'}, $rO_job);
-      push (@{$step->{'jobIds'}->{$sampleName}}, $jobId);
+      my $jobId = SubmitToCluster::printSubmitCmd($rH_cfg, "markDup",$runID . "." . $rH_laneInfo->{'lane'}, 'LANEMARKDUP_'.$processingId, $jobDependency, $processingId, $rO_job);
+      push (@{$step->{'jobIds'}->{$processingId}}, $jobId);
       push (@{$step->{'jobIds'}->{$GLOBAL_DEP_KEY}}, $jobId);
     }
 
-    $outputMetrics = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.dup.metrics';
+    $outputMetrics = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.metrics';
     my $rO_collectMetricsJob = Picard::collectMetrics($rH_cfg, $sortedLaneBamFile, $outputMetrics, $ref);
     if(!$rO_collectMetricsJob->isUp2Date()) {
-      my $jobId2 = SubmitToCluster::printSubmitCmd($rH_cfg, "collectMetrics", $runID . "." . $rH_laneInfo->{'lane'}, 'COLLECTMETRICS_'.$rH_laneInfo->{'processingSheetId'}, $jobDependency, $rH_laneInfo->{'processingSheetId'}, $rO_collectMetricsJob);
-      push (@{$step->{'jobIds'}->{$sampleName}}, $jobId2);
+      my $jobId2 = SubmitToCluster::printSubmitCmd($rH_cfg, "collectMetrics", $runID . "." . $rH_laneInfo->{'lane'}, 'COLLECTMETRICS_'.$processingId, $jobDependency, $processingId, $rO_collectMetricsJob);
+      push (@{$step->{'jobIds'}->{$processingId}}, $jobId2);
       push (@{$step->{'jobIds'}->{$GLOBAL_DEP_KEY}}, $jobId2);
     }
     
-    $outputMetrics = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.dup.metrics.nodup.targetCoverage.txt';
+    $outputMetrics = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.metrics.targetCoverage.txt';
     my $coverageBED = defined(BVATools::resolveSampleBED($rH_cfg, $rH_laneInfo)) ? $runDirectory . "/". BVATools::resolveSampleBED($rH_cfg, $rH_laneInfo) : undef;
     my $rO_coverageJob = BVATools::depthOfCoverage($rH_cfg, $sortedLaneBamFile, $outputMetrics, $coverageBED, $ref);
     if(!$rO_coverageJob->isUp2Date()) {
@@ -536,8 +551,8 @@ sub laneMetrics {
 	  print "\n";
 	}
       }
-      my $jobId3 = SubmitToCluster::printSubmitCmd($rH_cfg, "depthOfCoverage", $runID . '.' . $rH_laneInfo->{'lane'}, 'LANEDEPTHOFCOVERAGE_'.$rH_laneInfo->{'processingSheetId'}, $jobDependency, $rH_laneInfo->{'processingSheetId'}, $rO_coverageJob);
-      push (@{$step->{'jobIds'}->{$sampleName}}, $jobId3);
+      my $jobId3 = SubmitToCluster::printSubmitCmd($rH_cfg, "depthOfCoverage", $runID . '.' . $rH_laneInfo->{'lane'}, 'LANEDEPTHOFCOVERAGE_'.$processingId, $jobDependency, $processingId, $rO_coverageJob);
+      push (@{$step->{'jobIds'}->{$processingId}}, $jobId3);
       push (@{$step->{'jobIds'}->{$GLOBAL_DEP_KEY}}, $jobId3);
     }
   }
@@ -557,6 +572,7 @@ sub generateBamMd5 {
 
   for my $rH_sample (@$rAoH_sample) {
     my $sampleName = $rH_sample->{'name'};
+    my $processingId = $rH_sample->{'processingSheetId'};
     my $libSource = $rH_sample->{'libSource'}; # gDNA, cDNA, ...
     my $ref = getGenomeReference($rH_sample->{'referenceMappingSpecies'}, $rH_sample->{'ref'}, $libSource, 'bwa');
     if (!defined($ref)) {
@@ -564,19 +580,17 @@ sub generateBamMd5 {
       next;
     }
 
-    my $dependencies = getDependencies($step, $rH_cfg, $sampleName);
+    my $dependencies = getDependencies($step, $rH_cfg, $processingId);
     my $directory = $runDirectory.'/' . $ALIGNED_DIR . '.'.$lane.'/alignment/'.$sampleName."/run".$runID."_".$lane."/";
-    my $sortedLaneDupFile = $directory . $sampleName.'.'.$rH_sample->{'libraryBarcode'}.'.sorted.dup';
+    my $sortedLaneFile = $directory . $sampleName.'.'.$rH_sample->{'libraryBarcode'}.'.sorted';
 
     my $ro_job = new Job();
-    $ro_job->testInputOutputs([$sortedLaneDupFile.'.bam', $sortedLaneDupFile.'.bai'],[$sortedLaneDupFile.'.bam.md5', $sortedLaneDupFile.'.bai.md5']);
+    $ro_job->testInputOutputs([$sortedLaneFile.'.bai'],[$sortedLaneFile.'.bai.md5']);
     if (!$ro_job->isUp2Date()) {
-      my $command = 'md5sum -b '.$sortedLaneDupFile . '.bam > ' . $sortedLaneDupFile . '.bam.md5';
-      $command .= '; md5sum -b '.$sortedLaneDupFile . '.bai > ' . $sortedLaneDupFile . '.bai.md5';
-
+      my $command = 'md5sum -b '.$sortedLaneFile . '.bai > ' . $sortedLaneFile . '.bai.md5';
       $ro_job->addCommand($command);
-      my $jobId = SubmitToCluster::printSubmitCmd($rH_cfg, "generateBamMD5", "$runID.$lane", 'bmd5_'.$rH_sample->{'processingSheetId'}, $dependencies, $rH_sample->{'processingSheetId'}, $ro_job);
-      push (@{$step->{'jobIds'}->{$sampleName}}, $jobId);
+      my $jobId = SubmitToCluster::printSubmitCmd($rH_cfg, "generateBamMD5", "$runID.$lane", 'bmd5_'.$processingId, $dependencies, $processingId, $ro_job);
+      push (@{$step->{'jobIds'}->{$processingId}}, $jobId);
       push (@{$step->{'jobIds'}->{$GLOBAL_DEP_KEY}}, $jobId);
     }
   }
@@ -875,6 +889,9 @@ sub validateBarcodes {
 
   for my $rH_sample (@$rAoH_sample) {
     my $currentIndex = $rH_sample->{'index'};
+    $currentIndex =~ s/\-//; # remove dual-index "-"
+    $currentIndex = substr($currentIndex, $firstIndex - 1, $lastIndex- $firstIndex + 1);
+    
     for my $candidateIndex (@indexes) {
       my $distance = distance($currentIndex, $candidateIndex);
       if ($distance < $minAllowedDistance) {
@@ -909,28 +926,49 @@ sub distance {
 sub getMask {
   my $lane           = shift;
   my $rAoH_readsInfo = shift;
-
+  my $firstIndex     = shift;
+  my $lastIndex      = shift;
+  
   my ($rA_headers, $rAoA_sampleSheetDatas) = getSampleSheetContent();
   my $rAoA_laneData = getLaneSampleDatas($lane, $rA_headers, $rAoA_sampleSheetDatas);
-  my $rA_laneIdxLengths=getSmallestIndexLength($rAoH_readsInfo, $rA_headers, $rAoA_laneData);
+  my $rA_laneIdxLengths = getSmallestIndexLength($rAoH_readsInfo, $rA_headers, $rAoA_laneData);
 
   my $mask = "";
   my $readIndex = 0;
+  my $nbTotalIndexBaseUsed = 0;
+  
   for my $rH_readInfo (@{$rAoH_readsInfo}) {
     my $nbCycles = $rH_readInfo->{'nbCycles'};
-    if(length($mask) != 0) {
+    if (length($mask) != 0) {
       $mask .= ',';
     }
 
-    if($rH_readInfo->{'isIndexed'} eq "Y") {
-      if($nbCycles > $rA_laneIdxLengths->[$readIndex]) {
-	if($rA_laneIdxLengths->[$readIndex] == 0) {
+    if ($rH_readInfo->{'isIndexed'} eq "Y") {
+      if ($nbCycles >= $rA_laneIdxLengths->[$readIndex]) {
+	if ($rA_laneIdxLengths->[$readIndex] == 0 || $lastIndex <= $nbTotalIndexBaseUsed) {
 	  $mask .= 'n'.$nbCycles;
 	} else {
-	  $mask .= 'I'.$rA_laneIdxLengths->[$readIndex].'n'.($nbCycles-$rA_laneIdxLengths->[$readIndex]);
+	  my $nbNPrinted = 0;
+	  my $nbIndexBaseUsed = 0;
+	  if ($firstIndex > ($nbTotalIndexBaseUsed + 1)) {
+	    $nbNPrinted = min($nbCycles, $firstIndex-$nbTotalIndexBaseUsed-1);
+	    if ($nbNPrinted >= $rA_laneIdxLengths->[$readIndex]) {
+	      $nbNPrinted = $nbCycles;
+	    }
+	    $mask .= 'n' . $nbNPrinted;
+	  }
+	  $nbIndexBaseUsed = max($rA_laneIdxLengths->[$readIndex] - $nbNPrinted, 0);
+	  $nbIndexBaseUsed = min($lastIndex-$nbTotalIndexBaseUsed-$nbNPrinted, $nbIndexBaseUsed);
+	  $nbTotalIndexBaseUsed += $nbIndexBaseUsed + min($nbNPrinted, $rA_laneIdxLengths->[$readIndex]);
+	  
+	  if ($nbIndexBaseUsed > 0) {
+	    $mask .= 'I'.$nbIndexBaseUsed;
+	  }
+	  if (($nbCycles-$nbIndexBaseUsed-$nbNPrinted) > 0) {
+	    $mask .= 'n'.($nbCycles-$nbIndexBaseUsed-$nbNPrinted);
+	  }
+	  
 	}
-      } elsif($nbCycles == $rA_laneIdxLengths->[$readIndex]){
-        $mask .= 'I'.$nbCycles;
       } else {
         exitWithError("Cycles for index don't match on lane: ".$lane);
       }
@@ -940,6 +978,20 @@ sub getMask {
     }
   }
   return $mask;
+}
+
+sub min {
+  my $a = shift;
+  my $b = shift;
+  
+  return ($a < $b) ? $a : $b;
+}
+
+sub max {
+  my $a = shift;
+  my $b = shift;
+  
+  return ($a < $b) ? $b : $a;
 }
 
 #Returns the sampleSheeet column header as a reference to an array and the sampleSheet sample data line as a reference to an array of array

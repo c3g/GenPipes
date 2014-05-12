@@ -533,7 +533,7 @@ sub pbAlign{ # Smrtanalysis 2.2.0, in Smrtanalysis 2.1.1, it was compareSequence
     $cmd .= ' --seed=1 --minAccuracy=0.75 --minLength=50 --algorithmOptions=\"-useQuality\" --algorithmOptions=\" -minMatch 12 -bestn 10 -minPctIdentity 70.0\" --hitPolicy=randombest';
     $cmd .= ' --tmpDir=' . $tmpdir;
     $cmd .= ' -vv';
-    $cmd .= ' --nproc=' . LoadConfig::getParam($rH_cfg, 'compareSequences', 'num_threads', 1, 'int');
+    $cmd .= ' --nproc=' . LoadConfig::getParam($rH_cfg, 'pbAlign', 'num_threads', 1, 'int');
     $cmd .= ' --regionTable=' . $controlRegionsFofn;
     $ro_job->addCommand($cmd);
   }

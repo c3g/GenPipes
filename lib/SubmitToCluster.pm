@@ -142,11 +142,12 @@ sub printSubmitCmd {
 
   # Print out job command
   print $command;
-  print ' && echo \"MUGQICexitStatus:\$?\" ';
+  print ' && MUGQIC_STATE=\${PIPESTATUS} &&  echo \"MUGQICexitStatus:\${MUGQIC_STATE}\" ';
   # Only add if it's the last job of the series.
   if (defined($rA_FilesToTest) && @{$rA_FilesToTest} > 0 && $commandIdx == $rO_job->getNbCommands() - 1) {
-    print ' && touch ' . join(' ', @{$rA_FilesToTest});
+    print ' && if  [ \"\$MUGQIC_STATE\" == \"0\" ] ; then touch ' . join(' ', @{$rA_FilesToTest}) .' ; fi';
   }
+  print ' && exit \${MUGQIC_STATE} ';
   print '"';
   print ' | ' . LoadConfig::getParam($rH_cfg, $stepName, 'clusterSubmitCmd');
   print " " . LoadConfig::getParam($rH_cfg, $stepName, 'clusterOtherArg');

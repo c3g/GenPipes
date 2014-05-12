@@ -348,6 +348,9 @@ sub main {
 			}
 		}
 	}
+	my $tmpdir = LoadConfig::getParam(\%cfg, 'smrtanalysis', 'tmpDir', 1, 'path');
+  print STDERR "[DEBUG] Project path: $outdir\tMAKE SURE TO USE AN ABSOLUTE PATH - NO RELATIVE PATH PLEASE!\n";
+  print STDERR "[DEBUG] tmpDir: $tmpdir\tPLEASE MAKE SURE YOUR TMPDIR IS A VALID DIRECTORY!\n";
 	exit;		
 }
 

@@ -199,6 +199,78 @@ sub depthOfCoverage {
   return $ro_job;
 }
 
+# If per RG != 0 is given there will be multiple outputs, so output is a prefix
+# If per RG == 0 or undef, output is an actual file.
+sub basefreq {
+  my $rH_cfg      = shift;
+  my $inputBam    = shift;
+  my $output      = shift;
+  my $positions   = shift;
+  my $perRG       = shift;
+
+  if(!defined($perRG)) {
+    $perRG = 0;
+  }
+
+  my $ro_job = new Job();
+  if($perRG != 0) {
+    $ro_job->testInputOutputs([$inputBam, $positions], [$output.'.alleleFreq.csv']);
+  }
+  else {
+    $ro_job->testInputOutputs([$inputBam, $positions], [$output]);
+  }
+
+  if (!$ro_job->isUp2Date()) {
+    my $threads = LoadConfig::getParam($rH_cfg, 'basefreq', 'threads');
+    my $command;
+    $command .= LoadConfig::moduleLoad($rH_cfg, [['basefreq', 'moduleVersion.java'], ['basefreq', 'moduleVersion.bvatools']]) . ' &&';
+    $command .= ' java ' . LoadConfig::getParam($rH_cfg, 'basefreq', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'basefreq', 'ram') . ' -jar \${BVATOOLS_JAR}';
+    $command .= ' basefreq';
+    $command .= ' --pos ' . $positions;
+    $command .= ' --bam ' . $inputBam;
+    if($perRG != 0) {
+      $command .= ' --perRG';
+    }
+    if(defined($threads) && $threads > 1) {
+      $command .= ' --useIndex';
+      $command .= ' --threads ' . $threads;
+    }
+    $command .= ' --out ' . $output;
+
+    $ro_job->addCommand($command);
+  }
+
+  return $ro_job;
+}
+
+sub bafPlot {
+  my $rH_cfg          = shift;
+  my $inputAlleleFreq = shift;
+  my $positions       = shift;
+  my $outputPrefix    = shift;
+
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$inputAlleleFreq, $positions], [$outputPrefix.'.png']);
+
+  my $refDict = LoadConfig::getParam($rH_cfg, 'bafPlot', 'referenceSequenceDictionary', 1, 'filepath');
+
+  if (!$ro_job->isUp2Date()) {
+    my $command;
+    $command .= LoadConfig::moduleLoad($rH_cfg, [['bafPlot', 'moduleVersion.java'], ['bafPlot', 'moduleVersion.bvatools']]) . ' &&';
+    $command .= ' java ' . LoadConfig::getParam($rH_cfg, 'bafPlot', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'bafPlot', 'ram') . ' -jar \${BVATOOLS_JAR}';
+    $command .= ' ratiobaf';
+    $command .= ' ' . LoadConfig::getParam($rH_cfg, 'bafPlot', 'extraFlags', 0);
+    $command .= ' --refdict ' . $refDict;
+    $command .= ' --snppos ' . $positions;
+    $command .= ' --basefreq ' . $inputAlleleFreq;
+    $command .= ' --prefix ' . $outputPrefix;
+
+    $ro_job->addCommand($command);
+  }
+
+  return $ro_job;
+}
+
 sub qc {
   my $rH_cfg         = shift;
   my $read1          = shift;
