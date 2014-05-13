@@ -153,6 +153,36 @@ sub main {
     $firstIndex = 1;
   }
   
+  my $runID;
+  my $runName;
+  if ( $runDirectory =~ /.*_\d+HS\d\d[AB]/ ) {
+    ($runName,$runID) = $runDirectory =~ /.*\/(\d+_[^_]+_\d+_[^_]+_(\d+)HS.+)/;
+  }
+  elsif ( $runDirectory =~ /.*\d+_[^_]+_\d+_.+/ ) {
+    ($runName,$runID) = $runDirectory =~ /.*\/(\d+_([^_]+_\d+)_.*)/;
+  }
+
+  my $isMiSeq = 0;
+  if($runDirectory =~ /\d{6}_M\d+/){
+    $isMiSeq = 1;
+  }  
+  
+  if (!defined($opts{'i'})) {
+    # Download casava sheet
+    if ( !-e $runDirectory . "/SampleSheet.nanuq.csv" ) {
+      my $command = formatCommand("config" => \%cfg, "command" => LoadConfig::getParam(\%cfg, 'default', 'fetchCasavaSheetCommand'), "runDirectory" => $runDirectory, "runID" => $runID, "lane" => $lane, "isMiSeq" => $isMiSeq);;
+      system($command);
+    }
+  }
+  
+  if (!defined($opts{'n'})) {
+    # Download nanuq run sheet
+    if ( !-e $runDirectory . "/run.nanuq.csv" ) {
+      my $command = formatCommand("config" => \%cfg, "command" => LoadConfig::getParam(\%cfg, 'default', 'fetchNanuqSheetCommand'), "runDirectory" => $runDirectory, "runID" => $runID, "lane" => $lane, "isMiSeq" => $isMiSeq);;
+      system($command);
+    }
+  }
+
   
   $UNALIGNED_DIR = LoadConfig::getParam(\%cfg, 'default', 'unalignedDirPrefix');
   $ALIGNED_DIR  = LoadConfig::getParam(\%cfg, 'default', 'alignedDirPrefix');
@@ -176,20 +206,6 @@ sub main {
     }
   }
 
-  my $runID;
-  my $runName;
-  if ( $runDirectory =~ /.*_\d+HS\d\d[AB]/ ) {
-    ($runName,$runID) = $runDirectory =~ /.*\/(\d+_[^_]+_\d+_[^_]+_(\d+)HS.+)/;
-  }
-  elsif ( $runDirectory =~ /.*\d+_[^_]+_\d+_.+/ ) {
-    ($runName,$runID) = $runDirectory =~ /.*\/(\d+_([^_]+_\d+)_.*)/;
-  }
-
-  my $isMiSeq = 0;
-  if($runDirectory =~ /\d{6}_M\d+/){
-    $isMiSeq = 1;
-  }
-  
   $mask = getMask($lane, $rAoH_readsInfo, $firstIndex, $lastIndex);
   
 
