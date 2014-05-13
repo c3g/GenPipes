@@ -507,6 +507,8 @@ sub laneMetrics {
   my $rAoH_sampleLanes  = $rAoH_sample;
 
   my $first=1;
+  my %downloadedBedFiles;
+  
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
     my $libSource = $rH_laneInfo->{'libSource'}; # gDNA, cDNA, ...
     my $ref = getGenomeReference($rH_laneInfo->{'referenceMappingSpecies'}, $rH_laneInfo->{'ref'}, $libSource, 'fasta');
@@ -546,10 +548,13 @@ sub laneMetrics {
     if(!$rO_coverageJob->isUp2Date()) {
       # download bed files?
       if (LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'fetchBedFiles')) {
-	for my $bedFile (@{$rH_laneInfo->{'bedFiles'}}) {
-	  print formatCommand("config" => $rH_cfg, "command" => LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'fetchBedFileCommand'), "runDirectory" => $runDirectory, "runID" => $runID, "lane" => $lane, "isMiSeq" => $isMiSeq, "bedFile" => $bedFile) . "\n";
-	  print "\n";
-	}
+        for my $bedFile (@{$rH_laneInfo->{'bedFiles'}}) {
+          if (!defined($downloadedBedFiles{$bedFile})) {
+            print formatCommand("config" => $rH_cfg, "command" => LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'fetchBedFileCommand'), "runDirectory" => $runDirectory, "runID" => $runID, "lane" => $lane, "isMiSeq" => $isMiSeq, "bedFile" => $bedFile) . "\n";
+            print "\n";
+            $downloadedBedFiles{$bedFile} = 1;
+          }
+        }
       }
       my $jobId3 = SubmitToCluster::printSubmitCmd($rH_cfg, "depthOfCoverage", $runID . '.' . $rH_laneInfo->{'lane'}, 'LANEDEPTHOFCOVERAGE_'.$processingId, $jobDependency, $processingId, $rO_coverageJob);
       push (@{$step->{'jobIds'}->{$processingId}}, $jobId3);
