@@ -53,7 +53,7 @@ sub getCutoff {
   my $infile           = shift;
   my $coverage         = shift;
   my $genomeSize       = shift;
-  my $coverageFraction = shift;
+  my $coverageCutoff   = shift;
   #my $xml              = shift;
   #my $xmlOut           = shift;
   my $outfile          = shift;
@@ -75,8 +75,8 @@ sub getCutoff {
     $cmd .= ' --infile ' . $infile;
     $cmd .= ' --coverage ' . $coverage;
     $cmd .= ' --genomeSize ' . $genomeSize;
-    $cmd .= ' --coverageCutoff';
-    $cmd .= ' --coverageFraction ' . $coverageFraction;
+    $cmd .= ' --coverageCutoff ' . $coverageCutoff;
+    #$cmd .= ' --coverageFraction ' . $coverageFraction;
     #$cmd .= ' --coverageFraction ' . LoadConfig::getParam($rH_cfg, 'preassembly', 'coverageFraction');
     #$cmd .= ' --xml ' . $xml;
     #$cmd .= ' --xmlOut ' . $xmlOut;
