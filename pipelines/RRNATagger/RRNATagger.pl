@@ -9,6 +9,7 @@ BEGIN{
 	use Cwd 'abs_path';
 	my ( undef, $mod_path, undef ) = fileparse( abs_path(__FILE__) );
 	unshift @INC, $mod_path."lib";
+	unshift @INC, $mod_path."../../lib";
 }
 
 ## LIBRARIES
@@ -33,15 +34,6 @@ use LoadConfig;
 use SampleSheet;
 use SubmitToCluster;
 use Job;
-
-BEGIN{
-	#Makesure we can find the GetConfig::LoadModules module relative to this script install
-	use File::Basename;
-	use Cwd 'abs_path';
-	my ( undef, $mod_path, undef ) = fileparse( abs_path(__FILE__) );
-	unshift @INC, $mod_path."lib";
-	unshift @INC, $mod_path."scripts";
-}
 
 our $VERSION = "0.5";
 $SIG{INT} = sub{exit}; #Handle ungraceful exits with CTRL-C.
@@ -483,8 +475,8 @@ foreach my $barcodes (@barcodes){
 		my $rO_jobCutR1 = RRNAAmplicons::cutReads(
 			\%cfg,
 			$curr_dir."/fastqs/ncontam_nphix_1.fastq",
-			LoadConfig::getParam(\%cfg, 'cut', 'R1_start'),
-			(LoadConfig::getParam(\%cfg, 'default',  'readLength') - LoadConfig::getParam(\%cfg, 'cut', 'R1_end') ),
+			LoadConfig::getParam(\%cfg, 'itags_QC', 'R1_start'),
+			(LoadConfig::getParam(\%cfg, 'default',  'readLength') - LoadConfig::getParam(\%cfg, 'itags_QC', 'R1_end')),
 			$curr_dir."/fastqs/ncontam_nphix_trimmed_1.fastq"
 		);
 		if(!$rO_jobCutR1->isUp2Date()) {
@@ -498,8 +490,8 @@ foreach my $barcodes (@barcodes){
 		my $rO_jobCutR2 = RRNAAmplicons::cutReads(
 			\%cfg,
 			$curr_dir."/fastqs/ncontam_nphix_2.fastq",
-			LoadConfig::getParam(\%cfg, 'cut', 'R2_start'),
-			(LoadConfig::getParam(\%cfg, 'default',  'readLength') - LoadConfig::getParam(\%cfg, 'cut', 'R2_end') ),
+			LoadConfig::getParam(\%cfg, 'itags_QC', 'R2_start'),
+			(LoadConfig::getParam(\%cfg, 'default',  'readLength') - LoadConfig::getParam(\%cfg, 'itags_QC', 'R2_end')),
 			$curr_dir."/fastqs/ncontam_nphix_trimmed_2.fastq"
 		);
 		if(!$rO_jobCutR2->isUp2Date()) {
