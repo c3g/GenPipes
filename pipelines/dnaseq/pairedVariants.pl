@@ -384,6 +384,24 @@ sub DNAC {
   my $rH_samplePair = shift;
   my $rAoH_seqDictionary = shift;
 
+#   my $jobDependency = undef;
+#   my $parentStep = $steps[$stepId]->{'parentStep'};
+#   if(defined($globalDep{$parentStep}->{$rH_samplePair->{'sample'}})) {
+#     $jobDependency = $globalDep{$parentStep}->{$rH_samplePair->{'sample'}};
+#   }
+# 
+#   my $sampleName = $rH_samplePair->{'sample'};
+#   my $inputVCF = 'pairedVariants/' . $sampleName.'/'.$sampleName.'.merged.flt.NFiltered.vcf';
+#   my $outputVCF = 'pairedVariants/' . $sampleName.'/'.$sampleName.'.merged.flt.mil.vcf';
+# 
+#   # Use mergeFilterBCF to make sure we have the right path
+#   my $rO_job = VCFtools::annotateMappability($rH_cfg, $inputVCF, $outputVCF);
+#   if(!$rO_job->isUp2Date()) {
+#     SubmitToCluster::printSubmitCmd($rH_cfg, "flagMappability", undef, 'MAPPABILITY', $jobDependency, $sampleName, $rO_job);
+#   }
+#   return $rO_job->getCommandJobId(0);
+#   my $trimDependency = $ro_trimJob->getCommandJobId(0);
+
   my $jobDependency = undef;
   my $parentStep = $steps[$stepId]->{'parentStep'};
   if(defined($globalDep{$parentStep}->{$rH_samplePair->{'sample'}})) {
@@ -405,26 +423,46 @@ sub DNAC {
   my $bin1000File = $DNAC1000File.'.bins.tsv';
   my $bin30000File = $DNAC30000File.'.bins.tsv';
 
-  my $command500 = BVATools::countBins($rH_cfg, $sampleName, $tumorBam, 500, 'chr', $bin500File, $normalBam);
-  my $command1000 = BVATools::countBins($rH_cfg, $sampleName, $tumorBam, 1000, 'chr', $bin1000File, $normalBam);
-  my $command30000 = BVATools::countBins($rH_cfg, $sampleName, $tumorBam, 30000, 'genome', $bin30000File, $normalBam);
+  my $rO_binCout500_job = BVATools::countBins($rH_cfg, $sampleName, $tumorBam, 500, 'chr', $bin500File, $normalBam);
+  if(!$rO_binCout500_job->isUp2Date()) {
+    SubmitToCluster::printSubmitCmd($rH_cfg, "DNAC_500", undef, 'BIN_COUNT', $jobDependency, $sampleName, $rO_binCout500_job);
+  }
+  my $ro_binCout1000_job = BVATools::countBins($rH_cfg, $sampleName, $tumorBam, 1000, 'chr', $bin1000File, $normalBam);
+  if(!$rO_binCout1000_job->isUp2Date()) {
+    SubmitToCluster::printSubmitCmd($rH_cfg, "DNAC_500", undef, 'BIN_COUNT', $jobDependency, $sampleName, $rO_binCout1000_job);
+  }
+  my $ro_binCout30000_job = BVATools::countBins($rH_cfg, $sampleName, $tumorBam, 30000, 'genome', $bin30000File, $normalBam);
+  if(!$rO_binCout30000_job->isUp2Date()) {
+    SubmitToCluster::printSubmitCmd($rH_cfg, "DNAC_500", undef, 'BIN_COUNT', $jobDependency, $sampleName, $rO_binCout30000_job);
+  }
+  
+  my $rO_dnac500_job = SVtools::runPairedDNAC($rH_cfg, $sampleName, $bin500File, $DNAC500File, 500);
+  if(!$rO_dnac500_job->isUp2Date()) {
+    SubmitToCluster::printSubmitCmd($rH_cfg, "DNAC_500", undef, 'DNAC', $rO_binCout500_job->getCommandJobId(0), $sampleName, $rO_dnac500_job);
+  }
+  my $rO_dnac1000_job = SVtools::runPairedDNAC($rH_cfg, $sampleName, $bin1000File, $DNAC1000File, 1000);
+  if(!$rO_dnac1000_job->isUp2Date()) {
+    SubmitToCluster::printSubmitCmd($rH_cfg, "DNAC_1000", undef, 'DNAC', $rO_binCout1000_job->getCommandJobId(0), $sampleName, $rO_dnac1000_job);
+  }
+  my $rO_dnac30000_job = SVtools::runPairedDNAC($rH_cfg, $sampleName, $bin30000File, $DNAC30000File, 30000);
+  if(!$rO_dnac30000_job->isUp2Date()) {
+    SubmitToCluster::printSubmitCmd($rH_cfg, "DNAC_30000", undef, 'DNAC', $rO_binCout30000_job->getCommandJobId(0), $sampleName, $rO_dnac30000_job);
+  }
 
-  $command500 .= ' && '.SVtools::runPairedDNAC($rH_cfg, $sampleName, $bin500File, $DNAC500File, 500);
-  $command1000 .= ' && '.SVtools::runPairedDNAC($rH_cfg, $sampleName, $bin1000File, $DNAC1000File, 1000);
-  $command30000 .= ' && '.SVtools::runPairedDNAC($rH_cfg, $sampleName, $bin30000File, $DNAC30000File, 30000);
+  my $rO_filter500_job = SVtools::filterDNAC($rH_cfg, $sampleName, $DNAC500File.'.txt', $DNAC500File.'.filteredSV', 1);
+  if(!$rO_filter500_job->isUp2Date()) {
+    SubmitToCluster::printSubmitCmd($rH_cfg, "DNAC_500", undef, 'FILTER_DNAC', $rO_dnac500_job->getCommandJobId(0), $sampleName, $rO_filter500_job);
+  }
+  my $rO_filter1000_job = SVtools::filterDNAC($rH_cfg, $sampleName, $DNAC1000File.'.txt', $DNAC1000File.'.filteredSV', 1);
+  if(!$rO_filter1000_job->isUp2Date()) {
+    SubmitToCluster::printSubmitCmd($rH_cfg, "DNAC_1000", undef, 'FILTER_DNAC', $rO_dnac1000_job->getCommandJobId(0), $sampleName, $rO_filter1000_job);
+  }
+  my $rO_filter30000_job = SVtools::filterDNAC($rH_cfg, $sampleName, $DNAC30000File.'.txt', $DNAC30000File.'.filteredSV', 2);
+  if(!$rO_filter30000_job->isUp2Date()) {
+    SubmitToCluster::printSubmitCmd($rH_cfg, "DNAC_30000", undef, 'FILTER_DNAC', $rO_dnac30000_job->getCommandJobId(0), $sampleName, $rO_filter30000_job);
+  }
 
-  $command500 .= ' && '.SVtools::filterDNAC($rH_cfg, $sampleName, $DNAC500File.'.txt', $DNAC500File.'.filteredSV', 1);
-  $command1000 .= ' && '.SVtools::filterDNAC($rH_cfg, $sampleName, $DNAC1000File.'.txt', $DNAC1000File.'.filteredSV', 1);
-  $command30000 .= ' && '.SVtools::filterDNAC($rH_cfg, $sampleName, $DNAC30000File.'.txt', $DNAC30000File.'.filteredSV', 2);
-
-  my $dnac500JobId = SubmitToCluster::printSubmitCmd($rH_cfg, "DNAC_500", undef, 'DNAC_500', $jobDependency, $sampleName, $command500);
-  print 'DNAC_JOB_IDS=${DNAC_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$dnac500JobId."\n";
-  my $dnac1000JobId = SubmitToCluster::printSubmitCmd($rH_cfg, "DNAC_1000", undef, 'DNAC_1000', $jobDependency, $sampleName, $command1000);
-  print 'DNAC_JOB_IDS=${DNAC_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$dnac1000JobId."\n";
-  my $dnac30000JobId = SubmitToCluster::printSubmitCmd($rH_cfg, "DNAC_30000", undef, 'DNAC_30000', $jobDependency, $sampleName, $command30000);
-  print 'DNAC_JOB_IDS=${DNAC_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$dnac30000JobId."\n";
-
-  return $dnac30000JobId;
+  return $rO_filter500_job->getCommandJobId(0) .':' .$rO_filter1000_job->getCommandJobId(0) .':' .$rO_filter30000_job->getCommandJobId(0) ;
 }
 
 sub Breakdancer {
@@ -450,9 +488,17 @@ sub Breakdancer {
   my $normalOutput = $outputDir.$sampleName.'.brdN.cfg';
   my $tumorOutput = $outputDir.$sampleName.'.brdT.cfg';
   my $sampleCFGOutput = $outputDir.$sampleName.'.brd.cfg';
-  my $command = Breakdancer::bam2cfg($rH_cfg,$sampleName,$normalBam,$normalOutput, LoadConfig::getParam($rH_cfg, 'Breakdancer', 'normalStdDevCutoff'));
-  $command .= ' & '.Breakdancer::bam2cfg($rH_cfg,$sampleName,$tumorBam,$tumorOutput, LoadConfig::getParam($rH_cfg, 'Breakdancer', 'tumorStdDevCutoff'));
-  $command .= ' & wait && cat '.$normalOutput.' '.$tumorOutput. ' > '.$sampleCFGOutput;
+  my $rO_normal_job = Breakdancer::bam2cfg($rH_cfg,$sampleName,$normalBam,$normalOutput, LoadConfig::getParam($rH_cfg, 'Breakdancer', 'normalStdDevCutoff'));
+  if(!$rO_normal_job->isUp2Date()) {
+    SubmitToCluster::printSubmitCmd($rH_cfg, "BRD", undef, 'CONF_N', $jobDependency, $sampleName, $rO_normal_job);
+  }
+  my $rO_tumor_job = Breakdancer::bam2cfg($rH_cfg,$sampleName,$tumorBam,$tumorOutput, LoadConfig::getParam($rH_cfg, 'Breakdancer', 'tumorStdDevCutoff'));
+  if(!$rO_tumor_job->isUp2Date()) {
+    SubmitToCluster::printSubmitCmd($rH_cfg, "BRD", undef, 'CONF_T', $jobDependency, $sampleName, $rO_tumor_job);
+  }
+
+  
+   my $rO_mergeConf_job =$command .= ' & wait && cat '.$normalOutput.' '.$tumorOutput. ' > '.$sampleCFGOutput;
   my $brdCFGJobId = SubmitToCluster::printSubmitCmd($rH_cfg, "Breakdancer", undef, 'BRD_CFG', $jobDependency, $sampleName, $command);
   $brdCFGJobId = '$'.$brdCFGJobId;
 

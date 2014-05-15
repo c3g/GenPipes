@@ -73,10 +73,10 @@ sub mergeBarcodes{
 		for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
 			my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sampleName};
 			for my $rH_laneInfo (@$rAoH_sampleLanes) { #this rH_laneInfo contains the complete line info from the sample sheet for this sample.
-				#$cmd_R1 .= " " . $rawReadDir .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' . $sampleName . "." . $rH_laneInfo->{'libraryBarcode'} . "." . LoadConfig::getParam($rH_cfg, 'default','qual', 1, 'int') . ".pair1.fastq.gz";
-				#$cmd_R2 .= " " . $rawReadDir .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' . $sampleName . "." . $rH_laneInfo->{'libraryBarcode'} . "." . LoadConfig::getParam($rH_cfg, 'default','qual', 1, 'int') . ".pair2.fastq.gz";
-				$cmd_R1 .= " " . $rawReadDir .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' . $sampleName . "." . LoadConfig::getParam($rH_cfg, 'default','qual', 1, 'int') . ".pair1.fastq.gz";
-				$cmd_R2 .= " " . $rawReadDir .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' . $sampleName . "." . LoadConfig::getParam($rH_cfg, 'default','qual', 1, 'int') . ".pair2.fastq.gz";
+				$cmd_R1 .= " " . $rawReadDir .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' . $sampleName . "." . $rH_laneInfo->{'libraryBarcode'} . "." . LoadConfig::getParam($rH_cfg, 'default','qual', 1, 'int') . ".pair1.fastq.gz";
+				$cmd_R2 .= " " . $rawReadDir .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' . $sampleName . "." . $rH_laneInfo->{'libraryBarcode'} . "." . LoadConfig::getParam($rH_cfg, 'default','qual', 1, 'int') . ".pair2.fastq.gz";
+				#$cmd_R1 .= " " . $rawReadDir .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' . $sampleName . "." . LoadConfig::getParam($rH_cfg, 'default','qual', 1, 'int') . ".pair1.fastq.gz";
+				#$cmd_R2 .= " " . $rawReadDir .'/' .$sampleName .'/run' .$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} .'/' . $sampleName . "." . LoadConfig::getParam($rH_cfg, 'default','qual', 1, 'int') . ".pair2.fastq.gz";
 			}
 		}
 		$cmd_R1 .= " | gunzip -c > ".$outdir."/raw_reads/reads_1.fastq";
@@ -365,9 +365,9 @@ sub cutReads{
       ['memtime', 'moduleVersion.memtime'],
       ['tools', 'moduleVersion.tools'],
       ['perl', 'moduleVersion.perl']
-    ]) . ' && ';
-		$cmd .=	' memtime ';
-		$cmd .= 'cutFastqSeq.pl ';
+    ]) . ' &&';
+		$cmd .=	' memtime';
+		$cmd .= ' cutFastqSeq.pl';
 		$cmd .= ' --infile ' . $infile;
 		$cmd .= ' --begin ' . $begin;
 		$cmd .= ' --end ' . $end;
