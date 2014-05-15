@@ -271,6 +271,37 @@ sub bafPlot {
   return $ro_job;
 }
 
+sub fixMateByCoordinate {
+  my $rH_cfg    = shift;
+  my $inputBAM  = shift;
+  my $outputBAM = shift;
+
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$inputBAM], [$outputBAM]);
+
+  my ($sortOutputName) = $outputBAM =~ /(.+)\.[^.]+$/;
+
+  if (!$ro_job->isUp2Date()) {
+    my $command;
+    $command .= LoadConfig::moduleLoad($rH_cfg, [['fixmate', 'moduleVersion.java'], ['fixmate', 'moduleVersion.bvatools'], ['fixmate', 'moduleVersion.samtools']]) . ' &&';
+    $command .= ' java ' . LoadConfig::getParam($rH_cfg, 'fixmate', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'fixmate', 'ram') . ' -jar \${BVATOOLS_JAR}';
+    $command .= ' groupfixmate';
+    $command .= ' --level 1';
+    $command .= ' --bam ' . $inputBAM;
+    $command .= ' --out ' . $sortOutputName.'.tmp.bam';
+    $command .= ' && ';
+    $command .= ' samtools sort ';
+    $command .= ' '. LoadConfig::getParam($rH_cfg, 'fixmate', 'extraSortFlags');
+    $command .= ' ' . $sortOutputName.'.tmp.bam';
+    $command .= ' ' . $sortOutputName;
+
+    $ro_job->addCommand($command);
+  }
+
+  return $ro_job;
+}
+
+
 sub qc {
   my $rH_cfg         = shift;
   my $read1          = shift;

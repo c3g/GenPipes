@@ -133,7 +133,7 @@ push(@steps, {'name' => 'recalibration', 'stepLoop' => 'sample', 'parentStep' =>
 push(@steps, {'name' => 'metrics', 'stepLoop' => 'sample', 'parentStep' => 'recalibration'});
 push(@steps, {'name' => 'callableBases', 'stepLoop' => 'sample', 'parentStep' => 'recalibration'});
 push(@steps, {'name' => 'extractCommonSNPFreq', 'stepLoop' => 'sample', 'parentStep' => 'recalibration'});
-push(@steps, {'name' => 'BAFPlot', 'stepLoop' => 'sample', 'parentStep' => 'commonSNPFreq'});
+push(@steps, {'name' => 'BAFPlot', 'stepLoop' => 'sample', 'parentStep' => 'extractCommonSNPFreq'});
 push(@steps, {'name' => 'haplotypeCaller', 'stepLoop' => 'sample', 'parentStep' => 'recalibration'});
 push(@steps, {'name' => 'metricsLibrarySample', 'stepLoop' => 'experiment', 'parentStep' => 'metrics'});
 push(@steps, {'name' => 'snpAndIndelBCF', 'stepLoop' => 'experiment', 'parentStep' => 'recalibration'});
@@ -747,7 +747,7 @@ sub fixmate {
   my $inputBAM = 'alignment/'.$sampleName.'/'.$sampleName.'.realigned.qsorted.bam';
   my $outputBAM = 'alignment/'.$sampleName.'/'.$sampleName.'.matefixed.sorted.bam';
 
-  my $rO_job = Picard::fixmate($rH_cfg, $inputBAM, $outputBAM);
+  my $rO_job = BVATools::fixMateByCoordinate($rH_cfg, $inputBAM, $outputBAM);
   if(!$rO_job->isUp2Date()) {
     SubmitToCluster::printSubmitCmd($rH_cfg, "fixmate", undef, 'FIXMATE', $jobDependency, $sampleName, $rO_job);
   }
