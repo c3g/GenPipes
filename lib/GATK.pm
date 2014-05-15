@@ -108,6 +108,7 @@ sub realign {
     $command .= ' -R ' . $refGenome;
     $command .= ' -o ' . $intervalOutput;
     $command .= ' -I ' . $sortedBAM;
+    $command .= ' ' . LoadConfig::getParam($rH_cfg, 'indelRealigner', 'targetCreatorExtraFlags');
     if (defined($seqName)) {
       $command .= ' -L ' . $seqName;
     }
@@ -121,6 +122,7 @@ sub realign {
     $command .= ' -targetIntervals ' . $intervalOutput;
     $command .= ' -o ' . $realignOutput;
     $command .= ' -I ' . $sortedBAM;
+    $command .= ' ' . LoadConfig::getParam($rH_cfg, 'indelRealigner', 'indelRealignerExtraFlags');
     if (defined($seqName)) {
       $command .= ' -L ' . $seqName;
     }
