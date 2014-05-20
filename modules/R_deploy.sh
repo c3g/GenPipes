@@ -27,7 +27,7 @@ exit
 
 
 # sh -l R.sh -f -v 3.0.2 -p MUGQIC_INSTALL_HOME_DEV -i software/R -m modulefiles/mugqic_dev/R >& logdev
-# sh -l R.sh -f -v 3.0.2 -p MUGQIC_INSTALL_HOME -i software/R -m modulefiles/mugqic/R >& logprod
+# sh -l R.sh -f -v 3.1.0 -p MUGQIC_INSTALL_HOME -i software/R -m modulefiles/mugqic/R >& logprod
 
 
 

@@ -219,10 +219,11 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
 	,"tools","TxDb.Hsapiens.UCSC.hg19.knownGene","utils","Vennerable","vioplot","vsn"
 	,"WriteXLS","XML","xtable","zlibbioc")
 
-	## Programmatically add all the org pacakges
+	## Programmatically add all the org packages (excluding MeSH mess which takes too long)
 	contribUrl = contrib.url(biocinstallRepos(), type = 'source')
 	availPkgs  = available.packages(contribUrl, type = 'source')	
 	org.packages = rownames(availPkgs)[grepl("^org", rownames(availPkgs))]
+	org.packages = org.packages[!grepl("^org.MeSH.",org.packages)]
 	deps = c(deps,org.packages)
 
 	## Install pkgs not already installed, with ask=FALSE biocLite() takes care of updating if necessary
@@ -250,6 +251,9 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
 	#system(paste("chmod -R ug+rwX",  .Library))
 	#system(paste("chmod -R o+rX", .Library))
 	EOF
+
+
+echo "R packages installation done."
 
 ## Adjust permissions
 chmod -R ug+rwX  $INSTALL_DIR $MODULEFILE $MODULEVERSIONFILE
