@@ -177,6 +177,7 @@ proc ModulesHelp { } {
 }
 module-whatis \"$SOFTWARE\"
 
+prereq                              mugqic/hmmer/2.3.2
 set             root                \$::env($INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE_DIR
 prepend-path    PATH                \$root
 " > $VERSION

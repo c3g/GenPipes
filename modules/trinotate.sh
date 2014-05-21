@@ -68,6 +68,7 @@ proc ModulesHelp { } {
 }
 module-whatis \"$SOFTWARE\"
 
+prereq                              mugqic/trinity
 set             root                \$::env($INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE_DIR
 prepend-path    PATH                \$root
 setenv          TRINOTATE_HOME      \$root
