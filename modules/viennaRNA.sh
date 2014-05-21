@@ -14,6 +14,7 @@ cd $SOFTWARE-$VERSION
 
 # MANUAL FIX: sprintf fix
 #MANUAL: nano RNAforester/src/rnafuncs.cpp  , add "#include <stdio.h>"
+# http://missingreadme.wordpress.com/2010/11/08/how-to-install-the-vienna-rna-package/
 ./configure --prefix=$INSTALL_PATH/$SOFTWARE-$VERSION --datadir=$INSTALL_PATH/$SOFTWARE-$VERSION
 # FIX: perl lib custom loc
 cd Perl
