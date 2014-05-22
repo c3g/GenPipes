@@ -131,6 +131,7 @@ push(@steps, {'name' => 'fixmate', 'stepLoop' => 'sample', 'parentStep' => 'merg
 push(@steps, {'name' => 'markDup', 'stepLoop' => 'sample', 'parentStep' => 'fixmate'});
 push(@steps, {'name' => 'recalibration', 'stepLoop' => 'sample', 'parentStep' => 'markDup'});
 push(@steps, {'name' => 'metrics', 'stepLoop' => 'sample', 'parentStep' => 'recalibration'});
+push(@steps, {'name' => 'calculateHSMetrics', 'stepLoop' => 'sample', 'parentStep' => 'recalibration'});
 push(@steps, {'name' => 'callableBases', 'stepLoop' => 'sample', 'parentStep' => 'recalibration'});
 push(@steps, {'name' => 'extractCommonSNPFreq', 'stepLoop' => 'sample', 'parentStep' => 'recalibration'});
 push(@steps, {'name' => 'BAFPlot', 'stepLoop' => 'sample', 'parentStep' => 'extractCommonSNPFreq'});
@@ -563,8 +564,6 @@ sub symlinkRawAlignBam {
 
   my @inputBams;
 
-  
-
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
     my $baseDirectory = "$sampleName/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'};
     my $rawBam = abs_path(LoadConfig::getParam($rH_cfg, 'default', 'rawReadDir', 1, 'dirpath')) . "/" . $baseDirectory . "/" . $rH_laneInfo->{'bam'};
@@ -897,6 +896,34 @@ sub metrics {
   }
 
   return $jobId;
+}
+sub calculateHSMetrics {
+  my $stepId = shift;
+  my $rH_cfg = shift;
+  my $sampleName = shift;
+  my $rAoH_sampleLanes  = shift;
+  my $rAoH_seqDictionary = shift;
+
+  my $jobDependency = undef;
+  my $parentStep = $steps[$stepId]->{'parentStep'};
+  if(defined($globalDep{$parentStep}->{$sampleName})) {
+    $jobDependency = $globalDep{$parentStep}->{$sampleName};
+  }
+
+
+  my $coverageBED = BVATools::resolveSampleBED($rH_cfg, $rAoH_sampleLanes->[0]);
+  if(defined($coverageBED)) {
+    my $bamFile = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.recal.bam';
+
+    my $outputMetrics = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.recal.onTarget.tsv';
+    my $rO_job = Picard::calculateHSMetricsFromBED($rH_cfg, $bamFile, $coverageBED, $outputMetrics);
+    if(!$rO_job->isUp2Date()) {
+      SubmitToCluster::printSubmitCmd($rH_cfg, "calculateHSMetrics", undef, 'CALCULATE_HS_METRICS', $jobDependency, $sampleName, $rO_job);
+    }
+    return $rO_job->getCommandJobId(0);
+  }
+
+  return undef;
 }
 
 sub callableBases {

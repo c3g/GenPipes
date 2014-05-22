@@ -541,21 +541,34 @@ sub laneMetrics {
     
     $outputMetrics = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.metrics.targetCoverage.txt';
     my $coverageBED = defined(BVATools::resolveSampleBED($rH_cfg, $rH_laneInfo)) ? $runDirectory . "/". BVATools::resolveSampleBED($rH_cfg, $rH_laneInfo) : undef;
-    my $rO_coverageJob = BVATools::depthOfCoverage($rH_cfg, $sortedLaneBamFile, $outputMetrics, $coverageBED, $ref);
-    if(!$rO_coverageJob->isUp2Date()) {
-      # download bed files?
-      if (LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'fetchBedFiles')) {
-        for my $bedFile (@{$rH_laneInfo->{'bedFiles'}}) {
-          if (!defined($downloadedBedFiles{$bedFile})) {
-            print formatCommand("config" => $rH_cfg, "command" => LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'fetchBedFileCommand'), "runDirectory" => $runDirectory, "runID" => $runID, "lane" => $lane , "bedFile" => $bedFile) . "\n";
-            print "\n";
-            $downloadedBedFiles{$bedFile} = 1;
-          }
+    # download bed files?
+    if (LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'fetchBedFiles')) {
+      for my $bedFile (@{$rH_laneInfo->{'bedFiles'}}) {
+        if (!defined($downloadedBedFiles{$bedFile})) {
+          print formatCommand("config" => $rH_cfg, "command" => LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'fetchBedFileCommand'), "runDirectory" => $runDirectory, "runID" => $runID, "lane" => $lane , "bedFile" => $bedFile) . "\n";
+          print "\n";
+          $downloadedBedFiles{$bedFile} = 1;
         }
       }
+    }
+
+    my $rO_coverageJob = BVATools::depthOfCoverage($rH_cfg, $sortedLaneBamFile, $outputMetrics, $coverageBED, $ref);
+    if(!$rO_coverageJob->isUp2Date()) {
       my $jobId3 = SubmitToCluster::printSubmitCmd($rH_cfg, "depthOfCoverage", $runID . '.' . $rH_laneInfo->{'lane'}, 'LANEDEPTHOFCOVERAGE_'.$processingId, $jobDependency, $processingId, $rO_coverageJob);
       push (@{$step->{'jobIds'}->{$processingId}}, $jobId3);
       push (@{$step->{'jobIds'}->{$GLOBAL_DEP_KEY}}, $jobId3);
+    }
+
+    my ($refDict) = $ref =~ /^(.+)\.[^.]*$/;
+    $refDict .= '.dict';
+    if(defined($coverageBED)) {
+      $outputMetrics = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.metrics.onTarget.txt';
+      my $rO_hsMetricsJob = Picard::calculateHSMetricsFromBED($rH_cfg, $sortedLaneBamFile, $coverageBED, $outputMetrics, $ref, $refDict);
+      if(!$rO_hsMetricsJob->isUp2Date()) {
+        my $jobId = SubmitToCluster::printSubmitCmd($rH_cfg, "calculateHSMetrics", $runID . '.' . $rH_laneInfo->{'lane'}, 'CALCULATEHSMETRICS_'.$processingId, $jobDependency, $processingId, $rO_hsMetricsJob);
+        push (@{$step->{'jobIds'}->{$processingId}}, $jobId);
+        push (@{$step->{'jobIds'}->{$GLOBAL_DEP_KEY}}, $jobId);
+      }
     }
   }
   return;
@@ -1202,7 +1215,5 @@ sub areSamplesIndexMixed{
   }
   return 0;
 }
-
-
 
 1;
