@@ -80,7 +80,7 @@ push(@steps, {'name' => 'generateQCGraphs', 'stepLoop' => 'sample', 'parentStep'
 push(@steps, {'name' => 'generateBlasts', 'stepLoop' => 'sample', 'parentStep' => ['generateFastq']});
 push(@steps, {'name' => 'align', 'stepLoop' => 'sample', 'parentStep' => ['generateFastq']});
 push(@steps, {'name' => 'laneMetrics', 'stepLoop' => 'sample', 'parentStep' => ['align']});
-push(@steps, {'name' => 'generateBamMd5', 'stepLoop' => 'sample', 'parentStep' => ['laneMetrics']});
+push(@steps, {'name' => 'generateBamMd5', 'stepLoop' => 'sample', 'parentStep' => ['align']});
 push(@steps, {'name' => 'startCopyNotification' , 'stepLoop' => 'lane' , 'parentStep' => ['generateIndexCount','generateMD5','generateQCGraphs','generateBlasts','laneMetrics','generateBamMd5']});
 push(@steps, {'name' => 'copy' , 'stepLoop' => 'lane' , 'parentStep' => ['generateIndexCount','generateMD5','generateQCGraphs','generateBlasts','laneMetrics','generateBamMd5']});
 push(@steps, {'name' => 'endCopyNotification' , 'stepLoop' => 'lane' , 'parentStep' => ['copy']});
@@ -153,6 +153,31 @@ sub main {
     $firstIndex = 1;
   }
   
+  my $runID;
+  my $runName;
+  if ( $runDirectory =~ /.*_\d+HS\d\d[AB]/ ) {
+    ($runName,$runID) = $runDirectory =~ /.*\/(\d+_[^_]+_\d+_[^_]+_(\d+)HS.+)/;
+  }
+  elsif ( $runDirectory =~ /.*\d+_[^_]+_\d+_.+/ ) {
+    ($runName,$runID) = $runDirectory =~ /.*\/(\d+_([^_]+_\d+)_.*)/;
+  }
+
+  if (!defined($opts{'i'})) {
+    # Download casava sheet
+    if ( !-e $runDirectory . "/SampleSheet.nanuq.csv" ) {
+      my $command = formatCommand("config" => \%cfg, "command" => LoadConfig::getParam(\%cfg, 'default', 'fetchCasavaSheetCommand'), "runDirectory" => $runDirectory, "runID" => $runID, "lane" => $lane);
+      system($command);
+    }
+  }
+  
+  if (!defined($opts{'n'})) {
+    # Download nanuq run sheet
+    if ( !-e $runDirectory . "/run.nanuq.csv" ) {
+      my $command = formatCommand("config" => \%cfg, "command" => LoadConfig::getParam(\%cfg, 'default', 'fetchNanuqSheetCommand'), "runDirectory" => $runDirectory, "runID" => $runID, "lane" => $lane);
+      system($command);
+    }
+  }
+
   
   $UNALIGNED_DIR = LoadConfig::getParam(\%cfg, 'default', 'unalignedDirPrefix');
   $ALIGNED_DIR  = LoadConfig::getParam(\%cfg, 'default', 'alignedDirPrefix');
@@ -176,20 +201,6 @@ sub main {
     }
   }
 
-  my $runID;
-  my $runName;
-  if ( $runDirectory =~ /.*_\d+HS\d\d[AB]/ ) {
-    ($runName,$runID) = $runDirectory =~ /.*\/(\d+_[^_]+_\d+_[^_]+_(\d+)HS.+)/;
-  }
-  elsif ( $runDirectory =~ /.*\d+_[^_]+_\d+_.+/ ) {
-    ($runName,$runID) = $runDirectory =~ /.*\/(\d+_([^_]+_\d+)_.*)/;
-  }
-
-  my $isMiSeq = 0;
-  if($runDirectory =~ /\d{6}_M\d+/){
-    $isMiSeq = 1;
-  }
-  
   $mask = getMask($lane, $rAoH_readsInfo, $firstIndex, $lastIndex);
   
 
@@ -204,7 +215,7 @@ sub main {
     my $stepRef = \&$stepName;
     $step->{'jobIds'}->{$GLOBAL_DEP_KEY} = ();
 
-    &$stepRef($step, \%cfg, $runDirectory, $runID, $lane, $isMiSeq, $rAoH_readsInfo, $nbReads, $rAoH_samples);
+    &$stepRef($step, \%cfg, $runDirectory, $runID, $lane, $rAoH_readsInfo, $nbReads, $rAoH_samples);
   }
 
   my $jobIds = join (LoadConfig::getParam(\%cfg, 'default', 'clusterDependencySep'), map {"\$" . $_} @{$steps[$endStep-1]->{'jobIds'}->{$GLOBAL_DEP_KEY}});
@@ -218,7 +229,6 @@ sub generateIndexCount {
   my $runDirectory   = shift;
   my $runID          = shift;
   my $lane           = shift;
-  my $isMiSeq        = shift;
   my $rAoH_readsInfo = shift;
   my $nbReads        = shift;
 
@@ -263,7 +273,6 @@ sub generateFastq {
   my $runDirectory   = shift;
   my $runID          = shift;
   my $lane           = shift;
-  my $isMiSeq        = shift;
   my $rAoH_readsInfo = shift;
   my $nbReads        = shift;
   my $rAoH_sample    = shift;
@@ -297,7 +306,7 @@ sub generateFastq {
       print  "$casavaCmd --input-dir $baseCallDir --output-dir $runDirectory/$UNALIGNED_DIR.$lane --tiles s_$lane --sample-sheet $runDirectory/$casavaSampleSheetPrefix$lane.csv --fastq-cluster-count 0 --mismatches $globalNumberOfMismatch --use-bases-mask $mask\n";
     }
     if (LoadConfig::getParam($rH_cfg, 'generateFastq', 'sendNotification')) {
-      print formatCommand("config" => $rH_cfg, "command" => LoadConfig::getParam($rH_cfg, 'generateFastq', 'startNotificationCommand'), "runDirectory" => $runDirectory, "runID" => $runID, "lane" => $lane, "isMiSeq" => $isMiSeq, "mask" => $mask, "mismatches" => $globalNumberOfMismatch) . "\n";
+      print formatCommand("config" => $rH_cfg, "command" => LoadConfig::getParam($rH_cfg, 'generateFastq', 'startNotificationCommand'), "runDirectory" => $runDirectory, "runID" => $runID, "lane" => $lane, "mask" => $mask, "mismatches" => $globalNumberOfMismatch) . "\n";
       print "\n";
     }
 
@@ -317,7 +326,6 @@ sub generateMD5 {
   my $runDirectory   = shift;
   my $runID          = shift;
   my $lane           = shift;
-  my $isMiSeq        = shift;
   my $rAoH_readsInfo = shift;
   my $nbReads        = shift;
   my $rAoH_sample    = shift;
@@ -357,7 +365,6 @@ sub generateQCGraphs {
   my $runDirectory   = shift;
   my $runID          = shift;
   my $lane           = shift;
-  my $isMiSeq        = shift;
   my $rAoH_readsInfo = shift;
   my $nbReads        = shift;
   my $rAoH_sample    = shift;
@@ -389,21 +396,13 @@ sub generateBlasts {
   my $runDirectory   = shift;
   my $runID          = shift;
   my $lane           = shift;
-  my $isMiSeq        = shift;
   my $rAoH_readsInfo = shift;
   my $nbReads        = shift;
   my $rAoH_sample    = shift;
 
   my $nbBlastsToDo;
-  my $nbBlastsToDoPerSample;
-  my $nbBlastsToDoPerLane;
-  if ($isMiSeq) {
-    $nbBlastsToDoPerSample = LoadConfig::getParam($rH_cfg, 'generateBlasts', 'blastToDoPerSampleMiSeq');
-    $nbBlastsToDoPerLane = LoadConfig::getParam($rH_cfg, 'generateBlasts', 'blastToDoPerLaneMiSeq');
-  } else {
-    $nbBlastsToDoPerSample = LoadConfig::getParam($rH_cfg, 'generateBlasts', 'blastToDoPerSampleHiSeq');
-    $nbBlastsToDoPerLane = LoadConfig::getParam($rH_cfg, 'generateBlasts', 'blastToDoPerLaneHiSeq');
-  }
+  my $nbBlastsToDoPerSample = LoadConfig::getParam($rH_cfg, 'generateBlasts', 'blastToDoPerSample');
+  my $nbBlastsToDoPerLane = LoadConfig::getParam($rH_cfg, 'generateBlasts', 'blastToDoPerLane');
 
   if (!defined($nbBlastsToDoPerSample) || ($nbBlastsToDoPerSample eq "") || ($nbBlastsToDoPerSample < 1) || (ref($nbBlastsToDoPerSample) eq "ARRAY" && scalar(@{$nbBlastsToDoPerSample}) == 0)) {
     $nbBlastsToDo = ceil($nbBlastsToDoPerLane / (scalar (@$rAoH_sample)));
@@ -448,7 +447,6 @@ sub align {
   my $runDirectory   = shift;
   my $runID          = shift;
   my $lane           = shift;
-  my $isMiSeq        = shift;
   my $rAoH_readsInfo = shift;
   my $nbReads        = shift;
   my $rAoH_sample    = shift;
@@ -499,7 +497,6 @@ sub laneMetrics {
   my $runDirectory   = shift;
   my $runID          = shift;
   my $lane           = shift;
-  my $isMiSeq        = shift;
   my $rAoH_readsInfo = shift;
   my $nbReads        = shift;
   my $rAoH_sample    = shift;
@@ -507,6 +504,8 @@ sub laneMetrics {
   my $rAoH_sampleLanes  = $rAoH_sample;
 
   my $first=1;
+  my %downloadedBedFiles;
+  
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
     my $libSource = $rH_laneInfo->{'libSource'}; # gDNA, cDNA, ...
     my $ref = getGenomeReference($rH_laneInfo->{'referenceMappingSpecies'}, $rH_laneInfo->{'ref'}, $libSource, 'fasta');
@@ -532,7 +531,7 @@ sub laneMetrics {
       push (@{$step->{'jobIds'}->{$GLOBAL_DEP_KEY}}, $jobId);
     }
 
-    $outputMetrics = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.dup.metrics';
+    $outputMetrics = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.metrics';
     my $rO_collectMetricsJob = Picard::collectMetrics($rH_cfg, $sortedLaneBamFile, $outputMetrics, $ref);
     if(!$rO_collectMetricsJob->isUp2Date()) {
       my $jobId2 = SubmitToCluster::printSubmitCmd($rH_cfg, "collectMetrics", $runID . "." . $rH_laneInfo->{'lane'}, 'COLLECTMETRICS_'.$processingId, $jobDependency, $processingId, $rO_collectMetricsJob);
@@ -540,16 +539,19 @@ sub laneMetrics {
       push (@{$step->{'jobIds'}->{$GLOBAL_DEP_KEY}}, $jobId2);
     }
     
-    $outputMetrics = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.dup.metrics.nodup.targetCoverage.txt';
+    $outputMetrics = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.metrics.targetCoverage.txt';
     my $coverageBED = defined(BVATools::resolveSampleBED($rH_cfg, $rH_laneInfo)) ? $runDirectory . "/". BVATools::resolveSampleBED($rH_cfg, $rH_laneInfo) : undef;
     my $rO_coverageJob = BVATools::depthOfCoverage($rH_cfg, $sortedLaneBamFile, $outputMetrics, $coverageBED, $ref);
     if(!$rO_coverageJob->isUp2Date()) {
       # download bed files?
       if (LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'fetchBedFiles')) {
-	for my $bedFile (@{$rH_laneInfo->{'bedFiles'}}) {
-	  print formatCommand("config" => $rH_cfg, "command" => LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'fetchBedFileCommand'), "runDirectory" => $runDirectory, "runID" => $runID, "lane" => $lane, "isMiSeq" => $isMiSeq, "bedFile" => $bedFile) . "\n";
-	  print "\n";
-	}
+        for my $bedFile (@{$rH_laneInfo->{'bedFiles'}}) {
+          if (!defined($downloadedBedFiles{$bedFile})) {
+            print formatCommand("config" => $rH_cfg, "command" => LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'fetchBedFileCommand'), "runDirectory" => $runDirectory, "runID" => $runID, "lane" => $lane , "bedFile" => $bedFile) . "\n";
+            print "\n";
+            $downloadedBedFiles{$bedFile} = 1;
+          }
+        }
       }
       my $jobId3 = SubmitToCluster::printSubmitCmd($rH_cfg, "depthOfCoverage", $runID . '.' . $rH_laneInfo->{'lane'}, 'LANEDEPTHOFCOVERAGE_'.$processingId, $jobDependency, $processingId, $rO_coverageJob);
       push (@{$step->{'jobIds'}->{$processingId}}, $jobId3);
@@ -565,7 +567,6 @@ sub generateBamMd5 {
   my $runDirectory   = shift;
   my $runID          = shift;
   my $lane           = shift;
-  my $isMiSeq        = shift;
   my $rAoH_readsInfo = shift;
   my $nbReads        = shift;
   my $rAoH_sample    = shift;
@@ -582,14 +583,12 @@ sub generateBamMd5 {
 
     my $dependencies = getDependencies($step, $rH_cfg, $processingId);
     my $directory = $runDirectory.'/' . $ALIGNED_DIR . '.'.$lane.'/alignment/'.$sampleName."/run".$runID."_".$lane."/";
-    my $sortedLaneDupFile = $directory . $sampleName.'.'.$rH_sample->{'libraryBarcode'}.'.sorted.dup';
+    my $sortedLaneFile = $directory . $sampleName.'.'.$rH_sample->{'libraryBarcode'}.'.sorted';
 
     my $ro_job = new Job();
-    $ro_job->testInputOutputs([$sortedLaneDupFile.'.bam', $sortedLaneDupFile.'.bai'],[$sortedLaneDupFile.'.bam.md5', $sortedLaneDupFile.'.bai.md5']);
+    $ro_job->testInputOutputs([$sortedLaneFile.'.bai'],[$sortedLaneFile.'.bai.md5']);
     if (!$ro_job->isUp2Date()) {
-      my $command = 'md5sum -b '.$sortedLaneDupFile . '.bam > ' . $sortedLaneDupFile . '.bam.md5';
-      $command .= '; md5sum -b '.$sortedLaneDupFile . '.bai > ' . $sortedLaneDupFile . '.bai.md5';
-
+      my $command = 'md5sum -b '.$sortedLaneFile . '.bai > ' . $sortedLaneFile . '.bai.md5';
       $ro_job->addCommand($command);
       my $jobId = SubmitToCluster::printSubmitCmd($rH_cfg, "generateBamMD5", "$runID.$lane", 'bmd5_'.$processingId, $dependencies, $processingId, $ro_job);
       push (@{$step->{'jobIds'}->{$processingId}}, $jobId);
@@ -605,7 +604,6 @@ sub startCopyNotification {
   my $runDirectory   = shift;
   my $runID          = shift;
   my $lane           = shift;
-  my $isMiSeq        = shift;
   my $rAoH_readsInfo = shift;
   my $nbReads        = shift;
   my $rAoH_sample    = shift;
@@ -613,7 +611,7 @@ sub startCopyNotification {
   my $dependencies = getDependencies($step, $rH_cfg);
 
   if (LoadConfig::getParam($rH_cfg, 'startCopyNotification', 'sendNotification')) {
-    my $command = formatCommand("config" => $rH_cfg, "command" => LoadConfig::getParam($rH_cfg, 'startCopyNotification', 'notificationCommand'), "runDirectory" => $runDirectory, "runID" => $runID, "lane" => $lane, "isMiSeq" => $isMiSeq);
+    my $command = formatCommand("config" => $rH_cfg, "command" => LoadConfig::getParam($rH_cfg, 'startCopyNotification', 'notificationCommand'), "runDirectory" => $runDirectory, "runID" => $runID, "lane" => $lane);
 
     my $ro_job = new Job();
     $ro_job->addCommand($command);
@@ -630,7 +628,6 @@ sub copy {
   my $runDirectory   = shift;
   my $runID          = shift;
   my $lane           = shift;
-  my $isMiSeq        = shift;
   my $rAoH_readsInfo = shift;
   my $nbReads        = shift;
 
@@ -638,13 +635,10 @@ sub copy {
   my $ro_job = new Job();
   my $destinationFolder;
 
-  if ($isMiSeq) {
-    $destinationFolder= LoadConfig::getParam($rH_cfg, 'copy','destinationFolderMiSeq');
-  } else {
-    $destinationFolder= LoadConfig::getParam($rH_cfg, 'copy','destinationFolderHiSeq');
-  }
 
-  my $command = formatCommand("config" => $rH_cfg, "command" => LoadConfig::getParam($rH_cfg, 'copy', 'copyCommand'), "runDirectory" => $runDirectory, "runID" => $runID, "lane" => $lane, "isMiSeq" => $isMiSeq, "destinationFolder" => $destinationFolder);
+  $destinationFolder= LoadConfig::getParam($rH_cfg, 'copy','destinationFolder');
+
+  my $command = formatCommand("config" => $rH_cfg, "command" => LoadConfig::getParam($rH_cfg, 'copy', 'copyCommand'), "runDirectory" => $runDirectory, "runID" => $runID, "lane" => $lane, "destinationFolder" => $destinationFolder);
 
   $ro_job->addCommand($command);
 
@@ -659,14 +653,13 @@ sub endCopyNotification {
   my $runDirectory   = shift;
   my $runID          = shift;
   my $lane           = shift;
-  my $isMiSeq        = shift;
   my $rAoH_readsInfo = shift;
   my $nbReads        = shift;
 
   my $dependencies = getDependencies($step, $rH_cfg);
 
   if (LoadConfig::getParam($rH_cfg, 'endCopyNotification', 'sendNotification')) {
-    my $command = formatCommand("config" => $rH_cfg, "command" => LoadConfig::getParam($rH_cfg, 'endCopyNotification', 'notificationCommand'), "runDirectory" => $runDirectory, "runID" => $runID, "lane" => $lane, "isMiSeq" => $isMiSeq);
+    my $command = formatCommand("config" => $rH_cfg, "command" => LoadConfig::getParam($rH_cfg, 'endCopyNotification', 'notificationCommand'), "runDirectory" => $runDirectory, "runID" => $runID, "lane" => $lane);
 
     my $ro_job = new Job();
     $ro_job->addCommand($command);
@@ -829,11 +822,7 @@ sub formatCommand {
   my %params = @_;
   my $command = $params{'command'};
 
-  if($params{'isMiSeq'} == 1) {
-    $params{'technology'} = LoadConfig::getParam($params{'config'}, '', 'miSeqTechnologyName');
-  } else {
-    $params{'technology'} = LoadConfig::getParam($params{'config'}, '', 'hiSeqTechnologyName');
-  }
+  $params{'technology'} = LoadConfig::getParam($params{'config'}, '', 'technologyName');
 
   if (defined($params{'runDirectory'})) {
     $params{'runName'} = basename($params{'runDirectory'});

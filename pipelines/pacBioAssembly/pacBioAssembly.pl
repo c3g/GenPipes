@@ -267,7 +267,7 @@ sub main {
 		# Sample/assembly
 		foreach my $coverage(@coverageRange){
 	
-			print STDERR "[DEBUG] ".$coverage."_percent_coverage\n";
+			print STDERR "[DEBUG] ".$coverage."_X_coverage\n";
 				
 			my $dependency2 = $dependency;
 
@@ -277,14 +277,14 @@ sub main {
    				my $subref = \&$fname;
 				   	  
 				if ($steps[$currentStep]->{'stepLoop'} eq 'sample') { #preassembly
-					print STDERR "[DEBUG] \t".$coverage."_percent_coverage: ".$steps[$currentStep]->{'name'}."\n";
+					print STDERR "[DEBUG] \t".$coverage."_X_coverage: ".$steps[$currentStep]->{'name'}."\n";
 
 					if($steps[$currentStep]->{'name'} eq 'getStats'){
 						$dependency2 = &$subref($steps[$currentStep]->{'name'}, $currSampleName, $estimatedCoverage, $coverage, $currFofn, \%cfg, $dependency);
 
 					}else{
 						# Tests for the first step in the list. Used for dependencies.
-						$dependency2 = &$subref($steps[$currentStep]->{'name'}, $currSampleName, $coverage."percent", $currFofn, \%cfg, $dependency2);
+						$dependency2 = &$subref($steps[$currentStep]->{'name'}, $currSampleName, $coverage."X", $currFofn, \%cfg, $dependency2);
 					}
 				}
 			}
@@ -316,18 +316,18 @@ sub main {
 
 						if($steps[$currentStep]->{'name'} eq 'assembly'){
 								print STDERR "[DEBUG] \t\tMERSIZE: ".$merSize."\t".$steps[$currentStep]->{'name'}."\n";
-								$dependency3 = &$subref($steps[$currentStep]->{'name'}, $currSampleName, $coverage."percent", $merSize, $currFofn, \%cfg, $dependency3); 
+								$dependency3 = &$subref($steps[$currentStep]->{'name'}, $currSampleName, $coverage."X", $merSize, $currFofn, \%cfg, $dependency3); 
 
 						}elsif($steps[$currentStep]->{'name'} eq 'polishing'){
 							die "Please enter a value between 1 and 4 for polishing rounds.\n" if($polishingRounds < 1 && $polishingRounds > 4);
 
 							for(my $k=1; $k<=$polishingRounds; $k++){
 								print STDERR "[DEBUG] \t\tPOLISHING ROUND: ".$k."\t".$steps[$currentStep]->{'name'}."\n";
-								$dependency3 = &$subref($steps[$currentStep]->{'name'}, $currSampleName, $coverage."percent", $merSize, $currFofn, \%cfg, $dependency3, $k); 
+								$dependency3 = &$subref($steps[$currentStep]->{'name'}, $currSampleName, $coverage."X", $merSize, $currFofn, \%cfg, $dependency3, $k); 
 							}
 						}else{
 							print STDERR "[DEBUG] \t\tMERSIZE: ".$merSize."\t".$steps[$currentStep]->{'name'}."\n";
-							$dependency3 = &$subref($steps[$currentStep]->{'name'}, $currSampleName, $coverage."percent", $merSize, $currFofn, \%cfg, $dependency3, $polishingRounds); 
+							$dependency3 = &$subref($steps[$currentStep]->{'name'}, $currSampleName, $coverage."X", $merSize, $currFofn, \%cfg, $dependency3, $polishingRounds); 
 						}
 
 					}
@@ -443,7 +443,7 @@ sub getStats{
 	my $rH_cfg            = shift;
 	my $dependency        = shift;
 
-	my $suffix = $coverageCutoff."percent";
+	my $suffix = $coverageCutoff."X";
 
 	# Define outdir
 	my $outdir = LoadConfig::getParam($rH_cfg, 'default', 'outdir');
@@ -452,7 +452,7 @@ sub getStats{
 	system("mkdir -p $outdir/$sampleName/$suffix");
 	system("mkdir -p $outdir/$sampleName/$suffix/preassembly");
 
-	$coverageCutoff = $coverageCutoff / 100; 
+	#$coverageCutoff = $coverageCutoff / 100; # Was for old fraction method...
 	
 	# Choose a subread length threshold such that subreads above the threshold provide about 20x coverage of the genome.
 	my $rO_jobGetCutoff = PacBioTools::getCutoff(

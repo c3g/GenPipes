@@ -9,6 +9,7 @@ BEGIN{
 	use Cwd 'abs_path';
 	my ( undef, $mod_path, undef ) = fileparse( abs_path(__FILE__) );
 	unshift @INC, $mod_path."lib";
+	unshift @INC, $mod_path."../../lib";
 }
 
 ## LIBRARIES
@@ -33,15 +34,6 @@ use LoadConfig;
 use SampleSheet;
 use SubmitToCluster;
 use Job;
-
-BEGIN{
-	#Makesure we can find the GetConfig::LoadModules module relative to this script install
-	use File::Basename;
-	use Cwd 'abs_path';
-	my ( undef, $mod_path, undef ) = fileparse( abs_path(__FILE__) );
-	unshift @INC, $mod_path."lib";
-	unshift @INC, $mod_path."scripts";
-}
 
 our $VERSION = "0.5";
 $SIG{INT} = sub{exit}; #Handle ungraceful exits with CTRL-C.
@@ -483,8 +475,8 @@ foreach my $barcodes (@barcodes){
 		my $rO_jobCutR1 = RRNAAmplicons::cutReads(
 			\%cfg,
 			$curr_dir."/fastqs/ncontam_nphix_1.fastq",
-			LoadConfig::getParam(\%cfg, 'cut', 'R1_start'),
-			(LoadConfig::getParam(\%cfg, 'default',  'readLength') - LoadConfig::getParam(\%cfg, 'cut', 'R1_end') ),
+			LoadConfig::getParam(\%cfg, 'itags_QC', 'R1_start'),
+			(LoadConfig::getParam(\%cfg, 'default',  'readLength') - LoadConfig::getParam(\%cfg, 'itags_QC', 'R1_end')),
 			$curr_dir."/fastqs/ncontam_nphix_trimmed_1.fastq"
 		);
 		if(!$rO_jobCutR1->isUp2Date()) {
@@ -498,8 +490,8 @@ foreach my $barcodes (@barcodes){
 		my $rO_jobCutR2 = RRNAAmplicons::cutReads(
 			\%cfg,
 			$curr_dir."/fastqs/ncontam_nphix_2.fastq",
-			LoadConfig::getParam(\%cfg, 'cut', 'R2_start'),
-			(LoadConfig::getParam(\%cfg, 'default',  'readLength') - LoadConfig::getParam(\%cfg, 'cut', 'R2_end') ),
+			LoadConfig::getParam(\%cfg, 'itags_QC', 'R2_start'),
+			(LoadConfig::getParam(\%cfg, 'default',  'readLength') - LoadConfig::getParam(\%cfg, 'itags_QC', 'R2_end')),
 			$curr_dir."/fastqs/ncontam_nphix_trimmed_2.fastq"
 		);
 		if(!$rO_jobCutR2->isUp2Date()) {
@@ -525,13 +517,26 @@ foreach my $barcodes (@barcodes){
 		$currStep++;
 
 		# Remove primers (if primers appear in reads) and do Itags QC (filter reads).
-		if($rev_primer || $fwd_primer ){ #Don't execute this step if primers are not to be removed.	
-			if(defined $rev_primer && defined $fwd_primer){
-			}elsif(defined $rev_primer){
-				$fwd_primer = "null";	
-			}elsif(defined $fwd_primer){
-				$rev_primer = "null";	
-			}	
+		#if($rev_primer || $fwd_primer ){ #Don't execute this step if primers are not to be removed.	
+			#if(defined $rev_primer && defined $fwd_primer){
+      #  # Leave as is...
+			#}elsif(!defined $fwd_primer && !defined $rev_primer){
+			#	$fwd_primer = "null";	
+			#	$rev_primer = "null";	
+			#}else{
+      #  if(!defined $fwd_primer){
+			#	  $fwd_primer = "null";
+      #  }	
+      #  if(!defined $rev_primer){
+			#	  $rev_primer = "null";
+      #  }	
+			#}
+      $fwd_primer = "null" if(!defined $fwd_primer);
+      $rev_primer = "null" if(!defined $rev_primer);
+      $fwd_primer = "null" if($fwd_primer eq "");
+      $rev_primer = "null" if($rev_primer eq "");
+      print STDERR "[DEBUG] fwd_primer: ".$fwd_primer."\n";	
+      print STDERR "[DEBUG] fwd_primer: ".$rev_primer."\n";	
 			my $rO_jobItagsQC = RRNAAmplicons::itagsQC(
 				\%cfg,
 				$curr_dir."/fastqs/assembly_complete/ncontam_nphix_trimmed.extendedFrags.fastq",
@@ -546,7 +551,7 @@ foreach my $barcodes (@barcodes){
 			}
 			print STDERR "[DEBUG]\tStep #".$currStep." itags_QC\n";
 			$currStep++;
-		}
+		#}
 		
 		my $QC_passed_reads = $curr_dir."/fastqs/ncontam_nphix_trimmed.extendedFrags_QCpassed.fastq";
 		$assembled_filtered = $QC_passed_reads;
