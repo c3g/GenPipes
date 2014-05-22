@@ -5,7 +5,7 @@
 #
 
 SOFTWARE=snpEff
-VERSION=3.5
+VERSION=3.6
 # Replace "." in official version number by "_" in archive version number
 ARCHIVE_VERSION=${VERSION//./_}
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/$SOFTWARE
