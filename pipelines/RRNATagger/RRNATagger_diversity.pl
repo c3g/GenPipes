@@ -847,7 +847,7 @@ print STDERR "[DEBUG]\tStep #".$currStep." Nozzle deliverables\n";
 
 # Set script name (without suffix) as pipeline name
 my $pipelineName = fileparse($0, qr/\.[^.]*/) . "-$Version::version";
-my $stepNames = "$start_at-$end_at";
+my $stepNames = "$start_at-$currStep";
 
 # Log anynymous statistics on remote MUGQIC web server
 Tools::mugqicLog($pipelineName, $stepNames, $numberOfSamples);
