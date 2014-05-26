@@ -222,8 +222,17 @@ my $loop_counter = 1;
 my $curr_dir;
 my @sr_array; # For single reads pipeline
 
+# number of samples will be stored in this following variable:
+my $numberOfSamples = 0;
+
 foreach my $barcodes (@barcodes){
-	
+
+  ## Count samples being processed.
+  my $currNumberOfSamples = `grep -o ">" $barcodes | wc -l`;
+  chomp($currNumberOfSamples);
+  $numberOfSamples += $currNumberOfSamples;
+  print STDERR "[DEBUG] Number of samples: $numberOfSamples\n";
+
 	# Declare variables holding file name of reads going into clustering.
 	# These will be QC passed reads.	
 	my $assembled_filtered;
