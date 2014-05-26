@@ -76,6 +76,7 @@ use LoadConfig;
 use Metrics;
 use SampleSheet;
 use SubmitToCluster;
+use Tools;
 use Trimmomatic;
 use Trinity;
 use Version;
@@ -228,7 +229,7 @@ sub main {
   } else {
     # Check options
     my %opts;
-    getopts('hc:s:e:n:d:w:', \%opts);
+    getopts('hc:s:n:d:w:', \%opts);
   
     if (defined($opts{'h'}) ||
        !defined($opts{'c'}) ||
@@ -251,6 +252,7 @@ sub main {
     unless (-f $configFile) {die "Error: configuration file $configFile does not exist!\n" . getUsage()};
     my %cfg = LoadConfig->readConfigFile($configFile);
   
+    my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($nanuqSampleSheet);
     SubmitToCluster::initPipeline($workDirectory);
   
     # Go through steps and create global or sample jobs accordingly
@@ -265,7 +267,6 @@ sub main {
         unless (defined $nanuqSampleSheet) {die "Error: nanuq sample sheet is not defined! (use -n option)\n" . getUsage()};
         unless (-f $nanuqSampleSheet) {die "Error: nanuq sample sheet $nanuqSampleSheet does not exist!\n" . getUsage()};
   
-        my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($nanuqSampleSheet);
         foreach my $sample (keys %$rHoAoH_sampleInfo) {
           my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sample};
           # Sample step functions need sample and lanes parameters
@@ -276,6 +277,14 @@ sub main {
         &$stepName(\%cfg, $step);
       }
     }
+
+    # Set script name (without suffix) as pipeline name
+    my $pipelineName = fileparse($0, qr/\.[^.]*/) . "-$Version::version";
+    my $steps = join(",", map($A_steps[$_]->{'name'}, @stepRange));
+    my $nbSamples = scalar(keys %$rHoAoH_sampleInfo);
+
+    # Log anynymous statistics on remote MUGQIC web server
+    Tools::mugqicLog($pipelineName, $steps, $nbSamples);
   }
 }
 

@@ -309,6 +309,13 @@ sub main {
   }
   print 'export FINAL_STEP_JOB_IDS='.$jobId."\n";
   
+  # Set script name (without suffix) as pipeline name
+  my $pipelineName = fileparse($0, qr/\.[^.]*/) . "-$Version::version";
+  my $steps = join(",", map($steps[$_]->{'name'}, @stepRange));
+  my $nbSamples = scalar(@sampleNames);
+
+  # Log anynymous statistics on remote MUGQIC web server
+  Tools::mugqicLog($pipelineName, $steps, $nbSamples);
 }
 
 sub samToFastq {
