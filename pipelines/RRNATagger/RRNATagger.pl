@@ -1569,10 +1569,10 @@ foreach my $barcodes (@barcodes){
 
 # Set script name (without suffix) as pipeline name
 my $pipelineName = fileparse($0, qr/\.[^.]*/) . "-$Version::version";
-my $stepNames = join(",", map($steps[$_]->{'name'}, @stepRange));
+my $stepNames = "$start_at-$end_at";
 
 # Log anynymous statistics on remote MUGQIC web server
-Tools::mugqicLog($pipelineName, $stepNames, $currNumberOfSamples);
+Tools::mugqicLog($pipelineName, $stepNames, $numberOfSamples);
 
 exit;
 
