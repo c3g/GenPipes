@@ -280,11 +280,11 @@ sub main {
 
     # Set script name (without suffix) as pipeline name
     my $pipelineName = fileparse($0, qr/\.[^.]*/) . "-$Version::version";
-    my $steps = join(",", map($A_steps[$_]->{'name'}, @stepRange));
+    my $stepNames = join(",", map($A_steps[$_]->{'name'}, @stepRange));
     my $nbSamples = scalar(keys %$rHoAoH_sampleInfo);
 
     # Log anynymous statistics on remote MUGQIC web server
-    Tools::mugqicLog($pipelineName, $steps, $nbSamples);
+    Tools::mugqicLog($pipelineName, $stepNames, $nbSamples);
   }
 }
 

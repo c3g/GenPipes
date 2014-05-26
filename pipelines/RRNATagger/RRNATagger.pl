@@ -34,6 +34,8 @@ use LoadConfig;
 use SampleSheet;
 use SubmitToCluster;
 use Job;
+use Tools;
+use Version;
 
 our $VERSION = "0.5";
 $SIG{INT} = sub{exit}; #Handle ungraceful exits with CTRL-C.
@@ -1564,6 +1566,13 @@ foreach my $barcodes (@barcodes){
 	# ==== SUBROUTINES END ====== #	
 	# =========================== #
 }
+
+# Set script name (without suffix) as pipeline name
+my $pipelineName = fileparse($0, qr/\.[^.]*/) . "-$Version::version";
+my $stepNames = join(",", map($steps[$_]->{'name'}, @stepRange));
+
+# Log anynymous statistics on remote MUGQIC web server
+Tools::mugqicLog($pipelineName, $stepNames, $currNumberOfSamples);
 
 exit;
 
