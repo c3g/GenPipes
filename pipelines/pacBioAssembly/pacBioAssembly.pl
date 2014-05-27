@@ -50,8 +50,10 @@ BEGIN{
 
 # Dependencies
 #--------------------
-use Getopt::Std;
 use Cwd qw/ abs_path /;
+use File::Basename;
+use Getopt::Std;
+use Parse::Range qw(parse_range);
 
 use LoadConfig;
 use SmrtAnalysis;
@@ -64,6 +66,8 @@ use SubmitToCluster;
 use BLAST;
 use Mummer;
 use GqSeqUtils;
+use Tools;
+use Version;
 #--------------------
 
 
@@ -106,8 +110,7 @@ my $computeCutoffFlag;
 sub printUsage {
   print "\nUsage: perl ".$0." \n";
   print "\t-c  config file\n";
-  print "\t-s  start step, inclusive\n";
-  print "\t-e  end step, inclusive\n";
+  print "\t-s  step range e.g. '1,3', '2-5', '1,4-7,10'\n";
   print "\t-n  sample sheet\n";
   print "\t-v  verbose\n";
   print "\n";
@@ -120,13 +123,17 @@ sub printUsage {
 
 sub main {
 	my %opts;
-	getopts('c:s:e:n:w:m:v:a:t:', \%opts);
+	getopts('c:s:n:w:m:v:a:t:', \%opts);
 	
-	if (!defined($opts{'c'}) || !defined($opts{'s'}) || !defined($opts{'e'}) || !defined($opts{'n'}) ) {
+	if (!defined($opts{'c'}) || !defined($opts{'s'}) || !defined($opts{'n'}) ) {
 		printUsage();
 		exit(1);
 	}
 	
+	# List user-defined step index range.
+	# Shift 1st position to 0 instead of 1
+	my @stepRange = map($_ - 1, parse_range($opts{'s'}));
+
 	# Load config file
 	$noMsub = 1 if(defined($opts{'m'}));
 	if(!defined($opts{'t'})){
@@ -235,7 +242,6 @@ sub main {
 		print STDERR "[DEBUG] numberOfbases: ".$numberOfBases."\n";
 		print STDERR "[DEBUG] Estimated coverage: ".$estimatedCoverage."\n";	
 
-		my $currentStep;
 		my $rootDependency = undef;
 		my $dependency = undef;
 		my $dependency3 = undef;
@@ -243,7 +249,7 @@ sub main {
 		my @endDependencies;
 
 		# global.
-		for($currentStep = $opts{'s'}-1; $currentStep <= ($opts{'e'}-1); $currentStep++) {
+		for my $currentStep (@stepRange) {
 
   			my $fname = $steps[$currentStep]->{'name'};
    			my $subref = \&$fname;
@@ -271,7 +277,7 @@ sub main {
 				
 			my $dependency2 = $dependency;
 
-			for($currentStep = $opts{'s'}-1; $currentStep <= ($opts{'e'}-1); $currentStep++) {
+			for my $currentStep (@stepRange) {
 	
   				my $fname = $steps[$currentStep]->{'name'};
    				my $subref = \&$fname;
@@ -296,7 +302,7 @@ sub main {
 				
 				#my $assemblyLoopCounter = 0;	
 			
-				for(my $currentStep = $opts{'s'}-1; $currentStep <= ($opts{'e'}-1); $currentStep++) {		
+				for my $currentStep (@stepRange) {		
 					my $fname = $steps[$currentStep]->{'name'};
 					my $subref = \&$fname;
 				
@@ -338,7 +344,7 @@ sub main {
 		}
 	
 		# end	
-		for($currentStep = $opts{'s'}-1; $currentStep <= ($opts{'e'}-1); $currentStep++) {
+		for my $currentStep (@stepRange) {
   			my $fname = $steps[$currentStep]->{'name'};
    			my $subref = \&$fname;
     
@@ -349,8 +355,17 @@ sub main {
 		}
 	}
 	my $tmpdir = LoadConfig::getParam(\%cfg, 'smrtanalysis', 'tmpDir', 1, 'path');
-  print STDERR "[DEBUG] Project path: $outdir\tMAKE SURE TO USE AN ABSOLUTE PATH - NO RELATIVE PATH PLEASE!\n";
-  print STDERR "[DEBUG] tmpDir: $tmpdir\tPLEASE MAKE SURE YOUR TMPDIR IS A VALID DIRECTORY!\n";
+	print STDERR "[DEBUG] Project path: $outdir\tMAKE SURE TO USE AN ABSOLUTE PATH - NO RELATIVE PATH PLEASE!\n";
+	print STDERR "[DEBUG] tmpDir: $tmpdir\tPLEASE MAKE SURE YOUR TMPDIR IS A VALID DIRECTORY!\n";
+
+	# Set script name (without suffix) as pipeline name
+	my $pipelineName = fileparse($0, qr/\.[^.]*/) . "-$Version::version";
+	my $stepNames = join(",", map($steps[$_]->{'name'}, @stepRange));
+	my $nbSamples = scalar(keys %hohSamples);
+
+	# Log anynymous statistics on remote MUGQIC web server
+	Tools::mugqicLog($pipelineName, $stepNames, $nbSamples);
+
 	exit;		
 }
 

@@ -88,20 +88,21 @@ use File::Path;
 use Parse::Range qw(parse_range);
 use POSIX;
 
-use LoadConfig;
-use SampleSheet;
-use SAMtools;
-use SequenceDictionaryParser;
-use Picard;
-use SubmitToCluster;
-use Homer;
-use MACS2;
 use BWA;
-use Trimmomatic;
+use GqSeqUtils;
+use Homer;
+use LoadConfig;
+use MACS2;
 use Metrics;
+use Picard;
+use SAMtools;
+use SampleSheet;
+use SequenceDictionaryParser;
+use SubmitToCluster;
+use Tools;
+use Trimmomatic;
 use Version;
 use Wiggle;
-use GqSeqUtils;
 
 
 
@@ -282,6 +283,14 @@ sub main {
       }
     }
   }
+
+  # Set script name (without suffix) as pipeline name
+  my $pipelineName = fileparse($0, qr/\.[^.]*/) . "-$Version::version";
+  my $stepNames = join(",", map($steps[$_]->{'name'}, @stepRange));
+  my $nbSamples = scalar(keys %$rHoAoH_sampleInfo);
+
+  # Log anynymous statistics on remote MUGQIC web server
+  Tools::mugqicLog($pipelineName, $stepNames, $nbSamples);
 }
 
 sub samToFastq {

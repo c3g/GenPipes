@@ -34,6 +34,8 @@ use LoadConfig;
 use SampleSheet;
 use SubmitToCluster;
 use Job;
+use Tools;
+use Version;
 
 our $VERSION = "0.5";
 $SIG{INT} = sub{exit}; #Handle ungraceful exits with CTRL-C.
@@ -222,8 +224,17 @@ my $loop_counter = 1;
 my $curr_dir;
 my @sr_array; # For single reads pipeline
 
+# number of samples will be stored in this following variable:
+my $numberOfSamples = 0;
+
 foreach my $barcodes (@barcodes){
-	
+
+  ## Count samples being processed.
+  my $currNumberOfSamples = `grep -o ">" $barcodes | wc -l`;
+  chomp($currNumberOfSamples);
+  $numberOfSamples += $currNumberOfSamples;
+  print STDERR "[DEBUG] Number of samples: $numberOfSamples\n";
+
 	# Declare variables holding file name of reads going into clustering.
 	# These will be QC passed reads.	
 	my $assembled_filtered;
@@ -1555,6 +1566,13 @@ foreach my $barcodes (@barcodes){
 	# ==== SUBROUTINES END ====== #	
 	# =========================== #
 }
+
+# Set script name (without suffix) as pipeline name
+my $pipelineName = fileparse($0, qr/\.[^.]*/) . "-$Version::version";
+my $stepNames = "$start_at-$end_at";
+
+# Log anynymous statistics on remote MUGQIC web server
+Tools::mugqicLog($pipelineName, $stepNames, $numberOfSamples);
 
 exit;
 

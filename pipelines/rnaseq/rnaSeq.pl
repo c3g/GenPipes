@@ -93,22 +93,23 @@ use File::Basename;
 use File::Path;
 use Parse::Range qw(parse_range);
 
-use LoadConfig;
-use Picard;
-use SampleSheet;
-use SAMtools;
-use SequenceDictionaryParser;
-use SubmitToCluster;
-use TophatBowtie;
-use Trimmomatic;
-use Metrics;
+use Cleaning;
 use Cufflinks;
-use Wiggle;
-use HtseqCount;
 use DiffExpression;
 use GqSeqUtils;
+use HtseqCount;
+use LoadConfig;
+use Metrics;
+use Picard;
+use SAMtools;
+use SampleSheet;
+use SequenceDictionaryParser;
+use SubmitToCluster;
+use Tools;
+use TophatBowtie;
+use Trimmomatic;
 use Version;
-use Cleaning;
+use Wiggle;
 
 #--------------------
 
@@ -284,6 +285,14 @@ sub main {
 				}
 			}
 		}
+
+        # Set script name (without suffix) as pipeline name
+        my $pipelineName = fileparse($0, qr/\.[^.]*/) . "-$Version::version";
+        my $stepNames = join(",", map($steps[$_]->{'name'}, @stepRange));
+        my $nbSamples = scalar(keys %$rHoAoH_sampleInfo);
+    
+        # Log anynymous statistics on remote MUGQIC web server
+        Tools::mugqicLog($pipelineName, $stepNames, $nbSamples);
 	}
 }
 
