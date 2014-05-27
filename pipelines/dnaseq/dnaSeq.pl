@@ -136,6 +136,7 @@ push(@steps, {'name' => 'callableBases', 'stepLoop' => 'sample', 'parentStep' =>
 push(@steps, {'name' => 'extractCommonSNPFreq', 'stepLoop' => 'sample', 'parentStep' => 'recalibration'});
 push(@steps, {'name' => 'BAFPlot', 'stepLoop' => 'sample', 'parentStep' => 'extractCommonSNPFreq'});
 push(@steps, {'name' => 'haplotypeCaller', 'stepLoop' => 'sample', 'parentStep' => 'recalibration'});
+push(@steps, {'name' => 'mergeAndCallGVCF', 'stepLoop' => 'sample', 'parentStep' => 'haplotypeCaller'});
 push(@steps, {'name' => 'metricsLibrarySample', 'stepLoop' => 'experiment', 'parentStep' => 'metrics'});
 push(@steps, {'name' => 'snpAndIndelBCF', 'stepLoop' => 'experiment', 'parentStep' => 'recalibration'});
 push(@steps, {'name' => 'mergeFilterBCF', 'stepLoop' => 'experiment', 'parentStep' => 'snpAndIndelBCF'});
@@ -633,7 +634,6 @@ sub indelRealigner {
     warn "Number of realign jobs is >50. This is usually much. Anything beyond 20 can be problematic.\n";
   }
 
-
   my $jobId;
   if($nbRealignJobs <= 1) {
     my $rO_job = GATK::realign($rH_cfg, $sampleName, 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.bam', undef, 'alignment/'.$sampleName.'/realign/all');
@@ -1021,29 +1021,15 @@ sub haplotypeCaller {
   print "HAPLOTYPE_CALLER_JOB_IDS=\"\"\n";
 
   my $bamFile = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.recal.bam';
-  my $nbJobs = LoadConfig::getParam($rH_cfg, 'haplotypeCaller', 'approxNbJobs', 0, 'int');
+  my $nbJobs = LoadConfig::getParam($rH_cfg, 'haplotypeCaller', 'nbJobs', 0, 'int');
+  if($nbJobs > 50) {
+    warn "Number of haplotyper jobs is >50. This is usually much. Anything beyond 20 can be problematic.\n";
+  }
   my $jobId=undef;
 
-  my $seqName = undef;
-  if (defined($nbJobs) && $nbJobs > 1) {
-    my $rA_regions = generateApproximateWindows($nbJobs, $rAoH_seqDictionary);
-    for my $region (@{$rA_regions}) {
-      my $rO_job = GATK::haplotypeCaller($rH_cfg, $bamFile, $region, $outputPrefix);
-      if(!$rO_job->isUp2Date()) {
-        $region =~ s/:/_/g;
-        SubmitToCluster::printSubmitCmd($rH_cfg, "haplotypeCaller", $region, 'HAPLOTYPE_CALLER', $jobDependency, $sampleName, $rO_job);
-        if(!defined($jobId)) {
-          $jobId = '${HAPLOTYPE_CALLER_JOB_IDS}';
-          print 'HAPLOTYPE_CALLER_JOB_IDS='.$rO_job->getCommandJobId(0)."\n";
-        }
-        else {
-          print 'HAPLOTYPE_CALLER_JOB_IDS=${HAPLOTYPE_CALLER_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$rO_job->getCommandJobId(0)."\n";
-        }
-      }
-    }
-  }
-  else {
+  if($nbJobs <= 1) {
     my $region = undef;
+    my $outputGVCF = $outputPrefix . '.hc.gvcf';
     my $rO_job = GATK::haplotypeCaller($rH_cfg, $bamFile, $region, $outputPrefix);
     if(!$rO_job->isUp2Date()) {
       SubmitToCluster::printSubmitCmd($rH_cfg, "haplotypeCaller", $region, 'HAPLOTYPE_CALLER', $jobDependency, $sampleName, $rO_job);
@@ -1056,8 +1042,84 @@ sub haplotypeCaller {
       }
     }
   }
+  else {
+    # Keep space for the exclude job at the end.
+    $nbJobs--;
+    my @chrToProcess;
+    for (my $idx=0; $idx < $nbJobs; $idx++) {
+      push(@chrToProcess, $rAoH_seqDictionary->[$idx]->{'name'});
+    }
+
+    print "HAPLOTYPER_JOB_IDS=\"\"\n";
+    my @excludeList;
+    for my $seqName (@chrToProcess) {
+      push(@excludeList, $seqName);
+      my $outputGVCF = $outputPrefix . '.' . $seqName . '.hc.g.vcf';
+      my $rO_job = GATK::haplotypeCaller($rH_cfg, $bamFile, $seqName, $outputGVCF);
+
+      if(!$rO_job->isUp2Date()) {
+        SubmitToCluster::printSubmitCmd($rH_cfg, "haplotypeCaller", $seqName, 'HAPLOTYPE_CALLER', $jobDependency, $sampleName, $rO_job);
+        if(!defined($jobId)) {
+          $jobId = '${HAPLOTYPE_CALLER_JOB_IDS}';
+          print 'HAPLOTYPE_CALLER_JOB_IDS='.$rO_job->getCommandJobId(0)."\n";
+        }
+        else {
+          print 'HAPLOTYPE_CALLER_JOB_IDS=${HAPLOTYPE_CALLER_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$rO_job->getCommandJobId(0)."\n";
+        }
+      }
+    }
+    my $outputGVCF = $outputPrefix . '.others.hc.g.vcf';
+    my $rO_job = GATK::haplotypeCaller($rH_cfg, $bamFile, undef, $outputGVCF, \@excludeList);
+    if(!$rO_job->isUp2Date()) {
+      SubmitToCluster::printSubmitCmd($rH_cfg, "haplotypeCaller", 'others', 'HAPLOTYPE_CALLER', $jobDependency, $sampleName, $rO_job);
+      if(!defined($jobId)) {
+        $jobId = '${HAPLOTYPE_CALLER_JOB_IDS}';
+        print 'HAPLOTYPE_CALLER_JOB_IDS='.$rO_job->getCommandJobId(0)."\n";
+      }
+      else {
+        print 'HAPLOTYPE_CALLER_JOB_IDS=${HAPLOTYPE_CALLER_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$rO_job->getCommandJobId(0)."\n";
+      }
+    }
+  }
 
   return $jobId;
+}
+
+sub mergeAndCallGVCF {
+  my $stepId = shift;
+  my $rH_cfg = shift;
+  my $sampleName = shift;
+  my $rAoH_sampleLanes  = shift;
+  my $rAoH_seqDictionary = shift;
+
+  my $jobDependency = undef;
+  my $parentStep = $steps[$stepId]->{'parentStep'};
+  if(defined($globalDep{$parentStep}->{$sampleName})) {
+    $jobDependency = $globalDep{$parentStep}->{$sampleName};
+  }
+
+  my $inputPrefix = 'alignment/'.$sampleName.'/rawHaplotypeCaller/' . $sampleName;
+  my @gvcfsToMerge;
+  # haplotypeCaller is used on purpose
+  my $nbJobs = LoadConfig::getParam($rH_cfg, 'haplotypeCaller', 'nbJobs', 0, 'int');
+  if ($nbJobs <= 1) {
+    # Name has to be .g.vcf because mergeAndCallGVCF will not be happy otherwise
+    push(@gvcfsToMerge, $inputPrefix . '.hc.g.vcf');
+  }
+  else {
+    # Keep space for the exclude job at the end.
+    $nbJobs--;
+    for (my $idx=0; $idx < $nbJobs; $idx++) {
+      push(@gvcfsToMerge, $inputPrefix . '.' . $rAoH_seqDictionary->[$idx]->{'name'} . '.hc.g.vcf');
+    }
+    push(@gvcfsToMerge, $inputPrefix . '.others.hc.g.vcf');
+  }
+
+  my $rO_job = GATK::mergeAndCallGVCF($rH_cfg, \@gvcfsToMerge, 'alignment/'.$sampleName.'/'.$sampleName.'.hc.g.vcf', 'alignment/'.$sampleName.'/'.$sampleName.'.hc.vcf.gz');
+  if(!$rO_job->isUp2Date()) {
+    SubmitToCluster::printSubmitCmd($rH_cfg, "mergeAndCallGVCF", undef, 'CAT_VARIANTS', $jobDependency, $sampleName, $rO_job);
+  }
+  return $rO_job->getCommandJobId(0);
 }
 
 sub metricsLibrarySample {
