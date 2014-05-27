@@ -145,8 +145,6 @@ sub mergeFilterBCF {
     $command .= ' ' . $bcfInputs;
     $command .= ' > ' . $outputBCF;
     $command .= ' && bcftools view ' . $outputBCF;
-    $command .= ' | vcfutils.pl varFilter';
-    $command .= ' ' . LoadConfig::getParam($rH_cfg, 'mergeFilterBCF', 'varfilterExtraFlags');
     $command .= ' > ' . $outputVCF;
 
     $ro_job->addCommand($command);
