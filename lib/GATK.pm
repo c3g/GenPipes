@@ -242,20 +242,18 @@ sub callableBases {
 }
 
 sub haplotypeCaller {
-  my $rH_cfg       = shift;
-  my $bam          = shift;
-  my $seqName      = shift;
-  my $outputPrefix = shift;
+  my $rH_cfg        = shift;
+  my $bam           = shift;
+  my $seqName       = shift;
+  my $outputGVCF    = shift;
+  my $rA_exclusions = shift;
 
   my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta', 1, 'filepath');
   my $options = LoadConfig::getParam($rH_cfg, 'haplotypeCaller', 'options');
-  my $regionCmd;
-
-  if (defined($seqName)) {
+  my $regionCmd = "";
+  if(defined($seqName)) {
     $regionCmd =' -L ' . $seqName;
-    $outputPrefix = $outputPrefix . '.' . $seqName;
   }
-  my $outputGVCF = $outputPrefix . '.hc.gvcf';
 
   my $ro_job = new Job();
   $ro_job->testInputOutputs([$bam], [$outputGVCF]);
@@ -268,12 +266,49 @@ sub haplotypeCaller {
     $command .= ' ' . $options;
     $command .= ' --reference_sequence ' . $refGenome;
     $command .= ' -I ' . $bam;
+    if (defined($rA_exclusions)) {
+      $command .= ' --excludeIntervals ' . join(' --excludeIntervals ', @{$rA_exclusions});
+    }
     $command .= ' --out ' . $outputGVCF;
     $command .= $regionCmd;
 
     $ro_job->addCommand($command);
   }
 
+  return $ro_job;
+}
+
+sub mergeAndCallGVCF {
+  my $rH_cfg      = shift;
+  my $rA_vcfs     = shift;
+  my $outputGVCF  = shift;
+  my $outputVCF   = shift;
+
+  my $refGenome = LoadConfig::getParam($rH_cfg, 'mergeAndCallGVCF', 'referenceFasta', 1, 'filepath');
+  my $catOptions = LoadConfig::getParam($rH_cfg, 'mergeAndCallGVCF', 'catOptions');
+  my $callOptions = LoadConfig::getParam($rH_cfg, 'mergeAndCallGVCF', 'callOptions');
+
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs($rA_vcfs, [$outputGVCF, $outputVCF]);
+  if (!$ro_job->isUp2Date()) {
+    my $command;
+    $command .= LoadConfig::moduleLoad($rH_cfg, [['mergeAndCallGVCF', 'moduleVersion.java'], ['mergeAndCallGVCF', 'moduleVersion.gatk']]) . ' &&';
+    $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'mergeAndCallGVCF', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'mergeAndCallGVCF', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'mergeAndCallGVCF', 'ram') . ' -cp \${GATK_JAR} org.broadinstitute.sting.tools.CatVariants';
+    $command .= ' -R ' . $refGenome;
+    for my $vcf (@{$rA_vcfs}) {
+      $command .= ' -V ' . $vcf;
+    }
+    $command .= ' -out ' . $outputGVCF;
+    $command .= ' ' . $catOptions;
+    $command .= ' && ';
+    $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'mergeAndCallGVCF', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'mergeAndCallGVCF', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'mergeAndCallGVCF', 'ram') . ' -jar \${GATK_JAR}';
+    $command .= ' -T GenotypeGVCFs';
+    $command .= ' -V ' . $outputGVCF;
+    $command .= ' -o ' . $outputVCF;
+    $command .= ' ' . $callOptions;
+
+    $ro_job->addCommand($command);
+  }
   return $ro_job;
 }
 
