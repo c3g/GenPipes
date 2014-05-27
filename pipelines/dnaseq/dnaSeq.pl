@@ -179,6 +179,18 @@ B<recalibration> : Recalibrate base quality scores of sequencing-by-synthesis re
 B<metrics> : Compute metrics and generate coverage tracks per sample. Multiple metrics are computed at this stage:Number of raw reads, Number of filtered reads, Number of aligned reads, Number of duplicate reads, Median, mean and standard deviation of insert sizes of reads after alignment, mean coverage over exons (mean number of reads per base position), percentage of bases covered at X reads (%_bases_above_50 means the % of exons bases which have at least 50 reads) whole genome
 percentage of bases covered at X reads (%_bases_above_50 means the % of exons bases which have at least 50 reads) for specific targets (CCDS regions are used in human samples). A TDF (.tdf) coverage track is also generated at this step for easy visualization of coverage in the IGV browser.
 
+B<calculateHSMetrics> : Compute on target percent of hybridasation based capture
+
+B<callableBases> : Computes the callable region or the genome as a bed track
+
+B<extractCommonSNPFreq> : Extracts allele frequecies of possible variants accross the genome
+
+B<BAFPlot> : Plots DepthRatio and B allele frequency of previously extracted alleles
+
+B<haplotypeCaller> : GATKs haplotype caller for snps and small indels
+
+B<metricsLibrarySample> : Merges the gvcfs of haplotype caller and also generates a per sample vcf containing genotypes.
+
 B<metricsLibrarySample> : Merge metrics. Read metrics per sample are merged at this step.
 
 B<snpAndIndelBCF> : Mpileup and Variant calling. Variants (SNPs and INDELs) are called using samtools mpileup. bcftools view is used to produce binary bcf files.  
