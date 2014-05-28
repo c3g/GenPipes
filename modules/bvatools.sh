@@ -12,7 +12,7 @@ cd $MUGQIC_INSTALL_HOME/archive
 
 # Download, extract, build
 # Write here the specific commands to download, extract, build the software, typically similar to:
-wget https://bitbucket.org/mugqic/${SOFTWARE}/downloads/${SOFTWARE}-${VERSION}.zip
+wget https://bitbucket.org/mugqic/${SOFTWARE}/downloads/${SOFTWARE}-${VERSION}.zip -O ${SOFTWARE}-${VERSION}.zip
 
 mkdir -p $INSTALL_PATH
 cd $INSTALL_PATH
