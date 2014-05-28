@@ -40,4 +40,4 @@ done
 
 cd ..
 
-chmod -R 775 $MUGQIC_INSTALL_HOME/software/perl
+chmod -R ug+rwX,o+rX $MUGQIC_INSTALL_HOME/software/perl

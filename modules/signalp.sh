@@ -1,30 +1,10 @@
 #!/bin/bash
 
+#
+# SignalP
+#
+
 ## NOTE (FL): Tools from cbs.dtu.dk under some sort of danish license and need to be downloaded manually.
-
-SOFTWARE=signalp
-VERSION=4.1  ## WARNING: version hard-coded below
-INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/$SOFTWARE
-mkdir -p $INSTALL_PATH
-cd $INSTALL_PATH
-
-# Download, extract, build
-wget https://www.dropbox.com/s/b4guq6ysyhi7eqm/signalp-4.1c.Linux.tar.gz  -O signalp-4.1c.Linux.tar.gz
-tar xvf signalp-4.1c.Linux.tar.gz
-cd $SOFTWARE-$VERSION 
-
-# Stupid manual changes required by signalP
-sed -i "s,/usr/cbs/bio/src/signalp-$VERSION,$PWD,g" signalp 
-mkdir -p tmp
-sed -i "s,/var/tmp,$PWD/tmp,g" signalp
-sed -i 's/$MAX_ALLOWED_ENTRIES=10000;/$MAX_ALLOWED_ENTRIES=2000000;/g' signalp
-
-./signalp -t euk -f short test/euk10.fsa > euk10.fsa.short_out
-./signalp -t euk -f long test/euk10.fsa > euk10.fsa.long_out
-./signalp -t euk -f all test/euk10.fsa > euk10.fsa.all_out
- ./signalp -t euk -f summary test/euk10.fsa > euk10.fsa.summary_out
-
-
 
 # INSTALLATION
 # 
@@ -68,28 +48,94 @@ sed -i 's/$MAX_ALLOWED_ENTRIES=10000;/$MAX_ALLOWED_ENTRIES=2000000;/g' signalp
 # 
 #    6. Enjoy ...
 #  
-# 
-cd ..
 
+SOFTWARE=signalp
+VERSION=4.1
+
+# 'MUGQIC_INSTALL_HOME_DEV' for development, 'MUGQIC_INSTALL_HOME' for production (don't write '$' before!)
+INSTALL_HOME=MUGQIC_INSTALL_HOME
+
+# Indirection call to use $INSTALL_HOME value as variable name
+INSTALL_DIR=${!INSTALL_HOME}/software/$SOFTWARE
+
+# Create install directory with permissions if necessary
+if [[ ! -d $INSTALL_DIR ]]
+then
+  mkdir $INSTALL_DIR
+  chmod ug+rwX,o+rX $INSTALL_DIR
+fi
+
+INSTALL_DOWNLOAD=$INSTALL_DIR/tmp
+mkdir $INSTALL_DOWNLOAD
+cd $INSTALL_DOWNLOAD
+
+# Download, extract, build
+# Write here the specific commands to download, extract, build the software, typically similar to:
+ARCHIVE=$SOFTWARE-${VERSION}c.Linux.tar.gz
+# If archive was previously downloaded, use the local one, otherwise get it from remote site
+if [[ -f ${!INSTALL_HOME}/archive/$ARCHIVE ]]
+then
+  echo "Archive $ARCHIVE already in ${!INSTALL_HOME}/archive/: using it..."
+  cp -a ${!INSTALL_HOME}/archive/$ARCHIVE .
+else
+  echo "Archive $ARCHIVE not in ${!INSTALL_HOME}/archive/: downloading it..."
+  wget http://www.dropbox.com/s/b4guq6ysyhi7eqm/$ARCHIVE -O $ARCHIVE
+fi
+tar zxvf $ARCHIVE
+
+SOFTWARE_DIR=$SOFTWARE-$VERSION
+cd $SOFTWARE_DIR
+
+# Update signalp program path with dynamic path cmd
+sed -i "s,\$ENV{SIGNALP} = '/usr/cbs/bio/src/$SOFTWARE_DIR',use FindBin;\n    \$ENV{SIGNALP} = \$FindBin::Bin," signalp
+
+# Update where to store temporary files (writable to all users)
+mkdir tmp
+sed -i "s,my \$outputDir = \"/var/tmp,my \$outputDir = \"\$ENV{SIGNALP}/tmp," signalp
+
+# Update max number of sequences per run
+sed -i 's/$MAX_ALLOWED_ENTRIES=10000;/$MAX_ALLOWED_ENTRIES=2000000;/' signalp
+
+# Update Perl script shebang
+sed -i "s,#!/usr/bin/perl,#!/usr/bin/env perl," signalp
+
+# Test SignalP on the 10 eukaryotic sequences shipped with the package
+echo "Testing SignalP..."
+./signalp -t euk -f short test/euk10.fsa > euk10.fsa.short_out
+./signalp -t euk -f long test/euk10.fsa > euk10.fsa.long_out
+./signalp -t euk -f all test/euk10.fsa > euk10.fsa.all_out
+./signalp -t euk -f summary test/euk10.fsa > euk10.fsa.summary_out
+echo "The output files *_out  should be identical to the corresponding files in '$SOFTWARE_DIR/test', save round number differences"
+echo "diff test/euk10.fsa.short_out euk10.fsa.short_out"
+diff test/euk10.fsa.short_out euk10.fsa.short_out
+echo "diff test/euk10.fsa.long_out euk10.fsa.long_out"
+diff test/euk10.fsa.long_out euk10.fsa.long_out
+echo "diff test/euk10.fsa.all_out euk10.fsa.all_out"
+diff test/euk10.fsa.all_out euk10.fsa.all_out
+echo "diff test/euk10.fsa.summary_out euk10.fsa.summary_out"
+diff test/euk10.fsa.summary_out euk10.fsa.summary_out
+echo "Testing SignalP finished."
 
 # Add permissions and install software
-chmod -R ug+rwX .
-chmod -R o+rX .
-mv -i signalp-*.Linux.tar.gz $MUGQIC_INSTALL_HOME/archive 
-
-
+cd $INSTALL_DOWNLOAD
+chmod -R ug+rwX,o+rX .
+mv -i $SOFTWARE_DIR $INSTALL_DIR
+# Store archive if not already present or if different from the previous one
+if [[ ! -f ${!INSTALL_HOME}/archive/$ARCHIVE || `diff ${!INSTALL_HOME}/archive/$ARCHIVE $ARCHIVE` ]]
+then
+  mv -i $ARCHIVE ${!INSTALL_HOME}/archive/
+fi
 
 # Module file
 echo "#%Module1.0
 proc ModulesHelp { } {
-       puts stderr \"\tMUGQIC - $SOFTWARE \" ; 
+  puts stderr \"\tMUGQIC - $SOFTWARE \"
 }
-module-whatis \"$SOFTWARE  \" ; 
+module-whatis \"$SOFTWARE\"
 
-set             root                \$::env(MUGQIC_INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE-$VERSION ;  
-prepend-path    PATH                \$root ;
+set             root                \$::env($INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE_DIR
+prepend-path    PATH                \$root
 " > $VERSION
-
 
 ################################################################################
 # Everything below this line should be generic and not modified
@@ -98,10 +144,19 @@ prepend-path    PATH                \$root ;
 echo "#%Module1.0
 set ModulesVersion \"$VERSION\"" > .version
 
+# Set module directory path by removing '_INSTALL_HOME' in $INSTALL_HOME and lowercasing the result
+MODULE_DIR=${!INSTALL_HOME}/modulefiles/`echo ${INSTALL_HOME/_INSTALL_HOME/} | tr '[:upper:]' '[:lower:]'`/$SOFTWARE
+
+# Create module directory with permissions if necessary
+if [[ ! -d $MODULE_DIR ]]
+then
+  mkdir $MODULE_DIR
+  chmod ug+rwX,o+rX $MODULE_DIR
+fi
+
 # Add permissions and install module
-mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
-chmod -R ug+rwX $VERSION .version
-chmod -R o+rX $VERSION .version
-mv $VERSION .version $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
+chmod ug+rwX,o+rX $VERSION .version
+mv $VERSION .version $MODULE_DIR
 
-
+# Clean up temporary installation files if any
+rm -rf $INSTALL_DOWNLOAD

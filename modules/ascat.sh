@@ -1,17 +1,17 @@
 #!/bin/bash
 
 #
-# RSEM
+# ASCAT
 #
 
-SOFTWARE=rsem
-VERSION=1.2.12
+SOFTWARE=ASCAT
+VERSION=2.3
 
-# 'MUGQIC_INSTALL_HOME_DEV' for development, 'MUGQIC_INSTALL_HOME' for production (don't write '$' before!)
 INSTALL_HOME=MUGQIC_INSTALL_HOME
 
 # Indirection call to use $INSTALL_HOME value as variable name
-INSTALL_DIR=${!INSTALL_HOME}/software/$SOFTWARE
+SOFTWARE_DIR=${SOFTWARE}${VERSION}
+INSTALL_DIR=${!INSTALL_HOME}/software/$SOFTWARE/
 
 # Create install directory with permissions if necessary
 if [[ ! -d $INSTALL_DIR ]]
@@ -25,7 +25,8 @@ mkdir $INSTALL_DOWNLOAD
 cd $INSTALL_DOWNLOAD
 
 # Download, extract, build
-ARCHIVE=$SOFTWARE-$VERSION.tar.gz
+ARCHIVE=ASCAT2.3.zip
+
 # If archive was previously downloaded, use the local one, otherwise get it from remote site
 if [[ -f ${!INSTALL_HOME}/archive/$ARCHIVE ]]
 then
@@ -33,13 +34,12 @@ then
   cp -a ${!INSTALL_HOME}/archive/$ARCHIVE .
 else
   echo "Archive $ARCHIVE not in ${!INSTALL_HOME}/archive/: downloading it..."
-  wget http://deweylab.biostat.wisc.edu/rsem/src/$ARCHIVE
+  echo "It's not currently available on-line. An email to the author is needed to get the software"
+  #wget http://heim.ifi.uio.no/bioinf/Projects/ASCAT/$ARCHIVE
 fi
-tar zxvf $ARCHIVE
 
-SOFTWARE_DIR=$SOFTWARE-$VERSION
-cd $SOFTWARE_DIR
-make
+ls -l 
+unzip $ARCHIVE
 
 # Add permissions and install software
 cd $INSTALL_DOWNLOAD
@@ -54,12 +54,12 @@ fi
 # Module file
 echo "#%Module1.0
 proc ModulesHelp { } {
-  puts stderr \"\tMUGQIC - $SOFTWARE \"
+  puts stderr \"\tMUGQIC - $SOFTWARE \" ;
 }
-module-whatis \"$SOFTWARE\"
+module-whatis \"$SOFTWARE\" ;
 
 set             root                \$::env($INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE_DIR
-prepend-path    PATH                \$root
+setenv          ${SOFTWARE}_HOME    \$root/
 " > $VERSION
 
 ################################################################################

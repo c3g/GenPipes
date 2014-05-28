@@ -35,7 +35,15 @@ cd $INSTALL_DOWNLOAD
 # Download, extract, build
 # Write here the specific commands to download, extract, build the software, typically similar to:
 ARCHIVE=$SOFTWARE-$VERSION.(zip|tar.gz|tar.bz2)  ## TO BE MODIFIED WITH SPECIFIC ARCHIVE
-wget http://www.software_lab.org/download/$ARCHIVE  ## TO BE MODIFIED WITH SPECIFIC URL
+# If archive was previously downloaded, use the local one, otherwise get it from remote site
+if [[ -f ${!INSTALL_HOME}/archive/$ARCHIVE ]]
+then
+  echo "Archive $ARCHIVE already in ${!INSTALL_HOME}/archive/: using it..."
+  cp -a ${!INSTALL_HOME}/archive/$ARCHIVE .
+else
+  echo "Archive $ARCHIVE not in ${!INSTALL_HOME}/archive/: downloading it..."
+  wget http://www.software_lab.org/download/$ARCHIVE  ## TO BE MODIFIED WITH SPECIFIC URL
+fi
 (unzip|tar zxvf|tar jxvf) $ARCHIVE  ## TO BE MODIFIED WITH SPECIFIC COMMAND
 
 SOFTWARE_DIR=$SOFTWARE-$VERSION  ## TO BE MODIFIED WITH SPECIFIC SOFTWARE DIRECTORY IF NECESSARY
@@ -47,7 +55,11 @@ make  ## TO BE ADDED AND MODIFIED IF NECESSARY
 cd $INSTALL_DOWNLOAD
 chmod -R ug+rwX,o+rX .
 mv -i $SOFTWARE_DIR $INSTALL_DIR
-mv -i $ARCHIVE ${!INSTALL_HOME}/archive
+# Store archive if not already present or if different from the previous one
+if [[ ! -f ${!INSTALL_HOME}/archive/$ARCHIVE || `diff ${!INSTALL_HOME}/archive/$ARCHIVE $ARCHIVE` ]]
+then
+  mv -i $ARCHIVE ${!INSTALL_HOME}/archive/
+fi
 
 # Module file
 echo "#%Module1.0

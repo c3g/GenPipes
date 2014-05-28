@@ -1,40 +1,67 @@
 #!/bin/bash
 
-# rm -rf /mnt/parallel_scratch_mp2_wipe_on_august_2014/bourque/bourque_group/analyste/software/cd-hit
-SOFTWARE="cd-hit"
-VERSION="4.5.4-2011-03-07"
-INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/$SOFTWARE
-mkdir -p $INSTALL_PATH
-cd $INSTALL_PATH
+#
+# CD-HIT
+#
+
+SOFTWARE=cd-hit
+VERSION=4.5.4-2011-03-07
+
+# 'MUGQIC_INSTALL_HOME_DEV' for development, 'MUGQIC_INSTALL_HOME' for production (don't write '$' before!)
+INSTALL_HOME=MUGQIC_INSTALL_HOME
+
+# Indirection call to use $INSTALL_HOME value as variable name
+INSTALL_DIR=${!INSTALL_HOME}/software/$SOFTWARE
+
+# Create install directory with permissions if necessary
+if [[ ! -d $INSTALL_DIR ]]
+then
+  mkdir $INSTALL_DIR
+  chmod ug+rwX,o+rX $INSTALL_DIR
+fi
+
+INSTALL_DOWNLOAD=$INSTALL_DIR/tmp
+mkdir $INSTALL_DOWNLOAD
+cd $INSTALL_DOWNLOAD
 
 # Download, extract, build
-wget http://www.bioinformatics.org/downloads/index.php/cd-hit/cd-hit-v$VERSION.tgz
-tar xvf "cd-hit-v$VERSION.tgz"
-cd "cd-hit-v$VERSION"
+# Write here the specific commands to download, extract, build the software, typically similar to:
+ARCHIVE=$SOFTWARE-v$VERSION.tgz
+# If archive was previously downloaded, use the local one, otherwise get it from remote site
+if [[ -f ${!INSTALL_HOME}/archive/$ARCHIVE ]]
+then
+  echo "Archive $ARCHIVE already in ${!INSTALL_HOME}/archive/: using it..."
+  cp -a ${!INSTALL_HOME}/archive/$ARCHIVE .
+else
+  echo "Archive $ARCHIVE not in ${!INSTALL_HOME}/archive/: downloading it..."
+  wget http://www.bioinformatics.org/downloads/index.php/$SOFTWARE/$ARCHIVE
+fi
+tar zxvf $ARCHIVE
+
+SOFTWARE_DIR=$SOFTWARE-v$VERSION
+cd $SOFTWARE_DIR
 make -j8 openmp=yes
 
-
-cd ..
-
-
 # Add permissions and install software
-chmod -R ug+rwX .
-chmod -R o+rX .
-mv -if cd-hit-v$VERSION.tgz $MUGQIC_INSTALL_HOME/archive/ 
-
-
+cd $INSTALL_DOWNLOAD
+chmod -R ug+rwX,o+rX .
+mv -i $SOFTWARE_DIR $INSTALL_DIR
+# Store archive if not already present or if different from the previous one
+if [[ ! -f ${!INSTALL_HOME}/archive/$ARCHIVE || `diff ${!INSTALL_HOME}/archive/$ARCHIVE $ARCHIVE` ]]
+then
+  mv -i $ARCHIVE ${!INSTALL_HOME}/archive/
+fi
 
 # Module file
 echo "#%Module1.0
 proc ModulesHelp { } {
-       puts stderr \"\tMUGQIC - $SOFTWARE \" ; 
+  puts stderr \"\tMUGQIC - $SOFTWARE \" ;
 }
-module-whatis \"$SOFTWARE  \" ; 
+module-whatis \"$SOFTWARE\" ;
 
-set             root                \$::env(MUGQIC_INSTALL_HOME)/software/$SOFTWARE/cd-hit-v$VERSION ;  
+set             root                \$::env($INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE_DIR
 prepend-path    PATH                \$root ;
 " > $VERSION
-
 
 ################################################################################
 # Everything below this line should be generic and not modified
@@ -43,10 +70,19 @@ prepend-path    PATH                \$root ;
 echo "#%Module1.0
 set ModulesVersion \"$VERSION\"" > .version
 
+# Set module directory path by removing '_INSTALL_HOME' in $INSTALL_HOME and lowercasing the result
+MODULE_DIR=${!INSTALL_HOME}/modulefiles/`echo ${INSTALL_HOME/_INSTALL_HOME/} | tr '[:upper:]' '[:lower:]'`/$SOFTWARE
+
+# Create module directory with permissions if necessary
+if [[ ! -d $MODULE_DIR ]]
+then
+  mkdir $MODULE_DIR
+  chmod ug+rwX,o+rX $MODULE_DIR
+fi
+
 # Add permissions and install module
-mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
-chmod -R ug+rwX $VERSION .version
-chmod -R o+rX $VERSION .version
-mv $VERSION .version $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
+chmod ug+rwX,o+rX $VERSION .version
+mv $VERSION .version $MODULE_DIR
 
-
+# Clean up temporary installation files if any
+rm -rf $INSTALL_DOWNLOAD

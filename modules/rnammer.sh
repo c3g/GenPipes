@@ -1,10 +1,13 @@
 #!/bin/bash
 
+#
+# RNAmmer
+#
 
 ### NOTE (FL): rnmmer is a pain to install:
 # - requires 2.x version of hmmer
 # - requires XML::Simple module
-# - see http://blog.karinlag.no/2013/10/rnammer-install/ for detauls
+# - see http://blog.karinlag.no/2013/10/rnammer-install/ for details
 
 
 # Installation notes:
@@ -14,11 +17,9 @@
 # In the 'rnammer' software configuration, edit the rnammer script to point
 # $HMMSEARCH_BINARY = "/path/to/hmmsearch2";
 # Be sure that rnammer functions correctly by executing it on their provided sample data.  RNAMMER is quite useful, but the current implementation is not robust to error, so check carefully.
-# 
-# 
 
 
-# RNAmmer 1.2		INSTALLATION INSTRUCTIONS
+# RNAmmer 1.2   INSTALLATION INSTRUCTIONS
 # 
 # 
 # DESCRIPTION
@@ -32,8 +33,8 @@
 # 
 # More information about the method can be found at:
 # 
-# 	http://www.cbs.dtu.dk/services/RNAmmer/
-# 	http://www.cbs.dtu.dk/ws/RNAmmer/
+#   http://www.cbs.dtu.dk/services/RNAmmer/
+#   http://www.cbs.dtu.dk/ws/RNAmmer/
 # 
 # DOWNLOAD
 # 
@@ -41,7 +42,7 @@
 # It may be downloaded only by special agreement.  For academic users there is a
 # download site at:
 # 
-# 	http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?rnammer
+#   http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?rnammer
 # 
 # Other users are requested to contact software@cbs.dtu.dk.
 # 
@@ -51,15 +52,15 @@
 # Make sure that your server has a complete UNIX installation. Specifically, the
 # following programs are necessary:
 # 
-# 	Perl scripting language with support for Getopt::Long module installed
-# 	hmmsearch	- the profile HMM search program from HMMER
+#   Perl scripting language with support for Getopt::Long module installed
+#   hmmsearch - the profile HMM search program from HMMER
 # 
 # INSTALLATION
 # 
 # 1. Decide where you wish to keep the software. Uncompress and untar
 #    the package in that location:
 # 
-# 	cat rnammer-1.2.tar.Z | gunzip | tar xvf -
+#   cat rnammer-1.2.tar.Z | gunzip | tar xvf -
 # 
 #    This will produce a directory  'rnammer-1.2.'.
 # 
@@ -67,7 +68,7 @@
 # 
 # 3. Test RNAmmer on the test sequences shipped with the package:
 # 
-# 	perl rnammer -S bac -m lsu,ssu,tsu -gff - < example/ecoli.fsa
+#   perl rnammer -S bac -m lsu,ssu,tsu -gff - < example/ecoli.fsa
 # 
 # 4. Move or copy the 'rnammer' script to a directory in the users' path.
 # 
@@ -87,70 +88,99 @@
 # 
 # CBS, July 19 2007
 
-
-
-
-
-# rm -rf /mnt/parallel_scratch_mp2_wipe_on_august_2014/bourque/bourque_group/analyste/software/rnammers
-
-# HMMSEARCH2PATH
-module load mugqic/hmmer/2.3.2
-HMMSEARCH2PATH=`which hmmsearch`
-
-# Required perl installation
-module load mugqic/perl/5.18.2
-# cpan install XML::Simple
-
-# need to ln -s  hmmmer2
 SOFTWARE=rnammer
 VERSION=1.2
-INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/$SOFTWARE/$SOFTWARE-$VERSION 
-mkdir -p $INSTALL_PATH
-cd $INSTALL_PATH
+
+# 'MUGQIC_INSTALL_HOME_DEV' for development, 'MUGQIC_INSTALL_HOME' for production (don't write '$' before!)
+INSTALL_HOME=MUGQIC_INSTALL_HOME
+
+# Indirection call to use $INSTALL_HOME value as variable name
+INSTALL_DIR=${!INSTALL_HOME}/software/$SOFTWARE
+
+# Create install directory with permissions if necessary
+if [[ ! -d $INSTALL_DIR ]]
+then
+  mkdir $INSTALL_DIR
+  chmod ug+rwX,o+rX $INSTALL_DIR
+fi
+
+INSTALL_DOWNLOAD=$INSTALL_DIR/tmp
+mkdir $INSTALL_DOWNLOAD
+cd $INSTALL_DOWNLOAD
 
 # Download, extract, build
-wget https://www.dropbox.com/s/5j05i5vs2s18tee/rnammer-$VERSION.src.tar.Z -O rnammer-$VERSION.src.tar.Z
-tar xvfz rnammer-$VERSION.src.tar.Z
-mv -if rnammer-$VERSION.src.tar.Z $MUGQIC_INSTALL_HOME/archive
+# Write here the specific commands to download, extract, build the software, typically similar to:
+ARCHIVE=$SOFTWARE-$VERSION.src.tar.Z
+SOFTWARE_DIR=$SOFTWARE-$VERSION
+mkdir $SOFTWARE_DIR
+cd $SOFTWARE_DIR
+# If archive was previously downloaded, use the local one, otherwise get it from remote site
+if [[ -f ${!INSTALL_HOME}/archive/$ARCHIVE ]]
+then
+  echo "Archive $ARCHIVE already in ${!INSTALL_HOME}/archive/: using it..."
+  cp -a ${!INSTALL_HOME}/archive/$ARCHIVE .
+else
+  echo "Archive $ARCHIVE not in ${!INSTALL_HOME}/archive/: downloading it..."
+  # Must send a request for academic users to get this URL
+  wget https://www.dropbox.com/s/5j05i5vs2s18tee/$ARCHIVE -O $ARCHIVE
+fi
+tar zxvf $ARCHIVE
+mv $ARCHIVE $INSTALL_DOWNLOAD
 
+# Various custom modifications due to poor original coding...
+# Remove hmmsearch absolute path (IMPORTANT: module mugqic/hmmer/2.3.2 must be loaded to run rnammer!)
+sed -i "s,HMMSEARCH_BINARY = \"\/[^ ]*hmmsearch,HMMSEARCH_BINARY = \"hmmsearch,g" rnammer
+# Also replace hmmsearch file check with 'which' to avoid error when using hmmsearch via module mugqic/hmmer/2.3.2
+sed -i "s,err_exit ( \"read_configuration(): Binary 'hmmsearch' not found (specify with '\[hmmsearch\]=)\" ) unless -f \$config{hmmsearch},use File::Which;\n\terr_exit ( \"read_configuration(): Binary 'hmmsearch' not found (specify with '[hmmsearch]=)\" ) unless which(\$config{hmmsearch}),g" core-rnammer
 
-# link to hmmsearch 2.3.2
-ln -s $HMMSEARCH2PATH hmmsearch2
-sed -i "s,\$HMMSEARCH_BINARY = \"/usr/cbs/bio/bin/linux64/hmmsearch\";,\$HMMSEARCH_BINARY = \"$PWD/hmmsearch2\";,g" rnammer 
+# Remove perl absolute path (IMPORTANT: module mugqic/perl with XML::Simple must be loaded to run rnammer!)
+sed -i "s,PERL = \"\/[^ ]*perl,PERL = \"perl,g" rnammer
 
-# Paths
-sed -i "s,\"/usr/cbs/bio/src/rnammer-1.2\";,\"$PWD\";,g" rnammer 
+# Update rnammer program path with dynamic path cmd
+sed -i "s,my \$INSTALL_PATH = \"/usr/cbs/bio/src/rnammer-1.2\",use FindBin;\nmy \$INSTALL_PATH = \$FindBin::Bin," rnammer
 
-# perl
-sed -i s,"#\!/usr/bin/perl,#\!/usr/bin/env perl,g" rnammer 
-sed -i s,"#\!/usr/bin/perl,#\!/usr/bin/env perl,g" xml2fsa
-sed -i s,"#\!/usr/bin/perl,#\!/usr/bin/env perl,g" xml2gff
-sed -i s,"#\!/usr/bin/perl,#\!/usr/bin/env perl,g" core-rnammer
+# Update Perl script shebangs
+sed -i s,"#\!/usr/bin/perl,#\!/usr/bin/env perl,g" core-rnammer rnammer xml2fsa xml2gff
 
 # Crap -cpu 1 issue
-# http://blog.karinlag.no/2013/10/rnammer-install/
+# Cf: http://blog.karinlag.no/2013/10/rnammer-install/
 sed -i "s,--cpu 1,,g" core-rnammer
 
-## Test
-perl rnammer -S bac -m lsu,ssu,tsu -gff - < example/ecoli.fsa
+# Test RNAmmer
+echo "Testing RNAmmer..."
+module load mugqic/hmmer/2.3.2
+module load mugqic/perl/5.18.2
+./rnammer -S bac -m lsu,ssu,tsu -xml ecoli.xml -gff ecoli.gff -h ecoli.hmmreport < example/ecoli.fsa
+echo "The output files ecoli.xml, ecoli.gff and ecoli.hmmreport should be identical to the corresponding files in '$SOFTWARE_DIR/example'"
+echo "diff example/ecoli.xml ecoli.xml"
+diff example/ecoli.xml ecoli.xml
+echo "diff example/ecoli.gff ecoli.gff"
+diff example/ecoli.gff ecoli.gff
+echo "diff example/ecoli.hmmreport ecoli.hmmreport"
+diff example/ecoli.hmmreport ecoli.hmmreport
+echo "Testing RNAmmer finished."
 
 # Add permissions and install software
-cd ..
-chmod -R ug+rwX .
-chmod -R o+rX .
-
+cd $INSTALL_DOWNLOAD
+chmod -R ug+rwX,o+rX .
+mv -i $SOFTWARE_DIR $INSTALL_DIR
+# Store archive if not already present or if different from the previous one
+if [[ ! -f ${!INSTALL_HOME}/archive/$ARCHIVE || `diff ${!INSTALL_HOME}/archive/$ARCHIVE $ARCHIVE` ]]
+then
+  mv -i $ARCHIVE ${!INSTALL_HOME}/archive/
+fi
 
 # Module file
 echo "#%Module1.0
 proc ModulesHelp { } {
-       puts stderr \"\tMUGQIC - $SOFTWARE \" ; 
+  puts stderr \"\tMUGQIC - $SOFTWARE \"
 }
-module-whatis \"$SOFTWARE  \" ; 
+module-whatis \"$SOFTWARE\"
 
-set             root                \$::env(MUGQIC_INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE-$VERSION ;  
-prepend-path    PATH                \$root ;
+prereq                              mugqic/hmmer/2.3.2
+set             root                \$::env($INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE_DIR
+prepend-path    PATH                \$root
 " > $VERSION
-
 
 ################################################################################
 # Everything below this line should be generic and not modified
@@ -159,10 +189,19 @@ prepend-path    PATH                \$root ;
 echo "#%Module1.0
 set ModulesVersion \"$VERSION\"" > .version
 
+# Set module directory path by removing '_INSTALL_HOME' in $INSTALL_HOME and lowercasing the result
+MODULE_DIR=${!INSTALL_HOME}/modulefiles/`echo ${INSTALL_HOME/_INSTALL_HOME/} | tr '[:upper:]' '[:lower:]'`/$SOFTWARE
+
+# Create module directory with permissions if necessary
+if [[ ! -d $MODULE_DIR ]]
+then
+  mkdir $MODULE_DIR
+  chmod ug+rwX,o+rX $MODULE_DIR
+fi
+
 # Add permissions and install module
-mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
-chmod -R ug+rwX $VERSION .version
-chmod -R o+rX $VERSION .version
-mv $VERSION .version $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
+chmod ug+rwX,o+rX $VERSION .version
+mv $VERSION .version $MODULE_DIR
 
-
+# Clean up temporary installation files if any
+rm -rf $INSTALL_DOWNLOAD

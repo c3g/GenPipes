@@ -1,14 +1,14 @@
 #!/bin/bash
 
 #
-# RSEM
+# BLAT
 #
 
-SOFTWARE=rsem
-VERSION=1.2.12
+SOFTWARE=blat
+VERSION=34
 
 # 'MUGQIC_INSTALL_HOME_DEV' for development, 'MUGQIC_INSTALL_HOME' for production (don't write '$' before!)
-INSTALL_HOME=MUGQIC_INSTALL_HOME
+INSTALL_HOME=MUGQIC_INSTALL_HOME_DEV
 
 # Indirection call to use $INSTALL_HOME value as variable name
 INSTALL_DIR=${!INSTALL_HOME}/software/$SOFTWARE
@@ -25,31 +25,23 @@ mkdir $INSTALL_DOWNLOAD
 cd $INSTALL_DOWNLOAD
 
 # Download, extract, build
-ARCHIVE=$SOFTWARE-$VERSION.tar.gz
-# If archive was previously downloaded, use the local one, otherwise get it from remote site
-if [[ -f ${!INSTALL_HOME}/archive/$ARCHIVE ]]
-then
-  echo "Archive $ARCHIVE already in ${!INSTALL_HOME}/archive/: using it..."
-  cp -a ${!INSTALL_HOME}/archive/$ARCHIVE .
-else
-  echo "Archive $ARCHIVE not in ${!INSTALL_HOME}/archive/: downloading it..."
-  wget http://deweylab.biostat.wisc.edu/rsem/src/$ARCHIVE
-fi
-tar zxvf $ARCHIVE
+# Write here the specific commands to download, extract, build the software, typically similar to:
+ARCHIVE=${SOFTWARE}Src$VERSION.zip
+wget http://users.soe.ucsc.edu/~kent/src/$ARCHIVE
+unzip $ARCHIVE
 
 SOFTWARE_DIR=$SOFTWARE-$VERSION
-cd $SOFTWARE_DIR
-make
+mkdir $INSTALL_DIR/$SOFTWARE_DIR
+cd ${SOFTWARE}Src
+# Won't compile elsewise
+sed -i 's/ -Werror//g' inc/common.mk
+export MACHTYPE=x86_64
+make BINDIR=$INSTALL_DIR/$SOFTWARE_DIR
 
 # Add permissions and install software
 cd $INSTALL_DOWNLOAD
-chmod -R ug+rwX,o+rX .
-mv -i $SOFTWARE_DIR $INSTALL_DIR
-# Store archive if not already present or if different from the previous one
-if [[ ! -f ${!INSTALL_HOME}/archive/$ARCHIVE || `diff ${!INSTALL_HOME}/archive/$ARCHIVE $ARCHIVE` ]]
-then
-  mv -i $ARCHIVE ${!INSTALL_HOME}/archive/
-fi
+chmod -R ug+rwX,o+rX . $INSTALL_DIR/$SOFTWARE_DIR
+mv -i $ARCHIVE ${!INSTALL_HOME}/archive
 
 # Module file
 echo "#%Module1.0
