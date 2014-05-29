@@ -5,14 +5,14 @@
 #
 
 SOFTWARE=bvatools
-VERSION=1.2
+VERSION=1.3
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/$SOFTWARE
 INSTALL_DOWNLOAD=$INSTALL_PATH/tmp
 cd $MUGQIC_INSTALL_HOME/archive
 
 # Download, extract, build
 # Write here the specific commands to download, extract, build the software, typically similar to:
-wget https://bitbucket.org/mugqic/${SOFTWARE}/downloads/${SOFTWARE}-${VERSION}.zip
+wget https://bitbucket.org/mugqic/${SOFTWARE}/downloads/${SOFTWARE}-${VERSION}.zip -O ${SOFTWARE}-${VERSION}.zip
 
 mkdir -p $INSTALL_PATH
 cd $INSTALL_PATH
