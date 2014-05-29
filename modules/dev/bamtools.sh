@@ -26,6 +26,7 @@ module-whatis \"Ray Parallel genome assemblies for parallel DNA sequencing \"
             
 set             root               \$::env(MUGQIC_INSTALL_HOME)/software/bamtools/bamtools-$VERSION
 prepend-path    PATH               \$root/bin
+prepend-path    LD_LIBRARY_PATH    \$root/lib
 " > $VERSION
 
 # version file
