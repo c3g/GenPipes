@@ -21,6 +21,10 @@ class Job:
             ", ".join(self.input_files)
 
     @property
+    def id(self):
+        return self._id
+
+    @property
     def config(self):
         return self._config
 
@@ -72,18 +76,18 @@ class Job:
 
         return is_job_up2date
 
-config = Config("/lb/project/mugqic/projects/jfillon_pipelines/dnaseq/bam2fastq/dnaSeq.abacus.ini")
-job = Job(
-    config,
-    ["/lb/project/mugqic/projects/jfillon_pipelines/dnaseq/bam2fastq/dnaSeq.abacus.ini", "/lb/project/mugqic/projects/jfillon_pipelines/dnaseq/bam2fastq/project.nanuq.csv"],
-    ["/lb/project/mugqic/projects/jfillon_pipelines/dnaseq/bam2fastq/output_file"],
-    [
-        ["trim", "moduleVersion.trimmomatic"],
-        ["aln", "moduleVersion.bwa"],
-        ["recalibration", "moduleVersion.picard"]
-    ])
-
-job.command = "ls -l"
-print job.command_with_modules
-print job.is_up2date
-job.show()
+#config = Config("/lb/project/mugqic/projects/jfillon_pipelines/dnaseq/bam2fastq/dnaSeq.abacus.ini")
+#job = Job(
+#    config,
+#    ["/lb/project/mugqic/projects/jfillon_pipelines/dnaseq/bam2fastq/dnaSeq.abacus.ini", "/lb/project/mugqic/projects/jfillon_pipelines/dnaseq/bam2fastq/project.nanuq.csv"],
+#    ["/lb/project/mugqic/projects/jfillon_pipelines/dnaseq/bam2fastq/output_file"],
+#    [
+#        ["trim", "moduleVersion.trimmomatic"],
+#        ["aln", "moduleVersion.bwa"],
+#        ["recalibration", "moduleVersion.picard"]
+#    ])
+#
+#job.command = "ls -l"
+#print job.command_with_modules
+#print job.is_up2date
+#job.show()

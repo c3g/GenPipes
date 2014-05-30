@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import argparse
+
 from Pipeline import *
 from Trimmomatic import *
 
@@ -7,26 +9,37 @@ samples = ["sampleA", "sampleB"]
 readsets = ["readsetA_1", "readsetA_2", "readsetB_1", "readsetB_2"]
 
 def trim(readset):
-    return trimmomatic(readset, readset + ".output", "")
+    return trimmomatic(readset, readset + ".trim")
 
-def align(readset):
-    return trinity(readset + ".output")
+def normalization(readset):
+    return normalize(readset + ".trim", readset + ".trim.normalized")
 
-def blast(sample):
+def align():
+    return trinity([readset + ".trim.normalized" for readset in readsets])
+
+def blast():
     return blastx("Trinity.fasta")
 
-def deliverable(sample):
-    return nozzle("stats.csv", "report")
+def abundance(sample):
+    return rsem("Trinity.fasta", sample)
 
-steps = [
+def annotate():
+    return trinotate("Trinity.fasta")
+
+def deliverable():
+    return nozzle(["Trinity.fasta", "Trinity_stats.csv", "trinotate.tsv"] + ["rsem_" + sample + ".fpkm" for sample in samples], "report")
+
+step_dict_map = [
     {"name": trim, "loop": readsets},
-    {"name": align, "loop": readsets, "parents": [trim]},
-    {"name": blast, "loop": samples},
-    {"name": deliverable, "loop": GLOBAL, "parents": [align, blast]}
+    {"name": normalization, "loop": readsets},
+    {"name": align, "loop": GLOBAL},
+    {"name": blast, "loop": GLOBAL},
+    {"name": abundance, "loop": samples},
+    {"name": annotate, "loop": GLOBAL},
+    {"name": deliverable, "loop": GLOBAL}
 ]
 
-#obj1 = Pipeline('rnaSeqDenovoAssembly', [], ["trim", "align", "blast", "abundance", "dge", "trinotate", "deliverable"], "1,3,5-7")
-#obj1.show()
-obj2 = Pipeline('rnaSeqDenovoAssembly2', [], steps, "1,2,3-4")
-obj2.show()
-print steps[2]
+pipeline = Pipeline([], step_dict_map, "1-7")
+pipeline.parser.add_argument("-d", "--design", help="design file", type=file)
+args = pipeline.parser.parse_args()
+pipeline.show()

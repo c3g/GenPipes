@@ -3,17 +3,18 @@
 import re
 
 class Step:
-    def __init__(self, get_job_by_item, loop):
+    def __init__(self, create_job, loop):
         # Step name is used in Bash $JOB_ID variable, hence only alphanumeric and "_" characters are allowed
-        if re.search("^[a-zA-Z]\w+$", get_job_by_item.__name__):
-            self._name = get_job_by_item.__name__
+        step_name = create_job.__name__
+        if re.search("^[a-zA-Z]\w+$", step_name):
+            self._name = step_name
         else:
-            raise Exception("Error: step name \"" + get_job_by_item.__name__ +
+            raise Exception("Error: step name \"" + step_name +
                 "\" is invalid (should match [a-zA-Z][a-zA-Z0-9_]+)!")
 
-        self._name = get_job_by_item.__name__
+        self._name = step_name
         self._loop = loop
-        self._get_job_by_item = get_job_by_item
+        self._create_job = create_job
         self._jobs = []
 
     @property
@@ -25,12 +26,13 @@ class Step:
         return self._loop
 
     @property
-    def get_job_by_item(self):
-        return self._get_job_by_item
+    def create_job(self):
+        return self._create_job
 
     @property
     def jobs(self):
         return self._jobs
 
-    def job_id(self, job):
-        return self.name + "_" + str(self.jobs.index(job) + 1) + "_JOB_ID"
+    def add_job(self, job):
+        self.jobs.append(job)
+        job.id = self.name + "_" + str(len(self.jobs)) + "_JOB_ID"
