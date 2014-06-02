@@ -78,6 +78,24 @@ sub rnaseq_denovo {
   }
 }
 
+sub chipseq {
+  ### clean current directory for RNA-Seq De Novo temporary files
+  &rawReads;
+  foreach my $folder ((
+    "reads",
+    "alignment",
+    "metrics",
+    "graphs",
+    "tracks",
+    "peak_call",
+    "annotation"
+    )) {
+    rmtree($folder);
+    print "the $folder folder is now removed\n";
+  }
+  &tags;
+}
+
 sub rawReads {
   ### cleaning raw_reads if fastq are only symlink
   my $rrClean = 1 ;
@@ -229,6 +247,17 @@ sub metrics {
   }
    print "\n----------------------------------\n";
   print "the metrics folder is now cleaned\n";
+  print "----------------------------------\n";
+}
+  
+sub tags {
+  print "Cleaning the tags folder:\n";
+  foreach my $name ( <tags/*/*.tsv> ) {
+    print "$name \n";
+    rmtree($name);
+  }
+   print "\n----------------------------------\n";
+  print "the tags folder is now cleaned\n";
   print "----------------------------------\n";
 }
   
