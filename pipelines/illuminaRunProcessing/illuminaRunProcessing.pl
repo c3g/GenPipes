@@ -727,14 +727,20 @@ sub getGenomeList {
     closedir(SPECIES_DIR);
     for my $buildDir (@buildDirs) {
       my $fasta = "$rootDir/$speciesDir/$buildDir/fasta/bwa/$buildDir.fasta";
+      my $fa = "$rootDir/$speciesDir/$buildDir/fasta/bwa/$buildDir.fa";
       if (-r $fasta) {
         $genomes{$speciesDir}{$buildDir}{"bwa"}=$fasta;
+      } elsif (-r $fa) {
+        $genomes{$speciesDir}{$buildDir}{"bwa"}=$fa;
       } else {
         #print STDERR "Available Genomes Scan: No BWA reference genome found for the build '$buildDir' of the '$speciesDir' species\n";
       }
       $fasta = "$rootDir/$speciesDir/$buildDir/fasta/$buildDir.fasta";
+      $fa = "$rootDir/$speciesDir/$buildDir/fasta/$buildDir.fa";
       if (-r $fasta) {
         $genomes{$speciesDir}{$buildDir}{"fasta"}=$fasta;
+      } elsif (-r $fa) {
+        $genomes{$speciesDir}{$buildDir}{"fasta"}=$fa;
       } else {
         #print STDERR "Available Genomes Scan: No Fasta reference genome found for the build '$buildDir' of the '$speciesDir' species\n";
       }
@@ -781,7 +787,7 @@ sub getGenomeReference {
     if (defined($species)) {
       # defaulting to a basic alignement with BWA
       for my $defaultGenomeRegexp (keys %$rHoH_defaultGenomes) {
-        if ($species =~ /$defaultGenomeRegexp/i) {
+        if ($species =~ /^\s*$defaultGenomeRegexp\s*$/i) {
           my $refSpecies = $rHoH_defaultGenomes->{$defaultGenomeRegexp}->{"species"};
           my $build = $rHoH_defaultGenomes->{$defaultGenomeRegexp}->{"build"};
           $refpath = $rHoH_genomes->{$refSpecies}->{$build}->{$program}
