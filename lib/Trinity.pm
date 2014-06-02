@@ -232,8 +232,11 @@ sub rnammerTranscriptome {
 
   my $command = "\n";
 
+  $command .= "module load mugqic/hmmer/2.3.2 && \\\n";
+
   $command .= LoadConfig::moduleLoad($rH_cfg, [
     ['rnammerTranscriptome', 'moduleVersion.rnammer'],
+    ['rnammerTranscriptome', 'moduleVersion.trinity'],
     ['rnammerTranscriptome', 'moduleVersion.trinotate']
   ]) . " && \\\n";
 
