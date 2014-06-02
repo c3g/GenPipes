@@ -303,6 +303,7 @@ sub mergeAndCallGVCF {
     $command .= ' && ';
     $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'mergeAndCallGVCF', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'mergeAndCallGVCF', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'mergeAndCallGVCF', 'ram') . ' -jar \${GATK_JAR}';
     $command .= ' -T GenotypeGVCFs';
+    $command .= ' -R ' . $refGenome;
     $command .= ' -V ' . $outputGVCF;
     $command .= ' -o ' . $outputVCF;
     $command .= ' ' . $callOptions;
