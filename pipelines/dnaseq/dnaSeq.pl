@@ -221,6 +221,7 @@ for my $stepName (@steps) {
   $globalDep{$stepName -> {'name'} } ={};
 }
 
+my %generatedIntervalLists;
 
 # Global scope variables
 my $configFile;
@@ -328,7 +329,7 @@ sub main {
   my $nbSamples = scalar(@sampleNames);
 
   # Log anynymous statistics on remote MUGQIC web server
-  Tools::mugqicLog($pipelineName, $stepNames, $nbSamples);
+#  Tools::mugqicLog($pipelineName, $stepNames, $nbSamples);
 }
 
 sub samToFastq {
@@ -929,13 +930,21 @@ sub calculateHSMetrics {
     $jobDependency = $globalDep{$parentStep}->{$sampleName};
   }
 
-
   my $coverageBED = BVATools::resolveSampleBED($rH_cfg, $rAoH_sampleLanes->[0]);
   if(defined($coverageBED)) {
+    my ($coverageIntList) = $coverageBED =~ /^(.+)\.[^.]+$/;
+    $coverageIntList .= '.interval_list';
+
+    my $rO_intListJob = Tools::generateIntervalList($rH_cfg, undef, $coverageBED, $coverageIntList);
+    if(!$rO_intListJob->isUp2Date() && !defined($generatedIntervalLists{$coverageIntList})) {
+      print $rO_intListJob->getCommand()."\n";
+      $generatedIntervalLists{$coverageIntList} = 1;
+    }
+
     my $bamFile = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.recal.bam';
 
     my $outputMetrics = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.recal.onTarget.tsv';
-    my $rO_job = Picard::calculateHSMetricsFromBED($rH_cfg, $bamFile, $coverageBED, $outputMetrics);
+    my $rO_job = Picard::calculateHSMetrics($rH_cfg, $bamFile, $coverageIntList, $outputMetrics);
     if(!$rO_job->isUp2Date()) {
       SubmitToCluster::printSubmitCmd($rH_cfg, "calculateHSMetrics", undef, 'CALCULATE_HS_METRICS', $jobDependency, $sampleName, $rO_job);
     }
@@ -1134,7 +1143,7 @@ sub mergeAndCallGVCF {
     push(@gvcfsToMerge, $inputPrefix . '.others.hc.g.vcf');
   }
 
-  my $rO_job = GATK::mergeAndCallGVCF($rH_cfg, \@gvcfsToMerge, 'alignment/'.$sampleName.'/'.$sampleName.'.hc.g.vcf', 'alignment/'.$sampleName.'/'.$sampleName.'.hc.vcf.gz');
+  my $rO_job = GATK::mergeAndCallGVCF($rH_cfg, \@gvcfsToMerge, 'alignment/'.$sampleName.'/'.$sampleName.'.hc.g.vcf', 'alignment/'.$sampleName.'/'.$sampleName.'.hc.vcf');
   if(!$rO_job->isUp2Date()) {
     SubmitToCluster::printSubmitCmd($rH_cfg, "mergeAndCallGVCF", undef, 'CAT_VARIANTS', $jobDependency, $sampleName, $rO_job);
   }

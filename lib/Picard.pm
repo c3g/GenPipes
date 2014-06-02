@@ -167,37 +167,26 @@ sub collectMetrics {
   return $ro_job;
 }
 
-sub calculateHSMetricsFromBED {
+sub calculateHSMetrics {
   my $rH_cfg        = shift;
   my $inputBAM      = shift;
-  my $inputBED      = shift;
+  my $intervalsFile = shift;
   my $outputMetrics = shift;
   my $reference     = shift;
-  my $referenceDict = shift;
 
   my $ro_job = new Job();
-  $ro_job->testInputOutputs([$inputBAM, $inputBED], [$outputMetrics]);
+  $ro_job->testInputOutputs([$inputBAM, $intervalsFile], [$outputMetrics]);
 
   if (!$ro_job->isUp2Date()) {
-    if (!defined($reference) || !defined($referenceDict)) {
+    if (!defined($reference)) {
       $reference = LoadConfig::getParam($rH_cfg, 'calculateHSMetrics', 'referenceFasta', 1, 'filepath');
-      $referenceDict = LoadConfig::getParam($rH_cfg, 'calculateHSMetrics', 'referenceSequenceDictionary', 1, 'filepath');
     }
-
-    my ($intervalsFile) = $inputBED =~ /^(.+)\.[^.]+$/;
-    $intervalsFile .= '.interval_list';
 
     my $command;
     $command .= LoadConfig::moduleLoad($rH_cfg, [
       ['calculateHSMetrics', 'moduleVersion.java'],
       ['calculateHSMetrics', 'moduleVersion.picard'],
-      ['calculateHSMetrics', 'moduleVersion.tools']
     ]) . ' && ';
-    $command .= 'bed2IntervalList.pl';
-    $command .= ' --dict ' . $referenceDict;
-    $command .= ' --bed ' . $inputBED;
-    $command .= ' > ' . $intervalsFile;
-    $command .= ' && ';
     $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'calculateHSMetrics', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'calculateHSMetrics', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'calculateHSMetrics', 'ram') . ' -jar \${PICARD_HOME}/CalculateHsMetrics.jar';
     $command .= ' TMP_DIR=' . LoadConfig::getParam($rH_cfg, 'calculateHSMetrics', 'tmpDir');
     $command .= ' REFERENCE_SEQUENCE=' . $reference;

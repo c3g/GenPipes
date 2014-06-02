@@ -93,6 +93,7 @@ my %H_steps =  map {$_->{'name'} => $_} @steps;
 
 # Global scope variables
 my $GLOBAL_DEP_KEY = "#global";
+my %generatedIntervalLists;
 
 my $rHoH_genomes;
 my $rHoH_defaultGenomes;
@@ -101,7 +102,6 @@ my $globalNumberOfMismatch;
 my $mask;
 my $firstIndex;
 my $lastIndex;
-
 
 &main();
 
@@ -562,8 +562,17 @@ sub laneMetrics {
     my ($refDict) = $ref =~ /^(.+)\.[^.]*$/;
     $refDict .= '.dict';
     if(defined($coverageBED)) {
+      my ($coverageIntList) = $coverageBED =~ /^(.+)\.[^.]+$/;
+      $coverageIntList .= '.interval_list';
+
+      my $rO_intListJob = Tools::generateIntervalList($rH_cfg, $refDict, $coverageBED, $coverageIntList);
+      if(!$rO_intListJob->isUp2Date() && !defined($generatedIntervalLists{$coverageIntList})) {
+        print $rO_intListJob->getCommand()."\n";
+        $generatedIntervalLists{$coverageIntList} = 1;
+      }
+
       $outputMetrics = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.metrics.onTarget.txt';
-      my $rO_hsMetricsJob = Picard::calculateHSMetricsFromBED($rH_cfg, $sortedLaneBamFile, $coverageBED, $outputMetrics, $ref, $refDict);
+      my $rO_hsMetricsJob = Picard::calculateHSMetrics($rH_cfg, $sortedLaneBamFile, $coverageIntList, $outputMetrics, $ref, $refDict);
       if(!$rO_hsMetricsJob->isUp2Date()) {
         my $jobId = SubmitToCluster::printSubmitCmd($rH_cfg, "calculateHSMetrics", $runID . '.' . $rH_laneInfo->{'lane'}, 'CALCULATEHSMETRICS_'.$processingId, $jobDependency, $processingId, $rO_hsMetricsJob);
         push (@{$step->{'jobIds'}->{$processingId}}, $jobId);

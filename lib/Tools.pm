@@ -74,6 +74,32 @@ sub filterNStretches {
   return $rO_job;
 }
 
+sub generateIntervalList {
+  my $rH_cfg   = shift;
+  my $dict     = shift;
+  my $bedFile  = shift;
+  my $output   = shift;
+
+  my $rO_job = new Job();
+  if(!defined($dict)) {
+    $dict = LoadConfig::getParam($rH_cfg, 'default', 'referenceSequenceDictionary', 1, 'filepath');
+  }
+
+  $rO_job->testInputOutputs([$dict, $bedFile], [$output]);
+
+  if (!$rO_job->isUp2Date()) {
+    my $command;
+    $command .= LoadConfig::moduleLoad($rH_cfg, [['default' , 'moduleVersion.tools'], ['default' , 'moduleVersion.perl']]) . ' &&';
+    $command .= ' bed2IntervalList.pl';
+    $command .= ' --dict ' . $dict;
+    $command .= ' --bed ' . $bedFile;
+    $command .= ' > ' . $output;
+
+    $rO_job->addCommand($command);
+  }
+  return $rO_job;
+}
+
 sub mugqicLog {
   my $pipeline = shift;
   my $steps = shift;
