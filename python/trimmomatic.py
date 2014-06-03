@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from Job import *
+from job import *
 
 def trimmomatic(input1, output1):
     job = Job(None, [input1], [output1])

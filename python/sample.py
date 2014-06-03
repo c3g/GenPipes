@@ -2,7 +2,8 @@
 
 import os
 import re
-from Readset import *
+
+from readset import *
 
 class Sample:
 

@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 
+# Python Standard Modules
 import argparse
 
-from Pipeline import *
-from Trimmomatic import *
+# MUGQIC Modules
+from pipeline import *
+from trimmomatic import *
 
 samples = ["sampleA", "sampleB"]
 readsets = ["readsetA_1", "readsetA_2", "readsetB_1", "readsetB_2"]
@@ -40,6 +42,12 @@ step_dict_map = [
 ]
 
 pipeline = Pipeline([], step_dict_map, "1-7")
+pipeline.parser.add_argument("-r", "--readsets", help="readset file", type=file, required=True)
 pipeline.parser.add_argument("-d", "--design", help="design file", type=file)
 args = pipeline.parser.parse_args()
+print args.config
+print args.steps
+print args.readsets
+print args.output_dir
+
 pipeline.show()

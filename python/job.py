@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 
-from Config import *
+# Python Standard Modules
+import os
+
+# MUGQIC Modules
+from config import *
 
 class Job:
 
