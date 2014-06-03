@@ -1,31 +1,32 @@
-#!/bin/sh
-SOFTWARE=seqan  
-VERSION=1.4.1
+#!/bin/bash
+SOFTWARE=entrezdirect  ## TO BE MODIFIED WITH e.g. blast, hmmer, samtools, etc.
+VERSION=1.0.0  ## TO BE MODIFIED WITH e.g. 2.2.28+, 3.0, 0.1.19, etc.
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/$SOFTWARE
-mkdir -p $INSTALL_PATH
-cd $INSTALL_PATH
+INSTALL_DOWNLOAD=$INSTALL_PATH/tmp
+mkdir -p $INSTALL_DOWNLOAD
+cd $INSTALL_DOWNLOAD
 
 # Download, extract, build
 # Write here the specific commands to download, extract, build the software, typically similar to:
-wget http://packages.seqan.de/seqan-apps/seqan-apps-$VERSION-Linux-x86_64.tar.bz2
-tar -xvf seqan-apps-$VERSION-Linux-x86_64.tar.bz2
+wget ftp://ftp.ncbi.nlm.nih.gov/entrez/entrezdirect/edirect.tar.gz
+tar zxvf edirect.tar.gz
 
 # Add permissions and install software
 chmod -R ug+rwX .
 chmod -R o+rX .
-mv -i seqan-apps-$VERSION-Linux-x86_64.tar.bz2 $MUGQIC_INSTALL_HOME/archive 
-
-
+rm -rf $INSTALL_PATH/$SOFTWARE-$VERSION  
+mv -f edirect $INSTALL_PATH/$SOFTWARE-$VERSION  
+mv -f edirect.tar.gz $MUGQIC_INSTALL_HOME/archive
 
 # Module file
 echo "#%Module1.0
 proc ModulesHelp { } {
-       puts stderr \"\tMUGQIC - $SOFTWARE \" ;  ## TO BE MODIFIED WITH DETAILED DESCRIPTION IF ANY
+       puts stderr \"\tMUGQIC - $SOFTWARE \" ; 
 }
-module-whatis \"$SOFTWARE  \" ;  ## TO BE MODIFIED WITH DETAILED DESCRIPTION IF ANY
+module-whatis \"$SOFTWARE  \" ; 
                       
-set             root                \$::env(MUGQIC_INSTALL_HOME)/software/$SOFTWARE/seqan-apps-$VERSION-Linux-x86_64 ;  
-prepend-path    PATH                \$root/bin ;  
+set             root                \$::env(MUGQIC_INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE-$VERSION ; 
+prepend-path    PATH                \$root;
 " > $VERSION
 
 ################################################################################
@@ -41,4 +42,5 @@ chmod -R ug+rwX $VERSION .version
 chmod -R o+rX $VERSION .version
 mv $VERSION .version $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
 
-
+# Clean up temporary installation files if any
+rm -rf $INSTALL_DOWNLOAD

@@ -1,10 +1,10 @@
-#!/bin/sh
+#!/bin/bash
 
 #
 # wgs-assembler
 #
 SOFTWARE=wgs-assembler
-VERSION=7.0
+VERSION=8.1
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/$SOFTWARE/
 # Don't use /tmp!!! we need to compile wgs-assembler in it's final location because it hard codes the path in sources
 mkdir -p $INSTALL_PATH
@@ -16,9 +16,11 @@ cd $INSTALL_PATH
 tar xjvf $MUGQIC_INSTALL_HOME/archive/wgs-${VERSION}.tar.bz2
 cd wgs-${VERSION}/kmer
 make install
+cd ../samtools
+make
 cd ../src
-# for pacbio
-sed -i 's/\(#define AS_READ_MAX_NORMAL_LEN_BITS[^0-9]\+\)[0-9]\+/\1 17/g' AS_global.h
+# change default size to 131k. Default since 8.1 is 65k
+sed -i 's/\(#define AS_READ_MAX_NORMAL_LEN_BITS[^0-9]\+\)[0-9]\+/\1 17/g' AS_global.H
 make
 
 # Add permissions and install software

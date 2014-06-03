@@ -1,6 +1,19 @@
 #!/bin/sh
-SOFTWARE=entrezdirect  ## TO BE MODIFIED WITH e.g. blast, hmmer, samtools, etc.
-VERSION=1.0.0  ## TO BE MODIFIED WITH e.g. 2.2.28+, 3.0, 0.1.19, etc.
+
+################################################################################
+# This is a module install script template which should be copied and used for
+# consistency between module paths, permissions, etc.
+# Only lines marked as "## TO BE ADDED/MODIFIED" should be, indeed, modified.
+# You should probably also delete this commented-out header and the ## comments
+################################################################################
+
+
+#
+# Software_name  gnuplot.
+#
+
+SOFTWARE=fasttree
+VERSION=2.1.7 
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/$SOFTWARE
 INSTALL_DOWNLOAD=$INSTALL_PATH/tmp
 mkdir -p $INSTALL_DOWNLOAD
@@ -8,25 +21,20 @@ cd $INSTALL_DOWNLOAD
 
 # Download, extract, build
 # Write here the specific commands to download, extract, build the software, typically similar to:
-wget ftp://ftp.ncbi.nlm.nih.gov/entrez/entrezdirect/edirect.tar.gz
-tar zxvf edirect.tar.gz
+wget http://www.microbesonline.org/fasttree/FastTree  
 
 # Add permissions and install software
-chmod -R ug+rwX .
-chmod -R o+rX .
-rm -rf $INSTALL_PATH/$SOFTWARE-$VERSION  
-mv -f edirect $INSTALL_PATH/$SOFTWARE-$VERSION  
-mv -f edirect.tar.gz $MUGQIC_INSTALL_HOME/archive
+chmod -R 775 *
 
 # Module file
 echo "#%Module1.0
 proc ModulesHelp { } {
-       puts stderr \"\tMUGQIC - $SOFTWARE \" ; 
+       puts stderr \"\tMUGQIC - $SOFTWARE-$VERSION \" ;
 }
 module-whatis \"$SOFTWARE  \" ; 
                       
-set             root                \$::env(MUGQIC_INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE-$VERSION ; 
-prepend-path    PATH                \$root;
+set             root                \$::env(MUGQIC_INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE-$VERSION ;
+prepend-path    PATH                \$root/bin ;  
 " > $VERSION
 
 ################################################################################

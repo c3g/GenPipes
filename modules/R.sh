@@ -197,32 +197,33 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
 	,"AnnotationForge","ape","ash","base","BatchExperiments","BatchJobs","beanplot","Biobase","BiocGenerics"
 	,"BiocInstaller","bioDist","biomaRt","Biostrings","biovizBase","bit"
 	,"bitops","boot","brew","BSgenome","caTools","charm","charmData","class"
-	,"cluster","codetools","colorspace","compiler","corpcor","crlmm","ctc"
+	,"cluster","clusterProfiler","codetools","colorspace","compiler","corpcor","crlmm","ctc"
 	,"cummeRbund","datasets","DBI","DESeq","devtools","dichromat","digest"
 	,"edgeR","ellipse","evaluate","fastcluster","ff","fields"
 	,"foreach","foreign","gcrma","gdata","genefilter","GenomicFeatures"
 	,"GenomicRanges","genoset","GEOquery","ggplot2","googleVis","goseq"
 	,"gplots","graph","graphics","grDevices","grid","gtable","gtools"
-	,"Gviz","hdrcde","Hmisc","hwriter","igraph","IlluminaHumanMethylation450k.db"
+	,"Gviz","hdrcde","Hmisc","hwriter","HTSFilter","igraph","IlluminaHumanMethylation450k.db"
 	,"IlluminaHumanMethylation450kmanifest","impute","IRanges","iterators"
 	,"KernSmooth","ks","labeling","lattice","latticeExtra","limma","locfit"
 	,"lumi","LVSmiRNA","maps","markdown","MASS","Matrix","matrixStats","mclust"
-	,"memoise","methods","methyAnalysis","methylumi","mgcv","minfi","misc3d"
+	,"memoise","methods","methyAnalysis","methylumi","mgcv","minfi","mirbase.db","misc3d"
 	,"multicore","multtest","munsell","mvtnorm","NBPSeq","nleqslv","nlme"
 	,"nnet","nor1mix","Nozzle.R1","oligo","oligoClasses","outliers","parallel"
 	,"pd.charm.hg18.example","pheatmap","plotrix","plyr","plyr","preprocessCore"
 	,"proto","quantreg","R2HTML","RBGL","RColorBrewer","Rcpp","RcppEigen","RCurl"
 	,"ReportingTools","reshape","reshape2","rgl","RJSONIO","R.methodsS3","roxygen2"
-	,"rpart","Rsamtools","RSQLite","rtracklayer","scales","ShortRead","siggenes","snow"
+	,"rpart","Rsamtools","RSQLite","rtracklayer","scales","sendmailR","ShortRead","siggenes","snow"
 	,"SNPchip","SortableHTMLTables","spam","SparseM","spatial","splines","SQN"
 	,"statmod","stats","stats4","stringr","survival","sva","tcltk","testthat"
-	,"tools","TxDb.Hsapiens.UCSC.hg19.knownGene","utils","Vennerable","vsn"
+	,"tools","TxDb.Hsapiens.UCSC.hg19.knownGene","utils","Vennerable","vioplot","vsn"
 	,"WriteXLS","XML","xtable","zlibbioc")
 
-	## Programmatically add all the org pacakges
+	## Programmatically add all the org packages (excluding MeSH mess which takes too long)
 	contribUrl = contrib.url(biocinstallRepos(), type = 'source')
 	availPkgs  = available.packages(contribUrl, type = 'source')	
 	org.packages = rownames(availPkgs)[grepl("^org", rownames(availPkgs))]
+	org.packages = org.packages[!grepl("^org.MeSH.",org.packages)]
 	deps = c(deps,org.packages)
 
 	## Install pkgs not already installed, with ask=FALSE biocLite() takes care of updating if necessary
@@ -250,6 +251,9 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
 	#system(paste("chmod -R ug+rwX",  .Library))
 	#system(paste("chmod -R o+rX", .Library))
 	EOF
+
+
+echo "R packages installation done."
 
 ## Adjust permissions
 chmod -R ug+rwX  $INSTALL_DIR $MODULEFILE $MODULEVERSIONFILE

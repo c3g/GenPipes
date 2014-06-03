@@ -1,40 +1,50 @@
+#!/bin/bash
 
-###################
-################### Tophat
-###################
-VERSION=2.0.9
-INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/tophat
-INSTALL_DOWNLOAD=$MUGQIC_INSTALL_HOME/software/tophat/tmp
-mkdir -p $INSTALL_PATH/archive $INSTALL_DOWNLOAD
+#
+# TopHat
+#
+
+SOFTWARE=tophat
+VERSION=2.0.11
+INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/$SOFTWARE
+INSTALL_DOWNLOAD=$INSTALL_PATH/tmp
+mkdir -p $INSTALL_DOWNLOAD
 cd $INSTALL_DOWNLOAD
 
-# Download and extract
-wget http://tophat.cbcb.umd.edu/downloads/tophat-$VERSION.Linux_x86_64.tar.gz
-tar -xvf tophat-$VERSION.Linux_x86_64.tar.gz
+# Download, extract, build
+wget http://tophat.cbcb.umd.edu/downloads/$SOFTWARE-$VERSION.Linux_x86_64.tar.gz
+tar zxvf $SOFTWARE-$VERSION.Linux_x86_64.tar.gz
 
-# Install
-mv tophat-$VERSION.Linux_x86_64/ $INSTALL_PATH
-cd $INSTALL_PATH
-chmod -R g+w tophat-$VERSION.Linux_x86_64/
+# Add permissions and install software
+cd $INSTALL_DOWNLOAD
+chmod -R ug+rwX .
+chmod -R o+rX .
+mv -i $SOFTWARE-$VERSION.Linux_x86_64 $INSTALL_PATH
+mv -i $SOFTWARE-$VERSION.Linux_x86_64.tar.gz $MUGQIC_INSTALL_HOME/archive
 
 # Module file
 echo "#%Module1.0
 proc ModulesHelp { } {
-       puts stderr \"\tMUGQIC - Adds tophat to your environment \"
+       puts stderr \"\tMUGQIC - $SOFTWARE \"
 }
-module-whatis \"MUGQIC - Adds tophat to your environment \"
-                       
-set             root               \$::env(MUGQIC_INSTALL_HOME)/software/tophat/tophat-$VERSION.Linux_x86_64
-prepend-path    PATH               \$root
+module-whatis \"$SOFTWARE  \"
+
+set             root                \$::env(MUGQIC_INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE-$VERSION.Linux_x86_64
+prepend-path    PATH                \$root
 " > $VERSION
 
-# Version file
+################################################################################
+# Everything below this line should be generic and not modified
+
+# Default module version file
 echo "#%Module1.0
-set ModulesVersion \"$VERSION\"
+set ModulesVersion \"$VERSION\"" > .version
 
-" > .version
+# Add permissions and install module
+mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
+chmod -R ug+rwX $VERSION .version
+chmod -R o+rX $VERSION .version
+mv $VERSION .version $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
 
-mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/tophat
-mv .version $VERSION $MUGQIC_INSTALL_HOME/modulefiles/mugqic/tophat
-mv $INSTALL_DOWNLOAD/tophat-$VERSION.Linux_x86_64.tar.gz $INSTALL_PATH/archive/
+# Clean up temporary installation files if any
 rm -rf $INSTALL_DOWNLOAD
