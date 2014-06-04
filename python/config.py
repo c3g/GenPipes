@@ -12,7 +12,7 @@ class Config(ConfigParser.SafeConfigParser):
         ConfigParser.SafeConfigParser.__init__(self)
         # Make option names case sensitive
         self.optionxform = str
-        self.readfp(open(config_file))
+        self.readfp(config_file)
         self.check_modules()
 
     # Check by a system call if all modules defined in config file are available
@@ -47,8 +47,6 @@ class Config(ConfigParser.SafeConfigParser):
                     return self.getfloat(section, option)
                 elif type == 'boolean':
                     return self.getboolean(section, option)
-                elif type == 'float':
-                    return self.getfloat(section, option)
                 elif type == 'filepath':
                     value = self.get(section, option)
                     if os.path.isfile(os.path.expandvars(value)):

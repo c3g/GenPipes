@@ -71,12 +71,11 @@ class Job:
         if is_job_up2date:
             # Retrieve latest input file modification time i.e. maximum stat mtime
             # Use 'echo' system command to expand environment variables in input file paths if any
-            # Also check if input file exists before calling mtime function, return 0 otherwise
             latest_input_time = max([os.stat(os.path.expandvars(input_file)).st_mtime for input_file in self.input_files])
 
             # Same with earliest output file modification time
             earliest_output_time = max([os.stat(os.path.expandvars(output_file)).st_mtime for output_file in self.output_files])
-            is_job_up2date = earliest_output_time >= latest_input_time
+            is_job_up2date = earliest_output_time > latest_input_time
 
         return is_job_up2date
 
