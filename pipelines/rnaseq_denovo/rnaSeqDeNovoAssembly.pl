@@ -734,6 +734,7 @@ sub trinotate {
   my $eValue = LoadConfig::getParam($rH_cfg, 'trinotate', 'eValue');
   my $pfamCutoff = LoadConfig::getParam($rH_cfg, 'trinotate', 'pfamCutoff');
 
+  # Dump all annotations in Trinotate SQLite DB; also fix Transdecoder missing "cds." ID prefix bug
   $command .= <<END;
 mkdir -p \$WORK_DIR/trinotate/ && cd \$WORK_DIR/trinotate/ && \\
 cp \\\$TRINOTATE_HOME/Trinotate.sqlite . && \\
@@ -741,7 +742,8 @@ cp \\\$TRINOTATE_HOME/Trinotate.sqlite . && \\
 \\\$TRINOTATE_HOME/Trinotate Trinotate.sqlite init --gene_trans_map Trinity.fasta.gene_trans_map --transcript \$WORK_DIR/trinity_out_dir/Trinity.fasta --transdecoder_pep ./transdecoder/Trinity.fasta.transdecoder.pep && \\
 \\\$TRINOTATE_HOME/Trinotate Trinotate.sqlite LOAD_blastx \$WORK_DIR/blast/blastx_Trinity_$db.tsv && \\
 \\\$TRINOTATE_HOME/Trinotate Trinotate.sqlite LOAD_blastp ./blastp/blastp_Trinity.fasta.transdecoder.pep_uniprot_sprot_2013_11.tsv && \\
-\\\$TRINOTATE_HOME/Trinotate Trinotate.sqlite LOAD_pfam ./transdecoder/Trinity.fasta.transdecoder.pfam.dat.domtbl && \\
+awk '{\\\$4 = \\\"cds.\\\"\\\$4; print}' Trinity.fasta.transdecoder.pfam.dat.domtbl > Trinity.fasta.transdecoder.pfam.dat.domtbl.adj && \\
+\\\$TRINOTATE_HOME/Trinotate Trinotate.sqlite LOAD_pfam ./transdecoder/Trinity.fasta.transdecoder.pfam.dat.domtbl.adj && \\
 \\\$TRINOTATE_HOME/Trinotate Trinotate.sqlite LOAD_tmhmm ./tmhmm/tmhmm.out && \\
 \\\$TRINOTATE_HOME/Trinotate Trinotate.sqlite LOAD_signalp ./signalp/signalp.out && \\
 \\\$TRINOTATE_HOME/Trinotate Trinotate.sqlite LOAD_rnammer ./rnammer/Trinity.fasta.rnammer.gff && \\
