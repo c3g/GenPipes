@@ -203,7 +203,7 @@ sub dcmegablast{ #JT: Initially for for PacBio pipeline
     $cmd .= ' -query ' . $infileFasta;
     $cmd .= ' -outfmt \"' .$outfmt. ' qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore stitle sskingdoms sscinames scomnames\"';
     $cmd .= ' -out ' .$outfile;
-    $cmd .= ' -max_target_seqs ' . LoadConfig::getParam($rH_cfg, 'blast', 'max_target_seqs', 1, 'int');
+    $cmd .= ' -num_alignments ' . LoadConfig::getParam($rH_cfg, 'blast', 'max_target_seqs', 1, 'int');
     $cmd .= ' -num_threads ' . LoadConfig::getParam($rH_cfg, 'blast', 'num_threads', 1, 'int');
     $cmd .= ' -db ' . LoadConfig::getParam($rH_cfg, 'blast', 'blastdb');
     $cmd .= ' && ';
