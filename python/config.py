@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 
 # Python Standard Modules
+import ConfigParser
+import logging
 import os
 import re
 import subprocess
-import ConfigParser
+
+log = logging.getLogger(__name__)
 
 class Config(ConfigParser.SafeConfigParser):
 
@@ -23,17 +26,17 @@ class Config(ConfigParser.SafeConfigParser):
         # assuming that all module key names contain "moduleVersion"
         for section in self.sections():
             for name, value in self.items(section):
-                if re.search("moduleVersion", name) and value not in modules:
+                if re.search("^moduleVersion\.", name) and value not in modules:
                     modules.append(value)
 
-        print "Check modules..."
+        log.info("Check modules...")
         for module in modules:
             # Bash shell must be invoked in order to find "module" cmd
             module_show_output = subprocess.check_output(["bash", "-c", "module show " + module], stderr=subprocess.STDOUT)
             if re.search("Error", module_show_output, re.IGNORECASE):
                 raise Exception("Error in config file with " + module + ":\n" + module_show_output)
             else:
-                print "Module " + module + " OK"
+                log.info("Module " + module + " OK")
         print
 
     # Retrieve param in config file with optional definition check and type validation

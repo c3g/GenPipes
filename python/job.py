@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 # Python Standard Modules
+import collections
 import os
 
 # MUGQIC Modules
@@ -13,12 +14,8 @@ class Job:
         self._input_files = input_files
         self._output_files = output_files
 
-        self._modules = []
-        for section, option in module_entries:
-            module = self.config.param(section, option)
-            if module not in self.modules:
-                self.modules.append(module)
-            
+        # Retrieve modules from config, removing duplicates but keeping the order
+        self._modules =  list(collections.OrderedDict.fromkeys([self.config.param(section, option) for section, option in module_entries]))
 
     def show(self):
         print "Job: input_files: " + \
@@ -41,6 +38,10 @@ class Job:
         return self._output_files
 
     @property
+    def dependency_jobs(self):
+        return self._dependency_jobs
+
+    @property
     def modules(self):
         return self._modules
 
@@ -50,7 +51,10 @@ class Job:
 
     @property
     def command_with_modules(self):
-        return "module load " + " ".join(self.modules) + " && \\\n" + self.command
+        command = self.command
+        if self.modules:
+            command = "module load " + " ".join(self.modules) + " && \\\n" + command
+        return command
 
     @property
     def is_up2date(self):

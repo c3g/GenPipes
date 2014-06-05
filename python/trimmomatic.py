@@ -2,8 +2,8 @@
 
 from job import *
 
-def trimmomatic(input1, output1):
-    job = Job(None, [input1], [output1])
+def trimmomatic(config, input1, output1):
+    job = Job(config, [input1], [output1], [["trim", "moduleVersion.java"]])
     job.command = "java -jar Trimmomatic.jar " + input1 + " > " + output1
     return job
 

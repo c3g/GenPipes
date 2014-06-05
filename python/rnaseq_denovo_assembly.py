@@ -3,12 +3,14 @@
 # Python Standard Modules
 import argparse
 import collections
+import logging
 
 # MUGQIC Modules
 from pipeline import *
 from readset import *
 from trimmomatic import *
 
+log = logging.getLogger(__name__)
 
 class RnaSeqDeNovoAssembly(Pipeline):
 
@@ -21,7 +23,7 @@ class RnaSeqDeNovoAssembly(Pipeline):
         return self._samples
 
     def trim(self, readset):
-        return trimmomatic(readset.name, readset.name + ".trim")
+        return trimmomatic(self.config, readset.name, readset.name + ".trim")
 
     def normalization(self, readset):
         return normalize(readset.name + ".trim", readset.name + ".trim.normalized")
@@ -58,7 +60,7 @@ class RnaSeqDeNovoAssembly(Pipeline):
         self._readsets = []
         self._samples = []
 
-        argparser = default_argparser(self.step_dict_map)
+        argparser = PipelineArgumentParser(self.step_dict_map)
         # Add pipeline specific arguments
         argparser.add_argument("-r", "--readsets", help="readset file", type=file, required=True)
         argparser.add_argument("-d", "--design", help="design file", type=file)
@@ -70,4 +72,5 @@ class RnaSeqDeNovoAssembly(Pipeline):
 
         Pipeline.__init__(self, args)
         
-RnaSeqDeNovoAssembly().show()
+#RnaSeqDeNovoAssembly().show()
+RnaSeqDeNovoAssembly().submit_jobs()

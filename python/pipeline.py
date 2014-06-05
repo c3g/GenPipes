@@ -2,17 +2,22 @@
 
 # Python Standard Modules
 import argparse
+import logging
 import os
 import re
 
 # MUGQIC Modules
-from  step import *
 from  config import *
+from  scheduler import *
+from  step import *
+
+log = logging.getLogger(__name__)
 
 class Pipeline:
     def __init__(self, args):
         self._config = Config(args.config)
         self._output_dir = os.path.abspath(args.output_dir)
+        self._scheduler = create_scheduler(args.job_scheduler)
         self._step_map = []
         for step_dict in self.step_dict_map:
             step_name = step_dict['name'].__name__
@@ -27,6 +32,8 @@ class Pipeline:
             raise Exception("Error: step range \"" + args.steps +
                 "\" is invalid (should match \d+([,-]\d+)*)!")
 
+        self.create_jobs()
+
     @property
     def config(self):
         return self._config
@@ -34,6 +41,10 @@ class Pipeline:
     @property
     def output_dir(self):
         return self._output_dir
+
+    @property
+    def scheduler(self):
+        return self._scheduler
 
     @property
     def step_dict_map(self):
@@ -49,8 +60,11 @@ class Pipeline:
         return self._steps
 
     @property
-    def parser(self):
-        return self._parser
+    def jobs(self):
+        jobs = []
+        for step in self.steps:
+            jobs.extend(step.jobs)
+        return jobs
 
     def steps_by_name(self, name):
         return [step for step in self.step_map if step.name == name]
@@ -67,20 +81,30 @@ class Pipeline:
                     dependency_jobs.append(step_job)
         return dependency_jobs
 
-    def show(self):
-        print 'Pipeline: ' + self.__class__.__name__
-        print 'output_dir: ' + self.output_dir
-        print 'Steps: '
+    def create_jobs(self):
         for step in self.steps:
-            print "Step: " + step.name
+            log.debug("create_jobs for step: " + step.name)
             if step.loop:
                 jobs = [step.create_job(item) for item in step.loop]
             else:
                 jobs = [step.create_job()]
             for job in jobs:
+                job.dependency_jobs = self.dependency_jobs(job)
                 step.add_job(job)
+
+    def submit_jobs(self):
+        self.scheduler.submit(self.jobs)
+
+    def show(self):
+        print 'Pipeline: ' + self.__class__.__name__
+        print 'output_dir: ' + self.output_dir
+        print 'scheduler: ' + self.scheduler.__class__.__name__
+        print 'Steps: '
+        for step in self.steps:
+            print "Step: " + step.name
+            for job in step.jobs:
                 print job.id
-                for dependency_job in self.dependency_jobs(job):
+                for dependency_job in job.dependency_jobs:
                     print "  Dependency " + dependency_job.id + ", command: " + dependency_job.command
                 print "  Input files:" + ",".join(job.input_files)
                 print "  Command: " + job.command
@@ -97,10 +121,19 @@ def parse_range(astr):
     return sorted(result)
 
 # Default command line argument parser holding common options shared by all pipelines
-def default_argparser(step_dict_map):
-    # Create argparser with numbered step list as epilog
-    argparser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, epilog="Steps:\n" + "\n".join([str(idx + 1) + "- " + step_dict['name'].__name__ for idx, step_dict in enumerate(step_dict_map)]))
-    argparser.add_argument("-c", "--config", help="config INI-style file", type=file, required=True)
-    argparser.add_argument("-s", "--steps", help="step range e.g. '1-5', '3,6,7', '2,4-8'", required=True)
-    argparser.add_argument("-o", "--output_dir", help="output directory (default: current)", default=os.getcwd())
-    return argparser
+class PipelineArgumentParser(argparse.ArgumentParser):
+
+    def __init__(self, step_dict_map):
+        # Create ArgumentParser with numbered step list as epilog
+        argparse.ArgumentParser.__init__(self, formatter_class=argparse.RawDescriptionHelpFormatter, epilog="Steps:\n" + "\n".join([str(idx + 1) + "- " + step_dict['name'].__name__ for idx, step_dict in enumerate(step_dict_map)]))
+
+        self.add_argument("-c", "--config", help="config INI-style file", type=file, required=True)
+        self.add_argument("-s", "--steps", help="step range e.g. '1-5', '3,6,7', '2,4-8'", required=True)
+        self.add_argument("-o", "--output-dir", help="output directory (default: current)", default=os.getcwd())
+        self.add_argument("-j", "--job-scheduler", help="job scheduler type (default: torque)", choices=["torque", "batch", "daemon"], default="torque")
+        self.add_argument("-l", "--log", help="log level (default: info)", choices=["debug", "info", "warning", "error", "critical"], default="info")
+
+    def parse_args(self):
+        args = argparse.ArgumentParser.parse_args(self)
+        logging.basicConfig(level=getattr(logging, args.log.upper()))
+        return args
