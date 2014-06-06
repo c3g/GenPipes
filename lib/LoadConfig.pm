@@ -161,7 +161,13 @@ sub getParam {
       } elsif ($type eq 'prefixpath') {
         my $tmpVal = `echo $retVal`;
         chomp($tmpVal);
-        glob($tmpVal . "*") or die "Error: parameter \"[" . $section . "] " . $value . "\" value $retVal is not a valid prefix path!";
+        my $fileExists = 0;
+        for my $file (glob($tmpVal . "*")) {
+          if (-e $file) {
+            $fileExists = 1;
+          }
+        }
+        $fileExists or die "Error: parameter \"[" . $section . "] " . $value . "\" value $retVal is not a valid prefix path!";
       } elsif ($type eq 'array') {
         if (ref($retVal) ne "ARRAY") {
           if (ref(\$retVal) eq "SCALAR") {
