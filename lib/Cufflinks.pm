@@ -58,7 +58,7 @@ sub fpkm {
   }
 
   my $ro_job = new Job();
-  $ro_job->testInputOutputs([$inputBAM], [$outputIndexFile]);
+  $ro_job->testInputOutputs([$inputBAM], [$outputIndexFile],$ro_job);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
@@ -133,7 +133,7 @@ sub cuffdiff {
   }
 
   my $ro_job = new Job();
-  $ro_job->testInputOutputs($rA_groupInputFiles, undef);
+  $ro_job->testInputOutputs([$rA_groupInputFiles],[$outputDir.'/isoform_exp.diff']);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
@@ -158,7 +158,7 @@ sub cuffcompare {
   my $mergeGtfFilePath = shift;
 
   my $ro_job = new Job();
-  $ro_job->testInputOutputs($rA_mergeList, [$outputPrefix . '.combined.gtf', $outputPrefix . '.TranscriptList.tsv']);
+  $ro_job->testInputOutputs($rA_mergeList, [$outputPrefix . '.combined.gtf', $outputPrefix . '.TranscriptList.tsv'],$ro_job);
 
   if (!$ro_job->isUp2Date()) {
     my $mergeListString = join(' ', @{$rA_mergeList});
