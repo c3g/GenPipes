@@ -26,6 +26,10 @@ class Job:
         return self._id
 
     @property
+    def name(self):
+        return self._name
+
+    @property
     def config(self):
         return self._config
 

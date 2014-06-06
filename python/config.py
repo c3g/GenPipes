@@ -37,7 +37,6 @@ class Config(ConfigParser.SafeConfigParser):
                 raise Exception("Error in config file with " + module + ":\n" + module_show_output)
             else:
                 log.info("Module " + module + " OK")
-        print
 
     # Retrieve param in config file with optional definition check and type validation
     # By default, parameter is required to be defined in the config file

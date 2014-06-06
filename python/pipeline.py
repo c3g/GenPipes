@@ -84,16 +84,22 @@ class Pipeline:
     def create_jobs(self):
         for step in self.steps:
             log.debug("create_jobs for step: " + step.name)
+            jobs = []
             if step.loop:
-                jobs = [step.create_job(item) for item in step.loop]
+                for item in step.loop:
+                    job = step.create_job(item)
+                    job.name = step.name + "." + item.name
+                    jobs.append(job)
             else:
-                jobs = [step.create_job()]
+                job = step.create_job()
+                job.name = step.name
+                jobs.append(job)
             for job in jobs:
                 job.dependency_jobs = self.dependency_jobs(job)
                 step.add_job(job)
 
     def submit_jobs(self):
-        self.scheduler.submit(self.jobs)
+        self.scheduler.submit(self)
 
     def show(self):
         print 'Pipeline: ' + self.__class__.__name__
