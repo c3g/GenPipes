@@ -133,7 +133,7 @@ sub cuffdiff {
   }
 
   my $ro_job = new Job();
-  $ro_job->testInputOutputs([$rA_groupInputFiles],[$outputDir.'/isoform_exp.diff']);
+  $ro_job->testInputOutputs($rA_groupInputFiles,[$outputDir.'/isoform_exp.diff']);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
