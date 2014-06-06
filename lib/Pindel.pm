@@ -51,7 +51,7 @@ sub pairedConfigFile {
   my $output        = shift;
 
   my $ro_job = new Job();
-  $ro_job->testInputOutputs([$tumorBam, $normalMetrics, $tumorMetrics, $normalBam], [$output]);
+  $ro_job->testInputOutputs([$tumorBam, $normalMetrics, $tumorMetrics, $normalBam], [$output],$ro_job);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
@@ -79,12 +79,12 @@ sub pairedPI {
   my $PIOption       = shift;
 
   my $ro_job = new Job();
-  $ro_job->testInputOutputs([$inputCFG], [$outputTest . '_SI']);
+  $ro_job->testInputOutputs([$inputCFG], [$outputTest . '_SI'],$ro_job);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
-    $command .= LoadConfig::moduleLoad($rH_cfg, [['pindel', 'moduleVersion.pindel']]) . ' &&';
-    $command .= ' pindel ' . LoadConfig::getParam($rH_cfg, 'pindel', 'piParameters');
+    $command .= LoadConfig::moduleLoad($rH_cfg, [['Pindel', 'moduleVersion.pindel']]) . ' &&';
+    $command .= ' pindel ' . LoadConfig::getParam($rH_cfg, 'Pindel', 'piParameters');
     $command .= ' -f ' . $chr;
     $command .= ' -i ' . $inputCFG;
     $command .= ' -o ' . $outputPrefix;
@@ -101,7 +101,7 @@ sub mergeChro {
   my $outputPrefix    = shift;
 
   my $ro_job = new Job();
-  $ro_job->testInputOutputs([$outputPrefix . '.1_SI'], [$outputPrefix . '_SI']);
+  $ro_job->testInputOutputs([$outputPrefix . '.1_SI'], [$outputPrefix . '_SI'],$ro_job);
 
   if (!$ro_job->isUp2Date()) {
     my $command;

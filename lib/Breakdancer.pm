@@ -52,11 +52,29 @@ sub bam2cfg {
 
   if (!$ro_job->isUp2Date()) {
     my $command;
-    $command .= LoadConfig::moduleLoad($rH_cfg, [['bam2cfg', 'moduleVersion.breakdancer'], ['bam2cfg', 'moduleVersion.samtools']]) . ' &&';
-    $command .= ' bam2cfg.pl -g -h ';
+    $command .= LoadConfig::moduleLoad($rH_cfg, [['bam2cfg', 'moduleVersion.breakdancer'], ['bam2cfg', 'moduleVersion.samtools'], ['bam2cfg', 'moduleVersion.perl']]) . ' &&';
+    $command .= ' perl \$BRD_PERL/bam2cfg.pl -g -h ';
     $command .= ' -c ' . $stdDevCutoff;
     $command .= ' ' . $sampleBAM;
     $command .= ' > ' . $output;
+
+    $ro_job->addCommand($command);
+  }
+  return $ro_job;
+}
+
+sub mergeConf {
+  my $rH_cfg           = shift;
+  my $normalOutput     = shift;
+  my $tumorOutput      = shift;
+  my $sampleCFGOutput  = shift;
+  
+  my $ro_job = new Job();
+  $ro_job->testInputOutputs([$normalOutput,$tumorOutput], [$sampleCFGOutput]);
+
+  if (!$ro_job->isUp2Date()) {
+    my $command;
+    $command .=  ' cat ' .$normalOutput .' ' .$tumorOutput .' > ' .$sampleCFGOutput;
 
     $ro_job->addCommand($command);
   }
@@ -94,7 +112,7 @@ sub pairedBRD {
   my $outputPrefix = shift;
 
   my $ro_job = new Job();
-  $ro_job->testInputOutputs([$inputCFG], [$outputPrefix . '.bed', $outputPrefix . '.ctx']);
+  $ro_job->testInputOutputs([$inputCFG], [$outputPrefix . '.bed', $outputPrefix . '.ctx'],$ro_job);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
@@ -116,13 +134,14 @@ sub mergeCTX {
   my $outputPrefix = shift;
 
   my $ro_job = new Job();
-  $ro_job->testInputOutputs(undef, [$outputPrefix . '.ctx']);
+  $ro_job->testInputOutputs(undef, [$outputPrefix . '.ctx'],$ro_job);
 
   if (!$ro_job->isUp2Date()) {
     my $command;
-    $command .= 'rm ' . $outputPrefix . '.ctx && ' ;
+    $command .= 'rm -f ' . $outputPrefix . '.ctx && ' ;
     $command .= 'touch ' . $outputPrefix . '.ctx && ' ;
     $command .= 'for i in ' . $outputPrefix . '.*.ctx ; do cat \$i >> ' . $outputPrefix . '.ctx' ;
+    $command .= ' ; done' ;
 
     $ro_job->addCommand($command);
   }
