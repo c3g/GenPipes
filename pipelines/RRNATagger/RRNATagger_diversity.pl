@@ -9,6 +9,7 @@ BEGIN{
 	use Cwd 'abs_path';
 	my ( undef, $mod_path, undef ) = fileparse( abs_path(__FILE__) );
 	unshift @INC, $mod_path."lib";
+	unshift @INC, $mod_path."../../lib";
 }
 
 use Env qw/TMPDIR PATH PYTHONPATH PERL5LIB/;
@@ -25,7 +26,7 @@ use File::Basename;
 use File::Temp;
 use File::Which;
 use File::Path qw(make_path remove_tree);
-use Job;
+use Version;
 
 # Libraries mugqic
 use RRNAAmplicons;
@@ -33,6 +34,8 @@ use MicrobialEcology;
 use LoadConfig;
 use SampleSheet;
 use SubmitToCluster;
+use Job;
+use Tools;
 
 our $VERSION = "0.5";
 $SIG{INT} = sub{exit}; #Handle ungraceful exits with CTRL-C.
@@ -149,19 +152,18 @@ my $bin_dir_name = dirname(rel2abs($0));
 $ENV{PATH} = $bin_dir_name.":".$ENV{PATH};
 
 GetOptions(
-    'infile_cluster_fasta=s' 	=> \$infile_cluster_fasta,
-    'infile_cluster_table=s' 	=> \$infile_cluster_table,
-	'infile_otu_table=s'		=> \$infile_otu_table,
-	'infile_otu_fasta=s'		=> \$infile_otu_fasta,
-	'barcodes=s' 				=> \$barcodes,
-	'config_file=s'				=> \$config_file,
-	'no_unifrac'				=> \$no_unifrac,
-	'keep_singlets'				=> \$keep_singlets,
-	#'mapping_file=s'            => \$mapping_file,
-	'start_at=i' 				=> \$start_at,
-	'end_at=i'   				=> \$end_at,
-    'verbose' 					=> \$verbose,
-    'help' 						=> \$help
+  'infile_cluster_fasta=s'  => \$infile_cluster_fasta,
+  'infile_cluster_table=s'  => \$infile_cluster_table,
+  'infile_otu_table=s'      => \$infile_otu_table,
+  'infile_otu_fasta=s'      => \$infile_otu_fasta,
+  'barcodes=s'              => \$barcodes,
+  'config_file=s'           => \$config_file,
+  'no_unifrac'              => \$no_unifrac,
+  'keep_singlets'           => \$keep_singlets,
+  'start_at=i'              => \$start_at,
+  'end_at=i'                => \$end_at,
+  'verbose'                 => \$verbose,
+  'help'                    => \$help
 );
 if ($help) { print $usage; exit; }
 
@@ -233,6 +235,11 @@ my $dependency = undef;
 print STDERR "[DEBUG] **************************************************************** \n";
 print STDERR "[DEBUG] ****** Generating RRNATagger diversity pipeline commands...***** \n";
 print STDERR "[DEBUG] **************************************************************** \n";
+
+## Count samples being processed.
+my $numberOfSamples = `grep -o ">" $barcodes | wc -l`;
+chomp($numberOfSamples);
+print STDERR "[DEBUG] Number of samples: $numberOfSamples\n";
 
 
 #################################
@@ -837,6 +844,13 @@ if(!$rO_jobDeliverables->isUp2Date()) {
   $dependency = $rO_jobDeliverables->getCommandJobId(0) if($start_at <= $currStep && $end_at >= $currStep);
 }
 print STDERR "[DEBUG]\tStep #".$currStep." Nozzle deliverables\n";
+
+# Set script name (without suffix) as pipeline name
+my $pipelineName = fileparse($0, qr/\.[^.]*/) . "-$Version::version";
+my $stepNames = "$start_at-$currStep";
+
+# Log anynymous statistics on remote MUGQIC web server
+Tools::mugqicLog($pipelineName, $stepNames, $numberOfSamples);
 
 exit;
 

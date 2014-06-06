@@ -49,10 +49,11 @@
 # report.contact=your.name@mail.mcgill.ca
 #
 # Then run sample setup (from MUGQIC tools repo) if internal libs from MUGQIC.
-/path/to/your/mugqic_tools/sampleSetup.pl --nanuqAuthFile ~/nanuq_sample_setup.txt --projectId 9999 --tech miseq
+/path/to/your/mugqic_tools/perl-tools/sampleSetup.pl --nanuqAuthFile ~/nanuq_sample_setup.txt --projectId 9999 --tech miseq
 
 
 # Then get your barcodes (for MUGQIC sequencing libs)
+module load mugqic/tools/1.8
 /path/to/your/mugqic_tools/perl-tools/getMiSeqBarcodes.pl --runId M00833_0173 > barcodes.fasta
 # RRNATagger.pl has been design to support many configurations of sequencing runs (i.e. single, paired end reads). Here are different ways to run the pipeline according 
 # to the type of library that is to be analyzed.

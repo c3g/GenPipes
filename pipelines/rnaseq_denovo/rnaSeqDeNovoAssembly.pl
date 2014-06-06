@@ -66,13 +66,17 @@ use lib "$FindBin::Bin/../../lib";
 # Dependency modules
 #-------------------
 use Cwd 'abs_path';
+use File::Basename;
 use Getopt::Std;
+use Parse::Range qw(parse_range);
+
 use Cleaning;
 use GqSeqUtils;
 use LoadConfig;
 use Metrics;
 use SampleSheet;
 use SubmitToCluster;
+use Tools;
 use Trimmomatic;
 use Trinity;
 use Version;
@@ -106,14 +110,54 @@ my @A_steps = (
     'parent' => ['trinity']
   },
   {
-    'name'   => 'blast',
+    'name'   => 'blastxNr',
     'loop'   => 'global',
     'parent' => ['blastSplitQuery']
   },
   {
-    'name'   => 'blastMergeResults',
+    'name'   => 'blastxNrMergeResults',
     'loop'   => 'global',
-    'parent' => ['blast']
+    'parent' => ['blastxNr']
+  },
+  {
+    'name'   => 'blastxSwissProt',
+    'loop'   => 'global',
+    'parent' => ['blastSplitQuery']
+  },
+  {
+    'name'   => 'blastxSwissProtMergeResults',
+    'loop'   => 'global',
+    'parent' => ['blastxSwissProt']
+  },
+  {
+    'name'   => 'transdecoder',
+    'loop'   => 'global',
+    'parent' => ['trinity']
+  },
+  {
+    'name'   => 'rnammer',
+    'loop'   => 'global',
+    'parent' => ['trinity']
+  },
+  {
+    'name'   => 'blastpSwissProt',
+    'loop'   => 'global',
+    'parent' => ['transdecoder']
+  },
+  {
+    'name'   => 'signalp',
+    'loop'   => 'global',
+    'parent' => ['transdecoder']
+  },
+  {
+    'name'   => 'tmhmm',
+    'loop'   => 'global',
+    'parent' => ['transdecoder']
+  },
+  {
+    'name'   => 'trinotate',
+    'loop'   => 'global',
+    'parent' => ['blastxSwissProtMergeResults', 'rnammer', 'blastpSwissProt', 'signalp', 'tmhmm']
   },
   {
     'name'   => 'alignEstimateAbundancePrepareReference',
@@ -128,7 +172,7 @@ my @A_steps = (
   {
     'name'   => 'differentialGeneExpression',
     'loop'   => 'global',
-    'parent' => ['alignEstimateAbundance', 'blastMergeResults']
+    'parent' => ['alignEstimateAbundance', 'blastxNrMergeResults']
   },
   {
     'name'   => 'metrics',
@@ -159,11 +203,10 @@ sub getUsage {
   my $usage = <<END;
 MUGQIC Pipeline RNA-Seq De Novo Assembly Version: $Version::version
 
-Usage: perl $0 -h | -c CONFIG_FILE -s start_step_num -e end_step_num [-n SAMPLE_SHEET] [-d DESIGN_FILE] [-w WORK_DIR]
+Usage: perl $0 -h | -c CONFIG_FILE -s step_range [-n SAMPLE_SHEET] [-d DESIGN_FILE] [-w WORK_DIR]
   -h  help and usage
   -c  .ini config file
-  -s  start step, inclusive
-  -e  end step, inclusive
+  -s  step range e.g. '1,3', '2-5', '1,4-7,10'
   -n  nanuq sample sheet
   -d  design file
   -w  work directory (default current)
@@ -181,38 +224,40 @@ END
 }
 
 sub main {
-  if ($ARGV[0] eq "--clean") {
+  if ($ARGV[0] and $ARGV[0] eq "--clean") {
     Cleaning::rnaseq_denovo();
   } else {
     # Check options
     my %opts;
-    getopts('hc:s:e:n:d:w:', \%opts);
+    getopts('hc:s:n:d:w:', \%opts);
   
     if (defined($opts{'h'}) ||
        !defined($opts{'c'}) ||
-       !defined($opts{'s'}) ||
-       !defined($opts{'e'})) {
+       !defined($opts{'s'})) {
       die (getUsage());
     }
   
     # Assign options
-    my $startStep = $opts{'s'};
-    my $endStep = $opts{'e'};
     my $workDirectory = $opts{'w'};
     $configFile = $opts{'c'};
     $nanuqSampleSheet = $opts{'n'};
     $designFile = $opts{'d'};
-  
+
+    # List user-defined step index range.
+    # Shift 1st position to 0 instead of 1
+    my @stepRange = map($_ - 1, parse_range($opts{'s'}));
+
     # Get config values
     unless (defined $configFile) {die "Error: configuration file is not defined! (use -c option)\n" . getUsage()};
     unless (-f $configFile) {die "Error: configuration file $configFile does not exist!\n" . getUsage()};
     my %cfg = LoadConfig->readConfigFile($configFile);
   
+    my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($nanuqSampleSheet);
     SubmitToCluster::initPipeline($workDirectory);
   
     # Go through steps and create global or sample jobs accordingly
-    for (my $i = $startStep; $i <= $endStep; $i++) {
-      my $step = $A_steps[$i - 1];
+    for my $currentStep (@stepRange) {
+      my $step = $A_steps[$currentStep];
       my $stepName = $step->{'name'};
       $step->{'jobIds'} = ();
   
@@ -222,7 +267,6 @@ sub main {
         unless (defined $nanuqSampleSheet) {die "Error: nanuq sample sheet is not defined! (use -n option)\n" . getUsage()};
         unless (-f $nanuqSampleSheet) {die "Error: nanuq sample sheet $nanuqSampleSheet does not exist!\n" . getUsage()};
   
-        my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($nanuqSampleSheet);
         foreach my $sample (keys %$rHoAoH_sampleInfo) {
           my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sample};
           # Sample step functions need sample and lanes parameters
@@ -233,6 +277,14 @@ sub main {
         &$stepName(\%cfg, $step);
       }
     }
+
+    # Set script name (without suffix) as pipeline name
+    my $pipelineName = fileparse($0, qr/\.[^.]*/) . "-$Version::version";
+    my $stepNames = join(",", map($A_steps[$_]->{'name'}, @stepRange));
+    my $nbSamples = scalar(keys %$rHoAoH_sampleInfo);
+
+    # Log anynymous statistics on remote MUGQIC web server
+    Tools::mugqicLog($pipelineName, $stepNames, $nbSamples);
   }
 }
 
@@ -444,35 +496,35 @@ sub blastSplitQuery {
   my $step = shift;
 
   my $rO_job = new Job();
-  if (!$rO_job->isUp2Date()) {
-    my $command = "\n";
+  my $command = "\n";
 
-    $command .= LoadConfig::moduleLoad($rH_cfg, [
-      ['blast', 'moduleVersion.exonerate']
-    ]) . " && \\\n";
+  $command .= LoadConfig::moduleLoad($rH_cfg, [
+    ['blast', 'moduleVersion.exonerate']
+  ]) . " && \\\n";
 
-    my $trinityFastaFile = "\$WORK_DIR/trinity_out_dir/Trinity.fasta";
-    my $trinityIndexFile = "\$WORK_DIR/trinity_out_dir/Trinity.idx";
-    my $reducedTrinityFastaFile = "\$WORK_DIR/trinity_out_dir/Trinity.longest_transcript.fasta";
+  my $trinityFastaFile = "\$WORK_DIR/trinity_out_dir/Trinity.fasta";
+  my $trinityIndexFile = "\$WORK_DIR/trinity_out_dir/Trinity.idx";
+  my $reducedTrinityFastaFile = "\$WORK_DIR/trinity_out_dir/Trinity.longest_transcript.fasta";
 
-    # Remove previous Trinity assembly FASTA index if present
-    $command .= "rm -f $trinityIndexFile && \\\n";
-    # Create Trinity assembly FASTA index
-    $command .= "fastaindex $trinityFastaFile $trinityIndexFile && \\\n";
-    # Create Trinity assembly FASTA subset with longest transcript per component only
-    $command .= "fastalength $trinityFastaFile | perl -pe 's/ ((c\\d+_g\\d+)_i\\d+)/\\t\\1\\t\\2/' | sort -k3,3 -k1,1gr | uniq -f2 | cut -f2 | fastafetch $trinityFastaFile -i $trinityIndexFile -q stdin > $reducedTrinityFastaFile && \\\n";
+  # Remove previous Trinity assembly FASTA index if present
+  $command .= "rm -f $trinityIndexFile && \\\n";
+  # Create Trinity assembly FASTA index
+  $command .= "fastaindex $trinityFastaFile $trinityIndexFile && \\\n";
+  # Create Trinity assembly FASTA subset with longest transcript per component only
+  $command .= "fastalength $trinityFastaFile | perl -pe 's/ ((c\\d+_g\\d+)_i\\d+)/\\t\\1\\t\\2/' | sort -k3,3 -k1,1gr | uniq -f2 | cut -f2 | fastafetch $trinityFastaFile -i $trinityIndexFile -q stdin > $reducedTrinityFastaFile && \\\n";
 
-    # Split Trinity assembly FASTA into chunks for BLAST parallelization
-    my $chunkDir = "\$WORK_DIR/blast/chunks";
-    $command .= "mkdir -p $chunkDir && \\\n";
-    $command .= "fastasplit -f $reducedTrinityFastaFile -o $chunkDir -c " . LoadConfig::getParam($rH_cfg, 'blast', 'blastJobs', 1, 'int') . " \\\n";
+  # Split full and reduced Trinity assemblies FASTA into chunks for BLAST parallelization
+  my $chunkDir = "\$WORK_DIR/blast/Trinity.chunks";
+  my $reducedChunkDir = "\$WORK_DIR/blast/Trinity.longest_transcript.chunks";
+  $command .= "mkdir -p $chunkDir $reducedChunkDir && \\\n";
+  $command .= "fastasplit -f $trinityFastaFile -o $chunkDir -c " . LoadConfig::getParam($rH_cfg, 'blast', 'blastJobs', 1, 'int') . " && \\\n";
+  $command .= "fastasplit -f $reducedTrinityFastaFile -o $reducedChunkDir -c " . LoadConfig::getParam($rH_cfg, 'blast', 'blastJobs', 1, 'int') . " \\\n";
 
-    $rO_job->addCommand($command);
-  }
+  $rO_job->addCommand($command);
   submitJob($rH_cfg, $step, undef, $rO_job);
 }
 
-sub blast {
+sub blastxNr {
   my $rH_cfg = shift;
   my $step = shift;
 
@@ -483,82 +535,241 @@ sub blast {
     my $chunkIndex = sprintf("%07d", $jobIndex);
 
     my $rO_job = new Job();
-    if (!$rO_job->isUp2Date()) {
-      my $command = "\n";
+    my $command = "\n";
 
-      $command .= LoadConfig::moduleLoad($rH_cfg, [
-        ['blast', 'moduleVersion.tools'],
-        ['blast', 'moduleVersion.exonerate'],
-        ['blast', 'moduleVersion.blast']
-      ]) . " && \\\n";
+    $command .= LoadConfig::moduleLoad($rH_cfg, [
+      ['blast', 'moduleVersion.tools'],
+      ['blast', 'moduleVersion.exonerate'],
+      ['blast', 'moduleVersion.blast']
+    ]) . " && \\\n";
 
-      my $cores = LoadConfig::getParam($rH_cfg, 'blast', 'blastCPUperJob', 1, 'int');
-      my $program = LoadConfig::getParam($rH_cfg, 'blast', 'blastProgram');
-      my $db = LoadConfig::getParam($rH_cfg, 'blast', 'blastDb');
+    my $cores = LoadConfig::getParam($rH_cfg, 'blast', 'blastCPUperJob', 1, 'int');
+    my $program = "blastx";
+    my $db = "nr";
 
-      # Check if BLAST db files are available
-      my $blastDbHome = "\$MUGQIC_INSTALL_HOME/genomes/blast_db";
-      `ls $blastDbHome/$db.*[np]hr` or die "Error: $db BLAST db files do not exist in $blastDbHome!";
+    # Check if BLAST db files are available
+    my $blastDbHome = "\$MUGQIC_INSTALL_HOME/genomes/blast_db";
+    `ls $blastDbHome/$db.*[np]hr` or die "Error: $db BLAST db files do not exist in $blastDbHome!";
 
-      my $options = LoadConfig::getParam($rH_cfg, 'blast', 'blastOptions');
-      my $chunkDir = "\$WORK_DIR/blast/chunks";
-      my $chunkQuery = "$chunkDir/Trinity.longest_transcript.fasta_chunk_$chunkIndex";
-      my $chunkResult = "$chunkDir/$program" . "_Trinity.longest_transcript_$db" . "_chunk_$chunkIndex.tsv";
+    my $options = "-outfmt \'7 std stitle\'";
+    my $chunkDir = "\$WORK_DIR/blast/Trinity.longest_transcript.chunks";
+    my $chunkQuery = "$chunkDir/Trinity.longest_transcript.fasta_chunk_$chunkIndex";
+    my $chunkResult = "$chunkDir/$program" . "_Trinity.longest_transcript_$db" . "_chunk_$chunkIndex.tsv";
 
-      # Each FASTA chunk is further divided in subchunk per CPU per job as a second level of BLAST parallelization
-      # The user must adjust BLAST configuration to optimize num. jobs vs num. CPUs per job, depending on the cluster
-      $command .= "parallelBlast.pl -file $chunkQuery --OUT $chunkResult -n $cores --BLAST \\\"$program -db $db $options\\\" \\\n";
+    # Each FASTA chunk is further divided in subchunk per CPU per job as a second level of BLAST parallelization
+    # The user must adjust BLAST configuration to optimize num. jobs vs num. CPUs per job, depending on the cluster
+    $command .= "parallelBlast.pl -file $chunkQuery --OUT $chunkResult -n $cores --BLAST \\\"$program -db $db $options\\\" \\\n";
 
-      $rO_job->addCommand($command);
-    }
-    submitJob($rH_cfg, $step, "blast_chunk_$jobIndex", $rO_job);
+    $rO_job->addCommand($command);
+    submitJob($rH_cfg, $step, "chunk_$jobIndex", $rO_job);
   }
 }
 
-sub blastMergeResults {
+sub blastxNrMergeResults {
   my $rH_cfg = shift;
   my $step = shift;
 
   my $rO_job = new Job();
-  if (!$rO_job->isUp2Date()) {
-    my $command = "\n";
+  my $command = "\n";
 
-    my $program = LoadConfig::getParam($rH_cfg, 'blast', 'blastProgram');
-    my $db = LoadConfig::getParam($rH_cfg, 'blast', 'blastDb');
-    my $blastDir = "\$WORK_DIR/blast";
-    my $chunkResults = "$blastDir/chunks/$program" . "_Trinity.longest_transcript_$db" . "_chunk_*.tsv";
-    my $result = "$blastDir/$program" . "_Trinity.longest_transcript_$db.tsv";
+  my $program = "blastx";
+  my $db = "nr";
+  my $blastDir = "\$WORK_DIR/blast";
+  my $chunkResults = "$blastDir/Trinity.longest_transcript.chunks/$program" . "_Trinity.longest_transcript_$db" . "_chunk_*.tsv";
+  my $result = "$blastDir/$program" . "_Trinity.longest_transcript_$db.tsv";
 
-    # All BLAST chunks are merged into one file named after BLAST program and reference database
-    $command .= "cat $chunkResults > $result.tmp && \\\n";
-    # Remove all comment lines except "Fields" one which is placed as first line
-    $command .= "cat <(grep -m1 '^# Fields' $result.tmp) <(grep -v '^#' $result.tmp) > $result && \\\n";
-    $command .= "rm $result.tmp && \\\n";
+  # All BLAST chunks are merged into one file named after BLAST program and reference database
+  $command .= "cat $chunkResults > $result.tmp && \\\n";
+  # Remove all comment lines except "Fields" one which is placed as first line
+  $command .= "cat <(grep -m1 '^# Fields' $result.tmp) <(grep -v '^#' $result.tmp) > $result && \\\n";
+  $command .= "rm $result.tmp && \\\n";
 
-    # Create a BLAST results ZIP file for future deliverables
-    $command .= "zip -j $result.zip $result \\\n";
+  # Create a BLAST results ZIP file for future deliverables
+  $command .= "zip -j $result.zip $result \\\n";
 
-    $rO_job->addCommand($command);
-  }
+  $rO_job->addCommand($command);
   submitJob($rH_cfg, $step, undef, $rO_job);
 }
 
-# The RSEM reference assembly is created once only, and then used by all RSEM sample jobs in parallel
+sub blastxSwissProt {
+  my $rH_cfg = shift;
+  my $step = shift;
+
+  my $numJobs = LoadConfig::getParam($rH_cfg, 'blast', 'blastJobs', 1, 'int');
+
+  for (my $jobIndex = 0; $jobIndex < $numJobs; $jobIndex++) {
+    # fastasplit creates FASTA chunk files numbered with 7 digits and padded with leading 0s
+    my $chunkIndex = sprintf("%07d", $jobIndex);
+
+    my $rO_job = new Job();
+    my $command = "\n";
+
+    $command .= LoadConfig::moduleLoad($rH_cfg, [
+      ['blast', 'moduleVersion.tools'],
+      ['blast', 'moduleVersion.exonerate'],
+      ['blast', 'moduleVersion.blast']
+    ]) . " && \\\n";
+
+    my $cores = LoadConfig::getParam($rH_cfg, 'blast', 'blastCPUperJob', 1, 'int');
+    my $program = "blastx";
+    my $db = LoadConfig::getParam($rH_cfg, 'blastxSwissProt', 'blastDb');
+
+    # Check if BLAST db files are available
+    my $blastDbHome = "\$MUGQIC_INSTALL_HOME/genomes/blast_db";
+    `ls $blastDbHome/$db.*[np]hr` or die "Error: $db BLAST db files do not exist in $blastDbHome!";
+
+    my $options = "-max_target_seqs 1 -outfmt \'6 std stitle\'";
+    my $chunkDir = "\$WORK_DIR/blast/Trinity.chunks";
+    my $chunkQuery = "$chunkDir/Trinity.fasta_chunk_$chunkIndex";
+    my $chunkResult = "$chunkDir/$program" . "_Trinity_$db" . "_chunk_$chunkIndex.tsv";
+
+    # Each FASTA chunk is further divided in subchunk per CPU per job as a second level of BLAST parallelization
+    # The user must adjust BLAST configuration to optimize num. jobs vs num. CPUs per job, depending on the cluster
+    $command .= "parallelBlast.pl -file $chunkQuery --OUT $chunkResult -n $cores --BLAST \\\"$program -db $db $options\\\" \\\n";
+
+    $rO_job->addCommand($command);
+    submitJob($rH_cfg, $step, "chunk_$jobIndex", $rO_job);
+  }
+}
+
+sub blastxSwissProtMergeResults {
+  my $rH_cfg = shift;
+  my $step = shift;
+
+  my $rO_job = new Job();
+  my $command = "\n";
+
+  my $program = "blastx";
+  my $db = LoadConfig::getParam($rH_cfg, 'blastxSwissProt', 'blastDb');
+  my $blastDir = "\$WORK_DIR/blast";
+  my $chunkResults = "$blastDir/Trinity.chunks/$program" . "_Trinity_$db" . "_chunk_*.tsv";
+  my $result = "$blastDir/$program" . "_Trinity_$db.tsv";
+
+  # All BLAST chunks are merged into one file named after BLAST program and reference database
+  $command .= "cat $chunkResults > $result && \\\n";
+
+  # Create a BLAST results ZIP file for future deliverables
+  $command .= "zip -j $result.zip $result \\\n";
+
+  $rO_job->addCommand($command);
+  submitJob($rH_cfg, $step, undef, $rO_job);
+}
+
+sub transdecoder {
+  my $rH_cfg = shift;
+  my $step = shift;
+
+  my $rO_job = Trinity::transdecoder($rH_cfg, "\$WORK_DIR/trinity_out_dir/Trinity.fasta", "\$WORK_DIR/trinotate/transdecoder");
+  submitJob($rH_cfg, $step, undef, $rO_job);
+}
+
+sub rnammer {
+  my $rH_cfg = shift;
+  my $step = shift;
+
+  my $rO_job = Trinity::rnammerTranscriptome($rH_cfg, "\$WORK_DIR/trinity_out_dir/Trinity.fasta", "\$WORK_DIR/trinotate/rnammer");
+  submitJob($rH_cfg, $step, undef, $rO_job);
+}
+
+sub blastpSwissProt {
+  my $rH_cfg = shift;
+  my $step = shift;
+
+  my $rO_job = new Job();
+  my $command = "\n";
+
+  $command .= LoadConfig::moduleLoad($rH_cfg, [
+    ['blastpSwissProt', 'moduleVersion.tools'],
+    ['blastpSwissProt', 'moduleVersion.exonerate'],
+    ['blastpSwissProt', 'moduleVersion.blast']
+  ]) . " && \\\n";
+
+  my $cores = LoadConfig::getParam($rH_cfg, 'blastpSwissProt', 'blastCPUperJob', 1, 'int');
+  my $db = LoadConfig::getParam($rH_cfg, 'blastpSwissProt', 'blastDb');
+
+  # Check if BLAST db files are available
+  my $blastDbHome = "\$MUGQIC_INSTALL_HOME/genomes/blast_db";
+  `ls $blastDbHome/$db.*[np]hr` or die "Error: $db BLAST db files do not exist in $blastDbHome!";
+
+  my $options = "-max_target_seqs 1 -outfmt \'6 std stitle\'";
+  my $query = "\$WORK_DIR/trinotate/transdecoder/Trinity.fasta.transdecoder.pep";
+  my $output = "\$WORK_DIR/trinotate/blastp/blastp_Trinity.fasta.transdecoder.pep_$db.tsv";
+
+  $command .= "mkdir -p " . dirname($output) . " && \\\n";
+  $command .= "parallelBlast.pl -file $query --OUT $output -n $cores --BLAST \\\"blastp -db $db $options\\\" \\\n";
+
+  $rO_job->addCommand($command);
+  submitJob($rH_cfg, $step, undef, $rO_job);
+}
+
+sub signalp {
+  my $rH_cfg = shift;
+  my $step = shift;
+
+  my $rO_job = Trinity::signalp($rH_cfg, "\$WORK_DIR/trinotate/transdecoder/Trinity.fasta.transdecoder.pep", "\$WORK_DIR/trinotate/signalp/signalp.out");
+  submitJob($rH_cfg, $step, undef, $rO_job);
+}
+
+sub tmhmm {
+  my $rH_cfg = shift;
+  my $step = shift;
+
+  my $rO_job = Trinity::tmhmm($rH_cfg, "\$WORK_DIR/trinotate/transdecoder/Trinity.fasta.transdecoder.pep", "\$WORK_DIR/trinotate/tmhmm/tmhmm.out");
+  submitJob($rH_cfg, $step, undef, $rO_job);
+}
+
+sub trinotate {
+  my $rH_cfg = shift;
+  my $step = shift;
+
+  my $rO_job = new Job();
+  my $command = "\n";
+
+  $command .= LoadConfig::moduleLoad($rH_cfg, [
+    ['trinotate', 'moduleVersion.trinity'],
+    ['trinotate', 'moduleVersion.trinotate']
+  ]) . " && \\\n";
+
+  my $db = LoadConfig::getParam($rH_cfg, 'blastxSwissProt', 'blastDb');
+  my $eValue = LoadConfig::getParam($rH_cfg, 'trinotate', 'eValue');
+  my $pfamCutoff = LoadConfig::getParam($rH_cfg, 'trinotate', 'pfamCutoff');
+
+  # Dump all annotations in Trinotate SQLite DB; also fix Transdecoder missing "cds." ID prefix bug
+  $command .= <<END;
+mkdir -p \$WORK_DIR/trinotate/ && cd \$WORK_DIR/trinotate/ && \\
+cp \\\$TRINOTATE_HOME/Trinotate.sqlite . && \\
+\\\$TRINITY_HOME/util/support_scripts/get_Trinity_gene_to_trans_map.pl \$WORK_DIR/trinity_out_dir/Trinity.fasta > Trinity.fasta.gene_trans_map && \\
+\\\$TRINOTATE_HOME/Trinotate Trinotate.sqlite init --gene_trans_map Trinity.fasta.gene_trans_map --transcript \$WORK_DIR/trinity_out_dir/Trinity.fasta --transdecoder_pep ./transdecoder/Trinity.fasta.transdecoder.pep && \\
+\\\$TRINOTATE_HOME/Trinotate Trinotate.sqlite LOAD_blastx \$WORK_DIR/blast/blastx_Trinity_$db.tsv && \\
+\\\$TRINOTATE_HOME/Trinotate Trinotate.sqlite LOAD_blastp ./blastp/blastp_Trinity.fasta.transdecoder.pep_uniprot_sprot_2013_11.tsv && \\
+awk '{\\\$4 = \\\"cds.\\\"\\\$4; print}' ./transdecoder/Trinity.fasta.transdecoder.pfam.dat.domtbl > ./transdecoder/Trinity.fasta.transdecoder.pfam.dat.domtbl.adj && \\
+\\\$TRINOTATE_HOME/Trinotate Trinotate.sqlite LOAD_pfam ./transdecoder/Trinity.fasta.transdecoder.pfam.dat.domtbl.adj && \\
+\\\$TRINOTATE_HOME/Trinotate Trinotate.sqlite LOAD_tmhmm ./tmhmm/tmhmm.out && \\
+\\\$TRINOTATE_HOME/Trinotate Trinotate.sqlite LOAD_signalp ./signalp/signalp.out && \\
+\\\$TRINOTATE_HOME/Trinotate Trinotate.sqlite LOAD_rnammer ./rnammer/Trinity.fasta.rnammer.gff && \\
+\\\$TRINOTATE_HOME/Trinotate Trinotate.sqlite report -E $eValue --pfam_cutoff $pfamCutoff > trinotate_annotation_report.tsv \\
+END
+
+  $rO_job->addCommand($command);
+  submitJob($rH_cfg, $step, undef, $rO_job);
+}
+
+# The reference assembly is created once only, and then used by all abundance estimation sample jobs in parallel
 sub alignEstimateAbundancePrepareReference {
   my $rH_cfg = shift;
   my $step = shift;
 
-  my $rO_job = Trinity::alignEstimateAbundancePrepareReference($rH_cfg, "\$WORK_DIR");
+  my $rO_job = Trinity::alignEstimateAbundancePrepareReference($rH_cfg, "\$WORK_DIR/trinity_out_dir/Trinity.fasta");
   submitJob($rH_cfg, $step, undef, $rO_job);
 }
 
-# RSEM abundance estimation is performed by sample
+# Abundance estimation is performed by sample
 sub alignEstimateAbundance {
   my $rH_cfg = shift;
   my $step = shift;
   my $sample = shift;
 
-  my $rO_job = Trinity::alignEstimateAbundance($rH_cfg, "\$WORK_DIR", $sample);
+  my $rO_job = Trinity::alignEstimateAbundance($rH_cfg, "\$WORK_DIR/trinity_out_dir/Trinity.fasta", $sample);
   submitJob($rH_cfg, $step, $sample, $rO_job);
 }
 
@@ -576,9 +787,9 @@ sub differentialGeneExpression {
 
     my $command = "\n";
 
-    # Retrieve BLAST result file
-    my $program = LoadConfig::getParam($rH_cfg, 'blast', 'blastProgram');
-    my $db = LoadConfig::getParam($rH_cfg, 'blast', 'blastDb');
+    # Retrieve BLAST nr result file
+    my $program = "blastx";
+    my $db = "nr";
     my $blastDir = "\$WORK_DIR/blast";
     my $blastResult = "$blastDir/$program" . "_Trinity.longest_transcript_$db.tsv";
 
@@ -609,8 +820,8 @@ sub differentialGeneExpression {
     # Keep BLAST best hit only
     # Remove from column headers ".(genes|isoforms).results" created by RSEM
     $command .= "grep -v '^#' $blastResult | awk '!x[\\\$1]++' | awk -F\\\"\\t\\\" 'FNR==NR {a[\\\$1]=\\\$2; next}{OFS=\\\"\\t\\\"; if (a[\\\$1]) {print \\\$1, a[\\\$1]} else {print \\\$1, \\\$1}}' - $isoformsMatrix | sed '1s/^\\t/Isoform\\tSymbol/' | paste - <(cut -f 2- $isoformsMatrix) | sed '1s/\\.isoforms\\.results//g' > $isoformsAnnotatedMatrix && \\\n";
-    # Remove "_seq" from isoform BLAST query name and keep BLAST isoform best hit as BLAST gene best hit
-    $command .= "grep -v '^#' $blastResult | awk '!x[\\\$1]++' | awk -F\\\"\\t\\\" 'FNR==NR {sub(/_seq.*/, \\\"\\\", \\\$1); a[\\\$1]=\\\$2; next}{OFS=\\\"\\t\\\"; if (a[\\\$1]) {print \\\$1, a[\\\$1]} else {print \\\$1, \\\$1}}' - $genesMatrix | sed '1s/^\\t/Gene\\tSymbol/' | paste - <(cut -f 2- $genesMatrix) | sed '1s/\\.genes\\.results//g' > $genesAnnotatedMatrix && \\\n";
+    # Remove "_i" from isoform BLAST query name and keep BLAST isoform best hit as BLAST gene best hit
+    $command .= "grep -v '^#' $blastResult | awk '!x[\\\$1]++' | awk -F\\\"\\t\\\" 'FNR==NR {sub(/_i.*/, \\\"\\\", \\\$1); a[\\\$1]=\\\$2; next}{OFS=\\\"\\t\\\"; if (a[\\\$1]) {print \\\$1, a[\\\$1]} else {print \\\$1, \\\$1}}' - $genesMatrix | sed '1s/^\\t/Gene\\tSymbol/' | paste - <(cut -f 2- $genesMatrix) | sed '1s/\\.genes\\.results//g' > $genesAnnotatedMatrix && \\\n";
 
     # Perform edgeR
     $command .= "Rscript \\\$R_TOOLS/edger.R -d $designFile -c $isoformsAnnotatedMatrix -o $dgeDir/isoforms_$db && \\\n";

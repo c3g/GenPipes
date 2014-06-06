@@ -109,7 +109,7 @@ sub exploratoryRnaAnalysis {
 
   if (!$ro_job->isUp2Date()) {
     my $rscript = 'suppressPackageStartupMessages(library(gqSeqUtils));';
-    $rscript .= ' initIllmSeqProject(nanuq.file= \"' . $readSetSheet . '\",overwrite.sheets=FALSE,project.path= \"' . $workDirectory . '\");';
+    $rscript .= ' initIllmSeqProject(nanuq.file= \"' . $readSetSheet . '\",overwrite.sheets=TRUE,project.path= \"' . $workDirectory . '\");';
     $rscript .= ' exploratoryRNAseq(project.path= \"' . $workDirectory . '\",ini.file.path = \"' . $configFile . '\");';
     $rscript .= ' print(\"done.\")';
     my $command = LoadConfig::moduleLoad($rH_cfg, [['downstreamAnalyses','moduleVersion.cranR']]) . ' &&';

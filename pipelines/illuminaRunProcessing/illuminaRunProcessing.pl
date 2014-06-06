@@ -26,6 +26,8 @@ B<Config::Simple> Used to parse config file
 
 B<File::Basename> path parsing
 
+B<Parse::Range> Step range parsing
+
 B<XML::Simple> for RunInfo.xml file parsing
 
 B<Cwd> path parsing
@@ -55,6 +57,7 @@ use Cwd;
 use POSIX;
 use XML::Simple;
 use Data::Dumper;
+use Parse::Range qw(parse_range);
 
 use CountIlluminaBarcodes;
 use BVATools;
@@ -66,11 +69,7 @@ use SubmitToCluster;
 use Tools;
 use Version;
 use Metrics;
-#--------------------
 
-
-# SUB
-#--------------------
 
 my @steps;
 push(@steps, {'name' => 'generateIndexCount', 'stepLoop' => 'lane', 'parentStep' => []});
@@ -93,6 +92,7 @@ my %H_steps =  map {$_->{'name'} => $_} @steps;
 
 # Global scope variables
 my $GLOBAL_DEP_KEY = "#global";
+my %generatedIntervalLists;
 
 my $rHoH_genomes;
 my $rHoH_defaultGenomes;
@@ -102,15 +102,13 @@ my $mask;
 my $firstIndex;
 my $lastIndex;
 
-
 &main();
 
 sub printUsage {
   print "Version: ".$Version::version."\n";
   print "\nUsage: perl ".$0." -c config.ini -s start -e end -l nb -r /path/to/run\n";
   print "\t-c  config file\n";
-  print "\t-s  start step, inclusive\n";
-  print "\t-e  end step, inclusive\n";
+  print "\t-s  step range e.g. '1,3', '2-5', '1,4-7,11'\n";  
   print "\t-l  lane number\n";
   print "\t-r  run directory\n";
   print "\t-n  nanuq sample sheet. Optional, default=RUNDIRECTORY/run.nanuq.csv\n";
@@ -129,9 +127,9 @@ sub printUsage {
 
 sub main {
   my %opts;
-  getopts('c:s:e:m:n:l:r:i:x:y:', \%opts);
+  getopts('c:s:m:n:l:r:i:x:y:', \%opts);
 
-  if (!defined($opts{'c'}) || !defined($opts{'s'}) || !defined($opts{'e'}) || !defined($opts{'l'}) || !defined($opts{'r'})) {
+  if (!defined($opts{'c'}) || !defined($opts{'s'}) || !defined($opts{'l'}) || !defined($opts{'r'})) {
     printUsage();
     exit(1);
   }
@@ -203,14 +201,17 @@ sub main {
 
   $mask = getMask($lane, $rAoH_readsInfo, $firstIndex, $lastIndex);
   
+  # List user-defined step index range.
+  # Shift 1st position to 0 instead of 1
+  my @stepRange = map($_ - 1, parse_range($opts{'s'}));
 
   SubmitToCluster::initPipeline($runDirectory);
 
   my $startStep = $opts{'s'};
-  my $endStep = $opts{'e'};
+  my $endStep = $stepRange[$#stepRange];
   # Go through steps and create global or sample jobs accordingly
-  for (my $i = $startStep; $i <= $endStep; $i++) {
-    my $step = $steps[$i - 1];
+  for my $currentStep (@stepRange) {
+    my $step = $steps[$currentStep];
     my $stepName = $step->{'name'};
     my $stepRef = \&$stepName;
     $step->{'jobIds'}->{$GLOBAL_DEP_KEY} = ();
@@ -218,7 +219,7 @@ sub main {
     &$stepRef($step, \%cfg, $runDirectory, $runID, $lane, $rAoH_readsInfo, $nbReads, $rAoH_samples);
   }
 
-  my $jobIds = join (LoadConfig::getParam(\%cfg, 'default', 'clusterDependencySep'), map {"\$" . $_} @{$steps[$endStep-1]->{'jobIds'}->{$GLOBAL_DEP_KEY}});
+  my $jobIds = join (LoadConfig::getParam(\%cfg, 'default', 'clusterDependencySep'), map {"\$" . $_} @{$steps[$endStep]->{'jobIds'}->{$GLOBAL_DEP_KEY}});
   print 'export FINAL_STEP_JOB_IDS='.$jobIds."\n";
   return;
 }
@@ -541,21 +542,43 @@ sub laneMetrics {
     
     $outputMetrics = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.metrics.targetCoverage.txt';
     my $coverageBED = defined(BVATools::resolveSampleBED($rH_cfg, $rH_laneInfo)) ? $runDirectory . "/". BVATools::resolveSampleBED($rH_cfg, $rH_laneInfo) : undef;
-    my $rO_coverageJob = BVATools::depthOfCoverage($rH_cfg, $sortedLaneBamFile, $outputMetrics, $coverageBED, $ref);
-    if(!$rO_coverageJob->isUp2Date()) {
-      # download bed files?
-      if (LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'fetchBedFiles')) {
-        for my $bedFile (@{$rH_laneInfo->{'bedFiles'}}) {
-          if (!defined($downloadedBedFiles{$bedFile})) {
-            print formatCommand("config" => $rH_cfg, "command" => LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'fetchBedFileCommand'), "runDirectory" => $runDirectory, "runID" => $runID, "lane" => $lane , "bedFile" => $bedFile) . "\n";
-            print "\n";
-            $downloadedBedFiles{$bedFile} = 1;
-          }
+    # download bed files?
+    if (LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'fetchBedFiles')) {
+      for my $bedFile (@{$rH_laneInfo->{'bedFiles'}}) {
+        if (!defined($downloadedBedFiles{$bedFile})) {
+          print formatCommand("config" => $rH_cfg, "command" => LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'fetchBedFileCommand'), "runDirectory" => $runDirectory, "runID" => $runID, "lane" => $lane , "bedFile" => $bedFile) . "\n";
+          print "\n";
+          $downloadedBedFiles{$bedFile} = 1;
         }
       }
+    }
+
+    my $rO_coverageJob = BVATools::depthOfCoverage($rH_cfg, $sortedLaneBamFile, $outputMetrics, $coverageBED, $ref);
+    if(!$rO_coverageJob->isUp2Date()) {
       my $jobId3 = SubmitToCluster::printSubmitCmd($rH_cfg, "depthOfCoverage", $runID . '.' . $rH_laneInfo->{'lane'}, 'LANEDEPTHOFCOVERAGE_'.$processingId, $jobDependency, $processingId, $rO_coverageJob);
       push (@{$step->{'jobIds'}->{$processingId}}, $jobId3);
       push (@{$step->{'jobIds'}->{$GLOBAL_DEP_KEY}}, $jobId3);
+    }
+
+    my ($refDict) = $ref =~ /^(.+)\.[^.]*$/;
+    $refDict .= '.dict';
+    if(defined($coverageBED)) {
+      my ($coverageIntList) = $coverageBED =~ /^(.+)\.[^.]+$/;
+      $coverageIntList .= '.interval_list';
+
+      my $rO_intListJob = Tools::generateIntervalList($rH_cfg, $refDict, $coverageBED, $coverageIntList);
+      if(!$rO_intListJob->isUp2Date() && !defined($generatedIntervalLists{$coverageIntList})) {
+        print $rO_intListJob->getCommand()."\n";
+        $generatedIntervalLists{$coverageIntList} = 1;
+      }
+
+      $outputMetrics = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.metrics.onTarget.txt';
+      my $rO_hsMetricsJob = Picard::calculateHSMetrics($rH_cfg, $sortedLaneBamFile, $coverageIntList, $outputMetrics, $ref, $refDict);
+      if(!$rO_hsMetricsJob->isUp2Date()) {
+        my $jobId = SubmitToCluster::printSubmitCmd($rH_cfg, "calculateHSMetrics", $runID . '.' . $rH_laneInfo->{'lane'}, 'CALCULATEHSMETRICS_'.$processingId, $jobDependency, $processingId, $rO_hsMetricsJob);
+        push (@{$step->{'jobIds'}->{$processingId}}, $jobId);
+        push (@{$step->{'jobIds'}->{$GLOBAL_DEP_KEY}}, $jobId);
+      }
     }
   }
   return;
@@ -705,14 +728,20 @@ sub getGenomeList {
     closedir(SPECIES_DIR);
     for my $buildDir (@buildDirs) {
       my $fasta = "$rootDir/$speciesDir/$buildDir/fasta/bwa/$buildDir.fasta";
+      my $fa = "$rootDir/$speciesDir/$buildDir/fasta/bwa/$buildDir.fa";
       if (-r $fasta) {
         $genomes{$speciesDir}{$buildDir}{"bwa"}=$fasta;
+      } elsif (-r $fa) {
+        $genomes{$speciesDir}{$buildDir}{"bwa"}=$fa;
       } else {
         #print STDERR "Available Genomes Scan: No BWA reference genome found for the build '$buildDir' of the '$speciesDir' species\n";
       }
       $fasta = "$rootDir/$speciesDir/$buildDir/fasta/$buildDir.fasta";
+      $fa = "$rootDir/$speciesDir/$buildDir/fasta/$buildDir.fa";
       if (-r $fasta) {
         $genomes{$speciesDir}{$buildDir}{"fasta"}=$fasta;
+      } elsif (-r $fa) {
+        $genomes{$speciesDir}{$buildDir}{"fasta"}=$fa;
       } else {
         #print STDERR "Available Genomes Scan: No Fasta reference genome found for the build '$buildDir' of the '$speciesDir' species\n";
       }
@@ -759,7 +788,7 @@ sub getGenomeReference {
     if (defined($species)) {
       # defaulting to a basic alignement with BWA
       for my $defaultGenomeRegexp (keys %$rHoH_defaultGenomes) {
-        if ($species =~ /$defaultGenomeRegexp/i) {
+        if ($species =~ /^\s*$defaultGenomeRegexp\s*$/i) {
           my $refSpecies = $rHoH_defaultGenomes->{$defaultGenomeRegexp}->{"species"};
           my $build = $rHoH_defaultGenomes->{$defaultGenomeRegexp}->{"build"};
           $refpath = $rHoH_genomes->{$refSpecies}->{$build}->{$program}
@@ -1202,7 +1231,5 @@ sub areSamplesIndexMixed{
   }
   return 0;
 }
-
-
 
 1;

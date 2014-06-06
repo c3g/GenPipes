@@ -40,6 +40,9 @@ use lib "$FindBin::Bin";
 use Cwd 'abs_path';
 use File::Basename;
 use LoadConfig;
+use LWP::UserAgent;
+use Socket;
+use Sys::Hostname;
 
 # SUB
 #-----------------------
@@ -56,19 +59,77 @@ sub filterNStretches {
 
   my $toolShedDir = getToolShedDir();
 
-  my $ro_job = new Job();
-  $ro_job->testInputOutputs([$inputVCF], [$outputVCF]);
+  my $rO_job = new Job();
+  $rO_job->testInputOutputs([$inputVCF], [$outputVCF]);
 
-  if (!$ro_job->isUp2Date()) {
+  if (!$rO_job->isUp2Date()) {
     my $command;
     $command .= LoadConfig::moduleLoad($rH_cfg, [['metrics' , 'moduleVersion.tools']]) . ' &&';
     $command .= ' \$PERL_TOOLS/filterLongIndel.pl ';
     $command .= ' ' . $inputVCF;
     $command .= ' > ' . $outputVCF;
 
-    $ro_job->addCommand($command);
+    $rO_job->addCommand($command);
   }
-  return $ro_job;
+  return $rO_job;
+}
+
+sub generateIntervalList {
+  my $rH_cfg   = shift;
+  my $dict     = shift;
+  my $bedFile  = shift;
+  my $output   = shift;
+
+  my $rO_job = new Job();
+  if(!defined($dict)) {
+    $dict = LoadConfig::getParam($rH_cfg, 'default', 'referenceSequenceDictionary', 1, 'filepath');
+  }
+
+  $rO_job->testInputOutputs([$dict, $bedFile], [$output]);
+
+  if (!$rO_job->isUp2Date()) {
+    my $command;
+    $command .= LoadConfig::moduleLoad($rH_cfg, [['default' , 'moduleVersion.tools'], ['default' , 'moduleVersion.perl']]) . ' &&';
+    $command .= ' bed2IntervalList.pl';
+    $command .= ' --dict ' . $dict;
+    $command .= ' --bed ' . $bedFile;
+    $command .= ' > ' . $output;
+
+    $rO_job->addCommand($command);
+  }
+  return $rO_job;
+}
+
+sub mugqicLog {
+  my $pipeline = shift;
+  my $steps = shift;
+  my $samples = shift;
+
+  my $userAgent = LWP::UserAgent->new;
+  my $server = "http://mugqic.hpc.mcgill.ca/cgi-bin/pipeline.cgi";
+  my $request = HTTP::Request->new(POST => $server);
+
+  my $hostname = hostname;
+  # Retrieve client local IP address
+  my $ip = inet_ntoa((gethostbyname(hostname))[4]);
+
+  $request->content(
+    "hostname=$hostname&" .
+    "ip=$ip&" .
+    "pipeline=$pipeline&" .
+    "steps=$steps&" .
+    "samples=$samples"
+  );
+
+  my $response = $userAgent->request($request);
+  if ($response->is_success) {
+    my $message = $response->decoded_content;
+    print STDERR "MUGQIC remote log sent successfully. $message\n";
+  } else {
+    print STDERR "MUGQIC remote log failed to be sent.\n";
+    print STDERR "HTTP GET error code: ", $response->code, "\n";
+    print STDERR "HTTP GET error message: ", $response->message, "\n";
+  }
 }
 
 1;

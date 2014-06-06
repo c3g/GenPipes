@@ -88,20 +88,22 @@ use File::Path;
 use Parse::Range qw(parse_range);
 use POSIX;
 
-use LoadConfig;
-use SampleSheet;
-use SAMtools;
-use SequenceDictionaryParser;
-use Picard;
-use SubmitToCluster;
-use Homer;
-use MACS2;
 use BWA;
-use Trimmomatic;
+use Cleaning;
+use GqSeqUtils;
+use Homer;
+use LoadConfig;
+use MACS2;
 use Metrics;
+use Picard;
+use SAMtools;
+use SampleSheet;
+use SequenceDictionaryParser;
+use SubmitToCluster;
+use Tools;
+use Trimmomatic;
 use Version;
 use Wiggle;
-use GqSeqUtils;
 
 
 
@@ -178,6 +180,7 @@ sub printUsage {
   print "\t-n  nanuq sample sheet\n";
   print "\t-d  design file\n";
   print "\t-w  work directory\n";
+  print "\t--clean  delete all result files except deliverables (no other option required)\n";
   print "\n";
   print "Steps:\n";
   for (my $idx = 0; $idx < @steps; $idx++) {
@@ -187,100 +190,112 @@ sub printUsage {
 }
 
 sub main {
-  my %opts;
-  getopts('c:s:n:d:w:', \%opts);
-
-  if (!defined($opts{'c'}) || !defined($opts{'s'}) || !defined($opts{'n'}) || !defined($opts{'d'}) || !defined($opts{'w'})) {
-    printUsage();
-    exit(1);
-  }
-
-  my %jobIdVarPrefix;
-  my %cfg = LoadConfig->readConfigFile($opts{'c'});
-  my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($opts{'n'});
-  $designFilePath = $opts{'d'};
-  # get Design groups
-  my $rHoAoA_designGroup = MACS2::getDesign(\%cfg,$designFilePath);
-  $workDir = abs_path($opts{'w'});
-  $currentWorkDir = getcwd();
-  $configFile =  abs_path($opts{'c'});
-  #generate sample jobIdprefix
-  my $cpt = 1;
-
-  for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
-    my $cpt2 = 1;
-    $jobIdVarPrefix{$sampleName} = $cpt;
-    my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sampleName};
-    for my $rH_laneInfo (@$rAoH_sampleLanes) {
-      $jobIdVarPrefix{$sampleName . '.' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} = $cpt . '_' . $cpt2;
-      $cpt2++;
-    }
-    $cpt++;
-  }
-  $cpt = 1;
+  if ($ARGV[0] and $ARGV[0] eq "--clean") {
+    Cleaning::chipseq();
+  } else {
+    my %opts;
+    getopts('c:s:n:d:w:', \%opts);
   
-  # generate design jobIdprefix
-  for my $designName (keys %{$rHoAoA_designGroup}) {
-    $jobIdVarPrefix{$designName} = $cpt;
-    $cpt++;
-  }
-
-  # List user-defined step index range.
-  # Shift 1st position to 0 instead of 1
-  my @stepRange = map($_ - 1, parse_range($opts{'s'}));
-
-  SubmitToCluster::initPipeline($workDir);
-
-  for my $current (@stepRange) {
-    my $fname = $steps[$current]->{'name'};
-    my $loopType = $steps[$current]->{'stepLoop'};
-    my $subref = \&$fname;
-    my @aOjobIDList=();
-
-    if ($loopType eq 'sample') {
-      for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
-        my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sampleName};
+    if (!defined($opts{'c'}) || !defined($opts{'s'}) || !defined($opts{'n'}) || !defined($opts{'d'}) || !defined($opts{'w'})) {
+      printUsage();
+      exit(1);
+    }
+  
+    my %jobIdVarPrefix;
+    my %cfg = LoadConfig->readConfigFile($opts{'c'});
+    my $rHoAoH_sampleInfo = SampleSheet::parseSampleSheetAsHash($opts{'n'});
+    $designFilePath = $opts{'d'};
+    # get Design groups
+    my $rHoAoA_designGroup = MACS2::getDesign(\%cfg,$designFilePath);
+    $workDir = abs_path($opts{'w'});
+    $currentWorkDir = getcwd();
+    $configFile =  abs_path($opts{'c'});
+    #generate sample jobIdprefix
+    my $cpt = 1;
+  
+    for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
+      my $cpt2 = 1;
+      $jobIdVarPrefix{$sampleName} = $cpt;
+      my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sampleName};
+      for my $rH_laneInfo (@$rAoH_sampleLanes) {
+        $jobIdVarPrefix{$sampleName . '.' . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}} = $cpt . '_' . $cpt2;
+        $cpt2++;
+      }
+      $cpt++;
+    }
+    $cpt = 1;
+    
+    # generate design jobIdprefix
+    for my $designName (keys %{$rHoAoA_designGroup}) {
+      $jobIdVarPrefix{$designName} = $cpt;
+      $cpt++;
+    }
+  
+    # List user-defined step index range.
+    # Shift 1st position to 0 instead of 1
+    my @stepRange = map($_ - 1, parse_range($opts{'s'}));
+  
+    SubmitToCluster::initPipeline($workDir);
+  
+    for my $current (@stepRange) {
+      my $fname = $steps[$current]->{'name'};
+      my $loopType = $steps[$current]->{'stepLoop'};
+      my $subref = \&$fname;
+      my @aOjobIDList=();
+  
+      if ($loopType eq 'sample') {
+        for my $sampleName (keys %{$rHoAoH_sampleInfo}) {
+          my $rAoH_sampleLanes = $rHoAoH_sampleInfo->{$sampleName};
+          # Tests for the first step in the list. Used for dependencies.
+          my $jobIdVar = &$subref($current , \%cfg, $sampleName, $rAoH_sampleLanes, \%jobIdVarPrefix);
+          if (defined($jobIdVar)) {
+            $globalDep{$fname}->{$sampleName} = $jobIdVar;
+            # This is for global steps depending on sample / design  steps
+            if(defined ($globalDep{$fname}->{'experiment'})){
+              @aOjobIDList=@{$globalDep{$fname}->{'experiment'}};
+            }
+            push(@aOjobIDList, $jobIdVar);
+            $globalDep{$fname}->{'experiment'} =  \@aOjobIDList;
+          }
+        }
+      } elsif ($loopType eq 'design') {
+        for my $design (keys %{$rHoAoA_designGroup}) {        
+          my $jobIdVar = &$subref($current, \%cfg, $design, $rHoAoA_designGroup, $rHoAoH_sampleInfo, \%jobIdVarPrefix);
+          if (defined($jobIdVar)) {
+            $globalDep{$fname}->{$design} = $jobIdVar;
+            # This is for global steps depending on sample / design  steps
+            if(defined ($globalDep{$fname}->{'experiment'})){
+              @aOjobIDList=@{$globalDep{$fname}->{'experiment'}};
+            }
+            push(@aOjobIDList, $jobIdVar);
+            $globalDep{$fname}->{'experiment'} =  \@aOjobIDList;
+          }
+        }
+      } elsif($loopType eq 'experiment') {      
+        my $jobIdVar = &$subref($current, \%cfg, $designFilePath, $rHoAoA_designGroup, $rHoAoH_sampleInfo, \%jobIdVarPrefix );
+        if (defined($jobIdVar)) {
+          if(defined ($globalDep{$fname}->{'experiment'})){
+             @aOjobIDList=@{$globalDep{$fname}->{'experiment'}};
+          }
+          push(@aOjobIDList, $jobIdVar);
+          $globalDep{$fname}->{'experiment'} = \@aOjobIDList;
+        }
+      } else {
         # Tests for the first step in the list. Used for dependencies.
-        my $jobIdVar = &$subref($current , \%cfg, $sampleName, $rAoH_sampleLanes, \%jobIdVarPrefix);
+        my $jobIdVar = &$subref($current, \%cfg, $designFilePath, $rHoAoA_designGroup, $rHoAoH_sampleInfo, \%jobIdVarPrefix);
         if (defined($jobIdVar)) {
-          $globalDep{$fname}->{$sampleName} = $jobIdVar;
-          # This is for global steps depending on sample / design  steps
-          if(defined ($globalDep{$fname}->{'experiment'})){
-            @aOjobIDList=@{$globalDep{$fname}->{'experiment'}};
-          }
-          push(@aOjobIDList, $jobIdVar);
-          $globalDep{$fname}->{'experiment'} =  \@aOjobIDList;
+          $globalDep{$fname}->{$fname} = $jobIdVar;
         }
-      }
-    } elsif ($loopType eq 'design') {
-      for my $design (keys %{$rHoAoA_designGroup}) {        
-        my $jobIdVar = &$subref($current, \%cfg, $design, $rHoAoA_designGroup, $rHoAoH_sampleInfo, \%jobIdVarPrefix);
-        if (defined($jobIdVar)) {
-          $globalDep{$fname}->{$design} = $jobIdVar;
-          # This is for global steps depending on sample / design  steps
-          if(defined ($globalDep{$fname}->{'experiment'})){
-            @aOjobIDList=@{$globalDep{$fname}->{'experiment'}};
-          }
-          push(@aOjobIDList, $jobIdVar);
-          $globalDep{$fname}->{'experiment'} =  \@aOjobIDList;
-        }
-      }
-    } elsif($loopType eq 'experiment') {      
-      my $jobIdVar = &$subref($current, \%cfg, $designFilePath, $rHoAoA_designGroup, $rHoAoH_sampleInfo, \%jobIdVarPrefix );
-      if (defined($jobIdVar)) {
-        if(defined ($globalDep{$fname}->{'experiment'})){
-           @aOjobIDList=@{$globalDep{$fname}->{'experiment'}};
-        }
-        push(@aOjobIDList, $jobIdVar);
-        $globalDep{$fname}->{'experiment'} = \@aOjobIDList;
-      }
-    } else {
-      # Tests for the first step in the list. Used for dependencies.
-      my $jobIdVar = &$subref($current, \%cfg, $designFilePath, $rHoAoA_designGroup, $rHoAoH_sampleInfo, \%jobIdVarPrefix);
-      if (defined($jobIdVar)) {
-        $globalDep{$fname}->{$fname} = $jobIdVar;
       }
     }
+  
+    # Set script name (without suffix) as pipeline name
+    my $pipelineName = fileparse($0, qr/\.[^.]*/) . "-$Version::version";
+    my $stepNames = join(",", map($steps[$_]->{'name'}, @stepRange));
+    my $nbSamples = scalar(keys %$rHoAoH_sampleInfo);
+  
+    # Log anynymous statistics on remote MUGQIC web server
+    Tools::mugqicLog($pipelineName, $stepNames, $nbSamples);
   }
 }
 

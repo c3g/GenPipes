@@ -1,0 +1,65 @@
+Summary files of the RRNATagger pipeline. Please disregard all files ending with .mugqic.done extension. 
+First uncompress the .tar.gz (or zip) archive. If you are unfamiliar with decompressing files, you can 
+use the free 7zip software.
+
+The Duk/ and Fastqs/ directories contains files generated during reads QC, trimming an filtering.
+
+Root directory/                # Look for the file called
+                               # qual_stats_unassembled.pdf. Contains plots of
+                               # quality scores. Y axis = Qscore, X axis = base 
+                               # pos.
+
+Duk/
+
+├── contam.fastq        # Contains contaminant sequences
+├── duk_contam_log.txt  # Log from the contaminant reads removal
+├── duk_phix_log.txt    # Log from PhiX reads removal
+├── ncontam.fastq       # Non-contaminant reads
+├── ncontam_nphix.fastq # Non-contaminants and non-PhiX reads
+└── ncontam_phix.fastq  # Non-contaminants and PhiX reads
+
+Fastqs/
+
+├── barcodes_log_reads_1_Qcpassed.txt  # Barcode binning log (QC passed reads).
+├── ncontam_nphix_1.fastq              # Good reads: (from 
+|                                      # the Duk/ directory) non-contaminants and
+|                                      # non-phix reads
+├── ncontam_nphix_1_Qcfailed.fastq     # Reads that failed QC filtering 
+├── ncontam_nphix_1_Qcpassed.fastq     # Reads that passed QC filtering
+├── ncontam_nphix_barcodes.txt         # Barcode binning log (raw reads)
+├── qscores_1.tsv                      # Quality scores
+├── qscores_reads_1_Qcpssed.tsv        # Quality scores from reads that passed QC
+└── qual_stats_1_log.txt               # Quality scores log
+
+
+Reads_1/
+                      
+├── obs                        # Directory containing files generated during clustering step. The file 
+|                                called: obs_filtered_blast.out (open in Excel) contains
+|                                the best hit of each cluster against nt (PacBio only).
+├── otu_tables                 # Contains various OTU tables.
+|                                We suggest you look at the table called:
+|                                otu_table_filtered_rarefied.tsv (open in Excel)
+|                                    otu_table.tsv                                       # Contains all OTUs on which we were able to confidently assign a taxonomy.
+|                                    otu_table_failed.tsv                                # Contains all OTUs on which we failed to confidently assign a taxonomy.
+|                                    otu_table_filtered.tsv                              # OTU table on which we Removed empty columns (usually does not happen, but just in case).
+|                                    otu_table_filtered_rarefied.tsv                     # OTU table on which each samples were Rarefied to 1000 reads. Samples having less than 1000 reads are discarded. 
+|                                    otu_table_filtered_rarefied_1X1.tsv                 # OTU table rarefied to 1000 reads and to which singlets OTUs have been removed
+|                                    otu_table_filtered_rarefied_2X2.tsv                 # OTU table rarefied to 1000 reads and to which doublets OTUs have been removed
+|                                    otu_table_filtered_bacteriaArchaea.tsv              # Contains Bacteria and Archaea organisms only.
+|                                    otu_table_filtered_others.tsv                       # Contains non Bacteria and Non Archaea organisms (and or optionally non Fungi organisms).
+|                                    otu_table_filtered_bacteriaArchaea_rarefied.tsv     # OTU table on which each samples were Rarefied to 1000 reads. Samples having less than 1000 reads are discarded.
+|                                    otu_table_filtered_bacteriaArchaea_rarefied_1X1.tsv # OTU table rarefied to 1000 reads and to which singlets OTUs have been removed
+|                                    otu_table_filtered_bacteriaArchaea_rarefied_2X2.tsv # OTU table rarefied to 1000 reads and to which doublets OTUs have been removed
+|
+├── rdp                        # Contains RDP classifier output file.
+|                                (Open in Excel)
+└── tax_summary                # Contains files related to taxonomic summary
+    |                          # These files can be opened with Excel.
+    ├── absolute               # Taxonomic tables with absolute numbers
+    ├── relative               # Taxonomic tables with absolute numbers
+    └── plots
+                               # Contains bar_charts.html (open in a web browser)
+
+Blast/                         # Only contains data for PacBio datatype. Directory is empty
+                               # if datatype is 454 or MiSeq/HiSeq.
