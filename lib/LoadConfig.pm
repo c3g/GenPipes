@@ -158,6 +158,10 @@ sub getParam {
         my $tmpVal = `echo $retVal`;
         chomp($tmpVal);
         -d $tmpVal or die "Error: parameter \"[" . $section . "] " . $value . "\" value $retVal is not a valid directory path!";
+      } elsif ($type eq 'prefixpath') {
+        my $tmpVal = `echo $retVal`;
+        chomp($tmpVal);
+        glob($tmpVal) or die "Error: parameter \"[" . $section . "] " . $value . "\" value $retVal is not a valid prefix path!";
       } elsif ($type eq 'array') {
         if (ref($retVal) ne "ARRAY") {
           if (ref(\$retVal) eq "SCALAR") {
