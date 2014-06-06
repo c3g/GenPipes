@@ -212,6 +212,8 @@ sub transdecoder {
   ]) . " && \\\n";
 
   $command .= "mkdir -p $output_directory && cd $output_directory && \\\n";
+  # Remove previous symlink if any to avoid transdecoder error "ln: creating symbolic link `Trinity.fasta.transdecoder.pfam.dat.domtbl': File exists" (transdecoder should do by itself!)
+  $command .= "rm -f Trinity.fasta.transdecoder.pfam.dat.domtbl && \\\n";
   $command .= "\\\$TRINITY_HOME/trinity-plugins/transdecoder/TransDecoder \\
   --t $transcripts \\\n";
   $command .= "  --search_pfam " . LoadConfig::getParam($rH_cfg, 'transdecoder', 'pfamDb', 1, 'filepath') . " \\\n";
