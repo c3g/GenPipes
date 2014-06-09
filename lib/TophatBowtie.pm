@@ -68,11 +68,22 @@ sub align {
   } else {
     ($bwa_idx_basename = LoadConfig::getParam($rH_cfg, 'align', 'referenceFasta', 1, 'filepath')) =~ s/\.[^.]+$//;
   }
-  my $refFile = LoadConfig::getParam($rH_cfg, 'align','referenceGtf', 1, 'filepath');
+  
+  
+  # -G and --transcriptome-index options
+  my $refFile      = LoadConfig::getParam($rH_cfg, 'align','referenceGtf',       0, 'filepath');
+  my $refFileIndex = LoadConfig::getParam($rH_cfg, 'align','transcriptomeIndex', 0, 'prefixpath');
   my $refOption = ' ';
-  if ($refFile ne ' ') {
+  if ($refFile) {
     $refOption .= '-G ' . $refFile;
+	if ($refFileIndex) {
+		$refOption .= ' --transcriptome-index ' . $refFileIndex;
+	}
   }
+  
+  # Tophat any other options
+  my $otherOptions      = LoadConfig::getParam($rH_cfg, 'align','tophatMoreOptions', 0);
+
 
   my $ro_job = new Job();
   if (defined($pair2)) {
@@ -98,7 +109,7 @@ sub align {
     $command .= ' --library-type ' . LoadConfig::getParam($rH_cfg, 'align', 'strandInfo');
 #     $command .= ' --fusion-search ' . LoadConfig::getParam($rH_cfg, 'align', 'fusionOption');
     $command .= ' -o ' . $laneDirectory;
-    $command .= ' -p ' . LoadConfig::getParam($rH_cfg, 'align', 'TBAlnThreads', 1, 'int') . $refOption;
+    $command .= ' -p ' . LoadConfig::getParam($rH_cfg, 'align', 'TBAlnThreads', 1, 'int') . $refOption . ' ' . $otherOptions  ;
 #     $command .= ' -g ' . LoadConfig::getParam($rH_cfg, 'align', 'maxReadLocation');
 
     #------ flefebvr Tue 16 Apr 09:04:54 2013 
