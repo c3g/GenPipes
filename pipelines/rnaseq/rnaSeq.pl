@@ -954,8 +954,8 @@ sub goseq {
     die ("A design is needed for the goseq step\n");
   }
 
-	my $columnsCuff = LoadConfig::getParam($rH_cfg, 'diffExpress', 'cuffRescolumns');
-	my $columnsDge = LoadConfig::getParam($rH_cfg, 'diffExpress', 'dgeRescolumns');
+	my $columnsCuff = LoadConfig::getParam($rH_cfg, 'goseq', 'cuffRescolumns');
+	my $columnsDge = LoadConfig::getParam($rH_cfg, 'goseq', 'dgeRescolumns');
 	my $goseqJobId = undef;
 	for my $design (keys %{$rHoAoA_designGroup}) {
 		## goseq for cuffdiff known results
