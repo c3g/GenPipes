@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # NOTE:
 # This script is not fully portable because of BLAS and LAPACK. Pay attention to corresponding setenv paths below.
 # TODO: we need to a way to keep track of the list of python packages + their versions for reporting, something a la help('modules')
@@ -181,6 +183,20 @@ easy_install https://pypi.python.org/packages/source/P/PyVCF/PyVCF-${PYVCF_VERSI
 easy_install http://labix.org/download/python-dateutil/python-dateutil-1.5.tar.gz
 easy_install pyparsing
 easy_install matplotlib
+
+## RSeQC (easyinstall won't work)
+# module load mugqic/python/2.7.5
+VERSION=2.3.8  
+wget https://downloads.sourceforge.net/project/rseqc/RSeQC-$VERSION.tar.gz
+tar xvf RSeQC-$VERSION.tar.gz
+cd RSeQC-$VERSION
+module load mugqic/python/2.7.5 # wouldn't work with 2.7.8s
+python setup.py install
+cd ..
+rm -rf RSeQC*
+python -c 'from qcmodule import SAM'
+
+
 
 #module-whatis	 HTSeq: Analysing high-throughput sequencing data with Python 
 #prepend-path	 PATH /sb/programs/analyste/software/Python-2.7.3/bin/  # hmmm already done by python!!

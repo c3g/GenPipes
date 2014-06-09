@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 ################################################################################
 # This is a module install script template which should be copied and used for
@@ -63,3 +63,32 @@ mv $VERSION .version $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
 
 # Clean up temporary installation files if any
 rm -rf $INSTALL_DOWNLOAD
+
+
+
+
+
+
+################################################################################
+################################################################################
+################################################################################
+################################################################################
+
+# ## 2014-03-11
+# # Complicated install of DB_File on Mammouth
+# module load mugqic/perl db
+# TEMPDIR=`mktemp -d -t $me.XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX` && cd $TEMPDIR 
+# echo "Working in $TEMPDIR"
+# VERSION="1.831"
+# wget http://search.cpan.org/CPAN/authors/id/P/PM/PMQS/DB_File-$VERSION.tar.gz
+# tar -xvf DB_File-$VERSION.tar.gz
+# cd DB_File-$VERSION
+# sed -i "s,/usr/local/BerkeleyDB/include,/opt/db/5.3.21/include,g"  config.in
+# sed -i "s,/usr/local/BerkeleyDB/lib,/opt/db/5.3.21/lib,g"  config.in
+# perl Makefile.PL 
+# make
+# make test
+# make install
+# perl -e "use DB_File;"
+# chmod -R gu+rwX  $MUGQIC_INSTALL_HOME/software/perl
+

@@ -1,6 +1,7 @@
+#!/bin/bash
 
 ###################
-################### picard
+################### mutect
 ###################
 VERSION="1.1.4"
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/mutect/
@@ -18,6 +19,7 @@ module-whatis \"MUGQIC - Broads cancer snp caller  \"
             
 set             root              \$::env(MUGQIC_INSTALL_HOME)/software/mutect/muTect-${VERSION}
 setenv          MUTECT_JAR        \$root/muTect-${VERSION}.jar
+setenv          MUTECT_HOME       \$root/
 " > $VERSION
 
 # version file

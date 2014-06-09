@@ -1,11 +1,11 @@
-#!/bin/sh
+#!/bin/bash
 
 #
 # MUGQIC Tools
 #
 
 SOFTWARE=mugqic_tools
-VERSION=1.7
+VERSION=1.10
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/$SOFTWARE
 INSTALL_DOWNLOAD=$INSTALL_PATH/tmp
 mkdir -p $INSTALL_DOWNLOAD
@@ -37,6 +37,7 @@ module-whatis \"$SOFTWARE  \" ;
 set             root                \$::env(MUGQIC_INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE-$VERSION ;
 prepend-path    PATH                \$root/tools ;
 prepend-path    PATH                \$root/perl-tools ;
+prepend-path    PATH                \$root/R-tools ;
 prepend-path    PATH                \$root/python-tools ;
 prepend-path    PATH                \$root/RRNATagger-tools ;
 prepend-path    PERL5LIB            \$root/perl-tools ;

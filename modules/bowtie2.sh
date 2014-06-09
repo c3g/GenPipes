@@ -1,11 +1,11 @@
-#!/bin/sh
+#!/bin/bash
 
 #
 # Bowtie2
 #
 
 SOFTWARE=bowtie2
-VERSION=2.2.0
+VERSION=2.2.2
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/$SOFTWARE
 INSTALL_DOWNLOAD=$INSTALL_PATH/tmp
 mkdir -p $INSTALL_DOWNLOAD
