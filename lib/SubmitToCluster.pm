@@ -61,6 +61,9 @@ sub initPipeline {
   # Add script name (without suffix) as job list filename prefix (in practice, identical to pipeline name)
   my $jobListPrefix = fileparse($0, qr/\.[^.]*/) . "_";
 
+  # Set environment work dir for further file path resolutions
+  $ENV{'WORK_DIR'}=$workDir;
+
   # Set pipeline header and global variables
   print <<END;
 #!/bin/bash
@@ -135,17 +138,17 @@ sub printSubmitCmd {
   my $rA_FilesToTest = $rO_job->getFilesToTest();
   # Erase dones, on all jobs of the series
   if (defined($rA_FilesToTest) && @{$rA_FilesToTest} > 0) {
-    print 'echo "rm -f ' . join(' ', @{$rA_FilesToTest}) . ' ; ';
+    print "echo \"rm -f \\\n  " . join(" \\\n  ", @{$rA_FilesToTest}) . " && \\\n";
   } else {
     print 'echo "';
   }
 
   # Print out job command
   print $command;
-  print ' && MUGQIC_STATE=\${PIPESTATUS} &&  echo \"MUGQICexitStatus:\${MUGQIC_STATE}\" ';
+  print " && \\\n" . 'MUGQIC_STATE=\${PIPESTATUS} &&  echo \"MUGQICexitStatus:\${MUGQIC_STATE}\" ';
   # Only add if it's the last job of the series.
   if (defined($rA_FilesToTest) && @{$rA_FilesToTest} > 0 && $commandIdx == $rO_job->getNbCommands() - 1) {
-    print ' && if  [ \"\$MUGQIC_STATE\" == \"0\" ] ; then touch ' . join(' ', @{$rA_FilesToTest}) .' ; fi';
+    print ' && if  [ \"\$MUGQIC_STATE\" == \"0\" ] ; then touch ' . "\\\n  " . join(" \\\n  ", @{$rA_FilesToTest}) . " ; fi \\\n";
   }
   print ' && exit \${MUGQIC_STATE} ';
   print '"';
