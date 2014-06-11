@@ -748,7 +748,7 @@ sub rawCountsMetrics {
 	my $wigArchive = 'tracks.zip' ;
 	my $rO_job = Wiggle::zipWig($rH_cfg, $wigFolder, $wigArchive);
 	if(!$rO_job->isUp2Date()) {
-    SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", undef, 'WIGZIP' , $wiggleDependency, undef, $rO_job);
+    SubmitToCluster::printSubmitCmd($rH_cfg, "metrics", 'wigzip', 'WIGZIP' , $wiggleDependency, undef, $rO_job);
     if(!defined($metricsJobId)) {
       $metricsJobId = $rO_job->getCommandJobId(0);
     } else {
