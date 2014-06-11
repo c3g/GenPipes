@@ -121,7 +121,7 @@ will generate a bash script for steps 1 to 11. This script can then be executed:
       -d (design.csv) the design file. A tab separated value file that specifies the experimental design information of the project. An example of design file may be available in the respective pipeline directory (pipelines/Pipeline_name/example.design.tsv)
       -w The project's working directory. All job outputs will be sent to this directory.
 
-### Call home
+## Call home
 When pipeline jobs are submitted, a call home feature is invoked. The reason is to justify grant applications to support funding on the pipelines.
 
 This is the data that is transmitted:
