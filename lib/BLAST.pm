@@ -186,8 +186,11 @@ sub dcmegablast{ #JT: Initially for for PacBio pipeline
   my $coverageBED = shift;
   my $outdir      = shift;
 
+  my $prefix = $outfile;
+  $prefix =~ s{\.[^.]+$}{};
+
   my $ro_job = new Job();
-    $ro_job->testInputOutputs([$infileFasta], [$outfile]);
+  $ro_job->testInputOutputs([$infileFasta], [$outfile]);
     
   if (!$ro_job->isUp2Date()) {
     my $cmd = '';
@@ -201,11 +204,16 @@ sub dcmegablast{ #JT: Initially for for PacBio pipeline
     $cmd .= ' blastn';
     $cmd .= ' -task dc-megablast';
     $cmd .= ' -query ' . $infileFasta;
-    $cmd .= ' -outfmt \"' .$outfmt. ' qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore stitle sskingdoms sscinames scomnames\"';
-    $cmd .= ' -out ' .$outfile;
-    $cmd .= ' -num_alignments ' . LoadConfig::getParam($rH_cfg, 'blast', 'max_target_seqs', 1, 'int');
+    $cmd .= ' -outfmt \"' . $outfmt . ' qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore stitle sskingdoms sscinames scomnames\"';
+    $cmd .= ' -out ' . $prefix . '.all.tmp';
+    $cmd .= ' -max_target_seqs ' . LoadConfig::getParam($rH_cfg, 'blast', 'max_target_seqs', 1, 'int');
     $cmd .= ' -num_threads ' . LoadConfig::getParam($rH_cfg, 'blast', 'num_threads', 1, 'int');
     $cmd .= ' -db ' . LoadConfig::getParam($rH_cfg, 'blast', 'blastdb');
+    $cmd .= ' && ';
+    $cmd .= ' pacBioKeepBlastBestHits.pl';
+    $cmd .= ' --infile ' . $prefix . '.all.tmp';
+    $cmd .= ' --n ' . LoadConfig::getParam($rH_cfg, 'blast', 'max_target_seqs', 1, 'int');
+    $cmd .= ' > ' . $outfile;
     $cmd .= ' && ';
     $cmd .= ' pacBioMergeCovToBlast.R';
     $cmd .= ' -c ' . $coverageBED;
