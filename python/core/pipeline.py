@@ -102,20 +102,20 @@ class Pipeline:
         self.scheduler.submit(self)
 
     def show(self):
-        print 'Pipeline: ' + self.__class__.__name__
-        print 'output_dir: ' + self.output_dir
-        print 'scheduler: ' + self.scheduler.__class__.__name__
-        print 'Steps: '
+        print('Pipeline: ' + self.__class__.__name__)
+        print('output_dir: ' + self.output_dir)
+        print('scheduler: ' + self.scheduler.__class__.__name__)
+        print('Steps:')
         for step in self.steps:
-            print "Step: " + step.name
+            print("Step: " + step.name)
             for job in step.jobs:
-                print job.id
+                print(job.id)
                 for dependency_job in job.dependency_jobs:
-                    print "  Dependency " + dependency_job.id + ", command: " + dependency_job.command
-                print "  Input files:" + ",".join(job.input_files)
-                print "  Command: " + job.command
-                print "  Output files:" + ",".join(job.output_files)
-                print
+                    print("  Dependency " + dependency_job.id + ", command: " + dependency_job.command)
+                print("  Input files:" + ",".join(job.input_files))
+                print("  Command: " + job.command)
+                print("  Output files:" + ",".join(job.output_files))
+                print()
 
 # Return a range list given a string.
 # e.g. parse_range('1,3,5-12') returns [1, 3, 5, 6, 7, 8, 9, 10, 11, 12]

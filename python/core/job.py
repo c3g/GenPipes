@@ -15,11 +15,11 @@ class Job:
         self._output_files = output_files
 
         # Retrieve modules from config, removing duplicates but keeping the order
-        self._modules =  list(collections.OrderedDict.fromkeys([self.config.param(section, option) for section, option in module_entries]))
+        self._modules = list(collections.OrderedDict.fromkeys([self.config.param(section, option) for section, option in module_entries]))
 
     def show(self):
-        print "Job: input_files: " + \
-            ", ".join(self.input_files)
+        print("Job: input_files: " + \
+            ", ".join(self.input_files))
 
     @property
     def id(self):
@@ -99,6 +99,6 @@ class Job:
 #    ])
 #
 #job.command = "ls -l"
-#print job.command_with_modules
-#print job.is_up2date
+#print(job.command_with_modules)
+#print(job.is_up2date)
 #job.show()

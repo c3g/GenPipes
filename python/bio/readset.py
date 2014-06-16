@@ -24,7 +24,7 @@ class Readset:
                 "\" is invalid (should be \"PAIRED_END\" or \"SINGLE_END\")!")
 
     def show(self):
-        print 'Readset -- name: ' + self._name + ', run_type: ' + self._run_type
+        print('Readset -- name: ' + self._name + ', run_type: ' + self._run_type)
 
     @property
     def name(self):
@@ -117,7 +117,7 @@ class Readset:
             readset.lane = line['Lane']
             readset.adaptor1 = line['Adaptor1']
             readset.adaptor2 = line['Adaptor2']
-            readset.quality_offset = line['QualityOffset']
+            readset.quality_offset = int(line['QualityOffset'])
             if line['BED'] != None and line['BED'] != "":
                 readset.beds = line['BED'].split(";")
             else:
@@ -131,7 +131,7 @@ class Readset:
 #readset = Readset("readset1", "SINGLE_END")
 #readset.show()
 #readset.bam = "toto.bam"
-#print readset.bam
+#print(readset.bam)
 #
 #sample = Sample("sample1")
 #sample.show()

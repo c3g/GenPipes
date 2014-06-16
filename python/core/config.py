@@ -50,14 +50,14 @@ class Config(ConfigParser.SafeConfigParser):
                 elif type == 'boolean':
                     return self.getboolean(section, option)
                 elif type == 'filepath':
-                    value = self.get(section, option)
-                    if os.path.isfile(os.path.expandvars(value)):
+                    value = os.path.expandvars(self.get(section, option))
+                    if os.path.isfile(value):
                         return value
                     else:
                         raise Exception("File path \"" + value + "\" does not exist or is not a valid regular file!")
                 elif type == 'dirpath':
-                    value = self.get(section, option)
-                    if os.path.isdir(os.path.expandvars(value)):
+                    value = os.path.expandvars(self.get(section, option))
+                    if os.path.isdir(value):
                         return value
                     else:
                         raise Exception("Directory path \"" + value + "\" does not exist or is not a valid directory!")
@@ -67,7 +67,7 @@ class Config(ConfigParser.SafeConfigParser):
                 else:
                     return self.get(section, option)
             except:
-                print "Error: parameter \"[" + section + "] " + option + "\" value \"" + self.get(section, option) + "\" is invalid!"
+                print("Error: parameter \"[" + section + "] " + option + "\" value \"" + self.get(section, option) + "\" is invalid!")
                 raise
         elif required:
             raise Exception("Error: parameter \"[" + section + "] " + option + "\" is not defined in config file!")
@@ -75,5 +75,5 @@ class Config(ConfigParser.SafeConfigParser):
             return ""
 
 #config = Config("/lb/project/mugqic/projects/jfillon_pipelines/dnaseq/bam2fastq/dnaSeq.abacus.ini")
-#print config.get("trim", "moduleVersion.java")
-#print config.param("trim", "toto", False, "list")
+#print(config.get("trim", "moduleVersion.java"))
+#print(config.param("trim", "toto", False, "list"))
