@@ -54,7 +54,7 @@ Whenever the latest snapshot from github is needed, use the command pull
 
 #### Setup
 
-Add the mugqic directory library to your PERL5LIB path.
+Add the mugqic directory library to your PERL5LIB path. For instance, if you have cloned the repository to /home/user/src/, 
 
     export PERL5LIB=${PERL5LIB}:/home/user/src/mugqic_pipeline/lib/ 
 
@@ -65,7 +65,11 @@ In its general operation all the mugqic pipelines require two input files: a pro
 
 ###   The project's read set sheet 
 
-Is a csv plain text read set sheet generated from [NANUQ](http://gqinnovationcenter.com/index.aspx). See [this](https://biowiki.atlassian.net/wiki/display/PS/Read+Set+Files+%28FastQ%29+Setup) page to learn how to properly setup your fastq files and your project read set sheet.
+Is a csv plain text file where row provides various attributes of the read sets. For sequencing data provided by the MUGQIC, the read set sheet can be downloaded from [NANUQ](http://gqinnovationcenter.com/index.aspx), under the "Read Sets" tab of your project page. If your sequencing data was generated at a different facility, please refer to [this](https://biowiki.atlassian.net/wiki/display/PS/Read+Set+Files+%28FastQ%29+Setup) page to learn how create the read set sheet from scratch.
+
+###   The FASTQ files
+
+FASTQ files must be placed within a directory structure nested by sample and lane number. See [this](https://biowiki.atlassian.net/wiki/display/PS/Read+Set+Files+%28FastQ%29+Setup) page to learn how to do this.
 
 
 ###   The configuration (ini) file. 
