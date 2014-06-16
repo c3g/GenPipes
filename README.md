@@ -69,7 +69,7 @@ Is a csv plain text file where row provides various attributes of the read sets.
 
 ###   The FASTQ files
 
-FASTQ files must be placed within a directory structure nested by sample and lane number. See [this](https://biowiki.atlassian.net/wiki/display/PS/Read+Set+Files+%28FastQ%29+Setup) page to learn how to do this.
+FASTQ files must be placed in a directory structure nested by sample and lane number. See [this](https://biowiki.atlassian.net/wiki/display/PS/Read+Set+Files+%28FastQ%29+Setup) page to learn how to do this.
 
 
 ###   The configuration (ini) file. 
