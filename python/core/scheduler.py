@@ -79,10 +79,10 @@ JOB_OUTPUT=$JOB_OUTPUT_DIR/$JOB_OUTPUT_RELATIVE_PATH""".format(
                     )
 
                     cmd = \
-"""echo \"rm -f $JOB_DONE && \\
+"""echo "rm -f $JOB_DONE && \\
 {job.command_with_modules} && \\
-MUGQIC_STATE=\${{PIPESTATUS}} && echo \\"MUGQICexitStatus:\${{MUGQIC_STATE}}\\" && \\
-if [ \\"\$MUGQIC_STATE\\" == \\"0\\" ] ; then touch $JOB_DONE ; fi && exit \${{MUGQIC_STATE}}" | \\
+MUGQIC_STATE=\$PIPESTATUS && echo MUGQICexitStatus:\$MUGQIC_STATE && \\
+if [ \$MUGQIC_STATE -eq 0 ] ; then touch $JOB_DONE ; fi && exit \$MUGQIC_STATE" | \\
 """.format(job=job)
 
                     cmd += \

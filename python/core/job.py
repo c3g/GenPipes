@@ -11,8 +11,9 @@ class Job:
 
     def __init__(self, config, input_files, output_files, module_entries = []):
         self._config = config
-        self._input_files = input_files
-        self._output_files = output_files
+        # Remove undefined input/output files if any
+        self._input_files = filter(None, input_files)
+        self._output_files = filter(None, output_files)
 
         # Retrieve modules from config, removing duplicates but keeping the order
         self._modules = list(collections.OrderedDict.fromkeys([self.config.param(section, option) for section, option in module_entries]))
@@ -41,6 +42,15 @@ class Job:
     def output_files(self):
         return self._output_files
 
+    # Input/output files are first defined relative to the pipeline output directory
+    def update_files(self, output_dir):
+        self.input_files = [file if os.path.isabs(file) else os.path.join(output_dir, file) for file in self.input_files]
+        self.output_files = [file if os.path.isabs(file) else os.path.join(output_dir, file) for file in self.output_files]
+
+    @property
+    def done(self):
+        return self._done
+
     @property
     def dependency_jobs(self):
         return self._dependency_jobs
@@ -60,19 +70,22 @@ class Job:
             command = "module load " + " ".join(self.modules) + " && \\\n" + command
         return command
 
-    @property
     def is_up2date(self):
         # Job is up to date by default
         is_job_up2date = True
+
+        # If .done is missing, job is not up to date
+        if not os.path.isfile(os.path.expandvars(self.done)):
+            is_job_up2date = False
 
         # If any input file is missing, job is not up to date
         for input_file in self.input_files:
             if not os.path.isfile(os.path.expandvars(input_file)):
                 is_job_up2date = False
 
-        # If any output file or output ".done" file is missing, job is not up to date
+        # If any output file file is missing, job is not up to date
         for output_file in self.output_files:
-            if not os.path.isfile(os.path.expandvars(output_file)) or not os.path.isfile(os.path.expandvars(output_file + ".done")):
+            if not os.path.isfile(os.path.expandvars(output_file)):
                 is_job_up2date = False
 
         # Skip further tests if job is already out of date

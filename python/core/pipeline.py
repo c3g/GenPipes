@@ -18,6 +18,7 @@ class Pipeline:
         self._config = Config(args.config)
         self._output_dir = os.path.abspath(args.output_dir)
         self._scheduler = create_scheduler(args.job_scheduler)
+        self._force_jobs = args.force
         self._step_map = []
         for step_dict in self.step_dict_map:
             step_name = step_dict['name'].__name__
@@ -45,6 +46,10 @@ class Pipeline:
     @property
     def scheduler(self):
         return self._scheduler
+
+    @property
+    def force_jobs(self):
+        return self._force_jobs
 
     @property
     def step_dict_map(self):
@@ -83,7 +88,7 @@ class Pipeline:
 
     def create_jobs(self):
         for step in self.steps:
-            log.debug("create_jobs for step: " + step.name)
+            log.info("Create jobs for step " + step.name + "...")
             jobs = []
             if step.loop:
                 for item in step.loop:
@@ -95,8 +100,14 @@ class Pipeline:
                 job.name = step.name
                 jobs.append(job)
             for job in jobs:
-                job.dependency_jobs = self.dependency_jobs(job)
-                step.add_job(job)
+                job.update_files(self.output_dir)
+                job.done = os.path.join(self.output_dir, "job_output", step.name, job.name + ".mugqic.done")
+                if not self.force_jobs and job.is_up2date():
+                    log.info("Job " + job.name + " up to date... skipping")
+                else:
+                    job.dependency_jobs = self.dependency_jobs(job)
+                    step.add_job(job)
+            log.info("Step " + step.name + ": " + str(len(step.jobs)) + " job" + ("s" if len(step.jobs) > 1 else "") + " created" + ("" if step.jobs else "... skipping") + "\n")
 
     def submit_jobs(self):
         self.scheduler.submit(self)
@@ -137,6 +148,7 @@ class PipelineArgumentParser(argparse.ArgumentParser):
         self.add_argument("-s", "--steps", help="step range e.g. '1-5', '3,6,7', '2,4-8'", required=True)
         self.add_argument("-o", "--output-dir", help="output directory (default: current)", default=os.getcwd())
         self.add_argument("-j", "--job-scheduler", help="job scheduler type (default: torque)", choices=["torque", "batch", "daemon"], default="torque")
+        self.add_argument("-f", "--force", help="force creation of jobs even if up to date (default: false)", action="store_true")
         self.add_argument("-l", "--log", help="log level (default: info)", choices=["debug", "info", "warning", "error", "critical"], default="info")
 
     def parse_args(self):
