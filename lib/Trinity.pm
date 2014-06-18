@@ -88,8 +88,7 @@ sub insilico_read_normalization {
   my $rO_job = new Job();
   $rO_job->testInputOutputs($rA_inputs, $rA_outputs);
 
-  my $command = "\n";
-  $command .= "mkdir -p $outputDirectory && \\\n";
+  my $command = "mkdir -p $outputDirectory && \\\n";
 
   # Create sorted left/right lists of fastq.gz files
   if ($readType eq "paired") {    # Paired reads
@@ -127,7 +126,7 @@ $readFileOptions \\
   $command .= " " . LoadConfig::getParam($rH_cfg, 'normalization', 'normalizationOptions', 1) . " && \\\n";
 
   # Count normalized reads for stats
-  $command .= "wc -l " . @$rA_outputs[0] . " | awk '{print \\\"# normalized $readType reads\\t\\\"\\\$1 / 4}' > $outputDirectory/normalization.stats.tsv \\\n";
+  $command .= "wc -l " . @$rA_outputs[0] . " | awk '{print \\\"# normalized $readType reads\\t\\\"\\\$1 / 4}' > $outputDirectory/normalization.stats.tsv";
 
   $rO_job->addCommand($command);
 
@@ -167,9 +166,7 @@ sub trinity {
   my $rO_job = new Job();
   $rO_job->testInputOutputs($rA_inputs, ["$outputDirectory/Trinity.fasta"]);
 
-  my $command = "\n";
-
-  $command .= LoadConfig::moduleLoad($rH_cfg, [
+  my $command = LoadConfig::moduleLoad($rH_cfg, [
     ['trinity', 'moduleVersion.java'],
     ['trinity', 'moduleVersion.trinity'],
     ['trinity', 'moduleVersion.bowtie'],
@@ -189,7 +186,7 @@ $readFileOptions \\
   $command .= "zip -j $outputDirectory/Trinity.fasta.zip $outputDirectory/Trinity.fasta && \\\n";
 
   # Compute assembly stats
-  $command .= "Rscript -e 'library(gqSeqUtils); dnaFastaStats(filename = \\\"$outputDirectory/Trinity.fasta\\\", type = \\\"trinity\\\", output.prefix = \\\"$outputDirectory/Trinity.stats\\\")' \\\n";
+  $command .= "Rscript -e 'library(gqSeqUtils); dnaFastaStats(filename = \\\"$outputDirectory/Trinity.fasta\\\", type = \\\"trinity\\\", output.prefix = \\\"$outputDirectory/Trinity.stats\\\")'";
 
   $rO_job->addCommand($command);
 
@@ -199,26 +196,26 @@ $readFileOptions \\
 sub transdecoder {
   my $rH_cfg = shift;
   my $transcripts = shift;
-  my $output_directory = shift;
+  my $outputDirectory = shift;
 
   my $rO_job = new Job();
 
-  my $command = "\n";
+  $rO_job->testInputOutputs([$transcripts], ["$outputDirectory/Trinity.fasta.transdecoder.pep", "$outputDirectory/Trinity.fasta.transdecoder.pfam.dat.domtbl"]);
 
-  $command .= LoadConfig::moduleLoad($rH_cfg, [
+  my $command = LoadConfig::moduleLoad($rH_cfg, [
     ['transdecoder', 'moduleVersion.cd-hit'],
     ['transdecoder', 'moduleVersion.hmmer'],
     ['transdecoder', 'moduleVersion.trinity']
   ]) . " && \\\n";
 
-  $command .= "mkdir -p $output_directory && cd $output_directory && \\\n";
+  $command .= "mkdir -p $outputDirectory && cd $outputDirectory && \\\n";
   # Remove previous symlink if any to avoid transdecoder error "ln: creating symbolic link `Trinity.fasta.transdecoder.pfam.dat.domtbl': File exists" (transdecoder should do by itself!)
   $command .= "rm -f Trinity.fasta.transdecoder.pfam.dat.domtbl && \\\n";
   $command .= "\\\$TRINITY_HOME/trinity-plugins/transdecoder/TransDecoder \\
   --t $transcripts \\\n";
   $command .= "  --search_pfam " . LoadConfig::getParam($rH_cfg, 'transdecoder', 'pfamDb', 1, 'filepath') . " \\\n";
   $command .= "  --CPU " . LoadConfig::getParam($rH_cfg, 'transdecoder', 'CPU', 1, 'int') . " \\\n";
-  $command .= "  " . LoadConfig::getParam($rH_cfg, 'transdecoder', 'transdecoderOptions', 0) . " \\\n";
+  $command .= "  " . LoadConfig::getParam($rH_cfg, 'transdecoder', 'transdecoderOptions', 0);
 
   $rO_job->addCommand($command);
 
@@ -228,13 +225,13 @@ sub transdecoder {
 sub rnammerTranscriptome {
   my $rH_cfg = shift;
   my $transcripts = shift;
-  my $output_directory = shift;
+  my $outputDirectory = shift;
 
   my $rO_job = new Job();
 
-  my $command = "\n";
+  $rO_job->testInputOutputs([$transcripts], ["$outputDirectory/Trinity.fasta.rnammer.gff"]);
 
-  $command .= "module load mugqic/hmmer/2.3.2 && \\\n";
+  my $command = "module load mugqic/hmmer/2.3.2 && \\\n";
 
   $command .= LoadConfig::moduleLoad($rH_cfg, [
     ['rnammerTranscriptome', 'moduleVersion.rnammer'],
@@ -242,11 +239,11 @@ sub rnammerTranscriptome {
     ['rnammerTranscriptome', 'moduleVersion.trinotate']
   ]) . " && \\\n";
 
-  $command .= "mkdir -p $output_directory && cd $output_directory && \\\n";
+  $command .= "mkdir -p $outputDirectory && cd $outputDirectory && \\\n";
   $command .= "\\\$TRINOTATE_HOME/util/rnammer_support/RnammerTranscriptome.pl \\
   --transcriptome $transcripts \\
   --path_to_rnammer \\\`which rnammer\\\` \\\n";
-  $command .= "  " . LoadConfig::getParam($rH_cfg, 'rnammerTranscriptome', 'rnammerTranscriptomeOptions', 0) . " \\\n";
+  $command .= "  " . LoadConfig::getParam($rH_cfg, 'rnammerTranscriptome', 'rnammerTranscriptomeOptions', 0);
 
   $rO_job->addCommand($command);
 
@@ -260,19 +257,19 @@ sub signalp {
 
   my $rO_job = new Job();
 
-  my $command = "\n";
+  $rO_job->testInputOutputs([$input], [$output]);
 
-  $command .= LoadConfig::moduleLoad($rH_cfg, [
+  my $command = LoadConfig::moduleLoad($rH_cfg, [
     ['signalp', 'moduleVersion.signalp']
   ]) . " && \\\n";
 
-  my $output_directory = dirname($output);
+  my $outputDirectory = dirname($output);
 
   $command .= "signalp \\\n";
-  $command .= "  -T $output_directory/tmp \\\n";
+  $command .= "  -T $outputDirectory/tmp \\\n";
   $command .= "  -n $output \\\n";
   $command .= "  " . LoadConfig::getParam($rH_cfg, 'signalp', 'signalpOptions', 0) . " \\\n";
-  $command .= "  $input \\\n";
+  $command .= "  $input";
 
   $rO_job->addCommand($command);
 
@@ -286,16 +283,16 @@ sub tmhmm {
 
   my $rO_job = new Job();
 
-  my $command = "\n";
+  $rO_job->testInputOutputs([$input], [$output]);
 
-  $command .= LoadConfig::moduleLoad($rH_cfg, [
+  my $command = LoadConfig::moduleLoad($rH_cfg, [
     ['tmhmm', 'moduleVersion.tmhmm']
   ]) . " && \\\n";
 
-  my $output_directory = dirname($output);
+  my $outputDirectory = dirname($output);
 
-  $command .= "mkdir -p $output_directory && cd $output_directory && \\\n";
-  $command .= "tmhmm --short < $input > $output \\\n";
+  $command .= "mkdir -p $outputDirectory && cd $outputDirectory && \\\n";
+  $command .= "tmhmm --short < $input > $output";
 
   $rO_job->addCommand($command);
 
@@ -308,9 +305,9 @@ sub alignEstimateAbundancePrepareReference {
 
   my $rO_job = new Job();
 
-  my $command = "\n";
+  $rO_job->testInputOutputs([$transcripts], ["$transcripts.RSEM.transcripts.fa", "$transcripts.RSEM.idx.fa"]);
 
-  $command .= LoadConfig::moduleLoad($rH_cfg, [
+  my $command = LoadConfig::moduleLoad($rH_cfg, [
     ['alignEstimateAbundance', 'moduleVersion.bowtie'],
     ['alignEstimateAbundance', 'moduleVersion.rsem'],
     ['alignEstimateAbundance', 'moduleVersion.samtools'],
@@ -323,7 +320,7 @@ sub alignEstimateAbundancePrepareReference {
   --est_method RSEM \\
   --aln_method bowtie \\
   --trinity_mode \\
-  --prep_reference \\\n";
+  --prep_reference";
 
   $rO_job->addCommand($command);
 
@@ -339,21 +336,19 @@ sub alignEstimateAbundance {
 
   $rO_job->testInputOutputs(
     [$transcripts],
-    ["\$WORK_DIR/alignEstimateAbundance/$sample.genes.results",
-     "\$WORK_DIR/alignEstimateAbundance/$sample.isoforms.results"]
+    ["\$WORK_DIR/alignEstimateAbundance/$sample/$sample.genes.results",
+     "\$WORK_DIR/alignEstimateAbundance/$sample/$sample.isoforms.results"]
   );
 
-  my $command = "\n";
-
-  my $left  = "\\`find \$WORK_DIR/reads -name $sample*pair1*.fastq.gz | sort | paste -s -d,\\`";
-  my $right  = "\\`find \$WORK_DIR/reads -name $sample*pair2*.fastq.gz | sort | paste -s -d,\\`";
-
-  $command .= LoadConfig::moduleLoad($rH_cfg, [
+  my $command = LoadConfig::moduleLoad($rH_cfg, [
     ['alignEstimateAbundance', 'moduleVersion.bowtie'],
     ['alignEstimateAbundance', 'moduleVersion.rsem'],
     ['alignEstimateAbundance', 'moduleVersion.samtools'],
     ['alignEstimateAbundance', 'moduleVersion.trinity']
   ]) . " && \\\n";
+
+  my $left  = "\\`find \$WORK_DIR/reads -name $sample*pair1*.fastq.gz | sort | paste -s -d,\\`";
+  my $right  = "\\`find \$WORK_DIR/reads -name $sample*pair2*.fastq.gz | sort | paste -s -d,\\`";
 
   $command .= "align_and_estimate_abundance.pl \\
   --transcripts $transcripts \\
@@ -367,7 +362,7 @@ sub alignEstimateAbundance {
   --SS_lib_type RF \\
   --output_prefix $sample \\
   --output_dir \$WORK_DIR/alignEstimateAbundance/$sample \\
-  --thread_count " . LoadConfig::getParam($rH_cfg, 'alignEstimateAbundance', 'CPU', 1, 'int') . " \\\n";
+  --thread_count " . LoadConfig::getParam($rH_cfg, 'alignEstimateAbundance', 'CPU', 1, 'int');
 
   $rO_job->addCommand($command);
 

@@ -130,12 +130,28 @@ sub testInputOutputs {
     return "";
   }
 
+  my $rA_inputFiles = [];
+  my $rA_outputFiles = [];
+
+  # Update file paths with expanded environment variables if any
+  for my $filePath (@$rA_inputs) {
+    my $longFilePath = `echo $filePath`;
+    chomp($longFilePath);
+    push($rA_inputFiles, $longFilePath);
+  }
+
+  for my $filePath (@$rA_outputs) {
+    my $longFilePath = `echo $filePath`;
+    chomp($longFilePath);
+    push($rA_outputFiles, $longFilePath);
+  }
+
   my $latestInput = -1;
-  my $inputStat = stat($rA_inputs->[0]);
+  my $inputStat = stat($rA_inputFiles->[0]);
   if(defined($inputStat)) {
     $latestInput = $inputStat->mtime;
   }
-  for my $inputFile (@{$rA_inputs}) {
+  for my $inputFile (@{$rA_inputFiles}) {
     $inputStat = stat($inputFile);
     my $inputTime = -1;
     if(defined($inputStat)) {
@@ -147,11 +163,9 @@ sub testInputOutputs {
   }
 
   my $retVal = " && touch ";
-  my @filesToTest;
   my $runIt = 0;
-  for my $outputFile (@{$rA_outputs}) {
+  for my $outputFile (@{$rA_outputFiles}) {
     $retVal .= $outputFile.'.mugqic.done ';
-    push(@filesToTest, $outputFile.'.mugqic.done');
     if($runIt != 0) {
       next;
     }
@@ -176,6 +190,7 @@ sub testInputOutputs {
     return undef;
   }
   else {
+    my @filesToTest = map {"$_.mugqic.done"} @$rA_outputs;
     $self->addFilesToTest(\@filesToTest);
     return $retVal;
   }

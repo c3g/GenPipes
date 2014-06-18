@@ -40,7 +40,6 @@ use lib "$FindBin::Bin";
 use Cwd 'abs_path';
 use File::Basename;
 use LoadConfig;
-use LWP::UserAgent;
 use Socket;
 use Sys::Hostname;
 
@@ -105,31 +104,23 @@ sub mugqicLog {
   my $steps = shift;
   my $samples = shift;
 
-  my $userAgent = LWP::UserAgent->new;
   my $server = "http://mugqic.hpc.mcgill.ca/cgi-bin/pipeline.cgi";
-  my $request = HTTP::Request->new(POST => $server);
-
   my $hostname = hostname;
   # Retrieve client local IP address
   my $ip = inet_ntoa((gethostbyname(hostname))[4]);
 
-  $request->content(
+  my $request =
     "hostname=$hostname&" .
     "ip=$ip&" .
     "pipeline=$pipeline&" .
     "steps=$steps&" .
     "samples=$samples"
-  );
+  ;
 
-  my $response = $userAgent->request($request);
-  if ($response->is_success) {
-    my $message = $response->decoded_content;
-    print STDERR "MUGQIC remote log sent successfully. $message\n";
-  } else {
-    print STDERR "MUGQIC remote log failed to be sent.\n";
-    print STDERR "HTTP GET error code: ", $response->code, "\n";
-    print STDERR "HTTP GET error message: ", $response->message, "\n";
-  }
+  print "#" . "-" x 79 . "\n";
+  print "# Call home with pipeline statistics\n";
+  print "#" . "-" x 79 . "\n";
+  print "wget \"$server?$request\" --quiet --output-document=/dev/null";
 }
 
 1;
