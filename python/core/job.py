@@ -100,6 +100,45 @@ class Job:
 
         return is_job_up2date
 
+
+# Create a new job from a job list by merging their modules and commands with a specified separator
+def group_jobs(jobs, separator):
+
+    # At least 2 jobs are required
+    if len(jobs) < 2:
+        raise Exception("Error: group_jobs requires at least 2 jobs!")
+
+    # Merge all input/output files and modules
+    input_files = []
+    output_files = []
+    modules = []
+    for job_item in jobs:
+        input_files.extend(job_item.input_files)
+        output_files.extend(job_item.output_files)
+        modules.extend(job_item.modules)
+
+    # Remove duplicates if any, keeping the order
+    input_files = list(collections.OrderedDict.fromkeys([input_file for input_file in input_files]))
+    output_files = list(collections.OrderedDict.fromkeys([output_file for output_file in output_files]))
+    modules = list(collections.OrderedDict.fromkeys([module for module in modules]))
+
+    job = Job(jobs[0].config, input_files, output_files);
+    job.modules = modules
+
+    # Merge commands with specified separator
+    job.command(separator.join([job_item.command for job_item in jobs]))
+
+    return job;
+
+# Create a new job by piping a list of jobs together
+def pipe_jobs(jobs):
+    return group_jobs(jobs, " | \\\n")
+
+# Create a new job by concatenating a list of jobs together
+def concat_jobs(jobs):
+    return group_jobs(jobs, " && \\\n")
+
+
 #config = Config("/lb/project/mugqic/projects/jfillon_pipelines/dnaseq/bam2fastq/dnaSeq.abacus.ini")
 #job = Job(
 #    config,

@@ -83,8 +83,8 @@ class RnaSeqDeNovoAssembly(Pipeline):
         argparser.add_argument("-d", "--design", help="design file", type=file)
         args = argparser.parse_args()
 
-        self._readsets = Readset.parse_readset_file(args.readsets.name)
-        # Retrieve unique samples from their readsets, removing duplicates
+        self._readsets = parse_readset_file(args.readsets.name)
+        # Retrieve unique samples from their readsets
         self._samples = list(collections.OrderedDict.fromkeys([readset.sample for readset in self._readsets]))
 
         Pipeline.__init__(self, args)

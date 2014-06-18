@@ -77,7 +77,7 @@ class DnaSeq(Pipeline):
         argparser.add_argument("-r", "--readsets", help="readset file", type=file, required=True)
         args = argparser.parse_args()
 
-        self._readsets = Readset.parse_readset_file(args.readsets.name)
+        self._readsets = parse_readset_file(args.readsets.name)
         # Retrieve unique samples from their readsets, removing duplicates
         self._samples = list(collections.OrderedDict.fromkeys([readset.sample for readset in self._readsets]))
 
