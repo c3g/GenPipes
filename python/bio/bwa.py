@@ -4,17 +4,17 @@
 import os
 
 # MUGQIC Modules
+from core.config import *
 from core.job import *
 
 def mem(
-    config,
     in1fastq,
     in2fastq=None,
     out_sam=None,
     read_group=None
     ):
 
-    job = Job(config, [in1fastq, in2fastq], [out_sam], [["mem", "moduleVersion.bwa"]])
+    job = Job([in1fastq, in2fastq], [out_sam], [["mem", "moduleVersion.bwa"]])
 
     job.command = ""
     if out_sam:

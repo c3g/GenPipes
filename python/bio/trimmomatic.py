@@ -1,13 +1,16 @@
 #!/usr/bin/env python
 
 # Python Standard Modules
+import logging
 import os
 
 # MUGQIC Modules
+from core.config import *
 from core.job import *
 
+log = logging.getLogger(__name__)
+
 def trimmomatic(
-    config,
     input1,
     input2,
     paired_output1,
@@ -27,7 +30,7 @@ def trimmomatic(
         inputs = [input1]
         outputs = [singleOutput]
 
-    job = Job(config, inputs, outputs, [["trim", "moduleVersion.java"], ['trim', 'moduleVersion.trimmomatic']])
+    job = Job(inputs, outputs, [["trim", "moduleVersion.java"], ['trim', 'moduleVersion.trimmomatic']])
 
     # # Retrieve output directories removing duplicates if any
     output_dirs = list(collections.OrderedDict.fromkeys([os.path.dirname(output) for output in outputs]))
@@ -73,32 +76,32 @@ java -XX:ParallelGCThreads=1 -Xmx2G -jar \$TRIMMOMATIC_JAR {mode} \\
 
     return job
 
-def normalize(config, input1, output1):
-    job = Job(config, [input1], [output1])
+def normalize(input1, output1):
+    job = Job([input1], [output1])
     job.command = "normalize " + input1 + " > " + output1
     return job
 
-def trinity(config, normalized_readsets):
-    job = Job(config, normalized_readsets, ["Trinity.fasta", "Trinity_stats.csv"])
+def trinity(normalized_readsets):
+    job = Job(normalized_readsets, ["Trinity.fasta", "Trinity_stats.csv"])
     job.command = "trinity " + " ".join(normalized_readsets) + " > Trinity.fasta"
     return job
 
-def blastx(config, input1):
-    job = Job(config, [input1], ["blastx_nr.tsv"])
+def blastx(input1):
+    job = Job([input1], ["blastx_nr.tsv"])
     job.command = "blastx " + input1 + " > blastx_nr.tsv"
     return job
 
-def rsem(config, reference, fasta):
-    job = Job(config, [reference, fasta], ["rsem_" + fasta + ".fpkm"])
+def rsem(reference, fasta):
+    job = Job([reference, fasta], ["rsem_" + fasta + ".fpkm"])
     job.command = "rsem -db " + reference + " -input " + fasta
     return job
 
-def trinotate(config, input1):
-    job = Job(config, [input1], ["trinotate.tsv"])
+def trinotate(input1):
+    job = Job([input1], ["trinotate.tsv"])
     job.command = "trinotate " + input1 + " > trinotate.tsv"
     return job
 
-def nozzle(config, input_files, output1):
-    job = Job(config, input_files, [output1])
+def nozzle(input_files, output1):
+    job = Job(input_files, [output1])
     job.command = "nozzle " + " ".join(input_files) + " > " + output1
     return job

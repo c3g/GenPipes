@@ -11,8 +11,10 @@ log = logging.getLogger(__name__)
 
 class Config(ConfigParser.SafeConfigParser):
 
-    def __init__(self, config_file):
+    def __init__(self):
         ConfigParser.SafeConfigParser.__init__(self)
+
+    def parse_file(self, config_file):
         # Make option names case sensitive
         self.optionxform = str
         self.readfp(config_file)
@@ -75,6 +77,5 @@ class Config(ConfigParser.SafeConfigParser):
         else:
             return ""
 
-#config = Config("/lb/project/mugqic/projects/jfillon_pipelines/dnaseq/bam2fastq/dnaSeq.abacus.ini")
-#print(config.get("trim", "moduleVersion.java"))
-#print(config.param("trim", "toto", False, "list"))
+# Global config object used throughout the whole pipeline
+config = Config()

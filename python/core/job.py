@@ -2,21 +2,23 @@
 
 # Python Standard Modules
 import collections
+import logging
 import os
 
 # MUGQIC Modules
 from config import *
 
+log = logging.getLogger(__name__)
+
 class Job:
 
-    def __init__(self, config, input_files, output_files, module_entries = []):
-        self._config = config
+    def __init__(self, input_files, output_files, module_entries = []):
         # Remove undefined input/output files if any
         self._input_files = filter(None, input_files)
         self._output_files = filter(None, output_files)
 
         # Retrieve modules from config, removing duplicates but keeping the order
-        self._modules = list(collections.OrderedDict.fromkeys([self.config.param(section, option) for section, option in module_entries]))
+        self._modules = list(collections.OrderedDict.fromkeys([config.param(section, option) for section, option in module_entries]))
 
     def show(self):
         print("Job: input_files: " + \
@@ -29,10 +31,6 @@ class Job:
     @property
     def name(self):
         return self._name
-
-    @property
-    def config(self):
-        return self._config
 
     @property
     def input_files(self):
@@ -122,11 +120,11 @@ def group_jobs(jobs, separator):
     output_files = list(collections.OrderedDict.fromkeys([output_file for output_file in output_files]))
     modules = list(collections.OrderedDict.fromkeys([module for module in modules]))
 
-    job = Job(jobs[0].config, input_files, output_files);
+    job = Job(input_files, output_files);
     job.modules = modules
 
     # Merge commands with specified separator
-    job.command(separator.join([job_item.command for job_item in jobs]))
+    job.command = separator.join([job_item.command for job_item in jobs])
 
     return job;
 
@@ -137,20 +135,3 @@ def pipe_jobs(jobs):
 # Create a new job by concatenating a list of jobs together
 def concat_jobs(jobs):
     return group_jobs(jobs, " && \\\n")
-
-
-#config = Config("/lb/project/mugqic/projects/jfillon_pipelines/dnaseq/bam2fastq/dnaSeq.abacus.ini")
-#job = Job(
-#    config,
-#    ["/lb/project/mugqic/projects/jfillon_pipelines/dnaseq/bam2fastq/dnaSeq.abacus.ini", "/lb/project/mugqic/projects/jfillon_pipelines/dnaseq/bam2fastq/project.nanuq.csv"],
-#    ["/lb/project/mugqic/projects/jfillon_pipelines/dnaseq/bam2fastq/output_file"],
-#    [
-#        ["trim", "moduleVersion.trimmomatic"],
-#        ["aln", "moduleVersion.bwa"],
-#        ["recalibration", "moduleVersion.picard"]
-#    ])
-#
-#job.command = "ls -l"
-#print(job.command_with_modules)
-#print(job.is_up2date)
-#job.show()

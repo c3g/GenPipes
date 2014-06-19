@@ -10,6 +10,7 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(sys.argv[0])))
 
 # MUGQIC Modules
+from core.config import *
 from core.pipeline import *
 from bio.readset import *
 from bio.trimmomatic import *
@@ -29,7 +30,6 @@ class RnaSeqDeNovoAssembly(Pipeline):
     def trim(self, readset):
         trim_file_prefix = "trim/" + readset.sample.name + "/" + readset.name + ".trim."
         return trimmomatic(
-            self.config,
             readset.fastq1,
             readset.fastq2,
             trim_file_prefix + "pair1.fastq.gz",
@@ -43,22 +43,22 @@ class RnaSeqDeNovoAssembly(Pipeline):
         )
 
     def normalization(self, readset):
-        return normalize(self.config, readset.name + ".trim", readset.name + ".trim.normalized")
+        return normalize(readset.name + ".trim", readset.name + ".trim.normalized")
 
     def trinity(self):
-        return trinity(self.config, [readset.name + ".trim.normalized" for readset in self.readsets])
+        return trinity([readset.name + ".trim.normalized" for readset in self.readsets])
 
     def blast(self):
-        return blastx(self.config, "Trinity.fasta")
+        return blastx("Trinity.fasta")
 
     def rsem(self, sample):
-        return rsem(self.config, "Trinity.fasta", sample.name)
+        return rsem("Trinity.fasta", sample.name)
 
     def annotate(self):
-        return trinotate(self.config, "Trinity.fasta")
+        return trinotate("Trinity.fasta")
 
     def deliverable(self):
-        return nozzle(self.config, ["Trinity.fasta", "Trinity_stats.csv", "trinotate.tsv"] + ["rsem_" + sample.name + ".fpkm" for sample in self.samples], "report")
+        return nozzle(["Trinity.fasta", "Trinity_stats.csv", "trinotate.tsv"] + ["rsem_" + sample.name + ".fpkm" for sample in self.samples], "report")
 
     @property
     def step_dict_map(self):

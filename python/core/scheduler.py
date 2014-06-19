@@ -5,6 +5,7 @@ import datetime
 import os
 
 # MUGQIC Modules
+from config import *
 
 # Output comment separator line
 separator_line = "#" + "-" * 79
@@ -69,7 +70,7 @@ mkdir -p $JOB_OUTPUT_DIR/$STEP""".format(separator_line=separator_line, step=ste
 {separator_line}
 JOB_NAME={job.name}
 JOB_DEPENDENCIES={dependency_jobs}
-JOB_DONE=$JOB_OUTPUT_DIR/$STEP/$JOB_NAME.mugqic.done
+JOB_DONE={job.done}
 JOB_OUTPUT_RELATIVE_PATH=$STEP/${{JOB_NAME}}_$TIMESTAMP.o
 JOB_OUTPUT=$JOB_OUTPUT_DIR/$JOB_OUTPUT_RELATIVE_PATH""".format(
                             job=job,
@@ -86,19 +87,19 @@ if [ \$MUGQIC_STATE -eq 0 ] ; then touch $JOB_DONE ; fi && exit \$MUGQIC_STATE" 
 """.format(job=job)
 
                     cmd += \
-                        job.config.param(step.name, 'clusterSubmitCmd') + " " + \
-                        job.config.param(step.name, 'clusterOtherArg') + " " + \
-                        job.config.param(step.name, 'clusterWorkDirArg') + " $OUTPUT_DIR " + \
-                        job.config.param(step.name, 'clusterOutputDirArg') + " $JOB_OUTPUT " + \
-                        job.config.param(step.name, 'clusterJobNameArg') + " $JOB_NAME " + \
-                        job.config.param(step.name, 'clusterWalltime') + " " + \
-                        job.config.param(step.name, 'clusterQueue') + " " + \
-                        job.config.param(step.name, 'clusterCPU')
+                        config.param(step.name, 'clusterSubmitCmd') + " " + \
+                        config.param(step.name, 'clusterOtherArg') + " " + \
+                        config.param(step.name, 'clusterWorkDirArg') + " $OUTPUT_DIR " + \
+                        config.param(step.name, 'clusterOutputDirArg') + " $JOB_OUTPUT " + \
+                        config.param(step.name, 'clusterJobNameArg') + " $JOB_NAME " + \
+                        config.param(step.name, 'clusterWalltime') + " " + \
+                        config.param(step.name, 'clusterQueue') + " " + \
+                        config.param(step.name, 'clusterCPU')
                     if dependency_jobs:
-                        cmd += " " + job.config.param(step.name, 'clusterDependencyArg') + "$JOB_DEPENDENCIES"
-                    cmd += " " + job.config.param(step.name, 'clusterSubmitCmdSuffix')
+                        cmd += " " + config.param(step.name, 'clusterDependencyArg') + "$JOB_DEPENDENCIES"
+                    cmd += " " + config.param(step.name, 'clusterSubmitCmdSuffix')
 
-                    if job.config.param(step.name, 'clusterCmdProducesJobId'):
+                    if config.param(step.name, 'clusterCmdProducesJobId'):
                         cmd = job.id + "=$(" + cmd + ")"
                     else:
                         cmd += "\n" + job.id + "=" + job.name

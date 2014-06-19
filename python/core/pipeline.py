@@ -2,20 +2,20 @@
 
 # Python Standard Modules
 import argparse
+import hashlib
 import logging
 import os
 import re
 
 # MUGQIC Modules
-from  config import *
-from  scheduler import *
-from  step import *
+from config import *
+from scheduler import *
+from step import *
 
 log = logging.getLogger(__name__)
 
 class Pipeline:
     def __init__(self, args):
-        self._config = Config(args.config)
         self._output_dir = os.path.abspath(args.output_dir)
         self._scheduler = create_scheduler(args.job_scheduler)
         self._force_jobs = args.force
@@ -34,10 +34,6 @@ class Pipeline:
                 "\" is invalid (should match \d+([,-]\d+)*)!")
 
         self.create_jobs()
-
-    @property
-    def config(self):
-        return self._config
 
     @property
     def output_dir(self):
@@ -101,7 +97,7 @@ class Pipeline:
                 jobs.append(job)
             for job in jobs:
                 job.update_files(self.output_dir)
-                job.done = os.path.join(self.output_dir, "job_output", step.name, job.name + ".mugqic.done")
+                job.done = os.path.join("job_output", step.name, job.name + "." + hashlib.md5(job.command).hexdigest() + ".mugqic.done")
                 if not self.force_jobs and job.is_up2date():
                     log.info("Job " + job.name + " up to date... skipping")
                 else:
@@ -154,4 +150,5 @@ class PipelineArgumentParser(argparse.ArgumentParser):
     def parse_args(self):
         args = argparse.ArgumentParser.parse_args(self)
         logging.basicConfig(level=getattr(logging, args.log.upper()))
+        config.parse_file(args.config)
         return args

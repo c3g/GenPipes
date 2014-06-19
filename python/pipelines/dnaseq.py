@@ -11,10 +11,13 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(sys.argv[0])))
 
 # MUGQIC Modules
+from core.config import *
+from core.job import *
 from core.pipeline import *
 from bio.readset import *
 from bio.trimmomatic import *
 from bio.bwa import *
+from bio.picard import *
 
 log = logging.getLogger(__name__)
 
@@ -31,7 +34,6 @@ class DnaSeq(Pipeline):
     def trim(self, readset):
         trim_file_prefix = "trim/" + readset.sample.name + "/" + readset.name + ".trim."
         return trimmomatic(
-            self.config,
             readset.fastq1,
             readset.fastq2,
             trim_file_prefix + "pair1.fastq.gz",
@@ -44,27 +46,34 @@ class DnaSeq(Pipeline):
             trim_file_prefix + "stats.csv"
         )
 
-    def mem(self, readset):
+    def bwa_mem_sort_sam(self, readset):
         trim_file_prefix = "trim/" + readset.sample.name + "/" + readset.name + ".trim."
 
         rg_platform_unit = readset.run + "_" + readset.lane
         rg_id = readset.library + "_" + rg_platform_unit
 
-        read_group = "'@RG\tID:" + rg_id + "\tSM:" + readset.sample.name + "\tLB:" + readset.library + "\tPU:run" + rg_platform_unit + "\tCN:" + self.config.param('mem', 'bwaInstitution') + "\tPL:Illumina'"
+        read_group = "'@RG\tID:" + rg_id + "\tSM:" + readset.sample.name + "\tLB:" + readset.library + "\tPU:run" + rg_platform_unit + "\tCN:" + config.param('mem', 'bwaInstitution') + "\tPL:Illumina'"
 
-        return mem(
-            self.config,
+        bwa_job = mem(
             trim_file_prefix + "pair1.fastq.gz",
             trim_file_prefix + "pair2.fastq.gz",
-            "align/" + readset.sample.name + "/" + readset.name + ".sam",
+            None,
             read_group
         )
+
+        sort_sam_job = sort_sam(
+            "/dev/stdin",
+            "align/" + readset.sample.name + "/" + readset.name + ".sorted.bam",
+            "coordinate"
+        )
+
+        return pipe_jobs([bwa_job, sort_sam_job])
 
     @property
     def step_dict_map(self):
         return [
             {"name": self.trim, "loop": self.readsets},
-            {"name": self.mem, "loop": self.readsets}
+            {"name": self.bwa_mem_sort_sam, "loop": self.readsets}
         ]
 
     def __init__(self):
