@@ -164,12 +164,13 @@ def sam_to_fastq(input, fastq, second_end_fastq):
     )
 
     job.command = \
-"""java -Djava.io.tmpdir={tmp_dir} {extra_java_flags} -Xmx{ram} -jar \$PICARD_HOME/SamToFastq.jar" \\
+"""java -Djava.io.tmpdir={tmp_dir} {extra_java_flags} -Xmx{ram} -jar \$PICARD_HOME/SamToFastq.jar \\
   INPUT={input} \\
   FASTQ={fastq}{second_end_fastq}""".format(
         tmp_dir=config.param('samToFastq', 'tmpDir'),
         extra_java_flags=config.param('samToFastq', 'extraJavaFlags'),
         ram=config.param('samToFastq', 'samToFastqRam'),
+        input=input,
         fastq=fastq,
         second_end_fastq=" \\\n  SECOND_END_FASTQ=" + second_end_fastq if second_end_fastq else ""
     )

@@ -5,6 +5,7 @@ import argparse
 import collections
 import logging
 import os
+import re
 import sys
 
 # Append mugqic_pipeline directory to Python library path
@@ -30,6 +31,19 @@ class DnaSeq(Pipeline):
     @property
     def samples(self):
         return self._samples
+
+    def sam_to_fastq(self, readset):
+        if readset.bam and not readset.fastq1:
+            if readset.run_type == "PAIRED_END":
+                readset.fastq1 = re.sub("\.bam$", ".pair1.fastq.gz", readset.bam)
+                readset.fastq2 = re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)
+            elif readset.run_type == "SINGLE_END":
+                fastq1 = re.sub("\.bam$", ".single.fastq.gz", readset.bam)
+            else:
+                raise Exception("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+
+            return sam_to_fastq(readset.bam, readset.fastq1, readset.fastq2)
 
     def trim(self, readset):
         trim_file_prefix = "trim/" + readset.sample.name + "/" + readset.name + ".trim."
@@ -72,6 +86,7 @@ class DnaSeq(Pipeline):
     @property
     def step_dict_map(self):
         return [
+            {"name": self.sam_to_fastq, "loop": self.readsets},
             {"name": self.trim, "loop": self.readsets},
             {"name": self.bwa_mem_sort_sam, "loop": self.readsets}
         ]
@@ -86,7 +101,7 @@ class DnaSeq(Pipeline):
         argparser.add_argument("-r", "--readsets", help="readset file", type=file, required=True)
         args = argparser.parse_args()
 
-        self._readsets = parse_readset_file(args.readsets.name)
+        self._readsets = parse_nanuq_readset_file(args.readsets.name)
         # Retrieve unique samples from their readsets, removing duplicates
         self._samples = list(collections.OrderedDict.fromkeys([readset.sample for readset in self._readsets]))
 
