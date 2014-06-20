@@ -26,8 +26,14 @@ use warnings;
 
 #--------------------------
 
+# Add the mugqic_pipeline/lib/ path relative to this Perl script to @INC library search variable
+use FindBin;
+use lib $FindBin::Bin;
+
 # Dependencies
 #-----------------------
+use Digest::MD5 qw(md5_hex);
+use File::Basename;
 use File::stat;
 use LoadConfig;
 
@@ -55,11 +61,13 @@ sub addCommand {
 
 sub addFilesToTest {
     my ( $self, $rA_filesToTest ) = @_;
-    if(defined($rA_filesToTest)) {
+    if($rA_filesToTest) {
       if(!defined($self->{'_filesToTest'})) {
         $self->{'_filesToTest'} = ();
       }
-      push(@{$self->{'_filesToTest'}}, @{$rA_filesToTest});
+      # Create checksum file name of all files to test and store it in the directory of the first file to test
+      my $checksumFileToTest = dirname(@{$rA_filesToTest}[0]) . "/" . md5_hex(join("", @{$rA_filesToTest})) . ".mugqic.done";
+      push(@{$self->{'_filesToTest'}}, $checksumFileToTest);
     }
 }
 
@@ -130,6 +138,8 @@ sub testInputOutputs {
     return "";
   }
 
+  $self->addFilesToTest($rA_outputs);
+
   my $rA_inputFiles = [];
   my $rA_outputFiles = [];
 
@@ -164,13 +174,20 @@ sub testInputOutputs {
 
   my $retVal = " && touch ";
   my $runIt = 0;
+
+  for my $fileToTest (@{$self->getFilesToTest()}) {
+    if(!(-e $fileToTest)) {
+      $runIt = 1;
+    }
+  }
+
   for my $outputFile (@{$rA_outputFiles}) {
     $retVal .= $outputFile.'.mugqic.done ';
     if($runIt != 0) {
       next;
     }
 
-    if(!(-e $outputFile) || !(-e $outputFile.'.mugqic.done')) {
+    if(!(-e $outputFile)) {
       $runIt = 1;
     }
     else {
@@ -190,8 +207,6 @@ sub testInputOutputs {
     return undef;
   }
   else {
-    my @filesToTest = map {"$_.mugqic.done"} @$rA_outputs;
-    $self->addFilesToTest(\@filesToTest);
     return $retVal;
   }
 }

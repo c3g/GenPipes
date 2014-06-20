@@ -6,7 +6,7 @@ I<dnaSeq>
 
 =head1 SYNOPSIS
 
-  perl dnaSeq.pl -c dnaSeq.guillimin.ini -s 1 -e 21 -n project.nanuq.csv > toRun.sh
+  perl dnaSeq.pl -c dnaSeq.guillimin.ini -s 1-21 -n project.nanuq.csv > toRun.sh
 
   will generate a bash script for steps 1 to 21. This script can then be executed:
 
@@ -15,8 +15,7 @@ I<dnaSeq>
   Options
 
   -c (dnaSeq.guillimin.ini) the standard configuration file for the pipeline. Templates for some cluster systems like Abacus or Guillimin may already be available at pipelines/dnaseq
-  -s The start step
-  -e The end step
+  -s The step range e.g. '1,3', '2-5', '1,4-7,10'
   -n (project.nanuq.csv) the standard NANUQ read set sheet.
 
 =head1 DESCRIPTION
@@ -232,7 +231,7 @@ my $workDirectory = getcwd();
 
 sub printUsage {
   print "Version: ".$Version::version."\n";
-  print "\nUsage: perl ".$0." -c config.ini -s start -e end -n SampleSheet.csv\n";
+  print "\nUsage: perl ".$0." -c config.ini -s start -n SampleSheet.csv\n";
   print "\t-c  config file\n";
   print "\t-s  step range e.g. '1,3', '2-5', '1,4-7,10'\n";
   print "\t-n  nanuq sample sheet\n";
