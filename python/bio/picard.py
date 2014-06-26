@@ -79,7 +79,7 @@ def collect_multiple_metrics(input, output, reference_sequence=None):
         [
             ['collectMetrics', 'moduleVersion.java'],
             ['collectMetrics', 'moduleVersion.picard'],
-            ['collectMetrics', 'moduleVersion.cranR']
+            ['collectMetrics', 'moduleVersion.R']
         ]
     )
 
@@ -97,6 +97,7 @@ def collect_multiple_metrics(input, output, reference_sequence=None):
         tmp_dir=config.param('collectMetrics', 'tmpDir'),
         extra_java_flags=config.param('collectMetrics', 'extraJavaFlags'),
         ram=config.param('collectMetrics', 'collectMetricsRam'),
+        reference_sequence=reference_sequence,
         input=input,
         output=output,
         max_records_in_ram=config.param('collectMetrics', 'collectMetricsRecInRam', type='int')
