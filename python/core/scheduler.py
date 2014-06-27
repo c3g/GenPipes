@@ -46,14 +46,14 @@ cd $OUTPUT_DIR"""
             .format(
                 separator_line=separator_line,
                 pipeline=pipeline,
-                steps="\n".join(["#   " + step.name + ": " + str(len(step.jobs)) + " job" + ("s" if len(step.jobs) > 1 else "" if step.jobs else "... skipping") for step in pipeline.steps]),
+                steps="\n".join(["#   " + step.name + ": " + str(len(step.jobs)) + " job" + ("s" if len(step.jobs) > 1 else "" if step.jobs else "... skipping") for step in pipeline.step_range]),
                 datetime=datetime.datetime.now()
             )
         )
 
     def submit(self, pipeline):
         self.print_header(pipeline)
-        for step in pipeline.steps:
+        for step in pipeline.step_range:
             if step.jobs:
                 print("""
 {separator_line}

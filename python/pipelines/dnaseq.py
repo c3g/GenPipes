@@ -211,24 +211,20 @@ class DnaSeq(Pipeline):
         return jobs
 
     @property
-    def step_dict_map(self):
+    def steps(self):
         return [
-            {"name": self.sam_to_fastq},
-            {"name": self.trim},
-            {"name": self.bwa_mem_sort_sam},
-            {"name": self.merge_readsets},
-            {"name": self.mark_duplicates},
-            {"name": self.collect_multiple_metrics},
-            {"name": self.recalibration},
-            {"name": self.indel_realigner}
+            self.sam_to_fastq,
+            self.trim,
+            self.bwa_mem_sort_sam,
+            self.merge_readsets,
+            self.mark_duplicates,
+            self.collect_multiple_metrics,
+            self.recalibration,
+            self.indel_realigner
         ]
 
     def __init__(self):
-        # Initialize attributes to avoid AttributeError in default_argparser(self.step_dict_map)
-        self._readsets = []
-        self._samples = []
-
-        argparser = PipelineArgumentParser(self.step_dict_map)
+        argparser = PipelineArgumentParser(self.steps)
         # Add pipeline specific arguments
         argparser.add_argument("-r", "--readsets", help="readset file", type=file, required=True)
         args = argparser.parse_args()

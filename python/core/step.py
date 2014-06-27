@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
+# Python Standard Modules
 import re
 
 class Step:
-    def __init__(self, create_jobs, loop):
+    def __init__(self, create_jobs):
         # Step name is used in Bash $JOB_ID variable, hence only alphanumeric and "_" characters are allowed
         step_name = create_jobs.__name__
         if re.search("^[a-zA-Z]\w+$", step_name):
@@ -13,17 +14,12 @@ class Step:
                 "\" is invalid (should match [a-zA-Z][a-zA-Z0-9_]+)!")
 
         self._name = step_name
-        self._loop = loop
         self._create_jobs = create_jobs
         self._jobs = []
 
     @property
     def name(self):
         return self._name
-
-    @property
-    def loop(self):
-        return self._loop
 
     @property
     def create_jobs(self):

@@ -2,6 +2,7 @@
 
 # Python Standard Modules
 import argparse
+import collections
 import hashlib
 import logging
 import os
@@ -19,16 +20,16 @@ class Pipeline:
         self._output_dir = os.path.abspath(args.output_dir)
         self._scheduler = create_scheduler(args.job_scheduler)
         self._force_jobs = args.force
-        self._step_map = []
-        for step_dict in self.step_dict_map:
-            step_name = step_dict['name'].__name__
-            if self.steps_by_name(step_name):
-                raise Exception("Error: step name \"" + step_name + "\" is not unique for this pipeline!")
-            else:
-                self.step_map.append(Step(step_dict['name'], step_dict['loop'] if 'loop' in step_dict else None))
+
+        step_counter = collections.Counter(self.steps)
+        duplicated_steps = [step.__name__ for step in step_counter if step_counter[step] > 1]
+        if duplicated_steps:
+            raise Exception("Error: pipeline contains duplicated steps: " + ", ".join(duplicated_steps) + "!")
+        else:
+            self.step_list = [Step(step) for step in self.steps]
 
         if re.search("^\d+([,-]\d+)*$", args.steps):
-            self._steps = self.steps_by_range(args.steps)
+            self._step_range = [self.step_list[i - 1] for i in parse_range(args.steps)]
         else:
             raise Exception("Error: step range \"" + args.steps +
                 "\" is invalid (should match \d+([,-]\d+)*)!")
@@ -48,34 +49,28 @@ class Pipeline:
         return self._force_jobs
 
     @property
-    def step_dict_map(self):
+    def steps(self):
         # Needs to be defined in pipeline child class
         raise NotImplementedError
 
     @property
-    def step_map(self):
-        return self._step_map
+    def step_list(self):
+        return self._step_list
 
     @property
-    def steps(self):
-        return self._steps
+    def step_range(self):
+        return self._step_range
 
     @property
     def jobs(self):
         jobs = []
-        for step in self.steps:
+        for step in self.step_range:
             jobs.extend(step.jobs)
         return jobs
 
-    def steps_by_name(self, name):
-        return [step for step in self.step_map if step.name == name]
-
-    def steps_by_range(self, range):
-        return [self.step_map[i - 1] for i in parse_range(range)]
-
     def dependency_jobs(self, current_job):
         dependency_jobs = []
-        for step in self.steps:
+        for step in self.step_range:
             for step_job in step.jobs:
                 # If current job input files intersect with step job output files, step job is a dependency
                 if set(current_job.input_files).intersection(set(step_job.output_files)):
@@ -83,7 +78,7 @@ class Pipeline:
         return dependency_jobs
 
     def create_jobs(self):
-        for step in self.steps:
+        for step in self.step_range:
             log.info("Create jobs for step " + step.name + "...")
             jobs = step.create_jobs()
             for job in jobs:
@@ -105,21 +100,6 @@ class Pipeline:
     def submit_jobs(self):
         self.scheduler.submit(self)
 
-    def show(self):
-        print('Pipeline: ' + self.__class__.__name__)
-        print('output_dir: ' + self.output_dir)
-        print('scheduler: ' + self.scheduler.__class__.__name__)
-        print('Steps:')
-        for step in self.steps:
-            print("Step: " + step.name)
-            for job in step.jobs:
-                print(job.id)
-                for dependency_job in job.dependency_jobs:
-                    print("  Dependency " + dependency_job.id + ", command: " + dependency_job.command)
-                print("  Input files:" + ",".join(job.input_files))
-                print("  Command: " + job.command)
-                print("  Output files:" + ",".join(job.output_files))
-                print()
 
 # Return a range list given a string.
 # e.g. parse_range('1,3,5-12') returns [1, 3, 5, 6, 7, 8, 9, 10, 11, 12]
@@ -133,9 +113,9 @@ def parse_range(astr):
 # Default command line argument parser holding common options shared by all pipelines
 class PipelineArgumentParser(argparse.ArgumentParser):
 
-    def __init__(self, step_dict_map):
+    def __init__(self, steps):
         # Create ArgumentParser with numbered step list as epilog
-        argparse.ArgumentParser.__init__(self, formatter_class=argparse.RawDescriptionHelpFormatter, epilog="Steps:\n" + "\n".join([str(idx + 1) + "- " + step_dict['name'].__name__ for idx, step_dict in enumerate(step_dict_map)]))
+        argparse.ArgumentParser.__init__(self, formatter_class=argparse.RawDescriptionHelpFormatter, epilog="Steps:\n" + "\n".join([str(idx + 1) + "- " + step.__name__ for idx, step in enumerate(steps)]))
 
         self.add_argument("-c", "--config", help="config INI-style file", type=file, required=True)
         self.add_argument("-s", "--steps", help="step range e.g. '1-5', '3,6,7', '2,4-8'", required=True)
