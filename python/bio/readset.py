@@ -85,6 +85,7 @@ def parse_readset_file(readset_file):
     readsets = []
     samples = []
 
+    log.info("Parse readset file " + readset_file + " ...")
     readset_csv = csv.DictReader(open(readset_file, 'rb'), delimiter='\t')
     for line in readset_csv:
         sample_name = line['Sample']
@@ -128,12 +129,15 @@ def parse_readset_file(readset_file):
         readsets.append(readset)
         sample.add_readset(readset)
 
+    log.info(str(len(readsets)) + " readset" + ("s" if len(readsets) > 1 else "") + " parsed")
+    log.info(str(len(readsets)) + " sample" + ("s" if len(samples) > 1 else "") + " parsed\n")
     return readsets
 
 def parse_nanuq_readset_file(readset_file):
     readsets = []
     samples = []
 
+    log.info("Parse Nanuq readset file " + readset_file + " ...")
     readset_csv = csv.DictReader(open(readset_file, 'rb'), delimiter=',', quotechar='"')
     for line in readset_csv:
         if line['Status'] and line['Status'] == "Data is valid":
@@ -196,6 +200,8 @@ def parse_nanuq_readset_file(readset_file):
         else:
             log.warning("Sample Name " + line['Name'] + ", Run ID " + line['Run'] + ", Lane " + line['Region'] + " data is not valid... skipping")
 
+    log.info(str(len(readsets)) + " readset" + ("s" if len(readsets) > 1 else "") + " parsed")
+    log.info(str(len(readsets)) + " sample" + ("s" if len(samples) > 1 else "") + " parsed\n")
     return readsets
 
 #readset = Readset("readset1", "SINGLE_END")

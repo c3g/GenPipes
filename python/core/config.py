@@ -48,6 +48,12 @@ class Config(ConfigParser.SafeConfigParser):
             try:
                 if type == 'int':
                     return self.getint(section, option)
+                elif type == 'posint':
+                    value = self.getint(section, option)
+                    if value > 0:
+                        return value
+                    else:
+                        raise Exception("Integer \"" + value + "\" is not > 0!")
                 elif type == 'float':
                     return self.getfloat(section, option)
                 elif type == 'boolean':

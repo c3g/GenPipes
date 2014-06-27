@@ -11,7 +11,7 @@ log = logging.getLogger(__name__)
 def parse_sequence_dictionary_file(sequence_dictionary_file):
     sequence_dictionary = []
 
-    log.info("Parse sequence dictionary " + sequence_dictionary_file + "...")
+    log.info("Parse sequence dictionary " + sequence_dictionary_file + " ...")
 
     with open(sequence_dictionary_file) as sdf:
         for line in sdf:

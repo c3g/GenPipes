@@ -12,13 +12,15 @@ log = logging.getLogger(__name__)
 
 class Job:
 
-    def __init__(self, input_files, output_files, module_entries = []):
+    def __init__(self, input_files, output_files, module_entries = [], name=""):
         # Remove undefined input/output files if any
         self._input_files = filter(None, input_files)
         self._output_files = filter(None, output_files)
 
         # Retrieve modules from config, removing duplicates but keeping the order
         self._modules = list(collections.OrderedDict.fromkeys([config.param(section, option) for section, option in module_entries]))
+
+        self._name = name
 
     def show(self):
         print("Job: input_files: " + \
@@ -33,17 +35,16 @@ class Job:
         return self._name
 
     @property
+    def output_dir(self):
+        return self._output_dir
+
+    @property
     def input_files(self):
         return self._input_files
 
     @property
     def output_files(self):
         return self._output_files
-
-    # Input/output files are first defined relative to the pipeline output directory
-    def update_files(self, output_dir):
-        self.input_files = [file if os.path.isabs(file) else os.path.join(output_dir, file) for file in self.input_files]
-        self.output_files = [file if os.path.isabs(file) else os.path.join(output_dir, file) for file in self.output_files]
 
     @property
     def done(self):
@@ -68,43 +69,44 @@ class Job:
             command = "module load " + " ".join(self.modules) + " && \\\n" + command
         return command
 
+    def abspath(self, file):
+        tmp_file = os.path.expandvars(file)
+        if not os.path.isabs(tmp_file):
+            # File path is relative to the job output directory
+            tmp_file = os.path.join(self.output_dir, tmp_file)
+        return tmp_file
+
     def is_up2date(self):
-        # Job is up to date by default
-        is_job_up2date = True
+        # If job has dependencies, job is not up to date
+        if self.dependency_jobs:
+            return False
 
-        # If .done is missing, job is not up to date
-        if not os.path.isfile(os.path.expandvars(self.done)):
-            is_job_up2date = False
+        # Retrieve absolute paths for .done, input and output files to avoid redundant OS function calls
+        abspath_done = self.abspath(self.done)
+        abspath_input_files = [self.abspath(input_file) for input_file in self.input_files]
+        abspath_output_files = [self.abspath(output_file) for output_file in self.output_files]
 
-        # If any input file is missing, job is not up to date
-        for input_file in self.input_files:
-            if not os.path.isfile(os.path.expandvars(input_file)):
-                is_job_up2date = False
+        # If any .done, input or output file is missing, job is not up to date
+        for file in [abspath_done] + abspath_input_files + abspath_output_files:
+            if not os.path.isfile(file):
+                return False
 
-        # If any output file file is missing, job is not up to date
-        for output_file in self.output_files:
-            if not os.path.isfile(os.path.expandvars(output_file)):
-                is_job_up2date = False
+        # Retrieve latest input file modification time i.e. maximum stat mtime
+        latest_input_time = max([os.stat(input_file).st_mtime for input_file in abspath_input_files])
 
-        # Skip further tests if job is already out of date
-        if is_job_up2date:
-            # Retrieve latest input file modification time i.e. maximum stat mtime
-            # Use 'echo' system command to expand environment variables in input file paths if any
-            latest_input_time = max([os.stat(os.path.expandvars(input_file)).st_mtime for input_file in self.input_files])
+        # Same with earliest output file modification time
+        earliest_output_time = min([os.stat(output_file).st_mtime for output_file in abspath_output_files])
 
-            # Same with earliest output file modification time
-            earliest_output_time = max([os.stat(os.path.expandvars(output_file)).st_mtime for output_file in self.output_files])
-            is_job_up2date = earliest_output_time > latest_input_time
+        # If any input file is more recent than all output files, job is not up to date
+        if latest_input_time >= earliest_output_time:
+            return False
 
-        return is_job_up2date
+        # If all previous tests passed, job is up to date
+        return True
 
 
-# Create a new job from a job list by merging their modules and commands with a specified separator
-def group_jobs(jobs, separator):
-
-    # At least 2 jobs are required
-    if len(jobs) < 2:
-        raise Exception("Error: group_jobs requires at least 2 jobs!")
+# Create a new job by concatenating a list of jobs together
+def concat_jobs(jobs):
 
     # Merge all input/output files and modules
     input_files = []
@@ -120,18 +122,29 @@ def group_jobs(jobs, separator):
     output_files = list(collections.OrderedDict.fromkeys([output_file for output_file in output_files]))
     modules = list(collections.OrderedDict.fromkeys([module for module in modules]))
 
-    job = Job(input_files, output_files);
+    job = Job(input_files, output_files)
     job.modules = modules
 
-    # Merge commands with specified separator
-    job.command = separator.join([job_item.command for job_item in jobs])
+    # Merge commands
+    job.command = " && \\\n".join([job_item.command for job_item in jobs])
 
-    return job;
+    return job
 
 # Create a new job by piping a list of jobs together
 def pipe_jobs(jobs):
-    return group_jobs(jobs, " | \\\n")
 
-# Create a new job by concatenating a list of jobs together
-def concat_jobs(jobs):
-    return group_jobs(jobs, " && \\\n")
+    job = Job(jobs[0].input_files, jobs[-1].output_files)
+
+   # Merge all modules
+    modules = []
+    for job_item in jobs:
+        modules.extend(job_item.modules)
+
+    # Remove duplicates if any, keeping the order
+    modules = list(collections.OrderedDict.fromkeys([module for module in modules]))
+    job.modules = modules
+
+    # Merge commands
+    job.command = " | \\\n".join([job_item.command for job_item in jobs])
+
+    return job

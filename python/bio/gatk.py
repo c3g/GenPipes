@@ -61,42 +61,46 @@ def realigner_target_creator(input, output, intervals=[], exclude_intervals=[]):
 
     job.command = \
 """java -Djava.io.tmpdir={tmp_dir} {extra_java_flags} -Xmx{ram} -jar \$GATK_JAR \\
-  -T RealignerTargetCreator \\
+  -T RealignerTargetCreator {extra_realigner_target_creator_flags} \\
   -R {reference_fasta} \\
   -I {input} \\
   -o {output}{intervals}{exclude_intervals}""".format(
         tmp_dir=config.param('realignerTargetCreator', 'tmpDir'),
         extra_java_flags=config.param('realignerTargetCreator', 'extraJavaFlags'),
         ram=config.param('realignerTargetCreator', 'ram'),
+        extra_realigner_target_creator_flags=config.param('realignerTargetCreator', 'extraRealignerTargetCreatorFlags'),
         reference_fasta=config.param('realignerTargetCreator', 'referenceFasta', type='filepath'),
         input=input,
         output=output,
-        intervals=" \\\n  --intervals ".join(intervals),
-        exclude_intervals=" \\\n  --excludeIntervals ".join(exclude_intervals) + " \\\n  --excludeIntervals unmapped" if exclude_intervals else ""
+        intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
+        exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals)
     )
 
     return job
 
 
-def indel_realigner(input, output, intervals=[], process_unmapped_intervals=False, exclude_intervals=[]):
+def indel_realigner(input, output, target_intervals, intervals=[], exclude_intervals=[]):
 
     job = Job([input], [output], [['indelRealigner', 'moduleVersion.java'], ['indelRealigner', 'moduleVersion.gatk']])
 
     job.command = \
 """java -Djava.io.tmpdir={tmp_dir} {extra_java_flags} -Xmx{ram} -jar \$GATK_JAR \\
-  -T IndelRealigner \\
+  -T IndelRealigner {extra_indel_realigner_flags} \\
   -R {reference_fasta} \\
   -I {input} \\
-  -o {output}{intervals}{exclude_intervals} \\
+  --targetIntervals {target_intervals} \\
+  -o {output}{intervals}{exclude_intervals}{extra_indel_realigner_flags} \\
   --maxReadsInMemory {max_reads_in_memory}""".format(
         tmp_dir=config.param('indelRealigner', 'tmpDir'),
         extra_java_flags=config.param('indelRealigner', 'extraJavaFlags'),
         ram=config.param('indelRealigner', 'ram'),
+        extra_indel_realigner_flags=config.param('indelRealigner', 'extraIndelRealignerFlags'),
         reference_fasta=config.param('indelRealigner', 'referenceFasta', type='filepath'),
         input=input,
+        target_intervals=target_intervals,
         output=output,
-        intervals=" \\\n  --intervals ".join(intervals),
-        exclude_intervals=" \\\n  --excludeIntervals ".join(exclude_intervals) + " \\\n  --excludeIntervals unmapped" if exclude_intervals else " \\\n --intervals unmapped" if process_unmapped_intervals else "",
+        intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
+        exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals),
         max_reads_in_memory=config.param('indelRealigner', 'maxReadsInMemory')
     )
 

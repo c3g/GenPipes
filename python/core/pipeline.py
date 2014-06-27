@@ -78,30 +78,27 @@ class Pipeline:
         for step in self.steps:
             for step_job in step.jobs:
                 # If current job input files intersect with step job output files, step job is a dependency
-                if list(set(current_job.input_files) & set(step_job.output_files)):
+                if set(current_job.input_files).intersection(set(step_job.output_files)):
                     dependency_jobs.append(step_job)
         return dependency_jobs
 
     def create_jobs(self):
         for step in self.steps:
             log.info("Create jobs for step " + step.name + "...")
-            jobs = []
-            if step.loop:
-                for item in step.loop:
-                    job = step.create_job(item)
-                    job.name = step.name + "." + item.name
-                    jobs.append(job)
-            else:
-                job = step.create_job()
-                job.name = step.name
-                jobs.append(job)
+            jobs = step.create_jobs()
             for job in jobs:
-                job.update_files(self.output_dir)
+                # Job name is mandatory to create job .done file name
+                if not job.name:
+                    raise Exception("Error: job \"" + job.command + "\" has no name!")
+
+                # Job .done file name contains the command checksum.
+                # Thus, if the command is modified, the job is not up-to-date anymore.
                 job.done = os.path.join("job_output", step.name, job.name + "." + hashlib.md5(job.command).hexdigest() + ".mugqic.done")
+                job.output_dir = self.output_dir
+                job.dependency_jobs = self.dependency_jobs(job)
                 if not self.force_jobs and job.is_up2date():
                     log.info("Job " + job.name + " up to date... skipping")
                 else:
-                    job.dependency_jobs = self.dependency_jobs(job)
                     step.add_job(job)
             log.info("Step " + step.name + ": " + str(len(step.jobs)) + " job" + ("s" if len(step.jobs) > 1 else "") + " created" + ("" if step.jobs else "... skipping") + "\n")
 
