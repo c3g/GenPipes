@@ -328,7 +328,7 @@ sub main {
   my $nbSamples = scalar(@sampleNames);
 
   # Log anynymous statistics on remote MUGQIC web server
-#  Tools::mugqicLog($pipelineName, $stepNames, $nbSamples);
+  Tools::mugqicLog($pipelineName, $stepNames, $nbSamples);
 }
 
 sub samToFastq {
