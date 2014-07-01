@@ -25,13 +25,12 @@ class Scheduler:
         # Needs to be defined in scheduler child class
         raise NotImplementedError
 
-class TorqueScheduler(Scheduler):
     def print_header(self, pipeline):
         print(
 """#!/bin/bash
 
 {separator_line}
-# {pipeline.__class__.__name__} Torque Job Submission Bash script
+# {pipeline.__class__.__name__} {scheduler.__class__.__name__} Job Submission Bash script
 # Created on: {datetime}
 # Steps:
 {steps}
@@ -46,27 +45,32 @@ cd $OUTPUT_DIR"""
             .format(
                 separator_line=separator_line,
                 pipeline=pipeline,
+                scheduler=self,
                 steps="\n".join(["#   " + step.name + ": " + str(len(step.jobs)) + " job" + ("s" if len(step.jobs) > 1 else "" if step.jobs else "... skipping") for step in pipeline.step_range]),
                 datetime=datetime.datetime.now()
             )
         )
 
-    def submit(self, pipeline):
-        self.print_header(pipeline)
-        for step in pipeline.step_range:
-            if step.jobs:
-                print("""
+    def print_step(self, step):
+        print("""
 {separator_line}
 # STEP: {step.name}
 {separator_line}
 STEP={step.name}
 mkdir -p $JOB_OUTPUT_DIR/$STEP""".format(separator_line=separator_line, step=step)
-                )
+        )
+
+class TorqueScheduler(Scheduler):
+    def submit(self, pipeline):
+        self.print_header(pipeline)
+        for step in pipeline.step_range:
+            if step.jobs:
+                self.print_step(step)
                 for job in step.jobs:
                     dependency_jobs = ":".join(["$" + dependency_job.id for dependency_job in job.dependency_jobs])
                     print("""
 {separator_line}
-# {job.id}: {job.name}
+# JOB: {job.id}: {job.name}
 {separator_line}
 JOB_NAME={job.name}
 JOB_DEPENDENCIES={dependency_jobs}
@@ -111,8 +115,20 @@ if [ \$MUGQIC_STATE -eq 0 ] ; then touch $JOB_DONE ; fi && exit \$MUGQIC_STATE" 
 
 class BatchScheduler(Scheduler):
     def submit(self, pipeline):
-        for job in pipeline.jobs:
-            print(job.command_with_modules)
+        self.print_header(pipeline)
+        for step in pipeline.step_range:
+            if step.jobs:
+                self.print_step(step)
+                for job in step.jobs:
+                    print("""
+{separator_line}
+# JOB: {job.name}
+{separator_line}
+{job.command_with_modules}""".format(
+                            job=job,
+                            separator_line=separator_line
+                        )
+                    )
 
 class DaemonScheduler(Scheduler):
     def submit(self, pipeline):

@@ -24,6 +24,7 @@ from bio import gatk
 from bio import igvtools
 from bio import picard
 from bio import samtools
+from bio import tools
 from bio import trimmomatic
 
 log = logging.getLogger(__name__)
@@ -277,6 +278,61 @@ class DnaSeq(Pipeline):
             jobs.append(job)
         return jobs
 
+    def calculate_hs_metrics(self):
+        jobs = []
+
+        created_interval_lists = []
+
+        for sample in self.samples:
+            coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
+            if coverage_bed:
+                interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
+                if not interval_list in created_interval_lists:
+                    print tools.bed2interval_list(None, coverage_bed, interval_list)
+                    created_interval_lists.append(interval_list)
+
+                align_file_prefix = "alignment/" + sample.name + "/" + sample.name + ".sorted.dup.recal."
+                job = picard.calculate_hs_metrics(align_file_prefix + "bam", align_file_prefix + "onTarget.tsv", interval_list)
+                job.name = "calculate_hs_metrics." + sample.name
+                jobs.append(job)
+        return jobs
+
+    def callable_loci(self):
+        jobs = []
+
+        for sample in self.samples:
+            align_file_prefix = "alignment/" + sample.name + "/" + sample.name + "."
+
+            job = gatk.callable_loci(align_file_prefix + "sorted.dup.recal.bam", align_file_prefix + "callable.bed", align_file_prefix + "callable.summary.txt")
+            job.name = "callable_loci." + sample.name
+            jobs.append(job)
+
+        return jobs
+
+    def extract_common_snp_freq(self):
+        jobs = []
+
+        for sample in self.samples:
+            align_file_prefix = "alignment/" + sample.name + "/" + sample.name + "."
+
+            job = bvatools.basefreq(align_file_prefix + "sorted.dup.recal.bam", align_file_prefix + "commonSNPs.alleleFreq.csv", config.param('extract_common_snp_freq', 'commonSNPPos', type='filepath'), 0)
+            job.name = "extract_common_snp_freq." + sample.name
+            jobs.append(job)
+
+        return jobs
+
+    def baf_plot(self):
+        jobs = []
+
+        for sample in self.samples:
+            align_file_prefix = "alignment/" + sample.name + "/" + sample.name + "."
+
+            job = bvatools.ratiobaf(align_file_prefix + "commonSNPs.alleleFreq.csv", align_file_prefix + "ratioBAF", config.param('baf_plot', 'commonSNPPos', type='filepath'))
+            job.name = "baf_plot." + sample.name
+            jobs.append(job)
+
+        return jobs
+
     @property
     def steps(self):
         return [
@@ -289,7 +345,11 @@ class DnaSeq(Pipeline):
             self.fix_mate_by_coordinate,
             self.mark_duplicates,
             self.recalibration,
-            self.metrics
+            self.metrics,
+            self.calculate_hs_metrics,
+            self.callable_loci,
+            self.extract_common_snp_freq,
+            self.baf_plot
         ]
 
     def __init__(self):

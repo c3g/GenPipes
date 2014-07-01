@@ -53,7 +53,7 @@ class Config(ConfigParser.SafeConfigParser):
                     if value > 0:
                         return value
                     else:
-                        raise Exception("Integer \"" + value + "\" is not > 0!")
+                        raise Exception("Integer \"" + str(value) + "\" is not > 0!")
                 elif type == 'float':
                     return self.getfloat(section, option)
                 elif type == 'boolean':
