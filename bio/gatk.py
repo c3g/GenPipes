@@ -12,12 +12,12 @@ def base_recalibrator(input, output):
 
     job.command = \
 """java -Djava.io.tmpdir={tmp_dir} {extra_java_flags} -Xmx{ram} -jar \$GATK_JAR \\
-  -T BaseRecalibrator \\
-  -nct {threads} \\
-  -I {input} \\
-  -R {reference_fasta} \\
-  -knownSites {known_sites} \\
-  -o {output}""".format(
+  --analysis_type BaseRecalibrator \\
+  --num_cpu_threads_per_data_thread {threads} \\
+  --input_file {input} \\
+  --reference_sequence {reference_fasta} \\
+  --knownSites {known_sites} \\
+  --out {output}""".format(
         tmp_dir=config.param('baseRecalibrator', 'tmpDir'),
         extra_java_flags=config.param('baseRecalibrator', 'extraJavaFlags'),
         ram=config.param('baseRecalibrator', 'ram'),
@@ -38,11 +38,11 @@ def callable_loci(input, output, summary):
 
     job.command = \
 """java -Djava.io.tmpdir={tmp_dir} {extra_java_flags} -Xmx{ram} -jar \$GATK_JAR \\
-  -T CallableLoci {options} \\
-  -I {input} \\
-  -R {reference_fasta} \\
+  --analysis_type CallableLoci {options} \\
+  --input_file {input} \\
+  --reference_sequence {reference_fasta} \\
   --summary {summary} \\
-  -o {output}""".format(
+  --out {output}""".format(
         tmp_dir=config.param('callable_loci', 'tmpDir'),
         extra_java_flags=config.param('callable_loci', 'extraJavaFlags'),
         ram=config.param('callable_loci', 'ram'),
@@ -63,11 +63,13 @@ def depth_of_coverage(input, output_prefix, intervals=""):
 
     job.command = \
 """java -Djava.io.tmpdir={tmp_dir} {extra_java_flags} -Xmx{ram} -jar \$GATK_JAR \\
-  -T DepthOfCoverage --omitDepthOutputAtEachBase --logging_level ERROR \\
-  -R {reference_fasta} \\
-  -I {input} \\
-  -o {output_prefix}{intervals}{summary_coverage_thresholds} \\
-  --start 1 --stop {highest_summary_coverage_threshold} --nBins {highest_summary_coverage_threshold} -dt NONE""".format(
+  --analysis_type DepthOfCoverage --omitDepthOutputAtEachBase --logging_level ERROR \\
+  --reference_sequence {reference_fasta} \\
+  --input_file {input} \\
+  --out {output_prefix}{intervals}{summary_coverage_thresholds} \\
+  --start 1 --stop {highest_summary_coverage_threshold} \\
+  --nBins {highest_summary_coverage_threshold} \\
+  --downsampling_type NONE""".format(
         tmp_dir=config.param('depth_of_coverage', 'tmpDir'),
         extra_java_flags=config.param('depth_of_coverage', 'extraJavaFlags'),
         ram=config.param('depth_of_coverage', 'ram'),
@@ -81,17 +83,40 @@ def depth_of_coverage(input, output_prefix, intervals=""):
 
     return job
 
+def haplotype_caller(input, output, intervals=[], exclude_intervals=[]):
+
+    job = Job([input], [output], [['haplotype_caller', 'moduleVersion.java'], ['haplotype_caller', 'moduleVersion.gatk']])
+
+    job.command = \
+"""java -Djava.io.tmpdir={tmp_dir} {extra_java_flags} -Xmx{ram} -jar \$GATK_JAR \\
+  --analysis_type HaplotypeCaller {options} \\
+  --reference_sequence {reference_fasta} \\
+  --input_file {input} \\
+  --out {output}{intervals}{exclude_intervals}""".format(
+        tmp_dir=config.param('haplotype_caller', 'tmpDir'),
+        extra_java_flags=config.param('haplotype_caller', 'extraJavaFlags'),
+        ram=config.param('haplotype_caller', 'ram'),
+        options=config.param('haplotype_caller', 'options'),
+        reference_fasta=config.param('haplotype_caller', 'referenceFasta', type='filepath'),
+        input=input,
+        output=output,
+        intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
+        exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals)
+    )
+
+    return job
+
 def indel_realigner(input, output, target_intervals, intervals=[], exclude_intervals=[]):
 
     job = Job([input], [output], [['indelRealigner', 'moduleVersion.java'], ['indelRealigner', 'moduleVersion.gatk']])
 
     job.command = \
 """java -Djava.io.tmpdir={tmp_dir} {extra_java_flags} -Xmx{ram} -jar \$GATK_JAR \\
-  -T IndelRealigner {extra_indel_realigner_flags} \\
-  -R {reference_fasta} \\
-  -I {input} \\
+  --analysis_type IndelRealigner {extra_indel_realigner_flags} \\
+  --reference_sequence {reference_fasta} \\
+  --input_file {input} \\
   --targetIntervals {target_intervals} \\
-  -o {output}{intervals}{exclude_intervals}{extra_indel_realigner_flags} \\
+  --out {output}{intervals}{exclude_intervals} \\
   --maxReadsInMemory {max_reads_in_memory}""".format(
         tmp_dir=config.param('indelRealigner', 'tmpDir'),
         extra_java_flags=config.param('indelRealigner', 'extraJavaFlags'),
@@ -114,12 +139,12 @@ def print_reads(input, output, base_quality_score_recalibration):
 
     job.command = \
 """java -Djava.io.tmpdir={tmp_dir} {extra_java_flags} -Xmx{ram} -jar \$GATK_JAR \\
-  -T PrintReads \\
-  -nct {threads} \\
-  -I {input} \\
-  -R {reference_fasta} \\
-  -BQSR {base_quality_score_recalibration} \\
-  -o {output}""".format(
+  --analysis_type PrintReads \\
+  --num_cpu_threads_per_data_thread {threads} \\
+  --input_file {input} \\
+  --reference_sequence {reference_fasta} \\
+  --BQSR {base_quality_score_recalibration} \\
+  --out {output}""".format(
         tmp_dir=config.param('printReads', 'tmpDir'),
         extra_java_flags=config.param('printReads', 'extraJavaFlags'),
         ram=config.param('printReads', 'ram'),
@@ -139,10 +164,10 @@ def realigner_target_creator(input, output, intervals=[], exclude_intervals=[]):
 
     job.command = \
 """java -Djava.io.tmpdir={tmp_dir} {extra_java_flags} -Xmx{ram} -jar \$GATK_JAR \\
-  -T RealignerTargetCreator {extra_realigner_target_creator_flags} \\
-  -R {reference_fasta} \\
-  -I {input} \\
-  -o {output}{intervals}{exclude_intervals}""".format(
+  --analysis_type RealignerTargetCreator {extra_realigner_target_creator_flags} \\
+  --reference_sequence {reference_fasta} \\
+  --input_file {input} \\
+  --out {output}{intervals}{exclude_intervals}""".format(
         tmp_dir=config.param('realignerTargetCreator', 'tmpDir'),
         extra_java_flags=config.param('realignerTargetCreator', 'extraJavaFlags'),
         ram=config.param('realignerTargetCreator', 'ram'),

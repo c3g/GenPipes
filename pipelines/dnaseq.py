@@ -41,7 +41,10 @@ class DnaSeq(Pipeline):
 
     @property
     def sequence_dictionary(self):
-        return self._sequence_dictionary
+        if hasattr(self, "_sequence_dictionary"):
+            return self._sequence_dictionary
+        else:
+            return None
 
     def sam_to_fastq(self):
         jobs = []
@@ -130,7 +133,8 @@ class DnaSeq(Pipeline):
         jobs = []
 
         # Create sequence dictionary
-        self._sequence_dictionary = parse_sequence_dictionary_file(config.param('DEFAULT', 'referenceSequenceDictionary', type='filepath'))
+        if not self.sequence_dictionary:
+            self.sequence_dictionary = parse_sequence_dictionary_file(config.param('DEFAULT', 'referenceSequenceDictionary', type='filepath'))
 
         nb_realign_jobs = config.param('indel_realigner', 'nbRealignJobs', type='posint')
         if nb_realign_jobs > 50:
@@ -157,7 +161,7 @@ class DnaSeq(Pipeline):
                 job.name = "indel_realigner." + sample.name
                 jobs.append(job)
             else:
-                unique_sequences_per_job = [sequence['name'] for sequence in self._sequence_dictionary[0:min(nb_realign_jobs, len(self._sequence_dictionary))]]
+                unique_sequences_per_job = [sequence['name'] for sequence in self.sequence_dictionary[0:min(nb_realign_jobs, len(self.sequence_dictionary))]]
                 for sequence in unique_sequences_per_job:
                     output_prefix = realign_directory + sequence
                     job = concat_jobs([
@@ -184,8 +188,8 @@ class DnaSeq(Pipeline):
         jobs = []
 
         # Create sequence dictionary if not already done
-        if not self._sequence_dictionary:
-            self._sequence_dictionary = parse_sequence_dictionary_file(config.param('DEFAULT', 'referenceSequenceDictionary', type='filepath'))
+        if not self.sequence_dictionary:
+            self.sequence_dictionary = parse_sequence_dictionary_file(config.param('DEFAULT', 'referenceSequenceDictionary', type='filepath'))
 
         nb_realign_jobs = config.param('indel_realigner', 'nbRealignJobs', type='posint')
 
@@ -194,7 +198,7 @@ class DnaSeq(Pipeline):
             realign_directory = align_directory + "realign/"
             merged_realigned_bam = align_directory + sample.name + ".realigned.qsorted.bam"
             if nb_realign_jobs > 1:
-                realigned_bams = [realign_directory + sequence['name'] + ".bam" for sequence in self._sequence_dictionary[0:min(nb_realign_jobs, len(self._sequence_dictionary))]]
+                realigned_bams = [realign_directory + sequence['name'] + ".bam" for sequence in self.sequence_dictionary[0:min(nb_realign_jobs, len(self.sequence_dictionary))]]
                 realigned_bams.append(realign_directory + "others.bam")
                 job = picard.merge_sam_files(realigned_bams, merged_realigned_bam)
                 job.name = "merge_realigned." + sample.name
@@ -333,6 +337,45 @@ class DnaSeq(Pipeline):
 
         return jobs
 
+    def haplotype_caller(self):
+        jobs = []
+
+        # Create sequence dictionary
+        if not self.sequence_dictionary:
+            self.sequence_dictionary = parse_sequence_dictionary_file(config.param('DEFAULT', 'referenceSequenceDictionary', type='filepath'))
+
+        nb_realign_jobs = config.param('haplotype_caller', 'nbJobs', type='posint')
+        if nb_realign_jobs > 50:
+            log.warning("Number of realign jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
+
+        for sample in self.samples:
+            align_directory = "alignment/" + sample.name + "/"
+            haplotype_directory = align_directory + "rawHaplotypeCaller/"
+            input = align_directory + sample.name + ".sorted.dup.recal.bam"
+            if nb_realign_jobs == 1:
+                job = gatk.haplotype_caller(input, haplotype_directory + sample.name + ".hc.gvcf")
+
+                # Create output directory since it is done by default by GATK tools
+                job.command = "mkdir -p " + haplotype_directory + " && \\\n" + job.command
+
+                job.name = "haplotype_caller." + sample.name
+                jobs.append(job)
+            else:
+                unique_sequences_per_job = [sequence['name'] for sequence in self.sequence_dictionary[0:min(nb_realign_jobs, len(self.sequence_dictionary))]]
+                for sequence in unique_sequences_per_job:
+                    job = gatk.haplotype_caller(input, haplotype_directory + sequence + ".hc.g.vcf", intervals=[sequence])
+                    job.name = "haplotype_caller." + sample.name + "." + sequence
+                    # Create output directory since it is done by default by GATK tools
+                    job.command = "mkdir -p " + haplotype_directory + " && \\\n" + job.command
+                    jobs.append(job)
+                job = gatk.haplotype_caller(input, haplotype_directory + ".others.hc.g.vcf", exclude_intervals=unique_sequences_per_job)
+                # Create output directory since it is done by default by GATK tools
+                job.command = "mkdir -p " + haplotype_directory + " && \\\n" + job.command
+                job.name = "haplotype_caller." + sample.name + ".others"
+                jobs.append(job)
+
+        return jobs
+
     @property
     def steps(self):
         return [
@@ -349,7 +392,8 @@ class DnaSeq(Pipeline):
             self.calculate_hs_metrics,
             self.callable_loci,
             self.extract_common_snp_freq,
-            self.baf_plot
+            self.baf_plot,
+            self.haplotype_caller
         ]
 
     def __init__(self):
