@@ -1,1 +1,1 @@
-__all__ = ["bwa", "gatk", "picard", "readset", "sample", "sequence_dictionary", "trimmomatic"]
+__all__ = ["bvatools", "bwa", "gatk", "igvtools", "picard", "readset", "sample", "samtools", "sequence_dictionary", "trimmomatic"]

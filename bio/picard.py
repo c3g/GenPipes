@@ -20,7 +20,7 @@ def merge_sam_files(inputs, output):
         tmp_dir=config.param('mergeSamFiles', 'tmpDir'),
         extra_java_flags=config.param('mergeSamFiles', 'extraJavaFlags'),
         ram=config.param('mergeSamFiles', 'mergeRam'),
-        inputs=" ".join(["INPUT=" + input for input in inputs]),
+        inputs=" \\\n  ".join(["INPUT=" + input for input in inputs]),
         output=output,
         max_records_in_ram=config.param('mergeSamFiles', 'mergeRecInRam', type='int')
     )
@@ -29,7 +29,7 @@ def merge_sam_files(inputs, output):
 
 def fix_mate_information(input, output):
 
-    job = Job([inputBAM], [outputBAM], [['fixmate', 'moduleVersion.java'], ['fixmate', 'moduleVersion.picard']])
+    job = Job([input], [output], [['fixmate', 'moduleVersion.java'], ['fixmate', 'moduleVersion.picard']])
 
     job.command = \
 """java -Djava.io.tmpdir={tmp_dir} {extra_java_flags} -Xmx{ram} -jar \$PICARD_HOME/FixMateInformation.jar \\
@@ -63,7 +63,7 @@ def mark_duplicates(inputs, output, metrics_file):
         tmp_dir=config.param('markDup', 'tmpDir'),
         extra_java_flags=config.param('markDup', 'extraJavaFlags'),
         ram=config.param('markDup', 'markDupRam'),
-        inputs=" ".join(["INPUT=" + input for input in inputs]),
+        inputs=" \\\n  ".join(["INPUT=" + input for input in inputs]),
         output=output,
         metrics_file=metrics_file,
         max_records_in_ram=config.param('markDup', 'markDupRecInRam', type='int')

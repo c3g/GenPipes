@@ -70,11 +70,26 @@ class Pipeline:
 
     def dependency_jobs(self, current_job):
         dependency_jobs = []
+        dependency_input_files = set()
         for step in self.step_range:
             for step_job in step.jobs:
                 # If current job input files intersect with step job output files, step job is a dependency
-                if set(current_job.input_files).intersection(set(step_job.output_files)):
+                shared_files = set(current_job.input_files).intersection(set(step_job.output_files))
+                if shared_files:
                     dependency_jobs.append(step_job)
+                    dependency_input_files.update(shared_files)
+
+        # Check if job input files not found in dependencies are on file system
+        missing_input_files = set()
+        # Add current_job.output_files in case of "... && ..." command
+        # where first command output becomes second command input
+        for remaining_input_file in set(current_job.input_files).difference(dependency_input_files).difference(set(current_job.output_files)):
+            if not os.path.isfile(current_job.abspath(remaining_input_file)):
+                missing_input_files.add(remaining_input_file)
+        if missing_input_files:
+            raise Exception("Error: missing input files for job " + current_job.name + ": " +
+                ", ".join(missing_input_files) + " neither found in dependencies nor on file system!")
+
         return dependency_jobs
 
     def create_jobs(self):

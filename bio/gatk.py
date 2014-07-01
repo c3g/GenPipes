@@ -106,11 +106,11 @@ def indel_realigner(input, output, target_intervals, intervals=[], exclude_inter
 
     return job
 
-def depth_of_coverage(input, output_prefix, intervals=[]):
+def depth_of_coverage(input, output_prefix, intervals=""):
 
-    job = Job([input], [output_prefix + ".sample_summary"], [['depthOfCoverage', 'moduleVersion.java'], ['depthOfCoverage', 'moduleVersion.gatk']])
+    job = Job([input], [output_prefix + ".sample_summary"], [['depth_of_coverage', 'moduleVersion.java'], ['depth_of_coverage', 'moduleVersion.gatk']])
 
-    summary_coverage_thresholds = config.param('depthOfCoverage', 'percentThresholds', type='list').sort()
+    summary_coverage_thresholds = sorted(config.param('depth_of_coverage', 'percentThresholds', type='list'), key=int)
 
     job.command = \
 """java -Djava.io.tmpdir={tmp_dir} {extra_java_flags} -Xmx{ram} -jar \$GATK_JAR \\
@@ -119,14 +119,14 @@ def depth_of_coverage(input, output_prefix, intervals=[]):
   -I {input} \\
   -o {output_prefix}{intervals}{summary_coverage_thresholds} \\
   --start 1 --stop {highest_summary_coverage_threshold} --nBins {highest_summary_coverage_threshold} -dt NONE""".format(
-        tmp_dir=config.param('depthOfCoverage', 'tmpDir'),
-        extra_java_flags=config.param('depthOfCoverage', 'extraJavaFlags'),
-        ram=config.param('depthOfCoverage', 'ram'),
-        reference_fasta=config.param('depthOfCoverage', 'referenceFasta', type='filepath'),
+        tmp_dir=config.param('depth_of_coverage', 'tmpDir'),
+        extra_java_flags=config.param('depth_of_coverage', 'extraJavaFlags'),
+        ram=config.param('depth_of_coverage', 'ram'),
+        reference_fasta=config.param('depth_of_coverage', 'referenceFasta', type='filepath'),
         input=input,
         output_prefix=output_prefix,
-        intervals=" \\\n  --intervals ".join(intervals),
-        summary_coverage_thresholds=" \\\n  --summaryCoverageThreshold ".join(summary_coverage_thresholds),
+        intervals=" \\\n  --intervals " + intervals if intervals else "",
+        summary_coverage_thresholds="".join(" \\\n  --summaryCoverageThreshold " + summary_coverage_threshold for summary_coverage_threshold in summary_coverage_thresholds),
         highest_summary_coverage_threshold=summary_coverage_thresholds[-1]
     )
 
