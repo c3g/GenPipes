@@ -51,15 +51,27 @@
 # Then run sample setup (from MUGQIC tools repo) if internal libs from MUGQIC.
 /path/to/your/mugqic_tools/perl-tools/sampleSetup.pl --nanuqAuthFile ~/nanuq_sample_setup.txt --projectId 9999 --tech miseq
 
+# Then get your barcodes (for MUGQIC sequencing libs) 
+module load mugqic/tools/1.9
 
-# Then get your barcodes (for MUGQIC sequencing libs)
-module load mugqic/tools/1.8
+## FOR MISEQ
 /path/to/your/mugqic_tools/perl-tools/getMiSeqBarcodes.pl --runId M00833_0173 > barcodes.fasta
+
+## FOR 454:
+/path/to/your/mugqic_tools/perl-tools/sampleSetup.pl --nanuqAuthFile ~/nanuq_sample_setup.txt --projectId 10246 --tech 454
+# This will create symlinks into your raw_reads/ directory(abacus only). Then merge all files with:
+/path/to/your/mugqic_tools/perl-tools/454ToFastq.pl --indir ./raw_reads/ --outIndex ./barcodes.tsv --outFasta ./barcodes.fasta --cutAt 350 > ./raw_reads/reads.fastq 
+
+
 # RRNATagger.pl has been design to support many configurations of sequencing runs (i.e. single, paired end reads). Here are different ways to run the pipeline according 
 # to the type of library that is to be analyzed.
 #
 # Regardless of the type of library you have, 454, PacBio or MiSeq/HiSeq rRNA amplicons library, here is the command line you need to launch and the steps that will be performed:
+#
+## FOR 454:
 # ./RRNATagger.pl --everything --external_infile ./reads_cutadapt_220.fastq --barcodes ./myBarcodes.fasta --config_file ./RRNATagger.abacus.ini --verbose --start_at 1 > commands.sh
+
+## FOR MISEQ IF YOU HAVE ACCESS TO NANUQ PROJECT SAMPLE SHEET:
 ./RRNATagger.pl --sampleSheet ./project.nanuq.csv --barcodes barcodes.fasta --bactArch --config_file myInifile.ini --verbose --start_at 1 --end_at 62 > commands_1-62.sh
 
 # Steps in the RRNATagger pipeline can vary depending on the data types you
