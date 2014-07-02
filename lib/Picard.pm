@@ -188,6 +188,7 @@ sub calculateHSMetrics {
       ['calculateHSMetrics', 'moduleVersion.picard'],
     ]) . ' && ';
     $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'calculateHSMetrics', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'calculateHSMetrics', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'calculateHSMetrics', 'ram') . ' -jar \${PICARD_HOME}/CalculateHsMetrics.jar';
+    $command .= ' VALIDATION_STRINGENCY=SILENT';
     $command .= ' TMP_DIR=' . LoadConfig::getParam($rH_cfg, 'calculateHSMetrics', 'tmpDir');
     $command .= ' REFERENCE_SEQUENCE=' . $reference;
     $command .= ' BAIT_INTERVALS=' . $intervalsFile;
