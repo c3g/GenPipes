@@ -55,6 +55,26 @@ def callable_loci(input, output, summary):
 
     return job
 
+def cat_variants(variants, output):
+
+    job = Job(variants, [output], [['cat_variants', 'moduleVersion.java'], ['cat_variants', 'moduleVersion.gatk']])
+
+    job.command = \
+"""java -Djava.io.tmpdir={tmp_dir} {extra_java_flags} -Xmx{ram} -cp \$GATK_JAR \\
+  org.broadinstitute.sting.tools.CatVariants {options} \\
+  --reference {reference_fasta}{variants} \\
+  --outputFile {output}""".format(
+        tmp_dir=config.param('cat_variants', 'tmpDir'),
+        extra_java_flags=config.param('cat_variants', 'extraJavaFlags'),
+        ram=config.param('cat_variants', 'ram'),
+        options=config.param('cat_variants', 'options'),
+        reference_fasta=config.param('cat_variants', 'referenceFasta', type='filepath'),
+        variants="".join(" \\\n  --variant " + variant for variant in variants),
+        output=output
+    )
+
+    return job
+
 def depth_of_coverage(input, output_prefix, intervals=""):
 
     job = Job([input], [output_prefix + ".sample_summary"], [['depth_of_coverage', 'moduleVersion.java'], ['depth_of_coverage', 'moduleVersion.gatk']])
@@ -79,6 +99,26 @@ def depth_of_coverage(input, output_prefix, intervals=""):
         intervals=" \\\n  --intervals " + intervals if intervals else "",
         summary_coverage_thresholds="".join(" \\\n  --summaryCoverageThreshold " + summary_coverage_threshold for summary_coverage_threshold in summary_coverage_thresholds),
         highest_summary_coverage_threshold=summary_coverage_thresholds[-1]
+    )
+
+    return job
+
+def genotype_gvcfs(variants, output):
+
+    job = Job(variants, [output], [['genotype_gvcfs', 'moduleVersion.java'], ['genotype_gvcfs', 'moduleVersion.gatk']])
+
+    job.command = \
+"""java -Djava.io.tmpdir={tmp_dir} {extra_java_flags} -Xmx{ram} -jar \$GATK_JAR \\
+  --analysis_type GenotypeGVCFs {options} \\
+  --reference_sequence {reference_fasta}{variants} \\
+  --out {output}""".format(
+        tmp_dir=config.param('genotype_gvcfs', 'tmpDir'),
+        extra_java_flags=config.param('genotype_gvcfs', 'extraJavaFlags'),
+        ram=config.param('genotype_gvcfs', 'ram'),
+        options=config.param('genotype_gvcfs', 'options'),
+        reference_fasta=config.param('genotype_gvcfs', 'referenceFasta', type='filepath'),
+        variants="".join(" \\\n  --variant " + variant for variant in variants),
+        output=output
     )
 
     return job

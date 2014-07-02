@@ -3,6 +3,7 @@ __all__ = [
     "bwa",
     "gatk",
     "igvtools",
+    "metrics",
     "picard",
     "readset",
     "sample",
