@@ -23,3 +23,16 @@ def bed2interval_list(dictionary, bed, output):
     )
 
     return job
+
+def filter_long_indel(input, output):
+    job = Job([input], [output], [['DEFAULT' , 'moduleVersion.tools'], ['DEFAULT' , 'moduleVersion.perl']])
+
+    job.command = \
+"""filterLongIndel.pl \\
+  {input} \\
+  > {output}""".format(
+        input=input,
+        output=output
+    )
+
+    return job

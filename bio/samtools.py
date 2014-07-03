@@ -19,6 +19,21 @@ def flagstat(input, output):
 
     return job
 
+def mpileup(input_bams, output, extra_options="", region=None, pair_calling=False):
+    job = Job(input_bams, [output], [['samtools_mpileup', 'moduleVersion.samtools']])
+
+    job.command = \
+"""samtools mpileup {extra_options} \\
+  -f {reference_fasta}{region}{input_bams}{output}""".format(
+        extra_options=extra_options,
+        reference_fasta=config.param('samtools_mpileup', 'referenceFasta', type='filepath'),
+        region=" \\\n  -r " + region if region else "",
+        input_bams="".join([" \\\n  " + input_bam for input_bam in input_bams]),
+        output=" \\\n  > " + output if output else ""
+    )
+
+    return job
+
 def sort(input_bam, output_prefix):
     job = Job([input_bam], [output_prefix + ".bam"], [['samtools_sort', 'moduleVersion.samtools']])
 
@@ -27,6 +42,31 @@ def sort(input_bam, output_prefix):
         extra_sort_flags=config.param('samtools_sort', 'extraSortFlags', required=False),
         input_bam=input_bam,
         output_prefix=output_prefix
+    )
+
+    return job
+
+def bcftools_cat(inputs, output):
+    job = Job(inputs, [output], [['bcftools_cat', 'moduleVersion.samtools']])
+
+    job.command = \
+"""bcftools cat \\
+  {input}{output}""".format(
+        input=" \\\n  ".join(inputs),
+        output=" \\\n  > " + output if output else ""
+    )
+
+    return job
+
+def bcftools_view(input, output, pair_calling=False):
+    job = Job([input], [output], [['bcftools_view', 'moduleVersion.samtools']])
+
+    job.command = \
+"""bcftools view {pair_calling} -bvcg \\
+  {input}{output}""".format(
+        pair_calling="-T pair" if pair_calling else "",
+        input=input,
+        output=" \\\n  > " + output if output else ""
     )
 
     return job

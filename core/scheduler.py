@@ -67,18 +67,27 @@ class TorqueScheduler(Scheduler):
             if step.jobs:
                 self.print_step(step)
                 for job in step.jobs:
-                    dependency_jobs = ":".join(["$" + dependency_job.id for dependency_job in job.dependency_jobs])
+                    if job.dependency_jobs:
+                        # Chunk JOB_DEPENDENCIES on multiple lines to avoid lines too long
+                        max_dependencies_per_line = 50
+                        dependency_chunks = [job.dependency_jobs[i:i + max_dependencies_per_line] for i in range(0, len(job.dependency_jobs), max_dependencies_per_line)]
+                        job_dependencies = "JOB_DEPENDENCIES=" + ":".join(["$" + dependency_job.id for dependency_job in dependency_chunks[0]])
+                        for dependency_chunk in dependency_chunks[1:]:
+                            job_dependencies += "\nJOB_DEPENDENCIES=$JOB_DEPENDENCIES:" + ":".join(["$" + dependency_job.id for dependency_job in dependency_chunk])
+                    else:
+                        job_dependencies = "JOB_DEPENDENCIES="
+
                     print("""
 {separator_line}
 # JOB: {job.id}: {job.name}
 {separator_line}
 JOB_NAME={job.name}
-JOB_DEPENDENCIES={dependency_jobs}
+{job_dependencies}
 JOB_DONE={job.done}
 JOB_OUTPUT_RELATIVE_PATH=$STEP/${{JOB_NAME}}_$TIMESTAMP.o
 JOB_OUTPUT=$JOB_OUTPUT_DIR/$JOB_OUTPUT_RELATIVE_PATH""".format(
                             job=job,
-                            dependency_jobs=dependency_jobs,
+                            job_dependencies=job_dependencies,
                             separator_line=separator_line
                         )
                     )
@@ -99,7 +108,7 @@ if [ \$MUGQIC_STATE -eq 0 ] ; then touch $JOB_DONE ; fi && exit \$MUGQIC_STATE" 
                         config.param(step.name, 'clusterWalltime') + " " + \
                         config.param(step.name, 'clusterQueue') + " " + \
                         config.param(step.name, 'clusterCPU')
-                    if dependency_jobs:
+                    if job.dependency_jobs:
                         cmd += " " + config.param(step.name, 'clusterDependencyArg') + "$JOB_DEPENDENCIES"
                     cmd += " " + config.param(step.name, 'clusterSubmitCmdSuffix')
 

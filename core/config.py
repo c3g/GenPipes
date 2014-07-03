@@ -44,6 +44,9 @@ class Config(ConfigParser.SafeConfigParser):
     # Retrieve param in config file with optional definition check and type validation
     # By default, parameter is required to be defined in the config file
     def param(self, section, option, required=True, type='string'):
+        if not self.has_section(section):
+            section = 'DEFAULT'
+
         if self.has_option(section, option):
             try:
                 if type == 'int':

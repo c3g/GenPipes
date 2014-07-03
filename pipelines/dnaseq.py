@@ -4,6 +4,7 @@
 import argparse
 import collections
 import logging
+import math
 import os
 import re
 import sys
@@ -393,6 +394,95 @@ class DnaSeq(Pipeline):
         job.name = "dna_sample_metrics"
         return [job]
 
+    def generate_approximate_windows(self, nb_jobs):
+        if nb_jobs <= len(self.sequence_dictionary):
+            return [sequence['name'] + ":1-" + str(sequence['length']) for sequence in self.sequence_dictionary]
+        else:
+            total_length = sum([sequence['length'] for sequence in self.sequence_dictionary])
+            approximate_window_size = int(math.floor(total_length / (nb_jobs - len(self.sequence_dictionary))))
+            windows = []
+
+            for  sequence in self.sequence_dictionary:
+                for start, end in [[pos, min(pos + approximate_window_size - 1, sequence['length'])] for pos in range(1, sequence['length'] + 1, approximate_window_size)]:
+                    windows.append(sequence['name'] + ":" + str(start) + "-" + str(end))
+            return windows
+
+    def snp_and_indel_bcf(self):
+        jobs = []
+        input_bams = ["alignment/" + sample.name + "/" + sample.name + ".sorted.dup.recal.bam" for sample in self.samples]
+        nb_jobs = config.param('snp_and_indel_bcf', 'approxNbJobs', required=False, type='int')
+        output_directory = "variants/rawBCF/"
+
+        if nb_jobs and nb_jobs > 1:
+            for region in self.generate_approximate_windows(nb_jobs):
+                job = pipe_jobs([
+                    samtools.mpileup(input_bams, None, config.param('snp_and_indel_bcf', 'extra_mpileup_options'), region),
+                    samtools.bcftools_view("-", output_directory + "allSamples." + region + ".bcf"),
+                ])
+                job.name = "mpileup.allSamples." + re.sub(":", "_", region)
+                jobs.append(job)
+        else:
+            job = pipe_jobs([
+                samtools.mpileup(input_bams, None, config.param('snp_and_indel_bcf', 'extra_mpileup_options')),
+                samtools.bcftools_view("-", output_directory + "allSamples.bcf"),
+            ])
+            job.name = "mpileup.allSamples"
+            jobs.append(job)
+        for job in jobs:
+            job.command = "mkdir -p " + output_directory + " && \\\n" + job.command
+        return jobs
+
+    def rawmpileup(self):
+        jobs = []
+        for sample in self.samples:
+            mpileup_directory = "alignment/" + sample.name + "/mpileup/"
+
+            for sequence in self.sequence_dictionary:
+                output = mpileup_directory + sample.name + "." + sequence['name'] + ".mpileup.gz"
+                gzip_job = Job([], [output])
+                gzip_job.command = "gzip -1 -c > " + output
+                job = pipe_jobs([
+                    samtools.mpileup(["alignment/" + sample.name + "/" + sample.name + ".sorted.dup.recal.bam"], None, config.param('rawmpileup', 'extra_mpileup_options'), sequence['name']),
+                    gzip_job
+                ])
+                job.command = "mkdir -p " + mpileup_directory + " && \\\n" + job.command
+                job.name = "rawmpileup." + sample.name + "." + sequence['name']
+                jobs.append(job)
+
+        return jobs
+
+    def rawmpileup_cat(self):
+        jobs = []
+        for sample in self.samples:
+            mpileup_file_prefix = "alignment/" + sample.name + "/mpileup/" + sample.name + "."
+            mpileup_inputs = [mpileup_file_prefix + sequence['name'] + ".mpileup.gz" for sequence in self.sequence_dictionary]
+
+            gzip_output = mpileup_file_prefix + "mpileup.gz"
+            job = Job(mpileup_inputs, [gzip_output])
+            job.command = "zcat \\\n  " + " \\\n  ".join(mpileup_inputs) + " | \\\n  gzip -c --best > " + gzip_output
+            job.name = "rawmpileup_cat." + sample.name
+            jobs.append(job)
+        return jobs
+
+    def merge_filter_bcf(self):
+        nb_jobs = config.param('snp_and_indel_bcf', 'approxNbJobs', type='int')
+        bcf_directory = "variants/rawBCF/"
+        inputs = [bcf_directory + "allSamples." + region + ".bcf" for region in self.generate_approximate_windows(nb_jobs)]
+        output_file_prefix = "variants/allSamples.merged."
+
+        bcf = output_file_prefix + "bcf"
+        job = concat_jobs([
+            samtools.bcftools_cat(inputs, bcf),
+            samtools.bcftools_view(bcf, output_file_prefix + "flt.vcf")
+        ])
+        job.name = "merge_filter_bcf"
+        return [job]
+
+    def filter_nstretches(self):
+        job = tools.filter_long_indel("variants/allSamples.merged.flt.vcf", "variants/allSamples.merged.flt.NFiltered.vcf")
+        job.name = "filter_nstretches"
+        return [job]
+
     @property
     def steps(self):
         return [
@@ -412,7 +502,12 @@ class DnaSeq(Pipeline):
             self.baf_plot,
             self.haplotype_caller,
             self.merge_and_call_gvcf,
-            self.dna_sample_metrics
+            self.dna_sample_metrics,
+            self.rawmpileup,
+            self.rawmpileup_cat,
+            self.snp_and_indel_bcf,
+            self.merge_filter_bcf,
+            self.filter_nstretches
         ]
 
     def __init__(self):
