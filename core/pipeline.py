@@ -111,6 +111,7 @@ class Pipeline:
                 else:
                     step.add_job(job)
             log.info("Step " + step.name + ": " + str(len(step.jobs)) + " job" + ("s" if len(step.jobs) > 1 else "") + " created" + ("" if step.jobs else "... skipping") + "\n")
+        log.info("TOTAL: " + str(len(self.jobs)) + " job" + ("s" if len(self.jobs) > 1 else "") + " created" + ("" if step.jobs else "... skipping") + "\n")
 
     def submit_jobs(self):
         self.scheduler.submit(self)
@@ -132,6 +133,7 @@ class PipelineArgumentParser(argparse.ArgumentParser):
         # Create ArgumentParser with numbered step list as epilog
         argparse.ArgumentParser.__init__(self, formatter_class=argparse.RawDescriptionHelpFormatter, epilog="Steps:\n" + "\n".join([str(idx + 1) + "- " + step.__name__ for idx, step in enumerate(steps)]))
 
+        # Common options for all pipelines
         self.add_argument("-c", "--config", help="config INI-style file", type=file, required=True)
         self.add_argument("-s", "--steps", help="step range e.g. '1-5', '3,6,7', '2,4-8'", required=True)
         self.add_argument("-o", "--output-dir", help="output directory (default: current)", default=os.getcwd())

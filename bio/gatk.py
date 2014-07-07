@@ -88,7 +88,7 @@ def depth_of_coverage(input, output_prefix, intervals=""):
   --input_file {input} \\
   --out {output_prefix}{intervals}{summary_coverage_thresholds} \\
   --start 1 --stop {highest_summary_coverage_threshold} \\
-  --nBins {highest_summary_coverage_threshold} \\
+  --nBins {nbins} \\
   --downsampling_type NONE""".format(
         tmp_dir=config.param('depth_of_coverage', 'tmpDir'),
         extra_java_flags=config.param('depth_of_coverage', 'extraJavaFlags'),
@@ -98,7 +98,8 @@ def depth_of_coverage(input, output_prefix, intervals=""):
         output_prefix=output_prefix,
         intervals=" \\\n  --intervals " + intervals if intervals else "",
         summary_coverage_thresholds="".join(" \\\n  --summaryCoverageThreshold " + summary_coverage_threshold for summary_coverage_threshold in summary_coverage_thresholds),
-        highest_summary_coverage_threshold=summary_coverage_thresholds[-1]
+        highest_summary_coverage_threshold=summary_coverage_thresholds[-1],
+        nbins=int(summary_coverage_thresholds[-1]) - 1
     )
 
     return job

@@ -97,8 +97,10 @@ class Job:
         # Same with earliest output file modification time
         earliest_output_time = min([os.stat(output_file).st_mtime for output_file in abspath_output_files])
 
-        # If any input file is more recent than all output files, job is not up to date
-        if latest_input_time >= earliest_output_time:
+        # If any input file is strictly more recent than all output files, job is not up to date
+        # Use strictly '>' otherwise jobs like "cmd1 in1 > out1 && cmd2 out1 > out2" would always be out of date
+        # (out1 is both output and input of the command)
+        if latest_input_time > earliest_output_time:
             return False
 
         # If all previous tests passed, job is up to date

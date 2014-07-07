@@ -22,12 +22,15 @@ from bio.sequence_dictionary import *
 from bio import bvatools
 from bio import bwa
 from bio import gatk
+from bio import gq_seq_utils
 from bio import igvtools
 from bio import metrics
 from bio import picard
 from bio import samtools
+from bio import snpeff
 from bio import tools
 from bio import trimmomatic
+from bio import vcftools
 
 log = logging.getLogger(__name__)
 
@@ -391,6 +394,7 @@ class DnaSeq(Pipeline):
     def dna_sample_metrics(self):
         job = metrics.dna_sample_metrics("alignment/", "metrics/SampleMetrics.stats", config.param('DEFAULT', 'experimentType'))
         job.input_files = ["alignment/" + sample.name + "/" + sample.name + ".sorted.dup.metrics" for sample in self.samples]
+        job.command = "mkdir -p metrics/ && \\\n" + job.command
         job.name = "dna_sample_metrics"
         return [job]
 
@@ -412,19 +416,20 @@ class DnaSeq(Pipeline):
         input_bams = ["alignment/" + sample.name + "/" + sample.name + ".sorted.dup.recal.bam" for sample in self.samples]
         nb_jobs = config.param('snp_and_indel_bcf', 'approxNbJobs', required=False, type='int')
         output_directory = "variants/rawBCF/"
+        bcftools_view_options = "-bvcg"
 
         if nb_jobs and nb_jobs > 1:
             for region in self.generate_approximate_windows(nb_jobs):
                 job = pipe_jobs([
                     samtools.mpileup(input_bams, None, config.param('snp_and_indel_bcf', 'extra_mpileup_options'), region),
-                    samtools.bcftools_view("-", output_directory + "allSamples." + region + ".bcf"),
+                    samtools.bcftools_view("-", output_directory + "allSamples." + region + ".bcf", bcftools_view_options),
                 ])
                 job.name = "mpileup.allSamples." + re.sub(":", "_", region)
                 jobs.append(job)
         else:
             job = pipe_jobs([
                 samtools.mpileup(input_bams, None, config.param('snp_and_indel_bcf', 'extra_mpileup_options')),
-                samtools.bcftools_view("-", output_directory + "allSamples.bcf"),
+                samtools.bcftools_view("-", output_directory + "allSamples.bcf", bcftools_view_options),
             ])
             job.name = "mpileup.allSamples"
             jobs.append(job)
@@ -483,6 +488,42 @@ class DnaSeq(Pipeline):
         job.name = "filter_nstretches"
         return [job]
 
+    def flag_mappability(self):
+        job = vcftools.annotate_mappability("variants/allSamples.merged.flt.NFiltered.vcf", "variants/allSamples.merged.flt.mil.vcf")
+        job.name = "flag_mappability"
+        return [job]
+
+    def snp_id_annotation(self):
+        job = snpeff.snpsift_annotate("variants/allSamples.merged.flt.mil.vcf", "variants/allSamples.merged.flt.mil.snpId.vcf")
+        job.name = "snp_id_annotation"
+        return [job]
+
+    def snp_effect(self):
+        job = snpeff.compute_effects("variants/allSamples.merged.flt.mil.snpId.vcf", "variants/allSamples.merged.flt.mil.snpId.snpeff.vcf", split=True)
+        job.name = "snp_effect"
+        return [job]
+
+    def dbnsfp_annotation(self):
+        job = snpeff.snpsift_dbnsfp("variants/allSamples.merged.flt.mil.snpId.snpeff.vcf", "variants/allSamples.merged.flt.mil.snpId.snpeff.dbnsfp.vcf")
+        job.name = "dbnsfp_annotation"
+        return [job]
+
+    def metrics_snv(self):
+        stats_file = "variants/allSamples.merged.flt.mil.snpId.snpeff.vcf.statsFile.txt"
+
+        vcf_stats_job = metrics.vcf_stats("variants/allSamples.merged.flt.mil.snpId.vcf", "variants/allSamples.merged.flt.mil.snpId.snpeff.vcf.part_changeRate.tsv", stats_file)
+        vcf_stats_job.name = "metrics_change_rate"
+
+        snv_graph_job = metrics.snv_graph_metrics(stats_file, "metrics/allSamples.SNV")
+        snv_graph_job.name = "metrics_snv_graph"
+
+        return [vcf_stats_job, snv_graph_job]
+
+    def deliverable(self):
+        job = gq_seq_utils.client_report(os.path.abspath(config.filepath), self.output_dir, "DNAseq")
+        job.name = "deliverable"
+        return [job]
+
     @property
     def steps(self):
         return [
@@ -507,7 +548,13 @@ class DnaSeq(Pipeline):
             self.rawmpileup_cat,
             self.snp_and_indel_bcf,
             self.merge_filter_bcf,
-            self.filter_nstretches
+            self.filter_nstretches,
+            self.flag_mappability,
+            self.snp_id_annotation,
+            self.snp_effect,
+            self.dbnsfp_annotation,
+            self.metrics_snv,
+            self.deliverable
         ]
 
     def __init__(self):

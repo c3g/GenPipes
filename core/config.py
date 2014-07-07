@@ -14,7 +14,13 @@ class Config(ConfigParser.SafeConfigParser):
     def __init__(self):
         ConfigParser.SafeConfigParser.__init__(self)
 
+    @property
+    def filepath(self):
+        return self._filepath
+
     def parse_file(self, config_file):
+        self._filepath = config_file.name
+
         # Make option names case sensitive
         self.optionxform = str
         self.readfp(config_file)

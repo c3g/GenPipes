@@ -51,19 +51,20 @@ def bcftools_cat(inputs, output):
 
     job.command = \
 """bcftools cat \\
-  {input}{output}""".format(
-        input=" \\\n  ".join(inputs),
+  {inputs}{output}""".format(
+        inputs=" \\\n  ".join(inputs),
         output=" \\\n  > " + output if output else ""
     )
 
     return job
 
-def bcftools_view(input, output, pair_calling=False):
+def bcftools_view(input, output, options="", pair_calling=False):
     job = Job([input], [output], [['bcftools_view', 'moduleVersion.samtools']])
 
     job.command = \
-"""bcftools view {pair_calling} -bvcg \\
+"""bcftools view {pair_calling} {options} \\
   {input}{output}""".format(
+        options=options,
         pair_calling="-T pair" if pair_calling else "",
         input=input,
         output=" \\\n  > " + output if output else ""
