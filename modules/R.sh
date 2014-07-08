@@ -130,7 +130,7 @@ then
 	# hack to force umask 0002: in a large group, want pkgs installed with write perm.
 	sed -i 's/Sys.umask("022")/Sys\.umask("002")/g' src/library/tools/R/build.R 
 
-	./configure --prefix=$INSTALL_DIR  # TEMP s--with-readline=yes --with-readline=no
+	./configure --prefix=$INSTALL_DIR --enable-R-shlib # TEMP s--with-readline=yes --with-readline=no
 	make -j8
 	make install
 	cd $TEMPDIR
@@ -202,7 +202,7 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
 	,"edgeR","ellipse","evaluate","fastcluster","ff","fields"
 	,"foreach","foreign","gcrma","gdata","genefilter","GenomicFeatures"
 	,"GenomicRanges","genoset","GEOquery","ggplot2","googleVis","goseq"
-	,"gplots","graph","graphics","grDevices","grid","gtable","gtools"
+	,"gplots","graph","graphics","grDevices","grid","gsalib","gtable","gtools"
 	,"Gviz","hdrcde","Hmisc","hwriter","HTSFilter","igraph","IlluminaHumanMethylation450k.db"
 	,"IlluminaHumanMethylation450kmanifest","impute","IRanges","iterators"
 	,"KernSmooth","ks","labeling","lattice","latticeExtra","limma","locfit"
