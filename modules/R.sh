@@ -130,7 +130,7 @@ then
 	# hack to force umask 0002: in a large group, want pkgs installed with write perm.
 	sed -i 's/Sys.umask("022")/Sys\.umask("002")/g' src/library/tools/R/build.R 
 
-	./configure --prefix=$INSTALL_DIR  # TEMP s--with-readline=yes --with-readline=no
+	./configure --enable-R-shlib --prefix=$INSTALL_DIR  # --enable-R-shlib  is for Rpy
 	make -j8
 	make install
 	cd $TEMPDIR
@@ -203,13 +203,13 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
 	,"foreach","foreign","gcrma","gdata","genefilter","GenomicFeatures"
 	,"GenomicRanges","genoset","GEOquery","ggplot2","googleVis","goseq"
 	,"gplots","graph","graphics","grDevices","grid","gtable","gtools"
-	,"Gviz","hdrcde","Hmisc","hwriter","HTSFilter","igraph","IlluminaHumanMethylation450k.db"
+	,"Gviz","hdrcde","Hmisc","hwriter","HTqPCR","HTSFilter","igraph","IlluminaHumanMethylation450k.db"
 	,"IlluminaHumanMethylation450kmanifest","impute","IRanges","iterators"
 	,"KernSmooth","ks","labeling","lattice","latticeExtra","limma","locfit"
 	,"lumi","LVSmiRNA","maps","markdown","MASS","Matrix","matrixStats","mclust"
 	,"memoise","methods","methyAnalysis","methylumi","mgcv","minfi","mirbase.db","misc3d"
 	,"multicore","multtest","munsell","mvtnorm","NBPSeq","nleqslv","nlme"
-	,"nnet","nor1mix","Nozzle.R1","oligo","oligoClasses","outliers","parallel"
+	,"nnet","nondetects","nor1mix","Nozzle.R1","oligo","oligoClasses","outliers","parallel"
 	,"pd.charm.hg18.example","pheatmap","plotrix","plyr","plyr","preprocessCore"
 	,"proto","quantreg","R2HTML","RBGL","RColorBrewer","Rcpp","RcppEigen","RCurl"
 	,"ReportingTools","reshape","reshape2","rgl","RJSONIO","R.methodsS3","roxygen2"
