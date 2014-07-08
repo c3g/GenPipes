@@ -515,12 +515,18 @@ class DnaSeq(Pipeline):
         vcf_stats_job.name = "metrics_change_rate"
 
         snv_graph_job = metrics.snv_graph_metrics(stats_file, "metrics/allSamples.SNV")
+        snv_graph_job.output_files = ["metrics/allSamples.SNV.SummaryTable.tsv"]
         snv_graph_job.name = "metrics_snv_graph"
 
         return [vcf_stats_job, snv_graph_job]
 
     def deliverable(self):
         job = gq_seq_utils.client_report(os.path.abspath(config.filepath), self.output_dir, "DNAseq")
+        job.input_files = [
+            "metrics/SampleMetrics.stats",
+            "variants/allSamples.merged.flt.vcf",
+            "metrics/allSamples.SNV.SummaryTable.tsv"
+        ]
         job.name = "deliverable"
         return [job]
 
