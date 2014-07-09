@@ -52,6 +52,7 @@ use POSIX;
 use XML::Simple;
 use Data::Dumper;
 use Parse::Range qw(parse_range);
+use File::Basename;
 
 use CountIlluminaBarcodes;
 use BVATools;
