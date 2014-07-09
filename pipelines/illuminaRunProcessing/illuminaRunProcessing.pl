@@ -664,9 +664,9 @@ sub copy {
     my $ref = getGenomeReference($rH_sample->{'referenceMappingSpecies'}, $rH_sample->{'ref'}, $libSource, 'bwa');
     if (defined($ref)) {
       # BAM have been created, therefore no need to rsync fasta files
-      $excludeFastq .= " \\\n  --exclude \\'" . getFastqFilename($runDirectory, $lane, $rH_sample, 1) . "\\'";
+      $excludeFastq .= " \\\n  --exclude '" . getFastqFilename($runDirectory, $lane, $rH_sample, 1) . "'";
       if ($nbReads > 1) {
-        $excludeFastq .= " \\\n  --exclude \\'" . getFastqFilename($runDirectory, $lane, $rH_sample, 2) . "\\'";
+        $excludeFastq .= " \\\n  --exclude '" . getFastqFilename($runDirectory, $lane, $rH_sample, 2) . "'";
       }
     }
   }
