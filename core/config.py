@@ -2,10 +2,12 @@
 
 # Python Standard Modules
 import ConfigParser
+import glob
 import logging
 import os
 import re
 import subprocess
+import sys
 
 log = logging.getLogger(__name__)
 
@@ -79,14 +81,21 @@ class Config(ConfigParser.SafeConfigParser):
                         return value
                     else:
                         raise Exception("Directory path \"" + value + "\" does not exist or is not a valid directory!")
+                elif type == 'prefixpath':
+                    value = os.path.expandvars(self.get(section, option))
+                    if glob.glob(value + "*"):
+                        return value
+                    else:
+                        raise Exception("Prefix path \"" + value + "\" does not match any file!")
                 elif type == 'list':
                     # Remove empty strings from list
                     return [x for x in self.get(section, option).split(",") if x]
-                else:
+                elif type == 'string':
                     return self.get(section, option)
-            except:
-                print("Error: parameter \"[" + section + "] " + option + "\" value \"" + self.get(section, option) + "\" is invalid!")
-                raise
+                else:
+                    raise Exception("Unknown parameter type '" + type + "'")
+            except Exception as e:
+                raise Exception("Error: parameter \"[" + section + "] " + option + "\" value \"" + self.get(section, option) + "\" is invalid!\n" + e.message)
         elif required:
             raise Exception("Error: parameter \"[" + section + "] " + option + "\" is not defined in config file!")
         else:

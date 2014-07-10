@@ -12,6 +12,7 @@ __all__ = [
     "sequence_dictionary",
     "snpeff",
     "tools",
+    "tophat",
     "trimmomatic",
     "vcftools"
 ]

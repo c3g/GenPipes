@@ -73,7 +73,7 @@ class Job:
         tmp_file = os.path.expandvars(file)
         if not os.path.isabs(tmp_file):
             # File path is relative to the job output directory
-            tmp_file = os.path.join(self.output_dir, tmp_file)
+            tmp_file = os.path.normpath(os.path.join(self.output_dir, tmp_file))
         return tmp_file
 
     def is_up2date(self):

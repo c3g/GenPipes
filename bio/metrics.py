@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 # Python Standard Modules
+import os
 
 # MUGQIC Modules
 from core.config import *
@@ -17,6 +18,25 @@ def dna_sample_metrics(input_directory, output, experiment_type="unknown"):
         input_directory=input_directory,
         output=output,
         experiment_type=experiment_type
+    )
+
+    return job
+
+def merge_trimmomatic_stats(input_pattern, input_directory, output, type):
+    job = Job([], [output], [['merge_trimmomatic_stats', 'moduleVersion.R'], ['merge_trimmomatic_stats', 'moduleVersion.tools']])
+
+    job.command = \
+"""mkdir -p {output_directory} && \\
+Rscript \$R_TOOLS/mergeTrimmomaticStat.R \\
+  {input_pattern} \\
+  {input_directory} \\
+  {output} \\
+  {type}""".format(
+        output_directory=os.path.dirname(output),
+        input_pattern=input_pattern,
+        input_directory=input_directory,
+        output=output,
+        type=type
     )
 
     return job

@@ -102,15 +102,10 @@ def parse_readset_file(readset_file):
         readset = Readset(line['ReadSet'], line['RunType'])
 
         # Readset file paths are either absolute or relative to the readset file
-        # Convert them to absolute paths and check if files exist
+        # Convert them to absolute paths
         for format in ("BAM", "FASTQ1", "FASTQ2"):
-            if line[format]:
-                if not os.path.isabs(line[format]):
-                    line[format] = os.path.dirname(os.path.abspath(readset_file)) + os.sep + line[format]
-
-                if not os.path.isfile(line[format]):
-                    raise Exception("Error in parse_readset_file: \"" + line[format] +
-                        "\" does not exist or is not a valid plain file!")
+            if line[format] and not os.path.isabs(line[format]):
+                line[format] = os.path.dirname(os.path.abspath(readset_file)) + os.sep + line[format]
 
         readset.bam = line['BAM']
         readset.fastq1 = line['FASTQ1']
@@ -180,15 +175,10 @@ def parse_nanuq_readset_file(readset_file):
                     line['FASTQ1'] = file_prefix + "single.fastq.gz"
 
             # Readset file paths are either absolute or relative to the readset file
-            # Convert them to absolute paths and check if files exist
+            # Convert them to absolute paths
             for format in ['BAM', 'FASTQ1', 'FASTQ2']:
-                if line[format]:
-                    if not os.path.isfile(line[format]):
-                        raise Exception("Error in parse_nanuq_readset_file: \"" + line[format] +
-                            "\" does not exist or is not a valid plain file!")
-
-                    elif not os.path.isabs(line[format]):
-                        line[format] = os.path.abspath(line[format])
+                if line[format] and not os.path.isabs(line[format]):
+                    line[format] = os.path.abspath(line[format])
 
             readset.bam = line['BAM']
             readset.fastq1 = line['FASTQ1']
@@ -203,15 +193,3 @@ def parse_nanuq_readset_file(readset_file):
     log.info(str(len(readsets)) + " readset" + ("s" if len(readsets) > 1 else "") + " parsed")
     log.info(str(len(readsets)) + " sample" + ("s" if len(samples) > 1 else "") + " parsed\n")
     return readsets
-
-#readset = Readset("readset1", "SINGLE_END")
-#readset.show()
-#readset.bam = "toto.bam"
-#print(readset.bam)
-#
-#sample = Sample("sample1")
-#sample.show()
-#sample.add_readset(readset)
-#sample.show()
-#
-#Readset.parse_readset_file("/lb/project/mugqic/projects/jfillon_pipelines/dnaseq/bam2fastq/samples.tsv")

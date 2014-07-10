@@ -30,9 +30,11 @@ def trimmomatic(
         inputs = [input1]
         outputs = [singleOutput]
 
+    outputs.extend([trim_log, trim_stats])
+
     job = Job(inputs, outputs, [["trim", "moduleVersion.java"], ['trim', 'moduleVersion.trimmomatic']])
 
-    # # Retrieve output directories removing duplicates if any
+    # Retrieve output directories removing duplicates if any
     output_dirs = list(collections.OrderedDict.fromkeys([os.path.dirname(output) for output in outputs]))
     threads = config.param('trim', 'nbThreads', type='int')
     adapter_file = config.param('trim', 'adapterFile', type='filepath')
