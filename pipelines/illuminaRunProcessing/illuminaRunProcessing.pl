@@ -41,23 +41,18 @@ use warnings;
 
 #---------------------
 
-BEGIN{
-    #Makesure we can find the GetConfig::LoadModules module relative to this script install
-    use File::Basename;
-    use Cwd 'abs_path';
-    my ( undef, $mod_path, undef ) = fileparse( abs_path(__FILE__) );
-    unshift @INC, $mod_path."lib";
-}
-
+# Add the mugqic_pipeline/lib/ path relative to this Perl script to @INC library search variable
+use FindBin;
+use lib "$FindBin::Bin/../../lib";
 
 # Dependencies
 #--------------------
 use Getopt::Std;
-use Cwd;
 use POSIX;
 use XML::Simple;
 use Data::Dumper;
 use Parse::Range qw(parse_range);
+use File::Basename;
 
 use CountIlluminaBarcodes;
 use BVATools;
@@ -654,15 +649,29 @@ sub copy {
   my $lane           = shift;
   my $rAoH_readsInfo = shift;
   my $nbReads        = shift;
+  my $rAoH_sample    = shift;
 
   my $dependencies = getDependencies($step, $rH_cfg);
   my $ro_job = new Job();
   my $destinationFolder;
 
-
   $destinationFolder= LoadConfig::getParam($rH_cfg, 'copy','destinationFolder');
 
-  my $command = formatCommand("config" => $rH_cfg, "command" => LoadConfig::getParam($rH_cfg, 'copy', 'copyCommand'), "runDirectory" => $runDirectory, "runID" => $runID, "lane" => $lane, "destinationFolder" => $destinationFolder);
+  my $excludeFastq = "";
+  # Check if sample has a reference genome and therefore associated BAM files
+  for my $rH_sample (@$rAoH_sample) {
+    my $libSource = $rH_sample->{'libSource'}; # gDNA, cDNA, ...
+    my $ref = getGenomeReference($rH_sample->{'referenceMappingSpecies'}, $rH_sample->{'ref'}, $libSource, 'bwa');
+    if (defined($ref)) {
+      # BAM have been created, therefore no need to rsync fasta files
+      $excludeFastq .= " \\\n  --exclude '" . getFastqFilename($runDirectory, $lane, $rH_sample, 1) . "'";
+      if ($nbReads > 1) {
+        $excludeFastq .= " \\\n  --exclude '" . getFastqFilename($runDirectory, $lane, $rH_sample, 2) . "'";
+      }
+    }
+  }
+
+  my $command = formatCommand("config" => $rH_cfg, "command" => LoadConfig::getParam($rH_cfg, 'copy', 'copyCommand'), "runDirectory" => $runDirectory, "runID" => $runID, "lane" => $lane, "destinationFolder" => $destinationFolder, "excludeFastq" => $excludeFastq);
 
   $ro_job->addCommand($command);
 
