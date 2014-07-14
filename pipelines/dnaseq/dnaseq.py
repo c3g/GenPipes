@@ -189,7 +189,7 @@ if [ ! -e {sample_output_bam} ]; then ln -s {output_bam} {sample_output_bam}; fi
                     jobs.append(job)
 
                 # Create on last job to process the last remaining sequences and 'others' sequences
-                realign_prefix = os.path.join(realign_directory + "others")
+                realign_prefix = os.path.join(realign_directory, "others")
                 realign_intervals = realign_prefix + ".intervals"
                 output_bam = realign_prefix + ".bam"
                 job = concat_jobs([

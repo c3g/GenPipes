@@ -99,7 +99,7 @@ def parse_readset_file(readset_file):
             samples.append(sample)
 
         # Create readset and add it to sample
-        readset = Readset(line['ReadSet'], line['RunType'])
+        readset = Readset(line['Readset'], line['RunType'])
 
         # Readset file paths are either absolute or relative to the readset file
         # Convert them to absolute paths

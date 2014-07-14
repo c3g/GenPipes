@@ -30,9 +30,7 @@ def trimmomatic(
         inputs = [input1]
         outputs = [singleOutput]
 
-    outputs.extend([trim_log, trim_stats])
-
-    job = Job(inputs, outputs, [["trim", "moduleVersion.java"], ['trim', 'moduleVersion.trimmomatic']])
+    job = Job(inputs, outputs + [trim_log, trim_stats], [["trim", "moduleVersion.java"], ['trim', 'moduleVersion.trimmomatic']])
 
     # Retrieve output directories removing duplicates if any
     output_dirs = list(collections.OrderedDict.fromkeys([os.path.dirname(output) for output in outputs]))
