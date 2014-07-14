@@ -29,20 +29,12 @@ from bio import picard
 from bio import samtools
 from bio import snpeff
 from bio import tools
-from bio import trimmomatic
 from bio import vcftools
+from pipelines.illumina import illumina
 
 log = logging.getLogger(__name__)
 
-class DnaSeq(Pipeline):
-
-    @property
-    def readsets(self):
-        return self._readsets
-
-    @property
-    def samples(self):
-        return self._samples
+class DnaSeq(illumina.Illumina):
 
     @property
     def sequence_dictionary(self):
@@ -50,53 +42,25 @@ class DnaSeq(Pipeline):
             self._sequence_dictionary = parse_sequence_dictionary_file(config.param('DEFAULT', 'referenceSequenceDictionary', type='filepath'))
         return self._sequence_dictionary
 
-    def sam_to_fastq(self):
-        jobs = []
-        for readset in self.readsets:
-            if readset.bam and not readset.fastq1:
-                if readset.run_type == "PAIRED_END":
-                    readset.fastq1 = re.sub("\.bam$", ".pair1.fastq.gz", readset.bam)
-                    readset.fastq2 = re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)
-                elif readset.run_type == "SINGLE_END":
-                    fastq1 = re.sub("\.bam$", ".single.fastq.gz", readset.bam)
-                else:
-                    raise Exception("Error: run type \"" + readset.run_type +
-                    "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
-
-                job = picard.sam_to_fastq(readset.bam, readset.fastq1, readset.fastq2)
-                job.name = "sam_to_fastq." + readset.name
-                jobs.append(job)
-        return jobs
-
-    def trim(self):
-        jobs = []
-        for readset in self.readsets:
-            trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
-            job = trimmomatic.trimmomatic(
-                readset.fastq1,
-                readset.fastq2,
-                trim_file_prefix + "pair1.fastq.gz",
-                trim_file_prefix + "single1.fastq.gz",
-                trim_file_prefix + "pair2.fastq.gz",
-                trim_file_prefix + "single2.fastq.gz",
-                None,
-                readset.quality_offset,
-                trim_file_prefix + "out",
-                trim_file_prefix + "stats.csv"
-            )
-            job.name = "trim." + readset.name
-            jobs.append(job)
-        return jobs
-
     def bwa_mem_sort_sam(self):
         jobs = []
         for readset in self.readsets:
             trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
             alignment_directory = os.path.join("alignment", readset.sample.name)
 
+            if readset.run_type == "PAIRED_END":
+                fastq1 = trim_file_prefix + "pair1.fastq.gz"
+                fastq2 = trim_file_prefix + "pair2.fastq.gz"
+            elif readset.run_type == "SINGLE_END":
+                fastq1 = trim_file_prefix + "single.fastq.gz"
+                fastq2 = None
+            else:
+                raise Exception("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+
             bwa_job = bwa.mem(
-                trim_file_prefix + "pair1.fastq.gz",
-                trim_file_prefix + "pair2.fastq.gz",
+                fastq1,
+                fastq2,
                 read_group="'@RG" + \
                     "\tID:" + readset.name + \
                     "\tSM:" + readset.sample.name + \
