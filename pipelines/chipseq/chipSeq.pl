@@ -6,13 +6,12 @@ I<chipSeq>
 
 =head1 SYNOPSIS
 
-  perl chipSeq.pl -c chipSeq.abacus.ini -n project.nanuq.csv -d design.csv -w  currentDirectory -s 1 -e 11 > toRun.sh
+  perl chipSeq.pl -c chipSeq.abacus.ini -n project.nanuq.csv -d design.csv -w  currentDirectory -s 1-11 > toRun.sh
 
   Options:
 
     -c (chipSeq.abacus.ini) the standard configuration file for the pipeline.
-    -s The start step
-    -e The end step
+    -s the step range e.g. '1,3', '2-5', '1,4-7,10'
     -n (project.nanuq.csv) the NANUQ Project sample file
     -d (design.csv) the design file. A tab separated value file that specifies the experimental design information of the project.
     -w The project's working directory. All job outputs will be sent to this directory.

@@ -6,7 +6,7 @@ I<rnaSeq>
 
 =head1 SYNOPSIS
 
-  perl rnaSeq.pl -c rnaSeq.abacus.ini -s 1 -e 14 -n project.nanuq.csv -d design.txt -w  `pwd`  > toRun.sh
+  perl rnaSeq.pl -c rnaSeq.abacus.ini -s 1-14 -n project.nanuq.csv -d design.txt -w  `pwd`  > toRun.sh
 
   will generate a bash script for steps 1 to 14. This script can then be executed:
 
@@ -15,8 +15,7 @@ I<rnaSeq>
   Options
 
   -c (rnaSeq.abacus.ini) the standard configuration file for the pipeline. Templates for some cluster systems like Abacus or Guillimin may already be available at pipelines/rnaseq/
-  -s The start step
-  -e The end step
+  -s the step range e.g. '1,3', '2-5', '1,4-7,10'
   -n (project.nanuq.csv)  the NANUQ project read set sheet, prepared as described above.
   -d (design.txt) the design file. A tab separated value file that specifies the experimental design information of the project. The first column lists the sample names, which should match elements the column Name in the read set sheet. Subsequent columns specify all the pairwise comparisons which should be undertaken: values should be either "2" (nominator), "1" (denominator) or "0" (exclude from comparison). 
   -w The project's working directory. All job outputs will be sent to this directory.

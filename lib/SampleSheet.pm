@@ -251,7 +251,7 @@ sub parseHeaderIndexes {
     $sampleSheetWarnings.="[Warning] Missing BED Files\n";
   }
   if($libSourceIdx==-1) {
-    $sampleSheetErrors.="Missing Library Source\n";
+    $sampleSheetWarnings.="[Warning] Missing Library Source\n";
   }
   if($fastq1Idx==-1) {
     $sampleSheetWarnings.="[Warning] Missing FASTQ1 Files\n";

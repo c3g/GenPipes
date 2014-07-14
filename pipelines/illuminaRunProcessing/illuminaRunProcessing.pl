@@ -41,23 +41,18 @@ use warnings;
 
 #---------------------
 
-BEGIN{
-    #Makesure we can find the GetConfig::LoadModules module relative to this script install
-    use File::Basename;
-    use Cwd 'abs_path';
-    my ( undef, $mod_path, undef ) = fileparse( abs_path(__FILE__) );
-    unshift @INC, $mod_path."lib";
-}
-
+# Add the mugqic_pipeline/lib/ path relative to this Perl script to @INC library search variable
+use FindBin;
+use lib "$FindBin::Bin/../../lib";
 
 # Dependencies
 #--------------------
 use Getopt::Std;
-use Cwd;
 use POSIX;
 use XML::Simple;
 use Data::Dumper;
 use Parse::Range qw(parse_range);
+use File::Basename;
 
 use CountIlluminaBarcodes;
 use BVATools;
@@ -182,7 +177,8 @@ sub main {
   
   my ($nbReads, $rAoH_readsInfo) = parseRunInfoFile($runDirectory ."/RunInfo.xml" );
 
-  my $rAoH_samples = generateIlluminaLaneSampleSheet($lane, $runDirectory, $rAoH_readsInfo);
+  $mask = getMask($lane, $rAoH_readsInfo, $firstIndex, $lastIndex);
+  my $rAoH_samples = generateIlluminaLaneSampleSheet($lane, $runDirectory, $rAoH_readsInfo, $mask);
   my $rHoAoH_infos = SampleSheet::parseSampleSheetAsHashByProcessingId($nanuqSheet,1);
 
   $rHoH_genomes = getGenomeList(LoadConfig::getParam(\%cfg, 'default', 'genomesHome'));
@@ -199,7 +195,7 @@ sub main {
     }
   }
 
-  $mask = getMask($lane, $rAoH_readsInfo, $firstIndex, $lastIndex);
+  
   
   # List user-defined step index range.
   # Shift 1st position to 0 instead of 1
@@ -653,15 +649,29 @@ sub copy {
   my $lane           = shift;
   my $rAoH_readsInfo = shift;
   my $nbReads        = shift;
+  my $rAoH_sample    = shift;
 
   my $dependencies = getDependencies($step, $rH_cfg);
   my $ro_job = new Job();
   my $destinationFolder;
 
-
   $destinationFolder= LoadConfig::getParam($rH_cfg, 'copy','destinationFolder');
 
-  my $command = formatCommand("config" => $rH_cfg, "command" => LoadConfig::getParam($rH_cfg, 'copy', 'copyCommand'), "runDirectory" => $runDirectory, "runID" => $runID, "lane" => $lane, "destinationFolder" => $destinationFolder);
+  my $excludeFastq = "";
+  # Check if sample has a reference genome and therefore associated BAM files
+  for my $rH_sample (@$rAoH_sample) {
+    my $libSource = $rH_sample->{'libSource'}; # gDNA, cDNA, ...
+    my $ref = getGenomeReference($rH_sample->{'referenceMappingSpecies'}, $rH_sample->{'ref'}, $libSource, 'bwa');
+    if (defined($ref)) {
+      # BAM have been created, therefore no need to rsync fasta files
+      $excludeFastq .= " \\\n  --exclude '" . getFastqFilename($runDirectory, $lane, $rH_sample, 1) . "'";
+      if ($nbReads > 1) {
+        $excludeFastq .= " \\\n  --exclude '" . getFastqFilename($runDirectory, $lane, $rH_sample, 2) . "'";
+      }
+    }
+  }
+
+  my $command = formatCommand("config" => $rH_cfg, "command" => LoadConfig::getParam($rH_cfg, 'copy', 'copyCommand'), "runDirectory" => $runDirectory, "runID" => $runID, "lane" => $lane, "destinationFolder" => $destinationFolder, "excludeFastq" => $excludeFastq);
 
   $ro_job->addCommand($command);
 
@@ -910,7 +920,6 @@ sub validateBarcodes {
   for my $rH_sample (@$rAoH_sample) {
     my $currentIndex = $rH_sample->{'index'};
     $currentIndex =~ s/\-//; # remove dual-index "-"
-    $currentIndex = substr($currentIndex, $firstIndex - 1, $lastIndex- $firstIndex + 1);
     
     for my $candidateIndex (@indexes) {
       my $distance = distance($currentIndex, $candidateIndex);
@@ -965,30 +974,35 @@ sub getMask {
 
     if ($rH_readInfo->{'isIndexed'} eq "Y") {
       if ($nbCycles >= $rA_laneIdxLengths->[$readIndex]) {
-	if ($rA_laneIdxLengths->[$readIndex] == 0 || $lastIndex <= $nbTotalIndexBaseUsed) {
-	  $mask .= 'n'.$nbCycles;
-	} else {
-	  my $nbNPrinted = 0;
-	  my $nbIndexBaseUsed = 0;
-	  if ($firstIndex > ($nbTotalIndexBaseUsed + 1)) {
-	    $nbNPrinted = min($nbCycles, $firstIndex-$nbTotalIndexBaseUsed-1);
-	    if ($nbNPrinted >= $rA_laneIdxLengths->[$readIndex]) {
-	      $nbNPrinted = $nbCycles;
-	    }
-	    $mask .= 'n' . $nbNPrinted;
-	  }
-	  $nbIndexBaseUsed = max($rA_laneIdxLengths->[$readIndex] - $nbNPrinted, 0);
-	  $nbIndexBaseUsed = min($lastIndex-$nbTotalIndexBaseUsed-$nbNPrinted, $nbIndexBaseUsed);
-	  $nbTotalIndexBaseUsed += $nbIndexBaseUsed + min($nbNPrinted, $rA_laneIdxLengths->[$readIndex]);
-	  
-	  if ($nbIndexBaseUsed > 0) {
-	    $mask .= 'I'.$nbIndexBaseUsed;
-	  }
-	  if (($nbCycles-$nbIndexBaseUsed-$nbNPrinted) > 0) {
-	    $mask .= 'n'.($nbCycles-$nbIndexBaseUsed-$nbNPrinted);
-	  }
-	  
-	}
+        if ($rA_laneIdxLengths->[$readIndex] == 0 || $lastIndex <= $nbTotalIndexBaseUsed) {
+          # Don't use any index base for this read
+          $mask .= 'n'.$nbCycles;
+        } else {
+          my $nbNPrinted = 0;
+          my $nbIndexBaseUsed = 0;
+          
+          # Ns in the beginning of the index read
+          if ($firstIndex > ($nbTotalIndexBaseUsed + 1)) {
+            $nbNPrinted = min($nbCycles, $firstIndex-$nbTotalIndexBaseUsed-1);
+            if ($nbNPrinted >= $rA_laneIdxLengths->[$readIndex]) {
+              $nbNPrinted = $nbCycles;
+            }
+            $mask .= 'n' . $nbNPrinted;
+          }
+          
+          # Calculate the number of index bases
+          $nbIndexBaseUsed = max($rA_laneIdxLengths->[$readIndex] - $nbNPrinted, 0);
+          $nbIndexBaseUsed = min($lastIndex-$nbTotalIndexBaseUsed-$nbNPrinted, $nbIndexBaseUsed);
+          $nbTotalIndexBaseUsed += $nbIndexBaseUsed + min($nbNPrinted, $rA_laneIdxLengths->[$readIndex]);
+          if ($nbIndexBaseUsed > 0) {
+            $mask .= 'I'.$nbIndexBaseUsed;
+          }
+          
+          # Ns at the end of the index read
+          if (($nbCycles-$nbIndexBaseUsed-$nbNPrinted) > 0) {
+            $mask .= 'n'.($nbCycles-$nbIndexBaseUsed-$nbNPrinted);
+          }
+        }
       } else {
         exitWithError("Cycles for index don't match on lane: ".$lane);
       }
@@ -1120,7 +1134,10 @@ sub generateIlluminaLaneSampleSheet {
   my $lane           = shift;
   my $runDirectory   = shift;
   my $rAoH_readsInfo = shift;
-
+  my $mask           = shift;
+  
+  my @readMask = split(',', $mask);
+  
   #init samplesheet data
   my ($rA_headers, $rAoA_sampleSheetDatas) = getSampleSheetContent($casavaSheet);
   my $indexColumnIdx = getColumnHeaderIndex('Index', $rA_headers);
@@ -1159,23 +1176,35 @@ sub generateIlluminaLaneSampleSheet {
       my $columnValue=$rA_values->[$idx];
 
       if ( $idx == $indexColumnIdx ) {
-        if(length($columnValue) > 0) {
-          if(!$laneHasOneSample){
-            #index to use for lane with more than one sample
+        if (length($columnValue) > 0) {
+          if (!$laneHasOneSample){
+            # index to use for lane with more than one sample
+            
             my @sampleIndexes = split('-', $columnValue);
             my $nbIndex=@$rA_laneIndexLength;
 
-            if($sampleAreMixed){
-              #we have a mixed of index in the sample, there are sample with one or 2 index, ignore the second index in the samplesheet
+            if ($sampleAreMixed){
+              # we have a mixed of index in the sample, there are sample with one or 2 index, ignore the second index in the samplesheet
               $nbIndex=1;
             }
 
-            for(my $indexIdx=0; $indexIdx < $nbIndex; $indexIdx++) {
-              #trim index to smallest lane index
-              if($indexIdx < @sampleIndexes){
+            for (my $indexIdx=0; $indexIdx < $nbIndex; $indexIdx++) {
+              my $currentReadMask = @readMask[($indexIdx > 0) ? 2 : 1];
+              my $numberOfIgnoredLeadingIndexBases = 0;
+              my $numberOfIndexBasesToUse=0;
+              if ($currentReadMask =~ /(n\d+)?(I\d+)(n\d+)?/) {
+                if (defined($1)) {
+                  $numberOfIgnoredLeadingIndexBases = substr($1, 1);
+                }
+                if (defined($2)) {
+                  $numberOfIndexBasesToUse = substr($2, 1);
+                }
+              }
+              # trim index to smallest lane index
+              if ($indexIdx < @sampleIndexes){
                 # the sample has this index
-                my $index = substr( $sampleIndexes[$indexIdx], 0, $rA_laneIndexLength->[$indexIdx]);
-                if($indexIdx > 0) {
+                my $index = substr( $sampleIndexes[$indexIdx], $numberOfIgnoredLeadingIndexBases, $numberOfIndexBasesToUse);
+                if ($indexIdx > 0 && length($index) > 0) {
                   $indexToUse .= '-';
                 }
                 $indexToUse .= $index;

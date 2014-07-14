@@ -6,13 +6,12 @@ I<rnaSeqDeNovoAssembly>
 
 =head1 SYNOPSIS
 
-perl rnaSeqDeNovoAssembly.pl -c rnaSeqDeNovo.abacus.ini -n project.nanuq.csv -d design.csv -w  currentDirectory -s 1 -e 11 > toRun.sh
+perl rnaSeqDeNovoAssembly.pl -c rnaSeqDeNovo.abacus.ini -n project.nanuq.csv -d design.csv -w  currentDirectory -s 1-11 > toRun.sh
 
 Options:
 
   -c (rnaSeqDeNovo.abacus.ini) the standard configuration file for the pipeline.
-  -s The start step
-  -e The end step
+  -s The step range e.g. '1,3', '2-5', '1,4-7,10'
   -n (project.nanuq.csv) the NANUQ Project sample file
   -d (design.csv) the design file. A tab separated value file that specifies the experimental design information of the project.
   -w The project's working directory. All job outputs will be sent to this directory.

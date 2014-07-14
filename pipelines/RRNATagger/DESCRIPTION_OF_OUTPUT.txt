@@ -30,13 +30,17 @@ Fastqs/
 ├── qscores_1.tsv                      # Quality scores
 ├── qscores_reads_1_Qcpssed.tsv        # Quality scores from reads that passed QC
 └── qual_stats_1_log.txt               # Quality scores log
+* for assembled reads only, QC passed barcodes/samples distribution is located here: Assembled/qscores/barcodes_assembled_QCpassed_log.txt                  
 
 
-Reads_1/
+
+Reads_1/ or Assembled/
                       
 ├── obs                        # Directory containing files generated during clustering step. The file 
-|                                called: obs_filtered_blast.out (open in Excel) contains
-|                                the best hit of each cluster against nt (PacBio only).
+|                                called: obs_filtered_blast.out (open in Excel) contains the best hit of each cluster against nt (PacBio only).
+|                                obs_filtered.fasta contains the representative sequences of each OTUs. Each sequence of this file is assigned a taxonomy
+|                                with the RDP classifier.
+|                                
 ├── otu_tables                 # Contains various OTU tables.
 |                                We suggest you look at the table called:
 |                                otu_table_filtered_rarefied.tsv (open in Excel)
