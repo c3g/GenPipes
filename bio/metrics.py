@@ -41,6 +41,31 @@ Rscript \$R_TOOLS/mergeTrimmomaticStat.R \\
 
     return job
 
+def rnaseqc(sample_file, output_directory, run_type=None):
+    job = Job([sample_file], [os.path.join(output_directory, "index.html")], [['rnaseqc', 'moduleVersion.java'], ['rnaseqc', 'moduleVersion.bwa'], ['rnaseqc', 'moduleVersion.rnaseqc']])
+
+    job.command = \
+"""java -Djava.io.tmpdir={tmp_dir} {extra_java_flags} -Xmx{ram} -jar \$RNASEQC_JAR \\
+  -BWArRNA {reference_ribosomal_rna_fasta} \\
+  -n {number_top_transcripts} \\
+  -o {output_directory} \\
+  -r {reference_genome_fasta} \\
+  -s {sample_file} \\
+  -t {gtf_file}{single_end}""".format(
+        tmp_dir=config.param('rnaseqc', 'tmpDir'),
+        extra_java_flags=config.param('rnaseqc', 'extraJavaFlags'),
+        ram=config.param('rnaseqc', 'ram'),
+        reference_ribosomal_rna_fasta=config.param('rnaseqc', 'ribosomalFasta', type='filepath'),
+        number_top_transcripts=config.param('rnaseqc', 'topTranscript', type='int'),
+        output_directory=output_directory,
+        reference_genome_fasta=config.param('rnaseqc', 'referenceFasta', type='filepath'),
+        sample_file=sample_file,
+        gtf_file=config.param('rnaseqc', 'referenceGtf', type='filepath'),
+        single_end=" \\\n  -singleEnd" if run_type == "SINGLE_END" else ""
+    )
+
+    return job
+
 def snv_graph_metrics(list, output_basename):
     job = Job([list], [output_basename + ".snvGraphMetrics_listFiles.txt"], [['snv_graph_metrics', 'moduleVersion.R'], ['snv_graph_metrics', 'moduleVersion.tools']])
 

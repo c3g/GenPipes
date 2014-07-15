@@ -31,7 +31,7 @@ class Illumina(Pipeline):
     def samples(self):
         return self._samples
 
-    def sam_to_fastq(self):
+    def picard_sam_to_fastq(self):
         jobs = []
         for readset in self.readsets:
             if readset.bam and not readset.fastq1:
@@ -45,11 +45,11 @@ class Illumina(Pipeline):
                     "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
 
                 job = picard.sam_to_fastq(readset.bam, readset.fastq1, readset.fastq2)
-                job.name = "sam_to_fastq." + readset.name
+                job.name = "picard_sam_to_fastq." + readset.name
                 jobs.append(job)
         return jobs
 
-    def trim(self):
+    def trimmomatic(self):
         jobs = []
         for readset in self.readsets:
             trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
@@ -87,6 +87,6 @@ class Illumina(Pipeline):
             else:
                 raise Exception("Error: run type \"" + readset.run_type +
                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
-            job.name = "trim." + readset.name
+            job.name = "trimmomatic." + readset.name
             jobs.append(job)
         return jobs

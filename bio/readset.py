@@ -104,22 +104,19 @@ def parse_readset_file(readset_file):
         # Readset file paths are either absolute or relative to the readset file
         # Convert them to absolute paths
         for format in ("BAM", "FASTQ1", "FASTQ2"):
-            if line[format] and not os.path.isabs(line[format]):
+            if line.get(format, None) and not os.path.isabs(line[format]):
                 line[format] = os.path.dirname(os.path.abspath(readset_file)) + os.sep + line[format]
 
-        readset.bam = line['BAM']
-        readset.fastq1 = line['FASTQ1']
-        readset.fastq2 = line['FASTQ2']
-        readset.library = line['Library']
-        readset.run = line['Run']
-        readset.lane = line['Lane']
-        readset.adaptor1 = line['Adaptor1']
-        readset.adaptor2 = line['Adaptor2']
-        readset.quality_offset = int(line['QualityOffset'])
-        if line['BED']:
-            readset.beds = line['BED'].split(";")
-        else:
-            readset.beds = []
+        readset.bam = line.get('BAM', None)
+        readset.fastq1 = line.get('FASTQ1', None)
+        readset.fastq2 = line.get('FASTQ2', None)
+        readset.library = line.get('Library', None)
+        readset.run = line.get('Run', None)
+        readset.lane = line.get('Lane', None)
+        readset.adaptor1 = line.get('Adaptor1', None)
+        readset.adaptor2 = line.get('Adaptor2', None)
+        readset.quality_offset = int(line['QualityOffset']) if line.get('QualityOffset', None) else None
+        readset.beds = line['BED'].split(";") if line.get('BED', None) else []
 
         readsets.append(readset)
         sample.add_readset(readset)

@@ -47,6 +47,7 @@ class DnaSeq(illumina.Illumina):
         for readset in self.readsets:
             trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
             alignment_directory = os.path.join("alignment", readset.sample.name)
+            readset_bam = os.path.join(alignment_directory, readset.name + ".sorted.bam")
 
             if readset.run_type == "PAIRED_END":
                 fastq1 = trim_file_prefix + "pair1.fastq.gz"
@@ -73,7 +74,7 @@ class DnaSeq(illumina.Illumina):
 
             sort_sam_job = picard.sort_sam(
                 "/dev/stdin",
-                os.path.join(alignment_directory, readset.name + ".sorted.bam"),
+                readset_bam,
                 "coordinate"
             )
 
@@ -82,20 +83,29 @@ class DnaSeq(illumina.Illumina):
             # Create alignment directory beforehand (not done by default by BWA mem or Picard SortSam)
             job.command = "mkdir -p " + alignment_directory + " && \\\n" + job.command
 
+            # If this readset is unique for this sample, further BAM merging is not necessary.
+            # Thus, create a sample BAM symlink to the readset BAM.
+            if len(readset.sample.readsets) == 1:
+                sample_bam = os.path.join(alignment_directory, readset.sample.name + ".sorted.bam")
+                job.command += " && \\\nln -s " + readset_bam + " " + sample_bam
+                job.output_files.append(sample_bam)
+
             job.name = "bwa_mem_sort_sam." + readset.name
             jobs.append(job)
         return jobs
 
-    def merge_readsets(self):
+    def picard_merge_sam_files(self):
         jobs = []
         for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
-            inputs = [os.path.join(alignment_directory, readset.name + ".sorted.bam") for readset in sample.readsets]
-            output = os.path.join(alignment_directory, sample.name + ".sorted.bam")
+            # Skip samples with one readset only, since symlink has been created at align step
+            if len(sample.readsets) > 1:
+                alignment_directory = os.path.join("alignment", sample.name)
+                inputs = [os.path.join(alignment_directory, readset.name + ".sorted.bam") for readset in sample.readsets]
+                output = os.path.join(alignment_directory, sample.name + ".sorted.bam")
 
-            job = picard.merge_sam_files(inputs, output)
-            job.name = "merge_readsets." + sample.name
-            jobs.append(job)
+                job = picard.merge_sam_files(inputs, output)
+                job.name = "picard_merge_sam_files." + sample.name
+                jobs.append(job)
         return jobs
 
     def indel_realigner(self):
@@ -409,14 +419,14 @@ if [ ! -e {sample_output_bam} ]; then ln -s {output_bam} {sample_output_bam}; fi
                     samtools.mpileup(input_bams, None, config.param('snp_and_indel_bcf', 'extra_mpileup_options'), region),
                     samtools.bcftools_view("-", os.path.join(output_directory, "allSamples." + region + ".bcf"), bcftools_view_options),
                 ])
-                job.name = "mpileup.allSamples." + re.sub(":", "_", region)
+                job.name = "snp_and_indel_bcf.allSamples." + re.sub(":", "_", region)
                 jobs.append(job)
         else:
             job = pipe_jobs([
                 samtools.mpileup(input_bams, None, config.param('snp_and_indel_bcf', 'extra_mpileup_options')),
                 samtools.bcftools_view("-", os.path.join(output_directory, "allSamples.bcf"), bcftools_view_options),
             ])
-            job.name = "mpileup.allSamples"
+            job.name = "snp_and_indel_bcf.allSamples"
             jobs.append(job)
         for job in jobs:
             job.command = "mkdir -p " + output_directory + " && \\\n" + job.command
@@ -517,10 +527,10 @@ if [ ! -e {sample_output_bam} ]; then ln -s {output_bam} {sample_output_bam}; fi
     @property
     def steps(self):
         return [
-            self.sam_to_fastq,
-            self.trim,
+            self.picard_sam_to_fastq,
+            self.trimmomatic,
             self.bwa_mem_sort_sam,
-            self.merge_readsets,
+            self.picard_merge_sam_files,
             self.indel_realigner,
             self.merge_realigned,
             self.fix_mate_by_coordinate,
