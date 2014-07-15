@@ -844,7 +844,7 @@ sub blast{
 	# Get fasta file of best hit.
 	my $rO_jobBlastDb = BLAST::blastdbcmd(
 		$rH_cfg,
-		"\\\$(head -n 6 $outdir/$sampleName/$suffix/$merSize/blast/blast_report.csv | tail -n 1 |  awk -F \\\\\\t '{print \\\$2}' | sed 's/gi|\\([0-9]*\\)|.*/\\1/' | tr '\\n' '  ')",
+		"\\\$(grep -v '^#' < $outdir/$sampleName/$suffix/$merSize/blast/blast_report.csv | head -n 1 | awk -F \\\\\\t '{print \\\$2}' | sed 's/gi|\\([0-9]*\\)|.*/\\1/' | tr '\\n' '  ')",
 		"$outdir/$sampleName/$suffix/$merSize/blast/nt_reference.fasta"
 	);
 	if(!$rO_jobBlastDb->isUp2Date()) {
