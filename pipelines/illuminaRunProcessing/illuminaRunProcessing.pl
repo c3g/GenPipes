@@ -108,6 +108,7 @@ sub printUsage {
   print "\t-r  run directory\n";
   print "\t-n  nanuq sample sheet. Optional, default=RUNDIRECTORY/run.nanuq.csv\n";
   print "\t-i  Illumina (Casava) sample sheet. Optional, default=RUNDIRECTORY/SampleSheet.nanuq.csv\n";
+  print "\t-f  Force download of samples sheets, even if already existing, Optional, default= no force\n";
   print "\t-m  Number of mismatches. Optional, default=1\n";
   print "\t-x  First index nucleotide to use. Optional, default=1\n";
   print "\t-y  Last index nucleotide to use. Optional, default=last\n";
@@ -122,7 +123,7 @@ sub printUsage {
 
 sub main {
   my %opts;
-  getopts('c:s:m:n:l:r:i:x:y:', \%opts);
+  getopts('fc:s:m:n:l:r:i:x:y:', \%opts);
 
   if (!defined($opts{'c'}) || !defined($opts{'s'}) || !defined($opts{'l'}) || !defined($opts{'r'})) {
     printUsage();
@@ -137,6 +138,7 @@ sub main {
   my $nanuqSheet = defined($opts{'n'}) ? $opts{'n'} : $runDirectory . "/run.nanuq.csv";
   $firstIndex = $opts{'x'};
   $lastIndex = $opts{'y'};
+  my $forceDownload = $opts{'f'};
   
   if (!defined($lastIndex) ||  !($lastIndex > 0)) {
     $lastIndex = 999;
@@ -155,18 +157,18 @@ sub main {
     ($runName,$runID) = $runDirectory =~ /.*\/(\d+_([^_]+_\d+)_.*)/;
   }
 
-  if (!defined($opts{'i'})) {
+  if (!defined($opts{'i'}) || defined($forceDownload)) {
     # Download casava sheet
-    if ( !-e $runDirectory . "/SampleSheet.nanuq.csv" ) {
-      my $command = formatCommand("config" => \%cfg, "command" => LoadConfig::getParam(\%cfg, 'default', 'fetchCasavaSheetCommand'), "runDirectory" => $runDirectory, "runID" => $runID, "lane" => $lane);
+    if ( (!-e $casavaSheet) || defined($forceDownload)) {
+      my $command = formatCommand("config" => \%cfg, "command" => LoadConfig::getParam(\%cfg, 'default', 'fetchCasavaSheetCommand'), "runDirectory" => $runDirectory, "runID" => $runID, "lane" => $lane, "filename" => $casavaSheet);
       system($command);
     }
   }
   
-  if (!defined($opts{'n'})) {
+  if (!defined($opts{'n'}) || defined($forceDownload)) {
     # Download nanuq run sheet
-    if ( !-e $runDirectory . "/run.nanuq.csv" ) {
-      my $command = formatCommand("config" => \%cfg, "command" => LoadConfig::getParam(\%cfg, 'default', 'fetchNanuqSheetCommand'), "runDirectory" => $runDirectory, "runID" => $runID, "lane" => $lane);
+    if ( (!-e $nanuqSheet) || defined($forceDownload)) {
+      my $command = formatCommand("config" => \%cfg, "command" => LoadConfig::getParam(\%cfg, 'default', 'fetchNanuqSheetCommand'), "runDirectory" => $runDirectory, "runID" => $runID, "lane" => $lane, "filename" => $nanuqSheet);
       system($command);
     }
   }
