@@ -199,6 +199,22 @@ zip -r {output_directory}.zip {output_directory}""".format(
 
         return jobs
 
+    def raw_counts(self):
+        jobs = []
+
+        for sample in self.samples:
+            alignment_file_prefix = os.path.join("alignment", sample.name, sample.name)
+            input_bam = alignment_file_prefix + ".merged.mdup.bam"
+            sorted_bam = alignment_file_prefix + ".queryNameSorted.bam"
+            sort_order = "queryname"
+
+            # Sort BAM by query
+            job = picard.sort_sam(input_bam, sorted_bam, sort_order)
+            job.name = "sort_sam.qnsort." + sample.name
+            jobs.append(job)
+
+        return jobs
+
     @property
     def steps(self):
         return [
@@ -210,7 +226,8 @@ zip -r {output_directory}.zip {output_directory}""".format(
             self.picard_reorder_sam,
             self.picard_mark_duplicates,
             self.rnaseqc,
-            self.wiggle
+            self.wiggle,
+            self.raw_counts
         ]
 
     def __init__(self):

@@ -20,12 +20,13 @@ class Config(ConfigParser.SafeConfigParser):
     def filepath(self):
         return self._filepath
 
-    def parse_file(self, config_file):
-        self._filepath = config_file.name
+    def parse_files(self, config_files):
+        self._filepath = config_files[-1].name
 
         # Make option names case sensitive
         self.optionxform = str
-        self.readfp(config_file)
+        for config_file in config_files:
+            self.readfp(config_file)
         self.check_modules()
 
     # Check by a system call if all modules defined in config file are available
