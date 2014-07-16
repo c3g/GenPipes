@@ -99,8 +99,6 @@ class Job:
         earliest_output_time = min([os.stat(output_file).st_mtime for output_file in abspath_output_files])
 
         # If any input file is strictly more recent than all output files, job is not up to date
-        # Use strictly '>' otherwise jobs like "cmd1 in1 > out1 && cmd2 out1 > out2" would always be out of date
-        # (out1 is both output and input of the command)
         if latest_input_time > earliest_output_time:
             return False
 
@@ -116,14 +114,9 @@ def concat_jobs(jobs):
     output_files = []
     modules = []
     for job_item in jobs:
-        input_files.extend(job_item.input_files)
-        output_files.extend(job_item.output_files)
-        modules.extend(job_item.modules)
-
-    # Remove duplicates if any, keeping the order
-    input_files = list(collections.OrderedDict.fromkeys([input_file for input_file in input_files]))
-    output_files = list(collections.OrderedDict.fromkeys([output_file for output_file in output_files]))
-    modules = list(collections.OrderedDict.fromkeys([module for module in modules]))
+        input_files.extend([input_file for input_file in job_item.input_files if input_file not in input_files and input_file not in output_files])
+        output_files.extend([output_file for output_file in job_item.output_files if output_file not in output_files])
+        modules.extend([module for module in job_item.modules if module not in modules])
 
     job = Job(input_files, output_files)
     job.modules = modules
