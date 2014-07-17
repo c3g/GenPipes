@@ -31,6 +31,15 @@ class Illumina(Pipeline):
     def samples(self):
         return self._samples
 
+    @property
+    def run_type(self):
+        run_types = [readset.run_type for readset in self.readsets]
+        if len(set(run_types)) == 1 and re.search("^(PAIRED|SINGLE)_END$", run_types[0]):
+            return run_types[0]
+        else:
+            raise Exception("Error: readset run types " + ",".join(["\"" + run_type + "\"" for run_type in run_types]) +
+            " are invalid (should be all PAIRED_END or all SINGLE_END)!")
+
     def picard_sam_to_fastq(self):
         jobs = []
         for readset in self.readsets:

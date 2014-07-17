@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 
 class Job:
 
-    def __init__(self, input_files, output_files, module_entries = [], name=""):
+    def __init__(self, input_files=[], output_files=[], module_entries = [], name="", command=""):
         # Remove undefined input/output files if any
         self._input_files = filter(None, input_files)
         self._output_files = filter(None, output_files)
@@ -21,6 +21,7 @@ class Job:
         self._modules = list(collections.OrderedDict.fromkeys([config.param(section, option) for section, option in module_entries]))
 
         self._name = name
+        self._command = command
 
     def show(self):
         print("Job: input_files: " + \

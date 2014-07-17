@@ -134,7 +134,7 @@ class PipelineArgumentParser(argparse.ArgumentParser):
         argparse.ArgumentParser.__init__(self, formatter_class=argparse.RawDescriptionHelpFormatter, epilog="Steps:\n" + "\n".join([str(idx + 1) + "- " + step.__name__ for idx, step in enumerate(steps)]))
 
         # Common options for all pipelines
-        self.add_argument("-c", "--config", help="config INI-style file", type=file, required=True)
+        self.add_argument("-c", "--config", help="config INI-style file", nargs="+", type=file, required=True)
         self.add_argument("-s", "--steps", help="step range e.g. '1-5', '3,6,7', '2,4-8'", required=True)
         self.add_argument("-o", "--output-dir", help="output directory (default: current)", default=os.getcwd())
         self.add_argument("-j", "--job-scheduler", help="job scheduler type (default: torque)", choices=["torque", "batch", "daemon"], default="torque")
@@ -144,5 +144,5 @@ class PipelineArgumentParser(argparse.ArgumentParser):
     def parse_args(self):
         args = argparse.ArgumentParser.parse_args(self)
         logging.basicConfig(level=getattr(logging, args.log.upper()))
-        config.parse_file(args.config)
+        config.parse_files(args.config)
         return args

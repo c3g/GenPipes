@@ -1,4 +1,5 @@
 __all__ = [
+    "bedtools",
     "bvatools",
     "bwa",
     "gatk",

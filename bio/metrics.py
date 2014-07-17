@@ -41,7 +41,7 @@ Rscript \$R_TOOLS/mergeTrimmomaticStat.R \\
 
     return job
 
-def rnaseqc(sample_file, output_directory, run_type=None):
+def rnaseqc(sample_file, output_directory, is_single_end=False):
     job = Job([sample_file], [os.path.join(output_directory, "index.html")], [['rnaseqc', 'moduleVersion.java'], ['rnaseqc', 'moduleVersion.bwa'], ['rnaseqc', 'moduleVersion.rnaseqc']])
 
     job.command = \
@@ -61,7 +61,7 @@ def rnaseqc(sample_file, output_directory, run_type=None):
         reference_genome_fasta=config.param('rnaseqc', 'referenceFasta', type='filepath'),
         sample_file=sample_file,
         gtf_file=config.param('rnaseqc', 'referenceGtf', type='filepath'),
-        single_end=" \\\n  -singleEnd" if run_type == "SINGLE_END" else ""
+        single_end=" \\\n  -singleEnd" if is_single_end else ""
     )
 
     return job
