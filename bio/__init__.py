@@ -3,6 +3,7 @@ __all__ = [
     "bwa",
     "gatk",
     "gq_seq_utils",
+    "htseq",
     "igvtools",
     "metrics",
     "picard",

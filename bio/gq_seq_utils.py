@@ -6,7 +6,7 @@
 from core.config import *
 from core.job import *
 
-def client_report(ini_filepath, project_path, pipeline_type):
+def report(ini_filepath, project_path, pipeline_type):
     # Job input and output files must be set in pipeline since they are different in each pipeline
     job = Job([], [], [['report', 'moduleVersion.R']])
 

@@ -80,7 +80,7 @@ def snv_graph_metrics(list, output_basename):
     return job
 
 def vcf_stats(input, output, list):
-    job = Job([input, list], [output], [['vcf_stats', 'moduleVersion.python'], ['vcf_stats', 'moduleVersion.tools']])
+    job = Job([input], [output, list], [['vcf_stats', 'moduleVersion.python'], ['vcf_stats', 'moduleVersion.tools']])
 
     job.command = \
 """python \$PYTHON_TOOLS/vcfStats.py \\

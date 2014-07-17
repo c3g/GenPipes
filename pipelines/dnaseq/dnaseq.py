@@ -502,20 +502,24 @@ if [ ! -e {sample_output_bam} ]; then ln -s {output_bam} {sample_output_bam}; fi
         job.name = "dbnsfp_annotation"
         return [job]
 
-    def metrics_snv(self):
-        stats_file = "variants/allSamples.merged.flt.mil.snpId.snpeff.vcf.statsFile.txt"
+    def metrics_vcf_stats(self):
+        variants_file_prefix = "variants/allSamples.merged.flt.mil.snpId."
 
-        vcf_stats_job = metrics.vcf_stats("variants/allSamples.merged.flt.mil.snpId.vcf", "variants/allSamples.merged.flt.mil.snpId.snpeff.vcf.part_changeRate.tsv", stats_file)
-        vcf_stats_job.name = "metrics_change_rate"
+        job = metrics.vcf_stats(variants_file_prefix + "vcf", variants_file_prefix + "snpeff.vcf.part_changeRate.tsv", variants_file_prefix + "snpeff.vcf.statsFile.txt")
+        job.name = "metrics_change_rate"
+        return [job]
 
-        snv_graph_job = metrics.snv_graph_metrics(stats_file, "metrics/allSamples.SNV")
-        snv_graph_job.output_files = ["metrics/allSamples.SNV.SummaryTable.tsv"]
-        snv_graph_job.name = "metrics_snv_graph"
 
-        return [vcf_stats_job, snv_graph_job]
+    def metrics_snv_graph_metrics(self):
+        variants_file_prefix = "variants/allSamples.merged.flt.mil.snpId."
+        job = metrics.snv_graph_metrics(variants_file_prefix + "snpeff.vcf.statsFile.txt", "metrics/allSamples.SNV")
+        job.output_files = ["metrics/allSamples.SNV.SummaryTable.tsv"]
+        job.name = "metrics_snv_graph"
+
+        return [job]
 
     def deliverable(self):
-        job = gq_seq_utils.client_report(os.path.abspath(config.filepath), self.output_dir, "DNAseq")
+        job = gq_seq_utils.report(os.path.abspath(config.filepath), self.output_dir, "DNAseq")
         job.input_files = [
             "metrics/SampleMetrics.stats",
             "variants/allSamples.merged.flt.vcf",
@@ -553,7 +557,8 @@ if [ ! -e {sample_output_bam} ]; then ln -s {output_bam} {sample_output_bam}; fi
             self.snp_id_annotation,
             self.snp_effect,
             self.dbnsfp_annotation,
-            self.metrics_snv,
+            self.metrics_vcf_stats,
+            self.metrics_snv_graph_metrics,
             self.deliverable
         ]
 

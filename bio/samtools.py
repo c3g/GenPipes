@@ -46,6 +46,19 @@ def sort(input_bam, output_prefix):
 
     return job
 
+def samtools_view(input, output, options=""):
+    job = Job([input], [output], [['samtools_view', 'moduleVersion.samtools']])
+
+    job.command = \
+"""samtools view {options} \\
+  {input}{output}""".format(
+        options=options,
+        input=input,
+        output=" \\\n  > " + output if output else ""
+    )
+
+    return job
+
 def bcftools_cat(inputs, output):
     job = Job(inputs, [output], [['bcftools_cat', 'moduleVersion.samtools']])
 
