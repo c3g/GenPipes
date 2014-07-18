@@ -677,6 +677,7 @@ sub clustering3{
 		$cmd .= ' --ref_db ' . LoadConfig::getParam($rH_cfg, 'DB', 'chimeras', 1, 'filepath'); 
 		$cmd .= ' --barcodes ' . $barcodes;
 		$cmd .= ' --outdir ' . $outdir;
+    $cmd .= ' --lowAbunCutOff ' . LoadConfig::getParam($rH_cfg, 'clustering', 'lowAbunCutOff', 1, 'int');
 		$cmd .= ' --num_threads ' . LoadConfig::getParam($rH_cfg, 'clustering', 'num_threads', 1, 'int');
 		#$cmd .= ' --start_at 4';
 	
