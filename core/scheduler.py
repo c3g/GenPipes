@@ -134,9 +134,14 @@ class BatchScheduler(Scheduler):
 {separator_line}
 # JOB: {job.name}
 {separator_line}
-{job.command_with_modules}""".format(
+JOB_DONE={job.done}
+rm -f $JOB_DONE && \\
+{command_with_modules} && \\
+MUGQIC_STATE=$PIPESTATUS && echo MUGQICexitStatus:$MUGQIC_STATE && \\
+if [ $MUGQIC_STATE -eq 0 ] ; then touch $JOB_DONE ; fi && exit $MUGQIC_STATE""".format(
                             job=job,
-                            separator_line=separator_line
+                            separator_line=separator_line,
+                            command_with_modules=re.sub(r"\\(.)", r"\1", job.command_with_modules)
                         )
                     )
 

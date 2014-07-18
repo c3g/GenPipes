@@ -519,7 +519,7 @@ if [ ! -e {sample_output_bam} ]; then ln -s {output_bam} {sample_output_bam}; fi
         return [job]
 
     def deliverable(self):
-        job = gq_seq_utils.report(os.path.abspath(config.filepath), self.output_dir, "DNAseq")
+        job = gq_seq_utils.report(os.path.abspath(config.filepath), self.output_dir, "DNAseq", "deliverables")
         job.input_files = [
             "metrics/SampleMetrics.stats",
             "variants/allSamples.merged.flt.vcf",
