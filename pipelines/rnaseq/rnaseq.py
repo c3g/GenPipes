@@ -15,9 +15,11 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(sys.argv[0]))))
 from core.config import *
 from core.job import *
 from core.pipeline import *
+from bio.design import *
 from bio.readset import *
 
 from bio import bedtools
+from bio import htseq
 from bio import metrics
 from bio import picard
 from bio import samtools
@@ -27,6 +29,12 @@ from pipelines.illumina import illumina
 log = logging.getLogger(__name__)
 
 class RnaSeq(illumina.Illumina):
+
+    @property
+    def contrasts(self):
+        if not hasattr(self, "_contrasts"):
+            self._contrasts = parse_design_file(self.args.design.name, self.samples)
+        return self._contrasts
 
     def trim_metrics(self):
         # Transform pipeline 'PAIRED_END' or 'SINGLE_END' run_type to 'paired' or 'single' parameter
@@ -213,6 +221,22 @@ zip -r {output_directory}.zip {output_directory}""".format(
             job.name = "sort_sam.qnsort." + sample.name
             jobs.append(job)
 
+            # Count reads
+            output_count = os.path.join("raw_counts", sample.name + ".readcounts.csv")
+            stranded = "no" if config.param('align', 'strandInfo') == "fr-unstranded" else "reverse"
+            job = concat_jobs([
+                Job(command="mkdir -p raw_counts"),
+                htseq.htseq_count(
+                    sorted_bam,
+                    config.param('htseq', 'referenceGtf', type='filepath'),
+                    output_count,
+                    config.param('htseq', 'options'),
+                    stranded
+                )
+            ])
+            job.name = "htseq_count." + sample.name
+            jobs.append(job)
+
         return jobs
 
     @property
@@ -231,17 +255,9 @@ zip -r {output_directory}.zip {output_directory}""".format(
         ]
 
     def __init__(self):
-        argparser = PipelineArgumentParser(self.steps)
         # Add pipeline specific arguments
-        argparser.add_argument("-r", "--readsets", help="readset file", type=file, required=True)
-        args = argparser.parse_args()
+        self.argparser.add_argument("-d", "--design", help="design file", type=file)
 
-        # Create readsets
-        self._readsets = parse_readset_file(args.readsets.name)
-
-        # Retrieve unique samples from their readsets, removing duplicates
-        self._samples = list(collections.OrderedDict.fromkeys([readset.sample for readset in self._readsets]))
-
-        Pipeline.__init__(self, args)
+        super(RnaSeq, self).__init__()
         
 RnaSeq().submit_jobs()

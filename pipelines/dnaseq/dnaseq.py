@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 
 # Python Standard Modules
-import argparse
-import collections
 import logging
 import math
 import os
@@ -562,18 +560,4 @@ if [ ! -e {sample_output_bam} ]; then ln -s {output_bam} {sample_output_bam}; fi
             self.deliverable
         ]
 
-    def __init__(self):
-        argparser = PipelineArgumentParser(self.steps)
-        # Add pipeline specific arguments
-        argparser.add_argument("-r", "--readsets", help="readset file", type=file, required=True)
-        args = argparser.parse_args()
-
-        # Create readsets
-        self._readsets = parse_readset_file(args.readsets.name)
-
-        # Retrieve unique samples from their readsets, removing duplicates
-        self._samples = list(collections.OrderedDict.fromkeys([readset.sample for readset in self._readsets]))
-
-        Pipeline.__init__(self, args)
-        
 DnaSeq().submit_jobs()
