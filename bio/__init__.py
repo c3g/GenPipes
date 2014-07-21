@@ -2,6 +2,7 @@ __all__ = [
     "bedtools",
     "bvatools",
     "bwa",
+    "cufflinks",
     "gatk",
     "gq_seq_utils",
     "htseq",
