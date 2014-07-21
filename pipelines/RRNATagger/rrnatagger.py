@@ -18,17 +18,47 @@ from core.pipeline import *
 from bio.design import *
 from bio.readset import *
 
-from bio import bedtools
-from bio import htseq
-from bio import metrics
-from bio import picard
-from bio import samtools
-from bio import tophat
+from bio import rrna_amplicons
+from bio import microbial_ecology
+
 from pipelines.illumina import illumina
 
 log = logging.getLogger(__name__)
 
-class RnaSeq(illumina.Illumina):
+class RRNATagger(illumina.Illumina):
+
+    def merge_barcodes(self):
+        # Merge all demultiplexed fastq files in one file. One file for reads1 and one file for reads2 of Illumina paired-end.
+        # If library is Illumina single end or 454 or PacBio, only one file will be generated.
+
+    def remove_contam(self):
+
+    def split_barcodes(self):
+
+    def qscores(self):
+
+    def qc(self):
+
+    def qscores_qced(self):
+
+    def generate_clusters(self):
+
+    def classify(self): # Add PacBio's blast here!
+    
+    def generate_otu_table(self):
+
+    def filter_otu_table(self):
+
+    def summarize_taxonomy(self):
+
+    def plot_taxonomy(self):
+
+    def deliverables(self):
+
+    def cleanup(self):
+
+
+
 
     @property
     def contrasts(self):
@@ -261,3 +291,97 @@ zip -r {output_directory}.zip {output_directory}""".format(
         super(RnaSeq, self).__init__()
         
 RnaSeq().submit_jobs()
+
+# Steps from old Perl pipeline:
+
+# MERGE
+#1 mergeBarcodes
+
+# REMOVE CONTAM
+#2 duk_wrapper_contam
+#3 duk_wrapper_phix
+
+# SPLIT BY BARCODES
+#4 barcodes
+
+# QSCORES
+#5 qscore_sheet_R1_raw
+#6 qscore_plot_R1_raw
+
+# QC
+#7 itags_QC
+
+# QSCORE QCED
+#8 qscore_sheet_R1QCed
+#9 qscore_plot_R1QCed
+
+# CLUSTER SEQUENCED
+#10 clustering_method_3
+
+# CLASSIFY
+#11 RDP 
+
+# GENERATE RAW OTU TABLE
+#12 add_taxonomy
+
+# FILTER OTU TABLE
+#13 filter_obs
+#14 split_otu_table
+#15 convert_otu_to_biom
+#16 convert_otu_to_biom2
+#17 convert_otu_to_biom3
+#18 rarefy
+#19 rarefy
+#20 filter_obs_table2X2
+#21 filter_obs_table2X2
+#22 filter_obs_table1X1
+#23 filter_obs_table1X1
+
+# SUMMARIZE TAXONOMY
+#24 summarize_taxonomy_absolute_L1
+#25 summarize_taxonomy_absolute_L2
+#26 summarize_taxonomy_absolute_L3
+#27 summarize_taxonomy_absolute_L4
+#28 summarize_taxonomy_absolute_L5
+#29 summarize_taxonomy_absolute_L6
+#30 summarize_taxonomy_absolute_L7
+#31 summarize_taxonomy_relative_L1
+#32 summarize_taxonomy_relative_L2
+#33 summarize_taxonomy_relative_L3
+#34 summarize_taxonomy_relative_L4
+#35 summarize_taxonomy_relative_L5
+#36 summarize_taxonomy_relative_L6
+#37 summarize_taxonomy_relative_L7
+#38 summarize_taxonomy_absolute_raw_L1
+#39 summarize_taxonomy_absolute_raw_L2
+#40 summarize_taxonomy_absolute_raw_L3
+#41 summarize_taxonomy_absolute_raw_L4
+#42 summarize_taxonomy_absolute_raw_L5
+#43 summarize_taxonomy_absolute_raw_L6
+#44 summarize_taxonomy_absolute_raw_L7
+#45 summarize_taxonomy_relative_raw_L1
+#46 summarize_taxonomy_relative_raw_L2
+#47 summarize_taxonomy_relative_raw_L3
+#48 summarize_taxonomy_relative_raw_L4
+#49 summarize_taxonomy_relative_raw_L5
+#50 summarize_taxonomy_relative_raw_L6
+#51 summarize_taxonomy_relative_raw_L7
+
+# PLOT TAXONOMY
+#52 plot_taxonomy_absolute
+#53 plot_taxonomy_absolute_raw
+#54 phylum_barplot_all
+#55 phylum_barplot_all_rel
+#56 phylum_barplot_bacteria_rarefied
+
+# BLAST (PACBIO ONLY)
+#57 blast raw OTUs
+
+# DELIVERABLES
+#58 count_report
+#59 txtToPdf
+#60 merge_pdf
+#61 Nozzle deliverables
+
+# CLEANUP
+#62 cleanup

@@ -25,10 +25,14 @@ class Illumina(Pipeline):
 
     @property
     def readsets(self):
+        if not hasattr(self, "_readsets"):
+            self._readsets = parse_readset_file(self.args.readsets.name)
         return self._readsets
 
     @property
     def samples(self):
+        if not hasattr(self, "_samples"):
+            self._samples = list(collections.OrderedDict.fromkeys([readset.sample for readset in self._readsets]))
         return self._samples
 
     @property
@@ -99,3 +103,9 @@ class Illumina(Pipeline):
             job.name = "trimmomatic." + readset.name
             jobs.append(job)
         return jobs
+
+    def __init__(self):
+        # Add pipeline specific arguments
+        self.argparser.add_argument("-r", "--readsets", help="readset file", type=file, required=True)
+
+        super(Illumina, self).__init__()

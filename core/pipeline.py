@@ -15,26 +15,53 @@ from step import *
 
 log = logging.getLogger(__name__)
 
-class Pipeline:
-    def __init__(self, args):
-        self._output_dir = os.path.abspath(args.output_dir)
-        self._scheduler = create_scheduler(args.job_scheduler)
-        self._force_jobs = args.force
+class Pipeline(object):
+    def __init__(self):
+        self._args = self.argparser.parse_args()
+
+        logging.basicConfig(level=getattr(logging, self.args.log.upper()))
+        config.parse_files(self.args.config)
+
+        self._output_dir = os.path.abspath(self.args.output_dir)
+        self._scheduler = create_scheduler(self.args.job_scheduler)
+        self._force_jobs = self.args.force
 
         step_counter = collections.Counter(self.steps)
         duplicated_steps = [step.__name__ for step in step_counter if step_counter[step] > 1]
         if duplicated_steps:
             raise Exception("Error: pipeline contains duplicated steps: " + ", ".join(duplicated_steps) + "!")
         else:
-            self.step_list = [Step(step) for step in self.steps]
+            self._step_list = [Step(step) for step in self.steps]
 
-        if re.search("^\d+([,-]\d+)*$", args.steps):
-            self._step_range = [self.step_list[i - 1] for i in parse_range(args.steps)]
+        if re.search("^\d+([,-]\d+)*$", self.args.steps):
+            self._step_range = [self.step_list[i - 1] for i in parse_range(self.args.steps)]
         else:
-            raise Exception("Error: step range \"" + args.steps +
+            raise Exception("Error: step range \"" + self.args.steps +
                 "\" is invalid (should match \d+([,-]\d+)*)!")
 
         self.create_jobs()
+
+    # Pipeline command line arguments parser
+    @property
+    def argparser(self):
+        if not hasattr(self, "_argparser"):
+            # Create ArgumentParser with numbered step list as epilog
+            self._argparser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, epilog="Steps:\n" + "\n".join([str(idx + 1) + "- " + step.__name__ for idx, step in enumerate(self.steps)]))
+
+            # Common options for all pipelines
+            self._argparser.add_argument("-c", "--config", help="config INI-style file", nargs="+", type=file, required=True)
+            self._argparser.add_argument("-s", "--steps", help="step range e.g. '1-5', '3,6,7', '2,4-8'", required=True)
+            self._argparser.add_argument("-o", "--output-dir", help="output directory (default: current)", default=os.getcwd())
+            self._argparser.add_argument("-j", "--job-scheduler", help="job scheduler type (default: torque)", choices=["torque", "batch", "daemon"], default="torque")
+            self._argparser.add_argument("-f", "--force", help="force creation of jobs even if up to date (default: false)", action="store_true")
+            self._argparser.add_argument("-l", "--log", help="log level (default: info)", choices=["debug", "info", "warning", "error", "critical"], default="info")
+
+        return self._argparser
+
+    # Pipeline command line arguments 
+    @property
+    def args(self):
+        return self._args
 
     @property
     def output_dir(self):
@@ -125,24 +152,3 @@ def parse_range(astr):
         x = part.split('-')
         result.update(range(int(x[0]), int(x[-1]) + 1))
     return sorted(result)
-
-# Default command line argument parser holding common options shared by all pipelines
-class PipelineArgumentParser(argparse.ArgumentParser):
-
-    def __init__(self, steps):
-        # Create ArgumentParser with numbered step list as epilog
-        argparse.ArgumentParser.__init__(self, formatter_class=argparse.RawDescriptionHelpFormatter, epilog="Steps:\n" + "\n".join([str(idx + 1) + "- " + step.__name__ for idx, step in enumerate(steps)]))
-
-        # Common options for all pipelines
-        self.add_argument("-c", "--config", help="config INI-style file", nargs="+", type=file, required=True)
-        self.add_argument("-s", "--steps", help="step range e.g. '1-5', '3,6,7', '2,4-8'", required=True)
-        self.add_argument("-o", "--output-dir", help="output directory (default: current)", default=os.getcwd())
-        self.add_argument("-j", "--job-scheduler", help="job scheduler type (default: torque)", choices=["torque", "batch", "daemon"], default="torque")
-        self.add_argument("-f", "--force", help="force creation of jobs even if up to date (default: false)", action="store_true")
-        self.add_argument("-l", "--log", help="log level (default: info)", choices=["debug", "info", "warning", "error", "critical"], default="info")
-
-    def parse_args(self):
-        args = argparse.ArgumentParser.parse_args(self)
-        logging.basicConfig(level=getattr(logging, args.log.upper()))
-        config.parse_files(args.config)
-        return args
