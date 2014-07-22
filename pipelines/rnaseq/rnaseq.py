@@ -19,6 +19,7 @@ from bio.design import *
 from bio.readset import *
 
 from bio import bedtools
+from bio import cufflinks
 from bio import htseq
 from bio import metrics
 from bio import picard
@@ -134,7 +135,6 @@ class RnaSeq(illumina.Illumina):
 
         job = metrics.rnaseqc(sample_file, output_directory, self.run_type == "SINGLE_END")
 
-        sample_file_job = Job([os.path.join("alignment", sample.name, sample.name + ".merged.mdup.bam") for sample in self.samples], [sample_file])
         project_name = config.param('DEFAULT', 'projectName')
         job.command = """\
 mkdir -p {output_directory} && \\
@@ -176,8 +176,7 @@ zip -r {output_directory}.zip {output_directory}""".format(
                     samtools.view(input_bam, input_bam_f2, "-bh -F 256 -f 161"),
                     picard.merge_sam_files([input_bam_f1, input_bam_f2], output_bam_f),
                     Job(command="rm " + input_bam_f1 + " " + input_bam_f2)
-                ])
-                bam_f_job.name = "wiggle." + sample.name + ".forward_strandspec"
+                ], name="wiggle." + sample.name + ".forward_strandspec")
 
                 bam_r_job = concat_jobs([
                     Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " " + os.path.join("tracks", "bigWig")),
@@ -185,8 +184,7 @@ zip -r {output_directory}.zip {output_directory}""".format(
                     samtools.view(input_bam, input_bam_r2, "-bh -F 256 -f 145"),
                     picard.merge_sam_files([input_bam_r1, input_bam_r2], output_bam_r),
                     Job(command="rm " + input_bam_r1 + " " + input_bam_r2)
-                ])
-                bam_r_job.name = "wiggle." + sample.name + ".reverse_strandspec"
+                ], name="wiggle." + sample.name + ".reverse_strandspec")
 
                 jobs.extend([bam_f_job, bam_r_job])
 
@@ -201,8 +199,7 @@ zip -r {output_directory}.zip {output_directory}""".format(
                 job = concat_jobs([
                     Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " " + os.path.join("tracks", "bigWig")),
                     bedtools.graph(input_bam, bed_graph_output, big_wig_output)
-                ])
-                job.name = "wiggle." + re.sub(".bedGraph", "", os.path.basename(bed_graph_output))
+                ], name="wiggle." + re.sub(".bedGraph", "", os.path.basename(bed_graph_output)))
                 jobs.append(job)
 
         return jobs
@@ -233,8 +230,114 @@ zip -r {output_directory}.zip {output_directory}""".format(
                     config.param('htseq', 'options'),
                     stranded
                 )
-            ])
-            job.name = "htseq_count." + sample.name
+            ], name="htseq_count." + sample.name)
+            jobs.append(job)
+
+        return jobs
+
+    def raw_counts_metrics(self):
+        jobs = []
+
+        # Create raw count matrix
+        output_directory = "DGE"
+        read_count_files = [os.path.join("raw_counts", sample.name + ".readcounts.csv") for sample in self.samples]
+        output_matrix = os.path.join(output_directory, "rawCountMatrix.csv")
+
+        job = Job(read_count_files, [output_matrix], [['raw_counts_metrics', 'moduleVersion.tools']], name="metrics.matrix")
+
+        job.command = """\
+mkdir -p {output_directory} && \\
+gtf2tmpMatrix.awk \\
+  {reference_gtf}
+  {output_directory}/tmpMatrix.txt && \\
+HEAD='Gene\tSymbol' && \\
+for read_count_file in \\
+  {read_count_files} \\
+do
+  sort -k1,1 \$read_count_file > {output_directory}/tmpSort.txt
+  join -1 1 -2 1 {output_directory}/tmpMatrix.txt {output_directory}/tmpSort.txt > {output_directory}/tmpMatrix.2.txt
+  mv {output_directory}/tmpMatrix.2.txt {output_directory}/tmpMatrix.txt
+  na=\$(basename \$read_count_file | cut -d\. -f1)
+  HEAD=\\"\$HEAD\t\$na\\"
+done && \\
+echo -e \$HEAD | cat - {output_directory}/tmpMatrix.txt | tr ' ' '\t' > {output_matrix} && \\
+rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
+            reference_gtf=config.param('raw_counts_metrics', 'referenceGtf', type='filepath'),
+            output_directory=output_directory,
+            read_count_files=" \\\n  ".join(read_count_files),
+            output_matrix=output_matrix
+        )
+        jobs.append(job)
+
+        # Create Wiggle tracks archive
+        wiggle_directory = os.path.join("tracks", "bigWig")
+        wiggle_archive = "tracks.zip"
+        jobs.append(Job([os.path.join(wiggle_directory, sample.name + ".bw") for sample in self.samples], [wiggle_archive], name="metrics.wigzip", command="zip -r " + wiggle_archive + " " + wiggle_directory))
+
+        # RPKM and Saturation
+        count_file = os.path.join("DGE", "rawCountMatrix.csv")
+        gene_size_file = config.param('saturation', 'geneSizeFile', type='filepath')
+        rpkm_directory = "raw_counts"
+        saturation_directory = os.path.join("metrics", "saturation")
+
+        job = concat_jobs([
+            Job(command="mkdir -p " + saturation_directory),
+            metrics.rpkm_saturation(count_file, gene_size_file, rpkm_directory, saturation_directory)
+        ], name="saturation.rpkm")
+        jobs.append(job)
+
+        return jobs
+
+    def fpkm(self):
+        jobs = []
+
+        for sample in self.samples:
+            input_bam = os.path.join("alignment", sample.name, sample.name + ".merged.mdup.bam")
+            known_output_directory = os.path.join("fpkm", "known", sample.name)
+            denovo_output_directory = os.path.join("fpkm", "denovo", sample.name)
+            gtf = config.param('fpkm','referenceGtf', type='filepath')
+
+            # Known FPKM
+            job = cufflinks.cufflinks(input_bam, known_output_directory, gtf)
+            job.name = "fpkm.known"
+            jobs.append(job)
+
+            # De Novo FPKM
+            job = cufflinks.cufflinks(input_bam, denovo_output_directory)
+            job.name = "fpkm.denovo"
+            jobs.append(job)
+
+        return jobs
+
+    def cuffdiff(self):
+        jobs = []
+
+        fpkm_directory = os.path.join("fpkm", "denovo")
+        gtf_files = [os.path.join(fpkm_directory, sample.name, "transcripts.gtf") for sample in self.samples]
+        gtf_list = os.path.join(fpkm_directory, "gtfMerge.list")
+
+        # Merge de novo transcripts into one GTF file
+        jobs.append(concat_jobs([
+            Job(
+                gtf_files,
+                [gtf_list],
+                command = """\
+cat \\
+  {gtf_files} \\
+  > {gtf_list}""".format(gtf_files=" \\\n  ".join(gtf_files), gtf_list=gtf_list)
+            ),
+            cufflinks.cuffcompare(gtf_files, os.path.join(fpkm_directory, "allSample"), gtf_list),
+        ], name="cuffcompare.merge"))
+
+        # Perform cuffdiff on each design contrast
+        for contrast in self.contrasts:
+            job = cufflinks.cuffdiff(
+                # Cuffdiff input is a list of lists of replicate bams per control and per treatment
+                [[os.path.join("alignment", sample.name, sample.name + ".merged.mdup.bam") for sample in group] for group in contrast.controls, contrast.treatments],
+                config.param('cuffdiff','referenceGtf', type='filepath'),
+                os.path.join("cuffdiff", "known", contrast.name)
+            )
+            job.name = "cuffdiff.known." + contrast.name
             jobs.append(job)
 
         return jobs
@@ -251,7 +354,10 @@ zip -r {output_directory}.zip {output_directory}""".format(
             self.picard_mark_duplicates,
             self.rnaseqc,
             self.wiggle,
-            self.raw_counts
+            self.raw_counts,
+            self.raw_counts_metrics,
+            self.fpkm,
+            self.cuffdiff
         ]
 
     def __init__(self):

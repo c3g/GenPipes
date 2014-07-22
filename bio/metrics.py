@@ -66,6 +66,28 @@ def rnaseqc(sample_file, output_directory, is_single_end=False):
 
     return job
 
+def rpkm_saturation(count_file, gene_size_file, rpkm_directory, saturation_directory):
+    job = Job([count_file], [saturation_directory + ".zip"], [['saturation', 'moduleVersion.R'], ['saturation', 'moduleVersion.tools']])
+
+    job.command = \
+"""Rscript \$R_TOOLS/rpkmSaturation.R \\
+  {count_file} \\
+  {gene_size_file} \\
+  {rpkm_directory} \\
+  {saturation_directory} \\
+  {threads} \\
+  {optionR} && \\
+zip -r {saturation_directory}.zip {saturation_directory}""".format(
+        count_file=count_file,
+        gene_size_file=gene_size_file,
+        rpkm_directory=rpkm_directory,
+        saturation_directory=saturation_directory,
+        threads=config.param('saturation', 'threadNum', type='posint'),
+        optionR=config.param('saturation', 'optionR', required=False)
+    )
+
+    return job
+
 def snv_graph_metrics(list, output_basename):
     job = Job([list], [output_basename + ".snvGraphMetrics_listFiles.txt"], [['snv_graph_metrics', 'moduleVersion.R'], ['snv_graph_metrics', 'moduleVersion.tools']])
 

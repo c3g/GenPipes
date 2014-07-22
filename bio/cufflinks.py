@@ -7,6 +7,70 @@ import os
 from core.config import *
 from core.job import *
 
+def cuffcompare(gtf_files, output_prefix, gtf_list):
+    job = Job(
+        gtf_files,
+        [output_prefix + ".combined.gtf", output_prefix + ".TranscriptList.tsv"],
+        [['cuffcompare', 'moduleVersion.cufflinks'], ['cuffcompare', 'moduleVersion.tools']]
+    )
+
+    job.command = """\
+mkdir -p {output_directory} && \\
+cuffcompare -T \\
+  -o {output_prefix} \\
+  -r {reference_gff} \\
+  -R {reference_fasta} \\
+  {gtf_files} && \\
+formatDenovoCombinedGTF.py \\
+  -c {output_prefix}.combined.gtf \\
+  -t {output_prefix}.tracking \\
+  -s {gtf_list} \\
+  -o {output_prefix}.TranscriptList.tsv""".format(
+        output_directory=os.path.dirname(output_prefix),
+        output_prefix=output_prefix,
+        reference_gff=config.param('cuffcompare', 'referenceGtf', type='filepath'),
+        reference_fasta=config.param('cuffcompare', 'referenceFasta', type='filepath'),
+        gtf_files=" \\\n  ".join(gtf_files),
+        gtf_list=gtf_list
+    )
+
+    return job
+
+def cuffdiff(sample_replicate_group_bams, gtf, output_directory):
+
+    # sample_replicate_group_bams is a list of lists of replicates per sample
+    # Flatten this list to set job input files
+    input_bams = []
+    for sample_replicate_bams in sample_replicate_group_bams:
+        input_bams.extend(sample_replicate_bams)
+
+    job = Job(
+        input_bams + [gtf],
+        [os.path.join(output_directory, "isoform_exp.diff")],
+        [['cuffcompare', 'moduleVersion.cufflinks']]
+    )
+
+    job.command = """\
+mkdir -p {output_directory} && \\
+cuffdiff {other_options} \\
+  --frag-bias-correct {genome_fasta} \\
+  --library-type {library_type} \\
+  --output-dir {output_directory} \\
+  --num-threads {num_threads} \\
+  {gtf} \\
+  {input_bams}""".format(
+        other_options=config.param('cuffdiff', 'options'),
+        genome_fasta=config.param('cuffdiff', 'referenceFasta', type='filepath'),
+        library_type=config.param('cuffdiff', 'strandInfo'),
+        output_directory=output_directory,
+        num_threads=config.param('cuffdiff', 'numThreads', type='posint'),
+        gtf=gtf,
+        # Join replicate bams per sample with a "," then join all sample replicate groups with a " "
+        input_bams=" \\\n  ".join([",".join(sample_replicate_bams) for sample_replicate_bams in sample_replicate_group_bams])
+    )
+
+    return job
+
 def cufflinks(input_bam, output_directory, gtf=None):
 
     job = Job(
@@ -28,7 +92,7 @@ cufflinks -q {other_options}{gtf} \\
         max_bundle_frags=config.param('cufflinks', 'cufflinksMaxFargs', type='int'),
         library_type=config.param('cufflinks', 'strandInfo'),
         output_directory=output_directory,
-        num_threads=config.param('cufflinks', 'cufflinksThreads', type='int'),
+        num_threads=config.param('cufflinks', 'cufflinksThreads', type='posint'),
         input_bam=input_bam
     )
 

@@ -107,7 +107,7 @@ class Job:
 
 
 # Create a new job by concatenating a list of jobs together
-def concat_jobs(jobs):
+def concat_jobs(jobs, name=""):
 
     # Merge all input/output files and modules
     input_files = []
@@ -118,7 +118,7 @@ def concat_jobs(jobs):
         output_files.extend([output_file for output_file in job_item.output_files if output_file not in output_files])
         modules.extend([module for module in job_item.modules if module not in modules])
 
-    job = Job(input_files, output_files)
+    job = Job(input_files, output_files, name=name)
     job.modules = modules
 
     # Merge commands
@@ -129,7 +129,7 @@ def concat_jobs(jobs):
 # Create a new job by piping a list of jobs together
 def pipe_jobs(jobs):
 
-    job = Job(jobs[0].input_files, jobs[-1].output_files)
+    job = Job(jobs[0].input_files, jobs[-1].output_files, name=name)
 
    # Merge all modules
     modules = []
