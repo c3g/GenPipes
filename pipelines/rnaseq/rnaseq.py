@@ -79,7 +79,7 @@ class RnaSeq(illumina.Illumina):
             # Thus, create a sample BAM symlink to the readset BAM.
             if len(readset.sample.readsets) == 1:
                 sample_bam = os.path.join(alignment_directory, readset.sample.name + ".sorted.bam")
-                job.command += " && \\\nln -s " + os.path.join(readset_alignment_directory, "accepted_hits.bam") + " " + sample_bam
+                job.command += " && \\\nln -s " + os.path.join(readset.name, "accepted_hits.bam") + " " + sample_bam
                 job.output_files.append(sample_bam)
 
             job.name = "tophat." + readset.name
@@ -144,7 +144,7 @@ echo \\"Sample\tBamFile\tNote
 {job.command} && \\
 zip -r {output_directory}.zip {output_directory}""".format(
             output_directory=output_directory,
-            input_bams=" \\\n".join(["\t".join([sample.name, os.path.join("alignment", sample.name, sample.name + ".merged.mdup.bam"), project_name]) for sample in self.samples]),
+            input_bams="\n".join(["\t".join([sample.name, os.path.join("alignment", sample.name, sample.name + ".merged.mdup.bam"), project_name]) for sample in self.samples]),
             sample_file=sample_file,
             job=job
         )

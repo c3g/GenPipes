@@ -29,11 +29,12 @@ def tophat(
     transcriptome_bowtie_index = config.param('tophat', 'transcriptomeBowtieIndex', required=False, type='prefixpath')
 
     job.command = """\
+mkdir -p {output_directory} && \\
 tophat {other_options}{gtf}{transcriptome_index} \\
   --rg-id '{rg_id}' \\
   --rg-sample '{rg_sample}' \\
   --rg-library '{rg_library}' \\
-  --rg-platform_unit '{rg_platform_unit}' \\
+  --rg-platform-unit '{rg_platform_unit}' \\
   --rg-platform '{rg_platform}' \\
   --rg-center '{rg_center}' \\
   --library-type {library_type} \\

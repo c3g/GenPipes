@@ -15,8 +15,6 @@ def create_scheduler(type):
         return TorqueScheduler()
     elif type == "batch":
         return BatchScheduler()
-    elif type == "daemon":
-        return DaemonScheduler()
     else:
         raise Exception("Error: scheduler type \"" + type + "\" is invalid!")
 
@@ -95,9 +93,11 @@ JOB_OUTPUT=$JOB_OUTPUT_DIR/$JOB_OUTPUT_RELATIVE_PATH""".format(
 
                     cmd = \
 """echo "rm -f $JOB_DONE && \\
-{job.command_with_modules} && \\
-MUGQIC_STATE=\$PIPESTATUS && echo MUGQICexitStatus:\$MUGQIC_STATE && \\
-if [ \$MUGQIC_STATE -eq 0 ] ; then touch $JOB_DONE ; fi && exit \$MUGQIC_STATE" | \\
+{job.command_with_modules}
+MUGQIC_STATE=\$PIPESTATUS
+echo MUGQICexitStatus:\$MUGQIC_STATE
+if [ \$MUGQIC_STATE -eq 0 ] ; then touch $JOB_DONE ; fi
+exit \$MUGQIC_STATE" | \\
 """.format(job=job)
 
                     cmd += \
@@ -126,6 +126,7 @@ if [ \$MUGQIC_STATE -eq 0 ] ; then touch $JOB_DONE ; fi && exit \$MUGQIC_STATE" 
 class BatchScheduler(Scheduler):
     def submit(self, pipeline):
         self.print_header(pipeline)
+        print("SEPARATOR_LINE=`seq -s - 80 | sed 's/[0-9]//g'`")
         for step in pipeline.step_range:
             if step.jobs:
                 self.print_step(step)
@@ -134,18 +135,18 @@ class BatchScheduler(Scheduler):
 {separator_line}
 # JOB: {job.name}
 {separator_line}
+JOB_NAME={job.name}
 JOB_DONE={job.done}
+printf "\\n$SEPARATOR_LINE\\n"
+echo "Begin MUGQIC Job $JOB_NAME at `date +%FT%H.%M.%S`" && \\
 rm -f $JOB_DONE && \\
-{command_with_modules} && \\
-MUGQIC_STATE=$PIPESTATUS && echo MUGQICexitStatus:$MUGQIC_STATE && \\
-if [ $MUGQIC_STATE -eq 0 ] ; then touch $JOB_DONE ; fi && exit $MUGQIC_STATE""".format(
+{command_with_modules}
+MUGQIC_STATE=$PIPESTATUS
+echo "End MUGQIC Job $JOB_NAME at `date +%FT%H.%M.%S`"
+echo MUGQICexitStatus:$MUGQIC_STATE
+if [ $MUGQIC_STATE -eq 0 ] ; then touch $JOB_DONE ; else exit $MUGQIC_STATE ; fi""".format(
                             job=job,
                             separator_line=separator_line,
                             command_with_modules=re.sub(r"\\(.)", r"\1", job.command_with_modules)
                         )
                     )
-
-class DaemonScheduler(Scheduler):
-    def submit(self, pipeline):
-        for job in pipeline.jobs:
-            print("daemon(" + job.command_with_modules + ")")
