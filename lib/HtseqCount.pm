@@ -151,7 +151,7 @@ sub refGtf2matrix {
     $command .= ' do sort -k1,1 \$i > ' . $outputDir . '/tmpSort.txt ;';
     $command .= ' join -1 1 -2 1 ' . $outputDir . '/tmpMatrix.txt ' . $outputDir . '/tmpSort.txt > ' . $outputDir . '/tmpMatrix.2.txt ;';
     $command .= ' mv ' . $outputDir . '/tmpMatrix.2.txt ' . $outputDir . '/tmpMatrix.txt ;';
-    $command .= ' na=\$(basename \$i | cut -d\. -f1) ;';
+    $command .= ' na=\$(basename \$i | cut -d\.readcounts\.csv -f1) ;'; 
     $command .= ' HEAD=\"\$HEAD\t\$na\" ;';
     $command .= ' done &&';
     $command .= ' echo -e \$HEAD | cat - ' . $outputDir . '/tmpMatrix.txt | tr \' \' \'\t\' > ' . $outputDir . '/' . $outputMatrix . ' &&';
