@@ -10,6 +10,7 @@ __all__ = [
     "metrics",
     "picard",
     "readset",
+    "rrna_amplicons",
     "sample",
     "samtools",
     "sequence_dictionary",
