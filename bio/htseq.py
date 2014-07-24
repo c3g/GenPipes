@@ -13,7 +13,7 @@ def htseq_count(input, gtf, output, options="", stranded="no"):
     job.command = \
 """htseq-count {options} \\
   --stranded={stranded} \\
-  {input}
+  {input} \\
   {gtf}{output}""".format(
         options=options,
         stranded=stranded,

@@ -127,7 +127,7 @@ def concat_jobs(jobs, name=""):
     return job
 
 # Create a new job by piping a list of jobs together
-def pipe_jobs(jobs):
+def pipe_jobs(jobs, name=""):
 
     job = Job(jobs[0].input_files, jobs[-1].output_files, name=name)
 

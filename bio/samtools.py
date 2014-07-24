@@ -46,7 +46,7 @@ def sort(input_bam, output_prefix):
 
     return job
 
-def view(input, output, options=""):
+def view(input, output=None, options=""):
     job = Job([input], [output], [['samtools_view', 'moduleVersion.samtools']])
 
     job.command = \

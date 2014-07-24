@@ -223,13 +223,16 @@ zip -r {output_directory}.zip {output_directory}""".format(
             stranded = "no" if config.param('align', 'strandInfo') == "fr-unstranded" else "reverse"
             job = concat_jobs([
                 Job(command="mkdir -p raw_counts"),
-                htseq.htseq_count(
-                    sorted_bam,
-                    config.param('htseq', 'referenceGtf', type='filepath'),
-                    output_count,
-                    config.param('htseq', 'options'),
-                    stranded
-                )
+                pipe_jobs([
+                    samtools.view(sorted_bam),
+                    htseq.htseq_count(
+                        "/dev/stdin",
+                        config.param('htseq', 'referenceGtf', type='filepath'),
+                        output_count,
+                        config.param('htseq', 'options'),
+                        stranded
+                    )
+                ])
             ], name="htseq_count." + sample.name)
             jobs.append(job)
 
@@ -248,16 +251,16 @@ zip -r {output_directory}.zip {output_directory}""".format(
         job.command = """\
 mkdir -p {output_directory} && \\
 gtf2tmpMatrix.awk \\
-  {reference_gtf}
+  {reference_gtf} \\
   {output_directory}/tmpMatrix.txt && \\
 HEAD='Gene\tSymbol' && \\
 for read_count_file in \\
-  {read_count_files} \\
+  {read_count_files}
 do
-  sort -k1,1 \$read_count_file > {output_directory}/tmpSort.txt
-  join -1 1 -2 1 {output_directory}/tmpMatrix.txt {output_directory}/tmpSort.txt > {output_directory}/tmpMatrix.2.txt
-  mv {output_directory}/tmpMatrix.2.txt {output_directory}/tmpMatrix.txt
-  na=\$(basename \$read_count_file | cut -d\. -f1)
+  sort -k1,1 \$read_count_file > {output_directory}/tmpSort.txt && \\
+  join -1 1 -2 1 {output_directory}/tmpMatrix.txt {output_directory}/tmpSort.txt > {output_directory}/tmpMatrix.2.txt && \\
+  mv {output_directory}/tmpMatrix.2.txt {output_directory}/tmpMatrix.txt && \\
+  na=\$(basename \$read_count_file | cut -d\. -f1) && \\
   HEAD=\\"\$HEAD\t\$na\\"
 done && \\
 echo -e \$HEAD | cat - {output_directory}/tmpMatrix.txt | tr ' ' '\t' > {output_matrix} && \\
