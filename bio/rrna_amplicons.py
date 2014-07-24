@@ -50,674 +50,566 @@ cat \\\n  {reads} | gunzip -c > {outfile}""".format(
     return job
 
 #### TO BE CONVERTED TO PYTHON
-sub dukWrapper{
-        my $rH_cfg           = shift;
-        my $infileFastq      = shift;
-        my $contam           = shift;
-        my $ncontam          = shift;
-        my $log              = shift;
-        my $db               = shift;
-        
-        my $ro_job = new Job();
-        $ro_job->testInputOutputs([$infileFastq] , [$contam, $ncontam]);
-        
-        if (!$ro_job->isUp2Date()) {
-                    my $cmd = '';
-                $cmd .= LoadConfig::moduleLoad($rH_cfg, [
-                          ['memtime', 'moduleVersion.memtime'],
-                          ['tools', 'moduleVersion.tools'],
-                          ['perl', 'moduleVersion.perl'],
-                          ['duk', 'moduleVersion.duk']
-                        ]) . ' && ';
-                    $cmd .= ' memtime ';     
-                    $cmd .= ' contamWrapper.pl';
-                    $cmd .= ' --infile ' . $infileFastq;
-                    $cmd .= ' --outfile_matched ' . $contam;
-                    $cmd .= ' --outfile_unmatched ' . $ncontam;
-                    $cmd .= ' --log ' . $log;
-                    $cmd .= ' --db ' . $db;
-                    $cmd .= ' --num_threads ' . LoadConfig::getParam($rH_cfg, 'duk_wrapper', 'num_threads', 1, 'int');
+def duk_wrapper(infile_fastq, contam, ncontam, log, db):
+    
+    job = Job( 
+        [infile_fastq], 
+        [contam, ncontam],
+        [
+            ['memtime', 'moduleVersion.memtime'],
+            ['tools', 'moduleVersion.tools'],
+            ['perl', 'moduleVersion.perl'],
+            ['duk', 'moduleVersion.duk']
+          ]
+    )
+
+    job.command="""
+memtime contamWrapper.pl \\
+--infile {infile_fastq} \\
+--outfile_matched {contam} \\
+--outfile_unmatched {ncontam} \\
+--log {log} \\
+--db {db} \\
+--num_threads {num_threads}""".format(
+    infile_fastq = infile_fastq,
+    outfile_matched = outfile_matched,
+    outfile_unmatched = outfile_unmatched,
+    log = log,
+    db = db,
+    num_threads = config.param('duk_wrapper', 'num_threads', type='int')
+    )
+    return job
+
+
+def duk(log, ncontam, contam, db, infile):
                 
-                    $ro_job->addCommand($cmd);
-                }
-        return $ro_job;
-}
+    job = Job(
+        [infile], 
+        [contam, ncontam, log],
+        [
+            ['memtime', 'moduleVersion.memtime'],
+            ['tools', 'moduleVersion.tools'],
+            ['perl', 'moduleVersion.perl'],
+            ['duk', 'moduleVersion.duk']
+        ]
+    )
+        
+    job.command=""" 
+memtime gunzip -c {infile} | duk \\
+-o log {log} \\
+-n ncontam {ncontam}\\
+-m contam {contam}\\
+-k {k} \\
+-s {d} \\
+-c {c} \\
+db""".format(
+    log = log,
+    ncontam = ncontam,
+    contam = contam,
+    k = config.param('duk', 'k', 'int'),
+    s = config.param('duk', 's', 'int'),
+    c = config.param('duk', 'c', 'int'),
+    ) 
+    return job
 
-sub duk{
-        my $rH_cfg             = shift;
-        my $log                = shift;
-        my $ncontam            = shift;
-        my $contam             = shift;
-        my $db                 = shift;
-        my $infile             = shift;
-        
-        my $ro_job = new Job();
-        $ro_job->testInputOutputs([$infile] , [$contam, $ncontam, $log]);
-        
-        if (!$ro_job->isUp2Date()) {
-                    my $cmd = '';
-                $cmd .= LoadConfig::moduleLoad($rH_cfg, [
-                          ['memtime', 'moduleVersion.memtime'],
-                          ['tools', 'moduleVersion.tools'],
-                          ['perl', 'moduleVersion.perl'],
-                          ['duk', 'moduleVersion.duk']
-                        ]) . ' && ';
-                    $cmd .= ' memtime ';
-                    $cmd .= ' gunzip -c ' . $infile . ' |' ;    
-                    $cmd .= ' duk';
-                    $cmd .= ' -o ' . $log;
-                    $cmd .= ' -n ' . $ncontam;
-                    $cmd .= ' -m ' . $contam;
-                    $cmd .= ' -k '.LoadConfig::getParam($rH_cfg, 'duk', 'k', 1, 'int');
-                    $cmd .= ' -s '.LoadConfig::getParam($rH_cfg, 'duk', 's', 1, 'int');
-                    $cmd .= ' -c '.LoadConfig::getParam($rH_cfg, 'duk', 'c', 1, 'int');
-                    $cmd .= ' ' . $db;      
+def split_barcodes(infile, barcodes, outfile, log):
+    
+    job = Job(
+        [infile],
+        [outfile],
+        [
+            ['memtime', 'moduleVersion.memtime'],
+            ['tools', 'moduleVersion.tools'],
+            ['perl', 'moduleVersion.perl']
+        ]
+    )
+
+    job.command="""
+memtime barcodes.pl \\
+--infile {infile} \\
+--barcodes {barcodes} \\
+--outfile {outfile} \\
+--num_threads {num_threads}  \\
+--log {log};""".format(
+    infile = infile,
+    outfile = outfile,
+    num_threads = config.param( 'barcodes', 'num_threads', 1, 'int'),
+    log = {log}
+    )
+    
+    return job
+
+def removeUnpairedReads(infile, outfilePaired, unpairedR1, unpairedR2):
+    job = Job(
+        [infile], 
+        [outfilePaired],
+        [
+            ['memtime', 'moduleVersion.memtime'],
+            ['tools', 'moduleVersion.tools'],
+            ['perl', 'moduleVersion.perl']
+        ]
+    )
+    job.command="""
+memtime removeUnpaired.pl \\
+--infile {infile} \\
+--outfile_paired {outfilePaired} \\
+--outfile_1 {unpairedR1} \\
+--outfile_2 {unpairedR2} \\
+--num_threads {num_threads}""".format(
+    infile = infile,
+    outfile_paired = outfile_paired,
+    outfile_1 = outfile_1,
+    outfile_2 = outfile_2,
+    num_threads =  config.param( 'remove_unpaired', 'num_threads', 1, 'int');
+    )
                 
-                    $ro_job->addCommand($cmd);
-                }
-        return $ro_job;
-}
+    return job
 
-sub splitBarcodes{
-        my $rH_cfg             = shift;
-        my $infile             = shift;
-        my $barcodes           = shift;
-        my $outfile            = shift;
-        my $log                = shift;
+def splitPairs(infile, outfileR1, outfileR2):
         
-        my $ro_job = new Job();
-        $ro_job->testInputOutputs([$infile] , [$outfile]);
-        
-        if (!$ro_job->isUp2Date()) {
-                    my $cmd = '';
-                $cmd .= LoadConfig::moduleLoad($rH_cfg, [
-                          ['memtime', 'moduleVersion.memtime'],
-                          ['tools', 'moduleVersion.tools'],
-                          ['perl', 'moduleVersion.perl']
-                        ]) . ' && ';
-                    $cmd .= ' memtime ';
-                    $cmd .= ' barcodes.pl';
-                    $cmd .= ' --infile ' . $infile;
-                    $cmd .= ' --barcodes ' . $barcodes;
-                    $cmd .= ' --outfile ' . $outfile;
-                    $cmd .= ' --num_threads '. LoadConfig::getParam($rH_cfg, 'barcodes', 'num_threads', 1, 'int');
-                    $cmd .= ' --log ' . $log;
+    job = Job(
+        [infile], 
+        [outfileR1, outfileR2]
+        [
+            ['memtime', 'moduleVersion.memtime'],
+            ['tools', 'moduleVersion.tools'],
+            ['perl', 'moduleVersion.perl']
+        ]
+    )
 
-                    $ro_job->addCommand($cmd);
-                }
-        return $ro_job;
-}
-
-sub removeUnpairedReads{
-        my $rH_cfg             = shift;
-        my $infile             = shift;
-        my $outfilePaired      = shift;
-        my $unpairedR1         = shift;
-        my $unpairedR2         = shift;
-        
-        my $ro_job = new Job();
-        $ro_job->testInputOutputs([$infile] , [$outfilePaired]);
-        
-        if (!$ro_job->isUp2Date()) {
-                    my $cmd = '';
-                $cmd .= LoadConfig::moduleLoad($rH_cfg, [
-                          ['memtime', 'moduleVersion.memtime'],
-                          ['tools', 'moduleVersion.tools'],
-                          ['perl', 'moduleVersion.perl']
-                        ]) . ' && ';
-                    $cmd .= ' memtime ';
-                    $cmd .= ' removeUnpaired.pl';
-                    $cmd .= ' --infile '. $infile;
-                    $cmd .= ' --outfile_paired ' . $outfilePaired;
-                    $cmd .= ' --outfile_1 ' . $unpairedR1;
-                    $cmd .= ' --outfile_2 ' . $unpairedR2;
-                    $cmd .= ' --num_threads '.LoadConfig::getParam($rH_cfg, 'remove_unpaired', 'num_threads', 1, 'int');
+    job.command="""
+memtime splitPairs.pl \\
+--infile {infile} \\
+--outfile_1 {outfileR1} \\
+--outfile_2 {outfileR2} \\
+--num_threads {num_threads}""".format(
+    infile = infile,
+    outfile_1 = outfile_1,
+    outfile_2 = outfile_2,
+    num_threads = config.param( 'split_pairs', 'num_threads', 'int')
+    )
                 
-                    $ro_job->addCommand($cmd);
-                }
-        return $ro_job;
-}
-
-sub splitPairs{
-        my $rH_cfg             = shift;
-        my $infile             = shift;
-        my $outfileR1          = shift;
-        my $outfileR2          = shift;
-        
-        my $ro_job = new Job();
-        $ro_job->testInputOutputs([$infile] , [$outfileR1, $outfileR2]);
-        
-        if (!$ro_job->isUp2Date()) {
-                    my $cmd = '';
-                $cmd .= LoadConfig::moduleLoad($rH_cfg, [
-                          ['memtime', 'moduleVersion.memtime'],
-                          ['tools', 'moduleVersion.tools'],
-                          ['perl', 'moduleVersion.perl']
-                        ]) . ' && ';
-                    $cmd .= ' memtime ';
-                    $cmd .= ' splitPairs.pl';
-                    $cmd .= ' --infile ' . $infile;
-                    $cmd .= ' --outfile_1 ' . $outfileR1;
-                    $cmd .= ' --outfile_2 ' . $outfileR2;
-                    $cmd .= ' --num_threads '.LoadConfig::getParam($rH_cfg, 'split_pairs', 'num_threads', 1, 'int');
-                
-                    $ro_job->addCommand($cmd);
-                }
-        return $ro_job;
-}
-
-sub generateQscoreSheet{
-        my $rH_cfg             = shift;
-        my $infile             = shift;
-        my $prefix             = shift;
-        my $log                = shift;
-        my $outfile            = shift;
-        my $barcodes           = shift;
-        
-        my $ro_job = new Job();
-        $ro_job->testInputOutputs([$infile] , [$outfile]);
-        
-        if (!$ro_job->isUp2Date()) {
-                    my $cmd = '';
-                $cmd .= LoadConfig::moduleLoad($rH_cfg, [
-                          ['memtime', 'moduleVersion.memtime'],
-                          ['fastx', 'moduleVersion.fastx'],
-                          ['tools', 'moduleVersion.tools'],
-                          ['perl', 'moduleVersion.perl']
-                        ]) . ' && ';
-                    $cmd .= ' memtime ';
-                    $cmd .= 'qscoreSheets.pl ';
-                    $cmd .= ' --fastq ' . $infile;
-                    $cmd .= ' --tmp ' . LoadConfig::getParam($rH_cfg, 'default', 'tmpDir', 1, 'dirpath') ;
-                    $cmd .= ' --prefix ' . $prefix;
-                    $cmd .= ' --suffix suffix';
-                    $cmd .= ' --log ' . $log;
-                    $cmd .= ' --outfile ' . $outfile;
-                    $cmd .= ' --phred ' . LoadConfig::getParam($rH_cfg, 'default', 'qual', 1, 'int') ;
-                    $cmd .= ' --barcodes ' . $barcodes;
-                    $cmd .= ' --num_threads '. LoadConfig::getParam($rH_cfg, 'qscore_sheet', 'num_threads', 1, 'int');
                     
-                    $ro_job->addCommand($cmd);
-                }
-        return $ro_job;
-}
+        return job
 
-sub generateQscoreGraphSingle{
-        my $rH_cfg             = shift;
-        my $infile             = shift;
-        my $prefix             = shift;
-        my $outfile            = shift;
+def generateQscoreSheet(infile, prefix, log, outfile, barcodes):
+                
+    job = Job(
+        [infile],
+        [outfile],
+        [
+            ['memtime', 'moduleVersion.memtime'],
+            ['fastx', 'moduleVersion.fastx'],
+            ['tools', 'moduleVersion.tools'],
+            ['perl', 'moduleVersion.perl']
+        ]
+    )
+
+    job.command="""
+memtime qscoreSheets.pl \\ 
+ --fastq {infile} \\
+ --tmp {tmp} \\
+ --prefix {prefix} \\
+ --suffix {suffix} \\
+ --log {log} \\
+ --outfile {outfile} \\
+ --phred {phred} \\
+ --barcodes {barcodes} \\
+ --num_threads {num_threads}""".format(
+    infile = infile,
+    tmp = tmp,
+    suffix = suffix,
+    log = log,
+    outfile = outfile,
+    tmp = config.param('DEFAULT', 'tmpDir', 'dirpath'),
+    phred = config.param('DEFAULT', 'qual', 'int'),
+    config.param( 'qscore_sheet', 'num_threads', 'int')
+
+    )
+                    
+    return job
+
+def generateQscoreGraphSingle(infile, prefix, outfile):
         
-        my $ro_job = new Job();
-        $ro_job->testInputOutputs([$infile] , [$outfile]);
+    job = Job(
+        [infile] , 
+        [outfile],
+        [
+            ['memtime', 'moduleVersion.memtime'],
+            ['R', 'moduleVersion.R'],
+            ['tools', 'moduleVersion.tools'],
+            ['perl', 'moduleVersion.perl']
+        ]
+    )
+    job.command="""
+memtime qscorePlots.pl \\
+--infile_1 {infile} \\
+--name {prefix} \\
+--pdf {outfile} \\
+--display 1 \\
+--single""".format(
+    infile = infile,
+    prefix = prefix,
+    outfile = outfile
+    )
+
+    return job
+
+def generateQscoreGraphPaired(infileR1, infileR2, outfile):
+                
+    job = Job(
+        [infileR1, infileR2], 
+        [outfile],
+        [
+            ['memtime', 'moduleVersion.memtime'],
+            ['R', 'moduleVersion.R'],
+            ['tools', 'moduleVersion.tools'],
+            ['perl', 'moduleVersion.perl']
+        ]
+    )
+
+    job.command="""
+memtime qscorePlots.pl
+--infile_1 {infileR1} \\
+--infile_2 {infileR2} \\
+--name qual_stats \\
+--pdf {outfile} \\
+--display 1 \\
+--paired""".format(
+    infileR1 = infileR1,
+    infileR2 = infileR2,
+    outfile = outfile
+    )
+
+    return job
+
+def cutReads(infile, begin, end, outfile):
         
-        if (!$ro_job->isUp2Date()) {
-                    my $cmd = '';
-                $cmd .= LoadConfig::moduleLoad($rH_cfg, [
+    job = Job(
+        [infile],
+        [outfile]
+        [
+            ['memtime', 'moduleVersion.memtime'],
+            ['tools', 'moduleVersion.tools'],
+            ['perl', 'moduleVersion.perl']
+        ]
+
+    job.command="""
+memtime cutFastqSeq.pl \\
+--infile {infile} \\
+--begin {begin} \\
+--end {end} \\
+--outfile {outfile}""".format(
+    infile = infile,
+    begin = begin,
+    end = end,
+    outfile = outfile
+    )
+
+    return job
+
+def flash(infileR1, infileR2, prefix, outdir):
+                
+        job = Job(
+            [infileR1, infileR2], 
+            [outdir.'/assembly_complete/ncontam_nphix_trimmed.extendedFrags.fastq'],
+            [
+                ['memtime', 'moduleVersion.memtime'],
+                ['flash', 'moduleVersion.flash'],
+                ['tools', 'moduleVersion.tools'],
+                ['perl', 'moduleVersion.perl']
+            ]
+    job.command="""
+memtime flash.pl \\
+--infile_1 {infileR1} \\
+--infile_2 {infileR2} \\
+--prefix {prefix} \\
+--outdir {outdir} \\
+--n {n} \\
+--m {m} \\
+--M {M} \\
+--x {x} \\
+--p {p} \\
+--num_threads {num_threads}""".format(
+    infileR1 = infileR1,
+    infileR2 = infileR2,
+    prefix = prefix,
+    outdir = outdir,
+    n = config.getparam('flash', 'sampling', 'int'),
+    m = config.getparam('flash', 'minOverlap', 'int'),
+    M = config.getparam('flash', 'maxOverlap', 'int'),
+    x = config.getparam('flash', 'percentMismatch', 'float'),
+    p = config.getparam('flash', 'phred', 'int'),
+    num_threads = config.getparam( 'flash', 'num_threads', 'int')
+    )
+    return job
+
+def removePrimers(infile, revPrimer, fwdPrimer, outfile,  outfileFailed):
+        
+    job = Job(
+        [infile], 
+        [outfile],
+        [
+            ['memtime', 'moduleVersion.memtime'],
+            ['tools', 'moduleVersion.tools'],
+            ['perl', 'moduleVersion.perl']
+        ]
+    )
+
+    job.command="""
+memtime itagsQC.pl \\
+ --infile {infile} \\
+if(revPrimer ne 'null'){
+                 --primer_3_prime revPrimer;
+                 --length_3_prime ' . LoadConfig::getParam( 'itags_QC', 'length3Prime', 1, 'int'); 
+            }if(fwdPrimer ne 'null'){
+                             --primer_5_prime fwdPrimer;
+                             --length_5_prime ' . LoadConfig::getParam( 'itags_QC', 'length5Prime', 1, 'int') ;    
+                        }
+# --qscore_1 ' . LoadConfig::getParam( 'itags_QC', 'qscore1');
+# --qscore_2 ' . LoadConfig::getParam( 'itags_QC', 'qscore2');
+ --outfile outfile;
+ --outfile_failed outfileFailed;
+ --num_threads ' . LoadConfig::getParam( 'itags_QC', 'num_threads', 1, 'int');
+ --qual ' . LoadConfig::getParam( 'default', 'qual', 1, 'int');
+# --lq_threshold ' . LoadConfig::getParam( 'itags_QC', 'lq_threshold');
+ --primer_mismatch ' . LoadConfig::getParam( 'itags_QC', 'primerMismatch', 1, 'int');
+# --min_length ' . LoadConfig::getParam( 'itags_QC', 'minlength');
+# --N ' . LoadConfig::getParam( 'itags_QC', 'N');""".format(
+
+         )
+        return job
+
+def itagsQC(infile, revPrimer, fwdPrimer, outfile, outfileFailed):
+        
+        job = Job([infile] , [outfile]);
+                [
                           ['memtime', 'moduleVersion.memtime'],
-                          ['R', 'moduleVersion.R'],
                           ['tools', 'moduleVersion.tools'],
                           ['perl', 'moduleVersion.perl']
-                        ]) . ' && ';
-                    $cmd .= ' memtime ';
-                    $cmd .= ' qscorePlots.pl';
-                    $cmd .= ' --infile_1 ' . $infile;
-                    $cmd .= ' --name ' . $prefix;  
-                    $cmd .= ' --pdf ' . $outfile; 
-                    $cmd .= ' --display 1';
-                    $cmd .= ' --single';
-
-                    $ro_job->addCommand($cmd);
-                }
-        return $ro_job;
-}
-
-sub generateQscoreGraphPaired{
-        my $rH_cfg             = shift;
-        my $infileR1           = shift;
-        my $infileR2           = shift;
-        my $outfile            = shift;
-        
-        my $ro_job = new Job();
-        $ro_job->testInputOutputs([$infileR1, $infileR2] , [$outfile]);
-        
-        if (!$ro_job->isUp2Date()) {
-                    my $cmd = '';
-                $cmd .= LoadConfig::moduleLoad($rH_cfg, [
-                          ['memtime', 'moduleVersion.memtime'],
-                          ['R', 'moduleVersion.R'],
-                          ['tools', 'moduleVersion.tools'],
-                          ['perl', 'moduleVersion.perl']
-                        ]) . ' && ';
-                    $cmd .= ' memtime ';
-                    $cmd .= ' qscorePlots.pl';
-                    $cmd .= ' --infile_1 ' . $infileR1;
-                    $cmd .= ' --infile_2 ' . $infileR2;
-                    $cmd .= ' --name qual_stats';  
-                    $cmd .= ' --pdf ' . $outfile; 
-                    $cmd .= ' --display 1';
-                    $cmd .= ' --paired';
-
-                    $ro_job->addCommand($cmd);
-                }
-        return $ro_job;
-}
-
-sub cutReads{
-        my $rH_cfg             = shift;
-        my $infile             = shift;
-        my $begin              = shift;
-        my $end                = shift;
-        my $outfile            = shift;
-        
-        my $ro_job = new Job();
-        $ro_job->testInputOutputs([$infile] , [$outfile]);
-        
-        if (!$ro_job->isUp2Date()) {
-                    my $cmd = '';
-                $cmd .= LoadConfig::moduleLoad($rH_cfg, [
-                          ['memtime', 'moduleVersion.memtime'],
-                          ['tools', 'moduleVersion.tools'],
-                          ['perl', 'moduleVersion.perl']
-                        ]) . ' &&';
-                    $cmd .= ' memtime';
-                    $cmd .= ' cutFastqSeq.pl';
-                    $cmd .= ' --infile ' . $infile;
-                    $cmd .= ' --begin ' . $begin;
-                    $cmd .= ' --end ' . $end;
-                    $cmd .= ' --outfile ' . $outfile;
-
-                    $ro_job->addCommand($cmd);
-                }
-        return $ro_job;
-}
-
-sub flash{
-        my $rH_cfg             = shift;
-        my $infileR1           = shift;
-        my $infileR2           = shift;
-        my $prefix             = shift;
-        my $outdir             = shift;
-        
-        my $ro_job = new Job();
-        $ro_job->testInputOutputs([$infileR1, $infileR2] , [$outdir.'/assembly_complete/ncontam_nphix_trimmed.extendedFrags.fastq']);
-        
-        if (!$ro_job->isUp2Date()) {
-                    my $cmd = '';
-                $cmd .= LoadConfig::moduleLoad($rH_cfg, [
-                          ['memtime', 'moduleVersion.memtime'],
-                          ['flash', 'moduleVersion.flash'],
-                          ['tools', 'moduleVersion.tools'],
-                          ['perl', 'moduleVersion.perl']
-                        ]) . ' && ';
-                    $cmd .= ' memtime ';
-                    $cmd .= ' flash.pl';
-                    $cmd .= ' --infile_1 ' . $infileR1;
-                    $cmd .= ' --infile_2 ' . $infileR2;
-                    $cmd .= ' --prefix ' . $prefix;
-                    $cmd .= ' --outdir ' . $outdir;
-                    $cmd .= ' --n ' . LoadConfig::getParam($rH_cfg, 'flash', 'sampling', 1, 'int');
-                    $cmd .= ' --m ' . LoadConfig::getParam($rH_cfg, 'flash', 'minOverlap', 1, 'int');
-                    $cmd .= ' --M ' . LoadConfig::getParam($rH_cfg, 'flash', 'maxOverlap', 1, 'int');
-                    $cmd .= ' --x ' . LoadConfig::getParam($rH_cfg, 'flash', 'percentMismatch', 1, 'float');
-                    $cmd .= ' --p ' . LoadConfig::getParam($rH_cfg, 'flash', 'phred', 1, 'int');
-                    $cmd .= ' --num_threads ' . LoadConfig::getParam($rH_cfg, 'flash', 'num_threads', 1, 'int');
-
-                    $ro_job->addCommand($cmd);
-                }
-        return $ro_job;
-}
-
-sub removePrimers{
-        my $rH_cfg             = shift;
-        my $infile             = shift;
-        my $revPrimer          = shift;
-        my $fwdPrimer          = shift;
-        my $outfile            = shift;
-        my $outfileFailed      = shift;
-        
-        my $ro_job = new Job();
-        $ro_job->testInputOutputs([$infile] , [$outfile]);
-        
-        if (!$ro_job->isUp2Date()) {
-                    my $cmd = '';
-                $cmd .= LoadConfig::moduleLoad($rH_cfg, [
-                          ['memtime', 'moduleVersion.memtime'],
-                          ['tools', 'moduleVersion.tools'],
-                          ['perl', 'moduleVersion.perl']
-                        ]) . ' && ';
-                    $cmd .= ' memtime ';
-                    $cmd .= 'itagsQC.pl';
-                    $cmd .= ' --infile ' . $infile;
-                    if($revPrimer ne 'null'){
-                                    $cmd .= ' --primer_3_prime ' . $revPrimer;
-                                    $cmd .= ' --length_3_prime ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'length3Prime', 1, 'int'); 
-                                }if($fwdPrimer ne 'null'){
-                                                $cmd .= ' --primer_5_prime ' . $fwdPrimer;
-                                                $cmd .= ' --length_5_prime ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'length5Prime', 1, 'int') ;    
+                        ]
+    job.command="""
+                     memtime 
+                    itagsQC.pl
+                     --infile infile;
+                    if(revPrimer ne 'null'){
+                                     --primer_3_prime revPrimer;
+                                     --length_3_prime ' . LoadConfig::getParam( 'itags_QC', 'length3Prime', 1, 'int'); 
+                                }if(fwdPrimer ne 'null'){
+                                                 --primer_5_prime fwdPrimer;
+                                                 --length_5_prime ' . LoadConfig::getParam( 'itags_QC', 'length5Prime', 1, 'int') ;    
                                             }
-                    #$cmd .= ' --qscore_1 ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'qscore1');
-                    #$cmd .= ' --qscore_2 ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'qscore2');
-                    $cmd .= ' --outfile ' . $outfile;
-                    $cmd .= ' --outfile_failed ' . $outfileFailed;
-                    $cmd .= ' --num_threads ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'num_threads', 1, 'int');
-                    $cmd .= ' --qual ' . LoadConfig::getParam($rH_cfg, 'default', 'qual', 1, 'int');
-                    #$cmd .= ' --lq_threshold ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'lq_threshold');
-                    $cmd .= ' --primer_mismatch ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'primerMismatch', 1, 'int');
-                    #$cmd .= ' --min_length ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'minlength');
-                    #$cmd .= ' --N ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'N');
-                
-                    $ro_job->addCommand($cmd);
-                }
-        return $ro_job;
-}
+                     --qscore_1 ' . LoadConfig::getParam( 'itags_QC', 'qscore1', 1, 'int');
+                     --qscore_2 ' . LoadConfig::getParam( 'itags_QC', 'qscore2', 1, 'int');
+                     --outfile outfile;
+                     --outfile_failed outfileFailed;
+                     --num_threads ' . LoadConfig::getParam( 'itags_QC', 'num_threads', 1, 'int');
+                     --qual ' . LoadConfig::getParam( 'default', 'qual', 1, 'int');
+                     --lq_threshold ' . LoadConfig::getParam( 'itags_QC', 'lq_threshold', 1, 'int');
+                     --primer_mismatch ' . LoadConfig::getParam( 'itags_QC', 'primerMismatch', 1, 'float');
+                     --min_length ' . LoadConfig::getParam( 'itags_QC', 'minlength', 1, 'int');
+                     --N ' . LoadConfig::getParam( 'itags_QC', 'N', 1, 'int');""".format(
 
-sub itagsQC{
-        my $rH_cfg             = shift;
-        my $infile             = shift;
-        my $revPrimer          = shift;
-        my $fwdPrimer          = shift;
-        my $outfile            = shift;
-        my $outfileFailed      = shift;
+         )
+                
+                    
+        return job
+
+def countReport(rA_files, rA_names, analysisType, barcodesDist, OTUtable, obsTable, outfile):
         
-        my $ro_job = new Job();
-        $ro_job->testInputOutputs([$infile] , [$outfile]);
-        
-        if (!$ro_job->isUp2Date()) {
-                    my $cmd = '';
-                $cmd .= LoadConfig::moduleLoad($rH_cfg, [
+    job = Job([OTUtable], [outfile]);
+                [
                           ['memtime', 'moduleVersion.memtime'],
                           ['tools', 'moduleVersion.tools'],
                           ['perl', 'moduleVersion.perl']
-                        ]) . ' && ';
-                    $cmd .= ' memtime ';
-                    $cmd .= 'itagsQC.pl';
-                    $cmd .= ' --infile ' . $infile;
-                    if($revPrimer ne 'null'){
-                                    $cmd .= ' --primer_3_prime ' . $revPrimer;
-                                    $cmd .= ' --length_3_prime ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'length3Prime', 1, 'int'); 
-                                }if($fwdPrimer ne 'null'){
-                                                $cmd .= ' --primer_5_prime ' . $fwdPrimer;
-                                                $cmd .= ' --length_5_prime ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'length5Prime', 1, 'int') ;    
-                                            }
-                    $cmd .= ' --qscore_1 ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'qscore1', 1, 'int');
-                    $cmd .= ' --qscore_2 ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'qscore2', 1, 'int');
-                    $cmd .= ' --outfile ' . $outfile;
-                    $cmd .= ' --outfile_failed ' . $outfileFailed;
-                    $cmd .= ' --num_threads ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'num_threads', 1, 'int');
-                    $cmd .= ' --qual ' . LoadConfig::getParam($rH_cfg, 'default', 'qual', 1, 'int');
-                    $cmd .= ' --lq_threshold ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'lq_threshold', 1, 'int');
-                    $cmd .= ' --primer_mismatch ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'primerMismatch', 1, 'float');
-                    $cmd .= ' --min_length ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'minlength', 1, 'int');
-                    $cmd .= ' --N ' . LoadConfig::getParam($rH_cfg, 'itags_QC', 'N', 1, 'int');
-                
-                    $ro_job->addCommand($cmd);
-                }
-        return $ro_job;
-}
-
-sub countReport{
-        my $rH_cfg             = shift;
-        my $rA_files           = shift;
-        my $rA_names           = shift;
-        my $analysisType       = shift; 
-        my $barcodesDist       = shift;
-        my $OTUtable           = shift;
-        my $obsTable           = shift;
-        my $outfile            = shift;
-        
-        my $ro_job = new Job();
-        $ro_job->testInputOutputs([$OTUtable], [$outfile]);
-        
-        if (!$ro_job->isUp2Date()) {
-                    my $cmd = '';
-                $cmd .= LoadConfig::moduleLoad($rH_cfg, [
-                          ['memtime', 'moduleVersion.memtime'],
-                          ['tools', 'moduleVersion.tools'],
-                          ['perl', 'moduleVersion.perl']
-                        ]) . ' && ';
-                    $cmd .= ' memtime ';
-                    $cmd .= 'countReport.pl';
-                    foreach(@$rA_files){
-                                    $cmd .= ' --file ' .$_;
+                        ]
+    job.command="""
+                     memtime 
+                    countReport.pl
+                    foreach(@rA_files){
+                                     --file ' ._;
                                 }
-                    foreach(@$rA_names){
-                                    $cmd .= ' --name ' .$_;
+                    foreach(@rA_names){
+                                     --name ' ._;
                                 }
-                    $cmd .= ' --analysisType ' . $analysisType;
-                    $cmd .= ' --barcodesDist '. $barcodesDist;
-                    $cmd .= ' --OTUtable ' . $OTUtable;
-                    $cmd .= ' --obsTable ' . $obsTable;
-                    $cmd .= ' > ' .$outfile;
-                
-                    $ro_job->addCommand($cmd);
-                }
-        return $ro_job;
-}
+                     --analysisType analysisType;
+                     --barcodesDist '. barcodesDist;
+                     --OTUtable OTUtable;
+                     --obsTable obsTable;
+                     > ' .outfile;""".format(
 
-sub txtToPdf{
-        my $rH_cfg             = shift;
-        my $infile             = shift;
-        my $outfile            = shift;
-        
-        my $ro_job = new Job();
-        $ro_job->testInputOutputs([$infile], [$outfile]);
-        
-        if (!$ro_job->isUp2Date()) {
-                    my $cmd = '';
-                $cmd .= LoadConfig::moduleLoad($rH_cfg, [
+         )
+                
+                    
+        return job
+
+def txtToPdf(infile, outfile):
+                
+        job = Job([infile], [outfile]);
+                [
                           ['memtime', 'moduleVersion.memtime'],
                           ['tools', 'moduleVersion.tools'],
                           ['perl', 'moduleVersion.perl']
-                        ]) . ' && ';
-                    $cmd .= ' memtime ';
-                    $cmd .= 'txtToPdf.pl';
-                    $cmd .= ' --infile ' . $infile;
-                    $cmd .= ' --outfile ' . $outfile;
-                
-                    $ro_job->addCommand($cmd);
-                }
-        return $ro_job;
-}
+                        ]
+    job.command="""
+                     memtime 
+                    txtToPdf.pl
+                     --infile infile;
+                     --outfile outfile;""".format(
 
-sub mergePdf{
-        my $rH_cfg             = shift;
-        my $command            = shift;
+         )
+        return job
+
+def mergePdf(command):
         
-        my $dummyOutfile       = "mergepdf.mugqic.done";
-        my $ro_job = new Job();
-        $ro_job->testInputOutputs([""] , [$dummyOutfile]);
+        my dummyOutfile       = "mergepdf.mugqic.done";
         
-        if (!$ro_job->isUp2Date()) {
-                    my $cmd = '';
-                $cmd .= LoadConfig::moduleLoad($rH_cfg, [
+        job = Job([""] , [dummyOutfile]);
+        
+        
+                    
+                [
                           ['memtime', 'moduleVersion.memtime'],
                           ['ghostscript', 'moduleVersion.ghostscript'],
                           ['tools', 'moduleVersion.tools'],
                           ['perl', 'moduleVersion.perl']
-                        ]) . ' && ';
-                    $cmd .= ' memtime ';
-                    $cmd .= ' ' . $command;
-                    $cmd .= ' && touch ' . $dummyOutfile; 
+                        ]
+    job.command="""
+                     memtime 
+                     command;
+                     && touch dummyOutfile; """.format(
 
-                    $ro_job->addCommand($cmd);
-                }
-        return $ro_job;
-}
+         )
 
-sub clustering1{
-        my $rH_cfg             = shift;
-        my $infile             = shift;
-        my $barcodes           = shift;
-        my $outdir             = shift;
+                    
+        return job
+
+def clustering1(infile, barcodes, outdir):
         
-        my $ro_job = new Job();
-        $ro_job->testInputOutputs([$infile], ["$outdir/obs_filtered.fasta", "$outdir/obs_filtered.tsv"]);
-        
-        if (!$ro_job->isUp2Date()) {
-                    my $cmd = '';
-                $cmd .= LoadConfig::moduleLoad($rH_cfg, [
+        job = Job([infile], ["outdir/obs_filtered.fasta", "outdir/obs_filtered.tsv"]);
+                [
                           ['memtime', 'moduleVersion.memtime'],
                           ['usearch', 'moduleVersion.usearch'],
                           ['tools', 'moduleVersion.tools'],
                           ['perl', 'moduleVersion.perl']
-                        ]) . ' && ';
-                    $cmd .= ' memtime ';
-                    $cmd .= ' clustering1.pl';
-                    $cmd .= ' --infile_fastq ' . $infile;
-                    $cmd .= ' --ref_db ' . LoadConfig::getParam($rH_cfg, 'DB', 'chimeras', 1, 'filepath'); 
-                    $cmd .= ' --barcodes ' . $barcodes;
-                    $cmd .= ' --outdir ' . $outdir;
-                    $cmd .= ' --num_threads ' . LoadConfig::getParam($rH_cfg, 'clustering', 'num_threads', 1, 'int');
-                    #$cmd .= ' --start_at 4';
-                
-                    $ro_job->addCommand($cmd);
-                }
-        return $ro_job;
-}
+                        ]
+    job.command="""
+                     memtime 
+                     clustering1.pl
+                     --infile_fastq infile;
+                     --ref_db ' . LoadConfig::getParam( 'DB', 'chimeras', 1, 'filepath'); 
+                     --barcodes barcodes;
+                     --outdir outdir;
+                     --num_threads ' . LoadConfig::getParam( 'clustering', 'num_threads', 1, 'int');
+                    # --start_at 4""".format(
 
-sub clustering2{
-        my $rH_cfg             = shift;
-        my $infile             = shift;
-        my $barcodes           = shift;
-        my $outdir             = shift;
+         )
+        return job
+
+def clustering2(infile, barcodes, outdir):
         
-        my $ro_job = new Job();
-        $ro_job->testInputOutputs([$infile], ["$outdir/obs_filtered.fasta", "$outdir/obs_filtered.tsv"]);
-        
-        if (!$ro_job->isUp2Date()) {
-                    my $cmd = '';
-                $cmd .= LoadConfig::moduleLoad($rH_cfg, [
+        job = Job([infile], ["outdir/obs_filtered.fasta", "outdir/obs_filtered.tsv"]);
+                [
                           ['memtime', 'moduleVersion.memtime'],
                           ['usearch', 'moduleVersion.usearch'],
                           ['tools', 'moduleVersion.tools'],
                           ['perl', 'moduleVersion.perl']
-                        ]) . ' && ';
-                    $cmd .= ' memtime ';
-                    $cmd .= ' clustering2.pl';
-                    $cmd .= ' --infile_fastq ' . $infile;
-                    $cmd .= ' --ref_db ' . LoadConfig::getParam($rH_cfg, 'DB', 'chimeras', 1, 'path'); 
-                    $cmd .= ' --barcodes ' . $barcodes;
-                    $cmd .= ' --outdir ' . $outdir;
-                    $cmd .= ' --num_threads ' . LoadConfig::getParam($rH_cfg, 'clustering', 'num_threads', 1, 'int');
-                    #$cmd .= ' --start_at 4';
-                
-                    $ro_job->addCommand($cmd);
-                }
-        return $ro_job;
-}
+                        ]
+    job.command="""
+                     memtime 
+                     clustering2.pl
+                     --infile_fastq infile;
+                     --ref_db ' . LoadConfig::getParam( 'DB', 'chimeras', 1, 'path'); 
+                     --barcodes barcodes;
+                     --outdir outdir;
+                     --num_threads ' . LoadConfig::getParam( 'clustering', 'num_threads', 1, 'int');
+                    # --start_at 4""".format(
 
-sub clustering3{
-        my $rH_cfg             = shift;
-        my $infile             = shift;
-        my $barcodes           = shift;
-        my $outdir             = shift;
+         )
+        return job
+
+def clustering3(infile, barcodes, outdir):
         
-        my $ro_job = new Job();
-        $ro_job->testInputOutputs([$infile], ["$outdir/obs_filtered.fasta", "$outdir/obs_filtered.tsv"]);
-        
-        if (!$ro_job->isUp2Date()) {
-                    my $cmd = '';
-                $cmd .= LoadConfig::moduleLoad($rH_cfg, [
+        job = Job([infile], ["outdir/obs_filtered.fasta", "outdir/obs_filtered.tsv"]);
+                [
                           ['memtime', 'moduleVersion.memtime'],
                           ['usearch', 'moduleVersion.usearch'],
                           ['dnaclust', 'moduleVersion.dnaclust'],
                           ['tools', 'moduleVersion.tools'],
                           ['perl', 'moduleVersion.perl']
-                        ]) . ' && ';
-                    $cmd .= ' memtime ';
-                    $cmd .= ' clustering3.pl';
-                    $cmd .= ' --infile_fastq ' . $infile;
-                    $cmd .= ' --ref_db ' . LoadConfig::getParam($rH_cfg, 'DB', 'chimeras', 1, 'filepath'); 
-                    $cmd .= ' --barcodes ' . $barcodes;
-                    $cmd .= ' --outdir ' . $outdir;
-                $cmd .= ' --lowAbunCutOff ' . LoadConfig::getParam($rH_cfg, 'clustering', 'lowAbunCutOff', 1, 'int');
-                    $cmd .= ' --num_threads ' . LoadConfig::getParam($rH_cfg, 'clustering', 'num_threads', 1, 'int');
-                    #$cmd .= ' --start_at 4';
-                
-                    $ro_job->addCommand($cmd);
-                }
-        return $ro_job;
-}
+                        ]
+    job.command="""
+                     memtime 
+                     clustering3.pl
+                     --infile_fastq infile;
+                     --ref_db ' . LoadConfig::getParam( 'DB', 'chimeras', 1, 'filepath'); 
+                     --barcodes barcodes;
+                     --outdir outdir;
+                 --lowAbunCutOff ' . LoadConfig::getParam( 'clustering', 'lowAbunCutOff', 1, 'int');
+                     --num_threads ' . LoadConfig::getParam( 'clustering', 'num_threads', 1, 'int');
+                    # --start_at 4""".format(
 
-sub clientReport{
-      my $rH_cfg        = shift;
-      my $iniFilePath   = shift;
-      my $projectPath   = shift;
-      my $pipelineType  = shift;
-      my $reportPath    = shift;
+         )
+        return job
+
+def clientReport(iniFilePath, projectPath, pipelineType, reportPath):
         
-      my $pipeline = 'pipeline=\"' .$pipelineType .'\",';
-        my $titleTMP = LoadConfig::getParam($rH_cfg, 'report','projectName');
-        my $title = 'report.title=\"' .$titleTMP .'\",';
-        my $authorTMP = LoadConfig::getParam($rH_cfg, 'report','report.author');
-        my $author = 'report.author=\"' .$authorTMP .'\",';
-        my $contactTMP = LoadConfig::getParam($rH_cfg, 'report','report.contact');
-        my $contact = 'report.contact=\"' .$contactTMP .'\",';
+      my pipeline = 'pipeline=\"' .pipelineType .'\",
+        my titleTMP = LoadConfig::getParam( 'report','projectName');
+        my title = 'report.title=\"' .titleTMP .'\",
+        my authorTMP = LoadConfig::getParam( 'report','report.author');
+        my author = 'report.author=\"' .authorTMP .'\",
+        my contactTMP = LoadConfig::getParam( 'report','report.contact');
+        my contact = 'report.contact=\"' .contactTMP .'\",
 
-        my $ro_job = new Job();
-        #$ro_job->testInputOutputs([$iniFilePath],[$projectPath]]);
-        $ro_job->setUp2Date(0);
+        
+        #job = Job([iniFilePath],[projectPath]]);
+        ro_job->setUp2Date(0);
 
-        if (!$ro_job->isUp2Date()) {
-                    my $cmd = '';
-                $cmd .= LoadConfig::moduleLoad($rH_cfg, [
+        
+                    
+                [
                           ['R', 'moduleVersion.R']
-                        ]) . ' && ';
-                    $cmd .= ' R --no-save -e \'library(gqSeqUtils) ;';
-                    $cmd .= ' mugqicPipelineReport(';
-                    $cmd .= ' pipeline=\"' . $pipelineType . '\",';
-                    $cmd .= ' report.path=\"' . $reportPath . '\",';
-                    $cmd .= ' ini.file.path=\"' . $iniFilePath . '\",' ;
-                    $cmd .= ' report.title=\"' . LoadConfig::getParam($rH_cfg, 'report','projectName') . '\",' ;
-                    $cmd .= ' report.author=\"' . LoadConfig::getParam($rH_cfg, 'report','report.author') . '\",' ;
-                    $cmd .= ' report.contact=\"' . LoadConfig::getParam($rH_cfg, 'report','report.contact') . '\",' ;
-                    $cmd .= ' project.path=\"' . $projectPath . '\")\'' ;
+                        ]
+    job.command="""
+                     R --no-save -e \'library(gqSeqUtils) ;
+                     mugqicPipelineReport(
+                     pipeline=\"pipelineType . '\",
+                     report.path=\"reportPath . '\",
+                     ini.file.path=\"iniFilePath . '\",' ;
+                     report.title=\"' . LoadConfig::getParam( 'report','projectName') . '\",' ;
+                     report.author=\"' . LoadConfig::getParam( 'report','report.author') . '\",' ;
+                     report.contact=\"' . LoadConfig::getParam( 'report','report.contact') . '\",' ;
+                     project.path=\"projectPath . '\")\'' ;""".format(
 
-                    $ro_job->addCommand($cmd);
-                }
+         )
 
-        return $ro_job;
-}
+                    
+        return job
 
-sub cleanup{
-        my $rH_cfg             = shift;
-        my $tmpdir             = shift;
+def cleanup(tmpdir):
         
-        my $ro_job = new Job();
-        $ro_job->testInputOutputs([""] , [""]);
-        
-        if (!$ro_job->isUp2Date()) {
-                    my $cmd = '';
-                $cmd .= LoadConfig::moduleLoad($rH_cfg, [
+        job = Job([""] , [""]);
+                [
                           ['memtime', 'moduleVersion.memtime']
-                        ]) . ' && ';
-                    $cmd .= ' memtime ';
-                    $cmd .= 'rm '.$tmpdir.' -rf';
-                
-                    $ro_job->addCommand($cmd);
-                }
-        return $ro_job;
-}
+                        ]
+    job.command="""
+                     memtime 
+                    rm '.tmpdir.' -rf""".format(
 
-sub templateSub{
-        my $rH_cfg             = shift;
-        my $outdir             = shift;
+         )
+        return job
+
+def templateSub(outdir):
         
-        my $ro_job = new Job();
-        $ro_job->testInputOutputs(undef , undef);
-        
-        if (!$ro_job->isUp2Date()) {
-                    my $cmd = '';
-                $cmd .= LoadConfig::moduleLoad($rH_cfg, [
+        job = Job(undef , undef);
+                [
                           ['memtime', 'moduleVersion.memtime']
-                        ]) . ' && ';
-                    $cmd .= ' memtime ';
+                        ]
+    job.command="""
+                     memtime """.format(
 
-                
-                    $ro_job->addCommand($cmd);
-                }
-        return $ro_job;
-}
+         )
+        return job
 
 
