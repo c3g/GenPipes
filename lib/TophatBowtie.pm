@@ -58,15 +58,15 @@ sub align {
 
 #   #------ flefebvr Tue 16 Apr 09:04:33 2013 
 #   # Bowtie index basename (assumes reference fasta is named basename.extension) 
-#   (my $bwa_idx_basename  = LoadConfig::getParam($rH_cfg, 'align', 'bowtieRefIndex')) =~ s/\.[^.]+$//;
+#   (my $bowtie_idx_basename  = LoadConfig::getParam($rH_cfg, 'align', 'bowtieRefIndex')) =~ s/\.[^.]+$//;
 #   #------
   ####mbourgey - Francois' change does not works when using hg1k
 
-  my $bwa_idx_basename ;
+  my $bowtie_idx_basename ;
   if (-e LoadConfig::getParam($rH_cfg, 'align','referenceFasta', 1, 'filepath') . '.1.bt2') {
-    $bwa_idx_basename = LoadConfig::getParam($rH_cfg, 'align', 'referenceFasta', 1, 'filepath');
+    $bowtie_idx_basename = LoadConfig::getParam($rH_cfg, 'align', 'referenceFasta', 1, 'filepath');
   } else {
-    ($bwa_idx_basename = LoadConfig::getParam($rH_cfg, 'align', 'referenceFasta', 1, 'filepath')) =~ s/\.[^.]+$//;
+    ($bowtie_idx_basename = LoadConfig::getParam($rH_cfg, 'align', 'referenceFasta', 1, 'filepath')) =~ s/\.[^.]+$//;
   }
   
   
@@ -114,7 +114,7 @@ sub align {
 
     #------ flefebvr Tue 16 Apr 09:04:54 2013 
     #$command .= ' ' . LoadConfig::getParam($rH_cfg, 'align', 'bowtieRefIndex');
-    $command .= ' ' . $bwa_idx_basename;
+    $command .= ' ' . $bowtie_idx_basename;
     #------
 
     $command .= ' ' . $pair1;
