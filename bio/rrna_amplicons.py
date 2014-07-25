@@ -134,7 +134,7 @@ memtime barcodes.pl \\
     infile = infile,
     outfile = outfile,
     num_threads = config.param( 'barcodes', 'num_threads', 1, 'int'),
-    log = {log}
+    log = log
     )
     
     return job
@@ -160,7 +160,7 @@ memtime removeUnpaired.pl \\
     outfile_paired = outfile_paired,
     outfile_1 = outfile_1,
     outfile_2 = outfile_2,
-    num_threads =  config.param( 'remove_unpaired', 'num_threads', 1, 'int');
+    num_threads =  config.param( 'remove_unpaired', 'num_threads', 'int')
     )
                 
     return job
@@ -189,8 +189,7 @@ memtime splitPairs.pl \\
     num_threads = config.param( 'split_pairs', 'num_threads', 'int')
     )
                 
-                    
-        return job
+    return job
 
 def generateQscoreSheet(infile, prefix, log, outfile, barcodes):
                 
@@ -216,15 +215,13 @@ memtime qscoreSheets.pl \\
  --phred {phred} \\
  --barcodes {barcodes} \\
  --num_threads {num_threads}""".format(
-    infile = infile,
-    tmp = tmp,
-    suffix = suffix,
-    log = log,
-    outfile = outfile,
-    tmp = config.param('DEFAULT', 'tmpDir', 'dirpath'),
-    phred = config.param('DEFAULT', 'qual', 'int'),
-    config.param( 'qscore_sheet', 'num_threads', 'int')
-
+        infile = infile,
+        suffix = suffix,
+        log = log,
+        outfile = outfile,
+        tmp = config.param('default', 'tmpDir', 'dirpath'),
+        phred = config.param('default', 'qual', 'int'),
+        num_threads = config.param('qscore_sheet', 'num_threads', 'int')
     )
                     
     return job
@@ -293,6 +290,7 @@ def cutReads(infile, begin, end, outfile):
             ['tools', 'moduleVersion.tools'],
             ['perl', 'moduleVersion.perl']
         ]
+    )
 
     job.command="""
 memtime cutFastqSeq.pl \\
@@ -310,15 +308,16 @@ memtime cutFastqSeq.pl \\
 
 def flash(infileR1, infileR2, prefix, outdir):
                 
-        job = Job(
-            [infileR1, infileR2], 
-            [outdir.'/assembly_complete/ncontam_nphix_trimmed.extendedFrags.fastq'],
-            [
-                ['memtime', 'moduleVersion.memtime'],
-                ['flash', 'moduleVersion.flash'],
-                ['tools', 'moduleVersion.tools'],
-                ['perl', 'moduleVersion.perl']
-            ]
+    job = Job(
+        [infileR1, infileR2], 
+        [outdir + "/assembly_complete/ncontam_nphix_trimmed.extendedFrags.fastq"],
+        [
+            ['memtime', 'moduleVersion.memtime'],
+            ['flash', 'moduleVersion.flash'],
+            ['tools', 'moduleVersion.tools'],
+            ['perl', 'moduleVersion.perl']
+        ]
+    )
     job.command="""
 memtime flash.pl \\
 --infile_1 {infileR1} \\
@@ -358,258 +357,324 @@ def removePrimers(infile, revPrimer, fwdPrimer, outfile,  outfileFailed):
 
     job.command="""
 memtime itagsQC.pl \\
- --infile {infile} \\
-if(revPrimer ne 'null'){
-                 --primer_3_prime revPrimer;
-                 --length_3_prime ' . LoadConfig::getParam( 'itags_QC', 'length3Prime', 1, 'int'); 
-            }if(fwdPrimer ne 'null'){
-                             --primer_5_prime fwdPrimer;
-                             --length_5_prime ' . LoadConfig::getParam( 'itags_QC', 'length5Prime', 1, 'int') ;    
-                        }
-# --qscore_1 ' . LoadConfig::getParam( 'itags_QC', 'qscore1');
-# --qscore_2 ' . LoadConfig::getParam( 'itags_QC', 'qscore2');
- --outfile outfile;
- --outfile_failed outfileFailed;
- --num_threads ' . LoadConfig::getParam( 'itags_QC', 'num_threads', 1, 'int');
- --qual ' . LoadConfig::getParam( 'default', 'qual', 1, 'int');
-# --lq_threshold ' . LoadConfig::getParam( 'itags_QC', 'lq_threshold');
- --primer_mismatch ' . LoadConfig::getParam( 'itags_QC', 'primerMismatch', 1, 'int');
-# --min_length ' . LoadConfig::getParam( 'itags_QC', 'minlength');
-# --N ' . LoadConfig::getParam( 'itags_QC', 'N');""".format(
+ --infile {infile} \\""".format(
+    infile = infile
+    )
 
-         )
-        return job
+    if(revPrimer != "null"):
+        job.command+="""
+--primer_3_prime {revPrimer} \\
+--length_3_prime {length_3_prime} \\""".format(
+        revPrimer = revPrimer,
+        length_3_prime = config.param('itags_QC', 'length3Prime', 'int')
+        )
+    
+    if(fwdPrimer != "null"):
+        job.command+="""
+--primer_5_prime {fwdPrimer} \\
+--length_5_prime {length_5_prime} \\""".format(
+        fwdPrimer = fwdPrimer,
+        length_5_prime = config.param('itags_QC', 'length5Prime', 'int')
+        )
+ 
+    job.command+="""
+ --outfile {outfile} \\
+ --outfile_failed {outfileFailed} \\
+ --num_threads {num_threads} \\
+ --qual {qual} \\
+ --primer_mismatch {primer_mismatch}""".format(
+        num_threads = config.param('itags_QC', 'num_threads', 'int'),
+        qual = config.param('default', 'qual', 'int'),
+        primer_mismatch = config.param('itags_QC', 'primerMismatch', 'int')
+    )
+
+    return job
 
 def itagsQC(infile, revPrimer, fwdPrimer, outfile, outfileFailed):
         
-        job = Job([infile] , [outfile]);
-                [
-                          ['memtime', 'moduleVersion.memtime'],
-                          ['tools', 'moduleVersion.tools'],
-                          ['perl', 'moduleVersion.perl']
-                        ]
-    job.command="""
-                     memtime 
-                    itagsQC.pl
-                     --infile infile;
-                    if(revPrimer ne 'null'){
-                                     --primer_3_prime revPrimer;
-                                     --length_3_prime ' . LoadConfig::getParam( 'itags_QC', 'length3Prime', 1, 'int'); 
-                                }if(fwdPrimer ne 'null'){
-                                                 --primer_5_prime fwdPrimer;
-                                                 --length_5_prime ' . LoadConfig::getParam( 'itags_QC', 'length5Prime', 1, 'int') ;    
-                                            }
-                     --qscore_1 ' . LoadConfig::getParam( 'itags_QC', 'qscore1', 1, 'int');
-                     --qscore_2 ' . LoadConfig::getParam( 'itags_QC', 'qscore2', 1, 'int');
-                     --outfile outfile;
-                     --outfile_failed outfileFailed;
-                     --num_threads ' . LoadConfig::getParam( 'itags_QC', 'num_threads', 1, 'int');
-                     --qual ' . LoadConfig::getParam( 'default', 'qual', 1, 'int');
-                     --lq_threshold ' . LoadConfig::getParam( 'itags_QC', 'lq_threshold', 1, 'int');
-                     --primer_mismatch ' . LoadConfig::getParam( 'itags_QC', 'primerMismatch', 1, 'float');
-                     --min_length ' . LoadConfig::getParam( 'itags_QC', 'minlength', 1, 'int');
-                     --N ' . LoadConfig::getParam( 'itags_QC', 'N', 1, 'int');""".format(
+    job = Job(
+        [infile],
+        [outfile],
+        [
+            ['memtime', 'moduleVersion.memtime'],
+            ['tools', 'moduleVersion.tools'],
+            ['perl', 'moduleVersion.perl']
+        ]
+    )
 
-         )
+    job.command="""
+memtime  itagsQC.pl
+ --infile {infile} \\""".format(
+     infile = infile
+    )
+
+    if(revPrimer != "null"):
+        job.command+="""
+--primer_3_prime {revPrimer} \\
+--length_3_prime {length_3_prime} \\""".format(
+            revPrimer = revPrimer,
+            length_3_prime = config.param('itags_QC', 'length3Prime', 'int') 
+        )
+
+    if(fwdPrimer != "null"):
+        job.command+="""
+--primer_5_prime {fwdPrimer} \\
+--length_5_prime {length_5_prime} \\""".format(
+            fwdPrimer = fwdPrimer,
+            length_5_prime = config.param( 'itags_QC', 'length5Prime', 'int')
+        )
+    job.command+="""
+ --qscore_1 {qscore1} \\
+ --qscore_2 {qscore2} \\
+ --outfile {outfile}
+ --outfile_failed {outfileFailed}
+ --num_threads {num_threads} \\
+ --qual {qual} \\
+ --lq_threshold {lq_threshold} \\
+ --primer_mismatch {primer_mismatch} \\
+ --min_length {min_length} \\
+ --N {N}""".format(
+        qscore_1 = config.param('itags_QC', 'qscore1', 'int'),
+        qscore_2 = config.param('itags_QC', 'qscore2', 'int'),
+        outfile = outfile,
+        outfile_failed = outfile_failed,
+        num_threads =  config.param('itags_QC', 'num_threads', 'int'),
+        qual = config.param('default', 'qual', 'int'),
+        lq_threshold = config.param('itags_QC', 'lq_threshold', 'int'),
+        primer_mismatch = config.param( 'itags_QC', 'primerMismatch', 'float'),
+        min_length = config.param('itags_QC', 'minlength', 'int'),
+        N = config.param('itags_QC', 'N', 'int')
+    )
                 
-                    
-        return job
+    return job
 
 def countReport(rA_files, rA_names, analysisType, barcodesDist, OTUtable, obsTable, outfile):
         
-    job = Job([OTUtable], [outfile]);
-                [
-                          ['memtime', 'moduleVersion.memtime'],
-                          ['tools', 'moduleVersion.tools'],
-                          ['perl', 'moduleVersion.perl']
-                        ]
-    job.command="""
-                     memtime 
-                    countReport.pl
-                    foreach(@rA_files){
-                                     --file ' ._;
-                                }
-                    foreach(@rA_names){
-                                     --name ' ._;
-                                }
-                     --analysisType analysisType;
-                     --barcodesDist '. barcodesDist;
-                     --OTUtable OTUtable;
-                     --obsTable obsTable;
-                     > ' .outfile;""".format(
+    job = Job(
+        [OTUtable],
+        [outfile],
+        [
+            ['memtime', 'moduleVersion.memtime'],
+            ['tools', 'moduleVersion.tools'],
+            ['perl', 'moduleVersion.perl']
+        ]
+    )
+    
+    cmd = "memtime countReport.pl \\"
 
-         )
-                
+    for file in rA_files:
+        cmd += " --file " + file
+
+    for name in rA_names:
+        cmd += " --name " + name
+        cmd += " --analysisType " + analysisType
+        cmd += " --barcodesDist " + barcodesDist
+        cmd += " --OTUtable " + OTUtable
+        cmd += " --obsTable " + obsTable
+        cmd += " > " + outfile
+     
+    job.command = cmd
                     
-        return job
+    return job
 
 def txtToPdf(infile, outfile):
                 
-        job = Job([infile], [outfile]);
-                [
-                          ['memtime', 'moduleVersion.memtime'],
-                          ['tools', 'moduleVersion.tools'],
-                          ['perl', 'moduleVersion.perl']
-                        ]
+    job = Job(
+        [infile],
+        [outfile],
+        [
+            ['memtime', 'moduleVersion.memtime'],
+            ['tools', 'moduleVersion.tools'],
+            ['perl', 'moduleVersion.perl']
+        ]
+    )
     job.command="""
-                     memtime 
-                    txtToPdf.pl
-                     --infile infile;
-                     --outfile outfile;""".format(
-
-         )
-        return job
+memtime txtToPdf.pl
+--infile {infile}
+--outfile {outfile}""".format(
+        infile = infile,
+        outfile = outfile
+    )
+    return job
 
 def mergePdf(command):
         
-        my dummyOutfile       = "mergepdf.mugqic.done";
+    dummyOutfile = "mergepdf.mugqic.done";
         
-        job = Job([""] , [dummyOutfile]);
-        
-        
-                    
-                [
-                          ['memtime', 'moduleVersion.memtime'],
-                          ['ghostscript', 'moduleVersion.ghostscript'],
-                          ['tools', 'moduleVersion.tools'],
-                          ['perl', 'moduleVersion.perl']
-                        ]
+    job = Job(
+        [""],
+        [dummyOutfile],
+        [
+            ['memtime', 'moduleVersion.memtime'],
+            ['ghostscript', 'moduleVersion.ghostscript'],
+            ['tools', 'moduleVersion.tools'],
+            ['perl', 'moduleVersion.perl']
+        ]
+    )
+    
     job.command="""
-                     memtime 
-                     command;
-                     && touch dummyOutfile; """.format(
+memtime {command} \\
+&& touch {dummyOutfile}; """.format(
+        command = command,
+        dummyOutfile = dummyOutfile
+    )
 
-         )
-
-                    
-        return job
+    return job
 
 def clustering1(infile, barcodes, outdir):
         
-        job = Job([infile], ["outdir/obs_filtered.fasta", "outdir/obs_filtered.tsv"]);
-                [
-                          ['memtime', 'moduleVersion.memtime'],
-                          ['usearch', 'moduleVersion.usearch'],
-                          ['tools', 'moduleVersion.tools'],
-                          ['perl', 'moduleVersion.perl']
-                        ]
+    job = Job(
+        [infile],
+        ["outdir/obs_filtered.fasta", "outdir/obs_filtered.tsv"],
+        [
+            ['memtime', 'moduleVersion.memtime'],
+            ['usearch', 'moduleVersion.usearch'],
+            ['tools', 'moduleVersion.tools'],
+            ['perl', 'moduleVersion.perl']
+        ]
+    )
     job.command="""
-                     memtime 
-                     clustering1.pl
-                     --infile_fastq infile;
-                     --ref_db ' . LoadConfig::getParam( 'DB', 'chimeras', 1, 'filepath'); 
-                     --barcodes barcodes;
-                     --outdir outdir;
-                     --num_threads ' . LoadConfig::getParam( 'clustering', 'num_threads', 1, 'int');
-                    # --start_at 4""".format(
+memtime clustering1.pl \\
+--infile_fastq {infile} \\
+--ref_db {ref_db} \\
+--barcodes {barcodes} \\
+--outdir {outdir} \\
+--num_threads {num_threads}.""".format(
+    infile = infile,
+    barcodes = barcodes,
+    ref_db =  config.param( 'DB', 'chimeras', 'filepath'),
+    outdir = outdir,
+    num_threads = config.param( 'clustering', 'num_threads', 1, 'int')
+    )
 
-         )
-        return job
+    return job
 
 def clustering2(infile, barcodes, outdir):
         
-        job = Job([infile], ["outdir/obs_filtered.fasta", "outdir/obs_filtered.tsv"]);
-                [
-                          ['memtime', 'moduleVersion.memtime'],
-                          ['usearch', 'moduleVersion.usearch'],
-                          ['tools', 'moduleVersion.tools'],
-                          ['perl', 'moduleVersion.perl']
-                        ]
+    job = Job(
+        [infile],
+        ["outdir/obs_filtered.fasta", "outdir/obs_filtered.tsv"],
+        [
+            ['memtime', 'moduleVersion.memtime'],
+            ['usearch', 'moduleVersion.usearch'],
+            ['tools', 'moduleVersion.tools'],
+            ['perl', 'moduleVersion.perl']
+        ]
+    )
     job.command="""
-                     memtime 
-                     clustering2.pl
-                     --infile_fastq infile;
-                     --ref_db ' . LoadConfig::getParam( 'DB', 'chimeras', 1, 'path'); 
-                     --barcodes barcodes;
-                     --outdir outdir;
-                     --num_threads ' . LoadConfig::getParam( 'clustering', 'num_threads', 1, 'int');
-                    # --start_at 4""".format(
-
-         )
-        return job
+memtime clustering2.pl \\
+--infile_fastq {infile} \\
+--ref_db {ref_db} \\ 
+--barcodes {barcodes} \\
+--outdir {outdir} \\
+--num_threads {num_threads}""".format(
+        infile = infile,
+        ref_db = config.param( 'DB', 'chimeras', 1, 'path'),
+        barcodes = barcodes,
+        outdir = outdir,
+        num_threads = config.param( 'clustering', 'num_threads', 'int')
+    )
+    return job
 
 def clustering3(infile, barcodes, outdir):
         
-        job = Job([infile], ["outdir/obs_filtered.fasta", "outdir/obs_filtered.tsv"]);
-                [
-                          ['memtime', 'moduleVersion.memtime'],
-                          ['usearch', 'moduleVersion.usearch'],
-                          ['dnaclust', 'moduleVersion.dnaclust'],
-                          ['tools', 'moduleVersion.tools'],
-                          ['perl', 'moduleVersion.perl']
-                        ]
-    job.command="""
-                     memtime 
-                     clustering3.pl
-                     --infile_fastq infile;
-                     --ref_db ' . LoadConfig::getParam( 'DB', 'chimeras', 1, 'filepath'); 
-                     --barcodes barcodes;
-                     --outdir outdir;
-                 --lowAbunCutOff ' . LoadConfig::getParam( 'clustering', 'lowAbunCutOff', 1, 'int');
-                     --num_threads ' . LoadConfig::getParam( 'clustering', 'num_threads', 1, 'int');
-                    # --start_at 4""".format(
+    job = Job(
+        [infile],
+        ["outdir/obs_filtered.fasta", "outdir/obs_filtered.tsv"],
+        [
+            ['memtime', 'moduleVersion.memtime'],
+            ['usearch', 'moduleVersion.usearch'],
+            ['dnaclust', 'moduleVersion.dnaclust'],
+            ['tools', 'moduleVersion.tools'],
+            ['perl', 'moduleVersion.perl']
+        ]
+    )
 
-         )
-        return job
+    job.command="""
+memtime clustering3.pl \\
+--infile_fastq {infile} \\
+--ref_db {ref_db} \\ 
+--barcodes {barcodes} \\
+--outdir {outdir} \\
+--lowAbunCutOff {lowAbunCutoff} \\
+--num_threads {num_threads}""".format(
+    infile = infile,
+    ref_db =  config.param('DB', 'chimeras', 'filepath'),
+    barcodes = barcodes,
+    outdir = outdir,
+    lowAbunCutoff = config.param('clustering', 'lowAbunCutOff', 'int'),
+    num_threads =  config.param('clustering', 'num_threads', 'int')
+    )
+    
+    return job
 
 def clientReport(iniFilePath, projectPath, pipelineType, reportPath):
         
-      my pipeline = 'pipeline=\"' .pipelineType .'\",
-        my titleTMP = LoadConfig::getParam( 'report','projectName');
-        my title = 'report.title=\"' .titleTMP .'\",
-        my authorTMP = LoadConfig::getParam( 'report','report.author');
-        my author = 'report.author=\"' .authorTMP .'\",
-        my contactTMP = LoadConfig::getParam( 'report','report.contact');
-        my contact = 'report.contact=\"' .contactTMP .'\",
+    pipeline = "pipeline=\"" + pipelineType + "\""
+    titleTMP = config.param('report', 'projectName')
+    title = "report.title=\"" + titleTMP + "\""
+    authorTMP = config.param('report', 'report.author')
+    author = "report.author=\"" + authorTMP + "\""
+    contactTMP = config.param('report', 'report.contact')
+    contact = "report.contact=\"" + contactTMP + "\""
 
-        
-        #job = Job([iniFilePath],[projectPath]]);
-        ro_job->setUp2Date(0);
+    job = Job(
+        [iniFilePath],
+        [projectPath],
+        [
+            ['R', 'moduleVersion.R']
+        ]
+    )
 
-        
-                    
-                [
-                          ['R', 'moduleVersion.R']
-                        ]
     job.command="""
-                     R --no-save -e \'library(gqSeqUtils) ;
-                     mugqicPipelineReport(
-                     pipeline=\"pipelineType . '\",
-                     report.path=\"reportPath . '\",
-                     ini.file.path=\"iniFilePath . '\",' ;
-                     report.title=\"' . LoadConfig::getParam( 'report','projectName') . '\",' ;
-                     report.author=\"' . LoadConfig::getParam( 'report','report.author') . '\",' ;
-                     report.contact=\"' . LoadConfig::getParam( 'report','report.contact') . '\",' ;
-                     project.path=\"projectPath . '\")\'' ;""".format(
-
-         )
-
-                    
-        return job
+R --no-save -e \'library(gqSeqUtils) \\
+mugqicPipelineReport( \\
+  pipeline="{pipelineType}", \\
+  report.path="{reportPath}", \\
+  ini.file.path="{iniFilePath}", \\
+  report.title="{project_name}", \\
+  report.author="{project_author}", \\
+  report.contact="{report_contact}", \\
+  project.path="{projectPath}" """.format(
+        pipelineType = pipelineType,
+        reportPath = reportPath,
+        iniFilePath = iniFilePath,
+        projectName = titleTMP,
+        project_author = authorTMP,
+        report_contact = contactTMP,
+        projectPath = projectPath
+    )
+                
+    return job
 
 def cleanup(tmpdir):
         
-        job = Job([""] , [""]);
-                [
-                          ['memtime', 'moduleVersion.memtime']
-                        ]
+    job = Job(
+        [""], 
+        [""],
+        [
+            ['memtime', 'moduleVersion.memtime']
+        ]
+    )
+    
     job.command="""
-                     memtime 
-                    rm '.tmpdir.' -rf""".format(
-
-         )
-        return job
+memtime \\
+rm  {tmpdir} -rf""".format(
+    tmpdir = tmpdir
+    )
+    return job
 
 def templateSub(outdir):
         
-        job = Job(undef , undef);
-                [
-                          ['memtime', 'moduleVersion.memtime']
-                        ]
-    job.command="""
-                     memtime """.format(
+    job = Job(
+        ["undef"],
+        ["undef"],
+        [
+            ['memtime', 'moduleVersion.memtime']
+        ]
+    )
+    job.command="memtime"
 
-         )
-        return job
+    return job
 
 
