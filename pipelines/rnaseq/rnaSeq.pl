@@ -590,7 +590,7 @@ sub alignMetrics {
 	my $libraryType = LoadConfig::getParam($rH_cfg, 'default', 'libraryType');
 	my $rO_job = Metrics::rnaQc($rH_cfg, $sampleList, $outputFolder, $libraryType);
 	if(!$rO_job->isUp2Date()) {
-		SubmitToCluster::printSubmitCmd($rH_cfg, "rnaQc", LoadConfig::getParam($rH_cfg, 'rnaQc','projectName'), 'METRICSRNA', $mergingDependency, undef, $rO_job);
+		SubmitToCluster::printSubmitCmd($rH_cfg, "rnaQc", "RNASeQC", 'METRICSRNA', $mergingDependency, undef, $rO_job);
 	}
 
 	return $rO_job->getCommandJobId(0);
