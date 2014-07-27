@@ -56,19 +56,8 @@ sub align {
   my $laneDirectory = "alignment/" . $sampleName . "/run" . $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'} . "/";
   my $outputBAM = $laneDirectory . 'accepted_hits.bam';
 
-#   #------ flefebvr Tue 16 Apr 09:04:33 2013 
-#   # Bowtie index basename (assumes reference fasta is named basename.extension) 
-#   (my $bowtie_idx_basename  = LoadConfig::getParam($rH_cfg, 'align', 'bowtieRefIndex')) =~ s/\.[^.]+$//;
-#   #------
-  ####mbourgey - Francois' change does not works when using hg1k
-
-  my $bowtie_idx_basename ;
-  if (-e LoadConfig::getParam($rH_cfg, 'align','referenceFasta', 1, 'filepath') . '.1.bt2') {
-    $bowtie_idx_basename = LoadConfig::getParam($rH_cfg, 'align', 'referenceFasta', 1, 'filepath');
-  } else {
-    ($bowtie_idx_basename = LoadConfig::getParam($rH_cfg, 'align', 'referenceFasta', 1, 'filepath')) =~ s/\.[^.]+$//;
-  }
-  
+  # Bowtie index basename
+  my $bowtie_idx_basename = LoadConfig::getParam($rH_cfg, 'align', 'bowtieIndexBasename', 1, 'prefixpath'); ;
   
   # -G and --transcriptome-index options
   my $refFile      = LoadConfig::getParam($rH_cfg, 'align','referenceGtf',       0, 'filepath');
@@ -112,10 +101,7 @@ sub align {
     $command .= ' -p ' . LoadConfig::getParam($rH_cfg, 'align', 'TBAlnThreads', 1, 'int') . $refOption . ' ' . $otherOptions  ;
 #     $command .= ' -g ' . LoadConfig::getParam($rH_cfg, 'align', 'maxReadLocation');
 
-    #------ flefebvr Tue 16 Apr 09:04:54 2013 
-    #$command .= ' ' . LoadConfig::getParam($rH_cfg, 'align', 'bowtieRefIndex');
     $command .= ' ' . $bowtie_idx_basename;
-    #------
 
     $command .= ' ' . $pair1;
     if (defined($pair2)) {
