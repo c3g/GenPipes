@@ -71,6 +71,7 @@ sub rnaQc {
     if (defined($libraryType) && $libraryType eq "single") {
       $command .= ' -singleEnd';
     }
+	$command .= ' ' . LoadConfig::getParam($rH_cfg, 'rnaQc', 'rnaseqcOtherOptions', 0);
     $command .= ' -BWArRNA ' . LoadConfig::getParam($rH_cfg, 'rnaQc', 'ribosomalFasta', 1, 'filepath') . ' &&';
     $command .= ' zip -r ' . $outputFolder . '.zip ' . $outputFolder;
 
