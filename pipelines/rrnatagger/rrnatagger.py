@@ -23,21 +23,37 @@ from bio import rrna_amplicons
 
 from pipelines.illumina import illumina
 
+# Global scope variables
 log = logging.getLogger(__name__)
 
 class RRNATagger(illumina.Illumina):
+    #outdir             = config.param('default', 'currentDir')
+    #clustering_method  = config.param('clustering', 'clusteringMethod')
+    #lib_type           = config.param('default', 'libraryType')
+    #project_name       = config.param('default', 'projectName')
+    #if not project_name:
+    #    project_name       = "RRNATagger-project" 
+    #organism_type      = config.param('default', 'organism_type')
+    #barcodes           = os.path.abspath(self.args.barcodes)
+    
+    #outdir 
+    #clustering_method  
+    #lib_type
+    #project_name
+    #organism_type
+    #barcodes
 
     def merge_barcodes(self):
         # Merge all demultiplexed fastq files in one file. One file for reads1 and one file for reads2 of Illumina paired-end.
         # If library is Illumina single end or 454 or PacBio, only one file will be generated.
-        lib_type = config.param('default', 'libraryType', type='string')
+        #lib_type = config.param('default', 'libraryType', type='string')
         #raw_reads_dir = os.path.join("raw_reads", sample.name)
         outdir = os.path.curdir + "/raw_reads"
         jobs = []
         reads1 = []
         reads2 = []
         
-        if lib_type == "ex":
+        if self.lib_type == "ex":
             for readset in self.readsets: 
                 reads1.append(os.path.join("raw_reads", readset.sample.name, "run" + readset.run + "_" + readset.lane, readset.sample.name + "." + readset.library + "." + str(readset.quality_offset) + ".pair1.fastq.gz"))
                 reads2.append(os.path.join("raw_reads", readset.sample.name, "run" + readset.run + "_" + readset.lane, readset.sample.name + "." + readset.library + "." + str(readset.quality_offset) + ".pair2.fastq.gz"))
@@ -51,7 +67,7 @@ class RRNATagger(illumina.Illumina):
             job.name = "merge_barcodes"
             jobs.append(job)
 
-        elif lib_type == "nc1":
+        elif self.lib_type == "nc1":
             for readset in self.readsets: 
                 reads1.append(os.path.join("raw_reads", readset.sample.name, "run" + readset.run + "_" + readset.lane, readset.sample.name + "." + readset.library + "." + str(readset.quality_offset) + ".pair1.fastq.gz"))
             
@@ -63,7 +79,7 @@ class RRNATagger(illumina.Illumina):
             job.name = "merge_barcodes_reads1"
             jobs.append(job)
         
-        elif lib_type == "nc2":
+        elif self.lib_type == "nc2":
             for readset in self.readsets: 
                 reads2.append(os.path.join("raw_reads", readset.sample.name, "run" + readset.run + "_" + readset.lane, readset.sample.name + "." + readset.library + "." + str(readset.quality_offset) + ".pair2.fastq.gz"))
             
@@ -83,6 +99,18 @@ class RRNATagger(illumina.Illumina):
 
 
     def remove_contam(self):
+        duk_dir = outdir + "/duk"
+
+        job = rrna_amplicons.duk_wrapper(
+            infile_fastq,
+            duk_dir + "/contam.fastq",
+            duk_dir + "/ncontam.fastq",
+            duk_dir + "/duk_contam_log.txt",
+            config.param('DB', 'contaminants')
+        );
+        job.name = "duk_wrapper"
+        jobs.append(job)
+
         sys.stderr.write('not implemented yet\n')
 
     def split_barcodes(self):
@@ -135,12 +163,27 @@ class RRNATagger(illumina.Illumina):
             self.merge_barcodes
         ]
 
-    #def __init__(self):
+    def __init__(self):
         # Add pipeline specific arguments
-        #self.argparser.add_argument("-d", "--design", help="design file", type=file)
-    #    sys.stderr.write('Running rRNA amplicons pipeline\n')
-
+        self.argparser.add_argument("-b", "--barcodes", help="barcodes in fasta format", type=file)
+        sys.stderr.write('Running rRNA amplicons pipeline\n')
         
+        
+        #self.outdir = config.param('default', 'currentDir', type='filePath')
+        self.clustering_method = config.param('clustering', 'clusteringMethod', type='int')
+        #lib_type = config.param('default', 'libraryType', type='string')
+        self.project_name = config.param('default', 'projectName', type='string')
+        if not self.project_name:
+            self.project_name = "RRNATagger-project" 
+        #organism_type = config.param('default', 'organism_type', type='string')
+        self.lib_type = config.param('default', 'libraryType', type='string')
+        self.barcodes = os.path.abspath(self.args.barcodes)
+        
+        sys.stderr.write('lib_type:' + self.lib_type + '\n')
+        super(RRNATagger, self).__init__()
+       
+        
+ 
 RRNATagger().submit_jobs()
 
 # Steps from old Perl pipeline:
