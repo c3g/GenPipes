@@ -7,7 +7,7 @@ from core.config import *
 from core.job import *
 
 def flagstat(input, output):
-    job = Job([input], [output], [['samtools_flagstat', 'moduleVersion.samtools']])
+    job = Job([input], [output], [['samtools_flagstat', 'module_samtools']])
 
     job.command = \
 """samtools flagstat \\
@@ -20,13 +20,13 @@ def flagstat(input, output):
     return job
 
 def mpileup(input_bams, output, extra_options="", region=None, pair_calling=False):
-    job = Job(input_bams, [output], [['samtools_mpileup', 'moduleVersion.samtools']])
+    job = Job(input_bams, [output], [['samtools_mpileup', 'module_samtools']])
 
     job.command = \
 """samtools mpileup {extra_options} \\
   -f {reference_fasta}{region}{input_bams}{output}""".format(
         extra_options=extra_options,
-        reference_fasta=config.param('samtools_mpileup', 'referenceFasta', type='filepath'),
+        reference_fasta=config.param('samtools_mpileup', 'genome_fasta', type='filepath'),
         region=" \\\n  -r " + region if region else "",
         input_bams="".join([" \\\n  " + input_bam for input_bam in input_bams]),
         output=" \\\n  > " + output if output else ""
@@ -35,11 +35,11 @@ def mpileup(input_bams, output, extra_options="", region=None, pair_calling=Fals
     return job
 
 def sort(input_bam, output_prefix):
-    job = Job([input_bam], [output_prefix + ".bam"], [['samtools_sort', 'moduleVersion.samtools']])
+    job = Job([input_bam], [output_prefix + ".bam"], [['samtools_sort', 'module_samtools']])
 
     job.command = \
-"""samtools sort {extra_sort_flags} {input_bam} {output_prefix}""".format(
-        extra_sort_flags=config.param('samtools_sort', 'extraSortFlags', required=False),
+"""samtools sort {other_options} {input_bam} {output_prefix}""".format(
+        other_options=config.param('samtools_sort', 'other_options', required=False),
         input_bam=input_bam,
         output_prefix=output_prefix
     )
@@ -47,7 +47,7 @@ def sort(input_bam, output_prefix):
     return job
 
 def view(input, output=None, options=""):
-    job = Job([input], [output], [['samtools_view', 'moduleVersion.samtools']])
+    job = Job([input], [output], [['samtools_view', 'module_samtools']])
 
     job.command = \
 """samtools view {options} \\
@@ -60,7 +60,7 @@ def view(input, output=None, options=""):
     return job
 
 def bcftools_cat(inputs, output):
-    job = Job(inputs, [output], [['bcftools_cat', 'moduleVersion.samtools']])
+    job = Job(inputs, [output], [['bcftools_cat', 'module_samtools']])
 
     job.command = \
 """bcftools cat \\
@@ -72,7 +72,7 @@ def bcftools_cat(inputs, output):
     return job
 
 def bcftools_view(input, output, options="", pair_calling=False):
-    job = Job([input], [output], [['bcftools_view', 'moduleVersion.samtools']])
+    job = Job([input], [output], [['bcftools_view', 'module_samtools']])
 
     job.command = \
 """bcftools view {pair_calling} {options} \\

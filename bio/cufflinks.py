@@ -11,7 +11,7 @@ def cuffcompare(gtf_files, output_prefix, gtf_list):
     job = Job(
         gtf_files,
         [output_prefix + ".combined.gtf", output_prefix + ".TranscriptList.tsv"],
-        [['cuffcompare', 'moduleVersion.cufflinks'], ['cuffcompare', 'moduleVersion.tools']]
+        [['cuffcompare', 'module_cufflinks'], ['cuffcompare', 'module_tools']]
     )
 
     job.command = """\
@@ -29,7 +29,7 @@ formatDenovoCombinedGTF.py \\
         output_directory=os.path.dirname(output_prefix),
         output_prefix=output_prefix,
         reference_gff=config.param('cuffcompare', 'referenceGtf', type='filepath'),
-        reference_fasta=config.param('cuffcompare', 'referenceFasta', type='filepath'),
+        reference_fasta=config.param('cuffcompare', 'genome_fasta', type='filepath'),
         gtf_files=" \\\n  ".join(gtf_files),
         gtf_list=gtf_list
     )
@@ -47,20 +47,20 @@ def cuffdiff(sample_replicate_group_bams, gtf, output_directory):
     job = Job(
         input_bams + [gtf],
         [os.path.join(output_directory, "isoform_exp.diff")],
-        [['cuffcompare', 'moduleVersion.cufflinks']]
+        [['cuffcompare', 'module_cufflinks']]
     )
 
     job.command = """\
 mkdir -p {output_directory} && \\
 cuffdiff {other_options} \\
-  --frag-bias-correct {genome_fasta} \\
+  --frag-bias-correct {reference_fasta} \\
   --library-type {library_type} \\
   --output-dir {output_directory} \\
   --num-threads {num_threads} \\
   {gtf} \\
   {input_bams}""".format(
         other_options=config.param('cuffdiff', 'options'),
-        genome_fasta=config.param('cuffdiff', 'referenceFasta', type='filepath'),
+        reference_fasta=config.param('cuffdiff', 'genome_fasta', type='filepath'),
         library_type=config.param('cuffdiff', 'strandInfo'),
         output_directory=output_directory,
         num_threads=config.param('cuffdiff', 'numThreads', type='posint'),
@@ -76,7 +76,7 @@ def cufflinks(input_bam, output_directory, gtf=None):
     job = Job(
         [input_bam],
         [os.path.join(output_directory, "transcripts.gtf")],
-        [['cufflinks', 'moduleVersion.cufflinks']]
+        [['cufflinks', 'module_cufflinks']]
     )
 
     job.command = """\

@@ -7,7 +7,7 @@ from core.config import *
 from core.job import *
 
 def annotate_mappability(input, output):
-    job = Job([input], [output], [['annotate_mappability', 'moduleVersion.vcftools'], ['annotate_mappability', 'moduleVersion.tabix']])
+    job = Job([input], [output], [['annotate_mappability', 'module_vcftools'], ['annotate_mappability', 'module_tabix']])
 
     job.command = \
 """vcf-annotate \\
@@ -15,7 +15,7 @@ def annotate_mappability(input, output):
   -c CHROM,FROM,TO,INFO/MIL \\
   -a {annotations} \\
   {input}{output}""".format(
-        annotations=config.param('annotate_mappability', 'referenceMappabilityBedIndexed', type='filepath'),
+        annotations=config.param('annotate_mappability', 'genome_mappability_bed_indexed', type='filepath'),
         input=input,
         output=" \\\n  > " + output if output else ""
     )

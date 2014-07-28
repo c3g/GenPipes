@@ -12,7 +12,7 @@ def graph(input_bam, output_bed_graph, output_wiggle):
     job = Job(
         [input_bam],
         [output_bed_graph, output_wiggle],
-        [['bedtools', 'moduleVersion.samtools'], ['bedtools', 'moduleVersion.bedtools'], ['bedtools', 'moduleVersion.ucsc']]
+        [['bedtools', 'module_samtools'], ['bedtools', 'module_bedtools'], ['bedtools', 'module_ucsc']]
     )
 
     job.command = """\

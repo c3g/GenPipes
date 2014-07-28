@@ -22,7 +22,7 @@ def tophat(
     job = Job(
         [reads1, reads2],
         [os.path.join(output_directory, "accepted_hits.bam")],
-        [['tophat', 'moduleVersion.bowtie'], ['tophat', 'moduleVersion.samtools'], ['tophat', 'moduleVersion.tophat']]
+        [['tophat', 'module_bowtie'], ['tophat', 'module_samtools'], ['tophat', 'module_tophat']]
     )
 
     gtf = config.param('tophat', 'referenceGtf', required=False, type='filepath')

@@ -135,7 +135,7 @@ class RnaSeq(illumina.Illumina):
 
         job = metrics.rnaseqc(sample_file, output_directory, self.run_type == "SINGLE_END")
 
-        project_name = config.param('DEFAULT', 'projectName')
+        project_name = config.param('DEFAULT', 'project_name')
         job.command = """\
 mkdir -p {output_directory} && \\
 echo \\"Sample\tBamFile\tNote
@@ -246,7 +246,7 @@ zip -r {output_directory}.zip {output_directory}""".format(
         read_count_files = [os.path.join("raw_counts", sample.name + ".readcounts.csv") for sample in self.samples]
         output_matrix = os.path.join(output_directory, "rawCountMatrix.csv")
 
-        job = Job(read_count_files, [output_matrix], [['raw_counts_metrics', 'moduleVersion.tools']], name="metrics.matrix")
+        job = Job(read_count_files, [output_matrix], [['raw_counts_metrics', 'module_tools']], name="metrics.matrix")
 
         job.command = """\
 mkdir -p {output_directory} && \\

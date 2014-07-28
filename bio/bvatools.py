@@ -7,7 +7,7 @@ from core.config import *
 from core.job import *
 
 def resolve_readset_coverage_bed(readset):
-    coverage_target = config.param('depth_of_coverage', 'coverageTargets', required=False)
+    coverage_target = config.param('bvatools_depth_of_coverage', 'coverage_targets', required=False)
 
     if coverage_target:
         if coverage_target == "auto":
@@ -17,7 +17,7 @@ def resolve_readset_coverage_bed(readset):
                 return None
         else:
             # Add filepath validation
-            coverage_target = config.param('depth_of_coverage', 'coverageTargets', type='filepath')
+            coverage_target = config.param('bvatools_depth_of_coverage', 'coverage_targets', type='filepath')
             return coverage_target
     else:
         return None
@@ -25,18 +25,18 @@ def resolve_readset_coverage_bed(readset):
 # If per RG != 0 is given there will be multiple outputs, so output is a prefix
 # If per RG == 0 or undef, output is an actual file.
 def basefreq(input, output, positions, per_rg):
-    job = Job([input, positions], [output], [['basefreq', 'moduleVersion.java'], ['basefreq', 'moduleVersion.bvatools']])
+    job = Job([input, positions], [output], [['bvatools_basefreq', 'module_java'], ['bvatools_basefreq', 'module_bvatools']])
 
-    threads = config.param('basefreq', 'threads', type='int')
+    threads = config.param('bvatools_basefreq', 'threads', type='int')
 
     job.command = \
-"""java {extra_java_flags} -Xmx{ram} -jar \$BVATOOLS_JAR \\
+"""java {java_other_options} -Xmx{ram} -jar \$BVATOOLS_JAR \\
   basefreq \\
   --pos {positions} \\
   --bam {input}{per_rg}{threads} \\
   --out {output}""".format(
-        extra_java_flags=config.param('basefreq', 'extraJavaFlags'),
-        ram=config.param('basefreq', 'ram'),
+        java_other_options=config.param('bvatools_basefreq', 'java_other_options'),
+        ram=config.param('bvatools_basefreq', 'ram'),
         positions=positions,
         per_rg=" \\\n  --per_rg " if per_rg else "",
         threads=" \\\n  --useIndex --threads " + str(threads) if threads > 1 else "",
@@ -47,20 +47,20 @@ def basefreq(input, output, positions, per_rg):
     return job
 
 def depth_of_coverage(input, output, coverage_bed, reference_genome=""):
-    job = Job([input, coverage_bed], [output], [['depth_of_coverage', 'moduleVersion.java'], ['depth_of_coverage', 'moduleVersion.bvatools']])
+    job = Job([input, coverage_bed], [output], [['bvatools_depth_of_coverage', 'module_java'], ['bvatools_depth_of_coverage', 'module_bvatools']])
 
     if not reference_genome:
-        reference_genome=config.param('depth_of_coverage', 'referenceFasta', type='filepath')
+        reference_genome=config.param('bvatools_depth_of_coverage', 'genome_fasta', type='filepath')
 
     job.command = \
-"""java {extra_java_flags} -Xmx{ram} -jar \$BVATOOLS_JAR \\
-  depthofcoverage {extra_flags} \\
+"""java {java_other_options} -Xmx{ram} -jar \$BVATOOLS_JAR \\
+  depthofcoverage {other_options} \\
   --ref {reference_genome}{intervals} \\
   --bam {input} \\
   > {output}""".format(
-        extra_java_flags=config.param('depth_of_coverage', 'extraJavaFlags'),
-        ram=config.param('depth_of_coverage', 'ram'),
-        extra_flags=config.param('depth_of_coverage', 'extraFlags', required=False),
+        java_other_options=config.param('bvatools_depth_of_coverage', 'java_other_options'),
+        ram=config.param('bvatools_depth_of_coverage', 'ram'),
+        other_options=config.param('bvatools_depth_of_coverage', 'other_options', required=False),
         reference_genome=reference_genome,
         intervals=" \\\n  --intervals " + coverage_bed if coverage_bed else "",
         input=input,
@@ -69,17 +69,17 @@ def depth_of_coverage(input, output, coverage_bed, reference_genome=""):
 
     return job
 
-def fix_mate_by_coordinate(input, output):
-    job = Job([input], [output], [['fix_mate_by_coordinate', 'moduleVersion.java'], ['fix_mate_by_coordinate', 'moduleVersion.bvatools']])
+def groupfixmate(input, output):
+    job = Job([input], [output], [['bvatools_groupfixmate', 'module_java'], ['bvatools_groupfixmate', 'module_bvatools']])
 
     job.command = \
-"""java {extra_java_flags} -Xmx{ram} -jar \$BVATOOLS_JAR \\
+"""java {java_other_options} -Xmx{ram} -jar \$BVATOOLS_JAR \\
   groupfixmate \\
   --level 1 \\
   --bam {input} \\
   --out {output}""".format(
-        extra_java_flags=config.param('fix_mate_by_coordinate', 'extraJavaFlags'),
-        ram=config.param('fix_mate_by_coordinate', 'ram'),
+        java_other_options=config.param('bvatools_groupfixmate', 'java_other_options'),
+        ram=config.param('bvatools_groupfixmate', 'ram'),
         input=input,
         output=output
     )
@@ -87,20 +87,20 @@ def fix_mate_by_coordinate(input, output):
     return job
 
 def ratiobaf(basefreq, output_prefix, positions):
-    job = Job([basefreq, positions], [output_prefix + ".png"], [['ratiobaf', 'moduleVersion.java'], ['ratiobaf', 'moduleVersion.bvatools']])
+    job = Job([basefreq, positions], [output_prefix + ".png"], [['bvatools_ratiobaf', 'module_java'], ['bvatools_ratiobaf', 'module_bvatools']])
 
-    reference_dictionary = config.param('ratiobaf', 'referenceSequenceDictionary', type='filepath')
+    reference_dictionary = config.param('bvatools_ratiobaf', 'genome_dictionary', type='filepath')
 
     job.command = \
-"""java {extra_java_flags} -Xmx{ram} -jar \$BVATOOLS_JAR \\
-  ratiobaf {extra_flags} \\
+"""java {java_other_options} -Xmx{ram} -jar \$BVATOOLS_JAR \\
+  ratiobaf {other_options} \\
   --refdict {reference_dictionary} \\
   --snppos {positions} \\
   --basefreq {basefreq} \\
   --prefix {output_prefix}""".format(
-        extra_java_flags=config.param('ratiobaf', 'extraJavaFlags'),
-        ram=config.param('ratiobaf', 'ram'),
-        extra_flags=config.param('ratiobaf', 'extraFlags', required=False),
+        java_other_options=config.param('bvatools_ratiobaf', 'java_other_options'),
+        ram=config.param('bvatools_ratiobaf', 'ram'),
+        other_options=config.param('bvatools_ratiobaf', 'other_options', required=False),
         reference_dictionary=reference_dictionary,
         positions=positions,
         basefreq=basefreq,

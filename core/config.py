@@ -34,10 +34,10 @@ class Config(ConfigParser.SafeConfigParser):
         modules = []
 
         # Retrieve all unique module version values in config file
-        # assuming that all module key names contain "moduleVersion"
+        # assuming that all module key names start with "module_"
         for section in self.sections():
             for name, value in self.items(section):
-                if re.search("^moduleVersion\.", name) and value not in modules:
+                if re.search("^module_", name) and value not in modules:
                     modules.append(value)
 
         log.info("Check modules...")
@@ -53,6 +53,9 @@ class Config(ConfigParser.SafeConfigParser):
     # Retrieve param in config file with optional definition check and type validation
     # By default, parameter is required to be defined in the config file
     def param(self, section, option, required=True, type='string'):
+        # Store original section for future error message, in case 'DEFAULT' section is used eventually
+        original_section = section
+
         if not self.has_section(section):
             section = 'DEFAULT'
 
@@ -98,7 +101,7 @@ class Config(ConfigParser.SafeConfigParser):
             except Exception as e:
                 raise Exception("Error: parameter \"[" + section + "] " + option + "\" value \"" + self.get(section, option) + "\" is invalid!\n" + e.message)
         elif required:
-            raise Exception("Error: parameter \"[" + section + "] " + option + "\" is not defined in config file!")
+            raise Exception("Error: parameter \"[" + original_section + "] " + option + "\" is not defined in config file!")
         else:
             return ""
 

@@ -165,7 +165,7 @@ class RRNATagger(illumina.Illumina):
         job = metrics.rnaseqc(sample_file, output_directory, self.run_type == "SINGLE_END")
 
         sample_file_job = Job([os.path.join("alignment", sample.name, sample.name + ".merged.mdup.bam") for sample in self.samples], [sample_file])
-        project_name = config.param('DEFAULT', 'projectName')
+        project_name = config.param('DEFAULT', 'project_name')
         job.command = """\
 mkdir -p {output_directory} && \\
 echo \\"Sample\tBamFile\tNote

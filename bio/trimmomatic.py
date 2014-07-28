@@ -30,16 +30,16 @@ def trimmomatic(
         inputs = [input1]
         outputs = [singleOutput]
 
-    job = Job(inputs, outputs + [trim_log, trim_stats], [["trim", "moduleVersion.java"], ['trim', 'moduleVersion.trimmomatic']])
+    job = Job(inputs, outputs + [trim_log, trim_stats], [['trimmomatic', 'module_java'], ['trimmomatic', 'module_trimmomatic']])
 
     # Retrieve output directories removing duplicates if any
     output_dirs = list(collections.OrderedDict.fromkeys([os.path.dirname(output) for output in outputs]))
-    threads = config.param('trim', 'nbThreads', type='int')
-    adapter_file = config.param('trim', 'adapterFile', type='filepath')
-    clip_settings = config.param('trim', 'clipSettings')
-    min_quality = config.param('trim', 'minQuality', type='int')
-    min_length = config.param('trim', 'minLength', type='int')
-    headcrop = config.param('trim', 'headcrop', required=False, type='int')
+    threads = config.param('trimmomatic', 'threads', type='posint')
+    adapter_file = config.param('trimmomatic', 'adapter_fasta', type='filepath')
+    illumina_clip_settings = config.param('trimmomatic', 'illumina_clip_settings')
+    trailing_min_quality = config.param('trimmomatic', 'trailing_min_quality', type='int')
+    min_length = config.param('trimmomatic', 'min_length', type='posint')
+    headcrop_length = config.param('trimmomatic', 'headcrop_length', required=False, type='posint')
 
     job.command = \
 """mkdir -p {output_dirs} && \\
@@ -48,8 +48,8 @@ java -XX:ParallelGCThreads=1 -Xmx2G -jar \$TRIMMOMATIC_JAR {mode} \\
   -phred{quality_offset} \\
   {inputs} \\
   {outputs} \\
-  ILLUMINACLIP:{adapter_file}{clip_settings} \\
-  TRAILING:{min_quality} \\
+  ILLUMINACLIP:{adapter_file}{illumina_clip_settings} \\
+  TRAILING:{trailing_min_quality} \\
   MINLEN:{min_length}""".format(
         output_dirs=" ".join(output_dirs),
         mode = "PE" if input2 else "SE",
@@ -58,50 +58,20 @@ java -XX:ParallelGCThreads=1 -Xmx2G -jar \$TRIMMOMATIC_JAR {mode} \\
         inputs=" \\\n  ".join(inputs),
         outputs=" \\\n  ".join(outputs),
         adapter_file=adapter_file,
-        clip_settings=clip_settings,
-        min_quality=min_quality,
+        illumina_clip_settings=illumina_clip_settings,
+        trailing_min_quality=trailing_min_quality,
         min_length = min_length
     )
 
     if quality_offset == 64:
         job.command += " \\\n  TOPHRED33"
 
-    if headcrop and headcrop > 0:
-        job.command += " \\\n  HEADCROP:" + str(headcrop)
+    if headcrop_length:
+        job.command += " \\\n  HEADCROP:" + str(headcrop_length)
 
     job.command += " \\\n  2> " + trim_log
 
     # Compute statistics
     job.command += " && \\\ngrep ^Input " + trim_log + " | perl -pe 's/^Input Read Pairs: (\\d+).*Both Surviving: (\\d+).*Forward Only Surviving: (\\d+).*$/Raw Fragments,\\1\\nFragment Surviving,\\2\\nSingle Surviving,\\3/' > " + trim_stats
 
-    return job
-
-def normalize(input1, output1):
-    job = Job([input1], [output1])
-    job.command = "normalize " + input1 + " > " + output1
-    return job
-
-def trinity(normalized_readsets):
-    job = Job(normalized_readsets, ["Trinity.fasta", "Trinity_stats.csv"])
-    job.command = "trinity " + " ".join(normalized_readsets) + " > Trinity.fasta"
-    return job
-
-def blastx(input1):
-    job = Job([input1], ["blastx_nr.tsv"])
-    job.command = "blastx " + input1 + " > blastx_nr.tsv"
-    return job
-
-def rsem(reference, fasta):
-    job = Job([reference, fasta], ["rsem_" + fasta + ".fpkm"])
-    job.command = "rsem -db " + reference + " -input " + fasta
-    return job
-
-def trinotate(input1):
-    job = Job([input1], ["trinotate.tsv"])
-    job.command = "trinotate " + input1 + " > trinotate.tsv"
-    return job
-
-def nozzle(input_files, output1):
-    job = Job(input_files, [output1])
-    job.command = "nozzle " + " ".join(input_files) + " > " + output1
     return job

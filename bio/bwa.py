@@ -14,20 +14,20 @@ def mem(
     read_group=None
     ):
 
-    job = Job([in1fastq, in2fastq], [out_sam], [["mem", "moduleVersion.bwa"]])
+    job = Job([in1fastq, in2fastq], [out_sam], [["bwa_mem", "module_bwa"]])
 
     job.command = ""
     if out_sam:
         job.command += "mkdir -p " + os.path.dirname(out_sam) + " && \\\n"
 
-    idxbase = config.param('mem', 'bwaRefIndex', type='filepath')
-    extra_flags = config.param('mem', 'bwaExtraFlags')
+    idxbase = config.param('bwa_mem', 'genome_bwa_index', type='filepath')
+    other_options = config.param('bwa_mem', 'other_options')
 
     job.command += \
-"""bwa mem {extra_flags}{read_group} \\
+"""bwa mem {other_options}{read_group} \\
   {idxbase} \\
   {in1fastq}{in2fastq}{out_sam}""".format(
-        extra_flags=" \\\n  " + extra_flags if extra_flags else "",
+        other_options=" \\\n  " + other_options if other_options else "",
         read_group=" \\\n  -R " + read_group if read_group else "",
         idxbase=idxbase,
         in1fastq=in1fastq,

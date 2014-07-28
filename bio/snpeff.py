@@ -8,10 +8,10 @@ from core.job import *
 
 def compute_effects(input, output, split=False):
     output_stats = output + ".stats.csv"
-    job = Job([input], [output, output_stats], [['compute_effects', 'moduleVersion.java'], ['compute_effects', 'moduleVersion.snpeff']])
+    job = Job([input], [output, output_stats], [['compute_effects', 'module_java'], ['compute_effects', 'module_snpeff']])
 
     job.command = \
-"""java -Djava.io.tmpdir={tmp_dir} {extra_java_flags} -Xmx{ram} -jar \$SNPEFF_HOME/snpEff.jar eff {options} \\
+"""java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar \$SNPEFF_HOME/snpEff.jar eff {options} \\
   -c \$SNPEFF_HOME/snpEff.config \\
   -i vcf \\
   -o vcf \\
@@ -19,19 +19,19 @@ def compute_effects(input, output, split=False):
   -stats {output_stats} \\
   {reference_snpeff_genome} \\
   {input}{output}""".format(
-        tmp_dir=config.param('compute_effects', 'tmpDir'),
-        extra_java_flags=config.param('compute_effects', 'extraJavaFlags'),
+        tmp_dir=config.param('compute_effects', 'tmp_dir'),
+        java_other_options=config.param('compute_effects', 'java_other_options'),
         ram=config.param('compute_effects', 'ram'),
         options=config.param('compute_effects', 'options', required=False),
         output_stats=output_stats,
-        reference_snpeff_genome=config.param('compute_effects', 'referenceSnpEffGenome'),
+        reference_snpeff_genome=config.param('compute_effects', 'snpeff_genome'),
         input=input,
         output=" \\\n  > " + output if output else ""
     )
 
     if split:
         split_output_stats = output + ".statsFile.txt"
-        split_job = Job([output_stats], [split_output_stats], [['compute_effects', 'moduleVersion.tools']])
+        split_job = Job([output_stats], [split_output_stats], [['compute_effects', 'module_tools']])
         split_job.command = \
 """splitSnpEffStat.awk \\
   {output_stats} \\
@@ -48,16 +48,16 @@ def compute_effects(input, output, split=False):
 
 def snpsift_annotate(input, output):
 
-    job = Job([input], [output], [['snpsift_annotate', 'moduleVersion.java'], ['snpsift_annotate', 'moduleVersion.snpeff']])
+    job = Job([input], [output], [['snpsift_annotate', 'module_java'], ['snpsift_annotate', 'module_snpeff']])
 
     job.command = \
-"""java -Djava.io.tmpdir={tmp_dir} {extra_java_flags} -Xmx{ram} -jar \$SNPEFF_HOME/SnpSift.jar annotate \\
+"""java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar \$SNPEFF_HOME/SnpSift.jar annotate \\
   {db_snp} \\
   {input}{output}""".format(
-        tmp_dir=config.param('snpsift_annotate', 'tmpDir'),
-        extra_java_flags=config.param('snpsift_annotate', 'extraJavaFlags'),
+        tmp_dir=config.param('snpsift_annotate', 'tmp_dir'),
+        java_other_options=config.param('snpsift_annotate', 'java_other_options'),
         ram=config.param('snpsift_annotate', 'ram'),
-        db_snp=config.param('snpsift_annotate', 'dbSnp', type='filepath'),
+        db_snp=config.param('snpsift_annotate', 'dbsnp', type='filepath'),
         input=input,
         output=" \\\n  > " + output if output else ""
     )
@@ -66,16 +66,16 @@ def snpsift_annotate(input, output):
 
 def snpsift_dbnsfp(input, output):
 
-    job = Job([input], [output], [['snpsift_dbnsfp', 'moduleVersion.java'], ['snpsift_dbnsfp', 'moduleVersion.snpeff']])
+    job = Job([input], [output], [['snpsift_dbnsfp', 'module_java'], ['snpsift_dbnsfp', 'module_snpeff']])
 
     job.command = \
-"""java -Djava.io.tmpdir={tmp_dir} {extra_java_flags} -Xmx{ram} -jar \$SNPEFF_HOME/SnpSift.jar dbnsfp \\
+"""java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar \$SNPEFF_HOME/SnpSift.jar dbnsfp \\
   -v {db_nsfp} \\
   {input}{output}""".format(
-        tmp_dir=config.param('snpsift_dbnsfp', 'tmpDir'),
-        extra_java_flags=config.param('snpsift_dbnsfp', 'extraJavaFlags'),
+        tmp_dir=config.param('snpsift_dbnsfp', 'tmp_dir'),
+        java_other_options=config.param('snpsift_dbnsfp', 'java_other_options'),
         ram=config.param('snpsift_dbnsfp', 'ram'),
-        db_nsfp=config.param('snpsift_dbnsfp', 'dbNSFP', type='filepath'),
+        db_nsfp=config.param('snpsift_dbnsfp', 'dbnsfp', type='filepath'),
         input=input,
         output=" \\\n  > " + output if output else ""
     )

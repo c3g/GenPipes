@@ -14,7 +14,7 @@ def merge_barcodes(reads1, reads2, outdir):
     job = Job(
         reads1 + reads2, 
         [outfile1, outfile2],
-        [['tools', 'moduleVersion.tools'], ['memtime', 'moduleVersion.memtime']]
+        [['tools', 'module_tools'], ['memtime', 'module_memtime']]
     )
 
     job.command = """\
@@ -64,10 +64,10 @@ sub dukWrapper{
         if (!$ro_job->isUp2Date()) {
                     my $cmd = '';
                 $cmd .= LoadConfig::moduleLoad($rH_cfg, [
-                          ['memtime', 'moduleVersion.memtime'],
-                          ['tools', 'moduleVersion.tools'],
-                          ['perl', 'moduleVersion.perl'],
-                          ['duk', 'moduleVersion.duk']
+                          ['memtime', 'module_memtime'],
+                          ['tools', 'module_tools'],
+                          ['perl', 'module_perl'],
+                          ['duk', 'module_duk']
                         ]) . ' && ';
                     $cmd .= ' memtime ';     
                     $cmd .= ' contamWrapper.pl';
@@ -97,10 +97,10 @@ sub duk{
         if (!$ro_job->isUp2Date()) {
                     my $cmd = '';
                 $cmd .= LoadConfig::moduleLoad($rH_cfg, [
-                          ['memtime', 'moduleVersion.memtime'],
-                          ['tools', 'moduleVersion.tools'],
-                          ['perl', 'moduleVersion.perl'],
-                          ['duk', 'moduleVersion.duk']
+                          ['memtime', 'module_memtime'],
+                          ['tools', 'module_tools'],
+                          ['perl', 'module_perl'],
+                          ['duk', 'module_duk']
                         ]) . ' && ';
                     $cmd .= ' memtime ';
                     $cmd .= ' gunzip -c ' . $infile . ' |' ;    
@@ -131,9 +131,9 @@ sub splitBarcodes{
         if (!$ro_job->isUp2Date()) {
                     my $cmd = '';
                 $cmd .= LoadConfig::moduleLoad($rH_cfg, [
-                          ['memtime', 'moduleVersion.memtime'],
-                          ['tools', 'moduleVersion.tools'],
-                          ['perl', 'moduleVersion.perl']
+                          ['memtime', 'module_memtime'],
+                          ['tools', 'module_tools'],
+                          ['perl', 'module_perl']
                         ]) . ' && ';
                     $cmd .= ' memtime ';
                     $cmd .= ' barcodes.pl';
@@ -161,9 +161,9 @@ sub removeUnpairedReads{
         if (!$ro_job->isUp2Date()) {
                     my $cmd = '';
                 $cmd .= LoadConfig::moduleLoad($rH_cfg, [
-                          ['memtime', 'moduleVersion.memtime'],
-                          ['tools', 'moduleVersion.tools'],
-                          ['perl', 'moduleVersion.perl']
+                          ['memtime', 'module_memtime'],
+                          ['tools', 'module_tools'],
+                          ['perl', 'module_perl']
                         ]) . ' && ';
                     $cmd .= ' memtime ';
                     $cmd .= ' removeUnpaired.pl';
@@ -190,9 +190,9 @@ sub splitPairs{
         if (!$ro_job->isUp2Date()) {
                     my $cmd = '';
                 $cmd .= LoadConfig::moduleLoad($rH_cfg, [
-                          ['memtime', 'moduleVersion.memtime'],
-                          ['tools', 'moduleVersion.tools'],
-                          ['perl', 'moduleVersion.perl']
+                          ['memtime', 'module_memtime'],
+                          ['tools', 'module_tools'],
+                          ['perl', 'module_perl']
                         ]) . ' && ';
                     $cmd .= ' memtime ';
                     $cmd .= ' splitPairs.pl';
@@ -220,15 +220,15 @@ sub generateQscoreSheet{
         if (!$ro_job->isUp2Date()) {
                     my $cmd = '';
                 $cmd .= LoadConfig::moduleLoad($rH_cfg, [
-                          ['memtime', 'moduleVersion.memtime'],
-                          ['fastx', 'moduleVersion.fastx'],
-                          ['tools', 'moduleVersion.tools'],
-                          ['perl', 'moduleVersion.perl']
+                          ['memtime', 'module_memtime'],
+                          ['fastx', 'module_fastx'],
+                          ['tools', 'module_tools'],
+                          ['perl', 'module_perl']
                         ]) . ' && ';
                     $cmd .= ' memtime ';
                     $cmd .= 'qscoreSheets.pl ';
                     $cmd .= ' --fastq ' . $infile;
-                    $cmd .= ' --tmp ' . LoadConfig::getParam($rH_cfg, 'default', 'tmpDir', 1, 'dirpath') ;
+                    $cmd .= ' --tmp ' . LoadConfig::getParam($rH_cfg, 'default', 'tmp_dir', 1, 'dirpath') ;
                     $cmd .= ' --prefix ' . $prefix;
                     $cmd .= ' --suffix suffix';
                     $cmd .= ' --log ' . $log;
@@ -254,10 +254,10 @@ sub generateQscoreGraphSingle{
         if (!$ro_job->isUp2Date()) {
                     my $cmd = '';
                 $cmd .= LoadConfig::moduleLoad($rH_cfg, [
-                          ['memtime', 'moduleVersion.memtime'],
-                          ['R', 'moduleVersion.R'],
-                          ['tools', 'moduleVersion.tools'],
-                          ['perl', 'moduleVersion.perl']
+                          ['memtime', 'module_memtime'],
+                          ['R', 'module_R'],
+                          ['tools', 'module_tools'],
+                          ['perl', 'module_perl']
                         ]) . ' && ';
                     $cmd .= ' memtime ';
                     $cmd .= ' qscorePlots.pl';
@@ -284,10 +284,10 @@ sub generateQscoreGraphPaired{
         if (!$ro_job->isUp2Date()) {
                     my $cmd = '';
                 $cmd .= LoadConfig::moduleLoad($rH_cfg, [
-                          ['memtime', 'moduleVersion.memtime'],
-                          ['R', 'moduleVersion.R'],
-                          ['tools', 'moduleVersion.tools'],
-                          ['perl', 'moduleVersion.perl']
+                          ['memtime', 'module_memtime'],
+                          ['R', 'module_R'],
+                          ['tools', 'module_tools'],
+                          ['perl', 'module_perl']
                         ]) . ' && ';
                     $cmd .= ' memtime ';
                     $cmd .= ' qscorePlots.pl';
@@ -316,9 +316,9 @@ sub cutReads{
         if (!$ro_job->isUp2Date()) {
                     my $cmd = '';
                 $cmd .= LoadConfig::moduleLoad($rH_cfg, [
-                          ['memtime', 'moduleVersion.memtime'],
-                          ['tools', 'moduleVersion.tools'],
-                          ['perl', 'moduleVersion.perl']
+                          ['memtime', 'module_memtime'],
+                          ['tools', 'module_tools'],
+                          ['perl', 'module_perl']
                         ]) . ' &&';
                     $cmd .= ' memtime';
                     $cmd .= ' cutFastqSeq.pl';
@@ -345,10 +345,10 @@ sub flash{
         if (!$ro_job->isUp2Date()) {
                     my $cmd = '';
                 $cmd .= LoadConfig::moduleLoad($rH_cfg, [
-                          ['memtime', 'moduleVersion.memtime'],
-                          ['flash', 'moduleVersion.flash'],
-                          ['tools', 'moduleVersion.tools'],
-                          ['perl', 'moduleVersion.perl']
+                          ['memtime', 'module_memtime'],
+                          ['flash', 'module_flash'],
+                          ['tools', 'module_tools'],
+                          ['perl', 'module_perl']
                         ]) . ' && ';
                     $cmd .= ' memtime ';
                     $cmd .= ' flash.pl';
@@ -382,9 +382,9 @@ sub removePrimers{
         if (!$ro_job->isUp2Date()) {
                     my $cmd = '';
                 $cmd .= LoadConfig::moduleLoad($rH_cfg, [
-                          ['memtime', 'moduleVersion.memtime'],
-                          ['tools', 'moduleVersion.tools'],
-                          ['perl', 'moduleVersion.perl']
+                          ['memtime', 'module_memtime'],
+                          ['tools', 'module_tools'],
+                          ['perl', 'module_perl']
                         ]) . ' && ';
                     $cmd .= ' memtime ';
                     $cmd .= 'itagsQC.pl';
@@ -426,9 +426,9 @@ sub itagsQC{
         if (!$ro_job->isUp2Date()) {
                     my $cmd = '';
                 $cmd .= LoadConfig::moduleLoad($rH_cfg, [
-                          ['memtime', 'moduleVersion.memtime'],
-                          ['tools', 'moduleVersion.tools'],
-                          ['perl', 'moduleVersion.perl']
+                          ['memtime', 'module_memtime'],
+                          ['tools', 'module_tools'],
+                          ['perl', 'module_perl']
                         ]) . ' && ';
                     $cmd .= ' memtime ';
                     $cmd .= 'itagsQC.pl';
@@ -472,9 +472,9 @@ sub countReport{
         if (!$ro_job->isUp2Date()) {
                     my $cmd = '';
                 $cmd .= LoadConfig::moduleLoad($rH_cfg, [
-                          ['memtime', 'moduleVersion.memtime'],
-                          ['tools', 'moduleVersion.tools'],
-                          ['perl', 'moduleVersion.perl']
+                          ['memtime', 'module_memtime'],
+                          ['tools', 'module_tools'],
+                          ['perl', 'module_perl']
                         ]) . ' && ';
                     $cmd .= ' memtime ';
                     $cmd .= 'countReport.pl';
@@ -506,9 +506,9 @@ sub txtToPdf{
         if (!$ro_job->isUp2Date()) {
                     my $cmd = '';
                 $cmd .= LoadConfig::moduleLoad($rH_cfg, [
-                          ['memtime', 'moduleVersion.memtime'],
-                          ['tools', 'moduleVersion.tools'],
-                          ['perl', 'moduleVersion.perl']
+                          ['memtime', 'module_memtime'],
+                          ['tools', 'module_tools'],
+                          ['perl', 'module_perl']
                         ]) . ' && ';
                     $cmd .= ' memtime ';
                     $cmd .= 'txtToPdf.pl';
@@ -531,10 +531,10 @@ sub mergePdf{
         if (!$ro_job->isUp2Date()) {
                     my $cmd = '';
                 $cmd .= LoadConfig::moduleLoad($rH_cfg, [
-                          ['memtime', 'moduleVersion.memtime'],
-                          ['ghostscript', 'moduleVersion.ghostscript'],
-                          ['tools', 'moduleVersion.tools'],
-                          ['perl', 'moduleVersion.perl']
+                          ['memtime', 'module_memtime'],
+                          ['ghostscript', 'module_ghostscript'],
+                          ['tools', 'module_tools'],
+                          ['perl', 'module_perl']
                         ]) . ' && ';
                     $cmd .= ' memtime ';
                     $cmd .= ' ' . $command;
@@ -557,10 +557,10 @@ sub clustering1{
         if (!$ro_job->isUp2Date()) {
                     my $cmd = '';
                 $cmd .= LoadConfig::moduleLoad($rH_cfg, [
-                          ['memtime', 'moduleVersion.memtime'],
-                          ['usearch', 'moduleVersion.usearch'],
-                          ['tools', 'moduleVersion.tools'],
-                          ['perl', 'moduleVersion.perl']
+                          ['memtime', 'module_memtime'],
+                          ['usearch', 'module_usearch'],
+                          ['tools', 'module_tools'],
+                          ['perl', 'module_perl']
                         ]) . ' && ';
                     $cmd .= ' memtime ';
                     $cmd .= ' clustering1.pl';
@@ -588,10 +588,10 @@ sub clustering2{
         if (!$ro_job->isUp2Date()) {
                     my $cmd = '';
                 $cmd .= LoadConfig::moduleLoad($rH_cfg, [
-                          ['memtime', 'moduleVersion.memtime'],
-                          ['usearch', 'moduleVersion.usearch'],
-                          ['tools', 'moduleVersion.tools'],
-                          ['perl', 'moduleVersion.perl']
+                          ['memtime', 'module_memtime'],
+                          ['usearch', 'module_usearch'],
+                          ['tools', 'module_tools'],
+                          ['perl', 'module_perl']
                         ]) . ' && ';
                     $cmd .= ' memtime ';
                     $cmd .= ' clustering2.pl';
@@ -619,11 +619,11 @@ sub clustering3{
         if (!$ro_job->isUp2Date()) {
                     my $cmd = '';
                 $cmd .= LoadConfig::moduleLoad($rH_cfg, [
-                          ['memtime', 'moduleVersion.memtime'],
-                          ['usearch', 'moduleVersion.usearch'],
-                          ['dnaclust', 'moduleVersion.dnaclust'],
-                          ['tools', 'moduleVersion.tools'],
-                          ['perl', 'moduleVersion.perl']
+                          ['memtime', 'module_memtime'],
+                          ['usearch', 'module_usearch'],
+                          ['dnaclust', 'module_dnaclust'],
+                          ['tools', 'module_tools'],
+                          ['perl', 'module_perl']
                         ]) . ' && ';
                     $cmd .= ' memtime ';
                     $cmd .= ' clustering3.pl';
@@ -648,7 +648,7 @@ sub clientReport{
       my $reportPath    = shift;
         
       my $pipeline = 'pipeline=\"' .$pipelineType .'\",';
-        my $titleTMP = LoadConfig::getParam($rH_cfg, 'report','projectName');
+        my $titleTMP = LoadConfig::getParam($rH_cfg, 'report','project_name');
         my $title = 'report.title=\"' .$titleTMP .'\",';
         my $authorTMP = LoadConfig::getParam($rH_cfg, 'report','report.author');
         my $author = 'report.author=\"' .$authorTMP .'\",';
@@ -662,14 +662,14 @@ sub clientReport{
         if (!$ro_job->isUp2Date()) {
                     my $cmd = '';
                 $cmd .= LoadConfig::moduleLoad($rH_cfg, [
-                          ['R', 'moduleVersion.R']
+                          ['R', 'module_R']
                         ]) . ' && ';
                     $cmd .= ' R --no-save -e \'library(gqSeqUtils) ;';
                     $cmd .= ' mugqicPipelineReport(';
                     $cmd .= ' pipeline=\"' . $pipelineType . '\",';
                     $cmd .= ' report.path=\"' . $reportPath . '\",';
                     $cmd .= ' ini.file.path=\"' . $iniFilePath . '\",' ;
-                    $cmd .= ' report.title=\"' . LoadConfig::getParam($rH_cfg, 'report','projectName') . '\",' ;
+                    $cmd .= ' report.title=\"' . LoadConfig::getParam($rH_cfg, 'report','project_name') . '\",' ;
                     $cmd .= ' report.author=\"' . LoadConfig::getParam($rH_cfg, 'report','report.author') . '\",' ;
                     $cmd .= ' report.contact=\"' . LoadConfig::getParam($rH_cfg, 'report','report.contact') . '\",' ;
                     $cmd .= ' project.path=\"' . $projectPath . '\")\'' ;
@@ -690,7 +690,7 @@ sub cleanup{
         if (!$ro_job->isUp2Date()) {
                     my $cmd = '';
                 $cmd .= LoadConfig::moduleLoad($rH_cfg, [
-                          ['memtime', 'moduleVersion.memtime']
+                          ['memtime', 'module_memtime']
                         ]) . ' && ';
                     $cmd .= ' memtime ';
                     $cmd .= 'rm '.$tmpdir.' -rf';
@@ -710,7 +710,7 @@ sub templateSub{
         if (!$ro_job->isUp2Date()) {
                     my $cmd = '';
                 $cmd .= LoadConfig::moduleLoad($rH_cfg, [
-                          ['memtime', 'moduleVersion.memtime']
+                          ['memtime', 'module_memtime']
                         ]) . ' && ';
                     $cmd .= ' memtime ';
 
