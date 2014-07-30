@@ -9,7 +9,7 @@ set -eu -o pipefail
 SOFTWARE=ucsc
 # By default, the latest remote version will be downloaded and the version date set appropriately.
 # To use a local archive specific version, uncomment and update VERSION
-VERSION=20140212
+#VERSION=20140212
 
 # 'MUGQIC_INSTALL_HOME_DEV' for development, 'MUGQIC_INSTALL_HOME' for production (don't write '$' before!)
 INSTALL_HOME=MUGQIC_INSTALL_HOME
