@@ -101,7 +101,7 @@ my $lastIndex;
 
 sub printUsage {
   print "Version: ".$Version::version."\n";
-  print "\nUsage: perl ".$0." -c config.ini -s start -e end -l nb -r /path/to/run\n";
+  print "\nUsage: perl ".$0." -c config.ini -s steps -l nb -r /path/to/run\n";
   print "\t-c  config file\n";
   print "\t-s  step range e.g. '1,3', '2-5', '1,4-7,11'\n";  
   print "\t-l  lane number\n";
