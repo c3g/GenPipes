@@ -192,7 +192,7 @@ def sort_sam(input, output, sort_order):
         ram=config.param('picard_sort_sam', 'ram'),
         input=input,
         output=output,
-        sort_order = sort_order,
+        sort_order=sort_order,
         max_records_in_ram=config.param('picard_sort_sam', 'max_records_in_ram', type='int')
     )
 

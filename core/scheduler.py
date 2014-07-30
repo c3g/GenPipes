@@ -101,19 +101,19 @@ exit \$MUGQIC_STATE" | \\
 """.format(job=job)
 
                     cmd += \
-                        config.param(step.name, 'clusterSubmitCmd') + " " + \
-                        config.param(step.name, 'clusterOtherArg') + " " + \
-                        config.param(step.name, 'clusterWorkDirArg') + " $OUTPUT_DIR " + \
-                        config.param(step.name, 'clusterOutputDirArg') + " $JOB_OUTPUT " + \
-                        config.param(step.name, 'clusterJobNameArg') + " $JOB_NAME " + \
-                        config.param(step.name, 'clusterWalltime') + " " + \
-                        config.param(step.name, 'clusterQueue') + " " + \
-                        config.param(step.name, 'clusterCPU')
+                        config.param(step.name, 'cluster_submit_cmd') + " " + \
+                        config.param(step.name, 'cluster_other_arg') + " " + \
+                        config.param(step.name, 'cluster_work_dir_arg') + " $OUTPUT_DIR " + \
+                        config.param(step.name, 'cluster_output_dir_arg') + " $JOB_OUTPUT " + \
+                        config.param(step.name, 'cluster_job_name_arg') + " $JOB_NAME " + \
+                        config.param(step.name, 'cluster_walltime') + " " + \
+                        config.param(step.name, 'cluster_queue') + " " + \
+                        config.param(step.name, 'cluster_cpu')
                     if job.dependency_jobs:
-                        cmd += " " + config.param(step.name, 'clusterDependencyArg') + "$JOB_DEPENDENCIES"
-                    cmd += " " + config.param(step.name, 'clusterSubmitCmdSuffix')
+                        cmd += " " + config.param(step.name, 'cluster_dependency_arg') + "$JOB_DEPENDENCIES"
+                    cmd += " " + config.param(step.name, 'cluster_submit_cmd_suffix')
 
-                    if config.param(step.name, 'clusterCmdProducesJobId'):
+                    if config.param(step.name, 'cluster_cmd_produces_job_id'):
                         cmd = job.id + "=$(" + cmd + ")"
                     else:
                         cmd += "\n" + job.id + "=" + job.name

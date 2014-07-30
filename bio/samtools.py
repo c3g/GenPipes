@@ -19,13 +19,13 @@ def flagstat(input, output):
 
     return job
 
-def mpileup(input_bams, output, extra_options="", region=None, pair_calling=False):
+def mpileup(input_bams, output, other_options="", region=None, pair_calling=False):
     job = Job(input_bams, [output], [['samtools_mpileup', 'module_samtools']])
 
     job.command = \
-"""samtools mpileup {extra_options} \\
+"""samtools mpileup {other_options} \\
   -f {reference_fasta}{region}{input_bams}{output}""".format(
-        extra_options=extra_options,
+        other_options=other_options,
         reference_fasta=config.param('samtools_mpileup', 'genome_fasta', type='filepath'),
         region=" \\\n  -r " + region if region else "",
         input_bams="".join([" \\\n  " + input_bam for input_bam in input_bams]),
