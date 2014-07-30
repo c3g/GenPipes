@@ -231,7 +231,7 @@ my $workDirectory = getcwd();
 
 sub printUsage {
   print "Version: ".$Version::version."\n";
-  print "\nUsage: perl ".$0." -c config.ini -s start -n SampleSheet.csv\n";
+  print "\nUsage: perl ".$0." -c config.ini -s step_range -n SampleSheet.csv\n";
   print "\t-c  config file\n";
   print "\t-s  step range e.g. '1,3', '2-5', '1,4-7,10'\n";
   print "\t-n  nanuq sample sheet\n";
