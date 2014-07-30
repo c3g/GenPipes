@@ -1,4 +1,6 @@
 #!/bin/bash
+# Exit immediately on error
+set -eu -o pipefail
 
 ################################################################################
 # This is a module install script template which should be copied and used for
@@ -6,7 +8,6 @@
 # Only lines marked as "## TO BE ADDED/MODIFIED" should be, indeed, modified.
 # You should probably also delete this commented-out header and the ## comments
 ################################################################################
-
 
 #
 # Software_name  ## TO BE MODIFIED WITH e.g. BLAST, HMMER, SAMtools, etc.
@@ -29,7 +30,7 @@ then
 fi
 
 INSTALL_DOWNLOAD=$INSTALL_DIR/tmp
-mkdir $INSTALL_DOWNLOAD
+mkdir -p $INSTALL_DOWNLOAD
 cd $INSTALL_DOWNLOAD
 
 # Download, extract, build
@@ -54,7 +55,7 @@ make  ## TO BE ADDED AND MODIFIED IF NECESSARY
 # Add permissions and install software
 cd $INSTALL_DOWNLOAD
 chmod -R ug+rwX,o+rX .
-mv -i $SOFTWARE_DIR $INSTALL_DIR
+mv -i $SOFTWARE_DIR $INSTALL_DIR/
 # Store archive if not already present or if different from the previous one
 if [[ ! -f ${!INSTALL_HOME}/archive/$ARCHIVE || `diff ${!INSTALL_HOME}/archive/$ARCHIVE $ARCHIVE` ]]
 then
@@ -93,7 +94,7 @@ fi
 
 # Add permissions and install module
 chmod ug+rwX,o+rX $VERSION .version
-mv $VERSION .version $MODULE_DIR
+mv $VERSION .version $MODULE_DIR/
 
 # Clean up temporary installation files if any
 rm -rf $INSTALL_DOWNLOAD
