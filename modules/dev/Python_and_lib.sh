@@ -7,16 +7,17 @@
 ###################
 ################### Python 
 ###################
-VERSION=2.7.6
+VERSION=2.7.8
 LIBVERSION=2.7
-SUT_VERSION=1.3.2
+SUT_VERSION=5.4.1
 # CYTHON_VERSION=0.20
 # NUMPY_VERSION=1.8.0
 # BIO_VERSION=1.63
 # MATPLOT_VERSION=1.2.1
 # HTSEQ_VERSION=0.5.4p1
-PYVCF_VERSION=0.6.4
+PYVCF_VERSION=0.6.7
 
+###MUGQIC_INSTALL_HOME=$SHARE_NOBACKUP/mugqic_prod => temporary mamouth transition
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/python/Python-${VERSION}
 ARCHIVE_PATH=$MUGQIC_INSTALL_HOME/archive/python
 PYTHONUSERBASE=${MUGQIC_INSTALL_HOME}/software/python/Python-${VERSION}
@@ -141,7 +142,7 @@ easy_install biopython
 # ##toto
 # ## matplotlib
 # easy_install dateutil
- easy_install matplotlib ### NOTE: didn't work on mamouth
+easy_install matplotlib ### NOTE: didn't work on mamouth
 # wget --no-check-certificate http://downloads.sourceforge.net/project/matplotlib/matplotlib/matplotlib-${MATPLOT_VERSION}/matplotlib-${MATPLOT_VERSION}.tar.gz
 # tar -xvf matplotlib-${MATPLOT_VERSION}.tar.gz
 # cd matplotlib-${MATPLOT_VERSION}
@@ -186,15 +187,15 @@ easy_install matplotlib
 
 ## RSeQC (easyinstall won't work)
 # module load mugqic/python/2.7.5
-VERSION=2.3.8  
-wget https://downloads.sourceforge.net/project/rseqc/RSeQC-$VERSION.tar.gz
-tar xvf RSeQC-$VERSION.tar.gz
-cd RSeQC-$VERSION
-module load mugqic/python/2.7.5 # wouldn't work with 2.7.8s
-python setup.py install
-cd ..
-rm -rf RSeQC*
-python -c 'from qcmodule import SAM'
+# VERSION_RSeQC=2.3.9  
+# wget https://downloads.sourceforge.net/project/rseqc/RSeQC-$VERSION_RSeQC.tar.gz
+# tar xvf RSeQC-$VERSION_RSeQC.tar.gz
+# cd RSeQC-$VERSION_RSeQC
+# #module load mugqic/python/2.7.5 # wouldn't work with 2.7.8s
+# python setup.py install
+# cd ..
+# rm -rf RSeQC*
+# python -c 'from qcmodule import SAM'
 
 
 
@@ -223,5 +224,16 @@ rm -rf tmp
 chmod 664 $MUGQIC_INSTALL_HOME/modulefiles/mugqic/python/$VERSION
 chmod -R 775 $INSTALL_PATH
 
-
+#####
+## test install
+#####
+## module load mugqic/python/$VERSION
+## htseq-count -h
+## python
+## from numpy import *
+## from Bio import SeqIO
+## from matplotlib import *
+## from HTSeq import *
+## from bedtools import *
+## from vcf import *
 
