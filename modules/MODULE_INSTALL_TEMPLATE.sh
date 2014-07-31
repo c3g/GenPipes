@@ -82,8 +82,8 @@ setenv          ${SOFTWARE}_JAR     \$root/$SOFTWARE-$VERSION.jar ;  ## TO BE AD
 echo "#%Module1.0
 set ModulesVersion \"$VERSION\"" > .version
 
-# Set module directory path by removing '_INSTALL_HOME' in $INSTALL_HOME and lowercasing the result
-MODULE_DIR=${!INSTALL_HOME}/modulefiles/`echo ${INSTALL_HOME/_INSTALL_HOME/} | tr '[:upper:]' '[:lower:]'`/$SOFTWARE
+# Set module directory path by lowercasing $INSTALL_HOME and removing '_install_home' in it
+MODULE_DIR=${!INSTALL_HOME}/modulefiles/`echo ${INSTALL_HOME,,} | sed 's/_install_home//'`/$SOFTWARE
 
 # Create module directory with permissions if necessary
 if [[ ! -d $MODULE_DIR ]]
