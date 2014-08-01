@@ -40,32 +40,43 @@ then
 ENSEMBL_RELEASE=75  ## TO BE MODIFIED IF NECESSARY
 ENSEMBL_URL_PREFIX=ftp://ftp.ensembl.org/pub/release-$ENSEMBL_RELEASE
 
-DNA_URL=$ENSEMBL_URL_PREFIX/fasta/${SPECIES,,}/dna/$SPECIES.$ASSEMBLY.$ENSEMBL_RELEASE.dna.toplevel.fa.gz
-GTF_URL=$ENSEMBL_URL_PREFIX/gtf/${SPECIES,,}/$SPECIES.$ASSEMBLY.$ENSEMBL_RELEASE.gtf.gz
-rRNA_URL=$ENSEMBL_URL_PREFIX/fasta/${SPECIES,,}/ncrna/$SPECIES.$ASSEMBLY.$ENSEMBL_RELEASE.ncrna.fa.gz
+BASENAME=$SPECIES.$ASSEMBLY.$ENSEMBL_RELEASE
+DNA_URL=$ENSEMBL_URL_PREFIX/fasta/${SPECIES,,}/dna/$BASENAME.dna.toplevel.fa.gz
+DNA_FASTA=$BASENAME.fa
+GTF_URL=$ENSEMBL_URL_PREFIX/gtf/${SPECIES,,}/$BASENAME.gtf.gz
+rRNA_URL=$ENSEMBL_URL_PREFIX/fasta/${SPECIES,,}/ncrna/$BASENAME.ncrna.fa.gz
 
 fi
 
 cd $INSTALL_DIR
 
 echo Installing genome assembly...
-mkdir -p $INSTALL_DIR/dna
-cd $INSTALL_DIR/dna
+mkdir -p $INSTALL_DIR/source
+cd $INSTALL_DIR/source
 wget $DNA_URL
-gunzip `basename $DNA_URL`
-ln -s `basename ${DNA_URL%.gz}` $SPECIES.$ASSEMBLY.fa
+mkdir -p $INSTALL_DIR/dna
+gunzip -c `basename $DNA_URL` > $INSTALL_DIR/dna/$DNA_FASTA
+cd $INSTALL_DIR/dna
+#ln -s -f `basename ${DNA_URL%.gz}` $SPECIES.$ASSEMBLY.fa
 
 echo Creating genome SAM dictionary...
 module load mugqic/picard mugqic/java
-java -jar $PICARD_HOME/CreateSequenceDictionary.jar REFERENCE=$SPECIES.$ASSEMBLY.fa OUTPUT=$SPECIES.$ASSEMBLY.dict GENOME_ASSEMBLY=$SPECIES.$ASSEMBLY
+java -jar $PICARD_HOME/CreateSequenceDictionary.jar REFERENCE=$DNA_FASTA OUTPUT=$BASENAME.dict GENOME_ASSEMBLY=$BASENAME
 
 echo Creating genome FASTA index...
 module load mugqic/samtools
-samtools faidx $SPECIES.$ASSEMBLY.fa
+samtools faidx $DNA_FASTA
 
 echo Creating genome bwa index...
 mkdir -p $INSTALL_DIR/dna/bwa
 cd $INSTALL_DIR/dna/bwa
-ln -s ../$SPECIES.$ASSEMBLY.fa
+ln -s -f ../$DNA_FASTA
 module load mugqic/bwa
-bwa index $SPECIES.$ASSEMBLY.fa
+bwa index $DNA_FASTA
+
+echo Creating genome bowtie2 index...
+mkdir -p $INSTALL_DIR/dna/bowtie2
+cd $INSTALL_DIR/dna/bowtie2
+ln -s -f ../$DNA_FASTA
+module load mugqic/bowtie2
+bowtie2-build $DNA_FASTA $BASENAME
