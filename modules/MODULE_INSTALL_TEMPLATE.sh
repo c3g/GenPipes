@@ -26,7 +26,7 @@ INSTALL_DIR=${!INSTALL_HOME}/software/$SOFTWARE
 if [[ ! -d $INSTALL_DIR ]]
 then
   mkdir $INSTALL_DIR
-  chmod ug+rwX,o+rX $INSTALL_DIR
+  chmod ug+rwX,o+rX-w $INSTALL_DIR
 fi
 
 INSTALL_DOWNLOAD=$INSTALL_DIR/tmp
@@ -54,7 +54,7 @@ make  ## TO BE ADDED AND MODIFIED IF NECESSARY
 
 # Add permissions and install software
 cd $INSTALL_DOWNLOAD
-chmod -R ug+rwX,o+rX .
+chmod -R ug+rwX,o+rX-w .
 mv -i $SOFTWARE_DIR $INSTALL_DIR/
 # Store archive if not already present or if different from the previous one
 if [[ ! -f ${!INSTALL_HOME}/archive/$ARCHIVE || `diff ${!INSTALL_HOME}/archive/$ARCHIVE $ARCHIVE` ]]
@@ -89,11 +89,11 @@ MODULE_DIR=${!INSTALL_HOME}/modulefiles/`echo ${INSTALL_HOME,,} | sed 's/_instal
 if [[ ! -d $MODULE_DIR ]]
 then
   mkdir $MODULE_DIR
-  chmod ug+rwX,o+rX $MODULE_DIR
+  chmod ug+rwX,o+rX-w $MODULE_DIR
 fi
 
 # Add permissions and install module
-chmod ug+rwX,o+rX $VERSION .version
+chmod ug+rwX,o+rX-w $VERSION .version
 mv $VERSION .version $MODULE_DIR/
 
 # Clean up temporary installation files if any
