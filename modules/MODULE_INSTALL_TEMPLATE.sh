@@ -97,4 +97,5 @@ chmod ug+rwX,o+rX $VERSION .version
 mv $VERSION .version $MODULE_DIR/
 
 # Clean up temporary installation files if any
+cd
 rm -rf $INSTALL_DOWNLOAD

@@ -62,11 +62,11 @@ make -j8
 rm -rf $SOFTWARE_INSTALL_DIR
 make install
 
-export LD_LIBRARY_PATH=/software/libraries/GotoBLAS_LAPACK/shared:$SOFTWARE_INSTALL_DIR/lib/python$LIBVERSION:$LD_LIBRARY_PATH
-export LIBRARY_PATH=/software/libraries/GotoBLAS_LAPACK/shared:$SOFTWARE_INSTALL_DIR/lib/python$LIBVERSION:$LIBRARY_PATH
-export CPATH=$SOFTWARE_INSTALL_DIR/include:$SOFTWARE_INSTALL_DIR/include/python$LIBVERSION:$CPATH
+export LD_LIBRARY_PATH=/software/libraries/GotoBLAS_LAPACK/shared:$SOFTWARE_INSTALL_DIR/lib/python$LIBVERSION
+export LIBRARY_PATH=/software/libraries/GotoBLAS_LAPACK/shared:$SOFTWARE_INSTALL_DIR/lib/python$LIBVERSION
+export CPATH=$SOFTWARE_INSTALL_DIR/include:$SOFTWARE_INSTALL_DIR/include/python$LIBVERSION
 export PATH=$SOFTWARE_INSTALL_DIR/bin:$PATH
-export PYTHONPATH=$SOFTWARE_INSTALL_DIR/lib/python$LIBVERSION/site-packages/:$PYTHONPATH
+export PYTHONPATH=$SOFTWARE_INSTALL_DIR/lib/python$LIBVERSION/site-packages
 
 # Install setuptools => easy_install
 mkdir -p $SOFTWARE_INSTALL_DIR/lib/python$LIBVERSION/site-packages
@@ -142,7 +142,11 @@ easy_install https://pypi.python.org/packages/source/P/PyVCF/PyVCF-${PYVCF_VERSI
 # matplotlib
 easy_install http://labix.org/download/python-dateutil/python-dateutil-1.5.tar.gz
 easy_install pyparsing
+# matplotlib first install fails: repeat it a second time to succeed (?!: pb with tornado 4.0 to be investigated)
+set +e
 easy_install matplotlib ### NOTE: didn't work on mammouth
+easy_install matplotlib ### NOTE: didn't work on mammouth
+set -e
 # cd $SOFTWARE_INSTALL_DIR/lib/python$LIBVERSION/site-packages
 # wget --no-check-certificate http://downloads.sourceforge.net/project/matplotlib/matplotlib/matplotlib-${MATPLOTLIB_VERSION}/matplotlib-${MATPLOTLIB_VERSION}.tar.gz
 # tar -xvf matplotlib-${MATPLOTLIB_VERSION}.tar.gz
@@ -202,11 +206,13 @@ chmod ug+rwX,o+rX $VERSION .version
 mv $VERSION .version $MODULE_DIR/
 
 # Clean up temporary installation files if any
+cd
 rm -rf $INSTALL_DOWNLOAD
 
 ################################################################################
 
 # Test module install
+echo `seq -s - 80 | sed 's/[0-9]//g'`
 echo "Testing $MODULE_DIR/$VERSION install..."
 module load $MODULE_DIR/$VERSION
 htseq-count -h
