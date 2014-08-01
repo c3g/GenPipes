@@ -144,8 +144,8 @@ easy_install http://labix.org/download/python-dateutil/python-dateutil-1.5.tar.g
 easy_install pyparsing
 # matplotlib first install fails: repeat it a second time to succeed (?!: pb with tornado 4.0 to be investigated)
 set +e
-easy_install matplotlib ### NOTE: didn't work on mammouth
-easy_install matplotlib ### NOTE: didn't work on mammouth
+easy_install matplotlib
+easy_install matplotlib
 set -e
 # cd $SOFTWARE_INSTALL_DIR/lib/python$LIBVERSION/site-packages
 # wget --no-check-certificate http://downloads.sourceforge.net/project/matplotlib/matplotlib/matplotlib-${MATPLOTLIB_VERSION}/matplotlib-${MATPLOTLIB_VERSION}.tar.gz
