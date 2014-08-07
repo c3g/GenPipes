@@ -6,6 +6,17 @@
 from core.config import *
 from core.job import *
 
+def index(input, output):
+    job = Job([input], [output], [['samtools_index', 'module_samtools']])
+
+    job.command = \
+"""samtools index \\
+  {input}""".format(
+        input=input
+    )
+
+    return job
+
 def flagstat(input, output):
     job = Job([input], [output], [['samtools_flagstat', 'module_samtools']])
 
@@ -34,12 +45,14 @@ def mpileup(input_bams, output, other_options="", region=None, pair_calling=Fals
 
     return job
 
-def sort(input_bam, output_prefix):
+def sort(input_bam, output_prefix, sort_by_name=False):
     job = Job([input_bam], [output_prefix + ".bam"], [['samtools_sort', 'module_samtools']])
 
+    other_options=" -n " if sort_by_name else ""
+    
     job.command = \
 """samtools sort {other_options} {input_bam} {output_prefix}""".format(
-        other_options=config.param('samtools_sort', 'other_options', required=False),
+        other_options=other_options + config.param('samtools_sort', 'other_options', required=False),
         input_bam=input_bam,
         output_prefix=output_prefix
     )
