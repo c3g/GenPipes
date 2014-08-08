@@ -154,16 +154,14 @@ sub parseSampleSheet {
 
     my $filePrefix = $sampleInfo{'name'} . '.' . $sampleInfo{'libraryBarcode'} . '.' . $sampleInfo{'qualOffset'} . ".";
 
-    if ($values[$fastq1Idx]) {
-      if ($values[$runTypeIdx] eq "PAIRED_END") {
-        $sampleInfo{'read1File'} = $filePrefix . "pair1.fastq.gz";
-        $sampleInfo{'read2File'} = $filePrefix . "pair2.fastq.gz";
-      } elsif ($values[$runTypeIdx] eq "SINGLE_END") {
-        $sampleInfo{'read1File'} = $filePrefix . "single.fastq.gz";
-      } else {
-        print "Unrecognized run type $values[$runTypeIdx] \n";
-        exit 1;
-      }
+    if ($values[$runTypeIdx] eq "PAIRED_END") {
+      $sampleInfo{'read1File'} = $filePrefix . "pair1.fastq.gz";
+      $sampleInfo{'read2File'} = $filePrefix . "pair2.fastq.gz";
+    } elsif ($values[$runTypeIdx] eq "SINGLE_END") {
+      $sampleInfo{'read1File'} = $filePrefix . "single.fastq.gz";
+    } else {
+      print "Unrecognized run type $values[$runTypeIdx] \n";
+      exit 1;
     }
 
     if ($values[$bamIdx]) {
