@@ -32,14 +32,7 @@ class Scheduler:
 # Created on: {datetime}
 # Steps:
 {steps}
-{separator_line}
-
-OUTPUT_DIR={pipeline.output_dir}
-JOB_OUTPUT_DIR=$OUTPUT_DIR/job_output
-TIMESTAMP=`date +%FT%H.%M.%S`
-JOB_LIST=$JOB_OUTPUT_DIR/{pipeline.__class__.__name__}_job_list_$TIMESTAMP
-mkdir -p $OUTPUT_DIR
-cd $OUTPUT_DIR"""
+{separator_line}"""
             .format(
                 separator_line=separator_line,
                 pipeline=pipeline,
@@ -49,6 +42,20 @@ cd $OUTPUT_DIR"""
                 datetime=datetime.datetime.now()
             )
         )
+
+        if pipeline.jobs:
+            print(
+"""
+OUTPUT_DIR={pipeline.output_dir}
+JOB_OUTPUT_DIR=$OUTPUT_DIR/job_output
+TIMESTAMP=`date +%FT%H.%M.%S`
+JOB_LIST=$JOB_OUTPUT_DIR/{pipeline.__class__.__name__}_job_list_$TIMESTAMP
+mkdir -p $OUTPUT_DIR
+cd $OUTPUT_DIR"""
+                .format(
+                    pipeline=pipeline,
+                )
+            )
 
     def print_step(self, step):
         print("""
@@ -126,7 +133,8 @@ exit \$MUGQIC_STATE" | \\
 class BatchScheduler(Scheduler):
     def submit(self, pipeline):
         self.print_header(pipeline)
-        print("SEPARATOR_LINE=`seq -s - 80 | sed 's/[0-9]//g'`")
+        if pipeline.jobs:
+            print("SEPARATOR_LINE=`seq -s - 80 | sed 's/[0-9]//g'`")
         for step in pipeline.step_range:
             if step.jobs:
                 self.print_step(step)
