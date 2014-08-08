@@ -8,7 +8,7 @@ import re
 import sys
 
 # Append mugqic_pipeline directory to Python library path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(sys.argv[0]))))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # MUGQIC Modules
 from core.config import *
@@ -28,7 +28,7 @@ from bio import samtools
 from bio import snpeff
 from bio import tools
 from bio import vcftools
-from pipelines.illumina import illumina
+from pipelines.dnaseq import dnaseq
 
 log = logging.getLogger(__name__)
 
