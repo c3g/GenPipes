@@ -69,6 +69,35 @@ def depth_of_coverage(input, output, coverage_bed, reference_genome=""):
 
     return job
 
+def extract_sclip(bamFile, output_prefix, flank=200):
+    job = Job([bamFile], [output_prefix + ".sc.bam", output_prefix + ".scPositions.txt", output_prefix + ".scSequences.txt"], [['bvatools_ratiobaf', 'module_java'], ['bvatools_ratiobaf', 'module_bvatools']])
+
+    reference_dictionary = config.param('bvatools_ratiobaf', 'genome_dictionary', type='filepath')
+
+    job.command = \
+"""java {java_other_options} -Xmx{ram} -jar \$BVATOOLS_JAR \\
+  extractsclip {other_options} \\
+  --bam {bamFile} \\
+  --flank {flank} \\
+  --minSCCount{minSCCount} \\
+  --minSCLength {minSCLength}
+  --minMappingQuality {minMappingQuality} \\
+  --threads {threads}
+  --prefix {output_prefix}""".format(
+        java_other_options=config.param('bvatools_extractsclip', 'java_other_options'),
+        ram=config.param('bvatools_extractsclip', 'ram'),
+        other_options=config.param('bvatools_extractsclip', 'other_options', required=False),
+        bamFile=bamFile,
+        flank=flank,
+        minSCCount=config.param('bvatools_extractsclip', 'minSCCount'),
+        minSCLength=config.param('bvatools_extractsclip', 'minSCLength'),
+        minMappingQuality=config.param('bvatools_extractsclip', 'minMappingQuality'),
+        threads=config.param('bvatools_extractsclip', 'threads'),
+        output_prefix=output_prefix
+    )
+
+    return job
+    
 def groupfixmate(input, output):
     job = Job([input], [output], [['bvatools_groupfixmate', 'module_java'], ['bvatools_groupfixmate', 'module_bvatools']])
 
