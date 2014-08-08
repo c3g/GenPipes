@@ -34,39 +34,41 @@ log = logging.getLogger(__name__)
 
 class Puure(dnaseq.DnaSeq):
   
-def extract_sclip(self):
+    @property  
+    def extract_sclip(self):
         jobs = []
-
+        
         for sample in self.samples:
             alignment_file_prefix = os.path.join("alignment", sample.name, sample.name + ".")
             sclip_directory = os.path.join("sclip", sample.name)
             sclip_file_prefix = os.path.join("sclip", sample.name, sample.name + ".")
-
+            
+            Job(command="insertSize=\$(awk 'NR==8 {print (\$1+(\$2*3))}' "+ alignment_file_prefix + ".sorted.dup.all.metrics.insert_size_metrics)")
+            
             job = bvatools.extract_sclip(alignment_file_prefix + "sorted.dup.bam", sclip_file_prefix)
             job.name = "extract_sclip." + sample.name
             jobs.append(job)
             
-            job = concat_jobs([
-                Job(command="mkdir -p " + sclip_directory),
+            job = concat_jobs([Job(command="mkdir -p " + sclip_directory),
                 job
             ], name="extract_sclip." + sample.name)
             
-            job = concat_jobs(job,
+            job = concat_jobs([job,
                 samtools.index(sclip_file_prefix + "sc.bam", sclip_file_prefix + "sc.bai"),
             ], name="extract_sclip." + sample.name)
             
-            job = concat_jobs(job,
+            job = concat_jobs([job,
                 samtools.index(sclip_file_prefix + "scOthers.bam", sclip_file_prefix + "scOthers.bai"),
             ], name="extract_sclip." + sample.name)
             
-            job = concat_jobs(job,
+            job = concat_jobs([job,
                 igvtools.compute_tdf(sclip_file_prefix + "sc.bam", sclip_file_prefix + "sc.tdf"),
             ], name="extract_sclip." + sample.name)
             
             jobs.append(job)
-         return jobs
-         
- def extract_bam_unmap(self):
+        return jobs
+    
+    def extract_bam_unmap(self):
         jobs = []
 
         for sample in self.samples:
@@ -119,9 +121,9 @@ def extract_sclip(self):
             
             jobs.append(job)
             
-         return jobs
-         
- def extract_fastq_unmap(self):
+        return jobs
+    
+    def extract_fastq_unmap(self):
         jobs = []
 
         for sample in self.samples:
@@ -198,22 +200,19 @@ def extract_sclip(self):
           
             ## equal fastq file beetween OEAMAP and OEAUNMAP (due to the filter of mapq)
             job = concat_jobs([
-                 tools.py_equalFastqFile(extract_file_prefix + "scOEAMAP.2.fastq.gz", extract_file_prefix + "scOEAUNMAP.1.fastq.gz", extract_file_prefix + "scOEAUNMAP.1.equal.fastq.gz")
-                 Job(command="rm " + extract_file_prefix + "scOEAUNMAP.1.fastq.gz"),
+                 tools.py_equalFastqFile(extract_file_prefix + "scOEAMAP.2.fastq.gz", extract_file_prefix + "scOEAUNMAP.1.fastq.gz", extract_file_prefix + "scOEAUNMAP.1.equal.fastq.gz"),
+                 Job(command="rm " + extract_file_prefix + "scOEAUNMAP.1.fastq.gz")
             ], name="equal_fastq_SCOEA1" + sample.name)
             jobs.append(job)              
           
             job = concat_jobs([
-                 tools.py_equalFastqFile(extract_file_prefix + "scOEAMAP.1.fastq.gz", extract_file_prefix + "scOEAUNMAP.2.fastq.gz", extract_file_prefix + "scOEAUNMAP.2.equal.fastq.gz")
-                 Job(command="rm " + extract_file_prefix + "scOEAUNMAP.2.fastq.gz"),
+                 tools.py_equalFastqFile(extract_file_prefix + "scOEAMAP.1.fastq.gz", extract_file_prefix + "scOEAUNMAP.2.fastq.gz", extract_file_prefix + "scOEAUNMAP.2.equal.fastq.gz"),
+                 Job(command="rm " + extract_file_prefix + "scOEAUNMAP.2.fastq.gz")
             ], name="equal_fastq_SCOEA2" + sample.name)
             jobs.append(job)    
             
-         return jobs        
-         
-         
-         
-
+        return jobs        
+     
     @property
     def steps(self):
         return [

@@ -7,7 +7,7 @@ from core.config import *
 from core.job import *
 
 ## function for awk tools ##
-def awk_samToFastq (input=None, output):
+def awk_samToFastq (output, input=None):
     cmd = "sh samToFastq.awk " + input + " > " + output if input else "sh samToFastq.awk - > " + output
     job = Job(output_files=[output], command=cmd, module_entries=[['DEFAULT' , 'module_tools']])
 
