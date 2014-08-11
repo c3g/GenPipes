@@ -7,6 +7,17 @@ import os
 from core.config import *
 from core.job import *
 
+def index(input):
+    job = Job([input], [input + ".bwt"], [['bwa_mem', 'module_bwa']])
+
+    job.command = \
+"""bwa index \\
+  {input}""".format(
+        input=input
+    )
+
+    return job
+
 def mem(
     in1fastq,
     in2fastq=None,

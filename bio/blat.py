@@ -8,7 +8,7 @@ from core.config import *
 from core.job import *
 
 def blat_dna_vs_dna(ref, query, outout, other_options=""):
-    job = Job([ref, query], [outout], [['DEFAULT', 'module_blast']])
+    job = Job([ref, query], [outout], [['DEFAULT', 'module_ucsc']])
 
     job.command = \
 """blat -t=dna -q=dna \\
