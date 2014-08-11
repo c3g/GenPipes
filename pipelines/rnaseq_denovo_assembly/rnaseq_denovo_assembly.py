@@ -139,13 +139,75 @@ class RnaSeqDeNovoAssembly(illumina.Illumina):
         job.name = "insilico_read_normalization_readsets." + readset.name
         return [job]
 
+    def trinity(self):
+        normalization_directory = os.path.join("insilico_read_normalization", "all")
+        output_directory = "trinity_out_dir"
+        trinity_fasta = os.path.join(output_directory, "Trinity.fasta")
+        trinity_stats_prefix = os.path.join(output_directory, "Trinity.stats")
+
+        if self.run_type == "PAIRED_END":
+            left_reads = os.path.join(normalization_directory, "left.norm.fq")
+            right_reads = os.path.join(normalization_directory, "right.norm.fq")
+            input_files = [left_reads, right_reads]
+            reads_option = "--left " + left_reads + " \\\n  --right " + right_reads
+        elif self.run_type == "SINGLE_END":
+            single_reads = os.path.join(normalization_directory, "single.norm.fq")
+            input_files = [single_reads]
+            reads_option = "--single " + single_reads
+
+        trinity_job = Job(input_files, [trinity_fasta], [
+            ['trinity', 'module_java'],
+            ['trinity', 'module_trinity'],
+            ['trinity', 'module_bowtie'],
+            ['trinity', 'module_samtools']
+        ])
+
+        trinity_job.command = """\
+Trinity {other_options} \\
+  --JM {jellyfish_memory} \\
+  --CPU {cpu} \\
+  --bflyCPU {butterfly_cpu} \\
+  {reads_option} \\
+  --output {output_directory}""".format(
+            other_options=config.param('trinity', 'other_options'),
+            jellyfish_memory=config.param('trinity', 'jellyfish_memory'),
+            cpu=config.param('trinity', 'cpu'),
+            butterfly_cpu=config.param('trinity', 'butterfly_cpu'),
+            reads_option=reads_option,
+            output_directory=output_directory
+        )
+
+        return [concat_jobs([
+            trinity_job,
+            Job([trinity_fasta], [trinity_fasta + ".zip"], command="zip -j " + trinity_fasta + ".zip " + trinity_fasta),
+            Job([trinity_fasta], [trinity_stats_prefix + ".csv", trinity_stats_prefix + ".jpg", trinity_stats_prefix + ".pdf"], [['trinity', 'module_R']], command="Rscript -e 'library(gqSeqUtils); dnaFastaStats(filename = \\\"" + trinity_fasta + "\\\", type = \\\"trinity\\\", output.prefix = \\\"" + trinity_stats_prefix + "\\\")'")
+        ], name="trinity")]
+
+    def exonerate_fastasplit(self):
+        trinity_directory = "trinity_out_dir"
+        trinity_fasta = os.path.join(trinity_directory, "Trinity.fasta")
+        trinity_chunks_directory = os.path.join(trinity_directory, "Trinity.fasta_chunks")
+        num_fasta_chunks = config.param('exonerate_fastasplit', 'num_fasta_chunks', type='posint')
+
+        return [concat_jobs([
+            Job(command="mkdir -p " + trinity_chunks_directory),
+            Job(
+                [trinity_fasta],
+                [os.path.join(trinity_chunks_directory, "Trinity.fasta_chunk_{:07d}".format(i)) for i in range(num_fasta_chunks)],
+                [['exonerate_fastasplit', 'module_exonerate']],
+                command="fastasplit -f " + trinity_fasta + " -o " + trinity_chunks_directory + " -c " + str(num_fasta_chunks)
+            )
+        ], name="exonerate_fastasplit.Trinity.fasta")]
+
     @property
     def steps(self):
         return [
             self.picard_sam_to_fastq,
             self.trimmomatic,
             self.insilico_read_normalization_readsets,
-            self.insilico_read_normalization_all
+            self.insilico_read_normalization_all,
+            self.trinity,
+            self.exonerate_fastasplit
         ]
 
     def __init__(self):
