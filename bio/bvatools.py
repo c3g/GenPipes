@@ -89,9 +89,9 @@ def extract_sclip(bamFile, output_prefix, flank="200"):
         other_options=config.param('bvatools_extractsclip', 'other_options', required=False),
         bamFile=bamFile,
         flank=flank,
-        minSCCount=config.param('bvatools_extractsclip', 'minSCCount'),
-        minSCLength=config.param('bvatools_extractsclip', 'minSCLength'),
-        minMappingQuality=config.param('bvatools_extractsclip', 'minMappingQuality'),
+        minSCCount=config.param('bvatools_extractsclip', 'min_sclip_count'),
+        minSCLength=config.param('bvatools_extractsclip', 'kmer'),
+        minMappingQuality=config.param('bvatools_extractsclip', 'min_mapping_quality'),
         threads=config.param('bvatools_extractsclip', 'threads'),
         output_prefix=output_prefix
     )
