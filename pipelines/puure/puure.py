@@ -40,22 +40,22 @@ class Puure(dnaseq.DnaSeq):
   
     def get_job_max_insert_size(self, sample):
         alignment_file_prefix = os.path.join("alignment", sample.name, sample.name + ".")
-        job=Job(command="maxInsertSize=\$(awk 'NR==8 {print (\$1+(\$2*3))}' "+ alignment_file_prefix + ".sorted.dup.all.metrics.insert_size_metrics)")
+        job=Job(command="maxInsertSize=\$(awk 'NR==8 {print (\$1+(\$2*3))}' "+ alignment_file_prefix + ".sorted.dup.recall.all.metrics.insert_size_metrics)")
         return job
 
     def get_job_min_insert_size(self, sample):
         alignment_file_prefix = os.path.join("alignment", sample.name, sample.name + ".")
-        job=Job(command="minInsertSize=\$(awk 'NR==8 {print (\$1-(\$2*3))}' "+ alignment_file_prefix + ".sorted.dup.all.metrics.insert_size_metrics)")
+        job=Job(command="minInsertSize=\$(awk 'NR==8 {print (\$1-(\$2*3))}' "+ alignment_file_prefix + ".sorted.dup.recall.all.metrics.insert_size_metrics)")
         return job
 
     def get_job_mean_cov(self, sample):
         alignment_file_prefix = os.path.join("alignment", sample.name, sample.name + ".")
-        job=Job(command="meanCov=\$( grep " + sample.name + " " + alignment_file_prefix + ".sorted.dup.all.coverage.sample_summary | cut -f3")
+        job=Job(command="meanCov=\$( grep " + sample.name + " " + alignment_file_prefix + ".sorted.dup.recall.all.coverage.sample_summary | cut -f3")
         return job
 
     def get_job_mean_read_length(self, sample):
         alignment_file_prefix = os.path.join("alignment", sample.name, sample.name + ".")
-        job=Job(command="meanReadLen=\$(awk 'NR==10 {print \$16}' " + alignment_file_prefix + "..all.metrics.alignment_summary_metrics")
+        job=Job(command="meanReadLen=\$(awk 'NR==10 {print \$16}' " + alignment_file_prefix + "sorted.dup.recall.all.metrics.alignment_summary_metrics")
         return job
 
     def extract_sclip(self):
@@ -71,7 +71,7 @@ class Puure(dnaseq.DnaSeq):
             ], name="extract_sclip_" + sample.name)
             
             job = concat_jobs([job,
-                bvatools.extract_sclip(alignment_file_prefix + "sorted.dup.bam", sclip_file_prefix, "\$maxInsertSize")
+                bvatools.extract_sclip(alignment_file_prefix + "sorted.dup.recall.bam", sclip_file_prefix, "\$maxInsertSize")
             ], name="extract_sclip_" + sample.name)
             
             job = concat_jobs([job,
@@ -545,7 +545,7 @@ class Puure(dnaseq.DnaSeq):
                     "\$meanCov",
                     "\$maxInsertSize",
                     config.param('DEFAULT', 'min_overlap_for_cluster'),
-                    config.param('DEFAULT', 'exclusion_file')
+                    config.param('DEFAULT', 'genome_mappability_bed_indexed')
                   )
                 ], name="analyse_find_insert_tmp" + type_insert + "_" + sample.name)
             ], name="analyse_find_insert" + type_insert + "_" + sample.name)
@@ -596,6 +596,7 @@ class Puure(dnaseq.DnaSeq):
             self.merge_realigned,
             self.fix_mate_by_coordinate,
             self.picard_mark_duplicates,
+            self.recalibration,
             self.metrics,
             self.extract_sclip,
             self.extract_bam_unmap,
