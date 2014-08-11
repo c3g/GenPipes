@@ -67,7 +67,7 @@ class Puure(dnaseq.DnaSeq):
             sclip_file_prefix = os.path.join("sclip", sample.name, sample.name + ".")
             
             job = concat_jobs([Job(command="mkdir -p " + sclip_directory),
-                get_job_max_insert_size(self, sample)
+                self.get_job_max_insert_size(sample)
             ], name="extract_sclip_" + sample.name)
             
             job = concat_jobs([job,
@@ -489,10 +489,10 @@ class Puure(dnaseq.DnaSeq):
             ray_directory = os.path.join("scaffolds", sample.name, "ray", "ray" + config.param('ray', 'kmer'))
             extract_file_prefix = os.path.join("extract", sample.name, sample.name + ".")
             
-            jobMaxInsert = get_job_max_insert_size(self, sample)
-            jobMinInsert = get_job_min_insert_size(self, sample)
-            jobMeanCov = get_job_mean_cov(self, sample)
-            jobMeanReadLength=get_job_mean_read_length(self,sample)
+            jobMaxInsert = self.get_job_max_insert_size(sample)
+            jobMinInsert = self.get_job_min_insert_size(sample)
+            jobMeanCov = self.get_job_mean_cov(sample)
+            jobMeanReadLength = self.get_job_mean_read_length(sample)
             
             job = concat_jobs([
                 jobMinInsert,
