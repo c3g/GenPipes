@@ -574,16 +574,16 @@ class Puure(dnaseq.DnaSeq):
         return jobs
 
     def find_virus(self):
-        return find_insertion(self,"Virus")
+        return self.find_insertion("Virus")
 
     def find_human(self):
-        return find_insertion(self,"Human")
+        return self.find_insertion("Human")
 
     def find_other(self):
-        return find_insertion(self,"Other")
+        return self.find_insertion("Other")
 
     def find_none(self):
-        return find_insertion(self,"None")
+        return self.find_insertion("None")
 
     @property
     def steps(self):
