@@ -46,7 +46,7 @@ def basefreq(input, output, positions, per_rg):
 
     return job
 
-def depth_of_coverage(input, output, coverage_bed, reference_genome=""):
+def depth_of_coverage(input, output, coverage_bed, reference_genome="", other_options=""):
     job = Job([input, coverage_bed], [output], [['bvatools_depth_of_coverage', 'module_java'], ['bvatools_depth_of_coverage', 'module_bvatools']])
 
     if not reference_genome:
@@ -60,7 +60,7 @@ def depth_of_coverage(input, output, coverage_bed, reference_genome=""):
   > {output}""".format(
         java_other_options=config.param('bvatools_depth_of_coverage', 'java_other_options'),
         ram=config.param('bvatools_depth_of_coverage', 'ram'),
-        other_options=config.param('bvatools_depth_of_coverage', 'other_options', required=False),
+        other_options=other_options,
         reference_genome=reference_genome,
         intervals=" \\\n  --intervals " + coverage_bed if coverage_bed else "",
         input=input,
@@ -69,7 +69,7 @@ def depth_of_coverage(input, output, coverage_bed, reference_genome=""):
 
     return job
 
-def extract_sclip(bamFile, output_prefix, flank=200):
+def extract_sclip(bamFile, output_prefix, flank="200"):
     job = Job([bamFile], [output_prefix + ".sc.bam", output_prefix + ".scPositions.txt", output_prefix + ".scSequences.txt"], [['bvatools_ratiobaf', 'module_java'], ['bvatools_ratiobaf', 'module_bvatools']])
 
     reference_dictionary = config.param('bvatools_ratiobaf', 'genome_dictionary', type='filepath')

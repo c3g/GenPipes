@@ -244,7 +244,13 @@ class DnaSeq(illumina.Illumina):
             job.name = "gatk_depth_of_coverage.target." + sample.name
             jobs.append(job)
 
-            job = bvatools.depth_of_coverage(input, recal_file_prefix + "coverage.tsv", bvatools.resolve_readset_coverage_bed(sample.readsets[0]))
+            job = bvatools.depth_of_coverage(
+                input, 
+                recal_file_prefix + "coverage.tsv", 
+                bvatools.resolve_readset_coverage_bed(sample.readsets[0]), 
+                config.param('bvatools_depth_of_coverage', 'other_options', required=False)
+            )
+            
             job.name = "bvatools_depth_of_coverage." + sample.name
             jobs.append(job)
 
@@ -549,4 +555,5 @@ class DnaSeq(illumina.Illumina):
             self.deliverable
         ]
 
-DnaSeq().submit_jobs()
+if __name__ == "__main__": 
+   DnaSeq().submit_jobs()

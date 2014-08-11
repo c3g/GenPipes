@@ -9,6 +9,7 @@ __all__ = [
     "igvtools",
     "metrics",
     "picard",
+    "ray",
     "readset",
     "rrna_amplicons",
     "sample",

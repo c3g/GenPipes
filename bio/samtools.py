@@ -17,6 +17,17 @@ def index(input, output):
 
     return job
 
+def faidx(input):
+    job = Job([input], [input + ".fai"], [['samtools_index', 'module_samtools']])
+
+    job.command = \
+"""samtools faidx \\
+  {input}""".format(
+        input=input
+    )
+
+    return job
+
 def flagstat(input, output):
     job = Job([input], [output], [['samtools_flagstat', 'module_samtools']])
 
