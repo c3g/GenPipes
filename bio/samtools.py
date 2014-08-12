@@ -6,8 +6,8 @@
 from core.config import *
 from core.job import *
 
-def index(input, output):
-    job = Job([input], [output], [['samtools_index', 'module_samtools']])
+def index(input):
+    job = Job([input], [input + ".bai"], [['samtools_index', 'module_samtools']])
 
     job.command = \
 """samtools index \\

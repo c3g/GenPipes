@@ -240,7 +240,7 @@ class DnaSeq(illumina.Illumina):
             jobs.append(job)
 
             # Compute CCDS coverage
-            job = gatk.depth_of_coverage(input, recal_file_prefix + "all.coverage", config.param('metrics', 'coverage_targets'))
+            job = gatk.depth_of_coverage(input, recal_file_prefix + "CCDS.coverage", config.param('metrics', 'coverage_targets'))
             job.name = "gatk_depth_of_coverage.target." + sample.name
             jobs.append(job)
 

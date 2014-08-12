@@ -11,26 +11,26 @@ from core.job import *
 
 
 ## function for python tools ## 
-def py_addLengthRay (scaffolds_File, length_file, output):
-    job = Job([scaffolds_File, length_file], [output], [['DEFAULT' , 'module_tools'], ['DEFAULT' , 'module_python']])
+def py_addLengthRay (file_scaffolds_fasta, length_file, output):
+    job = Job([file_scaffolds_fasta, length_file], [output], [['DEFAULT' , 'module_tools'], ['DEFAULT' , 'module_python']])
     
     job.command = \
 """python addLengthRay.py \\
   -s {scaFile} \\
   -l {lenFile}""".format(
-        scaFile=scaffolds_File,
-        lenFile=fastq
+        scaFile=file_scaffolds_fasta,
+        lenFile=length_file
     )
     
     return job
-def py_blastMatchSca (scaffolds_File, blast_file, output):
-    job = Job([scaffolds_File, blast_file], [output], [['DEFAULT' , 'module_tools'], ['DEFAULT' , 'module_python']])
+def py_blastMatchSca (prefix_scaffolds_fasta, blast_file, output):
+    job = Job([prefix_scaffolds_fasta + ".fasta", blast_file], [output], [['DEFAULT' , 'module_tools'], ['DEFAULT' , 'module_python']])
     
     job.command = \
 """python blastMatchSca.py \\
   -f {scaFile} \\
   -b {blastFile}""".format(
-        scaFile=scaffolds_File,
+        scaFile=prefix_scaffolds_fasta,
         blastFile=blast_file
     )
     
@@ -86,7 +86,7 @@ def filter_long_indel(input, output):
 ## function for R tools ##
 
 def r_select_scaffolds(input, output, name_sample, type_insert, min_insert_size=200):
-    job = Job([input], [output], [['DEFAULT' , 'module_R']])
+    job = Job(input, output, [['DEFAULT' , 'module_R']])
     
     job.command = \
 """ R --no-save --args \\
@@ -104,7 +104,7 @@ def r_select_scaffolds(input, output, name_sample, type_insert, min_insert_size=
     return job
 
 def r_find_cluster(input, output, unmap_type, name_sample, type_insert, max_insert_size=200, min_mapping_quality=10):
-    job = Job([input], [output], [['DEFAULT' , 'module_R']])
+    job = Job(input, output, [['DEFAULT' , 'module_R']])
     
     job.command = \
 """ R --no-save --args \\
@@ -125,7 +125,7 @@ def r_find_cluster(input, output, unmap_type, name_sample, type_insert, max_inse
     return job
 
 def r_find_insert(input, output, name_sample, type_insert, mean_coverage=20, max_insert_size=200, min_overlap=2, exclu_file="None"):
-    job = Job([input], [output], [['DEFAULT' , 'module_R']])
+    job = Job(input, output, [['DEFAULT' , 'module_R']])
     
     job.command = \
 """ R --no-save --args \\
@@ -149,7 +149,7 @@ def r_find_insert(input, output, name_sample, type_insert, mean_coverage=20, max
     return job
 
 def r_filter_insert(input, output, name_sample, type_insert, mean_coverage=20, max_insert_size=200, strand=1, min_num_read=1, mean_read_length=100):
-    job = Job([input], [output], [['DEFAULT' , 'module_R']])
+    job = Job(input, output, [['DEFAULT' , 'module_R']])
     
     job.command = \
 """ R --no-save --args \\
