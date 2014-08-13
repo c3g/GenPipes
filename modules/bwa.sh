@@ -1,27 +1,11 @@
 #!/bin/bash
 
-###################
-################### BWA
-###################
-# tpx patch can be found here:
-# ftp://ftp.conveysupport.com/outgoing/bwa/bwa-0.6.2-tpx.patch
-VERSION="0.7.9a"
-INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/bwa/
-mkdir -p $INSTALL_PATH
-cd $INSTALL_PATH
-
-# Download
-wget http://downloads.sourceforge.net/project/bio-bwa/bwa-$VERSION.tar.bz2
-tar xvjf bwa-$VERSION.tar.bz2
-
-# Compile
-cd bwa-$VERSION
 #
 # BWA
 #
 
 SOFTWARE=bwa
-VERSION=0.7.9a
+VERSION=0.7.10
 
 # 'MUGQIC_INSTALL_HOME_DEV' for development, 'MUGQIC_INSTALL_HOME' for production (don't write '$' before!)
 INSTALL_HOME=MUGQIC_INSTALL_HOME
@@ -56,7 +40,6 @@ tar jxvf $ARCHIVE
 
 SOFTWARE_DIR=$SOFTWARE-$VERSION
 cd $SOFTWARE_DIR
->>>>>>> a441cda364f569f2c231fce63b9ed69270eaaec1
 make -j8
 
 # Add permissions and install software
