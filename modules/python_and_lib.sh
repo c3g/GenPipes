@@ -154,6 +154,8 @@ set -e
 # python setup.py build # NOTE: no ssh -X from MacOS when building this
 # python setup.py install
 
+# pysam
+easy_install pysam
 
 
 # Add permissions
