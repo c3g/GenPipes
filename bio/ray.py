@@ -11,22 +11,22 @@ def ray(pathOut, pair1=[], pair2=[], single=[], options=""):
       raise Exception("Error Ray: the number of paired files is different :" + len(pair1) + " - " + len(pair2))
     
     inputList = []
-    pair=""
+    strPair=""
     for i in range(len(pair1)):
-        pair = pair + "-p " + pair1[i] + " " + pair2[i] + " " 
+        strPair = strPair + "-p " + pair1[i] + " " + pair2[i] + " " 
         inputList.append(pair1[i])
         inputList.append(pair2[i])
     
-    single=""
-    for element in single:
-        single = single + "-s " + element + " "
-        inputList.append(element)
+    strSingle=""
+    for i in range(len(single)):
+        strSingle = strSingle + "-s " + single[i] + " "
+        inputList.append(single[i])
         
     job = Job(
         inputList, 
         [#TODO add output files
          os.path.join(pathOut, "Scaffolds.fasta"),
-         os.path.join(pathOut, "Scaffolds.fasta.length")
+         os.path.join(pathOut, "ScaffoldLengths.txt")
         ], 
         [
          ['DEFAULT', 'module_gcc'],
@@ -36,15 +36,18 @@ def ray(pathOut, pair1=[], pair2=[], single=[], options=""):
     )
     
     job.command = \
-"""mpiexec Ray -k {kmer} \\
+"""rm -r {rmdir}; mpiexec {optionmpi} Ray -k {kmer} \\
   {pair} \\
   {single} \\
   -o {output}""".format(
+        optionmpi=config.param('DEFAULT', 'openmpi_options', required=False),
+        rmdir=pathOut,
+        mkdir=pathOut,
         kmer=config.param('ray', 'kmer'),
         options=options,
-        pair=pair,
-        single=single,
-        output=pathOut + " \\\n  > "
+        pair=strPair,
+        single=strSingle,
+        output=pathOut
     )
 
     return job

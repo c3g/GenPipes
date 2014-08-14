@@ -73,10 +73,10 @@ def extract_sclip(bamFile, output_prefix, flank="200"):
     job = Job(
         [bamFile], 
         [
-          output_prefix + "sc.bam", 
-          output_prefix + "scOthers.bam", 
-          output_prefix + "scPositions.txt", 
-          output_prefix + "scSequences.txt"
+          output_prefix + ".sc.bam", 
+          output_prefix + ".scOthers.bam", 
+          output_prefix + ".scPositions.txt", 
+          output_prefix + ".scSequences.txt"
         ], 
         [
           ['bvatools_ratiobaf', 'module_java'], 
@@ -91,9 +91,9 @@ def extract_sclip(bamFile, output_prefix, flank="200"):
   --bam {bamFile} \\
   --flank {flank} \\
   --minSCCount {minSCCount} \\
-  --minSCLength {minSCLength}
+  --minSCLength {minSCLength} \\
   --minMappingQuality {minMappingQuality} \\
-  --threads {threads}
+  --threads {threads} \\
   --prefix {output_prefix}""".format(
         java_other_options=config.param('bvatools_extractsclip', 'java_other_options'),
         ram=config.param('bvatools_extractsclip', 'ram'),
