@@ -43,7 +43,7 @@ def ray(pathOut, pair1=[], pair2=[], single=[], options=""):
         optionmpi=config.param('DEFAULT', 'openmpi_options', required=False),
         rmdir=pathOut,
         mkdir=pathOut,
-        kmer=config.param('ray', 'kmer'),
+        kmer=config.param('assembly_of_unmap', 'kmer'),
         options=options,
         pair=strPair,
         single=strSingle,

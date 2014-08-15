@@ -271,7 +271,7 @@ class Puure(illumina.Illumina):
             sclip_file_prefix = os.path.join("sclip", sample.name, sample.name)
             
             job = concat_jobs([
-                Job(command="mkdir -p " + sclip_directory),
+                Job(command="if [ ! -d " + sclip_directory + " ]; then mkdir " + sclip_directory + "; fi"),
                 self.get_job_max_insert_size(sample),
                 bvatools.extract_sclip(alignment_file_prefix + "sorted.dup.bam", sclip_file_prefix, "\$maxInsertSize"),
                 samtools.index(sclip_file_prefix + ".sc.bam"),
@@ -291,7 +291,7 @@ class Puure(illumina.Illumina):
             extract_directory = os.path.join("extract", sample.name)
             extract_file_prefix = os.path.join("extract", sample.name, sample.name + ".")
             
-            jobMkdir = Job(command="mkdir -p " + extract_directory)
+            jobMkdir = Job(command="if [ ! -d " + extract_directory + " ]; then mkdir " + extract_directory + "; fi")
             ## extract Orphan
             job = concat_jobs([
 	        jobMkdir,
@@ -344,7 +344,7 @@ class Puure(illumina.Illumina):
             extract_file_prefix = os.path.join("extract", sample.name, sample.name + ".")
             sclip_file_prefix = os.path.join("sclip", sample.name, sample.name + ".")
             
-            jobMkdir = Job(command="mkdir -p " + extract_directory)
+            jobMkdir = Job(command="if [ ! -d " + extract_directory + " ]; then mkdir " + extract_directory + "; fi")
             
             ## create fastq of ORPHAN
             job = picard.sam_to_fastq(extract_file_prefix + "ORPHAN.sName.bam", extract_file_prefix + "ORPHAN.1.fastq.gz", extract_file_prefix + "ORPHAN.2.fastq.gz")
@@ -485,7 +485,7 @@ class Puure(illumina.Illumina):
             
             #map Orphan read
             job = concat_jobs([
-                Job(command="mkdir " + cov_directory),
+                Job(command="if [ ! -d " + cov_directory + " ]; then mkdir " + cov_directory + "; fi"),
                 pipe_jobs([
                     bwa.mem(
                         extract_file_prefix + "ORPHAN.1.fastq.gz",
@@ -510,7 +510,7 @@ class Puure(illumina.Illumina):
             
             #map OEA read
             job = concat_jobs([
-                Job(command="mkdir " + cov_directory),
+                Job(command="if [ ! -d " + cov_directory + " ]; then mkdir " + cov_directory + "; fi"),
                 pipe_jobs([
                     bwa.mem(
                         extract_file_prefix + "OEAUNMAP.1.equal.fastq.gz",
@@ -533,7 +533,7 @@ class Puure(illumina.Illumina):
             jobs.append(job)
             
             job = concat_jobs([
-                Job(command="mkdir " + cov_directory),
+                Job(command="if [ ! -d " + cov_directory + " ]; then mkdir " + cov_directory + "; fi"),
                 pipe_jobs([
                     bwa.mem(
                         extract_file_prefix + "OEAUNMAP.2.equal.fastq.gz",
@@ -557,7 +557,7 @@ class Puure(illumina.Illumina):
             
             #map sclip read
             job = concat_jobs([
-                Job(command="mkdir " + cov_directory),
+                Job(command="if [ ! -d " + cov_directory + " ]; then mkdir " + cov_directory + "; fi"),
                 pipe_jobs([
                     bwa.mem(
                         extract_file_prefix + "sclip.1.fastq.gz",
@@ -580,7 +580,7 @@ class Puure(illumina.Illumina):
             jobs.append(job)
             
             job = concat_jobs([
-                Job(command="mkdir " + cov_directory),
+                Job(command="if [ ! -d " + cov_directory + " ]; then mkdir " + cov_directory + "; fi"),
                 pipe_jobs([
                     bwa.mem(
                         extract_file_prefix + "sclip.2.fastq.gz",
