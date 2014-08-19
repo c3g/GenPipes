@@ -148,11 +148,11 @@ class BatchScheduler(Scheduler):
 JOB_NAME={job.name}
 JOB_DONE={job.done}
 printf "\\n$SEPARATOR_LINE\\n"
-echo "Begin MUGQIC Job $JOB_NAME at `date +%FT%H.%M.%S`" && \\
+echo "Begin MUGQIC Job $JOB_NAME at `date +%FT%H:%M:%S`" && \\
 rm -f $JOB_DONE && \\
 {command_with_modules}
 MUGQIC_STATE=$PIPESTATUS
-echo "End MUGQIC Job $JOB_NAME at `date +%FT%H.%M.%S`"
+echo "End MUGQIC Job $JOB_NAME at `date +%FT%H:%M:%S`"
 echo MUGQICexitStatus:$MUGQIC_STATE
 if [ $MUGQIC_STATE -eq 0 ] ; then touch $JOB_DONE ; else exit $MUGQIC_STATE ; fi""".format(
                             job=job,

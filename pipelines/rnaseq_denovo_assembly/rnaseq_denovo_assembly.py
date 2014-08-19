@@ -416,7 +416,8 @@ awk '{{\$4 = \\\"cds.\\\"\$4; print}}' {transdecoder_pfam} > {transdecoder_pfam}
 {trinotate_command} LOAD_tmhmm {tmhmm} && \\
 {trinotate_command} LOAD_signalp {signalp} && \\
 {trinotate_command} LOAD_rnammer {rnammer} && \\
-{trinotate_command} report -E {evalue} --pfam_cutoff {pfam_cutoff} > {trinotate_report}""".format(
+{trinotate_command} report -E {evalue} --pfam_cutoff {pfam_cutoff} | cut -f 1-12 \\
+  > {trinotate_report}""".format(
                     trinity_fasta=os.path.join("..", trinity_fasta),
                     trinotate_command="\$TRINOTATE_HOME/Trinotate " + os.path.basename(trinotate_sqlite),
                     transdecoder_pep=os.path.join("..", transdecoder_pep),
