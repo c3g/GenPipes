@@ -75,7 +75,21 @@ def cat_variants(variants, output):
 
 def depth_of_coverage(input, output_prefix, intervals=""):
 
-    job = Job([input], [output_prefix + ".sample_summary"], [['gatk_depth_of_coverage', 'module_java'], ['gatk_depth_of_coverage', 'module_gatk']])
+    job = Job(
+        [input], 
+        [
+          output_prefix + ".sample_summary",
+          output_prefix + ".sample_cumulative_coverage_counts",
+          output_prefix + ".sample_cumulative_coverage_proportions",
+          output_prefix + ".sample_interval_statistics",
+          output_prefix + ".sample_interval_summary",
+          output_prefix + ".sample_statistics"
+        ],  
+        [
+          ['gatk_depth_of_coverage', 'module_java'], 
+          ['gatk_depth_of_coverage', 'module_gatk']
+        ]
+    )
 
     summary_coverage_thresholds = sorted(config.param('gatk_depth_of_coverage', 'summary_coverage_thresholds', type='list'), key=int)
 

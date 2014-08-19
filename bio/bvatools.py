@@ -70,7 +70,18 @@ def depth_of_coverage(input, output, coverage_bed, reference_genome="", other_op
     return job
 
 def extract_sclip(bamFile, output_prefix, flank="200"):
-    job = Job([bamFile], [output_prefix + ".sc.bam", output_prefix + ".scPositions.txt", output_prefix + ".scSequences.txt"], [['bvatools_ratiobaf', 'module_java'], ['bvatools_ratiobaf', 'module_bvatools']])
+    job = Job(
+        [bamFile], 
+        [
+          output_prefix + ".sc.bam", 
+          output_prefix + ".scOthers.bam", 
+          output_prefix + ".scPositions.txt", 
+          output_prefix + ".scSequences.txt"
+        ], 
+        [
+          ['bvatools_ratiobaf', 'module_java'], 
+          ['bvatools_ratiobaf', 'module_bvatools']
+        ])
 
     reference_dictionary = config.param('bvatools_ratiobaf', 'genome_dictionary', type='filepath')
 
@@ -79,19 +90,19 @@ def extract_sclip(bamFile, output_prefix, flank="200"):
   extractsclip {other_options} \\
   --bam {bamFile} \\
   --flank {flank} \\
-  --minSCCount{minSCCount} \\
-  --minSCLength {minSCLength}
+  --minSCCount {minSCCount} \\
+  --minSCLength {minSCLength} \\
   --minMappingQuality {minMappingQuality} \\
-  --threads {threads}
+  --threads {threads} \\
   --prefix {output_prefix}""".format(
         java_other_options=config.param('bvatools_extractsclip', 'java_other_options'),
         ram=config.param('bvatools_extractsclip', 'ram'),
         other_options=config.param('bvatools_extractsclip', 'other_options', required=False),
         bamFile=bamFile,
         flank=flank,
-        minSCCount=config.param('bvatools_extractsclip', 'minSCCount'),
-        minSCLength=config.param('bvatools_extractsclip', 'minSCLength'),
-        minMappingQuality=config.param('bvatools_extractsclip', 'minMappingQuality'),
+        minSCCount=config.param('bvatools_extractsclip', 'min_sclip_count'),
+        minSCLength=config.param('bvatools_extractsclip', 'kmer'),
+        minMappingQuality=config.param('bvatools_extractsclip', 'min_mapping_quality'),
         threads=config.param('bvatools_extractsclip', 'threads'),
         output_prefix=output_prefix
     )
