@@ -555,5 +555,5 @@ class DnaSeq(illumina.Illumina):
             self.deliverable
         ]
 
-if __name__ == "__main__": 
-   DnaSeq().submit_jobs()
+if __name__ == '__main__': 
+    DnaSeq().submit_jobs()

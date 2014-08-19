@@ -31,21 +31,6 @@ log = logging.getLogger(__name__)
 
 class RnaSeq(illumina.Illumina):
 
-    @property
-    def contrasts(self):
-        if not hasattr(self, "_contrasts"):
-            self._contrasts = parse_design_file(self.args.design.name, self.samples)
-        return self._contrasts
-
-    def trim_metrics(self):
-        # Transform pipeline 'PAIRED_END' or 'SINGLE_END' run_type to 'paired' or 'single' parameter
-        run_type = re.sub("_END$", "", self.run_type).lower()
-
-        job = metrics.merge_trimmomatic_stats("trim.stats.csv", "trim", os.path.join("metrics", "trimming.stats"), run_type)
-        job.input_files = [os.path.join("trim", readset.sample.name, readset.name + ".trim.stats.csv") for readset in self.readsets]
-        job.name = "trim_metrics"
-        return [job]
-
     def tophat(self):
         jobs = []
         for readset in self.readsets:
@@ -350,7 +335,7 @@ cat \\
         return [
             self.picard_sam_to_fastq,
             self.trimmomatic,
-            self.trim_metrics,
+            self.merge_trimmomatic_stats,
             self.tophat,
             self.picard_merge_sam_files,
             self.picard_reorder_sam,
@@ -369,4 +354,5 @@ cat \\
 
         super(RnaSeq, self).__init__()
         
-RnaSeq().submit_jobs()
+if __name__ == '__main__':
+    RnaSeq().submit_jobs()

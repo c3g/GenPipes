@@ -11,8 +11,8 @@ from config import *
 separator_line = "#" + "-" * 79
 
 def create_scheduler(type):
-    if type == "torque":
-        return TorqueScheduler()
+    if type == "pbs":
+        return PBSScheduler()
     elif type == "batch":
         return BatchScheduler()
     else:
@@ -26,6 +26,8 @@ class Scheduler:
     def print_header(self, pipeline):
         print(
 """#!/bin/bash
+# Exit immediately on error
+set -eu -o pipefail
 
 {separator_line}
 # {pipeline.__class__.__name__} {scheduler.__class__.__name__} Job Submission Bash script
@@ -66,7 +68,7 @@ STEP={step.name}
 mkdir -p $JOB_OUTPUT_DIR/$STEP""".format(separator_line=separator_line, step=step)
         )
 
-class TorqueScheduler(Scheduler):
+class PBSScheduler(Scheduler):
     def submit(self, pipeline):
         self.print_header(pipeline)
         for step in pipeline.step_range:

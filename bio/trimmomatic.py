@@ -19,8 +19,7 @@ def trimmomatic(
     unpaired_output2,
     single_output,
     quality_offset,
-    trim_log,
-    trim_stats
+    trim_log
     ):
 
     if input2:  # Paired end reads
@@ -28,9 +27,9 @@ def trimmomatic(
         outputs = [paired_output1, unpaired_output1, paired_output2, unpaired_output2]
     else:   # Single end reads
         inputs = [input1]
-        outputs = [singleOutput]
+        outputs = [single_output]
 
-    job = Job(inputs, outputs + [trim_log, trim_stats], [['trimmomatic', 'module_java'], ['trimmomatic', 'module_trimmomatic']])
+    job = Job(inputs, outputs + [trim_log], [['trimmomatic', 'module_java'], ['trimmomatic', 'module_trimmomatic']])
 
     # Retrieve output directories removing duplicates if any
     output_dirs = list(collections.OrderedDict.fromkeys([os.path.dirname(output) for output in outputs]))
@@ -70,8 +69,5 @@ java -XX:ParallelGCThreads=1 -Xmx2G -jar \$TRIMMOMATIC_JAR {mode} \\
         job.command += " \\\n  HEADCROP:" + str(headcrop_length)
 
     job.command += " \\\n  2> " + trim_log
-
-    # Compute statistics
-    job.command += " && \\\ngrep ^Input " + trim_log + " | perl -pe 's/^Input Read Pairs: (\\d+).*Both Surviving: (\\d+).*Forward Only Surviving: (\\d+).*$/Raw Fragments,\\1\\nFragment Surviving,\\2\\nSingle Surviving,\\3/' > " + trim_stats
 
     return job

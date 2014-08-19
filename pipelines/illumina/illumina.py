@@ -12,8 +12,10 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 # MUGQIC Modules
 from core.job import *
 from core.pipeline import *
+from bio.design import *
 from bio.readset import *
 
+from bio import metrics
 from bio import picard
 from bio import trimmomatic
 
@@ -44,6 +46,15 @@ class Illumina(Pipeline):
             raise Exception("Error: readset run types " + ",".join(["\"" + run_type + "\"" for run_type in run_types]) +
             " are invalid (should be all PAIRED_END or all SINGLE_END)!")
 
+    @property
+    def contrasts(self):
+        if not hasattr(self, "_contrasts"):
+            if self.args.design:
+                self._contrasts = parse_old_design_file(self.args.design.name, self.samples)
+            else:
+                raise Exception("Error: missing '--design' option!")
+        return self._contrasts
+
     def picard_sam_to_fastq(self):
         jobs = []
         for readset in self.readsets:
@@ -66,6 +77,8 @@ class Illumina(Pipeline):
         jobs = []
         for readset in self.readsets:
             trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
+            trim_log = trim_file_prefix + "log"
+            trim_stats = trim_file_prefix + "stats.csv"
             if readset.run_type == "PAIRED_END":
                 if readset.bam and not readset.fastq1:
                     readset.fastq1 = re.sub("\.bam$", ".pair1.fastq.gz", readset.bam)
@@ -79,8 +92,7 @@ class Illumina(Pipeline):
                     trim_file_prefix + "single2.fastq.gz",
                     None,
                     readset.quality_offset,
-                    trim_file_prefix + "out",
-                    trim_file_prefix + "stats.csv"
+                    trim_log
                 )
             elif readset.run_type == "SINGLE_END":
                 if readset.bam and not readset.fastq1:
@@ -94,15 +106,43 @@ class Illumina(Pipeline):
                     None,
                     trim_file_prefix + "single.fastq.gz",
                     readset.quality_offset,
-                    trim_file_prefix + "out",
-                    trim_file_prefix + "stats.csv"
+                    trim_log
                 )
             else:
                 raise Exception("Error: run type \"" + readset.run_type +
                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+
             job.name = "trimmomatic." + readset.name
             jobs.append(job)
         return jobs
+
+    def merge_trimmomatic_stats(self):
+        merge_trim_stats = os.path.join("metrics", "trimming.stats")
+        job = Job(command="rm -f " + merge_trim_stats)
+        for readset in self.readsets:
+            trim_log = os.path.join("trim", readset.sample.name, readset.name + ".trim.log")
+            if readset.run_type == "PAIRED_END":
+                perl_command = "perl -pe 's/^Input Read Pairs: (\\\\d+).*Both Surviving: (\\\\d+).*Forward Only Surviving: (\\\\d+).*$/{readset.sample.name}\t{readset.name}\t\\\\1\t\\\\2\t\\\\3/'".format(readset=readset)
+            elif readset.run_type == "SINGLE_END":
+                perl_command = "perl -pe 's/^Input Reads: (\\\\d+).*Surviving: (\\\\d+).*$/{readset.sample.name}\t{readset.name}\t\\\\1\t\\\\2\t\\\\2/'".format(readset=readset)
+
+            job = concat_jobs([
+                job,
+                Job(
+                    [trim_log],
+                    [merge_trim_stats],
+                    command="""\
+grep ^Input {trim_log} | \\
+{perl_command} \\
+  >> {merge_trim_stats}""".format(
+                        trim_log=trim_log,
+                        perl_command=perl_command,
+                        merge_trim_stats=merge_trim_stats
+                    )
+                )
+            ], name="merge_trimmomatic_stats")
+
+        return [job]
 
     def __init__(self):
         # Add pipeline specific arguments

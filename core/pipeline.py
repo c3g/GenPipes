@@ -52,7 +52,7 @@ class Pipeline(object):
             self._argparser.add_argument("-c", "--config", help="config INI-style list of files; config parameters are overwritten based on files order", nargs="+", type=file, required=True)
             self._argparser.add_argument("-s", "--steps", help="step range e.g. '1-5', '3,6,7', '2,4-8'", required=True)
             self._argparser.add_argument("-o", "--output-dir", help="output directory (default: current)", default=os.getcwd())
-            self._argparser.add_argument("-j", "--job-scheduler", help="job scheduler type (default: torque)", choices=["torque", "batch"], default="torque")
+            self._argparser.add_argument("-j", "--job-scheduler", help="job scheduler type (default: pbs)", choices=["pbs", "batch"], default="pbs")
             self._argparser.add_argument("-f", "--force", help="force creation of jobs even if up to date (default: false)", action="store_true")
             self._argparser.add_argument("-l", "--log", help="log level (default: info)", choices=["debug", "info", "warning", "error", "critical"], default="info")
 
@@ -130,7 +130,7 @@ class Pipeline(object):
 
                 # Job .done file name contains the command checksum.
                 # Thus, if the command is modified, the job is not up-to-date anymore.
-                job.done = os.path.join("job_output", step.name, job.name + "." + hashlib.md5(job.command).hexdigest() + ".mugqic.done")
+                job.done = os.path.join("job_output", step.name, job.name + "." + hashlib.md5(job.command_with_modules).hexdigest() + ".mugqic.done")
                 job.output_dir = self.output_dir
                 job.dependency_jobs = self.dependency_jobs(job)
                 if not self.force_jobs and job.is_up2date():

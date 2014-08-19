@@ -59,7 +59,43 @@ def parse_design_file(design_file, samples):
                 elif sample_contrast_type == "treatment":
                     contrast.treatments.append(sample)
                 else:
-                    raise Exception("Error: invalid value for sample " + sample_name + " and contrast " + contrast_name + " in design file " + design_file + " (should be 'control', 'treatment' or '')!")
+                    raise Exception("Error: invalid value for sample " + sample_name + " and contrast " + contrast.name + " in design file " + design_file + " (should be 'control', 'treatment' or '')!")
+
+    for contrast in contrasts:
+        log.info("Contrast " + contrast.name + " (controls: " + str(len(contrast.controls)) + ", treatments: " + str(len(contrast.treatments)) + ") created")
+    log.info(str(len(contrasts)) + " contrast" + ("s" if len(contrasts) > 1 else "") + " parsed\n")
+
+    return contrasts
+
+def parse_old_design_file(design_file, samples):
+
+    log.warning("Parse old-style design file " + design_file + " ...")
+    design_csv = csv.DictReader(open(design_file, 'rb'), delimiter='\t')
+
+    # Skip first column which is Sample
+    contrasts = [Contrast(name) for name in design_csv.fieldnames[1:]]
+
+    for line in design_csv:
+
+        sample_name = line['SampleID']
+        matching_samples = [sample for sample in samples if sample.name == sample_name]
+        if matching_samples:
+            # There should be only one matching sample
+            sample = matching_samples[0]
+        else:
+            raise Exception("Error: sample " + sample_name + " in design file " + design_file + " not found in pipeline samples!")
+
+        # Skip first column which is Sample
+        for contrast in contrasts:
+            sample_contrast_type = line[contrast.name]
+            # Empty types are ignored
+            if sample_contrast_type:
+                if sample_contrast_type == "1":
+                    contrast.controls.append(sample)
+                elif sample_contrast_type == "2":
+                    contrast.treatments.append(sample)
+                else:
+                    raise Exception("Error: invalid value for sample " + sample_name + " and contrast " + contrast.name + " in design file " + design_file + " (should be '1', '2' or '')!")
 
     for contrast in contrasts:
         log.info("Contrast " + contrast.name + " (controls: " + str(len(contrast.controls)) + ", treatments: " + str(len(contrast.treatments)) + ") created")
