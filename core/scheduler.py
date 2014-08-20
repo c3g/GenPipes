@@ -11,8 +11,8 @@ from config import *
 separator_line = "#" + "-" * 79
 
 def create_scheduler(type):
-    if type == "torque":
-        return TorqueScheduler()
+    if type == "pbs":
+        return PBSScheduler()
     elif type == "batch":
         return BatchScheduler()
     else:
@@ -26,29 +26,38 @@ class Scheduler:
     def print_header(self, pipeline):
         print(
 """#!/bin/bash
+# Exit immediately on error
+set -eu -o pipefail
 
 {separator_line}
 # {pipeline.__class__.__name__} {scheduler.__class__.__name__} Job Submission Bash script
 # Created on: {datetime}
 # Steps:
 {steps}
-{separator_line}
-
-OUTPUT_DIR={pipeline.output_dir}
-JOB_OUTPUT_DIR=$OUTPUT_DIR/job_output
-TIMESTAMP=`date +%FT%H.%M.%S`
-JOB_LIST=$JOB_OUTPUT_DIR/{pipeline.__class__.__name__}_job_list_$TIMESTAMP
-mkdir -p $OUTPUT_DIR
-cd $OUTPUT_DIR"""
+{separator_line}"""
             .format(
                 separator_line=separator_line,
                 pipeline=pipeline,
                 scheduler=self,
                 steps="\n".join(["#   " + step.name + ": " + str(len(step.jobs)) + " job" + ("s" if len(step.jobs) > 1 else "" if step.jobs else "... skipping") for step in pipeline.step_range]) + \
                 "\n#   TOTAL: " + str(len(pipeline.jobs)) + " job" + ("s" if len(pipeline.jobs) > 1 else "" if pipeline.jobs else "... skipping"),
-                datetime=datetime.datetime.now()
+                datetime=datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
             )
         )
+
+        if pipeline.jobs:
+            print(
+"""
+OUTPUT_DIR={pipeline.output_dir}
+JOB_OUTPUT_DIR=$OUTPUT_DIR/job_output
+TIMESTAMP=`date +%FT%H.%M.%S`
+JOB_LIST=$JOB_OUTPUT_DIR/{pipeline.__class__.__name__}_job_list_$TIMESTAMP
+mkdir -p $OUTPUT_DIR
+cd $OUTPUT_DIR"""
+                .format(
+                    pipeline=pipeline,
+                )
+            )
 
     def print_step(self, step):
         print("""
@@ -59,7 +68,7 @@ STEP={step.name}
 mkdir -p $JOB_OUTPUT_DIR/$STEP""".format(separator_line=separator_line, step=step)
         )
 
-class TorqueScheduler(Scheduler):
+class PBSScheduler(Scheduler):
     def submit(self, pipeline):
         self.print_header(pipeline)
         for step in pipeline.step_range:
@@ -126,7 +135,8 @@ exit \$MUGQIC_STATE" | \\
 class BatchScheduler(Scheduler):
     def submit(self, pipeline):
         self.print_header(pipeline)
-        print("SEPARATOR_LINE=`seq -s - 80 | sed 's/[0-9]//g'`")
+        if pipeline.jobs:
+            print("SEPARATOR_LINE=`seq -s - 80 | sed 's/[0-9]//g'`")
         for step in pipeline.step_range:
             if step.jobs:
                 self.print_step(step)
@@ -138,11 +148,11 @@ class BatchScheduler(Scheduler):
 JOB_NAME={job.name}
 JOB_DONE={job.done}
 printf "\\n$SEPARATOR_LINE\\n"
-echo "Begin MUGQIC Job $JOB_NAME at `date +%FT%H.%M.%S`" && \\
+echo "Begin MUGQIC Job $JOB_NAME at `date +%FT%H:%M:%S`" && \\
 rm -f $JOB_DONE && \\
 {command_with_modules}
 MUGQIC_STATE=$PIPESTATUS
-echo "End MUGQIC Job $JOB_NAME at `date +%FT%H.%M.%S`"
+echo "End MUGQIC Job $JOB_NAME at `date +%FT%H:%M:%S`"
 echo MUGQICexitStatus:$MUGQIC_STATE
 if [ $MUGQIC_STATE -eq 0 ] ; then touch $JOB_DONE ; else exit $MUGQIC_STATE ; fi""".format(
                             job=job,

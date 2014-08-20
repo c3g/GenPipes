@@ -2,92 +2,674 @@
 
 # Python Standard Modules
 import argparse
-import collections
+import glob
 import logging
 import os
+import re
 import sys
 
-sys.path.append(os.path.dirname(os.path.dirname(sys.argv[0])))
+# Append mugqic_pipeline directory to Python library path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # MUGQIC Modules
 from core.config import *
+from core.job import *
 from core.pipeline import *
 from bio.readset import *
-from bio.trimmomatic import *
+
+from bio import gq_seq_utils
+from pipelines.illumina import illumina
 
 log = logging.getLogger(__name__)
 
-class RnaSeqDeNovoAssembly(Pipeline):
+# Those functions could be moved in a separate 'trinity' module in the future if they are reused elsewhere
+def insilico_read_normalization(
+    left_or_single_reads,
+    right_reads,
+    sequence_type,
+    jellyfish_memory,
+    output_directory=None,
+    cpu=None
+    ):
 
-    @property
-    def readsets(self):
-        return self._readsets
+    normalization_stats_file = "normalization.stats.tsv"
+    output_files = ["left.norm." + sequence_type, "right.norm." + sequence_type] if right_reads else ["single.norm." + sequence_type]
+    if output_directory:
+        output_files = [os.path.join(output_directory, output_file) for output_file in output_files]
+        normalization_stats_file = os.path.join(output_directory, normalization_stats_file)
 
-    @property
-    def samples(self):
-        return self._samples
+    output_files.append(normalization_stats_file)
 
-    def trim(self, readset):
-        trim_file_prefix = "trim/" + readset.sample.name + "/" + readset.name + ".trim."
-        return trimmomatic(
-            readset.fastq1,
-            readset.fastq2,
-            trim_file_prefix + "pair1.fastq.gz",
-            trim_file_prefix + "single1.fastq.gz",
-            trim_file_prefix + "pair2.fastq.gz",
-            trim_file_prefix + "single2.fastq.gz",
-            None,
-            readset.quality_offset,
-            trim_file_prefix + "out",
-            trim_file_prefix + "stats.csv"
+    job = Job(
+        left_or_single_reads + right_reads,
+        output_files,
+        [['insilico_read_normalization', 'module_perl'], ['insilico_read_normalization', 'module_trinity']]
+    )
+
+    job.command = """\
+insilico_read_normalization.pl {other_options} \\
+  --seqType {sequence_type} \\
+  --JM {jellyfish_memory} \\
+  --max_cov {maximum_coverage} \\
+  {left_or_single_reads}{right_reads}{output_directory}{cpu}""".format(
+        other_options=config.param('insilico_read_normalization', 'other_options', required=False),
+        sequence_type=sequence_type,
+        jellyfish_memory=jellyfish_memory,
+        maximum_coverage=config.param('insilico_read_normalization', 'maximum_coverage', type="int"),
+        left_or_single_reads=" \\\n  ".join(["--left " + read for read in left_or_single_reads]) if right_reads else " \\\n  ".join(["--single " + read for read in left_or_single_reads]),
+        right_reads="".join([" \\\n  --right " + read for read in right_reads]) if right_reads else "",
+        output_directory=" \\\n  --output " + output_directory if output_directory else "",
+        cpu=" \\\n  --CPU " + str(cpu) if cpu else ""
+    )
+
+    if output_directory:
+        job = concat_jobs([Job(command="mkdir -p " + output_directory), job])
+
+    # Count normalized reads for stats
+    job = concat_jobs([job, Job(command="""\
+wc -l {output_file} | awk '{{print \\"# normalized {read_type} reads\t\\"\\$1 / 4}}' > {normalization_stats_file}""".format(
+        output_file=output_files[0],
+        read_type="paired" if right_reads else "single",
+        normalization_stats_file=normalization_stats_file
+    ))])
+
+    return job
+
+
+class RnaSeqDeNovoAssembly(illumina.Illumina):
+
+    def insilico_read_normalization_readsets(self):
+        jobs = []
+        for readset in self.readsets:
+            trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
+            normalization_directory = os.path.join("insilico_read_normalization", readset.name)
+
+            if readset.run_type == "PAIRED_END":
+                left_or_single_reads = [trim_file_prefix + "pair1.fastq.gz"]
+                right_reads = [trim_file_prefix + "pair2.fastq.gz"]
+            elif readset.run_type == "SINGLE_END":
+                left_or_single_reads = [trim_file_prefix + "single.fastq.gz"]
+                right_reads = []
+            else:
+                raise Exception("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+
+            job = insilico_read_normalization(
+                left_or_single_reads,
+                right_reads,
+                "fq",
+                config.param('insilico_read_normalization_readsets', 'jellyfish_memory'),
+                normalization_directory,
+                config.param('insilico_read_normalization_readsets', 'cpu', required=False, type='int')
+            )
+
+            job.name = "insilico_read_normalization_readsets." + readset.name
+            jobs.append(job)
+
+        return jobs
+
+    def insilico_read_normalization_all(self):
+        normalization_directory = "insilico_read_normalization"
+        left_or_single_reads = []
+        right_reads = []
+
+        for readset in self.readsets:
+            if readset.run_type == "PAIRED_END":
+                left_or_single_reads.append(os.path.join(normalization_directory, readset.name, "left.norm.fq"))
+                right_reads.append(os.path.join(normalization_directory, readset.name, "right.norm.fq"))
+            elif readset.run_type == "SINGLE_END":
+                left_or_single_reads.append(trim_file_prefix + "single.norm.fq")
+            else:
+                raise Exception("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+
+        job = insilico_read_normalization(
+            left_or_single_reads,
+            right_reads,
+            "fq",
+            config.param('insilico_read_normalization_all', 'jellyfish_memory'),
+            os.path.join(normalization_directory, "all"),
+            config.param('insilico_read_normalization_all', 'cpu', required=False, type='int')
         )
 
-    def normalization(self, readset):
-        return normalize(readset.name + ".trim", readset.name + ".trim.normalized")
+        job.name = "insilico_read_normalization_readsets." + readset.name
+        return [job]
 
     def trinity(self):
-        return trinity([readset.name + ".trim.normalized" for readset in self.readsets])
+        normalization_directory = os.path.join("insilico_read_normalization", "all")
+        output_directory = "trinity_out_dir"
+        trinity_fasta = os.path.join(output_directory, "Trinity.fasta")
+        trinity_stats_prefix = os.path.join(output_directory, "Trinity.stats")
 
-    def blast(self):
-        return blastx("Trinity.fasta")
+        if self.run_type == "PAIRED_END":
+            left_reads = os.path.join(normalization_directory, "left.norm.fq")
+            right_reads = os.path.join(normalization_directory, "right.norm.fq")
+            input_files = [left_reads, right_reads]
+            reads_option = "--left " + left_reads + " \\\n  --right " + right_reads
+        elif self.run_type == "SINGLE_END":
+            single_reads = os.path.join(normalization_directory, "single.norm.fq")
+            input_files = [single_reads]
+            reads_option = "--single " + single_reads
 
-    def rsem(self, sample):
-        return rsem("Trinity.fasta", sample.name)
+        trinity_job = Job(input_files, [trinity_fasta], [
+            ['trinity', 'module_perl'],
+            ['trinity', 'module_java'],
+            ['trinity', 'module_trinity'],
+            ['trinity', 'module_bowtie'],
+            ['trinity', 'module_samtools']
+        ])
 
-    def annotate(self):
-        return trinotate("Trinity.fasta")
+        trinity_job.command = """\
+Trinity {other_options} \\
+  --JM {jellyfish_memory} \\
+  --CPU {cpu} \\
+  --bflyCPU {butterfly_cpu} \\
+  {reads_option} \\
+  --output {output_directory}""".format(
+            other_options=config.param('trinity', 'other_options'),
+            jellyfish_memory=config.param('trinity', 'jellyfish_memory'),
+            cpu=config.param('trinity', 'cpu'),
+            butterfly_cpu=config.param('trinity', 'butterfly_cpu'),
+            reads_option=reads_option,
+            output_directory=output_directory
+        )
+
+        return [concat_jobs([
+            trinity_job,
+            Job([trinity_fasta], [trinity_fasta + ".zip"], command="zip -j " + trinity_fasta + ".zip " + trinity_fasta),
+            Job([trinity_fasta], [trinity_stats_prefix + ".csv", trinity_stats_prefix + ".jpg", trinity_stats_prefix + ".pdf"], [['trinity', 'module_R']], command="Rscript -e 'library(gqSeqUtils); dnaFastaStats(filename = \\\"" + trinity_fasta + "\\\", type = \\\"trinity\\\", output.prefix = \\\"" + trinity_stats_prefix + "\\\")'")
+        ], name="trinity")]
+
+    def exonerate_fastasplit(self):
+        trinity_directory = "trinity_out_dir"
+        trinity_fasta = os.path.join(trinity_directory, "Trinity.fasta")
+        trinity_chunks_directory = os.path.join(trinity_directory, "Trinity.fasta_chunks")
+        num_fasta_chunks = config.param('exonerate_fastasplit', 'num_fasta_chunks', type='posint')
+
+        return [concat_jobs([
+            Job(command="rm -rf " + trinity_chunks_directory),
+            Job(command="mkdir -p " + trinity_chunks_directory),
+            Job(
+                [trinity_fasta],
+                # fastasplit creates FASTA chunk files numbered with 7 digits and padded with leading 0s
+                [os.path.join(trinity_chunks_directory, "Trinity.fasta_chunk_{:07d}".format(i)) for i in range(num_fasta_chunks)],
+                [['exonerate_fastasplit', 'module_exonerate']],
+                command="fastasplit -f " + trinity_fasta + " -o " + trinity_chunks_directory + " -c " + str(num_fasta_chunks)
+            )
+        ], name="exonerate_fastasplit.Trinity.fasta")]
+
+    def blastx_swissprot(self):
+        jobs = []
+        trinity_chunks_directory = os.path.join("trinity_out_dir", "Trinity.fasta_chunks")
+        blast_directory = "blast"
+        num_fasta_chunks = config.param('exonerate_fastasplit', 'num_fasta_chunks', type='posint')
+        cpu = config.param('blastx_swissprot', 'cpu')
+        program = "blastx"
+        db = config.param("blastx_swissprot", "db", type='prefixpath')
+        if not glob.glob(db + ".*phr"):
+            raise Exception("Error: " + db + " BLAST db files do not exist!")
+
+        for i in range(num_fasta_chunks):
+            query_chunk = os.path.join(trinity_chunks_directory, "Trinity.fasta_chunk_{:07d}".format(i))
+            blast_chunk = os.path.join(blast_directory, program + "_Trinity_" + os.path.basename(db) + "_chunk_{:07d}.tsv".format(i))
+            jobs.append(concat_jobs([
+                Job(command="mkdir -p " + blast_directory),
+                Job(
+                    [query_chunk],
+                    [blast_chunk],
+                    [['blast', 'module_perl'], ['blast', 'module_tools'], ['blast', 'module_blast']],
+                    command="""\
+parallelBlast.pl \\
+  -file {query_chunk} \\
+  --OUT {blast_chunk} \\
+  -n {cpu} \\
+  --BLAST \\\"{program} -db {db} -max_target_seqs 1 -outfmt \'6 std stitle\'\\\"""".format(
+                        query_chunk=query_chunk,
+                        blast_chunk=blast_chunk,
+                        cpu=cpu,
+                        program=program,
+                        db=db
+                    )
+                )
+            ], name="blastx_swissprot.chunk_{:07d}".format(i)))
+
+        return jobs
+
+    def blastx_swissprot_merge(self):
+        blast_directory = "blast"
+        num_fasta_chunks = config.param('exonerate_fastasplit', 'num_fasta_chunks', type='posint')
+        program = "blastx"
+        db = config.param("blastx_swissprot", "db", type='prefixpath')
+        blast_chunks = [os.path.join(blast_directory, program + "_Trinity_" + os.path.basename(db) + "_chunk_{:07d}.tsv".format(i)) for i in range(num_fasta_chunks)]
+        blast_result = os.path.join(blast_directory, program + "_Trinity_" + os.path.basename(db) + ".tsv")
+        return [concat_jobs([
+            Job(
+                blast_chunks,
+                [blast_result],
+                command="cat \\\n  " + " \\\n  ".join(blast_chunks) + " \\\n  > " + blast_result
+            ),
+            Job(command="zip -j {blast_result}.zip {blast_result}".format(blast_result=blast_result))
+        ], name="blastx_swissprot_merge")]
+
+    def transdecoder(self):
+        trinity_fasta = os.path.join("trinity_out_dir", "Trinity.fasta")
+        transdecoder_directory = os.path.join("trinotate", "transdecoder")
+
+        return [concat_jobs([
+            Job(command="mkdir -p " + transdecoder_directory),
+            Job(command="cd " + transdecoder_directory),
+            Job(command="rm -f " + "Trinity.fasta.transdecoder.pfam.dat.domtbl"),
+            Job(
+                [trinity_fasta],
+                [os.path.join(transdecoder_directory, "Trinity.fasta.transdecoder.pep"),
+                 os.path.join(transdecoder_directory, "Trinity.fasta.transdecoder.pfam.dat.domtbl")],
+                [['transdecoder', 'module_perl'],
+                 ['transdecoder', 'module_cd_hit'],
+                 ['transdecoder', 'module_hmmer'],
+                 ['transdecoder', 'module_trinity']],
+                command="""\
+\$TRINITY_HOME/trinity-plugins/transdecoder/TransDecoder {other_options} \\
+  --t {transcripts} \\
+  --search_pfam {pfam_db} \\
+  --CPU {cpu}""".format(
+                    other_options=config.param('transdecoder', 'other_options', required=False),
+                    transcripts=os.path.relpath(trinity_fasta, transdecoder_directory),
+                    pfam_db=config.param('transdecoder', 'pfam_db', type='filepath'),
+                    cpu=config.param('transdecoder', 'cpu', type='posint')
+                )
+            ),
+            Job(command="cd " + os.path.join("..", "..")),
+        ], name="transdecoder")]
+
+    def rnammer_transcriptome(self):
+        trinity_fasta = os.path.join("trinity_out_dir", "Trinity.fasta")
+        rnammer_directory = os.path.join("trinotate", "rnammer")
+
+        return [concat_jobs([
+            Job(command="mkdir -p " + rnammer_directory),
+            Job(command="cd " + rnammer_directory),
+            Job(
+                [trinity_fasta],
+                [os.path.join(rnammer_directory, "Trinity.fasta.rnammer.gff")],
+                [['rnammer_transcriptome', 'module_perl'],
+                 ['rnammer_transcriptome', 'module_hmmer'],
+                 ['rnammer_transcriptome', 'module_rnammer'],
+                 ['rnammer_transcriptome', 'module_trinity'],
+                 ['rnammer_transcriptome', 'module_trinotate']],
+                command="""\
+\$TRINOTATE_HOME/util/rnammer_support/RnammerTranscriptome.pl {other_options} \\
+  --transcriptome {transcriptome} \\
+  --path_to_rnammer \`which rnammer\`""".format(
+                    other_options=config.param('rnammer_transcriptome', 'other_options', required=False),
+                    transcriptome=os.path.relpath(trinity_fasta, rnammer_directory)
+                )
+            ),
+            Job(command="cd " + os.path.join("..", "..")),
+        ], name="rnammer_transcriptome")]
+
+    def blastp_swissprot(self):
+        blast_directory = os.path.join("trinotate", "blastp")
+        cpu = config.param('blastp_swissprot', 'cpu')
+        program = "blastp"
+        db = config.param("blastp_swissprot", "db", type='prefixpath')
+        if not glob.glob(db + ".*phr"):
+            raise Exception("Error: " + db + " BLAST db files do not exist!")
+
+        query = os.path.join("trinotate", "transdecoder", "Trinity.fasta.transdecoder.pep")
+        blast_result = os.path.join(blast_directory, program + "_" + os.path.basename(query) + "_" + os.path.basename(db) + ".tsv")
+        return [concat_jobs([
+            Job(command="mkdir -p " + blast_directory),
+            Job(
+                [query],
+                [blast_result],
+                [['blast', 'module_perl'], ['blast', 'module_tools'], ['blast', 'module_blast']],
+                command="""\
+parallelBlast.pl \\
+  -file {query} \\
+  --OUT {blast_result} \\
+  -n {cpu} \\
+  --BLAST \\\"{program} -db {db} -max_target_seqs 1 -outfmt \'6 std stitle\'\\\"""".format(
+                    query=query,
+                    blast_result=blast_result,
+                    cpu=cpu,
+                    program=program,
+                    db=db
+                )
+            )
+        ], name="blastp_swissprot")]
+
+    def signalp(self):
+        transdecoder_fasta = os.path.join("trinotate", "transdecoder", "Trinity.fasta.transdecoder.pep")
+        signalp_gff = os.path.join("trinotate", "signalp", "signalp.gff")
+
+        return [Job(
+            [transdecoder_fasta],
+            [signalp_gff],
+            [['signalp', 'module_perl'], ['signalp', 'module_signalp']],
+            command="""\
+signalp {other_options} \\
+  -T {tmp_directory} \\
+  -n {signalp_gff} \\
+  {transdecoder_fasta}""".format(
+                other_options=config.param('signalp', 'other_options', required=False),
+                tmp_directory=os.path.dirname(signalp_gff),
+                signalp_gff=signalp_gff,
+                transdecoder_fasta=transdecoder_fasta
+            ), name="signalp")]
+
+    def tmhmm(self):
+        transdecoder_fasta = os.path.join("trinotate", "transdecoder", "Trinity.fasta.transdecoder.pep")
+        tmhmm_output = os.path.join("trinotate", "tmhmm", "tmhmm.out")
+
+        return [concat_jobs([
+            Job(command="mkdir -p " + os.path.dirname(tmhmm_output)),
+            Job(
+                [transdecoder_fasta],
+                [tmhmm_output],
+                [['tmhmm', 'module_perl'], ['tmhmm', 'module_tmhmm']],
+                command="""\
+tmhmm --short \\
+  < {transdecoder_fasta} \\
+  > {tmhmm_output}""".format(
+                    transdecoder_fasta=transdecoder_fasta,
+                    tmhmm_output=tmhmm_output
+            ))], name="tmhmm")]
+
+    def trinotate(self):
+        db = os.path.basename(config.param("blastx_swissprot", "db", type='prefixpath'))
+        trinity_fasta = os.path.join("trinity_out_dir", "Trinity.fasta")
+        blastx = os.path.join("blast", "blastx_Trinity_" + db + ".tsv")
+        transdecoder_pep = os.path.join("trinotate", "transdecoder", "Trinity.fasta.transdecoder.pep")
+        transdecoder_pfam = os.path.join("trinotate", "transdecoder", "Trinity.fasta.transdecoder.pfam.dat.domtbl")
+        blastp = os.path.join("trinotate", "blastp", "blastp_" + os.path.basename(transdecoder_pep) + "_" + db + ".tsv")
+        rnammer = os.path.join("trinotate", "rnammer", "Trinity.fasta.rnammer.gff")
+        signalp = os.path.join("trinotate", "signalp", "signalp.gff")
+        tmhmm = os.path.join("trinotate", "tmhmm", "tmhmm.out")
+        trinotate_sqlite = os.path.join("trinotate", "Trinotate.sqlite")
+        trinotate_report = os.path.join("trinotate", "trinotate_annotation_report.tsv")
+
+        return [concat_jobs([
+            Job(command="mkdir -p trinotate"),
+            Job(
+                [trinity_fasta,
+                 blastx,
+                 transdecoder_pep,
+                 transdecoder_pfam,
+                 blastp,
+                 rnammer,
+                 signalp,
+                 tmhmm],
+                [trinotate_sqlite, trinotate_report],
+                [['trinotate', 'module_perl'], ['trinotate', 'module_trinity'], ['trinotate', 'module_trinotate']],
+                command="""\
+cd trinotate && \\
+cp \$TRINOTATE_HOME/Trinotate.sqlite . && \\
+\$TRINITY_HOME/util/support_scripts/get_Trinity_gene_to_trans_map.pl {trinity_fasta} > {trinity_fasta}.gene_trans_map && \\
+{trinotate_command} init \\
+  --gene_trans_map {trinity_fasta}.gene_trans_map \\
+  --transcript {trinity_fasta} \\
+  --transdecoder_pep {transdecoder_pep} && \\
+{trinotate_command} LOAD_blastx {blastx} && \\
+{trinotate_command} LOAD_blastp {blastp} && \\
+awk '{{\$4 = \\\"cds.\\\"\$4; print}}' {transdecoder_pfam} > {transdecoder_pfam}.adj && \\
+{trinotate_command} LOAD_pfam {transdecoder_pfam}.adj && \\
+{trinotate_command} LOAD_tmhmm {tmhmm} && \\
+{trinotate_command} LOAD_signalp {signalp} && \\
+{trinotate_command} LOAD_rnammer {rnammer} && \\
+{trinotate_command} report -E {evalue} --pfam_cutoff {pfam_cutoff} | cut -f 1-12 \\
+  > {trinotate_report}""".format(
+                    trinity_fasta=os.path.join("..", trinity_fasta),
+                    trinotate_command="\$TRINOTATE_HOME/Trinotate " + os.path.basename(trinotate_sqlite),
+                    transdecoder_pep=os.path.join("..", transdecoder_pep),
+                    blastx=os.path.join("..", blastx),
+                    blastp=os.path.join("..", blastp),
+                    transdecoder_pfam=os.path.join("..", transdecoder_pfam),
+                    tmhmm=os.path.join("..", tmhmm),
+                    signalp=os.path.join("..", signalp),
+                    rnammer=os.path.join("..", rnammer),
+                    evalue=config.param('trinotate', 'evalue'),
+                    pfam_cutoff=config.param('trinotate', 'pfam_cutoff'),
+                    trinotate_report=os.path.join("..", trinotate_report)
+            )),
+            Job(command="cd ..")], name="trinotate")]
+
+    def align_and_estimate_abundance_prep_reference(self):
+        trinity_fasta = os.path.join("trinity_out_dir", "Trinity.fasta")
+
+        return [Job(
+                [trinity_fasta],
+                [trinity_fasta + ".RSEM.transcripts.fa",
+                 trinity_fasta + ".RSEM.idx.fa"],
+                [['align_and_estimate_abundance_prep_reference', 'module_perl'],
+                 ['align_and_estimate_abundance_prep_reference', 'module_bowtie'],
+                 ['align_and_estimate_abundance_prep_reference', 'module_rsem'],
+                 ['align_and_estimate_abundance_prep_reference', 'module_samtools'],
+                 ['align_and_estimate_abundance_prep_reference', 'module_trinity']],
+                command="""\
+align_and_estimate_abundance.pl \\
+  --transcripts {transcripts} \\
+  --seqType fa \\
+  --est_method RSEM \\
+  --aln_method bowtie \\
+  --trinity_mode \\
+  --prep_reference""".format(transcripts=trinity_fasta),
+                name="align_and_estimate_abundance_prep_reference")]
+
+    def align_and_estimate_abundance(self):
+        jobs = []
+        trinity_fasta = os.path.join("trinity_out_dir", "Trinity.fasta")
+
+        for sample in self.samples:
+            trim_directory = os.path.join("trim", sample.name)
+            output_directory = os.path.join("align_and_estimate_abundance", sample.name)
+            left_or_single_reads = []
+            right_reads = []
+
+            for readset in sample.readsets:
+                if readset.run_type == "PAIRED_END":
+                    left_or_single_reads.append(os.path.join(trim_directory, readset.name + ".trim.pair1.fastq.gz"))
+                    right_reads.append(os.path.join(trim_directory, readset.name + ".trim.pair2.fastq.gz"))
+                elif readset.run_type == "SINGLE_END":
+                    left_or_single_reads.append(os.path.join(trim_directory, readset.name + ".trim.single.fastq.gz"))
+                else:
+                    raise Exception("Error: run type \"" + readset.run_type +
+                    "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+
+            jobs.append(Job(
+                [trinity_fasta] + left_or_single_reads + right_reads,
+                [os.path.join(output_directory, sample.name + ".genes.results"),
+                 os.path.join(output_directory, sample.name + ".isoforms.results")],
+                [['align_and_estimate_abundance_prep_reference', 'module_perl'],
+                 ['align_and_estimate_abundance_prep_reference', 'module_bowtie'],
+                 ['align_and_estimate_abundance_prep_reference', 'module_rsem'],
+                 ['align_and_estimate_abundance_prep_reference', 'module_samtools'],
+                 ['align_and_estimate_abundance_prep_reference', 'module_trinity']],
+                command="""\
+align_and_estimate_abundance.pl {other_options} \\
+  --transcripts {transcripts} \\
+  --seqType fq \\
+  --est_method RSEM \\
+  --aln_method bowtie \\
+  --trinity_mode \\
+  --output_prefix {sample.name} \\
+  --output_dir {output_directory} \\
+  --thread_count {cpu} \\
+  {left_or_single_reads}{right_reads}""".format(
+                    other_options=config.param('align_and_estimate_abundance', 'other_options'),
+                    transcripts=trinity_fasta,
+                    sample=sample,
+                    output_directory=output_directory,
+                    cpu=config.param('align_and_estimate_abundance', 'cpu', type='posint'),
+                    left_or_single_reads="--left " + ",".join(left_or_single_reads) if right_reads else "--single " + ",".join(left_or_single_reads),
+                    right_reads=" \\\n  --right " + ",".join(right_reads) if right_reads else ""
+                ), name="align_and_estimate_abundance." + sample.name))
+
+        return jobs
+
+    def differential_expression(self):
+        jobs = []
+        output_directory = "differential_expression"
+
+        for item in "genes","isoforms":
+            matrix = os.path.join(output_directory, item + ".counts.matrix")
+            align_and_estimate_abundance_results = [os.path.join("align_and_estimate_abundance", sample.name, sample.name + "." + item + ".results") for sample in self.samples]
+            jobs.append(concat_jobs([
+                Job(command="mkdir -p " + os.path.join(output_directory, item)),
+                # Create isoforms and genes matrices with counts of RNA-seq fragments per feature using Trinity RSEM utility
+                Job(
+                    align_and_estimate_abundance_results,
+                    [matrix],
+                    [['differential_expression', 'module_perl'],
+                     ['differential_expression', 'module_trinity'],
+                     ['differential_expression', 'module_R']],
+                    command="""\
+abundance_estimates_to_matrix.pl \\
+  --est_method RSEM \\
+  --out_prefix {out_prefix} \\
+  {align_and_estimate_abundance_results}""".format(
+                        out_prefix=os.path.join(output_directory, item),
+                        align_and_estimate_abundance_results=" \\\n  ".join(align_and_estimate_abundance_results)
+                    )
+                ),
+                # Extract isoforms and genes length values from any one of sample abundance files
+                Job(
+                    [align_and_estimate_abundance_results[0]],
+                    [os.path.join(output_directory, item + ".lengths.tsv")],
+                    command="cut -f 1,3,4 " + align_and_estimate_abundance_results[0] + " \\\n  > " + os.path.join(output_directory, item + ".lengths.tsv")),
+                # edger.R requires a matrix with gene/isoform symbol as second column
+                Job(
+                    [matrix],
+                    [matrix + ".symbol"],
+                    command="""\
+awk -F '\t' '{{OFS=\\\"\t\\\" ; print $1,$0}}' {matrix} | sed '1s/^\t/{item}\tSymbol/' \\
+  > {matrix}.symbol""".format(matrix=matrix, item=item.title())
+                ),
+                # Perform edgeR
+                Job(
+                    [matrix + ".symbol"],
+                    [os.path.join(output_directory, item, contrast.name, "edger_results.csv") for contrast in self.contrasts],
+                    [['differential_expression', 'module_R'],
+                     ['differential_expression', 'module_tools']],
+                    command="""\
+Rscript \\$R_TOOLS/edger.R \\
+  -d {design} \\
+  -c {matrix}.symbol \\
+  -o {output_subdirectory}""".format(
+                        design=os.path.relpath(self.args.design.name, self.output_dir),
+                        matrix=matrix,
+                        output_subdirectory=os.path.join(output_directory, item)
+                    )
+                ),
+                # Perform DESeq
+                Job(
+                    [matrix + ".symbol"],
+                    [os.path.join(output_directory, item, contrast.name, "deseq_results.csv") for contrast in self.contrasts] +
+                    [os.path.join(output_directory, item, contrast.name, "dge_results.csv") for contrast in self.contrasts],
+                    [['differential_expression', 'module_R'],
+                     ['differential_expression', 'module_tools']],
+                    command="""\
+Rscript \\$R_TOOLS/deseq.R \\
+  -d {design} \\
+  -c {matrix}.symbol \\
+  -o {output_subdirectory}""".format(
+                        design=os.path.relpath(self.args.design.name, self.output_dir),
+                        matrix=matrix,
+                        output_subdirectory=os.path.join(output_directory, item)
+                    )
+                )
+            ], name="differential_expression." + item))
+        return jobs
 
     def deliverable(self):
-        return nozzle(["Trinity.fasta", "Trinity_stats.csv", "trinotate.tsv"] + ["rsem_" + sample.name + ".fpkm" for sample in self.samples], "report")
+        isoforms_lengths = os.path.join("differential_expression", "isoforms.lengths.tsv")
+        trinotate_annotation_report = os.path.join("trinotate", "trinotate_annotation_report.tsv")
+        job = concat_jobs([
+            Job([isoforms_lengths, trinotate_annotation_report],
+                [trinotate_annotation_report + ".genes"],
+                command="""\
+sed '1d' {isoforms_lengths} | perl -pe 's/^(c\\\\d+_g\\\\d+)/\\\\1\t\\\\1/' | sort -k1,1 -k3,3gr | \\
+awk -F "\t" 'FNR == NR {{if (!isoform[$1]) {{isoform[$1] = $2; next}}}}{{OFS="\t"; if (isoform[$1] == $2 && !gene[$1]++ || $1 == "#gene_id") {{print}}}}' - {trinotate_annotation_report} | \\
+perl -pe 's/^(\\\\S+)\t\\\\S+\t([^^\t]*)/\\\\1\t\\\\2\t\\\\2/' | \\
+sed '1s/^#gene_id\tTop_BLASTX_hit/Gene\tSymbol/' \\
+  > {trinotate_annotation_report}.genes""".format(
+                    isoforms_lengths=isoforms_lengths,
+                    trinotate_annotation_report=trinotate_annotation_report
+                )
+            ),
+            Job([trinotate_annotation_report],
+                [trinotate_annotation_report + ".isoforms"],
+                command="""\
+cut -f 2- {trinotate_annotation_report} | awk '!isoform[$1]++' | \\
+perl -pe 's/^(\\\\S+)\t([^^\t]*)/\\\\1\t\\\\2\t\\\\2/' | \\
+sed '1s/^transcript_id\tTop_BLASTX_hit/Transcript\tSymbol/' \\
+  > {trinotate_annotation_report}.isoforms""".format(
+                    trinotate_annotation_report=trinotate_annotation_report
+                )
+            )
+        ])
+
+        for item in "genes","isoforms":
+            for contrast in self.contrasts:
+                dge_results = os.path.join("differential_expression", item, contrast.name, "dge_results.csv")
+                dge_trinotate_results = re.sub("results\.csv$", "trinotate_results.csv", dge_results)
+                job = concat_jobs([
+                    job,
+                    Job([dge_results, trinotate_annotation_report + "." + item],
+                        [dge_trinotate_results],
+                        command="""\
+awk -F "\t" 'FNR == NR {{item[\\$1] = \\$0; next}} {{OFS="\t"; print \\$0, item[\\$1]}}' \\
+  {trinotate_annotation_report_item} \\
+  <(sed '1s/^id/{item}/' {dge_results}) \\
+  > {dge_results}.tmp && \\
+paste <(cut -f1,12 {dge_results}.tmp) <(cut -f3-10,13- {dge_results}.tmp) > {dge_trinotate_results} && \\
+rm {dge_results}.tmp""".format(
+                            trinotate_annotation_report_item=trinotate_annotation_report + "." + item,
+                            item=item.title()[0:-1],
+                            dge_results=dge_results,
+                            dge_trinotate_results=dge_trinotate_results
+                        )
+                    )
+                ])
+
+        report_job = gq_seq_utils.report(os.path.abspath(config.filepath), self.output_dir, "RNAseqDeNovo", "deliverable")
+        report_job.input_files = [
+            "metrics/trimming.stats",
+            "trinity_out_dir/Trinity.fasta",
+            "trinity_out_dir/Trinity.stats.csv",
+            "trinity_out_dir/Trinity.stats.pdf",
+        ] + [os.path.join("differential_expression", item, contrast.name, "dge_trinotate_results.csv") for item in "genes","isoforms" for contrast in self.contrasts]
+
+        return [concat_jobs([job, report_job], name="deliverable")]
 
     @property
-    def step_dict_map(self):
+    def steps(self):
         return [
-            {"name": self.trim, "loop": self.readsets},
-            {"name": self.normalization, "loop": self.readsets},
-            {"name": self.trinity},
-            {"name": self.blast},
-            {"name": self.rsem, "loop": self.samples},
-            {"name": self.annotate},
-            {"name": self.deliverable}
+            self.picard_sam_to_fastq,
+            self.trimmomatic,
+            self.merge_trimmomatic_stats,
+            self.insilico_read_normalization_readsets,
+            self.insilico_read_normalization_all,
+            self.trinity,
+            self.exonerate_fastasplit,
+            self.blastx_swissprot,
+            self.blastx_swissprot_merge,
+            self.transdecoder,
+            self.rnammer_transcriptome,
+            self.blastp_swissprot,
+            self.signalp,
+            self.tmhmm,
+            self.trinotate,
+            self.align_and_estimate_abundance_prep_reference,
+            self.align_and_estimate_abundance,
+            self.differential_expression,
+            self.deliverable
         ]
 
     def __init__(self):
-        # Initialize attributes to avoid AttributeError in default_argparser(self.step_dict_map)
-        self._readsets = []
-        self._samples = []
-
-        argparser = PipelineArgumentParser(self.step_dict_map)
         # Add pipeline specific arguments
-        argparser.add_argument("-r", "--readsets", help="readset file", type=file, required=True)
-        argparser.add_argument("-d", "--design", help="design file", type=file)
-        args = argparser.parse_args()
+        self.argparser.add_argument("-d", "--design", help="design file", type=file)
 
-        self._readsets = parse_readset_file(args.readsets.name)
-        # Retrieve unique samples from their readsets
-        self._samples = list(collections.OrderedDict.fromkeys([readset.sample for readset in self._readsets]))
+        super(RnaSeqDeNovoAssembly, self).__init__()
 
-        Pipeline.__init__(self, args)
-        
-#RnaSeqDeNovoAssembly().show()
-RnaSeqDeNovoAssembly().submit_jobs()
+if __name__ == '__main__':
+    RnaSeqDeNovoAssembly().submit_jobs()

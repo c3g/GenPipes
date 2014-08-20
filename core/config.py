@@ -29,11 +29,11 @@ class Config(ConfigParser.SafeConfigParser):
             self.readfp(config_file)
         self.check_modules()
 
-    # Check by a system call if all modules defined in config file are available
+    # Check by a system call if all modules defined in config files are available
     def check_modules(self):
         modules = []
 
-        # Retrieve all unique module version values in config file
+        # Retrieve all unique module version values in config files
         # assuming that all module key names start with "module_"
         for section in self.sections():
             for name, value in self.items(section):
@@ -45,13 +45,13 @@ class Config(ConfigParser.SafeConfigParser):
             # Bash shell must be invoked in order to find "module" cmd
             module_show_output = subprocess.check_output(["bash", "-c", "module show " + module], stderr=subprocess.STDOUT)
             if re.search("Error", module_show_output, re.IGNORECASE):
-                raise Exception("Error in config file with " + module + ":\n" + module_show_output)
+                raise Exception("Error in config file(s) with " + module + ":\n" + module_show_output)
             else:
                 log.info("Module " + module + " OK")
         log.info("Module check finished\n")
 
-    # Retrieve param in config file with optional definition check and type validation
-    # By default, parameter is required to be defined in the config file
+    # Retrieve param in config files with optional definition check and type validation
+    # By default, parameter is required to be defined in one of the config file
     def param(self, section, option, required=True, type='string'):
         # Store original section for future error message, in case 'DEFAULT' section is used eventually
         original_section = section
@@ -101,7 +101,7 @@ class Config(ConfigParser.SafeConfigParser):
             except Exception as e:
                 raise Exception("Error: parameter \"[" + section + "] " + option + "\" value \"" + self.get(section, option) + "\" is invalid!\n" + e.message)
         elif required:
-            raise Exception("Error: parameter \"[" + original_section + "] " + option + "\" is not defined in config file!")
+            raise Exception("Error: parameter \"[" + original_section + "] " + option + "\" is not defined in config file(s)!")
         else:
             return ""
 
