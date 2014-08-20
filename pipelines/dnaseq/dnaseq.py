@@ -159,7 +159,7 @@ class DnaSeq(illumina.Illumina):
                     # Create output directory since it is not done by default by GATK tools
                     Job(command="mkdir -p " + realign_directory),
                     gatk.realigner_target_creator(input, realign_intervals, exclude_intervals=unique_sequences_per_job),
-                    gatk.indel_realigner(input, output_bam, target_intervals=realign_intervals, exclude_intervals=unique_sequences_per_job)
+                    gatk.indel_realigner(input, output_bam, target_intervals=realign_intervals, intervals=["unmapped"], exclude_intervals=unique_sequences_per_job)
                 ], name="gatk_indel_realigner." + sample.name + ".others"))
 
         return jobs

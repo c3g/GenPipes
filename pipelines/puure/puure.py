@@ -202,7 +202,7 @@ class Puure(illumina.Illumina):
                     # Create output directory since it is not done by default by GATK tools
                     Job(command="mkdir -p " + realign_directory),
                     gatk.realigner_target_creator(input, realign_intervals, exclude_intervals=unique_sequences_per_job),
-                    gatk.indel_realigner(input, output_bam, target_intervals=realign_intervals, exclude_intervals=unique_sequences_per_job)
+                    gatk.indel_realigner(input, output_bam, target_intervals=realign_intervals, intervals=["unmapped"], exclude_intervals=unique_sequences_per_job)
                 ], name="gatk_indel_realigner." + sample.name + ".others"))
         return jobs
 
@@ -271,7 +271,7 @@ class Puure(illumina.Illumina):
             sclip_file_prefix = os.path.join("sclip", sample.name, sample.name)
             
             job = concat_jobs([
-                Job(command="if [ ! -d " + sclip_directory + " ]; then mkdir " + sclip_directory + "; fi"),
+                Job(command="if [ ! -d " + sclip_directory + " ]; then mkdir -p " + sclip_directory + "; fi"),
                 self.get_job_max_insert_size(sample),
                 bvatools.extract_sclip(alignment_file_prefix + "sorted.dup.bam", sclip_file_prefix, "\$maxInsertSize"),
                 samtools.index(sclip_file_prefix + ".sc.bam"),
@@ -291,7 +291,7 @@ class Puure(illumina.Illumina):
             extract_directory = os.path.join("extract", sample.name)
             extract_file_prefix = os.path.join("extract", sample.name, sample.name + ".")
             
-            jobMkdir = Job(command="if [ ! -d " + extract_directory + " ]; then mkdir " + extract_directory + "; fi")
+            jobMkdir = Job(command="if [ ! -d " + extract_directory + " ]; then mkdir -p " + extract_directory + "; fi")
             ## extract Orphan
             job = concat_jobs([
 	        jobMkdir,
@@ -344,7 +344,7 @@ class Puure(illumina.Illumina):
             extract_file_prefix = os.path.join("extract", sample.name, sample.name + ".")
             sclip_file_prefix = os.path.join("sclip", sample.name, sample.name + ".")
             
-            jobMkdir = Job(command="if [ ! -d " + extract_directory + " ]; then mkdir " + extract_directory + "; fi")
+            jobMkdir = Job(command="if [ ! -d " + extract_directory + " ]; then mkdir -p " + extract_directory + "; fi")
             
             ## create fastq of ORPHAN
             job = picard.sam_to_fastq(extract_file_prefix + "ORPHAN.sName.bam", extract_file_prefix + "ORPHAN.1.fastq.gz", extract_file_prefix + "ORPHAN.2.fastq.gz")
@@ -485,7 +485,7 @@ class Puure(illumina.Illumina):
             
             #map Orphan read
             job = concat_jobs([
-                Job(command="if [ ! -d " + cov_directory + " ]; then mkdir " + cov_directory + "; fi"),
+                Job(command="if [ ! -d " + cov_directory + " ]; then mkdir -p " + cov_directory + "; fi"),
                 pipe_jobs([
                     bwa.mem(
                         extract_file_prefix + "ORPHAN.1.fastq.gz",
@@ -510,7 +510,7 @@ class Puure(illumina.Illumina):
             
             #map OEA read
             job = concat_jobs([
-                Job(command="if [ ! -d " + cov_directory + " ]; then mkdir " + cov_directory + "; fi"),
+                Job(command="if [ ! -d " + cov_directory + " ]; then mkdir -p " + cov_directory + "; fi"),
                 pipe_jobs([
                     bwa.mem(
                         extract_file_prefix + "OEAUNMAP.1.equal.fastq.gz",
@@ -533,7 +533,7 @@ class Puure(illumina.Illumina):
             jobs.append(job)
             
             job = concat_jobs([
-                Job(command="if [ ! -d " + cov_directory + " ]; then mkdir " + cov_directory + "; fi"),
+                Job(command="if [ ! -d " + cov_directory + " ]; then mkdir -p " + cov_directory + "; fi"),
                 pipe_jobs([
                     bwa.mem(
                         extract_file_prefix + "OEAUNMAP.2.equal.fastq.gz",
@@ -557,7 +557,7 @@ class Puure(illumina.Illumina):
             
             #map sclip read
             job = concat_jobs([
-                Job(command="if [ ! -d " + cov_directory + " ]; then mkdir " + cov_directory + "; fi"),
+                Job(command="if [ ! -d " + cov_directory + " ]; then mkdir -p " + cov_directory + "; fi"),
                 pipe_jobs([
                     bwa.mem(
                         extract_file_prefix + "sclip.1.fastq.gz",
@@ -580,7 +580,7 @@ class Puure(illumina.Illumina):
             jobs.append(job)
             
             job = concat_jobs([
-                Job(command="if [ ! -d " + cov_directory + " ]; then mkdir " + cov_directory + "; fi"),
+                Job(command="if [ ! -d " + cov_directory + " ]; then mkdir -p " + cov_directory + "; fi"),
                 pipe_jobs([
                     bwa.mem(
                         extract_file_prefix + "sclip.2.fastq.gz",
@@ -780,32 +780,6 @@ class Puure(illumina.Illumina):
                     "\$maxInsertSize",
                     config.param('DEFAULT', 'min_overlap_for_cluster'),
                     config.param('DEFAULT', 'genome_mappability_bed_indexed')
-                )
-            ], name="analyse_find_insert_" + type_insert + "_" + sample.name)
-            jobs.append(job)
-            
-            job = concat_jobs([
-                jobMaxInsert,
-                jobMeanCov,
-                jobMeanReadLength,
-                tools.r_filter_insert(
-                   [
-                    os.path.join(insert_directory, "scaffolds.tab"), 
-                    extract_file_prefix + "OEAMAP.bam", 
-                    os.path.join(cov_directory, "OEAUNMAP.1.bam"), 
-                    os.path.join(cov_directory, "OEAUNMAP.2.bam")
-                   ],
-                   [
-                    os.path.join(insert_directory, "cluster.OEA.tab"),
-                    os.path.join(insert_directory, "cluster.OEA.fusion.tab")
-                   ],
-                   sample.name,
-                   type_insert,
-                   "\$meanCov",
-                   "\$maxInsertSize",
-                   config.param('DEFAULT', 'num_starnd_for_insertion'),
-                   config.param('DEFAULT', 'min_read_for_insertion'),
-                   "\$meanReadLen"
                 )
             ], name="analyse_find_insert_" + type_insert + "_" + sample.name)
             jobs.append(job)

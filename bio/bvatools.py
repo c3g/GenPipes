@@ -95,15 +95,15 @@ def extract_sclip(bamFile, output_prefix, flank="200"):
   --minMappingQuality {minMappingQuality} \\
   --threads {threads} \\
   --prefix {output_prefix}""".format(
-        java_other_options=config.param('bvatools_extractsclip', 'java_other_options'),
-        ram=config.param('bvatools_extractsclip', 'ram'),
-        other_options=config.param('bvatools_extractsclip', 'other_options', required=False),
+        java_other_options=config.param('extract_sclip', 'java_other_options'),
+        ram=config.param('extract_sclip', 'ram'),
+        other_options=config.param('extract_sclip', 'other_options', required=False),
         bamFile=bamFile,
         flank=flank,
-        minSCCount=config.param('bvatools_extractsclip', 'min_sclip_count'),
-        minSCLength=config.param('bvatools_extractsclip', 'kmer'),
-        minMappingQuality=config.param('bvatools_extractsclip', 'min_mapping_quality'),
-        threads=config.param('bvatools_extractsclip', 'threads'),
+        minSCCount=config.param('extract_sclip', 'min_sclip_count'),
+        minSCLength=config.param('extract_sclip', 'kmer'),
+        minMappingQuality=config.param('extract_sclip', 'min_mapping_quality'),
+        threads=config.param('extract_sclip', 'threads'),
         output_prefix=output_prefix
     )
 
