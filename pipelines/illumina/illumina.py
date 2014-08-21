@@ -118,7 +118,7 @@ class Illumina(Pipeline):
 
     def merge_trimmomatic_stats(self):
         merge_trim_stats = os.path.join("metrics", "trimming.stats")
-        job = Job(command="rm -f " + merge_trim_stats)
+        job = concat_jobs([Job(command="rm -f " + merge_trim_stats), Job(command="mkdir -p metrics")])
         for readset in self.readsets:
             trim_log = os.path.join("trim", readset.sample.name, readset.name + ".trim.log")
             if readset.run_type == "PAIRED_END":
