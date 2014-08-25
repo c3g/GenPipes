@@ -20,14 +20,14 @@ nmblines=\$(samtools view -F 256 -f 81 {input_bam} | wc -l) && \\
 scalefactor=0\$(echo \\"scale=2; 1 / (\$nmblines / 10000000);\\" | bc) && \\
 genomeCoverageBed -bg -split -scale \$scalefactor \\
   -ibam {input_bam} \\
-  -g {chromosome_size_file} \\
+  -g {chromosome_size} \\
   > {output_bed_graph} && \\
 bedGraphToBigWig \\
   {output_bed_graph} \\
-  {chromosome_size_file} \\
+  {chromosome_size} \\
   {output_wiggle}""".format(
         input_bam=input_bam,
-        chromosome_size_file=config.param('bedtools', 'chromosomeSizeFile', type='filepath'),
+        chromosome_size=config.param('bedtools', 'chromosome_size', type='filepath'),
         output_bed_graph=output_bed_graph,
         output_wiggle=output_wiggle
     )

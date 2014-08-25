@@ -25,8 +25,8 @@ def tophat(
         [['tophat', 'module_bowtie'], ['tophat', 'module_samtools'], ['tophat', 'module_tophat']]
     )
 
-    gtf = config.param('tophat', 'referenceGtf', required=False, type='filepath')
-    transcriptome_bowtie_index = config.param('tophat', 'transcriptomeBowtieIndex', required=False, type='prefixpath')
+    gtf = config.param('tophat', 'gtf', required=False, type='filepath')
+    transcriptome_bowtie_index = config.param('tophat', 'transcriptome_bowtie_index', required=False, type='prefixpath')
 
     job.command = """\
 mkdir -p {output_directory} && \\
@@ -42,7 +42,7 @@ tophat {other_options}{gtf}{transcriptome_index} \\
   --num-threads {num_threads} \\
   {bowtie_index} \\
   {reads1}{reads2}""".format(
-        other_options=config.param('tophat', 'otherOptions', required=False),
+        other_options=config.param('tophat', 'other_options', required=False),
         gtf=" \\\n  --GTF " + gtf if gtf else "",
         transcriptome_index=" \\\n  --transcriptome-index " + transcriptome_bowtie_index if transcriptome_bowtie_index else "",
         rg_id=rg_id,
@@ -51,10 +51,10 @@ tophat {other_options}{gtf}{transcriptome_index} \\
         rg_platform_unit=rg_platform_unit,
         rg_platform=rg_platform,
         rg_center=rg_center,
-        library_type=config.param('tophat', 'strandInfo'),
+        library_type=config.param('tophat', 'library_type'),
         output_directory=output_directory,
-        num_threads=config.param('tophat', 'TBAlnThreads'),
-        bowtie_index=config.param('tophat', 'bowtie_index', type='prefixpath'),
+        num_threads=config.param('tophat', 'threads'),
+        bowtie_index=config.param('tophat', 'genome_bowtie_index', type='prefixpath'),
         reads1=reads1,
         reads2=" \\\n  " + reads2 if reads2 else ""
     )

@@ -37,18 +37,18 @@ def rnaseqc(sample_file, output_directory, is_single_end=False):
         java_other_options=config.param('rnaseqc', 'java_other_options'),
         ram=config.param('rnaseqc', 'ram'),
         reference_ribosomal_rna_fasta=config.param('rnaseqc', 'ribosomal_fasta', type='filepath'),
-        number_top_transcripts=config.param('rnaseqc', 'topTranscript', type='int'),
+        number_top_transcripts=config.param('rnaseqc', 'number_top_transcript', type='int'),
         output_directory=output_directory,
         reference_genome_fasta=config.param('rnaseqc', 'genome_fasta', type='filepath'),
         sample_file=sample_file,
-        gtf_file=config.param('rnaseqc', 'referenceGtf', type='filepath'),
+        gtf_file=config.param('rnaseqc', 'gtf', type='filepath'),
         single_end=" \\\n  -singleEnd" if is_single_end else ""
     )
 
     return job
 
 def rpkm_saturation(count_file, gene_size_file, rpkm_directory, saturation_directory):
-    job = Job([count_file], [saturation_directory + ".zip"], [['saturation', 'module_R'], ['saturation', 'module_tools']])
+    job = Job([count_file], [saturation_directory + ".zip"], [['rpkm_saturation', 'module_R'], ['rpkm_saturation', 'module_tools']])
 
     job.command = \
 """Rscript \$R_TOOLS/rpkmSaturation.R \\
@@ -57,14 +57,14 @@ def rpkm_saturation(count_file, gene_size_file, rpkm_directory, saturation_direc
   {rpkm_directory} \\
   {saturation_directory} \\
   {threads} \\
-  {optionR} && \\
+  {other_options} && \\
 zip -r {saturation_directory}.zip {saturation_directory}""".format(
         count_file=count_file,
         gene_size_file=gene_size_file,
         rpkm_directory=rpkm_directory,
         saturation_directory=saturation_directory,
-        threads=config.param('saturation', 'threadNum', type='posint'),
-        optionR=config.param('saturation', 'optionR', required=False)
+        threads=config.param('rpkm_saturation', 'threads', type='posint'),
+        other_options=config.param('rpkm_saturation', 'other_options', required=False)
     )
 
     return job
