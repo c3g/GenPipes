@@ -57,7 +57,7 @@ class RnaSeq(illumina.Illumina):
                 rg_library=readset.library,
                 rg_platform_unit=readset.run + "_" + readset.lane,
                 rg_platform=config.param('tophat', 'platform'),
-                rg_center=config.param('tophat', 'TBInstitution'),
+                rg_center=config.param('tophat', 'sequencing_center'),
             )
 
             # If this readset is unique for this sample, further BAM merging is not necessary.
@@ -148,7 +148,7 @@ zip -r {output_directory}.zip {output_directory}""".format(
             bed_graph_prefix = os.path.join("tracks", sample.name, sample.name)
             big_wig_prefix = os.path.join("tracks", "bigWig", sample.name)
 
-            if config.param('tophat', 'strandInfo') != 'fr-unstranded':
+            if config.param('tophat', 'library_type') != 'fr-unstranded':
                 input_bam_f1 = bam_file_prefix + "tmp1.forward.bam"
                 input_bam_f2 = bam_file_prefix + "tmp2.forward.bam"
                 input_bam_r1 = bam_file_prefix + "tmp1.reverse.bam"
@@ -205,14 +205,14 @@ zip -r {output_directory}.zip {output_directory}""".format(
 
             # Count reads
             output_count = os.path.join("raw_counts", sample.name + ".readcounts.csv")
-            stranded = "no" if config.param('align', 'strandInfo') == "fr-unstranded" else "reverse"
+            stranded = "no" if config.param('tophat', 'library_type') == "fr-unstranded" else "reverse"
             job = concat_jobs([
                 Job(command="mkdir -p raw_counts"),
                 pipe_jobs([
                     samtools.view(sorted_bam),
                     htseq.htseq_count(
                         "/dev/stdin",
-                        config.param('htseq', 'referenceGtf', type='filepath'),
+                        config.param('htseq', 'gtf', type='filepath'),
                         output_count,
                         config.param('htseq', 'options'),
                         stranded
@@ -250,7 +250,7 @@ do
 done && \\
 echo -e \$HEAD | cat - {output_directory}/tmpMatrix.txt | tr ' ' '\t' > {output_matrix} && \\
 rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
-            reference_gtf=config.param('raw_counts_metrics', 'referenceGtf', type='filepath'),
+            reference_gtf=config.param('raw_counts_metrics', 'gtf', type='filepath'),
             output_directory=output_directory,
             read_count_files=" \\\n  ".join(read_count_files),
             output_matrix=output_matrix
@@ -260,11 +260,18 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
         # Create Wiggle tracks archive
         wiggle_directory = os.path.join("tracks", "bigWig")
         wiggle_archive = "tracks.zip"
-        jobs.append(Job([os.path.join(wiggle_directory, sample.name + ".bw") for sample in self.samples], [wiggle_archive], name="metrics.wigzip", command="zip -r " + wiggle_archive + " " + wiggle_directory))
+        big_wig_prefix = os.path.join("tracks", "bigWig", sample.name)
+        if config.param('tophat', 'library_type') != 'fr-unstranded':
+            wiggle_files = []
+            for sample in self.samples:
+                wiggle_files.extend([os.path.join(wiggle_directory, sample.name) + ".forward.bw", os.path.join(wiggle_directory, sample.name) + ".reverse.bw"])
+        else:
+            wiggle_files = [os.path.join(wiggle_directory, sample.name + ".bw") for sample in self.samples]
+        jobs.append(Job(wiggle_files, [wiggle_archive], name="metrics.wigzip", command="zip -r " + wiggle_archive + " " + wiggle_directory))
 
         # RPKM and Saturation
         count_file = os.path.join("DGE", "rawCountMatrix.csv")
-        gene_size_file = config.param('saturation', 'geneSizeFile', type='filepath')
+        gene_size_file = config.param('saturation', 'gene_size', type='filepath')
         rpkm_directory = "raw_counts"
         saturation_directory = os.path.join("metrics", "saturation")
 
@@ -276,14 +283,14 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
 
         return jobs
 
-    def fpkm(self):
+    def cufflinks(self):
         jobs = []
 
         for sample in self.samples:
             input_bam = os.path.join("alignment", sample.name, sample.name + ".merged.mdup.bam")
             known_output_directory = os.path.join("fpkm", "known", sample.name)
             denovo_output_directory = os.path.join("fpkm", "denovo", sample.name)
-            gtf = config.param('fpkm','referenceGtf', type='filepath')
+            gtf = config.param('cufflinks','gtf', type='filepath')
 
             # Known FPKM
             job = cufflinks.cufflinks(input_bam, known_output_directory, gtf)
@@ -322,7 +329,7 @@ cat \\
             job = cufflinks.cuffdiff(
                 # Cuffdiff input is a list of lists of replicate bams per control and per treatment
                 [[os.path.join("alignment", sample.name, sample.name + ".merged.mdup.bam") for sample in group] for group in contrast.controls, contrast.treatments],
-                config.param('cuffdiff','referenceGtf', type='filepath'),
+                config.param('cuffdiff','gtf', type='filepath'),
                 os.path.join("cuffdiff", "known", contrast.name)
             )
             job.name = "cuffdiff.known." + contrast.name
@@ -344,7 +351,7 @@ cat \\
             self.wiggle,
             self.raw_counts,
             self.raw_counts_metrics,
-            self.fpkm,
+            self.cufflinks,
             self.cuffdiff
         ]
 

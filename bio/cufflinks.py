@@ -28,7 +28,7 @@ formatDenovoCombinedGTF.py \\
   -o {output_prefix}.TranscriptList.tsv""".format(
         output_directory=os.path.dirname(output_prefix),
         output_prefix=output_prefix,
-        reference_gff=config.param('cuffcompare', 'referenceGtf', type='filepath'),
+        reference_gff=config.param('cuffcompare', 'gtf', type='filepath'),
         reference_fasta=config.param('cuffcompare', 'genome_fasta', type='filepath'),
         gtf_files=" \\\n  ".join(gtf_files),
         gtf_list=gtf_list
@@ -53,17 +53,17 @@ def cuffdiff(sample_replicate_group_bams, gtf, output_directory):
     job.command = """\
 mkdir -p {output_directory} && \\
 cuffdiff {other_options} \\
-  --frag-bias-correct {reference_fasta} \\
+  --frag-bias-correct {genome_fasta} \\
   --library-type {library_type} \\
   --output-dir {output_directory} \\
   --num-threads {num_threads} \\
   {gtf} \\
   {input_bams}""".format(
-        other_options=config.param('cuffdiff', 'options'),
-        reference_fasta=config.param('cuffdiff', 'genome_fasta', type='filepath'),
-        library_type=config.param('cuffdiff', 'strandInfo'),
+        other_options=config.param('cuffdiff', 'other_options'),
+        genome_fasta=config.param('cuffdiff', 'genome_fasta', type='filepath'),
+        library_type=config.param('cuffdiff', 'library_type'),
         output_directory=output_directory,
-        num_threads=config.param('cuffdiff', 'numThreads', type='posint'),
+        num_threads=config.param('cuffdiff', 'threads', type='posint'),
         gtf=gtf,
         # Join replicate bams per sample with a "," then join all sample replicate groups with a " "
         input_bams=" \\\n  ".join([",".join(sample_replicate_bams) for sample_replicate_bams in sample_replicate_group_bams])
@@ -87,12 +87,12 @@ cufflinks -q {other_options}{gtf} \\
   --output-dir {output_directory} \\
   --num-threads {num_threads} \\
   {input_bam}""".format(
-        other_options=config.param('cufflinks', 'otherOptions', required=False),
+        other_options=config.param('cufflinks', 'other_options', required=False),
         gtf=" \\\n  --GTF " + gtf if gtf else "",
-        max_bundle_frags=config.param('cufflinks', 'cufflinksMaxFargs', type='int'),
-        library_type=config.param('cufflinks', 'strandInfo'),
+        max_bundle_frags=config.param('cufflinks', 'max_bundle_frags', type='int'),
+        library_type=config.param('cufflinks', 'library_type'),
         output_directory=output_directory,
-        num_threads=config.param('cufflinks', 'cufflinksThreads', type='posint'),
+        num_threads=config.param('cufflinks', 'threads', type='posint'),
         input_bam=input_bam
     )
 

@@ -79,12 +79,12 @@ def fix_mate_information(input, output):
   INPUT={input} \\
   OUTPUT={output} \\
   MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
-        tmp_dir=config.param('fixmate', 'tmp_dir'),
-        java_other_options=config.param('fixmate', 'java_other_options'),
-        ram=config.param('fixmate', 'ram'),
+        tmp_dir=config.param('picard_fix_mate_information', 'tmp_dir'),
+        java_other_options=config.param('picard_fix_mate_information', 'java_other_options'),
+        ram=config.param('picard_fix_mate_information', 'ram'),
         input=input,
         output=output,
-        max_records_in_ram=config.param('fixmate', 'max_records_in_ram', type='int')
+        max_records_in_ram=config.param('picard_fix_mate_information', 'max_records_in_ram', type='int')
     )
 
     return job
@@ -146,13 +146,13 @@ def reorder_sam(input, output):
   OUTPUT={output} \\
   REFERENCE={reference} \\
   MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
-        tmp_dir=config.param('reorder_sam', 'tmp_dir'),
-        java_other_options=config.param('reorder_sam', 'java_other_options'),
-        ram=config.param('reorder_sam', 'ram'),
+        tmp_dir=config.param('picard_reorder_sam', 'tmp_dir'),
+        java_other_options=config.param('picard_reorder_sam', 'java_other_options'),
+        ram=config.param('picard_reorder_sam', 'ram'),
         input=input,
         output=output,
-        reference=config.param('reorder_sam', 'genome_fasta', type='filepath'),
-        max_records_in_ram=config.param('reorder_sam', 'max_records_in_ram', type='int')
+        reference=config.param('picard_reorder_sam', 'genome_fasta', type='filepath'),
+        max_records_in_ram=config.param('picard_reorder_sam', 'max_records_in_ram', type='int')
     )
 
     return job
