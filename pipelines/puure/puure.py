@@ -41,7 +41,7 @@ class Puure(illumina.Illumina):
     def get_job_sam_to_fastq(self, file_fastq):
         job=Job(
           output_files=[file_fastq],
-          command="awk ' BEGIN { FS=\"\t\" } { print \"@\"\$1; print \$10; print \"+\";  print \$11}' | gzip -c > " + file_fastq
+          command="awk ' BEGIN { FS=\\\"\t\\\" } { print \\\"@\\\"\$1; print \$10; print \\\"+\\\";  print \$11}' | gzip -c > " + file_fastq
         ) 
         return job
 
@@ -65,7 +65,7 @@ class Puure(illumina.Illumina):
         alignment_file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.")
         job=Job(
            input_files=[alignment_file_prefix + "all.coverage.sample_summary"],
-           command="meanCov=\$( grep " + sample.name + " " + alignment_file_prefix + "all.coverage.sample_summary | cut -f3"
+           command="meanCov=\$( grep " + sample.name + " " + alignment_file_prefix + "all.coverage.sample_summary | cut -f3)"
         )
         return job
 
@@ -73,7 +73,7 @@ class Puure(illumina.Illumina):
         alignment_file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.")
         job=Job(
            input_files=[alignment_file_prefix + "all.metrics.alignment_summary_metrics"],
-           command="meanReadLen=\$(awk 'NR==10 {print \$16}' " + alignment_file_prefix + "all.metrics.alignment_summary_metrics"
+           command="meanReadLen=\$(awk 'NR==10 {print \$16}' " + alignment_file_prefix + "all.metrics.alignment_summary_metrics)"
         )
         return job
 
@@ -241,15 +241,15 @@ class Puure(illumina.Illumina):
     def metrics(self):
         jobs = []
         for sample in self.samples:
-            recal_file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.")
-            input = recal_file_prefix + "bam"
+            file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.")
+            input = file_prefix + "bam"
 
-            job = picard.collect_multiple_metrics(input, recal_file_prefix + "all.metrics")
+            job = picard.collect_multiple_metrics(input, file_prefix + "all.metrics")
             job.name = "picard_collect_multiple_metrics." + sample.name
             jobs.append(job)
 
             # Compute genome coverage
-            job = gatk.depth_of_coverage(input, recal_file_prefix + "all.coverage")
+            job = gatk.depth_of_coverage(input, file_prefix + "all.coverage")
             job.name = "gatk_depth_of_coverage.genome." + sample.name
             jobs.append(job)
 
@@ -336,7 +336,23 @@ class Puure(illumina.Illumina):
             
         return jobs
 
-    def extract_fastq_unmap(self):
+    def extract_fastq_orphan(self):
+        jobs = []
+
+        for sample in self.samples:
+            extract_directory = os.path.join("extract", sample.name)
+            extract_file_prefix = os.path.join("extract", sample.name, sample.name + ".")
+            
+            jobMkdir = Job(command="if [ ! -d " + extract_directory + " ]; then mkdir -p " + extract_directory + "; fi")
+            
+            ## create fastq of ORPHAN
+            job = picard.sam_to_fastq(extract_file_prefix + "ORPHAN.sName.bam", extract_file_prefix + "ORPHAN.1.fastq.gz", extract_file_prefix + "ORPHAN.2.fastq.gz")
+            job.name = "extract_fastq_ORPHAN_" + sample.name
+            jobs.append(job)
+            
+        return jobs        
+
+    def extract_fastq_oea_sclip(self):
         jobs = []
 
         for sample in self.samples:
@@ -345,11 +361,6 @@ class Puure(illumina.Illumina):
             sclip_file_prefix = os.path.join("sclip", sample.name, sample.name + ".")
             
             jobMkdir = Job(command="if [ ! -d " + extract_directory + " ]; then mkdir -p " + extract_directory + "; fi")
-            
-            ## create fastq of ORPHAN
-            job = picard.sam_to_fastq(extract_file_prefix + "ORPHAN.sName.bam", extract_file_prefix + "ORPHAN.1.fastq.gz", extract_file_prefix + "ORPHAN.2.fastq.gz")
-            job.name = "extract_fastq_ORPHAN_" + sample.name
-            jobs.append(job)
             
             ## create fastq of OEA close to sclip
             job = pipe_jobs([
@@ -390,24 +401,33 @@ class Puure(illumina.Illumina):
             jobs.append(job)
             
             ## create fastq sclip
-            job = Job(
+            jobMkdir = Job(command="if [ ! -d " + extract_directory + " ]; then mkdir -p " + extract_directory + "; fi")
+            jobFastq = Job(
                 input_files=[sclip_file_prefix+"scSequences.txt"],
                 output_files=[extract_file_prefix+"sclip.1.fastq.gz"],
-                command="awk 'NR>1 {if (\$3==\"+\") { print \"@\"\$4; print \$5 ;print \"+\";  print \$6}}' " + 
+                command="awk 'NR>1 {if (\$3==\\\"+\\\") { print \\\"@\\\"\$4; print \$5 ;print \\\"+\\\";  print \$6}}' " + 
                         sclip_file_prefix + "scSequences.txt " +
                         "| gzip -c > " + extract_file_prefix+"sclip.1.fastq.gz",
                 name="fastq_sclip1_" + sample.name
             )
+            job = concat_jobs([
+                jobMkdir,
+                jobFastq
+            ], name="fastq_sclip1_" + sample.name)
             jobs.append(job)
             
-            job = Job(
+            jobFastq = Job(
                 input_files=[sclip_file_prefix+"scSequences.txt"],
                 output_files=[extract_file_prefix+"sclip.2.fastq.gz"],
-                command="awk 'NR>1 {if (\$3==\"-\") { print \"@\"\$4; print \$5 ;print \"+\";  print \$6}}' " + 
+                command="awk 'NR>1 {if (\$3==\\\"-\\\") { print \\\"@\\\"\$4; print \$5 ;print \\\"+\\\";  print \$6}}' " + 
                         sclip_file_prefix + "scSequences.txt " +
                         "| gzip -c > " + extract_file_prefix+"sclip.2.fastq.gz",
                 name="fastq_sclip2_" + sample.name
             )
+            job = concat_jobs([
+                jobMkdir,
+                jobFastq
+            ], name="fastq_sclip2_" + sample.name)
             jobs.append(job)
             
         return jobs        
@@ -418,6 +438,8 @@ class Puure(illumina.Illumina):
         for sample in self.samples:
             ray_directory = os.path.join("scaffolds", sample.name, "ray", "ray" + config.param('ray', 'kmer'))
             extract_file_prefix = os.path.join("extract", sample.name, sample.name + ".")
+            
+            jobRM = Job(command="if [ -d " + ray_directory + " ]; then rm -r " + ray_directory + "; fi")
             
             jobRay = ray.ray(
                     ray_directory, 
@@ -468,6 +490,7 @@ class Puure(illumina.Illumina):
             ], name="index_" + sample.name)
             
             job = concat_jobs([
+               jobRM,
                jobRay,
                jobFormat,
                jobIndex
@@ -482,6 +505,7 @@ class Puure(illumina.Illumina):
         for sample in self.samples:
             cov_directory = os.path.join("scaffolds", sample.name, "ray", "ray" + config.param('ray', 'kmer'), "cov")
             extract_file_prefix = os.path.join("extract", sample.name, sample.name + ".")
+            scaffolds_file = os.path.join("scaffolds", sample.name, "ray", "ray" + config.param('ray', 'kmer'), "Scaffolds.fasta")
             
             #map Orphan read
             job = concat_jobs([
@@ -497,7 +521,8 @@ class Puure(illumina.Illumina):
                             "\tPU:orphan" + \
                             "\tCN:" + config.param('bwa_mem', 'sequencing_center') + \
                             "\tPL:Illumina" + \
-                            "'"
+                            "'",
+                        ref=scaffolds_file
                     ),
                     picard.sort_sam(
                         "/dev/stdin",
@@ -521,7 +546,8 @@ class Puure(illumina.Illumina):
                             "\tPU:scoea1" + \
                             "\tCN:" + config.param('bwa_mem', 'sequencing_center') + \
                             "\tPL:Illumina" + \
-                            "'"
+                            "'",
+                        ref=scaffolds_file
                     ),
                     picard.sort_sam(
                         "/dev/stdin",
@@ -544,7 +570,8 @@ class Puure(illumina.Illumina):
                             "\tPU:scoea2" + \
                             "\tCN:" + config.param('bwa_mem', 'sequencing_center') + \
                             "\tPL:Illumina" + \
-                            "'"
+                            "'",
+                        ref=scaffolds_file
                     ),
                     picard.sort_sam(
                         "/dev/stdin",
@@ -568,7 +595,8 @@ class Puure(illumina.Illumina):
                             "\tPU:sclip1" + \
                             "\tCN:" + config.param('bwa_mem', 'sequencing_center') + \
                             "\tPL:Illumina" + \
-                            "'"
+                            "'",
+                        ref=scaffolds_file
                     ),
                     picard.sort_sam(
                         "/dev/stdin",
@@ -591,7 +619,8 @@ class Puure(illumina.Illumina):
                             "\tPU:sclip2" + \
                             "\tCN:" + config.param('bwa_mem', 'sequencing_center') + \
                             "\tPL:Illumina" + \
-                            "'"
+                            "'",
+                        ref=scaffolds_file
                     ),
                     picard.sort_sam(
                         "/dev/stdin",
@@ -629,7 +658,8 @@ class Puure(illumina.Illumina):
                 os.path.join(cov_directory, "readunmap.cov.txt"), 
                 [], 
                 os.path.join(ray_directory, "Scaffolds.fasta"),
-                "--gc --ommitN --minMappingQuality " + config.param('DEFAULT', 'min_mapping_quality') + "--threads 5")
+                "--gc --ommitN --minMappingQuality " + config.param('DEFAULT', 'min_mapping_quality') + " --threads " + config.param('merge_and_cov_scaffolds', 'threads')
+            )
             job.name = "covSca_" + sample.name
             jobs.append(job)
         
@@ -642,7 +672,7 @@ class Puure(illumina.Illumina):
             cov_directory = os.path.join("scaffolds", sample.name, "ray", "ray" + config.param('ray', 'kmer'), "cov")
             ray_directory = os.path.join("scaffolds", sample.name, "ray", "ray" + config.param('ray', 'kmer'))
             
-            job = blast.blast_on_db(
+            job = blast.blastn_on_db(
                 "nt", 
                 os.path.join(ray_directory, "Scaffolds.fasta"), 
                 os.path.join(ray_directory, "Scaffolds.fasta.blastn.xml"),
@@ -676,7 +706,7 @@ class Puure(illumina.Illumina):
                 Job(
                  input_files=[os.path.join(ray_directory, "Scaffolds.fasta.refGenome.psl")],
                  output_files=[os.path.join(ray_directory, "Scaffolds.fasta.refGenome.noHeader.psl")],
-                 command="awk 'NR>1 {print $0} ' " + os.path.join(ray_directory, "Scaffolds.fasta.refGenome.psl") + " > " + os.path.join(ray_directory, "Scaffolds.fasta.refGenome.noHeader.psl")
+                 command="awk 'NR>5 {print \$0} ' " + os.path.join(ray_directory, "Scaffolds.fasta.refGenome.psl") + " > " + os.path.join(ray_directory, "Scaffolds.fasta.refGenome.noHeader.psl")
                 )
             ], name = "blat_sca_on_ref_" + sample.name)
             jobs.append(job)
@@ -687,17 +717,20 @@ class Puure(illumina.Illumina):
         jobs = []
         
         for sample in self.samples:
+            main_directory = "./"
             cov_directory = os.path.join("scaffolds", sample.name, "ray", "ray" + config.param('ray', 'kmer'), "cov")
             insert_directory = os.path.join("scaffolds", sample.name, "ray", "ray" + config.param('ray', 'kmer'), "insert" + type_insert)
             ray_directory = os.path.join("scaffolds", sample.name, "ray", "ray" + config.param('ray', 'kmer'))
             extract_file_prefix = os.path.join("extract", sample.name, sample.name + ".")
             
+            jobMkdir = Job(command="if [ ! -d " + insert_directory + " ]; then mkdir -p " + insert_directory + "; fi")
             jobMaxInsert = self.get_job_max_insert_size(sample)
             jobMinInsert = self.get_job_min_insert_size(sample)
             jobMeanCov = self.get_job_mean_cov(sample)
             jobMeanReadLength = self.get_job_mean_read_length(sample)
             
             job = concat_jobs([
+                jobMkdir,
                 jobMinInsert,
                 tools.r_select_scaffolds(
                   [
@@ -709,6 +742,8 @@ class Puure(illumina.Illumina):
                    os.path.join(insert_directory, "scaffolds.tab"), 
                    os.path.join(insert_directory, "scaffolds.toDelete.tab")
                   ],
+                  main_directory,
+                  config.param('ray', 'kmer'),
                   sample.name,
                   type_insert,
                   "\$minInsertSize"
@@ -729,6 +764,8 @@ class Puure(illumina.Illumina):
                    os.path.join(insert_directory, "cluster.OEA.tab"), 
                    os.path.join(insert_directory, "cluster.OEA.fusion.tab")
                   ],
+                  main_directory,
+                  config.param('ray', 'kmer'),
                   "OEA",
                   sample.name,
                   type_insert,
@@ -751,7 +788,9 @@ class Puure(illumina.Illumina):
                    os.path.join(insert_directory, "cluster.OEA.tab"), 
                    os.path.join(insert_directory, "cluster.OEA.fusion.tab")
                   ],
-                  "sclip",
+                  main_directory,
+                  config.param('ray', 'kmer'),
+                  "Sclip",
                   sample.name,
                   type_insert,
                   "\$maxInsertSize",
@@ -774,6 +813,8 @@ class Puure(illumina.Illumina):
                      os.path.join(insert_directory, "cluster.OEA.tab"), 
                      os.path.join(insert_directory, "cluster.OEA.fusion.tab")
                     ],
+                    main_directory,
+                    config.param('ray', 'kmer'),
                     sample.name,
                     type_insert,
                     "\$meanCov",
@@ -811,7 +852,8 @@ class Puure(illumina.Illumina):
             self.metrics,
             self.extract_sclip,
             self.extract_bam_unmap,
-            self.extract_fastq_unmap,
+            self.extract_fastq_orphan,
+            self.extract_fastq_oea_sclip,
             self.assembly_of_unmap,
             self.map_on_scaffolds,
             self.merge_and_cov_scaffolds,

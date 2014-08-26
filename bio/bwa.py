@@ -18,20 +18,19 @@ def index(input):
 
     return job
 
-def mem(
-    in1fastq,
-    in2fastq=None,
-    out_sam=None,
-    read_group=None
-    ):
-
+def mem(in1fastq, in2fastq=None, out_sam=None, read_group=None, ref=None):
     job = Job([in1fastq, in2fastq], [out_sam], [["bwa_mem", "module_bwa"]])
-
     job.command = ""
+
+    if ref:
+      idxbase = ref
+      job = Job([in1fastq, in2fastq, ref+".bwt"], [out_sam], [["bwa_mem", "module_bwa"]])
+    else :
+      idxbase = config.param('bwa_mem', 'genome_bwa_index', type='filepath')
+    
     if out_sam:
         job.command += "mkdir -p " + os.path.dirname(out_sam) + " && \\\n"
-
-    idxbase = config.param('bwa_mem', 'genome_bwa_index', type='filepath')
+    
     other_options = config.param('bwa_mem', 'other_options')
 
     job.command += \
