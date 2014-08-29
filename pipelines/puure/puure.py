@@ -436,13 +436,15 @@ class Puure(illumina.Illumina):
         jobs = []
         
         for sample in self.samples:
-            ray_directory = os.path.join("scaffolds", sample.name, "ray", "ray" + config.param('ray', 'kmer'))
+            ray_directory1 = os.path.join("scaffolds", sample.name, "ray")
+            ray_directory2 = os.path.join("scaffolds", sample.name, "ray", "ray" + config.param('ray', 'kmer'))
             extract_file_prefix = os.path.join("extract", sample.name, sample.name + ".")
             
-            jobRM = Job(command="if [ -d " + ray_directory + " ]; then rm -r " + ray_directory + "; fi")
+            jobRM = Job(command="if [ -d " + ray_directory2 + " ]; then rm -r " + ray_directory2 + "; fi")
+            jobMkdir = Job(command="if [ ! -d " + ray_directory1 + " ]; then mkdir -p " + ray_directory1 + "; fi")
             
             jobRay = ray.ray(
-                    ray_directory, 
+                    ray_directory2, 
                     [extract_file_prefix + "ORPHAN.1.fastq.gz"], 
                     [extract_file_prefix + "ORPHAN.2.fastq.gz"], 
                     [
@@ -456,41 +458,42 @@ class Puure(illumina.Illumina):
                         
             jobFormat = concat_jobs([
                 Job(
-                     input_files=[os.path.join(ray_directory, "Scaffolds.fasta")],
-                     command="sed -i '/^$/d' " + os.path.join(ray_directory, "Scaffolds.fasta") + " && sed -i 's/scaffold-//g' " + os.path.join(ray_directory, "Scaffolds.fasta")
+                     input_files=[os.path.join(ray_directory2, "Scaffolds.fasta")],
+                     command="sed -i '/^$/d' " + os.path.join(ray_directory2, "Scaffolds.fasta") + " && sed -i 's/scaffold-//g' " + os.path.join(ray_directory2, "Scaffolds.fasta")
                 ),
                 tools.py_addLengthRay(
-                     os.path.join(ray_directory, "Scaffolds.fasta"), 
-                     os.path.join(ray_directory, "ScaffoldLengths.txt"), 
-                     os.path.join(ray_directory, "Scaffolds.fasta.length")
+                     os.path.join(ray_directory2, "Scaffolds.fasta"), 
+                     os.path.join(ray_directory2, "ScaffoldLengths.txt"), 
+                     os.path.join(ray_directory2, "Scaffolds.fasta.length")
                 ),
                 Job(
                      input_files=[
-                        os.path.join(ray_directory, "Scaffolds.fasta.length"), 
-                        os.path.join(ray_directory, "Scaffolds.fasta")
+                        os.path.join(ray_directory2, "Scaffolds.fasta.length"), 
+                        os.path.join(ray_directory2, "Scaffolds.fasta")
                      ],
-                     command="rm -r " + os.path.join(ray_directory, "Scaffolds.fasta") + 
-                             " && mv " + os.path.join(ray_directory, "Scaffolds.fasta.length") + " " + os.path.join(ray_directory, "Scaffolds.fasta")
+                     command="rm -r " + os.path.join(ray_directory2, "Scaffolds.fasta") + 
+                             " && mv " + os.path.join(ray_directory2, "Scaffolds.fasta.length") + " " + os.path.join(ray_directory2, "Scaffolds.fasta")
                 ),
                 exonerate.fastareformat(
-                  os.path.join(ray_directory, "Scaffolds.fasta"), 
-                  os.path.join(ray_directory, "Scaffolds2.fasta")
+                  os.path.join(ray_directory2, "Scaffolds.fasta"), 
+                  os.path.join(ray_directory2, "Scaffolds2.fasta")
                 ),
                 Job(
-                     input_files=[os.path.join(ray_directory, "Scaffolds2.fasta")],
-                     output_files=[os.path.join(ray_directory, "Scaffolds.fasta")],
-                     command="rm -r " + os.path.join(ray_directory, "Scaffolds.fasta") + 
-                             " && mv " + os.path.join(ray_directory, "Scaffolds2.fasta")+ " " + os.path.join(ray_directory, "Scaffolds.fasta")
+                     input_files=[os.path.join(ray_directory2, "Scaffolds2.fasta")],
+                     output_files=[os.path.join(ray_directory2, "Scaffolds.fasta")],
+                     command="rm -r " + os.path.join(ray_directory2, "Scaffolds.fasta") + 
+                             " && mv " + os.path.join(ray_directory2, "Scaffolds2.fasta")+ " " + os.path.join(ray_directory2, "Scaffolds.fasta")
                 )
             ], name="format_" + sample.name)
             
             jobIndex = concat_jobs([
-                samtools.faidx(os.path.join(ray_directory, "Scaffolds.fasta")),
-                bwa.index(os.path.join(ray_directory, "Scaffolds.fasta"))
+                samtools.faidx(os.path.join(ray_directory2, "Scaffolds.fasta")),
+                bwa.index(os.path.join(ray_directory2, "Scaffolds.fasta"))
             ], name="index_" + sample.name)
             
             job = concat_jobs([
                jobRM,
+               jobMkdir,
                jobRay,
                jobFormat,
                jobIndex
