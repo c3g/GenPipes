@@ -834,20 +834,6 @@ sub metrics {
     }
   }
 
-  # Compute flags
-  $output = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.recal.bam.flagstat';
-  my $rO_flagstatJob = SAMtools::flagstat($rH_cfg, $bamFile, $output);
-  if(!$rO_flagstatJob->isUp2Date()) {
-    SubmitToCluster::printSubmitCmd($rH_cfg, "flagstat", undef, 'FLAGSTAT', $jobDependency, $sampleName, $rO_flagstatJob);
-    if(!defined($jobId)) {
-      $jobId='$METRICS_JOBS';
-      print 'METRICS_JOBS='.$rO_flagstatJob->getCommandJobId(0)."\n";
-    }
-    else {
-      print 'METRICS_JOBS=${METRICS_JOBS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$rO_flagstatJob->getCommandJobId(0)."\n";
-    }
-  }
-
   return $jobId;
 }
 sub calculateHSMetrics {
