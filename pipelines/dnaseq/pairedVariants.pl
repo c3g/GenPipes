@@ -108,7 +108,7 @@ sub main {
   my %opts;
   getopts('c:s:e:n:', \%opts);
   
-  if (!defined($opts{'c'}) || !defined($opts{'s'}) || !defined($opts{'e'}) || !defined($opts{'n'})) {
+  if (!defined($opts{'c'}) || !defined($opts{'s'}) || !defined($opts{'n'})) {
     printUsage();
     exit(1);
   }
