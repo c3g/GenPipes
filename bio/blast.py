@@ -7,11 +7,11 @@ import os
 from core.config import *
 from core.job import *
 
-def blast_on_db(db, query, output, other_options=""):
+def blastn_on_db(db, query, output, other_options=""):
     job = Job([query], [output], [['DEFAULT', 'module_blast']])
 
     job.command = \
-"""blast {other_options} \\
+"""blastn {other_options} \\
    -db {db} \\
    -query {query} \\
    -out {output}""".format(

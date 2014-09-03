@@ -85,17 +85,19 @@ def filter_long_indel(input, output):
 
 ## function for R tools ##
 
-def r_select_scaffolds(input, output, name_sample, type_insert, min_insert_size=200):
-    job = Job(input, output, [['DEFAULT' , 'module_R']])
+def r_select_scaffolds(input, output, folder_sca, kmer, name_sample, type_insert, min_insert_size=200):
+    job = Job(input, output, [['DEFAULT' , 'module_tools'], ['DEFAULT' , 'module_R']])
     
     job.command = \
 """ R --no-save --args \\
-  ./ \\
-  ./ \\
+  {folder_sca} \\
+  {kmer} \\
   {name_sample} \\
   {type_insert} \\
   {min_insert_size} \\
-  < \$R_TOOLS/analyse_selectSca.r \\""".format(
+  < \$R_TOOLS/puureAnalyseSelectSca.r """.format(
+        folder_sca=folder_sca,
+        kmer=kmer,
         name_sample=name_sample,
         type_insert=type_insert,
         min_insert_size=min_insert_size
@@ -103,18 +105,20 @@ def r_select_scaffolds(input, output, name_sample, type_insert, min_insert_size=
     
     return job
 
-def r_find_cluster(input, output, unmap_type, name_sample, type_insert, max_insert_size=200, min_mapping_quality=10):
-    job = Job(input, output, [['DEFAULT' , 'module_R']])
+def r_find_cluster(input, output, folder_sca, kmer, unmap_type, name_sample, type_insert, max_insert_size=200, min_mapping_quality=10):
+    job = Job(input, output, [['DEFAULT' , 'module_tools'], ['DEFAULT' , 'module_R']])
     
     job.command = \
 """ R --no-save --args \\
-  ./ \\
-  ./ \\
+  {folder_sca} \\
+  {kmer} \\
   {name_sample} \\
   {type_insert} \\
   {min_mapping_quality} \\
   {max_insert_size} \\
-  < \$R_TOOLS/analyse_findCluster_{unmap_type}.r \\""".format(
+  < \$R_TOOLS/puureAnalyseFindCluster{unmap_type}.r """.format(
+        folder_sca=folder_sca,
+        kmer=kmer,
         name_sample=name_sample,
         type_insert=type_insert,
         min_mapping_quality=min_mapping_quality,
@@ -124,20 +128,22 @@ def r_find_cluster(input, output, unmap_type, name_sample, type_insert, max_inse
     
     return job
 
-def r_find_insert(input, output, name_sample, type_insert, mean_coverage=20, max_insert_size=200, min_overlap=2, exclu_file="None"):
-    job = Job(input, output, [['DEFAULT' , 'module_R']])
+def r_find_insert(input, output, folder_sca, kmer, name_sample, type_insert, mean_coverage=20, max_insert_size=200, min_overlap=2, exclu_file="None"):
+    job = Job(input, output, [['DEFAULT' , 'module_tools'], ['DEFAULT' , 'module_R']])
     
     job.command = \
 """ R --no-save --args \\
-  ./ \\
-  ./ \\
+  {folder_sca} \\
+  {kmer} \\
   {name_sample} \\
   {type_insert} \\
   {mean_coverage} \\
   {max_insert_size} \\
   {min_overlap} \\
   {exclu_file} \\
-  < \$R_TOOLS/analyse_findInsert.r \\""".format(
+  < \$R_TOOLS/puureAnalyseFindInsert.r """.format(
+        folder_sca=folder_sca,
+        kmer=kmer,
         name_sample=name_sample,
         type_insert=type_insert,
         mean_coverage=mean_coverage,
@@ -148,13 +154,13 @@ def r_find_insert(input, output, name_sample, type_insert, mean_coverage=20, max
     
     return job
 
-def r_filter_insert(input, output, name_sample, type_insert, mean_coverage=20, max_insert_size=200, strand=1, min_num_read=1, mean_read_length=100):
-    job = Job(input, output, [['DEFAULT' , 'module_R']])
+def r_filter_insert(input, output, folder_sca, kmer, name_sample, type_insert, mean_coverage=20, max_insert_size=200, strand=1, min_num_read=1, mean_read_length=100):
+    job = Job(input, output, [['DEFAULT' , 'module_tools'], ['DEFAULT' , 'module_R']])
     
     job.command = \
 """ R --no-save --args \\
-  ./ \\
-  ./ \\
+  {folder_sca} \\
+  {kmer} \\
   {name_sample} \\
   {type_insert} \\
   {mean_coverage} \\
@@ -162,7 +168,9 @@ def r_filter_insert(input, output, name_sample, type_insert, mean_coverage=20, m
   {strand} \\
   {min_num_read} \\
   {mean_read_length} \\
-  < \$R_TOOLS/analyse_findInsert.r \\""".format(
+  < \$R_TOOLS/puureAnalyseFindInsert.r """.format(
+        folder_sca=folder_sca,
+        kmer=kmer,
         name_sample=name_sample,
         type_insert=type_insert,
         mean_coverage=mean_coverage,
