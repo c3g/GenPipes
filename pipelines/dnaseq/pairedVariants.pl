@@ -43,6 +43,7 @@ use lib "$FindBin::Bin/../../lib";
 # Dependencies
 #--------------------
 use Getopt::Std;
+use Parse::Range qw(parse_range);
 use POSIX;
 
 use LoadConfig;
@@ -91,10 +92,9 @@ for my $stepName (@steps) {
 
 sub printUsage {
   print "Version: ".$Version::version."\n";
-  print "\nUsage: perl ".$0." project.csv first_step last_step\n";
+  print "\nUsage: perl ".$0." -n pairs.csv -s range\n";
   print "\t-c  config file\n";
   print "\t-s  start step, inclusive\n";
-  print "\t-e  end step, inclusive\n";
   print "\t-n  paired sample sheet. Format: 'SAMPLE,NORMAL,TUMOR'\n";
   print "\n";
   print "Steps:\n";
@@ -117,11 +117,15 @@ sub main {
   my $rAoH_samplePairs = SampleSheet::parsePairedSampleSheet($opts{'n'});
   my $rAoH_seqDictionary = SequenceDictionaryParser::readDictFile(\%cfg);
 
+  # List user-defined step index range.
+  # Shift 1st position to 0 instead of 1
+  my @stepRange = map($_ - 1, parse_range($opts{'s'}));
+
   SubmitToCluster::initPipeline;
 
   my $latestBam;
   for my $rH_samplePair  (@$rAoH_samplePairs) {
-    for(my $currentStep = $opts{'s'}-1; $currentStep <= ($opts{'e'}-1); $currentStep++) {
+    for my $currentStep (@stepRange) {
       my $fname = $steps[$currentStep]->{'name'};
       my $subref = \&$fname;
 
