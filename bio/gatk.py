@@ -59,7 +59,7 @@ def cat_variants(variants, output):
 
     job.command = \
 """java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -cp \$GATK_JAR \\
-  org.broadinstitute.sting.tools.CatVariants {options} \\
+  org.broadinstitute.gatk.tools.CatVariants {options} \\
   --reference {reference}{variants} \\
   --outputFile {output}""".format(
         tmp_dir=config.param('gatk_cat_variants', 'tmp_dir'),

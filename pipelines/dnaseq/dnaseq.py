@@ -364,6 +364,7 @@ class DnaSeq(illumina.Illumina):
 
         for sample in self.samples:
             haplotype_file_prefix = os.path.join("alignment", sample.name, "rawHaplotypeCaller", sample.name)
+            output_haplotype_file_prefix = os.path.join("alignment", sample.name, sample.name)
             if nb_haplotype_jobs == 1:
                 gvcfs_to_merge = [haplotype_file_prefix + ".hc.g.vcf"]
             else:
@@ -371,8 +372,8 @@ class DnaSeq(illumina.Illumina):
                 gvcfs_to_merge.append(haplotype_file_prefix + ".others.hc.g.vcf")
 
             jobs.append(concat_jobs([
-                gatk.cat_variants(gvcfs_to_merge, haplotype_file_prefix + ".hc.g.vcf"),
-                gatk.genotype_gvcfs([haplotype_file_prefix + ".hc.g.vcf"], haplotype_file_prefix + ".hc.vcf")
+                gatk.cat_variants(gvcfs_to_merge, output_haplotype_file_prefix + ".hc.g.vcf"),
+                gatk.genotype_gvcfs([output_haplotype_file_prefix + ".hc.g.vcf"], output_haplotype_file_prefix + ".hc.vcf")
             ], name="merge_and_call_gvcf." + sample.name))
 
         return jobs
