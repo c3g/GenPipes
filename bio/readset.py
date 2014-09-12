@@ -88,7 +88,7 @@ def parse_readset_file(readset_file):
     log.info("Parse readset file " + readset_file + " ...")
     readset_csv = csv.DictReader(open(readset_file, 'rb'), delimiter='\t')
     for line in readset_csv:
-        sample_name = line['Sample']
+        sample_name = line['SampleID']
         sample_names = [sample.name for sample in samples]
         if sample_name in sample_names:
             # Sample already exists
