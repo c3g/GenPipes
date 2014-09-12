@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 # Python Standard Modules
-import datetime
 import os
 
 # MUGQIC Modules
@@ -31,7 +30,7 @@ set -eu -o pipefail
 
 {separator_line}
 # {pipeline.__class__.__name__} {scheduler.__class__.__name__} Job Submission Bash script
-# Created on: {datetime}
+# Created on: {pipeline.timestamp}
 # Steps:
 {steps}
 {separator_line}"""
@@ -40,8 +39,7 @@ set -eu -o pipefail
                 pipeline=pipeline,
                 scheduler=self,
                 steps="\n".join(["#   " + step.name + ": " + str(len(step.jobs)) + " job" + ("s" if len(step.jobs) > 1 else "" if step.jobs else "... skipping") for step in pipeline.step_range]) + \
-                "\n#   TOTAL: " + str(len(pipeline.jobs)) + " job" + ("s" if len(pipeline.jobs) > 1 else "" if pipeline.jobs else "... skipping"),
-                datetime=datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+                "\n#   TOTAL: " + str(len(pipeline.jobs)) + " job" + ("s" if len(pipeline.jobs) > 1 else "" if pipeline.jobs else "... skipping")
             )
         )
 

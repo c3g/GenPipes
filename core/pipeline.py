@@ -3,6 +3,7 @@
 # Python Standard Modules
 import argparse
 import collections
+import datetime
 import hashlib
 import logging
 import os
@@ -17,10 +18,23 @@ log = logging.getLogger(__name__)
 
 class Pipeline(object):
     def __init__(self):
+        self._timestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
         self._args = self.argparser.parse_args()
 
         logging.basicConfig(level=getattr(logging, self.args.log.upper()))
         config.parse_files(self.args.config)
+
+        # Create a config trace from merged config file values
+        with open(self.__class__.__name__ + ".config.trace.ini", 'wb') as config_trace:        
+            config_trace.write("""\
+# {self.__class__.__name__} Config Trace
+# Created on: {self.timestamp}
+# From:
+#   {config_files}
+# DO NOT EDIT THIS AUTOMATICALLY GENERATED FILE - edit the master config files
+
+""".format(config_files="\n#   ".join([config_file.name for config_file in self.args.config]), self=self))
+            config.write(config_trace)
 
         self._output_dir = os.path.abspath(self.args.output_dir)
         self._scheduler = create_scheduler(self.args.job_scheduler)
@@ -62,6 +76,10 @@ class Pipeline(object):
     @property
     def args(self):
         return self._args
+
+    @property
+    def timestamp(self):
+        return self._timestamp
 
     @property
     def output_dir(self):
