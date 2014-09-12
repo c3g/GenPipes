@@ -293,7 +293,7 @@ sub mergeAndCallGVCF {
   if (!$ro_job->isUp2Date()) {
     my $command;
     $command .= LoadConfig::moduleLoad($rH_cfg, [['mergeAndCallGVCF', 'moduleVersion.java'], ['mergeAndCallGVCF', 'moduleVersion.gatk']]) . ' &&';
-    $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'mergeAndCallGVCF', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'mergeAndCallGVCF', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'mergeAndCallGVCF', 'ram') . ' -cp \${GATK_JAR} org.broadinstitute.sting.tools.CatVariants';
+    $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'mergeAndCallGVCF', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'mergeAndCallGVCF', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'mergeAndCallGVCF', 'ram') . ' -cp \${GATK_JAR} org.broadinstitute.gatk.tools.CatVariants';
     $command .= ' -R ' . $refGenome;
     for my $vcf (@{$rA_vcfs}) {
       $command .= ' -V ' . $vcf;

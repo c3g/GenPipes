@@ -120,7 +120,6 @@ use GqSeqUtils;
 my @steps;
 push(@steps, {'name' => 'samToFastq', 'stepLoop' => 'sample', 'parentStep' => undef});
 push(@steps, {'name' => 'trimAndAlign', 'stepLoop' => 'sample', 'parentStep' => 'samToFastq'});
-push(@steps, {'name' => 'laneMetrics', 'stepLoop' => 'sample', 'parentStep' => 'trimAndAlign'});
 push(@steps, {'name' => 'mergeTrimStats', 'stepLoop' => 'experiment', 'parentStep' => 'trimAndAlign'});
 push(@steps, {'name' => 'symlinkRawAlignBam', 'stepLoop' => 'sample', 'parentStep' => undef});
 push(@steps, {'name' => 'mergeLanes', 'stepLoop' => 'sample', 'parentStep' => 'trimAndAlign'});
@@ -158,8 +157,6 @@ push(@steps, {'name' => 'fullPileup', 'stepLoop' => 'sample', 'parentStep' => 'r
 The standard variant discovery pipeline performs the following steps:
 
 B<trimAndAlign> :  Raw reads quality trimming and removing of Illumina adapters is performed using trimmomatic. The filtered reads are aligned to a reference genome. The alignment is done per lane of sequencing. The alignment software used is bwa, two different algorithms are available: bwa aln (backtrack) and bwa mem.
-
-B<laneMetrics> :  Aligned reads are duplicates if they have the same 5' alignment positions (for both mates in the case of paired-end reads). All but the best pair (based on alignment score) will be marked as a duplicate in the .bam file. Marking duplicates is done with picard software. Metrics per lane are produced at this step.
 
 B<mergeTrimStats> : The trim statistics per lane/sample are merged at this step.
 
@@ -231,7 +228,7 @@ my $workDirectory = getcwd();
 
 sub printUsage {
   print "Version: ".$Version::version."\n";
-  print "\nUsage: perl ".$0." -c config.ini -s start -n SampleSheet.csv\n";
+  print "\nUsage: perl ".$0." -c config.ini -s step_range -n SampleSheet.csv\n";
   print "\t-c  config file\n";
   print "\t-s  step range e.g. '1,3', '2-5', '1,4-7,10'\n";
   print "\t-n  nanuq sample sheet\n";
@@ -444,7 +441,7 @@ sub trimAndAlign {
         }
         else {
           SubmitToCluster::printSubmitCmd($rH_cfg, "aln", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'READALN', $trimDependency, $sampleName, $ro_bwaJob, 0 );
-          SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'samse.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA',  $ro_bwaJob->getCommandJobId(1), $sampleName, $ro_bwaJob, 1 );
+          SubmitToCluster::printSubmitCmd($rH_cfg, "aln", 'samse.'.$rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'BWA',  $ro_bwaJob->getCommandJobId(0), $sampleName, $ro_bwaJob, 1 );
           print 'BWA_JOB_IDS=${BWA_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$ro_bwaJob->getCommandJobId(1)."\n";
           $setJobId = 1;
         } 
@@ -466,68 +463,6 @@ sub trimAndAlign {
   }
 
   return '$BWA_JOB_IDS';
-}
-
-sub laneMetrics {
-  my $stepId = shift;
-  my $rH_cfg = shift;
-  my $sampleName = shift;
-  my $rAoH_sampleLanes  = shift;
-  my $rAoH_seqDictionary = shift;
-
-  my $jobDependency = undef;
-  my $parentStep = $steps[$stepId]->{'parentStep'};
-  if(defined($globalDep{$parentStep}->{$sampleName})) {
-    $jobDependency = $globalDep{$parentStep}->{$sampleName};
-  }
-
-  print "LANE_METRICS_JOB_IDS=\"\"\n";
-  my $first=1;
-  for my $rH_laneInfo (@$rAoH_sampleLanes) {
-    my $directory = 'alignment/'.$sampleName."/run".$rH_laneInfo->{'runId'}."_".$rH_laneInfo->{'lane'}."/";
-    my $sortedLaneBamFile = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.bam';
-    my $sortedLaneDupBamFile = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.dup.bam';
-    my $outputMetrics = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.dup.metrics';
-
-    my $rO_job = Picard::markDup($rH_cfg, $sampleName, $sortedLaneBamFile, $sortedLaneDupBamFile, $outputMetrics);
-    if(!$rO_job->isUp2Date()) {
-      SubmitToCluster::printSubmitCmd($rH_cfg, "markDup", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'LANEMARKDUP', $jobDependency, $sampleName, $rO_job);
-      if($first == 1) {
-        print 'LANE_METRICS_JOB_IDS='.$rO_job->getCommandJobId(0)."\n";
-        $first = 0;
-      }
-      else {
-        print 'LANE_METRICS_JOB_IDS=${LANE_METRICS_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'laneMarkDup', 'clusterDependencySep').$rO_job->getCommandJobId(0)."\n";
-      }
-    }
-
-    $outputMetrics = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.dup.metrics';
-    my $rO_collectMetricsJob = Picard::collectMetrics($rH_cfg, $sortedLaneBamFile, $outputMetrics);
-    if(!$rO_collectMetricsJob->isUp2Date()) {
-      SubmitToCluster::printSubmitCmd($rH_cfg, "collectMetrics", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'COLLECTMETRICS', $jobDependency, $sampleName, $rO_collectMetricsJob);
-      if($first == 1) {
-        print 'LANE_METRICS_JOB_IDS='.$rO_collectMetricsJob->getCommandJobId(0)."\n";
-      }
-      else {
-        print 'LANE_METRICS_JOB_IDS=${LANE_METRICS_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'collectMetrics', 'clusterDependencySep').$rO_collectMetricsJob->getCommandJobId(0)."\n";
-      }
-    }
-
-    $outputMetrics = $directory.$rH_laneInfo->{'name'}.'.'.$rH_laneInfo->{'libraryBarcode'}.'.sorted.dup.metrics.nodup.targetCoverage.txt';
-    my $coverageBED = BVATools::resolveSampleBED($rH_cfg, $rH_laneInfo);
-    my $rO_coverageJob = BVATools::depthOfCoverage($rH_cfg, $sortedLaneBamFile, $outputMetrics, $coverageBED);
-    if(!$rO_coverageJob->isUp2Date()) {
-      SubmitToCluster::printSubmitCmd($rH_cfg, "depthOfCoverage", $rH_laneInfo->{'runId'} . "_" . $rH_laneInfo->{'lane'}, 'LANEDEPTHOFCOVERAGE', $jobDependency, $sampleName, $rO_coverageJob);
-      if($first == 1) {
-        print 'LANE_METRICS_JOB_IDS='.$rO_coverageJob->getCommandJobId(0)."\n";
-      }
-      else {
-        print 'LANE_METRICS_JOB_IDS=${LANE_METRICS_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'depthOfCoverage', 'clusterDependencySep').$rO_coverageJob->getCommandJobId(0)."\n";
-      }
-    }
-  }
-
-  return '${LANE_METRICS_JOB_IDS}';
 }
 
 sub mergeTrimStats {
@@ -573,7 +508,6 @@ sub mergeTrimStats {
   }
   return $rO_job->getCommandJobId(0);
 }
-
 
 sub symlinkRawAlignBam {
   my $stepId = shift;
@@ -897,20 +831,6 @@ sub metrics {
     }
     else {
       print 'METRICS_JOBS=${METRICS_JOBS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$rO_igvtoolsTDFJob->getCommandJobId(0)."\n";
-    }
-  }
-
-  # Compute flags
-  $output = 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.dup.recal.bam.flagstat';
-  my $rO_flagstatJob = SAMtools::flagstat($rH_cfg, $bamFile, $output);
-  if(!$rO_flagstatJob->isUp2Date()) {
-    SubmitToCluster::printSubmitCmd($rH_cfg, "flagstat", undef, 'FLAGSTAT', $jobDependency, $sampleName, $rO_flagstatJob);
-    if(!defined($jobId)) {
-      $jobId='$METRICS_JOBS';
-      print 'METRICS_JOBS='.$rO_flagstatJob->getCommandJobId(0)."\n";
-    }
-    else {
-      print 'METRICS_JOBS=${METRICS_JOBS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$rO_flagstatJob->getCommandJobId(0)."\n";
     }
   }
 

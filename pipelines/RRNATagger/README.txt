@@ -55,7 +55,7 @@
 module load mugqic/tools/1.9
 
 ## FOR MISEQ
-/path/to/your/mugqic_tools/perl-tools/getMiSeqBarcodes.pl --runId M00833_0173 > barcodes.fasta
+/path/to/your/mugqic_tools/perl-tools/getMiSeqBarcodes.pl --sampleSheet ./project.nanuq.csv  --runId M00833_0173 > barcodes.fasta
 
 ## FOR 454:
 /path/to/your/mugqic_tools/perl-tools/sampleSetup.pl --nanuqAuthFile ~/nanuq_sample_setup.txt --projectId 10246 --tech 454

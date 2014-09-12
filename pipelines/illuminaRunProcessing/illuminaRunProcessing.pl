@@ -41,23 +41,18 @@ use warnings;
 
 #---------------------
 
-BEGIN{
-    #Makesure we can find the GetConfig::LoadModules module relative to this script install
-    use File::Basename;
-    use Cwd 'abs_path';
-    my ( undef, $mod_path, undef ) = fileparse( abs_path(__FILE__) );
-    unshift @INC, $mod_path."lib";
-}
-
+# Add the mugqic_pipeline/lib/ path relative to this Perl script to @INC library search variable
+use FindBin;
+use lib "$FindBin::Bin/../../lib";
 
 # Dependencies
 #--------------------
 use Getopt::Std;
-use Cwd;
 use POSIX;
 use XML::Simple;
 use Data::Dumper;
 use Parse::Range qw(parse_range);
+use File::Basename;
 
 use CountIlluminaBarcodes;
 use BVATools;
@@ -106,13 +101,14 @@ my $lastIndex;
 
 sub printUsage {
   print "Version: ".$Version::version."\n";
-  print "\nUsage: perl ".$0." -c config.ini -s start -e end -l nb -r /path/to/run\n";
+  print "\nUsage: perl ".$0." -c config.ini -s steps -l nb -r /path/to/run\n";
   print "\t-c  config file\n";
   print "\t-s  step range e.g. '1,3', '2-5', '1,4-7,11'\n";  
   print "\t-l  lane number\n";
   print "\t-r  run directory\n";
   print "\t-n  nanuq sample sheet. Optional, default=RUNDIRECTORY/run.nanuq.csv\n";
   print "\t-i  Illumina (Casava) sample sheet. Optional, default=RUNDIRECTORY/SampleSheet.nanuq.csv\n";
+  print "\t-f  Force download of samples sheets, even if already existing, Optional, default= no force\n";
   print "\t-m  Number of mismatches. Optional, default=1\n";
   print "\t-x  First index nucleotide to use. Optional, default=1\n";
   print "\t-y  Last index nucleotide to use. Optional, default=last\n";
@@ -127,7 +123,7 @@ sub printUsage {
 
 sub main {
   my %opts;
-  getopts('c:s:m:n:l:r:i:x:y:', \%opts);
+  getopts('fc:s:m:n:l:r:i:x:y:', \%opts);
 
   if (!defined($opts{'c'}) || !defined($opts{'s'}) || !defined($opts{'l'}) || !defined($opts{'r'})) {
     printUsage();
@@ -142,6 +138,7 @@ sub main {
   my $nanuqSheet = defined($opts{'n'}) ? $opts{'n'} : $runDirectory . "/run.nanuq.csv";
   $firstIndex = $opts{'x'};
   $lastIndex = $opts{'y'};
+  my $forceDownload = $opts{'f'};
   
   if (!defined($lastIndex) ||  !($lastIndex > 0)) {
     $lastIndex = 999;
@@ -160,18 +157,18 @@ sub main {
     ($runName,$runID) = $runDirectory =~ /.*\/(\d+_([^_]+_\d+)_.*)/;
   }
 
-  if (!defined($opts{'i'})) {
+  if (!defined($opts{'i'}) || defined($forceDownload)) {
     # Download casava sheet
-    if ( !-e $runDirectory . "/SampleSheet.nanuq.csv" ) {
-      my $command = formatCommand("config" => \%cfg, "command" => LoadConfig::getParam(\%cfg, 'default', 'fetchCasavaSheetCommand'), "runDirectory" => $runDirectory, "runID" => $runID, "lane" => $lane);
+    if ( (!-e $casavaSheet) || defined($forceDownload)) {
+      my $command = formatCommand("config" => \%cfg, "command" => LoadConfig::getParam(\%cfg, 'default', 'fetchCasavaSheetCommand'), "runDirectory" => $runDirectory, "runID" => $runID, "lane" => $lane, "filename" => $casavaSheet);
       system($command);
     }
   }
   
-  if (!defined($opts{'n'})) {
+  if (!defined($opts{'n'}) || defined($forceDownload)) {
     # Download nanuq run sheet
-    if ( !-e $runDirectory . "/run.nanuq.csv" ) {
-      my $command = formatCommand("config" => \%cfg, "command" => LoadConfig::getParam(\%cfg, 'default', 'fetchNanuqSheetCommand'), "runDirectory" => $runDirectory, "runID" => $runID, "lane" => $lane);
+    if ( (!-e $nanuqSheet) || defined($forceDownload)) {
+      my $command = formatCommand("config" => \%cfg, "command" => LoadConfig::getParam(\%cfg, 'default', 'fetchNanuqSheetCommand'), "runDirectory" => $runDirectory, "runID" => $runID, "lane" => $lane, "filename" => $nanuqSheet);
       system($command);
     }
   }
@@ -654,15 +651,29 @@ sub copy {
   my $lane           = shift;
   my $rAoH_readsInfo = shift;
   my $nbReads        = shift;
+  my $rAoH_sample    = shift;
 
   my $dependencies = getDependencies($step, $rH_cfg);
   my $ro_job = new Job();
   my $destinationFolder;
 
-
   $destinationFolder= LoadConfig::getParam($rH_cfg, 'copy','destinationFolder');
 
-  my $command = formatCommand("config" => $rH_cfg, "command" => LoadConfig::getParam($rH_cfg, 'copy', 'copyCommand'), "runDirectory" => $runDirectory, "runID" => $runID, "lane" => $lane, "destinationFolder" => $destinationFolder);
+  my $excludeFastq = "";
+  # Check if sample has a reference genome and therefore associated BAM files
+  for my $rH_sample (@$rAoH_sample) {
+    my $libSource = $rH_sample->{'libSource'}; # gDNA, cDNA, ...
+    my $ref = getGenomeReference($rH_sample->{'referenceMappingSpecies'}, $rH_sample->{'ref'}, $libSource, 'bwa');
+    if (defined($ref)) {
+      # BAM have been created, therefore no need to rsync fasta files
+      $excludeFastq .= " \\\n  --exclude '" . getFastqFilename($runDirectory, $lane, $rH_sample, 1) . "'";
+      if ($nbReads > 1) {
+        $excludeFastq .= " \\\n  --exclude '" . getFastqFilename($runDirectory, $lane, $rH_sample, 2) . "'";
+      }
+    }
+  }
+
+  my $command = formatCommand("config" => $rH_cfg, "command" => LoadConfig::getParam($rH_cfg, 'copy', 'copyCommand'), "runDirectory" => $runDirectory, "runID" => $runID, "lane" => $lane, "destinationFolder" => $destinationFolder, "excludeFastq" => $excludeFastq);
 
   $ro_job->addCommand($command);
 
