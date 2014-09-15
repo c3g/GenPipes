@@ -22,6 +22,7 @@ from bio import trimmomatic
 
 log = logging.getLogger(__name__)
 
+# Abstract pipeline gathering common features of all MUGQIC pipelines (readsets, samples, remote log, etc.)
 class MUGQICPipeline(Pipeline):
 
     @property
@@ -64,7 +65,7 @@ wget "{server}?{request}" --quiet --output-document=/dev/null
         super(MUGQICPipeline, self).__init__()
 
 
-# Abstract pipeline gathering common features of all Illumina sequencing pipelines (readsets, trimming, etc.)
+# Abstract pipeline gathering common features of all Illumina sequencing pipelines (trimming, etc.)
 # Specific steps must be defined in Illumina children pipelines.
 class Illumina(MUGQICPipeline):
 
