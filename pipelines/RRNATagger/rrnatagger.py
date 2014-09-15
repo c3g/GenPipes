@@ -21,11 +21,11 @@ from bio.readset import *
 from bio import rrna_amplicons
 from bio import microbial_ecology
 
-from pipelines.illumina import illumina
+from pipelines import common
 
 log = logging.getLogger(__name__)
 
-class RRNATagger(illumina.Illumina):
+class RRNATagger(common.Illumina):
 
     def merge_barcodes(self):
         # Merge all demultiplexed fastq files in one file. One file for reads1 and one file for reads2 of Illumina paired-end.

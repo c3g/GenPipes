@@ -25,11 +25,11 @@ from bio import metrics
 from bio import picard
 from bio import samtools
 from bio import tophat
-from pipelines.illumina import illumina
+from pipelines import common
 
 log = logging.getLogger(__name__)
 
-class RnaSeq(illumina.Illumina):
+class RnaSeq(common.Illumina):
 
     def tophat(self):
         jobs = []

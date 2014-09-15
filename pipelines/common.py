@@ -4,10 +4,11 @@
 import logging
 import os
 import re
+import socket
 import sys
 
 # Append mugqic_pipeline directory to Python library path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0]))))
 
 # MUGQIC Modules
 from core.job import *
@@ -21,9 +22,7 @@ from bio import trimmomatic
 
 log = logging.getLogger(__name__)
 
-# Abstract pipeline gathering common features of all Illumina sequencing pipelines (readsets, trimming, etc.)
-# Specific steps must be defined in Illumina children pipelines.
-class Illumina(Pipeline):
+class MUGQICPipeline(Pipeline):
 
     @property
     def readsets(self):
@@ -36,6 +35,38 @@ class Illumina(Pipeline):
         if not hasattr(self, "_samples"):
             self._samples = list(collections.OrderedDict.fromkeys([readset.sample for readset in self.readsets]))
         return self._samples
+
+    def mugqic_log(self):
+        server = "http://mugqic.hpc.mcgill.ca/cgi-bin/pipeline.cgi"
+        request = \
+            "hostname=" + socket.gethostname() + "&" + \
+            "ip=" + socket.gethostbyname(socket.gethostname()) + "&" + \
+            "pipeline=" + self.__class__.__name__ + "&" + \
+            "steps=" + ",".join([step.name for step in self.step_range]) + "&" + \
+            "samples=" + str(len(self.samples))
+
+        print("""
+{separator_line}
+# Call home with pipeline statistics
+{separator_line}
+wget "{server}?{request}" --quiet --output-document=/dev/null
+""".format(separator_line = "#" + "-" * 79, server=server, request=request))
+
+
+    def submit_jobs(self):
+        super(MUGQICPipeline, self).scheduler.submit(self)
+        self.mugqic_log()
+
+    def __init__(self):
+        # Add pipeline specific arguments
+        self.argparser.add_argument("-r", "--readsets", help="readset file", type=file, required=True)
+
+        super(MUGQICPipeline, self).__init__()
+
+
+# Abstract pipeline gathering common features of all Illumina sequencing pipelines (readsets, trimming, etc.)
+# Specific steps must be defined in Illumina children pipelines.
+class Illumina(MUGQICPipeline):
 
     @property
     def run_type(self):
@@ -143,9 +174,3 @@ grep ^Input {trim_log} | \\
             ], name="merge_trimmomatic_stats")
 
         return [job]
-
-    def __init__(self):
-        # Add pipeline specific arguments
-        self.argparser.add_argument("-r", "--readsets", help="readset file", type=file, required=True)
-
-        super(Illumina, self).__init__()

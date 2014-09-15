@@ -51,7 +51,8 @@ JOB_OUTPUT_DIR=$OUTPUT_DIR/job_output
 TIMESTAMP=`date +%FT%H.%M.%S`
 JOB_LIST=$JOB_OUTPUT_DIR/{pipeline.__class__.__name__}_job_list_$TIMESTAMP
 mkdir -p $OUTPUT_DIR
-cd $OUTPUT_DIR"""
+cd $OUTPUT_DIR
+"""
                 .format(
                     pipeline=pipeline,
                 )
@@ -63,7 +64,8 @@ cd $OUTPUT_DIR"""
 # STEP: {step.name}
 {separator_line}
 STEP={step.name}
-mkdir -p $JOB_OUTPUT_DIR/$STEP""".format(separator_line=separator_line, step=step)
+mkdir -p $JOB_OUTPUT_DIR/$STEP
+""".format(separator_line=separator_line, step=step)
         )
 
 class PBSScheduler(Scheduler):
@@ -126,7 +128,7 @@ exit \$MUGQIC_STATE" | \\
                         cmd += "\n" + job.id + "=" + job.name
 
                     # Write job parameters in job list file
-                    cmd += "\necho \"$" + job.id + "\t$JOB_NAME\t$JOB_DEPENDENCIES\t$JOB_OUTPUT_RELATIVE_PATH\" >> $JOB_LIST"
+                    cmd += "\necho \"$" + job.id + "\t$JOB_NAME\t$JOB_DEPENDENCIES\t$JOB_OUTPUT_RELATIVE_PATH\" >> $JOB_LIST\n"
 
                     print cmd
 
@@ -152,7 +154,8 @@ rm -f $JOB_DONE && \\
 MUGQIC_STATE=$PIPESTATUS
 echo "End MUGQIC Job $JOB_NAME at `date +%FT%H:%M:%S`"
 echo MUGQICexitStatus:$MUGQIC_STATE
-if [ $MUGQIC_STATE -eq 0 ] ; then touch $JOB_DONE ; else exit $MUGQIC_STATE ; fi""".format(
+if [ $MUGQIC_STATE -eq 0 ] ; then touch $JOB_DONE ; else exit $MUGQIC_STATE ; fi
+""".format(
                             job=job,
                             separator_line=separator_line,
                             command_with_modules=re.sub(r"\\(.)", r"\1", job.command_with_modules)

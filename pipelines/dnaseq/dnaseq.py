@@ -28,11 +28,11 @@ from bio import samtools
 from bio import snpeff
 from bio import tools
 from bio import vcftools
-from pipelines.illumina import illumina
+from pipelines import common
 
 log = logging.getLogger(__name__)
 
-class DnaSeq(illumina.Illumina):
+class DnaSeq(common.Illumina):
 
     @property
     def sequence_dictionary(self):

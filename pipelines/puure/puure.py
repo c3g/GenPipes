@@ -29,11 +29,12 @@ from bio import picard
 from bio import ray
 from bio import samtools
 from bio import tools
-from pipelines.illumina import illumina
+from pipelines import common
+
 
 log = logging.getLogger(__name__)
 
-class Puure(illumina.Illumina):
+class Puure(common.Illumina):
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ##
 #some fonctions used by "insert steps"

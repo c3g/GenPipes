@@ -18,7 +18,7 @@ from core.pipeline import *
 from bio.readset import *
 
 from bio import gq_seq_utils
-from pipelines.illumina import illumina
+from pipelines import common
 
 log = logging.getLogger(__name__)
 
@@ -76,7 +76,7 @@ wc -l {output_file} | awk '{{print \\"# normalized {read_type} reads\t\\"\\$1 / 
     return job
 
 
-class RnaSeqDeNovoAssembly(illumina.Illumina):
+class RnaSeqDeNovoAssembly(common.Illumina):
 
     def insilico_read_normalization_readsets(self):
         jobs = []
