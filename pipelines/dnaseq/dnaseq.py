@@ -45,7 +45,7 @@ class DnaSeq(common.Illumina):
         for readset in self.readsets:
             trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
             alignment_directory = os.path.join("alignment", readset.sample.name)
-            readset_bam = os.path.join(alignment_directory, readset.name + ".sorted.bam")
+            readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
 
             if readset.run_type == "PAIRED_END":
                 fastq1 = trim_file_prefix + "pair1.fastq.gz"
@@ -58,7 +58,7 @@ class DnaSeq(common.Illumina):
                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
 
             job = concat_jobs([
-                Job(command="mkdir -p " + alignment_directory),
+                Job(command="mkdir -p " + os.path.dirname(readset_bam)),
                 pipe_jobs([
                     bwa.mem(
                         fastq1,

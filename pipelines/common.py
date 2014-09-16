@@ -56,7 +56,8 @@ wget "{server}?{request}" --quiet --output-document=/dev/null
 
     def submit_jobs(self):
         super(MUGQICPipeline, self).scheduler.submit(self)
-        self.mugqic_log()
+        if self.jobs:
+            self.mugqic_log()
 
     def __init__(self):
         # Add pipeline specific arguments
