@@ -166,22 +166,16 @@ create_picard_index() {
   echo
   echo Creating genome Picard sequence dictionary...
   echo
-  INDEX_DIR=$GENOME_DIR/picard_index
-  mkdir -p $INDEX_DIR
-  ln -s -f -t $INDEX_DIR ../$GENOME_FASTA
   module load mugqic/picard/1.108 mugqic/java
-  java -jar $PICARD_HOME/CreateSequenceDictionary.jar REFERENCE=$INDEX_DIR/$GENOME_FASTA OUTPUT=$INDEX_DIR/${GENOME_FASTA/.fa}.dict GENOME_ASSEMBLY=${GENOME_FASTA/.fa} > $LOG_DIR/picard_$TIMESTAMP.log 2>&1
+  java -jar $PICARD_HOME/CreateSequenceDictionary.jar REFERENCE=$GENOME_DIR/$GENOME_FASTA OUTPUT=$GENOME_DIR/${GENOME_FASTA/.fa/.dict} GENOME_ASSEMBLY=${GENOME_FASTA/.fa} > $LOG_DIR/picard_$TIMESTAMP.log 2>&1
 }
 
 create_samtools_index() {
   echo
   echo Creating genome SAMtools FASTA index...
   echo
-  INDEX_DIR=$GENOME_DIR/sam_index
-  mkdir -p $INDEX_DIR
-  ln -s -f -t $INDEX_DIR ../$GENOME_FASTA
   module load mugqic/samtools/0.1.19
-  samtools faidx $INDEX_DIR/$GENOME_FASTA > $LOG_DIR/samtools_$TIMESTAMP.log 2>&1
+  samtools faidx $GENOME_DIR/$GENOME_FASTA > $LOG_DIR/samtools_$TIMESTAMP.log 2>&1
 }
 
 create_bwa_index() {

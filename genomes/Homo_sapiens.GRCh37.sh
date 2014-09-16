@@ -29,7 +29,10 @@ install_genome() {
   GENOME_URL=ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/human_g1k_v37.fasta.gz
 
   download_urls
+  # set +e since gunzip human_g1k_v37.fasta.gz exit code != 0 ("gzip: human_g1k_v37.fasta.gz: decompression OK, trailing garbage ignored")
+  set +e
   copy_files
+  set -e
   build_files
   create_genome_ini_file
 
