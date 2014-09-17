@@ -48,16 +48,19 @@ class RnaSeq(common.Illumina):
                 raise Exception("Error: run type \"" + readset.run_type +
                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
 
+            rg_platform = config.param('tophat', 'platform', required=False)
+            rg_center = config.param('tophat', 'sequencing_center', required=False)
+
             job = tophat.tophat(
                 fastq1,
                 fastq2,
                 readset_alignment_directory,
                 rg_id=readset.name,
                 rg_sample=readset.sample.name,
-                rg_library=readset.library,
-                rg_platform_unit=readset.run + "_" + readset.lane,
-                rg_platform=config.param('tophat', 'platform'),
-                rg_center=config.param('tophat', 'sequencing_center'),
+                rg_library=readset.library if readset.library else "",
+                rg_platform_unit=readset.run + "_" + readset.lane if readset.run and readset.lane else "",
+                rg_platform=rg_platform if rg_platform else "",
+                rg_center=rg_center if rg_center else ""
             )
 
             # If this readset is unique for this sample, further BAM merging is not necessary.
@@ -115,28 +118,27 @@ class RnaSeq(common.Illumina):
 
     def rnaseqc(self):
 
-        sample_file = os.path.join("alignment", "rnaseqc.samples.txt")
-        output_directory = os.path.join("metrics", "rnaseqRep")
-
-        job = metrics.rnaseqc(sample_file, output_directory, self.run_type == "SINGLE_END")
-
         project_name = config.param('DEFAULT', 'project_name')
-        job.command = """\
-mkdir -p {output_directory} && \\
-echo \\"Sample\tBamFile\tNote
-{input_bams}\\" \
-> {sample_file} && \\
-{job.command} && \\
-zip -r {output_directory}.zip {output_directory}""".format(
-            output_directory=output_directory,
-            input_bams="\n".join(["\t".join([sample.name, os.path.join("alignment", sample.name, sample.name + ".merged.mdup.bam"), project_name]) for sample in self.samples]),
-            sample_file=sample_file,
-            job=job
-        )
+        sample_file = os.path.join("alignment", "rnaseqc.samples.txt")
+        sample_rows = [[sample.name, os.path.join("alignment", sample.name, sample.name + ".merged.mdup.bam"), project_name] for sample in self.samples]
+        input_bams = [sample_row[1] for sample_row in sample_rows]
+        output_directory = os.path.join("metrics", "rnaseqRep")
+        gtf = config.param('rnaseqc', 'gtf', type='filepath')
+        gtf_no_pseudogenes = os.path.join(config.param('rnaseqc', 'tmp_dir', type='dirpath'), re.sub("\.gtf$", ".no_pseudogenes.gtf", os.path.basename(gtf)))
 
-        job.input_files.extend([os.path.join("alignment", sample.name, sample.name + ".merged.mdup.bam") for sample in self.samples])
-        job.output_files.extend([sample_file, output_directory + ".zip"])
-        job.name = "rnaseqc"
+        job = concat_jobs([
+            Job(command="mkdir -p " + output_directory),
+            Job(input_bams, [sample_file], command="""\
+echo \\"Sample\tBamFile\tNote
+{sample_rows}\\" \\
+  > {sample_file}""".format(sample_rows="\n".join(["\t".join(sample_row) for sample_row in sample_rows]), sample_file=sample_file)),
+            # Remove pseudogenes from GTF otherwise RNASeQC fails
+            Job(module_entries=[['rnaseqc', 'module_cufflinks']], command="gffread -E " + gtf + " -T --no-pseudo -o " + gtf_no_pseudogenes + " 2> /dev/null"),
+            metrics.rnaseqc(sample_file, output_directory, self.run_type == "SINGLE_END", gtf_file=gtf_no_pseudogenes),
+            Job(command="rm " + gtf_no_pseudogenes),
+            Job([], [output_directory + ".zip"], command="zip -r {output_directory}.zip {output_directory}".format(output_directory=output_directory))
+        ], name="rnaseqc")
+
         return [job]
 
     def wiggle(self):
@@ -162,6 +164,9 @@ zip -r {output_directory}.zip {output_directory}""".format(
                     picard.merge_sam_files([input_bam_f1, input_bam_f2], output_bam_f),
                     Job(command="rm " + input_bam_f1 + " " + input_bam_f2)
                 ], name="wiggle." + sample.name + ".forward_strandspec")
+                # Remove temporary-then-deleted files from job output files, otherwise job is never up to date
+                bam_f_job.output_files.remove(input_bam_f1)
+                bam_f_job.output_files.remove(input_bam_f2)
 
                 bam_r_job = concat_jobs([
                     Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " " + os.path.join("tracks", "bigWig")),
@@ -170,6 +175,9 @@ zip -r {output_directory}.zip {output_directory}""".format(
                     picard.merge_sam_files([input_bam_r1, input_bam_r2], output_bam_r),
                     Job(command="rm " + input_bam_r1 + " " + input_bam_r2)
                 ], name="wiggle." + sample.name + ".reverse_strandspec")
+                # Remove temporary-then-deleted files from job output files, otherwise job is never up to date
+                bam_r_job.output_files.remove(input_bam_r1)
+                bam_r_job.output_files.remove(input_bam_r2)
 
                 jobs.extend([bam_f_job, bam_r_job])
 
@@ -329,7 +337,7 @@ cat \\
             job = cufflinks.cuffdiff(
                 # Cuffdiff input is a list of lists of replicate bams per control and per treatment
                 [[os.path.join("alignment", sample.name, sample.name + ".merged.mdup.bam") for sample in group] for group in contrast.controls, contrast.treatments],
-                config.param('cuffdiff','gtf', type='filepath'),
+                config.param('cuffdiff', 'gtf', type='filepath'),
                 os.path.join("cuffdiff", "known", contrast.name)
             )
             job.name = "cuffdiff.known." + contrast.name

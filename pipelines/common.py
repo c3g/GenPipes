@@ -27,8 +27,6 @@ class MUGQICPipeline(Pipeline):
 
     @property
     def readsets(self):
-        if not hasattr(self, "_readsets"):
-            self._readsets = parse_readset_file(self.args.readsets.name)
         return self._readsets
 
     @property
@@ -69,6 +67,12 @@ wget "{server}?{request}" --quiet --output-document=/dev/null
 # Abstract pipeline gathering common features of all Illumina sequencing pipelines (trimming, etc.)
 # Specific steps must be defined in Illumina children pipelines.
 class Illumina(MUGQICPipeline):
+
+    @property
+    def readsets(self):
+        if not hasattr(self, "_readsets"):
+            self._readsets = parse_illumina_readset_file(self.args.readsets.name)
+        return self._readsets
 
     @property
     def run_type(self):

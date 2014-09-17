@@ -34,4 +34,4 @@ class Sample:
                 "\" already exists for sample \"" + self.name + "\"!")
         else:
             self.readsets.append(readset)
-            readset.sample = self
+            readset._sample = self

@@ -22,7 +22,7 @@ def dna_sample_metrics(input_directory, output, experiment_type="unknown"):
 
     return job
 
-def rnaseqc(sample_file, output_directory, is_single_end=False):
+def rnaseqc(sample_file, output_directory, is_single_end=False, gtf_file=None):
     job = Job([sample_file], [os.path.join(output_directory, "index.html")], [['rnaseqc', 'module_java'], ['rnaseqc', 'module_bwa'], ['rnaseqc', 'module_rnaseqc']])
 
     job.command = \
@@ -32,7 +32,7 @@ def rnaseqc(sample_file, output_directory, is_single_end=False):
   -o {output_directory} \\
   -r {reference_genome_fasta} \\
   -s {sample_file} \\
-  -t {gtf_file}{single_end}""".format(
+  -t {gtf_file}{other_options}{single_end}""".format(
         tmp_dir=config.param('rnaseqc', 'tmp_dir'),
         java_other_options=config.param('rnaseqc', 'java_other_options'),
         ram=config.param('rnaseqc', 'ram'),
@@ -41,7 +41,8 @@ def rnaseqc(sample_file, output_directory, is_single_end=False):
         output_directory=output_directory,
         reference_genome_fasta=config.param('rnaseqc', 'genome_fasta', type='filepath'),
         sample_file=sample_file,
-        gtf_file=config.param('rnaseqc', 'gtf', type='filepath'),
+        gtf_file=gtf_file if gtf_file else config.param('rnaseqc', 'gtf', type='filepath'),
+        other_options=" \\\n  " + config.param('rnaseqc', 'other_options', required=False) if config.param('rnaseqc', 'other_options', required=False) else "",
         single_end=" \\\n  -singleEnd" if is_single_end else ""
     )
 

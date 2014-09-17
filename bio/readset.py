@@ -11,14 +11,28 @@ from sample import *
 
 log = logging.getLogger(__name__)
 
-class Readset:
+class Readset(object):
 
-    def __init__(self, name, run_type):
+    def __init__(self, name):
         if re.search("^\w[\w.-]*$", name):
             self._name = name
         else:
             raise Exception("Error: readset name \"" + name +
                 "\" is invalid (should match [a-zA-Z0-9_][a-zA-Z0-9_.-]*)!")
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def sample(self):
+        return self._sample
+
+
+class IlluminaReadset(Readset):
+
+    def __init__(self, name, run_type):
+        super(IlluminaReadset, self).__init__(name)
 
         if run_type in ("PAIRED_END", "SINGLE_END"):
             self._run_type = run_type
@@ -26,20 +40,9 @@ class Readset:
             raise Exception("Error: readset run_type \"" + run_type +
                 "\" is invalid (should be \"PAIRED_END\" or \"SINGLE_END\")!")
 
-    def show(self):
-        print('Readset -- name: ' + self._name + ', run_type: ' + self._run_type)
-
-    @property
-    def name(self):
-        return self._name
-
     @property
     def run_type(self):
         return self._run_type
-
-    @property
-    def sample(self):
-        return self._sample
 
     @property
     def bam(self):
@@ -81,12 +84,12 @@ class Readset:
     def beds(self):
         return self._beds
 
-def parse_readset_file(readset_file):
+def parse_illumina_readset_file(illumina_readset_file):
     readsets = []
     samples = []
 
-    log.info("Parse readset file " + readset_file + " ...")
-    readset_csv = csv.DictReader(open(readset_file, 'rb'), delimiter='\t')
+    log.info("Parse Illumina readset file " + illumina_readset_file + " ...")
+    readset_csv = csv.DictReader(open(illumina_readset_file, 'rb'), delimiter='\t')
     for line in readset_csv:
         sample_name = line['SampleID']
         sample_names = [sample.name for sample in samples]
@@ -99,24 +102,24 @@ def parse_readset_file(readset_file):
             samples.append(sample)
 
         # Create readset and add it to sample
-        readset = Readset(line['Readset'], line['RunType'])
+        readset = IlluminaReadset(line['Readset'], line['RunType'])
 
         # Readset file paths are either absolute or relative to the readset file
         # Convert them to absolute paths
         for format in ("BAM", "FASTQ1", "FASTQ2"):
             if line.get(format, None) and not os.path.isabs(line[format]):
-                line[format] = os.path.dirname(os.path.abspath(readset_file)) + os.sep + line[format]
+                line[format] = os.path.dirname(os.path.abspath(illumina_readset_file)) + os.sep + line[format]
 
-        readset.bam = line.get('BAM', None)
-        readset.fastq1 = line.get('FASTQ1', None)
-        readset.fastq2 = line.get('FASTQ2', None)
-        readset.library = line.get('Library', None)
-        readset.run = line.get('Run', None)
-        readset.lane = line.get('Lane', None)
-        readset.adaptor1 = line.get('Adaptor1', None)
-        readset.adaptor2 = line.get('Adaptor2', None)
-        readset.quality_offset = int(line['QualityOffset']) if line.get('QualityOffset', None) else None
-        readset.beds = line['BED'].split(";") if line.get('BED', None) else []
+        readset._bam = line.get('BAM', None)
+        readset._fastq1 = line.get('FASTQ1', None)
+        readset._fastq2 = line.get('FASTQ2', None)
+        readset._library = line.get('Library', None)
+        readset._run = line.get('Run', None)
+        readset._lane = line.get('Lane', None)
+        readset._adaptor1 = line.get('Adaptor1', None)
+        readset._adaptor2 = line.get('Adaptor2', None)
+        readset._quality_offset = int(line['QualityOffset']) if line.get('QualityOffset', None) else None
+        readset._beds = line['BED'].split(";") if line.get('BED', None) else []
 
         readsets.append(readset)
         sample.add_readset(readset)
@@ -125,12 +128,12 @@ def parse_readset_file(readset_file):
     log.info(str(len(readsets)) + " sample" + ("s" if len(samples) > 1 else "") + " parsed\n")
     return readsets
 
-def parse_nanuq_readset_file(readset_file):
+def parse_nanuq_illumina_readset_file(illumina_readset_file):
     readsets = []
     samples = []
 
-    log.info("Parse Nanuq readset file " + readset_file + " ...")
-    readset_csv = csv.DictReader(open(readset_file, 'rb'), delimiter=',', quotechar='"')
+    log.info("Parse Nanuq Illumina readset file " + illumina_readset_file + " ...")
+    readset_csv = csv.DictReader(open(illumina_readset_file, 'rb'), delimiter=',', quotechar='"')
     for line in readset_csv:
         if line['Status'] and line['Status'] == "Data is valid":
             sample_name = line['Name']
@@ -144,7 +147,7 @@ def parse_nanuq_readset_file(readset_file):
                 samples.append(sample)
     
             # Create readset and add it to sample
-            readset = Readset(line['Filename Prefix'], line['Run Type'])
+            readset = IlluminaReadset(line['Filename Prefix'], line['Run Type'])
     
             readset.library = line['Library Barcode']
             readset.run = line['Run']
@@ -186,6 +189,78 @@ def parse_nanuq_readset_file(readset_file):
 
         else:
             log.warning("Sample Name " + line['Name'] + ", Run ID " + line['Run'] + ", Lane " + line['Region'] + " data is not valid... skipping")
+
+    log.info(str(len(readsets)) + " readset" + ("s" if len(readsets) > 1 else "") + " parsed")
+    log.info(str(len(readsets)) + " sample" + ("s" if len(samples) > 1 else "") + " parsed\n")
+    return readsets
+
+
+class PacBioReadset(Readset):
+
+    @property
+    def run(self):
+        return self._run
+
+    @property
+    def smartcell(self):
+        return self._smartcell
+
+    @property
+    def protocol(self):
+        return self._protocol
+
+    @property
+    def nb_base_pairs(self):
+        return self._nb_base_pairs
+
+    @property
+    def estimated_genome_size(self):
+        return self._estimated_genome_size
+
+    @property
+    def bas_files(self):
+        return self._bas_files
+
+    @property
+    def bax_files(self):
+        return self._bax_files
+
+def parse_pacbio_readset_file(pacbio_readset_file):
+    readsets = []
+    samples = []
+
+    log.info("Parse PacBio readset file " + pacbio_readset_file + " ...")
+    readset_csv = csv.DictReader(open(pacbio_readset_file, 'rb'), delimiter='\t')
+    for line in readset_csv:
+        sample_name = line['SampleID']
+        sample_names = [sample.name for sample in samples]
+        if sample_name in sample_names:
+            # Sample already exists
+            sample = samples[sample_names.index(sample_name)]
+        else:
+            # Create new sample
+            sample = Sample(sample_name)
+            samples.append(sample)
+
+        # Create readset and add it to sample
+        readset = PacBioReadset(line['Readset'])
+
+        # Readset file paths are either absolute or relative to the readset file
+        # Convert them to absolute paths
+        for format in ("BAS", "BAX"):
+            if line.get(format, None):
+                line[format] = ",".join(os.path.dirname(os.path.abspath(pacbio_readset_file)) + os.sep + file for file in line[format].split(",") if not os.path.isabs(file))
+
+        readset._run = line.get('Run', None)
+        readset._smartcell = line.get('Smartcell', None)
+        readset._protocol = line.get('Protocol', None)
+        readset._nb_base_pairs = int(line['NbBasepairs']) if line.get('NbBasepairs', None) else None
+        readset._estimated_genome_size = int(line['EstimatedGenomeSize']) if line.get('EstimatedGenomeSize', None) else None
+        readset._bas_files = line['BAS'].split(",") if line.get('BAS', None) else []
+        readset._bax_files = line['BAX'].split(",") if line.get('BAX', None) else []
+
+        readsets.append(readset)
+        sample.add_readset(readset)
 
     log.info(str(len(readsets)) + " readset" + ("s" if len(readsets) > 1 else "") + " parsed")
     log.info(str(len(readsets)) + " sample" + ("s" if len(samples) > 1 else "") + " parsed\n")
