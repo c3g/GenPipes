@@ -323,7 +323,7 @@ sub mutect {
 
   my $refGenome = LoadConfig::getParam($rH_cfg, 'default', 'referenceFasta', 1, 'filepath');
   my $dbSnp = LoadConfig::getParam($rH_cfg, 'mutect', 'dbSnp');
-  my $cosmic = LoadConfig::getParam($rH_cfg, 'mutect', 'cosmic');
+  my $cosmic = LoadConfig::getParam($rH_cfg, 'mutect', 'cosmic',0);
   my $outputPrefix = $outputDir . $sampleName;
 
   my $regionCmd = ' ';
@@ -347,7 +347,9 @@ sub mutect {
     $command .= ' -dt NONE -baq OFF --validation_strictness LENIENT -nt 2 ';
     $command .= ' --reference_sequence ' . $refGenome;
     $command .= ' --dbsnp ' . $dbSnp;
-    $command .= ' --cosmic ' . $cosmic;
+    if (defined($cosmic) && $cosmic ne "") {
+        $command .= ' --cosmic ' . $cosmic;
+    }
     $command .= ' --input_file:normal ' . $normalBAM;
     $command .= ' --input_file:tumor ' . $tumorBAM;
     $command .= ' --out ' . $outputCallStats;
