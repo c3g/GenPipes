@@ -293,7 +293,7 @@ sub mergeAndCallGVCF {
   if (!$ro_job->isUp2Date()) {
     my $command;
     $command .= LoadConfig::moduleLoad($rH_cfg, [['mergeAndCallGVCF', 'moduleVersion.java'], ['mergeAndCallGVCF', 'moduleVersion.gatk']]) . ' &&';
-    $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'mergeAndCallGVCF', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'mergeAndCallGVCF', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'mergeAndCallGVCF', 'ram') . ' -cp \${GATK_JAR} org.broadinstitute.sting.tools.CatVariants';
+    $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'mergeAndCallGVCF', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'mergeAndCallGVCF', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'mergeAndCallGVCF', 'ram') . ' -cp \${GATK_JAR} org.broadinstitute.gatk.tools.CatVariants';
     $command .= ' -R ' . $refGenome;
     for my $vcf (@{$rA_vcfs}) {
       $command .= ' -V ' . $vcf;
@@ -344,7 +344,7 @@ sub mutect {
     $command .= LoadConfig::moduleLoad($rH_cfg, [['mutect', 'moduleVersion.java'], ['mutect', 'moduleVersion.mutect']]) . ' &&';
     $command .= ' java -Djava.io.tmpdir=' . LoadConfig::getParam($rH_cfg, 'mutect', 'tmpDir') . ' ' . LoadConfig::getParam($rH_cfg, 'mutect', 'extraJavaFlags') . ' -Xmx' . LoadConfig::getParam($rH_cfg, 'mutect', 'mutectRam') . ' -jar \${MUTECT_JAR}';
     $command .= ' --analysis_type MuTect';
-    $command .= ' -dt NONE -baq OFF --validation_strictness LENIENT -nt 2 ';
+    $command .= ' -dt NONE -baq OFF --validation_strictness LENIENT';
     $command .= ' --reference_sequence ' . $refGenome;
     $command .= ' --dbsnp ' . $dbSnp;
     if (defined($cosmic) && $cosmic ne "") {

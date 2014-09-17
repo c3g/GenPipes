@@ -120,7 +120,7 @@ sub mugqicLog {
   print "#" . "-" x 79 . "\n";
   print "# Call home with pipeline statistics\n";
   print "#" . "-" x 79 . "\n";
-  print "wget \"$server?$request\" --quiet --output-document=/dev/null";
+  print "wget \"$server?$request\" --quiet --output-document=/dev/null\n";
 }
 
 1;
