@@ -18,7 +18,7 @@ SETUPTOOLS_VERSION=5.4.1
 # CYTHON_VERSION=0.20
 # NUMPY_VERSION=1.8.0
 # BIOPYTHON_VERSION=1.63
-# MATPLOTLIB_VERSION=1.2.1
+MATPLOTLIB_VERSION=1.4.0
 # HTSEQ_VERSION=0.5.4p1
 PYVCF_VERSION=0.6.7
 
@@ -57,7 +57,8 @@ tar zxvf $ARCHIVE
 SOFTWARE_DIR=${SOFTWARE^}-$VERSION
 SOFTWARE_INSTALL_DIR=$INSTALL_DIR/$SOFTWARE_DIR
 cd $SOFTWARE_DIR
-./configure --prefix=$SOFTWARE_INSTALL_DIR
+# Compile with --enable-unicode=ucs4 to fix error "ImportError: numpy-1.8.1-py2.7-linux-x86_64.egg/numpy/core/multiarray.so: undefined symbol: PyUnicodeUCS2_AsASCIIString"
+./configure --prefix=$SOFTWARE_INSTALL_DIR --enable-unicode=ucs4
 make -j8
 rm -rf $SOFTWARE_INSTALL_DIR
 make install
@@ -143,16 +144,20 @@ easy_install https://pypi.python.org/packages/source/P/PyVCF/PyVCF-${PYVCF_VERSI
 easy_install http://labix.org/download/python-dateutil/python-dateutil-1.5.tar.gz
 easy_install pyparsing
 # matplotlib first install fails: repeat it a second time to succeed (?!: pb with tornado 4.0 to be investigated)
-set +e
-easy_install matplotlib
-easy_install matplotlib
-set -e
-# cd $SOFTWARE_INSTALL_DIR/lib/python$LIBVERSION/site-packages
-# wget --no-check-certificate http://downloads.sourceforge.net/project/matplotlib/matplotlib/matplotlib-${MATPLOTLIB_VERSION}/matplotlib-${MATPLOTLIB_VERSION}.tar.gz
-# tar -xvf matplotlib-${MATPLOTLIB_VERSION}.tar.gz
-# cd matplotlib-${MATPLOTLIB_VERSION}
-# python setup.py build # NOTE: no ssh -X from MacOS when building this
-# python setup.py install
+#set +e
+#easy_install matplotlib
+#easy_install matplotlib
+#set -e
+cd $SOFTWARE_INSTALL_DIR/lib/python$LIBVERSION/site-packages
+wget --no-check-certificate http://downloads.sourceforge.net/project/matplotlib/matplotlib/matplotlib-${MATPLOTLIB_VERSION}/matplotlib-${MATPLOTLIB_VERSION}.tar.gz
+tar -xvf matplotlib-${MATPLOTLIB_VERSION}.tar.gz
+cd matplotlib-${MATPLOTLIB_VERSION}
+# Matplotlib is known to work with freetype 2.3, and the required version will be reduced in 1.4.1.
+# Cf: http://matplotlib.org/users/installing.html
+# (otherwise install fails: "Requires freetype2 2.4 or later")
+sed -i "945s/min_version\='2.4'/min_version='2.3'/" setupext.py
+python setup.py build # NOTE: no ssh -X from MacOS when building this
+python setup.py install
 
 # pysam
 easy_install pysam
