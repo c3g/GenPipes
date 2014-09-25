@@ -15,6 +15,7 @@ __all__ = [
     "sample",
     "samtools",
     "sequence_dictionary",
+    "smrtanalysis",
     "snpeff",
     "tools",
     "tophat",

@@ -125,7 +125,7 @@ def parse_illumina_readset_file(illumina_readset_file):
         sample.add_readset(readset)
 
     log.info(str(len(readsets)) + " readset" + ("s" if len(readsets) > 1 else "") + " parsed")
-    log.info(str(len(readsets)) + " sample" + ("s" if len(samples) > 1 else "") + " parsed\n")
+    log.info(str(len(samples)) + " sample" + ("s" if len(samples) > 1 else "") + " parsed\n")
     return readsets
 
 def parse_nanuq_illumina_readset_file(illumina_readset_file):
@@ -191,7 +191,7 @@ def parse_nanuq_illumina_readset_file(illumina_readset_file):
             log.warning("Sample Name " + line['Name'] + ", Run ID " + line['Run'] + ", Lane " + line['Region'] + " data is not valid... skipping")
 
     log.info(str(len(readsets)) + " readset" + ("s" if len(readsets) > 1 else "") + " parsed")
-    log.info(str(len(readsets)) + " sample" + ("s" if len(samples) > 1 else "") + " parsed\n")
+    log.info(str(len(samples)) + " sample" + ("s" if len(samples) > 1 else "") + " parsed\n")
     return readsets
 
 
@@ -263,5 +263,5 @@ def parse_pacbio_readset_file(pacbio_readset_file):
         sample.add_readset(readset)
 
     log.info(str(len(readsets)) + " readset" + ("s" if len(readsets) > 1 else "") + " parsed")
-    log.info(str(len(readsets)) + " sample" + ("s" if len(samples) > 1 else "") + " parsed\n")
+    log.info(str(len(samples)) + " sample" + ("s" if len(samples) > 1 else "") + " parsed\n")
     return readsets

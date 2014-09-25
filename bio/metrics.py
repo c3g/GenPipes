@@ -8,7 +8,7 @@ from core.config import *
 from core.job import *
 
 def dna_sample_metrics(input_directory, output, experiment_type="unknown"):
-    job = Job([input_directory], [output], [['dna_sample_metrics', 'module_R'], ['dna_sample_metrics', 'module_tools']])
+    job = Job([input_directory], [output], [['dna_sample_metrics', 'module_R'], ['dna_sample_metrics', 'module_mugqic_tools']])
 
     job.command = \
 """Rscript \$R_TOOLS/DNAsampleMetrics.R \\
@@ -49,7 +49,7 @@ def rnaseqc(sample_file, output_directory, is_single_end=False, gtf_file=None):
     return job
 
 def rpkm_saturation(count_file, gene_size_file, rpkm_directory, saturation_directory):
-    job = Job([count_file], [saturation_directory + ".zip"], [['rpkm_saturation', 'module_R'], ['rpkm_saturation', 'module_tools']])
+    job = Job([count_file], [saturation_directory + ".zip"], [['rpkm_saturation', 'module_R'], ['rpkm_saturation', 'module_mugqic_tools']])
 
     job.command = \
 """Rscript \$R_TOOLS/rpkmSaturation.R \\
@@ -71,7 +71,7 @@ zip -r {saturation_directory}.zip {saturation_directory}""".format(
     return job
 
 def snv_graph_metrics(list, output_basename):
-    job = Job([list], [output_basename + ".snvGraphMetrics_listFiles.txt"], [['snv_graph_metrics', 'module_R'], ['snv_graph_metrics', 'module_tools']])
+    job = Job([list], [output_basename + ".snvGraphMetrics_listFiles.txt"], [['snv_graph_metrics', 'module_R'], ['snv_graph_metrics', 'module_mugqic_tools']])
 
     job.command = \
 """Rscript \$R_TOOLS/snvGraphMetrics.R \\
@@ -84,7 +84,7 @@ def snv_graph_metrics(list, output_basename):
     return job
 
 def vcf_stats(input, output, list):
-    job = Job([input], [output, list], [['vcf_stats', 'module_python'], ['vcf_stats', 'module_tools']])
+    job = Job([input], [output, list], [['vcf_stats', 'module_python'], ['vcf_stats', 'module_mugqic_tools']])
 
     job.command = \
 """python \$PYTHON_TOOLS/vcfStats.py \\

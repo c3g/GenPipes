@@ -11,7 +11,7 @@ def cuffcompare(gtf_files, output_prefix, gtf_list):
     job = Job(
         gtf_files,
         [output_prefix + ".combined.gtf", output_prefix + ".TranscriptList.tsv"],
-        [['cuffcompare', 'module_cufflinks'], ['cuffcompare', 'module_tools']]
+        [['cuffcompare', 'module_cufflinks'], ['cuffcompare', 'module_mugqic_tools']]
     )
 
     job.command = """\

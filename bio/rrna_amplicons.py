@@ -14,7 +14,7 @@ def merge_barcodes(reads1, reads2, outdir):
     job = Job(
         reads1 + reads2, 
         [outfile1, outfile2],
-        [['tools', 'module_tools'], ['memtime', 'module_memtime']]
+        [['tools', 'module_mugqic_tools'], ['memtime', 'module_memtime']]
     )
 
     job.command = """\
@@ -57,7 +57,7 @@ def duk_wrapper(infile_fastq, contam, ncontam, log, db):
         [contam, ncontam],
         [
             ['memtime', 'module_memtime'],
-            ['tools', 'module_tools'],
+            ['tools', 'module_mugqic_tools'],
             ['perl', 'module_perl'],
             ['duk', 'module_duk']
           ]
@@ -88,7 +88,7 @@ def duk(log, ncontam, contam, db, infile):
         [contam, ncontam, log],
         [
             ['memtime', 'module_memtime'],
-            ['tools', 'module_tools'],
+            ['tools', 'module_mugqic_tools'],
             ['perl', 'module_perl'],
             ['duk', 'module_duk']
         ]
@@ -119,7 +119,7 @@ def split_barcodes(infile, barcodes, outfile, log):
         [outfile],
         [
             ['memtime', 'module_memtime'],
-            ['tools', 'module_tools'],
+            ['tools', 'module_mugqic_tools'],
             ['perl', 'module_perl']
         ]
     )
@@ -145,7 +145,7 @@ def removeUnpairedReads(infile, outfilePaired, unpairedR1, unpairedR2):
         [outfilePaired],
         [
             ['memtime', 'module_memtime'],
-            ['tools', 'module_tools'],
+            ['tools', 'module_mugqic_tools'],
             ['perl', 'module_perl']
         ]
     )
@@ -172,7 +172,7 @@ def splitPairs(infile, outfileR1, outfileR2):
         [outfileR1, outfileR2]
         [
             ['memtime', 'module_memtime'],
-            ['tools', 'module_tools'],
+            ['tools', 'module_mugqic_tools'],
             ['perl', 'module_perl']
         ]
     )
@@ -199,7 +199,7 @@ def generateQscoreSheet(infile, prefix, log, outfile, barcodes):
         [
             ['memtime', 'module_memtime'],
             ['fastx', 'module_fastx'],
-            ['tools', 'module_tools'],
+            ['tools', 'module_mugqic_tools'],
             ['perl', 'module_perl']
         ]
     )
@@ -234,7 +234,7 @@ def generateQscoreGraphSingle(infile, prefix, outfile):
         [
             ['memtime', 'module_memtime'],
             ['R', 'module_R'],
-            ['tools', 'module_tools'],
+            ['tools', 'module_mugqic_tools'],
             ['perl', 'module_perl']
         ]
     )
@@ -260,7 +260,7 @@ def generateQscoreGraphPaired(infileR1, infileR2, outfile):
         [
             ['memtime', 'module_memtime'],
             ['R', 'module_R'],
-            ['tools', 'module_tools'],
+            ['tools', 'module_mugqic_tools'],
             ['perl', 'module_perl']
         ]
     )
@@ -287,7 +287,7 @@ def cutReads(infile, begin, end, outfile):
         [outfile]
         [
             ['memtime', 'module_memtime'],
-            ['tools', 'module_tools'],
+            ['tools', 'module_mugqic_tools'],
             ['perl', 'module_perl']
         ]
     )
@@ -314,7 +314,7 @@ def flash(infileR1, infileR2, prefix, outdir):
         [
             ['memtime', 'module_memtime'],
             ['flash', 'module_flash'],
-            ['tools', 'module_tools'],
+            ['tools', 'module_mugqic_tools'],
             ['perl', 'module_perl']
         ]
     )
@@ -350,7 +350,7 @@ def removePrimers(infile, revPrimer, fwdPrimer, outfile,  outfileFailed):
         [outfile],
         [
             ['memtime', 'module_memtime'],
-            ['tools', 'module_tools'],
+            ['tools', 'module_mugqic_tools'],
             ['perl', 'module_perl']
         ]
     )
@@ -397,7 +397,7 @@ def itagsQC(infile, revPrimer, fwdPrimer, outfile, outfileFailed):
         [outfile],
         [
             ['memtime', 'module_memtime'],
-            ['tools', 'module_tools'],
+            ['tools', 'module_mugqic_tools'],
             ['perl', 'module_perl']
         ]
     )
@@ -455,7 +455,7 @@ def countReport(rA_files, rA_names, analysisType, barcodesDist, OTUtable, obsTab
         [outfile],
         [
             ['memtime', 'module_memtime'],
-            ['tools', 'module_tools'],
+            ['tools', 'module_mugqic_tools'],
             ['perl', 'module_perl']
         ]
     )
@@ -484,7 +484,7 @@ def txtToPdf(infile, outfile):
         [outfile],
         [
             ['memtime', 'module_memtime'],
-            ['tools', 'module_tools'],
+            ['tools', 'module_mugqic_tools'],
             ['perl', 'module_perl']
         ]
     )
@@ -507,7 +507,7 @@ def mergePdf(command):
         [
             ['memtime', 'module_memtime'],
             ['ghostscript', 'module_ghostscript'],
-            ['tools', 'module_tools'],
+            ['tools', 'module_mugqic_tools'],
             ['perl', 'module_perl']
         ]
     )
@@ -529,7 +529,7 @@ def clustering1(infile, barcodes, outdir):
         [
             ['memtime', 'module_memtime'],
             ['usearch', 'module_usearch'],
-            ['tools', 'module_tools'],
+            ['tools', 'module_mugqic_tools'],
             ['perl', 'module_perl']
         ]
     )
@@ -557,7 +557,7 @@ def clustering2(infile, barcodes, outdir):
         [
             ['memtime', 'module_memtime'],
             ['usearch', 'module_usearch'],
-            ['tools', 'module_tools'],
+            ['tools', 'module_mugqic_tools'],
             ['perl', 'module_perl']
         ]
     )
@@ -585,7 +585,7 @@ def clustering3(infile, barcodes, outdir):
             ['memtime', 'module_memtime'],
             ['usearch', 'module_usearch'],
             ['dnaclust', 'module_dnaclust'],
-            ['tools', 'module_tools'],
+            ['tools', 'module_mugqic_tools'],
             ['perl', 'module_perl']
         ]
     )

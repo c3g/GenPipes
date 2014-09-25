@@ -217,7 +217,7 @@ Trinity {other_options} \\
                 Job(
                     [query_chunk],
                     [blast_chunk],
-                    [['blast', 'module_perl'], ['blast', 'module_tools'], ['blast', 'module_blast']],
+                    [['blast', 'module_perl'], ['blast', 'module_mugqic_tools'], ['blast', 'module_blast']],
                     command="""\
 parallelBlast.pl \\
   -file {query_chunk} \\
@@ -322,7 +322,7 @@ parallelBlast.pl \\
             Job(
                 [query],
                 [blast_result],
-                [['blast', 'module_perl'], ['blast', 'module_tools'], ['blast', 'module_blast']],
+                [['blast', 'module_perl'], ['blast', 'module_mugqic_tools'], ['blast', 'module_blast']],
                 command="""\
 parallelBlast.pl \\
   -file {query} \\
@@ -549,7 +549,7 @@ awk -F '\t' '{{OFS=\\\"\t\\\" ; print $1,$0}}' {matrix} | sed '1s/^\t/{item}\tSy
                     [matrix + ".symbol"],
                     [os.path.join(output_directory, item, contrast.name, "edger_results.csv") for contrast in self.contrasts],
                     [['differential_expression', 'module_R'],
-                     ['differential_expression', 'module_tools']],
+                     ['differential_expression', 'module_mugqic_tools']],
                     command="""\
 Rscript \\$R_TOOLS/edger.R \\
   -d {design} \\
@@ -566,7 +566,7 @@ Rscript \\$R_TOOLS/edger.R \\
                     [os.path.join(output_directory, item, contrast.name, "deseq_results.csv") for contrast in self.contrasts] +
                     [os.path.join(output_directory, item, contrast.name, "dge_results.csv") for contrast in self.contrasts],
                     [['differential_expression', 'module_R'],
-                     ['differential_expression', 'module_tools']],
+                     ['differential_expression', 'module_mugqic_tools']],
                     command="""\
 Rscript \\$R_TOOLS/deseq.R \\
   -d {design} \\

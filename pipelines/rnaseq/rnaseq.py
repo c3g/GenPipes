@@ -239,7 +239,7 @@ echo \\"Sample\tBamFile\tNote
         read_count_files = [os.path.join("raw_counts", sample.name + ".readcounts.csv") for sample in self.samples]
         output_matrix = os.path.join(output_directory, "rawCountMatrix.csv")
 
-        job = Job(read_count_files, [output_matrix], [['raw_counts_metrics', 'module_tools']], name="metrics.matrix")
+        job = Job(read_count_files, [output_matrix], [['raw_counts_metrics', 'module_mugqic_tools']], name="metrics.matrix")
 
         job.command = """\
 mkdir -p {output_directory} && \\

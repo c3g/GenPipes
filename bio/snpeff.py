@@ -31,7 +31,7 @@ def compute_effects(input, output, split=False):
 
     if split:
         split_output_stats = output + ".statsFile.txt"
-        split_job = Job([output_stats], [split_output_stats], [['compute_effects', 'module_tools']])
+        split_job = Job([output_stats], [split_output_stats], [['compute_effects', 'module_mugqic_tools']])
         split_job.command = \
 """splitSnpEffStat.awk \\
   {output_stats} \\
