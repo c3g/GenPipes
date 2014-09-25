@@ -198,7 +198,7 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
 	,"BiocInstaller","bioDist","biomaRt","Biostrings","biovizBase","bit"
 	,"bitops","boot","brew","BSgenome","caTools","charm","charmData","class"
 	,"cluster","clusterProfiler","codetools","colorspace","compiler","corpcor","crlmm","ctc"
-	,"cummeRbund","datasets","DBI","DESeq","devtools","dichromat","digest","dplyr"
+	,"cummeRbund","datasets","DBI","DESeq","devtools","dichromat","digest","dplyr","DNAcopy"
 	,"edgeR","ellipse","evaluate","fastcluster","ff","fields"
 	,"foreach","foreign","gcrma","gdata","genefilter","GenomicFeatures"
 	,"GenomicRanges","genoset","GEOquery","ggplot2","ggvis","googleVis","goseq"
