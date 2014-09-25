@@ -163,7 +163,7 @@ sub cuffcompare {
   if (!$ro_job->isUp2Date()) {
     my $mergeListString = join(' ', @{$rA_mergeList});
     my $command;
-    $command .= LoadConfig::moduleLoad($rH_cfg, [['cuffcompare', 'moduleVersion.cufflinks'], ['cuffcompare', 'moduleVersion.tools']]) . ' &&';
+    $command .= LoadConfig::moduleLoad($rH_cfg, [['cuffcompare', 'moduleVersion.python'], ['cuffcompare', 'moduleVersion.cufflinks'], ['cuffcompare', 'moduleVersion.tools']]) . ' &&';
     $command .= ' cuffcompare -o ' . $outputPrefix;
     $command .= ' -r ' . LoadConfig::getParam($rH_cfg, 'cuffcompare', 'referenceGtf', 1, 'filepath');
     $command .= ' -R ' . LoadConfig::getParam($rH_cfg, 'fpkm', 'referenceFasta', 1, 'filepath');
