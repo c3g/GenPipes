@@ -562,9 +562,9 @@ sub Pindel {
 
 #  my $sampleName = $rH_samplePair->{'sample'};
   my $normalBam = 'alignment/'.$rH_samplePair->{'normal'}.'/'.$rH_samplePair->{'normal'}.'.sorted.dup.recal.bam';
-  my $normalMetrics = 'alignment/'.$rH_samplePair->{'normal'}.'/'.$rH_samplePair->{'normal'}.'.sorted.dup.isize.txt';
+  my $normalMetrics = 'alignment/'.$rH_samplePair->{'normal'}.'/'.$rH_samplePair->{'normal'}.'.sorted.dup.recal.all.metrics.insert_size_metrics';
   my $tumorBam = 'alignment/'.$rH_samplePair->{'tumor'}.'/'.$rH_samplePair->{'tumor'}.'.sorted.dup.recal.bam';
-  my $tumorMetrics = 'alignment/'.$rH_samplePair->{'tumor'}.'/'.$rH_samplePair->{'tumor'}.'.sorted.dup.isize.txt';
+  my $tumorMetrics = 'alignment/'.$rH_samplePair->{'tumor'}.'/'.$rH_samplePair->{'tumor'}.'.sorted.dup.recal.all.metrics.insert_size_metrics';
   my $outputDir = 'pairedVariants/' . $sampleName.'/pindel/';
 
   print 'mkdir -p '.$outputDir."\n";
