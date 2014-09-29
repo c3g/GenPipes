@@ -142,10 +142,10 @@ sub pairCommand {
     if ($rH_laneInfo->{'qualOffset'} eq "64") {
       $command .= ' TOPHRED33';
     }
+    $command .= ' ILLUMINACLIP:' . $adapterFile . LoadConfig::getParam($rH_cfg, 'trim', 'clipSettings');
     if (defined($headcrop) && length($headcrop) > 0 && $headcrop > 0) {
       $command .= ' HEADCROP:' . $headcrop;
     }
-    $command .= ' ILLUMINACLIP:' . $adapterFile . LoadConfig::getParam($rH_cfg, 'trim', 'clipSettings');
     if ($minQuality > 0) {
       $command .= ' TRAILING:' . $minQuality;
     }
