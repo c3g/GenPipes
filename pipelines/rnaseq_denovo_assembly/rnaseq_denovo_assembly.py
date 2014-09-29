@@ -476,7 +476,7 @@ align_and_estimate_abundance.pl \\
                     "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
 
             jobs.append(Job(
-                [trinity_fasta] + left_or_single_reads + right_reads,
+                [trinity_fasta, trinity_fasta + ".RSEM.transcripts.fa", trinity_fasta + ".RSEM.idx.fa"] + left_or_single_reads + right_reads,
                 [os.path.join(output_directory, sample.name + ".genes.results"),
                  os.path.join(output_directory, sample.name + ".isoforms.results")],
                 [['align_and_estimate_abundance_prep_reference', 'module_perl'],
