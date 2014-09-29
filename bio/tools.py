@@ -14,8 +14,8 @@ from core.job import *
 def py_addLengthRay (file_scaffolds_fasta, length_file, output):
     job = Job([file_scaffolds_fasta, length_file], [output], [['DEFAULT' , 'module_mugqic_tools'], ['DEFAULT' , 'module_python']])
     
-    job.command = \
-"""python \$PYTHON_TOOLS/addLengthRay.py \\
+    job.command = """\
+python $PYTHON_TOOLS/addLengthRay.py \\
   -s {scaFile} \\
   -l {lenFile}""".format(
         scaFile=file_scaffolds_fasta,
@@ -23,11 +23,12 @@ def py_addLengthRay (file_scaffolds_fasta, length_file, output):
     )
     
     return job
+
 def py_blastMatchSca (prefix_scaffolds_fasta, blast_file, output):
     job = Job([prefix_scaffolds_fasta + ".fasta", blast_file], [output], [['DEFAULT' , 'module_mugqic_tools'], ['DEFAULT' , 'module_python']])
     
-    job.command = \
-"""python \$PYTHON_TOOLS/blastMatchSca.py \\
+    job.command = """\
+python $PYTHON_TOOLS/blastMatchSca.py \\
   -f {scaFile} \\
   -b {blastFile}""".format(
         scaFile=prefix_scaffolds_fasta,
@@ -39,8 +40,8 @@ def py_blastMatchSca (prefix_scaffolds_fasta, blast_file, output):
 def py_equalFastqFile (fastq_ref, fastq, output):
     job = Job([fastq_ref, fastq], [output], [['DEFAULT' , 'module_mugqic_tools'], ['DEFAULT' , 'module_python']])
     
-    job.command = \
-"""python \$PYTHON_TOOLS/equalFastqFile.py \\
+    job.command = """\
+python $PYTHON_TOOLS/equalFastqFile.py \\
   -r {ref} \\
   -f {fastq}""".format(
         ref=fastq_ref,
@@ -55,8 +56,8 @@ def bed2interval_list(dictionary, bed, output):
     if not dictionary:
         dictionary = config.param('DEFAULT', 'genome_dictionary', type='filepath')
     
-    job.command = \
-"""bed2IntervalList.pl \\
+    job.command = """\
+bed2IntervalList.pl \\
   --dict {dictionary} \\
   --bed {bed} \\
   > {output}""".format(
@@ -70,8 +71,8 @@ def bed2interval_list(dictionary, bed, output):
 def filter_long_indel(input, output):
     job = Job([input], [output], [['DEFAULT' , 'module_mugqic_tools'], ['DEFAULT' , 'module_perl']])
     
-    job.command = \
-"""filterLongIndel.pl \\
+    job.command = """\
+filterLongIndel.pl \\
   {input} \\
   > {output}""".format(
         input=input,
@@ -88,14 +89,14 @@ def filter_long_indel(input, output):
 def r_select_scaffolds(input, output, folder_sca, kmer, name_sample, type_insert, min_insert_size=200):
     job = Job(input, output, [['DEFAULT' , 'module_mugqic_tools'], ['DEFAULT' , 'module_R']])
     
-    job.command = \
-""" R --no-save --args \\
+    job.command = """\
+R --no-save --args \\
   {folder_sca} \\
   {kmer} \\
   {name_sample} \\
   {type_insert} \\
   {min_insert_size} \\
-  < \$R_TOOLS/puureAnalyseSelectSca.r """.format(
+  < $R_TOOLS/puureAnalyseSelectSca.r""".format(
         folder_sca=folder_sca,
         kmer=kmer,
         name_sample=name_sample,
@@ -108,15 +109,15 @@ def r_select_scaffolds(input, output, folder_sca, kmer, name_sample, type_insert
 def r_find_cluster(input, output, folder_sca, kmer, unmap_type, name_sample, type_insert, max_insert_size=200, min_mapping_quality=10):
     job = Job(input, output, [['DEFAULT' , 'module_mugqic_tools'], ['DEFAULT' , 'module_R']])
     
-    job.command = \
-""" R --no-save --args \\
+    job.command = """\
+R --no-save --args \\
   {folder_sca} \\
   {kmer} \\
   {name_sample} \\
   {type_insert} \\
   {min_mapping_quality} \\
   {max_insert_size} \\
-  < \$R_TOOLS/puureAnalyseFindCluster{unmap_type}.r """.format(
+  < $R_TOOLS/puureAnalyseFindCluster{unmap_type}.r""".format(
         folder_sca=folder_sca,
         kmer=kmer,
         name_sample=name_sample,
@@ -131,8 +132,8 @@ def r_find_cluster(input, output, folder_sca, kmer, unmap_type, name_sample, typ
 def r_find_insert(input, output, folder_sca, kmer, name_sample, type_insert, mean_coverage=20, max_insert_size=200, min_overlap=2, exclu_file="None"):
     job = Job(input, output, [['DEFAULT' , 'module_mugqic_tools'], ['DEFAULT' , 'module_R']])
     
-    job.command = \
-""" R --no-save --args \\
+    job.command = """\
+R --no-save --args \\
   {folder_sca} \\
   {kmer} \\
   {name_sample} \\
@@ -141,7 +142,7 @@ def r_find_insert(input, output, folder_sca, kmer, name_sample, type_insert, mea
   {max_insert_size} \\
   {min_overlap} \\
   {exclu_file} \\
-  < \$R_TOOLS/puureAnalyseFindInsert.r """.format(
+  < $R_TOOLS/puureAnalyseFindInsert.r""".format(
         folder_sca=folder_sca,
         kmer=kmer,
         name_sample=name_sample,
@@ -157,8 +158,8 @@ def r_find_insert(input, output, folder_sca, kmer, name_sample, type_insert, mea
 def r_filter_insert(input, output, folder_sca, kmer, name_sample, type_insert, mean_coverage=20, max_insert_size=200, strand=1, min_num_read=1, mean_read_length=100):
     job = Job(input, output, [['DEFAULT' , 'module_mugqic_tools'], ['DEFAULT' , 'module_R']])
     
-    job.command = \
-""" R --no-save --args \\
+    job.command = """\
+R --no-save --args \\
   {folder_sca} \\
   {kmer} \\
   {name_sample} \\
@@ -168,7 +169,7 @@ def r_filter_insert(input, output, folder_sca, kmer, name_sample, type_insert, m
   {strand} \\
   {min_num_read} \\
   {mean_read_length} \\
-  < \$R_TOOLS/puureAnalyseFindInsert.r """.format(
+  < $R_TOOLS/puureAnalyseFindInsert.r""".format(
         folder_sca=folder_sca,
         kmer=kmer,
         name_sample=name_sample,
@@ -181,6 +182,3 @@ def r_filter_insert(input, output, folder_sca, kmer, name_sample, type_insert, m
     )
     
     return job
-
-
-

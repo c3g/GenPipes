@@ -10,8 +10,8 @@ from core.job import *
 def index(input):
     job = Job([input], [input + ".bwt"], [['bwa_mem', 'module_bwa']])
 
-    job.command = \
-"""bwa index \\
+    job.command = """\
+bwa index \\
   {input}""".format(
         input=input
     )
@@ -33,8 +33,8 @@ def mem(in1fastq, in2fastq=None, out_sam=None, read_group=None, ref=None):
     
     other_options = config.param('bwa_mem', 'other_options')
 
-    job.command += \
-"""bwa mem {other_options}{read_group} \\
+    job.command += """\
+bwa mem {other_options}{read_group} \\
   {idxbase} \\
   {in1fastq}{in2fastq}{out_sam}""".format(
         other_options=" \\\n  " + other_options if other_options else "",

@@ -10,8 +10,8 @@ def base_recalibrator(input, output):
 
     job = Job([input], [output], [['gatk_base_recalibrator', 'module_java'], ['gatk_base_recalibrator', 'module_gatk']])
 
-    job.command = \
-"""java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar \$GATK_JAR \\
+    job.command = """\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --analysis_type BaseRecalibrator \\
   --num_cpu_threads_per_data_thread {threads} \\
   --input_file {input} \\
@@ -34,8 +34,8 @@ def callable_loci(input, output, summary):
 
     job = Job([input], [output, summary], [['gatk_callable_loci', 'module_java'], ['gatk_callable_loci', 'module_gatk']])
 
-    job.command = \
-"""java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar \$GATK_JAR \\
+    job.command = """\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --analysis_type CallableLoci {other_options} \\
   --input_file {input} \\
   --reference_sequence {reference_sequence} \\
@@ -57,8 +57,8 @@ def cat_variants(variants, output):
 
     job = Job(variants, [output], [['gatk_cat_variants', 'module_java'], ['gatk_cat_variants', 'module_gatk']])
 
-    job.command = \
-"""java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -cp \$GATK_JAR \\
+    job.command = """\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -cp $GATK_JAR \\
   org.broadinstitute.gatk.tools.CatVariants {options} \\
   --reference {reference}{variants} \\
   --outputFile {output}""".format(
@@ -93,8 +93,8 @@ def depth_of_coverage(input, output_prefix, intervals=""):
 
     summary_coverage_thresholds = sorted(config.param('gatk_depth_of_coverage', 'summary_coverage_thresholds', type='list'), key=int)
 
-    job.command = \
-"""java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar \$GATK_JAR \\
+    job.command = """\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --analysis_type DepthOfCoverage --omitDepthOutputAtEachBase --logging_level ERROR \\
   --reference_sequence {reference_sequence} \\
   --input_file {input} \\
@@ -120,8 +120,8 @@ def genotype_gvcfs(variants, output):
 
     job = Job(variants, [output], [['gatk_genotype_gvcfs', 'module_java'], ['gatk_genotype_gvcfs', 'module_gatk']])
 
-    job.command = \
-"""java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar \$GATK_JAR \\
+    job.command = """\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --analysis_type GenotypeGVCFs {options} \\
   --reference_sequence {reference_sequence}{variants} \\
   --out {output}""".format(
@@ -140,8 +140,8 @@ def haplotype_caller(input, output, intervals=[], exclude_intervals=[]):
 
     job = Job([input], [output], [['gatk_haplotype_caller', 'module_java'], ['gatk_haplotype_caller', 'module_gatk']])
 
-    job.command = \
-"""java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar \$GATK_JAR \\
+    job.command = """\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --analysis_type HaplotypeCaller {options} \\
   --reference_sequence {reference_sequence} \\
   --input_file {input} \\
@@ -163,8 +163,8 @@ def indel_realigner(input, output, target_intervals, intervals=[], exclude_inter
 
     job = Job([input], [output], [['gatk_indel_realigner', 'module_java'], ['gatk_indel_realigner', 'module_gatk']])
 
-    job.command = \
-"""java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar \$GATK_JAR \\
+    job.command = """\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --analysis_type IndelRealigner {other_options} \\
   --reference_sequence {reference_sequence} \\
   --input_file {input} \\
@@ -190,8 +190,8 @@ def print_reads(input, output, base_quality_score_recalibration):
 
     job = Job([input], [output], [['gatk_print_reads', 'module_java'], ['gatk_print_reads', 'module_gatk']])
 
-    job.command = \
-"""java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar \$GATK_JAR \\
+    job.command = """\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --analysis_type PrintReads \\
   --num_cpu_threads_per_data_thread {threads} \\
   --input_file {input} \\
@@ -215,8 +215,8 @@ def realigner_target_creator(input, output, intervals=[], exclude_intervals=[]):
 
     job = Job([input], [output], [['gatk_realigner_target_creator', 'module_java'], ['gatk_realigner_target_creator', 'module_gatk']])
 
-    job.command = \
-"""java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar \$GATK_JAR \\
+    job.command = """\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --analysis_type RealignerTargetCreator {other_options} \\
   --reference_sequence {reference_sequence} \\
   --input_file {input} \\

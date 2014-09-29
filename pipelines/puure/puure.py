@@ -42,7 +42,7 @@ class Puure(common.Illumina):
     def get_job_sam_to_fastq(self, file_fastq):
         job=Job(
           output_files=[file_fastq],
-          command="awk ' BEGIN { FS=\\\"\t\\\" } { print \\\"@\\\"\$1; print \$10; print \\\"+\\\";  print \$11}' | gzip -c > " + file_fastq
+          command="awk ' BEGIN { FS=\"\t\" } { print \"@\"$1; print $10; print \"+\";  print $11}' | gzip -c > " + file_fastq
         ) 
         return job
 
@@ -50,7 +50,7 @@ class Puure(common.Illumina):
         alignment_file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.")
         job=Job(
            input_files=[alignment_file_prefix + "all.metrics.insert_size_metrics"],
-           command="maxInsertSize=\$(awk 'NR==8 {print (\$1+(\$2*3))}' "+ alignment_file_prefix + "all.metrics.insert_size_metrics)"
+           command="maxInsertSize=$(awk 'NR==8 {print ($1+($2*3))}' "+ alignment_file_prefix + "all.metrics.insert_size_metrics)"
         )
         return job
 
@@ -58,7 +58,7 @@ class Puure(common.Illumina):
         alignment_file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.")
         job=Job(
            input_files=[alignment_file_prefix + "all.metrics.insert_size_metrics"],
-           command="minInsertSize=\$(awk 'NR==8 {print (\$1-(\$2*3))}' "+ alignment_file_prefix + "all.metrics.insert_size_metrics)"
+           command="minInsertSize=$(awk 'NR==8 {print ($1-($2*3))}' "+ alignment_file_prefix + "all.metrics.insert_size_metrics)"
         )
         return job
 
@@ -66,7 +66,7 @@ class Puure(common.Illumina):
         alignment_file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.")
         job=Job(
            input_files=[alignment_file_prefix + "all.coverage.sample_summary"],
-           command="meanCov=\$( grep " + sample.name + " " + alignment_file_prefix + "all.coverage.sample_summary | cut -f3)"
+           command="meanCov=$( grep " + sample.name + " " + alignment_file_prefix + "all.coverage.sample_summary | cut -f3)"
         )
         return job
 
@@ -74,7 +74,7 @@ class Puure(common.Illumina):
         alignment_file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.")
         job=Job(
            input_files=[alignment_file_prefix + "all.metrics.alignment_summary_metrics"],
-           command="meanReadLen=\$(awk 'NR==10 {print \$16}' " + alignment_file_prefix + "all.metrics.alignment_summary_metrics)"
+           command="meanReadLen=$(awk 'NR==10 {print $16}' " + alignment_file_prefix + "all.metrics.alignment_summary_metrics)"
         )
         return job
 
@@ -274,7 +274,7 @@ class Puure(common.Illumina):
             job = concat_jobs([
                 Job(command="if [ ! -d " + sclip_directory + " ]; then mkdir -p " + sclip_directory + "; fi"),
                 self.get_job_max_insert_size(sample),
-                bvatools.extract_sclip(alignment_file_prefix + "sorted.dup.bam", sclip_file_prefix, "\$maxInsertSize"),
+                bvatools.extract_sclip(alignment_file_prefix + "sorted.dup.bam", sclip_file_prefix, "$maxInsertSize"),
                 samtools.index(sclip_file_prefix + ".sc.bam"),
                 samtools.index(sclip_file_prefix + ".scOthers.bam"),
                 igvtools.compute_tdf(sclip_file_prefix + ".sc.bam", sclip_file_prefix + ".sc.tdf")
@@ -295,7 +295,7 @@ class Puure(common.Illumina):
             jobMkdir = Job(command="if [ ! -d " + extract_directory + " ]; then mkdir -p " + extract_directory + "; fi")
             ## extract Orphan
             job = concat_jobs([
-	        jobMkdir,
+            jobMkdir,
                 concat_jobs([
                  samtools.view(sclip_file_prefix + "scOthers.bam", extract_file_prefix + "ORPHAN.bam", "-b -h -f 12 -F 256"),
                  samtools.sort(extract_file_prefix + "ORPHAN.bam", extract_file_prefix + "ORPHAN.sName", True)
@@ -306,7 +306,7 @@ class Puure(common.Illumina):
             
             ## extract OEA close to sclip
             job = concat_jobs([
-	        jobMkdir,
+            jobMkdir,
                 concat_jobs([
                  samtools.view(sclip_file_prefix + "sc.bam", extract_file_prefix + "OEAUNMAP.1.bam", "-b -h -f 68 -F 264"),
                  samtools.sort(extract_file_prefix + "OEAUNMAP.1.bam", extract_file_prefix + "OEAUNMAP.1.sName", True)
@@ -316,7 +316,7 @@ class Puure(common.Illumina):
             jobs.append(job)
             
             job = concat_jobs([
-	        jobMkdir,
+            jobMkdir,
                 concat_jobs([
                  samtools.view(sclip_file_prefix + "sc.bam", extract_file_prefix + "OEAUNMAP.2.bam", "-b -h -f 132 -F 264"),
                  samtools.sort(extract_file_prefix + "OEAUNMAP.2.bam", extract_file_prefix + "OEAUNMAP.2.sName", True)
@@ -326,7 +326,7 @@ class Puure(common.Illumina):
             jobs.append(job)
             
             job = concat_jobs([
-	        jobMkdir,
+            jobMkdir,
                 concat_jobs([
                  samtools.view(sclip_file_prefix + "sc.bam", extract_file_prefix + "OEAMAP.bam", "-b -h -f 8 -F 1284"),
                  samtools.sort(extract_file_prefix + "OEAMAP.bam", extract_file_prefix + "OEAMAP.sName", True)
@@ -406,7 +406,7 @@ class Puure(common.Illumina):
             jobFastq = Job(
                 input_files=[sclip_file_prefix+"scSequences.txt"],
                 output_files=[extract_file_prefix+"sclip.1.fastq.gz"],
-                command="awk 'NR>1 {if (\$3==\\\"+\\\") { print \\\"@\\\"\$4; print \$5 ;print \\\"+\\\";  print \$6}}' " + 
+                command="awk 'NR>1 {if ($3==\"+\") { print \"@\"$4; print $5 ;print \"+\";  print $6}}' " + 
                         sclip_file_prefix + "scSequences.txt " +
                         "| gzip -c > " + extract_file_prefix+"sclip.1.fastq.gz",
                 name="fastq_sclip1_" + sample.name
@@ -420,7 +420,7 @@ class Puure(common.Illumina):
             jobFastq = Job(
                 input_files=[sclip_file_prefix+"scSequences.txt"],
                 output_files=[extract_file_prefix+"sclip.2.fastq.gz"],
-                command="awk 'NR>1 {if (\$3==\\\"-\\\") { print \\\"@\\\"\$4; print \$5 ;print \\\"+\\\";  print \$6}}' " + 
+                command="awk 'NR>1 {if ($3==\"-\") { print \"@\"$4; print $5 ;print \"+\";  print $6}}' " + 
                         sclip_file_prefix + "scSequences.txt " +
                         "| gzip -c > " + extract_file_prefix+"sclip.2.fastq.gz",
                 name="fastq_sclip2_" + sample.name
@@ -519,7 +519,7 @@ class Puure(common.Illumina):
                         extract_file_prefix + "ORPHAN.1.fastq.gz",
                         extract_file_prefix + "ORPHAN.2.fastq.gz",
                         read_group="'@RG" + \
-                            "\tID:" + sample.name + "_ray_orphan"\
+                            "\tID:" + sample.name + "_ray_orphan" \
                             "\tSM:" + sample.name + \
                             "\tLB:" + sample.name + \
                             "\tPU:orphan" + \
@@ -568,7 +568,7 @@ class Puure(common.Illumina):
                     bwa.mem(
                         extract_file_prefix + "OEAUNMAP.2.equal.fastq.gz",
                         read_group="'@RG" + \
-                            "\tID:" + sample.name + "_ray_scoea2"\
+                            "\tID:" + sample.name + "_ray_scoea2" \
                             "\tSM:" + sample.name + \
                             "\tLB:" + sample.name + \
                             "\tPU:scoea2" + \
@@ -593,7 +593,7 @@ class Puure(common.Illumina):
                     bwa.mem(
                         extract_file_prefix + "sclip.1.fastq.gz",
                         read_group="'@RG" + \
-                            "\tID:" + sample.name + "_ray_sclip1"\
+                            "\tID:" + sample.name + "_ray_sclip1" \
                             "\tSM:" + sample.name + \
                             "\tLB:" + sample.name + \
                             "\tPU:sclip1" + \
@@ -617,7 +617,7 @@ class Puure(common.Illumina):
                     bwa.mem(
                         extract_file_prefix + "sclip.2.fastq.gz",
                         read_group="'@RG" + \
-                            "\tID:" + sample.name + "_ray_sclip2"\
+                            "\tID:" + sample.name + "_ray_sclip2" \
                             "\tSM:" + sample.name + \
                             "\tLB:" + sample.name + \
                             "\tPU:sclip2" + \
@@ -702,7 +702,7 @@ class Puure(common.Illumina):
             ray_directory = os.path.join("scaffolds", sample.name, "ray", "ray" + config.param('ray', 'kmer'))
             
             job = concat_jobs([
-	        blat.blat_dna_vs_dna(
+            blat.blat_dna_vs_dna(
                    config.param('DEFAULT', 'genome_fasta'), 
                    os.path.join(ray_directory, "Scaffolds.fasta"), 
                    os.path.join(ray_directory, "Scaffolds.fasta.refGenome.psl")
@@ -710,7 +710,7 @@ class Puure(common.Illumina):
                 Job(
                  input_files=[os.path.join(ray_directory, "Scaffolds.fasta.refGenome.psl")],
                  output_files=[os.path.join(ray_directory, "Scaffolds.fasta.refGenome.noHeader.psl")],
-                 command="awk 'NR>5 {print \$0} ' " + os.path.join(ray_directory, "Scaffolds.fasta.refGenome.psl") + " > " + os.path.join(ray_directory, "Scaffolds.fasta.refGenome.noHeader.psl")
+                 command="awk 'NR>5 {print $0} ' " + os.path.join(ray_directory, "Scaffolds.fasta.refGenome.psl") + " > " + os.path.join(ray_directory, "Scaffolds.fasta.refGenome.noHeader.psl")
                 )
             ], name = "blat_sca_on_ref_" + sample.name)
             jobs.append(job)
@@ -750,7 +750,7 @@ class Puure(common.Illumina):
                   config.param('ray', 'kmer'),
                   sample.name,
                   type_insert,
-                  "\$minInsertSize"
+                  "$minInsertSize"
                 )
             ], name="analyse_scaffolds_" + type_insert + "_" + sample.name)
             jobs.append(job)
@@ -773,7 +773,7 @@ class Puure(common.Illumina):
                   "OEA",
                   sample.name,
                   type_insert,
-                  "\$maxInsertSize",
+                  "$maxInsertSize",
                   config.param('DEFAULT', 'min_mapping_quality')
                 )
             ], name="analyse_cluster_OEA_" + type_insert + "_" + sample.name)
@@ -797,7 +797,7 @@ class Puure(common.Illumina):
                   "Sclip",
                   sample.name,
                   type_insert,
-                  "\$maxInsertSize",
+                  "$maxInsertSize",
                   config.param('DEFAULT', 'min_mapping_quality')
                 )
             ], name="analyse_cluster_sclip_" + type_insert + "_" + sample.name)
@@ -821,8 +821,8 @@ class Puure(common.Illumina):
                     config.param('ray', 'kmer'),
                     sample.name,
                     type_insert,
-                    "\$meanCov",
-                    "\$maxInsertSize",
+                    "$meanCov",
+                    "$maxInsertSize",
                     config.param('DEFAULT', 'min_overlap_for_cluster'),
                     config.param('DEFAULT', 'genome_mappability_bed_indexed')
                 )

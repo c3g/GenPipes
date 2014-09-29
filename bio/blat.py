@@ -10,13 +10,12 @@ from core.job import *
 def blat_dna_vs_dna(ref, query, output, other_options=""):
     job = Job([ref, query], [output], [['DEFAULT', 'module_ucsc']])
 
-    job.command = \
-"""blat -t=dna -q=dna \\
-   {ref} \\
-   {query} \\
-   {output} \\
-   {other_options} \\
-   """.format(
+    job.command = """\
+blat -t=dna -q=dna \\
+  {ref} \\
+  {query} \\
+  {output} \\
+  {other_options}""".format(
         ref=ref,
         query=query,
         output=output,

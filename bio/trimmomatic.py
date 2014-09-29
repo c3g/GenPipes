@@ -40,9 +40,9 @@ def trimmomatic(
     min_length = config.param('trimmomatic', 'min_length', type='posint')
     headcrop_length = config.param('trimmomatic', 'headcrop_length', required=False, type='posint')
 
-    job.command = \
-"""mkdir -p {output_dirs} && \\
-java -XX:ParallelGCThreads=1 -Xmx2G -jar \$TRIMMOMATIC_JAR {mode} \\
+    job.command = """\
+mkdir -p {output_dirs} && \\
+java -XX:ParallelGCThreads=1 -Xmx2G -jar $TRIMMOMATIC_JAR {mode} \\
   -threads {threads} \\
   -phred{quality_offset} \\
   {inputs} \\

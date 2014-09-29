@@ -93,16 +93,20 @@ JOB_NAME={job.name}
 {job_dependencies}
 JOB_DONE={job.done}
 JOB_OUTPUT_RELATIVE_PATH=$STEP/${{JOB_NAME}}_$TIMESTAMP.o
-JOB_OUTPUT=$JOB_OUTPUT_DIR/$JOB_OUTPUT_RELATIVE_PATH""".format(
+JOB_OUTPUT=$JOB_OUTPUT_DIR/$JOB_OUTPUT_RELATIVE_PATH
+COMMAND=$(cat << '{limit_string}'
+{job.command_with_modules}
+{limit_string}
+)""".format(
                             job=job,
                             job_dependencies=job_dependencies,
-                            separator_line=separator_line
+                            separator_line=separator_line,
+                            limit_string=os.path.basename(job.done)
                         )
                     )
 
                     cmd = \
-"""echo "rm -f $JOB_DONE && \\
-{job.command_with_modules}
+"""echo "rm -f $JOB_DONE && $COMMAND
 MUGQIC_STATE=\$PIPESTATUS
 echo MUGQICexitStatus:\$MUGQIC_STATE
 if [ \$MUGQIC_STATE -eq 0 ] ; then touch $JOB_DONE ; fi
@@ -150,14 +154,13 @@ JOB_DONE={job.done}
 printf "\\n$SEPARATOR_LINE\\n"
 echo "Begin MUGQIC Job $JOB_NAME at `date +%FT%H:%M:%S`" && \\
 rm -f $JOB_DONE && \\
-{command_with_modules}
+{job.command_with_modules}
 MUGQIC_STATE=$PIPESTATUS
 echo "End MUGQIC Job $JOB_NAME at `date +%FT%H:%M:%S`"
 echo MUGQICexitStatus:$MUGQIC_STATE
 if [ $MUGQIC_STATE -eq 0 ] ; then touch $JOB_DONE ; else exit $MUGQIC_STATE ; fi
 """.format(
                             job=job,
-                            separator_line=separator_line,
-                            command_with_modules=re.sub(r"\\(.)", r"\1", job.command_with_modules)
+                            separator_line=separator_line
                         )
                     )

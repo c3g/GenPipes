@@ -29,8 +29,8 @@ def basefreq(input, output, positions, per_rg):
 
     threads = config.param('bvatools_basefreq', 'threads', type='int')
 
-    job.command = \
-"""java {java_other_options} -Xmx{ram} -jar \$BVATOOLS_JAR \\
+    job.command = """\
+java {java_other_options} -Xmx{ram} -jar $BVATOOLS_JAR \\
   basefreq \\
   --pos {positions} \\
   --bam {input}{per_rg}{threads} \\
@@ -52,8 +52,8 @@ def depth_of_coverage(input, output, coverage_bed, reference_genome="", other_op
     if not reference_genome:
         reference_genome=config.param('bvatools_depth_of_coverage', 'genome_fasta', type='filepath')
 
-    job.command = \
-"""java {java_other_options} -Xmx{ram} -jar \$BVATOOLS_JAR \\
+    job.command = """\
+java {java_other_options} -Xmx{ram} -jar $BVATOOLS_JAR \\
   depthofcoverage {other_options} \\
   --ref {reference_genome}{intervals} \\
   --bam {input} \\
@@ -85,8 +85,8 @@ def extract_sclip(bamFile, output_prefix, flank="200"):
 
     reference_dictionary = config.param('bvatools_ratiobaf', 'genome_dictionary', type='filepath')
 
-    job.command = \
-"""java {java_other_options} -Xmx{ram} -jar \$BVATOOLS_JAR \\
+    job.command = """\
+java {java_other_options} -Xmx{ram} -jar $BVATOOLS_JAR \\
   extractsclip {other_options} \\
   --bam {bamFile} \\
   --flank {flank} \\
@@ -112,8 +112,8 @@ def extract_sclip(bamFile, output_prefix, flank="200"):
 def groupfixmate(input, output):
     job = Job([input], [output], [['bvatools_groupfixmate', 'module_java'], ['bvatools_groupfixmate', 'module_bvatools']])
 
-    job.command = \
-"""java {java_other_options} -Xmx{ram} -jar \$BVATOOLS_JAR \\
+    job.command = """\
+java {java_other_options} -Xmx{ram} -jar $BVATOOLS_JAR \\
   groupfixmate \\
   --level 1 \\
   --bam {input} \\
@@ -131,8 +131,8 @@ def ratiobaf(basefreq, output_prefix, positions):
 
     reference_dictionary = config.param('bvatools_ratiobaf', 'genome_dictionary', type='filepath')
 
-    job.command = \
-"""java {java_other_options} -Xmx{ram} -jar \$BVATOOLS_JAR \\
+    job.command = """\
+java {java_other_options} -Xmx{ram} -jar $BVATOOLS_JAR \\
   ratiobaf {other_options} \\
   --refdict {reference_dictionary} \\
   --snppos {positions} \\

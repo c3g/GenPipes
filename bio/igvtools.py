@@ -9,8 +9,8 @@ from core.job import *
 def compute_tdf(input, output):
     job = Job([input], [output], [['compute_tdf', 'module_java'], ['compute_tdf', 'module_igvtools']])
 
-    job.command = \
-"""igvtools count -f min,max,mean \\
+    job.command = """\
+igvtools count -f min,max,mean \\
   {input} \\
   {output} \\
   {genome}""".format(

@@ -15,7 +15,7 @@ def parse_sequence_dictionary_file(sequence_dictionary_file):
 
     with open(sequence_dictionary_file) as sdf:
         for line in sdf:
-            parsed_line = re.search("^\@SQ\tSN:([^\t]+)\tLN:(\d+)", line)
+            parsed_line = re.search("^@SQ\tSN:([^\t]+)\tLN:(\d+)", line)
             if parsed_line:
                 sequence_dictionary.append({'name': parsed_line.group(1), 'length': int(parsed_line.group(2))})
 

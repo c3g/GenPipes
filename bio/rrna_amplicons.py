@@ -60,17 +60,17 @@ def duk_wrapper(infile_fastq, contam, ncontam, log, db):
             ['tools', 'module_mugqic_tools'],
             ['perl', 'module_perl'],
             ['duk', 'module_duk']
-          ]
+        ]
     )
 
-    job.command="""
+    job.command="""\
 memtime contamWrapper.pl \\
---infile {infile_fastq} \\
---outfile_matched {contam} \\
---outfile_unmatched {ncontam} \\
---log {log} \\
---db {db} \\
---num_threads {num_threads}""".format(
+  --infile {infile_fastq} \\
+  --outfile_matched {contam} \\
+  --outfile_unmatched {ncontam} \\
+  --log {log} \\
+  --db {db} \\
+  --num_threads {num_threads}""".format(
     infile_fastq = infile_fastq,
     outfile_matched = outfile_matched,
     outfile_unmatched = outfile_unmatched,
@@ -94,15 +94,15 @@ def duk(log, ncontam, contam, db, infile):
         ]
     )
         
-    job.command=""" 
+    job.command="""\
 memtime gunzip -c {infile} | duk \\
--o log {log} \\
--n ncontam {ncontam}\\
--m contam {contam}\\
--k {k} \\
--s {d} \\
--c {c} \\
-db""".format(
+  -o log {log} \\
+  -n ncontam {ncontam}\\
+  -m contam {contam}\\
+  -k {k} \\
+  -s {d} \\
+  -c {c} \\
+  db""".format(
     log = log,
     ncontam = ncontam,
     contam = contam,
@@ -124,13 +124,13 @@ def split_barcodes(infile, barcodes, outfile, log):
         ]
     )
 
-    job.command="""
+    job.command="""\
 memtime barcodes.pl \\
---infile {infile} \\
---barcodes {barcodes} \\
---outfile {outfile} \\
---num_threads {num_threads}  \\
---log {log};""".format(
+  --infile {infile} \\
+  --barcodes {barcodes} \\
+  --outfile {outfile} \\
+  --num_threads {num_threads}  \\
+  --log {log};""".format(
     infile = infile,
     outfile = outfile,
     num_threads = config.param( 'barcodes', 'num_threads', 1, 'int'),
@@ -149,13 +149,13 @@ def removeUnpairedReads(infile, outfilePaired, unpairedR1, unpairedR2):
             ['perl', 'module_perl']
         ]
     )
-    job.command="""
+    job.command="""\
 memtime removeUnpaired.pl \\
---infile {infile} \\
---outfile_paired {outfilePaired} \\
---outfile_1 {unpairedR1} \\
---outfile_2 {unpairedR2} \\
---num_threads {num_threads}""".format(
+  --infile {infile} \\
+  --outfile_paired {outfilePaired} \\
+  --outfile_1 {unpairedR1} \\
+  --outfile_2 {unpairedR2} \\
+  --num_threads {num_threads}""".format(
     infile = infile,
     outfile_paired = outfile_paired,
     outfile_1 = outfile_1,
@@ -177,12 +177,12 @@ def splitPairs(infile, outfileR1, outfileR2):
         ]
     )
 
-    job.command="""
+    job.command="""\
 memtime splitPairs.pl \\
---infile {infile} \\
---outfile_1 {outfileR1} \\
---outfile_2 {outfileR2} \\
---num_threads {num_threads}""".format(
+  --infile {infile} \\
+  --outfile_1 {outfileR1} \\
+  --outfile_2 {outfileR2} \\
+  --num_threads {num_threads}""".format(
     infile = infile,
     outfile_1 = outfile_1,
     outfile_2 = outfile_2,
@@ -204,17 +204,17 @@ def generateQscoreSheet(infile, prefix, log, outfile, barcodes):
         ]
     )
 
-    job.command="""
+    job.command="""\
 memtime qscoreSheets.pl \\ 
- --fastq {infile} \\
- --tmp {tmp} \\
- --prefix {prefix} \\
- --suffix {suffix} \\
- --log {log} \\
- --outfile {outfile} \\
- --phred {phred} \\
- --barcodes {barcodes} \\
- --num_threads {num_threads}""".format(
+  --fastq {infile} \\
+  --tmp {tmp} \\
+  --prefix {prefix} \\
+  --suffix {suffix} \\
+  --log {log} \\
+  --outfile {outfile} \\
+  --phred {phred} \\
+  --barcodes {barcodes} \\
+  --num_threads {num_threads}""".format(
         infile = infile,
         suffix = suffix,
         log = log,
@@ -238,13 +238,13 @@ def generateQscoreGraphSingle(infile, prefix, outfile):
             ['perl', 'module_perl']
         ]
     )
-    job.command="""
+    job.command="""\
 memtime qscorePlots.pl \\
---infile_1 {infile} \\
---name {prefix} \\
---pdf {outfile} \\
---display 1 \\
---single""".format(
+  --infile_1 {infile} \\
+  --name {prefix} \\
+  --pdf {outfile} \\
+  --display 1 \\
+  --single""".format(
     infile = infile,
     prefix = prefix,
     outfile = outfile
@@ -265,14 +265,14 @@ def generateQscoreGraphPaired(infileR1, infileR2, outfile):
         ]
     )
 
-    job.command="""
+    job.command="""\
 memtime qscorePlots.pl
---infile_1 {infileR1} \\
---infile_2 {infileR2} \\
---name qual_stats \\
---pdf {outfile} \\
---display 1 \\
---paired""".format(
+  --infile_1 {infileR1} \\
+  --infile_2 {infileR2} \\
+  --name qual_stats \\
+  --pdf {outfile} \\
+  --display 1 \\
+  --paired""".format(
     infileR1 = infileR1,
     infileR2 = infileR2,
     outfile = outfile
@@ -292,12 +292,12 @@ def cutReads(infile, begin, end, outfile):
         ]
     )
 
-    job.command="""
+    job.command="""\
 memtime cutFastqSeq.pl \\
---infile {infile} \\
---begin {begin} \\
---end {end} \\
---outfile {outfile}""".format(
+  --infile {infile} \\
+  --begin {begin} \\
+  --end {end} \\
+  --outfile {outfile}""".format(
     infile = infile,
     begin = begin,
     end = end,
@@ -318,18 +318,18 @@ def flash(infileR1, infileR2, prefix, outdir):
             ['perl', 'module_perl']
         ]
     )
-    job.command="""
+    job.command="""\
 memtime flash.pl \\
---infile_1 {infileR1} \\
---infile_2 {infileR2} \\
---prefix {prefix} \\
---outdir {outdir} \\
---n {n} \\
---m {m} \\
---M {M} \\
---x {x} \\
---p {p} \\
---num_threads {num_threads}""".format(
+  --infile_1 {infileR1} \\
+  --infile_2 {infileR2} \\
+  --prefix {prefix} \\
+  --outdir {outdir} \\
+  --n {n} \\
+  --m {m} \\
+  --M {M} \\
+  --x {x} \\
+  --p {p} \\
+  --num_threads {num_threads}""".format(
     infileR1 = infileR1,
     infileR2 = infileR2,
     prefix = prefix,
@@ -355,34 +355,34 @@ def removePrimers(infile, revPrimer, fwdPrimer, outfile,  outfileFailed):
         ]
     )
 
-    job.command="""
+    job.command="""\
 memtime itagsQC.pl \\
- --infile {infile} \\""".format(
+  --infile {infile} \\""".format(
     infile = infile
     )
 
     if(revPrimer != "null"):
-        job.command+="""
---primer_3_prime {revPrimer} \\
---length_3_prime {length_3_prime} \\""".format(
+        job.command+="""\
+  --primer_3_prime {revPrimer} \\
+  --length_3_prime {length_3_prime} \\""".format(
         revPrimer = revPrimer,
         length_3_prime = config.param('itags_QC', 'length3Prime', 'int')
         )
     
     if(fwdPrimer != "null"):
-        job.command+="""
---primer_5_prime {fwdPrimer} \\
---length_5_prime {length_5_prime} \\""".format(
+        job.command+="""\
+  --primer_5_prime {fwdPrimer} \\
+  --length_5_prime {length_5_prime} \\""".format(
         fwdPrimer = fwdPrimer,
         length_5_prime = config.param('itags_QC', 'length5Prime', 'int')
         )
  
-    job.command+="""
- --outfile {outfile} \\
- --outfile_failed {outfileFailed} \\
- --num_threads {num_threads} \\
- --qual {qual} \\
- --primer_mismatch {primer_mismatch}""".format(
+    job.command+="""\
+  --outfile {outfile} \\
+  --outfile_failed {outfileFailed} \\
+  --num_threads {num_threads} \\
+  --qual {qual} \\
+  --primer_mismatch {primer_mismatch}""".format(
         num_threads = config.param('itags_QC', 'num_threads', 'int'),
         qual = config.param('default', 'qual', 'int'),
         primer_mismatch = config.param('itags_QC', 'primerMismatch', 'int')
@@ -402,38 +402,38 @@ def itagsQC(infile, revPrimer, fwdPrimer, outfile, outfileFailed):
         ]
     )
 
-    job.command="""
+    job.command="""\
 memtime  itagsQC.pl
- --infile {infile} \\""".format(
+  --infile {infile} \\""".format(
      infile = infile
     )
 
     if(revPrimer != "null"):
-        job.command+="""
---primer_3_prime {revPrimer} \\
---length_3_prime {length_3_prime} \\""".format(
+        job.command+="""\
+  --primer_3_prime {revPrimer} \\
+  --length_3_prime {length_3_prime} \\""".format(
             revPrimer = revPrimer,
             length_3_prime = config.param('itags_QC', 'length3Prime', 'int') 
         )
 
     if(fwdPrimer != "null"):
-        job.command+="""
---primer_5_prime {fwdPrimer} \\
---length_5_prime {length_5_prime} \\""".format(
+        job.command+="""\
+  --primer_5_prime {fwdPrimer} \\
+  --length_5_prime {length_5_prime} \\""".format(
             fwdPrimer = fwdPrimer,
             length_5_prime = config.param( 'itags_QC', 'length5Prime', 'int')
         )
-    job.command+="""
- --qscore_1 {qscore1} \\
- --qscore_2 {qscore2} \\
- --outfile {outfile}
- --outfile_failed {outfileFailed}
- --num_threads {num_threads} \\
- --qual {qual} \\
- --lq_threshold {lq_threshold} \\
- --primer_mismatch {primer_mismatch} \\
- --min_length {min_length} \\
- --N {N}""".format(
+    job.command+="""\
+  --qscore_1 {qscore1} \\
+  --qscore_2 {qscore2} \\
+  --outfile {outfile}
+  --outfile_failed {outfileFailed}
+  --num_threads {num_threads} \\
+  --qual {qual} \\
+  --lq_threshold {lq_threshold} \\
+  --primer_mismatch {primer_mismatch} \\
+  --min_length {min_length} \\
+  --N {N}""".format(
         qscore_1 = config.param('itags_QC', 'qscore1', 'int'),
         qscore_2 = config.param('itags_QC', 'qscore2', 'int'),
         outfile = outfile,
@@ -488,10 +488,10 @@ def txtToPdf(infile, outfile):
             ['perl', 'module_perl']
         ]
     )
-    job.command="""
+    job.command="""\
 memtime txtToPdf.pl
---infile {infile}
---outfile {outfile}""".format(
+  --infile {infile}
+  --outfile {outfile}""".format(
         infile = infile,
         outfile = outfile
     )
@@ -512,7 +512,7 @@ def mergePdf(command):
         ]
     )
     
-    job.command="""
+    job.command="""\
 memtime {command} \\
 && touch {dummyOutfile}; """.format(
         command = command,
@@ -533,13 +533,13 @@ def clustering1(infile, barcodes, outdir):
             ['perl', 'module_perl']
         ]
     )
-    job.command="""
+    job.command="""\
 memtime clustering1.pl \\
---infile_fastq {infile} \\
---ref_db {ref_db} \\
---barcodes {barcodes} \\
---outdir {outdir} \\
---num_threads {num_threads}.""".format(
+  --infile_fastq {infile} \\
+  --ref_db {ref_db} \\
+  --barcodes {barcodes} \\
+  --outdir {outdir} \\
+  --num_threads {num_threads}.""".format(
     infile = infile,
     barcodes = barcodes,
     ref_db =  config.param( 'DB', 'chimeras', 'filepath'),
@@ -561,13 +561,13 @@ def clustering2(infile, barcodes, outdir):
             ['perl', 'module_perl']
         ]
     )
-    job.command="""
+    job.command="""\
 memtime clustering2.pl \\
---infile_fastq {infile} \\
---ref_db {ref_db} \\ 
---barcodes {barcodes} \\
---outdir {outdir} \\
---num_threads {num_threads}""".format(
+  --infile_fastq {infile} \\
+  --ref_db {ref_db} \\ 
+  --barcodes {barcodes} \\
+  --outdir {outdir} \\
+  --num_threads {num_threads}""".format(
         infile = infile,
         ref_db = config.param( 'DB', 'chimeras', 1, 'path'),
         barcodes = barcodes,
@@ -590,14 +590,14 @@ def clustering3(infile, barcodes, outdir):
         ]
     )
 
-    job.command="""
+    job.command="""\
 memtime clustering3.pl \\
---infile_fastq {infile} \\
---ref_db {ref_db} \\ 
---barcodes {barcodes} \\
---outdir {outdir} \\
---lowAbunCutOff {lowAbunCutoff} \\
---num_threads {num_threads}""".format(
+  --infile_fastq {infile} \\
+  --ref_db {ref_db} \\ 
+  --barcodes {barcodes} \\
+  --outdir {outdir} \\
+  --lowAbunCutOff {lowAbunCutoff} \\
+  --num_threads {num_threads}""".format(
     infile = infile,
     ref_db =  config.param('DB', 'chimeras', 'filepath'),
     barcodes = barcodes,
@@ -626,8 +626,8 @@ def clientReport(iniFilePath, projectPath, pipelineType, reportPath):
         ]
     )
 
-    job.command="""
-R --no-save -e \'library(gqSeqUtils) \\
+    job.command="""\
+R --no-save -e 'library(gqSeqUtils) \\
 mugqicPipelineReport( \\
   pipeline="{pipelineType}", \\
   report.path="{reportPath}", \\
@@ -657,7 +657,7 @@ def cleanup(tmpdir):
         ]
     )
     
-    job.command="""
+    job.command="""\
 memtime \\
 rm  {tmpdir} -rf""".format(
     tmpdir = tmpdir

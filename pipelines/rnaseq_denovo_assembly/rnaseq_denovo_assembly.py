@@ -67,7 +67,7 @@ insilico_read_normalization.pl {other_options} \\
 
     # Count normalized reads for stats
     job = concat_jobs([job, Job(command="""\
-wc -l {output_file} | awk '{{print \\"# normalized {read_type} reads\t\\"\\$1 / 4}}' > {normalization_stats_file}""".format(
+wc -l {output_file} | awk '{{print "# normalized {read_type} reads\t"$1 / 4}}' > {normalization_stats_file}""".format(
         output_file=output_files[0],
         read_type="paired" if right_reads else "single",
         normalization_stats_file=normalization_stats_file
@@ -177,7 +177,7 @@ Trinity {other_options} \\
         return [concat_jobs([
             trinity_job,
             Job([trinity_fasta], [trinity_fasta + ".zip"], command="zip -j " + trinity_fasta + ".zip " + trinity_fasta),
-            Job([trinity_fasta], [trinity_stats_prefix + ".csv", trinity_stats_prefix + ".jpg", trinity_stats_prefix + ".pdf"], [['trinity', 'module_R']], command="Rscript -e 'library(gqSeqUtils); dnaFastaStats(filename = \\\"" + trinity_fasta + "\\\", type = \\\"trinity\\\", output.prefix = \\\"" + trinity_stats_prefix + "\\\")'")
+            Job([trinity_fasta], [trinity_stats_prefix + ".csv", trinity_stats_prefix + ".jpg", trinity_stats_prefix + ".pdf"], [['trinity', 'module_R']], command="Rscript -e 'library(gqSeqUtils); dnaFastaStats(filename = \"" + trinity_fasta + "\", type = \"trinity\", output.prefix = \"" + trinity_stats_prefix + "\")'")
         ], name="trinity")]
 
     def exonerate_fastasplit(self):
@@ -223,7 +223,7 @@ parallelBlast.pl \\
   -file {query_chunk} \\
   --OUT {blast_chunk} \\
   -n {cpu} \\
-  --BLAST \\\"{program} -db {db} -max_target_seqs 1 -outfmt \'6 std stitle\'\\\"""".format(
+  --BLAST "{program} -db {db} -max_target_seqs 1 -outfmt '6 std stitle'" """.format(
                         query_chunk=query_chunk,
                         blast_chunk=blast_chunk,
                         cpu=cpu,
@@ -268,7 +268,7 @@ parallelBlast.pl \\
                  ['transdecoder', 'module_hmmer'],
                  ['transdecoder', 'module_trinity']],
                 command="""\
-\$TRINITY_HOME/trinity-plugins/transdecoder/TransDecoder {other_options} \\
+$TRINITY_HOME/trinity-plugins/transdecoder/TransDecoder {other_options} \\
   --t {transcripts} \\
   --search_pfam {pfam_db} \\
   --CPU {cpu}""".format(
@@ -297,9 +297,9 @@ parallelBlast.pl \\
                  ['rnammer_transcriptome', 'module_trinity'],
                  ['rnammer_transcriptome', 'module_trinotate']],
                 command="""\
-\$TRINOTATE_HOME/util/rnammer_support/RnammerTranscriptome.pl {other_options} \\
+$TRINOTATE_HOME/util/rnammer_support/RnammerTranscriptome.pl {other_options} \\
   --transcriptome {transcriptome} \\
-  --path_to_rnammer \`which rnammer\`""".format(
+  --path_to_rnammer `which rnammer`""".format(
                     other_options=config.param('rnammer_transcriptome', 'other_options', required=False),
                     transcriptome=os.path.relpath(trinity_fasta, rnammer_directory)
                 )
@@ -328,7 +328,7 @@ parallelBlast.pl \\
   -file {query} \\
   --OUT {blast_result} \\
   -n {cpu} \\
-  --BLAST \\\"{program} -db {db} -max_target_seqs 1 -outfmt \'6 std stitle\'\\\"""".format(
+  --BLAST "{program} -db {db} -max_target_seqs 1 -outfmt '6 std stitle'" """.format(
                     query=query,
                     blast_result=blast_result,
                     cpu=cpu,
@@ -403,15 +403,15 @@ tmhmm --short \\
                 [['trinotate', 'module_perl'], ['trinotate', 'module_trinity'], ['trinotate', 'module_trinotate']],
                 command="""\
 cd trinotate && \\
-cp \$TRINOTATE_HOME/Trinotate.sqlite . && \\
-\$TRINITY_HOME/util/support_scripts/get_Trinity_gene_to_trans_map.pl {trinity_fasta} > {trinity_fasta}.gene_trans_map && \\
+cp $TRINOTATE_HOME/Trinotate.sqlite . && \\
+$TRINITY_HOME/util/support_scripts/get_Trinity_gene_to_trans_map.pl {trinity_fasta} > {trinity_fasta}.gene_trans_map && \\
 {trinotate_command} init \\
   --gene_trans_map {trinity_fasta}.gene_trans_map \\
   --transcript {trinity_fasta} \\
   --transdecoder_pep {transdecoder_pep} && \\
 {trinotate_command} LOAD_blastx {blastx} && \\
 {trinotate_command} LOAD_blastp {blastp} && \\
-awk '{{\$4 = \\\"cds.\\\"\$4; print}}' {transdecoder_pfam} > {transdecoder_pfam}.adj && \\
+awk '{{$4 = "cds."$4; print}}' {transdecoder_pfam} > {transdecoder_pfam}.adj && \\
 {trinotate_command} LOAD_pfam {transdecoder_pfam}.adj && \\
 {trinotate_command} LOAD_tmhmm {tmhmm} && \\
 {trinotate_command} LOAD_signalp {signalp} && \\
@@ -419,7 +419,7 @@ awk '{{\$4 = \\\"cds.\\\"\$4; print}}' {transdecoder_pfam} > {transdecoder_pfam}
 {trinotate_command} report -E {evalue} --pfam_cutoff {pfam_cutoff} | cut -f 1-12 \\
   > {trinotate_report}""".format(
                     trinity_fasta=os.path.join("..", trinity_fasta),
-                    trinotate_command="\$TRINOTATE_HOME/Trinotate " + os.path.basename(trinotate_sqlite),
+                    trinotate_command="$TRINOTATE_HOME/Trinotate " + os.path.basename(trinotate_sqlite),
                     transdecoder_pep=os.path.join("..", transdecoder_pep),
                     blastx=os.path.join("..", blastx),
                     blastp=os.path.join("..", blastp),
@@ -541,7 +541,7 @@ abundance_estimates_to_matrix.pl \\
                     [matrix],
                     [matrix + ".symbol"],
                     command="""\
-awk -F '\t' '{{OFS=\\\"\t\\\" ; print $1,$0}}' {matrix} | sed '1s/^\t/{item}\tSymbol/' \\
+awk -F '\t' '{{OFS="\t" ; print $1,$0}}' {matrix} | sed '1s/^\t/{item}\tSymbol/' \\
   > {matrix}.symbol""".format(matrix=matrix, item=item.title())
                 ),
                 # Perform edgeR
@@ -551,7 +551,7 @@ awk -F '\t' '{{OFS=\\\"\t\\\" ; print $1,$0}}' {matrix} | sed '1s/^\t/{item}\tSy
                     [['differential_expression', 'module_R'],
                      ['differential_expression', 'module_mugqic_tools']],
                     command="""\
-Rscript \\$R_TOOLS/edger.R \\
+Rscript $R_TOOLS/edger.R \\
   -d {design} \\
   -c {matrix}.symbol \\
   -o {output_subdirectory}""".format(
@@ -568,7 +568,7 @@ Rscript \\$R_TOOLS/edger.R \\
                     [['differential_expression', 'module_R'],
                      ['differential_expression', 'module_mugqic_tools']],
                     command="""\
-Rscript \\$R_TOOLS/deseq.R \\
+Rscript $R_TOOLS/deseq.R \\
   -d {design} \\
   -c {matrix}.symbol \\
   -o {output_subdirectory}""".format(
@@ -587,9 +587,9 @@ Rscript \\$R_TOOLS/deseq.R \\
             Job([isoforms_lengths, trinotate_annotation_report],
                 [trinotate_annotation_report + ".genes"],
                 command="""\
-sed '1d' {isoforms_lengths} | perl -pe 's/^(c\\\\d+_g\\\\d+)/\\\\1\t\\\\1/' | sort -k1,1 -k3,3gr | \\
+sed '1d' {isoforms_lengths} | perl -pe 's/^(c\d+_g\d+)/\\1\t\\1/' | sort -k1,1 -k3,3gr | \\
 awk -F "\t" 'FNR == NR {{if (!isoform[$1]) {{isoform[$1] = $2; next}}}}{{OFS="\t"; if (isoform[$1] == $2 && !gene[$1]++ || $1 == "#gene_id") {{print}}}}' - {trinotate_annotation_report} | \\
-perl -pe 's/^(\\\\S+)\t\\\\S+\t([^^\t]*)/\\\\1\t\\\\2\t\\\\2/' | \\
+perl -pe 's/^(\S+)\t\S+\t([^^\t]*)/\\1\t\\2\t\\2/' | \\
 sed '1s/^#gene_id\tTop_BLASTX_hit/Gene\tSymbol/' \\
   > {trinotate_annotation_report}.genes""".format(
                     isoforms_lengths=isoforms_lengths,
@@ -600,7 +600,7 @@ sed '1s/^#gene_id\tTop_BLASTX_hit/Gene\tSymbol/' \\
                 [trinotate_annotation_report + ".isoforms"],
                 command="""\
 cut -f 2- {trinotate_annotation_report} | awk '!isoform[$1]++' | \\
-perl -pe 's/^(\\\\S+)\t([^^\t]*)/\\\\1\t\\\\2\t\\\\2/' | \\
+perl -pe 's/^(\S+)\t([^^\t]*)/\\1\t\\2\t\\2/' | \\
 sed '1s/^transcript_id\tTop_BLASTX_hit/Transcript\tSymbol/' \\
   > {trinotate_annotation_report}.isoforms""".format(
                     trinotate_annotation_report=trinotate_annotation_report
@@ -617,7 +617,7 @@ sed '1s/^transcript_id\tTop_BLASTX_hit/Transcript\tSymbol/' \\
                     Job([dge_results, trinotate_annotation_report + "." + item],
                         [dge_trinotate_results],
                         command="""\
-awk -F "\t" 'FNR == NR {{item[\\$1] = \\$0; next}} {{OFS="\t"; print \\$0, item[\\$1]}}' \\
+awk -F "\t" 'FNR == NR {{item[$1] = $0; next}} {{OFS="\t"; print $0, item[$1]}}' \\
   {trinotate_annotation_report_item} \\
   <(sed '1s/^id/{item}/' {dge_results}) \\
   > {dge_results}.tmp && \\

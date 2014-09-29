@@ -10,8 +10,8 @@ from core.job import *
 def dna_sample_metrics(input_directory, output, experiment_type="unknown"):
     job = Job([input_directory], [output], [['dna_sample_metrics', 'module_R'], ['dna_sample_metrics', 'module_mugqic_tools']])
 
-    job.command = \
-"""Rscript \$R_TOOLS/DNAsampleMetrics.R \\
+    job.command = """\
+Rscript $R_TOOLS/DNAsampleMetrics.R \\
   {input_directory} \\
   {output} \\
   {experiment_type}""".format(
@@ -25,8 +25,8 @@ def dna_sample_metrics(input_directory, output, experiment_type="unknown"):
 def rnaseqc(sample_file, output_directory, is_single_end=False, gtf_file=None):
     job = Job([sample_file], [os.path.join(output_directory, "index.html")], [['rnaseqc', 'module_java'], ['rnaseqc', 'module_bwa'], ['rnaseqc', 'module_rnaseqc']])
 
-    job.command = \
-"""java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar \$RNASEQC_JAR \\
+    job.command = """\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $RNASEQC_JAR \\
   -BWArRNA {reference_ribosomal_rna_fasta} \\
   -n {number_top_transcripts} \\
   -o {output_directory} \\
@@ -51,8 +51,8 @@ def rnaseqc(sample_file, output_directory, is_single_end=False, gtf_file=None):
 def rpkm_saturation(count_file, gene_size_file, rpkm_directory, saturation_directory):
     job = Job([count_file], [saturation_directory + ".zip"], [['rpkm_saturation', 'module_R'], ['rpkm_saturation', 'module_mugqic_tools']])
 
-    job.command = \
-"""Rscript \$R_TOOLS/rpkmSaturation.R \\
+    job.command = """\
+Rscript $R_TOOLS/rpkmSaturation.R \\
   {count_file} \\
   {gene_size_file} \\
   {rpkm_directory} \\
@@ -73,8 +73,8 @@ zip -r {saturation_directory}.zip {saturation_directory}""".format(
 def snv_graph_metrics(list, output_basename):
     job = Job([list], [output_basename + ".snvGraphMetrics_listFiles.txt"], [['snv_graph_metrics', 'module_R'], ['snv_graph_metrics', 'module_mugqic_tools']])
 
-    job.command = \
-"""Rscript \$R_TOOLS/snvGraphMetrics.R \\
+    job.command = """\
+Rscript $R_TOOLS/snvGraphMetrics.R \\
   {list} \\
   {output_basename}""".format(
         list=list,
@@ -86,8 +86,8 @@ def snv_graph_metrics(list, output_basename):
 def vcf_stats(input, output, list):
     job = Job([input], [output, list], [['vcf_stats', 'module_python'], ['vcf_stats', 'module_mugqic_tools']])
 
-    job.command = \
-"""python \$PYTHON_TOOLS/vcfStats.py \\
+    job.command = """\
+python $PYTHON_TOOLS/vcfStats.py \\
   -v {input} \\
   -d {dictionary} \\
   -o {output} \\

@@ -129,8 +129,8 @@ class RnaSeq(common.Illumina):
         job = concat_jobs([
             Job(command="mkdir -p " + output_directory),
             Job(input_bams, [sample_file], command="""\
-echo \\"Sample\tBamFile\tNote
-{sample_rows}\\" \\
+echo "Sample\tBamFile\tNote
+{sample_rows}" \\
   > {sample_file}""".format(sample_rows="\n".join(["\t".join(sample_row) for sample_row in sample_rows]), sample_file=sample_file)),
             # Remove pseudogenes from GTF otherwise RNASeQC fails
             Job(module_entries=[['rnaseqc', 'module_cufflinks']], command="gffread -E " + gtf + " -T --no-pseudo -o " + gtf_no_pseudogenes + " 2> /dev/null"),
@@ -250,13 +250,13 @@ HEAD='Gene\tSymbol' && \\
 for read_count_file in \\
   {read_count_files}
 do
-  sort -k1,1 \$read_count_file > {output_directory}/tmpSort.txt && \\
+  sort -k1,1 $read_count_file > {output_directory}/tmpSort.txt && \\
   join -1 1 -2 1 {output_directory}/tmpMatrix.txt {output_directory}/tmpSort.txt > {output_directory}/tmpMatrix.2.txt && \\
   mv {output_directory}/tmpMatrix.2.txt {output_directory}/tmpMatrix.txt && \\
-  na=\$(basename \$read_count_file | cut -d\. -f1) && \\
-  HEAD=\\"\$HEAD\t\$na\\"
+  na=$(basename $read_count_file | cut -d. -f1) && \\
+  HEAD="$HEAD\t$na"
 done && \\
-echo -e \$HEAD | cat - {output_directory}/tmpMatrix.txt | tr ' ' '\t' > {output_matrix} && \\
+echo -e $HEAD | cat - {output_directory}/tmpMatrix.txt | tr ' ' '\t' > {output_matrix} && \\
 rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
             reference_gtf=config.param('raw_counts_metrics', 'gtf', type='filepath'),
             output_directory=output_directory,

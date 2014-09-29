@@ -10,8 +10,8 @@ def calculate_hs_metrics(input, output, intervals, reference_sequence=None):
 
     job = Job([input], [output], [['picard_calculate_hs_metrics', 'module_java'], ['picard_calculate_hs_metrics', 'module_picard']])
 
-    job.command = \
-"""java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar \$PICARD_HOME/CalculateHsMetrics.jar \\
+    job.command = """\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/CalculateHsMetrics.jar \\
   TMP_DIR={tmp_dir} \\
   INPUT={input} \\
   OUTPUT={output} \\
@@ -49,8 +49,8 @@ def collect_multiple_metrics(input, output, reference_sequence=None):
         ]
     )
 
-    job.command = \
-"""java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar \$PICARD_HOME/CollectMultipleMetrics.jar \\
+    job.command = """\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/CollectMultipleMetrics.jar \\
   PROGRAM=CollectAlignmentSummaryMetrics PROGRAM=CollectInsertSizeMetrics VALIDATION_STRINGENCY=SILENT \\
   TMP_DIR={tmp_dir} \\
   REFERENCE_SEQUENCE={reference_sequence} \\
@@ -72,8 +72,8 @@ def fix_mate_information(input, output):
 
     job = Job([input], [output], [['fixmate', 'module_java'], ['fixmate', 'module_picard']])
 
-    job.command = \
-"""java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar \$PICARD_HOME/FixMateInformation.jar \\
+    job.command = """\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/FixMateInformation.jar \\
   VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true SORT_ORDER=coordinate \\
   TMP_DIR={tmp_dir} \\
   INPUT={input} \\
@@ -93,8 +93,8 @@ def mark_duplicates(inputs, output, metrics_file):
 
     job = Job(inputs, [output, metrics_file], [['picard_mark_duplicates', 'module_java'], ['picard_mark_duplicates', 'module_picard']])
 
-    job.command = \
-"""java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar \$PICARD_HOME/MarkDuplicates.jar \\
+    job.command = """\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/MarkDuplicates.jar \\
   REMOVE_DUPLICATES=false CREATE_MD5_FILE=true VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true \\
   TMP_DIR={tmp_dir} \\
   {inputs} \\
@@ -116,8 +116,8 @@ def merge_sam_files(inputs, output):
 
     job = Job(inputs, [output], [['picard_merge_sam_files', 'module_java'], ['picard_merge_sam_files', 'module_picard']])
 
-    job.command = \
-"""java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar \$PICARD_HOME/MergeSamFiles.jar \\
+    job.command = """\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/MergeSamFiles.jar \\
   VALIDATION_STRINGENCY=SILENT ASSUME_SORTED=true CREATE_INDEX=true \\
   TMP_DIR={tmp_dir} \\
   {inputs} \\
@@ -138,8 +138,8 @@ def reorder_sam(input, output):
 
     job = Job([input], [output], [['reorder_sam', 'module_java'], ['reorder_sam', 'module_picard']])
 
-    job.command = \
-"""java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar \$PICARD_HOME/ReorderSam.jar \\
+    job.command = """\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/ReorderSam.jar \\
   VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true \\
   TMP_DIR={tmp_dir} \\
   INPUT={input} \\
@@ -169,8 +169,8 @@ def sam_to_fastq(input, fastq, second_end_fastq):
         ]
     )
 
-    job.command = \
-"""java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar \$PICARD_HOME/SamToFastq.jar \\
+    job.command = """\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/SamToFastq.jar \\
   INPUT={input} \\
   FASTQ={fastq}{second_end_fastq}""".format(
         tmp_dir=config.param('picard_sam_to_fastq', 'tmp_dir'),
@@ -187,8 +187,8 @@ def sort_sam(input, output, sort_order):
 
     job = Job([input], [output], [['picard_sort_sam', 'module_java'], ['picard_sort_sam', 'module_picard']])
 
-    job.command = \
-"""java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar \$PICARD_HOME/SortSam.jar \\
+    job.command = """\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/SortSam.jar \\
   VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true \\
   TMP_DIR={tmp_dir} \\
   INPUT={input} \\

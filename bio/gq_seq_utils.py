@@ -16,13 +16,13 @@ def report(ini_filepath, project_path, pipeline_type, output_directory):
     # Job input files must be set in pipeline since they are different in each pipeline
     job = Job([], [os.path.join(path, "index.html")], [['report', 'module_R']])
 
-    job.command = \
-"""R --no-save -e 'library(gqSeqUtils); mugqicPipelineReport(pipeline=\\"{pipeline}\\"{title}{path}{author}{contact}, ini.file.path=\\"{ini_filepath}\\", project.path=\\"{project_path}\\")'""".format(
+    job.command = """\
+R --no-save -e 'library(gqSeqUtils); mugqicPipelineReport(pipeline="{pipeline}"{title}{path}{author}{contact}, ini.file.path="{ini_filepath}", project.path="{project_path}")'""".format(
         pipeline=pipeline_type,
-        title=", report.title=\\\"" + title + "\\\"" if title else "",
-        path=", report.path=\\\"" + path + "\\\"" if path else "",
-        author=", report.author=\\\"" + author + "\\\"" if author else "",
-        contact=", report.contact=\\\"" + contact + "\\\"" if contact else "",
+        title=", report.title=\"" + title + "\"" if title else "",
+        path=", report.path=\"" + path + "\"" if path else "",
+        author=", report.author=\"" + author + "\"" if author else "",
+        contact=", report.contact=\"" + contact + "\"" if contact else "",
         ini_filepath=ini_filepath,
         project_path=project_path
     )

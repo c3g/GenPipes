@@ -35,8 +35,8 @@ def ray(pathOut, pair1=[], pair2=[], single=[], options=""):
         ]
     )
     
-    job.command = \
-"""mpiexec {optionmpi} Ray -k {kmer} \\
+    job.command = """\
+mpiexec {optionmpi} Ray -k {kmer} \\
   {pair} \\
   {single} \\
   -o {output}""".format(

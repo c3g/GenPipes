@@ -16,9 +16,9 @@ def graph(input_bam, output_bed_graph, output_wiggle):
     )
 
     job.command = """\
-nmblines=\$(samtools view -F 256 -f 81 {input_bam} | wc -l) && \\
-scalefactor=0\$(echo \\"scale=2; 1 / (\$nmblines / 10000000);\\" | bc) && \\
-genomeCoverageBed -bg -split -scale \$scalefactor \\
+nmblines=$(samtools view -F 256 -f 81 {input_bam} | wc -l) && \\
+scalefactor=0$(echo "scale=2; 1 / ($nmblines / 10000000);" | bc) && \\
+genomeCoverageBed -bg -split -scale $scalefactor \\
   -ibam {input_bam} \\
   -g {chromosome_size} \\
   > {output_bed_graph} && \\

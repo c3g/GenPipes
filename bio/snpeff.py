@@ -10,9 +10,9 @@ def compute_effects(input, output, split=False):
     output_stats = output + ".stats.csv"
     job = Job([input], [output, output_stats], [['compute_effects', 'module_java'], ['compute_effects', 'module_snpeff']])
 
-    job.command = \
-"""java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar \$SNPEFF_HOME/snpEff.jar eff {options} \\
-  -c \$SNPEFF_HOME/snpEff.config \\
+    job.command = """\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $SNPEFF_HOME/snpEff.jar eff {options} \\
+  -c $SNPEFF_HOME/snpEff.config \\
   -i vcf \\
   -o vcf \\
   -csvStats \\
@@ -32,8 +32,8 @@ def compute_effects(input, output, split=False):
     if split:
         split_output_stats = output + ".statsFile.txt"
         split_job = Job([output_stats], [split_output_stats], [['compute_effects', 'module_mugqic_tools']])
-        split_job.command = \
-"""splitSnpEffStat.awk \\
+        split_job.command = """\
+splitSnpEffStat.awk \\
   {output_stats} \\
   {output_part} \\
   {split_output_stats}""".format(
@@ -50,8 +50,8 @@ def snpsift_annotate(input, output):
 
     job = Job([input], [output], [['snpsift_annotate', 'module_java'], ['snpsift_annotate', 'module_snpeff']])
 
-    job.command = \
-"""java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar \$SNPEFF_HOME/SnpSift.jar annotate \\
+    job.command = """\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $SNPEFF_HOME/SnpSift.jar annotate \\
   {db_snp} \\
   {input}{output}""".format(
         tmp_dir=config.param('snpsift_annotate', 'tmp_dir'),
@@ -68,8 +68,8 @@ def snpsift_dbnsfp(input, output):
 
     job = Job([input], [output], [['snpsift_dbnsfp', 'module_java'], ['snpsift_dbnsfp', 'module_snpeff']])
 
-    job.command = \
-"""java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar \$SNPEFF_HOME/SnpSift.jar dbnsfp \\
+    job.command = """\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $SNPEFF_HOME/SnpSift.jar dbnsfp \\
   -v {db_nsfp} \\
   {input}{output}""".format(
         tmp_dir=config.param('snpsift_dbnsfp', 'tmp_dir'),

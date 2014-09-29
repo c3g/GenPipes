@@ -10,8 +10,8 @@ from core.job import *
 def htseq_count(input, gtf, output, options="", stranded="no"):
     job = Job([input], [output], [['htseq_count', 'module_python']])
 
-    job.command = \
-"""htseq-count {options} \\
+    job.command = """\
+htseq-count {options} \\
   --stranded={stranded} \\
   {input} \\
   {gtf}{output}""".format(

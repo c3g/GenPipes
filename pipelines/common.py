@@ -159,9 +159,9 @@ class Illumina(MUGQICPipeline):
         for readset in self.readsets:
             trim_log = os.path.join("trim", readset.sample.name, readset.name + ".trim.log")
             if readset.run_type == "PAIRED_END":
-                perl_command = "perl -pe 's/^Input Read Pairs: (\\\\d+).*Both Surviving: (\\\\d+).*Forward Only Surviving: (\\\\d+).*$/{readset.sample.name}\t{readset.name}\t\\\\1\t\\\\2\t\\\\3/'".format(readset=readset)
+                perl_command = "perl -pe 's/^Input Read Pairs: (\d+).*Both Surviving: (\d+).*Forward Only Surviving: (\d+).*$/{readset.sample.name}\t{readset.name}\t\\1\t\\2\t\\3/'".format(readset=readset)
             elif readset.run_type == "SINGLE_END":
-                perl_command = "perl -pe 's/^Input Reads: (\\\\d+).*Surviving: (\\\\d+).*$/{readset.sample.name}\t{readset.name}\t\\\\1\t\\\\2\t\\\\2/'".format(readset=readset)
+                perl_command = "perl -pe 's/^Input Reads: (\d+).*Surviving: (\d+).*$/{readset.sample.name}\t{readset.name}\t\\1\t\\2\t\\2/'".format(readset=readset)
 
             job = concat_jobs([
                 job,
