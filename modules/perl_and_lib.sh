@@ -54,10 +54,12 @@ export PERL_EXTUTILS_AUTOINSTALL="--defaultdeps"
 
 for MODULE in \
 Config::Simple \
+DBI \
 File::Slurp \
 File::Which \
 Filesys::Df \
 Parse::Range \
+PDF::API2 \
 PDF::Create \
 PerlIO::gzip \
 Proc::ParallelLoop \
