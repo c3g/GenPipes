@@ -44,7 +44,7 @@ def trimmomatic(
     # CAUTION: Trimmomatic settings order is IMPORTANT! First, illuminaclip settings, then headcrop length, then trailing min quality, then minimum length
     job.command = """\
 mkdir -p {output_dirs} && \\
-java -XX:ParallelGCThreads=1 -Xmx2G -jar $TRIMMOMATIC_JAR {mode} \\
+java -XX:ParallelGCThreads=1 -Xmx{ram} -jar $TRIMMOMATIC_JAR {mode} \\
   -threads {threads} \\
   -phred{quality_offset} \\
   {inputs} \\
@@ -53,6 +53,7 @@ java -XX:ParallelGCThreads=1 -Xmx2G -jar $TRIMMOMATIC_JAR {mode} \\
   TRAILING:{trailing_min_quality} \\
   MINLEN:{min_length}""".format(
         output_dirs=" ".join(output_dirs),
+        ram=config.param('trimmomatic', 'ram'),
         mode = "PE" if input2 else "SE",
         threads=threads,
         quality_offset=quality_offset if quality_offset == 64 else "33",
