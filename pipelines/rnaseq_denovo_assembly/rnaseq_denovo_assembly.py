@@ -132,7 +132,7 @@ class RnaSeqDeNovoAssembly(common.Illumina):
             config.param('insilico_read_normalization_all', 'cpu', required=False, type='int')
         )
 
-        job.name = "insilico_read_normalization_readsets." + readset.name
+        job.name = "insilico_read_normalization_all"
         return [job]
 
     def trinity(self):
