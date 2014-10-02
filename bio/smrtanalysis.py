@@ -25,9 +25,7 @@ def blasr(
             ['smrtanalysis_blasr', 'module_smrtanalysis']
         ], 
         command = """\
-set +u && \\
-source $SEYMOUR_HOME/etc/setup.sh && \\
-set -u && \\
+set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
 memtime blasr \\
   {infile} \\
   {infile_long} \\
@@ -57,6 +55,32 @@ filterm4.py {outfile} > {outfile_filtered} 2> {outfile_filtered}.log""".format(
         outfile_filtered=outfile_filtered
     ))
 
+def fastq_to_ca(
+    libraryname,
+    reads,
+    outfile
+    ):
+
+    return  Job(
+        [reads],
+        [outfile],
+        [
+            ['smrtanalysis_blasr', 'module_memtime'],
+            ['smrtanalysis_blasr', 'module_smrtanalysis']
+        ],
+        command = """\
+set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
+memtime fastqToCA \\
+  -technology sanger \\
+  -type sanger \\
+  -libraryname {libraryname} \\
+  -reads {reads} \\
+  > {outfile}""".format(
+        libraryname=libraryname,
+        reads=reads,
+        outfile=outfile
+    ))
+
 def filtering(
     fofn,
     input_xml,
@@ -78,9 +102,7 @@ def filtering(
             ['smrtanalysis_filtering', 'module_smrtanalysis']
         ],
         command = """\
-set +u && \\
-source $SEYMOUR_HOME/etc/setup.sh && \\
-set -u && \\
+set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
 memtime fofnToSmrtpipeInput.py {fofn} > {input_xml} && \\
 cp {fofn} {output_dir}/input.fofn && \\
 memtime sed -e 's/MINSUBREADLENGTH/{min_subread_length}/g' -e 's/MINREADLENGTH/{min_read_length}/g' -e 's/MINQUAL/{min_qual}/g' \\
@@ -129,9 +151,7 @@ def m4topre(
             ['smrtanalysis_blasr', 'module_smrtanalysis']
         ], 
         command = """\
-set +u && \\
-source $SEYMOUR_HOME/etc/setup.sh && \\
-set -u && \\
+set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
 memtime m4topre.py \\
   {infile} \\
   {allm4} \\
@@ -161,9 +181,7 @@ def pbdagcon(
             ['smrtanalysis_blasr', 'module_smrtanalysis']
         ], 
         command = """\
-set +u && \\
-source $SEYMOUR_HOME/etc/setup.sh && \\
-set -u && \\
+set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
 memtime pbdagcon -a -j {threads} \\
   {infile} \\
   > {outfile} && \\
@@ -173,4 +191,77 @@ awk '{{if ($0~/>/) {{sub(/>/,"@",$0);print;}} else {{l=length($0);q=""; while (l
         infile=infile,
         outfile=outfile,
         outfile_fastq=outfile_fastq
+    ))
+
+def pbutgcns(
+    gpk_store,
+    tig_store,
+    unitigs_list,
+    prefix,
+    outdir,
+    outfile,
+    tmp_dir
+    ):
+
+    return  Job(
+        [gpk_store, tig_store],
+        [outfile],
+        [
+            ['smrtanalysis_blasr', 'module_memtime'],
+            ['smrtanalysis_blasr', 'module_smrtanalysis']
+        ],
+        command = """\
+set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
+memtime tigStore \\
+  -g {gpk_store} \\
+  -t {tig_store} 1 \\
+  -d properties -U | \\
+awk 'BEGIN{{t=0}}$1=="numFrags"{{if ($2 > 1) {{print t, $2}} t++}}' | sort -nrk2,2 \\
+  > {unitigs_list} && \\
+mkdir -p {outdir} && \\
+tmp={tmp_dir} \\
+cap={prefix} \\
+utg={unitigs_list} \\
+nprocs={threads} \\
+cns={outfile} \\
+pbutgcns_wf.sh""".format(
+        gpk_store=gpk_store,
+        tig_store=tig_store,
+        unitigs_list=unitigs_list,
+        outdir=outdir,
+        tmp_dir=tmp_dir,
+        prefix=prefix,
+        threads=config.param('smrtanalysis_pbutgcns', 'threads', type='posint'),
+        outfile=outfile
+    ))
+
+def run_ca(
+    infile,
+    ini,
+    prefix,
+    outdir
+    ):
+
+    return  Job(
+        [infile, ini],
+        [
+            os.path.join(outdir, prefix + ".ovlStore.list"),
+            os.path.join(outdir, prefix + ".tigStore"),
+            os.path.join(outdir, prefix + ".gkpStore"),
+        ],
+        [
+            ['smrtanalysis_blasr', 'module_memtime'],
+            ['smrtanalysis_blasr', 'module_smrtanalysis']
+        ],
+        command = """\
+set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
+memtime runCA \\
+  -s {ini} \\
+  -p {prefix} \\
+  -d {outdir} \\
+  {infile}""".format(
+        infile=infile,
+        ini=ini,
+        prefix=prefix,
+        outdir=outdir
     ))
