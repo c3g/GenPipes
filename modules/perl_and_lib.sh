@@ -54,6 +54,7 @@ export PERL_EXTUTILS_AUTOINSTALL="--defaultdeps"
 
 for MODULE in \
 Config::Simple \
+DBD::SQLite \
 DBI \
 File::Slurp \
 File::Which \
