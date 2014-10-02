@@ -123,8 +123,8 @@ class RnaSeq(common.Illumina):
         sample_rows = [[sample.name, os.path.join("alignment", sample.name, sample.name + ".merged.mdup.bam"), project_name] for sample in self.samples]
         input_bams = [sample_row[1] for sample_row in sample_rows]
         output_directory = os.path.join("metrics", "rnaseqRep")
-        gtf = config.param('rnaseqc', 'gtf', type='filepath')
-        gtf_no_pseudogenes = os.path.join(config.param('rnaseqc', 'tmp_dir', type='dirpath'), re.sub("\.gtf$", ".no_pseudogenes.gtf", os.path.basename(gtf)))
+        # Use GTF with transcript_id only otherwise RNASeQC fails
+        gtf_transcript_id = config.param('rnaseqc', 'gtf_transcript_id', type='filepath')
 
         job = concat_jobs([
             Job(command="mkdir -p " + output_directory),
@@ -132,10 +132,7 @@ class RnaSeq(common.Illumina):
 echo "Sample\tBamFile\tNote
 {sample_rows}" \\
   > {sample_file}""".format(sample_rows="\n".join(["\t".join(sample_row) for sample_row in sample_rows]), sample_file=sample_file)),
-            # Remove pseudogenes from GTF otherwise RNASeQC fails
-            Job(module_entries=[['rnaseqc', 'module_cufflinks']], command="gffread -E " + gtf + " -T --no-pseudo -o " + gtf_no_pseudogenes + " 2> /dev/null"),
-            metrics.rnaseqc(sample_file, output_directory, self.run_type == "SINGLE_END", gtf_file=gtf_no_pseudogenes),
-            Job(command="rm " + gtf_no_pseudogenes),
+            metrics.rnaseqc(sample_file, output_directory, self.run_type == "SINGLE_END", gtf_file=gtf_transcript_id),
             Job([], [output_directory + ".zip"], command="zip -r {output_directory}.zip {output_directory}".format(output_directory=output_directory))
         ], name="rnaseqc")
 
