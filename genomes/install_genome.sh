@@ -185,9 +185,11 @@ create_bwa_index() {
   BWA_CMD="\
 INDEX_DIR=$GENOME_DIR/bwa_index && \
 mkdir -p \$INDEX_DIR && \
-ln -s -f -t \$INDEX_DIR ../$GENOME_FASTA
+ln -s -f -t \$INDEX_DIR ../$GENOME_FASTA && \
 module load mugqic/bwa/0.7.10 && \
-bwa index \$INDEX_DIR/$GENOME_FASTA > $LOG_DIR/bwa_$TIMESTAMP.log 2>&1"
+LOG=$LOG_DIR/bwa_$TIMESTAMP.log && \
+bwa index \$INDEX_DIR/$GENOME_FASTA > \$LOG 2>&1 && \
+chmod -R ug+rwX,o+rX \$INDEX_DIR \$LOG"
   cmd_or_job BWA_CMD
 }
 
@@ -198,14 +200,18 @@ create_bowtie2_tophat_index() {
   BOWTIE2_TOPHAT_CMD="\
 INDEX_DIR=$GENOME_DIR/bowtie2_index && \
 mkdir -p \$INDEX_DIR && \
-ln -s -f -t \$INDEX_DIR ../$GENOME_FASTA
+ln -s -f -t \$INDEX_DIR ../$GENOME_FASTA && \
 module load mugqic/bowtie/2.1.0 && \
-bowtie2-build \$INDEX_DIR/$GENOME_FASTA \$INDEX_DIR/${GENOME_FASTA/.fa} > $LOG_DIR/bowtie2_$TIMESTAMP.log 2>&1 && \
+LOG=$LOG_DIR/bowtie2_$TIMESTAMP.log && \
+bowtie2-build \$INDEX_DIR/$GENOME_FASTA \$INDEX_DIR/${GENOME_FASTA/.fa} > \$LOG 2>&1 && \
+chmod -R ug+rwX,o+rX \$INDEX_DIR \$LOG && \
 INDEX_DIR=$INSTALL_DIR/annotations/gtf_tophat_index && \
 mkdir -p \$INDEX_DIR && \
-ln -s -f -t \$INDEX_DIR ../$GTF
+ln -s -f -t \$INDEX_DIR ../$GTF && \
 module load mugqic/samtools/0.1.19 mugqic/tophat/2.0.11 && \
-tophat --output-dir \$INDEX_DIR/tophat_out --GTF \$INDEX_DIR/$GTF --transcriptome-index=\$INDEX_DIR/${GTF/.gtf} $GENOME_DIR/bowtie2_index/${GENOME_FASTA/.fa} > $LOG_DIR/gtf_tophat_$TIMESTAMP.log 2>&1"
+LOG=$LOG_DIR/gtf_tophat_$TIMESTAMP.log && \
+tophat --output-dir \$INDEX_DIR/tophat_out --GTF \$INDEX_DIR/$GTF --transcriptome-index=\$INDEX_DIR/${GTF/.gtf} $GENOME_DIR/bowtie2_index/${GENOME_FASTA/.fa} > \$LOG 2>&1 && \
+chmod -R ug+rwX,o+rX \$INDEX_DIR \$LOG"
   cmd_or_job BOWTIE2_TOPHAT_CMD
 }
 
@@ -244,15 +250,15 @@ EOF
 }
 
 get_vcf_dbsnp() {
-  # Try to retrieve VCF dbSNP version (set +e since zgrep exit code != 0 if not found)
+  # Try to retrieve VCF dbSNP latest version (set +e since zgrep exit code != 0 if not found)
   set +e
-  DBSNP=`zgrep -m1 -Po "##INFO=<ID=dbSNP_\d+" $ANNOTATIONS_DIR/$VCF | cut -f3 -d=`
+  DBSNP=`zcat $ANNOTATIONS_DIR/$VCF | grep -v "^#" | cut -f8 | grep -Po "dbSNP_\d+" | sed s/dbSNP_// | sort -ug | tail -1`
   set -e
   echo Found VCF dbSNP version: $DBSNP
   if [ $DBSNP ]
   then
     # Add dbSNP version to VCF filename
-    mv $ANNOTATIONS_DIR/$VCF $ANNOTATIONS_DIR/${VCF/.vcf.gz/.$DBSNP.vcf.gz}
+    ln -s -f $VCF $ANNOTATIONS_DIR/${VCF/.vcf.gz/.dbSNP_$DBSNP.vcf.gz}
   fi
 }
 
@@ -262,6 +268,7 @@ copy_files() {
   gunzip -c `basename $GENOME_URL` > $GENOME_DIR/$GENOME_FASTA
   cd `download_dir $GTF_URL`
   gunzip -c `basename $GTF_URL` > $ANNOTATIONS_DIR/$GTF
+  grep -P "(^#|transcript_id)" $ANNOTATIONS_DIR/$GTF > $ANNOTATIONS_DIR/${GTF/.gtf/.transcript_id.gtf}
   cd `download_dir $NCRNA_URL`
   gunzip -c `basename $NCRNA_URL` > $ANNOTATIONS_DIR/$NCRNA
 
@@ -286,11 +293,13 @@ build_files() {
 
 create_genome_ini_file() {
   echo "\
-[info]
+[DEFAULT]
 scientific_name=$SPECIES
 common_name=$COMMON_NAME
 assembly=$ASSEMBLY
-assembly_synonyms=$ASSEMBLY_SYNONYMS" > $INSTALL_DIR/genome.ini
+assembly_synonyms=$ASSEMBLY_SYNONYMS
+source=$SOURCE
+release=$RELEASE" > $INSTALL_DIR/$SPECIES.$ASSEMBLY.ini
 }
 
 install_genome() {
@@ -310,5 +319,5 @@ install_genome() {
   create_genome_ini_file
 
   # Add permissions
-  chmod ug+rwX,o+rX $INSTALL_DIR
+  chmod -R ug+rwX,o+rX $INSTALL_DIR
 }
