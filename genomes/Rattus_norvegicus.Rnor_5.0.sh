@@ -7,7 +7,7 @@ COMMON_NAME="Rat"
 ASSEMBLY=Rnor_5.0
 ASSEMBLY_SYNONYMS=rn5
 SOURCE=Ensembl
-RELEASE=76
+RELEASE=77
 
 GENOME_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source $GENOME_INSTALL_SCRIPT_DIR/install_genome.sh
