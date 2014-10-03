@@ -218,12 +218,12 @@ memtime tigStore \\
   -d properties -U | \\
 awk 'BEGIN{{t=0}}$1=="numFrags"{{if ($2 > 1) {{print t, $2}} t++}}' | sort -nrk2,2 \\
   > {unitigs_list} && \\
-mkdir -p {outdir} && \\
-tmp={tmp_dir} \\
-cap={prefix} \\
-utg={unitigs_list} \\
-nprocs={threads} \\
-cns={outfile} \\
+mkdir -p {outdir} {tmp_dir} && \\
+tmp={tmp_dir} && \\
+cap={prefix} && \\
+utg={unitigs_list} && \\
+nprocs={threads} && \\
+cns={outfile} && \\
 pbutgcns_wf.sh""".format(
         gpk_store=gpk_store,
         tig_store=tig_store,
