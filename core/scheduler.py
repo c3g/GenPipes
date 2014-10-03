@@ -23,8 +23,8 @@ class Scheduler:
         raise NotImplementedError
 
     def print_header(self, pipeline):
-        print(
-"""#!/bin/bash
+        print("""\
+#!/bin/bash
 # Exit immediately on error
 set -eu -o pipefail
 
@@ -105,28 +105,31 @@ COMMAND=$(cat << '{limit_string}'
                         )
                     )
 
-                    cmd = \
-"""echo "rm -f $JOB_DONE && $COMMAND
+                    cmd = """\
+echo "rm -f $JOB_DONE && $COMMAND
 MUGQIC_STATE=\$PIPESTATUS
 echo MUGQICexitStatus:\$MUGQIC_STATE
 if [ \$MUGQIC_STATE -eq 0 ] ; then touch $JOB_DONE ; fi
 exit \$MUGQIC_STATE" | \\
 """.format(job=job)
 
+                    # Cluster settings section must match job name prefix before first "."
+                    # e.g. "[trimmomatic] cluster_cpu=..." for job name "trimmomatic.readset1"
+                    job_name_prefix = job.name.split(".")[0]
                     cmd += \
-                        config.param(step.name, 'cluster_submit_cmd') + " " + \
-                        config.param(step.name, 'cluster_other_arg') + " " + \
-                        config.param(step.name, 'cluster_work_dir_arg') + " $OUTPUT_DIR " + \
-                        config.param(step.name, 'cluster_output_dir_arg') + " $JOB_OUTPUT " + \
-                        config.param(step.name, 'cluster_job_name_arg') + " $JOB_NAME " + \
-                        config.param(step.name, 'cluster_walltime') + " " + \
-                        config.param(step.name, 'cluster_queue') + " " + \
-                        config.param(step.name, 'cluster_cpu')
+                        config.param(job_name_prefix, 'cluster_submit_cmd') + " " + \
+                        config.param(job_name_prefix, 'cluster_other_arg') + " " + \
+                        config.param(job_name_prefix, 'cluster_work_dir_arg') + " $OUTPUT_DIR " + \
+                        config.param(job_name_prefix, 'cluster_output_dir_arg') + " $JOB_OUTPUT " + \
+                        config.param(job_name_prefix, 'cluster_job_name_arg') + " $JOB_NAME " + \
+                        config.param(job_name_prefix, 'cluster_walltime') + " " + \
+                        config.param(job_name_prefix, 'cluster_queue') + " " + \
+                        config.param(job_name_prefix, 'cluster_cpu')
                     if job.dependency_jobs:
-                        cmd += " " + config.param(step.name, 'cluster_dependency_arg') + "$JOB_DEPENDENCIES"
-                    cmd += " " + config.param(step.name, 'cluster_submit_cmd_suffix')
+                        cmd += " " + config.param(job_name_prefix, 'cluster_dependency_arg') + "$JOB_DEPENDENCIES"
+                    cmd += " " + config.param(job_name_prefix, 'cluster_submit_cmd_suffix')
 
-                    if config.param(step.name, 'cluster_cmd_produces_job_id'):
+                    if config.param(job_name_prefix, 'cluster_cmd_produces_job_id'):
                         cmd = job.id + "=$(" + cmd + ")"
                     else:
                         cmd += "\n" + job.id + "=" + job.name
