@@ -129,7 +129,8 @@ class Pipeline(object):
         # Add current_job.output_files in case of "... && ..." command
         # where first command output becomes second command input
         for remaining_input_file in set(current_job.input_files).difference(dependency_input_files).difference(set(current_job.output_files)):
-            if not os.path.isfile(current_job.abspath(remaining_input_file)):
+            # Use 'exists' instead of 'isfile' since input file can be a directory
+            if not os.path.exists(current_job.abspath(remaining_input_file)):
                 missing_input_files.add(remaining_input_file)
         if missing_input_files:
             raise Exception("Error: missing input files for job " + current_job.name + ": " +

@@ -89,7 +89,8 @@ class Job:
 
         # If any .done, input or output file is missing, job is not up to date
         for file in [abspath_done] + abspath_input_files + abspath_output_files:
-            if not os.path.isfile(file):
+            # Use 'exists' instead of 'isfile' since input/output files can be directories
+            if not os.path.exists(file):
                 return False
 
         # Retrieve latest input file modification time i.e. maximum stat mtime
