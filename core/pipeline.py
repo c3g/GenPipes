@@ -147,6 +147,10 @@ class Pipeline(object):
                 if not job.name:
                     raise Exception("Error: job \"" + job.command + "\" has no name!")
 
+                log.debug("Job name: " + job.name)
+                log.debug("Job input files:\n  " + "\n  ".join(job.input_files))
+                log.debug("Job output files:\n  " + "\n  ".join(job.output_files) + "\n")
+
                 # Job .done file name contains the command checksum.
                 # Thus, if the command is modified, the job is not up-to-date anymore.
                 job.done = os.path.join("job_output", step.name, job.name + "." + hashlib.md5(job.command_with_modules).hexdigest() + ".mugqic.done")
