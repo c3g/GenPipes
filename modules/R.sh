@@ -215,7 +215,7 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
 	,"ReportingTools","reshape","reshape2","rgl","RJSONIO","R.methodsS3","roxygen2"
 	,"rpart","Rsamtools","RSQLite","rtracklayer","scales","sendmailR","shiny","ShortRead","siggenes","snow"
 	,"SNPchip","SortableHTMLTables","spam","SparseM","spatial","splines","SQN"
-	,"statmod","stats","stats4","stringr","survival","sva","tcltk","testthat"
+	,"statmod","stats","stats4","stringr","survival","sva","testthat"
 	,"tools","TxDb.Hsapiens.UCSC.hg19.knownGene","utils","Vennerable","vioplot","vsn"
 	,"WriteXLS","XML","xtable","zlibbioc")
 
