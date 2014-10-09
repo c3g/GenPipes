@@ -23,7 +23,7 @@ def blasr(
         [
             ['smrtanalysis_blasr', 'module_memtime'],
             ['smrtanalysis_blasr', 'module_smrtanalysis']
-        ], 
+        ],
         command = """\
 set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
 memtime blasr \\
@@ -55,6 +55,28 @@ filterm4.py {outfile} > {outfile_filtered} 2> {outfile_filtered}.log""".format(
         outfile_filtered=outfile_filtered
     ))
 
+def cmph5tools_sort(
+    cmph5,
+    cmph5_out
+    ):
+
+    return  Job(
+        [cmph5],
+        [cmph5_out],
+        [
+            ['smrtanalysis_cmph5tools_sort', 'module_memtime'],
+            ['smrtanalysis_cmph5tools_sort', 'module_smrtanalysis']
+        ],
+        command = """\
+set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
+memtime cmph5tools.py -vv sort --deep --inPlace \\
+  --outFile {cmph5_out} \\
+  {cmph5} \\
+  > /dev/null""".format(
+        cmph5=cmph5,
+        cmph5_out=cmph5_out
+    ))
+
 def fastq_to_ca(
     libraryname,
     reads,
@@ -65,8 +87,8 @@ def fastq_to_ca(
         [reads],
         [outfile],
         [
-            ['smrtanalysis_blasr', 'module_memtime'],
-            ['smrtanalysis_blasr', 'module_smrtanalysis']
+            ['smrtanalysis_fastq_to_ca', 'module_memtime'],
+            ['smrtanalysis_fastq_to_ca', 'module_smrtanalysis']
         ],
         command = """\
 set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
@@ -134,6 +156,29 @@ memtime prinseq-lite.pl \\
         output=output
     ))
 
+def load_pulses(
+    cmph5,
+    input_fofn
+    ):
+
+    return  Job(
+        [input_fofn, cmph5],
+        # loadPulses modifies the input cmph5 directly
+        [cmph5],
+        [
+            ['smrtanalysis_load_pulses', 'module_memtime'],
+            ['smrtanalysis_load_pulses', 'module_smrtanalysis']
+        ],
+        command = """\
+set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
+memtime loadPulses \\
+  {input_fofn} \\
+  {cmph5} \\
+  -metrics DeletionQV,IPD,InsertionQV,PulseWidth,QualityValue,MergeQV,SubstitutionQV,DeletionTag -byread""".format(
+        input_fofn=input_fofn,
+        cmph5=cmph5
+    ))
+
 def m4topre(
     infile,
     allm4,
@@ -141,15 +186,13 @@ def m4topre(
     outfile
     ):
 
-    outfile_filtered = outfile + ".filtered"
-
     return  Job(
         [infile],
         [outfile],
         [
-            ['smrtanalysis_blasr', 'module_memtime'],
-            ['smrtanalysis_blasr', 'module_smrtanalysis']
-        ], 
+            ['smrtanalysis_m4topre', 'module_memtime'],
+            ['smrtanalysis_m4topre', 'module_smrtanalysis']
+        ],
         command = """\
 set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
 memtime m4topre.py \\
@@ -165,21 +208,53 @@ memtime m4topre.py \\
         outfile=outfile
     ))
 
+def pbalign(
+    cmph5,
+    control_regions_fofn,
+    input_fofn,
+    ref_upload,
+    tmp_dir
+    ):
+
+    return  Job(
+        [input_fofn, ref_upload],
+        [cmph5],
+        [
+            ['smrtanalysis_pbalign', 'module_memtime'],
+            ['smrtanalysis_pbalign', 'module_smrtanalysis']
+        ],
+        command = """\
+set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
+memtime pbalign.py \\
+  {input_fofn} \\
+  {ref_upload} \\
+  {cmph5} \\
+   --seed=1 --minAccuracy=0.75 --minLength=50 --algorithmOptions="-useQuality" --algorithmOptions=" -minMatch 12 -bestn 10 -minPctIdentity 70.0" --hitPolicy=randombest \\
+  --tmpDir={tmp_dir} \\
+  -vv \\
+  --nproc={threads} \\
+  --regionTable={control_regions_fofn}""".format(
+        input_fofn=input_fofn,
+        ref_upload=ref_upload,
+        cmph5=cmph5,
+        tmp_dir=tmp_dir,
+        threads=config.param('smrtanalysis_pbalign', 'threads', type='posint'),
+        control_regions_fofn=control_regions_fofn
+    ))
+
 def pbdagcon(
     infile,
     outfile,
     outfile_fastq
     ):
 
-    outfile_filtered = outfile + ".filtered"
-
     return  Job(
         [infile],
         [outfile, outfile_fastq],
         [
-            ['smrtanalysis_blasr', 'module_memtime'],
-            ['smrtanalysis_blasr', 'module_smrtanalysis']
-        ], 
+            ['smrtanalysis_pbdagcon', 'module_memtime'],
+            ['smrtanalysis_pbdagcon', 'module_smrtanalysis']
+        ],
         command = """\
 set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
 memtime pbdagcon -a -j {threads} \\
@@ -207,8 +282,8 @@ def pbutgcns(
         [gpk_store, tig_store],
         [outfile],
         [
-            ['smrtanalysis_blasr', 'module_memtime'],
-            ['smrtanalysis_blasr', 'module_smrtanalysis']
+            ['smrtanalysis_pbutgcns', 'module_memtime'],
+            ['smrtanalysis_pbutgcns', 'module_smrtanalysis']
         ],
         command = """\
 set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
@@ -218,12 +293,12 @@ memtime tigStore \\
   -d properties -U | \\
 awk 'BEGIN{{t=0}}$1=="numFrags"{{if ($2 > 1) {{print t, $2}} t++}}' | sort -nrk2,2 \\
   > {unitigs_list} && \\
-mkdir -p {outdir} {tmp_dir} && \\
-tmp={tmp_dir} && \\
-cap={prefix} && \\
-utg={unitigs_list} && \\
-nprocs={threads} && \\
-cns={outfile} && \\
+mkdir -p {outdir} && \\
+tmp={tmp_dir} \\
+cap={prefix} \\
+utg={unitigs_list} \\
+nprocs={threads} \\
+cns={outfile} \\
 pbutgcns_wf.sh""".format(
         gpk_store=gpk_store,
         tig_store=tig_store,
@@ -233,6 +308,35 @@ pbutgcns_wf.sh""".format(
         prefix=prefix,
         threads=config.param('smrtanalysis_pbutgcns', 'threads', type='posint'),
         outfile=outfile
+    ))
+
+def reference_uploader(
+    prefix,
+    sample_name,
+    fasta
+    ):
+
+    return  Job(
+        [fasta],
+        [os.path.join(prefix, sample_name, "sequence", sample_name + ".fasta")],
+        [
+            ['smrtanalysis_reference_uploader', 'module_memtime'],
+            ['smrtanalysis_reference_uploader', 'module_smrtanalysis']
+        ],
+        # Preload assembled contigs as reference
+        command = """\
+set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
+memtime referenceUploader \\
+  --skipIndexUpdate \\
+  -c \\
+  -p {prefix} \\
+  -n {sample_name} \\
+  -f {fasta} \\
+  --saw="sawriter -blt 8 -welter" --jobId="Anonymous" \\
+  --samIdx="samtools faidx" --jobId="Anonymous" --verbose""".format(
+        prefix=prefix,
+        sample_name=sample_name,
+        fasta=fasta
     ))
 
 def run_ca(
@@ -247,11 +351,11 @@ def run_ca(
         [
             os.path.join(outdir, prefix + ".ovlStore.list"),
             os.path.join(outdir, prefix + ".tigStore"),
-            os.path.join(outdir, prefix + ".gkpStore"),
+            os.path.join(outdir, prefix + ".gkpStore")
         ],
         [
-            ['smrtanalysis_blasr', 'module_memtime'],
-            ['smrtanalysis_blasr', 'module_smrtanalysis']
+            ['smrtanalysis_run_ca', 'module_memtime'],
+            ['smrtanalysis_run_ca', 'module_smrtanalysis']
         ],
         command = """\
 set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
@@ -264,4 +368,116 @@ memtime runCA \\
         ini=ini,
         prefix=prefix,
         outdir=outdir
+    ))
+
+def summarize_polishing(
+    sample_name,
+    reference,
+    aligned_reads_cmph5,
+    alignment_summary,
+    coverage_bed,
+    aligned_reads_sam,
+    variants_gff,
+    variants_bed,
+    variants_vcf
+    ):
+
+    return  Job(
+        [aligned_reads_cmph5, os.path.join(os.path.dirname(reference), "data", "consensus.fasta")],
+        [variants_vcf],
+        [
+            ['smrtanalysis_run_ca', 'module_memtime'],
+            ['smrtanalysis_run_ca', 'module_smrtanalysis']
+        ],
+        command = """\
+set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
+memtime summarizeCoverage.py \\
+  --reference {reference} \\
+  --numRegions=500 \\
+  {aligned_reads_cmph5} \\
+  > {alignment_summary} && \\
+memtime gffToBed.py \\
+  --name=meanCoverage \\
+  --description="Mean coverage of genome in fixed interval regions" \\
+  coverage {alignment_summary} \\
+  > {coverage_bed} && \\
+memtime loadSequencingChemistryIntoCmpH5.py \\
+  --xml {chemistry_mapping} \\
+  --h5 {aligned_reads_cmph5} && \\
+memtime h5repack -f GZIP=1 \\
+  {aligned_reads_cmph5} \\
+  {aligned_reads_cmph5}.repacked && \\
+mv {aligned_reads_cmph5}.repacked {aligned_reads_cmph5} && \\
+memtime pbsamtools.py --bam \\
+  --outfile {aligned_reads_sam} \\
+  --refrepos {reference} \\
+  --readGroup movie {aligned_reads_cmph5} && \\
+memtime cmph5tools.py -vv sort --deep --inPlace {aligned_reads_cmph5} && \\
+memtime summarizeConsensus.py \\
+  --variantsGff {variants_gff} \\
+  {alignment_summary} \\
+  --output {alignment_summary}.tmp && \\
+mv {alignment_summary}.tmp {alignment_summary} && \\
+memtime gffToBed.py --name=variants \\
+  --description='PacBio: snps, insertions, and deletions derived from consensus calls against reference' \\
+  variants {variants_gff} \\
+  > {variants_bed} && \\
+memtime gffToVcf.py \\
+  --globalReference={sample_name} \\
+  {variants_gff} \\
+  > {variants_vcf}""".format(
+        reference=reference,
+        aligned_reads_cmph5=aligned_reads_cmph5,
+        alignment_summary=alignment_summary,
+        coverage_bed=coverage_bed,
+        chemistry_mapping=config.param('smrtanalysis_summarize_polishing', 'chemistry_mapping', type='filepath'),
+        aligned_reads_sam=aligned_reads_sam,
+        variants_gff=variants_gff,
+        variants_bed=variants_bed,
+        sample_name=sample_name,
+        variants_vcf=variants_vcf
+    ))
+
+def variant_caller(
+    cmph5,
+    ref_fasta,
+    outfile_variants,
+    outfile_fasta,
+    outfile_fastq
+    ):
+
+    outfile_fasta_uncompressed = re.sub("\.(gz|gzip)$", "", outfile_fasta)
+
+    return  Job(
+        [cmph5, ref_fasta],
+        [outfile_variants, outfile_fasta, outfile_fastq, re.sub("\.gz$", "", outfile_fasta_uncompressed)],
+        [
+            ['smrtanalysis_variant_caller', 'module_memtime'],
+            ['smrtanalysis_variant_caller', 'module_smrtanalysis']
+        ],
+        command = """\
+set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
+memtime variantCaller.py \\
+  -P {protocol} \\
+  -v \\
+  -j {threads} \\
+  --algorithm={algorithm} \\
+  {cmph5} \\
+  -r {ref_fasta} \\
+  -o {outfile_variants} \\
+  -o {outfile_fasta} \\
+  -o {outfile_fastq} \\
+  > /dev/null && \\
+gunzip -c \\
+  {outfile_fasta} \\
+  > {outfile_fasta_uncompressed}""".format(
+        protocol=config.param('smrtanalysis_variant_caller', 'protocol', type='dirpath'),
+        threads=config.param('smrtanalysis_variant_caller', 'threads', type='posint'),
+        algorithm=config.param('smrtanalysis_variant_caller', 'algorithm'),
+        cmph5=cmph5,
+        ref_fasta=ref_fasta,
+        outfile_variants=outfile_variants,
+        outfile_fasta=outfile_fasta,
+        outfile_fastq=outfile_fastq,
+        outfile_fasta_uncompressed=outfile_fasta_uncompressed
     ))

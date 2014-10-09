@@ -13,6 +13,7 @@ from core.config import *
 from core.job import *
 from bio.readset import *
 
+from bio import blast
 from bio import pacbio_tools
 from bio import smrtanalysis
 from pipelines import common
@@ -94,8 +95,8 @@ END
             log.info("estimated_coverage: " + str(estimated_coverage))
 
             for coverage_cutoff in config.param('DEFAULT', 'coverage_cutoff', type='list'):
-                suffix = coverage_cutoff + "X"
-                coverage_directory = os.path.join(sample.name, suffix)
+                cutoff_x = coverage_cutoff + "X"
+                coverage_directory = os.path.join(sample.name, cutoff_x)
 
                 log.info("COVERAGE_CUTOFF: " + coverage_cutoff + "_X_coverage")
 
@@ -108,7 +109,7 @@ END
                         coverage_cutoff,
                         os.path.join(coverage_directory, "preassemblyMinReadSize.txt")
                     )
-                ], name="pacbio_tools_get_cutoff." + sample.name + ".coverage_cutoff" + suffix))
+                ], name="pacbio_tools_get_cutoff." + sample.name + ".coverage_cutoff" + cutoff_x))
 
         return jobs
 
@@ -120,15 +121,16 @@ END
     3- m4topre (Converts .m4 blasr output in .pre format.)
     4- pbdagcon (generates corrected reads from alignments)
     """
-    def pacbio_tools_split_reads(self):
+    def preassembly(self):
         jobs = []
 
         for sample in self.samples:
             for coverage_cutoff in config.param('DEFAULT', 'coverage_cutoff', type='list'):
-                suffix = coverage_cutoff + "X"
-                coverage_directory = os.path.join(sample.name, suffix)
+                cutoff_x = coverage_cutoff + "X"
+                coverage_directory = os.path.join(sample.name, cutoff_x)
                 preassembly_directory = os.path.join(coverage_directory, "preassembly", "data")
-                job_name_suffix = sample.name + ".coverage_cutoff" + suffix
+                job_name_suffix = sample.name + ".coverage_cutoff" + cutoff_x
+
                 jobs.append(concat_jobs([
                     Job(command="mkdir -p " + preassembly_directory),
                     pacbio_tools.split_reads(
@@ -139,18 +141,6 @@ END
                     )
                 ], name="pacbio_tools_split_reads." + job_name_suffix))
 
-        return jobs
-
-    def smrtanalysis_blasr(self):
-        jobs = []
-
-        for sample in self.samples:
-            for coverage_cutoff in config.param('DEFAULT', 'coverage_cutoff', type='list'):
-                suffix = coverage_cutoff + "X"
-                coverage_directory = os.path.join(sample.name, suffix)
-                preassembly_directory = os.path.join(coverage_directory, "preassembly", "data")
-                job_name_suffix = sample.name + ".coverage_cutoff" + suffix
-
                 job = smrtanalysis.blasr(
                     os.path.join(sample.name, "filtering", "data", "filtered_subreads.fasta"),
                     os.path.join(preassembly_directory, "filtered_longreads.fa"),
@@ -160,17 +150,6 @@ END
                 job.name = "smrtanalysis_blasr." + job_name_suffix
                 jobs.append(job)
 
-        return jobs
-
-    def smrtanalysis_m4topre(self):
-        jobs = []
-
-        for sample in self.samples:
-            for coverage_cutoff in config.param('DEFAULT', 'coverage_cutoff', type='list'):
-                suffix = coverage_cutoff + "X"
-                coverage_directory = os.path.join(sample.name, suffix)
-                preassembly_directory = os.path.join(coverage_directory, "preassembly", "data")
-                job_name_suffix = sample.name + ".coverage_cutoff" + suffix
                 job = smrtanalysis.m4topre(
                     os.path.join(preassembly_directory, "seeds.m4.filtered"),
                     os.path.join(preassembly_directory, "seeds.m4.fofn"),
@@ -179,18 +158,6 @@ END
                 )
                 job.name = "smrtanalysis_m4topre." + job_name_suffix
                 jobs.append(job)
-
-        return jobs
-
-    def smrtanalysis_pbdagcon(self):
-        jobs = []
-
-        for sample in self.samples:
-            for coverage_cutoff in config.param('DEFAULT', 'coverage_cutoff', type='list'):
-                suffix = coverage_cutoff + "X"
-                coverage_directory = os.path.join(sample.name, suffix)
-                preassembly_directory = os.path.join(coverage_directory, "preassembly", "data")
-                job_name_suffix = sample.name + ".coverage_cutoff" + suffix
 
                 job = smrtanalysis.pbdagcon(
                     os.path.join(preassembly_directory, "aln.pre"),
@@ -210,19 +177,20 @@ END
     2- fastqToCA. Generates input file compatible with the Celera assembler
     3- runCA. Run the Celera assembler.
     """
-    def pacbio_tools_celera_config(self):
+    def assembly(self):
         jobs = []
 
         for sample in self.samples:
             for coverage_cutoff in config.param('DEFAULT', 'coverage_cutoff', type='list'):
-                suffix = coverage_cutoff + "X"
-                coverage_directory = os.path.join(sample.name, suffix)
+                cutoff_x = coverage_cutoff + "X"
+                coverage_directory = os.path.join(sample.name, cutoff_x)
                 preassembly_directory = os.path.join(coverage_directory, "preassembly", "data")
 
                 for mer_size in config.param('DEFAULT', 'mer_sizes', type='list'):
-                    mer_size_directory = os.path.join(coverage_directory, "merSize" + mer_size)
+                    mer_size_text = "merSize" + mer_size
+                    sample_cutoff_mer_size = "_".join([sample.name, cutoff_x, mer_size_text])
+                    mer_size_directory = os.path.join(coverage_directory, mer_size_text)
                     assembly_directory = os.path.join(mer_size_directory, "assembly")
-                    job_name_suffix = sample.name + ".coverage_cutoff" + suffix + ".mer_size" + mer_size
 
                     jobs.append(concat_jobs([
                         Job(command="mkdir -p " + assembly_directory),
@@ -231,86 +199,188 @@ END
                             config.param('DEFAULT', 'celera_settings'),
                             os.path.join(mer_size_directory, "celera_assembly.ini")
                         )
-                    ], name="pacbio_tools_celera_config." + job_name_suffix))
-
-        return jobs
-
-    def smrtanalysis_fastq_to_ca(self):
-        jobs = []
-
-        for sample in self.samples:
-            for coverage_cutoff in config.param('DEFAULT', 'coverage_cutoff', type='list'):
-                suffix = coverage_cutoff + "X"
-                coverage_directory = os.path.join(sample.name, suffix)
-                preassembly_directory = os.path.join(coverage_directory, "preassembly", "data")
-
-                for mer_size in config.param('DEFAULT', 'mer_sizes', type='list'):
-                    mer_size_directory = os.path.join(coverage_directory, "merSize" + mer_size)
-                    assembly_directory = os.path.join(mer_size_directory, "assembly")
-                    job_name_suffix = sample.name + ".coverage_cutoff" + suffix + ".mer_size" + mer_size
+                    ], name="pacbio_tools_celera_config." + sample_cutoff_mer_size))
 
                     job = smrtanalysis.fastq_to_ca(
-                        "_".join([sample.name, suffix, mer_size]),
+                        sample_cutoff_mer_size,
                         os.path.join(preassembly_directory, "corrected.fastq"),
                         os.path.join(preassembly_directory, "corrected.frg")
                     )
-                    job.name = "smrtanalysis_fastq_to_ca." + job_name_suffix
+                    job.name = "smrtanalysis_fastq_to_ca." + sample_cutoff_mer_size
                     jobs.append(job)
-
-        return jobs
-
-    def smrtanalysis_run_ca(self):
-        jobs = []
-
-        for sample in self.samples:
-            for coverage_cutoff in config.param('DEFAULT', 'coverage_cutoff', type='list'):
-                suffix = coverage_cutoff + "X"
-                coverage_directory = os.path.join(sample.name, suffix)
-                preassembly_directory = os.path.join(coverage_directory, "preassembly", "data")
-
-                for mer_size in config.param('DEFAULT', 'mer_sizes', type='list'):
-                    mer_size_directory = os.path.join(coverage_directory, "merSize" + mer_size)
-                    assembly_directory = os.path.join(mer_size_directory, "assembly")
-                    job_name_suffix = sample.name + ".coverage_cutoff" + suffix + ".mer_size" + mer_size
 
                     jobs.append(concat_jobs([
                         Job(command="rm -rf " + assembly_directory),
                         smrtanalysis.run_ca(
                             os.path.join(preassembly_directory, "corrected.frg"),
                             os.path.join(mer_size_directory, "celera_assembly.ini"),
-                            "_".join([sample.name, suffix, mer_size]),
+                            sample_cutoff_mer_size,
                             assembly_directory
                         )
-                    ], name="smrtanalysis_run_ca." + job_name_suffix))
+                    ], name="smrtanalysis_run_ca." + sample_cutoff_mer_size))
+
+                    job = smrtanalysis.pbutgcns(
+                        os.path.join(assembly_directory, sample_cutoff_mer_size + ".gkpStore"),
+                        os.path.join(assembly_directory, sample_cutoff_mer_size + ".tigStore"),
+                        os.path.join(mer_size_directory, "unitigs.lst"),
+                        os.path.join(assembly_directory, sample_cutoff_mer_size),
+                        os.path.join(assembly_directory, "9-terminator"),
+                        os.path.join(assembly_directory, "9-terminator", sample_cutoff_mer_size + ".ctg.fasta"),
+                        os.path.join(config.param('smrtanalysis_pbutgcns', 'tmp_dir', type='dirpath'), sample_cutoff_mer_size)
+                    )
+                    job.name = "smrtanalysis_pbutgcns." + sample_cutoff_mer_size
+                    jobs.append(job)
 
         return jobs
 
-    def smrtanalysis_pbutgcns(self):
+    """
+    Align raw reads on the Celera assembly with BLASR. Load pulse information from bax files into aligned file. Sort that file and run quiver (variantCaller.py).
+    
+    1- Generate fofn
+    2- Upload Celera assembly with smrtpipe refUploader
+    3- Compare sequences
+    4- Load pulses
+    5- Sort .cmp.h5 file
+    6- variantCaller.py
+    """
+    def polishing(self):
         jobs = []
 
         for sample in self.samples:
             for coverage_cutoff in config.param('DEFAULT', 'coverage_cutoff', type='list'):
-                suffix = coverage_cutoff + "X"
-                coverage_directory = os.path.join(sample.name, suffix)
+                cutoff_x = coverage_cutoff + "X"
+                coverage_directory = os.path.join(sample.name, cutoff_x)
                 preassembly_directory = os.path.join(coverage_directory, "preassembly", "data")
 
                 for mer_size in config.param('DEFAULT', 'mer_sizes', type='list'):
-                    mer_size_directory = os.path.join(coverage_directory, "merSize" + mer_size)
+                    mer_size_text = "merSize" + mer_size
+                    mer_size_directory = os.path.join(coverage_directory, mer_size_text)
                     assembly_directory = os.path.join(mer_size_directory, "assembly")
-                    job_name_suffix = sample.name + ".coverage_cutoff" + suffix + ".mer_size" + mer_size
 
-                    job = smrtanalysis.pbutgcns(
-                        os.path.join(assembly_directory, "_".join([sample.name, suffix, mer_size]) + ".gkpStore"),
-                        os.path.join(assembly_directory, "_".join([sample.name, suffix, mer_size]) + ".tigStore"),
-                        os.path.join(mer_size_directory, "unitigs.lst"),
-                        os.path.join(assembly_directory, "_".join([sample.name, suffix, mer_size])),
-                        os.path.join(assembly_directory, "9-terminator"),
-                        os.path.join(assembly_directory, "9-terminator", "_".join([sample.name, suffix, mer_size]) + ".ctg.fasta"),
-                        config.param('smrtanalysis_pbutgcns', 'tmp_dir', type='dirpath')
+                    polishing_rounds = config.param('DEFAULT', 'polishing_rounds', type='posint')
+                    if polishing_rounds > 4:
+                        raise Exception("Error: polishing_rounds \"" + str(polishing_rounds) + "\" is invalid (should be between 1 and 4)!")
+
+                    for polishing_round in range(1, polishing_rounds + 1):
+                        polishing_round_directory = os.path.join(mer_size_directory, "polishing" + str(polishing_round))
+                        sample_cutoff_mer_size_polishing_round = "_".join([sample.name, cutoff_x, mer_size_text, "polishingRound" + str(polishing_round)])
+
+                        if polishing_round == 1:
+                            fasta_file = os.path.join(assembly_directory, "9-terminator", "_".join([sample.name, cutoff_x, mer_size_text]) + ".ctg.fasta")
+                        else:
+                            fasta_file = os.path.join(mer_size_directory, "polishing" + str(polishing_round - 1), "data", "consensus.fasta")
+
+                        jobs.append(concat_jobs([
+                            Job(command="mkdir -p " + os.path.join(polishing_round_directory, "data")),
+                            smrtanalysis.reference_uploader(
+                                polishing_round_directory,
+                                sample_cutoff_mer_size_polishing_round,
+                                fasta_file
+                            )
+                        ], name="smrtanalysis_reference_uploader." + sample_cutoff_mer_size_polishing_round))
+
+                        job = smrtanalysis.pbalign(
+                            os.path.join(polishing_round_directory, "data", "aligned_reads.cmp.h5"),
+                            os.path.join(sample.name, "filtering", "data", "filtered_regions.fofn"),
+                            os.path.join(sample.name, "filtering", "input.fofn"),
+                            os.path.join(polishing_round_directory, sample_cutoff_mer_size_polishing_round, "sequence", sample_cutoff_mer_size_polishing_round + ".fasta"),
+                            os.path.join(config.param('smrtanalysis_pbalign', 'tmp_dir', type='dirpath'), sample_cutoff_mer_size_polishing_round)
+                        )
+                        job.name = "smrtanalysis_pbalign." + sample_cutoff_mer_size_polishing_round
+                        jobs.append(job)
+
+                        job = smrtanalysis.load_pulses(
+                            os.path.join(polishing_round_directory, "data", "aligned_reads.cmp.h5"),
+                            os.path.join(sample.name, "filtering", "input.fofn")
+                        )
+                        job.name = "smrtanalysis_load_pulses." + sample_cutoff_mer_size_polishing_round
+                        jobs.append(job)
+
+                        job = smrtanalysis.cmph5tools_sort(
+                            os.path.join(polishing_round_directory, "data", "aligned_reads.cmp.h5"),
+                            os.path.join(polishing_round_directory, "data", "aligned_reads.cmp.h5.sorted")
+                        )
+                        job.name = "smrtanalysis_cmph5tools_sort." + sample_cutoff_mer_size_polishing_round
+                        jobs.append(job)
+
+                        job = smrtanalysis.variant_caller(
+                            os.path.join(polishing_round_directory, "data", "aligned_reads.cmp.h5.sorted"),
+                            os.path.join(polishing_round_directory, sample_cutoff_mer_size_polishing_round, "sequence", sample_cutoff_mer_size_polishing_round + ".fasta"),
+                            os.path.join(polishing_round_directory, "data", "variants.gff"),
+                            os.path.join(polishing_round_directory, "data", "consensus.fasta.gz"),
+                            os.path.join(polishing_round_directory, "data", "consensus.fastq.gz")
+                        )
+                        job.name = "smrtanalysis_variant_caller." + sample_cutoff_mer_size_polishing_round
+                        jobs.append(job)
+
+                        job = smrtanalysis.summarize_polishing(
+                            "_".join([sample.name, cutoff_x, mer_size_text]),
+                            os.path.join(polishing_round_directory, sample_cutoff_mer_size_polishing_round),
+                            os.path.join(polishing_round_directory, "data", "aligned_reads.cmp.h5.sorted"),
+                            os.path.join(polishing_round_directory, "data", "alignment_summary.gff"),
+                            os.path.join(polishing_round_directory, "data", "coverage.bed"),
+                            os.path.join(polishing_round_directory, "data", "aligned_reads.sam"),
+                            os.path.join(polishing_round_directory, "data", "variants.gff"),
+                            os.path.join(polishing_round_directory, "data", "variants.bed"),
+                            os.path.join(polishing_round_directory, "data", "variants.vcf")
+                        )
+                        job.name = "smrtanalysis_summarize_polishing." + sample_cutoff_mer_size_polishing_round
+                        jobs.append(job)
+
+        return jobs
+
+    """
+    Blast polished assembly against nr using dc-megablast.
+    """
+    def blast(self):
+        jobs = []
+
+        for sample in self.samples:
+            for coverage_cutoff in config.param('DEFAULT', 'coverage_cutoff', type='list'):
+                cutoff_x = coverage_cutoff + "X"
+                coverage_directory = os.path.join(sample.name, cutoff_x)
+                preassembly_directory = os.path.join(coverage_directory, "preassembly", "data")
+
+                for mer_size in config.param('DEFAULT', 'mer_sizes', type='list'):
+                    mer_size_text = "merSize" + mer_size
+                    mer_size_directory = os.path.join(coverage_directory, mer_size_text)
+                    blast_directory = os.path.join(mer_size_directory, "blast")
+
+                    polishing_rounds = config.param('DEFAULT', 'polishing_rounds', type='posint')
+                    if polishing_rounds > 4:
+                        raise Exception("Error: polishing_rounds \"" + str(polishing_rounds) + "\" is invalid (should be between 1 and 4)!")
+
+                    polishing_round_directory = os.path.join(mer_size_directory, "polishing" + str(polishing_rounds))
+                    sample_cutoff_mer_size = "_".join([sample.name, cutoff_x, mer_size_text])
+                    blast_report = os.path.join(blast_directory, "blast_report.csv")
+
+                    # Blast contigs against nt
+                    jobs.append(concat_jobs([
+                        Job(command="mkdir -p " + blast_directory),
+                        blast.dcmegablast(
+                            os.path.join(polishing_round_directory, "data", "consensus.fasta"),
+                            "7",
+                            blast_report,
+                            os.path.join(polishing_round_directory, "data", "coverage.bed"),
+                            blast_directory
+                        )
+                    ], name="blast_dcmegablast." + sample_cutoff_mer_size))
+
+                    job = blast.blastdbcmd(
+                        blast_report,
+                        "$(grep -v '^#' < " + blast_report + " | head -n 1 | awk -F '\\t' '{print $2}' | sed 's/gi|\([0-9]*\)|.*/\\1/' | tr '\\n' '  ')",
+                        os.path.join(blast_directory, "nt_reference.fasta"),
                     )
-                    job.name = "smrtanalysis_pbutgcns." + job_name_suffix
+                    job.name = "blast_blastdbcmd." + sample_cutoff_mer_size
                     jobs.append(job)
 
+        return jobs
+
+    """
+    Using MUMmer, align polished assembly against best hit from blast job. Also align polished assembly against itself to detect structure variation such as repeats, etc.
+    """
+    def mummer(self):
+        jobs = []
 
         return jobs
 
@@ -319,14 +389,11 @@ END
         return [
             self.smrtanalysis_filtering,
             self.pacbio_tools_get_cutoff,
-            self.pacbio_tools_split_reads,
-            self.smrtanalysis_blasr,
-            self.smrtanalysis_m4topre,
-            self.smrtanalysis_pbdagcon,
-            self.pacbio_tools_celera_config,
-            self.smrtanalysis_fastq_to_ca,
-            self.smrtanalysis_run_ca,
-            self.smrtanalysis_pbutgcns
+            self.preassembly,
+            self.assembly,
+            self.polishing,
+            self.blast,
+            self.mummer
         ]
 
 if __name__ == '__main__':
