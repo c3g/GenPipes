@@ -17,11 +17,11 @@ def blastdbcmd(
         [entry_file],
         [outfile],
         [
-            ['blast_dcmegablast', 'module_memtime'],
-            ['blast_dcmegablast', 'module_blast']
+            ['blast_blastdbcmd', 'module_memtime'],
+            ['blast_blastdbcmd', 'module_blast']
         ],
         command = """\
-memtime blastn -task dc-megablast \\
+memtime blastdbcmd \\
   -db {blast_db} \\
   -entry {entry_cmd} \\
   -outfmt %f \\

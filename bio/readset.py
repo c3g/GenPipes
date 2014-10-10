@@ -215,7 +215,10 @@ class PacBioReadset(Readset):
 
     @property
     def estimated_genome_size(self):
-        return self._estimated_genome_size
+        if self._estimated_genome_size:
+            return self._estimated_genome_size
+        else:
+            raise Exception("Error: readset \"" + self.name + "\" estimated_genome_size is not defined!")
 
     @property
     def bas_files(self):

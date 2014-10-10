@@ -113,11 +113,12 @@ def filtering(
 
     ref_params_xml=config.param('smrtanalysis_filtering', 'filtering_settings')
     output_prefix = os.path.join(output_dir, "data", "filtered_subreads.")
-    output = output_prefix + "fastq"
+    input_fofn = os.path.join(output_dir, "input.fofn")
+    output_fastq = output_prefix + "fastq"
 
     return Job(
         [fofn, ref_params_xml],
-        [output, output_prefix + "fasta"],
+        [input_fofn, output_fastq, output_prefix + "fasta"],
         [
             ['smrtanalysis_filtering', 'module_memtime'],
             ['smrtanalysis_filtering', 'module_prinseq'],
@@ -126,7 +127,7 @@ def filtering(
         command = """\
 set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
 memtime fofnToSmrtpipeInput.py {fofn} > {input_xml} && \\
-cp {fofn} {output_dir}/input.fofn && \\
+cp {fofn} {input_fofn} && \\
 memtime sed -e 's/MINSUBREADLENGTH/{min_subread_length}/g' -e 's/MINREADLENGTH/{min_read_length}/g' -e 's/MINQUAL/{min_qual}/g' \\
   < {ref_params_xml} > {params_xml} && \\
 memtime smrtpipe.py \\
@@ -139,10 +140,11 @@ memtime smrtpipe.py \\
   > {log} && \\
 memtime prinseq-lite.pl \\
   -verbose \\
-  -fastq {output} \\
+  -fastq {output_fastq} \\
   -out_format 1 \\
   -out_good {output_dir}/data/filtered_subreads""".format(
         fofn=fofn,
+        input_fofn=input_fofn,
         input_xml=input_xml,
         min_subread_length=config.param('smrtanalysis_filtering', 'min_subread_length'),
         min_read_length=config.param('smrtanalysis_filtering', 'min_read_length'),
@@ -153,7 +155,7 @@ memtime prinseq-lite.pl \\
         tmp_dir=config.param('smrtanalysis_filtering', 'tmp_dir', type='dirpath'),
         output_dir=output_dir,
         log=log,
-        output=output
+        output_fastq=output_fastq
     ))
 
 def load_pulses(

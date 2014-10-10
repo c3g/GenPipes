@@ -8,6 +8,7 @@ __all__ = [
     "htseq",
     "igvtools",
     "metrics",
+    "mummer",
     "pacbio_tools",
     "picard",
     "ray",

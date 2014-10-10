@@ -14,6 +14,7 @@ from core.job import *
 from bio.readset import *
 
 from bio import blast
+from bio import mummer
 from bio import pacbio_tools
 from bio import smrtanalysis
 from pipelines import common
@@ -41,17 +42,24 @@ class PacBioAssembly(common.MUGQICPipeline):
 
         for sample in self.samples:
             fofn = os.path.join("fofns", sample.name + ".fofn")
-            bax_files = [bax_file for readset in sample.readsets for bax_file in readset.bax_files]
+            input_files = []
+            for readset in sample.readsets:
+                if readset.bax_files:
+                    # New PacBio format is BAX
+                    input_files.extend(readset.bax_files)
+                else:
+                    # But old PacBio format BAS should still be supported
+                    input_files.extend(readset.bas_files)
             filtering_directory = os.path.join(sample.name, "filtering")
 
             jobs.append(concat_jobs([
                 Job([], [config.param('smrtanalysis_filtering', 'celera_settings'), config.param('smrtanalysis_filtering', 'filtering_settings')], command="cp -a -f " + os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "protocols") + " ."),
                 Job(command="mkdir -p fofns"),
-                Job(bax_files, [fofn], command="""\
+                Job(input_files, [fofn], command="""\
 `cat > {fofn} << END
-{bax_files}
+{input_files}
 END
-`""".format(bax_files="\n".join(bax_files), fofn=fofn)),
+`""".format(input_files="\n".join(input_files), fofn=fofn)),
                 Job(command="mkdir -p " + filtering_directory),
                 smrtanalysis.filtering(
                     fofn,
@@ -366,6 +374,7 @@ END
                         )
                     ], name="blast_dcmegablast." + sample_cutoff_mer_size))
 
+                    # Get fasta file of best hit.
                     job = blast.blastdbcmd(
                         blast_report,
                         "$(grep -v '^#' < " + blast_report + " | head -n 1 | awk -F '\\t' '{print $2}' | sed 's/gi|\([0-9]*\)|.*/\\1/' | tr '\\n' '  ')",
@@ -381,6 +390,53 @@ END
     """
     def mummer(self):
         jobs = []
+
+        for sample in self.samples:
+            for coverage_cutoff in config.param('DEFAULT', 'coverage_cutoff', type='list'):
+                cutoff_x = coverage_cutoff + "X"
+                coverage_directory = os.path.join(sample.name, cutoff_x)
+                preassembly_directory = os.path.join(coverage_directory, "preassembly", "data")
+
+                for mer_size in config.param('DEFAULT', 'mer_sizes', type='list'):
+                    mer_size_text = "merSize" + mer_size
+                    mer_size_directory = os.path.join(coverage_directory, mer_size_text)
+                    fasta_reference = os.path.join(mer_size_directory, "blast", "nt_reference.fasta")
+                    mummer_directory = os.path.join(mer_size_directory, "mummer")
+                    mummer_file_prefix = os.path.join(mummer_directory, sample.name + ".")
+
+                    polishing_rounds = config.param('DEFAULT', 'polishing_rounds', type='posint')
+                    if polishing_rounds > 4:
+                        raise Exception("Error: polishing_rounds \"" + str(polishing_rounds) + "\" is invalid (should be between 1 and 4)!")
+
+                    fasta_consensus = os.path.join(mer_size_directory, "polishing" + str(polishing_rounds), "data", "consensus.fasta")
+                    sample_cutoff_mer_size_nucmer = "_".join([sample.name, cutoff_x, mer_size_text]) + "-nucmer"
+
+                    # Run nucmer
+                    jobs.append(concat_jobs([
+                        Job(command="mkdir -p " + mummer_directory),
+                        mummer.reference(
+                            mummer_file_prefix + "nucmer",
+                            fasta_reference,
+                            fasta_consensus,
+                            sample_cutoff_mer_size_nucmer,
+                            mummer_file_prefix + "nucmer.delta",
+                            mummer_file_prefix + "nucmer.delta",
+                            mummer_file_prefix + "dnadiff",
+                            mummer_file_prefix + "dnadiff.delta",
+                            mummer_file_prefix + "dnadiff.delta.snpflank"
+                        )
+                    ], name="mummer_reference." + sample_cutoff_mer_size_nucmer))
+
+                    jobs.append(concat_jobs([
+                        Job(command="mkdir -p " + mummer_directory),
+                        mummer.self(
+                            mummer_file_prefix + "nucmer.self",
+                            fasta_consensus,
+                            sample_cutoff_mer_size_nucmer + "-self",
+                            mummer_file_prefix + "nucmer.self.delta",
+                            mummer_file_prefix + "nucmer.self.delta"
+                        )
+                    ], name="mummer_self." + sample_cutoff_mer_size_nucmer))
 
         return jobs
 

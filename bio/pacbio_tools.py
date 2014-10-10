@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 # Python Standard Modules
-import os
 
 # MUGQIC Modules
 from core.config import *
