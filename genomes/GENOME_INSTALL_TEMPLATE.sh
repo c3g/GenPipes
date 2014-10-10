@@ -14,13 +14,13 @@ SPECIES=Species_scientific_name  ## TO BE MODIFIED WITH e.g. Homo_sapiens, Danio
 COMMON_NAME="Common name1,Common name2,Common name3"  ## TO BE MODIFIED WITH COMMA-SEPARATED LIST OF COMMON NAMES e.g. "Human", "Zebrafish", "Fruit fly", etc. (WITH "" IF SPACES)
 ASSEMBLY=Source_assembly_version0.0  ## TO BE MODIFIED WITH e.g. GRCh37, Zv9, BDGP5, etc.
 ASSEMBLY_SYNONYMS=  ## TO BE MODIFIED WITH COMMA-SEPARATED LIST OF UCSC OR OTHER ASSEMBLY SYNONYMS e.g. hg19, danRer7, dm3, etc. OR LEFT BLANK (DO NOT DELETE THIS LINE THOUGH)
-SOURCE=(Ensembl|Ensembl_Genomes)  ## TO BE MODIFIED WITH SPECIFIC SOURCE
-RELEASE=00  ## TO BE MODIFIED WITH Ensembl(_Genomes) RELEASE
+SOURCE=(Ensembl|EnsemblGenomes)  ## TO BE MODIFIED WITH SPECIFIC SOURCE
+VERSION=00  ## TO BE MODIFIED WITH SOURCE VERSION
 
 GENOME_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source $GENOME_INSTALL_SCRIPT_DIR/install_genome.sh
 
-install_genome "$SPECIES" "$COMMON_NAME" "$ASSEMBLY" "$ASSEMBLY_SYNONYMS" "$SOURCE" "$RELEASE"
+install_genome "$SPECIES" "$COMMON_NAME" "$ASSEMBLY" "$ASSEMBLY_SYNONYMS" "$SOURCE" "$VERSION"
 
 ################################################################################
 # Write below all commands to install additional data files specific to this genome assembly

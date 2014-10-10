@@ -7,12 +7,12 @@ COMMON_NAME="Mouse"
 ASSEMBLY=NCBIM37
 ASSEMBLY_SYNONYMS=mm9
 SOURCE=Ensembl
-RELEASE=67
+VERSION=67
 
 GENOME_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source $GENOME_INSTALL_SCRIPT_DIR/install_genome.sh
 
-install_genome "$SPECIES" "$COMMON_NAME" "$ASSEMBLY" "$ASSEMBLY_SYNONYMS" "$SOURCE" "$RELEASE"
+install_genome "$SPECIES" "$COMMON_NAME" "$ASSEMBLY" "$ASSEMBLY_SYNONYMS" "$SOURCE" "$VERSION"
 
 ################################################################################
 # Write below all commands to install additional data files specific to this genome assembly

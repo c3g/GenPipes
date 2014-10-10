@@ -7,10 +7,20 @@ COMMON_NAME="Human"
 ASSEMBLY=GRCh38
 ASSEMBLY_SYNONYMS=hg38
 SOURCE=Ensembl
-RELEASE=77
+VERSION=77
 
 GENOME_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source $GENOME_INSTALL_SCRIPT_DIR/install_genome.sh
+
+# Download dbSNP directly from NCBI since it is more up to date
+get_vcf_dbsnp() {
+  DBSNP_URL=ftp://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606_b141_GRCh38/VCF/00-All.vcf.gz
+  DBSNP_VERSION=141
+  download_url $DBSNP_URL
+  download_url $DBSNP_URL.tbi
+  cp `basename $DBSNP_URL` $ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP$DBSNP_VERSION.vcf.gz
+  cp `basename $DBSNP_URL.tbi` $ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP$DBSNP_VERSION.vcf.gz.tbi
+}
 
 # Overwrite install_genome since NCBI genome is used instead of Ensembl
 install_genome() {
@@ -20,7 +30,7 @@ install_genome() {
   ASSEMBLY="$3"
   ASSEMBLY_SYNONYMS="$4"
   SOURCE="$5"
-  RELEASE="$6"
+  VERSION="$6"
 
   init_install
   set_urls
@@ -45,7 +55,7 @@ install_genome() {
   chmod ug+rwX,o+rX $INSTALL_DIR
 }
 
-install_genome "$SPECIES" "$COMMON_NAME" "$ASSEMBLY" "$ASSEMBLY_SYNONYMS" "$SOURCE" "$RELEASE"
+install_genome "$SPECIES" "$COMMON_NAME" "$ASSEMBLY" "$ASSEMBLY_SYNONYMS" "$SOURCE" "$VERSION"
 
 ################################################################################
 # Write below all commands to install additional data files specific to this genome assembly

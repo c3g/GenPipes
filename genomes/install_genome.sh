@@ -15,9 +15,9 @@ init_install() {
   GENOME_DIR=$INSTALL_DIR/genome
   GENOME_FASTA=$SPECIES.$ASSEMBLY.fa
   ANNOTATIONS_DIR=$INSTALL_DIR/annotations
-  GTF=$SPECIES.$ASSEMBLY.$RELEASE.gtf
-  NCRNA=$SPECIES.$ASSEMBLY.$RELEASE.ncrna.fa
-  VCF=$SPECIES.$ASSEMBLY.$RELEASE.vcf.gz
+  GTF=$SPECIES.$ASSEMBLY.$SOURCE$VERSION.gtf
+  NCRNA=$SPECIES.$ASSEMBLY.$SOURCE$VERSION.ncrna.fa
+  VCF=$SPECIES.$ASSEMBLY.$SOURCE$VERSION.vcf.gz
 
   echo Installing genome for:
   echo species: $SPECIES
@@ -50,7 +50,7 @@ download_url() {
   DOWNLOAD_DIR=`download_dir $URL`
   mkdir -p $DOWNLOAD_DIR
   cd $DOWNLOAD_DIR
-  wget $URL
+  wget -nc $URL
 }
 
 set_urls() {
@@ -59,17 +59,17 @@ set_urls() {
   #
   if [[ $SOURCE == "Ensembl" ]]
   then
-    URL_PREFIX=ftp://ftp.ensembl.org/pub/release-$RELEASE
+    URL_PREFIX=ftp://ftp.ensembl.org/pub/release-$VERSION
     GENOME_URL=$URL_PREFIX/fasta/${SPECIES,,}/dna/$SPECIES.$ASSEMBLY.dna.primary_assembly.fa.gz
     NCRNA_URL=$URL_PREFIX/fasta/${SPECIES,,}/ncrna/$SPECIES.$ASSEMBLY.ncrna.fa.gz
-    GTF_URL=$URL_PREFIX/gtf/${SPECIES,,}/$SPECIES.$ASSEMBLY.$RELEASE.gtf.gz
+    GTF_URL=$URL_PREFIX/gtf/${SPECIES,,}/$SPECIES.$ASSEMBLY.$VERSION.gtf.gz
     VCF_URL=$URL_PREFIX/variation/vcf/${SPECIES,,}/$SPECIES.vcf.gz
   
     # Before Ensembl release 76, release number was added in genome and ncrna file names
-    if [ $RELEASE -lt 76 ]
+    if [ $VERSION -lt 76 ]
     then
-      GENOME_URL=${GENOME_URL/$SPECIES.$ASSEMBLY/$SPECIES.$ASSEMBLY.$RELEASE}
-      NCRNA_URL=${NCRNA_URL/$SPECIES.$ASSEMBLY/$SPECIES.$ASSEMBLY.$RELEASE}
+      GENOME_URL=${GENOME_URL/$SPECIES.$ASSEMBLY/$SPECIES.$ASSEMBLY.$VERSION}
+      NCRNA_URL=${NCRNA_URL/$SPECIES.$ASSEMBLY/$SPECIES.$ASSEMBLY.$VERSION}
     fi
   
     # Check if a genome primary assembly is available for this species, otherwise use the toplevel assembly
@@ -97,9 +97,9 @@ set_urls() {
   #
   # Ensembl Genomes (non-vertebrate species)
   #
-  elif [[ $SOURCE == "Ensembl_Genomes" ]]
+  elif [[ $SOURCE == "EnsemblGenomes" ]]
   then
-    RELEASE_URL=ftp://ftp.ensemblgenomes.org/pub/release-$RELEASE
+    RELEASE_URL=ftp://ftp.ensemblgenomes.org/pub/release-$VERSION
   
     # Retrieve Ensembl Genomes species information
     download_url $RELEASE_URL/species.txt
@@ -111,14 +111,14 @@ set_urls() {
   
     # Escherichia coli bacteria file paths are different
     # Retrieve which bacteria collection it belongs to and adjust paths accordingly
-    CORE_DB_PREFIX=`echo "$SPECIES_LINE" | cut -f13 | perl -pe "s/_core_${RELEASE}_\d+_\d+//"`
+    CORE_DB_PREFIX=`echo "$SPECIES_LINE" | cut -f13 | perl -pe "s/_core_${VERSION}_\d+_\d+//"`
     if [[ $CORE_DB_PREFIX != ${SPECIES,,} ]]
     then
       EG_SPECIES=$CORE_DB_PREFIX/${SPECIES,,}
-      EG_BASENAME=$SPECIES.`echo "$SPECIES_LINE" | cut -f6`.$RELEASE
+      EG_BASENAME=$SPECIES.`echo "$SPECIES_LINE" | cut -f6`.$VERSION
     else
       EG_SPECIES=${SPECIES,,}
-      EG_BASENAME=$SPECIES.$ASSEMBLY.$RELEASE
+      EG_BASENAME=$SPECIES.$ASSEMBLY.$VERSION
     fi
   
     URL_PREFIX=$RELEASE_URL/${DIVISION,}
@@ -233,7 +233,7 @@ create_gene_annotations() {
   R --no-restore --no-save<<EOF
 suppressPackageStartupMessages(library(gqSeqUtils))
 gtf.fn     = "$GTF"
-annotation = "$SPECIES.$ASSEMBLY.$RELEASE"
+annotation = "$SPECIES.$ASSEMBLY.$SOURCE$VERSION"
 
 genes = extractGeneAnnotationFromGtf(gtf.fn, feature.types = c("exon", "CDS"))
 # NOTE: feature.types passed down to gqSeqUtils::calculateGeneLengthsFromGtf
@@ -252,13 +252,13 @@ EOF
 get_vcf_dbsnp() {
   # Try to retrieve VCF dbSNP latest version (set +e since zgrep exit code != 0 if not found)
   set +e
-  DBSNP=`zcat $ANNOTATIONS_DIR/$VCF | grep -v "^#" | cut -f8 | grep -Po "dbSNP_\d+" | sed s/dbSNP_// | sort -ug | tail -1`
+  DBSNP_VERSION=`zcat $ANNOTATIONS_DIR/$VCF | grep -v "^#" | cut -f8 | grep -Po "dbSNP_\d+" | sed s/dbSNP_// | sort -ug | tail -1`
   set -e
-  echo Found VCF dbSNP version: $DBSNP
-  if [ $DBSNP ]
+  echo Found VCF dbSNP version: $DBSNP_VERSION
+  if [ $DBSNP_VERSION ]
   then
     # Add dbSNP version to VCF filename
-    ln -s -f $VCF $ANNOTATIONS_DIR/${VCF/.vcf.gz/.dbSNP_$DBSNP.vcf.gz}
+    ln -s -f $VCF $ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP$DBSNP_VERSION.vcf.gz
   fi
 }
 
@@ -299,7 +299,7 @@ common_name=$COMMON_NAME
 assembly=$ASSEMBLY
 assembly_synonyms=$ASSEMBLY_SYNONYMS
 source=$SOURCE
-release=$RELEASE" > $INSTALL_DIR/$SPECIES.$ASSEMBLY.ini
+version=$VERSION" > $INSTALL_DIR/$SPECIES.$ASSEMBLY.ini
 }
 
 install_genome() {
@@ -309,7 +309,7 @@ install_genome() {
   ASSEMBLY="$3"
   ASSEMBLY_SYNONYMS="$4"
   SOURCE="$5"
-  RELEASE="$6"
+  VERSION="$6"
 
   init_install
   set_urls
