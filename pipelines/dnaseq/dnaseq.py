@@ -66,9 +66,9 @@ class DnaSeq(common.Illumina):
                         read_group="'@RG" + \
                             "\tID:" + readset.name + \
                             "\tSM:" + readset.sample.name + \
-                            "\tLB:" + readset.library + \
-                            "\tPU:run" + readset.run + "_" + readset.lane + \
-                            "\tCN:" + config.param('bwa_mem', 'sequencing_center') + \
+                            ("\tLB:" + readset.library if readset.library else "") + \
+                            ("\tPU:run" + readset.run + "_" + readset.lane if readset.run and readset.lane else "") + \
+                            ("\tCN:" + config.param('bwa_mem', 'sequencing_center') if config.param('bwa_mem', 'sequencing_center', required=False) else "") + \
                             "\tPL:Illumina" + \
                             "'"
                     ),
