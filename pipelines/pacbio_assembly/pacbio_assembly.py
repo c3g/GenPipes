@@ -271,7 +271,9 @@ END
 
                     for polishing_round in range(1, polishing_rounds + 1):
                         polishing_round_directory = os.path.join(mer_size_directory, "polishing" + str(polishing_round))
-                        sample_cutoff_mer_size_polishing_round = "_".join([sample.name, cutoff_x, mer_size_text, "polishingRound" + str(polishing_round)])
+                        # smrtanalysis.reference_uploader transforms "-" into "_" in fasta filename
+                        sample_cutoff_mer_size_polishing_round = "_".join([sample.name.replace("-", "_"), cutoff_x, mer_size_text, "polishingRound" + str(polishing_round)])
+                        job_name_suffix = "_".join([sample.name, cutoff_x, mer_size_text, "polishingRound" + str(polishing_round)])
 
                         if polishing_round == 1:
                             fasta_file = os.path.join(assembly_directory, "9-terminator", "_".join([sample.name, cutoff_x, mer_size_text]) + ".ctg.fasta")
@@ -285,7 +287,7 @@ END
                                 sample_cutoff_mer_size_polishing_round,
                                 fasta_file
                             )
-                        ], name="smrtanalysis_reference_uploader." + sample_cutoff_mer_size_polishing_round))
+                        ], name="smrtanalysis_reference_uploader." + job_name_suffix))
 
                         job = smrtanalysis.pbalign(
                             os.path.join(polishing_round_directory, "data", "aligned_reads.cmp.h5"),
@@ -294,21 +296,21 @@ END
                             os.path.join(polishing_round_directory, sample_cutoff_mer_size_polishing_round, "sequence", sample_cutoff_mer_size_polishing_round + ".fasta"),
                             os.path.join(config.param('smrtanalysis_pbalign', 'tmp_dir', type='dirpath'), sample_cutoff_mer_size_polishing_round)
                         )
-                        job.name = "smrtanalysis_pbalign." + sample_cutoff_mer_size_polishing_round
+                        job.name = "smrtanalysis_pbalign." + job_name_suffix
                         jobs.append(job)
 
                         job = smrtanalysis.load_pulses(
                             os.path.join(polishing_round_directory, "data", "aligned_reads.cmp.h5"),
                             os.path.join(sample.name, "filtering", "input.fofn")
                         )
-                        job.name = "smrtanalysis_load_pulses." + sample_cutoff_mer_size_polishing_round
+                        job.name = "smrtanalysis_load_pulses." + job_name_suffix
                         jobs.append(job)
 
                         job = smrtanalysis.cmph5tools_sort(
                             os.path.join(polishing_round_directory, "data", "aligned_reads.cmp.h5"),
                             os.path.join(polishing_round_directory, "data", "aligned_reads.cmp.h5.sorted")
                         )
-                        job.name = "smrtanalysis_cmph5tools_sort." + sample_cutoff_mer_size_polishing_round
+                        job.name = "smrtanalysis_cmph5tools_sort." + job_name_suffix
                         jobs.append(job)
 
                         job = smrtanalysis.variant_caller(
@@ -318,7 +320,7 @@ END
                             os.path.join(polishing_round_directory, "data", "consensus.fasta.gz"),
                             os.path.join(polishing_round_directory, "data", "consensus.fastq.gz")
                         )
-                        job.name = "smrtanalysis_variant_caller." + sample_cutoff_mer_size_polishing_round
+                        job.name = "smrtanalysis_variant_caller." + job_name_suffix
                         jobs.append(job)
 
                         job = smrtanalysis.summarize_polishing(
@@ -332,7 +334,7 @@ END
                             os.path.join(polishing_round_directory, "data", "variants.bed"),
                             os.path.join(polishing_round_directory, "data", "variants.vcf")
                         )
-                        job.name = "smrtanalysis_summarize_polishing." + sample_cutoff_mer_size_polishing_round
+                        job.name = "smrtanalysis_summarize_polishing." + job_name_suffix
                         jobs.append(job)
 
         return jobs
