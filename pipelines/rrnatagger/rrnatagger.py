@@ -21,12 +21,12 @@ from bio.readset import *
 from bio import rrna_amplicons
 #from bio import microbial_ecology
 
-from pipelines.illumina import illumina
+from pipelines import common
 
 # Global scope variables
 log = logging.getLogger(__name__)
 
-class RRNATagger(illumina.Illumina):
+class RRNATagger(common.Illumina):
     #outdir             = config.param('default', 'currentDir')
     #clustering_method  = config.param('clustering', 'clusteringMethod')
     #lib_type           = config.param('default', 'libraryType')
@@ -182,9 +182,10 @@ class RRNATagger(illumina.Illumina):
         sys.stderr.write('lib_type:' + self.lib_type + '\n')
         super(RRNATagger, self).__init__()
        
-        
- 
-RRNATagger().submit_jobs()
+if __name__ == "__main__":
+    # RRNATagger pipeline is under development
+    raise NotImplementedError
+    RRNATagger().submit_jobs()
 
 # Steps from old Perl pipeline:
 
