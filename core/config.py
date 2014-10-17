@@ -21,8 +21,6 @@ class Config(ConfigParser.SafeConfigParser):
         return self._filepath
 
     def parse_files(self, config_files):
-        self._filepath = config_files[-1].name
-
         # Make option names case sensitive
         self.optionxform = str
         for config_file in config_files:

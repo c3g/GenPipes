@@ -35,6 +35,7 @@ class Pipeline(object):
 
 """.format(config_files="\n#   ".join([config_file.name for config_file in self.args.config]), self=self))
             config.write(config_trace)
+            config.filepath = os.path.abspath(config_trace.name)
 
         self._output_dir = os.path.abspath(self.args.output_dir)
         self._scheduler = create_scheduler(self.args.job_scheduler)

@@ -2,6 +2,7 @@
 
 # Python Standard Modules
 import collections
+import datetime
 import logging
 import os
 
@@ -22,10 +23,6 @@ class Job:
 
         self._name = name
         self._command = command
-
-    def show(self):
-        print("Job: input_files: " + \
-            ", ".join(self.input_files))
 
     @property
     def id(self):
@@ -80,6 +77,8 @@ class Job:
     def is_up2date(self):
         # If job has dependencies, job is not up to date
         if self.dependency_jobs:
+            log.debug("Job " + self.name + " NOT up to date")
+            log.debug("Dependency jobs:\n  " + "\n  ".join([job.name for job in self.dependency_jobs]) + "\n")
             return False
 
         # Retrieve absolute paths for .done, input and output files to avoid redundant OS function calls
@@ -91,6 +90,8 @@ class Job:
         for file in [abspath_done] + abspath_input_files + abspath_output_files:
             # Use 'exists' instead of 'isfile' since input/output files can be directories
             if not os.path.exists(file):
+                log.debug("Job " + self.name + " NOT up to date")
+                log.debug("Input, output or .done file missing: " + file)
                 return False
 
         # Retrieve latest input file modification time i.e. maximum stat mtime
@@ -101,6 +102,8 @@ class Job:
 
         # If any input file is strictly more recent than all output files, job is not up to date
         if latest_input_time > earliest_output_time:
+            log.debug("Job " + self.name + " NOT up to date")
+            log.debug("Latest input file modification time: " + datetime.datetime.fromtimestamp(latest_input_time).isoformat() + " > earliest output file modification time: " + datetime.datetime.fromtimestamp(earliest_output_time).isoformat() + "\n")
             return False
 
         # If all previous tests passed, job is up to date
