@@ -14,6 +14,7 @@ from core.job import *
 from bio.readset import *
 
 from bio import blast
+from bio import gq_seq_utils
 from bio import mummer
 from bio import pacbio_tools
 from bio import smrtanalysis
@@ -442,6 +443,94 @@ END
 
         return jobs
 
+    """
+    Generates summary tables and Generates MUGQIC style nozzle report.
+    """
+    def report(self):
+        jobs = []
+
+        for sample in self.samples:
+            for coverage_cutoff in config.param('DEFAULT', 'coverage_cutoff', type='list'):
+                cutoff_x = coverage_cutoff + "X"
+                coverage_directory = os.path.join(sample.name, cutoff_x)
+                preassembly_directory = os.path.join(coverage_directory, "preassembly", "data")
+
+                for mer_size in config.param('DEFAULT', 'mer_sizes', type='list'):
+                    mer_size_text = "merSize" + mer_size
+                    sample_cutoff_mer_size = "_".join([sample.name, cutoff_x, mer_size_text])
+                    mer_size_directory = os.path.join(coverage_directory, mer_size_text)
+                    report_directory = os.path.join(mer_size_directory, "report")
+
+                    polishing_rounds = config.param('DEFAULT', 'polishing_rounds', type='posint')
+                    fasta_consensus = os.path.join(mer_size_directory, "polishing" + str(polishing_rounds), "data", "consensus.fasta")
+                    jobs.append(concat_jobs([
+                        Job(command="mkdir -p " + report_directory),
+                        # Generate table(s) and figures
+                        pacbio_tools.assembly_stats(
+                            os.path.join(preassembly_directory, "filtered_shortreads.fa"),
+                            os.path.join(preassembly_directory, "filtered_longreads.fa"),
+                            os.path.join(preassembly_directory, "corrected.fasta"),
+                            os.path.join(sample.name, "filtering", "data", "filtered_summary.csv"),
+                            fasta_consensus,
+                            sample.name,
+                            cutoff_x + "_" + mer_size,
+                            sample.readsets[0].estimated_genome_size,
+                            # Number of unique smartcells per sample
+                            len(set([readset.smartcell for readset in sample.readsets])),
+                            report_directory
+                        )
+                    ], name="pacbio_tools_assembly_stats." + sample_cutoff_mer_size))
+
+                    job = gq_seq_utils.report(
+                        os.path.abspath(config.filepath),
+                        mer_size_directory,
+                        "PacBioAssembly",
+                        mer_size_directory
+                    )
+                    # Job input files must be defined here since only project directory is given to gq_seq_utils.report
+                    job.input_files = [
+                        os.path.join(report_directory, "summaryTableAssembly.tsv"),
+                        os.path.join(report_directory, "summaryTableReads.tsv")
+                    ]
+
+                    job.name = "gq_seq_utils_report." + sample.name
+                    jobs.append(job)
+
+
+        return jobs
+
+    """
+    Compile assembly stats of all conditions used in the pipeline.
+    """
+    def compile(self):
+        jobs = []
+
+        for sample in self.samples:
+            # Generate table
+            job = pacbio_tools.compile(
+                sample.name,
+                sample.name,
+                sample.readsets[0].estimated_genome_size,
+                sample.name + ".compiledStats.csv"
+            )
+            # Job input files (all consensus.fasta) need to be defined here since only sample directory is given to pacbio_tools.compile
+            job.input_files = [os.path.join(
+                sample.name,
+                coverage_cutoff + "X",
+                "merSize" + mer_size,
+                "polishing" + str(polishing_round),
+                "data",
+                "consensus.fasta")
+                for coverage_cutoff in config.param('DEFAULT', 'coverage_cutoff', type='list')
+                for mer_size in config.param('DEFAULT', 'mer_sizes', type='list')
+                for polishing_round in range(1, config.param('DEFAULT', 'polishing_rounds', type='posint') + 1)
+            ]
+
+            job.name = "pacbiotools_compile." + sample.name
+            jobs.append(job)
+
+        return jobs
+
     @property
     def steps(self):
         return [
@@ -451,7 +540,9 @@ END
             self.assembly,
             self.polishing,
             self.blast,
-            self.mummer
+            self.mummer,
+            self.report,
+            self.compile
         ]
 
 if __name__ == '__main__':

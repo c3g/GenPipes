@@ -6,6 +6,52 @@
 from core.config import *
 from core.job import *
 
+def assembly_stats(
+    short_reads,
+    long_reads,
+    corrected_reads,
+    filtered_summary,
+    contigs,
+    sample_name,
+    suffix,
+    estimated_genome_size,
+    smrt_cells,
+    outdir
+    ):
+
+    return Job(
+        [short_reads, long_reads, corrected_reads, filtered_summary, contigs],
+        [os.path.join(outdir, "summaryTableAssembly.tsv"), os.path.join(outdir, "summaryTableReads.tsv")],
+        [
+            ['pacbio_tools_assembly_stats', 'module_memtime'],
+            ['pacbio_tools_assembly_stats', 'module_perl'],
+            ['pacbio_tools_assembly_stats', 'module_R'],
+            ['pacbio_tools_assembly_stats', 'module_mugqic_tools']
+        ],
+        command = """\
+memtime pacBioAssemblyStats.pl \\
+  --shortReads {short_reads} \\
+  --longReads {long_reads} \\
+  --correctedReads {corrected_reads} \\
+  --filteredSummary {filtered_summary} \\
+  --contigs {contigs} \\
+  --sampleName {sample_name} \\
+  --suffix {suffix} \\
+  --estimatedGenomeSize {estimated_genome_size} \\
+  --smrtCells {smrt_cells} \\
+  --outdir {outdir}""".format(
+        short_reads=short_reads,
+        long_reads=long_reads,
+        corrected_reads=corrected_reads,
+        filtered_summary=filtered_summary,
+        contigs=contigs,
+        sample_name=sample_name,
+        suffix=suffix,
+        estimated_genome_size=estimated_genome_size,
+        smrt_cells=smrt_cells,
+        outdir=outdir
+    ))
+
 def celera_config(
     mer_size,
     infile,
@@ -57,6 +103,34 @@ memtime pacBioAssemblyCeleraConfig.pl \\
         frg_corr_threads=config.param('pacbio_tools_celera_config', 'frg_corr_threads', type='int'),
         stop_after=config.param('pacbio_tools_celera_config', 'stop_after'),
         unitigger=config.param('pacbio_tools_celera_config', 'unitigger'),
+        outfile=outfile
+    ))
+
+def compile(
+    indir,
+    sample_name,
+    estimated_genome_size,
+    outfile
+    ):
+
+    return Job(
+        # Input files need to be specified in the wrapper since they depend on cutoffs, mer sizes and polishing rounds
+        [None],
+        [outfile],
+        [
+            ['pacbio_tools_get_cutoff', 'module_memtime'],
+            ['pacbio_tools_get_cutoff', 'module_perl'],
+            ['pacbio_tools_get_cutoff', 'module_mugqic_tools']
+        ],
+        command = """\
+memtime pacBioCompileStats.pl \\
+  --indir {indir} \\
+  --estimatedGenomeSize {estimated_genome_size} \\
+  --sampleName {sample_name} \\
+  > {outfile}""".format(
+        indir=indir,
+        estimated_genome_size=estimated_genome_size,
+        sample_name=sample_name,
         outfile=outfile
     ))
 
