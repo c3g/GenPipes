@@ -482,7 +482,7 @@ END
                     ], name="pacbio_tools_assembly_stats." + sample_cutoff_mer_size))
 
                     job = gq_seq_utils.report(
-                        os.path.abspath(config.filepath),
+                        [config_file.name for config_file in self.args.config],
                         mer_size_directory,
                         "PacBioAssembly",
                         mer_size_directory
