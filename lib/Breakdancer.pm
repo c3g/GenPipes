@@ -134,7 +134,7 @@ sub mergeCTX {
   my $outputPrefix = shift;
 
   my $ro_job = new Job();
-  $ro_job->testInputOutputs(undef, [$outputPrefix . '.ctx'],$ro_job);
+  $ro_job->testInputOutputs([$outputPrefix . '.TR.ctx'], [$outputPrefix . '.ctx'],$ro_job);
 
   if (!$ro_job->isUp2Date()) {
     my $command;

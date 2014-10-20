@@ -51,6 +51,8 @@ sub runPairedDNAC {
 
   my $ro_job = new Job();
   $ro_job->testInputOutputs([$inputBins], [$outputPrefix . '_CNVcalls.txt'],$ro_job);
+  my $options = LoadConfig::getParam($rH_cfg, 'DNAC', 'options', 0);
+
 
   if (!$ro_job->isUp2Date()) {
     my $command;
@@ -60,7 +62,10 @@ sub runPairedDNAC {
     $command .= ' -b ' .$window;
     $command .= ' -o ' .$outputPrefix;
     $command .= ' -c ' .$GCmapFile; 
-
+    if (defined($options) && length($options) > 0) {
+        $command .= ' ' .$options;
+    }
+    
     $ro_job->addCommand($command);
   }
   return $ro_job;
@@ -106,7 +111,7 @@ sub filterBrD {
 
   if (!$ro_job->isUp2Date()) {
     my $command;
-    $command .= LoadConfig::moduleLoad($rH_cfg, [['filterSVC', 'moduleVersion.svtools']]) . ' &&';
+    $command .= LoadConfig::moduleLoad($rH_cfg, [['filterSV', 'moduleVersion.svtools'], ['filterSV', 'moduleVersion.python']]) . ' &&';
     $command .= ' \${SVTOOLS_HOME}/Cancer/filterOutBrD.py';
     $command .= ' -f ' . $inputBrDCalls;
     $command .= ' -o ' . $outputPrefix . '.txt';
@@ -137,7 +142,7 @@ sub filterPI {
 
   if (!$ro_job->isUp2Date()) {
     my $command;
-    $command .= LoadConfig::moduleLoad($rH_cfg, [['filterSV', 'moduleVersion.svtools']]) . ' &&';
+    $command .= LoadConfig::moduleLoad($rH_cfg, [['filterSV', 'moduleVersion.svtools'],['filterSV', 'moduleVersion.python']]) . ' &&';
     $command .= ' \${SVTOOLS_HOME}/Cancer/filterOutPI.py';
     $command .= ' -f ' . $outputPrefix;
     $command .= ' -o ' . $outputPrefix . '.txt';
@@ -167,7 +172,7 @@ sub filterResults {
 # 
 #   if (!$ro_job->isUp2Date()) {
   my $command;
-  $command .= LoadConfig::moduleLoad($rH_cfg, [[$stepIniPrefix, 'moduleVersion.svtools'], ['filterSVC', 'moduleVersion.bedtools']]) . ' &&';
+  $command .= LoadConfig::moduleLoad($rH_cfg, [[$stepIniPrefix, 'moduleVersion.svtools'], ['filterSVC', 'moduleVersion.bedtools'],['filterSV', 'moduleVersion.python']]) . ' &&';
   $command .= ' \${SVTOOLS_HOME}/Cancer/filterBedResults.sh';
   $command .= ' ' . $outputPrefix . '.txt';
   $command .= ' ' . LoadConfig::getParam($rH_cfg, $stepIniPrefix, 'referenceMappabilityBed', 1, 'filepath');

@@ -539,7 +539,7 @@ sub Breakdancer {
   }
   ##filter results
   my $brdCallsFile = $outputPrefix .'.ctx';
-  my $rO_brdFilter_job = SVtools::filterBrD($rH_cfg, $sampleName, $brdCallsFile, $outputPrefix.'.filteredSV', $normalBam, $tumorBam);
+  my $rO_brdFilter_job = SVtools::filterBrD($rH_cfg, $sampleName, $brdCallsFile, $outputPrefix, $normalBam, $tumorBam);
   if(!$rO_brdFilter_job->isUp2Date()) {
       SubmitToCluster::printSubmitCmd($rH_cfg, "filterSV", 'BRD_FILTER', 'BRD_FILTER',  $rO_brdMerge_job->getCommandJobId(0), $sampleName, $rO_brdFilter_job);
   }
