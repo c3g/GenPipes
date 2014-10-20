@@ -458,7 +458,7 @@ sub align {
     my $processingId = $rH_laneInfo->{'processingSheetId'};
     $step->{'jobIds'}->{$processingId} =();
     my $libSource = $rH_laneInfo->{'libSource'}; # gDNA, cDNA, ...
-    my $ref = getGenomeReference($rH_laneInfo->{'referenceMappingSpecies'}, $rH_laneInfo->{'ref'}, $libSource, 'bwa');
+    my $ref = getGenomeReference($rH_laneInfo->{'ref'}, $libSource, 'bwa');
     if (!defined($ref)) {
       print STDERR "Skipping alignment for sample '$sampleName'; No reference genome found for species '". (defined($rH_laneInfo->{'ref'}) ? $rH_laneInfo->{'ref'} : ""). "'.\n";
       next;
@@ -507,7 +507,7 @@ sub laneMetrics {
   
   for my $rH_laneInfo (@$rAoH_sampleLanes) {
     my $libSource = $rH_laneInfo->{'libSource'}; # gDNA, cDNA, ...
-    my $ref = getGenomeReference($rH_laneInfo->{'referenceMappingSpecies'}, $rH_laneInfo->{'ref'}, $libSource, 'fasta');
+    my $ref = getGenomeReference($rH_laneInfo->{'ref'}, $libSource, 'fasta');
     if (!defined($ref)) {
       #skipped alignment
       next;
@@ -596,7 +596,7 @@ sub generateBamMd5 {
     my $sampleName = $rH_sample->{'name'};
     my $processingId = $rH_sample->{'processingSheetId'};
     my $libSource = $rH_sample->{'libSource'}; # gDNA, cDNA, ...
-    my $ref = getGenomeReference($rH_sample->{'referenceMappingSpecies'}, $rH_sample->{'ref'}, $libSource, 'bwa');
+    my $ref = getGenomeReference($rH_sample->{'ref'}, $libSource, 'bwa');
     if (!defined($ref)) {
       #skipped alignment
       next;
@@ -663,7 +663,7 @@ sub copy {
   # Check if sample has a reference genome and therefore associated BAM files
   for my $rH_sample (@$rAoH_sample) {
     my $libSource = $rH_sample->{'libSource'}; # gDNA, cDNA, ...
-    my $ref = getGenomeReference($rH_sample->{'referenceMappingSpecies'}, $rH_sample->{'ref'}, $libSource, 'bwa');
+    my $ref = getGenomeReference($rH_sample->{'ref'}, $libSource, 'bwa');
     if (defined($ref)) {
       # BAM have been created, therefore no need to rsync fasta files
       $excludeFastq .= " \\\n  --exclude '" . getFastqFilename($runDirectory, $lane, $rH_sample, 1) . "'";
@@ -729,35 +729,27 @@ sub getGenomeList {
   my $rootDir = shift;
 
   opendir(ROOT_DIR, $rootDir) or exitWithError("Couldn't open directory ".$rootDir);
-  my @speciesDirs =  grep { /^[^\.]/ && -d "$rootDir/$_" } readdir(ROOT_DIR);
+  my @dirs =  grep { /^[^\.]/ && -d "$rootDir/$_" } readdir(ROOT_DIR);
   closedir(ROOT_DIR);
 
   my %genomes;
 
-  for my $speciesDir (@speciesDirs) {
-    opendir(SPECIES_DIR, "$rootDir/$speciesDir") or exitWithError("Couldn't open directory $rootDir/$speciesDir");
-    my @buildDirs = grep { /^[^\.]/ && -d "$rootDir/$speciesDir/$_" } readdir(SPECIES_DIR);
-    closedir(SPECIES_DIR);
-    for my $buildDir (@buildDirs) {
-      my $fasta = "$rootDir/$speciesDir/$buildDir/fasta/bwa/$buildDir.fasta";
-      my $fa = "$rootDir/$speciesDir/$buildDir/fasta/bwa/$buildDir.fa";
-      if (-r $fasta) {
-        $genomes{$speciesDir}{$buildDir}{"bwa"}=$fasta;
-      } elsif (-r $fa) {
-        $genomes{$speciesDir}{$buildDir}{"bwa"}=$fa;
+  for my $folderName (@dirs) {
+    if ($folderName =~ m/(.+?)\.(.+)/) {
+      my $species = $1;
+      my $build = $2;
+      my $fa = "$rootDir/$folderName/genome/bwa_index/$folderName.fa";
+      if (-r $fa) {
+        $genomes{$species}{$build}{"bwa"}=$fa;
       } else {
-        #print STDERR "Available Genomes Scan: No BWA reference genome found for the build '$buildDir' of the '$speciesDir' species\n";
+        #print STDERR "Available Genomes Scan: No BWA reference genome found for the '$folderName' folder\n";
       }
-      $fasta = "$rootDir/$speciesDir/$buildDir/fasta/$buildDir.fasta";
-      $fa = "$rootDir/$speciesDir/$buildDir/fasta/$buildDir.fa";
-      if (-r $fasta) {
-        $genomes{$speciesDir}{$buildDir}{"fasta"}=$fasta;
-      } elsif (-r $fa) {
-        $genomes{$speciesDir}{$buildDir}{"fasta"}=$fa;
+      $fa = "$rootDir/$folderName/genome/$folderName.fa";
+      if (-r $fa) {
+        $genomes{$species}{$build}{"fasta"}=$fa;
       } else {
-        #print STDERR "Available Genomes Scan: No Fasta reference genome found for the build '$buildDir' of the '$speciesDir' species\n";
+        #print STDERR "Available Genomes Scan: No Fasta reference genome found for the '$folderName' folder\n";
       }
-
     }
   }
 
@@ -765,52 +757,23 @@ sub getGenomeList {
 }
 
 # Get the corresponding genome reference
-# if the sample is gDNA, will use the "reference mapping species", if populated;
-# the species will be used otherwise
 sub getGenomeReference {
-  my $ref           = shift;
   my $species       = shift;
   my $librarySource = shift;
   my $program       = shift;
 
   my $refpath;
 
-  if ($librarySource eq "gDNA" && defined($ref)) {
-    # gDNA alignment with BWA
-    my ($refSpecies, $build) = split( ',', $ref );
-
-    if (!defined($refSpecies) || !defined($build)){
-      return;
-    }
-
-    # Trimming leading/trailing spaces
-    $refSpecies =~ s/^\s+|\s+$//g;
-    $build =~ s/^\s+|\s+$//g;
-
-    # Replacing spaces with '_'
-    $refSpecies =~ s/\s/_/g;
-    $build =~ s/\s/_/g;
-
-    $refpath =  $rHoH_genomes->{$refSpecies}->{$build}->{$program}
-  }
-
-  if (defined($refpath)) {
-    return $refpath;
-  } else {
-    if (defined($species)) {
-      # defaulting to a basic alignement with BWA
-      for my $defaultGenomeRegexp (keys %$rHoH_defaultGenomes) {
-        if ($species =~ /^\s*$defaultGenomeRegexp\s*$/i) {
-          my $refSpecies = $rHoH_defaultGenomes->{$defaultGenomeRegexp}->{"species"};
-          my $build = $rHoH_defaultGenomes->{$defaultGenomeRegexp}->{"build"};
-          $refpath = $rHoH_genomes->{$refSpecies}->{$build}->{$program}
-        }
+  if (defined($species)) {
+    for my $defaultGenomeRegexp (keys %$rHoH_defaultGenomes) {
+      if ($species =~ /^\s*$defaultGenomeRegexp\s*$/i) {
+        my $refSpecies = $rHoH_defaultGenomes->{$defaultGenomeRegexp}->{"species"};
+        my $build = $rHoH_defaultGenomes->{$defaultGenomeRegexp}->{"build"};
+        $refpath = $rHoH_genomes->{$refSpecies}->{$build}->{$program}
       }
     }
   }
-
   return $refpath;
-
 }
 
 
