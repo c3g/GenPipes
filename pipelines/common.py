@@ -13,12 +13,12 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0]))))
 # MUGQIC Modules
 from core.job import *
 from core.pipeline import *
-from bio.design import *
-from bio.readset import *
+from bfx.design import *
+from bfx.readset import *
 
-from bio import metrics
-from bio import picard
-from bio import trimmomatic
+from bfx import metrics
+from bfx import picard
+from bfx import trimmomatic
 
 log = logging.getLogger(__name__)
 

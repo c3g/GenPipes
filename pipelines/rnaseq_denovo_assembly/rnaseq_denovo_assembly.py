@@ -15,9 +15,9 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 from core.config import *
 from core.job import *
 from core.pipeline import *
-from bio.readset import *
+from bfx.readset import *
 
-from bio import gq_seq_utils
+from bfx import gq_seq_utils
 from pipelines import common
 
 log = logging.getLogger(__name__)

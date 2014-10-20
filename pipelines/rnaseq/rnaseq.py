@@ -15,16 +15,16 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 from core.config import *
 from core.job import *
 from core.pipeline import *
-from bio.design import *
-from bio.readset import *
+from bfx.design import *
+from bfx.readset import *
 
-from bio import bedtools
-from bio import cufflinks
-from bio import htseq
-from bio import metrics
-from bio import picard
-from bio import samtools
-from bio import tophat
+from bfx import bedtools
+from bfx import cufflinks
+from bfx import htseq
+from bfx import metrics
+from bfx import picard
+from bfx import samtools
+from bfx import tophat
 from pipelines import common
 
 log = logging.getLogger(__name__)

@@ -14,20 +14,20 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 from core.config import *
 from core.job import *
 from core.pipeline import *
-from bio.readset import *
-from bio.sequence_dictionary import *
+from bfx.readset import *
+from bfx.sequence_dictionary import *
 
-from bio import bvatools
-from bio import bwa
-from bio import gatk
-from bio import gq_seq_utils
-from bio import igvtools
-from bio import metrics
-from bio import picard
-from bio import samtools
-from bio import snpeff
-from bio import tools
-from bio import vcftools
+from bfx import bvatools
+from bfx import bwa
+from bfx import gatk
+from bfx import gq_seq_utils
+from bfx import igvtools
+from bfx import metrics
+from bfx import picard
+from bfx import samtools
+from bfx import snpeff
+from bfx import tools
+from bfx import vcftools
 from pipelines import common
 
 log = logging.getLogger(__name__)

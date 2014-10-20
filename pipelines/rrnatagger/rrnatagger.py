@@ -15,11 +15,11 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 from core.config import *
 from core.job import *
 from core.pipeline import *
-from bio.design import *
-from bio.readset import *
+from bfx.design import *
+from bfx.readset import *
 
-from bio import rrna_amplicons
-#from bio import microbial_ecology
+from bfx import rrna_amplicons
+#from bfx import microbial_ecology
 
 from pipelines import common
 
