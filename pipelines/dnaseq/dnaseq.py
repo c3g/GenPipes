@@ -513,7 +513,12 @@ class DnaSeq(common.Illumina):
         return [job]
 
     def deliverable(self):
-        job = gq_seq_utils.report(os.path.abspath(config.filepath), self.output_dir, "DNAseq", "deliverables")
+        job = gq_seq_utils.report(
+                        [config_file.name for config_file in self.args.config],
+                        self.output_dir,
+                        "DNAseq",
+                        "deliverables"
+                    )
         job.input_files = [
             "metrics/SampleMetrics.stats",
             "variants/allSamples.merged.flt.vcf",
@@ -527,6 +532,7 @@ class DnaSeq(common.Illumina):
         return [
             self.picard_sam_to_fastq,
             self.trimmomatic,
+            self.merge_trimmomatic_stats,
             self.bwa_mem_picard_sort_sam,
             self.picard_merge_sam_files,
             self.gatk_indel_realigner,
