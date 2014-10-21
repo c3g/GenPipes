@@ -61,7 +61,7 @@ cuffdiff {other_options} \\
   {input_bams}""".format(
         other_options=config.param('cuffdiff', 'other_options'),
         genome_fasta=config.param('cuffdiff', 'genome_fasta', type='filepath'),
-        library_type=config.param('cuffdiff', 'library_type'),
+        library_type=config.param('cuffdiff', 'strand_info'),
         output_directory=output_directory,
         num_threads=config.param('cuffdiff', 'threads', type='posint'),
         gtf=gtf,
@@ -90,7 +90,7 @@ cufflinks -q {other_options}{gtf} \\
         other_options=config.param('cufflinks', 'other_options', required=False),
         gtf=" \\\n  --GTF " + gtf if gtf else "",
         max_bundle_frags=config.param('cufflinks', 'max_bundle_frags', type='int'),
-        library_type=config.param('cufflinks', 'library_type'),
+        library_type=config.param('cufflinks', 'strand_info'),
         output_directory=output_directory,
         num_threads=config.param('cufflinks', 'threads', type='posint'),
         input_bam=input_bam

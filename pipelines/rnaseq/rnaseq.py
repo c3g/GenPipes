@@ -147,7 +147,7 @@ echo "Sample\tBamFile\tNote
             bed_graph_prefix = os.path.join("tracks", sample.name, sample.name)
             big_wig_prefix = os.path.join("tracks", "bigWig", sample.name)
 
-            if config.param('tophat', 'library_type') != 'fr-unstranded':
+            if config.param('DEFAULT', 'strand_info') != 'fr-unstranded':
                 input_bam_f1 = bam_file_prefix + "tmp1.forward.bam"
                 input_bam_f2 = bam_file_prefix + "tmp2.forward.bam"
                 input_bam_r1 = bam_file_prefix + "tmp1.reverse.bam"
@@ -210,7 +210,7 @@ echo "Sample\tBamFile\tNote
 
             # Count reads
             output_count = os.path.join("raw_counts", sample.name + ".readcounts.csv")
-            stranded = "no" if config.param('tophat', 'library_type') == "fr-unstranded" else "reverse"
+            stranded = "no" if config.param('DEFAULT', 'strand_info') == "fr-unstranded" else "reverse"
             job = concat_jobs([
                 Job(command="mkdir -p raw_counts"),
                 pipe_jobs([
@@ -266,7 +266,7 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
         wiggle_directory = os.path.join("tracks", "bigWig")
         wiggle_archive = "tracks.zip"
         big_wig_prefix = os.path.join("tracks", "bigWig", sample.name)
-        if config.param('tophat', 'library_type') != 'fr-unstranded':
+        if config.param('DEFAULT', 'strand_info') != 'fr-unstranded':
             wiggle_files = []
             for sample in self.samples:
                 wiggle_files.extend([os.path.join(wiggle_directory, sample.name) + ".forward.bw", os.path.join(wiggle_directory, sample.name) + ".reverse.bw"])

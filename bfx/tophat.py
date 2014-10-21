@@ -51,7 +51,7 @@ tophat {other_options}{gtf}{transcriptome_index} \\
         rg_platform_unit=rg_platform_unit,
         rg_platform=rg_platform,
         rg_center=rg_center,
-        library_type=config.param('tophat', 'library_type'),
+        library_type=config.param('DEFAULT', 'strand_info'),
         output_directory=output_directory,
         num_threads=config.param('tophat', 'threads'),
         bowtie_index=config.param('tophat', 'genome_bowtie_index', type='prefixpath'),
