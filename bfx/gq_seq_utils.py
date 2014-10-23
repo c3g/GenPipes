@@ -8,13 +8,13 @@ from core.job import *
 
 def report(ini_filepaths, project_path, pipeline_type, output_directory):
 
-    title = config.param('report', 'project_name', required=False)
-    path = os.path.join(output_directory, config.param('report', 'report_name'))
-    author = config.param('report', 'report_author', required=False)
-    contact = config.param('report', 'report_contact', required=False)
+    title = config.param('gq_seq_utils_report', 'report_title', required=False)
+    path = os.path.join(output_directory, config.param('gq_seq_utils_report', 'report_dir'))
+    author = config.param('gq_seq_utils_report', 'report_author', required=False)
+    contact = config.param('gq_seq_utils_report', 'report_contact', required=False)
 
-    # Job input files must be set in pipeline since they are different in each pipeline
-    job = Job([], [os.path.join(path, "index.html")], [['report', 'module_R']])
+    # Job input files must be set in pipeline class since they are different for each pipeline
+    job = Job([], [os.path.join(path, "index.html")], [['gq_seq_utils_report', 'module_R']])
 
     job.command = """\
 R --no-save -e 'library(gqSeqUtils); mugqicPipelineReport(pipeline="{pipeline}"{title}{path}{author}{contact}, ini.file.path=c({ini_filepaths}), project.path="{project_path}")'""".format(

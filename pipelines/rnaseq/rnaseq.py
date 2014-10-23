@@ -118,9 +118,8 @@ class RnaSeq(common.Illumina):
 
     def rnaseqc(self):
 
-        project_name = config.param('DEFAULT', 'project_name')
         sample_file = os.path.join("alignment", "rnaseqc.samples.txt")
-        sample_rows = [[sample.name, os.path.join("alignment", sample.name, sample.name + ".merged.mdup.bam"), project_name] for sample in self.samples]
+        sample_rows = [[sample.name, os.path.join("alignment", sample.name, sample.name + ".merged.mdup.bam"), "RNAseq"] for sample in self.samples]
         input_bams = [sample_row[1] for sample_row in sample_rows]
         output_directory = os.path.join("metrics", "rnaseqRep")
         # Use GTF with transcript_id only otherwise RNASeQC fails

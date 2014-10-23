@@ -512,19 +512,19 @@ class DnaSeq(common.Illumina):
 
         return [job]
 
-    def deliverable(self):
+    def gq_seq_utils_report(self):
         job = gq_seq_utils.report(
-                        [config_file.name for config_file in self.args.config],
-                        self.output_dir,
-                        "DNAseq",
-                        "deliverables"
-                    )
+            [config_file.name for config_file in self.args.config],
+            self.output_dir,
+            "DNAseq",
+            self.output_dir
+        )
         job.input_files = [
             "metrics/SampleMetrics.stats",
             "variants/allSamples.merged.flt.vcf",
             "metrics/allSamples.SNV.SummaryTable.tsv"
         ]
-        job.name = "deliverable"
+        job.name = "gq_seq_utils_report"
         return [job]
 
     @property
@@ -559,7 +559,7 @@ class DnaSeq(common.Illumina):
             self.dbnsfp_annotation,
             self.metrics_vcf_stats,
             self.metrics_snv_graph_metrics,
-            self.deliverable
+            self.gq_seq_utils_report
         ]
 
 if __name__ == '__main__': 
