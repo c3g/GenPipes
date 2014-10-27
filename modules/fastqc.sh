@@ -1,9 +1,9 @@
-
+#!/bin/bash
 
 ###################
 ################### FASTQC
 ###################
-VERSION="0.10.1"
+VERSION="0.11.2"
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/fastqc/fastqc_v"$VERSION" # where to install..
 mkdir -p $INSTALL_PATH
 cd $INSTALL_PATH

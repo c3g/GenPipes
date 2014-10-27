@@ -1,10 +1,10 @@
-#!/bin/bash 
+#!/bin/bash
 # Install software needed to run the ChIPSEQ pipeline
 # Dependency of MUGQIC_HOME environment variable is assumed
 
 
 main() {
-  prologue
+  #prologue
   #checkInstallWeblogo 
   checkInstallWeblogo282
   InstallHomer 
@@ -167,7 +167,19 @@ function checkInstallWeblogo {
 	setenv          WEBLOGO_HOME    \$root"/weblogo-3.3/"
 	prepend-path    PATH            \$root"/weblogo-3.3/"
 	" > $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$PACKAGE_NAME/$VERSION
-  cd $curDir
+	# Default module version file
+	echo "#%Module1.0
+	set ModulesVersion \"$VERSION\"" > .version
+
+	# Add permissions and install module
+	mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$PACKAGE_NAME
+	chmod -R ug+rwX $VERSION .version
+	chmod -R o+rX $VERSION .version
+	mv $VERSION .version $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$PACKAGE_NAME
+
+	# Clean up temporary installation files if any
+	rm -rf $INSTALL_DOWNLOAD
+	  cd $curDir
 }
 
 function checkInstallWeblogo282 {
@@ -198,6 +210,12 @@ function checkInstallWeblogo282 {
 	tar -xzvf weblogo.2.8.2.tar.gz
 
 
+	# Starting from guillimin Phase 2 (2014-02) you'll need to replace shebang #/usr/bin/perl with #/usr/bin/env perl and change the remaining parameters with the respective perl directives :-(
+	# change /usr/bin/perl -w in /software/areas/genomics/phase2/software/weblogo/2.8.2/weblogo/seqlogo 
+	# sed  -i "s/ perl -w/ perl \\nuse warnings;/" $MUGQIC_INSTALL_HOME/modulefiles/mugqic/weblogo/seqlogo 
+	#	
+
+ 
 	echo "#%Module1.0
 	proc ModulesHelp { } {
 	puts stderr \"\tMUGQIC - Adds WebLogo, a tool for creating sequence logos from biological sequence alignments. \"
@@ -208,7 +226,19 @@ function checkInstallWeblogo282 {
 	setenv          WEBLOGO_HOME    \$root/weblogo
 	prepend-path    PATH            \$root/weblogo
 	" > $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$PACKAGE_NAME/$VERSION
-  cd $curDir
+	# Default module version file
+	echo "#%Module1.0
+	set ModulesVersion \"$VERSION\"" > .version
+
+	# Add permissions and install module
+	mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$PACKAGE_NAME
+	chmod -R ug+rwX $VERSION .version
+	chmod -R o+rX $VERSION .version
+	mv $VERSION .version $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$PACKAGE_NAME
+
+	# Clean up temporary installation files if any
+	rm -rf $INSTALL_DOWNLOAD
+	cd $curDir
 	
 }
 
@@ -245,7 +275,15 @@ function InstallHomer {
 	perl configureHomer.pl -install mm10
 	perl configureHomer.pl -install mm9
 	perl configureHomer.pl -install rn5
-
+	
+	# Starting from guillimin Phase 2 (2014-02) you'll need to replace shebang #/usr/bin/perl with #/usr/bin/env perl and change the remaining parameters with the respective perl directives :-(
+	#for fi in $(ls  $INSTALL_PATH/bin/*pl); 
+	#do 
+	#	cat $fi | sed -e 's/\/usr\/bin\/perl/\/usr\/bin\/env perl/g' > $fi.bak && mv $fi.bak $fi; 
+	#	echo $fi
+       	#        sed  -i "s/ perl -w/ perl \\nuse warnings;/" $fi
+        #        sed -i "s/-I\/software\/areas\/genomics\/phase2\/software\/homer\/4.1\/.\/\/bin/\\nuse lib \'\/software\/areas\/genomics\/phase2\/software\/homer\/4.1\/bin\';/" $fi
+	# done
 
 	# 2- Create module file
 	mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$PACKAGE_NAME/ 
@@ -255,11 +293,20 @@ function InstallHomer {
 	puts stderr \"\tMUGQIC - Adds Homer, software for motif discovery and next generation sequencing analysis to your environment \"
 	}
 	module-whatis \"MUGQIC -  Adds Homer, software for motif discovery and next generation sequencing analysis to your environment \"
-	prereq					 mugqic/python/2.7.3 
 	set             root            \$::env(MUGQIC_INSTALL_HOME)/software/"$PACKAGE_NAME"/"$VERSION"
 	setenv          HOMER_HOME      \$root
 	prepend-path    PATH            \$root/bin
 	" > $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$PACKAGE_NAME/$VERSION
+	# Default module version file
+	echo "#%Module1.0
+	set ModulesVersion \"$VERSION\"" > .version
+	
+	# Add permissions and install module
+	mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$PACKAGE_NAME
+	chmod -R ug+rwX $VERSION .version
+	chmod -R o+rX $VERSION .version
+	mv $VERSION .version $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$PACKAGE_NAME
+
 	cd $curDir
 }
 
@@ -293,6 +340,16 @@ function InstallFindPeaks()  {
 	set             root            \$::env(MUGQIC_INSTALL_HOME)/software/"$PACKAGE_NAME"/"$VERSION"/fp4
 	setenv          FINDPEAKS_JAR   \$root/FindPeaks.jar
 	" > $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$PACKAGE_NAME/$VERSION
+	# Default module version file
+	echo "#%Module1.0
+	set ModulesVersion \"$VERSION\"" > .version
+	
+	# Add permissions and install module
+	mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$PACKAGE_NAME
+	chmod -R ug+rwX $VERSION .version
+	chmod -R o+rX $VERSION .version
+	mv $VERSION .version $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$PACKAGE_NAME
+
 
 	cd $curDir
 
@@ -329,7 +386,6 @@ function InstallMACS()  {
 	puts stderr \"\tMUGQIC - Adds Model-based Analysis of ChIP-Seq (MACS) tool to your environment \"
 	}
 	module-whatis \"MUGQIC - Adds Model-based Analysis of ChIP-Seq (MACS) tool to your environment \"
-	prereq					 mugqic/python/2.7.3
 	set             root            \$::env(MUGQIC_INSTALL_HOME)/software/"$PACKAGE_NAME"/"$VERSION"
 	prepend-path    PATH            \$root/bin
 	prepend-path    PYTHONPATH      \$root/lib/python2.7/site-packages
@@ -337,6 +393,15 @@ function InstallMACS()  {
 	setenv          MACS_LIB        \$root/lib/python2.7/site-packages
 
 	" > $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$PACKAGE_NAME/$VERSION
+	# Default module version file
+	echo "#%Module1.0
+	set ModulesVersion \"$VERSION\"" > .version
+
+	# Add permissions and install module
+	mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$PACKAGE_NAME
+	chmod -R ug+rwX $VERSION .version
+	chmod -R o+rX $VERSION .version
+	mv $VERSION .version $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$PACKAGE_NAME
 
 	cd $curDir
 }
@@ -374,7 +439,6 @@ function InstallMACS2() {
 	puts stderr \"\tMUGQIC - Adds Model-based Analysis of ChIP-Seq (MACS) tool to your environment \"
 	}
 	module-whatis \"MUGQIC - Adds Model-based Analysis of ChIP-Seq (MACS) tool to your environment \"
-	prereq					 mugqic/python/2.7.3
 	set             root            \$::env(MUGQIC_INSTALL_HOME)/software/"$PACKAGE_NAME"/"$VERSION"
 	prepend-path    PATH            \$root/bin
 	prepend-path    PYTHONPATH      \$root/lib/python2.7/site-packages
@@ -382,6 +446,15 @@ function InstallMACS2() {
 	setenv          MACS_LIB        \$root/lib/python2.7/site-packages
 
 	" > $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$PACKAGE_NAME/$VERSION
+	# Default module version file
+	echo "#%Module1.0
+	set ModulesVersion \"$VERSION\"" > .version
+	
+	# Add permissions and install module
+	mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$PACKAGE_NAME
+	chmod -R ug+rwX $VERSION .version
+	chmod -R o+rX $VERSION .version
+	mv $VERSION .version $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$PACKAGE_NAME
 
 	cd $curDir
 }

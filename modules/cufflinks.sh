@@ -1,11 +1,11 @@
-#!/bin/sh
+#!/bin/bash
 
 #
 # Cufflinks
 #
 
 SOFTWARE=cufflinks
-VERSION=2.1.1
+VERSION=2.2.1
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/$SOFTWARE
 INSTALL_DOWNLOAD=$INSTALL_PATH/tmp
 mkdir -p $INSTALL_DOWNLOAD
