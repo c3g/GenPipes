@@ -130,7 +130,7 @@ then
 	# hack to force umask 0002: in a large group, want pkgs installed with write perm.
 	sed -i 's/Sys.umask("022")/Sys\.umask("002")/g' src/library/tools/R/build.R 
 
-	./configure --prefix=$INSTALL_DIR  # TEMP s--with-readline=yes --with-readline=no
+	./configure --enable-R-shlib --prefix=$INSTALL_DIR  # --enable-R-shlib  is for Rpy
 	make -j8
 	make install
 	cd $TEMPDIR
@@ -194,29 +194,29 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
 
 	## Define the list of packages to standard packages to install.
 	deps = c("affxparser","affy","affyio","affyPLM","akima","annotate","AnnotationDbi"
-	,"AnnotationForge","ape","ash","base","BatchExperiments","BatchJobs","beanplot","Biobase","BiocGenerics"
+	,"AnnotationForge","ape","ash","BatchExperiments","BatchJobs","beanplot","Biobase","BiocGenerics"
 	,"BiocInstaller","bioDist","biomaRt","Biostrings","biovizBase","bit"
 	,"bitops","boot","brew","BSgenome","caTools","charm","charmData","class"
-	,"cluster","clusterProfiler","codetools","colorspace","compiler","corpcor","crlmm","ctc"
-	,"cummeRbund","datasets","DBI","DESeq","devtools","dichromat","digest"
+	,"cluster","clusterProfiler","codetools","colorspace","corpcor","crlmm","ctc"
+	,"cummeRbund","datasets","DBI","DESeq","devtools","dichromat","digest","dplyr","DNAcopy"
 	,"edgeR","ellipse","evaluate","fastcluster","ff","fields"
 	,"foreach","foreign","gcrma","gdata","genefilter","GenomicFeatures"
-	,"GenomicRanges","genoset","GEOquery","ggplot2","googleVis","goseq"
-	,"gplots","graph","graphics","grDevices","grid","gtable","gtools"
-	,"Gviz","hdrcde","Hmisc","hwriter","HTSFilter","igraph","IlluminaHumanMethylation450k.db"
+	,"GenomicRanges","genoset","GEOquery","ggplot2","ggvis","googleVis","goseq"
+	,"gplots","graph","gsalib","gtable","gtools"
+	,"Gviz","hdrcde","Hmisc","hwriter","HTqPCR","HTSFilter","igraph","IlluminaHumanMethylation450k.db"
 	,"IlluminaHumanMethylation450kmanifest","impute","IRanges","iterators"
 	,"KernSmooth","ks","labeling","lattice","latticeExtra","limma","locfit"
-	,"lumi","LVSmiRNA","maps","markdown","MASS","Matrix","matrixStats","mclust"
-	,"memoise","methods","methyAnalysis","methylumi","mgcv","minfi","mirbase.db","misc3d"
-	,"multicore","multtest","munsell","mvtnorm","NBPSeq","nleqslv","nlme"
-	,"nnet","nor1mix","Nozzle.R1","oligo","oligoClasses","outliers","parallel"
+	,"lumi","LVSmiRNA","magrittr","maps","markdown","MASS","Matrix","matrixStats","mclust"
+	,"memoise","methyAnalysis","methylumi","mgcv","minfi","mirbase.db","misc3d"
+	,"multtest","munsell","mvtnorm","NBPSeq","nleqslv","nlme"
+	,"nnet","nondetects","nor1mix","Nozzle.R1","oligo","oligoClasses","outliers"
 	,"pd.charm.hg18.example","pheatmap","plotrix","plyr","plyr","preprocessCore"
 	,"proto","quantreg","R2HTML","RBGL","RColorBrewer","Rcpp","RcppEigen","RCurl"
 	,"ReportingTools","reshape","reshape2","rgl","RJSONIO","R.methodsS3","roxygen2"
-	,"rpart","Rsamtools","RSQLite","rtracklayer","scales","sendmailR","ShortRead","siggenes","snow"
-	,"SNPchip","SortableHTMLTables","spam","SparseM","spatial","splines","SQN"
-	,"statmod","stats","stats4","stringr","survival","sva","tcltk","testthat"
-	,"tools","TxDb.Hsapiens.UCSC.hg19.knownGene","utils","Vennerable","vioplot","vsn"
+	,"rpart","Rsamtools","RSQLite","rtracklayer","scales","sendmailR","shiny","ShortRead","siggenes","snow"
+	,"SNPchip","SortableHTMLTables","spam","SparseM","spatial","SQN"
+	,"statmod","stringr","survival","sva","testthat"
+	,"TxDb.Hsapiens.UCSC.hg19.knownGene","vioplot","vsn"
 	,"WriteXLS","XML","xtable","zlibbioc")
 
 	## Programmatically add all the org packages (excluding MeSH mess which takes too long)

@@ -5,7 +5,7 @@
 #
 
 SOFTWARE=ray
-VERSION=2.3.0
+VERSION=2.3.1
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/$SOFTWARE
 INSTALL_DOWNLOAD=$INSTALL_PATH/tmp
 mkdir -p $INSTALL_DOWNLOAD
@@ -16,12 +16,13 @@ wget http://downloads.sourceforge.net/project/denovoassembler/Ray-${VERSION}.tar
 tar xjvf Ray-$VERSION.tar.bz2
 cd Ray-$VERSION
 
-# Needed on guillimin
-#module load gcc/4.7.2 openmpi/1.6.3-gcc
+# Guillimin
+# module load gcc/4.7.2 openmpi/1.6.3-gcc
 # Mammouth
 # module load gcc/4.7.0 openmpi_gcc64/1.6.4
-# fix readme
-sed 's/ RayPlatform\/README/ RayPlatform\/README.md/g' -i Makefile
+# Abacus
+# module load itgenome/openmpi/1.6
+
 make -j 4 HAVE_LIBZ=y HAVE_LIBBZ2=y MAXKMERLENGTH=64 PREFIX=${INSTALL_PATH}/$SOFTWARE-$VERSION
 make HAVE_LIBZ=y HAVE_LIBBZ2=y MAXKMERLENGTH=64 PREFIX=${INSTALL_PATH}/$SOFTWARE-$VERSION install
 chmod -R a+rX,g+w ${INSTALL_PATH}/$SOFTWARE-$VERSION

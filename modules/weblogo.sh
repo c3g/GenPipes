@@ -3,11 +3,17 @@
 set -eu -o pipefail
 
 #
-# MUGQIC Tools
+# WebLogo
 #
 
-SOFTWARE=mugqic_tools
-VERSION=1.10.4
+# WebLogo requires a recent version of ghostscript to create PNG and PDF output, and pdf2svg to generate SVG output.
+# WebLogo version 3 is written in python. It is necessary to have python 2.5, 2.6 or 2.7 and the extension package numpy installed before WebLogo will run. 
+
+SOFTWARE=weblogo
+#VERSION=2.8.2
+VERSION=3.3
+# If WebLogo version >= 3, specify in which python version it must be intalled
+PYTHON_VERSION=2.7.8
 
 # 'MUGQIC_INSTALL_HOME_DEV' for development, 'MUGQIC_INSTALL_HOME' for production (don't write '$' before!)
 INSTALL_HOME=MUGQIC_INSTALL_HOME
@@ -27,8 +33,16 @@ mkdir -p $INSTALL_DOWNLOAD
 cd $INSTALL_DOWNLOAD
 
 # Download, extract, build
-# Write here the specific commands to download, extract, build the software, typically similar to:
-ARCHIVE=$SOFTWARE-$VERSION.tar.gz
+if [[ $VERSION == "2.8.2" ]]
+then
+  ARCHIVE=$SOFTWARE.$VERSION.tar.gz
+  URL=http://weblogo.berkeley.edu/release/$ARCHIVE
+elif [[ $VERSION == "3.3" ]]
+then
+  ARCHIVE=$SOFTWARE-$VERSION.tar.gz
+  URL=http://weblogo.googlecode.com/files/$ARCHIVE
+fi
+
 # If archive was previously downloaded, use the local one, otherwise get it from remote site
 if [[ -f ${!INSTALL_HOME}/archive/$ARCHIVE ]]
 then
@@ -36,15 +50,25 @@ then
   cp -a ${!INSTALL_HOME}/archive/$ARCHIVE .
 else
   echo "Archive $ARCHIVE not in ${!INSTALL_HOME}/archive/: downloading it..."
-  wget https://bitbucket.org/mugqic/$SOFTWARE/get/$VERSION.tar.gz
-  # Rename archive
-  mv $VERSION.tar.gz $ARCHIVE
+  wget $URL
 fi
 tar zxvf $ARCHIVE
 
 SOFTWARE_DIR=$SOFTWARE-$VERSION
-# Rename mugqic_tools directory since original bitbucket name contains the commit number instead of version
-mv mugqic-mugqic_tools* $SOFTWARE_DIR
+
+if [[ $VERSION == "2.8.2" ]]
+then
+  mv $SOFTWARE $SOFTWARE_DIR
+  cd $SOFTWARE_DIR
+  # Update Perl script shebangs
+  sed -i s,"#\!/usr/bin/perl -w,#\!/usr/bin/env perl\\nuse warnings;,g" seqlogo
+elif [[ $VERSION == "3.3" ]]
+then
+  cd $SOFTWARE_DIR
+  module load mugqic/python/$PYTHON_VERSION
+  python setup.py install
+  ln -s weblogo seqlogo
+fi
 
 # Add permissions and install software
 cd $INSTALL_DOWNLOAD
@@ -59,33 +83,24 @@ fi
 # Module file
 echo "#%Module1.0
 proc ModulesHelp { } {
-       puts stderr \"\tMUGQIC - $SOFTWARE \" ;
+  puts stderr \"\tMUGQIC - $SOFTWARE \"
 }
-module-whatis \"$SOFTWARE  \" ;
-                      
-set             root                \$::env($INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE_DIR ;
-prepend-path    PATH                \$root/tools ;
-prepend-path    PATH                \$root/perl-tools ;
-prepend-path    PATH                \$root/R-tools ;
-prepend-path    PATH                \$root/python-tools ;
-prepend-path    PATH                \$root/RRNATagger-tools ;
-prepend-path    PERL5LIB            \$root/perl-tools ;
-setenv          R_TOOLS             \$root/R-tools ;
-setenv          PERL_TOOLS          \$root/perl-tools ;
-setenv          PYTHON_TOOLS        \$root/python-tools ;
+module-whatis \"$SOFTWARE\"
+
+set             root                \$::env($INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE_DIR
+prepend-path    PATH                \$root
+setenv          WEBLOGO_HOME    \$root
 " > $VERSION
 
 ################################################################################
 # Everything below this line should be generic and not modified
-
-# Well... here, module directory is named "tools" instead of "mugqic_tools" for aesthetical reasons
 
 # Default module version file
 echo "#%Module1.0
 set ModulesVersion \"$VERSION\"" > .version
 
 # Set module directory path by lowercasing $INSTALL_HOME and removing '_install_home' in it
-MODULE_DIR=${!INSTALL_HOME}/modulefiles/`echo ${INSTALL_HOME,,} | sed 's/_install_home//'`/tools
+MODULE_DIR=${!INSTALL_HOME}/modulefiles/`echo ${INSTALL_HOME,,} | sed 's/_install_home//'`/$SOFTWARE
 
 # Create module directory with permissions if necessary
 if [[ ! -d $MODULE_DIR ]]

@@ -3,11 +3,13 @@
 set -eu -o pipefail
 
 #
-# MUGQIC Tools
+# MACS
 #
 
-SOFTWARE=mugqic_tools
-VERSION=1.10.4
+SOFTWARE=MACS
+VERSION=2.0.10.09132012
+#VERSION=1.4.2
+PYTHON_VERSION=2.7.8
 
 # 'MUGQIC_INSTALL_HOME_DEV' for development, 'MUGQIC_INSTALL_HOME' for production (don't write '$' before!)
 INSTALL_HOME=MUGQIC_INSTALL_HOME
@@ -27,8 +29,18 @@ mkdir -p $INSTALL_DOWNLOAD
 cd $INSTALL_DOWNLOAD
 
 # Download, extract, build
-# Write here the specific commands to download, extract, build the software, typically similar to:
-ARCHIVE=$SOFTWARE-$VERSION.tar.gz
+if [[ $VERSION == "1.4.2" ]]
+then
+  ARCHIVE=$SOFTWARE-$VERSION-1.tar.gz
+  URL=https://github.com/downloads/taoliu/MACS/$ARCHIVE
+  SOFTWARE_DIR=$SOFTWARE-$VERSION
+elif [[ $VERSION == "2.0.10.09132012" ]]
+then
+  ARCHIVE=${SOFTWARE}2-$VERSION.tar.gz
+  URL=https://pypi.python.org/packages/source/M/MACS2/$ARCHIVE
+  SOFTWARE_DIR=${SOFTWARE}2-$VERSION
+fi
+
 # If archive was previously downloaded, use the local one, otherwise get it from remote site
 if [[ -f ${!INSTALL_HOME}/archive/$ARCHIVE ]]
 then
@@ -36,20 +48,17 @@ then
   cp -a ${!INSTALL_HOME}/archive/$ARCHIVE .
 else
   echo "Archive $ARCHIVE not in ${!INSTALL_HOME}/archive/: downloading it..."
-  wget https://bitbucket.org/mugqic/$SOFTWARE/get/$VERSION.tar.gz
-  # Rename archive
-  mv $VERSION.tar.gz $ARCHIVE
+  wget --no-check-certificate $URL
 fi
 tar zxvf $ARCHIVE
 
-SOFTWARE_DIR=$SOFTWARE-$VERSION
-# Rename mugqic_tools directory since original bitbucket name contains the commit number instead of version
-mv mugqic-mugqic_tools* $SOFTWARE_DIR
+cd $SOFTWARE_DIR
+module load mugqic/python/$PYTHON_VERSION
+python setup.py install --prefix $INSTALL_DIR/$SOFTWARE_DIR
 
 # Add permissions and install software
 cd $INSTALL_DOWNLOAD
-chmod -R ug+rwX,o+rX-w .
-mv -i $SOFTWARE_DIR $INSTALL_DIR/
+chmod -R ug+rwX,o+rX-w . $INSTALL_DIR/$SOFTWARE_DIR
 # Store archive if not already present or if different from the previous one
 if [[ ! -f ${!INSTALL_HOME}/archive/$ARCHIVE || `diff ${!INSTALL_HOME}/archive/$ARCHIVE $ARCHIVE` ]]
 then
@@ -59,33 +68,26 @@ fi
 # Module file
 echo "#%Module1.0
 proc ModulesHelp { } {
-       puts stderr \"\tMUGQIC - $SOFTWARE \" ;
+  puts stderr \"\tMUGQIC - $SOFTWARE \"
 }
-module-whatis \"$SOFTWARE  \" ;
-                      
-set             root                \$::env($INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE_DIR ;
-prepend-path    PATH                \$root/tools ;
-prepend-path    PATH                \$root/perl-tools ;
-prepend-path    PATH                \$root/R-tools ;
-prepend-path    PATH                \$root/python-tools ;
-prepend-path    PATH                \$root/RRNATagger-tools ;
-prepend-path    PERL5LIB            \$root/perl-tools ;
-setenv          R_TOOLS             \$root/R-tools ;
-setenv          PERL_TOOLS          \$root/perl-tools ;
-setenv          PYTHON_TOOLS        \$root/python-tools ;
+module-whatis \"$SOFTWARE\"
+
+set             root                \$::env($INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE_DIR
+prepend-path    PATH                \$root/bin
+prepend-path    PYTHONPATH         \$root/lib/python2.7/site-packages
+setenv          MACS_BIN            \$root/bin
+setenv          MACS_LIB            \$root/lib/python2.7/site-packages
 " > $VERSION
 
 ################################################################################
 # Everything below this line should be generic and not modified
-
-# Well... here, module directory is named "tools" instead of "mugqic_tools" for aesthetical reasons
 
 # Default module version file
 echo "#%Module1.0
 set ModulesVersion \"$VERSION\"" > .version
 
 # Set module directory path by lowercasing $INSTALL_HOME and removing '_install_home' in it
-MODULE_DIR=${!INSTALL_HOME}/modulefiles/`echo ${INSTALL_HOME,,} | sed 's/_install_home//'`/tools
+MODULE_DIR=${!INSTALL_HOME}/modulefiles/`echo ${INSTALL_HOME,,} | sed 's/_install_home//'`/$SOFTWARE
 
 # Create module directory with permissions if necessary
 if [[ ! -d $MODULE_DIR ]]

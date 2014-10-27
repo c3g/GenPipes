@@ -3,16 +3,14 @@
 set -eu -o pipefail
 
 #
-# UCSC 'kent' bioinformatics utilities
+# AMOS
 #
 
-SOFTWARE=ucsc
-# By default, the latest remote version will be downloaded and the version date set appropriately.
-# To use a local archive specific version, uncomment and update VERSION
-#VERSION=20140212
+SOFTWARE=amos
+VERSION=3.1.0
 
 # 'MUGQIC_INSTALL_HOME_DEV' for development, 'MUGQIC_INSTALL_HOME' for production (don't write '$' before!)
-INSTALL_HOME=MUGQIC_INSTALL_HOME
+INSTALL_HOME=MUGQIC_INSTALL_HOME_DEV
 
 # Indirection call to use $INSTALL_HOME value as variable name
 INSTALL_DIR=${!INSTALL_HOME}/software/$SOFTWARE
@@ -29,48 +27,31 @@ mkdir -p $INSTALL_DOWNLOAD
 cd $INSTALL_DOWNLOAD
 
 # Download, extract, build
-# Write here the specific commands to download, extract, build the software, typically similar to:
-
-# Momentarily unset variable expansion error to test $VERSION
-set +u
-if [[ -z $VERSION ]]
+ARCHIVE=$SOFTWARE-$VERSION.tar.gz
+# If archive was previously downloaded, use the local one, otherwise get it from remote site
+if [[ -f ${!INSTALL_HOME}/archive/$ARCHIVE ]]
 then
-  # If VERSION is not set, download the latest remote archive
-  echo "Archive VERSION not set: downloading latest remote archive..."
-  REMOTE_ARCHIVE=userApps.src.tgz
-  wget http://hgdownload.cse.ucsc.edu/admin/exe/$REMOTE_ARCHIVE
-  # Set VERSION with the archive last modification date
-  VERSION=`stat --printf=%y $REMOTE_ARCHIVE | perl -pe 's/^(\d+)-(\d+)-(\d+).*/\1\2\3/'`
-  ARCHIVE=$SOFTWARE-userApps-$VERSION.src.tgz
-  mv $REMOTE_ARCHIVE $ARCHIVE
+  echo "Archive $ARCHIVE already in ${!INSTALL_HOME}/archive/: using it..."
+  cp -a ${!INSTALL_HOME}/archive/$ARCHIVE .
 else
-  # Try to find specific version in archive repository
-  ARCHIVE=$SOFTWARE-userApps-$VERSION.src.tgz
-  if [[ -f ${!INSTALL_HOME}/archive/$ARCHIVE ]]
-  then
-    echo "Archive $ARCHIVE already in ${!INSTALL_HOME}/archive/: using it..."
-    cp -a ${!INSTALL_HOME}/archive/$ARCHIVE .
-  else
-    echo "Error: archive $ARCHIVE not found in ${!INSTALL_HOME}/archive/!"
-    echo "Comment VERSION variable to download the latest remote version"
-    exit 1
-  fi
+  echo "Archive $ARCHIVE not in ${!INSTALL_HOME}/archive/: downloading it..."
+  wget http://downloads.sourceforge.net/project/$SOFTWARE/$SOFTWARE/$VERSION/$ARCHIVE
 fi
-set -u
-
 tar zxvf $ARCHIVE
 
 SOFTWARE_DIR=$SOFTWARE-$VERSION
-mv userApps $SOFTWARE_DIR
 cd $SOFTWARE_DIR
+# With-qmake seems to work on guillimin and mammouth as well as abacus
+module load mugqic/MUMmer mugqic/ucsc
+./configure --prefix=$INSTALL_DIR/$SOFTWARE_DIR --with-qmake-qt4=/usr/lib64/qt4/bin/qmake
 make
+make install
 
-# Add permissions and install software
+# Add permissions
 cd $INSTALL_DOWNLOAD
-chmod -R ug+rwX,o+rX .
-mv -i $SOFTWARE_DIR $INSTALL_DIR/
+chmod -R ug+rwX,o+rX . $INSTALL_DIR/$SOFTWARE_DIR
 # Store archive if not already present or if different from the previous one
-if [[ ! -f ${!INSTALL_HOME}/archive/$ARCHIVE || `diff -q ${!INSTALL_HOME}/archive/$ARCHIVE $ARCHIVE` ]]
+if [[ ! -f ${!INSTALL_HOME}/archive/$ARCHIVE || `diff ${!INSTALL_HOME}/archive/$ARCHIVE $ARCHIVE` ]]
 then
   mv -i $ARCHIVE ${!INSTALL_HOME}/archive/
 fi

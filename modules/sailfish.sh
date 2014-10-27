@@ -1,6 +1,4 @@
 #!/bin/bash
-# Exit immediately on error
-set -eu -o pipefail
 
 ################################################################################
 # This is a module install script template which should be copied and used for
@@ -13,8 +11,8 @@ set -eu -o pipefail
 # Software_name  ## TO BE MODIFIED WITH e.g. BLAST, HMMER, SAMtools, etc.
 #
 
-SOFTWARE=software_name  ## TO BE MODIFIED WITH e.g. blast, hmmer, samtools, etc.
-VERSION=0.0.0  ## TO BE MODIFIED WITH e.g. 2.2.28+, 3.0, 0.1.19, etc.
+SOFTWARE=sailfish  ## TO BE MODIFIED WITH e.g. blast, hmmer, samtools, etc.
+VERSION=0.6.3  ## TO BE MODIFIED WITH e.g. 2.2.28+, 3.0, 0.1.19, etc.
 
 # 'MUGQIC_INSTALL_HOME_DEV' for development, 'MUGQIC_INSTALL_HOME' for production (don't write '$' before!)
 INSTALL_HOME=MUGQIC_INSTALL_HOME_DEV  ## TO BE MODIFIED IF NECESSARY
@@ -26,16 +24,18 @@ INSTALL_DIR=${!INSTALL_HOME}/software/$SOFTWARE
 if [[ ! -d $INSTALL_DIR ]]
 then
   mkdir $INSTALL_DIR
-  chmod ug+rwX,o+rX-w $INSTALL_DIR
+  chmod ug+rwX,o+rX $INSTALL_DIR
 fi
 
 INSTALL_DOWNLOAD=$INSTALL_DIR/tmp
-mkdir -p $INSTALL_DOWNLOAD
+mkdir $INSTALL_DOWNLOAD
 cd $INSTALL_DOWNLOAD
 
 # Download, extract, build
 # Write here the specific commands to download, extract, build the software, typically similar to:
-ARCHIVE=$SOFTWARE-$VERSION.(zip|tar.gz|tar.bz2)  ## TO BE MODIFIED WITH SPECIFIC ARCHIVE
+ARCHIVE=v$VERSION.tar.gz  ## TO BE MODIFIED WITH SPECIFIC ARCHIVE
+
+# 
 # If archive was previously downloaded, use the local one, otherwise get it from remote site
 if [[ -f ${!INSTALL_HOME}/archive/$ARCHIVE ]]
 then
@@ -43,19 +43,35 @@ then
   cp -a ${!INSTALL_HOME}/archive/$ARCHIVE .
 else
   echo "Archive $ARCHIVE not in ${!INSTALL_HOME}/archive/: downloading it..."
-  wget http://www.software_lab.org/download/$ARCHIVE  ## TO BE MODIFIED WITH SPECIFIC URL
+   wget https://github.com/kingsfordgroup/sailfish/archive/$ARCHIVE  -O $ARCHIVE
 fi
-(unzip|tar zxvf|tar jxvf) $ARCHIVE  ## TO BE MODIFIED WITH SPECIFIC COMMAND
+tar xvf $ARCHIVE  
 
-SOFTWARE_DIR=$SOFTWARE-$VERSION  ## TO BE MODIFIED WITH SPECIFIC SOFTWARE DIRECTORY IF NECESSARY
+
+
+# https://github.com/kingsfordgroup/sailfish/blob/master/README.md
+SOFTWARE_DIR=sailfish-$VERSION
 cd $SOFTWARE_DIR
-./configure --prefix=$INSTALL_DIR/$SOFTWARE_DIR  ## TO BE ADDED AND MODIFIED IF NECESSARY
-make  ## TO BE ADDED AND MODIFIED IF NECESSARY
+mkdir build
+cd build
+
+module load cmake/2.8.8 gcc/4.8.2  # mammouth
+#module load cmake/2.8.12.2 gcc/4.9.1  # , guillimin
+# abacus
+cmake -DFETCH_BOOST=TRUE .. 
+
+
+make -j8
+
+
+make install
+
+
 
 # Add permissions and install software
 cd $INSTALL_DOWNLOAD
-chmod -R ug+rwX,o+rX-w .
-mv -i $SOFTWARE_DIR $INSTALL_DIR/
+chmod -R ug+rwX,o+rX .
+mv -i $SOFTWARE_DIR $INSTALL_DIR
 # Store archive if not already present or if different from the previous one
 if [[ ! -f ${!INSTALL_HOME}/archive/$ARCHIVE || `diff ${!INSTALL_HOME}/archive/$ARCHIVE $ARCHIVE` ]]
 then
@@ -65,15 +81,15 @@ fi
 # Module file
 echo "#%Module1.0
 proc ModulesHelp { } {
-  puts stderr \"\tMUGQIC - $SOFTWARE \" ;  ## TO BE MODIFIED WITH DETAILED HELP IF ANY
+  puts stderr \"\tMUGQIC - $SOFTWARE \" ; 
 }
-module-whatis \"$SOFTWARE\" ;  ## TO BE MODIFIED WITH DETAILED DESCRIPTION IF ANY
+module-whatis \"$SOFTWARE\" http://www.cs.cmu.edu/~ckingsf/software/sailfish/index.html ;  
 
 set             root                \$::env($INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE_DIR
-prepend-path    PATH                \$root/bin ;  ## TO BE ADDED IF NECESSARY
-prepend-path    PATH                \$root/other_tools/bin ;  ## TO BE ADDED AND MODIFIED IF NECESSARY
-setenv          ${SOFTWARE}_JAR     \$root/$SOFTWARE-$VERSION.jar ;  ## TO BE ADDED AND MODIFIED IF NECESSARY
+prepend-path    PATH                \$root/bin ; 
+prepend-path    LD_LIBRARY_PATH      \$root/lib ;  
 " > $VERSION
+# export =$PWD/lib/:$LD_LIBRARY_PATH
 
 ################################################################################
 # Everything below this line should be generic and not modified
@@ -82,20 +98,19 @@ setenv          ${SOFTWARE}_JAR     \$root/$SOFTWARE-$VERSION.jar ;  ## TO BE AD
 echo "#%Module1.0
 set ModulesVersion \"$VERSION\"" > .version
 
-# Set module directory path by lowercasing $INSTALL_HOME and removing '_install_home' in it
-MODULE_DIR=${!INSTALL_HOME}/modulefiles/`echo ${INSTALL_HOME,,} | sed 's/_install_home//'`/$SOFTWARE
+# Set module directory path by removing '_INSTALL_HOME' in $INSTALL_HOME and lowercasing the result
+MODULE_DIR=${!INSTALL_HOME}/modulefiles/`echo ${INSTALL_HOME/_INSTALL_HOME/} | tr '[:upper:]' '[:lower:]'`/$SOFTWARE
 
 # Create module directory with permissions if necessary
 if [[ ! -d $MODULE_DIR ]]
 then
   mkdir $MODULE_DIR
-  chmod ug+rwX,o+rX-w $MODULE_DIR
+  chmod ug+rwX,o+rX $MODULE_DIR
 fi
 
 # Add permissions and install module
-chmod ug+rwX,o+rX-w $VERSION .version
-mv $VERSION .version $MODULE_DIR/
+chmod ug+rwX,o+rX $VERSION .version
+mv $VERSION .version $MODULE_DIR
 
 # Clean up temporary installation files if any
-cd
 rm -rf $INSTALL_DOWNLOAD

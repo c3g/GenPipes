@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 ################################################################################
 # This is a module install script template which should be copied and used for
@@ -9,11 +9,11 @@
 
 
 #
-# Software_name  python.
+# Software_name  duk
 #
 
-SOFTWARE=python
-VERSION=2.7.3
+SOFTWARE=duk
+VERSION=1.1
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/$SOFTWARE
 INSTALL_DOWNLOAD=$INSTALL_PATH/tmp
 mkdir -p $INSTALL_DOWNLOAD
@@ -21,17 +21,17 @@ cd $INSTALL_DOWNLOAD
 
 # Download, extract, build
 # Write here the specific commands to download, extract, build the software, typically similar to:
-wget http://www.python.org/ftp/python/2.7.3/Python-2.7.3.tgz
-tar -xvf Python-$VERSION.tgz                                                  
-cd Python-$VERSION                                                            
+wget http://sourceforge.net/projects/duk/files/duk.tar/download
+tar -xvf $SOFTWARE.tar                                                  
+cd $SOFTWARE-$VERSION                                                            
 ./configure --prefix=$INSTALL_PATH/$SOFTWARE-$VERSION                            
 make                                                                             
-make install
 
 # Add permissions and install software
 chmod -R 775 *
 cd $INSTALL_DOWNLOAD
-mv -i $INSTALL_DOWNLOAD/Python-$VERSION.tgz $MUGQIC_INSTALL_HOME/archive      
+#mv -i $SOFTWARE-$VERSION $INSTALL_PATH                                          
+mv -i $INSTALL_DOWNLOAD/$SOFTWARE-$VERSION.tar $MUGQIC_INSTALL_HOME/archive      
 
 # Module file
 echo "#%Module1.0
