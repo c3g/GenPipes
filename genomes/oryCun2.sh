@@ -24,7 +24,7 @@ SPECIE="Oryctolagus_cuniculus"
 ROOT="$MUGQIC_INSTALL_HOME/genomes/${SPECIE}/${GENOME}"
 mkdir -p $ROOT/fasta/bowtie2 $ROOT/fasta/bwa $ROOT/fasta/byChro $ROOT/annotation/mappability $ROOT/annotation/genes
 cd $ROOT/fasta
-wget "http://hgdownload.cse.ucsc.edu/goldenPath/${GENOME}/bigZips/${GENOME}.fa.gz"
+wget ftp://ftp.ensembl.org/pub/release-75/fasta/oryctolagus_cuniculus/dna/Oryctolagus_cuniculus.OryCun2.0.75.dna_sm.toplevel.fa.gz
 gunzip ${GENOME}.fa.gz 
 ln -s ${GENOME}.fa ${GENOME}.fa.fa
 

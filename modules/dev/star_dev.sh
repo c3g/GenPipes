@@ -2,14 +2,14 @@
 ###################
 ################### STAR
 ###################
-VERSION="2.3.0e"
+VERSION="2.4.0c"
 INSTALL_PATH=$MUGQIC_INSTALL_HOME_DEV/software/star
 mkdir -p $INSTALL_PATH
 cd $INSTALL_PATH
 
 # Download and extract
-wget https://rna-star.googlecode.com/files/STAR_$VERSION.tgz
-tar zxvf STAR_$VERSION.tgz
+wget https://github.com/alexdobin/STAR/archive/STAR_${VERSION}.tar.gz
+tar zxvf STAR_$VERSION.tar.gz
 chmod -R 775 STAR_$VERSION
 
 ##INSTALL
