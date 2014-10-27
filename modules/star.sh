@@ -7,7 +7,7 @@ set -eu -o pipefail
 #
 
 SOFTWARE=star
-VERSION=2.4.0d
+VERSION=2.4.0e
 
 # 'MUGQIC_INSTALL_HOME_DEV' for development, 'MUGQIC_INSTALL_HOME' for production (don't write '$' before!)
 INSTALL_HOME=MUGQIC_INSTALL_HOME
@@ -42,8 +42,8 @@ tar zxvf $ARCHIVE
 SOFTWARE_DIR=${SOFTWARE^^}_$VERSION
 # Remove "STAR-" prefix from top directory name
 mv ${SOFTWARE^^}-$SOFTWARE_DIR $SOFTWARE_DIR
-cd $SOFTWARE_DIR
-make
+cd $SOFTWARE_DIR/source
+make -j8
 
 # Add permissions and install software
 cd $INSTALL_DOWNLOAD
@@ -63,7 +63,7 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                \$::env($INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE_DIR
-prepend-path    PATH                \$root
+prepend-path    PATH                \$root/source
 " > $VERSION
 
 ################################################################################
