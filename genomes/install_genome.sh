@@ -246,7 +246,7 @@ create_star_index() {
     STAR_CMD="\
 INDEX_DIR=$INSTALL_DIR/annotations/star_index/$SOURCE$VERSION.sjdbOverhang$sjdbOverhang && \
 mkdir -p \$INDEX_DIR && \
-module load mugqic/star/2.4.0d && \
+module load mugqic/star/2.4.0e && \
 LOG=$LOG_DIR/star_${sjdbOverhang}_$TIMESTAMP.log && \
 STAR --runMode genomeGenerate --genomeDir \$INDEX_DIR --genomeFastaFiles $GENOME_DIR/$GENOME_FASTA --runThreadN $runThreadN --sjdbOverhang $sjdbOverhang --sjdbGTFfile $INSTALL_DIR/annotations/$GTF --outFileNamePrefix \$INDEX_DIR/ > \$LOG 2>&1 && \
 chmod -R ug+rwX,o+rX \$INDEX_DIR \$LOG"
