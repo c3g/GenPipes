@@ -1,35 +1,28 @@
 # MUGQIC PIPELINES
 -------------
 
-This repository holds perl libs, wrappers and scripts of several bioinformatics pipelines.
+This repository holds Python libs, wrappers and scripts of several bioinformatics pipelines.
 
-The main repo dir organization is:
+The repository organization is:
 
-mugqic_pipeline  -  root dir
+mugqic_pipeline           - Root directory.
 
-root/lib       - dir containing all libraries of all pipelines. 
+mugqic_pipeline/core      - Core libraries for all pipelines.
 
-root/pipelines - dir containing the pipelines itself. An addtional dir should be created in this dir with the pipeline name \(root/pipeline/Pipeline_name\)
+mugqic_pipeline/bfx       - Bioinformatics libraries for all pipelines.
 
-Perl documentation on *.pm and *.pl files should \(as much as possible\) be created using POD \(Pod::Usage\). 
+mugqic_pipeline/pipelines - Pipelines, each of them being located in the subdirectory \(mugqic_pipeline/pipelines/<pipeline_name>\).
 
+Python documentation for *.py files should \(as much as possible\) be created using pydoc.
 
-# BUG report
+# Documentation
 -------------
 
-Please report bugs, errors or problems by sending an email to [bioinformatics.service@mail.mcgill.ca](mailto:bioinformatics.service@mail.mcgill.ca)
+Visit our [wiki](https://biowiki.atlassian.net/wiki/display/PS/Pipeline+Space+Home) for a pipeline overview.
 
+To generate documentation for Python wrappers and libraries, use [pydoc](https://docs.python.org/2/library/pydoc.html). For instance:
 
-# Documentation 
--------------
-
-Visit our [wiki](https://biowiki.atlassian.net/wiki/display/PS/Pipeline+Space+Home) for an overview of the pipelines included in the mugqic_pipeline repository. 
-
-To automatically generate documentation for perl wrappers and libraries, use [pod2html](http://perldoc.perl.org/Pod/Html.html). For instance, 
-
-    pod2html --infile=src/mugqic_pipeline/pipelines/chipseq/chipSeq.pl --outfile=chipSeq.html
-
-will generate HTML documentation for the chipSeq.pl script (The chipseq pipeline wrapper)
+    pydoc --infile=src/mugqic_pipeline/pipelines/dnaseq/dnaseq.py --outfile=dnaseq.html
 
 MUGQIC pipelines are perl programs that write to the standard output a list of bash commands intended to be run in a cluster computing environment. Dependencies between steps are controlled from the program. When executed, commands will submit jobs to a batch server. The cluster submit commands and the parameters associated to each job can be modified through a configuration file.
 
@@ -52,23 +45,17 @@ Whenever the latest snapshot from github is needed, use the command pull
 
     git pull origin
 
-#### Setup
 
-Add the mugqic directory library to your PERL5LIB path.
-
-    export PERL5LIB=${PERL5LIB}:/home/user/src/mugqic_pipeline/lib/ 
-
-    
 ## Usage
 
-In its general operation all the mugqic pipelines require two input files: a project's read set sheet and a configuration (ini) file. Fastq files must be properly setup using a specific naming and directory structure. Additionally, the RNAseq and CHIPseq pipelines require a design file and the path for the job output logs. The command line options of the main pipelines are described below. Summaries of usage are printed when a command is run with no arguments. 
+In its general operation all the mugqic pipelines require two input files: a project's read set sheet and a configuration (ini) file. Fastq files must be properly setup using a specific naming and directory structure. Additionally, the RNAseq and CHIPseq pipelines require a design file and the path for the job output logs. The command line options of the main pipelines are described below. Summaries of usage are printed when a command is run with no arguments.
 
-###   The project's read set sheet 
+###   The project's read set sheet
 
 Is a csv plain text read set sheet generated from [NANUQ](http://gqinnovationcenter.com/index.aspx). See [this](https://biowiki.atlassian.net/wiki/display/PS/Read+Set+Files+%28FastQ%29+Setup) page to learn how to properly setup your fastq files and your project read set sheet.
 
 
-###   The configuration (ini) file. 
+###   The configuration (ini) file.
 Is the standard configuration file for the pipeline. It's a plain text file composed of sections, keys and values. Section name appears on a line in square brackets ([default]). Every key has a name and a value, separated by an equals sign (=), i.e. clusterSubmitCmd=msub. Semicolons (;) or number signs (#) at the beginning of the line indicate a comment. Comment lines are ignored. Generally sections are associated to specific steps of the pipeline. If a property is associated to a specific step, the program will search for keys in the respective section. If the key is not found, the values in the default section will be used. Templates for Compute Canada's Guillimin and Mammouth clusters may already be available in the respective pipeline directory (\(root/pipeline/Pipeline_name\)).
 
 
@@ -104,19 +91,19 @@ will generate a bash script for steps 1 to 14. This script can then be executed:
       -d (design.txt) the design file. A tab separated value file that specifies the experimental design information of the project. The first column lists the sample names, which should match elements the column Name in the read set sheet. Subsequent columns specify all the pairwise comparisons which should be undertaken: values should be either "2" (nominator), "1" (denominator) or "0" (exclude from comparison). An example of design file may be available in the respective pipeline directory (pipelines/Pipeline_name/example.design.tsv).
       -w The project's working directory. All job outputs will be sent to this directory.
 
-###   CHIPseq pipeline
+## Call home
+When pipeline jobs are submitted, a call home feature is invoked to collect some usage data. Those data are used to compute statistics and justify grant applications for pipeline funding support.
 
-    perl chipSeq.pl -c chipSeq.abacus.ini -n project.nanuq.csv -d design.csv -w  `pwd` -s 1 -e 11 > toRun.sh
+Data collected:
 
-will generate a bash script for steps 1 to 11. This script can then be executed:
+1. Date
+2. Number of samples
+3. Host and IP address
+4. Pipeline name (DnaSeq, RnaSeq, etc.)
+5. Pipeline Steps
 
-    sh toRun.sh
 
-####      Options
+# BUG report
+-------------
 
-      -c (chipSeq.abacus.ini) the standard configuration file for the pipeline. Templates for some cluster systems like Abacus or Guillimin may already be at pipelines/chipseq
-      -s The start step
-      -e The end step
-      -n (project.nanuq.csv) the NANUQ Project sample file, prepared as described above.
-      -d (design.csv) the design file. A tab separated value file that specifies the experimental design information of the project. An example of design file may be available in the respective pipeline directory (pipelines/Pipeline_name/example.design.tsv)
-      -w The project's working directory. All job outputs will be sent to this directory.
+Please report bugs, errors or problems by sending an email to [bioinformatics.service@mail.mcgill.ca](mailto:bioinformatics.service@mail.mcgill.ca)

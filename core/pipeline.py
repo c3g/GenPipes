@@ -61,9 +61,10 @@ class Pipeline(object):
     def argparser(self):
         if not hasattr(self, "_argparser"):
             # Create ArgumentParser with numbered step list as epilog
-            self._argparser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, epilog="Steps:\n" + "\n".join([str(idx + 1) + "- " + step.__name__ for idx, step in enumerate(self.steps)]))
+            self._argparser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, description=self.name, epilog="Steps:\n" + "\n".join([str(idx + 1) + "- " + step.__name__ for idx, step in enumerate(self.steps)]))
 
             # Common options for all pipelines
+            self._argparser.add_argument("-v", "--version", action="version", version=self.name, help="show the version information and exit")
             self._argparser.add_argument("-c", "--config", help="config INI-style list of files; config parameters are overwritten based on files order", nargs="+", type=file, required=True)
             self._argparser.add_argument("-s", "--steps", help="step range e.g. '1-5', '3,6,7', '2,4-8'", required=True)
             self._argparser.add_argument("-o", "--output-dir", help="output directory (default: current)", default=os.getcwd())
@@ -72,6 +73,10 @@ class Pipeline(object):
             self._argparser.add_argument("-l", "--log", help="log level (default: info)", choices=["debug", "info", "warning", "error", "critical"], default="info")
 
         return self._argparser
+
+    @property
+    def name(self):
+        return self.__class__.__name__ + "-" + open(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "VERSION"), 'r').read().split('\n')[0]
 
     # Pipeline command line arguments 
     @property
