@@ -144,19 +144,33 @@ download_urls() {
   fi
 }
 
+# Test genome size to decide whether indexing requires more cores or memory
+is_genome_big() {
+  GENOME_SIZE_LIMIT=200000000
+
+  if [ `stat --printf="%s" $GENOME_DIR/$GENOME_FASTA` -gt $GENOME_SIZE_LIMIT ]
+  then
+    return 0
+  else
+    return 1
+  fi
+}
+
 cmd_or_job() {
   CMD=$1
+  JOB_PREFIX=${3:-$CMD}  # Job prefix = 3rd param if defined else cmd name
 
   # If genome is too big, run command in a separate job since login node memory is limited
-  if [ `stat --printf="%s" $GENOME_DIR/$GENOME_FASTA` -gt 200000000 ]
+  if is_genome_big
   then
     echo
-    echo Submitting $CMD as job...
+    echo Submitting $JOB_PREFIX as job...
     echo
-    echo "${!CMD}" | qsub -m ae -M $JOB_MAIL -W umask=0002 -d $INSTALL_DIR -j oe -o $LOG_DIR/${CMD}_$TIMESTAMP.log -N $CMD.$GENOME_FASTA -l walltime=24:00:0 -q sw -l nodes=1:ppn=2
+    CORES=${2:-1}  # Nb cores = 2nd param if defined else 1
+    echo "${!CMD}" | qsub -m ae -M $JOB_MAIL -W umask=0002 -d $INSTALL_DIR -j oe -o $LOG_DIR/${JOB_PREFIX}_$TIMESTAMP.log -N $JOB_PREFIX.$GENOME_FASTA -l walltime=24:00:0 -q sw -l nodes=1:ppn=$CORES
   else
     echo
-    echo Running $CMD...
+    echo Running $JOB_PREFIX...
     echo
     echo "${!CMD}" | bash
   fi
@@ -190,7 +204,7 @@ module load mugqic/bwa/0.7.10 && \
 LOG=$LOG_DIR/bwa_$TIMESTAMP.log && \
 bwa index \$INDEX_DIR/$GENOME_FASTA > \$LOG 2>&1 && \
 chmod -R ug+rwX,o+rX \$INDEX_DIR \$LOG"
-  cmd_or_job BWA_CMD
+  cmd_or_job BWA_CMD 2
 }
 
 create_bowtie2_tophat_index() {
@@ -212,7 +226,33 @@ module load mugqic/samtools/0.1.19 mugqic/tophat/2.0.11 && \
 LOG=$LOG_DIR/gtf_tophat_$TIMESTAMP.log && \
 tophat --output-dir \$INDEX_DIR/tophat_out --GTF \$INDEX_DIR/$GTF --transcriptome-index=\$INDEX_DIR/${GTF/.gtf} $GENOME_DIR/bowtie2_index/${GENOME_FASTA/.fa} > \$LOG 2>&1 && \
 chmod -R ug+rwX,o+rX \$INDEX_DIR \$LOG"
-  cmd_or_job BOWTIE2_TOPHAT_CMD
+  cmd_or_job BOWTIE2_TOPHAT_CMD 2
+}
+
+create_star_index() {
+  if is_genome_big
+  then
+    runThreadN=6
+  else
+    runThreadN=1
+  fi
+
+  for sjdbOverhang in 49 99
+  do
+
+    echo
+    echo Creating STAR index with sjdbOverhang $sjdbOverhang...
+    echo
+    STAR_CMD="\
+INDEX_DIR=$INSTALL_DIR/annotations/star_index/$SOURCE$VERSION.sjdbOverhang$sjdbOverhang && \
+mkdir -p \$INDEX_DIR && \
+module load mugqic/star/2.4.0d && \
+LOG=$LOG_DIR/star_${sjdbOverhang}_$TIMESTAMP.log && \
+STAR --runMode genomeGenerate --genomeDir \$INDEX_DIR --genomeFastaFiles $GENOME_DIR/$GENOME_FASTA --runThreadN $runThreadN --sjdbOverhang $sjdbOverhang --sjdbGTFfile $INSTALL_DIR/annotations/$GTF --outFileNamePrefix \$INDEX_DIR/ > \$LOG 2>&1 && \
+chmod -R ug+rwX,o+rX \$INDEX_DIR \$LOG"
+    cmd_or_job STAR_CMD $runThreadN STAR_${sjdbOverhang}_CMD
+
+  done
 }
 
 create_ncrna_bwa_index() {
@@ -286,8 +326,8 @@ build_files() {
   create_samtools_index
   create_bwa_index
   create_bowtie2_tophat_index
+  create_star_index
   create_ncrna_bwa_index
-
   create_gene_annotations
 }
 
