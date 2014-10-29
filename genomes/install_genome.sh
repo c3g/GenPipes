@@ -244,7 +244,7 @@ create_star_index() {
     echo Creating STAR index with sjdbOverhang $sjdbOverhang...
     echo
     STAR_CMD="\
-INDEX_DIR=$INSTALL_DIR/annotations/star_index/$SOURCE$VERSION.sjdbOverhang$sjdbOverhang && \
+INDEX_DIR=$INSTALL_DIR/genome/star_index/$SOURCE$VERSION.sjdbOverhang$sjdbOverhang && \
 mkdir -p \$INDEX_DIR && \
 module load mugqic/star/2.4.0e && \
 LOG=$LOG_DIR/star_${sjdbOverhang}_$TIMESTAMP.log && \
