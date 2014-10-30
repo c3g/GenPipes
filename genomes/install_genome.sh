@@ -2,12 +2,21 @@
 # Exit immediately on error
 set -eu -o pipefail
 
+module_bowtie=mugqic/bowtie/2.1.0
+module_bwa=mugqic/bwa/0.7.10
+module_java=mugqic/java/openjdk-jdk1.7.0_60
+module_picard=mugqic/picard/1.108
+module_R=mugqic/R/3.1.1
+module_samtools=mugqic/samtools/0.1.19
+module_star=mugqic/star/2.4.0e
+module_tophat=mugqic/tophat/2.0.11
+
 init_install() {
   # '$MUGQIC_INSTALL_HOME_DEV' for development, '$MUGQIC_INSTALL_HOME' for production
   INSTALL_HOME=$MUGQIC_INSTALL_HOME_DEV
 
   INSTALL_DIR=$INSTALL_HOME/genomes/species/$SPECIES.$ASSEMBLY
-  SOURCE_DIR=$INSTALL_DIR/source
+  DOWNLOAD_DIR=$INSTALL_DIR/downloads
   LOG_DIR=$INSTALL_DIR/log
   TIMESTAMP=`date +%FT%H.%M.%S`
 
@@ -17,6 +26,7 @@ init_install() {
   ANNOTATIONS_DIR=$INSTALL_DIR/annotations
   GTF=$SPECIES.$ASSEMBLY.$SOURCE$VERSION.gtf
   NCRNA=$SPECIES.$ASSEMBLY.$SOURCE$VERSION.ncrna.fa
+  RRNA=$SPECIES.$ASSEMBLY.$SOURCE$VERSION.rrna.fa
   VCF=$SPECIES.$ASSEMBLY.$SOURCE$VERSION.vcf.gz
 
   echo Installing genome for:
@@ -30,14 +40,14 @@ init_install() {
   if [[ ! -d $INSTALL_DIR ]] ; then mkdir -p $INSTALL_DIR ; fi
 
   # Create subdirectories
-  mkdir -p $SOURCE_DIR $LOG_DIR $GENOME_DIR $ANNOTATIONS_DIR
+  mkdir -p $DOWNLOAD_DIR $LOG_DIR $GENOME_DIR $ANNOTATIONS_DIR
 }
 
-download_dir() {
+download_path() {
   URL=$1
 
-  # Download directory is the URL domain name
-  echo $SOURCE_DIR/`echo $URL | perl -pe 's/^\S+:\/\/([^\/]*).*$/\1/'`
+  # Download path is the URL without protocol prefix
+  echo $DOWNLOAD_DIR/`echo $URL | perl -pe 's,^[^:]*://,,'`
 }
 
 download_url() {
@@ -47,10 +57,8 @@ download_url() {
   echo Downloading $URL...
   echo
 
-  DOWNLOAD_DIR=`download_dir $URL`
-  mkdir -p $DOWNLOAD_DIR
   cd $DOWNLOAD_DIR
-  wget -nc $URL
+  wget -r -c $URL
 }
 
 set_urls() {
@@ -102,9 +110,9 @@ set_urls() {
     RELEASE_URL=ftp://ftp.ensemblgenomes.org/pub/release-$VERSION
   
     # Retrieve Ensembl Genomes species information
-    download_url $RELEASE_URL/species.txt
-    cd `download_dir $RELEASE_URL/species.txt`
-    SPECIES_LINE="`awk -F"\t" -v species=${SPECIES,,} '$2 == species' species.txt`"
+    SPECIES_URL=$RELEASE_URL/species.txt
+    download_url $SPECIES_URL
+    SPECIES_LINE="`awk -F"\t" -v species=${SPECIES,,} '$2 == species' $(download_path $SPECIES_URL)`"
 
     # Retrieve species division (Bacteria|Fungi|Metazoa|Plants|Protists)
     DIVISION=`echo "$SPECIES_LINE" | cut -f3 | sed "s/^Ensembl//"`
@@ -156,6 +164,22 @@ is_genome_big() {
   fi
 }
 
+# Test if a list of files given as parameters exist, are regular files and are not zero size
+is_up2date() {
+  # By default, files are up to date
+  IS_UP2DATE=0
+
+  for f in $@
+  do
+    if [[ ! -f $f || ! -s $f ]]
+    then
+      IS_UP2DATE=1
+    fi
+  done
+
+  return $IS_UP2DATE
+}
+
 cmd_or_job() {
   CMD=$1
   JOB_PREFIX=${3:-$CMD}  # Job prefix = 3rd param if defined else cmd name
@@ -177,56 +201,89 @@ cmd_or_job() {
 }
 
 create_picard_index() {
-  echo
-  echo Creating genome Picard sequence dictionary...
-  echo
-  module load mugqic/picard/1.108 mugqic/java
-  java -jar $PICARD_HOME/CreateSequenceDictionary.jar REFERENCE=$GENOME_DIR/$GENOME_FASTA OUTPUT=$GENOME_DIR/${GENOME_FASTA/.fa/.dict} GENOME_ASSEMBLY=${GENOME_FASTA/.fa} > $LOG_DIR/picard_$TIMESTAMP.log 2>&1
+  GENOME_DICT=$GENOME_DIR/${GENOME_FASTA/.fa/.dict}
+
+  if ! is_up2date $GENOME_DICT
+  then
+    echo
+    echo Creating genome Picard sequence dictionary...
+    echo
+    module load $module_picard $module_java
+    java -jar $PICARD_HOME/CreateSequenceDictionary.jar REFERENCE=$GENOME_DIR/$GENOME_FASTA OUTPUT=$GENOME_DICT GENOME_ASSEMBLY=${GENOME_FASTA/.fa} > $LOG_DIR/picard_$TIMESTAMP.log 2>&1
+  else
+    echo
+    echo Genome Picard sequence dictionary up to date... skipping
+    echo
+  fi
 }
 
 create_samtools_index() {
-  echo
-  echo Creating genome SAMtools FASTA index...
-  echo
-  module load mugqic/samtools/0.1.19
-  samtools faidx $GENOME_DIR/$GENOME_FASTA > $LOG_DIR/samtools_$TIMESTAMP.log 2>&1
+  if ! is_up2date $GENOME_DIR/$GENOME_FASTA.fai
+  then
+    echo
+    echo Creating genome SAMtools FASTA index...
+    echo
+    module load $module_samtools
+    samtools faidx $GENOME_DIR/$GENOME_FASTA > $LOG_DIR/samtools_$TIMESTAMP.log 2>&1
+  else
+    echo
+    echo Genome SAMtools FASTA index up to date... skipping
+    echo
+  fi
 }
 
 create_bwa_index() {
-  echo
-  echo Creating genome BWA index...
-  echo
-  BWA_CMD="\
-INDEX_DIR=$GENOME_DIR/bwa_index && \
-mkdir -p \$INDEX_DIR && \
-ln -s -f -t \$INDEX_DIR ../$GENOME_FASTA && \
-module load mugqic/bwa/0.7.10 && \
+  INDEX_DIR=$GENOME_DIR/bwa_index
+  if ! is_up2date $INDEX_DIR/$GENOME_FASTA.sa
+  then
+    echo
+    echo Creating genome BWA index...
+    echo
+    BWA_CMD="\
+mkdir -p $INDEX_DIR && \
+ln -s -f -t $INDEX_DIR ../$GENOME_FASTA && \
+module load $module_bwa && \
 LOG=$LOG_DIR/bwa_$TIMESTAMP.log && \
-bwa index \$INDEX_DIR/$GENOME_FASTA > \$LOG 2>&1 && \
-chmod -R ug+rwX,o+rX \$INDEX_DIR \$LOG"
-  cmd_or_job BWA_CMD 2
+bwa index $INDEX_DIR/$GENOME_FASTA > \$LOG 2>&1 && \
+chmod -R ug+rwX,o+rX $INDEX_DIR \$LOG"
+    cmd_or_job BWA_CMD 2
+  else
+    echo
+    echo Genome BWA index up to date... skipping
+    echo
+  fi
 }
 
 create_bowtie2_tophat_index() {
-  echo
-  echo Creating genome Bowtie 2 index and gtf TopHat index...
-  echo
-  BOWTIE2_TOPHAT_CMD="\
-INDEX_DIR=$GENOME_DIR/bowtie2_index && \
-mkdir -p \$INDEX_DIR && \
-ln -s -f -t \$INDEX_DIR ../$GENOME_FASTA && \
-module load mugqic/bowtie/2.1.0 && \
+  BOWTIE2_INDEX_DIR=$GENOME_DIR/bowtie2_index
+  BOWTIE2_INDEX_PREFIX=$BOWTIE2_INDEX_DIR/${GENOME_FASTA/.fa}
+  TOPHAT_INDEX_DIR=$ANNOTATIONS_DIR/gtf_tophat_index
+  TOPHAT_INDEX_PREFIX=$TOPHAT_INDEX_DIR/${GTF/.gtf}
+
+  if ! is_up2date $BOWTIE2_INDEX_PREFIX.[1-4].bt2 $BOWTIE2_INDEX_PREFIX.rev.[12].bt2 $TOPHAT_INDEX_PREFIX.[1-4].bt2 $TOPHAT_INDEX_PREFIX.rev.[12].bt2
+  then
+    echo
+    echo Creating genome Bowtie 2 index and gtf TopHat index...
+    echo
+    BOWTIE2_TOPHAT_CMD="\
+mkdir -p $BOWTIE2_INDEX_DIR && \
+ln -s -f -t $BOWTIE2_INDEX_DIR ../$GENOME_FASTA && \
+module load $module_bowtie && \
 LOG=$LOG_DIR/bowtie2_$TIMESTAMP.log && \
-bowtie2-build \$INDEX_DIR/$GENOME_FASTA \$INDEX_DIR/${GENOME_FASTA/.fa} > \$LOG 2>&1 && \
-chmod -R ug+rwX,o+rX \$INDEX_DIR \$LOG && \
-INDEX_DIR=$INSTALL_DIR/annotations/gtf_tophat_index && \
-mkdir -p \$INDEX_DIR && \
-ln -s -f -t \$INDEX_DIR ../$GTF && \
-module load mugqic/samtools/0.1.19 mugqic/tophat/2.0.11 && \
+bowtie2-build $BOWTIE2_INDEX_DIR/$GENOME_FASTA $BOWTIE2_INDEX_PREFIX > \$LOG 2>&1 && \
+chmod -R ug+rwX,o+rX $BOWTIE2_INDEX_DIR \$LOG && \
+mkdir -p $TOPHAT_INDEX_DIR && \
+ln -s -f -t $TOPHAT_INDEX_DIR ../$GTF && \
+module load $module_samtools $module_tophat && \
 LOG=$LOG_DIR/gtf_tophat_$TIMESTAMP.log && \
-tophat --output-dir \$INDEX_DIR/tophat_out --GTF \$INDEX_DIR/$GTF --transcriptome-index=\$INDEX_DIR/${GTF/.gtf} $GENOME_DIR/bowtie2_index/${GENOME_FASTA/.fa} > \$LOG 2>&1 && \
-chmod -R ug+rwX,o+rX \$INDEX_DIR \$LOG"
+tophat --output-dir $TOPHAT_INDEX_DIR/tophat_out --GTF $TOPHAT_INDEX_DIR/$GTF --transcriptome-index=$TOPHAT_INDEX_PREFIX $BOWTIE2_INDEX_PREFIX > \$LOG 2>&1 && \
+chmod -R ug+rwX,o+rX \$TOPHAT_INDEX_DIR \$LOG"
   cmd_or_job BOWTIE2_TOPHAT_CMD 2
+  else
+    echo
+    echo Genome Bowtie 2 index and gtf TopHat index up to date... skipping
+    echo
+  fi
 }
 
 create_star_index() {
@@ -239,41 +296,80 @@ create_star_index() {
 
   for sjdbOverhang in 49 99
   do
-
-    echo
-    echo Creating STAR index with sjdbOverhang $sjdbOverhang...
-    echo
-    STAR_CMD="\
-INDEX_DIR=$INSTALL_DIR/genome/star_index/$SOURCE$VERSION.sjdbOverhang$sjdbOverhang && \
-mkdir -p \$INDEX_DIR && \
-module load mugqic/star/2.4.0e && \
+    INDEX_DIR=$INSTALL_DIR/genome/star_index/$SOURCE$VERSION.sjdbOverhang$sjdbOverhang
+    if ! is_up2date $INDEX_DIR/SAindex
+    then
+      echo
+      echo Creating STAR index with sjdbOverhang $sjdbOverhang...
+      echo
+      STAR_CMD="\
+mkdir -p $INDEX_DIR && \
+module load $module_star && \
 LOG=$LOG_DIR/star_${sjdbOverhang}_$TIMESTAMP.log && \
-STAR --runMode genomeGenerate --genomeDir \$INDEX_DIR --genomeFastaFiles $GENOME_DIR/$GENOME_FASTA --runThreadN $runThreadN --sjdbOverhang $sjdbOverhang --sjdbGTFfile $INSTALL_DIR/annotations/$GTF --outFileNamePrefix \$INDEX_DIR/ > \$LOG 2>&1 && \
-chmod -R ug+rwX,o+rX \$INDEX_DIR \$LOG"
-    cmd_or_job STAR_CMD $runThreadN STAR_${sjdbOverhang}_CMD
-
+STAR --runMode genomeGenerate --genomeDir $INDEX_DIR --genomeFastaFiles $GENOME_DIR/$GENOME_FASTA --runThreadN $runThreadN --sjdbOverhang $sjdbOverhang --sjdbGTFfile $ANNOTATIONS_DIR/$GTF --outFileNamePrefix $INDEX_DIR/ > \$LOG 2>&1 && \
+chmod -R ug+rwX,o+rX $INDEX_DIR \$LOG"
+      cmd_or_job STAR_CMD $runThreadN STAR_${sjdbOverhang}_CMD
+    else
+      echo
+      echo STAR index with sjdbOverhang $sjdbOverhang up to date... skipping
+      echo
+    fi
   done
 }
 
 create_ncrna_bwa_index() {
-  echo
-  echo Creating ncRNA BWA index...
-  echo
-  INDEX_DIR=$INSTALL_DIR/annotations/ncrna_bwa_index
-  mkdir -p $INDEX_DIR
-  ln -s -f -t $INDEX_DIR ../$NCRNA
-  module load mugqic/bwa/0.7.10
-  bwa index $INDEX_DIR/$NCRNA > $LOG_DIR/ncrna_bwa_$TIMESTAMP.log 2>&1
+  INDEX_DIR=$ANNOTATIONS_DIR/ncrna_bwa_index
+  if ! is_up2date $INDEX_DIR/$NCRNA.sa
+  then
+    echo
+    echo Creating ncRNA BWA index...
+    echo
+    mkdir -p $INDEX_DIR
+    ln -s -f -t $INDEX_DIR ../$NCRNA
+    module load $module_bwa
+    bwa index $INDEX_DIR/$NCRNA > $LOG_DIR/ncrna_bwa_$TIMESTAMP.log 2>&1
+  else
+    echo
+    echo ncRNA BWA index up to date... skipping
+    echo
+  fi
+}
+
+create_rrna_bwa_index() {
+  if is_up2date $ANNOTATIONS_DIR/$RRNA
+  then
+    INDEX_DIR=$ANNOTATIONS_DIR/rrna_bwa_index
+    if ! is_up2date $INDEX_DIR/$RRNA.sa
+    then
+      echo
+      echo Creating rRNA BWA index...
+      echo
+      mkdir -p $INDEX_DIR
+      ln -s -f -t $INDEX_DIR ../$RRNA
+      module load $module_bwa
+      bwa index $INDEX_DIR/$RRNA > $LOG_DIR/ncrna_bwa_$TIMESTAMP.log 2>&1
+    else
+      echo
+      echo rRNA BWA index up to date... skipping
+      echo
+    fi
+  fi
 }
 
 create_gene_annotations() {
-  # Create gene annotation from GTF
-  cd $INSTALL_DIR/annotations
-  module load mugqic_dev/R/3.1.1
-  R --no-restore --no-save<<EOF
+  ANNOTATION_PREFIX=$ANNOTATIONS_DIR/${GTF/.gtf}
+
+  if ! is_up2date $ANNOTATION_PREFIX.genes.length.tsv $ANNOTATION_PREFIX.geneid2Symbol.tsv $ANNOTATION_PREFIX.genes.tsv
+  then
+    echo
+    echo Creating gene ID, symbol, length annotations from GTF...
+    echo
+    cd $ANNOTATIONS_DIR
+    module load $module_R
+    R --no-restore --no-save<<EOF
 suppressPackageStartupMessages(library(gqSeqUtils))
 gtf.fn     = "$GTF"
-annotation = "$SPECIES.$ASSEMBLY.$SOURCE$VERSION"
+annotation = "$ANNOTATION_PREFIX"
 
 genes = extractGeneAnnotationFromGtf(gtf.fn, feature.types = c("exon", "CDS"))
 # NOTE: feature.types passed down to gqSeqUtils::calculateGeneLengthsFromGtf
@@ -287,6 +383,11 @@ write.table(data.frame("ensembl"=genes[["featureID"]], "geneSymbol"=genes[["SYMB
 write.table(genes, file = paste0(annotation, ".genes.tsv"), sep='\t', quote=F, row.names=F, col.names=T)
 
 EOF
+  else
+    echo
+    echo Gene ID, symbol, length annotations from GTF up to date... skipping
+    echo
+  fi
 }
 
 get_vcf_dbsnp() {
@@ -304,19 +405,28 @@ get_vcf_dbsnp() {
 
 copy_files() {
   # Uncompress files
-  cd `download_dir $GENOME_URL`
-  gunzip -c `basename $GENOME_URL` > $GENOME_DIR/$GENOME_FASTA
-  cd `download_dir $GTF_URL`
-  gunzip -c `basename $GTF_URL` > $ANNOTATIONS_DIR/$GTF
-  grep -P "(^#|transcript_id)" $ANNOTATIONS_DIR/$GTF > $ANNOTATIONS_DIR/${GTF/.gtf/.transcript_id.gtf}
-  cd `download_dir $NCRNA_URL`
-  gunzip -c `basename $NCRNA_URL` > $ANNOTATIONS_DIR/$NCRNA
+  if ! is_up2date $GENOME_DIR/$GENOME_FASTA ; then gunzip -c `download_path $GENOME_URL` > $GENOME_DIR/$GENOME_FASTA ; fi
+  if ! is_up2date $ANNOTATIONS_DIR/$GTF ; then gunzip -c `download_path $GTF_URL` > $ANNOTATIONS_DIR/$GTF ; fi
+  TRANSCRIPT_ID_GTF=$ANNOTATIONS_DIR/${GTF/.gtf/.transcript_id.gtf}
+  if ! is_up2date $TRANSCRIPT_ID_GTF ; then grep -P "(^#|transcript_id)" $ANNOTATIONS_DIR/$GTF > $TRANSCRIPT_ID_GTF ; fi
+  if ! is_up2date $ANNOTATIONS_DIR/$NCRNA ; then gunzip -c `download_path $NCRNA_URL` > $ANNOTATIONS_DIR/$NCRNA ; fi
+
+  # Create rRNA FASTA as subset of ncRNA FASTA keeping only sequences with "gene_biotype:rRNA" in their description
+  if [ $(grep -q "gene_biotype:rRNA" $ANNOTATIONS_DIR/$NCRNA)$? == 0 ]
+  then
+    if ! is_up2date $ANNOTATIONS_DIR/$RRNA
+    then
+      grep -Pzo "^>.*gene_biotype:rRNA[^>]*" $ANNOTATIONS_DIR/$NCRNA | grep -v "^$" > $ANNOTATIONS_DIR/$RRNA
+    fi
+  fi
 
   if [ ! -z "${VCF_URL:-}" ]
   then
-    cd `download_dir $VCF_URL`
-    cp `basename $VCF_URL` $ANNOTATIONS_DIR/$VCF
-    get_vcf_dbsnp
+    if ! is_up2date $ANNOTATIONS_DIR/$VCF
+    then
+      cp `download_path $VCF_URL` $ANNOTATIONS_DIR/$VCF
+      get_vcf_dbsnp
+    fi
   fi
 }
 
@@ -328,6 +438,7 @@ build_files() {
   create_bowtie2_tophat_index
   create_star_index
   create_ncrna_bwa_index
+  create_rrna_bwa_index
   create_gene_annotations
 }
 
