@@ -14,12 +14,12 @@ source $GENOME_INSTALL_SCRIPT_DIR/install_genome.sh
 
 # Download dbSNP directly from NCBI since it is more up to date
 get_vcf_dbsnp() {
-  DBSNP_URL=ftp://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606_b141_GRCh38/VCF/00-All.vcf.gz
-  DBSNP_VERSION=141
+  DBSNP_VERSION=142
+  DBSNP_URL=ftp://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606_b${DBSNP_VERSION}_GRCh38/VCF/All.vcf.gz
   download_url $DBSNP_URL
   download_url $DBSNP_URL.tbi
-  cp `basename $DBSNP_URL` $ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP$DBSNP_VERSION.vcf.gz
-  cp `basename $DBSNP_URL.tbi` $ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP$DBSNP_VERSION.vcf.gz.tbi
+  cp `download_path $DBSNP_URL` $ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP$DBSNP_VERSION.vcf.gz
+  cp `download_path $DBSNP_URL.tbi` $ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP$DBSNP_VERSION.vcf.gz.tbi
 }
 
 # Overwrite install_genome since NCBI genome is used instead of Ensembl
