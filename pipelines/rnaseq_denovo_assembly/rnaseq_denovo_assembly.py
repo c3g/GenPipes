@@ -580,7 +580,7 @@ Rscript $R_TOOLS/deseq.R \\
             ], name="differential_expression." + item))
         return jobs
 
-    def deliverable(self):
+    def gq_seq_utils_report(self):
         isoforms_lengths = os.path.join("differential_expression", "isoforms.lengths.tsv")
         trinotate_annotation_report = os.path.join("trinotate", "trinotate_annotation_report.tsv")
         job = concat_jobs([
@@ -631,7 +631,13 @@ rm {dge_results}.tmp""".format(
                     )
                 ])
 
-        report_job = gq_seq_utils.report(os.path.abspath(config.filepath), self.output_dir, "RNAseqDeNovo", "deliverable")
+        report_job = gq_seq_utils.report(
+            [config_file.name for config_file in self.args.config],
+            self.output_dir,
+            "RNAseqDeNovo",
+            self.output_dir
+        )
+
         report_job.input_files = [
             "metrics/trimming.stats",
             "trinity_out_dir/Trinity.fasta",
@@ -639,7 +645,7 @@ rm {dge_results}.tmp""".format(
             "trinity_out_dir/Trinity.stats.pdf",
         ] + [os.path.join("differential_expression", item, contrast.name, "dge_trinotate_results.csv") for item in "genes","isoforms" for contrast in self.contrasts]
 
-        return [concat_jobs([job, report_job], name="deliverable")]
+        return [concat_jobs([job, report_job], name="gq_seq_utils_report")]
 
     @property
     def steps(self):
@@ -662,7 +668,7 @@ rm {dge_results}.tmp""".format(
             self.align_and_estimate_abundance_prep_reference,
             self.align_and_estimate_abundance,
             self.differential_expression,
-            self.deliverable
+            self.gq_seq_utils_report
         ]
 
     def __init__(self):

@@ -446,7 +446,7 @@ END
     """
     Generates summary tables and Generates MUGQIC style nozzle report.
     """
-    def report(self):
+    def gq_seq_utils_report(self):
         jobs = []
 
         for sample in self.samples:
@@ -541,7 +541,7 @@ END
             self.polishing,
             self.blast,
             self.mummer,
-            self.report,
+            self.gq_seq_utils_report,
             self.compile
         ]
 
