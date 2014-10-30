@@ -24,19 +24,24 @@ from bfx import htseq
 from bfx import metrics
 from bfx import picard
 from bfx import samtools
-from bfx import tophat
+from bfx import star
 from pipelines import common
 
 log = logging.getLogger(__name__)
 
 class RnaSeq(common.Illumina):
 
-    def tophat(self):
+    def star(self):
         jobs = []
+        project_index_directory = "reference.Merged"
+        project_junction_file =  os.path.join("alignment_1stPass", "AllSample.SJ.out.tab")
+        individual_junction_list=[]
+        ######
+        #pass 1 -alignment
         for readset in self.readsets:
             trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
-            alignment_directory = os.path.join("alignment", readset.sample.name)
-            readset_alignment_directory = os.path.join(alignment_directory, readset.name)
+            alignment_1stPass_directory = os.path.join("alignment_1stPass", readset.sample.name)
+            individual_junction_list.append(os.path.join(alignment_1stPass_directory,"SJ.out.tab")
 
             if readset.run_type == "PAIRED_END":
                 fastq1 = trim_file_prefix + "pair1.fastq.gz"
@@ -48,13 +53,13 @@ class RnaSeq(common.Illumina):
                 raise Exception("Error: run type \"" + readset.run_type +
                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
 
-            rg_platform = config.param('tophat', 'platform', required=False)
-            rg_center = config.param('tophat', 'sequencing_center', required=False)
+            rg_platform = config.param('star_align', 'platform', required=False)
+            rg_center = config.param('star_align', 'sequencing_center', required=False)
 
-            job = tophat.tophat(
-                fastq1,
-                fastq2,
-                readset_alignment_directory,
+            job = star.align(
+                reads1=fastq1,
+                reads2=fastq2,
+                output_directory=alignment_1stPass_directory,
                 rg_id=readset.name,
                 rg_sample=readset.sample.name,
                 rg_library=readset.library if readset.library else "",
@@ -62,15 +67,70 @@ class RnaSeq(common.Illumina):
                 rg_platform=rg_platform if rg_platform else "",
                 rg_center=rg_center if rg_center else ""
             )
+            job.name = "star_align1." + readset.name
+            jobs.append(job)
+        
+        ######
+        #pass 1 - contatenate junction
+        job = star.concatenate_junction(
+            input_junction_files_list=individual_junction_list,
+            output_junction_file=project_junction_file
+        )
+        job.name = "star_concat.AllSample"
+        jobs.append(job)
+        
+        ######
+        #pass 1 - genome indexing
+        job = star.index(
+            genome_index_folder=project_index_directory,
+            junction_file=project_junction_file
+        )
+        job.name = "star_index.AllSample"
+        jobs.append(job)
+        
+        ######
+        #Pass 2 - alignment
+        for readset in self.readsets:
+            trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
+            alignment_2ndPass_directory = os.path.join("alignment", readset.sample.name)
 
+            if readset.run_type == "PAIRED_END":
+                fastq1 = trim_file_prefix + "pair1.fastq.gz"
+                fastq2 = trim_file_prefix + "pair2.fastq.gz"
+            elif readset.run_type == "SINGLE_END":
+                fastq1 = trim_file_prefix + "single.fastq.gz"
+                fastq2 = None
+            else:
+                raise Exception("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+
+            rg_platform = config.param('star_align', 'platform', required=False)
+            rg_center = config.param('star_align', 'sequencing_center', required=False)
+
+            job = star.align(
+                reads1=fastq1,
+                reads2=fastq2,
+                output_directory=alignment_2ndPass_directory,
+                genome_index_folder=project_index_directory,
+                rg_id=readset.name,
+                rg_sample=readset.sample.name,
+                rg_library=readset.library if readset.library else "",
+                rg_platform_unit=readset.run + "_" + readset.lane if readset.run and readset.lane else "",
+                rg_platform=rg_platform if rg_platform else "",
+                rg_center=rg_center if rg_center else ""
+                create_wiggle_track=True,
+                search_chimeres=True,
+                cuff_follow=True
+            )
+            
             # If this readset is unique for this sample, further BAM merging is not necessary.
             # Thus, create a sample BAM symlink to the readset BAM.
             if len(readset.sample.readsets) == 1:
-                sample_bam = os.path.join(alignment_directory, readset.sample.name + ".sorted.bam")
-                job.command += " && \\\nln -s " + os.path.join(readset.name, "accepted_hits.bam") + " " + sample_bam
+                sample_bam = readset.sample.name + ".nameSorted.bam"
+                job.command += " && \\\n cd alignment && \\\n ln -s " + os.path.join(readset.name, "Aligned.out.bam") + " " + sample_bam
                 job.output_files.append(sample_bam)
 
-            job.name = "tophat." + readset.name
+            job.name = "star_align2." + readset.name
             jobs.append(job)
 
         return jobs
