@@ -1,69 +1,81 @@
 #!/bin/bash
-
-################################################################################
-# This is a module install script template which should be copied and used for
-# consistency between module paths, permissions, etc.
-# Only lines marked as "## TO BE ADDED/MODIFIED" should be, indeed, modified.
-# You should probably also delete this commented-out header and the ## comments
-################################################################################
-
+# Exit immediately on error
+set -eu -o pipefail
 
 #
-# Software_name  memtime.
+# SMRT Analysis
 #
 
-SOFTWARE=smrtanalysis 
-VERSION=2.1.1
-INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/$SOFTWARE
-INSTALL_DOWNLOAD=$INSTALL_PATH/tmp
+SOFTWARE=smrtanalysis
+VERSION_BASE=2.3.0.140936
+VERSION_PATCH=p0
+VERSION=$VERSION_BASE.$VERSION_PATCH
+
+# 'MUGQIC_INSTALL_HOME_DEV' for development, 'MUGQIC_INSTALL_HOME' for production (don't write '$' before!)
+INSTALL_HOME=MUGQIC_INSTALL_HOME_DEV
+
+# Indirection call to use $INSTALL_HOME value as variable name
+INSTALL_DIR=${!INSTALL_HOME}/software/$SOFTWARE
+
+# Create install directory with permissions if necessary
+if [[ ! -d $INSTALL_DIR ]]
+then
+  mkdir $INSTALL_DIR
+  chmod ug+rwX,o+rX-w $INSTALL_DIR
+fi
+
+INSTALL_DOWNLOAD=$INSTALL_DIR/tmp
 mkdir -p $INSTALL_DOWNLOAD
 cd $INSTALL_DOWNLOAD
 
 # Download, extract, build
-# Write here the specific commands to download, extract, build the software, typically similar to:
-wget http://programs.pacificbiosciences.com/l/1652/2013-11-05/2tqk3c         
-./smrtanalysis-2.1.1-centos-5.6.run --extract-only
+ARCHIVE_BASE=${SOFTWARE}_$VERSION_BASE.run
+ARCHIVE_PATCH=${SOFTWARE}-patch_$VERSION.run
 
-## I didn't had time to automate this step, but to install smrtanalysis without support for mysql (i.e. smrtportal)
-## the following file needs to be modified:
-## ./smrtanalysis/install/smrtanalysis-2.1.1.128549/postinstall/bin/conf_main_fab.py
-## Comment the following lines:
-#------------------------------------
-##   #Deal with running services
-##      #for svc, pid in util.servicesRunning().iteritems():
-##      #    if pid:
-##      #        if not promptForKillProcess(svc, pid):
-##      #            abort('Unable to end process %s - please run this script with the root account.' % svc)
-##
-## Then:
-##-----------------------------------
-##   # createDb()
-##
-##
+for ARCHIVE in $ARCHIVE_BASE $ARCHIVE_PATCH
+do
+  # If archive was previously downloaded, use the local one, otherwise get it from remote site
+  if [[ -f ${!INSTALL_HOME}/archive/$ARCHIVE ]]
+  then
+    echo "Archive $ARCHIVE already in ${!INSTALL_HOME}/archive/: using it..."
+    cp -a ${!INSTALL_HOME}/archive/$ARCHIVE .
+  else
+    echo "Archive $ARCHIVE not in ${!INSTALL_HOME}/archive/: downloading it..."
+    wget http://files.pacb.com/software/$SOFTWARE/${VERSION%\.*}/$ARCHIVE
+  fi
+done
+# Extract and apply patch but NOT install SMRT Portal etc.
+bash $ARCHIVE_BASE --extract-only --patchfile $ARCHIVE_PATCH
 
-## Once done 
-export SEYMOUR_HOME=$MUGQIC_INSTALL_HOME/software/$NAME/$NAME-$VERSION/
+SOFTWARE_DIR=${SOFTWARE}_$VERSION
 
-## Then install by running the installation script. Follow instructions (enter dummy parallel envir. and dummy queues).
-## Installation tested with smrtanalysis 2.1.1 and 2.2.0
-./smrtanalysis/install/smrtanalysis-2.1.1.128549/etc/scripts/postinstall/configure_smrtanalysis.sh
-mv -i ./smrtanalysis/install/smrtanalysis-2.1.1.128549/* $INSTALL_PATH/$SOFTWARE-$VERSION/
+# Rename software default directory name with proper version number including patch
+mv $SOFTWARE/install/${SOFTWARE}_$VERSION_BASE $SOFTWARE_DIR
+
+# Default SGE cluster manager is not available; bash commands are run instead
+sed -i 's/^CLUSTER_MANAGER = SGE/CLUSTER_MANAGER = BASH/' $SOFTWARE_DIR/analysis/etc/smrtpipe.rc
 
 # Add permissions and install software
-chmod -R 775 $INSTALL_PATH/$SOFTWARE-$VERSION
 cd $INSTALL_DOWNLOAD
-mv -i $INSTALL_DOWNLOAD/*.run $MUGQIC_INSTALL_HOME/archive
+chmod -R ug+rwX,o+rX-w .
+mv -i $SOFTWARE_DIR $INSTALL_DIR/
+# Store archive if not already present or if different from the previous one
+if [[ ! -f ${!INSTALL_HOME}/archive/$ARCHIVE || `diff ${!INSTALL_HOME}/archive/$ARCHIVE $ARCHIVE` ]]
+then
+  mv -i $ARCHIVE ${!INSTALL_HOME}/archive/
+fi
 
 # Module file
 echo "#%Module1.0
 proc ModulesHelp { } {
-       puts stderr \"\tMUGQIC - $SOFTWARE-$VERSION \" ; 
+  puts stderr \"\tMUGQIC - $SOFTWARE \"
 }
-module-whatis \"$SOFTWARE-$VERSION  \" ;
-                      
-set             root                \$::env(MUGQIC_INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE-$VERSION ;
-prepend-path    PATH                \$root ;
-puts            stderr              \"!!!===> Don't forget to source \${SEYMOUR_HOME}/etc/setup.sh  <===!!!\"  
+module-whatis \"$SOFTWARE\"
+
+set             root                \$::env($INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE_DIR
+setenv          SEYMOUR_HOME        \$root
+prepend-path    PATH                \$root/analysis/bin
+puts            stderr              \"!!!===> Don't forget to source \\\${SEYMOUR_HOME}/etc/setup.sh  <===!!!\"
 " > $VERSION
 
 ################################################################################
@@ -73,11 +85,20 @@ puts            stderr              \"!!!===> Don't forget to source \${SEYMOUR_
 echo "#%Module1.0
 set ModulesVersion \"$VERSION\"" > .version
 
+# Set module directory path by lowercasing $INSTALL_HOME and removing '_install_home' in it
+MODULE_DIR=${!INSTALL_HOME}/modulefiles/`echo ${INSTALL_HOME,,} | sed 's/_install_home//'`/$SOFTWARE
+
+# Create module directory with permissions if necessary
+if [[ ! -d $MODULE_DIR ]]
+then
+  mkdir $MODULE_DIR
+  chmod ug+rwX,o+rX-w $MODULE_DIR
+fi
+
 # Add permissions and install module
-mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
-chmod -R ug+rwX $VERSION .version
-chmod -R o+rX $VERSION .version
-mv $VERSION .version $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
+chmod ug+rwX,o+rX-w $VERSION .version
+mv $VERSION .version $MODULE_DIR/
 
 # Clean up temporary installation files if any
+cd
 rm -rf $INSTALL_DOWNLOAD
