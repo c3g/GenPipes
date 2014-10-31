@@ -19,14 +19,16 @@ def align(
     rg_platform_unit="",
     rg_platform="",
     rg_center="",
+    sort_bam=False,
     create_wiggle_track=False,
     search_chimeres=False,
     cuff_follow=False
     ):
 
+    bam_name="Aligned.sortedByCoord.out.bam" if sort_bam else "Aligned.out.bam"
     job = Job(
         [reads1, reads2],
-        [os.path.join(output_directory, "Aligned.out.bam"),os.path.join(output_directory, "SJ.out.tab")],
+        [os.path.join(output_directory, bam_name),os.path.join(output_directory, "SJ.out.tab")],
         [['star_align', 'module_star']]
     )
     
@@ -80,10 +82,9 @@ STAR --runMode alignReads \\
   --readFilesCommand zcat \\
   --outStd Log \\
   --outSAMunmapped Within \\
-  --outSAMtype BAM Unsorted \\
-  --outFileNamePrefix {output_directory} \\ 
-  --limitBAMsortRAM {ram} \\
+  --outSAMtype BAM {sort_value} \\
   --limitGenomeGenerateRAM {ram} \\
+  {sort_ram} \\
   {io_limit_size} \\
   {wig_param} \\
   {chim_param} \\
@@ -99,12 +100,14 @@ STAR --runMode alignReads \\
         rg_center=rg_center,
         output_directory=output_directory,
         num_threads=num_threads if str(num_threads) != "" and isinstance(num_threads, int) and  num_threads > 0 else 1,  
-        ram=int(max_ram/2),
+        ram=int(max_ram/2) if sort_bam else int(max_ram),
         reads1=reads1,
         reads2=" \\\n  " + reads2 if reads2 else "",
-        io_limit_size="\\\n  --limitIObufferSize " + io_max if io_max else "",
+        io_limit_size="\\\n  --limitIObufferSize " + str(io_max) if io_max else "",
         wig_param=wig_cmd,
-        chim_param=chim_cmd
+        chim_param=chim_cmd,
+        sort_ram="\\\n  --limitBAMsortRAM "+ str(int(max_ram/2)) if sort_bam else "",
+        sort_value="SortedByCoordinate" if sort_bam else "Unsorted"
     )
 
     return job

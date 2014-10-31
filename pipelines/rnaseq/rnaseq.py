@@ -121,13 +121,14 @@ class RnaSeq(common.Illumina):
                 create_wiggle_track=True,
                 search_chimeres=True,
                 cuff_follow=True
+                sort_bam=True
             )
             
             # If this readset is unique for this sample, further BAM merging is not necessary.
             # Thus, create a sample BAM symlink to the readset BAM.
             if len(readset.sample.readsets) == 1:
-                sample_bam = readset.sample.name + ".nameSorted.bam"
-                job.command += " && \\\n cd alignment && \\\n ln -s " + os.path.join(readset.name, "Aligned.out.bam") + " " + sample_bam
+                sample_bam = readset.sample.name + ".sorted.bam"
+                job.command += " && \\\n cd alignment && \\\n ln -s " + os.path.join(readset.name, "Aligned.sortedByCoord.out.bam") + " " + sample_bam
                 job.output_files.append(sample_bam)
 
             job.name = "star_align2." + readset.name
@@ -141,7 +142,7 @@ class RnaSeq(common.Illumina):
             # Skip samples with one readset only, since symlink has been created at align step
             if len(sample.readsets) > 1:
                 alignment_directory = os.path.join("alignment", sample.name)
-                inputs = [os.path.join(alignment_directory, readset.name + ".sorted.bam") for readset in sample.readsets]
+                inputs = [os.path.join(alignment_directory, readset.name, "Aligned.sortedByCoord.out.bam") for readset in sample.readsets]
                 output = os.path.join(alignment_directory, sample.name + ".sorted.bam")
 
                 job = picard.merge_sam_files(inputs, output)
@@ -178,8 +179,9 @@ class RnaSeq(common.Illumina):
 
     def rnaseqc(self):
 
+        project_name = config.param('DEFAULT', 'project_name')
         sample_file = os.path.join("alignment", "rnaseqc.samples.txt")
-        sample_rows = [[sample.name, os.path.join("alignment", sample.name, sample.name + ".merged.mdup.bam"), "RNAseq"] for sample in self.samples]
+        sample_rows = [[sample.name, os.path.join("alignment", sample.name, sample.name + ".merged.mdup.bam"), project_name] for sample in self.samples]
         input_bams = [sample_row[1] for sample_row in sample_rows]
         output_directory = os.path.join("metrics", "rnaseqRep")
         # Use GTF with transcript_id only otherwise RNASeQC fails
