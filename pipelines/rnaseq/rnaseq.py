@@ -179,9 +179,8 @@ class RnaSeq(common.Illumina):
 
     def rnaseqc(self):
 
-        project_name = config.param('DEFAULT', 'project_name')
         sample_file = os.path.join("alignment", "rnaseqc.samples.txt")
-        sample_rows = [[sample.name, os.path.join("alignment", sample.name, sample.name + ".merged.mdup.bam"), project_name] for sample in self.samples]
+        sample_rows = [[sample.name, os.path.join("alignment", sample.name, sample.name + ".merged.mdup.bam"), "RNAseq"] for sample in self.samples]
         input_bams = [sample_row[1] for sample_row in sample_rows]
         output_directory = os.path.join("metrics", "rnaseqRep")
         # Use GTF with transcript_id only otherwise RNASeQC fails
@@ -203,55 +202,56 @@ echo "Sample\tBamFile\tNote
         jobs = []
 
         for sample in self.samples:
-            bam_file_prefix = os.path.join("alignment", sample.name, sample.name + ".merged.mdup.")
-            input_bam = bam_file_prefix + "bam"
-            bed_graph_prefix = os.path.join("tracks", sample.name, sample.name)
-            big_wig_prefix = os.path.join("tracks", "bigWig", sample.name)
+            if len(sample.readsets) > 1:
+                bam_file_prefix = os.path.join("alignment", sample.name, sample.name + ".merged.mdup.")
+                input_bam = bam_file_prefix + "bam"
+                bed_graph_prefix = os.path.join("tracks", sample.name, sample.name)
+                big_wig_prefix = os.path.join("tracks", "bigWig", sample.name)
 
-            if config.param('DEFAULT', 'strand_info') != 'fr-unstranded':
-                input_bam_f1 = bam_file_prefix + "tmp1.forward.bam"
-                input_bam_f2 = bam_file_prefix + "tmp2.forward.bam"
-                input_bam_r1 = bam_file_prefix + "tmp1.reverse.bam"
-                input_bam_r2 = bam_file_prefix + "tmp2.reverse.bam"
-                output_bam_f = bam_file_prefix + "forward.bam"
-                output_bam_r = bam_file_prefix + "reverse.bam"
+                if config.param('DEFAULT', 'strand_info') != 'fr-unstranded':
+                    input_bam_f1 = bam_file_prefix + "tmp1.forward.bam"
+                    input_bam_f2 = bam_file_prefix + "tmp2.forward.bam"
+                    input_bam_r1 = bam_file_prefix + "tmp1.reverse.bam"
+                    input_bam_r2 = bam_file_prefix + "tmp2.reverse.bam"
+                    output_bam_f = bam_file_prefix + "forward.bam"
+                    output_bam_r = bam_file_prefix + "reverse.bam"
 
-                bam_f_job = concat_jobs([
-                    samtools.view(input_bam, input_bam_f1, "-bh -F 256 -f 81"),
-                    samtools.view(input_bam, input_bam_f2, "-bh -F 256 -f 161"),
-                    picard.merge_sam_files([input_bam_f1, input_bam_f2], output_bam_f),
-                    Job(command="rm " + input_bam_f1 + " " + input_bam_f2)
-                ], name="wiggle." + sample.name + ".forward_strandspec")
-                # Remove temporary-then-deleted files from job output files, otherwise job is never up to date
-                bam_f_job.output_files.remove(input_bam_f1)
-                bam_f_job.output_files.remove(input_bam_f2)
+                    bam_f_job = concat_jobs([
+                        samtools.view(input_bam, input_bam_f1, "-bh -F 256 -f 81"),
+                        samtools.view(input_bam, input_bam_f2, "-bh -F 256 -f 161"),
+                        picard.merge_sam_files([input_bam_f1, input_bam_f2], output_bam_f),
+                        Job(command="rm " + input_bam_f1 + " " + input_bam_f2)
+                    ], name="wiggle." + sample.name + ".forward_strandspec")
+                    # Remove temporary-then-deleted files from job output files, otherwise job is never up to date
+                    bam_f_job.output_files.remove(input_bam_f1)
+                    bam_f_job.output_files.remove(input_bam_f2)
 
-                bam_r_job = concat_jobs([
-                    Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " " + os.path.join("tracks", "bigWig")),
-                    samtools.view(input_bam, input_bam_r1, "-bh -F 256 -f 97"),
-                    samtools.view(input_bam, input_bam_r2, "-bh -F 256 -f 145"),
-                    picard.merge_sam_files([input_bam_r1, input_bam_r2], output_bam_r),
-                    Job(command="rm " + input_bam_r1 + " " + input_bam_r2)
-                ], name="wiggle." + sample.name + ".reverse_strandspec")
-                # Remove temporary-then-deleted files from job output files, otherwise job is never up to date
-                bam_r_job.output_files.remove(input_bam_r1)
-                bam_r_job.output_files.remove(input_bam_r2)
+                    bam_r_job = concat_jobs([
+                        Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " " + os.path.join("tracks", "bigWig")),
+                        samtools.view(input_bam, input_bam_r1, "-bh -F 256 -f 97"),
+                        samtools.view(input_bam, input_bam_r2, "-bh -F 256 -f 145"),
+                        picard.merge_sam_files([input_bam_r1, input_bam_r2], output_bam_r),
+                        Job(command="rm " + input_bam_r1 + " " + input_bam_r2)
+                    ], name="wiggle." + sample.name + ".reverse_strandspec")
+                    # Remove temporary-then-deleted files from job output files, otherwise job is never up to date
+                    bam_r_job.output_files.remove(input_bam_r1)
+                    bam_r_job.output_files.remove(input_bam_r2)
 
-                jobs.extend([bam_f_job, bam_r_job])
+                    jobs.extend([bam_f_job, bam_r_job])
 
-                outputs = [
-                    [bed_graph_prefix + ".forward.bedGraph", big_wig_prefix + ".forward.bw"],
-                    [bed_graph_prefix + ".reverse.bedGraph", big_wig_prefix + ".reverse.bw"],
-                ]
-            else:
-                outputs = [[bed_graph_prefix + ".bedGraph", big_wig_prefix + ".bw"]]
+                    outputs = [
+                        [bed_graph_prefix + ".forward.bedGraph", big_wig_prefix + ".forward.bw"],
+                        [bed_graph_prefix + ".reverse.bedGraph", big_wig_prefix + ".reverse.bw"],
+                    ]
+                else:
+                    outputs = [[bed_graph_prefix + ".bedGraph", big_wig_prefix + ".bw"]]
 
-            for bed_graph_output, big_wig_output in outputs:
-                job = concat_jobs([
-                    Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " " + os.path.join("tracks", "bigWig")),
-                    bedtools.graph(input_bam, bed_graph_output, big_wig_output)
-                ], name="wiggle." + re.sub(".bedGraph", "", os.path.basename(bed_graph_output)))
-                jobs.append(job)
+                for bed_graph_output, big_wig_output in outputs:
+                    job = concat_jobs([
+                        Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " " + os.path.join("tracks", "bigWig")),
+                        bedtools.graph(input_bam, bed_graph_output, big_wig_output)
+                    ], name="wiggle." + re.sub(".bedGraph", "", os.path.basename(bed_graph_output)))
+                    jobs.append(job)
 
         return jobs
 
@@ -354,21 +354,33 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
 
         for sample in self.samples:
             input_bam = os.path.join("alignment", sample.name, sample.name + ".merged.mdup.bam")
-            known_output_directory = os.path.join("fpkm", "known", sample.name)
-            denovo_output_directory = os.path.join("fpkm", "denovo", sample.name)
+            output_directory = os.path.join("fpkm", sample.name)
             gtf = config.param('cufflinks','gtf', type='filepath')
 
-            # Known FPKM
-            job = cufflinks.cufflinks(input_bam, known_output_directory, gtf)
-            job.name = "fpkm.known"
-            jobs.append(job)
-
             # De Novo FPKM
-            job = cufflinks.cufflinks(input_bam, denovo_output_directory)
-            job.name = "fpkm.denovo"
+            job = cufflinks.cufflinks(input_bam, denovo_output_directory, gtf)
+            job.name = "cufflinks."+sample.name
             jobs.append(job)
 
         return jobs
+    
+    def cuffmerge(self):
+        
+        output_directory = os.path.join("fpkm", "AllSample")
+        sample_file = os.path.join("fpkm", "cuffmerge.samples.txt")
+        input_gtfs = [ os.path.join("fpkm", sample.name, "transcripts.gtf")] for sample in self.samples]
+        gtf = config.param('cuffmerge','gtf', type='filepath')
+        
+        
+        job = concat_jobs([
+            Job(command="mkdir -p " + output_directory),
+            Job(input_gtfs, [sample_file], command="""\
+{sample_rows} > {sample_file}""".format(sample_rows="\n".join(input_gtfs), sample_file=sample_file)),
+            cufflinks.cuffmerge(sample_file, output_directory, gtf_file=gtf),
+            , name="cuffmerge")
+        
+        return [job]
+        
 
     def cuffdiff(self):
         jobs = []

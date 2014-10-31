@@ -88,7 +88,7 @@ cufflinks -q {other_options}{gtf} \\
   --num-threads {num_threads} \\
   {input_bam}""".format(
         other_options=config.param('cufflinks', 'other_options', required=False),
-        gtf=" \\\n  --GTF " + gtf if gtf else "",
+        gtf=" \\\n  --GTF-guide " + gtf if gtf else "",
         max_bundle_frags=config.param('cufflinks', 'max_bundle_frags', type='int'),
         library_type=config.param('cufflinks', 'strand_info'),
         output_directory=output_directory,
@@ -97,3 +97,29 @@ cufflinks -q {other_options}{gtf} \\
     )
 
     return job
+
+def cuffmerge(sample_file, output_directory, gtf_file=None):
+
+    job = Job(
+        [sample_file],
+        [output_directory],
+        [['cuffmerge', 'module_cufflinks']]
+    )
+    
+
+    job.command = """\
+cuffmerge {gtf} \\
+  --ref-sequence {reference_sequence} \\
+  -o {output_directory} \\
+  --num-threads {num_threads} \\
+  {sample_file}""".format(
+        gtf=" \\\n  --ref-gtf " + gtf_file if gtf_file else "",
+        reference_sequence=config.param('cuffmerge', 'genome_fasta', type='filepath',required=True),
+        output_directory=output_directory,
+        num_threads=config.param('cuffmerge', 'threads', type='posint'),
+        sample_file=sample_file
+    )
+
+    return job
+
+
