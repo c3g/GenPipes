@@ -7,12 +7,15 @@ set -eu -o pipefail
 #
 
 SOFTWARE=smrtanalysis
-VERSION_BASE=2.3.0.140936
-VERSION_PATCH=p0
-VERSION=$VERSION_BASE.$VERSION_PATCH
+#VERSION_BASE=2.3.0.140936
+#VERSION_PATCH=p0
+#VERSION=$VERSION_BASE.$VERSION_PATCH
+VERSION_BASE=2.2.0.133377
+VERSION_PATCH=patch-3
+VERSION=$VERSION_BASE-$VERSION_PATCH
 
 # 'MUGQIC_INSTALL_HOME_DEV' for development, 'MUGQIC_INSTALL_HOME' for production (don't write '$' before!)
-INSTALL_HOME=MUGQIC_INSTALL_HOME_DEV
+INSTALL_HOME=MUGQIC_INSTALL_HOME
 
 # Indirection call to use $INSTALL_HOME value as variable name
 INSTALL_DIR=${!INSTALL_HOME}/software/$SOFTWARE
@@ -29,8 +32,10 @@ mkdir -p $INSTALL_DOWNLOAD
 cd $INSTALL_DOWNLOAD
 
 # Download, extract, build
-ARCHIVE_BASE=${SOFTWARE}_$VERSION_BASE.run
-ARCHIVE_PATCH=${SOFTWARE}-patch_$VERSION.run
+#ARCHIVE_BASE=${SOFTWARE}_$VERSION_BASE.run
+#ARCHIVE_PATCH=${SOFTWARE}-patch_$VERSION.run
+ARCHIVE_BASE=${SOFTWARE}-$VERSION_BASE.run
+ARCHIVE_PATCH=${SOFTWARE}-$VERSION.run
 
 for ARCHIVE in $ARCHIVE_BASE $ARCHIVE_PATCH
 do
@@ -41,16 +46,19 @@ do
     cp -a ${!INSTALL_HOME}/archive/$ARCHIVE .
   else
     echo "Archive $ARCHIVE not in ${!INSTALL_HOME}/archive/: downloading it..."
-    wget http://files.pacb.com/software/$SOFTWARE/${VERSION%\.*}/$ARCHIVE
+    #wget http://files.pacb.com/software/$SOFTWARE/${VERSION%\.*}/$ARCHIVE
+    wget https://s3.amazonaws.com/files.pacb.com/software/$SOFTWARE/${VERSION_BASE%\.*}/$ARCHIVE
   fi
 done
 # Extract and apply patch but NOT install SMRT Portal etc.
 bash $ARCHIVE_BASE --extract-only --patchfile $ARCHIVE_PATCH
 
-SOFTWARE_DIR=${SOFTWARE}_$VERSION
+#SOFTWARE_DIR=${SOFTWARE}_$VERSION
+SOFTWARE_DIR=${SOFTWARE}-$VERSION
 
 # Rename software default directory name with proper version number including patch
-mv $SOFTWARE/install/${SOFTWARE}_$VERSION_BASE $SOFTWARE_DIR
+#mv $SOFTWARE/install/${SOFTWARE}_$VERSION_BASE $SOFTWARE_DIR
+mv $SOFTWARE/install/${SOFTWARE}-$VERSION_BASE $SOFTWARE_DIR
 
 # Default SGE cluster manager is not available; bash commands are run instead
 sed -i 's/^CLUSTER_MANAGER = SGE/CLUSTER_MANAGER = BASH/' $SOFTWARE_DIR/analysis/etc/smrtpipe.rc
