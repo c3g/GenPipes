@@ -40,6 +40,9 @@ class IlluminaReadset(Readset):
             raise Exception("Error: readset run_type \"" + run_type +
                 "\" is invalid (should be \"PAIRED_END\" or \"SINGLE_END\")!")
 
+        self.fastq1 = None
+        self.fastq2 = None
+
     @property
     def run_type(self):
         return self._run_type
@@ -47,14 +50,6 @@ class IlluminaReadset(Readset):
     @property
     def bam(self):
         return self._bam
-
-    @property
-    def fastq1(self):
-        return self._fastq1
-
-    @property
-    def fastq2(self):
-        return self._fastq2
 
     @property
     def library(self):
@@ -111,8 +106,8 @@ def parse_illumina_readset_file(illumina_readset_file):
                 line[format] = os.path.dirname(os.path.abspath(illumina_readset_file)) + os.sep + line[format]
 
         readset._bam = line.get('BAM', None)
-        readset._fastq1 = line.get('FASTQ1', None)
-        readset._fastq2 = line.get('FASTQ2', None)
+        readset.fastq1 = line.get('FASTQ1', None)
+        readset.fastq2 = line.get('FASTQ2', None)
         readset._library = line.get('Library', None)
         readset._run = line.get('Run', None)
         readset._lane = line.get('Lane', None)
