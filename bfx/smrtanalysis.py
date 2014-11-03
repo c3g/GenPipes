@@ -118,7 +118,7 @@ def filtering(
 
     return Job(
         [fofn, ref_params_xml],
-        [input_fofn, output_fastq, output_prefix + "fasta"],
+        [input_fofn, output_fastq, output_prefix + "fasta", os.path.join(output_dir, "data", "filtered_summary.csv")],
         [
             ['smrtanalysis_filtering', 'module_memtime'],
             ['smrtanalysis_filtering', 'module_prinseq'],
