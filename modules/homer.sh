@@ -32,10 +32,10 @@ fi
 cd $INSTALL_DIR
 
 # Download, install
-SOFTWARE_DIR=$SOFTWARE-$VERSION  ## TO BE MODIFIED WITH SPECIFIC SOFTWARE DIRECTORY IF NECESSARY
+SOFTWARE_DIR=$SOFTWARE-$VERSION
 mkdir -p $SOFTWARE_DIR
 cd $SOFTWARE_DIR
-wget http://homer.salk.edu/homer/configureHomer.pl  ## TO BE MODIFIED WITH SPECIFIC URL
+wget http://homer.salk.edu/homer/configureHomer.pl
 
 module load mugqic/perl/5.18.2
 module load mugqic/weblogo/3.3
