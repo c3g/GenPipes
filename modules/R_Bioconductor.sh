@@ -127,15 +127,17 @@ then
 fi
 MODULEFILE="$MODULEFILE_DIR/$VERSION"
 MODULEVERSIONFILE="$MODULEFILE_DIR/.version"
-mkdir -p $MODULEFILE_DIR $INSTALL_DIR
 # NOTE: this is somewhat complicated because we want the ROOT dir MUGQIC_INSTALL_HOME to be resolved at module execution.
 # TCLROOT is just a variable holding the TCL script value for the 'root' variable in the module file.
 
-echo "The software will be installed in $INSTALL_DIR"
-echo "The module file will be put in $MODULEFILE_DIR"
-echo "The module file will be $MODULEFILE"
-echo "The module vesion file will be $MODULEVERSIONFILE"
+echo "The software install location is $INSTALL_DIR"
+echo "The module file directory is $MODULEFILE_DIR"
+echo "The module file is $MODULEFILE"
+echo "The module version file is $MODULEVERSIONFILE"
 
+
+## Dir creation
+mkdir -p $MODULEFILE_DIR $INSTALL_DIR
 
 ## Install if required by force or absence of module files
 if [[ ( ! ( -f "$MODULEFILE" && -f "$INSTALL_DIR/bin/R") ) || "$UPDATE_MODE" = 0   ]]

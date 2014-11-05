@@ -35,7 +35,6 @@ EXAMPLE USAGE:
 
 R_mugqic_packages.sh  -v master -R mugqic_dev/R_Bioconductor/3.1.2_3.0 -p MUGQIC_INSTALL_HOME_DEV -m modulefiles/mugqic_dev -i software
 
-
 NOTES: 
 ...
 
@@ -91,13 +90,15 @@ then
 fi
 MODULEFILE="$MODULEFILE_DIR/$REF"
 MODULEVERSIONFILE="$MODULEFILE_DIR/.version"
+
+echo "The software install location is $INSTALL_DIR"
+echo "The module file directory is $MODULEFILE_DIR"
+echo "The module file is $MODULEFILE"
+echo "The module version file is $MODULEVERSIONFILE"
+
+
+## Dir creation
 mkdir -p $MODULEFILE_DIR $INSTALL_DIR
-
-
-echo "The software will be installed in $INSTALL_DIR"
-echo "The module file will be put in $MODULEFILE_DIR"
-echo "The module file will be $MODULEFILE"
-echo "The module vesion file will be $MODULEVERSIONFILE"
 
 # Download from bitbucket, install
 wget "https://bitbucket.org/mugqic/$REPO/get/$REF.tar.gz" -O "$SOFTWARE-$REF.tar.gz" 
