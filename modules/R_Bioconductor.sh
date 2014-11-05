@@ -5,9 +5,8 @@ me=`basename $0`
 
 
 # TODO:
-# - Finish refactoring Bioconductor with $SOFTWARE
-# - Test some more
-# - deploy meacnism
+# - Test prefixing system
+# - test -r, -v , etc
 
 
 #TODO

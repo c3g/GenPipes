@@ -130,6 +130,10 @@ set ModulesVersion $REF
 EOF
 
 
+## Adjust permissions
+chmod -R ug+rwX  $INSTALL_DIR $MODULEFILE $MODULEVERSIONFILE
+chmod -R o+rX    $INSTALL_DIR $MODULEFILE $MODULEVERSIONFILE
+
 
 
 echo "done."
