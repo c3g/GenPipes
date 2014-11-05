@@ -11,9 +11,9 @@ wget https://bitbucket.org/mugqic/mugqic_resources/raw/master/modules/R_mugqic_p
 sh R_Bioconductor.sh >& abacus.R_Bioconductor.log $@
 sh R_mugqic_packages.sh >& abacus.R_mugqic_packages.log $@
 
-## Guillimin phase 2
-ssh flefebvre1@guillimin-p2.hpc.mcgill.ca "bash -l -s" -- >& guillimin2.R_Bioconductor.log < R_Bioconductor.sh $@
-ssh flefebvre1@guillimin-p2.hpc.mcgill.ca "bash -l -s" -- >& guillimin2.R_mugqic_packages.log < R_mugqic_packages.sh $@
+## Guillimin 
+ssh flefebvre1@guillimin-p2.hpc.mcgill.ca "bash -l -s" -- >& guillimin.R_Bioconductor.log < R_Bioconductor.sh $@
+ssh flefebvre1@guillimin-p2.hpc.mcgill.ca "bash -l -s" -- >& guillimin.R_mugqic_packages.log < R_mugqic_packages.sh $@
 
 ## Mammouth MP2
 ssh lefebvr3@bourque-mp2.rqchp.ca  "bash -l -s" -- >& mammouth.R_Bioconductor.log  < R_Bioconductor.sh $@
