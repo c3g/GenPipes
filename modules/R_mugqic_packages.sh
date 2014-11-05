@@ -93,6 +93,12 @@ MODULEFILE="$MODULEFILE_DIR/$REF"
 MODULEVERSIONFILE="$MODULEFILE_DIR/.version"
 mkdir -p $MODULEFILE_DIR $INSTALL_DIR
 
+
+echo "The software will be installed in $INSTALL_DIR"
+echo "The module file will be put in $MODULEFILE_DIR"
+echo "The module file will be $MODULEFILE"
+echo "The module vesion file will be $MODULEVERSIONFILE"
+
 # Download from bitbucket, install
 wget "https://bitbucket.org/mugqic/$REPO/get/$REF.tar.gz" -O "$SOFTWARE-$REF.tar.gz" 
 tar -zxf "$SOFTWARE-$REF.tar.gz"  

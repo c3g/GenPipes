@@ -131,7 +131,10 @@ mkdir -p $MODULEFILE_DIR $INSTALL_DIR
 # NOTE: this is somewhat complicated because we want the ROOT dir MUGQIC_INSTALL_HOME to be resolved at module execution.
 # TCLROOT is just a variable holding the TCL script value for the 'root' variable in the module file.
 
-
+echo "The software will be installed in $INSTALL_DIR"
+echo "The module file will be put in $MODULEFILE_DIR"
+echo "The module file will be $MODULEFILE"
+echo "The module vesion file will be $MODULEVERSIONFILE"
 
 
 ## Install if required by force or absence of module files
