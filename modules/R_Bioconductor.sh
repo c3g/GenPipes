@@ -35,7 +35,7 @@ VERSION=$R_VERSION
 INSTALL_PREFIX_ENV_VARNAME=""
 MODULEFILE_DIR="$MUGQIC_INSTALL_HOME_DEV/modulefiles/mugqic_dev"
 INSTALL_DIR="$MUGQIC_INSTALL_HOME_DEV/software"
-UPDATE_MODE=0
+UPDATE_MODE=1
 
 ## Parse arguments
 usage()
@@ -55,8 +55,8 @@ OPTIONS:
 
 EXAMPLE USAGE:
 
-R_Bioconductor.sh -v 3.1.1 -p MUGQIC_INSTALL_HOME     -m modulefiles/mugqic     -i software/R
-R_Bioconductor.sh -v 3.1.1 -p MUGQIC_INSTALL_HOME_DEV -m modulefiles/mugqic_dev -i software/R
+R_Bioconductor.sh -v 3.1.1 -p MUGQIC_INSTALL_HOME     -m modulefiles/mugqic     -i software
+R_Bioconductor.sh -v 3.1.1 -p MUGQIC_INSTALL_HOME_DEV -m modulefiles/mugqic_dev -i software
 
 NOTES: 
    - On Mammouth, byte compiling of the base package might fail if an R module is already loaded.
