@@ -47,7 +47,7 @@ This script installs R, installs the corresponding module and other dependencies
 
 OPTIONS:
    -v      Force a specifc R version different than latest, e.g. 3.1.1. Note that the Bioconductor version installed will always be the latest one for this R version.
-   -u      Update mode. If this flag is absent, or if the R executable is not found or if the module file is not found, R base will be downloaded, compiled and installed. 
+   -r      Disable package update mode. If this flag is present, or if the R executable is not found or if the module file is not found, R base will be downloaded, compiled and installed. 
    -p	   Name of an environnment variable which defines a prefix path to -m and -i. E.g. MUGQIC_INSTALL_HOME
    -m      Where to write the module file and its directory, defaults to modulesfiles/mugqic_dev/
    -i	   R installation directory, defaults to software/. Actual install dir will be reassigned to <-i>/$SOFTWARE/$SOFTWARE-<Rversion_Biocversion>. If version is not latest, then Bioconductor version is NOT added to the install prefix and the module name (I could not find an easy way to figure out which Bioc version matches an old R version)
@@ -85,8 +85,8 @@ do
          i)
              INSTALL_DIR=$OPTARG
              ;;
-         u)
-             UPDATE_MODE=1
+         r)
+             UPDATE_MODE=0
              ;;
          ?)
              usage
