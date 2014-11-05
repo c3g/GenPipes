@@ -16,7 +16,7 @@ igvtools count -f min,max,mean \\
   {genome}""".format(
         input=input,
         output=output,
-        genome=config.param('compute_tdf', 'igv_genome')
+        genome=config.param('compute_tdf', 'igv_genome', type='filepath')
     )
 
     return job
