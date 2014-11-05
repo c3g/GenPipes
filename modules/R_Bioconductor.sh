@@ -5,6 +5,7 @@ me=`basename $0`
 
 
 # TODO:
+# - something is wrog -v 3.1.1s
 # - Test prefixing system
 # - test -r, -v , etc
 
@@ -30,7 +31,6 @@ export R_LIBS=
 
 ## Default arg values
 R_VERSION="latest" # -v 
-VERSION=$R_VERSION
 INSTALL_PREFIX_ENV_VARNAME=""
 MODULEFILE_DIR="$MUGQIC_INSTALL_HOME_DEV/modulefiles/mugqic_dev"
 INSTALL_DIR="$MUGQIC_INSTALL_HOME_DEV/software"
@@ -110,6 +110,8 @@ then
 	BIOCVERSION=`wget -qO- http://bioconductor.org/packages/release/bioc | grep 'Bioconductor version: Release ' | grep -oE '[0-9]*\.[0-9]*'`  
 	echo "Latest Bioconductor version appears to be $BIOCVERSION"
 	VERSION="$R_VERSION""_""$BIOCVERSION"
+else
+	VERSION=$R_VERSION
 fi
 
 
