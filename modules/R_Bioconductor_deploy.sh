@@ -21,11 +21,15 @@ ssh lefebvr3@bourque-mp2.rqchp.ca  "bash -l -s" -- >& mammouth.R_mugqic_packages
 
 exit
 
-# Deploy prod
+
+
 # wget https://bitbucket.org/mugqic/mugqic_resources/raw/master/modules/R_Bioconductor.sh -O R_Bioconductor.sh
 # wget https://bitbucket.org/mugqic/mugqic_resources/raw/master/modules/R_mugqic_packages.sh -O R_mugqic_packages.sh
-# sh R_Bioconductor.sh -r -p MUGQIC_INSTALL_HOME -m modulesfiles/mugqic -i software &> R_Bioconductor_prod.log
-# sh R_mugqic_packages.sh -v 0.1 -R mugqic/R_Bioconductor/3.1.2_3.0 -p MUGQIC_INSTALL_HOME -m modulesfiles/mugqic -i software &> R_mugqic_packages_prod.log
 #
+# # Deploy prod
+# sh R_Bioconductor.sh -r -p MUGQIC_INSTALL_HOME -m modulefiles/mugqic -i software &> R_Bioconductor_prod.log
+# sh R_mugqic_packages.sh -v 0.1 -R mugqic/R_Bioconductor/3.1.2_3.0 -p MUGQIC_INSTALL_HOME -m modulefiles/mugqic -i software &> R_mugqic_packages_prod.log
 #
-
+# # Deploy dev
+# sh R_Bioconductor.sh -r -p MUGQIC_INSTALL_HOME_DEV -m modulefiles/mugqic_dev -i software &> R_Bioconductor_dev.log
+# sh R_mugqic_packages.sh -v master -R mugqic_dev/R_Bioconductor -p MUGQIC_INSTALL_HOME_DEV -m modulefiles/mugqic_dev -i software &> R_mugqic_packages_dev.log
