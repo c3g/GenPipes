@@ -1,36 +1,157 @@
-# MUGQIC PIPELINES
--------------
+MUGQIC Pipelines
+================
+This repository holds several bioinformatics pipelines developed at [McGill University and G&eacute;nome Qu&eacute;bec Innovation Centre](http://gqinnovationcenter.com) (MUGQIC).
 
-This repository holds Python libs, wrappers and scripts of several bioinformatics pipelines.
+Visit our [wiki](https://biowiki.atlassian.net/wiki/display/PS/Pipeline+Space+Home) for an overview of the various pipelines.
 
-The repository organization is:
+MUGQIC pipelines consist of Python scripts which create a list of jobs running Bash commands. Those scripts support dependencies between jobs and smart restart mechanism if some jobs fail during pipeline execution. Jobs can be submitted in different ways: by creating a Bash script running a series of commands in batch or by sending those jobs to a PBS scheduler like Torque. Job commands and parameters can be modified through several configuration files.
 
-mugqic_pipeline           - Root directory.
+Software requirement
+--------------------
+MUGQIC pipelines have been tested with Python 2.7.
 
-mugqic_pipeline/core      - Core libraries for all pipelines.
+Quick start for abacus, guillimin and mammouth users
+----------------------------------------------------
+Genomes and modules used by the pipelines are already installed on those clusters.
+To access them, add the following lines to your *$HOME/.bash_profile*:
 
-mugqic_pipeline/bfx       - Bioinformatics libraries for all pipelines.
+    umask 0002
+    
+    ## MUGQIC genomes and modules
+    
+    HOST=`hostname`;
+    
+    DNSDOMAIN=`dnsdomainname`;
+    
+    if [[ $HOST == abacus* || $DNSDOMAIN == ferrier.genome.mcgill.ca ]]; then
+    
+     export MUGQIC_INSTALL_HOME=/sb/programs/analyste
+    
+     export MUGQIC_INSTALL_HOME_DEV=/lb/project/mugqic/analyste_dev
+    
+    elif [[ $HOST == lg-* || $DNSDOMAIN == guillimin.clumeq.ca ]]; then
+    
+     export MUGQIC_INSTALL_HOME=/software/areas/genomics/phase2
+    
+     export MUGQIC_INSTALL_HOME_DEV=/gs/project/mugqic/analyste_dev/phase2
+    
+    elif [[ $BQMAMMOUTH == "mp2" ]]; then
+    
+     export MUGQIC_INSTALL_HOME=$(share_nobackup bourque)/mugqic_prod
+    
+     export MUGQIC_INSTALL_HOME_DEV=$(share_nobackup bourque)/mugqic_dev
+    
+    fi
+    
+    module use $MUGQIC_INSTALL_HOME/modulefiles $MUGQIC_INSTALL_HOME_DEV/modulefiles
+    
 
-mugqic_pipeline/pipelines - Pipelines, each of them being located in the subdirectory \(mugqic_pipeline/pipelines/<pipeline_name>\).
+Also, set `JOB_MAIL` in your *$HOME/.bash_profile* to receive PBS job logs:
 
-Python documentation for *.py files should \(as much as possible\) be created using pydoc.
-
-# Documentation
--------------
-
-Visit our [wiki](https://biowiki.atlassian.net/wiki/display/PS/Pipeline+Space+Home) for a pipeline overview.
-
-To generate documentation for Python wrappers and libraries, use [pydoc](https://docs.python.org/2/library/pydoc.html). For instance:
-
-    pydoc --infile=src/mugqic_pipeline/pipelines/dnaseq/dnaseq.py --outfile=dnaseq.html
-
-MUGQIC pipelines are perl programs that write to the standard output a list of bash commands intended to be run in a cluster computing environment. Dependencies between steps are controlled from the program. When executed, commands will submit jobs to a batch server. The cluster submit commands and the parameters associated to each job can be modified through a configuration file.
+    export JOB_MAIL=my.name@email.ca
 
 
-## Download and setup
+MUGQIC pipelines and compatible Python version are already installed as modules on those clusters.
+To use them by default, add in your *$HOME/.bash_profile*:
 
-In order to make pipelines that work anywhere, regardless of user path settings, and to control for versions of third party software and data associated to the analysis, the pipelines depend on environment modules. The modules created by the bioinformatics team in Compute Canada's Guillimin and Mammouth clusters are located in the $MUGCIC_INSTALL_HOME/modulefiles path and use the notation: mugqic/<software>/<version> . Click [here](https://biowiki.atlassian.net/wiki/display/CS/Software+and+Data+Dependencies) to setup modules on Guillimin and Mammouth clusters.
+    module load mugqic/python/2.7.8
+    module load mugqic/pipeline/<latest_version>
 
+(find out the latest version with: "`module avail 2>&1 | grep mugqic/pipeline`").
+
+
+### For abacus users
+To use parallel computing with some modules, add the following lines to your *$HOME/.bash_profile*:
+
+    ## MPI
+    export PATH=/sb/programs/mpi/mpi_pbs/openmpi-1.6/bin:$PATH
+    export LD_LIBRARY_PATH=/sb/programs/mpi/mpi_pbs/openmpi-1.6/lib:$LD_LIBRARY_PATH
+
+### For guillimin and mammouth users
+Set your `RAP_ID` (Resource Allocation Project ID from Compute Canada) in your *$HOME/.bash_profile*:
+
+    export RAP_ID=my-rap-id
+
+
+Usage
+-----
+
+For each pipeline, get help about usage, arguments and steps with:
+
+    mugqic_pipeline/pipelines/<pipeline_name>/<pipeline_name>.py --help
+
+Pipelines require as input one Readset File and one or more Configuration File(s) described below.
+
+For more information about a specific pipeline, visit:
+
+* [DNA-Seq](https://bitbucket.org/mugqic/mugqic_pipeline/src/python/pipelines/dnaseq/)
+* [RNA-Seq](https://bitbucket.org/mugqic/mugqic_pipeline/src/python/pipelines/rnaseq/)
+* [RNA-Seq De Novo Assembly](https://bitbucket.org/mugqic/mugqic_pipeline/src/python/pipelines/rnaseq_denovo_assembly/)
+* [PacBio Assembly](https://bitbucket.org/mugqic/mugqic_pipeline/src/python/pipelines/pacbio_assembly/)
+
+
+Readset File
+------------
+
+The Readset File is a TAB-separated values plain text file with one line per readset and the following columns in any order:
+
+### DNA-Seq, RNA-Seq, RNA-Seq De Novo Assembly
+
+* SampleID: must contain letters A-Z, numbers 0-9, hyphens (-) or underscores (_) only; BAM files will be merged into a file named after this value; mandatory;
+* Readset: a unique readset name with the same allowed characters as above; mandatory;
+* Library: optional;
+* RunType: "`PAIRED_END`" or "`SINGLE_END`"; mandatory;
+* Run: optional;
+* Lane: optional;
+* QualityOffset: quality score offset integer used for trimming; optional;
+* BED: relative or absolute path to BED file; optional;
+* FASTQ1: relative or absolute path to first FASTQ file for paired-end readset or single FASTQ file for single-end readset; mandatory if BAM value is missing;
+* FASTQ2: relative or absolute path to second FASTQ file for paired-end readset; mandatory if RunType value is "`PAIRED_END`";
+* BAM: relative or absolute path to BAM file which will be converted into FASTQ files if they are not available; mandatory if FASTQ1 value is missing, ignored otherwise.
+
+Example:
+
+    SampleID	Readset	Library	RunType	Run	Lane	QualityOffset	BED	FASTQ1	FASTQ2	BAM
+    sampleA	readset1	lib0001	PAIRED_END	run100	1	33	path/to/file.bed	path/to/readset1.paired1.fastq.gz	path/to/readset1.paired2.fastq.gz	path/to/readset1.bam
+    sampleA	readset2	lib0001	PAIRED_END	run100	2	33	path/to/file.bed	path/to/readset2.paired1.fastq.gz	path/to/readset2.paired2.fastq.gz	path/to/readset2.bam
+    sampleA	readset3	lib0001	PAIRED_END	run100	3	33	path/to/file.bed	path/to/readset3.paired1.fastq.gz	path/to/readset3.paired2.fastq.gz	path/to/readset3.bam
+    sampleA	readset4	lib0001	PAIRED_END	run100	4	33	path/to/file.bed	path/to/readset4.paired1.fastq.gz	path/to/readset4.paired2.fastq.gz	path/to/readset4.bam
+    sampleB	readset5	lib0002	PAIRED_END	run200	3	33	path/to/file.bed	path/to/readset5.paired1.fastq.gz	path/to/readset5.paired2.fastq.gz	path/to/readset5.bam
+    sampleB	readset6	lib0002	PAIRED_END	run200	4	33	path/to/file.bed	path/to/readset6.paired1.fastq.gz	path/to/readset6.paired2.fastq.gz	path/to/readset6.bam
+    sampleB	readset7	lib0002	PAIRED_END	run200	5	33	path/to/file.bed	path/to/readset7.paired1.fastq.gz	path/to/readset7.paired2.fastq.gz	path/to/readset7.bam
+    sampleB	readset8	lib0002	PAIRED_END	run200	6	33	path/to/file.bed	path/to/readset8.paired1.fastq.gz	path/to/readset8.paired2.fastq.gz	path/to/readset8.bam
+
+
+### PacBio Assembly
+
+* SampleID: must contain letters A-Z, numbers 0-9, hyphens (-) or underscores (_) only; BAM files will be merged into a file named after this value; mandatory;
+* Readset: a unique readset name with the same allowed characters as above; mandatory;
+* Smartcell: mandatory;
+* NbBasepairs: total number of base pairs for this readset; mandatory;
+* EstimatedGenomeSize: estimated genome size in number of base pairs used to compute seeding reads length cutoff; mandatory;
+* BAS: comma-separated list of relative or absolute paths to BAS files (old PacBio format); mandatory if BAX value is missing, ignored otherwise;
+* BAX: comma-separated list of relative or absolute paths to BAX files; BAX file list is used first if both BAX/BAS lists are present; mandatory if BAS value is missing;
+
+Example:
+
+    SampleID	Readset	Smartcell	NbBasepairs	EstimatedGenomeSize	BAS	BAX
+    sampleA	readset1	F_01_1	122169744	150000	path/to/readset1.bas.h5	path/to/readset1.1.bax.h5,path/to/readset1.2.bax.h5,path/to/readset1.3.bax.h5
+    sampleA	readset2	F_01_2	105503472	150000	path/to/readset2.bas.h5	path/to/readset2.1.bax.h5,path/to/readset2.2.bax.h5,path/to/readset2.3.bax.h5
+    sampleB	readset3	G_01_1	118603200	150000	path/to/readset3.bas.h5	path/to/readset3.1.bax.h5,path/to/readset3.2.bax.h5,path/to/readset3.3.bax.h5
+    sampleB	readset4	G_01_1	104239488	150000	path/to/readset4.bas.h5	path/to/readset4.1.bax.h5,path/to/readset4.2.bax.h5,path/to/readset4.3.bax.h5
+
+
+### For abacus users
+If your readsets belong to a [NANUQ](http://gqinnovationcenter.com/services/nanuq.aspx) project, use `nanuq2mugqic_pipeline.py` script in module `mugqic/tools` to automatically create a Readset File and symlinks to your readsets on abacus.
+
+
+Configuration (INI) Files
+-------------------------
+Is the standard configuration file for the pipeline. It's a plain text file composed of sections, keys and values. Section name appears on a line in square brackets ([default]). Every key has a name and a value, separated by an equals sign (=), i.e. clusterSubmitCmd=msub. Semicolons (;) or number signs (#) at the beginning of the line indicate a comment. Comment lines are ignored. Generally sections are associated to specific steps of the pipeline. If a property is associated to a specific step, the program will search for keys in the respective section. If the key is not found, the values in the default section will be used. Templates for Compute Canada's Guillimin and Mammouth clusters may already be available in the respective pipeline directory (\(root/pipeline/Pipeline_name\)).
+
+
+Download
+--------
 
 To download the pipeline use git to obtain the most recent development version. Mugqic pipelines are hosted on github, and can be obtained via:
 
@@ -45,65 +166,26 @@ Whenever the latest snapshot from github is needed, use the command pull
 
     git pull origin
 
+Setup
+-----
 
-## Usage
-
-In its general operation all the mugqic pipelines require two input files: a project's read set sheet and a configuration (ini) file. Fastq files must be properly setup using a specific naming and directory structure. Additionally, the RNAseq and CHIPseq pipelines require a design file and the path for the job output logs. The command line options of the main pipelines are described below. Summaries of usage are printed when a command is run with no arguments.
-
-###   The project's read set sheet
-
-Is a csv plain text read set sheet generated from [NANUQ](http://gqinnovationcenter.com/index.aspx). See [this](https://biowiki.atlassian.net/wiki/display/PS/Read+Set+Files+%28FastQ%29+Setup) page to learn how to properly setup your fastq files and your project read set sheet.
+In order to make pipelines that work anywhere, regardless of user path settings, and to control for versions of third party software and data associated to the analysis, the pipelines depend on environment modules. The modules created by the bioinformatics team in Compute Canada's Guillimin and Mammouth clusters are located in the $MUGCIC_INSTALL_HOME/modulefiles path and use the notation: mugqic/<software>/<version> . Click [here](https://biowiki.atlassian.net/wiki/display/CS/Software+and+Data+Dependencies) to setup modules on Guillimin and Mammouth clusters.
 
 
-###   The configuration (ini) file.
-Is the standard configuration file for the pipeline. It's a plain text file composed of sections, keys and values. Section name appears on a line in square brackets ([default]). Every key has a name and a value, separated by an equals sign (=), i.e. clusterSubmitCmd=msub. Semicolons (;) or number signs (#) at the beginning of the line indicate a comment. Comment lines are ignored. Generally sections are associated to specific steps of the pipeline. If a property is associated to a specific step, the program will search for keys in the respective section. If the key is not found, the values in the default section will be used. Templates for Compute Canada's Guillimin and Mammouth clusters may already be available in the respective pipeline directory (\(root/pipeline/Pipeline_name\)).
 
-
-###   DNAseq pipeline
-
-    perl dnaSeq.pl -c dnaSeq.abacus.ini -s 1 -e 21 -n project.nanuq.csv > toRun.sh
-
-will generate a bash script for steps 1 to 21. This script can then be executed:
-
-    sh toRun.sh
-
-####    Options
-
-      -c (dnaSeq.abacus.ini) the standard configuration file for the pipeline. Templates for some cluster systems like Abacus or Guillimin may already be available at pipelines/dnaseq
-      -s The start step
-      -e The end step
-      -n (project.nanuq.csv) the read set sheet, prepared as described above.
-
-###   RNAseq pipeline
-
-    perl rnaSeq.pl -c rnaSeq.abacus.ini -s 1 -e 14 -n project.nanuq.csv -d design.txt -w  `pwd`  > toRun.sh
-
-will generate a bash script for steps 1 to 14. This script can then be executed:
-
-    sh toRun.sh
-
-####      Options
-
-      -c (rnaSeq.abacus.ini) the standard configuration file for the pipeline. Templates for some cluster systems like Abacus or Guillimin may already be available at pipelines/rnaseq/
-      -s The start step
-      -e The end step
-      -n (project.nanuq.csv)  the NANUQ project read set sheet, prepared as described above.
-      -d (design.txt) the design file. A tab separated value file that specifies the experimental design information of the project. The first column lists the sample names, which should match elements the column Name in the read set sheet. Subsequent columns specify all the pairwise comparisons which should be undertaken: values should be either "2" (nominator), "1" (denominator) or "0" (exclude from comparison). An example of design file may be available in the respective pipeline directory (pipelines/Pipeline_name/example.design.tsv).
-      -w The project's working directory. All job outputs will be sent to this directory.
-
-## Call home
+Call home
+---------
 When pipeline jobs are submitted, a call home feature is invoked to collect some usage data. Those data are used to compute statistics and justify grant applications for pipeline funding support.
 
 Data collected:
 
 1. Date
-2. Number of samples
-3. Host and IP address
-4. Pipeline name (DnaSeq, RnaSeq, etc.)
+2. Host and IP address
+3. Pipeline name (DnaSeq, RnaSeq, etc.)
+4. Number of samples
 5. Pipeline Steps
 
 
-# BUG report
--------------
-
-Please report bugs, errors or problems by sending an email to [bioinformatics.service@mail.mcgill.ca](mailto:bioinformatics.service@mail.mcgill.ca)
+Contact us
+----------
+Please, ask questions or report bugs by sending us an email to [bioinformatics.service@mail.mcgill.ca](mailto:bioinformatics.service@mail.mcgill.ca).
