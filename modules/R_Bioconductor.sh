@@ -3,34 +3,14 @@ set -e
 umask 0002
 me=`basename $0`
 
-
-# TODO:
-# - something is wrog -v 3.1.1s
-# - Test prefixing system
-# - test -r, -v , etc
-
-
-#TODO
-# documentation.md.. need to be documented
-# update CRON job
-# investiguate idea of local package repository
-# idea to check sys libs most common missings
-# Document most common issues in script help
-# cron parallel calls is problematic and not scalabe
-# is it roxygenizing?
-# gcc 4,8 vs Rcpparmadillo
-#Joel would like a cleanup of libraries
-
-
 # Constants
 SOFTWARE="R_Bioconductor" # used for module and install dir names
-
 
 ## Neutralize $R_LIBS
 export R_LIBS=
 
 ## Default arg values
-R_VERSION="latest" # -v 
+R_VERSION="latest" 
 INSTALL_PREFIX_ENV_VARNAME=""
 MODULEFILE_DIR="$MUGQIC_INSTALL_HOME_DEV/modulefiles/mugqic_dev"
 INSTALL_DIR="$MUGQIC_INSTALL_HOME_DEV/software"
@@ -46,10 +26,10 @@ This script installs R, installs the corresponding module and other dependencies
 
 OPTIONS:
    -v      Force a specifc R version different than latest, e.g. 3.1.1. Note that the Bioconductor version installed will always be the latest one for this R version.
-   -r      Disable package update mode. If this flag is present, or if the R executable is not found or if the module file is not found, R base will be downloaded, compiled and installed. 
+   -r      Disable package update mode. If this flag is present, or if the R executable is not found or if the module file is not found, R base will be downloaded, compiled, installed, and all packages will be re-installed. 
    -p	   Name of an environnment variable which defines a prefix path to -m and -i. E.g. MUGQIC_INSTALL_HOME
-   -m      Where to write the module file and its directory, defaults to modulesfiles/mugqic_dev/
-   -i	   R installation directory, defaults to software/. Actual install dir will be reassigned to <-i>/$SOFTWARE/$SOFTWARE-<Rversion_Biocversion>. If version is not latest, then Bioconductor version is NOT added to the install prefix and the module name (I could not find an easy way to figure out which Bioc version matches an old R version)
+   -m      The root folder for the module files, defaults to \$MUGQIC_INSTALL_HOME_DEV/modulefiles/mugqic_dev. 
+   -i	   The root folder for software. Defaults to \$MUGQIC_INSTALL_HOME_DEV/software. Actual install dir will be reassigned to <-i>/$SOFTWARE/$SOFTWARE-<Rversion_Biocversion>. If R version is not latest, then Bioconductor version number is NOT added to the install prefix and the module name (I could not find an easy way to figure out which Bioc version matches an old R version)
    -h      Print this message
 
 EXAMPLE USAGE:
@@ -65,7 +45,7 @@ NOTES:
 EOF
 }
 
-while getopts “v:p:m:i:uh” OPTION
+while getopts “v:p:m:i:rh” OPTION
 do
      case $OPTION in
          h)
@@ -230,7 +210,7 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
 	,"foreach","foreign","gcrma","gdata","genefilter","GenomicFeatures"
 	,"GenomicRanges","genoset","GEOquery","ggplot2","ggvis","googleVis","goseq"
 	,"gplots","graph","gsalib","gtable","gtools"
-	,"Gviz","hdrcde","Hmisc","hwriter","HTqPCR","HTSFilter","igraph","IlluminaHumanMethylation450k.db"
+	,"Gviz","hdrcde","Hmisc","hwriter","HTqPCR","HTSFilter","igraph"
 	,"IlluminaHumanMethylation450kmanifest","impute","IRanges","iterators"
 	,"KernSmooth","ks","labeling","lattice","latticeExtra","limma","locfit"
 	,"lumi","LVSmiRNA","magrittr","maps","markdown","MASS","Matrix","matrixStats","mclust"
@@ -262,8 +242,6 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
 
 	## Install Vennerable, since not yet in CRAN
 	install.packages("Vennerable", repos="http://R-Forge.R-project.org",lib=.Library, type='source')
-
-
 
 EOF
 

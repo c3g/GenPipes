@@ -27,8 +27,8 @@ OPTIONS:
    -v	The desired git reference to the repository. Defaults to master.
    -R	The R module name with which to build and prereq this package installation. Defaults to mugqic_dev/R_Bioconductor
    -p	Name of an environment variable which defines a prefix path to -m and -i. E.g. MUGQIC_INSTALL_HOME
-   -m  	Path the module files directory. Defaults to $MUGQIC_INSTALL_HOME_DEV/modulefiles/mugqic_dev. Actual module file  dir will be <-m>/$SOFTWARE/<-v>
-   -i	library installation directory, defaults to $MUGQIC_INSTALL_HOME_DEV/software. Actual install will be <-i>/$SOFTWARE/$SOFTWARE-<-v>/
+   -m  	Path the module files directory. Defaults to \$MUGQIC_INSTALL_HOME_DEV/modulefiles/mugqic_dev. Actual module file  dir will be <-m>/$SOFTWARE/<-v>
+   -i	library installation directory, defaults to \$MUGQIC_INSTALL_HOME_DEV/software. Actual install will be <-i>/$SOFTWARE/$SOFTWARE-<-v>/
    -h 	Print this message
    
 EXAMPLE USAGE:
