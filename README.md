@@ -1,6 +1,6 @@
 MUGQIC Pipelines
 ================
-This repository holds several bioinformatics pipelines developed at [McGill University and G&eacute;nome Qu&eacute;bec Innovation Centre](http://gqinnovationcenter.com) (MUGQIC).
+This repository holds several bioinformatics pipelines developed at [McGill University and Génome Qu&eacute;bec Innovation Centre](http://gqinnovationcenter.com) (MUGQIC).
 
 Visit our [wiki](https://biowiki.atlassian.net/wiki/display/PS/Pipeline+Space+Home) for an overview of the various pipelines.
 
