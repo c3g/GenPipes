@@ -1,28 +1,18 @@
+On this page:
+
+[TOC]
+
 MUGQIC Pipelines
 ================
 This repository holds several bioinformatics pipelines developed at [McGill University and Génome Québec Innovation Centre](http://gqinnovationcenter.com) (MUGQIC).
 
 Visit our [wiki](https://biowiki.atlassian.net/wiki/display/PS/Pipeline+Space+Home) for an overview of the various pipelines.
 
-MUGQIC pipelines consist of Python scripts which create a list of jobs running Bash commands. Those scripts support dependencies between jobs and smart restart mechanism if some jobs fail during pipeline execution. Jobs can be submitted in different ways: by creating a Bash script running a series of commands in batch or by sending those jobs to a PBS scheduler like Torque. Job commands and parameters can be modified through several configuration files.
-
-[TOC]
+MUGQIC pipelines consist of Python scripts which create a list of jobs running Bash commands. Those scripts support dependencies between jobs and smart restart mechanism if some jobs fail during pipeline execution. Jobs can be submitted in different ways: by sending those jobs to a PBS scheduler like Torque or by creating a Bash script running a series of commands in batch. Job commands and parameters can be modified through several configuration files.
 
 On this page:
 
-
-
-* [Software requirement](https://bitbucket.org/mugqic/mugqic_pipeline/src/python/overview#markdown-header-software-requirement)
-* [Quick start for abacus, guillimin and mammouth users](https://bitbucket.org/mugqic/mugqic_pipeline/overview#markdown-header-quick-start-for-abacus,-guillimin-and-mammouth-users)
-    * [For abacus users](https://bitbucket.org/mugqic/mugqic_pipeline/overview#markdown-header-for-abacus-users)
-    * [For guillimin and mammouth users](https://bitbucket.org/mugqic/mugqic_pipeline/overview#markdown-header-for-guillimin-and-mammouth-users)
-* [Usage](https://bitbucket.org/mugqic/mugqic_pipeline/overview#markdown-header-usage)
-* [Readset File](https://bitbucket.org/mugqic/mugqic_pipeline/overview#markdown-header-readset-file)
-    * [DNA-Seq, RNA-Seq, RNA-Seq De Novo Assembly](https://bitbucket.org/mugqic/mugqic_pipeline/overview#markdown-header-dna-seq,-rna-seq,-rna-seq-de-novo-assembly)
-    * [PacBio Assembly](https://bitbucket.org/mugqic/mugqic_pipeline/overview#markdown-header-pacbio-assembly)
-    * [For abacus users](https://bitbucket.org/mugqic/mugqic_pipeline/overview#markdown-header-for-abacus-users)
-* [Call home](https://bitbucket.org/mugqic/mugqic_pipeline/overview#markdown-header-call-home)
-* [Contact us](https://bitbucket.org/mugqic/mugqic_pipeline/overview#markdown-header-contact-us)
+[TOC]
 
 
 Software requirement
@@ -30,11 +20,10 @@ Software requirement
 MUGQIC pipelines have been tested with Python 2.7.
 
 
-Quick start for abacus, guillimin and mammouth users
+Quick setup for abacus, guillimin and mammouth users
 ----------------------------------------------------
 Genomes and modules used by the pipelines are already installed on those clusters.
 To access them, add the following lines to your *$HOME/.bash_profile*:
-
 ```
 #!bash
 umask 0002
@@ -46,20 +35,14 @@ HOST=`hostname`;
 DNSDOMAIN=`dnsdomainname`;
     
 if [[ $HOST == abacus* || $DNSDOMAIN == ferrier.genome.mcgill.ca ]]; then
-    
   export MUGQIC_INSTALL_HOME=/sb/programs/analyste
   export MUGQIC_INSTALL_HOME_DEV=/lb/project/mugqic/analyste_dev
-    
 elif [[ $HOST == lg-* || $DNSDOMAIN == guillimin.clumeq.ca ]]; then
-    
   export MUGQIC_INSTALL_HOME=/software/areas/genomics/phase2  
   export MUGQIC_INSTALL_HOME_DEV=/gs/project/mugqic/analyste_dev/phase2
-    
 elif [[ $BQMAMMOUTH == "mp2" ]]; then
-    
   export MUGQIC_INSTALL_HOME=$(share_nobackup bourque)/mugqic_prod
   export MUGQIC_INSTALL_HOME_DEV=$(share_nobackup bourque)/mugqic_dev
-    
 fi
     
 module use $MUGQIC_INSTALL_HOME/modulefiles $MUGQIC_INSTALL_HOME_DEV/modulefiles
@@ -175,26 +158,44 @@ Configuration (INI) Files
 Is the standard configuration file for the pipeline. It's a plain text file composed of sections, keys and values. Section name appears on a line in square brackets ([default]). Every key has a name and a value, separated by an equals sign (=), i.e. clusterSubmitCmd=msub. Semicolons (;) or number signs (#) at the beginning of the line indicate a comment. Comment lines are ignored. Generally sections are associated to specific steps of the pipeline. If a property is associated to a specific step, the program will search for keys in the respective section. If the key is not found, the values in the default section will be used. Templates for Compute Canada's Guillimin and Mammouth clusters may already be available in the respective pipeline directory (\(root/pipeline/Pipeline_name\)).
 
 
-Download
---------
-
-To download the pipeline use git to obtain the most recent development version. Mugqic pipelines are hosted on github, and can be obtained via:
-
-    git clone https://bitbucket.org/mugqic/mugqic_pipeline.git
+Download and setup for external users
+-------------------------------------
 
 
-If you encounter issues with the development version (master), or simply wish to obtain the most recent stable revision (1.1) then use:
+### Download
 
-    git fetch && git checkout 1.1
+Visit our [Download page](https://bitbucket.org/mugqic/mugqic_pipeline/downloads) to get the latest stable release.
 
-Whenever the latest snapshot from github is needed, use the command pull
+If you want to use the most recent development version:
+```
+#!bash
+git clone https://bitbucket.org/mugqic/mugqic_pipeline.git
+```
 
-    git pull origin
 
-Setup
------
+### Setup
 
-In order to make pipelines that work anywhere, regardless of user path settings, and to control for versions of third party software and data associated to the analysis, the pipelines depend on environment modules. The modules created by the bioinformatics team in Compute Canada's Guillimin and Mammouth clusters are located in the $MUGCIC_INSTALL_HOME/modulefiles path and use the notation: mugqic/<software>/<version> . Click [here](https://biowiki.atlassian.net/wiki/display/CS/Software+and+Data+Dependencies) to setup modules on Guillimin and Mammouth clusters.
+MUGQIC Pipelines require genomes and modules resources to run properly.
+First, set `MUGQIC_INSTALL_HOME` to the directory where you want to install those resources, in your *$HOME/.bash_profile*:
+```
+#!bash
+## MUGQIC genomes and modules
+    
+export MUGQIC_INSTALL_HOME=/path/to/your/local/mugqic_resources
+    
+module use $MUGQIC_INSTALL_HOME/modulefiles
+```
+
+
+#### Genomes
+Reference genomes and annotations must be installed in `$MUGQIC_INSTALL_HOME/genomes/`.
+Default genome installation scripts are already available [here](https://bitbucket.org/mugqic/mugqic_resources/src/HEAD/genomes/?at=master).
+To install all of them, use the script [`install_all_genomes.sh`](https://bitbucket.org/mugqic/mugqic_resources/src/HEAD/genomes/install_all_genomes.sh?at=master)
+
+
+#### Modules
+Software tools and associated modules must be installed in `$MUGQIC_INSTALL_HOME/software/` and `$MUGQIC_INSTALL_HOME/modulefiles/`.
+Default software/module installation scripts are already available [here](https://bitbucket.org/mugqic/mugqic_resources/src/HEAD/genomes/?at=master).
 
 
 Call home
