@@ -1,6 +1,6 @@
 MUGQIC Pipelines
 ================
-This repository holds several bioinformatics pipelines developed at [McGill University and Génome Qu&eacute;bec Innovation Centre](http://gqinnovationcenter.com) (MUGQIC).
+This repository holds several bioinformatics pipelines developed at [McGill University and Génome Québec Innovation Centre](http://gqinnovationcenter.com) (MUGQIC).
 
 Visit our [wiki](https://biowiki.atlassian.net/wiki/display/PS/Pipeline+Space+Home) for an overview of the various pipelines.
 
@@ -114,12 +114,8 @@ Example:
     SampleID	Readset	Library	RunType	Run	Lane	QualityOffset	BED	FASTQ1	FASTQ2	BAM
     sampleA	readset1	lib0001	PAIRED_END	run100	1	33	path/to/file.bed	path/to/readset1.paired1.fastq.gz	path/to/readset1.paired2.fastq.gz	path/to/readset1.bam
     sampleA	readset2	lib0001	PAIRED_END	run100	2	33	path/to/file.bed	path/to/readset2.paired1.fastq.gz	path/to/readset2.paired2.fastq.gz	path/to/readset2.bam
-    sampleA	readset3	lib0001	PAIRED_END	run100	3	33	path/to/file.bed	path/to/readset3.paired1.fastq.gz	path/to/readset3.paired2.fastq.gz	path/to/readset3.bam
-    sampleA	readset4	lib0001	PAIRED_END	run100	4	33	path/to/file.bed	path/to/readset4.paired1.fastq.gz	path/to/readset4.paired2.fastq.gz	path/to/readset4.bam
-    sampleB	readset5	lib0002	PAIRED_END	run200	3	33	path/to/file.bed	path/to/readset5.paired1.fastq.gz	path/to/readset5.paired2.fastq.gz	path/to/readset5.bam
-    sampleB	readset6	lib0002	PAIRED_END	run200	4	33	path/to/file.bed	path/to/readset6.paired1.fastq.gz	path/to/readset6.paired2.fastq.gz	path/to/readset6.bam
-    sampleB	readset7	lib0002	PAIRED_END	run200	5	33	path/to/file.bed	path/to/readset7.paired1.fastq.gz	path/to/readset7.paired2.fastq.gz	path/to/readset7.bam
-    sampleB	readset8	lib0002	PAIRED_END	run200	6	33	path/to/file.bed	path/to/readset8.paired1.fastq.gz	path/to/readset8.paired2.fastq.gz	path/to/readset8.bam
+    sampleB	readset3	lib0002	PAIRED_END	run200	5	33	path/to/file.bed	path/to/readset3.paired1.fastq.gz	path/to/readset3.paired2.fastq.gz	path/to/readset3.bam
+    sampleB	readset4	lib0002	PAIRED_END	run200	6	33	path/to/file.bed	path/to/readset4.paired1.fastq.gz	path/to/readset4.paired2.fastq.gz	path/to/readset4.bam
 
 
 ### PacBio Assembly
@@ -138,7 +134,7 @@ Example:
     sampleA	readset1	F_01_1	122169744	150000	path/to/readset1.bas.h5	path/to/readset1.1.bax.h5,path/to/readset1.2.bax.h5,path/to/readset1.3.bax.h5
     sampleA	readset2	F_01_2	105503472	150000	path/to/readset2.bas.h5	path/to/readset2.1.bax.h5,path/to/readset2.2.bax.h5,path/to/readset2.3.bax.h5
     sampleB	readset3	G_01_1	118603200	150000	path/to/readset3.bas.h5	path/to/readset3.1.bax.h5,path/to/readset3.2.bax.h5,path/to/readset3.3.bax.h5
-    sampleB	readset4	G_01_1	104239488	150000	path/to/readset4.bas.h5	path/to/readset4.1.bax.h5,path/to/readset4.2.bax.h5,path/to/readset4.3.bax.h5
+    sampleB	readset4	G_01_2	104239488	150000	path/to/readset4.bas.h5	path/to/readset4.1.bax.h5,path/to/readset4.2.bax.h5,path/to/readset4.3.bax.h5
 
 
 ### For abacus users
@@ -179,11 +175,11 @@ When pipeline jobs are submitted, a call home feature is invoked to collect some
 
 Data collected:
 
-1. Date
-2. Host and IP address
-3. Pipeline name (DnaSeq, RnaSeq, etc.)
-4. Number of samples
-5. Pipeline Steps
+* Date and time
+* Host and IP address
+* Pipeline name
+* Number of samples
+* Pipeline steps
 
 
 Contact us
