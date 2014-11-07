@@ -16,8 +16,7 @@ Genomes and modules used by the pipelines are already installed on those cluster
 To access them, add the following lines to your *$HOME/.bash_profile*:
 
 ```
-#!python
-#
+#!bash
     umask 0002
     
     ## MUGQIC genomes and modules
