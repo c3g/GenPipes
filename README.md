@@ -158,7 +158,7 @@ If your readsets belong to a [NANUQ](http://gqinnovationcenter.com/services/nanu
 Configuration Files
 -------------------------
 Pipeline cluster settings and command parameters can be customized using Configuration Files (`.ini` extension).
-Those files have structure similar to what you would find on Microsoft Windows INI files e.g.:
+Those files have a structure similar to what you would find on Microsoft Windows INI files e.g.:
 ```
 #!ini
 [My Section]
@@ -166,23 +166,35 @@ foodir=my_dir/whatever
 bar=my_param
 ```
 
-Each pipeline has a default configuration file set for running on abacus cluster using Homo sapiens reference genome in:
+A parameter value is first searched in its specific section, then, if not found, it is searched in the special `DEFAULT` section.
 
+Configuration files support interpolation. For example:
+```
+#!ini
+[My Section]
+dir=frob
+foodir=%(dir)s/whatever
+```
+would resolve `foodir` value to `frob/whatever`.
+
+Each pipeline has a default configuration file (`.base.ini` extension) set for running on abacus cluster using Homo sapiens reference genome:
 ```
 #!bash
 mugqic_pipeline/pipelines/<pipeline_name>/<pipeline_name>.base.ini
 ```
-    
 
-Is the standard configuration file for the pipeline.
-It's a plain text file composed of sections, keys and values.
-Section name appears on a line in square brackets ([default]).
-Every key has a name and a value, separated by an equals sign (=), i.e. clusterSubmitCmd=msub.
-Semicolons (;) or number signs (#) at the beginning of the line indicate a comment.
-Comment lines are ignored. Generally sections are associated to specific steps of the pipeline.
-If a property is associated to a specific step, the program will search for keys in the respective section.
-If the key is not found, the values in the default section will be used.
-Templates for Compute Canada's Guillimin and Mammouth clusters may already be available in the respective pipeline directory (\(root/pipeline/Pipeline_name\)).
+You can also pass a list of several configuration files to a pipeline command.
+Files are read in the list order and each parameter value is overwritten if redefined in the next file.
+
+This is useful to customize settings for a specific cluster or genome.
+Each pipeline has a special configuration for guillimin and mammouth clusters (`.guillimin.ini` and `.mammouth.ini` extensions respectively).
+And various genome settings are available in `mugqic_pipeline/genome_configs/`.
+
+For example, to run the DNA-Seq pipeline on guillimin cluster with Mus musculus reference genome:
+```
+#!bash
+mugqic_pipeline/pipelines/dnaseq/dnaseq.py -c mugqic_pipeline/pipelines/dnaseq/dnaseq.base.ini mugqic_pipeline/pipelines/dnaseq/dnaseq.guillimin.ini mugqic_pipeline/genome_configs/Mus_musculus.GRCm38.ini
+```
 
 
 Download and setup for external users
