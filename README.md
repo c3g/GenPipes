@@ -17,70 +17,73 @@ To access them, add the following lines to your *$HOME/.bash_profile*:
 
 ```
 #!bash
-    umask 0002
+umask 0002
     
-    ## MUGQIC genomes and modules
+## MUGQIC genomes and modules
     
-    HOST=`hostname`;
+HOST=`hostname`;
     
-    DNSDOMAIN=`dnsdomainname`;
+DNSDOMAIN=`dnsdomainname`;
     
-    if [[ $HOST == abacus* || $DNSDOMAIN == ferrier.genome.mcgill.ca ]]; then
+if [[ $HOST == abacus* || $DNSDOMAIN == ferrier.genome.mcgill.ca ]]; then
     
-     export MUGQIC_INSTALL_HOME=/sb/programs/analyste
+  export MUGQIC_INSTALL_HOME=/sb/programs/analyste
+  export MUGQIC_INSTALL_HOME_DEV=/lb/project/mugqic/analyste_dev
     
-     export MUGQIC_INSTALL_HOME_DEV=/lb/project/mugqic/analyste_dev
+elif [[ $HOST == lg-* || $DNSDOMAIN == guillimin.clumeq.ca ]]; then
     
-    elif [[ $HOST == lg-* || $DNSDOMAIN == guillimin.clumeq.ca ]]; then
+  export MUGQIC_INSTALL_HOME=/software/areas/genomics/phase2  
+  export MUGQIC_INSTALL_HOME_DEV=/gs/project/mugqic/analyste_dev/phase2
     
-     export MUGQIC_INSTALL_HOME=/software/areas/genomics/phase2
+elif [[ $BQMAMMOUTH == "mp2" ]]; then
     
-     export MUGQIC_INSTALL_HOME_DEV=/gs/project/mugqic/analyste_dev/phase2
+  export MUGQIC_INSTALL_HOME=$(share_nobackup bourque)/mugqic_prod
+  export MUGQIC_INSTALL_HOME_DEV=$(share_nobackup bourque)/mugqic_dev
     
-    elif [[ $BQMAMMOUTH == "mp2" ]]; then
+fi
     
-     export MUGQIC_INSTALL_HOME=$(share_nobackup bourque)/mugqic_prod
-    
-     export MUGQIC_INSTALL_HOME_DEV=$(share_nobackup bourque)/mugqic_dev
-    
-    fi
-    
-    module use $MUGQIC_INSTALL_HOME/modulefiles $MUGQIC_INSTALL_HOME_DEV/modulefiles
+module use $MUGQIC_INSTALL_HOME/modulefiles $MUGQIC_INSTALL_HOME_DEV/modulefiles
 ```    
 
 Also, set `JOB_MAIL` in your *$HOME/.bash_profile* to receive PBS job logs:
-
-    export JOB_MAIL=my.name@email.ca
-
+```
+#!bash
+export JOB_MAIL=my.name@email.ca
+```
 
 MUGQIC pipelines and compatible Python version are already installed as modules on those clusters.
 To use them by default, add in your *$HOME/.bash_profile*:
-
-    module load mugqic/python/2.7.8
-    module load mugqic/pipeline/<latest_version>
-
+```
+#!bash
+module load mugqic/python/2.7.8
+module load mugqic/pipeline/<latest_version>
+```
 (find out the latest version with: "`module avail 2>&1 | grep mugqic/pipeline`").
 
 
 ### For abacus users
 To use parallel computing with some modules, add the following lines to your *$HOME/.bash_profile*:
-
-    ## MPI
-    export PATH=/sb/programs/mpi/mpi_pbs/openmpi-1.6/bin:$PATH
-    export LD_LIBRARY_PATH=/sb/programs/mpi/mpi_pbs/openmpi-1.6/lib:$LD_LIBRARY_PATH
-
+```
+#!bash
+## MPI
+export PATH=/sb/programs/mpi/mpi_pbs/openmpi-1.6/bin:$PATH
+export LD_LIBRARY_PATH=/sb/programs/mpi/mpi_pbs/openmpi-1.6/lib:$LD_LIBRARY_PATH
+```
 ### For guillimin and mammouth users
 Set your `RAP_ID` (Resource Allocation Project ID from Compute Canada) in your *$HOME/.bash_profile*:
-
-    export RAP_ID=my-rap-id
-
+```
+#!bash
+export RAP_ID=my-rap-id
+```
 
 Usage
 -----
 
 For each pipeline, get help about usage, arguments and steps with:
-
-    mugqic_pipeline/pipelines/<pipeline_name>/<pipeline_name>.py --help
+```
+#!bash
+mugqic_pipeline/pipelines/<pipeline_name>/<pipeline_name>.py --help
+```
 
 Pipelines require as input one Readset File and one or more Configuration File(s) described below.
 
