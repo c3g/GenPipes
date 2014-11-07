@@ -31,14 +31,20 @@ HOST=`hostname`;
 DNSDOMAIN=`dnsdomainname`;
     
 if [[ $HOST == abacus* || $DNSDOMAIN == ferrier.genome.mcgill.ca ]]; then
+
   export MUGQIC_INSTALL_HOME=/sb/programs/analyste
   export MUGQIC_INSTALL_HOME_DEV=/lb/project/mugqic/analyste_dev
+
 elif [[ $HOST == lg-* || $DNSDOMAIN == guillimin.clumeq.ca ]]; then
+
   export MUGQIC_INSTALL_HOME=/software/areas/genomics/phase2  
   export MUGQIC_INSTALL_HOME_DEV=/gs/project/mugqic/analyste_dev/phase2
+
 elif [[ $BQMAMMOUTH == "mp2" ]]; then
+
   export MUGQIC_INSTALL_HOME=$(share_nobackup bourque)/mugqic_prod
   export MUGQIC_INSTALL_HOME_DEV=$(share_nobackup bourque)/mugqic_dev
+
 fi
     
 module use $MUGQIC_INSTALL_HOME/modulefiles $MUGQIC_INSTALL_HOME_DEV/modulefiles
@@ -149,9 +155,34 @@ Example:
 If your readsets belong to a [NANUQ](http://gqinnovationcenter.com/services/nanuq.aspx) project, use `nanuq2mugqic_pipeline.py` script in module `mugqic/tools` to automatically create a Readset File and symlinks to your readsets on abacus.
 
 
-Configuration (INI) Files
+Configuration Files
 -------------------------
-Is the standard configuration file for the pipeline. It's a plain text file composed of sections, keys and values. Section name appears on a line in square brackets ([default]). Every key has a name and a value, separated by an equals sign (=), i.e. clusterSubmitCmd=msub. Semicolons (;) or number signs (#) at the beginning of the line indicate a comment. Comment lines are ignored. Generally sections are associated to specific steps of the pipeline. If a property is associated to a specific step, the program will search for keys in the respective section. If the key is not found, the values in the default section will be used. Templates for Compute Canada's Guillimin and Mammouth clusters may already be available in the respective pipeline directory (\(root/pipeline/Pipeline_name\)).
+Pipeline cluster settings and command parameters can be customized using Configuration Files (`.ini` extension).
+Those files have structure similar to what you would find on Microsoft Windows INI files e.g.:
+```
+#!ini
+[My Section]
+foodir=my_dir/whatever
+bar=my_param
+```
+
+Each pipeline has a default configuration file set for running on abacus cluster using Homo sapiens reference genome in:
+
+```
+#!bash
+mugqic_pipeline/pipelines/<pipeline_name>/<pipeline_name>.base.ini
+```
+    
+
+Is the standard configuration file for the pipeline.
+It's a plain text file composed of sections, keys and values.
+Section name appears on a line in square brackets ([default]).
+Every key has a name and a value, separated by an equals sign (=), i.e. clusterSubmitCmd=msub.
+Semicolons (;) or number signs (#) at the beginning of the line indicate a comment.
+Comment lines are ignored. Generally sections are associated to specific steps of the pipeline.
+If a property is associated to a specific step, the program will search for keys in the respective section.
+If the key is not found, the values in the default section will be used.
+Templates for Compute Canada's Guillimin and Mammouth clusters may already be available in the respective pipeline directory (\(root/pipeline/Pipeline_name\)).
 
 
 Download and setup for external users
