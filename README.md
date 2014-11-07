@@ -8,7 +8,7 @@ MUGQIC pipelines consist of Python scripts which create a list of jobs running B
 
 On this page:
 
-* [Software requirement](https://bitbucket.org/mugqic/mugqic_pipeline/overview#markdown-header-software-requirement)
+* [Software requirement](https://bitbucket.org/mugqic/mugqic_pipeline/src/python/overview#markdown-header-software-requirement)
 * [Quick start for abacus, guillimin and mammouth users](https://bitbucket.org/mugqic/mugqic_pipeline/overview#markdown-header-quick-start-for-abacus,-guillimin-and-mammouth-users)
     * [For abacus users](https://bitbucket.org/mugqic/mugqic_pipeline/overview#markdown-header-for-abacus-users)
     * [For guillimin and mammouth users](https://bitbucket.org/mugqic/mugqic_pipeline/overview#markdown-header-for-guillimin-and-mammouth-users)
