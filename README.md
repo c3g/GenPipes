@@ -6,7 +6,11 @@ Visit our [wiki](https://biowiki.atlassian.net/wiki/display/PS/Pipeline+Space+Ho
 
 MUGQIC pipelines consist of Python scripts which create a list of jobs running Bash commands. Those scripts support dependencies between jobs and smart restart mechanism if some jobs fail during pipeline execution. Jobs can be submitted in different ways: by creating a Bash script running a series of commands in batch or by sending those jobs to a PBS scheduler like Torque. Job commands and parameters can be modified through several configuration files.
 
+[TOC]
+
 On this page:
+
+
 
 * [Software requirement](https://bitbucket.org/mugqic/mugqic_pipeline/src/python/overview#markdown-header-software-requirement)
 * [Quick start for abacus, guillimin and mammouth users](https://bitbucket.org/mugqic/mugqic_pipeline/overview#markdown-header-quick-start-for-abacus,-guillimin-and-mammouth-users)
