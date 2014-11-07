@@ -39,27 +39,27 @@ First, loop through fasta sequences. put the length of each sequence in an array
 ### preAssembly (aka correction)
 Having in hand a cutoff value, filtered reads are splitted between short and long reads. Short reads are aligned against long reads and consensus (e.g. corrected reads) are generated from these alignments:
 
-1- split reads between long and short;
-2- blasr (aligner for PacBio reads);
-3- m4topre (converts .m4 blasr output in .pre format);
-4- pbdagcon (aka HGAP2) (generates corrected reads from alignments).
+1. split reads between long and short;
+2. blasr (aligner for PacBio reads);
+3. m4topre (converts .m4 blasr output in .pre format);
+4. pbdagcon (aka HGAP2) (generates corrected reads from alignments).
 
 ### assembly
 Corrected reads are assembled to generates contigs. Please see the [Celera documentation](http://wgs-assembler.sourceforge.net/wiki/index.php/RunCA). Quality of assembly seems to be highly sensitive to parameters you give to Celera:
 
-1- Generate celera config files using paramters provided in the .ini file;
-2- fastqToCA: generates input file compatible with the Celera assembler;
-3- runCA: run the Celera assembler.
+1. Generate celera config files using paramters provided in the .ini file;
+2. fastqToCA: generates input file compatible with the Celera assembler;
+3. runCA: run the Celera assembler.
 
 ### polishing
 Align raw reads on the Celera assembly with BLASR. Load pulse information from bax or bas files into aligned file. Sort that file and run quiver (variantCaller.py):
 
-1- Generate fofn;
-2- Upload Celera assembly with smrtpipe refUploader;
-3- Compare sequences;
-4- Load pulses;
-5- Sort .cmp.h5 file;
-6- variantCaller.py.
+1. Generate fofn;
+2. Upload Celera assembly with smrtpipe refUploader;
+3. Compare sequences;
+4. Load pulses;
+5. Sort .cmp.h5 file;
+6. variantCaller.py.
 
 ### blast
 Blast polished assembly against nr using dc-megablast.
