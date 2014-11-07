@@ -187,13 +187,13 @@ You can also pass a list of several configuration files to a pipeline command.
 Files are read in the list order and each parameter value is overwritten if redefined in the next file.
 
 This is useful to customize settings for a specific cluster or genome.
-Each pipeline has a special configuration for guillimin and mammouth clusters (`.guillimin.ini` and `.mammouth.ini` extensions respectively).
+Each pipeline has a special configuration file for guillimin and mammouth clusters (`.guillimin.ini` and `.mammouth.ini` extensions respectively).
 And various genome settings are available in `mugqic_pipeline/genome_configs/`.
 
 For example, to run the DNA-Seq pipeline on guillimin cluster with Mus musculus reference genome:
 ```
 #!bash
-mugqic_pipeline/pipelines/dnaseq/dnaseq.py -c mugqic_pipeline/pipelines/dnaseq/dnaseq.base.ini mugqic_pipeline/pipelines/dnaseq/dnaseq.guillimin.ini mugqic_pipeline/genome_configs/Mus_musculus.GRCm38.ini
+mugqic_pipeline/pipelines/dnaseq/dnaseq.py -c mugqic_pipeline/pipelines/dnaseq/dnaseq.base.ini mugqic_pipeline/pipelines/dnaseq/dnaseq.guillimin.ini mugqic_pipeline/genome_configs/Mus_musculus.GRCm38.ini ...
 ```
 
 
