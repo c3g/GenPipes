@@ -149,8 +149,8 @@ Example:
     sampleB	readset4	G_01_2	104239488	150000	path/to/readset4.bas.h5	path/to/readset4.1.bax.h5,path/to/readset4.2.bax.h5,path/to/readset4.3.bax.h5
 
 
-### For abacus users
-If your readsets belong to a [NANUQ](http://gqinnovationcenter.com/services/nanuq.aspx) project, use `nanuq2mugqic_pipeline.py` script in module `mugqic/tools` to automatically create a Readset File and symlinks to your readsets on abacus.
+### For abacus users with Nanuq readsets
+If your readsets belong to a [Nanuq](http://gqinnovationcenter.com/services/nanuq.aspx) project, use `nanuq2mugqic_pipeline.py` script in module `mugqic/tools` to automatically create a Readset File and symlinks to your readsets on abacus.
 
 
 Configuration Files
