@@ -6,9 +6,25 @@ Visit our [wiki](https://biowiki.atlassian.net/wiki/display/PS/Pipeline+Space+Ho
 
 MUGQIC pipelines consist of Python scripts which create a list of jobs running Bash commands. Those scripts support dependencies between jobs and smart restart mechanism if some jobs fail during pipeline execution. Jobs can be submitted in different ways: by creating a Bash script running a series of commands in batch or by sending those jobs to a PBS scheduler like Torque. Job commands and parameters can be modified through several configuration files.
 
+On this page:
+
+* [Software requirement](https://bitbucket.org/mugqic/mugqic_pipeline/overview#markdown-header-software-requirement)
+* [Quick start for abacus, guillimin and mammouth users](https://bitbucket.org/mugqic/mugqic_pipeline/overview#markdown-header-quick-start-for-abacus,-guillimin-and-mammouth-users)
+    * [For abacus users](https://bitbucket.org/mugqic/mugqic_pipeline/overview#markdown-header-for-abacus-users)
+    * [For guillimin and mammouth users](https://bitbucket.org/mugqic/mugqic_pipeline/overview#markdown-header-for-guillimin-and-mammouth-users)
+* [Usage](https://bitbucket.org/mugqic/mugqic_pipeline/overview#markdown-header-usage)
+* [Readset File](https://bitbucket.org/mugqic/mugqic_pipeline/overview#markdown-header-readset-file)
+    * [DNA-Seq, RNA-Seq, RNA-Seq De Novo Assembly](https://bitbucket.org/mugqic/mugqic_pipeline/overview#markdown-header-dna-seq,-rna-seq,-rna-seq-de-novo-assembly)
+    * [PacBio Assembly](https://bitbucket.org/mugqic/mugqic_pipeline/overview#markdown-header-pacbio-assembly)
+    * [For abacus users](https://bitbucket.org/mugqic/mugqic_pipeline/overview#markdown-header-for-abacus-users)
+* [Call home](https://bitbucket.org/mugqic/mugqic_pipeline/overview#markdown-header-call-home)
+* [Contact us](https://bitbucket.org/mugqic/mugqic_pipeline/overview#markdown-header-contact-us)
+
+
 Software requirement
 --------------------
 MUGQIC pipelines have been tested with Python 2.7.
+
 
 Quick start for abacus, guillimin and mammouth users
 ----------------------------------------------------
@@ -45,13 +61,11 @@ fi
 module use $MUGQIC_INSTALL_HOME/modulefiles $MUGQIC_INSTALL_HOME_DEV/modulefiles
 ```    
 
-
 Also, set `JOB_MAIL` in your *$HOME/.bash_profile* to receive PBS job logs:
 ```
 #!bash
 export JOB_MAIL=my.name@email.ca
 ```
-
 
 MUGQIC pipelines and compatible Python version are already installed as modules on those clusters.
 To use them by default, add in your *$HOME/.bash_profile*:
@@ -80,6 +94,7 @@ Set your `RAP_ID` (Resource Allocation Project ID from Compute Canada) in your *
 export RAP_ID=my-rap-id
 ```
 
+
 Usage
 -----
 
@@ -88,7 +103,6 @@ For each pipeline, get help about usage, arguments and steps with:
 #!bash
 mugqic_pipeline/pipelines/<pipeline_name>/<pipeline_name>.py --help
 ```
-
 
 Pipelines require as input one Readset File and one or more Configuration File(s) described below.
 
@@ -104,6 +118,7 @@ Readset File
 ------------
 
 The Readset File is a TAB-separated values plain text file with one line per readset and the following columns in any order:
+
 
 ### DNA-Seq, RNA-Seq, RNA-Seq De Novo Assembly
 
@@ -176,7 +191,6 @@ Setup
 -----
 
 In order to make pipelines that work anywhere, regardless of user path settings, and to control for versions of third party software and data associated to the analysis, the pipelines depend on environment modules. The modules created by the bioinformatics team in Compute Canada's Guillimin and Mammouth clusters are located in the $MUGCIC_INSTALL_HOME/modulefiles path and use the notation: mugqic/<software>/<version> . Click [here](https://biowiki.atlassian.net/wiki/display/CS/Software+and+Data+Dependencies) to setup modules on Guillimin and Mammouth clusters.
-
 
 
 Call home
