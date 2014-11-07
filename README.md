@@ -45,11 +45,13 @@ fi
 module use $MUGQIC_INSTALL_HOME/modulefiles $MUGQIC_INSTALL_HOME_DEV/modulefiles
 ```    
 
+
 Also, set `JOB_MAIL` in your *$HOME/.bash_profile* to receive PBS job logs:
 ```
 #!bash
 export JOB_MAIL=my.name@email.ca
 ```
+
 
 MUGQIC pipelines and compatible Python version are already installed as modules on those clusters.
 To use them by default, add in your *$HOME/.bash_profile*:
@@ -69,6 +71,8 @@ To use parallel computing with some modules, add the following lines to your *$H
 export PATH=/sb/programs/mpi/mpi_pbs/openmpi-1.6/bin:$PATH
 export LD_LIBRARY_PATH=/sb/programs/mpi/mpi_pbs/openmpi-1.6/lib:$LD_LIBRARY_PATH
 ```
+
+
 ### For guillimin and mammouth users
 Set your `RAP_ID` (Resource Allocation Project ID from Compute Canada) in your *$HOME/.bash_profile*:
 ```
@@ -84,6 +88,7 @@ For each pipeline, get help about usage, arguments and steps with:
 #!bash
 mugqic_pipeline/pipelines/<pipeline_name>/<pipeline_name>.py --help
 ```
+
 
 Pipelines require as input one Readset File and one or more Configuration File(s) described below.
 
