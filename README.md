@@ -1,7 +1,3 @@
-On this page:
-
-[TOC]
-
 MUGQIC Pipelines
 ================
 This repository holds several bioinformatics pipelines developed at [McGill University and Génome Québec Innovation Centre](http://gqinnovationcenter.com) (MUGQIC).
@@ -169,7 +165,7 @@ Visit our [Download page](https://bitbucket.org/mugqic/mugqic_pipeline/downloads
 If you want to use the most recent development version:
 ```
 #!bash
-git clone https://bitbucket.org/mugqic/mugqic_pipeline.git
+git clone git@bitbucket.org:mugqic/mugqic_pipeline.git
 ```
 
 
@@ -195,7 +191,7 @@ To install all of them, use the script [`install_all_genomes.sh`](https://bitbuc
 
 #### Modules
 Software tools and associated modules must be installed in `$MUGQIC_INSTALL_HOME/software/` and `$MUGQIC_INSTALL_HOME/modulefiles/`.
-Default software/module installation scripts are already available [here](https://bitbucket.org/mugqic/mugqic_resources/src/HEAD/genomes/?at=master).
+Default software/module installation scripts are already available [here](https://bitbucket.org/mugqic/mugqic_resources/src/HEAD/modules/?at=master).
 
 
 Call home
