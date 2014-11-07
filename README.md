@@ -15,6 +15,9 @@ Quick start for abacus, guillimin and mammouth users
 Genomes and modules used by the pipelines are already installed on those clusters.
 To access them, add the following lines to your *$HOME/.bash_profile*:
 
+```
+#!python
+#
     umask 0002
     
     ## MUGQIC genomes and modules
@@ -44,7 +47,7 @@ To access them, add the following lines to your *$HOME/.bash_profile*:
     fi
     
     module use $MUGQIC_INSTALL_HOME/modulefiles $MUGQIC_INSTALL_HOME_DEV/modulefiles
-    
+```    
 
 Also, set `JOB_MAIL` in your *$HOME/.bash_profile* to receive PBS job logs:
 
