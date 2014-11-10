@@ -51,7 +51,7 @@ module use $MUGQIC_INSTALL_HOME/modulefiles $MUGQIC_INSTALL_HOME_DEV/modulefiles
 Also, set `JOB_MAIL` in your *$HOME/.bash_profile* to receive PBS job logs:
 ```
 #!bash
-export JOB_MAIL=my.name@email.ca
+export JOB_MAIL=<my.name@my.email.ca>
 ```
 
 MUGQIC pipelines and compatible Python version are already installed as modules on those clusters.
@@ -78,7 +78,7 @@ export LD_LIBRARY_PATH=/sb/programs/mpi/mpi_pbs/openmpi-1.6/lib:$LD_LIBRARY_PATH
 Set your `RAP_ID` (Resource Allocation Project ID from Compute Canada) in your *$HOME/.bash_profile*:
 ```
 #!bash
-export RAP_ID=my-rap-id
+export RAP_ID=<my-rap-id>
 ```
 
 
@@ -135,14 +135,14 @@ Example:
 * SampleID: must contain letters A-Z, numbers 0-9, hyphens (-) or underscores (_) only; BAM files will be merged into a file named after this value; mandatory;
 * Readset: a unique readset name with the same allowed characters as above; mandatory;
 * Smartcell: mandatory;
-* NbBasepairs: total number of base pairs for this readset; mandatory;
+* NbBasePairs: total number of base pairs for this readset; mandatory;
 * EstimatedGenomeSize: estimated genome size in number of base pairs used to compute seeding reads length cutoff; mandatory;
 * BAS: comma-separated list of relative or absolute paths to BAS files (old PacBio format); mandatory if BAX value is missing, ignored otherwise;
 * BAX: comma-separated list of relative or absolute paths to BAX files; BAX file list is used first if both BAX/BAS lists are present; mandatory if BAS value is missing;
 
 Example:
 
-    SampleID	Readset	Smartcell	NbBasepairs	EstimatedGenomeSize	BAS	BAX
+    SampleID	Readset	Smartcell	NbBasePairs	EstimatedGenomeSize	BAS	BAX
     sampleA	readset1	F_01_1	122169744	150000	path/to/readset1.bas.h5	path/to/readset1.1.bax.h5,path/to/readset1.2.bax.h5,path/to/readset1.3.bax.h5
     sampleA	readset2	F_01_2	105503472	150000	path/to/readset2.bas.h5	path/to/readset2.1.bax.h5,path/to/readset2.2.bax.h5,path/to/readset2.3.bax.h5
     sampleB	readset3	G_01_1	118603200	150000	path/to/readset3.bas.h5	path/to/readset3.1.bax.h5,path/to/readset3.2.bax.h5,path/to/readset3.3.bax.h5

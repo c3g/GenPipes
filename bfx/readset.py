@@ -252,7 +252,7 @@ def parse_pacbio_readset_file(pacbio_readset_file):
         readset._run = line.get('Run', None)
         readset._smartcell = line.get('Smartcell', None)
         readset._protocol = line.get('Protocol', None)
-        readset._nb_base_pairs = int(line['NbBasepairs']) if line.get('NbBasepairs', None) else None
+        readset._nb_base_pairs = int(line['NbBasePairs']) if line.get('NbBasePairs', None) else None
         readset._estimated_genome_size = int(line['EstimatedGenomeSize']) if line.get('EstimatedGenomeSize', None) else None
         readset._bas_files = line['BAS'].split(",") if line.get('BAS', None) else []
         readset._bax_files = line['BAX'].split(",") if line.get('BAX', None) else []
