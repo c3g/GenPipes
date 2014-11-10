@@ -61,7 +61,7 @@ class Pipeline(object):
     def argparser(self):
         if not hasattr(self, "_argparser"):
             # Create ArgumentParser with numbered step list as epilog
-            self._argparser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, description=self.name, epilog="Steps:\n" + "\n".join([str(idx + 1) + "- " + step.__name__ for idx, step in enumerate(self.steps)]))
+            self._argparser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, description=self.name + "\n\nFor more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipeline/", epilog="Steps:\n" + "\n".join([str(idx + 1) + "- " + step.__name__ for idx, step in enumerate(self.steps)]))
 
             # Common options for all pipelines
             self._argparser.add_argument("-v", "--version", action="version", version=self.name, help="show the version information and exit")
