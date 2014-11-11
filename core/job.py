@@ -94,16 +94,18 @@ class Job:
                 log.debug("Input, output or .done file missing: " + file)
                 return False
 
-        # Retrieve latest input file modification time i.e. maximum stat mtime
-        latest_input_time = max([os.stat(input_file).st_mtime for input_file in abspath_input_files])
+        # Retrieve latest input file by modification time i.e. maximum stat mtime
+        latest_input_file = max(abspath_input_files, key=lambda input_file: os.stat(input_file).st_mtime)
+        latest_input_time = os.stat(latest_input_file).st_mtime
 
-        # Same with earliest output file modification time
-        earliest_output_time = min([os.stat(output_file).st_mtime for output_file in abspath_output_files])
+        # Same with earliest output file by modification time
+        earliest_output_file = min(abspath_output_files, key=lambda output_file:os.stat(output_file).st_mtime)
+        earliest_output_time = os.stat(earliest_output_file).st_mtime
 
         # If any input file is strictly more recent than all output files, job is not up to date
         if latest_input_time > earliest_output_time:
             log.debug("Job " + self.name + " NOT up to date")
-            log.debug("Latest input file modification time: " + datetime.datetime.fromtimestamp(latest_input_time).isoformat() + " > earliest output file modification time: " + datetime.datetime.fromtimestamp(earliest_output_time).isoformat() + "\n")
+            log.debug("Latest input file modification time: " + latest_input_file + " " + datetime.datetime.fromtimestamp(latest_input_time).isoformat() + " > earliest output file modification time: " + earliest_output_file + " " + datetime.datetime.fromtimestamp(earliest_output_time).isoformat() + "\n")
             return False
 
         # If all previous tests passed, job is up to date
