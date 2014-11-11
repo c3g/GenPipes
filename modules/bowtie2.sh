@@ -1,38 +1,75 @@
 #!/bin/bash
+# Exit immediately on error
+set -eu -o pipefail
+
+################################################################################
+# This is a module install script template which should be copied and used for
+# consistency between module paths, permissions, etc.
+# Only lines marked as "## TO BE ADDED/MODIFIED" should be, indeed, modified.
+# You should probably also delete this commented-out header and the ## comments
+################################################################################
 
 #
-# Bowtie2
+# Software_name  ## TO BE MODIFIED WITH e.g. BLAST, HMMER, SAMtools, etc.
 #
 
-SOFTWARE=bowtie2
-VERSION=2.2.3
-INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/$SOFTWARE
-INSTALL_DOWNLOAD=$INSTALL_PATH/tmp
+SOFTWARE="bowtie2"  ## TO BE MODIFIED WITH e.g. blast, hmmer, samtools, etc.
+VERSION="2.2.4"  ## TO BE MODIFIED WITH e.g. 2.2.28+, 3.0, 0.1.19, etc.
+
+# 'MUGQIC_INSTALL_HOME_DEV' for development, 'MUGQIC_INSTALL_HOME' for production (don't write '$' before!)
+INSTALL_HOME=MUGQIC_INSTALL_HOME_DEV  ## TO BE MODIFIED IF NECESSARY
+
+# Indirection call to use $INSTALL_HOME value as variable name
+INSTALL_DIR=${!INSTALL_HOME}/software/$SOFTWARE
+
+# Create install directory with permissions if necessary
+if [[ ! -d $INSTALL_DIR ]]
+then
+  mkdir $INSTALL_DIR
+  chmod ug+rwX,o+rX-w $INSTALL_DIR
+fi
+
+INSTALL_DOWNLOAD=$INSTALL_DIR/tmp
 mkdir -p $INSTALL_DOWNLOAD
 cd $INSTALL_DOWNLOAD
 
 # Download, extract, build
-wget http://sourceforge.net/projects/bowtie-bio/files/$SOFTWARE/$VERSION/$SOFTWARE-$VERSION-source.zip
-unzip $SOFTWARE-$VERSION-source.zip
-cd $SOFTWARE-$VERSION
-make
+# Write here the specific commands to download, extract, build the software, typically similar to:
+ARCHIVE="$SOFTWARE-$VERSION-source.zip"  ## TO BE MODIFIED WITH SPECIFIC ARCHIVE
+# If archive was previously downloaded, use the local one, otherwise get it from remote site
+if [[ -f ${!INSTALL_HOME}/archive/$ARCHIVE ]]
+then
+  echo "Archive $ARCHIVE already in ${!INSTALL_HOME}/archive/: using it..."
+  cp -a ${!INSTALL_HOME}/archive/$ARCHIVE .
+else
+  echo "Archive $ARCHIVE not in ${!INSTALL_HOME}/archive/: downloading it..."
+  wget http://sourceforge.net/projects/bowtie-bio/files/$SOFTWARE/$VERSION/$ARCHIVE  ## TO BE MODIFIED WITH SPECIFIC URL
+fi
+unzip $ARCHIVE  ## TO BE MODIFIED WITH SPECIFIC COMMAND
+
+SOFTWARE_DIR=$SOFTWARE-$VERSION  ## TO BE MODIFIED WITH SPECIFIC SOFTWARE DIRECTORY IF NECESSARY
+cd $SOFTWARE_DIR
+make  -j8 ## TO BE ADDED AND MODIFIED IF NECESSARY
 
 # Add permissions and install software
 cd $INSTALL_DOWNLOAD
-chmod -R ug+rwX .
-chmod -R o+rX .
-mv -i $SOFTWARE-$VERSION $INSTALL_PATH
-mv -i $SOFTWARE-$VERSION-source.zip $MUGQIC_INSTALL_HOME/archive
+chmod -R ug+rwX,o+rX-w .
+mv -i $SOFTWARE_DIR $INSTALL_DIR/
+# Store archive if not already present or if different from the previous one
+if [[ ! -f ${!INSTALL_HOME}/archive/$ARCHIVE || `diff ${!INSTALL_HOME}/archive/$ARCHIVE $ARCHIVE` ]]
+then
+  mv -i $ARCHIVE ${!INSTALL_HOME}/archive/
+fi
 
 # Module file
 echo "#%Module1.0
 proc ModulesHelp { } {
-       puts stderr \"\tMUGQIC - $SOFTWARE \" ;
+  puts stderr \"\tMUGQIC - $SOFTWARE \" ;  
 }
-module-whatis \"$SOFTWARE  \" ;
-                      
-set             root                \$::env(MUGQIC_INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE-$VERSION ;
-prepend-path    PATH                \$root
+module-whatis \"$SOFTWARE\" ; 
+
+set             root                \$::env($INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE_DIR
+prepend-path    PATH                \$root; 
 " > $VERSION
 
 ################################################################################
@@ -42,11 +79,28 @@ prepend-path    PATH                \$root
 echo "#%Module1.0
 set ModulesVersion \"$VERSION\"" > .version
 
+# Set module directory path by lowercasing $INSTALL_HOME and removing '_install_home' in it
+MODULE_DIR=${!INSTALL_HOME}/modulefiles/`echo ${INSTALL_HOME,,} | sed 's/_install_home//'`/$SOFTWARE
+
+# Create module directory with permissions if necessary
+if [[ ! -d $MODULE_DIR ]]
+then
+  mkdir $MODULE_DIR
+  chmod ug+rwX,o+rX-w $MODULE_DIR
+fi
+
 # Add permissions and install module
-mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
-chmod -R ug+rwX $VERSION .version
-chmod -R o+rX $VERSION .version
-mv $VERSION .version $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
+chmod ug+rwX,o+rX-w $VERSION .version
+mv $VERSION .version $MODULE_DIR/
 
 # Clean up temporary installation files if any
+cd
 rm -rf $INSTALL_DOWNLOAD
+
+
+
+
+
+
+
+
