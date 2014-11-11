@@ -186,12 +186,12 @@ Files are read in the list order and each parameter value is overwritten if rede
 
 This is useful to customize settings for a specific cluster or genome.
 Each pipeline has a special configuration file for guillimin and mammouth clusters (`.guillimin.ini` and `.mammouth.ini` extensions respectively).
-And various genome settings are available in `mugqic_pipeline/genome_configs/`.
+And various genome settings are available in `mugqic_pipeline/resources/genomes/config/`.
 
 For example, to run the DNA-Seq pipeline on guillimin cluster with Mus musculus reference genome:
 ```
 #!bash
-mugqic_pipeline/pipelines/dnaseq/dnaseq.py -c mugqic_pipeline/pipelines/dnaseq/dnaseq.base.ini mugqic_pipeline/pipelines/dnaseq/dnaseq.guillimin.ini mugqic_pipeline/genome_configs/Mus_musculus.GRCm38.ini ...
+mugqic_pipeline/pipelines/dnaseq/dnaseq.py -c mugqic_pipeline/pipelines/dnaseq/dnaseq.base.ini mugqic_pipeline/pipelines/dnaseq/dnaseq.guillimin.ini mugqic_pipeline/resources/genomes/config/Mus_musculus.GRCm38.ini ...
 ```
 
 
@@ -226,13 +226,13 @@ module use $MUGQIC_INSTALL_HOME/modulefiles
 
 #### Genomes
 Reference genomes and annotations must be installed in `$MUGQIC_INSTALL_HOME/genomes/`.
-Default genome installation scripts are already available [here](https://bitbucket.org/mugqic/mugqic_resources/src/HEAD/genomes/?at=master).
-To install all of them, use the script [`install_all_genomes.sh`](https://bitbucket.org/mugqic/mugqic_resources/src/HEAD/genomes/install_all_genomes.sh?at=master)
+Default genome installation scripts are already available in `mugqic_pipeline/resources/genomes/`.
+To install all of them, use the script `mugqic_pipeline/resources/genomes/install_all_genomes.sh`.
 
 
 #### Modules
 Software tools and associated modules must be installed in `$MUGQIC_INSTALL_HOME/software/` and `$MUGQIC_INSTALL_HOME/modulefiles/`.
-Default software/module installation scripts are already available [here](https://bitbucket.org/mugqic/mugqic_resources/src/HEAD/modules/?at=master).
+Default software/module installation scripts are already available in `mugqic_pipeline/resources/modules/`.
 
 
 Call home
