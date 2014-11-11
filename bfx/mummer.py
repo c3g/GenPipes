@@ -20,7 +20,7 @@ def reference(
 
     return Job(
         [fasta_reference, fasta_consensus],
-        [outfile2],
+        [outfile, outfile + ".png", outfile2],
         [
             ['mummer_reference', 'module_mummer'],
             ['mummer_reference', 'module_gnuplot']
@@ -66,7 +66,7 @@ def self(
 
     return Job(
         [fasta_consensus],
-        [outfile],
+        [outfile, outfile + ".png"],
         [
             ['mummer_self', 'module_mummer'],
             ['mummer_self', 'module_gnuplot']

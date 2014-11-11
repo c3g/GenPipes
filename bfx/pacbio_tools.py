@@ -21,7 +21,15 @@ def assembly_stats(
 
     return Job(
         [short_reads, long_reads, corrected_reads, filtered_summary, contigs],
-        [os.path.join(outdir, "summaryTableAssembly.tsv"), os.path.join(outdir, "summaryTableReads.tsv")],
+        [
+            os.path.join(outdir, "pacBioGraph_readLengthScore.pdf"),
+            os.path.join(outdir, "pacBioGraph_readLengthScore.jpeg"),
+            os.path.join(outdir, "pacBioGraph_histoReadLength.pdf"),
+            os.path.join(outdir, "pacBioGraph_histoReadLength.jpeg"),
+            os.path.join(outdir, "summaryTableAssembly.tsv"),
+            os.path.join(outdir, "summaryTableReads.tsv"),
+            os.path.join(outdir, "summaryTableReads2.tsv")
+        ],
         [
             ['pacbio_tools_assembly_stats', 'module_memtime'],
             ['pacbio_tools_assembly_stats', 'module_perl'],

@@ -300,22 +300,28 @@ END
                         job.name = "smrtanalysis_pbalign." + job_name_suffix
                         jobs.append(job)
 
-                        job = smrtanalysis.load_pulses(
-                            os.path.join(polishing_round_directory, "data", "aligned_reads.cmp.h5"),
-                            os.path.join(sample.name, "filtering", "input.fofn")
-                        )
-                        job.name = "smrtanalysis_load_pulses." + job_name_suffix
-                        jobs.append(job)
+                        jobs.append(concat_jobs([
+                            smrtanalysis.load_chemistry(
+                                os.path.join(polishing_round_directory, "data", "aligned_reads.cmp.h5"),
+                                os.path.join(sample.name, "filtering", "input.fofn"),
+                                os.path.join(polishing_round_directory, "data", "aligned_reads.loadChemistry.cmp.h5")
+                            ),
+                            smrtanalysis.load_pulses(
+                                os.path.join(polishing_round_directory, "data", "aligned_reads.loadChemistry.cmp.h5"),
+                                os.path.join(sample.name, "filtering", "input.fofn"),
+                                os.path.join(polishing_round_directory, "data", "aligned_reads.loadPulses.cmp.h5")
+                            )
+                        ], name = "smrtanalysis_load_chemistry_load_pulses." + job_name_suffix))
 
                         job = smrtanalysis.cmph5tools_sort(
-                            os.path.join(polishing_round_directory, "data", "aligned_reads.cmp.h5"),
-                            os.path.join(polishing_round_directory, "data", "aligned_reads.cmp.h5.sorted")
+                            os.path.join(polishing_round_directory, "data", "aligned_reads.loadPulses.cmp.h5"),
+                            os.path.join(polishing_round_directory, "data", "aligned_reads.sorted.cmp.h5")
                         )
                         job.name = "smrtanalysis_cmph5tools_sort." + job_name_suffix
                         jobs.append(job)
 
                         job = smrtanalysis.variant_caller(
-                            os.path.join(polishing_round_directory, "data", "aligned_reads.cmp.h5.sorted"),
+                            os.path.join(polishing_round_directory, "data", "aligned_reads.sorted.cmp.h5"),
                             os.path.join(polishing_round_directory, sample_cutoff_mer_size_polishing_round, "sequence", sample_cutoff_mer_size_polishing_round + ".fasta"),
                             os.path.join(polishing_round_directory, "data", "variants.gff"),
                             os.path.join(polishing_round_directory, "data", "consensus.fasta.gz"),
@@ -327,9 +333,10 @@ END
                         job = smrtanalysis.summarize_polishing(
                             "_".join([sample.name, cutoff_x, mer_size_text]),
                             os.path.join(polishing_round_directory, sample_cutoff_mer_size_polishing_round),
-                            os.path.join(polishing_round_directory, "data", "aligned_reads.cmp.h5.sorted"),
+                            os.path.join(polishing_round_directory, "data", "aligned_reads.sorted.cmp.h5"),
                             os.path.join(polishing_round_directory, "data", "alignment_summary.gff"),
                             os.path.join(polishing_round_directory, "data", "coverage.bed"),
+                            os.path.join(sample.name, "filtering", "input.fofn"),
                             os.path.join(polishing_round_directory, "data", "aligned_reads.sam"),
                             os.path.join(polishing_round_directory, "data", "variants.gff"),
                             os.path.join(polishing_round_directory, "data", "variants.bed"),
@@ -459,6 +466,8 @@ END
                     mer_size_text = "merSize" + mer_size
                     sample_cutoff_mer_size = "_".join([sample.name, cutoff_x, mer_size_text])
                     mer_size_directory = os.path.join(coverage_directory, mer_size_text)
+                    blast_directory = os.path.join(mer_size_directory, "blast")
+                    mummer_file_prefix = os.path.join(mer_size_directory, "mummer", sample.name + ".")
                     report_directory = os.path.join(mer_size_directory, "report")
 
                     polishing_rounds = config.param('DEFAULT', 'polishing_rounds', type='posint')
@@ -489,8 +498,15 @@ END
                     )
                     # Job input files must be defined here since only project directory is given to gq_seq_utils.report
                     job.input_files = [
+                        fasta_consensus + ".gz",
+                        os.path.join(blast_directory, "blastCov.tsv"),
+                        os.path.join(blast_directory, "contigsCoverage.tsv"),
+                        os.path.join(mummer_file_prefix + "nucmer.delta.png"),
+                        os.path.join(mummer_file_prefix + "dnadiff.delta.snpflank"),
+                        os.path.join(mummer_file_prefix + "nucmer.self.delta.png"),
                         os.path.join(report_directory, "summaryTableAssembly.tsv"),
-                        os.path.join(report_directory, "summaryTableReads.tsv")
+                        os.path.join(report_directory, "summaryTableReads.tsv"),
+                        os.path.join(report_directory, "summaryTableReads2.tsv")
                     ]
 
                     job.name = "gq_seq_utils_report." + sample.name

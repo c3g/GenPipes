@@ -58,8 +58,8 @@ def dcmegablast(
     tmp_outfile = os.path.splitext(outfile)[0] + ".all.tmp"
 
     return  Job(
-        [infile_fasta],
-        [outfile],
+        [infile_fasta, coverage_bed],
+        [outfile, os.path.join(outdir, "blastCov.tsv"), os.path.join(outdir, "contigsCoverage.tsv")],
         [
             ['blast_dcmegablast', 'module_memtime'],
             ['blast_dcmegablast', 'module_blast'],
