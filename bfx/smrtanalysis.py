@@ -423,12 +423,10 @@ gffToBed.py \\
 h5repack -f GZIP=1 \\
   {aligned_reads_cmph5} \\
   {aligned_reads_cmph5}.repacked && \\
-mv {aligned_reads_cmph5}.repacked {aligned_reads_cmph5} && \\
 pbsamtools --bam \\
   --outfile {aligned_reads_sam} \\
   --refrepos {reference} \\
-  --readGroup movie {aligned_reads_cmph5} && \\
-cmph5tools.py -vv sort --deep --inPlace {aligned_reads_cmph5} && \\
+  --readGroup movie {aligned_reads_cmph5}.repacked && \\
 summarizeConsensus.py \\
   --variantsGff {variants_gff} \\
   {alignment_summary} \\
