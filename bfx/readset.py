@@ -245,9 +245,15 @@ def parse_pacbio_readset_file(pacbio_readset_file):
 
         # Readset file paths are either absolute or relative to the readset file
         # Convert them to absolute paths
+        log.debug("line BAX before: " + line['BAX'])
         for format in ("BAS", "BAX"):
             if line.get(format, None):
-                line[format] = ",".join(os.path.dirname(os.path.abspath(pacbio_readset_file)) + os.sep + file for file in line[format].split(",") if not os.path.isabs(file))
+                log.debug("In line.get(format, None)")
+                files = line[format].split(",")
+                for file in files:
+                    if not os.path.isabs(file):
+                        file = os.path.dirname(os.path.abspath(pacbio_readset_file)) + os.sep + file
+                line[format] = ",".join(files)
 
         readset._run = line.get('Run', None)
         readset._smartcell = line.get('Smartcell', None)
@@ -256,6 +262,8 @@ def parse_pacbio_readset_file(pacbio_readset_file):
         readset._estimated_genome_size = int(line['EstimatedGenomeSize']) if line.get('EstimatedGenomeSize', None) else None
         readset._bas_files = line['BAS'].split(",") if line.get('BAS', None) else []
         readset._bax_files = line['BAX'].split(",") if line.get('BAX', None) else []
+        log.debug("line BAX: " + line['BAX'])
+        log.debug("Readset BAX: " + ",".join(readset._bax_files))
 
         readsets.append(readset)
         sample.add_readset(readset)
