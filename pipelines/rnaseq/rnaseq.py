@@ -41,7 +41,7 @@ class RnaSeq(common.Illumina):
         for readset in self.readsets:
             trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
             alignment_1stPass_directory = os.path.join("alignment_1stPass", readset.sample.name)
-            individual_junction_list.append(os.path.join(alignment_1stPass_directory,"SJ.out.tab")
+            individual_junction_list.append(os.path.join(alignment_1stPass_directory,"SJ.out.tab"))
 
             if readset.run_type == "PAIRED_END":
                 fastq1 = trim_file_prefix + "pair1.fastq.gz"
@@ -117,13 +117,13 @@ class RnaSeq(common.Illumina):
                 rg_library=readset.library if readset.library else "",
                 rg_platform_unit=readset.run + "_" + readset.lane if readset.run and readset.lane else "",
                 rg_platform=rg_platform if rg_platform else "",
-                rg_center=rg_center if rg_center else ""
+                rg_center=rg_center if rg_center else "",
                 create_wiggle_track=True,
                 search_chimeres=True,
-                cuff_follow=True
+                cuff_follow=True,
                 sort_bam=True
             )
-            
+ 
             # If this readset is unique for this sample, further BAM merging is not necessary.
             # Thus, create a sample BAM symlink to the readset BAM.
             if len(readset.sample.readsets) == 1:
@@ -368,7 +368,7 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
         
         output_directory = os.path.join("fpkm", "AllSample")
         sample_file = os.path.join("fpkm", "cuffmerge.samples.txt")
-        input_gtfs = [ os.path.join("fpkm", sample.name, "transcripts.gtf")] for sample in self.samples]
+        input_gtfs = [os.path.join("fpkm", sample.name, "transcripts.gtf") for sample in self.samples]
         gtf = config.param('cuffmerge','gtf', type='filepath')
         
         
@@ -376,8 +376,8 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
             Job(command="mkdir -p " + output_directory),
             Job(input_gtfs, [sample_file], command="""\
 {sample_rows} > {sample_file}""".format(sample_rows="\n".join(input_gtfs), sample_file=sample_file)),
-            cufflinks.cuffmerge(sample_file, output_directory, gtf_file=gtf),
-            , name="cuffmerge")
+            cufflinks.cuffmerge(sample_file, output_directory, gtf_file=gtf)],
+            name="cuffmerge")
         
         return [job]
         
@@ -421,7 +421,7 @@ cat \\
             self.picard_sam_to_fastq,
             self.trimmomatic,
             self.merge_trimmomatic_stats,
-            self.tophat,
+            self.star,
             self.picard_merge_sam_files,
             self.picard_reorder_sam,
             self.picard_mark_duplicates,
