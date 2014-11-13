@@ -20,6 +20,7 @@ from bfx.readset import *
 
 from bfx import bedtools
 from bfx import cufflinks
+from bfx import differential_expression
 from bfx import htseq
 from bfx import metrics
 from bfx import picard
@@ -178,7 +179,6 @@ class RnaSeq(common.Illumina):
         return jobs
 
     def rnaseqc(self):
-
         sample_file = os.path.join("alignment", "rnaseqc.samples.txt")
         sample_rows = [[sample.name, os.path.join("alignment", sample.name, sample.name + ".merged.mdup.bam"), "RNAseq"] for sample in self.samples]
         input_bams = [sample_row[1] for sample_row in sample_rows]
@@ -415,6 +415,25 @@ cat \\
 
         return jobs
 
+    def differential_expression(self):
+        # If --design is missing, this will raise an Exception
+        if self.contrasts:
+            design_file = os.path.relpath(self.args.design.name, self.output_dir)
+        output_directory = "DGE"
+        count_matrix = os.path.join(output_directory, "rawCountMatrix.csv")
+
+        edger_job = differential_expression.edger(design_file, count_matrix, output_directory)
+        edger_job.output_files = [os.path.join(output_directory, contrast.name, "edger_results.csv") for contrast in self.contrasts]
+
+        deseq_job = differential_expression.deseq(design_file, count_matrix, output_directory)
+        deseq_job.output_files = [os.path.join(output_directory, contrast.name, "deseq_results.csv") for contrast in self.contrasts]
+
+        return [concat_jobs([
+            Job(command="mkdir -p " + output_directory),
+            edger_job,
+            deseq_job
+        ], name="differential_expression")]
+
     @property
     def steps(self):
         return [
@@ -430,7 +449,8 @@ cat \\
             self.raw_counts,
             self.raw_counts_metrics,
             self.cufflinks,
-            self.cuffdiff
+            self.cuffdiff,
+            self.differential_expression
         ]
 
     def __init__(self):

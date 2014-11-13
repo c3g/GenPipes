@@ -3,6 +3,7 @@ __all__ = [
     "bvatools",
     "bwa",
     "cufflinks",
+    "differential_expression",
     "gatk",
     "gq_seq_utils",
     "htseq",
