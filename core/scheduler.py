@@ -110,7 +110,7 @@ COMMAND=$(cat << '{limit_string}'
 echo "rm -f $JOB_DONE && $COMMAND
 MUGQIC_STATE=\$PIPESTATUS
 echo MUGQICexitStatus:\$MUGQIC_STATE
-if [ \$MUGQIC_STATE -eq 0 ] ; then echo $COMMAND > $JOB_DONE ; fi
+if [ \$MUGQIC_STATE -eq 0 ] ; then touch $JOB_DONE ; fi
 exit \$MUGQIC_STATE" | \\
 """.format(job=job)
 
@@ -155,20 +155,16 @@ class BatchScheduler(Scheduler):
 {separator_line}
 JOB_NAME={job.name}
 JOB_DONE={job.done}
-COMMAND=$(cat << '{limit_string}'
-{job.command_with_modules}
-{limit_string}
-)
 printf "\\n$SEPARATOR_LINE\\n"
 echo "Begin MUGQIC Job $JOB_NAME at `date +%FT%H:%M:%S`" && \\
-rm -f $JOB_DONE && eval $COMMAND
+rm -f $JOB_DONE && \\
+{job.command_with_modules}
 MUGQIC_STATE=$PIPESTATUS
 echo "End MUGQIC Job $JOB_NAME at `date +%FT%H:%M:%S`"
 echo MUGQICexitStatus:$MUGQIC_STATE
-if [ $MUGQIC_STATE -eq 0 ] ; then echo -n "$COMMAND" > $JOB_DONE ; else exit $MUGQIC_STATE ; fi
+if [ $MUGQIC_STATE -eq 0 ] ; then touch $JOB_DONE ; else exit $MUGQIC_STATE ; fi
 """.format(
                             job=job,
-                            separator_line=separator_line,
-                            limit_string=os.path.basename(job.done)
+                            separator_line=separator_line
                         )
                     )
