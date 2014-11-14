@@ -49,7 +49,10 @@ class IlluminaReadset(Readset):
 
     @property
     def bam(self):
-        return self._bam
+        if not hasattr(self, "_bam"):
+            return None
+        else:
+            return self._bam
 
     @property
     def library(self):
@@ -126,67 +129,157 @@ def parse_illumina_readset_file(illumina_readset_file):
     log.info(str(len(samples)) + " sample" + ("s" if len(samples) > 1 else "") + " parsed\n")
     return readsets
 
-def parse_nanuq_illumina_readset_file(illumina_readset_file):
+class IlluminaRawReadset(IlluminaReadset):
+
+    def __init__(self, name, run_type):
+        super(IlluminaRawReadset, self).__init__(name, run_type)
+
+    @property
+    def index(self):
+        return self._index
+
+    @property
+    def reference_species(self):
+        return self._reference_species
+
+    @property
+    def reference_assembly(self):
+        return self._reference_assembly
+
+    @property
+    def aligner_reference_file(self):
+        return self._aligner_reference_file
+
+    @property
+    def reference_file(self):
+        return self._reference_file
+
+    @property
+    def species(self):
+        return self._species
+
+    @property
+    def project(self):
+        return self._project
+
+    @property
+    def library_source(self):
+        return self._library_source
+
+    @property
+    def operator(self):
+        return self._operator
+
+    @property
+    def recipe(self):
+        return self._recipe
+
+    @property
+    def control(self):
+        return self._control
+
+    @property
+    def description(self):
+        return self._description
+
+    @property
+    def flow_cell(self):
+        return self._flow_cell
+
+
+def parse_illumina_raw_readset_files(output_dir, run_type, nanuq_readset_file, casava_sheet_file, lane, default_species_genome, genome_root):
     readsets = []
     samples = []
 
-    log.info("Parse Nanuq Illumina readset file " + illumina_readset_file + " ...")
-    readset_csv = csv.DictReader(open(illumina_readset_file, 'rb'), delimiter=',', quotechar='"')
+    # Parsing Nanuq readset sheet
+    log.info("Parse Nanuq Illumina readset file " + nanuq_readset_file + " ...")
+    readset_csv = csv.DictReader(open(nanuq_readset_file, 'rb'), delimiter=',', quotechar='"')
     for line in readset_csv:
-        if line['Status'] and line['Status'] == "Data is valid":
-            sample_name = line['Name']
-            sample_names = [sample.name for sample in samples]
-            if sample_name in sample_names:
-                # Sample already exists
-                sample = samples[sample_names.index(sample_name)]
-            else:
-                # Create new sample
-                sample = Sample(sample_name)
-                samples.append(sample)
-    
-            # Create readset and add it to sample
-            readset = IlluminaReadset(line['Filename Prefix'], line['Run Type'])
-    
-            readset.library = line['Library Barcode']
-            readset.run = line['Run']
-            readset.lane = line['Region']
-    
-            readset.adaptor1 = line['Adaptor Read 1 (NOTE: Usage is bound by Illumina Disclaimer found on Nanuq Project Page)']
-            readset.adaptor2 = line['Adaptor Read 2 (NOTE: Usage is bound by Illumina Disclaimer found on Nanuq Project Page)']
-            readset.quality_offset = int(line['Quality Offset'])
-            if line['BED Files']:
-                readset.beds = line['BED Files'].split(";")
-            else:
-                readset.beds = []
-    
-            file_prefix = "raw_reads/{sample_name}/run{readset.run}_{readset.lane}/{sample_name}.{readset.library}.{readset.quality_offset}.".format(sample_name=sample_name, readset=readset)
-    
-            if line['BAM']:
-                line['BAM'] = file_prefix + "bam"
-                line['FASTQ1'] = ""
-                line['FASTQ2'] = ""
-            elif line['FASTQ1']:
-                if line['FASTQ2']:
-                    line['FASTQ1'] = file_prefix + "pair1.fastq.gz"
-                    line['FASTQ2'] = file_prefix + "pair2.fastq.gz"
-                else:
-                    line['FASTQ1'] = file_prefix + "single.fastq.gz"
+        current_lane = line['Region']
 
-            # Readset file paths are either absolute or relative to the readset file
-            # Convert them to absolute paths
-            for format in ['BAM', 'FASTQ1', 'FASTQ2']:
-                if line[format] and not os.path.isabs(line[format]):
-                    line[format] = os.path.abspath(line[format])
+        if (int(current_lane) != lane):
+            continue
 
-            readset.bam = line['BAM']
-            readset.fastq1 = line['FASTQ1']
-            readset.fastq2 = line['FASTQ2']
+        sample_name = line['Name']
 
-            readsets.append(readset)
-            sample.add_readset(readset)
+        # Always create a new sample
+        sample = Sample(sample_name)
+        samples.append(sample)
 
+        # Create readset and add it to sample
+        readset = IlluminaRawReadset(line['ProcessingSheetId'], run_type)
+        readset._quality_offset = 33
+        readset._library = line['Library Barcode']
+        readset._library_source = line['Library Source']
+        readset._run = line['Run']
+        readset._lane = current_lane
+        readset._adaptor1 = line['Adaptor Read 1 (NOTE: Usage is bound by Illumina Disclaimer found on Nanuq Project Page)']
+        readset._adaptor2 = line['Adaptor Read 2 (NOTE: Usage is bound by Illumina Disclaimer found on Nanuq Project Page)']
+        if line['BED Files']:
+            readset._beds = line['BED Files'].split(";")
         else:
-            log.warning("Sample Name " + line['Name'] + ", Run ID " + line['Run'] + ", Lane " + line['Region'] + " data is not valid... skipping")
+            readset._beds = []
+
+        readsets.append(readset)
+        sample.add_readset(readset)
+
+
+    # Parsing Casava sheet
+    log.info("Parsing Casava sample sheet " + casava_sheet_file + " ...")
+    casava_csv = csv.DictReader(open(casava_sheet_file, 'rb'), delimiter=',')
+    for line in casava_csv:
+        if (int(line['Lane']) != lane):
+            continue
+        processingSheetId = line['SampleID']
+        readset = [x for x in readsets if x.name == processingSheetId][0]
+        readset._flow_cell = line['FCID']
+        readset._species = line['SampleRef']
+        readset._index = line['Index']
+        readset._description = line['Description']
+        readset._control = line['Control']
+        readset._recipe = line['Recipe']
+        readset._operator = line['Operator']
+        readset._project = line['SampleProject']
+
+        fastq_file_pattern = os.path.join(output_dir,
+                                          "Unaligned." + readset.lane,
+                                          'Project_' + readset.project,
+                                          'Sample_' + readset.name,
+                                          readset.name + '_' + readset.index + '_L00' + readset.lane + '_R{read_number}_001.fastq.gz')
+        readset.fastq1 = fastq_file_pattern.format(read_number = 1)
+        readset.fastq2 = fastq_file_pattern.format(read_number = 2) if readset.run_type == "PAIRED_END" else None;
+
+
+    # Searching for a matching reference for the specified species
+    for readset in readsets:
+        # Find if any reference_assembly or reference_species for the specied species
+        for genome in default_species_genome.split('~'):
+            values = genome.split(':')
+            if (re.match(values[0], readset.species, re.IGNORECASE)) :
+                aligner_reference_file = os.path.join(genome_root, values[1] + "." + values[2],
+                                              "genome",
+                                              "bwa_index",
+                                              values[1] + "." + values[2] + ".fa")
+                reference_file = os.path.join(genome_root, values[1] + "." + values[2],
+                                              "genome",
+                                              values[1] + "." + values[2] + ".fa")
+                if (os.path.isfile(reference_file) and os.path.isfile(aligner_reference_file)):
+                    readset._aligner_reference_file = aligner_reference_file
+                    readset._reference_file = reference_file
+                    readset._reference_species = values[1]
+                    readset._reference_assembly = values[2]
+                    readset._bam = os.path.join(output_dir,
+                                                "Aligned." + readset.lane,
+                                                'alignment',
+                                                readset.sample.name,
+                                                'run' + readset.run + "_" + readset.lane,
+                                                readset.sample.name + readset.library)
+                else:
+                    log.warning("Unable to access the reference file: '" + reference_file + "'")
+
+        if (readset.bam is None):
+            log.info("Skipping alignment for the species: " + readset.species)
+
 
     log.info(str(len(readsets)) + " readset" + ("s" if len(readsets) > 1 else "") + " parsed")
     log.info(str(len(samples)) + " sample" + ("s" if len(samples) > 1 else "") + " parsed\n")

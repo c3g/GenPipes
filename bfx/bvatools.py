@@ -148,3 +148,34 @@ java {java_other_options} -Xmx{ram} -jar $BVATOOLS_JAR \\
     )
 
     return job
+
+def readsqc(read1, read2, type, region_name, output_directory):
+    job = Job([read1, read2], ["mpsQC_" + region_name + "_stats.xml"], [['bvatools_readsqc', 'module_java'], ['bvatools_readsqc', 'module_bvatools']])
+    
+    command =  """\
+java {java_other_options} -Xmx{ram} -jar $BVATOOLS_JAR \\
+readsqc {other_options} \\
+--regionName {region_name} \\
+--type {type} \\
+--output {output_directory} \\
+--read1 {read1}""".format(
+        java_other_options=config.param('bvatools_readsqc', 'java_other_options'),
+        ram=config.param('bvatools_readsqc', 'ram'),
+        other_options=config.param('bvatools_readsqc', 'other_options', required=False),
+        region_name=region_name,
+        type=type,
+        output_directory=output_directory,
+        read1=read1
+    )
+
+    if (read2):
+        command += " --read2 {read2}".format(read2=read2)
+
+    job.command = command
+
+    return job
+
+
+
+
+
