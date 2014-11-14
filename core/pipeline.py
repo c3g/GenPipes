@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 
+# Check Python version
+import sys
+if sys.version_info < (2,7):
+    raise SystemExit("Incompatible Python version: " + sys.version + "\nPython 2.7 or higher is required")
+
 # Python Standard Modules
 import argparse
 import collections
