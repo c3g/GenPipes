@@ -64,16 +64,6 @@ module load mugqic/pipeline/<latest_version>
 (find out the latest version with: "`module avail 2>&1 | grep mugqic/pipeline`").
 
 
-### For abacus users
-To use parallel computing with some modules, add the following lines to your *$HOME/.bash_profile*:
-```
-#!bash
-## MPI
-export PATH=/sb/programs/mpi/mpi_pbs/openmpi-1.6/bin:$PATH
-export LD_LIBRARY_PATH=/sb/programs/mpi/mpi_pbs/openmpi-1.6/lib:$LD_LIBRARY_PATH
-```
-
-
 ### For guillimin and mammouth users
 Set your `RAP_ID` (Resource Allocation Project ID from Compute Canada) in your *$HOME/.bash_profile*:
 ```
