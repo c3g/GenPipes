@@ -86,7 +86,7 @@ def parse_illumina_readset_file(illumina_readset_file):
     log.info("Parse Illumina readset file " + illumina_readset_file + " ...")
     readset_csv = csv.DictReader(open(illumina_readset_file, 'rb'), delimiter='\t')
     for line in readset_csv:
-        sample_name = line['SampleID']
+        sample_name = line['Sample']
         sample_names = [sample.name for sample in samples]
         if sample_name in sample_names:
             # Sample already exists
@@ -233,7 +233,7 @@ def parse_pacbio_readset_file(pacbio_readset_file):
     log.info("Parse PacBio readset file " + pacbio_readset_file + " ...")
     readset_csv = csv.DictReader(open(pacbio_readset_file, 'rb'), delimiter='\t')
     for line in readset_csv:
-        sample_name = line['SampleID']
+        sample_name = line['Sample']
         sample_names = [sample.name for sample in samples]
         if sample_name in sample_names:
             # Sample already exists

@@ -41,7 +41,7 @@ def parse_design_file(design_file, samples):
 
     for line in design_csv:
 
-        sample_name = line['SampleID']
+        sample_name = line['Sample']
         matching_samples = [sample for sample in samples if sample.name == sample_name]
         if matching_samples:
             # There should be only one matching sample
@@ -77,7 +77,7 @@ def parse_old_design_file(design_file, samples):
 
     for line in design_csv:
 
-        sample_name = line['SampleID']
+        sample_name = line['Sample']
         matching_samples = [sample for sample in samples if sample.name == sample_name]
         if matching_samples:
             # There should be only one matching sample

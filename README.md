@@ -109,7 +109,7 @@ The Readset File is a TAB-separated values plain text file with one line per rea
 
 ### DNA-Seq, RNA-Seq, RNA-Seq De Novo Assembly
 
-* SampleID: must contain letters A-Z, numbers 0-9, hyphens (-) or underscores (_) only; BAM files will be merged into a file named after this value; mandatory;
+* Sample: must contain letters A-Z, numbers 0-9, hyphens (-) or underscores (_) only; BAM files will be merged into a file named after this value; mandatory;
 * Readset: a unique readset name with the same allowed characters as above; mandatory;
 * Library: optional;
 * RunType: "`PAIRED_END`" or "`SINGLE_END`"; mandatory;
@@ -123,7 +123,7 @@ The Readset File is a TAB-separated values plain text file with one line per rea
 
 Example:
 
-    SampleID	Readset	Library	RunType	Run	Lane	QualityOffset	BED	FASTQ1	FASTQ2	BAM
+    Sample	Readset	Library	RunType	Run	Lane	QualityOffset	BED	FASTQ1	FASTQ2	BAM
     sampleA	readset1	lib0001	PAIRED_END	run100	1	33	path/to/file.bed	path/to/readset1.paired1.fastq.gz	path/to/readset1.paired2.fastq.gz	path/to/readset1.bam
     sampleA	readset2	lib0001	PAIRED_END	run100	2	33	path/to/file.bed	path/to/readset2.paired1.fastq.gz	path/to/readset2.paired2.fastq.gz	path/to/readset2.bam
     sampleB	readset3	lib0002	PAIRED_END	run200	5	33	path/to/file.bed	path/to/readset3.paired1.fastq.gz	path/to/readset3.paired2.fastq.gz	path/to/readset3.bam
@@ -132,7 +132,7 @@ Example:
 
 ### PacBio Assembly
 
-* SampleID: must contain letters A-Z, numbers 0-9, hyphens (-) or underscores (_) only; BAM files will be merged into a file named after this value; mandatory;
+* Sample: must contain letters A-Z, numbers 0-9, hyphens (-) or underscores (_) only; BAM files will be merged into a file named after this value; mandatory;
 * Readset: a unique readset name with the same allowed characters as above; mandatory;
 * Smartcell: mandatory;
 * NbBasePairs: total number of base pairs for this readset; mandatory;
@@ -142,7 +142,7 @@ Example:
 
 Example:
 
-    SampleID	Readset	Smartcell	NbBasePairs	EstimatedGenomeSize	BAS	BAX
+    Sample	Readset	Smartcell	NbBasePairs	EstimatedGenomeSize	BAS	BAX
     sampleA	readset1	F_01_1	122169744	150000	path/to/readset1.bas.h5	path/to/readset1.1.bax.h5,path/to/readset1.2.bax.h5,path/to/readset1.3.bax.h5
     sampleA	readset2	F_01_2	105503472	150000	path/to/readset2.bas.h5	path/to/readset2.1.bax.h5,path/to/readset2.2.bax.h5,path/to/readset2.3.bax.h5
     sampleB	readset3	G_01_1	118603200	150000	path/to/readset3.bas.h5	path/to/readset3.1.bax.h5,path/to/readset3.2.bax.h5,path/to/readset3.3.bax.h5
