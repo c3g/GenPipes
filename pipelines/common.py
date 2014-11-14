@@ -91,7 +91,7 @@ class Illumina(MUGQICPipeline):
     def contrasts(self):
         if not hasattr(self, "_contrasts"):
             if self.args.design:
-                self._contrasts = parse_old_design_file(self.args.design.name, self.samples)
+                self._contrasts = parse_design_file(self.args.design.name, self.samples)
             else:
                 raise Exception("Error: missing '--design' option!")
         return self._contrasts

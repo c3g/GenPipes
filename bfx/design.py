@@ -31,7 +31,7 @@ class Contrast:
         return self._treatments
 
 
-def parse_design_file(design_file, samples):
+def parse_new_design_file(design_file, samples):
 
     log.info("Parse design file " + design_file + " ...")
     design_csv = csv.DictReader(open(design_file, 'rb'), delimiter='\t')
@@ -67,9 +67,8 @@ def parse_design_file(design_file, samples):
 
     return contrasts
 
-def parse_old_design_file(design_file, samples):
+def parse_design_file(design_file, samples):
 
-    log.warning("Parse old-style design file " + design_file + " ...")
     design_csv = csv.DictReader(open(design_file, 'rb'), delimiter='\t')
 
     # Skip first column which is Sample
@@ -85,17 +84,17 @@ def parse_old_design_file(design_file, samples):
         else:
             raise Exception("Error: sample " + sample_name + " in design file " + design_file + " not found in pipeline samples!")
 
-        # Skip first column which is Sample
         for contrast in contrasts:
             sample_contrast_type = line[contrast.name]
-            # Empty types are ignored
-            if sample_contrast_type:
-                if sample_contrast_type == "1":
-                    contrast.controls.append(sample)
-                elif sample_contrast_type == "2":
-                    contrast.treatments.append(sample)
-                else:
-                    raise Exception("Error: invalid value for sample " + sample_name + " and contrast " + contrast.name + " in design file " + design_file + " (should be '1', '2' or '')!")
+            # Empty or '0' types are ignored
+            if not sample_contrast_type or sample_contrast_type == "0":
+                pass
+            elif sample_contrast_type == "1":
+                contrast.controls.append(sample)
+            elif sample_contrast_type == "2":
+                contrast.treatments.append(sample)
+            else:
+                raise Exception("Error: invalid value for sample " + sample_name + " and contrast " + contrast.name + " in design file " + design_file + " (should be '1' for control, '2' for treatment, '0' or '' to be ignored)!")
 
     for contrast in contrasts:
         log.info("Contrast " + contrast.name + " (controls: " + str(len(contrast.controls)) + ", treatments: " + str(len(contrast.treatments)) + ") created")
