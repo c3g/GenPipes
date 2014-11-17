@@ -287,7 +287,7 @@ configureBclToFastq.pl
 
     def md5(self):
         """ Create md5 checksum files for the fastq using the system 'md5sum' util.
-            When the run is paired-end, one checksum file will be created for each fastq.
+            One checksum file will be created for each fastq.
         """
         jobs = []
         for readset in self.readsets:
@@ -606,7 +606,7 @@ configureBclToFastq.pl
     def generate_illumina_lane_sample_sheet(self):
         """ Create a sample sheet to use with the BCL2FASTQ software.
             Only the samples of the chosen lane will be in the file.
-            The sample index are trimmed according to the mask used.
+            The sample indexes are trimmed according to the mask used.
         """
         read_masks = self.get_mask().split(",")
 
@@ -672,20 +672,20 @@ configureBclToFastq.pl
 
     def get_smallest_index_length(self):
         """ Returns a list (for each index read of the run) of the minimum between the number of index cycle on the sequencer and all the index lengths."""
-        runIdxLengths = [r.nb_cycles for r in self.read_infos if r.is_index]
+        run_index_lengths = [r.nb_cycles for r in self.read_infos if r.is_index]
 
-        if (len(runIdxLengths) == 0 and len(self.readsets) > 1):
+        if (len(run_index_lengths) == 0 and len(self.readsets) > 1):
             raise Exception("Multiple samples on a lane, but no indexes were read from the sequencer.")
 
-        for i in range(0, len(runIdxLengths)):
+        for i in range(0, len(run_index_lengths)):
             min_sample_index_length = min(len(readset.index.split("-")[i])
                                             for readset in
                                             self.readsets
                                             if (len(readset.index.split("-")) > i and len(readset.index.split("-")[i]) > 0)
                                           )
-            runIdxLengths[i] = 0 if (min_sample_index_length is None) else min(min_sample_index_length, runIdxLengths[i])
+            run_index_lengths[i] = 0 if (min_sample_index_length is None) else min(min_sample_index_length, run_index_lengths[i])
 
-        return runIdxLengths
+        return run_index_lengths
 
     def parse_run_info_file(self):
         """ Parse the RunInfo.xml file of the run and load the reads data in the memory """
