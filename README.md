@@ -81,7 +81,7 @@ For each pipeline, get help about usage, arguments and steps with:
 mugqic_pipeline/pipelines/<pipeline_name>/<pipeline_name>.py --help
 ```
 
-Pipelines require as input one Readset File, one or more Configuration File(s) and possibly one design file, all described below.
+Pipelines require as input one Readset File, one or more Configuration File(s) and possibly one Design File, all described below.
 
 For more information about a specific pipeline, visit:
 
@@ -178,7 +178,7 @@ This is useful to customize settings for a specific cluster or genome.
 Each pipeline has a special configuration file for guillimin and mammouth clusters (`.guillimin.ini` and `.mammouth.ini` extensions respectively).
 And various genome settings are available in `mugqic_pipeline/resources/genomes/config/`.
 
-For example, to run the DNA-Seq pipeline on guillimin cluster with Mus musculus reference genome:
+For example, to run the DNA-Seq pipeline on guillimin cluster with *Mus musculus* reference genome:
 ```
 #!bash
 mugqic_pipeline/pipelines/dnaseq/dnaseq.py -c mugqic_pipeline/pipelines/dnaseq/dnaseq.base.ini mugqic_pipeline/pipelines/dnaseq/dnaseq.guillimin.ini mugqic_pipeline/resources/genomes/config/Mus_musculus.GRCm38.ini ...
@@ -189,6 +189,7 @@ Design File
 -----------
 RNA-Seq and RNA-Seq De Novo Assembly pipelines can perform differential expression analysis if they are provided with an input design file.
 The Design File is a TAB-separated values plain text file with one line per sample and the following columns:
+
 * Sample: first column; must contain letters A-Z, numbers 0-9, hyphens (-) or underscores (_) only; the sample name must match a sample name in the readset file; mandatory;
 * <contrast>: each of the following columns defines an experimental design contrast; the column name defines the contrast name, and the following values represent the sample group membership for this contrast:
     * '0' or '': the sample does not belong to any group;
