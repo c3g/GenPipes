@@ -28,4 +28,4 @@ use warnings;
 # Dependencies
 #-----------------------
 
-our $version = '1.4-beta';
+our $version = '1.4';
