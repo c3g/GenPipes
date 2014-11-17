@@ -632,7 +632,14 @@ sub indelRealigner {
     my $rO_job = GATK::realign($rH_cfg, $sampleName, 'alignment/'.$sampleName.'/'.$sampleName.'.sorted.bam', undef, 'alignment/'.$sampleName.'/realign/others', 1, \@excludeList);
     if(!$rO_job->isUp2Date()) {
       SubmitToCluster::printSubmitCmd($rH_cfg, "indelRealigner", 'others', 'REALIGN', $jobDependency, $sampleName, $rO_job);
-      print 'REALIGN_JOB_IDS=${REALIGN_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$rO_job->getCommandJobId(0)."\n";
+      if($firstJob) {
+        $jobId = $rO_job->getCommandJobId(0);
+        print 'REALIGN_JOB_IDS='.$rO_job->getCommandJobId(0)."\n";
+        $firstJob = 0;
+      }
+      else {
+        print 'REALIGN_JOB_IDS=${REALIGN_JOB_IDS}'.LoadConfig::getParam($rH_cfg, 'default', 'clusterDependencySep').$rO_job->getCommandJobId(0)."\n";
+      }
       $jobId = '${REALIGN_JOB_IDS}';
     }
   }
