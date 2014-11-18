@@ -78,10 +78,10 @@ class IlluminaRunProcessing(common.Illumina):
         return self._is_paired_end
 
     @property
-    def copy_inputs(self):
-        if not hasattr(self, "_copy_inputs"):
-            self._copy_inputs = []
-        return self._copy_inputs
+    def copy_step_inputs(self):
+        if not hasattr(self, "_copy_step_inputs"):
+            self._copy_step_inputs = []
+        return self._copy_step_inputs
 
     @property
     def run_id(self):
@@ -190,6 +190,7 @@ class IlluminaRunProcessing(common.Illumina):
         else:
             input = self.run_directory + os.sep + "RunInfo.xml"
             output = self.run_directory + os.sep + os.path.basename(self.run_directory) + "_" + str(self.lane_number) + '.metrics'
+
             job = Job([input], [output], [["index_count", "module_java"]], name="index_" + self.run_id + str(self.lane_number))
             job.command = """\
 java -Djava.io.tmpdir={tmp_dir}\\
@@ -216,6 +217,7 @@ java -Djava.io.tmpdir={tmp_dir}\\
                 read_structure = mask,
                 output = output
             )
+            self.copy_step_inputs.extend(job.output_files)
             jobs.append(job)
 
         return jobs
@@ -239,6 +241,7 @@ java -Djava.io.tmpdir={tmp_dir}\\
             threads = config.param('index_count', 'threads'),
             unaligned_folder = output_dir
         )
+        self.copy_step_inputs.extend(job.output_files)
         jobs.append(job)
 
         # TODO
@@ -293,6 +296,7 @@ configureBclToFastq.pl
         for readset in self.readsets:
             inputs = [readset.fastq1]
             outputs = [readset.fastq1 + ".md5"]
+
             command = "md5sum -b " + readset.fastq1 + " > " + readset.fastq1 + ".md5"
 
             # Second read in paired-end run
@@ -300,7 +304,10 @@ configureBclToFastq.pl
                 inputs.append(readset.fastq2)
                 outputs.append(readset.fastq2 + ".md5")
                 command += " && md5sum -b " + readset.fastq2 + " > " + readset.fastq2 + ".md5"
+
+
             job = Job(inputs, outputs, name="md5_" + readset.name, command=command)
+            self.copy_step_inputs.extend(job.output_files)
             jobs.append(job)
         return jobs
 
@@ -329,7 +336,9 @@ configureBclToFastq.pl
                 )]
             )
 
+
             job.name = "qc." + readset.name
+            self.copy_step_inputs.extend(job.output_files)
             jobs.append(job)
 
         return jobs
@@ -364,6 +373,7 @@ configureBclToFastq.pl
                 Job(inputs, [output], [["blast", "module_mugqic_tools"]], command=command)
             ], name= "blast_" + readset.name)
 
+            self.copy_step_inputs.extend(job.output_files)
             jobs.append(job)
 
         return jobs
@@ -400,6 +410,7 @@ configureBclToFastq.pl
                 ])
             ], name="bwa_mem_picard_sort_sam." + readset.name)
 
+            self.copy_step_inputs.extend(job.output_files)
             jobs.append(job)
         return jobs
 
@@ -414,6 +425,7 @@ configureBclToFastq.pl
 
             job = picard.mark_duplicates([input], output, metrics_file)
             job.name = "picard_mark_duplicates." + readset.name
+            self.copy_step_inputs.extend(job.output_files)
             jobs.append(job)
         return jobs
 
@@ -426,6 +438,7 @@ configureBclToFastq.pl
 
             job = picard.collect_multiple_metrics(input, input_file_prefix + "all.metrics", reference_sequence=readset.reference_file)
             job.name = "picard_collect_multiple_metrics." + readset.name
+            self.copy_step_inputs.extend(job.output_files)
             jobs.append(job)
 
             job = bvatools.depth_of_coverage(
@@ -437,6 +450,7 @@ configureBclToFastq.pl
             )
 
             job.name = "bvatools_depth_of_coverage." + readset.name
+            self.copy_step_inputs.extend(job.output_files)
             jobs.append(job)
 
         return jobs
@@ -459,6 +473,7 @@ configureBclToFastq.pl
                     created_interval_lists.append(interval_list)
 
                 job.name = "picard_calculate_hs_metrics." + readset.name
+                self.copy_step_inputs.extend(job.output_files)
                 jobs.append(job)
         return jobs
 
@@ -473,6 +488,7 @@ configureBclToFastq.pl
             command = "md5sum -b " + input_bai + " > " + output_bai + " && md5sum -b " + input_bam + " > " + output_bam
 
             job = Job([input_bam], [output_bai, output_bam], name="bmd5_" + readset.name, command=command)
+            self.copy_step_inputs.extend(job.output_files)
             jobs.append(job)
         return jobs
 
@@ -480,7 +496,7 @@ configureBclToFastq.pl
         """ Send an optional notification for the processing completion. """
         jobs = []
 
-        inputs = self.copy_inputs
+        inputs = self.copy_step_inputs
 
         output1 = "notificationProcessingComplete." + str(self.lane_number) + ".out"
         output2 = "notificationCopyStart." + str(self.lane_number) + ".out"
@@ -504,7 +520,7 @@ configureBclToFastq.pl
         """Copy processed files to another place where they can be served or loaded into a LIMS."""
         jobs = []
 
-        inputs = self.copy_inputs
+        inputs = self.copy_step_inputs
         output = self.output_dir + "copyCompleted." + str(self.lane_number) + ".out"
 
         exclude_bam = config.param('copy', 'exclude_bam', required=False, type='boolean')
