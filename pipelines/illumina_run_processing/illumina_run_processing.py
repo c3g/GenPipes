@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 # Python Standard Modules
+from __future__ import print_function, division, unicode_literals, absolute_import
 import logging
 import math
 import os
@@ -8,10 +9,6 @@ import re
 import sys
 import itertools
 import xml.etree.ElementTree as XML
-# TODO import future
-
-# Append mugqic_pipeline directory to Python library path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # MUGQIC Modules
 from core.config import *
@@ -355,7 +352,7 @@ configureBclToFastq.pl
         is_nb_blast_per_lane = config.param('blast', 'is_nb_for_whole_lane', type="boolean")
 
         if (is_nb_blast_per_lane):
-            nb_blast_to_do = int(nb_blast_to_do) / len(self.readsets)
+            nb_blast_to_do = int(nb_blast_to_do) // len(self.readsets)
 
 
         for readset in self.readsets:
@@ -746,7 +743,7 @@ configureBclToFastq.pl
 
 def distance(str1, str2):
     """ Returns the hamming distance. http://code.activestate.com/recipes/499304-hamming-distance/#c2 """
-    return sum(itertools.imap(str.__ne__, str1, str2))
+    return sum(itertools.imap(unicode.__ne__, str1, str2))
 
 
 if __name__ == '__main__': 
