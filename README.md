@@ -187,14 +187,15 @@ mugqic_pipeline/pipelines/dnaseq/dnaseq.py -c mugqic_pipeline/pipelines/dnaseq/d
 
 Design File
 -----------
-RNA-Seq and RNA-Seq De Novo Assembly pipelines can perform differential expression analysis if they are provided with an input design file.
+RNA-Seq and RNA-Seq De Novo Assembly pipelines can perform differential expression analysis if they are provided with an input Design File.
+
 The Design File is a TAB-separated values plain text file with one line per sample and the following columns:
 
 * Sample: first column; must contain letters A-Z, numbers 0-9, hyphens (-) or underscores (_) only; the sample name must match a sample name in the readset file; mandatory;
 * <contrast>: each of the following columns defines an experimental design contrast; the column name defines the contrast name, and the following values represent the sample group membership for this contrast:
-    * '0' or '': the sample does not belong to any group;
-    * '1': the sample belongs to the control group;
-    * '2': the sample belongs to the test case group.
+    * '__0__' or '': the sample does not belong to any group;
+    * '__1__': the sample belongs to the control group;
+    * '__2__': the sample belongs to the test case group.
 
 Example:
 
