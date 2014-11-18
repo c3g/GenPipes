@@ -66,8 +66,8 @@ class IlluminaRunProcessing(common.Illumina):
                                                                self.nanuq_readset_file,
                                                                self.casava_sheet_file,
                                                                self.args.lane_number,
-                                                               config.param('global', 'default_species_genome'),
-                                                               config.param('global', 'genomes_home')
+                                                               config.param('DEFAULT', 'default_species_genome'),
+                                                               config.param('DEFAULT', 'genomes_home')
                                                                )
         return self._readsets
 
@@ -428,17 +428,16 @@ configureBclToFastq.pl
             job.name = "picard_collect_multiple_metrics." + readset.name
             jobs.append(job)
 
-            if readset.beds:
-                job = bvatools.depth_of_coverage(
-                    input, 
-                    input_file_prefix + "coverage.tsv", 
-                    bvatools.resolve_readset_coverage_bed(readset), 
-                    config.param('bvatools_depth_of_coverage', 'other_options', required=False),
-                # reference_genome=readset.reference_file
-                )
+            job = bvatools.depth_of_coverage(
+                input, 
+                input_file_prefix + "coverage.tsv", 
+                bvatools.resolve_readset_coverage_bed(readset), 
+                other_options = config.param('bvatools_depth_of_coverage', 'other_options', required=False),
+                reference_genome = readset.reference_file
+            )
 
-                job.name = "bvatools_depth_of_coverage." + readset.name
-                jobs.append(job)
+            job.name = "bvatools_depth_of_coverage." + readset.name
+            jobs.append(job)
 
         return jobs
 
@@ -481,14 +480,14 @@ configureBclToFastq.pl
         """ Send an optional notification for the processing completion. """
         jobs = []
 
-        input = self.copy_inputs
+        inputs = self.copy_inputs
 
         output1 = "notificationProcessingComplete." + str(self.lane_number) + ".out"
         output2 = "notificationCopyStart." + str(self.lane_number) + ".out"
 
         notification_command = config.param('start_copy_notification', 'notification_command', required=False)
         if (notification_command):
-            job = Job([input], [output1, output2], name="start_copy_" + self.run_id + "_" + str(self.lane_number))
+            job = Job(inputs, [output1, output2], name="start_copy_" + self.run_id + "_" + str(self.lane_number))
             job.command = notification_command.format(
                 technology = config.param('start_copy_notification', 'technology'),
                 output_dir = self.output_dir,
@@ -497,7 +496,7 @@ configureBclToFastq.pl
                 output2 = output2,
                 lane_number = self.lane_number
             )
-            jobs.append(job)        
+            jobs.append(job)
 
         return jobs
 
@@ -505,11 +504,48 @@ configureBclToFastq.pl
         """Copy processed files to another place where they can be served or loaded into a LIMS."""
         jobs = []
 
-        input = self.copy_inputs
+        inputs = self.copy_inputs
         output = self.output_dir + "copyCompleted." + str(self.lane_number) + ".out"
 
-        # TODO: the actual copy
-        job = Job([input], [output], name="copy_" + self.run_id + "_" + str(self.lane_number), command="touch " + output)
+        exclude_bam = config.param('copy', 'exclude_bam', required=False, type='boolean')
+        exclude_fastq_with_bam = config.param('copy', 'exclude_fastq_with_bam', required=False, type='boolean')
+        if (exclude_bam and exclude_fastq_with_bam):
+            log.warn("Excluding both BAM and fastq files")
+
+        excluded_files = []
+
+        if (exclude_bam or exclude_fastq_with_bam):
+            for readset in [readset for readset in self.readsets if (readset.bam)]:
+                if exclude_bam:
+                    excluded_files.append(readset.bam + ".*.bam")
+                    excluded_files.append(readset.bam + ".*.bai")
+                if exclude_fastq_with_bam:
+                    excluded_files.append(readset.fastq1)
+                    if readset.fastq2:
+                        excluded_files.append(readset.fastq2)
+
+        jobs_to_concat = []
+        if (self.run_directory != self.output_dir):
+            copy_command_run_folder = config.param('copy', 'copy_command', required=False).format(
+                    exclusion_clauses = "",
+                    lane_number = self.lane_number,
+                    source = self.run_directory,
+                    run_name = os.path.basename(self.run_directory)
+            )
+            jobs_to_concat.append(Job(inputs, [output], command=copy_command_run_folder))
+
+        copy_command_output_folder = config.param('copy', 'copy_command', required=False).format(
+                exclusion_clauses = "\\\n".join(["--exclude '" + file + "'" for file in excluded_files]),
+                lane_number = self.lane_number,
+                source = self.output_dir,
+                run_name = os.path.basename(self.run_directory)
+        )
+        jobs_to_concat.append(Job(inputs, [output], command=copy_command_output_folder))
+        jobs_to_concat.append(Job(command="touch " + output))
+
+        job = concat_jobs(jobs_to_concat)
+        job.name = "copy_" + self.run_id + "_" + str(self.lane_number)
+
         jobs.append(job)
         return jobs
 
@@ -657,7 +693,7 @@ configureBclToFastq.pl
                 "SampleProject" : readset.project
             }
 
-        csv_file = self.output_dir + os.sep + config.param('global', 'casava_sample_sheet_prefix') + str(self.lane_number) + ".csv"
+        csv_file = self.output_dir + os.sep + config.param('DEFAULT', 'casava_sample_sheet_prefix') + str(self.lane_number) + ".csv"
         writer = csv.writer(open(csv_file, 'wb'),
                             delimiter=',',
                             quotechar="",
@@ -688,7 +724,7 @@ configureBclToFastq.pl
         return run_index_lengths
 
     def parse_run_info_file(self):
-        """ Parse the RunInfo.xml file of the run and load the reads data in the memory """
+        """ Parse the RunInfo.xml file of the run and returns the list of RunInfoRead objects """
         reads = XML.parse(self.run_directory + os.sep + "RunInfo.xml").getroot().find('Run').find('Reads')
         return [RunInfoRead(int(r.get("Number")), int(r.get("NumCycles")), r.get("IsIndexedRead") == "Y") for r in reads.iter('Read')]
 
