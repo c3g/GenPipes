@@ -80,20 +80,20 @@ class IlluminaRunProcessing(common.Illumina):
             Supports both default folder name configuration and GQ's globaly unique name convention.
         """
         if not hasattr(self, "_run_id"):
-            if (re.search(".*_\d+HS\d\d[AB]", self.run_directory)):
-                m = re.search(".*\/(\d+_[^_]+_\d+_[^_]+_(\d+)HS.+)", self.run_directory)
+            if (re.search(".*_\d+HS\d\d[AB]", self.run_dir)):
+                m = re.search(".*\/(\d+_[^_]+_\d+_[^_]+_(\d+)HS.+)", self.run_dir)
                 self._run_id = m.group(2)
-            elif (re.search(".*\d+_[^_]+_\d+_.+", self.run_directory)):
-                m = re.search(".*\/(\d+_([^_]+_\d+)_.*)", self.run_directory)
+            elif (re.search(".*\d+_[^_]+_\d+_.+", self.run_dir)):
+                m = re.search(".*\/(\d+_([^_]+_\d+)_.*)", self.run_dir)
                 self._run_id = m.group(2)
             else:
-                log.warn("Unsupported folder name: " + self.run_directory)
+                log.warn("Unsupported folder name: " + self.run_dir)
 
         return self._run_id
 
     @property
-    def run_directory(self):
-        return self.args.run_directory
+    def run_dir(self):
+        return self.args.run_dir
 
     @property
     def lane_number(self):
@@ -148,7 +148,7 @@ class IlluminaRunProcessing(common.Illumina):
             self._argparser = super(common.Illumina, self).argparser
 
             # overiding r parameter from readset filename to run dir
-            self._argparser.add_argument("-d", "--run", help="run directory", required=True, dest="run_directory")
+            self._argparser.add_argument("-d", "--run", help="run directory", required=True, dest="run_dir")
             self._argparser.add_argument("-p", "--lane", help="lane number", type=int, required=True, dest="lane_number")
             self._argparser.add_argument("-r", "--readsets", help="readset file", type=file, required=False, dest="nanuq_readset_file")
             self._argparser.add_argument("-i", help="illumina casava sheet", type=file, required=False, dest="casava_sheet_file")
@@ -181,8 +181,8 @@ class IlluminaRunProcessing(common.Illumina):
         if (index_length == 0):
             log.info("No Indexes, *NOT* Generating index counts")
         else:
-            input = self.run_directory + os.sep + "RunInfo.xml"
-            output = self.run_directory + os.sep + os.path.basename(self.run_directory) + "_" + str(self.lane_number) + '.metrics'
+            input = self.run_dir + os.sep + "RunInfo.xml"
+            output = self.run_dir + os.sep + os.path.basename(self.run_dir) + "_" + str(self.lane_number) + '.metrics'
 
             job = Job([input], [output], [["index_count", "module_java"]], name="index_" + self.run_id + str(self.lane_number))
             job.command = """\
@@ -205,7 +205,7 @@ java -Djava.io.tmpdir={tmp_dir}\\
                 mistmaches = self.number_of_mismatches,
                 threads = config.param('index_count', 'threads'),
                 barcode_file = config.param('index_count', 'barcode_file'),
-                basecalls_dir = self.run_directory + os.sep + config.param('index_count', 'basecalls_dir'),
+                basecalls_dir = self.run_dir + os.sep + config.param('index_count', 'basecalls_dir'),
                 lane_number = self.lane_number,
                 read_structure = mask,
                 output = output
@@ -254,7 +254,7 @@ configureBclToFastq.pl
  --sample-sheet {sample_sheet}\\
  --fastq-cluster-count 0\\""".format(
                 module = config.param('fastq', 'module_bcl_to_fastq'),
-                input_dir = self.run_directory + os.sep + config.param('fastq', 'basecalls_dir'),
+                input_dir = self.run_dir + os.sep + config.param('fastq', 'basecalls_dir'),
                 output_dir = output_dir,
                 tiles = "s_" + str(self.lane_number),
                 sample_sheet = self.output_dir + os.sep + casava_sheet_prefix + str(self.lane_number) + ".csv"
@@ -545,12 +545,12 @@ configureBclToFastq.pl
                         excluded_files.append(readset.fastq2)
 
         jobs_to_concat = []
-        if (self.run_directory != self.output_dir):
+        if (self.run_dir != self.output_dir):
             copy_command_run_folder = config.param('copy', 'copy_command', required=False).format(
                     exclusion_clauses = "",
                     lane_number = self.lane_number,
-                    source = self.run_directory,
-                    run_name = os.path.basename(self.run_directory)
+                    source = self.run_dir,
+                    run_name = os.path.basename(self.run_dir)
             )
             jobs_to_concat.append(Job(inputs, [output], command=copy_command_run_folder))
 
@@ -558,7 +558,7 @@ configureBclToFastq.pl
                 exclusion_clauses = "\\\n".join(["--exclude '" + file + "'" for file in excluded_files]),
                 lane_number = self.lane_number,
                 source = self.output_dir,
-                run_name = os.path.basename(self.run_directory)
+                run_name = os.path.basename(self.run_dir)
         )
         jobs_to_concat.append(Job(inputs, [output], command=copy_command_output_folder))
         jobs_to_concat.append(Job(command="touch " + output))
@@ -582,7 +582,7 @@ configureBclToFastq.pl
             job.command = notification_command.format(
                 technology = config.param('end_copy_notification', 'technology'),
                 output_dir = self.output_dir,
-                run_name = os.path.basename(self.run_directory),
+                run_name = os.path.basename(self.run_dir),
                 output = output,
                 lane_number = self.lane_number
             )
@@ -744,7 +744,7 @@ configureBclToFastq.pl
 
     def parse_run_info_file(self):
         """ Parse the RunInfo.xml file of the run and returns the list of RunInfoRead objects """
-        reads = XML.parse(self.run_directory + os.sep + "RunInfo.xml").getroot().find('Run').find('Reads')
+        reads = XML.parse(self.run_dir + os.sep + "RunInfo.xml").getroot().find('Run').find('Reads')
         return [RunInfoRead(int(r.get("Number")), int(r.get("NumCycles")), r.get("IsIndexedRead") == "Y") for r in reads.iter('Read')]
 
     def load_readsets(self):
