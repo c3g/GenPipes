@@ -8,8 +8,8 @@ wget https://bitbucket.org/mugqic/mugqic_resources/raw/master/modules/R_Biocondu
 wget https://bitbucket.org/mugqic/mugqic_resources/raw/master/modules/R_mugqic_packages.sh -O R_mugqic_packages.sh
 
 ## Abacus
-sh R_Bioconductor.sh >& abacus.R_Bioconductor.log $@
-sh R_mugqic_packages.sh >& abacus.R_mugqic_packages.log $@
+bash -l R_Bioconductor.sh >& abacus.R_Bioconductor.log $@
+bash -l R_mugqic_packages.sh >& abacus.R_mugqic_packages.log $@
 
 ## Guillimin 
 ssh flefebvre1@guillimin-p2.hpc.mcgill.ca "bash -l -s" -- >& guillimin.R_Bioconductor.log < R_Bioconductor.sh $@
