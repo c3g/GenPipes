@@ -354,6 +354,7 @@ configureBclToFastq.pl
         if (is_nb_blast_per_lane):
             nb_blast_to_do = int(nb_blast_to_do) // len(self.readsets)
 
+        nb_blast_to_do = max(1, nb_blast_to_do)
 
         for readset in self.readsets:
             output_prefix = os.path.join(self.output_dir,
