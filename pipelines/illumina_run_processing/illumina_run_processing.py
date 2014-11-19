@@ -667,11 +667,13 @@ configureBclToFastq.pl
             The sample indexes are trimmed according to the mask used.
         """
         read_masks = self.get_mask().split(",")
+        has_single_index = self.has_single_index();
 
         csv_headers = ["FCID", "Lane", "SampleID" , "SampleRef", "Index", "Description",
                        "Control", "Recipe", "Operator", "SampleProject"]
-        rows = []
-        has_single_index = self.has_single_index();
+        csv_file = self.output_dir + os.sep + config.param('DEFAULT', 'casava_sample_sheet_prefix') + str(self.lane_number) + ".csv"
+        writer = csv.DictWriter(open(csv_file, 'wb'), delimiter=str(','), fieldnames=csv_headers)
+        writer.writeheader()
 
         for readset in self.readsets:
             index_to_use = ""
@@ -715,13 +717,9 @@ configureBclToFastq.pl
                 "Operator" : readset.operator,
                 "SampleProject" : readset.project
             }
-            rows.append(csv_dict)
+            writer.writerow(csv_dict)
 
-        csv_file = self.output_dir + os.sep + config.param('DEFAULT', 'casava_sample_sheet_prefix') + str(self.lane_number) + ".csv"
-        writer = csv.DictWriter(open(csv_file, 'wb'), delimiter=str(','), fieldnames=csv_headers, extrasaction='ignore')
-        writer.writeheader()
 
-        writer.writerows(rows)
 
     def has_single_index(self):
         """ Returns True when there is at least one sample on the lane that doesn't use double-indexing. """
