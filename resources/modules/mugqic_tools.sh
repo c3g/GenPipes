@@ -7,7 +7,7 @@ set -eu -o pipefail
 #
 
 SOFTWARE=mugqic_tools
-VERSION=1.10.4
+VERSION=1.10.5
 
 # 'MUGQIC_INSTALL_HOME_DEV' for development, 'MUGQIC_INSTALL_HOME' for production (don't write '$' before!)
 INSTALL_HOME=MUGQIC_INSTALL_HOME
