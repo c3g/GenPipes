@@ -9,6 +9,7 @@ import re
 import sys
 import itertools
 import xml.etree.ElementTree as XML
+from subprocess import call
 
 # MUGQIC Modules
 from core.config import *
@@ -52,20 +53,13 @@ class RunInfoRead(object):
 
 
 class IlluminaRunProcessing(common.Illumina):
+
     """Main object of the Illumina Run Processing Pipeline."""
 
     @property
     def readsets(self):
         if not hasattr(self, "_readsets"):
-            self._readsets = parse_illumina_raw_readset_files(
-                                                               self.output_dir,
-                                                               "PAIRED_END" if self.is_paired_end else "SINGLE_END",
-                                                               self.nanuq_readset_file,
-                                                               self.casava_sheet_file,
-                                                               self.args.lane_number,
-                                                               config.param('DEFAULT', 'default_species_genome'),
-                                                               config.param('DEFAULT', 'genomes_home')
-                                                               )
+            self._readsets = self.load_readsets()
         return self._readsets
 
     @property
@@ -107,11 +101,11 @@ class IlluminaRunProcessing(common.Illumina):
 
     @property
     def casava_sheet_file(self):
-        return self.args.casava_sheet_file if (self.args.casava_sheet_file) else self.run_directory + os.sep + "SampleSheet.nanuq.csv"
+        return self.args.casava_sheet_file if (self.args.casava_sheet_file) else self.output_dir + os.sep + "SampleSheet.nanuq.csv"
 
     @property
     def nanuq_readset_file(self):
-        return self.args.nanuq_readset_file if (self.args.nanuq_readset_file) else self.run_directory + os.sep + "run.nanuq.csv"
+        return self.args.nanuq_readset_file if (self.args.nanuq_readset_file) else self.output_dir + os.sep + "run.nanuq.csv"
 
     @property
     def number_of_mismatches(self):
@@ -136,7 +130,6 @@ class IlluminaRunProcessing(common.Illumina):
             self.bwa_mem_picard_sort_sam,
             self.picard_mark_duplicates,
             self.metrics,
-            self.picard_calculate_hs_metrics,
             self.bam_md5,
             self.start_copy_notification,
             self.copy,
@@ -155,19 +148,22 @@ class IlluminaRunProcessing(common.Illumina):
             self._argparser = super(common.Illumina, self).argparser
 
             # overiding r parameter from readset filename to run dir
-            self._argparser.add_argument("-r", "--run", help="run directory", required=True, dest="run_directory")
+            self._argparser.add_argument("-d", "--run", help="run directory", required=True, dest="run_directory")
             self._argparser.add_argument("-p", "--lane", help="lane number", type=int, required=True, dest="lane_number")
-            self._argparser.add_argument("-n", "--readsets", help="nanuq run sheet", type=file, required=False, dest="nanuq_readset_file")
+            self._argparser.add_argument("-r", "--readsets", help="readset file", type=file, required=False, dest="nanuq_readset_file")
             self._argparser.add_argument("-i", help="illumina casava sheet", type=file, required=False, dest="casava_sheet_file")
             self._argparser.add_argument("-x", help="first index base to use for demultiplexing", type=int, required=False, dest="first_index")
             self._argparser.add_argument("-y", help="last index base to use for demultiplexing", type=int, required=False, dest="last_index")
             self._argparser.add_argument("-m", help="number of index mistmaches allowed for demultiplexing", type=int, required=False, dest="number_of_mismatches")
+            self._argparser.add_argument("-m", help="number of index mistmaches allowed for demultiplexing", type=int, required=False, dest="number_of_mismatches")
+            self._argparser.add_argument("-w", "--force-download", help="force the download of the samples sheets (default: false)", action="store_true", dest="force_download")
 
         return self._argparser
 
 
     def index_count(self):
         """ Generate a file with all the indexes found in the index-reads of the run.
+
             The file nammed "RUNFOLDER_LANENUMBER.metrics" will be in saved in the output directory.
         """
         jobs = []
@@ -221,6 +217,7 @@ java -Djava.io.tmpdir={tmp_dir}\\
 
     def fastq(self):
         """ Launch fastq generation from Illumina raw data using BCL2FASTQ conversion software.
+
             Demultiplexing, if needed, takes place in this step.
         """
         jobs = []
@@ -287,6 +284,7 @@ configureBclToFastq.pl
 
     def md5(self):
         """ Create md5 checksum files for the fastq using the system 'md5sum' util.
+
             One checksum file will be created for each fastq.
         """
         jobs = []
@@ -310,6 +308,7 @@ configureBclToFastq.pl
 
     def qc_graphs(self):
         """ Generate some QC Graphics and a summary XML file using BVATools.
+
             Files are created in a 'qc' subfolder of the fastq directory.
             Examples of output graphic:
                 - Per cycle qualities, sequence content and sequence length;
@@ -342,6 +341,7 @@ configureBclToFastq.pl
 
     def blast(self):
         """ Run blast on a subsample of the reads to find the 20 most frequent hits.
+
             The "runBlat.sh" util from MUGQIC Tools is used.
             The number of reads to subsample can be configured by sample or for the whole lane.
             The output will be in the "Blast_sample" folder, under the Unaligned folder.
@@ -429,6 +429,8 @@ configureBclToFastq.pl
     def metrics(self):
         """"""
         jobs = []
+        created_interval_lists = []
+        downloaded_bed_files = []
         for readset in [readset for readset in self.readsets if (readset.bam)]:
             input_file_prefix = readset.bam + '.sorted.'
             input = input_file_prefix + "bam"
@@ -438,40 +440,44 @@ configureBclToFastq.pl
             self.copy_step_inputs.extend(job.output_files)
             jobs.append(job)
 
-            job = bvatools.depth_of_coverage(
-                input, 
-                input_file_prefix + "coverage.tsv", 
-                bvatools.resolve_readset_coverage_bed(readset), 
-                other_options = config.param('bvatools_depth_of_coverage', 'other_options', required=False),
-                reference_genome = readset.reference_file
-            )
-
-            job.name = "bvatools_depth_of_coverage." + readset.name
-            self.copy_step_inputs.extend(job.output_files)
-            jobs.append(job)
-
-        return jobs
-
-    def picard_calculate_hs_metrics(self):
-        """"""
-        jobs = []
-
-        created_interval_lists = []
-
-        for readset in [readset for readset in self.readsets if (readset.bam)]:
             coverage_bed = bvatools.resolve_readset_coverage_bed(readset)
             if coverage_bed:
+                full_coverage_bed = self.output_dir + os.sep + coverage_bed
+                if (not os.path.exists(full_coverage_bed)) and (coverage_bed not in downloaded_bed_files):
+                    # Download the bed file
+                    command = config.param('DEFAULT', 'fetch_bed_file_command').format(
+                            output_directory = self.output_dir,
+                            filename = coverage_bed
+                    )
+                    job = Job([], [full_coverage_bed], command=command, name="bed_" + coverage_bed)
+                    downloaded_bed_files.append(coverage_bed)
+                    jobs.append(job)
+
+                job = bvatools.depth_of_coverage(
+                    input, 
+                    input_file_prefix + "coverage.tsv", 
+                    full_coverage_bed, 
+                    other_options = config.param('bvatools_depth_of_coverage', 'other_options', required=False),
+                    reference_genome = readset.reference_file
+                )
+
+                job.name = "bvatools_depth_of_coverage." + readset.name
+                self.copy_step_inputs.extend(job.output_files)
+                jobs.append(job)
+
                 interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
 
                 input_file_prefix = readset.bam + ".sorted.dup."
-                job = picard.calculate_hs_metrics(input_file_prefix + "bam", input_file_prefix + "onTarget.tsv", interval_list)
+                job = picard.calculate_hs_metrics(input_file_prefix + "bam", input_file_prefix + "onTarget.tsv", interval_list, reference_sequence=readset.reference_file)
                 if not interval_list in created_interval_lists:
-                    job = concat_jobs([tools.bed2interval_list(None, coverage_bed, interval_list), job])
+                    ref_dict = os.path.splitext(readset.reference_file)[0] + '.dict'
+                    job = concat_jobs([tools.bed2interval_list(ref_dict, full_coverage_bed, interval_list), job])
                     created_interval_lists.append(interval_list)
 
                 job.name = "picard_calculate_hs_metrics." + readset.name
                 self.copy_step_inputs.extend(job.output_files)
                 jobs.append(job)
+
         return jobs
 
     def bam_md5(self):
@@ -607,6 +613,7 @@ configureBclToFastq.pl
 
     def get_mask(self):
         """ Returns a BCL2FASTQ friendly mask of the reads cycles.
+
             The mask is calculated using:
                 - first base and last base of index;
                 - the index length in the sample sheet;
@@ -654,6 +661,7 @@ configureBclToFastq.pl
 
     def generate_illumina_lane_sample_sheet(self):
         """ Create a sample sheet to use with the BCL2FASTQ software.
+
             Only the samples of the chosen lane will be in the file.
             The sample indexes are trimmed according to the mask used.
         """
@@ -661,6 +669,7 @@ configureBclToFastq.pl
 
         csv_headers = ["FCID", "Lane", "SampleID" , "SampleRef", "Index", "Description",
                        "Control", "Recipe", "Operator", "SampleProject"]
+        rows = []
         has_single_index = self.has_single_index();
 
         for readset in self.readsets:
@@ -682,9 +691,9 @@ configureBclToFastq.pl
                     m = re.match("(n\d+)?(I\d+)(n\d+)?", read_masks[i+1])
                     if m :
                         if m.group(1):
-                            nb_ignored_leading_bases = m.group(1)[1:]
+                            nb_ignored_leading_bases = int(m.group(1)[1:])
                         if m.group(2):
-                            nb_of_index_bases = m.group(2)[1:]
+                            nb_of_index_bases = int(m.group(2)[1:])
 
                     # remove ignored leading bases and trim index to smallest lane index
                     index = indexes[i][nb_ignored_leading_bases:nb_ignored_leading_bases + nb_of_index_bases]
@@ -705,19 +714,17 @@ configureBclToFastq.pl
                 "Operator" : readset.operator,
                 "SampleProject" : readset.project
             }
+            rows.append(csv_dict)
 
         csv_file = self.output_dir + os.sep + config.param('DEFAULT', 'casava_sample_sheet_prefix') + str(self.lane_number) + ".csv"
-        writer = csv.writer(open(csv_file, 'wb'),
-                            delimiter=',',
-                            quotechar="",
-                            fieldnames=csv_headers)
+        writer = csv.DictWriter(open(csv_file, 'wb'), delimiter=str(','), fieldnames=csv_headers, extrasaction='ignore')
         writer.writeheader()
-        for key, value in csv_dict.items():
-            writer.writrerow([key, value])
+
+        writer.writerows(rows)
 
     def has_single_index(self):
         """ Returns True when there is at least one sample on the lane that doesn't use double-indexing. """
-        return len([readset for readset in self.readset if ("-" not in readset.index)]) > 0
+        return len([readset for readset in self.readsets if ("-" not in readset.index)]) > 0
 
     def get_smallest_index_length(self):
         """ Returns a list (for each index read of the run) of the minimum between the number of index cycle on the sequencer and all the index lengths."""
@@ -741,6 +748,44 @@ configureBclToFastq.pl
         reads = XML.parse(self.run_directory + os.sep + "RunInfo.xml").getroot().find('Run').find('Reads')
         return [RunInfoRead(int(r.get("Number")), int(r.get("NumCycles")), r.get("IsIndexedRead") == "Y") for r in reads.iter('Read')]
 
+    def load_readsets(self):
+        """ Download the sample sheets if required or asked for; call the load of these files and return a list of readsets."""
+
+        # Casava sheet download
+        if (not self.args.casava_sheet_file or self.args.download):
+            if (not os.path.exists(self.casava_sheet_file) or self.args.force_download):
+                command = config.param('DEFAULT', 'fetch_casava_sheet_command').format(
+                        output_directory = self.output_dir,
+                        run_id = self.run_id,
+                        filename = self.casava_sheet_file
+                    )
+                return_code = subprocess.call(command, shell=True)
+                if return_code != 0:
+                    raise Exception("Unable to download the Casava Sheet.")
+
+        # Nanuq readset file download
+        if (not self.args.nanuq_readset_file or self.args.download):
+            if (not os.path.exists(self.nanuq_readset_file) or self.args.force_download):
+                command = config.param('DEFAULT', 'fetch_nanuq_sheet_command').format(
+                        output_directory = self.output_dir,
+                        run_id = self.run_id,
+                        filename = self.nanuq_readset_file
+                    )
+                return_code = subprocess.call(command, shell=True)
+                if return_code != 0:
+                    raise Exception("Unable to download the Nanuq readset file.")
+
+        return parse_illumina_raw_readset_files(
+                                                self.output_dir,
+                                                "PAIRED_END" if self.is_paired_end else "SINGLE_END",
+                                                self.nanuq_readset_file,
+                                                self.casava_sheet_file,
+                                                self.args.lane_number,
+                                                config.param('DEFAULT', 'default_species_genome'),
+                                                config.param('DEFAULT', 'genomes_home')
+        )
+
+
 def distance(str1, str2):
     """ Returns the hamming distance. http://code.activestate.com/recipes/499304-hamming-distance/#c2 """
     return sum(itertools.imap(unicode.__ne__, str1, str2))
@@ -748,4 +793,5 @@ def distance(str1, str2):
 
 if __name__ == '__main__': 
     pipeline = IlluminaRunProcessing();
+    pipeline.generate_illumina_lane_sample_sheet()
     pipeline.submit_jobs();
