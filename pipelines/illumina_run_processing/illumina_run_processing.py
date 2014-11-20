@@ -181,7 +181,7 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
             input = self.run_dir + os.sep + "RunInfo.xml"
             output = self.run_dir + os.sep + os.path.basename(self.run_dir) + "_" + str(self.lane_number) + '.metrics'
 
-            job = Job([input], [output], [["index_count", "module_java"]], name="index_" + self.run_id + str(self.lane_number))
+            job = Job([input], [output], [["index_count", "module_java"]], name="index." + self.run_id + str(self.lane_number))
             job.command = """\
 java -Djava.io.tmpdir={tmp_dir}\\
  {java_other_options}\\
@@ -227,7 +227,7 @@ java -Djava.io.tmpdir={tmp_dir}\\
 
         output_dir = self.output_dir + os.sep + "Unaligned." + str(self.lane_number)
 
-        job = Job([input], outputs, name="fastq_" + self.run_id + "_" + str(self.lane_number))
+        job = Job([input], outputs, name="fastq." + self.run_id + "." + str(self.lane_number))
         job.command = "cd {unaligned_folder} && make -j {threads}".format(
             threads = config.param('index_count', 'threads'),
             unaligned_folder = output_dir
@@ -298,7 +298,7 @@ configureBclToFastq.pl
                 command += " && md5sum -b " + readset.fastq2 + " > " + readset.fastq2 + ".md5"
 
 
-            job = Job(inputs, outputs, name="md5_" + readset.name, command=command)
+            job = Job(inputs, outputs, name="md5." + readset.name, command=command)
             self.copy_step_inputs.extend(job.output_files)
             jobs.append(job)
         return jobs
@@ -366,7 +366,7 @@ configureBclToFastq.pl
             job = concat_jobs([
                 Job(command="mkdir -p " + os.path.dirname(output)),
                 Job(inputs, [output], [["blast", "module_mugqic_tools"]], command=command)
-            ], name= "blast_" + readset.name)
+            ], name= "blast." + readset.name)
 
             self.copy_step_inputs.extend(job.output_files)
             jobs.append(job)
@@ -488,7 +488,7 @@ configureBclToFastq.pl
             output_bam = input_bam + ".md5"
             command = "md5sum -b " + input_bai + " > " + output_bai + " && md5sum -b " + input_bam + " > " + output_bam
 
-            job = Job([input_bam], [output_bai, output_bam], name="bmd5_" + readset.name, command=command)
+            job = Job([input_bam], [output_bai, output_bam], name="bmd5." + readset.name, command=command)
             self.copy_step_inputs.extend(job.output_files)
             jobs.append(job)
         return jobs
@@ -504,7 +504,7 @@ configureBclToFastq.pl
 
         notification_command = config.param('start_copy_notification', 'notification_command', required=False)
         if (notification_command):
-            job = Job(inputs, [output1, output2], name="start_copy_" + self.run_id + "_" + str(self.lane_number))
+            job = Job(inputs, [output1, output2], name="start_copy." + self.run_id + "." + str(self.lane_number))
             job.command = notification_command.format(
                 technology = config.param('start_copy_notification', 'technology'),
                 output_dir = self.output_dir,
@@ -561,7 +561,7 @@ configureBclToFastq.pl
         jobs_to_concat.append(Job(command="touch " + output))
 
         job = concat_jobs(jobs_to_concat)
-        job.name = "copy_" + self.run_id + "_" + str(self.lane_number)
+        job.name = "copy." + self.run_id + "." + str(self.lane_number)
 
         jobs.append(job)
         return jobs
@@ -575,7 +575,7 @@ configureBclToFastq.pl
 
         notification_command = config.param('end_copy_notification', 'notification_command', required=False)
         if (notification_command):
-            job = Job([input], [output], name="end_copy_" + self.run_id + "_" + str(self.lane_number))
+            job = Job([input], [output], name="end_copy." + self.run_id + "." + str(self.lane_number))
             job.command = notification_command.format(
                 technology = config.param('end_copy_notification', 'technology'),
                 output_dir = self.output_dir,
