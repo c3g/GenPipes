@@ -226,57 +226,57 @@ java -Djava.io.tmpdir={tmp_dir}\\
             outputs += [readset.fastq2 for readset in self.readsets]
 
         output_dir = self.output_dir + os.sep + "Unaligned." + str(self.lane_number)
+        casava_sheet_prefix = config.param('fastq', 'casava_sample_sheet_prefix')
 
-        job = Job([input], outputs, name="fastq." + self.run_id + "." + str(self.lane_number))
-        job.command = "cd {unaligned_folder} && make -j {threads}".format(
-            threads = config.param('index_count', 'threads'),
-            unaligned_folder = output_dir
+        command = """\
+configureBclToFastq.pl
+--input-dir {input_dir}\\
+--output-dir {output_dir}\\
+--tiles {tiles}\\
+--sample-sheet {sample_sheet}\\
+--fastq-cluster-count 0\\""".format(
+            input_dir = self.run_dir + os.sep + config.param('fastq', 'basecalls_dir'),
+            output_dir = output_dir,
+            tiles = "s_" + str(self.lane_number),
+            sample_sheet = self.output_dir + os.sep + casava_sheet_prefix + str(self.lane_number) + ".csv"
         )
+
+        mask = self.get_mask()
+        demultiplexing = False
+        if (re.search("I", mask)):
+            self.validateBarcodes()
+            demultiplexing = True
+            command += " --mismatches {number_of_mismatches} --use-bases-mask {mask}".format(
+                number_of_mismatches = self.number_of_mismatches,
+                mask = mask
+            )
+
+        job = concat_jobs([
+            Job([input], [], [('fastq', 'module_bcl_to_fastq')], command=command),
+            Job([input], outputs, command="cd {unaligned_folder} && make -j {threads}".format(
+                threads = config.param('index_count', 'threads'),
+                unaligned_folder = output_dir)
+             ),
+            ]
+        )
+        job.name = name="fastq." + self.run_id + "." + str(self.lane_number)
         self.copy_step_inputs.extend(job.output_files)
         jobs.append(job)
 
-        # TODO
-        #if (not job.is_up2date()):
-        if (True):
-            self.validateBarcodes()
-            mask = self.get_mask()
-            casava_sheet_prefix = config.param('fastq', 'casava_sample_sheet_prefix')
-            demultiplexing = False
-            command = """\
-module load {module} &&
-configureBclToFastq.pl
- --input-dir {input_dir}\\
- --output-dir {output_dir}\\
- --tiles {tiles}\\
- --sample-sheet {sample_sheet}\\
- --fastq-cluster-count 0\\""".format(
-                module = config.param('fastq', 'module_bcl_to_fastq'),
-                input_dir = self.run_dir + os.sep + config.param('fastq', 'basecalls_dir'),
-                output_dir = output_dir,
-                tiles = "s_" + str(self.lane_number),
-                sample_sheet = self.output_dir + os.sep + casava_sheet_prefix + str(self.lane_number) + ".csv"
+        notification_command = config.param('fastq_notification', 'command', required=False)
+        if (notification_command):
+            notification_command =notification_command.format(
+                    output_dir = self.output_dir,
+                    number_of_mismatches = self.number_of_mismatches if (demultiplexing) else "-",
+                    lane_number = self.lane_number,
+                    mask = mask if (demultiplexing) else "-",
+                    technology = config.param('fastq', 'technology'),
+                    run_id = self.run_id
             )
-            if (re.search("I", mask)):
-                demultiplexing = True
-                command += " --mismatches {number_of_mismatches} --use-bases-mask {mask}".format(
-                    number_of_mismatches = self.number_of_mismatches,
-                    mask = mask
-                )
-            # TODO output command directly in bash
-            log.info(command)
-
-            notification_command = config.param('fastq', 'notification_command', required=False)
-            if (notification_command):
-                notification_command =notification_command.format(
-                        output_dir = self.output_dir,
-                        number_of_mismatches = self.number_of_mismatches if (demultiplexing) else "-",
-                        lane_number = self.lane_number,
-                        mask = mask if (demultiplexing) else "-",
-                        technology = config.param('fastq', 'technology'),
-                        run_id = self.run_id
-                )
-                # TODO output notification_command directly in bash
-                log.info(notification_command)
+            # Use the same inputs and output of fastq job to send a notification each time the fastq job run
+            job = Job([input], outputs, name="fastq_notification." + self.run_id + "." + str(self.lane_number), command=notification_command)
+            self.copy_step_inputs.extend(job.output_files)
+            jobs.append(job)
         return jobs
 
     def md5(self):
