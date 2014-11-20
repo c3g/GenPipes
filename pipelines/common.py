@@ -73,6 +73,7 @@ class Illumina(MUGQICPipeline):
 
     def __init__(self):
         self.argparser.add_argument("-r", "--readsets", help="readset file", type=file, required=True)
+        super(Illumina, self).__init__()
 
     @property
     def readsets(self):
