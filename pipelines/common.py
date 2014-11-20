@@ -31,7 +31,6 @@ class MUGQICPipeline(Pipeline):
         # Add pipeline specific arguments
         self.argparser.description = "Version: " + self.version + "\n\nFor more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipeline/"
         self.argparser.add_argument("-v", "--version", action="version", version="mugqic_pipelines " + self.version, help="show the version information and exit")
-        self.argparser.add_argument("-r", "--readsets", help="readset file", type=file, required=True)
 
         super(MUGQICPipeline, self).__init__()
 
@@ -71,6 +70,9 @@ wget "{server}?{request}" --quiet --output-document=/dev/null
 # Abstract pipeline gathering common features of all Illumina sequencing pipelines (trimming, etc.)
 # Specific steps must be defined in Illumina children pipelines.
 class Illumina(MUGQICPipeline):
+
+    def __init__(self):
+        self.argparser.add_argument("-r", "--readsets", help="readset file", type=file, required=True)
 
     @property
     def readsets(self):

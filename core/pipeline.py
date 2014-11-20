@@ -66,7 +66,7 @@ class Pipeline(object):
     def argparser(self):
         if not hasattr(self, "_argparser"):
             # Create ArgumentParser with numbered step list as epilog
-            self._argparser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, conflict_handler='resolve', epilog="Steps:\n" + "\n".join([str(idx + 1) + "- " + step.__name__ for idx, step in enumerate(self.steps)]))
+            self._argparser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, epilog="Steps:\n" + "\n".join([str(idx + 1) + "- " + step.__name__ for idx, step in enumerate(self.steps)]))
 
             # Common options for all pipelines
             self._argparser.add_argument("-c", "--config", help="config INI-style list of files; config parameters are overwritten based on files order", nargs="+", type=file, required=True)

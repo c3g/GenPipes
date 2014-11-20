@@ -11,6 +11,9 @@ import itertools
 import xml.etree.ElementTree as XML
 from subprocess import call
 
+# Append mugqic_pipeline directory to Python library path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
+
 # MUGQIC Modules
 from core.config import *
 from core.job import *
@@ -52,9 +55,22 @@ class RunInfoRead(object):
         return self._is_index
 
 
-class IlluminaRunProcessing(common.Illumina):
+class IlluminaRunProcessing(common.MUGQICPipeline):
 
     """Main object of the Illumina Run Processing Pipeline."""
+
+    def __init__(self):
+        self.argparser.add_argument("-d", "--run", help="run directory", required=True, dest="run_dir")
+        self.argparser.add_argument("-p", "--lane", help="lane number", type=int, required=True, dest="lane_number")
+        self.argparser.add_argument("-r", "--readsets", help="readset file", type=file, required=False)
+        self.argparser.add_argument("-i", help="illumina casava sheet", type=file, required=False, dest="casava_sheet_file")
+        self.argparser.add_argument("-x", help="first index base to use for demultiplexing", type=int, required=False, dest="first_index")
+        self.argparser.add_argument("-y", help="last index base to use for demultiplexing", type=int, required=False, dest="last_index")
+        self.argparser.add_argument("-m", help="number of index mistmaches allowed for demultiplexing", type=int, required=False, dest="number_of_mismatches")
+        self.argparser.add_argument("-w", "--force-download", help="force the download of the samples sheets (default: false)", action="store_true", dest="force_download")
+
+        super(IlluminaRunProcessing, self).__init__()
+
 
     @property
     def readsets(self):
@@ -105,7 +121,7 @@ class IlluminaRunProcessing(common.Illumina):
 
     @property
     def nanuq_readset_file(self):
-        return self.args.nanuq_readset_file if (self.args.nanuq_readset_file) else self.output_dir + os.sep + "run.nanuq.csv"
+        return self.args.readsets.name if (self.args.readsets) else self.output_dir + os.sep + "run.nanuq.csv"
 
     @property
     def number_of_mismatches(self):
@@ -141,25 +157,6 @@ class IlluminaRunProcessing(common.Illumina):
         if not hasattr(self, "_read_infos"):
             self._read_infos = self.parse_run_info_file()
         return self._read_infos
-
-    @property
-    def argparser(self):
-        if not hasattr(self, "_argparser"):
-            self._argparser = super(common.Illumina, self).argparser
-
-            # overiding r parameter from readset filename to run dir
-            self._argparser.add_argument("-d", "--run", help="run directory", required=True, dest="run_dir")
-            self._argparser.add_argument("-p", "--lane", help="lane number", type=int, required=True, dest="lane_number")
-            self._argparser.add_argument("-r", "--readsets", help="readset file", type=file, required=False, dest="nanuq_readset_file")
-            self._argparser.add_argument("-i", help="illumina casava sheet", type=file, required=False, dest="casava_sheet_file")
-            self._argparser.add_argument("-x", help="first index base to use for demultiplexing", type=int, required=False, dest="first_index")
-            self._argparser.add_argument("-y", help="last index base to use for demultiplexing", type=int, required=False, dest="last_index")
-            self._argparser.add_argument("-m", help="number of index mistmaches allowed for demultiplexing", type=int, required=False, dest="number_of_mismatches")
-            self._argparser.add_argument("-m", help="number of index mistmaches allowed for demultiplexing", type=int, required=False, dest="number_of_mismatches")
-            self._argparser.add_argument("-w", "--force-download", help="force the download of the samples sheets (default: false)", action="store_true", dest="force_download")
-
-        return self._argparser
-
 
     def index_count(self):
         """ Generate a file with all the indexes found in the index-reads of the run.
@@ -758,12 +755,13 @@ configureBclToFastq.pl
                         run_id = self.run_id,
                         filename = self.casava_sheet_file
                     )
+                log.info(command)
                 return_code = subprocess.call(command, shell=True)
                 if return_code != 0:
                     raise Exception("Unable to download the Casava Sheet.")
 
         # Nanuq readset file download
-        if (not self.args.nanuq_readset_file or self.args.download):
+        if (not self.args.readsets or self.args.download):
             if (not os.path.exists(self.nanuq_readset_file) or self.args.force_download):
                 command = config.param('DEFAULT', 'fetch_nanuq_sheet_command').format(
                         output_directory = self.output_dir,
