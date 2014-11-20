@@ -227,9 +227,11 @@ java -Djava.io.tmpdir={tmp_dir}\\
 
         output_dir = self.output_dir + os.sep + "Unaligned." + str(self.lane_number)
         casava_sheet_prefix = config.param('fastq', 'casava_sample_sheet_prefix')
+        mask = self.get_mask()
+        demultiplexing = False
 
         command = """\
-configureBclToFastq.pl
+rm "{output_dir}"; configureBclToFastq.pl
 --input-dir {input_dir}\\
 --output-dir {output_dir}\\
 --tiles {tiles}\\
@@ -241,8 +243,6 @@ configureBclToFastq.pl
             sample_sheet = self.output_dir + os.sep + casava_sheet_prefix + str(self.lane_number) + ".csv"
         )
 
-        mask = self.get_mask()
-        demultiplexing = False
         if (re.search("I", mask)):
             self.validateBarcodes()
             demultiplexing = True
