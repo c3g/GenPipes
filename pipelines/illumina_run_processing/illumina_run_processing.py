@@ -417,7 +417,7 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
         created_interval_lists = []
         downloaded_bed_files = []
         for readset in [readset for readset in self.readsets if (readset.bam)]:
-            input_file_prefix = readset.bam + '.sorted.'
+            input_file_prefix = readset.bam + '.sorted.dup.'
             input = input_file_prefix + "bam"
 
             job = picard.collect_multiple_metrics(input, input_file_prefix + "all.metrics", reference_sequence=readset.reference_file)
@@ -450,7 +450,6 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
 
                 interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
 
-                input_file_prefix = readset.bam + ".sorted.dup."
                 job = picard.calculate_hs_metrics(input_file_prefix + "bam", input_file_prefix + "onTarget.tsv", interval_list, reference_sequence=readset.reference_file)
                 if not interval_list in created_interval_lists:
                     ref_dict = os.path.splitext(readset.reference_file)[0] + '.dict'
