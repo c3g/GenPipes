@@ -8,6 +8,7 @@ ASSEMBLY=NCBIM37
 ASSEMBLY_SYNONYMS=mm9
 SOURCE=Ensembl
 VERSION=67
+BIOMART_HOST=may2012.archive.ensembl.org
 
 GENOME_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source $GENOME_INSTALL_SCRIPT_DIR/install_genome.sh

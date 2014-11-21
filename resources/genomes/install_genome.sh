@@ -74,11 +74,14 @@ set_urls() {
     NCRNA_URL=$URL_PREFIX/fasta/${SPECIES,,}/ncrna/$SPECIES.$ASSEMBLY.ncrna.fa.gz
     GTF_URL=$URL_PREFIX/gtf/${SPECIES,,}/$SPECIES.$ASSEMBLY.$VERSION.gtf.gz
     VCF_URL=$URL_PREFIX/variation/vcf/${SPECIES,,}/$SPECIES.vcf.gz
+    BIOMART_MART=ENSEMBL_MART_ENSEMBL
     # Retrieve species short name e.g. "mmusculus" for "Mus_musculus"
     SPECIES_SHORT_NAME=`echo ${SPECIES:0:1}${SPECIES#*_} | tr [:upper:] [:lower:]`
     BIOMART_DATASET=${SPECIES_SHORT_NAME}_gene_ensembl
     BIOMART_GENE_ID=ensembl_gene_id
     BIOMART_GO_ID=go_id
+    BIOMART_GO_NAME=name_1006
+    BIOMART_GO_DEFINITION=definition_1006
   
     # Before Ensembl release 76, release number was added in genome and ncrna file names
     if [ $VERSION -lt 76 ]
@@ -151,6 +154,8 @@ set_urls() {
     BIOMART_DATASET=${SPECIES_SHORT_NAME}_eg_gene
     BIOMART_GENE_ID=ensembl_gene_id
     BIOMART_GO_ID=go_accession
+    BIOMART_GO_NAME=go_name_1006
+    BIOMART_GO_DEFINITION=go_definition_1006
   fi
 }
 
@@ -415,7 +420,7 @@ create_go_annotations() {
       module load $module_mugqic_R_packages
       R --no-restore --no-save<<EOF
 suppressPackageStartupMessages(library(gqSeqUtils))
-res = getBMsimple("$BIOMART_HOST","$BIOMART_MART","$BIOMART_DATASET",c("$BIOMART_GENE_ID", "$BIOMART_GO_ID"))
+res = getBMsimple("$BIOMART_HOST","$BIOMART_MART","$BIOMART_DATASET",c("$BIOMART_GENE_ID", "$BIOMART_GO_ID", "$BIOMART_GO_NAME", "$BIOMART_GO_DEFINITION"))
 res = res[ res[["$BIOMART_GENE_ID"]] != '' & res[["$BIOMART_GO_ID"]] != '', ]
 write.table(res, file="$ANNOTATIONS_DIR/$GO", quote=FALSE,sep='\t',col.names=FALSE,row.names=FALSE)
 EOF

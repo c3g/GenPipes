@@ -8,6 +8,7 @@ ASSEMBLY=CanFam3.1
 ASSEMBLY_SYNONYMS=canFam3
 SOURCE=Ensembl
 VERSION=77
+BIOMART_HOST=oct2014.archive.ensembl.org
 
 GENOME_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source $GENOME_INSTALL_SCRIPT_DIR/install_genome.sh

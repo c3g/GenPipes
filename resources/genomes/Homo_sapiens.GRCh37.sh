@@ -8,6 +8,7 @@ ASSEMBLY=GRCh37
 ASSEMBLY_SYNONYMS=hg19
 SOURCE=Ensembl
 VERSION=75
+BIOMART_HOST=feb2014.archive.ensembl.org
 
 GENOME_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source $GENOME_INSTALL_SCRIPT_DIR/install_genome.sh
