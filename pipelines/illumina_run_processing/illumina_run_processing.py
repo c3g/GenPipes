@@ -85,12 +85,6 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         return self._is_paired_end
 
     @property
-    def copy_step_inputs(self):
-        if not hasattr(self, "_copy_step_inputs"):
-            self._copy_step_inputs = []
-        return self._copy_step_inputs
-
-    @property
     def run_id(self):
         """ The run id from the run folder.
             Supports both default folder name configuration and GQ's globaly unique name convention.
@@ -143,7 +137,7 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
             self.md5,
             self.qc_graphs,
             self.blast,
-            self.bwa_mem_picard_sort_sam,
+            self.align,
             self.picard_mark_duplicates,
             self.metrics,
             self.bam_md5,
@@ -207,7 +201,6 @@ java -Djava.io.tmpdir={tmp_dir}\\
                 read_structure = mask,
                 output = output
             )
-            self.copy_step_inputs.extend(job.output_files)
             jobs.append(job)
 
         return jobs
@@ -227,9 +220,11 @@ java -Djava.io.tmpdir={tmp_dir}\\
 
         output_dir = self.output_dir + os.sep + "Unaligned." + str(self.lane_number)
         casava_sheet_prefix = config.param('fastq', 'casava_sample_sheet_prefix')
+        mask = self.get_mask()
+        demultiplexing = False
 
         command = """\
-configureBclToFastq.pl
+rm "{output_dir}"; configureBclToFastq.pl
 --input-dir {input_dir}\\
 --output-dir {output_dir}\\
 --tiles {tiles}\\
@@ -241,8 +236,6 @@ configureBclToFastq.pl
             sample_sheet = self.output_dir + os.sep + casava_sheet_prefix + str(self.lane_number) + ".csv"
         )
 
-        mask = self.get_mask()
-        demultiplexing = False
         if (re.search("I", mask)):
             self.validateBarcodes()
             demultiplexing = True
@@ -260,7 +253,6 @@ configureBclToFastq.pl
             ]
         )
         job.name = name="fastq." + self.run_id + "." + str(self.lane_number)
-        self.copy_step_inputs.extend(job.output_files)
         jobs.append(job)
 
         notification_command = config.param('fastq_notification', 'command', required=False)
@@ -275,7 +267,6 @@ configureBclToFastq.pl
             )
             # Use the same inputs and output of fastq job to send a notification each time the fastq job run
             job = Job([input], outputs, name="fastq_notification." + self.run_id + "." + str(self.lane_number), command=notification_command)
-            self.copy_step_inputs.extend(job.output_files)
             jobs.append(job)
         return jobs
 
@@ -299,7 +290,6 @@ configureBclToFastq.pl
 
 
             job = Job(inputs, outputs, name="md5." + readset.name, command=command)
-            self.copy_step_inputs.extend(job.output_files)
             jobs.append(job)
         return jobs
 
@@ -331,7 +321,6 @@ configureBclToFastq.pl
 
 
             job.name = "qc." + readset.name
-            self.copy_step_inputs.extend(job.output_files)
             jobs.append(job)
 
         return jobs
@@ -368,12 +357,11 @@ configureBclToFastq.pl
                 Job(inputs, [output], [["blast", "module_mugqic_tools"]], command=command)
             ], name= "blast." + readset.name)
 
-            self.copy_step_inputs.extend(job.output_files)
             jobs.append(job)
 
         return jobs
 
-    def bwa_mem_picard_sort_sam(self):
+    def align(self):
         """
         """
         jobs = []
@@ -405,7 +393,6 @@ configureBclToFastq.pl
                 ])
             ], name="bwa_mem_picard_sort_sam." + readset.name)
 
-            self.copy_step_inputs.extend(job.output_files)
             jobs.append(job)
         return jobs
 
@@ -420,7 +407,6 @@ configureBclToFastq.pl
 
             job = picard.mark_duplicates([input], output, metrics_file)
             job.name = "picard_mark_duplicates." + readset.name
-            self.copy_step_inputs.extend(job.output_files)
             jobs.append(job)
         return jobs
 
@@ -435,7 +421,6 @@ configureBclToFastq.pl
 
             job = picard.collect_multiple_metrics(input, input_file_prefix + "all.metrics", reference_sequence=readset.reference_file)
             job.name = "picard_collect_multiple_metrics." + readset.name
-            self.copy_step_inputs.extend(job.output_files)
             jobs.append(job)
 
             coverage_bed = bvatools.resolve_readset_coverage_bed(readset)
@@ -460,7 +445,6 @@ configureBclToFastq.pl
                 )
 
                 job.name = "bvatools_depth_of_coverage." + readset.name
-                self.copy_step_inputs.extend(job.output_files)
                 jobs.append(job)
 
                 interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
@@ -473,7 +457,6 @@ configureBclToFastq.pl
                     created_interval_lists.append(interval_list)
 
                 job.name = "picard_calculate_hs_metrics." + readset.name
-                self.copy_step_inputs.extend(job.output_files)
                 jobs.append(job)
 
         return jobs
@@ -489,15 +472,17 @@ configureBclToFastq.pl
             command = "md5sum -b " + input_bai + " > " + output_bai + " && md5sum -b " + input_bam + " > " + output_bam
 
             job = Job([input_bam], [output_bai, output_bam], name="bmd5." + readset.name, command=command)
-            self.copy_step_inputs.extend(job.output_files)
             jobs.append(job)
         return jobs
 
     def start_copy_notification(self):
         """ Send an optional notification for the processing completion. """
         jobs = []
+        inputs = []
 
-        inputs = self.copy_step_inputs
+        for step in self.step_list[0:[step_function.__name__ for step_function in self.steps].index("copy") - 1]:
+            for job in step.jobs:
+                inputs.extend(job.output_files) 
 
         output1 = "notificationProcessingComplete." + str(self.lane_number) + ".out"
         output2 = "notificationCopyStart." + str(self.lane_number) + ".out"
@@ -520,8 +505,12 @@ configureBclToFastq.pl
     def copy(self):
         """Copy processed files to another place where they can be served or loaded into a LIMS."""
         jobs = []
+        inputs = []
 
-        inputs = self.copy_step_inputs
+        for step in self.step_list[0:[step_function.__name__ for step_function in self.steps].index("copy") - 1]:
+            for job in step.jobs:
+                inputs.extend(job.output_files) 
+
         output = self.output_dir + "copyCompleted." + str(self.lane_number) + ".out"
 
         exclude_bam = config.param('copy', 'exclude_bam', required=False, type='boolean')
