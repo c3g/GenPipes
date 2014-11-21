@@ -132,7 +132,7 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
     @property
     def steps(self):
         return [
-            self.index_count,
+            self.index,
             self.fastq,
             self.md5,
             self.qc_graphs,
@@ -152,7 +152,7 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
             self._read_infos = self.parse_run_info_file()
         return self._read_infos
 
-    def index_count(self):
+    def index(self):
         """ Generate a file with all the indexes found in the index-reads of the run.
 
             The file nammed "RUNFOLDER_LANENUMBER.metrics" will be in saved in the output directory.
@@ -175,7 +175,7 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
             input = self.run_dir + os.sep + "RunInfo.xml"
             output = self.run_dir + os.sep + os.path.basename(self.run_dir) + "_" + str(self.lane_number) + '.metrics'
 
-            job = Job([input], [output], [["index_count", "module_java"]], name="index." + self.run_id + str(self.lane_number))
+            job = Job([input], [output], [["index", "module_java"]], name="index." + self.run_id + "." + str(self.lane_number))
             job.command = """\
 java -Djava.io.tmpdir={tmp_dir}\\
  {java_other_options}\\
@@ -189,14 +189,14 @@ java -Djava.io.tmpdir={tmp_dir}\\
  READ_STRUCTURE={read_structure}\\
  METRICS_FILE={output}\\
  TMP_DIR={tmp_dir}""".format(
-                tmp_dir = config.param('index_count', 'tmp_dir'),
-                java_other_options = config.param('index_count', 'java_other_options'),
-                ram = config.param('index_count', 'ram'),
-                jar = config.param('index_count', 'jar'),
+                tmp_dir = config.param('index', 'tmp_dir'),
+                java_other_options = config.param('index', 'java_other_options'),
+                ram = config.param('index', 'ram'),
+                jar = config.param('index', 'jar'),
                 mistmaches = self.number_of_mismatches,
-                threads = config.param('index_count', 'threads'),
-                barcode_file = config.param('index_count', 'barcode_file'),
-                basecalls_dir = self.run_dir + os.sep + config.param('index_count', 'basecalls_dir'),
+                threads = config.param('index', 'threads'),
+                barcode_file = config.param('index', 'barcode_file'),
+                basecalls_dir = self.run_dir + os.sep + config.param('index', 'basecalls_dir'),
                 lane_number = self.lane_number,
                 read_structure = mask,
                 output = output
@@ -224,12 +224,12 @@ java -Djava.io.tmpdir={tmp_dir}\\
         demultiplexing = False
 
         command = """\
-rm "{output_dir}"; configureBclToFastq.pl
---input-dir {input_dir}\\
---output-dir {output_dir}\\
---tiles {tiles}\\
---sample-sheet {sample_sheet}\\
---fastq-cluster-count 0\\""".format(
+rm -r "{output_dir}"; configureBclToFastq.pl\\
+ --input-dir {input_dir}\\
+ --output-dir {output_dir}\\
+ --tiles {tiles}\\
+ --sample-sheet {sample_sheet}\\
+ --fastq-cluster-count 0""".format(
             input_dir = self.run_dir + os.sep + config.param('fastq', 'basecalls_dir'),
             output_dir = output_dir,
             tiles = "s_" + str(self.lane_number),
@@ -246,18 +246,19 @@ rm "{output_dir}"; configureBclToFastq.pl
 
         job = concat_jobs([
             Job([input], [], [('fastq', 'module_bcl_to_fastq')], command=command),
-            Job([input], outputs, command="cd {unaligned_folder} && make -j {threads}".format(
-                threads = config.param('index_count', 'threads'),
-                unaligned_folder = output_dir)
-             ),
+            Job([input], outputs, command="cd {unaligned_folder} && make -j {threads} && cd {run_output_dir}".format(
+                threads = config.param('fastq', 'threads'),
+                unaligned_folder = output_dir,
+                run_output_dir = self.output_dir
+            )),
             ]
         )
         job.name = name="fastq." + self.run_id + "." + str(self.lane_number)
         jobs.append(job)
 
-        notification_command = config.param('fastq_notification', 'command', required=False)
+        notification_command = config.param('fastq_notification', 'notification_command', required=False)
         if (notification_command):
-            notification_command =notification_command.format(
+            notification_command = notification_command.format(
                     output_dir = self.output_dir,
                     number_of_mismatches = self.number_of_mismatches if (demultiplexing) else "-",
                     lane_number = self.lane_number,
@@ -289,7 +290,7 @@ rm "{output_dir}"; configureBclToFastq.pl
                 command += " && md5sum -b " + readset.fastq2 + " > " + readset.fastq2 + ".md5"
 
 
-            job = Job(inputs, outputs, name="md5." + readset.name, command=command)
+            job = Job(inputs, outputs, name="md5." + readset.name + ".md5." + self.run_id + "." + str(self.lane_number), command=command)
             jobs.append(job)
         return jobs
 
@@ -320,7 +321,7 @@ rm "{output_dir}"; configureBclToFastq.pl
             )
 
 
-            job.name = "qc." + readset.name
+            job.name = "qc." + readset.name + ".qc." + self.run_id + "." + str(self.lane_number)
             jobs.append(job)
 
         return jobs
@@ -355,7 +356,7 @@ rm "{output_dir}"; configureBclToFastq.pl
             job = concat_jobs([
                 Job(command="mkdir -p " + os.path.dirname(output)),
                 Job(inputs, [output], [["blast", "module_mugqic_tools"]], command=command)
-            ], name= "blast." + readset.name)
+            ], name= "blast." + readset.name + ".blast." + self.run_id + "." + str(self.lane_number))
 
             jobs.append(job)
 
@@ -391,7 +392,7 @@ rm "{output_dir}"; configureBclToFastq.pl
                         "coordinate"
                     )
                 ])
-            ], name="bwa_mem_picard_sort_sam." + readset.name)
+            ], name="bwa_mem_picard_sort_sam." + readset.name + ".align." + self.run_id + "." + str(self.lane_number))
 
             jobs.append(job)
         return jobs
@@ -406,7 +407,7 @@ rm "{output_dir}"; configureBclToFastq.pl
             metrics_file = readset.bam + "dup.metrics"
 
             job = picard.mark_duplicates([input], output, metrics_file)
-            job.name = "picard_mark_duplicates." + readset.name
+            job.name = "picard_mark_duplicates." + readset.name + ".dup." + self.run_id + "." + str(self.lane_number)
             jobs.append(job)
         return jobs
 
@@ -416,11 +417,11 @@ rm "{output_dir}"; configureBclToFastq.pl
         created_interval_lists = []
         downloaded_bed_files = []
         for readset in [readset for readset in self.readsets if (readset.bam)]:
-            input_file_prefix = readset.bam + '.sorted.'
+            input_file_prefix = readset.bam + '.sorted.dup.'
             input = input_file_prefix + "bam"
 
             job = picard.collect_multiple_metrics(input, input_file_prefix + "all.metrics", reference_sequence=readset.reference_file)
-            job.name = "picard_collect_multiple_metrics." + readset.name
+            job.name = "picard_collect_multiple_metrics." + readset.name + ".met." + self.run_id + "." + str(self.lane_number)
             jobs.append(job)
 
             coverage_bed = bvatools.resolve_readset_coverage_bed(readset)
@@ -444,19 +445,18 @@ rm "{output_dir}"; configureBclToFastq.pl
                     reference_genome = readset.reference_file
                 )
 
-                job.name = "bvatools_depth_of_coverage." + readset.name
+                job.name = "bvatools_depth_of_coverage." + readset.name + ".doc." + self.run_id + "." + str(self.lane_number)
                 jobs.append(job)
 
                 interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
 
-                input_file_prefix = readset.bam + ".sorted.dup."
                 job = picard.calculate_hs_metrics(input_file_prefix + "bam", input_file_prefix + "onTarget.tsv", interval_list, reference_sequence=readset.reference_file)
                 if not interval_list in created_interval_lists:
                     ref_dict = os.path.splitext(readset.reference_file)[0] + '.dict'
                     job = concat_jobs([tools.bed2interval_list(ref_dict, full_coverage_bed, interval_list), job])
                     created_interval_lists.append(interval_list)
 
-                job.name = "picard_calculate_hs_metrics." + readset.name
+                job.name = "picard_calculate_hs_metrics." + readset.name + ".hs." + self.run_id + "." + str(self.lane_number)
                 jobs.append(job)
 
         return jobs
@@ -471,7 +471,7 @@ rm "{output_dir}"; configureBclToFastq.pl
             output_bam = input_bam + ".md5"
             command = "md5sum -b " + input_bai + " > " + output_bai + " && md5sum -b " + input_bam + " > " + output_bam
 
-            job = Job([input_bam], [output_bai, output_bam], name="bmd5." + readset.name, command=command)
+            job = Job([input_bam], [output_bai, output_bam], name="bmd5." + readset.name + ".bmd5." + self.run_id + "." + str(self.lane_number), command=command)
             jobs.append(job)
         return jobs
 
@@ -489,7 +489,7 @@ rm "{output_dir}"; configureBclToFastq.pl
 
         notification_command = config.param('start_copy_notification', 'notification_command', required=False)
         if (notification_command):
-            job = Job(inputs, [output1, output2], name="start_copy." + self.run_id + "." + str(self.lane_number))
+            job = Job(inputs, [output1, output2], name="start_copy_notification." + self.run_id + "." + str(self.lane_number))
             job.command = notification_command.format(
                 technology = config.param('start_copy_notification', 'technology'),
                 output_dir = self.output_dir,
@@ -511,7 +511,7 @@ rm "{output_dir}"; configureBclToFastq.pl
             for job in step.jobs:
                 inputs.extend(job.output_files) 
 
-        output = self.output_dir + "copyCompleted." + str(self.lane_number) + ".out"
+        output = self.output_dir + os.sep + "copyCompleted." + str(self.lane_number) + ".out"
 
         exclude_bam = config.param('copy', 'exclude_bam', required=False, type='boolean')
         exclude_fastq_with_bam = config.param('copy', 'exclude_fastq_with_bam', required=False, type='boolean')
@@ -541,7 +541,7 @@ rm "{output_dir}"; configureBclToFastq.pl
             jobs_to_concat.append(Job(inputs, [output], command=copy_command_run_folder))
 
         copy_command_output_folder = config.param('copy', 'copy_command', required=False).format(
-                exclusion_clauses = "\\\n".join(["--exclude '" + file + "'" for file in excluded_files]),
+                exclusion_clauses = "\\\n".join([" --exclude '" + file + "'" for file in excluded_files]),
                 lane_number = self.lane_number,
                 source = self.output_dir,
                 run_name = os.path.basename(self.run_dir)
@@ -559,8 +559,8 @@ rm "{output_dir}"; configureBclToFastq.pl
         """ Send an optional notification to notify that the copy is finished. """
         jobs = []
 
-        input = self.output_dir + "copyCompleted." + str(self.lane_number) + ".out"
-        output = self.output_dir + "notificationAssociation." + str(self.lane_number) + ".out"
+        input = self.output_dir + os.sep + "copyCompleted." + str(self.lane_number) + ".out"
+        output = self.output_dir + os.sep +"notificationAssociation." + str(self.lane_number) + ".out"
 
         notification_command = config.param('end_copy_notification', 'notification_command', required=False)
         if (notification_command):

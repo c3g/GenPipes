@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 
 class Job:
 
-    def __init__(self, input_files=[], output_files=[], module_entries = [], name="", command=""):
+    def __init__(self, input_files=[], output_files=[], module_entries = [], name="", command="", removable_files=[]):
         # Remove undefined input/output files if any
         self._input_files = filter(None, input_files)
         self._output_files = filter(None, output_files)
@@ -42,6 +42,10 @@ class Job:
 
     @property
     def output_files(self):
+        return self._output_files
+
+    @property
+    def removable_files(self):
         return self._output_files
 
     @property

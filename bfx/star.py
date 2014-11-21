@@ -36,7 +36,7 @@ def align(
     )
     
     ## Get param from config file
-    num_threads = config.param('star_align', 'threads')
+    num_threads = config.param('star_align', 'threads', type='int')
     ram_limit = config.param('star_align', 'ram')
     max_ram = int(utils.number_symbol_converter(ram_limit))
     io_limit = config.param('star_align', 'io_buffer')
@@ -47,7 +47,7 @@ def align(
     
     ## Wiggle information
     if create_wiggle_track:
-        wig_cmd = "--outWigType wiggle read1 5p"
+        wig_cmd = "--outWigType wiggle read1_5p"
         if stranded.lower() == "stranded":
             wig_cmd = wig_cmd + " --outWigStrand Stranded"
         elif stranded.lower() == "unstranded":
@@ -87,6 +87,7 @@ STAR --runMode alignReads \\
   --outSAMunmapped Within \\
   --outSAMtype BAM {sort_value} \\
   --limitGenomeGenerateRAM {ram} \\
+  --outFileNamePrefix {output_directory}/ \\
   {sort_ram} \\
   {io_limit_size} \\
   {wig_param} \\
@@ -130,8 +131,8 @@ def index(
     )
 
     ## get param form config filepat
-    reference_fasta = config.param('star_index', 'threads', required=True)
-    num_threads = config.param('star_index', 'threads')
+    reference_fasta = config.param('star_index', 'genome_fasta', required=True)
+    num_threads = config.param('star_index', 'threads', type='int')
     ram_limit = config.param('star_index', 'ram')
     max_ram = int(utils.number_symbol_converter(ram_limit))
     io_limit = config.param('star_index', 'io_buffer')
@@ -153,12 +154,12 @@ STAR --runMode genomeGenerate \\
         genome_index_folder=genome_index_folder,
         other_options=config.param('star_index', 'other_options', required=False),
         num_threads=num_threads if str(num_threads) != "" and isinstance(num_threads, int) and  num_threads > 0 else 1,  
-        ram=int(max_ram/2),
+        ram=max_ram,
         reference_fasta=reference_fasta,
         junction_file=junction_file,
         gtf=" \\\n  --sjdbGTFfile " + gtf if gtf else "",
-        sjdbOverhang="\\\n  --sjdbOverhang " + (read_size - 1) if str(read_size) != "" and isinstance(read_size, int) and  read_size > 0 else "",
-        io_limit_size="\\\n  --limitIObufferSize " + io_max if io_max else ""
+        sjdbOverhang="\\\n  --sjdbOverhang " + str(read_size - 1) if str(read_size) != "" and isinstance(read_size, int) and  read_size > 0 else "",
+        io_limit_size="\\\n  --limitIObufferSize " + str(io_max) if io_max else ""
     )
     
     return job
@@ -177,7 +178,7 @@ def concatenate_junction(
     
     
     job.command = """\
-cat {file_list} | awk 'BEGIN {OFS="\t"; strChar[0]="."; strChar[1]="+"; strChar[2]="-";} {if($5>0){print $1,$2,$3,strChar[$4]}}' |sort -k1,1h -k2,2n > {output_junction_file}""".format(
+cat {file_list} | awk 'BEGIN {{OFS="\t"; strChar[0]="."; strChar[1]="+"; strChar[2]="-"}} {{if($5>0){{print $1,$2,$3,strChar[$4]}}}}' |sort -k1,1h -k2,2n > {output_junction_file}""".format(
     file_list=" ".join(input_junction_files_list),
     output_junction_file=output_junction_file
     )

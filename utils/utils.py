@@ -8,6 +8,7 @@ import os
 import re
 import string
 import sys
+import shutil
 
 log = logging.getLogger(__name__)
 
@@ -32,4 +33,10 @@ def number_symbol_converter(x):
     except: 
         raise Exception("Number abbreviation \"" + x + "\" is not a number abbreviation")
 
+
+def cleanFiles(x):
+    ##x must be a list of files path 
+    for i in x:
+        shutil.rmtree(i)
+        print i +"is now removed\n"
 
