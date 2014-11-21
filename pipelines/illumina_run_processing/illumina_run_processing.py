@@ -771,6 +771,10 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
                                                 config.param('DEFAULT', 'genomes_home')
         )
 
+    def submit_jobs(self):
+        self.generate_illumina_lane_sample_sheet()
+        super(IlluminaRunProcessing, self).submit_jobs()
+
 
 def distance(str1, str2):
     """ Returns the hamming distance. http://code.activestate.com/recipes/499304-hamming-distance/#c2 """
@@ -778,6 +782,5 @@ def distance(str1, str2):
 
 
 if __name__ == '__main__': 
-    pipeline = IlluminaRunProcessing();
-    pipeline.generate_illumina_lane_sample_sheet()
-    pipeline.submit_jobs();
+    IlluminaRunProcessing()
+
