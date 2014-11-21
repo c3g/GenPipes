@@ -246,10 +246,11 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
 
         job = concat_jobs([
             Job([input], [], [('fastq', 'module_bcl_to_fastq')], command=command),
-            Job([input], outputs, command="cd {unaligned_folder} && make -j {threads}".format(
+            Job([input], outputs, command="cd {unaligned_folder} && make -j {threads} && cd {run_output_dir}".format(
                 threads = config.param('fastq', 'threads'),
-                unaligned_folder = output_dir)
-             ),
+                unaligned_folder = output_dir,
+                run_output_dir = self.output_dir
+            )),
             ]
         )
         job.name = name="fastq." + self.run_id + "." + str(self.lane_number)
@@ -289,7 +290,7 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
                 command += " && md5sum -b " + readset.fastq2 + " > " + readset.fastq2 + ".md5"
 
 
-            job = Job(inputs, outputs, name="md5." + readset.name + ".md5", command=command)
+            job = Job(inputs, outputs, name="md5." + readset.name + ".md5." + self.run_id + "." + str(self.lane_number), command=command)
             jobs.append(job)
         return jobs
 
@@ -320,7 +321,7 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
             )
 
 
-            job.name = "qc." + readset.name + ".qc"
+            job.name = "qc." + readset.name + ".qc." + self.run_id + "." + str(self.lane_number)
             jobs.append(job)
 
         return jobs
@@ -355,7 +356,7 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
             job = concat_jobs([
                 Job(command="mkdir -p " + os.path.dirname(output)),
                 Job(inputs, [output], [["blast", "module_mugqic_tools"]], command=command)
-            ], name= "blast." + readset.name + ".blast")
+            ], name= "blast." + readset.name + ".blast." + self.run_id + "." + str(self.lane_number))
 
             jobs.append(job)
 
@@ -391,7 +392,7 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
                         "coordinate"
                     )
                 ])
-            ], name="bwa_mem_picard_sort_sam." + readset.name + ".align")
+            ], name="bwa_mem_picard_sort_sam." + readset.name + ".align." + self.run_id + "." + str(self.lane_number))
 
             jobs.append(job)
         return jobs
@@ -406,7 +407,7 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
             metrics_file = readset.bam + "dup.metrics"
 
             job = picard.mark_duplicates([input], output, metrics_file)
-            job.name = "picard_mark_duplicates." + readset.name + ".dup"
+            job.name = "picard_mark_duplicates." + readset.name + ".dup." + self.run_id + "." + str(self.lane_number)
             jobs.append(job)
         return jobs
 
@@ -420,7 +421,7 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
             input = input_file_prefix + "bam"
 
             job = picard.collect_multiple_metrics(input, input_file_prefix + "all.metrics", reference_sequence=readset.reference_file)
-            job.name = "picard_collect_multiple_metrics." + readset.name
+            job.name = "picard_collect_multiple_metrics." + readset.name + ".met." + self.run_id + "." + str(self.lane_number)
             jobs.append(job)
 
             coverage_bed = bvatools.resolve_readset_coverage_bed(readset)
@@ -444,7 +445,7 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
                     reference_genome = readset.reference_file
                 )
 
-                job.name = "bvatools_depth_of_coverage." + readset.name + ".doc"
+                job.name = "bvatools_depth_of_coverage." + readset.name + ".doc." + self.run_id + "." + str(self.lane_number)
                 jobs.append(job)
 
                 interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
@@ -456,7 +457,7 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
                     job = concat_jobs([tools.bed2interval_list(ref_dict, full_coverage_bed, interval_list), job])
                     created_interval_lists.append(interval_list)
 
-                job.name = "picard_calculate_hs_metrics." + readset.name + ".hs"
+                job.name = "picard_calculate_hs_metrics." + readset.name + ".hs." + self.run_id + "." + str(self.lane_number)
                 jobs.append(job)
 
         return jobs
@@ -471,7 +472,7 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
             output_bam = input_bam + ".md5"
             command = "md5sum -b " + input_bai + " > " + output_bai + " && md5sum -b " + input_bam + " > " + output_bam
 
-            job = Job([input_bam], [output_bai, output_bam], name="bmd5." + readset.name + ".bmd5", command=command)
+            job = Job([input_bam], [output_bai, output_bam], name="bmd5." + readset.name + ".bmd5." + self.run_id + "." + str(self.lane_number), command=command)
             jobs.append(job)
         return jobs
 
