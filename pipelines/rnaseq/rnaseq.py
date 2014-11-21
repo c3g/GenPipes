@@ -21,6 +21,7 @@ from bfx.readset import *
 from bfx import bedtools
 from bfx import cufflinks
 from bfx import differential_expression
+from bfx import gq_seq_utils
 from bfx import htseq
 from bfx import metrics
 from bfx import picard
@@ -31,6 +32,12 @@ from pipelines import common
 log = logging.getLogger(__name__)
 
 class RnaSeq(common.Illumina):
+
+    def __init__(self):
+        # Add pipeline specific arguments
+        self.argparser.add_argument("-d", "--design", help="design file", type=file)
+
+        super(RnaSeq, self).__init__()
 
     def star(self):
         jobs = []
@@ -458,6 +465,16 @@ cat \\
 
         return jobs
 
+    def gq_seq_utils_exploratory_rnaseq(self):
+        return [concat_jobs([
+            Job(command="mkdir -p exploratory"),
+            gq_seq_utils.exploratory_rnaseq(
+                os.path.abspath(self.args.readsets.name),
+                self.output_dir,
+                [config_file.name for config_file in self.args.config]
+            )
+        ], name="gq_seq_utils_exploratory_rnaseq")]
+
     @property
     def steps(self):
         return [
@@ -474,15 +491,10 @@ cat \\
             self.raw_counts_metrics,
             self.cufflinks,
             self.cuffdiff,
+            self.gq_seq_utils_exploratory_rnaseq,
             self.differential_expression,
             self.differential_expression_goseq
         ]
 
-    def __init__(self):
-        # Add pipeline specific arguments
-        self.argparser.add_argument("-d", "--design", help="design file", type=file)
-
-        super(RnaSeq, self).__init__()
-        
 if __name__ == '__main__':
-    RnaSeq().submit_jobs()
+    RnaSeq()
