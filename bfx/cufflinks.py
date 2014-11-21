@@ -36,18 +36,18 @@ formatDenovoCombinedGTF.py \\
 
     return job
 
-def cuffdiff(sample_replicate_group_bams, gtf, output_directory):
+def cuffdiff(sample_replicate_group_files, gtf, output_directory):
 
-    # sample_replicate_group_bams is a list of lists of replicates per sample
+    # sample_replicate_group_files is a list of lists of replicates per sample
     # Flatten this list to set job input files
-    input_bams = []
-    for sample_replicate_bams in sample_replicate_group_bams:
-        input_bams.extend(sample_replicate_bams)
+    input_files = []
+    for sample_replicate_files in sample_replicate_group_files:
+        input_files.extend(sample_replicate_files)
 
     job = Job(
-        input_bams + [gtf],
+        input_files + [gtf],
         [os.path.join(output_directory, "isoform_exp.diff")],
-        [['cuffcompare', 'module_cufflinks']]
+        [['cuffdiff', 'module_cufflinks']]
     )
 
     job.command = """\
@@ -58,7 +58,7 @@ cuffdiff {other_options} \\
   --output-dir {output_directory} \\
   --num-threads {num_threads} \\
   {gtf} \\
-  {input_bams}""".format(
+  {input_files}""".format(
         other_options=config.param('cuffdiff', 'other_options'),
         genome_fasta=config.param('cuffdiff', 'genome_fasta', type='filepath'),
         library_type=config.param('cuffdiff', 'strand_info'),
@@ -66,7 +66,7 @@ cuffdiff {other_options} \\
         num_threads=config.param('cuffdiff', 'threads', type='posint'),
         gtf=gtf,
         # Join replicate bams per sample with a "," then join all sample replicate groups with a " "
-        input_bams=" \\\n  ".join([",".join(sample_replicate_bams) for sample_replicate_bams in sample_replicate_group_bams])
+        input_files=" \\\n  ".join([",".join(sample_replicate_files) for sample_replicate_files in sample_replicate_group_files])
     )
 
     return job
@@ -102,7 +102,7 @@ def cuffmerge(sample_file, output_directory, gtf_file=None):
 
     job = Job(
         [sample_file],
-        [output_directory],
+        [os.path.join(output_directory, "merged.gtf")],
         [['cuffmerge', 'module_cufflinks']]
     )
     
@@ -118,6 +118,60 @@ cuffmerge {gtf} \\
         output_directory=output_directory,
         num_threads=config.param('cuffmerge', 'threads', type='posint'),
         sample_file=sample_file
+    )
+
+    return job
+
+def cuffquant(input_bam, output_directory, gtf):
+
+    job = Job(
+        [input_bam],
+        [os.path.join(output_directory, "abundances.cxb")],
+        [['cuffquant', 'module_cufflinks']]
+    )
+
+    job.command = """\
+mkdir -p {output_directory} && \\
+cuffquant -q {other_options}\\
+  --max-bundle-frags {max_bundle_frags} \\
+  --library-type {library_type} \\
+  --output-dir {output_directory} \\
+  --num-threads {num_threads} \\
+  {gtf} \\
+  {input_bam}""".format(
+        other_options=config.param('cuffquant', 'other_options', required=False),
+        gtf=gtf,
+        max_bundle_frags=config.param('cuffquant', 'max_bundle_frags', type='int'),
+        library_type=config.param('cuffquant', 'strand_info'),
+        output_directory=output_directory,
+        num_threads=config.param('cuffquant', 'threads', type='posint'),
+        input_bam=input_bam
+    )
+
+    return job
+
+def cuffnorm(input_files, gtf, output_directory):
+
+    job = Job(
+        input_files+[gtf],
+        [os.path.join(output_directory, "isoform.fpkm_table"),os.path.join(output_directory, "isoform.count_table")],
+        [['cuffnorm', 'module_cufflinks']]
+    )
+
+    job.command = """\
+mkdir -p {output_directory} && \\
+cuffnorm -q {other_options}\\
+  --library-type {library_type} \\
+  --output-dir {output_directory} \\
+  --num-threads {num_threads} \\
+  {gtf} \\
+  {input_files}""".format(
+        other_options=config.param('cuffnorm', 'other_options', required=False),
+        gtf=gtf,
+        library_type=config.param('cuffnorm', 'strand_info'),
+        output_directory=output_directory,
+        num_threads=config.param('cuffnorm', 'threads', type='posint'),
+        input_files=" \\\n  ".join(input_files)
     )
 
     return job

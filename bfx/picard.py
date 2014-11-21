@@ -184,7 +184,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
 
     return job
 
-def sort_sam(input, output, sort_order):
+def sort_sam(input, output, sort_order="coordinate"):
 
     job = Job([input], [output], [['picard_sort_sam', 'module_java'], ['picard_sort_sam', 'module_picard']])
 
