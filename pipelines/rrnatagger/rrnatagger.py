@@ -185,7 +185,7 @@ class RRNATagger(common.Illumina):
 if __name__ == "__main__":
     # RRNATagger pipeline is under development
     raise NotImplementedError
-    RRNATagger().submit_jobs()
+    RRNATagger()
 
 # Steps from old Perl pipeline:
 

@@ -872,4 +872,4 @@ class Puure(common.Illumina):
 if __name__ == "__main__": 
     # PUUre has not been completely tested
     raise NotImplementedError
-    Puure().submit_jobs()
+    Puure()

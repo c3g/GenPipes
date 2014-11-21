@@ -678,4 +678,4 @@ rm {dge_results}.tmp""".format(
         super(RnaSeqDeNovoAssembly, self).__init__()
 
 if __name__ == '__main__':
-    RnaSeqDeNovoAssembly().submit_jobs()
+    RnaSeqDeNovoAssembly()

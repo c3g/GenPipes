@@ -563,4 +563,4 @@ class DnaSeq(common.Illumina):
         ]
 
 if __name__ == '__main__': 
-    DnaSeq().submit_jobs()
+    DnaSeq()
