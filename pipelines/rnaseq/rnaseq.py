@@ -431,7 +431,7 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
         return jobs
 
     def differential_expression(self):
-        # If --design is missing, this will raise an Exception
+        # If --design <design_file> option is missing, self.contrasts call will raise an Exception
         if self.contrasts:
             design_file = os.path.relpath(self.args.design.name, self.output_dir)
         output_directory = "DGE"
@@ -448,6 +448,30 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
             edger_job,
             deseq_job
         ], name="differential_expression")]
+
+    def differential_expression_goseq(self):
+        jobs = []
+
+        for contrast in self.contrasts:
+            # goseq for cuffdiff known results
+            job = differential_expression.goseq(
+                os.path.join("cuffdiff", "known", contrast.name, "isoform_exp.diff"),
+                config.param("differential_expression_goseq", "cuffdiff_input_columns"),
+                os.path.join("cuffdiff", "known", contrast.name, "gene_ontology_results.csv")
+            )
+            job.name = "differential_expression_goseq.cuffdiff.known." + contrast.name
+            jobs.append(job)
+
+            # goseq for dge results
+            job = differential_expression.goseq(
+                os.path.join("DGE", contrast.name, "dge_results.csv"),
+                config.param("differential_expression_goseq", "dge_input_columns"),
+                os.path.join("DGE", contrast.name, "gene_ontology_results.csv")
+            )
+            job.name = "differential_expression_goseq.dge." + contrast.name
+            jobs.append(job)
+
+        return jobs
 
     @property
     def steps(self):
@@ -468,7 +492,8 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
             self.cuffquant,
             self.cuffdiff,
             self.cuffnorm,
-            self.differential_expression
+            self.differential_expression,
+            self.differential_expression_goseq
         ]
 
     def __init__(self):

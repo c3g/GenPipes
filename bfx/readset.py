@@ -147,6 +147,10 @@ class IlluminaRawReadset(IlluminaReadset):
         return self._reference_assembly
 
     @property
+    def aligner(self):
+        return self._aligner
+
+    @property
     def aligner_reference_file(self):
         return self._aligner_reference_file
 
@@ -211,6 +215,14 @@ def parse_illumina_raw_readset_files(output_dir, run_type, nanuq_readset_file, c
         readset._quality_offset = 33
         readset._library = line['Library Barcode']
         readset._library_source = line['Library Source']
+
+        # TODO change aligner to support RNA-seq data
+        #if re.search("RNA|cDNA", readset.library_source):
+        #    readset._aligner = "star"
+        #else:
+        #    readset._aligner = "bwa"
+        readset._aligner = "bwa"
+
         readset._run = line['Run']
         readset._lane = current_lane
         readset._adaptor1 = line['Adaptor Read 1 (NOTE: Usage is bound by Illumina Disclaimer found on Nanuq Project Page)']
@@ -256,24 +268,29 @@ def parse_illumina_raw_readset_files(output_dir, run_type, nanuq_readset_file, c
         for genome in default_species_genome.split('~'):
             values = genome.split(':')
             if (re.match(values[0], readset.species, re.IGNORECASE)) :
-                aligner_reference_file = os.path.join(genome_root, values[1] + "." + values[2],
-                                              "genome",
-                                              "bwa_index",
-                                              values[1] + "." + values[2] + ".fa")
+                aligner_reference_file = ""
+                if (readset.aligner == "bwa"):
+                    aligner_reference_file = os.path.join(genome_root, values[1] + "." + values[2],
+                                                          "genome",
+                                                          "bwa_index",
+                                                          values[1] + "." + values[2] + ".fa")
                 reference_file = os.path.join(genome_root, values[1] + "." + values[2],
                                               "genome",
                                               values[1] + "." + values[2] + ".fa")
-                if (os.path.isfile(reference_file) and os.path.isfile(aligner_reference_file)):
-                    readset._aligner_reference_file = aligner_reference_file
-                    readset._reference_file = reference_file
-                    readset._reference_species = values[1]
-                    readset._reference_assembly = values[2]
-                    readset._bam = os.path.join(output_dir,
-                                                "Aligned." + readset.lane,
-                                                'alignment',
-                                                readset.sample.name,
-                                                'run' + readset.run + "_" + readset.lane,
-                                                readset.sample.name + readset.library)
+                if reference_file and os.path.isfile(reference_file):
+                    if aligner_reference_file and os.path.isfile(aligner_reference_file):
+                        readset._aligner_reference_file = aligner_reference_file
+                        readset._reference_file = reference_file
+                        readset._reference_species = values[1]
+                        readset._reference_assembly = values[2]
+                        readset._bam = os.path.join(output_dir,
+                                                    "Aligned." + readset.lane,
+                                                    'alignment',
+                                                    readset.sample.name,
+                                                    'run' + readset.run + "_" + readset.lane,
+                                                    readset.sample.name + readset.library)
+                    else:
+                        log.warning("Unable to access the aligner reference file: '" + aligner_reference_file + "'")
                 else:
                     log.warning("Unable to access the reference file: '" + reference_file + "'")
 

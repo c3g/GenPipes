@@ -6,7 +6,8 @@ module_bowtie=mugqic/bowtie/2.1.0
 module_bwa=mugqic/bwa/0.7.10
 module_java=mugqic/java/openjdk-jdk1.7.0_60
 module_picard=mugqic/picard/1.108
-module_R=mugqic/R/3.1.1
+module_R=mugqic_dev/R_Bioconductor/3.1.2_3.0
+module_mugqic_R_packages=mugqic_dev/mugqic_R_packages/master
 module_samtools=mugqic/samtools/0.1.19
 module_star=mugqic/star/2.4.0e
 module_tophat=mugqic/tophat/2.0.11
@@ -28,6 +29,7 @@ init_install() {
   NCRNA=$SPECIES.$ASSEMBLY.$SOURCE$VERSION.ncrna.fa
   RRNA=$SPECIES.$ASSEMBLY.$SOURCE$VERSION.rrna.fa
   VCF=$SPECIES.$ASSEMBLY.$SOURCE$VERSION.vcf.gz
+  GO=$SPECIES.$ASSEMBLY.$SOURCE$VERSION.GO.tsv
 
   echo Installing genome for:
   echo species: $SPECIES
@@ -72,6 +74,14 @@ set_urls() {
     NCRNA_URL=$URL_PREFIX/fasta/${SPECIES,,}/ncrna/$SPECIES.$ASSEMBLY.ncrna.fa.gz
     GTF_URL=$URL_PREFIX/gtf/${SPECIES,,}/$SPECIES.$ASSEMBLY.$VERSION.gtf.gz
     VCF_URL=$URL_PREFIX/variation/vcf/${SPECIES,,}/$SPECIES.vcf.gz
+    BIOMART_MART=ENSEMBL_MART_ENSEMBL
+    # Retrieve species short name e.g. "mmusculus" for "Mus_musculus"
+    SPECIES_SHORT_NAME=`echo ${SPECIES:0:1}${SPECIES#*_} | tr [:upper:] [:lower:]`
+    BIOMART_DATASET=${SPECIES_SHORT_NAME}_gene_ensembl
+    BIOMART_GENE_ID=ensembl_gene_id
+    BIOMART_GO_ID=go_id
+    BIOMART_GO_NAME=name_1006
+    BIOMART_GO_DEFINITION=definition_1006
   
     # Before Ensembl release 76, release number was added in genome and ncrna file names
     if [ $VERSION -lt 76 ]
@@ -139,6 +149,13 @@ set_urls() {
     else
       echo VCF not available for $SPECIES
     fi
+    # Retrieve species short name e.g. "athaliana" for "Arabidopsis_thaliana"
+    SPECIES_SHORT_NAME=`echo ${SPECIES:0:1}${SPECIES#*_} | tr [:upper:] [:lower:]`
+    BIOMART_DATASET=${SPECIES_SHORT_NAME}_eg_gene
+    BIOMART_GENE_ID=ensembl_gene_id
+    BIOMART_GO_ID=go_accession
+    BIOMART_GO_NAME=go_name_1006
+    BIOMART_GO_DEFINITION=go_definition_1006
   fi
 }
 
@@ -390,6 +407,31 @@ EOF
   fi
 }
 
+create_go_annotations() {
+
+  if [ ! -z "${BIOMART_HOST:-}" ]
+  then
+    if ! is_up2date $ANNOTATIONS_DIR/$GO
+    then
+      echo
+      echo Retrieving GO annotations using BioMart...
+      echo
+      module load $module_R
+      module load $module_mugqic_R_packages
+      R --no-restore --no-save<<EOF
+suppressPackageStartupMessages(library(gqSeqUtils))
+res = getBMsimple("$BIOMART_HOST","$BIOMART_MART","$BIOMART_DATASET",c("$BIOMART_GENE_ID", "$BIOMART_GO_ID", "$BIOMART_GO_NAME", "$BIOMART_GO_DEFINITION"))
+res = res[ res[["$BIOMART_GENE_ID"]] != '' & res[["$BIOMART_GO_ID"]] != '', ]
+write.table(res, file="$ANNOTATIONS_DIR/$GO", quote=FALSE,sep='\t',col.names=FALSE,row.names=FALSE)
+EOF
+    else
+      echo
+      echo GO annotations up to date... skipping
+      echo
+    fi
+  fi
+}
+
 get_vcf_dbsnp() {
   # Try to retrieve VCF dbSNP latest version (set +e since zgrep exit code != 0 if not found)
   set +e
@@ -440,6 +482,7 @@ build_files() {
   create_ncrna_bwa_index
   create_rrna_bwa_index
   create_gene_annotations
+  create_go_annotations
 }
 
 create_genome_ini_file() {
