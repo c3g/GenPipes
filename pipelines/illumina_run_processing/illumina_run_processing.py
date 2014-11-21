@@ -247,7 +247,7 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
         job = concat_jobs([
             Job([input], [], [('fastq', 'module_bcl_to_fastq')], command=command),
             Job([input], outputs, command="cd {unaligned_folder} && make -j {threads}".format(
-                threads = config.param('index_count', 'threads'),
+                threads = config.param('fastq', 'threads'),
                 unaligned_folder = output_dir)
              ),
             ]
@@ -541,7 +541,7 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
             jobs_to_concat.append(Job(inputs, [output], command=copy_command_run_folder))
 
         copy_command_output_folder = config.param('copy', 'copy_command', required=False).format(
-                exclusion_clauses = "\\\n".join(["--exclude '" + file + "'" for file in excluded_files]),
+                exclusion_clauses = "\\\n".join([" --exclude '" + file + "'" for file in excluded_files]),
                 lane_number = self.lane_number,
                 source = self.output_dir,
                 run_name = os.path.basename(self.run_dir)
