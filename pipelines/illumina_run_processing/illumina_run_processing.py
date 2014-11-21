@@ -137,7 +137,7 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
             self.md5,
             self.qc_graphs,
             self.blast,
-            self.bwa_mem_picard_sort_sam,
+            self.align,
             self.picard_mark_duplicates,
             self.metrics,
             self.bam_md5,
@@ -361,7 +361,7 @@ rm "{output_dir}"; configureBclToFastq.pl
 
         return jobs
 
-    def bwa_mem_picard_sort_sam(self):
+    def align(self):
         """
         """
         jobs = []
