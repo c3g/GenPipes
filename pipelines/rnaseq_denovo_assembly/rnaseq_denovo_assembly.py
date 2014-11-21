@@ -103,6 +103,7 @@ class RnaSeqDeNovoAssembly(common.Illumina):
                 config.param('insilico_read_normalization_readsets', 'cpu', required=False, type='int')
             )
 
+            job.removable_files = [normalization_directory]
             job.name = "insilico_read_normalization_readsets." + readset.name
             jobs.append(job)
 
@@ -110,6 +111,7 @@ class RnaSeqDeNovoAssembly(common.Illumina):
 
     def insilico_read_normalization_all(self):
         normalization_directory = "insilico_read_normalization"
+        normalization_directory_all = os.path.join(normalization_directory, "all")
         left_or_single_reads = []
         right_reads = []
 
@@ -128,10 +130,11 @@ class RnaSeqDeNovoAssembly(common.Illumina):
             right_reads,
             "fq",
             config.param('insilico_read_normalization_all', 'jellyfish_memory'),
-            os.path.join(normalization_directory, "all"),
+            normalization_directory_all,
             config.param('insilico_read_normalization_all', 'cpu', required=False, type='int')
         )
 
+        job.removable_files = [normalization_directory_all]
         job.name = "insilico_read_normalization_all"
         return [job]
 
@@ -173,6 +176,8 @@ Trinity {other_options} \\
             reads_option=reads_option,
             output_directory=output_directory
         )
+
+        trinity_job.removable_files = [output_directory]
 
         return [concat_jobs([
             trinity_job,

@@ -181,12 +181,12 @@ class Pipeline(object):
         self.scheduler.submit(self)
 
     def clean_jobs(self):
-        self.scheduler.print_header(self)
         for step in self.step_range:
             for job in step.jobs:
-                for removable_file in job.removable_files:
+                abspath_removable_files = [job.abspath(removable_file) for removable_file in job.removable_files]
+                for removable_file in abspath_removable_files:
                     if os.path.exists(removable_file):
-                        print("rm -rf {removable_file}".format(removable_file=removable_file))
+                        print("rm -rf " + removable_file)
 
 
 # Return a range list given a string.
