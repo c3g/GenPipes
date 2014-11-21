@@ -132,7 +132,7 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
     @property
     def steps(self):
         return [
-            self.index_count,
+            self.index,
             self.fastq,
             self.md5,
             self.qc_graphs,
@@ -152,7 +152,7 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
             self._read_infos = self.parse_run_info_file()
         return self._read_infos
 
-    def index_count(self):
+    def index(self):
         """ Generate a file with all the indexes found in the index-reads of the run.
 
             The file nammed "RUNFOLDER_LANENUMBER.metrics" will be in saved in the output directory.
@@ -175,7 +175,7 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
             input = self.run_dir + os.sep + "RunInfo.xml"
             output = self.run_dir + os.sep + os.path.basename(self.run_dir) + "_" + str(self.lane_number) + '.metrics'
 
-            job = Job([input], [output], [["index_count", "module_java"]], name="index." + self.run_id + "." + str(self.lane_number))
+            job = Job([input], [output], [["index", "module_java"]], name="index." + self.run_id + "." + str(self.lane_number))
             job.command = """\
 java -Djava.io.tmpdir={tmp_dir}\\
  {java_other_options}\\
@@ -189,14 +189,14 @@ java -Djava.io.tmpdir={tmp_dir}\\
  READ_STRUCTURE={read_structure}\\
  METRICS_FILE={output}\\
  TMP_DIR={tmp_dir}""".format(
-                tmp_dir = config.param('index_count', 'tmp_dir'),
-                java_other_options = config.param('index_count', 'java_other_options'),
-                ram = config.param('index_count', 'ram'),
-                jar = config.param('index_count', 'jar'),
+                tmp_dir = config.param('index', 'tmp_dir'),
+                java_other_options = config.param('index', 'java_other_options'),
+                ram = config.param('index', 'ram'),
+                jar = config.param('index', 'jar'),
                 mistmaches = self.number_of_mismatches,
-                threads = config.param('index_count', 'threads'),
-                barcode_file = config.param('index_count', 'barcode_file'),
-                basecalls_dir = self.run_dir + os.sep + config.param('index_count', 'basecalls_dir'),
+                threads = config.param('index', 'threads'),
+                barcode_file = config.param('index', 'barcode_file'),
+                basecalls_dir = self.run_dir + os.sep + config.param('index', 'basecalls_dir'),
                 lane_number = self.lane_number,
                 read_structure = mask,
                 output = output
