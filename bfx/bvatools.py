@@ -108,7 +108,7 @@ java {java_other_options} -Xmx{ram} -jar $BVATOOLS_JAR \\
     )
 
     return job
-    
+
 def groupfixmate(input, output):
     job = Job([input], [output], [['bvatools_groupfixmate', 'module_java'], ['bvatools_groupfixmate', 'module_bvatools']])
 
@@ -151,7 +151,9 @@ java {java_other_options} -Xmx{ram} -jar $BVATOOLS_JAR \\
 
 def readsqc(read1, read2, type, region_name, output_directory):
     job = Job([read1, read2], ["mpsQC_" + region_name + "_stats.xml"], [['bvatools_readsqc', 'module_java'], ['bvatools_readsqc', 'module_bvatools']])
-    
+
+    threads = config.param('bvatools_readsqc', 'threads', type='int', required=False)
+
     command =  """\
 java {java_other_options} -Xmx{ram} -jar $BVATOOLS_JAR \\
 readsqc {other_options} \\
@@ -165,7 +167,8 @@ readsqc {other_options} \\
         region_name=region_name,
         type=type,
         output_directory=output_directory,
-        read1=read1
+        read1=read1,
+        threads=" \\\n --threads " + str(threads) if threads > 1 else "",
     )
 
     if (read2):
