@@ -209,6 +209,7 @@ PBS Job Logs
 ------------
 When pipelines are run in PBS (Portable Batch System) job scheduler mode (default), a job list file is created in `<output_dir>/job_output/<PipelineName>_job_list_<timestamp>` and subsequent job log files are placed in `<output_dir>/job_output/<step_name>/<job_name>_<timestamp>.o` e.g.:
 ```
+#!bash
 job_output/
 ├── RnaSeqDeNovoAssembly_job_list_2014-09-30T19.52.29
 ├── trimmomatic
@@ -228,6 +229,7 @@ getLogReport.pl <output_dir>/job_output/<PipelineName>_job_list_<timestamp>
 
 which will output e.g.:
 ```
+#!bash
 # Number of jobs: 41
 #
 # Number of successful jobs: 4
