@@ -450,12 +450,15 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
 
                 interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
 
-                job = picard.calculate_hs_metrics(input_file_prefix + "bam", input_file_prefix + "onTarget.tsv", interval_list, reference_sequence=readset.reference_file)
                 if not interval_list in created_interval_lists:
+                    # Create one job to generate the interval list from the bed file
                     ref_dict = os.path.splitext(readset.reference_file)[0] + '.dict'
-                    job = concat_jobs([tools.bed2interval_list(ref_dict, full_coverage_bed, interval_list), job])
+                    job = tools.bed2interval_list(ref_dict, full_coverage_bed, interval_list)
+                    job.name = "interval_list." + coverage_bed
                     created_interval_lists.append(interval_list)
+                    jobs.append(job)
 
+                job = picard.calculate_hs_metrics(input_file_prefix + "bam", input_file_prefix + "onTarget.tsv", interval_list, reference_sequence=readset.reference_file)
                 job.name = "picard_calculate_hs_metrics." + readset.name + ".hs." + self.run_id + "." + str(self.lane_number)
                 jobs.append(job)
 
