@@ -140,7 +140,7 @@ class RnaSeq(common.Illumina):
             if len(readset.sample.readsets) == 1:
                 sample_bam = os.path.join("alignment",readset.sample.name ,readset.sample.name + ".sorted.bam")
                 job.command += " && \\\n rm -f " + sample_bam + " && \\\n ln -s " + os.path.join(self.output_dir,"alignment",readset.name, "Aligned.sortedByCoord.out.bam") + " " + sample_bam
-                job.output_files.append(os.path.join("alignment",readset.sample.name,sample_bam))
+                job.output_files.append(sample_bam)
 
             job.name = "star_align2." + readset.name
             jobs.append(job)
@@ -448,7 +448,7 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
         edger_job.output_files = [os.path.join(output_directory, contrast.name, "edger_results.csv") for contrast in self.contrasts]
 
         deseq_job = differential_expression.deseq(design_file, count_matrix, output_directory)
-        deseq_job.output_files = [os.path.join(output_directory, contrast.name, "deseq_results.csv") for contrast in self.contrasts]
+        deseq_job.output_files = [os.path.join(output_directory, contrast.name, "dge_results.csv") for contrast in self.contrasts]
 
         return [concat_jobs([
             Job(command="mkdir -p " + output_directory),
@@ -462,9 +462,9 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
         for contrast in self.contrasts:
             # goseq for cuffdiff known results
             job = differential_expression.goseq(
-                os.path.join("cuffdiff", "known", contrast.name, "isoform_exp.diff"),
+                os.path.join("cuffdiff", contrast.name, "isoform_exp.diff"),
                 config.param("differential_expression_goseq", "cuffdiff_input_columns"),
-                os.path.join("cuffdiff", "known", contrast.name, "gene_ontology_results.csv")
+                os.path.join("cuffdiff",  contrast.name, "gene_ontology_results.csv")
             )
             job.name = "differential_expression_goseq.cuffdiff.known." + contrast.name
             jobs.append(job)

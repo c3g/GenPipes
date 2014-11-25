@@ -383,6 +383,7 @@ create_gene_annotations() {
     echo
     cd $ANNOTATIONS_DIR
     module load $module_R
+    module load $module_mugqic_R_packages
     R --no-restore --no-save<<EOF
 suppressPackageStartupMessages(library(gqSeqUtils))
 gtf.fn     = "$GTF"

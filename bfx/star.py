@@ -43,7 +43,7 @@ def align(
     io_max = int(utils.number_symbol_converter(io_limit))
     stranded = config.param('star_align', 'strand_info')
     wig_prefix = config.param('star_align', 'wig_prefix')
-    chimere_segment_min = config.param('star_align','chimere_segment_min', type='int')
+    chimere_segment_min = config.param('star_align','chimere_segment_min', type='int', required=False)
     
     ## Wiggle information
     if create_wiggle_track:
@@ -92,16 +92,16 @@ STAR --runMode alignReads \\
   {io_limit_size} \\
   {wig_param} \\
   {chim_param} \\
-  --outSAMattrRGline \"ID:{rg_id} PL:{rg_platform} PU:{rg_platform_unit} LB:{rg_library} SM:{rg_sample} CN:{rg_center}\" \\
+  --outSAMattrRGline {rg_id}\t{rg_platform}\t{rg_platform_unit}\t{rg_library}\t{rg_sample}\t{rg_center} \\
   {other_options}""".format(
         genome_index_folder=genome_index_folder,
         other_options=config.param('star_align', 'other_options', required=False),
-        rg_id=rg_id,
-        rg_sample=rg_sample,
-        rg_library=rg_library,
-        rg_platform_unit=rg_platform_unit,
-        rg_platform=rg_platform,
-        rg_center=rg_center,
+        rg_id="ID:\"" + rg_id + "\" " if rg_id != "" else "",
+        rg_sample="SM:\"" + rg_sample + "\" " if rg_sample != "" else "",
+        rg_library=" LB:\"" + rg_library + "\" " if rg_library != "" else "",
+        rg_platform_unit=" PU:\"" + rg_platform_unit + "\" " if rg_platform_unit != "" else "",
+        rg_platform="PL:\"" + rg_platform + "\" " if rg_platform != "" else "",
+        rg_center="CN:\"" + rg_center + "\" " if rg_center != "" else "",
         output_directory=output_directory,
         num_threads=num_threads if str(num_threads) != "" and isinstance(num_threads, int) and num_threads > 0 else 1,
         ram=int(max_ram/2) if sort_bam else int(max_ram),

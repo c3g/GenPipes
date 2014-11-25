@@ -5,6 +5,7 @@ import csv
 import logging
 import os
 import re
+import ConfigParser
 
 # MUGQIC Modules
 from sample import *
@@ -151,8 +152,8 @@ class IlluminaRawReadset(IlluminaReadset):
         return self._aligner
 
     @property
-    def aligner_reference_file(self):
-        return self._aligner_reference_file
+    def aligner_reference_index(self):
+        return self._aligner_reference_index
 
     @property
     def reference_file(self):
@@ -191,7 +192,7 @@ class IlluminaRawReadset(IlluminaReadset):
         return self._flow_cell
 
 
-def parse_illumina_raw_readset_files(output_dir, run_type, nanuq_readset_file, casava_sheet_file, lane, default_species_genome, genome_root):
+def parse_illumina_raw_readset_files(output_dir, run_type, nanuq_readset_file, casava_sheet_file, lane, default_species_genome, genome_root, nb_cycles):
     readsets = []
     samples = []
 
@@ -216,12 +217,11 @@ def parse_illumina_raw_readset_files(output_dir, run_type, nanuq_readset_file, c
         readset._library = line['Library Barcode']
         readset._library_source = line['Library Source']
 
-        # TODO change aligner to support RNA-seq data
-        #if re.search("RNA|cDNA", readset.library_source):
-        #    readset._aligner = "star"
-        #else:
-        #    readset._aligner = "bwa"
-        readset._aligner = "bwa"
+
+        if re.search("RNA|cDNA", readset.library_source):
+            readset._aligner = "star"
+        else:
+            readset._aligner = "bwa"
 
         readset._run = line['Run']
         readset._lane = current_lane
@@ -267,19 +267,34 @@ def parse_illumina_raw_readset_files(output_dir, run_type, nanuq_readset_file, c
         # Find if any reference_assembly or reference_species for the specied species
         for genome in default_species_genome.split('~'):
             values = genome.split(':')
+            folder_name = os.path.join(values[1] + "." + values[2])
             if (re.match(values[0], readset.species, re.IGNORECASE)) :
-                aligner_reference_file = ""
+                aligner_reference_index = ""
                 if (readset.aligner == "bwa"):
-                    aligner_reference_file = os.path.join(genome_root, values[1] + "." + values[2],
+                    aligner_reference_index = os.path.join(genome_root,
+                                                           folder_name,
                                                           "genome",
                                                           "bwa_index",
-                                                          values[1] + "." + values[2] + ".fa")
-                reference_file = os.path.join(genome_root, values[1] + "." + values[2],
+                                                          folder_name + ".fa")
+                elif (readset.aligner == "star"):
+                    ini_file = os.path.join(genome_root, folder_name, folder_name + ".ini")
+                    genome_config = ConfigParser.SafeConfigParser()
+                    genome_config.read(ini_file)
+
+                    source = genome_config.get("DEFAULT", "source")
+                    version = genome_config.get("DEFAULT", "version")
+
+                    aligner_reference_index = os.path.join(genome_root,
+                                                           folder_name,
+                                                          "genome",
+                                                          "star_index",
+                                                          source + version + ".sjdbOverhang" + str(nb_cycles-1))
+                reference_file = os.path.join(genome_root, folder_name,
                                               "genome",
-                                              values[1] + "." + values[2] + ".fa")
+                                              folder_name + ".fa")
                 if reference_file and os.path.isfile(reference_file):
-                    if aligner_reference_file and os.path.isfile(aligner_reference_file):
-                        readset._aligner_reference_file = aligner_reference_file
+                    if aligner_reference_index and (os.path.isfile(aligner_reference_index) or os.path.isdir(aligner_reference_index)):
+                        readset._aligner_reference_index = aligner_reference_index
                         readset._reference_file = reference_file
                         readset._reference_species = values[1]
                         readset._reference_assembly = values[2]
@@ -290,7 +305,7 @@ def parse_illumina_raw_readset_files(output_dir, run_type, nanuq_readset_file, c
                                                     'run' + readset.run + "_" + readset.lane,
                                                     readset.sample.name + readset.library)
                     else:
-                        log.warning("Unable to access the aligner reference file: '" + aligner_reference_file + "'")
+                        log.warning("Unable to access the aligner reference file: '" + aligner_reference_index + "' for aligner: '" + readset.aligner + "'")
                 else:
                     log.warning("Unable to access the reference file: '" + reference_file + "'")
 
