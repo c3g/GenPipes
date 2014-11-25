@@ -131,6 +131,12 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         return self.args.last_index if (self.args.last_index) else 999
 
     @property
+    def copy_job_inputs(self):
+        if not hasattr(self, "_copy_job_inputs"):
+            self._copy_job_inputs = []
+        return self._copy_job_inputs
+
+    @property
     def steps(self):
         return [
             self.index,
@@ -204,6 +210,7 @@ java -Djava.io.tmpdir={tmp_dir}\\
             )
             jobs.append(job)
 
+        self.add_copy_job_inputs(jobs)
         return jobs
 
     def fastq(self):
@@ -270,6 +277,8 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
             # Use the same inputs and output of fastq job to send a notification each time the fastq job run
             job = Job([input], outputs, name="fastq_notification." + self.run_id + "." + str(self.lane_number), command=notification_command)
             jobs.append(job)
+
+        self.add_copy_job_inputs(jobs)
         return jobs
 
     def md5(self):
@@ -293,6 +302,8 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
 
             job = Job(inputs, outputs, name="md5." + readset.name + ".md5." + self.run_id + "." + str(self.lane_number), command=command)
             jobs.append(job)
+
+        self.add_copy_job_inputs(jobs)
         return jobs
 
     def qc_graphs(self):
@@ -325,6 +336,7 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
             job.name = "qc." + readset.name + ".qc." + self.run_id + "." + str(self.lane_number)
             jobs.append(job)
 
+        self.add_copy_job_inputs(jobs)
         return jobs
 
     def blast(self):
@@ -361,6 +373,7 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
 
             jobs.append(job)
 
+        self.add_copy_job_inputs(jobs)
         return jobs
 
     def align(self):
@@ -372,6 +385,8 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
                 jobs.extend(self.get_bwa_jobs(readset))
             elif (readset.aligner == "star"):
                 jobs.extend(self.get_star_jobs(readset))
+
+        self.add_copy_job_inputs(jobs)
         return jobs
 
     def picard_mark_duplicates(self):
@@ -386,6 +401,8 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
             job = picard.mark_duplicates([input], output, metrics_file)
             job.name = "picard_mark_duplicates." + readset.name + ".dup." + self.run_id + "." + str(self.lane_number)
             jobs.append(job)
+
+        self.add_copy_job_inputs(jobs)
         return jobs
 
     def metrics(self):
@@ -439,6 +456,7 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
                 job.name = "picard_calculate_hs_metrics." + readset.name + ".hs." + self.run_id + "." + str(self.lane_number)
                 jobs.append(job)
 
+        self.add_copy_job_inputs(jobs)
         return jobs
 
     def bam_md5(self):
@@ -453,12 +471,14 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
 
             job = Job([input_bam], [output_bai, output_bam], name="bmd5." + readset.name + ".bmd5." + self.run_id + "." + str(self.lane_number), command=command)
             jobs.append(job)
+
+        self.add_copy_job_inputs(jobs)
         return jobs
 
     def start_copy_notification(self):
         """ Send an optional notification for the processing completion. """
         jobs = []
-        inputs = self.get_copy_job_inputs()
+        inputs = self.copy_job_inputs
 
         output1 = "notificationProcessingComplete." + str(self.lane_number) + ".out"
         output2 = "notificationCopyStart." + str(self.lane_number) + ".out"
@@ -481,7 +501,7 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
     def copy(self):
         """Copy processed files to another place where they can be served or loaded into a LIMS."""
         jobs = []
-        inputs = self.get_copy_job_inputs()
+        inputs = self.copy_job_inputs
 
         output = self.output_dir + os.sep + "copyCompleted." + str(self.lane_number) + ".out"
 
@@ -552,13 +572,9 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
     # Utility methods
     #
 
-    def get_copy_job_inputs(self):
-        inputs = []
-        for step in self.step_list[0:[step_function.__name__ for step_function in self.steps].index("copy") - 1]:
-            for job in step.jobs:
-                inputs.extend(job.output_files) 
-        log.debug("Copy job inputs:\n  " + "\n  ".join(inputs) + "\n")
-        return inputs
+    def add_copy_job_inputs(self, jobs):
+        for job in jobs:
+            self.copy_job_inputs.extend(job.output_files)
 
     def get_bwa_jobs(self, readset):
         jobs = []
