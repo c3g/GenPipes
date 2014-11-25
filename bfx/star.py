@@ -43,7 +43,7 @@ def align(
     io_max = int(utils.number_symbol_converter(io_limit))
     stranded = config.param('star_align', 'strand_info')
     wig_prefix = config.param('star_align', 'wig_prefix')
-    chimere_segment_min = config.param('star_align','chimere_segment_min', type='int')
+    chimere_segment_min = config.param('star_align','chimere_segment_min', type='int', required=False)
     
     ## Wiggle information
     if create_wiggle_track:

@@ -8,7 +8,7 @@ from core.job import *
 
 def calculate_hs_metrics(input, output, intervals, reference_sequence=None):
 
-    job = Job([input], [output], [['picard_calculate_hs_metrics', 'module_java'], ['picard_calculate_hs_metrics', 'module_picard']])
+    job = Job([input, intervals], [output], [['picard_calculate_hs_metrics', 'module_java'], ['picard_calculate_hs_metrics', 'module_picard']])
 
     job.command = """\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/CalculateHsMetrics.jar \\

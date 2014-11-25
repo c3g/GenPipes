@@ -566,4 +566,4 @@ END
         ]
 
 if __name__ == '__main__':
-    PacBioAssembly().submit_jobs()
+    PacBioAssembly()

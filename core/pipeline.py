@@ -44,7 +44,6 @@ class Pipeline(object):
 
         self._output_dir = os.path.abspath(self.args.output_dir)
         self._scheduler = create_scheduler(self.args.job_scheduler)
-        self._force_jobs = self.args.force
 
         step_counter = collections.Counter(self.steps)
         duplicated_steps = [step.__name__ for step in step_counter if step_counter[step] > 1]
@@ -59,7 +58,15 @@ class Pipeline(object):
             raise Exception("Error: step range \"" + self.args.steps +
                 "\" is invalid (should match \d+([,-]\d+)*)!")
 
-        self.create_jobs()
+        # For job cleaning, all jobs must be created first, no matter whether they are up to date or not
+        if self.args.clean:
+            self._force_jobs = True
+            self.create_jobs()
+            self.clean_jobs()
+        else:
+            self._force_jobs = self.args.force
+            self.create_jobs()
+            self.submit_jobs()
 
     # Pipeline command line arguments parser
     @property
@@ -74,6 +81,7 @@ class Pipeline(object):
             self._argparser.add_argument("-o", "--output-dir", help="output directory (default: current)", default=os.getcwd())
             self._argparser.add_argument("-j", "--job-scheduler", help="job scheduler type (default: pbs)", choices=["pbs", "batch"], default="pbs")
             self._argparser.add_argument("-f", "--force", help="force creation of jobs even if up to date (default: false)", action="store_true")
+            self._argparser.add_argument("--clean", help="create 'rm' commands for all job removable files in the given step range, if they exists; if --clean is set, --job-scheduler, --force options and job up-to-date status are ignored (default: false)", action="store_true")
             self._argparser.add_argument("-l", "--log", help="log level (default: info)", choices=["debug", "info", "warning", "error", "critical"], default="info")
 
         return self._argparser
@@ -171,6 +179,14 @@ class Pipeline(object):
 
     def submit_jobs(self):
         self.scheduler.submit(self)
+
+    def clean_jobs(self):
+        for step in self.step_range:
+            for job in step.jobs:
+                abspath_removable_files = [job.abspath(removable_file) for removable_file in job.removable_files]
+                for removable_file in abspath_removable_files:
+                    if os.path.exists(removable_file):
+                        print("rm -rf " + removable_file)
 
 
 # Return a range list given a string.
