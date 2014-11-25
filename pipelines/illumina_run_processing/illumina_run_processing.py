@@ -27,6 +27,7 @@ from bfx import igvtools
 from bfx import metrics
 from bfx import picard
 from bfx import samtools
+from bfx import star
 from bfx import tools
 from pipelines import common
 
@@ -366,35 +367,11 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
         """
         """
         jobs = []
-
         for readset in [readset for readset in self.readsets if (readset.bam)]:
-            output = readset.bam + ".sorted.bam"
-
-            job = concat_jobs([
-                Job(command="mkdir -p " + os.path.dirname(output)),
-                pipe_jobs([
-                    bwa.mem(
-                        readset.fastq1,
-                        readset.fastq2,
-                        read_group="'@RG" + \
-                            "\tID:" + readset.name + \
-                            "\tSM:" + readset.sample.name + \
-                            ("\tLB:" + readset.library if readset.library else "") + \
-                            ("\tPU:run" + readset.run + "_" + readset.lane if readset.run and readset.lane else "") + \
-                            ("\tCN:" + config.param('bwa_mem', 'sequencing_center') if config.param('bwa_mem', 'sequencing_center', required=False) else "") + \
-                            "\tPL:Illumina" + \
-                            "'",
-                        ref=readset.aligner_reference_file
-                    ),
-                    picard.sort_sam(
-                        "/dev/stdin",
-                        output,
-                        "coordinate"
-                    )
-                ])
-            ], name="bwa_mem_picard_sort_sam." + readset.name + ".align." + self.run_id + "." + str(self.lane_number))
-
-            jobs.append(job)
+            if (readset.aligner == "bwa"):
+                jobs.extend(self.get_bwa_jobs(readset))
+            elif (readset.aligner == "star"):
+                jobs.extend(self.get_star_jobs(readset))
         return jobs
 
     def picard_mark_duplicates(self):
@@ -583,9 +560,74 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
         log.debug("Copy job inputs:\n  " + "\n  ".join(inputs) + "\n")
         return inputs
 
+    def get_bwa_jobs(self, readset):
+        jobs = []
+
+        output = readset.bam + ".sorted.bam"
+
+        job = concat_jobs([
+            Job(command="mkdir -p " + os.path.dirname(output)),
+            pipe_jobs([
+                bwa.mem(
+                    readset.fastq1,
+                    readset.fastq2,
+                    read_group="'@RG" + \
+                        "\tID:" + readset.name + \
+                        "\tSM:" + readset.sample.name + \
+                        ("\tLB:" + readset.library if readset.library else "") + \
+                        ("\tPU:run" + readset.run + "_" + readset.lane if readset.run and readset.lane else "") + \
+                        ("\tCN:" + config.param('bwa_mem', 'sequencing_center') if config.param('bwa_mem', 'sequencing_center', required=False) else "") + \
+                        "\tPL:Illumina" + \
+                        "'",
+                    ref=readset.aligner_reference_index
+                ),
+                picard.sort_sam(
+                    "/dev/stdin",
+                    output,
+                    "coordinate"
+                )
+            ])
+        ], name="bwa_mem_picard_sort_sam." + readset.name + ".align." + self.run_id + "." + str(self.lane_number))
+
+        jobs.append(job)
+        return jobs
+
+    def get_star_jobs(self, readset):
+        jobs = []
+
+        output = readset.bam + ".sorted.bam"
+
+        rg_center = config.param('star_align', 'sequencing_center', required=False)
+        star_bam_name = "Aligned.sortedByCoord.out.bam"
+
+        job = concat_jobs([
+            star.align(
+                reads1=readset.fastq1,
+                reads2=readset.fastq2,
+                output_directory=os.path.dirname(output),
+                sort_bam=True,
+                genome_index_folder=readset.aligner_reference_index,
+                rg_id=readset.name,
+                rg_sample=readset.sample.name,
+                rg_library=readset.library if readset.library else "",
+                rg_platform_unit=readset.run + "_" + readset.lane if readset.run and readset.lane else "",
+                rg_platform="Illumina",
+                rg_center=rg_center if rg_center else ""
+            ),
+            Job(output_files=[output], command="mv " + os.path.dirname(output) + os.sep + star_bam_name + " " + output)
+        ])
+        job.name = "star_align." + readset.name
+        jobs.append(job)
+        return jobs
+
     def getSequencerIndexLength(self):
         """ Returns the total number of index cycles of the run. """
         return sum(index_read.nb_cycles for index_read in [read for read in self.read_infos if (read.is_index)])
+
+    def getSequencerMinimumReadLength(self):
+        """ Returns the minimum number of cycles of a real read (not indexed). """
+        return min(read.nb_cycles for read in [read for read in self.read_infos if (not read.is_index)])
+
 
     def validateBarcodes(self):
         """ Validate all index sequences against each other to ensure they aren't in collision according to the chosen number of mismatches parameter."""
@@ -775,7 +817,8 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
                                                 self.casava_sheet_file,
                                                 self.args.lane_number,
                                                 config.param('DEFAULT', 'default_species_genome'),
-                                                config.param('DEFAULT', 'genomes_home')
+                                                config.param('DEFAULT', 'genomes_home', type="dirpath"),
+                                                self.getSequencerMinimumReadLength()
         )
 
     def submit_jobs(self):
