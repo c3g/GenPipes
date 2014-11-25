@@ -481,11 +481,7 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
     def start_copy_notification(self):
         """ Send an optional notification for the processing completion. """
         jobs = []
-        inputs = []
-
-        for step in self.step_list[0:[step_function.__name__ for step_function in self.steps].index("copy") - 1]:
-            for job in step.jobs:
-                inputs.extend(job.output_files) 
+        inputs = self.get_copy_job_inputs()
 
         output1 = "notificationProcessingComplete." + str(self.lane_number) + ".out"
         output2 = "notificationCopyStart." + str(self.lane_number) + ".out"
@@ -508,11 +504,7 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
     def copy(self):
         """Copy processed files to another place where they can be served or loaded into a LIMS."""
         jobs = []
-        inputs = []
-
-        for step in self.step_list[0:[step_function.__name__ for step_function in self.steps].index("copy") - 1]:
-            for job in step.jobs:
-                inputs.extend(job.output_files) 
+        inputs = self.get_copy_job_inputs()
 
         output = self.output_dir + os.sep + "copyCompleted." + str(self.lane_number) + ".out"
 
@@ -578,6 +570,17 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
             jobs.append(job)
 
         return jobs
+
+    #
+    # Utility methods
+    #
+
+    def get_copy_job_inputs(self):
+        inputs = []
+        for step in self.step_list[0:[step_function.__name__ for step_function in self.steps].index("copy") - 1]:
+            for job in step.jobs:
+                inputs.extend(job.output_files) 
+        return inputs if len(inputs) else None;
 
     def getSequencerIndexLength(self):
         """ Returns the total number of index cycles of the run. """
