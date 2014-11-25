@@ -6,25 +6,24 @@
 from core.config import *
 from core.job import *
 
-def exploratory_rnaseq(readset_filepath, project_path, ini_filepaths):
+def exploratory_rnaseq(input_file, genes_file, output_dir):
 
-    job = Job([], [], [['gq_seq_utils_exploratory_rnaseq', 'module_R']])
-
-    job.command = """\
-R --no-save <<EOF
+    return Job(
+        [genes_file],
+        [],
+        [['gq_seq_utils_exploratory_rnaseq', 'module_R']],
+        command = """\
+R --no-save --no-restore <<-EOF
 suppressPackageStartupMessages(library(gqSeqUtils))
 
-initIllmSeqProject(nanuq.file="{readset_filepath}", overwrite.sheets=TRUE, project.path="{project_path}")
-exploratoryRNAseq(project.path="{project_path}", ini.file.path=c({ini_filepaths}))
+exploratoryRNAseq(input.path="{input_file}", genes.path="{genes_file}", output.dir="{output_dir}")
 print("done.")
 
 EOF""".format(
-        readset_filepath=readset_filepath,
-        project_path=project_path,
-        ini_filepaths=",".join(['"' + ini_filepath + '"' for ini_filepath in ini_filepaths])
-    )
-
-    return job
+        input_file=input_file,
+        genes_file=genes_file,
+        output_dir=output_dir
+    ))
 
 def report(ini_filepaths, project_path, pipeline_type, output_directory):
 

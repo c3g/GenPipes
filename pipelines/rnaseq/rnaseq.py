@@ -481,12 +481,28 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
         return jobs
 
     def gq_seq_utils_exploratory_rnaseq(self):
+        sample_fpkm_readcounts = [[
+            sample.name,
+            os.path.join("fpkm", sample.name, "isoforms.fpkm_tracking"),
+            os.path.join("raw_counts", sample.name + ".readcounts.csv")
+        ] for sample in self.samples]
+
+        input_file = os.path.join("exploratory", "exploratory.samples.tsv")
+
         return [concat_jobs([
             Job(command="mkdir -p exploratory"),
+            Job(
+                [triplet[1] for triplet in sample_fpkm_readcounts] + [triplet[2] for triplet in sample_fpkm_readcounts],
+                [input_file],
+                command="""\
+`cat > {input_file} << END
+{sample_fpkm_readcounts}
+END
+`""".format(sample_fpkm_readcounts="\n".join("\t".join(triplet) for triplet in sample_fpkm_readcounts), input_file=input_file)),
             gq_seq_utils.exploratory_rnaseq(
-                os.path.abspath(self.args.readsets.name),
-                self.output_dir,
-                [config_file.name for config_file in self.args.config]
+                input_file,
+                config.param('gq_seq_utils_exploratory_rnaseq', 'genes', type='filepath'),
+                "exploratory"
             )
         ], name="gq_seq_utils_exploratory_rnaseq")]
 

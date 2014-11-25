@@ -75,7 +75,7 @@ def cufflinks(input_bam, output_directory, gtf=None):
 
     job = Job(
         [input_bam],
-        [os.path.join(output_directory, "transcripts.gtf")],
+        [os.path.join(output_directory, "transcripts.gtf"), os.path.join(output_directory, "isoforms.fpkm_tracking")],
         [['cufflinks', 'module_cufflinks']]
     )
 
