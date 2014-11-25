@@ -567,7 +567,7 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
 
         notification_command = config.param('end_copy_notification', 'notification_command', required=False)
         if (notification_command):
-            job = Job([input], [output], name="end_copy." + self.run_id + "." + str(self.lane_number))
+            job = Job([input], [output], name="end_copy_notification." + self.run_id + "." + str(self.lane_number))
             job.command = notification_command.format(
                 technology = config.param('end_copy_notification', 'technology'),
                 output_dir = self.output_dir,
