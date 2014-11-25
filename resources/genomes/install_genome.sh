@@ -5,9 +5,9 @@ set -eu -o pipefail
 module_bowtie=mugqic/bowtie/2.1.0
 module_bwa=mugqic/bwa/0.7.10
 module_java=mugqic/java/openjdk-jdk1.7.0_60
+module_mugqic_R_packages=mugqic/mugqic_R_packages/0.1
 module_picard=mugqic/picard/1.108
-module_R=mugqic_dev/R_Bioconductor/3.1.2_3.0
-module_mugqic_R_packages=mugqic_dev/mugqic_R_packages/master
+module_R=mugqic/R_Bioconductor/3.1.2_3.0
 module_samtools=mugqic/samtools/0.1.19
 module_star=mugqic/star/2.4.0e
 module_tophat=mugqic/tophat/2.0.11

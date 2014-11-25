@@ -8,9 +8,14 @@ from core.config import *
 from core.job import *
 
 def dna_sample_metrics(input_directory, output, experiment_type="unknown"):
-    job = Job([input_directory], [output], [['dna_sample_metrics', 'module_R'], ['dna_sample_metrics', 'module_mugqic_tools']])
-
-    job.command = """\
+    return Job(
+        [input_directory],
+        [output],
+        [
+            ['dna_sample_metrics', 'module_R'],
+            ['dna_sample_metrics', 'module_mugqic_tools']
+        ],
+        command = """\
 Rscript $R_TOOLS/DNAsampleMetrics.R \\
   {input_directory} \\
   {output} \\
@@ -18,9 +23,7 @@ Rscript $R_TOOLS/DNAsampleMetrics.R \\
         input_directory=input_directory,
         output=output,
         experiment_type=experiment_type
-    )
-
-    return job
+    ))
 
 def rnaseqc(sample_file, output_directory, is_single_end=False, gtf_file=None):
     job = Job([sample_file], [os.path.join(output_directory, "index.html")], [['rnaseqc', 'module_java'], ['rnaseqc', 'module_bwa'], ['rnaseqc', 'module_rnaseqc']])

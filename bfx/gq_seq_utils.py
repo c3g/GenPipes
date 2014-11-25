@@ -10,8 +10,11 @@ def exploratory_rnaseq(input_file, genes_file, output_dir):
 
     return Job(
         [genes_file],
-        [],
-        [['gq_seq_utils_exploratory_rnaseq', 'module_R']],
+        [os.path.join(output_dir, "top_sd_heatmap_cufflinks_logFPKMs.pdf")],
+        [
+            ['gq_seq_utils_exploratory_rnaseq', 'module_R'],
+            ['gq_seq_utils_exploratory_rnaseq', 'module_mugqic_R_packages']
+        ],
         command = """\
 R --no-save --no-restore <<-EOF
 suppressPackageStartupMessages(library(gqSeqUtils))
@@ -32,10 +35,15 @@ def report(ini_filepaths, project_path, pipeline_type, output_directory):
     author = config.param('gq_seq_utils_report', 'report_author', required=False)
     contact = config.param('gq_seq_utils_report', 'report_contact', required=False)
 
-    # Job input files must be set in pipeline class since they are different for each pipeline
-    job = Job([], [os.path.join(path, "index.html")], [['gq_seq_utils_report', 'module_R']])
-
-    job.command = """\
+    return Job(
+        # Job input files must be set in pipeline class since they are different for each pipeline
+        [],
+        [os.path.join(path, "index.html")],
+        [
+            ['gq_seq_utils_report', 'module_R'],
+            ['gq_seq_utils_exploratory_rnaseq', 'module_mugqic_R_packages']
+        ],
+        command = """\
 R --no-save -e 'library(gqSeqUtils); mugqicPipelineReport(pipeline="{pipeline}"{title}{path}{author}{contact}, ini.file.path=c({ini_filepaths}), project.path="{project_path}")'""".format(
         pipeline=pipeline_type,
         title=", report.title=\"" + title + "\"" if title else "",
@@ -44,6 +52,4 @@ R --no-save -e 'library(gqSeqUtils); mugqicPipelineReport(pipeline="{pipeline}"{
         contact=", report.contact=\"" + contact + "\"" if contact else "",
         ini_filepaths=",".join(['"' + ini_filepath + '"' for ini_filepath in ini_filepaths]),
         project_path=project_path
-    )
-
-    return job
+    ))

@@ -181,8 +181,15 @@ Trinity {other_options} \\
 
         return [concat_jobs([
             trinity_job,
-            Job([trinity_fasta], [trinity_fasta + ".zip"], command="zip -j " + trinity_fasta + ".zip " + trinity_fasta),
-            Job([trinity_fasta], [trinity_stats_prefix + ".csv", trinity_stats_prefix + ".jpg", trinity_stats_prefix + ".pdf"], [['trinity', 'module_R']], command="Rscript -e 'library(gqSeqUtils); dnaFastaStats(filename = \"" + trinity_fasta + "\", type = \"trinity\", output.prefix = \"" + trinity_stats_prefix + "\")'")
+            Job(
+                [trinity_fasta],
+                [trinity_fasta + ".zip"],
+                command="zip -j " + trinity_fasta + ".zip " + trinity_fasta),
+            Job(
+                [trinity_fasta],
+                [trinity_stats_prefix + ".csv", trinity_stats_prefix + ".jpg", trinity_stats_prefix + ".pdf"],
+                [['trinity', 'module_R'], ['trinity', 'module_mugqic_R_packages']],
+                command="Rscript -e 'library(gqSeqUtils); dnaFastaStats(filename = \"" + trinity_fasta + "\", type = \"trinity\", output.prefix = \"" + trinity_stats_prefix + "\")'")
         ], name="trinity")]
 
     def exonerate_fastasplit(self):
