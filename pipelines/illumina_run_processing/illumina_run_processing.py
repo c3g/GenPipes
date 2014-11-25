@@ -580,7 +580,8 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
         for step in self.step_list[0:[step_function.__name__ for step_function in self.steps].index("copy") - 1]:
             for job in step.jobs:
                 inputs.extend(job.output_files) 
-        return inputs if len(inputs) else None;
+        log.debug("Copy job inputs:\n  " + "\n  ".join(inputs) + "\n")
+        return inputs
 
     def getSequencerIndexLength(self):
         """ Returns the total number of index cycles of the run. """
