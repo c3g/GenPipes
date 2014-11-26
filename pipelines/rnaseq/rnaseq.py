@@ -350,7 +350,7 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
 
         for sample in self.samples:
             input_bam = os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.bam")
-            output_directory = os.path.join("fpkm", sample.name)
+            output_directory = os.path.join("cufflinks", sample.name)
 
             # De Novo FPKM
             job = cufflinks.cufflinks(input_bam, output_directory, gtf)
@@ -361,9 +361,9 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
     
     def cuffmerge(self):
         
-        output_directory = os.path.join("fpkm", "AllSample")
-        sample_file = os.path.join("fpkm", "cuffmerge.samples.txt")
-        input_gtfs = [os.path.join("fpkm", sample.name, "transcripts.gtf") for sample in self.samples]
+        output_directory = os.path.join("cufflinks", "AllSample")
+        sample_file = os.path.join("cufflinks", "cuffmerge.samples.txt")
+        input_gtfs = [os.path.join("cufflinks", sample.name, "transcripts.gtf") for sample in self.samples]
         gtf = config.param('cuffmerge','gtf', type='filepath')
         
         
@@ -379,11 +379,11 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
     def cuffquant(self):
         jobs = []
         
-        gtf = os.path.join("fpkm", "AllSample","merged.gtf")
+        gtf = os.path.join("cufflinks", "AllSample","merged.gtf")
         
         for sample in self.samples:
             input_bam = os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.bam")
-            output_directory = os.path.join("fpkm", sample.name)
+            output_directory = os.path.join("cufflinks", sample.name)
 
             #Quantification
             job = cufflinks.cuffquant(input_bam, output_directory, gtf)
@@ -395,7 +395,7 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
     def cuffdiff(self):
         jobs = []
 
-        fpkm_directory = "fpkm"
+        fpkm_directory = "cufflinks"
         gtf = os.path.join(fpkm_directory, "AllSample","merged.gtf")
 
 
@@ -415,7 +415,7 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
     def cuffnorm(self):
         jobs = []
 
-        fpkm_directory = "fpkm"
+        fpkm_directory = "cufflinks"
         gtf = os.path.join(fpkm_directory, "AllSample","merged.gtf")
 
 
@@ -471,6 +471,33 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
 
         return jobs
 
+
+    def gq_seq_utils_exploratory_rnaseq(self):
+        sample_fpkm_readcounts = [[
+            sample.name,
+            os.path.join("cufflinks", sample.name, "isoforms.fpkm_tracking"),
+            os.path.join("raw_counts", sample.name + ".readcounts.csv")
+        ] for sample in self.samples]
+
+        input_file = os.path.join("exploratory", "exploratory.samples.tsv")
+
+        return [concat_jobs([
+            Job(command="mkdir -p exploratory"),
+            Job(
+                [triplet[1] for triplet in sample_fpkm_readcounts] + [triplet[2] for triplet in sample_fpkm_readcounts],
+                [input_file],
+                command="""\
+`cat > {input_file} << END
+{sample_fpkm_readcounts}
+END
+`""".format(sample_fpkm_readcounts="\n".join("\t".join(triplet) for triplet in sample_fpkm_readcounts), input_file=input_file)),
+            gq_seq_utils.exploratory_rnaseq(
+                input_file,
+                config.param('gq_seq_utils_exploratory_rnaseq', 'genes', type='filepath'),
+                "exploratory"
+            )
+        ], name="gq_seq_utils_exploratory_rnaseq")]
+
     @property
     def steps(self):
         return [
@@ -492,6 +519,7 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
             self.cuffnorm,
             self.differential_expression,
             self.differential_expression_goseq
+            self. gq_seq_utils_exploratory_rnaseq
         ]
 
     def __init__(self):

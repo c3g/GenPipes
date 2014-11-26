@@ -622,7 +622,8 @@ def clientReport(iniFilePath, projectPath, pipelineType, reportPath):
         [iniFilePath],
         [projectPath],
         [
-            ['R', 'module_R']
+            ['R', 'module_R'],
+            ['R', 'module_mugqic_R_packages']
         ]
     )
 

@@ -480,8 +480,8 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
         jobs = []
         inputs = self.copy_job_inputs
 
-        output1 = "notificationProcessingComplete." + str(self.lane_number) + ".out"
-        output2 = "notificationCopyStart." + str(self.lane_number) + ".out"
+        output1 = self.output_dir + os.sep + "notificationProcessingComplete." + str(self.lane_number) + ".out"
+        output2 = self.output_dir + os.sep + "notificationCopyStart." + str(self.lane_number) + ".out"
 
         notification_command = config.param('start_copy_notification', 'notification_command', required=False)
         if (notification_command):
@@ -503,7 +503,8 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
         jobs = []
         inputs = self.copy_job_inputs
 
-        output = self.output_dir + os.sep + "copyCompleted." + str(self.lane_number) + ".out"
+        full_destination_folder = config.param('copy', 'destination_folder', type="dirpath") + os.path.basename(self.run_dir) + "_" + str(self.lane_number)
+        output = full_destination_folder + os.sep + "copyCompleted." + str(self.lane_number) + ".out"
 
         exclude_bam = config.param('copy', 'exclude_bam', required=False, type='boolean')
         exclude_fastq_with_bam = config.param('copy', 'exclude_fastq_with_bam', required=False, type='boolean')
@@ -517,7 +518,7 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
                 if exclude_bam:
                     excluded_files.append(readset.bam + ".*.bam")
                     excluded_files.append(readset.bam + ".*.bai")
-                if exclude_fastq_with_bam:
+                if exclude_fastq_with_bam and not exclude_bam:
                     excluded_files.append(readset.fastq1)
                     if readset.fastq2:
                         excluded_files.append(readset.fastq2)
@@ -533,7 +534,7 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
             jobs_to_concat.append(Job(inputs, [output], command=copy_command_run_folder))
 
         copy_command_output_folder = config.param('copy', 'copy_command', required=False).format(
-                exclusion_clauses = "\\\n".join([" --exclude '" + file + "'" for file in excluded_files]),
+                exclusion_clauses = "\\\n".join([" --exclude '" + file.replace(self.output_dir + os.sep, "") + "'" for file in excluded_files]),
                 lane_number = self.lane_number,
                 source = self.output_dir,
                 run_name = os.path.basename(self.run_dir)
@@ -551,8 +552,9 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
         """ Send an optional notification to notify that the copy is finished. """
         jobs = []
 
-        input = self.output_dir + os.sep + "copyCompleted." + str(self.lane_number) + ".out"
-        output = self.output_dir + os.sep +"notificationAssociation." + str(self.lane_number) + ".out"
+        full_destination_folder = config.param('copy', 'destination_folder', type="dirpath") + os.path.basename(self.run_dir) + "_" + str(self.lane_number)
+        input = full_destination_folder + os.sep + "copyCompleted." + str(self.lane_number) + ".out"
+        output = full_destination_folder + os.sep +"notificationAssociation." + str(self.lane_number) + ".out"
 
         notification_command = config.param('end_copy_notification', 'notification_command', required=False)
         if (notification_command):
