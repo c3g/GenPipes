@@ -377,7 +377,11 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
         job = concat_jobs([
             Job(command="mkdir -p " + output_directory),
             Job(input_gtfs, [sample_file], command="""\
-{sample_rows} > {sample_file}""".format(sample_rows="\n".join(input_gtfs), sample_file=sample_file)),
+`cat > {sample_file} << END
+{sample_rows}
+END
+  
+`""".format(sample_rows="\n".join(input_gtfs), sample_file=sample_file)),
             cufflinks.cuffmerge(sample_file, output_directory, gtf_file=gtf)],
             name="cuffmerge")
         
@@ -424,12 +428,13 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
 
         fpkm_directory = "cufflinks"
         gtf = os.path.join(fpkm_directory, "AllSample","merged.gtf")
+        sample_labels = ",".join([sample.name for sample in self.samples])
 
 
         # Perform cuffnorm using every samples
         job = cufflinks.cuffnorm([os.path.join(fpkm_directory, sample.name, "abundances.cxb") for sample in self.samples],
              gtf,
-             "cuffnorm")
+             "cuffnorm",sample_labels)
         job.name = "cuffnorm" 
         jobs.append(job)
         

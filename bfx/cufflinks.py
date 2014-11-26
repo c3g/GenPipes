@@ -132,7 +132,7 @@ def cuffquant(input_bam, output_directory, gtf):
 
     job.command = """\
 mkdir -p {output_directory} && \\
-cuffquant -q {other_options}\\
+cuffquant -q {other_options} \\
   --max-bundle-frags {max_bundle_frags} \\
   --library-type {library_type} \\
   --output-dir {output_directory} \\
@@ -150,7 +150,7 @@ cuffquant -q {other_options}\\
 
     return job
 
-def cuffnorm(input_files, gtf, output_directory):
+def cuffnorm(input_files, gtf, output_directory, sample_labels):
 
     job = Job(
         input_files+[gtf],
@@ -160,10 +160,11 @@ def cuffnorm(input_files, gtf, output_directory):
 
     job.command = """\
 mkdir -p {output_directory} && \\
-cuffnorm -q {other_options}\\
+cuffnorm -q {other_options} \\
   --library-type {library_type} \\
   --output-dir {output_directory} \\
   --num-threads {num_threads} \\
+  --labels {sample_labels} \\
   {gtf} \\
   {input_files}""".format(
         other_options=config.param('cuffnorm', 'other_options', required=False),
@@ -171,6 +172,7 @@ cuffnorm -q {other_options}\\
         library_type=config.param('cuffnorm', 'strand_info'),
         output_directory=output_directory,
         num_threads=config.param('cuffnorm', 'threads', type='posint'),
+        sample_labels=sample_labels,
         input_files=" \\\n  ".join(input_files)
     )
 
