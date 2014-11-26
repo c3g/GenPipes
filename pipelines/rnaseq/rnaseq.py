@@ -518,7 +518,7 @@ END
             self.cuffdiff,
             self.cuffnorm,
             self.differential_expression,
-            self.differential_expression_goseq
+            self.differential_expression_goseq,
             self.gq_seq_utils_exploratory_rnaseq
         ]
 
