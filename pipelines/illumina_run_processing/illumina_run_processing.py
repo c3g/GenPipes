@@ -480,8 +480,8 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
         jobs = []
         inputs = self.copy_job_inputs
 
-        output1 = "notificationProcessingComplete." + str(self.lane_number) + ".out"
-        output2 = "notificationCopyStart." + str(self.lane_number) + ".out"
+        output1 = self.output_dir + os.sep + "notificationProcessingComplete." + str(self.lane_number) + ".out"
+        output2 = self.output_dir + os.sep + "notificationCopyStart." + str(self.lane_number) + ".out"
 
         notification_command = config.param('start_copy_notification', 'notification_command', required=False)
         if (notification_command):
@@ -503,7 +503,8 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
         jobs = []
         inputs = self.copy_job_inputs
 
-        output = self.output_dir + os.sep + "copyCompleted." + str(self.lane_number) + ".out"
+        full_destination_folder = config.param('copy', 'destination_folder', type="dirpath") + os.path.basename(self.run_dir) + "_" + str(self.lane_number)
+        output = full_destination_folder + os.sep + "copyCompleted." + str(self.lane_number) + ".out"
 
         exclude_bam = config.param('copy', 'exclude_bam', required=False, type='boolean')
         exclude_fastq_with_bam = config.param('copy', 'exclude_fastq_with_bam', required=False, type='boolean')
@@ -551,8 +552,9 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
         """ Send an optional notification to notify that the copy is finished. """
         jobs = []
 
-        input = self.output_dir + os.sep + "copyCompleted." + str(self.lane_number) + ".out"
-        output = self.output_dir + os.sep +"notificationAssociation." + str(self.lane_number) + ".out"
+        full_destination_folder = config.param('copy', 'destination_folder', type="dirpath") + os.path.basename(self.run_dir) + "_" + str(self.lane_number)
+        input = full_destination_folder + os.sep + "copyCompleted." + str(self.lane_number) + ".out"
+        output = full_destination_folder + os.sep +"notificationAssociation." + str(self.lane_number) + ".out"
 
         notification_command = config.param('end_copy_notification', 'notification_command', required=False)
         if (notification_command):
