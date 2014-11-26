@@ -21,7 +21,6 @@ from bfx.readset import *
 from bfx import bedtools
 from bfx import cufflinks
 from bfx import differential_expression
-from bfx import gq_seq_utils
 from bfx import htseq
 from bfx import metrics
 from bfx import picard
@@ -33,12 +32,6 @@ import utils
 log = logging.getLogger(__name__)
 
 class RnaSeq(common.Illumina):
-
-    def __init__(self):
-        # Add pipeline specific arguments
-        self.argparser.add_argument("-d", "--design", help="design file", type=file)
-
-        super(RnaSeq, self).__init__()
 
     def star(self):
         jobs = []
@@ -77,7 +70,7 @@ class RnaSeq(common.Illumina):
                 rg_platform=rg_platform if rg_platform else "",
                 rg_center=rg_center if rg_center else ""
             )
-            job.name = "star_align1." + readset.name
+            job.name = "star_align.1." + readset.name
             jobs.append(job)
         
         ######
@@ -133,6 +126,7 @@ class RnaSeq(common.Illumina):
                 cuff_follow=True,
                 sort_bam=True
             )
+            job.input_files.append(os.path.join(project_index_directory, "SAindex"))
  
             # If this readset is unique for this sample, further BAM merging is not necessary.
             # Thus, create a sample BAM symlink to the readset BAM.
@@ -142,7 +136,7 @@ class RnaSeq(common.Illumina):
                 job.command += " && \\\n rm -f " + sample_bam + " && \\\n ln -s " + os.path.join(self.output_dir,"alignment",readset.name, "Aligned.sortedByCoord.out.bam") + " " + sample_bam
                 job.output_files.append(sample_bam)
 
-            job.name = "star_align2." + readset.name
+            job.name = "star_align.2." + readset.name
             jobs.append(job)
 
         return jobs
@@ -277,16 +271,13 @@ echo "Sample\tBamFile\tNote
             stranded = "no" if config.param('DEFAULT', 'strand_info') == "fr-unstranded" else "reverse"
             job = concat_jobs([
                 Job(command="mkdir -p raw_counts"),
-                pipe_jobs([
-                    samtools.view(input_bam),
-                    htseq.htseq_count(
-                        "/dev/stdin",
-                        config.param('htseq', 'gtf', type='filepath'),
-                        output_count,
-                        config.param('htseq', 'options'),
-                        stranded
-                    )
-                ])
+                htseq.htseq_count(
+                    input_bam,
+                    config.param('htseq', 'gtf', type='filepath'),
+                    output_count,
+                    config.param('htseq', 'options'),
+                    stranded
+                )
             ], name="htseq_count." + sample.name)
             jobs.append(job)
 
@@ -359,7 +350,7 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
 
         for sample in self.samples:
             input_bam = os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.bam")
-            output_directory = os.path.join("fpkm", sample.name)
+            output_directory = os.path.join("cufflinks", sample.name)
 
             # De Novo FPKM
             job = cufflinks.cufflinks(input_bam, output_directory, gtf)
@@ -370,9 +361,9 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
     
     def cuffmerge(self):
         
-        output_directory = os.path.join("fpkm", "AllSample")
-        sample_file = os.path.join("fpkm", "cuffmerge.samples.txt")
-        input_gtfs = [os.path.join("fpkm", sample.name, "transcripts.gtf") for sample in self.samples]
+        output_directory = os.path.join("cufflinks", "AllSample")
+        sample_file = os.path.join("cufflinks", "cuffmerge.samples.txt")
+        input_gtfs = [os.path.join("cufflinks", sample.name, "transcripts.gtf") for sample in self.samples]
         gtf = config.param('cuffmerge','gtf', type='filepath')
         
         
@@ -388,11 +379,11 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
     def cuffquant(self):
         jobs = []
         
-        gtf = os.path.join("fpkm", "AllSample","merged.gtf")
+        gtf = os.path.join("cufflinks", "AllSample","merged.gtf")
         
         for sample in self.samples:
             input_bam = os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.bam")
-            output_directory = os.path.join("fpkm", sample.name)
+            output_directory = os.path.join("cufflinks", sample.name)
 
             #Quantification
             job = cufflinks.cuffquant(input_bam, output_directory, gtf)
@@ -404,7 +395,7 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
     def cuffdiff(self):
         jobs = []
 
-        fpkm_directory = "fpkm"
+        fpkm_directory = "cufflinks"
         gtf = os.path.join(fpkm_directory, "AllSample","merged.gtf")
 
 
@@ -424,7 +415,7 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
     def cuffnorm(self):
         jobs = []
 
-        fpkm_directory = "fpkm"
+        fpkm_directory = "cufflinks"
         gtf = os.path.join(fpkm_directory, "AllSample","merged.gtf")
 
 
@@ -480,10 +471,11 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
 
         return jobs
 
+
     def gq_seq_utils_exploratory_rnaseq(self):
         sample_fpkm_readcounts = [[
             sample.name,
-            os.path.join("fpkm", sample.name, "isoforms.fpkm_tracking"),
+            os.path.join("cufflinks", sample.name, "isoforms.fpkm_tracking"),
             os.path.join("raw_counts", sample.name + ".readcounts.csv")
         ] for sample in self.samples]
 
@@ -525,10 +517,20 @@ END
             self.cuffquant,
             self.cuffdiff,
             self.cuffnorm,
-            self.gq_seq_utils_exploratory_rnaseq,
             self.differential_expression,
-            self.differential_expression_goseq
+            self.differential_expression_goseq,
+            self.gq_seq_utils_exploratory_rnaseq
         ]
 
+    def __init__(self):
+        # Add pipeline specific arguments
+        self.argparser.add_argument("-d", "--design", help="design file", type=file)
+
+        super(RnaSeq, self).__init__()
+        
 if __name__ == '__main__':
-    RnaSeq()
+    pipRna=RnaSeq()
+    #if pipRna.args.cleaning :
+    #    pipRna.cleanning()
+    #else:
+    pipRna.submit_jobs()

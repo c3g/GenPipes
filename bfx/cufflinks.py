@@ -125,7 +125,7 @@ cuffmerge {gtf} \\
 def cuffquant(input_bam, output_directory, gtf):
 
     job = Job(
-        [input_bam],
+        [input_bam,gtf],
         [os.path.join(output_directory, "abundances.cxb")],
         [['cuffquant', 'module_cufflinks']]
     )

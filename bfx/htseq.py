@@ -13,6 +13,7 @@ def htseq_count(input, gtf, output, options="", stranded="no"):
     job.command = """\
 htseq-count {options} \\
   --stranded={stranded} \\
+  --format=bam \\
   {input} \\
   {gtf}{output}""".format(
         options=options,
