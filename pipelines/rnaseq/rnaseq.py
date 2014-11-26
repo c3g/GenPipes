@@ -519,7 +519,7 @@ END
             self.cuffnorm,
             self.differential_expression,
             self.differential_expression_goseq
-            self. gq_seq_utils_exploratory_rnaseq
+            self.gq_seq_utils_exploratory_rnaseq
         ]
 
     def __init__(self):
