@@ -92,6 +92,7 @@ STAR --runMode alignReads \\
   {io_limit_size} \\
   {wig_param} \\
   {chim_param} \\
+  {cuff_cmd} \\
   --outSAMattrRGline {rg_id}\t{rg_platform}\t{rg_platform_unit}\t{rg_library}\t{rg_sample}\t{rg_center} \\
   {other_options}""".format(
         genome_index_folder=genome_index_folder,
@@ -111,6 +112,7 @@ STAR --runMode alignReads \\
         wig_param=wig_cmd,
         chim_param=chim_cmd,
         sort_ram="\\\n  --limitBAMsortRAM " + str(int(max_ram/2)) if sort_bam else "",
+        cuff_cmd=cuff_cmd,
         sort_value="SortedByCoordinate" if sort_bam else "Unsorted"
     )
 
