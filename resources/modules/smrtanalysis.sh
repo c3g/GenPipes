@@ -8,7 +8,7 @@ set -eu -o pipefail
 
 SOFTWARE=smrtanalysis
 VERSION_BASE=2.3.0.140936
-VERSION_PATCH=p0
+VERSION_PATCH=p1
 VERSION=$VERSION_BASE.$VERSION_PATCH
 
 # 'MUGQIC_INSTALL_HOME_DEV' for development, 'MUGQIC_INSTALL_HOME' for production (don't write '$' before!)
@@ -41,7 +41,7 @@ do
     cp -a ${!INSTALL_HOME}/archive/$ARCHIVE .
   else
     echo "Archive $ARCHIVE not in ${!INSTALL_HOME}/archive/: downloading it..."
-    wget http://files.pacb.com/software/$SOFTWARE/${VERSION%\.*}/$ARCHIVE
+    wget http://files.pacb.com/software/$SOFTWARE/${VERSION_BASE%\.*}/$ARCHIVE
   fi
 done
 # Extract and apply patch but NOT install SMRT Portal etc.
