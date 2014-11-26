@@ -518,7 +518,7 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
                 if exclude_bam:
                     excluded_files.append(readset.bam + ".*.bam")
                     excluded_files.append(readset.bam + ".*.bai")
-                if exclude_fastq_with_bam:
+                if exclude_fastq_with_bam and not exclude_bam:
                     excluded_files.append(readset.fastq1)
                     if readset.fastq2:
                         excluded_files.append(readset.fastq2)
@@ -534,7 +534,7 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
             jobs_to_concat.append(Job(inputs, [output], command=copy_command_run_folder))
 
         copy_command_output_folder = config.param('copy', 'copy_command', required=False).format(
-                exclusion_clauses = "\\\n".join([" --exclude '" + file + "'" for file in excluded_files]),
+                exclusion_clauses = "\\\n".join([" --exclude '" + file.replace(self.output_dir + os.sep, "") + "'" for file in excluded_files]),
                 lane_number = self.lane_number,
                 source = self.output_dir,
                 run_name = os.path.basename(self.run_dir)
