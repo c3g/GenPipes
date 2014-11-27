@@ -929,7 +929,7 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
 
         print("On this page:\n\n[TOC]\n\n")
 
-        print("## Usage\n```\n#!bash\nmugqic\\_pipeline/pipelines/illumina\\_run\\_processing/illumina\\_run\\_processing.py --help\n```\n\n")
+        print("## Usage\n```\n#!bash\nmugqic_pipeline/pipelines/illumina_run_processing/illumina_run_processing.py --help\n```\n\n")
 
         print("## Steps\n\n This pipeline performs the following steps:\n\n")
 

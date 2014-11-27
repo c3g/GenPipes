@@ -20,7 +20,7 @@ On this page:
 ## Usage
 ```
 #!bash
-mugqic\_pipeline/pipelines/illumina\_run\_processing/illumina\_run\_processing.py --help
+mugqic_pipeline/pipelines/illumina_run_processing/illumina_run_processing.py --help
 ```
 
 
