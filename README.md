@@ -122,11 +122,11 @@ Example:
 
 ### PacBio Assembly
 
-* Sample: must contain letters A-Z, numbers 0-9, hyphens (-) or underscores (_) only; BAM files will be merged into a file named after this value; mandatory;
+* Sample: must contain letters A-Z, numbers 0-9, hyphens (-) or underscores (_) only; mandatory;
 * Readset: a unique readset name with the same allowed characters as above; mandatory;
 * Smartcell: mandatory;
 * NbBasePairs: total number of base pairs for this readset; mandatory;
-* EstimatedGenomeSize: estimated genome size in number of base pairs used to compute seeding reads length cutoff; mandatory;
+* EstimatedGenomeSize: estimated genome size in number of base pairs used to compute seeding read length cutoff; mandatory;
 * BAS: comma-separated list of relative or absolute paths to BAS files (old PacBio format); mandatory if BAX value is missing, ignored otherwise;
 * BAX: comma-separated list of relative or absolute paths to BAX files; BAX file list is used first if both BAX/BAS lists are present; mandatory if BAS value is missing.
 
@@ -145,7 +145,7 @@ If your readsets belong to a [Nanuq](http://gqinnovationcenter.com/services/nanu
 
 Configuration Files
 -------------------
-Pipeline cluster settings and command parameters can be customized using Configuration Files (`.ini` extension).
+Pipeline command parameters and cluster settings can be customized using Configuration Files (`.ini` extension).
 Those files have a structure similar to Microsoft Windows INI files e.g.:
 ```
 #!ini
@@ -309,4 +309,9 @@ Data collected:
 
 Contact us
 ----------
-Please, ask questions or report bugs by sending us an email to [bioinformatics.service@mail.mcgill.ca](mailto:bioinformatics.service@mail.mcgill.ca).
+Please, ask questions or report bugs by sending us an e-mail at [bioinformatics.service@mail.mcgill.ca](mailto:bioinformatics.service@mail.mcgill.ca).
+
+* Messages should not be sent directly to our team members. The generic e-mail address above will create a ticket viewable by all of us and facilitate the follow-up of the problem.
+* Choose a meaningful subject for your message.
+* Include the pipeline version number in your message.
+* An error message or code snippet illustrating the problem is normally very useful. 
