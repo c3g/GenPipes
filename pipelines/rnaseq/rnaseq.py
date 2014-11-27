@@ -33,6 +33,11 @@ import utils
 log = logging.getLogger(__name__)
 
 class RnaSeq(common.Illumina):
+    
+    def __init__(self):
+        # Add pipeline specific arguments
+        self.argparser.add_argument("-d", "--design", help="design file", type=file)
+        super(RnaSeq, self).__init__()
 
     def star(self):
         jobs = []
@@ -528,15 +533,8 @@ END
             self.gq_seq_utils_exploratory_rnaseq
         ]
 
-    def __init__(self):
-        # Add pipeline specific arguments
-        self.argparser.add_argument("-d", "--design", help="design file", type=file)
 
-        super(RnaSeq, self).__init__()
         
 if __name__ == '__main__':
-    pipRna=RnaSeq()
-    #if pipRna.args.cleaning :
-    #    pipRna.cleanning()
-    #else:
-    pipRna.submit_jobs()
+    RnaSeq()
+
