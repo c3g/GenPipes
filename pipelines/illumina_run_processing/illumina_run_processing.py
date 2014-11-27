@@ -484,7 +484,7 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
                             output_directory = self.output_dir,
                             filename = coverage_bed
                     )
-                    job = Job([], [full_coverage_bed], command=command, name="bed_" + coverage_bed)
+                    job = Job([], [full_coverage_bed], command=command, name="bed_download." + coverage_bed)
                     downloaded_bed_files.append(coverage_bed)
                     jobs.append(job)
 
