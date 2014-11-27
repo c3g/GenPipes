@@ -21,24 +21,18 @@ from bfx.readset import *
 from bfx import bedtools
 from bfx import cufflinks
 from bfx import differential_expression
-from bfx import gq_seq_utils
 from bfx import htseq
 from bfx import metrics
 from bfx import picard
 from bfx import samtools
 from bfx import star
+from bfx import gq_seq_utils
 from pipelines import common
 import utils
 
 log = logging.getLogger(__name__)
 
 class RnaSeq(common.Illumina):
-
-    def __init__(self):
-        # Add pipeline specific arguments
-        self.argparser.add_argument("-d", "--design", help="design file", type=file)
-
-        super(RnaSeq, self).__init__()
 
     def star(self):
         jobs = []
@@ -338,14 +332,14 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
 
         # RPKM and Saturation
         count_file = os.path.join("DGE", "rawCountMatrix.csv")
-        gene_size_file = config.param('saturation', 'gene_size', type='filepath')
+        gene_size_file = config.param('saturation_rpkm', 'gene_size', type='filepath')
         rpkm_directory = "raw_counts"
         saturation_directory = os.path.join("metrics", "saturation")
 
         job = concat_jobs([
             Job(command="mkdir -p " + saturation_directory),
             metrics.rpkm_saturation(count_file, gene_size_file, rpkm_directory, saturation_directory)
-        ], name="saturation.rpkm")
+        ], name="saturation_rpkm")
         jobs.append(job)
 
         return jobs
@@ -534,5 +528,15 @@ END
             self.gq_seq_utils_exploratory_rnaseq
         ]
 
+    def __init__(self):
+        # Add pipeline specific arguments
+        self.argparser.add_argument("-d", "--design", help="design file", type=file)
+
+        super(RnaSeq, self).__init__()
+        
 if __name__ == '__main__':
-    RnaSeq()
+    pipRna=RnaSeq()
+    #if pipRna.args.cleaning :
+    #    pipRna.cleanning()
+    #else:
+    pipRna.submit_jobs()
