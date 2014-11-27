@@ -6,24 +6,25 @@
 from core.config import *
 from core.job import *
 
-def exploratory_rnaseq(input_file, genes_file, output_dir):
+def exploratory_analysis_rnaseq(htseq_count_file, cuffnorm_dir, genes_file, output_dir):
 
     return Job(
-        [genes_file],
+        [htseq_count_file, os.path.join(cuffnorm_dir, "isoforms.fpkm_table"), os.path.join(cuffnorm_dir, "isoforms.attr_table")],
         [os.path.join(output_dir, "top_sd_heatmap_cufflinks_logFPKMs.pdf")],
         [
-            ['gq_seq_utils_exploratory_rnaseq', 'module_R'],
-            ['gq_seq_utils_exploratory_rnaseq', 'module_mugqic_R_packages']
+            ['gq_seq_utils_exploratory_analysis_rnaseq', 'module_R'],
+            ['gq_seq_utils_exploratory_analysis_rnaseq', 'module_mugqic_R_packages']
         ],
         command = """\
 R --no-save --no-restore <<-EOF
 suppressPackageStartupMessages(library(gqSeqUtils))
 
-exploratoryRNAseq(input.path="{input_file}", genes.path="{genes_file}", output.dir="{output_dir}")
+exploratoryAnalysisRNAseq(htseq.counts.path="{htseq_count_file}", cuffnorm.fpkms.dir="{cuffnorm_dir}", genes.path="{genes_file}", output.dir="{output_dir}")
 print("done.")
 
 EOF""".format(
-        input_file=input_file,
+        htseq_count_file=htseq_count_file,
+        cuffnorm_dir=cuffnorm_dir,
         genes_file=genes_file,
         output_dir=output_dir
     ))
@@ -41,7 +42,7 @@ def report(ini_filepaths, project_path, pipeline_type, output_directory):
         [os.path.join(path, "index.html")],
         [
             ['gq_seq_utils_report', 'module_R'],
-            ['gq_seq_utils_exploratory_rnaseq', 'module_mugqic_R_packages']
+            ['gq_seq_utils_report', 'module_mugqic_R_packages']
         ],
         command = """\
 R --no-save -e 'library(gqSeqUtils); mugqicPipelineReport(pipeline="{pipeline}"{title}{path}{author}{contact}, ini.file.path=c({ini_filepaths}), project.path="{project_path}")'""".format(

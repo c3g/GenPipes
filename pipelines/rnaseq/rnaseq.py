@@ -462,16 +462,7 @@ END
         jobs = []
 
         for contrast in self.contrasts:
-            # goseq for cuffdiff known results
-            job = differential_expression.goseq(
-                os.path.join("cuffdiff", contrast.name, "isoform_exp.diff"),
-                config.param("differential_expression_goseq", "cuffdiff_input_columns"),
-                os.path.join("cuffdiff",  contrast.name, "gene_ontology_results.csv")
-            )
-            job.name = "differential_expression_goseq.cuffdiff.known." + contrast.name
-            jobs.append(job)
-
-            # goseq for dge results
+            # goseq for differential gene expression results
             job = differential_expression.goseq(
                 os.path.join("DGE", contrast.name, "dge_results.csv"),
                 config.param("differential_expression_goseq", "dge_input_columns"),
@@ -482,8 +473,7 @@ END
 
         return jobs
 
-
-    def gq_seq_utils_exploratory_rnaseq(self):
+    def gq_seq_utils_exploratory_analysis_rnaseq(self):
         sample_fpkm_readcounts = [[
             sample.name,
             os.path.join("cufflinks", sample.name, "isoforms.fpkm_tracking"),
@@ -494,20 +484,13 @@ END
 
         return [concat_jobs([
             Job(command="mkdir -p exploratory"),
-            Job(
-                [triplet[1] for triplet in sample_fpkm_readcounts] + [triplet[2] for triplet in sample_fpkm_readcounts],
-                [input_file],
-                command="""\
-`cat > {input_file} << END
-{sample_fpkm_readcounts}
-END
-`""".format(sample_fpkm_readcounts="\n".join("\t".join(triplet) for triplet in sample_fpkm_readcounts), input_file=input_file)),
-            gq_seq_utils.exploratory_rnaseq(
-                input_file,
-                config.param('gq_seq_utils_exploratory_rnaseq', 'genes', type='filepath'),
+            gq_seq_utils.exploratory_analysis_rnaseq(
+                os.path.join("DGE", "rawCountMatrix.csv"),
+                "cuffnorm",
+                config.param('gq_seq_utils_exploratory_analysis_rnaseq', 'genes', type='filepath'),
                 "exploratory"
             )
-        ], name="gq_seq_utils_exploratory_rnaseq")]
+        ], name="gq_seq_utils_exploratory_analysis_rnaseq")]
 
     @property
     def steps(self):
@@ -530,11 +513,8 @@ END
             self.cuffnorm,
             self.differential_expression,
             self.differential_expression_goseq,
-            self.gq_seq_utils_exploratory_rnaseq
+            self.gq_seq_utils_exploratory_analysis_rnaseq
         ]
 
-
-        
 if __name__ == '__main__':
     RnaSeq()
-

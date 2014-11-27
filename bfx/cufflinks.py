@@ -153,8 +153,8 @@ cuffquant -q {other_options} \\
 def cuffnorm(input_files, gtf, output_directory, sample_labels):
 
     job = Job(
-        input_files+[gtf],
-        [os.path.join(output_directory, "isoform.fpkm_table"),os.path.join(output_directory, "isoform.count_table")],
+        input_files + [gtf],
+        [os.path.join(output_directory, "isoforms.fpkm_table"), os.path.join(output_directory, "isoforms.count_table"), os.path.join(output_directory, "isoforms.attr_table")],
         [['cuffnorm', 'module_cufflinks']]
     )
 
