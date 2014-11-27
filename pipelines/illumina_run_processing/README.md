@@ -11,6 +11,35 @@ The standard MUGQIC Illumina Run Processing pipeline uses the Illumina bcl2fastq
 software to convert and demultiplex the base call files to fastq files. The
 pipeline runs some QCs on the raw data, on the fastq and on the aligment.
 
+## Sample Sheets
+The pipeline uses two input sample sheets. The first one is the standard Casava
+sheet, a csv file having the following columns (please refer to the Illumina
+Casava user guide):
+
+- `SampleID`
+- `FCID`
+- `SampleRef`
+- `Index`
+- `Description`
+- `Control`
+- `Recipe`
+- `Operator`
+- `SampleProject`
+
+The second sample sheet is called the Nanuq run sheet. It's a csv file with the
+following minimal set of mandatory columns (the column order in the file doesn't
+matter)
+
+- `ProcessingSheetId` Must be the same as the `SampleID` from the Casava Sheet.
+- `Name` The sample name put in RG headers of bam files and on filename on disk.
+- `Run` The run number.
+- `Region` The lane number.
+- `Library Barcode` The library barcode put in .bam's RG headers and on disk
+- `Library Source` The type of library. If this value contains 'RNA' or 'cDNA',
+STAR will be used to make the aligmnent, otherwise, bwa\_mem will be used
+- `BED Files` The name of the BED file containing the genomic targets. This is
+the 'filename' parameter passed to the 'fetch\_bed\_file\_command'
+
 
 On this page:
 
