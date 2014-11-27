@@ -708,7 +708,10 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
                 rg_platform="Illumina",
                 rg_center=rg_center if rg_center else ""
             ),
-            Job(output_files=[output], command="mv " + os.path.dirname(output) + os.sep + star_bam_name + " " + output)
+            Job(output_files=[output], command="mv " + os.path.dirname(output) + os.sep + star_bam_name + " " + output),
+            Job(module_entries=[["star_align", "module_samtools"]], command="samtools index " + output),
+            # Rename the "bam.bai" file to ".bai" only
+            Job(command="mv " + output + ".bai" + " " + output[::-1].replace(".bam"[::-1], ".bai"[::-1], 1)[::-1])
         ])
         job.name = "star_align." + readset.name
         jobs.append(job)
