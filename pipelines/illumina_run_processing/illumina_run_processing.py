@@ -193,7 +193,7 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
             log.info("No Indexes, *NOT* Generating index counts")
         else:
             input = self.run_dir + os.sep + "RunInfo.xml"
-            output = self.run_dir + os.sep + os.path.basename(self.run_dir) + "_" + str(self.lane_number) + '.metrics'
+            output = self.output_dir + os.sep + os.path.basename(self.run_dir) + "_" + str(self.lane_number) + '.metrics'
 
             job = Job([input], [output], [["index", "module_java"]], name="index." + self.run_id + "." + str(self.lane_number))
             job.command = """\
