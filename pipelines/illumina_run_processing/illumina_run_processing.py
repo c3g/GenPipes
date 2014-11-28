@@ -556,7 +556,7 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
             input_bam = readset.bam + ".sorted.bam"
             output_bai = input_bai + ".md5"
             output_bam = input_bam + ".md5"
-            command = "md5sum -b " + input_bai + " > " + output_bai + " && md5sum -b " + input_bam + " > " + output_bam
+            command = "md5sum -b " + input_bam + " > " + output_bam + " && md5sum -b " + input_bai + " > " + output_bai
 
             job = Job([input_bam], [output_bai, output_bam], name="bmd5." + readset.name + ".bmd5." + self.run_id + "." + str(self.lane_number), command=command)
             jobs.append(job)
@@ -738,9 +738,7 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
                 rg_center=rg_center if rg_center else ""
             ),
             Job(output_files=[output], command="mv " + os.path.dirname(output) + os.sep + star_bam_name + " " + output),
-            Job(module_entries=[["star_align", "module_samtools"]], command="samtools index " + output),
-            # Rename the "bam.bai" file to ".bai" only
-            Job(command="mv " + output + ".bai" + " " + output[::-1].replace(".bam"[::-1], ".bai"[::-1], 1)[::-1])
+            picard.build_bam_index(output, output[::-1].replace(".bam"[::-1], ".bai"[::-1], 1)[::-1])
         ])
         job.name = "star_align." + readset.name
         jobs.append(job)

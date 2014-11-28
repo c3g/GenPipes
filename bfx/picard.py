@@ -206,3 +206,21 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
     )
 
     return job
+
+def build_bam_index(input, output):
+
+    job = Job([input], [output], [['build_bam_index', 'module_java'], ['build_bam_index', 'module_picard']])
+
+    job.command = """\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/BuildBamIndex.jar \\
+  VALIDATION_STRINGENCY=SILENT \\
+  INPUT={input} \\
+  OUTPUT={output} """.format(
+        tmp_dir=config.param('build_bam_index', 'tmp_dir'),
+        java_other_options=config.param('build_bam_index', 'java_other_options'),
+        ram=config.param('build_bam_index', 'ram'),
+        input=input,
+        output=output,
+    )
+
+    return job
