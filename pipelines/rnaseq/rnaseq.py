@@ -492,6 +492,19 @@ END
             )
         ], name="gq_seq_utils_exploratory_analysis_rnaseq")]
 
+    def gq_seq_utils_report(self):
+        job = gq_seq_utils.report(
+            [config_file.name for config_file in self.args.config],
+            self.output_dir,
+            "RNAseq",
+            self.output_dir
+        )
+        job.input_files = [
+            "metrics/trimming.stats"
+        ]
+        job.name = "gq_seq_utils_report"
+        return [job]
+
     @property
     def steps(self):
         return [
@@ -513,7 +526,8 @@ END
             self.cuffnorm,
             self.differential_expression,
             self.differential_expression_goseq,
-            self.gq_seq_utils_exploratory_analysis_rnaseq
+            self.gq_seq_utils_exploratory_analysis_rnaseq,
+            self.gq_seq_utils_report
         ]
 
 if __name__ == '__main__':
