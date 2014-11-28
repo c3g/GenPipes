@@ -175,13 +175,13 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         return [
             self.index,
             self.fastq,
-            self.md5,
             self.qc_graphs,
             self.blast,
             self.align,
             self.picard_mark_duplicates,
             self.metrics,
             self.bam_md5,
+            self.md5,
             self.start_copy_notification,
             self.copy,
             self.end_copy_notification
