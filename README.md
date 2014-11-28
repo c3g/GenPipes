@@ -311,7 +311,7 @@ Contact us
 ----------
 Please, ask questions or report bugs by sending us an e-mail at [bioinformatics.service@mail.mcgill.ca](mailto:bioinformatics.service@mail.mcgill.ca).
 
-* Messages should not be sent directly to our team members. The generic e-mail address above will create a ticket viewable by all of us and facilitate the follow-up of the problem.
+* Messages should not be sent directly to our team members. The generic e-mail address above will create a ticket viewable by all of us and facilitate the follow-up of your request.
 * Choose a meaningful subject for your message.
 * Include the pipeline version number in your message.
-* An error message or code snippet illustrating the problem is normally very useful. 
+* An error message or code snippet illustrating your request is normally very useful. 
