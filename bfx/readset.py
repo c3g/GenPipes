@@ -225,8 +225,6 @@ def parse_illumina_raw_readset_files(output_dir, run_type, nanuq_readset_file, c
 
         readset._run = line['Run']
         readset._lane = current_lane
-        readset._adaptor1 = line['Adaptor Read 1 (NOTE: Usage is bound by Illumina Disclaimer found on Nanuq Project Page)']
-        readset._adaptor2 = line['Adaptor Read 2 (NOTE: Usage is bound by Illumina Disclaimer found on Nanuq Project Page)']
         if line['BED Files']:
             readset._beds = line['BED Files'].split(";")
         else:
