@@ -22,14 +22,7 @@ from core.pipeline import *
 from bfx.readset import *
 
 from bfx import bvatools
-from bfx import bwa
-from bfx import gatk
-from bfx import igvtools
-from bfx import metrics
 from bfx import picard
-from bfx import samtools
-from bfx import star
-from bfx import tools
 from pipelines import common
 
 log = logging.getLogger(__name__)
@@ -449,11 +442,7 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
         """
         jobs = []
         for readset in [readset for readset in self.readsets if (readset.bam)]:
-            if (readset.aligner == "bwa"):
-                jobs.extend(self.get_bwa_jobs(readset))
-            elif (readset.aligner == "star"):
-                jobs.extend(self.get_star_jobs(readset))
-
+            jobs.extend(readset.aligner.get_alignment_jobs(readset))
         self.add_copy_job_inputs(jobs)
         return jobs
 
@@ -494,54 +483,8 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
             from the specicied "BED Files".
         """
         jobs = []
-        created_interval_lists = []
-        downloaded_bed_files = []
         for readset in [readset for readset in self.readsets if (readset.bam)]:
-            input_file_prefix = readset.bam + '.sorted.dup.'
-            input = input_file_prefix + "bam"
-
-            job = picard.collect_multiple_metrics(input, input_file_prefix + "all.metrics", reference_sequence=readset.reference_file)
-            job.name = "picard_collect_multiple_metrics." + readset.name + ".met." + self.run_id + "." + str(self.lane_number)
-            jobs.append(job)
-
-            coverage_bed = bvatools.resolve_readset_coverage_bed(readset)
-            if coverage_bed:
-                full_coverage_bed = self.output_dir + os.sep + coverage_bed
-                if (not os.path.exists(full_coverage_bed)) and (coverage_bed not in downloaded_bed_files):
-                    # Download the bed file
-                    command = config.param('DEFAULT', 'fetch_bed_file_command').format(
-                            output_directory = self.output_dir,
-                            filename = coverage_bed
-                    )
-                    job = Job([], [full_coverage_bed], command=command, name="bed_download." + coverage_bed)
-                    downloaded_bed_files.append(coverage_bed)
-                    jobs.append(job)
-
-                job = bvatools.depth_of_coverage(
-                    input, 
-                    input_file_prefix + "coverage.tsv", 
-                    full_coverage_bed, 
-                    other_options = config.param('bvatools_depth_of_coverage', 'other_options', required=False),
-                    reference_genome = readset.reference_file
-                )
-
-                job.name = "bvatools_depth_of_coverage." + readset.name + ".doc." + self.run_id + "." + str(self.lane_number)
-                jobs.append(job)
-
-                interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
-
-                if not interval_list in created_interval_lists:
-                    # Create one job to generate the interval list from the bed file
-                    ref_dict = os.path.splitext(readset.reference_file)[0] + '.dict'
-                    job = tools.bed2interval_list(ref_dict, full_coverage_bed, interval_list)
-                    job.name = "interval_list." + coverage_bed
-                    created_interval_lists.append(interval_list)
-                    jobs.append(job)
-
-                job = picard.calculate_hs_metrics(input_file_prefix + "bam", input_file_prefix + "onTarget.tsv", interval_list, reference_sequence=readset.reference_file)
-                job.name = "picard_calculate_hs_metrics." + readset.name + ".hs." + self.run_id + "." + str(self.lane_number)
-                jobs.append(job)
-
+            jobs.extend(readset.aligner.get_metrics_jobs(readset))
         self.add_copy_job_inputs(jobs)
         return jobs
 
@@ -682,67 +625,6 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
     def add_copy_job_inputs(self, jobs):
         for job in jobs:
             self.copy_job_inputs.extend(job.output_files)
-
-    def get_bwa_jobs(self, readset):
-        jobs = []
-
-        output = readset.bam + ".sorted.bam"
-
-        job = concat_jobs([
-            Job(command="mkdir -p " + os.path.dirname(output)),
-            pipe_jobs([
-                bwa.mem(
-                    readset.fastq1,
-                    readset.fastq2,
-                    read_group="'@RG" + \
-                        "\tID:" + readset.name + \
-                        "\tSM:" + readset.sample.name + \
-                        ("\tLB:" + readset.library if readset.library else "") + \
-                        ("\tPU:run" + readset.run + "_" + readset.lane if readset.run and readset.lane else "") + \
-                        ("\tCN:" + config.param('bwa_mem', 'sequencing_center') if config.param('bwa_mem', 'sequencing_center', required=False) else "") + \
-                        "\tPL:Illumina" + \
-                        "'",
-                    ref=readset.aligner_reference_index
-                ),
-                picard.sort_sam(
-                    "/dev/stdin",
-                    output,
-                    "coordinate"
-                )
-            ])
-        ], name="bwa_mem_picard_sort_sam." + readset.name + ".align." + self.run_id + "." + str(self.lane_number))
-
-        jobs.append(job)
-        return jobs
-
-    def get_star_jobs(self, readset):
-        jobs = []
-
-        output = readset.bam + ".sorted.bam"
-
-        rg_center = config.param('star_align', 'sequencing_center', required=False)
-        star_bam_name = "Aligned.sortedByCoord.out.bam"
-
-        job = concat_jobs([
-            star.align(
-                reads1=readset.fastq1,
-                reads2=readset.fastq2,
-                output_directory=os.path.dirname(output),
-                sort_bam=True,
-                genome_index_folder=readset.aligner_reference_index,
-                rg_id=readset.name,
-                rg_sample=readset.sample.name,
-                rg_library=readset.library if readset.library else "",
-                rg_platform_unit=readset.run + "_" + readset.lane if readset.run and readset.lane else "",
-                rg_platform="Illumina",
-                rg_center=rg_center if rg_center else ""
-            ),
-            Job(output_files=[output], command="mv " + os.path.dirname(output) + os.sep + star_bam_name + " " + output),
-            picard.build_bam_index(output, output[::-1].replace(".bam"[::-1], ".bai"[::-1], 1)[::-1])
-        ])
-        job.name = "star_align." + readset.name
-        jobs.append(job)
-        return jobs
 
     def getSequencerIndexLength(self):
         """ Returns the total number of index cycles of the run. """
