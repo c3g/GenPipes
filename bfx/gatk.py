@@ -24,7 +24,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         threads=config.param('gatk_base_recalibrator', 'threads', type='int'),
         input=input,
         reference_sequence=config.param('gatk_base_recalibrator', 'genome_fasta', type='filepath'),
-        known_sites=config.param('gatk_base_recalibrator', 'known_sites', type='filepath'),
+        known_sites=config.param('gatk_base_recalibrator', 'known_variants', type='filepath'),
         output=output
     )
 

@@ -57,7 +57,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $SNPEFF_HOME
         tmp_dir=config.param('snpsift_annotate', 'tmp_dir'),
         java_other_options=config.param('snpsift_annotate', 'java_other_options'),
         ram=config.param('snpsift_annotate', 'ram'),
-        db_snp=config.param('snpsift_annotate', 'dbsnp', type='filepath'),
+        db_snp=config.param('snpsift_annotate', 'known_variants', type='filepath'),
         input=input,
         output=" \\\n  > " + output if output else ""
     )
