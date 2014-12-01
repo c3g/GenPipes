@@ -8,6 +8,7 @@ import re
 import ConfigParser
 
 # MUGQIC Modules
+from run_processing_aligner import *
 from sample import *
 
 log = logging.getLogger(__name__)
@@ -198,6 +199,8 @@ def parse_illumina_raw_readset_files(output_dir, run_type, nanuq_readset_file, c
 
     # Parsing Nanuq readset sheet
     log.info("Parse Nanuq Illumina readset file " + nanuq_readset_file + " ...")
+    star_aligner = StarRunProcessingAligner(output_dir, nb_cycles)
+    bwa_aligner = BwaRunProcessingAligner(output_dir)
     readset_csv = csv.DictReader(open(nanuq_readset_file, 'rb'), delimiter=',', quotechar='"')
     for line in readset_csv:
         current_lane = line['Region']
@@ -217,11 +220,10 @@ def parse_illumina_raw_readset_files(output_dir, run_type, nanuq_readset_file, c
         readset._library = line['Library Barcode']
         readset._library_source = line['Library Source']
 
-
         if re.search("RNA|cDNA", readset.library_source):
-            readset._aligner = "star"
+            readset._aligner = star_aligner
         else:
-            readset._aligner = "bwa"
+            readset._aligner = bwa_aligner
 
         readset._run = line['Run']
         readset._lane = current_lane
@@ -267,26 +269,7 @@ def parse_illumina_raw_readset_files(output_dir, run_type, nanuq_readset_file, c
             values = genome.split(':')
             folder_name = os.path.join(values[1] + "." + values[2])
             if (re.match(values[0], readset.species, re.IGNORECASE)) :
-                aligner_reference_index = ""
-                if (readset.aligner == "bwa"):
-                    aligner_reference_index = os.path.join(genome_root,
-                                                           folder_name,
-                                                          "genome",
-                                                          "bwa_index",
-                                                          folder_name + ".fa")
-                elif (readset.aligner == "star"):
-                    ini_file = os.path.join(genome_root, folder_name, folder_name + ".ini")
-                    genome_config = ConfigParser.SafeConfigParser()
-                    genome_config.read(ini_file)
-
-                    source = genome_config.get("DEFAULT", "source")
-                    version = genome_config.get("DEFAULT", "version")
-
-                    aligner_reference_index = os.path.join(genome_root,
-                                                           folder_name,
-                                                          "genome",
-                                                          "star_index",
-                                                          source + version + ".sjdbOverhang" + str(nb_cycles-1))
+                aligner_reference_index = readset.aligner.get_reference_index(genome_root + os.sep + folder_name)
                 reference_file = os.path.join(genome_root, folder_name,
                                               "genome",
                                               folder_name + ".fa")

@@ -337,14 +337,14 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
 
         # RPKM and Saturation
         count_file = os.path.join("DGE", "rawCountMatrix.csv")
-        gene_size_file = config.param('saturation_rpkm', 'gene_size', type='filepath')
+        gene_size_file = config.param('rpkm_saturation', 'gene_size', type='filepath')
         rpkm_directory = "raw_counts"
         saturation_directory = os.path.join("metrics", "saturation")
 
         job = concat_jobs([
             Job(command="mkdir -p " + saturation_directory),
             metrics.rpkm_saturation(count_file, gene_size_file, rpkm_directory, saturation_directory)
-        ], name="saturation_rpkm")
+        ], name="rpkm_saturation")
         jobs.append(job)
 
         return jobs
