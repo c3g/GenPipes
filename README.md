@@ -140,7 +140,7 @@ Example:
 
 
 ### For abacus users with Nanuq readsets
-If your readsets belong to a [Nanuq](http://gqinnovationcenter.com/services/nanuq.aspx) project, use `nanuq2mugqic_pipeline.py` script in module `mugqic/tools` to automatically create a Readset File and symlinks to your readsets on abacus.
+If your readsets belong to a [Nanuq](http://gqinnovationcenter.com/services/nanuq.aspx) project, use `mugqic_pipeline/utils/nanuq2mugqic_pipelines.py` script to automatically create a Readset File and symlinks to your readsets on abacus.
 
 
 Configuration Files
@@ -221,10 +221,10 @@ my_output_dir/job_output/
     └── trinotate_2014-10-22T14.05.58.o
 ```
 
-To view a TAB-separated values log report, use `getLogReport.pl` script in module `mugqic/tools` by typing:
+To view a TAB-separated values log report, use `mugqic_pipeline/utils/log_report.pl` script by typing:
 ```
 #!bash
-getLogReport.pl <output_dir>/job_output/<PipelineName>_job_list_<timestamp>
+mugqic_pipeline/utils/log_report.pl <output_dir>/job_output/<PipelineName>_job_list_<timestamp>
 ```
 
 which will output e.g.:

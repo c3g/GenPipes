@@ -546,7 +546,7 @@ END
                 for polishing_round in range(1, config.param('DEFAULT', 'polishing_rounds', type='posint') + 1)
             ]
 
-            job.name = "pacbiotools_compile." + sample.name
+            job.name = "pacbio_tools_compile." + sample.name
             jobs.append(job)
 
         return jobs
