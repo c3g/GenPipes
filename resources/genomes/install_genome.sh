@@ -74,6 +74,7 @@ set_urls() {
     NCRNA_URL=$URL_PREFIX/fasta/${SPECIES,,}/ncrna/$SPECIES.$ASSEMBLY.ncrna.fa.gz
     GTF_URL=$URL_PREFIX/gtf/${SPECIES,,}/$SPECIES.$ASSEMBLY.$VERSION.gtf.gz
     VCF_URL=$URL_PREFIX/variation/vcf/${SPECIES,,}/$SPECIES.vcf.gz
+    VCF_TBI_URL=$VCF_URL.tbi
     BIOMART_MART=ENSEMBL_MART_ENSEMBL
     # Retrieve species short name e.g. "mmusculus" for "Mus_musculus"
     SPECIES_SHORT_NAME=`echo ${SPECIES:0:1}${SPECIES#*_} | tr [:upper:] [:lower:]`
@@ -111,6 +112,17 @@ set_urls() {
       echo VCF not available for $SPECIES
       VCF_URL=
     fi
+
+    # Check if a VCF tabix index is available for this species
+    set +e
+    wget --spider $VCF_TBI_URL
+    EXIT_CODE=$?
+    set -e
+    if [ $EXIT_CODE != 0 ]
+    then
+      echo VCF tabix index not available for $SPECIES
+      VCF_TBI_URL=
+    fi
   
   #
   # Ensembl Genomes (non-vertebrate species)
@@ -143,7 +155,7 @@ set_urls() {
     GENOME_URL=$URL_PREFIX/fasta/$EG_SPECIES/dna/$EG_BASENAME.dna.genome.fa.gz
     NCRNA_URL=$URL_PREFIX/fasta/$EG_SPECIES/ncrna/$EG_BASENAME.ncrna.fa.gz
     GTF_URL=$URL_PREFIX/gtf/$EG_SPECIES/$EG_BASENAME.gtf.gz
-    if [[ `echo "$SPECIES_LINE" | cut -f13` == "Y"  ]]
+    if [[ `echo "$SPECIES_LINE" | cut -f8` == "Y"  ]]
     then
       VCF_URL=$URL_PREFIX/vcf/${SPECIES,,}/${SPECIES,,}.vcf.gz
     else
@@ -166,6 +178,10 @@ download_urls() {
   if [ ! -z "${VCF_URL:-}" ]
   then
     download_url $VCF_URL
+  fi
+  if [ ! -z "${VCF_TBI_URL:-}" ]
+  then
+    download_url $VCF_TBI_URL
   fi
 }
 
@@ -434,15 +450,19 @@ EOF
 }
 
 get_vcf_dbsnp() {
-  # Try to retrieve VCF dbSNP latest version (set +e since zgrep exit code != 0 if not found)
-  set +e
-  DBSNP_VERSION=`zcat $ANNOTATIONS_DIR/$VCF | grep -v "^#" | cut -f8 | grep -Po "dbSNP_\d+" | sed s/dbSNP_// | sort -ug | tail -1`
-  set -e
-  echo Found VCF dbSNP version: $DBSNP_VERSION
-  if [ $DBSNP_VERSION ]
+  if [[ ! -z "${VCF_URL:-}" && ! -z "${VCF_TBI_URL:-}" ]]
   then
-    # Add dbSNP version to VCF filename
-    ln -s -f $VCF $ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP$DBSNP_VERSION.vcf.gz
+    # Try to retrieve VCF dbSNP latest version (set +e since zgrep exit code != 0 if not found)
+    set +e
+    DBSNP_VERSION=`zcat $ANNOTATIONS_DIR/$VCF | grep -v "^#" | cut -f8 | grep -Po "dbSNP_\d+" | sed s/dbSNP_// | sort -ug | tail -1`
+    set -e
+    echo Found VCF dbSNP version: $DBSNP_VERSION
+    if [ $DBSNP_VERSION ]
+    then
+      # Add dbSNP version to VCF filename
+      ln -s -f $VCF $ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP$DBSNP_VERSION.vcf.gz
+      ln -s -f $VCF.tbi $ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP$DBSNP_VERSION.vcf.gz.tbi
+    fi
   fi
 }
 
@@ -468,9 +488,18 @@ copy_files() {
     if ! is_up2date $ANNOTATIONS_DIR/$VCF
     then
       cp `download_path $VCF_URL` $ANNOTATIONS_DIR/$VCF
-      get_vcf_dbsnp
     fi
   fi
+
+  if [ ! -z "${VCF_TBI_URL:-}" ]
+  then
+    if ! is_up2date $ANNOTATIONS_DIR/$VCF.tbi
+    then
+      cp `download_path $VCF_TBI_URL` $ANNOTATIONS_DIR/$VCF.tbi
+    fi
+  fi
+
+  get_vcf_dbsnp
 }
 
 build_files() {
@@ -487,6 +516,7 @@ build_files() {
 }
 
 create_genome_ini_file() {
+  INI=$INSTALL_DIR/$SPECIES.$ASSEMBLY.ini
   echo "\
 [DEFAULT]
 scientific_name=$SPECIES
@@ -494,7 +524,13 @@ common_name=$COMMON_NAME
 assembly=$ASSEMBLY
 assembly_synonyms=$ASSEMBLY_SYNONYMS
 source=$SOURCE
-version=$VERSION" > $INSTALL_DIR/$SPECIES.$ASSEMBLY.ini
+version=$VERSION" > $INI
+
+  if [ ! -z "${DBSNP_VERSION:-}" ]
+  then
+    echo "\
+dbsnp_version=$DBSNP_VERSION" >> $INI
+  fi
 }
 
 install_genome() {
