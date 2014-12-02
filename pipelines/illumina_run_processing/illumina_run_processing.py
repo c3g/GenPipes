@@ -272,11 +272,12 @@ java -Djava.io.tmpdir={tmp_dir}\\
         demultiplexing = False
 
         command = """\
-rm -r "{output_dir}"; configureBclToFastq.pl\\
+configureBclToFastq.pl\\
  --input-dir {input_dir}\\
  --output-dir {output_dir}\\
  --tiles {tiles}\\
  --sample-sheet {sample_sheet}\\
+ --force\\
  --fastq-cluster-count 0""".format(
             input_dir = self.run_dir + os.sep + config.param('fastq', 'basecalls_dir'),
             output_dir = output_dir,
