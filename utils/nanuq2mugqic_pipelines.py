@@ -84,7 +84,8 @@ def create_readsets(nanuq_auth_file, nanuq_readset_file, seq_type, mugqic_pipeli
                 formats = ['FASTQ1', 'FASTQ2', 'BAM']
 
                 fieldnames = [key[1] for key in nanuq_vs_mugqic_pipeline_readset_keys] + formats
-                available_beds = line['BED Files'].split(';')
+                # Filter empty strings returned by split with string ";" separator
+                available_beds = filter(None, line['BED Files'].split(';'))
                 for bed in available_beds:
                     bed_files.add(bed)
 
