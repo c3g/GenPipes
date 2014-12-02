@@ -284,7 +284,7 @@ def parse_illumina_raw_readset_files(output_dir, run_type, nanuq_readset_file, c
                                                     'alignment',
                                                     readset.sample.name,
                                                     'run' + readset.run + "_" + readset.lane,
-                                                    readset.sample.name + "." + readset.library)
+                                                    readset.sample.name + "." + readset.library + ".sorted")
                     else:
                         log.warning("Unable to access the aligner reference file: '" + aligner_reference_index + "' for aligner: '" + readset.aligner + "'")
                 else:

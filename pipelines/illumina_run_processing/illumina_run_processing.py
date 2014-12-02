@@ -385,10 +385,10 @@ configureBclToFastq.pl\\
         """
         jobs = []
         for readset in [readset for readset in self.readsets if (readset.bam)]:
-            input_file_prefix = readset.bam + '.sorted.'
+            input_file_prefix = readset.bam + '.'
             input =  input_file_prefix + "bam"
-            output = input_file_prefix + "dup.bam"
-            metrics_file = readset.bam + "dup.metrics"
+            output = input_file_prefix + ".dup.bam"
+            metrics_file = readset.bam + ".dup.metrics"
 
             job = picard.mark_duplicates([input], output, metrics_file)
             job.name = "picard_mark_duplicates." + readset.name + ".dup." + self.run_id + "." + str(self.lane_number)
@@ -443,7 +443,7 @@ configureBclToFastq.pl\\
             file2 = readset.fastq2
             type = "FASTQ"
             if readset.bam:
-                file1 = readset.bam + ".sorted.bam"
+                file1 = readset.bam + ".bam"
                 file2 = None
                 type = "BAM"
 
@@ -483,8 +483,8 @@ configureBclToFastq.pl\\
 
             # Alignment files
             if (readset.bam):
-                current_jobs.append(Job([readset.bam + ".sorted.bam"],[readset.bam + ".sorted.bam.md5"], command="md5sum -b " + readset.bam + ".sorted.bam" + " > " + readset.bam + ".sorted.bam.md5"))
-                current_jobs.append(Job([],[readset.bam + ".sorted.bai.md5"], command="md5sum -b " + readset.bam + ".sorted.bai" + " > " + readset.bam + ".sorted.bai.md5"))
+                current_jobs.append(Job([readset.bam + ".bam"],[readset.bam + ".bam.md5"], command="md5sum -b " + readset.bam + ".bam" + " > " + readset.bam + ".bam.md5"))
+                current_jobs.append(Job([],[readset.bam + ".bai.md5"], command="md5sum -b " + readset.bam + ".bai" + " > " + readset.bam + ".bai.md5"))
 
             job = concat_jobs(current_jobs, name= "md5." + readset.name + ".md5." + self.run_id + "." + str(self.lane_number))
 

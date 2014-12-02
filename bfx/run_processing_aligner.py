@@ -47,7 +47,7 @@ class BwaRunProcessingAligner(RunProcessingAligner):
 
     def get_alignment_jobs(self, readset):
         jobs = []
-        output = readset.bam + ".sorted.bam"
+        output = readset.bam + ".bam"
 
         job = concat_jobs([
             Job(command="mkdir -p " + os.path.dirname(output)),
@@ -79,7 +79,7 @@ class BwaRunProcessingAligner(RunProcessingAligner):
     def get_metrics_jobs(self, readset):
         jobs = []
 
-        input_file_prefix = readset.bam + '.sorted.'
+        input_file_prefix = readset.bam + '.'
         input = input_file_prefix + "bam"
 
         job = picard.collect_multiple_metrics(input, input_file_prefix + "all.metrics", reference_sequence=readset.reference_file)
@@ -152,7 +152,7 @@ class StarRunProcessingAligner(RunProcessingAligner):
 
     def get_alignment_jobs(self, readset):
         jobs = []
-        output = readset.bam + ".sorted.bam"
+        output = readset.bam + ".bam"
 
         rg_center = config.param('star_align', 'sequencing_center', required=False)
         star_bam_name = "Aligned.sortedByCoord.out.bam"
