@@ -88,6 +88,7 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
     """
 
     def __init__(self):
+        self.copy_job_inputs = []
         self.argparser.add_argument("-d", "--run", help="run directory", required=True, dest="run_dir")
         self.argparser.add_argument("-p", "--lane", help="lane number", type=int, required=True, dest="lane_number")
         self.argparser.add_argument("-r", "--readsets", help="readset file", type=file, required=False)
@@ -156,12 +157,6 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
     @property
     def last_index(self):
         return self.args.last_index if (self.args.last_index) else 999
-
-    @property
-    def copy_job_inputs(self):
-        if not hasattr(self, "_copy_job_inputs"):
-            self._copy_job_inputs = []
-        return self._copy_job_inputs
 
     @property
     def steps(self):
@@ -624,6 +619,8 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
 
     def add_copy_job_inputs(self, jobs):
         for job in jobs:
+            # we first remove dependencies of the current job, since we will have a dependency on that job
+            self.copy_job_inputs = [item for item in self.copy_job_inputs if item not in job.input_files]
             self.copy_job_inputs.extend(job.output_files)
 
     def getSequencerIndexLength(self):
