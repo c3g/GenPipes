@@ -90,29 +90,7 @@ An optional notification command can be launched to notify the start of the
 fastq generation with the calculated mask.
 
 
-### Step 3: md5
-
-
-Create md5 checksum files for the fastq using the system 'md5sum' util.
-
-One checksum file is created for each fastq.
-
-
-### Step 4: qc\_graphs
-
-
-Generate some QC Graphics and a summary XML file for each sample using 
-[BVATools](https://bitbucket.org/mugqic/bvatools/).
-
-Files are created in a 'qc' subfolder of the fastq directory. Examples of
-output graphic:
-
-- Per cycle qualities, sequence content and sequence length;
-- Known sequences (adaptors);
-- Abundant Duplicates;
-
-
-### Step 5: blast
+### Step 3: blast
 
 
 Run blast on a subsample of the reads of each sample to find the 20 most
@@ -123,7 +101,7 @@ subsample can be configured by sample or for the whole lane. The output will be
 in the "Blast\_sample" folder, under the Unaligned folder.
 
 
-### Step 6: align
+### Step 4: align
 
 
 Align the reads from the fastq file, sort the resulting .bam and create an index
@@ -138,13 +116,13 @@ STAR is used as a splice-junctions aware aligner when the sample
 the reads.
 
 
-### Step 7: picard\_mark\_duplicates
+### Step 5: picard\_mark\_duplicates
 
 
 Runs Picard mark duplicates on the sorted bam file.
 
 
-### Step 8: metrics
+### Step 6: metrics
 
 
 This step runs a series of multiple metrics collection jobs and the output bam
@@ -164,14 +142,30 @@ metrics from the BAM file. The bait and interval list is automatically created
 from the specicied "BED Files".
 
 
-### Step 9: bam\_md5
+### Step 7: qc\_graphs
 
 
-Create md5 checksum files for the sorted .bam (and .bai) files using the system
-'md5sum' util.
+Generate some QC Graphics and a summary XML file for each sample using 
+[BVATools](https://bitbucket.org/mugqic/bvatools/).
+
+Files are created in a 'qc' subfolder of the fastq directory. Examples of
+output graphic:
+
+- Per cycle qualities, sequence content and sequence length;
+- Known sequences (adaptors);
+- Abundant Duplicates;
 
 
-### Step 10: start\_copy\_notification
+### Step 8: md5
+
+
+Create md5 checksum files for the fastq, bam and bai using the system 'md5sum'
+util.
+
+One checksum file is created for each file.
+
+
+### Step 9: start\_copy\_notification
 
 
 Send an optional notification for the processing completion.
@@ -180,7 +174,7 @@ The command used is in the configuration file. This step is skipped when no
 command is provided.
 
 
-### Step 11: copy
+### Step 10: copy
 
 
 Copy processed files to another place where they can be served or loaded into a
@@ -190,7 +184,7 @@ The destination folder and the command used can be set in the configuration
 file.
 
 
-### Step 12: end\_copy\_notification
+### Step 11: end\_copy\_notification
 
 
 Send an optional notification to notify that the copy is finished.
