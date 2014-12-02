@@ -47,7 +47,7 @@ class BwaRunProcessingAligner(RunProcessingAligner):
 
     def get_alignment_jobs(self, readset):
         jobs = []
-        output = readset.bam + ".sorted.bam"
+        output = readset.bam + ".bam"
 
         job = concat_jobs([
             Job(command="mkdir -p " + os.path.dirname(output)),
@@ -79,7 +79,7 @@ class BwaRunProcessingAligner(RunProcessingAligner):
     def get_metrics_jobs(self, readset):
         jobs = []
 
-        input_file_prefix = readset.bam + '.sorted.'
+        input_file_prefix = readset.bam + '.'
         input = input_file_prefix + "bam"
 
         job = picard.collect_multiple_metrics(input, input_file_prefix + "all.metrics", reference_sequence=readset.reference_file)
@@ -87,8 +87,9 @@ class BwaRunProcessingAligner(RunProcessingAligner):
         jobs.append(job)
 
         coverage_bed = bvatools.resolve_readset_coverage_bed(readset)
+        full_coverage_bed = (self.output_dir + os.sep + coverage_bed) if coverage_bed else None
+
         if coverage_bed:
-            full_coverage_bed = self.output_dir + os.sep + coverage_bed
             if (not os.path.exists(full_coverage_bed)) and (coverage_bed not in self.downloaded_bed_files):
                 # Download the bed file
                 command = config.param('DEFAULT', 'fetch_bed_file_command').format(
@@ -98,17 +99,6 @@ class BwaRunProcessingAligner(RunProcessingAligner):
                 job = Job([], [full_coverage_bed], command=command, name="bed_download." + coverage_bed)
                 self.downloaded_bed_files.append(coverage_bed)
                 jobs.append(job)
-
-            job = bvatools.depth_of_coverage(
-                input, 
-                input_file_prefix + "coverage.tsv", 
-                full_coverage_bed, 
-                other_options = config.param('bvatools_depth_of_coverage', 'other_options', required=False),
-                reference_genome = readset.reference_file
-            )
-
-            job.name = "bvatools_depth_of_coverage." + readset.name + ".doc"
-            jobs.append(job)
 
             interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
 
@@ -123,6 +113,16 @@ class BwaRunProcessingAligner(RunProcessingAligner):
             job = picard.calculate_hs_metrics(input_file_prefix + "bam", input_file_prefix + "onTarget.tsv", interval_list, reference_sequence=readset.reference_file)
             job.name = "picard_calculate_hs_metrics." + readset.name + ".hs"
             jobs.append(job)
+
+        job = bvatools.depth_of_coverage(
+                input, 
+                input_file_prefix + "coverage.tsv", 
+                full_coverage_bed, 
+                other_options = config.param('bvatools_depth_of_coverage', 'other_options', required=False),
+                reference_genome = readset.reference_file
+        )
+        job.name = "bvatools_depth_of_coverage." + readset.name + ".doc"
+        jobs.append(job)
 
         return jobs
 
@@ -152,7 +152,7 @@ class StarRunProcessingAligner(RunProcessingAligner):
 
     def get_alignment_jobs(self, readset):
         jobs = []
-        output = readset.bam + ".sorted.bam"
+        output = readset.bam + ".bam"
 
         rg_center = config.param('star_align', 'sequencing_center', required=False)
         star_bam_name = "Aligned.sortedByCoord.out.bam"

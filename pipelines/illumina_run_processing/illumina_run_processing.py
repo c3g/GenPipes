@@ -88,6 +88,7 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
     """
 
     def __init__(self):
+        self.copy_job_inputs = []
         self.argparser.add_argument("-d", "--run", help="run directory", required=True, dest="run_dir")
         self.argparser.add_argument("-p", "--lane", help="lane number", type=int, required=True, dest="lane_number")
         self.argparser.add_argument("-r", "--readsets", help="readset file", type=file, required=False)
@@ -158,22 +159,15 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         return self.args.last_index if (self.args.last_index) else 999
 
     @property
-    def copy_job_inputs(self):
-        if not hasattr(self, "_copy_job_inputs"):
-            self._copy_job_inputs = []
-        return self._copy_job_inputs
-
-    @property
     def steps(self):
         return [
             self.index,
             self.fastq,
-            self.qc_graphs,
             self.blast,
             self.align,
             self.picard_mark_duplicates,
             self.metrics,
-            self.bam_md5,
+            self.qc_graphs,
             self.md5,
             self.start_copy_notification,
             self.copy,
@@ -277,11 +271,12 @@ java -Djava.io.tmpdir={tmp_dir}\\
         demultiplexing = False
 
         command = """\
-rm -r "{output_dir}"; configureBclToFastq.pl\\
+configureBclToFastq.pl\\
  --input-dir {input_dir}\\
  --output-dir {output_dir}\\
  --tiles {tiles}\\
  --sample-sheet {sample_sheet}\\
+ --force\\
  --fastq-cluster-count 0""".format(
             input_dir = self.run_dir + os.sep + config.param('fastq', 'basecalls_dir'),
             output_dir = output_dir,
@@ -321,68 +316,6 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
             )
             # Use the same inputs and output of fastq job to send a notification each time the fastq job run
             job = Job([input], outputs, name="fastq_notification." + self.run_id + "." + str(self.lane_number), command=notification_command)
-            jobs.append(job)
-
-        self.add_copy_job_inputs(jobs)
-        return jobs
-
-    def md5(self):
-        """
-            Create md5 checksum files for the fastq using the system 'md5sum' util.
-
-            One checksum file is created for each fastq.
-        """
-        jobs = []
-        for readset in self.readsets:
-            inputs = [readset.fastq1]
-            outputs = [readset.fastq1 + ".md5"]
-
-            command = "md5sum -b " + readset.fastq1 + " > " + readset.fastq1 + ".md5"
-
-            # Second read in paired-end run
-            if (readset.fastq2):
-                inputs.append(readset.fastq2)
-                outputs.append(readset.fastq2 + ".md5")
-                command += " && md5sum -b " + readset.fastq2 + " > " + readset.fastq2 + ".md5"
-
-
-            job = Job(inputs, outputs, name="md5." + readset.name + ".md5." + self.run_id + "." + str(self.lane_number), command=command)
-            jobs.append(job)
-
-        self.add_copy_job_inputs(jobs)
-        return jobs
-
-    def qc_graphs(self):
-        """ 
-            Generate some QC Graphics and a summary XML file for each sample using 
-            [BVATools](https://bitbucket.org/mugqic/bvatools/).
-
-            Files are created in a 'qc' subfolder of the fastq directory. Examples of
-            output graphic:
-
-            - Per cycle qualities, sequence content and sequence length;
-            - Known sequences (adaptors);
-            - Abundant Duplicates;
-        """
-        jobs = []
-
-        for readset in self.readsets:
-            output_dir = os.path.dirname(readset.fastq1) + os.sep + "qc"
-            region_name = readset.name + "_" + readset.index + "_L00" + readset.lane
-
-            job = concat_jobs([
-                Job(command="mkdir -p " + output_dir),
-                bvatools.readsqc(
-                    readset.fastq1, 
-                    readset.fastq2,
-                    "FASTQ",
-                    region_name, 
-                    output_dir
-                )]
-            )
-
-
-            job.name = "qc." + readset.name + ".qc." + self.run_id + "." + str(self.lane_number)
             jobs.append(job)
 
         self.add_copy_job_inputs(jobs)
@@ -452,10 +385,10 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
         """
         jobs = []
         for readset in [readset for readset in self.readsets if (readset.bam)]:
-            input_file_prefix = readset.bam + '.sorted.'
+            input_file_prefix = readset.bam + '.'
             input =  input_file_prefix + "bam"
-            output = input_file_prefix + "dup.bam"
-            metrics_file = readset.bam + "dup.metrics"
+            output = input_file_prefix + ".dup.bam"
+            metrics_file = readset.bam + ".dup.metrics"
 
             job = picard.mark_duplicates([input], output, metrics_file)
             job.name = "picard_mark_duplicates." + readset.name + ".dup." + self.run_id + "." + str(self.lane_number)
@@ -488,20 +421,73 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
         self.add_copy_job_inputs(jobs)
         return jobs
 
-    def bam_md5(self):
-        """
-            Create md5 checksum files for the sorted .bam (and .bai) files using the system
-            'md5sum' util.
+    def qc_graphs(self):
+        """ 
+            Generate some QC Graphics and a summary XML file for each sample using 
+            [BVATools](https://bitbucket.org/mugqic/bvatools/).
+
+            Files are created in a 'qc' subfolder of the fastq directory. Examples of
+            output graphic:
+
+            - Per cycle qualities, sequence content and sequence length;
+            - Known sequences (adaptors);
+            - Abundant Duplicates;
         """
         jobs = []
-        for readset in [readset for readset in self.readsets if (readset.bam)]:
-            input_bai = readset.bam + ".sorted.bai"
-            input_bam = readset.bam + ".sorted.bam"
-            output_bai = input_bai + ".md5"
-            output_bam = input_bam + ".md5"
-            command = "md5sum -b " + input_bam + " > " + output_bam + " && md5sum -b " + input_bai + " > " + output_bai
 
-            job = Job([input_bam], [output_bai, output_bam], name="bmd5." + readset.name + ".bmd5." + self.run_id + "." + str(self.lane_number), command=command)
+        for readset in self.readsets:
+            output_dir = os.path.dirname(readset.fastq1) + os.sep + "qc"
+            region_name = readset.name + "_" + readset.index + "_L00" + readset.lane
+
+            file1 = readset.fastq1
+            file2 = readset.fastq2
+            type = "FASTQ"
+            if readset.bam:
+                file1 = readset.bam + ".bam"
+                file2 = None
+                type = "BAM"
+
+            job = concat_jobs([
+                Job(command="mkdir -p " + output_dir),
+                bvatools.readsqc(
+                    file1, 
+                    file2,
+                    type,
+                    region_name, 
+                    output_dir
+                )]
+            )
+
+            job.name = "qc." + readset.name + ".qc." + self.run_id + "." + str(self.lane_number)
+            jobs.append(job)
+
+        self.add_copy_job_inputs(jobs)
+        return jobs
+
+    def md5(self):
+        """
+            Create md5 checksum files for the fastq, bam and bai using the system 'md5sum'
+            util.
+
+            One checksum file is created for each file.
+        """
+        jobs = []
+        for readset in self.readsets:
+            inputs = [readset.fastq1]
+            outputs = [readset.fastq1 + ".md5"]
+            current_jobs = [Job([readset.fastq1],[readset.fastq1 + ".md5"], command="md5sum -b " + readset.fastq1 + " > " + readset.fastq1 + ".md5")]
+
+            # Second read in paired-end run
+            if (readset.fastq2):
+                current_jobs.append(Job([readset.fastq2],[readset.fastq2 + ".md5"], command="md5sum -b " + readset.fastq2 + " > " + readset.fastq2 + ".md5"))
+
+            # Alignment files
+            if (readset.bam):
+                current_jobs.append(Job([readset.bam + ".bam"],[readset.bam + ".bam.md5"], command="md5sum -b " + readset.bam + ".bam" + " > " + readset.bam + ".bam.md5"))
+                current_jobs.append(Job([],[readset.bam + ".bai.md5"], command="md5sum -b " + readset.bam + ".bai" + " > " + readset.bam + ".bai.md5"))
+
+            job = concat_jobs(current_jobs, name= "md5." + readset.name + ".md5." + self.run_id + "." + str(self.lane_number))
+
             jobs.append(job)
 
         self.add_copy_job_inputs(jobs)
@@ -624,6 +610,8 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
 
     def add_copy_job_inputs(self, jobs):
         for job in jobs:
+            # we first remove dependencies of the current job, since we will have a dependency on that job
+            self.copy_job_inputs = [item for item in self.copy_job_inputs if item not in job.input_files]
             self.copy_job_inputs.extend(job.output_files)
 
     def getSequencerIndexLength(self):
