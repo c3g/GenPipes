@@ -96,6 +96,14 @@ def create_readsets(nanuq_auth_file, nanuq_readset_file, seq_type, mugqic_pipeli
                             mugqic_pipeline_readset_path = os.path.join(raw_reads_directory, line['Name'], os.path.basename(nanuq_readset_path))
                             symlinks.append([nanuq_readset_path, mugqic_pipeline_readset_path])
                             mugqic_pipeline_readset_csv_row[format] = mugqic_pipeline_readset_path
+
+                            # Add BAM index to symlinks if it exists, log a warning otherwise
+                            if format == 'BAM':
+                                nanuq_readset_index_path = re.sub("\.bam$", ".bai", nanuq_readset_path)
+                                if os.path.isfile(nanuq_readset_index_path):
+                                    symlinks.append([nanuq_readset_index_path, re.sub("\.bam$", ".bai", mugqic_pipeline_readset_path)])
+                                else:
+                                    log.warning("Nanuq readset index path " + nanuq_readset_index_path + " is invalid!")
                         else:
                             raise Exception("Error: Nanuq readset path " + nanuq_readset_path + " is invalid!")
 
