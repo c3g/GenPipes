@@ -9,7 +9,7 @@ Version: 2.0.0-beta
 
 The standard MUGQIC Illumina Run Processing pipeline uses the Illumina bcl2fastq
 software to convert and demultiplex the base call files to fastq files. The
-pipeline runs some QCs on the raw data, on the fastq and on the aligment.
+pipeline runs some QCs on the raw data, on the fastq and on the alignment.
 
 ## Sample Sheets
 The pipeline uses two input sample sheets. The first one is the standard Casava
@@ -90,18 +90,7 @@ An optional notification command can be launched to notify the start of the
 fastq generation with the calculated mask.
 
 
-### Step 3: blast
-
-
-Run blast on a subsample of the reads of each sample to find the 20 most
-frequent hits.
-
-The "runBlast.sh" util from MUGQIC Tools is used. The number of reads to
-subsample can be configured by sample or for the whole lane. The output will be
-in the "Blast\_sample" folder, under the Unaligned folder.
-
-
-### Step 4: align
+### Step 3: align
 
 
 Align the reads from the fastq file, sort the resulting .bam and create an index
@@ -116,13 +105,13 @@ STAR is used as a splice-junctions aware aligner when the sample
 the reads.
 
 
-### Step 5: picard\_mark\_duplicates
+### Step 4: picard\_mark\_duplicates
 
 
 Runs Picard mark duplicates on the sorted bam file.
 
 
-### Step 6: metrics
+### Step 5: metrics
 
 
 This step runs a series of multiple metrics collection jobs and the output bam
@@ -140,6 +129,17 @@ calculate the coverage of each target region.
 - Picard CalculateHsMetrics: Calculates a set of Hybrid Selection specific
 metrics from the BAM file. The bait and interval list is automatically created
 from the specicied "BED Files".
+
+
+### Step 6: blast
+
+
+Run blast on a subsample of the reads of each sample to find the 20 most
+frequent hits.
+
+The "runBlast.sh" util from MUGQIC Tools is used. The number of reads to
+subsample can be configured by sample or for the whole lane. The output will be
+in the "Blast\_sample" folder, under the Unaligned folder.
 
 
 ### Step 7: qc\_graphs
