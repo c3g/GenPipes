@@ -55,7 +55,7 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
     """
         The standard MUGQIC Illumina Run Processing pipeline uses the Illumina bcl2fastq
         software to convert and demultiplex the base call files to fastq files. The
-        pipeline runs some QCs on the raw data, on the fastq and on the aligment.
+        pipeline runs some QCs on the raw data, on the fastq and on the alignment.
 
         ## Sample Sheets
         The pipeline uses two input sample sheets. The first one is the standard Casava
@@ -163,10 +163,10 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         return [
             self.index,
             self.fastq,
-            self.blast,
             self.align,
             self.picard_mark_duplicates,
             self.metrics,
+            self.blast,
             self.qc_graphs,
             self.md5,
             self.start_copy_notification,
@@ -321,45 +321,6 @@ configureBclToFastq.pl\\
         self.add_copy_job_inputs(jobs)
         return jobs
 
-    def blast(self):
-        """ 
-            Run blast on a subsample of the reads of each sample to find the 20 most
-            frequent hits.
-
-            The "runBlast.sh" util from MUGQIC Tools is used. The number of reads to
-            subsample can be configured by sample or for the whole lane. The output will be
-            in the "Blast_sample" folder, under the Unaligned folder.
-        """
-        jobs = []
-
-        nb_blast_to_do = config.param('blast', 'nb_blast_to_do', type="posint")
-        is_nb_blast_per_lane = config.param('blast', 'is_nb_for_whole_lane', type="boolean")
-
-        if (is_nb_blast_per_lane):
-            nb_blast_to_do = int(nb_blast_to_do) // len(self.readsets)
-
-        nb_blast_to_do = max(1, nb_blast_to_do)
-
-        for readset in self.readsets:
-            output_prefix = os.path.join(self.output_dir,
-                                         "Unaligned." + readset.lane,
-                                         "Blast_sample",
-                                         readset.name + "_" + readset.index + "_L00" + readset.lane)
-            inputs = [readset.fastq1, readset.fastq2]
-            output = output_prefix + '.R1.RDP.blastHit_20MF_species.txt'
-            command = "runBlast.sh " + str(nb_blast_to_do) + " " + output_prefix + " " + readset.fastq1 + " "
-            if (readset.fastq2):
-                command += readset.fastq2
-            job = concat_jobs([
-                Job(command="mkdir -p " + os.path.dirname(output)),
-                Job(inputs, [output], [["blast", "module_mugqic_tools"]], command=command)
-            ], name= "blast." + readset.name + ".blast." + self.run_id + "." + str(self.lane_number))
-
-            jobs.append(job)
-
-        self.add_copy_job_inputs(jobs)
-        return jobs
-
     def align(self):
         """
             Align the reads from the fastq file, sort the resulting .bam and create an index
@@ -418,6 +379,77 @@ configureBclToFastq.pl\\
         jobs = []
         for readset in [readset for readset in self.readsets if (readset.bam)]:
             jobs.extend(readset.aligner.get_metrics_jobs(readset))
+        self.add_copy_job_inputs(jobs)
+        return jobs
+
+    def blast(self):
+        """ 
+            Run blast on a subsample of the reads of each sample to find the 20 most
+            frequent hits.
+
+            The "runBlast.sh" util from MUGQIC Tools is used. The number of reads to
+            subsample can be configured by sample or for the whole lane. The output will be
+            in the "Blast_sample" folder, under the Unaligned folder.
+        """
+        jobs = []
+
+        nb_blast_to_do = config.param('blast', 'nb_blast_to_do', type="posint")
+        is_nb_blast_per_lane = config.param('blast', 'is_nb_for_whole_lane', type="boolean")
+
+        if (is_nb_blast_per_lane):
+            nb_blast_to_do = int(nb_blast_to_do) // len(self.readsets)
+
+        nb_blast_to_do = max(1, nb_blast_to_do)
+
+        for readset in self.readsets:
+            output_prefix = os.path.join(self.output_dir,
+                                         "Unaligned." + readset.lane,
+                                         "Blast_sample",
+                                         readset.name + "_" + readset.index + "_L00" + readset.lane)
+            output = output_prefix + '.R1.RDP.blastHit_20MF_species.txt'
+            current_jobs = [Job(command="mkdir -p " + os.path.dirname(output))]
+
+            if (readset.bam):
+                input = readset.bam + ".bam"
+
+                fasta_file = output_prefix + ".R1.subSampled_{nb_blast_to_do}.fasta".format(nb_blast_to_do = nb_blast_to_do)
+                result_file = output_prefix + ".R1.subSampled_{nb_blast_to_do}.blastres".format(nb_blast_to_do = nb_blast_to_do)
+
+                # count the read that aren't marked as secondary alignment and calculate the ratio of reads to subsample
+                command = """subsampling=$(samtools view -F 0x0180 {input} | wc -l | awk -v nbReads={nb_blast_to_do} '{{x=sprintf("%.4f", nbReads/$1); if (x == "0.0000") print "0.0001"; else print x}}')""".format(
+                    input = input,
+                    nb_blast_to_do = nb_blast_to_do
+                )
+                current_jobs.append(Job([input], [], [["blast", "module_samtools"]], command=command))
+
+                # subsample the reads and output to a temp fasta
+                command = """samtools view -s $subsampling -F 0x0180 {input} | awk '{{OFS="\\t"; print ">"$1"\\n"$10}}' - > {fasta_file}""".format(
+                    input = input,
+                    fasta_file = fasta_file
+                )
+                current_jobs.append(Job([input], [], [["blast", "module_samtools"]], command=command))
+
+                # run blast
+                command = """blastn -query {fasta_file} -db nt -out {result_file} -perc_identity 80 -num_descriptions 1 -num_alignments 1""".format(
+                    fasta_file = fasta_file,
+                    result_file = result_file
+                )
+                current_jobs.append(Job([], [], [["blast", "module_blast"]], command=command))
+
+                # filter and format the result to only have the sorted number of match and the species
+                command = """grep ">" {result_file} | awk ' {{ print $2 "_" $3}} ' | sort | uniq -c | sort -n -r | head -20 > {output}""".format(
+                   result_file = result_file,
+                   output = output
+                )
+                current_jobs.append(Job([], [output], [], command=command))
+            else:
+                inputs = [readset.fastq1, readset.fastq2]
+                command = "runBlast.sh " + str(nb_blast_to_do) + " " + output_prefix + " " + readset.fastq1 + " "
+                if (readset.fastq2):
+                    command += readset.fastq2
+                current_jobs.append(Job(inputs, [output], [["blast", "module_mugqic_tools"], ["blast", "module_blast"]], command=command))
+            job = concat_jobs(current_jobs, name= "blast." + readset.name + ".blast." + self.run_id + "." + str(self.lane_number))
+            jobs.append(job)
         self.add_copy_job_inputs(jobs)
         return jobs
 
