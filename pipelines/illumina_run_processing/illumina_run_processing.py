@@ -22,14 +22,7 @@ from core.pipeline import *
 from bfx.readset import *
 
 from bfx import bvatools
-from bfx import bwa
-from bfx import gatk
-from bfx import igvtools
-from bfx import metrics
 from bfx import picard
-from bfx import samtools
-from bfx import star
-from bfx import tools
 from pipelines import common
 
 log = logging.getLogger(__name__)
@@ -62,7 +55,7 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
     """
         The standard MUGQIC Illumina Run Processing pipeline uses the Illumina bcl2fastq
         software to convert and demultiplex the base call files to fastq files. The
-        pipeline runs some QCs on the raw data, on the fastq and on the aligment.
+        pipeline runs some QCs on the raw data, on the fastq and on the alignment.
 
         ## Sample Sheets
         The pipeline uses two input sample sheets. The first one is the standard Casava
@@ -95,6 +88,7 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
     """
 
     def __init__(self):
+        self.copy_job_inputs = []
         self.argparser.add_argument("-d", "--run", help="run directory", required=True, dest="run_dir")
         self.argparser.add_argument("-p", "--lane", help="lane number", type=int, required=True, dest="lane_number")
         self.argparser.add_argument("-r", "--readsets", help="readset file", type=file, required=False)
@@ -165,22 +159,15 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         return self.args.last_index if (self.args.last_index) else 999
 
     @property
-    def copy_job_inputs(self):
-        if not hasattr(self, "_copy_job_inputs"):
-            self._copy_job_inputs = []
-        return self._copy_job_inputs
-
-    @property
     def steps(self):
         return [
             self.index,
             self.fastq,
-            self.qc_graphs,
-            self.blast,
             self.align,
             self.picard_mark_duplicates,
             self.metrics,
-            self.bam_md5,
+            self.blast,
+            self.qc_graphs,
             self.md5,
             self.start_copy_notification,
             self.copy,
@@ -284,11 +271,12 @@ java -Djava.io.tmpdir={tmp_dir}\\
         demultiplexing = False
 
         command = """\
-rm -r "{output_dir}"; configureBclToFastq.pl\\
+configureBclToFastq.pl\\
  --input-dir {input_dir}\\
  --output-dir {output_dir}\\
  --tiles {tiles}\\
  --sample-sheet {sample_sheet}\\
+ --force\\
  --fastq-cluster-count 0""".format(
             input_dir = self.run_dir + os.sep + config.param('fastq', 'basecalls_dir'),
             output_dir = output_dir,
@@ -333,107 +321,6 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
         self.add_copy_job_inputs(jobs)
         return jobs
 
-    def md5(self):
-        """
-            Create md5 checksum files for the fastq using the system 'md5sum' util.
-
-            One checksum file is created for each fastq.
-        """
-        jobs = []
-        for readset in self.readsets:
-            inputs = [readset.fastq1]
-            outputs = [readset.fastq1 + ".md5"]
-
-            command = "md5sum -b " + readset.fastq1 + " > " + readset.fastq1 + ".md5"
-
-            # Second read in paired-end run
-            if (readset.fastq2):
-                inputs.append(readset.fastq2)
-                outputs.append(readset.fastq2 + ".md5")
-                command += " && md5sum -b " + readset.fastq2 + " > " + readset.fastq2 + ".md5"
-
-
-            job = Job(inputs, outputs, name="md5." + readset.name + ".md5." + self.run_id + "." + str(self.lane_number), command=command)
-            jobs.append(job)
-
-        self.add_copy_job_inputs(jobs)
-        return jobs
-
-    def qc_graphs(self):
-        """ 
-            Generate some QC Graphics and a summary XML file for each sample using 
-            [BVATools](https://bitbucket.org/mugqic/bvatools/).
-
-            Files are created in a 'qc' subfolder of the fastq directory. Examples of
-            output graphic:
-
-            - Per cycle qualities, sequence content and sequence length;
-            - Known sequences (adaptors);
-            - Abundant Duplicates;
-        """
-        jobs = []
-
-        for readset in self.readsets:
-            output_dir = os.path.dirname(readset.fastq1) + os.sep + "qc"
-            region_name = readset.name + "_" + readset.index + "_L00" + readset.lane
-
-            job = concat_jobs([
-                Job(command="mkdir -p " + output_dir),
-                bvatools.readsqc(
-                    readset.fastq1, 
-                    readset.fastq2,
-                    "FASTQ",
-                    region_name, 
-                    output_dir
-                )]
-            )
-
-
-            job.name = "qc." + readset.name + ".qc." + self.run_id + "." + str(self.lane_number)
-            jobs.append(job)
-
-        self.add_copy_job_inputs(jobs)
-        return jobs
-
-    def blast(self):
-        """ 
-            Run blast on a subsample of the reads of each sample to find the 20 most
-            frequent hits.
-
-            The "runBlast.sh" util from MUGQIC Tools is used. The number of reads to
-            subsample can be configured by sample or for the whole lane. The output will be
-            in the "Blast_sample" folder, under the Unaligned folder.
-        """
-        jobs = []
-
-        nb_blast_to_do = config.param('blast', 'nb_blast_to_do', type="posint")
-        is_nb_blast_per_lane = config.param('blast', 'is_nb_for_whole_lane', type="boolean")
-
-        if (is_nb_blast_per_lane):
-            nb_blast_to_do = int(nb_blast_to_do) // len(self.readsets)
-
-        nb_blast_to_do = max(1, nb_blast_to_do)
-
-        for readset in self.readsets:
-            output_prefix = os.path.join(self.output_dir,
-                                         "Unaligned." + readset.lane,
-                                         "Blast_sample",
-                                         readset.name + "_" + readset.index + "_L00" + readset.lane)
-            inputs = [readset.fastq1, readset.fastq2]
-            output = output_prefix + '.R1.RDP.blastHit_20MF_species.txt'
-            command = "runBlast.sh " + str(nb_blast_to_do) + " " + output_prefix + " " + readset.fastq1 + " "
-            if (readset.fastq2):
-                command += readset.fastq2
-            job = concat_jobs([
-                Job(command="mkdir -p " + os.path.dirname(output)),
-                Job(inputs, [output], [["blast", "module_mugqic_tools"]], command=command)
-            ], name= "blast." + readset.name + ".blast." + self.run_id + "." + str(self.lane_number))
-
-            jobs.append(job)
-
-        self.add_copy_job_inputs(jobs)
-        return jobs
-
     def align(self):
         """
             Align the reads from the fastq file, sort the resulting .bam and create an index
@@ -449,11 +336,7 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
         """
         jobs = []
         for readset in [readset for readset in self.readsets if (readset.bam)]:
-            if (readset.aligner == "bwa"):
-                jobs.extend(self.get_bwa_jobs(readset))
-            elif (readset.aligner == "star"):
-                jobs.extend(self.get_star_jobs(readset))
-
+            jobs.extend(readset.aligner.get_alignment_jobs(readset))
         self.add_copy_job_inputs(jobs)
         return jobs
 
@@ -463,10 +346,10 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
         """
         jobs = []
         for readset in [readset for readset in self.readsets if (readset.bam)]:
-            input_file_prefix = readset.bam + '.sorted.'
+            input_file_prefix = readset.bam + '.'
             input =  input_file_prefix + "bam"
-            output = input_file_prefix + "dup.bam"
-            metrics_file = readset.bam + "dup.metrics"
+            output = input_file_prefix + ".dup.bam"
+            metrics_file = readset.bam + ".dup.metrics"
 
             job = picard.mark_duplicates([input], output, metrics_file)
             job.name = "picard_mark_duplicates." + readset.name + ".dup." + self.run_id + "." + str(self.lane_number)
@@ -494,71 +377,149 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
             from the specicied "BED Files".
         """
         jobs = []
-        created_interval_lists = []
-        downloaded_bed_files = []
         for readset in [readset for readset in self.readsets if (readset.bam)]:
-            input_file_prefix = readset.bam + '.sorted.dup.'
-            input = input_file_prefix + "bam"
+            jobs.extend(readset.aligner.get_metrics_jobs(readset))
+        self.add_copy_job_inputs(jobs)
+        return jobs
 
-            job = picard.collect_multiple_metrics(input, input_file_prefix + "all.metrics", reference_sequence=readset.reference_file)
-            job.name = "picard_collect_multiple_metrics." + readset.name + ".met." + self.run_id + "." + str(self.lane_number)
-            jobs.append(job)
+    def blast(self):
+        """ 
+            Run blast on a subsample of the reads of each sample to find the 20 most
+            frequent hits.
 
-            coverage_bed = bvatools.resolve_readset_coverage_bed(readset)
-            if coverage_bed:
-                full_coverage_bed = self.output_dir + os.sep + coverage_bed
-                if (not os.path.exists(full_coverage_bed)) and (coverage_bed not in downloaded_bed_files):
-                    # Download the bed file
-                    command = config.param('DEFAULT', 'fetch_bed_file_command').format(
-                            output_directory = self.output_dir,
-                            filename = coverage_bed
-                    )
-                    job = Job([], [full_coverage_bed], command=command, name="bed_download." + coverage_bed)
-                    downloaded_bed_files.append(coverage_bed)
-                    jobs.append(job)
+            The "runBlast.sh" util from MUGQIC Tools is used. The number of reads to
+            subsample can be configured by sample or for the whole lane. The output will be
+            in the "Blast_sample" folder, under the Unaligned folder.
+        """
+        jobs = []
 
-                job = bvatools.depth_of_coverage(
-                    input, 
-                    input_file_prefix + "coverage.tsv", 
-                    full_coverage_bed, 
-                    other_options = config.param('bvatools_depth_of_coverage', 'other_options', required=False),
-                    reference_genome = readset.reference_file
+        nb_blast_to_do = config.param('blast', 'nb_blast_to_do', type="posint")
+        is_nb_blast_per_lane = config.param('blast', 'is_nb_for_whole_lane', type="boolean")
+
+        if (is_nb_blast_per_lane):
+            nb_blast_to_do = int(nb_blast_to_do) // len(self.readsets)
+
+        nb_blast_to_do = max(1, nb_blast_to_do)
+
+        for readset in self.readsets:
+            output_prefix = os.path.join(self.output_dir,
+                                         "Unaligned." + readset.lane,
+                                         "Blast_sample",
+                                         readset.name + "_" + readset.index + "_L00" + readset.lane)
+            output = output_prefix + '.R1.RDP.blastHit_20MF_species.txt'
+            current_jobs = [Job(command="mkdir -p " + os.path.dirname(output))]
+
+            if (readset.bam):
+                input = readset.bam + ".bam"
+
+                fasta_file = output_prefix + ".R1.subSampled_{nb_blast_to_do}.fasta".format(nb_blast_to_do = nb_blast_to_do)
+                result_file = output_prefix + ".R1.subSampled_{nb_blast_to_do}.blastres".format(nb_blast_to_do = nb_blast_to_do)
+
+                # count the read that aren't marked as secondary alignment and calculate the ratio of reads to subsample
+                command = """subsampling=$(samtools view -F 0x0180 {input} | wc -l | awk -v nbReads={nb_blast_to_do} '{{x=sprintf("%.4f", nbReads/$1); if (x == "0.0000") print "0.0001"; else print x}}')""".format(
+                    input = input,
+                    nb_blast_to_do = nb_blast_to_do
                 )
+                current_jobs.append(Job([input], [], [["blast", "module_samtools"]], command=command))
 
-                job.name = "bvatools_depth_of_coverage." + readset.name + ".doc." + self.run_id + "." + str(self.lane_number)
-                jobs.append(job)
+                # subsample the reads and output to a temp fasta
+                command = """samtools view -s $subsampling -F 0x0180 {input} | awk '{{OFS="\\t"; print ">"$1"\\n"$10}}' - > {fasta_file}""".format(
+                    input = input,
+                    fasta_file = fasta_file
+                )
+                current_jobs.append(Job([input], [], [["blast", "module_samtools"]], command=command))
 
-                interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
+                # run blast
+                command = """blastn -query {fasta_file} -db nt -out {result_file} -perc_identity 80 -num_descriptions 1 -num_alignments 1""".format(
+                    fasta_file = fasta_file,
+                    result_file = result_file
+                )
+                current_jobs.append(Job([], [], [["blast", "module_blast"]], command=command))
 
-                if not interval_list in created_interval_lists:
-                    # Create one job to generate the interval list from the bed file
-                    ref_dict = os.path.splitext(readset.reference_file)[0] + '.dict'
-                    job = tools.bed2interval_list(ref_dict, full_coverage_bed, interval_list)
-                    job.name = "interval_list." + coverage_bed
-                    created_interval_lists.append(interval_list)
-                    jobs.append(job)
+                # filter and format the result to only have the sorted number of match and the species
+                command = """grep ">" {result_file} | awk ' {{ print $2 "_" $3}} ' | sort | uniq -c | sort -n -r | head -20 > {output}""".format(
+                   result_file = result_file,
+                   output = output
+                )
+                current_jobs.append(Job([], [output], [], command=command))
+            else:
+                inputs = [readset.fastq1, readset.fastq2]
+                command = "runBlast.sh " + str(nb_blast_to_do) + " " + output_prefix + " " + readset.fastq1 + " "
+                if (readset.fastq2):
+                    command += readset.fastq2
+                current_jobs.append(Job(inputs, [output], [["blast", "module_mugqic_tools"], ["blast", "module_blast"]], command=command))
+            job = concat_jobs(current_jobs, name= "blast." + readset.name + ".blast." + self.run_id + "." + str(self.lane_number))
+            jobs.append(job)
+        self.add_copy_job_inputs(jobs)
+        return jobs
 
-                job = picard.calculate_hs_metrics(input_file_prefix + "bam", input_file_prefix + "onTarget.tsv", interval_list, reference_sequence=readset.reference_file)
-                job.name = "picard_calculate_hs_metrics." + readset.name + ".hs." + self.run_id + "." + str(self.lane_number)
-                jobs.append(job)
+    def qc_graphs(self):
+        """ 
+            Generate some QC Graphics and a summary XML file for each sample using 
+            [BVATools](https://bitbucket.org/mugqic/bvatools/).
+
+            Files are created in a 'qc' subfolder of the fastq directory. Examples of
+            output graphic:
+
+            - Per cycle qualities, sequence content and sequence length;
+            - Known sequences (adaptors);
+            - Abundant Duplicates;
+        """
+        jobs = []
+
+        for readset in self.readsets:
+            output_dir = os.path.dirname(readset.fastq1) + os.sep + "qc"
+            region_name = readset.name + "_" + readset.index + "_L00" + readset.lane
+
+            file1 = readset.fastq1
+            file2 = readset.fastq2
+            type = "FASTQ"
+            if readset.bam:
+                file1 = readset.bam + ".bam"
+                file2 = None
+                type = "BAM"
+
+            job = concat_jobs([
+                Job(command="mkdir -p " + output_dir),
+                bvatools.readsqc(
+                    file1, 
+                    file2,
+                    type,
+                    region_name, 
+                    output_dir
+                )]
+            )
+
+            job.name = "qc." + readset.name + ".qc." + self.run_id + "." + str(self.lane_number)
+            jobs.append(job)
 
         self.add_copy_job_inputs(jobs)
         return jobs
 
-    def bam_md5(self):
+    def md5(self):
         """
-            Create md5 checksum files for the sorted .bam (and .bai) files using the system
-            'md5sum' util.
+            Create md5 checksum files for the fastq, bam and bai using the system 'md5sum'
+            util.
+
+            One checksum file is created for each file.
         """
         jobs = []
-        for readset in [readset for readset in self.readsets if (readset.bam)]:
-            input_bai = readset.bam + ".sorted.bai"
-            input_bam = readset.bam + ".sorted.bam"
-            output_bai = input_bai + ".md5"
-            output_bam = input_bam + ".md5"
-            command = "md5sum -b " + input_bam + " > " + output_bam + " && md5sum -b " + input_bai + " > " + output_bai
+        for readset in self.readsets:
+            inputs = [readset.fastq1]
+            outputs = [readset.fastq1 + ".md5"]
+            current_jobs = [Job([readset.fastq1],[readset.fastq1 + ".md5"], command="md5sum -b " + readset.fastq1 + " > " + readset.fastq1 + ".md5")]
 
-            job = Job([input_bam], [output_bai, output_bam], name="bmd5." + readset.name + ".bmd5." + self.run_id + "." + str(self.lane_number), command=command)
+            # Second read in paired-end run
+            if (readset.fastq2):
+                current_jobs.append(Job([readset.fastq2],[readset.fastq2 + ".md5"], command="md5sum -b " + readset.fastq2 + " > " + readset.fastq2 + ".md5"))
+
+            # Alignment files
+            if (readset.bam):
+                current_jobs.append(Job([readset.bam + ".bam"],[readset.bam + ".bam.md5"], command="md5sum -b " + readset.bam + ".bam" + " > " + readset.bam + ".bam.md5"))
+                current_jobs.append(Job([],[readset.bam + ".bai.md5"], command="md5sum -b " + readset.bam + ".bai" + " > " + readset.bam + ".bai.md5"))
+
+            job = concat_jobs(current_jobs, name= "md5." + readset.name + ".md5." + self.run_id + "." + str(self.lane_number))
+
             jobs.append(job)
 
         self.add_copy_job_inputs(jobs)
@@ -681,68 +642,9 @@ rm -r "{output_dir}"; configureBclToFastq.pl\\
 
     def add_copy_job_inputs(self, jobs):
         for job in jobs:
+            # we first remove dependencies of the current job, since we will have a dependency on that job
+            self.copy_job_inputs = [item for item in self.copy_job_inputs if item not in job.input_files]
             self.copy_job_inputs.extend(job.output_files)
-
-    def get_bwa_jobs(self, readset):
-        jobs = []
-
-        output = readset.bam + ".sorted.bam"
-
-        job = concat_jobs([
-            Job(command="mkdir -p " + os.path.dirname(output)),
-            pipe_jobs([
-                bwa.mem(
-                    readset.fastq1,
-                    readset.fastq2,
-                    read_group="'@RG" + \
-                        "\tID:" + readset.name + \
-                        "\tSM:" + readset.sample.name + \
-                        ("\tLB:" + readset.library if readset.library else "") + \
-                        ("\tPU:run" + readset.run + "_" + readset.lane if readset.run and readset.lane else "") + \
-                        ("\tCN:" + config.param('bwa_mem', 'sequencing_center') if config.param('bwa_mem', 'sequencing_center', required=False) else "") + \
-                        "\tPL:Illumina" + \
-                        "'",
-                    ref=readset.aligner_reference_index
-                ),
-                picard.sort_sam(
-                    "/dev/stdin",
-                    output,
-                    "coordinate"
-                )
-            ])
-        ], name="bwa_mem_picard_sort_sam." + readset.name + ".align." + self.run_id + "." + str(self.lane_number))
-
-        jobs.append(job)
-        return jobs
-
-    def get_star_jobs(self, readset):
-        jobs = []
-
-        output = readset.bam + ".sorted.bam"
-
-        rg_center = config.param('star_align', 'sequencing_center', required=False)
-        star_bam_name = "Aligned.sortedByCoord.out.bam"
-
-        job = concat_jobs([
-            star.align(
-                reads1=readset.fastq1,
-                reads2=readset.fastq2,
-                output_directory=os.path.dirname(output),
-                sort_bam=True,
-                genome_index_folder=readset.aligner_reference_index,
-                rg_id=readset.name,
-                rg_sample=readset.sample.name,
-                rg_library=readset.library if readset.library else "",
-                rg_platform_unit=readset.run + "_" + readset.lane if readset.run and readset.lane else "",
-                rg_platform="Illumina",
-                rg_center=rg_center if rg_center else ""
-            ),
-            Job(output_files=[output], command="mv " + os.path.dirname(output) + os.sep + star_bam_name + " " + output),
-            picard.build_bam_index(output, output[::-1].replace(".bam"[::-1], ".bai"[::-1], 1)[::-1])
-        ])
-        job.name = "star_align." + readset.name
-        jobs.append(job)
-        return jobs
 
     def getSequencerIndexLength(self):
         """ Returns the total number of index cycles of the run. """

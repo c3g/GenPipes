@@ -47,11 +47,21 @@ class DnaSeq(common.Illumina):
             alignment_directory = os.path.join("alignment", readset.sample.name)
             readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
 
+            # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
             if readset.run_type == "PAIRED_END":
-                fastq1 = trim_file_prefix + "pair1.fastq.gz"
-                fastq2 = trim_file_prefix + "pair2.fastq.gz"
+                candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
+                if readset.fastq1 and readset.fastq2:
+                    candidate_input_files.append([readset.fastq1, readset.fastq2])
+                if readset.bam:
+                    candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
+                [fastq1, fastq2] = self.select_input_files(candidate_input_files)
             elif readset.run_type == "SINGLE_END":
-                fastq1 = trim_file_prefix + "single.fastq.gz"
+                candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
+                if readset.fastq1:
+                    candidate_input_files.append([readset.fastq1])
+                if readset.bam:
+                    candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz")])
+                [fastq1] = self.select_input_files(candidate_input_files)
                 fastq2 = None
             else:
                 raise Exception("Error: run type \"" + readset.run_type +
@@ -80,33 +90,45 @@ class DnaSeq(common.Illumina):
                 ])
             ], name="bwa_mem_picard_sort_sam." + readset.name)
 
-            # If this readset is unique for this sample, further BAM merging is not necessary.
-            # Thus, create a sample BAM symlink to the readset BAM, along with its index.
-            if len(readset.sample.readsets) == 1:
-                readset_index = re.sub("\.bam$", ".bai", readset_bam)
-                sample_bam = os.path.join(alignment_directory, readset.sample.name + ".sorted.bam")
-                sample_index = re.sub("\.bam$", ".bai", sample_bam)
-                job = concat_jobs([
-                    job,
-                    Job([readset_bam], [sample_bam], command="ln -s -f " + os.path.relpath(readset_bam, os.path.dirname(sample_bam)) + " " + sample_bam),
-                    Job([readset_bam], [sample_index], command="ln -s -f " + os.path.relpath(readset_index, os.path.dirname(sample_index)) + " " + sample_index)
-                ], name=job.name)
-
             jobs.append(job)
         return jobs
 
     def picard_merge_sam_files(self):
         jobs = []
         for sample in self.samples:
-            # Skip samples with one readset only, since symlink has been created at align step
-            if len(sample.readsets) > 1:
-                alignment_directory = os.path.join("alignment", sample.name)
-                inputs = [os.path.join(alignment_directory, readset.name + ".sorted.bam") for readset in sample.readsets]
-                output = os.path.join(alignment_directory, sample.name + ".sorted.bam")
+            alignment_directory = os.path.join("alignment", sample.name)
+            # Find input readset BAMs first from previous bwa_mem_picard_sort_sam job, then from original BAMs in the readset sheet.
+            readset_bams = self.select_input_files([[os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam") for readset in sample.readsets], [readset.bam for readset in sample.readsets]])
+            sample_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
 
-                job = picard.merge_sam_files(inputs, output)
+            mkdir_job = Job(command="mkdir -p " + os.path.dirname(sample_bam))
+
+            # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
+            if len(sample.readsets) == 1:
+                readset_bam = readset_bams[0]
+                if os.path.isabs(readset_bam):
+                    target_readset_bam = readset_bam
+                else:
+                    target_readset_bam = os.path.relpath(readset_bam, alignment_directory)
+                readset_index = re.sub("\.bam$", ".bai", readset_bam)
+                target_readset_index = re.sub("\.bam$", ".bai", target_readset_bam)
+                sample_index = re.sub("\.bam$", ".bai", sample_bam)
+
+                job = concat_jobs([
+                    mkdir_job,
+                    Job([readset_bam], [sample_bam], command="ln -s -f " + target_readset_bam + " " + sample_bam),
+                    Job([readset_index], [sample_index], command="ln -s -f " + target_readset_index + " " + sample_index)
+                ], name="symlink_readset_sample_bam." + sample.name)
+
+            elif len(sample.readsets) > 1:
+                job = concat_jobs([
+                    mkdir_job,
+                    picard.merge_sam_files(readset_bams, sample_bam)
+                ])
                 job.name = "picard_merge_sam_files." + sample.name
-                jobs.append(job)
+
+            jobs.append(job)
+
         return jobs
 
     def gatk_indel_realigner(self):

@@ -16,6 +16,7 @@ import re
 
 # MUGQIC Modules
 from config import *
+from job import *
 from scheduler import *
 from step import *
 
@@ -30,7 +31,7 @@ class Pipeline(object):
         config.parse_files(self.args.config)
 
         # Create a config trace from merged config file values
-        with open(self.__class__.__name__ + ".config.trace.ini", 'wb') as config_trace:        
+        with open(self.__class__.__name__ + ".config.trace.ini", 'wb') as config_trace:
             config_trace.write("""\
 # {self.__class__.__name__} Config Trace
 # Created on: {self.timestamp}
@@ -126,6 +127,39 @@ class Pipeline(object):
         for step in self.step_range:
             jobs.extend(step.jobs)
         return jobs
+
+    # Given a list of lists of input files, return the first valid list of input files which can be found either in previous jobs output files or on file system.
+    # Thus, a job with several candidate lists of input files can find out the first valid one.
+    def select_input_files(self, candidate_input_files):
+        log.debug("candidate_input_files: \n" + str(candidate_input_files))
+
+        selected_input_files = []
+
+        # Create a reversed copy to pop the candidates ordered by priority
+        remaining_candidate_input_files = list(candidate_input_files)
+        remaining_candidate_input_files.reverse()
+        previous_jobs_output_files = set([output_file for job in self.jobs for output_file in job.output_files])
+
+        while not selected_input_files and remaining_candidate_input_files:
+            input_files = filter(None, remaining_candidate_input_files.pop())
+            # Skip empty candidate input files
+            if input_files:
+                # dependency_jobs() checks if the current candidate input files is valid, otherwise raises an exception
+                try:
+                    job = Job(input_files=input_files)
+                    job.output_dir = self.output_dir
+                    self.dependency_jobs(job)
+                    selected_input_files = input_files
+                except Exception as e:
+                    log.debug("Caught Exception for candidate input file: " +  ", ".join(input_files))
+                    log.debug(e.message)
+
+        if selected_input_files:
+            log.debug("selected_input_files: " + ", ".join(input_files) + "\n")
+            return selected_input_files
+        else:
+            raise Exception("Error: missing candidate input files: " + str(candidate_input_files) +
+                " neither found in dependencies nor on file system!")
 
     def dependency_jobs(self, current_job):
         dependency_jobs = []

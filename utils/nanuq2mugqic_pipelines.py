@@ -84,7 +84,8 @@ def create_readsets(nanuq_auth_file, nanuq_readset_file, seq_type, mugqic_pipeli
                 formats = ['FASTQ1', 'FASTQ2', 'BAM']
 
                 fieldnames = [key[1] for key in nanuq_vs_mugqic_pipeline_readset_keys] + formats
-                available_beds = line['BED Files'].split(';')
+                # Filter empty strings returned by split with string ";" separator
+                available_beds = filter(None, line['BED Files'].split(';'))
                 for bed in available_beds:
                     bed_files.add(bed)
 
@@ -95,6 +96,14 @@ def create_readsets(nanuq_auth_file, nanuq_readset_file, seq_type, mugqic_pipeli
                             mugqic_pipeline_readset_path = os.path.join(raw_reads_directory, line['Name'], os.path.basename(nanuq_readset_path))
                             symlinks.append([nanuq_readset_path, mugqic_pipeline_readset_path])
                             mugqic_pipeline_readset_csv_row[format] = mugqic_pipeline_readset_path
+
+                            # Add BAM index to symlinks if it exists, log a warning otherwise
+                            if format == 'BAM':
+                                nanuq_readset_index_path = re.sub("\.bam$", ".bai", nanuq_readset_path)
+                                if os.path.isfile(nanuq_readset_index_path):
+                                    symlinks.append([nanuq_readset_index_path, re.sub("\.bam$", ".bai", mugqic_pipeline_readset_path)])
+                                else:
+                                    log.warning("Nanuq readset index path " + nanuq_readset_index_path + " is invalid!")
                         else:
                             raise Exception("Error: Nanuq readset path " + nanuq_readset_path + " is invalid!")
 

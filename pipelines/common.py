@@ -102,19 +102,23 @@ class Illumina(MUGQICPipeline):
     def picard_sam_to_fastq(self):
         jobs = []
         for readset in self.readsets:
-            if readset.bam and not readset.fastq1:
-                if readset.run_type == "PAIRED_END":
-                    readset.fastq1 = re.sub("\.bam$", ".pair1.fastq.gz", readset.bam)
-                    readset.fastq2 = re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)
-                elif readset.run_type == "SINGLE_END":
-                    readset.fastq1 = re.sub("\.bam$", ".single.fastq.gz", readset.bam)
-                else:
-                    raise Exception("Error: run type \"" + readset.run_type +
-                    "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+            if readset.bam:
+                # If readset FASTQ files are available, skip this step
+                if not readset.fastq1:
+                    if readset.run_type == "PAIRED_END":
+                        fastq1 = re.sub("\.bam$", ".pair1.fastq.gz", readset.bam)
+                        fastq2 = re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)
+                    elif readset.run_type == "SINGLE_END":
+                        fastq1 = re.sub("\.bam$", ".single.fastq.gz", readset.bam)
+                    else:
+                        raise Exception("Error: run type \"" + readset.run_type +
+                        "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
 
-                job = picard.sam_to_fastq(readset.bam, readset.fastq1, readset.fastq2)
-                job.name = "picard_sam_to_fastq." + readset.name
-                jobs.append(job)
+                    job = picard.sam_to_fastq(readset.bam, fastq1, fastq2)
+                    job.name = "picard_sam_to_fastq." + readset.name
+                    jobs.append(job)
+            else:
+                raise Exception("Error: BAM file not available for readset \"" + readset.name + "\"!")
         return jobs
 
     def trimmomatic(self):
@@ -124,12 +128,13 @@ class Illumina(MUGQICPipeline):
             trim_log = trim_file_prefix + "log"
             trim_stats = trim_file_prefix + "stats.csv"
             if readset.run_type == "PAIRED_END":
-                if readset.bam and not readset.fastq1:
-                    readset.fastq1 = re.sub("\.bam$", ".pair1.fastq.gz", readset.bam)
-                    readset.fastq2 = re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)
+                candidate_input_files = [[readset.fastq1, readset.fastq2]]
+                if readset.bam:
+                    candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
+                [fastq1, fastq2] = self.select_input_files(candidate_input_files)
                 job = trimmomatic.trimmomatic(
-                    readset.fastq1,
-                    readset.fastq2,
+                    fastq1,
+                    fastq2,
                     trim_file_prefix + "pair1.fastq.gz",
                     trim_file_prefix + "single1.fastq.gz",
                     trim_file_prefix + "pair2.fastq.gz",
@@ -139,10 +144,12 @@ class Illumina(MUGQICPipeline):
                     trim_log
                 )
             elif readset.run_type == "SINGLE_END":
-                if readset.bam and not readset.fastq1:
-                    readset.fastq1 = re.sub("\.bam$", ".single.fastq.gz", readset.bam)
+                candidate_input_files = [[readset.fastq1]]
+                if readset.bam:
+                    candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
+                [fastq1] = self.select_input_files(candidate_input_files)
                 job = trimmomatic.trimmomatic(
-                    readset.fastq1,
+                    fastq1,
                     None,
                     None,
                     None,
