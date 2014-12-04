@@ -67,12 +67,13 @@ def goseq(
             ['differential_expression_goseq', 'module_R']
         ],
         command = """\
-Rscript $R_TOOLS/goseq.R \\
+Rscript $R_TOOLS/goseq.R {other_options} \\
   -a {gene_size_file} \\
   -G {gene_ontology_file} \\
   -d {input_file} \\
   -c {input_columns} \\
   -o {output_file}""".format(
+        other_options=config.param('differential_expression_goseq','other_options'),
         gene_size_file=config.param('differential_expression_goseq', 'gene_size', type='filepath'),
         gene_ontology_file=config.param('differential_expression_goseq', 'gene_ontology', type='filepath'),
         input_file=input_file,
