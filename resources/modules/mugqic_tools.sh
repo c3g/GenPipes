@@ -7,7 +7,7 @@ set -eu -o pipefail
 #
 
 SOFTWARE=mugqic_tools
-VERSION=1.10.5
+VERSION=2.0.0
 
 # 'MUGQIC_INSTALL_HOME_DEV' for development, 'MUGQIC_INSTALL_HOME' for production (don't write '$' before!)
 INSTALL_HOME=MUGQIC_INSTALL_HOME
@@ -36,15 +36,11 @@ then
   cp -a ${!INSTALL_HOME}/archive/$ARCHIVE .
 else
   echo "Archive $ARCHIVE not in ${!INSTALL_HOME}/archive/: downloading it..."
-  wget https://bitbucket.org/mugqic/$SOFTWARE/get/$VERSION.tar.gz
-  # Rename archive
-  mv $VERSION.tar.gz $ARCHIVE
+  wget https://bitbucket.org/mugqic/$SOFTWARE/downloads/$ARCHIVE --output-document=$ARCHIVE
 fi
 tar zxvf $ARCHIVE
 
 SOFTWARE_DIR=$SOFTWARE-$VERSION
-# Rename mugqic_tools directory since original bitbucket name contains the commit number instead of version
-mv mugqic-mugqic_tools* $SOFTWARE_DIR
 
 # Add permissions and install software
 cd $INSTALL_DOWNLOAD
@@ -78,14 +74,12 @@ setenv          PYTHON_TOOLS        \$root/python-tools ;
 ################################################################################
 # Everything below this line should be generic and not modified
 
-# Well... here, module directory is named "tools" instead of "mugqic_tools" for aesthetical reasons
-
 # Default module version file
 echo "#%Module1.0
 set ModulesVersion \"$VERSION\"" > .version
 
 # Set module directory path by lowercasing $INSTALL_HOME and removing '_install_home' in it
-MODULE_DIR=${!INSTALL_HOME}/modulefiles/`echo ${INSTALL_HOME,,} | sed 's/_install_home//'`/tools
+MODULE_DIR=${!INSTALL_HOME}/modulefiles/`echo ${INSTALL_HOME,,} | sed 's/_install_home//'`/$SOFTWARE
 
 # Create module directory with permissions if necessary
 if [[ ! -d $MODULE_DIR ]]
