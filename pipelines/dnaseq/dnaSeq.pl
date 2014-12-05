@@ -984,7 +984,7 @@ sub haplotypeCaller {
   if($nbJobs <= 1) {
     my $region = undef;
     my $outputGVCF = $outputPrefix . '.hc.gvcf';
-    my $rO_job = GATK::haplotypeCaller($rH_cfg, $bamFile, $region, $outputPrefix);
+    my $rO_job = GATK::haplotypeCaller($rH_cfg, $bamFile, $region, $outputGVCF);
     if(!$rO_job->isUp2Date()) {
       SubmitToCluster::printSubmitCmd($rH_cfg, "haplotypeCaller", $region, 'HAPLOTYPE_CALLER', $jobDependency, $sampleName, $rO_job);
       if(!defined($jobId)) {
