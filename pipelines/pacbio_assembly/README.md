@@ -14,7 +14,7 @@ On this page:
 
 Usage
 -----
-Prepare your readset file as described [here](https://bitbucket.org/mugqic/mugqic_pipelines/src/#markdown-header-pacbio-assembly) (if you use `nanuq2mugqic_pipelines.py`, you need to add and fill manually the `EstimatedGenomeSize` column in your readset file).
+Prepare your readset file as described [here](https://bitbucket.org/mugqic/mugqic_pipelines/src#markdown-header-pacbio-assembly) (if you use `nanuq2mugqic_pipelines.py`, you need to add and fill manually the `EstimatedGenomeSize` column in your readset file).
 
 ```
 #!bash
