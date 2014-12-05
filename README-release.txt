@@ -5,7 +5,7 @@ vim VERSION
 git commit -m "Version bump to 2.0.0" VERSION
 
 # Tag the branch and push the tag. You'll need to have a gpg signature for this. Extra precaution
-git tag -s mugqic_pipeline-2.0.0 -m 'mugqic_pipeline release 2.0.0'
+git tag -s mugqic_pipelines-2.0.0 -m 'mugqic_pipelines release 2.0.0'
 git push --tags
 
 # Version bump the value. Until the next release, add '-beta' e.g. 2.1.0-beta

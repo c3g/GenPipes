@@ -33,5 +33,5 @@ Usage
 -----
 ```
 #!bash
-mugqic_pipeline/pipelines/rnaseq_denovo_assembly/rnaseq_denovo_assembly.py --help
+mugqic_pipelines/pipelines/rnaseq_denovo_assembly/rnaseq_denovo_assembly.py --help
 ```

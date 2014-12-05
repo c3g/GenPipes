@@ -49,7 +49,7 @@ On this page:
 ## Usage
 ```
 #!bash
-mugqic_pipeline/pipelines/illumina_run_processing/illumina_run_processing.py --help
+mugqic_pipelines/pipelines/illumina_run_processing/illumina_run_processing.py --help
 ```
 
 

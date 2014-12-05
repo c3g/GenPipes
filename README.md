@@ -59,9 +59,9 @@ To use them by default, add in your *$HOME/.bash_profile*:
 ```
 #!bash
 module load mugqic/python/2.7.8
-module load mugqic/pipeline/<latest_version>
+module load mugqic/mugqic_pipelines/<latest_version>
 ```
-(find out the latest version with: "`module avail 2>&1 | grep mugqic/pipeline`").
+(find out the latest version with: "`module avail 2>&1 | grep mugqic/mugqic_pipelines`").
 
 
 ### For guillimin and mammouth users
@@ -78,17 +78,17 @@ Usage
 For each pipeline, get help about usage, arguments and steps with:
 ```
 #!bash
-mugqic_pipeline/pipelines/<pipeline_name>/<pipeline_name>.py --help
+mugqic_pipelines/pipelines/<pipeline_name>/<pipeline_name>.py --help
 ```
 
 Pipelines require as input one Readset File, one or more Configuration File(s) and possibly one Design File, all described below.
 
 For more information about a specific pipeline, visit:
 
-### [DNA-Seq Pipeline](https://bitbucket.org/mugqic/mugqic_pipeline/src/python/pipelines/dnaseq/)
-### [RNA-Seq Pipeline](https://bitbucket.org/mugqic/mugqic_pipeline/src/python/pipelines/rnaseq/)
-### [RNA-Seq De Novo Assembly Pipeline](https://bitbucket.org/mugqic/mugqic_pipeline/src/python/pipelines/rnaseq_denovo_assembly/)
-### [PacBio Assembly Pipeline](https://bitbucket.org/mugqic/mugqic_pipeline/src/python/pipelines/pacbio_assembly/)
+### [DNA-Seq Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/dnaseq/)
+### [RNA-Seq Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/rnaseq/)
+### [RNA-Seq De Novo Assembly Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/rnaseq_denovo_assembly/)
+### [PacBio Assembly Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/pacbio_assembly/)
 
 
 Readset File
@@ -140,7 +140,7 @@ Example:
 
 
 ### For abacus users with Nanuq readsets
-If your readsets belong to a [Nanuq](http://gqinnovationcenter.com/services/nanuq.aspx) project, use `mugqic_pipeline/utils/nanuq2mugqic_pipelines.py` script to automatically create a Readset File and symlinks to your readsets on abacus.
+If your readsets belong to a [Nanuq](http://gqinnovationcenter.com/services/nanuq.aspx) project, use `mugqic_pipelines/utils/nanuq2mugqic_pipelines.py` script to automatically create a Readset File and symlinks to your readsets on abacus.
 
 
 Configuration Files
@@ -168,7 +168,7 @@ would resolve `dir2` value to `my_dir/my_subdir`.
 Each pipeline has a default configuration file (`.base.ini` extension) set for running on abacus cluster using *Homo sapiens* reference genome:
 ```
 #!bash
-mugqic_pipeline/pipelines/<pipeline_name>/<pipeline_name>.base.ini
+mugqic_pipelines/pipelines/<pipeline_name>/<pipeline_name>.base.ini
 ```
 
 You can also pass a list of several configuration files to a pipeline command.
@@ -176,12 +176,12 @@ Files are read in the list order and each parameter value is overwritten if rede
 
 This is useful to customize settings for a specific cluster or genome.
 Each pipeline has a special configuration file for guillimin and mammouth clusters (`.guillimin.ini` and `.mammouth.ini` extensions respectively).
-And various genome settings are available in `mugqic_pipeline/resources/genomes/config/`.
+And various genome settings are available in `mugqic_pipelines/resources/genomes/config/`.
 
 For example, to run the DNA-Seq pipeline on guillimin cluster with *Mus musculus* reference genome:
 ```
 #!bash
-mugqic_pipeline/pipelines/dnaseq/dnaseq.py -c mugqic_pipeline/pipelines/dnaseq/dnaseq.base.ini mugqic_pipeline/pipelines/dnaseq/dnaseq.guillimin.ini mugqic_pipeline/resources/genomes/config/Mus_musculus.GRCm38.ini ...
+mugqic_pipelines/pipelines/dnaseq/dnaseq.py -c mugqic_pipelines/pipelines/dnaseq/dnaseq.base.ini mugqic_pipelines/pipelines/dnaseq/dnaseq.guillimin.ini mugqic_pipelines/resources/genomes/config/Mus_musculus.GRCm38.ini ...
 ```
 
 
@@ -221,10 +221,10 @@ my_output_dir/job_output/
     └── trinotate_2014-10-22T14.05.58.o
 ```
 
-To view a TAB-separated values log report, use `mugqic_pipeline/utils/log_report.pl` script by typing:
+To view a TAB-separated values log report, use `mugqic_pipelines/utils/log_report.pl` script by typing:
 ```
 #!bash
-mugqic_pipeline/utils/log_report.pl <output_dir>/job_output/<PipelineName>_job_list_<timestamp>
+mugqic_pipelines/utils/log_report.pl <output_dir>/job_output/<PipelineName>_job_list_<timestamp>
 ```
 
 which will output e.g.:
@@ -260,12 +260,12 @@ Download and setup for external users
 
 ### Download
 
-Visit our [Download page](https://bitbucket.org/mugqic/mugqic_pipeline/downloads) to get the latest stable release.
+Visit our [Download page](https://bitbucket.org/mugqic/mugqic_pipelines/downloads) to get the latest stable release.
 
 If you want to use the most recent development version:
 ```
 #!bash
-git clone git@bitbucket.org:mugqic/mugqic_pipeline.git
+git clone git@bitbucket.org:mugqic/mugqic_pipelines.git
 ```
 
 
@@ -285,18 +285,18 @@ module use $MUGQIC_INSTALL_HOME/modulefiles
 
 #### Genomes
 Reference genomes and annotations must be installed in `$MUGQIC_INSTALL_HOME/genomes/`.
-Default genome installation scripts are already available in `mugqic_pipeline/resources/genomes/`.
-To install all of them, use the script `mugqic_pipeline/resources/genomes/install_all_genomes.sh`.
+Default genome installation scripts are already available in `mugqic_pipelines/resources/genomes/`.
+To install all of them, use the script `mugqic_pipelines/resources/genomes/install_all_genomes.sh`.
 
 
 #### Modules
 Software tools and associated modules must be installed in `$MUGQIC_INSTALL_HOME/software/` and `$MUGQIC_INSTALL_HOME/modulefiles/`.
-Default software/module installation scripts are already available in `mugqic_pipeline/resources/modules/`.
+Default software/module installation scripts are already available in `mugqic_pipelines/resources/modules/`.
 
 
 Call home
 ---------
-When pipeline jobs are submitted, a call home feature is invoked to collect some usage data. Those data are used to compute statistics and justify grant applications for pipeline funding support.
+When pipeline jobs are submitted, a call home feature is invoked to collect some usage data. Those data are used to compute statistics and justify grant applications for funding support.
 
 Data collected:
 
@@ -313,5 +313,5 @@ Please, ask questions or report bugs by sending us an e-mail at [bioinformatics.
 
 * Messages should not be sent directly to our team members. The generic e-mail address above will create a ticket viewable by all of us and facilitate the follow-up of your request.
 * Choose a meaningful subject for your message.
-* Include the pipeline version number in your message.
+* Include the version number in your message.
 * An error message or code snippet illustrating your request is normally very useful. 
