@@ -72,48 +72,45 @@ def align(
         elif stranded.lower() == "unstranded":
             cuff_cmd = "--outSAMstrandField intronMotif"
         else:
-            raise Exception("Stand info\"" + stranded + "\" unrecongized")
+            raise Exception("Stand info\"" + stranded + "\" unrecognized")
     else:
         cuff_cmd = ""
-    
+
+    other_options = config.param('star_align', 'other_options', required=False)
+
     job.command = """\
 mkdir -p {output_directory} && \\
 STAR --runMode alignReads \\
   --genomeDir {genome_index_folder} \\
-  --readFilesIn {reads1}{reads2}\\
+  --readFilesIn \\
+    {reads1}{reads2} \\
   --runThreadN {num_threads} \\
   --readFilesCommand zcat \\
   --outStd Log \\
   --outSAMunmapped Within \\
   --outSAMtype BAM {sort_value} \\
-  --limitGenomeGenerateRAM {ram} \\
   --outFileNamePrefix {output_directory}/ \\
-  {sort_ram} \\
-  {io_limit_size} \\
-  {wig_param} \\
-  {chim_param} \\
-  {cuff_cmd} \\
   --outSAMattrRGline {rg_id}\t{rg_platform}\t{rg_platform_unit}\t{rg_library}\t{rg_sample}\t{rg_center} \\
-  {other_options}""".format(
-        genome_index_folder=genome_index_folder,
-        other_options=config.param('star_align', 'other_options', required=False),
-        rg_id="ID:\"" + rg_id + "\" " if rg_id != "" else "",
-        rg_sample="SM:\"" + rg_sample + "\" " if rg_sample != "" else "",
-        rg_library=" LB:\"" + rg_library + "\" " if rg_library != "" else "",
-        rg_platform_unit=" PU:\"" + rg_platform_unit + "\" " if rg_platform_unit != "" else "",
-        rg_platform="PL:\"" + rg_platform + "\" " if rg_platform != "" else "",
-        rg_center="CN:\"" + rg_center + "\" " if rg_center != "" else "",
+  --limitGenomeGenerateRAM {ram}{sort_ram}{io_limit_size}{wig_param}{chim_param}{cuff_cmd}{other_options}""".format(
         output_directory=output_directory,
-        num_threads=num_threads if str(num_threads) != "" and isinstance(num_threads, int) and num_threads > 0 else 1,
-        ram=int(max_ram/2) if sort_bam else int(max_ram),
+        genome_index_folder=genome_index_folder,
         reads1=reads1,
-        reads2=" \\\n  " + reads2 if reads2 else "",
-        io_limit_size="\\\n  --limitIObufferSize " + str(io_max) if io_max else "",
-        wig_param=wig_cmd,
-        chim_param=chim_cmd,
-        sort_ram="\\\n  --limitBAMsortRAM " + str(int(max_ram/2)) if sort_bam else "",
-        cuff_cmd=cuff_cmd,
-        sort_value="SortedByCoordinate" if sort_bam else "Unsorted"
+        reads2=" \\\n    " + reads2 if reads2 else "",
+        num_threads=num_threads if str(num_threads) != "" and isinstance(num_threads, int) and num_threads > 0 else 1,
+        sort_value="SortedByCoordinate" if sort_bam else "Unsorted",
+        rg_id="ID:\"" + rg_id + "\" " if rg_id != "" else "",
+        rg_platform="PL:\"" + rg_platform + "\" " if rg_platform != "" else "",
+        rg_platform_unit=" PU:\"" + rg_platform_unit + "\" " if rg_platform_unit != "" else "",
+        rg_library=" LB:\"" + rg_library + "\" " if rg_library != "" else "",
+        rg_sample="SM:\"" + rg_sample + "\" " if rg_sample != "" else "",
+        rg_center="CN:\"" + rg_center + "\" " if rg_center != "" else "",
+        ram=int(max_ram / 2) if sort_bam else int(max_ram),
+        sort_ram=" \\\n  --limitBAMsortRAM " + str(int(max_ram/2)) if sort_bam else "",
+        io_limit_size=" \\\n  --limitIObufferSize " + str(io_max) if io_max else "",
+        wig_param=" \\\n  " + wig_cmd if wig_cmd else "",
+        chim_param=" \\\n  " + chim_cmd if chim_cmd else "",
+        cuff_cmd=" \\\n  " + cuff_cmd if cuff_cmd else "",
+        other_options=" \\\n  " + other_options if other_options else ""
     )
 
     return job
@@ -122,7 +119,7 @@ STAR --runMode alignReads \\
 def index(
     genome_index_folder,
     junction_file,
-    gtf = config.param('star_align', 'gtf', required=False, type='filepath'),
+    gtf = config.param('star_align', 'gtf', type='filepath', required=False),
     ):
     #STAR --runMode genomeGenerate --genomeDir $odir --genomeFastaFiles $genome --runThreadN $runThreadN --limitGenomeGenerateRAM $limitGenomeGenerateRAM --sjdbOverhang $sjdbOverhang  --sjdbFileChrStartEnd "
 
@@ -132,14 +129,15 @@ def index(
         [['star_index', 'module_star']]
     )
 
-    ## get param form config filepat
-    reference_fasta = config.param('star_index', 'genome_fasta', required=True)
+    ## get param from config filepath
+    reference_fasta = config.param('star_index', 'genome_fasta', type='filepath')
     num_threads = config.param('star_index', 'threads', type='int')
     ram_limit = config.param('star_index', 'ram')
     max_ram = int(utils.number_symbol_converter(ram_limit))
     io_limit = config.param('star_index', 'io_buffer')
     io_max = int(utils.number_symbol_converter(io_limit))
-    read_size = config.param('star_index', 'cycle_number', type='int')
+    read_size = config.param('star_index', 'cycle_number', type='posint')
+    other_options = config.param('star_index', 'other_options', required=False)
      
     job.command = """\
 mkdir -p {genome_index_folder} && \\
@@ -147,21 +145,17 @@ STAR --runMode genomeGenerate \\
   --genomeDir {genome_index_folder} \\
   --genomeFastaFiles {reference_fasta} \\
   --runThreadN {num_threads} \\
-  --limitGenomeGenerateRAM  {ram} \\
-  --sjdbFileChrStartEnd {junction_file} \\
-  {gtf} \\
-  {io_limit_size} \\
-  {sjdbOverhang} \\
-  {other_options}""".format(
+  --limitGenomeGenerateRAM {ram} \\
+  --sjdbFileChrStartEnd {junction_file}{gtf}{io_limit_size}{sjdbOverhang}{other_options}""".format(
         genome_index_folder=genome_index_folder,
-        other_options=config.param('star_index', 'other_options', required=False),
-        num_threads=num_threads if str(num_threads) != "" and isinstance(num_threads, int) and  num_threads > 0 else 1,  
-        ram=max_ram,
         reference_fasta=reference_fasta,
+        num_threads=num_threads if str(num_threads) != "" and isinstance(num_threads, int) and  num_threads > 0 else 1,
+        ram=max_ram,
         junction_file=junction_file,
         gtf=" \\\n  --sjdbGTFfile " + gtf if gtf else "",
-        sjdbOverhang="\\\n  --sjdbOverhang " + str(read_size - 1) if str(read_size) != "" and isinstance(read_size, int) and  read_size > 0 else "",
-        io_limit_size="\\\n  --limitIObufferSize " + str(io_max) if io_max else ""
+        io_limit_size=" \\\n  --limitIObufferSize " + str(io_max) if io_max else "",
+        sjdbOverhang=" \\\n  --sjdbOverhang " + str(read_size - 1) if read_size else "",
+        other_options=" \\\n  " + other_options if other_options else ""
     )
     
     return job
@@ -170,18 +164,18 @@ def concatenate_junction(
     input_junction_files_list,
     output_junction_file
     ):
-    
-    
+
     job = Job(
         input_junction_files_list,
         [output_junction_file],
         [['star_junction', 'module_star']]
     )
-    
-    
+
     job.command = """\
-cat {file_list} | awk 'BEGIN {{OFS="\t"; strChar[0]="."; strChar[1]="+"; strChar[2]="-"}} {{if($5>0){{print $1,$2,$3,strChar[$4]}}}}' |sort -k1,1h -k2,2n > {output_junction_file}""".format(
-    file_list=" ".join(input_junction_files_list),
+cat \\
+  {file_list} | \\
+awk 'BEGIN {{OFS="\t"; strChar[0]="."; strChar[1]="+"; strChar[2]="-"}} {{if($5>0){{print $1,$2,$3,strChar[$4]}}}}' | sort -k1,1h -k2,2n > {output_junction_file}""".format(
+    file_list=" \\\n  ".join(input_junction_files_list),
     output_junction_file=output_junction_file
     )
     
