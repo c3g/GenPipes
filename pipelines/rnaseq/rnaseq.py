@@ -42,20 +42,29 @@ class RnaSeq(common.Illumina):
     def star(self):
         jobs = []
         project_index_directory = "reference.Merged"
-        project_junction_file =  os.path.join("alignment_1stPass", "AllSample.SJ.out.tab")
+        project_junction_file =  os.path.join("alignment_1stPass", "AllSamples.SJ.out.tab")
         individual_junction_list=[]
         ######
         #pass 1 -alignment
         for readset in self.readsets:
             trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
-            alignment_1stPass_directory = os.path.join("alignment_1stPass", readset.sample.name)
+            alignment_1stPass_directory = os.path.join("alignment_1stPass", readset.sample.name, readset.name)
             individual_junction_list.append(os.path.join(alignment_1stPass_directory,"SJ.out.tab"))
 
             if readset.run_type == "PAIRED_END":
-                fastq1 = trim_file_prefix + "pair1.fastq.gz"
-                fastq2 = trim_file_prefix + "pair2.fastq.gz"
+                candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
+                if readset.fastq1 and readset.fastq2:
+                    candidate_input_files.append([readset.fastq1, readset.fastq2])
+                if readset.bam:
+                    candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
+                [fastq1, fastq2] = self.select_input_files(candidate_input_files)
             elif readset.run_type == "SINGLE_END":
-                fastq1 = trim_file_prefix + "single.fastq.gz"
+                candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
+                if readset.fastq1:
+                    candidate_input_files.append([readset.fastq1])
+                if readset.bam:
+                    candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz")])
+                [fastq1] = self.select_input_files(candidate_input_files)
                 fastq2 = None
             else:
                 raise Exception("Error: run type \"" + readset.run_type +
@@ -80,34 +89,38 @@ class RnaSeq(common.Illumina):
             jobs.append(job)
         
         ######
+        jobs.append(concat_jobs([
         #pass 1 - contatenate junction
-        job = star.concatenate_junction(
+        star.concatenate_junction(
             input_junction_files_list=individual_junction_list,
             output_junction_file=project_junction_file
-        )
-        job.name = "star_concat.AllSample"
-        jobs.append(job)
-        
-        ######
+        ),
         #pass 1 - genome indexing
-        job = star.index(
+        star.index(
             genome_index_folder=project_index_directory,
             junction_file=project_junction_file
-        )
-        job.name = "star_index.AllSample"
-        jobs.append(job)
-        
+        )], name = "star_index.AllSamples"))
+
         ######
         #Pass 2 - alignment
         for readset in self.readsets:
             trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
-            alignment_2ndPass_directory = os.path.join("alignment", readset.sample.name)
+            alignment_2ndPass_directory = os.path.join("alignment", readset.sample.name, readset.name)
 
             if readset.run_type == "PAIRED_END":
-                fastq1 = trim_file_prefix + "pair1.fastq.gz"
-                fastq2 = trim_file_prefix + "pair2.fastq.gz"
+                candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
+                if readset.fastq1 and readset.fastq2:
+                    candidate_input_files.append([readset.fastq1, readset.fastq2])
+                if readset.bam:
+                    candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
+                [fastq1, fastq2] = self.select_input_files(candidate_input_files)
             elif readset.run_type == "SINGLE_END":
-                fastq1 = trim_file_prefix + "single.fastq.gz"
+                candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
+                if readset.fastq1:
+                    candidate_input_files.append([readset.fastq1])
+                if readset.bam:
+                    candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz")])
+                [fastq1] = self.select_input_files(candidate_input_files)
                 fastq2 = None
             else:
                 raise Exception("Error: run type \"" + readset.run_type +
@@ -138,9 +151,11 @@ class RnaSeq(common.Illumina):
             # Thus, create a sample BAM symlink to the readset BAM.
             # remove older symlink before otherwise it raise an error if the link already exist (in case of redo)
             if len(readset.sample.readsets) == 1:
-                sample_bam = os.path.join("alignment",readset.sample.name ,readset.sample.name + ".sorted.bam")
-                job.command += " && \\\n rm -f " + sample_bam + " && \\\n ln -s " + os.path.join(self.output_dir,"alignment",readset.name, "Aligned.sortedByCoord.out.bam") + " " + sample_bam
-                job.output_files.append(sample_bam)
+                readset_bam = os.path.join(alignment_2ndPass_directory, "Aligned.sortedByCoord.out.bam")
+                sample_bam = os.path.join("alignment", readset.sample.name ,readset.sample.name + ".sorted.bam")
+                job = concat_jobs([
+                    job,
+                    Job([readset_bam], [sample_bam], command="ln -s -f " + os.path.relpath(readset_bam, os.path.dirname(sample_bam)) + " " + sample_bam)])
 
             job.name = "star_align.2." + readset.name
             jobs.append(job)
@@ -367,7 +382,7 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
     
     def cuffmerge(self):
         
-        output_directory = os.path.join("cufflinks", "AllSample")
+        output_directory = os.path.join("cufflinks", "AllSamples")
         sample_file = os.path.join("cufflinks", "cuffmerge.samples.txt")
         input_gtfs = [os.path.join("cufflinks", sample.name, "transcripts.gtf") for sample in self.samples]
         gtf = config.param('cuffmerge','gtf', type='filepath')
@@ -389,7 +404,7 @@ END
     def cuffquant(self):
         jobs = []
         
-        gtf = os.path.join("cufflinks", "AllSample","merged.gtf")
+        gtf = os.path.join("cufflinks", "AllSamples","merged.gtf")
         
         for sample in self.samples:
             input_bam = os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.bam")
@@ -406,7 +421,7 @@ END
         jobs = []
 
         fpkm_directory = "cufflinks"
-        gtf = os.path.join(fpkm_directory, "AllSample","merged.gtf")
+        gtf = os.path.join(fpkm_directory, "AllSamples","merged.gtf")
 
 
         # Perform cuffdiff on each design contrast
@@ -426,7 +441,7 @@ END
         jobs = []
 
         fpkm_directory = "cufflinks"
-        gtf = os.path.join(fpkm_directory, "AllSample","merged.gtf")
+        gtf = os.path.join(fpkm_directory, "AllSamples","merged.gtf")
         sample_labels = ",".join([sample.name for sample in self.samples])
 
 
