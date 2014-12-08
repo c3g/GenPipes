@@ -1,3 +1,3 @@
 MAILTO="francois.lefebvre3@mail.mcgill.ca"
-4 3 * * * wget https://bitbucket.org/mugqic/mugqic_pipelines/raw/python/resources/modules/R_Bioconductor_deploy.sh -O R_Bioconductor_deploy.sh && bash -l R_Bioconductor_deploy.sh
+4 3 * * * wget https://bitbucket.org/mugqic/mugqic_pipelines/raw/master/resources/modules/R_Bioconductor_deploy.sh -O R_Bioconductor_deploy.sh && bash -l R_Bioconductor_deploy.sh
 

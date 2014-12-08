@@ -4,8 +4,8 @@ set -e
 
 ## This script calls R.sh on known cluster. It assumes being run on abacus, and that the user can ssh
 ## directly without password.
-wget https://bitbucket.org/mugqic/mugqic_resources/raw/master/modules/R_Bioconductor.sh -O R_Bioconductor.sh
-wget https://bitbucket.org/mugqic/mugqic_resources/raw/master/modules/R_mugqic_packages.sh -O R_mugqic_packages.sh
+wget https://bitbucket.org/mugqic/mugqic_pipelines/raw/master/resources/modules/R_Bioconductor.sh -O R_Bioconductor.sh
+wget https://bitbucket.org/mugqic/mugqic_pipelines/raw/master/resources/modules/R_mugqic_packages.sh -O R_mugqic_packages.sh
 
 ## Abacus
 bash -l R_Bioconductor.sh >& abacus.R_Bioconductor.log $@
@@ -23,8 +23,8 @@ exit
 
 
 
-# wget https://bitbucket.org/mugqic/mugqic_resources/raw/master/modules/R_Bioconductor.sh -O R_Bioconductor.sh
-# wget https://bitbucket.org/mugqic/mugqic_resources/raw/master/modules/R_mugqic_packages.sh -O R_mugqic_packages.sh
+# wget https://bitbucket.org/mugqic/mugqic_pipelines/raw/master/resources/modules/R_Bioconductor.sh -O R_Bioconductor.sh
+# wget https://bitbucket.org/mugqic/mugqic_pipelines/raw/master/resources/modules/R_mugqic_packages.sh -O R_mugqic_packages.sh
 #
 # # Deploy prod
 # sh R_Bioconductor.sh -r -p MUGQIC_INSTALL_HOME -m modulefiles/mugqic -i software &> R_Bioconductor_prod.log
