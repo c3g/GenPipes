@@ -78,6 +78,12 @@ wc -l {output_file} | awk '{{print "# normalized {read_type} reads\t"$1 / 4}}' >
 
 class RnaSeqDeNovoAssembly(common.Illumina):
 
+    def __init__(self):
+        # Add pipeline specific arguments
+        self.argparser.add_argument("-d", "--design", help="design file", type=file)
+
+        super(RnaSeqDeNovoAssembly, self).__init__()
+
     def insilico_read_normalization_readsets(self):
         jobs = []
         for readset in self.readsets:
@@ -682,12 +688,6 @@ rm {dge_results}.tmp""".format(
             self.differential_expression,
             self.gq_seq_utils_report
         ]
-
-    def __init__(self):
-        # Add pipeline specific arguments
-        self.argparser.add_argument("-d", "--design", help="design file", type=file)
-
-        super(RnaSeqDeNovoAssembly, self).__init__()
 
 if __name__ == '__main__':
     RnaSeqDeNovoAssembly()
