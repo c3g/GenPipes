@@ -309,9 +309,13 @@ Data collected:
 
 Contact us
 ----------
-Please, ask questions or report bugs by sending us an e-mail at [bioinformatics.service@mail.mcgill.ca](mailto:bioinformatics.service@mail.mcgill.ca).
+Please visit our [mailing list](https://groups.google.com/forum/#!forum/mugqic_pipelines) to find questions and answers about MUGQIC Pipelines.
 
-* Messages should not be sent directly to our team members. The generic e-mail address above will create a ticket viewable by all of us and facilitate the follow-up of your request.
+To use it, send us an e-mail at [mugqic_pipelines@googlegroups.com](mailto:mugqic_pipelines@googlegroups.com).
+
+You can also report bugs at [bioinformatics.service@mail.mcgill.ca](mailto:bioinformatics.service@mail.mcgill.ca).
+
+* Messages should not be sent directly to our team members. The generic e-mail addresses above are viewable by all of us and facilitate the follow-up of your request.
 * Choose a meaningful subject for your message.
-* Include the version number in your message.
+* Include the pipeline version number in your message.
 * An error message or code snippet illustrating your request is normally very useful. 
