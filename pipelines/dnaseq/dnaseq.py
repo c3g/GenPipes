@@ -295,12 +295,14 @@ class DnaSeq(common.Illumina):
             if coverage_bed:
                 interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
 
-                recal_file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.")
-                job = picard.calculate_hs_metrics(recal_file_prefix + "bam", recal_file_prefix + "onTarget.tsv", interval_list)
                 if not interval_list in created_interval_lists:
-                    job = concat_jobs([tools.bed2interval_list(None, coverage_bed, interval_list), job])
+                    job = tools.bed2interval_list(None, coverage_bed, interval_list)
+                    job.name = "interval_list." + os.path.basename(coverage_bed)
+                    jobs.append(job)
                     created_interval_lists.append(interval_list)
 
+                recal_file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.")
+                job = picard.calculate_hs_metrics(recal_file_prefix + "bam", recal_file_prefix + "onTarget.tsv", interval_list)
                 job.name = "picard_calculate_hs_metrics." + sample.name
                 jobs.append(job)
         return jobs
