@@ -3,7 +3,7 @@ set -e
 
 ## This script calls R.sh on known cluster. It assumes being run on abacus, and that the user can ssh
 ## directly without password.
-wget https://bitbucket.org/mugqic/mugqic_resources/raw/master/modules/R.sh -O R.sh
+wget https://bitbucket.org/mugqic/mugqic_pipelines/raw/master/resources/modules/R.sh -O R.sh
 
 ## Abacus
 sh R.sh >& abacus.R.log $@
