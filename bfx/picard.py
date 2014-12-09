@@ -187,7 +187,11 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
 def sort_sam(input, output, sort_order="coordinate"):
 
     # Add SAM/BAM index as output
-    job = Job([input], [output, re.sub("\.([sb])am$", ".\\1ai", output)], [['picard_sort_sam', 'module_java'], ['picard_sort_sam', 'module_picard']])
+    job = Job([input], [output], [['picard_sort_sam', 'module_java'], ['picard_sort_sam', 'module_picard']])
+
+    # Index is created only when writing a coordinate-sorted BAM file
+    if sort_order == "coordinate":
+        job.output_files.append(re.sub("\.([sb])am$", ".\\1ai", output))
 
     job.command = """\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/SortSam.jar \\
