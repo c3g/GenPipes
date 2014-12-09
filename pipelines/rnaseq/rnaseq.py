@@ -324,7 +324,7 @@ for read_count_file in \\
   {read_count_files}
 do
   sort -k1,1 $read_count_file > {output_directory}/tmpSort.txt && \\
-  join -1 1 -2 1 {output_directory}/tmpMatrix.txt {output_directory}/tmpSort.txt > {output_directory}/tmpMatrix.2.txt && \\
+  join -1 1 -2 1 <(sort -k1,1 {output_directory}/tmpMatrix.txt) {output_directory}/tmpSort.txt > {output_directory}/tmpMatrix.2.txt && \\
   mv {output_directory}/tmpMatrix.2.txt {output_directory}/tmpMatrix.txt && \\
   na=$(basename $read_count_file | cut -d. -f1) && \\
   HEAD="$HEAD\t$na"
