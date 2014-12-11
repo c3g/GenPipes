@@ -61,6 +61,7 @@ module-whatis \"$SOFTWARE\" ;
 
 set             root                  \$::env($INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE_DIR
 setenv          MUGQIC_PIPELINES_HOME \$root
+prepend-path    PATH                  \$root/utils
 prepend-path    PATH                  \$root/pipelines/dnaseq
 prepend-path    PATH                  \$root/pipelines/rnaseq
 prepend-path    PATH                  \$root/pipelines/rnaseq_denovo_assembly
