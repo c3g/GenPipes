@@ -348,7 +348,7 @@ configureBclToFastq.pl\\
         for readset in [readset for readset in self.readsets if (readset.bam)]:
             input_file_prefix = readset.bam + '.'
             input =  input_file_prefix + "bam"
-            output = input_file_prefix + ".dup.bam"
+            output = input_file_prefix + "dup.bam"
             metrics_file = readset.bam + ".dup.metrics"
 
             job = picard.mark_duplicates([input], output, metrics_file)
