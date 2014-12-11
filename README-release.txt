@@ -19,6 +19,8 @@ vim VERSION
 git commit -m "Version bump to 2.1.0-beta" VERSION
 git push
 
+# Deploy mugqic_pipelines-<VERSION> as a module on all clusters
+
 # Send a message to the mailing list:
 mugqic_pipelines@googlegroups.com
 
