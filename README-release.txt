@@ -16,7 +16,7 @@ https://bitbucket.org/mugqic/mugqic_pipelines/downloads
 
 # Version bump the value. Until the next release, add '-beta' e.g. 2.1.0-beta
 vim VERSION
-git commit -m "Version bump to 2.1.0-beta"
+git commit -m "Version bump to 2.1.0-beta" VERSION
 git push
 
 # Send a message to the mailing list:
