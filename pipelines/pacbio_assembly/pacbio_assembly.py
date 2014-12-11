@@ -23,6 +23,19 @@ from pipelines import common
 log = logging.getLogger(__name__)
 
 class PacBioAssembly(common.MUGQICPipeline):
+    """
+    Contigs assembly with PacBio reads is done using what is refer as the HGAP workflow.
+    Briefly, raw subreads generated from raw .ba(s|x).h5 PacBio data files are filtered for quality.
+    A subread length cutoff value is extracted from subreads, depending on subreads distribution,
+    and used into the preassembly (aka correcting step) (BLASR) step which consists of aligning
+    short subreads on long subreads.
+    Since errors in PacBio reads is random, the alignment of multiple short reads on longer reads
+    allows to correct sequencing error on long reads.
+    These long corrected reads are then used as seeds into assembly (Celera assembler) which gives contigs.
+    These contigs are then *polished* by aligning raw reads on contigs (BLASR) that are then processed
+    through a variant calling algorithm (Quiver) that generates high quality consensus sequences
+    using local realignments and PacBio quality scores.
+    """
 
     def __init__(self):
         self.argparser.add_argument("-r", "--readsets", help="readset file", type=file, required=True)
@@ -34,15 +47,17 @@ class PacBioAssembly(common.MUGQICPipeline):
             self._readsets = parse_pacbio_readset_file(self.args.readsets.name)
         return self._readsets
 
-    """
-    Filtering. This step uses smrtpipe.py (From the SmrtAnalysis package) and will filter reads and subreads based on their length and QVs.
-    1- fofnToSmrtpipeInput.py.
-    2- modify RS_Filtering.xml files according to reads filtering values entered in .ini file.
-    3- smrtpipe.py with filtering protocol
-    4- prinseq-lite.pl to write fasta file based on fastq file.
-    Informative run metrics such as loading efficiency, readlengths and base quality are generated in this step as well.
-    """
     def smrtanalysis_filtering(self):
+        """
+        Filter reads and subreads based on their length and QVs, using smrtpipe.py (from the SmrtAnalysis package).
+
+        1. fofnToSmrtpipeInput.py
+        2. modify RS_Filtering.xml files according to reads filtering values entered in .ini file
+        3. smrtpipe.py with filtering protocol
+        4. prinseq-lite.pl: write fasta file based on fastq file
+
+        Informative run metrics such as loading efficiency, read lengths and base quality are generated in this step as well.
+        """
         jobs = []
 
         for sample in self.samples:
@@ -77,25 +92,26 @@ END
 
         return jobs
 
-    """
-    Cutoff value for splitting long reads from short reads is done here using
-    estimated coverage and estimated genome size.
-
-    You should estimate the overall coverage and length distribution for putting in
-    the correct options in the configuration file. You will need to decide a
-    length cutoff for the seeding reads. The optimum cutoff length will depend on
-    the distribution of the sequencing read lengths, the genome size and the
-    overall yield. Here, you provide a percentage value that corresponds to the
-    fraction of coverage you want to use as seeding reads.
-
-    First, loop through fasta sequences. put the length of each sequence in an array,
-    sort it, loop through it again and compute the cummulative length coveredby each
-    sequence as we loop though the array. Once that length is > (coverage * genome
-    size) * $percentageCutoff (e.g. 0.10), we have our threshold. The idea is to
-    consider all reads above that threshold to be seeding reads to which will be
-    align lower shorter subreads.
-    """
     def pacbio_tools_get_cutoff(self):
+        """
+        Cutoff value for splitting long reads from short reads is done here using
+        estimated coverage and estimated genome size.
+
+        You should estimate the overall coverage and length distribution for putting in
+        the correct options in the configuration file. You will need to decide a
+        length cutoff for the seeding reads. The optimum cutoff length will depend on
+        the distribution of the sequencing read lengths, the genome size and the
+        overall yield. Here, you provide a percentage value that corresponds to the
+        fraction of coverage you want to use as seeding reads.
+
+        First, loop through fasta sequences, put the length of each sequence in an array,
+        sort it, loop through it again and compute the cummulative length covered by each
+        sequence as we loop through the array. Once that length is > (coverage * genome
+        size) * $percentageCutoff (e.g. 0.10), we have our threshold. The idea is to
+        consider all reads above that threshold to be seeding reads to which will be
+        aligned lower shorter subreads.
+        """
+
         jobs = []
 
         for sample in self.samples:
@@ -126,15 +142,17 @@ END
 
         return jobs
 
-    """
-    Having in hand a cutoff value, filtered reads are splitted between short and long reads. Short reads
-    are aligned against long reads and consensus (e.g. corrected reads) are generated from these alignments.
-    1- split reads between long and short.
-    2- blasr (Aligner for PacBio reads)
-    3- m4topre (Converts .m4 blasr output in .pre format.)
-    4- pbdagcon (generates corrected reads from alignments)
-    """
     def preassembly(self):
+        """
+        Having in hand a cutoff value, filtered reads are splitted between short and long reads. Short reads
+        are aligned against long reads and consensus (e.g. corrected reads) are generated from these alignments.
+
+        1. split reads between long and short
+        2. blasr: aligner for PacBio reads
+        3. m4topre: convert .m4 blasr output in .pre format
+        4. pbdagcon (aka HGAP2): generate corrected reads from alignments
+        """
+
         jobs = []
 
         for sample in self.samples:
@@ -182,15 +200,17 @@ END
 
         return jobs
 
-    """
-    Corrected reads are assembled to generates contigs. Please see Celera documentation.
-    http://sourceforge.net/apps/mediawiki/wgs-assembler/index.php?title=RunCA#ovlThreads
-    Quality of assembly seems to be highly sensitive to paramters you give Celera.
-    1- Generate celera config files using paramters provided in the .ini file.
-    2- fastqToCA. Generates input file compatible with the Celera assembler
-    3- runCA. Run the Celera assembler.
-    """
     def assembly(self):
+        """
+        Corrected reads are assembled to generates contigs. Please see th e[Celera documentation]
+        (http://wgs-assembler.sourceforge.net/wiki/index.php?title=RunCA).
+        Quality of assembly seems to be highly sensitive to parameters you give Celera.
+
+        1. generate celera config files using parameters provided in the .ini file
+        2. fastqToCA: generate input file compatible with the Celera assembler
+        3. runCA: run the Celera assembler
+        """
+
         jobs = []
 
         for sample in self.samples:
@@ -246,17 +266,18 @@ END
 
         return jobs
 
-    """
-    Align raw reads on the Celera assembly with BLASR. Load pulse information from bax files into aligned file. Sort that file and run quiver (variantCaller.py).
-    
-    1- Generate fofn
-    2- Upload Celera assembly with smrtpipe refUploader
-    3- Compare sequences
-    4- Load pulses
-    5- Sort .cmp.h5 file
-    6- variantCaller.py
-    """
     def polishing(self):
+        """
+        Align raw reads on the Celera assembly with BLASR. Load pulse information from bax or bas files into aligned file. Sort that file and run quiver (variantCaller.py).
+
+        1. generate fofn
+        2. upload Celera assembly with smrtpipe refUploader
+        3. compare sequences
+        4. load pulses
+        5. sort .cmp.h5 file
+        6. variantCaller.py
+        """
+
         jobs = []
 
         for sample in self.samples:
@@ -351,10 +372,11 @@ END
 
         return jobs
 
-    """
-    Blast polished assembly against nr using dc-megablast.
-    """
     def blast(self):
+        """
+        Blast polished assembly against nr using dc-megablast.
+        """
+
         jobs = []
 
         for sample in self.samples:
@@ -399,10 +421,11 @@ END
 
         return jobs
 
-    """
-    Using MUMmer, align polished assembly against best hit from blast job. Also align polished assembly against itself to detect structure variation such as repeats, etc.
-    """
     def mummer(self):
+        """
+        Using MUMmer, align polished assembly against best hit from blast job. Also align polished assembly against itself to detect structure variation such as repeats, etc.
+        """
+
         jobs = []
 
         for sample in self.samples:
@@ -454,10 +477,11 @@ END
 
         return jobs
 
-    """
-    Generates summary tables and Generates MUGQIC style nozzle report.
-    """
     def gq_seq_utils_report(self):
+        """
+        Generates summary tables and generates MUGQIC style nozzle report.
+        """
+
         jobs = []
 
         for sample in self.samples:
@@ -519,10 +543,11 @@ END
 
         return jobs
 
-    """
-    Compile assembly stats of all conditions used in the pipeline.
-    """
     def compile(self):
+        """
+        Compile assembly stats of all conditions used in the pipeline.
+        """
+
         jobs = []
 
         for sample in self.samples:
