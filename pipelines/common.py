@@ -72,13 +72,16 @@ wget "{server}?{request}" --quiet --output-document=/dev/null
 class Illumina(MUGQICPipeline):
 
     def __init__(self):
-        self.argparser.add_argument("-r", "--readsets", help="readset file", type=file, required=True)
+        self.argparser.add_argument("-r", "--readsets", help="readset file", type=file)
         super(Illumina, self).__init__()
 
     @property
     def readsets(self):
         if not hasattr(self, "_readsets"):
-            self._readsets = parse_illumina_readset_file(self.args.readsets.name)
+            if self.args.readsets:
+                self._readsets = parse_illumina_readset_file(self.args.readsets.name)
+            else:
+                self.argparser.error("argument -r/--readsets is required!")
         return self._readsets
 
     @property
@@ -96,7 +99,7 @@ class Illumina(MUGQICPipeline):
             if self.args.design:
                 self._contrasts = parse_design_file(self.args.design.name, self.samples)
             else:
-                raise Exception("Error: missing '--design' option!")
+                self.argparser.error("argument -d/--design is required!")
         return self._contrasts
 
     def picard_sam_to_fastq(self):
