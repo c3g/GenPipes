@@ -1,3 +1,5 @@
+On this page:
+[TOC]
 
 PacBio Assembly Pipeline
 ========================
@@ -18,7 +20,6 @@ Prepare your readset file as described [here](https://bitbucket.org/mugqic/mugqi
 (if you use `nanuq2mugqic_pipelines.py`, you need to add and fill manually
 the `EstimatedGenomeSize` column in your readset file).
 
-[TOC]
 
 Usage
 -----
@@ -30,7 +31,7 @@ usage: pacbio_assembly.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
 
 Version: 2.0.0
 
-For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
+For more documentation, visit our [website](https://bitbucket.org/mugqic/mugqic_pipelines/)
 
 optional arguments:
   -h                    show this help message and exit
