@@ -140,6 +140,11 @@ exit \$MUGQIC_STATE" | \\
 
                     print cmd
 
+        # Check cluster maximum job submission
+        cluster_max_jobs = config.param('DEFAULT', 'cluster_max_jobs', type='posint', required=False)
+        if cluster_max_jobs and len(pipeline.jobs) > cluster_max_jobs:
+            log.warning("Number of jobs: " + str(len(pipeline.jobs)) + " > Cluster maximum number of jobs: " + str(cluster_max_jobs) + "!")
+
 class BatchScheduler(Scheduler):
     def submit(self, pipeline):
         self.print_header(pipeline)

@@ -4,6 +4,7 @@ from core.job import *
 from core.config import *
 from bfx import bvatools
 from bfx import bwa
+from bfx import metrics
 from bfx import picard
 from bfx import star
 from bfx import tools
@@ -22,6 +23,9 @@ class RunProcessingAligner(object):
         raise NotImplementedError("Please Implement this method")
 
     def get_metrics_jobs(self, readset):
+        raise NotImplementedError("Please Implement this method")
+
+    def get_annotation_files (self, genome_folder):
         raise NotImplementedError("Please Implement this method")
 
 
@@ -44,6 +48,9 @@ class BwaRunProcessingAligner(RunProcessingAligner):
                             "genome",
                             "bwa_index",
                             folder_name + ".fa")
+
+    def get_annotation_files (self, genome_folder):
+        return [];
 
     def get_alignment_jobs(self, readset):
         jobs = []
@@ -150,6 +157,26 @@ class StarRunProcessingAligner(RunProcessingAligner):
                             "star_index",
                             source + version + ".sjdbOverhang" + str(self.nb_cycles-1))
 
+    def get_annotation_files (self, genome_folder):
+        folder_name = os.path.basename(genome_folder)
+        ini_file = os.path.join(genome_folder + os.sep + folder_name + ".ini")
+        genome_config = ConfigParser.SafeConfigParser()
+        genome_config.read(ini_file)
+
+        source = genome_config.get("DEFAULT", "source")
+        version = genome_config.get("DEFAULT", "version")
+
+        return [
+            os.path.join(genome_folder,
+                        "annotations",
+                        folder_name + '.' + source + version + ".transcript_id.gtf"),
+
+            os.path.join(genome_folder,
+                        "annotations",
+                        "ncrna_bwa_index",
+                        folder_name + '.' + source + version + ".ncrna.fa")
+        ]
+
     def get_alignment_jobs(self, readset):
         jobs = []
         output = readset.bam + ".bam"
@@ -179,4 +206,25 @@ class StarRunProcessingAligner(RunProcessingAligner):
         return jobs
 
     def get_metrics_jobs(self, readset):
-        return [];
+        jobs = []
+        input_bam = readset.bam + ".dup.bam"
+        sample_file = input_bam + ".sample_file"
+        sample_row = readset.sample.name + "\t" + readset.bam + "\tRNAseq"
+        output_directory = os.path.join("metrics", "rnaseqRep")
+
+
+        if len(readset.annotation_files) > 1 and os.path.isfile(readset.annotation_files[0]) and os.path.isfile(readset.annotation_files[1]):
+            gtf_transcript_id = readset.annotation_files[0]
+            ribosomal_fasta = readset.annotation_files[1]
+            reference= readset.reference_file
+            job = concat_jobs([
+                Job(command="mkdir -p " + output_directory),
+                Job([input_bam], [sample_file], command="""\
+    echo "Sample\tBamFile\tNote
+    {sample_row}" \\
+    > {sample_file}""".format(sample_row=sample_row, sample_file=sample_file)),
+                metrics.rnaseqc(sample_file, output_directory, readset.fastq2 is not None, gtf_file=gtf_transcript_id, ribosomal_fasta=ribosomal_fasta, reference=reference),
+            ], name="rnaseqc")
+            jobs.append(job)
+
+        return jobs
