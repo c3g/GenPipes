@@ -1,3 +1,5 @@
+[TOC]
+
 
 PacBio Assembly Pipeline
 ========================
@@ -18,7 +20,12 @@ Prepare your readset file as described [here](https://bitbucket.org/mugqic/mugqi
 (if you use `nanuq2mugqic_pipelines.py`, you need to add and fill manually
 the `EstimatedGenomeSize` column in your readset file).
 
+
+Usage
+-----
 ```
+#!text
+
 usage: pacbio_assembly.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                           [-o OUTPUT_DIR] [-j {pbs,batch}] [-f] [--clean]
                           [-l {debug,info,warning,error,critical}]
@@ -107,8 +114,8 @@ are aligned against long reads and consensus (e.g. corrected reads) are generate
 
 4- assembly
 -----------
-Corrected reads are assembled to generates contigs. Please see th e[Celera documentation]
-(http://wgs-assembler.sourceforge.net/wiki/index.php?title=RunCA).
+Corrected reads are assembled to generates contigs. Please see the
+[Celera documentation](http://wgs-assembler.sourceforge.net/wiki/index.php?title=RunCA).
 Quality of assembly seems to be highly sensitive to parameters you give Celera.
 
 1. generate celera config files using parameters provided in the .ini file
