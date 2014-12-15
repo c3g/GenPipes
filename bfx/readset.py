@@ -161,6 +161,13 @@ class IlluminaRawReadset(IlluminaReadset):
         return self._reference_file
 
     @property
+    def annotation_files(self):
+        if not hasattr(self, "_annotation_files"):
+            return None
+        else:
+            return self._annotation_files
+
+    @property
     def species(self):
         return self._species
 
@@ -270,12 +277,14 @@ def parse_illumina_raw_readset_files(output_dir, run_type, nanuq_readset_file, c
             folder_name = os.path.join(values[1] + "." + values[2])
             if (re.match(values[0], readset.species, re.IGNORECASE)) :
                 aligner_reference_index = readset.aligner.get_reference_index(genome_root + os.sep + folder_name)
+                annotation_files = readset.aligner.get_annotation_files(genome_root + os.sep + folder_name)
                 reference_file = os.path.join(genome_root, folder_name,
                                               "genome",
                                               folder_name + ".fa")
                 if reference_file and os.path.isfile(reference_file):
                     if aligner_reference_index and (os.path.isfile(aligner_reference_index) or os.path.isdir(aligner_reference_index)):
                         readset._aligner_reference_index = aligner_reference_index
+                        readset._annotation_files = annotation_files
                         readset._reference_file = reference_file
                         readset._reference_species = values[1]
                         readset._reference_assembly = values[2]
