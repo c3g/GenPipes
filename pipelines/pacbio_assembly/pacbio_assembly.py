@@ -24,6 +24,9 @@ log = logging.getLogger(__name__)
 
 class PacBioAssembly(common.MUGQICPipeline):
     """
+    PacBio Assembly Pipeline
+    ========================
+
     Contigs assembly with PacBio reads is done using what is refer as the HGAP workflow.
     Briefly, raw subreads generated from raw .ba(s|x).h5 PacBio data files are filtered for quality.
     A subread length cutoff value is extracted from subreads, depending on subreads distribution,
@@ -35,16 +38,24 @@ class PacBioAssembly(common.MUGQICPipeline):
     These contigs are then *polished* by aligning raw reads on contigs (BLASR) that are then processed
     through a variant calling algorithm (Quiver) that generates high quality consensus sequences
     using local realignments and PacBio quality scores.
+
+    Prepare your readset file as described [here](https://bitbucket.org/mugqic/mugqic_pipelines/src#markdown-header-pacbio-assembly)
+    (if you use `nanuq2mugqic_pipelines.py`, you need to add and fill manually
+    the `EstimatedGenomeSize` column in your readset file).
     """
 
     def __init__(self):
-        self.argparser.add_argument("-r", "--readsets", help="readset file", type=file, required=True)
+        self.argparser.add_argument("-r", "--readsets", help="readset file", type=file)
         super(PacBioAssembly, self).__init__()
 
     @property
     def readsets(self):
         if not hasattr(self, "_readsets"):
-            self._readsets = parse_pacbio_readset_file(self.args.readsets.name)
+            if self.args.readsets:
+                self._readsets = parse_pacbio_readset_file(self.args.readsets.name)
+            else:
+                self.argparser.error("argument -r/--readsets is required!")
+
         return self._readsets
 
     def smrtanalysis_filtering(self):
@@ -202,8 +213,8 @@ END
 
     def assembly(self):
         """
-        Corrected reads are assembled to generates contigs. Please see th e[Celera documentation]
-        (http://wgs-assembler.sourceforge.net/wiki/index.php?title=RunCA).
+        Corrected reads are assembled to generates contigs. Please see the
+        [Celera documentation](http://wgs-assembler.sourceforge.net/wiki/index.php?title=RunCA).
         Quality of assembly seems to be highly sensitive to parameters you give Celera.
 
         1. generate celera config files using parameters provided in the .ini file
@@ -545,7 +556,7 @@ END
 
     def compile(self):
         """
-        Compile assembly stats of all conditions used in the pipeline.
+        Compile assembly stats of all conditions used in the pipeline (useful when multiple assemblies are performed).
         """
 
         jobs = []

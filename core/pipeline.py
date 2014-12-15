@@ -13,6 +13,7 @@ import hashlib
 import logging
 import os
 import re
+import textwrap
 
 # MUGQIC Modules
 from config import *
@@ -28,11 +29,39 @@ class Pipeline(object):
         self._args = self.argparser.parse_args()
 
         logging.basicConfig(level=getattr(logging, self.args.log.upper()))
-        config.parse_files(self.args.config)
 
-        # Create a config trace from merged config file values
-        with open(self.__class__.__name__ + ".config.trace.ini", 'wb') as config_trace:
-            config_trace.write("""\
+        if self.args.help:
+            print """\
+[TOC]
+
+{pipeline_doc}
+
+Usage
+-----
+```
+#!text
+
+{help}
+```
+{step_doc}
+""".format(
+            pipeline_doc=textwrap.dedent(self.__doc__) if self.__doc__ else "",
+            help=self.argparser.format_help(),
+            overview=self.__doc__ if self.__doc__ else "",
+            step_doc="\n".join([str(idx + 1) + "- " + step.__name__ + "\n" + "-" * len(str(idx + 1) + "- " + step.__name__) + (textwrap.dedent(step.__doc__) if step.__doc__ else "") for idx, step in enumerate(self.steps)])
+            )
+            self.argparser.exit()
+
+        # Normal pipeline execution
+        else:
+            if self.args.config:
+                config.parse_files(self.args.config)
+            else:
+                self.argparser.error("argument -c/--config is required!")
+
+            # Create a config trace from merged config file values
+            with open(self.__class__.__name__ + ".config.trace.ini", 'wb') as config_trace:
+                config_trace.write("""\
 # {self.__class__.__name__} Config Trace
 # Created on: {self.timestamp}
 # From:
@@ -40,45 +69,57 @@ class Pipeline(object):
 # DO NOT EDIT THIS AUTOMATICALLY GENERATED FILE - edit the master config files
 
 """.format(config_files="\n#   ".join([config_file.name for config_file in self.args.config]), self=self))
-            config.write(config_trace)
-            config.filepath = os.path.abspath(config_trace.name)
+                config.write(config_trace)
+                config.filepath = os.path.abspath(config_trace.name)
 
-        self._output_dir = os.path.abspath(self.args.output_dir)
-        self._scheduler = create_scheduler(self.args.job_scheduler)
+            self._output_dir = os.path.abspath(self.args.output_dir)
+            self._scheduler = create_scheduler(self.args.job_scheduler)
 
-        step_counter = collections.Counter(self.steps)
-        duplicated_steps = [step.__name__ for step in step_counter if step_counter[step] > 1]
-        if duplicated_steps:
-            raise Exception("Error: pipeline contains duplicated steps: " + ", ".join(duplicated_steps) + "!")
-        else:
-            self._step_list = [Step(step) for step in self.steps]
+            step_counter = collections.Counter(self.steps)
+            duplicated_steps = [step.__name__ for step in step_counter if step_counter[step] > 1]
+            if duplicated_steps:
+                raise Exception("Error: pipeline contains duplicated steps: " + ", ".join(duplicated_steps) + "!")
+            else:
+                self._step_list = [Step(step) for step in self.steps]
 
-        if re.search("^\d+([,-]\d+)*$", self.args.steps):
-            self._step_range = [self.step_list[i - 1] for i in parse_range(self.args.steps)]
-        else:
-            raise Exception("Error: step range \"" + self.args.steps +
-                "\" is invalid (should match \d+([,-]\d+)*)!")
+            if self.args.steps:
+                if re.search("^\d+([,-]\d+)*$", self.args.steps):
+                    self._step_range = [self.step_list[i - 1] for i in parse_range(self.args.steps)]
+                else:
+                    raise Exception("Error: step range \"" + self.args.steps +
+                        "\" is invalid (should match \d+([,-]\d+)*)!")
+            else:
+                self.argparser.error("argument -s/--steps is required!")
 
-        # For job cleaning, all jobs must be created first, no matter whether they are up to date or not
-        if self.args.clean:
-            self._force_jobs = True
-            self.create_jobs()
-            self.clean_jobs()
-        else:
-            self._force_jobs = self.args.force
-            self.create_jobs()
-            self.submit_jobs()
+            # For job cleaning, all jobs must be created first, no matter whether they are up to date or not
+            if self.args.clean:
+                self._force_jobs = True
+                self.create_jobs()
+                self.clean_jobs()
+            else:
+                self._force_jobs = self.args.force
+                self.create_jobs()
+                self.submit_jobs()
 
     # Pipeline command line arguments parser
     @property
     def argparser(self):
         if not hasattr(self, "_argparser"):
-            # Create ArgumentParser with numbered step list as epilog
-            self._argparser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, epilog="Steps:\n" + "\n".join([str(idx + 1) + "- " + step.__name__ for idx, step in enumerate(self.steps)]))
+            epilog = """\
+Steps:
+------
+{steps}
+""".format(
+            steps="\n".join([str(idx + 1) + "- " + step.__name__  for idx, step in enumerate(self.steps)])
+            )
+
+            # Create ArgumentParser with numbered step list and description as epilog
+            self._argparser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, epilog=epilog, conflict_handler='resolve')
 
             # Common options for all pipelines
-            self._argparser.add_argument("-c", "--config", help="config INI-style list of files; config parameters are overwritten based on files order", nargs="+", type=file, required=True)
-            self._argparser.add_argument("-s", "--steps", help="step range e.g. '1-5', '3,6,7', '2,4-8'", required=True)
+            self._argparser.add_argument("--help", help="show detailed description of pipeline and steps", action="store_true")
+            self._argparser.add_argument("-c", "--config", help="config INI-style list of files; config parameters are overwritten based on files order", nargs="+", type=file)
+            self._argparser.add_argument("-s", "--steps", help="step range e.g. '1-5', '3,6,7', '2,4-8'")
             self._argparser.add_argument("-o", "--output-dir", help="output directory (default: current)", default=os.getcwd())
             self._argparser.add_argument("-j", "--job-scheduler", help="job scheduler type (default: pbs)", choices=["pbs", "batch"], default="pbs")
             self._argparser.add_argument("-f", "--force", help="force creation of jobs even if up to date (default: false)", action="store_true")
@@ -87,7 +128,7 @@ class Pipeline(object):
 
         return self._argparser
 
-    # Pipeline command line arguments 
+    # Pipeline command line arguments
     @property
     def args(self):
         return self._args
