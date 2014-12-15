@@ -1,5 +1,3 @@
-On this page:
-
 [TOC]
 
 PacBio Assembly Pipeline
