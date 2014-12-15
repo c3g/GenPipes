@@ -1,4 +1,5 @@
 On this page:
+
 [TOC]
 
 PacBio Assembly Pipeline
@@ -24,6 +25,7 @@ the `EstimatedGenomeSize` column in your readset file).
 Usage
 -----
 ```
+#!text
 usage: pacbio_assembly.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                           [-o OUTPUT_DIR] [-j {pbs,batch}] [-f] [--clean]
                           [-l {debug,info,warning,error,critical}]
