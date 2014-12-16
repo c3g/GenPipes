@@ -218,12 +218,15 @@ class DnaSeq(common.Illumina):
                 for sequence in unique_sequences_per_job:
                     realign_prefix = os.path.join(realign_directory, sequence)
                     realign_intervals = realign_prefix + ".intervals"
+                    intervals=[sequence]
+                    if unique_sequences_per_job.index(sequence) == 0:
+                        intervals.append("unmapped")
                     output_bam = realign_prefix + ".bam"
                     jobs.append(concat_jobs([
                         # Create output directory since it is not done by default by GATK tools
                         Job(command="mkdir -p " + realign_directory),
                         gatk.realigner_target_creator(input, realign_intervals, intervals=[sequence]),
-                        gatk.indel_realigner(input, output_bam, target_intervals=realign_intervals, intervals=[sequence])
+                        gatk.indel_realigner(input, output_bam, target_intervals=realign_intervals, intervals=intervals)
                     ], name="gatk_indel_realigner." + sample.name + "." + sequence))
 
                 # Create one last job to process the last remaining sequences and 'others' sequences
@@ -234,7 +237,7 @@ class DnaSeq(common.Illumina):
                     # Create output directory since it is not done by default by GATK tools
                     Job(command="mkdir -p " + realign_directory),
                     gatk.realigner_target_creator(input, realign_intervals, exclude_intervals=unique_sequences_per_job),
-                    gatk.indel_realigner(input, output_bam, target_intervals=realign_intervals, intervals=["unmapped"], exclude_intervals=unique_sequences_per_job)
+                    gatk.indel_realigner(input, output_bam, target_intervals=realign_intervals, exclude_intervals=unique_sequences_per_job)
                 ], name="gatk_indel_realigner." + sample.name + ".others"))
 
         return jobs
