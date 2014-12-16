@@ -209,7 +209,7 @@ class StarRunProcessingAligner(RunProcessingAligner):
         jobs = []
         input_bam = readset.bam + ".dup.bam"
         sample_file = input_bam + ".sample_file"
-        sample_row = readset.sample.name + "\t" + readset.bam + "\tRNAseq"
+        sample_row = readset.sample.name + "\t" + input_bam + "\tRNAseq"
         output_directory = os.path.join("metrics", "rnaseqRep")
 
 
@@ -224,7 +224,7 @@ class StarRunProcessingAligner(RunProcessingAligner):
     {sample_row}" \\
     > {sample_file}""".format(sample_row=sample_row, sample_file=sample_file)),
                 metrics.rnaseqc(sample_file, output_directory, readset.fastq2 is not None, gtf_file=gtf_transcript_id, ribosomal_fasta=ribosomal_fasta, reference=reference),
-            ], name="rnaseqc")
+            ], name="rnaseqc" + readset.name + ".rnaseqc")
             jobs.append(job)
 
         return jobs
