@@ -211,7 +211,7 @@ class StarRunProcessingAligner(RunProcessingAligner):
         input_bam = readset.bam + ".dup.bam"
         sample_file = input_bam + ".sample_file"
         sample_row = readset.sample.name + "\t" + input_bam + "\tRNAseq"
-        output_directory = os.path.join("metrics", "rnaseqRep")
+        output_directory = os.path.join(os.path.dirname(input_bam), "rnaseqc_" + readset.sample.name + "." + readset.library)
 
 
         if len(readset.annotation_files) > 1 and os.path.isfile(readset.annotation_files[0]) and os.path.isfile(readset.annotation_files[1]):
