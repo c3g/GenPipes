@@ -199,6 +199,15 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
 	## biocLite
 	source("http://bioconductor.org/biocLite.R")
 
+	## RcppArmadillo temporary patch: CentOS 6 is old and using an old gcc (4.4.7) which is incompatible with the latest armadillo libs. The easiest workaround seems to force install
+	# of an archived version of RcppArmadillo. Note that update attempts below will fail with ERROR.
+	# https://github.com/RcppCore/RcppArmadillo/issues/30
+	# http://stackoverflow.com/questions/27296522/rcpparmadillo-failing-to-install-on-centos
+	biocLite("RcppArmadillo",suppressUpdates=TRUE,suppressAutoUpdate=TRUE,ask=FALSE) # despite failing, this will install Rcpparmadillo dependencies for us
+	rcpp.armadillo.archive="RcppArmadillo_0.4.500.0.tar.gz"
+	download.file(sprintf("http://cran.r-project.org/src/contrib/Archive/RcppArmadillo/%s",rcpp.armadillo.archive),destfile=rcpp.armadillo.archive)
+	install.packages(rcpp.armadillo.archive,repos=NULL,type="source",lib=.Library)
+
 	## Define the list of packages to standard packages to install.
 	deps = c("affxparser","affy","affyio","affyPLM","akima","annotate","AnnotationDbi"
 	,"AnnotationForge","ape","ash","BatchExperiments","BatchJobs","beanplot","Biobase","BiocGenerics"
@@ -225,7 +234,6 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
 	,"statmod","stringr","survival","sva","testthat","tidyr"
 	,"TxDb.Hsapiens.UCSC.hg19.knownGene","vioplot","vsn"
 	,"WriteXLS","XML","xtable","zlibbioc")
-
 
 	## Programmatically add all the org packages (excluding MeSH mess which takes too long)
 	contribUrl = contrib.url(biocinstallRepos(), type = 'source')
