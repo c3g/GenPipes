@@ -103,6 +103,10 @@ class Illumina(MUGQICPipeline):
         return self._contrasts
 
     def picard_sam_to_fastq(self):
+        """
+        Convert SAM/BAM files from the input readset file into FASTQ format
+        if FASTQ files are not already specified in the readset file. Do nothing otherwise.
+        """
         jobs = []
         for readset in self.readsets:
             if readset.bam:
@@ -125,6 +129,14 @@ class Illumina(MUGQICPipeline):
         return jobs
 
     def trimmomatic(self):
+        """
+        Raw reads quality trimming and removing of Illumina adapters is performed using [Trimmomatic](http://www.usadellab.org/cms/index.php?page=trimmomatic).
+
+        This step takes as input files:
+
+        1. FASTQ files from the readset file if available
+        2. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
+        """
         jobs = []
         for readset in self.readsets:
             trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
@@ -171,6 +183,9 @@ class Illumina(MUGQICPipeline):
         return jobs
 
     def merge_trimmomatic_stats(self):
+        """
+        The trim statistics per readset are merged at this step.
+        """
         merge_trim_stats = os.path.join("metrics", "trimming.stats")
         job = concat_jobs([Job(command="rm -f " + merge_trim_stats), Job(command="mkdir -p metrics")])
         for readset in self.readsets:
