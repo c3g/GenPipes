@@ -199,6 +199,7 @@ class StarRunProcessingAligner(RunProcessingAligner):
                 rg_center=rg_center if rg_center else ""
             ),
             Job(output_files=[output], command="mv " + os.path.dirname(output) + os.sep + star_bam_name + " " + output),
+            Job(command="ln -s " + output + " " + os.path.dirname(output) + os.sep + star_bam_name),
             picard.build_bam_index(output, output[::-1].replace(".bam"[::-1], ".bai"[::-1], 1)[::-1])
         ])
         job.name = "star_align." + readset.name
