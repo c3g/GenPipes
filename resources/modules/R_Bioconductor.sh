@@ -203,7 +203,7 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
 	# of an archived version of RcppArmadillo. Note that update attempts below will fail with ERROR.
 	# https://github.com/RcppCore/RcppArmadillo/issues/30
 	# http://stackoverflow.com/questions/27296522/rcpparmadillo-failing-to-install-on-centos
-	biocLite("RcppArmadillo",suppressUpdates=TRUE,suppressAutoUpdate=TRUE,ask=FALSE) # despite failing, this will install Rcpparmadillo dependencies for us
+	biocLite("RcppArmadillo",ask=FALSE) # despite failing, this will install Rcpparmadillo dependencies for us
 	rcpp.armadillo.archive="RcppArmadillo_0.4.500.0.tar.gz"
 	download.file(sprintf("http://cran.r-project.org/src/contrib/Archive/RcppArmadillo/%s",rcpp.armadillo.archive),destfile=rcpp.armadillo.archive)
 	install.packages(rcpp.armadillo.archive,repos=NULL,type="source",lib=.Library)
