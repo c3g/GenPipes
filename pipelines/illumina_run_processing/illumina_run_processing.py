@@ -303,7 +303,7 @@ configureBclToFastq.pl\\
             )
 
         job = concat_jobs([
-            Job([input], [], [('fastq', 'module_bcl_to_fastq')], command=command),
+            Job([input], [], [('fastq', 'module_bcl_to_fastq'), ('fastq', 'module_perl')], command=command),
             Job([input], outputs, command="cd {unaligned_folder} && make -j {threads} && cd {run_output_dir}".format(
                 threads = config.param('fastq', 'threads'),
                 unaligned_folder = output_dir,
