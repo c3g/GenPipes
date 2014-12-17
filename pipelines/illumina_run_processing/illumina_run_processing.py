@@ -87,6 +87,8 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         - `Library Barcode` The library barcode put in .bam's RG headers and on disk
         - `Library Source` The type of library. If this value contains `RNA` or `cDNA`,
         `STAR` will be used to make the aligmnent, otherwise, `bwa_mem` will be used
+        - `Library Type` Used to determine is the sample is from cDNA/RNA when the
+        `Library Source` is `Library`
         - `BED Files` The name of the BED file containing the genomic targets. This is
         the `filename` parameter passed to the `fetch_bed_file_command`
     """

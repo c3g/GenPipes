@@ -180,6 +180,10 @@ class IlluminaRawReadset(IlluminaReadset):
         return self._library_source
 
     @property
+    def library_type(self):
+        return self._library_type
+
+    @property
     def operator(self):
         return self._operator
 
@@ -226,8 +230,9 @@ def parse_illumina_raw_readset_files(output_dir, run_type, nanuq_readset_file, c
         readset._quality_offset = 33
         readset._library = line['Library Barcode']
         readset._library_source = line['Library Source']
+        readset._library_type = line['Library Type']
 
-        if re.search("RNA|cDNA", readset.library_source):
+        if re.search("RNA|cDNA", readset.library_source) or (readset.library_source == "Library" and re.search("RNA", readset.library_type)):
             readset._aligner = star_aligner
         else:
             readset._aligner = bwa_aligner
