@@ -1,37 +1,200 @@
-RNA-Seq De Novo Assembly Pipeline
-=================================
+[TOC]
 
 
-Overview
---------
-The standard MUGQIC RNA-Seq De Novo Assembly pipeline uses the [Trinity](http://trinityrnaseq.sourceforge.net/) software suite to reconstruct transcriptomes from RNA-Seq data without using any reference genome or transcriptome.
+The standard MUGQIC RNA-Seq De Novo Assembly pipeline uses the [Trinity](http://trinityrnaseq.sourceforge.net/)
+software suite to reconstruct transcriptomes from RNA-Seq data without using any reference genome or transcriptome.
 
- 
+First, reads are trimmed with [Trimmomatic](http://www.usadellab.org/cms/index.php?page=trimmomatic)
+and normalized in order to reduce memory requirement and decrease assembly runtime, using the Trinity
+normalization utility inspired by the [Diginorm](http://arxiv.org/abs/1203.4802) algorithm.
 
-First, reads are trimmed with [Trimmomatic](http://www.usadellab.org/cms/index.php?page=trimmomatic) and normalized in order to reduce memory requirement and decrease assembly runtime, using the Trinity normalization utility inspired by the [Diginorm](http://arxiv.org/abs/1203.4802) algorithm.
-
-Then, the transcriptome is assembled on normalized reads using the Trinity assembler. Trinity creates a Trinity.fasta file with a list of contigs representing the transcriptome isoforms. Those transcripts are grouped in components mostly representing genes.
+Then, the transcriptome is assembled on normalized reads using the Trinity assembler. Trinity creates
+a Trinity.fasta file with a list of contigs representing the transcriptome isoforms. Those transcripts
+are grouped in components mostly representing genes.
 
 Components and transcripts are functionally annotated using the [Trinotate](http://trinotate.sourceforge.net/) suite.
 
-Gene abundance estimation for each sample has been performed using [RSEM](http://deweylab.biostat.wisc.edu/rsem/) (RNA-Seq by Expectation-Maximization). Differential gene expression analysis is performed using [DESeq](http://genomebiology.com/2010/11/10/R106) and [edgeR](http://bioinformatics.oxfordjournals.org/content/26/1/139/) R Bioconductor packages.
+Gene abundance estimation for each sample has been performed using [RSEM](http://deweylab.biostat.wisc.edu/rsem/)
+(RNA-Seq by Expectation-Maximization). Differential gene expression analysis is performed using
+[DESeq](http://genomebiology.com/2010/11/10/R106) and [edgeR](http://bioinformatics.oxfordjournals.org/content/26/1/139/) R Bioconductor packages.
 
-The DESeq and edgeR methods model **count data** by a negative binomial distribution. The parameters of the distribution (mean and dispersion) are estimated from the data, i.e. from the read counts in the input files. Both methods compute a measure of read abundance, i.e. expression level (called *base mean* or *mean of normalized counts* in DESeq, and *concentration* in edgeR) for each gene and apply a hypothesis test to each gene to evaluate differential expression. In particular, both methods determine a p-value and a log2 fold change (in expression level) for each gene. The Log2 FC of EdgeR is reported in the differential gene results file, one file per design.
+The DESeq and edgeR methods model **count data** by a negative binomial distribution. The parameters of
+the distribution (mean and dispersion) are estimated from the data, i.e. from the read counts in the input files.
+Both methods compute a measure of read abundance, i.e. expression level (called *base mean* or
+*mean of normalized counts* in DESeq, and *concentration* in edgeR) for each gene and apply a hypothesis test
+to each gene to evaluate differential expression. In particular, both methods determine a p-value and
+a log2 fold change (in expression level) for each gene. The Log2 FC of EdgeR is reported in the differential gene
+results file, one file per design.
 
-The log2fold change is the logarithm (to basis 2) of the fold change condition from condition A to B (mutation or treatment are the most common conditions). A “fold change” between conditions A and B at a gene or transcript is normally computed as the ratio at gene or transcript of the base mean of scaled counts for condition B to the base mean of scaled counts for condition A. Counts are scaled by a size factor in a step called normalization (if the counts of non-differentially expressed genes in one sample are, on average, twice as high as in another,  the size factor for the first sample should be twice that of the other sample).  Each column of the count table is then divided by the size factor for this column and the count values are brought to a common scale, making them comparable. See the [EdgeR vignette](http://www.bioconductor.org/packages/2.12/bioc/vignettes/edgeR/inst/doc/edgeR.pdf) for additional information on normalization approaches used in the pipeline.
+The log2fold change is the logarithm (to basis 2) of the fold change condition from condition A to B
+(mutation or treatment are the most common conditions). A "fold change" between conditions A and B at a gene
+or transcript is normally computed as the ratio at gene or transcript of the base mean of scaled counts
+for condition B to the base mean of scaled counts for condition A. Counts are scaled by a size factor in
+a step called normalization (if the counts of non-differentially expressed genes in one sample are, on average,
+twice as high as in another,  the size factor for the first sample should be twice that of the other sample).
+Each column of the count table is then divided by the size factor for this column and the count values
+are brought to a common scale, making them comparable. See the [EdgeR vignette](http://www.bioconductor.org/packages/2.12/bioc/vignettes/edgeR/inst/doc/edgeR.pdf) for additional information on normalization approaches used in the pipeline.
 
- 
+An HTML summary report is automatically generated by the pipeline. This report contains description of
+the sequencing experiment as well as a detailed presentation of the pipeline steps and results. Various
+Quality Control (QC) summary statistics are included in the report and additional QC analysis is accessible
+for download directly through the report. The report includes also the main references of the software and
+methods used during the analysis, together with the full list of parameters that have been passed
+to the pipeline main script.
 
-An HTML summary report is automatically generated by the pipeline. This report contains description of the sequencing experiment as well as a detailed presentation of the pipeline steps and results. Various Quality Control (QC) summary statistics are included in the report and additional QC analysis is accessible for download directly through the report. The report includes also the main references of the software and methods used during the analysis, together with the full list of parameters that have been passed to the pipeline main script.
-
-
-On this page:
-
-[TOC]
 
 Usage
 -----
 ```
-#!bash
-mugqic_pipelines/pipelines/rnaseq_denovo_assembly/rnaseq_denovo_assembly.py --help
+#!text
+
+usage: rnaseq_denovo_assembly.py [-h] [--help] [-c CONFIG [CONFIG ...]]
+                                 [-s STEPS] [-o OUTPUT_DIR] [-j {pbs,batch}]
+                                 [-f] [--clean]
+                                 [-l {debug,info,warning,error,critical}]
+                                 [-d DESIGN] [-r READSETS] [-v]
+
+Version: 2.0.1
+
+For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
+
+optional arguments:
+  -h                    show this help message and exit
+  --help                show detailed description of pipeline and steps
+  -c CONFIG [CONFIG ...], --config CONFIG [CONFIG ...]
+                        config INI-style list of files; config parameters are
+                        overwritten based on files order
+  -s STEPS, --steps STEPS
+                        step range e.g. '1-5', '3,6,7', '2,4-8'
+  -o OUTPUT_DIR, --output-dir OUTPUT_DIR
+                        output directory (default: current)
+  -j {pbs,batch}, --job-scheduler {pbs,batch}
+                        job scheduler type (default: pbs)
+  -f, --force           force creation of jobs even if up to date (default:
+                        false)
+  --clean               create 'rm' commands for all job removable files in
+                        the given step range, if they exists; if --clean is
+                        set, --job-scheduler, --force options and job up-to-
+                        date status are ignored (default: false)
+  -l {debug,info,warning,error,critical}, --log {debug,info,warning,error,critical}
+                        log level (default: info)
+  -d DESIGN, --design DESIGN
+                        design file
+  -r READSETS, --readsets READSETS
+                        readset file
+  -v, --version         show the version information and exit
+
+Steps:
+------
+1- picard_sam_to_fastq
+2- trimmomatic
+3- merge_trimmomatic_stats
+4- insilico_read_normalization_readsets
+5- insilico_read_normalization_all
+6- trinity
+7- exonerate_fastasplit
+8- blastx_swissprot
+9- blastx_swissprot_merge
+10- transdecoder
+11- rnammer_transcriptome
+12- blastp_swissprot
+13- signalp
+14- tmhmm
+15- trinotate
+16- align_and_estimate_abundance_prep_reference
+17- align_and_estimate_abundance
+18- differential_expression
+19- gq_seq_utils_report
+
 ```
+1- picard_sam_to_fastq
+----------------------
+Convert SAM/BAM files from the input readset file into FASTQ format
+if FASTQ files are not already specified in the readset file. Do nothing otherwise.
+
+2- trimmomatic
+--------------
+Raw reads quality trimming and removing of Illumina adapters is performed using [Trimmomatic](http://www.usadellab.org/cms/index.php?page=trimmomatic).
+
+This step takes as input files:
+
+1. FASTQ files from the readset file if available
+2. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
+
+3- merge_trimmomatic_stats
+--------------------------
+The trim statistics per readset are merged at this step.
+
+4- insilico_read_normalization_readsets
+---------------------------------------
+Normalize each readset, using the Trinity normalization utility.
+
+5- insilico_read_normalization_all
+----------------------------------
+Merge all normalized readsets together and normalize the result, using the Trinity normalization utility.
+
+6- trinity
+----------
+Create a de novo assembly from normalized readsets using [Trinity](http://trinityrnaseq.sourceforge.net/).
+
+7- exonerate_fastasplit
+-----------------------
+Split the Trinity assembly FASTA into chunks for further parallel BLAST annotations.
+
+8- blastx_swissprot
+-------------------
+Annotate Trinity FASTA chunks with Swiss-Prot database using [blastx](http://blast.ncbi.nlm.nih.gov/).
+
+9- blastx_swissprot_merge
+-------------------------
+Merge blastx Swiss-Prot chunks results.
+
+10- transdecoder
+----------------
+Identifies candidate coding regions within transcript sequences using [Transdecoder](http://transdecoder.sourceforge.net/).
+
+11- rnammer_transcriptome
+-------------------------
+Identify potential rRNA transcripts using [RNAmmer](http://www.cbs.dtu.dk/cgi-bin/sw_request?rnammer).
+
+12- blastp_swissprot
+--------------------
+Search Transdecoder-predicted coding regions for sequence homologies using [blastp](http://blast.ncbi.nlm.nih.gov/).
+
+13- signalp
+-----------
+Predict signal peptides using [SignalP](http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?signalp).
+
+14- tmhmm
+---------
+Predict transmembrane regions using [TMHMM](http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?tmhmm).
+
+15- trinotate
+-------------
+Perform transcriptome functional annotation and analysis using [Trinotate](http://trinotate.sourceforge.net/).
+All functional annotation data is integrated into a SQLite database and a whole annotation report is created.
+
+16- align_and_estimate_abundance_prep_reference
+-----------------------------------------------
+Index Trinity FASTA file for further abundance estimation using [Trinity align_and_estimate_abundance.pl utility](http://trinityrnaseq.sourceforge.net/analysis/abundance_estimation.html).
+
+17- align_and_estimate_abundance
+--------------------------------
+Estimate transcript abundance using [RSEM](http://deweylab.biostat.wisc.edu/rsem/) via
+[Trinity align_and_estimate_abundance.pl utility](http://trinityrnaseq.sourceforge.net/analysis/abundance_estimation.html).
+
+18- differential_expression
+---------------------------
+Performs differential gene expression analysis using [DESEQ](http://bioconductor.org/packages/release/bioc/html/DESeq.html) and [EDGER](http://www.bioconductor.org/packages/release/bioc/html/edgeR.html).
+Merge the results of the analysis in a single csv file.
+
+19- gq_seq_utils_report
+-----------------------
+Generates the standard report. A summary html report contains the description of
+the sequencing experiment as well as a detailed presentation of the pipeline steps and results.
+Various Quality Control (QC) summary statistics are included in the report and additional QC analysis
+is accessible for download directly through the report. The report includes also the main references
+of the software and methods used during the analysis, together with the full list of parameters
+passed to the pipeline main script.
+
+
