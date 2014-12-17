@@ -1,6 +1,9 @@
 [TOC]
 
 
+RNA-Seq De Novo Assembly Pipeline
+=================================
+
 The standard MUGQIC RNA-Seq De Novo Assembly pipeline uses the [Trinity](http://trinityrnaseq.sourceforge.net/)
 software suite to reconstruct transcriptomes from RNA-Seq data without using any reference genome or transcriptome.
 

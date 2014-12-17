@@ -79,6 +79,7 @@ class DnaSeq(common.Illumina):
         2. Else, FASTQ files from the readset file if available
         3. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
         """
+
         jobs = []
         for readset in self.readsets:
             trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
@@ -140,6 +141,7 @@ class DnaSeq(common.Illumina):
         1. Aligned and sorted BAM output files from previous bwa_mem_picard_sort_sam step if available
         2. Else, BAM files from the readset file
         """
+
         jobs = []
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
@@ -185,6 +187,7 @@ class DnaSeq(common.Illumina):
         those regions properly. Realignment is done using [GATK](https://www.broadinstitute.org/gatk/).
         The reference genome is divided by a number regions given by the `nb_jobs` parameter.
         """
+
         jobs = []
 
         nb_jobs = config.param('gatk_indel_realigner', 'nb_jobs', type='posint')
@@ -246,6 +249,7 @@ class DnaSeq(common.Illumina):
         """
         BAM files of regions of realigned reads are merged per sample using [Picard](http://broadinstitute.github.io/picard/).
         """
+
         jobs = []
 
         nb_jobs = config.param('gatk_indel_realigner', 'nb_jobs', type='posint')
@@ -272,6 +276,7 @@ class DnaSeq(common.Illumina):
         need to be recalculated since the reads are realigned at positions that differ from their original alignment.
         Fixing the read mate positions is done using [Picard](http://broadinstitute.github.io/picard/).
         """
+
         jobs = []
         for sample in self.samples:
             alignment_file_prefix = os.path.join("alignment", sample.name, sample.name + ".")
@@ -289,6 +294,7 @@ class DnaSeq(common.Illumina):
         (for both mates in the case of paired-end reads). All but the best pair (based on alignment score)
         will be marked as a duplicate in the BAM file. Marking duplicates is done using [Picard](http://broadinstitute.github.io/picard/).
         """
+
         jobs = []
         for sample in self.samples:
             alignment_file_prefix = os.path.join("alignment", sample.name, sample.name + ".")
@@ -310,6 +316,7 @@ class DnaSeq(common.Illumina):
         and sequence context, and by doing so, provides not only more accurate quality scores but also
         more widely dispersed ones.
         """
+
         jobs = []
         for sample in self.samples:
             duplicate_file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.")
@@ -334,6 +341,7 @@ class DnaSeq(common.Illumina):
         (CCDS regions are used in human samples). A TDF (.tdf) coverage track is also generated at this step
         for easy visualization of coverage in the IGV browser.
         """
+
         jobs = []
         for sample in self.samples:
             recal_file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.")
@@ -376,6 +384,7 @@ class DnaSeq(common.Illumina):
         """
         Compute on target percent of hybridisation based capture.
         """
+
         jobs = []
 
         created_interval_lists = []
@@ -401,6 +410,7 @@ class DnaSeq(common.Illumina):
         """
         Computes the callable region or the genome as a bed track.
         """
+
         jobs = []
 
         for sample in self.samples:
@@ -416,6 +426,7 @@ class DnaSeq(common.Illumina):
         """
         Extracts allele frequencies of possible variants accross the genome.
         """
+
         jobs = []
 
         for sample in self.samples:
@@ -431,6 +442,7 @@ class DnaSeq(common.Illumina):
         """
         Plots DepthRatio and B allele frequency of previously extracted alleles.
         """
+
         jobs = []
 
         for sample in self.samples:
@@ -446,6 +458,7 @@ class DnaSeq(common.Illumina):
         """
         GATK haplotype caller for snps and small indels.
         """
+
         jobs = []
 
         nb_haplotype_jobs = config.param('gatk_haplotype_caller', 'nb_jobs', type='posint')
@@ -488,6 +501,7 @@ class DnaSeq(common.Illumina):
         """
         Merges the gvcfs of haplotype caller and also generates a per sample vcf containing genotypes.
         """
+
         jobs = []
         nb_haplotype_jobs = config.param('gatk_haplotype_caller', 'nb_jobs', type='posint')
 
@@ -511,6 +525,7 @@ class DnaSeq(common.Illumina):
         """
         Merge metrics. Read metrics per sample are merged at this step.
         """
+
         job = concat_jobs([
             Job(command="mkdir -p metrics"),
             metrics.dna_sample_metrics("alignment", "metrics/SampleMetrics.stats", config.param('DEFAULT', 'experiment_type'))
@@ -536,6 +551,7 @@ class DnaSeq(common.Illumina):
         Full pileup (optional). A raw mpileup file is created using samtools mpileup and compressed in gz format.
         One packaged mpileup file is created per sample/chromosome.
         """
+
         jobs = []
         for sample in self.samples:
             mpileup_directory = os.path.join("alignment", sample.name, "mpileup")
@@ -555,6 +571,7 @@ class DnaSeq(common.Illumina):
         """
         Merge mpileup files per sample/chromosome into one compressed gzip file per sample.
         """
+
         jobs = []
         for sample in self.samples:
             mpileup_file_prefix = os.path.join("alignment", sample.name, "mpileup", sample.name + ".")
@@ -572,6 +589,7 @@ class DnaSeq(common.Illumina):
         Mpileup and Variant calling. Variants (SNPs and INDELs) are called using
         [SAMtools](http://samtools.sourceforge.net/) mpileup. bcftools view is used to produce binary bcf files.
         """
+
         jobs = []
         input_bams = [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam") for sample in self.samples]
         nb_jobs = config.param('snp_and_indel_bcf', 'approximate_nb_jobs', type='posint')
@@ -604,6 +622,7 @@ class DnaSeq(common.Illumina):
         and transforms the output into the VCF (.vcf) format. One vcf file contain the SNP/INDEL calls
         for all samples in the experiment.
         """
+
         nb_jobs = config.param('snp_and_indel_bcf', 'approximate_nb_jobs', type='posint')
 
         if nb_jobs == 1:
@@ -625,6 +644,7 @@ class DnaSeq(common.Illumina):
         The final .vcf files are filtered for long 'N' INDELs which are sometimes introduced and cause excessive
         memory usage by downstream tools.
         """
+
         job = tools.filter_long_indel("variants/allSamples.merged.flt.vcf", "variants/allSamples.merged.flt.NFiltered.vcf")
         job.name = "filter_nstretches"
         return [job]
@@ -634,6 +654,7 @@ class DnaSeq(common.Illumina):
         Mappability annotation. An in-house database identifies regions in which reads are confidently mapped
         to the reference genome.
         """
+
         job = vcftools.annotate_mappability("variants/allSamples.merged.flt.NFiltered.vcf", "variants/allSamples.merged.flt.mil.vcf")
         job.name = "flag_mappability"
         return [job]
@@ -642,6 +663,7 @@ class DnaSeq(common.Illumina):
         """
         dbSNP annotation. The .vcf files are annotated for dbSNP using the software SnpSift (from the [SnpEff suite](http://snpeff.sourceforge.net/)).
         """
+
         job = snpeff.snpsift_annotate("variants/allSamples.merged.flt.mil.vcf", "variants/allSamples.merged.flt.mil.snpId.vcf")
         job.name = "snp_id_annotation"
         return [job]
@@ -651,6 +673,7 @@ class DnaSeq(common.Illumina):
         Variant effect annotation. The .vcf files are annotated for variant effects using the SnpEff software.
         SnpEff annotates and predicts the effects of variants on genes (such as amino acid changes).
         """
+
         job = snpeff.compute_effects("variants/allSamples.merged.flt.mil.snpId.vcf", "variants/allSamples.merged.flt.mil.snpId.snpeff.vcf", split=True)
         job.name = "snp_effect"
         return [job]
@@ -664,6 +687,7 @@ class DnaSeq(common.Illumina):
         (SIFT, Polyphen2, LRT and MutationTaster), three conservation scores (PhyloP, GERP++ and SiPhy)
         and other function annotations).
         """
+
         job = snpeff.snpsift_dbnsfp("variants/allSamples.merged.flt.mil.snpId.snpeff.vcf", "variants/allSamples.merged.flt.mil.snpId.snpeff.dbnsfp.vcf")
         job.name = "dbnsfp_annotation"
         return [job]
@@ -675,6 +699,7 @@ class DnaSeq(common.Illumina):
         counts by genomic region, SNV quality, coverage, InDel lengths, base changes,  transition-transversion rates,
         summary of allele frequencies, codon changes, amino acid changes, changes per chromosome, change rates.
         """
+
         variants_file_prefix = "variants/allSamples.merged.flt.mil.snpId."
 
         job = metrics.vcf_stats(variants_file_prefix + "vcf", variants_file_prefix + "snpeff.vcf.part_changeRate.tsv", variants_file_prefix + "snpeff.vcf.statsFile.txt")
@@ -701,6 +726,7 @@ class DnaSeq(common.Illumina):
         The report includes also the main references of the software and methods used during the analysis,
         together with the full list of parameters passed to the pipeline main script.
         """
+
         job = gq_seq_utils.report(
             [config_file.name for config_file in self.args.config],
             self.output_dir,

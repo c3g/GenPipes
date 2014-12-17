@@ -69,6 +69,7 @@ class PacBioAssembly(common.MUGQICPipeline):
 
         Informative run metrics such as loading efficiency, read lengths and base quality are generated in this step as well.
         """
+
         jobs = []
         jobs.append(Job([], [config.param('smrtanalysis_filtering', 'celera_settings'), config.param('smrtanalysis_filtering', 'filtering_settings')], command="cp -a -f " + os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "protocols") + " .", name="smrtanalysis_filtering.config"))
 

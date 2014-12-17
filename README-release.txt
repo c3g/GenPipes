@@ -8,6 +8,14 @@ git commit -m "Version bump to 2.0.0" VERSION
 vim resources/modules/mugqic_pipelines.sh
 (VERSION=2.0.0)
 
+# Recreate the pipelines/<pipeline>/README.md using --help with markdown output
+for f in \
+  pipelines/dnaseq/dnaseq.py \
+  pipelines/rnaseq/rnaseq.py \
+  pipelines/rnaseq_denovo_assembly/rnaseq_denovo_assembly.py \
+  pipelines/pacbio_assembly/pacbio_assembly.py \
+; do echo $f; $f --help > `dirname $f`/README.md; done
+
 # Tag the branch and push the tag. You'll need to have a gpg signature for this. Extra precaution
 git tag -s 2.0.0 -m 'Release 2.0.0'
 git push -u origin --tags

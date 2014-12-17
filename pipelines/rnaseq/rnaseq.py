@@ -84,6 +84,7 @@ class RnaSeq(common.Illumina):
     [Here](https://bitbucket.org/mugqic/mugqic_pipelines/downloads/MUGQIC_Bioinfo_RNA-Seq.pptx) is more
     information about RNA-Seq pipeline that you may find interesting.
     """
+
     def __init__(self):
         # Add pipeline specific arguments
         self.argparser.add_argument("-d", "--design", help="design file", type=file)
@@ -100,6 +101,7 @@ class RnaSeq(common.Illumina):
         2. Else, FASTQ files from the readset file if available
         3. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
         """
+
         jobs = []
         project_index_directory = "reference.Merged"
         project_junction_file =  os.path.join("alignment_1stPass", "AllSamples.SJ.out.tab")
@@ -226,6 +228,7 @@ class RnaSeq(common.Illumina):
         """
         BAM readset files are merged into one file per sample. Merge is done using [Picard](http://broadinstitute.github.io/picard/).
         """
+
         jobs = []
         for sample in self.samples:
             # Skip samples with one readset only, since symlink has been created at align step
@@ -243,6 +246,7 @@ class RnaSeq(common.Illumina):
         """
         The alignment file is reordered (karyotypic) using [Picard](http://broadinstitute.github.io/picard/).
         """
+
         jobs = []
         for sample in self.samples:
             alignment_file_prefix = os.path.join("alignment", sample.name, sample.name)
@@ -262,6 +266,7 @@ class RnaSeq(common.Illumina):
         (for both mates in the case of paired-end reads). All but the best pair (based on alignment score)
         will be marked as a duplicate in the BAM file. Marking duplicates is done using [Picard](http://broadinstitute.github.io/picard/).
         """
+
         jobs = []
         for sample in self.samples:
             alignment_file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.")
@@ -279,6 +284,7 @@ class RnaSeq(common.Illumina):
         """
         Computes a series of quality control metrics using [RNA-SeQC](https://www.broadinstitute.org/cancer/cga/rna-seqc).
         """
+
         sample_file = os.path.join("alignment", "rnaseqc.samples.txt")
         sample_rows = [[sample.name, os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.bam"), "RNAseq"] for sample in self.samples]
         input_bams = [sample_row[1] for sample_row in sample_rows]
@@ -302,6 +308,7 @@ echo "Sample\tBamFile\tNote
         """
         Generate wiggle tracks suitable for multiple browsers.
         """
+
         jobs = []
 
         for sample in self.samples:
@@ -361,6 +368,7 @@ echo "Sample\tBamFile\tNote
         """
         Count reads in features using [htseq-count](http://www-huber.embl.de/users/anders/HTSeq/doc/count.html).
         """
+
         jobs = []
 
         for sample in self.samples:
@@ -388,6 +396,7 @@ echo "Sample\tBamFile\tNote
         """
         Create rawcount matrix, zip the wiggle tracks and create the saturation plots based on standardized read counts.
         """
+
         jobs = []
 
         # Create raw count matrix
@@ -451,6 +460,7 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
         """
         Compute RNA-Seq data expression using [cufflinks](http://cole-trapnell-lab.github.io/cufflinks/cufflinks/).
         """
+
         jobs = []
         
         gtf = config.param('cufflinks','gtf', type='filepath')
@@ -470,7 +480,7 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
         """
         Merge assemblies into a master transcriptome using [cuffmerge](http://cole-trapnell-lab.github.io/cufflinks/cuffmerge/).
         """
-        
+
         output_directory = os.path.join("cufflinks", "AllSamples")
         sample_file = os.path.join("cufflinks", "cuffmerge.samples.txt")
         input_gtfs = [os.path.join("cufflinks", sample.name, "transcripts.gtf") for sample in self.samples]
@@ -494,6 +504,7 @@ END
         """
         Compute gene and transcript expression profiles using [cuffquant](http://cole-trapnell-lab.github.io/cufflinks/cuffquant/).
         """
+
         jobs = []
         
         gtf = os.path.join("cufflinks", "AllSamples","merged.gtf")
@@ -515,6 +526,7 @@ END
         of Cufflinks, is used to calculate transcript expression levels in more than one condition
         and test them for significant differences.
         """
+
         jobs = []
 
         fpkm_directory = "cufflinks"
@@ -538,6 +550,7 @@ END
         """
         Normalize RNA-Seq expression levels using [Cuffnorm](http://cole-trapnell-lab.github.io/cufflinks/cuffnorm/).
         """
+
         jobs = []
 
         fpkm_directory = "cufflinks"
@@ -559,6 +572,7 @@ END
         Performs differential gene expression analysis using [DESEQ](http://bioconductor.org/packages/release/bioc/html/DESeq.html) and [EDGER](http://www.bioconductor.org/packages/release/bioc/html/edgeR.html).
         Merge the results of the analysis in a single csv file.
         """
+
         # If --design <design_file> option is missing, self.contrasts call will raise an Exception
         if self.contrasts:
             design_file = os.path.relpath(self.args.design.name, self.output_dir)
@@ -582,6 +596,7 @@ END
         Gene Ontology analysis for RNA-seq using the bioconductor's R package [goseq](http://www.bioconductor.org/packages/release/bioc/html/goseq.html).
         Generates GO annotations for differential gene expression analysis.
         """
+
         jobs = []
 
         for contrast in self.contrasts:
@@ -600,6 +615,7 @@ END
         """
         Exploratory analysis using the gqSeqUtils R package.
         """
+
         sample_fpkm_readcounts = [[
             sample.name,
             os.path.join("cufflinks", sample.name, "isoforms.fpkm_tracking"),
@@ -627,6 +643,7 @@ END
         of the software and methods used during the analysis, together with the full list of parameters
         passed to the pipeline main script.
         """
+
         job = gq_seq_utils.report(
             [config_file.name for config_file in self.args.config],
             self.output_dir,
