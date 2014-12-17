@@ -70,10 +70,11 @@ class PacBioAssembly(common.MUGQICPipeline):
         Informative run metrics such as loading efficiency, read lengths and base quality are generated in this step as well.
         """
         jobs = []
+        jobs.append(Job([], [config.param('smrtanalysis_filtering', 'celera_settings'), config.param('smrtanalysis_filtering', 'filtering_settings')], command="cp -a -f " + os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "protocols") + " .", name="smrtanalysis_filtering.config"))
 
         for sample in self.samples:
             fofn = os.path.join("fofns", sample.name + ".fofn")
-            input_files = []
+            input_files = [config.param('smrtanalysis_filtering', 'celera_settings'), config.param('smrtanalysis_filtering', 'filtering_settings')]
             for readset in sample.readsets:
                 if readset.bax_files:
                     # New PacBio format is BAX
@@ -84,7 +85,6 @@ class PacBioAssembly(common.MUGQICPipeline):
             filtering_directory = os.path.join(sample.name, "filtering")
 
             jobs.append(concat_jobs([
-                Job([], [config.param('smrtanalysis_filtering', 'celera_settings'), config.param('smrtanalysis_filtering', 'filtering_settings')], command="cp -a -f " + os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "protocols") + " ."),
                 Job(command="mkdir -p fofns"),
                 Job(input_files, [fofn], command="""\
 `cat > {fofn} << END
