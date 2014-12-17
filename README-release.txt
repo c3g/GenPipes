@@ -4,6 +4,10 @@
 vim VERSION
 git commit -m "Version bump to 2.0.0" VERSION
 
+# Update mugqic_pipelines module version
+vim resources/modules/mugqic_pipelines.sh
+(VERSION=2.0.0)
+
 # Tag the branch and push the tag. You'll need to have a gpg signature for this. Extra precaution
 git tag -s 2.0.0 -m 'Release 2.0.0'
 git push -u origin --tags
