@@ -209,9 +209,10 @@ class StarRunProcessingAligner(RunProcessingAligner):
     def get_metrics_jobs(self, readset):
         jobs = []
         input_bam = readset.bam + ".dup.bam"
+        input_bam_directory = os.path.dirname(input_bam)
         sample_file = input_bam + ".sample_file"
         sample_row = readset.sample.name + "\t" + input_bam + "\tRNAseq"
-        output_directory = os.path.join(os.path.dirname(input_bam), "rnaseqc_" + readset.sample.name + "." + readset.library)
+        output_directory = os.path.join(input_bam_directory, "rnaseqc_" + readset.sample.name + "." + readset.library)
 
 
         if len(readset.annotation_files) > 1 and os.path.isfile(readset.annotation_files[0]) and os.path.isfile(readset.annotation_files[1]):
@@ -225,6 +226,7 @@ class StarRunProcessingAligner(RunProcessingAligner):
     {sample_row}" \\
     > {sample_file}""".format(sample_row=sample_row, sample_file=sample_file)),
                 metrics.rnaseqc(sample_file, output_directory, readset.fastq2 is not None, gtf_file=gtf_transcript_id, ribosomal_fasta=ribosomal_fasta, reference=reference),
+                Job(command="cp " + os.path.join(output_directory, "metrics.tsv") + " " +  os.path.join(input_bam_directory, readset.sample.name + "." + readset.library + ".rnaseqc.sorted.dup.metrics.tsv")),
             ], name="rnaseqc" + readset.name + ".rnaseqc")
             jobs.append(job)
 
