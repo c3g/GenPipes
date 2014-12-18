@@ -712,7 +712,7 @@ class DnaSeq(common.Illumina):
         """
         variants_file_prefix = "variants/allSamples.merged.flt.mil.snpId."
         job = metrics.snv_graph_metrics(variants_file_prefix + "snpeff.vcf.statsFile.txt", "metrics/allSamples.SNV")
-        job.output_files = ["metrics/allSamples.SNV.SummaryTable.tsv"]
+        job.output_files = ["metrics/allSamples.SNV.SummaryTable.tsv", "metrics/allSamples.SNV.EffectsFunctionalClass.tsv", "metrics/allSamples.EffectsImpact.tsv"]
         job.name = "metrics_snv_graph"
 
         return [job]
@@ -734,9 +734,11 @@ class DnaSeq(common.Illumina):
             self.output_dir
         )
         job.input_files = [
+            "metrics/trimming.stats",
             "metrics/SampleMetrics.stats",
-            "variants/allSamples.merged.flt.vcf",
-            "metrics/allSamples.SNV.SummaryTable.tsv"
+            "metrics/allSamples.SNV.SummaryTable.tsv",
+            "metrics/allSamples.SNV.EffectsFunctionalClass.tsv",
+            "metrics/allSamples.EffectsImpact.tsv"
         ]
         job.name = "gq_seq_utils_report"
         return [job]
