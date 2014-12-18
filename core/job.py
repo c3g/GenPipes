@@ -100,12 +100,13 @@ class Job:
                 return False
 
         # Retrieve latest input file by modification time i.e. maximum stat mtime
-        latest_input_file = max(abspath_input_files, key=lambda input_file: os.stat(input_file).st_mtime)
-        latest_input_time = os.stat(latest_input_file).st_mtime
+        # Use lstat to avoid following symbolic links
+        latest_input_file = max(abspath_input_files, key=lambda input_file: os.lstat(input_file).st_mtime)
+        latest_input_time = os.lstat(latest_input_file).st_mtime
 
         # Same with earliest output file by modification time
-        earliest_output_file = min(abspath_output_files, key=lambda output_file:os.stat(output_file).st_mtime)
-        earliest_output_time = os.stat(earliest_output_file).st_mtime
+        earliest_output_file = min(abspath_output_files, key=lambda output_file:os.lstat(output_file).st_mtime)
+        earliest_output_time = os.lstat(earliest_output_file).st_mtime
 
         # If any input file is strictly more recent than all output files, job is not up to date
         if latest_input_time > earliest_output_time:
