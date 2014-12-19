@@ -256,12 +256,14 @@ Steps:
         self.scheduler.submit(self)
 
     def clean_jobs(self):
-        for step in self.step_range:
-            for job in step.jobs:
-                abspath_removable_files = [job.abspath(removable_file) for removable_file in job.removable_files]
-                for removable_file in abspath_removable_files:
-                    if os.path.exists(removable_file):
-                        print("rm -rf " + removable_file)
+        abspath_removable_files = []
+        for job in self.jobs:
+            # Retrieve absolute paths of removable files
+            abspath_removable_files.extend([job.abspath(removable_file) for removable_file in job.removable_files])
+        # Remove removable file duplicates but keep the order
+        for removable_file in list(collections.OrderedDict.fromkeys(abspath_removable_files)):
+            if os.path.exists(removable_file):
+                print("rm -rf " + removable_file)
 
 
 # Return a range list given a string.

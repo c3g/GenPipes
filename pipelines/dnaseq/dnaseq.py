@@ -164,8 +164,8 @@ class DnaSeq(common.Illumina):
 
                 job = concat_jobs([
                     mkdir_job,
-                    Job([readset_bam], [sample_bam], command="ln -s -f " + target_readset_bam + " " + sample_bam),
-                    Job([readset_index], [sample_index], command="ln -s -f " + target_readset_index + " " + sample_index)
+                    Job([readset_bam], [sample_bam], command="ln -s -f " + target_readset_bam + " " + sample_bam, removable_files=[sample_bam]),
+                    Job([readset_index], [sample_index], command="ln -s -f " + target_readset_index + " " + sample_index, removable_files=[sample_index])
                 ], name="symlink_readset_sample_bam." + sample.name)
 
             elif len(sample.readsets) > 1:
@@ -205,7 +205,7 @@ class DnaSeq(common.Illumina):
                 output_bam = realign_prefix + ".bam"
                 sample_output_bam = os.path.join(alignment_directory, sample.name + ".realigned.qsorted.bam")
                 jobs.append(concat_jobs([
-                    Job(command="mkdir -p " + realign_directory),
+                    Job(command="mkdir -p " + realign_directory, removable_files=[realign_directory]),
                     gatk.realigner_target_creator(input, realign_intervals),
                     gatk.indel_realigner(input, output_bam, target_intervals=realign_intervals),
                     # Create sample realign symlink since no merging is required
@@ -227,7 +227,7 @@ class DnaSeq(common.Illumina):
                     output_bam = realign_prefix + ".bam"
                     jobs.append(concat_jobs([
                         # Create output directory since it is not done by default by GATK tools
-                        Job(command="mkdir -p " + realign_directory),
+                        Job(command="mkdir -p " + realign_directory, removable_files=[realign_directory]),
                         gatk.realigner_target_creator(input, realign_intervals, intervals=[sequence]),
                         gatk.indel_realigner(input, output_bam, target_intervals=realign_intervals, intervals=intervals)
                     ], name="gatk_indel_realigner." + sample.name + "." + sequence))
@@ -238,7 +238,7 @@ class DnaSeq(common.Illumina):
                 output_bam = realign_prefix + ".bam"
                 jobs.append(concat_jobs([
                     # Create output directory since it is not done by default by GATK tools
-                    Job(command="mkdir -p " + realign_directory),
+                    Job(command="mkdir -p " + realign_directory, removable_files=[realign_directory]),
                     gatk.realigner_target_creator(input, realign_intervals, exclude_intervals=unique_sequences_per_job),
                     gatk.indel_realigner(input, output_bam, target_intervals=realign_intervals, exclude_intervals=unique_sequences_per_job)
                 ], name="gatk_indel_realigner." + sample.name + ".others"))

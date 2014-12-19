@@ -29,7 +29,7 @@ def trimmomatic(
         inputs = [input1]
         outputs = [single_output]
 
-    job = Job(inputs, outputs + [trim_log], [['trimmomatic', 'module_java'], ['trimmomatic', 'module_trimmomatic']])
+    job = Job(inputs, outputs + [trim_log], [['trimmomatic', 'module_java'], ['trimmomatic', 'module_trimmomatic']], removable_files=[paired_output1, unpaired_output1, paired_output2, unpaired_output2, single_output])
 
     # Retrieve output directories removing duplicates if any
     output_dirs = list(collections.OrderedDict.fromkeys([os.path.dirname(output) for output in outputs]))

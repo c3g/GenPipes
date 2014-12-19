@@ -13,7 +13,7 @@ def blastdbcmd(
     outfile
     ):
 
-    return  Job(
+    return Job(
         [entry_file],
         [outfile],
         [
@@ -57,7 +57,7 @@ def dcmegablast(
 
     tmp_outfile = os.path.splitext(outfile)[0] + ".all.tmp"
 
-    return  Job(
+    return Job(
         [infile_fasta, coverage_bed],
         [outfile, os.path.join(outdir, "blastCov.tsv"), os.path.join(outdir, "contigsCoverage.tsv")],
         [

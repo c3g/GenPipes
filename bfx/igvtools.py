@@ -7,9 +7,14 @@ from core.config import *
 from core.job import *
 
 def compute_tdf(input, output):
-    job = Job([input], [output], [['compute_tdf', 'module_java'], ['compute_tdf', 'module_igvtools']])
-
-    job.command = """\
+    return Job(
+        [input],
+        [output],
+        [
+            ['compute_tdf', 'module_java'],
+            ['compute_tdf', 'module_igvtools']
+        ],
+        command="""\
 igvtools count -f min,max,mean \\
   {input} \\
   {output} \\
@@ -17,6 +22,5 @@ igvtools count -f min,max,mean \\
         input=input,
         output=output,
         genome=config.param('compute_tdf', 'igv_genome', type='filepath')
+        )
     )
-
-    return job
