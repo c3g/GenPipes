@@ -65,5 +65,5 @@ java -XX:ParallelGCThreads=1 -Xmx{ram} -jar $TRIMMOMATIC_JAR {mode} \\
         tophred33=" \\\n  TOPHRED33" if quality_offset == 64 else "",
         trim_log=trim_log
         ),
-        removable_files=[paired_output1, unpaired_output1, paired_output2, unpaired_output2, single_output],
+        removable_files=[paired_output1, unpaired_output1, paired_output2, unpaired_output2, single_output]
     )

@@ -43,10 +43,11 @@ def insilico_read_normalization(
     job = Job(
         left_or_single_reads + right_reads,
         output_files,
-        [['insilico_read_normalization', 'module_perl'], ['insilico_read_normalization', 'module_trinity']]
-    )
-
-    job.command = """\
+        [
+            ['insilico_read_normalization', 'module_perl'],
+            ['insilico_read_normalization', 'module_trinity']
+        ],
+        command="""\
 insilico_read_normalization.pl {other_options} \\
   --seqType {sequence_type} \\
   --JM {jellyfish_memory} \\
@@ -60,6 +61,8 @@ insilico_read_normalization.pl {other_options} \\
         right_reads="".join([" \\\n  --right " + read for read in right_reads]) if right_reads else "",
         output_directory=" \\\n  --output " + output_directory if output_directory else "",
         cpu=" \\\n  --CPU " + str(cpu) if cpu else ""
+        ),
+        removable_files=[output_directory if output_directory else None]
     )
 
     if output_directory:
@@ -158,7 +161,6 @@ class RnaSeqDeNovoAssembly(common.Illumina):
                 config.param('insilico_read_normalization_readsets', 'cpu', required=False, type='int')
             )
 
-            job.removable_files = [normalization_directory]
             job.name = "insilico_read_normalization_readsets." + readset.name
             jobs.append(job)
 
@@ -193,7 +195,6 @@ class RnaSeqDeNovoAssembly(common.Illumina):
             config.param('insilico_read_normalization_all', 'cpu', required=False, type='int')
         )
 
-        job.removable_files = [normalization_directory_all]
         job.name = "insilico_read_normalization_all"
         return [job]
 
