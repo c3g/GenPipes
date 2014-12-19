@@ -297,7 +297,7 @@ Trinity {other_options} \\
             query_chunk = os.path.join(trinity_chunks_directory, "Trinity.fasta_chunk_{:07d}".format(i))
             blast_chunk = os.path.join(blast_directory, program + "_Trinity_" + os.path.basename(db) + "_chunk_{:07d}.tsv".format(i))
             jobs.append(concat_jobs([
-                Job(command="mkdir -p " + blast_directory),
+                Job(command="mkdir -p " + blast_directory, removable_files=[blast_directory]),
                 Job(
                     [query_chunk],
                     [blast_chunk],
@@ -624,7 +624,17 @@ align_and_estimate_abundance.pl {other_options} \\
                     cpu=config.param('align_and_estimate_abundance', 'cpu', type='posint'),
                     left_or_single_reads="--left " + ",".join(left_or_single_reads) if right_reads else "--single " + ",".join(left_or_single_reads),
                     right_reads=" \\\n  --right " + ",".join(right_reads) if right_reads else ""
-                ), name="align_and_estimate_abundance." + sample.name))
+                ),
+                name="align_and_estimate_abundance." + sample.name,
+                removable_files=[
+                    os.path.join(output_directory, sample.name + ".bowtie.bam"),
+                    os.path.join(output_directory, sample.name + ".transcript.bam"),
+                    os.path.join(output_directory, sample.name + ".transcript.sorted.bam"),
+                    os.path.join(output_directory, sample.name + ".transcript.sorted.bam.bai"),
+                    os.path.join(output_directory, sample.name + ".bowtie.csorted.bam"),
+                    os.path.join(output_directory, sample.name + ".bowtie.csorted.bam.bai")
+                ]
+            ))
 
         return jobs
 
