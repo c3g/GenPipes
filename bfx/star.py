@@ -32,7 +32,8 @@ def align(
     job = Job(
         [reads1, reads2],
         [os.path.join(output_directory, bam_name), os.path.join(output_directory, "SJ.out.tab")],
-        [['star_align', 'module_star']]
+        [['star_align', 'module_star']],
+        removable_files=[os.path.join(output_directory, bam_name)]
     )
     
     ## Get param from config file
@@ -126,7 +127,8 @@ def index(
     job = Job(
         [junction_file],
         [os.path.join(genome_index_folder, "SAindex")],
-        [['star_index', 'module_star']]
+        [['star_index', 'module_star']],
+        removable_files=[genome_index_folder]
     )
 
     ## get param from config filepath

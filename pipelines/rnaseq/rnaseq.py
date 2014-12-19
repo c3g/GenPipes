@@ -217,7 +217,7 @@ class RnaSeq(common.Illumina):
                 sample_bam = os.path.join("alignment", readset.sample.name ,readset.sample.name + ".sorted.bam")
                 job = concat_jobs([
                     job,
-                    Job([readset_bam], [sample_bam], command="ln -s -f " + os.path.relpath(readset_bam, os.path.dirname(sample_bam)) + " " + sample_bam)])
+                    Job([readset_bam], [sample_bam], command="ln -s -f " + os.path.relpath(readset_bam, os.path.dirname(sample_bam)) + " " + sample_bam, removable_files=[sample_bam])])
 
             job.name = "star_align.2." + readset.name
             jobs.append(job)
@@ -293,7 +293,7 @@ class RnaSeq(common.Illumina):
         gtf_transcript_id = config.param('rnaseqc', 'gtf_transcript_id', type='filepath')
 
         job = concat_jobs([
-            Job(command="mkdir -p " + output_directory),
+            Job(command="mkdir -p " + output_directory, removable_files=[output_directory]),
             Job(input_bams, [sample_file], command="""\
 echo "Sample\tBamFile\tNote
 {sample_rows}" \\
@@ -357,7 +357,7 @@ echo "Sample\tBamFile\tNote
 
             for bed_graph_output, big_wig_output in outputs:
                 job = concat_jobs([
-                    Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " " + os.path.join("tracks", "bigWig")),
+                    Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " " + os.path.join("tracks", "bigWig"), removable_files=["tracks"]),
                     bedtools.graph(input_bam, bed_graph_output, big_wig_output)
                 ], name="wiggle." + re.sub(".bedGraph", "", os.path.basename(bed_graph_output)))
                 jobs.append(job)
@@ -471,6 +471,7 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
 
             # De Novo FPKM
             job = cufflinks.cufflinks(input_bam, output_directory, gtf)
+            job.removable_files = ["cufflinks"]
             job.name = "cufflinks."+sample.name
             jobs.append(job)
 
@@ -541,6 +542,7 @@ END
                 gtf,
                 os.path.join("cuffdiff", contrast.name)
             )
+            job.removable_files = ["cuffdiff"]
             job.name = "cuffdiff." + contrast.name
             jobs.append(job)
 
@@ -562,6 +564,7 @@ END
         job = cufflinks.cuffnorm([os.path.join(fpkm_directory, sample.name, "abundances.cxb") for sample in self.samples],
              gtf,
              "cuffnorm",sample_labels)
+        job.removable_files = ["cuffnorm"]
         job.name = "cuffnorm" 
         jobs.append(job)
         
