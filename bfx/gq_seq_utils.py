@@ -15,7 +15,7 @@ def exploratory_analysis_rnaseq(htseq_count_file, cuffnorm_dir, genes_file, outp
             ['gq_seq_utils_exploratory_analysis_rnaseq', 'module_R'],
             ['gq_seq_utils_exploratory_analysis_rnaseq', 'module_mugqic_R_packages']
         ],
-        command = """\
+        command="""\
 R --no-save --no-restore <<-EOF
 suppressPackageStartupMessages(library(gqSeqUtils))
 
@@ -44,7 +44,7 @@ def report(ini_filepaths, project_path, pipeline_type, output_directory):
             ['gq_seq_utils_report', 'module_R'],
             ['gq_seq_utils_report', 'module_mugqic_R_packages']
         ],
-        command = """\
+        command="""\
 R --no-save -e 'library(gqSeqUtils); mugqicPipelineReport(pipeline="{pipeline}"{title}{path}{author}{contact}, ini.file.path=c({ini_filepaths}), project.path="{project_path}")'""".format(
         pipeline=pipeline_type,
         title=", report.title=\"" + title + "\"" if title else "",

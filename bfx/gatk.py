@@ -70,7 +70,7 @@ def cat_variants(variants, output):
             ['gatk_cat_variants', 'module_java'],
             ['gatk_cat_variants', 'module_gatk']
         ],
-        command = """\
+        command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -cp $GATK_JAR \\
   org.broadinstitute.gatk.tools.CatVariants {options} \\
   --reference {reference}{variants} \\

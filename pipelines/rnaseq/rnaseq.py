@@ -21,12 +21,12 @@ from bfx.readset import *
 from bfx import bedtools
 from bfx import cufflinks
 from bfx import differential_expression
+from bfx import gq_seq_utils
 from bfx import htseq
 from bfx import metrics
 from bfx import picard
 from bfx import samtools
 from bfx import star
-from bfx import gq_seq_utils
 from pipelines import common
 import utils
 

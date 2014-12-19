@@ -19,16 +19,18 @@ def tophat(
     rg_center=""
     ):
 
-    job = Job(
-        [reads1, reads2],
-        [os.path.join(output_directory, "accepted_hits.bam")],
-        [['tophat', 'module_bowtie'], ['tophat', 'module_samtools'], ['tophat', 'module_tophat']]
-    )
-
     gtf = config.param('tophat', 'gtf', required=False, type='filepath')
     transcriptome_bowtie_index = config.param('tophat', 'transcriptome_bowtie_index', required=False, type='prefixpath')
 
-    job.command = """\
+    return Job(
+        [reads1, reads2],
+        [os.path.join(output_directory, "accepted_hits.bam")],
+        [
+            ['tophat', 'module_bowtie'],
+            ['tophat', 'module_samtools'],
+            ['tophat', 'module_tophat']
+        ],
+        command="""\
 mkdir -p {output_directory} && \\
 tophat {other_options}{gtf}{transcriptome_index} \\
   --rg-id '{rg_id}' \\
@@ -57,6 +59,5 @@ tophat {other_options}{gtf}{transcriptome_index} \\
         bowtie_index=config.param('tophat', 'genome_bowtie_index', type='prefixpath'),
         reads1=reads1,
         reads2=" \\\n  " + reads2 if reads2 else ""
+        )
     )
-
-    return job

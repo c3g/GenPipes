@@ -36,7 +36,7 @@ def assembly_stats(
             ['pacbio_tools_assembly_stats', 'module_R'],
             ['pacbio_tools_assembly_stats', 'module_mugqic_tools']
         ],
-        command = """\
+        command="""\
 memtime pacBioAssemblyStats.pl \\
   --shortReads {short_reads} \\
   --longReads {long_reads} \\
@@ -74,7 +74,7 @@ def celera_config(
             ['pacbio_tools_celera_config', 'module_perl'],
             ['pacbio_tools_celera_config', 'module_mugqic_tools']
         ],
-        command = """\
+        command="""\
 memtime pacBioAssemblyCeleraConfig.pl \\
   --infile {infile} \\
   --merylThreads {meryl_threads} \\
@@ -130,7 +130,7 @@ def compile(
             ['pacbio_tools_get_cutoff', 'module_perl'],
             ['pacbio_tools_get_cutoff', 'module_mugqic_tools']
         ],
-        command = """\
+        command="""\
 memtime pacBioCompileStats.pl \\
   --indir {indir} \\
   --estimatedGenomeSize {estimated_genome_size} \\
@@ -158,7 +158,7 @@ def get_cutoff(
             ['pacbio_tools_get_cutoff', 'module_perl'],
             ['pacbio_tools_get_cutoff', 'module_mugqic_tools']
         ],
-        command = """\
+        command="""\
 memtime pacBioGetCutoff.pl \\
   --infile {infile} \\
   --coverage {coverage} \\
@@ -187,7 +187,7 @@ def split_reads(
             ['pacbio_tools_get_cutoff', 'module_perl'],
             ['pacbio_tools_get_cutoff', 'module_mugqic_tools']
         ],
-        command = """\
+        command="""\
 memtime pacBioSplitReads.pl \\
   --infile {infile} \\
   --cutoff `cat {cutoff}` \\

@@ -99,7 +99,7 @@ def bcftools_cat(inputs, output):
         inputs,
         [output],
         [['bcftools_cat', 'module_samtools']],
-        command = """\
+        command="""\
 bcftools cat \\
   {inputs}{output}""".format(
         inputs=" \\\n  ".join(inputs),
@@ -112,7 +112,7 @@ def bcftools_view(input, output, options="", pair_calling=False):
         [input],
         [output],
         [['bcftools_view', 'module_samtools']],
-        command = """\
+        command="""\
 bcftools view {pair_calling} {options} \\
   {input}{output}""".format(
         options=options,

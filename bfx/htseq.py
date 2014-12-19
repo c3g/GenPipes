@@ -8,9 +8,11 @@ from core.config import *
 from core.job import *
 
 def htseq_count(input, gtf, output, options="", stranded="no"):
-    job = Job([input], [output], [['htseq_count', 'module_python']])
-
-    job.command = """\
+    return Job(
+        [input],
+        [output],
+        [['htseq_count', 'module_python']],
+        command="""\
 htseq-count {options} \\
   --stranded={stranded} \\
   --format=bam \\
@@ -21,6 +23,5 @@ htseq-count {options} \\
         input=input,
         gtf=gtf,
         output=" \\\n  > " + output if output else ""
+        )
     )
-
-    return job

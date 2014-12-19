@@ -139,7 +139,8 @@ class Illumina(MUGQICPipeline):
         """
         jobs = []
         for readset in self.readsets:
-            trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
+            trim_directory = os.path.join("trim", readset.sample.name)
+            trim_file_prefix = os.path.join(trim_directory, readset.name + ".trim.")
             trim_log = trim_file_prefix + "log"
             trim_stats = trim_file_prefix + "stats.csv"
             if readset.run_type == "PAIRED_END":
@@ -178,8 +179,11 @@ class Illumina(MUGQICPipeline):
                 raise Exception("Error: run type \"" + readset.run_type +
                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
 
-            job.name = "trimmomatic." + readset.name
-            jobs.append(job)
+            jobs.append(concat_jobs([
+                # Trimmomatic does not create output directory by default
+                Job(command="mkdir -p " + trim_directory),
+                job
+            ], name="trimmomatic." + readset.name))
         return jobs
 
     def merge_trimmomatic_stats(self):
