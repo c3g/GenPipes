@@ -3,31 +3,47 @@
 import argparse
 import csv
 import glob
+import httplib
 import logging
 import os
 import re
-import subprocess
 
 log = logging.getLogger(__name__)
 
+def get_nanuq_file(nanuq_auth_file, nanuq_url, nanuq_file):
+
+    if os.path.exists(nanuq_file):
+        log.warning("File " + nanuq_file + " already exists! Skipping...")
+    else:
+        https_connection = httplib.HTTPSConnection("genomequebec.mcgill.ca")
+        https_connection.set_debuglevel(1)
+        headers = {"Content-type": "application/x-www-form-urlencoded", "Accept": "text/plain"}
+
+        log.info("Fetching Nanuq file from server...")
+
+        with open(nanuq_auth_file) as auth_file:
+            https_connection.request("POST", nanuq_url, auth_file, headers)
+
+        http_response = https_connection.getresponse()
+
+        log.info("HTTP Response Status: " + str(http_response.status))
+        log.info("HTTP Response Reason: " + http_response.reason)
+
+        with open(nanuq_file, 'w') as file:
+            file.write(http_response.read())
+
+        https_connection.close()
+
+
 def get_nanuq_readset_file(nanuq_auth_file, nanuq_project_id, nanuq_readset_file, seq_type):
+    get_nanuq_file(nanuq_auth_file, "/nanuqMPS/csv/technology/" + seq_type + "/project/" + nanuq_project_id + "/filename/" + nanuq_readset_file, nanuq_readset_file)
 
-    command = "wget --no-cookies --post-file " + nanuq_auth_file + " https://genomequebec.mcgill.ca/nanuqMPS/csv/technology/" + seq_type + "/project/" + nanuq_project_id + "/filename/" + nanuq_readset_file
 
-    log.info("Fetching Nanuq readset file from server...")
-    log.info(command)
+def get_nanuq_bed_file(nanuq_auth_file, bed_file):
+    get_nanuq_file(nanuq_auth_file, "/nanuqLimsCgi/targetRegion/downloadBed.cgi?bedName=" + bed_file, bed_file)
 
-    subprocess.check_call(["bash", "-c", command])
 
-def get_nanuq_bed_files(nanuq_auth_file, bed_files):
-    for bed in bed_files:
-        command = "wget --no-cookies --post-file " + nanuq_auth_file + " https://genomequebec.mcgill.ca/nanuqLimsCgi/targetRegion/downloadBed.cgi?bedName=" + bed + " -O " + bed
-        log.info("Fetching Nanuq BED file from server...")
-        log.info(command)
-
-        subprocess.check_call(["bash", "-c", command])
-
-def create_readsets(nanuq_auth_file, nanuq_readset_file, seq_type, mugqic_pipelines_readset_file="readsets.tsv"):
+def create_readsets(nanuq_readset_file, seq_type, mugqic_pipelines_readset_file="readsets.tsv", args_nanuq_auth_file=None):
     # Lowercase the first seq_type character
     lcfirst_seq_type = seq_type[0].lower() + seq_type[1:]
 
@@ -35,11 +51,13 @@ def create_readsets(nanuq_auth_file, nanuq_readset_file, seq_type, mugqic_pipeli
     raw_reads_directory = "raw_reads"
     symlinks = []
     mugqic_pipelines_readset_csv_rows = []
+    bed_files = set()  # Only used for HiSeq/MiSeq sequencing type
+    adapters = set()  # Only used for HiSeq/MiSeq sequencing type
 
     # Parse Nanuq readset file and list symlinks to be created
     log.info("Parse Nanuq readset file " + nanuq_readset_file + " ...")
     nanuq_readset_csv = csv.DictReader(open(nanuq_readset_file, 'rb'), delimiter=',', quotechar='"')
-    bed_files = set();
+
     for line in nanuq_readset_csv:
         if line['Status'] and line['Status'] == "Data is valid":
             mugqic_pipelines_readset_csv_row = {}
@@ -76,18 +94,14 @@ def create_readsets(nanuq_auth_file, nanuq_readset_file, seq_type, mugqic_pipeli
                     ['Run Type', 'RunType'],
                     ['Run', 'Run'],
                     ['Region', 'Lane'],
-                    ['Adaptor Read 1 (NOTE: Usage is bound by Illumina Disclaimer found on Nanuq Project Page)', 'Adaptor1'],
-                    ['Adaptor Read 2 (NOTE: Usage is bound by Illumina Disclaimer found on Nanuq Project Page)', 'Adaptor2'],
+                    ['Adaptor Read 1 (NOTE: Usage is bound by Illumina Disclaimer found on Nanuq Project Page)', 'Adapter1'],
+                    ['Adaptor Read 2 (NOTE: Usage is bound by Illumina Disclaimer found on Nanuq Project Page)', 'Adapter2'],
                     ['Quality Offset', 'QualityOffset'],
                     ['BED Files', 'BED']
                 ]
                 formats = ['FASTQ1', 'FASTQ2', 'BAM']
 
                 fieldnames = [key[1] for key in nanuq_vs_mugqic_pipelines_readset_keys] + formats
-                # Filter empty strings returned by split with string ";" separator
-                available_beds = filter(None, line['BED Files'].split(';'))
-                for bed in available_beds:
-                    bed_files.add(bed)
 
                 for format in formats:
                     if line.get(format, None):
@@ -107,6 +121,23 @@ def create_readsets(nanuq_auth_file, nanuq_readset_file, seq_type, mugqic_pipeli
                         else:
                             raise Exception("Error: Nanuq readset path " + nanuq_readset_path + " is invalid!")
 
+                # BED files
+                # Filter empty strings returned by split with string ";" separator
+                for bed_file in filter(None, line['BED Files'].split(';')):
+                    # Retrieve BED file if not previously done
+                    if bed_file not in bed_files:
+                        if args_nanuq_auth_file:
+                            get_nanuq_bed_file(args_nanuq_auth_file.name, bed_file)
+                        else:
+                            log.warning("Nanuq authentication file missing: skipping retrieval of " + bed_file + "...")
+                        bed_files.add(bed_file)
+
+                # Store unique pairs of adapters
+                adapter1 = line.get('Adaptor Read 1 (NOTE: Usage is bound by Illumina Disclaimer found on Nanuq Project Page)', None)
+                adapter2 = line.get('Adaptor Read 2 (NOTE: Usage is bound by Illumina Disclaimer found on Nanuq Project Page)', None)
+                if adapter1 and adapter2:
+                    adapters.add((adapter1, adapter2))
+
             for nanuq_key, mugqic_pipelines_key in nanuq_vs_mugqic_pipelines_readset_keys:
                 value = line.get(nanuq_key, None)
                 if value:
@@ -116,8 +147,20 @@ def create_readsets(nanuq_auth_file, nanuq_readset_file, seq_type, mugqic_pipeli
         else:
             log.warning(str(line) + " line data is not valid... skipping")
 
-    # Get the bed files once
-    get_nanuq_bed_files(nanuq_auth_file, bed_files)
+    # Write adapters file if necessary
+    adapters_file = "adapters.fa"
+    if adapters:
+        if os.path.exists(adapters_file):
+            log.warning("File " + adapters_file + " already exists! Skipping...")
+        else:
+            with open(adapters_file, "w") as adapters_f:
+                for idx, (adapter1, adapter2) in enumerate(adapters):
+                    adapters_f.write("""\
+>Prefix{idx}/1
+{adapter1}
+>Prefix{idx}/2
+{adapter2}
+""".format(idx=idx + 1, adapter1=adapter1, adapter2=adapter2))
 
     # Create symbolic links and parent directories if necessary
     for target, link_name in symlinks:
@@ -131,9 +174,13 @@ def create_readsets(nanuq_auth_file, nanuq_readset_file, seq_type, mugqic_pipeli
             os.symlink(target, link_name)
             log.info("Symlink " + link_name + " created successfully.")
 
-    mugqic_pipelines_readset_csv = csv.DictWriter(open(mugqic_pipelines_readset_file, 'wb'), fieldnames=fieldnames, delimiter='\t')
-    mugqic_pipelines_readset_csv.writeheader()
-    mugqic_pipelines_readset_csv.writerows(mugqic_pipelines_readset_csv_rows)
+    # Write mugqic_pipelines readset file if necessary
+    if os.path.exists(mugqic_pipelines_readset_file):
+        log.warning("File " + mugqic_pipelines_readset_file + " already exists! Skipping...")
+    else:
+        mugqic_pipelines_readset_csv = csv.DictWriter(open(mugqic_pipelines_readset_file, 'wb'), fieldnames=fieldnames, delimiter='\t')
+        mugqic_pipelines_readset_csv.writeheader()
+        mugqic_pipelines_readset_csv.writerows(mugqic_pipelines_readset_csv_rows)
 
 #-------------------------------------------------------------------------------
 # Main script
@@ -168,4 +215,4 @@ elif args.nanuq_readset_file:
     mugqic_pipelines_readset_file = "readsets.tsv"
 
 if not args.no_links:
-    create_readsets(args.nanuq_auth_file.name, nanuq_readset_file, args.seq_type, mugqic_pipelines_readset_file)
+    create_readsets(nanuq_readset_file, args.seq_type, mugqic_pipelines_readset_file, args.nanuq_auth_file)
