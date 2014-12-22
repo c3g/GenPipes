@@ -121,7 +121,7 @@ Steps:
             self._argparser.add_argument("-c", "--config", help="config INI-style list of files; config parameters are overwritten based on files order", nargs="+", type=file)
             self._argparser.add_argument("-s", "--steps", help="step range e.g. '1-5', '3,6,7', '2,4-8'")
             self._argparser.add_argument("-o", "--output-dir", help="output directory (default: current)", default=os.getcwd())
-            self._argparser.add_argument("-j", "--job-scheduler", help="job scheduler type (default: pbs)", choices=["pbs", "batch"], default="pbs")
+            self._argparser.add_argument("-j", "--job-scheduler", help="job scheduler type (default: pbs)", choices=["pbs", "batch", "daemon"], default="pbs")
             self._argparser.add_argument("-f", "--force", help="force creation of jobs even if up to date (default: false)", action="store_true")
             self._argparser.add_argument("--clean", help="create 'rm' commands for all job removable files in the given step range, if they exists; if --clean is set, --job-scheduler, --force options and job up-to-date status are ignored (default: false)", action="store_true")
             self._argparser.add_argument("-l", "--log", help="log level (default: info)", choices=["debug", "info", "warning", "error", "critical"], default="info")
@@ -264,7 +264,6 @@ Steps:
         for removable_file in list(collections.OrderedDict.fromkeys(abspath_removable_files)):
             if os.path.exists(removable_file):
                 print("rm -rf " + removable_file)
-
 
 # Return a range list given a string.
 # e.g. parse_range('1,3,5-12') returns [1, 3, 5, 6, 7, 8, 9, 10, 11, 12]

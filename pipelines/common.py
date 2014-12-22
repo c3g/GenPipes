@@ -63,7 +63,7 @@ wget "{server}?{request}" --quiet --output-document=/dev/null
 
     def submit_jobs(self):
         super(MUGQICPipeline, self).scheduler.submit(self)
-        if self.jobs:
+        if self.jobs and self.args.job_scheduler in ["pbs", "batch"]:
             self.mugqic_log()
 
 
