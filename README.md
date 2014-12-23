@@ -311,6 +311,9 @@ Contact us
 ----------
 Please visit our [mailing list](https://groups.google.com/forum/#!forum/mugqic_pipelines) to find questions and answers about MUGQIC Pipelines.
 
+To subscribe to the mailing list and receive other people's messages, send an e-mail at [mugqic_pipelines+subscribe@googlegroups.com](mailto:mugqic_pipelines+subscribe@googlegroups.com).
+You will receive an invitation which you must accept.
+
 To use it, send us an e-mail at [mugqic_pipelines@googlegroups.com](mailto:mugqic_pipelines@googlegroups.com).
 
 You can also report bugs at [bioinformatics.service@mail.mcgill.ca](mailto:bioinformatics.service@mail.mcgill.ca).

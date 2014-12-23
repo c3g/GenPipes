@@ -43,10 +43,11 @@ def insilico_read_normalization(
     job = Job(
         left_or_single_reads + right_reads,
         output_files,
-        [['insilico_read_normalization', 'module_perl'], ['insilico_read_normalization', 'module_trinity']]
-    )
-
-    job.command = """\
+        [
+            ['insilico_read_normalization', 'module_perl'],
+            ['insilico_read_normalization', 'module_trinity']
+        ],
+        command="""\
 insilico_read_normalization.pl {other_options} \\
   --seqType {sequence_type} \\
   --JM {jellyfish_memory} \\
@@ -60,6 +61,8 @@ insilico_read_normalization.pl {other_options} \\
         right_reads="".join([" \\\n  --right " + read for read in right_reads]) if right_reads else "",
         output_directory=" \\\n  --output " + output_directory if output_directory else "",
         cpu=" \\\n  --CPU " + str(cpu) if cpu else ""
+        ),
+        removable_files=[output_directory if output_directory else None]
     )
 
     if output_directory:
@@ -158,7 +161,6 @@ class RnaSeqDeNovoAssembly(common.Illumina):
                 config.param('insilico_read_normalization_readsets', 'cpu', required=False, type='int')
             )
 
-            job.removable_files = [normalization_directory]
             job.name = "insilico_read_normalization_readsets." + readset.name
             jobs.append(job)
 
@@ -193,7 +195,6 @@ class RnaSeqDeNovoAssembly(common.Illumina):
             config.param('insilico_read_normalization_all', 'cpu', required=False, type='int')
         )
 
-        job.removable_files = [normalization_directory_all]
         job.name = "insilico_read_normalization_all"
         return [job]
 
@@ -296,7 +297,7 @@ Trinity {other_options} \\
             query_chunk = os.path.join(trinity_chunks_directory, "Trinity.fasta_chunk_{:07d}".format(i))
             blast_chunk = os.path.join(blast_directory, program + "_Trinity_" + os.path.basename(db) + "_chunk_{:07d}.tsv".format(i))
             jobs.append(concat_jobs([
-                Job(command="mkdir -p " + blast_directory),
+                Job(command="mkdir -p " + blast_directory, removable_files=[blast_directory]),
                 Job(
                     [query_chunk],
                     [blast_chunk],
@@ -623,7 +624,17 @@ align_and_estimate_abundance.pl {other_options} \\
                     cpu=config.param('align_and_estimate_abundance', 'cpu', type='posint'),
                     left_or_single_reads="--left " + ",".join(left_or_single_reads) if right_reads else "--single " + ",".join(left_or_single_reads),
                     right_reads=" \\\n  --right " + ",".join(right_reads) if right_reads else ""
-                ), name="align_and_estimate_abundance." + sample.name))
+                ),
+                name="align_and_estimate_abundance." + sample.name,
+                removable_files=[
+                    os.path.join(output_directory, sample.name + ".bowtie.bam"),
+                    os.path.join(output_directory, sample.name + ".transcript.bam"),
+                    os.path.join(output_directory, sample.name + ".transcript.sorted.bam"),
+                    os.path.join(output_directory, sample.name + ".transcript.sorted.bam.bai"),
+                    os.path.join(output_directory, sample.name + ".bowtie.csorted.bam"),
+                    os.path.join(output_directory, sample.name + ".bowtie.csorted.bam.bai")
+                ]
+            ))
 
         return jobs
 

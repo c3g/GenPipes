@@ -17,13 +17,13 @@ def blasr(
 
     outfile_filtered = outfile + ".filtered"
 
-    return  Job(
+    return Job(
         [infile, infile_long],
         [outfile_filtered, outfile_fofn],
         [
             ['smrtanalysis_blasr', 'module_smrtanalysis']
         ],
-        command = """\
+        command="""\
 bash -c 'set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
 blasr \\
   {infile} \\
@@ -59,13 +59,13 @@ def cmph5tools_sort(
     cmph5_out
     ):
 
-    return  Job(
+    return Job(
         [cmph5],
         [cmph5_out],
         [
             ['smrtanalysis_cmph5tools_sort', 'module_smrtanalysis']
         ],
-        command = """\
+        command="""\
 bash -c 'set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
 cmph5tools.py -vv sort --deep --inPlace \\
   --outFile {cmph5_out} \\
@@ -81,13 +81,13 @@ def fastq_to_ca(
     outfile
     ):
 
-    return  Job(
+    return Job(
         [reads],
         [outfile],
         [
             ['smrtanalysis_fastq_to_ca', 'module_smrtanalysis']
         ],
-        command = """\
+        command="""\
 bash -c 'set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
 fastqToCA \\
   -technology sanger \\
@@ -121,7 +121,7 @@ def filtering(
             ['smrtanalysis_filtering', 'module_prinseq'],
             ['smrtanalysis_filtering', 'module_smrtanalysis']
         ],
-        command = """\
+        command="""\
 bash -c 'set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
 fofnToSmrtpipeInput.py {fofn} > {input_xml} && \\
 cp {fofn} {input_fofn} && \\
@@ -161,14 +161,14 @@ def load_chemistry(
     cmph5_output
     ):
 
-    return  Job(
+    return Job(
         [input_fofn, cmph5],
         [cmph5_output],
         [
             ['smrtanalysis_load_chemistry', 'module_smrtanalysis']
         ],
         # Copy cmph5 file since loadChemistry.py modifies the input cmph5 directly
-        command = """\
+        command="""\
 cp {cmph5} {cmph5_output} && \\
 bash -c 'set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
 loadChemistry.py \\
@@ -185,14 +185,14 @@ def load_pulses(
     cmph5_output
     ):
 
-    return  Job(
+    return Job(
         [input_fofn, cmph5],
         [cmph5_output],
         [
             ['smrtanalysis_load_pulses', 'module_smrtanalysis']
         ],
         # Copy cmph5 file since loadPulses modifies the input cmph5 directly
-        command = """\
+        command="""\
 cp {cmph5} {cmph5_output} && \\
 bash -c 'set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
 loadPulses \\
@@ -211,13 +211,13 @@ def m4topre(
     outfile
     ):
 
-    return  Job(
+    return Job(
         [infile],
         [outfile],
         [
             ['smrtanalysis_m4topre', 'module_smrtanalysis']
         ],
-        command = """\
+        command="""\
 bash -c 'set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
 m4topre.py \\
   {infile} \\
@@ -240,13 +240,13 @@ def pbalign(
     tmp_dir
     ):
 
-    return  Job(
+    return Job(
         [input_fofn, ref_upload],
         [cmph5],
         [
             ['smrtanalysis_pbalign', 'module_smrtanalysis']
         ],
-        command = """\
+        command="""\
 bash -c 'set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
 pbalign \\
   {input_fofn} \\
@@ -271,13 +271,13 @@ def pbdagcon(
     outfile_fastq
     ):
 
-    return  Job(
+    return Job(
         [infile],
         [outfile, outfile_fastq],
         [
             ['smrtanalysis_pbdagcon', 'module_smrtanalysis']
         ],
-        command = """\
+        command="""\
 bash -c 'set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
 pbdagcon -a -j {threads} \\
   {infile} \\
@@ -300,13 +300,13 @@ def pbutgcns(
     tmp_dir
     ):
 
-    return  Job(
+    return Job(
         [gpk_store, tig_store],
         [outfile],
         [
             ['smrtanalysis_pbutgcns', 'module_smrtanalysis']
         ],
-        command = """\
+        command="""\
 tigStore \\
   -g {gpk_store} \\
   -t {tig_store} 1 \\
@@ -337,14 +337,14 @@ def reference_uploader(
     fasta
     ):
 
-    return  Job(
+    return Job(
         [fasta],
         [os.path.join(prefix, sample_name, "sequence", sample_name + ".fasta")],
         [
             ['smrtanalysis_reference_uploader', 'module_smrtanalysis']
         ],
         # Preload assembled contigs as reference
-        command = """\
+        command="""\
 bash -c 'set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
 referenceUploader \\
   --skipIndexUpdate \\
@@ -366,7 +366,7 @@ def run_ca(
     outdir
     ):
 
-    return  Job(
+    return Job(
         [infile, ini],
         [
             os.path.join(outdir, prefix + ".ovlStore.list"),
@@ -376,7 +376,7 @@ def run_ca(
         [
             ['smrtanalysis_run_ca', 'module_smrtanalysis']
         ],
-        command = """\
+        command="""\
 bash -c 'set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
 runCA \\
   -s {ini} \\
@@ -402,13 +402,13 @@ def summarize_polishing(
     variants_vcf
     ):
 
-    return  Job(
+    return Job(
         [aligned_reads_cmph5, input_fofn, os.path.join(os.path.dirname(reference), "data", "consensus.fasta")],
         [alignment_summary, coverage_bed, aligned_reads_sam, variants_bed, variants_vcf],
         [
             ['smrtanalysis_run_ca', 'module_smrtanalysis']
         ],
-        command = """\
+        command="""\
 bash -c 'set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
 summarize_coverage.py \\
   --reference {reference} \\
@@ -462,13 +462,13 @@ def variant_caller(
 
     outfile_fasta_uncompressed = re.sub("\.(gz|gzip)$", "", outfile_fasta)
 
-    return  Job(
+    return Job(
         [cmph5, ref_fasta],
         [outfile_variants, outfile_fasta, outfile_fastq, re.sub("\.gz$", "", outfile_fasta_uncompressed)],
         [
             ['smrtanalysis_variant_caller', 'module_smrtanalysis']
         ],
-        command = """\
+        command="""\
 bash -c 'set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
 variantCaller.py \\
   -P {protocol} \\

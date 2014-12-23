@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 # Python Standard Modules
+import json
 import os
 
 # MUGQIC Modules
@@ -14,6 +15,8 @@ def create_scheduler(type):
         return PBSScheduler()
     elif type == "batch":
         return BatchScheduler()
+    elif type == "daemon":
+        return DaemonScheduler()
     else:
         raise Exception("Error: scheduler type \"" + type + "\" is invalid!")
 
@@ -173,3 +176,31 @@ if [ $MUGQIC_STATE -eq 0 ] ; then touch $JOB_DONE ; else exit $MUGQIC_STATE ; fi
                             separator_line=separator_line
                         )
                     )
+
+class DaemonScheduler(Scheduler):
+    def submit(self, pipeline):
+        print self.json(pipeline)
+
+    def json(self, pipeline):
+        return json.dumps(
+            {'pipeline': [
+                {step.name: [
+                    {
+                        "job_name": job.name,
+                        "job_id": job.id,
+                        "job_command": job.command_with_modules,
+                        "job_dependencies": [dependency_job.id for dependency_job in job.dependency_jobs],
+                        "job_cluster_options": 
+                            # Cluster settings section must match job name prefix before first "."
+                            # e.g. "[trimmomatic] cluster_cpu=..." for job name "trimmomatic.readset1"
+                            config.param(job.name.split(".")[0], 'cluster_submit_cmd') + " " + \
+                            config.param(job.name.split(".")[0], 'cluster_other_arg') + " " + \
+                            config.param(job.name.split(".")[0], 'cluster_work_dir_arg') + " " + pipeline.output_dir + " " + \
+                            config.param(job.name.split(".")[0], 'cluster_output_dir_arg') + " " + os.path.join(pipeline.output_dir, "job_output", step.name, job.name + ".o") + " " + \
+                            config.param(job.name.split(".")[0], 'cluster_job_name_arg') + " " + job.name + " " + \
+                            config.param(job.name.split(".")[0], 'cluster_walltime') + " " + \
+                            config.param(job.name.split(".")[0], 'cluster_queue') + " " + \
+                            config.param(job.name.split(".")[0], 'cluster_cpu')
+                    } for job in step.jobs
+                ]} for step in pipeline.step_range
+            ]}, indent=4)

@@ -20,7 +20,7 @@ def deseq(
             ['differential_expression_deseq', 'module_mugqic_tools'],
             ['differential_expression_deseq', 'module_R']
         ],
-        command = """\
+        command="""\
 Rscript $R_TOOLS/deseq.R \\
   -d {design_file} \\
   -c {count_matrix} \\
@@ -43,7 +43,7 @@ def edger(
             ['differential_expression_edger', 'module_mugqic_tools'],
             ['differential_expression_edger', 'module_R']
         ],
-        command = """\
+        command="""\
 Rscript $R_TOOLS/edger.R \\
   -d {design_file} \\
   -c {count_matrix} \\
@@ -66,7 +66,7 @@ def goseq(
             ['differential_expression_goseq', 'module_mugqic_tools'],
             ['differential_expression_goseq', 'module_R']
         ],
-        command = """\
+        command="""\
 Rscript $R_TOOLS/goseq.R {other_options} \\
   -a {gene_size_file} \\
   -G {gene_ontology_file} \\

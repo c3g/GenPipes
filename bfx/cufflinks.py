@@ -8,13 +8,14 @@ from core.config import *
 from core.job import *
 
 def cuffcompare(gtf_files, output_prefix, gtf_list):
-    job = Job(
+    return Job(
         gtf_files,
         [output_prefix + ".combined.gtf", output_prefix + ".TranscriptList.tsv"],
-        [['cuffcompare', 'module_cufflinks'], ['cuffcompare', 'module_mugqic_tools']]
-    )
-
-    job.command = """\
+        [
+            ['cuffcompare', 'module_cufflinks'],
+            ['cuffcompare', 'module_mugqic_tools']
+        ],
+        command="""\
 mkdir -p {output_directory} && \\
 cuffcompare -T \\
   -o {output_prefix} \\
@@ -32,9 +33,8 @@ formatDenovoCombinedGTF.py \\
         reference_fasta=config.param('cuffcompare', 'genome_fasta', type='filepath'),
         gtf_files=" \\\n  ".join(gtf_files),
         gtf_list=gtf_list
+        )
     )
-
-    return job
 
 def cuffdiff(sample_replicate_group_files, gtf, output_directory):
 
@@ -44,13 +44,11 @@ def cuffdiff(sample_replicate_group_files, gtf, output_directory):
     for sample_replicate_files in sample_replicate_group_files:
         input_files.extend(sample_replicate_files)
 
-    job = Job(
+    return Job(
         input_files + [gtf],
         [os.path.join(output_directory, "isoform_exp.diff")],
-        [['cuffdiff', 'module_cufflinks']]
-    )
-
-    job.command = """\
+        [['cuffdiff', 'module_cufflinks']],
+        command="""\
 mkdir -p {output_directory} && \\
 cuffdiff {other_options} \\
   --frag-bias-correct {genome_fasta} \\
@@ -67,19 +65,16 @@ cuffdiff {other_options} \\
         gtf=gtf,
         # Join replicate bams per sample with a "," then join all sample replicate groups with a " "
         input_files=" \\\n  ".join([",".join(sample_replicate_files) for sample_replicate_files in sample_replicate_group_files])
+        )
     )
-
-    return job
 
 def cufflinks(input_bam, output_directory, gtf=None):
 
-    job = Job(
+    return Job(
         [input_bam],
         [os.path.join(output_directory, "transcripts.gtf"), os.path.join(output_directory, "isoforms.fpkm_tracking")],
-        [['cufflinks', 'module_cufflinks']]
-    )
-
-    job.command = """\
+        [['cufflinks', 'module_cufflinks']],
+        command="""\
 mkdir -p {output_directory} && \\
 cufflinks -q {other_options}{gtf} \\
   --max-bundle-frags {max_bundle_frags} \\
@@ -94,20 +89,16 @@ cufflinks -q {other_options}{gtf} \\
         output_directory=output_directory,
         num_threads=config.param('cufflinks', 'threads', type='posint'),
         input_bam=input_bam
+        )
     )
-
-    return job
 
 def cuffmerge(sample_file, output_directory, gtf_file=None):
 
-    job = Job(
+    return Job(
         [sample_file],
         [os.path.join(output_directory, "merged.gtf")],
-        [['cuffmerge', 'module_cufflinks']]
-    )
-    
-
-    job.command = """\
+        [['cuffmerge', 'module_cufflinks']],
+        command="""\
 cuffmerge {gtf} \\
   --ref-sequence {reference_sequence} \\
   -o {output_directory} \\
@@ -118,19 +109,16 @@ cuffmerge {gtf} \\
         output_directory=output_directory,
         num_threads=config.param('cuffmerge', 'threads', type='posint'),
         sample_file=sample_file
+        )
     )
-
-    return job
 
 def cuffquant(input_bam, output_directory, gtf):
 
-    job = Job(
+    return Job(
         [input_bam,gtf],
         [os.path.join(output_directory, "abundances.cxb")],
-        [['cuffquant', 'module_cufflinks']]
-    )
-
-    job.command = """\
+        [['cuffquant', 'module_cufflinks']],
+        command="""\
 mkdir -p {output_directory} && \\
 cuffquant -q {other_options} \\
   --max-bundle-frags {max_bundle_frags} \\
@@ -146,19 +134,16 @@ cuffquant -q {other_options} \\
         output_directory=output_directory,
         num_threads=config.param('cuffquant', 'threads', type='posint'),
         input_bam=input_bam
+        )
     )
-
-    return job
 
 def cuffnorm(input_files, gtf, output_directory, sample_labels):
 
-    job = Job(
+    return Job(
         input_files + [gtf],
         [os.path.join(output_directory, "isoforms.fpkm_table"), os.path.join(output_directory, "isoforms.count_table"), os.path.join(output_directory, "isoforms.attr_table")],
-        [['cuffnorm', 'module_cufflinks']]
-    )
-
-    job.command = """\
+        [['cuffnorm', 'module_cufflinks']],
+        command="""\
 mkdir -p {output_directory} && \\
 cuffnorm -q {other_options} \\
   --library-type {library_type} \\
@@ -174,8 +159,5 @@ cuffnorm -q {other_options} \\
         num_threads=config.param('cuffnorm', 'threads', type='posint'),
         sample_labels=sample_labels,
         input_files=" \\\n  ".join(input_files)
+        )
     )
-
-    return job
-
-

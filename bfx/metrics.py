@@ -15,7 +15,7 @@ def dna_sample_metrics(input_directory, output, experiment_type="unknown"):
             ['dna_sample_metrics', 'module_R'],
             ['dna_sample_metrics', 'module_mugqic_tools']
         ],
-        command = """\
+        command="""\
 Rscript $R_TOOLS/DNAsampleMetrics.R \\
   {input_directory} \\
   {output} \\
@@ -26,9 +26,15 @@ Rscript $R_TOOLS/DNAsampleMetrics.R \\
     ))
 
 def rnaseqc(sample_file, output_directory, is_single_end=False, gtf_file=None, reference=None, ribosomal_fasta=None):
-    job = Job([sample_file], [os.path.join(output_directory, "index.html")], [['rnaseqc', 'module_java'], ['rnaseqc', 'module_bwa'], ['rnaseqc', 'module_rnaseqc']])
-
-    job.command = """\
+    return Job(
+        [sample_file],
+        [os.path.join(output_directory, "index.html")],
+        [
+            ['rnaseqc', 'module_java'],
+            ['rnaseqc', 'module_bwa'],
+            ['rnaseqc', 'module_rnaseqc']
+        ],
+        command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $RNASEQC_JAR \\
   -BWArRNA {reference_ribosomal_rna_fasta} \\
   -n {number_top_transcripts} \\
@@ -47,14 +53,18 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $RNASEQC_JAR
         gtf_file=gtf_file if gtf_file else config.param('rnaseqc', 'gtf', type='filepath'),
         other_options=" \\\n  " + config.param('rnaseqc', 'other_options', required=False) if config.param('rnaseqc', 'other_options', required=False) else "",
         single_end=" \\\n  -singleEnd" if is_single_end else ""
+        )
     )
 
-    return job
-
 def rpkm_saturation(count_file, gene_size_file, rpkm_directory, saturation_directory):
-    job = Job([count_file], [saturation_directory + ".zip"], [['rpkm_saturation', 'module_R'], ['rpkm_saturation', 'module_mugqic_tools']])
-
-    job.command = """\
+    return Job(
+        [count_file],
+        [saturation_directory + ".zip"],
+        [
+            ['rpkm_saturation', 'module_R'],
+            ['rpkm_saturation', 'module_mugqic_tools']
+        ],
+        command="""\
 Rscript $R_TOOLS/rpkmSaturation.R \\
   {count_file} \\
   {gene_size_file} \\
@@ -69,27 +79,36 @@ zip -r {saturation_directory}.zip {saturation_directory}""".format(
         saturation_directory=saturation_directory,
         threads=config.param('rpkm_saturation', 'threads', type='posint'),
         other_options=config.param('rpkm_saturation', 'other_options', required=False)
+        ),
+        removable_files=[saturation_directory]
     )
 
-    return job
-
 def snv_graph_metrics(list, output_basename):
-    job = Job([list], [output_basename + ".snvGraphMetrics_listFiles.txt"], [['snv_graph_metrics', 'module_R'], ['snv_graph_metrics', 'module_mugqic_tools']])
-
-    job.command = """\
+    return Job(
+        [list],
+        [output_basename + ".snvGraphMetrics_listFiles.txt"],
+        [
+            ['snv_graph_metrics', 'module_R'],
+            ['snv_graph_metrics', 'module_mugqic_tools']
+        ],
+        command="""\
 Rscript $R_TOOLS/snvGraphMetrics.R \\
   {list} \\
   {output_basename}""".format(
         list=list,
         output_basename=output_basename
+        )
     )
 
-    return job
-
 def vcf_stats(input, output, list):
-    job = Job([input], [output, list], [['vcf_stats', 'module_python'], ['vcf_stats', 'module_mugqic_tools']])
-
-    job.command = """\
+    return Job(
+        [input],
+        [output, list],
+        [
+            ['vcf_stats', 'module_python'],
+            ['vcf_stats', 'module_mugqic_tools']
+        ],
+        command="""\
 python $PYTHON_TOOLS/vcfStats.py \\
   -v {input} \\
   -d {dictionary} \\
@@ -99,6 +118,5 @@ python $PYTHON_TOOLS/vcfStats.py \\
         dictionary=config.param('vcf_stats', 'genome_dictionary', type='filepath'),
         output=output,
         list=list
+        )
     )
-
-    return job

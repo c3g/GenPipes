@@ -25,11 +25,16 @@ def resolve_readset_coverage_bed(readset):
 # If per RG != 0 is given there will be multiple outputs, so output is a prefix
 # If per RG == 0 or undef, output is an actual file.
 def basefreq(input, output, positions, per_rg):
-    job = Job([input, positions], [output], [['bvatools_basefreq', 'module_java'], ['bvatools_basefreq', 'module_bvatools']])
-
     threads = config.param('bvatools_basefreq', 'threads', type='int')
 
-    job.command = """\
+    return Job(
+        [input, positions],
+        [output],
+        [
+            ['bvatools_basefreq', 'module_java'],
+            ['bvatools_basefreq', 'module_bvatools']
+        ],
+        command="""\
 java {java_other_options} -Xmx{ram} -jar $BVATOOLS_JAR \\
   basefreq \\
   --pos {positions} \\
@@ -42,17 +47,19 @@ java {java_other_options} -Xmx{ram} -jar $BVATOOLS_JAR \\
         threads=" \\\n  --useIndex --threads " + str(threads) if threads > 1 else "",
         input=input,
         output=output
+        ),
+        removable_files=[output]
     )
 
-    return job
-
 def depth_of_coverage(input, output, coverage_bed, reference_genome="", other_options=""):
-    job = Job([input, coverage_bed], [output], [['bvatools_depth_of_coverage', 'module_java'], ['bvatools_depth_of_coverage', 'module_bvatools']])
-
-    if not reference_genome:
-        reference_genome=config.param('bvatools_depth_of_coverage', 'genome_fasta', type='filepath')
-
-    job.command = """\
+    return Job(
+        [input, coverage_bed],
+        [output],
+        [
+            ['bvatools_depth_of_coverage', 'module_java'],
+            ['bvatools_depth_of_coverage', 'module_bvatools']
+        ],
+        command="""\
 java {java_other_options} -Xmx{ram} -jar $BVATOOLS_JAR \\
   depthofcoverage {other_options} \\
   --ref {reference_genome}{intervals} \\
@@ -61,16 +68,15 @@ java {java_other_options} -Xmx{ram} -jar $BVATOOLS_JAR \\
         java_other_options=config.param('bvatools_depth_of_coverage', 'java_other_options'),
         ram=config.param('bvatools_depth_of_coverage', 'ram'),
         other_options=other_options,
-        reference_genome=reference_genome,
+        reference_genome=reference_genome if reference_genome else config.param('bvatools_depth_of_coverage', 'genome_fasta', type='filepath'),
         intervals=" \\\n  --intervals " + coverage_bed if coverage_bed else "",
         input=input,
         output=output
+        )
     )
 
-    return job
-
 def extract_sclip(bamFile, output_prefix, flank="200"):
-    job = Job(
+    return Job(
         [bamFile], 
         [
           output_prefix + ".sc.bam", 
@@ -81,11 +87,8 @@ def extract_sclip(bamFile, output_prefix, flank="200"):
         [
           ['bvatools_ratiobaf', 'module_java'], 
           ['bvatools_ratiobaf', 'module_bvatools']
-        ])
-
-    reference_dictionary = config.param('bvatools_ratiobaf', 'genome_dictionary', type='filepath')
-
-    job.command = """\
+        ],
+        command="""\
 java {java_other_options} -Xmx{ram} -jar $BVATOOLS_JAR \\
   extractsclip {other_options} \\
   --bam {bamFile} \\
@@ -105,14 +108,18 @@ java {java_other_options} -Xmx{ram} -jar $BVATOOLS_JAR \\
         minMappingQuality=config.param('extract_sclip', 'min_mapping_quality'),
         threads=config.param('extract_sclip', 'threads'),
         output_prefix=output_prefix
+        )
     )
 
-    return job
-
 def groupfixmate(input, output):
-    job = Job([input], [output], [['bvatools_groupfixmate', 'module_java'], ['bvatools_groupfixmate', 'module_bvatools']])
-
-    job.command = """\
+    return Job(
+        [input],
+        [output],
+        [
+            ['bvatools_groupfixmate', 'module_java'],
+            ['bvatools_groupfixmate', 'module_bvatools']
+        ],
+        command="""\
 java {java_other_options} -Xmx{ram} -jar $BVATOOLS_JAR \\
   groupfixmate \\
   --level 1 \\
@@ -122,16 +129,19 @@ java {java_other_options} -Xmx{ram} -jar $BVATOOLS_JAR \\
         ram=config.param('bvatools_groupfixmate', 'ram'),
         input=input,
         output=output
+        ),
+        removable_files=[output]
     )
 
-    return job
-
 def ratiobaf(basefreq, output_prefix, positions):
-    job = Job([basefreq, positions], [output_prefix + ".png"], [['bvatools_ratiobaf', 'module_java'], ['bvatools_ratiobaf', 'module_bvatools']])
-
-    reference_dictionary = config.param('bvatools_ratiobaf', 'genome_dictionary', type='filepath')
-
-    job.command = """\
+    return Job(
+        [basefreq, positions],
+        [output_prefix + ".png"],
+        [
+            ['bvatools_ratiobaf', 'module_java'],
+            ['bvatools_ratiobaf', 'module_bvatools']
+        ],
+        command="""\
 java {java_other_options} -Xmx{ram} -jar $BVATOOLS_JAR \\
   ratiobaf {other_options} \\
   --refdict {reference_dictionary} \\
@@ -141,26 +151,30 @@ java {java_other_options} -Xmx{ram} -jar $BVATOOLS_JAR \\
         java_other_options=config.param('bvatools_ratiobaf', 'java_other_options'),
         ram=config.param('bvatools_ratiobaf', 'ram'),
         other_options=config.param('bvatools_ratiobaf', 'other_options', required=False),
-        reference_dictionary=reference_dictionary,
+        reference_dictionary=config.param('bvatools_ratiobaf', 'genome_dictionary', type='filepath'),
         positions=positions,
         basefreq=basefreq,
         output_prefix=output_prefix
+        )
     )
 
-    return job
-
 def readsqc(read1, read2, type, region_name, output_directory):
-    job = Job([read1, read2], [output_directory + os.sep + "mpsQC_" + region_name + "_stats.xml"], [['bvatools_readsqc', 'module_java'], ['bvatools_readsqc', 'module_bvatools']])
-
     threads = config.param('bvatools_readsqc', 'threads', type='int', required=False)
 
-    command =  """\
+    return Job(
+        [read1, read2],
+        [output_directory + os.sep + "mpsQC_" + region_name + "_stats.xml"],
+        [
+            ['bvatools_readsqc', 'module_java'],
+            ['bvatools_readsqc', 'module_bvatools']
+        ],
+        command="""\
 java {java_other_options} -Xmx{ram} -jar $BVATOOLS_JAR \\
-readsqc {other_options} \\
---regionName {region_name} \\
---type {type} \\
---output {output_directory} \\
---read1 {read1}""".format(
+  readsqc {other_options} \\
+  --regionName {region_name} \\
+  --type {type} \\
+  --output {output_directory} \\
+  --read1 {read1}{read2}""".format(
         java_other_options=config.param('bvatools_readsqc', 'java_other_options'),
         ram=config.param('bvatools_readsqc', 'ram'),
         other_options=config.param('bvatools_readsqc', 'other_options', required=False),
@@ -168,17 +182,7 @@ readsqc {other_options} \\
         type=type,
         output_directory=output_directory,
         read1=read1,
-        threads=" \\\n --threads " + str(threads) if threads > 1 else "",
+        read2=" \\\n  --read2 " + read2 if read2 else "",
+        threads=" \\\n  --threads " + str(threads) if threads > 1 else ""
+        )
     )
-
-    if (read2):
-        command += " --read2 {read2}".format(read2=read2)
-
-    job.command = command
-
-    return job
-
-
-
-
-

@@ -25,7 +25,7 @@ def reference(
             ['mummer_reference', 'module_mummer'],
             ['mummer_reference', 'module_gnuplot']
         ],
-        command = """\
+        command="""\
 promer --maxmatch \\
   --mincluster {c} \\
   --prefix {prefix1} \\
@@ -71,7 +71,7 @@ def self(
             ['mummer_self', 'module_mummer'],
             ['mummer_self', 'module_gnuplot']
         ],
-        command = """\
+        command="""\
 nucmer --maxmatch \\
   --mincluster {c} \\
   --prefix {prefix1} \\

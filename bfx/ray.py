@@ -22,7 +22,7 @@ def ray(pathOut, pair1=[], pair2=[], single=[], options=""):
         strSingle = strSingle + "-s " + single[i] + " "
         inputList.append(single[i])
         
-    job = Job(
+    return Job(
         inputList, 
         [#TODO add output files
          os.path.join(pathOut, "Scaffolds.fasta"),
@@ -32,10 +32,8 @@ def ray(pathOut, pair1=[], pair2=[], single=[], options=""):
          ['DEFAULT', 'module_gcc'],
          ['DEFAULT', 'module_openmpi'],
          ['DEFAULT', 'module_ray']
-        ]
-    )
-    
-    job.command = """\
+        ],
+        command="""\
 mpiexec {optionmpi} Ray -k {kmer} \\
   {pair} \\
   {single} \\
@@ -48,6 +46,5 @@ mpiexec {optionmpi} Ray -k {kmer} \\
         pair=strPair,
         single=strSingle,
         output=pathOut
+        )
     )
-
-    return job
