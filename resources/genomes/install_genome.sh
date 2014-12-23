@@ -31,11 +31,11 @@ init_install() {
   VCF=$SPECIES.$ASSEMBLY.$SOURCE$VERSION.vcf.gz
   GO=$SPECIES.$ASSEMBLY.$SOURCE$VERSION.GO.tsv
 
-  echo Installing genome for:
-  echo species: $SPECIES
-  echo assembly: $ASSEMBLY
-  echo source: $SOURCE
-  echo in: $INSTALL_DIR
+  echo "Installing genome for:"
+  echo "species: $SPECIES"
+  echo "assembly: $ASSEMBLY"
+  echo "source: $SOURCE"
+  echo "in: $INSTALL_DIR"
   echo
 
   # Create install directory with permissions if necessary
@@ -43,6 +43,17 @@ init_install() {
 
   # Create subdirectories
   mkdir -p $DOWNLOAD_DIR $LOG_DIR $GENOME_DIR $ANNOTATIONS_DIR
+}
+
+is_url_valid() {
+  URL=$1
+
+  set +e
+  wget `dirname $URL`/ -O - | grep `basename $URL`
+  EXIT_CODE=$?
+  set -e
+
+  return $EXIT_CODE
 }
 
 download_path() {
@@ -56,7 +67,7 @@ download_url() {
   URL=$1
 
   echo
-  echo Downloading $URL...
+  echo "Downloading $URL..."
   echo
 
   cd $DOWNLOAD_DIR
@@ -92,35 +103,23 @@ set_urls() {
     fi
   
     # Check if a genome primary assembly is available for this species, otherwise use the toplevel assembly
-    set +e
-    wget --spider $GENOME_URL
-    EXIT_CODE=$?
-    set -e
-    if [ $EXIT_CODE != 0 ]
+    if ! is_url_valid $GENOME_URL
     then
-      echo Primary assembly not available for $SPECIES, use toplevel assembly instead
+      echo "Primary assembly not available for $SPECIES, use toplevel assembly instead"
       GENOME_URL=${GENOME_URL/primary_assembly/toplevel}
     fi
 
     # Check if a VCF is available for this species
-    set +e
-    wget --spider $VCF_URL
-    EXIT_CODE=$?
-    set -e
-    if [ $EXIT_CODE != 0 ]
+    if ! is_url_valid $VCF_URL
     then
-      echo VCF not available for $SPECIES
+      echo "VCF not available for $SPECIES"
       VCF_URL=
     fi
 
     # Check if a VCF tabix index is available for this species
-    set +e
-    wget --spider $VCF_TBI_URL
-    EXIT_CODE=$?
-    set -e
-    if [ $EXIT_CODE != 0 ]
+    if ! is_url_valid $VCF_TBI_URL
     then
-      echo VCF tabix index not available for $SPECIES
+      echo "VCF tabix index not available for $SPECIES"
       VCF_TBI_URL=
     fi
   
@@ -159,7 +158,7 @@ set_urls() {
     then
       VCF_URL=$URL_PREFIX/vcf/${SPECIES,,}/${SPECIES,,}.vcf.gz
     else
-      echo VCF not available for $SPECIES
+      echo "VCF not available for $SPECIES"
     fi
     # Retrieve species short name e.g. "athaliana" for "Arabidopsis_thaliana"
     SPECIES_SHORT_NAME=`echo ${SPECIES:0:1}${SPECIES#*_} | tr [:upper:] [:lower:]`
@@ -221,13 +220,13 @@ cmd_or_job() {
   if is_genome_big
   then
     echo
-    echo Submitting $JOB_PREFIX as job...
+    echo "Submitting $JOB_PREFIX as job..."
     echo
     CORES=${2:-1}  # Nb cores = 2nd param if defined else 1
     echo "${!CMD}" | qsub -m ae -M $JOB_MAIL -W umask=0002 -d $INSTALL_DIR -j oe -o $LOG_DIR/${JOB_PREFIX}_$TIMESTAMP.log -N $JOB_PREFIX.$GENOME_FASTA -l walltime=24:00:0 -q sw -l nodes=1:ppn=$CORES
   else
     echo
-    echo Running $JOB_PREFIX...
+    echo "Running $JOB_PREFIX..."
     echo
     echo "${!CMD}" | bash
   fi
@@ -239,13 +238,13 @@ create_picard_index() {
   if ! is_up2date $GENOME_DICT
   then
     echo
-    echo Creating genome Picard sequence dictionary...
+    echo "Creating genome Picard sequence dictionary..."
     echo
     module load $module_picard $module_java
     java -jar $PICARD_HOME/CreateSequenceDictionary.jar REFERENCE=$GENOME_DIR/$GENOME_FASTA OUTPUT=$GENOME_DICT GENOME_ASSEMBLY=${GENOME_FASTA/.fa} > $LOG_DIR/picard_$TIMESTAMP.log 2>&1
   else
     echo
-    echo Genome Picard sequence dictionary up to date... skipping
+    echo "Genome Picard sequence dictionary up to date... skipping"
     echo
   fi
 }
@@ -254,13 +253,13 @@ create_samtools_index() {
   if ! is_up2date $GENOME_DIR/$GENOME_FASTA.fai
   then
     echo
-    echo Creating genome SAMtools FASTA index...
+    echo "Creating genome SAMtools FASTA index..."
     echo
     module load $module_samtools
     samtools faidx $GENOME_DIR/$GENOME_FASTA > $LOG_DIR/samtools_$TIMESTAMP.log 2>&1
   else
     echo
-    echo Genome SAMtools FASTA index up to date... skipping
+    echo "Genome SAMtools FASTA index up to date... skipping"
     echo
   fi
 }
@@ -270,7 +269,7 @@ create_bwa_index() {
   if ! is_up2date $INDEX_DIR/$GENOME_FASTA.sa
   then
     echo
-    echo Creating genome BWA index...
+    echo "Creating genome BWA index..."
     echo
     BWA_CMD="\
 mkdir -p $INDEX_DIR && \
@@ -282,7 +281,7 @@ chmod -R ug+rwX,o+rX $INDEX_DIR \$LOG"
     cmd_or_job BWA_CMD 2
   else
     echo
-    echo Genome BWA index up to date... skipping
+    echo "Genome BWA index up to date... skipping"
     echo
   fi
 }
@@ -296,7 +295,7 @@ create_bowtie2_tophat_index() {
   if ! is_up2date $BOWTIE2_INDEX_PREFIX.[1-4].bt2 $BOWTIE2_INDEX_PREFIX.rev.[12].bt2 $TOPHAT_INDEX_PREFIX.[1-4].bt2 $TOPHAT_INDEX_PREFIX.rev.[12].bt2
   then
     echo
-    echo Creating genome Bowtie 2 index and gtf TopHat index...
+    echo "Creating genome Bowtie 2 index and gtf TopHat index..."
     echo
     BOWTIE2_TOPHAT_CMD="\
 mkdir -p $BOWTIE2_INDEX_DIR && \
@@ -314,7 +313,7 @@ chmod -R ug+rwX,o+rX \$TOPHAT_INDEX_DIR \$LOG"
   cmd_or_job BOWTIE2_TOPHAT_CMD 2
   else
     echo
-    echo Genome Bowtie 2 index and gtf TopHat index up to date... skipping
+    echo "Genome Bowtie 2 index and gtf TopHat index up to date... skipping"
     echo
   fi
 }
@@ -333,7 +332,7 @@ create_star_index() {
     if ! is_up2date $INDEX_DIR/SAindex
     then
       echo
-      echo Creating STAR index with sjdbOverhang $sjdbOverhang...
+      echo "Creating STAR index with sjdbOverhang $sjdbOverhang..."
       echo
       STAR_CMD="\
 mkdir -p $INDEX_DIR && \
@@ -344,7 +343,7 @@ chmod -R ug+rwX,o+rX $INDEX_DIR \$LOG"
       cmd_or_job STAR_CMD $runThreadN STAR_${sjdbOverhang}_CMD
     else
       echo
-      echo STAR index with sjdbOverhang $sjdbOverhang up to date... skipping
+      echo "STAR index with sjdbOverhang $sjdbOverhang up to date... skipping"
       echo
     fi
   done
@@ -355,7 +354,7 @@ create_ncrna_bwa_index() {
   if ! is_up2date $INDEX_DIR/$NCRNA.sa
   then
     echo
-    echo Creating ncRNA BWA index...
+    echo "Creating ncRNA BWA index..."
     echo
     mkdir -p $INDEX_DIR
     ln -s -f -t $INDEX_DIR ../$NCRNA
@@ -363,7 +362,7 @@ create_ncrna_bwa_index() {
     bwa index $INDEX_DIR/$NCRNA > $LOG_DIR/ncrna_bwa_$TIMESTAMP.log 2>&1
   else
     echo
-    echo ncRNA BWA index up to date... skipping
+    echo "ncRNA BWA index up to date... skipping"
     echo
   fi
 }
@@ -375,7 +374,7 @@ create_rrna_bwa_index() {
     if ! is_up2date $INDEX_DIR/$RRNA.sa
     then
       echo
-      echo Creating rRNA BWA index...
+      echo "Creating rRNA BWA index..."
       echo
       mkdir -p $INDEX_DIR
       ln -s -f -t $INDEX_DIR ../$RRNA
@@ -383,7 +382,7 @@ create_rrna_bwa_index() {
       bwa index $INDEX_DIR/$RRNA > $LOG_DIR/ncrna_bwa_$TIMESTAMP.log 2>&1
     else
       echo
-      echo rRNA BWA index up to date... skipping
+      echo "rRNA BWA index up to date... skipping"
       echo
     fi
   fi
@@ -395,7 +394,7 @@ create_gene_annotations() {
   if ! is_up2date $ANNOTATION_PREFIX.genes.length.tsv $ANNOTATION_PREFIX.geneid2Symbol.tsv $ANNOTATION_PREFIX.genes.tsv
   then
     echo
-    echo Creating gene ID, symbol, length annotations from GTF...
+    echo "Creating gene ID, symbol, length annotations from GTF..."
     echo
     cd $ANNOTATIONS_DIR
     module load $module_R
@@ -419,7 +418,7 @@ write.table(genes, file = paste0(annotation, ".genes.tsv"), sep='\t', quote=F, r
 EOF
   else
     echo
-    echo Gene ID, symbol, length annotations from GTF up to date... skipping
+    echo "Gene ID, symbol, length annotations from GTF up to date... skipping"
     echo
   fi
 }
@@ -431,7 +430,7 @@ create_go_annotations() {
     if ! is_up2date $ANNOTATIONS_DIR/$GO
     then
       echo
-      echo Retrieving GO annotations using BioMart...
+      echo "Retrieving GO annotations using BioMart..."
       echo
       module load $module_R
       module load $module_mugqic_R_packages
@@ -443,7 +442,7 @@ write.table(res, file="$ANNOTATIONS_DIR/$GO", quote=FALSE,sep='\t',col.names=FAL
 EOF
     else
       echo
-      echo GO annotations up to date... skipping
+      echo "GO annotations up to date... skipping"
       echo
     fi
   fi
@@ -452,16 +451,26 @@ EOF
 get_vcf_dbsnp() {
   if [[ ! -z "${VCF_URL:-}" && ! -z "${VCF_TBI_URL:-}" ]]
   then
-    # Try to retrieve VCF dbSNP latest version (set +e since zgrep exit code != 0 if not found)
-    set +e
-    DBSNP_VERSION=`zcat $ANNOTATIONS_DIR/$VCF | grep -v "^#" | cut -f8 | grep -Po "dbSNP_\d+" | sed s/dbSNP_// | sort -ug | tail -1`
-    set -e
-    echo Found VCF dbSNP version: $DBSNP_VERSION
-    if [ $DBSNP_VERSION ]
+    if ! is_up2date $ANNOTATIONS_DIR/$VCF $ANNOTATIONS_DIR/$VCF.tbi
     then
-      # Add dbSNP version to VCF filename
-      ln -s -f $VCF $ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP$DBSNP_VERSION.vcf.gz
-      ln -s -f $VCF.tbi $ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP$DBSNP_VERSION.vcf.gz.tbi
+      echo
+      echo "Retrieving dbSNP latest version from VCF..."
+      echo
+      # Set +e since zgrep exit code != 0 if not found
+      set +e
+      DBSNP_VERSION=`zcat $ANNOTATIONS_DIR/$VCF | grep -v "^#" | cut -f8 | grep -Po "dbSNP_\d+" | sed s/dbSNP_// | sort -ug | tail -1`
+      set -e
+      echo "Found VCF dbSNP version: $DBSNP_VERSION"
+      if [ $DBSNP_VERSION ]
+      then
+        # Add dbSNP version to VCF filename
+        ln -s -f $VCF $ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP$DBSNP_VERSION.vcf.gz
+        ln -s -f $VCF.tbi $ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP$DBSNP_VERSION.vcf.gz.tbi
+      fi
+    else
+      echo
+      echo "VCF up to date... assuming dbSNP symlink too and skipping"
+      echo
     fi
   fi
 }
@@ -511,6 +520,7 @@ build_files() {
   create_star_index
   create_ncrna_bwa_index
   create_rrna_bwa_index
+
   create_gene_annotations
   create_go_annotations
 }
