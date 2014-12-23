@@ -71,7 +71,7 @@ class PacBioAssembly(common.MUGQICPipeline):
         """
 
         jobs = []
-        jobs.append(Job([], [config.param('smrtanalysis_filtering', 'celera_settings'), config.param('smrtanalysis_filtering', 'filtering_settings')], command="cp -a -f " + os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "protocols") + " .", name="smrtanalysis_filtering.config"))
+        jobs.append(Job([os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])),config.param('smrtanalysis_filtering', 'celera_settings')),os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])),config.param('smrtanalysis_filtering', 'filtering_settings'))], [config.param('smrtanalysis_filtering', 'celera_settings'), config.param('smrtanalysis_filtering', 'filtering_settings')], command="cp -a -f " + os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "protocols") + " .", name="smrtanalysis_filtering.config"))
 
         for sample in self.samples:
             fofn = os.path.join("fofns", sample.name + ".fofn")
