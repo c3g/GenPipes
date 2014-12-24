@@ -43,7 +43,7 @@ then
   cp -a ${!INSTALL_HOME}/archive/$ARCHIVE .
 else
   echo "Archive $ARCHIVE not in ${!INSTALL_HOME}/archive/: downloading it..."
-  wget http://www.software_lab.org/download/$ARCHIVE  ## TO BE MODIFIED WITH SPECIFIC URL
+  wget http://www.software_lab.org/download/$ARCHIVE -O $ARCHIVE  ## TO BE MODIFIED WITH SPECIFIC URL
 fi
 (unzip|tar zxvf|tar jxvf) $ARCHIVE  ## TO BE MODIFIED WITH SPECIFIC COMMAND
 

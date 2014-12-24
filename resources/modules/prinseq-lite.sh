@@ -36,7 +36,7 @@ then
   cp -a ${!INSTALL_HOME}/archive/$ARCHIVE .
 else
   echo "Archive $ARCHIVE not in ${!INSTALL_HOME}/archive/: downloading it..."
-  wget http://sourceforge.net/projects/prinseq/files/standalone/$ARCHIVE/download
+  wget http://sourceforge.net/projects/prinseq/files/standalone/$ARCHIVE/download -O $ARCHIVE
 fi
 tar zxvf $ARCHIVE
 
