@@ -627,16 +627,29 @@ END
         of the software and methods used during the analysis, together with the full list of parameters
         passed to the pipeline main script.
         """
-
+        output_files=[
+            "metrics/trimming.stats",
+            "tracks.zip",
+            "metrics/rnaseqRep.zip",
+            "exploratory/top_sd_heatmap_cufflinks_logFPKMs.pdf",
+            "cuffnorm/isoforms.fpkm_table", 
+            "cuffnorm/isoforms.count_table",
+            "cuffnorm/isoforms.attr_table",
+            "metrics/saturation.zip"
+        ]
+        
+        for contrast in self.contrasts:
+                 output_files.append(os.path.join("DGE", contrast.name, "gene_ontology_results.csv"))
+                 output_files.append(os.path.join("cuffdiff", contrast.name, "isoform_exp.diff"))
+                 
+        
         job = gq_seq_utils.report(
             [config_file.name for config_file in self.args.config],
             self.output_dir,
             "RNAseq",
             self.output_dir
         )
-        job.input_files = [
-            "metrics/trimming.stats"
-        ]
+        job.input_files = output_files
         job.name = "gq_seq_utils_report"
         return [job]
 
