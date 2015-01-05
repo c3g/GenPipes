@@ -1,42 +1,44 @@
 #!/bin/bash
+# Exit immediately on error
+set -eu -o pipefail
 
-###################
-################### BEDTools
-###################
-VERSION="2.17.0"
-INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/bedtools
-INSTALL_DOWNLOAD=$MUGQIC_INSTALL_HOME/software/bedtools/tmp
+SOFTWARE=bedtools
+VERSION=2.17.0
+ARCHIVE=BEDTools.v$VERSION.tar.gz
+ARCHIVE_URL=http://bedtools.googlecode.com/files/$ARCHIVE
+SOFTWARE_DIR=$SOFTWARE-$VERSION
 
-mkdir -p $INSTALL_PATH $INSTALL_DOWNLOAD
-cd $INSTALL_DOWNLOAD
+# 'MUGQIC_INSTALL_HOME_DEV' for development, 'MUGQIC_INSTALL_HOME' for production (don't write '$' before!)
+# 'MUGQIC_INSTALL_HOME' must be explicitely passed as first parameter, otherwise 'MUGQIC_INSTALL_HOME_DEV' is used
+INSTALL_HOME=${1:-MUGQIC_INSTALL_HOME_DEV}
 
-# Download and extract
-wget "http://bedtools.googlecode.com/files/BEDTools.v$VERSION.tar.gz"
-tar -xvf BEDTools.v$VERSION.tar.gz
+# Specific commands to extract and build the software
+# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
+# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
+build() {
+  cd $INSTALL_DOWNLOAD
+  tar zxvf $ARCHIVE
 
-# Change the program directory name since different tar.gz archive versions have different names
-mv *-$VERSION $INSTALL_PATH/bedtools-$VERSION
-cd $INSTALL_PATH/bedtools-$VERSION
-make -j8
-cd ..
-chmod -R g+w $INSTALL_PATH/bedtools-$VERSION
+  cd $SOFTWARE_DIR
+  make -j8
+
+  # Install software
+  cd $INSTALL_DOWNLOAD
+  mv -i $SOFTWARE_DIR $INSTALL_DIR/
+}
 
 # Module file
-echo "#%Module1.0
+MODULE_FILE="\
+#%Module1.0
 proc ModulesHelp { } {
-       puts stderr \"\tMUGQIC - BEDtools \"
+  puts stderr \"\tMUGQIC - $SOFTWARE \"
 }
-module-whatis \"MUGQIC - BEDtools  \"
-                      
-set             root               \$::env(MUGQIC_INSTALL_HOME)/software/bedtools/bedtools-$VERSION/bin
-prepend-path    PATH               \$root
-" > $VERSION
+module-whatis \"$SOFTWARE\"
 
-# Version file
-echo "#%Module1.0
-set ModulesVersion \"$VERSION\"
-" > .version
+set             root                \$::env($INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE_DIR
+prepend-path    PATH                \$root/bin
+"
 
-mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/bedtools
-mv .version $VERSION $MUGQIC_INSTALL_HOME/modulefiles/mugqic/bedtools/
-rm -rf $INSTALL_DOWNLOAD
+# Call generic module install script once all variables and functions have been set
+MODULE_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source $MODULE_INSTALL_SCRIPT_DIR/install_module.sh $@
