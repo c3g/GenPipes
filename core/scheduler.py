@@ -191,6 +191,8 @@ class DaemonScheduler(Scheduler):
                         "job_name": job.name,
                         "job_id": job.id,
                         "job_command": job.command_with_modules,
+                        "job_input_files": job.input_files,
+                        "job_output_files": job.output_files,
                         "job_dependencies": [dependency_job.id for dependency_job in job.dependency_jobs],
                         "job_cluster_options": {
                             # Cluster settings section must match job name prefix before first "."
