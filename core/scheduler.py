@@ -183,24 +183,28 @@ class DaemonScheduler(Scheduler):
 
     def json(self, pipeline):
         return json.dumps(
-            {'pipeline': [
-                {step.name: [
-                    {
+            {'pipeline': {
+                'output_dir': pipeline.output_dir,
+                'steps': [{
+                    'name': step.name,
+                    'jobs': [{
                         "job_name": job.name,
                         "job_id": job.id,
                         "job_command": job.command_with_modules,
                         "job_dependencies": [dependency_job.id for dependency_job in job.dependency_jobs],
-                        "job_cluster_options": 
+                        "job_cluster_options": {
                             # Cluster settings section must match job name prefix before first "."
                             # e.g. "[trimmomatic] cluster_cpu=..." for job name "trimmomatic.readset1"
-                            config.param(job.name.split(".")[0], 'cluster_submit_cmd') + " " + \
-                            config.param(job.name.split(".")[0], 'cluster_other_arg') + " " + \
-                            config.param(job.name.split(".")[0], 'cluster_work_dir_arg') + " " + pipeline.output_dir + " " + \
-                            config.param(job.name.split(".")[0], 'cluster_output_dir_arg') + " " + os.path.join(pipeline.output_dir, "job_output", step.name, job.name + ".o") + " " + \
-                            config.param(job.name.split(".")[0], 'cluster_job_name_arg') + " " + job.name + " " + \
-                            config.param(job.name.split(".")[0], 'cluster_walltime') + " " + \
-                            config.param(job.name.split(".")[0], 'cluster_queue') + " " + \
-                            config.param(job.name.split(".")[0], 'cluster_cpu')
-                    } for job in step.jobs
-                ]} for step in pipeline.step_range
-            ]}, indent=4)
+                            'cluster_submit_cmd': config.param(job.name.split(".")[0], 'cluster_submit_cmd'),
+                            'cluster_other_arg': config.param(job.name.split(".")[0], 'cluster_other_arg'),
+                            'cluster_work_dir_arg': config.param(job.name.split(".")[0], 'cluster_work_dir_arg') + " " + pipeline.output_dir,
+                            'cluster_output_dir_arg': config.param(job.name.split(".")[0], 'cluster_output_dir_arg') + " " + os.path.join(pipeline.output_dir, "job_output", step.name, job.name + ".o"),
+                            'cluster_job_name_arg': config.param(job.name.split(".")[0], 'cluster_job_name_arg') + " " + job.name,
+                            'cluster_walltime': config.param(job.name.split(".")[0], 'cluster_walltime'),
+                            'cluster_queue': config.param(job.name.split(".")[0], 'cluster_queue'),
+                            'cluster_cpu': config.param(job.name.split(".")[0], 'cluster_cpu')
+                        },
+                        "job_done": job.done
+                    } for job in step.jobs]
+                } for step in pipeline.step_range]
+            }}, indent=4)
