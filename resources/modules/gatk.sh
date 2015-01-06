@@ -1,37 +1,38 @@
 #!/bin/bash
+# Exit immediately on error
+set -eu -o pipefail
 
-###################
-################### GATK
-###################
-echo "You must download and copy it in the ${MUGQIC_INSTALL_HOME}/archive directory";
-echo "It can be found here:"
-echo "http://www.broadinstitute.org/gatk/download"
+SOFTWARE=GenomeAnalysisTK
 VERSION=3.2-2
-INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/GenomeAnalysisTK/GenomeAnalysisTK-$VERSION
+ARCHIVE=$SOFTWARE-$VERSION.tar.bz2
+echo "Prior to install the gatk module, you must download the archive $ARCHIVE manually, if not done already, from http://www.broadinstitute.org/gatk/download since it requires a license agreement.
+Once downloaded, copy it in \$MUGQIC_INSTALL_HOME_DEV/archive/ or \$MUGQIC_INSTALL_HOME/archive/"
+SOFTWARE_DIR=$SOFTWARE-$VERSION
 
-mkdir -p $INSTALL_PATH
-cd $INSTALL_PATH
-tar xjvf ${MUGQIC_INSTALL_HOME}/archive/GenomeAnalysisTK-3.2-2.tar.bz2
-chmod -R g+w $INSTALL_PATH
+# 'MUGQIC_INSTALL_HOME_DEV' for development, 'MUGQIC_INSTALL_HOME' for production (don't write '$' before!)
+# 'MUGQIC_INSTALL_HOME' must be explicitely passed as first parameter, otherwise 'MUGQIC_INSTALL_HOME_DEV' is used
+INSTALL_HOME=${1:-MUGQIC_INSTALL_HOME_DEV}
 
-echo "#%Module1.0
-
-proc ModulesHelp { } {
-        puts stderr "\tadd  GenomeAnalysisTK"
+# Specific commands to extract and build the software
+# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
+# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
+build() {
+  mkdir -p $INSTALL_DIR/$SOFTWARE_DIR
+  tar jxvf $INSTALL_DOWNLOAD/$ARCHIVE --directory=$INSTALL_DIR/$SOFTWARE_DIR
 }
 
-module-whatis "The Broads toolsuite to work with resequencing"
+# Module file
+MODULE_FILE="\
+#%Module1.0
+proc ModulesHelp { } {
+  puts stderr \"\tMUGQIC - $SOFTWARE \"
+}
+module-whatis \"$SOFTWARE\"
 
-set             root         $::env(MUGQIC_INSTALL_HOME)/software/GenomeAnalysisTK/GenomeAnalysisTK-$VERSION
-setenv          GATK_JAR     \$root/GenomeAnalysisTK.jar
-" > $VERSION
+set             root                \$::env($INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE_DIR
+setenv          GATK_JAR     \$root/$SOFTWARE.jar
+"
 
-# Version file
-echo "#%Module1.0
-set ModulesVersion \"$VERSION\"
-" > .version
-
-mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/GenomeAnalysisTK
-mv .version $VERSION $MUGQIC_INSTALL_HOME/modulefiles/mugqic/GenomeAnalysisTK/
-
-echo "Module is installed here: $MUGQIC_INSTALL_HOME/modulefiles/mugqic/GenomeAnalysisTK"
+# Call generic module install script once all variables and functions have been set
+MODULE_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source $MODULE_INSTALL_SCRIPT_DIR/install_module.sh $@
