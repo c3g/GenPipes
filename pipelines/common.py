@@ -109,9 +109,9 @@ class Illumina(MUGQICPipeline):
         """
         jobs = []
         for readset in self.readsets:
-            if readset.bam:
-                # If readset FASTQ files are available, skip this step
-                if not readset.fastq1:
+            # If readset FASTQ files are available, skip this step
+            if not readset.fastq1:
+                if readset.bam:
                     if readset.run_type == "PAIRED_END":
                         fastq1 = re.sub("\.bam$", ".pair1.fastq.gz", readset.bam)
                         fastq2 = re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)
@@ -124,8 +124,8 @@ class Illumina(MUGQICPipeline):
                     job = picard.sam_to_fastq(readset.bam, fastq1, fastq2)
                     job.name = "picard_sam_to_fastq." + readset.name
                     jobs.append(job)
-            else:
-                raise Exception("Error: BAM file not available for readset \"" + readset.name + "\"!")
+                else:
+                    raise Exception("Error: BAM file not available for readset \"" + readset.name + "\"!")
         return jobs
 
     def trimmomatic(self):
