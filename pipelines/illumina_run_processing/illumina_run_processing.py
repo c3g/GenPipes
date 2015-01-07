@@ -161,7 +161,7 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
 
     @property
     def number_of_mismatches(self):
-        return self.args.number_of_mismatches if (self.args.number_of_mismatches) else 1
+        return self.args.number_of_mismatches if (self.args.number_of_mismatches is not None) else 1
 
     @property
     def first_index(self):
@@ -170,6 +170,12 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
     @property
     def last_index(self):
         return self.args.last_index if (self.args.last_index) else 999
+
+    @property
+    def mask(self):
+        if not hasattr(self, "_mask"):
+            self._mask = self.get_mask()
+        return self._mask
 
     @property
     def steps(self):
@@ -280,7 +286,7 @@ java -Djava.io.tmpdir={tmp_dir}\\
 
         output_dir = self.output_dir + os.sep + "Unaligned." + str(self.lane_number)
         casava_sheet_prefix = config.param('fastq', 'casava_sample_sheet_prefix')
-        mask = self.get_mask()
+        mask = self.mask
         demultiplexing = False
 
         command = """\
@@ -740,7 +746,7 @@ configureBclToFastq.pl\\
             Only the samples of the chosen lane will be in the file.
             The sample indexes are trimmed according to the mask used.
         """
-        read_masks = self.get_mask().split(",")
+        read_masks = self.mask.split(",")
         has_single_index = self.has_single_index();
 
         csv_headers = ["FCID", "Lane", "SampleID" , "SampleRef", "Index", "Description",
