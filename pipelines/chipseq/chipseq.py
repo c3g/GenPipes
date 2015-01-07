@@ -14,6 +14,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 from core.config import *
 from core.job import *
 from core.pipeline import *
+from bfx.design import *
 
 from bfx import gq_seq_utils
 from bfx import picard
@@ -41,6 +42,11 @@ class ChipSeq(dnaseq.DnaSeq):
     [Here](https://bitbucket.org/mugqic/mugqic_pipelines/downloads/MUGQIC_Bioinfo_ChIP-Seq.pptx)
     is more information about ChIP-Seq pipeline that you may find interesting.
     """
+
+    def __init__(self):
+        # Add pipeline specific arguments
+        self.argparser.add_argument("-d", "--design", help="design file", type=file)
+        super(ChipSeq, self).__init__()
 
     def picard_mark_duplicates(self):
         """
@@ -89,6 +95,32 @@ makeTagDirectory \\
 
         return jobs
 
+    def qc_plots_R(self):
+        """
+        Sequencing quality metrics as tag count, tag autocorrelation, sequence bias and GC bias are generated.
+        """
+
+         # If --design <design_file> option is missing, self.contrasts call will raise an Exception
+        if self.contrasts:
+            design_file = os.path.relpath(self.args.design.name, self.output_dir)
+
+        return [Job(
+            [design_file] + [os.path.join("tags", sample.name, "tagInfo.txt") for sample in self.samples],
+            [os.path.join("graphs", sample.name + "_QC_Metrics.ps") for sample in self.samples],
+            [
+                ['qc_plots_R', 'module_mugqic_tools'],
+                ['qc_plots_R', 'module_R']
+            ],
+            command="""\
+mkdir -p graphs && \\
+Rscript $R_TOOLS/chipSeqGenerateQCMetrics.R \\
+  {design_file} \\
+  {output_dir}""".format(
+                design_file=design_file,
+                output_dir=self.output_dir
+            ),
+            name="qc_plots_R"
+        )]
 
     def gq_seq_utils_report(self):
         """
@@ -126,6 +158,7 @@ makeTagDirectory \\
             self.picard_merge_sam_files,
             self.picard_mark_duplicates,
             self.homer_make_tag_directory,
+            self.qc_plots_R,
             self.gq_seq_utils_report
         ]
 
