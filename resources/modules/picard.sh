@@ -5,15 +5,14 @@
 #
 
 SOFTWARE=picard
-VERSION=1.125
+VERSION=1.123
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/$SOFTWARE
 INSTALL_DOWNLOAD=$INSTALL_PATH/tmp
 mkdir -p $INSTALL_DOWNLOAD
 cd $INSTALL_DOWNLOAD
 
 # Download, extract, build
-#wget http://downloads.sourceforge.net/project/picard/picard-tools/$VERSION/$SOFTWARE-tools-$VERSION.zip
-wget https://github.com/broadinstitute/picard/releases/download/1.125/picard-tools-1.125.zip
+wget "https://github.com/broadinstitute/picard/releases/download/${VERSION}/picard-tools-${VERSION}.zip" -O picard-tools-${VERSION}.zip
 unzip $SOFTWARE-tools-$VERSION.zip
 
 # Add permissions and install software
