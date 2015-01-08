@@ -95,7 +95,37 @@ makeTagDirectory \\
 
         return jobs
 
-    def qc_plots_R(self):
+    def homer_make_ucsc_file(self):
+        """
+        Wiggle Track Format files are generated from the aligned reads using Homer.
+        The resulting files can be loaded in browsers like IGV or UCSC.
+        """
+
+        jobs = []
+        for sample in self.samples:
+            tag_dir = os.path.join("tags", sample.name)
+            bedgraph_dir = os.path.join("tracks", sample.name)
+            bedgraph_file = os.path.join(bedgraph_dir, sample.name + ".ucsc.bedGraph.gz")
+
+            jobs.append(Job(
+                [os.path.join(tag_dir, "tagInfo.txt")],
+                [bedgraph_file],
+                [['homer_make_ucsc_files', 'module_homer']],
+                command="""\
+mkdir -p {bedgraph_dir} && \\
+makeUCSCfile \\
+  {tag_dir} | \\
+gzip -1 -c > {bedgraph_file}""".format(
+                    tag_dir=tag_dir,
+                    bedgraph_dir=bedgraph_dir,
+                    bedgraph_file=bedgraph_file
+                ),
+                name="homer_make_ucsc_file." + sample.name
+            ))
+
+        return jobs
+
+    def qc_metrics(self):
         """
         Sequencing quality metrics as tag count, tag autocorrelation, sequence bias and GC bias are generated.
         """
@@ -121,6 +151,43 @@ Rscript $R_TOOLS/chipSeqGenerateQCMetrics.R \\
             ),
             name="qc_plots_R"
         )]
+
+    def macs2_callpeak(self):
+        """
+        Peaks are called using the MACS2 software. Different calling strategies are used for narrow and broad peaks.
+        The mfold parameter used in the model building step is estimated from a peak enrichment diagnosis run.
+        The estimated mfold lower bound is 10 and the estimated upper bound can vary between 15 and 100.
+        The default mfold parameter of MACS2 is [10,30].
+        """
+
+        jobs = []
+
+        for contrast in self.contrasts:
+            if contrast.treatments:
+                contrast_name = contrast.name.split(",")[0]
+                treatment_files = [os.path.join("alignment", sample.name, sample.name + ".sorted.bam") for sample in contrast.treatments]
+                control_files = [os.path.join("alignment", sample.name, sample.name + ".sorted.bam") for sample in contrast.controls]
+                output_dir = os.path.join("peak_call", contrast_name)
+
+                jobs.append(Job(
+                    treatment_files + control_files,
+                    [os.path.join(output_dir, contrast_name + "_peaks.xls")],
+                    [['macs2_callpeak', 'module_python'], ['macs2_callpeak', 'module_macs2']],
+                    command="""\
+mkdir -p {output_dir} && \\
+macs2 callpeak \\
+  --treatment \\
+  {treatment_files}{control_files} \\
+  --name {output_prefix_name}""".format(
+                        output_dir=output_dir,
+                        treatment_files=" \\\n  ".join(treatment_files),
+                        control_files=" \\\n  --control \\\n  " + " \\\n  ".join(control_files),
+                        output_prefix_name=os.path.join(output_dir, contrast_name)
+                    ),
+                    name="macs2_callpeak." + contrast_name
+                ))
+
+        return jobs
 
     def gq_seq_utils_report(self):
         """
@@ -158,7 +225,9 @@ Rscript $R_TOOLS/chipSeqGenerateQCMetrics.R \\
             self.picard_merge_sam_files,
             self.picard_mark_duplicates,
             self.homer_make_tag_directory,
-            self.qc_plots_R,
+            self.homer_make_ucsc_file,
+            self.qc_metrics,
+            self.macs2_callpeak,
             self.gq_seq_utils_report
         ]
 
