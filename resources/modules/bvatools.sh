@@ -1,50 +1,41 @@
 #!/bin/bash
-
-#
-# BVATools
-#
+# Exit immediately on error
+set -eu -o pipefail
 
 SOFTWARE=bvatools
 VERSION=1.4
-INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/$SOFTWARE
-INSTALL_DOWNLOAD=$INSTALL_PATH/tmp
-cd $MUGQIC_INSTALL_HOME/archive
+ARCHIVE=$SOFTWARE-$VERSION.zip
+ARCHIVE_URL=https://bitbucket.org/mugqic/$SOFTWARE/downloads/$ARCHIVE
+SOFTWARE_DIR=$SOFTWARE-$VERSION
 
-# Download, extract, build
-# Write here the specific commands to download, extract, build the software, typically similar to:
-wget https://bitbucket.org/mugqic/${SOFTWARE}/downloads/${SOFTWARE}-${VERSION}.zip -O ${SOFTWARE}-${VERSION}.zip
+# 'MUGQIC_INSTALL_HOME_DEV' for development, 'MUGQIC_INSTALL_HOME' for production (don't write '$' before!)
+# 'MUGQIC_INSTALL_HOME' must be explicitely passed as first parameter, otherwise 'MUGQIC_INSTALL_HOME_DEV' is used
+INSTALL_HOME=${1:-MUGQIC_INSTALL_HOME_DEV}
 
-mkdir -p $INSTALL_PATH
-cd $INSTALL_PATH
-unzip $MUGQIC_INSTALL_HOME/archive/$SOFTWARE-$VERSION.zip
+# Specific commands to extract and build the software
+# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
+# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
+build() {
+  cd $INSTALL_DOWNLOAD
+  unzip $ARCHIVE
 
-# Add permissions and install software
-chmod -R ug+w .
-chmod -R a+rX .
+  # Install software
+  mv -i $SOFTWARE_DIR $INSTALL_DIR/
+}
 
 # Module file
-echo "#%Module1.0
+MODULE_FILE="\
+#%Module1.0
 proc ModulesHelp { } {
-       puts stderr \"\tMUGQIC - $SOFTWARE \" ;
+  puts stderr \"\tMUGQIC - $SOFTWARE \"
 }
-module-whatis \"$SOFTWARE BAM and Variant analysis tools\" ;
-                      
-set             root                \$::env(MUGQIC_INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE-$VERSION ;
-setenv          BVATOOLS_HOME    \$root ;
-setenv          BVATOOLS_JAR     \$root/$SOFTWARE-$VERSION-full.jar ;
-" > $VERSION
+module-whatis \"$SOFTWARE\"
 
-################################################################################
-# Everything below this line should be generic and not modified
+set             root                \$::env($INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE_DIR
+setenv          BVATOOLS_HOME       \$root
+setenv          BVATOOLS_JAR        \$root/$SOFTWARE-$VERSION-full.jar
+"
 
-# Default module version file
-echo "#%Module1.0
-set ModulesVersion \"$VERSION\"" > .version
-
-# Add permissions and install module
-mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
-chmod -R ug+rwX $VERSION .version
-mv $VERSION .version $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
-
-# Clean up temporary installation files if any
-rm -rf $INSTALL_DOWNLOAD
+# Call generic module install script once all variables and functions have been set
+MODULE_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source $MODULE_INSTALL_SCRIPT_DIR/install_module.sh $@

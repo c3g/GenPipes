@@ -265,15 +265,6 @@ def parse_illumina_raw_readset_files(output_dir, run_type, nanuq_readset_file, c
         readset._operator = line['Operator']
         readset._project = line['SampleProject']
 
-        fastq_file_pattern = os.path.join(output_dir,
-                                          "Unaligned." + readset.lane,
-                                          'Project_' + readset.project,
-                                          'Sample_' + readset.name,
-                                          readset.name + '_' + readset.index + '_L00' + readset.lane + '_R{read_number}_001.fastq.gz')
-        readset.fastq1 = fastq_file_pattern.format(read_number = 1)
-        readset.fastq2 = fastq_file_pattern.format(read_number = 2) if readset.run_type == "PAIRED_END" else None;
-
-
     # Searching for a matching reference for the specified species
     for readset in readsets:
         # Find if any reference_assembly or reference_species for the specied species

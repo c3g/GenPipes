@@ -111,6 +111,7 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
     def readsets(self):
         if not hasattr(self, "_readsets"):
             self._readsets = self.load_readsets()
+            self.generate_illumina_lane_sample_sheet()
         return self._readsets
 
     @property
@@ -160,7 +161,7 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
 
     @property
     def number_of_mismatches(self):
-        return self.args.number_of_mismatches if (self.args.number_of_mismatches) else 1
+        return self.args.number_of_mismatches if (self.args.number_of_mismatches is not None) else 1
 
     @property
     def first_index(self):
@@ -169,6 +170,12 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
     @property
     def last_index(self):
         return self.args.last_index if (self.args.last_index) else 999
+
+    @property
+    def mask(self):
+        if not hasattr(self, "_mask"):
+            self._mask = self.get_mask()
+        return self._mask
 
     @property
     def steps(self):
@@ -279,7 +286,7 @@ java -Djava.io.tmpdir={tmp_dir}\\
 
         output_dir = self.output_dir + os.sep + "Unaligned." + str(self.lane_number)
         casava_sheet_prefix = config.param('fastq', 'casava_sample_sheet_prefix')
-        mask = self.get_mask()
+        mask = self.mask
         demultiplexing = False
 
         command = """\
@@ -739,7 +746,7 @@ configureBclToFastq.pl\\
             Only the samples of the chosen lane will be in the file.
             The sample indexes are trimmed according to the mask used.
         """
-        read_masks = self.get_mask().split(",")
+        read_masks = self.mask.split(",")
         has_single_index = self.has_single_index();
 
         csv_headers = ["FCID", "Lane", "SampleID" , "SampleRef", "Index", "Description",
@@ -778,6 +785,15 @@ configureBclToFastq.pl\\
                         index_to_use += "-"
                     index_to_use += index
 
+            readset._index = index_to_use if len(index_to_use) > 0 else "NoIndex"
+            fastq_file_pattern = os.path.join(self.output_dir,
+                                                "Unaligned." + readset.lane,
+                                                'Project_' + readset.project,
+                                                'Sample_' + readset.name,
+                                                readset.name + '_' + readset.index + '_L00' + readset.lane + '_R{read_number}_001.fastq.gz')
+            readset.fastq1 = fastq_file_pattern.format(read_number = 1)
+            readset.fastq2 = fastq_file_pattern.format(read_number = 2) if readset.run_type == "PAIRED_END" else None;
+
             csv_dict = {
                 "FCID" : readset.flow_cell,
                 "Lane" : self.lane_number,
@@ -806,11 +822,15 @@ configureBclToFastq.pl\\
             raise Exception("Multiple samples on a lane, but no indexes were read from the sequencer.")
 
         for i in range(0, len(run_index_lengths)):
-            min_sample_index_length = min(len(readset.index.split("-")[i])
+            min_sample_index_length = 0
+            try:
+               min_sample_index_length = min(len(readset.index.split("-")[i])
                                             for readset in
                                             self.readsets
                                             if (len(readset.index.split("-")) > i and len(readset.index.split("-")[i]) > 0)
                                           )
+            except ValueError:
+                pass # value already set to zero
             run_index_lengths[i] = 0 if (min_sample_index_length is None) else min(min_sample_index_length, run_index_lengths[i])
 
         return run_index_lengths
@@ -860,7 +880,6 @@ configureBclToFastq.pl\\
         )
 
     def submit_jobs(self):
-        self.generate_illumina_lane_sample_sheet()
         super(IlluminaRunProcessing, self).submit_jobs()
 
 

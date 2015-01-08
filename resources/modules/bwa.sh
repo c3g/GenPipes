@@ -1,59 +1,35 @@
 #!/bin/bash
-
-#
-# BWA
-#
+# Exit immediately on error
+set -eu -o pipefail
 
 SOFTWARE=bwa
 VERSION=0.7.10
+ARCHIVE=$SOFTWARE-$VERSION.tar.bz2
+ARCHIVE_URL=http://downloads.sourceforge.net/project/bio-bwa/$ARCHIVE
+SOFTWARE_DIR=$SOFTWARE-$VERSION
 
 # 'MUGQIC_INSTALL_HOME_DEV' for development, 'MUGQIC_INSTALL_HOME' for production (don't write '$' before!)
-INSTALL_HOME=MUGQIC_INSTALL_HOME
+# 'MUGQIC_INSTALL_HOME' must be explicitely passed as first parameter, otherwise 'MUGQIC_INSTALL_HOME_DEV' is used
+INSTALL_HOME=${1:-MUGQIC_INSTALL_HOME_DEV}
 
-# Indirection call to use $INSTALL_HOME value as variable name
-INSTALL_DIR=${!INSTALL_HOME}/software/$SOFTWARE
+# Specific commands to extract and build the software
+# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
+# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
+build() {
+  cd $INSTALL_DOWNLOAD
+  tar jxvf $ARCHIVE
 
-# Create install directory with permissions if necessary
-if [[ ! -d $INSTALL_DIR ]]
-then
-  mkdir $INSTALL_DIR
-  chmod ug+rwX,o+rX $INSTALL_DIR
-fi
+  cd $SOFTWARE_DIR
+  make -j8
 
-INSTALL_DOWNLOAD=$INSTALL_DIR/tmp
-mkdir $INSTALL_DOWNLOAD
-cd $INSTALL_DOWNLOAD
-
-# Download, extract, build
-# Write here the specific commands to download, extract, build the software, typically similar to:
-ARCHIVE=$SOFTWARE-$VERSION.tar.bz2
-# If archive was previously downloaded, use the local one, otherwise get it from remote site
-if [[ -f ${!INSTALL_HOME}/archive/$ARCHIVE ]]
-then
-  echo "Archive $ARCHIVE already in ${!INSTALL_HOME}/archive/: using it..."
-  cp -a ${!INSTALL_HOME}/archive/$ARCHIVE .
-else
-  echo "Archive $ARCHIVE not in ${!INSTALL_HOME}/archive/: downloading it..."
-  wget http://downloads.sourceforge.net/project/bio-bwa/$ARCHIVE
-fi
-tar jxvf $ARCHIVE
-
-SOFTWARE_DIR=$SOFTWARE-$VERSION
-cd $SOFTWARE_DIR
-make -j8
-
-# Add permissions and install software
-cd $INSTALL_DOWNLOAD
-chmod -R ug+rwX,o+rX .
-mv -i $SOFTWARE_DIR $INSTALL_DIR
-# Store archive if not already present or if different from the previous one
-if [[ ! -f ${!INSTALL_HOME}/archive/$ARCHIVE || `diff ${!INSTALL_HOME}/archive/$ARCHIVE $ARCHIVE` ]]
-then
-  mv -i $ARCHIVE ${!INSTALL_HOME}/archive/
-fi
+  # Install software
+  cd $INSTALL_DOWNLOAD
+  mv -i $SOFTWARE_DIR $INSTALL_DIR/
+}
 
 # Module file
-echo "#%Module1.0
+MODULE_FILE="\
+#%Module1.0
 proc ModulesHelp { } {
   puts stderr \"\tMUGQIC - $SOFTWARE \"
 }
@@ -61,28 +37,8 @@ module-whatis \"$SOFTWARE\"
 
 set             root                \$::env($INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE_DIR
 prepend-path    PATH                \$root
-" > $VERSION
+"
 
-################################################################################
-# Everything below this line should be generic and not modified
-
-# Default module version file
-echo "#%Module1.0
-set ModulesVersion \"$VERSION\"" > .version
-
-# Set module directory path by removing '_INSTALL_HOME' in $INSTALL_HOME and lowercasing the result
-MODULE_DIR=${!INSTALL_HOME}/modulefiles/`echo ${INSTALL_HOME/_INSTALL_HOME/} | tr '[:upper:]' '[:lower:]'`/$SOFTWARE
-
-# Create module directory with permissions if necessary
-if [[ ! -d $MODULE_DIR ]]
-then
-  mkdir $MODULE_DIR
-  chmod ug+rwX,o+rX $MODULE_DIR
-fi
-
-# Add permissions and install module
-chmod ug+rwX,o+rX $VERSION .version
-mv $VERSION .version $MODULE_DIR
-
-# Clean up temporary installation files if any
-rm -rf $INSTALL_DOWNLOAD
+# Call generic module install script once all variables and functions have been set
+MODULE_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source $MODULE_INSTALL_SCRIPT_DIR/install_module.sh $@
