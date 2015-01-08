@@ -365,9 +365,9 @@ echo "Sample\tBamFile\tNote
                 Job(command="mkdir -p raw_counts"),
                 htseq.htseq_count(
                     input_bam,
-                    config.param('htseq', 'gtf', type='filepath'),
+                    config.param('htseq_count', 'gtf', type='filepath'),
                     output_count,
-                    config.param('htseq', 'options'),
+                    config.param('htseq_count', 'options'),
                     stranded
                 )
             ], name="htseq_count." + sample.name)
