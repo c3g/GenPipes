@@ -50,7 +50,7 @@ then
   cp -a $ARCHIVE_DIR/$ARCHIVE $INSTALL_DOWNLOAD/
 else
   echo "Archive $ARCHIVE not in $ARCHIVE_DIR/: downloading it..."
-  wget $ARCHIVE_URL -O $INSTALL_DOWNLOAD/$ARCHIVE
+  wget --no-check-certificate $ARCHIVE_URL -O $INSTALL_DOWNLOAD/$ARCHIVE
 fi
 
 build $ARCHIVE
