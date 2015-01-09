@@ -2,21 +2,24 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=picard
-VERSION=1.123
-ARCHIVE=$SOFTWARE-tools-$VERSION.zip
-ARCHIVE_URL=https://github.com/broadinstitute/picard/releases/download/$VERSION/$ARCHIVE
-SOFTWARE_DIR=$SOFTWARE-tools-$VERSION
+SOFTWARE=MACS2
+VERSION=2.1.0.20140616
+PYTHON_VERSION=2.7.8
+
+ARCHIVE=$SOFTWARE-$VERSION.tar.gz
+ARCHIVE_URL=https://pypi.python.org/packages/source/M/MACS2/$ARCHIVE
+SOFTWARE_DIR=$SOFTWARE-$VERSION
 
 # Specific commands to extract and build the software
 # $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
 # $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
-  unzip $ARCHIVE
+  tar zxvf $ARCHIVE
 
-  # Install software
-  mv -i $SOFTWARE_DIR $INSTALL_DIR/
+  cd $SOFTWARE_DIR
+  module load mugqic/python/$PYTHON_VERSION
+  python setup.py install --prefix $INSTALL_DIR/$SOFTWARE_DIR
 }
 
 module_file() {
@@ -28,7 +31,8 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-setenv          PICARD_HOME         \$root
+prepend-path    PATH                \$root/bin
+prepend-path    PYTHONPATH          \$root/lib/python2.7/site-packages
 "
 }
 

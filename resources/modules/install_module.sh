@@ -14,7 +14,6 @@ create_dir() {
 }
 
 # 'MUGQIC_INSTALL_HOME_DEV' for development, 'MUGQIC_INSTALL_HOME' for production (don't write '$' before!)
-# 'MUGQIC_INSTALL_HOME' must be explicitely passed as first parameter, otherwise 'MUGQIC_INSTALL_HOME_DEV' is used
 if [[ ${1:-} == MUGQIC_INSTALL_HOME ]]
 then
   INSTALL_HOME=MUGQIC_INSTALL_HOME
@@ -51,7 +50,7 @@ then
   cp -a $ARCHIVE_DIR/$ARCHIVE $INSTALL_DOWNLOAD/
 else
   echo "Archive $ARCHIVE not in $ARCHIVE_DIR/: downloading it..."
-  wget $ARCHIVE_URL -O $INSTALL_DOWNLOAD/$ARCHIVE
+  wget --no-check-certificate $ARCHIVE_URL -O $INSTALL_DOWNLOAD/$ARCHIVE
 fi
 
 build $ARCHIVE
@@ -68,7 +67,7 @@ fi
 # Deploy module
 create_dir $MODULE_DIR
 # Surround variable with "" since it contains a multiline text
-echo "$MODULE_FILE" > $MODULE_DIR/$VERSION
+module_file > $MODULE_DIR/$VERSION
 # Default module version file
 echo "\
 #%Module1.0
@@ -79,3 +78,10 @@ chmod ug+rwX,o+rX-w $MODULE_DIR/$VERSION $MODULE_DIR/.version
 # Clean up temporary installation files if any
 cd
 rm -rf $INSTALL_DOWNLOAD
+
+echo
+echo "$SOFTWARE version $VERSION has been successfully installed in \$$INSTALL_HOME"
+if [[ $INSTALL_HOME == 'MUGQIC_INSTALL_HOME_DEV' ]]
+then
+  echo "To install module in production, 'MUGQIC_INSTALL_HOME' must be explicitely passed as first parameter (no '\$' before)"
+fi
