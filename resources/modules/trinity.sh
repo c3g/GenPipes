@@ -1,83 +1,48 @@
 #!/bin/bash
-
-#
-# Trinity
-#
+# Exit immediately on error
+set -eu -o pipefail
 
 SOFTWARE=trinity
 VERSION=20140413p1
-
-# 'MUGQIC_INSTALL_HOME_DEV' for development, 'MUGQIC_INSTALL_HOME' for production (don't write '$' before!)
-INSTALL_HOME=MUGQIC_INSTALL_HOME
-
-# Indirection call to use $INSTALL_HOME value as variable name
-INSTALL_DIR=${!INSTALL_HOME}/software/$SOFTWARE
-
-# Create install directory with permissions if necessary
-if [[ ! -d $INSTALL_DIR ]]
-then
-  mkdir $INSTALL_DIR
-  chmod ug+rwX,o+rX $INSTALL_DIR
-fi
-
-INSTALL_DOWNLOAD=$INSTALL_DIR/tmp
-mkdir $INSTALL_DOWNLOAD
-cd $INSTALL_DOWNLOAD
-
-# Download, extract, build
 ARCHIVE=${SOFTWARE}rnaseq_r$VERSION.tar.gz
-wget http://sourceforge.net/projects/trinityrnaseq/files/$ARCHIVE
-tar zxvf $ARCHIVE
-
+ARCHIVE_URL=http://downloads.sourceforge.net/project/trinityrnaseq/$ARCHIVE
 SOFTWARE_DIR=${SOFTWARE}rnaseq_r$VERSION
-cd $SOFTWARE_DIR
-# Set Makefile flags to compile jellyfish statically
-sed -i 's/cd trinity-plugins\/jellyfish \&\& \.\/configure.*/cd trinity-plugins\/jellyfish \&\& .\/configure CC=gcc CXX=g++ --enable-static --disable-shared --prefix=`pwd` \&\& $(MAKE) LDFLAGS=-all-static AM_CPPFLAGS="-Wall -Wnon-virtual-dtor -I"`pwd`/' Makefile
-# Disable "-" to "_" substitution in abundance matrix since we don't want sample names to be modified
-sed -ri 's/(\$file =\~ s\/\\-\/_\/g;)/#\1/' util/abundance_estimates_to_matrix.pl
-make
 
-# Add permissions and install archive
-cd $INSTALL_DOWNLOAD
-chmod -R ug+rwX,o+rX .
-mv -i $SOFTWARE_DIR $INSTALL_DIR
-mv -i $ARCHIVE ${!INSTALL_HOME}/archive
+# Specific commands to extract and build the software
+# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
+# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
+build() {
+  cd $INSTALL_DOWNLOAD
+  tar zxvf $ARCHIVE
 
-# Module file
-echo "#%Module1.0
-proc ModulesHelp { } {
-  puts stderr \"\tMUGQIC - $SOFTWARE \" ;
+  cd $SOFTWARE_DIR
+  sed -i 's/cd trinity-plugins\/jellyfish \&\& \.\/configure.*/cd trinity-plugins\/jellyfish \&\& .\/configure CC=gcc CXX=g++ --enable-static --disable-shared --prefix=`pwd` \&\& $(MAKE) LDFLAGS=-all-static AM_CPPFLAGS="-Wall -Wnon-virtual-dtor -I"`pwd`/' Makefile
+  # Disable "-" to "_" substitution in abundance matrix since we don't want sample names to be modified
+  sed -ri 's/(\$file =\~ s\/\\-\/_\/g;)/#\1/' util/abundance_estimates_to_matrix.pl
+  make
+
+  # Install software
+  cd $INSTALL_DOWNLOAD
+  mv -i $SOFTWARE_DIR $INSTALL_DIR/
 }
-module-whatis \"$SOFTWARE\" ;
 
-set             root                \$::env($INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE_DIR
-setenv          TRINITY_HOME        \$root ;
-prepend-path    PATH                \$root ;
-prepend-path    PATH                \$root/util ;
-prepend-path    PATH                \$root/util/RSEM_util ;
-prepend-path    PATH                \$root/Analysis/DifferentialExpression ;
-" > $VERSION
+module_file() {
+echo "\
+#%Module1.0
+proc ModulesHelp { } {
+  puts stderr \"\tMUGQIC - $SOFTWARE \"
+}
+module-whatis \"$SOFTWARE\"
 
-################################################################################
-# Everything below this line should be generic and not modified
+set             root                $INSTALL_DIR/$SOFTWARE_DIR
+prepend-path    PATH                \$root
+prepend-path    PATH                \$root/util
+prepend-path    PATH                \$root/util/RSEM_util
+prepend-path    PATH                \$root/Analysis/DifferentialExpression
+setenv          TRINITY_HOME        \$root
+"
+}
 
-# Default module version file
-echo "#%Module1.0
-set ModulesVersion \"$VERSION\"" > .version
-
-# Set module directory path by removing '_INSTALL_HOME' in $INSTALL_HOME and lowercasing the result
-MODULE_DIR=${!INSTALL_HOME}/modulefiles/`echo ${INSTALL_HOME/_INSTALL_HOME/} | tr '[:upper:]' '[:lower:]'`/$SOFTWARE
-
-# Create module directory with permissions if necessary
-if [[ ! -d $MODULE_DIR ]]
-then
-  mkdir $MODULE_DIR
-  chmod ug+rwX,o+rX $MODULE_DIR
-fi
-
-# Add permissions and install module
-chmod ug+rwX,o+rX $VERSION .version
-mv $VERSION .version $MODULE_DIR
-
-# Clean up temporary installation files if any
-rm -rf $INSTALL_DOWNLOAD
+# Call generic module install script once all variables and functions have been set
+MODULE_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source $MODULE_INSTALL_SCRIPT_DIR/install_module.sh $@
