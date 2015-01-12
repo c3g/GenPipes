@@ -323,6 +323,9 @@ configureBclToFastq.pl\\
         job.name = name="fastq." + self.run_id + "." + str(self.lane_number)
         jobs.append(job)
 
+        # don't depend on the notification command
+        self.add_copy_job_inputs(jobs)
+
         notification_command = config.param('fastq_notification', 'notification_command', required=False)
         if (notification_command):
             notification_command = notification_command.format(
@@ -334,10 +337,9 @@ configureBclToFastq.pl\\
                     run_id = self.run_id
             )
             # Use the same inputs and output of fastq job to send a notification each time the fastq job run
-            job = Job([input], outputs, name="fastq_notification." + self.run_id + "." + str(self.lane_number), command=notification_command)
+            job = Job([input], ["notificationFastqStart." + str(self.lane_number) + ".out"], name="fastq_notification." + self.run_id + "." + str(self.lane_number), command=notification_command)
             jobs.append(job)
 
-        self.add_copy_job_inputs(jobs)
         return jobs
 
     def align(self):

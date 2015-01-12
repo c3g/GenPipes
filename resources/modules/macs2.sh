@@ -2,19 +2,24 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=GenomeAnalysisTK
-VERSION=3.2-2
-ARCHIVE=$SOFTWARE-$VERSION.tar.bz2
-echo "Prior to install the gatk module, you must download the archive $ARCHIVE manually, if not done already, from http://www.broadinstitute.org/gatk/download since it requires a license agreement.
-Once downloaded, copy it in \$MUGQIC_INSTALL_HOME_DEV/archive/ or \$MUGQIC_INSTALL_HOME/archive/"
+SOFTWARE=MACS2
+VERSION=2.1.0.20140616
+PYTHON_VERSION=2.7.8
+
+ARCHIVE=$SOFTWARE-$VERSION.tar.gz
+ARCHIVE_URL=https://pypi.python.org/packages/source/M/MACS2/$ARCHIVE
 SOFTWARE_DIR=$SOFTWARE-$VERSION
 
 # Specific commands to extract and build the software
 # $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
 # $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
-  mkdir -p $INSTALL_DIR/$SOFTWARE_DIR
-  tar jxvf $INSTALL_DOWNLOAD/$ARCHIVE --directory=$INSTALL_DIR/$SOFTWARE_DIR
+  cd $INSTALL_DOWNLOAD
+  tar zxvf $ARCHIVE
+
+  cd $SOFTWARE_DIR
+  module load mugqic/python/$PYTHON_VERSION
+  python setup.py install --prefix $INSTALL_DIR/$SOFTWARE_DIR
 }
 
 module_file() {
@@ -26,7 +31,8 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-setenv          GATK_JAR            \$root/$SOFTWARE.jar
+prepend-path    PATH                \$root/bin
+prepend-path    PYTHONPATH          \$root/lib/python2.7/site-packages
 "
 }
 

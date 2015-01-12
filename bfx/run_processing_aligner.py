@@ -89,7 +89,7 @@ class BwaRunProcessingAligner(RunProcessingAligner):
         input_file_prefix = readset.bam + '.'
         input = input_file_prefix + "bam"
 
-        job = picard.collect_multiple_metrics(input, input_file_prefix + "all.metrics", reference_sequence=readset.reference_file)
+        job = picard.collect_multiple_metrics(input, input_file_prefix + "metrics", reference_sequence=readset.reference_file)
         job.name = "picard_collect_multiple_metrics." + readset.name + ".met"
         jobs.append(job)
 
@@ -117,13 +117,13 @@ class BwaRunProcessingAligner(RunProcessingAligner):
                 self.created_interval_lists.append(interval_list)
                 jobs.append(job)
 
-            job = picard.calculate_hs_metrics(input_file_prefix + "bam", input_file_prefix + "onTarget.tsv", interval_list, reference_sequence=readset.reference_file)
+            job = picard.calculate_hs_metrics(input_file_prefix + "bam", input_file_prefix + "metrics.onTarget.tsv", interval_list, reference_sequence=readset.reference_file)
             job.name = "picard_calculate_hs_metrics." + readset.name + ".hs"
             jobs.append(job)
 
         job = bvatools.depth_of_coverage(
                 input, 
-                input_file_prefix + "coverage.tsv", 
+                input_file_prefix + "metrics.coverage.tsv", 
                 full_coverage_bed, 
                 other_options = config.param('bvatools_depth_of_coverage', 'other_options', required=False),
                 reference_genome = readset.reference_file

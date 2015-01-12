@@ -1,50 +1,37 @@
 #!/bin/bash
-
-#
-# Cufflinks
-#
+# Exit immediately on error
+set -eu -o pipefail
 
 SOFTWARE=cufflinks
 VERSION=2.2.1
-INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/$SOFTWARE
-INSTALL_DOWNLOAD=$INSTALL_PATH/tmp
-mkdir -p $INSTALL_DOWNLOAD
-cd $INSTALL_DOWNLOAD
+ARCHIVE=$SOFTWARE-$VERSION.Linux_x86_64.tar.gz
+ARCHIVE_URL=http://cole-trapnell-lab.github.io/cufflinks/assets/downloads/$ARCHIVE
+SOFTWARE_DIR=$SOFTWARE-$VERSION.Linux_x86_64
 
-# Download, extract, build
-wget http://cufflinks.cbcb.umd.edu/downloads/$SOFTWARE-$VERSION.Linux_x86_64.tar.gz
-tar zxvf $SOFTWARE-$VERSION.Linux_x86_64.tar.gz
+# Specific commands to extract and build the software
+# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
+# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
+build() {
+  cd $INSTALL_DOWNLOAD
+  tar zxvf $ARCHIVE
 
-# Add permissions and install software
-cd $INSTALL_DOWNLOAD
-chmod -R ug+rwX .
-chmod -R o+rX .
-mv -i $SOFTWARE-$VERSION.Linux_x86_64 $INSTALL_PATH
-mv -i $SOFTWARE-$VERSION.Linux_x86_64.tar.gz $MUGQIC_INSTALL_HOME/archive
-
-# Module file
-echo "#%Module1.0
-proc ModulesHelp { } {
-       puts stderr \"\tMUGQIC - $SOFTWARE \"
+  # Install software
+  mv -i $SOFTWARE_DIR $INSTALL_DIR/
 }
-module-whatis \"$SOFTWARE  \"
 
-set             root                \$::env(MUGQIC_INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE-$VERSION.Linux_x86_64
+module_file() {
+echo "\
+#%Module1.0
+proc ModulesHelp { } {
+  puts stderr \"\tMUGQIC - $SOFTWARE \"
+}
+module-whatis \"$SOFTWARE\"
+
+set             root                $INSTALL_DIR/$SOFTWARE_DIR
 prepend-path    PATH                \$root
-" > $VERSION
+"
+}
 
-################################################################################
-# Everything below this line should be generic and not modified
-
-# Default module version file
-echo "#%Module1.0
-set ModulesVersion \"$VERSION\"" > .version
-
-# Add permissions and install module
-mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
-chmod -R ug+rwX $VERSION .version
-chmod -R o+rX $VERSION .version
-mv $VERSION .version $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
-
-# Clean up temporary installation files if any
-rm -rf $INSTALL_DOWNLOAD
+# Call generic module install script once all variables and functions have been set
+MODULE_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source $MODULE_INSTALL_SCRIPT_DIR/install_module.sh $@

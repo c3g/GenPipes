@@ -1,48 +1,37 @@
 #!/bin/bash
-
-#
-# Picard
-#
+# Exit immediately on error
+set -eu -o pipefail
 
 SOFTWARE=picard
 VERSION=1.123
-INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/$SOFTWARE
-INSTALL_DOWNLOAD=$INSTALL_PATH/tmp
-mkdir -p $INSTALL_DOWNLOAD
-cd $INSTALL_DOWNLOAD
+ARCHIVE=$SOFTWARE-tools-$VERSION.zip
+ARCHIVE_URL=https://github.com/broadinstitute/picard/releases/download/$VERSION/$ARCHIVE
+SOFTWARE_DIR=$SOFTWARE-tools-$VERSION
 
-# Download, extract, build
-wget "https://github.com/broadinstitute/picard/releases/download/${VERSION}/picard-tools-${VERSION}.zip" -O picard-tools-${VERSION}.zip
-unzip $SOFTWARE-tools-$VERSION.zip
+# Specific commands to extract and build the software
+# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
+# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
+build() {
+  cd $INSTALL_DOWNLOAD
+  unzip $ARCHIVE
 
-# Add permissions and install software
-cd $INSTALL_DOWNLOAD
-chmod -R ug+rwX .
-mv -i $SOFTWARE-tools-$VERSION $INSTALL_PATH
-mv -i $SOFTWARE-tools-$VERSION.zip $MUGQIC_INSTALL_HOME/archive
-
-# Module file
-echo "#%Module1.0
-proc ModulesHelp { } {
-       puts stderr \"\tMUGQIC - $SOFTWARE \" ;
+  # Install software
+  mv -i $SOFTWARE_DIR $INSTALL_DIR/
 }
-module-whatis \"$SOFTWARE  \" ;
-                      
-set             root                \$::env(MUGQIC_INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE-tools-$VERSION ;
-setenv          PICARD_HOME         \$root ;
-" > $VERSION
 
-################################################################################
-# Everything below this line should be generic and not modified
+module_file() {
+echo "\
+#%Module1.0
+proc ModulesHelp { } {
+  puts stderr \"\tMUGQIC - $SOFTWARE \"
+}
+module-whatis \"$SOFTWARE\"
 
-# Default module version file
-echo "#%Module1.0
-set ModulesVersion \"$VERSION\"" > .version
+set             root                $INSTALL_DIR/$SOFTWARE_DIR
+setenv          PICARD_HOME         \$root
+"
+}
 
-# Add permissions and install module
-mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
-chmod -R ug+rwX $VERSION .version
-mv $VERSION .version $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
-
-# Clean up temporary installation files if any
-rm -rf $INSTALL_DOWNLOAD
+# Call generic module install script once all variables and functions have been set
+MODULE_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source $MODULE_INSTALL_SCRIPT_DIR/install_module.sh $@
