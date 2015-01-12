@@ -31,6 +31,7 @@ set             root                $INSTALL_DIR/$SOFTWARE_DIR
 setenv          BVATOOLS_HOME       \$root
 setenv          BVATOOLS_JAR        \$root/$SOFTWARE-$VERSION-full.jar
 "
+}
 
 # Call generic module install script once all variables and functions have been set
 MODULE_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

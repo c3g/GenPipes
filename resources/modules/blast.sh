@@ -29,6 +29,7 @@ set             root                $INSTALL_DIR/$SOFTWARE_DIR
 prepend-path    PATH                \$root/bin
 prepend-path    BLASTDB             \$::env(MUGQIC_INSTALL_HOME)/genomes/blast_db
 "
+}
 
 # Call generic module install script once all variables and functions have been set
 MODULE_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
