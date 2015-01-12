@@ -43,7 +43,7 @@ show-snps -rlTC \\
   -x {x} \\
   {infile2} \\
   > {outfile2}""".format(
-        c=config.param('mummer', 'c', type='posint'),
+        c=config.param('mummer_reference', 'c', type='posint'),
         prefix1=prefix1,
         fasta_reference=fasta_reference,
         fasta_consensus=fasta_consensus,
@@ -51,7 +51,7 @@ show-snps -rlTC \\
         prefix2=prefix2,
         outfile=outfile,
         prefix3=prefix3,
-        x=config.param('mummer', 'x', type='posint'),
+        x=config.param('mummer_reference', 'x', type='posint'),
         infile2=infile2,
         outfile2=outfile2
     ))
@@ -81,7 +81,7 @@ mummerplot --png --layout --filter \\
   --title {title} \\
   --prefix {prefix2} \\
   {outfile}""".format(
-        c=config.param('mummer', 'c', type='posint'),
+        c=config.param('mummer_self', 'c', type='posint'),
         prefix1=prefix1,
         fasta_consensus=fasta_consensus,
         title=title,
