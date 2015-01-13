@@ -169,23 +169,42 @@ Rscript $R_TOOLS/chipSeqGenerateQCMetrics.R \\
                 control_files = [os.path.join("alignment", sample.name, sample.name + ".sorted.bam") for sample in contrast.controls]
                 output_dir = os.path.join("peak_call", contrast_name)
 
+                genome_index = csv.reader(open(config.param('macs2_callpeak', 'genome_fasta', type='filepath') + ".fai", 'rb'), delimiter='\t')
+                # 2nd column of genome index contains chromosome length
+                genome_size = sum([int(chromosome[1]) for chromosome in genome_index])
+
+                if contrast.name.split(",")[1] == 'B':  # Broad region
+                  other_options = " --broad --nomodel"
+                else:  # Narrow region
+                    if control_files:
+                        other_options = " --nomodel"
+                    else:
+                        other_options = " --fix-bimodal"
+
                 jobs.append(Job(
                     treatment_files + control_files,
                     [os.path.join(output_dir, contrast_name + "_peaks.xls")],
                     [['macs2_callpeak', 'module_python'], ['macs2_callpeak', 'module_macs2']],
                     command="""\
 mkdir -p {output_dir} && \\
-macs2 callpeak \\
+macs2 callpeak {format}{other_options} \\
+  --gsize {genome_size} \\
   --treatment \\
   {treatment_files}{control_files} \\
-  --name {output_prefix_name}""".format(
+  --name {output_prefix_name} \\
+  >& {output_prefix_name}.diag.macs.out""".format(
                         output_dir=output_dir,
+                        format="--format " + ("BAMPE" if self.run_type == "PAIRED_END" else "BAM"),
+                        other_options=other_options,
+                        genome_size=genome_size,
                         treatment_files=" \\\n  ".join(treatment_files),
-                        control_files=" \\\n  --control \\\n  " + " \\\n  ".join(control_files),
+                        control_files=" \\\n  --control \\\n  " + " \\\n  ".join(control_files) if control_files else " \\\n  --nolambda",
                         output_prefix_name=os.path.join(output_dir, contrast_name)
                     ),
                     name="macs2_callpeak." + contrast_name
                 ))
+            else:
+                log.warning("No treatment found for contrast " + contrast.name + "... skipping")
 
         return jobs
 
