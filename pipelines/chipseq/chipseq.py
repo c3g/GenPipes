@@ -80,7 +80,7 @@ class ChipSeq(dnaseq.DnaSeq):
             jobs.append(Job(
                 [alignment_file],
                 [os.path.join(output_dir, "tagInfo.txt")],
-                [['homer_make_tag_directory', 'module_homer']],
+                [['homer_make_tag_directory', 'module_samtools'], ['homer_make_tag_directory', 'module_homer']],
                 command="""\
 makeTagDirectory \\
   {output_dir} \\
