@@ -50,7 +50,7 @@ then
   cp -a $ARCHIVE_DIR/$ARCHIVE $INSTALL_DOWNLOAD/
 else
   echo "Archive $ARCHIVE not in $ARCHIVE_DIR/: downloading it..."
-  wget --no-check-certificate $ARCHIVE_URL -O $INSTALL_DOWNLOAD/$ARCHIVE
+  wget --no-check-certificate $ARCHIVE_URL --output-document=$INSTALL_DOWNLOAD/$ARCHIVE
 fi
 
 build $ARCHIVE
@@ -83,5 +83,5 @@ echo
 echo "$SOFTWARE version $VERSION has been successfully installed in \$$INSTALL_HOME"
 if [[ $INSTALL_HOME == 'MUGQIC_INSTALL_HOME_DEV' ]]
 then
-  echo "To install module in production, 'MUGQIC_INSTALL_HOME' must be explicitely passed as first parameter (no '\$' before)"
+  echo "To install module in production, type '$0 MUGQIC_INSTALL_HOME' (no '\$' before parameter)"
 fi
