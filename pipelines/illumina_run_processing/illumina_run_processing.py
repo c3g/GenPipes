@@ -153,7 +153,7 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
 
     @property
     def casava_sheet_file(self):
-        return self.args.casava_sheet_file if (self.args.casava_sheet_file) else self.output_dir + os.sep + "SampleSheet.nanuq.csv"
+        return self.args.casava_sheet_file.name if (self.args.casava_sheet_file) else self.output_dir + os.sep + "SampleSheet.nanuq.csv"
 
     @property
     def nanuq_readset_file(self):
@@ -846,7 +846,7 @@ configureBclToFastq.pl\\
         """ Download the sample sheets if required or asked for; call the load of these files and return a list of readsets."""
 
         # Casava sheet download
-        if (not self.args.casava_sheet_file or self.args.download):
+        if (not self.args.casava_sheet_file or self.args.force_download):
             if (not os.path.exists(self.casava_sheet_file) or self.args.force_download):
                 command = config.param('DEFAULT', 'fetch_casava_sheet_command').format(
                         output_directory = self.output_dir,
@@ -859,7 +859,7 @@ configureBclToFastq.pl\\
                     raise Exception("Unable to download the Casava Sheet.")
 
         # Nanuq readset file download
-        if (not self.args.readsets or self.args.download):
+        if (not self.args.readsets or self.args.force_download):
             if (not os.path.exists(self.nanuq_readset_file) or self.args.force_download):
                 command = config.param('DEFAULT', 'fetch_nanuq_sheet_command').format(
                         output_directory = self.output_dir,
