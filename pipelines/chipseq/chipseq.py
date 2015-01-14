@@ -48,6 +48,13 @@ class ChipSeq(dnaseq.DnaSeq):
         self.argparser.add_argument("-d", "--design", help="design file", type=file)
         super(ChipSeq, self).__init__()
 
+    def mappable_genome_size(self):
+        genome_index = csv.reader(open(config.param('DEFAULT', 'genome_fasta', type='filepath') + ".fai", 'rb'), delimiter='\t')
+        # 2nd column of genome index contains chromosome length
+        # HOMER and MACS2 mappable genome size (without repetitive features) is about 80 % of total size
+        return sum([int(chromosome[1]) for chromosome in genome_index]) * 0.8
+
+
     def picard_mark_duplicates(self):
         """
         Mark duplicates. Aligned reads per sample are duplicates if they have the same 5' alignment positions
@@ -164,16 +171,20 @@ Rscript $R_TOOLS/chipSeqGenerateQCMetrics.R \\
 
         for contrast in self.contrasts:
             if contrast.treatments:
-                contrast_name = contrast.name.split(",")[0]
+                if re.search("^\w[\w.-]*,[BN]$", contrast.name):
+                    contrast_name = contrast.name.split(",")[0]
+                    if contrast.name.split(",")[1] == 'B':
+                        contrast_type = 'broad'
+                    elif contrast.name.split(",")[1] == 'N':
+                        contrast_type = 'narrow'
+                else:
+                    raise Exception("Error: contrast name \"" + contrast.name + "\" is invalid (should be <contrast>,B for broad or <contrast>,N for narrow)!")
+
                 treatment_files = [os.path.join("alignment", sample.name, sample.name + ".sorted.bam") for sample in contrast.treatments]
                 control_files = [os.path.join("alignment", sample.name, sample.name + ".sorted.bam") for sample in contrast.controls]
                 output_dir = os.path.join("peak_call", contrast_name)
 
-                genome_index = csv.reader(open(config.param('macs2_callpeak', 'genome_fasta', type='filepath') + ".fai", 'rb'), delimiter='\t')
-                # 2nd column of genome index contains chromosome length
-                genome_size = sum([int(chromosome[1]) for chromosome in genome_index])
-
-                if contrast.name.split(",")[1] == 'B':  # Broad region
+                if contrast_type == 'broad':  # Broad region
                   other_options = " --broad --nomodel"
                 else:  # Narrow region
                     if control_files:
@@ -183,7 +194,7 @@ Rscript $R_TOOLS/chipSeqGenerateQCMetrics.R \\
 
                 jobs.append(Job(
                     treatment_files + control_files,
-                    [os.path.join(output_dir, contrast_name + "_peaks.xls")],
+                    [os.path.join(output_dir, contrast_name + "_peaks." + contrast_type + "Peak")],
                     [['macs2_callpeak', 'module_python'], ['macs2_callpeak', 'module_macs2']],
                     command="""\
 mkdir -p {output_dir} && \\
@@ -196,13 +207,87 @@ macs2 callpeak {format}{other_options} \\
                         output_dir=output_dir,
                         format="--format " + ("BAMPE" if self.run_type == "PAIRED_END" else "BAM"),
                         other_options=other_options,
-                        genome_size=genome_size,
+                        genome_size=self.mappable_genome_size(),
                         treatment_files=" \\\n  ".join(treatment_files),
                         control_files=" \\\n  --control \\\n  " + " \\\n  ".join(control_files) if control_files else " \\\n  --nolambda",
                         output_prefix_name=os.path.join(output_dir, contrast_name)
                     ),
                     name="macs2_callpeak." + contrast_name
                 ))
+            else:
+                log.warning("No treatment found for contrast " + contrast.name + "... skipping")
+
+        return jobs
+
+    def homer_annotate_peaks(self):
+        """
+        The peaks called previously are annotated with HOMER using RefSeq annotations for the reference genome.
+        Gene ontology and genome ontology analysis are also performed at this stage.
+        """
+
+        jobs = []
+
+        for contrast in self.contrasts:
+            if contrast.treatments:
+                if re.search("^\w[\w.-]*,[BN]$", contrast.name):
+                    contrast_name = contrast.name.split(",")[0]
+                    if contrast.name.split(",")[1] == 'B':
+                        contrast_type = 'broad'
+                    elif contrast.name.split(",")[1] == 'N':
+                        contrast_type = 'narrow'
+                else:
+                    raise Exception("Error: contrast name \"" + contrast.name + "\" is invalid (should be <contrast>,B for broad or <contrast>,N for narrow)!")
+
+                peak_file = os.path.join("peak_call", contrast_name, contrast_name + "_peaks." + contrast_type + "Peak")
+                output_dir = os.path.join("annotation", contrast_name)
+                annotation_file = os.path.join(output_dir, contrast_name + ".annotated.csv")
+
+                jobs.append(concat_jobs([
+                    Job(command="mkdir -p " + output_dir),
+                    Job(
+                        [peak_file],
+                        [annotation_file],
+                        [['homer_annotate_peaks', 'module_perl'], ['homer_annotate_peaks', 'module_homer']],
+                        command="""\
+annotatePeaks.pl \\
+  {peak_file} \\
+  {genome_fasta} \\
+  -gsize {genome_size} \\
+  -cons -CpG \\
+  -go {output_dir} \\
+  -genomeOntology {output_dir} \\
+  > {annotation_file}""".format(
+                            peak_file=peak_file,
+                            genome_fasta=config.param('homer_annotate_peaks', 'genome_fasta', type='filepath'),
+                            genome_size=self.mappable_genome_size(),
+                            output_dir=output_dir,
+                            annotation_file=annotation_file
+                        )
+                    ),
+                    Job(
+                        [annotation_file],
+                        [annotation_file],
+                        [['homer_annotate_peaks', 'module_perl'], ['homer_annotate_peaks', 'module_mugqic_tools']],
+                        command="""\
+perl -MReadMetrics -e 'ReadMetrics::parseHomerAnnotations(
+  "{annotation_file}",
+  "{output_prefix}",
+  {proximal_distance},
+  {distal_distance},
+  {distance5d_lower},
+  {distance5d_upper},
+  {gene_desert_size}
+)'""".format(
+                            annotation_file=annotation_file,
+                            output_prefix=os.path.join(output_dir, contrast_name),
+                            proximal_distance=config.param('homer_annotate_peaks', 'proximal_distance', type='int'),
+                            distal_distance=config.param('homer_annotate_peaks', 'distal_distance', type='int'),
+                            distance5d_lower=config.param('homer_annotate_peaks', 'distance5d_lower', type='int'),
+                            distance5d_upper=config.param('homer_annotate_peaks', 'distance5d_upper', type='int'),
+                            gene_desert_size=config.param('homer_annotate_peaks', 'gene_desert_size', type='int')
+                        )
+                    )
+                ], name="homer_annotate_peaks." + contrast_name))
             else:
                 log.warning("No treatment found for contrast " + contrast.name + "... skipping")
 
@@ -247,6 +332,7 @@ macs2 callpeak {format}{other_options} \\
             self.homer_make_ucsc_file,
             self.qc_metrics,
             self.macs2_callpeak,
+            self.homer_annotate_peaks,
             self.gq_seq_utils_report
         ]
 
