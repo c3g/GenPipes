@@ -33,9 +33,6 @@ build() {
   # DELTAFILTER and SHOWCOORDS are ignored by ./configure for minimus2 (bug?)
   perl -pi -e s,"DELTAFILTER\s+=.*,DELTAFILTER=`which delta-filter`,g" $INSTALL_DIR/$SOFTWARE_DIR/bin/minimus2
   perl -pi -e s,"SHOWCOORDS\s+=.*,SHOWCOORDS=`which show-coords`,g" $INSTALL_DIR/$SOFTWARE_DIR/bin/minimus2
-
-  # Update Python script shebang
-  #sed -i s,"#\!/usr/bin/perl,#\!/usr/bin/env perl,g" $INSTALL_DIR/$SOFTWARE_DIR/bin/*
 }
 
 module_file() {
