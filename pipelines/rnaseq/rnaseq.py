@@ -357,19 +357,25 @@ echo "Sample\tBamFile\tNote
         for sample in self.samples:
             alignment_file_prefix = os.path.join("alignment", sample.name, sample.name)
             input_bam = alignment_file_prefix + ".QueryNameSorted.bam"
-
+            
             # Count reads
             output_count = os.path.join("raw_counts", sample.name + ".readcounts.csv")
             stranded = "no" if config.param('DEFAULT', 'strand_info') == "fr-unstranded" else "reverse"
             job = concat_jobs([
                 Job(command="mkdir -p raw_counts"),
-                htseq.htseq_count(
-                    input_bam,
-                    config.param('htseq_count', 'gtf', type='filepath'),
-                    output_count,
-                    config.param('htseq_count', 'options'),
-                    stranded
-                )
+                pipe_jobs([
+                        samtools.view(
+                                input_bam,
+                                options="-F 4"
+                        ),
+                        htseq.htseq_count(
+                        "/dev/stdin",
+                        config.param('htseq_count', 'gtf', type='filepath'),
+                        output_count,
+                        config.param('htseq_count', 'options'),
+                        stranded
+                        )
+                ])
             ], name="htseq_count." + sample.name)
             jobs.append(job)
 
