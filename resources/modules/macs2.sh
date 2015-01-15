@@ -20,6 +20,9 @@ build() {
   cd $SOFTWARE_DIR
   module load mugqic/python/$PYTHON_VERSION
   python setup.py install --prefix $INSTALL_DIR/$SOFTWARE_DIR
+
+  # Update Python script shebang
+  sed -i s,"#\!/.*python,#\!/usr/bin/env python,g" $INSTALL_DIR/$SOFTWARE_DIR/bin/macs2
 }
 
 module_file() {

@@ -34,10 +34,10 @@ Usage
 #!text
 
 usage: dnaseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
-                 [-o OUTPUT_DIR] [-j {pbs,batch}] [-f] [--clean]
+                 [-o OUTPUT_DIR] [-j {pbs,batch,daemon}] [-f] [--clean]
                  [-l {debug,info,warning,error,critical}] [-r READSETS] [-v]
 
-Version: 2.0.1
+Version: 2.0.2
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
@@ -51,7 +51,7 @@ optional arguments:
                         step range e.g. '1-5', '3,6,7', '2,4-8'
   -o OUTPUT_DIR, --output-dir OUTPUT_DIR
                         output directory (default: current)
-  -j {pbs,batch}, --job-scheduler {pbs,batch}
+  -j {pbs,batch,daemon}, --job-scheduler {pbs,batch,daemon}
                         job scheduler type (default: pbs)
   -f, --force           force creation of jobs even if up to date (default:
                         false)
