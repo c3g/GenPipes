@@ -239,7 +239,8 @@ macs2 callpeak {format}{other_options} \\
             if contrast.treatments:
                 peak_file = os.path.join("peak_call", contrast.real_name, contrast.real_name + "_peaks." + contrast.type + "Peak")
                 output_dir = os.path.join("annotation", contrast.real_name)
-                annotation_file = os.path.join(output_dir, contrast.real_name + ".annotated.csv")
+                output_file_prefix = os.path.join(output_dir, contrast.real_name)
+                annotation_file = output_file_prefix + ".annotated.csv"
 
                 jobs.append(concat_jobs([
                     Job(command="mkdir -p " + output_dir),
@@ -265,7 +266,12 @@ annotatePeaks.pl \\
                     ),
                     Job(
                         [annotation_file],
-                        [annotation_file],
+                        [
+                            output_file_prefix + ".tss.stats.csv",
+                            output_file_prefix + ".exon.stats.csv",
+                            output_file_prefix + ".intron.stats.csv",
+                            output_file_prefix + ".tss.distance.csv"
+                        ],
                         [['homer_annotate_peaks', 'module_perl'], ['homer_annotate_peaks', 'module_mugqic_tools']],
                         command="""\
 perl -MReadMetrics -e 'ReadMetrics::parseHomerAnnotations(
