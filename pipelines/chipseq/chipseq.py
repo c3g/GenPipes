@@ -48,6 +48,23 @@ class ChipSeq(dnaseq.DnaSeq):
         self.argparser.add_argument("-d", "--design", help="design file", type=file)
         super(ChipSeq, self).__init__()
 
+    @property
+    def contrasts(self):
+        contrasts = super(ChipSeq, self).contrasts
+
+        # Parse contrasts to retrieve name and type
+        for contrast in contrasts:
+            if re.search("^\w[\w.-]*,[BN]$", contrast.name):
+                contrast.real_name = contrast.name.split(",")[0]
+                if contrast.name.split(",")[1] == 'B':
+                    contrast.type = 'broad'
+                elif contrast.name.split(",")[1] == 'N':
+                    contrast.type = 'narrow'
+            else:
+                raise Exception("Error: contrast name \"" + contrast.name + "\" is invalid (should be <contrast>,B for broad or <contrast>,N for narrow)!")
+
+        return contrasts
+
     def mappable_genome_size(self):
         genome_index = csv.reader(open(config.param('DEFAULT', 'genome_fasta', type='filepath') + ".fai", 'rb'), delimiter='\t')
         # 2nd column of genome index contains chromosome length
@@ -142,7 +159,7 @@ gzip -1 -c > {bedgraph_file}""".format(
             design_file = os.path.relpath(self.args.design.name, self.output_dir)
 
         return [Job(
-            [design_file] + [os.path.join("tags", sample.name, "tagInfo.txt") for sample in self.samples],
+            [os.path.join("tags", sample.name, "tagInfo.txt") for sample in self.samples],
             [os.path.join("graphs", sample.name + "_QC_Metrics.ps") for sample in self.samples],
             [
                 ['qc_plots_R', 'module_mugqic_tools'],
@@ -171,20 +188,11 @@ Rscript $R_TOOLS/chipSeqGenerateQCMetrics.R \\
 
         for contrast in self.contrasts:
             if contrast.treatments:
-                if re.search("^\w[\w.-]*,[BN]$", contrast.name):
-                    contrast_name = contrast.name.split(",")[0]
-                    if contrast.name.split(",")[1] == 'B':
-                        contrast_type = 'broad'
-                    elif contrast.name.split(",")[1] == 'N':
-                        contrast_type = 'narrow'
-                else:
-                    raise Exception("Error: contrast name \"" + contrast.name + "\" is invalid (should be <contrast>,B for broad or <contrast>,N for narrow)!")
-
                 treatment_files = [os.path.join("alignment", sample.name, sample.name + ".sorted.bam") for sample in contrast.treatments]
                 control_files = [os.path.join("alignment", sample.name, sample.name + ".sorted.bam") for sample in contrast.controls]
-                output_dir = os.path.join("peak_call", contrast_name)
+                output_dir = os.path.join("peak_call", contrast.real_name)
 
-                if contrast_type == 'broad':  # Broad region
+                if contrast.type == 'broad':  # Broad region
                   other_options = " --broad --nomodel"
                 else:  # Narrow region
                     if control_files:
@@ -194,7 +202,7 @@ Rscript $R_TOOLS/chipSeqGenerateQCMetrics.R \\
 
                 jobs.append(Job(
                     treatment_files + control_files,
-                    [os.path.join(output_dir, contrast_name + "_peaks." + contrast_type + "Peak")],
+                    [os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak")],
                     [['macs2_callpeak', 'module_python'], ['macs2_callpeak', 'module_macs2']],
                     command="""\
 mkdir -p {output_dir} && \\
@@ -210,9 +218,9 @@ macs2 callpeak {format}{other_options} \\
                         genome_size=self.mappable_genome_size(),
                         treatment_files=" \\\n  ".join(treatment_files),
                         control_files=" \\\n  --control \\\n  " + " \\\n  ".join(control_files) if control_files else " \\\n  --nolambda",
-                        output_prefix_name=os.path.join(output_dir, contrast_name)
+                        output_prefix_name=os.path.join(output_dir, contrast.real_name)
                     ),
-                    name="macs2_callpeak." + contrast_name
+                    name="macs2_callpeak." + contrast.real_name
                 ))
             else:
                 log.warning("No treatment found for contrast " + contrast.name + "... skipping")
@@ -229,18 +237,9 @@ macs2 callpeak {format}{other_options} \\
 
         for contrast in self.contrasts:
             if contrast.treatments:
-                if re.search("^\w[\w.-]*,[BN]$", contrast.name):
-                    contrast_name = contrast.name.split(",")[0]
-                    if contrast.name.split(",")[1] == 'B':
-                        contrast_type = 'broad'
-                    elif contrast.name.split(",")[1] == 'N':
-                        contrast_type = 'narrow'
-                else:
-                    raise Exception("Error: contrast name \"" + contrast.name + "\" is invalid (should be <contrast>,B for broad or <contrast>,N for narrow)!")
-
-                peak_file = os.path.join("peak_call", contrast_name, contrast_name + "_peaks." + contrast_type + "Peak")
-                output_dir = os.path.join("annotation", contrast_name)
-                annotation_file = os.path.join(output_dir, contrast_name + ".annotated.csv")
+                peak_file = os.path.join("peak_call", contrast.real_name, contrast.real_name + "_peaks." + contrast.type + "Peak")
+                output_dir = os.path.join("annotation", contrast.real_name)
+                annotation_file = os.path.join(output_dir, contrast.real_name + ".annotated.csv")
 
                 jobs.append(concat_jobs([
                     Job(command="mkdir -p " + output_dir),
@@ -279,7 +278,7 @@ perl -MReadMetrics -e 'ReadMetrics::parseHomerAnnotations(
   {gene_desert_size}
 )'""".format(
                             annotation_file=annotation_file,
-                            output_prefix=os.path.join(output_dir, contrast_name),
+                            output_prefix=os.path.join(output_dir, contrast.real_name),
                             proximal_distance=config.param('homer_annotate_peaks', 'proximal_distance', type='int'),
                             distal_distance=config.param('homer_annotate_peaks', 'distal_distance', type='int'),
                             distance5d_lower=config.param('homer_annotate_peaks', 'distance5d_lower', type='int'),
@@ -287,11 +286,94 @@ perl -MReadMetrics -e 'ReadMetrics::parseHomerAnnotations(
                             gene_desert_size=config.param('homer_annotate_peaks', 'gene_desert_size', type='int')
                         )
                     )
-                ], name="homer_annotate_peaks." + contrast_name))
+                ], name="homer_annotate_peaks." + contrast.real_name))
             else:
                 log.warning("No treatment found for contrast " + contrast.name + "... skipping")
 
         return jobs
+
+    def homer_find_motifs_genome(self):
+        """
+        De novo and known motif analysis per design are performed using HOMER.
+        """
+
+        jobs = []
+
+        for contrast in self.contrasts:
+            # Don't find motifs for broad peaks
+            if contrast.type == "narrow" and contrast.treatments:
+                peak_file = os.path.join("peak_call", contrast.real_name, contrast.real_name + "_peaks." + contrast.type + "Peak")
+                output_dir = os.path.join("annotation", contrast.real_name)
+
+                jobs.append(Job(
+                    [peak_file],
+                    [os.path.join(output_dir, "homerResults.html")],
+                    [
+                        ['homer_find_motifs_genome', 'module_perl'],
+                        ['homer_find_motifs_genome', 'module_weblogo'],
+                        ['homer_find_motifs_genome', 'module_homer']
+                    ],
+                    command="""\
+mkdir -p {output_dir} && \\
+findMotifsGenome.pl \\
+  {peak_file} \\
+  {genome_fasta} \\
+  {output_dir} \\
+  -preparsedDir {output_dir}/preparsed \\
+  -p {threads}""".format(
+                        peak_file=peak_file,
+                        genome_fasta=config.param('homer_find_motifs_genome', 'genome_fasta', type='filepath'),
+                        output_dir=output_dir,
+                        threads=config.param('homer_find_motifs_genome', 'threads', type='posint')
+                    ),
+                    name="homer_find_motifs_genome." + contrast.real_name
+                ))
+            else:
+                log.warning("No treatment found for contrast " + contrast.name + "... skipping")
+
+        return jobs
+
+    def annotation_graphs(self):
+        """
+        The peak location statistics. The following peak location statistics are generated per design:
+        proportions of the genomic locations of the peaks. The locations are: Gene (exon or intron),
+        Proximal ([0;2] kb upstream of a transcription start site), Distal ([2;10] kb upstream
+        of a transcription start site), 5d ([10;100] kb upstream of a transcription start site),
+        Gene desert (>= 100 kb upstream or downstream of a transcription start site), Other (anything
+        not included in the above categories); The distribution of peaks found within exons and introns;
+        The distribution of peak distance relative to the transcription start sites (TSS);
+        the Location of peaks per design.
+        """
+
+         # If --design <design_file> option is missing, self.contrasts call will raise an Exception
+        if self.contrasts:
+            design_file = os.path.relpath(self.args.design.name, self.output_dir)
+
+        input_files = []
+        for contrast in self.contrasts:
+            input_file_prefix = os.path.join("annotation", contrast.real_name, contrast.real_name)
+            input_files.append(input_file_prefix + ".tss.stats.csv")
+            input_files.append(input_file_prefix + ".exon.stats.csv")
+            input_files.append(input_file_prefix + ".intron.stats.csv")
+            input_files.append(input_file_prefix + ".tss.distance.csv")
+
+        return [Job(
+            input_files,
+            [os.path.join("graphs", "peak_stats.csv"), os.path.join("graphs", "Misc_Graphs.ps")],
+            [
+                ['annotation_graphs', 'module_mugqic_tools'],
+                ['annotation_graphs', 'module_R']
+            ],
+            command="""\
+mkdir -p graphs && \\
+Rscript $R_TOOLS/chipSeqgenerateAnnotationGraphs.R \\
+  {design_file} \\
+  {output_dir}""".format(
+                design_file=design_file,
+                output_dir=self.output_dir
+            ),
+            name="annotation_graphs"
+        )]
 
     def gq_seq_utils_report(self):
         """
@@ -333,6 +415,8 @@ perl -MReadMetrics -e 'ReadMetrics::parseHomerAnnotations(
             self.qc_metrics,
             self.macs2_callpeak,
             self.homer_annotate_peaks,
+            self.homer_find_motifs_genome,
+            self.annotation_graphs,
             self.gq_seq_utils_report
         ]
 
