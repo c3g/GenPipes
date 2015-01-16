@@ -1,31 +1,34 @@
 #!/bin/bash
+# Exit immediately on error
+set -eu -o pipefail
 
-###################
-################### RNASeqC
-###################
-VERSION="1.1.7" # Tue 29 Jan 10:10:21 2013 
-INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/rnaseqc/RNA-SeQC_v$VERSION # where to install..
-mkdir -p $INSTALL_PATH
-cd $INSTALL_PATH
-wget http://www.broadinstitute.org/cancer/cga/tools/rnaseqc/RNA-SeQC_v$VERSION.jar
+SOFTWARE=rnaseqc
+VERSION=1.1.7
+ARCHIVE=RNA-SeQC_v$VERSION.jar
+ARCHIVE_URL=http://www.broadinstitute.org/cancer/cga/tools/rnaseqc/$ARCHIVE
+SOFTWARE_DIR=${ARCHIVE/.jar/}
 
-# Module file
-echo "#%Module1.0
-proc ModulesHelp { } {
-       puts stderr \"\tMUGQIC - RNAseq QC software. Depends on bwa \"
+# Specific commands to extract and build the software
+# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
+# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
+build() {
+  mkdir -p $INSTALL_DIR/$SOFTWARE_DIR
+  cp $INSTALL_DOWNLOAD/$ARCHIVE $INSTALL_DIR/$SOFTWARE_DIR/
 }
-module-whatis \"MUGQIC -Java tool to generate RNA QC html report \"
-                      
-set             root                \$::env(MUGQIC_INSTALL_HOME)/software/rnaseqc/RNA-SeQC_v$VERSION/RNA-SeQC_v$VERSION.jar
-setenv          RNASEQC_JAR        \$root
-" > $VERSION
 
-# version file
-echo "#%Module1.0
-set ModulesVersion \"$VERSION\"
-" > .version
+module_file() {
+echo "\
+#%Module1.0
+proc ModulesHelp { } {
+  puts stderr \"\tMUGQIC - $SOFTWARE \"
+}
+module-whatis \"$SOFTWARE\"
 
-mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/rnaseqc
-mv .version $VERSION $MUGQIC_INSTALL_HOME/modulefiles/mugqic/rnaseqc
+set             root                $INSTALL_DIR/$SOFTWARE_DIR
+setenv          RNASEQC_JAR         \$root/$ARCHIVE
+"
+}
 
-
+# Call generic module install script once all variables and functions have been set
+MODULE_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source $MODULE_INSTALL_SCRIPT_DIR/install_module.sh $@

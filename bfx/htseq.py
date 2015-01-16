@@ -7,7 +7,7 @@ import os
 from core.config import *
 from core.job import *
 
-def htseq_count(input, gtf, output, options="", stranded="no"):
+def htseq_count(input, gtf, output, options="", stranded="no",input_type="sam"):
     return Job(
         [input],
         [output],
@@ -15,13 +15,14 @@ def htseq_count(input, gtf, output, options="", stranded="no"):
         command="""\
 htseq-count {options} \\
   --stranded={stranded} \\
-  --format=bam \\
+  --format={input_type} \\
   {input} \\
   {gtf}{output}""".format(
         options=options,
         stranded=stranded,
         input=input,
         gtf=gtf,
-        output=" \\\n  > " + output if output else ""
+        output=" \\\n  > " + output if output else "",
+        input_type=input_type
         )
     )
