@@ -369,7 +369,7 @@ echo "Sample\tBamFile\tNote
                                 options="-F 4"
                         ),
                         htseq.htseq_count(
-                        "/dev/stdin",
+                        "-",
                         config.param('htseq_count', 'gtf', type='filepath'),
                         output_count,
                         config.param('htseq_count', 'options'),
@@ -400,7 +400,7 @@ mkdir -p {output_directory} && \\
 gtf2tmpMatrix.awk \\
   {reference_gtf} \\
   {output_directory}/tmpMatrix.txt && \\
-HEAD='Gene\tSymbol' && \\
+HEAD='Gene\\tSymbol' && \\
 for read_count_file in \\
   {read_count_files}
 do
@@ -408,9 +408,9 @@ do
   join -1 1 -2 1 <(sort -k1,1 {output_directory}/tmpMatrix.txt) {output_directory}/tmpSort.txt > {output_directory}/tmpMatrix.2.txt && \\
   mv {output_directory}/tmpMatrix.2.txt {output_directory}/tmpMatrix.txt && \\
   na=$(basename $read_count_file | cut -d. -f1) && \\
-  HEAD="$HEAD\t$na"
+  HEAD="$HEAD\\t$na"
 done && \\
-echo -e $HEAD | cat - {output_directory}/tmpMatrix.txt | tr ' ' '\t' > {output_matrix} && \\
+echo -e $HEAD | cat - {output_directory}/tmpMatrix.txt | tr ' ' '\\t' > {output_matrix} && \\
 rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
             reference_gtf=config.param('raw_counts_metrics', 'gtf', type='filepath'),
             output_directory=output_directory,
