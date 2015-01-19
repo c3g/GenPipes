@@ -18,6 +18,9 @@ build() {
   cd $INSTALL_DIR/$SOFTWARE_DIR
   make check
   make install
+
+  # Update Perl script shebangs
+  sed -i s,"#\!/usr/bin/perl.*,#\!/usr/bin/env perl,g" mapview mummerplot nucmer promer nucmer2xfig dnadiff
 }
 
 module_file() {
