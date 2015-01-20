@@ -149,21 +149,25 @@ Pipeline command parameters and cluster settings can be customized using Configu
 Those files have a structure similar to Microsoft Windows INI files e.g.:
 ```
 #!ini
-[my_section]
-param1=my_param
-dir1=my_dir/my_subdir
+[DEFAULT]
+module_trimmomatic=mugqic/trimmomatic/0.32
+
+[trimmomatic]
+min_length=50
 ```
 
 A parameter value is first searched in its specific section, then, if not found, in the special `DEFAULT` section.
+The example above would resolve parameter `module_trimmomatic` value from section `trimmomatic` to `mugqic/trimmomatic/0.32`.
 
 Configuration files support interpolation. For example:
 ```
 #!ini
-[my_section]
-dir1=my_dir
-dir2=%(dir1)s/my_subdir
+scientific_name=Homo_sapiens
+assembly=GRCh37
+assembly_dir=$MUGQIC_INSTALL_HOME/genomes/species/%(scientific_name)s.%(assembly)s
+genome_fasta=%(assembly_dir)s/genome/%(scientific_name)s.%(assembly)s.fa
 ```
-would resolve `dir2` value to `my_dir/my_subdir`.
+would resolve `genome_fasta` value to `$MUGQIC_INSTALL_HOME/genomes/species/Homo_sapiens.GRCh37/genome/Homo_sapiens.GRCh37.fa`.
 
 Each pipeline has a default configuration file (`.base.ini` extension) set for running on abacus cluster using *Homo sapiens* reference genome:
 ```
