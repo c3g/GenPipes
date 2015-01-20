@@ -37,7 +37,7 @@ class ChipSeq(dnaseq.DnaSeq):
     are produced for narrow peaks and a standard report is generated.
 
     An example of the ChIP-Seq report for an analysis on public ENCODE data is available for illustration purpose only:
-    [DNA-Seq report](http://gqinnovationcenter.com/services/bioinformatics/tools/chipReport/index.html).
+    [ChIP-Seq report](http://gqinnovationcenter.com/services/bioinformatics/tools/chipReport/index.html).
 
     [Here](https://bitbucket.org/mugqic/mugqic_pipelines/downloads/MUGQIC_Bioinfo_ChIP-Seq.pptx)
     is more information about ChIP-Seq pipeline that you may find interesting.
@@ -396,7 +396,7 @@ Rscript $R_TOOLS/chipSeqgenerateAnnotationGraphs.R \\
         job = gq_seq_utils.report(
             [config_file.name for config_file in self.args.config],
             self.output_dir,
-            "DNAseq",
+            "CHIPseq",
             self.output_dir
         )
         job.input_files = [
