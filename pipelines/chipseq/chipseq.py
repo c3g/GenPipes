@@ -251,15 +251,17 @@ macs2 callpeak {format}{other_options} \\
                         command="""\
 annotatePeaks.pl \\
   {peak_file} \\
-  {genome_fasta} \\
+  {genome} \\
   -gsize {genome_size} \\
+  -gtf {gtf} \\
   -cons -CpG \\
   -go {output_dir} \\
   -genomeOntology {output_dir} \\
   > {annotation_file}""".format(
                             peak_file=peak_file,
-                            genome_fasta=config.param('homer_annotate_peaks', 'genome_fasta', type='filepath'),
+                            genome=config.param('homer_annotate_peaks', 'genome_fasta', type='filepath'),
                             genome_size=self.mappable_genome_size(),
+                            gtf=config.param('homer_annotate_peaks', 'gtf', type='filepath'),
                             output_dir=output_dir,
                             annotation_file=annotation_file
                         )
