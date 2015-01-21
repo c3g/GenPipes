@@ -1,8 +1,6 @@
 #!/bin/bash
-
-#
-# SignalP
-#
+# Exit immediately on error
+set -eu -o pipefail
 
 ## NOTE (FL): Tools from cbs.dtu.dk under some sort of danish license and need to be downloaded manually.
 
@@ -47,116 +45,72 @@
 #            neqn signalp.1 | tbl | nroff -man | col | compress >signalp.Z
 # 
 #    6. Enjoy ...
-#  
 
 SOFTWARE=signalp
 VERSION=4.1
-
-# 'MUGQIC_INSTALL_HOME_DEV' for development, 'MUGQIC_INSTALL_HOME' for production (don't write '$' before!)
-INSTALL_HOME=MUGQIC_INSTALL_HOME
-
-# Indirection call to use $INSTALL_HOME value as variable name
-INSTALL_DIR=${!INSTALL_HOME}/software/$SOFTWARE
-
-# Create install directory with permissions if necessary
-if [[ ! -d $INSTALL_DIR ]]
-then
-  mkdir $INSTALL_DIR
-  chmod ug+rwX,o+rX $INSTALL_DIR
-fi
-
-INSTALL_DOWNLOAD=$INSTALL_DIR/tmp
-mkdir $INSTALL_DOWNLOAD
-cd $INSTALL_DOWNLOAD
-
-# Download, extract, build
-# Write here the specific commands to download, extract, build the software, typically similar to:
 ARCHIVE=$SOFTWARE-${VERSION}c.Linux.tar.gz
-# If archive was previously downloaded, use the local one, otherwise get it from remote site
-if [[ -f ${!INSTALL_HOME}/archive/$ARCHIVE ]]
-then
-  echo "Archive $ARCHIVE already in ${!INSTALL_HOME}/archive/: using it..."
-  cp -a ${!INSTALL_HOME}/archive/$ARCHIVE .
-else
-  echo "Archive $ARCHIVE not in ${!INSTALL_HOME}/archive/: downloading it..."
-  wget http://www.dropbox.com/s/b4guq6ysyhi7eqm/$ARCHIVE -O $ARCHIVE
-fi
-tar zxvf $ARCHIVE
-
+ARCHIVE_URL=http://www.dropbox.com/s/b4guq6ysyhi7eqm/$ARCHIVE
 SOFTWARE_DIR=$SOFTWARE-$VERSION
-cd $SOFTWARE_DIR
 
-# Update signalp program path with dynamic path cmd
-sed -i "s,\$ENV{SIGNALP} = '/usr/cbs/bio/src/$SOFTWARE_DIR',use FindBin;\n    \$ENV{SIGNALP} = \$FindBin::Bin," signalp
+# Specific commands to extract and build the software
+# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
+# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
+build() {
+  cd $INSTALL_DOWNLOAD
+  tar zxvf $ARCHIVE
 
-# Update where to store temporary files (writable to all users)
-mkdir tmp
-sed -i "s,my \$outputDir = \"/var/tmp,my \$outputDir = \"\$ENV{SIGNALP}/tmp," signalp
+  cd $SOFTWARE_DIR
 
-# Update max number of sequences per run
-sed -i 's/$MAX_ALLOWED_ENTRIES=10000;/$MAX_ALLOWED_ENTRIES=2000000;/' signalp
+  # Update signalp program path with dynamic path cmd
+  sed -i "s,\$ENV{SIGNALP} = '/usr/cbs/bio/src/$SOFTWARE_DIR',use FindBin;\n    \$ENV{SIGNALP} = \$FindBin::Bin," signalp
 
-# Update Perl script shebang
-sed -i "s,#!/usr/bin/perl,#!/usr/bin/env perl," signalp
+  # Update where to store temporary files (writable to all users)
+  mkdir tmp
+  sed -i "s,my \$outputDir = \"/var/tmp,my \$outputDir = \"\$ENV{SIGNALP}/tmp," signalp
 
-# Test SignalP on the 10 eukaryotic sequences shipped with the package
-echo "Testing SignalP..."
-./signalp -t euk -f short test/euk10.fsa > euk10.fsa.short_out
-./signalp -t euk -f long test/euk10.fsa > euk10.fsa.long_out
-./signalp -t euk -f all test/euk10.fsa > euk10.fsa.all_out
-./signalp -t euk -f summary test/euk10.fsa > euk10.fsa.summary_out
-echo "The output files *_out  should be identical to the corresponding files in '$SOFTWARE_DIR/test', save round number differences"
-echo "diff test/euk10.fsa.short_out euk10.fsa.short_out"
-diff test/euk10.fsa.short_out euk10.fsa.short_out
-echo "diff test/euk10.fsa.long_out euk10.fsa.long_out"
-diff test/euk10.fsa.long_out euk10.fsa.long_out
-echo "diff test/euk10.fsa.all_out euk10.fsa.all_out"
-diff test/euk10.fsa.all_out euk10.fsa.all_out
-echo "diff test/euk10.fsa.summary_out euk10.fsa.summary_out"
-diff test/euk10.fsa.summary_out euk10.fsa.summary_out
-echo "Testing SignalP finished."
+  # Update max number of sequences per run
+  sed -i 's/$MAX_ALLOWED_ENTRIES=10000;/$MAX_ALLOWED_ENTRIES=2000000;/' signalp
 
-# Add permissions and install software
-cd $INSTALL_DOWNLOAD
-chmod -R ug+rwX,o+rX .
-mv -i $SOFTWARE_DIR $INSTALL_DIR
-# Store archive if not already present or if different from the previous one
-if [[ ! -f ${!INSTALL_HOME}/archive/$ARCHIVE || `diff ${!INSTALL_HOME}/archive/$ARCHIVE $ARCHIVE` ]]
-then
-  mv -i $ARCHIVE ${!INSTALL_HOME}/archive/
-fi
+  # Update Perl script shebang
+  sed -i "s,#!/usr/bin/perl,#!/usr/bin/env perl," signalp
 
-# Module file
-echo "#%Module1.0
+  # Test SignalP on the 10 eukaryotic sequences shipped with the package
+  set +e
+  echo "Testing SignalP..."
+  ./signalp -t euk -f short test/euk10.fsa > euk10.fsa.short_out
+  ./signalp -t euk -f long test/euk10.fsa > euk10.fsa.long_out
+  ./signalp -t euk -f all test/euk10.fsa > euk10.fsa.all_out
+  ./signalp -t euk -f summary test/euk10.fsa > euk10.fsa.summary_out
+  echo "The output files *_out  should be identical to the corresponding files in '$SOFTWARE_DIR/test', save round number differences"
+  echo "diff test/euk10.fsa.short_out euk10.fsa.short_out"
+  diff test/euk10.fsa.short_out euk10.fsa.short_out
+  echo "diff test/euk10.fsa.long_out euk10.fsa.long_out"
+  diff test/euk10.fsa.long_out euk10.fsa.long_out
+  echo "diff test/euk10.fsa.all_out euk10.fsa.all_out"
+  diff test/euk10.fsa.all_out euk10.fsa.all_out
+  echo "diff test/euk10.fsa.summary_out euk10.fsa.summary_out"
+  diff test/euk10.fsa.summary_out euk10.fsa.summary_out
+  echo "Testing SignalP finished."
+  set -e
+
+  # Install software
+  cd $INSTALL_DOWNLOAD
+  mv -i $SOFTWARE_DIR $INSTALL_DIR/
+}
+
+module_file() {
+echo "\
+#%Module1.0
 proc ModulesHelp { } {
   puts stderr \"\tMUGQIC - $SOFTWARE \"
 }
 module-whatis \"$SOFTWARE\"
 
-set             root                \$::env($INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE_DIR
+set             root                $INSTALL_DIR/$SOFTWARE_DIR
 prepend-path    PATH                \$root
-" > $VERSION
+"
+}
 
-################################################################################
-# Everything below this line should be generic and not modified
-
-# Default module version file
-echo "#%Module1.0
-set ModulesVersion \"$VERSION\"" > .version
-
-# Set module directory path by removing '_INSTALL_HOME' in $INSTALL_HOME and lowercasing the result
-MODULE_DIR=${!INSTALL_HOME}/modulefiles/`echo ${INSTALL_HOME/_INSTALL_HOME/} | tr '[:upper:]' '[:lower:]'`/$SOFTWARE
-
-# Create module directory with permissions if necessary
-if [[ ! -d $MODULE_DIR ]]
-then
-  mkdir $MODULE_DIR
-  chmod ug+rwX,o+rX $MODULE_DIR
-fi
-
-# Add permissions and install module
-chmod ug+rwX,o+rX $VERSION .version
-mv $VERSION .version $MODULE_DIR
-
-# Clean up temporary installation files if any
-rm -rf $INSTALL_DOWNLOAD
+# Call generic module install script once all variables and functions have been set
+MODULE_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source $MODULE_INSTALL_SCRIPT_DIR/install_module.sh $@
