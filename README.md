@@ -290,8 +290,61 @@ module use $MUGQIC_INSTALL_HOME/modulefiles
 #### Genomes
 Reference genomes and annotations must be installed in `$MUGQIC_INSTALL_HOME/genomes/`.
 Default genome installation scripts are already available in `mugqic_pipelines/resources/genomes/`.
-To install all of them, use the script `mugqic_pipelines/resources/genomes/install_all_genomes.sh`.
+To install all of them at once, use the script `mugqic_pipelines/resources/genomes/install_all_genomes.sh`.
+To install a new genome and its annotations from [Ensembl](http://www.ensembl.org/) (vertebrate species) or [EnsemblGenomes](http://ensemblgenomes.org/) (other species),
+copy `GENOME_INSTALL_TEMPLATE.sh` into `<species_scientific_name>.<assembly>.sh` and update it.
 
+All species-related files are in:
+`$MUGQIC_INSTALL_HOME/genomes/species/<species_scientific_name>.<assembly>/`
+e.g. for *Homo sapiens* assembly *GRCh37*, the directory has the following (incomplete) hierarchy:
+```
+#!text
+$MUGQIC_INSTALL_HOME/genomes/species/Homo_sapiens.GRCh37/
+├── annotations/
+│   ├── gtf_tophat_index/
+│   ├── Homo_sapiens.GRCh37.dbSNP142.vcf.gz
+│   ├── Homo_sapiens.GRCh37.dbSNP142.vcf.gz.tbi
+│   ├── Homo_sapiens.GRCh37.Ensembl75.geneid2Symbol.tsv
+│   ├── Homo_sapiens.GRCh37.Ensembl75.genes.length.tsv
+│   ├── Homo_sapiens.GRCh37.Ensembl75.genes.tsv
+│   ├── Homo_sapiens.GRCh37.Ensembl75.GO.tsv
+│   ├── Homo_sapiens.GRCh37.Ensembl75.gtf
+│   ├── Homo_sapiens.GRCh37.Ensembl75.ncrna.fa
+│   ├── Homo_sapiens.GRCh37.Ensembl75.rrna.fa
+│   ├── Homo_sapiens.GRCh37.Ensembl75.transcript_id.gtf
+│   ├── Homo_sapiens.GRCh37.Ensembl75.vcf.gz
+│   ├── ncrna_bwa_index/
+│   └── rrna_bwa_index/
+├── downloads/
+│   ├── ftp.1000genomes.ebi.ac.uk/
+│   ├── ftp.ensembl.org/
+│   └── ftp.ncbi.nih.gov/
+├── genome/
+│   ├── bowtie2_index/
+│   ├── bwa_index/
+│   ├── Homo_sapiens.GRCh37.dict
+│   ├── Homo_sapiens.GRCh37.fa
+│   ├── Homo_sapiens.GRCh37.fa.fai
+│   └── star_index/
+├── Homo_sapiens.GRCh37.ini
+└── log/
+```
+The assembly name is, by default, the one used by [Ensembl](http://www.ensembl.org/) e.g. "*GRCh37*"
+Each species directory contains a `<scientific_name>.<assembly>.ini` file
+which lists among other things, the assembly synonyms e.g. "*hg19*":
+
+`Homo_sapiens.GRCh37.ini`
+```
+#!ini
+[DEFAULT]
+scientific_name=Homo_sapiens
+common_name=Human
+assembly=GRCh37
+assembly_synonyms=hg19
+source=Ensembl
+version=75
+dbsnp_version=142
+```
 
 #### Modules
 Software tools and associated modules must be installed in `$MUGQIC_INSTALL_HOME/software/` and `$MUGQIC_INSTALL_HOME/modulefiles/`.
@@ -325,4 +378,4 @@ You can also report bugs at [bioinformatics.service@mail.mcgill.ca](mailto:bioin
 * Messages should not be sent directly to our team members. The generic e-mail addresses above are viewable by all of us and facilitate the follow-up of your request.
 * Choose a meaningful subject for your message.
 * Include the pipeline version number in your message.
-* An error message or code snippet illustrating your request is normally very useful. 
+* An error message or code snippet illustrating your request is normally very useful.
