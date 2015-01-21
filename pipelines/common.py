@@ -117,6 +117,7 @@ class Illumina(MUGQICPipeline):
                         fastq2 = re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)
                     elif readset.run_type == "SINGLE_END":
                         fastq1 = re.sub("\.bam$", ".single.fastq.gz", readset.bam)
+                        fastq2 = None
                     else:
                         raise Exception("Error: run type \"" + readset.run_type +
                         "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
