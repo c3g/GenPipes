@@ -290,18 +290,16 @@ module use $MUGQIC_INSTALL_HOME/modulefiles
 #### Genomes
 Reference genomes and annotations must be installed in `$MUGQIC_INSTALL_HOME/genomes/`.
 Default genome installation scripts are already available in `mugqic_pipelines/resources/genomes/`.
-To install all of them, use the script `mugqic_pipelines/resources/genomes/install_all_genomes.sh`.
+To install all of them at once, use the script `mugqic_pipelines/resources/genomes/install_all_genomes.sh`.
 
 All species-related files are in:
 `$MUGQIC_INSTALL_HOME/genomes/species/<species_scientific_name>.<assembly>/`
 e.g. for *Homo sapiens* assembly *GRCh37*, the directory has the following (incomplete) hierarchy:
 ```
 #!text
-$MUGQIC_INSTALL_HOME/genomes/species/Homo_sapiens.GRCh37
+$MUGQIC_INSTALL_HOME/genomes/species/Homo_sapiens.GRCh37/
 ├── annotations/
 │   ├── gtf_tophat_index/
-│   ├── Homo_sapiens.GRCh37.dbSNP141.vcf.gz
-│   ├── Homo_sapiens.GRCh37.dbSNP141.vcf.gz.tbi
 │   ├── Homo_sapiens.GRCh37.dbSNP142.vcf.gz
 │   ├── Homo_sapiens.GRCh37.dbSNP142.vcf.gz.tbi
 │   ├── Homo_sapiens.GRCh37.Ensembl75.geneid2Symbol.tsv
@@ -329,9 +327,9 @@ $MUGQIC_INSTALL_HOME/genomes/species/Homo_sapiens.GRCh37
 ├── Homo_sapiens.GRCh37.ini
 └── log/
 ```
-The assembly name is by default the one used by Ensembl e.g. *GRCh37*
+The assembly name is, by default, the one used by [Ensembl](http://www.ensembl.org/) e.g. "*GRCh37*"
 Each species directory contains a `<scientific_name>.<assembly>.ini` file
-which lists among other things, the assembly synonyms e.g. `hg19`:
+which lists among other things, the assembly synonyms e.g. "*hg19*":
 
 `Homo_sapiens.GRCh37.ini`
 ```
