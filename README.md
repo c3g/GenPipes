@@ -291,6 +291,8 @@ module use $MUGQIC_INSTALL_HOME/modulefiles
 Reference genomes and annotations must be installed in `$MUGQIC_INSTALL_HOME/genomes/`.
 Default genome installation scripts are already available in `mugqic_pipelines/resources/genomes/`.
 To install all of them at once, use the script `mugqic_pipelines/resources/genomes/install_all_genomes.sh`.
+To install a new genome and its annotations from [Ensembl](http://www.ensembl.org/) (vertebrate species) or [EnsemblGenomes](http://ensemblgenomes.org/) (other species),
+copy `GENOME_INSTALL_TEMPLATE.sh` into `<species_scientific_name>.<assembly>.sh` and update it.
 
 All species-related files are in:
 `$MUGQIC_INSTALL_HOME/genomes/species/<species_scientific_name>.<assembly>/`
