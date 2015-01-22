@@ -1,50 +1,37 @@
 #!/bin/bash
-
-#
-# Trimmomatic
-#
+# Exit immediately on error
+set -eu -o pipefail
 
 SOFTWARE=trimmomatic
 VERSION=0.32
-INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/$SOFTWARE
-INSTALL_DOWNLOAD=$INSTALL_PATH/tmp
-mkdir -p $INSTALL_DOWNLOAD
-cd $INSTALL_DOWNLOAD
+ARCHIVE=${SOFTWARE^}-$VERSION.zip
+ARCHIVE_URL=http://www.usadellab.org/cms/uploads/supplementary/${SOFTWARE^}/$ARCHIVE
+SOFTWARE_DIR=${SOFTWARE^}-$VERSION
 
-# Download, extract, build
-wget http://www.usadellab.org/cms/uploads/supplementary/Trimmomatic/Trimmomatic-$VERSION.zip
-unzip Trimmomatic-$VERSION.zip
+# Specific commands to extract and build the software
+# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
+# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
+build() {
+  cd $INSTALL_DOWNLOAD
+  unzip $ARCHIVE
 
-# Add permissions and install software
-cd $INSTALL_DOWNLOAD
-chmod -R ug+rwX .
-chmod -R o+rX .
-mv -i Trimmomatic-$VERSION $INSTALL_PATH
-mv -i Trimmomatic-$VERSION.zip $MUGQIC_INSTALL_HOME/archive
-
-# Module file
-echo "#%Module1.0
-proc ModulesHelp { } {
-       puts stderr \"\tMUGQIC - Trimmomatic to trim fastq \" ;
+  # Install software
+  mv -i $SOFTWARE_DIR $INSTALL_DIR/
 }
-module-whatis \"Trimmomatic to trim fastq  \" ;
-                      
-set             root                \$::env(MUGQIC_INSTALL_HOME)/software/$SOFTWARE/Trimmomatic-$VERSION ;
-setenv          TRIMMOMATIC_JAR     \$root/$SOFTWARE-$VERSION.jar ;
-" > $VERSION
 
-################################################################################
-# Everything below this line should be generic and not modified
+module_file() {
+echo "\
+#%Module1.0
+proc ModulesHelp { } {
+  puts stderr \"\tMUGQIC - $SOFTWARE \"
+}
+module-whatis \"$SOFTWARE\"
 
-# Default module version file
-echo "#%Module1.0
-set ModulesVersion \"$VERSION\"" > .version
+set             root                $INSTALL_DIR/$SOFTWARE_DIR
+setenv          TRIMMOMATIC_JAR     \$root/$SOFTWARE-$VERSION.jar
+"
+}
 
-# Add permissions and install module
-mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
-chmod -R ug+rwX $VERSION .version
-chmod -R o+rX $VERSION .version
-mv $VERSION .version $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
-
-# Clean up temporary installation files if any
-rm -rf $INSTALL_DOWNLOAD
+# Call generic module install script once all variables and functions have been set
+MODULE_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source $MODULE_INSTALL_SCRIPT_DIR/install_module.sh $@
