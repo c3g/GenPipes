@@ -22,6 +22,8 @@ build() {
   # Download patch too
   download_archive $ARCHIVE_URL_PREFIX/$ARCHIVE_PATCH $ARCHIVE_PATCH
 
+  # Bash cannot run patch if not executable
+  chmod +x $ARCHIVE $ARCHIVE_PATCH
   # Extract and apply patch but NOT install SMRT Portal etc.
   bash $ARCHIVE --extract-only --patchfile $ARCHIVE_PATCH
 
