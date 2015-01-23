@@ -1,52 +1,43 @@
 #!/bin/bash
-
-#
-# SnpEff
-#
+# Exit immediately on error
+set -eu -o pipefail
 
 SOFTWARE=snpEff
 VERSION=3.6
 # Replace "." in official version number by "_" in archive version number
-ARCHIVE_VERSION=${VERSION//./_}
-INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/$SOFTWARE
-INSTALL_DOWNLOAD=$INSTALL_PATH/tmp
-mkdir -p $INSTALL_DOWNLOAD
-cd $INSTALL_DOWNLOAD
+ARCHIVE=${SOFTWARE}_v${VERSION//./_}_core.zip
+ARCHIVE_URL=http://sourceforge.net/projects/snpeff/files/$ARCHIVE
+SOFTWARE_DIR=${SOFTWARE}_${VERSION//./_}
 
-# Download, extract, build
-wget http://sourceforge.net/projects/snpeff/files/${SOFTWARE}_v${ARCHIVE_VERSION}_core.zip
-unzip ${SOFTWARE}_v${ARCHIVE_VERSION}_core.zip
+# Specific commands to extract and build the software
+# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
+# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
+build() {
+  cd $INSTALL_DOWNLOAD
+  unzip $ARCHIVE
 
-# Add permissions and install software
-cd $INSTALL_DOWNLOAD
-chmod -R ug+rwX .
-chmod -R o+rX .
-mv -i $SOFTWARE $INSTALL_PATH/${SOFTWARE}_$ARCHIVE_VERSION
-mv -i ${SOFTWARE}_v${ARCHIVE_VERSION}_core.zip $MUGQIC_INSTALL_HOME/archive
+  # Install databases
+  java -jar $SOFTWARE/snpEff.jar download GRCh37.75
+  java -jar $SOFTWARE/snpEff.jar download GRCm38.75
+  java -jar $SOFTWARE/snpEff.jar download hg19
 
-# Module file
-echo "#%Module1.0
-proc ModulesHelp { } {
-       puts stderr \"\tMUGQIC - $SOFTWARE \"
+  # Install software
+  mv -i $SOFTWARE $INSTALL_DIR/$SOFTWARE_DIR
 }
-module-whatis \"$SOFTWARE  \"
 
-set             root                \$::env(MUGQIC_INSTALL_HOME)/software/$SOFTWARE/${SOFTWARE}_$ARCHIVE_VERSION
+module_file() {
+echo "\
+#%Module1.0
+proc ModulesHelp { } {
+  puts stderr \"\tMUGQIC - $SOFTWARE \"
+}
+module-whatis \"$SOFTWARE\"
+
+set             root                $INSTALL_DIR/$SOFTWARE_DIR
 setenv          SNPEFF_HOME         \$root
-" > $VERSION
+"
+}
 
-################################################################################
-# Everything below this line should be generic and not modified
-
-# Default module version file
-echo "#%Module1.0
-set ModulesVersion \"$VERSION\"" > .version
-
-# Add permissions and install module
-mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
-chmod -R ug+rwX $VERSION .version
-chmod -R o+rX $VERSION .version
-mv $VERSION .version $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
-
-# Clean up temporary installation files if any
-rm -rf $INSTALL_DOWNLOAD
+# Call generic module install script once all variables and functions have been set
+MODULE_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source $MODULE_INSTALL_SCRIPT_DIR/install_module.sh $@

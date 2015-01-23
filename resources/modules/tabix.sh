@@ -1,48 +1,41 @@
 #!/bin/bash
+# Exit immediately on error
+set -eu -o pipefail
 
-#
-# Tabix
-#
 SOFTWARE=tabix
 VERSION=0.2.6
-INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/$SOFTWARE
-INSTALL_DOWNLOAD=$INSTALL_PATH/tmp
-mkdir -p $INSTALL_DOWNLOAD
-cd $INSTALL_DOWNLOAD
+ARCHIVE=$SOFTWARE-$VERSION.tar.bz2
+ARCHIVE_URL=http://downloads.sourceforge.net/project/samtools/$SOFTWARE/$ARCHIVE
+SOFTWARE_DIR=$SOFTWARE-$VERSION
 
-# Download, extract, compile
-wget http://downloads.sourceforge.net/project/samtools/$SOFTWARE/$SOFTWARE-$VERSION.tar.bz2
-tar jxvf $SOFTWARE-$VERSION.tar.bz2
-cd $SOFTWARE-$VERSION
-make
+# Specific commands to extract and build the software
+# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
+# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
+build() {
+  cd $INSTALL_DOWNLOAD
+  tar jxvf $ARCHIVE
 
-# Add permissions and install software
-cd $INSTALL_DOWNLOAD
-chmod -R ug+rwX .
-mv -i $SOFTWARE-$VERSION $INSTALL_PATH  ## TO BE MODIFIED
-mv -i $SOFTWARE-$VERSION.tar.bz2 $MUGQIC_INSTALL_HOME/archive  ## TO BE MODIFIED
+  cd $SOFTWARE_DIR
+  make
 
-# Module file
-echo "#%Module1.0
-proc ModulesHelp { } {
-       puts stderr \"\tMUGQIC - $SOFTWARE add  Generic indexer for TAB-delimited genome position files\"
+  # Install software
+  cd $INSTALL_DOWNLOAD
+  mv -i $SOFTWARE_DIR $INSTALL_DIR/
 }
-module-whatis \"$SOFTWARE Generic indexer for TAB-delimited genome position files \"
-                      
-set             root                \$::env(MUGQIC_INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE-$VERSION
+
+module_file() {
+echo "\
+#%Module1.0
+proc ModulesHelp { } {
+  puts stderr \"\tMUGQIC - $SOFTWARE \"
+}
+module-whatis \"$SOFTWARE\"
+
+set             root                $INSTALL_DIR/$SOFTWARE_DIR
 prepend-path    PATH                \$root
-" > $VERSION
+"
+}
 
-################################################################################
-# Everything below this line should be generic and not modified
-
-# Version file
-echo "#%Module1.0
-set ModulesVersion \"$VERSION\"" > .version
-
-# Install module
-mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
-mv .version $VERSION $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
-
-# Clean up temporary installation files if any
-rm -rf $INSTALL_DOWNLOAD
+# Call generic module install script once all variables and functions have been set
+MODULE_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source $MODULE_INSTALL_SCRIPT_DIR/install_module.sh $@
