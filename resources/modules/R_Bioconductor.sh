@@ -210,7 +210,7 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
 
 	## Define the list of packages to standard packages to install.
 	deps = c("affxparser","affy","affyio","affyPLM","akima","annotate","AnnotationDbi"
-	,"AnnotationForge","ape","ash","BatchExperiments","BatchJobs","beanplot","Biobase","BiocGenerics"
+	,"AnnotationForge","ape","ash","ballgown","BatchExperiments","BatchJobs","beanplot","Biobase","BiocGenerics"
 	,"BiocInstaller","bioDist","biomaRt","Biostrings","biovizBase","bit"
 	,"bitops","boot","brew","BSgenome","caTools","charm","charmData","class"
 	,"cluster","clusterStab","clusterProfiler","codetools","colorspace","ConsensusClusterPlus","corpcor","crlmm","ctc"
