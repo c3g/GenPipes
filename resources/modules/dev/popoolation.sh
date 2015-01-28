@@ -1,7 +1,7 @@
 #!/bin/sh
 
 SOFTWARE="popoolation2"
-VERSION="0.189"  ## Checked out svn revision 189
+VERSION="0.201"  ## Checked out svn revision 189
 INSTALL_PATH=$MUGQIC_INSTALL_HOME_DEV/software/$SOFTWARE
 INSTALL_DOWNLOAD=$INSTALL_PATH/tmp
 mkdir -p $INSTALL_DOWNLOAD
@@ -10,7 +10,7 @@ cd $INSTALL_DOWNLOAD
 # Download, extract, build
 # Write here the specific commands to download, extract, build the software, typically similar to:
 svn checkout http://popoolation2.googlecode.com/svn/trunk/ $SOFTWARE-$VERSION
-svn update
+svn update 
 
 # Add permissions and install software
 cd $INSTALL_DOWNLOAD
