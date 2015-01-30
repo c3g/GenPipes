@@ -71,6 +71,64 @@ class ChipSeq(dnaseq.DnaSeq):
         # HOMER and MACS2 mappable genome size (without repetitive features) is about 80 % of total size
         return sum([int(chromosome[1]) for chromosome in genome_index]) * 0.8
 
+    def samtools_view_filter(self):
+        """
+        Filter unique reads by mapping quality using [Samtools](http://www.htslib.org/).
+        """
+
+        jobs = []
+        for readset in self.readsets:
+            readset_bam_prefix = os.path.join("alignment", readset.sample.name, readset.name, readset.name + ".sorted.")
+            readset_bam = readset_bam_prefix + "bam"
+            filtered_readset_bam = readset_bam_prefix + "filtered.bam"
+
+            job = samtools.view(readset_bam, filtered_readset_bam, "-b -F4 -q " + str(config.param('samtools_view_filter', 'min_mapq', type='int')))
+            job.name = "samtools_view_filter." + readset.name
+            jobs.append(job)
+        return jobs
+
+    def picard_merge_sam_files(self):
+        """
+        BAM readset files are merged into one file per sample. Merge is done using [Picard](http://broadinstitute.github.io/picard/).
+
+        This step takes as input files:
+
+        1. Aligned and sorted BAM output files from previous bwa_mem_picard_sort_sam step if available
+        2. Else, BAM files from the readset file
+        """
+
+        jobs = []
+        for sample in self.samples:
+            alignment_directory = os.path.join("alignment", sample.name)
+            # Find input readset BAMs first from previous bwa_mem_picard_sort_sam job, then from original BAMs in the readset sheet.
+            readset_bams = [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bam") for readset in sample.readsets]
+            sample_bam = os.path.join(alignment_directory, sample.name + ".merged.bam")
+
+            mkdir_job = Job(command="mkdir -p " + os.path.dirname(sample_bam))
+
+            # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
+            if len(sample.readsets) == 1:
+                readset_bam = readset_bams[0]
+                if os.path.isabs(readset_bam):
+                    target_readset_bam = readset_bam
+                else:
+                    target_readset_bam = os.path.relpath(readset_bam, alignment_directory)
+
+                job = concat_jobs([
+                    mkdir_job,
+                    Job([readset_bam], [sample_bam], command="ln -s -f " + target_readset_bam + " " + sample_bam, removable_files=[sample_bam]),
+                ], name="symlink_readset_sample_bam." + sample.name)
+
+            elif len(sample.readsets) > 1:
+                job = concat_jobs([
+                    mkdir_job,
+                    picard.merge_sam_files(readset_bams, sample_bam)
+                ])
+                job.name = "picard_merge_sam_files." + sample.name
+
+            jobs.append(job)
+
+        return jobs
 
     def picard_mark_duplicates(self):
         """
@@ -82,12 +140,76 @@ class ChipSeq(dnaseq.DnaSeq):
         jobs = []
         for sample in self.samples:
             alignment_file_prefix = os.path.join("alignment", sample.name, sample.name + ".")
-            input = alignment_file_prefix + "sorted.bam"
+            input = alignment_file_prefix + "merged.bam"
             output = alignment_file_prefix + "sorted.dup.bam"
             metrics_file = alignment_file_prefix + "sorted.dup.metrics"
 
             job = picard.mark_duplicates([input], output, metrics_file)
             job.name = "picard_mark_duplicates." + sample.name
+            jobs.append(job)
+        return jobs
+
+    # Generic function called in metrics step
+    def merge_metrics(self, name, alignment_file,flagstat_file, metrics_file):
+        return concat_jobs([
+                samtools.flagstat(alignment_file, flagstat_file),
+                Job(
+                    [flagstat_file],
+                    [metrics_file],
+                    [['homer_annotate_peaks', 'module_perl'], ['homer_annotate_peaks', 'module_mugqic_tools']],
+                    command="""\
+perl -MReadMetrics -e 'ReadMetrics::mergeStats(
+  "{name}",
+  "{metrics_file}",
+  ReadMetrics::parseFlagstats(
+    "{name}",
+    "{flagstat_file}"
+  )
+)'""".format(
+                        name=name,
+                        metrics_file=metrics_file,
+                        flagstat_file=flagstat_file
+                    )
+                )
+            ])
+
+    def metrics(self):
+        """
+        The number of raw/filtered and aligned reads per sample are computed at this stage.
+        """
+
+        jobs = []
+        trimming_stats = os.path.join("metrics", "trimming.stats")
+        for readset in self.readsets:
+            alignment_file = os.path.join("alignment", readset.sample.name, readset.name, readset.name + ".sorted.bam")
+            flagstat_file = alignment_file + ".flagstat"
+            metrics_file = os.path.join("metrics", readset.name + ".readstats.csv")
+
+            jobs.append(concat_jobs([
+                self.merge_metrics(readset.sample.name + " " + readset.name, alignment_file, flagstat_file, metrics_file + ".tmp"),
+                Job(
+                    [metrics_file + ".tmp"],
+                    [metrics_file],
+                    command="""\
+grep "{sample_name}\t{readset_name}" {trimming_stats} | cut -f3- | sed 's/\t/,/g' | sed '1iRaw Fragments,Fragment Surviving,Single Surviving' | paste -d, <(cut -f1 -d, {metrics_file}.tmp) - <(cut -f2- -d, {metrics_file}.tmp) \\
+  > {metrics_file} && \\
+rm {metrics_file}.tmp
+""".format(
+                        sample_name=readset.sample.name,
+                        readset_name=readset.name,
+                        trimming_stats=trimming_stats,
+                        metrics_file=metrics_file
+                    )
+                )
+            ], name = "metrics." + readset.name))
+
+        for sample in self.samples:
+            alignment_file = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam")
+            flagstat_file = alignment_file + ".flagstat"
+            metrics_file = os.path.join("metrics", sample.name + ".memstats.csv")
+
+            job = self.merge_metrics(sample.name, alignment_file, flagstat_file, metrics_file)
+            job.name = "metrics." + sample.name
             jobs.append(job)
         return jobs
 
@@ -98,7 +220,7 @@ class ChipSeq(dnaseq.DnaSeq):
 
         jobs = []
         for sample in self.samples:
-            alignment_file = os.path.join("alignment", sample.name, sample.name + ".sorted.bam")
+            alignment_file = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam")
             output_dir = os.path.join("tags", sample.name)
 
             jobs.append(Job(
@@ -109,10 +231,10 @@ class ChipSeq(dnaseq.DnaSeq):
 makeTagDirectory \\
   {output_dir} \\
   {alignment_file} \\
-  -checkGC -genome {genome_fasta}""".format(
+  -checkGC -genome {genome}""".format(
                     output_dir=output_dir,
                     alignment_file=alignment_file,
-                    genome_fasta=config.param('homer_make_tag_directory', 'genome_fasta', type='filepath')
+                    genome=config.param('homer_make_tag_directory', 'assembly')
                 ),
                 name="homer_make_tag_directory." + sample.name
             ))
@@ -188,8 +310,8 @@ Rscript $R_TOOLS/chipSeqGenerateQCMetrics.R \\
 
         for contrast in self.contrasts:
             if contrast.treatments:
-                treatment_files = [os.path.join("alignment", sample.name, sample.name + ".sorted.bam") for sample in contrast.treatments]
-                control_files = [os.path.join("alignment", sample.name, sample.name + ".sorted.bam") for sample in contrast.controls]
+                treatment_files = [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam") for sample in contrast.treatments]
+                control_files = [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam") for sample in contrast.controls]
                 output_dir = os.path.join("peak_call", contrast.real_name)
 
                 if contrast.type == 'broad':  # Broad region
@@ -238,15 +360,18 @@ macs2 callpeak {format}{other_options} \\
         for contrast in self.contrasts:
             if contrast.treatments:
                 peak_file = os.path.join("peak_call", contrast.real_name, contrast.real_name + "_peaks." + contrast.type + "Peak")
-                output_dir = os.path.join("annotation", contrast.real_name)
-                output_file_prefix = os.path.join(output_dir, contrast.real_name)
-                annotation_file = output_file_prefix + ".annotated.csv"
+                output_prefix = os.path.join("annotation", contrast.real_name, contrast.real_name)
+                annotation_file = output_prefix + ".annotated.csv"
 
                 jobs.append(concat_jobs([
-                    Job(command="mkdir -p " + output_dir),
+                    Job(command="mkdir -p " + output_prefix),
                     Job(
                         [peak_file],
-                        [annotation_file],
+                        [
+                            annotation_file,
+                            os.path.join(output_prefix, "geneOntology.html"),
+                            os.path.join(output_prefix, "GenomeOntology.html")
+                        ],
                         [['homer_annotate_peaks', 'module_perl'], ['homer_annotate_peaks', 'module_homer']],
                         command="""\
 annotatePeaks.pl \\
@@ -254,26 +379,23 @@ annotatePeaks.pl \\
   {genome} \\
   -gsize {genome} \\
   -cons -CpG \\
-  -go {output_dir} \\
-  -genomeOntology {output_dir} \\
+  -go {output_prefix} \\
+  -genomeOntology {output_prefix} \\
   > {annotation_file}""".format(
                             peak_file=peak_file,
-                            genome=config.param('homer_annotate_peaks', 'homer_genome'),
-                            #genome=config.param('homer_annotate_peaks', 'genome_fasta', type='filepath'),
-                            genome_size=config.param('homer_annotate_peaks', 'homer_genome'),
-                            #genome_size=self.mappable_genome_size(),
-                            #gtf=config.param('homer_annotate_peaks', 'gtf', type='filepath'),
-                            output_dir=output_dir,
+                            genome=config.param('homer_annotate_peaks', 'assembly'),
+                            genome_size=config.param('homer_annotate_peaks', 'assembly'),
+                            output_prefix=output_prefix,
                             annotation_file=annotation_file
                         )
                     ),
                     Job(
                         [annotation_file],
                         [
-                            output_file_prefix + ".tss.stats.csv",
-                            output_file_prefix + ".exon.stats.csv",
-                            output_file_prefix + ".intron.stats.csv",
-                            output_file_prefix + ".tss.distance.csv"
+                            output_prefix + ".tss.stats.csv",
+                            output_prefix + ".exon.stats.csv",
+                            output_prefix + ".intron.stats.csv",
+                            output_prefix + ".tss.distance.csv"
                         ],
                         [['homer_annotate_peaks', 'module_perl'], ['homer_annotate_peaks', 'module_mugqic_tools']],
                         command="""\
@@ -287,7 +409,7 @@ perl -MReadMetrics -e 'ReadMetrics::parseHomerAnnotations(
   {gene_desert_size}
 )'""".format(
                             annotation_file=annotation_file,
-                            output_prefix=os.path.join(output_dir, contrast.real_name),
+                            output_prefix=output_prefix,
                             proximal_distance=config.param('homer_annotate_peaks', 'proximal_distance', type='int'),
                             distal_distance=config.param('homer_annotate_peaks', 'distal_distance', type='int'),
                             distance5d_lower=config.param('homer_annotate_peaks', 'distance5d_lower', type='int'),
@@ -310,13 +432,16 @@ perl -MReadMetrics -e 'ReadMetrics::parseHomerAnnotations(
 
         for contrast in self.contrasts:
             # Don't find motifs for broad peaks
-            if contrast.type == "narrow" and contrast.treatments:
+            if contrast.type == 'narrow' and contrast.treatments:
                 peak_file = os.path.join("peak_call", contrast.real_name, contrast.real_name + "_peaks." + contrast.type + "Peak")
-                output_dir = os.path.join("annotation", contrast.real_name)
+                output_dir = os.path.join("annotation", contrast.real_name, contrast.real_name)
 
                 jobs.append(Job(
                     [peak_file],
-                    [os.path.join(output_dir, "homerResults.html")],
+                    [
+                        os.path.join(output_dir, "homerResults.html"),
+                        os.path.join(output_dir, "knownResults.html")
+                    ],
                     [
                         ['homer_find_motifs_genome', 'module_perl'],
                         ['homer_find_motifs_genome', 'module_weblogo'],
@@ -326,12 +451,12 @@ perl -MReadMetrics -e 'ReadMetrics::parseHomerAnnotations(
 mkdir -p {output_dir} && \\
 findMotifsGenome.pl \\
   {peak_file} \\
-  {genome_fasta} \\
+  {genome} \\
   {output_dir} \\
   -preparsedDir {output_dir}/preparsed \\
   -p {threads}""".format(
                         peak_file=peak_file,
-                        genome_fasta=config.param('homer_find_motifs_genome', 'genome_fasta', type='filepath'),
+                        genome=config.param('homer_find_motifs_genome', 'assembly'),
                         output_dir=output_dir,
                         threads=config.param('homer_find_motifs_genome', 'threads', type='posint')
                     ),
@@ -359,16 +484,21 @@ findMotifsGenome.pl \\
             design_file = os.path.relpath(self.args.design.name, self.output_dir)
 
         input_files = []
+        output_files = []
         for contrast in self.contrasts:
-            input_file_prefix = os.path.join("annotation", contrast.real_name, contrast.real_name)
-            input_files.append(input_file_prefix + ".tss.stats.csv")
-            input_files.append(input_file_prefix + ".exon.stats.csv")
-            input_files.append(input_file_prefix + ".intron.stats.csv")
-            input_files.append(input_file_prefix + ".tss.distance.csv")
+            annotation_prefix = os.path.join("annotation", contrast.real_name, contrast.real_name)
+            input_files.append(annotation_prefix + ".tss.stats.csv")
+            input_files.append(annotation_prefix + ".exon.stats.csv")
+            input_files.append(annotation_prefix + ".intron.stats.csv")
+            input_files.append(annotation_prefix + ".tss.distance.csv")
+
+            output_files.append(os.path.join("graphs", contrast.real_name + "_Misc_Graphs.ps"))
+
+        output_files.append(os.path.join("annotation", "peak_stats.csv"))
 
         return [Job(
             input_files,
-            [os.path.join("graphs", "peak_stats.csv"), os.path.join("graphs", "Misc_Graphs.ps")],
+            output_files,
             [
                 ['annotation_graphs', 'module_mugqic_tools'],
                 ['annotation_graphs', 'module_R']
@@ -400,13 +530,17 @@ Rscript $R_TOOLS/chipSeqgenerateAnnotationGraphs.R \\
             "CHIPseq",
             self.output_dir
         )
-        job.input_files = [
-            "metrics/trimming.stats",
-            "metrics/SampleMetrics.stats",
-            "metrics/allSamples.SNV.SummaryTable.tsv",
-            "metrics/allSamples.SNV.EffectsFunctionalClass.tsv",
-            "metrics/allSamples.SNV.EffectsImpact.tsv"
-        ]
+        job.input_files = [os.path.join("metrics", "trimming.stats")] + \
+            [os.path.join("metrics", readset.name + ".readstats.csv") for readset in self.readsets] + \
+            [os.path.join("metrics", sample.name + ".memstats.csv") for sample in self.samples] + \
+            [os.path.join("graphs", sample.name + "_QC_Metrics.ps") for sample in self.samples] + \
+            [os.path.join("annotation", contrast.real_name, contrast.real_name + ".annotated.csv") for contrast in self.contrasts if contrast.type == 'narrow'] + \
+            [os.path.join("annotation", contrast.real_name, contrast.real_name, "GenomeOntology.html") for contrast in self.contrasts if contrast.type == 'narrow'] + \
+            [os.path.join("annotation", contrast.real_name, contrast.real_name, "geneOntology.html") for contrast in self.contrasts if contrast.type == 'narrow'] + \
+            [os.path.join("annotation", contrast.real_name, contrast.real_name, "homerResults.html") for contrast in self.contrasts if contrast.type == 'narrow'] + \
+            [os.path.join("annotation", contrast.real_name, contrast.real_name, "knownResults.html") for contrast in self.contrasts if contrast.type == 'narrow'] + \
+            [os.path.join("graphs", contrast.real_name + "_Misc_Graphs.ps") for contrast in self.contrasts] + \
+            [os.path.join("annotation", "peak_stats.csv")] if [contrast for contrast in self.contrasts if contrast.type == 'narrow'] else []
         job.name = "gq_seq_utils_report"
         return [job]
 
@@ -417,8 +551,10 @@ Rscript $R_TOOLS/chipSeqgenerateAnnotationGraphs.R \\
             self.trimmomatic,
             self.merge_trimmomatic_stats,
             self.bwa_mem_picard_sort_sam,
+            self.samtools_view_filter,
             self.picard_merge_sam_files,
             self.picard_mark_duplicates,
+            self.metrics,
             self.homer_make_tag_directory,
             self.homer_make_ucsc_file,
             self.qc_metrics,
