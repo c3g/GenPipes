@@ -33,7 +33,7 @@ cd $INSTALL_DOWNLOAD
 
 # Download, extract, build
 # Write here the specific commands to download, extract, build the software, typically similar to:
-ARCHIVE=v$VERSION.tar.gz  ## TO BE MODIFIED WITH SPECIFIC ARCHIVE
+ARCHIVE=Sailfish-$VERSION-Linux_x86-64.tar.gz  ## TO BE MODIFIED WITH SPECIFIC ARCHIVE
 
 # 
 # If archive was previously downloaded, use the local one, otherwise get it from remote site
@@ -43,28 +43,29 @@ then
   cp -a ${!INSTALL_HOME}/archive/$ARCHIVE .
 else
   echo "Archive $ARCHIVE not in ${!INSTALL_HOME}/archive/: downloading it..."
-   wget https://github.com/kingsfordgroup/sailfish/archive/$ARCHIVE  -O $ARCHIVE
+   wget  https://github.com/kingsfordgroup/sailfish/releases/download/v$VERSION/$ARCHIVE  -O $ARCHIVE
+	
 fi
 tar xvf $ARCHIVE  
 
 
 
 # https://github.com/kingsfordgroup/sailfish/blob/master/README.md
-SOFTWARE_DIR=sailfish-$VERSION
-cd $SOFTWARE_DIR
-mkdir build
-cd build
-
-module load cmake/2.8.8 gcc/4.8.2  # mammouth
-#module load cmake/2.8.12.2 gcc/4.9.1  # , guillimin
-# abacus
-cmake -DFETCH_BOOST=TRUE .. 
-
-
-make -j8
-
-
-make install
+SOFTWARE_DIR=Sailfish-$VERSION-Linux_x86-64
+# cd $SOFTWARE_DIR
+# mkdir build
+# cd build
+#
+# module load cmake/2.8.8 gcc/4.8.2  # mammouth
+# #module load cmake/2.8.12.2 gcc/4.9.1  # , guillimin
+# # abacus
+# cmake -DFETCH_BOOST=TRUE ..
+#
+#
+# make -j8
+#
+#
+# make install
 
 
 

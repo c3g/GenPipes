@@ -137,6 +137,7 @@ def genotype_gvcfs(variants, output):
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --analysis_type GenotypeGVCFs {options} \\
+  --disable_auto_index_creation_and_locking_when_reading_rods \\
   --reference_sequence {reference_sequence}{variants} \\
   --out {output}""".format(
         tmp_dir=config.param('gatk_genotype_gvcfs', 'tmp_dir'),

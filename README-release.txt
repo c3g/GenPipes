@@ -13,6 +13,7 @@ for f in \
   pipelines/rnaseq/rnaseq.py \
   pipelines/rnaseq_denovo_assembly/rnaseq_denovo_assembly.py \
   pipelines/pacbio_assembly/pacbio_assembly.py \
+  pipelines/illumina_run_processing/illumina_run_processing.py \
 ; do echo $f; $f --help > `dirname $f`/README.md; done
 
 git commit -a -m "Version bump to 2.0.0"

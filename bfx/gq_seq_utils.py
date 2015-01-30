@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 # Python Standard Modules
+import os
 
 # MUGQIC Modules
 from core.config import *
@@ -51,6 +52,6 @@ R --no-save -e 'library(gqSeqUtils); mugqicPipelineReport(pipeline="{pipeline}"{
         path=", report.path=\"" + path + "\"" if path else "",
         author=", report.author=\"" + author + "\"" if author else "",
         contact=", report.contact=\"" + contact + "\"" if contact else "",
-        ini_filepaths=",".join(['"' + ini_filepath + '"' for ini_filepath in ini_filepaths]),
+        ini_filepaths=",".join(['"' + os.path.abspath(ini_filepath) + '"' for ini_filepath in ini_filepaths]),
         project_path=project_path
     ))
