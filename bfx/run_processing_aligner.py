@@ -55,7 +55,6 @@ class BwaRunProcessingAligner(RunProcessingAligner):
     def get_alignment_jobs(self, readset):
         jobs = []
         output = readset.bam + ".bam"
-
         job = concat_jobs([
             Job(command="mkdir -p " + os.path.dirname(output)),
             pipe_jobs([
@@ -63,7 +62,7 @@ class BwaRunProcessingAligner(RunProcessingAligner):
                     readset.fastq1,
                     readset.fastq2,
                     read_group="'@RG" + \
-                        "\tID:" + readset.name + \
+                        "\tID:" + readset.library + "_" + readset.run + "_" + readset.lane + \
                         "\tSM:" + readset.sample.name + \
                         ("\tLB:" + readset.library if readset.library else "") + \
                         ("\tPU:run" + readset.run + "_" + readset.lane if readset.run and readset.lane else "") + \
@@ -191,7 +190,7 @@ class StarRunProcessingAligner(RunProcessingAligner):
                 output_directory=os.path.dirname(output),
                 sort_bam=True,
                 genome_index_folder=readset.aligner_reference_index,
-                rg_id=readset.name,
+                rg_id=readset.library + "_" + readset.run + "_" + readset.lane,
                 rg_sample=readset.sample.name,
                 rg_library=readset.library if readset.library else "",
                 rg_platform_unit=readset.run + "_" + readset.lane if readset.run and readset.lane else "",
