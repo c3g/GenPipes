@@ -167,20 +167,32 @@ set_urls() {
     BIOMART_GO_ID=go_accession
     BIOMART_GO_NAME=go_name_1006
     BIOMART_GO_DEFINITION=go_definition_1006
+
+  #
+  # UCSC
+  #
+  elif [[ $SOURCE == "UCSC" ]]
+  then
+    GENOME_URL=http://hgdownload.soe.ucsc.edu/goldenPath/$ASSEMBLY/bigZips/$ASSEMBLY.2bit
   fi
 }
 
 download_urls() {
   download_url $GENOME_URL
-  download_url $GTF_URL
-  download_url $NCRNA_URL
-  if [ ! -z "${VCF_URL:-}" ]
+
+  # Annotations are not downloaded for UCSC genomes
+  if [[ $SOURCE != "UCSC" ]]
   then
-    download_url $VCF_URL
-  fi
-  if [ ! -z "${VCF_TBI_URL:-}" ]
-  then
-    download_url $VCF_TBI_URL
+    download_url $GTF_URL
+    download_url $NCRNA_URL
+    if [ ! -z "${VCF_URL:-}" ]
+    then
+      download_url $VCF_URL
+    fi
+    if [ ! -z "${VCF_TBI_URL:-}" ]
+    then
+      download_url $VCF_TBI_URL
+    fi
   fi
 }
 
@@ -477,38 +489,53 @@ get_vcf_dbsnp() {
 
 copy_files() {
   # Uncompress files
-  if ! is_up2date $GENOME_DIR/$GENOME_FASTA ; then gunzip -c `download_path $GENOME_URL` > $GENOME_DIR/$GENOME_FASTA ; fi
-  if ! is_up2date $ANNOTATIONS_DIR/$GTF ; then gunzip -c `download_path $GTF_URL` > $ANNOTATIONS_DIR/$GTF ; fi
-  TRANSCRIPT_ID_GTF=$ANNOTATIONS_DIR/${GTF/.gtf/.transcript_id.gtf}
-  if ! is_up2date $TRANSCRIPT_ID_GTF ; then grep -P "(^#|transcript_id)" $ANNOTATIONS_DIR/$GTF > $TRANSCRIPT_ID_GTF ; fi
-  if ! is_up2date $ANNOTATIONS_DIR/$NCRNA ; then gunzip -c `download_path $NCRNA_URL` > $ANNOTATIONS_DIR/$NCRNA ; fi
-
-  # Create rRNA FASTA as subset of ncRNA FASTA keeping only sequences with "gene_biotype:rRNA" in their description
-  if [ $(grep -q "gene_biotype:rRNA" $ANNOTATIONS_DIR/$NCRNA)$? == 0 ]
+  if ! is_up2date $GENOME_DIR/$GENOME_FASTA
   then
-    if ! is_up2date $ANNOTATIONS_DIR/$RRNA
+    if [[ $SOURCE == "UCSC" ]]
     then
-      grep -Pzo "^>.*gene_biotype:rRNA[^>]*" $ANNOTATIONS_DIR/$NCRNA | grep -v "^$" > $ANNOTATIONS_DIR/$RRNA
+      # Use UCSC utility program twoBitToFa to uncompress genome
+      module load mugqic/ucsc
+      twoBitToFa `download_path $GENOME_URL` $GENOME_DIR/$GENOME_FASTA
+    else
+      gunzip -c `download_path $GENOME_URL` > $GENOME_DIR/$GENOME_FASTA
     fi
   fi
 
-  if [ ! -z "${VCF_URL:-}" ]
+  # Annotations are not installed for UCSC genomes
+  if [[ $SOURCE != "UCSC" ]]
   then
-    if ! is_up2date $ANNOTATIONS_DIR/$VCF
-    then
-      cp `download_path $VCF_URL` $ANNOTATIONS_DIR/$VCF
-    fi
-  fi
+    if ! is_up2date $ANNOTATIONS_DIR/$GTF ; then gunzip -c `download_path $GTF_URL` > $ANNOTATIONS_DIR/$GTF ; fi
+    TRANSCRIPT_ID_GTF=$ANNOTATIONS_DIR/${GTF/.gtf/.transcript_id.gtf}
+    if ! is_up2date $TRANSCRIPT_ID_GTF ; then grep -P "(^#|transcript_id)" $ANNOTATIONS_DIR/$GTF > $TRANSCRIPT_ID_GTF ; fi
+    if ! is_up2date $ANNOTATIONS_DIR/$NCRNA ; then gunzip -c `download_path $NCRNA_URL` > $ANNOTATIONS_DIR/$NCRNA ; fi
 
-  if [ ! -z "${VCF_TBI_URL:-}" ]
-  then
-    if ! is_up2date $ANNOTATIONS_DIR/$VCF.tbi
+    # Create rRNA FASTA as subset of ncRNA FASTA keeping only sequences with "gene_biotype:rRNA" in their description
+    if [ $(grep -q "gene_biotype:rRNA" $ANNOTATIONS_DIR/$NCRNA)$? == 0 ]
     then
-      cp `download_path $VCF_TBI_URL` $ANNOTATIONS_DIR/$VCF.tbi
+      if ! is_up2date $ANNOTATIONS_DIR/$RRNA
+      then
+        grep -Pzo "^>.*gene_biotype:rRNA[^>]*" $ANNOTATIONS_DIR/$NCRNA | grep -v "^$" > $ANNOTATIONS_DIR/$RRNA
+      fi
     fi
-  fi
 
-  get_vcf_dbsnp
+    if [ ! -z "${VCF_URL:-}" ]
+    then
+      if ! is_up2date $ANNOTATIONS_DIR/$VCF
+      then
+        cp `download_path $VCF_URL` $ANNOTATIONS_DIR/$VCF
+      fi
+    fi
+
+    if [ ! -z "${VCF_TBI_URL:-}" ]
+    then
+      if ! is_up2date $ANNOTATIONS_DIR/$VCF.tbi
+      then
+        cp `download_path $VCF_TBI_URL` $ANNOTATIONS_DIR/$VCF.tbi
+      fi
+    fi
+
+    get_vcf_dbsnp
+  fi
 }
 
 build_files() {
@@ -516,13 +543,18 @@ build_files() {
   create_picard_index
   create_samtools_index
   create_bwa_index
-  create_bowtie2_tophat_index
-  create_star_index
-  create_ncrna_bwa_index
-  create_rrna_bwa_index
 
-  create_gene_annotations
-  create_go_annotations
+  # Annotations are not installed for UCSC genomes
+  if [[ $SOURCE != "UCSC" ]]
+  then
+    create_bowtie2_tophat_index
+    create_star_index
+    create_ncrna_bwa_index
+    create_rrna_bwa_index
+
+    create_gene_annotations
+    create_go_annotations
+  fi
 }
 
 create_genome_ini_file() {
