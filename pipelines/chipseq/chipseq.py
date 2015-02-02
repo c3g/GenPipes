@@ -185,7 +185,7 @@ perl -MReadMetrics -e 'ReadMetrics::mergeStats(
             flagstat_file = alignment_file + ".flagstat"
             metrics_file = os.path.join("metrics", readset.name + ".readstats.csv")
 
-            jobs.append(concat_jobs([
+            job = concat_jobs([
                 self.merge_metrics(readset.sample.name + " " + readset.name, alignment_file, flagstat_file, metrics_file + ".tmp"),
                 Job(
                     [metrics_file + ".tmp"],
@@ -201,7 +201,10 @@ rm {metrics_file}.tmp
                         metrics_file=metrics_file
                     )
                 )
-            ], name = "metrics." + readset.name))
+            ], name = "metrics." + readset.name)
+            # Remove uncessary temporary file otherwise job is never up to date
+            job.output_files.remove(metrics_file + ".tmp")
+            jobs.append(job)
 
         for sample in self.samples:
             alignment_file = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam")
@@ -530,6 +533,11 @@ Rscript $R_TOOLS/chipSeqgenerateAnnotationGraphs.R \\
             "CHIPseq",
             self.output_dir
         )
+
+        # Mammouth compute nodes don't have 'convert' command by default. ImageMagick module must be loaded explicitely
+        if config.param('gq_seq_utils_report', 'module_imagemagick', required=False):
+            job.modules.append(config.param('gq_seq_utils_report', 'module_imagemagick', required=False))
+
         job.input_files = [os.path.join("metrics", "trimming.stats")] + \
             [os.path.join("metrics", readset.name + ".readstats.csv") for readset in self.readsets] + \
             [os.path.join("metrics", sample.name + ".memstats.csv") for sample in self.samples] + \
