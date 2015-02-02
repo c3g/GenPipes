@@ -41,7 +41,8 @@ samtools flagstat \\
   > {output}""".format(
         input=input,
         output=output
-        )
+        ),
+        removable_files=[output]
     )
 
 def mpileup(input_bams, output, other_options="", region=None):

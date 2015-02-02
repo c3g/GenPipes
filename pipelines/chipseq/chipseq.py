@@ -156,7 +156,7 @@ class ChipSeq(dnaseq.DnaSeq):
                 Job(
                     [flagstat_file],
                     [metrics_file],
-                    [['homer_annotate_peaks', 'module_perl'], ['homer_annotate_peaks', 'module_mugqic_tools']],
+                    [['metrics', 'module_perl'], ['metrics', 'module_mugqic_tools']],
                     command="""\
 perl -MReadMetrics -e 'ReadMetrics::mergeStats(
   "{name}",
@@ -169,7 +169,8 @@ perl -MReadMetrics -e 'ReadMetrics::mergeStats(
                         name=name,
                         metrics_file=metrics_file,
                         flagstat_file=flagstat_file
-                    )
+                    ),
+                    removable_files=[metrics_file]
                 )
             ])
 
@@ -199,7 +200,8 @@ rm {metrics_file}.tmp
                         readset_name=readset.name,
                         trimming_stats=trimming_stats,
                         metrics_file=metrics_file
-                    )
+                    ),
+                    removable_files=[metrics_file]
                 )
             ], name = "metrics." + readset.name)
             # Remove uncessary temporary file otherwise job is never up to date
@@ -239,7 +241,8 @@ makeTagDirectory \\
                     alignment_file=alignment_file,
                     genome=config.param('homer_make_tag_directory', 'assembly')
                 ),
-                name="homer_make_tag_directory." + sample.name
+                name="homer_make_tag_directory." + sample.name,
+                removable_files=[output_dir]
             ))
 
         return jobs
@@ -269,7 +272,8 @@ gzip -1 -c > {bedgraph_file}""".format(
                     bedgraph_dir=bedgraph_dir,
                     bedgraph_file=bedgraph_file
                 ),
-                name="homer_make_ucsc_file." + sample.name
+                name="homer_make_ucsc_file." + sample.name,
+                removable_files=[bedgraph_dir]
             ))
 
         return jobs
@@ -283,9 +287,11 @@ gzip -1 -c > {bedgraph_file}""".format(
         if self.contrasts:
             design_file = os.path.relpath(self.args.design.name, self.output_dir)
 
+        output_files = [os.path.join("graphs", sample.name + "_QC_Metrics.ps") for sample in self.samples]
+
         return [Job(
             [os.path.join("tags", sample.name, "tagInfo.txt") for sample in self.samples],
-            [os.path.join("graphs", sample.name + "_QC_Metrics.ps") for sample in self.samples],
+            output_files,
             [
                 ['qc_plots_R', 'module_mugqic_tools'],
                 ['qc_plots_R', 'module_R']
@@ -298,7 +304,8 @@ Rscript $R_TOOLS/chipSeqGenerateQCMetrics.R \\
                 design_file=design_file,
                 output_dir=self.output_dir
             ),
-            name="qc_plots_R"
+            name="qc_plots_R",
+            removable_files=output_files
         )]
 
     def macs2_callpeak(self):
@@ -345,7 +352,8 @@ macs2 callpeak {format}{other_options} \\
                         control_files=" \\\n  --control \\\n  " + " \\\n  ".join(control_files) if control_files else " \\\n  --nolambda",
                         output_prefix_name=os.path.join(output_dir, contrast.real_name)
                     ),
-                    name="macs2_callpeak." + contrast.real_name
+                    name="macs2_callpeak." + contrast.real_name,
+                    removable_files=[output_dir]
                 ))
             else:
                 log.warning("No treatment found for contrast " + contrast.name + "... skipping")
@@ -418,7 +426,8 @@ perl -MReadMetrics -e 'ReadMetrics::parseHomerAnnotations(
                             distance5d_lower=config.param('homer_annotate_peaks', 'distance5d_lower', type='int'),
                             distance5d_upper=config.param('homer_annotate_peaks', 'distance5d_upper', type='int'),
                             gene_desert_size=config.param('homer_annotate_peaks', 'gene_desert_size', type='int')
-                        )
+                        ),
+                        removable_files=[os.path.join("annotation", contrast.real_name)]
                     )
                 ], name="homer_annotate_peaks." + contrast.real_name))
             else:
@@ -463,7 +472,8 @@ findMotifsGenome.pl \\
                         output_dir=output_dir,
                         threads=config.param('homer_find_motifs_genome', 'threads', type='posint')
                     ),
-                    name="homer_find_motifs_genome." + contrast.real_name
+                    name="homer_find_motifs_genome." + contrast.real_name,
+                    removable_files=[os.path.join("annotation", contrast.real_name)]
                 ))
             else:
                 log.warning("No treatment found for contrast " + contrast.name + "... skipping")
@@ -514,7 +524,8 @@ Rscript $R_TOOLS/chipSeqgenerateAnnotationGraphs.R \\
                 design_file=design_file,
                 output_dir=self.output_dir
             ),
-            name="annotation_graphs"
+            name="annotation_graphs",
+            removable_files=output_files
         )]
 
     def gq_seq_utils_report(self):
@@ -550,6 +561,9 @@ Rscript $R_TOOLS/chipSeqgenerateAnnotationGraphs.R \\
             [os.path.join("graphs", contrast.real_name + "_Misc_Graphs.ps") for contrast in self.contrasts] + \
             [os.path.join("annotation", "peak_stats.csv")] if [contrast for contrast in self.contrasts if contrast.type == 'narrow'] else []
         job.name = "gq_seq_utils_report"
+        job.removable_files = [os.path.join("graphs", sample.name + "_QC_Metrics.png") for sample in self.samples] + \
+            [os.path.join("graphs", contrast.real_name + "_Misc_Graphs.png") for contrast in self.contrasts] + \
+            [os.path.join("graphs", contrast.real_name + "_Misc_Graphs.pdf") for contrast in self.contrasts]
         return [job]
 
     @property
