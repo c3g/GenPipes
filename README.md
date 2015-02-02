@@ -203,7 +203,7 @@ The Design File is a TAB-separated values plain text file with one line per samp
     * '__1__': the sample belongs to the control group;
     * '__2__': the sample belongs to the test case group.
 
-*Warning for ChIP-Seq pipeline users:* the values '__1__' for control and '__2__' for treatment are inverted compared to the old Perl version.
+**Warning for ChIP-Seq pipeline users:** the values '__1__' for control and '__2__' for treatment are inverted compared to the old Perl version.
 
 Example:
 
