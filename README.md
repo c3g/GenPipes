@@ -89,6 +89,8 @@ For more information about a specific pipeline, visit:
 ### [RNA-Seq Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/rnaseq/)
 ### [RNA-Seq De Novo Assembly Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/rnaseq_denovo_assembly/)
 ### [PacBio Assembly Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/pacbio_assembly/)
+### [ChIP-Seq Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/chipseq/)
+### [Illumina Run Processing Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/illumina_run_processing/)
 
 
 Readset File
@@ -97,7 +99,7 @@ Readset File
 The Readset File is a TAB-separated values plain text file with one line per readset and the following columns in any order:
 
 
-### DNA-Seq, RNA-Seq, RNA-Seq De Novo Assembly
+### DNA-Seq, RNA-Seq, RNA-Seq De Novo Assembly, ChIP-Seq
 
 * Sample: must contain letters A-Z, numbers 0-9, hyphens (-) or underscores (_) only; BAM files will be merged into a file named after this value; mandatory;
 * Readset: a unique readset name with the same allowed characters as above; mandatory;
@@ -191,7 +193,7 @@ mugqic_pipelines/pipelines/dnaseq/dnaseq.py -c mugqic_pipelines/pipelines/dnaseq
 
 Design File
 -----------
-RNA-Seq and RNA-Seq De Novo Assembly pipelines can perform differential expression analysis if they are provided with an input Design File.
+RNA-Seq, RNA-Seq De Novo Assembly and ChIP-Seq pipelines can perform differential expression analysis if they are provided with an input Design File.
 
 The Design File is a TAB-separated values plain text file with one line per sample and the following columns:
 
@@ -200,6 +202,8 @@ The Design File is a TAB-separated values plain text file with one line per samp
     * '__0__' or '': the sample does not belong to any group;
     * '__1__': the sample belongs to the control group;
     * '__2__': the sample belongs to the test case group.
+
+*Warning for ChIP-Seq pipeline users:* the values '__1__' for control and '__2__' for treatment are inverted compared to the old Perl version.
 
 Example:
 

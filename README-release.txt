@@ -13,6 +13,7 @@ for f in \
   pipelines/rnaseq/rnaseq.py \
   pipelines/rnaseq_denovo_assembly/rnaseq_denovo_assembly.py \
   pipelines/pacbio_assembly/pacbio_assembly.py \
+  pipelines/chipseq/chipseq.py \
   pipelines/illumina_run_processing/illumina_run_processing.py \
 ; do echo $f; $f --help > `dirname $f`/README.md; done
 
