@@ -4,7 +4,7 @@ set -eu -o pipefail
 
 SOFTWARE=smrtanalysis
 VERSION_BASE=2.3.0.140936
-VERSION_PATCH=p1
+VERSION_PATCH=p2
 VERSION=$VERSION_BASE.$VERSION_PATCH
 ARCHIVE=${SOFTWARE}_$VERSION_BASE.run
 ARCHIVE_PATCH=${SOFTWARE}-patch_$VERSION.run
@@ -35,6 +35,9 @@ build() {
 
   # Install software
   mv -i $SOFTWARE_DIR $INSTALL_DIR/
+
+  # Archive patch file as well
+  store_archive $ARCHIVE_PATCH
 }
 
 module_file() {
