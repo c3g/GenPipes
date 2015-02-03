@@ -214,7 +214,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
   VALIDATION_STRINGENCY=LENIENT \\
   INPUT={input} \\
   FASTQ={fastq}{second_end_fastq}""".format(
-        tmp_dir=config.param('picard_sam_to_fastq', 'tmp_dir', type='dirpath'),
+        tmp_dir=config.param('picard_sam_to_fastq', 'tmp_dir'),
         java_other_options=config.param('picard_sam_to_fastq', 'java_other_options'),
         ram=config.param('picard_sam_to_fastq', 'ram'),
         input=input,
