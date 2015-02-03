@@ -550,8 +550,6 @@ Rscript $R_TOOLS/chipSeqgenerateAnnotationGraphs.R \\
             job.modules.append(config.param('gq_seq_utils_report', 'module_imagemagick', required=False))
 
         job.input_files = \
-            [os.path.join("metrics", readset.name + ".readstats.csv") for readset in self.readsets] + \
-            [os.path.join("metrics", sample.name + ".memstats.csv") for sample in self.samples] + \
             [os.path.join("graphs", sample.name + "_QC_Metrics.ps") for sample in self.samples] + \
             [os.path.join("annotation", contrast.real_name, contrast.real_name + ".annotated.csv") for contrast in self.contrasts if contrast.type == 'narrow'] + \
             [os.path.join("annotation", contrast.real_name, contrast.real_name, "GenomeOntology.html") for contrast in self.contrasts if contrast.type == 'narrow'] + \
