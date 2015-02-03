@@ -189,7 +189,7 @@ perl -MReadMetrics -e 'ReadMetrics::mergeStats(
             job = concat_jobs([
                 self.merge_metrics(readset.sample.name + " " + readset.name, alignment_file, flagstat_file, metrics_file + ".tmp"),
                 Job(
-                    [metrics_file + ".tmp"],
+                    [trimming_stats, metrics_file + ".tmp"],
                     [metrics_file],
                     command="""\
 grep "{sample_name}\t{readset_name}" {trimming_stats} | cut -f3- | sed 's/\t/,/g' | sed '1iRaw Fragments,Fragment Surviving,Single Surviving' | paste -d, <(cut -f1 -d, {metrics_file}.tmp) - <(cut -f2- -d, {metrics_file}.tmp) \\
@@ -549,7 +549,7 @@ Rscript $R_TOOLS/chipSeqgenerateAnnotationGraphs.R \\
         if config.param('gq_seq_utils_report', 'module_imagemagick', required=False):
             job.modules.append(config.param('gq_seq_utils_report', 'module_imagemagick', required=False))
 
-        job.input_files = [os.path.join("metrics", "trimming.stats")] + \
+        job.input_files = \
             [os.path.join("metrics", readset.name + ".readstats.csv") for readset in self.readsets] + \
             [os.path.join("metrics", sample.name + ".memstats.csv") for sample in self.samples] + \
             [os.path.join("graphs", sample.name + "_QC_Metrics.ps") for sample in self.samples] + \
