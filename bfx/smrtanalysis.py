@@ -117,7 +117,6 @@ def filtering(
         [fofn, ref_params_xml],
         [input_fofn, output_fastq, output_prefix + "fasta", os.path.join(output_dir, "data", "filtered_summary.csv")],
         [
-            ['smrtanalysis_filtering', 'module_memtime'],
             ['smrtanalysis_filtering', 'module_prinseq'],
             ['smrtanalysis_filtering', 'module_smrtanalysis']
         ],
@@ -135,7 +134,7 @@ smrtpipe.py \\
   --debug \\
   xml:{input_xml} \\
   > {log}' && \\
-memtime prinseq-lite.pl \\
+prinseq-lite.pl \\
   -verbose \\
   -fastq {output_fastq} \\
   -out_format 1 \\

@@ -31,13 +31,12 @@ def assembly_stats(
             os.path.join(outdir, "summaryTableReads2.tsv")
         ],
         [
-            ['pacbio_tools_assembly_stats', 'module_memtime'],
             ['pacbio_tools_assembly_stats', 'module_perl'],
             ['pacbio_tools_assembly_stats', 'module_R'],
             ['pacbio_tools_assembly_stats', 'module_mugqic_tools']
         ],
         command="""\
-memtime pacBioAssemblyStats.pl \\
+pacBioAssemblyStats.pl \\
   --shortReads {short_reads} \\
   --longReads {long_reads} \\
   --correctedReads {corrected_reads} \\
@@ -70,12 +69,11 @@ def celera_config(
         [infile],
         [outfile],
         [
-            ['pacbio_tools_celera_config', 'module_memtime'],
             ['pacbio_tools_celera_config', 'module_perl'],
             ['pacbio_tools_celera_config', 'module_mugqic_tools']
         ],
         command="""\
-memtime pacBioAssemblyCeleraConfig.pl \\
+pacBioAssemblyCeleraConfig.pl \\
   --infile {infile} \\
   --merylThreads {meryl_threads} \\
   --ovlThreads {ovl_threads} \\
@@ -126,12 +124,11 @@ def compile(
         [None],
         [outfile],
         [
-            ['pacbio_tools_get_cutoff', 'module_memtime'],
             ['pacbio_tools_get_cutoff', 'module_perl'],
             ['pacbio_tools_get_cutoff', 'module_mugqic_tools']
         ],
         command="""\
-memtime pacBioCompileStats.pl \\
+pacBioCompileStats.pl \\
   --indir {indir} \\
   --estimatedGenomeSize {estimated_genome_size} \\
   --sampleName {sample_name} \\
@@ -154,12 +151,11 @@ def get_cutoff(
         [infile],
         [outfile],
         [
-            ['pacbio_tools_get_cutoff', 'module_memtime'],
             ['pacbio_tools_get_cutoff', 'module_perl'],
             ['pacbio_tools_get_cutoff', 'module_mugqic_tools']
         ],
         command="""\
-memtime pacBioGetCutoff.pl \\
+pacBioGetCutoff.pl \\
   --infile {infile} \\
   --coverage {coverage} \\
   --genomeSize {genome_size} \\
@@ -183,12 +179,11 @@ def split_reads(
         [infile, cutoff],
         [short_reads, long_reads],
         [
-            ['pacbio_tools_get_cutoff', 'module_memtime'],
             ['pacbio_tools_get_cutoff', 'module_perl'],
             ['pacbio_tools_get_cutoff', 'module_mugqic_tools']
         ],
         command="""\
-memtime pacBioSplitReads.pl \\
+pacBioSplitReads.pl \\
   --infile {infile} \\
   --cutoff `cat {cutoff}` \\
   --outfileShort {short_reads} \\

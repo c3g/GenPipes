@@ -17,11 +17,10 @@ def blastdbcmd(
         [entry_file],
         [outfile],
         [
-            ['blast_blastdbcmd', 'module_memtime'],
             ['blast_blastdbcmd', 'module_blast']
         ],
         command="""\
-memtime blastdbcmd \\
+blastdbcmd \\
   -db {blast_db} \\
   -entry {entry_cmd} \\
   -outfmt %f \\
@@ -61,13 +60,12 @@ def dcmegablast(
         [infile_fasta, coverage_bed],
         [outfile, os.path.join(outdir, "blastCov.tsv"), os.path.join(outdir, "contigsCoverage.tsv")],
         [
-            ['blast_dcmegablast', 'module_memtime'],
             ['blast_dcmegablast', 'module_blast'],
             ['blast_dcmegablast', 'module_R'],
             ['blast_dcmegablast', 'module_mugqic_tools']
         ],
         command="""\
-memtime blastn -task dc-megablast \\
+blastn -task dc-megablast \\
   -query {infile_fasta} \\
   -outfmt "{outfmt} qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore stitle sskingdoms sscinames scomnames" \\
   -out {tmp_outfile} \\
