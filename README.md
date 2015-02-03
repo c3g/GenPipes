@@ -201,7 +201,7 @@ The Design File is a TAB-separated values plain text file with one line per samp
 * <contrast>: each of the following columns defines an experimental design contrast; the column name defines the contrast name, and the following values represent the sample group membership for this contrast:
     * '__0__' or '': the sample does not belong to any group;
     * '__1__': the sample belongs to the control group;
-    * '__2__': the sample belongs to the test case group.
+    * '__2__': the sample belongs to the treatment test case group.
 
 **Warning for ChIP-Seq pipeline users:** the values '__1__' for control and '__2__' for treatment are inverted compared to the old Perl version.
 
