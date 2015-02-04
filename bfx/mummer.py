@@ -18,7 +18,7 @@ def reference(
     outfile2
     ):
 
-    return Job(
+    job = Job(
         [fasta_reference, fasta_consensus],
         [outfile, outfile + ".png", outfile2],
         [
@@ -56,6 +56,12 @@ show-snps -rlTC \\
         outfile2=outfile2
     ))
 
+    # Mammouth does not have libgd by default. Module must be loaded explicitely
+    if config.param('mummer_reference', 'module_libgd', required=False):
+        job.modules.append(config.param('mummer_reference', 'module_libgd', required=False))
+
+    return job
+
 def self(
     prefix1,
     fasta_consensus,
@@ -64,7 +70,7 @@ def self(
     outfile
     ):
 
-    return Job(
+    job = Job(
         [fasta_consensus],
         [outfile, outfile + ".png"],
         [
@@ -88,3 +94,9 @@ mummerplot --png --layout --filter \\
         prefix2=prefix2,
         outfile=outfile
     ))
+
+    # Mammouth does not have libgd by default. Module must be loaded explicitely
+    if config.param('mummer_self', 'module_libgd', required=False):
+        job.modules.append(config.param('mummer_self', 'module_libgd', required=False))
+
+    return job
