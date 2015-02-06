@@ -69,12 +69,12 @@ class IlluminaReadset(Readset):
         return self._lane
 
     @property
-    def adaptor1(self):
-        return self._adaptor1
+    def adapter1(self):
+        return self._adapter1
 
     @property
-    def adaptor2(self):
-        return self._adaptor2
+    def adapter2(self):
+        return self._adapter2
 
     @property
     def quality_offset(self):
@@ -119,8 +119,8 @@ def parse_illumina_readset_file(illumina_readset_file):
         readset._library = line.get('Library', None)
         readset._run = line.get('Run', None)
         readset._lane = line.get('Lane', None)
-        readset._adaptor1 = line.get('Adaptor1', None)
-        readset._adaptor2 = line.get('Adaptor2', None)
+        readset._adapter1 = line.get('Adapter1', None)
+        readset._adapter2 = line.get('Adapter2', None)
         readset._quality_offset = int(line['QualityOffset']) if line.get('QualityOffset', None) else None
         readset._beds = line['BED'].split(";") if line.get('BED', None) else []
 
