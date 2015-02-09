@@ -13,16 +13,23 @@
 #
 # 
 # cd ~ ; rm -rf /mnt/lustre03/bourque/bourque_group/opt/software/mirdeep2
+
+
+# rm -rf /gs/project/mugqic/analyste_dev/phase2/software/mirdeep2
+export PERL5LIBPREFIX=$MUGQIC_INSTALL_HOME_DEV/software/perl5libs
+export PERL5LIB=$PERL5LIBPREFIX/share/perl5/:$PERL5LIBPREFIX/lib64/perl5/
+
 SOFTWARE=mirdeep2 
-VERSION="2_0_0_5"  
-INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/$SOFTWARE/$SOFTWARE-$VERSION
+VERSION="2_0_0_7"  
+INSTALL_PATH=$MUGQIC_INSTALL_HOME_DEV/software/$SOFTWARE
 mkdir -p $INSTALL_PATH
 cd $INSTALL_PATH
 
 # Download
-wget "https://www.mdc-berlin.de/38350089/en/research/research_teams/systems_biology_of_gene_regulatory_elements/projects/miRDeep/mirdeep$VERSION.zip"
+wget "https://www.mdc-berlin.de/43969303/en/research/research_teams/systems_biology_of_gene_regulatory_elements/projects/miRDeep/mirdeep$VERSION.zip"
 unzip mirdeep$VERSION.zip
-mv mirdeep2/* . ; rm -rf mirdeep2
+rm -rf mirdeep$VERSION.zip
+cd  mirdeep$VERSION
 
 # Download two obscure dependencies: SQUID AND RANFOLD
 wget http://selab.janelia.org/software/squid/squid.tar.gz
@@ -36,11 +43,13 @@ cd squid
 make
 cd ../randfold
 
-# MANUAL FIX: replace "INCLUDE=-I." by "$MUGQIC_INSTALL_HOME/software/mirdeep2/mirdeep2-2_0_0_5/squid"
-echo $MUGQIC_INSTALL_HOME/software/mirdeep2/mirdeep2-2_0_0_5/squid/
+# MANUAL FIX: replace "INCLUDE=-I." by "$MUGQIC_INSTALL_HOME_DEV/software/mirdeep2/mirdeep2-2_0_0_5/squid"
+echo $MUGQIC_INSTALL_HOME_DEV/software/mirdeep2/mirdeep$VERSION/squid/ #
+# /gs/project/mugqic/analyste_dev/phase2/software/mirdeep2/mirdeep2_0_0_7/squid/
+# INCLUDE=-I. -I/gs/project/mugqic/analyste_dev/phase2/software/mirdeep2/mirdeep2_0_0_7/squid/ -L/gs/project/mugqic/analyste_dev/phase2/software/mirdeep2/mirdeep2_0_0_7/squid/
 nano Makefile
 # INCLUDE=-I. -I/mnt/lustre03/bourque/bourque_group/opt/software/mirdeep2/mirdeep2-2_0_0_5/squid/ -L/mnt/lustre03/bourque/bourque_group/opt/software/mirdeep2/mirdeep2-2_0_0_5/squid/
-# sed -e s/INCLUDE=-I./$MUGQIC_INSTALL_HOME/g temp
+# sed -e s/INCLUDE=-I./$MUGQIC_INSTALL_HOME_DEV/g temp
 # 2.c.ii.3)  edit Makefile e.g. emacs Makefile
 #            change line with INCLUDE=-I. to           
 #            INCLUDE=-I. -Iyour_path_to_squid-1.9g -Lyour_path_to_squid-1.9g
@@ -48,8 +57,40 @@ nano Makefile
 make
 cd ..
 
-# PDF-API2 perl module
-cpan -i PDF::API2
+# PDF-API2 perl module (cpan not working for some reason)
+
+
+wget http://cpan.metacpan.org/authors/id/G/GA/GAAS/IO-String-1.08.tar.gz
+tar -xvf IO-String-1.08.tar.gz
+
+
+wget http://search.cpan.org/CPAN/authors/id/M/MH/MHOSKEN/Font-TTF-1.05.tar.gz
+tar -xvf Font-TTF-1.05.tar.gz 
+
+
+wget http://search.cpan.org/CPAN/authors/id/S/SS/SSIMMS/PDF-API2-2.023.tar.gz
+tar -xvf PDF-API2-2.023.tar.gz
+
+cd IO-String-1.08
+perl Makefile.PL PREFIX=$PERL5LIBPREFIX
+make
+make test
+make install
+cd ..
+
+cd Font-TTF-1.05
+perl Makefile.PL PREFIX=$PERL5LIBPREFIX
+make
+make test
+make install
+cd ..
+
+cd PDF-API2-2.023
+perl Makefile.PL PREFIX=$PERL5LIBPREFIX
+make
+make test
+make install
+cd ../.. 
  
 # Add permissions and install software
 chmod -R ug+rwX .
@@ -65,12 +106,15 @@ proc ModulesHelp { } {
 }
 module-whatis \"$SOFTWARE  \" ;  
                       
-set             root                \$::env(MUGQIC_INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE-$VERSION ;  
+set             root                \$::env(MUGQIC_INSTALL_HOME_DEV)/software/$SOFTWARE/mirdeep$VERSION ;  
 prepend-path    PATH                \$root ; 
 prepend-path    PATH                \$root/randfold ;
-#prepend-path   PERL5LIB            \$root/lib
+
 module          load                mugqic/bowtie/1.0.0
-module          load                mugqic/ViennaRNA/1.8.3
+module          load                mugqic_dev/ViennaRNA/1.8.3
+
+prepend-path    PERL5LIB            $PERL5LIB ; 
+
 " > $VERSION
 
 
@@ -84,8 +128,7 @@ echo "#%Module1.0
 set ModulesVersion \"$VERSION\"" > .version
 
 # Add permissions and install module
-mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
+mkdir -p $MUGQIC_INSTALL_HOME_DEV/modulefiles/mugqic_dev/$SOFTWARE
 chmod -R ug+rwX $VERSION .version
 chmod -R o+rX $VERSION .version
-mv $VERSION .version $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
-
+mv $VERSION .version $MUGQIC_INSTALL_HOME_DEV/modulefiles/mugqic_dev/$SOFTWARE

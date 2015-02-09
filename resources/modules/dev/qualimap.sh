@@ -10,10 +10,18 @@ set -eu -o pipefail
 ################################################################################
 
 SOFTWARE=qualimap 
-VERSION="v2.0.1" 
+
+# VERSION="v2.0.1"
+# ARCHIVE=$SOFTWARE"_"$VERSION.zip
+# ARCHIVE_URL=http://qualimap.bioinfo.cipf.es/release/$ARCHIVE
+# SOFTWARE_DIR=$SOFTWARE"_"$VERSION
+
+
+VERSION="build-09-02-15" 
 ARCHIVE=$SOFTWARE"_"$VERSION.zip  
-ARCHIVE_URL=http://qualimap.bioinfo.cipf.es/release/$ARCHIVE  
+ARCHIVE_URL=http://www.dropbox.com/s/4konlqbullchrah/$ARCHIVE
 SOFTWARE_DIR=$SOFTWARE"_"$VERSION  
+
 
 # Specific commands to extract and build the software
 # $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
