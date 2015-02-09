@@ -1,0 +1,39 @@
+#!/bin/bash
+# Exit immediately on error
+set -eu -o pipefail
+
+# Perl module where to install libs
+VERSION=5.18.2
+module load mugqic/perl/$VERSION
+
+# Install Perl modules from CPAN
+
+# MakeMaker's prompt function will always return the default without waiting for user input.
+export PERL_MM_USE_DEFAULT=1
+# Install module prerequisites automatically
+export PERL_EXTUTILS_AUTOINSTALL="--defaultdeps"
+
+for MODULE in \
+Config::Simple \
+DBD::SQLite \
+DBI \
+File::Slurp \
+File::Which \
+Filesys::Df \
+Parse::Range \
+PDF::API2 \
+PDF::Create \
+PerlIO::gzip \
+Proc::ParallelLoop \
+Statistics::Descriptive \
+Text::CSV \
+Text::CSV::Encoded \
+XML::Simple \
+; do
+$PERL_HOME/bin/perl -MCPAN -e"CPAN::Shell->force(qw(install $MODULE))"
+# Test if module is properly installed
+$PERL_HOME/bin/perl -e "use $MODULE"
+done
+
+# Add permissions
+chmod -R ug+rwX,o+rX-w $PERL_HOME
