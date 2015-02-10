@@ -3,9 +3,9 @@
 set -eu -o pipefail
 
 SOFTWARE=bedtools
-VERSION=2.17.0
-ARCHIVE=BEDTools.v$VERSION.tar.gz
-ARCHIVE_URL=http://bedtools.googlecode.com/files/$ARCHIVE
+VERSION=2.22.1
+ARCHIVE=$SOFTWARE-$VERSION.tar.gz
+ARCHIVE_URL=https://github.com/arq5x/bedtools2/releases/download/v$VERSION/$ARCHIVE
 SOFTWARE_DIR=$SOFTWARE-$VERSION
 
 # Specific commands to extract and build the software
@@ -15,6 +15,8 @@ build() {
   cd $INSTALL_DOWNLOAD
   tar zxvf $ARCHIVE
 
+  # Rename archive root directory since version is missing
+  mv bedtools2 $SOFTWARE_DIR
   cd $SOFTWARE_DIR
   make -j8
 
