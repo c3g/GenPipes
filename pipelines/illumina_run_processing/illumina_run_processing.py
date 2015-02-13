@@ -585,7 +585,7 @@ configureBclToFastq.pl\\
         jobs = []
         inputs = self.copy_job_inputs
 
-        full_destination_folder = config.param('copy', 'destination_folder', type="dirpath") + os.path.basename(self.run_dir) + "_" + str(self.lane_number)
+        full_destination_folder = config.param('copy', 'destination_folder', type="dirpath") + os.path.basename(self.run_dir)
         output = full_destination_folder + os.sep + "copyCompleted." + str(self.lane_number) + ".out"
 
         exclude_bam = config.param('copy', 'exclude_bam', required=False, type='boolean')
@@ -641,7 +641,7 @@ configureBclToFastq.pl\\
         """
         jobs = []
 
-        full_destination_folder = config.param('copy', 'destination_folder', type="dirpath") + os.path.basename(self.run_dir) + "_" + str(self.lane_number)
+        full_destination_folder = config.param('copy', 'destination_folder', type="dirpath") + os.path.basename(self.run_dir)
         input = full_destination_folder + os.sep + "copyCompleted." + str(self.lane_number) + ".out"
         output = full_destination_folder + os.sep +"notificationAssociation." + str(self.lane_number) + ".out"
 
