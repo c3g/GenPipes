@@ -3,8 +3,8 @@
 set -eu -o pipefail
 
 # Perl module where to install libs
-VERSION=5.18.2
-module load mugqic/perl/$VERSION
+PERL_MODULE=mugqic/perl/5.18.2
+module load $PERL_MODULE
 
 # Install Perl modules from CPAN
 
