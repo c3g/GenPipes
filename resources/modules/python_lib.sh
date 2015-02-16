@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 # Python module where to install libs
-PYTHON_MODULE=mugqic_dev/python/2.7.8
+PYTHON_MODULE=mugqic/python/2.7.8
 module load $PYTHON_MODULE
 
 # Install Python libraries
