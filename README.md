@@ -211,7 +211,7 @@ Example:
     sampleC	0	2	0
     sampleD	0	0	2
 
-## For ChIP-Seq pipeline users
+### For ChIP-Seq pipeline users
 Peak calling type must be specified by adding to the contrast name either `,N` for *Narrow* peak calling, or `,B` for *Broad* peak calling.
 
 Example:
