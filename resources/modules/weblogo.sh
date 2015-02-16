@@ -37,12 +37,11 @@ then
   sed -i s,"#\!/usr/bin/perl -w,#\!/usr/bin/env perl\\nuse warnings;,g" seqlogo
 elif [[ $VERSION == "3.3" ]]
 then
-  cd $SOFTWARE_DIR
-  module load mugqic/python/$PYTHON_VERSION
-  python setup.py install
-  ln -s weblogo seqlogo
-  cd $INSTALL_DOWNLOAD
   mv $SOFTWARE_DIR $INSTALL_DIR/
+  cd $INSTALL_DIR/$SOFTWARE_DIR
+  module load mugqic/python/$PYTHON_VERSION
+  python setup.py install --prefix $INSTALL_DIR/$SOFTWARE_DIR
+  ln -s weblogo seqlogo
 fi
 }
 
@@ -56,6 +55,7 @@ module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
 prepend-path    PATH                \$root
+prepend-path    PYTHONPATH          \$root/lib/python2.7/site-packages
 setenv          WEBLOGO_HOME        \$root
 "
 }
