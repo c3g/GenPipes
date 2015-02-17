@@ -228,15 +228,13 @@ class RnaSeqDeNovoAssembly(common.Illumina):
 
         trinity_job.command = """\
 Trinity {other_options} \\
-  --JM {jellyfish_memory} \\
+  --max_memory {max_memory} \\
   --CPU {cpu} \\
-  --bflyCPU {butterfly_cpu} \\
   {reads_option} \\
   --output {output_directory}""".format(
             other_options=config.param('trinity', 'other_options'),
-            jellyfish_memory=config.param('trinity', 'jellyfish_memory'),
+            max_memory=config.param('trinity', 'max_memory'),
             cpu=config.param('trinity', 'cpu'),
-            butterfly_cpu=config.param('trinity', 'butterfly_cpu'),
             reads_option=reads_option,
             output_directory=output_directory
         )
@@ -278,9 +276,9 @@ Trinity {other_options} \\
             )
         ], name="exonerate_fastasplit.Trinity.fasta")]
 
-    def blastx_swissprot(self):
+    def blastx_trinity_uniprot(self):
         """
-        Annotate Trinity FASTA chunks with Swiss-Prot database using [blastx](http://blast.ncbi.nlm.nih.gov/).
+        Annotate Trinity FASTA chunks with Swiss-Prot and UniRef databases using [blastx](http://blast.ncbi.nlm.nih.gov/).
         """
 
         jobs = []
@@ -289,89 +287,140 @@ Trinity {other_options} \\
         num_fasta_chunks = config.param('exonerate_fastasplit', 'num_fasta_chunks', type='posint')
         cpu = config.param('blastx_swissprot', 'cpu')
         program = "blastx"
-        db = config.param("blastx_swissprot", "db", type='prefixpath')
-        if not glob.glob(db + ".*phr"):
-            raise Exception("Error: " + db + " BLAST db files do not exist!")
+        swissprot_db = config.param("blastx_trinity_uniprot", "swissprot_db", type='prefixpath')
+        uniref_db = config.param("blastx_trinity_uniprot", "uniref_db", type='prefixpath')
 
-        for i in range(num_fasta_chunks):
-            query_chunk = os.path.join(trinity_chunks_directory, "Trinity.fasta_chunk_{:07d}".format(i))
-            blast_chunk = os.path.join(blast_directory, program + "_Trinity_" + os.path.basename(db) + "_chunk_{:07d}.tsv".format(i))
-            jobs.append(concat_jobs([
-                Job(command="mkdir -p " + blast_directory, removable_files=[blast_directory]),
-                Job(
-                    [query_chunk],
-                    [blast_chunk],
-                    [['blast', 'module_perl'], ['blast', 'module_mugqic_tools'], ['blast', 'module_blast']],
-                    command="""\
+        for db in swissprot_db, uniref_db:
+            if not glob.glob(db + ".*phr"):
+                raise Exception("Error: " + db + " BLAST db files do not exist!")
+
+            for i in range(num_fasta_chunks):
+                trinity_chunk = os.path.join(trinity_chunks_directory, "Trinity.fasta_chunk_{:07d}".format(i))
+                query_chunk = os.path.join(blast_directory, "query_Trinity_" + os.path.basename(db) + "_chunk_{:07d}.tsv".format(i))
+                blast_chunk = os.path.join(blast_directory, program + "_Trinity_" + os.path.basename(db) + "_chunk_{:07d}.tsv".format(i))
+                jobs.append(concat_jobs([
+                    Job(command="mkdir -p " + blast_directory, removable_files=[blast_directory]),
+                    Job(command="ln -s -f " + os.path.relpath(trinity_chunk, os.path.dirname(query_chunk)) + " " + query_chunk, removable_files=[blast_directory]),
+                    Job(
+                        [trinity_chunk],
+                        [blast_chunk],
+                        [['blast', 'module_perl'], ['blast', 'module_mugqic_tools'], ['blast', 'module_blast']],
+                        command="""\
 parallelBlast.pl \\
   -file {query_chunk} \\
   --OUT {blast_chunk} \\
   -n {cpu} \\
   --BLAST "{program} -db {db} -max_target_seqs 1 -outfmt '6 std stitle'" """.format(
-                        query_chunk=query_chunk,
-                        blast_chunk=blast_chunk,
-                        cpu=cpu,
-                        program=program,
-                        db=db
+                            query_chunk=query_chunk,
+                            blast_chunk=blast_chunk,
+                            cpu=cpu,
+                            program=program,
+                            db=db
+                        )
                     )
-                )
-            ], name="blastx_swissprot.chunk_{:07d}".format(i)))
+                ], name="blastx_trinity_" + os.path.basename(db) + ".chunk_{:07d}".format(i)))
 
         return jobs
 
-    def blastx_swissprot_merge(self):
+    def blastx_trinity_uniprot_merge(self):
         """
-        Merge blastx Swiss-Prot chunks results.
+        Merge blastx Swiss-Prot and UniRef chunks results.
         """
 
+        jobs = []
         blast_directory = "blast"
         num_fasta_chunks = config.param('exonerate_fastasplit', 'num_fasta_chunks', type='posint')
         program = "blastx"
-        db = config.param("blastx_swissprot", "db", type='prefixpath')
-        blast_chunks = [os.path.join(blast_directory, program + "_Trinity_" + os.path.basename(db) + "_chunk_{:07d}.tsv".format(i)) for i in range(num_fasta_chunks)]
-        blast_result = os.path.join(blast_directory, program + "_Trinity_" + os.path.basename(db) + ".tsv")
-        return [concat_jobs([
-            Job(
-                blast_chunks,
-                [blast_result],
-                command="cat \\\n  " + " \\\n  ".join(blast_chunks) + " \\\n  > " + blast_result
-            ),
-            Job(command="zip -j {blast_result}.zip {blast_result}".format(blast_result=blast_result))
-        ], name="blastx_swissprot_merge")]
+        swissprot_db = config.param("blastx_trinity_uniprot", "swissprot_db", type='prefixpath')
+        uniref_db = config.param("blastx_trinity_uniprot", "uniref_db", type='prefixpath')
+
+        for db in swissprot_db, uniref_db:
+            blast_chunks = [os.path.join(blast_directory, program + "_Trinity_" + os.path.basename(db) + "_chunk_{:07d}.tsv".format(i)) for i in range(num_fasta_chunks)]
+            blast_result = os.path.join(blast_directory, program + "_Trinity_" + os.path.basename(db) + ".tsv")
+            jobs.append(concat_jobs([
+                Job(
+                    blast_chunks,
+                    [blast_result],
+                    command="cat \\\n  " + " \\\n  ".join(blast_chunks) + " \\\n  > " + blast_result
+                ),
+                Job(command="zip -j {blast_result}.zip {blast_result}".format(blast_result=blast_result))
+            ], name="blastx_trinity_" + os.path.basename(db) + "_merge"))
+
+        return jobs
 
     def transdecoder(self):
         """
-        Identifies candidate coding regions within transcript sequences using [Transdecoder](http://transdecoder.sourceforge.net/).
+        Identifies candidate coding regions within transcript sequences using [Transdecoder](http://transdecoder.github.io/).
         """
 
         trinity_fasta = os.path.join("trinity_out_dir", "Trinity.fasta")
         transdecoder_directory = os.path.join("trinotate", "transdecoder")
+        transdecoder_subdirectory = os.path.join(os.path.basename(trinity_fasta) + ".transdecoder_dir")
 
         return [concat_jobs([
             Job(command="mkdir -p " + transdecoder_directory),
             Job(command="cd " + transdecoder_directory),
-            Job(command="rm -f " + "Trinity.fasta.transdecoder.pfam.dat.domtbl"),
             Job(
                 [trinity_fasta],
-                [os.path.join(transdecoder_directory, "Trinity.fasta.transdecoder.pep"),
-                 os.path.join(transdecoder_directory, "Trinity.fasta.transdecoder.pfam.dat.domtbl")],
+                [os.path.join(transdecoder_directory, os.path.basename(trinity_fasta) + ".transdecoder.pep")],
                 [['transdecoder', 'module_perl'],
-                 ['transdecoder', 'module_cd_hit'],
+                 ['transdecoder', 'module_blast'],
                  ['transdecoder', 'module_hmmer'],
-                 ['transdecoder', 'module_trinity']],
+                 ['transdecoder', 'module_trinotate'],
+                 ['transdecoder', 'module_transdecoder']],
                 command="""\
-$TRINITY_HOME/trinity-plugins/transdecoder/TransDecoder {other_options} \\
-  --t {transcripts} \\
-  --search_pfam {pfam_db} \\
-  --CPU {cpu}""".format(
+TransDecoder.LongOrfs {other_options} \\
+  -t {transcripts} && \\
+blastp \\
+  -query {transdecoder_subdirectory}/longest_orfs.pep \\
+  -db {swissprot_db} \\
+  -max_target_seqs 1 -outfmt 6 -evalue 1e-5 -num_threads {cpu} \\
+  > {transdecoder_subdirectory}/longest_orfs.blastp.outfmt6 && \\
+hmmscan --cpu {cpu} \\
+  --domtblout {transdecoder_subdirectory}/longest_orfs.pfam.domtblout \\
+  {pfam_db} \\
+  {transdecoder_subdirectory}/longest_orfs.pep && \\
+TransDecoder.Predict \\
+  -t {transcripts} \\
+  --retain_pfam_hits {transdecoder_subdirectory}/longest_orfs.pfam.domtblout \\
+  --retain_blastp_hits {transdecoder_subdirectory}/longest_orfs.blastp.outfmt6""".format(
                     other_options=config.param('transdecoder', 'other_options', required=False),
                     transcripts=os.path.relpath(trinity_fasta, transdecoder_directory),
+                    transdecoder_subdirectory=transdecoder_subdirectory,
+                    swissprot_db=config.param('transdecoder', 'swissprot_db', type='filepath'),
                     pfam_db=config.param('transdecoder', 'pfam_db', type='filepath'),
                     cpu=config.param('transdecoder', 'cpu', type='posint')
                 )
             ),
             Job(command="cd " + os.path.join("..", "..")),
         ], name="transdecoder")]
+
+    def hmmer(self):
+        """
+        Identifies protein domains using [HMMR](http://hmmer.janelia.org/).
+        """
+
+        transdecoder_directory = os.path.join("trinotate", "transdecoder")
+        transdecoder_fasta = os.path.join(transdecoder_directory, "Trinity.fasta.transdecoder.pep")
+        transdecoder_pfam = os.path.join(transdecoder_directory, "Trinity.fasta.transdecoder.pfam")
+
+        return [concat_jobs([
+            Job(
+                [transdecoder_fasta],
+                [transdecoder_pfam],
+                [['hmmer', 'module_hmmer']],
+                command="""\
+hmmscan --cpu {cpu} \\
+  --domtblout {transdecoder_pfam} \\
+  {pfam_db} \\
+  {transdecoder_fasta}""".format(
+                    cpu=config.param('hmmer', 'cpu', type='posint'),
+                    transdecoder_pfam=transdecoder_pfam,
+                    pfam_db=config.param('hmmer', 'pfam_db', type='filepath'),
+                    transdecoder_fasta=transdecoder_fasta
+                )
+            ),
+        ], name="hmmer")]
 
     def rnammer_transcriptome(self):
         """
@@ -403,24 +452,28 @@ $TRINOTATE_HOME/util/rnammer_support/RnammerTranscriptome.pl {other_options} \\
             Job(command="cd " + os.path.join("..", "..")),
         ], name="rnammer_transcriptome")]
 
-    def blastp_swissprot(self):
+    def blastp_transdecoder_uniprot(self):
         """
-        Search Transdecoder-predicted coding regions for sequence homologies using [blastp](http://blast.ncbi.nlm.nih.gov/).
+        Search Transdecoder-predicted coding regions for sequence homologies on UniProt using [blastp](http://blast.ncbi.nlm.nih.gov/).
         """
 
+        jobs = []
         blast_directory = os.path.join("trinotate", "blastp")
-        cpu = config.param('blastp_swissprot', 'cpu')
+        cpu = config.param('blastp_transdecoder_uniprot', 'cpu')
         program = "blastp"
-        db = config.param("blastp_swissprot", "db", type='prefixpath')
+        transdecoder_fasta = os.path.join("trinotate", "transdecoder", "Trinity.fasta.transdecoder.pep")
+        db = config.param("blastp_transdecoder_uniprot", "swissprot_db", type='prefixpath')
+
         if not glob.glob(db + ".*phr"):
             raise Exception("Error: " + db + " BLAST db files do not exist!")
 
-        query = os.path.join("trinotate", "transdecoder", "Trinity.fasta.transdecoder.pep")
-        blast_result = os.path.join(blast_directory, program + "_" + os.path.basename(query) + "_" + os.path.basename(db) + ".tsv")
-        return [concat_jobs([
+        query = os.path.join(blast_directory, os.path.basename(transdecoder_fasta) + "_" + os.path.basename(db) + ".tsv")
+        blast_result = os.path.join(blast_directory, program + "_" + os.path.basename(query))
+        jobs.append(concat_jobs([
             Job(command="mkdir -p " + blast_directory),
+            Job(command="ln -s -f " + os.path.relpath(transdecoder_fasta, os.path.dirname(query)) + " " + query, removable_files=[blast_directory]),
             Job(
-                [query],
+                [transdecoder_fasta],
                 [blast_result],
                 [['blast', 'module_perl'], ['blast', 'module_mugqic_tools'], ['blast', 'module_blast']],
                 command="""\
@@ -436,7 +489,9 @@ parallelBlast.pl \\
                     db=db
                 )
             )
-        ], name="blastp_swissprot")]
+        ], name="blastp_transdecoder_" + os.path.basename(db)))
+
+        return jobs
 
     def signalp(self):
         """
@@ -451,7 +506,7 @@ parallelBlast.pl \\
             [signalp_gff],
             [['signalp', 'module_perl'], ['signalp', 'module_signalp']],
             command="""\
-signalp {other_options} \\
+signalp -f short {other_options} \\
   -T {tmp_directory} \\
   -n {signalp_gff} \\
   {transdecoder_fasta}""".format(
@@ -489,12 +544,14 @@ tmhmm --short \\
         All functional annotation data is integrated into a SQLite database and a whole annotation report is created.
         """
 
-        db = os.path.basename(config.param("blastx_swissprot", "db", type='prefixpath'))
+        swissprot_db = os.path.basename(config.param("blastx_trinity_uniprot", "swissprot_db", type='prefixpath'))
+        uniref_db = os.path.basename(config.param("blastx_trinity_uniprot", "uniref_db", type='prefixpath'))
         trinity_fasta = os.path.join("trinity_out_dir", "Trinity.fasta")
-        blastx = os.path.join("blast", "blastx_Trinity_" + db + ".tsv")
+        swissprot_blastx = os.path.join("blast", "blastx_Trinity_" + swissprot_db + ".tsv")
+        trembl_blastx = os.path.join("blast", "blastx_Trinity_" + uniref_db + ".tsv")
         transdecoder_pep = os.path.join("trinotate", "transdecoder", "Trinity.fasta.transdecoder.pep")
-        transdecoder_pfam = os.path.join("trinotate", "transdecoder", "Trinity.fasta.transdecoder.pfam.dat.domtbl")
-        blastp = os.path.join("trinotate", "blastp", "blastp_" + os.path.basename(transdecoder_pep) + "_" + db + ".tsv")
+        transdecoder_pfam = os.path.join("trinotate", "transdecoder", "Trinity.fasta.transdecoder.pfam")
+        swissprot_blastp = os.path.join("trinotate", "blastp", "blastp_" + os.path.basename(transdecoder_pep) + "_" + swissprot_db + ".tsv")
         rnammer = os.path.join("trinotate", "rnammer", "Trinity.fasta.rnammer.gff")
         signalp = os.path.join("trinotate", "signalp", "signalp.gff")
         tmhmm = os.path.join("trinotate", "tmhmm", "tmhmm.out")
@@ -505,10 +562,11 @@ tmhmm --short \\
             Job(command="mkdir -p trinotate"),
             Job(
                 [trinity_fasta,
-                 blastx,
+                 swissprot_blastx,
+                 trembl_blastx,
                  transdecoder_pep,
                  transdecoder_pfam,
-                 blastp,
+                 swissprot_blastp,
                  rnammer,
                  signalp,
                  tmhmm],
@@ -516,26 +574,29 @@ tmhmm --short \\
                 [['trinotate', 'module_perl'], ['trinotate', 'module_trinity'], ['trinotate', 'module_trinotate']],
                 command="""\
 cd trinotate && \\
-cp $TRINOTATE_HOME/Trinotate.sqlite . && \\
-$TRINITY_HOME/util/support_scripts/get_Trinity_gene_to_trans_map.pl {trinity_fasta} > {trinity_fasta}.gene_trans_map && \\
-{trinotate_command} init \\
+cp $TRINOTATE_SQLITE {trinotate_sqlite} && \\
+$TRINITY_HOME/util/support_scripts/get_Trinity_gene_to_trans_map.pl \\
+  {trinity_fasta} \\
+  > {trinity_fasta}.gene_trans_map && \\
+Trinotate {trinotate_sqlite} init \\
   --gene_trans_map {trinity_fasta}.gene_trans_map \\
   --transcript {trinity_fasta} \\
   --transdecoder_pep {transdecoder_pep} && \\
-{trinotate_command} LOAD_blastx {blastx} && \\
-{trinotate_command} LOAD_blastp {blastp} && \\
-awk '{{$4 = "cds."$4; print}}' {transdecoder_pfam} > {transdecoder_pfam}.adj && \\
-{trinotate_command} LOAD_pfam {transdecoder_pfam}.adj && \\
-{trinotate_command} LOAD_tmhmm {tmhmm} && \\
-{trinotate_command} LOAD_signalp {signalp} && \\
-{trinotate_command} LOAD_rnammer {rnammer} && \\
-{trinotate_command} report -E {evalue} --pfam_cutoff {pfam_cutoff} | cut -f 1-12 \\
+Trinotate {trinotate_sqlite} LOAD_swissprot_blastx {swissprot_blastx} && \\
+Trinotate {trinotate_sqlite} LOAD_trembl_blastx {trembl_blastx} && \\
+Trinotate {trinotate_sqlite} LOAD_swissprot_blastp {swissprot_blastp} && \\
+Trinotate {trinotate_sqlite} LOAD_pfam {transdecoder_pfam} && \\
+Trinotate {trinotate_sqlite} LOAD_tmhmm {tmhmm} && \\
+Trinotate {trinotate_sqlite} LOAD_signalp {signalp} && \\
+Trinotate {trinotate_sqlite} LOAD_rnammer {rnammer} && \\
+Trinotate {trinotate_sqlite} report -E {evalue} --pfam_cutoff {pfam_cutoff} | cut -f 1-12 \\
   > {trinotate_report}""".format(
                     trinity_fasta=os.path.join("..", trinity_fasta),
-                    trinotate_command="$TRINOTATE_HOME/Trinotate " + os.path.basename(trinotate_sqlite),
+                    trinotate_sqlite=trinotate_sqlite,
                     transdecoder_pep=os.path.join("..", transdecoder_pep),
-                    blastx=os.path.join("..", blastx),
-                    blastp=os.path.join("..", blastp),
+                    swissprot_blastx=os.path.join("..", swissprot_blastx),
+                    trembl_blastx=os.path.join("..", trembl_blastx),
+                    swissprot_blastp=os.path.join("..", swissprot_blastp),
                     transdecoder_pfam=os.path.join("..", transdecoder_pfam),
                     tmhmm=os.path.join("..", tmhmm),
                     signalp=os.path.join("..", signalp),
@@ -732,11 +793,13 @@ Rscript $R_TOOLS/deseq.R \\
         job = concat_jobs([
             Job([isoforms_lengths, trinotate_annotation_report],
                 [trinotate_annotation_report + ".genes"],
+                # Create a gene subset of Trinotate report with only the longest isoform per gene.
+                # Creation 'Symbol' column in second position, with value as first part of sprot_Top_BLASTX_hit column
                 command="""\
-sed '1d' {isoforms_lengths} | perl -pe 's/^(c\d+_g\d+)/\\1\t\\1/' | sort -k1,1 -k3,3gr | \\
+sed '1d' {isoforms_lengths} | perl -pe 's/^(.*c\d+_g\d+)/\\1\t\\1/' | sort -k1,1 -k3,3gr | \\
 awk -F "\t" 'FNR == NR {{if (!isoform[$1]) {{isoform[$1] = $2; next}}}}{{OFS="\t"; if (isoform[$1] == $2 && !gene[$1]++ || $1 == "#gene_id") {{print}}}}' - {trinotate_annotation_report} | \\
 perl -pe 's/^(\S+)\t\S+\t([^^\t]*)/\\1\t\\2\t\\2/' | \\
-sed '1s/^#gene_id\tTop_BLASTX_hit/Gene\tSymbol/' \\
+sed '1s/^#gene_id\tsprot_Top_BLASTX_hit/Gene\tSymbol/' \\
   > {trinotate_annotation_report}.genes""".format(
                     isoforms_lengths=isoforms_lengths,
                     trinotate_annotation_report=trinotate_annotation_report
@@ -744,10 +807,12 @@ sed '1s/^#gene_id\tTop_BLASTX_hit/Gene\tSymbol/' \\
             ),
             Job([trinotate_annotation_report],
                 [trinotate_annotation_report + ".isoforms"],
+                # Create a isoform subset of Trinotate report with only the longest isoform per gene.
+                # Creation 'Symbol' column in second position, with value as first part of sprot_Top_BLASTX_hit column
                 command="""\
 cut -f 2- {trinotate_annotation_report} | awk '!isoform[$1]++' | \\
 perl -pe 's/^(\S+)\t([^^\t]*)/\\1\t\\2\t\\2/' | \\
-sed '1s/^transcript_id\tTop_BLASTX_hit/Transcript\tSymbol/' \\
+sed '1s/^transcript_id\tsprot_Top_BLASTX_hit/Transcript\tSymbol/' \\
   > {trinotate_annotation_report}.isoforms""".format(
                     trinotate_annotation_report=trinotate_annotation_report
                 )
@@ -763,12 +828,12 @@ sed '1s/^transcript_id\tTop_BLASTX_hit/Transcript\tSymbol/' \\
                     Job([dge_results, trinotate_annotation_report + "." + item],
                         [dge_trinotate_results],
                         command="""\
-awk -F "\t" 'FNR == NR {{item[$1] = $0; next}} {{OFS="\t"; print $0, item[$1]}}' \\
+awk -F "\t" 'FNR == NR {{item[$1] = $0; next}} {{OFS="\t"; print item[$1], $0}}' \\
   {trinotate_annotation_report_item} \\
   <(sed '1s/^id/{item}/' {dge_results}) \\
   > {dge_results}.tmp && \\
-paste <(cut -f1,12 {dge_results}.tmp) <(cut -f3-10,13- {dge_results}.tmp) > {dge_trinotate_results} && \\
-rm {dge_results}.tmp""".format(
+paste <(cut -f1,2,15- {dge_results}.tmp) <(cut -f3-12 {dge_results}.tmp) > {dge_trinotate_results} && \\
+echo {dge_results}.tmp""".format(
                             trinotate_annotation_report_item=trinotate_annotation_report + "." + item,
                             item=item.title()[0:-1],
                             dge_results=dge_results,
@@ -803,11 +868,12 @@ rm {dge_results}.tmp""".format(
             self.insilico_read_normalization_all,
             self.trinity,
             self.exonerate_fastasplit,
-            self.blastx_swissprot,
-            self.blastx_swissprot_merge,
+            self.blastx_trinity_uniprot,
+            self.blastx_trinity_uniprot_merge,
             self.transdecoder,
+            self.hmmer,
             self.rnammer_transcriptome,
-            self.blastp_swissprot,
+            self.blastp_transdecoder_uniprot,
             self.signalp,
             self.tmhmm,
             self.trinotate,

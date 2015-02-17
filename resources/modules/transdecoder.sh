@@ -2,11 +2,11 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=trinity
-VERSION=2.0.4
-ARCHIVE=${SOFTWARE}rnaseq-$VERSION.tar.gz
-ARCHIVE_URL=https://github.com/trinityrnaseq/trinityrnaseq/archive/v$VERSION.tar.gz
-SOFTWARE_DIR=${SOFTWARE}rnaseq-$VERSION
+SOFTWARE=TransDecoder
+VERSION=2.0.1
+ARCHIVE=$SOFTWARE-$VERSION.tar.gz
+ARCHIVE_URL=https://github.com/$SOFTWARE/$SOFTWARE/archive/$VERSION.tar.gz
+SOFTWARE_DIR=$SOFTWARE-$VERSION
 
 # Specific commands to extract and build the software
 # $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
@@ -33,10 +33,6 @@ module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
 prepend-path    PATH                \$root
-prepend-path    PATH                \$root/util
-prepend-path    PATH                \$root/util/RSEM_util
-prepend-path    PATH                \$root/Analysis/DifferentialExpression
-setenv          TRINITY_HOME        \$root
 "
 }
 
