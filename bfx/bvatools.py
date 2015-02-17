@@ -62,12 +62,14 @@ def depth_of_coverage(input, output, coverage_bed, reference_genome="", other_op
         command="""\
 java {java_other_options} -Xmx{ram} -jar $BVATOOLS_JAR \\
   depthofcoverage {other_options} \\
+  --threads {threads} \\
   --ref {reference_genome}{intervals} \\
   --bam {input} \\
   > {output}""".format(
         java_other_options=config.param('bvatools_depth_of_coverage', 'java_other_options'),
         ram=config.param('bvatools_depth_of_coverage', 'ram'),
         other_options=other_options,
+        threads=config.param('bvatools_depth_of_coverage', 'threads', type='posint'),
         reference_genome=reference_genome if reference_genome else config.param('bvatools_depth_of_coverage', 'genome_fasta', type='filepath'),
         intervals=" \\\n  --intervals " + coverage_bed if coverage_bed else "",
         input=input,

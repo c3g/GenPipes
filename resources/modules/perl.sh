@@ -2,10 +2,10 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=bedtools
-VERSION=2.22.1
+SOFTWARE=perl
+VERSION=5.18.2
 ARCHIVE=$SOFTWARE-$VERSION.tar.gz
-ARCHIVE_URL=https://github.com/arq5x/bedtools2/releases/download/v$VERSION/$ARCHIVE
+ARCHIVE_URL=http://www.cpan.org/src/5.0/$ARCHIVE
 SOFTWARE_DIR=$SOFTWARE-$VERSION
 
 # Specific commands to extract and build the software
@@ -15,14 +15,10 @@ build() {
   cd $INSTALL_DOWNLOAD
   tar zxvf $ARCHIVE
 
-  # Rename archive root directory since version is missing
-  mv bedtools2 $SOFTWARE_DIR
   cd $SOFTWARE_DIR
-  make -j8
-
-  # Install software
-  cd $INSTALL_DOWNLOAD
-  mv -i $SOFTWARE_DIR $INSTALL_DIR/
+  ./Configure -des -Dusethreads -Dprefix=$INSTALL_DIR/$SOFTWARE_DIR
+  make
+  make install
 }
 
 module_file() {
@@ -34,7 +30,11 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
+setenv          PERL_HOME           \$root
 prepend-path    PATH                \$root/bin
+prepend-path    PERL5LIB            \$root/lib
+prepend-path    PERL5LIB            \$root/lib/$VERSION
+prepend-path    PERL5LIB            \$root/libsite_perl/$VERSION
 "
 }
 

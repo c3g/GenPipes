@@ -14,7 +14,7 @@ set -eu -o pipefail
 #
 
 SOFTWARE="shortstack" 
-VERSION="2.0.9"  
+VERSION="2.1.0"  
 INSTALL_HOME=MUGQIC_INSTALL_HOME_DEV  ## TO BE MODIFIED IF NECESSARY
 
 # Indirection call to use $INSTALL_HOME value as variable name
@@ -69,7 +69,7 @@ module-whatis \"$SOFTWARE\" ;
 set             root                \$::env($INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE_DIR
 prepend-path    PATH                \$root 
 module		 load mugqic/bowtie/1.0.0 
-module		 load mugqic/ViennaRNA/1.8.3
+module		 load mugqic_dev/ViennaRNA/1.8.3
 module		 load mugqic/samtools/0.1.19
 module       load mugqic/ucsc/20140212
 " > $VERSION

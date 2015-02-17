@@ -365,7 +365,7 @@ class DnaSeq(common.Illumina):
                 input, 
                 recal_file_prefix + "coverage.tsv", 
                 bvatools.resolve_readset_coverage_bed(sample.readsets[0]), 
-                config.param('bvatools_depth_of_coverage', 'other_options', required=False)
+                other_options=config.param('bvatools_depth_of_coverage', 'other_options', required=False)
             )
             
             job.name = "bvatools_depth_of_coverage." + sample.name
