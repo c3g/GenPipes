@@ -10,10 +10,10 @@ set -eu -o pipefail
 # - Assuming sqlite is already available on the system
 
 SOFTWARE=trinotate
-VERSION=20131110
-ARCHIVE=${SOFTWARE^}_r$VERSION.tar.gz
-ARCHIVE_URL=http://downloads.sourceforge.net/project/$SOFTWARE/$ARCHIVE
-SOFTWARE_DIR=${SOFTWARE^}_r$VERSION
+VERSION=2.0.1
+ARCHIVE=${SOFTWARE^}-$VERSION.tar.gz
+ARCHIVE_URL=https://github.com/Trinotate/Trinotate/archive/v$VERSION.tar.gz
+SOFTWARE_DIR=${SOFTWARE^}-$VERSION
 
 # Specific commands to extract and build the software
 # $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
@@ -22,15 +22,31 @@ build() {
   cd $INSTALL_DOWNLOAD
   tar zxvf $ARCHIVE
 
-  # Download Trinotate Sqlite template DB
-  SQLITE_ARCHIVE=Trinotate.sqlite.gz
-  download_archive "http://sourceforge.net/projects/trinotate/files/TRINOTATE_RESOURCES/TrinotateSqlite.sprot.$VERSION.db.gz/download" $SQLITE_ARCHIVE
-  gunzip $SQLITE_ARCHIVE -c > $SOFTWARE_DIR/${SQLITE_ARCHIVE/.gz/}
-
   # Install software
   mv -i $SOFTWARE_DIR $INSTALL_DIR/
 
-  store_archive $SQLITE_ARCHIVE
+  # Download Trinotate resources (adjust file names for newer Trinotate version)
+  PFAM=Pfam-A.hmm
+  SQLITE=Trinotate.sprot_uniref90.20150131.boilerplate.sqlite
+  SPROT=uniprot_sprot.trinotate_v${VERSION%.*}.pep
+  UNIREF90=uniprot_uniref90.trinotate_v${VERSION%.*}.pep
+  for RESOURCE_ARCHIVE in \
+    $PFAM \
+    $SQLITE \
+    $SPROT \
+    $UNIREF90 \
+  ; do
+    download_archive "ftp://ftp.broadinstitute.org/pub/Trinity/Trinotate_v${VERSION%.*}_RESOURCES/$RESOURCE_ARCHIVE.gz" $RESOURCE_ARCHIVE.gz
+    gunzip $RESOURCE_ARCHIVE.gz -c > $INSTALL_DIR/$SOFTWARE_DIR/$RESOURCE_ARCHIVE
+    store_archive $RESOURCE_ARCHIVE.gz
+  done
+
+  module load mugqic/hmmer/3.1b1
+  hmmpress $INSTALL_DIR/$SOFTWARE_DIR/$PFAM
+
+  module load mugqic/blast/2.2.29+
+  makeblastdb -in $INSTALL_DIR/$SOFTWARE_DIR/$SPROT -dbtype prot
+  makeblastdb -in $INSTALL_DIR/$SOFTWARE_DIR/$UNIREF90 -dbtype prot
 }
 
 module_file() {
@@ -44,7 +60,7 @@ module-whatis \"$SOFTWARE\"
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
 prepend-path    PATH                \$root
 setenv          TRINOTATE_HOME      \$root
-setenv          TRINOTATE_SQLITE    \$root/Trinotate.sqlite
+setenv          TRINOTATE_SQLITE    \$root/$SQLITE
 "
 }
 

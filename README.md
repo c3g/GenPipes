@@ -203,8 +203,6 @@ The Design File is a TAB-separated values plain text file with one line per samp
     * '__1__': the sample belongs to the control group;
     * '__2__': the sample belongs to the treatment test case group.
 
-**Warning for ChIP-Seq pipeline users:** the values '__1__' for control and '__2__' for treatment are reversed compared to the old Perl version.
-
 Example:
 
     Sample	Contrast1	Contrast2	Contrast3
@@ -212,6 +210,18 @@ Example:
     sampleB	2	0	1
     sampleC	0	2	0
     sampleD	0	0	2
+
+### For ChIP-Seq pipeline users
+Peak calling type must be specified by adding to the contrast name either `,N` for *Narrow* peak calling, or `,B` for *Broad* peak calling.
+
+Example:
+
+    Sample	Contrast1,N	Contrast2,B
+    sampleA	1	1
+    sampleB	2	0
+    sampleC	0	2
+
+**Warning for ChIP-Seq pipeline users:** the values '__1__' for control and '__2__' for treatment are reversed compared to the old Perl version.
 
 PBS Job Logs
 ------------
