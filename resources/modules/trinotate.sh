@@ -26,27 +26,10 @@ build() {
   mv -i $SOFTWARE_DIR $INSTALL_DIR/
 
   # Download Trinotate resources (adjust file names for newer Trinotate version)
-  PFAM=Pfam-A.hmm
   SQLITE=Trinotate.sprot_uniref90.20150131.boilerplate.sqlite
-  SPROT=uniprot_sprot.trinotate_v${VERSION%.*}.pep
-  UNIREF90=uniprot_uniref90.trinotate_v${VERSION%.*}.pep
-  for RESOURCE_ARCHIVE in \
-    $PFAM \
-    $SQLITE \
-    $SPROT \
-    $UNIREF90 \
-  ; do
-    download_archive "ftp://ftp.broadinstitute.org/pub/Trinity/Trinotate_v${VERSION%.*}_RESOURCES/$RESOURCE_ARCHIVE.gz" $RESOURCE_ARCHIVE.gz
-    gunzip $RESOURCE_ARCHIVE.gz -c > $INSTALL_DIR/$SOFTWARE_DIR/$RESOURCE_ARCHIVE
-    store_archive $RESOURCE_ARCHIVE.gz
-  done
-
-  module load mugqic/hmmer/3.1b1
-  hmmpress $INSTALL_DIR/$SOFTWARE_DIR/$PFAM
-
-  module load mugqic/blast/2.2.29+
-  makeblastdb -in $INSTALL_DIR/$SOFTWARE_DIR/$SPROT -dbtype prot
-  makeblastdb -in $INSTALL_DIR/$SOFTWARE_DIR/$UNIREF90 -dbtype prot
+  download_archive "ftp://ftp.broadinstitute.org/pub/Trinity/Trinotate_v${VERSION%.*}_RESOURCES/$SQLITE.gz" $SQLITE.gz
+  gunzip $SQLITE.gz -c > $INSTALL_DIR/$SOFTWARE_DIR/$SQLITE
+  store_archive $SQLITE.gz
 }
 
 module_file() {
