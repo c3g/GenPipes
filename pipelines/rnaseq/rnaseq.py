@@ -263,30 +263,94 @@ class RnaSeq(common.Illumina):
             jobs.append(job)
         return jobs
 
-    def rnaseqc(self):
+    def picard_rna_metrics(sef):
         """
-        Computes a series of quality control metrics using [RNA-SeQC](https://www.broadinstitute.org/cancer/cga/rna-seqc).
+        Computes a series of quality control metrics using both CollectRnaSeqMetrics and CollectAlignmentSummaryMetrics functions
+        metrics are collected using [Picard](http://broadinstitute.github.io/picard/).
+        """
+        
+        jobs = []
+        reference_file = config.param('picard_collect_rna_metrics', 'genome_fasta', type='filepath')
+        for sample in self.samples:
+                alignment_file = os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.bam")
+                output_directory = os.path.join("metrics", sample.name)
+                
+                job = concat_jobs([
+                        Job(command="mkdir -p " + output_directory, removable_files=[output_directory]),
+                        picard.collect_multiple_metrics(alignment_file, os.path.join(output_directory,sample.name),reference_file),
+                        picard.collect_rna_metrics(alignment_file, os.path.join(output_directory,sample.name),reference_file)
+                ],name="picard_rna_metrics")
+                jobs.append(job)
+        
+        return jobs
+
+    def estimate_ribosomal_rna(self):
+        """
+        Use bwa mem to align reads on the rRNA reference fasta and count the number of read mapped
+        The filtered reads are aligned to a reference fasta file of ribosomal sequence. The alignment is done per sequencing readset.
+        The alignment software used is [BWA](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem.
+        BWA output BAM files are then sorted by coordinate using [Picard](http://broadinstitute.github.io/picard/).
+
+        This step takes as input files:
+
+        1. Trimmed FASTQ files if available
+        2. Else, FASTQ files from the readset file if available
+        3. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
         """
 
-        sample_file = os.path.join("alignment", "rnaseqc.samples.txt")
-        sample_rows = [[sample.name, os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.bam"), "RNAseq"] for sample in self.samples]
-        input_bams = [sample_row[1] for sample_row in sample_rows]
-        output_directory = os.path.join("metrics", "rnaseqRep")
-        # Use GTF with transcript_id only otherwise RNASeQC fails
-        gtf_transcript_id = config.param('rnaseqc', 'gtf_transcript_id', type='filepath')
+        jobs = []
+        for readset in self.readsets:
+            trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
+            alignment_directory = os.path.join("alignment", readset.sample.name)
+            readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
 
-        job = concat_jobs([
-            Job(command="mkdir -p " + output_directory, removable_files=[output_directory]),
-            Job(input_bams, [sample_file], command="""\
-echo "Sample\tBamFile\tNote
-{sample_rows}" \\
-  > {sample_file}""".format(sample_rows="\n".join(["\t".join(sample_row) for sample_row in sample_rows]), sample_file=sample_file)),
-            metrics.rnaseqc(sample_file, output_directory, self.run_type == "SINGLE_END", gtf_file=gtf_transcript_id),
-            Job([], [output_directory + ".zip"], command="zip -r {output_directory}.zip {output_directory}".format(output_directory=output_directory))
-        ], name="rnaseqc")
+            # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
+            if readset.run_type == "PAIRED_END":
+                candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
+                if readset.fastq1 and readset.fastq2:
+                    candidate_input_files.append([readset.fastq1, readset.fastq2])
+                if readset.bam:
+                    candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
+                [fastq1, fastq2] = self.select_input_files(candidate_input_files)
+            elif readset.run_type == "SINGLE_END":
+                candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
+                if readset.fastq1:
+                    candidate_input_files.append([readset.fastq1])
+                if readset.bam:
+                    candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
+                [fastq1] = self.select_input_files(candidate_input_files)
+                fastq2 = None
+            else:
+                raise Exception("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
 
-        return [job]
+            job = concat_jobs([
+                Job(command="mkdir -p " + os.path.dirname(readset_bam)),
+                pipe_jobs([
+                    bwa.mem(
+                        fastq1,
+                        fastq2,
+                        read_group="'@RG" + \
+                            "\tID:" + readset.name + \
+                            "\tSM:" + readset.sample.name + \
+                            ("\tLB:" + readset.library if readset.library else "") + \
+                            ("\tPU:run" + readset.run + "_" + readset.lane if readset.run and readset.lane else "") + \
+                            ("\tCN:" + config.param('bwa_mem', 'sequencing_center') if config.param('bwa_mem', 'sequencing_center', required=False) else "") + \
+                            "\tPL:Illumina" + \
+                            "'"
+                    ),
+                    #picard.sort_sam(
+                        #"/dev/stdin",
+                        #readset_bam,
+                        #"coordinate"
+                    #)
+                ])
+            ], name="bwa_mem_picard_sort_sam." + readset.name)
 
+            jobs.append(job)
+        return job
+
+        
     def wiggle(self):
         """
         Generate wiggle tracks suitable for multiple browsers.
@@ -669,7 +733,8 @@ END
             self.picard_merge_sam_files,
             self.picard_sort_sam,
             self.picard_mark_duplicates,
-            self.rnaseqc,
+            self.picard_rna_metrics,
+            self.estimate_ribosomal_rna,
             self.wiggle,
             self.raw_counts,
             self.raw_counts_metrics,

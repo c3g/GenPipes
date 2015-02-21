@@ -252,3 +252,38 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
         ),
         removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output) if sort_order == "coordinate" else None]
     )
+
+def collect_rna_metrics(input, output):
+        
+    return Job(
+        [input],
+        # collect specific RNA metrics (exon rate, strand specificity, etc...)
+        [output],
+        [
+            ['picard_collect_rna_metrics', 'module_java'],
+            ['picard_collect_rna_metrics', 'module_picard']
+            ['picard_collect_rna_metrics', 'module_R']
+        ],
+        command="""\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/CollectRnaSeqMetrics.jar \\
+  VALIDATION_STRINGENCY=SILENT  \\
+  TMP_DIR={tmp_dir} \\
+  INPUT={input} \\
+  OUTPUT={output} \\
+  REF_FLAT={ref_flat} \\
+  STRAND_SPECIFICITY={strand_specificity} \\
+  MINIMUM_LENGTH={min_length} \\
+  REFERENCE_SEQUENCE={reference} \\
+  MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
+        tmp_dir=config.param('picard_collect_rna_metrics', 'tmp_dir'),
+        java_other_options=config.param('picard_collect_rna_metrics', 'java_other_options'),
+        ram=config.param('picard_collect_rna_metrics', 'ram'),
+        input=input,
+        output=output,
+        ref_flat=config.param('picard_collect_rna_metrics', 'annotation_flat'),
+        strand_specificity=config.param('picard_collect_rna_metrics', 'strand_info'),
+        min_length=config.param('picard_collect_rna_metrics', 'minimum_length',type='int'),
+        reference=config.param('picard_collect_rna_metrics', 'genome_fasta'),
+        max_records_in_ram=config.param('picard_collect_rna_metrics', 'max_records_in_ram', type='int')
+        )
+    )
