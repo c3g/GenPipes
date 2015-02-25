@@ -573,7 +573,6 @@ tmhmm --short \\
                 [trinotate_sqlite, trinotate_report],
                 [['trinotate', 'module_perl'], ['trinotate', 'module_trinity'], ['trinotate', 'module_trinotate']],
                 command="""\
-cd trinotate && \\
 cp $TRINOTATE_SQLITE {trinotate_sqlite} && \\
 $TRINITY_HOME/util/support_scripts/get_Trinity_gene_to_trans_map.pl \\
   {trinity_fasta} \\
@@ -591,21 +590,20 @@ Trinotate {trinotate_sqlite} LOAD_signalp {signalp} && \\
 Trinotate {trinotate_sqlite} LOAD_rnammer {rnammer} && \\
 Trinotate {trinotate_sqlite} report -E {evalue} --pfam_cutoff {pfam_cutoff} | cut -f 1-12 \\
   > {trinotate_report}""".format(
-                    trinity_fasta=os.path.join("..", trinity_fasta),
+                    trinity_fasta=trinity_fasta,
                     trinotate_sqlite=trinotate_sqlite,
-                    transdecoder_pep=os.path.join("..", transdecoder_pep),
-                    swissprot_blastx=os.path.join("..", swissprot_blastx),
-                    trembl_blastx=os.path.join("..", trembl_blastx),
-                    swissprot_blastp=os.path.join("..", swissprot_blastp),
-                    transdecoder_pfam=os.path.join("..", transdecoder_pfam),
-                    tmhmm=os.path.join("..", tmhmm),
-                    signalp=os.path.join("..", signalp),
-                    rnammer=os.path.join("..", rnammer),
+                    transdecoder_pep=transdecoder_pep,
+                    swissprot_blastx=swissprot_blastx,
+                    trembl_blastx=trembl_blastx,
+                    swissprot_blastp=swissprot_blastp,
+                    transdecoder_pfam=transdecoder_pfam,
+                    tmhmm=tmhmm,
+                    signalp=signalp,
+                    rnammer=rnammer,
                     evalue=config.param('trinotate', 'evalue'),
                     pfam_cutoff=config.param('trinotate', 'pfam_cutoff'),
-                    trinotate_report=os.path.join("..", trinotate_report)
-            )),
-            Job(command="cd ..")], name="trinotate")]
+                    trinotate_report=trinotate_report
+            ))], name="trinotate")]
 
     def align_and_estimate_abundance_prep_reference(self):
         """
