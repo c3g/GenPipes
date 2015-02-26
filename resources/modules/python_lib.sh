@@ -32,6 +32,8 @@ python -c 'import bedtools; print  bedtools.__file__'
 easy_install https://pypi.python.org/packages/source/P/PyVCF/PyVCF-0.6.7.tar.gz
 python -c 'import vcf; print vcf.__file__'
 
+easy_install https://github.com/pysam-developers/pysam/archive/v0.8.2.tar.gz
+python -c 'import pysam; print pysam.__version__, pysam.__file__'
 
 # Add permissions
 chmod -R ug+rwX,o+rX-w $PYTHON_HOME
