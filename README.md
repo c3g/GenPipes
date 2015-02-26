@@ -149,7 +149,7 @@ $MUGQIC_INSTALL_HOME/genomes/species/Homo_sapiens.GRCh37/
 ├── Homo_sapiens.GRCh37.ini
 └── log/
 ```
-The assembly name is, by default, the one used by [Ensembl](http://www.ensembl.org/) e.g. "*GRCh37*"
+The assembly name is the one used by the download source e.g. "*GRCh37*" for [Ensembl](http://www.ensembl.org/).
 Each species directory contains a `<scientific_name>.<assembly>.ini` file
 which lists among other things, the assembly synonyms e.g. "*hg19*":
 
@@ -168,7 +168,7 @@ dbsnp_version=142
 
 #### Modules
 Software tools and associated modules must be installed in `$MUGQIC_INSTALL_HOME/software/` and `$MUGQIC_INSTALL_HOME/modulefiles/`.
-Default software/module installation scripts are already available in `mugqic_pipelines/resources/modules/`.
+Default software/module installation scripts are already available in `$MUGQIC_PIPELINES_HOME/resources/modules/`.
 
 
 Usage
@@ -350,7 +350,7 @@ my_output_dir/job_output/
 To view a TAB-separated values log report, use `$MUGQIC_PIPELINES_HOME/utils/log_report.pl` script by typing:
 ```
 #!bash
-mugqic_pipelines/utils/log_report.pl <output_dir>/job_output/<PipelineName>_job_list_<timestamp>
+$MUGQIC_PIPELINES_HOME/utils/log_report.pl <output_dir>/job_output/<PipelineName>_job_list_<timestamp>
 ```
 
 which will output e.g.:
