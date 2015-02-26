@@ -285,7 +285,7 @@ Trinity {other_options} \\
         trinity_chunks_directory = os.path.join("trinity_out_dir", "Trinity.fasta_chunks")
         blast_directory = "blast"
         num_fasta_chunks = config.param('exonerate_fastasplit', 'num_fasta_chunks', type='posint')
-        cpu = config.param('blastx_swissprot', 'cpu')
+        cpu = config.param('blastx_trinity_uniprot', 'cpu')
         program = "blastx"
         swissprot_db = config.param("blastx_trinity_uniprot", "swissprot_db", type='prefixpath')
         uniref_db = config.param("blastx_trinity_uniprot", "uniref_db", type='prefixpath')
