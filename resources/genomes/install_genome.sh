@@ -10,6 +10,7 @@ module_picard=mugqic/picard/1.123
 module_R=mugqic/R_Bioconductor/3.1.2_3.0
 module_samtools=mugqic/samtools/0.1.19
 module_star=mugqic/star/2.4.0e
+module_tabix=mugqic/tabix/0.2.6
 module_tophat=mugqic/tophat/2.0.11
 
 init_install() {
@@ -391,7 +392,7 @@ create_rrna_bwa_index() {
       mkdir -p $INDEX_DIR
       ln -s -f -t $INDEX_DIR ../$RRNA
       module load $module_bwa
-      bwa index $INDEX_DIR/$RRNA > $LOG_DIR/ncrna_bwa_$TIMESTAMP.log 2>&1
+      bwa index $INDEX_DIR/$RRNA > $LOG_DIR/rrna_bwa_$TIMESTAMP.log 2>&1
     else
       echo
       echo "rRNA BWA index up to date... skipping"
@@ -463,7 +464,7 @@ EOF
 get_vcf_dbsnp() {
   if [[ ! -z "${VCF_URL:-}" && ! -z "${VCF_TBI_URL:-}" ]]
   then
-    if ! is_up2date $ANNOTATIONS_DIR/$VCF $ANNOTATIONS_DIR/$VCF.tbi
+    if ! is_up2date $ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP[0-9]*.vcf.gz $ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP[0-9]*.vcf.gz.tbi
     then
       echo
       echo "Retrieving dbSNP latest version from VCF..."
@@ -475,13 +476,17 @@ get_vcf_dbsnp() {
       echo "Found VCF dbSNP version: $DBSNP_VERSION"
       if [ $DBSNP_VERSION ]
       then
+        DBSNP_VCF=$ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP$DBSNP_VERSION.vcf.gz
         # Add dbSNP version to VCF filename
-        ln -s -f $VCF $ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP$DBSNP_VERSION.vcf.gz
-        ln -s -f $VCF.tbi $ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP$DBSNP_VERSION.vcf.gz.tbi
+        # Remove variation sequences containing "." (columns 4 and 5 from uncommented lines) which make GATK crash
+        module load $module_tabix
+        zgrep -Pv "^[^#]\S*\t\S+\t\S+\t(\S*\.\S*|\S+\t\S*\.\S*)" $ANNOTATIONS_DIR/$VCF | bgzip > $DBSNP_VCF
+        # Create tabix index for new VCF without "." variation sequences
+        tabix -p vcf $DBSNP_VCF
       fi
     else
       echo
-      echo "VCF up to date... assuming dbSNP symlink too and skipping"
+      echo "dbSNP VCF exists... assuming up to date and skipping"
       echo
     fi
   fi
@@ -509,12 +514,12 @@ copy_files() {
     if ! is_up2date $TRANSCRIPT_ID_GTF ; then grep -P "(^#|transcript_id)" $ANNOTATIONS_DIR/$GTF > $TRANSCRIPT_ID_GTF ; fi
     if ! is_up2date $ANNOTATIONS_DIR/$NCRNA ; then gunzip -c `download_path $NCRNA_URL` > $ANNOTATIONS_DIR/$NCRNA ; fi
 
-    # Create rRNA FASTA as subset of ncRNA FASTA keeping only sequences with "gene_biotype:rRNA" in their description
-    if [ $(grep -q "gene_biotype:rRNA" $ANNOTATIONS_DIR/$NCRNA)$? == 0 ]
+    # Create rRNA FASTA as subset of ncRNA FASTA keeping only sequences with "rRNA" (ignore case) in their descriptions
+    if [ $(grep -q -i "rRNA" $ANNOTATIONS_DIR/$NCRNA)$? == 0 ]
     then
       if ! is_up2date $ANNOTATIONS_DIR/$RRNA
       then
-        grep -Pzo "^>.*gene_biotype:rRNA[^>]*" $ANNOTATIONS_DIR/$NCRNA | grep -v "^$" > $ANNOTATIONS_DIR/$RRNA
+        grep -Pzoi "^>.*rRNA[^>]*" $ANNOTATIONS_DIR/$NCRNA | grep -v "^$" > $ANNOTATIONS_DIR/$RRNA
       fi
     fi
 
