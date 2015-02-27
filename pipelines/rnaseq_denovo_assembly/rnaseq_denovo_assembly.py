@@ -831,7 +831,7 @@ awk -F "\t" 'FNR == NR {{item[$1] = $0; next}} {{OFS="\t"; print item[$1], $0}}'
   <(sed '1s/^id/{item}/' {dge_results}) \\
   > {dge_results}.tmp && \\
 paste <(cut -f1,2,15- {dge_results}.tmp) <(cut -f3-12 {dge_results}.tmp) > {dge_trinotate_results} && \\
-echo {dge_results}.tmp""".format(
+rm {dge_results}.tmp""".format(
                             trinotate_annotation_report_item=trinotate_annotation_report + "." + item,
                             item=item.title()[0:-1],
                             dge_results=dge_results,
