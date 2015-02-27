@@ -293,59 +293,47 @@ class RnaSeq(common.Illumina):
 
         This step takes as input files:
 
-        1. Trimmed FASTQ files if available
-        2. Else, FASTQ files from the readset file if available
-        3. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
+        readset Bam files
         """
 
         jobs = []
         for readset in self.readsets:
-            trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
-            alignment_directory = os.path.join("alignment", readset.sample.name)
-            readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
+            readset_bam = os.path.join("alignment", readset.sample.name, readset.name , "Aligned.sortedByCoord.out.bam")
+            output_folder = os.path.join("metrics",readset.sample.name, readset.name)
+            readset_metrics_bam = os.path.join(output_folder,readset.name +"rRNA.bam")
 
-            # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
-            if readset.run_type == "PAIRED_END":
-                candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
-                if readset.fastq1 and readset.fastq2:
-                    candidate_input_files.append([readset.fastq1, readset.fastq2])
-                if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
-                [fastq1, fastq2] = self.select_input_files(candidate_input_files)
-            elif readset.run_type == "SINGLE_END":
-                candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
-                if readset.fastq1:
-                    candidate_input_files.append([readset.fastq1])
-                if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
-                [fastq1] = self.select_input_files(candidate_input_files)
-                fastq2 = None
-            else:
-                raise Exception("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
 
             job = concat_jobs([
-                Job(command="mkdir -p " + os.path.dirname(readset_bam)),
+                Job(command="mkdir -p " + os.path.dirname(readset_bam) + " " + output_folder),
                 pipe_jobs([
+                    bvatools.bam2fq(
+                        bam
+                    ),
                     bwa.mem(
-                        fastq1,
-                        fastq2,
+                        "/dev/stdin",
+                        None,
                         read_group="'@RG" + \
                             "\tID:" + readset.name + \
                             "\tSM:" + readset.sample.name + \
                             ("\tLB:" + readset.library if readset.library else "") + \
                             ("\tPU:run" + readset.run + "_" + readset.lane if readset.run and readset.lane else "") + \
-                            ("\tCN:" + config.param('bwa_mem', 'sequencing_center') if config.param('bwa_mem', 'sequencing_center', required=False) else "") + \
+                            ("\tCN:" + config.param('bwa_mem_rRNA', 'sequencing_center') if config.param('bwa_mem_rRNA', 'sequencing_center', required=False) else "") + \
                             "\tPL:Illumina" + \
-                            "'"
+                            "'",
+                        ref=config.param('bwa_mem_rRNA', 'ribosomal_fasta'),
+                        ini_section='bwa_mem_rRNA'
                     ),
-                    #picard.sort_sam(
-                        #"/dev/stdin",
-                        #readset_bam,
-                        #"coordinate"
-                    #)
-                ])
-            ], name="bwa_mem_picard_sort_sam." + readset.name)
+                    picard.sort_sam(
+                        "/dev/stdin",
+                        readset_metrics_bam,
+                        "coordinate"
+                    )
+                ],removable_files=[sample_bam]),
+                tools.py_rrnaBAMcount (
+                    readset_metrics_bam, 
+                    config.param('bwa_mem_rRNA', 'gtf'), 
+                    output, 
+                    typ="transcript")], name="bwa_mem_rRNA." + readset.name)
 
             jobs.append(job)
         return job

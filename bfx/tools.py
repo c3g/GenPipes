@@ -60,6 +60,29 @@ python $PYTHON_TOOLS/equalFastqFile.py \\
         )
     )
 
+def py_rrnaBAMcount (bam, gtf, output, typ="transcript"):
+    return Job(
+        [bam],
+        [output],
+        [
+            ['DEFAULT', 'module_mugqic_tools'],
+            ['DEFAULT', 'module_python']
+        ],
+        command="""\
+python $PYTHON_TOOLS/rrnaBAMCounter.py \\
+  -i {bam} \\
+  -g {gtf} \\
+  -o {output} \\
+  -t {typ}""".format(
+        bam=bam,
+        gtf=gtf,
+        output=output,
+        typ=typ
+        )
+    )
+
+
+
 ## functions for perl tools ##
 def bed2interval_list(dictionary, bed, output):
     return Job(
