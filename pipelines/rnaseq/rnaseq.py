@@ -313,12 +313,12 @@ class RnaSeq(common.Illumina):
                         "/dev/stdin",
                         None,
                         read_group="'@RG" + \
-                            "\\\tID:" + readset.name + \
-                            "\\\tSM:" + readset.sample.name + \
-                            ("\\\tLB:" + readset.library if readset.library else "") + \
-                            ("\\\tPU:run" + readset.run + "_" + readset.lane if readset.run and readset.lane else "") + \
-                            ("\\\tCN:" + config.param('bwa_mem_rRNA', 'sequencing_center') if config.param('bwa_mem_rRNA', 'sequencing_center', required=False) else "") + \
-                            "\\\tPL:Illumina" + \
+                            "\tID:" + readset.name + \
+                            "\tSM:" + readset.sample.name + \
+                            ("\tLB:" + readset.library if readset.library else "") + \
+                            ("\tPU:run" + readset.run + "_" + readset.lane if readset.run and readset.lane else "") + \
+                            ("\tCN:" + config.param('bwa_mem_rRNA', 'sequencing_center') if config.param('bwa_mem_rRNA', 'sequencing_center', required=False) else "") + \
+                            "\tPL:Illumina" + \
                             "'",
                         ref=config.param('bwa_mem_rRNA', 'ribosomal_fasta'),
                         ini_section='bwa_mem_rRNA'
@@ -326,7 +326,8 @@ class RnaSeq(common.Illumina):
                     picard.sort_sam(
                         "/dev/stdin",
                         readset_metrics_bam,
-                        "coordinate"
+                        "coordinate",
+                        ini_section='picard_sort_sam_rrna'
                     )
                 ]),
                 tools.py_rrnaBAMcount (
