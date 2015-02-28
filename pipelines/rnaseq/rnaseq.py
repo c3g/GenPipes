@@ -263,7 +263,7 @@ class RnaSeq(common.Illumina):
             jobs.append(job)
         return jobs
 
-    def picard_rna_metrics(sef):
+    def picard_rna_metrics(self):
         """
         Computes a series of quality control metrics using both CollectRnaSeqMetrics and CollectAlignmentSummaryMetrics functions
         metrics are collected using [Picard](http://broadinstitute.github.io/picard/).
@@ -278,7 +278,7 @@ class RnaSeq(common.Illumina):
                 job = concat_jobs([
                         Job(command="mkdir -p " + output_directory, removable_files=[output_directory]),
                         picard.collect_multiple_metrics(alignment_file, os.path.join(output_directory,sample.name),reference_file),
-                        picard.collect_rna_metrics(alignment_file, os.path.join(output_directory,sample.name),reference_file)
+                        picard.collect_rna_metrics(alignment_file, os.path.join(output_directory,sample.name))
                 ],name="picard_rna_metrics")
                 jobs.append(job)
         
@@ -307,7 +307,7 @@ class RnaSeq(common.Illumina):
                 Job(command="mkdir -p " + os.path.dirname(readset_bam) + " " + output_folder),
                 pipe_jobs([
                     bvatools.bam2fq(
-                        bam
+                        readset_bam
                     ),
                     bwa.mem(
                         "/dev/stdin",
@@ -328,15 +328,16 @@ class RnaSeq(common.Illumina):
                         readset_metrics_bam,
                         "coordinate"
                     )
-                ],removable_files=[sample_bam]),
+                ]),
                 tools.py_rrnaBAMcount (
-                    readset_metrics_bam, 
-                    config.param('bwa_mem_rRNA', 'gtf'), 
-                    output, 
-                    typ="transcript")], name="bwa_mem_rRNA." + readset.name)
-
+                    bam=readset_metrics_bam, 
+                    gtf=config.param('bwa_mem_rRNA', 'gtf'), 
+                    output=os.path.join(output_folder,readset.name+"rRNA.stats.tsv"),
+                    typ="transcript")], name="bwa_mem_rRNA." + readset.name )
+            
+            job.removable_files=[readset_metrics_bam]
             jobs.append(job)
-        return job
+        return jobs
 
         
     def wiggle(self):

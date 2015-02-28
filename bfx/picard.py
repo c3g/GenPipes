@@ -261,7 +261,7 @@ def collect_rna_metrics(input, output):
         [output],
         [
             ['picard_collect_rna_metrics', 'module_java'],
-            ['picard_collect_rna_metrics', 'module_picard']
+            ['picard_collect_rna_metrics', 'module_picard'],
             ['picard_collect_rna_metrics', 'module_R']
         ],
         command="""\
