@@ -19,8 +19,8 @@ bwa index \\
         )
     )
 
-def mem(in1fastq, in2fastq=None, out_sam=None, read_group=None, ref=None):
-    other_options = config.param('bwa_mem', 'other_options', required=False)
+def mem(in1fastq, in2fastq=None, out_sam=None, read_group=None, ref=None, ini_section='bwa_mem'):
+    other_options = config.param(ini_section, 'other_options', required=False)
 
     return Job(
         [in1fastq, in2fastq, ref + ".bwt" if ref else None],
@@ -32,7 +32,7 @@ bwa mem {other_options}{read_group} \\
   {in1fastq}{in2fastq}{out_sam}""".format(
         other_options=" \\\n  " + other_options if other_options else "",
         read_group=" \\\n  -R " + read_group if read_group else "",
-        idxbase=ref if ref else config.param('bwa_mem', 'genome_bwa_index', type='filepath'),
+        idxbase=ref if ref else config.param(ini_section, 'genome_bwa_index', type='filepath'),
         in1fastq=in1fastq,
         in2fastq=" \\\n  " + in2fastq if in2fastq else "",
         out_sam=" \\\n  > " + out_sam if out_sam else ""
