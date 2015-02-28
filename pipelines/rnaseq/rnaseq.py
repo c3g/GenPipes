@@ -270,7 +270,7 @@ class RnaSeq(common.Illumina):
         """
         
         jobs = []
-        reference_file = config.param('picard_collect_rna_metrics', 'genome_fasta', type='filepath')
+        reference_file = config.param('picard_rna_metrics', 'genome_fasta', type='filepath')
         for sample in self.samples:
                 alignment_file = os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.bam")
                 output_directory = os.path.join("metrics", sample.name)
@@ -313,12 +313,12 @@ class RnaSeq(common.Illumina):
                         "/dev/stdin",
                         None,
                         read_group="'@RG" + \
-                            "\tID:" + readset.name + \
-                            "\tSM:" + readset.sample.name + \
-                            ("\tLB:" + readset.library if readset.library else "") + \
-                            ("\tPU:run" + readset.run + "_" + readset.lane if readset.run and readset.lane else "") + \
-                            ("\tCN:" + config.param('bwa_mem_rRNA', 'sequencing_center') if config.param('bwa_mem_rRNA', 'sequencing_center', required=False) else "") + \
-                            "\tPL:Illumina" + \
+                            "\\\tID:" + readset.name + \
+                            "\\\tSM:" + readset.sample.name + \
+                            ("\\\tLB:" + readset.library if readset.library else "") + \
+                            ("\\\tPU:run" + readset.run + "_" + readset.lane if readset.run and readset.lane else "") + \
+                            ("\\\tCN:" + config.param('bwa_mem_rRNA', 'sequencing_center') if config.param('bwa_mem_rRNA', 'sequencing_center', required=False) else "") + \
+                            "\\\tPL:Illumina" + \
                             "'",
                         ref=config.param('bwa_mem_rRNA', 'ribosomal_fasta'),
                         ini_section='bwa_mem_rRNA'
