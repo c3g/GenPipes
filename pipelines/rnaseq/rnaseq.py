@@ -279,7 +279,7 @@ class RnaSeq(common.Illumina):
                         Job(command="mkdir -p " + output_directory, removable_files=[output_directory]),
                         picard.collect_multiple_metrics(alignment_file, os.path.join(output_directory,sample.name),reference_file),
                         picard.collect_rna_metrics(alignment_file, os.path.join(output_directory,sample.name))
-                ],name="picard_rna_metrics")
+                ],name="picard_rna_metrics."+ sample.name)
                 jobs.append(job)
         
         return jobs
@@ -611,6 +611,28 @@ END
         
         return jobs
 
+    def fpkm_correlation_matrix(self):
+        """
+        Compute the pearson corrleation matrix of gene and transcripts FPKM. FPKM data are those estimated by cuffnorm.
+        """
+        output_directory = "metrics"
+        output_transcript = os.path.join(output_directory,"transcripts_fpkm_correlation_matrix.tsv")
+        cuffnorm_transcript = os.path.join("cuffnorm","isoforms.fpkm_table")
+        output_gene = os.path.join(output_directory,"gene_fpkm_correlation_matrix.tsv")
+        cuffnorm_gene = os.path.join("cuffnorm","genes.fpkm_table")
+        
+        jobs = []
+      
+        job = concat_jobs([Job(command="mkdir -p " + output_directory),
+                           utils.utils.fpkm_correlation_matrix(cuffnorm_transcript, output_transcript)])
+        job.name="fpkm_correlation_matrix_transcript"
+        jobs = jobs + [job]
+        job = utils.utils.fpkm_correlation_matrix(cuffnorm_gene, output_gene)
+        job.name="fpkm_correlation_matrix_gene"
+        jobs = jobs + [job]
+        
+        return jobs
+
     def differential_expression(self):
         """
         Performs differential gene expression analysis using [DESEQ](http://bioconductor.org/packages/release/bioc/html/DESeq.html) and [EDGER](http://www.bioconductor.org/packages/release/bioc/html/edgeR.html).
@@ -733,6 +755,7 @@ END
             self.cuffquant,
             self.cuffdiff,
             self.cuffnorm,
+            self.fpkm_correlation_matrix,
             self.differential_expression,
             self.differential_expression_goseq,
             self.gq_seq_utils_exploratory_analysis_rnaseq,
