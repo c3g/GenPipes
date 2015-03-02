@@ -255,6 +255,23 @@ grep ^Input {trim_log} | \\
                         merge_trim_stats=merge_trim_stats
                     )
                 )
-            ], name="merge_trimmomatic_stats")
+            ])
 
-        return [job]
+        report_file = os.path.join("report", "Illumina.merge_trimmomatic_stats.md")
+        return [concat_jobs([
+            job,
+            Job(
+                command="""\
+mkdir -p report && \\
+cp {merge_trim_stats} report/ && \\
+cat \\
+  {report_template_dir}/{basename_report_file} \\
+  <(LC_NUMERIC=fr_FR awk '{{OFS="|"; print $1, $2, sprintf("%\\47d", $3), sprintf("%\\47d", $4), sprintf("%.0f", $4 / $3 * 100)}}' {merge_trim_stats}) \\
+  > {report_file}""".format(
+                    report_template_dir=self.report_template_dir,
+                    merge_trim_stats=merge_trim_stats,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file]
+            )], name="merge_trimmomatic_stats")]
