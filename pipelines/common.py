@@ -232,14 +232,14 @@ END
         """
         The trim statistics per readset are merged at this step.
         """
-        merge_trim_stats = os.path.join("metrics", "trimming.stats")
-        job = concat_jobs([Job(command="rm -f " + merge_trim_stats), Job(command="mkdir -p metrics")])
+        merge_trim_stats = os.path.join("metrics", "trimReadsetTable.tsv")
+        job = concat_jobs([Job(command="mkdir -p metrics"), Job(command="echo 'Sample\tReadset\tRaw Reads #\tSurviving Reads #\tSurviving Reads %' > " + merge_trim_stats)])
         for readset in self.readsets:
             trim_log = os.path.join("trim", readset.sample.name, readset.name + ".trim.log")
             if readset.run_type == "PAIRED_END":
-                perl_command = "perl -pe 's/^Input Read Pairs: (\d+).*Both Surviving: (\d+).*Forward Only Surviving: (\d+).*$/{readset.sample.name}\t{readset.name}\t\\1\t\\2\t\\3/'".format(readset=readset)
+                perl_command = "perl -pe 's/^Input Read Pairs: (\d+).*Both Surviving: (\d+).*Forward Only Surviving: (\d+).*$/{readset.sample.name}\t{readset.name}\t\\1\t\\2/'".format(readset=readset)
             elif readset.run_type == "SINGLE_END":
-                perl_command = "perl -pe 's/^Input Reads: (\d+).*Surviving: (\d+).*$/{readset.sample.name}\t{readset.name}\t\\1\t\\2\t\\2/'".format(readset=readset)
+                perl_command = "perl -pe 's/^Input Reads: (\d+).*Surviving: (\d+).*$/{readset.sample.name}\t{readset.name}\t\\1\t\\2/'".format(readset=readset)
 
             job = concat_jobs([
                 job,
@@ -248,7 +248,8 @@ END
                     [merge_trim_stats],
                     command="""\
 grep ^Input {trim_log} | \\
-{perl_command} \\
+{perl_command} | \\
+awk '{{OFS="\t"; print $0, $4 / $3 * 100}}' \\
   >> {merge_trim_stats}""".format(
                         trim_log=trim_log,
                         perl_command=perl_command,
@@ -266,7 +267,7 @@ mkdir -p report && \\
 cp {merge_trim_stats} report/ && \\
 cat \\
   {report_template_dir}/{basename_report_file} \\
-  <(LC_NUMERIC=fr_FR awk '{{OFS="|"; print $1, $2, sprintf("%\\47d", $3), sprintf("%\\47d", $4), sprintf("%.0f", $4 / $3 * 100)}}' {merge_trim_stats}) \\
+  <(LC_NUMERIC=fr_FR awk -F "\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----|-----:|-----:|-----:"}} else {{print $1, $2, sprintf("%\\47d", $3), sprintf("%\\47d", $4), sprintf("%.0f", $5)}}}}' {merge_trim_stats}) \\
   > {report_file}""".format(
                     report_template_dir=self.report_template_dir,
                     merge_trim_stats=merge_trim_stats,

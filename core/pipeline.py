@@ -286,6 +286,7 @@ mkdir -p report && \\
 cp -r {self.report_template_dir}/css {self.report_template_dir}/images/ {self.report_template_dir}/_js/ report/
 pandoc \\
   --toc \\
+  --toc-depth=6 \\
   --template={self.report_template_dir}/template.html \\
   --css=css/style.css \\
   --variable title="{title}" \\

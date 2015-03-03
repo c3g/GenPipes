@@ -152,7 +152,7 @@ pandoc --to=markdown \\
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="bwa_mem_picard_sort_sam_report")
+                name="bwa_mem_picard_sort_sam.report")
         )
 
         return jobs
@@ -293,6 +293,24 @@ pandoc --to=markdown \\
                 job.name = "merge_realigned." + sample.name
                 jobs.append(job)
 
+        report_file = os.path.join("report", "DnaSeq.gatk_indel_realigner.md")
+        jobs.append(
+            Job(
+                [os.path.join("alignment", sample.name, sample.name + ".realigned.qsorted.bam") for sample in self.samples],
+                [report_file],
+                command="""\
+mkdir -p report && \\
+cp \\
+  {report_template_dir}/{basename_report_file} \\
+  {report_file}""".format(
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="merge_realigned.report")
+        )
+
         return jobs
 
     def fix_mate_by_coordinate(self):
@@ -311,6 +329,25 @@ pandoc --to=markdown \\
                 bvatools.groupfixmate(input, output_prefix + ".tmp.bam"),
                 samtools.sort(output_prefix + ".tmp.bam", output_prefix)
             ], name="fix_mate_by_coordinate." + sample.name))
+
+        report_file = os.path.join("report", "DnaSeq.fix_mate_by_coordinate.md")
+        jobs.append(
+            Job(
+                [os.path.join("alignment", sample.name, sample.name + ".matefixed.sorted.bam") for sample in self.samples],
+                [report_file],
+                command="""\
+mkdir -p report && \\
+cp \\
+  {report_template_dir}/{basename_report_file} \\
+  {report_file}""".format(
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="fix_mate_by_coordinate.report")
+        )
+
         return jobs
 
     def picard_mark_duplicates(self):
@@ -330,6 +367,25 @@ pandoc --to=markdown \\
             job = picard.mark_duplicates([input], output, metrics_file)
             job.name = "picard_mark_duplicates." + sample.name
             jobs.append(job)
+
+        report_file = os.path.join("report", "DnaSeq.picard_mark_duplicates.md")
+        jobs.append(
+            Job(
+                [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam") for sample in self.samples],
+                [report_file],
+                command="""\
+mkdir -p report && \\
+cp \\
+  {report_template_dir}/{basename_report_file} \\
+  {report_file}""".format(
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="picard_mark_duplicates.report")
+        )
+
         return jobs
 
     def recalibration(self):
@@ -353,6 +409,25 @@ pandoc --to=markdown \\
                 gatk.base_recalibrator(input, base_recalibrator_output),
                 gatk.print_reads(input, print_reads_output, base_recalibrator_output)
             ], name="recalibration." + sample.name))
+
+        report_file = os.path.join("report", "DnaSeq.recalibration.md")
+        jobs.append(
+            Job(
+                [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam") for sample in self.samples],
+                [report_file],
+                command="""\
+mkdir -p report && \\
+cp \\
+  {report_template_dir}/{basename_report_file} \\
+  {report_file}""".format(
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="recalibration.report")
+        )
+
         return jobs
 
     def metrics(self):
@@ -551,9 +626,27 @@ pandoc --to=markdown \\
         Merge metrics. Read metrics per sample are merged at this step.
         """
 
+        metrics_file = os.path.join("metrics", "SampleMetrics.stats")
+
+        report_file = os.path.join("report", "DnaSeq.dna_sample_metrics.md")
         job = concat_jobs([
             Job(command="mkdir -p metrics"),
-            metrics.dna_sample_metrics("alignment", "metrics/SampleMetrics.stats", config.param('DEFAULT', 'experiment_type'))
+            metrics.dna_sample_metrics("alignment", metrics_file, config.param('DEFAULT', 'experiment_type')),
+            Job(
+                command="""\
+mkdir -p report && \\
+cp {metrics_file} report/ && \\
+cat \\
+  {report_template_dir}/{basename_report_file} \\
+  <(LC_NUMERIC=fr_FR awk -F "\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----"}} else {{print $1, sprintf("%\\47d", $2), sprintf("%\\47d", $3), sprintf("%.0f", $4), sprintf("%\\47d", $5), sprintf("%.0f", $6), sprintf("%\\47d", $7), sprintf("%\\47d", $8), sprintf("%.0f", $9), $10}}}}' {metrics_file}) \\
+  > {report_file}""".format(
+                    report_template_dir=self.report_template_dir,
+                    metrics_file=metrics_file,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file]
+            )
         ], name="dna_sample_metrics")
         job.input_files = [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.metrics") for sample in self.samples]
         return [job]
@@ -648,6 +741,7 @@ pandoc --to=markdown \\
         for all samples in the experiment.
         """
 
+        jobs = []
         nb_jobs = config.param('snp_and_indel_bcf', 'approximate_nb_jobs', type='posint')
 
         if nb_jobs == 1:
@@ -657,12 +751,30 @@ pandoc --to=markdown \\
         output_file_prefix = "variants/allSamples.merged."
 
         bcf = output_file_prefix + "bcf"
-        job = concat_jobs([
+        jobs.append(concat_jobs([
             samtools.bcftools_cat(inputs, bcf),
             samtools.bcftools_view(bcf, output_file_prefix + "flt.vcf")
-        ])
-        job.name = "merge_filter_bcf"
-        return [job]
+        ], name = "merge_filter_bcf"))
+
+        report_file = os.path.join("report", "DnaSeq.merge_filter_bcf.md")
+        jobs.append(
+            Job(
+                [output_file_prefix + "flt.vcf"],
+                [report_file],
+                command="""\
+mkdir -p report && \\
+cp \\
+  {report_template_dir}/{basename_report_file} \\
+  {report_file}""".format(
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="merge_filter_bcf.report")
+        )
+
+        return jobs
 
     def filter_nstretches(self):
         """

@@ -1,0 +1,3 @@
+#### Marking Duplicates
+
+Sequencing experiment includes several PCR amplification steps, which could induce coverage bias during the library construction. If this bias is not taken into account it could generate high level of false positives and false negatives during the variant calling steps (SNV, SV and CNV). Thus, removing or marking read duplicates is an important step of the sequencing analysis. Aligned reads are duplicates if they have the same 5' alignment positions (for both mates in the case of paired-end reads). All but the best pair (based on alignment score) will be marked as a duplicate in the .bam file. Duplicates reads will be excluded in the subsequent analysis. Marking duplicates is performed using [Picard].
