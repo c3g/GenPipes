@@ -2,14 +2,14 @@
 
 General summary statistics are provided per sample. Sample readsets are merged for clarity.
 
-* Raw reads: total number of read obtained from the sequencer
-* Surviving reads: number of remaining reads after the trimming step
-* %: Surviving reads / Raw reads
+* Raw Reads: total number of read obtained from the sequencer
+* Surviving Reads: number of remaining reads after the trimming step
+* Surviving %: Surviving reads / Raw reads
 * Mapped reads: number of aligned read aligned
-* %: Mapped reads / Surviving reads
-* Not Duplicate: number of not duplicated read entries
-* Duplicate: number of duplicated read entries providing alternative coordinates
-* %: Duplicate / Mapped reads
+* Mapped %: Mapped reads / Surviving reads
+* Unique Reads: number of not duplicated read entries
+* Duplicate Reads: number of duplicated read entries providing alternative coordinates
+* Duplicate %: Duplicate / Mapped reads
 * Pair Orientation: library paired-end read design
 * Mean Insert Size: mean distance between the left most base position of the read1 and the right most base position of the read 2
 * Standard Deviation: standard deviation of distance between the left most base position of the read1 and the right most base position of the read 2
@@ -28,6 +28,7 @@ General summary statistics are provided per sample. Sample readsets are merged f
 * CCDS %_bases_above_100: total number of bases with a coverage >= 100x in the CCDS/capture region / size of the CCDS/capture region
 * CCDS %_bases_above_500: total number of bases with a coverage >= 500x in the CCDS/capture region / size of the CCDS/capture region
 
+<span />
 
-Table: Sequencing and Alignment Statistics per Sample ([download full table](SampleMetrics.stats))
+Table: Sequencing and Alignment Statistics per Sample (**partial table**; [download full table](sequenceAlignmentTable.tsv))
 

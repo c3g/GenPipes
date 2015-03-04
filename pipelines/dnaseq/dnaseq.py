@@ -456,11 +456,6 @@ cp \\
             job.name = "gatk_depth_of_coverage.genome." + sample.name
             jobs.append(job)
 
-            # Compute CCDS coverage
-            job = gatk.depth_of_coverage(input, recal_file_prefix + "CCDS.coverage", config.param('metrics', 'coverage_targets'))
-            job.name = "gatk_depth_of_coverage.target." + sample.name
-            jobs.append(job)
-
             job = bvatools.depth_of_coverage(
                 input, 
                 recal_file_prefix + "coverage.tsv", 
@@ -475,9 +470,6 @@ cp \\
             job.name = "igvtools_compute_tdf." + sample.name
             jobs.append(job)
 
-            job = samtools.flagstat(input, recal_file_prefix + "bam.flagstat")
-            job.name = "samtools_flagstat." + sample.name
-            jobs.append(job)
         return jobs
 
     def picard_calculate_hs_metrics(self):
@@ -626,7 +618,9 @@ cp \\
         Merge metrics. Read metrics per sample are merged at this step.
         """
 
+        trim_metrics_file = os.path.join("metrics", "trimSampleTable.tsv")
         metrics_file = os.path.join("metrics", "SampleMetrics.stats")
+        report_metrics_file = os.path.join("report", "sequenceAlignmentTable.tsv")
 
         report_file = os.path.join("report", "DnaSeq.dna_sample_metrics.md")
         job = concat_jobs([
@@ -635,14 +629,83 @@ cp \\
             Job(
                 command="""\
 mkdir -p report && \\
-cp {metrics_file} report/ && \\
+if [[ -f {trim_metrics_file} ]]
+then
+  sed '1s/^Sample/name/' {trim_metrics_file} | awk -F"\t" 'FNR==NR{{a[$1]=$0; next}}{{OFS="\t"; print a[$1], $0}}' - {metrics_file} \\
+  > {report_metrics_file}.tmp
+else
+  cp {metrics_file} {report_metrics_file}.tmp
+fi && \\
+python -c'import csv
+
+sample_csv = csv.DictReader(open("{report_metrics_file}.tmp", "rb"), delimiter="\t")
+print "\t".join([
+    "Sample",
+    "Raw Reads",
+    "Surviving Reads",
+    "Surviving %",
+    "Mapped Reads",
+    "Mapped %",
+    "Unique Reads",
+    "Duplicate Reads",
+    "Duplicate %",
+    "Pair Orientation",
+    "Mean Insert Size",
+    "Standard Deviation",
+    "WG Mean Coverage",
+    "WG %_bases_above_10",
+    "WG %_bases_above_25",
+    "WG %_bases_above_50",
+    "WG %_bases_above_75",
+    "WG %_bases_above_100",
+    "WG %_bases_above_500",
+    "CCDS Mean Coverage",
+    "CCDS %_bases_above_10",
+    "CCDS %_bases_above_25",
+    "CCDS %_bases_above_50",
+    "CCDS %_bases_above_75",
+    "CCDS %_bases_above_100",
+    "CCDS %_bases_above_500"
+])
+for line in sample_csv:
+    print "\t".join([
+        line["name"],
+        line.get("Raw Reads #", "NA"),
+        line.get("Surviving Reads #", "NA"),
+        str(float(line["Surviving Reads #"]) / float(line["Raw Reads #"]) * 100) if line.get("Surviving Reads #", None) and line.get("Raw Reads #", None) else "NA",
+        line["align"],
+        str(float(line["align"]) / float(line["Surviving Reads #"]) * 100) if line.get("align", None) and line.get("Surviving Reads #", None) else "NA",
+        str(float(line["align"]) - float(line["duplicate"])),
+        line["duplicate"],
+        str(float(line["duplicate"]) / float(line["align"]) * 100),
+        line.get("pairOrient", "NA"),
+        line.get("meanInsS", "NA"),
+        line.get("standD", "NA"),
+        line.get("wgMeanCov", "NA"),
+        line.get("wgbase10", "NA"),
+        line.get("wgbase25", "NA"),
+        line.get("wgbase50", "NA"),
+        line.get("wgbase75", "NA"),
+        line.get("wgbase100", "NA"),
+        line.get("wgbase500", "NA"),
+        line.get("ccdsMeanCov", "NA"),
+        line.get("ccdsbase10", "NA"),
+        line.get("ccdsbase25", "NA"),
+        line.get("ccdsbase50", "NA"),
+        line.get("ccdsbase75", "NA"),
+        line.get("ccdsbase100", "NA"),
+        line.get("ccdsbase500", "NA")
+    ])' > {report_metrics_file} && \\
+rm {report_metrics_file}.tmp && \\
 cat \\
   {report_template_dir}/{basename_report_file} \\
-  <(LC_NUMERIC=fr_FR awk -F "\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----"}} else {{print $1, sprintf("%\\47d", $2), sprintf("%\\47d", $3), sprintf("%.0f", $4), sprintf("%\\47d", $5), sprintf("%.0f", $6), sprintf("%\\47d", $7), sprintf("%\\47d", $8), sprintf("%.0f", $9), $10}}}}' {metrics_file}) \\
+  <(if [[ -f {trim_metrics_file} ]] ; then cut -f1-10 {report_metrics_file} | LC_NUMERIC=fr_FR awk -F "\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----"}} else {{print $1, sprintf("%\\47d", $2), sprintf("%\\47d", $3), sprintf("%.0f", $4), sprintf("%\\47d", $5), sprintf("%.0f", $6), sprintf("%\\47d", $7), sprintf("%\\47d", $8), sprintf("%.0f", $9), $10}}}}' ; else cut -f1,5,7-10 {report_metrics_file} | LC_NUMERIC=fr_FR awk -F "\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----:|-----:|-----:|-----:|-----"}} else {{print $1, sprintf("%\\47d", $2), sprintf("%\\47d", $3), sprintf("%\\47d", $4), sprintf("%.0f", $5), $6}}}}' ; fi) \\
   > {report_file}""".format(
                     report_template_dir=self.report_template_dir,
+                    trim_metrics_file=trim_metrics_file,
                     metrics_file=metrics_file,
                     basename_report_file=os.path.basename(report_file),
+                    report_metrics_file=report_metrics_file,
                     report_file=report_file
                 ),
                 report_files=[report_file]

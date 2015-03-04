@@ -266,24 +266,32 @@ Steps:
         self.scheduler.submit(self)
 
     def report_jobs(self):
-        abspath_report_files = []
+        report_files = []
         for job in self.jobs:
             # Retrieve absolute paths of report files
             for report_file in job.report_files:
                 if os.path.exists(job.abspath(report_file)):
-                    abspath_report_files.append(job.abspath(report_file))
+                    report_files.append(report_file)
                 else:
                     log.warn("Report file: " + report_file + " not found!... skipping")
-        if abspath_report_files:
-            # Print pandoc command to create HTML from config file
-            # Then copy images and other dependencies and print pandoc command with all markdown report files
-            # and config HTML (config HTML is created separately and then placed at the end,
-            # otherwise references section would be at the end instead
+        if report_files:
+            # Copy images and other HTML dependencies into report directory
+            # Print pandoc command with all markdown report files and config/references sections at the end
             print("""\
-module load {module_pandoc} && \\
-cd {output_dir} && \\
-mkdir -p report && \\
-cp -r {self.report_template_dir}/css {self.report_template_dir}/images/ {self.report_template_dir}/_js/ report/
+#!/bin/bash
+# Exit immediately on error
+set -eu -o pipefail
+
+module load {module_pandoc}
+cd {output_dir}
+mkdir -p report
+cp -r \\
+  {self.report_template_dir}/css/ \\
+  {self.report_template_dir}/images/ \\
+  {self.report_template_dir}/_js/ \\
+  {self.report_template_dir}/config_and_references.md \\
+  report/
+cp {config_file} report/config.ini
 pandoc \\
   --toc \\
   --toc-depth=6 \\
@@ -297,8 +305,7 @@ pandoc \\
     {introduction} \\
   ) \\
   {report_files} \\
-  <(echo "## Analysis Configuration Parameters" ; echo "~~~ {{.ini .numberLines}}" ; cat {config_file} ; echo "~~~") \\
-  {self.report_template_dir}/references.md \\
+  report/config_and_references.md \\
   --output report/index.html""".format(
                 module_pandoc=config.param('report', 'module_pandoc'),
                 output_dir=self.output_dir,
@@ -307,7 +314,7 @@ pandoc \\
                 title=config.param('report', 'title'),
                 introduction=os.path.join(self.report_template_dir, self.__class__.__name__ + '.introduction.md'),
                 date=datetime.datetime.now().strftime("%Y-%m-%d"),
-                report_files="\\\n  ".join(abspath_report_files)
+                report_files=" \\\n  ".join(report_files)
             ))
 
     def clean_jobs(self):
