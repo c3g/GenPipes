@@ -9,6 +9,8 @@ All analysis parameters are described in this [configuration file](config.ini).
 [GATK]: https://www.broadinstitute.org/gatk/
 [Picard]: http://broadinstitute.github.io/picard/
 [SAMtools]: http://www.htslib.org/
+[SnpEff]: http://snpeff.sourceforge.net/
+[SnpSift]: http://snpeff.sourceforge.net/SnpSift.html
 [Trimmomatic]: http://www.usadellab.org/cms/index.php?page=trimmomatic
 
 ---
@@ -75,6 +77,62 @@ references:
   type: article-journal
   issued:
     year: 2009
+
+- id: snpeff
+  title: 'A program for annotating and predicting the effects of single nucleotide polymorphisms, SnpEff: SNPs in the genome of Drosophila melanogaster strain w1118; iso-2; iso-3'
+  author:
+    - family: Cingolani
+      given: P.
+    - family: Platts
+      given: A.
+    - family: Wang
+      given: Le L.
+    - family: Coon
+      given: M.
+    - family: Nguyen
+      given: T.
+    - family: Wang
+      given: L.
+    - family: Land
+      given: S.J.
+    - family: Lu
+      given: X.
+    - family: Ruden
+      given: D.M.
+  container-title: Fly
+  volume: 6
+  URL: 'http://www.tandfonline.com/doi/abs/10.4161/fly.19695'
+  DOI: 10.4161/fly.19695
+  issue: 2
+  page: 80-92
+  type: article-journal
+  issued:
+    year: 2012
+
+- id: snpsift
+  title: 'Using Drosophila melanogaster as a model for genotoxic chemical mutational studies with a new program, SnpSift'
+  author:
+    - family: Cingolani
+      given: P.
+    - family: Patel
+      given: V.M.
+    - family: Coon
+      given: M.
+    - family: Nguyen
+      given: T.
+    - family: Land
+      given: S.J.
+    - family: Ruden
+      given: D.M.
+    - family: Lu
+      given: X.
+  container-title: Frontiers in Genetics
+  volume: 3
+  URL: 'http://journal.frontiersin.org/article/10.3389/fgene.2012.00035/abstract'
+  DOI: 10.3389/fgene.2012.00035
+  type: article-journal
+  issued:
+    year: 2012
 
 - id: trimmomatic
   title: 'Trimmomatic: a flexible trimmer for Illumina sequence data'

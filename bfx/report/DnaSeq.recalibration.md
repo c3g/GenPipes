@@ -8,4 +8,4 @@ The recalibration process is accomplished by analyzing the covariation among sev
 * The position within the read
 * The preceding and current nucleotide (sequencing chemistry effect) observed by the sequencing machine
 
-These covariates are then subsequently applied through a piecewise tabular correction to recalibrate the quality scores of all reads in a BAM file. The recalibration process is performed using [GATK]&nbsp;[@gatk].
+These covariates are then subsequently applied through a piecewise tabular correction to recalibrate the quality scores of all reads in a BAM file. The recalibration process is performed using [GATK]\ [@gatk].

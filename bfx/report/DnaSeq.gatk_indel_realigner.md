@@ -12,4 +12,4 @@ Insertion and deletion realignment is performed on regions where multiple base m
 2. INDELs seen in original alignments (in CIGARs)
 3. Sites where evidence suggests a hidden INDEL
 
-Realignment is done using [GATK]&nbsp;[@gatk].
+Realignment is done using [GATK]\ [@gatk].

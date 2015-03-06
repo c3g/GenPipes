@@ -627,11 +627,16 @@ cp \\
             Job(command="mkdir -p metrics"),
             metrics.dna_sample_metrics("alignment", metrics_file, config.param('DEFAULT', 'experiment_type')),
             Job(
+                [metrics_file],
+                [report_file],
+                [['dna_sample_metrics', 'module_python'], ['dna_sample_metrics', 'module_pandoc']],
+                # Ugly python to rename columns: should be done properly in R-tools/DNAsampleMetrics.R
+                # Then ugly awk to merge sample metrics with trim metrics if they exist; knitr may do this better
                 command="""\
 mkdir -p report && \\
 if [[ -f {trim_metrics_file} ]]
 then
-  sed '1s/^Sample/name/' {trim_metrics_file} | awk -F"\t" 'FNR==NR{{a[$1]=$0; next}}{{OFS="\t"; print a[$1], $0}}' - {metrics_file} \\
+  sed '1s/^Sample/name/' {trim_metrics_file} | perl -pe 's/(Paired|Single) Reads/Reads/g' | awk -F"\t" 'FNR==NR{{a[$1]=$0; next}}{{OFS="\t"; print a[$1], $0}}' - {metrics_file} \\
   > {report_metrics_file}.tmp
 else
   cp {metrics_file} {report_metrics_file}.tmp
@@ -670,11 +675,11 @@ print "\t".join([
 for line in sample_csv:
     print "\t".join([
         line["name"],
-        line.get("Raw Reads #", "NA"),
-        line.get("Surviving Reads #", "NA"),
+        str(int(line["Raw Reads #"]) * 2) if line.get("Raw Reads #", None) else "NA",
+        str(int(line["Surviving Reads #"]) * 2) if line.get("Surviving Reads #", None) else "NA",
         str(float(line["Surviving Reads #"]) / float(line["Raw Reads #"]) * 100) if line.get("Surviving Reads #", None) and line.get("Raw Reads #", None) else "NA",
         line["align"],
-        str(float(line["align"]) / float(line["Surviving Reads #"]) * 100) if line.get("align", None) and line.get("Surviving Reads #", None) else "NA",
+        str(float(line["align"]) / (float(line["Surviving Reads #"]) * 2) * 100) if line.get("align", None) and line.get("Surviving Reads #", None) else "NA",
         str(float(line["align"]) - float(line["duplicate"])),
         line["duplicate"],
         str(float(line["duplicate"]) / float(line["align"]) * 100),
@@ -697,9 +702,12 @@ for line in sample_csv:
         line.get("ccdsbase500", "NA")
     ])' > {report_metrics_file} && \\
 rm {report_metrics_file}.tmp && \\
-cat \\
+sequence_alignment_table_md=`if [[ -f {trim_metrics_file} ]] ; then cut -f1-10 {report_metrics_file} | LC_NUMERIC=fr_FR awk -F "\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----"}} else {{print $1, sprintf("%\\47d", $2), sprintf("%\\47d", $3), sprintf("%.1f", $4), sprintf("%\\47d", $5), sprintf("%.1f", $6), sprintf("%\\47d", $7), sprintf("%\\47d", $8), sprintf("%.1f", $9), $10}}}}' ; else cut -f1,5,7-10 {report_metrics_file} | LC_NUMERIC=fr_FR awk -F "\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----:|-----:|-----:|-----:|-----"}} else {{print $1, sprintf("%\\47d", $2), sprintf("%\\47d", $3), sprintf("%\\47d", $4), sprintf("%.1f", $5), $6}}}}' ; fi`
+pandoc \\
   {report_template_dir}/{basename_report_file} \\
-  <(if [[ -f {trim_metrics_file} ]] ; then cut -f1-10 {report_metrics_file} | LC_NUMERIC=fr_FR awk -F "\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----"}} else {{print $1, sprintf("%\\47d", $2), sprintf("%\\47d", $3), sprintf("%.0f", $4), sprintf("%\\47d", $5), sprintf("%.0f", $6), sprintf("%\\47d", $7), sprintf("%\\47d", $8), sprintf("%.0f", $9), $10}}}}' ; else cut -f1,5,7-10 {report_metrics_file} | LC_NUMERIC=fr_FR awk -F "\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----:|-----:|-----:|-----:|-----"}} else {{print $1, sprintf("%\\47d", $2), sprintf("%\\47d", $3), sprintf("%\\47d", $4), sprintf("%.0f", $5), $6}}}}' ; fi) \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable sequence_alignment_table="$sequence_alignment_table_md" \\
+  --to markdown \\
   > {report_file}""".format(
                     report_template_dir=self.report_template_dir,
                     trim_metrics_file=trim_metrics_file,
@@ -712,6 +720,7 @@ cat \\
             )
         ], name="dna_sample_metrics")
         job.input_files = [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.metrics") for sample in self.samples]
+        job.input_files += [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.all.metrics.insert_size_metrics") for sample in self.samples]
         return [job]
 
     def generate_approximate_windows(self, nb_jobs):
@@ -828,7 +837,9 @@ cat \\
 mkdir -p report && \\
 cp \\
   {report_template_dir}/{basename_report_file} \\
-  {report_file}""".format(
+  {report_template_dir}/HumanVCFformatDescriptor.tsv \\
+  report/ && \\
+sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {report_file}""".format(
                     report_template_dir=self.report_template_dir,
                     basename_report_file=os.path.basename(report_file),
                     report_file=report_file
@@ -874,9 +885,32 @@ cp \\
         SnpEff annotates and predicts the effects of variants on genes (such as amino acid changes).
         """
 
-        job = snpeff.compute_effects("variants/allSamples.merged.flt.mil.snpId.vcf", "variants/allSamples.merged.flt.mil.snpId.snpeff.vcf", split=True)
+        jobs = []
+
+        snpeff_file = os.path.join("variants", "allSamples.merged.flt.mil.snpId.snpeff.vcf")
+        report_file = os.path.join("report", "DnaSeq.snp_effect.md")
+        job = snpeff.compute_effects("variants/allSamples.merged.flt.mil.snpId.vcf", snpeff_file, split=True)
         job.name = "snp_effect"
-        return [job]
+        jobs.append(job)
+
+        jobs.append(Job(
+                [snpeff_file],
+                [report_file],
+                command="""\
+mkdir -p report && \\
+cp \\
+  {report_template_dir}/{basename_report_file} \\
+  report/""".format(
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="snp_effect.report"
+            )
+        )
+
+        return jobs
 
     def dbnsfp_annotation(self):
         """
@@ -911,37 +945,54 @@ cp \\
         """
         """
         variants_file_prefix = "variants/allSamples.merged.flt.mil.snpId."
+        snv_metrics_files = ["metrics/allSamples.SNV.SummaryTable.tsv", "metrics/allSamples.SNV.EffectsFunctionalClass.tsv", "metrics/allSamples.SNV.EffectsImpact.tsv"]
+
         job = metrics.snv_graph_metrics(variants_file_prefix + "snpeff.vcf.statsFile.txt", "metrics/allSamples.SNV")
-        job.output_files = ["metrics/allSamples.SNV.SummaryTable.tsv", "metrics/allSamples.SNV.EffectsFunctionalClass.tsv", "metrics/allSamples.SNV.EffectsImpact.tsv"]
+        job.output_files = snv_metrics_files
         job.name = "metrics_snv_graph"
 
-        return [job]
+        report_file = os.path.join("report", "DnaSeq.metrics_snv_graph_metrics.md")
 
-    def gq_seq_utils_report(self):
-        """
-        Generate the standard report. A summary html report is automatically generated by the pipeline.
-        This report contains description of the sequencing experiment as well as a detailed presentation
-        of the pipeline steps and results. Various Quality Control (QC) summary statistics are included
-        in the report and additional QC analysis is accessible for download directly through the report.
-        The report includes also the main references of the software and methods used during the analysis,
-        together with the full list of parameters passed to the pipeline main script.
-        """
-
-        job = gq_seq_utils.report(
-            [config_file.name for config_file in self.args.config],
-            self.output_dir,
-            "DNAseq",
-            self.output_dir
-        )
-        job.input_files = [
-            "metrics/trimming.stats",
-            "metrics/SampleMetrics.stats",
-            "metrics/allSamples.SNV.SummaryTable.tsv",
-            "metrics/allSamples.SNV.EffectsFunctionalClass.tsv",
-            "metrics/allSamples.SNV.EffectsImpact.tsv"
-        ]
-        job.name = "gq_seq_utils_report"
-        return [job]
+        return [concat_jobs([
+            job,
+            Job(
+                snv_metrics_files,
+                [report_file],
+                [['metrics_snv_graph_metrics', 'module_pandoc']],
+                command="""\
+mkdir -p report && \\
+paste \\
+  <(echo -e "Number of variants before filter\nNumber of variants filtered out\n%\nNumber of not variants\n%\nNumber of variants processed\nNumber of known variants\n%\nTransitions\nTransversions\nTs Tv ratio\nmissense\nnonsense\nsilent\nmissense silent ratio\nhigh impact\nlow impact\nmoderate impact\nmodifier impact") \\
+  <(paste \\
+    metrics/allSamples.SNV.SummaryTable.tsv \\
+    metrics/allSamples.SNV.EffectsFunctionalClass.tsv \\
+    <(sed '1d' metrics/allSamples.SNV.EffectsImpact.tsv) \\
+  | sed '1d' | sed 's/\t/\\n/g') \\
+  > report/SNV.SummaryTable.tsv
+snv_summary_table_md=`sed 's/\t/|/g' report/SNV.SummaryTable.tsv`
+pandoc \\
+  {report_template_dir}/{basename_report_file} \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable snv_summary_table="$snv_summary_table_md" \\
+  --to markdown \\
+  > {report_file}
+for file in SNVQuality SNVCoverage IndelLength CountRegions CountEffects BaseChange codonChange AminoAcidChange changeRate TsTv
+do
+  for ext in jpeg pdf tsv
+  do
+  cp \\
+    metrics/allSamples.SNV.$file.$ext  \\
+    report/SNV.$file.$ext
+  done
+done
+cp metrics/allSamples.SNV.chromosomeChange.zip report/SNV.chromosomeChange.zip""".format(
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file]
+            )
+        ], name="metrics_snv_graph_metrics")]
 
     @property
     def steps(self):
@@ -974,8 +1025,7 @@ cp \\
             self.snp_effect,
             self.dbnsfp_annotation,
             self.metrics_vcf_stats,
-            self.metrics_snv_graph_metrics,
-            self.gq_seq_utils_report
+            self.metrics_snv_graph_metrics
         ]
 
 if __name__ == '__main__': 

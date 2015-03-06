@@ -2,6 +2,10 @@
 
 General summary statistics are provided per sample. Sample readsets are merged for clarity.
 
+Table: Sequencing and Alignment Statistics per Sample (**partial table**; [download full table](sequenceAlignmentTable.tsv))
+
+$sequence_alignment_table$
+
 * Raw Reads: total number of read obtained from the sequencer
 * Surviving Reads: number of remaining reads after the trimming step
 * Surviving %: Surviving reads / Raw reads
@@ -27,8 +31,3 @@ General summary statistics are provided per sample. Sample readsets are merged f
 * CCDS %_bases_above_75: total number of bases with a coverage >= 75x in the CCDS/capture region / size of the CCDS/capture region
 * CCDS %_bases_above_100: total number of bases with a coverage >= 100x in the CCDS/capture region / size of the CCDS/capture region
 * CCDS %_bases_above_500: total number of bases with a coverage >= 500x in the CCDS/capture region / size of the CCDS/capture region
-
-<span />
-
-Table: Sequencing and Alignment Statistics per Sample (**partial table**; [download full table](sequenceAlignmentTable.tsv))
-

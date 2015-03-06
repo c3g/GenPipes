@@ -232,8 +232,10 @@ END
         """
         The trim statistics per readset are merged at this step.
         """
+
+        read_type = "Paired" if self.run_type == 'PAIRED_END' else "Single"
         readset_merge_trim_stats = os.path.join("metrics", "trimReadsetTable.tsv")
-        job = concat_jobs([Job(command="mkdir -p metrics"), Job(command="echo 'Sample\tReadset\tRaw Reads #\tSurviving Reads #\tSurviving Reads %' > " + readset_merge_trim_stats)])
+        job = concat_jobs([Job(command="mkdir -p metrics"), Job(command="echo 'Sample\tReadset\tRaw {read_type} Reads #\tSurviving {read_type} Reads #\tSurviving {read_type} Reads %' > ".format(read_type=read_type) + readset_merge_trim_stats)])
         for readset in self.readsets:
             trim_log = os.path.join("trim", readset.sample.name, readset.name + ".trim.log")
             if readset.run_type == "PAIRED_END":
@@ -265,6 +267,8 @@ awk '{{OFS="\t"; print $0, $4 / $3 * 100}}' \\
         return [concat_jobs([
             job,
             Job(
+                [readset_merge_trim_stats],
+                [sample_merge_trim_stats],
                 # Create sample trimming stats TSV file using ugly awk
                 command="""\
 cut -f1,3- {readset_merge_trim_stats} | awk -F"\t" '{{OFS="\t"; if (NR==1) {{print $0}} else {{raw[$1]+=$2; surviving[$1]+=$3}}}}END{{for (sample in raw){{print sample, raw[sample], surviving[sample], surviving[sample] / raw[sample] * 100}}}}' \\
@@ -274,13 +278,21 @@ cut -f1,3- {readset_merge_trim_stats} | awk -F"\t" '{{OFS="\t"; if (NR==1) {{pri
                 )
             ),
             Job(
+                [sample_merge_trim_stats],
+                [report_file],
+                [['merge_trimmomatic_stats', 'module_pandoc']],
                 command="""\
 mkdir -p report && \\
 cp {readset_merge_trim_stats} {sample_merge_trim_stats} report/ && \\
-cat \\
+trim_readset_table_md=`LC_NUMERIC=fr_FR awk -F "\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----|-----:|-----:|-----:"}} else {{print $1, $2, sprintf("%\\47d", $3), sprintf("%\\47d", $4), sprintf("%.1f", $5)}}}}' {readset_merge_trim_stats}` && \\
+pandoc \\
   {report_template_dir}/{basename_report_file} \\
-  <(LC_NUMERIC=fr_FR awk -F "\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----|-----:|-----:|-----:"}} else {{print $1, $2, sprintf("%\\47d", $3), sprintf("%\\47d", $4), sprintf("%.0f", $5)}}}}' {readset_merge_trim_stats}) \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable read_type={read_type} \\
+  --variable trim_readset_table="$trim_readset_table_md" \\
+  --to markdown \\
   > {report_file}""".format(
+                    read_type=read_type,
                     report_template_dir=self.report_template_dir,
                     readset_merge_trim_stats=readset_merge_trim_stats,
                     sample_merge_trim_stats=sample_merge_trim_stats,
