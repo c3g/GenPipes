@@ -478,21 +478,21 @@ class DnaSeq(common.Illumina):
                 ], name="gatk_haplotype_caller." + sample.name))
 
             else:
-                unique_sequences_per_job = [sequence['name'] for sequence in self.sequence_dictionary[0:min(nb_haplotype_jobs - 1, len(self.sequence_dictionary))]]
+                unique_sequences_per_job,unique_sequences_per_job_others = split_by_size(self.sequence_dictionary, nb_haplotype_jobs - 1)
 
                 # Create one separate job for each of the first sequences
-                for sequence in unique_sequences_per_job:
+                for idx,sequences in enumerate(unique_sequences_per_job):
                     jobs.append(concat_jobs([
                         # Create output directory since it is not done by default by GATK tools
                         Job(command="mkdir -p " + haplotype_directory),
-                        gatk.haplotype_caller(input, os.path.join(haplotype_directory, sample.name + "." + sequence + ".hc.g.vcf"), intervals=[sequence])
-                    ], name="gatk_haplotype_caller." + sample.name + "." + sequence))
+                        gatk.haplotype_caller(input, os.path.join(haplotype_directory, sample.name + "." + str(idx) + ".hc.g.vcf"), intervals=sequences)
+                    ], name="gatk_haplotype_caller." + sample.name + "." + str(idx)))
 
                 # Create one last job to process the last remaining sequences and 'others' sequences
                 jobs.append(concat_jobs([
                     # Create output directory since it is not done by default by GATK tools
                     Job(command="mkdir -p " + haplotype_directory),
-                    gatk.haplotype_caller(input, os.path.join(haplotype_directory, sample.name + ".others.hc.g.vcf"), exclude_intervals=unique_sequences_per_job)
+                    gatk.haplotype_caller(input, os.path.join(haplotype_directory, sample.name + ".others.hc.g.vcf"), exclude_intervals=unique_sequences_per_job_others)
                 ], name="gatk_haplotype_caller." + sample.name + ".others"))
 
         return jobs
@@ -511,7 +511,9 @@ class DnaSeq(common.Illumina):
             if nb_haplotype_jobs == 1:
                 gvcfs_to_merge = [haplotype_file_prefix + ".hc.g.vcf"]
             else:
-                gvcfs_to_merge = [haplotype_file_prefix + "." + sequence['name'] + ".hc.g.vcf" for sequence in self.sequence_dictionary[0:min(nb_haplotype_jobs - 1, len(self.sequence_dictionary))]]
+                unique_sequences_per_job,unique_sequences_per_job_others = split_by_size(self.sequence_dictionary, nb_haplotype_jobs - 1)
+
+                gvcfs_to_merge = [haplotype_file_prefix + "." + str(idx) + ".hc.g.vcf" for idx in xrange(len(unique_sequences_per_job))]
                 gvcfs_to_merge.append(haplotype_file_prefix + ".others.hc.g.vcf")
 
             jobs.append(concat_jobs([
