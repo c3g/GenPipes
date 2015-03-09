@@ -636,72 +636,13 @@ cp \\
 mkdir -p report && \\
 if [[ -f {trim_metrics_file} ]]
 then
-  sed '1s/^Sample/name/' {trim_metrics_file} | perl -pe 's/(Paired|Single) Reads/Reads/g' | awk -F"\t" 'FNR==NR{{a[$1]=$0; next}}{{OFS="\t"; print a[$1], $0}}' - {metrics_file} \\
-  > {report_metrics_file}.tmp
+  awk -F"\t" 'FNR==NR{{if (NR==1) {{if ($2=="Raw Paired Reads #") {{paired="true"}}; raw_reads[$1]="Raw Reads #"; surviving_reads[$1]="Surviving Reads #"; surviving_pct[$1]="Surviving Reads %"}} else {{if (paired) {{raw_reads[$1]=$2 * 2; surviving_reads[$1]=$3 * 2}} else {{raw_reads[$1]=$2; surviving_reads[$1]=$3}}; surviving_pct[$1]=$4}}; next}}{{OFS="\t"; if ($2=="Mapped Reads"){{mapped_pct="Mapped %"}} else {{mapped_pct=($2 / surviving_reads[$1] * 100)}}; printf $1"\t"raw_reads[$1]"\t"surviving_reads[$1]"\t"surviving_pct[$1]"\t"$2"\t"mapped_pct; for (i = 3; i<= NF; i++) {{printf "\t"$i}}; print ""}}' \\
+  {trim_metrics_file} \\
+  {metrics_file} \\
+  > {report_metrics_file}
 else
-  cp {metrics_file} {report_metrics_file}.tmp
+  cp {metrics_file} {report_metrics_file}
 fi && \\
-python -c'import csv
-
-sample_csv = csv.DictReader(open("{report_metrics_file}.tmp", "rb"), delimiter="\t")
-print "\t".join([
-    "Sample",
-    "Raw Reads",
-    "Surviving Reads",
-    "Surviving %",
-    "Mapped Reads",
-    "Mapped %",
-    "Unique Reads",
-    "Duplicate Reads",
-    "Duplicate %",
-    "Pair Orientation",
-    "Mean Insert Size",
-    "Standard Deviation",
-    "WG Mean Coverage",
-    "WG %_bases_above_10",
-    "WG %_bases_above_25",
-    "WG %_bases_above_50",
-    "WG %_bases_above_75",
-    "WG %_bases_above_100",
-    "WG %_bases_above_500",
-    "CCDS Mean Coverage",
-    "CCDS %_bases_above_10",
-    "CCDS %_bases_above_25",
-    "CCDS %_bases_above_50",
-    "CCDS %_bases_above_75",
-    "CCDS %_bases_above_100",
-    "CCDS %_bases_above_500"
-])
-for line in sample_csv:
-    print "\t".join([
-        line["name"],
-        str(int(line["Raw Reads #"]) * 2) if line.get("Raw Reads #", None) else "NA",
-        str(int(line["Surviving Reads #"]) * 2) if line.get("Surviving Reads #", None) else "NA",
-        str(float(line["Surviving Reads #"]) / float(line["Raw Reads #"]) * 100) if line.get("Surviving Reads #", None) and line.get("Raw Reads #", None) else "NA",
-        line["align"],
-        str(float(line["align"]) / (float(line["Surviving Reads #"]) * 2) * 100) if line.get("align", None) and line.get("Surviving Reads #", None) else "NA",
-        str(float(line["align"]) - float(line["duplicate"])),
-        line["duplicate"],
-        str(float(line["duplicate"]) / float(line["align"]) * 100),
-        line.get("pairOrient", "NA"),
-        line.get("meanInsS", "NA"),
-        line.get("standD", "NA"),
-        line.get("wgMeanCov", "NA"),
-        line.get("wgbase10", "NA"),
-        line.get("wgbase25", "NA"),
-        line.get("wgbase50", "NA"),
-        line.get("wgbase75", "NA"),
-        line.get("wgbase100", "NA"),
-        line.get("wgbase500", "NA"),
-        line.get("ccdsMeanCov", "NA"),
-        line.get("ccdsbase10", "NA"),
-        line.get("ccdsbase25", "NA"),
-        line.get("ccdsbase50", "NA"),
-        line.get("ccdsbase75", "NA"),
-        line.get("ccdsbase100", "NA"),
-        line.get("ccdsbase500", "NA")
-    ])' > {report_metrics_file} && \\
-rm {report_metrics_file}.tmp && \\
 sequence_alignment_table_md=`if [[ -f {trim_metrics_file} ]] ; then cut -f1-10 {report_metrics_file} | LC_NUMERIC=fr_FR awk -F "\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----"}} else {{print $1, sprintf("%\\47d", $2), sprintf("%\\47d", $3), sprintf("%.1f", $4), sprintf("%\\47d", $5), sprintf("%.1f", $6), sprintf("%\\47d", $7), sprintf("%\\47d", $8), sprintf("%.1f", $9), $10}}}}' ; else cut -f1,5,7-10 {report_metrics_file} | LC_NUMERIC=fr_FR awk -F "\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----:|-----:|-----:|-----:|-----"}} else {{print $1, sprintf("%\\47d", $2), sprintf("%\\47d", $3), sprintf("%\\47d", $4), sprintf("%.1f", $5), $6}}}}' ; fi`
 pandoc \\
   {report_template_dir}/{basename_report_file} \\

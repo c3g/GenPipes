@@ -11,7 +11,7 @@ $sequence_alignment_table$
 * Surviving %: Surviving reads / Raw reads
 * Mapped reads: number of aligned read aligned
 * Mapped %: Mapped reads / Surviving reads
-* Unique Reads: number of not duplicated read entries
+* Not Duplicate Reads: number of not duplicated read entries
 * Duplicate Reads: number of duplicated read entries providing alternative coordinates
 * Duplicate %: Duplicate / Mapped reads
 * Pair Orientation: library paired-end read design
