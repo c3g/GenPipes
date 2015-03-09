@@ -288,10 +288,14 @@ trim_readset_table_md=`LC_NUMERIC=fr_FR awk -F "\t" '{{OFS="|"; if (NR == 1) {{$
 pandoc \\
   {report_template_dir}/{basename_report_file} \\
   --template {report_template_dir}/{basename_report_file} \\
+  --variable trailing_min_quality={trailing_min_quality} \\
+  --variable min_length={min_length} \\
   --variable read_type={read_type} \\
   --variable trim_readset_table="$trim_readset_table_md" \\
   --to markdown \\
   > {report_file}""".format(
+                    trailing_min_quality=config.param('trimmomatic', 'trailing_min_quality', type='int'),
+                    min_length=config.param('trimmomatic', 'min_length', type='posint'),
                     read_type=read_type,
                     report_template_dir=self.report_template_dir,
                     readset_merge_trim_stats=readset_merge_trim_stats,
