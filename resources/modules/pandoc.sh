@@ -29,6 +29,7 @@ module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
 prepend-path    PATH                \$root/linux/debian/x86_64
+setenv          LANG                en_US.utf8
 "
 }
 

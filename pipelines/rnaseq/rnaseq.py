@@ -205,6 +205,30 @@ class RnaSeq(common.Illumina):
             job.name = "star_align.2." + readset.name
             jobs.append(job)
 
+        report_file = os.path.join("report", "RnaSeq.star.md")
+        jobs.append(
+            Job(
+                [os.path.join("alignment", readset.sample.name, readset.name, "Aligned.sortedByCoord.out.bam") for readset in self.readsets],
+                [report_file],
+                [['star', 'module_pandoc']],
+                command="""\
+mkdir -p report && \\
+pandoc --to=markdown \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable scientific_name="{scientific_name}" \\
+  --variable assembly="{assembly}" \\
+  {report_template_dir}/{basename_report_file} \\
+  > {report_file}""".format(
+                    scientific_name=config.param('star', 'scientific_name'),
+                    assembly=config.param('star', 'assembly'),
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="star.report")
+        )
+
         return jobs
 
     def picard_merge_sam_files(self):

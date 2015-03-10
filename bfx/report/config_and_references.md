@@ -11,6 +11,7 @@ All analysis parameters are described in this [configuration file](config.ini).
 [SAMtools]: http://www.htslib.org/
 [SnpEff]: http://snpeff.sourceforge.net/
 [SnpSift]: http://snpeff.sourceforge.net/SnpSift.html
+[STAR]: https://github.com/alexdobin/STAR
 [Trimmomatic]: http://www.usadellab.org/cms/index.php?page=trimmomatic
 
 ---
@@ -130,6 +131,37 @@ references:
   volume: 3
   URL: 'http://journal.frontiersin.org/article/10.3389/fgene.2012.00035/abstract'
   DOI: 10.3389/fgene.2012.00035
+  type: article-journal
+  issued:
+    year: 2012
+
+- id: star
+  title: 'STAR: ultrafast universal RNA-seq aligner'
+  author:
+    - family: Dobin
+      given: A.
+    - family: Davis
+      given: C.A.
+    - family: Schlesinger
+      given: F.
+    - family: Drenkow
+      given: J.
+    - family: Zaleski
+      given: C.
+    - family: Jha
+      given: S.
+    - family: Batut
+      given: P.
+    - family: Chaisson
+      given: M.
+    - family: Gingeras
+      given: T.R.
+  container-title: Bioinformatics
+  volume: 29
+  URL: 'http://bioinformatics.oxfordjournals.org/content/29/1/15'
+  DOI: 10.1093/bioinformatics/bts635
+  issue: 1
+  page: 15-21
   type: article-journal
   issued:
     year: 2012
