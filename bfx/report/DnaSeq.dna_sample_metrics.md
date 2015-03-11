@@ -9,7 +9,7 @@ $sequence_alignment_table$
 * Raw Reads: total number of reads obtained from the sequencer
 * Surviving Reads: number of remaining reads after the trimming step
 * Surviving %: Surviving reads / Raw reads
-* Mapped reads: number of aligned reads
+* Mapped reads: number of aligned reads to the reference
 * Mapped %: Mapped reads / Surviving reads
 * Not Duplicate Reads: number of not duplicated read entries
 * Duplicate Reads: number of duplicated read entries providing alternative coordinates
