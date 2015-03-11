@@ -62,16 +62,17 @@ def create_readsets(nanuq_readset_file, seq_type, mugqic_pipelines_readset_file=
             mugqic_pipelines_readset_csv_row = {}
 
             if seq_type == "Pacbio":
+                mugqic_pipelines_readset_csv_row['Sample'] = line['Name']
+                mugqic_pipelines_readset_csv_row['Readset'] = ".".join([line['Name'], line['Library Barcode'], line['Run'], line['Well']])
+
                 nanuq_vs_mugqic_pipelines_readset_keys = [
-                    ['Name', 'Sample'],
-                    ['Filename Prefix', 'Readset'],
                     ['Run', 'Run'],
                     ['Well', 'Smartcell'],
                     ['Collection Protocol', 'Protocol']
                 ]
                 formats = ['BAS', 'BAX']
 
-                fieldnames = [key[1] for key in nanuq_vs_mugqic_pipelines_readset_keys] + ['NbBasePairs', 'EstimatedGenomeSize'] + formats
+                fieldnames = ['Sample', 'Readset'] + [key[1] for key in nanuq_vs_mugqic_pipelines_readset_keys] + ['NbBasePairs', 'EstimatedGenomeSize'] + formats
 
                 nb_basepairs = re.search("^\([^/]*/[^/]*/(.*)\)$", line['Longest Subreads (count mean bp)'])
                 mugqic_pipelines_readset_csv_row['NbBasePairs'] = re.sub(",", "", nb_basepairs.group(1))
@@ -86,9 +87,10 @@ def create_readsets(nanuq_readset_file, seq_type, mugqic_pipelines_readset_file=
                             symlinks.append([nanuq_readset_path, mugqic_pipelines_readset_path])
 
             else:  # seq_type = HiSeq or MiSeq
+                mugqic_pipelines_readset_csv_row['Sample'] = line['Name']
+                mugqic_pipelines_readset_csv_row['Readset'] = ".".join([line['Name'], line['Library Barcode'], line['Run'], line['Region']])
+
                 nanuq_vs_mugqic_pipelines_readset_keys = [
-                    ['Name', 'Sample'],
-                    ['Filename Prefix', 'Readset'],
                     ['Library Barcode', 'Library'],
                     ['Run Type', 'RunType'],
                     ['Run', 'Run'],
@@ -100,13 +102,21 @@ def create_readsets(nanuq_readset_file, seq_type, mugqic_pipelines_readset_file=
                 ]
                 formats = ['FASTQ1', 'FASTQ2', 'BAM']
 
-                fieldnames = [key[1] for key in nanuq_vs_mugqic_pipelines_readset_keys] + formats
+                fieldnames = ['Sample', 'Readset'] + [key[1] for key in nanuq_vs_mugqic_pipelines_readset_keys] + formats
 
                 for format in formats:
                     if line.get(format, None):
                         nanuq_readset_path = os.path.normpath(os.path.join(nanuq_readset_root_directory, line[format]))
-                        if os.path.isfile(nanuq_readset_path):
-                            mugqic_pipelines_readset_path = os.path.join(raw_reads_directory, line['Name'], os.path.basename(nanuq_readset_path))
+                        if os.path.isfile(nanuq_readset_path) and (format != 'FASTQ2' or line['Run Type'] != 'SINGLE_END'):  # Ignore FASTQ2 value if any, in case of SINGLE_END readset
+                            if format == 'BAM':
+                                mugqic_pipelines_readset_basename = mugqic_pipelines_readset_csv_row['Readset'] + ".bam"
+                            else:  # format = FASTQ1 or FASTQ2
+                                if line['Run Type'] == 'PAIRED_END':
+                                    mugqic_pipelines_readset_basename = mugqic_pipelines_readset_csv_row['Readset'] + ".pair" + format[-1] + ".fastq.gz"
+                                else:  # format = FASTQ1 and Run Type = SINGLE_END
+                                    mugqic_pipelines_readset_basename = mugqic_pipelines_readset_csv_row['Readset'] + ".single.fastq.gz"
+
+                            mugqic_pipelines_readset_path = os.path.join(raw_reads_directory, mugqic_pipelines_readset_csv_row['Sample'], mugqic_pipelines_readset_basename)
                             symlinks.append([nanuq_readset_path, mugqic_pipelines_readset_path])
                             mugqic_pipelines_readset_csv_row[format] = mugqic_pipelines_readset_path
 
