@@ -6,13 +6,16 @@ All analysis parameters are described in this [configuration file](config.ini).
 <span />
 
 [BWA]: http://bio-bwa.sourceforge.net/
+[Cufflinks]: http://cole-trapnell-lab.github.io/cufflinks/
 [GATK]: https://www.broadinstitute.org/gatk/
+[IGV]: https://www.broadinstitute.org/igv/
 [Picard]: http://broadinstitute.github.io/picard/
 [SAMtools]: http://www.htslib.org/
 [SnpEff]: http://snpeff.sourceforge.net/
 [SnpSift]: http://snpeff.sourceforge.net/SnpSift.html
 [STAR]: https://github.com/alexdobin/STAR
 [Trimmomatic]: http://www.usadellab.org/cms/index.php?page=trimmomatic
+[UCSC]: http://genome.ucsc.edu/
 
 ---
 references:
@@ -32,6 +35,27 @@ references:
   type: article-journal
   issued:
     year: 2010
+
+- id: cufflinks
+  title: 'Identification of novel transcripts in annotated genomes using RNA-Seq'
+  author:
+    - family: Roberts
+      given: A.
+    - family: Pimentel
+      given: H.
+    - family: Trapnell
+      given: C.
+    - family: Pachter
+      given: L.
+  container-title: Bioinformatics
+  volume: 27
+  URL: 'http://bioinformatics.oxfordjournals.org/content/27/17/2325'
+  DOI: 10.1093/bioinformatics/btr355
+  issue: 17
+  page: 2325-2329
+  type: article-journal
+  issued:
+    year: 2011
 
 - id: gatk
   title: 'A framework for variation discovery and genotyping using next-generation DNA sequencing data'
