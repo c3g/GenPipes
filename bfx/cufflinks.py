@@ -141,7 +141,7 @@ def cuffnorm(input_files, gtf, output_directory, sample_labels):
 
     return Job(
         input_files + [gtf],
-        [os.path.join(output_directory, "isoforms.fpkm_table"), os.path.join(output_directory, "isoforms.count_table"), os.path.join(output_directory, "isoforms.attr_table")],
+        [os.path.join(output_directory, "isoforms.fpkm_table"), os.path.join(output_directory, "isoforms.count_table"), os.path.join(output_directory, "isoforms.attr_table"),os.path.join(output_directory, "genes.fpkm_table"), os.path.join(output_directory, "genes.count_table"), os.path.join(output_directory, "genes.attr_table")],
         [['cuffnorm', 'module_cufflinks']],
         command="""\
 mkdir -p {output_directory} && \\

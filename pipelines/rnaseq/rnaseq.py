@@ -27,6 +27,7 @@ from bfx import metrics
 from bfx import picard
 from bfx import samtools
 from bfx import star
+from bfx import bvatools
 from pipelines import common
 import utils
 
@@ -263,14 +264,39 @@ class RnaSeq(common.Illumina):
             jobs.append(job)
         return jobs
 
-    def picard_rna_metrics(sef):
+    def rnaseqc(self):
+        """
+        Computes a series of quality control metrics using [RNA-SeQC](https://www.broadinstitute.org/cancer/cga/rna-seqc).
+        """
+
+        sample_file = os.path.join("alignment", "rnaseqc.samples.txt")
+        sample_rows = [[sample.name, os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.bam"), "RNAseq"] for sample in self.samples]
+        input_bams = [sample_row[1] for sample_row in sample_rows]
+        output_directory = os.path.join("metrics", "rnaseqRep")
+        # Use GTF with transcript_id only otherwise RNASeQC fails
+        gtf_transcript_id = config.param('rnaseqc', 'gtf_transcript_id', type='filepath')
+
+        job = concat_jobs([
+            Job(command="mkdir -p " + output_directory, removable_files=[output_directory]),
+            Job(input_bams, [sample_file], command="""\
+echo "Sample\tBamFile\tNote
+{sample_rows}" \\
+  > {sample_file}""".format(sample_rows="\n".join(["\t".join(sample_row) for sample_row in sample_rows]), sample_file=sample_file)),
+            metrics.rnaseqc(sample_file, output_directory, self.run_type == "SINGLE_END", gtf_file=gtf_transcript_id),
+            Job([], [output_directory + ".zip"], command="zip -r {output_directory}.zip {output_directory}".format(output_directory=output_directory))
+        ], name="rnaseqc")
+
+        return [job]
+
+
+    def picard_rna_metrics(self):
         """
         Computes a series of quality control metrics using both CollectRnaSeqMetrics and CollectAlignmentSummaryMetrics functions
         metrics are collected using [Picard](http://broadinstitute.github.io/picard/).
         """
         
         jobs = []
-        reference_file = config.param('picard_collect_rna_metrics', 'genome_fasta', type='filepath')
+        reference_file = config.param('picard_rna_metrics', 'genome_fasta', type='filepath')
         for sample in self.samples:
                 alignment_file = os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.bam")
                 output_directory = os.path.join("metrics", sample.name)
@@ -278,8 +304,8 @@ class RnaSeq(common.Illumina):
                 job = concat_jobs([
                         Job(command="mkdir -p " + output_directory, removable_files=[output_directory]),
                         picard.collect_multiple_metrics(alignment_file, os.path.join(output_directory,sample.name),reference_file),
-                        picard.collect_rna_metrics(alignment_file, os.path.join(output_directory,sample.name),reference_file)
-                ],name="picard_rna_metrics")
+                        picard.collect_rna_metrics(alignment_file, os.path.join(output_directory,sample.name))
+                ],name="picard_rna_metrics."+ sample.name)
                 jobs.append(job)
         
         return jobs
@@ -307,7 +333,7 @@ class RnaSeq(common.Illumina):
                 Job(command="mkdir -p " + os.path.dirname(readset_bam) + " " + output_folder),
                 pipe_jobs([
                     bvatools.bam2fq(
-                        bam
+                        readset_bam
                     ),
                     bwa.mem(
                         "/dev/stdin",
@@ -326,17 +352,19 @@ class RnaSeq(common.Illumina):
                     picard.sort_sam(
                         "/dev/stdin",
                         readset_metrics_bam,
-                        "coordinate"
+                        "coordinate",
+                        ini_section='picard_sort_sam_rrna'
                     )
-                ],removable_files=[sample_bam]),
+                ]),
                 tools.py_rrnaBAMcount (
-                    readset_metrics_bam, 
-                    config.param('bwa_mem_rRNA', 'gtf'), 
-                    output, 
-                    typ="transcript")], name="bwa_mem_rRNA." + readset.name)
-
+                    bam=readset_metrics_bam, 
+                    gtf=config.param('bwa_mem_rRNA', 'gtf'), 
+                    output=os.path.join(output_folder,readset.name+"rRNA.stats.tsv"),
+                    typ="transcript")], name="bwa_mem_rRNA." + readset.name )
+            
+            job.removable_files=[readset_metrics_bam]
             jobs.append(job)
-        return job
+        return jobs
 
         
     def wiggle(self):
@@ -609,6 +637,28 @@ END
         
         return jobs
 
+    def fpkm_correlation_matrix(self):
+        """
+        Compute the pearson corrleation matrix of gene and transcripts FPKM. FPKM data are those estimated by cuffnorm.
+        """
+        output_directory = "metrics"
+        output_transcript = os.path.join(output_directory,"transcripts_fpkm_correlation_matrix.tsv")
+        cuffnorm_transcript = os.path.join("cuffnorm","isoforms.fpkm_table")
+        output_gene = os.path.join(output_directory,"gene_fpkm_correlation_matrix.tsv")
+        cuffnorm_gene = os.path.join("cuffnorm","genes.fpkm_table")
+        
+        jobs = []
+      
+        job = concat_jobs([Job(command="mkdir -p " + output_directory),
+                           utils.utils.fpkm_correlation_matrix(cuffnorm_transcript, output_transcript)])
+        job.name="fpkm_correlation_matrix_transcript"
+        jobs = jobs + [job]
+        job = utils.utils.fpkm_correlation_matrix(cuffnorm_gene, output_gene)
+        job.name="fpkm_correlation_matrix_gene"
+        jobs = jobs + [job]
+        
+        return jobs
+
     def differential_expression(self):
         """
         Performs differential gene expression analysis using [DESEQ](http://bioconductor.org/packages/release/bioc/html/DESeq.html) and [EDGER](http://www.bioconductor.org/packages/release/bioc/html/edgeR.html).
@@ -723,6 +773,7 @@ END
             self.picard_mark_duplicates,
             self.picard_rna_metrics,
             self.estimate_ribosomal_rna,
+            self.rnaseqc,
             self.wiggle,
             self.raw_counts,
             self.raw_counts_metrics,
@@ -731,6 +782,7 @@ END
             self.cuffquant,
             self.cuffdiff,
             self.cuffnorm,
+            self.fpkm_correlation_matrix,
             self.differential_expression,
             self.differential_expression_goseq,
             self.gq_seq_utils_exploratory_analysis_rnaseq,

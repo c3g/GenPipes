@@ -36,7 +36,6 @@ def rnaseqc(sample_file, output_directory, is_single_end=False, gtf_file=None, r
         ],
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $RNASEQC_JAR \\
-  -BWArRNA {reference_ribosomal_rna_fasta} \\
   -n {number_top_transcripts} \\
   -o {output_directory} \\
   -r {reference_genome_fasta} \\
@@ -45,7 +44,6 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $RNASEQC_JAR
         tmp_dir=config.param('rnaseqc', 'tmp_dir'),
         java_other_options=config.param('rnaseqc', 'java_other_options'),
         ram=config.param('rnaseqc', 'ram'),
-        reference_ribosomal_rna_fasta=ribosomal_fasta if ribosomal_fasta else config.param('rnaseqc', 'ribosomal_fasta', type='filepath'),
         number_top_transcripts=config.param('rnaseqc', 'number_top_transcript', type='int'),
         output_directory=output_directory,
         reference_genome_fasta=reference if reference else config.param('rnaseqc', 'genome_fasta', type='filepath'),

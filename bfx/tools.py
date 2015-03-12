@@ -69,7 +69,7 @@ def py_rrnaBAMcount (bam, gtf, output, typ="transcript"):
             ['DEFAULT', 'module_python']
         ],
         command="""\
-python $PYTHON_TOOLS/rrnaBAMCounter.py \\
+python $PYTHON_TOOLS/rrnaBAMcounter.py \\
   -i {bam} \\
   -g {gtf} \\
   -o {output} \\
