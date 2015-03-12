@@ -30,10 +30,12 @@ module-whatis \"$SOFTWARE\"
 set             root                   $INSTALL_DIR/$SOFTWARE_DIR
 setenv          MUGQIC_PIPELINES_HOME \$root
 prepend-path    PATH                  \$root/utils
+prepend-path    PATH                  \$root/pipelines/chipseq
 prepend-path    PATH                  \$root/pipelines/dnaseq
+prepend-path    PATH                  \$root/pipelines/illumina_run_processing
+prepend-path    PATH                  \$root/pipelines/pacbio_assembly
 prepend-path    PATH                  \$root/pipelines/rnaseq
 prepend-path    PATH                  \$root/pipelines/rnaseq_denovo_assembly
-prepend-path    PATH                  \$root/pipelines/pacbio_assembly
 "
 }
 

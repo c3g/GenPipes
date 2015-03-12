@@ -62,7 +62,7 @@ def collect_multiple_metrics(input, output, reference_sequence=None):
         [
          output + ".quality_by_cycle.pdf",
          output + ".alignment_summary_metrics",
-         output + ".insert_size_histogram.pdf",
+         output + ".insert_size_Histogram.pdf",
          output + ".insert_size_metrics",
          output + ".quality_by_cycle_metrics",
          output + ".quality_distribution_metrics",

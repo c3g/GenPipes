@@ -19,6 +19,7 @@ def trimmomatic(
     unpaired_output2,
     single_output,
     quality_offset,
+    adapter_file,
     trim_log
     ):
 
@@ -57,7 +58,7 @@ java -XX:ParallelGCThreads=1 -Xmx{ram} -jar $TRIMMOMATIC_JAR {mode} \\
         quality_offset=quality_offset if quality_offset == 64 else "33",
         inputs=" \\\n  ".join(inputs),
         outputs=" \\\n  ".join(outputs),
-        adapter_file=config.param('trimmomatic', 'adapter_fasta', type='filepath'),
+        adapter_file=adapter_file,
         illumina_clip_settings=config.param('trimmomatic', 'illumina_clip_settings'),
         headcrop_length=" \\\n  HEADCROP:" + str(headcrop_length) if headcrop_length else "",
         trailing_min_quality=config.param('trimmomatic', 'trailing_min_quality', type='int'),

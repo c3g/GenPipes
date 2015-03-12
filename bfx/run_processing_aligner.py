@@ -172,8 +172,8 @@ class StarRunProcessingAligner(RunProcessingAligner):
 
             os.path.join(genome_folder,
                         "annotations",
-                        "ncrna_bwa_index",
-                        folder_name + '.' + source + version + ".ncrna.fa")
+                        "rrna_bwa_index",
+                        folder_name + '.' + source + version + ".rrna.fa")
         ]
 
     def get_alignment_jobs(self, readset):

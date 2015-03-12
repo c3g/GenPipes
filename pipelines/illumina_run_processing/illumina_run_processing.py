@@ -585,7 +585,7 @@ configureBclToFastq.pl\\
         jobs = []
         inputs = self.copy_job_inputs
 
-        full_destination_folder = config.param('copy', 'destination_folder', type="dirpath") + os.path.basename(self.run_dir) + "_" + str(self.lane_number)
+        full_destination_folder = config.param('copy', 'destination_folder', type="dirpath") + os.path.basename(self.run_dir)
         output = full_destination_folder + os.sep + "copyCompleted." + str(self.lane_number) + ".out"
 
         exclude_bam = config.param('copy', 'exclude_bam', required=False, type='boolean')
@@ -610,6 +610,7 @@ configureBclToFastq.pl\\
             copy_command_run_folder = config.param('copy', 'copy_command', required=False).format(
                     exclusion_clauses = "",
                     lane_number = self.lane_number,
+                    run_id = self.run_id,
                     source = self.run_dir,
                     run_name = os.path.basename(self.run_dir)
             )
@@ -618,6 +619,7 @@ configureBclToFastq.pl\\
         copy_command_output_folder = config.param('copy', 'copy_command', required=False).format(
                 exclusion_clauses = "\\\n".join([" --exclude '" + file.replace(self.output_dir + os.sep, "") + "'" for file in excluded_files]),
                 lane_number = self.lane_number,
+                run_id = self.run_id,
                 source = self.output_dir,
                 run_name = os.path.basename(self.run_dir)
         )
@@ -639,7 +641,7 @@ configureBclToFastq.pl\\
         """
         jobs = []
 
-        full_destination_folder = config.param('copy', 'destination_folder', type="dirpath") + os.path.basename(self.run_dir) + "_" + str(self.lane_number)
+        full_destination_folder = config.param('copy', 'destination_folder', type="dirpath") + os.path.basename(self.run_dir)
         input = full_destination_folder + os.sep + "copyCompleted." + str(self.lane_number) + ".out"
         output = full_destination_folder + os.sep +"notificationAssociation." + str(self.lane_number) + ".out"
 
@@ -650,6 +652,7 @@ configureBclToFastq.pl\\
                 technology = config.param('end_copy_notification', 'technology'),
                 output_dir = self.output_dir,
                 run_name = os.path.basename(self.run_dir),
+                run_id = self.run_id,
                 output = output,
                 lane_number = self.lane_number
             )

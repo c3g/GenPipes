@@ -2,11 +2,11 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=trinity
-VERSION=2.0.4
-ARCHIVE=${SOFTWARE}rnaseq-$VERSION.tar.gz
-ARCHIVE_URL=https://github.com/trinityrnaseq/trinityrnaseq/archive/v$VERSION.tar.gz
-SOFTWARE_DIR=${SOFTWARE}rnaseq-$VERSION
+SOFTWARE=perl
+VERSION=5.18.2
+ARCHIVE=$SOFTWARE-$VERSION.tar.gz
+ARCHIVE_URL=http://www.cpan.org/src/5.0/$ARCHIVE
+SOFTWARE_DIR=$SOFTWARE-$VERSION
 
 # Specific commands to extract and build the software
 # $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
@@ -16,11 +16,9 @@ build() {
   tar zxvf $ARCHIVE
 
   cd $SOFTWARE_DIR
+  ./Configure -des -Dusethreads -Dprefix=$INSTALL_DIR/$SOFTWARE_DIR
   make
-
-  # Install software
-  cd $INSTALL_DOWNLOAD
-  mv -i $SOFTWARE_DIR $INSTALL_DIR/
+  make install
 }
 
 module_file() {
@@ -32,11 +30,11 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-prepend-path    PATH                \$root
-prepend-path    PATH                \$root/util
-prepend-path    PATH                \$root/util/RSEM_util
-prepend-path    PATH                \$root/Analysis/DifferentialExpression
-setenv          TRINITY_HOME        \$root
+setenv          PERL_HOME           \$root
+prepend-path    PATH                \$root/bin
+prepend-path    PERL5LIB            \$root/lib
+prepend-path    PERL5LIB            \$root/lib/$VERSION
+prepend-path    PERL5LIB            \$root/libsite_perl/$VERSION
 "
 }
 
