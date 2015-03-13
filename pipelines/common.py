@@ -249,7 +249,7 @@ END
                 Job(
                     [trim_log],
                     [readset_merge_trim_stats],
-                    # Create readset trimming stats TSV file using ugly awk
+                    # Create readset trimming stats TSV file with paired or single read count using ugly awk
                     command="""\
 grep ^Input {trim_log} | \\
 {perl_command} | \\
@@ -269,9 +269,9 @@ awk '{{OFS="\t"; print $0, $4 / $3 * 100}}' \\
             Job(
                 [readset_merge_trim_stats],
                 [sample_merge_trim_stats],
-                # Create sample trimming stats TSV file using ugly awk
+                # Create sample trimming stats TSV file with total read counts (i.e. paired * 2 if applicable) using ugly awk
                 command="""\
-cut -f1,3- {readset_merge_trim_stats} | awk -F"\t" '{{OFS="\t"; if (NR==1) {{print $0}} else {{raw[$1]+=$2; surviving[$1]+=$3}}}}END{{for (sample in raw){{print sample, raw[sample], surviving[sample], surviving[sample] / raw[sample] * 100}}}}' \\
+cut -f1,3- {readset_merge_trim_stats} | awk -F"\t" '{{OFS="\t"; if (NR==1) {{if ($2=="Raw Paired Reads #") {{paired=1}};print "Sample", "Raw Reads #", "Surviving Reads #", "Surviving %"}} else {{if (paired) {{$2=$2*2; $3=$3*2}}; raw[$1]+=$2; surviving[$1]+=$3}}}}END{{for (sample in raw){{print sample, raw[sample], surviving[sample], surviving[sample] / raw[sample] * 100}}}}' \\
   > {sample_merge_trim_stats}""".format(
                     readset_merge_trim_stats=readset_merge_trim_stats,
                     sample_merge_trim_stats=sample_merge_trim_stats

@@ -1,33 +1,22 @@
-### Sequencing and Alignment Metrics per Sample
+### Trimming and Alignment Metrics per Sample
 
 General summary statistics are provided per sample. Sample readsets are merged for clarity.
 
-Table: Sequencing and Alignment Statistics per Sample (**partial table**; [download full table](sequenceAlignmentTable.tsv))
+Table: Trimming and Alignment Statistics per Sample (**partial table**; [download full table](trimAlignmentTable.tsv))
 
-$sequence_alignment_table$
+$trim_alignment_table$
 
 * Raw Reads: total number of reads obtained from the sequencer
 * Surviving Reads: number of remaining reads after the trimming step
-* Surviving %: Surviving reads / Raw reads
-* Mapped reads: number of aligned reads
-* Mapped %: Mapped reads / Surviving reads
-* Not Duplicate Reads: number of not duplicated read entries
-* Duplicate Reads: number of duplicated read entries providing alternative coordinates
-* Duplicate %: Duplicate / Mapped reads
-* Pair Orientation: library paired-end read design
-* Mean Insert Size: mean distance between the left most base position of the read1 and the right most base position of the read 2
-* Standard Deviation: standard deviation of distance between the left most base position of the read1 and the right most base position of the read 2
-* WG Mean Coverage: total number of aligned reads / genome size
-* WG %_bases_above_10: total number of bases with a coverage >= 10x / genome size
-* WG %_bases_above_25: total number of bases with a coverage >= 25x / genome size
-* WG %_bases_above_50: total number of bases with a coverage >= 50x / genome size
-* WG %_bases_above_75: total number of bases with a coverage >= 75x / genome size
-* WG %_bases_above_100: total number of bases with a coverage >= 100x / genome size
-* WG %_bases_above_500: total number of bases with a coverage >= 500x / genome size
-* CCDS Mean Coverage: total number of aligned reads in the CCDS/capture region / size of the CCDS/capture region
-* CCDS %_bases_above_10: total number of bases with a coverage >= 10x in the CCDS/capture region / size of the CCDS/capture region
-* CCDS %_bases_above_25: total number of bases with a coverage >= 25x in the CCDS/capture region / size of the CCDS/capture region
-* CCDS %_bases_above_50: total number of bases with a coverage >= 50x in the CCDS/capture region / size of the CCDS/capture region
-* CCDS %_bases_above_75: total number of bases with a coverage >= 75x in the CCDS/capture region / size of the CCDS/capture region
-* CCDS %_bases_above_100: total number of bases with a coverage >= 100x in the CCDS/capture region / size of the CCDS/capture region
-* CCDS %_bases_above_500: total number of bases with a coverage >= 500x in the CCDS/capture region / size of the CCDS/capture region
+* Surviving %: Surviving Reads / Raw Reads
+* Aligned Reads: number of aligned reads to the reference
+* %: Aligned reads / Surviving reads
+* Alternative Alignments: number of duplicate read entries providing alternative coordinates
+* %: Alternative Alignments / Aligned Reads
+* rRNA Reads: number of reads aligning to rRNA regions as defined in the transcript model definition
+* %: rRNA Reads / Surviving Reads
+* Coverage: mean coverage = number of bp aligning to reference / total number of bp in the reference
+* Exonic Rate: fraction mapping reads within exons
+* Genes: number of Genes with at least 5 reads
+
+[Additional metrics can be found in the original RNAseqQC report available here](reportRNAseqQC.zip)

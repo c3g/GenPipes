@@ -631,21 +631,20 @@ cp \\
             Job(
                 [metrics_file],
                 [report_file],
-                [['dna_sample_metrics', 'module_python'], ['dna_sample_metrics', 'module_pandoc']],
-                # Ugly python to rename columns: should be done properly in R-tools/DNAsampleMetrics.R
-                # Then ugly awk to merge sample metrics with trim metrics if they exist; knitr may do this better
+                [['dna_sample_metrics', 'module_pandoc']],
+                # Ugly awk to merge sample metrics with trim metrics if they exist; knitr may do this better
                 command="""\
 mkdir -p report && \\
 if [[ -f {trim_metrics_file} ]]
 then
-  awk -F"\t" 'FNR==NR{{if (NR==1) {{if ($2=="Raw Paired Reads #") {{paired="true"}}; raw_reads[$1]="Raw Reads #"; surviving_reads[$1]="Surviving Reads #"; surviving_pct[$1]="Surviving Reads %"}} else {{if (paired) {{raw_reads[$1]=$2 * 2; surviving_reads[$1]=$3 * 2}} else {{raw_reads[$1]=$2; surviving_reads[$1]=$3}}; surviving_pct[$1]=$4}}; next}}{{OFS="\t"; if ($2=="Mapped Reads"){{mapped_pct="Mapped %"}} else {{mapped_pct=($2 / surviving_reads[$1] * 100)}}; printf $1"\t"raw_reads[$1]"\t"surviving_reads[$1]"\t"surviving_pct[$1]"\t"$2"\t"mapped_pct; for (i = 3; i<= NF; i++) {{printf "\t"$i}}; print ""}}' \\
+  awk -F"\t" 'FNR==NR{{raw_reads[$1]=$2; surviving_reads[$1]=$3; surviving_pct[$1]=$4; next}}{{OFS="\t"; if ($2=="Mapped Reads"){{mapped_pct="Mapped %"}} else {{mapped_pct=($2 / surviving_reads[$1] * 100)}}; printf $1"\t"raw_reads[$1]"\t"surviving_reads[$1]"\t"surviving_pct[$1]"\t"$2"\t"mapped_pct; for (i = 3; i<= NF; i++) {{printf "\t"$i}}; print ""}}' \\
   {trim_metrics_file} \\
   {metrics_file} \\
   > {report_metrics_file}
 else
   cp {metrics_file} {report_metrics_file}
 fi && \\
-sequence_alignment_table_md=`if [[ -f {trim_metrics_file} ]] ; then cut -f1-10 {report_metrics_file} | LC_NUMERIC=fr_FR awk -F "\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----"}} else {{print $1, sprintf("%\\47d", $2), sprintf("%\\47d", $3), sprintf("%.1f", $4), sprintf("%\\47d", $5), sprintf("%.1f", $6), sprintf("%\\47d", $7), sprintf("%\\47d", $8), sprintf("%.1f", $9), $10}}}}' ; else cut -f1,5,7-10 {report_metrics_file} | LC_NUMERIC=fr_FR awk -F "\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----:|-----:|-----:|-----:|-----"}} else {{print $1, sprintf("%\\47d", $2), sprintf("%\\47d", $3), sprintf("%\\47d", $4), sprintf("%.1f", $5), $6}}}}' ; fi`
+sequence_alignment_table_md=`if [[ -f {trim_metrics_file} ]] ; then cut -f1-10 {report_metrics_file} | LC_NUMERIC=fr_FR awk -F "\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----"}} else {{print $1, sprintf("%\\47d", $2), sprintf("%\\47d", $3), sprintf("%.1f", $4), sprintf("%\\47d", $5), sprintf("%.1f", $6), sprintf("%\\47d", $7), sprintf("%\\47d", $8), sprintf("%.1f", $9), $10}}}}' ; else cut -f1-6 {report_metrics_file} | LC_NUMERIC=fr_FR awk -F "\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----:|-----:|-----:|-----:|-----"}} else {{print $1, sprintf("%\\47d", $2), sprintf("%\\47d", $3), sprintf("%\\47d", $4), sprintf("%.1f", $5), $6}}}}' ; fi`
 pandoc \\
   {report_template_dir}/{basename_report_file} \\
   --template {report_template_dir}/{basename_report_file} \\

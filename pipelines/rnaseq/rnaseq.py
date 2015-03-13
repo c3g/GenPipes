@@ -292,6 +292,7 @@ pandoc --to=markdown \\
         Computes a series of quality control metrics using [RNA-SeQC](https://www.broadinstitute.org/cancer/cga/rna-seqc).
         """
 
+        jobs = []
         sample_file = os.path.join("alignment", "rnaseqc.samples.txt")
         sample_rows = [[sample.name, os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.bam"), "RNAseq"] for sample in self.samples]
         input_bams = [sample_row[1] for sample_row in sample_rows]
@@ -299,7 +300,7 @@ pandoc --to=markdown \\
         # Use GTF with transcript_id only otherwise RNASeQC fails
         gtf_transcript_id = config.param('rnaseqc', 'gtf_transcript_id', type='filepath')
 
-        job = concat_jobs([
+        jobs.append(concat_jobs([
             Job(command="mkdir -p " + output_directory, removable_files=[output_directory]),
             Job(input_bams, [sample_file], command="""\
 echo "Sample\tBamFile\tNote
@@ -307,9 +308,65 @@ echo "Sample\tBamFile\tNote
   > {sample_file}""".format(sample_rows="\n".join(["\t".join(sample_row) for sample_row in sample_rows]), sample_file=sample_file)),
             metrics.rnaseqc(sample_file, output_directory, self.run_type == "SINGLE_END", gtf_file=gtf_transcript_id),
             Job([], [output_directory + ".zip"], command="zip -r {output_directory}.zip {output_directory}".format(output_directory=output_directory))
-        ], name="rnaseqc")
+        ], name="rnaseqc"))
 
-        return [job]
+        trim_metrics_file = os.path.join("metrics", "trimSampleTable.tsv")
+        metrics_file = os.path.join("metrics", "rnaseqRep", "metrics.tsv")
+        report_metrics_file = os.path.join("report", "trimAlignmentTable.tsv")
+        report_file = os.path.join("report", "RnaSeq.rnaseqc.md")
+        jobs.append(
+            Job(
+                [metrics_file],
+                [report_file],
+                [['rnaseqc', 'module_python'], ['rnaseqc', 'module_pandoc']],
+                # Ugly awk to merge sample metrics with trim metrics if they exist; knitr may do this better
+                command="""\
+mkdir -p report && \\
+cp {output_directory}.zip report/reportRNAseqQC.zip && \\
+python -c 'import csv; csv_in = csv.DictReader(open("{metrics_file}"), delimiter="\t")
+print "\t".join(["Sample", "Aligned Reads", "Alternative Alignments", "%", "rRNA Reads", "Coverage", "Exonic Rate", "Genes"])
+print "\\n".join(["\t".join([
+    line["Sample"],
+    line["Mapped"],
+    line["Alternative Aligments"],
+    str(float(line["Alternative Aligments"]) / float(line["Mapped"]) * 100),
+    line["rRNA"],
+    line["Mean Per Base Cov."],
+    line["Exonic Rate"],
+    line["Genes Detected"]
+]) for line in csv_in])' \\
+  > {report_metrics_file}.tmp && \\
+if [[ -f {trim_metrics_file} ]]
+then
+  awk -F"\t" 'FNR==NR{{raw_reads[$1]=$2; surviving_reads[$1]=$3; surviving_pct[$1]=$4; next}}{{OFS="\t"; if ($2=="Aligned Reads"){{surviving_pct[$1]="%"; aligned_pct="%"; rrna_pct="%"}} else {{aligned_pct=($2 / surviving_reads[$1] * 100); rrna_pct=($5 / surviving_reads[$1] * 100)}}; printf $1"\t"raw_reads[$1]"\t"surviving_reads[$1]"\t"surviving_pct[$1]"\t"$2"\t"aligned_pct"\t"$3"\t"$4"\t"$5"\t"rrna_pct; for (i = 6; i<= NF; i++) {{printf "\t"$i}}; print ""}}' \\
+  {trim_metrics_file} \\
+  {report_metrics_file}.tmp \\
+  > {report_metrics_file}
+else
+  cp {report_metrics_file}.tmp {report_metrics_file}
+fi && \\
+rm {report_metrics_file}.tmp && \\
+trim_alignment_table_md=`if [[ -f {trim_metrics_file} ]] ; then cut -f1-13 {report_metrics_file} | LC_NUMERIC=fr_FR awk -F "\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:"}} else {{print $1, sprintf("%\\47d", $2), sprintf("%\\47d", $3), sprintf("%.1f", $4), sprintf("%\\47d", $5), sprintf("%.1f", $6), sprintf("%\\47d", $7), sprintf("%.1f", $8), sprintf("%\\47d", $9), sprintf("%.1f", $10), sprintf("%.2f", $11), sprintf("%.2f", $12), sprintf("%\\47d", $13)}}}}' ; else cat {report_metrics_file} | LC_NUMERIC=fr_FR awk -F "\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----:|-----:|-----:|-----:|-----:|-----:|-----:"}} else {{print $1, sprintf("%\\47d", $2), sprintf("%\\47d", $3), sprintf("%.1f", $4), sprintf("%\\47d", $5), sprintf("%.2f", $6), sprintf("%.2f", $7), $8}}}}' ; fi`
+pandoc \\
+  {report_template_dir}/{basename_report_file} \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable trim_alignment_table="$trim_alignment_table_md" \\
+  --to markdown \\
+  > {report_file}""".format(
+                    output_directory=output_directory,
+                    report_template_dir=self.report_template_dir,
+                    trim_metrics_file=trim_metrics_file,
+                    metrics_file=metrics_file,
+                    basename_report_file=os.path.basename(report_file),
+                    report_metrics_file=report_metrics_file,
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="rnaseqc.report"
+            )
+        )
+
+        return jobs
 
     def wiggle(self):
         """
