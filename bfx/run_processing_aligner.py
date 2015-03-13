@@ -30,6 +30,18 @@ class RunProcessingAligner(object):
     def get_annotation_files(self, genome_folder):
         raise NotImplementedError("Please Implement this method")
 
+    @staticmethod
+    def get_rg_tag(readset, ini_section):
+        return "'@RG" + \
+               "\tID:" + readset.library + "_" + readset.run + "_" + readset.lane + \
+               "\tSM:" + readset.sample.name + \
+               ("\tLB:" + readset.library if readset.library else "") + \
+               ("\tPU:run" + readset.run + "_" + readset.lane if readset.run and readset.lane else "") + \
+               ("\tCN:" + config.param(ini_section, 'sequencing_center')
+                if config.param(ini_section, 'sequencing_center', required=False) else "") + \
+               "\tPL:Illumina" + \
+               "'"
+
 
 class BwaRunProcessingAligner(RunProcessingAligner):
     @property
@@ -63,17 +75,7 @@ class BwaRunProcessingAligner(RunProcessingAligner):
                                   bwa.mem(
                                       readset.fastq1,
                                       readset.fastq2,
-                                      read_group="'@RG" +
-                                                 "\tID:" + readset.library + "_" + readset.run + "_" + readset.lane +
-                                                 "\tSM:" + readset.sample.name +
-                                                 ("\tLB:" + readset.library if readset.library else "") +
-                                                 ("\tPU:run" + readset.run + "_" + readset.lane
-                                                  if readset.run and readset.lane else "") +
-                                                 ("\tCN:" + config.param('bwa_mem', 'sequencing_center')
-                                                  if config.param('bwa_mem', 'sequencing_center',
-                                                                  required=False) else "") +
-                                                 "\tPL:Illumina" +
-                                                 "'",
+                                      read_group=RunProcessingAligner.get_rg_tag(readset, 'bwa_mem'),
                                       ref=readset.aligner_reference_index
                                   ),
                                   picard.sort_sam(
@@ -180,7 +182,11 @@ class StarRunProcessingAligner(RunProcessingAligner):
             os.path.join(genome_folder,
                          "annotations",
                          "rrna_bwa_index",
-                         folder_name + '.' + source + version + ".rrna.fa")
+                         folder_name + '.' + source + version + ".rrna.fa"),
+
+            os.path.join(genome_folder,
+                         "annotations",
+                         folder_name + '.' + source + version + ".ref_flat.tsv")
         ]
 
     def get_alignment_jobs(self, readset):
@@ -214,6 +220,17 @@ class StarRunProcessingAligner(RunProcessingAligner):
 
     def get_metrics_jobs(self, readset):
         jobs = []
+        jobs += StarRunProcessingAligner._rnaseqc(readset) + StarRunProcessingAligner._picard_rna_metrics(readset) + \
+                StarRunProcessingAligner._estimate_ribosomal_rna(readset)
+        return jobs
+
+    @staticmethod
+    def _rnaseqc(readset):
+        """
+        Computes a series of quality control metrics using
+        [RNA-SeQC](https://www.broadinstitute.org/cancer/cga/rna-seqc).
+        """
+        jobs = []
         input_bam = readset.bam + ".dup.bam"
         input_bam_directory = os.path.dirname(input_bam)
         sample_file = input_bam + ".sample_file"
@@ -228,9 +245,9 @@ class StarRunProcessingAligner(RunProcessingAligner):
             job = concat_jobs([
                                   Job(command="mkdir -p " + output_directory),
                                   Job([input_bam], [sample_file], command="""\
-    echo "Sample\tBamFile\tNote
-    {sample_row}" \\
-    > {sample_file}""".format(sample_row=sample_row, sample_file=sample_file)),
+        echo "Sample\tBamFile\tNote
+        {sample_row}" \\
+        > {sample_file}""".format(sample_row=sample_row, sample_file=sample_file)),
                                   metrics.rnaseqc(sample_file, output_directory, readset.fastq2 is not None,
                                                   gtf_file=gtf_transcript_id,
                                                   ribosomal_fasta=ribosomal_fasta, reference=reference),
@@ -244,3 +261,81 @@ class StarRunProcessingAligner(RunProcessingAligner):
             jobs.append(job)
 
         return jobs
+
+    @staticmethod
+    def _picard_rna_metrics(readset):
+        """
+        Computes a series of quality control metrics using both CollectRnaSeqMetrics and CollectAlignmentSummaryMetrics
+        functions metrics are collected using [Picard](http://broadinstitute.github.io/picard/).
+        """
+
+        jobs = []
+        sample = readset.sample
+
+        alignment_file = readset.bam + ".bam"
+        output_directory = os.path.dirname(alignment_file)
+
+        job = picard.collect_multiple_metrics(alignment_file, readset.bam + ".metrics",
+                                              reference_sequence=readset.reference_file)
+        job.name = "picard_collect_multiple_metrics." + readset.name + ".met" + "_" + readset.run + "_" + readset.lane
+        jobs.append(job)
+
+        if len(readset.annotation_files) > 2 and readset.annotation_files[2]:
+            job = picard.collect_rna_metrics(alignment_file,
+                                             os.path.join(output_directory, sample.name),
+                                             readset.annotation_files[2],
+                                             readset.reference_file)
+
+            job.name = "picard_rna_metrics." + sample.name
+            jobs.append(job)
+
+        return jobs
+
+
+    @staticmethod
+    def _estimate_ribosomal_rna(readset):
+        """
+        Use bwa mem to align reads on the rRNA reference fasta and count the number of read mapped
+        The filtered reads are aligned to a reference fasta file of ribosomal sequence. The alignment is done per
+        sequencing readset.
+        The alignment software used is [BWA](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem.
+        BWA output BAM files are then sorted by coordinate using [Picard](http://broadinstitute.github.io/picard/).
+        """
+
+        jobs = []
+        if len(readset.annotation_files) > 1 and os.path.isfile(readset.annotation_files[0]) and os.path.isfile(
+                readset.annotation_files[1]):
+            readset_bam = readset.bam + ".bam"
+            readset_metrics_bam = readset.bam + ".rRNA.bam"
+
+            job = concat_jobs([
+                                  pipe_jobs([
+                                      bvatools.bam2fq(
+                                          readset_bam
+                                      ),
+                                      bwa.mem(
+                                          "/dev/stdin",
+                                          None,
+                                          read_group=RunProcessingAligner.get_rg_tag(readset, 'bwa_mem_rRNA'),
+                                          ref=readset.annotation_files[1],
+                                          ini_section='bwa_mem_rRNA'
+                                      ),
+                                      picard.sort_sam(
+                                          "/dev/stdin",
+                                          readset_metrics_bam,
+                                          "coordinate",
+                                          ini_section='picard_sort_sam_rrna'
+                                      )
+                                  ]),
+                                  tools.py_rrnaBAMcount(
+                                      bam=readset_metrics_bam,
+                                      gtf=readset.annotation_files[0],
+                                      output=os.path.join(readset_metrics_bam + ".stats.tsv"),
+                                      typ="transcript")], name="bwa_mem_rRNA." + readset.name)
+
+            job.removable_files = [readset_metrics_bam]
+            jobs.append(job)
+
+        return jobs
+
+

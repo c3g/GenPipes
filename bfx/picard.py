@@ -253,8 +253,8 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
         removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output) if sort_order == "coordinate" else None]
     )
 
-def collect_rna_metrics(input, output):
-        
+def collect_rna_metrics(input, output, annotation_flat=None,reference_sequence=None):
+
     return Job(
         [input],
         # collect specific RNA metrics (exon rate, strand specificity, etc...)
@@ -280,10 +280,10 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
         ram=config.param('picard_collect_rna_metrics', 'ram'),
         input=input,
         output=output,
-        ref_flat=config.param('picard_collect_rna_metrics', 'annotation_flat'),
+        ref_flat=annotation_flat if annotation_flat else config.param('picard_collect_rna_metrics', 'annotation_flat'),
         strand_specificity=config.param('picard_collect_rna_metrics', 'strand_info'),
         min_length=config.param('picard_collect_rna_metrics', 'minimum_length',type='int'),
-        reference=config.param('picard_collect_rna_metrics', 'genome_fasta'),
+        reference=reference_sequence if reference_sequence else config.param('picard_collect_rna_metrics', 'genome_fasta'),
         max_records_in_ram=config.param('picard_collect_rna_metrics', 'max_records_in_ram', type='int')
         )
     )
