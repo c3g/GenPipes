@@ -434,11 +434,10 @@ cp \\
         """
         Compute metrics and generate coverage tracks per sample. Multiple metrics are computed at this stage:
         Number of raw reads, Number of filtered reads, Number of aligned reads, Number of duplicate reads,
-        Median, mean and standard deviation of insert sizes of reads after alignment, mean coverage over exons
-        (mean number of reads per base position), percentage of bases covered at X reads (%_bases_above_50 means
-        the % of exons bases which have at least 50 reads) whole genome percentage of bases covered at X reads
-        (%_bases_above_50 means the % of exons bases which have at least 50 reads) for specific targets
-        (CCDS regions are used in human samples). A TDF (.tdf) coverage track is also generated at this step
+        Median, mean and standard deviation of insert sizes of reads after alignment, percentage of bases
+        covered at X reads (%_bases_above_50 means the % of exons bases which have at least 50 reads)
+        whole genome or targeted percentage of bases covered at X reads (%_bases_above_50 means the % of exons
+        bases which have at least 50 reads). A TDF (.tdf) coverage track is also generated at this step
         for easy visualization of coverage in the IGV browser.
         """
 
@@ -451,11 +450,12 @@ cp \\
             job.name = "picard_collect_multiple_metrics." + sample.name
             jobs.append(job)
 
-            # Compute genome coverage
+            # Compute genome coverage with GATK
             job = gatk.depth_of_coverage(input, recal_file_prefix + "all.coverage")
             job.name = "gatk_depth_of_coverage.genome." + sample.name
             jobs.append(job)
 
+            # Compute genome or target coverage with BVATools
             job = bvatools.depth_of_coverage(
                 input, 
                 recal_file_prefix + "coverage.tsv", 
@@ -566,7 +566,7 @@ cp \\
                 jobs.append(concat_jobs([
                     # Create output directory since it is not done by default by GATK tools
                     Job(command="mkdir -p " + haplotype_directory),
-                    gatk.haplotype_caller(input, os.path.join(haplotype_directory, sample.name + ".hc.g.vcf"))
+                    gatk.haplotype_caller(input, os.path.join(haplotype_directory, sample.name + ".hc.g.vcf.bgz"))
                 ], name="gatk_haplotype_caller." + sample.name))
 
             else:
@@ -577,14 +577,14 @@ cp \\
                     jobs.append(concat_jobs([
                         # Create output directory since it is not done by default by GATK tools
                         Job(command="mkdir -p " + haplotype_directory),
-                        gatk.haplotype_caller(input, os.path.join(haplotype_directory, sample.name + "." + str(idx) + ".hc.g.vcf"), intervals=sequences)
+                        gatk.haplotype_caller(input, os.path.join(haplotype_directory, sample.name + "." + str(idx) + ".hc.g.vcf.bgz"), intervals=sequences)
                     ], name="gatk_haplotype_caller." + sample.name + "." + str(idx)))
 
                 # Create one last job to process the last remaining sequences and 'others' sequences
                 jobs.append(concat_jobs([
                     # Create output directory since it is not done by default by GATK tools
                     Job(command="mkdir -p " + haplotype_directory),
-                    gatk.haplotype_caller(input, os.path.join(haplotype_directory, sample.name + ".others.hc.g.vcf"), exclude_intervals=unique_sequences_per_job_others)
+                    gatk.haplotype_caller(input, os.path.join(haplotype_directory, sample.name + ".others.hc.g.vcf.bgz"), exclude_intervals=unique_sequences_per_job_others)
                 ], name="gatk_haplotype_caller." + sample.name + ".others"))
 
         return jobs
@@ -601,16 +601,16 @@ cp \\
             haplotype_file_prefix = os.path.join("alignment", sample.name, "rawHaplotypeCaller", sample.name)
             output_haplotype_file_prefix = os.path.join("alignment", sample.name, sample.name)
             if nb_haplotype_jobs == 1:
-                gvcfs_to_merge = [haplotype_file_prefix + ".hc.g.vcf"]
+                gvcfs_to_merge = [haplotype_file_prefix + ".hc.g.vcf.bgz"]
             else:
                 unique_sequences_per_job,unique_sequences_per_job_others = split_by_size(self.sequence_dictionary, nb_haplotype_jobs - 1)
 
-                gvcfs_to_merge = [haplotype_file_prefix + "." + str(idx) + ".hc.g.vcf" for idx in xrange(len(unique_sequences_per_job))]
-                gvcfs_to_merge.append(haplotype_file_prefix + ".others.hc.g.vcf")
+                gvcfs_to_merge = [haplotype_file_prefix + "." + str(idx) + ".hc.g.vcf.bgz" for idx in xrange(len(unique_sequences_per_job))]
+                gvcfs_to_merge.append(haplotype_file_prefix + ".others.hc.g.vcf.bgz")
 
             jobs.append(concat_jobs([
-                gatk.cat_variants(gvcfs_to_merge, output_haplotype_file_prefix + ".hc.g.vcf"),
-                gatk.genotype_gvcfs([output_haplotype_file_prefix + ".hc.g.vcf"], output_haplotype_file_prefix + ".hc.vcf")
+                gatk.cat_variants(gvcfs_to_merge, output_haplotype_file_prefix + ".hc.g.vcf.bgz"),
+                gatk.genotype_gvcfs([output_haplotype_file_prefix + ".hc.g.vcf.bgz"], output_haplotype_file_prefix + ".hc.vcf.bgz")
             ], name="merge_and_call_gvcf." + sample.name))
 
         return jobs
