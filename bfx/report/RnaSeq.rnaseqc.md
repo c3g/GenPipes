@@ -8,7 +8,7 @@ $trim_alignment_table$
 
 * Raw Reads: total number of reads obtained from the sequencer
 * Surviving Reads: number of remaining reads after the trimming step
-* Surviving %: Surviving Reads / Raw Reads
+* %: Surviving Reads / Raw Reads
 * Aligned Reads: number of aligned reads to the reference
 * %: Aligned reads / Surviving reads
 * Alternative Alignments: number of duplicate read entries providing alternative coordinates

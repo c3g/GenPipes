@@ -524,6 +524,31 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
         ], name="rpkm_saturation")
         jobs.append(job)
 
+        report_file = os.path.join("report", "RnaSeq.raw_counts_metrics.md")
+        jobs.append(
+            Job(
+                [wiggle_archive, saturation_directory + ".zip"],
+                [report_file],
+                command="""\
+mkdir -p report && \\
+cp metrics/rnaseqRep/corrMatrixSpearman.txt report/corrMatrixSpearman.tsv && \\
+cp {wiggle_archive} report/ && \\
+cp {saturation_archive} report/ && \\
+pandoc --to=markdown \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable corr_matrix_spearman_table="`head -16 report/corrMatrixSpearman.tsv | cut -f-16| awk -F"\t" '{{OFS="\t"; if (NR==1) {{$0="Vs"$0; print; gsub(/[^\t]/, "-"); print}} else {{printf $1; for (i=2; i<=NF; i++) {{printf "\t"sprintf("%.2f", $i)}}; print ""}}}}' | sed 's/\t/|/g'`" \\
+  {report_template_dir}/{basename_report_file} \\
+  > {report_file}""".format(
+                    wiggle_archive=wiggle_archive,
+                    saturation_archive=saturation_directory + ".zip",
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="raw_count_metrics.report")
+        )
+
         return jobs
 
     def cufflinks(self):
