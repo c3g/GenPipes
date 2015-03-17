@@ -120,7 +120,7 @@ def mark_duplicates(inputs, output, metrics_file):
 
     return Job(
         inputs,
-        [output, re.sub("\.([sb])am$", ".\\1ai", output), output + ".md5", metrics_file],
+        [output, re.sub("\.([sb])am$", ".\\1ai", output), metrics_file],
         [
             ['picard_mark_duplicates', 'module_java'],
             ['picard_mark_duplicates', 'module_picard']
