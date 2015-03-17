@@ -17,11 +17,13 @@ All analysis parameters are described in this [configuration file](config.ini).
 [HTSeq]: http://www-huber.embl.de/users/anders/HTSeq/doc/overview.html
 [IGV]: https://www.broadinstitute.org/igv/
 [Picard]: http://broadinstitute.github.io/picard/
+[RSEM]: http://deweylab.biostat.wisc.edu/rsem/
 [SAMtools]: http://www.htslib.org/
 [SnpEff]: http://snpeff.sourceforge.net/
 [SnpSift]: http://snpeff.sourceforge.net/SnpSift.html
 [STAR]: https://github.com/alexdobin/STAR
 [Trimmomatic]: http://www.usadellab.org/cms/index.php?page=trimmomatic
+[Trinity]: https://trinityrnaseq.github.io/
 [UCSC]: http://genome.ucsc.edu/
 
 ---
@@ -106,6 +108,24 @@ references:
   issued:
     year: 2010
 
+- id: diginorm
+  title: 'A Reference-Free Algorithm for Computational Normalization of Shotgun Sequencing Data'
+  author:
+    - family: Titus Brown
+      given: C.
+    - family: Howe
+      given: A.
+    - family: Zhang
+      given: Q.
+    - family: Pyrkosz
+      given: A.B.
+    - family: Brom
+      given: T.H.
+  container-title: arXiv.org
+  URL: 'http://arxiv.org/abs/1203.4802'
+  issued:
+    year: 2012
+
 - id: edger
   title: 'edgeR: a Bioconductor package for differential expression analysis of digital gene expression data'
   author:
@@ -182,6 +202,22 @@ references:
   type: article-journal
   issued:
     year: 2008
+
+- id: rsem
+  title: 'RSEM: accurate transcript quantification from RNA-Seq data with or without a reference genome'
+  author:
+    - family: Li
+      given: B.
+    - family: Dewey
+      given: C.N.
+  container-title: BMC Bioinformatics
+  volume: 12
+  URL: 'http://www.biomedcentral.com/1471-2105/12/323'
+  DOI: 10.1186/1471-2105-12-323
+  issue: 323
+  type: article-journal
+  issued:
+    year: 2011
 
 - id: samtools
   title: 'The Sequence Alignment/Map format and SAMtools'
@@ -320,4 +356,118 @@ references:
   type: article-journal
   issued:
     year: 2014
+
+- id: trinity_protocol
+  title: 'De novo transcript sequence reconstruction from RNA-seq using the Trinity platform for reference generation and analysis'
+  author:
+    - family: Haas,
+      given: B.J.
+    - family: Papanicolaou,
+      given: A.
+    - family: Yassour,
+      given: M.
+    - family: Grabherr,
+      given: M.
+    - family: Blood,
+      given: P.D.
+    - family: Bowden,
+      given: J.
+    - family: Couger,
+      given: M.B.
+    - family: Eccles,
+      given: D.
+    - family: Li,
+      given: B.
+    - family: Lieber,
+      given: M.
+    - family: MacManes,
+      given: M.D.
+    - family: Ott,
+      given: M.
+    - family: Orvis,
+      given: J.
+    - family: Pochet,
+      given: N.
+    - family: Strozzi,
+      given: F.
+    - family: Weeks,
+      given: N.
+    - family: Westerman,
+      given: R.
+    - family: William,
+      given: T.
+    - family: Dewey,
+      given: C.N.
+    - family: Henschel,
+      given: R.
+    - family: LeDuc
+      given: R.D.
+    - family: Friedman
+      given: N.
+    - family: Regev
+      given: A.
+  container-title: Nature Protocols
+  volume: 8
+  URL: 'http://www.nature.com/nprot/journal/v8/n8/full/nprot.2013.084.html'
+  DOI: 10.1038/nprot.2013.084
+  issue: 8
+  page: 1494-1512
+  type: article-journal
+  issued:
+    year: 2013
+
+- id: trinity
+  title: 'Full-length transcriptome assembly from RNA-Seq data without a reference genome'
+  author:
+    - family: Grabherr,
+      given: M.G.
+    - family: Haas,
+      given: B.J.
+    - family: Yassour,
+      given: M.
+    - family: Levin,
+      given: J.Z.
+    - family: Thompson,
+      given: D.A.
+    - family: Amit,
+      given: I.
+    - family: Adiconis,
+      given: X.
+    - family: Fan,
+      given: L.
+    - family: Raychowdhury,
+      given: R.
+    - family: Zeng,
+      given: Q.
+    - family: Chen,
+      given: Z.
+    - family: Mauceli,
+      given: E.
+    - family: Hacohen,
+      given: N.
+    - family: Gnirke,
+      given: A.
+    - family: Rhind,
+      given: N.
+    - family: di Palma,
+      given: F.
+    - family: Birren,
+      given: B.W.
+    - family: Nusbaum,
+      given: C.
+    - family: Lindblad-Toh,
+      given: K.
+    - family: Friedman
+      given: N.
+    - family: Regev
+      given: A.
+  container-title: Nature Biotechnology
+  volume: 29
+  URL: 'http://www.nature.com/nbt/journal/v29/n7/abs/nbt.1883.html'
+  DOI: 10.1038/nbt.1883
+  issue: 7
+  page: 644-652
+  type: article-journal
+  issued:
+    year: 2011
 ...

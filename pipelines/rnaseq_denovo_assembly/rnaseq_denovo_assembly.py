@@ -171,6 +171,7 @@ class RnaSeqDeNovoAssembly(common.Illumina):
         Merge all normalized readsets together and normalize the result, using the Trinity normalization utility.
         """
 
+        jobs = []
         normalization_directory = "insilico_read_normalization"
         normalization_directory_all = os.path.join(normalization_directory, "all")
         left_or_single_reads = []
@@ -196,7 +197,36 @@ class RnaSeqDeNovoAssembly(common.Illumina):
         )
 
         job.name = "insilico_read_normalization_all"
-        return [job]
+        jobs.append(job)
+
+        report_file = os.path.join("report", "RnaSeqDeNovoAssembly.insilico_read_normalization_all.md")
+        normalization_stats_file = os.path.join("insilico_read_normalization", "all", "normalization.stats.tsv")
+        jobs.append(
+            Job(
+                [normalization_stats_file],
+                [report_file],
+                [['insilico_read_normalization_all', 'module_pandoc']],
+                command="""\
+mkdir -p report && \\
+sum_norm=`cut -f2 {normalization_stats_file}` && \\
+normalization_table=`sed '1d' report/trimReadsetTable.tsv | LC_NUMERIC=fr_FR awk -v sum_norm=$sum_norm '{{sum_trim+=$4}}END{{print sprintf("%\\47d", sum_norm)"|"sprintf("%.2f", sum_norm / sum_trim * 100)}}'` && \\
+pandoc --to=markdown \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable read_type="{read_type}" \\
+  --variable normalization_table="$normalization_table" \\
+  {report_template_dir}/{basename_report_file} \\
+  > {report_file}""".format(
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    read_type="Paired" if self.run_type == 'PAIRED_END' else "Single",
+                    normalization_stats_file=normalization_stats_file,
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="insilico_read_normalization_all.report")
+        )
+
+        return jobs
 
     def trinity(self):
         """
