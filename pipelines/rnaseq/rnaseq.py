@@ -652,7 +652,6 @@ END
         gtf = os.path.join(fpkm_directory, "AllSamples","merged.gtf")
         sample_labels = ",".join([sample.name for sample in self.samples])
 
-
         # Perform cuffnorm using every samples
         job = cufflinks.cuffnorm([os.path.join(fpkm_directory, sample.name, "abundances.cxb") for sample in self.samples],
              gtf,
@@ -660,7 +659,74 @@ END
         job.removable_files = ["cuffnorm"]
         job.name = "cuffnorm" 
         jobs.append(job)
-        
+
+        return jobs
+
+    def gq_seq_utils_exploratory_analysis_rnaseq(self):
+        """
+        Exploratory analysis using the gqSeqUtils R package.
+        """
+
+        jobs = []
+
+        sample_fpkm_readcounts = [[
+            sample.name,
+            os.path.join("cufflinks", sample.name, "isoforms.fpkm_tracking"),
+            os.path.join("raw_counts", sample.name + ".readcounts.csv")
+        ] for sample in self.samples]
+
+        input_file = os.path.join("exploratory", "exploratory.samples.tsv")
+
+        jobs.append(concat_jobs([
+            Job(command="mkdir -p exploratory"),
+            gq_seq_utils.exploratory_analysis_rnaseq(
+                os.path.join("DGE", "rawCountMatrix.csv"),
+                "cuffnorm",
+                config.param('gq_seq_utils_exploratory_analysis_rnaseq', 'genes', type='filepath'),
+                "exploratory"
+            )
+        ], name="gq_seq_utils_exploratory_analysis_rnaseq"))
+
+        report_file = os.path.join("report", "RnaSeq.gq_seq_utils_exploratory_analysis_rnaseq.md")
+        jobs.append(
+            Job(
+                [os.path.join("exploratory", "index.tsv")],
+                [report_file],
+                command="""\
+mkdir -p report && \\
+cp -r exploratory/ report/ && \\
+cp \\
+  {report_template_dir}/{basename_report_file} \\
+  {report_file} && \\
+cut -f3-4 exploratory/index.tsv | sed '1d' | perl -pe 's/^([^\t]*)\t(.*)$/* [\\1](\\2)/' \\
+  >> {report_file}""".format(
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="gq_seq_utils_exploratory_analysis_rnaseq.report")
+        )
+
+        report_file = os.path.join("report", "RnaSeq.cuffnorm.md")
+        jobs.append(
+            Job(
+                [os.path.join("cufflinks", "AllSamples","merged.gtf")],
+                [report_file],
+                command="""\
+mkdir -p report && \\
+zip -r report/cuffAnalysis.zip cufflinks/ cuffdiff/ cuffnorm/ && \\
+cp \\
+  {report_template_dir}/{basename_report_file} \\
+  {report_file}""".format(
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="cuffnorm.report")
+        )
+
         return jobs
 
     def differential_expression(self):
@@ -705,65 +771,59 @@ END
             job.name = "differential_expression_goseq.dge." + contrast.name
             jobs.append(job)
 
-        return jobs
-
-    def gq_seq_utils_exploratory_analysis_rnaseq(self):
-        """
-        Exploratory analysis using the gqSeqUtils R package.
-        """
-
-        sample_fpkm_readcounts = [[
-            sample.name,
-            os.path.join("cufflinks", sample.name, "isoforms.fpkm_tracking"),
-            os.path.join("raw_counts", sample.name + ".readcounts.csv")
-        ] for sample in self.samples]
-
-        input_file = os.path.join("exploratory", "exploratory.samples.tsv")
-
-        return [concat_jobs([
-            Job(command="mkdir -p exploratory"),
-            gq_seq_utils.exploratory_analysis_rnaseq(
-                os.path.join("DGE", "rawCountMatrix.csv"),
-                "cuffnorm",
-                config.param('gq_seq_utils_exploratory_analysis_rnaseq', 'genes', type='filepath'),
-                "exploratory"
-            )
-        ], name="gq_seq_utils_exploratory_analysis_rnaseq")]
-
-    def gq_seq_utils_report(self):
-        """
-        Generates a summary html report containing the description of
-        the sequencing experiment as well as a detailed presentation of the pipeline steps and results.
-        Various Quality Control (QC) summary statistics are included in the report and additional QC analysis
-        is accessible for download directly through the report. The report includes also the main references
-        of the software and methods used during the analysis, together with the full list of parameters
-        passed to the pipeline main script.
-        """
-        output_files=[
-            "metrics/trimming.stats",
-            "tracks.zip",
-            "metrics/rnaseqRep.zip",
-            "exploratory/top_sd_heatmap_cufflinks_logFPKMs.pdf",
-            "cuffnorm/isoforms.fpkm_table", 
-            "cuffnorm/isoforms.count_table",
-            "cuffnorm/isoforms.attr_table",
-            "metrics/saturation.zip"
-        ]
-        
-        for contrast in self.contrasts:
-                 output_files.append(os.path.join("DGE", contrast.name, "gene_ontology_results.csv"))
-                 output_files.append(os.path.join("cuffdiff", contrast.name, "isoform_exp.diff"))
-                 
-        
-        job = gq_seq_utils.report(
-            [config_file.name for config_file in self.args.config],
-            self.output_dir,
-            "RNAseq",
-            self.output_dir
+        report_file = os.path.join("report", "RnaSeq.differential_expression.md")
+        jobs.append(
+            Job(
+                [os.path.join("DGE", "rawCountMatrix.csv")] +
+                [os.path.join("DGE", contrast.name, "dge_results.csv") for contrast in self.contrasts] +
+                [os.path.join("cuffdiff", contrast.name, "isoforms.fpkm_tracking") for contrast in self.contrasts] +
+                [os.path.join("cuffdiff", contrast.name, "isoform_exp.diff") for contrast in self.contrasts] +
+                [os.path.join("DGE", contrast.name, "gene_ontology_results.csv") for contrast in self.contrasts],
+                [report_file],
+                [['rnaseqc', 'module_pandoc']],
+                # Ugly awk to format differential expression results into markdown for genes, transcripts and GO if any; knitr may do this better
+                # Ugly awk and python to merge cuffdiff fpkm and isoforms into transcript expression results
+                command="""\
+mkdir -p report && \\
+cp {design_file} report/design.tsv && \\
+cp DGE/rawCountMatrix.csv report/ && \\
+pandoc \\
+  {report_template_dir}/{basename_report_file} \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable design_table="`head -7 report/design.tsv | cut -f-8 | awk -F"\t" '{{OFS="\t"; if (NR==1) {{print; gsub(/[^\t]/, "-")}} print}}' | sed 's/\t/|/g'`" \\
+  --variable raw_count_matrix_table="`head -7 report/rawCountMatrix.csv | cut -f-8 | awk -F"\t" '{{OFS="\t"; if (NR==1) {{print; gsub(/[^\t]/, "-")}} print}}' | sed 's/\t/|/g'`" \\
+  --to markdown \\
+  > {report_file} && \\
+for design in {designs}
+do
+  mkdir -p report/DiffExp/$design/
+  echo -e "\\n#### $design Results\\n" >> {report_file}
+  cp DGE/$design/dge_results.csv report/DiffExp/$design/${{design}}_Genes_DE_results.tsv
+  echo -e "\\nTable: Differential Gene Expression Results (**partial table**; [download full table](DiffExp/$design/${{design}}_Genes_DE_results.tsv))\\n" >> {report_file}
+  head -7 report/DiffExp/$design/${{design}}_Genes_DE_results.tsv | cut -f-8 | sed '2i ---\t---\t---\t---\t---\t---\t---\t---' | sed 's/\t/|/g' >> {report_file}
+  sed '1s/^tracking_id/test_id/' cuffdiff/$design/isoforms.fpkm_tracking | awk -F"\t" 'FNR==NR{{line[$1]=$0; next}}{{OFS="\t"; print line[$1], $0}}' - cuffdiff/$design/isoform_exp.diff | python -c 'import csv,sys; rows_in = csv.DictReader(sys.stdin, delimiter="\t"); rows_out = csv.DictWriter(sys.stdout, fieldnames=["test_id", "gene_id", "tss_id","nearest_ref_id","class_code","gene","locus","length","log2(fold_change)","test_stat","p_value","q_value"], delimiter="\t", extrasaction="ignore"); rows_out.writeheader(); rows_out.writerows(rows_in)' > report/DiffExp/$design/${{design}}_Transcripts_DE_results.tsv
+  echo -e "\\n---\\n\\nTable: Differential Transcript Expression Results (**partial table**; [download full table](DiffExp/$design/${{design}}_Transcripts_DE_results.tsv))\\n" >> {report_file}
+  head -7 report/DiffExp/$design/${{design}}_Transcripts_DE_results.tsv | cut -f-8 | sed '2i ---\t---\t---\t---\t---\t---\t---\t---' | sed 's/\t/|/g' >> {report_file}
+  if [ `wc -l DGE/$design/gene_ontology_results.csv | cut -f1 -d\ ` -gt 1 ]
+  then
+    cp DGE/$design/gene_ontology_results.csv report/DiffExp/$design/${{design}}_Genes_GO_results.tsv
+    echo -e "\\n---\\n\\nTable: GO Results of the Differentially Expressed Genes (**partial table**; [download full table](DiffExp/${{design}}/${{design}}_Genes_GO_results.tsv))\\n" >> {report_file}
+    head -7 report/DiffExp/${{design}}/${{design}}_Genes_GO_results.tsv | cut -f-8 | sed '2i ---\t---\t---\t---\t---\t---\t---\t---' | sed 's/\t/|/g' >> {report_file}
+  else
+    echo -e "\\nNo FDR adjusted GO enrichment was significant (p-value too high) based on the differentially expressed gene results for this design.\\n" >> {report_file}
+  fi
+done""".format(
+                    design_file=os.path.abspath(self.args.design.name),
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file,
+                    designs=" ".join([contrast.name for contrast in self.contrasts])
+                ),
+                report_files=[report_file],
+                name="differential_expression_goseq.report")
         )
-        job.input_files = output_files
-        job.name = "gq_seq_utils_report"
-        return [job]
+
+        return jobs
 
     @property
     def steps(self):
@@ -784,10 +844,9 @@ END
             self.cuffquant,
             self.cuffdiff,
             self.cuffnorm,
-            self.differential_expression,
-            self.differential_expression_goseq,
             self.gq_seq_utils_exploratory_analysis_rnaseq,
-            self.gq_seq_utils_report
+            self.differential_expression,
+            self.differential_expression_goseq
         ]
 
 if __name__ == '__main__':

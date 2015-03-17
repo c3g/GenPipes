@@ -12,7 +12,7 @@ The [Cufflinks] program [@cufflinks] is used to assemble aligned RNA-Seq reads i
 
 ### Metrics and Exploratory Analysis
 
-We use several metrics and exploratory analysis in order to control the data quality and to verify the biological reliability of the data.
+We use several metrics and exploratory analyses to control data quality and biological reliability.
 
 #### FPKM Metrics
 

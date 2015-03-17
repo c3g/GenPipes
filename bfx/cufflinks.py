@@ -46,7 +46,7 @@ def cuffdiff(sample_replicate_group_files, gtf, output_directory):
 
     return Job(
         input_files + [gtf],
-        [os.path.join(output_directory, "isoform_exp.diff")],
+        [os.path.join(output_directory, "isoforms.fpkm_tracking"), os.path.join(output_directory, "isoform_exp.diff")],
         [['cuffdiff', 'module_cufflinks']],
         command="""\
 mkdir -p {output_directory} && \\
