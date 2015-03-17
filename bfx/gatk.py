@@ -20,7 +20,6 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --analysis_type BaseRecalibrator \\
   --num_cpu_threads_per_data_thread {threads} \\
   --input_file {input} \\
-  --generate_md5 \\
   --reference_sequence {reference_sequence} \\
   --knownSites {known_sites} \\
   --out {output}""".format(
