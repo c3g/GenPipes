@@ -209,7 +209,7 @@ class RnaSeqDeNovoAssembly(common.Illumina):
                 command="""\
 mkdir -p report && \\
 sum_norm=`cut -f2 {normalization_stats_file}` && \\
-normalization_table=`sed '1d' report/trimReadsetTable.tsv | LC_NUMERIC=fr_FR awk -v sum_norm=$sum_norm '{{sum_trim+=$4}}END{{print sprintf("%\\47d", sum_norm)"|"sprintf("%.2f", sum_norm / sum_trim * 100)}}'` && \\
+normalization_table=`sed '1d' report/trimReadsetTable.tsv | LC_NUMERIC=fr_FR awk -v sum_norm=$sum_norm '{{sum_trim+=$4}}END{{print sprintf("%\\47d", sum_trim)"|"sprintf("%\\47d", sum_norm)"|"sprintf("%.2f", sum_norm / sum_trim * 100)}}'` && \\
 pandoc --to=markdown \\
   --template {report_template_dir}/{basename_report_file} \\
   --variable read_type="{read_type}" \\
@@ -232,6 +232,8 @@ pandoc --to=markdown \\
         """
         Create a de novo assembly from normalized readsets using [Trinity](http://trinityrnaseq.sourceforge.net/).
         """
+
+        jobs = []
 
         normalization_directory = os.path.join("insilico_read_normalization", "all")
         output_directory = "trinity_out_dir"
@@ -271,7 +273,7 @@ Trinity {other_options} \\
 
         trinity_job.removable_files = [output_directory]
 
-        return [concat_jobs([
+        jobs.append(concat_jobs([
             trinity_job,
             Job(
                 [trinity_fasta],
@@ -282,7 +284,34 @@ Trinity {other_options} \\
                 [trinity_stats_prefix + ".csv", trinity_stats_prefix + ".jpg", trinity_stats_prefix + ".pdf"],
                 [['trinity', 'module_R'], ['trinity', 'module_mugqic_R_packages']],
                 command="Rscript -e 'library(gqSeqUtils); dnaFastaStats(filename = \"" + trinity_fasta + "\", type = \"trinity\", output.prefix = \"" + trinity_stats_prefix + "\")'")
-        ], name="trinity")]
+        ], name="trinity"))
+
+        report_file = os.path.join("report", "RnaSeqDeNovoAssembly.trinity.md")
+        jobs.append(
+            Job(
+                [trinity_fasta + ".zip", trinity_stats_prefix + ".csv", trinity_stats_prefix + ".jpg", trinity_stats_prefix + ".pdf"],
+                [report_file],
+                [['trinity', 'module_pandoc']],
+                command="""\
+mkdir -p report && \\
+cp {trinity_fasta}.zip {trinity_stats_prefix}.csv {trinity_stats_prefix}.jpg {trinity_stats_prefix}.pdf report/ && \\
+assembly_table=`sed '1d' {trinity_stats_prefix}.csv | perl -pe 's/^"([^"]*)",/\\1\t/g' | grep -P "^(Nb. Transcripts|Nb. Components|Total Transcripts Length|Min. Transcript Length|Median Transcript Length|Mean Transcript Length|Max. Transcript Length|N50)" | LC_NUMERIC=fr_FR awk -F"\t" '{{print $1"|"sprintf("%\\47d", $2)}}'` && \\
+pandoc --to=markdown \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable assembly_table="$assembly_table" \\
+  {report_template_dir}/{basename_report_file} \\
+  > {report_file}""".format(
+                    trinity_fasta=trinity_fasta,
+                    trinity_stats_prefix=trinity_stats_prefix,
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="trinity.report")
+        )
+
+        return jobs
 
     def exonerate_fastasplit(self):
         """
@@ -361,20 +390,44 @@ parallelBlast.pl \\
         blast_directory = "blast"
         num_fasta_chunks = config.param('exonerate_fastasplit', 'num_fasta_chunks', type='posint')
         program = "blastx"
+        blast_prefix = os.path.join(blast_directory, program + "_Trinity_")
         swissprot_db = config.param("blastx_trinity_uniprot", "swissprot_db", type='prefixpath')
         uniref_db = config.param("blastx_trinity_uniprot", "uniref_db", type='prefixpath')
 
         for db in swissprot_db, uniref_db:
-            blast_chunks = [os.path.join(blast_directory, program + "_Trinity_" + os.path.basename(db) + "_chunk_{:07d}.tsv".format(i)) for i in range(num_fasta_chunks)]
-            blast_result = os.path.join(blast_directory, program + "_Trinity_" + os.path.basename(db) + ".tsv")
+            blast_chunks = [os.path.join(blast_prefix + os.path.basename(db) + "_chunk_{:07d}.tsv".format(i)) for i in range(num_fasta_chunks)]
+            blast_result = os.path.join(blast_prefix + os.path.basename(db) + ".tsv")
             jobs.append(concat_jobs([
                 Job(
                     blast_chunks,
                     [blast_result],
                     command="cat \\\n  " + " \\\n  ".join(blast_chunks) + " \\\n  > " + blast_result
                 ),
-                Job(command="zip -j {blast_result}.zip {blast_result}".format(blast_result=blast_result))
+                Job([blast_result], [blast_result + ".zip"], command="zip -j {blast_result}.zip {blast_result}".format(blast_result=blast_result))
             ], name="blastx_trinity_" + os.path.basename(db) + "_merge"))
+
+        report_file = os.path.join("report", "RnaSeqDeNovoAssembly.blastx_trinity_uniprot_merge.md")
+        jobs.append(
+            Job(
+                [blast_prefix + os.path.basename(swissprot_db) + ".tsv.zip"],
+                [report_file],
+                command="""\
+mkdir -p report && \\
+cp {blast_prefix}{blast_db}.tsv.zip  report/ && \\
+pandoc --to=markdown \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable blast_db="{blast_db}" \\
+  {report_template_dir}/{basename_report_file} \\
+  > {report_file}""".format(
+                    blast_prefix=blast_prefix,
+                    blast_db=os.path.basename(swissprot_db),
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="blastx_trinity_uniprot_merge.report")
+        )
 
         return jobs
 
@@ -417,7 +470,7 @@ TransDecoder.Predict \\
                     other_options=config.param('transdecoder', 'other_options', required=False),
                     transcripts=os.path.relpath(trinity_fasta, transdecoder_directory),
                     transdecoder_subdirectory=transdecoder_subdirectory,
-                    swissprot_db=config.param('transdecoder', 'swissprot_db', type='filepath'),
+                    swissprot_db=config.param('transdecoder', 'swissprot_db', type='prefixpath'),
                     pfam_db=config.param('transdecoder', 'pfam_db', type='filepath'),
                     cpu=config.param('transdecoder', 'cpu', type='posint')
                 )

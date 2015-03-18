@@ -4,9 +4,10 @@ Normalization has been performed in order to reduce memory requirement and decre
 
 Table: Normalization Metrics
 
-Surviving $read_type$ Reads #|% 
-----:|----:
+Trimming Surviving $read_type$ Reads #|Normalization Surviving $read_type$ Reads #|%
+----:|----:|----:
 $normalization_table$
 
-* Surviving $read_type$ Reads #: number of remaining $read_type$ Reads after the normalization step
+* Trimming Surviving $read_type$ Reads #: number of remaining $read_type$ Reads after the trimming step
+* Normalization Surviving $read_type$ Reads #: number of remaining $read_type$ Reads after the normalization step
 * %: percentage of Surviving $read_type$ Reads after normalization / Surviving $read_type$ Reads after trimming

@@ -5,6 +5,7 @@ All analysis parameters are described in this [configuration file](config.ini).
 ## References
 <span />
 
+[BLAST]: http://www.ncbi.nlm.nih.gov/books/NBK52640/
 [BWA]: http://bio-bwa.sourceforge.net/
 [Cuffdiff]: http://cole-trapnell-lab.github.io/cufflinks/cuffdiff/
 [Cufflinks]: http://cole-trapnell-lab.github.io/cufflinks/
