@@ -16,7 +16,7 @@ MUGQIC pipelines have been tested with Python 2.7.
 
 Quick setup for abacus, guillimin and mammouth users
 ----------------------------------------------------
-Genomes and modules used by the pipelines are already installed on those clusters.
+Genomes and modules used by the pipelines are already installed on a CVMFS partition mounted on all those clusters in `/cvmfs/soft.mugqic/CentOS6`.
 To access them, add the following lines to your *$HOME/.bash_profile*:
 ```
 #!bash
@@ -27,20 +27,19 @@ umask 0002
 HOST=`hostname`;
     
 DNSDOMAIN=`dnsdomainname`;
+
+export MUGQIC_INSTALL_HOME=/cvmfs/soft.mugqic/CentOS6
     
 if [[ $HOST == abacus* || $DNSDOMAIN == ferrier.genome.mcgill.ca ]]; then
 
-  export MUGQIC_INSTALL_HOME=/sb/programs/analyste
   export MUGQIC_INSTALL_HOME_DEV=/lb/project/mugqic/analyste_dev
 
 elif [[ $HOST == lg-* || $DNSDOMAIN == guillimin.clumeq.ca ]]; then
 
-  export MUGQIC_INSTALL_HOME=/software/areas/genomics/phase2  
   export MUGQIC_INSTALL_HOME_DEV=/gs/project/mugqic/analyste_dev/phase2
 
 elif [[ $BQMAMMOUTH == "mp2" ]]; then
 
-  export MUGQIC_INSTALL_HOME=$(share_nobackup bourque)/mugqic_prod
   export MUGQIC_INSTALL_HOME_DEV=$(share_nobackup bourque)/mugqic_dev
 
 fi
