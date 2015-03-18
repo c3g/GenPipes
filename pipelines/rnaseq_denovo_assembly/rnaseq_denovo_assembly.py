@@ -411,6 +411,7 @@ parallelBlast.pl \\
             Job(
                 [blast_prefix + os.path.basename(swissprot_db) + ".tsv.zip"],
                 [report_file],
+                [['blastx_trinity_uniprot_merge', 'module_pandoc']],
                 command="""\
 mkdir -p report && \\
 cp {blast_prefix}{blast_db}.tsv.zip  report/ && \\
@@ -857,17 +858,6 @@ Rscript $R_TOOLS/deseq.R \\
                     )
                 )
             ], name="differential_expression." + item))
-        return jobs
-
-    def gq_seq_utils_report(self):
-        """
-        Generates the standard report. A summary html report contains the description of
-        the sequencing experiment as well as a detailed presentation of the pipeline steps and results.
-        Various Quality Control (QC) summary statistics are included in the report and additional QC analysis
-        is accessible for download directly through the report. The report includes also the main references
-        of the software and methods used during the analysis, together with the full list of parameters
-        passed to the pipeline main script.
-        """
 
         isoforms_lengths = os.path.join("differential_expression", "isoforms.lengths.tsv")
         trinotate_annotation_report = os.path.join("trinotate", "trinotate_annotation_report.tsv")
@@ -923,21 +913,47 @@ rm {dge_results}.tmp""".format(
                     )
                 ])
 
-        report_job = gq_seq_utils.report(
-            [config_file.name for config_file in self.args.config],
-            self.output_dir,
-            "RNAseqDeNovo",
-            self.output_dir
-        )
+        genes_matrix = os.path.join("differential_expression", "genes.counts.matrix")
+        report_file = os.path.join("report", "RnaSeqDeNovoAssembly.differential_expression.md")
+        jobs.append(concat_jobs([
+            job,
+            Job(
+                [genes_matrix] +
+                [os.path.join("differential_expression", "genes", contrast.name, "dge_trinotate_results.csv") for contrast in self.contrasts],
+                [report_file],
+                [['rnaseqc', 'module_pandoc']],
+                # Ugly awk to format differential expression results into markdown for genes; knitr may do this better
+                command="""\
+mkdir -p report && \\
+cp {design_file} report/design.tsv && \\
+sed '1s/^\t/Gene\t/' {genes_matrix} > report/rawCountMatrix.csv && \\
+pandoc \\
+  {report_template_dir}/{basename_report_file} \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable design_table="`head -7 report/design.tsv | cut -f-8 | awk -F"\t" '{{OFS="\t"; if (NR==1) {{print; gsub(/[^\t]/, "-")}} print}}' | sed 's/\t/|/g'`" \\
+  --variable raw_count_matrix_table="`head -7 report/rawCountMatrix.csv | cut -f-8 | awk -F"\t" '{{OFS="\t"; if (NR==1) {{print; gsub(/[^\t]/, "-")}} print}}' | sed 's/|/\\\\\\\\|/g' | sed 's/\t/|/g'`" \\
+  --to markdown \\
+  > {report_file} && \\
+for design in {designs}
+do
+  mkdir -p report/DiffExp/$design/
+  echo -e "\\n#### $design Results\\n" >> {report_file}
+  cp differential_expression/genes/$design/dge_trinotate_results.csv report/DiffExp/$design/${{design}}_Genes_DE_results_{swissprot_db}.tsv
+  echo -e "\\nTable: Differential Gene Expression Results (**partial table**; [download full table](DiffExp/$design/${{design}}_Genes_DE_results_{swissprot_db}.tsv))\\n" >> {report_file}
+  head -7 report/DiffExp/$design/${{design}}_Genes_DE_results_{swissprot_db}.tsv | cut -f-8 | sed '2i ---\t---\t---\t---\t---\t---\t---\t---' | sed 's/|/\\\\|/g' | sed 's/\t/|/g' >> {report_file}
+done""".format(
+                    genes_matrix=genes_matrix,
+                    design_file=os.path.abspath(self.args.design.name),
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file,
+                    designs=" ".join([contrast.name for contrast in self.contrasts]),
+                    swissprot_db=os.path.basename(config.param("blastx_trinity_uniprot", "swissprot_db", type='prefixpath'))
+                ),
+                report_files=[report_file])
+        ], name="differential_expression.report"))
 
-        report_job.input_files = [
-            "metrics/trimming.stats",
-            "trinity_out_dir/Trinity.fasta",
-            "trinity_out_dir/Trinity.stats.csv",
-            "trinity_out_dir/Trinity.stats.pdf",
-        ] + [os.path.join("differential_expression", item, contrast.name, "dge_trinotate_results.csv") for item in "genes","isoforms" for contrast in self.contrasts]
-
-        return [concat_jobs([job, report_job], name="gq_seq_utils_report")]
+        return jobs
 
     @property
     def steps(self):
@@ -960,8 +976,7 @@ rm {dge_results}.tmp""".format(
             self.trinotate,
             self.align_and_estimate_abundance_prep_reference,
             self.align_and_estimate_abundance,
-            self.differential_expression,
-            self.gq_seq_utils_report
+            self.differential_expression
         ]
 
 if __name__ == '__main__':
