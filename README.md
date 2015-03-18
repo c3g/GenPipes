@@ -16,7 +16,7 @@ MUGQIC pipelines have been tested with Python 2.7.
 
 Quick setup for abacus, guillimin and mammouth users
 ----------------------------------------------------
-Genomes and modules used by the pipelines are already installed on a CVMFS partition shared by all those clusters.
+Genomes and modules used by the pipelines are already installed on a CVMFS partition mounted on all those clusters in `/cvmfs/soft.mugqic/CentOS6`.
 To access them, add the following lines to your *$HOME/.bash_profile*:
 ```
 #!bash
