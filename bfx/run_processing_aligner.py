@@ -236,21 +236,21 @@ class StarRunProcessingAligner(RunProcessingAligner):
         sample_file = input_bam + ".sample_file"
         sample_row = readset.sample.name + "\t" + input_bam + "\tRNAseq"
         output_directory = os.path.join(input_bam_directory, "rnaseqc_" + readset.sample.name + "." + readset.library)
+        ribosomal_interval_file = os.path.join(output_directory, "empty.list")
 
-        if len(readset.annotation_files) > 1 and os.path.isfile(readset.annotation_files[0]) and os.path.isfile(
-                readset.annotation_files[1]):
+        if len(readset.annotation_files) > 0 and os.path.isfile(readset.annotation_files[0]):
             gtf_transcript_id = readset.annotation_files[0]
-            ribosomal_fasta = readset.annotation_files[1]
             reference = readset.reference_file
             job = concat_jobs([
                                   Job(command="mkdir -p " + output_directory),
+                                  Job(command="touch " + ribosomal_interval_file),
                                   Job([input_bam], [sample_file], command="""\
         echo "Sample\tBamFile\tNote
         {sample_row}" \\
         > {sample_file}""".format(sample_row=sample_row, sample_file=sample_file)),
                                   metrics.rnaseqc(sample_file, output_directory, readset.fastq2 is not None,
                                                   gtf_file=gtf_transcript_id,
-                                                  ribosomal_fasta=ribosomal_fasta, reference=reference),
+                                                  ribosomal_interval_file=ribosomal_interval_file, reference=reference),
                                   Job(command="cp " + os.path.join(output_directory,
                                                                    "metrics.tsv") + " " + os.path.join(
                                       input_bam_directory,
@@ -280,7 +280,7 @@ class StarRunProcessingAligner(RunProcessingAligner):
         job.name = "picard_collect_multiple_metrics." + readset.name + ".met" + "_" + readset.run + "_" + readset.lane
         jobs.append(job)
 
-        if len(readset.annotation_files) > 2 and readset.annotation_files[2]:
+        if len(readset.annotation_files) > 2 and os.path.isfile(readset.annotation_files[2]):
             job = picard.collect_rna_metrics(alignment_file,
                                              os.path.join(output_directory, sample.name),
                                              readset.annotation_files[2],
