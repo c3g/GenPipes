@@ -265,12 +265,14 @@ Steps:
     def submit_jobs(self):
         self.scheduler.submit(self)
 
-    def report_jobs(self):
+    def report_jobs(self, output_dir=None):
+        if not output_dir:
+            output_dir = self.output_dir  # Default to pipeline output directory
         report_files = []
         for job in self.jobs:
             # Retrieve absolute paths of report files
             for report_file in job.report_files:
-                if os.path.exists(job.abspath(report_file)):
+                if os.path.exists(os.path.join(output_dir, report_file)):
                     report_files.append(report_file)
                 else:
                     log.warn("Report file: " + report_file + " not found!... skipping")
@@ -308,7 +310,7 @@ pandoc \\
   report/config_and_references.md \\
   --output report/index.html""".format(
                 module_pandoc=config.param('report', 'module_pandoc'),
-                output_dir=self.output_dir,
+                output_dir=output_dir,
                 config_file=config.filepath,
                 self=self,
                 title=config.param('report', 'title'),

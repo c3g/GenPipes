@@ -5,8 +5,10 @@ All analysis parameters are described in this [configuration file](config.ini).
 ## References
 <span />
 
+[BLASR]: https://github.com/PacificBiosciences/blasr
 [BLAST]: http://www.ncbi.nlm.nih.gov/books/NBK52640/
 [BWA]: http://bio-bwa.sourceforge.net/
+[Celera Assembler]: http://wgs-assembler.sourceforge.net/
 [Cuffdiff]: http://cole-trapnell-lab.github.io/cufflinks/cuffdiff/
 [Cufflinks]: http://cole-trapnell-lab.github.io/cufflinks/
 [Cuffmerge]: http://cole-trapnell-lab.github.io/cufflinks/cuffmerge/
@@ -15,8 +17,10 @@ All analysis parameters are described in this [configuration file](config.ini).
 [edgeR]: http://bioconductor.org/packages/release/bioc/html/edgeR.html
 [GATK]: https://www.broadinstitute.org/gatk/
 [goseq]: http://www.bioconductor.org/packages/release/bioc/html/goseq.html
+[HGAP]: https://github.com/PacificBiosciences/Bioinformatics-Training/wiki/HGAP
 [HTSeq]: http://www-huber.embl.de/users/anders/HTSeq/doc/overview.html
 [IGV]: https://www.broadinstitute.org/igv/
+[PacBio]: http://www.pacificbiosciences.com/news_and_events/publications/
 [Picard]: http://broadinstitute.github.io/picard/
 [RSEM]: http://deweylab.biostat.wisc.edu/rsem/
 [SAMtools]: http://www.htslib.org/
@@ -29,6 +33,22 @@ All analysis parameters are described in this [configuration file](config.ini).
 
 ---
 references:
+- id: blasr
+  title: 'Mapping single molecule sequencing reads using basic local alignment with successive refinement (BLASR): application and theory'
+  author:
+    - family: Chaisson
+      given: M.J.
+    - family: Tesler
+      given: G.
+  container-title: BMC Bioinformatics
+  volume: 13
+  URL: 'http://www.biomedcentral.com/1471-2105/13/238'
+  DOI: 10.1186/1471-2105-13-238
+  issue: 238
+  type: article-journal
+  issued:
+    year: 2012
+
 - id: bwa
   title: 'Fast and accurate long-read alignment with Burrows–Wheeler transform'
   author:
@@ -45,6 +65,77 @@ references:
   type: article-journal
   issued:
     year: 2010
+
+- id: celera
+  title: 'A Whole-Genome Assembly of Drosophila'
+  author:
+    - family: Myers
+      given: E.W.
+    - family: . Sutton
+      given: G.G.
+    - family: Delcher
+      given: A.L.
+    - family: Dew
+      given: I.M.
+    - family: Fasulo
+      given: D.P.
+    - family: Flanigan
+      given: M.J.
+    - family: Kravitz
+      given: S.A.
+    - family: Mobarry
+      given: C.M.
+    - family: Reinert
+      given: K.H.J.
+    - family: Remington
+      given: K.A.
+    - family: Anson
+      given: E.L.
+    - family: Bolanos
+      given: R.A.
+    - family: Chou
+      given: H.-H.
+    - family: Jordan
+      given: C.M.
+    - family: Halpern
+      given: A.L.
+    - family: Lonardi
+      given: S.
+    - family: Beasley
+      given: E.M.
+    - family: Brandon
+      given: R.C.
+    - family: Chen
+      given: L.
+    - family: Dunn
+      given: P.J.
+    - family: Lai
+      given: Z.
+    - family: Liang
+      given: Y.
+    - family: Nusskern
+      given: D.R.
+    - family: Zhan
+      given: M.
+    - family: Zhang
+      given: Q.
+    - family: Zheng
+      given: X.
+    - family: Rubin
+      given: G.M.
+    - family: Adams
+      given: M.D.
+    - family: Venter
+      given: J.C.
+  container-title: Science
+  volume: 287
+  URL: 'http://www.sciencemag.org/content/287/5461/2196'
+  DOI:  10.1126/science.287.5461.2196
+  issue: 5461
+  page: 2196-2204
+  type: article-journal
+  issued:
+    year: 2000
 
 - id: cuffdiff
   title: 'Differential analysis of gene regulation at transcript resolution with RNA-seq'
@@ -180,6 +271,43 @@ references:
   type: article-journal
   issued:
     year: 2010
+
+- id: hgap
+  title: 'Nonhybrid, finished microbial genome assemblies from long-read SMRT sequencing data'
+  author:
+    - family: Chin
+      given: C.-S.
+    - family: Alexander
+      given: D.H.
+    - family: Marks
+      given: P.
+    - family: Klammer
+      given: A.A.
+    - family: Drake
+      given: J.
+    - family: Heiner
+      given: C.
+    - family: Clum
+      given: A.
+    - family: Copeland
+      given: A.
+    - family: Huddleston
+      given: J.
+    - family: Eichler
+      given: E.E.
+    - family: Turner
+      given: S.W.
+    - family: Korlach
+      given: J.
+  container-title: Nature Methods
+  volume: 10
+  URL: 'http://www.nature.com/nmeth/journal/v10/n6/full/nmeth.2474.html'
+  DOI: 10.1038/nmeth.2474
+  issue: 6
+  page: 563-569
+  type: article-journal
+  issued:
+    year: 2013
 
 - id: quantifying_rnaseq
   title: 'Mapping and quantifying mammalian transcriptomes by RNA-Seq'
