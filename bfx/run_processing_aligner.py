@@ -330,7 +330,7 @@ class StarRunProcessingAligner(RunProcessingAligner):
                                   tools.py_rrnaBAMcount(
                                       bam=readset_metrics_bam,
                                       gtf=readset.annotation_files[0],
-                                      output=os.path.join(readset_metrics_bam + ".stats.tsv"),
+                                      output=os.path.join(readset.bam + ".metrics.rRNA.tsv"),
                                       typ="transcript")], name="bwa_mem_rRNA." + readset.name)
 
             job.removable_files = [readset_metrics_bam]
