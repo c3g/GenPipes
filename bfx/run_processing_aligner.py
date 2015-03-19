@@ -35,8 +35,8 @@ class RunProcessingAligner(object):
         return "'@RG" + \
                "\tID:" + readset.library + "_" + readset.run + "_" + readset.lane + \
                "\tSM:" + readset.sample.name + \
-               ("\tLB:" + readset.library if readset.library else "") + \
-               ("\tPU:run" + readset.run + "_" + readset.lane if readset.run and readset.lane else "") + \
+               "\tLB:" + readset.library + \
+               "\tPU:run" + readset.run + "_" + readset.lane + \
                ("\tCN:" + config.param(ini_section, 'sequencing_center')
                 if config.param(ini_section, 'sequencing_center', required=False) else "") + \
                "\tPL:Illumina" + \
