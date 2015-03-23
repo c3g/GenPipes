@@ -85,6 +85,29 @@ class ChipSeq(dnaseq.DnaSeq):
             job = samtools.view(readset_bam, filtered_readset_bam, "-b -F4 -q " + str(config.param('samtools_view_filter', 'min_mapq', type='int')))
             job.name = "samtools_view_filter." + readset.name
             jobs.append(job)
+
+        report_file = os.path.join("report", "ChipSeq.samtools_view_filter.md")
+        jobs.append(
+            Job(
+                [os.path.join("alignment", readset.sample.name, readset.name, readset.name + ".sorted.bam") for readset in self.readsets],
+                [report_file],
+                [['samtools_view_filter', 'module_pandoc']],
+                command="""\
+mkdir -p report && \\
+pandoc --to=markdown \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable min_mapq="{min_mapq}" \\
+  {report_template_dir}/{basename_report_file} \\
+  > {report_file}""".format(
+                    min_mapq=config.param('samtools_view_filter', 'min_mapq', type='int'),
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="samtools_view_filter.report")
+        )
+
         return jobs
 
     def picard_merge_sam_files(self):
@@ -147,32 +170,26 @@ class ChipSeq(dnaseq.DnaSeq):
             job = picard.mark_duplicates([input], output, metrics_file)
             job.name = "picard_mark_duplicates." + sample.name
             jobs.append(job)
-        return jobs
 
-    # Generic function called in metrics step
-    def merge_metrics(self, name, alignment_file,flagstat_file, metrics_file):
-        return concat_jobs([
-                samtools.flagstat(alignment_file, flagstat_file),
-                Job(
-                    [flagstat_file],
-                    [metrics_file],
-                    [['metrics', 'module_perl'], ['metrics', 'module_mugqic_tools']],
-                    command="""\
-perl -MReadMetrics -e 'ReadMetrics::mergeStats(
-  "{name}",
-  "{metrics_file}",
-  ReadMetrics::parseFlagstats(
-    "{name}",
-    "{flagstat_file}"
-  )
-)'""".format(
-                        name=name,
-                        metrics_file=metrics_file,
-                        flagstat_file=flagstat_file
-                    ),
-                    removable_files=[metrics_file]
-                )
-            ])
+        report_file = os.path.join("report", "ChipSeq.picard_mark_duplicates.md")
+        jobs.append(
+            Job(
+                [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam") for sample in self.samples],
+                [report_file],
+                command="""\
+mkdir -p report && \\
+cp \\
+  {report_template_dir}/{basename_report_file} \\
+  {report_file}""".format(
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="picard_mark_duplicates.report")
+        )
+
+        return jobs
 
     def metrics(self):
         """
@@ -180,42 +197,45 @@ perl -MReadMetrics -e 'ReadMetrics::mergeStats(
         """
 
         jobs = []
-        trimming_stats = os.path.join("metrics", "trimming.stats")
-        for readset in self.readsets:
-            alignment_file = os.path.join("alignment", readset.sample.name, readset.name, readset.name + ".sorted.bam")
-            flagstat_file = alignment_file + ".flagstat"
-            metrics_file = os.path.join("metrics", readset.name + ".readstats.csv")
+        jobs.append(concat_jobs([samtools.flagstat(os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam"), os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam.flagstat")) for sample in self.samples], name="metrics.flagstat"))
 
-            job = concat_jobs([
-                self.merge_metrics(readset.sample.name + " " + readset.name, alignment_file, flagstat_file, metrics_file + ".tmp"),
-                Job(
-                    [trimming_stats, metrics_file + ".tmp"],
-                    [metrics_file],
-                    command="""\
-grep "{sample_name}\t{readset_name}" {trimming_stats} | cut -f3- | sed 's/\t/,/g' | sed '1iRaw Fragments,Fragment Surviving,Single Surviving' | paste -d, <(cut -f1 -d, {metrics_file}.tmp) - <(cut -f2- -d, {metrics_file}.tmp) \\
+        metrics_file = os.path.join("metrics", "trimMemSampleTable.tsv")
+        report_file = os.path.join("report", "ChipSeq.metrics.md")
+        jobs.append(
+            Job(
+                [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam.flagstat") for sample in self.samples] + [os.path.join("metrics", "trimSampleTable.tsv")],
+                [metrics_file],
+                [['metrics', 'module_pandoc']],
+                # Retrieve number of aligned and duplicate reads from sample flagstat files
+                # Merge trimming stats per sample with aligned and duplicate stats using ugly awk
+                # Format merge stats into markdown table using ugly awk (knitr may do this better)
+                command="""\
+for sample in {samples}
+do
+  flagstat_file=alignment/$sample/$sample.sorted.dup.bam.flagstat
+  echo -e "$sample\t`grep -P '^\d+ \+ \d+ mapped' $flagstat_file | grep -Po '^\d+'`\t`grep -P '^\d+ \+ \d+ duplicate' $flagstat_file | grep -Po '^\d+'`"
+done | \\
+awk -F"\t" '{{OFS="\t"; print $0, $3 / $2 * 100}}' | sed '1iSample\tAligned Filtered Reads\tDuplicate Reads\tDuplicate %' | awk -F "\t" 'FNR==NR{{trim_line[$1]=$0; surviving[$1]=$3; next}}{{OFS="\t"; if ($1=="Sample") {{print trim_line[$1], $2, "Aligned Filtered %", $3, $4}} else {{print trim_line[$1], $2, $2 / surviving[$1] * 100, $3, $4}}}}' metrics/trimSampleTable.tsv - \\
   > {metrics_file} && \\
-rm {metrics_file}.tmp
+mkdir -p report && \\
+cp {metrics_file} report/ && \\
+pandoc --to=markdown \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable trim_mem_sample_table="`LC_NUMERIC=fr_FR awk -F "\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----:|-----:|-----:|-----:|-----:|-----:|-----:"}} else {{print $1, sprintf("%\\47d", $2), sprintf("%\\47d", $3), sprintf("%.1f", $4), sprintf("%\\47d", $5), sprintf("%.1f", $6), sprintf("%\\47d", $7), sprintf("%.1f", $8)}}}}' {metrics_file}`" \\
+  {report_template_dir}/{basename_report_file} \\
+  > {report_file}
 """.format(
-                        sample_name=readset.sample.name,
-                        readset_name=readset.name,
-                        trimming_stats=trimming_stats,
-                        metrics_file=metrics_file
-                    ),
-                    removable_files=[metrics_file]
-                )
-            ], name = "metrics." + readset.name)
-            # Remove uncessary temporary file otherwise job is never up to date
-            job.output_files.remove(metrics_file + ".tmp")
-            jobs.append(job)
-
-        for sample in self.samples:
-            alignment_file = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam")
-            flagstat_file = alignment_file + ".flagstat"
-            metrics_file = os.path.join("metrics", sample.name + ".memstats.csv")
-
-            job = self.merge_metrics(sample.name, alignment_file, flagstat_file, metrics_file)
-            job.name = "metrics." + sample.name
-            jobs.append(job)
+                    samples=" ".join([sample.name for sample in self.samples]),
+                    metrics_file=metrics_file,
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                name="metrics.report",
+                removable_files=[metrics_file],
+                report_files=[report_file]
+            )
+        )
         return jobs
 
     def homer_make_tag_directory(self):
@@ -247,6 +267,50 @@ makeTagDirectory \\
 
         return jobs
 
+    def qc_metrics(self):
+        """
+        Sequencing quality metrics as tag count, tag autocorrelation, sequence bias and GC bias are generated.
+        """
+
+         # If --design <design_file> option is missing, self.contrasts call will raise an Exception
+        if self.contrasts:
+            design_file = os.path.relpath(self.args.design.name, self.output_dir)
+
+        report_file = os.path.join("report", "ChipSeq.qc_metrics.md")
+        output_files = [os.path.join("graphs", sample.name + "_QC_Metrics.ps") for sample in self.samples] + [report_file]
+
+        return [Job(
+            [os.path.join("tags", sample.name, "tagInfo.txt") for sample in self.samples],
+            output_files,
+            [
+                ['qc_plots_R', 'module_mugqic_tools'],
+                ['qc_plots_R', 'module_R']
+            ],
+            command="""\
+mkdir -p graphs && \\
+Rscript $R_TOOLS/chipSeqGenerateQCMetrics.R \\
+  {design_file} \\
+  {output_dir} && \\
+cp {report_template_dir}/{basename_report_file} {report_file} && \\
+for sample in {samples}
+do
+  cp graphs/${{sample}}_QC_Metrics.ps report/
+  convert -rotate 90 graphs/${{sample}}_QC_Metrics.ps report/${{sample}}_QC_Metrics.png
+  echo -e "----\n\n![QC Metrics for Sample $sample ([download high-res image](${{sample}}_QC_Metrics.ps))](${{sample}}_QC_Metrics.png)\n" \\
+  >> {report_file}
+done""".format(
+                samples=" ".join([sample.name for sample in self.samples]),
+                design_file=design_file,
+                output_dir=self.output_dir,
+                report_template_dir=self.report_template_dir,
+                basename_report_file=os.path.basename(report_file),
+                report_file=report_file
+            ),
+            name="qc_plots_R",
+            removable_files=output_files,
+            report_files=[report_file]
+        )]
+
     def homer_make_ucsc_file(self):
         """
         Wiggle Track Format files are generated from the aligned reads using Homer.
@@ -276,37 +340,24 @@ gzip -1 -c > {bedgraph_file}""".format(
                 removable_files=[bedgraph_dir]
             ))
 
+        report_file = os.path.join("report", "ChipSeq.homer_make_ucsc_file.md")
+        jobs.append(
+            Job(
+                [os.path.join("tracks", sample.name, sample.name + ".ucsc.bedGraph.gz")],
+                [report_file],
+                command="""\
+mkdir -p report && \\
+zip -r report/tracks.zip tracks/*/*.ucsc.bedGraph.gz && \\
+cp {report_template_dir}/{basename_report_file} report/""".format(
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="homer_make_ucsc_file.report")
+        )
+
         return jobs
-
-    def qc_metrics(self):
-        """
-        Sequencing quality metrics as tag count, tag autocorrelation, sequence bias and GC bias are generated.
-        """
-
-         # If --design <design_file> option is missing, self.contrasts call will raise an Exception
-        if self.contrasts:
-            design_file = os.path.relpath(self.args.design.name, self.output_dir)
-
-        output_files = [os.path.join("graphs", sample.name + "_QC_Metrics.ps") for sample in self.samples]
-
-        return [Job(
-            [os.path.join("tags", sample.name, "tagInfo.txt") for sample in self.samples],
-            output_files,
-            [
-                ['qc_plots_R', 'module_mugqic_tools'],
-                ['qc_plots_R', 'module_R']
-            ],
-            command="""\
-mkdir -p graphs && \\
-Rscript $R_TOOLS/chipSeqGenerateQCMetrics.R \\
-  {design_file} \\
-  {output_dir}""".format(
-                design_file=design_file,
-                output_dir=self.output_dir
-            ),
-            name="qc_plots_R",
-            removable_files=output_files
-        )]
 
     def macs2_callpeak(self):
         """
@@ -357,6 +408,29 @@ macs2 callpeak {format}{other_options} \\
                 ))
             else:
                 log.warning("No treatment found for contrast " + contrast.name + "... skipping")
+
+        report_file = os.path.join("report", "ChipSeq.macs2_callpeak.md")
+        jobs.append(
+            Job(
+                [os.path.join("peak_call", contrast.real_name, contrast.real_name + "_peaks." + contrast.type + "Peak") for contrast in self.contrasts],
+                [report_file],
+                command="""\
+mkdir -p report && \\
+cp {report_template_dir}/{basename_report_file} report/ && \\
+for contrast in {contrasts}
+do
+  cp -a --parents peak_call/$contrast/ report/ && \\
+  echo -e "* [Peak Calls File for Design $contrast](peak_call/$contrast/${{contrast}}_peaks.xls)" \\
+  >> {report_file}
+done""".format(
+                    contrasts=" ".join([contrast.real_name for contrast in self.contrasts]),
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="macs2_callpeak.report")
+        )
 
         return jobs
 
@@ -432,6 +506,29 @@ perl -MReadMetrics -e 'ReadMetrics::parseHomerAnnotations(
                 ], name="homer_annotate_peaks." + contrast.real_name))
             else:
                 log.warning("No treatment found for contrast " + contrast.name + "... skipping")
+
+        report_file = os.path.join("report", "ChipSeq.homer_annotate_peaks.md")
+        jobs.append(
+            Job(
+                [os.path.join("peak_call", contrast.real_name, contrast.real_name + "_peaks." + contrast.type + "Peak") for contrast in self.contrasts],
+                [report_file],
+                command="""\
+mkdir -p report && \\
+cp {report_template_dir}/{basename_report_file} report/ && \\
+for contrast in {contrasts}
+do
+  cp -a --parents annotation/$contrast/ report/ && \\
+  echo -e "* [Gene Annotations for Design $contrast](annotation/$contrast/${{contrast}}.annotated.csv)\n* [HOMER Gene Ontology Annotations for Design $contrast](annotation/$contrast/$contrast/geneOntology.html)\n* [HOMER Genome Ontology Annotations for Design $contrast](annotation/$contrast/$contrast/GenomeOntology.html)" \\
+  >> {report_file}
+done""".format(
+                    contrasts=" ".join([contrast.real_name for contrast in self.contrasts]),
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="homer_annotate_peaks.report")
+        )
 
         return jobs
 
@@ -576,8 +673,8 @@ Rscript $R_TOOLS/chipSeqgenerateAnnotationGraphs.R \\
             self.picard_mark_duplicates,
             self.metrics,
             self.homer_make_tag_directory,
-            self.homer_make_ucsc_file,
             self.qc_metrics,
+            self.homer_make_ucsc_file,
             self.macs2_callpeak,
             self.homer_annotate_peaks,
             self.homer_find_motifs_genome,

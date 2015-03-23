@@ -18,8 +18,10 @@ All analysis parameters are described in this [configuration file](config.ini).
 [GATK]: https://www.broadinstitute.org/gatk/
 [goseq]: http://www.bioconductor.org/packages/release/bioc/html/goseq.html
 [HGAP]: https://github.com/PacificBiosciences/Bioinformatics-Training/wiki/HGAP
+[HOMER]: http://homer.salk.edu/homer/
 [HTSeq]: http://www-huber.embl.de/users/anders/HTSeq/doc/overview.html
 [IGV]: https://www.broadinstitute.org/igv/
+[MACS]: https://github.com/taoliu/MACS
 [PacBio]: http://www.pacificbiosciences.com/news_and_events/publications/
 [Picard]: http://broadinstitute.github.io/picard/
 [RSEM]: http://deweylab.biostat.wisc.edu/rsem/
@@ -308,6 +310,74 @@ references:
   type: article-journal
   issued:
     year: 2013
+
+- id: homer
+  title: 'Simple Combinations of Lineage-Determining Transcription Factors Prime cis-Regulatory Elements Required for Macrophage and B Cell Identities'
+  author:
+    - family: Heinz
+      given: S.
+    - family: Benner
+      given: C.
+    - family: Spann
+      given: N.
+    - family: Bertolino
+      given: E.
+    - family: Lin
+      given: Y.C.
+    - family: Laslo
+      given: P.
+    - family: Cheng
+      given: J.X.
+    - family: Murre
+      given: C.
+    - family: Singh
+      given: H.
+    - family: Glass
+      given: C.K.
+  container-title: Molecular Cell
+  volume: 38
+  URL: 'http://www.sciencedirect.com/science/article/pii/S1097276510003667'
+  DOI: 10.1016/j.molcel.2010.05.004
+  issue: 4
+  page: 576-589
+  type: article-journal
+  issued:
+    year: 2010
+
+- id: macs
+  title: 'Model-based Analysis of ChIP-Seq (MACS)'
+  author:
+    - family: Zhang
+      given: Y.
+    - family: Liu
+      given: T.
+    - family: Meyer
+      given: C.A.
+    - family: Eeckhoute
+      given: J.
+    - family: Johnson
+      given: D.S.
+    - family: Bernstein
+      given: B.E.
+    - family: Nusbaum
+      given: C.
+    - family: Myers
+      given: R.M.
+    - family: Brown
+      given: M.
+    - family: Li
+      given: W.
+    - family: Liu
+      given: X.S.
+  container-title: Genome Biology
+  volume: 9
+  URL: 'http://genomebiology.com/2008/9/9/R137'
+  DOI: 10.1186/gb-2008-9-9-r137
+  issue: 9
+  page: R137
+  type: article-journal
+  issued:
+    year: 2008
 
 - id: quantifying_rnaseq
   title: 'Mapping and quantifying mammalian transcriptomes by RNA-Seq'
