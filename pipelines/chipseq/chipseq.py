@@ -89,7 +89,7 @@ class ChipSeq(dnaseq.DnaSeq):
         report_file = os.path.join("report", "ChipSeq.samtools_view_filter.md")
         jobs.append(
             Job(
-                [os.path.join("alignment", readset.sample.name, readset.name, readset.name + ".sorted.bam") for readset in self.readsets],
+                [os.path.join("alignment", readset.sample.name, readset.name, readset.name + ".sorted.filtered.bam") for readset in self.readsets],
                 [report_file],
                 [['samtools_view_filter', 'module_pandoc']],
                 command="""\
@@ -294,9 +294,9 @@ Rscript $R_TOOLS/chipSeqGenerateQCMetrics.R \\
 cp {report_template_dir}/{basename_report_file} {report_file} && \\
 for sample in {samples}
 do
-  cp graphs/${{sample}}_QC_Metrics.ps report/
-  convert -rotate 90 graphs/${{sample}}_QC_Metrics.ps report/${{sample}}_QC_Metrics.png
-  echo -e "----\n\n![QC Metrics for Sample $sample ([download high-res image](${{sample}}_QC_Metrics.ps))](${{sample}}_QC_Metrics.png)\n" \\
+  cp --parents graphs/${{sample}}_QC_Metrics.ps report/
+  convert -rotate 90 graphs/${{sample}}_QC_Metrics.ps report/graphs/${{sample}}_QC_Metrics.png
+  echo -e "----\n\n![QC Metrics for Sample $sample ([download high-res image](graphs/${{sample}}_QC_Metrics.ps))](graphs/${{sample}}_QC_Metrics.png)\n" \\
   >> {report_file}
 done""".format(
                 samples=" ".join([sample.name for sample in self.samples]),
@@ -510,14 +510,14 @@ perl -MReadMetrics -e 'ReadMetrics::parseHomerAnnotations(
         report_file = os.path.join("report", "ChipSeq.homer_annotate_peaks.md")
         jobs.append(
             Job(
-                [os.path.join("peak_call", contrast.real_name, contrast.real_name + "_peaks." + contrast.type + "Peak") for contrast in self.contrasts],
+                [os.path.join("annotation", contrast.real_name, contrast.real_name + ".annotated.csv") for contrast in self.contrasts],
                 [report_file],
                 command="""\
-mkdir -p report && \\
+mkdir -p report/annotation/ && \\
 cp {report_template_dir}/{basename_report_file} report/ && \\
 for contrast in {contrasts}
 do
-  cp -a --parents annotation/$contrast/ report/ && \\
+  rsync -avP annotation/$contrast report/annotation/ && \\
   echo -e "* [Gene Annotations for Design $contrast](annotation/$contrast/${{contrast}}.annotated.csv)\n* [HOMER Gene Ontology Annotations for Design $contrast](annotation/$contrast/$contrast/geneOntology.html)\n* [HOMER Genome Ontology Annotations for Design $contrast](annotation/$contrast/$contrast/GenomeOntology.html)" \\
   >> {report_file}
 done""".format(
@@ -575,6 +575,30 @@ findMotifsGenome.pl \\
             else:
                 log.warning("No treatment found for contrast " + contrast.name + "... skipping")
 
+        report_file = os.path.join("report", "ChipSeq.homer_find_motifs_genome.md")
+        jobs.append(
+            Job(
+                [os.path.join("annotation", contrast.real_name, contrast.real_name, "homerResults.html") for contrast in self.contrasts] +
+                [os.path.join("annotation", contrast.real_name, contrast.real_name, "knownResults.html") for contrast in self.contrasts],
+                [report_file],
+                command="""\
+mkdir -p report/annotation/ && \\
+cp {report_template_dir}/{basename_report_file} report/ && \\
+for contrast in {contrasts}
+do
+  rsync -avP annotation/$contrast report/annotation/ && \\
+  echo -e "* [HOMER _De Novo_ Motif Results for Design $contrast](annotation/$contrast/$contrast/homerResults.html)\n* [HOMER Known Motif Results for Design $contrast](annotation/$contrast/$contrast/knownResults.html)" \\
+  >> {report_file}
+done""".format(
+                    contrasts=" ".join([contrast.real_name for contrast in self.contrasts if contrast.type == 'narrow' and contrast.treatments]),
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="homer_find_motifs_genome.report")
+        )
+
         return jobs
 
     def annotation_graphs(self):
@@ -604,62 +628,66 @@ findMotifsGenome.pl \\
 
             output_files.append(os.path.join("graphs", contrast.real_name + "_Misc_Graphs.ps"))
 
-        output_files.append(os.path.join("annotation", "peak_stats.csv"))
+        peak_stats_file = os.path.join("annotation", "peak_stats.csv")
+        output_files.append(peak_stats_file)
+        report_file = os.path.join("report", "ChipSeq.annotation_graphs.md")
+        output_files.append(report_file)
 
         return [Job(
             input_files,
             output_files,
             [
                 ['annotation_graphs', 'module_mugqic_tools'],
-                ['annotation_graphs', 'module_R']
+                ['annotation_graphs', 'module_R'],
+                ['annotation_graphs', 'module_pandoc']
             ],
             command="""\
 mkdir -p graphs && \\
 Rscript $R_TOOLS/chipSeqgenerateAnnotationGraphs.R \\
   {design_file} \\
-  {output_dir}""".format(
+  {output_dir} && \\
+mkdir -p report/annotation/ && \\
+if [[ -f {peak_stats_file} ]]
+then
+  cp {peak_stats_file} report/annotation/
+peak_stats_table=`LC_NUMERIC=fr_FR awk -F "," '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----|-----:|-----:|-----:|-----:|-----:|-----:"}} else {{print $1, $2,  sprintf("%\\47d", $3), $4, sprintf("%\\47.1f", $5), sprintf("%\\47.1f", $6), sprintf("%\\47.1f", $7), sprintf("%\\47.1f", $8)}}}}' {peak_stats_file}`
+else
+  peak_stats_table=""
+fi
+pandoc --to=markdown \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable peak_stats_table="$peak_stats_table" \\
+  --variable proximal_distance="{proximal_distance}" \\
+  --variable distal_distance="{distal_distance}" \\
+  --variable distance5d_lower="{distance5d_lower}" \\
+  --variable distance5d_upper="{distance5d_upper}" \\
+  --variable gene_desert_size="{gene_desert_size}" \\
+  {report_template_dir}/{basename_report_file} \\
+  > {report_file} && \\
+for contrast in {contrasts}
+do
+  cp --parents graphs/${{contrast}}_Misc_Graphs.ps report/
+  convert -rotate 90 graphs/${{contrast}}_Misc_Graphs.ps report/graphs/${{contrast}}_Misc_Graphs.png
+  echo -e "----\n\n![Annotation Statistics for Design $contrast ([download high-res image](graphs/${{contrast}}_Misc_Graphs.ps))](graphs/${{contrast}}_Misc_Graphs.png)\n" \\
+  >> {report_file}
+done""".format(
                 design_file=design_file,
-                output_dir=self.output_dir
+                output_dir=self.output_dir,
+                peak_stats_file=peak_stats_file,
+                contrasts=" ".join([contrast.real_name for contrast in self.contrasts if contrast.type == 'narrow' and contrast.treatments]),
+                proximal_distance=config.param('homer_annotate_peaks', 'proximal_distance', type='int') / -1000,
+                distal_distance=config.param('homer_annotate_peaks', 'distal_distance', type='int') / -1000,
+                distance5d_lower=config.param('homer_annotate_peaks', 'distance5d_lower', type='int') / -1000,
+                distance5d_upper=config.param('homer_annotate_peaks', 'distance5d_upper', type='int') / -1000,
+                gene_desert_size=config.param('homer_annotate_peaks', 'gene_desert_size', type='int') / 1000,
+                report_template_dir=self.report_template_dir,
+                basename_report_file=os.path.basename(report_file),
+                report_file=report_file
             ),
             name="annotation_graphs",
+            report_files=[report_file],
             removable_files=output_files
         )]
-
-    def gq_seq_utils_report(self):
-        """
-        Generate the standard report. A summary html report is automatically generated by the pipeline.
-        This report contains description of the sequencing experiment as well as a detailed presentation
-        of the pipeline steps and results. Various Quality Control (QC) summary statistics are included
-        in the report and additional QC analysis is accessible for download directly through the report.
-        The report includes also the main references of the software and methods used during the analysis,
-        together with the full list of parameters passed to the pipeline main script.
-        """
-
-        job = gq_seq_utils.report(
-            [config_file.name for config_file in self.args.config],
-            self.output_dir,
-            "CHIPseq",
-            self.output_dir
-        )
-
-        # Mammouth compute nodes don't have 'convert' command by default. ImageMagick module must be loaded explicitely
-        if config.param('gq_seq_utils_report', 'module_imagemagick', required=False):
-            job.modules.append(config.param('gq_seq_utils_report', 'module_imagemagick', required=False))
-
-        job.input_files = \
-            [os.path.join("graphs", sample.name + "_QC_Metrics.ps") for sample in self.samples] + \
-            [os.path.join("annotation", contrast.real_name, contrast.real_name + ".annotated.csv") for contrast in self.contrasts if contrast.type == 'narrow'] + \
-            [os.path.join("annotation", contrast.real_name, contrast.real_name, "GenomeOntology.html") for contrast in self.contrasts if contrast.type == 'narrow'] + \
-            [os.path.join("annotation", contrast.real_name, contrast.real_name, "geneOntology.html") for contrast in self.contrasts if contrast.type == 'narrow'] + \
-            [os.path.join("annotation", contrast.real_name, contrast.real_name, "homerResults.html") for contrast in self.contrasts if contrast.type == 'narrow'] + \
-            [os.path.join("annotation", contrast.real_name, contrast.real_name, "knownResults.html") for contrast in self.contrasts if contrast.type == 'narrow'] + \
-            [os.path.join("graphs", contrast.real_name + "_Misc_Graphs.ps") for contrast in self.contrasts] + \
-            [os.path.join("annotation", "peak_stats.csv")] if [contrast for contrast in self.contrasts if contrast.type == 'narrow'] else []
-        job.name = "gq_seq_utils_report"
-        job.removable_files = [os.path.join("graphs", sample.name + "_QC_Metrics.png") for sample in self.samples] + \
-            [os.path.join("graphs", contrast.real_name + "_Misc_Graphs.png") for contrast in self.contrasts] + \
-            [os.path.join("graphs", contrast.real_name + "_Misc_Graphs.pdf") for contrast in self.contrasts]
-        return [job]
 
     @property
     def steps(self):
@@ -678,8 +706,7 @@ Rscript $R_TOOLS/chipSeqgenerateAnnotationGraphs.R \\
             self.macs2_callpeak,
             self.homer_annotate_peaks,
             self.homer_find_motifs_genome,
-            self.annotation_graphs,
-            self.gq_seq_utils_report
+            self.annotation_graphs
         ]
 
 if __name__ == '__main__': 
