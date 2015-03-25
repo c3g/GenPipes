@@ -1,4 +1,4 @@
-### Trimming and Alignment Metrics per Sample
+### Sequencing and Alignment Metrics per Sample
 
 General summary statistics are provided per sample. Sample readsets are merged for clarity.
 

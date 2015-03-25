@@ -199,12 +199,14 @@ cp \\
         jobs = []
         jobs.append(concat_jobs([samtools.flagstat(os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam"), os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam.flagstat")) for sample in self.samples], name="metrics.flagstat"))
 
-        metrics_file = os.path.join("metrics", "trimMemSampleTable.tsv")
+        trim_metrics_file = os.path.join("metrics", "trimSampleTable.tsv")
+        metrics_file = os.path.join("metrics", "SampleMetrics.stats")
+        report_metrics_file = os.path.join("report", "trimMemSampleTable.tsv")
         report_file = os.path.join("report", "ChipSeq.metrics.md")
         jobs.append(
             Job(
-                [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam.flagstat") for sample in self.samples] + [os.path.join("metrics", "trimSampleTable.tsv")],
-                [metrics_file],
+                [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam.flagstat") for sample in self.samples],
+                [report_metrics_file],
                 [['metrics', 'module_pandoc']],
                 # Retrieve number of aligned and duplicate reads from sample flagstat files
                 # Merge trimming stats per sample with aligned and duplicate stats using ugly awk
@@ -215,24 +217,33 @@ do
   flagstat_file=alignment/$sample/$sample.sorted.dup.bam.flagstat
   echo -e "$sample\t`grep -P '^\d+ \+ \d+ mapped' $flagstat_file | grep -Po '^\d+'`\t`grep -P '^\d+ \+ \d+ duplicate' $flagstat_file | grep -Po '^\d+'`"
 done | \\
-awk -F"\t" '{{OFS="\t"; print $0, $3 / $2 * 100}}' | sed '1iSample\tAligned Filtered Reads\tDuplicate Reads\tDuplicate %' | awk -F "\t" 'FNR==NR{{trim_line[$1]=$0; surviving[$1]=$3; next}}{{OFS="\t"; if ($1=="Sample") {{print trim_line[$1], $2, "Aligned Filtered %", $3, $4}} else {{print trim_line[$1], $2, $2 / surviving[$1] * 100, $3, $4}}}}' metrics/trimSampleTable.tsv - \\
+awk -F"\t" '{{OFS="\t"; print $0, $3 / $2 * 100}}' | sed '1iSample\tAligned Filtered Reads\tDuplicate Reads\tDuplicate %' \\
   > {metrics_file} && \\
 mkdir -p report && \\
-cp {metrics_file} report/ && \\
+if [[ -f {trim_metrics_file} ]]
+then
+  awk -F "\t" 'FNR==NR{{trim_line[$1]=$0; surviving[$1]=$3; next}}{{OFS="\t"; if ($1=="Sample") {{print trim_line[$1], $2, "Aligned Filtered %", $3, $4}} else {{print trim_line[$1], $2, $2 / surviving[$1] * 100, $3, $4}}}}' {trim_metrics_file} {metrics_file} \\
+  > {report_metrics_file}
+else
+  cp {metrics_file} {report_metrics_file}
+fi && \\
+trim_mem_sample_table=`if [[ -f {trim_metrics_file} ]] ; then LC_NUMERIC=fr_FR awk -F "\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----:|-----:|-----:|-----:|-----:|-----:|-----:"}} else {{print $1, sprintf("%\\47d", $2), sprintf("%\\47d", $3), sprintf("%.1f", $4), sprintf("%\\47d", $5), sprintf("%.1f", $6), sprintf("%\\47d", $7), sprintf("%.1f", $8)}}}}' {report_metrics_file} ; else LC_NUMERIC=fr_FR awk -F "\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----:|-----:|-----:"}} else {{print $1, sprintf("%\\47d", $2), sprintf("%\\47d", $3), sprintf("%.1f", $4)}}}}' {report_metrics_file} ; fi` && \\
 pandoc --to=markdown \\
   --template {report_template_dir}/{basename_report_file} \\
-  --variable trim_mem_sample_table="`LC_NUMERIC=fr_FR awk -F "\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----:|-----:|-----:|-----:|-----:|-----:|-----:"}} else {{print $1, sprintf("%\\47d", $2), sprintf("%\\47d", $3), sprintf("%.1f", $4), sprintf("%\\47d", $5), sprintf("%.1f", $6), sprintf("%\\47d", $7), sprintf("%.1f", $8)}}}}' {metrics_file}`" \\
+  --variable trim_mem_sample_table="$trim_mem_sample_table" \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}
 """.format(
                     samples=" ".join([sample.name for sample in self.samples]),
+                    trim_metrics_file=trim_metrics_file,
                     metrics_file=metrics_file,
+                    report_metrics_file=report_metrics_file,
                     report_template_dir=self.report_template_dir,
                     basename_report_file=os.path.basename(report_file),
                     report_file=report_file
                 ),
                 name="metrics.report",
-                removable_files=[metrics_file],
+                removable_files=[report_metrics_file],
                 report_files=[report_file]
             )
         )
