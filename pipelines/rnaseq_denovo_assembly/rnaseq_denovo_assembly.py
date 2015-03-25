@@ -378,7 +378,7 @@ parallelBlast.pl \\
                             db=db
                         )
                     )
-                ], name="blastx_trinity_" + os.path.basename(db) + ".chunk_{:07d}".format(i)))
+                ], name="blastx_trinity_uniprot." + os.path.basename(db) + ".chunk_{:07d}".format(i)))
 
         return jobs
 
