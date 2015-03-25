@@ -349,7 +349,8 @@ pandoc --to=markdown \\
         swissprot_db = config.param("blastx_trinity_uniprot", "swissprot_db", type='prefixpath')
         uniref_db = config.param("blastx_trinity_uniprot", "uniref_db", type='prefixpath')
 
-        for db in swissprot_db, uniref_db:
+        # (Removed blast on uniref_db since it's too long)
+        for db in [swissprot_db]:
             if not glob.glob(db + ".*phr"):
                 raise Exception("Error: " + db + " BLAST db files do not exist!")
 
@@ -394,7 +395,8 @@ parallelBlast.pl \\
         swissprot_db = config.param("blastx_trinity_uniprot", "swissprot_db", type='prefixpath')
         uniref_db = config.param("blastx_trinity_uniprot", "uniref_db", type='prefixpath')
 
-        for db in swissprot_db, uniref_db:
+        # (Removed blast on uniref_db since it's too long)
+        for db in [swissprot_db]:
             blast_chunks = [os.path.join(blast_prefix + os.path.basename(db) + "_chunk_{:07d}.tsv".format(i)) for i in range(num_fasta_chunks)]
             blast_result = os.path.join(blast_prefix + os.path.basename(db) + ".tsv")
             jobs.append(concat_jobs([
@@ -629,10 +631,8 @@ tmhmm --short \\
         """
 
         swissprot_db = os.path.basename(config.param("blastx_trinity_uniprot", "swissprot_db", type='prefixpath'))
-        uniref_db = os.path.basename(config.param("blastx_trinity_uniprot", "uniref_db", type='prefixpath'))
         trinity_fasta = os.path.join("trinity_out_dir", "Trinity.fasta")
         swissprot_blastx = os.path.join("blast", "blastx_Trinity_" + swissprot_db + ".tsv")
-        trembl_blastx = os.path.join("blast", "blastx_Trinity_" + uniref_db + ".tsv")
         transdecoder_pep = os.path.join("trinotate", "transdecoder", "Trinity.fasta.transdecoder.pep")
         transdecoder_pfam = os.path.join("trinotate", "transdecoder", "Trinity.fasta.transdecoder.pfam")
         swissprot_blastp = os.path.join("trinotate", "blastp", "blastp_" + os.path.basename(transdecoder_pep) + "_" + swissprot_db + ".tsv")
@@ -647,7 +647,6 @@ tmhmm --short \\
             Job(
                 [trinity_fasta,
                  swissprot_blastx,
-                 trembl_blastx,
                  transdecoder_pep,
                  transdecoder_pfam,
                  swissprot_blastp,
@@ -666,7 +665,6 @@ Trinotate {trinotate_sqlite} init \\
   --transcript {trinity_fasta} \\
   --transdecoder_pep {transdecoder_pep} && \\
 Trinotate {trinotate_sqlite} LOAD_swissprot_blastx {swissprot_blastx} && \\
-Trinotate {trinotate_sqlite} LOAD_trembl_blastx {trembl_blastx} && \\
 Trinotate {trinotate_sqlite} LOAD_swissprot_blastp {swissprot_blastp} && \\
 Trinotate {trinotate_sqlite} LOAD_pfam {transdecoder_pfam} && \\
 Trinotate {trinotate_sqlite} LOAD_tmhmm {tmhmm} && \\
@@ -678,7 +676,6 @@ Trinotate {trinotate_sqlite} report -E {evalue} --pfam_cutoff {pfam_cutoff} | cu
                     trinotate_sqlite=trinotate_sqlite,
                     transdecoder_pep=transdecoder_pep,
                     swissprot_blastx=swissprot_blastx,
-                    trembl_blastx=trembl_blastx,
                     swissprot_blastp=swissprot_blastp,
                     transdecoder_pfam=transdecoder_pfam,
                     tmhmm=tmhmm,
@@ -887,31 +884,33 @@ sed '1s/^transcript_id\tsprot_Top_BLASTX_hit/Transcript\tSymbol/' \\
   > {trinotate_annotation_report}.isoforms""".format(
                     trinotate_annotation_report=trinotate_annotation_report
                 )
+            ),
+            # Merge Trinotate and differential expression files into one CSV
+            Job(
+                [os.path.join("differential_expression", "genes", contrast.name, "dge_results.csv") for contrast in self.contrasts] +
+                [os.path.join("differential_expression", "isoforms", contrast.name, "dge_results.csv") for contrast in self.contrasts] +
+                [trinotate_annotation_report + "." + item for item in "genes","isoforms"],
+                [os.path.join("differential_expression", "genes", contrast.name, "dge_trinotate_results.csv") for contrast in self.contrasts] +
+                [os.path.join("differential_expression", "isoforms", contrast.name, "dge_trinotate_results.csv") for contrast in self.contrasts],
+                command="""\
+for item in gene isoform
+do
+  for contrast in {contrasts}
+  do
+    dge_results=differential_expression/${{item}}s/$contrast/dge_results.csv
+    awk -F "\t" 'FNR == NR {{item[$1] = $0; next}} {{OFS="\t"; print item[$1], $0}}' \\
+      {trinotate_annotation_report}.${{item}}s \\
+      <(sed '1s/^id/${{item^}}/' $dge_results) \\
+      > $dge_results.tmp && \\
+    paste <(cut -f1,2,15- $dge_results.tmp) <(cut -f3-12 $dge_results.tmp) > ${{dge_results/results.csv/trinotate_results.csv}} && \\
+    rm $dge_results.tmp
+  done
+done""".format(
+                    contrasts=" ".join([contrast.name for contrast in self.contrasts]),
+                    trinotate_annotation_report=trinotate_annotation_report
+                )
             )
         ])
-
-        for item in "genes","isoforms":
-            for contrast in self.contrasts:
-                dge_results = os.path.join("differential_expression", item, contrast.name, "dge_results.csv")
-                dge_trinotate_results = re.sub("results\.csv$", "trinotate_results.csv", dge_results)
-                job = concat_jobs([
-                    job,
-                    Job([dge_results, trinotate_annotation_report + "." + item],
-                        [dge_trinotate_results],
-                        command="""\
-awk -F "\t" 'FNR == NR {{item[$1] = $0; next}} {{OFS="\t"; print item[$1], $0}}' \\
-  {trinotate_annotation_report_item} \\
-  <(sed '1s/^id/{item}/' {dge_results}) \\
-  > {dge_results}.tmp && \\
-paste <(cut -f1,2,15- {dge_results}.tmp) <(cut -f3-12 {dge_results}.tmp) > {dge_trinotate_results} && \\
-rm {dge_results}.tmp""".format(
-                            trinotate_annotation_report_item=trinotate_annotation_report + "." + item,
-                            item=item.title()[0:-1],
-                            dge_results=dge_results,
-                            dge_trinotate_results=dge_trinotate_results
-                        )
-                    )
-                ])
 
         genes_matrix = os.path.join("differential_expression", "genes.counts.matrix")
         report_file = os.path.join("report", "RnaSeqDeNovoAssembly.differential_expression.md")
@@ -934,20 +933,20 @@ pandoc \\
   --variable raw_count_matrix_table="`head -7 report/rawCountMatrix.csv | cut -f-8 | awk -F"\t" '{{OFS="\t"; if (NR==1) {{print; gsub(/[^\t]/, "-")}} print}}' | sed 's/|/\\\\\\\\|/g' | sed 's/\t/|/g'`" \\
   --to markdown \\
   > {report_file} && \\
-for design in {designs}
+for contrast in {contrasts}
 do
-  mkdir -p report/DiffExp/$design/
-  echo -e "\\n#### $design Results\\n" >> {report_file}
-  cp differential_expression/genes/$design/dge_trinotate_results.csv report/DiffExp/$design/${{design}}_Genes_DE_results_{swissprot_db}.tsv
-  echo -e "\\nTable: Differential Gene Expression Results (**partial table**; [download full table](DiffExp/$design/${{design}}_Genes_DE_results_{swissprot_db}.tsv))\\n" >> {report_file}
-  head -7 report/DiffExp/$design/${{design}}_Genes_DE_results_{swissprot_db}.tsv | cut -f-8 | sed '2i ---\t---\t---\t---\t---\t---\t---\t---' | sed 's/|/\\\\|/g' | sed 's/\t/|/g' >> {report_file}
+  mkdir -p report/DiffExp/$contrast/
+  echo -e "\\n#### $contrast Results\\n" >> {report_file}
+  cp differential_expression/genes/$contrast/dge_trinotate_results.csv report/DiffExp/$contrast/${{contrast}}_Genes_DE_results_{swissprot_db}.tsv
+  echo -e "\\nTable: Differential Gene Expression Results (**partial table**; [download full table](DiffExp/$contrast/${{contrast}}_Genes_DE_results_{swissprot_db}.tsv))\\n" >> {report_file}
+  head -7 report/DiffExp/$contrast/${{contrast}}_Genes_DE_results_{swissprot_db}.tsv | cut -f-8 | sed '2i ---\t---\t---\t---\t---\t---\t---\t---' | sed 's/|/\\\\|/g' | sed 's/\t/|/g' >> {report_file}
 done""".format(
                     genes_matrix=genes_matrix,
                     design_file=os.path.abspath(self.args.design.name),
                     report_template_dir=self.report_template_dir,
                     basename_report_file=os.path.basename(report_file),
                     report_file=report_file,
-                    designs=" ".join([contrast.name for contrast in self.contrasts]),
+                    contrasts=" ".join([contrast.name for contrast in self.contrasts]),
                     swissprot_db=os.path.basename(config.param("blastx_trinity_uniprot", "swissprot_db", type='prefixpath'))
                 ),
                 report_files=[report_file])

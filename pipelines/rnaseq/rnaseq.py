@@ -794,21 +794,21 @@ pandoc \\
   --variable raw_count_matrix_table="`head -7 report/rawCountMatrix.csv | cut -f-8 | awk -F"\t" '{{OFS="\t"; if (NR==1) {{print; gsub(/[^\t]/, "-")}} print}}' | sed 's/\t/|/g'`" \\
   --to markdown \\
   > {report_file} && \\
-for design in {designs}
+for contrast in {contrasts}
 do
-  mkdir -p report/DiffExp/$design/
-  echo -e "\\n#### $design Results\\n" >> {report_file}
-  cp DGE/$design/dge_results.csv report/DiffExp/$design/${{design}}_Genes_DE_results.tsv
-  echo -e "\\nTable: Differential Gene Expression Results (**partial table**; [download full table](DiffExp/$design/${{design}}_Genes_DE_results.tsv))\\n" >> {report_file}
-  head -7 report/DiffExp/$design/${{design}}_Genes_DE_results.tsv | cut -f-8 | sed '2i ---\t---\t---\t---\t---\t---\t---\t---' | sed 's/\t/|/g' >> {report_file}
-  sed '1s/^tracking_id/test_id/' cuffdiff/$design/isoforms.fpkm_tracking | awk -F"\t" 'FNR==NR{{line[$1]=$0; next}}{{OFS="\t"; print line[$1], $0}}' - cuffdiff/$design/isoform_exp.diff | python -c 'import csv,sys; rows_in = csv.DictReader(sys.stdin, delimiter="\t"); rows_out = csv.DictWriter(sys.stdout, fieldnames=["test_id", "gene_id", "tss_id","nearest_ref_id","class_code","gene","locus","length","log2(fold_change)","test_stat","p_value","q_value"], delimiter="\t", extrasaction="ignore"); rows_out.writeheader(); rows_out.writerows(rows_in)' > report/DiffExp/$design/${{design}}_Transcripts_DE_results.tsv
-  echo -e "\\n---\\n\\nTable: Differential Transcript Expression Results (**partial table**; [download full table](DiffExp/$design/${{design}}_Transcripts_DE_results.tsv))\\n" >> {report_file}
-  head -7 report/DiffExp/$design/${{design}}_Transcripts_DE_results.tsv | cut -f-8 | sed '2i ---\t---\t---\t---\t---\t---\t---\t---' | sed 's/\t/|/g' >> {report_file}
-  if [ `wc -l DGE/$design/gene_ontology_results.csv | cut -f1 -d\ ` -gt 1 ]
+  mkdir -p report/DiffExp/$contrast/
+  echo -e "\\n#### $contrast Results\\n" >> {report_file}
+  cp DGE/$contrast/dge_results.csv report/DiffExp/$contrast/${{contrast}}_Genes_DE_results.tsv
+  echo -e "\\nTable: Differential Gene Expression Results (**partial table**; [download full table](DiffExp/$contrast/${{contrast}}_Genes_DE_results.tsv))\\n" >> {report_file}
+  head -7 report/DiffExp/$contrast/${{contrast}}_Genes_DE_results.tsv | cut -f-8 | sed '2i ---\t---\t---\t---\t---\t---\t---\t---' | sed 's/\t/|/g' >> {report_file}
+  sed '1s/^tracking_id/test_id/' cuffdiff/$contrast/isoforms.fpkm_tracking | awk -F"\t" 'FNR==NR{{line[$1]=$0; next}}{{OFS="\t"; print line[$1], $0}}' - cuffdiff/$contrast/isoform_exp.diff | python -c 'import csv,sys; rows_in = csv.DictReader(sys.stdin, delimiter="\t"); rows_out = csv.DictWriter(sys.stdout, fieldnames=["test_id", "gene_id", "tss_id","nearest_ref_id","class_code","gene","locus","length","log2(fold_change)","test_stat","p_value","q_value"], delimiter="\t", extrasaction="ignore"); rows_out.writeheader(); rows_out.writerows(rows_in)' > report/DiffExp/$contrast/${{contrast}}_Transcripts_DE_results.tsv
+  echo -e "\\n---\\n\\nTable: Differential Transcript Expression Results (**partial table**; [download full table](DiffExp/$contrast/${{contrast}}_Transcripts_DE_results.tsv))\\n" >> {report_file}
+  head -7 report/DiffExp/$contrast/${{contrast}}_Transcripts_DE_results.tsv | cut -f-8 | sed '2i ---\t---\t---\t---\t---\t---\t---\t---' | sed 's/\t/|/g' >> {report_file}
+  if [ `wc -l DGE/$contrast/gene_ontology_results.csv | cut -f1 -d\ ` -gt 1 ]
   then
-    cp DGE/$design/gene_ontology_results.csv report/DiffExp/$design/${{design}}_Genes_GO_results.tsv
-    echo -e "\\n---\\n\\nTable: GO Results of the Differentially Expressed Genes (**partial table**; [download full table](DiffExp/${{design}}/${{design}}_Genes_GO_results.tsv))\\n" >> {report_file}
-    head -7 report/DiffExp/${{design}}/${{design}}_Genes_GO_results.tsv | cut -f-8 | sed '2i ---\t---\t---\t---\t---\t---\t---\t---' | sed 's/\t/|/g' >> {report_file}
+    cp DGE/$contrast/gene_ontology_results.csv report/DiffExp/$contrast/${{contrast}}_Genes_GO_results.tsv
+    echo -e "\\n---\\n\\nTable: GO Results of the Differentially Expressed Genes (**partial table**; [download full table](DiffExp/${{contrast}}/${{contrast}}_Genes_GO_results.tsv))\\n" >> {report_file}
+    head -7 report/DiffExp/${{contrast}}/${{contrast}}_Genes_GO_results.tsv | cut -f-8 | sed '2i ---\t---\t---\t---\t---\t---\t---\t---' | sed 's/\t/|/g' >> {report_file}
   else
     echo -e "\\nNo FDR adjusted GO enrichment was significant (p-value too high) based on the differentially expressed gene results for this design.\\n" >> {report_file}
   fi
@@ -817,7 +817,7 @@ done""".format(
                     report_template_dir=self.report_template_dir,
                     basename_report_file=os.path.basename(report_file),
                     report_file=report_file,
-                    designs=" ".join([contrast.name for contrast in self.contrasts])
+                    contrasts=" ".join([contrast.name for contrast in self.contrasts])
                 ),
                 report_files=[report_file],
                 name="differential_expression_goseq.report")
