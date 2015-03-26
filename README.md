@@ -216,14 +216,14 @@ are identical apart from `chr` sequence prefixes, document it):
 
 * Run `$MUGQIC_PIPELINES_HOME/resources/genomes/<scientific_name>.<assembly>.sh`. It will download and install genomes, indexes and, for Ensembl only, annotations (GTF, VCF, etc.).
 
-    If the genome is big, separate batch jobs will be submitted to the server for bwa, bowtie/tophat, star indexing.
+    If the genome is big, separate batch jobs will be submitted to the cluster for bwa, bowtie/tophat, star indexing.
     Check that jobs are completed OK.
 
 * If the new genome has been installed in `$MUGQIC_INSTALL_HOME_DEV`, to deploy in `$MUGQIC_INSTALL_HOME`:
 
         rsync -va $MUGQIC_INSTALL_HOME_DEV/genomes/species/<scientific_name>.<assembly>/ $MUGQIC_INSTALL_HOME/genomes/species/<scientific_name>.<assembly>/
 
-* Add the newly created INI files to the genome config files for further usage in pipeline command:
+* Add the newly created INI file to the genome config files for further usage in pipeline command:
 
         cp $MUGQIC_INSTALL_HOME/genomes/species/<scientific_name>.<assembly>/<scientific_name>.<assembly>.ini resources/genomes/config/
 
