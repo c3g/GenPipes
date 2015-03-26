@@ -234,15 +234,17 @@ Default software/module installation scripts are already available in `$MUGQIC_P
 
 ##### Install a new Module
 
-New software tools and associated modules can be installed semi-automatically.
+New software tools and associated modules can be installed semi-automatically:
 
 * `cp $MUGQIC_PIPELINES_HOME/resources/modules/MODULE_INSTALL_TEMPLATE.sh $MUGQIC_PIPELINES_HOME/resources/modules/<my_software>.sh`
 
 * Modify `$MUGQIC_PIPELINES_HOME/resources/modules/<my_software>.sh` following the instructions inside.
 
-* Run `$MUGQIC_PIPELINES_HOME/resources/modules/<my_software>.sh` with no arguments. By default, it will download and extract the remote software archive, build the software and create the associated modules, all in $MUGQIC_INSTALL_HOME_DEV` if it is set.
+* Run `$MUGQIC_PIPELINES_HOME/resources/modules/<my_software>.sh` with no arguments. By default, it will download and extract the remote software archive, build the software and create the associated module, all in `$MUGQIC_INSTALL_HOME_DEV` if it is set.
 
-* If everything is OK, to install it in production, run `$MUGQIC_PIPELINES_HOME/resources/modules/<my_software>.sh MUGQIC_INSTALL_HOME` (no `$` before `MUGQIC_INSTALL_HOME`!).
+* If everything is OK, to install it in production, run:
+        $MUGQIC_PIPELINES_HOME/resources/modules/<my_software>.sh MUGQIC_INSTALL_HOME
+(no `$` before `MUGQIC_INSTALL_HOME`!).
 
 * Check if the module is available with: `module avail 2>&1 | grep mugqic/<my_software>/<version>`
 
