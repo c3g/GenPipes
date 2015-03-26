@@ -175,22 +175,25 @@ Example for Chimpanzee:
 
 * Retrieve the assembly name:
 
-Ensembl: "*CHIMP2.1.4*"
+    Ensembl: "*CHIMP2.1.4*"
 
-UCSC: "*panTro4*"
+    UCSC: "*panTro4*"
 
 * Retrieve the source version:
 
-Ensembl: "78"
+    Ensembl: "78"
 
-UCSC: unfortunately, UCSC does not have version numbers. Use [panTro4.2bit](http://hgdownload.soe.ucsc.edu/goldenPath/panTro4/bigZips/) date
+    UCSC: unfortunately, UCSC does not have version numbers. Use [panTro4.2bit](http://hgdownload.soe.ucsc.edu/goldenPath/panTro4/bigZips/) date
 formatted as "YYYY-MM-DD": "2012-01-09"
 
 * `cp $MUGQIC_PIPELINES_HOME/resources/genomes/GENOME_INSTALL_TEMPLATE.sh $MUGQIC_PIPELINES_HOME/resources/genomes/<scientific_name>.<assembly>.sh` e.g.:
 
 Ensembl:
+
     cp $MUGQIC_PIPELINES_HOME/resources/genomes/GENOME_INSTALL_TEMPLATE.sh $MUGQIC_PIPELINES_HOME/resources/genomes/Pan_troglodytes.CHIMP2.1.4.sh
+
 UCSC:
+
     cp $MUGQIC_PIPELINES_HOME/resources/genomes/GENOME_INSTALL_TEMPLATE.sh $MUGQIC_PIPELINES_HOME/resources/genomes/Pan_troglodytes.panTro4.sh
 
 * Modify `$MUGQIC_PIPELINES_HOME/resources/genomes/<scientific_name>.<assembly>.sh` (`ASSEMBLY_SYNONYMS` can be left empty but if you know that 2 assemblies
@@ -222,15 +225,16 @@ VERSION=2012-01-09
 * Run `$MUGQIC_PIPELINES_HOME/resources/genomes/<scientific_name>.<assembly>.sh`. It will download and install genomes, indexes
 and, for Ensembl only, annotations (GTF, VCF, etc.).
 
-If the genome is big, separate batch jobs will be submitted to the server for bwa, bowtie/tophat, star indexing.
-Check that jobs are completed OK.
+    If the genome is big, separate batch jobs will be submitted to the server for bwa, bowtie/tophat, star indexing.
+    Check that jobs are completed OK.
 
 * If the new genome has been installed in `$MUGQIC_INSTALL_HOME_DEV`, to deploy in `$MUGQIC_INSTALL_HOME`:
 
-    rsync -va $MUGQIC_INSTALL_HOME_DEV/genomes/species/<scientific_name>.<assembly>/ $MUGQIC_INSTALL_HOME/genomes/species/<scientific_name>.<assembly>/
+    `rsync -va $MUGQIC_INSTALL_HOME_DEV/genomes/species/<scientific_name>.<assembly>/ $MUGQIC_INSTALL_HOME/genomes/species/<scientific_name>.<assembly>/`
 
 * Add the newly created INI files to the genome config files for further usage in pipeline command:
-    cp $MUGQIC_INSTALL_HOME/genomes/species/<scientific_name>.<assembly>/<scientific_name>.<assembly>.ini resources/genomes/config/
+
+    `cp $MUGQIC_INSTALL_HOME/genomes/species/<scientific_name>.<assembly>/<scientific_name>.<assembly>.ini resources/genomes/config/`
 
 
 #### Modules
