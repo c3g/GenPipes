@@ -171,20 +171,15 @@ copy `GENOME_INSTALL_TEMPLATE.sh` into `<species_scientific_name>.<assembly>.sh`
 
 Example for Chimpanzee:
 
-* Retrieve the species scientific name on [Ensembl](http://useast.ensembl.org/Pan_troglodytes/Info/Index?redirect=no) or [UCSC](http://genome.ucsc.edu/cgi-bin/hgGateway): "*Pan troglodytes*".
+* Retrieve the species scientific name on [Ensembl](http://useast.ensembl.org/Pan_troglodytes/Info/Index?redirect=no) or [UCSC](http://genome.ucsc.edu/cgi-bin/hgGateway): "*Pan troglodytes*"
 
 * Retrieve the assembly name:
-
     Ensembl: "*CHIMP2.1.4*"
-
     UCSC: "*panTro4*"
 
 * Retrieve the source version:
-
     Ensembl: "78"
-
-    UCSC: unfortunately, UCSC does not have version numbers. Use [panTro4.2bit](http://hgdownload.soe.ucsc.edu/goldenPath/panTro4/bigZips/) date
-formatted as "YYYY-MM-DD": "2012-01-09"
+    UCSC: unfortunately, UCSC does not have version numbers. Use [panTro4.2bit](http://hgdownload.soe.ucsc.edu/goldenPath/panTro4/bigZips/) date formatted as "YYYY-MM-DD": "2012-01-09"
 
 * `cp $MUGQIC_PIPELINES_HOME/resources/genomes/GENOME_INSTALL_TEMPLATE.sh $MUGQIC_PIPELINES_HOME/resources/genomes/<scientific_name>.<assembly>.sh` e.g.:
 
@@ -230,11 +225,11 @@ and, for Ensembl only, annotations (GTF, VCF, etc.).
 
 * If the new genome has been installed in `$MUGQIC_INSTALL_HOME_DEV`, to deploy in `$MUGQIC_INSTALL_HOME`:
 
-    `rsync -va $MUGQIC_INSTALL_HOME_DEV/genomes/species/<scientific_name>.<assembly>/ $MUGQIC_INSTALL_HOME/genomes/species/<scientific_name>.<assembly>/`
+    rsync -va $MUGQIC_INSTALL_HOME_DEV/genomes/species/<scientific_name>.<assembly>/ $MUGQIC_INSTALL_HOME/genomes/species/<scientific_name>.<assembly>/
 
 * Add the newly created INI files to the genome config files for further usage in pipeline command:
 
-    `cp $MUGQIC_INSTALL_HOME/genomes/species/<scientific_name>.<assembly>/<scientific_name>.<assembly>.ini resources/genomes/config/`
+    cp $MUGQIC_INSTALL_HOME/genomes/species/<scientific_name>.<assembly>/<scientific_name>.<assembly>.ini resources/genomes/config/
 
 
 #### Modules
