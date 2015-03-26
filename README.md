@@ -243,8 +243,9 @@ New software tools and associated modules can be installed semi-automatically:
 * Run `$MUGQIC_PIPELINES_HOME/resources/modules/<my_software>.sh` with no arguments. By default, it will download and extract the remote software archive, build the software and create the associated module, all in `$MUGQIC_INSTALL_HOME_DEV` if it is set.
 
 * If everything is OK, to install it in production, run:
+
         $MUGQIC_PIPELINES_HOME/resources/modules/<my_software>.sh MUGQIC_INSTALL_HOME
-(no `$` before `MUGQIC_INSTALL_HOME`!).
+    (no `$` before `MUGQIC_INSTALL_HOME`!).
 
 * Check if the module is available with: `module avail 2>&1 | grep mugqic/<my_software>/<version>`
 
