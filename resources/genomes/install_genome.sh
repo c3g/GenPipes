@@ -39,7 +39,7 @@ init_install() {
   echo "in: $INSTALL_DIR"
   echo
 
-  # Create install directory with permissions if necessary
+  # Create install directory if necessary
   if [[ ! -d $INSTALL_DIR ]] ; then mkdir -p $INSTALL_DIR ; fi
 
   # Create subdirectories
@@ -95,14 +95,14 @@ set_urls() {
     BIOMART_GO_ID=go_id
     BIOMART_GO_NAME=name_1006
     BIOMART_GO_DEFINITION=definition_1006
-  
+
     # Before Ensembl release 76, release number was added in genome and ncrna file names
     if [ $VERSION -lt 76 ]
     then
       GENOME_URL=${GENOME_URL/$SPECIES.$ASSEMBLY/$SPECIES.$ASSEMBLY.$VERSION}
       NCRNA_URL=${NCRNA_URL/$SPECIES.$ASSEMBLY/$SPECIES.$ASSEMBLY.$VERSION}
     fi
-  
+
     # Check if a genome primary assembly is available for this species, otherwise use the toplevel assembly
     if ! is_url_valid $GENOME_URL
     then
@@ -123,14 +123,14 @@ set_urls() {
       echo "VCF tabix index not available for $SPECIES"
       VCF_TBI_URL=
     fi
-  
+
   #
   # Ensembl Genomes (non-vertebrate species)
   #
   elif [[ $SOURCE == "EnsemblGenomes" ]]
   then
     RELEASE_URL=ftp://ftp.ensemblgenomes.org/pub/release-$VERSION
-  
+
     # Retrieve Ensembl Genomes species information
     SPECIES_URL=$RELEASE_URL/species.txt
     download_url $SPECIES_URL
@@ -138,7 +138,7 @@ set_urls() {
 
     # Retrieve species division (Bacteria|Fungi|Metazoa|Plants|Protists)
     DIVISION=`echo "$SPECIES_LINE" | cut -f3 | sed "s/^Ensembl//"`
-  
+
     # Escherichia coli bacteria file paths are different
     # Retrieve which bacteria collection it belongs to and adjust paths accordingly
     CORE_DB_PREFIX=`echo "$SPECIES_LINE" | cut -f13 | perl -pe "s/_core_${VERSION}_\d+_\d+//"`
@@ -150,7 +150,7 @@ set_urls() {
       EG_SPECIES=${SPECIES,,}
       EG_BASENAME=$SPECIES.$ASSEMBLY.$VERSION
     fi
-  
+
     URL_PREFIX=$RELEASE_URL/${DIVISION,}
     GENOME_URL=$URL_PREFIX/fasta/$EG_SPECIES/dna/$EG_BASENAME.dna.genome.fa.gz
     NCRNA_URL=$URL_PREFIX/fasta/$EG_SPECIES/ncrna/$EG_BASENAME.ncrna.fa.gz
@@ -181,7 +181,7 @@ set_urls() {
 download_urls() {
   download_url $GENOME_URL
 
-  # Annotations are not downloaded for UCSC genomes
+  # Annotations are not downloaded for UCSC genomes since they have no version number
   if [[ $SOURCE != "UCSC" ]]
   then
     download_url $GTF_URL
@@ -197,7 +197,7 @@ download_urls() {
   fi
 }
 
-# Test genome size to decide whether indexing requires more cores or memory
+# Test genome size to decide whether indexing requires more cores or memory and must be run as a separate job
 is_genome_big() {
   GENOME_SIZE_LIMIT=200000000
 
