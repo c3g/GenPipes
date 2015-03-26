@@ -185,7 +185,7 @@ Example for Chimpanzee:
 
     - Ensembl:
 
-        cp $MUGQIC_PIPELINES_HOME/resources/genomes/GENOME_INSTALL_TEMPLATE.sh $MUGQIC_PIPELINES_HOME/resources/genomes/Pan_troglodytes.CHIMP2.1.4.sh
+            cp $MUGQIC_PIPELINES_HOME/resources/genomes/GENOME_INSTALL_TEMPLATE.sh $MUGQIC_PIPELINES_HOME/resources/genomes/Pan_troglodytes.CHIMP2.1.4.sh
 
     - UCSC:
 
@@ -195,23 +195,22 @@ Example for Chimpanzee:
 are identical apart from `chr` sequence prefixes, document it):
 
     - Ensembl:
-```
-SPECIES=Pan_troglodytes   # With "_"; no space!
-COMMON_NAME=Chimpanzee
-ASSEMBLY=CHIMP2.1.4
-ASSEMBLY_SYNONYMS=panTro4
-SOURCE=Ensembl
-VERSION=78
-```
+
+            SPECIES=Pan_troglodytes   # With "_"; no space!
+            COMMON_NAME=Chimpanzee
+            ASSEMBLY=CHIMP2.1.4
+            ASSEMBLY_SYNONYMS=panTro4
+            SOURCE=Ensembl
+            VERSION=78
+
     - UCSC:
-```
-SPECIES=Pan_troglodytes   # With "_"; no space!
-COMMON_NAME=Chimpanzee
-ASSEMBLY=panTro4
-ASSEMBLY_SYNONYMS=CHIMP2.1.4
-SOURCE=UCSC
-VERSION=2012-01-09
-```
+
+            SPECIES=Pan_troglodytes   # With "_"; no space!
+            COMMON_NAME=Chimpanzee
+            ASSEMBLY=panTro4
+            ASSEMBLY_SYNONYMS=CHIMP2.1.4
+            SOURCE=UCSC
+            VERSION=2012-01-09
 
 * If necessary, update `$MUGQIC_PIPELINES_HOME/resources/genomes/install_genome.sh` with `INSTALL_HOME=$MUGQIC_INSTALL_HOME`
 (otherwise `$MUGQIC_INSTALL_HOME_DEV` will be used by default).
