@@ -110,8 +110,6 @@ module use $MUGQIC_INSTALL_HOME/modulefiles
 Reference genomes and annotations must be installed in `$MUGQIC_INSTALL_HOME/genomes/`.
 Default genome installation scripts are already available in `$MUGQIC_PIPELINES_HOME/resources/genomes/`.
 To install all of them at once, use the script `$MUGQIC_PIPELINES_HOME/resources/genomes/install_all_genomes.sh`.
-To install a new genome and its annotations from [Ensembl](http://www.ensembl.org/) (vertebrate species) or [EnsemblGenomes](http://ensemblgenomes.org/) (other species),
-copy `GENOME_INSTALL_TEMPLATE.sh` into `<species_scientific_name>.<assembly>.sh` and update it.
 
 All species-related files are in:
 `$MUGQIC_INSTALL_HOME/genomes/species/<species_scientific_name>.<assembly>/`
@@ -164,6 +162,68 @@ source=Ensembl
 version=75
 dbsnp_version=142
 ```
+
+##### Install a new Genome
+
+To install a new genome and its annotations from [Ensembl](http://www.ensembl.org/) (vertebrate species),
+[EnsemblGenomes](http://ensemblgenomes.org/) (other species) or [UCSC](http://genome.ucsc.edu/) (genome and indexes only; no annotations),
+copy `GENOME_INSTALL_TEMPLATE.sh` into `<species_scientific_name>.<assembly>.sh` and update it.
+
+Example for Chimpanzee:
+
+* Retrieve the species scientific name on [Ensembl](http://useast.ensembl.org/Pan_troglodytes/Info/Index?redirect=no) or [UCSC](http://genome.ucsc.edu/cgi-bin/hgGateway)
+here: "*Pan troglodytes*".
+
+* Retrieve the assembly name:
+Ensembl: "*CHIMP2.1.4*"
+UCSC: "*panTro4*"
+
+* Retrieve the source version:
+Ensembl: "78"
+UCSC: unfortunately, UCSC does not have version numbers. Use [panTro4.2bit](http://hgdownload.soe.ucsc.edu/goldenPath/panTro4/bigZips/) date
+formatted as "YYYY-MM-DD": "2012-01-09"
+
+* `cp $MUGQIC_PIPELINES_HOME/resources/genomes/GENOME_INSTALL_TEMPLATE.sh $MUGQIC_PIPELINES_HOME/resources/genomes/<scientific_name>.<assembly>.sh` e.g.:
+Ensembl: `cp $MUGQIC_PIPELINES_HOME/resources/genomes/GENOME_INSTALL_TEMPLATE.sh $MUGQIC_PIPELINES_HOME/resources/genomes/Pan_troglodytes.CHIMP2.1.4.sh`
+UCSC: `cp $MUGQIC_PIPELINES_HOME/resources/genomes/GENOME_INSTALL_TEMPLATE.sh $MUGQIC_PIPELINES_HOME/resources/genomes/Pan_troglodytes.panTro4.sh`
+
+* Modify `$MUGQIC_PIPELINES_HOME/resources/genomes/<scientific_name>.<assembly>.sh` (`ASSEMBLY_SYNONYMS` can be left empty but if you know that 2 assemblies
+are identical apart from `chr` sequence prefixes, document it):
+
+Ensembl:
+```
+SPECIES=Pan_troglodytes   # With "_"; no space!
+COMMON_NAME=Chimpanzee
+ASSEMBLY=CHIMP2.1.4
+ASSEMBLY_SYNONYMS=panTro4
+SOURCE=Ensembl
+VERSION=78
+```
+
+UCSC:
+```
+SPECIES=Pan_troglodytes   # With "_"; no space!
+COMMON_NAME=Chimpanzee
+ASSEMBLY=panTro4
+ASSEMBLY_SYNONYMS=CHIMP2.1.4
+SOURCE=UCSC
+VERSION=2012-01-09
+```
+
+* If necessary, update `$MUGQIC_PIPELINES_HOME/resources/genomes/install_genome.sh` with `INSTALL_HOME=$MUGQIC_INSTALL_HOME`
+(otherwise `$MUGQIC_INSTALL_HOME_DEV` will be used by default).
+
+* Run `$MUGQIC_PIPELINES_HOME/resources/genomes/<scientific_name>.<assembly>.sh`. It will download and install genomes, indexes
+and, for Ensembl only, annotations (GTF, VCF, etc.).
+If the genome is big, separate batch jobs will be submitted to the server for bwa, bowtie/tophat, star indexing.
+Check that jobs are completed OK.
+
+* If the new genome has been installed in `$MUGQIC_INSTALL_HOME_DEV`, to deploy in `$MUGQIC_INSTALL_HOME`:
+`rsync -va $MUGQIC_INSTALL_HOME_DEV/genomes/species/<scientific_name>.<assembly>/ $MUGQIC_INSTALL_HOME/genomes/species/<scientific_name>.<assembly>/`
+
+* Add the newly created INI files to the genome config files for further usage in pipeline command:
+`cp $MUGQIC_INSTALL_HOME/genomes/species/<scientific_name>.<assembly>/<scientific_name>.<assembly>.ini resources/genomes/config/`
+
 
 #### Modules
 Software tools and associated modules must be installed in `$MUGQIC_INSTALL_HOME/software/` and `$MUGQIC_INSTALL_HOME/modulefiles/`.
