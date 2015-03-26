@@ -165,9 +165,8 @@ dbsnp_version=142
 
 ##### Install a new Genome
 
-To install a new genome and its annotations from [Ensembl](http://www.ensembl.org/) (vertebrate species),
-[EnsemblGenomes](http://ensemblgenomes.org/) (other species) or [UCSC](http://genome.ucsc.edu/) (genome and indexes only; no annotations),
-copy `GENOME_INSTALL_TEMPLATE.sh` into `<species_scientific_name>.<assembly>.sh` and update it.
+New genomes and annotations can be installed semi-automatically from [Ensembl](http://www.ensembl.org/) (vertebrate species),
+[EnsemblGenomes](http://ensemblgenomes.org/) (other species) or [UCSC](http://genome.ucsc.edu/) (genome and indexes only; no annotations).
 
 Example for Chimpanzee:
 
