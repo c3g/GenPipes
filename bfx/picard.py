@@ -120,14 +120,14 @@ def mark_duplicates(inputs, output, metrics_file):
 
     return Job(
         inputs,
-        [output, re.sub("\.([sb])am$", ".\\1ai", output), output + ".md5", metrics_file],
+        [output, re.sub("\.([sb])am$", ".\\1ai", output), metrics_file],
         [
             ['picard_mark_duplicates', 'module_java'],
             ['picard_mark_duplicates', 'module_picard']
         ],
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/MarkDuplicates.jar \\
-  REMOVE_DUPLICATES=false CREATE_MD5_FILE=true VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true \\
+  REMOVE_DUPLICATES=false VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true \\
   TMP_DIR={tmp_dir} \\
   {inputs} \\
   OUTPUT={output} \\

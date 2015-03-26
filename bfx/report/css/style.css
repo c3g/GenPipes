@@ -1,0 +1,533 @@
+@charset "utf-8";
+/* CSS Document */
+
+body {
+	font-family:Verdana, Arial, Helvetica, sans-serif;
+	background-image:url(../images/background.jpg);
+	background-repeat:repeat-x;
+	background-color:#FFF;
+	margin: 0; /* it's good practice to zero the margin and padding of the body element to account for differing browser defaults */
+	padding: 0;
+	text-align: center; /* this centers the container in IE 5* browsers. The text is then set to the left aligned default in the #container selector */
+	color:#3A4863;
+	font-size:12px;
+	
+}
+.oneColFixCtrHdr #container {
+	width: 884px;  /* using 20px less than a full 800px width allows for browser chrome and avoids a horizontal scroll bar */
+	background: #FFFFFF;
+	margin: 0 auto; /* the auto margins (in conjunction with a width) center the page */
+	padding:0;
+	border: 1px solid #3A4863;
+	text-align: left; /* this overrides the text-align: center on the body element. */
+}
+.oneColFixCtrHdr #header {
+	background: #3A4863; 
+	color:#FFFFFF;
+	height:20px;
+	text-align:right;
+	vertical-align:middle;
+	padding: 10px 20px 0 20px;  /* this padding matches the left alignment of the elements in the divs that appear beneath it. If an image is used in the #header instead of text, you may want to remove the padding. */
+}
+.oneColFixCtrHdr #header h1 {
+	margin: 0; /* zeroing the margin of the last element in the #header div will avoid margin collapse - an unexplainable space between divs. If the div has a border around it, this is not necessary as that also avoids the margin collapse */
+	padding: 10px 0; /* using padding instead of margin will allow you to keep the element away from the edges of the div */
+	
+}
+.oneColFixCtrHdr #mainContent {
+	padding: 0 20px; /* remember that padding is the space inside the div box and margin is the space outside the div box */
+	margin-top:20px;
+	background: #FFFFFF;
+	clear:both;
+}
+
+#mainContent h1{
+	color:#344F7C;
+	font-variant:small-caps;
+	font-size:24px;
+	font-family:Arial, Helvetica, sans-serif;
+	border-bottom:1px solid #95C359;
+	font-weight:normal;
+	margin-top:0;
+}
+
+#mainContent h2{
+	color:#5977B5;
+	font-variant:small-caps;
+	font-size:22px;
+	font-family:Arial, Helvetica, sans-serif;
+	border-bottom:1px solid #95C359;
+	font-weight:normal;
+	margin-bottom:10px;
+
+}
+#mainContent h3{
+	color:#344F7C;
+	font-variant:small-caps;
+	font-size:16px;
+	font-family:Arial, Helvetica, sans-serif;
+	border-bottom:1px solid #ABB9DF;
+	font-weight:bold;
+	margin-top:12px;
+	padding-top:0;
+}
+h4{
+	color:#5977B5;
+	font-weight:bold;
+	font-size:14px;
+	margin-bottom:3px;
+}
+.importantAnnouncement{
+	color:#C33 !important;	
+}
+#mainContent h5{
+	color:#344F7C;
+	font-variant:small-caps;
+	font-size:16px;
+	font-family:Arial, Helvetica, sans-serif;
+	border-bottom:1px solid #95C359;
+	font-weight:bold;
+	margin-bottom:10px;
+}
+h6{
+	color:#344F7C;
+	font-size:14px;
+	font-weight:bold;
+	margin-bottom:2px;
+	margin-top:2px;
+	margin-left:15px;
+}
+#mainContent a{
+ color:#F60;	
+  text-decoration:none;
+}
+#mainContent a:visited{
+ /*color:#87B44C;	*/
+}
+#mainContent a:hover{
+ color:#5E79CB;	
+ text-decoration:underline;
+}
+
+#footer p{
+	padding: 0 10px; /* this padding matches the left alignment of the elements in the divs that appear above it. */
+	background:#3A4863;
+	color:#C8D9F0;
+	font-size:9px;
+	text-align:center;
+}
+#footer p {
+	margin: 0; /* zeroing the margins of the first element in the footer will avoid the possibility of margin collapse - a space between divs */
+	padding: 10px 0; /* padding on this element will create space, just as the the margin would have, without the margin collapse issue */
+}
+#logos{
+	margin:0;
+	padding:0;
+	margin-top:25px;
+	padding-top:10px;
+	border-top:1px solid #6686CA;
+}
+
+#banner{
+	border-top:1px solid #FFF;
+	border:0;
+	margin:0;
+	padding:0;
+	text-align:right;
+	
+}
+img{
+	border:0;
+	padding:0px;
+	margin:0px;
+}
+#mainMenu{
+	background-image:url(images/mainMenuBackground.gif);
+	background-repeat:repeat-x;
+	font-size:14px;
+	font-weight:bold;
+	text-align:center;
+	margin:0;
+	padding:0;
+	#height:33px;
+	height:0px;
+	border-top:3px solid #95C359;
+	border-bottom:1px solid #FFF;
+	
+}
+>html #mainMenu{
+	height:14px;
+}
+#mainMenu ul{
+	list-style-type:none;
+	padding:0;
+	margin:0;
+}
+#mainMenu ul li{
+	display:inline;
+	padding:0;
+	margin:0;
+
+
+}
+#mainMenu ul li.last a{
+	border-right:1px solid #9DC2F6;
+}
+#mainMenu a{
+	float:left;
+	padding:8px;
+	padding-left:15px;
+	padding-right:15px;
+	text-decoration:none;
+	color:white;
+	font-weight:bold;
+	border-right:1px solid #9DC2F6;
+	
+}
+#mainMenu a:hover, #mainMenu ul li:hover, #mainMenu ul li.selected a{
+	color:#FFF;
+	background:#95C359;
+}
+
+#secondaryMenu{
+	background-image:url(images/secondaryMenuBackground.gif);
+	background-repeat:repeat-x;
+	border-top:3px solid #6686CA;
+	border-bottom:1px solid #FFF;
+	font-size:12px;
+	font-weight:bold;
+	text-align:center;
+	margin:0;
+	padding:0;
+	height:26px;
+	
+}
+>html #secondaryMenu{
+	height:14px;
+}
+#secondaryMenu ul{
+	list-style-type:none;
+	padding:0;
+	margin:0;
+}
+#secondaryMenu ul li{
+	display:inline;
+	padding:0;
+	margin:0;
+
+}
+#secondaryMenu ul li.last a{
+	/*border-right:1px solid #DBE9FD;*/
+}
+#secondaryMenu a{
+	float:left;
+	padding:6px;
+	padding-left:10px;
+	padding-right:10px;
+	text-decoration:none;
+	color:#3A4863;
+	font-weight:bold;
+	border-right:1px solid #DBE9FD;
+}
+#secondaryMenu a:hover, #secondaryMenu ul li a:hover, #secondaryMenu ul li.selected a{
+	color:#FFF;
+	background:#6686CA;
+}
+#secondaryMenu ul li.selected a{
+	color:#FFF;
+}
+.utilMenu{
+	padding:0;
+	margin:0;
+	margin-bottom:5px;
+}
+html> .utilMenu{
+	padding:0;
+	margin:0;
+}
+
+.utilMenu a{
+	color:#C8D9F0;
+	font-size:10px;
+	font-family:Arial, Helvetica, sans-serif;
+}
+.utilMenu li{
+	list-style:none;
+	display:inline;
+	padding-right:7px;
+	padding-left:7px;
+
+}
+
+#leftColumnBox{
+	padding:10px;
+	padding-top:0px;
+	float:left;
+	border:1px solid #E3E5E9; 
+	width:250px; 
+	background-color:#F8FBFE;
+	font-size:11px;
+}
+
+#leftColumnBox a{
+	color:#F60;	
+}
+#leftColumnBox a:hover{
+	color:#5E79CB;	
+}
+#leftColumnBox h3{
+	color:#344F7C;
+	font-variant:small-caps;
+	font-size:16px;
+	font-family:Arial, Helvetica, sans-serif;
+	border-bottom:1px solid #ABB9DF;
+	font-weight:bold;
+	margin-top:12px;
+	padding-top:0;
+}
+#leftColumnBox h3.first{
+	margin-top:9px;
+}
+
+#leftColumnBox h4{
+	color:#5977B5;
+	font-size:12px;
+	font-family:Arial, Helvetica, sans-serif;
+	font-weight:bold;
+	margin-top:9px;
+	margin-bottom:5px;
+}
+#leftColumnBox hr{
+	color:#ABB9DF;
+	border-bottom-style:solid;
+	border:0;
+	border-top:1px solid #ABB9DF;
+}
+#leftColumnBox p{
+	font-size:11px;	
+	margin-top:0;
+	text-align:left;
+}
+div.leftContentBlock{
+	padding-left:2px;
+	padding-right:2px;
+}
+div.leftContentBlock ul{
+	font-size:11px;	
+	padding-left:25px;
+}
+div.leftContentBlock ul li{
+	padding:2px;
+}
+
+#rightColumnBox{
+	margin-left:25px;
+	float:left;
+	width:540px;
+}
+
+.listBox{
+	float:left;
+	width:250px;
+	padding-right:10px;
+	padding-left:10px;
+}
+
+.listBox h4{
+	background-color:#B0D384;
+	color:#506AB0;
+	font-variant:small-caps;
+	font-size:14px;
+	font-family:Arial, Helvetica, sans-serif;
+	font-weight:bold;
+	padding-left:10px;
+	padding-top:2px;
+	padding-bottom:2px;	
+	margin-bottom:2px;
+}
+.listBox h4 a:hover, .listBox h4 a:active{
+	color:#FFFFFF !important;
+}
+.listBox h4 a {
+	color:#506AB0 !important;
+}
+.listBox ul{
+	list-style-type:square;
+	padding-left:20px;
+	margin-top:10px;
+
+}
+.listBox ul li{
+	list-style-type:square;
+	padding:2px;
+}
+.listBox ul li a{
+	color:#5E79CB !important;
+}
+.listBox ul li a:visited{
+	/*color:#87B44C !important;	*/
+}
+.listBox ul li a:hover{
+	color:#F60 !important;
+}
+
+p{
+	text-align:justify;	
+	padding-left:10px;
+	padding-right:10px;
+}
+
+ul{
+	list-style-type:square;
+	margin:0;
+	margin-left:5px;
+	padding-left:25px;
+}
+li{
+	padding:4px;
+}
+table.publications{
+	border:1px solid #ABB9DF;
+	background-color:#ABB9DF;
+}
+table.publications th{
+	font-size:12px;
+	color:#3A4863;
+	vertical-align:top;
+}
+table.publications td{
+	font-size:11px;
+	vertical-align:top;
+}
+.oddRow{
+	background-color:#FFF;
+}
+.evenRow{
+	background-color:#eaeff3;
+}
+td.rowNb{
+	font-size:8px !important;
+	color:#999;
+}
+table.publications tbody tr:hover{
+	background-color:#D5E7FA;
+}
+
+div.contactInfo{
+	text-align:left;	
+}
+form{
+	margin:0;	
+	padding:0;
+}
+fieldset.form{
+	border:1px solid #ABB9DF;
+}
+fieldset.form legend{
+	color:#5977B5;
+	font-size:16px;
+	font-variant:small-caps;
+	font-weight:bold;
+}
+fieldset.form table.th{
+text-align:left;	
+}
+
+a.answerTitle {
+ 	text-decoration:none !important;	
+	font-weight:bold;
+	color:#5E79CB !important;
+}
+a.answerTitle:hover{
+	color:#5E79CB !important;	
+}
+ol.questions li a{
+	color:#5E79CB !important;	
+}
+ol.questions li a:hover{
+	color:#F60 !important;
+}
+
+.back{
+	font-size:10px !important;
+	margin-top:10px;
+	margin-bottom:10px;
+	text-align:right;
+}
+div.back a{
+	background-image:url(images/bulletFlecheBas2.gif);
+	background-repeat:no-repeat;
+	padding-left:10px;
+	font-weight:normal !important;	
+	color:#F60 !important;
+}
+.back a:hover{
+	color:#F60 !important;
+	text-decoration:underline !important;	
+}
+div.back a:visited{
+	font-weight:normal !important;	
+	color:#F60 !important;
+}
+table.rendezVous{
+	vertical-align:top;	
+}
+
+table.rendezVous td, table.rendezVous th{
+	vertical-align:top;	
+}
+.listBox span.newItem{
+	font-size:10px;
+	font-variant:small-caps;
+	color:#F60;
+	font-weight:bold;	
+}
+
+.newItem{
+	font-size:10px;
+	font-variant:small-caps;
+	color:#5977B5;
+	font-weight:bold;	
+}
+hr{
+	color:#ABB9DF;
+	border-style:solid;
+}
+table.footer{
+	font-size:12px;	
+	border:0;
+}
+table.footer th, table.footer td{
+	font-size:12px;	
+	border:0;
+}
+table{
+	border:1px solid #ABB9DF;
+	font-size:12px;
+	border-collapse:collapse;
+}
+table thead tr.header{
+	background-color:#5E79CB;
+	color:#FFF;	
+}
+table tr.subHeader, td.subHeader{
+	background-color:#E7EFF7;
+}
+table td, table th{
+	vertical-align:top;
+	border:1px solid #ABB9DF;
+	padding:2px;
+}
+div.projectBlock{
+	display:none;
+	border-bottom:1px solid #ccc;
+	border-top:1px solid #ccc;
+	margin:3px;
+}
+a.projectName{
+	color:#5E79CB !important;
+	font-size:14px;
+}
+a.projectName:hover{
+
+}

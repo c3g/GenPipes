@@ -384,6 +384,85 @@ END
 
         return jobs
 
+    def pacbio_tools_assembly_stats(self):
+
+        jobs = []
+
+        for sample in self.samples:
+            for coverage_cutoff in config.param('DEFAULT', 'coverage_cutoff', type='list'):
+                cutoff_x = coverage_cutoff + "X"
+                coverage_directory = os.path.join(sample.name, cutoff_x)
+                preassembly_directory = os.path.join(coverage_directory, "preassembly", "data")
+
+                for mer_size in config.param('DEFAULT', 'mer_sizes', type='list'):
+                    mer_size_text = "merSize" + mer_size
+                    sample_cutoff_mer_size = "_".join([sample.name, cutoff_x, mer_size_text])
+                    mer_size_directory = os.path.join(coverage_directory, mer_size_text)
+                    blast_directory = os.path.join(mer_size_directory, "blast")
+                    mummer_file_prefix = os.path.join(mer_size_directory, "mummer", sample.name + ".")
+                    report_directory = os.path.join(mer_size_directory, "report")
+
+                    polishing_rounds = config.param('DEFAULT', 'polishing_rounds', type='posint')
+                    fasta_consensus = os.path.join(mer_size_directory, "polishing" + str(polishing_rounds), "data", "consensus.fasta")
+                    # Number of unique run-smartcells per sample
+                    smartcells = len(set([(readset.run, readset.smartcell) for readset in sample.readsets]))
+
+                    jobs.append(concat_jobs([
+                        Job(command="mkdir -p " + report_directory),
+                        # Generate table(s) and figures
+                        pacbio_tools.assembly_stats(
+                            os.path.join(preassembly_directory, "filtered_shortreads.fa"),
+                            os.path.join(preassembly_directory, "filtered_longreads.fa"),
+                            os.path.join(preassembly_directory, "corrected.fasta"),
+                            os.path.join(sample.name, "filtering", "data", "filtered_summary.csv"),
+                            fasta_consensus,
+                            sample.name,
+                            cutoff_x + "_" + mer_size,
+                            sample.readsets[0].estimated_genome_size,
+                            smartcells,
+                            report_directory
+                        )
+                    ], name="pacbio_tools_assembly_stats." + sample_cutoff_mer_size))
+
+                    report_file = os.path.join(report_directory, "PacBioAssembly.pacbio_tools_assembly_stats.md")
+                    jobs.append(
+                        Job(
+                            [
+                                os.path.join(report_directory, "summaryTableReads.tsv"),
+                                os.path.join(report_directory, "summaryTableReads2.tsv"),
+                                os.path.join(report_directory, "summaryTableAssembly.tsv"),
+                                os.path.join(report_directory, "pacBioGraph_readLengthScore.pdf"),
+                                os.path.join(report_directory, "pacBioGraph_readLengthScore.jpeg"),
+                                os.path.join(report_directory, "pacBioGraph_histoReadLength.pdf"),
+                                os.path.join(report_directory, "pacBioGraph_histoReadLength.jpeg"),
+                                fasta_consensus + ".gz"
+                            ],
+                            [report_file],
+                            [['pacbio_tools_assembly_stats', 'module_pandoc']],
+                            command="""\
+cp {fasta_consensus}.gz {report_directory}/ && \\
+summary_table_reads2=`LC_NUMERIC=fr_FR awk -F "\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:"}} else {{print $1, sprintf("%\\47d", $2), sprintf("%\\47d", $3), sprintf("%\\47d", $4), sprintf("%\\47d", $5), sprintf("%\\47d", $6), sprintf("%\\47d", $7), sprintf("%\\47d", $8), sprintf("%\\47d", $9), sprintf("%\\47d", $10), sprintf("%\\47d", $11)}}}}' {report_directory}/summaryTableReads2.tsv | sed 's/^#//'` && \\
+summary_table_assembly=`awk -F"\t" '{{OFS="\t"; if (NR==1) {{print; gsub(/[^\t]/, "-")}} print}}' {report_directory}/summaryTableAssembly.tsv | sed 's/"//g' | sed 's/\t/|/g'` && \\
+pandoc --to=markdown \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable summary_table_reads2="$summary_table_reads2" \\
+  --variable summary_table_assembly="$summary_table_assembly" \\
+  --variable smartcells="{smartcells}" \\
+  {report_template_dir}/{basename_report_file} \\
+  > {report_file}""".format(
+                                fasta_consensus=fasta_consensus,
+                                report_directory=report_directory,
+                                smartcells=smartcells,
+                                report_template_dir=self.report_template_dir,
+                                basename_report_file=os.path.basename(report_file),
+                                report_file=report_file
+                            ),
+                            report_files=[os.path.relpath(report_file, mer_size_directory)],
+                            name="pacbio_tools_assembly_stats.report")
+                    )
+
+        return jobs
+
     def blast(self):
         """
         Blast polished assembly against nr using dc-megablast.
@@ -431,6 +510,32 @@ END
                     job.name = "blast_blastdbcmd." + sample_cutoff_mer_size
                     jobs.append(job)
 
+                    report_directory = os.path.join(mer_size_directory, "report")
+                    report_file = os.path.join(report_directory, "PacBioAssembly.blast.md")
+                    jobs.append(
+                        Job(
+                            [os.path.join(blast_directory, "blastCov.tsv"), os.path.join(blast_directory, "contigsCoverage.tsv")],
+                            [report_file],
+                            [['blast', 'module_pandoc']],
+                            command="""\
+cp {blast_directory}/blastCov.tsv {report_directory}/ && \\
+cp {blast_directory}/contigsCoverage.tsv {report_directory}/ && \\
+blast_table=`awk -F"\t" '{{OFS="\t"; if (NR==1) {{print; gsub(/[^\t]/, "-")}} print}}' {report_directory}/blastCov.tsv | sed 's/|/\\\\\\\\|/g' | sed 's/\t/|/g' | head -21` && \\
+pandoc --to=markdown \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable blast_table="$blast_table" \\
+  {report_template_dir}/{basename_report_file} \\
+  > {report_file}""".format(
+                                blast_directory=blast_directory,
+                                report_directory=report_directory,
+                                report_template_dir=self.report_template_dir,
+                                basename_report_file=os.path.basename(report_file),
+                                report_file=report_file
+                            ),
+                            report_files=[os.path.relpath(report_file, mer_size_directory)],
+                            name="blast.report")
+                    )
+
         return jobs
 
     def mummer(self):
@@ -444,7 +549,6 @@ END
             for coverage_cutoff in config.param('DEFAULT', 'coverage_cutoff', type='list'):
                 cutoff_x = coverage_cutoff + "X"
                 coverage_directory = os.path.join(sample.name, cutoff_x)
-                preassembly_directory = os.path.join(coverage_directory, "preassembly", "data")
 
                 for mer_size in config.param('DEFAULT', 'mer_sizes', type='list'):
                     mer_size_text = "merSize" + mer_size
@@ -487,71 +591,30 @@ END
                         )
                     ], name="mummer_self." + sample_cutoff_mer_size_nucmer))
 
-        return jobs
-
-    def gq_seq_utils_report(self):
-        """
-        Generates summary tables and generates MUGQIC style nozzle report.
-        """
-
-        jobs = []
-
-        for sample in self.samples:
-            for coverage_cutoff in config.param('DEFAULT', 'coverage_cutoff', type='list'):
-                cutoff_x = coverage_cutoff + "X"
-                coverage_directory = os.path.join(sample.name, cutoff_x)
-                preassembly_directory = os.path.join(coverage_directory, "preassembly", "data")
-
-                for mer_size in config.param('DEFAULT', 'mer_sizes', type='list'):
-                    mer_size_text = "merSize" + mer_size
-                    sample_cutoff_mer_size = "_".join([sample.name, cutoff_x, mer_size_text])
-                    mer_size_directory = os.path.join(coverage_directory, mer_size_text)
-                    blast_directory = os.path.join(mer_size_directory, "blast")
-                    mummer_file_prefix = os.path.join(mer_size_directory, "mummer", sample.name + ".")
                     report_directory = os.path.join(mer_size_directory, "report")
-
-                    polishing_rounds = config.param('DEFAULT', 'polishing_rounds', type='posint')
-                    fasta_consensus = os.path.join(mer_size_directory, "polishing" + str(polishing_rounds), "data", "consensus.fasta")
-                    jobs.append(concat_jobs([
-                        Job(command="mkdir -p " + report_directory),
-                        # Generate table(s) and figures
-                        pacbio_tools.assembly_stats(
-                            os.path.join(preassembly_directory, "filtered_shortreads.fa"),
-                            os.path.join(preassembly_directory, "filtered_longreads.fa"),
-                            os.path.join(preassembly_directory, "corrected.fasta"),
-                            os.path.join(sample.name, "filtering", "data", "filtered_summary.csv"),
-                            fasta_consensus,
-                            sample.name,
-                            cutoff_x + "_" + mer_size,
-                            sample.readsets[0].estimated_genome_size,
-                            # Number of unique smartcells per sample
-                            len(set([readset.smartcell for readset in sample.readsets])),
-                            report_directory
-                        )
-                    ], name="pacbio_tools_assembly_stats." + sample_cutoff_mer_size))
-
-                    job = gq_seq_utils.report(
-                        [config_file.name for config_file in self.args.config],
-                        mer_size_directory,
-                        "PacBioAssembly",
-                        mer_size_directory
+                    report_file = os.path.join(report_directory, "PacBioAssembly.mummer.md")
+                    jobs.append(
+                        Job(
+                            [mummer_file_prefix + "nucmer.self.delta.png", mummer_file_prefix + "nucmer.delta.png"],
+                            [report_file],
+                            [['mummer', 'module_pandoc']],
+                            command="""\
+cp {mummer_file_prefix}nucmer.self.delta.png {mummer_file_prefix}nucmer.delta.png {report_directory}/ && \\
+pandoc --to=markdown \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable sample="{sample}" \\
+  {report_template_dir}/{basename_report_file} \\
+  > {report_file}""".format(
+                                mummer_file_prefix=mummer_file_prefix,
+                                sample=sample.name,
+                                report_directory=report_directory,
+                                report_template_dir=self.report_template_dir,
+                                basename_report_file=os.path.basename(report_file),
+                                report_file=report_file
+                            ),
+                            report_files=[os.path.relpath(report_file, mer_size_directory)],
+                            name="mummer.report")
                     )
-                    # Job input files must be defined here since only project directory is given to gq_seq_utils.report
-                    job.input_files = [
-                        fasta_consensus + ".gz",
-                        os.path.join(blast_directory, "blastCov.tsv"),
-                        os.path.join(blast_directory, "contigsCoverage.tsv"),
-                        os.path.join(mummer_file_prefix + "nucmer.delta.png"),
-                        os.path.join(mummer_file_prefix + "dnadiff.delta.snpflank"),
-                        os.path.join(mummer_file_prefix + "nucmer.self.delta.png"),
-                        os.path.join(report_directory, "summaryTableAssembly.tsv"),
-                        os.path.join(report_directory, "summaryTableReads.tsv"),
-                        os.path.join(report_directory, "summaryTableReads2.tsv")
-                    ]
-
-                    job.name = "gq_seq_utils_report." + sample.name
-                    jobs.append(job)
-
 
         return jobs
 
@@ -588,6 +651,21 @@ END
 
         return jobs
 
+    def report_jobs(self):
+        """
+        Overwrite core pipeline report_jobs method to perform it on every sample/coverage_cutoff/mer_size
+        """
+        for sample in self.samples:
+            for coverage_cutoff in config.param('DEFAULT', 'coverage_cutoff', type='list'):
+                cutoff_x = coverage_cutoff + "X"
+                coverage_directory = os.path.join(sample.name, cutoff_x)
+
+                for mer_size in config.param('DEFAULT', 'mer_sizes', type='list'):
+                    mer_size_text = "merSize" + mer_size
+                    mer_size_directory = os.path.join(coverage_directory, mer_size_text)
+
+                    super(PacBioAssembly, self).report_jobs(os.path.join(self.output_dir, mer_size_directory))
+
     @property
     def steps(self):
         return [
@@ -596,9 +674,9 @@ END
             self.preassembly,
             self.assembly,
             self.polishing,
+            self.pacbio_tools_assembly_stats,
             self.blast,
             self.mummer,
-            self.gq_seq_utils_report,
             self.compile
         ]
 

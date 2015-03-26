@@ -91,8 +91,13 @@ Usage
             else:
                 self.argparser.error("argument -s/--steps is required!")
 
+            # For job reporting, all jobs must be created first, no matter whether they are up to date or not
+            if self.args.report:
+                self._force_jobs = True
+                self.create_jobs()
+                self.report_jobs()
             # For job cleaning, all jobs must be created first, no matter whether they are up to date or not
-            if self.args.clean:
+            elif self.args.clean:
                 self._force_jobs = True
                 self.create_jobs()
                 self.clean_jobs()
@@ -123,6 +128,7 @@ Steps:
             self._argparser.add_argument("-o", "--output-dir", help="output directory (default: current)", default=os.getcwd())
             self._argparser.add_argument("-j", "--job-scheduler", help="job scheduler type (default: pbs)", choices=["pbs", "batch"], default="pbs")
             self._argparser.add_argument("-f", "--force", help="force creation of jobs even if up to date (default: false)", action="store_true")
+            self._argparser.add_argument("--report", help="create 'pandoc' command to merge all markdown report files in the given step range into HTML, if they exists; if --report is set, --job-scheduler, --force, --clean options and job up-to-date status are ignored (default: false)", action="store_true")
             self._argparser.add_argument("--clean", help="create 'rm' commands for all job removable files in the given step range, if they exists; if --clean is set, --job-scheduler, --force options and job up-to-date status are ignored (default: false)", action="store_true")
             self._argparser.add_argument("-l", "--log", help="log level (default: info)", choices=["debug", "info", "warning", "error", "critical"], default="info")
 
@@ -140,6 +146,10 @@ Steps:
     @property
     def output_dir(self):
         return self._output_dir
+
+    @property
+    def report_template_dir(self):
+        return os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))), "bfx", "report")
 
     @property
     def scheduler(self):
@@ -254,6 +264,60 @@ Steps:
 
     def submit_jobs(self):
         self.scheduler.submit(self)
+
+    def report_jobs(self, output_dir=None):
+        if not output_dir:
+            output_dir = self.output_dir  # Default to pipeline output directory
+        report_files = []
+        for job in self.jobs:
+            # Retrieve absolute paths of report files
+            for report_file in job.report_files:
+                if os.path.exists(os.path.join(output_dir, report_file)):
+                    report_files.append(report_file)
+                else:
+                    log.warn("Report file: " + report_file + " not found!... skipping")
+        if report_files:
+            # Copy images and other HTML dependencies into report directory
+            # Print pandoc command with all markdown report files and config/references sections at the end
+            print("""\
+#!/bin/bash
+# Exit immediately on error
+set -eu -o pipefail
+
+module load {module_pandoc}
+cd {output_dir}
+mkdir -p report
+cp -r \\
+  {self.report_template_dir}/css/ \\
+  {self.report_template_dir}/images/ \\
+  {self.report_template_dir}/_js/ \\
+  {self.report_template_dir}/config_and_references.md \\
+  report/
+cp {config_file} report/config.ini
+pandoc \\
+  --toc \\
+  --toc-depth=6 \\
+  --template={self.report_template_dir}/template.html \\
+  --css=css/style.css \\
+  --variable title="{title}" \\
+  --filter pandoc-citeproc \\
+  <(pandoc --to=markdown \\
+    --template {introduction} \\
+    --variable date="{date}" \\
+    {introduction} \\
+  ) \\
+  {report_files} \\
+  report/config_and_references.md \\
+  --output report/index.html""".format(
+                module_pandoc=config.param('report', 'module_pandoc'),
+                output_dir=output_dir,
+                config_file=config.filepath,
+                self=self,
+                title=config.param('report', 'title'),
+                introduction=os.path.join(self.report_template_dir, self.__class__.__name__ + '.introduction.md'),
+                date=datetime.datetime.now().strftime("%Y-%m-%d"),
+                report_files=" \\\n  ".join(report_files)
+            ))
 
     def clean_jobs(self):
         abspath_removable_files = []

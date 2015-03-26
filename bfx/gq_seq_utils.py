@@ -11,7 +11,7 @@ def exploratory_analysis_rnaseq(htseq_count_file, cuffnorm_dir, genes_file, outp
 
     return Job(
         [htseq_count_file, os.path.join(cuffnorm_dir, "isoforms.fpkm_table"), os.path.join(cuffnorm_dir, "isoforms.attr_table")],
-        [os.path.join(output_dir, "top_sd_heatmap_cufflinks_logFPKMs.pdf")],
+        [os.path.join(output_dir, "index.tsv"), os.path.join(output_dir, "top_sd_heatmap_cufflinks_logFPKMs.pdf")],
         [
             ['gq_seq_utils_exploratory_analysis_rnaseq', 'module_R'],
             ['gq_seq_utils_exploratory_analysis_rnaseq', 'module_mugqic_R_packages']
@@ -21,6 +21,8 @@ R --no-save --no-restore <<-EOF
 suppressPackageStartupMessages(library(gqSeqUtils))
 
 exploratoryAnalysisRNAseq(htseq.counts.path="{htseq_count_file}", cuffnorm.fpkms.dir="{cuffnorm_dir}", genes.path="{genes_file}", output.dir="{output_dir}")
+desc = readRDS(file.path("{output_dir}","index.RData"))
+write.table(desc,file=file.path("{output_dir}","index.tsv"),sep='\t',quote=F,col.names=T,row.names=F)
 print("done.")
 
 EOF""".format(
