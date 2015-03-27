@@ -412,7 +412,7 @@ Example:
 
 HTML Analysis Report
 --------------------
-While pipelines are run, some jobs create a partial report in [Markdown](http://daringfireball.net/projects/markdown/) format in
+While pipelines are run, some jobs create a partial analysis report in [Markdown](http://daringfireball.net/projects/markdown/) format in
 `<output_dir>/report/<pipeline_name>.<step_name>.md` e.g. `<output_dir>/report/DnaSeq.bwa_mem_picard_sort_sam.md`.
 
 At any time during the pipeline processing, you can run the same pipeline command and add the option `--report`.
