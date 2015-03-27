@@ -409,6 +409,21 @@ Example:
 
 **Warning for ChIP-Seq pipeline users:** the values '__1__' for control and '__2__' for treatment are reversed compared to the old Perl version.
 
+
+HTML Analysis Report
+--------------------
+While pipelines are run, some jobs create a partial report in [Markdown](http://daringfireball.net/projects/markdown/) format in
+`<output_dir>/report/<pipeline_name>.<step_name>.md` e.g. `<output_dir>/report/DnaSeq.bwa_mem_picard_sort_sam.md`.
+
+At any time during the pipeline processing, you can run the same pipeline command and add the option `--report`.
+This will create a bash script calling the [Pandoc](http://pandoc.org/) converter to aggregate all partial Markdown reports already created into one single HTML document, which you can view in `<output_dir>/report/index.html`.
+
+Thus, if the last pipeline steps fail, you will still get an HTML report containing sections for the first steps only.
+
+The report title value can be overwritten in your copy of `$MUGQIC_PIPELINES_HOME/pipelines/<pipeline_name>/<pipeline_name>.base.ini` in section `[report]`.
+You can also edit the partial Markdown reports before running the pandoc script, to add custom comments in your HTML report.
+
+
 PBS Job Logs
 ------------
 When pipelines are run in PBS (Portable Batch System) job scheduler mode (default), a job list file is created in `<output_dir>/job_output/<PipelineName>_job_list_<timestamp>` and subsequent job log files are placed in `<output_dir>/job_output/<step_name>/<job_name>_<timestamp>.o` e.g.:
