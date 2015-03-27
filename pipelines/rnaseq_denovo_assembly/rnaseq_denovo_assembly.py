@@ -594,7 +594,7 @@ parallelBlast.pl \\
                     db=db
                 )
             )
-        ], name="blastp_transdecoder_" + os.path.basename(db)))
+        ], name="blastp_transdecoder_uniprot." + os.path.basename(db)))
 
         return jobs
 
