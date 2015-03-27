@@ -225,7 +225,7 @@ are identical apart from `chr` sequence prefixes, document it):
 
 * Add the newly created INI file to the genome config files for further usage in pipeline command:
 
-        cp $MUGQIC_INSTALL_HOME/genomes/species/<scientific_name>.<assembly>/<scientific_name>.<assembly>.ini resources/genomes/config/
+        cp $MUGQIC_INSTALL_HOME/genomes/species/<scientific_name>.<assembly>/<scientific_name>.<assembly>.ini $MUGQIC_PIPELINES_HOME/resources/genomes/config/
 
 
 #### Modules
@@ -408,6 +408,21 @@ Example:
     sampleC	0	2
 
 **Warning for ChIP-Seq pipeline users:** the values '__1__' for control and '__2__' for treatment are reversed compared to the old Perl version.
+
+
+HTML Analysis Report
+--------------------
+While pipelines are run, some jobs create a partial analysis report in [Markdown](http://daringfireball.net/projects/markdown/) format in
+`<output_dir>/report/<pipeline_name>.<step_name>.md` e.g. `<output_dir>/report/DnaSeq.bwa_mem_picard_sort_sam.md`.
+
+At any time during the pipeline processing, you can run the same pipeline command and add the option `--report`.
+This will create a bash script calling the [Pandoc](http://pandoc.org/) converter to aggregate all partial Markdown reports already created into one single HTML document, which you can view in `<output_dir>/report/index.html`.
+
+Thus, if the last pipeline steps fail, you will still get an HTML report containing sections for the first steps only.
+
+The report title value can be overwritten in your copy of `$MUGQIC_PIPELINES_HOME/pipelines/<pipeline_name>/<pipeline_name>.base.ini` in section `[report]`.
+You can also edit the partial Markdown reports before running the pandoc script, to add custom comments in your HTML report.
+
 
 PBS Job Logs
 ------------
