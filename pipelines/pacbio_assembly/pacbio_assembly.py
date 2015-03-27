@@ -477,7 +477,7 @@ pandoc --to=markdown \\
                                 report_file=report_file
                             ),
                             report_files=[os.path.relpath(report_file, mer_size_directory)],
-                            name="pacbio_tools_assembly_stats.report")
+                            name="pacbio_tools_assembly_stats." + sample_cutoff_mer_size + ".report")
                     )
 
         return jobs
@@ -552,7 +552,7 @@ pandoc --to=markdown \\
                                 report_file=report_file
                             ),
                             report_files=[os.path.relpath(report_file, mer_size_directory)],
-                            name="blast.report")
+                            name="blast." + sample_cutoff_mer_size + ".report")
                     )
 
         return jobs
@@ -581,7 +581,8 @@ pandoc --to=markdown \\
                         raise Exception("Error: polishing_rounds \"" + str(polishing_rounds) + "\" is invalid (should be between 1 and 4)!")
 
                     fasta_consensus = os.path.join(mer_size_directory, "polishing" + str(polishing_rounds), "data", "consensus.fasta")
-                    sample_cutoff_mer_size_nucmer = "_".join([sample.name, cutoff_x, mer_size_text]) + "-nucmer"
+                    sample_cutoff_mer_size = "_".join([sample.name, cutoff_x, mer_size_text])
+                    sample_cutoff_mer_size_nucmer = sample_cutoff_mer_size + "-nucmer"
 
                     # Run nucmer
                     jobs.append(concat_jobs([
@@ -632,7 +633,7 @@ pandoc --to=markdown \\
                                 report_file=report_file
                             ),
                             report_files=[os.path.relpath(report_file, mer_size_directory)],
-                            name="mummer.report")
+                            name="mummer." + sample_cutoff_mer_size + ".report")
                     )
 
         return jobs
