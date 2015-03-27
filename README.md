@@ -225,7 +225,7 @@ are identical apart from `chr` sequence prefixes, document it):
 
 * Add the newly created INI file to the genome config files for further usage in pipeline command:
 
-        cp $MUGQIC_INSTALL_HOME/genomes/species/<scientific_name>.<assembly>/<scientific_name>.<assembly>.ini resources/genomes/config/
+        cp $MUGQIC_INSTALL_HOME/genomes/species/<scientific_name>.<assembly>/<scientific_name>.<assembly>.ini $MUGQIC_PIPELINES_HOME/resources/genomes/config/
 
 
 #### Modules
