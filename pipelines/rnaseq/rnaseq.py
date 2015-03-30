@@ -548,6 +548,7 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
             Job(
                 [wiggle_archive, saturation_directory + ".zip"],
                 [report_file],
+                [['raw_counts_metrics', 'module_pandoc']],
                 command="""\
 mkdir -p report && \\
 cp metrics/rnaseqRep/corrMatrixSpearman.txt report/corrMatrixSpearman.tsv && \\
