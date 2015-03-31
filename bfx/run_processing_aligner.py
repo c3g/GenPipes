@@ -116,7 +116,7 @@ class BwaRunProcessingAligner(RunProcessingAligner):
 
         job = picard.collect_multiple_metrics(input, input_file_prefix + "metrics",
                                               reference_sequence=readset.reference_file)
-        job.name = "picard_collect_multiple_metrics." + readset.name + ".met" + "_" + readset.run + "_" + readset.lane
+        job.name = "picard_collect_multiple_metrics." + readset.name + ".met" + "." + readset.run + "." + readset.lane
         jobs.append(job)
 
         coverage_bed = bvatools.resolve_readset_coverage_bed(readset)
@@ -145,7 +145,7 @@ class BwaRunProcessingAligner(RunProcessingAligner):
 
             job = picard.calculate_hs_metrics(input_file_prefix + "bam", input_file_prefix + "metrics.onTarget.txt",
                                               interval_list, reference_sequence=readset.reference_file)
-            job.name = "picard_calculate_hs_metrics." + readset.name + ".hs" + "_" + readset.run + "_" + readset.lane
+            job.name = "picard_calculate_hs_metrics." + readset.name + ".hs" + "." + readset.run + "." + readset.lane
             jobs.append(job)
 
         job = bvatools.depth_of_coverage(
@@ -155,7 +155,7 @@ class BwaRunProcessingAligner(RunProcessingAligner):
             other_options=config.param('bvatools_depth_of_coverage', 'other_options', required=False),
             reference_genome=readset.reference_file
         )
-        job.name = "bvatools_depth_of_coverage." + readset.name + ".doc" + "_" + readset.run + "_" + readset.lane
+        job.name = "bvatools_depth_of_coverage." + readset.name + ".doc" + "." + readset.run + "." + readset.lane
         jobs.append(job)
 
         return jobs
@@ -233,7 +233,7 @@ class StarRunProcessingAligner(RunProcessingAligner):
             Job(command="ln -s " + output + " " + os.path.dirname(output) + os.sep + star_bam_name),
             picard.build_bam_index(output, output[::-1].replace(".bam"[::-1], ".bai"[::-1], 1)[::-1])
         ])
-        job.name = "star_align." + readset.name + "_" + readset.run + "_" + readset.lane
+        job.name = "star_align." + readset.name + "." + readset.run + "." + readset.lane
         jobs.append(job)
         return jobs
 
@@ -276,7 +276,7 @@ class StarRunProcessingAligner(RunProcessingAligner):
                                       readset.sample.name + "." +
                                       readset.library +
                                       ".rnaseqc.sorted.dup.metrics.tsv"))
-                              ], name="rnaseqc" + readset.name + ".rnaseqc" + "_" + readset.run + "_" + readset.lane)
+                              ], name="rnaseqc" + readset.name + ".rnaseqc" + "." + readset.run + "." + readset.lane)
             jobs.append(job)
 
         return jobs
@@ -296,7 +296,7 @@ class StarRunProcessingAligner(RunProcessingAligner):
 
         job = picard.collect_multiple_metrics(alignment_file, readset.bam + ".metrics",
                                               reference_sequence=readset.reference_file)
-        job.name = "picard_collect_multiple_metrics." + readset.name + ".met" + "_" + readset.run + "_" + readset.lane
+        job.name = "picard_collect_multiple_metrics." + readset.name + ".met" + "." + readset.run + "." + readset.lane
         jobs.append(job)
 
         if len(readset.annotation_files) > 2 and os.path.isfile(readset.annotation_files[2]):
@@ -305,7 +305,7 @@ class StarRunProcessingAligner(RunProcessingAligner):
                                              readset.annotation_files[2],
                                              readset.reference_file)
 
-            job.name = "picard_rna_metrics." + sample.name
+            job.name = "picard_rna_metrics." + readset.name + ".rmet" + "." + readset.run + "." + readset.lane
             jobs.append(job)
 
         return jobs
@@ -350,7 +350,8 @@ class StarRunProcessingAligner(RunProcessingAligner):
                                       bam=readset_metrics_bam,
                                       gtf=readset.annotation_files[0],
                                       output=os.path.join(readset.bam + ".metrics.rRNA.tsv"),
-                                      typ="transcript")], name="bwa_mem_rRNA." + readset.name)
+                                      typ="transcript")],
+                              name="bwa_mem_rRNA." + readset.name + ".rRNA" + "." + readset.run + "." + readset.lane)
 
             job.removable_files = [readset_metrics_bam]
             jobs.append(job)
