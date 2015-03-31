@@ -423,6 +423,8 @@ Thus, if the last pipeline steps fail, you will still get an HTML report contain
 The report title value can be overwritten in your copy of `$MUGQIC_PIPELINES_HOME/pipelines/<pipeline_name>/<pipeline_name>.base.ini` in section `[report]`.
 You can also edit the partial Markdown reports before running the pandoc script, to add custom comments in your HTML report.
 
+For developers: if you want to modify the Markdown report templates, they are all located in `$MUGQIC_PIPELINES_HOME/bfx/report/`.
+
 
 PBS Job Logs
 ------------

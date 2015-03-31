@@ -14,20 +14,17 @@ create_dir() {
 }
 
 download_archive() {
-  ARCHIVE_URL_TMP=$1
-  ARCHIVE_TMP=$2
-
   INSTALL_DOWNLOAD=$INSTALL_DIR/tmp
   mkdir -p $INSTALL_DOWNLOAD
 
   # If archive was previously downloaded, use the local one, otherwise get it from remote site
-  if [[ -f $ARCHIVE_DIR/$ARCHIVE_TMP ]]
+  if [[ -f $ARCHIVE_DIR/$ARCHIVE ]]
   then
-    echo "Archive $ARCHIVE_TMP already in $ARCHIVE_DIR/: using it..."
-    cp -a $ARCHIVE_DIR/$ARCHIVE_TMP $INSTALL_DOWNLOAD/
+    echo "Archive $ARCHIVE already in $ARCHIVE_DIR/: using it..."
+    cp -a $ARCHIVE_DIR/$ARCHIVE $INSTALL_DOWNLOAD/
   else
-    echo "Archive $ARCHIVE_TMP not in $ARCHIVE_DIR/: downloading it..."
-    wget --no-check-certificate $ARCHIVE_URL_TMP --output-document=$INSTALL_DOWNLOAD/$ARCHIVE_TMP
+    echo "Archive $ARCHIVE not in $ARCHIVE_DIR/: downloading it..."
+    wget --no-check-certificate $ARCHIVE_URL --output-document=$INSTALL_DOWNLOAD/$ARCHIVE
   fi
 }
 
@@ -69,7 +66,7 @@ then
 fi
 
 create_dir $INSTALL_DIR
-download_archive $ARCHIVE_URL $ARCHIVE
+download_archive
 build
 
 chmod -R ug+rwX,o+rX-w $INSTALL_DIR/$SOFTWARE_DIR
