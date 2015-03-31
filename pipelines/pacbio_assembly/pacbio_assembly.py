@@ -1,5 +1,24 @@
 #!/usr/bin/env python
 
+################################################################################
+# Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
+#
+# This file is part of MUGQIC Pipelines.
+#
+# MUGQIC Pipelines is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# MUGQIC Pipelines is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
+################################################################################
+
 # Python Standard Modules
 import logging
 import os
@@ -441,10 +460,14 @@ END
                             [['pacbio_tools_assembly_stats', 'module_pandoc']],
                             command="""\
 cp {fasta_consensus}.gz {report_directory}/ && \\
-summary_table_reads2=`LC_NUMERIC=fr_FR awk -F "\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:"}} else {{print $1, sprintf("%\\47d", $2), sprintf("%\\47d", $3), sprintf("%\\47d", $4), sprintf("%\\47d", $5), sprintf("%\\47d", $6), sprintf("%\\47d", $7), sprintf("%\\47d", $8), sprintf("%\\47d", $9), sprintf("%\\47d", $10), sprintf("%\\47d", $11)}}}}' {report_directory}/summaryTableReads2.tsv | sed 's/^#//'` && \\
+total_subreads=`grep -P '^"Total subreads"\t"' {report_directory}/summaryTableReads.tsv | cut -f2 | sed 's/"//g'` && \\
+average_subreads_length=`grep -P '^"Average subread length"\t"' {report_directory}/summaryTableReads.tsv | cut -f2 | sed 's/"//g'` && \\
+summary_table_reads2=`LC_NUMERIC=en_CA awk -F "\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:"}} else {{print $1, sprintf("%\\47d", $2), sprintf("%\\47d", $3), sprintf("%\\47d", $4), sprintf("%\\47d", $5), sprintf("%\\47d", $6), sprintf("%\\47d", $7), sprintf("%\\47d", $8), sprintf("%\\47d", $9), sprintf("%\\47d", $10), sprintf("%\\47d", $11)}}}}' {report_directory}/summaryTableReads2.tsv | sed 's/^#//'` && \\
 summary_table_assembly=`awk -F"\t" '{{OFS="\t"; if (NR==1) {{print; gsub(/[^\t]/, "-")}} print}}' {report_directory}/summaryTableAssembly.tsv | sed 's/"//g' | sed 's/\t/|/g'` && \\
 pandoc --to=markdown \\
   --template {report_template_dir}/{basename_report_file} \\
+  --variable total_subreads="$total_subreads" \\
+  --variable average_subreads_length="$average_subreads_length" \\
   --variable summary_table_reads2="$summary_table_reads2" \\
   --variable summary_table_assembly="$summary_table_assembly" \\
   --variable smartcells="{smartcells}" \\
@@ -458,7 +481,7 @@ pandoc --to=markdown \\
                                 report_file=report_file
                             ),
                             report_files=[os.path.relpath(report_file, mer_size_directory)],
-                            name="pacbio_tools_assembly_stats.report")
+                            name="pacbio_tools_assembly_stats." + sample_cutoff_mer_size + ".report")
                     )
 
         return jobs
@@ -533,7 +556,7 @@ pandoc --to=markdown \\
                                 report_file=report_file
                             ),
                             report_files=[os.path.relpath(report_file, mer_size_directory)],
-                            name="blast.report")
+                            name="blast." + sample_cutoff_mer_size + ".report")
                     )
 
         return jobs
@@ -562,7 +585,8 @@ pandoc --to=markdown \\
                         raise Exception("Error: polishing_rounds \"" + str(polishing_rounds) + "\" is invalid (should be between 1 and 4)!")
 
                     fasta_consensus = os.path.join(mer_size_directory, "polishing" + str(polishing_rounds), "data", "consensus.fasta")
-                    sample_cutoff_mer_size_nucmer = "_".join([sample.name, cutoff_x, mer_size_text]) + "-nucmer"
+                    sample_cutoff_mer_size = "_".join([sample.name, cutoff_x, mer_size_text])
+                    sample_cutoff_mer_size_nucmer = sample_cutoff_mer_size + "-nucmer"
 
                     # Run nucmer
                     jobs.append(concat_jobs([
@@ -613,7 +637,7 @@ pandoc --to=markdown \\
                                 report_file=report_file
                             ),
                             report_files=[os.path.relpath(report_file, mer_size_directory)],
-                            name="mummer.report")
+                            name="mummer." + sample_cutoff_mer_size + ".report")
                     )
 
         return jobs
