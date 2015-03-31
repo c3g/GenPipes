@@ -17,6 +17,7 @@ build() {
 
   cd $SOFTWARE_DIR
   make
+  make plugins
 
   # Install software
   cd $INSTALL_DOWNLOAD

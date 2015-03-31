@@ -718,7 +718,6 @@ Trinotate {trinotate_sqlite} report -E {evalue} --pfam_cutoff {pfam_cutoff} | cu
                  trinity_fasta + ".RSEM.idx.fa"],
                 [['align_and_estimate_abundance_prep_reference', 'module_perl'],
                  ['align_and_estimate_abundance_prep_reference', 'module_bowtie'],
-                 ['align_and_estimate_abundance_prep_reference', 'module_rsem'],
                  ['align_and_estimate_abundance_prep_reference', 'module_samtools'],
                  ['align_and_estimate_abundance_prep_reference', 'module_trinity']],
                 command="""\
@@ -762,7 +761,6 @@ align_and_estimate_abundance.pl \\
                  os.path.join(output_directory, sample.name + ".isoforms.results")],
                 [['align_and_estimate_abundance_prep_reference', 'module_perl'],
                  ['align_and_estimate_abundance_prep_reference', 'module_bowtie'],
-                 ['align_and_estimate_abundance_prep_reference', 'module_rsem'],
                  ['align_and_estimate_abundance_prep_reference', 'module_samtools'],
                  ['align_and_estimate_abundance_prep_reference', 'module_trinity']],
                 command="""\
