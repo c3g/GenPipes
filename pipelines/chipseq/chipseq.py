@@ -124,7 +124,7 @@ pandoc --to=markdown \\
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="samtools_view_filter.report")
+                name="samtools_view_filter_report")
         )
 
         return jobs
@@ -205,7 +205,7 @@ cp \\
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="picard_mark_duplicates.report")
+                name="picard_mark_duplicates_report")
         )
 
         return jobs
@@ -261,7 +261,7 @@ pandoc --to=markdown \\
                     basename_report_file=os.path.basename(report_file),
                     report_file=report_file
                 ),
-                name="metrics.report",
+                name="metrics_report",
                 removable_files=[report_metrics_file],
                 report_files=[report_file]
             )
@@ -384,7 +384,7 @@ cp {report_template_dir}/{basename_report_file} report/""".format(
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="homer_make_ucsc_file.report")
+                name="homer_make_ucsc_file_report")
         )
 
         return jobs
@@ -459,7 +459,7 @@ done""".format(
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="macs2_callpeak.report")
+                name="macs2_callpeak_report")
         )
 
         return jobs
@@ -557,7 +557,7 @@ done""".format(
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="homer_annotate_peaks.report")
+                name="homer_annotate_peaks_report")
         )
 
         return jobs
@@ -626,7 +626,7 @@ done""".format(
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="homer_find_motifs_genome.report")
+                name="homer_find_motifs_genome_report")
         )
 
         return jobs

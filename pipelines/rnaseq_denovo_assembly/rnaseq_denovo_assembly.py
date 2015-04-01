@@ -242,7 +242,7 @@ pandoc --to=markdown \\
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="insilico_read_normalization_all.report")
+                name="insilico_read_normalization_all_report")
         )
 
         return jobs
@@ -327,7 +327,7 @@ pandoc --to=markdown \\
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="trinity.report")
+                name="trinity_report")
         )
 
         return jobs
@@ -448,7 +448,7 @@ pandoc --to=markdown \\
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="blastx_trinity_uniprot_merge.report")
+                name="blastx_trinity_uniprot_merge_report")
         )
 
         return jobs
@@ -967,7 +967,7 @@ done""".format(
                     swissprot_db=os.path.basename(config.param("blastx_trinity_uniprot", "swissprot_db", type='prefixpath'))
                 ),
                 report_files=[report_file])
-        ], name="differential_expression.report"))
+        ], name="differential_expression_report"))
 
         return jobs
 

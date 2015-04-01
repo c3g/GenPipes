@@ -245,7 +245,7 @@ pandoc --to=markdown \\
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="star.report")
+                name="star_report")
         )
 
         return jobs
@@ -381,7 +381,7 @@ pandoc \\
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="rnaseqc.report"
+                name="rnaseqc_report"
             )
         )
 
@@ -566,7 +566,7 @@ pandoc --to=markdown \\
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="raw_count_metrics.report")
+                name="raw_count_metrics_report")
         )
 
         return jobs
@@ -725,7 +725,7 @@ cut -f3-4 exploratory/index.tsv | sed '1d' | perl -pe 's/^([^\t]*)\t(.*)$/* [\\1
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="gq_seq_utils_exploratory_analysis_rnaseq.report")
+                name="gq_seq_utils_exploratory_analysis_rnaseq_report")
         )
 
         report_file = os.path.join("report", "RnaSeq.cuffnorm.md")
@@ -744,7 +744,7 @@ cp \\
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="cuffnorm.report")
+                name="cuffnorm_report")
         )
 
         return jobs
@@ -840,7 +840,7 @@ done""".format(
                     contrasts=" ".join([contrast.name for contrast in self.contrasts])
                 ),
                 report_files=[report_file],
-                name="differential_expression_goseq.report")
+                name="differential_expression_goseq_report")
         )
 
         return jobs
