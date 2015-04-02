@@ -3,9 +3,9 @@
 set -eu -o pipefail
 
 SOFTWARE=samtools
-VERSION=0.1.19
+VERSION=1.2
 ARCHIVE=$SOFTWARE-$VERSION.tar.bz2
-ARCHIVE_URL=http://sourceforge.net/projects/$SOFTWARE/files/$SOFTWARE/$VERSION/$ARCHIVE
+ARCHIVE_URL=https://github.com/samtools/samtools/releases/download/${VERSION}/${ARCHIVE}
 SOFTWARE_DIR=$SOFTWARE-$VERSION
 
 # Specific commands to extract and build the software
@@ -17,10 +17,8 @@ build() {
 
   cd $SOFTWARE_DIR
   make
-
   # Install software
-  cd $INSTALL_DOWNLOAD
-  mv -i $SOFTWARE_DIR $INSTALL_DIR/
+  make prefix=$INSTALL_DIR/${SOFTWARE_DIR} install
 }
 
 module_file() {
@@ -32,8 +30,7 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-prepend-path    PATH                \$root
-prepend-path    PATH                \$root/bcftools
+prepend-path    PATH                \$root/bin
 "
 }
 

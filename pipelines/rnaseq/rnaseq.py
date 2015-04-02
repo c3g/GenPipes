@@ -1,5 +1,24 @@
 #!/usr/bin/env python
 
+################################################################################
+# Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
+#
+# This file is part of MUGQIC Pipelines.
+#
+# MUGQIC Pipelines is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# MUGQIC Pipelines is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
+################################################################################
+
 # Python Standard Modules
 import argparse
 import collections
@@ -205,6 +224,30 @@ class RnaSeq(common.Illumina):
             job.name = "star_align.2." + readset.name
             jobs.append(job)
 
+        report_file = os.path.join("report", "RnaSeq.star.md")
+        jobs.append(
+            Job(
+                [os.path.join("alignment", readset.sample.name, readset.name, "Aligned.sortedByCoord.out.bam") for readset in self.readsets],
+                [report_file],
+                [['star', 'module_pandoc']],
+                command="""\
+mkdir -p report && \\
+pandoc --to=markdown \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable scientific_name="{scientific_name}" \\
+  --variable assembly="{assembly}" \\
+  {report_template_dir}/{basename_report_file} \\
+  > {report_file}""".format(
+                    scientific_name=config.param('star', 'scientific_name'),
+                    assembly=config.param('star', 'assembly'),
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="star_report")
+        )
+
         return jobs
 
     def picard_merge_sam_files(self):
@@ -268,6 +311,7 @@ class RnaSeq(common.Illumina):
         Computes a series of quality control metrics using [RNA-SeQC](https://www.broadinstitute.org/cancer/cga/rna-seqc).
         """
 
+        jobs = []
         sample_file = os.path.join("alignment", "rnaseqc.samples.txt")
         sample_rows = [[sample.name, os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.bam"), "RNAseq"] for sample in self.samples]
         input_bams = [sample_row[1] for sample_row in sample_rows]
@@ -275,7 +319,7 @@ class RnaSeq(common.Illumina):
         # Use GTF with transcript_id only otherwise RNASeQC fails
         gtf_transcript_id = config.param('rnaseqc', 'gtf_transcript_id', type='filepath')
 
-        job = concat_jobs([
+        jobs.append(concat_jobs([
             Job(command="mkdir -p " + output_directory, removable_files=[output_directory]),
             Job(input_bams, [sample_file], command="""\
 echo "Sample\tBamFile\tNote
@@ -283,9 +327,65 @@ echo "Sample\tBamFile\tNote
   > {sample_file}""".format(sample_rows="\n".join(["\t".join(sample_row) for sample_row in sample_rows]), sample_file=sample_file)),
             metrics.rnaseqc(sample_file, output_directory, self.run_type == "SINGLE_END", gtf_file=gtf_transcript_id),
             Job([], [output_directory + ".zip"], command="zip -r {output_directory}.zip {output_directory}".format(output_directory=output_directory))
-        ], name="rnaseqc")
+        ], name="rnaseqc"))
 
-        return [job]
+        trim_metrics_file = os.path.join("metrics", "trimSampleTable.tsv")
+        metrics_file = os.path.join("metrics", "rnaseqRep", "metrics.tsv")
+        report_metrics_file = os.path.join("report", "trimAlignmentTable.tsv")
+        report_file = os.path.join("report", "RnaSeq.rnaseqc.md")
+        jobs.append(
+            Job(
+                [metrics_file],
+                [report_file],
+                [['rnaseqc', 'module_python'], ['rnaseqc', 'module_pandoc']],
+                # Ugly awk to merge sample metrics with trim metrics if they exist; knitr may do this better
+                command="""\
+mkdir -p report && \\
+cp {output_directory}.zip report/reportRNAseqQC.zip && \\
+python -c 'import csv; csv_in = csv.DictReader(open("{metrics_file}"), delimiter="\t")
+print "\t".join(["Sample", "Aligned Reads", "Alternative Alignments", "%", "rRNA Reads", "Coverage", "Exonic Rate", "Genes"])
+print "\\n".join(["\t".join([
+    line["Sample"],
+    line["Mapped"],
+    line["Alternative Aligments"],
+    str(float(line["Alternative Aligments"]) / float(line["Mapped"]) * 100),
+    line["rRNA"],
+    line["Mean Per Base Cov."],
+    line["Exonic Rate"],
+    line["Genes Detected"]
+]) for line in csv_in])' \\
+  > {report_metrics_file}.tmp && \\
+if [[ -f {trim_metrics_file} ]]
+then
+  awk -F"\t" 'FNR==NR{{raw_reads[$1]=$2; surviving_reads[$1]=$3; surviving_pct[$1]=$4; next}}{{OFS="\t"; if ($2=="Aligned Reads"){{surviving_pct[$1]="%"; aligned_pct="%"; rrna_pct="%"}} else {{aligned_pct=($2 / surviving_reads[$1] * 100); rrna_pct=($5 / surviving_reads[$1] * 100)}}; printf $1"\t"raw_reads[$1]"\t"surviving_reads[$1]"\t"surviving_pct[$1]"\t"$2"\t"aligned_pct"\t"$3"\t"$4"\t"$5"\t"rrna_pct; for (i = 6; i<= NF; i++) {{printf "\t"$i}}; print ""}}' \\
+  {trim_metrics_file} \\
+  {report_metrics_file}.tmp \\
+  > {report_metrics_file}
+else
+  cp {report_metrics_file}.tmp {report_metrics_file}
+fi && \\
+rm {report_metrics_file}.tmp && \\
+trim_alignment_table_md=`if [[ -f {trim_metrics_file} ]] ; then cut -f1-13 {report_metrics_file} | LC_NUMERIC=en_CA awk -F "\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:"}} else {{print $1, sprintf("%\\47d", $2), sprintf("%\\47d", $3), sprintf("%.1f", $4), sprintf("%\\47d", $5), sprintf("%.1f", $6), sprintf("%\\47d", $7), sprintf("%.1f", $8), sprintf("%\\47d", $9), sprintf("%.1f", $10), sprintf("%.2f", $11), sprintf("%.2f", $12), sprintf("%\\47d", $13)}}}}' ; else cat {report_metrics_file} | LC_NUMERIC=en_CA awk -F "\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----:|-----:|-----:|-----:|-----:|-----:|-----:"}} else {{print $1, sprintf("%\\47d", $2), sprintf("%\\47d", $3), sprintf("%.1f", $4), sprintf("%\\47d", $5), sprintf("%.2f", $6), sprintf("%.2f", $7), $8}}}}' ; fi`
+pandoc \\
+  {report_template_dir}/{basename_report_file} \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable trim_alignment_table="$trim_alignment_table_md" \\
+  --to markdown \\
+  > {report_file}""".format(
+                    output_directory=output_directory,
+                    report_template_dir=self.report_template_dir,
+                    trim_metrics_file=trim_metrics_file,
+                    metrics_file=metrics_file,
+                    basename_report_file=os.path.basename(report_file),
+                    report_metrics_file=report_metrics_file,
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="rnaseqc_report"
+            )
+        )
+
+        return jobs
 
     def wiggle(self):
         """
@@ -443,6 +543,32 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
         ], name="rpkm_saturation")
         jobs.append(job)
 
+        report_file = os.path.join("report", "RnaSeq.raw_counts_metrics.md")
+        jobs.append(
+            Job(
+                [wiggle_archive, saturation_directory + ".zip"],
+                [report_file],
+                [['raw_counts_metrics', 'module_pandoc']],
+                command="""\
+mkdir -p report && \\
+cp metrics/rnaseqRep/corrMatrixSpearman.txt report/corrMatrixSpearman.tsv && \\
+cp {wiggle_archive} report/ && \\
+cp {saturation_archive} report/ && \\
+pandoc --to=markdown \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable corr_matrix_spearman_table="`head -16 report/corrMatrixSpearman.tsv | cut -f-16| awk -F"\t" '{{OFS="\t"; if (NR==1) {{$0="Vs"$0; print; gsub(/[^\t]/, "-"); print}} else {{printf $1; for (i=2; i<=NF; i++) {{printf "\t"sprintf("%.2f", $i)}}; print ""}}}}' | sed 's/\t/|/g'`" \\
+  {report_template_dir}/{basename_report_file} \\
+  > {report_file}""".format(
+                    wiggle_archive=wiggle_archive,
+                    saturation_archive=saturation_directory + ".zip",
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="raw_count_metrics_report")
+        )
+
         return jobs
 
     def cufflinks(self):
@@ -546,7 +672,6 @@ END
         gtf = os.path.join(fpkm_directory, "AllSamples","merged.gtf")
         sample_labels = ",".join([sample.name for sample in self.samples])
 
-
         # Perform cuffnorm using every samples
         job = cufflinks.cuffnorm([os.path.join(fpkm_directory, sample.name, "abundances.cxb") for sample in self.samples],
              gtf,
@@ -554,7 +679,74 @@ END
         job.removable_files = ["cuffnorm"]
         job.name = "cuffnorm" 
         jobs.append(job)
-        
+
+        return jobs
+
+    def gq_seq_utils_exploratory_analysis_rnaseq(self):
+        """
+        Exploratory analysis using the gqSeqUtils R package.
+        """
+
+        jobs = []
+
+        sample_fpkm_readcounts = [[
+            sample.name,
+            os.path.join("cufflinks", sample.name, "isoforms.fpkm_tracking"),
+            os.path.join("raw_counts", sample.name + ".readcounts.csv")
+        ] for sample in self.samples]
+
+        input_file = os.path.join("exploratory", "exploratory.samples.tsv")
+
+        jobs.append(concat_jobs([
+            Job(command="mkdir -p exploratory"),
+            gq_seq_utils.exploratory_analysis_rnaseq(
+                os.path.join("DGE", "rawCountMatrix.csv"),
+                "cuffnorm",
+                config.param('gq_seq_utils_exploratory_analysis_rnaseq', 'genes', type='filepath'),
+                "exploratory"
+            )
+        ], name="gq_seq_utils_exploratory_analysis_rnaseq"))
+
+        report_file = os.path.join("report", "RnaSeq.gq_seq_utils_exploratory_analysis_rnaseq.md")
+        jobs.append(
+            Job(
+                [os.path.join("exploratory", "index.tsv")],
+                [report_file],
+                command="""\
+mkdir -p report && \\
+cp -r exploratory/ report/ && \\
+cp \\
+  {report_template_dir}/{basename_report_file} \\
+  {report_file} && \\
+cut -f3-4 exploratory/index.tsv | sed '1d' | perl -pe 's/^([^\t]*)\t(.*)$/* [\\1](\\2)/' \\
+  >> {report_file}""".format(
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="gq_seq_utils_exploratory_analysis_rnaseq_report")
+        )
+
+        report_file = os.path.join("report", "RnaSeq.cuffnorm.md")
+        jobs.append(
+            Job(
+                [os.path.join("cufflinks", "AllSamples","merged.gtf")],
+                [report_file],
+                command="""\
+mkdir -p report && \\
+zip -r report/cuffAnalysis.zip cufflinks/ cuffdiff/ cuffnorm/ && \\
+cp \\
+  {report_template_dir}/{basename_report_file} \\
+  {report_file}""".format(
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="cuffnorm_report")
+        )
+
         return jobs
 
     def differential_expression(self):
@@ -599,65 +791,59 @@ END
             job.name = "differential_expression_goseq.dge." + contrast.name
             jobs.append(job)
 
-        return jobs
-
-    def gq_seq_utils_exploratory_analysis_rnaseq(self):
-        """
-        Exploratory analysis using the gqSeqUtils R package.
-        """
-
-        sample_fpkm_readcounts = [[
-            sample.name,
-            os.path.join("cufflinks", sample.name, "isoforms.fpkm_tracking"),
-            os.path.join("raw_counts", sample.name + ".readcounts.csv")
-        ] for sample in self.samples]
-
-        input_file = os.path.join("exploratory", "exploratory.samples.tsv")
-
-        return [concat_jobs([
-            Job(command="mkdir -p exploratory"),
-            gq_seq_utils.exploratory_analysis_rnaseq(
-                os.path.join("DGE", "rawCountMatrix.csv"),
-                "cuffnorm",
-                config.param('gq_seq_utils_exploratory_analysis_rnaseq', 'genes', type='filepath'),
-                "exploratory"
-            )
-        ], name="gq_seq_utils_exploratory_analysis_rnaseq")]
-
-    def gq_seq_utils_report(self):
-        """
-        Generates a summary html report containing the description of
-        the sequencing experiment as well as a detailed presentation of the pipeline steps and results.
-        Various Quality Control (QC) summary statistics are included in the report and additional QC analysis
-        is accessible for download directly through the report. The report includes also the main references
-        of the software and methods used during the analysis, together with the full list of parameters
-        passed to the pipeline main script.
-        """
-        output_files=[
-            "metrics/trimming.stats",
-            "tracks.zip",
-            "metrics/rnaseqRep.zip",
-            "exploratory/top_sd_heatmap_cufflinks_logFPKMs.pdf",
-            "cuffnorm/isoforms.fpkm_table", 
-            "cuffnorm/isoforms.count_table",
-            "cuffnorm/isoforms.attr_table",
-            "metrics/saturation.zip"
-        ]
-        
-        for contrast in self.contrasts:
-                 output_files.append(os.path.join("DGE", contrast.name, "gene_ontology_results.csv"))
-                 output_files.append(os.path.join("cuffdiff", contrast.name, "isoform_exp.diff"))
-                 
-        
-        job = gq_seq_utils.report(
-            [config_file.name for config_file in self.args.config],
-            self.output_dir,
-            "RNAseq",
-            self.output_dir
+        report_file = os.path.join("report", "RnaSeq.differential_expression.md")
+        jobs.append(
+            Job(
+                [os.path.join("DGE", "rawCountMatrix.csv")] +
+                [os.path.join("DGE", contrast.name, "dge_results.csv") for contrast in self.contrasts] +
+                [os.path.join("cuffdiff", contrast.name, "isoforms.fpkm_tracking") for contrast in self.contrasts] +
+                [os.path.join("cuffdiff", contrast.name, "isoform_exp.diff") for contrast in self.contrasts] +
+                [os.path.join("DGE", contrast.name, "gene_ontology_results.csv") for contrast in self.contrasts],
+                [report_file],
+                [['rnaseqc', 'module_pandoc']],
+                # Ugly awk to format differential expression results into markdown for genes, transcripts and GO if any; knitr may do this better
+                # Ugly awk and python to merge cuffdiff fpkm and isoforms into transcript expression results
+                command="""\
+mkdir -p report && \\
+cp {design_file} report/design.tsv && \\
+cp DGE/rawCountMatrix.csv report/ && \\
+pandoc \\
+  {report_template_dir}/{basename_report_file} \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable design_table="`head -7 report/design.tsv | cut -f-8 | awk -F"\t" '{{OFS="\t"; if (NR==1) {{print; gsub(/[^\t]/, "-")}} print}}' | sed 's/\t/|/g'`" \\
+  --variable raw_count_matrix_table="`head -7 report/rawCountMatrix.csv | cut -f-8 | awk -F"\t" '{{OFS="\t"; if (NR==1) {{print; gsub(/[^\t]/, "-")}} print}}' | sed 's/\t/|/g'`" \\
+  --to markdown \\
+  > {report_file} && \\
+for contrast in {contrasts}
+do
+  mkdir -p report/DiffExp/$contrast/
+  echo -e "\\n#### $contrast Results\\n" >> {report_file}
+  cp DGE/$contrast/dge_results.csv report/DiffExp/$contrast/${{contrast}}_Genes_DE_results.tsv
+  echo -e "\\nTable: Differential Gene Expression Results (**partial table**; [download full table](DiffExp/$contrast/${{contrast}}_Genes_DE_results.tsv))\\n" >> {report_file}
+  head -7 report/DiffExp/$contrast/${{contrast}}_Genes_DE_results.tsv | cut -f-8 | sed '2i ---\t---\t---\t---\t---\t---\t---\t---' | sed 's/\t/|/g' >> {report_file}
+  sed '1s/^tracking_id/test_id/' cuffdiff/$contrast/isoforms.fpkm_tracking | awk -F"\t" 'FNR==NR{{line[$1]=$0; next}}{{OFS="\t"; print line[$1], $0}}' - cuffdiff/$contrast/isoform_exp.diff | python -c 'import csv,sys; rows_in = csv.DictReader(sys.stdin, delimiter="\t"); rows_out = csv.DictWriter(sys.stdout, fieldnames=["test_id", "gene_id", "tss_id","nearest_ref_id","class_code","gene","locus","length","log2(fold_change)","test_stat","p_value","q_value"], delimiter="\t", extrasaction="ignore"); rows_out.writeheader(); rows_out.writerows(rows_in)' > report/DiffExp/$contrast/${{contrast}}_Transcripts_DE_results.tsv
+  echo -e "\\n---\\n\\nTable: Differential Transcript Expression Results (**partial table**; [download full table](DiffExp/$contrast/${{contrast}}_Transcripts_DE_results.tsv))\\n" >> {report_file}
+  head -7 report/DiffExp/$contrast/${{contrast}}_Transcripts_DE_results.tsv | cut -f-8 | sed '2i ---\t---\t---\t---\t---\t---\t---\t---' | sed 's/\t/|/g' >> {report_file}
+  if [ `wc -l DGE/$contrast/gene_ontology_results.csv | cut -f1 -d\ ` -gt 1 ]
+  then
+    cp DGE/$contrast/gene_ontology_results.csv report/DiffExp/$contrast/${{contrast}}_Genes_GO_results.tsv
+    echo -e "\\n---\\n\\nTable: GO Results of the Differentially Expressed Genes (**partial table**; [download full table](DiffExp/${{contrast}}/${{contrast}}_Genes_GO_results.tsv))\\n" >> {report_file}
+    head -7 report/DiffExp/${{contrast}}/${{contrast}}_Genes_GO_results.tsv | cut -f-8 | sed '2i ---\t---\t---\t---\t---\t---\t---\t---' | sed 's/\t/|/g' >> {report_file}
+  else
+    echo -e "\\nNo FDR adjusted GO enrichment was significant (p-value too high) based on the differentially expressed gene results for this design.\\n" >> {report_file}
+  fi
+done""".format(
+                    design_file=os.path.abspath(self.args.design.name),
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file,
+                    contrasts=" ".join([contrast.name for contrast in self.contrasts])
+                ),
+                report_files=[report_file],
+                name="differential_expression_goseq_report")
         )
-        job.input_files = output_files
-        job.name = "gq_seq_utils_report"
-        return [job]
+
+        return jobs
 
     @property
     def steps(self):
@@ -678,10 +864,9 @@ END
             self.cuffquant,
             self.cuffdiff,
             self.cuffnorm,
-            self.differential_expression,
-            self.differential_expression_goseq,
             self.gq_seq_utils_exploratory_analysis_rnaseq,
-            self.gq_seq_utils_report
+            self.differential_expression,
+            self.differential_expression_goseq
         ]
 
 if __name__ == '__main__':

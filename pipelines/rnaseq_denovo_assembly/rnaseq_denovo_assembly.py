@@ -1,5 +1,24 @@
 #!/usr/bin/env python
 
+################################################################################
+# Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
+#
+# This file is part of MUGQIC Pipelines.
+#
+# MUGQIC Pipelines is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# MUGQIC Pipelines is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
+################################################################################
+
 # Python Standard Modules
 import argparse
 import glob
@@ -171,6 +190,7 @@ class RnaSeqDeNovoAssembly(common.Illumina):
         Merge all normalized readsets together and normalize the result, using the Trinity normalization utility.
         """
 
+        jobs = []
         normalization_directory = "insilico_read_normalization"
         normalization_directory_all = os.path.join(normalization_directory, "all")
         left_or_single_reads = []
@@ -196,12 +216,43 @@ class RnaSeqDeNovoAssembly(common.Illumina):
         )
 
         job.name = "insilico_read_normalization_all"
-        return [job]
+        jobs.append(job)
+
+        report_file = os.path.join("report", "RnaSeqDeNovoAssembly.insilico_read_normalization_all.md")
+        normalization_stats_file = os.path.join("insilico_read_normalization", "all", "normalization.stats.tsv")
+        jobs.append(
+            Job(
+                [normalization_stats_file],
+                [report_file],
+                [['insilico_read_normalization_all', 'module_pandoc']],
+                command="""\
+mkdir -p report && \\
+sum_norm=`cut -f2 {normalization_stats_file}` && \\
+normalization_table=`sed '1d' report/trimReadsetTable.tsv | LC_NUMERIC=en_CA awk -v sum_norm=$sum_norm '{{sum_trim+=$4}}END{{print sprintf("%\\47d", sum_trim)"|"sprintf("%\\47d", sum_norm)"|"sprintf("%.2f", sum_norm / sum_trim * 100)}}'` && \\
+pandoc --to=markdown \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable read_type="{read_type}" \\
+  --variable normalization_table="$normalization_table" \\
+  {report_template_dir}/{basename_report_file} \\
+  > {report_file}""".format(
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    read_type="Paired" if self.run_type == 'PAIRED_END' else "Single",
+                    normalization_stats_file=normalization_stats_file,
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="insilico_read_normalization_all_report")
+        )
+
+        return jobs
 
     def trinity(self):
         """
         Create a de novo assembly from normalized readsets using [Trinity](http://trinityrnaseq.sourceforge.net/).
         """
+
+        jobs = []
 
         normalization_directory = os.path.join("insilico_read_normalization", "all")
         output_directory = "trinity_out_dir"
@@ -241,7 +292,7 @@ Trinity {other_options} \\
 
         trinity_job.removable_files = [output_directory]
 
-        return [concat_jobs([
+        jobs.append(concat_jobs([
             trinity_job,
             Job(
                 [trinity_fasta],
@@ -252,7 +303,34 @@ Trinity {other_options} \\
                 [trinity_stats_prefix + ".csv", trinity_stats_prefix + ".jpg", trinity_stats_prefix + ".pdf"],
                 [['trinity', 'module_R'], ['trinity', 'module_mugqic_R_packages']],
                 command="Rscript -e 'library(gqSeqUtils); dnaFastaStats(filename = \"" + trinity_fasta + "\", type = \"trinity\", output.prefix = \"" + trinity_stats_prefix + "\")'")
-        ], name="trinity")]
+        ], name="trinity"))
+
+        report_file = os.path.join("report", "RnaSeqDeNovoAssembly.trinity.md")
+        jobs.append(
+            Job(
+                [trinity_fasta + ".zip", trinity_stats_prefix + ".csv", trinity_stats_prefix + ".jpg", trinity_stats_prefix + ".pdf"],
+                [report_file],
+                [['trinity', 'module_pandoc']],
+                command="""\
+mkdir -p report && \\
+cp {trinity_fasta}.zip {trinity_stats_prefix}.csv {trinity_stats_prefix}.jpg {trinity_stats_prefix}.pdf report/ && \\
+assembly_table=`sed '1d' {trinity_stats_prefix}.csv | perl -pe 's/^"([^"]*)",/\\1\t/g' | grep -P "^(Nb. Transcripts|Nb. Components|Total Transcripts Length|Min. Transcript Length|Median Transcript Length|Mean Transcript Length|Max. Transcript Length|N50)" | LC_NUMERIC=en_CA awk -F"\t" '{{print $1"|"sprintf("%\\47d", $2)}}'` && \\
+pandoc --to=markdown \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable assembly_table="$assembly_table" \\
+  {report_template_dir}/{basename_report_file} \\
+  > {report_file}""".format(
+                    trinity_fasta=trinity_fasta,
+                    trinity_stats_prefix=trinity_stats_prefix,
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="trinity_report")
+        )
+
+        return jobs
 
     def exonerate_fastasplit(self):
         """
@@ -290,7 +368,8 @@ Trinity {other_options} \\
         swissprot_db = config.param("blastx_trinity_uniprot", "swissprot_db", type='prefixpath')
         uniref_db = config.param("blastx_trinity_uniprot", "uniref_db", type='prefixpath')
 
-        for db in swissprot_db, uniref_db:
+        # (Removed blast on uniref_db since it's too long)
+        for db in [swissprot_db]:
             if not glob.glob(db + ".*phr"):
                 raise Exception("Error: " + db + " BLAST db files do not exist!")
 
@@ -318,7 +397,7 @@ parallelBlast.pl \\
                             db=db
                         )
                     )
-                ], name="blastx_trinity_" + os.path.basename(db) + ".chunk_{:07d}".format(i)))
+                ], name="blastx_trinity_uniprot." + os.path.basename(db) + ".chunk_{:07d}".format(i)))
 
         return jobs
 
@@ -331,20 +410,46 @@ parallelBlast.pl \\
         blast_directory = "blast"
         num_fasta_chunks = config.param('exonerate_fastasplit', 'num_fasta_chunks', type='posint')
         program = "blastx"
+        blast_prefix = os.path.join(blast_directory, program + "_Trinity_")
         swissprot_db = config.param("blastx_trinity_uniprot", "swissprot_db", type='prefixpath')
         uniref_db = config.param("blastx_trinity_uniprot", "uniref_db", type='prefixpath')
 
-        for db in swissprot_db, uniref_db:
-            blast_chunks = [os.path.join(blast_directory, program + "_Trinity_" + os.path.basename(db) + "_chunk_{:07d}.tsv".format(i)) for i in range(num_fasta_chunks)]
-            blast_result = os.path.join(blast_directory, program + "_Trinity_" + os.path.basename(db) + ".tsv")
+        # (Removed blast on uniref_db since it's too long)
+        for db in [swissprot_db]:
+            blast_chunks = [os.path.join(blast_prefix + os.path.basename(db) + "_chunk_{:07d}.tsv".format(i)) for i in range(num_fasta_chunks)]
+            blast_result = os.path.join(blast_prefix + os.path.basename(db) + ".tsv")
             jobs.append(concat_jobs([
                 Job(
                     blast_chunks,
                     [blast_result],
                     command="cat \\\n  " + " \\\n  ".join(blast_chunks) + " \\\n  > " + blast_result
                 ),
-                Job(command="zip -j {blast_result}.zip {blast_result}".format(blast_result=blast_result))
+                Job([blast_result], [blast_result + ".zip"], command="zip -j {blast_result}.zip {blast_result}".format(blast_result=blast_result))
             ], name="blastx_trinity_" + os.path.basename(db) + "_merge"))
+
+        report_file = os.path.join("report", "RnaSeqDeNovoAssembly.blastx_trinity_uniprot_merge.md")
+        jobs.append(
+            Job(
+                [blast_prefix + os.path.basename(swissprot_db) + ".tsv.zip"],
+                [report_file],
+                [['blastx_trinity_uniprot_merge', 'module_pandoc']],
+                command="""\
+mkdir -p report && \\
+cp {blast_prefix}{blast_db}.tsv.zip  report/ && \\
+pandoc --to=markdown \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable blast_db="{blast_db}" \\
+  {report_template_dir}/{basename_report_file} \\
+  > {report_file}""".format(
+                    blast_prefix=blast_prefix,
+                    blast_db=os.path.basename(swissprot_db),
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="blastx_trinity_uniprot_merge_report")
+        )
 
         return jobs
 
@@ -387,7 +492,7 @@ TransDecoder.Predict \\
                     other_options=config.param('transdecoder', 'other_options', required=False),
                     transcripts=os.path.relpath(trinity_fasta, transdecoder_directory),
                     transdecoder_subdirectory=transdecoder_subdirectory,
-                    swissprot_db=config.param('transdecoder', 'swissprot_db', type='filepath'),
+                    swissprot_db=config.param('transdecoder', 'swissprot_db', type='prefixpath'),
                     pfam_db=config.param('transdecoder', 'pfam_db', type='filepath'),
                     cpu=config.param('transdecoder', 'cpu', type='posint')
                 )
@@ -489,7 +594,7 @@ parallelBlast.pl \\
                     db=db
                 )
             )
-        ], name="blastp_transdecoder_" + os.path.basename(db)))
+        ], name="blastp_transdecoder_uniprot." + os.path.basename(db)))
 
         return jobs
 
@@ -545,10 +650,8 @@ tmhmm --short \\
         """
 
         swissprot_db = os.path.basename(config.param("blastx_trinity_uniprot", "swissprot_db", type='prefixpath'))
-        uniref_db = os.path.basename(config.param("blastx_trinity_uniprot", "uniref_db", type='prefixpath'))
         trinity_fasta = os.path.join("trinity_out_dir", "Trinity.fasta")
         swissprot_blastx = os.path.join("blast", "blastx_Trinity_" + swissprot_db + ".tsv")
-        trembl_blastx = os.path.join("blast", "blastx_Trinity_" + uniref_db + ".tsv")
         transdecoder_pep = os.path.join("trinotate", "transdecoder", "Trinity.fasta.transdecoder.pep")
         transdecoder_pfam = os.path.join("trinotate", "transdecoder", "Trinity.fasta.transdecoder.pfam")
         swissprot_blastp = os.path.join("trinotate", "blastp", "blastp_" + os.path.basename(transdecoder_pep) + "_" + swissprot_db + ".tsv")
@@ -563,7 +666,6 @@ tmhmm --short \\
             Job(
                 [trinity_fasta,
                  swissprot_blastx,
-                 trembl_blastx,
                  transdecoder_pep,
                  transdecoder_pfam,
                  swissprot_blastp,
@@ -582,7 +684,6 @@ Trinotate {trinotate_sqlite} init \\
   --transcript {trinity_fasta} \\
   --transdecoder_pep {transdecoder_pep} && \\
 Trinotate {trinotate_sqlite} LOAD_swissprot_blastx {swissprot_blastx} && \\
-Trinotate {trinotate_sqlite} LOAD_trembl_blastx {trembl_blastx} && \\
 Trinotate {trinotate_sqlite} LOAD_swissprot_blastp {swissprot_blastp} && \\
 Trinotate {trinotate_sqlite} LOAD_pfam {transdecoder_pfam} && \\
 Trinotate {trinotate_sqlite} LOAD_tmhmm {tmhmm} && \\
@@ -594,7 +695,6 @@ Trinotate {trinotate_sqlite} report -E {evalue} --pfam_cutoff {pfam_cutoff} | cu
                     trinotate_sqlite=trinotate_sqlite,
                     transdecoder_pep=transdecoder_pep,
                     swissprot_blastx=swissprot_blastx,
-                    trembl_blastx=trembl_blastx,
                     swissprot_blastp=swissprot_blastp,
                     transdecoder_pfam=transdecoder_pfam,
                     tmhmm=tmhmm,
@@ -618,7 +718,6 @@ Trinotate {trinotate_sqlite} report -E {evalue} --pfam_cutoff {pfam_cutoff} | cu
                  trinity_fasta + ".RSEM.idx.fa"],
                 [['align_and_estimate_abundance_prep_reference', 'module_perl'],
                  ['align_and_estimate_abundance_prep_reference', 'module_bowtie'],
-                 ['align_and_estimate_abundance_prep_reference', 'module_rsem'],
                  ['align_and_estimate_abundance_prep_reference', 'module_samtools'],
                  ['align_and_estimate_abundance_prep_reference', 'module_trinity']],
                 command="""\
@@ -662,7 +761,6 @@ align_and_estimate_abundance.pl \\
                  os.path.join(output_directory, sample.name + ".isoforms.results")],
                 [['align_and_estimate_abundance_prep_reference', 'module_perl'],
                  ['align_and_estimate_abundance_prep_reference', 'module_bowtie'],
-                 ['align_and_estimate_abundance_prep_reference', 'module_rsem'],
                  ['align_and_estimate_abundance_prep_reference', 'module_samtools'],
                  ['align_and_estimate_abundance_prep_reference', 'module_trinity']],
                 command="""\
@@ -774,17 +872,6 @@ Rscript $R_TOOLS/deseq.R \\
                     )
                 )
             ], name="differential_expression." + item))
-        return jobs
-
-    def gq_seq_utils_report(self):
-        """
-        Generates the standard report. A summary html report contains the description of
-        the sequencing experiment as well as a detailed presentation of the pipeline steps and results.
-        Various Quality Control (QC) summary statistics are included in the report and additional QC analysis
-        is accessible for download directly through the report. The report includes also the main references
-        of the software and methods used during the analysis, together with the full list of parameters
-        passed to the pipeline main script.
-        """
 
         isoforms_lengths = os.path.join("differential_expression", "isoforms.lengths.tsv")
         trinotate_annotation_report = os.path.join("trinotate", "trinotate_annotation_report.tsv")
@@ -814,47 +901,75 @@ sed '1s/^transcript_id\tsprot_Top_BLASTX_hit/Transcript\tSymbol/' \\
   > {trinotate_annotation_report}.isoforms""".format(
                     trinotate_annotation_report=trinotate_annotation_report
                 )
+            ),
+            # Merge Trinotate and differential expression files into one CSV
+            Job(
+                [os.path.join("differential_expression", "genes", contrast.name, "dge_results.csv") for contrast in self.contrasts] +
+                [os.path.join("differential_expression", "isoforms", contrast.name, "dge_results.csv") for contrast in self.contrasts] +
+                [trinotate_annotation_report + "." + item for item in "genes","isoforms"],
+                [os.path.join("differential_expression", "genes", contrast.name, "dge_trinotate_results.csv") for contrast in self.contrasts] +
+                [os.path.join("differential_expression", "isoforms", contrast.name, "dge_trinotate_results.csv") for contrast in self.contrasts],
+                command="""\
+for item in gene isoform
+do
+  for contrast in {contrasts}
+  do
+    dge_results=differential_expression/${{item}}s/$contrast/dge_results.csv
+    awk -F "\t" 'FNR == NR {{item[$1] = $0; next}} {{OFS="\t"; print item[$1], $0}}' \\
+      {trinotate_annotation_report}.${{item}}s \\
+      <(sed '1s/^id/${{item^}}/' $dge_results) \\
+      > $dge_results.tmp && \\
+    paste <(cut -f1,2,15- $dge_results.tmp) <(cut -f3-12 $dge_results.tmp) > ${{dge_results/results.csv/trinotate_results.csv}} && \\
+    rm $dge_results.tmp
+  done
+done""".format(
+                    contrasts=" ".join([contrast.name for contrast in self.contrasts]),
+                    trinotate_annotation_report=trinotate_annotation_report
+                )
             )
         ])
 
-        for item in "genes","isoforms":
-            for contrast in self.contrasts:
-                dge_results = os.path.join("differential_expression", item, contrast.name, "dge_results.csv")
-                dge_trinotate_results = re.sub("results\.csv$", "trinotate_results.csv", dge_results)
-                job = concat_jobs([
-                    job,
-                    Job([dge_results, trinotate_annotation_report + "." + item],
-                        [dge_trinotate_results],
-                        command="""\
-awk -F "\t" 'FNR == NR {{item[$1] = $0; next}} {{OFS="\t"; print item[$1], $0}}' \\
-  {trinotate_annotation_report_item} \\
-  <(sed '1s/^id/{item}/' {dge_results}) \\
-  > {dge_results}.tmp && \\
-paste <(cut -f1,2,15- {dge_results}.tmp) <(cut -f3-12 {dge_results}.tmp) > {dge_trinotate_results} && \\
-rm {dge_results}.tmp""".format(
-                            trinotate_annotation_report_item=trinotate_annotation_report + "." + item,
-                            item=item.title()[0:-1],
-                            dge_results=dge_results,
-                            dge_trinotate_results=dge_trinotate_results
-                        )
-                    )
-                ])
+        genes_matrix = os.path.join("differential_expression", "genes.counts.matrix")
+        report_file = os.path.join("report", "RnaSeqDeNovoAssembly.differential_expression.md")
+        jobs.append(concat_jobs([
+            job,
+            Job(
+                [genes_matrix] +
+                [os.path.join("differential_expression", "genes", contrast.name, "dge_trinotate_results.csv") for contrast in self.contrasts],
+                [report_file],
+                [['rnaseqc', 'module_pandoc']],
+                # Ugly awk to format differential expression results into markdown for genes; knitr may do this better
+                command="""\
+mkdir -p report && \\
+cp {design_file} report/design.tsv && \\
+sed '1s/^\t/Gene\t/' {genes_matrix} > report/rawCountMatrix.csv && \\
+pandoc \\
+  {report_template_dir}/{basename_report_file} \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable design_table="`head -7 report/design.tsv | cut -f-8 | awk -F"\t" '{{OFS="\t"; if (NR==1) {{print; gsub(/[^\t]/, "-")}} print}}' | sed 's/\t/|/g'`" \\
+  --variable raw_count_matrix_table="`head -7 report/rawCountMatrix.csv | cut -f-8 | awk -F"\t" '{{OFS="\t"; if (NR==1) {{print; gsub(/[^\t]/, "-")}} print}}' | sed 's/|/\\\\\\\\|/g' | sed 's/\t/|/g'`" \\
+  --to markdown \\
+  > {report_file} && \\
+for contrast in {contrasts}
+do
+  mkdir -p report/DiffExp/$contrast/
+  echo -e "\\n#### $contrast Results\\n" >> {report_file}
+  cp differential_expression/genes/$contrast/dge_trinotate_results.csv report/DiffExp/$contrast/${{contrast}}_Genes_DE_results_{swissprot_db}.tsv
+  echo -e "\\nTable: Differential Gene Expression Results (**partial table**; [download full table](DiffExp/$contrast/${{contrast}}_Genes_DE_results_{swissprot_db}.tsv))\\n" >> {report_file}
+  head -7 report/DiffExp/$contrast/${{contrast}}_Genes_DE_results_{swissprot_db}.tsv | cut -f-8 | sed '2i ---\t---\t---\t---\t---\t---\t---\t---' | sed 's/|/\\\\|/g' | sed 's/\t/|/g' >> {report_file}
+done""".format(
+                    genes_matrix=genes_matrix,
+                    design_file=os.path.abspath(self.args.design.name),
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file,
+                    contrasts=" ".join([contrast.name for contrast in self.contrasts]),
+                    swissprot_db=os.path.basename(config.param("blastx_trinity_uniprot", "swissprot_db", type='prefixpath'))
+                ),
+                report_files=[report_file])
+        ], name="differential_expression_report"))
 
-        report_job = gq_seq_utils.report(
-            [config_file.name for config_file in self.args.config],
-            self.output_dir,
-            "RNAseqDeNovo",
-            self.output_dir
-        )
-
-        report_job.input_files = [
-            "metrics/trimming.stats",
-            "trinity_out_dir/Trinity.fasta",
-            "trinity_out_dir/Trinity.stats.csv",
-            "trinity_out_dir/Trinity.stats.pdf",
-        ] + [os.path.join("differential_expression", item, contrast.name, "dge_trinotate_results.csv") for item in "genes","isoforms" for contrast in self.contrasts]
-
-        return [concat_jobs([job, report_job], name="gq_seq_utils_report")]
+        return jobs
 
     @property
     def steps(self):
@@ -877,8 +992,7 @@ rm {dge_results}.tmp""".format(
             self.trinotate,
             self.align_and_estimate_abundance_prep_reference,
             self.align_and_estimate_abundance,
-            self.differential_expression,
-            self.gq_seq_utils_report
+            self.differential_expression
         ]
 
 if __name__ == '__main__':

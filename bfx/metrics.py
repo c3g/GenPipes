@@ -1,5 +1,24 @@
 #!/usr/bin/env python
 
+################################################################################
+# Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
+#
+# This file is part of MUGQIC Pipelines.
+#
+# MUGQIC Pipelines is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# MUGQIC Pipelines is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
+################################################################################
+
 # Python Standard Modules
 import os
 
@@ -28,7 +47,7 @@ Rscript $R_TOOLS/DNAsampleMetrics.R \\
 def rnaseqc(sample_file, output_directory, is_single_end=False, gtf_file=None, reference=None, ribosomal_fasta=None):
     return Job(
         [sample_file],
-        [os.path.join(output_directory, "index.html")],
+        [os.path.join(output_directory, "index.html"), os.path.join(output_directory, "metrics.tsv")],
         [
             ['rnaseqc', 'module_java'],
             ['rnaseqc', 'module_bwa'],

@@ -1,5 +1,24 @@
 #!/usr/bin/env python
 
+################################################################################
+# Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
+#
+# This file is part of MUGQIC Pipelines.
+#
+# MUGQIC Pipelines is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# MUGQIC Pipelines is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
+################################################################################
+
 # Python Standard Modules
 import logging
 import math
@@ -130,6 +149,31 @@ class DnaSeq(common.Illumina):
             ], name="bwa_mem_picard_sort_sam." + readset.name)
 
             jobs.append(job)
+
+        report_file = os.path.join("report", "DnaSeq.bwa_mem_picard_sort_sam.md")
+        jobs.append(
+            Job(
+                [os.path.join("alignment", readset.sample.name, readset.name, readset.name + ".sorted.bam") for readset in self.readsets],
+                [report_file],
+                [['bwa_mem_picard_sort_sam', 'module_pandoc']],
+                command="""\
+mkdir -p report && \\
+pandoc --to=markdown \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable scientific_name="{scientific_name}" \\
+  --variable assembly="{assembly}" \\
+  {report_template_dir}/{basename_report_file} \\
+  > {report_file}""".format(
+                    scientific_name=config.param('bwa_mem_picard_sort_sam', 'scientific_name'),
+                    assembly=config.param('bwa_mem_picard_sort_sam', 'assembly'),
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="bwa_mem_picard_sort_sam_report")
+        )
+
         return jobs
 
     def picard_merge_sam_files(self):
@@ -268,6 +312,24 @@ class DnaSeq(common.Illumina):
                 job.name = "merge_realigned." + sample.name
                 jobs.append(job)
 
+        report_file = os.path.join("report", "DnaSeq.gatk_indel_realigner.md")
+        jobs.append(
+            Job(
+                [os.path.join("alignment", sample.name, sample.name + ".realigned.qsorted.bam") for sample in self.samples],
+                [report_file],
+                command="""\
+mkdir -p report && \\
+cp \\
+  {report_template_dir}/{basename_report_file} \\
+  {report_file}""".format(
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="merge_realigned_report")
+        )
+
         return jobs
 
     def fix_mate_by_coordinate(self):
@@ -286,6 +348,25 @@ class DnaSeq(common.Illumina):
                 bvatools.groupfixmate(input, output_prefix + ".tmp.bam"),
                 samtools.sort(output_prefix + ".tmp.bam", output_prefix)
             ], name="fix_mate_by_coordinate." + sample.name))
+
+        report_file = os.path.join("report", "DnaSeq.fix_mate_by_coordinate.md")
+        jobs.append(
+            Job(
+                [os.path.join("alignment", sample.name, sample.name + ".matefixed.sorted.bam") for sample in self.samples],
+                [report_file],
+                command="""\
+mkdir -p report && \\
+cp \\
+  {report_template_dir}/{basename_report_file} \\
+  {report_file}""".format(
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="fix_mate_by_coordinate_report")
+        )
+
         return jobs
 
     def picard_mark_duplicates(self):
@@ -305,6 +386,25 @@ class DnaSeq(common.Illumina):
             job = picard.mark_duplicates([input], output, metrics_file)
             job.name = "picard_mark_duplicates." + sample.name
             jobs.append(job)
+
+        report_file = os.path.join("report", "DnaSeq.picard_mark_duplicates.md")
+        jobs.append(
+            Job(
+                [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam") for sample in self.samples],
+                [report_file],
+                command="""\
+mkdir -p report && \\
+cp \\
+  {report_template_dir}/{basename_report_file} \\
+  {report_file}""".format(
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="picard_mark_duplicates_report")
+        )
+
         return jobs
 
     def recalibration(self):
@@ -329,6 +429,25 @@ class DnaSeq(common.Illumina):
                 gatk.print_reads(input, print_reads_output, base_recalibrator_output),
                 Job(input_files=[print_reads_output], output_files=[print_reads_output + ".md5"], command="md5sum " + print_reads_output + " > " + print_reads_output + ".md5")
             ], name="recalibration." + sample.name))
+
+        report_file = os.path.join("report", "DnaSeq.recalibration.md")
+        jobs.append(
+            Job(
+                [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam") for sample in self.samples],
+                [report_file],
+                command="""\
+mkdir -p report && \\
+cp \\
+  {report_template_dir}/{basename_report_file} \\
+  {report_file}""".format(
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="recalibration_report")
+        )
+
         return jobs
 
     def metrics(self):
@@ -371,9 +490,6 @@ class DnaSeq(common.Illumina):
             job.name = "igvtools_compute_tdf." + sample.name
             jobs.append(job)
 
-            job = samtools.flagstat(input, recal_file_prefix + "bam.flagstat")
-            job.name = "samtools_flagstat." + sample.name
-            jobs.append(job)
         return jobs
 
     def picard_calculate_hs_metrics(self):
@@ -524,11 +640,49 @@ class DnaSeq(common.Illumina):
         Merge metrics. Read metrics per sample are merged at this step.
         """
 
+        trim_metrics_file = os.path.join("metrics", "trimSampleTable.tsv")
+        metrics_file = os.path.join("metrics", "SampleMetrics.stats")
+        report_metrics_file = os.path.join("report", "sequenceAlignmentTable.tsv")
+
+        report_file = os.path.join("report", "DnaSeq.dna_sample_metrics.md")
         job = concat_jobs([
             Job(command="mkdir -p metrics"),
-            metrics.dna_sample_metrics("alignment", "metrics/SampleMetrics.stats", config.param('DEFAULT', 'experiment_type'))
+            metrics.dna_sample_metrics("alignment", metrics_file, config.param('DEFAULT', 'experiment_type')),
+            Job(
+                [metrics_file],
+                [report_file],
+                [['dna_sample_metrics', 'module_pandoc']],
+                # Ugly awk to merge sample metrics with trim metrics if they exist; knitr may do this better
+                command="""\
+mkdir -p report && \\
+if [[ -f {trim_metrics_file} ]]
+then
+  awk -F"\t" 'FNR==NR{{raw_reads[$1]=$2; surviving_reads[$1]=$3; surviving_pct[$1]=$4; next}}{{OFS="\t"; if ($2=="Mapped Reads"){{mapped_pct="Mapped %"}} else {{mapped_pct=($2 / surviving_reads[$1] * 100)}}; printf $1"\t"raw_reads[$1]"\t"surviving_reads[$1]"\t"surviving_pct[$1]"\t"$2"\t"mapped_pct; for (i = 3; i<= NF; i++) {{printf "\t"$i}}; print ""}}' \\
+  {trim_metrics_file} \\
+  {metrics_file} \\
+  > {report_metrics_file}
+else
+  cp {metrics_file} {report_metrics_file}
+fi && \\
+sequence_alignment_table_md=`if [[ -f {trim_metrics_file} ]] ; then cut -f1-10 {report_metrics_file} | LC_NUMERIC=en_CA awk -F "\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----"}} else {{print $1, sprintf("%\\47d", $2), sprintf("%\\47d", $3), sprintf("%.1f", $4), sprintf("%\\47d", $5), sprintf("%.1f", $6), sprintf("%\\47d", $7), sprintf("%\\47d", $8), sprintf("%.1f", $9), $10}}}}' ; else cut -f1-6 {report_metrics_file} | LC_NUMERIC=en_CA awk -F "\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----:|-----:|-----:|-----:|-----"}} else {{print $1, sprintf("%\\47d", $2), sprintf("%\\47d", $3), sprintf("%\\47d", $4), sprintf("%.1f", $5), $6}}}}' ; fi`
+pandoc \\
+  {report_template_dir}/{basename_report_file} \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable sequence_alignment_table="$sequence_alignment_table_md" \\
+  --to markdown \\
+  > {report_file}""".format(
+                    report_template_dir=self.report_template_dir,
+                    trim_metrics_file=trim_metrics_file,
+                    metrics_file=metrics_file,
+                    basename_report_file=os.path.basename(report_file),
+                    report_metrics_file=report_metrics_file,
+                    report_file=report_file
+                ),
+                report_files=[report_file]
+            )
         ], name="dna_sample_metrics")
         job.input_files = [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.metrics") for sample in self.samples]
+        job.input_files += [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.all.metrics.insert_size_metrics") for sample in self.samples]
         return [job]
 
     def generate_approximate_windows(self, nb_jobs):
@@ -621,6 +775,7 @@ class DnaSeq(common.Illumina):
         for all samples in the experiment.
         """
 
+        jobs = []
         nb_jobs = config.param('snp_and_indel_bcf', 'approximate_nb_jobs', type='posint')
 
         if nb_jobs == 1:
@@ -630,12 +785,32 @@ class DnaSeq(common.Illumina):
         output_file_prefix = "variants/allSamples.merged."
 
         bcf = output_file_prefix + "bcf"
-        job = concat_jobs([
+        jobs.append(concat_jobs([
             samtools.bcftools_cat(inputs, bcf),
             samtools.bcftools_view(bcf, output_file_prefix + "flt.vcf")
-        ])
-        job.name = "merge_filter_bcf"
-        return [job]
+        ], name = "merge_filter_bcf"))
+
+        report_file = os.path.join("report", "DnaSeq.merge_filter_bcf.md")
+        jobs.append(
+            Job(
+                [output_file_prefix + "flt.vcf"],
+                [report_file],
+                command="""\
+mkdir -p report && \\
+cp \\
+  {report_template_dir}/{basename_report_file} \\
+  {report_template_dir}/HumanVCFformatDescriptor.tsv \\
+  report/ && \\
+sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {report_file}""".format(
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="merge_filter_bcf_report")
+        )
+
+        return jobs
 
     def filter_nstretches(self):
         """
@@ -672,9 +847,32 @@ class DnaSeq(common.Illumina):
         SnpEff annotates and predicts the effects of variants on genes (such as amino acid changes).
         """
 
-        job = snpeff.compute_effects("variants/allSamples.merged.flt.mil.snpId.vcf", "variants/allSamples.merged.flt.mil.snpId.snpeff.vcf", split=True)
+        jobs = []
+
+        snpeff_file = os.path.join("variants", "allSamples.merged.flt.mil.snpId.snpeff.vcf")
+        report_file = os.path.join("report", "DnaSeq.snp_effect.md")
+        job = snpeff.compute_effects("variants/allSamples.merged.flt.mil.snpId.vcf", snpeff_file, split=True)
         job.name = "snp_effect"
-        return [job]
+        jobs.append(job)
+
+        jobs.append(Job(
+                [snpeff_file],
+                [report_file],
+                command="""\
+mkdir -p report && \\
+cp \\
+  {report_template_dir}/{basename_report_file} \\
+  report/""".format(
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="snp_effect_report"
+            )
+        )
+
+        return jobs
 
     def dbnsfp_annotation(self):
         """
@@ -709,37 +907,54 @@ class DnaSeq(common.Illumina):
         """
         """
         variants_file_prefix = "variants/allSamples.merged.flt.mil.snpId."
+        snv_metrics_files = ["metrics/allSamples.SNV.SummaryTable.tsv", "metrics/allSamples.SNV.EffectsFunctionalClass.tsv", "metrics/allSamples.SNV.EffectsImpact.tsv"]
+
         job = metrics.snv_graph_metrics(variants_file_prefix + "snpeff.vcf.statsFile.txt", "metrics/allSamples.SNV")
-        job.output_files = ["metrics/allSamples.SNV.SummaryTable.tsv", "metrics/allSamples.SNV.EffectsFunctionalClass.tsv", "metrics/allSamples.SNV.EffectsImpact.tsv"]
+        job.output_files = snv_metrics_files
         job.name = "metrics_snv_graph"
 
-        return [job]
+        report_file = os.path.join("report", "DnaSeq.metrics_snv_graph_metrics.md")
 
-    def gq_seq_utils_report(self):
-        """
-        Generate the standard report. A summary html report is automatically generated by the pipeline.
-        This report contains description of the sequencing experiment as well as a detailed presentation
-        of the pipeline steps and results. Various Quality Control (QC) summary statistics are included
-        in the report and additional QC analysis is accessible for download directly through the report.
-        The report includes also the main references of the software and methods used during the analysis,
-        together with the full list of parameters passed to the pipeline main script.
-        """
-
-        job = gq_seq_utils.report(
-            [config_file.name for config_file in self.args.config],
-            self.output_dir,
-            "DNAseq",
-            self.output_dir
-        )
-        job.input_files = [
-            "metrics/trimming.stats",
-            "metrics/SampleMetrics.stats",
-            "metrics/allSamples.SNV.SummaryTable.tsv",
-            "metrics/allSamples.SNV.EffectsFunctionalClass.tsv",
-            "metrics/allSamples.SNV.EffectsImpact.tsv"
-        ]
-        job.name = "gq_seq_utils_report"
-        return [job]
+        return [concat_jobs([
+            job,
+            Job(
+                snv_metrics_files,
+                [report_file],
+                [['metrics_snv_graph_metrics', 'module_pandoc']],
+                command="""\
+mkdir -p report && \\
+paste \\
+  <(echo -e "Number of variants before filter\nNumber of variants filtered out\n%\nNumber of not variants\n%\nNumber of variants processed\nNumber of known variants\n%\nTransitions\nTransversions\nTs Tv ratio\nmissense\nnonsense\nsilent\nmissense silent ratio\nhigh impact\nlow impact\nmoderate impact\nmodifier impact") \\
+  <(paste \\
+    metrics/allSamples.SNV.SummaryTable.tsv \\
+    metrics/allSamples.SNV.EffectsFunctionalClass.tsv \\
+    <(sed '1d' metrics/allSamples.SNV.EffectsImpact.tsv) \\
+  | sed '1d' | sed 's/\t/\\n/g') \\
+  > report/SNV.SummaryTable.tsv
+snv_summary_table_md=`sed 's/\t/|/g' report/SNV.SummaryTable.tsv`
+pandoc \\
+  {report_template_dir}/{basename_report_file} \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable snv_summary_table="$snv_summary_table_md" \\
+  --to markdown \\
+  > {report_file}
+for file in SNVQuality SNVCoverage IndelLength CountRegions CountEffects BaseChange codonChange AminoAcidChange changeRate TsTv
+do
+  for ext in jpeg pdf tsv
+  do
+  cp \\
+    metrics/allSamples.SNV.$file.$ext  \\
+    report/SNV.$file.$ext
+  done
+done
+cp metrics/allSamples.SNV.chromosomeChange.zip report/SNV.chromosomeChange.zip""".format(
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file]
+            )
+        ], name="metrics_snv_graph_metrics")]
 
     @property
     def steps(self):
@@ -772,8 +987,7 @@ class DnaSeq(common.Illumina):
             self.snp_effect,
             self.dbnsfp_annotation,
             self.metrics_vcf_stats,
-            self.metrics_snv_graph_metrics,
-            self.gq_seq_utils_report
+            self.metrics_snv_graph_metrics
         ]
 
 if __name__ == '__main__': 

@@ -1,5 +1,24 @@
 #!/usr/bin/env python
 
+################################################################################
+# Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
+#
+# This file is part of MUGQIC Pipelines.
+#
+# MUGQIC Pipelines is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# MUGQIC Pipelines is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
+################################################################################
+
 # Python Standard Modules
 import collections
 import datetime
@@ -13,10 +32,11 @@ log = logging.getLogger(__name__)
 
 class Job:
 
-    def __init__(self, input_files=[], output_files=[], module_entries = [], name="", command="", removable_files=[]):
+    def __init__(self, input_files=[], output_files=[], module_entries = [], name="", command="", report_files=[], removable_files=[]):
         # Remove undefined input/output/removable files if any
         self._input_files = filter(None, input_files)
         self._output_files = filter(None, output_files)
+        self._report_files = filter(None, report_files)
         self._removable_files = filter(None, removable_files)
 
         # Retrieve modules from config, removing duplicates but keeping the order
@@ -44,6 +64,10 @@ class Job:
     @property
     def output_files(self):
         return self._output_files
+
+    @property
+    def report_files(self):
+        return self._report_files
 
     @property
     def removable_files(self):
@@ -121,18 +145,20 @@ class Job:
 # Create a new job by concatenating a list of jobs together
 def concat_jobs(jobs, name=""):
 
-    # Merge all input/output/removable files and modules
+    # Merge all input/output/report/removable files and modules
     input_files = []
     output_files = []
+    report_files = []
     removable_files = []
     modules = []
     for job_item in jobs:
         input_files.extend([input_file for input_file in job_item.input_files if input_file not in input_files and input_file not in output_files])
         output_files.extend([output_file for output_file in job_item.output_files if output_file not in output_files])
+        report_files.extend([report_file for report_file in job_item.report_files if report_file not in report_files])
         removable_files.extend([removable_file for removable_file in job_item.removable_files if removable_file not in removable_files])
         modules.extend([module for module in job_item.modules if module not in modules])
 
-    job = Job(input_files, output_files, name=name, removable_files=removable_files)
+    job = Job(input_files, output_files, name=name, report_files=report_files, removable_files=removable_files)
     job.modules = modules
 
     # Merge commands
@@ -145,14 +171,18 @@ def pipe_jobs(jobs, name=""):
 
     job = Job(jobs[0].input_files, jobs[-1].output_files, name=name)
 
-    # Merge all removable files and modules
+    # Merge all report/removable files and modules
+    report_files = []
     removable_files = []
     modules = []
     for job_item in jobs:
+        report_files.extend(job_item.report_files)
         removable_files.extend(job_item.removable_files)
         modules.extend(job_item.modules)
 
     # Remove duplicates if any, keeping the order
+    report_files = list(collections.OrderedDict.fromkeys([report_file for report_file in report_files]))
+    job.report_files = report_files
     removable_files = list(collections.OrderedDict.fromkeys([removable_file for removable_file in removable_files]))
     job.removable_files = removable_files
     modules = list(collections.OrderedDict.fromkeys([module for module in modules]))

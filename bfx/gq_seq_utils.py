@@ -1,5 +1,24 @@
 #!/usr/bin/env python
 
+################################################################################
+# Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
+#
+# This file is part of MUGQIC Pipelines.
+#
+# MUGQIC Pipelines is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# MUGQIC Pipelines is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
+################################################################################
+
 # Python Standard Modules
 import os
 
@@ -11,7 +30,7 @@ def exploratory_analysis_rnaseq(htseq_count_file, cuffnorm_dir, genes_file, outp
 
     return Job(
         [htseq_count_file, os.path.join(cuffnorm_dir, "isoforms.fpkm_table"), os.path.join(cuffnorm_dir, "isoforms.attr_table")],
-        [os.path.join(output_dir, "top_sd_heatmap_cufflinks_logFPKMs.pdf")],
+        [os.path.join(output_dir, "index.tsv"), os.path.join(output_dir, "top_sd_heatmap_cufflinks_logFPKMs.pdf")],
         [
             ['gq_seq_utils_exploratory_analysis_rnaseq', 'module_R'],
             ['gq_seq_utils_exploratory_analysis_rnaseq', 'module_mugqic_R_packages']
@@ -21,6 +40,8 @@ R --no-save --no-restore <<-EOF
 suppressPackageStartupMessages(library(gqSeqUtils))
 
 exploratoryAnalysisRNAseq(htseq.counts.path="{htseq_count_file}", cuffnorm.fpkms.dir="{cuffnorm_dir}", genes.path="{genes_file}", output.dir="{output_dir}")
+desc = readRDS(file.path("{output_dir}","index.RData"))
+write.table(desc,file=file.path("{output_dir}","index.tsv"),sep='\t',quote=F,col.names=T,row.names=F)
 print("done.")
 
 EOF""".format(

@@ -1,5 +1,24 @@
 #!/usr/bin/env python
 
+################################################################################
+# Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
+#
+# This file is part of MUGQIC Pipelines.
+#
+# MUGQIC Pipelines is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# MUGQIC Pipelines is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
+################################################################################
+
 # Python Standard Modules
 import logging
 import os
@@ -232,29 +251,76 @@ END
         """
         The trim statistics per readset are merged at this step.
         """
-        merge_trim_stats = os.path.join("metrics", "trimming.stats")
-        job = concat_jobs([Job(command="rm -f " + merge_trim_stats), Job(command="mkdir -p metrics")])
+
+        read_type = "Paired" if self.run_type == 'PAIRED_END' else "Single"
+        readset_merge_trim_stats = os.path.join("metrics", "trimReadsetTable.tsv")
+        job = concat_jobs([Job(command="mkdir -p metrics"), Job(command="echo 'Sample\tReadset\tRaw {read_type} Reads #\tSurviving {read_type} Reads #\tSurviving {read_type} Reads %' > ".format(read_type=read_type) + readset_merge_trim_stats)])
         for readset in self.readsets:
             trim_log = os.path.join("trim", readset.sample.name, readset.name + ".trim.log")
             if readset.run_type == "PAIRED_END":
-                perl_command = "perl -pe 's/^Input Read Pairs: (\d+).*Both Surviving: (\d+).*Forward Only Surviving: (\d+).*$/{readset.sample.name}\t{readset.name}\t\\1\t\\2\t\\3/'".format(readset=readset)
+                # Retrieve readset raw and surviving reads from trimmomatic log using ugly Perl regexp
+                perl_command = "perl -pe 's/^Input Read Pairs: (\d+).*Both Surviving: (\d+).*Forward Only Surviving: (\d+).*$/{readset.sample.name}\t{readset.name}\t\\1\t\\2/'".format(readset=readset)
             elif readset.run_type == "SINGLE_END":
-                perl_command = "perl -pe 's/^Input Reads: (\d+).*Surviving: (\d+).*$/{readset.sample.name}\t{readset.name}\t\\1\t\\2\t\\2/'".format(readset=readset)
+                perl_command = "perl -pe 's/^Input Reads: (\d+).*Surviving: (\d+).*$/{readset.sample.name}\t{readset.name}\t\\1\t\\2/'".format(readset=readset)
 
             job = concat_jobs([
                 job,
                 Job(
                     [trim_log],
-                    [merge_trim_stats],
+                    [readset_merge_trim_stats],
+                    # Create readset trimming stats TSV file with paired or single read count using ugly awk
                     command="""\
 grep ^Input {trim_log} | \\
-{perl_command} \\
-  >> {merge_trim_stats}""".format(
+{perl_command} | \\
+awk '{{OFS="\t"; print $0, $4 / $3 * 100}}' \\
+  >> {readset_merge_trim_stats}""".format(
                         trim_log=trim_log,
                         perl_command=perl_command,
-                        merge_trim_stats=merge_trim_stats
+                        readset_merge_trim_stats=readset_merge_trim_stats
                     )
                 )
-            ], name="merge_trimmomatic_stats")
+            ])
 
-        return [job]
+        sample_merge_trim_stats = os.path.join("metrics", "trimSampleTable.tsv")
+        report_file = os.path.join("report", "Illumina.merge_trimmomatic_stats.md")
+        return [concat_jobs([
+            job,
+            Job(
+                [readset_merge_trim_stats],
+                [sample_merge_trim_stats],
+                # Create sample trimming stats TSV file with total read counts (i.e. paired * 2 if applicable) using ugly awk
+                command="""\
+cut -f1,3- {readset_merge_trim_stats} | awk -F"\t" '{{OFS="\t"; if (NR==1) {{if ($2=="Raw Paired Reads #") {{paired=1}};print "Sample", "Raw Reads #", "Surviving Reads #", "Surviving %"}} else {{if (paired) {{$2=$2*2; $3=$3*2}}; raw[$1]+=$2; surviving[$1]+=$3}}}}END{{for (sample in raw){{print sample, raw[sample], surviving[sample], surviving[sample] / raw[sample] * 100}}}}' \\
+  > {sample_merge_trim_stats}""".format(
+                    readset_merge_trim_stats=readset_merge_trim_stats,
+                    sample_merge_trim_stats=sample_merge_trim_stats
+                )
+            ),
+            Job(
+                [sample_merge_trim_stats],
+                [report_file],
+                [['merge_trimmomatic_stats', 'module_pandoc']],
+                command="""\
+mkdir -p report && \\
+cp {readset_merge_trim_stats} {sample_merge_trim_stats} report/ && \\
+trim_readset_table_md=`LC_NUMERIC=en_CA awk -F "\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----|-----:|-----:|-----:"}} else {{print $1, $2, sprintf("%\\47d", $3), sprintf("%\\47d", $4), sprintf("%.1f", $5)}}}}' {readset_merge_trim_stats}` && \\
+pandoc \\
+  {report_template_dir}/{basename_report_file} \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable trailing_min_quality={trailing_min_quality} \\
+  --variable min_length={min_length} \\
+  --variable read_type={read_type} \\
+  --variable trim_readset_table="$trim_readset_table_md" \\
+  --to markdown \\
+  > {report_file}""".format(
+                    trailing_min_quality=config.param('trimmomatic', 'trailing_min_quality', type='int'),
+                    min_length=config.param('trimmomatic', 'min_length', type='posint'),
+                    read_type=read_type,
+                    report_template_dir=self.report_template_dir,
+                    readset_merge_trim_stats=readset_merge_trim_stats,
+                    sample_merge_trim_stats=sample_merge_trim_stats,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file]
+            )], name="merge_trimmomatic_stats")]
