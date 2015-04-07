@@ -171,7 +171,7 @@ pandoc --to=markdown \\
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="bwa_mem_picard_sort_sam.report")
+                name="bwa_mem_picard_sort_sam_report")
         )
 
         return jobs
@@ -327,7 +327,7 @@ cp \\
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="merge_realigned.report")
+                name="merge_realigned_report")
         )
 
         return jobs
@@ -364,7 +364,7 @@ cp \\
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="fix_mate_by_coordinate.report")
+                name="fix_mate_by_coordinate_report")
         )
 
         return jobs
@@ -402,7 +402,7 @@ cp \\
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="picard_mark_duplicates.report")
+                name="picard_mark_duplicates_report")
         )
 
         return jobs
@@ -445,7 +445,7 @@ cp \\
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="recalibration.report")
+                name="recalibration_report")
         )
 
         return jobs
@@ -807,7 +807,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="merge_filter_bcf.report")
+                name="merge_filter_bcf_report")
         )
 
         return jobs
@@ -868,7 +868,7 @@ cp \\
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="snp_effect.report"
+                name="snp_effect_report"
             )
         )
 
