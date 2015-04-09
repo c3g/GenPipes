@@ -39,6 +39,7 @@ module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
 prepend-path    PATH                \$root
+prepend-path    LD_LIBRARY_PATH     \$root/bamtools-2.3.0/lib/
 "
 }
 
