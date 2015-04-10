@@ -481,7 +481,7 @@ pandoc --to=markdown \\
                                 report_file=report_file
                             ),
                             report_files=[os.path.relpath(report_file, mer_size_directory)],
-                            name="pacbio_tools_assembly_stats." + sample_cutoff_mer_size + ".report")
+                            name="pacbio_tools_assembly_stats_report." + sample_cutoff_mer_size)
                     )
 
         return jobs
@@ -556,7 +556,7 @@ pandoc --to=markdown \\
                                 report_file=report_file
                             ),
                             report_files=[os.path.relpath(report_file, mer_size_directory)],
-                            name="blast." + sample_cutoff_mer_size + ".report")
+                            name="blast_report." + sample_cutoff_mer_size)
                     )
 
         return jobs
@@ -637,7 +637,7 @@ pandoc --to=markdown \\
                                 report_file=report_file
                             ),
                             report_files=[os.path.relpath(report_file, mer_size_directory)],
-                            name="mummer." + sample_cutoff_mer_size + ".report")
+                            name="mummer_report." + sample_cutoff_mer_size)
                     )
 
         return jobs

@@ -207,3 +207,26 @@ java {java_other_options} -Xmx{ram} -jar $BVATOOLS_JAR \\
         threads=" \\\n  --threads " + str(threads) if threads > 1 else ""
         )
     )
+
+def bam2fq(bam, tags=None , out=None):
+
+    return Job(
+        [bam],
+        [out],
+        [
+            ['bvatools_bam2fq', 'module_java'],
+            ['bvatools_bam2fq', 'module_bvatools']
+        ],
+        command="""\
+java {java_other_options} -Xmx{ram} -jar $BVATOOLS_JAR \\
+  bam2fq {other_options} \\
+  --bam {bam} {tags} {out} """.format(
+        java_other_options=config.param('bvatools_bam2fq', 'java_other_options'),
+        ram=config.param('bvatools_bam2fq', 'ram'),
+        other_options=config.param('bvatools_bam2fq', 'other_options', required=False),
+        bam=bam,
+        tags=" \\\n  --tags " + tags if tags else "",
+        out=" \\\n  --out " + out if out else ""
+        )
+    )
+

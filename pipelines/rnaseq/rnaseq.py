@@ -46,6 +46,7 @@ from bfx import metrics
 from bfx import picard
 from bfx import samtools
 from bfx import star
+from bfx import bvatools
 from pipelines import common
 import utils
 
@@ -245,7 +246,7 @@ pandoc --to=markdown \\
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="star.report")
+                name="star_report")
         )
 
         return jobs
@@ -381,12 +382,91 @@ pandoc \\
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="rnaseqc.report"
+                name="rnaseqc_report"
             )
         )
 
         return jobs
 
+
+    def picard_rna_metrics(self):
+        """
+        Computes a series of quality control metrics using both CollectRnaSeqMetrics and CollectAlignmentSummaryMetrics functions
+        metrics are collected using [Picard](http://broadinstitute.github.io/picard/).
+        """
+        
+        jobs = []
+        reference_file = config.param('picard_rna_metrics', 'genome_fasta', type='filepath')
+        for sample in self.samples:
+                alignment_file = os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.bam")
+                output_directory = os.path.join("metrics", sample.name)
+                
+                job = concat_jobs([
+                        Job(command="mkdir -p " + output_directory, removable_files=[output_directory]),
+                        picard.collect_multiple_metrics(alignment_file, os.path.join(output_directory,sample.name),reference_file),
+                        picard.collect_rna_metrics(alignment_file, os.path.join(output_directory,sample.name))
+                ],name="picard_rna_metrics."+ sample.name)
+                jobs.append(job)
+        
+        return jobs
+
+    def estimate_ribosomal_rna(self):
+        """
+        Use bwa mem to align reads on the rRNA reference fasta and count the number of read mapped
+        The filtered reads are aligned to a reference fasta file of ribosomal sequence. The alignment is done per sequencing readset.
+        The alignment software used is [BWA](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem.
+        BWA output BAM files are then sorted by coordinate using [Picard](http://broadinstitute.github.io/picard/).
+
+        This step takes as input files:
+
+        readset Bam files
+        """
+
+        jobs = []
+        for readset in self.readsets:
+            readset_bam = os.path.join("alignment", readset.sample.name, readset.name , "Aligned.sortedByCoord.out.bam")
+            output_folder = os.path.join("metrics",readset.sample.name, readset.name)
+            readset_metrics_bam = os.path.join(output_folder,readset.name +"rRNA.bam")
+
+
+            job = concat_jobs([
+                Job(command="mkdir -p " + os.path.dirname(readset_bam) + " " + output_folder),
+                pipe_jobs([
+                    bvatools.bam2fq(
+                        readset_bam
+                    ),
+                    bwa.mem(
+                        "/dev/stdin",
+                        None,
+                        read_group="'@RG" + \
+                            "\tID:" + readset.name + \
+                            "\tSM:" + readset.sample.name + \
+                            ("\tLB:" + readset.library if readset.library else "") + \
+                            ("\tPU:run" + readset.run + "_" + readset.lane if readset.run and readset.lane else "") + \
+                            ("\tCN:" + config.param('bwa_mem_rRNA', 'sequencing_center') if config.param('bwa_mem_rRNA', 'sequencing_center', required=False) else "") + \
+                            "\tPL:Illumina" + \
+                            "'",
+                        ref=config.param('bwa_mem_rRNA', 'ribosomal_fasta'),
+                        ini_section='bwa_mem_rRNA'
+                    ),
+                    picard.sort_sam(
+                        "/dev/stdin",
+                        readset_metrics_bam,
+                        "coordinate",
+                        ini_section='picard_sort_sam_rrna'
+                    )
+                ]),
+                tools.py_rrnaBAMcount (
+                    bam=readset_metrics_bam, 
+                    gtf=config.param('bwa_mem_rRNA', 'gtf'), 
+                    output=os.path.join(output_folder,readset.name+"rRNA.stats.tsv"),
+                    typ="transcript")], name="bwa_mem_rRNA." + readset.name )
+            
+            job.removable_files=[readset_metrics_bam]
+            jobs.append(job)
+        return jobs
+
+        
     def wiggle(self):
         """
         Generate wiggle tracks suitable for multiple browsers.
@@ -566,7 +646,7 @@ pandoc --to=markdown \\
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="raw_count_metrics.report")
+                name="raw_count_metrics_report")
         )
 
         return jobs
@@ -682,6 +762,28 @@ END
 
         return jobs
 
+    def fpkm_correlation_matrix(self):
+        """
+        Compute the pearson corrleation matrix of gene and transcripts FPKM. FPKM data are those estimated by cuffnorm.
+        """
+        output_directory = "metrics"
+        output_transcript = os.path.join(output_directory,"transcripts_fpkm_correlation_matrix.tsv")
+        cuffnorm_transcript = os.path.join("cuffnorm","isoforms.fpkm_table")
+        output_gene = os.path.join(output_directory,"gene_fpkm_correlation_matrix.tsv")
+        cuffnorm_gene = os.path.join("cuffnorm","genes.fpkm_table")
+        
+        jobs = []
+      
+        job = concat_jobs([Job(command="mkdir -p " + output_directory),
+                           utils.utils.fpkm_correlation_matrix(cuffnorm_transcript, output_transcript)])
+        job.name="fpkm_correlation_matrix_transcript"
+        jobs = jobs + [job]
+        job = utils.utils.fpkm_correlation_matrix(cuffnorm_gene, output_gene)
+        job.name="fpkm_correlation_matrix_gene"
+        jobs = jobs + [job]
+        
+        return jobs
+
     def gq_seq_utils_exploratory_analysis_rnaseq(self):
         """
         Exploratory analysis using the gqSeqUtils R package.
@@ -725,7 +827,7 @@ cut -f3-4 exploratory/index.tsv | sed '1d' | perl -pe 's/^([^\t]*)\t(.*)$/* [\\1
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="gq_seq_utils_exploratory_analysis_rnaseq.report")
+                name="gq_seq_utils_exploratory_analysis_rnaseq_report")
         )
 
         report_file = os.path.join("report", "RnaSeq.cuffnorm.md")
@@ -744,7 +846,7 @@ cp \\
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="cuffnorm.report")
+                name="cuffnorm_report")
         )
 
         return jobs
@@ -840,7 +942,7 @@ done""".format(
                     contrasts=" ".join([contrast.name for contrast in self.contrasts])
                 ),
                 report_files=[report_file],
-                name="differential_expression_goseq.report")
+                name="differential_expression_goseq_report")
         )
 
         return jobs
@@ -855,6 +957,8 @@ done""".format(
             self.picard_merge_sam_files,
             self.picard_sort_sam,
             self.picard_mark_duplicates,
+            self.picard_rna_metrics,
+            self.estimate_ribosomal_rna,
             self.rnaseqc,
             self.wiggle,
             self.raw_counts,
@@ -864,6 +968,7 @@ done""".format(
             self.cuffquant,
             self.cuffdiff,
             self.cuffnorm,
+            self.fpkm_correlation_matrix,
             self.gq_seq_utils_exploratory_analysis_rnaseq,
             self.differential_expression,
             self.differential_expression_goseq

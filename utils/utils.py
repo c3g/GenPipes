@@ -29,6 +29,11 @@ import string
 import sys
 import shutil
 
+
+# MUGQIC Modules
+from core.config import *
+from core.job import *
+
 log = logging.getLogger(__name__)
 
 def number_symbol_converter(x):
@@ -51,6 +56,29 @@ def number_symbol_converter(x):
             raise Exception("Number abbreviation \"" + x + "\" is not recognized finishing with a number symbol (k, M, G, T, P, E, Z or Y")
     except: 
         raise Exception("Number abbreviation \"" + x + "\" is not a number abbreviation")
+
+
+def fpkm_correlation_matrix(cuffnorm_file, output_file):
+
+    return Job(
+        [cuffnorm_file],
+        [output_file],
+        [
+            ['fpkm_correlation_matrix', 'module_R'],
+        ],
+        command="""\
+R --no-save --no-restore <<-EOF
+dataFile=read.table("{cuffnorm_file}",header=T,check.names=F)
+fpkm=cbind(dataFile[,2:ncol(dataFile)])
+corTable=cor(log2(fpkm+0.1))
+corTableOut=rbind(c('Vs.',colnames(corTable)),cbind(rownames(corTable),round(corTable,3)))
+write.table(corTableOut,file="{output_file}",col.names=F,row.names=F,sep="\t",quote=F)
+print("done.")
+
+EOF""".format(
+        cuffnorm_file=cuffnorm_file,
+        output_file=output_file,
+    ))
 
 
 def cleanFiles(x):

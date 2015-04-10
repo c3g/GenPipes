@@ -44,7 +44,7 @@ Rscript $R_TOOLS/DNAsampleMetrics.R \\
         experiment_type=experiment_type
     ))
 
-def rnaseqc(sample_file, output_directory, is_single_end=False, gtf_file=None, reference=None, ribosomal_fasta=None):
+def rnaseqc(sample_file, output_directory, is_single_end=False, gtf_file=None, reference=None, ribosomal_interval_file=None):
     return Job(
         [sample_file],
         [os.path.join(output_directory, "index.html"), os.path.join(output_directory, "metrics.tsv")],
@@ -55,23 +55,22 @@ def rnaseqc(sample_file, output_directory, is_single_end=False, gtf_file=None, r
         ],
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $RNASEQC_JAR \\
-  -BWArRNA {reference_ribosomal_rna_fasta} \\
   -n {number_top_transcripts} \\
   -o {output_directory} \\
   -r {reference_genome_fasta} \\
   -s {sample_file} \\
-  -t {gtf_file}{other_options}{single_end}""".format(
+  -t {gtf_file}{other_options}{single_end}{ribosomal_interval_file}""".format(
         tmp_dir=config.param('rnaseqc', 'tmp_dir'),
         java_other_options=config.param('rnaseqc', 'java_other_options'),
         ram=config.param('rnaseqc', 'ram'),
-        reference_ribosomal_rna_fasta=ribosomal_fasta if ribosomal_fasta else config.param('rnaseqc', 'ribosomal_fasta', type='filepath'),
         number_top_transcripts=config.param('rnaseqc', 'number_top_transcript', type='int'),
         output_directory=output_directory,
         reference_genome_fasta=reference if reference else config.param('rnaseqc', 'genome_fasta', type='filepath'),
         sample_file=sample_file,
         gtf_file=gtf_file if gtf_file else config.param('rnaseqc', 'gtf', type='filepath'),
         other_options=" \\\n  " + config.param('rnaseqc', 'other_options', required=False) if config.param('rnaseqc', 'other_options', required=False) else "",
-        single_end=" \\\n  -singleEnd" if is_single_end else ""
+        single_end=" \\\n  -singleEnd" if is_single_end else "",
+        ribosomal_interval_file= " \\\n  -rRNA " + ribosomal_interval_file if ribosomal_interval_file else ""
         )
     )
 

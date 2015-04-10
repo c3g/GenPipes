@@ -242,7 +242,7 @@ pandoc --to=markdown \\
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="insilico_read_normalization_all.report")
+                name="insilico_read_normalization_all_report")
         )
 
         return jobs
@@ -327,7 +327,7 @@ pandoc --to=markdown \\
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="trinity.report")
+                name="trinity_report")
         )
 
         return jobs
@@ -448,7 +448,7 @@ pandoc --to=markdown \\
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="blastx_trinity_uniprot_merge.report")
+                name="blastx_trinity_uniprot_merge_report")
         )
 
         return jobs
@@ -718,7 +718,6 @@ Trinotate {trinotate_sqlite} report -E {evalue} --pfam_cutoff {pfam_cutoff} | cu
                  trinity_fasta + ".RSEM.idx.fa"],
                 [['align_and_estimate_abundance_prep_reference', 'module_perl'],
                  ['align_and_estimate_abundance_prep_reference', 'module_bowtie'],
-                 ['align_and_estimate_abundance_prep_reference', 'module_rsem'],
                  ['align_and_estimate_abundance_prep_reference', 'module_samtools'],
                  ['align_and_estimate_abundance_prep_reference', 'module_trinity']],
                 command="""\
@@ -762,7 +761,6 @@ align_and_estimate_abundance.pl \\
                  os.path.join(output_directory, sample.name + ".isoforms.results")],
                 [['align_and_estimate_abundance_prep_reference', 'module_perl'],
                  ['align_and_estimate_abundance_prep_reference', 'module_bowtie'],
-                 ['align_and_estimate_abundance_prep_reference', 'module_rsem'],
                  ['align_and_estimate_abundance_prep_reference', 'module_samtools'],
                  ['align_and_estimate_abundance_prep_reference', 'module_trinity']],
                 command="""\
@@ -969,7 +967,7 @@ done""".format(
                     swissprot_db=os.path.basename(config.param("blastx_trinity_uniprot", "swissprot_db", type='prefixpath'))
                 ),
                 report_files=[report_file])
-        ], name="differential_expression.report"))
+        ], name="differential_expression_report"))
 
         return jobs
 

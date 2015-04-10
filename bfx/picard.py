@@ -243,15 +243,15 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
         removable_files=[fastq, second_end_fastq]
     )
 
-def sort_sam(input, output, sort_order="coordinate"):
+def sort_sam(input, output, sort_order="coordinate",ini_section='picard_sort_sam'):
 
     return Job(
         [input],
         # Add SAM/BAM index as output only when writing a coordinate-sorted BAM file
         [output, re.sub("\.([sb])am$", ".\\1ai", output) if sort_order == "coordinate" else None],
         [
-            ['picard_sort_sam', 'module_java'],
-            ['picard_sort_sam', 'module_picard']
+            [ini_section, 'module_java'],
+            [ini_section, 'module_picard']
         ],
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/SortSam.jar \\
@@ -261,13 +261,48 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
   OUTPUT={output} \\
   SORT_ORDER={sort_order} \\
   MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
-        tmp_dir=config.param('picard_sort_sam', 'tmp_dir'),
-        java_other_options=config.param('picard_sort_sam', 'java_other_options'),
-        ram=config.param('picard_sort_sam', 'ram'),
+        tmp_dir=config.param(ini_section, 'tmp_dir'),
+        java_other_options=config.param(ini_section, 'java_other_options'),
+        ram=config.param(ini_section, 'ram'),
         input=input,
         output=output,
         sort_order=sort_order,
-        max_records_in_ram=config.param('picard_sort_sam', 'max_records_in_ram', type='int')
+        max_records_in_ram=config.param(ini_section, 'max_records_in_ram', type='int')
         ),
         removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output) if sort_order == "coordinate" else None]
+    )
+
+def collect_rna_metrics(input, output, annotation_flat=None,reference_sequence=None):
+
+    return Job(
+        [input],
+        # collect specific RNA metrics (exon rate, strand specificity, etc...)
+        [output],
+        [
+            ['picard_collect_rna_metrics', 'module_java'],
+            ['picard_collect_rna_metrics', 'module_picard'],
+            ['picard_collect_rna_metrics', 'module_R']
+        ],
+        command="""\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/CollectRnaSeqMetrics.jar \\
+  VALIDATION_STRINGENCY=SILENT  \\
+  TMP_DIR={tmp_dir} \\
+  INPUT={input} \\
+  OUTPUT={output} \\
+  REF_FLAT={ref_flat} \\
+  STRAND_SPECIFICITY={strand_specificity} \\
+  MINIMUM_LENGTH={min_length} \\
+  REFERENCE_SEQUENCE={reference} \\
+  MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
+        tmp_dir=config.param('picard_collect_rna_metrics', 'tmp_dir'),
+        java_other_options=config.param('picard_collect_rna_metrics', 'java_other_options'),
+        ram=config.param('picard_collect_rna_metrics', 'ram'),
+        input=input,
+        output=output,
+        ref_flat=annotation_flat if annotation_flat else config.param('picard_collect_rna_metrics', 'annotation_flat'),
+        strand_specificity=config.param('picard_collect_rna_metrics', 'strand_info'),
+        min_length=config.param('picard_collect_rna_metrics', 'minimum_length',type='int'),
+        reference=reference_sequence if reference_sequence else config.param('picard_collect_rna_metrics', 'genome_fasta'),
+        max_records_in_ram=config.param('picard_collect_rna_metrics', 'max_records_in_ram', type='int')
+        )
     )
