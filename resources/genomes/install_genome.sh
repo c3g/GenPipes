@@ -15,7 +15,7 @@ module_tophat=mugqic/tophat/2.0.11
 
 init_install() {
   # '$MUGQIC_INSTALL_HOME_DEV' for development, '$MUGQIC_INSTALL_HOME' for production
-  INSTALL_HOME=$MUGQIC_INSTALL_HOME_DEV
+  if [ -z "$INSTALL_HOME" ]; then INSTALL_HOME=$MUGQIC_INSTALL_HOME_DEV ; fi
 
   INSTALL_DIR=$INSTALL_HOME/genomes/species/$SPECIES.$ASSEMBLY
   DOWNLOAD_DIR=$INSTALL_DIR/downloads

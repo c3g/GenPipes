@@ -196,6 +196,44 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         )
     )
 
+def mutect(inputNormal, inputTumor, outputStats, outputVCF, intervals=[], exclude_intervals=[]):
+    cosmic = config.param('gatk_mutect', 'cosmic', type='filepath', required=False)
+    # if set add arg prefix
+    if cosmic :
+        cosmic = " --cosmic " + cosmic
+
+    return Job(
+        [inputNormal, inputTumor],
+        [outputStats, outputVCF],
+        [
+            ['gatk_mutect', 'module_java'],
+            ['gatk_mutect', 'module_mutect']
+        ],
+        command="""\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $MUTECT_JAR \\
+  --analysis_type MuTect {options} \\
+  --reference_sequence {reference_sequence} \\
+  --dbsnp {known_sites}{cosmic} \\
+  --input_file:normal {inputNormal} \\
+  --input_file:tumor {inputTumor} \\
+  --out {outputStats} \\
+  --vcf {outputVCF}{intervals}{exclude_intervals}""".format(
+        tmp_dir=config.param('gatk_mutect', 'tmp_dir'),
+        java_other_options=config.param('gatk_mutect', 'java_other_options'),
+        ram=config.param('gatk_mutect', 'ram'),
+        options=config.param('gatk_mutect', 'options'),
+        reference_sequence=config.param('gatk_mutect', 'genome_fasta', type='filepath'),
+        known_sites=config.param('gatk_mutect', 'known_variants', type='filepath'),
+        cosmic=cosmic,
+        inputNormal=inputNormal,
+        inputTumor=inputTumor,
+        outputStats=outputStats,
+        outputVCF=outputVCF,
+        intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
+        exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals)
+        )
+    )
+
 def indel_realigner(input, output, target_intervals, intervals=[], exclude_intervals=[]):
 
     return Job(
