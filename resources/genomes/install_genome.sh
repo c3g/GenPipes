@@ -12,6 +12,7 @@ module_samtools=mugqic/samtools/0.1.19
 module_star=mugqic/star/2.4.0e
 module_tabix=mugqic/tabix/0.2.6
 module_tophat=mugqic/tophat/2.0.11
+module_ucsc=mugqic/ucsc/20140212
 
 init_install() {
   # '$MUGQIC_INSTALL_HOME_DEV' for development, '$MUGQIC_INSTALL_HOME' for production
@@ -436,6 +437,28 @@ EOF
   fi
 }
 
+create_gene_annotations_flat() {
+  ANNOTATION_PREFIX=$ANNOTATIONS_DIR/${GTF/.gtf}
+  if ! is_up2date $ANNOTATION_PREFIX.ref_flat.tsv
+  then
+    echo
+    echo "Creating gene refFlat file from GTF..."
+    echo
+    cd $ANNOTATIONS_DIR
+    module load $module_ucsc 
+    gtfToGenePred -genePredExt -geneNameAsName2 ${ANNOTATION_PREFIX}.gtf ${ANNOTATION_PREFIX}.refFlat.tmp.txt
+    cut -f 12 ${ANNOTATION_PREFIX}.refFlat.tmp.txt  > ${ANNOTATION_PREFIX}.refFlat.tmp.2.txt 
+    cut -f 1-10 ${ANNOTATION_PREFIX}.refFlat.tmp.txt > ${ANNOTATION_PREFIX}.refFlat.tmp.3.txt 
+    paste ${ANNOTATION_PREFIX}.refFlat.tmp.2.txt ${ANNOTATION_PREFIX}.refFlat.tmp.3.txt > ${ANNOTATION_PREFIX}.ref_flat.tsv
+    rm ${ANNOTATION_PREFIX}.refFlat.tmp.txt ${ANNOTATION_PREFIX}.refFlat.tmp.2.txt ${ANNOTATION_PREFIX}.refFlat.tmp.3.txt
+  else
+    echo
+    echo "Creating gene refFlat file from GTF up to date... skipping"
+    echo
+  fi
+}
+  
+
 create_go_annotations() {
 
   if [ ! -z "${BIOMART_HOST:-}" ]
@@ -558,6 +581,7 @@ build_files() {
     create_rrna_bwa_index
 
     create_gene_annotations
+    create_gene_annotations_flat
     create_go_annotations
   fi
 }

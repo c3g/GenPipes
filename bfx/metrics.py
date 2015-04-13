@@ -1,5 +1,24 @@
 #!/usr/bin/env python
 
+################################################################################
+# Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
+#
+# This file is part of MUGQIC Pipelines.
+#
+# MUGQIC Pipelines is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# MUGQIC Pipelines is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
+################################################################################
+
 # Python Standard Modules
 import os
 
@@ -25,10 +44,10 @@ Rscript $R_TOOLS/DNAsampleMetrics.R \\
         experiment_type=experiment_type
     ))
 
-def rnaseqc(sample_file, output_directory, is_single_end=False, gtf_file=None, reference=None, ribosomal_fasta=None):
+def rnaseqc(sample_file, output_directory, is_single_end=False, gtf_file=None, reference=None, ribosomal_interval_file=None):
     return Job(
         [sample_file],
-        [os.path.join(output_directory, "index.html")],
+        [os.path.join(output_directory, "index.html"), os.path.join(output_directory, "metrics.tsv")],
         [
             ['rnaseqc', 'module_java'],
             ['rnaseqc', 'module_bwa'],
@@ -40,7 +59,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $RNASEQC_JAR
   -o {output_directory} \\
   -r {reference_genome_fasta} \\
   -s {sample_file} \\
-  -t {gtf_file}{other_options}{single_end}""".format(
+  -t {gtf_file}{other_options}{single_end}{ribosomal_interval_file}""".format(
         tmp_dir=config.param('rnaseqc', 'tmp_dir'),
         java_other_options=config.param('rnaseqc', 'java_other_options'),
         ram=config.param('rnaseqc', 'ram'),
@@ -50,7 +69,8 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $RNASEQC_JAR
         sample_file=sample_file,
         gtf_file=gtf_file if gtf_file else config.param('rnaseqc', 'gtf', type='filepath'),
         other_options=" \\\n  " + config.param('rnaseqc', 'other_options', required=False) if config.param('rnaseqc', 'other_options', required=False) else "",
-        single_end=" \\\n  -singleEnd" if is_single_end else ""
+        single_end=" \\\n  -singleEnd" if is_single_end else "",
+        ribosomal_interval_file= " \\\n  -rRNA " + ribosomal_interval_file if ribosomal_interval_file else ""
         )
     )
 

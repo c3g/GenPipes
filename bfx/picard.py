@@ -1,5 +1,24 @@
 #!/usr/bin/env python
 
+################################################################################
+# Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
+#
+# This file is part of MUGQIC Pipelines.
+#
+# MUGQIC Pipelines is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# MUGQIC Pipelines is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
+################################################################################
+
 # Python Standard Modules
 
 # MUGQIC Modules
@@ -120,14 +139,14 @@ def mark_duplicates(inputs, output, metrics_file):
 
     return Job(
         inputs,
-        [output, re.sub("\.([sb])am$", ".\\1ai", output), output + ".md5", metrics_file],
+        [output, re.sub("\.([sb])am$", ".\\1ai", output), metrics_file],
         [
             ['picard_mark_duplicates', 'module_java'],
             ['picard_mark_duplicates', 'module_picard']
         ],
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/MarkDuplicates.jar \\
-  REMOVE_DUPLICATES=false CREATE_MD5_FILE=true VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true \\
+  REMOVE_DUPLICATES=false VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true \\
   TMP_DIR={tmp_dir} \\
   {inputs} \\
   OUTPUT={output} \\
@@ -253,8 +272,8 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
         removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output) if sort_order == "coordinate" else None]
     )
 
-def collect_rna_metrics(input, output):
-        
+def collect_rna_metrics(input, output, annotation_flat=None,reference_sequence=None):
+
     return Job(
         [input],
         # collect specific RNA metrics (exon rate, strand specificity, etc...)
@@ -280,10 +299,10 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
         ram=config.param('picard_collect_rna_metrics', 'ram'),
         input=input,
         output=output,
-        ref_flat=config.param('picard_collect_rna_metrics', 'annotation_flat'),
+        ref_flat=annotation_flat if annotation_flat else config.param('picard_collect_rna_metrics', 'annotation_flat'),
         strand_specificity=config.param('picard_collect_rna_metrics', 'strand_info'),
         min_length=config.param('picard_collect_rna_metrics', 'minimum_length',type='int'),
-        reference=config.param('picard_collect_rna_metrics', 'genome_fasta'),
+        reference=reference_sequence if reference_sequence else config.param('picard_collect_rna_metrics', 'genome_fasta'),
         max_records_in_ram=config.param('picard_collect_rna_metrics', 'max_records_in_ram', type='int')
         )
     )

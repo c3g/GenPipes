@@ -1,0 +1,131 @@
+#!/usr/bin/env python
+
+import argparse
+import csv
+import os
+import sys
+
+def main():
+    parser = argparse.ArgumentParser(description='Parse WGS project')
+    parser.add_argument('-d', '--dir', help='Directory to extract from', required=True)
+    parser.add_argument('-s', '--sample', help='Sample name', required=True)
+    parser.add_argument('-a', '--arrayReport', help='Array Sample report', required=True)
+    parser.add_argument('-v', '--vertical', help='Vertival Output', required=False, type=bool)
+    
+    args = parser.parse_args()
+    
+    if not os.path.isdir(args.dir):
+      print args.dir + " is not a directory"
+      sys.exit(1)
+    
+    print("Reading " + args.dir)
+    
+    sampleStats = {'dupPct':'','chimeras':'','meanISize':'','iWidth99':'','interQ75_Q50Depth':'','depth':'','identity':"",'callRate':''}
+    getDups(args.sample, args.dir, sampleStats)
+    getChimeras(args.sample, args.dir, sampleStats)
+    getInsertSize(args.sample, args.dir, sampleStats)
+    getDepth(args.sample, args.dir, sampleStats)
+    getArrayIdentity(args.sample, args.dir, sampleStats)
+    getArrayCallRate(args.sample, args.arrayReport, sampleStats)
+    
+    if args.vertical:
+      print("MeanInsertSize     : " + sampleStats['meanISize'])
+      print("99% InsertSize     : " + sampleStats['iWidth99'])
+      print("Chimeras           : " + sampleStats['chimeras'])
+      print("Dups               : " + sampleStats['dupPct'])
+      print("Depth              : " + sampleStats['depth'])
+      print("InterQuantile Depth: " + sampleStats['interQ75_Q50Depth'])
+      print("Identity           : " + sampleStats['identity'])
+      print("Call Rate          : " + sampleStats['callRate'])
+      print("Sample             : " + passFail(sampleStats))
+    else:
+      print("Chimera rate,%Dups,InsertSize,Bin Width that contains 99% of Fragments Insert Size,InterQuantile Coverage Depth,Array call rate,% identity,coverage,PASS FAIL")
+      outLine = sampleStats['chimeras'] + "," + sampleStats['dupPct'] + "," + sampleStats['meanISize'] + "," + sampleStats['iWidth99'] + "," + sampleStats['interQ75_Q50Depth'] + "," + sampleStats['callRate'] + "," + sampleStats['identity'] + "," + sampleStats['depth'] + "," + passFail(sampleStats)
+      print(outLine)
+
+def passFail(sampleStats):
+  retVal=""
+
+  if float(sampleStats['depth']) < 30:
+    retVal += "LowDepth "
+  if float(sampleStats['identity']) < 90:
+    retVal += "IdentityLOW "
+  if float(sampleStats['meanISize']) < 50:
+    retVal += "InsertSizeLOW "
+  if float(sampleStats['meanISize']) > 2000:
+    retVal += "InsertSizeHIGH "
+  if float(sampleStats['chimeras']) > 0.1:
+    retVal += "chimericHIGH "
+
+  if len(retVal) == 0:
+    return "OK"
+  return retVal
+
+def getArrayCallRate(sample, report, sampleStats):
+    arrayMetrics = csv.DictReader(open(report, 'rb'), delimiter=',')
+    for line in arrayMetrics:
+        if line['Name'] == sample:
+            sampleStats['callRate'] = line['Call Rate']
+            break
+
+def getArrayIdentity(sample, dir, sampleStats):
+    MATCH_STR = '% Match : '
+    with open(dir + '/' + sample + '.snpArrayCmp.txt') as arrayMetrics:
+        for line in arrayMetrics:
+            if line.startswith(MATCH_STR):
+                sampleStats['identity'] = line[len(MATCH_STR):].rstrip('\n')
+                break
+
+def getDepth(sample, dir, sampleStats):
+    with open(dir + '/' + sample + '.sorted.dup.recal.coverage.tsv') as depthMetrics:
+        depthMetrics.readline()
+        line = depthMetrics.readline()
+        values = line.split('\t')
+        sampleStats['depth'] = values[8]
+        sampleStats['interQ75_Q50Depth'] = str(int(values[9]) - int(values[11])) 
+
+def getInsertSize(sample, dir, sampleStats):
+    with open(dir + '/' + sample + '.sorted.dup.recal.all.metrics.insert_size_metrics') as iSizeMetrics:
+        for line in iSizeMetrics:
+            if line.startswith('MEDIAN_INSERT_SIZE'):
+                break
+        for line in iSizeMetrics:
+            if line == '\n':
+                break
+            values = line.split('\t')
+            if not sampleStats['iWidth99']:
+                sampleStats['iWidth99'] = values[17]
+            else:
+                sampleStats['iWidth99'] += ',' + values[17]
+
+            if not sampleStats['meanISize']:
+                sampleStats['meanISize'] = values[4]
+            else:
+                sampleStats['meanISize'] += ',' + values[4]
+
+def getChimeras(sample, dir, sampleStats):
+    with open(dir + '/' + sample + '.sorted.dup.recal.all.metrics.alignment_summary_metrics') as alnMetrics:
+        for line in alnMetrics:
+            if line.startswith('PAIR'):
+                values = line.split('\t')
+                if not sampleStats['chimeras']:
+                    sampleStats['chimeras'] = values[20]
+                else:
+                    sampleStats['chimeras'] += ',' + values[20]
+    
+def getDups(sample, dir, sampleStats):
+    with open(dir + '/' + sample + '.sorted.dup.metrics') as dupMetric:
+        for line in dupMetric:
+            if line.startswith('LIBRARY'):
+                break
+        for line in dupMetric:
+            if line == '\n':
+                break
+            values = line.split('\t')
+            if not sampleStats['dupPct']:
+                sampleStats['dupPct'] = values[7]
+            else:
+                sampleStats['dupPct'] += ',' + values[7]
+
+if __name__ == "__main__":
+    main()
