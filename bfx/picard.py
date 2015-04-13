@@ -272,6 +272,33 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
         removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output) if sort_order == "coordinate" else None]
     )
 
+def sort_vcfs(inputs, output, ini_section='picard_sort_vcf'):
+
+    return Job(
+        inputs,
+        # Add SAM/BAM index as output only when writing a coordinate-sorted BAM file
+        [output],
+        [
+            [ini_section, 'module_java'],
+            [ini_section, 'module_picard']
+        ],
+        command="""\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/SortVcf.jar \\
+  VALIDATION_STRINGENCY=SILENT \\
+  TMP_DIR={tmp_dir} \\
+  {inputs} \\
+  OUTPUT={output} \\
+  SEQUENCE_DICTIONARY={seq_dict}""".format(
+        tmp_dir=config.param(ini_section, 'tmp_dir'),
+        java_other_options=config.param(ini_section, 'java_other_options'),
+        ram=config.param(ini_section, 'ram'),
+        input=" \\\n  ".join(["INPUT=" + input for input in inputs]),
+        output=output,
+        seq_dict=config.param(ini_section, 'genome_dictionary', type='filepath')
+        ),
+        removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output) if sort_order == "coordinate" else None]
+    )
+
 def collect_rna_metrics(input, output, annotation_flat=None,reference_sequence=None):
 
     return Job(

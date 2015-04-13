@@ -20,34 +20,47 @@
 ################################################################################
 
 # Python Standard Modules
-import os
 
 # MUGQIC Modules
 from core.config import *
 from core.job import *
 
-def scalpel_somatic(inputNormal, inputTumor, outputDir, bed):
-
+def add_reject(input, output):
+    """
+    Adds REJECT to the filter. Used with scalpel when merging common indels
+    """
     return Job(
-        [inputNormal, inputTumor, bed],
-        [os.path.join(outputDir, 'main', 'somatic.5x.indel.vcf')],
+        [input],
+        [output],
         [
-            ['scalpel', 'module_perl'],
-            ['scalpel', 'module_scalpel']
+            ['bcftools_add_reject', 'module_bcftools']
         ],
         command="""\
-scalpel --somatic \\
-  --ref {reference_sequence} \\
-  --normal {inputNormal} \\
-  --tumor {inputTumor} \\
-  --dir {outputDir} \\
-  --numprocs {cores_per_job} \\
-  --bed {bed}""".format(
-        reference_sequence=config.param('scalpel', 'genome_fasta', type='filepath'),
-        inputNormal=inputNormal,
-        inputTumor=inputTumor,
-        outputDir=outputDir,
-        cores_per_job=config.param('scalpel', 'cores_per_job'),
-        bed=bed
+bcftools \\
+  filter -m '+' -O v --soft-filter 'REJECT' -e '%TYPE="indel"' \\
+  {input}{output}""".format(
+        input=input,
+        output=" \\\n  > " + output if output else ""
         )
     )
+
+def add_chi2Filter(input, output):
+    """
+    Adds CHI2FILTER to the filter. Used with scalpel on somatic indels
+    """
+    return Job(
+        [input],
+        [output],
+        [
+            ['bcftools_add_chi2Filter', 'module_bcftools']
+        ],
+        command="""\
+bcftools \\
+  filter -m '+' -O v --soft-filter 'CHI2FILTER' -e 'INFO/CHI2 > 20.0' \\
+  {input}{output}""".format(
+        input=input,
+        output=" \\\n  > " + output if output else ""
+        )
+    )
+
+
