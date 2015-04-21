@@ -810,6 +810,8 @@ END
         ], name="gq_seq_utils_exploratory_analysis_rnaseq"))
 
 
+
+
         report_file          = os.path.join("report",                 "RnaSeq.gq_seq_utils_exploratory_analysis_rnaseq.md" )
         report_template_file = os.path.join(self.report_template_dir, "RnaSeq.gq_seq_utils_exploratory_analysis_rnaseq.Rmd")        
         jobs.append(
@@ -821,12 +823,10 @@ END
                     ['gq_seq_utils_exploratory_analysis_rnaseq', 'module_mugqic_R_packages']
                 ],           
                 command="""\            
-Rscript -e '\\
-library(knitr);\\
-knit({rmd},{md})'""".format(
-                    rmd = report_template_file,
-                    md  = report_file
-                ),
+R --no-save --no-restore <<-'EOF'
+library(knitr)
+knit({rmd},{md})
+EOF""".format(rmd = report_template_file,md  = report_file),
                 report_files=[report_file],
                 name="gq_seq_utils_exploratory_analysis_rnaseq_report")
         )
