@@ -809,26 +809,25 @@ END
             )
         ], name="gq_seq_utils_exploratory_analysis_rnaseq"))
 
-        report_file = os.path.join("report", "RnaSeq.gq_seq_utils_exploratory_analysis_rnaseq.md")
+        report_file          = os.path.join("report",                 "RnaSeq.gq_seq_utils_exploratory_analysis_rnaseq.md" )
+        report_template_file = os.path.join(self.report_template_dir, "RnaSeq.gq_seq_utils_exploratory_analysis_rnaseq.Rmd")
+        
         jobs.append(
             Job(
                 [os.path.join("exploratory", "index.tsv")],
-                [report_file],
-                command="""\
-mkdir -p report && \\
-cp -r exploratory/ report/ && \\
-cp \\
-  {report_template_dir}/{basename_report_file} \\
-  {report_file} && \\
-cut -f3-4 exploratory/index.tsv | sed '1d' | perl -pe 's/^([^\t]*)\t(.*)$/* [\\1](\\2)/' \\
-  >> {report_file}""".format(
-                    report_template_dir=self.report_template_dir,
-                    basename_report_file=os.path.basename(report_file),
-                    report_file=report_file
+                [report_file],           
+                command="""\            
+Rscript -e '\\
+library(knitr);\\
+knit({rmd},{md})'""".format(
+                    rmd = report_template_file,
+                    md  = report_file
                 ),
                 report_files=[report_file],
                 name="gq_seq_utils_exploratory_analysis_rnaseq_report")
         )
+
+
 
         report_file = os.path.join("report", "RnaSeq.cuffnorm.md")
         jobs.append(
