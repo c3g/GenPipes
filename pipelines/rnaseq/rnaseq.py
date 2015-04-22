@@ -825,15 +825,12 @@ END
                 ],           
                 command="""\
 R --no-save --no-restore <<-'EOF'
-library(rmarkdown)
-render(input = '{rmd}', 
- output_format = c("html_document","pdf_document","word_document","md_document","beamer_presentation","ioslides_presentation","slidy_presentation"), 
- output.dir = "report"  )
-
-
-
-
-EOF""".format(rmd = report_template_file,md  = report_file),
+library(rmarkdown); library(knitr)
+rmd=basename('{rmd}')
+file.copy(from='{rmd}', to = rmd, overwrite = T)
+render(input = rmd, output_format = c("html_document","md_document"), output_dir = "report" )
+file.remove(rmd)
+EOF""".format(rmd = report_template_file),
                 report_files=[report_file],
                 name="gq_seq_utils_exploratory_analysis_rnaseq_report")
         )

@@ -228,7 +228,7 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
 	,"nnet","nondetects","nor1mix","Nozzle.R1","oligo","oligoClasses","outliers"
 	,"pd.charm.hg18.example","pheatmap","plotrix","plyr","plyr","preprocessCore"
 	,"proto","quantreg","R2HTML","RBGL","RColorBrewer","Rcpp","RcppEigen","RCurl"
-	,"ReportingTools","reshape","reshape2","rgl","RJSONIO","R.methodsS3","roxygen2"
+	,"ReportingTools","reshape","reshape2","rgl","RJSONIO","R.methodsS3","rmarkdown","roxygen2"
 	,"rpart","Rsamtools","RSQLite","rtracklayer","scales","sendmailR","shiny","ShortRead","siggenes","snow"
 	,"SNPchip","SortableHTMLTables","spam","SparseM","spatial","SQN"
 	,"statmod","stringr","survival","sva","testthat","tidyr"
