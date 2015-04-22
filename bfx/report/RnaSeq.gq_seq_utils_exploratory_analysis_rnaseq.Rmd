@@ -1,12 +1,7 @@
 ```{r preparation, results="hide",echo=F,message=F,warning=F}
 
-# Assuming the report dir is "report", files are in exploratory and need to be copied to report_dir/exploratory
-report_dir="report"
-
-
-library(knitr)
-library(hwriter)
-library(magrittr)
+### DEFINED OUTSIDE
+# report_dir
 
 # Directories and cp data
 unlink( file.path(report_dir,"exploratory") , recursive = T)

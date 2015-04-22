@@ -791,14 +791,12 @@ END
 
         jobs = []
 
+        # gqSeqUtils function call
         sample_fpkm_readcounts = [[
             sample.name,
             os.path.join("cufflinks", sample.name, "isoforms.fpkm_tracking"),
             os.path.join("raw_counts", sample.name + ".readcounts.csv")
         ] for sample in self.samples]
-
-        input_file = os.path.join("exploratory", "exploratory.samples.tsv")
-
         jobs.append(concat_jobs([
             Job(command="mkdir -p exploratory"),
             gq_seq_utils.exploratory_analysis_rnaseq(
@@ -809,30 +807,16 @@ END
             )
         ], name="gq_seq_utils_exploratory_analysis_rnaseq"))
 
-
-
-
-        report_file          = os.path.join("report",                 "RnaSeq.gq_seq_utils_exploratory_analysis_rnaseq.md" )
-        report_template_file = os.path.join(self.report_template_dir, "RnaSeq.gq_seq_utils_exploratory_analysis_rnaseq.Rmd")        
+        # Render Report
         jobs.append(
-            Job(
-                [os.path.join("exploratory", "index.tsv")],
-                [report_file],
-                [
-                    ['gq_seq_utils_exploratory_analysis_rnaseq', 'module_R'],
-                    ['gq_seq_utils_exploratory_analysis_rnaseq', 'module_mugqic_R_packages'],
-                    ['gq_seq_utils_exploratory_analysis_rnaseq', 'module_pandoc']
-                ],           
-                command="""\
-R --no-save --no-restore <<-'EOF'
-library(rmarkdown); library(knitr)
-rmd=basename('{rmd}')
-file.copy(from='{rmd}', to = rmd, overwrite = T)
-render(input = rmd, output_format = c("html_document","md_document"), output_dir = "report" )
-file.remove(rmd)
-EOF""".format(rmd = report_template_file),
-                report_files=[report_file],
-                name="gq_seq_utils_exploratory_analysis_rnaseq_report")
+            rmarkdown.render(
+             job.input            = os.path.join("exploratory", "index.tsv"),
+             job.name             = "gq_seq_utils_exploratory_analysis_rnaseq_report",
+             input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeq.gq_seq_utils_exploratory_analysis_rnaseq.Rmd") ,
+             render_output_dir    = 'report',
+             module_section       = 'report', # TODO: this or exploratory?
+             prerun_r             = 'report_dir="report";' # TODO: really necessary or should be hard-coded in exploratory.Rmd?
+             )
         )
 
 
