@@ -825,7 +825,7 @@ END
                 command="""\
 R --no-save --no-restore <<-'EOF'
 library(knitr)
-knit({rmd},{md})
+knit('{rmd}','{md}')
 EOF""".format(rmd = report_template_file,md  = report_file),
                 report_files=[report_file],
                 name="gq_seq_utils_exploratory_analysis_rnaseq_report")
