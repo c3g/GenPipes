@@ -820,13 +820,19 @@ END
                 [report_file],
                 [
                     ['gq_seq_utils_exploratory_analysis_rnaseq', 'module_R'],
-                    ['gq_seq_utils_exploratory_analysis_rnaseq', 'module_mugqic_R_packages']
+                    ['gq_seq_utils_exploratory_analysis_rnaseq', 'module_mugqic_R_packages'],
+                    ['gq_seq_utils_exploratory_analysis_rnaseq', 'module_pandoc']
                 ],           
                 command="""\
 R --no-save --no-restore <<-'EOF'
-library(knitr)
-opts_knit$set(root.dir = getwd())
-knit2html('{rmd}', gsub( "md$","html", '{md}' )  )
+library(rmarkdown)
+render(input = '{rmd}', 
+ output_format = c("html_document","pdf_document","word_document","md_document","beamer_presentation","ioslides_presentation","slidy_presentation"), 
+ output.dir = "report"  )
+
+
+
+
 EOF""".format(rmd = report_template_file,md  = report_file),
                 report_files=[report_file],
                 name="gq_seq_utils_exploratory_analysis_rnaseq_report")
