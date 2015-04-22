@@ -52,6 +52,6 @@ patterns of variation among these genes that could be used to discriminate
 between groups of samples.
 
 ```{r summary_table, results="markup",echo=F,message=F,warning=F}
-kable(summary,align=c("l","r"))
+kable(summary,align=c("l","r"),row.names=F)
 ```
 
