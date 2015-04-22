@@ -822,7 +822,7 @@ END
                     ['gq_seq_utils_exploratory_analysis_rnaseq', 'module_R'],
                     ['gq_seq_utils_exploratory_analysis_rnaseq', 'module_mugqic_R_packages']
                 ],           
-                command="""\            
+                command="""\
 R --no-save --no-restore <<-'EOF'
 library(knitr)
 knit({rmd},{md})
