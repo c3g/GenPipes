@@ -826,7 +826,7 @@ END
 R --no-save --no-restore <<-'EOF'
 library(knitr)
 opts_knit$set(root.dir = getwd())
-knit('{rmd}','{md}')
+knit2html('{rmd}', gsub( "md$","html", '{md}' )  )
 EOF""".format(rmd = report_template_file,md  = report_file),
                 report_files=[report_file],
                 name="gq_seq_utils_exploratory_analysis_rnaseq_report")
