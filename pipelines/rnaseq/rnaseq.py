@@ -47,6 +47,7 @@ from bfx import picard
 from bfx import samtools
 from bfx import star
 from bfx import bvatools
+from bfx import rmarkdown
 from pipelines import common
 import utils
 
