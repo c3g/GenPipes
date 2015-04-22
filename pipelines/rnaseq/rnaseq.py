@@ -825,6 +825,7 @@ END
                 command="""\
 R --no-save --no-restore <<-'EOF'
 library(knitr)
+opts_knit$set(root.dir = getwd())
 knit('{rmd}','{md}')
 EOF""".format(rmd = report_template_file,md  = report_file),
                 report_files=[report_file],
