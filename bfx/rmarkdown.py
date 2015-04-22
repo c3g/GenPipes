@@ -27,11 +27,11 @@ from core.config import *
 from core.job import *
 
 # This is general to all jobs 
-def render(job.input, job.name, input_rmarkdown_file, render_output_dir, module_section="DEFAULT", prerun_r=""):
+def render(job_input, job_name, input_rmarkdown_file, render_output_dir, module_section="DEFAULT", prerun_r=""):
     # input_rmarkdown_file='/root/blu/awe.some.Rmd';render_output_dir='report'
     output_markdown_file = os.path.join(render_output_dir, os.path.splitext( os.path.basename(input_rmarkdown_file) )[0] + '.md')
     return Job(
-        [job.input],[output_markdown_file],
+        [job_input],[output_markdown_file],
         [
             [module_section, 'module_R'],
             [module_section, 'module_pandoc']

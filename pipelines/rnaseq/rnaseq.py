@@ -810,8 +810,8 @@ END
         # Render Report
         jobs.append(
             rmarkdown.render(
-             job.input            = os.path.join("exploratory", "index.tsv"),
-             job.name             = "gq_seq_utils_exploratory_analysis_rnaseq_report",
+             job_input            = os.path.join("exploratory", "index.tsv"),
+             job_name             = "gq_seq_utils_exploratory_analysis_rnaseq_report",
              input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeq.gq_seq_utils_exploratory_analysis_rnaseq.Rmd") ,
              render_output_dir    = 'report',
              module_section       = 'report', # TODO: this or exploratory?
