@@ -27,11 +27,11 @@ Usage
 #!text
 
 usage: pacbio_assembly.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
-                          [-o OUTPUT_DIR] [-j {pbs,batch}] [-f] [--clean]
-                          [-l {debug,info,warning,error,critical}]
+                          [-o OUTPUT_DIR] [-j {pbs,batch}] [-f] [--report]
+                          [--clean] [-l {debug,info,warning,error,critical}]
                           [-r READSETS] [-v]
 
-Version: 2.1.0
+Version: 2.1.1
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
@@ -49,8 +49,13 @@ optional arguments:
                         job scheduler type (default: pbs)
   -f, --force           force creation of jobs even if up to date (default:
                         false)
+  --report              create 'pandoc' command to merge all job markdown
+                        report files in the given step range into HTML, if
+                        they exist; if --report is set, --job-scheduler,
+                        --force, --clean options and job up-to-date status are
+                        ignored (default: false)
   --clean               create 'rm' commands for all job removable files in
-                        the given step range, if they exists; if --clean is
+                        the given step range, if they exist; if --clean is
                         set, --job-scheduler, --force options and job up-to-
                         date status are ignored (default: false)
   -l {debug,info,warning,error,critical}, --log {debug,info,warning,error,critical}
@@ -66,9 +71,9 @@ Steps:
 3- preassembly
 4- assembly
 5- polishing
-6- blast
-7- mummer
-8- gq_seq_utils_report
+6- pacbio_tools_assembly_stats
+7- blast
+8- mummer
 9- compile
 
 ```
@@ -133,17 +138,15 @@ Align raw reads on the Celera assembly with BLASR. Load pulse information from b
 5. sort .cmp.h5 file
 6. variantCaller.py
 
-6- blast
+6- pacbio_tools_assembly_stats
+------------------------------
+7- blast
 --------
 Blast polished assembly against nr using dc-megablast.
 
-7- mummer
+8- mummer
 ---------
 Using MUMmer, align polished assembly against best hit from blast job. Also align polished assembly against itself to detect structure variation such as repeats, etc.
-
-8- gq_seq_utils_report
-----------------------
-Generates summary tables and generates MUGQIC style nozzle report.
 
 9- compile
 ----------

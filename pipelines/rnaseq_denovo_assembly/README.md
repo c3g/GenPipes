@@ -53,11 +53,11 @@ Usage
 
 usage: rnaseq_denovo_assembly.py [-h] [--help] [-c CONFIG [CONFIG ...]]
                                  [-s STEPS] [-o OUTPUT_DIR] [-j {pbs,batch}]
-                                 [-f] [--clean]
+                                 [-f] [--report] [--clean]
                                  [-l {debug,info,warning,error,critical}]
                                  [-d DESIGN] [-r READSETS] [-v]
 
-Version: 2.1.0
+Version: 2.1.1
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
@@ -75,8 +75,13 @@ optional arguments:
                         job scheduler type (default: pbs)
   -f, --force           force creation of jobs even if up to date (default:
                         false)
+  --report              create 'pandoc' command to merge all job markdown
+                        report files in the given step range into HTML, if
+                        they exist; if --report is set, --job-scheduler,
+                        --force, --clean options and job up-to-date status are
+                        ignored (default: false)
   --clean               create 'rm' commands for all job removable files in
-                        the given step range, if they exists; if --clean is
+                        the given step range, if they exist; if --clean is
                         set, --job-scheduler, --force options and job up-to-
                         date status are ignored (default: false)
   -l {debug,info,warning,error,critical}, --log {debug,info,warning,error,critical}
@@ -96,18 +101,18 @@ Steps:
 5- insilico_read_normalization_all
 6- trinity
 7- exonerate_fastasplit
-8- blastx_swissprot
-9- blastx_swissprot_merge
+8- blastx_trinity_uniprot
+9- blastx_trinity_uniprot_merge
 10- transdecoder
-11- rnammer_transcriptome
-12- blastp_swissprot
-13- signalp
-14- tmhmm
-15- trinotate
-16- align_and_estimate_abundance_prep_reference
-17- align_and_estimate_abundance
-18- differential_expression
-19- gq_seq_utils_report
+11- hmmer
+12- rnammer_transcriptome
+13- blastp_transdecoder_uniprot
+14- signalp
+15- tmhmm
+16- trinotate
+17- align_and_estimate_abundance_prep_reference
+18- align_and_estimate_abundance
+19- differential_expression
 
 ```
 1- picard_sam_to_fastq
@@ -118,6 +123,11 @@ if FASTQ files are not already specified in the readset file. Do nothing otherwi
 2- trimmomatic
 --------------
 Raw reads quality trimming and removing of Illumina adapters is performed using [Trimmomatic](http://www.usadellab.org/cms/index.php?page=trimmomatic).
+If an adapter FASTA file is specified in the config file (section 'trimmomatic', param 'adapter_fasta'),
+it is used first. Else, 'Adapter1' and 'Adapter2' columns from the readset file are used to create
+an adapter FASTA file, given then to Trimmomatic. For PAIRED_END readsets, readset adapters are
+reversed-complemented and swapped, to match Trimmomatic Palindrome strategy. For SINGLE_END readsets,
+only Adapter1 is used and left unchanged.
 
 This step takes as input files:
 
@@ -144,60 +154,55 @@ Create a de novo assembly from normalized readsets using [Trinity](http://trinit
 -----------------------
 Split the Trinity assembly FASTA into chunks for further parallel BLAST annotations.
 
-8- blastx_swissprot
--------------------
-Annotate Trinity FASTA chunks with Swiss-Prot database using [blastx](http://blast.ncbi.nlm.nih.gov/).
-
-9- blastx_swissprot_merge
+8- blastx_trinity_uniprot
 -------------------------
-Merge blastx Swiss-Prot chunks results.
+Annotate Trinity FASTA chunks with Swiss-Prot and UniRef databases using [blastx](http://blast.ncbi.nlm.nih.gov/).
+
+9- blastx_trinity_uniprot_merge
+-------------------------------
+Merge blastx Swiss-Prot and UniRef chunks results.
 
 10- transdecoder
 ----------------
-Identifies candidate coding regions within transcript sequences using [Transdecoder](http://transdecoder.sourceforge.net/).
+Identifies candidate coding regions within transcript sequences using [Transdecoder](http://transdecoder.github.io/).
 
-11- rnammer_transcriptome
+11- hmmer
+---------
+Identifies protein domains using [HMMR](http://hmmer.janelia.org/).
+
+12- rnammer_transcriptome
 -------------------------
 Identify potential rRNA transcripts using [RNAmmer](http://www.cbs.dtu.dk/cgi-bin/sw_request?rnammer).
 
-12- blastp_swissprot
---------------------
-Search Transdecoder-predicted coding regions for sequence homologies using [blastp](http://blast.ncbi.nlm.nih.gov/).
+13- blastp_transdecoder_uniprot
+-------------------------------
+Search Transdecoder-predicted coding regions for sequence homologies on UniProt using [blastp](http://blast.ncbi.nlm.nih.gov/).
 
-13- signalp
+14- signalp
 -----------
 Predict signal peptides using [SignalP](http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?signalp).
 
-14- tmhmm
+15- tmhmm
 ---------
 Predict transmembrane regions using [TMHMM](http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?tmhmm).
 
-15- trinotate
+16- trinotate
 -------------
 Perform transcriptome functional annotation and analysis using [Trinotate](http://trinotate.sourceforge.net/).
 All functional annotation data is integrated into a SQLite database and a whole annotation report is created.
 
-16- align_and_estimate_abundance_prep_reference
+17- align_and_estimate_abundance_prep_reference
 -----------------------------------------------
 Index Trinity FASTA file for further abundance estimation using [Trinity align_and_estimate_abundance.pl utility](http://trinityrnaseq.sourceforge.net/analysis/abundance_estimation.html).
 
-17- align_and_estimate_abundance
+18- align_and_estimate_abundance
 --------------------------------
 Estimate transcript abundance using [RSEM](http://deweylab.biostat.wisc.edu/rsem/) via
 [Trinity align_and_estimate_abundance.pl utility](http://trinityrnaseq.sourceforge.net/analysis/abundance_estimation.html).
 
-18- differential_expression
+19- differential_expression
 ---------------------------
 Performs differential gene expression analysis using [DESEQ](http://bioconductor.org/packages/release/bioc/html/DESeq.html) and [EDGER](http://www.bioconductor.org/packages/release/bioc/html/edgeR.html).
 Merge the results of the analysis in a single csv file.
-
-19- gq_seq_utils_report
------------------------
-Generates the standard report. A summary html report contains the description of
-the sequencing experiment as well as a detailed presentation of the pipeline steps and results.
-Various Quality Control (QC) summary statistics are included in the report and additional QC analysis
-is accessible for download directly through the report. The report includes also the main references
-of the software and methods used during the analysis, together with the full list of parameters
-passed to the pipeline main script.
 
 

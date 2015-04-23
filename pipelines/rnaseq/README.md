@@ -41,11 +41,11 @@ Usage
 #!text
 
 usage: rnaseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
-                 [-o OUTPUT_DIR] [-j {pbs,batch}] [-f] [--clean]
+                 [-o OUTPUT_DIR] [-j {pbs,batch}] [-f] [--report] [--clean]
                  [-l {debug,info,warning,error,critical}] [-d DESIGN]
                  [-r READSETS] [-v]
 
-Version: 2.1.0
+Version: 2.1.1
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
@@ -63,8 +63,13 @@ optional arguments:
                         job scheduler type (default: pbs)
   -f, --force           force creation of jobs even if up to date (default:
                         false)
+  --report              create 'pandoc' command to merge all job markdown
+                        report files in the given step range into HTML, if
+                        they exist; if --report is set, --job-scheduler,
+                        --force, --clean options and job up-to-date status are
+                        ignored (default: false)
   --clean               create 'rm' commands for all job removable files in
-                        the given step range, if they exists; if --clean is
+                        the given step range, if they exist; if --clean is
                         set, --job-scheduler, --force options and job up-to-
                         date status are ignored (default: false)
   -l {debug,info,warning,error,critical}, --log {debug,info,warning,error,critical}
@@ -84,19 +89,21 @@ Steps:
 5- picard_merge_sam_files
 6- picard_sort_sam
 7- picard_mark_duplicates
-8- rnaseqc
-9- wiggle
-10- raw_counts
-11- raw_counts_metrics
-12- cufflinks
-13- cuffmerge
-14- cuffquant
-15- cuffdiff
-16- cuffnorm
-17- differential_expression
-18- differential_expression_goseq
-19- gq_seq_utils_exploratory_analysis_rnaseq
-20- gq_seq_utils_report
+8- picard_rna_metrics
+9- estimate_ribosomal_rna
+10- rnaseqc
+11- wiggle
+12- raw_counts
+13- raw_counts_metrics
+14- cufflinks
+15- cuffmerge
+16- cuffquant
+17- cuffdiff
+18- cuffnorm
+19- fpkm_correlation_matrix
+20- gq_seq_utils_exploratory_analysis_rnaseq
+21- differential_expression
+22- differential_expression_goseq
 
 ```
 1- picard_sam_to_fastq
@@ -107,6 +114,11 @@ if FASTQ files are not already specified in the readset file. Do nothing otherwi
 2- trimmomatic
 --------------
 Raw reads quality trimming and removing of Illumina adapters is performed using [Trimmomatic](http://www.usadellab.org/cms/index.php?page=trimmomatic).
+If an adapter FASTA file is specified in the config file (section 'trimmomatic', param 'adapter_fasta'),
+it is used first. Else, 'Adapter1' and 'Adapter2' columns from the readset file are used to create
+an adapter FASTA file, given then to Trimmomatic. For PAIRED_END readsets, readset adapters are
+reversed-complemented and swapped, to match Trimmomatic Palindrome strategy. For SINGLE_END readsets,
+only Adapter1 is used and left unchanged.
 
 This step takes as input files:
 
@@ -142,63 +154,74 @@ Mark duplicates. Aligned reads per sample are duplicates if they have the same 5
 (for both mates in the case of paired-end reads). All but the best pair (based on alignment score)
 will be marked as a duplicate in the BAM file. Marking duplicates is done using [Picard](http://broadinstitute.github.io/picard/).
 
-8- rnaseqc
-----------
+8- picard_rna_metrics
+---------------------
+Computes a series of quality control metrics using both CollectRnaSeqMetrics and CollectAlignmentSummaryMetrics functions
+metrics are collected using [Picard](http://broadinstitute.github.io/picard/).
+
+9- estimate_ribosomal_rna
+-------------------------
+Use bwa mem to align reads on the rRNA reference fasta and count the number of read mapped
+The filtered reads are aligned to a reference fasta file of ribosomal sequence. The alignment is done per sequencing readset.
+The alignment software used is [BWA](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem.
+BWA output BAM files are then sorted by coordinate using [Picard](http://broadinstitute.github.io/picard/).
+
+This step takes as input files:
+
+readset Bam files
+
+10- rnaseqc
+-----------
 Computes a series of quality control metrics using [RNA-SeQC](https://www.broadinstitute.org/cancer/cga/rna-seqc).
 
-9- wiggle
----------
+11- wiggle
+----------
 Generate wiggle tracks suitable for multiple browsers.
 
-10- raw_counts
+12- raw_counts
 --------------
 Count reads in features using [htseq-count](http://www-huber.embl.de/users/anders/HTSeq/doc/count.html).
 
-11- raw_counts_metrics
+13- raw_counts_metrics
 ----------------------
 Create rawcount matrix, zip the wiggle tracks and create the saturation plots based on standardized read counts.
 
-12- cufflinks
+14- cufflinks
 -------------
 Compute RNA-Seq data expression using [cufflinks](http://cole-trapnell-lab.github.io/cufflinks/cufflinks/).
 
-13- cuffmerge
+15- cuffmerge
 -------------
 Merge assemblies into a master transcriptome reference using [cuffmerge](http://cole-trapnell-lab.github.io/cufflinks/cuffmerge/).
 
-14- cuffquant
+16- cuffquant
 -------------
 Compute expression profiles (abundances.cxb) using [cuffquant](http://cole-trapnell-lab.github.io/cufflinks/cuffquant/).
 
-15- cuffdiff
+17- cuffdiff
 ------------
 [Cuffdiff](http://cole-trapnell-lab.github.io/cufflinks/cuffdiff/) is used to calculate differential transcript expression levels and test them for significant differences.
 
-16- cuffnorm
+18- cuffnorm
 ------------
 Global normalization of RNA-Seq expression levels using [Cuffnorm](http://cole-trapnell-lab.github.io/cufflinks/cuffnorm/).
 
-17- differential_expression
+19- fpkm_correlation_matrix
+---------------------------
+Compute the pearson corrleation matrix of gene and transcripts FPKM. FPKM data are those estimated by cuffnorm.
+
+20- gq_seq_utils_exploratory_analysis_rnaseq
+--------------------------------------------
+Exploratory analysis using the gqSeqUtils R package.
+
+21- differential_expression
 ---------------------------
 Performs differential gene expression analysis using [DESEQ](http://bioconductor.org/packages/release/bioc/html/DESeq.html) and [EDGER](http://www.bioconductor.org/packages/release/bioc/html/edgeR.html).
 Merge the results of the analysis in a single csv file.
 
-18- differential_expression_goseq
+22- differential_expression_goseq
 ---------------------------------
 Gene Ontology analysis for RNA-Seq using the Bioconductor's R package [goseq](http://www.bioconductor.org/packages/release/bioc/html/goseq.html).
 Generates GO annotations for differential gene expression analysis.
-
-19- gq_seq_utils_exploratory_analysis_rnaseq
---------------------------------------------
-Exploratory analysis using the gqSeqUtils R package.
-
-20- gq_seq_utils_report
------------------------
-Generates a summary html report containing the description of
-the sequencing experiment as well as a detailed presentation of the pipeline steps and results.
-Various Quality Control (QC) summary statistics are included in the report and additional QC analysis
-is accessible for download directly through the report. The report includes also the main references
-of the software and methods used during the analysis, together with the full list of parameters
-passed to the pipeline main script.
 
 

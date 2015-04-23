@@ -49,14 +49,14 @@ Usage
 
 usage: illumina_run_processing.py [-h] [--help] [-c CONFIG [CONFIG ...]]
                                   [-s STEPS] [-o OUTPUT_DIR] [-j {pbs,batch}]
-                                  [-f] [--clean]
+                                  [-f] [--report] [--clean]
                                   [-l {debug,info,warning,error,critical}]
                                   [-d RUN_DIR] [--lane LANE_NUMBER]
                                   [-r READSETS] [-i CASAVA_SHEET_FILE]
                                   [-x FIRST_INDEX] [-y LAST_INDEX]
                                   [-m NUMBER_OF_MISMATCHES] [-w] [-v]
 
-Version: 2.1.0
+Version: 2.1.1
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
@@ -74,8 +74,13 @@ optional arguments:
                         job scheduler type (default: pbs)
   -f, --force           force creation of jobs even if up to date (default:
                         false)
+  --report              create 'pandoc' command to merge all job markdown
+                        report files in the given step range into HTML, if
+                        they exist; if --report is set, --job-scheduler,
+                        --force, --clean options and job up-to-date status are
+                        ignored (default: false)
   --clean               create 'rm' commands for all job removable files in
-                        the given step range, if they exists; if --clean is
+                        the given step range, if they exist; if --clean is
                         set, --job-scheduler, --force options and job up-to-
                         date status are ignored (default: false)
   -l {debug,info,warning,error,critical}, --log {debug,info,warning,error,critical}
