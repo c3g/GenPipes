@@ -212,7 +212,7 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
 	deps = c("affxparser","affy","affyio","affyPLM","akima","annotate","AnnotationDbi"
 	,"AnnotationForge","ape","ash","ballgown","BatchExperiments","BatchJobs","beanplot","Biobase","BiocGenerics"
 	,"BiocInstaller","bioDist","biomaRt","Biostrings","biovizBase","bit"
-	,"bitops","boot","brew","BSgenome","caTools","charm","charmData","class"
+	,"bitops","boot","brew","BSgenome","caTools","charm","charmData","circlize","class"
 	,"cluster","clusterStab","clusterProfiler","codetools","colorspace","ConsensusClusterPlus","corpcor","crlmm","ctc"
 	,"cummeRbund","datasets","DBI","DESeq","devtools","dendextend","dichromat","digest","dplyr","DNAcopy"
 	,"edgeR","ellipse","evaluate","fastcluster","ff","fields","FDb.InfiniumMethylation.hg19"

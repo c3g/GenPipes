@@ -119,8 +119,12 @@ class BwaRunProcessingAligner(RunProcessingAligner):
         job.name = "picard_collect_multiple_metrics." + readset.name + ".met" + "." + readset.run + "." + readset.lane
         jobs.append(job)
 
-        coverage_bed = bvatools.resolve_readset_coverage_bed(readset)
-        full_coverage_bed = (self.output_dir + os.sep + coverage_bed) if coverage_bed else None
+        if readset.beds:
+            coverage_bed = readset.beds[0]
+            full_coverage_bed = (self.output_dir + os.sep + coverage_bed)
+        else:
+            coverage_bed = None
+            full_coverage_bed = None
 
         if coverage_bed:
             if (not os.path.exists(full_coverage_bed)) and (coverage_bed not in self.downloaded_bed_files):
