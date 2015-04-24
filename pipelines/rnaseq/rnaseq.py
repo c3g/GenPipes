@@ -808,7 +808,7 @@ END
             )
         ], name="gq_seq_utils_exploratory_analysis_rnaseq"))
 
-        # Render Report
+        # Render Rmarkdown Report
         jobs.append(
             rmarkdown.render(
              job_input            = os.path.join("exploratory", "index.tsv"),
@@ -885,6 +885,8 @@ cp \\
             job.name = "differential_expression_goseq.dge." + contrast.name
             jobs.append(job)
 
+
+###################
         report_file = os.path.join("report", "RnaSeq.differential_expression.md")
         jobs.append(
             Job(
@@ -936,6 +938,8 @@ done""".format(
                 report_files=[report_file],
                 name="differential_expression_goseq_report")
         )
+
+############
 
         return jobs
 
