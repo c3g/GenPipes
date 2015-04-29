@@ -30,15 +30,16 @@ summary$"File" %<>% sapply(function(fn){
 
 #### Exploratory Analysis 
 
-Different exploratory data analysis (EDA) techniques are applied to gene and transcript expression levels,quantified  
+Different exploratory data analysis (EDA) techniques are applied to gene and transcript expression levels, quantified  
 respectively by the HT-seq calculated log2(CPM) (counts-per-million reads) and cufflinks estimated 
-log2(FPKM) (fragments per kilobase of exon per million fragments mapped).The main goals of expression level EDA is to  
-detect the possible presence of outlying samples, potential mislabeling, explore the homogeneity of biological replicates and appreciate 
-the global effects of the different experimental variables. EDA plots are therefore essential to insure clean data is sent to differential analysis.
+log2(FPKM) (fragments per kilobase of exon per million fragments mapped). Main goals of expression level EDA are 
+the detection of outliers, potential mislabeling,  to explore the homogeneity of biological replicates and  to appreciate 
+the global effects of the different experimental variables. EDA plots are therefore essential to insure clean data is 
+sent to differential analysis.
 
-First, we analyze how different samples are connected to each other using 
-hierarchical clustering on the log2(CPM) gene expression levels, using 
-the correlation distance and the Ward method.
+First, we analyze how samples are connected to each other using 
+hierarchical clustering on the log2(CPM) gene expression levels. The Ward method is applied 
+to the matrix of Pearson's correlation distance.
 
 Secondly, we perform principal component analysis (PCA) on gene expression levels (log2CPM). 
 A PCA plot shows the projection of the samples onto a two-dimensional space spanned by the first 
