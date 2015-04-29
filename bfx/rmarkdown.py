@@ -39,11 +39,6 @@ def render(job_input, job_name, input_rmarkdown_file, render_output_dir, module_
         command="""\
 R --no-save --no-restore <<-'EOF'
 {prerun_r}
-library(rmarkdown)
-library(knitr)
-library(hwriter)
-library(magrittr)
-options(stringsAsFactors=F)
 input_rmarkdown_file = '{input_rmarkdown_file}'
 render_output_dir    = '{render_output_dir}'
 rmarkdown_file       = basename(input_rmarkdown_file) # honoring a different WD that location of Rmd file in knitr is problematic
@@ -54,4 +49,3 @@ EOF""".format(input_rmarkdown_file=input_rmarkdown_file, render_output_dir=rende
         name=job_name,
         report_files=[output_markdown_file],
     )
-

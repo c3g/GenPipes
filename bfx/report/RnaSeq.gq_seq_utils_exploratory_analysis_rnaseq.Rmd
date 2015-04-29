@@ -3,6 +3,14 @@
 ### DEFINED OUTSIDE
 # report_dir
 
+library(rmarkdown)
+library(knitr)
+library(hwriter)
+library(magrittr)
+options(stringsAsFactors=F)
+
+
+
 # Directories and cp data
 unlink( file.path(report_dir,"exploratory") , recursive = T)
 dir.create( file.path(report_dir,"exploratory"), showWarnings=F,recursive=T)
@@ -19,6 +27,9 @@ summary$"File" %<>% sapply(function(fn){
 	hwrite( gsub(".*\\.","",fn) ,link=fn)
 })
 ```
+
+#### Exploratory Analysis 
+
 Different exploratory data analysis (EDA) techniques are applied to gene and transcript expression levels,quantified  
 respectively by the HT-seq calculated log2(CPM) (counts-per-million reads) and cufflinks estimated 
 log2(FPKM) (fragments per kilobase of exon per million fragments mapped).The main goals of expression level EDA is to  
