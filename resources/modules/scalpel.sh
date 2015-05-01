@@ -2,10 +2,11 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=bvatools
-VERSION=1.5
-ARCHIVE=$SOFTWARE-$VERSION.zip
-ARCHIVE_URL=https://bitbucket.org/mugqic/$SOFTWARE/downloads/$ARCHIVE
+SOFTWARE=scalpel
+VERSION=0.3.2
+PERL_VERSION=5.18.2
+ARCHIVE=$SOFTWARE-$VERSION.tar.gz
+ARCHIVE_URL=http://sourceforge.net/projects/scalpel/files/$ARCHIVE/download
 SOFTWARE_DIR=$SOFTWARE-$VERSION
 
 # Specific commands to extract and build the software
@@ -13,9 +14,18 @@ SOFTWARE_DIR=$SOFTWARE-$VERSION
 # $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
-  unzip $ARCHIVE
+  tar zxvf $ARCHIVE
+
+  cd $SOFTWARE_DIR
+  module load mugqic/perl/$PERL_VERSION
+  make
+
+  # Update Perl script shebangs
+  sed -i s,"#\!/usr/bin/perl,#\!/usr/bin/env perl,g" *.pl scalpel
+  chmod +x *.pl scalpel
 
   # Install software
+  cd $INSTALL_DOWNLOAD
   mv -i $SOFTWARE_DIR $INSTALL_DIR/
 }
 
@@ -28,8 +38,8 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-setenv          BVATOOLS_HOME       \$root
-setenv          BVATOOLS_JAR        \$root/$SOFTWARE-$VERSION-full.jar
+prepend-path    PATH                \$root
+prepend-path    LD_LIBRARY_PATH     \$root/bamtools-2.3.0/lib/
 "
 }
 
