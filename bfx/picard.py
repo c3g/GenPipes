@@ -292,11 +292,10 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
         tmp_dir=config.param(ini_section, 'tmp_dir'),
         java_other_options=config.param(ini_section, 'java_other_options'),
         ram=config.param(ini_section, 'ram'),
-        input=" \\\n  ".join(["INPUT=" + input for input in inputs]),
+        inputs=" \\\n  ".join(["INPUT=" + input for input in inputs]),
         output=output,
         seq_dict=config.param(ini_section, 'genome_dictionary', type='filepath')
-        ),
-        removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output) if sort_order == "coordinate" else None]
+        )
     )
 
 def collect_rna_metrics(input, output, annotation_flat=None,reference_sequence=None):

@@ -36,6 +36,7 @@ from core.pipeline import *
 from bfx.sample_tumor_pairs import *
 from bfx.sequence_dictionary import *
 
+from bfx import bcftools
 from bfx import gq_seq_utils
 from bfx import gatk
 from bfx import picard
@@ -214,7 +215,7 @@ class TumorPair(dnaseq.DnaSeq):
                     bcftools.add_reject(input_common, outputCommon),
                     bcftools.add_chi2(input_somatic, outputSomatic),
                     picard.sort_vcfs([outputCommon, outputSomatic], outputWrongName),
-                    Job([outputWrongName], [output], command="sed 's/sample_name/" + tumor_pair.tumor + "/g'" + outputWrongName + ' > ' + output)]
+                    Job([outputWrongName], [output], command="sed 's/sample_name/" + tumor_pair.tumor.name + "/g'" + outputWrongName + ' > ' + output)]
                     , removable_files=[outputCommon,outputSomatic,outputWrongName,output]
                     , name="scalpel_merged_vcf." + tumor_pair.name)
                 jobs.append(job)
@@ -233,10 +234,9 @@ class TumorPair(dnaseq.DnaSeq):
                     vcfsToMerge.append(outputIdx)
                     job = concat_jobs([
                         bcftools.add_reject(input_common, outputCommon),
-                        bcftools.add_chi2(input_somatic, outputSomatic),
+                        bcftools.add_chi2Filter(input_somatic, outputSomatic),
                         picard.sort_vcfs([outputCommon, outputSomatic], outputWrongName),
-                        Job([outputWrongName], [output], command="sed 's/sample_name/" + tumor_pair.tumor + "/g'" + outputWrongName + ' > ' + outputIdx)]
-                        , removable_files=[outputCommon,outputSomatic,outputWrongName]
+                        Job([outputWrongName], [output], command="sed 's/sample_name/"+ tumor_pair.tumor.name + "/g'" + outputWrongName + ' > ' + outputIdx, removable_files=[outputCommon,outputSomatic,outputWrongName])]
                         , name="scalpel_merged_vcf." + tumor_pair.name + "." + str(idx))
                     jobs.append(job)
                 job = gatk.cat_variants(vcfsToMerge, output)

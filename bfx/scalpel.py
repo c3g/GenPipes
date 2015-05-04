@@ -30,7 +30,7 @@ def scalpel_somatic(inputNormal, inputTumor, outputDir, bed):
 
     return Job(
         [inputNormal, inputTumor, bed],
-        [os.path.join(outputDir, 'main', 'somatic.5x.indel.vcf')],
+        [os.path.join(outputDir, 'main', 'somatic.5x.indel.vcf'), os.path.join(outputDir, 'main', 'common.5x.indel.vcf')],
         [
             ['scalpel', 'module_perl'],
             ['scalpel', 'module_scalpel']
