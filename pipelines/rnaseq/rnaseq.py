@@ -47,6 +47,7 @@ from bfx import picard
 from bfx import samtools
 from bfx import star
 from bfx import bvatools
+from bfx import rmarkdown
 from pipelines import common
 import utils
 
@@ -791,14 +792,12 @@ END
 
         jobs = []
 
+        # gqSeqUtils function call
         sample_fpkm_readcounts = [[
             sample.name,
             os.path.join("cufflinks", sample.name, "isoforms.fpkm_tracking"),
             os.path.join("raw_counts", sample.name + ".readcounts.csv")
         ] for sample in self.samples]
-
-        input_file = os.path.join("exploratory", "exploratory.samples.tsv")
-
         jobs.append(concat_jobs([
             Job(command="mkdir -p exploratory"),
             gq_seq_utils.exploratory_analysis_rnaseq(
@@ -809,26 +808,19 @@ END
             )
         ], name="gq_seq_utils_exploratory_analysis_rnaseq"))
 
-        report_file = os.path.join("report", "RnaSeq.gq_seq_utils_exploratory_analysis_rnaseq.md")
+        # Render Rmarkdown Report
         jobs.append(
-            Job(
-                [os.path.join("exploratory", "index.tsv")],
-                [report_file],
-                command="""\
-mkdir -p report && \\
-cp -r exploratory/ report/ && \\
-cp \\
-  {report_template_dir}/{basename_report_file} \\
-  {report_file} && \\
-cut -f3-4 exploratory/index.tsv | sed '1d' | perl -pe 's/^([^\t]*)\t(.*)$/* [\\1](\\2)/' \\
-  >> {report_file}""".format(
-                    report_template_dir=self.report_template_dir,
-                    basename_report_file=os.path.basename(report_file),
-                    report_file=report_file
-                ),
-                report_files=[report_file],
-                name="gq_seq_utils_exploratory_analysis_rnaseq_report")
+            rmarkdown.render(
+             job_input            = os.path.join("exploratory", "index.tsv"),
+             job_name             = "gq_seq_utils_exploratory_analysis_rnaseq_report",
+             input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeq.gq_seq_utils_exploratory_analysis_rnaseq.Rmd") ,
+             render_output_dir    = 'report',
+             module_section       = 'report', # TODO: this or exploratory?
+             prerun_r             = 'report_dir="report";' # TODO: really necessary or should be hard-coded in exploratory.Rmd?
+             )
         )
+
+
 
         report_file = os.path.join("report", "RnaSeq.cuffnorm.md")
         jobs.append(
@@ -893,6 +885,8 @@ cp \\
             job.name = "differential_expression_goseq.dge." + contrast.name
             jobs.append(job)
 
+
+###################
         report_file = os.path.join("report", "RnaSeq.differential_expression.md")
         jobs.append(
             Job(
@@ -944,6 +938,8 @@ done""".format(
                 report_files=[report_file],
                 name="differential_expression_goseq_report")
         )
+
+############
 
         return jobs
 
