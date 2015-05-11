@@ -205,7 +205,7 @@ class TumorPair(dnaseq.DnaSeq):
             # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
             output = os.path.join(pair_directory, tumor_pair.name + ".scalpel.vcf")
             if nb_jobs == 1:
-                outputWrongName = os.path.join(scalpel_directory, tumor_pair.name + ".scalpel.vcf")
+                outputWrongName = os.path.join(scalpel_directory, tumor_pair.name + ".rename.scalpel.vcf")
                 outputSomatic = os.path.join(scalpel_directory, tumor_pair.name + ".scalpel.somatic.vcf")
                 outputCommon = os.path.join(scalpel_directory, tumor_pair.name + ".scalpel.common.vcf")
                 input_somatic = os.path.join(scalpel_directory, tumor_pair.name + ".scalpel", 'main', 'somatic.5x.indel.vcf')
@@ -224,7 +224,7 @@ class TumorPair(dnaseq.DnaSeq):
                 vcfsToMerge =[]
                 for idx in range(nb_jobs):
                     sample_directory = os.path.join(scalpel_directory, tumor_pair.name + "." + str(idx) + ".scalpel")
-                    outputWrongName = os.path.join(sample_directory, tumor_pair.name + ".scalpel.vcf")
+                    outputWrongName = os.path.join(sample_directory, tumor_pair.name + ".rename.scalpel.vcf")
                     outputSomatic = os.path.join(sample_directory, tumor_pair.name + ".scalpel.somatic.vcf")
                     outputCommon = os.path.join(sample_directory, tumor_pair.name + ".scalpel.common.vcf")
                     outputIdx = os.path.join(sample_directory, tumor_pair.name + ".scalpel.vcf")
@@ -242,6 +242,26 @@ class TumorPair(dnaseq.DnaSeq):
                 job = gatk.cat_variants(vcfsToMerge, output)
                 job.name="scalpel_merge_all_vcfs." + tumor_pair.name
                 jobs.append(job)
+
+        return jobs
+
+    def merge_svns_and_indels(self):
+        """
+        Merge snvs and indels
+        """
+
+        jobs = []
+
+        for tumor_pair in self.tumor_pairs.itervalues():
+            pair_directory = os.path.join("pairedVariants", tumor_pair.name)
+            input_mutect = os.path.join(pair_directory, tumor_pair.name + ".mutect.vcf")
+            input_scalpel = os.path.join(pair_directory, tumor_pair.name + ".scalpel.vcf")
+            output = os.path.join(pair_directory, tumor_pair.name + ".merged.vcf")
+
+            job = concat_jobs([
+                gatk.combine_variants([input_mutect, input_scalpel], output)],
+                name="merge_snvs_and_indels." + tumor_pair.name)
+            jobs.append(job)
 
         return jobs
 
@@ -266,7 +286,8 @@ class TumorPair(dnaseq.DnaSeq):
             self.paired_SNVs,
             self.merge_SNVs,
             self.paired_indels,
-            self.merge_indels
+            self.merge_indels,
+            self.merge_svns_and_indels
         ]
 
 if __name__ == '__main__': 
