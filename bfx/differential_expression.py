@@ -76,6 +76,8 @@ def goseq(
     input_file,
     input_columns,
     output_file,
+    gene_size_file=None,
+    gene_ontology_file=None,    
     ):
 
     return  Job(
@@ -93,9 +95,10 @@ Rscript $R_TOOLS/goseq.R {other_options} \\
   -c {input_columns} \\
   -o {output_file}""".format(
         other_options=config.param('differential_expression_goseq','other_options'),
-        gene_size_file=config.param('differential_expression_goseq', 'gene_size', type='filepath'),
-        gene_ontology_file=config.param('differential_expression_goseq', 'gene_ontology', type='filepath'),
+        gene_size_file=gene_size_file if gene_size_file else config.param('differential_expression_goseq', 'gene_size', type='filepath'),
+        gene_ontology_file=gene_ontology_file if gene_ontology_file else config.param('differential_expression_goseq', 'gene_ontology', type='filepath'),
         input_file=input_file,
         input_columns=input_columns,
         output_file=output_file
     ))
+
