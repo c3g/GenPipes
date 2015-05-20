@@ -35,7 +35,7 @@ from core.config import *
 from core.job import *
 from core.pipeline import *
 from bfx.readset import *
-
+from bfx import differential_expression
 from bfx import gq_seq_utils
 from pipelines import common
 
@@ -884,7 +884,7 @@ Rscript $R_TOOLS/deseq.R \\
 sed '1d' {isoforms_lengths} | perl -pe 's/^(.*c\d+_g\d+)/\\1\t\\1/' | sort -k1,1 -k3,3gr | \\
 awk -F "\t" 'FNR == NR {{if (!isoform[$1]) {{isoform[$1] = $2; next}}}}{{OFS="\t"; if (isoform[$1] == $2 && !gene[$1]++ || $1 == "#gene_id") {{print}}}}' - {trinotate_annotation_report} | \\
 perl -pe 's/^(\S+)\t\S+\t([^^\t]*)/\\1\t\\2\t\\2/' | \\
-sed '1s/^#gene_id\tsprot_Top_BLASTX_hit/Gene\tSymbol/' \\
+sed '1s/^#gene_id\tsprot_Top_BLASTX_hit/gene\tSymbol/' \\
   > {trinotate_annotation_report}.genes""".format(
                     isoforms_lengths=isoforms_lengths,
                     trinotate_annotation_report=trinotate_annotation_report
@@ -897,7 +897,7 @@ sed '1s/^#gene_id\tsprot_Top_BLASTX_hit/Gene\tSymbol/' \\
                 command="""\
 cut -f 2- {trinotate_annotation_report} | awk '!isoform[$1]++' | \\
 perl -pe 's/^(\S+)\t([^^\t]*)/\\1\t\\2\t\\2/' | \\
-sed '1s/^transcript_id\tsprot_Top_BLASTX_hit/Transcript\tSymbol/' \\
+sed '1s/^transcript_id\tsprot_Top_BLASTX_hit/transcript\tSymbol/' \\
   > {trinotate_annotation_report}.isoforms""".format(
                     trinotate_annotation_report=trinotate_annotation_report
                 )
@@ -971,6 +971,27 @@ done""".format(
 
         return jobs
 
+    def differential_expression_goseq(self):
+        """
+        Gene Ontology analysis for RNA-Seq denovo Assembly using the Bioconductor's R package [goseq](http://www.bioconductor.org/packages/release/bioc/html/goseq.html).
+        Generates GO annotations for differential gene expression analysis.
+        """
+
+        jobs = []
+
+        for contrast in self.contrasts:
+            # goseq for differential gene expression results
+            job = differential_expression.goseq(
+                os.path.join("differential_expression", "genes" , contrast.name, "dge_trinotate_results.csv"),
+                config.param("differential_expression_goseq", "dge_input_columns"),
+                os.path.join("differential_expression", "genes", contrast.name ,"gene_ontology_go_results.csv"),
+                os.path.join("differential_expression", "genes.lengths.tsv")
+            )
+            job.name = "differential_expression_goseq.dge." + contrast.name
+            jobs.append(job)
+            
+        return jobs
+    
     @property
     def steps(self):
         return [
@@ -992,7 +1013,8 @@ done""".format(
             self.trinotate,
             self.align_and_estimate_abundance_prep_reference,
             self.align_and_estimate_abundance,
-            self.differential_expression
+            self.differential_expression,
+            self.differential_expression_goseq
         ]
 
 if __name__ == '__main__':
