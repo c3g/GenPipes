@@ -662,6 +662,7 @@ tmhmm --short \\
         trinotate_report = os.path.join("trinotate", "trinotate_annotation_report.tsv")
 		trinotate_report_genes_prefix = os.path.join("trinotate", "trinotate_annotation_report.tsv.genes")
 		trinotate_report_transcripts_prefix = os.path.join("trinotate", "trinotate_annotation_report.tsv.transcripts")
+
         return [concat_jobs([
             Job(command="mkdir -p trinotate"),
             Job(
@@ -705,21 +706,21 @@ Trinotate {trinotate_sqlite} report -E {evalue} --pfam_cutoff {pfam_cutoff} \\
                     pfam_cutoff=config.param('trinotate', 'pfam_cutoff'),
                     trinotate_report=trinotate_report
             )),
-			Job(
-			[trinotate_report], 
-			[trinotate_report_genes_prefix + '_blast.tsv', trinotate_report_transcripts_prefix + '_blast.tsv' , 
-			trinotate_report_genes_prefix + '_go.tsv', trinotate_report_transcripts_prefix + '_go.tsv' ],
-			['trinotate', 'module_mugqic_tools'], 
-			command="""\
+            Job(
+            [trinotate_report], 
+            [trinotate_report_genes_prefix + '_blast.tsv', trinotate_report_transcripts_prefix + '_blast.tsv' , 
+            trinotate_report_genes_prefix + '_go.tsv', trinotate_report_transcripts_prefix + '_go.tsv' ],
+            [['trinotate', 'module_mugqic_tools']], 
+            command="""\
 $PYTHON_TOOLS/parseTrinotateOutput.py -r {trinotate_report} -o {trinotate_report_gene_prefix} -i {gene_id_column} &&
 $PYTHON_TOOLS/parseTrinotateOutput.py -r {trinotate_report} -o {trinotate_report_transcript_prefix} -i {transcript_id_column}
-			""".format(
-			trinotate_report=trinotate_report,
-			trinotate_report_gene_prefix=trinotate_report_gene_prefix,
-			trinotate_report_transcript_prefix=trinotate_report_transcript_prefix,
-			gene_id_column= "#gene_id" if not config.param('trinotate', 'gene_column'),
-			transcript_id_column="transcript_id" if not config.param('trinotate', 'transcript_column')
-			))
+            """.format(
+            trinotate_report=trinotate_report,
+            trinotate_report_gene_prefix=trinotate_report_gene_prefix,
+            trinotate_report_transcript_prefix=trinotate_report_transcript_prefix,
+            gene_id_column = transcript_id_column,
+            transcript_id_column=transcript_id_column
+            ))
     ], name="trinotate")]
 
     def align_and_estimate_abundance_prep_reference(self):
