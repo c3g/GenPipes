@@ -99,6 +99,52 @@ python $PYTHON_TOOLS/rrnaBAMcounter.py \\
         typ=typ
         )
     )
+# Parse Trinotate output, create best blast annotated file, GO terms and a list of filtered configs
+def py_parseTrinotateOutput(trinotate_annotation_report, trinotate_report_genes_prefix, trinotate_report_transcripts_prefix, gene_id_column, transcript_id_column, isoforms_lengths_file, job_name, filters=None):  
+    return Job(
+        [trinotate_annotation_report, isoforms_lengths_file], 
+        [trinotate_report_genes_prefix + '_blast.tsv', trinotate_report_transcripts_prefix + '_blast.tsv' , 
+        trinotate_report_genes_prefix + '_go.tsv', trinotate_report_transcripts_prefix + '_go.tsv' ],
+        [['DEFAULT', 'module_mugqic_tools'],
+         ['DEFAULT', 'module_python']
+         ],
+        name=job_name,
+        command="""\
+$PYTHON_TOOLS/parseTrinotateOutput.py -r {trinotate_annotation_report} -o {trinotate_report_genes_prefix} -i \"{gene_id_column}\" -l {isoforms_lengths} &&
+$PYTHON_TOOLS/parseTrinotateOutput.py -r {trinotate_annotation_report} -o {trinotate_report_transcripts_prefix} -i \"{transcript_id_column}\"{filters}""".format(
+        trinotate_annotation_report=trinotate_annotation_report,
+        trinotate_report_genes_prefix=trinotate_report_genes_prefix,
+        trinotate_report_transcripts_prefix=trinotate_report_transcripts_prefix,
+        gene_id_column = gene_id_column,
+        isoforms_lengths=isoforms_lengths_file, 
+        transcript_id_column=transcript_id_column,
+        filters="" if not filters else " -f " + ' and '.join(filters)
+        )
+    )
+
+def py_parseMergeCsv(input_files, delimiter, output , common, subset=None, exclude=None, left_join=None, sort_by=None, make_names=None):  
+    return Job(
+        input_files, 
+        [output],
+        [['DEFAULT', 'module_mugqic_tools'],
+         ['DEFAULT', 'module_python']
+         ], 
+        command="""\
+$PYTHON_TOOLS/parseMergeCsv.py -i {input_files} \\
+      -o {output} \\
+      -c {common_columns} \\
+      -d {delimiter} {subset}{toexclude}{left_outer_join}{sort_by_field}""".format(
+        input_files=" ".join(input_files),
+        output=output,
+        common_columns=common,        
+        delimiter=delimiter, 
+        subset=" -s " + subset if subset else "", 
+        toexclude=" -x " + exclude if exclude else "", 
+        left_outer_join=" -l " if  left_join else "",
+        sort_by_field=" -t " + sort_by if sort_by else "",
+        make_names=" -n " if make_names else ""
+        )
+    )
 
 
 
@@ -138,6 +184,7 @@ filterLongIndel.pl \\
         output=output
         )
     )
+
 
 ## functions for R tools ##
 
