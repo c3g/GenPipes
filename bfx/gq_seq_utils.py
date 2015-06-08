@@ -51,6 +51,29 @@ EOF""".format(
         output_dir=output_dir
     ))
 
+def exploratory_analysis_rnaseq_denovo(count_file, genes_file, output_dir):
+
+    return Job(
+        [count_file, genes_file ],
+        [os.path.join(output_dir, "index.tsv"), os.path.join(output_dir, "top_sd_heatmap_log2CPM.pdf")],
+        [
+            ['gq_seq_utils_exploratory_analysis_rnaseq', 'module_R'],
+            ['gq_seq_utils_exploratory_analysis_rnaseq', 'module_mugqic_R_packages']
+        ],
+        command="""\
+R --no-save --no-restore <<-EOF
+suppressPackageStartupMessages(library(gqSeqUtils))
+exploratoryAnalysisRNAseqdenovo(read.counts.path="{count_file}", genes.path="{genes_file}", output.dir="{output_dir}")
+desc = readRDS(file.path("{output_dir}","index.RData"))
+write.table(desc,file=file.path("{output_dir}","index.tsv"),sep='\t',quote=F,col.names=T,row.names=F)
+print("done.")
+
+EOF""".format(
+        count_file=count_file,
+        genes_file=genes_file,
+        output_dir=output_dir
+    ))
+
 def report(ini_filepaths, project_path, pipeline_type, output_directory):
 
     title = config.param('gq_seq_utils_report', 'report_title', required=False)
