@@ -2,8 +2,10 @@
 
 import argparse
 import csv
+import httplib
 import os
 import sys
+
 
 def main():
     parser = argparse.ArgumentParser(description='Parse WGS project')
@@ -11,23 +13,26 @@ def main():
     parser.add_argument('-s', '--sample', help='Sample name', required=True)
     parser.add_argument('-a', '--arrayReport', help='Array Sample report', required=True)
     parser.add_argument('-v', '--vertical', help='Vertival Output', required=False, type=bool)
-    
+    parser.add_argument('-w', '--host', help='Nanuq host to send data', required=False)
+    parser.add_argument('-x', '--authFile', help='Authentification file for connecting to host', required=False)
+
     args = parser.parse_args()
-    
+
     if not os.path.isdir(args.dir):
       print args.dir + " is not a directory"
       sys.exit(1)
-    
+
     print("Reading " + args.dir)
-    
+
     sampleStats = {'dupPct':'','chimeras':'','meanISize':'','iWidth99':'','interQ75_Q50Depth':'','depth':'','identity':"",'callRate':''}
     getDups(args.sample, args.dir, sampleStats)
+    getBarcode(args.sample, args.dir, sampleStats)
     getChimeras(args.sample, args.dir, sampleStats)
     getInsertSize(args.sample, args.dir, sampleStats)
     getDepth(args.sample, args.dir, sampleStats)
     getArrayIdentity(args.sample, args.dir, sampleStats)
     getArrayCallRate(args.sample, args.arrayReport, sampleStats)
-    
+
     if args.vertical:
       print("MeanInsertSize     : " + sampleStats['meanISize'])
       print("99% InsertSize     : " + sampleStats['iWidth99'])
@@ -42,6 +47,24 @@ def main():
       print("Chimera rate,%Dups,InsertSize,Bin Width that contains 99% of Fragments Insert Size,InterQuantile Coverage Depth,Array call rate,% identity,coverage,PASS FAIL")
       outLine = sampleStats['chimeras'] + "," + sampleStats['dupPct'] + "," + sampleStats['meanISize'] + "," + sampleStats['iWidth99'] + "," + sampleStats['interQ75_Q50Depth'] + "," + sampleStats['callRate'] + "," + sampleStats['identity'] + "," + sampleStats['depth'] + "," + passFail(sampleStats)
       print(outLine)
+
+    if args.host:
+        url = '/nanuqQCMPS/changeProcessingStateWS?barcode={barcode}&meanISize={meanISize}&iWidth99={iWidth99}' \
+              '&chimeras={chimeras}&dupPct={dupPct}&depth={depth}&interQ75_Q50Depth={interQ75_Q50Depth}' \
+              '&identity={identity}&callRate={callRate}&passFail={passFail}' \
+            .format(
+                barcode=sampleStats['barcode'],
+                meanISize=sampleStats['meanISize'],
+                iWidth99=sampleStats['iWidth99'],
+                chimeras=sampleStats['chimeras'],
+                dupPct=sampleStats['dupPct'],
+                depth=sampleStats['depth'],
+                interQ75_Q50Depth=sampleStats['interQ75_Q50Depth'],
+                identity=sampleStats['identity'],
+                callRate=sampleStats['callRate'],
+                passFail=passFail(sampleStats)
+        )
+        sys.exit(contact_server(args.host, url, auth_file=args.authFile) != 200)
 
 def passFail(sampleStats):
   retVal=""
@@ -82,7 +105,7 @@ def getDepth(sample, dir, sampleStats):
         line = depthMetrics.readline()
         values = line.split('\t')
         sampleStats['depth'] = values[8]
-        sampleStats['interQ75_Q50Depth'] = str(int(values[9]) - int(values[11])) 
+        sampleStats['interQ75_Q50Depth'] = str(int(values[9]) - int(values[11]))
 
 def getInsertSize(sample, dir, sampleStats):
     with open(dir + '/' + sample + '.sorted.dup.recal.all.metrics.insert_size_metrics') as iSizeMetrics:
@@ -112,7 +135,7 @@ def getChimeras(sample, dir, sampleStats):
                     sampleStats['chimeras'] = values[20]
                 else:
                     sampleStats['chimeras'] += ',' + values[20]
-    
+
 def getDups(sample, dir, sampleStats):
     with open(dir + '/' + sample + '.sorted.dup.metrics') as dupMetric:
         for line in dupMetric:
@@ -126,6 +149,32 @@ def getDups(sample, dir, sampleStats):
                 sampleStats['dupPct'] = values[7]
             else:
                 sampleStats['dupPct'] += ',' + values[7]
+
+def getBarcode(sample, dir, sampleStats):
+    with open(dir + '/' + sample + '.sorted.dup.metrics') as dupMetric:
+        for line in dupMetric:
+            if line.startswith('LIBRARY'):
+                break
+        for line in dupMetric:
+            if line == '\n':
+                break
+            values = line.split('\t')
+            sampleStats['barcode'] = values[0]
+
+def contact_server(host, url, auth_file=None):
+        https_connection = httplib.HTTPSConnection(host)
+        https_connection.set_debuglevel(0)
+        headers = {"Content-type": "application/x-www-form-urlencoded", "Accept": "text/plain"}
+
+        if auth_file:
+            with open(auth_file) as auth_file_handle:
+                https_connection.request("POST", url, auth_file_handle, headers)
+        else:
+            https_connection.request("POST", url, None, headers)
+        http_response = https_connection.getresponse()
+
+        https_connection.close()
+        return http_response.status
 
 if __name__ == "__main__":
     main()
