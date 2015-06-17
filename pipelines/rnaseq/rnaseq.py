@@ -308,6 +308,39 @@ pandoc --to=markdown \\
             jobs.append(job)
         return jobs
 
+    def bam_hard_clip(self):
+        """
+        Generate a hardclipped version of the bam for the toxedo suite which doesn't support this official sam feature.
+        """
+        
+        jobs = []
+        for sample in self.samples:
+            alignment_input = os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.bam")
+            alignment_output = os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.hardClip.bam")
+            job=pipe_jobs([
+                samtools.view(
+                    alignment_input,
+                    None,
+                    "-h"
+                ),
+                Job(
+                    [None],
+                    [alignment_output],
+                    # awk to transform soft clip into hard clip for tuxedo suite
+                    command="""\
+awk 'BEGIN {{OFS="\\t"}} {{if (substr($1,1,1)=="@") {{print;next}}; split($6,C,/[0-9]*/); split($6,L,/[SMDIN]/); if (C[2]=="S") {{$10=substr($10,L[1]+1); $11=substr($11,L[1]+1)}}; if (C[length(C)]=="S") {{L1=length($10)-L[length(L)-1]; $10=substr($10,1,L1); $11=substr($11,1,L1); }}; gsub(/[0-9]*S/,"",$6); print}}' """.format()
+                ),
+                samtools.view(
+                    "-",
+                    alignment_output,
+                    "-hb"
+                ),
+            ])
+            job.name="tuxedo_hard_clip."+ sample.name
+            jobs.append(job)
+        return jobs
+    
+
     def rnaseqc(self):
         """
         Computes a series of quality control metrics using [RNA-SeQC](https://www.broadinstitute.org/cancer/cga/rna-seqc).
@@ -405,7 +438,7 @@ pandoc \\
                 job = concat_jobs([
                         Job(command="mkdir -p " + output_directory, removable_files=[output_directory]),
                         picard.collect_multiple_metrics(alignment_file, os.path.join(output_directory,sample.name),reference_file),
-                        picard.collect_rna_metrics(alignment_file, os.path.join(output_directory,sample.name))
+                        picard.collect_rna_metrics(alignment_file, os.path.join(output_directory,sample.name+".picard_rna_metrics"))
                 ],name="picard_rna_metrics."+ sample.name)
                 jobs.append(job)
         
@@ -627,7 +660,7 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
         report_file = os.path.join("report", "RnaSeq.raw_counts_metrics.md")
         jobs.append(
             Job(
-                [wiggle_archive, saturation_directory + ".zip"],
+                [wiggle_archive, saturation_directory + ".zip","metrics/rnaseqRep/corrMatrixSpearman.txt"],
                 [report_file],
                 [['raw_counts_metrics', 'module_pandoc']],
                 command="""\
@@ -655,6 +688,7 @@ pandoc --to=markdown \\
     def cufflinks(self):
         """
         Compute RNA-Seq data expression using [cufflinks](http://cole-trapnell-lab.github.io/cufflinks/cufflinks/).
+        Warning: It needs to use a hard clipped bam file while Tuxedo tools do not support official soft clip SAM format
         """
 
         jobs = []
@@ -662,7 +696,7 @@ pandoc --to=markdown \\
         gtf = config.param('cufflinks','gtf', type='filepath')
 
         for sample in self.samples:
-            input_bam = os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.bam")
+            input_bam = os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.hardClip.bam")
             output_directory = os.path.join("cufflinks", sample.name)
 
             # De Novo FPKM
@@ -700,6 +734,7 @@ END
     def cuffquant(self):
         """
         Compute expression profiles (abundances.cxb) using [cuffquant](http://cole-trapnell-lab.github.io/cufflinks/cuffquant/).
+        Warning: It needs to use a hard clipped bam file while Tuxedo tools do not support official soft clip SAM format
         """
 
         jobs = []
@@ -707,7 +742,7 @@ END
         gtf = os.path.join("cufflinks", "AllSamples","merged.gtf")
         
         for sample in self.samples:
-            input_bam = os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.bam")
+            input_bam = os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.hardClip.bam")
             output_directory = os.path.join("cufflinks", sample.name)
 
             #Quantification
@@ -955,6 +990,7 @@ done""".format(
             self.picard_mark_duplicates,
             self.picard_rna_metrics,
             self.estimate_ribosomal_rna,
+            self.bam_hard_clip,
             self.rnaseqc,
             self.wiggle,
             self.raw_counts,
