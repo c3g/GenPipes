@@ -3,10 +3,14 @@
 set -eu -o pipefail
 
 # Python module where to install libs
-PYTHON_MODULE=mugqic/python/2.7.8
+PYTHON_VERSION=2.7.8
+PYTHON_MODULE=mugqic_dev/python/${PYTHON_VERSION}
 module load $PYTHON_MODULE
 
 ## Install Python libraries
+
+#pip
+easy_install pip
 
 # cython
 easy_install http://cython.org/release/Cython-0.22.tar.gz
@@ -44,6 +48,10 @@ python -c 'import pysam; print pysam.__version__, pysam.__file__'
 # nextworkx
 easy_install http://networkx.lanl.gov/download/networkx/networkx-1.7.tar.gz
 python -c 'import networkx; print networkx.__version__, networkx.__file__'
+
+#qiime
+PIP_PATH=$(which pip)
+${PIP_PATH} install qiime
 
 # Add permissions
 chmod -R ug+rwX,o+rX-w $PYTHON_HOME
