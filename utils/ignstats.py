@@ -96,7 +96,7 @@ def getArrayIdentity(sample, dir, sampleStats):
     with open(dir + '/' + sample + '.snpArrayCmp.txt') as arrayMetrics:
         for line in arrayMetrics:
             if line.startswith(MATCH_STR):
-                sampleStats['identity'] = line[len(MATCH_STR):].rstrip('\n')
+                sampleStats['identity'] = str(float(line[len(MATCH_STR):].rstrip('\n'))/100)
                 break
 
 def getDepth(sample, dir, sampleStats):
