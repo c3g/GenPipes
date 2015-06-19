@@ -336,7 +336,7 @@ cp \\
         """
         Fix the read mates. Once local regions are realigned, the read mate coordinates of the aligned reads
         need to be recalculated since the reads are realigned at positions that differ from their original alignment.
-        Fixing the read mate positions is done using [Picard](http://broadinstitute.github.io/picard/).
+        Fixing the read mate positions is done using [BVATools](https://bitbucket.org/mugqic/bvatools).
         """
 
         jobs = []
