@@ -346,7 +346,7 @@ cp \\
             output_prefix = alignment_file_prefix + "matefixed.sorted"
             jobs.append(concat_jobs([
                 bvatools.groupfixmate(input, output_prefix + ".tmp.bam"),
-                samtools.sort(output_prefix + ".tmp.bam", output_prefix)
+                picard.sort_sam(output_prefix + ".tmp.bam", output_prefix+ ".bam"),
             ], name="fix_mate_by_coordinate." + sample.name))
 
         report_file = os.path.join("report", "DnaSeq.fix_mate_by_coordinate.md")
