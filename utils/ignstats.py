@@ -88,7 +88,7 @@ def getArrayCallRate(sample, report, sampleStats):
     arrayMetrics = csv.DictReader(open(report, 'rb'), delimiter=',')
     for line in arrayMetrics:
         if line['Name'] == sample:
-            sampleStats['callRate'] = line['Call Rate']
+            sampleStats['callRate'] = str(float(line['Call Rate'].translate(None, "% "))/100)
             break
 
 def getArrayIdentity(sample, dir, sampleStats):
