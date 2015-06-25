@@ -71,7 +71,7 @@ def passFail(sampleStats):
 
   if float(sampleStats['depth']) < 30:
     retVal += "LowDepth "
-  if float(sampleStats['identity']) < 90:
+  if float(sampleStats['identity']) < 0.90:
     retVal += "IdentityLOW "
   if float(sampleStats['meanISize']) < 50:
     retVal += "InsertSizeLOW "
