@@ -34,10 +34,11 @@ def compute_tdf(input, output):
             ['compute_tdf', 'module_igvtools']
         ],
         command="""\
-igvtools count -f min,max,mean \\
+igvtools count {option} \\
   {input} \\
   {output} \\
   {genome}""".format(
+        option=config.param('igvtools_compute_tdf', 'option'),
         input=input,
         output=output,
         genome=config.param('compute_tdf', 'igv_genome', type='filepath')

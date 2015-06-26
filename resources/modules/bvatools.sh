@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=bvatools
-VERSION=1.5
+VERSION=1.6
 ARCHIVE=$SOFTWARE-$VERSION.zip
 ARCHIVE_URL=https://bitbucket.org/mugqic/$SOFTWARE/downloads/$ARCHIVE
 SOFTWARE_DIR=$SOFTWARE-$VERSION

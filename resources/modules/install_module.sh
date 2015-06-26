@@ -17,14 +17,24 @@ download_archive() {
   INSTALL_DOWNLOAD=$INSTALL_DIR/tmp
   mkdir -p $INSTALL_DOWNLOAD
 
+    if [[ "$#" -eq 2 ]]
+    then
+        ARCHIVE_TMP=$2
+        ARCHIVE_URL_PREFIX_TMP=$1
+        ARCHIVE_URL_TMP=${ARCHIVE_URL_PREFIX_TMP}/${ARCHIVE_TMP}
+    else
+        ARCHIVE_TMP=$ARCHIVE
+        ARCHIVE_URL_TMP=$ARCHIVE_URL
+    fi
+
   # If archive was previously downloaded, use the local one, otherwise get it from remote site
-  if [[ -f $ARCHIVE_DIR/$ARCHIVE ]]
+  if [[ -f $ARCHIVE_DIR/$ARCHIVE_TMP ]]
   then
-    echo "Archive $ARCHIVE already in $ARCHIVE_DIR/: using it..."
-    cp -a $ARCHIVE_DIR/$ARCHIVE $INSTALL_DOWNLOAD/
+    echo "Archive $ARCHIVE_TMP already in $ARCHIVE_DIR/: using it..."
+    cp -a $ARCHIVE_DIR/$ARCHIVE_TMP $INSTALL_DOWNLOAD/
   else
-    echo "Archive $ARCHIVE not in $ARCHIVE_DIR/: downloading it..."
-    wget --no-check-certificate $ARCHIVE_URL --output-document=$INSTALL_DOWNLOAD/$ARCHIVE
+    echo "Archive $ARCHIVE_TMP not in $ARCHIVE_DIR/: downloading it..."
+    wget --no-check-certificate $ARCHIVE_URL_TMP --output-document=$INSTALL_DOWNLOAD/$ARCHIVE_TMP
   fi
 }
 
