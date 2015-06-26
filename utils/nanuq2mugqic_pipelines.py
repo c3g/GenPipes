@@ -81,7 +81,7 @@ def create_readsets(nanuq_readset_file, seq_type, mugqic_pipelines_readset_file=
             mugqic_pipelines_readset_csv_row = {}
 
             if seq_type == "Pacbio":
-                mugqic_pipelines_readset_csv_row['Sample'] = line['Name']
+                mugqic_pipelines_readset_csv_row['Sample'] = line['Sample Group'] if line.has_key('Sample Group') and line['Sample Group'] != "" else line['Name']
                 mugqic_pipelines_readset_csv_row['Readset'] = ".".join([line['Name'], line['Library Barcode'], line['Run'], line['Well']])
 
                 nanuq_vs_mugqic_pipelines_readset_keys = [
@@ -106,7 +106,7 @@ def create_readsets(nanuq_readset_file, seq_type, mugqic_pipelines_readset_file=
                             symlinks.append([nanuq_readset_path, mugqic_pipelines_readset_path])
 
             else:  # seq_type = HiSeq or MiSeq
-                mugqic_pipelines_readset_csv_row['Sample'] = line['Name']
+                mugqic_pipelines_readset_csv_row['Sample'] = line['Sample Group'] if line.has_key('Sample Group') and line['Sample Group'] != "" else line['Name']
                 mugqic_pipelines_readset_csv_row['Readset'] = ".".join([line['Name'], line['Library Barcode'], line['Run'], line['Region']])
 
                 nanuq_vs_mugqic_pipelines_readset_keys = [

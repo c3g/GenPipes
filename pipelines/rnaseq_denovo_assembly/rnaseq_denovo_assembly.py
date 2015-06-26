@@ -201,7 +201,7 @@ class RnaSeqDeNovoAssembly(common.Illumina):
                 left_or_single_reads.append(os.path.join(normalization_directory, readset.name, "left.norm.fq"))
                 right_reads.append(os.path.join(normalization_directory, readset.name, "right.norm.fq"))
             elif readset.run_type == "SINGLE_END":
-                left_or_single_reads.append(trim_file_prefix + "single.norm.fq")
+                left_or_single_reads.append(os.path.join(normalization_directory, readset.name, "single.norm.fq"))
             else:
                 raise Exception("Error: run type \"" + readset.run_type +
                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")

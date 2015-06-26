@@ -12,6 +12,7 @@ ARCHIVE_PATCH=${SOFTWARE}-patch_$VERSION.run
 ARCHIVE_URL_PREFIX=http://files.pacb.com/software/$SOFTWARE/${VERSION_BASE%\.*}
 ARCHIVE_URL=$ARCHIVE_URL_PREFIX/$ARCHIVE
 SOFTWARE_DIR=${SOFTWARE}_$VERSION
+#https://files.pacb.com/software/smrtanalysis/2.3.0/smrtanalysis-patch_2.3.0.140936.p4.run
 
 # Specific commands to extract and build the software
 # $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
@@ -20,8 +21,10 @@ build() {
 
   cd $INSTALL_DOWNLOAD
 
+  # Download main source
+  download_archive
   # Download patch too
-  download_archive $ARCHIVE_URL_PREFIX/$ARCHIVE_PATCH $ARCHIVE_PATCH
+  download_archive $ARCHIVE_URL_PREFIX $ARCHIVE_PATCH 
 
   # Bash cannot run patch if not executable
   chmod +x $ARCHIVE $ARCHIVE_PATCH

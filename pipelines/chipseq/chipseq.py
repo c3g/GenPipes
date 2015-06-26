@@ -608,8 +608,8 @@ findMotifsGenome.pl \\
         report_file = os.path.join("report", "ChipSeq.homer_find_motifs_genome.md")
         jobs.append(
             Job(
-                [os.path.join("annotation", contrast.real_name, contrast.real_name, "homerResults.html") for contrast in self.contrasts] +
-                [os.path.join("annotation", contrast.real_name, contrast.real_name, "knownResults.html") for contrast in self.contrasts],
+                [os.path.join("annotation", contrast.real_name, contrast.real_name, "homerResults.html") for contrast in self.contrasts if contrast.type == 'narrow' and contrast.treatments] +
+                [os.path.join("annotation", contrast.real_name, contrast.real_name, "knownResults.html") for contrast in self.contrasts if contrast.type == 'narrow' and contrast.treatments],
                 [report_file],
                 command="""\
 mkdir -p report/annotation/ && \\

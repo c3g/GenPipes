@@ -17,17 +17,11 @@ $sequence_alignment_table$
 * Pair Orientation: library paired-end read design
 * Mean Insert Size: mean distance between the left most base position of the read1 and the right most base position of the read 2
 * Standard Deviation: standard deviation of distance between the left most base position of the read1 and the right most base position of the read 2
-* WG Mean Coverage: total number of aligned reads / genome size
-* WG %_bases_above_10: total number of bases with a coverage >= 10x / genome size
-* WG %_bases_above_25: total number of bases with a coverage >= 25x / genome size
-* WG %_bases_above_50: total number of bases with a coverage >= 50x / genome size
-* WG %_bases_above_75: total number of bases with a coverage >= 75x / genome size
-* WG %_bases_above_100: total number of bases with a coverage >= 100x / genome size
-* WG %_bases_above_500: total number of bases with a coverage >= 500x / genome size
-* CCDS Mean Coverage: total number of aligned reads in the CCDS/capture region / size of the CCDS/capture region
-* CCDS %_bases_above_10: total number of bases with a coverage >= 10x in the CCDS/capture region / size of the CCDS/capture region
-* CCDS %_bases_above_25: total number of bases with a coverage >= 25x in the CCDS/capture region / size of the CCDS/capture region
-* CCDS %_bases_above_50: total number of bases with a coverage >= 50x in the CCDS/capture region / size of the CCDS/capture region
-* CCDS %_bases_above_75: total number of bases with a coverage >= 75x in the CCDS/capture region / size of the CCDS/capture region
-* CCDS %_bases_above_100: total number of bases with a coverage >= 100x in the CCDS/capture region / size of the CCDS/capture region
-* CCDS %_bases_above_500: total number of bases with a coverage >= 500x in the CCDS/capture region / size of the CCDS/capture region
+* Mean Coverage: total number of aligned reads / (genome size or capture region size)
+* %_bases_above_10: total number of bases with a coverage >= 10x / (genome size or capture region size)
+* %_bases_above_25: total number of bases with a coverage >= 25x / (genome size or capture region size)
+* %_bases_above_50: total number of bases with a coverage >= 50x / (genome size or capture region size)
+* %_bases_above_75: total number of bases with a coverage >= 75x / (genome size or capture region size)
+* %_bases_above_100: total number of bases with a coverage >= 100x / (genome size or capture region size)
+* %_bases_above_500: total number of bases with a coverage >= 500x / (genome size or capture region size)
+
