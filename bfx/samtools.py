@@ -46,7 +46,7 @@ def faidx(input, filter=None):
 samtools faidx \\
   {input}{filter}""".format(
         input=input,
-        filter=" < " + filter if filter else ""
+        filter=filter if filter else ""
         )
     )
 
