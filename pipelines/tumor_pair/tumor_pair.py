@@ -231,12 +231,12 @@ class TumorPair(dnaseq.DnaSeq):
                     input_somatic = os.path.join(sample_directory, 'main', 'somatic.5x.indel.vcf')
                     input_common = os.path.join(sample_directory, 'main', 'common.5x.indel.vcf')
                     
-                    vcfsToMerge.append(outputIdx)
+                    vcfsToMerge.append(outputSomatic)
                     job = concat_jobs([
                         bcftools.add_reject(input_common, outputCommon),
                         bcftools.add_chi2Filter(input_somatic, outputSomatic),
                         picard.sort_vcfs([outputCommon, outputSomatic], outputWrongName),
-                        Job([outputWrongName], [output], command="sed 's/sample_name/"+ tumor_pair.tumor.name + "/g'" + outputWrongName + ' > ' + outputIdx, removable_files=[outputCommon,outputSomatic,outputWrongName])]
+                        Job([outputWrongName], [output], command="sed -e 's/sample_name/"+ tumor_pair.tumor.name + "/g' " + outputWrongName + ' > ' + outputIdx, removable_files=[outputCommon,outputSomatic,outputWrongName])]
                         , name="scalpel_merged_vcf." + tumor_pair.name + "." + str(idx))
                     jobs.append(job)
                 job = gatk.cat_variants(vcfsToMerge, output)
