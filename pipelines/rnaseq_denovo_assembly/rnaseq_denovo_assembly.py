@@ -805,12 +805,18 @@ align_and_estimate_abundance.pl {other_options} \\
         
         for item in "genes","isoforms":
             matrix = os.path.join(output_directory, item + ".counts.matrix")
+            count_files = os.path.join(output_directory, item + ".counts.files")
             align_and_estimate_abundance_results = [os.path.join("align_and_estimate_abundance", sample.name, sample.name + "." + item + ".results") for sample in self.samples]
             jobs.append(concat_jobs([
                 Job(command="mkdir -p " + os.path.join(output_directory, item)),
-                # Create isoforms and genes matrices with counts of RNA-seq fragments per feature using Trinity RSEM utility
                 Job(
                     align_and_estimate_abundance_results,
+                    [count_files],
+                    command="echo \\\n  " + "\\\n".join(align_and_estimate_abundance_results) + " \\\n > " + count_files
+                ),
+                # Create isoforms and genes matrices with counts of RNA-seq fragments per feature using Trinity RSEM utility
+                Job(
+                    [count_files],
                     [matrix],
                     [['align_and_estimate_abundance_prep_reference', 'module_perl'],
                      ['align_and_estimate_abundance_prep_reference', 'module_trinity'],
@@ -821,7 +827,7 @@ abundance_estimates_to_matrix.pl \\
   --out_prefix {out_prefix} \\
   {align_and_estimate_abundance_results}""".format(
                         out_prefix=os.path.join(output_directory, item),
-                        align_and_estimate_abundance_results=" \\\n  ".join(align_and_estimate_abundance_results)
+                        align_and_estimate_abundance_results=count_files
                     )
                 ),
                 # Extract isoforms and genes length values from any one of sample abundance files
@@ -977,19 +983,22 @@ done""".format(
         jobs = []
         output_directory = "filtered_assembly"         
         trinity_fasta = os.path.join("trinity_out_dir", "Trinity.fasta")
-        trinity_filtered = os.path.join(output_directory, "Trinity_filtered.fasta")
-        trinity_stats_prefix = os.path.join(output_directory, "Trinity_filtered.stats")
-        trinotate_annotation_report_filtered = os.path.join("trinotate", "trinotate_annotation_report.tsv" + ".filtered.tsv")
+        trinity_filtered = os.path.join(output_directory, "Trinity.fasta")
+        trinity_stats_prefix = os.path.join(output_directory, "trinity_filtered.stats")
+        trinotate_annotation_report_filtered = os.path.join("trinotate", "trinotate_annotation_report.tsv" + ".isoforms_filtered.tsv")
         
-        # Use samtools faidx to extract selected headers
+        # Use samtools faidx to extract selected headers, needed to force input files in mkdir job, dependencies fail using pipe_jobs (uses jobs[0].input_files and jobs[-1].output_files)
         jobs.append(concat_jobs([
-            Job(command="mkdir -p " + output_directory), 
+            Job([trinity_fasta, trinotate_annotation_report_filtered],
+                [trinity_filtered],
+                command="mkdir -p " + output_directory
+                ), 
             samtools.faidx(trinity_fasta),
             pipe_jobs([ 
-                samtools.faidx(trinity_fasta, trinotate_annotation_report_filtered),
+                samtools.faidx(trinity_fasta, " $(cat " + trinotate_annotation_report_filtered + " | tr '\\r\\n' ' ')"),
                 Job([trinity_fasta, trinotate_annotation_report_filtered],
                     [trinity_filtered],
-                    command="""cut -f 1 > {trinity_filtered}""".format(trinity_filtered=trinity_filtered )
+                    command="""awk '{{ print $1 }}' > {trinity_filtered}""".format(trinity_filtered=trinity_filtered )
                     )
             ]),
             Job(
@@ -1017,18 +1026,22 @@ Rscript -e 'library(gqSeqUtils); dnaFastaStats(filename = \"{trinity_filtered}\"
                 [['trinity', 'module_pandoc']],
                 command="""\
 mkdir -p report && \\
-cp {trinity_filtered}.zip {trinity_stats_prefix}.csv {trinity_stats_prefix}.jpg {trinity_stats_prefix}.pdf report/ && \\
+cp {trinity_filtered}.zip report/{output_directory}.zip && \\
+cp {trinity_stats_prefix}.csv {trinity_stats_prefix}.jpg {trinity_stats_prefix}.pdf report/ && \\
 assembly_table=`sed '1d' {trinity_stats_prefix}.csv | perl -pe 's/^"([^"]*)",/\\1\t/g' | grep -P "^(Nb. Transcripts|Nb. Components|Total Transcripts Length|Min. Transcript Length|Median Transcript Length|Mean Transcript Length|Max. Transcript Length|N50)" | LC_NUMERIC=en_CA awk -F"\t" '{{print $1"|"sprintf("%\\47d", $2)}}'` && \\
 pandoc --to=markdown \\
 --template {report_template_dir}/{basename_report_file} \\
 --variable assembly_table="$assembly_table" \\
+--variable filter_string="{filter_string}" \\
 {report_template_dir}/{basename_report_file} \\
 > {report_file}""".format(
                     trinity_filtered=trinity_filtered,
+                    output_directory=output_directory,
                     trinity_stats_prefix=trinity_stats_prefix,
                     report_template_dir=self.report_template_dir,
                     basename_report_file=os.path.basename(report_file),
-                    report_file=report_file
+                    report_file=report_file,
+                    filter_string="" if not config.param('filter_annotated_components', 'filters_trinotate', required=False) else config.param('filter_annotated_components', 'filters_trinotate', required=False)
                     ),                
                 name="filter_annotated_components_report",
                 report_files=[report_file]
@@ -1045,9 +1058,12 @@ pandoc --to=markdown \\
         """
         
         jobs = []
-        for item in "genes","isoforms":
+        for item in ["genes","isoforms" ]:
             jobs.append(
-                Job(command="""sed \'1d\' {item_length_file} > {item_length_file}.noheader.tsv""".format(
+                Job([os.path.join("differential_expression", item +".lengths.tsv")],                  
+                    [os.path.join("differential_expression", item +".lengths.tsv.noheader.tsv")],
+                    [],
+                    command="""sed \'1d\' {item_length_file} > {item_length_file}.noheader.tsv""".format(
                         item_length_file=os.path.join("differential_expression", item +".lengths.tsv")                        
                     ), name="format." + item + ".lengths"))
             for contrast in self.contrasts:

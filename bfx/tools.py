@@ -104,7 +104,8 @@ def py_parseTrinotateOutput(trinotate_annotation_report, trinotate_report_genes_
     return Job(
         [trinotate_annotation_report, isoforms_lengths_file], 
         [trinotate_report_genes_prefix + '_blast.tsv', trinotate_report_transcripts_prefix + '_blast.tsv' , 
-        trinotate_report_genes_prefix + '_go.tsv', trinotate_report_transcripts_prefix + '_go.tsv' ],
+        trinotate_report_genes_prefix + '_go.tsv', trinotate_report_transcripts_prefix + '_go.tsv',
+        trinotate_report_transcripts_prefix + '_filtered.tsv'],
         [['DEFAULT', 'module_mugqic_tools'],
          ['DEFAULT', 'module_python']
          ],
