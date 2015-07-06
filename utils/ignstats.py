@@ -49,7 +49,7 @@ def main():
       print(outLine)
 
     if args.host:
-        url = '/nanuqQCMPS/changeProcessingStateWS?barcode={barcode}&meanISize={meanISize}&iWidth99={iWidth99}' \
+        url = '/nanuqMPS/changeProcessingStateWS?barcode={barcode}&meanISize={meanISize}&iWidth99={iWidth99}' \
               '&chimeras={chimeras}&dupPct={dupPct}&depth={depth}&interQ75_Q50Depth={interQ75_Q50Depth}' \
               '&identity={identity}&callRate={callRate}&passFail={passFail}' \
             .format(
