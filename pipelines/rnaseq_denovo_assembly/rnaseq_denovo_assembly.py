@@ -813,7 +813,7 @@ align_and_estimate_abundance.pl {other_options} \\
                 Job(
                     align_and_estimate_abundance_results,
                     [count_files],
-                    command="echo \\\n  " + "\\\n".join(align_and_estimate_abundance_results) + " \\\n > " + count_files
+                    command="echo -e \"" + "\\n".join(align_and_estimate_abundance_results) + "\" > " + count_files
                 ),
                 # Create isoforms and genes matrices with counts of RNA-seq fragments per feature using Trinity RSEM utility
                 Job(
@@ -894,7 +894,7 @@ awk -F '\\t' '{{OFS="\\t" ; print $1,$0}}' {matrix} | sed '1s/^\\t/{item}\\tSymb
                 # Merge with annotations
                      jobs.append(concat_jobs([
                         tools.py_parseMergeCsv([os.path.join("differential_expression", item, contrast.name, "dge_results.csv"), trinotate_annotation_report + "." + item + "_blast.tsv"],
-                                    '\\\t',
+                                    "\\\\t",
                                     os.path.join("differential_expression", item, contrast.name, "dge_trinotate_results.csv"),
                                     "id " + "\"" + gene_id_column + "\"" if item == "genes" else "id " + transcript_id_column, 
                                     None,
