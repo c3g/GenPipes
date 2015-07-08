@@ -13,11 +13,11 @@ log = logging.getLogger(__name__)
 def catenate(
 	input_fastq,
 	input_name,
-	output_fasta
+	catenate_fasta
 	):
 
 	inputs = input_fastq
-	outputs = [output_fasta]
+	outputs = [catenate_fasta]
 
 	return Job(
 		inputs,
@@ -39,17 +39,17 @@ def catenate(
 		sample_name=','.join(input_name),
 		dir_output="catenate/",
 		),
-		removable_files=[output_fasta]
+		removable_files=[catenate_fasta]
 	)
 
 def uchime(
 	cat_sequence_fasta,
-	output_directory,
-	chimeras_file
+	chimeras_split_directory,
+	chimeras_split_file
 	):
 
 	inputs = [cat_sequence_fasta]
-	outputs = [chimeras_file]
+	outputs = [chimeras_split_file]
 
 	return Job(
 		inputs,
@@ -64,13 +64,15 @@ def uchime(
   -i {cat_sequence_fasta} \\
   -m {usearch61} \\
   -r {database} \\
-  -o {output_directory}""".format(
+  --threads {threads_number} \\
+  -o {chimeras_split_directory}""".format(
 		cat_sequence_fasta=cat_sequence_fasta,
 		usearch61="usearch61",
 		database=config.param('qiime', 'chimera_database'),
-		output_directory=output_directory
+		threads_number=config.param('qiime', 'threads'),
+		chimeras_split_directory=chimeras_split_directory
 		),
-		removable_files=[chimeras_file]
+		removable_files=[chimeras_split_file]
 	)
 	
 def filter_chimeras(
@@ -124,9 +126,9 @@ def otu_picking(
   -m {method} \\
   -s {similarity_treshold} \\
   --threads {threads_number} \\
-  -o {output_directory} """.format(
+  -o {output_directory}""".format(
 		input_without_chimer=input_without_chimer,
-		method='usearch61',
+		method='sumaclust',
 		similarity_treshold=config.param('qiime', 'similarity'),
 		threads_number=config.param('qiime', 'threads'),
 		output_directory=output_directory
@@ -204,11 +206,12 @@ def otu_table(
 	otu_file,
 	tax_assign_file,
 	otu_directory,
-	otu_table_file
+	otu_table_file,
+	otu_table_summary
 	):
 
 	inputs = [otu_file, tax_assign_file]
-	outputs = [otu_table_file]
+	outputs = [otu_table_file,otu_table_summary]
 	
 	return Job(
 		inputs,
@@ -226,7 +229,7 @@ def otu_table(
 		tax_assign_file=tax_assign_file,
 		otu_table_file=otu_table_file
 		),
-		removable_files=[otu_table_file]
+		removable_files=[otu_table_file,otu_table_summary]
 	)
 
 def otu_alignment(
@@ -309,33 +312,6 @@ def phylogeny(
 		),
 		removable_files=[phylo_file]
 	)	
-		
-def single_rarefaction(
-	otu_table,
-	otu_even_table
-	):
-
-	inputs = [otu_table]
-	outputs = [otu_even_table]
-	
-	return Job(
-		inputs,
-		outputs,
-		[
-			['qiime', 'module_qiime']
-		],
-
-		command="""\
-  $QIIME_HOME/single_rarefaction.py \\
-  -i {otu_table} \\
-  -o {otu_even_table} \\
-  -d {depth}""".format(
-		otu_table=otu_table,
-		otu_even_table=otu_even_table,
-		depth=config.param('qiime', 'single_rarefaction_depth')
-		),
-		removable_files=[otu_even_table]
-	)
 	
 def multiple_rarefaction(
 	otus_input,
@@ -359,7 +335,7 @@ def multiple_rarefaction(
   -x {multiple_rarefaction_max} \\
   -s {multiple_rarefaction_step} \\
   -n 3 \\
-  -o {rarefied_otu_directory}""".format(
+  --output_path {rarefied_otu_directory}""".format(
 		otus_input=otus_input[0],
 		multiple_rarefaction_min=config.param('qiime', 'multiple_rarefaction_min'),
 		multiple_rarefaction_max=config.param('qiime', 'multiple_rarefaction_max'),
@@ -398,11 +374,14 @@ def alpha_diversity(
 
 def collate_alpha(
 	alpha_diversity_directory,
-	alpha_diversity_collated_directory
+	alpha_diversity_collated_merge_directory,
+	chao1_stat,
+	observed_species_stat,
+	shannon_stat
 	):
 
 	inputs = [alpha_diversity_directory]
-	outputs = [alpha_diversity_collated_directory]
+	outputs = [chao1_stat,observed_species_stat,shannon_stat]
 	
 	return Job(
 		inputs,
@@ -414,21 +393,25 @@ def collate_alpha(
 		command="""\
   $QIIME_HOME/collate_alpha.py \\
   -i {alpha_diversity_directory} \\
-  -o {alpha_diversity_collated_directory}""".format(
+  -o {alpha_diversity_collated_merge_directory}""".format(
 		alpha_diversity_directory=alpha_diversity_directory,
-		alpha_diversity_collated_directory=alpha_diversity_collated_directory
+		alpha_diversity_collated_merge_directory=alpha_diversity_collated_merge_directory
 		),
-		removable_files=[alpha_diversity_collated_directory]
+		removable_files=[chao1_stat,observed_species_stat,shannon_stat]
 	)
-
-def rarefaction_plot(
-	alpha_diversity_collated_directory,
-	map_file,
-	alpha_diversity_rarefaction_directory
+				
+def sample_rarefaction_plot(
+	chao1_stat,
+	observed_species_stat,
+	shannon_stat,
+	sample_collated_directory,	
+	sample_map,
+	sample_rarefaction_directory,
+	curve_sample
 	):
 
-	inputs = [alpha_diversity_collated_directory]
-	outputs = [alpha_diversity_rarefaction_directory]
+	inputs = [chao1_stat,observed_species_stat,shannon_stat]
+	outputs = [sample_rarefaction_directory] + curve_sample
 	
 	return Job(
 		inputs,
@@ -439,14 +422,76 @@ def rarefaction_plot(
 
 		command="""\
   $QIIME_HOME/make_rarefaction_plots.py \\
-  -i {alpha_diversity_collated_directory} \\
-  -m {map_file}\\
-  -o {alpha_diversity_rarefaction_directory}""".format(
-		alpha_diversity_collated_directory=alpha_diversity_collated_directory,
-		map_file=map_file,
-		alpha_diversity_rarefaction_directory=alpha_diversity_rarefaction_directory
+  -i {sample_collated_directory} \\
+  -m {sample_map}\\
+  -o {sample_rarefaction_directory}""".format(
+		sample_collated_directory=sample_collated_directory,
+		sample_map=sample_map,
+		sample_rarefaction_directory=sample_rarefaction_directory
 		),
-		removable_files=[alpha_diversity_rarefaction_directory]
+		removable_files=[sample_rarefaction_directory]
+	)
+
+def single_rarefaction(
+	otu_table,
+	chao1_rarefied_stat,
+	observed_species_rarefied_stat,
+	shannon_rarefied_stat,
+	otu_even_table
+	):
+
+	inputs = [otu_table]
+	outputs = [chao1_rarefied_stat,observed_species_rarefied_stat,shannon_rarefied_stat,otu_even_table]
+	
+	return Job(
+		inputs,
+		outputs,
+		[
+			['qiime', 'module_qiime']
+		],
+
+		command="""\
+  $QIIME_HOME/single_rarefaction.py \\
+  -i {otu_table} \\
+  -o {otu_even_table} \\
+  -d {depth}""".format(
+		otu_table=otu_table,
+		otu_even_table=otu_even_table,
+		depth=config.param('qiime', 'single_rarefaction_depth')
+		),
+		removable_files=[otu_even_table]
+	)
+	
+def rarefaction_plot(
+	alpha_diversity_collated_merge_rarefied_directory,
+	chao1_stat,
+	observed_species_stat,
+	shannon_stat,
+	map_file,
+	alpha_diversity_rarefaction_file,
+	alpha_diversity_rarefaction_rarefied_directory
+	):
+
+	inputs = [chao1_stat,observed_species_stat,shannon_stat]
+	outputs = [alpha_diversity_rarefaction_file]
+	
+	return Job(
+		inputs,
+		outputs,
+		[
+			['qiime', 'module_qiime']
+		],
+
+		command="""\
+  $QIIME_HOME/make_rarefaction_plots.py \\
+  -i {alpha_diversity_collated_merge_rarefied_directory} \\
+  -m {map_file}\\
+  -o {alpha_diversity_rarefaction_rarefied_directory}""".format(
+		alpha_diversity_collated_merge_rarefied_directory=alpha_diversity_collated_merge_rarefied_directory,
+		map_file=map_file,
+		alpha_diversity_rarefaction_rarefied_directory=alpha_diversity_rarefaction_rarefied_directory
+		),
+		removable_files=[alpha_diversity_rarefaction_file]
 	)
 
 	
@@ -483,11 +528,12 @@ def summarize_taxa(
 
 def plot_taxa(
 	taxonomic_input,
+	alpha_diversity_taxonomy_bar_plot,
 	taxonomic_directory
 	):
 
 	inputs = taxonomic_input
-	outputs = [taxonomic_directory]
+	outputs = [alpha_diversity_taxonomy_bar_plot]
 	
 	return Job(
 		inputs,
@@ -500,6 +546,8 @@ def plot_taxa(
   $QIIME_HOME/plot_taxa_summary.py \\
   -i {taxonomic_input} \\
   -l {label} \\
+  -y 10 \\
+  -t png \\
   -c {chart_type} \\
   -o {taxonomic_directory}""".format(
 		taxonomic_input=",".join(taxonomic_input),
@@ -507,9 +555,9 @@ def plot_taxa(
 		chart_type="bar",
 		taxonomic_directory=taxonomic_directory
 		),
-		removable_files=[taxonomic_directory]
+		removable_files=[alpha_diversity_taxonomy_bar_plot]
 	)
-	
+		
 def krona(
 	otus_input,
 	sample_name,
@@ -571,11 +619,13 @@ def pcoa(
 	dm_unweighted_file,
 	dm_weighted_file,
 	dm_directory,
-	pcoa_directory
+	pcoa_directory,
+	pcoa_unweighted_file,
+	pcoa_weighted_file
 	):
 
 	inputs = [dm_unweighted_file, dm_weighted_file]
-	outputs = [pcoa_directory]
+	outputs = [pcoa_unweighted_file,pcoa_weighted_file]
 	
 	return Job(
 		inputs,
@@ -598,11 +648,12 @@ def pcoa_plot(
 	pcoa_file,
 	pcoa_directory,
 	map_file,
+	beta_diversity_pcoa,
 	pcoa_plot_directory
 	):
 
 	inputs = [pcoa_file]
-	outputs = [pcoa_plot_directory]
+	outputs = [beta_diversity_pcoa]
 	
 	return Job(
 		inputs,
@@ -620,6 +671,6 @@ def pcoa_plot(
 		map_file=map_file,
 		pcoa_plot_directory=pcoa_plot_directory
 		),
-		removable_files=[pcoa_plot_directory]
+		removable_files=[beta_diversity_pcoa]
 	)
 															

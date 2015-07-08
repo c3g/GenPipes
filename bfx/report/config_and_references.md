@@ -32,6 +32,15 @@ All analysis parameters are described in this [configuration file](config.ini).
 [Trimmomatic]: http://www.usadellab.org/cms/index.php?page=trimmomatic
 [Trinity]: https://trinityrnaseq.github.io/
 [UCSC]: http://genome.ucsc.edu/
+[FLASh]: http://ccb.jhu.edu/software/FLASH/
+[Uchime]: http://drive5.com/usearch/usearch_docs.html
+[Qiime]: http://qiime.org/
+[Usearch]: http://drive5.com/usearch/usearch_docs.html
+[Uclust]: http://drive5.com/usearch/manual/uclust_algo.html
+[PyNAST]: http://biocore.github.io/pynast/
+[FastTree]: http://www.microbesonline.org/fasttree/
+[Krona]: http://sourceforge.net/p/krona/home/krona/
+[Sumaclust]: http://www.grenoble.prabi.fr/trac/sumatra/wiki/documentation/sumaclust
 
 ---
 references:
@@ -669,4 +678,219 @@ references:
   type: article-journal
   issued:
     year: 2011
+
+- id: flash
+  title: 'FLASH: Fast length adjustment of short reads to improve genome assemblies'
+  author:
+    - family: Magoc
+      given: T.
+    - family: Salzberg
+      given: S.       
+  container-title: Bioinformatics
+  volume: 27
+  URL: 'http://bioinformatics.oxfordjournals.org/content/early/2011/09/07/bioinformatics.btr507.short'
+  DOI: 10.1093/bioinformatics/btr507
+  issue: 21
+  page: 2957-2963
+  type: article-journal
+  issued:
+    year: 2011      
+        
+- id: uchime
+  title: 'UCHIME improves sensitivity and speed of chimera detection'
+  author:
+    - family: Edgar
+      given: R.C.
+    - family: Haas
+      given: B.J.
+    - family: Clemente
+      given: JC.
+    - family: Quince
+      given: C.
+    - family: Knight
+      given: R.          
+  container-title: Bioinformatics
+  volume: 27
+  URL: 'http://bioinformatics.oxfordjournals.org/content/early/2011/06/23/bioinformatics.btr381.short?rss=1'
+  DOI: 10.1093/bioinformatics/btr381
+  issue: 16
+  page: 2194-2200
+  type: article-journal
+  issued:
+    year: 2011     
+    
+- id: qiime
+  title: 'QIIME allows analysis of high-throughput community sequencing data'
+  author:
+    - family: Caporaso
+      given: J.G.
+    - family: Kuczynski
+      given: J.
+    - family: Stombaugh
+      given: J.
+    - family: Bittinger
+      given: K.
+    - family: Bushman
+      given: F.D.
+    - family: Costello
+      given: E.K.
+    - family: Fierer
+      given: N.
+    - family: Gonzalez Pena
+      given: A.
+    - family: Goodrich
+      given: J.K.
+    - family: Gordon
+      given: J.I.
+    - family: Huttley
+      given: G.A.
+    - family: Kelley
+      given: S.T.
+    - family: Knights
+      given: D.
+    - family: Koenig
+      given: J.E.
+    - family: Ley
+      given: R.E.
+    - family: Lozupone
+      given: C.A.
+    - family: McDonald
+      given: D.
+    - family: Muegge
+      given: B.D.
+    - family: Pirrung
+      given: M.
+    - family: Reeder
+      given: J.
+    - family: Sevinsky
+      given: J.R.
+    - family: Turnbaugh
+      given: P.J.
+    - family: Walters
+      given: W.A.
+    - family: Widmann
+      given: J.
+    - family: Yatsunenko
+      given: T.
+    - family: Zaneveld
+      given: J.
+    - family: Knight
+      given: R. 
+  container-title: Nature Methods
+  volume: 7
+  URL: 'http://www.nature.com/nmeth/journal/v7/n5/full/nmeth.f.303.html'
+  DOI: 10.1038/nmeth.f.303
+  issue: 5
+  page: 335-336
+  type: article-journal
+  issued:
+    year: 2010 
+
+- id: usearch
+  title: 'Search and clustering orders of magnitude faster than BLAST'
+  author:
+    - family: Edgar
+      given: R.C.         
+  container-title: Bioinformatics
+  volume: 26
+  URL: 'http://bioinformatics.oxfordjournals.org/content/26/19/2460'
+  DOI: 10.1093/bioinformatics/btq461
+  issue: 19
+  page: 2460-2461
+  type: article-journal
+  issued:
+    year: 2010  
+    
+- id: uclust
+  title: 'Search and clustering orders of magnitude faster than BLAST'
+  author:
+    - family: Edgar
+      given: R.C.         
+  container-title: Bioinformatics
+  volume: 26
+  URL: 'http://bioinformatics.oxfordjournals.org/content/26/19/2460'
+  DOI: 10.1093/bioinformatics/btq461
+  issue: 19
+  page: 2460-2461
+  type: article-journal
+  issued:
+    year: 2010  
+    
+- id: pynast
+  title: 'PyNAST: a flexible tool for aligning sequences to a template alignment'
+  author:
+    - family: Caporaso
+      given: J.G.
+    - family: Bittinger
+      given: K.
+    - family: Bushman
+      given: F.D.
+    - family: DeSantis
+      given: T.Z.
+    - family: Andersen
+      given: G.L.      
+    - family: Knight
+      given: R.           
+  container-title: Bioinformatics
+  volume: 26
+  URL: 'http://bioinformatics.oxfordjournals.org/content/26/2/266'
+  DOI: 10.1093/bioinformatics/btp636
+  issue: 2
+  page: 266-267
+  type: article-journal
+  issued:
+    year: 2011  
+
+- id: fasttree
+  title: 'FastTree: computing large minimum evolution trees with profiles instead of a distance matrix'
+  author:
+    - family: Price
+      given: M.N.
+    - family: Dehal
+      given: P.S.
+    - family: Arkin
+      given: A.P.       
+  container-title: Mol Biol Evol
+  volume: 26
+  URL: 'http://mbe.oxfordjournals.org/content/26/7/1641'
+  DOI: 10.1093/molbev/msp077
+  issue: 7
+  page: 1641-1650
+  type: article-journal
+  issued:
+    year: 2009
+
+- id: krona
+  title: 'Interactive metagenomic visualization in a Web browser'
+  author:
+    - family: Ondov
+      given: B.D.
+    - family: Bergman
+      given: N.H.
+    - family: Phillippy
+      given: A.M.       
+  container-title: BMC Bioinformatics
+  volume: 12
+  URL: 'http://www.biomedcentral.com/1471-2105/12/385'
+  DOI: 10.1186/1471-2105-12-385
+  issue: 1
+  page: 385
+  type: article-journal
+  issued:
+    year: 2011
+
+- id: sumaclust
+  title: 'SUMATRA and SUMACLUST: fast and exact comparison and clustering of sequences'
+  author:
+    - family: Mercier
+      given: C.
+    - family: Boyer
+      given: F.
+    - family: Bonin
+      given: A.       
+    - family: Coissac
+      given: E.          
+  issued:
+    year: 2013
+                               
 ...

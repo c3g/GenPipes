@@ -1,6 +1,6 @@
 ### Paired end read Merging
 
-Paired end reads are merged with a minimum overlap of **$min_overlap$** and a maximum overlap of **$max_overlap$**. Merging are performed using [FLASh]\ [@trimmomatic].
+Paired end reads are merged with a minimum overlap of **$min_overlap$** and a maximum overlap of **$max_overlap$**. Merging are performed using [FLASh]\ [@flash].
 
 Table: Merging Statistics per Readset ([download full table](mergeReadsetTable.tsv))
 

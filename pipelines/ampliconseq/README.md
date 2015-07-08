@@ -74,22 +74,35 @@ Steps:
 3- flash
 4- merge_flash_stats
 5- catenate
-6- uchime
-7- filter_chimeras
-8- otu_picking
-9- otu_rep_picking
-10- otu_assigning
-11- otu_table
-12- otu_alignment
-13- filter_alignment
-14- phylogeny
-15- single_rarefaction
-16- multiple_rarefaction
-17- alpha_diversity
-18- collate_alpha
-19- rarefaction_plot
-20- summarize_taxa
-21- plot_taxa
+6- catenate_split
+7- uchime
+8- merge_uchime
+9- filter_chimeras
+10- otu_picking
+11- otu_rep_picking
+12- otu_assigning
+13- otu_table
+14- merge_uchime_stats
+15- otu_alignment
+16- filter_alignment
+17- phylogeny
+18- qiime_report
+19- multiple_rarefaction
+20- alpha_diversity
+21- collate_alpha
+22- sample_rarefaction_plot
+23- qiime_report2
+24- single_rarefaction
+25- rarefaction_plot
+26- summarize_taxa
+27- plot_taxa
+28- plot_heatmap
+29- krona
+30- plot_to_alpha
+31- beta_diversity
+32- pcoa
+33- pcoa_plot
+34- plot_to_beta
 
 ```
 1- trimmomatic
@@ -126,7 +139,11 @@ This step takes as input files:
 
 1. Merged FASTQ files from previous step flash. 
 
-6- uchime
+6- catenate_split
+-----------------
+Split the catenate file for UCHIME.
+
+7- uchime
 ---------
 Reference based chimera detection is performed using [Usearch/Uchime](http://drive5.com/usearch/) (http://drive5.com/usearch/manual/uchime_algo.html).
 
@@ -134,7 +151,11 @@ This step takes as input files:
 
 1. Catenated FASTA file from previous step catenate. 
 
-7- filter_chimeras
+8- merge_uchime
+---------------
+Merge the chimeras files from previous step.
+
+9- filter_chimeras
 ------------------
 Filter the input catenate data file by passing the chimeras file created in the previous step.
 
@@ -143,17 +164,17 @@ This step takes as input files:
 1. Catenated FASTQ file from 3rd step cat_data.
 2. Chimera file from previous step uchime.
 
-8- otu_picking
---------------
-The OTU picking step (de novo) assigns similar sequences to operational taxonomic units (OTUs) by clustering sequences based on a user-defined similarity threshold. Method per default uses [usearch61] (http://drive5.com/usearch/) program wrapped by [Qiime] (http://qiime.org).
+10- otu_picking
+---------------
+The OTU picking step (de novo) assigns similar sequences to operational taxonomic units (OTUs) by clustering sequences based on a user-defined similarity threshold. Method per default uses [sumaclust] (http://www.grenoble.prabi.fr/trac/sumatra/wiki/documentation/sumaclust) program wrapped by [Qiime] (http://qiime.org).
 
 This step takes as input file:
 
 1. Catenated and filtered FASTA file from previous step.
 
 
-9- otu_rep_picking
-------------------
+11- otu_rep_picking
+-------------------
 After picking OTUs, this step pick a representative sequence for each OTU.
 
 This step takes as input files:
@@ -162,16 +183,16 @@ This step takes as input files:
 2. Catenated and filtered FASTA file from filter_chimeras step.
 
 
-10- otu_assigning
+12- otu_assigning
 -----------------
-Given a set of OTUS, this step attempts to assign the taxonomy of each OTU using [uclust] (http://drive5.com/usearch/manual/uclust_algo.html).
+Given a set of OTUS, this step attempts to assign the taxonomy of each OTU using [Uclust] (http://drive5.com/usearch/manual/uclust_algo.html).
 
 This step takes as input files:
 
 1. OTU representative sequence file from previous step.
 
 
-11- otu_table
+13- otu_table
 -------------
 This step make a consensus OTU table in biom format. It tabulates the number of times an OTU is found in each sample, and adds the taxonomic predictions for each OTU. 
 
@@ -181,7 +202,11 @@ This step takes as input files:
 2. Taxonomy assignment for each OTU from the previous step.
 
 
-12- otu_alignment
+14- merge_uchime_stats
+----------------------
+The chimeric sequences filtered out statistics per readset are merged at this step.
+
+15- otu_alignment
 -----------------
 Align OTU representative sequences using [PyNAST] (http://biocore.github.io/pynast/).
 
@@ -190,7 +215,7 @@ This step takes as input file:
 1. OTU representative sequence file.
 
 
-13- filter_alignment
+16- filter_alignment
 --------------------
 Filter the alignment by removing positions which are gaps in every sequence.
 
@@ -199,26 +224,20 @@ This step takes as input file:
 1. Alignment sequence file.
 
 
-14- phylogeny
+17- phylogeny
 -------------
-Build a phylogenetic tree from a multiple sequence alignment.
+Build a phylogenetic tree from a multiple sequence alignment using [FastTree] (http://www.microbesonline.org/fasttree/).
 
 This step takes as input file:
 
 1. Filtered alignment sequence file from previous step.
 
 
-15- single_rarefaction
-----------------------
-This step is optionnal. It subsamples (rarefy) all the samples to an equal number of sequences for further comparaison.
-You have to provide the number of sequences to subsample per sample in the configuration file (single_rarefaction_depth).
+18- qiime_report
+----------------
+1st part report for taxonomic affiliation. 
 
-This step takes as input files:
-
-1. OTU table in biom format.
-
-
-16- multiple_rarefaction
+19- multiple_rarefaction
 ------------------------
 1st step (/4) for rarefaction plot.
 Rarefies OTU table by random sampling (without replacement) at different depth in order to perform rarefaction analysis. 
@@ -230,29 +249,48 @@ This step takes as input files:
 2. Else, OTU non rarefied table in biom format.
 
 
-17- alpha_diversity
+20- alpha_diversity
 -------------------
 2nd step (/4) for rarefaction plot.
-Calculate alpha diversity on each sample using a variety of alpha diversity metrics (chao1, observed otus). 
+Calculate alpha diversity on each sample using a variety of alpha diversity metrics (chao1, shannon, observed otus). 
 
 This step takes as input files:
 
 1. Multiple OTU rarefied table in biom format from previous step.
 
 
-18- collate_alpha
+21- collate_alpha
 -----------------
 3rd step (/4) for rarefaction plot.
 Merge all the alpha diversity computed in the previous step. 
 
-19- rarefaction_plot
+22- sample_rarefaction_plot
+---------------------------
+Last step for rarefaction plot.
+Plot the rarefaction curve for each sample
+
+23- qiime_report2
+-----------------
+2nd part report for taxonomic affiliation. Plot rarefaction curve for each sample.
+
+24- single_rarefaction
+----------------------
+This step is recommended. It subsamples (rarefy) all the samples to an equal number of sequences for further comparaison.
+You have to provide the number of sequences to subsample per sample in the configuration file (single_rarefaction_depth).
+
+This step takes as input files:
+
+1. OTU table in biom format.
+
+
+25- rarefaction_plot
 --------------------
 Last step for rarefaction plot.
-Plot the rarefaction curve. 
+Plot the rarefaction curve for rarefied data. 
 
-20- summarize_taxa
+26- summarize_taxa
 ------------------
-1st step (/2) for taxonomic affiliation plot.
+1st step (/3) for taxonomic affiliation plot.
 Summarize information of taxonomic groups within each sample at different taxonomic level. 
 
 This step takes as input files:
@@ -261,12 +299,65 @@ This step takes as input files:
 2. Else, OTU non rarefied table in biom format.
 
 
-21- plot_taxa
+27- plot_taxa
 -------------
-Last step for taxonomic affiliation plot.
-Make taxaonomy summary charts based on taxonomy assignment. 
+2nd step (/3) for taxonomic affiliation plot.
+Make taxaonomy summary bar plots based on taxonomy assignment. 
 
 This step takes as input files:
 
 1. Summarized information from previous step.
 
+
+28- plot_heatmap
+----------------
+Last step for taxonomic affiliation plot.
+Make heatmap at phylum level. 
+
+This step takes as input files:
+
+1. Summarized information from previous step.
+
+
+29- krona
+---------
+Plot Krona chart for taxonomic affiliation
+
+30- plot_to_alpha
+-----------------
+Final report 1st part for the Amplicon-Seq pipeline. Display results (taxonomy, heatmap and alpha diversity).
+
+31- beta_diversity
+------------------
+1st step (/3) for 2D PCoA plot.
+Calculate beta diversity (pairwise sample dissimilarity) on OTU table. The OTU table has to be rarefied. 
+Only works with >= 4 samples
+
+This step takes as input files:
+
+1. OTU rarefied table in biom format.
+2. Tree file.
+
+
+32- pcoa
+--------
+2nd step (/3) for 2D PCoA plot.
+Compute coordinates pour PCoA 
+
+This step takes as input file:
+
+1. Matrix produced in the previous step.
+
+
+33- pcoa_plot
+-------------
+Last step for 2D PCoA plot.
+
+This step takes as input file:
+
+1. PCoA from the previous step.
+
+
+34- plot_to_beta
+----------------
+Final report's 2nd part for the Amplicon-Seq pipeline. Display results (beta diversity PCoA plots).

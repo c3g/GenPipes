@@ -1,0 +1,9 @@
+### Rarefaction curve before rarefying data
+
+A rarefaction curve for each sample is plotted (observed OTUs metric) in order to estimate if the sequencing depth is enough to get all the species in the sample. It also help to choose the rarefaction threshold for all samples. 
+
+<img src="fig/alpha_diversity/alpha.rarefaction_sample.png" width="100%" />
+<p>
+Rarefaction curve for each sample ([download high resolution figure](fig/alpha_diversity/alpha.rarefaction_sample.png))
+
+
