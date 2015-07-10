@@ -1,6 +1,6 @@
-### Chimera detection
+### Read discarding and Chimera detection
 
-Chimera detection is applied to the merged reads using [Uchime]\ [@uchime]. Uchime performs both de novo (abundance based) chimera and reference based detection A custom database is used for reference based detection.
+Reads with 'N' base are discarded then chimera detection is applied to the merged reads using [Uchime]\ [@uchime]. Uchime performs both de novo (abundance based) chimera and reference based detection A custom database is used for reference based detection.
 
 Table: Chimera detection Statistics per Readset ([download full table](uchimeReadsetTable.tsv))
 

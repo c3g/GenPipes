@@ -33,7 +33,7 @@ def catenate(
   -o {dir_output} \\
   -r 30 \\
   -p 0.01 \\
-  -n 100 \\
+  -n 0 \\
   --barcode_type 'not-barcoded'""".format(
 		input_files=','.join(input_fastq),
 		sample_name=','.join(input_name),

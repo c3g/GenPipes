@@ -1194,24 +1194,28 @@ pandoc --to=markdown \\
 		
 		heatmap_script = os.path.join(heatmap_directory, "OTU_Phylum_to_R.R")
 		heatmap_chart = os.path.join(heatmap_directory, "otu_heatmap.png")
+		
+		heatmap_otu_data_R = os.path.join(heatmap_directory, "OTU_data.txt")
+		heatmap_otu_name_R = os.path.join(heatmap_directory, "OTU_name.txt")
+		heatmap_otu_tax_R = os.path.join(heatmap_directory, "OTU_tax_final.txt")
+		
 		heatmap_otu_table = os.path.join(heatmap_directory, "otumat.tsv")	
 		heatmap_tax_table = os.path.join(heatmap_directory, "taxmat.tsv")			
 				
 		taxonomic_input = [taxonomic_phylum]
 		
-		job = Job(taxonomic_input, [heatmap_script], [['qiime', 'module_R']])
+		job = Job(taxonomic_input, [heatmap_script,heatmap_otu_data_R,heatmap_otu_name_R,heatmap_otu_tax_R], [['qiime', 'module_R']])
 		job.command = """python $MUGQIC_INSTALL_HOME/software/AmpliconSeq/AmpliconSeq_script.py -m plot_heatmap -i {} -j {} -s {}""".format(taxonomic_phylum,heatmap_directory,1)
 		
-		jobR = Job([heatmap_script], [heatmap_chart,heatmap_otu_table,heatmap_tax_table], [['qiime', 'module_R']])
-		jobR.command = "./OTU_Phylum_to_R.R"
+		jobR = Job([heatmap_script,heatmap_otu_data_R,heatmap_otu_name_R,heatmap_otu_tax_R], [heatmap_chart,heatmap_otu_table,heatmap_tax_table], [['qiime', 'module_R']])
+		jobR.command = "./beta_diversity/heatmap/OTU_Phylum_to_R.R"
 		
 		
 		jobs.append(concat_jobs([
 		# Create an output directory
 		Job(command="mkdir -p beta_diversity/heatmap/"),
 		job,
-		Job(command="chmod +x beta_diversity/heatmap/OTU_Phylum_to_R.R"),
-		Job(command="cd " + heatmap_directory),
+		Job(command="chmod +x beta_diversity/heatmap/OTU_Phylum_to_R.R"), 
 		jobR
 	], name="plot_heatmap"))	
 	

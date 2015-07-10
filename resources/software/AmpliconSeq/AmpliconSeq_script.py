@@ -256,25 +256,25 @@ def plot_heatmap(table_f, rep_out_f, taxon_lvl):
 		
 	out_to_R.write("#Data load:\n\n")
 	
-	out_to_R.write('otu_data <- read.table("OTU_data.txt")'+"\n")
+	out_to_R.write('otu_data <- read.table("'+os.path.join(rep_out_f,'OTU_data.txt')+'")'+"\n")
 	out_to_R.write('vec_otu_data<-as.vector(as.matrix(otu_data))'+"\n")
 	out_to_R.write(cmd_matrix+"\n")
-	out_to_R.write('otu_name <- read.table("OTU_name.txt")'+"\n")
+	out_to_R.write('otu_name <- read.table("'+os.path.join(rep_out_f,'OTU_name.txt')+'")'+"\n")
 	out_to_R.write('vec_otu_name<-as.vector(as.matrix(otu_name))'+"\n")
 	out_to_R.write(cmd_names+"\n")
-	out_to_R.write('tax <- read.table("OTU_tax_final.txt")'+"\n")
+	out_to_R.write('tax <- read.table("'+os.path.join(rep_out_f,'OTU_tax_final.txt')+'")'+"\n")
 	out_to_R.write('vec_tax<-as.vector(as.matrix(tax))'+"\n")
 	out_to_R.write('taxmat = matrix(vec_tax, nrow = nrow(otumat), ncol = %s,byrow=TRUE)' % (int(taxon_lvl)+1)+"\n")
 	out_to_R.write('rownames(taxmat) <- rownames(otumat)'+"\n\n")
 	out_to_R.write(colnames_for_R+"\n")
 	
 	out_to_R.write('#Heatmap:\n\n')
-	out_to_R.write('png("otu_heatmap.png",width = 800, height = 800, units = "px")\n')
+	out_to_R.write('png("'+os.path.join(rep_out_f,'otu_heatmap.png')+'",width = 800, height = 800, units = "px")\n')
 	out_to_R.write('pheatmap(otumat,labels_row=taxmat[,"%s"])'% name_tax+'\n\n')
 	out_to_R.write('dev.off()\n\n')
 	
-	out_to_R.write('write.table(otumat, "otumat.tsv", sep="\t")\n')
-	out_to_R.write('write.table(taxmat, "taxmat.tsv", sep="\t")\n')
+	out_to_R.write('write.table(otumat, "'+os.path.join(rep_out_f,'otumat.tsv')+'", sep="\t")\n')
+	out_to_R.write('write.table(taxmat, "'+os.path.join(rep_out_f,'taxmat.tsv')+'", sep="\t")\n')
 	
 	out_to_R.close()
 	

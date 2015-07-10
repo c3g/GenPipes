@@ -3,6 +3,16 @@
 ####################################################################################################################################
 
 1) AmpliconSeq_script.py to copy in $MUGQIC_INSTALL_HOME/software/AmpliconSeq/
+2) For the map file: All '_' character have to be replaced by '.' for the sample name. Exemple:
+
+In readset.tsv:
+
+Sample name : Ya_4_w3
+
+In map file:
+
+Sample name: Ya.4.w3
+
 
 ####################################################################################################################################
 === USAGE ==
