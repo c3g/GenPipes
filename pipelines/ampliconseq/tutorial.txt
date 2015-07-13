@@ -3,6 +3,13 @@
 ####################################################################################################################################
 
 1) AmpliconSeq_script.py to copy in $MUGQIC_INSTALL_HOME/software/AmpliconSeq/
+
+2) IF you have a map file: copy the path to the "map_file" variable in the configuration file.
+   eg: map_file=/lb/project/mugqic/projects/ptranvan/project/Shen/map_shen_presentation.txt  
+
+   ELSE: Leave the variable empty. 
+   eg: map_file=
+
 2) For the map file: All '_' character have to be replaced by '.' for the sample name. Exemple:
 
 In readset.tsv:
