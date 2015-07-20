@@ -229,49 +229,11 @@ pandoc \\
 			], name="catenate"))	
 			
 			return jobs
-			
-	def catenate_split(self):
-	
-		"""
-		Split the catenate file for UCHIME.
-		"""
-		
-		jobs = []
-		input_files = []
-		sample_name = []
-		catenate_fasta = os.path.join("catenate", "seqs.fna")
-		catenate_split_directory = os.path.join("catenate", "split")
-		catenate_split_fasta = []
-		
-		#usearch 32bit does not support >4GB file.
-		number_split_file = math.ceil(float(config.param('qiime', 'nb_line_cat_file'))/float(10000000))
-		
-		i = 0
-		while i < int(number_split_file):
-		
-			if i<10:
-				nb = '0'+str(i)
-			else:
-				nb = str(i)
-				
-			#suffix name for split command is 00,01 ..	
-			catenate_split_fasta.append(os.path.join(catenate_split_directory,"seqs_split.fna"+nb))
-			i+=1
-		
-		job = Job([catenate_fasta], catenate_split_fasta, [['qiime', 'module_R']])
-		job.command = """split -d -l 10000000 {} {}""".format(catenate_fasta, os.path.join(catenate_split_directory,"seqs_split.fna"))
-		
-		jobs.append(concat_jobs([
-				Job(command="mkdir -p " + catenate_split_directory),
-				job
-			], name="catenate_split"))	
-			
-		return jobs
 					
 					
 	def uchime(self):
 		"""
-		Reference based chimera detection is performed using [Usearch/Uchime](http://drive5.com/usearch/) (http://drive5.com/usearch/manual/uchime_algo.html).
+		Reference based chimera detection is performed using [vsearch](https://github.com/torognes/vsearch)
 
 		This step takes as input files:
 
@@ -282,79 +244,21 @@ pandoc \\
 		
 		cat_sequence_fasta = os.path.join("catenate", "seqs.fna")
 		
-		output_directory = "uchime_checked_chimeras"
+		filter_directory = "catenate_without_chimeras"
+		filter_fasta = os.path.join(filter_directory, "seqs_chimeras_filtered.fna")	
 		
-		catenate_split_directory = os.path.join("catenate", "split")
-		catenate_split_fasta = []
-		
-		number_split_file = math.ceil(float(config.param('qiime', 'nb_line_cat_file'))/float(10000000))
-		
-		i = 0
-		while i < int(number_split_file):
-		
-			if i<10:
-				nb = '0'+str(i)
-			else:
-				nb = str(i)
-				
-			catenate_split_fasta.append(os.path.join(catenate_split_directory,"seqs_split.fna"+nb))
-			i+=1
-			
-		file_index = 0
-		
-		while file_index < len(catenate_split_fasta):
-		
-			chimeras_split_directory = os.path.join(output_directory,"chimeras"+str(file_index))
-			chimeras_split_file = os.path.join(chimeras_split_directory,"chimeras.txt")
-						
-			job = qiime.uchime(
-				catenate_split_fasta[file_index],
-				chimeras_split_directory,
-				chimeras_split_file
-			)
+		job = qiime.uchime(
+			cat_sequence_fasta,
+			filter_fasta
+		)
 
-			jobs.append(concat_jobs([
-				Job(command="mkdir -p " + output_directory),
-				job
-			], name="uchime." + str(file_index)))
-			
-			file_index+=1
-			
-		return jobs
-	
-	def merge_uchime(self):
-	
-		"""
-		Merge the chimeras files from previous step.
-		"""
-		
-		jobs = []
-		input_files = []
-		sample_name = []
-		chimeras_split_file_list = []
-		
-		chimeras_directory = "uchime_checked_chimeras"
-		chimeras_file = os.path.join(chimeras_directory,"chimeras.txt")
-				
-		number_split_file = math.ceil(float(config.param('qiime', 'nb_line_cat_file'))/float(10000000))
-		
-		file_index = 0
-		while file_index < int(number_split_file):
-				
-			chimeras_split_directory = os.path.join(chimeras_directory,"chimeras"+str(file_index))
-			chimeras_split_file_list.append(os.path.join(chimeras_split_directory,"chimeras.txt"))
-				
-			file_index+=1
-		
-		job = Job(chimeras_split_file_list, [chimeras_file])
-		job.command = """cat $(ls -v uchime_checked_chimeras/chimeras*/chimeras.txt) > {}""".format(chimeras_file)
-		
 		jobs.append(concat_jobs([
-				job
-			], name="merge_uchime"))	
-			
+			Job(command="mkdir -p " + filter_directory),
+			job
+		], name="uchime"))
+					
 		return jobs
-		
+	
 		
 	def merge_uchime_stats(self):
 		"""
@@ -435,44 +339,42 @@ pandoc \\
 				),
 				report_files=[report_file]
 			)], name="merge_uchime_stats")]
-			
-
-	def filter_chimeras(self):
+		
+	def otu_ref_picking(self):
 		"""
-		Filter the input catenate data file by passing the chimeras file created in the previous step.
+		TEST.
 
-		This step takes as input files:
+		This step takes as input file:
 
-		1. Catenated FASTQ file from 3rd step cat_data.
-		2. Chimera file from previous step uchime.
+		1. Catenated and filtered FASTA file from previous step.
+
 		"""
 		
 		jobs = []
 		
-		cat_sequence_fasta = os.path.join("catenate", "seqs.fna")
-		chimeras_file = os.path.join("uchime_checked_chimeras", "chimeras.txt")
 		
 		filter_directory = "catenate_without_chimeras"
-		filter_fasta = os.path.join(filter_directory, "seqs_chimeras_filtered.fna")			
-		
-		job = qiime.filter_chimeras(
-			cat_sequence_fasta,
-			chimeras_file,
-			filter_fasta
+		filter_fastq = os.path.join(filter_directory, "seqs_chimeras_filtered.fna")			
+			
+		output_directory = "otus/pick_otus_ref"
+	
+		job = qiime.otu_ref_picking(
+			filter_fastq,
+			output_directory,
 		)
 		
+		
 		jobs.append(concat_jobs([
-				# Create an output directory
-				Job(command="mkdir -p " + filter_directory),
-				job
-			], name="filter_chimeras"))
+		# Create an output directory
+		Job(command="mkdir -p otus/"),
+		job
+	], name="otu_ref_picking"))		
+		
 		return jobs
 		
-		
-
 	def otu_picking(self):
 		"""
-		The OTU picking step (de novo) assigns similar sequences to operational taxonomic units (OTUs) by clustering sequences based on a user-defined similarity threshold. Method per default uses [sumaclust] (http://www.grenoble.prabi.fr/trac/sumatra/wiki/documentation/sumaclust) program wrapped by [Qiime] (http://qiime.org).
+		The OTU picking step (de novo) assigns similar sequences to operational taxonomic units (OTUs) by clustering sequences based on a user-defined similarity threshold. Method per default uses [uclust] (http://drive5.com/usearch/manual/uclust_algo.html) program wrapped by [Qiime] (http://qiime.org).
 
 		This step takes as input file:
 
@@ -1505,35 +1407,32 @@ pandoc --to=markdown \\
 			self.flash,
 			self.merge_flash_stats,
 			self.catenate,	#5
-			self.catenate_split,	
 			self.uchime,
-			self.merge_uchime,
-			self.filter_chimeras,
-			self.otu_picking,	#10
+			self.otu_picking,	
 			self.otu_rep_picking,
 			self.otu_assigning,	
-			self.otu_table,	
+			self.otu_table,	#10	
 			self.merge_uchime_stats,
-			self.otu_alignment,	#15
+			self.otu_alignment,	
 			self.filter_alignment,
 			self.phylogeny,	
-			self.qiime_report,	
+			self.qiime_report,	#15	
 			self.multiple_rarefaction,
-			self.alpha_diversity,	#20
+			self.alpha_diversity,	
 			self.collate_alpha,
 			self.sample_rarefaction_plot,	
-			self.qiime_report2,
+			self.qiime_report2,	#20
 			self.single_rarefaction,
-			self.rarefaction_plot,	#25
+			self.rarefaction_plot,	
 			self.summarize_taxa,	
 			self.plot_taxa,	
-			self.plot_heatmap,
+			self.plot_heatmap,	#25
 			self.krona,
-			self.plot_to_alpha,	#30
+			self.plot_to_alpha,	
 			self.beta_diversity,	
 			self.pcoa,
-			self.pcoa_plot,
-			self.plot_to_beta
+			self.pcoa_plot,	#30
+			self.plot_to_beta,
 		]
 
 if __name__ == '__main__': 

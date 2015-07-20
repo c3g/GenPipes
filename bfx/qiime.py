@@ -44,66 +44,69 @@ def catenate(
 
 def uchime(
 	cat_sequence_fasta,
-	chimeras_split_directory,
-	chimeras_split_file
-	):
-
-	inputs = [cat_sequence_fasta]
-	outputs = [chimeras_split_file]
-
-	return Job(
-		inputs,
-		outputs,
-		[
-			['qiime', 'module_qiime'],
-			['qiime', 'module_usearch61']
-		],
-
-		command="""\
-  $QIIME_HOME/identify_chimeric_seqs.py \\
-  -i {cat_sequence_fasta} \\
-  -m {usearch61} \\
-  -r {database} \\
-  --threads {threads_number} \\
-  -o {chimeras_split_directory}""".format(
-		cat_sequence_fasta=cat_sequence_fasta,
-		usearch61="usearch61",
-		database=config.param('qiime', 'chimera_database'),
-		threads_number=config.param('qiime', 'threads'),
-		chimeras_split_directory=chimeras_split_directory
-		),
-		removable_files=[chimeras_split_file]
-	)
-	
-def filter_chimeras(
-	cat_sequence_fasta,
-	chimeras_file,
 	filter_fasta
 	):
 
-	inputs = [cat_sequence_fasta, chimeras_file]
+	inputs = [cat_sequence_fasta]
 	outputs = [filter_fasta]
 
 	return Job(
 		inputs,
 		outputs,
 		[
-			['qiime', 'module_qiime']
+			['qiime', 'module_qiime'],
+			['qiime', 'module_vsearch']
 		],
 
 		command="""\
-  $QIIME_HOME/filter_fasta.py \\
-  -f {cat_sequence_fasta} \\
-  -s {chimeras_file} \\
-  -n \\
-  -o {filter_fasta}""".format(
+  $VSEARCH_HOME/usearch61 \\
+  --uchime_ref {cat_sequence_fasta} \\
+  --db {database} \\
+  --nonchimeras {filter_fasta} \\
+  --threads {threads_number}""".format(
 		cat_sequence_fasta=cat_sequence_fasta,
-		filter_fasta=filter_fasta,
-		chimeras_file=chimeras_file
+		database=config.param('qiime', 'chimera_database'),
+		threads_number=config.param('qiime', 'threads'),
+		filter_fasta=filter_fasta
 		),
 		removable_files=[filter_fasta]
 	)
 
+def otu_ref_picking(
+	input_without_chimer,
+	output_directory,
+	):
+
+	inputs = [input_without_chimer]
+	outputs = [output_directory]
+	
+	return Job(
+		inputs,
+		outputs,
+		[
+			['qiime', 'module_qiime'],
+			['qiime', 'module_vsearch']
+		],
+
+		command="""\
+  $QIIME_HOME/pick_open_reference_otus.py \\
+  -i {input_without_chimer} \\
+  -r {reference_seqs_fp} \\
+  -m {method} \\
+  -s {similarity_treshold} \\
+  --parallel \\
+  --jobs_to_start {threads_number} \\
+  -o {output_directory}""".format(
+		input_without_chimer=input_without_chimer,
+		reference_seqs_fp=config.param('qiime', 'reference_seqs_fp'),
+		method='usearch61',
+		similarity_treshold=config.param('qiime', 'similarity'),
+		threads_number=config.param('qiime', 'threads'),
+		output_directory=output_directory
+		),
+		removable_files=[output_directory]
+	)
+	
 def otu_picking(
 	input_without_chimer,
 	output_directory,
@@ -117,7 +120,8 @@ def otu_picking(
 		inputs,
 		outputs,
 		[
-			['qiime', 'module_qiime']
+			['qiime', 'module_qiime'],
+			['qiime', 'module_vsearch']
 		],
 
 		command="""\
@@ -128,7 +132,7 @@ def otu_picking(
   --threads {threads_number} \\
   -o {output_directory}""".format(
 		input_without_chimer=input_without_chimer,
-		method='sumaclust',
+		method='usearch61',
 		similarity_treshold=config.param('qiime', 'similarity'),
 		threads_number=config.param('qiime', 'threads'),
 		output_directory=output_directory
