@@ -147,6 +147,24 @@ $PYTHON_TOOLS/parseMergeCsv.py -i {input_files} \\
         )
     )
 
+def py_filterAssemblyToFastaToTsv(fasta_file, filter_file, fasta_id_column, output):  
+    return Job(
+        [ fasta_file , filter_file], 
+        [ output + "." + ext for ext in ["fasta", "tsv"] ],
+        [['DEFAULT', 'module_mugqic_tools'],
+         ['DEFAULT', 'module_python']
+         ], 
+        command="""\
+$PYTHON_TOOLS/filterAssemblyToFastaToXls.py -f {fasta_file} \\
+-o {output} \\
+-l {filter_file} \\
+-c {fasta_id_column} """.format(
+        fasta_file = fasta_file,
+        output=output,
+        filter_file=filter_file,        
+        fasta_id_column=fasta_id_column
+        )
+    )
 
 
 ## functions for perl tools ##

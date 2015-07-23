@@ -347,18 +347,22 @@ pandoc --to=markdown \\
 
         trinity_directory = "trinity_out_dir"
         trinity_fasta = os.path.join(trinity_directory, "Trinity.fasta")
+        trinity_fasta_for_blast = os.path.join(trinity_directory, "Trinity.fa")
         trinity_chunks_directory = os.path.join(trinity_directory, "Trinity.fasta_chunks")
         num_fasta_chunks = config.param('exonerate_fastasplit', 'num_fasta_chunks', type='posint')
 
         return [concat_jobs([
             Job(command="rm -rf " + trinity_chunks_directory),
             Job(command="mkdir -p " + trinity_chunks_directory),
+            Job([trinity_fasta],
+                [trinity_fasta_for_blast],
+                command="awk \'{print $1 }\' " + trinity_fasta  + " > " +  trinity_fasta_for_blast),
             Job(
-                [trinity_fasta],
+                [trinity_fasta_for_blast],
                 # fastasplit creates FASTA chunk files numbered with 7 digits and padded with leading 0s
-                [os.path.join(trinity_chunks_directory, "Trinity.fasta_chunk_{:07d}".format(i)) for i in range(num_fasta_chunks)],
+                [os.path.join(trinity_chunks_directory, "Trinity.fa_chunk_{:07d}".format(i)) for i in range(num_fasta_chunks)],
                 [['exonerate_fastasplit', 'module_exonerate']],
-                command="fastasplit -f " + trinity_fasta + " -o " + trinity_chunks_directory + " -c " + str(num_fasta_chunks)
+                command="fastasplit -f " + trinity_fasta_for_blast + " -o " + trinity_chunks_directory + " -c " + str(num_fasta_chunks)
             )
         ], name="exonerate_fastasplit.Trinity.fasta")]
 
@@ -382,7 +386,7 @@ pandoc --to=markdown \\
                 raise Exception("Error: " + db + " BLAST db files do not exist!")
 
             for i in range(num_fasta_chunks):
-                trinity_chunk = os.path.join(trinity_chunks_directory, "Trinity.fasta_chunk_{:07d}".format(i))
+                trinity_chunk = os.path.join(trinity_chunks_directory, "Trinity.fa_chunk_{:07d}".format(i))
                 query_chunk = os.path.join(blast_directory, "query_Trinity_" + os.path.basename(db) + "_chunk_{:07d}.tsv".format(i))
                 blast_chunk = os.path.join(blast_directory, program + "_Trinity_" + os.path.basename(db) + "_chunk_{:07d}.tsv".format(i))
                 jobs.append(concat_jobs([
@@ -985,23 +989,15 @@ done""".format(
         output_directory = "filtered_assembly"         
         trinity_fasta = os.path.join("trinity_out_dir", "Trinity.fasta")
         trinity_filtered = os.path.join(output_directory, "Trinity.fasta")
+        trinity_filtered_prefix = os.path.join(output_directory, "Trinity")
         trinity_stats_prefix = os.path.join(output_directory, "trinity_filtered.stats")
         trinotate_annotation_report_filtered = os.path.join("trinotate", "trinotate_annotation_report.tsv" + ".isoforms_filtered.tsv")
         
-        # Use samtools faidx to extract selected headers, needed to force input files in mkdir job, dependencies fail using pipe_jobs (uses jobs[0].input_files and jobs[-1].output_files)
+        # Use python  to extract selected headers, needed to force input files in mkdir job, dependencies fail using pipe_jobs (uses jobs[0].input_files and jobs[-1].output_files)
         jobs.append(concat_jobs([
-            Job([trinity_fasta, trinotate_annotation_report_filtered],
-                [trinity_filtered],
-                command="mkdir -p " + output_directory
+            Job(command="mkdir -p " + output_directory
                 ), 
-            samtools.faidx(trinity_fasta),
-            pipe_jobs([ 
-                samtools.faidx(trinity_fasta, " $(cat " + trinotate_annotation_report_filtered + " | tr '\\r\\n' ' ')"),
-                Job([trinity_fasta, trinotate_annotation_report_filtered],
-                    [trinity_filtered],
-                    command="""awk '{{ print $1 }}' > {trinity_filtered}""".format(trinity_filtered=trinity_filtered )
-                    )
-            ]),
+            tools.py_filterAssemblyToFastaToTsv(trinity_fasta , trinotate_annotation_report_filtered, 0, trinity_filtered_prefix),
             Job(
                 [trinity_filtered],
                 [trinity_stats_prefix + ".csv", trinity_stats_prefix + ".jpg", trinity_stats_prefix + ".pdf"],
@@ -1014,12 +1010,23 @@ Rscript -e 'library(gqSeqUtils); dnaFastaStats(filename = \"{trinity_filtered}\"
             Job(
                 [trinity_filtered],
                 [trinity_filtered + ".zip"],
-                command="zip -j " + trinity_filtered + ".zip " + trinity_filtered
+                command="zip -j " + trinity_filtered + ".zip " + trinity_filtered + " " + trinity_filtered_prefix + ".tsv"
             )
         ], name="filter_annotated_components"))
-            
         report_file = os.path.join("report", "RnaSeqDeNovoAssembly.filtered.trinity.md")
-            
+        
+        # Render Rmarkdown Report
+        jobs.append(
+            rmarkdown.render(
+             job_input            = os.path.join(exploratory_output_dir, "index.tsv"),
+             job_name             = "gq_seq_utils_exploratory_analysis_rnaseq_denovo_report",
+             input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeqDeNovoAssembly.gq_seq_utils_exploratory_analysis_rnaseq.Rmd") ,
+             render_output_dir    = 'report/filtered_assembly/exploratory',
+             module_section       = 'report', # TODO: this or exploratory?
+             prerun_r             = 'report_dir="report";' # TODO: really necessary or should be hard-coded in exploratory.Rmd?
+             )
+        )
+      
         jobs.append(
                 Job(
                 [trinity_filtered + ".zip", trinity_stats_prefix + ".csv", trinity_stats_prefix + ".jpg", trinity_stats_prefix + ".pdf"],
