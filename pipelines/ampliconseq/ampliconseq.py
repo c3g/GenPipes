@@ -246,15 +246,20 @@ pandoc \\
 		
 		filter_directory = "catenate_without_chimeras"
 		filter_fasta = os.path.join(filter_directory, "seqs_chimeras_filtered.fna")	
+		filter_log = os.path.join(filter_directory, "seqs_chimeras_filtered.log")
 		
 		job = qiime.uchime(
 			cat_sequence_fasta,
 			filter_fasta
 		)
+		
+		job_log = Job([filter_fasta], [filter_log])
+		job_log.command = """python $MUGQIC_INSTALL_HOME/software/AmpliconSeq/AmpliconSeq_script.py -m catenate_stat -i {} -j {}""".format(filter_fasta,filter_log)
 
 		jobs.append(concat_jobs([
 			Job(command="mkdir -p " + filter_directory),
-			job
+			job,
+			job_log
 		], name="uchime"))
 					
 		return jobs
@@ -268,8 +273,8 @@ pandoc \\
 		readset_merge_uchime_stats = os.path.join("metrics", "uchimeReadsetTable.tsv")
 		job = concat_jobs([Job(command="mkdir -p metrics"), Job(command="echo 'Sample\tReadset\tMerged Paired Reads #\tFiltered Paired Reads #\tFiltered Paired Reads %' > " + readset_merge_uchime_stats)])
 		
-		otu_directory = "otus"
-		otu_table_summary = os.path.join(otu_directory, "otu_table.sum")
+		filter_directory = "catenate_without_chimeras"
+		filter_log = os.path.join(filter_directory, "seqs_chimeras_filtered.log")	
 		
 		for readset in self.readsets:
 			flash_log = os.path.join("merge", readset.sample.name, readset.name + ".log")
@@ -283,12 +288,12 @@ pandoc \\
 				  			
 			# Retrieve merge statistics using re search in python.
 
-			python_command = """python $MUGQIC_INSTALL_HOME/software/AmpliconSeq/AmpliconSeq_script.py -m uchime -i {} -j {} -s {}""".format(otu_table_summary,flash_log,str(readset.sample.name))
+			python_command = """python $MUGQIC_INSTALL_HOME/software/AmpliconSeq/AmpliconSeq_script.py -m uchime -i {} -j {} -s {}""".format(filter_log,flash_log,str(readset.sample.name))
 			
 			job = concat_jobs([
 				job,
 				Job(
-					[flash_log, otu_table_summary],
+					[flash_log, filter_log],
 					[readset_merge_uchime_stats],
 					# Create readset merging stats TSV file with paired read count using python.
 					command="""\
@@ -342,7 +347,7 @@ pandoc \\
 		
 	def otu_ref_picking(self):
 		"""
-		TEST.
+		The OTU picking step (close_ref) assigns similar sequences to operational taxonomic units (OTUs) by clustering sequences based on a user-defined similarity threshold. Method per default uses [uclust] (http://drive5.com/usearch/manual/uclust_algo.html) program wrapped by [Qiime] (http://qiime.org).
 
 		This step takes as input file:
 
@@ -1408,31 +1413,32 @@ pandoc --to=markdown \\
 			self.merge_flash_stats,
 			self.catenate,	#5
 			self.uchime,
-			self.otu_picking,	
-			self.otu_rep_picking,
-			self.otu_assigning,	
-			self.otu_table,	#10	
 			self.merge_uchime_stats,
+			self.otu_ref_picking,
+			self.otu_picking,	
+			self.otu_rep_picking,	#10
+			self.otu_assigning,	
+			self.otu_table,	
 			self.otu_alignment,	
 			self.filter_alignment,
-			self.phylogeny,	
-			self.qiime_report,	#15	
+			self.phylogeny,	#15	
+			self.qiime_report,	
 			self.multiple_rarefaction,
 			self.alpha_diversity,	
 			self.collate_alpha,
-			self.sample_rarefaction_plot,	
-			self.qiime_report2,	#20
+			self.sample_rarefaction_plot,	#20	
+			self.qiime_report2,	
 			self.single_rarefaction,
 			self.rarefaction_plot,	
 			self.summarize_taxa,	
-			self.plot_taxa,	
-			self.plot_heatmap,	#25
+			self.plot_taxa,	#25	
+			self.plot_heatmap,	
 			self.krona,
 			self.plot_to_alpha,	
 			self.beta_diversity,	
-			self.pcoa,
-			self.pcoa_plot,	#30
-			self.plot_to_beta,
+			self.pcoa,	#30
+			self.pcoa_plot,	
+			self.plot_to_beta
 		]
 
 if __name__ == '__main__': 

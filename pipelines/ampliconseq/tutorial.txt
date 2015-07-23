@@ -2,7 +2,7 @@
 === SETTING ==
 ####################################################################################################################################
 
-1) AmpliconSeq_script.py to copy in $MUGQIC_INSTALL_HOME/software/AmpliconSeq/
+1) resources/software/AmpliconSeq/AmpliconSeq_script.py to copy in $MUGQIC_INSTALL_HOME/software/AmpliconSeq/
 
 2a) IF you have a map file: copy the path to the "map_file" variable in the configuration file.
    eg: map_file=/lb/project/mugqic/projects/ptranvan/project/Shen/map_shen_presentation.txt  
@@ -25,57 +25,129 @@ Sample name: Ya.4.w3
 === USAGE ==
 ####################################################################################################################################
 
-1) To step 15: qiime_report
+************************************************************************
+DE NOVO mod
+************************************************************************
 
-$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-15 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis.sh
 
-NB1: This step can be long, some steps can be parallelized (step 6,7,9,12 - ie: uchime, otu_picking, otu_assigning, otu_alignment)
+1) To step 16: qiime_report
+
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-7,9-16 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis.sh
+
+NB1: This step can be long, some steps can be parallelized (step 6,9,11,13 - ie: uchime, otu_picking, otu_assigning, otu_alignment)
 --> Modify manually the 'ppn' to set it as same as 'threads' variable number. 
 
 NB2: For large data, set to >= 20 threads (and ppn) for uchime.
 NB3: For large data, set to >= 20 threads (and more for ppn) for otu picking.
 NB4: For large data, set to >= 15 threads (and ppn) for otu_alignment.
-NB5: For large data, increase the walltime (> 24h) of phylogeny step (14) 
+NB5: For large data, increase the walltime (> 24h) of phylogeny step (15) 
 
 A) Report 1
 
-$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-15 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-16 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
 
-The report helps you to choose the maximum rarefaction treshold. It CAN'T be > than the max Filtered Paired Reads (Chimera detection section).
+The otu_table.sum file helps you to choose the maximum rarefaction treshold. It CAN'T be > than the max Counts/sample.
+
+cat analysis/otus/otu_table.sum
+Look for Max in Counts/sample summary:
+
 Report to the "multiple_rarefaction_max" variable in the configuration file.
 
-4) To step 20: qiime_report2
+4) To step 21: qiime_report2
 
-$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 16-20 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis2.sh
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 17-21 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis2.sh
 
 B) Report 2
 
 The report helps you to choose the single rarefaction treshold (for all the samples) by looking the rarefaction curves for each sample.
 Report to the "single_rarefaction_depth" variable in the configuration file.
 
-$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-20 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-21 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
 
 if you have < 4 samples
 ------------------------
 
-5) To step 27: plot_to_alpha
+5) To step 28: plot_to_alpha
 
-$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 21-27 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis3.sh
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 22-28 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis3.sh
 
 C) Report 3: analysis done
 
-$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-27 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-28 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
 
 else
 ----
 
-5) To step 31: plot_to_beta
+5) To step 32: plot_to_beta
 
-$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 21-31 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis4.sh
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 22-32 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis4.sh
 
 C) Report 3: analysis done
 
-$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-31 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-32 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
+
+
+
+************************************************************************
+Close ref mod (large dataset)
+************************************************************************
+
+1) To step 16: qiime_report
+
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-8,10-16 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis.sh
+
+NB1: This step can be long, some steps can be parallelized (step 6,10,11,13 - ie: uchime, otu_ref_picking, otu_assigning, otu_alignment)
+--> Modify manually the 'ppn' to set it as same as 'threads' variable number. 
+
+NB2: For large data, set to >= 20 threads (and ppn) for uchime.
+NB3: For large data, set to >= 20 threads (and more for ppn) for otu_ref_picking.
+NB4: For large data, set to >= 15 threads (and ppn) for otu_alignment.
+NB5: For large data, increase the walltime (> 24h) of phylogeny step (15) 
+
+A) Report 1
+
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-16 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
+
+The otu_table.sum file helps you to choose the maximum rarefaction treshold. It CAN'T be > than the max Counts/sample.
+
+cat analysis/otus/otu_table.sum
+Look for Max in Counts/sample summary:
+
+Report to the "multiple_rarefaction_max" variable in the configuration file.
+
+4) To step 21: qiime_report2
+
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 17-21 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis2.sh
+
+B) Report 2
+
+The report helps you to choose the single rarefaction treshold (for all the samples) by looking the rarefaction curves for each sample.
+Report to the "single_rarefaction_depth" variable in the configuration file.
+
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-21 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
+
+if you have < 4 samples
+------------------------
+
+5) To step 28: plot_to_alpha
+
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 22-28 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis3.sh
+
+C) Report 3: analysis done
+
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-28 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
+
+else
+----
+
+5) To step 32: plot_to_beta
+
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 22-32 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis4.sh
+
+C) Report 3: analysis done
+
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-32 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
+
 
 ####################################################################################################################################
 ####################################################################################################################################

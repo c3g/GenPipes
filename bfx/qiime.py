@@ -89,17 +89,17 @@ def otu_ref_picking(
 		],
 
 		command="""\
-  $QIIME_HOME/pick_open_reference_otus.py \\
+  $QIIME_HOME/pick_otus.py \\
   -i {input_without_chimer} \\
-  -r {reference_seqs_fp} \\
   -m {method} \\
+  -r {reference_seqs_fp} \\
   -s {similarity_treshold} \\
-  --parallel \\
-  --jobs_to_start {threads_number} \\
+  --suppress_new_clusters \\
+  --threads {threads_number} \\
   -o {output_directory}""".format(
 		input_without_chimer=input_without_chimer,
-		reference_seqs_fp=config.param('qiime', 'reference_seqs_fp'),
 		method='usearch61',
+		reference_seqs_fp=config.param('qiime', 'reference_seqs_fp'),
 		similarity_treshold=config.param('qiime', 'similarity'),
 		threads_number=config.param('qiime', 'threads'),
 		output_directory=output_directory
@@ -255,10 +255,12 @@ def otu_alignment(
 		command="""\
   $QIIME_HOME/parallel_align_seqs_pynast.py \\
   -i {otu_rep_picking_fasta} \\
+  -t {template_fp} \\
   -T \\
   --jobs_to_start {threads_number} \\
   -o {output_directory}""".format(
 		otu_rep_picking_fasta=otu_rep_picking_fasta,
+		template_fp=config.param('qiime', 'template_fp'),
 		threads_number=config.param('qiime', 'threads'),
 		output_directory=output_directory
 		),

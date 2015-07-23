@@ -8,6 +8,8 @@
 
 import sys, getopt
 import os, re
+from Bio import SeqIO
+
 
 #m: map_build, krona
 
@@ -69,6 +71,31 @@ def krona(table_tax):
 		out_krona.close()
 	
 	table.close()
+
+def catenate_stat(cat_file, uchime_log):
+
+	"""
+	Catenate statistics for report.
+	"""
+
+	log_cat = open(cat_file,"rU")
+	stat_uchime = open(uchime_log,'w')
+	
+	dic_sample = {}
+
+	for record in SeqIO.parse(log_cat, "fasta") :
+	
+		if record.id.split('_')[0] in dic_sample:
+			dic_sample[record.id.split('_')[0]]+=1
+		else:
+			dic_sample[record.id.split('_')[0]]=1
+
+	for key, values in dic_sample.iteritems():
+		stat_uchime.write(key+'\t'+str(values)+'\n')
+		
+	log_cat.close()
+	stat_uchime.close()
+
 
 def uchime_stat(uchime_log, flash_log, sample):
 
@@ -322,7 +349,27 @@ def main(argv):
 					krona(argM)
 				else:
 					print("AmpliconSeq_script.py -m krona -i <krona_file>")
+			
+			elif arg == "catenate_stat":
+		
+				input_map_per_sample = False
+				
+				for optM2, argM2 in opts:	#cat without chimer				
+					if optM2 in ("-i"):		
+						filter_fasta = argM2
+				
+						for optM3, argM3 in opts:	#output				
+							if optM3 in ("-j"):	
+								filter_log = argM3
+												
+								input_catenate_stat = True
+								break
 					
+				if input_catenate_stat:
+					catenate_stat(filter_fasta,filter_log)
+				else:
+					print("AmpliconSeq_script.py -m catenate_stat -s <filter_fasta> -j <filter_log>")
+							
 			elif arg == "uchime":
 			
 				input_uchime = False
