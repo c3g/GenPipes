@@ -361,11 +361,13 @@ pandoc \\
 		filter_directory = "catenate_without_chimeras"
 		filter_fastq = os.path.join(filter_directory, "seqs_chimeras_filtered.fna")			
 			
-		output_directory = "otus/pick_otus_ref"
+		output_directory = "otus/pick_otus"
+		otu_file = os.path.join(output_directory, "seqs_chimeras_filtered_otus.txt")
 	
 		job = qiime.otu_ref_picking(
 			filter_fastq,
 			output_directory,
+			otu_file
 		)
 		
 		

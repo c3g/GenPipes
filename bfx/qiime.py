@@ -75,10 +75,11 @@ def uchime(
 def otu_ref_picking(
 	input_without_chimer,
 	output_directory,
+	otu_file
 	):
 
 	inputs = [input_without_chimer]
-	outputs = [output_directory]
+	outputs = [otu_file]
 	
 	return Job(
 		inputs,
@@ -104,7 +105,7 @@ def otu_ref_picking(
 		threads_number=config.param('qiime', 'threads'),
 		output_directory=output_directory
 		),
-		removable_files=[output_directory]
+		removable_files=[otu_file]
 	)
 	
 def otu_picking(
