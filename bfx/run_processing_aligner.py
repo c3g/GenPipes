@@ -177,40 +177,46 @@ class StarRunProcessingAligner(RunProcessingAligner):
     def get_reference_index(self, genome_folder):
         folder_name = os.path.basename(genome_folder)
         ini_file = os.path.join(genome_folder + os.sep + folder_name + ".ini")
-        genome_config = ConfigParser.SafeConfigParser()
-        genome_config.read(ini_file)
+        if os.path.isfile(ini_file):
+            genome_config = ConfigParser.SafeConfigParser()
+            genome_config.read(ini_file)
 
-        source = genome_config.get("DEFAULT", "source")
-        version = genome_config.get("DEFAULT", "version")
+            source = genome_config.get("DEFAULT", "source")
+            version = genome_config.get("DEFAULT", "version")
 
-        return os.path.join(genome_folder,
-                            "genome",
-                            "star_index",
-                            source + version + ".sjdbOverhang" + str(self.nb_cycles - 1))
+            return os.path.join(genome_folder,
+                                "genome",
+                                "star_index",
+                                source + version + ".sjdbOverhang" + str(self.nb_cycles - 1))
+        else:
+            return None
 
     def get_annotation_files(self, genome_folder):
         folder_name = os.path.basename(genome_folder)
         ini_file = os.path.join(genome_folder + os.sep + folder_name + ".ini")
-        genome_config = ConfigParser.SafeConfigParser()
-        genome_config.read(ini_file)
+        if os.path.isfile(ini_file):
+            genome_config = ConfigParser.SafeConfigParser()
+            genome_config.read(ini_file)
 
-        source = genome_config.get("DEFAULT", "source")
-        version = genome_config.get("DEFAULT", "version")
+            source = genome_config.get("DEFAULT", "source")
+            version = genome_config.get("DEFAULT", "version")
 
-        return [
-            os.path.join(genome_folder,
-                         "annotations",
-                         folder_name + '.' + source + version + ".transcript_id.gtf"),
+            return [
+                os.path.join(genome_folder,
+                             "annotations",
+                             folder_name + '.' + source + version + ".transcript_id.gtf"),
 
-            os.path.join(genome_folder,
-                         "annotations",
-                         "rrna_bwa_index",
-                         folder_name + '.' + source + version + ".rrna.fa"),
+                os.path.join(genome_folder,
+                             "annotations",
+                             "rrna_bwa_index",
+                             folder_name + '.' + source + version + ".rrna.fa"),
 
-            os.path.join(genome_folder,
-                         "annotations",
-                         folder_name + '.' + source + version + ".ref_flat.tsv")
-        ]
+                os.path.join(genome_folder,
+                             "annotations",
+                             folder_name + '.' + source + version + ".ref_flat.tsv")
+            ]
+        else:
+            return None
 
     def get_alignment_jobs(self, readset):
         jobs = []
