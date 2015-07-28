@@ -23,7 +23,8 @@ def catenate(
 		inputs,
 		outputs,
 		[
-			['qiime', 'module_qiime']
+			['qiime', 'module_qiime'],
+			['qiime', 'module_ampliconseq']
 		],
 
 		command="""\
@@ -55,7 +56,8 @@ def uchime(
 		outputs,
 		[
 			['qiime', 'module_qiime'],
-			['qiime', 'module_vsearch']
+			['qiime', 'module_vsearch'],
+			['qiime', 'module_ampliconseq']
 		],
 
 		command="""\
@@ -99,7 +101,7 @@ def otu_ref_picking(
   --threads {threads_number} \\
   -o {output_directory}""".format(
 		input_without_chimer=input_without_chimer,
-		method='usearch61',
+		method='usearch61_ref',
 		reference_seqs_fp=config.param('qiime', 'reference_seqs_fp'),
 		similarity_treshold=config.param('qiime', 'similarity'),
 		threads_number=config.param('qiime', 'threads'),
@@ -424,7 +426,8 @@ def sample_rarefaction_plot(
 		inputs,
 		outputs,
 		[
-			['qiime', 'module_qiime']
+			['qiime', 'module_qiime'],
+			['qiime', 'module_ampliconseq']
 		],
 
 		command="""\
@@ -444,30 +447,65 @@ def single_rarefaction(
 	chao1_rarefied_stat,
 	observed_species_rarefied_stat,
 	shannon_rarefied_stat,
-	otu_even_table
+	otu_normalized_table,
+	normalization_method
 	):
 
 	inputs = [otu_table]
-	outputs = [chao1_rarefied_stat,observed_species_rarefied_stat,shannon_rarefied_stat,otu_even_table]
+	outputs = [chao1_rarefied_stat,observed_species_rarefied_stat,shannon_rarefied_stat,otu_normalized_table,normalization_method]
 	
 	return Job(
 		inputs,
 		outputs,
 		[
-			['qiime', 'module_qiime']
+			['qiime', 'module_qiime'],
+			['qiime', 'module_ampliconseq']
 		],
 
 		command="""\
   $QIIME_HOME/single_rarefaction.py \\
   -i {otu_table} \\
-  -o {otu_even_table} \\
+  -o {otu_normalized_table} \\
   -d {depth}""".format(
 		otu_table=otu_table,
-		otu_even_table=otu_even_table,
+		otu_normalized_table=otu_normalized_table,
 		depth=config.param('qiime', 'single_rarefaction_depth')
 		),
-		removable_files=[otu_even_table]
+		removable_files=[otu_normalized_table]
 	)
+	
+def css_normalization(
+	otu_table,
+	chao1_rarefied_stat,
+	observed_species_rarefied_stat,
+	shannon_rarefied_stat,
+	otu_normalized_table,
+	normalization_method
+	):
+
+	inputs = [otu_table]
+	outputs = [chao1_rarefied_stat,observed_species_rarefied_stat,shannon_rarefied_stat,otu_normalized_table,normalization_method]
+	
+	return Job(
+		inputs,
+		outputs,
+		[
+			['qiime', 'module_qiime'],
+			['qiime', 'module_R'],
+			['qiime', 'module_ampliconseq']
+		],
+
+		command="""\
+  $QIIME_HOME/normalize_table.py \\
+  -i {otu_table} \\
+  -o {otu_normalized_table} \\
+  -a {method}""".format(
+		otu_table=otu_table,
+		otu_normalized_table=otu_normalized_table,
+		method="CSS"
+		),
+		removable_files=[otu_normalized_table]
+	)	
 	
 def rarefaction_plot(
 	alpha_diversity_collated_merge_rarefied_directory,
@@ -503,7 +541,7 @@ def rarefaction_plot(
 
 	
 def summarize_taxa(
-	otus_input,
+	otu_normalized_table,
 	taxonomic_directory,
 	taxonomic_phylum,
 	taxonomic_class,
@@ -512,7 +550,7 @@ def summarize_taxa(
 	taxonomic_genus
 	):
 
-	inputs = otus_input
+	inputs = [otu_normalized_table]
 	outputs = [taxonomic_directory, taxonomic_phylum, taxonomic_class, taxonomic_order, taxonomic_family, taxonomic_genus]
 	
 	return Job(
@@ -524,10 +562,10 @@ def summarize_taxa(
 
 		command="""\
   $QIIME_HOME/summarize_taxa.py \\
-  -i {otus_input} \\
+  -i {otu_normalized_table} \\
   -a \\
   -o {taxonomic_directory}""".format(
-		otus_input=otus_input[0],
+		otu_normalized_table=otu_normalized_table,
 		taxonomic_directory=taxonomic_directory
 		),
 		removable_files=[taxonomic_directory, taxonomic_phylum, taxonomic_class, taxonomic_order, taxonomic_family, taxonomic_genus]
@@ -566,12 +604,12 @@ def plot_taxa(
 	)
 		
 def krona(
-	otus_input,
+	otu_normalized_table,
 	sample_name,
 	alpha_diversity_krona_file
 	):
 
-	inputs = otus_input
+	inputs = [otu_normalized_table]
 	outputs = [alpha_diversity_krona_file]
 	
 	return Job(
@@ -579,7 +617,8 @@ def krona(
 		outputs,
 		[
 			['qiime', 'module_qiime'],
-			['qiime', 'module_krona']
+			['qiime', 'module_krona'],
+			['qiime', 'module_ampliconseq']
 		],
 
 		command="""\
@@ -593,14 +632,14 @@ def krona(
 	)
 
 def beta_diversity(
-	otu_even_table,
+	otu_normalized_table,
 	phylogenetic_tree_file,
 	dm_directory,
 	dm_unweighted_file,
 	dm_weighted_file
 	):
 
-	inputs = [otu_even_table, phylogenetic_tree_file]
+	inputs = [otu_normalized_table, phylogenetic_tree_file]
 	outputs = [dm_unweighted_file,dm_weighted_file]
 	
 	return Job(
@@ -612,10 +651,10 @@ def beta_diversity(
 
 		command="""\
   $QIIME_HOME/beta_diversity.py \\
-  -i {otu_even_table} \\
+  -i {otu_normalized_table} \\
   -t {phylogenetic_tree_file} \\
   -o {dm_directory}""".format(
-		otu_even_table=otu_even_table,
+		otu_normalized_table=otu_normalized_table,
 		phylogenetic_tree_file=phylogenetic_tree_file,
 		dm_directory=dm_directory
 		),

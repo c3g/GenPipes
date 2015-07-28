@@ -224,7 +224,7 @@ pandoc \\
 			)
 								
 			jobs.append(concat_jobs([
-				Job(command="python $MUGQIC_INSTALL_HOME/software/AmpliconSeq/AmpliconSeq_script.py -m map_build -i " + ','.join(sample_name)),
+				Job(command="python $AMP_SEQ_HOME/AmpliconSeq_script.py -m map_build -i " + ','.join(sample_name)),
 				job		
 			], name="catenate"))	
 			
@@ -254,7 +254,7 @@ pandoc \\
 		)
 		
 		job_log = Job([filter_fasta], [filter_log])
-		job_log.command = """python $MUGQIC_INSTALL_HOME/software/AmpliconSeq/AmpliconSeq_script.py -m catenate_stat -i {} -j {}""".format(filter_fasta,filter_log)
+		job_log.command = """python $AMP_SEQ_HOME/AmpliconSeq_script.py -m catenate_stat -i {} -j {}""".format(filter_fasta,filter_log)
 
 		jobs.append(concat_jobs([
 			Job(command="mkdir -p " + filter_directory),
@@ -288,13 +288,16 @@ pandoc \\
 				  			
 			# Retrieve merge statistics using re search in python.
 
-			python_command = """python $MUGQIC_INSTALL_HOME/software/AmpliconSeq/AmpliconSeq_script.py -m uchime -i {} -j {} -s {}""".format(filter_log,flash_log,str(readset.sample.name))
+			python_command = """python $AMP_SEQ_HOME/AmpliconSeq_script.py -m uchime -i {} -j {} -s {}""".format(filter_log,flash_log,str(readset.sample.name))
 			
 			job = concat_jobs([
 				job,
 				Job(
 					[flash_log, filter_log],
 					[readset_merge_uchime_stats],
+					[
+						['qiime', 'module_ampliconseq']
+					],
 					# Create readset merging stats TSV file with paired read count using python.
 					command="""\
 {python_command} \\
@@ -347,7 +350,7 @@ pandoc \\
 		
 	def otu_ref_picking(self):
 		"""
-		The OTU picking step (close_ref) assigns similar sequences to operational taxonomic units (OTUs) by clustering sequences based on a user-defined similarity threshold. Method per default uses [uclust] (http://drive5.com/usearch/manual/uclust_algo.html) program wrapped by [Qiime] (http://qiime.org).
+		The OTU picking step (close_ref) assigns similar sequences to operational taxonomic units (OTUs) by clustering sequences based on a user-defined similarity threshold. Method per default uses [VSEARCH] (https://github.com/torognes/vsearch) and [Qiime] (http://qiime.org).
 
 		This step takes as input file:
 
@@ -381,7 +384,7 @@ pandoc \\
 		
 	def otu_picking(self):
 		"""
-		The OTU picking step (de novo) assigns similar sequences to operational taxonomic units (OTUs) by clustering sequences based on a user-defined similarity threshold. Method per default uses [uclust] (http://drive5.com/usearch/manual/uclust_algo.html) program wrapped by [Qiime] (http://qiime.org).
+		The OTU picking step (de novo) assigns similar sequences to operational taxonomic units (OTUs) by clustering sequences based on a user-defined similarity threshold. Method per default uses [VSEARCH] (https://github.com/torognes/vsearch) and [Qiime] (http://qiime.org).
 
 		This step takes as input file:
 
@@ -814,10 +817,10 @@ pandoc --to=markdown \\
 			
 			jobs.append(concat_jobs([
 					Job(command="mkdir -p " + sample_collated_directory),
-					Job(command="""python $MUGQIC_INSTALL_HOME/software/AmpliconSeq/AmpliconSeq_script.py -m map_per_sample -s {} -j {}""".format(readset.sample.name,sample_map)),
-					Job(command="""python $MUGQIC_INSTALL_HOME/software/AmpliconSeq/AmpliconSeq_script.py -m sample_rarefaction -i {} -j {} -s {}""".format(chao1_stat,chao1_dir,readset.sample.name)),
-					Job(command="""python $MUGQIC_INSTALL_HOME/software/AmpliconSeq/AmpliconSeq_script.py -m sample_rarefaction -i {} -j {} -s {}""".format(observed_species_stat,observed_species_dir,readset.sample.name)),
-					Job(command="""python $MUGQIC_INSTALL_HOME/software/AmpliconSeq/AmpliconSeq_script.py -m sample_rarefaction -i {} -j {} -s {}""".format(shannon_stat,shannon_dir,readset.sample.name)),
+					Job(command="""python $AMP_SEQ_HOME/AmpliconSeq_script.py -m map_per_sample -s {} -j {}""".format(readset.sample.name,sample_map)),
+					Job(command="""python $AMP_SEQ_HOME/AmpliconSeq_script.py -m sample_rarefaction -i {} -j {} -s {}""".format(chao1_stat,chao1_dir,readset.sample.name)),
+					Job(command="""python $AMP_SEQ_HOME/AmpliconSeq_script.py -m sample_rarefaction -i {} -j {} -s {}""".format(observed_species_stat,observed_species_dir,readset.sample.name)),
+					Job(command="""python $AMP_SEQ_HOME/AmpliconSeq_script.py -m sample_rarefaction -i {} -j {} -s {}""".format(shannon_stat,shannon_dir,readset.sample.name)),
 					job
 				], name="sample_rarefaction_plot"))
 			
@@ -883,8 +886,9 @@ pandoc --to=markdown \\
 		otu_directory = "otus"
 		otu_table = os.path.join(otu_directory, "otu_table.biom")
 		
-		otu_even_directory = "otus_even"
-		otu_even_table = os.path.join(otu_even_directory,"otu_even_table.biom")
+		otu_normalized_directory = "otu_normalized"
+		otu_normalized_table = os.path.join(otu_normalized_directory,"otu_normalized_table.biom")
+		normalization_method = os.path.join(otu_normalized_directory,"rarefaction.txt")
 		
 		alpha_directory = "alpha_diversity"	
 		
@@ -906,22 +910,24 @@ pandoc --to=markdown \\
 			chao1_rarefied_stat,
 			observed_species_rarefied_stat,
 			shannon_rarefied_stat,
-			otu_even_table
+			otu_normalized_table,
+			normalization_method
 		)
 		
 		job_chao1 = Job([chao1_stat], [chao1_rarefied_stat])
-		job_chao1.command = """python $MUGQIC_INSTALL_HOME/software/AmpliconSeq/AmpliconSeq_script.py -m single_rarefaction -i {} -j {} -s {}""".format(chao1_stat,chao1_rarefied_stat,config.param('qiime', 'single_rarefaction_depth'))
+		job_chao1.command = """python $AMP_SEQ_HOME/AmpliconSeq_script.py -m single_rarefaction -i {} -j {} -s {}""".format(chao1_stat,chao1_rarefied_stat,config.param('qiime', 'single_rarefaction_depth'))
 		
 		job_observed_species = Job([observed_species_stat], [observed_species_rarefied_stat])
-		job_observed_species.command = """python $MUGQIC_INSTALL_HOME/software/AmpliconSeq/AmpliconSeq_script.py -m single_rarefaction -i {} -j {} -s {}""".format(observed_species_stat,observed_species_rarefied_stat,config.param('qiime', 'single_rarefaction_depth'))
+		job_observed_species.command = """python $AMP_SEQ_HOME/AmpliconSeq_script.py -m single_rarefaction -i {} -j {} -s {}""".format(observed_species_stat,observed_species_rarefied_stat,config.param('qiime', 'single_rarefaction_depth'))
 		
 		job_shannon = Job([shannon_stat], [shannon_rarefied_stat])
-		job_shannon.command = """python $MUGQIC_INSTALL_HOME/software/AmpliconSeq/AmpliconSeq_script.py -m single_rarefaction -i {} -j {} -s {}""".format(shannon_stat,shannon_rarefied_stat,config.param('qiime', 'single_rarefaction_depth'))
+		job_shannon.command = """python $AMP_SEQ_HOME/AmpliconSeq_script.py -m single_rarefaction -i {} -j {} -s {}""".format(shannon_stat,shannon_rarefied_stat,config.param('qiime', 'single_rarefaction_depth'))
 						
 		jobs.append(concat_jobs([
 		# Create an output directory
-		Job(command="mkdir -p otus_even"),
+		Job(command="mkdir -p otu_normalized"),
 		Job(command="mkdir -p " + alpha_diversity_collated_merge_rarefied_directory),
+		Job(command="touch " + normalization_method),
 		job_chao1,
 		job_observed_species,
 		job_shannon,
@@ -930,11 +936,77 @@ pandoc --to=markdown \\
 	
 	
 		return jobs
-						  		
+
+	def css_normalization(self):
+		"""
+		This step is recommended. Alternative method for normalization to rarefaction. 
+		Performs the CSS Matrix normalization.
+
+		This step takes as input files:
+
+		1. OTU table in biom format.
+
+		"""
+		
+		jobs = []
+				
+		otu_directory = "otus"
+		otu_table = os.path.join(otu_directory, "otu_table.biom")
+		
+		otu_normalized_directory = "otu_normalized"
+		otu_normalized_table = os.path.join(otu_normalized_directory,"otu_normalized_table.biom")
+		normalization_method = os.path.join(otu_normalized_directory,"css.txt")
+		
+		alpha_directory = "alpha_diversity"	
+		
+		alpha_diversity_collated_directory = os.path.join(alpha_directory, "alpha_diversity_collated")
+		
+		alpha_diversity_collated_merge_directory = os.path.join(alpha_diversity_collated_directory, "merge_samples")
+		chao1_stat = os.path.join(alpha_diversity_collated_merge_directory, "chao1.txt")
+		observed_species_stat = os.path.join(alpha_diversity_collated_merge_directory, "observed_species.txt")
+		shannon_stat = os.path.join(alpha_diversity_collated_merge_directory, "shannon.txt")
+		
+		alpha_diversity_collated_merge_rarefied_directory = os.path.join(alpha_diversity_collated_directory, "merge_samples_rarefied")
+		chao1_rarefied_stat = os.path.join(alpha_diversity_collated_merge_rarefied_directory, "chao1.txt")
+		observed_species_rarefied_stat = os.path.join(alpha_diversity_collated_merge_rarefied_directory, "observed_species.txt")
+		shannon_rarefied_stat = os.path.join(alpha_diversity_collated_merge_rarefied_directory, "shannon.txt")
+
+	
+		job = qiime.css_normalization(
+			otu_table,
+			chao1_rarefied_stat,
+			observed_species_rarefied_stat,
+			shannon_rarefied_stat,
+			otu_normalized_table,
+			normalization_method
+		)
+		
+		job_chao1 = Job([chao1_stat], [chao1_rarefied_stat])
+		job_chao1.command = """python $AMP_SEQ_HOME/AmpliconSeq_script.py -m single_rarefaction -i {} -j {} -s {}""".format(chao1_stat,chao1_rarefied_stat,config.param('qiime', 'multiple_rarefaction_max'))
+		
+		job_observed_species = Job([observed_species_stat], [observed_species_rarefied_stat])
+		job_observed_species.command = """python $AMP_SEQ_HOME/AmpliconSeq_script.py -m single_rarefaction -i {} -j {} -s {}""".format(observed_species_stat,observed_species_rarefied_stat,config.param('qiime', 'multiple_rarefaction_max'))
+		
+		job_shannon = Job([shannon_stat], [shannon_rarefied_stat])
+		job_shannon.command = """python $AMP_SEQ_HOME/AmpliconSeq_script.py -m single_rarefaction -i {} -j {} -s {}""".format(shannon_stat,shannon_rarefied_stat,config.param('qiime', 'multiple_rarefaction_max'))
+						
+		jobs.append(concat_jobs([
+		# Create an output directory
+		Job(command="mkdir -p otu_normalized"),
+		Job(command="mkdir -p " + alpha_diversity_collated_merge_rarefied_directory),
+		Job(command="touch " + normalization_method),
+		job_chao1,
+		job_observed_species,
+		job_shannon,
+		job
+	], name="css_normalization"))	
+		
+		return jobs
+										  		
 	def rarefaction_plot(self):
 		"""
 		Last step for rarefaction plot.
-		Plot the rarefaction curve for rarefied data. 
+		Rarefaction curve for each sample on the same plot. 
 		"""
 		
 		jobs = []
@@ -984,29 +1056,21 @@ pandoc --to=markdown \\
 		
 		jobs = []
 		
-		otu_even_directory = "otus_even"
-		otu_even_table = os.path.join(otu_even_directory,"otu_even_table.biom")
-		
-		otu_directory = "otus"
-		otu_table = os.path.join(otu_directory, "otu_table.biom")
-		
-		candidate_input_files = [[otu_even_table]]
-		candidate_input_files.append([otu_table])
-		
-		otus_input = self.select_input_files(candidate_input_files)
+		otu_normalized_directory = "otu_normalized"
+		otu_normalized_table = os.path.join(otu_normalized_directory,"otu_normalized_table.biom")
 		
 		alpha_directory = "alpha_diversity"
 		taxonomic_directory = os.path.join(alpha_directory, "taxonomic_affiliation")
-		taxonomic_phylum = os.path.join(taxonomic_directory, os.path.splitext(basename(otus_input[0]))[0]+"_L2.txt")
-		taxonomic_class = os.path.join(taxonomic_directory, os.path.splitext(basename(otus_input[0]))[0]+"_L3.txt")
-		taxonomic_order = os.path.join(taxonomic_directory, os.path.splitext(basename(otus_input[0]))[0]+"_L4.txt")
-		taxonomic_family = os.path.join(taxonomic_directory, os.path.splitext(basename(otus_input[0]))[0]+"_L5.txt")
-		taxonomic_genus = os.path.join(taxonomic_directory, os.path.splitext(basename(otus_input[0]))[0]+"_L6.txt")
+		taxonomic_phylum = os.path.join(taxonomic_directory, "otu_normalized_table_L2.txt")
+		taxonomic_class = os.path.join(taxonomic_directory, "otu_normalized_table_L3.txt")
+		taxonomic_order = os.path.join(taxonomic_directory, "otu_normalized_table_L4.txt")
+		taxonomic_family = os.path.join(taxonomic_directory, "otu_normalized_table_L5.txt")
+		taxonomic_genus = os.path.join(taxonomic_directory, "otu_normalized_table_L6.txt")
 
 
 	
 		job = qiime.summarize_taxa(
-			otus_input,
+			otu_normalized_table,
 			taxonomic_directory,
 			taxonomic_phylum,
 			taxonomic_class,
@@ -1036,24 +1100,13 @@ pandoc --to=markdown \\
 		
 		jobs = []
 		
-		otu_even_directory = "otus_even"
-		otu_even_table = os.path.join(otu_even_directory,"otu_even_table.biom")
-		
-		otu_directory = "otus"
-		otu_table = os.path.join(otu_directory, "otu_table.biom")
-		
-		candidate_input_files = [[otu_even_table]]
-		candidate_input_files.append([otu_table])
-		
-		otus_input = self.select_input_files(candidate_input_files)
-		
 		alpha_directory = "alpha_diversity"
 		taxonomic_directory = os.path.join(alpha_directory, "taxonomic_affiliation")
-		taxonomic_phylum = os.path.join(taxonomic_directory, os.path.splitext(basename(otus_input[0]))[0]+"_L2.txt")
-		taxonomic_class = os.path.join(taxonomic_directory, os.path.splitext(basename(otus_input[0]))[0]+"_L3.txt")
-		taxonomic_order = os.path.join(taxonomic_directory, os.path.splitext(basename(otus_input[0]))[0]+"_L4.txt")
-		taxonomic_family = os.path.join(taxonomic_directory, os.path.splitext(basename(otus_input[0]))[0]+"_L5.txt")
-		taxonomic_genus = os.path.join(taxonomic_directory, os.path.splitext(basename(otus_input[0]))[0]+"_L6.txt")
+		taxonomic_phylum = os.path.join(taxonomic_directory, "otu_normalized_table_L2.txt")
+		taxonomic_class = os.path.join(taxonomic_directory, "otu_normalized_table_L3.txt")
+		taxonomic_order = os.path.join(taxonomic_directory, "otu_normalized_table_L4.txt")
+		taxonomic_family = os.path.join(taxonomic_directory, "otu_normalized_table_L5.txt")
+		taxonomic_genus = os.path.join(taxonomic_directory, "otu_normalized_table_L6.txt")
 		
 		taxonomic_input = [taxonomic_phylum, taxonomic_class, taxonomic_order, taxonomic_family, taxonomic_genus]
 		
@@ -1083,20 +1136,12 @@ pandoc --to=markdown \\
 		
 		jobs = []
 		
-		otu_even_directory = "otus_even"
-		otu_even_table = os.path.join(otu_even_directory,"otu_even_table.biom")
-		
-		otu_directory = "otus"
-		otu_table = os.path.join(otu_directory, "otu_table.biom")
-		
-		candidate_input_files = [[otu_even_table]]
-		candidate_input_files.append([otu_table])
-		
-		otus_input = self.select_input_files(candidate_input_files)
+		otu_normalized_directory = "otu_normalized"
+		otu_normalized_table = os.path.join(otu_normalized_directory,"otu_normalized_table.biom")
 		
 		alpha_directory = "alpha_diversity"
 		taxonomic_directory = os.path.join(alpha_directory, "taxonomic_affiliation")
-		taxonomic_phylum = os.path.join(taxonomic_directory, os.path.splitext(basename(otus_input[0]))[0]+"_L2.txt")
+		taxonomic_phylum = os.path.join(taxonomic_directory, "otu_normalized_table_L2.txt")
 		
 		beta_directory = "beta_diversity"
 		heatmap_directory = os.path.join(beta_directory, "heatmap")
@@ -1114,9 +1159,9 @@ pandoc --to=markdown \\
 		taxonomic_input = [taxonomic_phylum]
 		
 		job = Job(taxonomic_input, [heatmap_script,heatmap_otu_data_R,heatmap_otu_name_R,heatmap_otu_tax_R], [['qiime', 'module_R']])
-		job.command = """python $MUGQIC_INSTALL_HOME/software/AmpliconSeq/AmpliconSeq_script.py -m plot_heatmap -i {} -j {} -s {}""".format(taxonomic_phylum,heatmap_directory,1)
+		job.command = """python $AMP_SEQ_HOME/AmpliconSeq_script.py -m plot_heatmap -i {} -j {} -s {}""".format(taxonomic_phylum,heatmap_directory,1)
 		
-		jobR = Job([heatmap_script,heatmap_otu_data_R,heatmap_otu_name_R,heatmap_otu_tax_R], [heatmap_chart,heatmap_otu_table,heatmap_tax_table], [['qiime', 'module_R']])
+		jobR = Job([heatmap_script,heatmap_otu_data_R,heatmap_otu_name_R,heatmap_otu_tax_R], [heatmap_chart,heatmap_otu_table,heatmap_tax_table], [['qiime', 'module_R'],['qiime', 'module_ampliconseq']])
 		jobR.command = "./beta_diversity/heatmap/OTU_Phylum_to_R.R"
 		
 		
@@ -1138,16 +1183,8 @@ pandoc --to=markdown \\
 		jobs = []
 		sample_name =[]
 		
-		otu_even_directory = "otus_even"
-		otu_even_table = os.path.join(otu_even_directory,"otu_even_table.biom")
-		
-		otu_directory = "otus"
-		otu_table = os.path.join(otu_directory, "otu_table.biom")
-		
-		candidate_input_files = [[otu_even_table]]
-		candidate_input_files.append([otu_table])
-		
-		otus_input = self.select_input_files(candidate_input_files)
+		otu_normalized_directory = "otu_normalized"
+		otu_normalized_table = os.path.join(otu_normalized_directory,"otu_normalized_table.biom")
 		
 		alpha_directory = "alpha_diversity"		
 		alpha_diversity_krona_directory = os.path.join(alpha_directory, "krona_chart")
@@ -1158,7 +1195,7 @@ pandoc --to=markdown \\
 			sample_name.append(alpha_diversity_krona_directory+'/'+str(readset.sample.name).replace("_", ".")+'.txt')
 			
 		job = qiime.krona(
-			otus_input,
+			otu_normalized_table,
 			sample_name,
 			alpha_diversity_krona_file,
 		)
@@ -1166,8 +1203,8 @@ pandoc --to=markdown \\
 		jobs.append(concat_jobs([
 				# Create an output directory
 				Job(command="mkdir -p alpha_diversity/krona_chart"),
-				Job(command='$QIIME_HOME/biom convert -i {} -o alpha_diversity/table_tax.txt --table-type="OTU table" --to-tsv --header-key taxonomy'.format(otus_input[0])),
-				Job(command="python $MUGQIC_INSTALL_HOME/software/AmpliconSeq/AmpliconSeq_script.py -m krona -i alpha_diversity/table_tax.txt"),
+				Job(command='$QIIME_HOME/biom convert -i {} -o alpha_diversity/table_tax.txt --table-type="OTU table" --to-tsv --header-key taxonomy'.format(otu_normalized_table)),
+				Job(command="python $AMP_SEQ_HOME/AmpliconSeq_script.py -m krona -i alpha_diversity/table_tax.txt"),
 				job
 			], name="krona"))
 		return jobs
@@ -1197,10 +1234,21 @@ pandoc --to=markdown \\
 		beta_diversity_heatmap_otumat = os.path.join(beta_diversity_heatmap_directory, "otumat.tsv")
 		beta_diversity_heatmap_taxmat = os.path.join(beta_diversity_heatmap_directory, "taxmat.tsv")
 		
+		otu_normalized_directory = "otu_normalized"
+		rarefaction_method = os.path.join(otu_normalized_directory,"rarefaction.txt")
+		css_method = os.path.join(otu_normalized_directory,"css.txt")
 		
-		inputs = [alpha_diversity_taxonomy_bar_plot,alpha_diversity_krona_directory,alpha_diversity_rarefaction_file,beta_diversity_heatmap_plot,beta_diversity_heatmap_otumat,beta_diversity_heatmap_taxmat]
-				
-		report_file = os.path.join("report", "AmpliconSeq.plot_to_alpha.md")
+		candidate_input_files = [[rarefaction_method]]
+		candidate_input_files.append([css_method])	
+		normalization_method = self.select_input_files(candidate_input_files)
+						
+		inputs = [alpha_diversity_taxonomy_bar_plot,alpha_diversity_krona_directory,alpha_diversity_rarefaction_file,beta_diversity_heatmap_plot,beta_diversity_heatmap_otumat,beta_diversity_heatmap_taxmat,normalization_method[0]]
+		
+		if normalization_method == ['otu_normalized/rarefaction.txt']:			
+			report_file = os.path.join("report", "AmpliconSeq.plot_to_alpha_rar.md")	
+		else:
+			report_file = os.path.join("report", "AmpliconSeq.plot_to_alpha_css.md")
+
 
 				
 		jobs.append(Job(
@@ -1235,7 +1283,7 @@ pandoc --to=markdown \\
 	def beta_diversity(self):
 		"""
 		1st step (/3) for 2D PCoA plot.
-		Calculate beta diversity (pairwise sample dissimilarity) on OTU table. The OTU table has to be rarefied. 
+		Calculate beta diversity (pairwise sample dissimilarity) on OTU table. The OTU table has to be normalized. 
 		Only works with >= 4 samples
 
 		This step takes as input files:
@@ -1247,8 +1295,8 @@ pandoc --to=markdown \\
 		
 		jobs = []
 		
-		otu_even_directory = "otus_even"
-		otu_even_table = os.path.join(otu_even_directory,"otu_even_table.biom")
+		otu_normalized_directory = "otu_normalized"
+		otu_normalized_table = os.path.join(otu_normalized_directory,"otu_normalized_table.biom")
 		
 		otu_directory = "otus"
 		phylogenetic_tree_directory = os.path.join(otu_directory, "phylogenetic_tree")		
@@ -1256,11 +1304,11 @@ pandoc --to=markdown \\
 		
 		beta_diversity_directory = "beta_diversity"
 		dm_directory = os.path.join(beta_diversity_directory, "dissimilarity_matrix")
-		dm_unweighted_file = os.path.join(dm_directory, "unweighted_unifrac_otu_even_table.txt")
-		dm_weighted_file = os.path.join(dm_directory, "weighted_unifrac_otu_even_table.txt")
+		dm_unweighted_file = os.path.join(dm_directory, "unweighted_unifrac_otu_normalized_table.txt")
+		dm_weighted_file = os.path.join(dm_directory, "weighted_unifrac_otu_normalized_table.txt")
 	
 		job = qiime.beta_diversity(
-			otu_even_table,
+			otu_normalized_table,
 			phylogenetic_tree_file,
 			dm_directory,
 			dm_unweighted_file,
@@ -1290,12 +1338,12 @@ pandoc --to=markdown \\
 		
 		beta_diversity_directory = "beta_diversity"
 		dm_directory = os.path.join(beta_diversity_directory, "dissimilarity_matrix")
-		dm_unweighted_file = os.path.join(dm_directory, "unweighted_unifrac_otu_even_table.txt")
-		dm_weighted_file = os.path.join(dm_directory, "weighted_unifrac_otu_even_table.txt")
+		dm_unweighted_file = os.path.join(dm_directory, "unweighted_unifrac_otu_normalized_table.txt")
+		dm_weighted_file = os.path.join(dm_directory, "weighted_unifrac_otu_normalized_table.txt")
 		
 		pcoa_directory = os.path.join(beta_diversity_directory, "principal_coordinates")
-		pcoa_unweighted_file = os.path.join(pcoa_directory, "pcoa_unweighted_unifrac_otu_even_table.txt")
-		pcoa_weighted_file = os.path.join(pcoa_directory, "pcoa_weighted_unifrac_otu_even_table.txt")
+		pcoa_unweighted_file = os.path.join(pcoa_directory, "pcoa_unweighted_unifrac_otu_normalized_table.txt")
+		pcoa_weighted_file = os.path.join(pcoa_directory, "pcoa_weighted_unifrac_otu_normalized_table.txt")
 			
 		job = qiime.pcoa(
 			dm_unweighted_file,
@@ -1328,12 +1376,12 @@ pandoc --to=markdown \\
 		
 		beta_diversity_directory = "beta_diversity"
 		pcoa_directory = os.path.join(beta_diversity_directory, "principal_coordinates")
-		pcoa_unweighted_file = os.path.join(pcoa_directory, "pcoa_unweighted_unifrac_otu_even_table.txt")
-		pcoa_weighted_file = os.path.join(pcoa_directory, "pcoa_weighted_unifrac_otu_even_table.txt")
+		pcoa_unweighted_file = os.path.join(pcoa_directory, "pcoa_unweighted_unifrac_otu_normalized_table.txt")
+		pcoa_weighted_file = os.path.join(pcoa_directory, "pcoa_weighted_unifrac_otu_normalized_table.txt")
 
 		pcoa_plot_directory = os.path.join(beta_diversity_directory, "2d_plots")	
-		beta_diversity_pcoa_unweighted = os.path.join(pcoa_plot_directory, "pcoa_unweighted_unifrac_otu_even_table_2D_PCoA_plots.html")
-		beta_diversity_pcoa_weighted = os.path.join(pcoa_plot_directory, "pcoa_weighted_unifrac_otu_even_table_2D_PCoA_plots.html")
+		beta_diversity_pcoa_unweighted = os.path.join(pcoa_plot_directory, "pcoa_unweighted_unifrac_otu_normalized_table_2D_PCoA_plots.html")
+		beta_diversity_pcoa_weighted = os.path.join(pcoa_plot_directory, "pcoa_weighted_unifrac_otu_normalized_table_2D_PCoA_plots.html")
 		
 		if config.param('qiime', 'map_file'):
 			map_file = config.param('qiime', 'map_file')
@@ -1376,8 +1424,8 @@ pandoc --to=markdown \\
 		beta_directory = "beta_diversity"	
 			
 		beta_diversity_pcoa_directory = os.path.join(beta_directory, "2d_plots")
-		beta_diversity_pcoa_unweighted = os.path.join(beta_diversity_pcoa_directory, "pcoa_unweighted_unifrac_otu_even_table_2D_PCoA_plots.html")
-		beta_diversity_pcoa_weighted = os.path.join(beta_diversity_pcoa_directory, "pcoa_weighted_unifrac_otu_even_table_2D_PCoA_plots.html")
+		beta_diversity_pcoa_unweighted = os.path.join(beta_diversity_pcoa_directory, "pcoa_unweighted_unifrac_otu_normalized_table_2D_PCoA_plots.html")
+		beta_diversity_pcoa_weighted = os.path.join(beta_diversity_pcoa_directory, "pcoa_weighted_unifrac_otu_normalized_table_2D_PCoA_plots.html")
 		
 		inputs = [beta_diversity_pcoa_unweighted,beta_diversity_pcoa_weighted]
 				
@@ -1431,14 +1479,15 @@ pandoc --to=markdown \\
 			self.sample_rarefaction_plot,	#20	
 			self.qiime_report2,	
 			self.single_rarefaction,
+			self.css_normalization,
 			self.rarefaction_plot,	
-			self.summarize_taxa,	
-			self.plot_taxa,	#25	
+			self.summarize_taxa,	#25	
+			self.plot_taxa,	
 			self.plot_heatmap,	
 			self.krona,
 			self.plot_to_alpha,	
-			self.beta_diversity,	
-			self.pcoa,	#30
+			self.beta_diversity,	#30
+			self.pcoa,
 			self.pcoa_plot,	
 			self.plot_to_beta
 		]

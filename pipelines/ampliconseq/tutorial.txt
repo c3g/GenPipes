@@ -2,15 +2,13 @@
 === SETTING ==
 ####################################################################################################################################
 
-1) resources/software/AmpliconSeq/AmpliconSeq_script.py to copy in $MUGQIC_INSTALL_HOME/software/AmpliconSeq/
-
-2a) IF you have a map file: copy the path to the "map_file" variable in the configuration file.
+1a) IF you have a map file: copy the path to the "map_file" variable in the configuration file.
    eg: map_file=/lb/project/mugqic/projects/ptranvan/project/Shen/map_shen_presentation.txt  
 
    ELSE: Leave the variable empty. 
    eg: map_file=
 
-2b) For the map file: All '_' character have to be replaced by '.' for the sample name. Exemple:
+1b) For the map file: All '_' character have to be replaced by '.' for the sample name. Exemple:
 
 In readset.tsv:
 
@@ -22,7 +20,7 @@ Sample name: Ya.4.w3
 
 
 ####################################################################################################################################
-=== USAGE ==
+=== USAGE == 2 mod: de novo or close reference
 ####################################################################################################################################
 
 ************************************************************************
@@ -59,32 +57,69 @@ $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 17
 
 B) Report 2
 
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-21 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
+
+Rarefaction normalization method:
+
 The report helps you to choose the single rarefaction treshold (for all the samples) by looking the rarefaction curves for each sample.
 Report to the "single_rarefaction_depth" variable in the configuration file.
 
-$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-21 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
+CSS normalization method:
+
+Nothing to do.
+
++++++++++++++++++++++++++++ 
+Rarefaction normalization 
++++++++++++++++++++++++++++ 
 
 if you have < 4 samples
 ------------------------
 
 5) To step 28: plot_to_alpha
 
-$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 22-28 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis3.sh
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 22,24-29 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis3.sh
 
 C) Report 3: analysis done
 
-$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-28 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-29 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
 
 else
 ----
 
 5) To step 32: plot_to_beta
 
-$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 22-32 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis4.sh
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 22,24-33 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis3.sh
 
 C) Report 3: analysis done
 
-$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-32 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-22,24-33 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
+
+
++++++++++++++++++++++++++++ 
+CSS normalization 
++++++++++++++++++++++++++++ 
+
+if you have < 4 samples
+------------------------
+
+5) To step 29: plot_to_alpha
+
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 23-29 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis3.sh
+
+C) Report 3: analysis done
+
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-29 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
+
+else
+----
+
+5) To step 33: plot_to_beta
+
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 23-33 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis3.sh
+
+C) Report 3: analysis done
+
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-21,23-33 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
 
 
 
@@ -121,32 +156,70 @@ $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 17
 
 B) Report 2
 
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-21 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
+
+Rarefaction normalization method:
+
 The report helps you to choose the single rarefaction treshold (for all the samples) by looking the rarefaction curves for each sample.
 Report to the "single_rarefaction_depth" variable in the configuration file.
 
-$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-21 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
+CSS normalization method:
+
+Nothing to do.
+
++++++++++++++++++++++++++++ 
+Rarefaction normalization 
++++++++++++++++++++++++++++ 
 
 if you have < 4 samples
 ------------------------
 
 5) To step 28: plot_to_alpha
 
-$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 22-28 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis3.sh
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 22,24-29 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis3.sh
 
 C) Report 3: analysis done
 
-$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-28 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-29 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
 
 else
 ----
 
 5) To step 32: plot_to_beta
 
-$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 22-32 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis4.sh
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 22,24-33 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis3.sh
 
 C) Report 3: analysis done
 
-$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-32 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-22,24-33 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
+
+
++++++++++++++++++++++++++++ 
+CSS normalization 
++++++++++++++++++++++++++++ 
+
+if you have < 4 samples
+------------------------
+
+5) To step 29: plot_to_alpha
+
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 23-29 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis3.sh
+
+C) Report 3: analysis done
+
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-29 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
+
+else
+----
+
+5) To step 33: plot_to_beta
+
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 23-33 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis3.sh
+
+C) Report 3: analysis done
+
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-21,23-33 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
+
 
 
 ####################################################################################################################################

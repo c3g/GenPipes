@@ -2,7 +2,7 @@
 
 These results have been generated after a rarefaction step. All the samples have been rarefied to **$single_rarefaction_depth$** sequences.
 
-The Amplicon-Seq pipeline provides taxonomic affiliation of your data at different level (Domain, Phylum, Class, Order, Family, Genus, Species).
+The Amplicon-Seq pipeline provides taxonomic affiliation of your data at different level (Kingdom, Phylum, Class, Order, Family, Genus, Species).
 
 #### Bar plot format 
 
