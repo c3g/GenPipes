@@ -2,12 +2,9 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-################################################################################
-# This is a module install script template which should be copied and used for
-# consistency between module paths, permissions, etc.
-# Only lines marked as "## TO BE ADDED/MODIFIED" should be, indeed, modified.
-# Also, once modified, delete this commented-out header and the ## comments
-################################################################################
+# NOTES:
+# - The script 	$INSTALL_DIR/$SOFTWARE_DIR/bin/epacts download downloads ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/human_g1k_v37.fasta.gz with perl NET::FTP, this fails on abacus for some reason
+# - http://csg.sph.umich.edu/kang/epacts/download/$ARCHIVE was originally blocketd on abacus, now fixed.
 
 
 # (See http://genome.sph.umich.edu/wiki/EPACTS for comprehensive documentation)
