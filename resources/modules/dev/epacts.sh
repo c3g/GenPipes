@@ -3,7 +3,75 @@
 set -eu -o pipefail
 
 # NOTES:
-# - The script 	$INSTALL_DIR/$SOFTWARE_DIR/bin/epacts download downloads ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/human_g1k_v37.fasta.gz with perl NET::FTP, this fails on abacus for some reason
+# - The script 	$INSTALL_DIR/$SOFTWARE_DIR/bin/epacts download downloads ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/human_g1k_v37.fasta.gz with perl NET::FTP, this fails on abacus. If we ever want to patch:
+
+# Bon, oui il se trouve que ftp soit problèmatique sur abacus car il utilise des ports tcp aléatoires.  Heureusement, c'est assez peu utilisé normalement.  La pluspart des téléchargement utilisent http, https, sftp ou encore des protocole spécialisés comme UDT ou EGA.
+#
+# Alors j'ai solutionné le problème comme suit:
+#
+# 1- J'ai constaté que le serveur distribue les mêmes données sur http aussi (pas toujours le cas mais souvent):
+# http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/
+#
+# 2- J'ai patché le programme afin qu'il récupère les données sur http plus tôt que ftp.  Je l'ai testé, les fichiers sont sur abacus maintenant.
+#
+# La nouvelle commande ainsi créée, epacts-download-http, peut télécharger les fichiers en question.  Bien sûr, j'ai laissé l'originale intacte
+#
+# Marc-andré
+#
+# P.s: Voici le diff qui montre le changement que j'ai fait.
+#
+# diff -u epacts-download epacts-download-http
+# --- epacts-download     2015-07-29 14:50:24.770927000 -0400
+# +++ epacts-download-http        2015-07-29 16:20:54.238175000 -0400
+# @@ -6,6 +6,7 @@
+#  use FindBin;
+#  use lib "$FindBin::Bin";
+#  use Net::FTP;
+# +use LWP::Simple;
+#
+#  my $man = 0;
+#  my $help = 0;
+# @@ -26,7 +27,11 @@
+#  my $dir = "/vol1/ftp/technical/reference";
+#  my $fasta = "human_g1k_v37.fasta.gz";
+#  my $fai = "human_g1k_v37.fasta.fai";
+# +my $result = 500;
+# +my $url = '';
+#
+# +# ftp won't work falling back to http
+# +=pod
+#  print "Connecting to $hostname\n";
+#  my $ftp = Net::FTP->new("$hostname", Debug => 0) or die "Cannot connect to $hostname $@";
+#  $ftp->login("anonymous",'-anonymous@') || die "Cannot login ", $ftp->message;
+# @@ -47,6 +52,26 @@
+#  print "Moving $fasta to $datadir/\n";
+#  rename("$fasta","$datadir/$fasta");
+#  $ftp->quit;
+# +=cut
+# +
+# +print "Downloading $fai..\n";
+# +$url = "http://$hostname$dir/$fai";
+# +$result = getstore($url, $fai);
+# +if ( $result != 200 ) {
+# +       die "Download of $fai failed, url: $url, result: $result";
+# +}
+# +print "Moving $fai to $datadir/\n";
+# +rename("$fai","$datadir/$fai");
+# +
+# +print "Downloading $fasta..\n";
+# +$url = "http://$hostname$dir/$fasta";
+# +getstore($url,$fasta);
+# +if ( $result != 200 ) {
+# +       die "Download of $fasta failed, url: $url, result: $result";
+# +}
+# +print "Moving $fasta to $datadir/\n";
+# +rename("$fasta","$datadir/$fasta");
+# +
+#
+#  print "Decompressing the file\n";
+#  my $cmd = "gzip -d $datadir/$fasta";
+
+
 # - http://csg.sph.umich.edu/kang/epacts/download/$ARCHIVE was originally blocketd on abacus, now fixed.
 
 
