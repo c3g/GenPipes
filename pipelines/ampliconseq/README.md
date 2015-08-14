@@ -371,7 +371,7 @@ Tutorial:
 ####################################################################################################################################
 
 1a) IF you have a map file: copy the path to the "map_file" variable in the configuration file.
-   eg: map_file=/lb/project/mugqic/projects/ptranvan/project/Shen/map_shen_presentation.txt  
+   eg: map_file=/path/to/map.txt  
 
    ELSE: Leave the variable empty. 
    eg: map_file=
