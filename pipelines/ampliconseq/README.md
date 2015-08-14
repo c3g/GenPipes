@@ -5,14 +5,14 @@ Amplicon-Seq Pipeline
 ================
 
 The standard MUGQIC Amplicon-Seq pipeline is suited for Metagenome analysis (e.g. ITS, 16S or 18S rDNA analysis).
-This pipeline is based on de novo OTU picking method using [Qiime](http://qiime.org). 
+This pipeline is based on OTU picking method using [Qiime](http://qiime.org). 
 First of all, reads are preprocessed by removing trailing low quality with Trimmomatic. Then (assuming we 
 have paired end data), the reads are merged with FLASh. Finally a reference chimera dectection is performed in
 order to filter out chimeric sequences possibly formed during amplicon sequencing.
-Reads are then clustered into different OTU according to a chosen treshold with Usearch. Each OTU is represented
+Reads are then clustered into different OTU according to a chosen treshold with VSEARCH. Each OTU is represented
 by a single sequence and taxonomic assignation is performed using Uclust. A phylegonetic tree is then built 
 with PyNAST which can be useful for beta diversity metrics.
-A rarefaction step can be performed in order to compare all the samples and to analyse the alpha and the beta 
+A normalization step (rarefaction or CSS) is then performed in order to compare all the samples and to analyse the alpha and the beta 
 diversity. 
 Plots for alpha diversity are made with Qiime and Krona tools. Also, Qiime is utilised for beta diversity analysis.
 
@@ -74,35 +74,34 @@ Steps:
 3- flash
 4- merge_flash_stats
 5- catenate
-6- catenate_split
-7- uchime
-8- merge_uchime
-9- filter_chimeras
-10- otu_picking
-11- otu_rep_picking
-12- otu_assigning
-13- otu_table
-14- merge_uchime_stats
-15- otu_alignment
-16- filter_alignment
-17- phylogeny
-18- qiime_report
-19- multiple_rarefaction
-20- alpha_diversity
-21- collate_alpha
-22- sample_rarefaction_plot
-23- qiime_report2
-24- single_rarefaction
-25- rarefaction_plot
-26- summarize_taxa
-27- plot_taxa
-28- plot_heatmap
-29- krona
-30- plot_to_alpha
-31- beta_diversity
-32- pcoa
-33- pcoa_plot
-34- plot_to_beta
+6- uchime
+7- merge_uchime_stats
+8- otu_ref_picking
+9- otu_picking
+10- otu_rep_picking
+11- otu_assigning
+12- otu_table
+13- otu_alignment
+14- filter_alignment
+15- phylogeny
+16- qiime_report
+17- multiple_rarefaction
+18- alpha_diversity
+19- collate_alpha
+20- sample_rarefaction_plot
+21- qiime_report2
+22- single_rarefaction
+23- css_normalization
+24- rarefaction_plot
+25- summarize_taxa
+26- plot_taxa
+27- plot_heatmap
+28- krona
+29- plot_to_alpha
+30- beta_diversity
+31- pcoa
+32- pcoa_plot
+33- plot_to_beta
 
 ```
 1- trimmomatic
@@ -139,41 +138,37 @@ This step takes as input files:
 
 1. Merged FASTQ files from previous step flash. 
 
-6- catenate_split
------------------
-Split the catenate file for UCHIME.
-
-7- uchime
+6- uchime
 ---------
-Reference based chimera detection is performed using [Usearch/Uchime](http://drive5.com/usearch/) (http://drive5.com/usearch/manual/uchime_algo.html).
+Reference based chimera detection is performed using [vsearch](https://github.com/torognes/vsearch)
 
 This step takes as input files:
 
 1. Catenated FASTA file from previous step catenate. 
 
-8- merge_uchime
----------------
-Merge the chimeras files from previous step.
+7- merge_uchime_stats
+---------------------
+The chimeric sequences filtered out statistics per readset are merged at this step.
 
-9- filter_chimeras
+8- otu_ref_picking
 ------------------
-Filter the input catenate data file by passing the chimeras file created in the previous step.
-
-This step takes as input files:
-
-1. Catenated FASTQ file from 3rd step cat_data.
-2. Chimera file from previous step uchime.
-
-10- otu_picking
----------------
-The OTU picking step (de novo) assigns similar sequences to operational taxonomic units (OTUs) by clustering sequences based on a user-defined similarity threshold. Method per default uses [sumaclust] (http://www.grenoble.prabi.fr/trac/sumatra/wiki/documentation/sumaclust) program wrapped by [Qiime] (http://qiime.org).
+The OTU picking step (close_ref) assigns similar sequences to operational taxonomic units (OTUs) by clustering sequences based on a user-defined similarity threshold. Method per default uses [VSEARCH] (https://github.com/torognes/vsearch) and [Qiime] (http://qiime.org).
 
 This step takes as input file:
 
 1. Catenated and filtered FASTA file from previous step.
 
 
-11- otu_rep_picking
+9- otu_picking
+--------------
+The OTU picking step (de novo) assigns similar sequences to operational taxonomic units (OTUs) by clustering sequences based on a user-defined similarity threshold. Method per default uses [VSEARCH] (https://github.com/torognes/vsearch) and [Qiime] (http://qiime.org).
+
+This step takes as input file:
+
+1. Catenated and filtered FASTA file from previous step.
+
+
+10- otu_rep_picking
 -------------------
 After picking OTUs, this step pick a representative sequence for each OTU.
 
@@ -183,7 +178,7 @@ This step takes as input files:
 2. Catenated and filtered FASTA file from filter_chimeras step.
 
 
-12- otu_assigning
+11- otu_assigning
 -----------------
 Given a set of OTUS, this step attempts to assign the taxonomy of each OTU using [Uclust] (http://drive5.com/usearch/manual/uclust_algo.html).
 
@@ -192,7 +187,7 @@ This step takes as input files:
 1. OTU representative sequence file from previous step.
 
 
-13- otu_table
+12- otu_table
 -------------
 This step make a consensus OTU table in biom format. It tabulates the number of times an OTU is found in each sample, and adds the taxonomic predictions for each OTU. 
 
@@ -202,11 +197,7 @@ This step takes as input files:
 2. Taxonomy assignment for each OTU from the previous step.
 
 
-14- merge_uchime_stats
-----------------------
-The chimeric sequences filtered out statistics per readset are merged at this step.
-
-15- otu_alignment
+13- otu_alignment
 -----------------
 Align OTU representative sequences using [PyNAST] (http://biocore.github.io/pynast/).
 
@@ -215,7 +206,7 @@ This step takes as input file:
 1. OTU representative sequence file.
 
 
-16- filter_alignment
+14- filter_alignment
 --------------------
 Filter the alignment by removing positions which are gaps in every sequence.
 
@@ -224,7 +215,7 @@ This step takes as input file:
 1. Alignment sequence file.
 
 
-17- phylogeny
+15- phylogeny
 -------------
 Build a phylogenetic tree from a multiple sequence alignment using [FastTree] (http://www.microbesonline.org/fasttree/).
 
@@ -233,11 +224,11 @@ This step takes as input file:
 1. Filtered alignment sequence file from previous step.
 
 
-18- qiime_report
+16- qiime_report
 ----------------
 1st part report for taxonomic affiliation. 
 
-19- multiple_rarefaction
+17- multiple_rarefaction
 ------------------------
 1st step (/4) for rarefaction plot.
 Rarefies OTU table by random sampling (without replacement) at different depth in order to perform rarefaction analysis. 
@@ -245,11 +236,10 @@ You need to provide the minimum/maximum number of sequences per samples and the 
 
 This step takes as input files:
 
-1. OTU rarefied table in biom format if available.
-2. Else, OTU non rarefied table in biom format.
+1. OTU non rarefied table in biom format.
 
 
-20- alpha_diversity
+18- alpha_diversity
 -------------------
 2nd step (/4) for rarefaction plot.
 Calculate alpha diversity on each sample using a variety of alpha diversity metrics (chao1, shannon, observed otus). 
@@ -259,21 +249,21 @@ This step takes as input files:
 1. Multiple OTU rarefied table in biom format from previous step.
 
 
-21- collate_alpha
+19- collate_alpha
 -----------------
 3rd step (/4) for rarefaction plot.
 Merge all the alpha diversity computed in the previous step. 
 
-22- sample_rarefaction_plot
+20- sample_rarefaction_plot
 ---------------------------
 Last step for rarefaction plot.
 Plot the rarefaction curve for each sample
 
-23- qiime_report2
+21- qiime_report2
 -----------------
 2nd part report for taxonomic affiliation. Plot rarefaction curve for each sample.
 
-24- single_rarefaction
+22- single_rarefaction
 ----------------------
 This step is recommended. It subsamples (rarefy) all the samples to an equal number of sequences for further comparaison.
 You have to provide the number of sequences to subsample per sample in the configuration file (single_rarefaction_depth).
@@ -283,12 +273,22 @@ This step takes as input files:
 1. OTU table in biom format.
 
 
-25- rarefaction_plot
+23- css_normalization
+---------------------
+This step is recommended. Alternative method for normalization to rarefaction. 
+Performs the CSS Matrix normalization.
+
+This step takes as input files:
+
+1. OTU table in biom format.
+
+
+24- rarefaction_plot
 --------------------
 Last step for rarefaction plot.
-Plot the rarefaction curve for rarefied data. 
+Rarefaction curve for each sample on the same plot. 
 
-26- summarize_taxa
+25- summarize_taxa
 ------------------
 1st step (/3) for taxonomic affiliation plot.
 Summarize information of taxonomic groups within each sample at different taxonomic level. 
@@ -299,7 +299,7 @@ This step takes as input files:
 2. Else, OTU non rarefied table in biom format.
 
 
-27- plot_taxa
+26- plot_taxa
 -------------
 2nd step (/3) for taxonomic affiliation plot.
 Make taxaonomy summary bar plots based on taxonomy assignment. 
@@ -309,7 +309,7 @@ This step takes as input files:
 1. Summarized information from previous step.
 
 
-28- plot_heatmap
+27- plot_heatmap
 ----------------
 Last step for taxonomic affiliation plot.
 Make heatmap at phylum level. 
@@ -319,18 +319,18 @@ This step takes as input files:
 1. Summarized information from previous step.
 
 
-29- krona
+28- krona
 ---------
 Plot Krona chart for taxonomic affiliation
 
-30- plot_to_alpha
+29- plot_to_alpha
 -----------------
 Final report 1st part for the Amplicon-Seq pipeline. Display results (taxonomy, heatmap and alpha diversity).
 
-31- beta_diversity
+30- beta_diversity
 ------------------
 1st step (/3) for 2D PCoA plot.
-Calculate beta diversity (pairwise sample dissimilarity) on OTU table. The OTU table has to be rarefied. 
+Calculate beta diversity (pairwise sample dissimilarity) on OTU table. The OTU table has to be normalized. 
 Only works with >= 4 samples
 
 This step takes as input files:
@@ -339,7 +339,7 @@ This step takes as input files:
 2. Tree file.
 
 
-32- pcoa
+31- pcoa
 --------
 2nd step (/3) for 2D PCoA plot.
 Compute coordinates pour PCoA 
@@ -349,7 +349,7 @@ This step takes as input file:
 1. Matrix produced in the previous step.
 
 
-33- pcoa_plot
+32- pcoa_plot
 -------------
 Last step for 2D PCoA plot.
 
@@ -358,6 +358,238 @@ This step takes as input file:
 1. PCoA from the previous step.
 
 
-34- plot_to_beta
+33- plot_to_beta
 ----------------
 Final report's 2nd part for the Amplicon-Seq pipeline. Display results (beta diversity PCoA plots).
+
+
+Tutorial:
+---------
+
+####################################################################################################################################
+=== SETTING ==
+####################################################################################################################################
+
+1a) IF you have a map file: copy the path to the "map_file" variable in the configuration file.
+   eg: map_file=/lb/project/mugqic/projects/ptranvan/project/Shen/map_shen_presentation.txt  
+
+   ELSE: Leave the variable empty. 
+   eg: map_file=
+
+1b) For the map file: All '_' character have to be replaced by '.' for the sample name. Exemple:
+
+In readset.tsv:
+
+Sample name : Ya_4_w3
+
+In map file:
+
+Sample name: Ya.4.w3
+
+
+####################################################################################################################################
+=== USAGE == 2 mod: de novo or close reference
+####################################################################################################################################
+
+************************************************************************
+DE NOVO mod
+************************************************************************
+
+
+1) To step 16: qiime_report
+
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-7,9-16 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis.sh
+
+NB1: This step can be long, some steps can be parallelized (step 6,9,11,13 - ie: uchime, otu_picking, otu_assigning, otu_alignment)
+--> Modify manually the 'ppn' to set it as same as 'threads' variable number. 
+
+NB2: For large data, set to >= 20 threads (and ppn) for uchime.
+NB3: For large data, set to >= 20 threads (and more for ppn) for otu picking.
+NB4: For large data, set to >= 15 threads (and ppn) for otu_alignment.
+NB5: For large data, increase the walltime (> 24h) of phylogeny step (15) 
+
+A) Report 1
+
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-16 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
+
+The otu_table.sum file helps you to choose the maximum rarefaction treshold. It CAN'T be > than the max Counts/sample.
+
+cat analysis/otus/otu_table.sum
+Look for Max in Counts/sample summary:
+
+Report to the "multiple_rarefaction_max" variable in the configuration file.
+
+4) To step 21: qiime_report2
+
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 17-21 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis2.sh
+
+B) Report 2
+
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-21 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
+
+Rarefaction normalization method:
+
+The report helps you to choose the single rarefaction treshold (for all the samples) by looking the rarefaction curves for each sample.
+Report to the "single_rarefaction_depth" variable in the configuration file.
+
+CSS normalization method:
+
+Nothing to do.
+
++++++++++++++++++++++++++++ 
+Rarefaction normalization 
++++++++++++++++++++++++++++ 
+
+if you have < 4 samples
+------------------------
+
+5) To step 28: plot_to_alpha
+
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 22,24-29 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis3.sh
+
+C) Report 3: analysis done
+
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-29 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
+
+else
+----
+
+5) To step 32: plot_to_beta
+
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 22,24-33 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis3.sh
+
+C) Report 3: analysis done
+
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-22,24-33 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
+
+
++++++++++++++++++++++++++++ 
+CSS normalization 
++++++++++++++++++++++++++++ 
+
+if you have < 4 samples
+------------------------
+
+5) To step 29: plot_to_alpha
+
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 23-29 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis3.sh
+
+C) Report 3: analysis done
+
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-29 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
+
+else
+----
+
+5) To step 33: plot_to_beta
+
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 23-33 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis3.sh
+
+C) Report 3: analysis done
+
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-21,23-33 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
+
+
+
+************************************************************************
+Close ref mod (large dataset)
+************************************************************************
+
+1) To step 16: qiime_report
+
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-8,10-16 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis.sh
+
+NB1: This step can be long, some steps can be parallelized (step 6,10,11,13 - ie: uchime, otu_ref_picking, otu_assigning, otu_alignment)
+NB2: For large data, set to >= 20 threads (and ppn) for uchime.
+NB3: For large data, set to >= 20 threads (and more for ppn) for otu_ref_picking.
+NB4: For large data, set to >= 15 threads (and ppn) for otu_alignment.
+NB5: For large data, increase the walltime (> 24h) of phylogeny step (15) 
+
+A) Report 1
+
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-16 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
+
+The otu_table.sum file helps you to choose the maximum rarefaction treshold. It CAN'T be > than the max Counts/sample.
+
+cat analysis/otus/otu_table.sum
+Look for Max in Counts/sample summary:
+
+Report to the "multiple_rarefaction_max" variable in the configuration file.
+
+4) To step 21: qiime_report2
+
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 17-21 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis2.sh
+
+B) Report 2
+
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-21 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
+
+Rarefaction normalization method:
+
+The report helps you to choose the single rarefaction treshold (for all the samples) by looking the rarefaction curves for each sample.
+Report to the "single_rarefaction_depth" variable in the configuration file.
+
+CSS normalization method:
+
+Nothing to do.
+
++++++++++++++++++++++++++++ 
+Rarefaction normalization 
++++++++++++++++++++++++++++ 
+
+if you have < 4 samples
+------------------------
+
+5) To step 28: plot_to_alpha
+
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 22,24-29 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis3.sh
+
+C) Report 3: analysis done
+
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-29 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
+
+else
+----
+
+5) To step 32: plot_to_beta
+
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 22,24-33 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis3.sh
+
+C) Report 3: analysis done
+
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-22,24-33 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
+
+
++++++++++++++++++++++++++++ 
+CSS normalization 
++++++++++++++++++++++++++++ 
+
+if you have < 4 samples
+------------------------
+
+5) To step 29: plot_to_alpha
+
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 23-29 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis3.sh
+
+C) Report 3: analysis done
+
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-29 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
+
+else
+----
+
+5) To step 33: plot_to_beta
+
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 23-33 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis3.sh
+
+C) Report 3: analysis done
+
+$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-21,23-33 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
+
+
+
+####################################################################################################################################
+####################################################################################################################################
+
+
+

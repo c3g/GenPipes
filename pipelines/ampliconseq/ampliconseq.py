@@ -200,7 +200,7 @@ pandoc \\
 			sample_name.append(str(readset.sample.name).replace("_", "."))
 			
 
-		if config.param('qiime', 'map_file'):
+		if config.param('qiime_catenate', 'map_file'):
 		
 		
 			job = qiime.catenate(
@@ -335,11 +335,13 @@ pandoc \\
   {report_template_dir}/{basename_report_file} \\
   --template {report_template_dir}/{basename_report_file} \\
   --variable read_type={read_type} \\
+  --variable sequence_max_n="{sequence_max_n}" \\
   --variable uchime_readset_table="$uchime_readset_table_md" \\
   --to markdown \\
   > {report_file}""".format(
 					read_type="Paired",
 					report_template_dir=self.report_template_dir,
+					sequence_max_n=config.param('qiime_catenate', 'sequence_max_n'),
 					readset_merge_uchime_stats=readset_merge_uchime_stats,
 					sample_merge_uchime_stats=sample_merge_uchime_stats,
 					basename_report_file=os.path.basename(report_file),
@@ -378,7 +380,7 @@ pandoc \\
 		# Create an output directory
 		Job(command="mkdir -p otus/"),
 		job
-	], name="otu_ref_picking"))		
+	], name="qiime_otu_picking"))		
 		
 		return jobs
 		
@@ -412,7 +414,7 @@ pandoc \\
 		# Create an output directory
 		Job(command="mkdir -p otus/"),
 		job
-	], name="otu_picking"))		
+	], name="qiime_otu_picking"))		
 		
 		return jobs
 
@@ -451,7 +453,7 @@ pandoc \\
 		# Create an output directory
 		Job(command="mkdir -p otus/pick_rep_set"),
 		job
-	], name="otu_rep_picking"))		
+	], name="qiime_rep_picking"))		
 		
 		return jobs
 
@@ -486,7 +488,7 @@ pandoc \\
 		# Create an output directory
 		Job(command="mkdir -p otus/taxonomy_assignment/"),
 		job
-	], name="otu_assigning"))		
+	], name="qiime_otu_assigning"))		
 		
 		return jobs
 
@@ -511,8 +513,12 @@ pandoc \\
 		tax_assign_file = os.path.join(tax_assign_directory, "rep_set_tax_assignments.txt")
 			
 		otu_table_file = os.path.join(otu_directory, "otu_table_prefiltered.biom")
+		otu_table_sample_file = os.path.join(otu_directory, "otu_table_prefiltered_sample.biom")
 		otu_table_final = os.path.join(otu_directory, "otu_table.biom")
 		otu_table_summary = os.path.join(otu_directory, "otu_table.sum")
+		
+		otu_sample_directory = os.path.join(otu_directory, "sample")
+		sample_name_control = os.path.join(otu_sample_directory, "done.txt")
 	
 		job = qiime.otu_table(
 			otu_file,
@@ -522,13 +528,25 @@ pandoc \\
 			otu_table_summary
 		)
 		
-		job_filter = Job([otu_table_file], [otu_table_final])
-		job_filter.command = """$QIIME_HOME/filter_otus_from_otu_table.py -i {} -n 2 -o {}""".format(otu_table_file,otu_table_final)
+		#Remove singleton
+		job_filter = Job([otu_table_file], [otu_table_sample_file])
+		job_filter.command = """$QIIME_HOME/filter_otus_from_otu_table.py -i {} -n 2 -o {}""".format(otu_table_file,otu_table_sample_file)
+		
+		#Remove samples with fewer than 2 observations.
+		job_filter2 = Job([otu_table_sample_file], [otu_table_final])
+		job_filter2.command = """$QIIME_HOME/filter_samples_from_otu_table.py -i {} -n 2 -o {}""".format(otu_table_sample_file,otu_table_final)
+		
+		#Sample remained after filtering.
+		job_sample = Job([otu_table_summary], [sample_name_control], [['qiime', 'module_ampliconseq']])
+		job_sample.command ="""python $AMP_SEQ_HOME/AmpliconSeq_script.py -m sample_name -i {} -j {}""".format(otu_table_summary,otu_sample_directory)
 		
 		jobs.append(concat_jobs([
 		job,
 		job_filter,
-		Job(command="""$QIIME_HOME/biom summarize-table -i {} > {}""".format(otu_table_final,otu_table_summary))
+		job_filter2,
+		Job(command="""$QIIME_HOME/biom summarize-table -i {} > {}""".format(otu_table_final,otu_table_summary)),
+		Job(command="mkdir -p " + otu_sample_directory),
+		job_sample
 	], name="otu_table"))	
 	
 		
@@ -559,7 +577,7 @@ pandoc \\
 			align_seq_fasta
 		)
 			
-		job.name = "otu_alignment"			
+		job.name = "qiime_otu_alignment"			
 		jobs.append(job)
 		
 		return jobs
@@ -623,7 +641,7 @@ pandoc \\
 		# Create an output directory
 		Job(command="mkdir -p otus/phylogenetic_tree/"),
 		job
-	], name="phylogeny"))		
+	], name="qiime_phylogeny"))		
 		
 		return jobs
 
@@ -664,7 +682,7 @@ pandoc --to=markdown \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}""".format(
                     amplicon_type=config.param('qiime', 'amplicon_type'),
-                    similarity=config.param('qiime', 'similarity'),
+                    similarity=config.param('qiime_otu_picking', 'similarity'),
                     amplicon_db=amp_db,
                     report_template_dir=self.report_template_dir,
                     basename_report_file=os.path.basename(report_file),
@@ -684,8 +702,7 @@ pandoc --to=markdown \\
 
 		This step takes as input files:
 
-		1. OTU rarefied table in biom format if available.
-		2. Else, OTU non rarefied table in biom format.
+		1. OTU non rarefied table in biom format.
 
 		"""
 		
@@ -783,6 +800,9 @@ pandoc --to=markdown \\
 		
 		jobs = []
 		
+		otu_directory = "otus"
+		otu_sample_directory = os.path.join(otu_directory, "sample")
+		
 		curve_sample=[]
 		alpha_directory = "alpha_diversity"		
 		alpha_diversity_collated_directory = os.path.join(alpha_directory, "alpha_diversity_collated")	
@@ -795,35 +815,41 @@ pandoc --to=markdown \\
 			
 		for readset in self.readsets:
 		
-			sample_collated_general_directory = os.path.join(alpha_diversity_collated_directory, readset.sample.name)
-			sample_map = os.path.join(sample_collated_general_directory, "map.txt")
-			sample_collated_directory = os.path.join(sample_collated_general_directory, "stat")
-			sample_rarefaction_directory = os.path.join(alpha_diversity_rarefaction_directory, readset.sample.name)
-			chao1_dir = os.path.join(sample_collated_directory, "chao1.txt")
-			observed_species_dir = os.path.join(sample_collated_directory, "observed_species.txt")
-			shannon_dir = os.path.join(sample_collated_directory, "shannon.txt")
-			observed_species_file = """{}/average_plots/observed_species{}.png""".format(readset.sample.name,str(readset.sample.name).replace('_','.'))
-			curve_sample.append(os.path.join(alpha_diversity_rarefaction_directory,observed_species_file))
-					
-			job = qiime.sample_rarefaction_plot(
-				chao1_stat,
-				observed_species_stat,
-				shannon_stat,
-				sample_collated_directory,	
-				sample_map,
-				sample_rarefaction_directory,
-				curve_sample,
-			)
+			try:
+				self.select_input_files([[os.path.join(otu_sample_directory,str(readset.sample.name).replace("_", ".")+'.txt')]])
+				
+				sample_collated_general_directory = os.path.join(alpha_diversity_collated_directory, readset.sample.name)
+				sample_map = os.path.join(sample_collated_general_directory, "map.txt")
+				sample_collated_directory = os.path.join(sample_collated_general_directory, "stat")
+				sample_rarefaction_directory = os.path.join(alpha_diversity_rarefaction_directory, readset.sample.name)
+				chao1_dir = os.path.join(sample_collated_directory, "chao1.txt")
+				observed_species_dir = os.path.join(sample_collated_directory, "observed_species.txt")
+				shannon_dir = os.path.join(sample_collated_directory, "shannon.txt")
+				observed_species_file = """{}/average_plots/observed_species{}.png""".format(readset.sample.name,str(readset.sample.name).replace('_','.'))
+				curve_sample.append(os.path.join(alpha_diversity_rarefaction_directory,observed_species_file))
+						
+				job = qiime.sample_rarefaction_plot(
+					chao1_stat,
+					observed_species_stat,
+					shannon_stat,
+					sample_collated_directory,	
+					sample_map,
+					sample_rarefaction_directory,
+					curve_sample,
+				)
+				
+				jobs.append(concat_jobs([
+						Job(command="mkdir -p " + sample_collated_directory),
+						Job(command="""python $AMP_SEQ_HOME/AmpliconSeq_script.py -m map_per_sample -s {} -j {}""".format(readset.sample.name,sample_map)),
+						Job(command="""python $AMP_SEQ_HOME/AmpliconSeq_script.py -m sample_rarefaction -i {} -j {} -s {}""".format(chao1_stat,chao1_dir,readset.sample.name)),
+						Job(command="""python $AMP_SEQ_HOME/AmpliconSeq_script.py -m sample_rarefaction -i {} -j {} -s {}""".format(observed_species_stat,observed_species_dir,readset.sample.name)),
+						Job(command="""python $AMP_SEQ_HOME/AmpliconSeq_script.py -m sample_rarefaction -i {} -j {} -s {}""".format(shannon_stat,shannon_dir,readset.sample.name)),
+						job
+					], name="sample_rarefaction_plot"))
 			
-			jobs.append(concat_jobs([
-					Job(command="mkdir -p " + sample_collated_directory),
-					Job(command="""python $AMP_SEQ_HOME/AmpliconSeq_script.py -m map_per_sample -s {} -j {}""".format(readset.sample.name,sample_map)),
-					Job(command="""python $AMP_SEQ_HOME/AmpliconSeq_script.py -m sample_rarefaction -i {} -j {} -s {}""".format(chao1_stat,chao1_dir,readset.sample.name)),
-					Job(command="""python $AMP_SEQ_HOME/AmpliconSeq_script.py -m sample_rarefaction -i {} -j {} -s {}""".format(observed_species_stat,observed_species_dir,readset.sample.name)),
-					Job(command="""python $AMP_SEQ_HOME/AmpliconSeq_script.py -m sample_rarefaction -i {} -j {} -s {}""".format(shannon_stat,shannon_dir,readset.sample.name)),
-					job
-				], name="sample_rarefaction_plot"))
-			
+			except:
+				pass 
+				
 		return jobs
 
 	def qiime_report2(self):
@@ -835,18 +861,26 @@ pandoc --to=markdown \\
 		inputs = []
 		curve_sample = []
 		
+		otu_directory = "otus"
+		otu_sample_directory = os.path.join(otu_directory, "sample")
+		
 		alpha_directory = "alpha_diversity"			
 		alpha_diversity_rarefaction_directory = os.path.join(alpha_directory, "alpha_rarefaction")
 		
 		report_file = os.path.join("report", "AmpliconSeq.plot_curve_no_rar.md")
 		num_sample = 0	
 		
-		for readset in self.readsets:		
-			inputs.append(str(readset.sample.name).replace('_','.'))
-			observed_species_file = """{}/average_plots/observed_species{}.png""".format(readset.sample.name,str(readset.sample.name).replace('_','.'))
-			curve_sample.append(os.path.join(alpha_diversity_rarefaction_directory,observed_species_file))
-			num_sample+=1
+		for readset in self.readsets:
+			try:
+				self.select_input_files([[os.path.join(otu_sample_directory,str(readset.sample.name).replace("_", ".")+'.txt')]])
+		
+				inputs.append(str(readset.sample.name).replace('_','.'))
+				observed_species_file = """{}/average_plots/observed_species{}.png""".format(readset.sample.name,str(readset.sample.name).replace('_','.'))
+				curve_sample.append(os.path.join(alpha_diversity_rarefaction_directory,observed_species_file))
+				num_sample+=1
 
+			except:
+				pass 
 				
 		jobs.append(Job(
                 curve_sample,
@@ -915,13 +949,13 @@ pandoc --to=markdown \\
 		)
 		
 		job_chao1 = Job([chao1_stat], [chao1_rarefied_stat])
-		job_chao1.command = """python $AMP_SEQ_HOME/AmpliconSeq_script.py -m single_rarefaction -i {} -j {} -s {}""".format(chao1_stat,chao1_rarefied_stat,config.param('qiime', 'single_rarefaction_depth'))
+		job_chao1.command = """python $AMP_SEQ_HOME/AmpliconSeq_script.py -m single_rarefaction -i {} -j {} -s {}""".format(chao1_stat,chao1_rarefied_stat,config.param('qiime_single_rarefaction', 'single_rarefaction_depth'))
 		
 		job_observed_species = Job([observed_species_stat], [observed_species_rarefied_stat])
-		job_observed_species.command = """python $AMP_SEQ_HOME/AmpliconSeq_script.py -m single_rarefaction -i {} -j {} -s {}""".format(observed_species_stat,observed_species_rarefied_stat,config.param('qiime', 'single_rarefaction_depth'))
+		job_observed_species.command = """python $AMP_SEQ_HOME/AmpliconSeq_script.py -m single_rarefaction -i {} -j {} -s {}""".format(observed_species_stat,observed_species_rarefied_stat,config.param('qiime_single_rarefaction', 'single_rarefaction_depth'))
 		
 		job_shannon = Job([shannon_stat], [shannon_rarefied_stat])
-		job_shannon.command = """python $AMP_SEQ_HOME/AmpliconSeq_script.py -m single_rarefaction -i {} -j {} -s {}""".format(shannon_stat,shannon_rarefied_stat,config.param('qiime', 'single_rarefaction_depth'))
+		job_shannon.command = """python $AMP_SEQ_HOME/AmpliconSeq_script.py -m single_rarefaction -i {} -j {} -s {}""".format(shannon_stat,shannon_rarefied_stat,config.param('qiime_single_rarefaction', 'single_rarefaction_depth'))
 						
 		jobs.append(concat_jobs([
 		# Create an output directory
@@ -982,13 +1016,13 @@ pandoc --to=markdown \\
 		)
 		
 		job_chao1 = Job([chao1_stat], [chao1_rarefied_stat])
-		job_chao1.command = """python $AMP_SEQ_HOME/AmpliconSeq_script.py -m single_rarefaction -i {} -j {} -s {}""".format(chao1_stat,chao1_rarefied_stat,config.param('qiime', 'multiple_rarefaction_max'))
+		job_chao1.command = """python $AMP_SEQ_HOME/AmpliconSeq_script.py -m single_rarefaction -i {} -j {} -s {}""".format(chao1_stat,chao1_rarefied_stat,config.param('qiime_multiple_rarefaction', 'multiple_rarefaction_max'))
 		
 		job_observed_species = Job([observed_species_stat], [observed_species_rarefied_stat])
-		job_observed_species.command = """python $AMP_SEQ_HOME/AmpliconSeq_script.py -m single_rarefaction -i {} -j {} -s {}""".format(observed_species_stat,observed_species_rarefied_stat,config.param('qiime', 'multiple_rarefaction_max'))
+		job_observed_species.command = """python $AMP_SEQ_HOME/AmpliconSeq_script.py -m single_rarefaction -i {} -j {} -s {}""".format(observed_species_stat,observed_species_rarefied_stat,config.param('qiime_multiple_rarefaction', 'multiple_rarefaction_max'))
 		
 		job_shannon = Job([shannon_stat], [shannon_rarefied_stat])
-		job_shannon.command = """python $AMP_SEQ_HOME/AmpliconSeq_script.py -m single_rarefaction -i {} -j {} -s {}""".format(shannon_stat,shannon_rarefied_stat,config.param('qiime', 'multiple_rarefaction_max'))
+		job_shannon.command = """python $AMP_SEQ_HOME/AmpliconSeq_script.py -m single_rarefaction -i {} -j {} -s {}""".format(shannon_stat,shannon_rarefied_stat,config.param('qiime_multiple_rarefaction', 'multiple_rarefaction_max'))
 						
 		jobs.append(concat_jobs([
 		# Create an output directory
@@ -1022,8 +1056,8 @@ pandoc --to=markdown \\
 		alpha_diversity_rarefaction_rarefied_directory = os.path.join(alpha_diversity_rarefaction_directory, "merge_samples_rarefied")
 		alpha_diversity_rarefaction_file = os.path.join(alpha_diversity_rarefaction_rarefied_directory, "rarefaction_plots.html")
 		
-		if config.param('qiime', 'map_file'):
-			map_file = config.param('qiime', 'map_file')
+		if config.param('qiime_catenate', 'map_file'):
+			map_file = config.param('qiime_catenate', 'map_file')
 		else:
 			map_file = "map.txt"
 			
@@ -1158,7 +1192,7 @@ pandoc --to=markdown \\
 				
 		taxonomic_input = [taxonomic_phylum]
 		
-		job = Job(taxonomic_input, [heatmap_script,heatmap_otu_data_R,heatmap_otu_name_R,heatmap_otu_tax_R], [['qiime', 'module_R']])
+		job = Job(taxonomic_input, [heatmap_script,heatmap_otu_data_R,heatmap_otu_name_R,heatmap_otu_tax_R], [['qiime', 'module_R'],['qiime', 'module_ampliconseq']])
 		job.command = """python $AMP_SEQ_HOME/AmpliconSeq_script.py -m plot_heatmap -i {} -j {} -s {}""".format(taxonomic_phylum,heatmap_directory,1)
 		
 		jobR = Job([heatmap_script,heatmap_otu_data_R,heatmap_otu_name_R,heatmap_otu_tax_R], [heatmap_chart,heatmap_otu_table,heatmap_tax_table], [['qiime', 'module_R'],['qiime', 'module_ampliconseq']])
@@ -1183,6 +1217,9 @@ pandoc --to=markdown \\
 		jobs = []
 		sample_name =[]
 		
+		otu_directory = "otus"
+		otu_sample_directory = os.path.join(otu_directory, "sample")
+		
 		otu_normalized_directory = "otu_normalized"
 		otu_normalized_table = os.path.join(otu_normalized_directory,"otu_normalized_table.biom")
 		
@@ -1190,10 +1227,13 @@ pandoc --to=markdown \\
 		alpha_diversity_krona_directory = os.path.join(alpha_directory, "krona_chart")
 		alpha_diversity_krona_file = os.path.join(alpha_diversity_krona_directory, "krona_chart.html")
 		
-		
-		for readset in self.readsets:				         
-			sample_name.append(alpha_diversity_krona_directory+'/'+str(readset.sample.name).replace("_", ".")+'.txt')
-			
+		for readset in self.readsets:		
+			try:
+				self.select_input_files([[os.path.join(otu_sample_directory,str(readset.sample.name).replace("_", ".")+'.txt')]])	
+				sample_name.append(alpha_diversity_krona_directory+'/'+str(readset.sample.name).replace("_", ".")+'.txt') 
+			except:
+				pass 
+						
 		job = qiime.krona(
 			otu_normalized_table,
 			sample_name,
@@ -1269,7 +1309,7 @@ pandoc --to=markdown \\
   --variable single_rarefaction_depth="{single_rarefaction_depth}" \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}""".format(
-                    single_rarefaction_depth=config.param('qiime', 'single_rarefaction_depth'),  
+                    single_rarefaction_depth=config.param('qiime_single_rarefaction', 'single_rarefaction_depth'),  
                     report_template_dir=self.report_template_dir,
                     basename_report_file=os.path.basename(report_file),
                     report_file=report_file
@@ -1383,8 +1423,8 @@ pandoc --to=markdown \\
 		beta_diversity_pcoa_unweighted = os.path.join(pcoa_plot_directory, "pcoa_unweighted_unifrac_otu_normalized_table_2D_PCoA_plots.html")
 		beta_diversity_pcoa_weighted = os.path.join(pcoa_plot_directory, "pcoa_weighted_unifrac_otu_normalized_table_2D_PCoA_plots.html")
 		
-		if config.param('qiime', 'map_file'):
-			map_file = config.param('qiime', 'map_file')
+		if config.param('qiime_catenate', 'map_file'):
+			map_file = config.param('qiime_catenate', 'map_file')
 		else:
 			map_file = "map.txt"
 							

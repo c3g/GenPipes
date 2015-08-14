@@ -23,8 +23,8 @@ def catenate(
 		inputs,
 		outputs,
 		[
-			['qiime', 'module_qiime'],
-			['qiime', 'module_ampliconseq']
+			['qiime_catenate', 'module_qiime'],
+			['qiime_catenate', 'module_ampliconseq']
 		],
 
 		command="""\
@@ -34,10 +34,11 @@ def catenate(
   -o {dir_output} \\
   -r 30 \\
   -p 0.01 \\
-  -n 0 \\
+  -n {sequence_max_n} \\
   --barcode_type 'not-barcoded'""".format(
 		input_files=','.join(input_fastq),
 		sample_name=','.join(input_name),
+		sequence_max_n=config.param('qiime_catenate', 'sequence_max_n'),
 		dir_output="catenate/",
 		),
 		removable_files=[catenate_fasta]
@@ -55,9 +56,9 @@ def uchime(
 		inputs,
 		outputs,
 		[
-			['qiime', 'module_qiime'],
-			['qiime', 'module_vsearch'],
-			['qiime', 'module_ampliconseq']
+			['uchime', 'module_qiime'],
+			['uchime', 'module_vsearch'],
+			['uchime', 'module_ampliconseq']
 		],
 
 		command="""\
@@ -67,8 +68,8 @@ def uchime(
   --nonchimeras {filter_fasta} \\
   --threads {threads_number}""".format(
 		cat_sequence_fasta=cat_sequence_fasta,
-		database=config.param('qiime', 'chimera_database'),
-		threads_number=config.param('qiime', 'threads'),
+		database=config.param('uchime', 'chimera_database'),
+		threads_number=config.param('uchime', 'threads'),
 		filter_fasta=filter_fasta
 		),
 		removable_files=[filter_fasta]
@@ -87,8 +88,8 @@ def otu_ref_picking(
 		inputs,
 		outputs,
 		[
-			['qiime', 'module_qiime'],
-			['qiime', 'module_vsearch']
+			['qiime_otu_picking', 'module_qiime'],
+			['qiime_otu_picking', 'module_vsearch']
 		],
 
 		command="""\
@@ -102,9 +103,9 @@ def otu_ref_picking(
   -o {output_directory}""".format(
 		input_without_chimer=input_without_chimer,
 		method='usearch61_ref',
-		reference_seqs_fp=config.param('qiime', 'reference_seqs_fp'),
-		similarity_treshold=config.param('qiime', 'similarity'),
-		threads_number=config.param('qiime', 'threads'),
+		reference_seqs_fp=config.param('DEFAULT', 'reference_seqs_fp'),
+		similarity_treshold=config.param('qiime_otu_picking', 'similarity'),
+		threads_number=config.param('qiime_otu_picking', 'threads'),
 		output_directory=output_directory
 		),
 		removable_files=[otu_file]
@@ -123,8 +124,8 @@ def otu_picking(
 		inputs,
 		outputs,
 		[
-			['qiime', 'module_qiime'],
-			['qiime', 'module_vsearch']
+			['qiime_otu_picking', 'module_qiime'],
+			['qiime_otu_picking', 'module_vsearch']
 		],
 
 		command="""\
@@ -136,8 +137,8 @@ def otu_picking(
   -o {output_directory}""".format(
 		input_without_chimer=input_without_chimer,
 		method='usearch61',
-		similarity_treshold=config.param('qiime', 'similarity'),
-		threads_number=config.param('qiime', 'threads'),
+		similarity_treshold=config.param('qiime_otu_picking', 'similarity'),
+		threads_number=config.param('qiime_otu_picking', 'threads'),
 		output_directory=output_directory
 		),
 		removable_files=[output_otus]
@@ -158,7 +159,7 @@ def otu_rep_picking(
 		inputs,
 		outputs,
 		[
-			['qiime', 'module_qiime']
+			['qiime_rep_picking', 'module_qiime']
 		],
 
 		command="""\
@@ -169,7 +170,7 @@ def otu_rep_picking(
   -o {output_directory}""".format(
 		otu_file=otu_file,
 		filter_fasta=filter_fasta,
-		method=config.param('qiime', 'rep_set_picking_method'),
+		method=config.param('qiime_rep_picking', 'rep_set_picking_method'),
 		output_directory=otu_rep_file
 		),
 		removable_files=[otu_rep_file]
@@ -188,7 +189,7 @@ def otu_assigning(
 		inputs,
 		outputs,
 		[
-			['qiime', 'module_qiime']
+			['qiime_otu_assigning', 'module_qiime']
 		],
 
 		command="""\
@@ -200,9 +201,9 @@ def otu_assigning(
   -t {taxonomy_otus} \\
   -o {output_directory}""".format(
 		otu_rep_picking_fasta=otu_rep_picking_fasta,
-		threads_number=config.param('qiime', 'threads'),
-		database_otus=config.param('qiime', 'reference_seqs_fp'),
-		taxonomy_otus=config.param('qiime', 'id_to_taxonomy_fp'),
+		threads_number=config.param('qiime_otu_assigning', 'threads'),
+		database_otus=config.param('DEFAULT', 'reference_seqs_fp'),
+		taxonomy_otus=config.param('DEFAULT', 'id_to_taxonomy_fp'),
 		output_directory=output_directory
 		),
 		removable_files=[tax_assign_file]
@@ -252,7 +253,7 @@ def otu_alignment(
 		inputs,
 		outputs,
 		[
-			['qiime', 'module_qiime']
+			['qiime_otu_alignment', 'module_qiime']
 		],
 
 		command="""\
@@ -263,8 +264,8 @@ def otu_alignment(
   --jobs_to_start {threads_number} \\
   -o {output_directory}""".format(
 		otu_rep_picking_fasta=otu_rep_picking_fasta,
-		template_fp=config.param('qiime', 'template_fp'),
-		threads_number=config.param('qiime', 'threads'),
+		template_fp=config.param('DEFAULT', 'template_fp'),
+		threads_number=config.param('qiime_otu_alignment', 'threads'),
 		output_directory=output_directory
 		),
 		removable_files=[align_seq_fasta]
@@ -309,7 +310,7 @@ def phylogeny(
 		inputs,
 		outputs,
 		[
-			['qiime', 'module_qiime']
+			['qiime_phylogeny', 'module_qiime']
 		],
 
 		command="""\
@@ -334,7 +335,7 @@ def multiple_rarefaction(
 		inputs,
 		outputs,
 		[
-			['qiime', 'module_qiime']
+			['qiime_multiple_rarefaction', 'module_qiime']
 		],
 
 		command="""\
@@ -346,9 +347,9 @@ def multiple_rarefaction(
   -n 3 \\
   --output_path {rarefied_otu_directory}""".format(
 		otus_input=otus_input[0],
-		multiple_rarefaction_min=config.param('qiime', 'multiple_rarefaction_min'),
-		multiple_rarefaction_max=config.param('qiime', 'multiple_rarefaction_max'),
-		multiple_rarefaction_step=config.param('qiime', 'multiple_rarefaction_step'),
+		multiple_rarefaction_min=config.param('qiime_multiple_rarefaction', 'multiple_rarefaction_min'),
+		multiple_rarefaction_max=config.param('qiime_multiple_rarefaction', 'multiple_rarefaction_max'),
+		multiple_rarefaction_step=config.param('qiime_multiple_rarefaction', 'multiple_rarefaction_step'),
 		rarefied_otu_directory=rarefied_otu_directory
 		),
 		removable_files=[rarefied_otu_directory]
@@ -458,8 +459,8 @@ def single_rarefaction(
 		inputs,
 		outputs,
 		[
-			['qiime', 'module_qiime'],
-			['qiime', 'module_ampliconseq']
+			['qiime_single_rarefaction', 'module_qiime'],
+			['qiime_single_rarefaction', 'module_ampliconseq']
 		],
 
 		command="""\
@@ -469,7 +470,7 @@ def single_rarefaction(
   -d {depth}""".format(
 		otu_table=otu_table,
 		otu_normalized_table=otu_normalized_table,
-		depth=config.param('qiime', 'single_rarefaction_depth')
+		depth=config.param('qiime_single_rarefaction', 'single_rarefaction_depth')
 		),
 		removable_files=[otu_normalized_table]
 	)
@@ -591,8 +592,9 @@ def plot_taxa(
   $QIIME_HOME/plot_taxa_summary.py \\
   -i {taxonomic_input} \\
   -l {label} \\
-  -y 10 \\
   -t png \\
+  -x 20 \\
+  -y 12 \\
   -c {chart_type} \\
   -o {taxonomic_directory}""".format(
 		taxonomic_input=",".join(taxonomic_input),

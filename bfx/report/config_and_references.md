@@ -40,7 +40,8 @@ All analysis parameters are described in this [configuration file](config.ini).
 [PyNAST]: http://biocore.github.io/pynast/
 [FastTree]: http://www.microbesonline.org/fasttree/
 [Krona]: http://sourceforge.net/p/krona/home/krona/
-[Sumaclust]: http://www.grenoble.prabi.fr/trac/sumatra/wiki/documentation/sumaclust
+[VSEARCH]: https://github.com/torognes/vsearch
+[CSS]: http://bioconductor.org/packages/release/bioc/html/metagenomeSeq.html
 
 ---
 references:
@@ -879,18 +880,45 @@ references:
   issued:
     year: 2011
 
-- id: sumaclust
-  title: 'SUMATRA and SUMACLUST: fast and exact comparison and clustering of sequences'
+- id: vsearch
+  title: 'VSEARCH'
   author:
-    - family: Mercier
-      given: C.
-    - family: Boyer
-      given: F.
-    - family: Bonin
-      given: A.       
-    - family: Coissac
-      given: E.          
+    - family: Flouri
+      given: T.
+    - family: Zeeshan
+      given: U.
+    - family: Mahé
+      given: F.       
+    - family: Nichols
+      given: B.   
+    - family: Quince
+      given: C. 
+    - family: Rognes
+      given: T. 
+  URL: 'https://github.com/torognes/vsearch'
+  DOI: 10.5281/zenodo.15524           
   issued:
-    year: 2013
-                               
+    year: 2015
+
+- id: css
+  title: 'Differential abundance analysis for microbial marker-gene surveys'
+  author:
+    - family: Paulson
+      given: J.N.
+    - family: Stine
+      given: O.C.
+    - family: Bravo
+      given: H.C.   
+    - family: Pop
+      given: M.     
+  container-title: Nat Methods
+  volume: 12
+  URL: 'http://www.nature.com/nmeth/journal/v10/n12/full/nmeth.2658.html'
+  DOI: 10.1038/nmeth.2658
+  page: 1200
+  type: article-journal
+  issued:
+    year: 2013   
+    
+                                
 ...
