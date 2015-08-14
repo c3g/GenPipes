@@ -9,28 +9,24 @@ set -eu -o pipefail
 # Also, once modified, delete this commented-out header and the ## comments
 ################################################################################
 
-SOFTWARE=KronaTools 
-VERSION=2.5 
-ARCHIVE=$SOFTWARE-$VERSION.tar
-ARCHIVE_URL=http://downloads.sourceforge.net/project/krona/KronaTools%20%28Mac%2C%20Linux%29/$ARCHIVE
-SOFTWARE_DIR=$SOFTWARE-$VERSION  
+SOFTWARE="LoRDEC" 
+VERSION="0.5" 
+ARCHIVE="LoRDEC-$VERSION.tar.gz"  
+ARCHIVE_URL="http://www.atgc-montpellier.fr/download/sources/lordec/LoRDEC-$VERSION.tar.gz" 
+SOFTWARE_DIR="$SOFTWARE-$VERSION"  
 
-# Specific commands to extract and build the software
-# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
-# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
+
 build() {
   cd $INSTALL_DOWNLOAD
-  tar xvf $ARCHIVE  
-
-  cd $SOFTWARE_DIR
-  #./configure --prefix=$INSTALL_DIR/$SOFTWARE_DIR  ## TO BE ADDED AND MODIFIED IF NECESSARY
+  tar zxvf $ARCHIVE 
+	cd $SOFTWARE_DIR
+	module load gcc/4.8.2 BOOST/1.57 
+	make install_dep
+	make
 
   # Install software
   cd $INSTALL_DOWNLOAD  ## TO BE ADDED AND MODIFIED IF NECESSARY
   mv -i $SOFTWARE_DIR $INSTALL_DIR/  ## TO BE ADDED AND MODIFIED IF NECESSARY
-  cd $INSTALL_DIR/$SOFTWARE_DIR
-  echo $INSTALL_DIR/$SOFTWARE_DIR
-  ./install.pl --prefix $INSTALL_DIR/$SOFTWARE_DIR
 }
 
 module_file() {
@@ -40,10 +36,10 @@ proc ModulesHelp { } {
   puts stderr \"\tMUGQIC - $SOFTWARE \"
 }
 module-whatis \"$SOFTWARE\"
+module load gcc/4.8.2 BOOST/1.57 
+set             root                $INSTALL_DIR/$SOFTWARE_DIR ;
+prepend-path    PATH                \$root ; 
 
-set             root                $INSTALL_DIR/$SOFTWARE_DIR
-prepend-path             PATH                \$root/bin
-setenv          KRONA_HOME         \$root/scripts
 "
 }
 

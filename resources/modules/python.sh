@@ -25,14 +25,17 @@ build() {
   make -j8
   make install
 
+  echo "General Python installation done.... processing setuptools"
+
   # Install setuptools => easy_install
   cd $INSTALL_DOWNLOAD
   SETUPTOOLS_ARCHIVE=setuptools-${SETUPTOOLS_VERSION}.tar.gz
-  download_archive https://pypi.python.org/packages/source/s/setuptools/$SETUPTOOLS_ARCHIVE $SETUPTOOLS_ARCHIVE
+  download_archive https://pypi.python.org/packages/source/s/setuptools $SETUPTOOLS_ARCHIVE 
   tar zxvf $SETUPTOOLS_ARCHIVE
   cd ${SETUPTOOLS_ARCHIVE/.tar.gz/}
   $INSTALL_DIR/$SOFTWARE_DIR/bin/python setup.py build
   $INSTALL_DIR/$SOFTWARE_DIR/bin/python setup.py install
+
 }
 
 module_file() {

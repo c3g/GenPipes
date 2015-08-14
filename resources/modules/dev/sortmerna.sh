@@ -9,25 +9,25 @@ set -eu -o pipefail
 # Also, once modified, delete this commented-out header and the ## comments
 ################################################################################
 
-SOFTWARE=usearch 
-VERSION=6.1.544
-ARCHIVE=$SOFTWARE-$VERSION.tar.gz  
-ARCHIVE_URL=http://www.drive5.com/usearch/download.html
-SOFTWARE_DIR=$SOFTWARE-$VERSION  
+SOFTWARE="sortmerna"
+VERSION="2.0"
+ARCHIVE="$VERSION.tar.gz"
+ARCHIVE_URL="https://github.com/biocore/$SOFTWARE/archive/$VERSION.tar.gz"
+SOFTWARE_DIR="$SOFTWARE-$VERSION"
 
-# Specific commands to extract and build the software
-# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
-# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
+
+
 build() {
+  cd $INSTALL_DOWNLOAD
+  tar zxvf $ARCHIVE  ## TO BE MODIFIED WITH SPECIFIC COMMAND
 
-  # Download usearch v6.1.544 on http://www.drive5.com/usearch/download.html.
-  # Rename the file to 'usearch61' and add the right for execution.
-  # Move it into the folder software/
-  
-  cd $INSTALL_DIR
-  mkdir $SOFTWARE_DIR
-  mv $MUGQIC_INSTALL_HOME/software/usearch61 $INSTALL_DIR/$SOFTWARE_DIR  ## TO BE ADDED AND MODIFIED IF NECESSARY
-  export PATH=$INSTALL_DIR/$SOFTWARE_DIR:$PATH
+  cd $SOFTWARE_DIR
+
+  bash ./build.sh
+
+  # Install software
+  cd $INSTALL_DOWNLOAD  ## TO BE ADDED AND MODIFIED IF NECESSARY
+  mv -i $SOFTWARE_DIR $INSTALL_DIR/  ## TO BE ADDED AND MODIFIED IF NECESSARY
 }
 
 module_file() {
@@ -39,7 +39,8 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-setenv          USEARCH61_HOME         \$root
+prepend-path    PATH                \$root;
+setenv          SORTMERNA_HOME        \$root;
 "
 }
 

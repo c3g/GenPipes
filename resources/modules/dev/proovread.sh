@@ -9,25 +9,27 @@ set -eu -o pipefail
 # Also, once modified, delete this commented-out header and the ## comments
 ################################################################################
 
-SOFTWARE=Qiime 
-VERSION=1.9.1
-ARCHIVE=$SOFTWARE-$VERSION.tar.gz  
-ARCHIVE_URL=http://qiime.org/install/install.html
-SOFTWARE_DIR=$SOFTWARE-$VERSION  
+SOFTWARE="proovread" 
+VERSION="2.12"
+ARCHIVE="$SOFTWARE-$VERSION.tar.gz"
+ARCHIVE_URL="https://github.com/BioInf-Wuerzburg/proovread/archive/$SOFTWARE-$VERSION.tar.gz"
+SOFTWARE_DIR=$SOFTWARE-$VERSION 
 
-# Specific commands to extract and build the software
-# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
-# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
+module load mugqic/perl/5.18.2
+cpan -i Log::Log4perl
+
+
 build() {
-  
-  cd $INSTALL_DIR
-  mkdir -p $SOFTWARE_DIR/lib/python2.7/site-packages
-  # YOU MUST EXPORT the lib/python2.7/site-packages/ directory in your PYTHONPATH.
-  export PYTHONPATH=$INSTALL_DIR/$SOFTWARE_DIR/lib/python2.7/site-packages:$PYTHONPATH
-  easy_install --prefix=$INSTALL_DIR/$SOFTWARE_DIR/ qiime
-  
-  # Testing the QIIME installation
-  $INSTALL_DIR/$SOFTWARE_DIR/bin/print_qiime_config.py -t
+  cd $INSTALL_DOWNLOAD
+
+	git clone --recursive https://github.com/BioInf-Wuerzburg/proovread
+	mv $SOFTWARE $SOFTWARE_DIR
+	cd $SOFTWARE_DIR/util/bwa
+	make -j8
+
+  # Install software
+  cd $INSTALL_DOWNLOAD  ## TO BE ADDED AND MODIFIED IF NECESSARY
+  mv -i $SOFTWARE_DIR $INSTALL_DIR/  ## TO BE ADDED AND MODIFIED IF NECESSARY
 }
 
 module_file() {
@@ -37,9 +39,10 @@ proc ModulesHelp { } {
   puts stderr \"\tMUGQIC - $SOFTWARE \"
 }
 module-whatis \"$SOFTWARE\"
-
-set             root                $INSTALL_DIR/$SOFTWARE_DIR/bin
-setenv          QIIME_HOME         \$root
+module load mugqic/perl/5.18.2 mugqic_dev/samtools/1.2 mugqic/blast/2.2.29+
+prepend-path PERL5LIB /software/areas/genomics/perl5libs/lib/site_perl/5.18.2/
+set             root                $INSTALL_DIR/$SOFTWARE_DIR
+prepend-path    PATH                \$root/bin ;  
 "
 }
 

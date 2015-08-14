@@ -140,7 +140,7 @@ This step takes as input files:
 
 6- uchime
 ---------
-Reference based chimera detection is performed using [vsearch](https://github.com/torognes/vsearch)
+Reference based chimera detection is performed using [VSEARCH](https://github.com/torognes/vsearch)
 
 This step takes as input files:
 
@@ -367,7 +367,7 @@ Tutorial:
 ---------
 
 ####################################################################################################################################
-=== SETTING ==
+**SETTING**
 ####################################################################################################################################
 
 1a) IF you have a map file: copy the path to the "map_file" variable in the configuration file.
@@ -388,7 +388,7 @@ Sample name: Ya.4.w3
 
 
 ####################################################################################################################################
-=== USAGE == 2 mod: de novo or close reference
+**USAGE** 2 mods: de novo or close reference.
 ####################################################################################################################################
 
 ************************************************************************
@@ -436,12 +436,9 @@ CSS normalization method:
 
 Nothing to do.
 
-+++++++++++++++++++++++++++ 
-Rarefaction normalization 
-+++++++++++++++++++++++++++ 
+**Rarefaction normalization**
 
-if you have < 4 samples
-------------------------
+*if you have < 4 samples*
 
 5) To step 28: plot_to_alpha
 
@@ -451,8 +448,7 @@ C) Report 3: analysis done
 
 $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-29 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
 
-else
-----
+*else*
 
 5) To step 32: plot_to_beta
 
@@ -462,13 +458,9 @@ C) Report 3: analysis done
 
 $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-22,24-33 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
 
+**CSS normalization**
 
-+++++++++++++++++++++++++++ 
-CSS normalization 
-+++++++++++++++++++++++++++ 
-
-if you have < 4 samples
-------------------------
+*if you have < 4 samples*
 
 5) To step 29: plot_to_alpha
 
@@ -478,8 +470,7 @@ C) Report 3: analysis done
 
 $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-29 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
 
-else
-----
+*else*
 
 5) To step 33: plot_to_beta
 
@@ -489,10 +480,8 @@ C) Report 3: analysis done
 
 $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-21,23-33 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
 
-
-
 ************************************************************************
-Close ref mod (large dataset)
+Close ref mod (for large dataset)
 ************************************************************************
 
 1) To step 16: qiime_report
@@ -533,12 +522,9 @@ CSS normalization method:
 
 Nothing to do.
 
-+++++++++++++++++++++++++++ 
-Rarefaction normalization 
-+++++++++++++++++++++++++++ 
+**Rarefaction normalization**
 
-if you have < 4 samples
-------------------------
+*if you have < 4 samples*
 
 5) To step 28: plot_to_alpha
 
@@ -548,8 +534,7 @@ C) Report 3: analysis done
 
 $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-29 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
 
-else
-----
+*else*
 
 5) To step 32: plot_to_beta
 
@@ -559,13 +544,9 @@ C) Report 3: analysis done
 
 $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-22,24-33 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
 
+**CSS normalization** 
 
-+++++++++++++++++++++++++++ 
-CSS normalization 
-+++++++++++++++++++++++++++ 
-
-if you have < 4 samples
-------------------------
+*if you have < 4 samples*
 
 5) To step 29: plot_to_alpha
 
@@ -575,8 +556,7 @@ C) Report 3: analysis done
 
 $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-29 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
 
-else
-----
+*else*
 
 5) To step 33: plot_to_beta
 
