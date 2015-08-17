@@ -980,84 +980,6 @@ done""".format(
   
         return jobs    
 
-    def filter_annotated_components(self):
-        """
-        Filter high quality contigs based on values in trinotate. Recreate a high quality contigs fasta file and run Assembly statistics using the gqSeqUtils R package.
-        """
-
-        jobs = []
-        output_directory = "filtered_assembly"         
-        trinity_fasta = os.path.join("trinity_out_dir", "Trinity.fasta")
-        trinity_filtered = os.path.join(output_directory, "Trinity.fasta")
-        trinity_filtered_prefix = os.path.join(output_directory, "Trinity")
-        trinity_stats_prefix = os.path.join(output_directory, "trinity_filtered.stats")
-        trinotate_annotation_report_filtered = os.path.join("trinotate", "trinotate_annotation_report.tsv" + ".isoforms_filtered.tsv")
-        
-        # Use python  to extract selected headers, needed to force input files in mkdir job, dependencies fail using pipe_jobs (uses jobs[0].input_files and jobs[-1].output_files)
-        jobs.append(concat_jobs([
-            Job(command="mkdir -p " + output_directory
-                ), 
-            tools.py_filterAssemblyToFastaToTsv(trinity_fasta , trinotate_annotation_report_filtered, 0, trinity_filtered_prefix),
-            Job(
-                [trinity_filtered],
-                [trinity_stats_prefix + ".csv", trinity_stats_prefix + ".jpg", trinity_stats_prefix + ".pdf"],
-                [['filter_annotated_components', 'module_R'], ['filter_annotated_components', 'module_mugqic_R_packages']],
-                command="""\
-Rscript -e 'library(gqSeqUtils); dnaFastaStats(filename = \"{trinity_filtered}\", type = \"trinity\", output.prefix = \"{trinity_stats_prefix}\")' """.format(
-                    trinity_filtered=trinity_filtered,
-                    trinity_stats_prefix=trinity_stats_prefix)
-            ),
-            Job(
-                [trinity_filtered],
-                [trinity_filtered + ".zip"],
-                command="zip -j " + trinity_filtered + ".zip " + trinity_filtered + " " + trinity_filtered_prefix + ".tsv"
-            )
-        ], name="filter_annotated_components"))
-        report_file = os.path.join("report", "RnaSeqDeNovoAssembly.filtered.trinity.md")
-        
-        # Render Rmarkdown Report
-        jobs.append(
-            rmarkdown.render(
-             job_input            = os.path.join(exploratory_output_dir, "index.tsv"),
-             job_name             = "gq_seq_utils_exploratory_analysis_rnaseq_denovo_report",
-             input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeqDeNovoAssembly.gq_seq_utils_exploratory_analysis_rnaseq.Rmd") ,
-             render_output_dir    = 'report/filtered_assembly/exploratory',
-             module_section       = 'report', # TODO: this or exploratory?
-             prerun_r             = 'report_dir="report";' # TODO: really necessary or should be hard-coded in exploratory.Rmd?
-             )
-        )
-      
-        jobs.append(
-                Job(
-                [trinity_filtered + ".zip", trinity_stats_prefix + ".csv", trinity_stats_prefix + ".jpg", trinity_stats_prefix + ".pdf"],
-                [report_file],
-                [['trinity', 'module_pandoc']],
-                command="""\
-mkdir -p report && \\
-cp {trinity_filtered}.zip report/{output_directory}.zip && \\
-cp {trinity_stats_prefix}.csv {trinity_stats_prefix}.jpg {trinity_stats_prefix}.pdf report/ && \\
-assembly_table=`sed '1d' {trinity_stats_prefix}.csv | perl -pe 's/^"([^"]*)",/\\1\t/g' | grep -P "^(Nb. Transcripts|Nb. Components|Total Transcripts Length|Min. Transcript Length|Median Transcript Length|Mean Transcript Length|Max. Transcript Length|N50)" | LC_NUMERIC=en_CA awk -F"\t" '{{print $1"|"sprintf("%\\47d", $2)}}'` && \\
-pandoc --to=markdown \\
---template {report_template_dir}/{basename_report_file} \\
---variable assembly_table="$assembly_table" \\
---variable filter_string="{filter_string}" \\
-{report_template_dir}/{basename_report_file} \\
-> {report_file}""".format(
-                    trinity_filtered=trinity_filtered,
-                    output_directory=output_directory,
-                    trinity_stats_prefix=trinity_stats_prefix,
-                    report_template_dir=self.report_template_dir,
-                    basename_report_file=os.path.basename(report_file),
-                    report_file=report_file,
-                    filter_string="" if not config.param('filter_annotated_components', 'filters_trinotate', required=False) else config.param('filter_annotated_components', 'filters_trinotate', required=False)
-                    ),                
-                name="filter_annotated_components_report",
-                report_files=[report_file]
-                )
-            )
-  
-        return jobs    
-
 
     def differential_expression_goseq(self):
         """
@@ -1122,6 +1044,121 @@ done""".format(
                 name="differential_expression_goseq_report")
         )
         return jobs
+
+    def filter_annotated_components(self):
+        """
+        Filter high quality contigs based on values in trinotate. Recreate a high quality contigs fasta file and run Assembly statistics using the gqSeqUtils R package.
+        """
+
+        jobs = []
+        output_directory = "filtered_assembly"         
+        trinity_fasta = os.path.join("trinity_out_dir", "Trinity.fasta")
+        trinity_filtered = os.path.join(output_directory, "Trinity.fasta")
+        trinity_filtered_prefix = os.path.join(output_directory, "Trinity")
+        trinity_stats_prefix = os.path.join(output_directory, "trinity_filtered.stats")
+        trinotate_annotation_report_filtered = os.path.join("trinotate", "trinotate_annotation_report.tsv" + ".isoforms_filtered.tsv")
+        
+        # Use python  to extract selected headers, needed to force input files in mkdir job, dependencies fail using pipe_jobs (uses jobs[0].input_files and jobs[-1].output_files)
+        jobs.append(concat_jobs([
+            Job(command="mkdir -p " + output_directory
+                ), 
+            tools.py_filterAssemblyToFastaToTsv(trinity_fasta , trinotate_annotation_report_filtered, 0, trinity_filtered_prefix),
+            Job(
+                [trinity_filtered],
+                [trinity_stats_prefix + ".csv", trinity_stats_prefix + ".jpg", trinity_stats_prefix + ".pdf"],
+                [['filter_annotated_components', 'module_R'], ['filter_annotated_components', 'module_mugqic_R_packages']],
+                command="""\
+Rscript -e 'library(gqSeqUtils); dnaFastaStats(filename = \"{trinity_filtered}\", type = \"trinity\", output.prefix = \"{trinity_stats_prefix}\")' """.format(
+                    trinity_filtered=trinity_filtered,
+                    trinity_stats_prefix=trinity_stats_prefix)
+            ),
+            Job(
+                [trinity_filtered],
+                [trinity_filtered + ".zip"],
+                command="zip -j " + trinity_filtered + ".zip " + trinity_filtered + " " + trinity_filtered_prefix + ".tsv"
+            )
+        ], name="filter_annotated_components"))
+        report_file = os.path.join("report", "RnaSeqDeNovoAssembly.filtered.trinity.md")
+              
+        jobs.append(
+                Job(
+                [trinity_filtered + ".zip", trinity_stats_prefix + ".csv", trinity_stats_prefix + ".jpg", trinity_stats_prefix + ".pdf"],
+                [report_file],
+                [['trinity', 'module_pandoc']],
+                command="""\
+mkdir -p report && \\
+cp {trinity_filtered}.zip report/{output_directory}.zip && \\
+cp {trinity_stats_prefix}.csv {trinity_stats_prefix}.jpg {trinity_stats_prefix}.pdf report/ && \\
+assembly_table=`sed '1d' {trinity_stats_prefix}.csv | perl -pe 's/^"([^"]*)",/\\1\t/g' | grep -P "^(Nb. Transcripts|Nb. Components|Total Transcripts Length|Min. Transcript Length|Median Transcript Length|Mean Transcript Length|Max. Transcript Length|N50)" | LC_NUMERIC=en_CA awk -F"\t" '{{print $1"|"sprintf("%\\47d", $2)}}'` && \\
+pandoc --to=markdown \\
+--template {report_template_dir}/{basename_report_file} \\
+--variable assembly_table="$assembly_table" \\
+--variable filter_string="{filter_string}" \\
+{report_template_dir}/{basename_report_file} \\
+> {report_file}""".format(
+                    trinity_filtered=trinity_filtered,
+                    output_directory=output_directory,
+                    trinity_stats_prefix=trinity_stats_prefix,
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file,
+                    filter_string="" if not config.param('filter_annotated_components', 'filters_trinotate', required=False) else config.param('filter_annotated_components', 'filters_trinotate', required=False)
+                    ),                
+                name="filter_annotated_components_report",
+                report_files=[report_file]
+                )
+            )
+        # Run exploratory analysis on filtered components
+        # Extract filtered components from counts file    
+        exploratory_output_dir = "filtered_assembly/exploratory"
+        counts_file = os.path.join("filtered_assembly", "isoforms.counts.matrix")
+        trinotate_annotation_report_filtered_header="trinotate/trinotate_annotation_report.tsv.isoforms_filtered_header.tsv"
+        lengths_file=os.path.join("differential_expression", "isoforms.lengths.tsv")
+        lengths_filtered_file = os.path.join("filtered_assembly", "isoforms.lengths.tsv")
+        jobs.append(concat_jobs([
+                        Job(command="mkdir -p " + exploratory_output_dir),
+                        Job(command="sed '1s/^/ \\n/' " + trinotate_annotation_report_filtered  + " > " + trinotate_annotation_report_filtered_header), 
+                        tools.py_parseMergeCsv([ trinotate_annotation_report_filtered_header, os.path.join("differential_expression", "isoforms.counts.matrix") ],
+                                    "\\\\t",
+                                    counts_file,
+                                    "\'\'",
+                                    left_join=True,
+                                    exclude="\'\'"
+                                    ),
+                        tools.py_parseMergeCsv([ trinotate_annotation_report_filtered_header, lengths_file ],
+                                    "\\\\t",
+                                    lengths_filtered_file,
+                                    "\'\' transcript_id",
+                                    left_join=True,
+                                    exclude="\' \'"
+                                    )
+
+                    ], name="filter_annotated_components_exploratory"))
+
+        # gqSeqUtils function call
+        jobs.append(concat_jobs([
+            Job(command="mkdir -p " + exploratory_output_dir),
+            gq_seq_utils.exploratory_analysis_rnaseq_denovo(
+                counts_file,
+                lengths_filtered_file,
+                exploratory_output_dir
+                
+            )
+        ], name="gq_seq_utils_exploratory_analysis_rnaseq_denovo"))
+
+        # Render Rmarkdown Report
+        jobs.append(
+            rmarkdown.render(
+             job_input            = os.path.join(exploratory_output_dir, "index.tsv"),
+             job_name             = "gq_seq_utils_exploratory_analysis_rnaseq_denovo_filtered_report",
+             input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeqDeNovoAssembly.gq_seq_utils_exploratory_analysis_rnaseq_filtered.Rmd") ,
+             render_output_dir    = 'report',
+             module_section       = 'report', 
+             prerun_r             = 'report_dir="report/filtered_assembly";' 
+             )
+        )
+
+        return jobs    
     
     @property
     def steps(self):
