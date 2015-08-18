@@ -1047,7 +1047,7 @@ done""".format(
 
     def filter_annotated_components(self):
         """
-        Filter high quality contigs based on values in trinotate. Recreate a high quality contigs fasta file and run Assembly statistics using the gqSeqUtils R package.
+        Filter high quality contigs based on values in trinotate annotations. Recreate a high quality contigs fasta file and run Assembly statistics using the gqSeqUtils R package.
         """
 
         jobs = []
@@ -1058,7 +1058,7 @@ done""".format(
         trinity_stats_prefix = os.path.join(output_directory, "trinity_filtered.stats")
         trinotate_annotation_report_filtered = os.path.join("trinotate", "trinotate_annotation_report.tsv" + ".isoforms_filtered.tsv")
         
-        # Use python  to extract selected headers, needed to force input files in mkdir job, dependencies fail using pipe_jobs (uses jobs[0].input_files and jobs[-1].output_files)
+        # Use python  to extract selected headers
         jobs.append(concat_jobs([
             Job(command="mkdir -p " + output_directory
                 ), 
@@ -1110,7 +1110,7 @@ pandoc --to=markdown \\
             )
         # Run exploratory analysis on filtered components
         # Extract filtered components from counts file    
-        exploratory_output_dir = "filtered_assembly/exploratory"
+        exploratory_output_dir = os.path.join("filtered_assembly","exploratory")
         counts_file = os.path.join("filtered_assembly", "isoforms.counts.matrix")
         trinotate_annotation_report_filtered_header="trinotate/trinotate_annotation_report.tsv.isoforms_filtered_header.tsv"
         lengths_file=os.path.join("differential_expression", "isoforms.lengths.tsv")
@@ -1141,8 +1141,7 @@ pandoc --to=markdown \\
             gq_seq_utils.exploratory_analysis_rnaseq_denovo(
                 counts_file,
                 lengths_filtered_file,
-                exploratory_output_dir
-                
+                exploratory_output_dir                
             )
         ], name="gq_seq_utils_exploratory_analysis_rnaseq_denovo"))
 
@@ -1154,7 +1153,7 @@ pandoc --to=markdown \\
              input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeqDeNovoAssembly.gq_seq_utils_exploratory_analysis_rnaseq_filtered.Rmd") ,
              render_output_dir    = 'report',
              module_section       = 'report', 
-             prerun_r             = 'report_dir="report/filtered_assembly";' 
+             prerun_r             = 'report_dir="report/filtered_assembly"; exploratory_dir="' + exploratory_output_dir + '";' 
              )
         )
 
