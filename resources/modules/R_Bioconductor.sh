@@ -87,7 +87,7 @@ then
 	R_VERSION=`cat ./*/VERSION`
 	rm -r R*
 	echo "Latest R version appears to be $R_VERSION"
-	BIOCVERSION=`wget -qO- http://bioconductor.org/packages/release/bioc | grep 'Bioconductor version: Release ' | grep -oE '[0-9]*\.[0-9]*'`  
+	BIOCVERSION=`wget -qO- http://bioconductor.org/packages/release/bioc/ | grep 'Bioconductor version: Release ' | grep -oE '[0-9]*\.[0-9]*'`  
 	echo "Latest Bioconductor version appears to be $BIOCVERSION"
 	VERSION="$R_VERSION""_""$BIOCVERSION"
 else
