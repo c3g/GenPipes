@@ -35,10 +35,12 @@ def catenate(
   -r 30 \\
   -p 0.01 \\
   -n {sequence_max_n} \\
+  --phred_offset {phred_offset} \\
   --barcode_type 'not-barcoded'""".format(
 		input_files=','.join(input_fastq),
 		sample_name=','.join(input_name),
 		sequence_max_n=config.param('qiime_catenate', 'sequence_max_n'),
+		phred_offset=config.param('qiime_catenate', 'phred_offset'),
 		dir_output="catenate/",
 		),
 		removable_files=[catenate_fasta]
@@ -259,12 +261,10 @@ def otu_alignment(
 		command="""\
   $QIIME_HOME/parallel_align_seqs_pynast.py \\
   -i {otu_rep_picking_fasta} \\
-  -t {template_fp} \\
   -T \\
   --jobs_to_start {threads_number} \\
   -o {output_directory}""".format(
 		otu_rep_picking_fasta=otu_rep_picking_fasta,
-		template_fp=config.param('DEFAULT', 'template_fp'),
 		threads_number=config.param('qiime_otu_alignment', 'threads'),
 		output_directory=output_directory
 		),

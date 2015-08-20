@@ -42,6 +42,7 @@ All analysis parameters are described in this [configuration file](config.ini).
 [Krona]: http://sourceforge.net/p/krona/home/krona/
 [VSEARCH]: https://github.com/torognes/vsearch
 [CSS]: http://bioconductor.org/packages/release/bioc/html/metagenomeSeq.html
+[GOLD]: http://microbiomeutil.sourceforge.net/
 
 ---
 references:
@@ -919,6 +920,47 @@ references:
   type: article-journal
   issued:
     year: 2013   
-    
+
+- id: gold
+  title: 'Chimeric 16S rRNA sequence formation and detection in Sanger and 454-pyrosequenced PCR amplicons'
+  author:
+    - family: Haas
+      given: B.J.
+    - family: Gevers
+      given: D.
+    - family: Earl
+      given: A.   
+    - family: Feldgarden
+      given: M.   
+    - family: Ward
+      given: D.V.   
+    - family: Giannokous
+      given: G.
+    - family: Ciulla
+      given: D.
+    - family: Tabbaa
+      given: D.   
+    - family: Highlander
+      given: S.K.   
+    - family: Sodergren
+      given: E.  
+    - family: Methe
+      given: B.   
+    - family: Desantis
+      given: T.Z.   
+    - family: Petrosino
+      given: J.F.
+    - family: Knight
+      given: R.
+    - family: Birren
+      given: B.W.   
+  container-title: Genome Res
+  volume: 21
+  URL: 'http://genome.cshlp.org/content/21/3/494.long'
+  DOI: 10.1101/gr.112730.110
+  page: 494
+  type: article-journal
+  issued:
+    year: 2011     
                                 
 ...

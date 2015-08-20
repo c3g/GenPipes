@@ -5,7 +5,6 @@ Taxomomic affiliation of the **$amplicon_type$** data has been studied using [Qi
 #### OTU picking
 
 Demultiplexed and quality filtered sequences from pre-processing step are clustered into OTUs using [VSEARCH]\ [@vsearch]. An OTU (Operational Taxonomic Unit) is formed based on sequence identity: the identity threshold defined is **$similarity$**.
-De novo OTU picking was performed to cluster sequences based on levels of pairwise sequence identity.
 
 After the clustering step, a representative sequence is picked for each OTU. Each OTU is therefore represented by a single sequence.
 

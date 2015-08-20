@@ -86,7 +86,7 @@ class AmpliconSeq(common.Illumina):
 			)	        
 
 			jobs.append(concat_jobs([
-                # Trimmomatic does not create output directory by default
+                # FLASh does not create output directory by default
 				Job(command="mkdir -p " + merge_directory),
 				job
 			], name="flash." + readset.sample.name))
@@ -224,7 +224,7 @@ pandoc \\
 			)
 								
 			jobs.append(concat_jobs([
-				Job(command="python $AMP_SEQ_HOME/AmpliconSeq_script.py -m map_build -i " + ','.join(sample_name)),
+				Job(command="python $AMP_SEQ_HOME/AmpliconSeq_script.py -m map_build -s " + ','.join(sample_name)),
 				job		
 			], name="catenate"))	
 			
@@ -272,6 +272,15 @@ pandoc \\
 		
 		readset_merge_uchime_stats = os.path.join("metrics", "uchimeReadsetTable.tsv")
 		job = concat_jobs([Job(command="mkdir -p metrics"), Job(command="echo 'Sample\tReadset\tMerged Paired Reads #\tFiltered Paired Reads #\tFiltered Paired Reads %' > " + readset_merge_uchime_stats)])
+		
+		# Database
+		
+		if config.param('uchime', 'name') == 'gold':
+			chimera_db = 'GOLD'
+			chimera_ref = 'gold'
+		else:
+			chimera_db = 'Unknown'
+			chimera_ref = 'Unknown'
 		
 		filter_directory = "catenate_without_chimeras"
 		filter_log = os.path.join(filter_directory, "seqs_chimeras_filtered.log")	
@@ -336,12 +345,16 @@ pandoc \\
   --template {report_template_dir}/{basename_report_file} \\
   --variable read_type={read_type} \\
   --variable sequence_max_n="{sequence_max_n}" \\
+  --variable chimera_db="{chimera_db}" \\
+  --variable chimera_ref="{chimera_ref}" \\
   --variable uchime_readset_table="$uchime_readset_table_md" \\
   --to markdown \\
   > {report_file}""".format(
 					read_type="Paired",
 					report_template_dir=self.report_template_dir,
 					sequence_max_n=config.param('qiime_catenate', 'sequence_max_n'),
+					chimera_db=chimera_db,
+					chimera_ref=chimera_ref,
 					readset_merge_uchime_stats=readset_merge_uchime_stats,
 					sample_merge_uchime_stats=sample_merge_uchime_stats,
 					basename_report_file=os.path.basename(report_file),
@@ -666,7 +679,7 @@ pandoc \\
 		elif config.param('qiime', 'amplicon_type') == 'ITS':
 			amp_db = 'UNITE'
 		else:
-			amp_db = 'Unknow'
+			amp_db = 'Unknown'
 				
 		jobs.append(Job(
                 [otu_table, phylo_file],
@@ -1497,36 +1510,37 @@ pandoc --to=markdown \\
 	@property
 	def steps(self):
 		return [
+			self.picard_sam_to_fastq,
 			self.trimmomatic,
 			self.merge_trimmomatic_stats,
 			self.flash,
-			self.merge_flash_stats,
-			self.catenate,	#5
+			self.merge_flash_stats,	#5
+			self.catenate,	
 			self.uchime,
 			self.merge_uchime_stats,
 			self.otu_ref_picking,
-			self.otu_picking,	
-			self.otu_rep_picking,	#10
+			self.otu_picking,	#10
+			self.otu_rep_picking,	
 			self.otu_assigning,	
 			self.otu_table,	
 			self.otu_alignment,	
-			self.filter_alignment,
-			self.phylogeny,	#15	
+			self.filter_alignment,	#15
+			self.phylogeny,	
 			self.qiime_report,	
 			self.multiple_rarefaction,
 			self.alpha_diversity,	
-			self.collate_alpha,
-			self.sample_rarefaction_plot,	#20	
+			self.collate_alpha,	#20
+			self.sample_rarefaction_plot,	
 			self.qiime_report2,	
 			self.single_rarefaction,
 			self.css_normalization,
-			self.rarefaction_plot,	
-			self.summarize_taxa,	#25	
+			self.rarefaction_plot,	#25	
+			self.summarize_taxa,		
 			self.plot_taxa,	
 			self.plot_heatmap,	
 			self.krona,
-			self.plot_to_alpha,	
-			self.beta_diversity,	#30
+			self.plot_to_alpha,	#30	
+			self.beta_diversity,	
 			self.pcoa,
 			self.pcoa_plot,	
 			self.plot_to_beta
