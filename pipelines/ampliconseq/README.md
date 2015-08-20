@@ -401,7 +401,9 @@ Sample name: Ya.4.w3
 In the [DEFAULT] section:
 
 name=greengenes
+
 version=138
+
 similarity_treshold=97 (or 61, 64, 67, 70, 73, 76, 79, 82, 85, 88, 91, 94, 99)
 
 Also, don't forget the [qiime_otu_picking] section for the similarity treshold!
@@ -413,7 +415,9 @@ Also, don't forget the [qiime_otu_picking] section for the similarity treshold!
 In the [DEFAULT] section:
 
 name=silva
+
 version=111
+
 similarity_treshold=97 (or 90, 94, 99)
 
 Also, don't forget the [qiime_otu_picking] section for the similarity treshold!
@@ -425,7 +429,9 @@ Also, don't forget the [qiime_otu_picking] section for the similarity treshold!
 In the [DEFAULT] section:
 
 name=unite
+
 version=1211
+
 similarity_treshold=97 (or 99)
 
 Also, don't forget the [qiime_otu_picking] section for the similarity treshold!
@@ -440,13 +446,17 @@ name=gold
 version=20110519
 
 3b) For ITS study, use the UNITE database for chimera detection.
+
 - Create a directory: mkdir -p $MUGQIC_INSTALL_HOME/resources/genomes/chimera_unite_db/20150311/
+
 - You need to download it maually: https://unite.ut.ee/sh_files/uchime_reference_dataset_11_03_2015.zip
+
 - Unzip the file and copy the database: cp uchime_sh_refs_dynamic_original_985_11.03.2015.fasta $MUGQIC_INSTALL_HOME/resources/genomes/chimera_unite_db/20150311/unite.fasta
 
 In the [uchime] section:
 
 name=unite
+
 version=20150311
 
 
@@ -462,11 +472,15 @@ version=20150311
 $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-8,10-17 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis.sh
 
 NB1: This step can be long, some steps can be parallelized (step 7,10,12,14 - ie: uchime, otu_picking, otu_assigning, otu_alignment)
+
 --> Modify manually the 'ppn' to set it as same as 'threads' variable number. 
 
 NB2: For large data, set to >= 20 threads (and ppn) for uchime.
+
 NB3: For large data, set to >= 20 threads (and more for ppn) for otu picking.
+
 NB4: For large data, set to >= 15 threads (and ppn) for otu_alignment.
+
 NB5: For large data, increase the walltime (> 24h) of phylogeny step (16) 
 
 A) Report 1
@@ -476,6 +490,7 @@ $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-
 The otu_table.sum file helps you to choose the maximum rarefaction treshold. It CAN'T be > than the max Counts/sample.
 
 cat analysis/otus/otu_table.sum
+
 Look for Max in Counts/sample summary:
 
 Report to the "multiple_rarefaction_max" variable in the configuration file.
@@ -548,9 +563,13 @@ $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-
 $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-9,11-17 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis.sh
 
 NB1: This step can be long, some steps can be parallelized (step 7,9,12,14 - ie: uchime, otu_ref_picking, otu_assigning, otu_alignment)
+
 NB2: For large data, set to >= 20 threads (and ppn) for uchime.
+
 NB3: For large data, set to >= 20 threads (and more for ppn) for otu_ref_picking.
+
 NB4: For large data, set to >= 15 threads (and ppn) for otu_alignment.
+
 NB5: For large data, increase the walltime (> 24h) of phylogeny step (16) 
 
 A) Report 1
@@ -560,6 +579,7 @@ $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-
 The otu_table.sum file helps you to choose the maximum rarefaction treshold. It CAN'T be > than the max Counts/sample.
 
 cat analysis/otus/otu_table.sum
+
 Look for Max in Counts/sample summary:
 
 Report to the "multiple_rarefaction_max" variable in the configuration file.
