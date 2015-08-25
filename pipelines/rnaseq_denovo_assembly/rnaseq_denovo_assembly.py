@@ -1117,7 +1117,7 @@ pandoc --to=markdown \\
         lengths_filtered_file = os.path.join("filtered_assembly", "isoforms.lengths.tsv")
         jobs.append(concat_jobs([
                         Job(command="mkdir -p " + exploratory_output_dir),
-                        Job(command="sed '1s/^/ \\n/' " + trinotate_annotation_report_filtered  + " > " + trinotate_annotation_report_filtered_header), 
+                        Job([trinotate_annotation_report_filtered], [trinotate_annotation_report_filtered_header], command="sed '1s/^/ \\n/' " + trinotate_annotation_report_filtered  + " > " + trinotate_annotation_report_filtered_header), 
                         tools.py_parseMergeCsv([ trinotate_annotation_report_filtered_header, os.path.join("differential_expression", "isoforms.counts.matrix") ],
                                     "\\\\t",
                                     counts_file,
