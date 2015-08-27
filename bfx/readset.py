@@ -225,7 +225,7 @@ def parse_illumina_raw_readset_files(output_dir, run_type, nanuq_readset_file, c
         'Homo_sapiens:GRCh37': GenomeBuild('Homo_sapiens', 'GRCh37'),
         'Homo_sapiens:hg19': GenomeBuild('Homo_sapiens', 'hg19'),
         'Mus_musculus:mm9': GenomeBuild('Mus_musculus', 'mm9'),
-        'Mus_musculus:GRCm38 ': GenomeBuild('Mus_musculus', 'GRCm38'),
+        'Mus_musculus:GRCm38': GenomeBuild('Mus_musculus', 'GRCm38'),
         'Rattus_norvegicus:Rnor_5.0': GenomeBuild('Rattus_norvegicus', 'Rnor_5.0')
     }
 
