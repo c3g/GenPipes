@@ -618,13 +618,14 @@ def krona(
 		inputs,
 		outputs,
 		[
+			['qiime', 'module_perl'],
 			['qiime', 'module_qiime'],
 			['qiime', 'module_krona'],
 			['qiime', 'module_ampliconseq']
 		],
 
 		command="""\
-  ktImportText \\
+  $PERL_HOME/bin/perl5.18.2 $KRONA_HOME/ImportText.pl \\
   {sample_name} \\
   -o {alpha_diversity_krona_file}""".format(
 		sample_name=' '.join(sample_name),
