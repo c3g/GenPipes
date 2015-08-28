@@ -87,7 +87,7 @@ then
 	R_VERSION=`cat ./*/VERSION`
 	rm -r R*
 	echo "Latest R version appears to be $R_VERSION"
-	BIOCVERSION=`wget -qO- http://bioconductor.org/packages/release/bioc | grep 'Bioconductor version: Release ' | grep -oE '[0-9]*\.[0-9]*'`  
+	BIOCVERSION=`wget -qO- http://bioconductor.org/packages/release/bioc/ | grep 'Bioconductor version: Release ' | grep -oE '[0-9]*\.[0-9]*'`  
 	echo "Latest Bioconductor version appears to be $BIOCVERSION"
 	VERSION="$R_VERSION""_""$BIOCVERSION"
 else
@@ -142,7 +142,7 @@ then
 	cd $TEMPDIR
 	
 	# Create mechoodule files
-	cat > $MODULEFILE <<-EOF	
+cat > $MODULEFILE <<-EOF	
 #%Module1.0
 proc ModulesHelp { } {
 puts stderr "MUGQIC - Adds R to your environment"
@@ -154,10 +154,11 @@ prepend-path    PATH               \$root/bin
 EOF
 
 		
-	cat > $MODULEVERSIONFILE <<-EOF
+cat > $MODULEVERSIONFILE <<-EOF
 #%Module1.0
 set ModulesVersion $VERSION
 EOF
+
 		
 		## Define Rprofile.site: 
 		# On headless nodes, can only use cairo backend OR have Xvb running
@@ -171,10 +172,14 @@ EOF
 		#  so the only other way is to set options(bitmapType="cairo")
 		# This can be set in R/lib64/etc/Rprofile.site, but then R should not be invked with R --vanilla
 		# because vanilla will ignore Rprofile.site.
-		cat > $INSTALL_DIR/lib64/R/etc/Rprofile.site <<-EOF
+		
+cat > $INSTALL_DIR/lib64/R/etc/Rprofile.site <<-'EOF'
 if(capabilities()["cairo"]){ options(bitmapType="cairo") }
 Sys.umask("002")			
 EOF
+	
+	
+	
 		
 fi
 
@@ -227,9 +232,9 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
 	,"multtest","munsell","mvtnorm","NBPSeq","nleqslv","nlme","NMF"
 	,"nnet","nondetects","nor1mix","Nozzle.R1","oligo","oligoClasses","outliers"
 	,"pd.charm.hg18.example","pheatmap","plotrix","plyr","plyr","preprocessCore"
-	,"proto","quantreg","R2HTML","RBGL","RColorBrewer","Rcpp","RcppEigen","RCurl"
+	,"proto","quantreg","R2HTML","RBGL","RColorBrewer","Rcpp","RcppEigen","RCurl","rhdf5"
 	,"ReportingTools","reshape","reshape2","rgl","RJSONIO","R.methodsS3","rmarkdown","roxygen2"
-	,"rpart","Rsamtools","RSQLite","rtracklayer","scales","sendmailR","shiny","ShortRead","siggenes","snow"
+	,"rpart","Rsamtools","RSQLite","rtracklayer","scales","sendmailR","shiny","ShortRead","siggenes","sleuth","snow"
 	,"SNPchip","SortableHTMLTables","spam","SparseM","spatial","SQN"
 	,"statmod","stringr","survival","sva","testthat","tidyr"
 	,"TxDb.Hsapiens.UCSC.hg19.knownGene","vioplot","vsn"
@@ -248,6 +253,7 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
 	biocLite(deps,lib=.Library,ask=FALSE)
 	deps = setdiff(deps,rownames(installed.packages()))
 	biocLite(deps,lib=.Library,ask=FALSE) # twice, just to make sure
+
 
 	## Install Vennerable, since not yet in CRAN
 	install.packages("Vennerable", repos="http://R-Forge.R-project.org",lib=.Library, type='source')

@@ -28,6 +28,7 @@ Proc::ParallelLoop \
 Statistics::Descriptive \
 Text::CSV \
 Text::CSV::Encoded \
+Text::NSP::Measures::2D::Fisher::twotailed \
 XML::Simple \
 ; do
 $PERL_HOME/bin/perl -MCPAN -e"CPAN::Shell->force(qw(install $MODULE))"
