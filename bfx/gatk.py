@@ -144,7 +144,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         )
     )
 
-def genotype_gvcfs(variants, output):
+def genotype_gvcfs(variants, output, options):
 
     return Job(
         variants,
@@ -281,3 +281,32 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals)
         )
     )
+
+
+def combine_gvcf(inputs, output, intervals=[], exclude_intervals=[]):
+
+    return Job(
+        [input],
+        [output],
+        [
+            ['gatk_combine_gvcf', 'module_java'],
+            ['gatk_combine_gvcf', 'module_gatk']
+        ],
+        command="""\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
+  --analysis_type CombineGVCFs {other_options} \\
+  --reference_sequence {reference_sequence} \\
+  {input} \\
+  --out {output}{intervals}{exclude_intervals}""".format(
+        tmp_dir=config.param('gatk_combine_gvcf', 'tmp_dir'),
+        java_other_options=config.param('gatk_combine_gvcf', 'java_other_options'),
+        ram=config.param('gatk_combine_gvcf', 'ram'),
+        other_options=config.param('gatk_combine_gvcf', 'other_options'),
+        reference_sequence=config.param('gatk_combine_gvcf', 'genome_fasta', type='filepath'),
+        input="".join(" \\\n  --variant " + input for input in inputs),
+        output=output,
+        intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
+        exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals)
+        )
+    )
+
