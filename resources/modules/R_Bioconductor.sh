@@ -258,6 +258,10 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
 	## Install Vennerable, since not yet in CRAN
 	install.packages("Vennerable", repos="http://R-Forge.R-project.org",lib=.Library, type='source')
 
+	## Sleuth
+	devtools::install_github("pachterlab/sleuth")
+
+
 EOF
 
 
