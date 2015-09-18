@@ -464,12 +464,13 @@ version=20150311
 **USAGE** 2 mods: de novo or close reference.
 ************************************************************************
 
+<!-- ###################################################### -->
 **de novo mod**
-
+<!-- ###################################################### -->
 
 1) To step 17: qiime_report
 
-$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-8,10-17 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis.sh
+ampliconseq.py -r readsets.tsv -s 1-8,10-17 -c ampliconseq.base.ini -o analysis > analysis.sh
 
 NB1: This step can be long, some steps can be parallelized (step 7,10,12,14 - ie: uchime, otu_picking, otu_assigning, otu_alignment)
 
@@ -485,7 +486,7 @@ NB5: For large data, increase the walltime (> 24h) of phylogeny step (16)
 
 A) Report 1
 
-$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-17 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
+ampliconseq.py -r readset.tsv -s 1-17 -c ampliconseq.base.ini -o analysis --report > report.sh
 
 The otu_table.sum file helps you to choose the maximum rarefaction treshold. It CAN'T be > than the max Counts/sample.
 
@@ -497,11 +498,11 @@ Report to the "multiple_rarefaction_max" variable in the configuration file.
 
 4) To step 22: qiime_report2
 
-$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 18-22 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis2.sh
+ampliconseq.py -r readset.tsv -s 18-22 -c ampliconseq.base.ini -o analysis > analysis2.sh
 
 B) Report 2
 
-$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-22 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
+ampliconseq.py -r readset.tsv -s 1-22 -c ampliconseq.base.ini -o analysis --report > report.sh
 
 **Rarefaction normalization**
 
@@ -512,21 +513,21 @@ Report to the "single_rarefaction_depth" variable in the configuration file.
 
 5) To step 30: plot_to_alpha
 
-$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 23,25-30 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis3.sh
+ampliconseq.py -r readset.tsv -s 23,25-30 -c ampliconseq.base.ini -o analysis > analysis3.sh
 
 C) Report 3: analysis done
 
-$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-30 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
+ampliconseq.py -r readset.tsv -s 1-30 -c ampliconseq.base.ini -o analysis --report > report.sh
 
 *else*
 
 5) To step 34: plot_to_beta
 
-$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 23,25-34 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis3.sh
+ampliconseq.py -r readset.tsv -s 23,25-34 -c ampliconseq.base.ini -o analysis > analysis3.sh
 
 C) Report 3: analysis done
 
-$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-23,25-34 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
+ampliconseq.py -r readset.tsv -s 1-23,25-34 -c ampliconseq.base.ini -o analysis --report > report.sh
 
 **CSS normalization**
 
@@ -534,27 +535,29 @@ $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-
 
 5) To step 30: plot_to_alpha
 
-$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 24-30 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis3.sh
+ampliconseq.py -r readset.tsv -s 24-30 -c ampliconseq.base.ini -o analysis > analysis3.sh
 
 C) Report 3: analysis done
 
-$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-22,24-30 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
+ampliconseq.py -r readset.tsv -s 1-22,24-30 -c ampliconseq.base.ini -o analysis --report > report.sh
 
 *else*
 
 5) To step 34: plot_to_beta
 
-$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 24-34 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis3.sh
+ampliconseq.py -r readset.tsv -s 24-34 -c ampliconseq.base.ini -o analysis > analysis3.sh
 
 C) Report 3: analysis done
 
-$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-22,24-34 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
+ampliconseq.py -r readset.tsv -s 1-22,24-34 -c ampliconseq.base.ini -o analysis --report > report.sh
 
+<!-- ###################################################### -->
 **Close ref mod (for large dataset)**
+<!-- ###################################################### -->
 
 1) To step 17: qiime_report
 
-$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-9,11-17 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis.sh
+ampliconseq.py -r readset.tsv -s 1-9,11-17 -c ampliconseq.base.ini -o analysis > analysis.sh
 
 NB1: This step can be long, some steps can be parallelized (step 7,9,12,14 - ie: uchime, otu_ref_picking, otu_assigning, otu_alignment)
 
@@ -568,7 +571,7 @@ NB5: For large data, increase the walltime (> 24h) of phylogeny step (16)
 
 A) Report 1
 
-$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-17 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
+ampliconseq.py -r readset.tsv -s 1-17 -c ampliconseq.base.ini -o analysis --report > report.sh
 
 The otu_table.sum file helps you to choose the maximum rarefaction treshold. It CAN'T be > than the max Counts/sample.
 
@@ -580,11 +583,11 @@ Report to the "multiple_rarefaction_max" variable in the configuration file.
 
 4) To step 22: qiime_report2
 
-$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 18-22 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis2.sh
+ampliconseq.py -r readset.tsv -s 18-22 -c ampliconseq.base.ini -o analysis > analysis2.sh
 
 B) Report 2
 
-$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-22 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
+ampliconseq.py -r readset.tsv -s 1-22 -c ampliconseq.base.ini -o analysis --report > report.sh
 
 **Rarefaction normalization**
 
@@ -595,21 +598,21 @@ Report to the "single_rarefaction_depth" variable in the configuration file.
 
 5) To step 30: plot_to_alpha
 
-$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 23,25-30 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis3.sh
+ampliconseq.py -r readset.tsv -s 23,25-30 -c ampliconseq.base.ini -o analysis > analysis3.sh
 
 C) Report 3: analysis done
 
-$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-30 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
+ampliconseq.py -r readset.tsv -s 1-30 -c ampliconseq.base.ini -o analysis --report > report.sh
 
 *else*
 
 5) To step 34: plot_to_beta
 
-$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 23,25-34 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis3.sh
+ampliconseq.py -r readset.tsv -s 23,25-34 -c ampliconseq.base.ini -o analysis > analysis3.sh
 
 C) Report 3: analysis done
 
-$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-23,25-34 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
+ampliconseq.py -r readset.tsv -s 1-23,25-34 -c ampliconseq.base.ini -o analysis --report > report.sh
 
 **CSS normalization**
 
@@ -617,21 +620,21 @@ $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-
 
 5) To step 30: plot_to_alpha
 
-$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 24-30 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis3.sh
+ampliconseq.py -r readset.tsv -s 24-30 -c ampliconseq.base.ini -o analysis > analysis3.sh
 
 C) Report 3: analysis done
 
-$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-22,24-30 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
+ampliconseq.py -r readset.tsv -s 1-22,24-30 -c ampliconseq.base.ini -o analysis --report > report.sh
 
 *else*
 
 5) To step 34: plot_to_beta
 
-$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 24-34 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis > analysis3.sh
+ampliconseq.py -r readset.tsv -s 24-34 -c ampliconseq.base.ini -o analysis > analysis3.sh
 
 C) Report 3: analysis done
 
-$MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.py -r readset.tsv -s 1-22,24-34 -c $MUGQIC_PIPELINES_HOME/pipelines/ampliconseq/ampliconseq.base.ini -o analysis --report > report.sh
+ampliconseq.py -r readset.tsv -s 1-22,24-34 -c ampliconseq.base.ini -o analysis --report > report.sh
 
 
 ####################################################################################################################################

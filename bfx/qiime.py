@@ -635,63 +635,119 @@ def krona(
 	)
 
 def beta_diversity(
+	metric,
 	otu_normalized_table,
 	phylogenetic_tree_file,
 	dm_directory,
 	dm_unweighted_file,
-	dm_weighted_file
+	dm_weighted_file,
+	dm_euclidean_file
 	):
 
-	inputs = [otu_normalized_table, phylogenetic_tree_file]
-	outputs = [dm_unweighted_file,dm_weighted_file]
+	if metric == 'unifrac':
 	
-	return Job(
-		inputs,
-		outputs,
-		[
-			['qiime', 'module_qiime']
-		],
-
-		command="""\
-  $QIIME_HOME/beta_diversity.py \\
-  -i {otu_normalized_table} \\
-  -t {phylogenetic_tree_file} \\
-  -o {dm_directory}""".format(
-		otu_normalized_table=otu_normalized_table,
-		phylogenetic_tree_file=phylogenetic_tree_file,
-		dm_directory=dm_directory
-		),
-		removable_files=[dm_unweighted_file,dm_weighted_file]
-	)
+		inputs = [otu_normalized_table, phylogenetic_tree_file]
+		outputs = [dm_unweighted_file,dm_weighted_file]
+		
+		return Job(
+			inputs,
+			outputs,
+			[
+				['qiime', 'module_qiime']
+			],
+	
+			command="""\
+	  $QIIME_HOME/beta_diversity.py \\
+	  -i {otu_normalized_table} \\
+	  -t {phylogenetic_tree_file} \\
+	  -o {dm_directory}""".format(
+			otu_normalized_table=otu_normalized_table,
+			phylogenetic_tree_file=phylogenetic_tree_file,
+			dm_directory=dm_directory
+			),
+			removable_files=[dm_unweighted_file,dm_weighted_file]
+		)
+		
+	else:
+	
+		inputs = [otu_normalized_table]
+		outputs = [dm_euclidean_file]
+		
+		return Job(
+			inputs,
+			outputs,
+			[
+				['qiime', 'module_qiime']
+			],
+	
+			command="""\
+	  $QIIME_HOME/beta_diversity.py \\
+	  -i {otu_normalized_table} \\
+	  -m {metrics} \\
+	  -o {dm_directory}""".format(
+			otu_normalized_table=otu_normalized_table,
+			metrics='euclidean',
+			dm_directory=dm_directory
+			),
+			removable_files=[dm_euclidean_file]
+		)
 
 def pcoa(
+	metric,
 	dm_unweighted_file,
 	dm_weighted_file,
+	dm_euclidean_file,
 	dm_directory,
 	pcoa_directory,
 	pcoa_unweighted_file,
-	pcoa_weighted_file
+	pcoa_weighted_file,
+	pcoa_euclidean_file
 	):
 
-	inputs = [dm_unweighted_file, dm_weighted_file]
-	outputs = [pcoa_unweighted_file,pcoa_weighted_file]
+	if metric == 'unifrac':
 	
-	return Job(
-		inputs,
-		outputs,
-		[
-			['qiime', 'module_qiime']
-		],
-
-		command="""\
-  $QIIME_HOME/principal_coordinates.py \\
-  -i {dm_directory} \\
-  -o {pcoa_directory}""".format(
-		dm_directory=dm_directory,
-		pcoa_directory=pcoa_directory
-		),
-		removable_files=[pcoa_directory]
-	)
+		inputs = [dm_unweighted_file, dm_weighted_file]
+		outputs = [pcoa_unweighted_file,pcoa_weighted_file]
+		
+		return Job(
+			inputs,
+			outputs,
+			[
+				['qiime', 'module_qiime']
+			],
+	
+			command="""\
+	  $QIIME_HOME/principal_coordinates.py \\
+	  -i {dm_directory} \\
+	  -o {pcoa_directory}""".format(
+			dm_directory=dm_directory,
+			pcoa_directory=pcoa_directory
+			),
+			removable_files=[pcoa_directory]
+		)
+	
+	else:
+	
+		inputs = [dm_euclidean_file]
+		outputs = [pcoa_euclidean_file]
+		
+		return Job(
+			inputs,
+			outputs,
+			[
+				['qiime', 'module_qiime']
+			],
+	
+			command="""\
+	  $QIIME_HOME/principal_coordinates.py \\
+	  -i {dm_directory} \\
+	  -o {pcoa_directory}""".format(
+			dm_directory=dm_directory,
+			pcoa_directory=pcoa_directory
+			),
+			removable_files=[pcoa_directory]
+		)
+	
 
 def pcoa_plot(
 	pcoa_file,

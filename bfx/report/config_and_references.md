@@ -43,6 +43,7 @@ All analysis parameters are described in this [configuration file](config.ini).
 [VSEARCH]: https://github.com/torognes/vsearch
 [CSS]: http://bioconductor.org/packages/release/bioc/html/metagenomeSeq.html
 [GOLD]: http://microbiomeutil.sourceforge.net/
+[UNITE]: https://unite.ut.ee/repository.php
 
 ---
 references:
@@ -962,5 +963,49 @@ references:
   type: article-journal
   issued:
     year: 2011     
-                                
+    
+- id: unite
+  title: 'A Comprehensive, Automatically Updated Fungal ITS Sequence Dataset for Reference-Based Chimera Control in Environmental Sequencing Efforts'
+  author:
+    - family: Nilsson
+      given: R.H.
+    - family: Tedersoo
+      given: L.
+    - family: Ryberg
+      given: M.   
+    - family: Kristiansson
+      given: E.   
+    - family: Hartmann
+      given: M.   
+    - family: Unterseher
+      given: M.
+    - family: Porter
+      given: T.M.
+    - family: Bengtsson-Palme
+      given: J.   
+    - family: Walker
+      given: D.M.   
+    - family: de Sousa
+      given: F.  
+    - family: Gamper
+      given: H.A.   
+    - family: Larsson
+      given: E.   
+    - family: Larsson
+      given: K.H.
+    - family: Kõljalg
+      given: U.
+    - family: Edgar
+      given: R.C.   
+    - family: Abarenkov
+      given: K.  
+  container-title: Microbes Environ
+  volume: 30
+  URL: 'https://www.jstage.jst.go.jp/article/jsme2/30/2/30_ME14121/_article'
+  DOI: 10.1264/jsme2.ME14121
+  page: 145
+  type: article-journal
+  issued:
+    year: 2015     
+                                                 
 ...

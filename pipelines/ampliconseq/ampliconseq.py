@@ -279,8 +279,8 @@ pandoc \\
 			chimera_db = 'GOLD'
 			chimera_ref = 'gold'
 		else:
-			chimera_db = 'Unknown'
-			chimera_ref = 'Unknown'
+			chimera_db = 'UNITE'
+			chimera_ref = 'unite'
 		
 		filter_directory = "catenate_without_chimeras"
 		filter_log = os.path.join(filter_directory, "seqs_chimeras_filtered.log")	
@@ -682,7 +682,8 @@ pandoc \\
 			amp_db = 'Unknown'
 				
 		jobs.append(Job(
-                [otu_table, phylo_file],
+				#[otu_table, phylo_file],
+                [otu_table],
                 [report_file],
                 [['qiime', 'module_pandoc']],
                 command="""\
@@ -1359,20 +1360,45 @@ pandoc --to=markdown \\
 		dm_directory = os.path.join(beta_diversity_directory, "dissimilarity_matrix")
 		dm_unweighted_file = os.path.join(dm_directory, "unweighted_unifrac_otu_normalized_table.txt")
 		dm_weighted_file = os.path.join(dm_directory, "weighted_unifrac_otu_normalized_table.txt")
+		dm_euclidean_file = os.path.join(dm_directory, "euclidean_otu_normalized_table.txt")
 	
-		job = qiime.beta_diversity(
-			otu_normalized_table,
-			phylogenetic_tree_file,
-			dm_directory,
-			dm_unweighted_file,
-			dm_weighted_file
-		)
+		if config.param('qiime_beta_diversity', 'metric') == 'unifrac':
 		
-		jobs.append(concat_jobs([
-		# Create an output directory
-		Job(command="mkdir -p beta_diversity/dissimilarity_matrix/"),
-		job
-	], name="beta_diversity"))		
+			job = qiime.beta_diversity(
+				config.param('qiime_beta_diversity', 'metric'),
+				otu_normalized_table,
+				phylogenetic_tree_file,
+				dm_directory,
+				dm_unweighted_file,
+				dm_weighted_file,
+				dm_euclidean_file
+			)
+			
+			jobs.append(concat_jobs([
+			# Create an output directory
+			Job(command="mkdir -p beta_diversity/dissimilarity_matrix/"),
+			job
+		], name="beta_diversity"))
+		
+		else:
+		
+			job = qiime.beta_diversity(
+				config.param('qiime_beta_diversity', 'metric'),
+				otu_normalized_table,
+				phylogenetic_tree_file,
+				dm_directory,
+				dm_unweighted_file,
+				dm_weighted_file,
+				dm_euclidean_file
+			)
+			
+			jobs.append(concat_jobs([
+			# Create an output directory
+			Job(command="mkdir -p beta_diversity/dissimilarity_matrix/"),
+			job
+		], name="beta_diversity"))
+		
+			
 		
 		return jobs
 
@@ -1393,18 +1419,23 @@ pandoc --to=markdown \\
 		dm_directory = os.path.join(beta_diversity_directory, "dissimilarity_matrix")
 		dm_unweighted_file = os.path.join(dm_directory, "unweighted_unifrac_otu_normalized_table.txt")
 		dm_weighted_file = os.path.join(dm_directory, "weighted_unifrac_otu_normalized_table.txt")
+		dm_euclidean_file = os.path.join(dm_directory, "euclidean_otu_normalized_table.txt")
 		
 		pcoa_directory = os.path.join(beta_diversity_directory, "principal_coordinates")
 		pcoa_unweighted_file = os.path.join(pcoa_directory, "pcoa_unweighted_unifrac_otu_normalized_table.txt")
 		pcoa_weighted_file = os.path.join(pcoa_directory, "pcoa_weighted_unifrac_otu_normalized_table.txt")
+		pcoa_euclidean_file = os.path.join(pcoa_directory, "pcoa_euclidean_otu_normalized_table.txt")
 			
 		job = qiime.pcoa(
+			config.param('qiime_beta_diversity', 'metric'),
 			dm_unweighted_file,
 			dm_weighted_file,
+			dm_euclidean_file,
 			dm_directory,
 			pcoa_directory,
 			pcoa_unweighted_file,
-			pcoa_weighted_file
+			pcoa_weighted_file,
+			pcoa_euclidean_file
 		)
 		
 		jobs.append(concat_jobs([
@@ -1431,40 +1462,63 @@ pandoc --to=markdown \\
 		pcoa_directory = os.path.join(beta_diversity_directory, "principal_coordinates")
 		pcoa_unweighted_file = os.path.join(pcoa_directory, "pcoa_unweighted_unifrac_otu_normalized_table.txt")
 		pcoa_weighted_file = os.path.join(pcoa_directory, "pcoa_weighted_unifrac_otu_normalized_table.txt")
+		pcoa_euclidean_file = os.path.join(pcoa_directory, "pcoa_euclidean_otu_normalized_table.txt")
 
 		pcoa_plot_directory = os.path.join(beta_diversity_directory, "2d_plots")	
 		beta_diversity_pcoa_unweighted = os.path.join(pcoa_plot_directory, "pcoa_unweighted_unifrac_otu_normalized_table_2D_PCoA_plots.html")
 		beta_diversity_pcoa_weighted = os.path.join(pcoa_plot_directory, "pcoa_weighted_unifrac_otu_normalized_table_2D_PCoA_plots.html")
+		beta_diversity_pcoa_euclidean = os.path.join(pcoa_plot_directory, "pcoa_euclidean_otu_normalized_table_2D_PCoA_plots.html")
 		
 		if config.param('qiime_catenate', 'map_file'):
 			map_file = config.param('qiime_catenate', 'map_file')
 		else:
 			map_file = "map.txt"
+			
+		if config.param('qiime_beta_diversity', 'metric') == 'unifrac':
 							
-		job1 = qiime.pcoa_plot(
-			pcoa_unweighted_file,
-			pcoa_directory,
-			map_file,
-			beta_diversity_pcoa_unweighted,
-			pcoa_plot_directory
-		)
-
-		job2 = qiime.pcoa_plot(
-			pcoa_weighted_file,
-			pcoa_directory,
-			map_file,
-			beta_diversity_pcoa_weighted,
-			pcoa_plot_directory
-		)		
+			job1 = qiime.pcoa_plot(
+				pcoa_unweighted_file,
+				pcoa_directory,
+				map_file,
+				beta_diversity_pcoa_unweighted,
+				pcoa_plot_directory
+			)
+	
+			job2 = qiime.pcoa_plot(
+				pcoa_weighted_file,
+				pcoa_directory,
+				map_file,
+				beta_diversity_pcoa_weighted,
+				pcoa_plot_directory
+			)		
+			
+			jobs.append(concat_jobs([
+			# Create an output directory
+			Job(command="mkdir -p beta_diversity/2d_plots/"),
+			job1,
+			job2
+		], name="pcoa_plot"))		
+			
+			return jobs
+			
+		else:
 		
-		jobs.append(concat_jobs([
-		# Create an output directory
-		Job(command="mkdir -p beta_diversity/2d_plots/"),
-		job1,
-		job2
-	], name="pcoa_plot"))		
-		
-		return jobs
+			job = qiime.pcoa_plot(
+				pcoa_euclidean_file,
+				pcoa_directory,
+				map_file,
+				beta_diversity_pcoa_euclidean,
+				pcoa_plot_directory
+			)	
+			
+			jobs.append(concat_jobs([
+			# Create an output directory
+			Job(command="mkdir -p beta_diversity/2d_plots/"),
+			job
+		], name="pcoa_plot"))		
+			
+			return jobs
+			
 
 		
 	def plot_to_beta(self):
@@ -1479,8 +1533,24 @@ pandoc --to=markdown \\
 		beta_diversity_pcoa_directory = os.path.join(beta_directory, "2d_plots")
 		beta_diversity_pcoa_unweighted = os.path.join(beta_diversity_pcoa_directory, "pcoa_unweighted_unifrac_otu_normalized_table_2D_PCoA_plots.html")
 		beta_diversity_pcoa_weighted = os.path.join(beta_diversity_pcoa_directory, "pcoa_weighted_unifrac_otu_normalized_table_2D_PCoA_plots.html")
+		beta_diversity_pcoa_euclidean = os.path.join(beta_diversity_pcoa_directory, "pcoa_euclidean_otu_normalized_table_2D_PCoA_plots.html")
+
 		
-		inputs = [beta_diversity_pcoa_unweighted,beta_diversity_pcoa_weighted]
+		if config.param('qiime_beta_diversity', 'metric') == 'unifrac':
+		
+			inputs = [beta_diversity_pcoa_unweighted,beta_diversity_pcoa_weighted]
+			
+			description_metric_t = "Beta diversity is a measure of diversity between samples. Using phylogenetic information, the Amplicon-Seq pipeline provides unweighted and weighted UNIFRAC distance metrics PCoA plots."
+			link_metric1_t = "Unweighted UNIFRAC distance ([Interactive html plots available here](fig/beta_diversity/2d_plots/pcoa_unweighted_unifrac_otu_normalized_table_2D_PCoA_plots.html))"
+			link_metric2_t = "Weighted UNIFRAC distance ([Interactive html plots available here](fig/beta_diversity/2d_plots/pcoa_weighted_unifrac_otu_normalized_table_2D_PCoA_plots.html))"		
+			
+		else:
+		
+			inputs = [beta_diversity_pcoa_euclidean]
+			
+			description_metric_t = "Beta diversity is a measure of diversity between samples. The Amplicon-Seq pipeline provides euclidean distance metrics PCoA plots."
+			link_metric1_t = "Euclidean distance ([Interactive html plots available here](fig/beta_diversity/2d_plots/pcoa_euclidean_otu_normalized_table_2D_PCoA_plots.html))"
+			link_metric2_t = " "	
 				
 		report_file = os.path.join("report", "AmpliconSeq.plot_to_beta.md")
 
@@ -1494,8 +1564,14 @@ mkdir -p report/fig/beta_diversity/ && \\
 cp -r beta_diversity/2d_plots/ report/fig/beta_diversity/2d_plots/ && \\
 pandoc --to=markdown \\
   --template {report_template_dir}/{basename_report_file} \\
+  --variable description_metric="{description_metric}" \\
+  --variable link_metric1="{link_metric1}" \\
+  --variable link_metric2="{link_metric2}" \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}""".format(
+                    description_metric=description_metric_t,
+                    link_metric1=link_metric1_t,
+                    link_metric2=link_metric2_t,
                     report_template_dir=self.report_template_dir,
                     basename_report_file=os.path.basename(report_file),
                     report_file=report_file
