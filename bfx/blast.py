@@ -109,3 +109,25 @@ pacBioMergeCovToBlast.R \\
         coverage_bed=coverage_bed,
         outdir=outdir
     ))
+
+
+# Parallel blast using fasta chunks
+def parallel_blast(fasta, query, blast, program, db):
+    cpu = config.param('blastx_trinity_uniprot', 'cpu')
+    return(Job(
+        [fasta],
+        [blast],
+        [['blast', 'module_perl'], ['blast', 'module_mugqic_tools'], ['blast', 'module_blast']],
+        command="""\
+parallelBlast.pl \\
+-file {query} \\
+--OUT {blast} \\
+-n {cpu} \\
+--BLAST "{program} -db {db} -max_target_seqs 1 -outfmt '6 std stitle'" """.format(
+            query=query,
+            blast=blast,
+            cpu=cpu,
+            program=program,
+            db=db
+        ))
+    )
