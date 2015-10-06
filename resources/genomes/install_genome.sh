@@ -571,12 +571,13 @@ build_files() {
   create_picard_index
   create_samtools_index
   create_bwa_index
+  create_star_index
 
   # Annotations are not installed for UCSC genomes
   if [[ $SOURCE != "UCSC" ]]
   then
     create_bowtie2_tophat_index
-    create_star_index
+    # create_star_index
     create_ncrna_bwa_index
     create_rrna_bwa_index
 
