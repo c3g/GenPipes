@@ -130,8 +130,7 @@ set_urls() {
   #
   elif [[ $SOURCE == "EnsemblGenomes" ]]
   then
-    RELEASE_URL=ftp://ftp.ensemblgenomes.org/pub/bacteria/release-$VERSION
-              # ftp://ftp.ensemblgenomes.org/pub/bacteria/release-28/
+    RELEASE_URL=ftp://ftp.ensemblgenomes.org/pub/release-$VERSION
     # Retrieve Ensembl Genomes species information
     SPECIES_URL=$RELEASE_URL/species.txt
     download_url $SPECIES_URL
