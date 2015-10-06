@@ -142,7 +142,7 @@ then
 	cd $TEMPDIR
 	
 	# Create mechoodule files
-	cat > $MODULEFILE <<-EOF	
+cat > $MODULEFILE <<-EOF	
 #%Module1.0
 proc ModulesHelp { } {
 puts stderr "MUGQIC - Adds R to your environment"
@@ -154,10 +154,11 @@ prepend-path    PATH               \$root/bin
 EOF
 
 		
-	cat > $MODULEVERSIONFILE <<-EOF
+cat > $MODULEVERSIONFILE <<-EOF
 #%Module1.0
 set ModulesVersion $VERSION
 EOF
+
 		
 		## Define Rprofile.site: 
 		# On headless nodes, can only use cairo backend OR have Xvb running
@@ -171,10 +172,14 @@ EOF
 		#  so the only other way is to set options(bitmapType="cairo")
 		# This can be set in R/lib64/etc/Rprofile.site, but then R should not be invked with R --vanilla
 		# because vanilla will ignore Rprofile.site.
-		cat > $INSTALL_DIR/lib64/R/etc/Rprofile.site <<-EOF
+		
+cat > $INSTALL_DIR/lib64/R/etc/Rprofile.site <<-'EOF'
 if(capabilities()["cairo"]){ options(bitmapType="cairo") }
 Sys.umask("002")			
 EOF
+	
+	
+	
 		
 fi
 
@@ -249,8 +254,13 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
 	deps = setdiff(deps,rownames(installed.packages()))
 	biocLite(deps,lib=.Library,ask=FALSE) # twice, just to make sure
 
+
 	## Install Vennerable, since not yet in CRAN
 	install.packages("Vennerable", repos="http://R-Forge.R-project.org",lib=.Library, type='source')
+
+	## Sleuth
+	devtools::install_github("pachterlab/sleuth")
+
 
 EOF
 

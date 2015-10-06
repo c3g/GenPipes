@@ -333,7 +333,7 @@ awk 'BEGIN {{OFS="\\t"}} {{if (substr($1,1,1)=="@") {{print;next}}; split($6,C,/
                 samtools.view(
                     "-",
                     alignment_output,
-                    "-hb"
+                    "-hbS"
                 ),
             ])
             job.name="tuxedo_hard_clip."+ sample.name

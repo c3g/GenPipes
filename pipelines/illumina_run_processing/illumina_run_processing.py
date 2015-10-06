@@ -845,7 +845,7 @@ configureBclToFastq.pl\\
                 "FCID": readset.flow_cell,
                 "Lane": self.lane_number,
                 "SampleID": readset.name,
-                "SampleRef": readset.species,
+                "SampleRef": "",
                 "Index": index_to_use,
                 "Description": readset.description,
                 "Control": readset.control,
@@ -928,7 +928,6 @@ configureBclToFastq.pl\\
             self.nanuq_readset_file,
             self.casava_sheet_file,
             self.args.lane_number,
-            config.param('DEFAULT', 'default_species_genome'),
             config.param('DEFAULT', 'genomes_home', type="dirpath"),
             self.get_sequencer_minimum_read_length()
         )
