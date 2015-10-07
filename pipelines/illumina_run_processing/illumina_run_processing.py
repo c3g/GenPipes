@@ -864,11 +864,12 @@ configureBclToFastq.pl\\
             Returns a list (for each index read of the run) of the minimum between the number of index cycle on the
             sequencer and all the index lengths.
         """
-        run_index_lengths = [r.nb_cycles for r in self.read_infos if r.is_index]
+        run_index_lengths = [r.nb_cycles for r in self.read_infos if r.is_index] # from RunInfo
 
         if len(run_index_lengths) == 0 and len(self.readsets) > 1:
             raise Exception("Multiple samples on a lane, but no indexes were read from the sequencer.")
 
+        # loop on all index reads, to compare with samples index length
         for i in range(0, len(run_index_lengths)):
             min_sample_index_length = 0
             try:
@@ -879,9 +880,15 @@ configureBclToFastq.pl\\
                     readset.index.split("-")[i]) > 0)
                 )
             except ValueError:
-                pass  # value already set to zero
-            run_index_lengths[i] = 0 if (min_sample_index_length is None) else min(min_sample_index_length,
-                                                                                   run_index_lengths[i])
+                pass  # we don't have a sample with this Ith index read, use the 0 already set
+
+            empty_index_list = [readset for readset in self.readsets if
+                  (len(readset.index.split("-")) <= i or len(readset.index.split("-")[i]) == 0)]
+            if len(empty_index_list):
+                # we have samples without this Ith index read, so we skip it
+                min_sample_index_length = 0
+
+            run_index_lengths[i] = min(min_sample_index_length, run_index_lengths[i])
 
         return run_index_lengths
 
