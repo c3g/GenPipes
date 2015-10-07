@@ -109,14 +109,14 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         self.copy_job_inputs = []
         self.argparser.add_argument("-d", "--run", help="run directory", required=False, dest="run_dir")
         self.argparser.add_argument("--lane", help="lane number", type=int, required=False, dest="lane_number")
-        self.argparser.add_argument("-r", "--readsets", help="readset file", type=file, required=False)
-        self.argparser.add_argument("-i", help="illumina casava sheet", type=file, required=False,
+        self.argparser.add_argument("-r", "--readsets", help="nanuq readset file. The default file is 'run.nanuq.csv' in the output folder. Will be automatically downloaded if not present.", type=file, required=False)
+        self.argparser.add_argument("-i", help="illumina casava sheet. The default file is 'SampleSheet.nanuq.csv' in the output folder. Will be automatically downloaded if not present", type=file, required=False,
                                     dest="casava_sheet_file")
-        self.argparser.add_argument("-x", help="first index base to use for demultiplexing", type=int, required=False,
+        self.argparser.add_argument("-x", help="first index base to use for demultiplexing (inclusive). The index from the sample sheet will be adjusted according to that value.", type=int, required=False,
                                     dest="first_index")
-        self.argparser.add_argument("-y", help="last index base to use for demultiplexing", type=int, required=False,
+        self.argparser.add_argument("-y", help="last index base to use for demultiplexing (inclusive)", type=int, required=False,
                                     dest="last_index")
-        self.argparser.add_argument("-m", help="number of index mistmaches allowed for demultiplexing", type=int,
+        self.argparser.add_argument("-m", help="number of index mistmaches allowed for demultiplexing (default 1). Barcode collisions are always checked.", type=int,
                                     required=False, dest="number_of_mismatches")
         self.argparser.add_argument("-w", "--force-download",
                                     help="force the download of the samples sheets (default: false)",

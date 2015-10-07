@@ -56,7 +56,7 @@ usage: illumina_run_processing.py [-h] [--help] [-c CONFIG [CONFIG ...]]
                                   [-x FIRST_INDEX] [-y LAST_INDEX]
                                   [-m NUMBER_OF_MISMATCHES] [-w] [-v]
 
-Version: 2.1.1
+Version: 2.2.0-beta
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
@@ -89,12 +89,19 @@ optional arguments:
                         run directory
   --lane LANE_NUMBER    lane number
   -r READSETS, --readsets READSETS
-                        readset file
-  -i CASAVA_SHEET_FILE  illumina casava sheet
+                        nanuq readset file. The default file is
+                        'run.nanuq.csv' in the output folder. Will be
+                        automatically downloaded if not present.
+  -i CASAVA_SHEET_FILE  illumina casava sheet. The default file is
+                        'SampleSheet.nanuq.csv' in the output folder. Will be
+                        automatically downloaded if not present
   -x FIRST_INDEX        first index base to use for demultiplexing
-  -y LAST_INDEX         last index base to use for demultiplexing
+                        (inclusive). The index from the sample sheet will be
+                        adjusted according to that value.
+  -y LAST_INDEX         last index base to use for demultiplexing (inclusive)
   -m NUMBER_OF_MISMATCHES
                         number of index mistmaches allowed for demultiplexing
+                        (default 1). Barcode collisions are always checked.
   -w, --force-download  force the download of the samples sheets (default:
                         false)
   -v, --version         show the version information and exit
@@ -226,5 +233,4 @@ Send an optional notification to notify that the copy is finished.
 
 The command used is in the configuration file. This step is skipped when no
 command is provided.
-
 
