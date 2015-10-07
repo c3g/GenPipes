@@ -25,6 +25,13 @@ Casava user guide):
 - `Operator`
 - `SampleProject`
 
+Example:
+
+    FCID,Lane,SampleID,SampleRef,Index,Description,Control,Recipe,Operator,SampleProject
+    H84WNADXX,1,sample1_MPS0001,,TAAGGCGA-AGAGTAGA,,N,,,nanuq
+    H84WNADXX,1,sample47_MPS0047,,GTAGAGGA-CTAAGCCT,,N,,,nanuq
+
+
 The second sample sheet is called the Nanuq run sheet. It's a csv file with the
 following minimal set of mandatory columns (the column order in the file doesn't
 matter)
@@ -40,6 +47,13 @@ matter)
 `Library Source` is `Library`
 - `BED Files` The name of the BED file containing the genomic targets. This is
 the `filename` parameter passed to the `fetch_bed_file_command`
+- `Genomic Database` The reference used to make the alignment and calculate aligments metrics
+
+Example:
+
+    Name,Genomic Database,Library Barcode,Library Source,Library Type,Run,Region,BED Files,ProcessingSheetId
+    sample1,Rattus_norvegicus:Rnor_5.0,MPS0001,RNA,Nextera XT,1419,1,toto.bed,sample1_MPS0001
+    sample47,,MPS1047,Library,Nextera XT,1419,2,toto.bed,sample47_MPS1047
 
 
 Usage
