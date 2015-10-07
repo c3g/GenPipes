@@ -574,8 +574,13 @@ configureBclToFastq.pl\\
 
             jobs.append(job)
 
-        self.add_copy_job_inputs(jobs)
-        return jobs
+        if config.param('md5', 'one_job', required=False, type="boolean"):
+            job = concat_jobs(jobs, "md5." + self.run_id + "." + str(self.lane_number))
+            self.add_copy_job_inputs([job])
+            return [job]
+        else:
+            self.add_copy_job_inputs(jobs)
+            return jobs
 
     def start_copy_notification(self):
         """
