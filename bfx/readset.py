@@ -313,7 +313,7 @@ def parse_illumina_raw_readset_files(output_dir, run_type, nanuq_readset_file, c
             else:
                 log.warning("Unable to access the reference file: '" + reference_file + "'")
 
-        if readset.bam is None:
+        if readset.bam is None and len(readset.genomic_database) > 0:
             log.info("Skipping alignment for the genomic database: '" + readset.genomic_database + "'")
 
     log.info(str(len(readsets)) + " readset" + ("s" if len(readsets) > 1 else "") + " parsed")
