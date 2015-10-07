@@ -116,9 +116,8 @@ Steps:
 6- blast
 7- qc_graphs
 8- md5
-9- start_copy_notification
-10- copy
-11- end_copy_notification
+9- copy
+10- end_copy_notification
 
 ```
 1- index
@@ -212,25 +211,19 @@ util.
 
 One checksum file is created for each file.
 
-9- start_copy_notification
---------------------------
-Send an optional notification for the processing completion.
-
-The command used is in the configuration file. This step is skipped when no
-command is provided.
-
-10- copy
---------
+9- copy
+-------
 Copy processed files to another place where they can be served or loaded into a
 LIMS.
 
 The destination folder and the command used can be set in the configuration
 file.
 
-11- end_copy_notification
+An optional notification can be sent before the copy. The command used is in the configuration file.
+
+10- end_copy_notification
 -------------------------
 Send an optional notification to notify that the copy is finished.
 
 The command used is in the configuration file. This step is skipped when no
 command is provided.
-
