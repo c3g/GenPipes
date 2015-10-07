@@ -207,7 +207,6 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
             self.blast,
             self.qc_graphs,
             self.md5,
-            self.start_copy_notification,
             self.copy,
             self.end_copy_notification
         ]
@@ -582,35 +581,6 @@ configureBclToFastq.pl\\
             self.add_copy_job_inputs(jobs)
             return jobs
 
-    def start_copy_notification(self):
-        """
-            Send an optional notification for the processing completion.
-
-            The command used is in the configuration file. This step is skipped when no
-            command is provided.
-        """
-        jobs = []
-        inputs = self.copy_job_inputs
-
-        output1 = self.output_dir + os.sep + "notificationProcessingComplete." + str(self.lane_number) + ".out"
-        output2 = self.output_dir + os.sep + "notificationCopyStart." + str(self.lane_number) + ".out"
-
-        notification_command = config.param('start_copy_notification', 'notification_command', required=False)
-        if notification_command:
-            job = Job(inputs, [output1, output2],
-                      name="start_copy_notification." + self.run_id + "." + str(self.lane_number))
-            job.command = notification_command.format(
-                technology=config.param('start_copy_notification', 'technology'),
-                output_dir=self.output_dir,
-                run_id=self.run_id,
-                output1=output1,
-                output2=output2,
-                lane_number=self.lane_number
-            )
-            jobs.append(job)
-
-        return jobs
-
     def copy(self):
         """
             Copy processed files to another place where they can be served or loaded into a
@@ -618,10 +588,31 @@ configureBclToFastq.pl\\
 
             The destination folder and the command used can be set in the configuration
             file.
-        """
-        jobs = []
-        inputs = self.copy_job_inputs
 
+            An optional notification can be sent before the copy. The command used is in the configuration file.
+        """
+        inputs = self.copy_job_inputs
+        jobs_to_concat = []
+
+        # Notification
+        output1 = self.output_dir + os.sep + "notificationProcessingComplete." + str(self.lane_number) + ".out"
+        output2 = self.output_dir + os.sep + "notificationCopyStart." + str(self.lane_number) + ".out"
+
+        notification_command = config.param('copy', 'notification_command', required=False)
+        if notification_command:
+            job = Job(inputs, [output1, output2],
+                      name="start_copy_notification." + self.run_id + "." + str(self.lane_number))
+            job.command = notification_command.format(
+                technology=config.param('copy', 'technology'),
+                output_dir=self.output_dir,
+                run_id=self.run_id,
+                output1=output1,
+                output2=output2,
+                lane_number=self.lane_number
+            )
+            jobs_to_concat.append(job)
+
+        # Actual copy
         full_destination_folder = config.param('copy', 'destination_folder', type="dirpath") + os.path.basename(
             self.run_dir)
         output = full_destination_folder + os.sep + "copyCompleted." + str(self.lane_number) + ".out"
@@ -643,7 +634,6 @@ configureBclToFastq.pl\\
                     if readset.fastq2:
                         excluded_files.append(readset.fastq2)
 
-        jobs_to_concat = []
         if self.run_dir != self.output_dir:
             copy_command_run_folder = config.param('copy', 'copy_command', required=False).format(
                 exclusion_clauses="",
@@ -666,11 +656,9 @@ configureBclToFastq.pl\\
         jobs_to_concat.append(Job(inputs, [output], command=copy_command_output_folder))
         jobs_to_concat.append(Job(command="touch " + output))
 
-        job = concat_jobs(jobs_to_concat)
-        job.name = "copy." + self.run_id + "." + str(self.lane_number)
+        job = concat_jobs(jobs_to_concat, "copy." + self.run_id + "." + str(self.lane_number))
 
-        jobs.append(job)
-        return jobs
+        return [job]
 
     def end_copy_notification(self):
         """
