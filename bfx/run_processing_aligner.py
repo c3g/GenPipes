@@ -223,13 +223,17 @@ class StarRunProcessingAligner(RunProcessingAligner):
         output = readset.bam + ".bam"
 
         rg_center = config.param('star_align', 'sequencing_center', required=False)
+
+        # We can't set the exact bam filename for STAR, so we output the result in a specific directory, and move the
+        # bam to the expected place with the right name.
         star_bam_name = "Aligned.sortedByCoord.out.bam"
+        star_output_directory = os.path.join(os.path.dirname(output), readset.library)
 
         job = concat_jobs([
             star.align(
                 reads1=readset.fastq1,
                 reads2=readset.fastq2,
-                output_directory=os.path.dirname(output),
+                output_directory=star_output_directory,
                 sort_bam=True,
                 genome_index_folder=readset.aligner_reference_index,
                 rg_id=readset.library + "_" + readset.run + "_" + readset.lane,
@@ -239,8 +243,8 @@ class StarRunProcessingAligner(RunProcessingAligner):
                 rg_platform="Illumina",
                 rg_center=rg_center if rg_center else ""
             ),
-            Job(output_files=[output], command="mv " + os.path.dirname(output) + os.sep + star_bam_name + " " + output),
-            Job(command="ln -s " + output + " " + os.path.dirname(output) + os.sep + star_bam_name),
+            Job(output_files=[output], command="mv " + os.path.join(star_output_directory, star_bam_name) + " "
+                                               + output),
             picard.build_bam_index(output, output[::-1].replace(".bam"[::-1], ".bai"[::-1], 1)[::-1])
         ])
         job.name = "star_align." + readset.name + "." + readset.run + "." + readset.lane
