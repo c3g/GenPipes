@@ -466,13 +466,13 @@ configureBclToFastq.pl\\
             output = output_prefix + '.R1.RDP.blastHit_20MF_species.txt'
             current_jobs = [Job(command="mkdir -p " + os.path.dirname(output))]
 
+            fasta_file = output_prefix + ".R1.subSampled_{nb_blast_to_do}.fasta".format(
+                nb_blast_to_do=nb_blast_to_do)
+            result_file = output_prefix + ".R1.subSampled_{nb_blast_to_do}.blastres".format(
+                nb_blast_to_do=nb_blast_to_do)
+
             if readset.bam:
                 input = readset.bam + ".bam"
-
-                fasta_file = output_prefix + ".R1.subSampled_{nb_blast_to_do}.fasta".format(
-                    nb_blast_to_do=nb_blast_to_do)
-                result_file = output_prefix + ".R1.subSampled_{nb_blast_to_do}.blastres".format(
-                    nb_blast_to_do=nb_blast_to_do)
 
                 # count the read that aren't marked as secondary alignment and calculate the ratio of reads to subsample
                 command = """subsampling=$(samtools view -F 0x0180 {input} | wc -l | awk -v nbReads={nb_blast_to_do} '{{x=sprintf("%.4f", nbReads/$1); if (x == "0.0000") print "0.0001"; else print x}}')""".format(
@@ -508,6 +508,38 @@ configureBclToFastq.pl\\
                     command += readset.fastq2
                 current_jobs.append(Job(inputs, [output], [["blast", "module_mugqic_tools"], ["blast", "module_blast"]],
                                         command=command))
+
+            # rRNA estimate using silva blast db, using the same subset of reads as the "normal" blast
+            rrna_db = config.param('blast', 'rrna_db', required=False)
+            if readset.is_rna and rrna_db:
+                rrna_result_file = result_file + "Rrna"
+                rrna_output = output_prefix + ".blast_rrna.txt"
+                command = """blastn -query {fasta_file} -db {db} -out {result_file} -perc_identity 80 -num_descriptions 1 -num_alignments 1""".format(
+                    fasta_file=fasta_file,
+                    result_file=rrna_result_file,
+                    db=rrna_db
+                )
+                current_jobs.append(Job([], [], [["blast", "module_blast"]], command=command))
+
+                command = """echo {db} | wc -l > {output}""".format(
+                    db=rrna_db,
+                    output=rrna_output
+                )
+                current_jobs.append(Job([], [output], [], command=command))
+
+                command = """grep ">" {result_file} | wc -l >> {output}""".format(
+                    result_file=rrna_result_file,
+                    output=rrna_output
+                )
+                current_jobs.append(Job([], [output], [], command=command))
+
+                command = """grep ">" {fasta_file} | wc -l >> {output}""".format(
+                    fasta_file=rrna_result_file,
+                    output=rrna_output
+                )
+                current_jobs.append(Job([], [output], [], command=command))
+
+            # merge all blast steps of the readset into one job
             job = concat_jobs(current_jobs,
                               name="blast." + readset.name + ".blast." + self.run_id + "." + str(self.lane_number))
             jobs.append(job)

@@ -173,6 +173,10 @@ class IlluminaRawReadset(IlluminaReadset):
         return self._reference_file
 
     @property
+    def is_rna(self):
+        return self._is_rna
+
+    @property
     def annotation_files(self):
         if not hasattr(self, "_annotation_files"):
             return None
@@ -256,8 +260,10 @@ def parse_illumina_raw_readset_files(output_dir, run_type, nanuq_readset_file, c
 
         if re.search("RNA|cDNA", readset.library_source) or (readset.library_source == "Library" and re.search("RNA", readset.library_type)):
             readset._aligner = star_aligner
+            readset._is_rna = True
         else:
             readset._aligner = bwa_aligner
+            readset._is_rna = False
 
         readset._run = line['Run']
         readset._lane = current_lane
