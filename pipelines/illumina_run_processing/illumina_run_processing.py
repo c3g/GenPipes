@@ -521,7 +521,7 @@ configureBclToFastq.pl\\
                 )
                 current_jobs.append(Job([], [], [["blast", "module_blast"]], command=command))
 
-                command = """echo {db} | wc -l > {output}""".format(
+                command = """echo '{db}' > {output}""".format(
                     db=rrna_db,
                     output=rrna_output
                 )
@@ -534,7 +534,7 @@ configureBclToFastq.pl\\
                 current_jobs.append(Job([], [output], [], command=command))
 
                 command = """grep ">" {fasta_file} | wc -l >> {output}""".format(
-                    fasta_file=rrna_result_file,
+                    fasta_file=fasta_file,
                     output=rrna_output
                 )
                 current_jobs.append(Job([], [output], [], command=command))
