@@ -229,20 +229,24 @@ class StarRunProcessingAligner(RunProcessingAligner):
         star_bam_name = "Aligned.sortedByCoord.out.bam"
         star_output_directory = os.path.join(os.path.dirname(output), readset.library)
 
+        star_job = star.align(
+            reads1=readset.fastq1,
+            reads2=readset.fastq2,
+            output_directory=star_output_directory,
+            sort_bam=True,
+            genome_index_folder=readset.aligner_reference_index,
+            rg_id=readset.library + "_" + readset.run + "_" + readset.lane,
+            rg_sample=readset.sample.name,
+            rg_library=readset.library if readset.library else "",
+            rg_platform_unit=readset.run + "_" + readset.lane if readset.run and readset.lane else "",
+            rg_platform="Illumina",
+            rg_center=rg_center if rg_center else ""
+        )
+        # we clean the output of the star job since we move the file, and the moved file is the output of the move job
+        star_job._output_files = []
+
         job = concat_jobs([
-            star.align(
-                reads1=readset.fastq1,
-                reads2=readset.fastq2,
-                output_directory=star_output_directory,
-                sort_bam=True,
-                genome_index_folder=readset.aligner_reference_index,
-                rg_id=readset.library + "_" + readset.run + "_" + readset.lane,
-                rg_sample=readset.sample.name,
-                rg_library=readset.library if readset.library else "",
-                rg_platform_unit=readset.run + "_" + readset.lane if readset.run and readset.lane else "",
-                rg_platform="Illumina",
-                rg_center=rg_center if rg_center else ""
-            ),
+            star_job,
             Job(output_files=[output], command="mv " + os.path.join(star_output_directory, star_bam_name) + " "
                                                + output),
             picard.build_bam_index(output, output[::-1].replace(".bam"[::-1], ".bai"[::-1], 1)[::-1])
