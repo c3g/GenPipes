@@ -162,7 +162,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         tmp_dir=config.param('gatk_genotype_gvcfs', 'tmp_dir'),
         java_other_options=config.param('gatk_genotype_gvcfs', 'java_other_options'),
         ram=config.param('gatk_genotype_gvcfs', 'ram'),
-        options=config.param('gatk_genotype_gvcfs', 'options'),
+        options=options,
         reference_sequence=config.param('gatk_genotype_gvcfs', 'genome_fasta', type='filepath'),
         variants="".join(" \\\n  --variant " + variant for variant in variants),
         output=output

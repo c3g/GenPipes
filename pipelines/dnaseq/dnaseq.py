@@ -609,7 +609,7 @@ cp \\
 
         return jobs
 
-    def merge_and_call_gvcf(self):
+    def merge_and_call_individual_gvcf(self):
         """
         Merges the gvcfs of haplotype caller and also generates a per sample vcf containing genotypes.
         """
@@ -630,10 +630,114 @@ cp \\
 
             jobs.append(concat_jobs([
                 gatk.cat_variants(gvcfs_to_merge, output_haplotype_file_prefix + ".hc.g.vcf.bgz"),
-                gatk.genotype_gvcfs([output_haplotype_file_prefix + ".hc.g.vcf.bgz"], output_haplotype_file_prefix + ".hc.vcf.bgz")
-            ], name="merge_and_call_gvcf." + sample.name))
+                gatk.genotype_gvcfs([output_haplotype_file_prefix + ".hc.g.vcf.bgz"], output_haplotype_file_prefix + ".hc.vcf.bgz",config.param('gatk_merge_and_call_individual_gvcfs', 'options'))
+            ], name="merge_and_call_individual_gvcf." + sample.name))
 
         return jobs
+
+    def combine_gvcf(self):
+        """
+        Combine the per sample gvcfs of haplotype caller into one main file for all sample.
+        """
+        
+        jobs = []
+        nb_haplotype_jobs = config.param('gatk_combine_gvcf', 'nb_haplotype', type='posint')
+        nb_maxbatches_jobs = config.param('gatk_combine_gvcf', 'nb_batch', type='posint')
+        
+        # merge all sample in one shot
+        if nb_maxbatches_jobs == 1 :
+            if nb_haplotype_jobs == 1:
+                job=gatk.combine_gvcf([ os.path.join("alignment", sample.name, sample.name)+".hc.vcf.bgz" for sample in self.samples ], os.path.join("alignment", "allSamples.hc.g.vcf.bgz"))
+                job.name="gatk_combine_gvcf.AllSamples"
+                jobs.appends(job)
+            else :
+                unique_sequences_per_job,unique_sequences_per_job_others = split_by_size(self.sequence_dictionary, nb_haplotype_jobs - 1)
+
+                # Create one separate job for each of the first sequences
+                for idx,sequences in enumerate(unique_sequences_per_job):
+                    job=gatk.combine_gvcf([ os.path.join("alignment", sample.name, sample.name)+".hc.vcf.bgz" for sample in self.samples ], os.path.join("alignment", "allSamples") + "." + str(idx) + ".hc.g.vcf.bgz", intervals=sequences)
+                    job.name="gatk_combine_gvcf.AllSample" + "." + str(idx)
+                    jobs.appends(job)
+
+                # Create one last job to process the last remaining sequences and 'others' sequences
+                job=gatk.combine_gvcf([ os.path.join("alignment", sample.name, sample.name)+".hc.vcf.bgz" for sample in self.samples ], os.path.join("alignment", "allSamples.others.hc.g.vcf.bgz"), exclude_intervals=unique_sequences_per_job_others)
+                job.name="gatk_combine_gvcf.AllSample" + ".others"
+                jobs.appends(job)
+        else:
+            #Combine samples by batch (pre-defined batches number in ini)
+            sample_per_batch = int(math.ceil(len(self.samples)/float(nb_maxbatches_jobs)))
+            batch_of_sample = [ self.samples[i:(i+sample_per_batch)] for i in range(0,len(self.samples),sample_per_batch) ]
+            cpt = 0
+            batches = []
+            for batch in batch_of_sample :
+                if nb_haplotype_jobs == 1:
+                    job=gatk.combine_gvcf([ os.path.join("alignment", sample.name, sample.name)+".hc.vcf.bgz" for sample in batch ], os.path.join("alignment", "allSamples.batch" + str(cpt) + ".hc.g.vcf.bgz"))
+                    job.name="gatk_combine_gvcf.AllSamples.batch" + str(cpt)
+                    jobs.appends(job)
+                else :
+                    unique_sequences_per_job,unique_sequences_per_job_others = split_by_size(self.sequence_dictionary, nb_haplotype_jobs - 1)
+
+                    # Create one separate job for each of the first sequences
+                    for idx,sequences in enumerate(unique_sequences_per_job):
+                        job=gatk.combine_gvcf([ os.path.join("alignment", sample.name, sample.name)+".hc.vcf.bgz" for sample in batch ], os.path.join("alignment", "allSamples") + ".batch" + str(cpt) + "." + str(idx) + ".hc.g.vcf.bgz", intervals=sequences)
+                        job.name="gatk_combine_gvcf.AllSample" + ".batch" + str(cpt) + "." + str(idx)
+                        jobs.appends(job)
+
+                    # Create one last job to process the last remaining sequences and 'others' sequences
+                    job=gatk.combine_gvcf([ os.path.join("alignment", sample.name, sample.name)+".hc.vcf.bgz" for sample in batch ], os.path.join("alignment", "allSamples" + ".batch" + str(cpt) + ".others.hc.g.vcf.bgz"), exclude_intervals=unique_sequences_per_job_others)
+                    job.name="gatk_combine_gvcf.AllSample" + ".batch" + str(cpt) + ".others"
+                    jobs.appends(job)
+                batches.append("batch" + str(cpt))
+                cpt = cpt + 1
+                
+            #Combine batches altogether
+            if nb_haplotype_jobs == 1:
+                job=gatk.combine_gvcf([ os.path.join("alignment", "allSamples." + batch_idx + ".hc.g.vcf.bgz") for batch_idx in batches ], os.path.join("alignment", "allSamples.hc.g.vcf.bgz"))
+                job.name="gatk_combine_gvcf.AllSamples.batches"
+                jobs.appends(job)
+            else :
+                unique_sequences_per_job,unique_sequences_per_job_others = split_by_size(self.sequence_dictionary, nb_haplotype_jobs - 1)
+
+                # Create one separate job for each of the first sequences
+                for idx,sequences in enumerate(unique_sequences_per_job):
+                    job=gatk.combine_gvcf([ os.path.join("alignment", "allSamples." + batch_idx + ".hc.g.vcf.bgz") for batch_idx in batches ], os.path.join("alignment", "allSamples") + "." + str(idx) + ".hc.g.vcf.bgz", intervals=sequences)
+                    job.name="gatk_combine_gvcf.AllSample" + "." + str(idx)
+                    jobs.appends(job)
+
+                # Create one last job to process the last remaining sequences and 'others' sequences
+                job=gatk.combine_gvcf([ os.path.join("alignment", "allSamples." + batch_idx + ".hc.g.vcf.bgz") for batch_idx in batches ], os.path.join("alignment", "allSamples" + ".others.hc.g.vcf.bgz"), exclude_intervals=unique_sequences_per_job_others)
+                job.name="gatk_combine_gvcf.AllSample" + ".others"
+                jobs.appends(job)
+        
+        return jobs
+        
+        
+    def merge_and_call_combined_gvcf(self):
+        """
+        Merges the combined gvcfs and also generates a general vcf containing genotypes.
+        """
+
+        jobs = []
+        nb_haplotype_jobs = config.param('gatk_combine_gvcf', 'nb_haplotype', type='posint')
+
+        haplotype_file_prefix = os.path.join("alignment","allSamples")
+        output_haplotype = os.path.join("alignment", "allSamples.hc.g.vcf.bgz")
+        output_haplotype_genotyped = os.path.join("alignment", "allSamples.hc.vcf.bgz")
+        if nb_haplotype_jobs >= 1:
+            unique_sequences_per_job,unique_sequences_per_job_others = split_by_size(self.sequence_dictionary, nb_haplotype_jobs - 1)
+
+            gvcfs_to_merge = [haplotype_file_prefix + "." + str(idx) + ".hc.g.vcf.bgz" for idx in xrange(len(unique_sequences_per_job))]
+            gvcfs_to_merge.append(haplotype_file_prefix + ".others.hc.g.vcf.bgz")
+
+            job = gatk.cat_variants(gvcfs_to_merge, output_haplotype)
+            job.name = "merge_and_call_gvcf.merge.AllSample"
+            jobs.appends(job)
+            
+        job = gatk.genotype_gvcfs([output_haplotype], output_haplotype_genotyped ,config.param('gatk_merge_and_call_combined_gvcfs', 'options'))
+        job.name = "merge_and_call_gvcf.call.AllSample"
+        jobs.appends(job)
+
+        return jobs        
 
     def dna_sample_metrics(self):
         """
@@ -975,12 +1079,10 @@ cp metrics/allSamples.SNV.chromosomeChange.zip report/SNV.chromosomeChange.zip""
             self.extract_common_snp_freq,
             self.baf_plot,
             self.gatk_haplotype_caller,
-            self.merge_and_call_gvcf,
+            self.merge_and_call_individual_gvcf,
+            self.combine_gvcf,
+            self.merge_and_call_combined_gvcf,
             self.dna_sample_metrics,
-            self.rawmpileup,
-            self.rawmpileup_cat,
-            self.snp_and_indel_bcf,
-            self.merge_filter_bcf,
             self.filter_nstretches,
             self.flag_mappability,
             self.snp_id_annotation,
@@ -988,6 +1090,10 @@ cp metrics/allSamples.SNV.chromosomeChange.zip report/SNV.chromosomeChange.zip""
             self.dbnsfp_annotation,
             self.metrics_vcf_stats,
             self.metrics_snv_graph_metrics
+            self.rawmpileup,
+            self.rawmpileup_cat,
+            self.snp_and_indel_bcf,
+            self.merge_filter_bcf,
         ]
 
 if __name__ == '__main__': 
