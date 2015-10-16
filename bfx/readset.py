@@ -225,19 +225,12 @@ def parse_illumina_raw_readset_files(output_dir, run_type, nanuq_readset_file, c
     samples = []
     GenomeBuild = namedtuple('GenomeBuild', 'species assembly')
 
-    genomic_databases = {
-        'Homo_sapiens:GRCh37': GenomeBuild('Homo_sapiens', 'GRCh37'),
-        'Homo_sapiens:hg19': GenomeBuild('Homo_sapiens', 'hg19'),
-        'Mus_musculus:mm9': GenomeBuild('Mus_musculus', 'mm9'),
-        'Mus_musculus:GRCm38': GenomeBuild('Mus_musculus', 'GRCm38'),
-        'Rattus_norvegicus:Rnor_5.0': GenomeBuild('Rattus_norvegicus', 'Rnor_5.0')
-    }
-
     # Parsing Nanuq readset sheet
     log.info("Parse Nanuq Illumina readset file " + nanuq_readset_file + " ...")
     star_aligner = StarRunProcessingAligner(output_dir, nb_cycles)
     bwa_aligner = BwaRunProcessingAligner(output_dir)
     readset_csv = csv.DictReader(open(nanuq_readset_file, 'rb'), delimiter=',', quotechar='"')
+    genome_build = None
     for line in readset_csv:
         current_lane = line['Region']
 
@@ -257,6 +250,10 @@ def parse_illumina_raw_readset_files(output_dir, run_type, nanuq_readset_file, c
         readset._library_source = line['Library Source']
         readset._library_type = line['Library Type']
         readset._genomic_database = line['Genomic Database']
+
+        m = re.search("(?P<build>\w+):(?P<assembly>\w+)", readset.genomic_database)
+        if m:
+            genome_build = GenomeBuild(m.group('build'), m.group('assembly'))
 
         if re.search("RNA|cDNA", readset.library_source) or (readset.library_source == "Library" and re.search("RNA", readset.library_type)):
             readset._aligner = star_aligner
@@ -293,7 +290,6 @@ def parse_illumina_raw_readset_files(output_dir, run_type, nanuq_readset_file, c
 
     # Searching for a matching reference for the specified species
     for readset in readsets:
-        genome_build = genomic_databases.get(readset.genomic_database, None)
         if genome_build is not None:
             folder_name = os.path.join(genome_build.species + "." + genome_build.assembly)
             aligner_reference_index = readset.aligner.get_reference_index(genome_root + os.sep + folder_name)
