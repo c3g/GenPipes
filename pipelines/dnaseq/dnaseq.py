@@ -1083,17 +1083,25 @@ cp metrics/allSamples.SNV.chromosomeChange.zip report/SNV.chromosomeChange.zip""
             self.combine_gvcf,
             self.merge_and_call_combined_gvcf,
             self.dna_sample_metrics,
-            self.filter_nstretches,
-            self.flag_mappability,
-            self.snp_id_annotation,
-            self.snp_effect,
-            self.dbnsfp_annotation,
-            self.metrics_vcf_stats,
-            self.metrics_snv_graph_metrics
+            self.haplotype_caller_filter_nstretches,
+            self.haplotype_caller_flag_mappability,
+            self.haplotype_caller_snp_id_annotation,
+            self.haplotype_caller_snp_effect,
+            self.haplotype_caller_dbnsfp_annotation,
+            self.haplotype_caller_metrics_vcf_stats,
+            self.haplotype_caller_metrics_snv_graph_metrics,
             self.rawmpileup,
             self.rawmpileup_cat,
             self.snp_and_indel_bcf,
             self.merge_filter_bcf,
+            self.mpileup_filter_nstretches,
+            self.mpileup_flag_mappability,
+            self.mpileup_snp_id_annotation,
+            self.mpileup_snp_effect,
+            self.mpileup_dbnsfp_annotation,
+            self.mpileup_metrics_vcf_stats,
+            self.mpileup_metrics_snv_graph_metrics
+            
         ]
 
 if __name__ == '__main__': 
