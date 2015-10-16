@@ -471,7 +471,7 @@ cp \\
             jobs.append(job)
 
             # Compute genome coverage with GATK
-            job = gatk.depth_of_coverage(input, recal_file_prefix + "all.coverage")
+            job = gatk.depth_of_coverage(input, recal_file_prefix + "all.coverage", bvatools.resolve_readset_coverage_bed(sample.readsets[0]))
             job.name = "gatk_depth_of_coverage.genome." + sample.name
             jobs.append(job)
 
