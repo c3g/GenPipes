@@ -104,7 +104,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -cp $GATK_JAR \\
         )
     )
 
-def depth_of_coverage(input, output_prefix, intervals=""):
+def depth_of_coverage(input, output_prefix, intervals):
 
     summary_coverage_thresholds = sorted(config.param('gatk_depth_of_coverage', 'summary_coverage_thresholds', type='list'), key=int)
 
@@ -137,7 +137,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         reference_sequence=config.param('gatk_depth_of_coverage', 'genome_fasta', type='filepath'),
         input=input,
         output_prefix=output_prefix,
-        intervals=" \\\n  --intervals " + intervals if intervals != "" else "",
+        intervals=" \\\n  --intervals " + intervals if intervals else "",
         summary_coverage_thresholds="".join(" \\\n  --summaryCoverageThreshold " + summary_coverage_threshold for summary_coverage_threshold in summary_coverage_thresholds),
         highest_summary_coverage_threshold=summary_coverage_thresholds[-1],
         nbins=int(summary_coverage_thresholds[-1]) - 1
