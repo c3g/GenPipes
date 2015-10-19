@@ -144,14 +144,14 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         )
     )
 
-def genotype_gvcfs(variants, output, options):
+def genotype_gvcf(variants, output, options):
 
     return Job(
         variants,
         [output],
         [
-            ['gatk_genotype_gvcfs', 'module_java'],
-            ['gatk_genotype_gvcfs', 'module_gatk']
+            ['gatk_genotype_gvcf', 'module_java'],
+            ['gatk_genotype_gvcf', 'module_gatk']
         ],
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
@@ -159,11 +159,11 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --disable_auto_index_creation_and_locking_when_reading_rods \\
   --reference_sequence {reference_sequence}{variants} \\
   --out {output}""".format(
-        tmp_dir=config.param('gatk_genotype_gvcfs', 'tmp_dir'),
-        java_other_options=config.param('gatk_genotype_gvcfs', 'java_other_options'),
-        ram=config.param('gatk_genotype_gvcfs', 'ram'),
+        tmp_dir=config.param('gatk_genotype_gvcf', 'tmp_dir'),
+        java_other_options=config.param('gatk_genotype_gvcf', 'java_other_options'),
+        ram=config.param('gatk_genotype_gvcf', 'ram'),
         options=options,
-        reference_sequence=config.param('gatk_genotype_gvcfs', 'genome_fasta', type='filepath'),
+        reference_sequence=config.param('gatk_genotype_gvcf', 'genome_fasta', type='filepath'),
         variants="".join(" \\\n  --variant " + variant for variant in variants),
         output=output
         )
@@ -286,7 +286,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
 def combine_gvcf(inputs, output, intervals=[], exclude_intervals=[]):
 
     return Job(
-        [input],
+        inputs,
         [output],
         [
             ['gatk_combine_gvcf', 'module_java'],
@@ -301,7 +301,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         tmp_dir=config.param('gatk_combine_gvcf', 'tmp_dir'),
         java_other_options=config.param('gatk_combine_gvcf', 'java_other_options'),
         ram=config.param('gatk_combine_gvcf', 'ram'),
-        other_options=config.param('gatk_combine_gvcf', 'other_options'),
+        other_options=config.param('gatk_combine_gvcf', 'other_options',required=False),
         reference_sequence=config.param('gatk_combine_gvcf', 'genome_fasta', type='filepath'),
         input="".join(" \\\n  --variant " + input for input in inputs),
         output=output,

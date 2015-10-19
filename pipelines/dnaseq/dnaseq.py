@@ -630,7 +630,7 @@ cp \\
 
             jobs.append(concat_jobs([
                 gatk.cat_variants(gvcfs_to_merge, output_haplotype_file_prefix + ".hc.g.vcf.bgz"),
-                gatk.genotype_gvcfs([output_haplotype_file_prefix + ".hc.g.vcf.bgz"], output_haplotype_file_prefix + ".hc.vcf.bgz",config.param('gatk_merge_and_call_individual_gvcfs', 'options'))
+                gatk.genotype_gvcf([output_haplotype_file_prefix + ".hc.g.vcf.bgz"], output_haplotype_file_prefix + ".hc.vcf.bgz",config.param('gatk_merge_and_call_individual_gvcfs', 'options'))
             ], name="merge_and_call_individual_gvcf." + sample.name))
 
         return jobs
@@ -641,9 +641,9 @@ cp \\
         """
         
         jobs = []
-        job = Job(command="mkdir -p variants")
+        job = Job([os.path.join("alignment", sample.name, sample.name)+".hc.vcf.bgz" for sample in self.samples ],[],command="mkdir -p variants")
         job.name = "mkdir"
-        jobs.appends(job)
+        jobs.append(job)
         nb_haplotype_jobs = config.param('gatk_combine_gvcf', 'nb_haplotype', type='posint')
         nb_maxbatches_jobs = config.param('gatk_combine_gvcf', 'nb_batch', type='posint')
         
@@ -652,7 +652,7 @@ cp \\
             if nb_haplotype_jobs == 1:
                 job=gatk.combine_gvcf([ os.path.join("alignment", sample.name, sample.name)+".hc.vcf.bgz" for sample in self.samples ], os.path.join("variants", "allSamples.hc.g.vcf.bgz"))
                 job.name="gatk_combine_gvcf.AllSamples"
-                jobs.appends(job)
+                jobs.append(job)
             else :
                 unique_sequences_per_job,unique_sequences_per_job_others = split_by_size(self.sequence_dictionary, nb_haplotype_jobs - 1)
 
@@ -660,12 +660,12 @@ cp \\
                 for idx,sequences in enumerate(unique_sequences_per_job):
                     job=gatk.combine_gvcf([ os.path.join("alignment", sample.name, sample.name)+".hc.vcf.bgz" for sample in self.samples ], os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.bgz", intervals=sequences)
                     job.name="gatk_combine_gvcf.AllSample" + "." + str(idx)
-                    jobs.appends(job)
+                    jobs.append(job)
 
                 # Create one last job to process the last remaining sequences and 'others' sequences
                 job=gatk.combine_gvcf([ os.path.join("alignment", sample.name, sample.name)+".hc.vcf.bgz" for sample in self.samples ], os.path.join("alignment", "allSamples.others.hc.g.vcf.bgz"), exclude_intervals=unique_sequences_per_job_others)
                 job.name="gatk_combine_gvcf.AllSample" + ".others"
-                jobs.appends(job)
+                jobs.append(job)
         else:
             #Combine samples by batch (pre-defined batches number in ini)
             sample_per_batch = int(math.ceil(len(self.samples)/float(nb_maxbatches_jobs)))
@@ -676,7 +676,7 @@ cp \\
                 if nb_haplotype_jobs == 1:
                     job=gatk.combine_gvcf([ os.path.join("alignment", sample.name, sample.name)+".hc.vcf.bgz" for sample in batch ], os.path.join("variants", "allSamples.batch" + str(cpt) + ".hc.g.vcf.bgz"))
                     job.name="gatk_combine_gvcf.AllSamples.batch" + str(cpt)
-                    jobs.appends(job)
+                    jobs.append(job)
                 else :
                     unique_sequences_per_job,unique_sequences_per_job_others = split_by_size(self.sequence_dictionary, nb_haplotype_jobs - 1)
 
@@ -684,12 +684,12 @@ cp \\
                     for idx,sequences in enumerate(unique_sequences_per_job):
                         job=gatk.combine_gvcf([ os.path.join("alignment", sample.name, sample.name)+".hc.vcf.bgz" for sample in batch ], os.path.join("variants", "allSamples") + ".batch" + str(cpt) + "." + str(idx) + ".hc.g.vcf.bgz", intervals=sequences)
                         job.name="gatk_combine_gvcf.AllSample" + ".batch" + str(cpt) + "." + str(idx)
-                        jobs.appends(job)
+                        jobs.append(job)
 
                     # Create one last job to process the last remaining sequences and 'others' sequences
                     job=gatk.combine_gvcf([ os.path.join("alignment", sample.name, sample.name)+".hc.vcf.bgz" for sample in batch ], os.path.join("variants", "allSamples" + ".batch" + str(cpt) + ".others.hc.g.vcf.bgz"), exclude_intervals=unique_sequences_per_job_others)
                     job.name="gatk_combine_gvcf.AllSample" + ".batch" + str(cpt) + ".others"
-                    jobs.appends(job)
+                    jobs.append(job)
                 batches.append("batch" + str(cpt))
                 cpt = cpt + 1
                 
@@ -697,20 +697,20 @@ cp \\
             if nb_haplotype_jobs == 1:
                 job=gatk.combine_gvcf([ os.path.join("variants", "allSamples." + batch_idx + ".hc.g.vcf.bgz") for batch_idx in batches ], os.path.join("variants", "allSamples.hc.g.vcf.bgz"))
                 job.name="gatk_combine_gvcf.AllSamples.batches"
-                jobs.appends(job)
+                jobs.append(job)
             else :
                 unique_sequences_per_job,unique_sequences_per_job_others = split_by_size(self.sequence_dictionary, nb_haplotype_jobs - 1)
 
                 # Create one separate job for each of the first sequences
                 for idx,sequences in enumerate(unique_sequences_per_job):
-                    job=gatk.combine_gvcf([ os.path.join("variants", "allSamples." + batch_idx + ".hc.g.vcf.bgz") for batch_idx in batches ], os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.bgz", intervals=sequences)
+                    job=gatk.combine_gvcf([ os.path.join("variants", "allSamples." + batch_idx + "." + str(idx) + ".hc.g.vcf.bgz") for batch_idx in batches ], os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.bgz", intervals=sequences)
                     job.name="gatk_combine_gvcf.AllSample" + "." + str(idx)
-                    jobs.appends(job)
+                    jobs.append(job)
 
                 # Create one last job to process the last remaining sequences and 'others' sequences
-                job=gatk.combine_gvcf([ os.path.join("variants", "allSamples." + batch_idx + ".hc.g.vcf.bgz") for batch_idx in batches ], os.path.join("variants", "allSamples" + ".others.hc.g.vcf.bgz"), exclude_intervals=unique_sequences_per_job_others)
+                job=gatk.combine_gvcf([ os.path.join("variants", "allSamples." + batch_idx + ".others.hc.g.vcf.bgz") for batch_idx in batches ], os.path.join("variants", "allSamples" + ".others.hc.g.vcf.bgz"), exclude_intervals=unique_sequences_per_job_others)
                 job.name="gatk_combine_gvcf.AllSample" + ".others"
-                jobs.appends(job)
+                jobs.append(job)
         
         return jobs
         
@@ -734,11 +734,11 @@ cp \\
 
             job = gatk.cat_variants(gvcfs_to_merge, output_haplotype)
             job.name = "merge_and_call_gvcf.merge.AllSample"
-            jobs.appends(job)
+            jobs.append(job)
             
-        job = gatk.genotype_gvcfs([output_haplotype], output_haplotype_genotyped ,config.param('gatk_merge_and_call_combined_gvcfs', 'options'))
+        job = gatk.genotype_gvcf([output_haplotype], output_haplotype_genotyped ,config.param('gatk_merge_and_call_combined_gvcfs', 'options'))
         job.name = "merge_and_call_gvcf.call.AllSample"
-        jobs.appends(job)
+        jobs.append(job)
 
         return jobs
 
@@ -772,8 +772,8 @@ cp \\
                             
         jobs.append(concat_jobs([
             Job(command="mkdir -p " + output_directory),
-            variants.gatk.variant_recalibrator( [os.path.join(output_directory, "allSamples.hc.vcf.bgz")], recal_snps_other_options, variant_recal_snps_prefix + ".recal", variant_recal_snps_prefix + ".tranches", variant_recal_snps_prefix + ".R"),
-            variants.gatk_variant_recalibrator( [os.path.join(output_directory, "allSamples.hc.vcf.bgz")], recal_indels_other_options, variant_recal_indels_prefix + ".recal", variant_recal_indels_prefix + ".tranches", variant_recal_indels_prefix + ".R")
+            gatk.variant_recalibrator( [os.path.join(output_directory, "allSamples.hc.vcf.bgz")], recal_snps_other_options, variant_recal_snps_prefix + ".recal", variant_recal_snps_prefix + ".tranches", variant_recal_snps_prefix + ".R"),
+            gatk.variant_recalibrator( [os.path.join(output_directory, "allSamples.hc.vcf.bgz")], recal_indels_other_options, variant_recal_indels_prefix + ".recal", variant_recal_indels_prefix + ".tranches", variant_recal_indels_prefix + ".R")
         ], name="variant_recalibrator.tranch.allSamples"))              
 
 
@@ -785,8 +785,8 @@ cp \\
 
         jobs.append(concat_jobs([
             Job(command="mkdir -p " + output_directory),
-            variants.gatk_apply_recalibration( os.path.join(output_directory, "allSamples.hc.vcf.bgz"), variant_apply_snps_prefix + ".recal", variant_apply_snps_prefix + ".tranches", apply_snps_other_options, variant_apply_snps_prefix + "_raw_indels.genotyped.vqsr.vcf.bgz"),
-            variants.gatk_apply_recalibration( variant_apply_snps_prefix + "_raw_indels.genotyped.vqsr.vcf.bgz", variant_apply_indels_prefix + ".recal", variant_apply_indels_prefix + ".tranches", apply_indels_other_options, os.path.join(output_directory, "allSamples.hc.vqsr.vcf"))
+            gatk.apply_recalibration( os.path.join(output_directory, "allSamples.hc.vcf.bgz"), variant_apply_snps_prefix + ".recal", variant_apply_snps_prefix + ".tranches", apply_snps_other_options, variant_apply_snps_prefix + "_raw_indels.genotyped.vqsr.vcf.bgz"),
+            gatk.apply_recalibration( variant_apply_snps_prefix + "_raw_indels.genotyped.vqsr.vcf.bgz", variant_apply_indels_prefix + ".recal", variant_apply_indels_prefix + ".tranches", apply_indels_other_options, os.path.join(output_directory, "allSamples.hc.vqsr.vcf"))
         ], name="variant_recalibrator.apply.allSamples"))
         
         return jobs
