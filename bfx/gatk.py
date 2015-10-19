@@ -310,3 +310,67 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         )
     )
 
+def variant_recalibrator(variants, other_options, recal_output, tranches_output, R_output):
+
+    return Job(
+        variants,
+        [recal_output, tranches_output, R_output],
+        [
+            ['gatk_variant_recalibrator', 'module_java'],
+            ['gatk_variant_recalibrator', 'module_gatk'],
+            ['gatk_variant_recalibrator', 'module_R']
+        ],
+        command="""\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
+  --analysis_type VariantRecalibrator {options} \\
+  --disable_auto_index_creation_and_locking_when_reading_rods \\
+  --reference_sequence {reference_sequence}{variants} \\
+  {other_options} \\
+  --recal_file {recal_output} \\
+  --tranches_file {tranches_output} \\
+  --rscript_file {R_output}""".format(
+        tmp_dir=config.param('gatk_variant_recalibrator', 'tmp_dir'),
+        java_other_options=config.param('gatk_variant_recalibrator', 'java_other_options'),
+        ram=config.param('gatk_variant_recalibrator', 'ram'),
+        options=config.param('gatk_variant_recalibrator', 'options'),
+        reference_sequence=config.param('gatk_variant_recalibrator', 'genome_fasta', type='filepath'),
+        variants="".join(" \\\n  -input " + variant for variant in variants),
+        other_options=other_options,
+        recal_output=recal_output,
+        tranches_output=tranches_output,
+        R_output=R_output
+        )
+    )
+        
+def apply_recalibration(variants, recal_input, tranches_input, other_options, apply_recal_output):
+
+    return Job(
+        [variants, recal_input, tranches_input],
+        [apply_recal_output],
+        [
+            ['gatk_apply_recalibration', 'module_java'],
+            ['gatk_apply_recalibration', 'module_gatk']
+        ],
+        command="""\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
+  --analysis_type ApplyRecalibration {options} \\
+  --disable_auto_index_creation_and_locking_when_reading_rods \\
+  --reference_sequence {reference_sequence} \\
+  -input {variants} \\
+  {other_options} \\
+  --tranches_file {tranches_input} \\
+  --recal_file {recal_input} \\
+  --out {output}""".format(
+        tmp_dir=config.param('gatk_apply_recalibration', 'tmp_dir'),
+        java_other_options=config.param('gatk_apply_recalibration', 'java_other_options'),
+        ram=config.param('gatk_apply_recalibration', 'ram'),
+        options=config.param('gatk_apply_recalibration', 'options'),
+        reference_sequence=config.param('gatk_apply_recalibration', 'genome_fasta', type='filepath'),
+        variants=variants,
+        other_options=other_options,
+        recal_input=recal_input,
+        tranches_input=tranches_input,
+        output=apply_recal_output
+        )
+    )
+
