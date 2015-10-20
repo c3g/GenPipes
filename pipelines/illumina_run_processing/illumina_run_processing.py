@@ -513,7 +513,8 @@ configureBclToFastq.pl\\
             rrna_db = config.param('blast', 'rrna_db', required=False)
             if readset.is_rna and rrna_db:
                 rrna_result_file = result_file + "Rrna"
-                rrna_output = output_prefix + ".blast_rrna.txt"
+                rrna_output = output_prefix + ".R1.subSampled_{nb_blast_to_do}.rrna".format(
+                    nb_blast_to_do=nb_blast_to_do)
                 command = """blastn -query {fasta_file} -db {db} -out {result_file} -perc_identity 80 -num_descriptions 1 -num_alignments 1""".format(
                     fasta_file=fasta_file,
                     result_file=rrna_result_file,
