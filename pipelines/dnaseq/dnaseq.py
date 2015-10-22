@@ -639,31 +639,29 @@ cp \\
         """
         Combine the per sample gvcfs of haplotype caller into one main file for all sample.
         """
-        
         jobs = []
-        job = Job([os.path.join("alignment", sample.name, sample.name)+".hc.vcf.bgz" for sample in self.samples ],[],command="mkdir -p variants")
-        job.name = "mkdir"
-        jobs.append(job)
         nb_haplotype_jobs = config.param('gatk_combine_gvcf', 'nb_haplotype', type='posint')
         nb_maxbatches_jobs = config.param('gatk_combine_gvcf', 'nb_batch', type='posint')
         
         # merge all sample in one shot
         if nb_maxbatches_jobs == 1 :
             if nb_haplotype_jobs == 1:
-                job=gatk.combine_gvcf([ os.path.join("alignment", sample.name, sample.name)+".hc.vcf.bgz" for sample in self.samples ], os.path.join("variants", "allSamples.hc.g.vcf.bgz"))
-                job.name="gatk_combine_gvcf.AllSamples"
-                jobs.append(job)
+                jobs.append(concat_jobs([
+                    Job(command="mkdir -p variants"),
+                    gatk.combine_gvcf([ os.path.join("alignment", sample.name, sample.name)+".hc.g.vcf.bgz" for sample in self.samples ], os.path.join("variants", "allSamples.hc.g.vcf.bgz"))],
+                    name="gatk_combine_gvcf.AllSamples"))
             else :
                 unique_sequences_per_job,unique_sequences_per_job_others = split_by_size(self.sequence_dictionary, nb_haplotype_jobs - 1)
 
                 # Create one separate job for each of the first sequences
                 for idx,sequences in enumerate(unique_sequences_per_job):
-                    job=gatk.combine_gvcf([ os.path.join("alignment", sample.name, sample.name)+".hc.vcf.bgz" for sample in self.samples ], os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.bgz", intervals=sequences)
-                    job.name="gatk_combine_gvcf.AllSample" + "." + str(idx)
-                    jobs.append(job)
+                    obs.append(concat_jobs([
+                        Job(command="mkdir -p variants"),
+                        gatk.combine_gvcf([ os.path.join("alignment", sample.name, sample.name)+".hc.g.vcf.bgz" for sample in self.samples ], os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.bgz", intervals=sequences)
+                    ], name="gatk_combine_gvcf.AllSample" + "." + str(idx)))
 
                 # Create one last job to process the last remaining sequences and 'others' sequences
-                job=gatk.combine_gvcf([ os.path.join("alignment", sample.name, sample.name)+".hc.vcf.bgz" for sample in self.samples ], os.path.join("alignment", "allSamples.others.hc.g.vcf.bgz"), exclude_intervals=unique_sequences_per_job_others)
+                job=gatk.combine_gvcf([ os.path.join("alignment", sample.name, sample.name)+".hc.g.vcf.bgz" for sample in self.samples ], os.path.join("alignment", "allSamples.others.hc.g.vcf.bgz"), exclude_intervals=unique_sequences_per_job_others)
                 job.name="gatk_combine_gvcf.AllSample" + ".others"
                 jobs.append(job)
         else:
@@ -674,20 +672,22 @@ cp \\
             batches = []
             for batch in batch_of_sample :
                 if nb_haplotype_jobs == 1:
-                    job=gatk.combine_gvcf([ os.path.join("alignment", sample.name, sample.name)+".hc.vcf.bgz" for sample in batch ], os.path.join("variants", "allSamples.batch" + str(cpt) + ".hc.g.vcf.bgz"))
-                    job.name="gatk_combine_gvcf.AllSamples.batch" + str(cpt)
-                    jobs.append(job)
+                    jobs.append(concat_jobs([
+                        Job(command="mkdir -p variants"),
+                        gatk.combine_gvcf([ os.path.join("alignment", sample.name, sample.name)+".hc.g.vcf.bgz" for sample in batch ], os.path.join("variants", "allSamples.batch" + str(cpt) + ".hc.g.vcf.bgz"))
+                    ], name="gatk_combine_gvcf.AllSamples.batch" + str(cpt)))
                 else :
                     unique_sequences_per_job,unique_sequences_per_job_others = split_by_size(self.sequence_dictionary, nb_haplotype_jobs - 1)
 
                     # Create one separate job for each of the first sequences
                     for idx,sequences in enumerate(unique_sequences_per_job):
-                        job=gatk.combine_gvcf([ os.path.join("alignment", sample.name, sample.name)+".hc.vcf.bgz" for sample in batch ], os.path.join("variants", "allSamples") + ".batch" + str(cpt) + "." + str(idx) + ".hc.g.vcf.bgz", intervals=sequences)
-                        job.name="gatk_combine_gvcf.AllSample" + ".batch" + str(cpt) + "." + str(idx)
-                        jobs.append(job)
-
+                        jobs.append(concat_jobs([
+                            Job(command="mkdir -p variants"),
+                            gatk.combine_gvcf([ os.path.join("alignment", sample.name, sample.name)+".hc.g.vcf.bgz" for sample in batch ], os.path.join("variants", "allSamples") + ".batch" + str(cpt) + "." + str(idx) + ".hc.g.vcf.bgz", intervals=sequences)
+                        ], name="gatk_combine_gvcf.AllSample" + ".batch" + str(cpt) + "." + str(idx)))
+                        
                     # Create one last job to process the last remaining sequences and 'others' sequences
-                    job=gatk.combine_gvcf([ os.path.join("alignment", sample.name, sample.name)+".hc.vcf.bgz" for sample in batch ], os.path.join("variants", "allSamples" + ".batch" + str(cpt) + ".others.hc.g.vcf.bgz"), exclude_intervals=unique_sequences_per_job_others)
+                    job=gatk.combine_gvcf([ os.path.join("alignment", sample.name, sample.name)+".hc.g.vcf.bgz" for sample in batch ], os.path.join("variants", "allSamples" + ".batch" + str(cpt) + ".others.hc.g.vcf.bgz"), exclude_intervals=unique_sequences_per_job_others)
                     job.name="gatk_combine_gvcf.AllSample" + ".batch" + str(cpt) + ".others"
                     jobs.append(job)
                 batches.append("batch" + str(cpt))
@@ -733,11 +733,11 @@ cp \\
             gvcfs_to_merge.append(haplotype_file_prefix + ".others.hc.g.vcf.bgz")
 
             job = gatk.cat_variants(gvcfs_to_merge, output_haplotype)
-            job.name = "merge_and_call_gvcf.merge.AllSample"
+            job.name = "merge_and_call_combined_gvcf.merge.AllSample"
             jobs.append(job)
             
         job = gatk.genotype_gvcf([output_haplotype], output_haplotype_genotyped ,config.param('gatk_merge_and_call_combined_gvcfs', 'options'))
-        job.name = "merge_and_call_gvcf.call.AllSample"
+        job.name = "merge_and_call_combined_gvcf.call.AllSample"
         jobs.append(job)
 
         return jobs
@@ -1066,12 +1066,12 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
 
 
 
-    def snp_effect(self, input_vcf = "variants/allSamples.merged.flt.mil.snpId.vcf", snpeff_file = "variants/allSamples.merged.flt.mil.snpId.snpeff.vcf", report_file = "report/DnaSeq.snp_effect.md", job_name = "snp_effect"):
+    def snp_effect(self, input_vcf = "variants/allSamples.merged.flt.mil.snpId.vcf", snpeff_file = "variants/allSamples.merged.flt.mil.snpId.snpeff.vcf", job_name = "snp_effect"):
         """
         Variant effect annotation. The .vcf files are annotated for variant effects using the SnpEff software.
         SnpEff annotates and predicts the effects of variants on genes (such as amino acid changes).
         """
-
+        report_file = "report/DnaSeq.snp_effect.md"
         jobs = []
 
         job = snpeff.compute_effects(input_vcf, snpeff_file, split=True)
@@ -1104,7 +1104,7 @@ cp \\
         See general snp_effect !  Applied to haplotype caller vcf
         """
         
-        jobs = self.snp_effect("variants/allSamples.hc.vqsr.mil.snpId.vcf", "variants/allSamples.hc.vqsr.mil.snpId.snpeff.vcf", "report/DnaSeq.haplotype_caller_snp_effect.md", "haplotype_caller_snp_effect")
+        jobs = self.snp_effect("variants/allSamples.hc.vqsr.mil.snpId.vcf", "variants/allSamples.hc.vqsr.mil.snpId.snpeff.vcf",  "haplotype_caller_snp_effect")
             
         return jobs
 
@@ -1114,7 +1114,7 @@ cp \\
         See general snp_effect !  Applied to mpileup vcf
         """
         
-        jobs = self.snp_effect("variants/allSamples.merged.flt.mil.snpId.vcf", "variants/allSamples.merged.flt.mil.snpId.snpeff.vcf", "report/DnaSeq.mpileup_snp_effect.md", "mpileup_snp_effect")
+        jobs = self.snp_effect("variants/allSamples.merged.flt.mil.snpId.vcf", "variants/allSamples.merged.flt.mil.snpId.snpeff.vcf",  "mpileup_snp_effect")
             
         return jobs
 
@@ -1195,10 +1195,11 @@ cp \\
      
 
 
-    def metrics_snv_graph_metrics(self, variants_file_prefix = "variants/allSamples.merged.flt.mil.snpId", snv_metrics_prefix = "metrics/allSamples.SNV", report_file = "report/DnaSeq.metrics_snv_graph_metrics.md",  job_name = "metrics_snv_graph"):
+    def metrics_snv_graph_metrics(self, variants_file_prefix = "variants/allSamples.merged.flt.mil.snpId", snv_metrics_prefix = "metrics/allSamples.SNV",  job_name = "metrics_snv_graph"):
         """
         """
        
+        report_file = "report/DnaSeq.metrics_snv_graph_metrics.md"
         snv_metrics_files = [snv_metrics_prefix + ".SummaryTable.tsv", snv_metrics_prefix + ".EffectsFunctionalClass.tsv", snv_metrics_prefix + ".EffectsImpact.tsv"]
 
         job = metrics.snv_graph_metrics(variants_file_prefix + ".snpeff.vcf.statsFile.txt", snv_metrics_prefix)
@@ -1253,7 +1254,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip {snv_metrics_prefix}.chromosomeChan
         See general metrics_vcf_stats !  Applied to haplotype caller vcf
         """
         
-        jobs = self.metrics_snv_graph_metrics("variants/allSamples.hc.vqsr.mil.snpId", "metrics/allSamples.hc.vqsr.SNV", "report/DnaSeq.haplotype_caller_metrics_snv_graph_metrics.md", "haplotype_caller_metrics_snv_graph")
+        jobs = self.metrics_snv_graph_metrics("variants/allSamples.hc.vqsr.mil.snpId", "metrics/allSamples.hc.vqsr.SNV", "haplotype_caller_metrics_snv_graph")
         
         return jobs
 
@@ -1263,7 +1264,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip {snv_metrics_prefix}.chromosomeChan
         See general metrics_vcf_stats !  Applied to mpileup vcf
         """
         
-        jobs = self.metrics_snv_graph_metrics("variants/allSamples.merged.flt.mil.snpId", "metrics/allSamples.mpileup.SNV", "report/DnaSeq.mpileup_metrics_snv_graph_metrics.md", "mpileup_metrics_snv_graph")
+        jobs = self.metrics_snv_graph_metrics("variants/allSamples.merged.flt.mil.snpId", "metrics/allSamples.mpileup.SNV", "mpileup_metrics_snv_graph")
         
         return jobs
 
