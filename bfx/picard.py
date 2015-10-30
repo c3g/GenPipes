@@ -48,6 +48,9 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
     )
 
 def calculate_hs_metrics(input, output, intervals, reference_sequence=None):
+    
+    baits_intervals = ""
+    baits_intervals = config.param('picard_calculate_hs_metrics', 'baits_intervals', required = False)
 
     return Job(
         [input, intervals],
@@ -61,7 +64,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
   TMP_DIR={tmp_dir} \\
   INPUT={input} \\
   OUTPUT={output} \\
-  BAIT_INTERVALS={intervals} \\
+  BAIT_INTERVALS={baits} \\
   TARGET_INTERVALS={intervals} \\
   REFERENCE_SEQUENCE={reference_sequence}""".format(
         tmp_dir=config.param('picard_calculate_hs_metrics', 'tmp_dir'),
@@ -70,6 +73,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
         input=input,
         output=output,
         intervals=intervals,
+        baits=baits_intervals if baits_intervals != "" else intervals,
         reference_sequence=reference_sequence if reference_sequence else config.param('picard_calculate_hs_metrics', 'genome_fasta', type='filepath')
         )
     )
