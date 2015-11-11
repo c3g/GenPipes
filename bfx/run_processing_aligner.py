@@ -22,6 +22,8 @@
 from core.job import *
 from core.config import *
 from bfx import bvatools
+from bfx import snpeff
+from bfx import verify_bam_id
 from bfx import bwa
 from bfx import metrics
 from bfx import picard
@@ -30,14 +32,19 @@ from bfx import tools
 
 
 class RunProcessingAligner(object):
-    def __init__(self, output_dir):
+    def __init__(self, output_dir, genome_folder):
         self._output_dir = output_dir
+        self._genome_folder = genome_folder
 
     @property
     def output_dir(self):
         return self._output_dir
 
-    def get_reference_index(self, genome_folder):
+    @property
+    def genome_folder(self):
+        return self._genome_folder
+
+    def get_reference_index(self):
         raise NotImplementedError("Please Implement this method")
 
     def get_alignment_jobs(self, readset):
@@ -46,7 +53,7 @@ class RunProcessingAligner(object):
     def get_metrics_jobs(self, readset):
         raise NotImplementedError("Please Implement this method")
 
-    def get_annotation_files(self, genome_folder):
+    def get_annotation_files(self):
         raise NotImplementedError("Please Implement this method")
 
     @staticmethod
@@ -63,27 +70,44 @@ class RunProcessingAligner(object):
 
 
 class BwaRunProcessingAligner(RunProcessingAligner):
-    @property
-    def created_interval_lists(self):
-        if not hasattr(self, "_created_interval_lists"):
-            self._created_interval_lists = []
-        return self._created_interval_lists
+    downloaded_bed_files = []
+    created_interval_lists = []
 
-    @property
-    def downloaded_bed_files(self):
-        if not hasattr(self, "_downloaded_bed_files"):
-            self._downloaded_bed_files = []
-        return self._downloaded_bed_files
-
-    def get_reference_index(self, genome_folder):
-        folder_name = os.path.basename(genome_folder)
-        return os.path.join(genome_folder,
+    def get_reference_index(self):
+        folder_name = os.path.basename(self.genome_folder)
+        return os.path.join(self.genome_folder,
                             "genome",
                             "bwa_index",
                             folder_name + ".fa")
 
-    def get_annotation_files(self, genome_folder):
-        return []
+    def get_dbnsfp_af_field(self):
+        folder_name = os.path.basename(self.genome_folder)
+        ini_file = os.path.join(self.genome_folder + os.sep + folder_name + ".ini")
+        if os.path.isfile(ini_file):
+            genome_config = ConfigParser.SafeConfigParser()
+            genome_config.read(ini_file)
+
+            version = genome_config.get("DEFAULT", "dbnsfp_af_field")
+            return version
+        else:
+            return None
+
+    def get_annotation_files(self):
+        folder_name = os.path.basename(self.genome_folder)
+        ini_file = os.path.join(self.genome_folder + os.sep + folder_name + ".ini")
+        if os.path.isfile(ini_file):
+            genome_config = ConfigParser.SafeConfigParser()
+            genome_config.read(ini_file)
+
+            dbsnp_version = genome_config.get("DEFAULT", "dbsnp_version")
+
+            return [
+                os.path.join(self.genome_folder,
+                             "annotations",
+                             folder_name + ".dbSNP" + dbsnp_version + ".vcf.gz"),
+            ]
+        else:
+            return []
 
     def get_alignment_jobs(self, readset):
         jobs = []
@@ -127,30 +151,33 @@ class BwaRunProcessingAligner(RunProcessingAligner):
             full_coverage_bed = None
 
         if coverage_bed:
-            if (not os.path.exists(full_coverage_bed)) and (coverage_bed not in self.downloaded_bed_files):
+            if (not os.path.exists(full_coverage_bed)) and \
+                    (coverage_bed not in BwaRunProcessingAligner.downloaded_bed_files):
                 # Download the bed file
                 command = config.param('DEFAULT', 'fetch_bed_file_command').format(
                     output_directory=self.output_dir,
                     filename=coverage_bed
                 )
                 job = Job([], [full_coverage_bed], command=command, name="bed_download." + coverage_bed)
-                self.downloaded_bed_files.append(coverage_bed)
+                BwaRunProcessingAligner.downloaded_bed_files.append(coverage_bed)
                 jobs.append(job)
 
             interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
 
-            if interval_list not in self.created_interval_lists:
+            if interval_list not in BwaRunProcessingAligner.created_interval_lists:
                 # Create one job to generate the interval list from the bed file
                 ref_dict = os.path.splitext(readset.reference_file)[0] + '.dict'
                 job = tools.bed2interval_list(ref_dict, full_coverage_bed, interval_list)
                 job.name = "interval_list." + coverage_bed
-                self.created_interval_lists.append(interval_list)
+                BwaRunProcessingAligner.created_interval_lists.append(interval_list)
                 jobs.append(job)
 
             job = picard.calculate_hs_metrics(input_file_prefix + "bam", input_file_prefix + "metrics.onTarget.txt",
                                               interval_list, reference_sequence=readset.reference_file)
             job.name = "picard_calculate_hs_metrics." + readset.name + ".hs" + "." + readset.run + "." + readset.lane
             jobs.append(job)
+
+            jobs.extend(self.verify_bam_id(readset, full_coverage_bed))
 
         job = bvatools.depth_of_coverage(
             input,
@@ -164,19 +191,67 @@ class BwaRunProcessingAligner(RunProcessingAligner):
 
         return jobs
 
+    def verify_bam_id(self, readset, coverage_bed):
+        """
+        verifyBamID is a software that verifies whether the reads in particular file match previously known
+        genotypes for an individual (or group of individuals), and checks whether the reads are contaminated
+        as a mixture of two samples. verifyBamID can detect sample contamination and swaps when external
+        genotypes are available. When external genotypes are not available, verifyBamID still robustly
+        detects sample swaps.
+
+        """
+        jobs = []
+        if len(readset.annotation_files) > 0 and os.path.isfile(readset.annotation_files[0]):
+
+            known_variants_annotated = readset.annotation_files[0]
+            dbnsfp_af_field = self.get_dbnsfp_af_field()
+            verify_bam_id_directory = os.path.join(os.path.dirname(readset.bam), "verify_bam_id_" + readset.library)
+            known_variants_annotated_filtered = os.path.join(verify_bam_id_directory,
+                                                             "known_variants.dbnsfp.targets.vcf")
+
+            input_bam = readset.bam + ".bam"
+            output_prefix = os.path.join(verify_bam_id_directory, readset.name)
+
+            # Check if target coverage exists, the known variants file is filtered
+            if coverage_bed:
+                jobs.append(
+                    concat_jobs([
+                        snpeff.snpsift_intervals_index(known_variants_annotated,
+                                                       coverage_bed,
+                                                       known_variants_annotated_filtered),
+                        Job(command="sed -i 's/" + dbnsfp_af_field + "/AF/g' " + known_variants_annotated_filtered)
+                    ], name="filter_annotated_known_variants." + readset.name + "." + readset.run + "." + readset.lane))
+            else:
+                jobs.append(Job(input_files=[ known_variants_annotated ],
+                                output_files=[ known_variants_annotated_filtered ],
+                                command="cat " + known_variants_annotated + " | sed -e 's/" + dbnsfp_af_field
+                                        + "/AF/g'  > " + known_variants_annotated_filtered,
+                                name="filter_annotated_known_variants." + readset.name + "." + readset.run + "."
+                                     + readset.lane))
+
+            # Run verifyBamID
+            jobs.append(verify_bam_id.verify(
+                input_bam,
+                known_variants_annotated_filtered,
+                output_prefix,
+                job_name="verify_bam_id." + readset.name + "." + readset.run + "." + readset.lane
+            ))
+
+        return jobs
+
 
 class StarRunProcessingAligner(RunProcessingAligner):
-    def __init__(self, output_dir, nb_cycles):
-        super(StarRunProcessingAligner, self).__init__(output_dir)
+    def __init__(self, output_dir, genome_folder, nb_cycles):
+        super(StarRunProcessingAligner, self).__init__(output_dir, genome_folder)
         self._nb_cycles = nb_cycles
 
     @property
     def nb_cycles(self):
         return self._nb_cycles
 
-    def get_reference_index(self, genome_folder):
-        folder_name = os.path.basename(genome_folder)
-        ini_file = os.path.join(genome_folder + os.sep + folder_name + ".ini")
+    def get_reference_index(self):
+        folder_name = os.path.basename(self.genome_folder)
+        ini_file = os.path.join(self.genome_folder + os.sep + folder_name + ".ini")
         if os.path.isfile(ini_file):
             genome_config = ConfigParser.SafeConfigParser()
             genome_config.read(ini_file)
@@ -184,16 +259,16 @@ class StarRunProcessingAligner(RunProcessingAligner):
             source = genome_config.get("DEFAULT", "source")
             version = genome_config.get("DEFAULT", "version")
 
-            return os.path.join(genome_folder,
+            return os.path.join(self.genome_folder,
                                 "genome",
                                 "star_index",
                                 source + version + ".sjdbOverhang" + str(self.nb_cycles - 1))
         else:
             return None
 
-    def get_annotation_files(self, genome_folder):
-        folder_name = os.path.basename(genome_folder)
-        ini_file = os.path.join(genome_folder + os.sep + folder_name + ".ini")
+    def get_annotation_files(self):
+        folder_name = os.path.basename(self.genome_folder)
+        ini_file = os.path.join(self.genome_folder + os.sep + folder_name + ".ini")
         if os.path.isfile(ini_file):
             genome_config = ConfigParser.SafeConfigParser()
             genome_config.read(ini_file)
@@ -202,16 +277,16 @@ class StarRunProcessingAligner(RunProcessingAligner):
             version = genome_config.get("DEFAULT", "version")
 
             return [
-                os.path.join(genome_folder,
+                os.path.join(self.genome_folder,
                              "annotations",
                              folder_name + '.' + source + version + ".transcript_id.gtf"),
 
-                os.path.join(genome_folder,
+                os.path.join(self.genome_folder,
                              "annotations",
                              "rrna_bwa_index",
                              folder_name + '.' + source + version + ".rrna.fa"),
 
-                os.path.join(genome_folder,
+                os.path.join(self.genome_folder,
                              "annotations",
                              folder_name + '.' + source + version + ".ref_flat.tsv")
             ]
@@ -327,7 +402,6 @@ class StarRunProcessingAligner(RunProcessingAligner):
             jobs.append(job)
 
         return jobs
-
 
     @staticmethod
     def _estimate_ribosomal_rna(readset):

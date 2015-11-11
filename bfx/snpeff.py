@@ -116,3 +116,23 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $SNPEFF_HOME
         output=" \\\n  > " + output if output else ""
         )
     )
+
+def snpsift_intervals_index(input, intervals_file, output=None):
+    return Job(
+        [input, intervals_file],
+        [output] if output else [],
+        [
+            ['snpsift_dbnsfp', 'module_java'],
+            ['snpsift_dbnsfp', 'module_snpeff']
+        ],
+        command="""\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $SNPEFF_HOME/SnpSift.jar intidx \\
+    {input} {intervals_file}{output}""".format(
+            tmp_dir=config.param('snpsift_dbnsfp', 'tmp_dir', required=False),
+            java_other_options=config.param('snpsift_dbnsfp', 'java_other_options', required=False),
+            ram=config.param('snpsift_dbnsfp', 'ram', required=False),
+            input=input,
+            intervals_file=intervals_file,
+            output=" \\\n  > " + output if output else ""
+        )
+    )

@@ -227,8 +227,6 @@ def parse_illumina_raw_readset_files(output_dir, run_type, nanuq_readset_file, c
 
     # Parsing Nanuq readset sheet
     log.info("Parse Nanuq Illumina readset file " + nanuq_readset_file + " ...")
-    star_aligner = StarRunProcessingAligner(output_dir, nb_cycles)
-    bwa_aligner = BwaRunProcessingAligner(output_dir)
     readset_csv = csv.DictReader(open(nanuq_readset_file, 'rb'), delimiter=',', quotechar='"')
     genome_build = None
     for line in readset_csv:
@@ -255,15 +253,12 @@ def parse_illumina_raw_readset_files(output_dir, run_type, nanuq_readset_file, c
         if m:
             genome_build = GenomeBuild(m.group('build'), m.group('assembly'))
 
-        if re.search("RNA|cDNA", readset.library_source) or (readset.library_source == "Library" and re.search("RNA", readset.library_type)):
-            readset._aligner = star_aligner
-            readset._is_rna = True
-        else:
-            readset._aligner = bwa_aligner
-            readset._is_rna = False
-
         readset._run = line['Run']
         readset._lane = current_lane
+
+        readset._is_rna = re.search("RNA|cDNA", readset.library_source) or (readset.library_source == "Library"
+                                                                            and re.search("RNA", readset.library_type))
+
         if line['BED Files']:
             readset._beds = line['BED Files'].split(";")
         else:
@@ -292,10 +287,16 @@ def parse_illumina_raw_readset_files(output_dir, run_type, nanuq_readset_file, c
     for readset in readsets:
         if genome_build is not None:
             folder_name = os.path.join(genome_build.species + "." + genome_build.assembly)
-            aligner_reference_index = readset.aligner.get_reference_index(genome_root + os.sep + folder_name)
-            annotation_files = readset.aligner.get_annotation_files(genome_root + os.sep + folder_name)
-            reference_file = os.path.join(genome_root,
-                                          folder_name,
+            current_genome_folder = genome_root + os.sep + folder_name
+
+            if readset.is_rna:
+                readset._aligner = StarRunProcessingAligner(output_dir, current_genome_folder, nb_cycles)
+            else:
+                readset._aligner = BwaRunProcessingAligner(output_dir, current_genome_folder)
+
+            aligner_reference_index = readset.aligner.get_reference_index()
+            annotation_files = readset.aligner.get_annotation_files()
+            reference_file = os.path.join(current_genome_folder,
                                           "genome",
                                           folder_name + ".fa")
             if reference_file and os.path.isfile(reference_file):
