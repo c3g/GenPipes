@@ -86,11 +86,12 @@ class BwaRunProcessingAligner(RunProcessingAligner):
         if os.path.isfile(ini_file):
             genome_config = ConfigParser.SafeConfigParser()
             genome_config.read(ini_file)
+            section = "DEFAULT"
+            option = "dbnsfp_af_field"
+            if genome_config.has_option(section, option):
+                return genome_config.get(section, option)
 
-            version = genome_config.get("DEFAULT", "dbnsfp_af_field")
-            return version
-        else:
-            return None
+        return None
 
     def get_annotation_files(self):
         folder_name = os.path.basename(self.genome_folder)
@@ -99,15 +100,17 @@ class BwaRunProcessingAligner(RunProcessingAligner):
             genome_config = ConfigParser.SafeConfigParser()
             genome_config.read(ini_file)
 
-            dbsnp_version = genome_config.get("DEFAULT", "dbsnp_version")
+            section = "DEFAULT"
+            option = "dbsnp_version"
+            if genome_config.has_option(section, option):
+                dbsnp_version = genome_config.get(section, option)
+                return [
+                    os.path.join(self.genome_folder,
+                                 "annotations",
+                                 folder_name + ".dbSNP" + dbsnp_version + ".vcf.gz"),
+                ]
 
-            return [
-                os.path.join(self.genome_folder,
-                             "annotations",
-                             folder_name + ".dbSNP" + dbsnp_version + ".vcf.gz"),
-            ]
-        else:
-            return []
+        return []
 
     def get_alignment_jobs(self, readset):
         jobs = []
