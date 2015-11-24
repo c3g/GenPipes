@@ -1239,7 +1239,7 @@ do
     report/SNV.$file.$ext
   done
 done
-cp {snv_metrics_prefix}.chromosomeChange.zip {snv_metrics_prefix}.chromosomeChange.zip""".format(
+cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".format(
                     report_template_dir=self.report_template_dir,
                     basename_report_file=os.path.basename(report_file),
                     snv_metrics_prefix=snv_metrics_prefix,
