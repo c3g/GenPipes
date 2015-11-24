@@ -165,7 +165,7 @@ prinseq-lite.pl \\
         min_subread_length=config.param('smrtanalysis_filtering', 'min_subread_length'),
         min_read_length=config.param('smrtanalysis_filtering', 'min_read_length'),
         min_qual=config.param('smrtanalysis_filtering', 'min_qual'),
-        whitelist_param=' -e "s|WHITELISTFILEPATH|'+white_path+'|g"' if white_path != "" else '',
+        whitelist_param=' -e "s|<\!-- WHITELISTCOM||g" -e "s|WHITELISTCOM -->||g" -e "s|WHITELISTFILEPATH|'+white_path+'|g"' if white_path != "" else '',
         ref_params_xml=ref_params_xml,
         params_xml=params_xml,
         threads=config.param('smrtanalysis_filtering', 'threads'),
