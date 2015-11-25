@@ -351,7 +351,7 @@ create_star_index() {
 mkdir -p $INDEX_DIR && \
 module load $module_star && \
 LOG=$LOG_DIR/star_${sjdbOverhang}_$TIMESTAMP.log && \
-STAR --runMode genomeGenerate --genomeDir $INDEX_DIR --genomeFastaFiles $GENOME_DIR/$GENOME_FASTA --runThreadN $runThreadN --sjdbOverhang $sjdbOverhang --sjdbGTFfile $ANNOTATIONS_DIR/$GTF --outFileNamePrefix $INDEX_DIR/ > \$LOG 2>&1 && \
+STAR --runMode genomeGenerate --genomeDir $INDEX_DIR --genomeFastaFiles $GENOME_DIR/$GENOME_FASTA --runThreadN $runThreadN --genomeSAindexNbases 8 --sjdbOverhang $sjdbOverhang --sjdbGTFfile $ANNOTATIONS_DIR/$GTF --outFileNamePrefix $INDEX_DIR/ > \$LOG 2>&1 && \
 chmod -R ug+rwX,o+rX $INDEX_DIR \$LOG"
       cmd_or_job STAR_CMD $runThreadN STAR_${sjdbOverhang}_CMD
     else
