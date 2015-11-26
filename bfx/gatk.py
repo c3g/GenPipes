@@ -50,7 +50,8 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         reference_sequence=config.param('gatk_base_recalibrator', 'genome_fasta', type='filepath'),
         known_sites=config.param('gatk_base_recalibrator', 'known_variants', type='filepath'),
         output=output
-        )
+        ),
+        removable_files=[output]
     )
 
 def callable_loci(input, output, summary):
@@ -339,7 +340,8 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         recal_output=recal_output,
         tranches_output=tranches_output,
         R_output=R_output
-        )
+        ),
+        removable_files=[recal_output, tranches_output, R_output]
     )
         
 def apply_recalibration(variants, recal_input, tranches_input, other_options, apply_recal_output):
