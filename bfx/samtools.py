@@ -37,15 +37,16 @@ samtools index \\
         )
     )
 
-def faidx(input):
+def faidx(input, filter=None):
     return Job(
         [input],
         [input + ".fai"],
         [['samtools_index', 'module_samtools']],
         command="""\
 samtools faidx \\
-  {input}""".format(
-        input=input
+  {input}{filter}""".format(
+        input=input,
+        filter=filter if filter else ""
         )
     )
 
