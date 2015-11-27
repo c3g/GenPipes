@@ -204,10 +204,12 @@ class BwaRunProcessingAligner(RunProcessingAligner):
 
         """
         jobs = []
-        if len(readset.annotation_files) > 0 and os.path.isfile(readset.annotation_files[0]):
+        dbnsfp_af_field = self.get_dbnsfp_af_field()
+        if len(readset.annotation_files) > 0 and os.path.isfile(readset.annotation_files[0])\
+                and dbnsfp_af_field is not None:
 
             known_variants_annotated = readset.annotation_files[0]
-            dbnsfp_af_field = self.get_dbnsfp_af_field()
+
             verify_bam_id_directory = os.path.join(os.path.dirname(readset.bam), "verify_bam_id_" + readset.library)
             known_variants_annotated_filtered = os.path.join(verify_bam_id_directory,
                                                              "known_variants.dbnsfp.targets.vcf")
