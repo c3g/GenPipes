@@ -56,7 +56,7 @@ def split_by_size(bed_intervals, interval_size, nbSplits, output="tmp"):
     for intervals in bed_intervals:
         # Stop if we already reached our limit.
         # This can gappen since the size of chromosomes vary
-        out.write(intervals['chr']+"\t"+intervals['chr']+"\t"+intervals['chr']+"\n")
+        out.write(intervals['chr']+"\t"+intervals['start']+"\t"+intervals['end']+"\n")
         total+=intervals['length']
         if total > blockSize:
             out.close()
