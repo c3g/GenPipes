@@ -159,6 +159,13 @@ class TumorPair(dnaseq.DnaSeq):
         nb_jobs = config.param('scalpel', 'nb_jobs', type='posint')
         if nb_jobs > 50:
             log.warning("Number of scalpel jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
+        use_bed = config.param('scalpel', 'use_bed', type='boolean', required=True)
+        genome_dictionary = config.param('DEFAULT', 'genome_dictionary', type='filepath')
+        if use_bed :
+            tumor_pair_first = self.tumor_pairs.keys()[0]
+            bed = self.sample[tumor_pairs_first].readsets[0].beds[0]
+            bed_intervals = bed_file.parse_bed_file(bed)
+            bed_file_list = bed_file.split_by_size(bed_intervals, nb_jobs, output="pairedVariants/Scalpel.tmp")
 
         for tumor_pair in self.tumor_pairs.itervalues():
             pair_directory = os.path.join("pairedVariants", tumor_pair.name)
@@ -167,31 +174,36 @@ class TumorPair(dnaseq.DnaSeq):
             inputTumor = os.path.join("alignment",tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
 
             mkdir_job = Job(command="mkdir -p " + scalpel_directory)
-
-            genome_dictionary = config.param('DEFAULT', 'genome_dictionary', type='filepath')
+      
             if use_bed :
-                bed_interval=self.tumor_pairs.readsets[0]
+                idx = 0
+                for bed_interval in bed_intervals:
+                    jobs.append(concat_jobs([
+                        mkdir_job,
+                        scalpel.scalpel_somatic(inputNormal, inputTumor, os.path.join(scalpel_directory, tumor_pair.name + '.' + str(idx) + ".scalpel"),bed_interval)
+                    ], name="scalpel." + tumor_pair.name+ "." + str(idx)))
+                    idx += 1
             else :
                 beds = []
                 for idx in range(nb_jobs):
                     beds.append(os.path.join(scalpel_directory, 'chrs.' + str(idx) + '.bed'))
-            if nb_jobs == 1:
-                bedJob = tools.dict2beds(genome_dictionary, beds)
-                jobs.append(concat_jobs([
-                    # Create output directory since it is not done by default by GATK tools
-                    mkdir_job,
-                    bedJob,
-                    scalpel.scalpel_somatic(inputNormal, inputTumor, os.path.join(scalpel_directory, tumor_pair.name + ".scalpel"), beds.pop())
-                ], name="scalpel." + tumor_pair.name))
+                if nb_jobs == 1:
+                    bedJob = tools.dict2beds(genome_dictionary, beds)
+                    jobs.append(concat_jobs([
+                        # Create output directory since it is not done by default by GATK tools
+                        mkdir_job,
+                        bedJob,
+                        scalpel.scalpel_somatic(inputNormal, inputTumor, os.path.join(scalpel_directory, tumor_pair.name + '.0' + ".scalpel"), beds.pop())
+                    ], name="scalpel." + tumor_pair.name+ ".0"))
 
-            else:
-                bedJob = tools.dict2beds(genome_dictionary, beds)
-                jobs.append(concat_jobs([mkdir_job,bedJob], name="scalpel.genome.beds." + tumor_pair.name))
+                else:
+                    bedJob = tools.dict2beds(genome_dictionary, beds)
+                    jobs.append(concat_jobs([mkdir_job,bedJob], name="scalpel.genome.beds." + tumor_pair.name))
 
-                for idx in range(nb_jobs):
-                    scalpelJob = scalpel.scalpel_somatic(inputNormal, inputTumor, os.path.join(scalpel_directory, tumor_pair.name + '.' + str(idx) + '.scalpel'), beds[idx])
-                    scalpelJob.name = "scalpel." + tumor_pair.name + "." + str(idx)
-                    jobs.append(scalpelJob)
+                    for idx in range(nb_jobs):
+                        scalpelJob = scalpel.scalpel_somatic(inputNormal, inputTumor, os.path.join(scalpel_directory, tumor_pair.name + '.' + str(idx) + '.scalpel'), beds[idx])
+                        scalpelJob.name = "scalpel." + tumor_pair.name + "." + str(idx)
+                        jobs.append(scalpelJob)
         return jobs
 
     def merge_indels(self):
@@ -208,41 +220,24 @@ class TumorPair(dnaseq.DnaSeq):
             scalpel_directory = os.path.join(pair_directory, "rawScalpel")
             # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
             output = os.path.join(pair_directory, tumor_pair.name + ".scalpel.vcf")
-            if nb_jobs == 1:
-                outputWrongName = os.path.join(scalpel_directory, tumor_pair.name + ".rename.scalpel.vcf")
-                outputSomatic = os.path.join(scalpel_directory, tumor_pair.name + ".scalpel.somatic.vcf")
-                outputCommon = os.path.join(scalpel_directory, tumor_pair.name + ".scalpel.common.vcf")
-                input_somatic = os.path.join(scalpel_directory, tumor_pair.name + ".scalpel", 'main', 'somatic.5x.indel.vcf')
-                input_common = os.path.join(scalpel_directory, tumor_pair.name + ".scalpel", 'main', 'common.5x.indel.vcf')
-
+            vcfsToMerge =[]
+            for idx in range(nb_jobs):
+                sample_directory = os.path.join(scalpel_directory, tumor_pair.name + "." + str(idx) + ".scalpel")
+                outputWrongName = os.path.join(sample_directory, tumor_pair.name + ".rename.scalpel.vcf")
+                outputSomatic = os.path.join(sample_directory, tumor_pair.name + ".scalpel.somatic.vcf")
+                outputCommon = os.path.join(sample_directory, tumor_pair.name + ".scalpel.common.vcf")
+                outputIdx = os.path.join(sample_directory, tumor_pair.name + ".scalpel.vcf")
+                input_somatic = os.path.join(sample_directory, 'main', 'somatic.5x.indel.vcf')
+                input_common = os.path.join(sample_directory, 'main', 'common.5x.indel.vcf')
+                
+                vcfsToMerge.append(outputSomatic)
                 job = concat_jobs([
                     bcftools.add_reject(input_common, outputCommon),
-                    bcftools.add_chi2(input_somatic, outputSomatic),
+                    bcftools.add_chi2Filter(input_somatic, outputSomatic),
                     picard.sort_vcfs([outputCommon, outputSomatic], outputWrongName),
-                    Job([outputWrongName], [output], command="sed 's/sample_name/" + tumor_pair.tumor.name + "/g'" + outputWrongName + ' > ' + output)]
-                    , removable_files=[outputCommon,outputSomatic,outputWrongName,output]
-                    , name="scalpel_merged_vcf." + tumor_pair.name)
+                    Job([outputWrongName], [output], command="sed -e 's/sample_name/"+ tumor_pair.tumor.name + "/g' " + outputWrongName + ' > ' + outputIdx, removable_files=[outputCommon,outputSomatic,outputWrongName])]
+                    , name="scalpel_merged_vcf." + tumor_pair.name + "." + str(idx))
                 jobs.append(job)
-
-            elif nb_jobs > 1:
-                vcfsToMerge =[]
-                for idx in range(nb_jobs):
-                    sample_directory = os.path.join(scalpel_directory, tumor_pair.name + "." + str(idx) + ".scalpel")
-                    outputWrongName = os.path.join(sample_directory, tumor_pair.name + ".rename.scalpel.vcf")
-                    outputSomatic = os.path.join(sample_directory, tumor_pair.name + ".scalpel.somatic.vcf")
-                    outputCommon = os.path.join(sample_directory, tumor_pair.name + ".scalpel.common.vcf")
-                    outputIdx = os.path.join(sample_directory, tumor_pair.name + ".scalpel.vcf")
-                    input_somatic = os.path.join(sample_directory, 'main', 'somatic.5x.indel.vcf')
-                    input_common = os.path.join(sample_directory, 'main', 'common.5x.indel.vcf')
-                    
-                    vcfsToMerge.append(outputSomatic)
-                    job = concat_jobs([
-                        bcftools.add_reject(input_common, outputCommon),
-                        bcftools.add_chi2Filter(input_somatic, outputSomatic),
-                        picard.sort_vcfs([outputCommon, outputSomatic], outputWrongName),
-                        Job([outputWrongName], [output], command="sed -e 's/sample_name/"+ tumor_pair.tumor.name + "/g' " + outputWrongName + ' > ' + outputIdx, removable_files=[outputCommon,outputSomatic,outputWrongName])]
-                        , name="scalpel_merged_vcf." + tumor_pair.name + "." + str(idx))
-                    jobs.append(job)
                 job = gatk.cat_variants(vcfsToMerge, output)
                 job.name="scalpel_merge_all_vcfs." + tumor_pair.name
                 jobs.append(job)
