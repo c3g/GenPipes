@@ -162,10 +162,9 @@ class TumorPair(dnaseq.DnaSeq):
         use_bed = config.param('scalpel', 'use_bed', type='boolean', required=True)
         genome_dictionary = config.param('DEFAULT', 'genome_dictionary', type='filepath')
         if use_bed :
-            tumor_pair_first = self.tumor_pairs.keys()[0]
-            bed = self.sample[tumor_pairs_first].readsets[0].beds[0]
-            bed_intervals = bed_file.parse_bed_file(bed)
-            bed_file_list = bed_file.split_by_size(bed_intervals, nb_jobs, output="pairedVariants/Scalpel.tmp")
+            bed = self.samples[0].readsets[0].beds[0]
+            bed_intervals, interval_size = bed_file.parse_bed_file(bed)
+            bed_file_list = bed_file.split_by_size(bed_intervals, interval_size, nb_jobs, output="pairedVariants/Scalpel.tmp")
 
         for tumor_pair in self.tumor_pairs.itervalues():
             pair_directory = os.path.join("pairedVariants", tumor_pair.name)
@@ -177,10 +176,10 @@ class TumorPair(dnaseq.DnaSeq):
       
             if use_bed :
                 idx = 0
-                for bed_interval in bed_intervals:
+                for bf in bed_file_list:
                     jobs.append(concat_jobs([
                         mkdir_job,
-                        scalpel.scalpel_somatic(inputNormal, inputTumor, os.path.join(scalpel_directory, tumor_pair.name + '.' + str(idx) + ".scalpel"),bed_interval)
+                        scalpel.scalpel_somatic(inputNormal, inputTumor, os.path.join(scalpel_directory, tumor_pair.name + '.' + str(idx) + ".scalpel"),bf)
                     ], name="scalpel." + tumor_pair.name+ "." + str(idx)))
                     idx += 1
             else :
