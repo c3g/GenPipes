@@ -43,6 +43,7 @@ from bfx import picard
 from bfx import samtools
 from bfx import scalpel
 from bfx import tools
+from bfx import bed_file
 from pipelines.dnaseq import dnaseq
 
 log = logging.getLogger(__name__)
@@ -168,9 +169,12 @@ class TumorPair(dnaseq.DnaSeq):
             mkdir_job = Job(command="mkdir -p " + scalpel_directory)
 
             genome_dictionary = config.param('DEFAULT', 'genome_dictionary', type='filepath')
-            beds = []
-            for idx in range(nb_jobs):
-                beds.append(os.path.join(scalpel_directory, 'chrs.' + str(idx) + '.bed'))
+            if use_bed :
+                bed_interval=self.tumor_pairs.readsets[0]
+            else :
+                beds = []
+                for idx in range(nb_jobs):
+                    beds.append(os.path.join(scalpel_directory, 'chrs.' + str(idx) + '.bed'))
             if nb_jobs == 1:
                 bedJob = tools.dict2beds(genome_dictionary, beds)
                 jobs.append(concat_jobs([
