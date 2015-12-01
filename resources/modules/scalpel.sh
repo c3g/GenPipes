@@ -7,8 +7,8 @@ set -eu -o pipefail
 SOFTWARE=scalpel 
 VERSION=0.5.2  
 ARCHIVE=$SOFTWARE-$VERSION.tar.gz 
-ARCHIVE_URL= http://sourceforge.net/projects/scalpel/files/${ARCHIVE} ## TO BE MODIFIED WITH SPECIFIC URL
-SOFTWARE_DIR=$SOFTWARE-$VERSION  ## TO BE MODIFIED WITH SPECIFIC SOFTWARE DIRECTORY IF NECESSARY
+ARCHIVE_URL=http://sourceforge.net/projects/${SOFTWARE}/files/${ARCHIVE} 
+SOFTWARE_DIR=$SOFTWARE-$VERSION 
 
 
 build() {
