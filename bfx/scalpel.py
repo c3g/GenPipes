@@ -42,13 +42,13 @@ scalpel --somatic \\
   --tumor {inputTumor} \\
   --dir {outputDir} \\
   --numprocs {cores_per_job} \\
-  --bed {bed}{options}""".format(
+  --bed {bed} {options}""".format(
         reference_sequence=config.param('scalpel', 'genome_fasta', type='filepath'),
         inputNormal=inputNormal,
         inputTumor=inputTumor,
         outputDir=outputDir,
         cores_per_job=config.param('scalpel', 'cores_per_job'),
-        bed=bed
+        bed=bed,
         options=config.param('scalpel', 'options', type='string')
         )
     )
