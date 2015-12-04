@@ -37,7 +37,7 @@ usage: dnaseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                  [-o OUTPUT_DIR] [-j {pbs,batch}] [-f] [--report] [--clean]
                  [-l {debug,info,warning,error,critical}] [-r READSETS] [-v]
 
-Version: 2.1.1
+Version: 2.2.0-beta
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
@@ -163,7 +163,7 @@ BAM files of regions of realigned reads are merged per sample using [Picard](htt
 -------------------------
 Fix the read mates. Once local regions are realigned, the read mate coordinates of the aligned reads
 need to be recalculated since the reads are realigned at positions that differ from their original alignment.
-Fixing the read mate positions is done using [Picard](http://broadinstitute.github.io/picard/).
+Fixing the read mate positions is done using [BVATools](https://bitbucket.org/mugqic/bvatools).
 
 9- picard_mark_duplicates
 -------------------------
