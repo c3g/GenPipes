@@ -72,6 +72,7 @@ class RunProcessingAligner(object):
 class BwaRunProcessingAligner(RunProcessingAligner):
     downloaded_bed_files = []
     created_interval_lists = []
+    filtered_annotation_files = []
 
     def get_reference_index(self):
         folder_name = os.path.basename(self.genome_folder)
@@ -79,19 +80,6 @@ class BwaRunProcessingAligner(RunProcessingAligner):
                             "genome",
                             "bwa_index",
                             folder_name + ".fa")
-
-    def get_dbnsfp_af_field(self):
-        folder_name = os.path.basename(self.genome_folder)
-        ini_file = os.path.join(self.genome_folder + os.sep + folder_name + ".ini")
-        if os.path.isfile(ini_file):
-            genome_config = ConfigParser.SafeConfigParser()
-            genome_config.read(ini_file)
-            section = "DEFAULT"
-            option = "dbnsfp_af_field"
-            if genome_config.has_option(section, option):
-                return genome_config.get(section, option)
-
-        return None
 
     def get_annotation_files(self):
         folder_name = os.path.basename(self.genome_folder)
@@ -101,13 +89,17 @@ class BwaRunProcessingAligner(RunProcessingAligner):
             genome_config.read(ini_file)
 
             section = "DEFAULT"
-            option = "dbsnp_version"
-            if genome_config.has_option(section, option):
-                dbsnp_version = genome_config.get(section, option)
+            dbsnp_option_name = "dbsnp_version"
+            af_option_name = "population_AF"
+
+            if genome_config.has_option(section, dbsnp_option_name) and\
+                    genome_config.has_option(section, af_option_name):
+                dbsnp_version = genome_config.get(section, dbsnp_option_name)
+                af_name = genome_config.get(section, af_option_name)
                 return [
                     os.path.join(self.genome_folder,
                                  "annotations",
-                                 folder_name + ".dbSNP" + dbsnp_version + ".vcf.gz"),
+                                 folder_name + ".dbSNP" + dbsnp_version + "." + af_name + ".vcf.gz"),
                 ]
 
         return []
@@ -204,35 +196,30 @@ class BwaRunProcessingAligner(RunProcessingAligner):
 
         """
         jobs = []
-        dbnsfp_af_field = self.get_dbnsfp_af_field()
-        if len(readset.annotation_files) > 0 and os.path.isfile(readset.annotation_files[0])\
-                and dbnsfp_af_field is not None:
+        if len(readset.annotation_files) > 0 and os.path.isfile(readset.annotation_files[0]):
 
             known_variants_annotated = readset.annotation_files[0]
 
             verify_bam_id_directory = os.path.join(os.path.dirname(readset.bam), "verify_bam_id_" + readset.library)
-            known_variants_annotated_filtered = os.path.join(verify_bam_id_directory,
-                                                             "known_variants.dbnsfp.targets.vcf")
+            known_variants_annotated_filtered = os.path.join(self.output_dir, coverage_bed + ".vcf.gz")
 
             input_bam = readset.bam + ".bam"
             output_prefix = os.path.join(verify_bam_id_directory, readset.name)
 
             # Check if target coverage exists, the known variants file is filtered
             if coverage_bed:
-                jobs.append(
-                    concat_jobs([
+                if known_variants_annotated_filtered not in BwaRunProcessingAligner.filtered_annotation_files:
+                    jobs.append(
                         snpeff.snpsift_intervals_index(known_variants_annotated,
                                                        coverage_bed,
-                                                       known_variants_annotated_filtered),
-                        Job(command="sed -i 's/" + dbnsfp_af_field + "/AF/g' " + known_variants_annotated_filtered)
-                    ], name="filter_annotated_known_variants." + readset.name + "." + readset.run + "." + readset.lane))
+                                                       known_variants_annotated_filtered,
+                                                       "filter_annotated_known_variants." + readset.name + "." +
+                                                           readset.run + "." + readset.lane
+                                                       )
+                    )
+                    BwaRunProcessingAligner.filtered_annotation_files.append(known_variants_annotated_filtered)
             else:
-                jobs.append(Job(input_files=[ known_variants_annotated ],
-                                output_files=[ known_variants_annotated_filtered ],
-                                command="cat " + known_variants_annotated + " | sed -e 's/" + dbnsfp_af_field
-                                        + "/AF/g'  > " + known_variants_annotated_filtered,
-                                name="filter_annotated_known_variants." + readset.name + "." + readset.run + "."
-                                     + readset.lane))
+                known_variants_annotated_filtered = known_variants_annotated
 
             # Run verifyBamID
             jobs.append(verify_bam_id.verify(

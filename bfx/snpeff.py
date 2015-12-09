@@ -117,7 +117,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $SNPEFF_HOME
         )
     )
 
-def snpsift_intervals_index(input, intervals_file, output=None):
+def snpsift_intervals_index(input, intervals_file, output=None, job_name="filter_vcf_snpsift"):
     return Job(
         [input, intervals_file],
         [output] if output else [],
@@ -134,5 +134,6 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $SNPEFF_HOME
             input=input,
             intervals_file=intervals_file,
             output=" \\\n  > " + output if output else ""
-        )
+        ),
+        name=job_name
     )
