@@ -99,7 +99,7 @@ class BwaRunProcessingAligner(RunProcessingAligner):
                 return [
                     os.path.join(self.genome_folder,
                                  "annotations",
-                                 folder_name + ".dbSNP" + dbsnp_version + "." + af_name + ".vcf.gz"),
+                                 folder_name + ".dbSNP" + dbsnp_version + "_" + af_name + ".vcf.gz"),
                 ]
 
         return []
@@ -213,7 +213,7 @@ class BwaRunProcessingAligner(RunProcessingAligner):
                         snpeff.snpsift_intervals_index(known_variants_annotated,
                                                        coverage_bed,
                                                        known_variants_annotated_filtered,
-                                                       "filter_annotated_known_variants." + readset.name + "." +
+                                                       "filter_annotated_known_variants." + coverage_bed + "." +
                                                            readset.run + "." + readset.lane
                                                        )
                     )
