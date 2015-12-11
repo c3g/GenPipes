@@ -249,10 +249,6 @@ def parse_illumina_raw_readset_files(output_dir, run_type, nanuq_readset_file, c
         readset._library_type = line['Library Type']
         readset._genomic_database = line['Genomic Database']
 
-        m = re.search("(?P<build>\w+):(?P<assembly>\w+)", readset.genomic_database)
-        if m:
-            genome_build = GenomeBuild(m.group('build'), m.group('assembly'))
-
         readset._run = line['Run']
         readset._lane = current_lane
 
@@ -285,6 +281,10 @@ def parse_illumina_raw_readset_files(output_dir, run_type, nanuq_readset_file, c
 
     # Searching for a matching reference for the specified species
     for readset in readsets:
+        m = re.search("(?P<build>\w+):(?P<assembly>\w+)", readset.genomic_database)
+        if m:
+            genome_build = GenomeBuild(m.group('build'), m.group('assembly'))
+
         if genome_build is not None:
             folder_name = os.path.join(genome_build.species + "." + genome_build.assembly)
             current_genome_folder = genome_root + os.sep + folder_name
