@@ -214,9 +214,9 @@ class BwaRunProcessingAligner(RunProcessingAligner):
                         snpeff.snpsift_intervals_index(known_variants_annotated,
                                                        coverage_bed,
                                                        known_variants_annotated_filtered,
-                                                       "filter_annotated_known_variants." + coverage_bed + "." +
-                                                                                            readset.run + "." +
-                                                                                            readset.lane
+                                                       "filter_annotated_known_variants." +
+                                                                 os.path.basename(coverage_bed) + "." + readset.run +
+                                                                 "." + readset.lane
                                                        )
                     )
                     BwaRunProcessingAligner.filtered_annotation_files.append(known_variants_annotated_filtered)
