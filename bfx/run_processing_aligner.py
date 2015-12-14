@@ -224,11 +224,17 @@ class BwaRunProcessingAligner(RunProcessingAligner):
                 known_variants_annotated_filtered = known_variants_annotated
 
             # Run verifyBamID
-            jobs.append(verify_bam_id.verify(
-                input_bam,
-                known_variants_annotated_filtered,
-                output_prefix,
-                job_name="verify_bam_id." + readset.name + "." + readset.run + "." + readset.lane
+            jobs.append(concat_jobs(
+                verify_bam_id.verify(
+                    input_bam,
+                    known_variants_annotated_filtered,
+                    output_prefix,
+                    job_name="verify_bam_id." + readset.name + "." + readset.run + "." + readset.lane
+                ),
+                Job([output_prefix + ".selfSM"],
+                    [output_prefix + ".tsv"],
+                    command="mv " + output_prefix + ".selfSM " + output_prefix + ".tsv"
+                )
             ))
 
         return jobs
