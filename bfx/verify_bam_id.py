@@ -26,7 +26,7 @@ import os
 from core.config import *
 from core.job import *
 
-def verify (input_bam, input_vcf, output_prefix, job_name ):
+def verify (input_bam, input_vcf, output_prefix, job_name = None ):
     return Job(
         [ input_bam, input_vcf ],
         [ output_prefix + ".selfSM" ],
