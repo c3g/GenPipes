@@ -99,7 +99,7 @@ class BwaRunProcessingAligner(RunProcessingAligner):
                 return [
                     os.path.join(self.genome_folder,
                                  "annotations",
-                                 folder_name + ".dbSNP" + dbsnp_version + "_" + af_name + ".vcf.gz"),
+                                 folder_name + ".dbSNP" + dbsnp_version + "_" + af_name + ".vcf"),
                 ]
 
         return []
@@ -200,11 +200,12 @@ class BwaRunProcessingAligner(RunProcessingAligner):
 
             known_variants_annotated = readset.annotation_files[0]
 
-            verify_bam_id_directory = os.path.join(os.path.dirname(readset.bam), "verify_bam_id_" + readset.library)
-            known_variants_annotated_filtered = os.path.join(self.output_dir, coverage_bed + ".vcf.gz")
+            known_variants_annotated_filtered = os.path.join(self.output_dir,
+                                                             coverage_bed + "." + readset.run + "." + readset.lane +
+                                                                            ".vcf")
 
             input_bam = readset.bam + ".bam"
-            output_prefix = os.path.join(verify_bam_id_directory, readset.name)
+            output_prefix = readset.bam + ".metrics.verifyBamId"
 
             # Check if target coverage exists, the known variants file is filtered
             if coverage_bed:
@@ -214,7 +215,8 @@ class BwaRunProcessingAligner(RunProcessingAligner):
                                                        coverage_bed,
                                                        known_variants_annotated_filtered,
                                                        "filter_annotated_known_variants." + coverage_bed + "." +
-                                                           readset.run + "." + readset.lane
+                                                                                            readset.run + "." +
+                                                                                            readset.lane
                                                        )
                     )
                     BwaRunProcessingAligner.filtered_annotation_files.append(known_variants_annotated_filtered)
