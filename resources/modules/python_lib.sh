@@ -23,10 +23,10 @@ python -c 'import numpy; print numpy.__version__, numpy.__file__'
 easy_install http://biopython.org/DIST/biopython-1.66.tar.gz
 python -c 'import Bio; print Bio.__version__, Bio.__file__'
 
-# matplotlib requires dateutil and pyparsing dependencies
+# matplotlib requires dateutil and pyparsing dependencies (matplotlib is stuck at version 1.4.3 for qiime compatibility)
 easy_install http://labix.org/download/python-dateutil/python-dateutil-1.5.tar.gz
 easy_install http://downloads.sourceforge.net/project/pyparsing/pyparsing/pyparsing-2.0.6/pyparsing-2.0.6.tar.gz
-easy_install https://downloads.sourceforge.net/project/matplotlib/matplotlib/matplotlib-1.5.0/matplotlib-1.5.0.tar.gz
+easy_install https://downloads.sourceforge.net/project/matplotlib/matplotlib/matplotlib-1.4.3/matplotlib-1.4.3.tar.gz
 python -c 'import matplotlib; print matplotlib.__version__, matplotlib.__file__'
 
 # HTseq
