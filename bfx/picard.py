@@ -136,7 +136,8 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
         input=input,
         output=output,
         max_records_in_ram=config.param('picard_fix_mate_information', 'max_records_in_ram', type='int')
-        )
+        ),
+        removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output), output + ".md5"]
     )
 
 def mark_duplicates(inputs, output, metrics_file):
