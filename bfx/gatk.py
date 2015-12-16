@@ -104,6 +104,30 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -cp $GATK_JAR \\
         )
     )
 
+def combine_variants(variants, output):
+
+    return Job(
+        variants,
+        [output],
+        [
+            ['gatk_combine_variants', 'module_java'],
+            ['gatk_combine_variants', 'module_gatk']
+        ],
+        command="""\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
+  --analysis_type CombineVariants  \\
+  --reference_sequence {reference}{variants} \\
+  --out {output}""".format(
+        tmp_dir=config.param('gatk_combine_variants', 'tmp_dir'),
+        java_other_options=config.param('gatk_combine_variants', 'java_other_options'),
+        ram=config.param('gatk_combine_variants', 'ram'),
+        reference=config.param('gatk_combine_variants', 'genome_fasta', type='filepath'),
+        variants="".join(" \\\n  --variant:V" + str(idx) + " " + variant for idx,variant in enumerate(variants)),
+        output=output
+        )
+    )
+
+
 def depth_of_coverage(input, output_prefix, intervals=""):
 
     summary_coverage_thresholds = sorted(config.param('gatk_depth_of_coverage', 'summary_coverage_thresholds', type='list'), key=int)
@@ -191,6 +215,44 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         reference_sequence=config.param('gatk_haplotype_caller', 'genome_fasta', type='filepath'),
         input=input,
         output=output,
+        intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
+        exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals)
+        )
+    )
+
+def mutect(inputNormal, inputTumor, outputStats, outputVCF, intervals=[], exclude_intervals=[]):
+    cosmic = config.param('gatk_mutect', 'cosmic', type='filepath', required=False)
+    # if set add arg prefix
+    if cosmic :
+        cosmic = " --cosmic " + cosmic
+
+    return Job(
+        [inputNormal, inputTumor],
+        [outputStats, outputVCF],
+        [
+            ['gatk_mutect', 'module_java'],
+            ['gatk_mutect', 'module_mutect']
+        ],
+        command="""\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $MUTECT_JAR \\
+  --analysis_type MuTect {options} \\
+  --reference_sequence {reference_sequence} \\
+  --dbsnp {known_sites}{cosmic} \\
+  --input_file:normal {inputNormal} \\
+  --input_file:tumor {inputTumor} \\
+  --out {outputStats} \\
+  --vcf {outputVCF}{intervals}{exclude_intervals}""".format(
+        tmp_dir=config.param('gatk_mutect', 'tmp_dir'),
+        java_other_options=config.param('gatk_mutect', 'java_other_options'),
+        ram=config.param('gatk_mutect', 'ram'),
+        options=config.param('gatk_mutect', 'options'),
+        reference_sequence=config.param('gatk_mutect', 'genome_fasta', type='filepath'),
+        known_sites=config.param('gatk_mutect', 'known_variants', type='filepath'),
+        cosmic=cosmic,
+        inputNormal=inputNormal,
+        inputTumor=inputTumor,
+        outputStats=outputStats,
+        outputVCF=outputVCF,
         intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
         exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals)
         )

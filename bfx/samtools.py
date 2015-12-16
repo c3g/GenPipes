@@ -65,16 +65,17 @@ samtools flagstat \\
         removable_files=[output]
     )
 
-def mpileup(input_bams, output, other_options="", region=None):
+def mpileup(input_bams, output, other_options="", region=None, regionFile=None):
     return Job(
         input_bams,
         [output],
         [['samtools_mpileup', 'module_samtools']],
         command="""\
 samtools mpileup {other_options} \\
-  -f {reference_fasta}{region}{input_bams}{output}""".format(
+  -f {reference_fasta}{region}{regionFile}{input_bams}{output}""".format(
         other_options=other_options,
         reference_fasta=config.param('samtools_mpileup', 'genome_fasta', type='filepath'),
+        regionFile=" \\\n  -l " + regionFile if regionFile else "",
         region=" \\\n  -r " + region if region else "",
         input_bams="".join([" \\\n  " + input_bam for input_bam in input_bams]),
         output=" \\\n  > " + output if output else ""

@@ -188,6 +188,23 @@ bed2IntervalList.pl \\
         )
     )
 
+def dict2beds(dictionary,beds):
+    return Job(
+        [dictionary],
+        beds,
+        [
+            ['DEFAULT', 'module_mugqic_tools'],
+            ['DEFAULT', 'module_python']
+        ],
+        command="""\
+dict2BEDs.py \\
+  --dict {dictionary} \\
+  --beds {beds}""".format(
+        dictionary=dictionary if dictionary else config.param('DEFAULT', 'genome_dictionary', type='filepath'),
+        beds=' '.join(beds)
+        )
+    )
+
 def filter_long_indel(input, output):
     return Job(
         [input],
