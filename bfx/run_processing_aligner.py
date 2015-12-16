@@ -199,16 +199,16 @@ class BwaRunProcessingAligner(RunProcessingAligner):
         if len(readset.annotation_files) > 0 and os.path.isfile(readset.annotation_files[0]):
 
             known_variants_annotated = readset.annotation_files[0]
-
-            known_variants_annotated_filtered = os.path.join(self.output_dir,
-                                                             coverage_bed + "." + readset.run + "." + readset.lane +
-                                                                            ".vcf")
+            known_variants_annotated_filtered = known_variants_annotated
 
             input_bam = readset.bam + ".bam"
             output_prefix = readset.bam + ".metrics.verifyBamId"
 
             # Check if target coverage exists, the known variants file is filtered
             if coverage_bed:
+                known_variants_annotated_filtered = os.path.join(self.output_dir,
+                                                                 coverage_bed + "." + readset.run + "." + readset.lane +
+                                                                    ".vcf")
                 if known_variants_annotated_filtered not in BwaRunProcessingAligner.filtered_annotation_files:
                     jobs.append(
                         snpeff.snpsift_intervals_index(known_variants_annotated,
@@ -220,8 +220,6 @@ class BwaRunProcessingAligner(RunProcessingAligner):
                                                        )
                     )
                     BwaRunProcessingAligner.filtered_annotation_files.append(known_variants_annotated_filtered)
-            else:
-                known_variants_annotated_filtered = known_variants_annotated
 
             # Run verifyBamID
             jobs.append(concat_jobs([
