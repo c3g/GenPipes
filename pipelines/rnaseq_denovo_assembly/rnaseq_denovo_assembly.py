@@ -567,6 +567,36 @@ awk -F '\\t' '{{OFS="\\t" ; print $1,$0}}' {matrix} | sed '1s/^\\t/{item}\\tSymb
         )        
 
         return jobs
+    def gq_seq_utils_exploratory_analysis_rnaseq_denovo(self):
+        """
+        Exploratory analysis using the gqSeqUtils R package.
+        """
+
+        jobs = []
+
+        # gqSeqUtils function call
+        jobs.append(concat_jobs([
+            Job(command="mkdir -p exploratory"),
+            gq_seq_utils.exploratory_analysis_rnaseq_denovo(
+                os.path.join("differential_expression", "genes.counts.matrix"),
+                os.path.join("differential_expression", "genes.lengths.tsv"),
+                "exploratory"
+            )
+        ], name="gq_seq_utils_exploratory_analysis_rnaseq_denovo"))
+
+        # Render Rmarkdown Report
+        jobs.append(
+            rmarkdown.render(
+             job_input            = os.path.join("exploratory", "index.tsv"),
+             job_name             = "gq_seq_utils_exploratory_analysis_rnaseq_denovo_report",
+             input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeqDeNovoAssembly.gq_seq_utils_exploratory_analysis_rnaseq.Rmd") ,
+             render_output_dir    = 'report',
+             module_section       = 'report', # TODO: this or exploratory?
+             prerun_r             = 'report_dir="report";' # TODO: really necessary or should be hard-coded in exploratory.Rmd?
+             )
+        )
+  
+        return jobs    
 
     def differential_expression(self):
         """
@@ -778,16 +808,28 @@ pandoc --to=markdown \\
                 report_files=[report_file]
                 )
             )
+
+        return jobs    
+    
+    def gq_seq_utils_exploratory_analysis_rnaseq_denovo_filtered(self):
+        """
+        Exploratory analysis using the gqSeqUtils R package using a subset of filtered transcripts
+        """
         # Run exploratory analysis on filtered components
         # Extract filtered components from counts file    
+        jobs=[]
         exploratory_output_dir = os.path.join("filtered_assembly","exploratory")
         counts_file = os.path.join("filtered_assembly", "isoforms.counts.matrix")
+        trinotate_annotation_report_filtered = os.path.join("trinotate", "trinotate_annotation_report.tsv" + ".isoforms_filtered.tsv")
         trinotate_annotation_report_filtered_header="trinotate/trinotate_annotation_report.tsv.isoforms_filtered_header.tsv"
         lengths_file=os.path.join("differential_expression", "isoforms.lengths.tsv")
         lengths_filtered_file = os.path.join("filtered_assembly", "isoforms.lengths.tsv")
+        
         jobs.append(concat_jobs([
                         Job(command="mkdir -p " + exploratory_output_dir),
-                        Job([trinotate_annotation_report_filtered], [trinotate_annotation_report_filtered_header], command="sed '1s/^/ \\n/' " + trinotate_annotation_report_filtered  + " > " + trinotate_annotation_report_filtered_header), 
+                        Job([trinotate_annotation_report_filtered], 
+                            [trinotate_annotation_report_filtered_header], 
+                            command="sed '1s/^/ \\n/' " + trinotate_annotation_report_filtered  + " > " + trinotate_annotation_report_filtered_header), 
                         tools.py_parseMergeCsv([ trinotate_annotation_report_filtered_header, os.path.join("differential_expression", "isoforms.counts.matrix") ],
                                     "\\\\t",
                                     counts_file,
@@ -803,10 +845,11 @@ pandoc --to=markdown \\
                                     exclude="\' \'"
                                     )
 
-                    ], name="filter_annotated_components_exploratory"))
+                    ], name="filter_annotated_components_exploratory"
+                    )
+                )
 
-        # gqSeqUtils function call
-        
+        # gqSeqUtils function call        
         jobs.append(concat_jobs([
             Job(command="mkdir -p " + exploratory_output_dir),
             gq_seq_utils.exploratory_analysis_rnaseq_denovo(
@@ -827,39 +870,87 @@ pandoc --to=markdown \\
              prerun_r             = 'report_dir="report/filtered_assembly"; exploratory_dir="' + exploratory_output_dir + '";' 
              )
         )
+        return jobs
 
-        return jobs    
-    
-    def gq_seq_utils_exploratory_analysis_rnaseq_denovo(self):
+    def differential_expression_filtered(self):    
         """
-        Exploratory analysis using the gqSeqUtils R package.
+        Differential Expression and GOSEQ analysis based on filtered transcripts and genes 
         """
-
-        jobs = []
-
-        # gqSeqUtils function call
-        jobs.append(concat_jobs([
-            Job(command="mkdir -p exploratory"),
-            gq_seq_utils.exploratory_analysis_rnaseq_denovo(
-                os.path.join("differential_expression", "genes.counts.matrix"),
-                os.path.join("differential_expression", "genes.lengths.tsv"),
-                "exploratory"
+        jobs=[]
+        filtered_output_files=[]
+        dge_output_dir = os.path.join("filtered_assembly","differential_expression")
+        dge_source_dir = os.path.join("differential_expression")
+        trinotate_annotation_report_filtered = "trinotate/trinotate_annotation_report.tsv.isoforms_filtered.tsv"
+        trinotate_annotation_report_filtered_header={}
+        trinotate_annotation_report_filtered_header["isoforms"]="trinotate/trinotate_annotation_report.tsv.isoforms_filtered_header.tsv"
+        trinotate_annotation_report_filtered_header["genes"]="trinotate/trinotate_annotation_report.tsv.genes_filtered_header.tsv"
+        dge_ids = { 'genes':"id", 'isoforms':"id" }
+        length_ids = { 'genes':"gene_id", 'isoforms':"transcript_id" } 
+        trinotate_filters = None if not config.param('filter_annotated_components', 'filters_trinotate', required=False) else config.param('filter_annotated_components', 'filters_trinotate', required=False).split("\n")
+        
+        # Create the trinotate_annotation_report_filtered file and add a header
+        jobs.append(concat_jobs([                    
+                        Job(command="mkdir -p " + dge_output_dir),
+                        Job([trinotate_annotation_report_filtered], 
+                            [trinotate_annotation_report_filtered_header["genes"]], 
+                            command="cat " + trinotate_annotation_report_filtered + " | awk 'BEGIN{OFS=\"_\";FS=\"_\"}{print $1,$2}' | uniq | sed '1s/^/ \\n/' " + "  > " + trinotate_annotation_report_filtered_header["genes"]
+                            ),
+                        Job([trinotate_annotation_report_filtered], 
+                            [trinotate_annotation_report_filtered_header["isoforms"]], 
+                            command="sed '1s/^/ \\n/' " + trinotate_annotation_report_filtered  + " > " + trinotate_annotation_report_filtered_header["isoforms"])
+                        ],name="differential_expression_filtered_get_trinotate")
+                    )
+            
+        for item in ["genes","isoforms" ] :
+            lengths_file=os.path.join( dge_source_dir , item + ".lengths.tsv")
+            lengths_filtered_file = os.path.join(dge_output_dir, item + ".lengths.tsv.noheader.tsv")
+            jobs.append(
+                concat_jobs([
+                    Job(command="mkdir -p " + os.path.join(dge_output_dir , item) ),                
+                    Job([lengths_file],                  
+                        [lengths_filtered_file],
+                        command="""sed \'1d\' {item_length_file} > {lengths_filtered_file}""".format(
+                        item_length_file=lengths_file,
+                        lengths_filtered_file=lengths_filtered_file))
+                    ], name="format." + item + ".lengths." + item)
             )
-        ], name="gq_seq_utils_exploratory_analysis_rnaseq_denovo"))
-
+            for contrast in self.contrasts:
+                dge_trinotate_results = os.path.join(dge_source_dir, item , contrast.name, "dge_trinotate_results.csv")
+                dge_trinotate_filtered_results = os.path.join(dge_output_dir, item , contrast.name, "dge_trinotate_results.csv")
+                dge_goseq_filtered_results = os.path.join(dge_output_dir, item, contrast.name ,"gene_ontology_results.csv")
+                jobs.append(concat_jobs([
+                    Job(command="mkdir -p " + os.path.join(dge_output_dir , item , contrast.name)),
+                    # Filter dge
+                    tools.py_parseMergeCsv([ dge_trinotate_results ],
+                                    "\\\\t",
+                                    dge_trinotate_filtered_results,
+                                    dge_ids[item],
+                                    filters=trinotate_filters
+                                    ),                        
+                    # goseq for differential gene /isoforms expression results
+                    differential_expression.goseq(
+                        dge_trinotate_filtered_results,
+                        config.param("differential_expression_goseq", "dge_input_columns"),
+                        dge_goseq_filtered_results,                
+                        os.path.join(lengths_filtered_file),
+                        os.path.join("trinotate", "trinotate_annotation_report.tsv." + item + "_go.tsv")
+                        )
+                    ], name= "filter_dge_run_goSeq_" + item + "_" + contrast.name)
+                )
+                filtered_output_files += [dge_trinotate_filtered_results, dge_goseq_filtered_results]
+        
         # Render Rmarkdown Report
         jobs.append(
             rmarkdown.render(
-             job_input            = os.path.join("exploratory", "index.tsv"),
-             job_name             = "gq_seq_utils_exploratory_analysis_rnaseq_denovo_report",
-             input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeqDeNovoAssembly.gq_seq_utils_exploratory_analysis_rnaseq.Rmd") ,
+             job_input            = filtered_output_files,
+             job_name             = "differential_expression_goseq_rnaseq_denovo_filtered_report",
+             input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeqDeNovoAssembly.differential_expression_goseq_filtered.Rmd") ,
              render_output_dir    = 'report',
-             module_section       = 'report', # TODO: this or exploratory?
-             prerun_r             = 'report_dir="report";' # TODO: really necessary or should be hard-coded in exploratory.Rmd?
+             module_section       = 'report', 
+             prerun_r             = 'report_dir="report/filtered_assembly"; source_dir="' + dge_output_dir + '"; ' + 'top_n_results=10; contrasts=c("' + '",'.join(contrast.name for contrast in self.contrasts) + '");'
              )
         )
-  
-        return jobs    
+        return jobs
     
     @property
     def steps(self):
@@ -885,7 +976,9 @@ pandoc --to=markdown \\
             self.gq_seq_utils_exploratory_analysis_rnaseq_denovo,
             self.differential_expression,
             self.differential_expression_goseq,
-            self.filter_annotated_components
+            self.filter_annotated_components,
+            self.gq_seq_utils_exploratory_analysis_rnaseq_denovo_filtered,
+            self.differential_expression_filtered            
         ]
 
 if __name__ == '__main__':

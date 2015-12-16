@@ -123,7 +123,7 @@ $PYTHON_TOOLS/parseTrinotateOutput.py -r {trinotate_annotation_report} -o {trino
         )
     )
 
-def py_parseMergeCsv(input_files, delimiter, output , common, subset=None, exclude=None, left_join=None, sort_by=None, make_names=None):  
+def py_parseMergeCsv(input_files, delimiter, output , common, subset=None, exclude=None, left_join=None, sort_by=None, make_names=None, filters=None):  
     return Job(
         input_files, 
         [output],
@@ -134,7 +134,7 @@ def py_parseMergeCsv(input_files, delimiter, output , common, subset=None, exclu
 $PYTHON_TOOLS/parseMergeCsv.py -i {input_files} \\
       -o {output} \\
       -c {common_columns} \\
-      -d {delimiter} {subset}{toexclude}{left_outer_join}{sort_by_field}""".format(
+      -d {delimiter} {subset}{toexclude}{left_outer_join}{sort_by_field}{make_names}{filters}""".format(
         input_files=" ".join(input_files),
         output=output,
         common_columns=common,        
@@ -143,7 +143,8 @@ $PYTHON_TOOLS/parseMergeCsv.py -i {input_files} \\
         toexclude=" -x " + exclude if exclude else "", 
         left_outer_join=" -l " if  left_join else "",
         sort_by_field=" -t " + sort_by if sort_by else "",
-        make_names=" -n " if make_names else ""
+        make_names=" -n " if make_names else "",
+        filters="" if not filters else " -f " + ' and '.join(filters)
         )
     )
 
