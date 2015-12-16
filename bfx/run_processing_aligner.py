@@ -230,9 +230,11 @@ class BwaRunProcessingAligner(RunProcessingAligner):
                     known_variants_annotated_filtered,
                     output_prefix,
                 ),
+                # the first column starts with a # (a comment for nanuq) so we remove the column and output the result
+                # in a file with the name supported by nanuq
                 Job([output_prefix + ".selfSM"],
                     [output_prefix + ".tsv"],
-                    command="mv " + output_prefix + ".selfSM " + output_prefix + ".tsv"
+                    command="cut -f2- " + output_prefix + ".selfSM > " + output_prefix + ".tsv"
                 )
                 ],
                 name="verify_bam_id." + readset.name + "." + readset.run + "." + readset.lane
