@@ -38,7 +38,7 @@ for (item in c("genes","isoforms")){
 }
 
 ```
-### Differential Expression Analysis and Gene Ontology (GO) Analysis of the Differential Expression Results
+#### Differential Expression Analysis and Gene Ontology (GO) Analysis of the Differential Expression Results
 
 The differential analysis results are filtered to extract differential expression results of high quality contigs/genes based on trinotate annotations. One gene ontology analysis is generated per design based on the differentially expressed genes from the DESeq/edgeR filtered results. GO terms associated to each gene are obtained from trinotate annotations. Every gene having an FDR adjusted p-value under 0.1 is considered as differentially expressed. The threshold for differentially expressed selection is the same as in the first analysis. The first column is the ID of the category enriched; the second column is the FDR adjusted p-value of category enrichment; the third column is the GO id; and the fourth column is a brief description of the GO term. **If there are no results for a particular design, it means the FDR adjusted GO enrichment was not significant (p-value too high)**.
 
@@ -47,16 +47,18 @@ The differential analysis results are filtered to extract differential expressio
 for (item in c("genes","isoforms")){    
     for (contrast in contrasts){
         subset.dge=try(subset(dge.results, fileID == paste(item,contrast,sep="_"), select=-fileID))
-        if (!inherits(subset.dge,'try-error') && nrow(subset.dge) > 0){
-            print(kable(subset.dge, row.names=F, caption=paste("Differentially Expressed ",item," for contrast ", contrast, 
-                                                               " (**partial table**; [download full table](",gsub("report/","",report_dir),"/differential_expression/", item,"/",contrast,"/dge_trinotate_results.csv))",sep="")))
-        }else  print(paste("No differentially expressed ",item," results are available for this design after filtering.",sep=""))    
+        if (!inherits(subset.dge,'try-error') && nrow(subset.dge) > 0){            
+            print(kable(subset.dge, row.names=F, caption=paste("<br>","Differentially Expressed ",item," for contrast ", contrast, 
+                                                               " (**partial table**; [download full table](",gsub("report/","",report_dir),"/differential_expression/", item,"/",contrast,"/dge_trinotate_results.csv))",sep=""), 
+                                    padding = 10, align=NULL))
+            }else  print(paste("<br>","No differentially expressed ",item," results are available for this contrast after filtering: ", contrast,  ".",sep=""))    
         
         subset.goseq=try(subset(goseq.results,fileID == paste(item,contrast,sep="_"), select=-fileID))
-        if (!inherits(subset.goseq,'try-error') && nrow(subset.goseq) > 0){
-            print(kable(subset.goseq, row.names=F, caption=paste("GO Results of the Differentially Expressed ",item," for contrast ", contrast, 
-                                                                 " (**partial table**; [download full table](",gsub("report/","",report_dir),"/differential_expression/", item,"/", contrast,"/gene_ontology_results.csv))",sep="")))
-        } else print(paste("No FDR adjusted GO enrichment was significant (p-value too high) based on the differentially expressed ",item, " results for this design.",sep=""))            
+        if (!inherits(subset.goseq,'try-error') && nrow(subset.goseq) > 0){            
+            print(kable(subset.goseq, row.names=F, caption=paste("<br>","GO Results of the Differentially Expressed ",item," for contrast ", contrast, 
+                                                                 " (**partial table**; [download full table](",gsub("report/","",report_dir),"/differential_expression/", item,"/", contrast,"/gene_ontology_results.csv))",sep=""), 
+                        padding = 10, align=NULL))
+            } else print(paste("<br>","No FDR adjusted GO enrichment was significant (p-value too high) based on the differentially expressed ",item, " results for this contrast: ", contrast ,".",sep=""))            
     }
 }
 ```
