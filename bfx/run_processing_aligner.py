@@ -172,7 +172,7 @@ class BwaRunProcessingAligner(RunProcessingAligner):
             job.name = "picard_calculate_hs_metrics." + readset.name + ".hs" + "." + readset.run + "." + readset.lane
             jobs.append(job)
 
-            jobs.extend(self.verify_bam_id(readset, full_coverage_bed))
+        jobs.extend(self.verify_bam_id(readset, full_coverage_bed))
 
         job = bvatools.depth_of_coverage(
             input,
