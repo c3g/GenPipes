@@ -128,6 +128,7 @@ def filtering(
     ):
 
     ref_params_xml=config.param('smrtanalysis_filtering', 'filtering_settings')
+    white_path=config.param('smrtanalysis_filtering', 'whitelist_path',required=False)
     output_prefix = os.path.join(output_dir, "data", "filtered_subreads.")
     input_fofn = os.path.join(output_dir, "input.fofn")
     output_fastq = output_prefix + "fastq"
@@ -143,7 +144,7 @@ def filtering(
 bash -c 'set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
 fofnToSmrtpipeInput.py {fofn} > {input_xml} && \\
 cp {fofn} {input_fofn} && \\
-sed -e "s/MINSUBREADLENGTH/{min_subread_length}/g" -e "s/MINREADLENGTH/{min_read_length}/g" -e "s/MINQUAL/{min_qual}/g" \\
+sed -e "s|MINSUBREADLENGTH|{min_subread_length}|g" -e "s|MINREADLENGTH|{min_read_length}|g" -e "s|MINQUAL|{min_qual}|g"{whitelist_param} \\
   < {ref_params_xml} > {params_xml} && \\
 smrtpipe.py \\
   -D NPROC={threads} \\
@@ -164,6 +165,7 @@ prinseq-lite.pl \\
         min_subread_length=config.param('smrtanalysis_filtering', 'min_subread_length'),
         min_read_length=config.param('smrtanalysis_filtering', 'min_read_length'),
         min_qual=config.param('smrtanalysis_filtering', 'min_qual'),
+        whitelist_param=' -e "s|<\!-- WHITELISTCOM||g" -e "s|WHITELISTCOM -->||g" -e "s|WHITELISTFILEPATH|'+white_path+'|g"' if white_path != "" else '',
         ref_params_xml=ref_params_xml,
         params_xml=params_xml,
         threads=config.param('smrtanalysis_filtering', 'threads'),

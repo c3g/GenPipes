@@ -16,7 +16,7 @@ module_ucsc=mugqic/ucsc/20140212
 
 init_install() {
   # '$MUGQIC_INSTALL_HOME_DEV' for development, '$MUGQIC_INSTALL_HOME' for production
-  INSTALL_HOME=$MUGQIC_INSTALL_HOME_DEV
+  if [ -z "$INSTALL_HOME" ]; then INSTALL_HOME=$MUGQIC_INSTALL_HOME_DEV ; fi
 
   INSTALL_DIR=$INSTALL_HOME/genomes/species/$SPECIES.$ASSEMBLY
   DOWNLOAD_DIR=$INSTALL_DIR/downloads
@@ -351,7 +351,7 @@ create_star_index() {
 mkdir -p $INDEX_DIR && \
 module load $module_star && \
 LOG=$LOG_DIR/star_${sjdbOverhang}_$TIMESTAMP.log && \
-STAR --runMode genomeGenerate --genomeDir $INDEX_DIR --genomeFastaFiles $GENOME_DIR/$GENOME_FASTA --runThreadN $runThreadN --sjdbOverhang $sjdbOverhang --sjdbGTFfile $ANNOTATIONS_DIR/$GTF --outFileNamePrefix $INDEX_DIR/ > \$LOG 2>&1 && \
+STAR --runMode genomeGenerate --genomeDir $INDEX_DIR --genomeFastaFiles $GENOME_DIR/$GENOME_FASTA --runThreadN $runThreadN --genomeSAindexNbases 8 --sjdbOverhang $sjdbOverhang --sjdbGTFfile $ANNOTATIONS_DIR/$GTF --outFileNamePrefix $INDEX_DIR/ > \$LOG 2>&1 && \
 chmod -R ug+rwX,o+rX $INDEX_DIR \$LOG"
       cmd_or_job STAR_CMD $runThreadN STAR_${sjdbOverhang}_CMD
     else
