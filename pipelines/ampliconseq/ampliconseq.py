@@ -38,10 +38,12 @@ from bfx.readset import *
 from bfx.sequence_dictionary import *
 
 from pipelines import common
+from bfx import tools
 from bfx import flash
 from bfx import trimmomatic
 from bfx import qiime
-
+from bfx import vsearch
+from bfx import krona
 
 log = logging.getLogger(__name__)
 
@@ -55,6 +57,7 @@ class AmpliconSeq(common.Illumina):
 
 	def flash(self):
 		"""
+		Step 4
 		Merge paired end reads using [FLASh](http://ccb.jhu.edu/software/FLASH/).
 		"""
 		jobs = []
@@ -95,6 +98,7 @@ class AmpliconSeq(common.Illumina):
 		
 	def merge_flash_stats(self):
 		"""
+		Step 5
 		The paired end merge statistics per readset are merged at this step.
 		"""
 		
@@ -149,7 +153,7 @@ cut -f1,3- {readset_merge_flash_stats} | awk -F"\t" '{{OFS="\t"; if (NR==1) {{if
 			Job(
 				[sample_merge_flash_stats],
 				[report_file],
-				[['merge_flash_stats', 'module_pandoc']],
+				[['DEFAULT', 'module_pandoc']],
 				command="""\
 mkdir -p report && \\
 cp {readset_merge_flash_stats} {sample_merge_flash_stats} report/ && \\
@@ -179,6 +183,7 @@ pandoc \\
 	def catenate(self):
 	
 		"""
+		Step 6
 		Catenate all the reads in one file for further analysis.
 	
 		This step takes as input files:
@@ -217,22 +222,33 @@ pandoc \\
 			
 		else:			
 		
-			job = qiime.catenate(
+			catenate_job = qiime.catenate(
 			input_files,
 			sample_name,
 			catenate_fasta
 			)
-								
+
+			mapbuild_job = tools.py_ampliconSeq(
+				[], [],
+				'map_build',
+				"""-s {}""".format(','.join(sample_name))
+			)
+			#Job(
+				#module_entries=[['DEFAULT', 'module_mugqic_tools']],
+				#command="""python $PYTHON_TOOLS/AmpliconSeq_script.py -m map_build -s {}""".format(','.join(sample_name))
+			#)
+
 			jobs.append(concat_jobs([
-				Job(command="python $AMP_SEQ_HOME/AmpliconSeq_script.py -m map_build -s " + ','.join(sample_name)),
-				job		
-			], name="catenate"))	
-			
+				mapbuild_job,
+				catenate_job		
+			], name="catenate"))
+
 			return jobs
 					
 					
 	def uchime(self):
 		"""
+		Step 7
 		Reference based chimera detection is performed using [vsearch](https://github.com/torognes/vsearch)
 
 		This step takes as input files:
@@ -248,17 +264,27 @@ pandoc \\
 		filter_fasta = os.path.join(filter_directory, "seqs_chimeras_filtered.fna")	
 		filter_log = os.path.join(filter_directory, "seqs_chimeras_filtered.log")
 		
-		job = qiime.uchime(
+		uchime_job = vsearch.uchime(
 			cat_sequence_fasta,
 			filter_fasta
 		)
 		
-		job_log = Job([filter_fasta], [filter_log])
-		job_log.command = """python $AMP_SEQ_HOME/AmpliconSeq_script.py -m catenate_stat -i {} -j {}""".format(filter_fasta,filter_log)
+		job_log = tools.py_ampliconSeq(
+			[filter_fasta],
+			[filter_log],
+			'catenate_stat',
+			"""-i {} -j {}""".format(filter_fasta,filter_log)
+		)
+		#Job(
+			#[filter_fasta],
+			#[filter_log],
+               		#module_entries=[['DEFAULT', 'module_mugqic_tools']],
+			#command="""python $PYTHON_TOOLS/AmpliconSeq_script.py -m catenate_stat -i {} -j {}""".format(filter_fasta,filter_log)
+		#)
 
 		jobs.append(concat_jobs([
 			Job(command="mkdir -p " + filter_directory),
-			job,
+			uchime_job,
 			job_log
 		], name="uchime"))
 					
@@ -267,6 +293,7 @@ pandoc \\
 		
 	def merge_uchime_stats(self):
 		"""
+		Step 8
 		The chimeric sequences filtered out statistics per readset are merged at this step.
 		"""
 		
@@ -297,24 +324,30 @@ pandoc \\
 				  			
 			# Retrieve merge statistics using re search in python.
 
-			python_command = """python $AMP_SEQ_HOME/AmpliconSeq_script.py -m uchime -i {} -j {} -s {}""".format(filter_log,flash_log,str(readset.sample.name))
+			#python_command = """python $PYTHON_TOOLS/AmpliconSeq_script.py -m uchime -i {} -j {} -s {}""".format(filter_log,flash_log,str(readset.sample.name))
 			
 			job = concat_jobs([
 				job,
-				Job(
-					[flash_log, filter_log],
+				tools.py_ampliconSeq(
+					[filter_log, flash_log],
 					[readset_merge_uchime_stats],
-					[
-						['qiime', 'module_ampliconseq']
-					],
-					# Create readset merging stats TSV file with paired read count using python.
-					command="""\
-{python_command} \\
-  >> {readset_merge_uchime_stats}""".format(
-						python_command=python_command,
-						readset_merge_uchime_stats=readset_merge_uchime_stats
-					)
+					'uchime',
+					"""-i {} -j {} -s {} >> {}""".format(filter_log,flash_log,str(readset.sample.name),readset_merge_uchime_stats)
 				)
+				#Job(
+					#[flash_log],
+					#[readset_merge_uchime_stats],
+					#[
+						#['DEFAULT', 'module_mugqic_tools']
+					#],
+					## Create readset merging stats TSV file with paired read count using python.
+					#command="""\
+#{python_command} \\
+  #>> {readset_merge_uchime_stats}""".format(
+						#python_command=python_command,
+						#readset_merge_uchime_stats=readset_merge_uchime_stats
+					#)
+				#)
 			])
 
 		sample_merge_uchime_stats = os.path.join("metrics", "uchimeSampleTable.tsv")
@@ -322,7 +355,7 @@ pandoc \\
 		return [concat_jobs([
 			job,
 			Job(
-				[readset_merge_uchime_stats],
+				[],
 				[sample_merge_uchime_stats],
 				# Create sample trimming stats TSV file with total read counts (i.e. paired * 2 if applicable) using ugly awk
 				command="""\
@@ -335,7 +368,7 @@ cut -f1,3- {readset_merge_uchime_stats} | awk -F"\t" '{{OFS="\t"; if (NR==1) {{i
 			Job(
 				[sample_merge_uchime_stats],
 				[report_file],
-				[['merge_uchime_stats', 'module_pandoc']],
+				[['DEFAULT', 'module_pandoc']],
 				command="""\
 mkdir -p report && \\
 cp {readset_merge_uchime_stats} {sample_merge_uchime_stats} report/ && \\
@@ -365,6 +398,7 @@ pandoc \\
 		
 	def otu_ref_picking(self):
 		"""
+		Step 9
 		The OTU picking step (close_ref) assigns similar sequences to operational taxonomic units (OTUs) by clustering sequences based on a user-defined similarity threshold. Method per default uses [VSEARCH] (https://github.com/torognes/vsearch) and [Qiime] (http://qiime.org).
 
 		This step takes as input file:
@@ -399,6 +433,7 @@ pandoc \\
 		
 	def otu_picking(self):
 		"""
+		Step 10
 		The OTU picking step (de novo) assigns similar sequences to operational taxonomic units (OTUs) by clustering sequences based on a user-defined similarity threshold. Method per default uses [VSEARCH] (https://github.com/torognes/vsearch) and [Qiime] (http://qiime.org).
 
 		This step takes as input file:
@@ -433,6 +468,7 @@ pandoc \\
 
 	def otu_rep_picking(self):
 		"""
+		Step 11
 		After picking OTUs, this step pick a representative sequence for each OTU.
 
 		This step takes as input files:
@@ -473,6 +509,7 @@ pandoc \\
 
 	def otu_assigning(self):
 		"""
+		Step 12
 		Given a set of OTUS, this step attempts to assign the taxonomy of each OTU using [Uclust] (http://drive5.com/usearch/manual/uclust_algo.html).
 
 		This step takes as input files:
@@ -507,6 +544,7 @@ pandoc \\
 
 	def otu_table(self):
 		"""
+		Step 13
 		This step make a consensus OTU table in biom format. It tabulates the number of times an OTU is found in each sample, and adds the taxonomic predictions for each OTU. 
 
 		This step takes as input files:
@@ -550,8 +588,14 @@ pandoc \\
 		job_filter2.command = """$QIIME_HOME/filter_samples_from_otu_table.py -i {} -n 2 -o {}""".format(otu_table_sample_file,otu_table_final)
 		
 		#Sample remained after filtering.
-		job_sample = Job([otu_table_summary], [sample_name_control], [['qiime', 'module_ampliconseq']])
-		job_sample.command ="""python $AMP_SEQ_HOME/AmpliconSeq_script.py -m sample_name -i {} -j {}""".format(otu_table_summary,otu_sample_directory)
+		job_sample = tools.py_ampliconSeq(
+			[otu_table_summary],
+			[sample_name_control],
+			'sample_name',
+			"""-i {} -j {}""".format(otu_table_summary,otu_sample_directory)
+		)
+		#Job([otu_table_summary], [sample_name_control], [['DEFAULT', 'module_mugqic_tools']])
+		#job_sample.command ="""python $PYTHON_TOOLS/AmpliconSeq_script.py -m sample_name -i {} -j {}""".format(otu_table_summary,otu_sample_directory)
 		
 		jobs.append(concat_jobs([
 		job,
@@ -567,6 +611,7 @@ pandoc \\
 
 	def otu_alignment(self):
 		"""
+		Step 14
 		Align OTU representative sequences using [PyNAST] (http://biocore.github.io/pynast/).
 
 		This step takes as input file:
@@ -597,6 +642,7 @@ pandoc \\
 
 	def filter_alignment(self):
 		"""
+		Step 15
 		Filter the alignment by removing positions which are gaps in every sequence.
 
 		This step takes as input file:
@@ -627,6 +673,7 @@ pandoc \\
 
 	def phylogeny(self):
 		"""
+		Step 16
 		Build a phylogenetic tree from a multiple sequence alignment using [FastTree] (http://www.microbesonline.org/fasttree/).
 
 		This step takes as input file:
@@ -660,6 +707,7 @@ pandoc \\
 
 	def qiime_report(self):
 		"""
+		Step 17
 		1st part report for taxonomic affiliation. 
 		"""
 		
@@ -685,7 +733,7 @@ pandoc \\
 				#[otu_table, phylo_file],
                 [otu_table],
                 [report_file],
-                [['qiime', 'module_pandoc']],
+                [['DEFAULT', 'module_pandoc']],
                 command="""\
 mkdir -p report && \\
 pandoc --to=markdown \\
@@ -710,6 +758,7 @@ pandoc --to=markdown \\
 		
 	def multiple_rarefaction(self):
 		"""
+		Step 18
 		1st step (/4) for rarefaction plot.
 		Rarefies OTU table by random sampling (without replacement) at different depth in order to perform rarefaction analysis. 
 		You need to provide the minimum/maximum number of sequences per samples and the size of each steps between the min/max of seqs/sample. 
@@ -747,6 +796,7 @@ pandoc --to=markdown \\
 
 	def alpha_diversity(self):
 		"""
+		Step 19
 		2nd step (/4) for rarefaction plot.
 		Calculate alpha diversity on each sample using a variety of alpha diversity metrics (chao1, shannon, observed otus). 
 
@@ -775,6 +825,7 @@ pandoc --to=markdown \\
 
 	def collate_alpha(self):
 		"""
+		Step 20
 		3rd step (/4) for rarefaction plot.
 		Merge all the alpha diversity computed in the previous step. 
 		"""
@@ -808,6 +859,7 @@ pandoc --to=markdown \\
 
 	def sample_rarefaction_plot(self):
 		"""
+		Step 21
 		Last step for rarefaction plot.
 		Plot the rarefaction curve for each sample
 		"""
@@ -830,7 +882,7 @@ pandoc --to=markdown \\
 		for readset in self.readsets:
 		
 			try:
-				self.select_input_files([[os.path.join(otu_sample_directory,str(readset.sample.name).replace("_", ".")+'.txt')]])
+			#	self.select_input_files([[os.path.join(otu_sample_directory,str(readset.sample.name).replace("_", ".")+'.txt')]])
 				
 				sample_collated_general_directory = os.path.join(alpha_diversity_collated_directory, readset.sample.name)
 				sample_map = os.path.join(sample_collated_general_directory, "map.txt")
@@ -854,12 +906,50 @@ pandoc --to=markdown \\
 				
 				jobs.append(concat_jobs([
 						Job(command="mkdir -p " + sample_collated_directory),
-						Job(command="""python $AMP_SEQ_HOME/AmpliconSeq_script.py -m map_per_sample -s {} -j {}""".format(readset.sample.name,sample_map)),
-						Job(command="""python $AMP_SEQ_HOME/AmpliconSeq_script.py -m sample_rarefaction -i {} -j {} -s {}""".format(chao1_stat,chao1_dir,readset.sample.name)),
-						Job(command="""python $AMP_SEQ_HOME/AmpliconSeq_script.py -m sample_rarefaction -i {} -j {} -s {}""".format(observed_species_stat,observed_species_dir,readset.sample.name)),
-						Job(command="""python $AMP_SEQ_HOME/AmpliconSeq_script.py -m sample_rarefaction -i {} -j {} -s {}""".format(shannon_stat,shannon_dir,readset.sample.name)),
+						tools.py_ampliconSeq(
+							[],
+							[sample_map],
+							'map_per_sample',
+							"""-s {} -j {}""".format(readset.sample.name,sample_map)
+						),
+						tools.py_ampliconSeq(
+							[chao1_stat],
+							[chao1_dir],
+							'sample_rarefaction',
+							"""-i {} -j {} -s {}""".format(chao1_stat,chao1_dir,readset.sample.name)
+						),
+						tools.py_ampliconSeq(
+							[observed_species_stat],
+							[observed_species_dir],
+							'sample_rarefaction',
+							"""-i {} -j {} -s {}""".format(observed_species_stat,observed_species_dir,readset.sample.name)
+						),
+						tools.py_ampliconSeq(
+							[shannon_stat],
+							[shannon_dir],
+							'sample_rarefaction',
+							"""-i {} -j {} -s {}""".format(shannon_stat,shannon_dir,readset.sample.name)
+						),
 						job
 					], name="sample_rarefaction_plot"))
+						#Job(
+							#module_entries=[['DEFAULT', 'module_mugqic_tools']],
+							#command="""python $PYTHON_TOOLS/AmpliconSeq_script.py -m map_per_sample -s {} -j {}""".format(readset.sample.name,sample_map)
+						#),
+						#Job(
+							#module_entries=[['DEFAULT', 'module_mugqic_tools']],
+							#command="""python $PYTHON_TOOLS/AmpliconSeq_script.py -m sample_rarefaction -i {} -j {} -s {}""".format(chao1_stat,chao1_dir,readset.sample.name)
+						#),
+						#Job(
+							#module_entries=[['DEFAULT', 'module_mugqic_tools']],
+							#command="""python $PYTHON_TOOLS/AmpliconSeq_script.py -m sample_rarefaction -i {} -j {} -s {}""".format(observed_species_stat,observed_species_dir,readset.sample.name)
+						#),
+						#Job(
+							#module_entries=[['DEFAULT', 'module_mugqic_tools']],
+							#command="""python $PYTHON_TOOLS/AmpliconSeq_script.py -m sample_rarefaction -i {} -j {} -s {}""".format(shannon_stat,shannon_dir,readset.sample.name)
+						#),
+						#job
+					#], name="sample_rarefaction_plot"))
 			
 			except:
 				pass 
@@ -868,6 +958,7 @@ pandoc --to=markdown \\
 
 	def qiime_report2(self):
 		"""
+		Step 22
 		2nd part report for taxonomic affiliation. Plot rarefaction curve for each sample.
 		"""
 		
@@ -886,7 +977,7 @@ pandoc --to=markdown \\
 		
 		for readset in self.readsets:
 			try:
-				self.select_input_files([[os.path.join(otu_sample_directory,str(readset.sample.name).replace("_", ".")+'.txt')]])
+			#	self.select_input_files([[os.path.join(otu_sample_directory,str(readset.sample.name).replace("_", ".")+'.txt')]])
 		
 				inputs.append(str(readset.sample.name).replace('_','.'))
 				observed_species_file = """{}/average_plots/observed_species{}.png""".format(readset.sample.name,str(readset.sample.name).replace('_','.'))
@@ -899,7 +990,7 @@ pandoc --to=markdown \\
 		jobs.append(Job(
                 curve_sample,
                 [report_file],
-                [['qiime', 'module_pandoc']],
+                [['DEFAULT', 'module_pandoc']],
                 command="""\            
 mkdir -p report/fig/alpha_diversity/ && \\
 montage -mode concatenate -tile {plot_dimension} {curve_sample} report/fig/alpha_diversity/alpha.rarefaction_sample.png  && \\
@@ -920,6 +1011,7 @@ pandoc --to=markdown \\
 		
 	def single_rarefaction(self):
 		"""
+		Step 23
 		This step is recommended. It subsamples (rarefy) all the samples to an equal number of sequences for further comparaison.
 		You have to provide the number of sequences to subsample per sample in the configuration file (single_rarefaction_depth).
 
@@ -962,15 +1054,47 @@ pandoc --to=markdown \\
 			normalization_method
 		)
 		
-		job_chao1 = Job([chao1_stat], [chao1_rarefied_stat])
-		job_chao1.command = """python $AMP_SEQ_HOME/AmpliconSeq_script.py -m single_rarefaction -i {} -j {} -s {}""".format(chao1_stat,chao1_rarefied_stat,config.param('qiime_single_rarefaction', 'single_rarefaction_depth'))
-		
-		job_observed_species = Job([observed_species_stat], [observed_species_rarefied_stat])
-		job_observed_species.command = """python $AMP_SEQ_HOME/AmpliconSeq_script.py -m single_rarefaction -i {} -j {} -s {}""".format(observed_species_stat,observed_species_rarefied_stat,config.param('qiime_single_rarefaction', 'single_rarefaction_depth'))
-		
-		job_shannon = Job([shannon_stat], [shannon_rarefied_stat])
-		job_shannon.command = """python $AMP_SEQ_HOME/AmpliconSeq_script.py -m single_rarefaction -i {} -j {} -s {}""".format(shannon_stat,shannon_rarefied_stat,config.param('qiime_single_rarefaction', 'single_rarefaction_depth'))
-						
+		job_chao1 = tools.py_ampliconSeq(
+			[chao1_stat],
+			[chao1_rarefied_stat],
+			'single_rarefaction',
+			"""-i {} -j {} -s {}""".format(chao1_stat,chao1_rarefied_stat,config.param('qiime_single_rarefaction', 'single_rarefaction_depth'))
+		)
+
+		job_observed_species = tools.py_ampliconSeq(
+			[observed_species_stat],
+			[observed_species_rarefied_stat],
+			'single_rarefaction',
+			"""-i {} -j {} -s {}""".format(observed_species_stat,observed_species_rarefied_stat,config.param('qiime_single_rarefaction', 'single_rarefaction_depth'))
+		)
+
+		job_shannon = tools.py_ampliconSeq(
+			[shannon_stat],
+			[shannon_rarefied_stat],
+			'single_rarefaction',
+			"""-i {} -j {} -s {}""".format(shannon_stat,shannon_rarefied_stat,config.param('qiime_single_rarefaction', 'single_rarefaction_depth'))
+		)
+		#job_chao1 = Job(
+			#[chao1_stat],
+			#[chao1_rarefied_stat],
+			#module_entries=[['DEFAULT', 'module_mugqic_tools']],
+			#command="""python $PYTHON_TOOLS/AmpliconSeq_script.py -m single_rarefaction -i {} -j {} -s {}""".format(chao1_stat,chao1_rarefied_stat,config.param('qiime_single_rarefaction', 'single_rarefaction_depth'))
+		#)
+
+		#job_observed_species = Job(
+			#[observed_species_stat],
+			#[observed_species_rarefied_stat],
+			#module_entries=[['DEFAULT', 'module_mugqic_tools']],
+			#command="""python $PYTHON_TOOLS/AmpliconSeq_script.py -m single_rarefaction -i {} -j {} -s {}""".format(observed_species_stat,observed_species_rarefied_stat,config.param('qiime_single_rarefaction', 'single_rarefaction_depth'))
+		#)
+
+		#job_shannon = Job(
+			#[shannon_stat],
+			#[shannon_rarefied_stat],
+			#module_entries=[['DEFAULT', 'module_mugqic_tools']],
+			#command="""python $PYTHON_TOOLS/AmpliconSeq_script.py -m single_rarefaction -i {} -j {} -s {}""".format(shannon_stat,shannon_rarefied_stat,config.param('qiime_single_rarefaction', 'single_rarefaction_depth'))
+		#)
+
 		jobs.append(concat_jobs([
 		# Create an output directory
 		Job(command="mkdir -p otu_normalized"),
@@ -987,6 +1111,7 @@ pandoc --to=markdown \\
 
 	def css_normalization(self):
 		"""
+		Step 24
 		This step is recommended. Alternative method for normalization to rarefaction. 
 		Performs the CSS Matrix normalization.
 
@@ -1029,14 +1154,46 @@ pandoc --to=markdown \\
 			normalization_method
 		)
 		
-		job_chao1 = Job([chao1_stat], [chao1_rarefied_stat])
-		job_chao1.command = """python $AMP_SEQ_HOME/AmpliconSeq_script.py -m single_rarefaction -i {} -j {} -s {}""".format(chao1_stat,chao1_rarefied_stat,config.param('qiime_multiple_rarefaction', 'multiple_rarefaction_max'))
+		job_chao1 = tools.py_ampliconSeq(
+			[chao1_stat],
+			[chao1_rarefied_stat],
+			'single_rarefaction',
+			"""-i {} -j {} -s {}""".format(chao1_stat,chao1_rarefied_stat,config.param('qiime_multiple_rarefaction', 'multiple_rarefaction_max'))
+		)
+
+		job_observed_species = tools.py_ampliconSeq(
+			[observed_species_stat],
+			[observed_species_rarefied_stat],
+			'single_rarefaction',
+			"""-i {} -j {} -s {}""".format(observed_species_stat,observed_species_rarefied_stat,config.param('qiime_multiple_rarefaction', 'multiple_rarefaction_max'))
+		)
+
+		job_shannon = tools.py_ampliconSeq(
+			[shannon_stat],
+			[shannon_rarefied_stat],
+			'single_rarefaction',
+			"""-i {} -j {} -s {}""".format(shannon_stat,shannon_rarefied_stat,config.param('qiime_multiple_rarefaction', 'multiple_rarefaction_max'))
+		)
+		#job_chao1 = Job(
+			#[chao1_stat],
+			#[chao1_rarefied_stat],
+			#module_entries=[['DEFAULT', 'module_mugqic_tools']],
+			#command="""python $PYTHON_TOOLS/AmpliconSeq_script.py -m single_rarefaction -i {} -j {} -s {}""".format(chao1_stat,chao1_rarefied_stat,config.param('qiime_multiple_rarefaction', 'multiple_rarefaction_max'))
+		#)
 		
-		job_observed_species = Job([observed_species_stat], [observed_species_rarefied_stat])
-		job_observed_species.command = """python $AMP_SEQ_HOME/AmpliconSeq_script.py -m single_rarefaction -i {} -j {} -s {}""".format(observed_species_stat,observed_species_rarefied_stat,config.param('qiime_multiple_rarefaction', 'multiple_rarefaction_max'))
+		#job_observed_species = Job(
+			#[observed_species_stat],
+			#[observed_species_rarefied_stat],
+			#module_entries=[['DEFAULT', 'module_mugqic_tools']],
+			#command="""python $PYTHON_TOOLS/AmpliconSeq_script.py -m single_rarefaction -i {} -j {} -s {}""".format(observed_species_stat,observed_species_rarefied_stat,config.param('qiime_multiple_rarefaction', 'multiple_rarefaction_max'))
+		#)
 		
-		job_shannon = Job([shannon_stat], [shannon_rarefied_stat])
-		job_shannon.command = """python $AMP_SEQ_HOME/AmpliconSeq_script.py -m single_rarefaction -i {} -j {} -s {}""".format(shannon_stat,shannon_rarefied_stat,config.param('qiime_multiple_rarefaction', 'multiple_rarefaction_max'))
+		#job_shannon = Job(
+			#[shannon_stat],
+			#[shannon_rarefied_stat],
+			#module_entries=[['DEFAULT', 'module_mugqic_tools']],
+			#command="""python $PYTHON_TOOLS/AmpliconSeq_script.py -m single_rarefaction -i {} -j {} -s {}""".format(shannon_stat,shannon_rarefied_stat,config.param('qiime_multiple_rarefaction', 'multiple_rarefaction_max'))
+		#)
 						
 		jobs.append(concat_jobs([
 		# Create an output directory
@@ -1053,6 +1210,7 @@ pandoc --to=markdown \\
 										  		
 	def rarefaction_plot(self):
 		"""
+		Step 25
 		Last step for rarefaction plot.
 		Rarefaction curve for each sample on the same plot. 
 		"""
@@ -1092,6 +1250,7 @@ pandoc --to=markdown \\
 
 	def summarize_taxa(self):
 		"""
+		Step 26
 		1st step (/3) for taxonomic affiliation plot.
 		Summarize information of taxonomic groups within each sample at different taxonomic level. 
 
@@ -1137,6 +1296,7 @@ pandoc --to=markdown \\
 
 	def plot_taxa(self):
 		"""
+		Step 27
 		2nd step (/3) for taxonomic affiliation plot.
 		Make taxaonomy summary bar plots based on taxonomy assignment. 
 
@@ -1159,20 +1319,21 @@ pandoc --to=markdown \\
 		taxonomic_input = [taxonomic_phylum, taxonomic_class, taxonomic_order, taxonomic_family, taxonomic_genus]
 		
 		alpha_diversity_taxonomy_bar_plot = os.path.join(taxonomic_directory, "bar_charts.html")		
-	
+
 		job = qiime.plot_taxa(
 			taxonomic_input,
 			alpha_diversity_taxonomy_bar_plot,
 			taxonomic_directory
 		)
-		
-		job.name = "plot_taxa"			
+
+		job.name = "plot_taxa"
 		jobs.append(job)	
 		
 		return jobs	
 
 	def plot_heatmap(self):
 		"""
+		Step 28
 		Last step for taxonomic affiliation plot.
 		Make heatmap at phylum level. 
 
@@ -1206,12 +1367,25 @@ pandoc --to=markdown \\
 				
 		taxonomic_input = [taxonomic_phylum]
 		
-		job = Job(taxonomic_input, [heatmap_script,heatmap_otu_data_R,heatmap_otu_name_R,heatmap_otu_tax_R], [['qiime', 'module_R'],['qiime', 'module_ampliconseq']])
-		job.command = """python $AMP_SEQ_HOME/AmpliconSeq_script.py -m plot_heatmap -i {} -j {} -s {}""".format(taxonomic_phylum,heatmap_directory,1)
+		job = tools.py_ampliconSeq(
+			[taxonomic_phylum],
+			[heatmap_script,heatmap_otu_data_R,heatmap_otu_name_R,heatmap_otu_tax_R],
+			'plot_heatmap',
+			"""-i {} -j {} -s {}""".format(taxonomic_phylum,heatmap_directory,1)
+		)
+		#job = Job(
+			#taxonomic_input,
+			#[heatmap_script,heatmap_otu_data_R,heatmap_otu_name_R,heatmap_otu_tax_R],
+                	#module_entries=[['DEFAULT', 'module_mugqic_tools']],
+			#command="""python $PYTHON_TOOLS/AmpliconSeq_script.py -m plot_heatmap -i {} -j {} -s {}""".format(taxonomic_phylum,heatmap_directory,1)
+		#)
 		
-		jobR = Job([heatmap_script,heatmap_otu_data_R,heatmap_otu_name_R,heatmap_otu_tax_R], [heatmap_chart,heatmap_otu_table,heatmap_tax_table], [['qiime', 'module_R'],['qiime', 'module_ampliconseq']])
-		jobR.command = "./beta_diversity/heatmap/OTU_Phylum_to_R.R"
-		
+		jobR = Job(
+			[heatmap_script,heatmap_otu_data_R,heatmap_otu_name_R,heatmap_otu_tax_R],
+			[heatmap_chart,heatmap_otu_table,heatmap_tax_table],
+			module_entries=[['DEFAULT', 'module_R'],['DEFAULT', 'module_ampliconseq']],
+			command="./beta_diversity/heatmap/OTU_Phylum_to_R.R"
+		)
 		
 		jobs.append(concat_jobs([
 		# Create an output directory
@@ -1225,6 +1399,7 @@ pandoc --to=markdown \\
 
 	def krona(self):
 		"""
+		Step 29
 		Plot Krona chart for taxonomic affiliation
 		"""
 		
@@ -1248,7 +1423,7 @@ pandoc --to=markdown \\
 			except:
 				pass 
 						
-		job = qiime.krona(
+		job = krona.krona(
 			otu_normalized_table,
 			sample_name,
 			alpha_diversity_krona_file,
@@ -1258,13 +1433,22 @@ pandoc --to=markdown \\
 				# Create an output directory
 				Job(command="mkdir -p alpha_diversity/krona_chart"),
 				Job(command='$QIIME_HOME/biom convert -i {} -o alpha_diversity/table_tax.txt --table-type="OTU table" --to-tsv --header-key taxonomy'.format(otu_normalized_table)),
-				Job(command="python $AMP_SEQ_HOME/AmpliconSeq_script.py -m krona -i alpha_diversity/table_tax.txt"),
+				tools.py_ampliconSeq(
+					[], [],
+					'krona',
+					"-i alpha_diversity/table_tax.txt"
+				),
+				#Job(
+					#module_entries=[['DEFAULT', 'module_mugqic_tools']],
+					#command="python $PYTHON_TOOLS/AmpliconSeq_script.py -m krona -i alpha_diversity/table_tax.txt"
+				#),
 				job
 			], name="krona"))
 		return jobs
 
 	def plot_to_alpha(self):
 		"""
+		Step 30
 		Final report 1st part for the Amplicon-Seq pipeline. Display results (taxonomy, heatmap and alpha diversity).
 		"""
 		
@@ -1308,7 +1492,7 @@ pandoc --to=markdown \\
 		jobs.append(Job(
                 inputs,
                 [report_file],
-                [['qiime', 'module_pandoc']],
+                [['DEFAULT', 'module_pandoc']],
                 command="""\            
 mkdir -p report/fig/alpha_diversity/ && \\
 mkdir -p report/fig/beta_diversity/heatmap/ && \\
@@ -1336,6 +1520,7 @@ pandoc --to=markdown \\
 		
 	def beta_diversity(self):
 		"""
+		Step 31
 		1st step (/3) for 2D PCoA plot.
 		Calculate beta diversity (pairwise sample dissimilarity) on OTU table. The OTU table has to be normalized. 
 		Only works with >= 4 samples
@@ -1404,6 +1589,7 @@ pandoc --to=markdown \\
 
 	def pcoa(self):
 		"""
+		Step 32
 		2nd step (/3) for 2D PCoA plot.
 		Compute coordinates pour PCoA 
 
@@ -1448,6 +1634,7 @@ pandoc --to=markdown \\
 
 	def pcoa_plot(self):
 		"""
+		Step 33
 		Last step for 2D PCoA plot.
 
 		This step takes as input file:
@@ -1523,6 +1710,7 @@ pandoc --to=markdown \\
 		
 	def plot_to_beta(self):
 		"""
+		Step 34
 		Final report's 2nd part for the Amplicon-Seq pipeline. Display results (beta diversity PCoA plots).
 		"""
 		
@@ -1558,7 +1746,7 @@ pandoc --to=markdown \\
 		jobs.append(Job(
                 inputs,
                 [report_file],
-                [['qiime', 'module_pandoc']],
+                [['DEFAULT', 'module_pandoc']],
                 command="""\            
 mkdir -p report/fig/beta_diversity/ && \\
 cp -r beta_diversity/2d_plots/ report/fig/beta_diversity/2d_plots/ && \\
@@ -1591,34 +1779,34 @@ pandoc --to=markdown \\
 			self.merge_trimmomatic_stats,
 			self.flash,
 			self.merge_flash_stats,	#5
-			self.catenate,	
+			self.catenate,
 			self.uchime,
 			self.merge_uchime_stats,
 			self.otu_ref_picking,
 			self.otu_picking,	#10
-			self.otu_rep_picking,	
-			self.otu_assigning,	
-			self.otu_table,	
-			self.otu_alignment,	
+			self.otu_rep_picking,
+			self.otu_assigning,
+			self.otu_table,
+			self.otu_alignment,
 			self.filter_alignment,	#15
-			self.phylogeny,	
-			self.qiime_report,	
+			self.phylogeny,
+			self.qiime_report,
 			self.multiple_rarefaction,
-			self.alpha_diversity,	
+			self.alpha_diversity,
 			self.collate_alpha,	#20
-			self.sample_rarefaction_plot,	
-			self.qiime_report2,	
+			self.sample_rarefaction_plot,
+			self.qiime_report2,
 			self.single_rarefaction,
 			self.css_normalization,
-			self.rarefaction_plot,	#25	
-			self.summarize_taxa,		
-			self.plot_taxa,	
-			self.plot_heatmap,	
+			self.rarefaction_plot,	#25
+			self.summarize_taxa,
+			self.plot_taxa,
+			self.plot_heatmap,
 			self.krona,
-			self.plot_to_alpha,	#30	
-			self.beta_diversity,	
+			self.plot_to_alpha,	#30
+			self.beta_diversity,
 			self.pcoa,
-			self.pcoa_plot,	
+			self.pcoa_plot,
 			self.plot_to_beta
 		]
 

@@ -352,3 +352,275 @@ This step takes as input file:
 Final report's 2nd part for the Amplicon-Seq pipeline. Display results (beta diversity PCoA plots).
 
 
+
+
+Tutorial:
+---------
+
+************************************************************************
+**SETTING**
+************************************************************************
+
+1a) IF you have a map file: copy the path to the "map_file" variable in the configuration file.
+   eg: map_file=/path/to/map.txt  
+
+   ELSE: Leave the variable empty. 
+   eg: map_file=
+
+1b) For the map file: All '_' character have to be replaced by '.' for the sample name. Exemple:
+
+In readset.tsv:
+
+Sample name : Ya_4_w3
+
+In map file:
+
+Sample name: Ya.4.w3
+
+**For the following settings, you need to download the databases. Run the .sh files in resources/genomes.**
+
+2a) For 16s study, use the Greengenes database for OTU picking. 
+
+- $MUGQIC_INSTALL_HOME/resources/genomes/greengenes.sh
+
+In the [DEFAULT] section:
+
+name=greengenes
+
+version=138
+
+similarity_treshold=97 (or 61, 64, 67, 70, 73, 76, 79, 82, 85, 88, 91, 94, 99)
+
+Also, don't forget the [qiime_otu_picking] section for the similarity treshold!
+
+2b) For 18s study, use the Silva database.
+
+- $MUGQIC_INSTALL_HOME/resources/genomes/silva.sh
+
+In the [DEFAULT] section:
+
+name=silva
+
+version=111
+
+similarity_treshold=97 (or 90, 94, 99)
+
+Also, don't forget the [qiime_otu_picking] section for the similarity treshold!
+
+2c) For ITS study, use the UNITE database for OTU picking.
+
+- $MUGQIC_INSTALL_HOME/resources/genomes/unite.sh
+
+In the [DEFAULT] section:
+
+name=unite
+
+version=1211
+
+similarity_treshold=97 (or 99)
+
+Also, don't forget the [qiime_otu_picking] section for the similarity treshold!
+
+3a) For 16s and 18s study, use the GOLD database for chimera detection. 
+
+- $MUGQIC_INSTALL_HOME/resources/genomes/chimera_gold.sh
+
+In the [uchime] section:
+
+name=gold
+version=20110519
+
+3b) For ITS study, use the UNITE database for chimera detection.
+
+- Create a directory: mkdir -p $MUGQIC_INSTALL_HOME/resources/genomes/chimera_unite_db/20150311/
+
+- You need to download it maually: https://unite.ut.ee/sh_files/uchime_reference_dataset_11_03_2015.zip
+
+- Unzip the file and copy the database: cp uchime_sh_refs_dynamic_original_985_11.03.2015.fasta $MUGQIC_INSTALL_HOME/resources/genomes/chimera_unite_db/20150311/unite.fasta
+
+In the [uchime] section:
+
+name=unite
+
+version=20150311
+
+
+************************************************************************
+**USAGE** 2 mods: de novo or close reference.
+************************************************************************
+
+<!-- ###################################################### -->
+**de novo mod**
+<!-- ###################################################### -->
+
+1) To step 17: qiime_report
+
+ampliconseq.py -r readsets.tsv -s 1-8,10-17 -c ampliconseq.base.ini -o analysis > analysis.sh
+
+NB1: This step can be long, some steps can be parallelized (step 7,10,12,14 - ie: uchime, otu_picking, otu_assigning, otu_alignment)
+
+--> Modify manually the 'ppn' to set it as same as 'threads' variable number. 
+
+NB2: For large data, set to >= 20 threads (and ppn) for uchime.
+
+NB3: For large data, set to >= 20 threads (and more for ppn) for otu picking.
+
+NB4: For large data, set to >= 15 threads (and ppn) for otu_alignment.
+
+NB5: For large data, increase the walltime (> 24h) of phylogeny step (16) 
+
+A) Report 1
+
+ampliconseq.py -r readset.tsv -s 1-17 -c ampliconseq.base.ini -o analysis --report > report.sh
+
+The otu_table.sum file helps you to choose the maximum rarefaction treshold. It CAN'T be > than the max Counts/sample.
+
+cat analysis/otus/otu_table.sum
+
+Look for Max in Counts/sample summary:
+
+Report to the "multiple_rarefaction_max" variable in the configuration file.
+
+4) To step 22: qiime_report2
+
+ampliconseq.py -r readset.tsv -s 18-22 -c ampliconseq.base.ini -o analysis > analysis2.sh
+
+B) Report 2
+
+ampliconseq.py -r readset.tsv -s 1-22 -c ampliconseq.base.ini -o analysis --report > report.sh
+
+**Rarefaction normalization**
+
+The report helps you to choose the single rarefaction treshold (for all the samples) by looking the rarefaction curves for each sample.
+Report to the "single_rarefaction_depth" variable in the configuration file.
+
+*if you have < 4 samples*
+
+5) To step 30: plot_to_alpha
+
+ampliconseq.py -r readset.tsv -s 23,25-30 -c ampliconseq.base.ini -o analysis > analysis3.sh
+
+C) Report 3: analysis done
+
+ampliconseq.py -r readset.tsv -s 1-30 -c ampliconseq.base.ini -o analysis --report > report.sh
+
+*else*
+
+5) To step 34: plot_to_beta
+
+ampliconseq.py -r readset.tsv -s 23,25-34 -c ampliconseq.base.ini -o analysis > analysis3.sh
+
+C) Report 3: analysis done
+
+ampliconseq.py -r readset.tsv -s 1-23,25-34 -c ampliconseq.base.ini -o analysis --report > report.sh
+
+**CSS normalization**
+
+*if you have < 4 samples*
+
+5) To step 30: plot_to_alpha
+
+ampliconseq.py -r readset.tsv -s 24-30 -c ampliconseq.base.ini -o analysis > analysis3.sh
+
+C) Report 3: analysis done
+
+ampliconseq.py -r readset.tsv -s 1-22,24-30 -c ampliconseq.base.ini -o analysis --report > report.sh
+
+*else*
+
+5) To step 34: plot_to_beta
+
+ampliconseq.py -r readset.tsv -s 24-34 -c ampliconseq.base.ini -o analysis > analysis3.sh
+
+C) Report 3: analysis done
+
+ampliconseq.py -r readset.tsv -s 1-22,24-34 -c ampliconseq.base.ini -o analysis --report > report.sh
+
+<!-- ###################################################### -->
+**Close ref mod (for large dataset)**
+<!-- ###################################################### -->
+
+1) To step 17: qiime_report
+
+ampliconseq.py -r readset.tsv -s 1-9,11-17 -c ampliconseq.base.ini -o analysis > analysis.sh
+
+NB1: This step can be long, some steps can be parallelized (step 7,9,12,14 - ie: uchime, otu_ref_picking, otu_assigning, otu_alignment)
+
+NB2: For large data, set to >= 20 threads (and ppn) for uchime.
+
+NB3: For large data, set to >= 20 threads (and more for ppn) for otu_ref_picking.
+
+NB4: For large data, set to >= 15 threads (and ppn) for otu_alignment.
+
+NB5: For large data, increase the walltime (> 24h) of phylogeny step (16) 
+
+A) Report 1
+
+ampliconseq.py -r readset.tsv -s 1-17 -c ampliconseq.base.ini -o analysis --report > report.sh
+
+The otu_table.sum file helps you to choose the maximum rarefaction treshold. It CAN'T be > than the max Counts/sample.
+
+cat analysis/otus/otu_table.sum
+
+Look for Max in Counts/sample summary:
+
+Report to the "multiple_rarefaction_max" variable in the configuration file.
+
+4) To step 22: qiime_report2
+
+ampliconseq.py -r readset.tsv -s 18-22 -c ampliconseq.base.ini -o analysis > analysis2.sh
+
+B) Report 2
+
+ampliconseq.py -r readset.tsv -s 1-22 -c ampliconseq.base.ini -o analysis --report > report.sh
+
+**Rarefaction normalization**
+
+The report helps you to choose the single rarefaction treshold (for all the samples) by looking the rarefaction curves for each sample.
+Report to the "single_rarefaction_depth" variable in the configuration file.
+
+*if you have < 4 samples*
+
+5) To step 30: plot_to_alpha
+
+ampliconseq.py -r readset.tsv -s 23,25-30 -c ampliconseq.base.ini -o analysis > analysis3.sh
+
+C) Report 3: analysis done
+
+ampliconseq.py -r readset.tsv -s 1-30 -c ampliconseq.base.ini -o analysis --report > report.sh
+
+*else*
+
+5) To step 34: plot_to_beta
+
+ampliconseq.py -r readset.tsv -s 23,25-34 -c ampliconseq.base.ini -o analysis > analysis3.sh
+
+C) Report 3: analysis done
+
+ampliconseq.py -r readset.tsv -s 1-23,25-34 -c ampliconseq.base.ini -o analysis --report > report.sh
+
+**CSS normalization**
+
+*if you have < 4 samples*
+
+5) To step 30: plot_to_alpha
+
+ampliconseq.py -r readset.tsv -s 24-30 -c ampliconseq.base.ini -o analysis > analysis3.sh
+
+C) Report 3: analysis done
+
+ampliconseq.py -r readset.tsv -s 1-22,24-30 -c ampliconseq.base.ini -o analysis --report > report.sh
+
+*else*
+
+5) To step 34: plot_to_beta
+
+ampliconseq.py -r readset.tsv -s 24-34 -c ampliconseq.base.ini -o analysis > analysis3.sh
+
+C) Report 3: analysis done
+
+ampliconseq.py -r readset.tsv -s 1-22,24-34 -c ampliconseq.base.ini -o analysis --report > report.sh
+
+
+####################################################################################################################################
+####################################################################################################################################

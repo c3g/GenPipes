@@ -253,3 +253,21 @@ R --no-save --args \\
         mean_read_length=mean_read_length
         )
     )
+
+def py_ampliconSeq(input_files, output_files, function, supplemental_parameters):
+    return Job(
+        input_files,
+        output_files,
+        module_entries=[
+            ['DEFAULT', 'module_mugqic_tools'],
+            ['DEFAULT', 'module_python']
+        ],
+        command="""\
+python $PYTHON_TOOLS/AmpliconSeq_script.py \\
+  -m {function} \\
+  {supplemental_parameters}""".format(
+        function=function,
+        supplemental_parameters=supplemental_parameters
+        )
+    )
+

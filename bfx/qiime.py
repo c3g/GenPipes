@@ -23,8 +23,8 @@ def catenate(
 		inputs,
 		outputs,
 		[
-			['qiime_catenate', 'module_qiime'],
-			['qiime_catenate', 'module_ampliconseq']
+			['DEFAULT', 'module_qiime'],
+			['DEFAULT', 'module_ampliconseq']
 		],
 
 		command="""\
@@ -46,37 +46,6 @@ def catenate(
 		removable_files=[catenate_fasta]
 	)
 
-def uchime(
-	cat_sequence_fasta,
-	filter_fasta
-	):
-
-	inputs = [cat_sequence_fasta]
-	outputs = [filter_fasta]
-
-	return Job(
-		inputs,
-		outputs,
-		[
-			['uchime', 'module_qiime'],
-			['uchime', 'module_vsearch'],
-			['uchime', 'module_ampliconseq']
-		],
-
-		command="""\
-  $VSEARCH_HOME/usearch61 \\
-  --uchime_ref {cat_sequence_fasta} \\
-  --db {database} \\
-  --nonchimeras {filter_fasta} \\
-  --threads {threads_number}""".format(
-		cat_sequence_fasta=cat_sequence_fasta,
-		database=config.param('uchime', 'chimera_database'),
-		threads_number=config.param('uchime', 'threads'),
-		filter_fasta=filter_fasta
-		),
-		removable_files=[filter_fasta]
-	)
-
 def otu_ref_picking(
 	input_without_chimer,
 	output_directory,
@@ -90,8 +59,8 @@ def otu_ref_picking(
 		inputs,
 		outputs,
 		[
-			['qiime_otu_picking', 'module_qiime'],
-			['qiime_otu_picking', 'module_vsearch']
+			['DEFAULT', 'module_qiime'],
+			['DEFAULT', 'module_vsearch']
 		],
 
 		command="""\
@@ -126,8 +95,8 @@ def otu_picking(
 		inputs,
 		outputs,
 		[
-			['qiime_otu_picking', 'module_qiime'],
-			['qiime_otu_picking', 'module_vsearch']
+			['DEFAULT', 'module_qiime'],
+			['DEFAULT', 'module_vsearch']
 		],
 
 		command="""\
@@ -161,7 +130,7 @@ def otu_rep_picking(
 		inputs,
 		outputs,
 		[
-			['qiime_rep_picking', 'module_qiime']
+			['DEFAULT', 'module_qiime']
 		],
 
 		command="""\
@@ -191,7 +160,7 @@ def otu_assigning(
 		inputs,
 		outputs,
 		[
-			['qiime_otu_assigning', 'module_qiime']
+			['DEFAULT', 'module_qiime']
 		],
 
 		command="""\
@@ -227,7 +196,7 @@ def otu_table(
 		inputs,
 		outputs,
 		[
-			['qiime', 'module_qiime']
+			['DEFAULT', 'module_qiime']
 		],
 
 		command="""\
@@ -255,7 +224,7 @@ def otu_alignment(
 		inputs,
 		outputs,
 		[
-			['qiime_otu_alignment', 'module_qiime']
+			['DEFAULT', 'module_qiime']
 		],
 
 		command="""\
@@ -284,7 +253,7 @@ def filter_alignment(
 		inputs,
 		outputs,
 		[
-			['qiime', 'module_qiime']
+			['DEFAULT', 'module_qiime']
 		],
 
 		command="""\
@@ -310,7 +279,7 @@ def phylogeny(
 		inputs,
 		outputs,
 		[
-			['qiime_phylogeny', 'module_qiime']
+			['DEFAULT', 'module_qiime']
 		],
 
 		command="""\
@@ -335,7 +304,7 @@ def multiple_rarefaction(
 		inputs,
 		outputs,
 		[
-			['qiime_multiple_rarefaction', 'module_qiime']
+			['DEFAULT', 'module_qiime']
 		],
 
 		command="""\
@@ -367,7 +336,7 @@ def alpha_diversity(
 		inputs,
 		outputs,
 		[
-			['qiime', 'module_qiime']
+			['DEFAULT', 'module_qiime']
 		],
 
 		command="""\
@@ -397,7 +366,7 @@ def collate_alpha(
 		inputs,
 		outputs,
 		[
-			['qiime', 'module_qiime']
+			['DEFAULT', 'module_qiime']
 		],
 
 		command="""\
@@ -427,12 +396,12 @@ def sample_rarefaction_plot(
 		inputs,
 		outputs,
 		[
-			['qiime', 'module_qiime'],
-			['qiime', 'module_ampliconseq']
+			['DEFAULT', 'module_qiime'],
+			['DEFAULT', 'module_ampliconseq']
 		],
 
 		command="""\
-  $QIIME_HOME/make_rarefaction_plots.py \\
+  MPLBACKEND=Agg $QIIME_HOME/make_rarefaction_plots.py \\
   -i {sample_collated_directory} \\
   -m {sample_map}\\
   -o {sample_rarefaction_directory}""".format(
@@ -459,8 +428,8 @@ def single_rarefaction(
 		inputs,
 		outputs,
 		[
-			['qiime_single_rarefaction', 'module_qiime'],
-			['qiime_single_rarefaction', 'module_ampliconseq']
+			['DEFAULT', 'module_qiime'],
+			['DEFAULT', 'module_ampliconseq']
 		],
 
 		command="""\
@@ -491,9 +460,9 @@ def css_normalization(
 		inputs,
 		outputs,
 		[
-			['qiime', 'module_qiime'],
-			['qiime', 'module_R'],
-			['qiime', 'module_ampliconseq']
+			['DEFAULT', 'module_qiime'],
+			['DEFAULT', 'module_R'],
+			['DEFAULT', 'module_ampliconseq']
 		],
 
 		command="""\
@@ -525,11 +494,11 @@ def rarefaction_plot(
 		inputs,
 		outputs,
 		[
-			['qiime', 'module_qiime']
+			['DEFAULT', 'module_qiime']
 		],
 
 		command="""\
-  $QIIME_HOME/make_rarefaction_plots.py \\
+  MPLBACKEND=Agg $QIIME_HOME/make_rarefaction_plots.py \\
   -i {alpha_diversity_collated_merge_rarefied_directory} \\
   -m {map_file}\\
   -o {alpha_diversity_rarefaction_rarefied_directory}""".format(
@@ -558,7 +527,7 @@ def summarize_taxa(
 		inputs,
 		outputs,
 		[
-			['qiime', 'module_qiime']
+			['DEFAULT', 'module_qiime']
 		],
 
 		command="""\
@@ -580,16 +549,16 @@ def plot_taxa(
 
 	inputs = taxonomic_input
 	outputs = [alpha_diversity_taxonomy_bar_plot]
-	
+
 	return Job(
 		inputs,
 		outputs,
 		[
-			['qiime', 'module_qiime']
+			['DEFAULT', 'module_qiime']
 		],
 
 		command="""\
-  $QIIME_HOME/plot_taxa_summary.py \\
+  MPLBACKEND=Agg $QIIME_HOME/plot_taxa_summary.py \\
   -i {taxonomic_input} \\
   -l {label} \\
   -t png \\
@@ -605,35 +574,6 @@ def plot_taxa(
 		removable_files=[alpha_diversity_taxonomy_bar_plot]
 	)
 		
-def krona(
-	otu_normalized_table,
-	sample_name,
-	alpha_diversity_krona_file
-	):
-
-	inputs = [otu_normalized_table]
-	outputs = [alpha_diversity_krona_file]
-	
-	return Job(
-		inputs,
-		outputs,
-		[
-			['qiime', 'module_perl'],
-			['qiime', 'module_qiime'],
-			['qiime', 'module_krona'],
-			['qiime', 'module_ampliconseq']
-		],
-
-		command="""\
-  $PERL_HOME/bin/perl5.18.2 $KRONA_HOME/ImportText.pl \\
-  {sample_name} \\
-  -o {alpha_diversity_krona_file}""".format(
-		sample_name=' '.join(sample_name),
-		alpha_diversity_krona_file=alpha_diversity_krona_file
-		),
-		removable_files=[alpha_diversity_krona_file]
-	)
-
 def beta_diversity(
 	metric,
 	otu_normalized_table,
@@ -653,7 +593,7 @@ def beta_diversity(
 			inputs,
 			outputs,
 			[
-				['qiime', 'module_qiime']
+				['DEFAULT', 'module_qiime']
 			],
 	
 			command="""\
@@ -677,7 +617,7 @@ def beta_diversity(
 			inputs,
 			outputs,
 			[
-				['qiime', 'module_qiime']
+				['DEFAULT', 'module_qiime']
 			],
 	
 			command="""\
@@ -713,7 +653,7 @@ def pcoa(
 			inputs,
 			outputs,
 			[
-				['qiime', 'module_qiime']
+				['DEFAULT', 'module_qiime']
 			],
 	
 			command="""\
@@ -735,7 +675,7 @@ def pcoa(
 			inputs,
 			outputs,
 			[
-				['qiime', 'module_qiime']
+				['DEFAULT', 'module_qiime']
 			],
 	
 			command="""\
@@ -764,7 +704,7 @@ def pcoa_plot(
 		inputs,
 		outputs,
 		[
-			['qiime', 'module_qiime']
+			['DEFAULT', 'module_qiime']
 		],
 
 		command="""\
