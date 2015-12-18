@@ -145,10 +145,11 @@ def getDups(sample, dir, sampleStats):
             if line == '\n':
                 break
             values = line.split('\t')
-            if not sampleStats['dupPct']:
-                sampleStats['dupPct'] = values[7]
-            else:
-                sampleStats['dupPct'] += ',' + values[7]
+            if not values[7] == '?':
+                if not sampleStats['dupPct']:
+                    sampleStats['dupPct'] = values[7]
+                else:
+                    sampleStats['dupPct'] += ',' + values[7]
 
 def getBarcode(sample, dir, sampleStats):
     with open(dir + '/' + sample + '.sorted.dup.metrics') as dupMetric:
