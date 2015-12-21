@@ -285,7 +285,7 @@ java -Djava.io.tmpdir={tmp_dir}\\
                 mistmaches=self.number_of_mismatches,
                 threads=config.param('index', 'threads'),
                 barcode_file=config.param('index', 'barcode_file'),
-                basecalls_dir=self.run_dir + os.sep + config.param('index', 'basecalls_dir'),
+                basecalls_dir=os.path.join(self.run_dir, "Data", "Intensities", "BaseCalls"),
                 lane_number=self.lane_number,
                 read_structure=mask,
                 output=output
@@ -320,41 +320,40 @@ java -Djava.io.tmpdir={tmp_dir}\\
 
         output_dir = self.output_dir + os.sep + "Unaligned." + str(self.lane_number)
         casava_sheet_prefix = config.param('fastq', 'casava_sample_sheet_prefix')
+        other_options = config.param('fastq', 'other_options')
         mask = self.mask
         demultiplexing = False
 
         command = """\
-configureBclToFastq.pl\\
- --input-dir {input_dir}\\
+bcl2fastq\\
+ --runfolder-dir {run_dir}\\
  --output-dir {output_dir}\\
  --tiles {tiles}\\
  --sample-sheet {sample_sheet}\\
- --force\\
- --fastq-cluster-count 0""".format(
-            input_dir=self.run_dir + os.sep + config.param('fastq', 'basecalls_dir'),
+ {other_options}\\
+ """.format(
+            run_dir=self.run_dir,
             output_dir=output_dir,
             tiles="s_" + str(self.lane_number),
-            sample_sheet=self.output_dir + os.sep + casava_sheet_prefix + str(self.lane_number) + ".csv"
+            sample_sheet=self.output_dir + os.sep + casava_sheet_prefix + str(self.lane_number) + ".csv",
+            other_options=other_options
         )
 
         if re.search("I", mask):
             self.validate_barcodes()
             demultiplexing = True
-            command += " --mismatches {number_of_mismatches} --use-bases-mask {mask}".format(
+            command += " --barcode-mismatches {number_of_mismatches} --use-bases-mask {mask}".format(
                 number_of_mismatches=self.number_of_mismatches,
                 mask=mask
             )
 
-        job = concat_jobs([
-            Job([input], [], [('fastq', 'module_bcl_to_fastq'), ('fastq', 'module_perl')], command=command),
-            Job([input], outputs, command="cd {unaligned_folder} && make -j {threads} && cd {run_output_dir}".format(
-                threads=config.param('fastq', 'threads'),
-                unaligned_folder=output_dir,
-                run_output_dir=self.output_dir
-            )),
-        ]
-        )
-        job.name = "fastq." + self.run_id + "." + str(self.lane_number)
+        job = Job([input],
+                  outputs,
+                  [('fastq', 'module_bcl_to_fastq'), ('fastq', 'module_gcc')],
+                  command=command,
+                  name="fastq." + self.run_id + "." + str(self.lane_number)
+                  )
+
         jobs.append(job)
 
         # don't depend on the notification command
@@ -462,7 +461,7 @@ configureBclToFastq.pl\\
             output_prefix = os.path.join(self.output_dir,
                                          "Unaligned." + readset.lane,
                                          "Blast_sample",
-                                         readset.name + "_" + readset.index + "_L00" + readset.lane)
+                                         readset.name + "_" + readset.sample_number + "_L00" + readset.lane)
             output = output_prefix + '.R1.RDP.blastHit_20MF_species.txt'
             current_jobs = [Job(command="mkdir -p " + os.path.dirname(output))]
 
@@ -563,7 +562,7 @@ configureBclToFastq.pl\\
 
         for readset in self.readsets:
             output_dir = os.path.dirname(readset.fastq1) + os.sep + "qc"
-            region_name = readset.name + "_" + readset.index + "_L00" + readset.lane
+            region_name = readset.name + "_" + readset.sample_number + "_L00" + readset.lane
 
             file1 = readset.fastq1
             file2 = readset.fastq2
@@ -834,11 +833,16 @@ configureBclToFastq.pl\\
         read_masks = self.mask.split(",")
         has_single_index = self.has_single_index()
 
-        csv_headers = ["FCID", "Lane", "SampleID", "SampleRef", "Index", "Description", "Control", "Recipe", "Operator",
-                       "SampleProject"]
+        csv_headers = ["FCID", "Lane", "Sample_ID", "Sample_Name", "SampleRef", "Index", "Description", "Control",
+                       "Recipe", "Operator", "Sample_Project"]
         csv_file = self.output_dir + os.sep + config.param('DEFAULT', 'casava_sample_sheet_prefix') + str(
             self.lane_number) + ".csv"
         writer = csv.DictWriter(open(csv_file, 'wb'), delimiter=str(','), fieldnames=csv_headers)
+
+        # add [Data] line before the actual headers
+        section_header_dict = {"FCID": "[Data]"}
+        writer.writerow(section_header_dict)
+
         writer.writeheader()
 
         for readset in self.readsets:
@@ -876,7 +880,7 @@ configureBclToFastq.pl\\
                                               "Unaligned." + readset.lane,
                                               'Project_' + readset.project,
                                               'Sample_' + readset.name,
-                                              readset.name + '_' + readset.index + '_L00' + readset.lane +
+                                              readset.name + '_S' + readset.sample_number + '_L00' + readset.lane +
                                               '_R{read_number}_001.fastq.gz')
             readset.fastq1 = fastq_file_pattern.format(read_number=1)
             readset.fastq2 = fastq_file_pattern.format(read_number=2) if readset.run_type == "PAIRED_END" else None
@@ -884,14 +888,15 @@ configureBclToFastq.pl\\
             csv_dict = {
                 "FCID": readset.flow_cell,
                 "Lane": self.lane_number,
-                "SampleID": readset.name,
+                "Sample_ID": "Sample_" + readset.name,
+                "Sample_Name": readset.name,
                 "SampleRef": "",
                 "Index": index_to_use,
                 "Description": readset.description,
                 "Control": readset.control,
                 "Recipe": readset.recipe,
                 "Operator": readset.operator,
-                "SampleProject": readset.project
+                "Sample_Project": "Project_" + readset.project
             }
             writer.writerow(csv_dict)
 
