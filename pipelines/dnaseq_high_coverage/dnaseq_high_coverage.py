@@ -43,6 +43,7 @@ from bfx import picard
 from bfx import samtools
 from bfx import tools
 from bfx import varscan
+from bfx import htslib
 from bfx import vt
 from bfx import snpeff
 from bfx import gemini
@@ -202,31 +203,36 @@ class DnaSeqHighCoverage(dnaseq.DnaSeq):
             job = concat_jobs([
                 Job(command="mkdir -p " + varscan_directory),
                 pipe_jobs([
-                    samtools.mpileup(bams, None, config.param('varscan', 'mpileup_other_options'),regionFile=bedfile),
-                    varscan.mpileupcns(None, os.path.join(variants_directory, "allSamples.vcf"), sampleNamesFile, config.param('varscan', 'other_options'))
+                    samtools.mpileup(bams, None, config.param('varscan', 'mpileup_other_options'), regionFile=bedfile),
+                    varscan.mpileupcns(None, None, sampleNamesFile, config.param('varscan', 'other_options')),
+                    htslib.bgzip_tabix_vcf(None, os.path.join(variants_directory, "allSamples.vcf.gz"))
                 ])
-            ], name="varscan")
+            ], name="varscan.single")
 
             jobs.append(job)
 
         else:
             output_vcfs=[]
             for idx in range(nb_jobs):
-                output_vcf = os.path.join(varscan_directory, "allCalls."+str(idx)+".vcf")
+                output_vcf = os.path.join(varscan_directory, "allSamples."+str(idx)+".vcf.gz")
                 varScanJob = pipe_jobs([
                     samtools.mpileup(bams, None, config.param('varscan', 'mpileup_other_options'), regionFile=beds[idx]),
-                    varscan.mpileupcns(None, output_vcf, sampleNamesFile ,config.param('varscan', 'other_options'))
+                    varscan.mpileupcns(None, None, sampleNamesFile, config.param('varscan', 'other_options')),
+                    htslib.bgzip_tabix_vcf(None, output_vcf)
                 ], name = "varscan." + str(idx))
                 output_vcfs.append(output_vcf)
                 jobs.append(varScanJob)
 
-            job=gatk.cat_variants(output_vcfs, os.path.join(variants_directory, "allSamples.vcf"))
+            job=gatk.cat_variants(output_vcfs, os.path.join(variants_directory, "allSamples.vcf.gz"))
             job.name="gatk_cat_varscan"
             jobs.append(job)
         return jobs
 
     def preprocess_vcf(self):
         """
+        Preprocess vcf for loading into a annotation database - gemini : http://gemini.readthedocs.org/en/latest/index.html
+        Processes include normalization and decomposition of MNPs by vt (http://genome.sph.umich.edu/wiki/Vt) and 
+        vcf FORMAT modification for correct loading into gemini
         """
 
         jobs = []
@@ -237,8 +243,8 @@ class DnaSeqHighCoverage(dnaseq.DnaSeq):
         outputFix = prefix + ".prep.vt.fix.vcf.gz"
 
         jobs.append(concat_jobs([
-            tools.preprocess_varscan( prefix + ".vcf",  prefix + ".prep.vcf.gz" ), 
-            vt.decompose_and_normalize_mnps( prefix + ".prep.vcf.gz", prefix + ".prep.vt.vcf.gz"),
+            tools.preprocess_varscan( prefix + ".vcf.gz",  prefix + ".prep.vcf.gz" ), 
+            vt.decompose_and_normalize_mnps( prefix + ".prep.vcf.gz" , prefix + ".prep.vt.vcf.gz"),
             Job([outputPreprocess], [outputFix], command="zcat " + outputPreprocess + " | grep -v 'ID=AD_O' | sed -e 's/AD_O/AD/g' | sed -e 's/\:AD\\t/\\t/g' | sed -e 's/\:\.//g'" + ' | bgzip -cf > ' + outputFix),
             tools.preprocess_varscan( outputFix,  prefix + ".vt.vcf.gz" )
         ], name="preprocess_vcf.allSamples"))
@@ -258,13 +264,15 @@ class DnaSeqHighCoverage(dnaseq.DnaSeq):
 
         jobs.append(concat_jobs([
             Job(command="mkdir -p " + output_directory),
-            snpeff.compute_effects( snpeff_prefix + ".vt.vcf.gz", snpeff_prefix + ".vt.snpeff.vcf.gz", split=True)
+            snpeff.compute_effects( snpeff_prefix + ".vt.vcf.gz", snpeff_prefix + ".vt.snpeff.vcf", split=True),
+            htslib.bgzip_tabix_vcf( snpeff_prefix + ".vt.snpeff.vcf", snpeff_prefix + ".vt.snpeff.vcf.gz")            
         ], name="compute_effects.allSamples"))
 
         return jobs
 
     def gemini_annotations(self):
         """
+        Load functionally annotated vcf file into a mysql lite annotation database : http://gemini.readthedocs.org/en/latest/index.html
         """
 
         jobs = []

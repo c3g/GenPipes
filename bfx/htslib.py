@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 ################################################################################
 # Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
 #
@@ -27,20 +25,38 @@
 from core.config import *
 from core.job import *
 
-def decompose_and_normalize_mnps(input, vt_output):
+def bgzip_tabix_vcf(input, output):
 
     return Job(
         [input],
-        [vt_output],
+        [output],
         [
             ['DEFAULT', 'module_htslib'],
-            ['decompose_and_normalize_mnps', 'module_vt']
         ],
         command="""\
-zcat {input} | sed 's/ID=AD,Number=./ID=AD,Number=R/' | vt decompose -s - | vt normalize -r {reference_sequence} - | bgzip -cf > {vt_output} \\
+bgzip -cf \\
+{input} > \\
+{output} && tabix -pvcf {output} \\
         """.format(
-        input=input,
-        reference_sequence=config.param('DEFAULT', 'genome_fasta', type='filepath'),
-        vt_output=vt_output
+        input=" \\\n " + input if input else "",
+        output=output
+        )
+    )
+
+def bgzip_tabix_bed(input, output):
+
+    return Job(
+        [input],
+        [output],
+        [
+            ['DEFAULT', 'module_htslib'],
+        ],
+        command="""\
+bgzip -cf \\
+{input} \\
+{output} && tabix -pbed {output} \\
+        """.format(
+        input=" \\\n  > " + input if input else "",
+        output=output
         )
     )
