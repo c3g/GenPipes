@@ -16,9 +16,14 @@ module_ucsc=mugqic/ucsc/20140212
 
 init_install() {
   # '$MUGQIC_INSTALL_HOME_DEV' for development, '$MUGQIC_INSTALL_HOME' for production
-  if [ -z "$INSTALL_HOME" ]; then INSTALL_HOME=$MUGQIC_INSTALL_HOME_DEV ; fi
+  if [[ ${1:-} == MUGQIC_INSTALL_HOME ]]
+then
+  INSTALL_HOME=MUGQIC_INSTALL_HOME
+else
+  INSTALL_HOME=MUGQIC_INSTALL_HOME_DEV
+fi
 
-  INSTALL_DIR=$INSTALL_HOME/genomes/species/$SPECIES.$ASSEMBLY
+  INSTALL_DIR=${!INSTALL_HOME}/genomes/species/$SPECIES.$ASSEMBLY
   DOWNLOAD_DIR=$INSTALL_DIR/downloads
   LOG_DIR=$INSTALL_DIR/log
   TIMESTAMP=`date +%FT%H.%M.%S`
