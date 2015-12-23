@@ -93,7 +93,8 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $SNPEFF_HOME
         db_snp=config.param('snpsift_annotate', 'known_variants', type='filepath'),
         input=input,
         output=" \\\n  > " + output if output else ""
-        )
+        ),
+        removable_files=[output]
     )
 
 def snpsift_dbnsfp(input, output):

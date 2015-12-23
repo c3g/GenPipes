@@ -153,7 +153,8 @@ filterLongIndel.pl \\
   > {output}""".format(
         input=input,
         output=output
-        )
+        ),
+        removable_files=[output]
     )
 
 ## functions for R tools ##
