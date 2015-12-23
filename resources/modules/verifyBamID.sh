@@ -4,26 +4,25 @@ set -eu -o pipefail
 
 
 SOFTWARE=verifyBamID
-VERSION=1.1.2
-ARCHIVE=verifyBamID
-ARCHIVE_URL=https://github.com/statgen/verifyBamID/releases/download/v1.1.2/verifyBamIDLibStatGen.1.1.2.tgz
-SOFTWARE_DIR=verifyBamID_1.1.2
+VERSION=devMaster_20151216
+ARCHIVE=${SOFTWARE}_${VERSION}.zip
+ARCHIVE_URL=https://github.com/statgen/verifyBamID/archive/master.zip
+SOFTWARE_DIR=${SOFTWARE}_${VERSION}
 
-# Specific commands to extract and build the software
+# Specific commands to extract and build the software
 # $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
 # $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 
 build() {
+  echo -e "INSTALL_DOWNLOAD =$INSTALL_DOWNLOAD"
   cd $INSTALL_DOWNLOAD
-  tar -xvzf $ARCHIVE
+  unzip ${SOFTWARE}_${VERSION}.zip
   # Transfer immediately from tmp to INSTALL_DIR
-  mv -i $INSTALL_DOWNLOAD/$SOFTWARE_DIR $INSTALL_DIR/
+  mv -i $INSTALL_DOWNLOAD/verifyBamID-master/ $INSTALL_DIR/$SOFTWARE_DIR/
   cd $INSTALL_DIR/$SOFTWARE_DIR
-  mkdir -p $INSTALL_DIR/$SOFTWARE_DIR/bin/
-  cd verifyBamID
-  make install INSTALLDIR=$INSTALL_DIR/$SOFTWARE_DIR/bin/
-  cd $INSTALL_DIR/$SOFTWARE_DIR
-  make install	|| echo "complete make didn t pass, create module file anyways"
+  mkdir -p bin/
+  make cloneLib
+  make install INSTALLDIR=$INSTALL_DIR/$SOFTWARE_DIR/bin/ || echo "complete make didn t pass, create module file anyways" 
 }
 
 module_file() {
