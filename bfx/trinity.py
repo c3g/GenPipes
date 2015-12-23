@@ -208,6 +208,10 @@ awk \'{{ print $1 }}\' {trinity_fasta}  > {trinity_fasta_for_blast}""".format(tr
 def extract_lengths_from_RSEM_output(align_and_estimate_abundance_results, output):
     return Job(
         [align_and_estimate_abundance_results],
-        [output],
-        command="cut -f 1,3,4 " + align_and_estimate_abundance_results + " \\\n  > " + output
-        )                
+        [output, output+".noheader.tsv"],
+        command="""\
+cut -f 1,3,4 {align_and_estimate_abundance_results} > {output} &&  sed \'1d\' {output} > {output}.noheader.tsv""".format(
+                    align_and_estimate_abundance_results=align_and_estimate_abundance_results,
+                    output=output
+                    )        
+        )    

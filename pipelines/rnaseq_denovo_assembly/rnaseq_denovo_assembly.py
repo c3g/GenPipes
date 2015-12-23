@@ -726,6 +726,7 @@ pandoc --to=markdown \\
         jobs.append(Job([trinotate_annotation_report],
                         [],
                         command="mkdir -p " + os.path.join(output_directory, item)))        
+        
         # Run DGE and merge dge results with annotations
         matrix = os.path.join(output_directory, item + ".counts.matrix")
         # Perform edgeR
@@ -757,7 +758,7 @@ pandoc --to=markdown \\
                     config.param("differential_expression", "dge_input_columns"),
                     os.path.join(output_directory, item, contrast.name ,"gene_ontology_results.csv"),                
                     os.path.join(output_directory, item +".lengths.tsv.noheader.tsv"),
-                    trinotate_annotation_report + item + "_go.tsv"
+                    trinotate_annotation_report + "." + item + "_go.tsv"
                 )
             ], name="differential_expression.merge.annotations.goseq." + item + "." + contrast.name ))
                         
@@ -794,7 +795,7 @@ pandoc --to=markdown \\
              render_output_dir    = 'report',
              module_section       = 'report', 
              prerun_r             = 'design_file="' +  os.path.relpath(self.args.design.name, self.output_dir) +
-                                    '"; report_dir="' + report_dir + '"; source_dir="' + output_directory + '"; ' + 'top_n_results=10; contrasts=c("' + '",'.join(contrast.name for contrast in self.contrasts) + '");'
+                                    '"; report_dir="' + report_dir + '"; source_dir="' + output_directory + '"; ' + 'top_n_results=10; contrasts=c("' + '","'.join(contrast.name for contrast in self.contrasts) + '");'
              )
         )
         return jobs
@@ -815,8 +816,6 @@ pandoc --to=markdown \\
         trinotate_annotation_report_filtered_header["isoforms"] = trinotate_annotation_report + ".isoforms_filtered_header.tsv"
         trinotate_annotation_report_filtered_header["genes"]= trinotate_annotation_report + ".genes_filtered_header.tsv"
         counts_ids = { 'genes':"Genes", 'isoforms':"Isoforms" }
-        length_ids = { 'genes':"gene_id", 'isoforms':"transcript_id" } 
-        dge_ids = { 'genes':"id", 'isoforms':"id" }
         trinotate_filters = None if not config.param('filter_annotated_components', 'filters_trinotate', required=False) else config.param('filter_annotated_components', 'filters_trinotate', required=False).split("\n")
         source_directory = "differential_expression"
         
@@ -829,7 +828,7 @@ pandoc --to=markdown \\
                             ),
                         Job([trinotate_annotation_report_filtered], 
                             [trinotate_annotation_report_filtered_header["isoforms"]], 
-                            command="sed '1s/^/ \\n/' " + trinotate_annotation_report_filtered  + " > " + trinotate_annotation_report_filtered_header["isoforms"]),
+                            command="sed '1s/^/ \\n/' " + trinotate_annotation_report_filtered  + " > " + trinotate_annotation_report_filtered_header["isoforms"])
                         ],name="differential_expression_filtered_get_trinotate")
         )
         
@@ -842,7 +841,14 @@ pandoc --to=markdown \\
                     "\'\' " + counts_ids[item],
                     left_join=True,
                     exclude="\' \'")
-            jobs.append(concat_jobs([job, concat_jobs(self.differential_expression_and_goseq_rsem(output_directory, item, trinotate_annotation_report), name="differential_expression_filtered_" + item)], name="differential_expression_filtered_" + item))
+            jobs.append(concat_jobs([
+                                  job,
+                                  Job([os.path.join(source_directory, item +".lengths.tsv.noheader.tsv")], 
+                                      [os.path.join(output_directory, item +".lengths.tsv.noheader.tsv")], 
+                                      command="cp " + os.path.join(source_directory, item +".lengths.tsv.noheader.tsv") + " " + os.path.join(output_directory, item +".lengths.tsv.noheader.tsv")),
+                                  concat_jobs(self.differential_expression_and_goseq_rsem(output_directory, item, trinotate_annotation_report), name="differential_expression_filtered_" + item)
+                                  ], name="differential_expression_filtered_" + item)
+            )
         
         # Dependencies for report    
         output_files = []                
@@ -858,7 +864,7 @@ pandoc --to=markdown \\
              input_rmarkdown_file = input_rmarkdown_file ,
              render_output_dir    = 'report',
              module_section       = 'report', 
-             prerun_r             = 'report_dir="' + report_dir + '"; source_dir="' + output_directory + '"; ' + 'top_n_results=10; contrasts=c("' + '",'.join(contrast.name for contrast in self.contrasts) + '");'
+             prerun_r             = 'report_dir="' + report_dir + '"; source_dir="' + output_directory + '"; ' + 'top_n_results=10; contrasts=c("' + '","'.join(contrast.name for contrast in self.contrasts) + '");'
              )
         )
         
