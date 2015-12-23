@@ -38,7 +38,7 @@ for (item in c("genes","isoforms")){
 }
 
 ```
-#### Differential Expression Analysis and Gene Ontology (GO) Analysis of the Differential Expression Results
+#### Differential Expression Analysis and Gene Ontology (GO) Analysis for filtered isoforms / genes
 
 The differential analysis results are filtered to extract differential expression results of high quality contigs/genes based on trinotate annotations. One gene ontology analysis is generated per design based on the differentially expressed genes from the DESeq/edgeR filtered results. GO terms associated to each gene are obtained from trinotate annotations. Every gene having an FDR adjusted p-value under 0.1 is considered as differentially expressed. The threshold for differentially expressed selection is the same as in the first analysis. The first column is the ID of the category enriched; the second column is the FDR adjusted p-value of category enrichment; the third column is the GO id; and the fourth column is a brief description of the GO term. **If there are no results for a particular design, it means the FDR adjusted GO enrichment was not significant (p-value too high)**.
 

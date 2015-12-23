@@ -165,15 +165,15 @@ align_and_estimate_abundance.pl {other_options} \\
         )
     return(job)
 
+
 def abundance_estimates_to_matrix(count_files, matrix, out_prefix):
-    
-    return(Job(
-        [count_files],
-        [matrix],
-        [['align_and_estimate_abundance_prep_reference', 'module_perl'],
-            ['align_and_estimate_abundance_prep_reference', 'module_trinity'],
-            ['align_and_estimate_abundance_prep_reference', 'module_R']],
-        command="""\
+    return( Job(
+            [count_files],
+            [matrix],
+            [['align_and_estimate_abundance_prep_reference', 'module_perl'],
+                ['align_and_estimate_abundance_prep_reference', 'module_trinity'],
+                ['align_and_estimate_abundance_prep_reference', 'module_R']],
+            command="""\
 abundance_estimates_to_matrix.pl \\
   --est_method RSEM \\
   --out_prefix {out_prefix} \\
@@ -182,6 +182,32 @@ abundance_estimates_to_matrix.pl \\
                 align_and_estimate_abundance_results=count_files
                 )
             )
-        )
+    )            
+    
 
+def prepare_abundance_matrix_for_dge(matrix, item):
+    return( Job(
+        [matrix],
+        [matrix + ".symbol"],
+        command="""\
+awk -F '\\t' '{{OFS="\\t" ; print $1,$0}}' {matrix} | sed '1s/^\\t/{item}\\tSymbol/' \\
+> {matrix}.symbol""".format(matrix=matrix, item=item.title())
+            )
+    )
 
+# Prepare the Trinity FASTA file for blast annotation (header longer then 1K characters makes the sequence to be excluded from blast)
+def prepare_for_blast(trinity_fasta, trinity_fasta_for_blast):
+    return Job( [trinity_fasta],
+                [trinity_fasta_for_blast],
+                command="""\
+awk \'{{ print $1 }}\' {trinity_fasta}  > {trinity_fasta_for_blast}""".format(trinity_fasta=trinity_fasta, trinity_fasta_for_blast=trinity_fasta_for_blast)
+    )
+
+# Extract isoforms and genes length values from any one of sample abundance files
+# edger.R requires a matrix with gene/isoform symbol as second column
+def extract_lengths_from_RSEM_output(align_and_estimate_abundance_results, output):
+    return Job(
+        [align_and_estimate_abundance_results],
+        [output],
+        command="cut -f 1,3,4 " + align_and_estimate_abundance_results + " \\\n  > " + output
+        )                

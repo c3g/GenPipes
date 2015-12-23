@@ -24,6 +24,7 @@
 # MUGQIC Modules
 from core.config import *
 from core.job import *
+from bfx import blast
 
 # Identifies candidate coding regions within transcript sequences using [Transdecoder](http://transdecoder.github.io/).
 def transdecoder(trinity_fasta, transdecoder_directory, transdecoder_subdirectory):
@@ -124,23 +125,7 @@ def blastp_transdecoder_uniprot(blast_directory, transdecoder_fasta, db):
     jobs.append(concat_jobs([
         Job(command="mkdir -p " + blast_directory),
         Job(command="ln -s -f " + os.path.relpath(transdecoder_fasta, os.path.dirname(query)) + " " + query, removable_files=[blast_directory]),
-        Job(
-            [transdecoder_fasta],
-            [blast_result],
-            [['blast', 'module_perl'], ['blast', 'module_mugqic_tools'], ['blast', 'module_blast']],
-            command="""\
-parallelBlast.pl \\
--file {query} \\
---OUT {blast_result} \\
--n {cpu} \\
---BLAST "{program} -db {db} -max_target_seqs 1 -outfmt '6 std stitle'" """.format(
-                query=query,
-                blast_result=blast_result,
-                cpu=cpu,
-                program=program,
-                db=db
-            )
-        )
+        blast.parallel_blast(transdecoder_fasta, query, blast_result, program, db, cpu)        
     ], name="blastp_transdecoder_uniprot." + os.path.basename(db)))
 
     return jobs

@@ -101,4 +101,3 @@ Rscript $R_TOOLS/goseq.R {other_options} \\
         input_columns=input_columns,
         output_file=output_file
     ))
-

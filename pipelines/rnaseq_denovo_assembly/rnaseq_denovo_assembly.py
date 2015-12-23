@@ -44,6 +44,7 @@ from bfx import tools
 from bfx import trinity
 from bfx import trinotate
 from bfx import blast
+from bfx import exonerate
 
 
 log = logging.getLogger(__name__)
@@ -286,16 +287,8 @@ pandoc --to=markdown \\
         return [concat_jobs([
             Job(command="rm -rf " + trinity_chunks_directory),
             Job(command="mkdir -p " + trinity_chunks_directory),
-            Job([trinity_fasta],
-                [trinity_fasta_for_blast],
-                command="awk \'{print $1 }\' " + trinity_fasta  + " > " +  trinity_fasta_for_blast),
-            Job(
-                [trinity_fasta_for_blast],
-                # fastasplit creates FASTA chunk files numbered with 7 digits and padded with leading 0s
-                [os.path.join(trinity_chunks_directory, "Trinity.fa_chunk_{:07d}".format(i)) for i in range(num_fasta_chunks)],
-                [['exonerate_fastasplit', 'module_exonerate']],
-                command="fastasplit -f " + trinity_fasta_for_blast + " -o " + trinity_chunks_directory + " -c " + str(num_fasta_chunks)
-            )
+            trinity.prepare_for_blast(trinity_fasta, trinity_fasta_for_blast),
+            exonerate.fastasplit(trinity_fasta_for_blast, trinity_chunks_directory, "Trinity.fa_chunk", num_fasta_chunks)
         ], name="exonerate_fastasplit.Trinity.fasta")]
 
     def blastx_trinity_uniprot(self):
@@ -310,6 +303,7 @@ pandoc --to=markdown \\
         program = "blastx"
         swissprot_db = config.param("blastx_trinity_uniprot", "swissprot_db", type='prefixpath')
         uniref_db = config.param("blastx_trinity_uniprot", "uniref_db", type='prefixpath')
+        cpu = config.param('blastx_trinity_uniprot', 'cpu')
 
         # (Removed blast on uniref_db since it's too long)
         for db in [swissprot_db]:
@@ -323,7 +317,7 @@ pandoc --to=markdown \\
                 jobs.append(concat_jobs([
                     Job(command="mkdir -p " + blast_directory, removable_files=[blast_directory]),
                     Job(command="ln -s -f " + os.path.relpath(trinity_chunk, os.path.dirname(query_chunk)) + " " + query_chunk, removable_files=[blast_directory]),
-                    blast.parallel_blast(trinity_chunk, query_chunk, blast_chunk, program, db),
+                    blast.parallel_blast(trinity_chunk, query_chunk, blast_chunk, program, db, cpu),
                 ], name="blastx_trinity_uniprot." + os.path.basename(db) + ".chunk_{:07d}".format(i)))
 
         return jobs
@@ -534,20 +528,8 @@ pandoc --to=markdown \\
                 ),
                 # Create isoforms and genes matrices with counts of RNA-seq fragments per feature using Trinity RSEM utility                
                 trinity.abundance_estimates_to_matrix(count_files, matrix, out_prefix),
-                
-                # Extract isoforms and genes length values from any one of sample abundance files
-                Job(
-                    [align_and_estimate_abundance_results[0]],
-                    [os.path.join(output_directory, item + ".lengths.tsv")],
-                    command="cut -f 1,3,4 " + align_and_estimate_abundance_results[0] + " \\\n  > " + os.path.join(output_directory, item + ".lengths.tsv")),
-                # edger.R requires a matrix with gene/isoform symbol as second column
-                Job(
-                    [matrix],
-                    [matrix + ".symbol"],
-                    command="""\
-awk -F '\\t' '{{OFS="\\t" ; print $1,$0}}' {matrix} | sed '1s/^\\t/{item}\\tSymbol/' \\
-  > {matrix}.symbol""".format(matrix=matrix, item=item.title())
-                )
+                trinity.prepare_abundance_matrix_for_dge(matrix, item),
+                trinity.extract_lengths_from_RSEM_output(align_and_estimate_abundance_results[0], os.path.join(output_directory, item + ".lengths.tsv"))
             ], name="align_and_estimate_abundance." + item))
                 
         # Parse Trinotate results to obtain blast, go annotation and a filtered set of contigs
@@ -567,6 +549,7 @@ awk -F '\\t' '{{OFS="\\t" ; print $1,$0}}' {matrix} | sed '1s/^\\t/{item}\\tSymb
         )        
 
         return jobs
+
     def gq_seq_utils_exploratory_analysis_rnaseq_denovo(self):
         """
         Exploratory analysis using the gqSeqUtils R package.
@@ -598,152 +581,6 @@ awk -F '\\t' '{{OFS="\\t" ; print $1,$0}}' {matrix} | sed '1s/^\\t/{item}\\tSymb
   
         return jobs    
 
-    def differential_expression(self):
-        """
-        Performs differential gene expression analysis using [DESEQ](http://bioconductor.org/packages/release/bioc/html/DESeq.html) and [EDGER](http://www.bioconductor.org/packages/release/bioc/html/edgeR.html).
-        Merge the results of the analysis in a single csv file.
-        """
-        output_directory = "differential_expression"
-        jobs = []
-        trinotate_annotation_report = os.path.join("trinotate", "trinotate_annotation_report.tsv")
-        gene_id_column = "#gene_id" if not config.param('trinotate', 'gene_column', required=False) else config.param('trinotate', 'gene_column', required=False) 
-        transcript_id_column = "transcript_id" if not config.param('trinotate', 'transcript_column', required=False) else config.param('trinotate', 'gene_column', required=False)
-        trinotate_columns_to_exclude = None if not config.param('differential_expression', 'trinotate_columns_to_exclude', required=False) else config.param('differential_expression', 'trinotate_columns_to_exclude', required=False)
-
-        
-        # Run DGE and merge dge results with annotations
-        for item in "genes","isoforms":
-            matrix = os.path.join(output_directory, item + ".counts.matrix")
-            # Perform edgeR
-            edger_job = differential_expression.edger(os.path.relpath(self.args.design.name, self.output_dir), matrix + ".symbol", os.path.join(output_directory, item))
-            edger_job.output_files = [os.path.join(output_directory, item ,contrast.name, "edger_results.csv") for contrast in self.contrasts]
-            # Perform DESeq             
-            deseq_job = differential_expression.deseq(os.path.relpath(self.args.design.name, self.output_dir), matrix + ".symbol", os.path.join(output_directory, item))
-            deseq_job.output_files = [os.path.join(output_directory, item ,contrast.name, "dge_results.csv") for contrast in self.contrasts]
-            jobs.append(concat_jobs([
-                        edger_job,
-                        deseq_job,
-                        ], name="differential_expression.run." + item))
-            for contrast in self.contrasts:
-                # Merge with annotations
-                     jobs.append(concat_jobs([
-                        tools.py_parseMergeCsv([os.path.join("differential_expression", item, contrast.name, "dge_results.csv"), trinotate_annotation_report + "." + item + "_blast.tsv"],
-                                    "\\\\t",
-                                    os.path.join("differential_expression", item, contrast.name, "dge_trinotate_results.csv"),
-                                    "id " + "\"" + gene_id_column + "\"" if item == "genes" else "id " + transcript_id_column, 
-                                    None,
-                                    trinotate_columns_to_exclude,
-                                    True,
-                                    "edger.p.value",
-                                    True
-                                    ),
-                    ], name="differential_expression.merge.annotations." + item + "." + contrast.name ))
-
-        genes_matrix = os.path.join("differential_expression", "genes.counts.matrix")
-        report_file = os.path.join("report", "RnaSeqDeNovoAssembly.differential_expression.md")                
-        jobs.append(
-            Job(
-                [genes_matrix] +
-                [os.path.join("differential_expression", "genes", contrast.name, "dge_trinotate_results.csv") for contrast in self.contrasts],
-                [report_file],
-                [['rnaseqc', 'module_pandoc']],
-                name="differential_expression_report",                
-                command="""\
-mkdir -p report && \\
-cp {design_file} report/design.tsv && \\
-sed '1s/^\\t/Gene\\t/' {genes_matrix} > report/rawCountMatrix.csv && \\
-pandoc \\
-  {report_template_dir}/{basename_report_file} \\
-  --template {report_template_dir}/{basename_report_file} \\
-  --variable design_table="`head -7 report/design.tsv | cut -f-8 | awk -F"\t" '{{OFS="\\t"; if (NR==1) {{print; gsub(/[^\\t]/, "-")}} print}}' | sed 's/\t/|/g'`" \\
-  --variable raw_count_matrix_table="`head -7 report/rawCountMatrix.csv | cut -f-8 | awk -F"\t" '{{OFS="\t"; if (NR==1) {{print; gsub(/[^\t]/, "-")}} print}}' | sed 's/|/\\\\\\\\|/g' | sed 's/\t/|/g'`" \\
-  --to markdown \\
-  > {report_file} && \\
-for contrast in {contrasts}
-do
-  mkdir -p report/DiffExp/$contrast/
-  echo -e "\\n#### $contrast Results\\n" >> {report_file}
-  cp differential_expression/genes/$contrast/dge_trinotate_results.csv report/DiffExp/$contrast/${{contrast}}_Genes_DE_results_{swissprot_db}.tsv
-  echo -e "\\nTable: Differential Gene Expression Results (**partial table**; [download full table](DiffExp/$contrast/${{contrast}}_Genes_DE_results_{swissprot_db}.tsv))\\n" >> {report_file}
-  head -7 report/DiffExp/$contrast/${{contrast}}_Genes_DE_results_{swissprot_db}.tsv | cut -f-8 | sed '2i ---\t---\t---\t---\t---\t---\t---\t---' | sed 's/|/\\\\|/g' | sed 's/\t/|/g' >> {report_file}
-done""".format(
-                    genes_matrix=genes_matrix,
-                    design_file=os.path.abspath(self.args.design.name),
-                    report_template_dir=self.report_template_dir,
-                    basename_report_file=os.path.basename(report_file),
-                    report_file=report_file,
-                    contrasts=" ".join([contrast.name for contrast in self.contrasts]),
-                    swissprot_db=os.path.basename(config.param("blastx_trinity_uniprot", "swissprot_db", type='prefixpath'))
-                ),
-                report_files=[report_file]
-        ))
-
-        return jobs
-
-
-    def differential_expression_goseq(self):
-        """
-        Gene Ontology analysis for RNA-Seq denovo Assembly using the Bioconductor's R package [goseq](http://www.bioconductor.org/packages/release/bioc/html/goseq.html).
-        Generates GO annotations for differential genes and isoforms expression analysis, based on associated GOTERMS generated by trinotate.
-        """
-        
-        jobs = []
-        for item in ["genes","isoforms" ]:
-            jobs.append(
-                Job([os.path.join("differential_expression", item +".lengths.tsv")],                  
-                    [os.path.join("differential_expression", item +".lengths.tsv.noheader.tsv")],
-                    [],
-                    command="""sed \'1d\' {item_length_file} > {item_length_file}.noheader.tsv""".format(
-                        item_length_file=os.path.join("differential_expression", item +".lengths.tsv")                        
-                    ), name="format." + item + ".lengths"))
-            for contrast in self.contrasts:
-                # goseq for differential gene /isoforms expression results
-                job = differential_expression.goseq(
-                    os.path.join("differential_expression", item , contrast.name, "dge_trinotate_results.csv"),
-                    config.param("differential_expression_goseq", "dge_input_columns"),
-                    os.path.join("differential_expression", item, contrast.name ,"gene_ontology_results.csv"),                
-                    os.path.join("differential_expression", item +".lengths.tsv.noheader.tsv"),
-                    os.path.join("trinotate", "trinotate_annotation_report.tsv." + item + "_go.tsv")
-                )
-                job.name = "differential_expression_goseq.dge." + item + "." + contrast.name
-                jobs.append(job)
-        
-        report_file = os.path.join("report", "RnaSeqDeNovoAssembly.differential_expression_goseq.md")
-        jobs.append(
-            Job(
-                [os.path.join("differential_expression", "genes", contrast.name, "dge_trinotate_results.csv") for contrast in self.contrasts] +  
-                [os.path.join("differential_expression", "genes", contrast.name ,"gene_ontology_results.csv") for contrast in self.contrasts],
-                [report_file],
-                [['differential_expression_goseq', 'module_pandoc']],
-                command="""\
-mkdir -p report && \\
-pandoc \\
-  {report_template_dir}/{basename_report_file} \\
-  --template {report_template_dir}/{basename_report_file} \\
-  --to markdown \\
-  > {report_file} && \\
-for contrast in {contrasts}
-do
-  mkdir -p report/DiffExp/$contrast/
-  echo -e "\\n#### $contrast Results\\n" >> {report_file}
-  if [ `wc -l differential_expression/genes/$contrast/gene_ontology_results.csv | cut -f1 -d\ ` -gt 1 ]
-  then
-    cp differential_expression/genes/$contrast/gene_ontology_results.csv report/DiffExp/$contrast/${{contrast}}_Genes_GO_results.tsv
-    echo -e "\\n---\\n\\nTable: GO Results of the Differentially Expressed Genes (**partial table**; [download full table](DiffExp/${{contrast}}/${{contrast}}_Genes_GO_results.tsv))\\n" >> {report_file}
-    head -7 report/DiffExp/${{contrast}}/${{contrast}}_Genes_GO_results.tsv | cut -f-8 | sed '2i ---\t---\t---\t---\t---\t---\t---\t---' | sed 's/\t/|/g' >> {report_file}  
-  else
-    echo -e "\\nNo FDR adjusted GO enrichment was significant (p-value too high) based on the differentially expressed gene results for this design.\\n" >> {report_file}
-  fi
-done""".format(
-                    report_template_dir=self.report_template_dir,
-                    basename_report_file=os.path.basename(report_file),
-                    report_file=report_file,
-                    contrasts=" ".join([contrast.name for contrast in self.contrasts])
-                ),
-                report_files=[report_file],
-                name="differential_expression_goseq_report")
-        )
-        return jobs
 
     def filter_annotated_components(self):
         """
@@ -872,84 +709,159 @@ pandoc --to=markdown \\
         )
         return jobs
 
+
+    def differential_expression_and_goseq_rsem(self, output_directory, item, trinotate_annotation_report):
+        """
+        This function returns jobs related to differential gene expression analysis using [DESEQ](http://bioconductor.org/packages/release/bioc/html/DESeq.html) and [EDGER](http://www.bioconductor.org/packages/release/bioc/html/edgeR.html).
+        Merge the results of the analysis in a single csv file. Also, performs Gene Ontology analysis for RNA-Seq denovo Assembly using the Bioconductor's R package [goseq](http://www.bioconductor.org/packages/release/bioc/html/goseq.html).
+        Generates GO annotations for differential genes and isoforms expression analysis, based on associated GOTERMS generated by trinotate.
+        """        
+        jobs = []        
+        # Parameters from ini file
+        gene_id_column = "#gene_id" if not config.param('trinotate', 'gene_column', required=False) else config.param('trinotate', 'gene_column', required=False) 
+        transcript_id_column = "transcript_id" if not config.param('trinotate', 'transcript_column', required=False) else config.param('trinotate', 'gene_column', required=False)
+        trinotate_filters = None if not config.param('filter_annotated_components', 'filters_trinotate', required=False) else config.param('filter_annotated_components', 'filters_trinotate', required=False).split("\n")
+        trinotate_columns_to_exclude = None if not config.param('differential_expression', 'trinotate_columns_to_exclude', required=False) else config.param('differential_expression', 'trinotate_columns_to_exclude', required=False)
+        # mkdir 
+        jobs.append(Job([trinotate_annotation_report],
+                        [],
+                        command="mkdir -p " + os.path.join(output_directory, item)))        
+        # Run DGE and merge dge results with annotations
+        matrix = os.path.join(output_directory, item + ".counts.matrix")
+        # Perform edgeR
+        edger_job = differential_expression.edger(os.path.relpath(self.args.design.name, self.output_dir), matrix + ".symbol", os.path.join(output_directory, item))
+        edger_job.output_files = [os.path.join(output_directory, item ,contrast.name, "edger_results.csv") for contrast in self.contrasts]
+        # Perform DESeq             
+        deseq_job = differential_expression.deseq(os.path.relpath(self.args.design.name, self.output_dir), matrix + ".symbol", os.path.join(output_directory, item))
+        deseq_job.output_files = [os.path.join(output_directory, item ,contrast.name, "dge_results.csv") for contrast in self.contrasts]
+        jobs.append(concat_jobs([
+                    edger_job,
+                    deseq_job,
+                    ], name="differential_expression.run." + item))
+        for contrast in self.contrasts:
+            # Merge with annotations
+            jobs.append(concat_jobs([
+                tools.py_parseMergeCsv([os.path.join(output_directory, item, contrast.name, "dge_results.csv"), trinotate_annotation_report + "." + item + "_blast.tsv"],
+                            "\\\\t",
+                            os.path.join(output_directory, item, contrast.name, "dge_trinotate_results.csv"),
+                            "id " + "\"" + gene_id_column + "\"" if item == "genes" else "id " + transcript_id_column, 
+                            None,
+                            trinotate_columns_to_exclude,
+                            True,
+                            "edger.p.value",
+                            True
+                            ),            
+            # Run GOseq 
+                differential_expression.goseq(
+                    os.path.join(output_directory, item , contrast.name, "dge_trinotate_results.csv"),
+                    config.param("differential_expression", "dge_input_columns"),
+                    os.path.join(output_directory, item, contrast.name ,"gene_ontology_results.csv"),                
+                    os.path.join(output_directory, item +".lengths.tsv.noheader.tsv"),
+                    trinotate_annotation_report + item + "_go.tsv"
+                )
+            ], name="differential_expression.merge.annotations.goseq." + item + "." + contrast.name ))
+                        
+        return jobs
+    
+    def differential_expression(self):    
+        """
+        Performs differential gene expression analysis using [DESEQ](http://bioconductor.org/packages/release/bioc/html/DESeq.html) and [EDGER](http://www.bioconductor.org/packages/release/bioc/html/edgeR.html).
+        Merge the results of the analysis in a single csv file. Also, performs Gene Ontology analysis for RNA-Seq denovo Assembly using the Bioconductor's R package [goseq](http://www.bioconductor.org/packages/release/bioc/html/goseq.html).
+        Generates GO annotations for differential genes and isoforms expression analysis, based on associated GOTERMS generated by trinotate.
+        """
+        output_directory = "differential_expression"
+        jobs = []
+        trinotate_annotation_report = os.path.join("trinotate", "trinotate_annotation_report.tsv")
+        report_dir= 'report'
+        input_rmarkdown_file=os.path.join(self.report_template_dir, "RnaSeqDeNovoAssembly.differential_expression_goseq.Rmd") 
+                
+        # Run DGE and merge dge results with annotations
+        for item in "genes","isoforms":
+            jobs.append(concat_jobs( self.differential_expression_and_goseq_rsem(output_directory, item, trinotate_annotation_report)
+                        , name= "differential_expression_" + item)
+            )            
+        # DGE Report
+        # Render Rmarkdown Report
+        output_files = []                
+        for job_item in jobs:
+            output_files.extend([output_file for output_file in job_item.output_files if output_file not in output_files])
+
+        jobs.append(
+            rmarkdown.render(
+             job_input            = output_files,
+             job_name             = "differential_expression_goseq_rnaseq_denovo_report",
+             input_rmarkdown_file = input_rmarkdown_file,
+             render_output_dir    = 'report',
+             module_section       = 'report', 
+             prerun_r             = 'design_file="' +  os.path.relpath(self.args.design.name, self.output_dir) +
+                                    '"; report_dir="' + report_dir + '"; source_dir="' + output_directory + '"; ' + 'top_n_results=10; contrasts=c("' + '",'.join(contrast.name for contrast in self.contrasts) + '");'
+             )
+        )
+        return jobs
+            
     def differential_expression_filtered(self):    
         """
         Differential Expression and GOSEQ analysis based on filtered transcripts and genes 
         """
-        jobs=[]
-        filtered_output_files=[]
-        dge_output_dir = os.path.join("filtered_assembly","differential_expression")
-        dge_source_dir = os.path.join("differential_expression")
-        trinotate_annotation_report_filtered = "trinotate/trinotate_annotation_report.tsv.isoforms_filtered.tsv"
-        trinotate_annotation_report_filtered_header={}
-        trinotate_annotation_report_filtered_header["isoforms"]="trinotate/trinotate_annotation_report.tsv.isoforms_filtered_header.tsv"
-        trinotate_annotation_report_filtered_header["genes"]="trinotate/trinotate_annotation_report.tsv.genes_filtered_header.tsv"
-        dge_ids = { 'genes':"id", 'isoforms':"id" }
-        length_ids = { 'genes':"gene_id", 'isoforms':"transcript_id" } 
-        trinotate_filters = None if not config.param('filter_annotated_components', 'filters_trinotate', required=False) else config.param('filter_annotated_components', 'filters_trinotate', required=False).split("\n")
+        output_directory = os.path.join("filtered_assembly","differential_expression")
+        jobs = []
+        trinotate_annotation_report = os.path.join("trinotate", "trinotate_annotation_report.tsv")
+        report_dir= os.path.join("report","filtered_assembly")
+        input_rmarkdown_file=os.path.join(self.report_template_dir, "RnaSeqDeNovoAssembly.differential_expression_goseq_filtered.Rmd") 
         
-        # Create the trinotate_annotation_report_filtered file and add a header
+        # Filter input files 
+        trinotate_annotation_report_filtered = trinotate_annotation_report + ".isoforms_filtered.tsv"
+        trinotate_annotation_report_filtered_header={}
+        trinotate_annotation_report_filtered_header["isoforms"] = trinotate_annotation_report + ".isoforms_filtered_header.tsv"
+        trinotate_annotation_report_filtered_header["genes"]= trinotate_annotation_report + ".genes_filtered_header.tsv"
+        counts_ids = { 'genes':"Genes", 'isoforms':"Isoforms" }
+        length_ids = { 'genes':"gene_id", 'isoforms':"transcript_id" } 
+        dge_ids = { 'genes':"id", 'isoforms':"id" }
+        trinotate_filters = None if not config.param('filter_annotated_components', 'filters_trinotate', required=False) else config.param('filter_annotated_components', 'filters_trinotate', required=False).split("\n")
+        source_directory = "differential_expression"
+        
+        # Create the files containing filtered isoforms and genes with headers
         jobs.append(concat_jobs([                    
-                        Job(command="mkdir -p " + dge_output_dir),
+                        Job(command="mkdir -p " + output_directory ),
                         Job([trinotate_annotation_report_filtered], 
                             [trinotate_annotation_report_filtered_header["genes"]], 
                             command="cat " + trinotate_annotation_report_filtered + " | awk 'BEGIN{OFS=\"_\";FS=\"_\"}{print $1,$2}' | uniq | sed '1s/^/ \\n/' " + "  > " + trinotate_annotation_report_filtered_header["genes"]
                             ),
                         Job([trinotate_annotation_report_filtered], 
                             [trinotate_annotation_report_filtered_header["isoforms"]], 
-                            command="sed '1s/^/ \\n/' " + trinotate_annotation_report_filtered  + " > " + trinotate_annotation_report_filtered_header["isoforms"])
+                            command="sed '1s/^/ \\n/' " + trinotate_annotation_report_filtered  + " > " + trinotate_annotation_report_filtered_header["isoforms"]),
                         ],name="differential_expression_filtered_get_trinotate")
-                    )
-            
-        for item in ["genes","isoforms" ] :
-            lengths_file=os.path.join( dge_source_dir , item + ".lengths.tsv")
-            lengths_filtered_file = os.path.join(dge_output_dir, item + ".lengths.tsv.noheader.tsv")
-            jobs.append(
-                concat_jobs([
-                    Job(command="mkdir -p " + os.path.join(dge_output_dir , item) ),                
-                    Job([lengths_file],                  
-                        [lengths_filtered_file],
-                        command="""sed \'1d\' {item_length_file} > {lengths_filtered_file}""".format(
-                        item_length_file=lengths_file,
-                        lengths_filtered_file=lengths_filtered_file))
-                    ], name="format." + item + ".lengths." + item)
-            )
-            for contrast in self.contrasts:
-                dge_trinotate_results = os.path.join(dge_source_dir, item , contrast.name, "dge_trinotate_results.csv")
-                dge_trinotate_filtered_results = os.path.join(dge_output_dir, item , contrast.name, "dge_trinotate_results.csv")
-                dge_goseq_filtered_results = os.path.join(dge_output_dir, item, contrast.name ,"gene_ontology_results.csv")
-                jobs.append(concat_jobs([
-                    Job(command="mkdir -p " + os.path.join(dge_output_dir , item , contrast.name)),
-                    # Filter dge
-                    tools.py_parseMergeCsv([ dge_trinotate_results ],
-                                    "\\\\t",
-                                    dge_trinotate_filtered_results,
-                                    dge_ids[item],
-                                    filters=trinotate_filters
-                                    ),                        
-                    # goseq for differential gene /isoforms expression results
-                    differential_expression.goseq(
-                        dge_trinotate_filtered_results,
-                        config.param("differential_expression_goseq", "dge_input_columns"),
-                        dge_goseq_filtered_results,                
-                        os.path.join(lengths_filtered_file),
-                        os.path.join("trinotate", "trinotate_annotation_report.tsv." + item + "_go.tsv")
-                        )
-                    ], name= "filter_dge_run_goSeq_" + item + "_" + contrast.name)
-                )
-                filtered_output_files += [dge_trinotate_filtered_results, dge_goseq_filtered_results]
+        )
         
+        # Run DGE and merge dge results with annotations        
+        for item in "genes","isoforms":
+            matrix = os.path.join(output_directory, item + ".counts.matrix.symbol")
+            job=tools.py_parseMergeCsv([ trinotate_annotation_report_filtered_header[item], os.path.join(source_directory, item + ".counts.matrix.symbol") ],
+                    "\\\\t",
+                    matrix,
+                    "\'\' " + counts_ids[item],
+                    left_join=True,
+                    exclude="\' \'")
+            jobs.append(concat_jobs([job, concat_jobs(self.differential_expression_and_goseq_rsem(output_directory, item, trinotate_annotation_report), name="differential_expression_filtered_" + item)], name="differential_expression_filtered_" + item))
+        
+        # Dependencies for report    
+        output_files = []                
+        for job_item in jobs:
+            output_files.extend([output_file for output_file in job_item.output_files if output_file not in output_files])
+            
+        # DGE Report
         # Render Rmarkdown Report
         jobs.append(
             rmarkdown.render(
-             job_input            = filtered_output_files,
+             job_input            = output_files,
              job_name             = "differential_expression_goseq_rnaseq_denovo_filtered_report",
-             input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeqDeNovoAssembly.differential_expression_goseq_filtered.Rmd") ,
+             input_rmarkdown_file = input_rmarkdown_file ,
              render_output_dir    = 'report',
              module_section       = 'report', 
-             prerun_r             = 'report_dir="report/filtered_assembly"; source_dir="' + dge_output_dir + '"; ' + 'top_n_results=10; contrasts=c("' + '",'.join(contrast.name for contrast in self.contrasts) + '");'
+             prerun_r             = 'report_dir="' + report_dir + '"; source_dir="' + output_directory + '"; ' + 'top_n_results=10; contrasts=c("' + '",'.join(contrast.name for contrast in self.contrasts) + '");'
              )
         )
+        
         return jobs
     
     @property
@@ -975,10 +887,9 @@ pandoc --to=markdown \\
             self.align_and_estimate_abundance,
             self.gq_seq_utils_exploratory_analysis_rnaseq_denovo,
             self.differential_expression,
-            self.differential_expression_goseq,
             self.filter_annotated_components,
-            self.gq_seq_utils_exploratory_analysis_rnaseq_denovo_filtered,
-            self.differential_expression_filtered            
+            self.gq_seq_utils_exploratory_analysis_rnaseq_denovo_filtered,            
+            self.differential_expression_filtered,
         ]
 
 if __name__ == '__main__':

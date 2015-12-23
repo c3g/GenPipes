@@ -112,8 +112,7 @@ pacBioMergeCovToBlast.R \\
 
 
 # Parallel blast using fasta chunks
-def parallel_blast(fasta, query, blast, program, db):
-    cpu = config.param('blastx_trinity_uniprot', 'cpu')
+def parallel_blast(fasta, query, blast, program, db, cpu):    
     return(Job(
         [fasta],
         [blast],
