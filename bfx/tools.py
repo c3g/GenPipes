@@ -205,6 +205,24 @@ dict2BEDs.py \\
         )
     )
 
+def preprocess_varscan(input,output):
+    return Job(
+        [input],
+        [output],
+        [
+            ['DEFAULT', 'module_mugqic_tools'],
+            ['DEFAULT', 'module_python']
+        ],
+        command="""\
+python $PYTHON_TOOLS/preprocess.py \\
+  --ref-depth RD --alt-depth AD \\
+  {input} \\
+  | bgzip -cf > {output}""".format(
+        input=input,
+        output=output
+        )
+    )
+
 def filter_long_indel(input, output):
     return Job(
         [input],

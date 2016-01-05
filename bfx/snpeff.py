@@ -42,7 +42,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $SNPEFF_HOME
   -csvStats \\
   -stats {output_stats} \\
   {reference_snpeff_genome} \\
-  {input}{output}""".format(
+  {input} > {output}""".format(
         tmp_dir=config.param('compute_effects', 'tmp_dir'),
         java_other_options=config.param('compute_effects', 'java_other_options'),
         ram=config.param('compute_effects', 'ram'),
@@ -50,7 +50,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $SNPEFF_HOME
         output_stats=output_stats,
         reference_snpeff_genome=config.param('compute_effects', 'snpeff_genome'),
         input=input,
-        output=" \\\n  > " + output if output else ""
+        output=output
         )
     )
 
