@@ -6,12 +6,12 @@ SOFTWARE=ucsc
 # By default, the latest remote version will be downloaded and the version date set appropriately.
 # To use a local archive specific version, uncomment and update VERSION
 #VERSION=latest
-VERSION=20140212
+VERSION=v326
 if [[ $VERSION == latest ]]
 then
   ARCHIVE=userApps.src.tgz
 else
-  ARCHIVE=$SOFTWARE-userApps-$VERSION.src.tgz
+  ARCHIVE=userApps.$VERSION.src.tgz
 fi
 ARCHIVE_URL=http://hgdownload.cse.ucsc.edu/admin/exe/$ARCHIVE
 SOFTWARE_DIR=$SOFTWARE-$VERSION
