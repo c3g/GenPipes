@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=gnuplot
-VERSION=4.6.4
+VERSION=5.0.0
 ARCHIVE=$SOFTWARE-$VERSION.tar.gz
 ARCHIVE_URL=http://sourceforge.net/projects/$SOFTWARE/files/$SOFTWARE/$VERSION/$ARCHIVE/download
 SOFTWARE_DIR=$SOFTWARE-$VERSION
