@@ -99,8 +99,7 @@ def create_readsets(nanuq_readset_file, seq_type, mugqic_pipelines_readset_file=
                 log.warning('EstimatedGenomeSize: ' + line['Genome size from Nanuq reception (Mb)'])
 
                 if mugqic_pipelines_readset_csv_row['EstimatedGenomeSize'] != '':
-                    mugqic_pipelines_readset_csv_row['EstimatedGenomeSize'] = float(mugqic_pipelines_readset_csv_row['EstimatedGenomeSize'])*1000*1000
-                    mugqic_pipelines_readset_csv_row['EstimatedGenomeSize'] = int(mugqic_pipelines_readset_csv_row['EstimatedGenomeSize'])
+                    mugqic_pipelines_readset_csv_row['EstimatedGenomeSize'] = int(float(mugqic_pipelines_readset_csv_row['EstimatedGenomeSize'])*1000*1000)
                 if line.get('Results Directory', None):
                     nanuq_readset_prefix = os.path.normpath(os.path.join(nanuq_readset_root_directory, line['Results Directory'], line['Movie name']))
                     for format in formats:
