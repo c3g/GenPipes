@@ -2,10 +2,11 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=mugqic_tools
-VERSION=2.1.4
+SOFTWARE=sphynx
+VERSION=master
 ARCHIVE=$SOFTWARE-$VERSION.tar.gz
-ARCHIVE_URL=https://bitbucket.org/mugqic/$SOFTWARE/downloads/$ARCHIVE
+#ARCHIVE_URL=https://bitbucket.org/mugqic/$SOFTWARE/downloads/$ARCHIVE
+ARCHIVE_URL=https://github.com/sphinx-doc/sphinx/archive/master.tar.gz
 SOFTWARE_DIR=$SOFTWARE-$VERSION
 
 # Specific commands to extract and build the software
@@ -16,7 +17,7 @@ build() {
   tar zxvf $ARCHIVE
 
   # Install software
-  mv -i mugqic-${SOFTWARE}-* $INSTALL_DIR/$SOFTWARE_DIR
+  mv -i $SOFTWARE_DIR $INSTALL_DIR/
 }
 
 module_file() {

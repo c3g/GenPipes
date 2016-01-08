@@ -43,6 +43,10 @@ from bfx import picard
 from bfx import samtools
 from bfx import tools
 from bfx import varscan
+from bfx import htslib
+from bfx import vt
+from bfx import snpeff
+from bfx import gemini
 from pipelines.dnaseq import dnaseq
 
 log = logging.getLogger(__name__)
@@ -64,6 +68,21 @@ class DnaSeqHighCoverage(dnaseq.DnaSeq):
     def __init__(self):
         # Add pipeline specific arguments
         super(DnaSeqHighCoverage, self).__init__()
+
+    def picard_fixmate(self):
+        """
+        """
+        jobs = []
+        for sample in self.samples:
+            sample_directory = os.path.join("alignment", sample.name)
+            input_file = os.path.join(sample_directory, sample.name + ".realigned.qsorted.bam")
+            output_file = os.path.join(sample_directory, sample.name + ".matefixed.sorted.bam")
+
+            job = picard.fix_mate_information(input_file, output_file)
+            job.name = "picard_fix_mate_information." + sample.name
+            jobs.append(job)
+
+        return jobs
 
     def metrics(self):
         """
@@ -157,45 +176,118 @@ class DnaSeqHighCoverage(dnaseq.DnaSeq):
 
         variants_directory = os.path.join("variants")
         varscan_directory = os.path.join(variants_directory, "rawVarScan")
+
         beds = []
         for idx in range(nb_jobs):
             beds.append(os.path.join(varscan_directory, 'chrs.' + str(idx) + '.bed'))
 
         genome_dictionary = config.param('DEFAULT', 'genome_dictionary', type='filepath')
-        mkdir_job = Job(command="mkdir -p " + varscan_directory)
+        
         if nb_jobs > 1:
             bedJob = tools.dict2beds(genome_dictionary, beds)
             jobs.append(concat_jobs([mkdir_job,bedJob], name="varscan.genome.beds"))
 
         bams=[]
-        sampleNames=[]
+        sampleNamesFile = 'varscan_samples.tsv'
+        sampleNames = open(sampleNamesFile, 'w')
+
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
             input = os.path.join(alignment_directory, sample.name + ".matefixed.sorted.bam")
             bams.append(input)
-            sampleNames.append(sample.name)
+            sampleNames.write("%s\n" % sample.name)
+            bedfile = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
+            #sampleNames.append(sample.name)
 
         if nb_jobs == 1:
-            # Create output directory since it is not done by default by GATK tools
-            jobs.append(pipe_jobs([
-                    samtools.mpitleup(bams, None, config.param('varscan', 'mpileup_other_options')),
-                    varscan.mpileupcns(None, os.path.join(variants_directory, "allCalls.vcf"), sampleNames)
-                ], name="varscan"))
+            job = concat_jobs([
+                Job(command="mkdir -p " + varscan_directory),
+                pipe_jobs([
+                    samtools.mpileup(bams, None, config.param('varscan', 'mpileup_other_options'), regionFile=bedfile),
+                    varscan.mpileupcns(None, None, sampleNamesFile, config.param('varscan', 'other_options')),
+                    htslib.bgzip_tabix_vcf(None, os.path.join(variants_directory, "allSamples.vcf.gz"))
+                ])
+            ], name="varscan.single")
+
+            jobs.append(job)
+
         else:
             output_vcfs=[]
             for idx in range(nb_jobs):
-                output_vcf = os.path.join(varscan_directory, "allCalls."+str(idx)+".vcf")
+                output_vcf = os.path.join(varscan_directory, "allSamples."+str(idx)+".vcf.gz")
                 varScanJob = pipe_jobs([
                     samtools.mpileup(bams, None, config.param('varscan', 'mpileup_other_options'), regionFile=beds[idx]),
-                    varscan.mpileupcns(None, output_vcf, sampleNames)
+                    varscan.mpileupcns(None, None, sampleNamesFile, config.param('varscan', 'other_options')),
+                    htslib.bgzip_tabix_vcf(None, output_vcf)
                 ], name = "varscan." + str(idx))
                 output_vcfs.append(output_vcf)
                 jobs.append(varScanJob)
 
-            job=gatk.cat_variants(output_vcfs, os.path.join(variants_directory, "allCalls.vcf"))
+            job=gatk.cat_variants(output_vcfs, os.path.join(variants_directory, "allSamples.vcf.gz"))
             job.name="gatk_cat_varscan"
             jobs.append(job)
         return jobs
+
+    def preprocess_vcf(self):
+        """
+        Preprocess vcf for loading into a annotation database - gemini : http://gemini.readthedocs.org/en/latest/index.html
+        Processes include normalization and decomposition of MNPs by vt (http://genome.sph.umich.edu/wiki/Vt) and 
+        vcf FORMAT modification for correct loading into gemini
+        """
+
+        jobs = []
+
+        output_directory = "variants"
+        prefix = os.path.join(output_directory, "allSamples")
+        outputPreprocess = prefix + ".prep.vt.vcf.gz"
+        outputFix = prefix + ".prep.vt.fix.vcf.gz"
+
+        jobs.append(concat_jobs([
+            tools.preprocess_varscan( prefix + ".vcf.gz",  prefix + ".prep.vcf.gz" ), 
+            vt.decompose_and_normalize_mnps( prefix + ".prep.vcf.gz" , prefix + ".prep.vt.vcf.gz"),
+            Job([outputPreprocess], [outputFix], command="zcat " + outputPreprocess + " | grep -v 'ID=AD_O' | sed -e 's/AD_O/AD/g' | sed -e 's/\:AD\\t/\\t/g' | sed -e 's/\:\.//g'" + ' | bgzip -cf > ' + outputFix),
+            tools.preprocess_varscan( outputFix,  prefix + ".vt.vcf.gz" )
+        ], name="preprocess_vcf.allSamples"))
+        
+        return jobs
+
+    def snp_effect(self):
+        """
+        Variant effect annotation. The .vcf files are annotated for variant effects using the SnpEff software.
+        SnpEff annotates and predicts the effects of variants on genes (such as amino acid changes).
+        """
+
+        jobs = []
+
+        output_directory = "variants"
+        snpeff_prefix = os.path.join(output_directory, "allSamples")
+
+        jobs.append(concat_jobs([
+            Job(command="mkdir -p " + output_directory),
+            snpeff.compute_effects( snpeff_prefix + ".vt.vcf.gz", snpeff_prefix + ".vt.snpeff.vcf", split=True),
+            htslib.bgzip_tabix_vcf( snpeff_prefix + ".vt.snpeff.vcf", snpeff_prefix + ".vt.snpeff.vcf.gz")            
+        ], name="compute_effects.allSamples"))
+
+        return jobs
+
+    def gemini_annotations(self):
+        """
+        Load functionally annotated vcf file into a mysql lite annotation database : http://gemini.readthedocs.org/en/latest/index.html
+        """
+
+        jobs = []
+                
+        output_directory = "variants"
+        temp_dir = os.path.join(os.getcwd(), output_directory)
+        gemini_prefix = os.path.join(output_directory, "allSamples")
+
+        jobs.append(concat_jobs([
+            Job(command="mkdir -p " + output_directory),
+            gemini.gemini_annotations( gemini_prefix + ".vt.snpeff.vcf.gz", gemini_prefix + ".gemini.16.3.db", temp_dir)
+        ], name="gemini_annotations.allSamples"))
+
+        return jobs
+
 
     @property
     def steps(self):
@@ -207,11 +299,14 @@ class DnaSeqHighCoverage(dnaseq.DnaSeq):
             self.picard_merge_sam_files,
             self.gatk_indel_realigner,
             self.merge_realigned,
-            self.fix_mate_by_coordinate,
+            self.picard_fixmate,
             self.metrics,
             self.picard_calculate_hs_metrics,
             self.gatk_callable_loci,
-            self.call_variants
+            self.call_variants,
+            self.preprocess_vcf,
+            self.snp_effect,
+            self.gemini_annotations
         ]
 
 if __name__ == '__main__': 

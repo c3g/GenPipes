@@ -1,0 +1,57 @@
+```{r preparation, results="hide",echo=F,message=F,warning=F}
+
+### DEFINED OUTSIDE
+# report_dir
+
+library(rmarkdown)
+library(knitr)
+library(hwriter)
+library(magrittr)
+options(stringsAsFactors=F)
+
+
+
+# Directories and cp data
+unlink( file.path(report_dir,"exploratory") , recursive = T)
+dir.create( file.path(report_dir,"exploratory"), showWarnings=F,recursive=T)
+file.copy(from = "exploratory", to = report_dir, overwrite = T, recursive = T)
+zip( file.path(report_dir,"exploratory/all.zip"), files = file.path(report_dir,"exploratory") %>% list.files(full.names=T,recursive=T) )
+
+# Create summary table
+summary = file.path(report_dir,"exploratory","index.tsv") %>% read.delim(header=T,check.names=F,colClasses="character",stringsAsFactors=F,comment.char='')
+summary = summary[ summary$"File" %>% basename  %in%  # some figures we don't want to show
+ c("cordist_hclust_log2CPM.pdf","pca_log2CPM.pdf","top_sd_heatmap_log2CPM.pdf","top_sd_heatmap_cufflinks_logFPKMs.pdf") , ] 
+summary = summary[,c("Description","File")]# we want to offer full package as zip
+summary %<>% rbind(c("All Figures","exploratory/all.zip"))
+summary$"File" %<>% sapply(function(fn){
+	hwrite( gsub(".*\\.","",fn) ,link=fn)
+})
+```
+
+#### Exploratory Analysis 
+
+Different exploratory data analysis (EDA) techniques are applied to gene expression levels, quantified  
+by the RSEM log2(CPM) (counts-per-million reads). Main goals of expression level EDA are 
+the detection of outliers, potential mislabeling,  to explore the homogeneity of biological replicates and  to appreciate 
+the global effects of the different experimental variables. EDA plots are therefore essential to insure clean data is 
+sent to differential analysis.
+
+First, we analyze how samples are connected to each other using 
+hierarchical clustering on the log2(CPM) gene expression levels. The Ward method is applied 
+to the matrix of Pearson's correlation distance.
+
+Secondly, we perform principal component analysis (PCA) on gene expression levels (log2CPM). 
+A PCA plot shows the projection of the samples onto a two-dimensional space spanned by the first 
+and second principal components. These are the orthogonal directions in which the data exhibits the largest and 
+second-largest variability. These two components are usually sufficient to 
+differentiate groups of samples describing the principal effects of the 
+experimental design.
+
+Next, genes with the most variable expression levels (log2CPM standard deviation across all samples, usually the top 75) 
+are used to cluster samples. The utility of such a plot is to get a rough overview of which genes or transcripts are contributing
+the most to the samples clustering pattern.
+
+```{r summary_table, results="markup",echo=F,message=F,warning=F}
+kable(summary,align=c("l","r"),row.names=F)
+```
+

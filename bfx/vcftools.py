@@ -42,5 +42,6 @@ vcf-annotate \\
         annotations=config.param('annotate_mappability', 'genome_mappability_bed_indexed', type='filepath'),
         input=input,
         output=" \\\n  > " + output if output else ""
-        )
+        ),
+        removable_files=[output]
     )

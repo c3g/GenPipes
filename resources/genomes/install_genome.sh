@@ -608,6 +608,10 @@ version=$VERSION" > $INI
     echo "\
 dbsnp_version=$DBSNP_VERSION" >> $INI
   fi
+  if [ ! -z "${population_AF:-}" ]; then
+  echo -e "\npopulation_AF=$population_AF" >> $INI
+  fi    
+  
 }
 
 install_genome() {

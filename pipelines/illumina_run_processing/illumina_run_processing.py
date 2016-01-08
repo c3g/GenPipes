@@ -88,6 +88,13 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         - `Operator`
         - `SampleProject`
 
+        Example:
+
+            FCID,Lane,SampleID,SampleRef,Index,Description,Control,Recipe,Operator,SampleProject
+            H84WNADXX,1,sample1_MPS0001,,TAAGGCGA-AGAGTAGA,,N,,,nanuq
+            H84WNADXX,1,sample47_MPS0047,,GTAGAGGA-CTAAGCCT,,N,,,nanuq
+
+
         The second sample sheet is called the Nanuq run sheet. It's a csv file with the
         following minimal set of mandatory columns (the column order in the file doesn't
         matter)
@@ -103,20 +110,27 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         `Library Source` is `Library`
         - `BED Files` The name of the BED file containing the genomic targets. This is
         the `filename` parameter passed to the `fetch_bed_file_command`
+        - `Genomic Database` The reference used to make the alignment and calculate aligments metrics
+
+        Example:
+
+            Name,Genomic Database,Library Barcode,Library Source,Library Type,Run,Region,BED Files,ProcessingSheetId
+            sample1,Rattus_norvegicus:Rnor_5.0,MPS0001,RNA,Nextera XT,1419,1,toto.bed,sample1_MPS0001
+            sample47,,MPS1047,Library,Nextera XT,1419,2,toto.bed,sample47_MPS1047
     """
 
     def __init__(self):
         self.copy_job_inputs = []
         self.argparser.add_argument("-d", "--run", help="run directory", required=False, dest="run_dir")
         self.argparser.add_argument("--lane", help="lane number", type=int, required=False, dest="lane_number")
-        self.argparser.add_argument("-r", "--readsets", help="readset file", type=file, required=False)
-        self.argparser.add_argument("-i", help="illumina casava sheet", type=file, required=False,
+        self.argparser.add_argument("-r", "--readsets", help="nanuq readset file. The default file is 'run.nanuq.csv' in the output folder. Will be automatically downloaded if not present.", type=file, required=False)
+        self.argparser.add_argument("-i", help="illumina casava sheet. The default file is 'SampleSheet.nanuq.csv' in the output folder. Will be automatically downloaded if not present", type=file, required=False,
                                     dest="casava_sheet_file")
-        self.argparser.add_argument("-x", help="first index base to use for demultiplexing", type=int, required=False,
+        self.argparser.add_argument("-x", help="first index base to use for demultiplexing (inclusive). The index from the sample sheet will be adjusted according to that value.", type=int, required=False,
                                     dest="first_index")
-        self.argparser.add_argument("-y", help="last index base to use for demultiplexing", type=int, required=False,
+        self.argparser.add_argument("-y", help="last index base to use for demultiplexing (inclusive)", type=int, required=False,
                                     dest="last_index")
-        self.argparser.add_argument("-m", help="number of index mistmaches allowed for demultiplexing", type=int,
+        self.argparser.add_argument("-m", help="number of index mistmaches allowed for demultiplexing (default 1). Barcode collisions are always checked.", type=int,
                                     required=False, dest="number_of_mismatches")
         self.argparser.add_argument("-w", "--force-download",
                                     help="force the download of the samples sheets (default: false)",
@@ -207,7 +221,6 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
             self.blast,
             self.qc_graphs,
             self.md5,
-            self.start_copy_notification,
             self.copy,
             self.end_copy_notification
         ]
@@ -453,13 +466,13 @@ configureBclToFastq.pl\\
             output = output_prefix + '.R1.RDP.blastHit_20MF_species.txt'
             current_jobs = [Job(command="mkdir -p " + os.path.dirname(output))]
 
+            fasta_file = output_prefix + ".R1.subSampled_{nb_blast_to_do}.fasta".format(
+                nb_blast_to_do=nb_blast_to_do)
+            result_file = output_prefix + ".R1.subSampled_{nb_blast_to_do}.blastres".format(
+                nb_blast_to_do=nb_blast_to_do)
+
             if readset.bam:
                 input = readset.bam + ".bam"
-
-                fasta_file = output_prefix + ".R1.subSampled_{nb_blast_to_do}.fasta".format(
-                    nb_blast_to_do=nb_blast_to_do)
-                result_file = output_prefix + ".R1.subSampled_{nb_blast_to_do}.blastres".format(
-                    nb_blast_to_do=nb_blast_to_do)
 
                 # count the read that aren't marked as secondary alignment and calculate the ratio of reads to subsample
                 command = """subsampling=$(samtools view -F 0x0180 {input} | wc -l | awk -v nbReads={nb_blast_to_do} '{{x=sprintf("%.4f", nbReads/$1); if (x == "0.0000") print "0.0001"; else print x}}')""".format(
@@ -495,6 +508,39 @@ configureBclToFastq.pl\\
                     command += readset.fastq2
                 current_jobs.append(Job(inputs, [output], [["blast", "module_mugqic_tools"], ["blast", "module_blast"]],
                                         command=command))
+
+            # rRNA estimate using silva blast db, using the same subset of reads as the "normal" blast
+            rrna_db = config.param('blast', 'rrna_db', required=False)
+            if readset.is_rna and rrna_db:
+                rrna_result_file = result_file + "Rrna"
+                rrna_output = output_prefix + ".R1.subSampled_{nb_blast_to_do}.rrna".format(
+                    nb_blast_to_do=nb_blast_to_do)
+                command = """blastn -query {fasta_file} -db {db} -out {result_file} -perc_identity 80 -num_descriptions 1 -num_alignments 1""".format(
+                    fasta_file=fasta_file,
+                    result_file=rrna_result_file,
+                    db=rrna_db
+                )
+                current_jobs.append(Job([], [], [["blast", "module_blast"]], command=command))
+
+                command = """echo '{db}' > {output}""".format(
+                    db=rrna_db,
+                    output=rrna_output
+                )
+                current_jobs.append(Job([], [output], [], command=command))
+
+                command = """grep ">" {result_file} | wc -l >> {output}""".format(
+                    result_file=rrna_result_file,
+                    output=rrna_output
+                )
+                current_jobs.append(Job([], [output], [], command=command))
+
+                command = """grep ">" {fasta_file} | wc -l >> {output}""".format(
+                    fasta_file=fasta_file,
+                    output=rrna_output
+                )
+                current_jobs.append(Job([], [output], [], command=command))
+
+            # merge all blast steps of the readset into one job
             job = concat_jobs(current_jobs,
                               name="blast." + readset.name + ".blast." + self.run_id + "." + str(self.lane_number))
             jobs.append(job)
@@ -574,37 +620,13 @@ configureBclToFastq.pl\\
 
             jobs.append(job)
 
-        self.add_copy_job_inputs(jobs)
-        return jobs
-
-    def start_copy_notification(self):
-        """
-            Send an optional notification for the processing completion.
-
-            The command used is in the configuration file. This step is skipped when no
-            command is provided.
-        """
-        jobs = []
-        inputs = self.copy_job_inputs
-
-        output1 = self.output_dir + os.sep + "notificationProcessingComplete." + str(self.lane_number) + ".out"
-        output2 = self.output_dir + os.sep + "notificationCopyStart." + str(self.lane_number) + ".out"
-
-        notification_command = config.param('start_copy_notification', 'notification_command', required=False)
-        if notification_command:
-            job = Job(inputs, [output1, output2],
-                      name="start_copy_notification." + self.run_id + "." + str(self.lane_number))
-            job.command = notification_command.format(
-                technology=config.param('start_copy_notification', 'technology'),
-                output_dir=self.output_dir,
-                run_id=self.run_id,
-                output1=output1,
-                output2=output2,
-                lane_number=self.lane_number
-            )
-            jobs.append(job)
-
-        return jobs
+        if config.param('md5', 'one_job', required=False, type="boolean"):
+            job = concat_jobs(jobs, "md5." + self.run_id + "." + str(self.lane_number))
+            self.add_copy_job_inputs([job])
+            return [job]
+        else:
+            self.add_copy_job_inputs(jobs)
+            return jobs
 
     def copy(self):
         """
@@ -613,10 +635,31 @@ configureBclToFastq.pl\\
 
             The destination folder and the command used can be set in the configuration
             file.
-        """
-        jobs = []
-        inputs = self.copy_job_inputs
 
+            An optional notification can be sent before the copy. The command used is in the configuration file.
+        """
+        inputs = self.copy_job_inputs
+        jobs_to_concat = []
+
+        # Notification
+        output1 = self.output_dir + os.sep + "notificationProcessingComplete." + str(self.lane_number) + ".out"
+        output2 = self.output_dir + os.sep + "notificationCopyStart." + str(self.lane_number) + ".out"
+
+        notification_command = config.param('copy', 'notification_command', required=False)
+        if notification_command:
+            job = Job(inputs, [output1, output2],
+                      name="start_copy_notification." + self.run_id + "." + str(self.lane_number))
+            job.command = notification_command.format(
+                technology=config.param('copy', 'technology'),
+                output_dir=self.output_dir,
+                run_id=self.run_id,
+                output1=output1,
+                output2=output2,
+                lane_number=self.lane_number
+            )
+            jobs_to_concat.append(job)
+
+        # Actual copy
         full_destination_folder = config.param('copy', 'destination_folder', type="dirpath") + os.path.basename(
             self.run_dir)
         output = full_destination_folder + os.sep + "copyCompleted." + str(self.lane_number) + ".out"
@@ -638,7 +681,6 @@ configureBclToFastq.pl\\
                     if readset.fastq2:
                         excluded_files.append(readset.fastq2)
 
-        jobs_to_concat = []
         if self.run_dir != self.output_dir:
             copy_command_run_folder = config.param('copy', 'copy_command', required=False).format(
                 exclusion_clauses="",
@@ -661,11 +703,9 @@ configureBclToFastq.pl\\
         jobs_to_concat.append(Job(inputs, [output], command=copy_command_output_folder))
         jobs_to_concat.append(Job(command="touch " + output))
 
-        job = concat_jobs(jobs_to_concat)
-        job.name = "copy." + self.run_id + "." + str(self.lane_number)
+        job = concat_jobs(jobs_to_concat, "copy." + self.run_id + "." + str(self.lane_number))
 
-        jobs.append(job)
-        return jobs
+        return [job]
 
     def end_copy_notification(self):
         """
@@ -864,11 +904,12 @@ configureBclToFastq.pl\\
             Returns a list (for each index read of the run) of the minimum between the number of index cycle on the
             sequencer and all the index lengths.
         """
-        run_index_lengths = [r.nb_cycles for r in self.read_infos if r.is_index]
+        run_index_lengths = [r.nb_cycles for r in self.read_infos if r.is_index] # from RunInfo
 
         if len(run_index_lengths) == 0 and len(self.readsets) > 1:
             raise Exception("Multiple samples on a lane, but no indexes were read from the sequencer.")
 
+        # loop on all index reads, to compare with samples index length
         for i in range(0, len(run_index_lengths)):
             min_sample_index_length = 0
             try:
@@ -879,9 +920,15 @@ configureBclToFastq.pl\\
                     readset.index.split("-")[i]) > 0)
                 )
             except ValueError:
-                pass  # value already set to zero
-            run_index_lengths[i] = 0 if (min_sample_index_length is None) else min(min_sample_index_length,
-                                                                                   run_index_lengths[i])
+                pass  # we don't have a sample with this Ith index read, use the 0 already set
+
+            empty_index_list = [readset for readset in self.readsets if
+                  (len(readset.index.split("-")) <= i or len(readset.index.split("-")[i]) == 0)]
+            if len(empty_index_list):
+                # we have samples without this Ith index read, so we skip it
+                min_sample_index_length = 0
+
+            run_index_lengths[i] = min(min_sample_index_length, run_index_lengths[i])
 
         return run_index_lengths
 
