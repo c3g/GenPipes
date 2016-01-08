@@ -3,7 +3,8 @@
 set -eu -o pipefail
 
 SOFTWARE=picard
-VERSION=1.123
+#version 2 or later require JDK1.8
+VERSION=2.0.1
 ARCHIVE=$SOFTWARE-tools-$VERSION.zip
 ARCHIVE_URL=https://github.com/broadinstitute/picard/releases/download/$VERSION/$ARCHIVE
 SOFTWARE_DIR=$SOFTWARE-tools-$VERSION
@@ -25,7 +26,7 @@ echo "\
 proc ModulesHelp { } {
   puts stderr \"\tMUGQIC - $SOFTWARE \"
 }
-module-whatis \"$SOFTWARE\"
+module-whatis \"$SOFTWARE - require JDK1.8\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
 setenv          PICARD_HOME         \$root
