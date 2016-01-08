@@ -146,7 +146,8 @@ def getDups(sample, dir, sampleStats):
                 break
             values = line.split('\t')
             if not sampleStats['dupPct']:
-                sampleStats['dupPct'] = values[7]
+		    if not sampleStats['dupPct'] == '?':
+			    sampleStats['dupPct'] = values[7]
             else:
                 sampleStats['dupPct'] += ',' + values[7]
 
