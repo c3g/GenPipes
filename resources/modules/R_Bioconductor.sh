@@ -257,6 +257,9 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
 
 	## Install Vennerable, since not yet in CRAN
 	install.packages("Vennerable", repos="http://R-Forge.R-project.org",lib=.Library, type='source')
+	## Force Rmarkdown and knitr, not available fot R 3.2
+	install.packages('knitr', repos='http://cran.rstudio.org')
+	install.packages('rmarkdown', repos='http://cran.rstudio.org')
 
 	## Sleuth
 	devtools::install_github("pachterlab/sleuth")

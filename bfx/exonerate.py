@@ -32,3 +32,12 @@ def fastareformat (input, output):
         command="fastareformat " + input + " > " + output, 
         module_entries=[['DEFAULT' , 'module_exonerate']]
     )
+
+def fastasplit (fasta, output_directory, output_basename, num_fasta_chunks):
+    return Job(
+        [fasta],
+        # fastasplit creates FASTA chunk files numbered with 7 digits and padded with leading 0s
+        [ os.path.join(output_directory, output_basename + "_{:07d}".format(i)) for i in range(num_fasta_chunks) ],
+        [['exonerate_fastasplit', 'module_exonerate']],
+        command="fastasplit -f " + fasta + " -o " + output_directory + " -c " + str(num_fasta_chunks)
+    )

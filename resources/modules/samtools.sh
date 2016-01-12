@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=samtools
-VERSION=1.2
+VERSION=1.3
 ARCHIVE=$SOFTWARE-$VERSION.tar.bz2
 ARCHIVE_URL=https://github.com/samtools/samtools/releases/download/${VERSION}/${ARCHIVE}
 SOFTWARE_DIR=$SOFTWARE-$VERSION

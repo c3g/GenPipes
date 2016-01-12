@@ -5,13 +5,18 @@ set -eu -o pipefail
 SOFTWARE=ucsc
 # By default, the latest remote version will be downloaded and the version date set appropriately.
 # To use a local archive specific version, uncomment and update VERSION
+<<<<<<< HEAD
 VERSION=latest
 #VERSION=20140212
+=======
+#VERSION=latest
+VERSION=v326
+>>>>>>> e3c632527d6ee305d3d923bf8f6b50bb73329aca
 if [[ $VERSION == latest ]]
 then
   ARCHIVE=userApps.src.tgz
 else
-  ARCHIVE=$SOFTWARE-userApps-$VERSION.src.tgz
+  ARCHIVE=userApps.$VERSION.src.tgz
 fi
 ARCHIVE_URL=http://hgdownload.cse.ucsc.edu/admin/exe/$ARCHIVE
 SOFTWARE_DIR=$SOFTWARE-$VERSION

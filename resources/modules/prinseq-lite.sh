@@ -3,7 +3,8 @@
 set -eu -o pipefail
 
 SOFTWARE=prinseq-lite
-VERSION=0.20.3
+VERSION=0.20.4
+#VERSION=0.20.3
 ARCHIVE=$SOFTWARE-$VERSION.tar.gz
 ARCHIVE_URL=http://sourceforge.net/projects/prinseq/files/standalone/$ARCHIVE/download
 SOFTWARE_DIR=$SOFTWARE-$VERSION

@@ -129,7 +129,7 @@ class RnaSeq(common.Illumina):
                 if readset.fastq1:
                     candidate_input_files.append([readset.fastq1])
                 if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz")])
+                    candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
                 [fastq1] = self.select_input_files(candidate_input_files)
                 fastq2 = None
             else:
@@ -185,7 +185,7 @@ class RnaSeq(common.Illumina):
                 if readset.fastq1:
                     candidate_input_files.append([readset.fastq1])
                 if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz")])
+                    candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
                 [fastq1] = self.select_input_files(candidate_input_files)
                 fastq2 = None
             else:

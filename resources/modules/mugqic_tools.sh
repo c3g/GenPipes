@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=mugqic_tools
-VERSION=2.1.1
+VERSION=2.1.4
 ARCHIVE=$SOFTWARE-$VERSION.tar.gz
 ARCHIVE_URL=https://bitbucket.org/mugqic/$SOFTWARE/downloads/$ARCHIVE
 SOFTWARE_DIR=$SOFTWARE-$VERSION
@@ -16,7 +16,7 @@ build() {
   tar zxvf $ARCHIVE
 
   # Install software
-  mv -i $SOFTWARE_DIR $INSTALL_DIR/
+  mv -i $SOFTWARE_DIR $INSTALL_DIR
 }
 
 module_file() {

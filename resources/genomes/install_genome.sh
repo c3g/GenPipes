@@ -9,16 +9,21 @@ module_mugqic_R_packages=mugqic/mugqic_R_packages/1.0.3
 module_picard=mugqic/picard/1.123
 module_R=mugqic/R_Bioconductor/3.1.2_3.0
 module_samtools=mugqic/samtools/0.1.19
-module_star=mugqic/star/2.4.0e
+module_star=mugqic/star/2.4.0f1
 module_tabix=mugqic/tabix/0.2.6
 module_tophat=mugqic/tophat/2.0.11
 module_ucsc=mugqic/ucsc/20140212
 
 init_install() {
   # '$MUGQIC_INSTALL_HOME_DEV' for development, '$MUGQIC_INSTALL_HOME' for production
-  INSTALL_HOME=$MUGQIC_INSTALL_HOME_DEV
+  if [[ ${1:-} == MUGQIC_INSTALL_HOME ]]
+then
+  INSTALL_HOME=MUGQIC_INSTALL_HOME
+else
+  INSTALL_HOME=MUGQIC_INSTALL_HOME_DEV
+fi
 
-  INSTALL_DIR=$INSTALL_HOME/genomes/species/$SPECIES.$ASSEMBLY
+  INSTALL_DIR=${!INSTALL_HOME}/genomes/species/$SPECIES.$ASSEMBLY
   DOWNLOAD_DIR=$INSTALL_DIR/downloads
   LOG_DIR=$INSTALL_DIR/log
   TIMESTAMP=`date +%FT%H.%M.%S`
@@ -236,7 +241,8 @@ cmd_or_job() {
     echo "Submitting $JOB_PREFIX as job..."
     echo
     CORES=${2:-1}  # Nb cores = 2nd param if defined else 1
-    echo "${!CMD}" | qsub -m ae -M $JOB_MAIL -W umask=0002 -d $INSTALL_DIR -j oe -o $LOG_DIR/${JOB_PREFIX}_$TIMESTAMP.log -N $JOB_PREFIX.$GENOME_FASTA -l walltime=24:00:0 -q sw -l nodes=1:ppn=$CORES
+    #echo "${!CMD}" | qsub -m ae -M $JOB_MAIL -W umask=0002 -d $INSTALL_DIR -j oe -o $LOG_DIR/${JOB_PREFIX}_$TIMESTAMP.log -N $JOB_PREFIX.$GENOME_FASTA -l walltime=24:00:0 -q sw -l nodes=1:ppn=$CORES
+    echo "${!CMD}" | bash
   else
     echo
     echo "Running $JOB_PREFIX..."
@@ -339,7 +345,7 @@ create_star_index() {
     runThreadN=1
   fi
 
-  for sjdbOverhang in 49 99
+  for sjdbOverhang in 49 99 74 149
   do
     INDEX_DIR=$INSTALL_DIR/genome/star_index/$SOURCE$VERSION.sjdbOverhang$sjdbOverhang
     if ! is_up2date $INDEX_DIR/SAindex
@@ -602,6 +608,10 @@ version=$VERSION" > $INI
     echo "\
 dbsnp_version=$DBSNP_VERSION" >> $INI
   fi
+  if [ ! -z "${population_AF:-}" ]; then
+  echo -e "\npopulation_AF=$population_AF" >> $INI
+  fi    
+  
 }
 
 install_genome() {

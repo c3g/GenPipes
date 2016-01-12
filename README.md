@@ -501,5 +501,6 @@ You can also report bugs at [bioinformatics.service@mail.mcgill.ca](mailto:bioin
 
 * Messages should not be sent directly to our team members. The generic e-mail addresses above are viewable by all of us and facilitate the follow-up of your request.
 * Choose a meaningful subject for your message.
-* Include the pipeline version number in your message.
+* Include the pipeline version number in your message (and the commit number if applicable).
+* Provide the following information relevant to the problem encountered: the python command, the bash submission script, the output (job_outputs/*/*.o) file, 
 * An error message or code snippet illustrating your request is normally very useful.
