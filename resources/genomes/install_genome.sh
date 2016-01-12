@@ -345,7 +345,7 @@ create_star_index() {
     runThreadN=1
   fi
 
-  for sjdbOverhang in 49 99
+  for sjdbOverhang in 49 99 74 149
   do
     INDEX_DIR=$INSTALL_DIR/genome/star_index/$SOURCE$VERSION.sjdbOverhang$sjdbOverhang
     if ! is_up2date $INDEX_DIR/SAindex

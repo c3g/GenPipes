@@ -2,11 +2,20 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=star
-VERSION=2.5.0c
+################################################################################
+# This is a module install script template which should be copied and used for
+# consistency between module paths, permissions, etc.
+# Only lines marked as "## TO BE ADDED/MODIFIED" should be, indeed, modified.
+# Also, once modified, delete this commented-out header and the ## comments
+################################################################################
+
+SOFTWARE=vt
+#VERSION=0.5
+VERSION=0.57
 ARCHIVE=$VERSION.tar.gz
-ARCHIVE_URL=https://github.com/alexdobin/STAR/archive/$ARCHIVE
-SOFTWARE_DIR=${SOFTWARE^^}_$VERSION
+ARCHIVE_URL=https://github.com/atks/vt/archive/$ARCHIVE
+
+SOFTWARE_DIR=$SOFTWARE-$VERSION
 
 # Specific commands to extract and build the software
 # $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
@@ -15,10 +24,8 @@ build() {
   cd $INSTALL_DOWNLOAD
   tar zxvf $ARCHIVE
 
-  # Remove "STAR-" prefix from top directory name
-  mv ${SOFTWARE^^}-$VERSION $SOFTWARE_DIR
-  cd $SOFTWARE_DIR/source
-  make -j8
+  cd $SOFTWARE_DIR
+  make
 
   # Install software
   cd $INSTALL_DOWNLOAD
@@ -34,7 +41,8 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-prepend-path    PATH                \$root/source
+prepend-path    PATH                \$root
+setenv          VT_HOME             \$root
 "
 }
 

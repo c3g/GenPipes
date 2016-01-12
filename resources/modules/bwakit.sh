@@ -2,20 +2,21 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=trimmomatic
-VERSION=0.35
-ARCHIVE=${SOFTWARE^}-$VERSION.zip
-ARCHIVE_URL=http://www.usadellab.org/cms/uploads/supplementary/${SOFTWARE^}/$ARCHIVE
-SOFTWARE_DIR=${SOFTWARE^}-$VERSION
+SOFTWARE=bwakit
+VERSION=0.7.12
+ARCHIVE=${SOFTWARE}-${VERSION}_x64-linux.tar.bz2
+ARCHIVE_URL=http://downloads.sourceforge.net/project/bio-bwa/${SOFTWARE}/$ARCHIVE
+SOFTWARE_DIR=bwa.kit
 
 # Specific commands to extract and build the software
 # $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
 # $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
-  unzip $ARCHIVE
+  tar jxvf $ARCHIVE
 
   # Install software
+  cd $INSTALL_DOWNLOAD
   mv -i $SOFTWARE_DIR $INSTALL_DIR/
 }
 
@@ -28,7 +29,7 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-setenv          TRIMMOMATIC_JAR     \$root/$SOFTWARE-$VERSION.jar
+prepend-path    PATH                \$root
 "
 }
 
