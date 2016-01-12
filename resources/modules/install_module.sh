@@ -88,11 +88,13 @@ create_dir $MODULE_DIR
 # Surround variable with "" since it contains a multiline text
 module_file > $MODULE_DIR/$VERSION
 # Default module version file
+echo "create .version"
 echo "\
 #%Module1.0
 set ModulesVersion \"$VERSION\"" > $MODULE_DIR/.version
 
-chmod ug+rwX,o+rX-w $MODULE_DIR/$VERSION $MODULE_DIR/.version
+echo "changing permission"
+chmod ug+rwX,o+rX-w  $MODULE_DIR/$VERSION $MODULE_DIR/.version
 
 # Clean up temporary installation files if any
 cd
