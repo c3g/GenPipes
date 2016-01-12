@@ -833,7 +833,7 @@ bcl2fastq\\
         read_masks = self.mask.split(",")
         has_single_index = self.has_single_index()
 
-        csv_headers = ["FCID", "Lane", "Sample_ID", "Sample_Name", "SampleRef", "Index", "Description", "Control",
+        csv_headers = ["FCID", "Lane", "Sample_ID", "Sample_Name", "SampleRef", "Index", "Index2", "Description", "Control",
                        "Recipe", "Operator", "Sample_Project"]
         csv_file = self.output_dir + os.sep + config.param('DEFAULT', 'casava_sample_sheet_prefix') + str(
             self.lane_number) + ".csv"
@@ -876,6 +876,8 @@ bcl2fastq\\
                     index_to_use += index
 
             readset._index = index_to_use if len(index_to_use) > 0 else "NoIndex"
+            index_array = index_to_use.split("-")
+
             fastq_file_pattern = os.path.join(self.output_dir,
                                               "Unaligned." + readset.lane,
                                               'Project_' + readset.project,
@@ -891,7 +893,8 @@ bcl2fastq\\
                 "Sample_ID": "Sample_" + readset.name,
                 "Sample_Name": readset.name,
                 "SampleRef": "",
-                "Index": index_to_use,
+                "Index": index_array[0],
+                "Index2": index_array[1] if len(index_array) > 1 else "",
                 "Description": readset.description,
                 "Control": readset.control,
                 "Recipe": readset.recipe,
