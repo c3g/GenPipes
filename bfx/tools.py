@@ -27,7 +27,7 @@ from core.job import *
 
 ## functions for awk tools ##
 
-## functions for python tools ## 
+## functions for python tools ##
 def py_addLengthRay (file_scaffolds_fasta, length_file, output):
     return Job(
         [file_scaffolds_fasta, length_file],
@@ -100,7 +100,22 @@ python $PYTHON_TOOLS/rrnaBAMcounter.py \\
         )
     )
 
-
+def py_ampliconSeq(input_files, output_files, function, supplemental_parameters):
+    return Job(
+        input_files,
+        output_files,
+        module_entries=[
+            ['DEFAULT', 'module_mugqic_tools'],
+            ['DEFAULT', 'module_python']
+        ],
+        command="""\
+python $PYTHON_TOOLS/AmpliconSeq_script.py \\
+  -m {function} \\
+  {supplemental_parameters}""".format(
+        function=function,
+        supplemental_parameters=supplemental_parameters
+        )
+    )
 
 ## functions for perl tools ##
 def bed2interval_list(dictionary, bed, output):
@@ -140,7 +155,6 @@ filterLongIndel.pl \\
     )
 
 ## functions for R tools ##
-
 def r_select_scaffolds(input, output, folder_sca, kmer, name_sample, type_insert, min_insert_size=200):
     return Job(
         input,
@@ -253,21 +267,3 @@ R --no-save --args \\
         mean_read_length=mean_read_length
         )
     )
-
-def py_ampliconSeq(input_files, output_files, function, supplemental_parameters):
-    return Job(
-        input_files,
-        output_files,
-        module_entries=[
-            ['DEFAULT', 'module_mugqic_tools'],
-            ['DEFAULT', 'module_python']
-        ],
-        command="""\
-python $PYTHON_TOOLS/AmpliconSeq_script.py \\
-  -m {function} \\
-  {supplemental_parameters}""".format(
-        function=function,
-        supplemental_parameters=supplemental_parameters
-        )
-    )
-
