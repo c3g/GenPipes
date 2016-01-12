@@ -11,30 +11,29 @@ from core.job import *
 log = logging.getLogger(__name__)
 
 def krona(
-	otu_normalized_table,
-	sample_name,
-	alpha_diversity_krona_file
-	):
+    otu_normalized_table,
+    sample_name,
+    alpha_diversity_krona_file
+    ):
 
-	inputs = [otu_normalized_table]
-	outputs = [alpha_diversity_krona_file]
-	
-	return Job(
-		inputs,
-		outputs,
-		[
-			['krona', 'module_perl'],
-			['krona', 'module_qiime'],
-			['krona', 'module_krona'],
-			['krona', 'module_ampliconseq']
-		],
+    inputs = [otu_normalized_table]
+    outputs = [alpha_diversity_krona_file]
+    
+    return Job(
+        inputs,
+        outputs,
+        [
+            ['krona', 'module_perl'],
+            ['krona', 'module_qiime'],
+            ['krona', 'module_krona']
+        ],
 
-		command="""\
+        command="""\
   $PERL_HOME/bin/perl5.18.2 $KRONA_HOME/ImportText.pl \\
   {sample_name} \\
   -o {alpha_diversity_krona_file}""".format(
-		sample_name=' '.join(sample_name),
-		alpha_diversity_krona_file=alpha_diversity_krona_file
-		),
-		removable_files=[alpha_diversity_krona_file]
-	)
+        sample_name=' '.join(sample_name),
+        alpha_diversity_krona_file=alpha_diversity_krona_file
+        ),
+        removable_files=[alpha_diversity_krona_file]
+    )
