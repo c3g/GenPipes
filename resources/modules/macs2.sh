@@ -31,7 +31,7 @@ build() {
 }
 
 module_file() {
-echo "
+echo "\
 #%Module1.0
 proc ModulesHelp { } {
   puts stderr \"\tMUGQIC - $SOFTWARE \"
