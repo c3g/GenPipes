@@ -5,8 +5,8 @@ set -eu -o pipefail
 SOFTWARE=ucsc
 # By default, the latest remote version will be downloaded and the version date set appropriately.
 # To use a local archive specific version, uncomment and update VERSION
-#VERSION=latest
-VERSION=20140212
+VERSION=latest
+#VERSION=20140212
 if [[ $VERSION == latest ]]
 then
   ARCHIVE=userApps.src.tgz

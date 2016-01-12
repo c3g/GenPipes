@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=vcftools
-VERSION=0.1.11
+VERSION=0.1.13
 ARCHIVE=${SOFTWARE}_$VERSION.tar.gz
 ARCHIVE_URL=http://sourceforge.net/projects/$SOFTWARE/files/$ARCHIVE
 SOFTWARE_DIR=${SOFTWARE}_$VERSION

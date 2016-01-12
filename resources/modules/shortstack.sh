@@ -14,7 +14,8 @@ set -eu -o pipefail
 #
 
 SOFTWARE="shortstack" 
-VERSION="2.1.0"  
+#VERSION="2.1.0"
+VERSION="3.3"
 INSTALL_HOME=MUGQIC_INSTALL_HOME_DEV  ## TO BE MODIFIED IF NECESSARY
 
 # Indirection call to use $INSTALL_HOME value as variable name

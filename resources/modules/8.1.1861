@@ -1,0 +1,9 @@
+#%Module1.0
+proc ModulesHelp { } {
+       puts stderr "\tMUGQIC - usearch-8.1.1861 " ;
+}
+module-whatis "usearch  " ; 
+                      
+set             root                $::env(MUGQIC_INSTALL_HOME)/software/usearch/usearch-8.1.1861 ;
+prepend-path    PATH                $root/bin ;  
+
