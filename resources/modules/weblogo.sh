@@ -7,8 +7,8 @@ set -eu -o pipefail
 
 SOFTWARE=weblogo
 #VERSION=2.8.2
-#VERSION=3.3
-VERSION=3.4.1
+VERSION=3.3
+#VERSION=3.4.1  # not using this becasue missing a shared object file libptf77blas.so
 # If WebLogo version >= 3, specify in which python version it must be intalled
 PYTHON_VERSION=2.7.8
 if [[ $VERSION == "2.8.2" ]]
