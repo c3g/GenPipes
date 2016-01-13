@@ -15,7 +15,6 @@ build() {
   cd $INSTALL_DOWNLOAD
   tar zxvf $ARCHIVE
 
-  # Remove "STAR-" prefix from top directory name
   mv ${SOFTWARE^^}-$VERSION $SOFTWARE_DIR
   cd $SOFTWARE_DIR/source
   make -j8
