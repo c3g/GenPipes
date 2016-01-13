@@ -2,7 +2,7 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=sphynx
+SOFTWARE=sphinx
 VERSION=master
 ARCHIVE=$SOFTWARE-$VERSION.tar.gz
 #ARCHIVE_URL=https://bitbucket.org/mugqic/$SOFTWARE/downloads/$ARCHIVE
