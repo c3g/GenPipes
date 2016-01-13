@@ -46,13 +46,13 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-setenv          GEMINI_BIN   $root/bin
-prepend-path    PATH         $root/bin
-prepend-path    PATH         $root/anaconda/bin
-prepend-path    PYTHONPATH   $root/anaconda/lib/python2.7/site-packages
-prepend-path    PYTHONPATH   $root/anaconda/lib/python2.7
-prepend-path    LD_LIBRARY_PATH $root/anaconda/lib/python2.7/site-packages
-prepend-path    LD_LIBRARY_PATH $root/anaconda/lib/python2.7
+setenv          GEMINI_BIN          \$root/bin
+prepend-path    PATH                \$root/bin
+prepend-path    PATH                \$root/anaconda/bin
+prepend-path    PYTHONPATH          \$root/anaconda/lib/python2.7/site-packages
+prepend-path    PYTHONPATH          \$root/anaconda/lib/python2.7
+prepend-path    LD_LIBRARY_PATH     \$root/anaconda/lib/python2.7/site-packages
+prepend-path    LD_LIBRARY_PATH     \$root/anaconda/lib/python2.7
 "
 }
 
