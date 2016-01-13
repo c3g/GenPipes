@@ -14,49 +14,35 @@
 
 SOFTWARE=snap
 VERSION=2013-11-29
-INSTALL_PATH=$MUGQIC_INSTALL_HOME_DEV/software/$SOFTWARE
-INSTALL_DOWNLOAD=$INSTALL_PATH/tmp
-mkdir -p $INSTALL_DOWNLOAD
-cd $INSTALL_DOWNLOAD
+ARCHIVE=$SOFTWARE-$VERSION.tar.gz
+ARCHIVE_URL=http://korflab.ucdavis.edu/Software/$ARCHIVE
+SOFTWARE_DIR=$SOFTWARE-$VERSION
 
-# Download, extract, build
-# Write here the specific commands to download, extract, build the software, typically similar to:
-wget http://korflab.ucdavis.edu/Software/snap-2013-11-29.tar.gz
-tar -xvf $SOFTWARE-$VERSION.tar.gz
-cd $SOFTWARE                                                     
-make
-mkdir -p $INSTALL_PATH
-mkdir -p $INSTALL_PATH/$SOFTWARE-$VERSION
-cp snap $INSTALL_PATH/$SOFTWARE-$VERSION/
+build() {
+  cd $INSTALL_DOWNLOAD
+  tar zxvf $ARCHIVE
 
-# Add permissions and install software
-chmod -R 775 *
-cd $INSTALL_DOWNLOAD
-mv -i $INSTALL_DOWNLOAD/$SOFTWARE-$VERSION.tar.gz $MUGQIC_INSTALL_HOME_DEV/archive
+  cd $SOFTWARE_DIR
+  make
 
-# Module file
-echo "#%Module1.0
-proc ModulesHelp { } {
-       puts stderr \"\tMUGQIC - $SOFTWARE-$VERSION \" ; 
+  # Install software
+  cd $INSTALL_DOWNLOAD
+  mv -i $SOFTWARE_DIR $INSTALL_DIR/
 }
-module-whatis \"$SOFTWARE-$VERSION  \" ;  
+
+module_file() {
+echo "\
+#%Module1.0
+proc ModulesHelp { } {
+  puts stderr \"\tMUGQIC - $SOFTWARE \"
+}
+module-whatis \"$SOFTWARE\"  
                       
-set             root                \$::env(MUGQIC_INSTALL_HOME_DEV)/software/$SOFTWARE/$SOFTWARE-$VERSION ;  ## TO BE MODIFIED WITH SPECIFIC $SOFTWARE-$VERSION IF DIFFERENT
-prepend-path    PATH                \$root/bin ;  
-" > $VERSION
+set             root            $INSTALL_DIR/$SOFTWARE_DIR
+repend-path     PATH            \$root/bin
+"
+}
 
-################################################################################
-# Everything below this line should be generic and not modified
-
-# Default module version file
-echo "#%Module1.0
-set ModulesVersion \"$VERSION\"" > .version
-
-# Add permissions and install module
-mkdir -p $MUGQIC_INSTALL_HOME_DEV/modulefiles/mugqic_dev/$SOFTWARE
-chmod -R ug+rwX $VERSION .version
-chmod -R o+rX $VERSION .version
-mv $VERSION .version $MUGQIC_INSTALL_HOME_DEV/modulefiles/mugqic_dev/$SOFTWARE
-
-# Clean up temporary installation files if any
-rm -rf $INSTALL_DOWNLOAD
+# Call generic module install script once all variables and functions have been set
+MODULE_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source $MODULE_INSTALL_SCRIPT_DIR/install_module.sh $@
