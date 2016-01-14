@@ -21,8 +21,8 @@ build() {
   make
 
   # Update Perl script shebangs
-  sed -i s,"#\!/usr/bin/perl,#\!/usr/bin/env perl,g" *.pl scalpel
-  chmod +x *.pl scalpel
+  sed -i s,"#\!/usr/bin/perl,#\!/usr/bin/env perl,g" *.pl scalpel*
+  chmod +x *.pl scalpel*
 
   # Install software
   cd $INSTALL_DOWNLOAD
