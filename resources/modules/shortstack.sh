@@ -6,6 +6,8 @@ set -eu -o pipefail
 # Software_name ShortStack
 #
 
+echo "Be sure to load bowtie, samtools, ucsc & ViennaRNA modules before using ShortStack"
+
 SOFTWARE="ShortStack" 
 #VERSION="2.1.0"
 VERSION="3.3"
@@ -36,10 +38,6 @@ module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
 prepend-path    PATH                \$root
-module load mugqic/bowtie/1.0.0 
-module load mugqic_dev/ViennaRNA/1.8.3
-module load mugqic/samtools/0.1.19
-module load mugqic/ucsc/20140212
 "
 }
 
