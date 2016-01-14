@@ -22,6 +22,9 @@ build() {
   cd $INSTALL_DOWNLOAD
   tar zxvf $ARCHIVE
 
+  # the extraction creates a folders name $SOFTWARE
+  # so let's rename it to $SOFTWARE_DIR
+  mv $SOFTWARE $SOFTWARE_DIR
   cd $SOFTWARE_DIR
   make
 
