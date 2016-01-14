@@ -16,7 +16,7 @@ ARCHIVE_URL=https://raw.githubusercontent.com/arq5x/gemini/master/gemini/scripts
 #ARCHIVE_URL=https://raw.github.com/mbourgey/gemini/master/gemini/scripts/gemini_install.py
 #ARCHIVE_URL=https://raw.github.com/mbourgey/$SOFTWARE/v$VERSION/$SOFTWARE/scripts/${SOFTWARE}_install.py 
 SOFTWARE_DIR=$SOFTWARE-$VERSION 
-PYTHON_VERSION=2.7.10
+PYTHON_VERSION=2.7.11
 
 # Specific commands to extract and build the software
 # $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
