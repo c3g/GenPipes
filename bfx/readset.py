@@ -161,6 +161,10 @@ class IlluminaRawReadset(IlluminaReadset):
         return self._index
 
     @property
+    def sample_number(self):
+        return self._sample_number
+
+    @property
     def aligner(self):
         return self._aligner
 
@@ -251,6 +255,7 @@ def parse_illumina_raw_readset_files(output_dir, run_type, nanuq_readset_file, c
 
         readset._run = line['Run']
         readset._lane = current_lane
+        readset._sample_number = str(len(readsets) + 1)
 
         readset._is_rna = re.search("RNA|cDNA", readset.library_source) or (readset.library_source == "Library"
                                                                             and re.search("RNA", readset.library_type))
