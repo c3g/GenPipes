@@ -7,8 +7,8 @@ COMMON_NAME="Human"
 ASSEMBLY=GRCh37
 ASSEMBLY_SYNONYMS=hg19
 SOURCE=Ensembl
-VERSION=75
-BIOMART_HOST=feb2014.archive.ensembl.org
+VERSION=83
+BIOMART_HOST=dec2015.archive.ensembl.org
 
 module_snpeff=mugqic/snpEff/4.0
 module_tabix=mugqic/tabix/0.2.6
