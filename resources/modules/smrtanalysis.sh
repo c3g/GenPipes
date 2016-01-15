@@ -2,7 +2,6 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-
 SOFTWARE=smrtanalysis
 VERSION_BASE=2.3.0.140936
 VERSION_PATCH=p5

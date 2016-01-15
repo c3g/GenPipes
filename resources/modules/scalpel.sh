@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=scalpel
-VERSION=0.3.2
+VERSION=0.5.2
 PERL_VERSION=5.18.2
 ARCHIVE=$SOFTWARE-$VERSION.tar.gz
 ARCHIVE_URL=http://sourceforge.net/projects/scalpel/files/$ARCHIVE/download
@@ -21,8 +21,8 @@ build() {
   make
 
   # Update Perl script shebangs
-  sed -i s,"#\!/usr/bin/perl,#\!/usr/bin/env perl,g" *.pl scalpel
-  chmod +x *.pl scalpel
+  sed -i s,"#\!/usr/bin/perl,#\!/usr/bin/env perl,g" *.pl scalpel*
+  chmod +x *.pl scalpel*
 
   # Install software
   cd $INSTALL_DOWNLOAD

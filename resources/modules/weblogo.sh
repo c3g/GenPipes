@@ -8,6 +8,7 @@ set -eu -o pipefail
 SOFTWARE=weblogo
 #VERSION=2.8.2
 VERSION=3.3
+#VERSION=3.4.1  # not using this becasue missing a shared object file libptf77blas.so
 # If WebLogo version >= 3, specify in which python version it must be intalled
 PYTHON_VERSION=2.7.8
 if [[ $VERSION == "2.8.2" ]]
@@ -18,6 +19,10 @@ elif [[ $VERSION == "3.3" ]]
 then
   ARCHIVE=$SOFTWARE-$VERSION.tar.gz
   ARCHIVE_URL=http://weblogo.googlecode.com/files/$ARCHIVE
+elif [[ $VERSION == "3.4.1" ]]
+then
+  ARCHIVE=$VERSION.tar.gz
+  ARCHIVE_URL=https://github.com/WebLogo/weblogo/archive/$ARCHIVE
 fi
 SOFTWARE_DIR=$SOFTWARE-$VERSION
 
@@ -36,6 +41,13 @@ then
   # Update Perl script shebangs
   sed -i s,"#\!/usr/bin/perl -w,#\!/usr/bin/env perl\\nuse warnings;,g" seqlogo
 elif [[ $VERSION == "3.3" ]]
+then
+  mv $SOFTWARE_DIR $INSTALL_DIR/
+  cd $INSTALL_DIR/$SOFTWARE_DIR
+  module load mugqic/python/$PYTHON_VERSION
+  python setup.py install --prefix $INSTALL_DIR/$SOFTWARE_DIR
+  ln -s weblogo seqlogo
+elif [[ $VERSION == 3.4.1 ]]
 then
   mv $SOFTWARE_DIR $INSTALL_DIR/
   cd $INSTALL_DIR/$SOFTWARE_DIR
