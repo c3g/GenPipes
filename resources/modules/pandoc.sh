@@ -3,9 +3,9 @@
 set -eu -o pipefail
 
 SOFTWARE=pandoc
-VERSION=1.16
-ARCHIVE=$VERSION.zip
-ARCHIVE_URL=https://github.com/jgm/$SOFTWARE/archive/$ARCHIVE
+VERSION=1.15.2
+ARCHIVE=$SOFTWARE-$VERSION.zip
+ARCHIVE_URL=https://s3.amazonaws.com/rstudio-buildtools/$ARCHIVE
 #VERSION=1.13.1
 #ARCHIVE=$SOFTWARE-$VERSION.zip
 #ARCHIVE_URL=https://s3.amazonaws.com/rstudio-buildtools/$ARCHIVE
