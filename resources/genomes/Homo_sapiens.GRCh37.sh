@@ -10,9 +10,9 @@ SOURCE=Ensembl
 VERSION=75
 BIOMART_HOST=feb2014.archive.ensembl.org
 
-module_snpeff=mugqic/snpEff/4.0
+module_snpeff=mugqic/snpEff/4.2
 module_tabix=mugqic/tabix/0.2.6
-module_java=mugqic/java/openjdk-jdk1.7.0_60
+module_java=mugqic/java/openjdk-jdk1.8.0_72
 
 
 GENOME_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
