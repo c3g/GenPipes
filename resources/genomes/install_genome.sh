@@ -2,17 +2,17 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-module_bowtie=mugqic/bowtie/2.1.0
-module_bwa=mugqic/bwa/0.7.10
-module_java=mugqic/java/openjdk-jdk1.7.0_60
+module_bowtie=mugqic/bowtie/2.2.4
+module_bwa=mugqic/bwa/0.7.12
+module_java=mugqic/java/openjdk-jdk1.8.0_72
 module_mugqic_R_packages=mugqic/mugqic_R_packages/1.0.3
-module_picard=mugqic/picard/1.123
+module_picard=mugqic/picard/2.0.1
 module_R=mugqic/R_Bioconductor/3.1.2_3.0
-module_samtools=mugqic/samtools/0.1.19
+module_samtools=mugqic/samtools/1.3
 module_star=mugqic/star/2.4.0f1
 module_tabix=mugqic/tabix/0.2.6
-module_tophat=mugqic/tophat/2.0.11
-module_ucsc=mugqic/ucsc/20140212
+module_tophat=mugqic/tophat/2.0.14
+module_ucsc=mugqic/ucsc/v326
 
 init_install() {
   # '$MUGQIC_INSTALL_HOME_DEV' for development, '$MUGQIC_INSTALL_HOME' for production

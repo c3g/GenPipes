@@ -7,7 +7,7 @@ COMMON_NAME="Human"
 ASSEMBLY=GRCh37
 ASSEMBLY_SYNONYMS=hg19
 SOURCE=Ensembl
-VERSION=83
+VERSION=75
 BIOMART_HOST=dec2015.archive.ensembl.org
 
 module_snpeff=mugqic/snpEff/4.2
