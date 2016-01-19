@@ -3,8 +3,8 @@
 set -eu -o pipefail
 
 # Perl module where to install libs
-#PERL_MODULE=mugqic/perl/5.18.2
-PERL_MODULE=mugqic/perl/5.22.1
+PERL_MODULE=mugqic/perl/5.18.2
+#PERL_MODULE=mugqic/perl/5.22.1
 module load $PERL_MODULE
 
 # Install Perl modules from CPAN
@@ -20,6 +20,7 @@ DBD::SQLite \
 DBI \
 File::Slurp \
 File::Which \
+File::Spec::Link \
 Filesys::Df \
 Parse::Range \
 PDF::API2 \

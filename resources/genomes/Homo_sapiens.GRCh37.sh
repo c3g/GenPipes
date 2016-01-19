@@ -7,12 +7,12 @@ COMMON_NAME="Human"
 ASSEMBLY=GRCh37
 ASSEMBLY_SYNONYMS=hg19
 SOURCE=Ensembl
-VERSION=83
+VERSION=75
 BIOMART_HOST=dec2015.archive.ensembl.org
 
-module_snpeff=mugqic/snpEff/4.0
+module_snpeff=mugqic/snpEff/4.2
 module_tabix=mugqic/tabix/0.2.6
-module_java=mugqic/java/openjdk-jdk1.7.0_60
+module_java=mugqic/java/openjdk-jdk1.8.0_72
 
 
 GENOME_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
