@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=VarScan
-VERSION=2.3.8
+VERSION=2.3.9
 # Replace "." in official version number by "_" in archive version number
 ARCHIVE=${SOFTWARE}.v${VERSION}.jar
 ARCHIVE_URL=http://sourceforge.net/projects/varscan/files/$ARCHIVE
