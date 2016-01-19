@@ -370,7 +370,7 @@ class StarRunProcessingAligner(RunProcessingAligner):
                                       readset.sample.name + "." +
                                       readset.library +
                                       ".rnaseqc.sorted.dup.metrics.tsv"))
-                              ], name="rnaseqc" + readset.name + ".rnaseqc" + "." + readset.run + "." + readset.lane)
+                              ], name="rnaseqc." + readset.name + ".rnaseqc" + "." + readset.run + "." + readset.lane)
             jobs.append(job)
 
         return jobs
