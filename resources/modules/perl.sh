@@ -3,8 +3,8 @@
 set -eu -o pipefail
 
 SOFTWARE=perl
-#VERSION=5.18.2
-VERSION=5.22.1
+VERSION=5.18.2
+#VERSION=5.22.1
 ARCHIVE=$SOFTWARE-$VERSION.tar.gz
 ARCHIVE_URL=http://www.cpan.org/src/5.0/$ARCHIVE
 SOFTWARE_DIR=$SOFTWARE-$VERSION
@@ -35,7 +35,7 @@ setenv          PERL_HOME           \$root
 prepend-path    PATH                \$root/bin
 prepend-path    PERL5LIB            \$root/lib
 prepend-path    PERL5LIB            \$root/lib/$VERSION
-prepend-path    PERL5LIB            \$root/libsite_perl/$VERSION
+prepend-path    PERL5LIB            \$root/lib/site_perl/$VERSION
 "
 }
 
