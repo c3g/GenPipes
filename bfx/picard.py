@@ -78,11 +78,10 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
         )
     )
 
-def collect_multiple_metrics(input, output, reference_sequence=None):
-
-    return Job(
-        [input],
-        [
+def collect_multiple_metrics(input, output, reference_sequence=None , library_type="PAIRED_END"):
+    
+    if  library_type == "PAIRED_END" :
+        outputs = [
          output + ".quality_by_cycle.pdf",
          output + ".alignment_summary_metrics",
          output + ".insert_size_Histogram.pdf",
@@ -90,7 +89,19 @@ def collect_multiple_metrics(input, output, reference_sequence=None):
          output + ".quality_by_cycle_metrics",
          output + ".quality_distribution_metrics",
          output + ".quality_distribution.pdf"
-        ],
+        ]
+    else :
+        outputs = [
+         output + ".quality_by_cycle.pdf",
+         output + ".alignment_summary_metrics",
+         output + ".quality_by_cycle_metrics",
+         output + ".quality_distribution_metrics",
+         output + ".quality_distribution.pdf"
+        ]
+
+    return Job(
+        [input],
+        outputs,
         [
             ['picard_collect_multiple_metrics', 'module_java'],
             ['picard_collect_multiple_metrics', 'module_picard'],

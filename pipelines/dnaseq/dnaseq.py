@@ -460,13 +460,21 @@ cp \\
         bases which have at least 50 reads). A TDF (.tdf) coverage track is also generated at this step
         for easy visualization of coverage in the IGV browser.
         """
+        
+        ##check the library status
+        library = {}
+        for readset in self.readsets:
+            if not library.has_key(readset.sample) :
+                library[readset.sample]="SINGLE_END"
+            if readset.run_type == "PAIRED_END" :
+                library[readset.sample]="PAIRED_END"
 
         jobs = []
         for sample in self.samples:
             recal_file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.")
             input = recal_file_prefix + "bam"
 
-            job = picard.collect_multiple_metrics(input, recal_file_prefix + "all.metrics")
+            job = picard.collect_multiple_metrics(input, recal_file_prefix + "all.metrics", library[sample])
             job.name = "picard_collect_multiple_metrics." + sample.name
             jobs.append(job)
 
@@ -800,7 +808,13 @@ cp \\
         """
         Merge metrics. Read metrics per sample are merged at this step.
         """
-
+        #get library type
+        library = "SINGLE_END"
+        for readset in self.readsets:
+            if readset.run_type == "PAIRED_END" :
+                library="PAIRED_END"
+        
+        
         trim_metrics_file = os.path.join("metrics", "trimSampleTable.tsv")
         metrics_file = os.path.join("metrics", "SampleMetrics.stats")
         report_metrics_file = os.path.join("report", "sequenceAlignmentTable.tsv")
@@ -808,7 +822,7 @@ cp \\
         report_file = os.path.join("report", "DnaSeq.dna_sample_metrics.md")
         job = concat_jobs([
             Job(command="mkdir -p metrics"),
-            metrics.dna_sample_metrics("alignment", metrics_file, config.param('DEFAULT', 'experiment_type')),
+            metrics.dna_sample_metrics("alignment", metrics_file, library),
             Job(
                 [metrics_file],
                 [report_file],
@@ -990,7 +1004,10 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         See general filter_nstretches description !  Applied to haplotype caller vcf
         """
         
-        job = self.filter_nstretches("variants/allSamples.hc.vqsr.vcf", "variants/allSamples.hc.vqsr.NFiltered.vcf", "haplotype_caller_filter_nstretches")
+        # Find input vcf first from VSQR, then from non recalibrate hapotype calleroriginal BAMs in the readset sheet.
+        hc_vcf = self.select_input_files([["variants/allSamples.hc.vqsr.vcf"],["variants/allSamples.hc.vcf.bgz"]])
+        
+        job = self.filter_nstretches(hc_vcf[0], "variants/allSamples.hc.vqsr.NFiltered.vcf", "haplotype_caller_filter_nstretches")
         
         return job
     
