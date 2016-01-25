@@ -21,6 +21,11 @@ build() {
 
   # Install software
   cd $INSTALL_DOWNLOAD
+
+  cd $SOFTWARE_DIR
+  find . -name "*.pl" | while read f ; do sed -i s,"#\!/usr/bin/perl -w,#\!/usr/bin/env perl\nuse warnings;,g" $f ; sed -i s,"#\!/usr/bin/perl,#\!/usr/bin/env perl\nuse warnings;,g" $f ; done
+  cd ..
+
   mv -i $SOFTWARE_DIR $INSTALL_DIR/
 }
 
