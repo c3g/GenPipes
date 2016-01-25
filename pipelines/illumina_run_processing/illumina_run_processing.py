@@ -314,9 +314,9 @@ java -Djava.io.tmpdir={tmp_dir}\\
 
         input = self.casava_sheet_file
 
-        outputs = [readset.fastq1 for readset in self.readsets]
+        fastq_outputs = [readset.fastq1 for readset in self.readsets]
         if self.is_paired_end:
-            outputs += [readset.fastq2 for readset in self.readsets]
+            fastq_outputs += [readset.fastq2 for readset in self.readsets]
 
         output_dir = self.output_dir + os.sep + "Unaligned." + str(self.lane_number)
         casava_sheet_prefix = config.param('fastq', 'casava_sample_sheet_prefix')
@@ -348,7 +348,7 @@ bcl2fastq\\
             )
 
         job = Job([input],
-                  outputs,
+                  fastq_outputs,
                   [('fastq', 'module_bcl_to_fastq'), ('fastq', 'module_gcc')],
                   command=command,
                   name="fastq." + self.run_id + "." + str(self.lane_number)
@@ -356,12 +356,12 @@ bcl2fastq\\
 
         jobs.append(job)
 
-        # don't depend on the notification command
+        # don't depend on notification commands
         self.add_copy_job_inputs(jobs)
 
-        notification_command = config.param('fastq_notification', 'notification_command', required=False)
-        if notification_command:
-            notification_command = notification_command.format(
+        notification_command_start = config.param('fastq_notification_start', 'notification_command', required=False)
+        if notification_command_start:
+            notification_command_start = notification_command_start.format(
                 output_dir=self.output_dir,
                 number_of_mismatches=self.number_of_mismatches if demultiplexing else "-",
                 lane_number=self.lane_number,
@@ -371,8 +371,21 @@ bcl2fastq\\
             )
             # Use the same inputs and output of fastq job to send a notification each time the fastq job run
             job = Job([input], ["notificationFastqStart." + str(self.lane_number) + ".out"],
-                      name="fastq_notification." + self.run_id + "." + str(self.lane_number),
-                      command=notification_command)
+                      name="fastq_notification_start." + self.run_id + "." + str(self.lane_number),
+                      command=notification_command_start)
+            jobs.append(job)
+
+        notification_command_end = config.param('fastq_notification_end', 'notification_command', required=False)
+        if notification_command_end:
+            notification_command_end = notification_command_end.format(
+                output_dir=self.output_dir,
+                lane_number=self.lane_number,
+                technology=config.param('fastq', 'technology'),
+                run_id=self.run_id
+            )
+            job = Job(fastq_outputs, ["notificationFastqEnd." + str(self.lane_number) + ".out"],
+                      name="fastq_notification_end." + self.run_id + "." + str(self.lane_number),
+                      command=notification_command_end)
             jobs.append(job)
 
         return jobs
