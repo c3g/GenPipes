@@ -28,7 +28,7 @@ echo "\
 proc ModulesHelp { } {
   puts stderr \"\tMUGQIC - $SOFTWARE \"
 }
-module-whatis \"$SOFTWARE\"
+module-whatis \"$SOFTWARE-$VERSION\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
 setenv          PERL_HOME           \$root
