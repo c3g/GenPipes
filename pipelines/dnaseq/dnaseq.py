@@ -474,7 +474,7 @@ cp \\
             recal_file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.")
             input = recal_file_prefix + "bam"
 
-            job = picard.collect_multiple_metrics(input, recal_file_prefix + "all.metrics", library[sample])
+            job = picard.collect_multiple_metrics(input, recal_file_prefix + "all.metrics",  library_type=library[sample])
             job.name = "picard_collect_multiple_metrics." + sample.name
             jobs.append(job)
 
@@ -857,7 +857,8 @@ pandoc \\
             )
         ], name="dna_sample_metrics")
         job.input_files = [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.metrics") for sample in self.samples]
-        job.input_files += [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.all.metrics.insert_size_metrics") for sample in self.samples]
+        if library == "PAIRED_END" :
+            job.input_files += [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.all.metrics.insert_size_metrics") for sample in self.samples]
         return [job]
 
     def generate_approximate_windows(self, nb_jobs):
@@ -1237,7 +1238,7 @@ cp \\
                 command="""\
 mkdir -p report && \\
 paste \\
-  <(echo -e "Number of variants before filter\nNumber of variants filtered out\n%\nNumber of not variants\n%\nNumber of variants processed\nNumber of known variants\n%\nTransitions\nTransversions\nTs Tv ratio\nmissense\nnonsense\nsilent\nmissense silent ratio\nhigh impact\nlow impact\nmoderate impact\nmodifier impact") \\
+  <(echo -e "Number of variants before filter\nNumber of not variants\n%\nNumber of variants processed\nNumber of known variants\n%\nTransitions\nTransversions\nTs Tv ratio\nmissense\nnonsense\nsilent\nmissense silent ratio\nhigh impact\nlow impact\nmoderate impact\nmodifier impact") \\
   <(paste \\
     {snv_metrics_prefix}.SummaryTable.tsv \\
     {snv_metrics_prefix}.EffectsFunctionalClass.tsv \\
@@ -1251,7 +1252,7 @@ pandoc \\
   --variable snv_summary_table="$snv_summary_table_md" \\
   --to markdown \\
   > {report_file}
-for file in SNVQuality SNVCoverage IndelLength CountRegions CountEffects BaseChange codonChange AminoAcidChange changeRate TsTv
+for file in SNVQuality  IndelLength CountRegions CountEffects BaseChange codonChange AminoAcidChange changeRate TsTv
 do
   for ext in jpeg pdf tsv
   do
