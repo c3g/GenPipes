@@ -20,6 +20,7 @@
 ################################################################################
 
 # Python Standard Modules
+import os
 
 # MUGQIC Modules
 from core.config import *
@@ -224,6 +225,23 @@ python $PYTHON_TOOLS/preprocess.py \\
     )
 
 def filter_long_indel(input, output):
+    pre_gzip_command = ""
+    post_rm_command = ""
+    input_filename, input_file_extension = os.path.splitext(input)
+    if input_file_extension == ".bgz" :
+        pre_gzip_command="""\
+zcat {input} > {input_filename} && """.format(
+            input=input,
+            input_filename=input_filename
+        )
+        post_rm_command=""" && \
+rm {input_filename} """.format(
+            input_filename=input_filename
+        )
+        input_next=input_filename
+    else :
+        input_next=input
+        
     return Job(
         [input],
         [output],
@@ -232,11 +250,13 @@ def filter_long_indel(input, output):
             ['DEFAULT', 'module_perl']
         ],
         command="""\
-filterLongIndel.pl \\
+{pre_gzip_command}filterLongIndel.pl \\
   {input} \\
-  > {output}""".format(
-        input=input,
-        output=output
+  > {output}{post_rm_command}""".format(
+        pre_gzip_command=pre_gzip_command,
+        input=input_next,
+        output=output,
+        post_rm_command=post_rm_command
         ),
         removable_files=[output]
     )
