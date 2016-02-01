@@ -122,7 +122,7 @@ Rscript $R_TOOLS/snvGraphMetrics.R \\
 
 def vcf_stats(input, output, list):
     return Job(
-        [input],
+        [input, list],
         [output, list],
         [
             ['vcf_stats', 'module_python'],
