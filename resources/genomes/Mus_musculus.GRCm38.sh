@@ -7,8 +7,8 @@ COMMON_NAME="Mouse"
 ASSEMBLY=GRCm38
 ASSEMBLY_SYNONYMS=mm10
 SOURCE=Ensembl
-VERSION=77
-BIOMART_HOST=oct2014.archive.ensembl.org
+VERSION=83
+BIOMART_HOST=dec2015.archive.ensembl.org
 
 GENOME_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source $GENOME_INSTALL_SCRIPT_DIR/install_genome.sh
