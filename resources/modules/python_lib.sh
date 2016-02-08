@@ -56,6 +56,9 @@ ${PIP_PATH} install scikit-bio
 # qiime
 ${PIP_PATH} install qiime
 
+#futures
+${PIP_PATH} install futures
+
 
 
 # Add permissions
