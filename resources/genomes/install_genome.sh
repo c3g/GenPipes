@@ -2,14 +2,14 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-module_bowtie=mugqic/bowtie/2.2.4
+module_bowtie=mugqic/bowtie2/2.2.4
 module_bwa=mugqic/bwa/0.7.12
 module_java=mugqic/java/openjdk-jdk1.8.0_72
 module_mugqic_R_packages=mugqic/mugqic_R_packages/1.0.3
-module_picard=mugqic/picard/2.0.1
+module_picard=mugqic/picard/1.123
 module_R=mugqic/R_Bioconductor/3.1.2_3.0
 module_samtools=mugqic/samtools/1.3
-module_star=mugqic/star/2.4.0f1
+module_star=mugqic/star/2.5.0c
 module_tabix=mugqic/tabix/0.2.6
 module_tophat=mugqic/tophat/2.0.14
 module_ucsc=mugqic/ucsc/v326
@@ -241,8 +241,8 @@ cmd_or_job() {
     echo "Submitting $JOB_PREFIX as job..."
     echo
     CORES=${2:-1}  # Nb cores = 2nd param if defined else 1
-    #echo "${!CMD}" | qsub -m ae -M $JOB_MAIL -W umask=0002 -d $INSTALL_DIR -j oe -o $LOG_DIR/${JOB_PREFIX}_$TIMESTAMP.log -N $JOB_PREFIX.$GENOME_FASTA -l walltime=24:00:0 -q sw -l nodes=1:ppn=$CORES
-    echo "${!CMD}" | bash
+    echo "${!CMD}" | qsub -m ae -M $JOB_MAIL -A $RAP_ID -W umask=0002 -d $INSTALL_DIR -j oe -o $LOG_DIR/${JOB_PREFIX}_$TIMESTAMP.log -N $JOB_PREFIX.$GENOME_FASTA -l walltime=24:00:0 -q sw -l nodes=1:ppn=$CORES
+    #echo "${!CMD}" | bash
   else
     echo
     echo "Running $JOB_PREFIX..."
