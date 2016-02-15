@@ -134,7 +134,7 @@ class DnaSeq(common.Illumina):
                         read_group="'@RG" + \
                             "\tID:" + readset.name + \
                             "\tSM:" + readset.sample.name + \
-                            ("\tLB:" + readset.library if readset.library else "") + \
+                            "\tLB:" + (readset.library if readset.library else readset.sample.name) + \
                             ("\tPU:run" + readset.run + "_" + readset.lane if readset.run and readset.lane else "") + \
                             ("\tCN:" + config.param('bwa_mem', 'sequencing_center') if config.param('bwa_mem', 'sequencing_center', required=False) else "") + \
                             "\tPL:Illumina" + \
