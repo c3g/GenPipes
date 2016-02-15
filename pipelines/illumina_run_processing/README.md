@@ -70,7 +70,7 @@ usage: illumina_run_processing.py [-h] [--help] [-c CONFIG [CONFIG ...]]
                                   [-x FIRST_INDEX] [-y LAST_INDEX]
                                   [-m NUMBER_OF_MISMATCHES] [-w] [-v]
 
-Version: 2.2.0-beta
+Version: 2.2.0
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
@@ -241,3 +241,5 @@ Send an optional notification to notify that the copy is finished.
 
 The command used is in the configuration file. This step is skipped when no
 command is provided.
+
+

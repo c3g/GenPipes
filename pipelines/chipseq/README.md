@@ -29,7 +29,7 @@ usage: chipseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                   [-l {debug,info,warning,error,critical}] [-d DESIGN]
                   [-r READSETS] [-v]
 
-Version: 2.1.1
+Version: 2.2.0
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 

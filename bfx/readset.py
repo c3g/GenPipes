@@ -287,6 +287,7 @@ def parse_illumina_raw_readset_files(output_dir, run_type, nanuq_readset_file, c
     # Searching for a matching reference for the specified species
     for readset in readsets:
         m = re.search("(?P<build>\w+):(?P<assembly>\w+)", readset.genomic_database)
+        genome_build = None
         if m:
             genome_build = GenomeBuild(m.group('build'), m.group('assembly'))
 
