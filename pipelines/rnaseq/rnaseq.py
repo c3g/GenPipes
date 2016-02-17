@@ -129,7 +129,7 @@ class RnaSeq(common.Illumina):
                 if readset.fastq1:
                     candidate_input_files.append([readset.fastq1])
                 if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz")])
+                    candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
                 [fastq1] = self.select_input_files(candidate_input_files)
                 fastq2 = None
             else:
@@ -185,7 +185,7 @@ class RnaSeq(common.Illumina):
                 if readset.fastq1:
                     candidate_input_files.append([readset.fastq1])
                 if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz")])
+                    candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
                 [fastq1] = self.select_input_files(candidate_input_files)
                 fastq2 = None
             else:
@@ -333,7 +333,7 @@ awk 'BEGIN {{OFS="\\t"}} {{if (substr($1,1,1)=="@") {{print;next}}; split($6,C,/
                 samtools.view(
                     "-",
                     alignment_output,
-                    "-hb"
+                    "-hbS"
                 ),
             ])
             job.name="tuxedo_hard_clip."+ sample.name
@@ -507,14 +507,22 @@ pandoc \\
         """
 
         jobs = []
-
+        
+        ##check the library status
+        library = {}
+        for readset in self.readsets:
+            if not library.has_key(readset.sample) :
+                library[readset.sample]="PAIRED_END"
+            if readset.run_type == "SINGLE_END" :
+                library[readset.sample]="SINGLE_END"
+        
         for sample in self.samples:
             bam_file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.")
             input_bam = bam_file_prefix + "bam"
             bed_graph_prefix = os.path.join("tracks", sample.name, sample.name)
             big_wig_prefix = os.path.join("tracks", "bigWig", sample.name)
 
-            if config.param('DEFAULT', 'strand_info') != 'fr-unstranded':
+            if (config.param('DEFAULT', 'strand_info') != 'fr-unstranded') and library[sample] == "PAIRED_END":
                 input_bam_f1 = bam_file_prefix + "tmp1.forward.bam"
                 input_bam_f2 = bam_file_prefix + "tmp2.forward.bam"
                 input_bam_r1 = bam_file_prefix + "tmp1.reverse.bam"
@@ -555,7 +563,7 @@ pandoc \\
             for bed_graph_output, big_wig_output in outputs:
                 job = concat_jobs([
                     Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " " + os.path.join("tracks", "bigWig"), removable_files=["tracks"]),
-                    bedtools.graph(input_bam, bed_graph_output, big_wig_output)
+                    bedtools.graph(input_bam, bed_graph_output, big_wig_output,library[sample])
                 ], name="wiggle." + re.sub(".bedGraph", "", os.path.basename(bed_graph_output)))
                 jobs.append(job)
 
@@ -634,10 +642,17 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
         jobs.append(job)
 
         # Create Wiggle tracks archive
+        library = {}
+        for readset in self.readsets:
+            if not library.has_key(readset.sample) :
+                library[readset.sample]="PAIRED_END"
+            if readset.run_type == "SINGLE_END" :
+                library[readset.sample]="SINGLE_END"
+                
         wiggle_directory = os.path.join("tracks", "bigWig")
         wiggle_archive = "tracks.zip"
         big_wig_prefix = os.path.join("tracks", "bigWig", sample.name)
-        if config.param('DEFAULT', 'strand_info') != 'fr-unstranded':
+        if config.param('DEFAULT', 'strand_info') != 'fr-unstranded' and library[sample] == "PAIRED_END" :
             wiggle_files = []
             for sample in self.samples:
                 wiggle_files.extend([os.path.join(wiggle_directory, sample.name) + ".forward.bw", os.path.join(wiggle_directory, sample.name) + ".reverse.bw"])

@@ -26,7 +26,12 @@ import os
 from core.config import *
 from core.job import *
 
-def graph(input_bam, output_bed_graph, output_wiggle):
+def graph(input_bam, output_bed_graph, output_wiggle, library_type="PAIRED_END"):
+    
+    if library_type == "PAIRED_END":
+        samtools_options="-F 256 -f 81 "
+    else :
+        samtools_options="-F 256"
 
     return Job(
         [input_bam],
@@ -37,16 +42,18 @@ def graph(input_bam, output_bed_graph, output_wiggle):
             ['bedtools', 'module_ucsc']
         ],
         command="""\
-nmblines=$(samtools view -F 256 -f 81 {input_bam} | wc -l) && \\
+nmblines=$(samtools view {samtools_options} {input_bam} | wc -l) && \\
 scalefactor=0$(echo "scale=2; 1 / ($nmblines / 10000000);" | bc) && \\
 genomeCoverageBed -bg -split -scale $scalefactor \\
   -ibam {input_bam} \\
   -g {chromosome_size} \\
   > {output_bed_graph} && \\
+sort -k1,1 -k2,2n {output_bed_graph} > {output_bed_graph}.sorted && \\
 bedGraphToBigWig \\
-  {output_bed_graph} \\
+  {output_bed_graph}.sorted \\
   {chromosome_size} \\
   {output_wiggle}""".format(
+        samtools_options=samtools_options,
         input_bam=input_bam,
         chromosome_size=config.param('bedtools', 'chromosome_size', type='filepath'),
         output_bed_graph=output_bed_graph,

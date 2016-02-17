@@ -3,7 +3,8 @@
 set -eu -o pipefail
 
 SOFTWARE=igvtools
-VERSION=2.3.14
+VERSION=2.3.67
+#VERSION=2.3.14
 ARCHIVE=${SOFTWARE}_$VERSION.zip
 ARCHIVE_URL=http://www.broadinstitute.org/igv/projects/downloads/$ARCHIVE
 SOFTWARE_DIR=$SOFTWARE-$VERSION

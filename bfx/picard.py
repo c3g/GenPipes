@@ -48,6 +48,9 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
     )
 
 def calculate_hs_metrics(input, output, intervals, reference_sequence=None):
+    
+    baits_intervals = ""
+    baits_intervals = config.param('picard_calculate_hs_metrics', 'baits_intervals', required = False)
 
     return Job(
         [input, intervals],
@@ -61,7 +64,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
   TMP_DIR={tmp_dir} \\
   INPUT={input} \\
   OUTPUT={output} \\
-  BAIT_INTERVALS={intervals} \\
+  BAIT_INTERVALS={baits} \\
   TARGET_INTERVALS={intervals} \\
   REFERENCE_SEQUENCE={reference_sequence}""".format(
         tmp_dir=config.param('picard_calculate_hs_metrics', 'tmp_dir'),
@@ -70,15 +73,15 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
         input=input,
         output=output,
         intervals=intervals,
+        baits=baits_intervals if baits_intervals != "" else intervals,
         reference_sequence=reference_sequence if reference_sequence else config.param('picard_calculate_hs_metrics', 'genome_fasta', type='filepath')
         )
     )
 
-def collect_multiple_metrics(input, output, reference_sequence=None):
-
-    return Job(
-        [input],
-        [
+def collect_multiple_metrics(input, output, reference_sequence=None , library_type="PAIRED_END"):
+    
+    if  library_type == "PAIRED_END" :
+        outputs = [
          output + ".quality_by_cycle.pdf",
          output + ".alignment_summary_metrics",
          output + ".insert_size_Histogram.pdf",
@@ -86,7 +89,19 @@ def collect_multiple_metrics(input, output, reference_sequence=None):
          output + ".quality_by_cycle_metrics",
          output + ".quality_distribution_metrics",
          output + ".quality_distribution.pdf"
-        ],
+        ]
+    else :
+        outputs = [
+         output + ".quality_by_cycle.pdf",
+         output + ".alignment_summary_metrics",
+         output + ".quality_by_cycle_metrics",
+         output + ".quality_distribution_metrics",
+         output + ".quality_distribution.pdf"
+        ]
+
+    return Job(
+        [input],
+        outputs,
         [
             ['picard_collect_multiple_metrics', 'module_java'],
             ['picard_collect_multiple_metrics', 'module_picard'],
@@ -132,7 +147,8 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
         input=input,
         output=output,
         max_records_in_ram=config.param('picard_fix_mate_information', 'max_records_in_ram', type='int')
-        )
+        ),
+        removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output), output + ".md5"]
     )
 
 def mark_duplicates(inputs, output, metrics_file):
@@ -270,6 +286,32 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
         max_records_in_ram=config.param(ini_section, 'max_records_in_ram', type='int')
         ),
         removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output) if sort_order == "coordinate" else None]
+    )
+
+def sort_vcfs(inputs, output, ini_section='picard_sort_vcf'):
+
+    return Job(
+        inputs,
+        # Add SAM/BAM index as output only when writing a coordinate-sorted BAM file
+        [output],
+        [
+            [ini_section, 'module_java'],
+            [ini_section, 'module_picard']
+        ],
+        command="""\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/SortVcf.jar \\
+  VALIDATION_STRINGENCY=SILENT \\
+  TMP_DIR={tmp_dir} \\
+  {inputs} \\
+  OUTPUT={output} \\
+  SEQUENCE_DICTIONARY={seq_dict}""".format(
+        tmp_dir=config.param(ini_section, 'tmp_dir'),
+        java_other_options=config.param(ini_section, 'java_other_options'),
+        ram=config.param(ini_section, 'ram'),
+        inputs=" \\\n  ".join(["INPUT=" + input for input in inputs]),
+        output=output,
+        seq_dict=config.param(ini_section, 'genome_dictionary', type='filepath')
+        )
     )
 
 def collect_rna_metrics(input, output, annotation_flat=None,reference_sequence=None):

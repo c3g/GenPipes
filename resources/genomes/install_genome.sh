@@ -2,23 +2,28 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-module_bowtie=mugqic/bowtie/2.1.0
-module_bwa=mugqic/bwa/0.7.10
-module_java=mugqic/java/openjdk-jdk1.7.0_60
+module_bowtie=mugqic/bowtie2/2.2.4
+module_bwa=mugqic/bwa/0.7.12
+module_java=mugqic/java/openjdk-jdk1.8.0_72
 module_mugqic_R_packages=mugqic/mugqic_R_packages/1.0.3
 module_picard=mugqic/picard/1.123
 module_R=mugqic/R_Bioconductor/3.1.2_3.0
-module_samtools=mugqic/samtools/0.1.19
-module_star=mugqic/star/2.4.0e
+module_samtools=mugqic/samtools/1.3
+module_star=mugqic/star/2.5.1b
 module_tabix=mugqic/tabix/0.2.6
-module_tophat=mugqic/tophat/2.0.11
-module_ucsc=mugqic/ucsc/20140212
+module_tophat=mugqic/tophat/2.0.14
+module_ucsc=mugqic/ucsc/v326
 
 init_install() {
   # '$MUGQIC_INSTALL_HOME_DEV' for development, '$MUGQIC_INSTALL_HOME' for production
-  INSTALL_HOME=$MUGQIC_INSTALL_HOME_DEV
+  if [[ ${1:-} == MUGQIC_INSTALL_HOME ]]
+then
+  INSTALL_HOME=MUGQIC_INSTALL_HOME
+else
+  INSTALL_HOME=MUGQIC_INSTALL_HOME_DEV
+fi
 
-  INSTALL_DIR=$INSTALL_HOME/genomes/species/$SPECIES.$ASSEMBLY
+  INSTALL_DIR=${!INSTALL_HOME}/genomes/species/$SPECIES.$ASSEMBLY
   DOWNLOAD_DIR=$INSTALL_DIR/downloads
   LOG_DIR=$INSTALL_DIR/log
   TIMESTAMP=`date +%FT%H.%M.%S`
@@ -131,7 +136,6 @@ set_urls() {
   elif [[ $SOURCE == "EnsemblGenomes" ]]
   then
     RELEASE_URL=ftp://ftp.ensemblgenomes.org/pub/release-$VERSION
-  
     # Retrieve Ensembl Genomes species information
     SPECIES_URL=$RELEASE_URL/species.txt
     download_url $SPECIES_URL
@@ -237,7 +241,7 @@ cmd_or_job() {
     echo "Submitting $JOB_PREFIX as job..."
     echo
     CORES=${2:-1}  # Nb cores = 2nd param if defined else 1
-    echo "${!CMD}" | qsub -m ae -M $JOB_MAIL -W umask=0002 -d $INSTALL_DIR -j oe -o $LOG_DIR/${JOB_PREFIX}_$TIMESTAMP.log -N $JOB_PREFIX.$GENOME_FASTA -l walltime=24:00:0 -q sw -l nodes=1:ppn=$CORES
+    echo "${!CMD}" | qsub -m ae -M $JOB_MAIL -A $RAP_ID -W umask=0002 -d $INSTALL_DIR -j oe -o $LOG_DIR/${JOB_PREFIX}_$TIMESTAMP.log -N $JOB_PREFIX.$GENOME_FASTA -l walltime=24:00:0 -q sw -l nodes=1:ppn=$CORES
   else
     echo
     echo "Running $JOB_PREFIX..."
@@ -324,7 +328,7 @@ module load $module_samtools $module_tophat && \
 LOG=$LOG_DIR/gtf_tophat_$TIMESTAMP.log && \
 tophat --output-dir $TOPHAT_INDEX_DIR/tophat_out --GTF $TOPHAT_INDEX_DIR/$GTF --transcriptome-index=$TOPHAT_INDEX_PREFIX $BOWTIE2_INDEX_PREFIX > \$LOG 2>&1 && \
 chmod -R ug+rwX,o+rX \$TOPHAT_INDEX_DIR \$LOG"
-  cmd_or_job BOWTIE2_TOPHAT_CMD 2
+  cmd_or_job BOWTIE2_TOPHAT_CMD 4
   else
     echo
     echo "Genome Bowtie 2 index and gtf TopHat index up to date... skipping"
@@ -340,7 +344,7 @@ create_star_index() {
     runThreadN=1
   fi
 
-  for sjdbOverhang in 49 99
+  for sjdbOverhang in 49 99 74 149
   do
     INDEX_DIR=$INSTALL_DIR/genome/star_index/$SOURCE$VERSION.sjdbOverhang$sjdbOverhang
     if ! is_up2date $INDEX_DIR/SAindex
@@ -352,7 +356,7 @@ create_star_index() {
 mkdir -p $INDEX_DIR && \
 module load $module_star && \
 LOG=$LOG_DIR/star_${sjdbOverhang}_$TIMESTAMP.log && \
-STAR --runMode genomeGenerate --genomeDir $INDEX_DIR --genomeFastaFiles $GENOME_DIR/$GENOME_FASTA --runThreadN $runThreadN --sjdbOverhang $sjdbOverhang --sjdbGTFfile $ANNOTATIONS_DIR/$GTF --outFileNamePrefix $INDEX_DIR/ > \$LOG 2>&1 && \
+STAR --runMode genomeGenerate --genomeDir $INDEX_DIR --genomeFastaFiles $GENOME_DIR/$GENOME_FASTA --runThreadN $runThreadN --genomeSAindexNbases 8 --sjdbOverhang $sjdbOverhang --sjdbGTFfile $ANNOTATIONS_DIR/$GTF --outFileNamePrefix $INDEX_DIR/ > \$LOG 2>&1 && \
 chmod -R ug+rwX,o+rX $INDEX_DIR \$LOG"
       cmd_or_job STAR_CMD $runThreadN STAR_${sjdbOverhang}_CMD
     else
@@ -571,12 +575,12 @@ build_files() {
   create_picard_index
   create_samtools_index
   create_bwa_index
+  create_star_index
 
   # Annotations are not installed for UCSC genomes
   if [[ $SOURCE != "UCSC" ]]
   then
     create_bowtie2_tophat_index
-    create_star_index
     create_ncrna_bwa_index
     create_rrna_bwa_index
 
@@ -602,6 +606,10 @@ version=$VERSION" > $INI
     echo "\
 dbsnp_version=$DBSNP_VERSION" >> $INI
   fi
+  if [ ! -z "${population_AF:-}" ]; then
+  echo -e "\npopulation_AF=$population_AF" >> $INI
+  fi    
+  
 }
 
 install_genome() {

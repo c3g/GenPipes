@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=trinity
-VERSION=2.0.6
+VERSION=2.1.1
 ARCHIVE=${SOFTWARE}rnaseq-$VERSION.tar.gz
 ARCHIVE_URL=https://github.com/trinityrnaseq/trinityrnaseq/archive/v$VERSION.tar.gz
 SOFTWARE_DIR=${SOFTWARE}rnaseq-$VERSION
@@ -21,6 +21,11 @@ build() {
 
   # Install software
   cd $INSTALL_DOWNLOAD
+
+  cd $SOFTWARE_DIR
+  find . -name "*.pl" | while read f ; do sed -i s,"#\!/usr/bin/perl -w,#\!/usr/bin/env perl\nuse warnings;,g" $f ; sed -i s,"#\!/usr/bin/perl,#\!/usr/bin/env perl\nuse warnings;,g" $f ; done
+  cd ..
+
   mv -i $SOFTWARE_DIR $INSTALL_DIR/
 }
 
