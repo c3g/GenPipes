@@ -21,8 +21,15 @@ To access them, add the following lines to your *$HOME/.bash_profile*:
 ```
 #!bash
 umask 0002
+
+## MUGQIC genomes and modules 
+
+export MUGQIC_INSTALL_HOME=/cvmfs/soft.mugqic/CentOS6
+
+module use $MUGQIC_INSTALL_HOME/modulefiles
+
     
-## MUGQIC genomes and modules
+## MUGQIC genomes and modules for MUGQIC analysts
     
 HOST=`hostname`;
     
