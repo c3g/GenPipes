@@ -18,6 +18,7 @@ Quick setup for abacus, guillimin and mammouth users
 ----------------------------------------------------
 Genomes and modules used by the pipelines are already installed on a CVMFS partition mounted on all those clusters in `/cvmfs/soft.mugqic/CentOS6`.
 To access them, add the following lines to your *$HOME/.bash_profile*:
+
 ```
 #!bash
 umask 0002
@@ -27,8 +28,14 @@ umask 0002
 export MUGQIC_INSTALL_HOME=/cvmfs/soft.mugqic/CentOS6
 
 module use $MUGQIC_INSTALL_HOME/modulefiles
+```
 
-    
+For MUGQIC analysts, add the following lines to your *$HOME/.bash_profile*:
+
+```
+#!bash
+umask 0002
+     
 ## MUGQIC genomes and modules for MUGQIC analysts
     
 HOST=`hostname`;
