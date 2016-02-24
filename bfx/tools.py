@@ -122,7 +122,7 @@ bed2IntervalList.pl \\
         )
     )
 
-def dict2beds(dictionary,beds):
+def dict2beds(dictionary,beds,other_option=""):
     return Job(
         [dictionary],
         beds,
@@ -133,9 +133,10 @@ def dict2beds(dictionary,beds):
         command="""\
 dict2BEDs.py \\
   --dict {dictionary} \\
-  --beds {beds}""".format(
+  --beds {beds} {other_option}""".format(
         dictionary=dictionary if dictionary else config.param('DEFAULT', 'genome_dictionary', type='filepath'),
-        beds=' '.join(beds)
+        beds=' '.join(beds),
+        other_option=other_option
         )
     )
 
