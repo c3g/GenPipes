@@ -123,6 +123,7 @@ bed2IntervalList.pl \\
     )
 
 def dict2beds(dictionary,beds,other_option=""):
+    ##other_option="-c 1000000 -o 150" =>will chunk each chro in many interval of 1Mb with 150 bp overlap in the same file
     return Job(
         [dictionary],
         beds,
