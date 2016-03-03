@@ -18,11 +18,25 @@ Quick setup for abacus, guillimin and mammouth users
 ----------------------------------------------------
 Genomes and modules used by the pipelines are already installed on a CVMFS partition mounted on all those clusters in `/cvmfs/soft.mugqic/CentOS6`.
 To access them, add the following lines to your *$HOME/.bash_profile*:
+
 ```
 #!bash
 umask 0002
-    
-## MUGQIC genomes and modules
+
+## MUGQIC genomes and modules 
+
+export MUGQIC_INSTALL_HOME=/cvmfs/soft.mugqic/CentOS6
+
+module use $MUGQIC_INSTALL_HOME/modulefiles
+```
+
+For MUGQIC analysts, add the following lines to your *$HOME/.bash_profile*:
+
+```
+#!bash
+umask 0002
+     
+## MUGQIC genomes and modules for MUGQIC analysts
     
 HOST=`hostname`;
     
@@ -497,7 +511,7 @@ You will receive an invitation which you must accept.
 
 To use it, send us an e-mail at [mugqic_pipelines@googlegroups.com](mailto:mugqic_pipelines@googlegroups.com).
 
-You can also report bugs at [bioinformatics.service@mail.mcgill.ca](mailto:bioinformatics.service@mail.mcgill.ca).
+You can also report bugs at [pipelines@computationalgenomics.ca](mailto:pipelines@computationalgenomics.ca).
 
 * Messages should not be sent directly to our team members. The generic e-mail addresses above are viewable by all of us and facilitate the follow-up of your request.
 * Choose a meaningful subject for your message.
