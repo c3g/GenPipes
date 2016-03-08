@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=tophat
-VERSION=2.0.13
+VERSION=2.0.14
 ARCHIVE=$SOFTWARE-$VERSION.Linux_x86_64.tar.gz
 ARCHIVE_URL=http://ccb.jhu.edu/software/tophat/downloads/$ARCHIVE
 SOFTWARE_DIR=$SOFTWARE-$VERSION.Linux_x86_64

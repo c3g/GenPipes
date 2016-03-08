@@ -18,11 +18,25 @@ Quick setup for abacus, guillimin and mammouth users
 ----------------------------------------------------
 Genomes and modules used by the pipelines are already installed on a CVMFS partition mounted on all those clusters in `/cvmfs/soft.mugqic/CentOS6`.
 To access them, add the following lines to your *$HOME/.bash_profile*:
+
 ```
 #!bash
 umask 0002
-    
-## MUGQIC genomes and modules
+
+## MUGQIC genomes and modules 
+
+export MUGQIC_INSTALL_HOME=/cvmfs/soft.mugqic/CentOS6
+
+module use $MUGQIC_INSTALL_HOME/modulefiles
+```
+
+For MUGQIC analysts, add the following lines to your *$HOME/.bash_profile*:
+
+```
+#!bash
+umask 0002
+     
+## MUGQIC genomes and modules for MUGQIC analysts
     
 HOST=`hostname`;
     
@@ -211,17 +225,14 @@ are identical apart from `chr` sequence prefixes, document it):
             SOURCE=UCSC
             VERSION=2012-01-09
 
-* If necessary, update `$MUGQIC_PIPELINES_HOME/resources/genomes/install_genome.sh` with `INSTALL_HOME=$MUGQIC_INSTALL_HOME`
-(otherwise `$MUGQIC_INSTALL_HOME_DEV` will be used by default).
-
-* Run `$MUGQIC_PIPELINES_HOME/resources/genomes/<scientific_name>.<assembly>.sh`. It will download and install genomes, indexes and, for Ensembl only, annotations (GTF, VCF, etc.).
+* Running `bash $MUGQIC_PIPELINES_HOME/resources/genomes/<scientific_name>.<assembly>.sh` will install the genome in $MUGQIC_INSTALL_HOME_DEV (by default). Run `bash $MUGQIC_PIPELINES_HOME/resources/genomes/<scientific_name>.<assembly>.sh MUGQIC_INSTALL_HOME` to install it in $MUGQIC_INSTALL_HOME. This will download and install genomes, indexes and, for Ensembl only, annotations (GTF, VCF, etc.).
 
     If the genome is big, separate batch jobs will be submitted to the cluster for bwa, bowtie/tophat, star indexing.
     Check that jobs are completed OK.
 
 * If the new genome has been installed in `$MUGQIC_INSTALL_HOME_DEV`, to deploy in `$MUGQIC_INSTALL_HOME`:
 
-        rsync -va $MUGQIC_INSTALL_HOME_DEV/genomes/species/<scientific_name>.<assembly>/ $MUGQIC_INSTALL_HOME/genomes/species/<scientific_name>.<assembly>/
+        rsync -va --no-o --no-g --no-p --size-only -I -O --delete --ignore-times $MUGQIC_INSTALL_HOME_DEV/genomes/species/<scientific_name>.<assembly> $MUGQIC_INSTALL_HOME/genomes/species/
 
 * Add the newly created INI file to the genome config files for further usage in pipeline command:
 
@@ -497,9 +508,10 @@ You will receive an invitation which you must accept.
 
 To use it, send us an e-mail at [mugqic_pipelines@googlegroups.com](mailto:mugqic_pipelines@googlegroups.com).
 
-You can also report bugs at [bioinformatics.service@mail.mcgill.ca](mailto:bioinformatics.service@mail.mcgill.ca).
+You can also report bugs at [pipelines@computationalgenomics.ca](mailto:pipelines@computationalgenomics.ca).
 
 * Messages should not be sent directly to our team members. The generic e-mail addresses above are viewable by all of us and facilitate the follow-up of your request.
 * Choose a meaningful subject for your message.
-* Include the pipeline version number in your message.
+* Include the pipeline version number in your message (and the commit number if applicable).
+* Provide the following information relevant to the problem encountered: the python command, the bash submission script, the output (job_outputs/*/*.o) file, 
 * An error message or code snippet illustrating your request is normally very useful.

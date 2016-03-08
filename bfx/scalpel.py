@@ -48,7 +48,7 @@ scalpel --somatic \\
         inputTumor=inputTumor,
         outputDir=outputDir,
         cores_per_job=config.param('scalpel', 'cores_per_job'),
-        bed=bed
+        bed=bed,
         options=config.param('scalpel', 'options', type='string')
         )
     )

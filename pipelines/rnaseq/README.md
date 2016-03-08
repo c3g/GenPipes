@@ -45,7 +45,7 @@ usage: rnaseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                  [-l {debug,info,warning,error,critical}] [-d DESIGN]
                  [-r READSETS] [-v]
 
-Version: 2.1.1
+Version: 2.2.0
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
@@ -91,19 +91,20 @@ Steps:
 7- picard_mark_duplicates
 8- picard_rna_metrics
 9- estimate_ribosomal_rna
-10- rnaseqc
-11- wiggle
-12- raw_counts
-13- raw_counts_metrics
-14- cufflinks
-15- cuffmerge
-16- cuffquant
-17- cuffdiff
-18- cuffnorm
-19- fpkm_correlation_matrix
-20- gq_seq_utils_exploratory_analysis_rnaseq
-21- differential_expression
-22- differential_expression_goseq
+10- bam_hard_clip
+11- rnaseqc
+12- wiggle
+13- raw_counts
+14- raw_counts_metrics
+15- cufflinks
+16- cuffmerge
+17- cuffquant
+18- cuffdiff
+19- cuffnorm
+20- fpkm_correlation_matrix
+21- gq_seq_utils_exploratory_analysis_rnaseq
+22- differential_expression
+23- differential_expression_goseq
 
 ```
 1- picard_sam_to_fastq
@@ -170,56 +171,62 @@ This step takes as input files:
 
 readset Bam files
 
-10- rnaseqc
+10- bam_hard_clip
+-----------------
+Generate a hardclipped version of the bam for the toxedo suite which doesn't support this official sam feature.
+
+11- rnaseqc
 -----------
 Computes a series of quality control metrics using [RNA-SeQC](https://www.broadinstitute.org/cancer/cga/rna-seqc).
 
-11- wiggle
+12- wiggle
 ----------
 Generate wiggle tracks suitable for multiple browsers.
 
-12- raw_counts
+13- raw_counts
 --------------
 Count reads in features using [htseq-count](http://www-huber.embl.de/users/anders/HTSeq/doc/count.html).
 
-13- raw_counts_metrics
+14- raw_counts_metrics
 ----------------------
 Create rawcount matrix, zip the wiggle tracks and create the saturation plots based on standardized read counts.
 
-14- cufflinks
+15- cufflinks
 -------------
 Compute RNA-Seq data expression using [cufflinks](http://cole-trapnell-lab.github.io/cufflinks/cufflinks/).
+Warning: It needs to use a hard clipped bam file while Tuxedo tools do not support official soft clip SAM format
 
-15- cuffmerge
+16- cuffmerge
 -------------
 Merge assemblies into a master transcriptome reference using [cuffmerge](http://cole-trapnell-lab.github.io/cufflinks/cuffmerge/).
 
-16- cuffquant
+17- cuffquant
 -------------
 Compute expression profiles (abundances.cxb) using [cuffquant](http://cole-trapnell-lab.github.io/cufflinks/cuffquant/).
+Warning: It needs to use a hard clipped bam file while Tuxedo tools do not support official soft clip SAM format
 
-17- cuffdiff
+18- cuffdiff
 ------------
 [Cuffdiff](http://cole-trapnell-lab.github.io/cufflinks/cuffdiff/) is used to calculate differential transcript expression levels and test them for significant differences.
 
-18- cuffnorm
+19- cuffnorm
 ------------
 Global normalization of RNA-Seq expression levels using [Cuffnorm](http://cole-trapnell-lab.github.io/cufflinks/cuffnorm/).
 
-19- fpkm_correlation_matrix
+20- fpkm_correlation_matrix
 ---------------------------
 Compute the pearson corrleation matrix of gene and transcripts FPKM. FPKM data are those estimated by cuffnorm.
 
-20- gq_seq_utils_exploratory_analysis_rnaseq
+21- gq_seq_utils_exploratory_analysis_rnaseq
 --------------------------------------------
 Exploratory analysis using the gqSeqUtils R package.
 
-21- differential_expression
+22- differential_expression
 ---------------------------
 Performs differential gene expression analysis using [DESEQ](http://bioconductor.org/packages/release/bioc/html/DESeq.html) and [EDGER](http://www.bioconductor.org/packages/release/bioc/html/edgeR.html).
 Merge the results of the analysis in a single csv file.
 
-22- differential_expression_goseq
+23- differential_expression_goseq
 ---------------------------------
 Gene Ontology analysis for RNA-Seq using the Bioconductor's R package [goseq](http://www.bioconductor.org/packages/release/bioc/html/goseq.html).
 Generates GO annotations for differential gene expression analysis.

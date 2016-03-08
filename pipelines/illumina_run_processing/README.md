@@ -25,6 +25,13 @@ Casava user guide):
 - `Operator`
 - `SampleProject`
 
+Example:
+
+    FCID,Lane,SampleID,SampleRef,Index,Description,Control,Recipe,Operator,SampleProject
+    H84WNADXX,1,sample1_MPS0001,,TAAGGCGA-AGAGTAGA,,N,,,nanuq
+    H84WNADXX,1,sample47_MPS0047,,GTAGAGGA-CTAAGCCT,,N,,,nanuq
+
+
 The second sample sheet is called the Nanuq run sheet. It's a csv file with the
 following minimal set of mandatory columns (the column order in the file doesn't
 matter)
@@ -40,6 +47,13 @@ matter)
 `Library Source` is `Library`
 - `BED Files` The name of the BED file containing the genomic targets. This is
 the `filename` parameter passed to the `fetch_bed_file_command`
+- `Genomic Database` The reference used to make the alignment and calculate aligments metrics
+
+Example:
+
+    Name,Genomic Database,Library Barcode,Library Source,Library Type,Run,Region,BED Files,ProcessingSheetId
+    sample1,Rattus_norvegicus:Rnor_5.0,MPS0001,RNA,Nextera XT,1419,1,toto.bed,sample1_MPS0001
+    sample47,,MPS1047,Library,Nextera XT,1419,2,toto.bed,sample47_MPS1047
 
 
 Usage
@@ -56,7 +70,7 @@ usage: illumina_run_processing.py [-h] [--help] [-c CONFIG [CONFIG ...]]
                                   [-x FIRST_INDEX] [-y LAST_INDEX]
                                   [-m NUMBER_OF_MISMATCHES] [-w] [-v]
 
-Version: 2.1.1
+Version: 2.2.0
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
@@ -89,12 +103,19 @@ optional arguments:
                         run directory
   --lane LANE_NUMBER    lane number
   -r READSETS, --readsets READSETS
-                        readset file
-  -i CASAVA_SHEET_FILE  illumina casava sheet
+                        nanuq readset file. The default file is
+                        'run.nanuq.csv' in the output folder. Will be
+                        automatically downloaded if not present.
+  -i CASAVA_SHEET_FILE  illumina casava sheet. The default file is
+                        'SampleSheet.nanuq.csv' in the output folder. Will be
+                        automatically downloaded if not present
   -x FIRST_INDEX        first index base to use for demultiplexing
-  -y LAST_INDEX         last index base to use for demultiplexing
+                        (inclusive). The index from the sample sheet will be
+                        adjusted according to that value.
+  -y LAST_INDEX         last index base to use for demultiplexing (inclusive)
   -m NUMBER_OF_MISMATCHES
                         number of index mistmaches allowed for demultiplexing
+                        (default 1). Barcode collisions are always checked.
   -w, --force-download  force the download of the samples sheets (default:
                         false)
   -v, --version         show the version information and exit
@@ -109,9 +130,8 @@ Steps:
 6- blast
 7- qc_graphs
 8- md5
-9- start_copy_notification
-10- copy
-11- end_copy_notification
+9- copy
+10- end_copy_notification
 
 ```
 1- index
@@ -205,22 +225,17 @@ util.
 
 One checksum file is created for each file.
 
-9- start_copy_notification
---------------------------
-Send an optional notification for the processing completion.
-
-The command used is in the configuration file. This step is skipped when no
-command is provided.
-
-10- copy
---------
+9- copy
+-------
 Copy processed files to another place where they can be served or loaded into a
 LIMS.
 
 The destination folder and the command used can be set in the configuration
 file.
 
-11- end_copy_notification
+An optional notification can be sent before the copy. The command used is in the configuration file.
+
+10- end_copy_notification
 -------------------------
 Send an optional notification to notify that the copy is finished.
 

@@ -27,6 +27,7 @@ from core.job import *
 
 def compute_effects(input, output, split=False):
     output_stats = output + ".stats.csv"
+    output_stats_html = output + ".stats.html"
     job = Job(
         [input],
         [output, output_stats],
@@ -39,18 +40,19 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $SNPEFF_HOME
   -c $SNPEFF_HOME/snpEff.config \\
   -i vcf \\
   -o vcf \\
-  -csvStats \\
-  -stats {output_stats} \\
+  -csvStats {output_stats} \\
+  -stats {output_stats_html} \\
   {reference_snpeff_genome} \\
-  {input}{output}""".format(
+  {input} > {output}""".format(
         tmp_dir=config.param('compute_effects', 'tmp_dir'),
         java_other_options=config.param('compute_effects', 'java_other_options'),
         ram=config.param('compute_effects', 'ram'),
         options=config.param('compute_effects', 'options', required=False),
         output_stats=output_stats,
+        output_stats_html=output_stats_html,
         reference_snpeff_genome=config.param('compute_effects', 'snpeff_genome'),
         input=input,
-        output=" \\\n  > " + output if output else ""
+        output=output
         )
     )
 
@@ -93,7 +95,8 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $SNPEFF_HOME
         db_snp=config.param('snpsift_annotate', 'known_variants', type='filepath'),
         input=input,
         output=" \\\n  > " + output if output else ""
-        )
+        ),
+        removable_files=[output]
     )
 
 def snpsift_dbnsfp(input, output):
@@ -106,7 +109,7 @@ def snpsift_dbnsfp(input, output):
         ],
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $SNPEFF_HOME/SnpSift.jar dbnsfp \\
-  -v {db_nsfp} \\
+  -v -db {db_nsfp} \\
   {input}{output}""".format(
         tmp_dir=config.param('snpsift_dbnsfp', 'tmp_dir'),
         java_other_options=config.param('snpsift_dbnsfp', 'java_other_options'),
@@ -115,4 +118,25 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $SNPEFF_HOME
         input=input,
         output=" \\\n  > " + output if output else ""
         )
+    )
+
+def snpsift_intervals_index(input, intervals_file, output=None, job_name="filter_vcf_snpsift"):
+    return Job(
+        [input, intervals_file],
+        [output] if output else [],
+        [
+            ['snpsift_dbnsfp', 'module_java'],
+            ['snpsift_dbnsfp', 'module_snpeff']
+        ],
+        command="""\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $SNPEFF_HOME/SnpSift.jar intidx \\
+    {input} {intervals_file}{output}""".format(
+            tmp_dir=config.param('snpsift_dbnsfp', 'tmp_dir', required=False),
+            java_other_options=config.param('snpsift_dbnsfp', 'java_other_options', required=False),
+            ram=config.param('snpsift_dbnsfp', 'ram', required=False),
+            input=input,
+            intervals_file=intervals_file,
+            output=" \\\n  > " + output if output else ""
+        ),
+        name=job_name
     )

@@ -161,6 +161,10 @@ class IlluminaRawReadset(IlluminaReadset):
         return self._index
 
     @property
+    def sample_number(self):
+        return self._sample_number
+
+    @property
     def aligner(self):
         return self._aligner
 
@@ -171,6 +175,10 @@ class IlluminaRawReadset(IlluminaReadset):
     @property
     def reference_file(self):
         return self._reference_file
+
+    @property
+    def is_rna(self):
+        return self._is_rna
 
     @property
     def annotation_files(self):
@@ -221,19 +229,10 @@ def parse_illumina_raw_readset_files(output_dir, run_type, nanuq_readset_file, c
     samples = []
     GenomeBuild = namedtuple('GenomeBuild', 'species assembly')
 
-    genomic_databases = {
-        'Homo_sapiens:GRCh37': GenomeBuild('Homo_sapiens', 'GRCh37'),
-        'Homo_sapiens:hg19': GenomeBuild('Homo_sapiens', 'hg19'),
-        'Mus_musculus:mm9': GenomeBuild('Mus_musculus', 'mm9'),
-        'Mus_musculus:GRCm38': GenomeBuild('Mus_musculus', 'GRCm38'),
-        'Rattus_norvegicus:Rnor_5.0': GenomeBuild('Rattus_norvegicus', 'Rnor_5.0')
-    }
-
     # Parsing Nanuq readset sheet
     log.info("Parse Nanuq Illumina readset file " + nanuq_readset_file + " ...")
-    star_aligner = StarRunProcessingAligner(output_dir, nb_cycles)
-    bwa_aligner = BwaRunProcessingAligner(output_dir)
     readset_csv = csv.DictReader(open(nanuq_readset_file, 'rb'), delimiter=',', quotechar='"')
+    genome_build = None
     for line in readset_csv:
         current_lane = line['Region']
 
@@ -254,13 +253,13 @@ def parse_illumina_raw_readset_files(output_dir, run_type, nanuq_readset_file, c
         readset._library_type = line['Library Type']
         readset._genomic_database = line['Genomic Database']
 
-        if re.search("RNA|cDNA", readset.library_source) or (readset.library_source == "Library" and re.search("RNA", readset.library_type)):
-            readset._aligner = star_aligner
-        else:
-            readset._aligner = bwa_aligner
-
         readset._run = line['Run']
         readset._lane = current_lane
+        readset._sample_number = str(len(readsets) + 1)
+
+        readset._is_rna = re.search("RNA|cDNA", readset.library_source) or (readset.library_source == "Library"
+                                                                            and re.search("RNA", readset.library_type))
+
         if line['BED Files']:
             readset._beds = line['BED Files'].split(";")
         else:
@@ -287,13 +286,23 @@ def parse_illumina_raw_readset_files(output_dir, run_type, nanuq_readset_file, c
 
     # Searching for a matching reference for the specified species
     for readset in readsets:
-        genome_build = genomic_databases.get(readset.genomic_database, None)
+        m = re.search("(?P<build>\w+):(?P<assembly>\w+)", readset.genomic_database)
+        genome_build = None
+        if m:
+            genome_build = GenomeBuild(m.group('build'), m.group('assembly'))
+
         if genome_build is not None:
             folder_name = os.path.join(genome_build.species + "." + genome_build.assembly)
-            aligner_reference_index = readset.aligner.get_reference_index(genome_root + os.sep + folder_name)
-            annotation_files = readset.aligner.get_annotation_files(genome_root + os.sep + folder_name)
-            reference_file = os.path.join(genome_root,
-                                          folder_name,
+            current_genome_folder = genome_root + os.sep + folder_name
+
+            if readset.is_rna:
+                readset._aligner = StarRunProcessingAligner(output_dir, current_genome_folder, nb_cycles)
+            else:
+                readset._aligner = BwaRunProcessingAligner(output_dir, current_genome_folder)
+
+            aligner_reference_index = readset.aligner.get_reference_index()
+            annotation_files = readset.aligner.get_annotation_files()
+            reference_file = os.path.join(current_genome_folder,
                                           "genome",
                                           folder_name + ".fa")
             if reference_file and os.path.isfile(reference_file):
@@ -313,7 +322,7 @@ def parse_illumina_raw_readset_files(output_dir, run_type, nanuq_readset_file, c
             else:
                 log.warning("Unable to access the reference file: '" + reference_file + "'")
 
-        if readset.bam is None:
+        if readset.bam is None and len(readset.genomic_database) > 0:
             log.info("Skipping alignment for the genomic database: '" + readset.genomic_database + "'")
 
     log.info(str(len(readsets)) + " readset" + ("s" if len(readsets) > 1 else "") + " parsed")

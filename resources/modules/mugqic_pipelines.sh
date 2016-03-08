@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=mugqic_pipelines
-VERSION=2.1.1
+VERSION=2.2.0
 ARCHIVE=$SOFTWARE-$VERSION.tar.gz
 ARCHIVE_URL=https://bitbucket.org/mugqic/$SOFTWARE/downloads/$ARCHIVE
 SOFTWARE_DIR=$SOFTWARE-$VERSION
@@ -32,6 +32,7 @@ setenv          MUGQIC_PIPELINES_HOME \$root
 prepend-path    PATH                  \$root/utils
 prepend-path    PATH                  \$root/pipelines/chipseq
 prepend-path    PATH                  \$root/pipelines/dnaseq
+prepend-path    PATH                  \$root/pipelines/dnaseq_high_coverage
 prepend-path    PATH                  \$root/pipelines/illumina_run_processing
 prepend-path    PATH                  \$root/pipelines/pacbio_assembly
 prepend-path    PATH                  \$root/pipelines/rnaseq

@@ -1,0 +1,64 @@
+```{r preparation, results="hide",echo=F,message=F,warning=F}
+
+### DEFINED OUTSIDE
+# report_dir
+# source_dir
+# contrasts
+# top_n_results
+
+library(rmarkdown)
+library(knitr)
+library(hwriter)
+library(magrittr)
+options(stringsAsFactors=F)
+
+
+
+# Directories and cp data
+#unlink( file.path(report_dir,"DiffExp","genes") , recursive = T)
+dir.create( file.path(report_dir), showWarnings=F,recursive=T)
+file.copy(from = source_dir, to = report_dir, overwrite = T, recursive = T)
+
+
+# Create GoSeq results tables
+goseq.results=data.frame(NULL)
+dge.results=data.frame(NULL)
+for (item in c("genes","isoforms")){
+    for (contrast in contrasts){
+        summary = file.path(report_dir,"differential_expression",item,contrast,"gene_ontology_results.csv") %>% read.delim(header=T,check.names=F,colClasses="character",stringsAsFactors=F,comment.char='')
+        # table is sorted by default, take the first 7 lines    
+        summary = summary[c(1:min(top_n_results,nrow(summary))),c(1:min(ncol(summary),8))] 
+        goseq.results=rbind(goseq.results, cbind(fileID=paste(item,contrast,sep="_"), summary))
+        summary = file.path(report_dir,"differential_expression",item,contrast,"dge_trinotate_results.csv") %>% read.delim(header=T,check.names=F,colClasses="character",stringsAsFactors=F,comment.char='')
+        # table is sorted by default, take the first 7 lines    
+        summary = summary[c(1:min(top_n_results,nrow(summary))),c(1:min(ncol(summary),8))]
+        dge.results=rbind(dge.results, cbind(fileID=paste(item,contrast,sep="_"), summary))
+        
+    }        
+}
+
+```
+#### Differential Expression Analysis and Gene Ontology (GO) Analysis for filtered isoforms / genes
+
+The differential analysis results are filtered to extract differential expression results of high quality contigs/genes based on trinotate annotations. One gene ontology analysis is generated per design based on the differentially expressed genes from the DESeq/edgeR filtered results. GO terms associated to each gene are obtained from trinotate annotations. Every gene having an FDR adjusted p-value under 0.1 is considered as differentially expressed. The threshold for differentially expressed selection is the same as in the first analysis. The first column is the ID of the category enriched; the second column is the FDR adjusted p-value of category enrichment; the third column is the GO id; and the fourth column is a brief description of the GO term. **If there are no results for a particular design, it means the FDR adjusted GO enrichment was not significant (p-value too high)**.
+
+```{r summary_table, results='asis', echo=F,message=F,warning=F}
+
+for (item in c("genes","isoforms")){    
+    for (contrast in contrasts){
+        subset.dge=try(subset(dge.results, fileID == paste(item,contrast,sep="_"), select=-fileID))
+        if (!inherits(subset.dge,'try-error') && nrow(subset.dge) > 0){            
+            print(kable(subset.dge, row.names=F, caption=paste("<br>","Differentially Expressed ",item," for contrast ", contrast, 
+                                                               " (**partial table**; [download full table](",gsub("report/","",report_dir),"/differential_expression/", item,"/",contrast,"/dge_trinotate_results.csv))",sep=""), 
+                                    padding = 10, align=NULL))
+            }else  print(paste("<br>","No differentially expressed ",item," results are available for this contrast after filtering: ", contrast,  ".",sep=""))    
+        
+        subset.goseq=try(subset(goseq.results,fileID == paste(item,contrast,sep="_"), select=-fileID))
+        if (!inherits(subset.goseq,'try-error') && nrow(subset.goseq) > 0){            
+            print(kable(subset.goseq, row.names=F, caption=paste("<br>","GO Results of the Differentially Expressed ",item," for contrast ", contrast, 
+                                                                 " (**partial table**; [download full table](",gsub("report/","",report_dir),"/differential_expression/", item,"/", contrast,"/gene_ontology_results.csv))",sep=""), 
+                        padding = 10, align=NULL))
+            } else print(paste("<br>","No FDR adjusted GO enrichment was significant (p-value too high) based on the differentially expressed ",item, " results for this contrast: ", contrast ,".",sep=""))            
+    }
+}
+```

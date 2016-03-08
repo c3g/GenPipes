@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=bedtools
-VERSION=2.22.1
+VERSION=2.25.0
 ARCHIVE=$SOFTWARE-$VERSION.tar.gz
 ARCHIVE_URL=https://github.com/arq5x/bedtools2/releases/download/v$VERSION/$ARCHIVE
 SOFTWARE_DIR=$SOFTWARE-$VERSION

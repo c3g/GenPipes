@@ -3,7 +3,8 @@
 set -eu -o pipefail
 
 SOFTWARE=hmmer
-VERSION=3.1b1
+VERSION=3.1b2
+#VERSION=3.1b1
 #VERSION=2.3.2
 ARCHIVE=$SOFTWARE-$VERSION.tar.gz
 # Adjust remote download URL according to version first number

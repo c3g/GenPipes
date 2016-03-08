@@ -1,57 +1,38 @@
 #!/bin/sh
-
-################################################################################
-# This is a module install script template which should be copied and used for
-# consistency between module paths, permissions, etc.
-# Only lines marked as "## TO BE ADDED/MODIFIED" should be, indeed, modified.
-# You should probably also delete this commented-out header and the ## comments
-################################################################################
-
-
-#
-# Software_name  usearch
-#
+# Exit immediately on error
+set -eu -o pipefail
 
 SOFTWARE=usearch
-VERSION=7.0.1090
-INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/$SOFTWARE
-INSTALL_DOWNLOAD=$INSTALL_PATH/tmp
-mkdir -p $INSTALL_DOWNLOAD
-cd $INSTALL_DOWNLOAD
-#http://www.drive5.com/usearch/download.html
-# Download, extract, build
-# Write here the specific commands to download, extract, build the software, typically similar to:
-cd $SOFTWARE-$VERSION                                                            
+#VERSION=7.0.1090
+VERSION=8.1.1861
+ARCHIVE=usearch8.1.1861_i86linux32
+ARCHIVE_URL=
+echo "Prior to install the usearch module, you must download the archive manually, if not done already, from http://www.drive5.com/usearch/download.html since it requires a license agreement.
+Once downloaded, copy it in \$MUGQIC_INSTALL_HOME_DEV/archive/ or \$MUGQIC_INSTALL_HOME/archive/ and rename it as ${SOFTWARE}${VERSION}"
+SOFTWARE_DIR=$SOFTWARE-$VERSION
 
-# Add permissions and install software
-chmod -R 775 *
-cd $INSTALL_DOWNLOAD
-#mv -i $SOFTWARE-$VERSION $INSTALL_PATH                                          
-mv -i $INSTALL_DOWNLOAD/$SOFTWARE-$VERSION.tar $MUGQIC_INSTALL_HOME/archive      
+# Specific commands to extract and build the software
+# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
+# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
+build() {
+  mkdir $INSTALL_DIR/$SOFTWARE_DIR
+  echo "mv $INSTALL_DOWNLOAD/${SOFTWARE}* $INSTALL_DIR/$SOFTWARE_DIR/${SOFTWARE}${VERSION}"
+  mv $INSTALL_DOWNLOAD/${SOFTWARE}* $INSTALL_DIR/$SOFTWARE_DIR/${SOFTWARE}${VERSION}
+}
 
-# Module file
-echo "#%Module1.0
+module_file() {
+echo "\
+#%Module1.0
 proc ModulesHelp { } {
        puts stderr \"\tMUGQIC - $SOFTWARE-$VERSION \" ;
 }
 module-whatis \"$SOFTWARE  \" ; 
                       
-set             root                \$::env(MUGQIC_INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE-$VERSION ;
-prepend-path    PATH                \$root/bin ;  
-" > $VERSION
+set             root                $INSTALL_DIR/$SOFTWARE_DIR ;
+prepend-path    PATH                \$root ;  
+"
+}
 
-################################################################################
-# Everything below this line should be generic and not modified
-
-# Default module version file
-echo "#%Module1.0
-set ModulesVersion \"$VERSION\"" > .version
-
-# Add permissions and install module
-mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
-chmod -R ug+rwX $VERSION .version
-chmod -R o+rX $VERSION .version
-mv $VERSION .version $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
-
-# Clean up temporary installation files if any
-rm -rf $INSTALL_DOWNLOAD
+# Call generic module install script once all variables and functions have been set
+MODULE_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source $MODULE_INSTALL_SCRIPT_DIR/install_module.sh $@

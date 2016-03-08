@@ -20,6 +20,7 @@
 ################################################################################
 
 # Python Standard Modules
+import os
 
 # MUGQIC Modules
 from core.config import *
@@ -99,7 +100,73 @@ python $PYTHON_TOOLS/rrnaBAMcounter.py \\
         typ=typ
         )
     )
+# Parse Trinotate output, create best blast annotated file, GO terms and a list of filtered configs
+def py_parseTrinotateOutput(trinotate_annotation_report, trinotate_report_genes_prefix, trinotate_report_transcripts_prefix, gene_id_column, transcript_id_column, isoforms_lengths_file, job_name, filters=None):  
+    return Job(
+        [trinotate_annotation_report, isoforms_lengths_file], 
+        [trinotate_report_genes_prefix + '_blast.tsv', trinotate_report_transcripts_prefix + '_blast.tsv' , 
+        trinotate_report_genes_prefix + '_go.tsv', trinotate_report_transcripts_prefix + '_go.tsv',
+        trinotate_report_transcripts_prefix + '_filtered.tsv'],
+        [['DEFAULT', 'module_mugqic_tools'],
+         ['DEFAULT', 'module_python']
+         ],
+        name=job_name,
+        command="""\
+$PYTHON_TOOLS/parseTrinotateOutput.py -r {trinotate_annotation_report} -o {trinotate_report_genes_prefix} -i \"{gene_id_column}\" -l {isoforms_lengths} &&
+$PYTHON_TOOLS/parseTrinotateOutput.py -r {trinotate_annotation_report} -o {trinotate_report_transcripts_prefix} -i \"{transcript_id_column}\"{filters}""".format(
+        trinotate_annotation_report=trinotate_annotation_report,
+        trinotate_report_genes_prefix=trinotate_report_genes_prefix,
+        trinotate_report_transcripts_prefix=trinotate_report_transcripts_prefix,
+        gene_id_column = gene_id_column,
+        isoforms_lengths=isoforms_lengths_file, 
+        transcript_id_column=transcript_id_column,
+        filters="" if not filters else " -f " + ' and '.join(filters)
+        )
+    )
 
+def py_parseMergeCsv(input_files, delimiter, output , common, subset=None, exclude=None, left_join=None, sort_by=None, make_names=None, filters=None):  
+    return Job(
+        input_files, 
+        [output],
+        [['DEFAULT', 'module_mugqic_tools'],
+         ['DEFAULT', 'module_python']
+         ], 
+        command="""\
+$PYTHON_TOOLS/parseMergeCsv.py -i {input_files} \\
+      -o {output} \\
+      -c {common_columns} \\
+      -d {delimiter} {subset}{toexclude}{left_outer_join}{sort_by_field}{make_names}{filters}""".format(
+        input_files=" ".join(input_files),
+        output=output,
+        common_columns=common,        
+        delimiter=delimiter, 
+        subset=" -s " + subset if subset else "", 
+        toexclude=" -x " + exclude if exclude else "", 
+        left_outer_join=" -l " if  left_join else "",
+        sort_by_field=" -t " + sort_by if sort_by else "",
+        make_names=" -n " if make_names else "",
+        filters="" if not filters else " -f " + ' and '.join(filters)
+        )
+    )
+
+def py_filterAssemblyToFastaToTsv(fasta_file, filter_file, fasta_id_column, output):  
+    return Job(
+        [ fasta_file , filter_file], 
+        [ output + "." + ext for ext in ["fasta", "tsv"] ],
+        [['DEFAULT', 'module_mugqic_tools'],
+         ['DEFAULT', 'module_python']
+         ], 
+        command="""\
+$PYTHON_TOOLS/filterAssemblyToFastaToXls.py -f {fasta_file} \\
+-o {output} \\
+-l {filter_file} \\
+-c {fasta_id_column} """.format(
+        fasta_file = fasta_file,
+        output=output,
+        filter_file=filter_file,        
+        fasta_id_column=fasta_id_column
+        )
+    )
 
 
 ## functions for perl tools ##
@@ -139,7 +206,46 @@ dict2BEDs.py \\
         )
     )
 
+<<<<<<< HEAD
 def filter_long_indel(input, output):
+=======
+def preprocess_varscan(input,output):
+>>>>>>> 5edde6884a6a5167ae55dfe97c8c6ecfd04e1ce8
+    return Job(
+        [input],
+        [output],
+        [
+            ['DEFAULT', 'module_mugqic_tools'],
+            ['DEFAULT', 'module_python']
+        ],
+        command="""\
+python $PYTHON_TOOLS/preprocess.py \\
+  --ref-depth RD --alt-depth AD \\
+  {input} \\
+  | bgzip -cf > {output}""".format(
+        input=input,
+        output=output
+        )
+    )
+
+def filter_long_indel(input, output):
+    pre_gzip_command = ""
+    post_rm_command = ""
+    input_filename, input_file_extension = os.path.splitext(input)
+    if input_file_extension == ".bgz" :
+        pre_gzip_command="""\
+zcat {input} > {input_filename} && """.format(
+            input=input,
+            input_filename=input_filename
+        )
+        post_rm_command=""" && \
+rm {input_filename} """.format(
+            input_filename=input_filename
+        )
+        input_next=input_filename
+    else :
+        input_next=input
+        
     return Job(
         [input],
         [output],
@@ -148,13 +254,17 @@ def filter_long_indel(input, output):
             ['DEFAULT', 'module_perl']
         ],
         command="""\
-filterLongIndel.pl \\
+{pre_gzip_command}filterLongIndel.pl \\
   {input} \\
-  > {output}""".format(
-        input=input,
-        output=output
-        )
+  > {output}{post_rm_command}""".format(
+        pre_gzip_command=pre_gzip_command,
+        input=input_next,
+        output=output,
+        post_rm_command=post_rm_command
+        ),
+        removable_files=[output]
     )
+
 
 ## functions for R tools ##
 
