@@ -47,7 +47,7 @@ class RunProcessingAligner(object):
     def get_reference_index(self):
         raise NotImplementedError("Please Implement this method")
 
-    def get_alignment_jobs(self, readset):
+    def get_alignment_job(self, readset):
         raise NotImplementedError("Please Implement this method")
 
     def get_metrics_jobs(self, readset):
@@ -104,8 +104,7 @@ class BwaRunProcessingAligner(RunProcessingAligner):
 
         return []
 
-    def get_alignment_jobs(self, readset):
-        jobs = []
+    def get_alignment_job(self, readset):
         output = readset.bam + ".bam"
         job = concat_jobs([
                               Job(command="mkdir -p " + os.path.dirname(output)),
@@ -122,10 +121,9 @@ class BwaRunProcessingAligner(RunProcessingAligner):
                                       "coordinate"
                                   )
                               ])
-                          ], name="bwa_mem_picard_sort_sam." + readset.name + "_" + readset.run + "_" + readset.lane)
+                          ], name="bwa_mem_picard_sort_sam." + readset.name + "." + readset.run + "." + readset.lane)
 
-        jobs.append(job)
-        return jobs
+        return job
 
     def get_metrics_jobs(self, readset):
         jobs = []
@@ -294,8 +292,7 @@ class StarRunProcessingAligner(RunProcessingAligner):
         else:
             return None
 
-    def get_alignment_jobs(self, readset):
-        jobs = []
+    def get_alignment_job(self, readset):
         output = readset.bam + ".bam"
 
         rg_center = config.param('star_align', 'sequencing_center', required=False)
@@ -328,8 +325,7 @@ class StarRunProcessingAligner(RunProcessingAligner):
             picard.build_bam_index(output, output[::-1].replace(".bam"[::-1], ".bai"[::-1], 1)[::-1])
         ])
         job.name = "star_align." + readset.name + "." + readset.run + "." + readset.lane
-        jobs.append(job)
-        return jobs
+        return job
 
     def get_metrics_jobs(self, readset):
         jobs = []

@@ -25,6 +25,7 @@ import os
 import sys
 import itertools
 import xml.etree.ElementTree as Xml
+import math
 
 # Append mugqic_pipelines directory to Python library path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
@@ -405,9 +406,9 @@ bcl2fastq\\
         """
         jobs = []
         for readset in [readset for readset in self.readsets if readset.bam]:
-            jobs.extend(readset.aligner.get_alignment_jobs(readset))
+            jobs.append(readset.aligner.get_alignment_job(readset))
         self.add_copy_job_inputs(jobs)
-        return jobs
+        return self.throttle_jobs(jobs)
 
     def picard_mark_duplicates(self):
         """
@@ -425,7 +426,7 @@ bcl2fastq\\
             jobs.append(job)
 
         self.add_copy_job_inputs(jobs)
-        return jobs
+        return self.throttle_jobs(jobs)
 
     def metrics(self):
         """
@@ -449,7 +450,7 @@ bcl2fastq\\
         for readset in [readset for readset in self.readsets if readset.bam]:
             jobs.extend(readset.aligner.get_metrics_jobs(readset))
         self.add_copy_job_inputs(jobs)
-        return jobs
+        return self.throttle_jobs(jobs)
 
     def blast(self):
         """ 
@@ -557,7 +558,7 @@ bcl2fastq\\
                               name="blast." + readset.name + ".blast." + self.run_id + "." + str(self.lane_number))
             jobs.append(job)
         self.add_copy_job_inputs(jobs)
-        return jobs
+        return self.throttle_jobs(jobs)
 
     def qc_graphs(self):
         """ 
@@ -600,7 +601,7 @@ bcl2fastq\\
             jobs.append(job)
 
         self.add_copy_job_inputs(jobs)
-        return jobs
+        return self.throttle_jobs(jobs)
 
     def md5(self):
         """
@@ -1002,6 +1003,33 @@ bcl2fastq\\
 
     def submit_jobs(self):
         super(IlluminaRunProcessing, self).submit_jobs()
+
+    def throttle_jobs(self, jobs):
+        """ Group jobs of the same task (same name prefix) if they exceed the configured threshold number. """
+        max_jobs_per_step = config.param('default', 'max_jobs_per_step', required=False, type="int")
+        jobs_by_name = collections.OrderedDict()
+        reply = []
+
+        # group jobs by task (name)
+        for job in jobs:
+            jobs_by_name.setdefault(job.name.split(".", 1)[0], []).append(job)
+
+        # loop on all task
+        for job_name in jobs_by_name:
+            current_jobs = jobs_by_name[job_name]
+            if max_jobs_per_step and 0 < max_jobs_per_step < len(current_jobs):
+                # we exceed the threshold, we group using 'number_task_by_job' jobs per group
+                number_task_by_job = int(math.ceil(len(current_jobs) / max_jobs_per_step))
+                merged_jobs = []
+                for x in range(max_jobs_per_step):
+                    if x * number_task_by_job < len(current_jobs):
+                        merged_jobs.append(concat_jobs(
+                            current_jobs[x * number_task_by_job:min((x + 1) * number_task_by_job, len(current_jobs))],
+                            job_name + "." + str(x + 1) + "." + self.run_id + "." + str(self.lane_number)))
+                reply.extend(merged_jobs)
+            else:
+                reply.extend(current_jobs)
+        return reply
 
 
 def distance(str1, str2):
