@@ -835,62 +835,56 @@ pandoc --to=markdown \\
         observed_species_stat = os.path.join(alpha_diversity_collated_merge_directory, "observed_species.txt")
         shannon_stat = os.path.join(alpha_diversity_collated_merge_directory, "shannon.txt")
 
-        for readset in self.readsets:
+        for readset in self.readsets:        
+            sample_collated_general_directory = os.path.join(alpha_diversity_collated_directory, readset.sample.name)
+            sample_map = os.path.join(sample_collated_general_directory, "map.txt")
+            sample_collated_directory = os.path.join(sample_collated_general_directory, "stat")
+            sample_rarefaction_directory = os.path.join(alpha_diversity_rarefaction_directory, readset.sample.name)
+            chao1_dir = os.path.join(sample_collated_directory, "chao1.txt")
+            observed_species_dir = os.path.join(sample_collated_directory, "observed_species.txt")
+            shannon_dir = os.path.join(sample_collated_directory, "shannon.txt")
+            observed_species_file = """{}/average_plots/observed_species{}.png""".format(readset.sample.name,str(readset.sample.name).replace('_','.'))
+            curve_sample.append(os.path.join(alpha_diversity_rarefaction_directory,observed_species_file))
 
-            try:
-                self.select_input_files([[os.path.join(otu_sample_directory,str(readset.sample.name).replace("_", ".")+'.txt')]])
+            job = qiime.sample_rarefaction_plot(
+                chao1_stat,
+                observed_species_stat,
+                shannon_stat,
+                sample_collated_directory,
+                sample_map,
+                sample_rarefaction_directory,
+                curve_sample,
+            )
 
-                sample_collated_general_directory = os.path.join(alpha_diversity_collated_directory, readset.sample.name)
-                sample_map = os.path.join(sample_collated_general_directory, "map.txt")
-                sample_collated_directory = os.path.join(sample_collated_general_directory, "stat")
-                sample_rarefaction_directory = os.path.join(alpha_diversity_rarefaction_directory, readset.sample.name)
-                chao1_dir = os.path.join(sample_collated_directory, "chao1.txt")
-                observed_species_dir = os.path.join(sample_collated_directory, "observed_species.txt")
-                shannon_dir = os.path.join(sample_collated_directory, "shannon.txt")
-                observed_species_file = """{}/average_plots/observed_species{}.png""".format(readset.sample.name,str(readset.sample.name).replace('_','.'))
-                curve_sample.append(os.path.join(alpha_diversity_rarefaction_directory,observed_species_file))
+            jobs.append(concat_jobs([
+                Job(command="mkdir -p " + sample_collated_directory),
+                tools.py_ampliconSeq(
+                    [],
+                    [sample_map],
+                    'map_per_sample',
+                    """-s {} -j {}""".format(readset.sample.name,sample_map)
+                ),
+                tools.py_ampliconSeq(
+                    [chao1_stat],
+                    [chao1_dir],
+                    'sample_rarefaction',
+                    """-i {} -j {} -s {}""".format(chao1_stat,chao1_dir,readset.sample.name)
+                ),
+                tools.py_ampliconSeq(
+                    [observed_species_stat],
+                    [observed_species_dir],
+                    'sample_rarefaction',
+                    """-i {} -j {} -s {}""".format(observed_species_stat,observed_species_dir,readset.sample.name)
+                ),
+                tools.py_ampliconSeq(
+                    [shannon_stat],
+                    [shannon_dir],
+                    'sample_rarefaction',
+                    """-i {} -j {} -s {}""".format(shannon_stat,shannon_dir,readset.sample.name)
+                ),
+                job
+            ], name="sample_rarefaction_plot"))
 
-                job = qiime.sample_rarefaction_plot(
-                    chao1_stat,
-                    observed_species_stat,
-                    shannon_stat,
-                    sample_collated_directory,
-                    sample_map,
-                    sample_rarefaction_directory,
-                    curve_sample,
-                )
-
-                jobs.append(concat_jobs([
-                        Job(command="mkdir -p " + sample_collated_directory),
-                        tools.py_ampliconSeq(
-                            [],
-                            [sample_map],
-                            'map_per_sample',
-                            """-s {} -j {}""".format(readset.sample.name,sample_map)
-                        ),
-                        tools.py_ampliconSeq(
-                            [chao1_stat],
-                            [chao1_dir],
-                            'sample_rarefaction',
-                            """-i {} -j {} -s {}""".format(chao1_stat,chao1_dir,readset.sample.name)
-                        ),
-                        tools.py_ampliconSeq(
-                            [observed_species_stat],
-                            [observed_species_dir],
-                            'sample_rarefaction',
-                            """-i {} -j {} -s {}""".format(observed_species_stat,observed_species_dir,readset.sample.name)
-                        ),
-                        tools.py_ampliconSeq(
-                            [shannon_stat],
-                            [shannon_dir],
-                            'sample_rarefaction',
-                            """-i {} -j {} -s {}""".format(shannon_stat,shannon_dir,readset.sample.name)
-                        ),
-                        job
-                    ], name="sample_rarefaction_plot"))
-
-            except:
-                pass
 
         return jobs
 
@@ -914,16 +908,11 @@ pandoc --to=markdown \\
         num_sample = 0
 
         for readset in self.readsets:
-            try:
-                self.select_input_files([[os.path.join(otu_sample_directory,str(readset.sample.name).replace("_", ".")+'.txt')]])
+            inputs.append(str(readset.sample.name).replace('_','.'))
+            observed_species_file = """{}/average_plots/observed_species{}.png""".format(readset.sample.name,str(readset.sample.name).replace('_','.'))
+            curve_sample.append(os.path.join(alpha_diversity_rarefaction_directory,observed_species_file))
+            num_sample+=1
 
-                inputs.append(str(readset.sample.name).replace('_','.'))
-                observed_species_file = """{}/average_plots/observed_species{}.png""".format(readset.sample.name,str(readset.sample.name).replace('_','.'))
-                curve_sample.append(os.path.join(alpha_diversity_rarefaction_directory,observed_species_file))
-                num_sample+=1
-
-            except:
-                pass
 
         jobs.append(Job(
                 curve_sample,
@@ -1304,11 +1293,8 @@ pandoc --to=markdown \\
         alpha_diversity_krona_file = os.path.join(alpha_diversity_krona_directory, "krona_chart.html")
 
         for readset in self.readsets:
-            try:
-                self.select_input_files([[os.path.join(otu_sample_directory,str(readset.sample.name).replace("_", ".")+'.txt')]])
-                sample_name.append(alpha_diversity_krona_directory+'/'+str(readset.sample.name).replace("_", ".")+'.txt')
-            except:
-                pass
+            sample_name.append(alpha_diversity_krona_directory+'/'+str(readset.sample.name).replace("_", ".")+'.txt')
+
 
         job = krona.krona(
             otu_normalized_table,
