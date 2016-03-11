@@ -687,8 +687,8 @@ bcl2fastq\\
         if exclude_bam or exclude_fastq_with_bam:
             for readset in [readset for readset in self.readsets if readset.bam]:
                 if exclude_bam:
-                    excluded_files.append(readset.bam + ".*.bam")
-                    excluded_files.append(readset.bam + ".*.bai")
+                    excluded_files.append(readset.bam + ".bam*")
+                    excluded_files.append(readset.bam + ".bai*")
                 if exclude_fastq_with_bam and not exclude_bam:
                     excluded_files.append(readset.fastq1)
                     if readset.fastq2:
