@@ -530,12 +530,12 @@ copy_files() {
   fi
 
   # Annotations are not installed for UCSC genomes
-  if [[ $SOURCE != "UCSC" ]]
-  then
+#  if [[ $SOURCE != "UCSC" ]]
+#  then
     if ! is_up2date $ANNOTATIONS_DIR/$GTF ; then gunzip -c `download_path $GTF_URL` > $ANNOTATIONS_DIR/$GTF ; fi
     TRANSCRIPT_ID_GTF=$ANNOTATIONS_DIR/${GTF/.gtf/.transcript_id.gtf}
     if ! is_up2date $TRANSCRIPT_ID_GTF ; then grep -P "(^#|transcript_id)" $ANNOTATIONS_DIR/$GTF > $TRANSCRIPT_ID_GTF ; fi
-    if ! is_up2date $ANNOTATIONS_DIR/$NCRNA ; then gunzip -c `download_path $NCRNA_URL` > $ANNOTATIONS_DIR/$NCRNA ; fi
+#    if ! is_up2date $ANNOTATIONS_DIR/$NCRNA ; then gunzip -c `download_path $NCRNA_URL` > $ANNOTATIONS_DIR/$NCRNA ; fi
 
     # Create rRNA FASTA as subset of ncRNA FASTA keeping only sequences with "rRNA" (ignore case) in their descriptions
     if [ $(grep -q -i "rRNA" $ANNOTATIONS_DIR/$NCRNA)$? == 0 ]
@@ -563,7 +563,7 @@ copy_files() {
     fi
 
     get_vcf_dbsnp
-  fi
+#  fi
 }
 
 build_files() {
@@ -571,6 +571,9 @@ build_files() {
   create_picard_index
   create_samtools_index
   create_bwa_index
+
+  create_gene_annotations
+  create_gene_annotations_flat
 
   # Annotations are not installed for UCSC genomes
   if [[ $SOURCE != "UCSC" ]]
