@@ -245,7 +245,7 @@ class DnaSeqHighCoverage(dnaseq.DnaSeq):
         jobs.append(concat_jobs([
             tools.preprocess_varscan( prefix + ".vcf.gz",  prefix + ".prep.vcf.gz" ), 
             vt.decompose_and_normalize_mnps( prefix + ".prep.vcf.gz" , prefix + ".prep.vt.vcf.gz"),
-            Job([outputPreprocess], [outputFix], command="zcat " + outputPreprocess + " | grep -v 'ID=AD_O' | sed -e 's/AD_O/AD/g' | sed -e 's/\:AD\\t/\\t/g' | sed -e 's/\:\.//g'" + ' | bgzip -cf > ' + outputFix),
+            Job([outputPreprocess], [outputFix], command="zcat " + outputPreprocess + " | grep -v 'ID=AD_O' | awk ' BEGIN {OFS=\"\\t\"; FS=\"\\t\"} {if (NF > 8) {for (i=9;i<=NF;i++) {x=split($i,na,\":\") ; if (x > 1) {tmp=na[1] ; for (j=2;j<x;j++){if (na[j] == \"AD_O\") {na[j]=\"AD\"} ; if (na[j] != \".\") {tmp=tmp\":\"na[j]}};$i=tmp}}};print $0} ' | bgzip -cf >  " + outputFix),
             tools.preprocess_varscan( outputFix,  prefix + ".vt.vcf.gz" )
         ], name="preprocess_vcf.allSamples"))
         
@@ -280,10 +280,12 @@ class DnaSeqHighCoverage(dnaseq.DnaSeq):
         output_directory = "variants"
         temp_dir = os.path.join(os.getcwd(), output_directory)
         gemini_prefix = os.path.join(output_directory, "allSamples")
+        gemini_module=config.param("DEFAULT", 'module_gemini').split(".")
+        gemini_version = ".".join([gemini_module[-2],gemini_module[-1]])
 
         jobs.append(concat_jobs([
             Job(command="mkdir -p " + output_directory),
-            gemini.gemini_annotations( gemini_prefix + ".vt.snpeff.vcf.gz", gemini_prefix + ".gemini.16.3.db", temp_dir)
+            gemini.gemini_annotations( gemini_prefix + ".vt.snpeff.vcf.gz", gemini_prefix + ".gemini."+gemini_version+".db", temp_dir)
         ], name="gemini_annotations.allSamples"))
 
         return jobs

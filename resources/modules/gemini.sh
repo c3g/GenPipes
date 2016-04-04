@@ -10,13 +10,13 @@ set -eu -o pipefail
 ################################################################################
 
 SOFTWARE=gemini 
-VERSION=0.18.0  
+VERSION=0.18.3 
 ARCHIVE=${SOFTWARE}_v$VERSION.install.py
 ARCHIVE_URL=https://raw.githubusercontent.com/arq5x/gemini/master/gemini/scripts/gemini_install.py
 #ARCHIVE_URL=https://raw.github.com/mbourgey/gemini/master/gemini/scripts/gemini_install.py
 #ARCHIVE_URL=https://raw.github.com/mbourgey/$SOFTWARE/v$VERSION/$SOFTWARE/scripts/${SOFTWARE}_install.py 
 SOFTWARE_DIR=$SOFTWARE-$VERSION 
-PYTHON_VERSION=2.7.11
+PYTHON_VERSION=2.7.8
 
 # Specific commands to extract and build the software
 # $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
