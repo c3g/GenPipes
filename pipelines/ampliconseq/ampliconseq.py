@@ -223,26 +223,19 @@ pandoc \\
             sample_name.append(str(readset.sample.name).replace("_", "."))
 
         if config.param('qiime_catenate', 'map_file'):
-
             job = qiime.catenate(
                 input_files,
                 sample_name,
                 catenate_fasta
             )
-
             job.name = "catenate"
             jobs.append(job)
-
-            return jobs
-
         else:
-
             catenate_job = qiime.catenate(
                 input_files,
                 sample_name,
                 catenate_fasta
             )
-
             mapbuild_job = tools.py_ampliconSeq(
                 [],
                 [],
@@ -251,13 +244,12 @@ pandoc \\
                     samples=','.join(sample_name)
                 )
             )
-
             jobs.append(concat_jobs([
                 mapbuild_job,
                 catenate_job
             ], name="catenate"))
 
-            return jobs
+        return jobs
 
     def uchime(self):
         """
