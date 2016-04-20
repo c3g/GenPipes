@@ -27,11 +27,10 @@ from core.config import *
 from core.job import *
 
 def tumor_pair_ensemble(input_mutect2, input_vardict, input_samtools, output):
+    
     return Job(
+        [input_mutect2,input_vardict,input_samtools],
         [output],
-        [input_mutect2],
-        [input_vardict],
-        [input_samtools],
         [
             ['bcbio_ensemble', 'module_java'],
             ['bcbio_ensemble', 'module_bcbio_variation']
