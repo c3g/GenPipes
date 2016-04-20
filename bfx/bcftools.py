@@ -63,4 +63,22 @@ bcftools \\
         )
     )
 
-
+def pass_filter(input, output):
+    """
+    Remove rejected calls. Used with mutect on somatic svns, but can 
+    used on any vcf
+    """
+    return Job(
+        [input],
+        [output],
+        [
+            ['bcftools_pass_filter', 'module_bcftools']
+        ],
+        command="""\
+bcftools \\
+  view -f PASS \\
+  {input}{output}""".format(
+        input=input,
+        output=" \\\n > " + output if output else ""
+        )
+    )

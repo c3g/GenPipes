@@ -122,8 +122,7 @@ bed2IntervalList.pl \\
         )
     )
 
-def dict2beds(dictionary,beds,other_option=""):
-    ##other_option="-c 1000000 -o 150" =>will chunk each chro in many interval of 1Mb with 150 bp overlap in the same file
+def dict2beds(dictionary,beds):
     return Job(
         [dictionary],
         beds,
@@ -134,10 +133,9 @@ def dict2beds(dictionary,beds,other_option=""):
         command="""\
 dict2BEDs.py \\
   --dict {dictionary} \\
-  --beds {beds} {other_option}""".format(
+  --beds {beds}""".format(
         dictionary=dictionary if dictionary else config.param('DEFAULT', 'genome_dictionary', type='filepath'),
-        beds=' '.join(beds),
-        other_option=other_option
+        beds=' '.join(beds)
         )
     )
 
