@@ -206,11 +206,7 @@ dict2BEDs.py \\
         )
     )
 
-<<<<<<< HEAD
-def filter_long_indel(input, output):
-=======
 def preprocess_varscan(input,output):
->>>>>>> 5edde6884a6a5167ae55dfe97c8c6ecfd04e1ce8
     return Job(
         [input],
         [output],
