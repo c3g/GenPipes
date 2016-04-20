@@ -44,6 +44,8 @@ from bfx import samtools
 from bfx import scalpel
 from bfx import tools
 from bfx import bed_file
+from bfx import vardict
+from bfx import bcbio_variation
 from pipelines.dnaseq import dnaseq
 
 log = logging.getLogger(__name__)
@@ -69,20 +71,20 @@ class TumorPair(dnaseq.DnaSeq):
             self._tumor_pairs = parse_tumor_pair_file(self.args.pairs.name, self.samples)
         return self._tumor_pairs
 
-    def paired_SNVs(self):
+    def paired_mutect2(self):
         """
-        GATK MuTect caller for SNVs.
+        GATK MuTect2 caller for SNVs and Indels.
         """
 
         jobs = []
 
-        nb_jobs = config.param('gatk_mutect', 'nb_jobs', type='posint')
+        nb_jobs = config.param('gatk_mutect2', 'nb_jobs', type='posint')
         if nb_jobs > 50:
             log.warning("Number of mutect jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
 
         for tumor_pair in self.tumor_pairs.itervalues():
             pair_directory = os.path.join("pairedVariants", tumor_pair.name)
-            mutect_directory = os.path.join(pair_directory, "rawMuTect")
+            mutect_directory = os.path.join(pair_directory, "rawMuTect2")
             inputNormal = os.path.join("alignment",tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.recal.bam")
             inputTumor = os.path.join("alignment",tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
 
@@ -91,46 +93,46 @@ class TumorPair(dnaseq.DnaSeq):
                 jobs.append(concat_jobs([
                     # Create output directory since it is not done by default by GATK tools
                     mkdir_job,
-                    gatk.mutect(inputNormal, inputTumor, os.path.join(mutect_directory, tumor_pair.name + ".mutect.stats"), os.path.join(mutect_directory, tumor_pair.name + ".mutect.vcf"))
-                ], name="gatk_mutect." + tumor_pair.name))
+                    gatk.mutect2(inputNormal, inputTumor, os.path.join(mutect_directory, tumor_pair.name + ".mutect2.vcf"))
+                ], name="gatk_mutect2." + tumor_pair.name))
 
             else:
                 unique_sequences_per_job,unique_sequences_per_job_others = split_by_size(self.sequence_dictionary, nb_jobs - 1)
 
                 # Create one separate job for each of the first sequences
                 for idx,sequences in enumerate(unique_sequences_per_job):
-                    outPrefix =  tumor_pair.name + "." + str(idx) + ".mutect"
+                    outPrefix =  tumor_pair.name + "." + str(idx) + ".mutect2"
                     jobs.append(concat_jobs([
                         # Create output directory since it is not done by default by GATK tools
                         mkdir_job,
-                        gatk.mutect(inputNormal, inputTumor, os.path.join(mutect_directory, outPrefix + ".stats"), os.path.join(mutect_directory, outPrefix + ".vcf"), intervals=sequences)
-                    ], name="gatk_mutect." + tumor_pair.name + "." + str(idx)))
+                        gatk.mutect2(inputNormal, inputTumor, os.path.join(mutect_directory, outPrefix + ".vcf"), intervals=sequences)
+                    ], name="gatk_mutect2." + tumor_pair.name + "." + str(idx)))
 
                 # Create one last job to process the last remaining sequences and 'others' sequences
                 jobs.append(concat_jobs([
                     # Create output directory since it is not done by default by GATK tools
                     mkdir_job,
-                    gatk.mutect(inputNormal, inputTumor, os.path.join(mutect_directory, tumor_pair.name + ".others.mutect.stats"), os.path.join(mutect_directory, tumor_pair.name + ".others.mutect.vcf"), exclude_intervals=unique_sequences_per_job_others)
-                ], name="gatk_mutect." + tumor_pair.name + ".others"))
+                    gatk.mutect2(inputNormal, inputTumor, os.path.join(mutect_directory, tumor_pair.name + ".others.mutect2.vcf"), exclude_intervals=unique_sequences_per_job_others)
+                ], name="gatk_mutect2." + tumor_pair.name + ".others"))
 
         return jobs
 
-    def merge_SNVs(self):
+    def merge_mutect2(self):
         """
-        Merge SNVs
+        Merge SNVs and indels for mutect2
         """
 
         jobs = []
 
-        nb_jobs = config.param('gatk_mutect', 'nb_jobs', type='posint')
+        nb_jobs = config.param('gatk_mutect2', 'nb_jobs', type='posint')
 
         for tumor_pair in self.tumor_pairs.itervalues():
             pair_directory = os.path.join("pairedVariants", tumor_pair.name)
-            mutect_directory = os.path.join(pair_directory, "rawMuTect")
+            mutect_directory = os.path.join(pair_directory, "rawMuTect2")
             # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
-            output = os.path.join(pair_directory, tumor_pair.name + ".mutect.vcf")
+            output = os.path.join(pair_directory, tumor_pair.name + ".mutect2.vcf")
             if nb_jobs == 1:
-                input = os.path.join(mutect_directory, tumor_pair.name + ".mutect.vcf")
+                input = os.path.join(mutect_directory, tumor_pair.name + ".mutect2.vcf")
                 job = Job([input], [output], command="ln -s -f " + input + " " + output, removable_files=[output], name="symlink_mutect_vcf." + tumor_pair.name)
 
             elif nb_jobs > 1:
@@ -139,8 +141,8 @@ class TumorPair(dnaseq.DnaSeq):
                 # Create one separate job for each of the first sequences
                 inputVCFs = []
                 for idx,sequences in enumerate(unique_sequences_per_job):
-                    inputVCFs.append(os.path.join(mutect_directory, tumor_pair.name + "." + str(idx) + ".mutect.vcf"))
-                inputVCFs.append(os.path.join(mutect_directory, tumor_pair.name + ".others.mutect.vcf"))
+                    inputVCFs.append(os.path.join(mutect_directory, tumor_pair.name + "." + str(idx) + ".mutect2.vcf"))
+                inputVCFs.append(os.path.join(mutect_directory, tumor_pair.name + ".others.mutect2.vcf"))
 
                 job = gatk.cat_variants(inputVCFs, output)
                 job.name = "gatk_cat_mutect." + tumor_pair.name
@@ -149,119 +151,233 @@ class TumorPair(dnaseq.DnaSeq):
 
         return jobs
 
-    def paired_indels(self):
+    def samtools_paired(self):
         """
-        Scalpel caller for insertions and deletions.
+        Samtools caller for SNVs and Indels.
         """
 
         jobs = []
 
-        nb_jobs = config.param('scalpel', 'nb_jobs', type='posint')
+        nb_jobs = config.param('samtools_paired', 'nb_jobs', type='posint')
         if nb_jobs > 50:
-            log.warning("Number of scalpel jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
-        use_bed = config.param('scalpel', 'use_bed', type='boolean', required=True)
+            log.warning("Number of mutect jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
+
+        for tumor_pair in self.tumor_pairs.itervalues():
+            pair_directory = os.path.join("pairedVariants", tumor_pair.name)
+            samtools_directory = os.path.join(pair_directory, "rawSamtools")
+            inputNormal = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.recal.bam")
+            inputTumor = os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
+ 
+            paired_sample = [inputNormal,inputTumor]
+           
+            if nb_jobs == 1:
+                jobs.append(concat_jobs([
+                    Job(command="mkdir -p " + samtools_directory),
+                    pipe_jobs([
+                        samtools.mpileup(paired_sample, None, config.param('samtools_paired', 'mpileup_other_options')),
+                        samtools.bcftools_view("-", os.path.join(samtools_directory,  tumor_pair.name + ".bcf"), config.param('samtools_paired', 'bcftools_view_options'), pair_calling=True),
+                    ])], name="samtools_paired." + tumor_pair.name))
+
+            else:
+                for region in self.generate_approximate_windows(nb_jobs): #for idx,sequences in enumerate(unique_sequences_per_job):
+                    jobs.append(concat_jobs([
+                        Job(command="mkdir -p " + samtools_directory),
+                        pipe_jobs([
+                            samtools.mpileup(paired_sample, None, config.param('samtools_paired', 'mpileup_other_options'), region),
+                            samtools.bcftools_view("-", os.path.join(samtools_directory,  tumor_pair.name + "." + region + ".bcf"), config.param('samtools_paired', 'bcftools_view_options'), pair_calling=True),
+                        ])], name="samtools_paired." + tumor_pair.name + "." + region))
+
+        return jobs
+
+    def merge_filter_paired_samtools(self):
+        """
+        bcftools is used to merge the raw binary variants files created in the snpAndIndelBCF step.
+        The output of bcftools is fed to varfilter, which does an additional filtering of the variants
+        and transforms the output into the VCF (.vcf) format. One vcf file contain the SNP/INDEL calls
+        for all samples in the experiment.
+        """
+
+        jobs = []
+        nb_jobs = config.param('merge_filter_paired_samtools', 'approximate_nb_jobs', type='posint')
+
+        for tumor_pair in self.tumor_pairs.itervalues():
+            pair_directory = os.path.join("pairedVariants", tumor_pair.name)
+            samtools_directory = os.path.join(pair_directory, "rawSamtools")
+            output = os.path.join(samtools_directory,  tumor_pair.name + ".samtools.bcf")
+            output_vcf = os.path.join(pair_directory,  tumor_pair.name + ".samtools.vcf")
+
+            if nb_jobs == 1:
+                inputs = os.path.join(samtools_directory,  tumor_pair.name + ".bcf") 
+                jobs.append(concat_jobs([
+                    samtools.bcftools_cat(inputs, output),
+                    samtools.bcftools_view(output, output_vcf)
+                ], name = "merge_filter_paired_samtools." + tumor_pair.name))
+
+            else:
+                inputs = [os.path.join(samtools_directory,  tumor_pair.name + "." + region + ".bcf") for region in self.generate_approximate_windows(nb_jobs)] #for idx,sequences in enumerate(unique_sequences_per_job):
+                jobs.append(concat_jobs([
+                    samtools.bcftools_cat(inputs, output),
+                    samtools.bcftools_view(output, output_vcf)
+                ], name = "merge_filter_paired_samtools." + tumor_pair.name))                    
+        
+        report_file = os.path.join("report", "DnaSeq.merge_filter_bcf.md")
+        jobs.append(
+            Job(
+                [output_vcf],
+                [report_file],
+                command="""\
+mkdir -p report && \\
+cp \\
+  {report_template_dir}/{basename_report_file} \\
+  {report_template_dir}/HumanVCFformatDescriptor.tsv \\
+  report/ && \\
+sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {report_file}""".format(
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="merge_filter_bcf_report")
+        )
+
+        return jobs
+
+
+
+    def vardict_paired(self):
+        """
+        vardict caller for SNVs and Indels.
+        """
+
+        jobs = []
+
+        nb_jobs = config.param('vardict_paired', 'nb_jobs', type='posint')
+        if nb_jobs > 50:
+            log.warning("Number of vardict jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
+
+        use_bed = config.param('vardict_paired', 'use_bed', type='boolean', required=True)
         genome_dictionary = config.param('DEFAULT', 'genome_dictionary', type='filepath')
         if use_bed :
             bed = self.samples[0].readsets[0].beds[0]
             bed_intervals, interval_size = bed_file.parse_bed_file(bed)
-            bed_file_list = bed_file.split_by_size(bed_intervals, interval_size, nb_jobs, output="pairedVariants/Scalpel.tmp")
+            bed_file_list = bed_file.split_by_size(bed_intervals, interval_size, nb_jobs, output="pairedVariants/vardict.tmp")
 
         for tumor_pair in self.tumor_pairs.itervalues():
             pair_directory = os.path.join("pairedVariants", tumor_pair.name)
-            scalpel_directory = os.path.join(pair_directory, "rawScalpel")
-            inputNormal = os.path.join("alignment",tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.recal.bam")
-            inputTumor = os.path.join("alignment",tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
+            vardict_directory = os.path.join(pair_directory, "rawVardict")
+            inputNormal = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.recal.bam")
+            inputTumor = os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
 
-            mkdir_job = Job(command="mkdir -p " + scalpel_directory)
-      
+            mkdir_job = Job(command="mkdir -p " + vardict_directory)
+
             if use_bed :
                 idx = 0
                 for bf in bed_file_list:
                     jobs.append(concat_jobs([
                         mkdir_job,
-                        scalpel.scalpel_somatic(inputNormal, inputTumor, os.path.join(scalpel_directory, tumor_pair.name + '.' + str(idx) + ".scalpel"),bf)
-                    ], name="scalpel." + tumor_pair.name+ "." + str(idx)))
+                        pipe_jobs([
+                            vardict.paired_java(inputNormal, inputTumor, tumor_pair.name, None, bf),
+                            vardict.testsomatic(None,None),
+                            vardict.var2vcf(os.path.join(vardict_directory, tumor_pair.name + "." + str(idx) + ".vardict.vcf"), tumor_pair.normal.name, tumor_pair.tumor.name, None ),
+                    ])], name="vardict_paired." + tumor_pair.name + "." + str(idx) ))
                     idx += 1
-            else :
+            else:
                 beds = []
                 for idx in range(nb_jobs):
-                    beds.append(os.path.join(scalpel_directory, 'chrs.' + str(idx) + '.bed'))
+                    beds.append(os.path.join(vardict_directory, "chr." + str(idx) + ".bed"))
                 if nb_jobs == 1:
-                    bedJob = tools.dict2beds(genome_dictionary, beds)
+                    bedJob = vardict.dict2beds(genome_dictionary, beds)
                     jobs.append(concat_jobs([
-                        # Create output directory since it is not done by default by GATK tools
                         mkdir_job,
                         bedJob,
-                        scalpel.scalpel_somatic(inputNormal, inputTumor, os.path.join(scalpel_directory, tumor_pair.name + '.0' + ".scalpel"), beds.pop())
-                    ], name="scalpel." + tumor_pair.name+ ".0"))
-
+                        pipe_jobs([
+                            vardict.paired_java(inputNormal, inputTumor, tumor_pair.name, None, beds.pop()),
+                            vardict.testsomatic(None,None),
+                            vardict.var2vcf(os.path.join(vardict_directory, tumor_pair.name + ".0.vardict.vcf"), tumor_pair.normal.name, tumor_pair.tumor.name, None ),
+                        ])], name="vardict_paired." + tumor_pair.name + ".0"))
                 else:
-                    bedJob = tools.dict2beds(genome_dictionary, beds)
-                    jobs.append(concat_jobs([mkdir_job,bedJob], name="scalpel.genome.beds." + tumor_pair.name))
+                    bedJob = vardict.dict2beds(genome_dictionary, beds)
+                    jobs.append(concat_jobs([mkdir_job,bedJob], name="vardict.genome.beds." + tumor_pair.name))
 
                     for idx in range(nb_jobs):
-                        scalpelJob = scalpel.scalpel_somatic(inputNormal, inputTumor, os.path.join(scalpel_directory, tumor_pair.name + '.' + str(idx) + '.scalpel'), beds[idx])
-                        scalpelJob.name = "scalpel." + tumor_pair.name + "." + str(idx)
-                        jobs.append(scalpelJob)
+                        jobs.append(concat_jobs([
+                        mkdir_job,
+                        pipe_jobs([
+                            vardict.paired_java(inputNormal, inputTumor, tumor_pair.name, None, beds[idx]),
+                            vardict.testsomatic(None, None),
+                            vardict.var2vcf(os.path.join(vardict_directory, tumor_pair.name + "." + str(idx) + ".vardict.vcf"), tumor_pair.normal.name, tumor_pair.tumor.name, None),
+                        ])], name="vardict_paired." + tumor_pair.name + "." + str(idx) ))                        
         return jobs
 
-    def merge_indels(self):
+    def merge_paired_vardict(self):
         """
-        Merge Insertion and Deletions
+        
         """
 
         jobs = []
-
-        nb_jobs = config.param('scalpel', 'nb_jobs', type='posint')
+        nb_jobs = config.param('vardict_paired', 'nb_jobs', type='posint')
 
         for tumor_pair in self.tumor_pairs.itervalues():
             pair_directory = os.path.join("pairedVariants", tumor_pair.name)
-            scalpel_directory = os.path.join(pair_directory, "rawScalpel")
-            # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
-            output = os.path.join(pair_directory, tumor_pair.name + ".scalpel.vcf")
-            vcfsToMerge =[]
-            for idx in range(nb_jobs):
-                sample_directory = os.path.join(scalpel_directory, tumor_pair.name + "." + str(idx) + ".scalpel")
-                outputWrongName = os.path.join(sample_directory, tumor_pair.name + ".rename.scalpel.vcf")
-                outputSomatic = os.path.join(sample_directory, tumor_pair.name + ".scalpel.somatic.vcf")
-                outputCommon = os.path.join(sample_directory, tumor_pair.name + ".scalpel.common.vcf")
-                outputIdx = os.path.join(sample_directory, tumor_pair.name + ".scalpel.vcf")
-                input_somatic = os.path.join(sample_directory, 'main', 'somatic.5x.indel.vcf')
-                input_common = os.path.join(sample_directory, 'main', 'common.5x.indel.vcf')
+            vardict_directory = os.path.join(pair_directory, "rawVardict")
+            output = os.path.join(pair_directory,  tumor_pair.name + ".vardict.vcf")
+
+            if nb_jobs == 1:
+                inputs = os.path.join(vardict_directory,  tumor_pair.name + ".0.vardict.vcf")
+                job = Job([input], [output], command="ln -s -f " + input + " " + output, removable_files=[output], name="symlink_vardict_vcf." + tumor_pair.name)
                 
-                vcfsToMerge.append(outputSomatic)
-                job = concat_jobs([
-                    bcftools.add_reject(input_common, outputCommon),
-                    bcftools.add_chi2Filter(input_somatic, outputSomatic),
-                    picard.sort_vcfs([outputCommon, outputSomatic], outputWrongName),
-                    Job([outputWrongName], [output], command="sed -e 's/sample_name/"+ tumor_pair.tumor.name + "/g' " + outputWrongName + ' > ' + outputIdx, removable_files=[outputCommon,outputSomatic,outputWrongName])]
-                    , name="scalpel_merged_vcf." + tumor_pair.name + "." + str(idx))
-                jobs.append(job)
-                job = gatk.cat_variants(vcfsToMerge, output)
-                job.name="scalpel_merge_all_vcfs." + tumor_pair.name
-                jobs.append(job)
+            else:
+                inputVCFs = []
+                for idx in range(nb_jobs):
+                    inputVCFs.append(os.path.join(vardict_directory,  tumor_pair.name + "." + str(idx) + ".vardict.vcf"))
+                
+                job = gatk.cat_variants(inputVCFs, output)
+                job.name = "gatk_cat_vardict." + tumor_pair.name
+
+        jobs.append(job)
 
         return jobs
 
-    def merge_svns_and_indels(self):
+
+    def ensemble_tumor_pairs(self):
+        """
+        """
+
+        jobs = []
+        ensemble_directory = os.path.join("pairedVariants", "ensemble")
+
+        for tumor_pair in self.tumor_pairs.itervalues():
+            input_directory = os.path.join("pairedVariants", tumor_pair.name)
+            input_mutect2 = os.path.join(input_directory, tumor_pair.name + ".mutect2.vcf")
+            input_vardict = os.path.join(input_directory, tumor_pair.name + ".vardict.vcf")
+            input_samtools = os.path.join(input_directory, tumor_pair.name + ".samtools.vcf")        
+            
+            output_directory = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.vcf")
+            
+            job = bcbio_variation.tumor_pair_ensemble(input_mutect2, input_vardict, input_samtools, output_directory)
+            job.name = "bcbio_ensemble." + tumor_pair.name
+
+            jobs.append(job)
+
+        return jobs
+
+    def combine_tumor_pairs_callers(self):
         """
         Merge snvs and indels
         """
 
         jobs = []
 
-        for tumor_pair in self.tumor_pairs.itervalues():
-            pair_directory = os.path.join("pairedVariants", tumor_pair.name)
-            input_mutect = os.path.join(pair_directory, tumor_pair.name + ".mutect.vcf")
-            input_scalpel = os.path.join(pair_directory, tumor_pair.name + ".scalpel.vcf")
-            output = os.path.join(pair_directory, tumor_pair.name + ".merged.vcf")
+        input_merged_vcfs = [ os.path.join("pairedVariants", tumor_pair.name , tumor_pair.name + ".ensemble.vcf") for tumor_pair in self.tumor_pairs.itervalues()]
+        output = os.path.join("pairedVariants", "allPairs.vcf.gz")
 
-            job = concat_jobs([
-                gatk.combine_variants([input_mutect, input_scalpel], output)],
-                name="merge_snvs_and_indels." + tumor_pair.name)
-            jobs.append(job)
+        job = concat_jobs([
+            gatk.combine_variants(input_merged_vcfs, output)],
+            name="combine_tumor_pairs.allPairs")
+        jobs.append(job)
 
         return jobs
+
 
     @property
     def steps(self):
@@ -281,11 +397,14 @@ class TumorPair(dnaseq.DnaSeq):
             self.gatk_callable_loci,
             self.extract_common_snp_freq,
             self.baf_plot,
-            self.paired_SNVs,
-            self.merge_SNVs,
-            self.paired_indels,
-            self.merge_indels,
-            self.merge_svns_and_indels
+            self.paired_mutect2,
+            self.merge_mutect2,
+            self.samtools_paired,
+            self.merge_filter_paired_samtools,
+            self.vardict_paired,
+            self.merge_paired_vardict,
+            self.ensemble_tumor_pairs,
+            self.combine_tumor_pairs_callers
         ]
 
 if __name__ == '__main__': 
