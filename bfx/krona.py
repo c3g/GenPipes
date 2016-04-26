@@ -18,18 +18,18 @@ def krona(
 
     inputs = [otu_normalized_table]
     outputs = [alpha_diversity_krona_file]
-    
+
     return Job(
         inputs,
         outputs,
         [
             ['krona', 'module_perl'],
-            ['krona', 'module_qiime'],
+            ['krona', 'module_python'],
             ['krona', 'module_krona']
         ],
 
         command="""\
-  $PERL_HOME/bin/perl5.18.2 $KRONA_HOME/ImportText.pl \\
+  $PERL_HOME/bin/perl $KRONA_HOME/ImportText.pl \\
   {sample_name} \\
   -o {alpha_diversity_krona_file}""".format(
         sample_name=' '.join(sample_name),

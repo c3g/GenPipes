@@ -141,7 +141,7 @@ The chimeric sequences filtered out statistics per readset are merged at this st
 
 9- otu_ref_picking
 ------------------
-The OTU picking step (close_ref) assigns similar sequences to operational taxonomic units (OTUs) by clustering sequences based on a user-defined similarity threshold. Method per default uses [VSEARCH] (https://github.com/torognes/vsearch) and [Qiime] (http://qiime.org).
+The OTU picking step (closed_ref) assigns similar sequences to operational taxonomic units (OTUs) by clustering sequences based on a user-defined similarity threshold. Method per default uses [VSEARCH] (https://github.com/torognes/vsearch) and [Qiime] (http://qiime.org).
 
 This step takes as input file:
 

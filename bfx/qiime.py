@@ -23,11 +23,11 @@ def catenate(
         inputs,
         outputs,
         [
-            ['qiime_catenate', 'module_qiime']
+            ['qiime_catenate', 'module_python']
         ],
 
         command="""\
-  $QIIME_HOME/split_libraries_fastq.py \\
+$QIIME_HOME/split_libraries_fastq.py \\
   -i {input_files} \\
   --sample_id {sample_name} \\
   -o {dir_output} \\
@@ -45,7 +45,7 @@ def catenate(
         removable_files=[catenate_fasta]
     )
 
-def otu_ref_picking(
+def otu_closed_ref_picking(
     input_without_chimer,
     output_directory,
     otu_file
@@ -53,17 +53,17 @@ def otu_ref_picking(
 
     inputs = [input_without_chimer]
     outputs = [otu_file]
-    
+
     return Job(
         inputs,
         outputs,
         [
-            ['qiime_otu_picking', 'module_qiime'],
+            ['qiime_otu_picking', 'module_python'],
             ['qiime_otu_picking', 'module_vsearch']
         ],
 
         command="""\
-  $QIIME_HOME/pick_otus.py \\
+$QIIME_HOME/pick_otus.py \\
   -i {input_without_chimer} \\
   -m {method} \\
   -r {reference_seqs_fp} \\
@@ -81,7 +81,42 @@ def otu_ref_picking(
         removable_files=[otu_file]
     )
 
-def otu_picking(
+def otu_open_ref_picking(
+    input_without_chimer,
+    output_directory,
+    otu_file
+    ):
+
+    inputs = [input_without_chimer]
+    outputs = [otu_file]
+
+    return Job(
+        inputs,
+        outputs,
+        [
+            ['qiime_otu_picking', 'module_python'],
+            ['qiime_otu_picking', 'module_vsearch']
+        ],
+
+        command="""\
+$QIIME_HOME/pick_otus.py \\
+  -i {input_without_chimer} \\
+  -m {method} \\
+  -r {reference_seqs_fp} \\
+  -s {similarity_treshold} \\
+  --threads {threads_number} \\
+  -o {output_directory}""".format(
+        input_without_chimer=input_without_chimer,
+        method='usearch61_ref',
+        reference_seqs_fp=config.param('qiime_otu_picking', 'reference_seqs_fp'),
+        similarity_treshold=config.param('qiime_otu_picking', 'similarity'),
+        threads_number=config.param('qiime_otu_picking', 'threads'),
+        output_directory=output_directory
+        ),
+        removable_files=[otu_file]
+    )
+
+def otu_denovo_picking(
     input_without_chimer,
     output_directory,
     output_otus
@@ -89,17 +124,17 @@ def otu_picking(
 
     inputs = [input_without_chimer]
     outputs = [output_otus]
-    
+
     return Job(
         inputs,
         outputs,
         [
-            ['qiime_otu_picking', 'module_qiime'],
+            ['qiime_otu_picking', 'module_python'],
             ['qiime_otu_picking', 'module_vsearch']
         ],
 
         command="""\
-  $QIIME_HOME/pick_otus.py \\
+$QIIME_HOME/pick_otus.py \\
   -i {input_without_chimer} \\
   -m {method} \\
   -s {similarity_treshold} \\
@@ -123,16 +158,16 @@ def otu_rep_picking(
 
     inputs = [otu_file, filter_fasta]
     outputs = [otu_rep_file]
-    
+
     return Job(
         inputs,
         outputs,
         [
-            ['qiime_rep_picking', 'module_qiime']
+            ['qiime_rep_picking', 'module_python']
         ],
 
         command="""\
-  $QIIME_HOME/pick_rep_set.py \\
+$QIIME_HOME/pick_rep_set.py \\
   -i {otu_file} \\
   -f {filter_fasta} \\
   -m {method} \\
@@ -153,16 +188,16 @@ def otu_assigning(
 
     inputs = [otu_rep_picking_fasta]
     outputs = [tax_assign_file]
-    
+
     return Job(
         inputs,
         outputs,
         [
-            ['qiime_otu_assigning', 'module_qiime']
+            ['qiime_otu_assigning', 'module_python']
         ],
 
         command="""\
-  $QIIME_HOME/parallel_assign_taxonomy_uclust.py \\
+$QIIME_HOME/parallel_assign_taxonomy_uclust.py \\
   -i {otu_rep_picking_fasta} \\
   -T \\
   -O {threads_number} \\
@@ -188,16 +223,16 @@ def otu_table(
 
     inputs = [otu_file, tax_assign_file]
     outputs = [otu_table_file,otu_table_summary]
-    
+
     return Job(
         inputs,
         outputs,
         [
-            ['qiime_otu_table', 'module_qiime']
+            ['qiime_otu_table', 'module_python']
         ],
 
         command="""\
-  $QIIME_HOME/make_otu_table.py \\
+$QIIME_HOME/make_otu_table.py \\
   -i {otu_file} \\
   -t {tax_assign_file} \\
   -o {otu_table_file}""".format(
@@ -216,16 +251,16 @@ def otu_alignment(
 
     inputs = [otu_rep_picking_fasta]
     outputs = [align_seq_fasta]
-    
+
     return Job(
         inputs,
         outputs,
         [
-            ['qiime_otu_alignment', 'module_qiime']
+            ['qiime_otu_assigning', 'module_python']
         ],
 
         command="""\
-  $QIIME_HOME/parallel_align_seqs_pynast.py \\
+$QIIME_HOME/parallel_align_seqs_pynast.py \\
   -i {otu_rep_picking_fasta} \\
   -T \\
   --jobs_to_start {threads_number} \\
@@ -245,23 +280,23 @@ def filter_alignment(
 
     inputs = [align_seq_fasta]
     outputs = [filter_align_fasta]
-    
+
     return Job(
         inputs,
         outputs,
         [
-            ['qiime_filter_alignment', 'module_qiime']
+            ['qiime_filter_alignment', 'module_python']
         ],
 
         command="""\
-  $QIIME_HOME/filter_alignment.py \\
+$QIIME_HOME/filter_alignment.py \\
   -i {align_seq_fasta} \\
   -o {output_directory}""".format(
         align_seq_fasta=align_seq_fasta,
         output_directory=output_directory
         ),
         removable_files=[filter_align_fasta]
-    )    
+    )
 
 def phylogeny(
     filter_align_fasta,
@@ -270,24 +305,24 @@ def phylogeny(
 
     inputs = [filter_align_fasta]
     outputs = [phylo_file]
-    
+
     return Job(
         inputs,
         outputs,
         [
-            ['qiime_phylogeny', 'module_qiime']
+            ['qiime_phylogeny', 'module_python']
         ],
 
         command="""\
-  $QIIME_HOME/make_phylogeny.py \\
+$QIIME_HOME/make_phylogeny.py \\
   -i {filter_align_fasta} \\
   -o {phylo_file}""".format(
         filter_align_fasta=filter_align_fasta,
         phylo_file=phylo_file
         ),
         removable_files=[phylo_file]
-    )    
-    
+    )
+
 def multiple_rarefaction(
     otus_input,
     rarefied_otu_directory
@@ -295,17 +330,16 @@ def multiple_rarefaction(
 
     inputs = otus_input
     outputs = [rarefied_otu_directory]
-    
+
     return Job(
         inputs,
         outputs,
         [
-            ['qiime_multiple_rarefaction', 'module_python'],
-            ['qiime_multiple_rarefaction', 'module_qiime']
+            ['qiime_multiple_rarefaction', 'module_python']
         ],
 
         command="""\
-  $QIIME_HOME/multiple_rarefactions.py \\
+$QIIME_HOME/multiple_rarefactions.py \\
   -i {otus_input} \\
   -m {multiple_rarefaction_min} \\
   -x {multiple_rarefaction_max} \\
@@ -328,16 +362,16 @@ def alpha_diversity(
 
     inputs = [rarefied_otu_directory]
     outputs = [alpha_diversity_directory]
-    
+
     return Job(
         inputs,
         outputs,
         [
-            ['qiime_alpha_diversity', 'module_qiime']
+            ['qiime_alpha_diversity', 'module_python']
         ],
 
         command="""\
-  $QIIME_HOME/alpha_diversity.py \\
+$QIIME_HOME/alpha_diversity.py \\
   -i {rarefied_otu_directory} \\
   -m {metrics} \\
   -o {alpha_diversity_directory}""".format(
@@ -358,16 +392,16 @@ def collate_alpha(
 
     inputs = [alpha_diversity_directory]
     outputs = [chao1_stat,observed_species_stat,shannon_stat]
-    
+
     return Job(
         inputs,
         outputs,
         [
-            ['qiime_collate_alpha', 'module_qiime']
+            ['qiime_collate_alpha', 'module_python']
         ],
 
         command="""\
-  $QIIME_HOME/collate_alpha.py \\
+$QIIME_HOME/collate_alpha.py \\
   -i {alpha_diversity_directory} \\
   -o {alpha_diversity_collated_merge_directory}""".format(
         alpha_diversity_directory=alpha_diversity_directory,
@@ -388,17 +422,16 @@ def sample_rarefaction_plot(
 
     inputs = [chao1_stat,observed_species_stat,shannon_stat]
     outputs = [sample_rarefaction_directory] + curve_sample
-    
+
     return Job(
         inputs,
         outputs,
         [
-            ['qiime_sample_rarefaction', 'module_python'],
-            ['qiime_sample_rarefaction', 'module_qiime']
+            ['qiime_sample_rarefaction', 'module_python']
         ],
 
         command="""\
-  MPLBACKEND=Agg $QIIME_HOME/make_rarefaction_plots.py \\
+MPLBACKEND=Agg $QIIME_HOME/make_rarefaction_plots.py \\
   -i {sample_collated_directory} \\
   -m {sample_map}\\
   -o {sample_rarefaction_directory}""".format(
@@ -420,16 +453,16 @@ def single_rarefaction(
 
     inputs = [otu_table]
     outputs = [chao1_rarefied_stat,observed_species_rarefied_stat,shannon_rarefied_stat,otu_normalized_table,normalization_method]
-    
+
     return Job(
         inputs,
         outputs,
         [
-            ['qiime_single_rarefaction', 'module_qiime']
+            ['qiime_single_rarefaction', 'module_python']
         ],
 
         command="""\
-  $QIIME_HOME/single_rarefaction.py \\
+$QIIME_HOME/single_rarefaction.py \\
   -i {otu_table} \\
   -o {otu_normalized_table} \\
   -d {depth}""".format(
@@ -451,17 +484,17 @@ def css_normalization(
 
     inputs = [otu_table]
     outputs = [chao1_rarefied_stat,observed_species_rarefied_stat,shannon_rarefied_stat,otu_normalized_table,normalization_method]
-    
+
     return Job(
         inputs,
         outputs,
         [
-            ['qiime_css_normalization', 'module_qiime'],
+            ['qiime_css_normalization', 'module_python'],
             ['qiime_css_normalization', 'module_R']
         ],
 
         command="""\
-  $QIIME_HOME/normalize_table.py \\
+$QIIME_HOME/normalize_table.py \\
   -i {otu_table} \\
   -o {otu_normalized_table} \\
   -a {method}""".format(
@@ -470,7 +503,7 @@ def css_normalization(
         method="CSS"
         ),
         removable_files=[otu_normalized_table]
-    )    
+    )
 
 def rarefaction_plot(
     alpha_diversity_collated_merge_rarefied_directory,
@@ -484,16 +517,16 @@ def rarefaction_plot(
 
     inputs = [chao1_stat,observed_species_stat,shannon_stat]
     outputs = [alpha_diversity_rarefaction_file]
-    
+
     return Job(
         inputs,
         outputs,
         [
-            ['qiime_rarefaction_plot', 'module_qiime']
+            ['qiime_rarefaction_plot', 'module_python']
         ],
 
         command="""\
-  MPLBACKEND=Agg $QIIME_HOME/make_rarefaction_plots.py \\
+MPLBACKEND=Agg $QIIME_HOME/make_rarefaction_plots.py \\
   -i {alpha_diversity_collated_merge_rarefied_directory} \\
   -m {map_file}\\
   -o {alpha_diversity_rarefaction_rarefied_directory}""".format(
@@ -516,16 +549,16 @@ def summarize_taxa(
 
     inputs = [otu_normalized_table]
     outputs = [taxonomic_directory, taxonomic_phylum, taxonomic_class, taxonomic_order, taxonomic_family, taxonomic_genus]
-    
+
     return Job(
         inputs,
         outputs,
         [
-            ['qiime_summarize_taxa', 'module_qiime']
+            ['qiime_summarize_taxa', 'module_python']
         ],
 
         command="""\
-  $QIIME_HOME/summarize_taxa.py \\
+$QIIME_HOME/summarize_taxa.py \\
   -i {otu_normalized_table} \\
   -a \\
   -o {taxonomic_directory}""".format(
@@ -548,11 +581,11 @@ def plot_taxa(
         inputs,
         outputs,
         [
-            ['qiime_plot_taxa', 'module_qiime']
+            ['qiime_plot_taxa', 'module_python']
         ],
 
         command="""\
-  MPLBACKEND=Agg $QIIME_HOME/plot_taxa_summary.py \\
+MPLBACKEND=Agg $QIIME_HOME/plot_taxa_summary.py \\
   -i {taxonomic_input} \\
   -l {label} \\
   -t png \\
@@ -579,46 +612,46 @@ def beta_diversity(
     ):
 
     if metric == 'unifrac':
-    
+
         inputs = [otu_normalized_table, phylogenetic_tree_file]
         outputs = [dm_unweighted_file,dm_weighted_file]
-        
+
         return Job(
             inputs,
             outputs,
             [
-                ['qiime_beta_diversity', 'module_qiime']
+                ['qiime_beta_diversity', 'module_python']
             ],
-    
+
             command="""\
-      $QIIME_HOME/beta_diversity.py \\
-      -i {otu_normalized_table} \\
-      -t {phylogenetic_tree_file} \\
-      -o {dm_directory}""".format(
+$QIIME_HOME/beta_diversity.py \\
+  -i {otu_normalized_table} \\
+  -t {phylogenetic_tree_file} \\
+  -o {dm_directory}""".format(
             otu_normalized_table=otu_normalized_table,
             phylogenetic_tree_file=phylogenetic_tree_file,
             dm_directory=dm_directory
             ),
             removable_files=[dm_unweighted_file,dm_weighted_file]
         )
-        
+
     else:
-    
+
         inputs = [otu_normalized_table]
         outputs = [dm_euclidean_file]
-        
+
         return Job(
             inputs,
             outputs,
             [
-                ['qiime_beta_diversity', 'module_qiime']
+                ['qiime_beta_diversity', 'module_python']
             ],
-    
+
             command="""\
-      $QIIME_HOME/beta_diversity.py \\
-      -i {otu_normalized_table} \\
-      -m {metrics} \\
-      -o {dm_directory}""".format(
+$QIIME_HOME/beta_diversity.py \\
+  -i {otu_normalized_table} \\
+  -m {metrics} \\
+  -o {dm_directory}""".format(
             otu_normalized_table=otu_normalized_table,
             metrics='euclidean',
             dm_directory=dm_directory
@@ -639,43 +672,43 @@ def pcoa(
     ):
 
     if metric == 'unifrac':
-    
+
         inputs = [dm_unweighted_file, dm_weighted_file]
         outputs = [pcoa_unweighted_file,pcoa_weighted_file]
-        
+
         return Job(
             inputs,
             outputs,
             [
-                ['qiime_pcoa', 'module_qiime']
+                ['qiime_pcoa', 'module_python']
             ],
-    
+
             command="""\
-      $QIIME_HOME/principal_coordinates.py \\
-      -i {dm_directory} \\
-      -o {pcoa_directory}""".format(
+$QIIME_HOME/principal_coordinates.py \\
+  -i {dm_directory} \\
+  -o {pcoa_directory}""".format(
             dm_directory=dm_directory,
             pcoa_directory=pcoa_directory
             ),
             removable_files=[pcoa_directory]
         )
-    
+
     else:
-    
+
         inputs = [dm_euclidean_file]
         outputs = [pcoa_euclidean_file]
-        
+
         return Job(
             inputs,
             outputs,
             [
-                ['qiime_pcoa', 'module_qiime']
+                ['qiime_pcoa', 'module_python']
             ],
-    
+
             command="""\
-      $QIIME_HOME/principal_coordinates.py \\
-      -i {dm_directory} \\
-      -o {pcoa_directory}""".format(
+$QIIME_HOME/principal_coordinates.py \\
+  -i {dm_directory} \\
+  -o {pcoa_directory}""".format(
             dm_directory=dm_directory,
             pcoa_directory=pcoa_directory
             ),
@@ -692,16 +725,16 @@ def pcoa_plot(
 
     inputs = [pcoa_file]
     outputs = [beta_diversity_pcoa]
-    
+
     return Job(
         inputs,
         outputs,
         [
-            ['qiime_pcoa_plot', 'module_qiime']
+            ['qiime_pcoa_plot', 'module_python']
         ],
 
         command="""\
-  $QIIME_HOME/make_2d_plots.py \\
+$QIIME_HOME/make_2d_plots.py \\
   -i {pcoa_file} \\
   -m {map_file} \\
   -o {pcoa_plot_directory}""".format(
