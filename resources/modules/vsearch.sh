@@ -3,9 +3,9 @@
 set -eu -o pipefail
 
 SOFTWARE=vsearch
-VERSION=1.9.7
-ARCHIVE=${VERSION}.tar.gz
-ARCHIVE_URL=https://github.com/torognes/vsearch/archive/v$ARCHIVE
+VERSION=1.11.1
+ARCHIVE=v${VERSION}.tar.gz
+ARCHIVE_URL=https://github.com/torognes/$SOFTWARE/archive/$ARCHIVE
 SOFTWARE_DIR=${SOFTWARE}-${VERSION}
 
 # Specific commands to extract and build the software
@@ -17,6 +17,7 @@ build() {
 
   # Install software
   cd $SOFTWARE_DIR
+  ./autogen.sh
   ./configure --prefix=$INSTALL_DIR/${SOFTWARE_DIR}
   make
   make install

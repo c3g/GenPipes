@@ -1,62 +1,41 @@
 #!/bin/sh
-
-################################################################################
-# This is a module install script template which should be copied and used for
-# consistency between module paths, permissions, etc.
-# Only lines marked as "## TO BE ADDED/MODIFIED" should be, indeed, modified.
-# You should probably also delete this commented-out header and the ## comments
-################################################################################
-
-
-#
-# Software_name  flash.
-#
+# Exit immediately on error
+set -eu -o pipefail
 
 SOFTWARE=FLASH
-VERSION=1.2.8 
-INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/$SOFTWARE
-INSTALL_DOWNLOAD=$INSTALL_PATH/tmp
-mkdir -p $INSTALL_DOWNLOAD
-cd $INSTALL_DOWNLOAD
+VERSION=1.2.11
+ARCHIVE=$SOFTWARE-$VERSION.tar.gz
+ARCHIVE_URL=http://sourceforge.net/projects/flashpage/files/latest/download?source=dlp
+SOFTWARE_DIR=$SOFTWARE-$VERSION
 
-# Download, extract, build
-# Write here the specific commands to download, extract, build the software, typically similar to:
-wget http://sourceforge.net/projects/flashpage/files/latest/download?source=dlp
-tar -xvf $SOFTWARE-$VERSION.tar                                                  
-cd $SOFTWARE-$VERSION                                                            
-./configure --prefix=$INSTALL_PATH/$SOFTWARE-$VERSION                            
-make                                                                             
-make install
+build() {
+  cd $INSTALL_DOWNLOAD
+  tar xzvf $ARCHIVE
 
-# Add permissions and install software
-chmod -R 775 *
-cd $INSTALL_DOWNLOAD
-#mv -i $SOFTWARE-$VERSION $INSTALL_PATH                                          
-mv -i $INSTALL_DOWNLOAD/$SOFTWARE-$VERSION.tar $MUGQIC_INSTALL_HOME/archive      
+  # Install software
+  cd $SOFTWARE_DIR
+  make
+
+  # Add permissions and install software
+  chmod -R 775 *
+  cd $INSTALL_DOWNLOAD
+  mv -i $SOFTWARE_DIR $INSTALL_DIR
+}
 
 # Module file
+module_file() {
 echo "#%Module1.0
 proc ModulesHelp { } {
-       puts stderr \"\tMUGQIC - $SOFTWARE-$VERSION \" ;
+       puts stderr \"\tMUGQIC - $SOFTWARE-$VERSION\" ;
 }
-module-whatis \"$SOFTWARE  \" ; 
-                      
-set             root                \$::env(MUGQIC_INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE-$VERSION ;
-prepend-path    PATH                \$root/bin ;  
-" > $VERSION
+module-whatis \"$SOFTWARE\" ; 
 
-################################################################################
-# Everything below this line should be generic and not modified
+set     root            $INSTALL_DIR/$SOFTWARE_DIR
+setenv  FLASH_HOME      \$root
+"
+}
 
-# Default module version file
-echo "#%Module1.0
-set ModulesVersion \"$VERSION\"" > .version
+# Call generic module install script once all variables and functions have been set
+MODULE_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source $MODULE_INSTALL_SCRIPT_DIR/install_module.sh $@
 
-# Add permissions and install module
-mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
-chmod -R ug+rwX $VERSION .version
-chmod -R o+rX $VERSION .version
-mv $VERSION .version $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
-
-# Clean up temporary installation files if any
-rm -rf $INSTALL_DOWNLOAD
