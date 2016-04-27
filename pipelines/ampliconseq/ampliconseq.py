@@ -708,7 +708,7 @@ $QIIME_HOME/biom summarize-table \\
         report_file = os.path.join("report", "AmpliconSeq.qiime.md")
 
         if config.param('qiime', 'amplicon_type') == '16s':
-            amp_db = 'Silva'
+            amp_db = 'Greengenes'
         elif config.param('qiime', 'amplicon_type') == '18s':
             amp_db = 'Silva'
         elif config.param('qiime', 'amplicon_type') == 'ITS':
@@ -956,7 +956,6 @@ pandoc --to=markdown \\
         jobs = []
 
         alpha_directories = ['open_ref_alpha_diversity', 'denovo_alpha_diversity', 'closed_ref_alpha_diversity']
-        alpha_directory = ""
 
         report_file = os.path.join("report", "AmpliconSeq.plot_curve_no_rar.md")
         num_sample = 0
@@ -972,8 +971,8 @@ pandoc --to=markdown \\
             )
             curve_sample.append(self.select_input_files([os.path.join(alpha_directory, "alpha_rarefaction", observed_species_file)] for alpha_directory in alpha_directories)[0])
             num_sample+=1
-            if not alpha_directory:
-                alpha_directory = os.path.dirname(os.path.dirname(curve_sample[0]))
+
+        alpha_directory = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(curve_sample[0]))))
 
         jobs.append(Job(
             curve_sample,
