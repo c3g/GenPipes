@@ -10,31 +10,33 @@ set -eu -o pipefail
 ################################################################################
 
 SOFTWARE=gemini 
-VERSION=0.18.0  
+VERSION=0.18.3 
 ARCHIVE=${SOFTWARE}_v$VERSION.install.py
-ARCHIVE_URL=https://raw.githubusercontent.com/arq5x/gemini/master/gemini/scripts/gemini_install.py
+ARCHIVE_URL=https://raw.github.com/arq5x/gemini/master/gemini/scripts/gemini_install.py
+#ARCHIVE_URL=https://raw.githubusercontent.com/arq5x/gemini/master/gemini/scripts/gemini_install.py
 #ARCHIVE_URL=https://raw.github.com/mbourgey/gemini/master/gemini/scripts/gemini_install.py
 #ARCHIVE_URL=https://raw.github.com/mbourgey/$SOFTWARE/v$VERSION/$SOFTWARE/scripts/${SOFTWARE}_install.py 
 SOFTWARE_DIR=$SOFTWARE-$VERSION 
-PYTHON_VERSION=2.7.11
+PYTHON_VERSION=2.7.8
 
 # Specific commands to extract and build the software
 # $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
 # $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
-  cd $INSTALL_DOWNLOAD
-  
+  cd $INSTALL_DIR
+  mv tmp/* .
+
   mkdir -p $SOFTWARE_DIR/shared_data $SOFTWARE_DIR/gemini_data
   module load mugqic/python/$PYTHON_VERSION
   python ${SOFTWARE}_v$VERSION.install.py $SOFTWARE_DIR  $SOFTWARE_DIR
-  
+
   export PATH=$SOFTWARE_DIR/anaconda/bin:$PATH
 
   gemini update --dataonly --extra cadd_score --extra gerp_bp
 
   # Install software
-  cd $INSTALL_DOWNLOAD  ## TO BE ADDED AND MODIFIED IF NECESSARY
-  mv -i $SOFTWARE_DIR $INSTALL_DIR/  ## TO BE ADDED AND MODIFIED IF NECESSARY
+#  cd $INSTALL_DOWNLOAD  ## TO BE ADDED AND MODIFIED IF NECESSARY
+#  mv -i $SOFTWARE_DIR $INSTALL_DIR/  ## TO BE ADDED AND MODIFIED IF NECESSARY
 }
 
 module_file() {

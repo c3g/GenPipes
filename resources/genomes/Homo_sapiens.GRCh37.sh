@@ -52,6 +52,8 @@ get_dbNSFP() {
         bgzip $DBSNSFP.txt      
         tabix -s 1 -b 2 -e 2 $DBSNSFP.txt.gz
         rm $ANNOTATIONS_DIR/$DBSNSFP_VERSION/*_variant.chr*
+    else
+        echo "$DBSNSFP is up to date... skipping"
     fi
     # Extract allelic frequencies for HAPMAP human populations and annotate dbsnp VCF    
     DBSNP_ANNOTATED=$ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP${DBSNP_VERSION}_annotated.vcf
@@ -64,7 +66,10 @@ get_dbNSFP() {
             #bgzip $ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP${DBSNP_VERSION}_${POP_FREQ}.vcf      
             #tabix -s 1 -b 2 -e 2 $ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP${DBSNP_VERSION}_${POP_FREQ}.vcf.gz            
         done
+    else
+        echo "$DBSNP_ANNOTATED is up to date... skipping"
     fi
+    
     # set the default allele frequency for a population (hapmap CEU)    
     population_AF=1000Gp1_EUR_AF    
 }
@@ -89,6 +94,7 @@ install_genome() {
   # set +e since gunzip human_g1k_v37.fasta.gz exit code != 0 ("gzip: human_g1k_v37.fasta.gz: decompression OK, trailing garbage ignored")
   set +e
   copy_files
+echo "get_dbNSFP"
   get_dbNSFP
   set -e
   build_files

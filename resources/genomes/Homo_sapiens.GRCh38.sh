@@ -37,15 +37,15 @@ get_vcf_dbsnp() {
 
 # Download dbNSFP and generate vcfs required to run VerifyBamId
 get_dbNSFP() {        
-    DBNSFP_URL=ftp://dbnsfp:dbnsfp@dbnsfp.softgenetics.com/dbNSFPv2.8.zip
-    DBSNSFP_VERSION=dbNSFPv2.8
+    DBNSFP_URL=ftp://dbnsfp:dbnsfp@dbnsfp.softgenetics.com/dbNSFPv3.1c.zip
+    DBSNSFP_VERSION=dbNSFPv3.1c
     DBSNSFP=$ANNOTATIONS_DIR/$DBSNSFP_VERSION/$DBSNSFP_VERSION.txt.gz
     if ! is_up2date $DBSNSFP.txt.gz
         then
         mkdir -p $ANNOTATIONS_DIR/$DBSNSFP_VERSION/
         if ! is_up2date `download_path $DBNSFP_URL`; then
             download_url $DBNSFP_URL            
-            cp dbnsfp.softgenetics.com/dbNSFPv2.8.zip $ANNOTATIONS_DIR/$DBSNSFP_VERSION/
+            cp dbnsfp.softgenetics.com/dbNSFPv3.1c.zip $ANNOTATIONS_DIR/$DBSNSFP_VERSION/
         fi
         unzip $ANNOTATIONS_DIR/$DBSNSFP_VERSION/$DBSNSFP_VERSION.zip -d $ANNOTATIONS_DIR/$DBSNSFP_VERSION/
         (head -n 1 $ANNOTATIONS_DIR/$DBSNSFP_VERSION/*_variant.chr1 ; cat $ANNOTATIONS_DIR/$DBSNSFP_VERSION/*_variant.chr* | grep -v "^#" ) > $DBSNSFP.txt
@@ -94,7 +94,7 @@ install_genome() {
   copy_files
   get_dbNSFP  
   set -e
-  if ! is_up2date $ANNOTATIONS_DIR/$GTF
+  if ! is_up2date $ANNOTATIONS_DIR/$GTF.updated
   then
     echo Update Ensembl GTF to match NCBI genome...
     # Remove Ensembl GTF haplotype annotations, adjust mitochondria and "GK" annotation version names
@@ -102,6 +102,7 @@ install_genome() {
     # Update Ensembl GTF annotation IDs to match NCBI genome chromosome IDs
     grep "^>" $GENOME_DIR/$GENOME_FASTA | cut -f1 -d\  | cut -c 2- | perl -pe 's/^(chr([^_\n]*))$/\1\t\2/' | perl -pe 's/^(chr[^_]*_([^_\n]*)(_\S+)?)$/\1\t\2/' | awk -F"\t" 'FNR==NR{id[$2]=$1; next}{OFS="\t"; if (id[$1]) {print id[$1],$0} else {print $0}}' - $ANNOTATIONS_DIR/$GTF.tmp | cut -f1,3- > $ANNOTATIONS_DIR/$GTF
     rm $ANNOTATIONS_DIR/$GTF.tmp
+    echo "Ensembl GTF up to date : match NCBI genome" > $ANNOTATIONS_DIR/$GTF.updated
   else
     echo
     echo "GTF up to date... skipping"
