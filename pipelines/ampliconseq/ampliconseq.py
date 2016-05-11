@@ -981,7 +981,7 @@ pandoc --to=markdown \\
             command="""\
 mkdir -p report/fig/{alpha_directory}/ && \\
 montage -mode concatenate -tile {plot_dimension} {curve_sample} report/fig/{alpha_directory}/alpha.rarefaction_sample.png  && \\
-#pandoc --to=markdown \\
+pandoc --to=markdown \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}""".format(
                 alpha_directory=alpha_directory,
@@ -1479,14 +1479,15 @@ $QIIME_HOME/biom convert -i {otu_normalized_table} \\
 
             alpha_directory = re.sub('otu_' + method + '_normalized', 'alpha_diversity', os.path.dirname(normalization_method))
             beta_directory = re.sub('alpha_diversity', 'beta_diversity', alpha_directory)
-            report_file = os.path.join("report", "AmpliconSeq." + re.sub('_alpha_diversity', '.', alpha_directory) + "plot_to_alpha_" + method[:3] + ".md")
+            report_file = os.path.join("report", "AmpliconSeq.plot_to_alpha_" + method[:3] + ".md")
 
             jobs.append(Job(
                 inputs,
                 [report_file],
                 [['plot_to_alpha', 'module_pandoc']],
                 command="""\
-mkdir -p report/fig/{alpha_directory}/ && \\
+mkdir -p report/fig/{alpha_directory}/{method}/ && \\
+mkdir -p report/fig/{alpha_directory}/alpha_rarefaction/ && \\
 mkdir -p report/fig/{beta_directory}/{method}/heatmap/ && \\
 cp -r {alpha_directory}/{method}/taxonomic_affiliation/ report/fig/{alpha_directory}/{method}/taxonomic_affiliation/ && \\
 cp -r {alpha_directory}/{method}/krona_chart/ report/fig/{alpha_directory}/{method}/krona_chart/ && \\
@@ -1736,7 +1737,7 @@ pandoc --to=markdown \\
                 link_metric1_t = "Euclidean distance ([Interactive html plots available here](fig/" + beta_directory + "/" + method + "/2d_plots/pcoa_euclidean_otu_normalized_table_2D_PCoA_plots.html))"
                 link_metric2_t = " "
 
-            report_file = os.path.join("report", "AmpliconSeq.plot_to_beta.md")
+            report_file = os.path.join("report", "AmpliconSeq.plot_to_beta_" + method[:3] + ".md")
 
             jobs.append(Job(
                 inputs,
@@ -1747,9 +1748,9 @@ mkdir -p report/fig/{beta_directory}/{method} && \\
 cp -r {beta_directory}/{method}/2d_plots/ report/fig/{beta_directory}/{method}/2d_plots/ && \\
 pandoc --to=markdown \\
   --template {report_template_dir}/{basename_report_file} \\
-  --variable description_metric={description_metric} \\
-  --variable link_metric1={link_metric1} \\
-  --variable link_metric2={link_metric2} \\
+  --variable description_metric="{description_metric}" \\
+  --variable link_metric1="{link_metric1}" \\
+  --variable link_metric2="{link_metric2}" \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}""".format(
                     beta_directory=beta_directory,

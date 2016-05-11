@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=python
-VERSION=2.7.8
+VERSION=2.7.11
 SETUPTOOLS_VERSION=12.1
 # Remove the version last number
 LIBVERSION=${VERSION%.[0-9]*}

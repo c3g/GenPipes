@@ -3,14 +3,14 @@
 set -eu -o pipefail
 
 SOFTWARE=python
-VERSION=2.7.11
+VERSION=2.7.10_qiime
 SETUPTOOLS_VERSION=20.9.0
 # Remove the version last number
-LIBVERSION=${VERSION%.[0-9]*}
+LIBVERSION=2.7
 # Uppercase first P in python
 ARCHIVE=${SOFTWARE^}-$VERSION.tgz
-ARCHIVE_URL=http://www.python.org/ftp/$SOFTWARE/$VERSION/$ARCHIVE
-SOFTWARE_DIR=${SOFTWARE^}-$VERSION
+ARCHIVE_URL=http://www.python.org/ftp/$SOFTWARE/2.7.10/${SOFTWARE^}-2.7.10.tgz
+SOFTWARE_DIR=${SOFTWARE^}-2.7.10
 
 # Specific commands to extract and build the software
 # $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
@@ -18,6 +18,9 @@ SOFTWARE_DIR=${SOFTWARE^}-$VERSION
 build() {
   cd $INSTALL_DOWNLOAD
   tar zxvf $ARCHIVE
+
+  mv $SOFTWARE_DIR ${SOFTWARE^}-$VERSION
+  SOFTWARE_DIR=${SOFTWARE^}-$VERSION
 
   cd $SOFTWARE_DIR
   # Compile with --enable-unicode=ucs4 to fix error "ImportError: numpy-1.8.1-py2.7-linux-x86_64.egg/numpy/core/multiarray.so: undefined symbol: PyUnicodeUCS2_AsASCIIString"
@@ -54,6 +57,7 @@ prepend-path    LIBRARY_PATH        \$root/lib/
 prepend-path    LD_LIBRARY_PATH     \$root/lib/
 prepend-path    CPATH               \$root/include:\$root/include/python$LIBVERSION
 prepend-path    PYTHONPATH          \$root/lib/python$LIBVERSION/site-packages:\$root/lib/python$LIBVERSION
+setenv          QIIME_HOME          \$root/bin
 "
 }
 
@@ -126,13 +130,13 @@ ARCHIVE_DIR=${!INSTALL_HOME}/archive
 # Set module directory path by lowercasing $INSTALL_HOME and removing '_install_home' in it
 MODULE_DIR=${!INSTALL_HOME}/modulefiles/`echo ${INSTALL_HOME,,} | sed 's/_install_home//'`/$SOFTWARE
 
-echo "Installing $SOFTWARE version ${VERSION}_qiime in \$$INSTALL_HOME..."
+echo "Installing $SOFTWARE version ${VERSION} in \$$INSTALL_HOME..."
 echo
 
 # Abort if software and/or module are already installed
-if [[ -e $INSTALL_DIR/$SOFTWARE_DIR || -e $MODULE_DIR/${VERSION}_qiime ]]
+if [[ -e $INSTALL_DIR/${SOFTWARE_DIR}_qiime || -e $MODULE_DIR/$VERSION ]]
 then
-  echo "$INSTALL_DIR/$SOFTWARE_DIR and/or $MODULE_DIR/${VERSION}_qiime already exist; please, delete them first!"
+  echo "$INSTALL_DIR/$SOFTWARE_DIR_qiime and/or $MODULE_DIR/$VERSION already exist; please, delete them first!"
   exit 1
 fi
 
@@ -147,20 +151,20 @@ store_archive $ARCHIVE
 # Deploy module
 create_dir $MODULE_DIR
 # Surround variable with "" since it contains a multiline text
-module_file > $MODULE_DIR/${VERSION}_qiime
+module_file > $MODULE_DIR/${VERSION}
 # Default module version file
 echo "\
 #%Module1.0
-set ModulesVersion \"${VERSION}_qiime\"" > $MODULE_DIR/.version
+set ModulesVersion \"${VERSION}\"" > $MODULE_DIR/.version
 
-chmod ug+rwX,o+rX-w $MODULE_DIR/${VERSION}_qiime $MODULE_DIR/.version
+chmod ug+rwX,o+rX-w $MODULE_DIR/${VERSION} $MODULE_DIR/.version
 
 # Clean up temporary installation files if any
 cd
 rm -rf $INSTALL_DOWNLOAD
 
 echo
-echo "$SOFTWARE version ${VERSION}_qiime has been successfully installed in \$$INSTALL_HOME"
+echo "$SOFTWARE version ${VERSION} has been successfully installed in \$$INSTALL_HOME"
 if [[ ! $INSTALL_HOME == 'MUGQIC_INSTALL_HOME' ]]
 then
   echo "To install module in production, type '$0 MUGQIC_INSTALL_HOME' (no '\$' before parameter)"
@@ -171,7 +175,85 @@ fi
 sleep 30
 
 ################################################################
-# Now install the all python libraries & dependencies for qiime
-# Call the module to installall thel python libraries & dependencies for qiime
-MODULE_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source $MODULE_INSTALL_SCRIPT_DIR/python_lib.2.7.10_qiime.sh 
+
+# Now installing Python libraries and qiime dependencies
+
+
+#pip
+echo "Installing pip..."
+$INSTALL_DIR/$SOFTWARE_DIR/bin/easy_install pip
+echo "pip installation complete !"
+
+# cython
+echo "Installing cython..."
+$INSTALL_DIR/$SOFTWARE_DIR/bin/easy_install cython
+echo "cython installation complete !"
+
+# numpy
+echo "Installing numpy..."
+$INSTALL_DIR/$SOFTWARE_DIR/bin/easy_install numpy
+python -c 'import numpy; print numpy.__version__, numpy.__file__'
+echo "numpy installation complete !"
+
+# biopython
+echo "Installing biopython..."
+$INSTALL_DIR/$SOFTWARE_DIR/bin/easy_install biopython
+python -c 'import Bio; print Bio.__version__, Bio.__file__'
+echo "biopython installation complete !"
+
+# matplotlib requires dateutil and pyparsing dependencies
+echo "Installing python-dateutil..."
+$INSTALL_DIR/$SOFTWARE_DIR/bin/easy_install python-dateutil
+echo "python-dateutil installation complete !"
+
+echo "Installing pyparsing..."
+$INSTALL_DIR/$SOFTWARE_DIR/bin/easy_install pyparsing
+echo "pyparsing installation complete !"
+
+echo "Installing matplotlib v1.4.3..."
+$INSTALL_DIR/$SOFTWARE_DIR/bin/easy_install matplotlib==1.4.3
+python -c 'import matplotlib; print matplotlib.__version__, matplotlib.__file__'
+echo "matplotlib v1.4.3 installation complete !"
+
+# HTseq
+echo "Installing HTseq..."
+$INSTALL_DIR/$SOFTWARE_DIR/bin/easy_install HTSeq
+python -c 'import HTSeq; print HTSeq.__version__, HTSeq.__file__'
+echo "HTseq installation complete !"
+
+# bedtools-python has no version (version from doc: 0.1.0): install from master
+echo "Installing bedtools-python..."
+$INSTALL_DIR/$SOFTWARE_DIR/bin/easy_install https://github.com/arq5x/bedtools-python/archive/master.zip
+python -c 'import bedtools; print  bedtools.__file__'
+echo "bedtools-python installation complete !"
+
+# PyVCF
+echo "Installing PyVCF..."
+$INSTALL_DIR/$SOFTWARE_DIR/bin/easy_install PyVCF
+python -c 'import vcf; print vcf.__file__'
+echo "PyVCF installation complete !"
+
+# pysam
+echo "Installing pysam..."
+$INSTALL_DIR/$SOFTWARE_DIR/bin/easy_install pysam
+python -c 'import pysam; print pysam.__version__, pysam.__file__'
+echo "pysam installation complete !"
+
+# nextworkx
+echo "Insalling nextworkx..."
+$INSTALL_DIR/$SOFTWARE_DIR/bin/easy_install networkx
+python -c 'import networkx; print networkx.__version__, networkx.__file__'
+echo "nextworkx installation complete !"
+
+#qiime
+echo "Insalling Qiime..."
+$INSTALL_DIR/$SOFTWARE_DIR/bin/pip install qiime
+echo "Qiime installation complete !"
+
+# Add permissions
+echo "adding the right permissions..."
+chmod -R ug+rwX,o+rX-w $INSTALL_DIR/$SOFTWARE_DIR
+
+
+echo "Python libraries and Qiime dependencies were successfully installed !!"
+

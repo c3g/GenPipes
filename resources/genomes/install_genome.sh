@@ -2,23 +2,30 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-module_bowtie=mugqic/bowtie/2.1.0
-module_bwa=mugqic/bwa/0.7.10
-module_java=mugqic/java/openjdk-jdk1.7.0_60
-module_mugqic_R_packages=mugqic/mugqic_R_packages/1.0.3
+module_bowtie=mugqic/bowtie2/2.2.4
+module_bwa=mugqic/bwa/0.7.12
+module_java=mugqic/java/openjdk-jdk1.8.0_72
+module_mugqic_R_packages=mugqic/mugqic_R_packages/1.0.4
 module_picard=mugqic/picard/1.123
-module_R=mugqic/R_Bioconductor/3.1.2_3.0
-module_samtools=mugqic/samtools/0.1.19
-module_star=mugqic/star/2.4.0e
+module_R=mugqic/R_Bioconductor/3.2.3_3.2
+module_samtools=mugqic/samtools/1.3
+module_star=mugqic/star/2.4.0f1
 module_tabix=mugqic/tabix/0.2.6
-module_tophat=mugqic/tophat/2.0.11
-module_ucsc=mugqic/ucsc/20140212
+module_tophat=mugqic/tophat/2.0.14
+module_ucsc=mugqic/ucsc/v326
 
 init_install() {
   # '$MUGQIC_INSTALL_HOME_DEV' for development, '$MUGQIC_INSTALL_HOME' for production
-  INSTALL_HOME=$MUGQIC_INSTALL_HOME_DEV
+  if [[ ${1:-} == MUGQIC_INSTALL_HOME ]]
+then
+  INSTALL_HOME=MUGQIC_INSTALL_HOME
+else
+  INSTALL_HOME=MUGQIC_INSTALL_HOME_TMP
+fi
+  echo $INSTALL_HOME
 
-  INSTALL_DIR=$INSTALL_HOME/genomes/species/$SPECIES.$ASSEMBLY
+  INSTALL_DIR=${!INSTALL_HOME}/genomes/species/$SPECIES.$ASSEMBLY
+echo $INSTALL_DIR
   DOWNLOAD_DIR=$INSTALL_DIR/downloads
   LOG_DIR=$INSTALL_DIR/log
   TIMESTAMP=`date +%FT%H.%M.%S`
@@ -237,6 +244,7 @@ cmd_or_job() {
     echo "Submitting $JOB_PREFIX as job..."
     echo
     CORES=${2:-1}  # Nb cores = 2nd param if defined else 1
+    echo "${!CMD}"
     echo "${!CMD}" | qsub -m ae -M $JOB_MAIL -W umask=0002 -d $INSTALL_DIR -j oe -o $LOG_DIR/${JOB_PREFIX}_$TIMESTAMP.log -N $JOB_PREFIX.$GENOME_FASTA -l walltime=24:00:0 -q sw -l nodes=1:ppn=$CORES
   else
     echo
@@ -316,14 +324,16 @@ mkdir -p $BOWTIE2_INDEX_DIR && \
 ln -s -f -t $BOWTIE2_INDEX_DIR ../$GENOME_FASTA && \
 module load $module_bowtie && \
 LOG=$LOG_DIR/bowtie2_$TIMESTAMP.log && \
-bowtie2-build $BOWTIE2_INDEX_DIR/$GENOME_FASTA $BOWTIE2_INDEX_PREFIX > \$LOG 2>&1 && \
-chmod -R ug+rwX,o+rX $BOWTIE2_INDEX_DIR \$LOG && \
+ERR=$LOG_DIR/bowtie2_$TIMESTAMP.err && \
+bowtie2-build $BOWTIE2_INDEX_DIR/$GENOME_FASTA $BOWTIE2_INDEX_PREFIX > \$LOG 2> \$ERR && \
+chmod -R ug+rwX,o+rX $BOWTIE2_INDEX_DIR \$LOG \$ERR && \
 mkdir -p $TOPHAT_INDEX_DIR && \
 ln -s -f -t $TOPHAT_INDEX_DIR ../$GTF && \
 module load $module_samtools $module_tophat && \
 LOG=$LOG_DIR/gtf_tophat_$TIMESTAMP.log && \
-tophat --output-dir $TOPHAT_INDEX_DIR/tophat_out --GTF $TOPHAT_INDEX_DIR/$GTF --transcriptome-index=$TOPHAT_INDEX_PREFIX $BOWTIE2_INDEX_PREFIX > \$LOG 2>&1 && \
-chmod -R ug+rwX,o+rX \$TOPHAT_INDEX_DIR \$LOG"
+ERR=$LOG_DIR/gtf_tophat_$TIMESTAMP.err && \
+tophat --output-dir $TOPHAT_INDEX_DIR/tophat_out --GTF $TOPHAT_INDEX_DIR/$GTF --transcriptome-index=$TOPHAT_INDEX_PREFIX $BOWTIE2_INDEX_PREFIX > \$LOG 2> \$ERR && \
+chmod -R ug+rwX,o+rX \$TOPHAT_INDEX_DIR \$LOG \$ERR"
   cmd_or_job BOWTIE2_TOPHAT_CMD 2
   else
     echo
@@ -340,9 +350,12 @@ create_star_index() {
     runThreadN=1
   fi
 
-  for sjdbOverhang in 49 99
+  # Get the version of STAR
+  STAR_VERSION=`module load $module_star && STAR --version | grep -oP "\d\.\d\.\d.+"`
+
+  for sjdbOverhang in 49 74 99 124 149
   do
-    INDEX_DIR=$INSTALL_DIR/genome/star_index/$SOURCE$VERSION.sjdbOverhang$sjdbOverhang
+    INDEX_DIR=$INSTALL_DIR/genome/star${STAR_VERSION}_index/$SOURCE$VERSION.sjdbOverhang$sjdbOverhang
     if ! is_up2date $INDEX_DIR/SAindex
     then
       echo
@@ -352,8 +365,9 @@ create_star_index() {
 mkdir -p $INDEX_DIR && \
 module load $module_star && \
 LOG=$LOG_DIR/star_${sjdbOverhang}_$TIMESTAMP.log && \
-STAR --runMode genomeGenerate --genomeDir $INDEX_DIR --genomeFastaFiles $GENOME_DIR/$GENOME_FASTA --runThreadN $runThreadN --sjdbOverhang $sjdbOverhang --sjdbGTFfile $ANNOTATIONS_DIR/$GTF --outFileNamePrefix $INDEX_DIR/ > \$LOG 2>&1 && \
-chmod -R ug+rwX,o+rX $INDEX_DIR \$LOG"
+ERR=$LOG_DIR/star_${sjdbOverhang}_$TIMESTAMP.err && \
+STAR --runMode genomeGenerate --genomeDir $INDEX_DIR --genomeFastaFiles $GENOME_DIR/$GENOME_FASTA --runThreadN $runThreadN --sjdbOverhang $sjdbOverhang --genomeSAindexNbases 4 --limitGenomeGenerateRAM 86000000000 --sjdbGTFfile $ANNOTATIONS_DIR/$GTF --outFileNamePrefix $INDEX_DIR/ > \$LOG 2> \$ERR && \
+chmod -R ug+rwX,o+rX $INDEX_DIR \$LOG \$ERR"
       cmd_or_job STAR_CMD $runThreadN STAR_${sjdbOverhang}_CMD
     else
       echo
@@ -447,7 +461,7 @@ create_gene_annotations_flat() {
     cd $ANNOTATIONS_DIR
     module load $module_ucsc 
     gtfToGenePred -genePredExt -geneNameAsName2 ${ANNOTATION_PREFIX}.gtf ${ANNOTATION_PREFIX}.refFlat.tmp.txt
-    cut -f 12 ${ANNOTATION_PREFIX}.refFlat.tmp.txt  > ${ANNOTATION_PREFIX}.refFlat.tmp.2.txt 
+    cut -f 12 ${ANNOTATION_PREFIX}.refFlat.tmp.txt > ${ANNOTATION_PREFIX}.refFlat.tmp.2.txt 
     cut -f 1-10 ${ANNOTATION_PREFIX}.refFlat.tmp.txt > ${ANNOTATION_PREFIX}.refFlat.tmp.3.txt 
     paste ${ANNOTATION_PREFIX}.refFlat.tmp.2.txt ${ANNOTATION_PREFIX}.refFlat.tmp.3.txt > ${ANNOTATION_PREFIX}.ref_flat.tsv
     rm ${ANNOTATION_PREFIX}.refFlat.tmp.txt ${ANNOTATION_PREFIX}.refFlat.tmp.2.txt ${ANNOTATION_PREFIX}.refFlat.tmp.3.txt
@@ -530,12 +544,12 @@ copy_files() {
   fi
 
   # Annotations are not installed for UCSC genomes
-#  if [[ $SOURCE != "UCSC" ]]
-#  then
+  if [[ $SOURCE != "UCSC" ]]
+  then
     if ! is_up2date $ANNOTATIONS_DIR/$GTF ; then gunzip -c `download_path $GTF_URL` > $ANNOTATIONS_DIR/$GTF ; fi
     TRANSCRIPT_ID_GTF=$ANNOTATIONS_DIR/${GTF/.gtf/.transcript_id.gtf}
     if ! is_up2date $TRANSCRIPT_ID_GTF ; then grep -P "(^#|transcript_id)" $ANNOTATIONS_DIR/$GTF > $TRANSCRIPT_ID_GTF ; fi
-#    if ! is_up2date $ANNOTATIONS_DIR/$NCRNA ; then gunzip -c `download_path $NCRNA_URL` > $ANNOTATIONS_DIR/$NCRNA ; fi
+    if ! is_up2date $ANNOTATIONS_DIR/$NCRNA ; then gunzip -c `download_path $NCRNA_URL` > $ANNOTATIONS_DIR/$NCRNA ; fi
 
     # Create rRNA FASTA as subset of ncRNA FASTA keeping only sequences with "rRNA" (ignore case) in their descriptions
     if [ $(grep -q -i "rRNA" $ANNOTATIONS_DIR/$NCRNA)$? == 0 ]
@@ -563,7 +577,29 @@ copy_files() {
     fi
 
     get_vcf_dbsnp
-#  fi
+
+  else
+    if ! is_up2date $ANNOTATIONS_DIR/$GTF
+    then
+      echo "Could not find $ANNOTATIONS_DIR/$GTF...\nyou might consider to manually download a gtf file from UCSC table browser (http://genome.ucsc.edu/cgi-bin/hgTables)"
+    else
+      TRANSCRIPT_ID_GTF=$ANNOTATIONS_DIR/${GTF/.gtf/.transcript_id.gtf}
+      if ! is_up2date $TRANSCRIPT_ID_GTF ; then grep -P "(^#|transcript_id)" $ANNOTATIONS_DIR/$GTF > $TRANSCRIPT_ID_GTF ; fi
+    fi
+
+    if ! is_up2date $ANNOTATIONS_DIR/$NCRNA
+    then
+      echo "Could not find $ANNOTATIONS_DIR/$NCRNA...\nyou might consider to use the ncrna.fa file from Ensembl... "
+    else
+      if [ $(grep -q -i "rRNA" $ANNOTATIONS_DIR/$NCRNA)$? == 0 ]
+      then
+        if ! is_up2date $ANNOTATIONS_DIR/$RRNA
+        then
+          grep -Pzoi "^>.*rRNA[^>]*" $ANNOTATIONS_DIR/$NCRNA | grep -v "^$" > $ANNOTATIONS_DIR/$RRNA
+        fi
+      fi
+    fi
+  fi
 }
 
 build_files() {
@@ -571,20 +607,16 @@ build_files() {
   create_picard_index
   create_samtools_index
   create_bwa_index
-
+  create_star_index
+#  create_bowtie2_tophat_index
+  create_ncrna_bwa_index
+  create_rrna_bwa_index
   create_gene_annotations
   create_gene_annotations_flat
 
   # Annotations are not installed for UCSC genomes
   if [[ $SOURCE != "UCSC" ]]
   then
-    create_bowtie2_tophat_index
-    create_star_index
-    create_ncrna_bwa_index
-    create_rrna_bwa_index
-
-    create_gene_annotations
-    create_gene_annotations_flat
     create_go_annotations
   fi
 }
@@ -605,6 +637,10 @@ version=$VERSION" > $INI
     echo "\
 dbsnp_version=$DBSNP_VERSION" >> $INI
   fi
+  if [ ! -z "${population_AF:-}" ]; then
+  echo -e "\npopulation_AF=$population_AF" >> $INI
+  fi
+
 }
 
 install_genome() {
