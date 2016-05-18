@@ -78,7 +78,68 @@ def pass_filter(input, output):
 bcftools \\
   view -f PASS \\
   {input}{output}""".format(
+        input=" \\\n " + input if input else "",
+        output=" \\\n > " + output if output else ""
+        )
+    )
+
+def concat(inputs, output):
+    """
+    Concatenate or combine VCF/BCF files
+    """
+    return Job(
+        inputs,
+        [output],
+        [
+            ['DEFAULT', 'module_bcftools']
+        ],
+        command="""\
+bcftools \\
+  concat -a \\
+  {inputs} \\
+  {output}""".format(
+        inputs="".join(" \\\n  " + input for input in inputs),
+        output=" \\\n > " + output if output else ""
+        )
+    )
+
+def view(input, output, filter_options):
+    """
+    Generalized view 
+    """
+    return Job(
+        [input],
+        [output],
+        [
+            ['DEFAULT', 'module_bcftools']
+        ],
+        command="""\
+bcftools \\
+  view -f PASS {filter_options} \\
+  {input}{output}""".format(
+        filter_options=filter_options,
         input=input,
         output=" \\\n > " + output if output else ""
         )
     )
+
+def filter(input, output, filter_options):
+    """
+    Generalized filter function
+    """
+    return Job(
+        [input],
+        [output],
+        [
+            ['DEFAULT', 'module_bcftools']
+        ],
+        command="""\
+bcftools \\
+  filter -m '+' -O v {filter_options} \\
+  {input}{output}""".format(
+        input=" \\\n " + input if input else "",
+        filter_options=filter_options,
+        output=" \\\n  > " + output if output else ""
+        )
+    )
+

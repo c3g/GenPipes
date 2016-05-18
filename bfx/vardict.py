@@ -32,7 +32,8 @@ def paired(input_normal, input_tumor, tumor_name, output=None, region=None):
         [
         ['vardict_paired', 'module_vardict'],
         ['vardict_paired', 'module_samtools'],
-        ['vardict_paired', 'module_perl']
+        ['vardict_paired', 'module_perl'],
+        ['vardict_paired', 'module_R']
         ],
         command="""\
 vardict \\
@@ -54,12 +55,14 @@ def paired_java(input_normal, input_tumor, tumor_name, output=None, region=None)
         [input_normal],
         [input_tumor],
         [
+        ['vardict_paired', 'module_java'],
         ['vardict_paired', 'module_vardict_java'],
         ['vardict_paired', 'module_samtools'],
-        ['vardict_paired', 'module_perl']
+        ['vardict_paired', 'module_perl'],
+        ['vardict_paired', 'module_R']
         ],
         command="""\
-VarDict \\
+java {java_other_options} -Xms768m -Xmx{ram} -classpath $VARDICT_HOME/lib/VarDict-1.4.5.jar:$VARDICT_HOME/lib/commons-cli-1.2.jar:$VARDICT_HOME/lib/jregex-1.2_01.jar:$VARDICT_HOME/lib/htsjdk-1.140.jar com.astrazeneca.vardict.Main \\
   -G {reference_fasta} \\
   -N {tumor_name} \\
   -b "{paired_samples}" \\
@@ -67,6 +70,8 @@ VarDict \\
         reference_fasta=config.param('vardict_paired', 'genome_fasta', type='filepath'),
         tumor_name=tumor_name,
         paired_samples=input_tumor + "|" + input_normal,
+        java_other_options=config.param('DEFAULT', 'java_other_options'),
+        ram=config.param('vardict_paired', 'ram'),
         vardict_options=config.param('vardict_paired', 'vardict_options'),
         region=" \\\n  " + region if region else "",
         output=" \\\n  > " + output if output else ""
@@ -98,7 +103,7 @@ def var2vcf(output, normal_name, tumor_name, input=None):
         ['vardict_paired', 'module_perl']
         ],
         command="""\
-perl $VARDICT_BIN/var2vcf_somatic.pl \\
+perl $VARDICT_BIN/var2vcf_paired.pl \\
     -N "{pairNames}" \\
     {var2vcf_options}{input}{output}""".format(
         pairNames=tumor_name + "|" + normal_name,

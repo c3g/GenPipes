@@ -26,32 +26,22 @@ import os
 from core.config import *
 from core.job import *
 
-def tumor_pair_ensemble(input_mutect2, input_vardict, input_samtools, output):
-    
+def vcfsamplediff(input_normal, input_tumor, input_vcf, output):
     return Job(
-        [input_mutect2, input_vardict, input_samtools],
+        [input_vcf],
         [output],
         [
-            ['bcbio_ensemble', 'module_java'],
-            ['bcbio_ensemble', 'module_bcbio_variation'],
-            ['bcbio_ensemble', 'module_bcftools']
+            ['DEFAULT', 'module_vcflib']
         ],
         command="""\
-java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $BCBIO_VARIATION_JAR \\
-  variant-ensemble \\
-  {config_yaml} \\
-  {reference_sequence} \\
-  {output} \\
-  {input_mutect2} {input_vardict} {input_samtools}""".format(
-        tmp_dir=config.param('bcbio_ensemble', 'tmp_dir'),
-        java_other_options=config.param('bcbio_ensemble', 'java_other_options'),
-        ram=config.param('bcbio_ensemble', 'ram'),
-        reference_sequence=config.param('bcbio_ensemble', 'genome_fasta', type='filepath'),
-        config_yaml=config.param('bcbio_ensemble', 'config_yaml'),
-        output=output,
-        input_mutect2=input_mutect2,
-        input_vardict=input_vardict,
-        input_samtools=input_samtools
+vcfsamplediff \\
+  STATUS \\
+  {input_normal} {input_tumor} \\
+  {input_vcf} \\
+  {output}""".format(
+        input_normal=input_normal,
+        input_tumor=input_tumor,
+        input_vcf=input_vcf,
+        output=" \\\n  > " + output if output else ""
         )
     )
-

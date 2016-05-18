@@ -95,7 +95,7 @@ def cat_variants(variants, output):
         ],
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -cp $GATK_JAR \\
-  org.broadinstitute.gatk.tools.CatVariants {options} --assumeSorted \\
+  org.broadinstitute.gatk.tools.CatVariants {options} \\
   --reference {reference}{variants} \\
   --outputFile {output}""".format(
         tmp_dir=config.param('gatk_cat_variants', 'tmp_dir'),
@@ -421,11 +421,10 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         )
     )
 
-
-def combine_gvcf(inputs, output, intervals=[], exclude_intervals=[]):
+def variant_annotator(input_normal, input_tumor, input_variants, output, intervals=[], exclude_intervals=[]):
 
     return Job(
-        inputs,
+        [input_normal, input_tumor, input_variants],
         [output],
         [
             ['gatk_combine_gvcf', 'module_java'],
@@ -433,21 +432,26 @@ def combine_gvcf(inputs, output, intervals=[], exclude_intervals=[]):
         ],
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
-  --analysis_type CombineGVCFs {other_options} \\
+  --analysis_type VariantAnnotator {other_options} \\
+  --disable_auto_index_creation_and_locking_when_reading_rods \\
   --reference_sequence {reference_sequence} \\
-  {input} \\
+  --input_file {input_normal} --input_file {input_tumor} \\
+  --variant {input_variants} \\
   --out {output}{intervals}{exclude_intervals}""".format(
-        tmp_dir=config.param('gatk_combine_gvcf', 'tmp_dir'),
-        java_other_options=config.param('gatk_combine_gvcf', 'java_other_options'),
-        ram=config.param('gatk_combine_gvcf', 'ram'),
-        other_options=config.param('gatk_combine_gvcf', 'other_options',required=False),
-        reference_sequence=config.param('gatk_combine_gvcf', 'genome_fasta', type='filepath'),
-        input="".join(" \\\n  --variant " + input for input in inputs),
+        tmp_dir=config.param('gatk_variant_annotator', 'tmp_dir'),
+        java_other_options=config.param('gatk_variant_annotator', 'java_other_options'),
+        ram=config.param('gatk_variant_annotator', 'ram'),
+        other_options=config.param('gatk_variant_annotator', 'other_options',required=False),
+        reference_sequence=config.param('gatk_variant_annotator', 'genome_fasta', type='filepath'),
+        input_normal=input_normal,
+        input_tumor=input_tumor,
+        input_variants=input_variants,
         output=output,
         intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
         exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals)
         )
     )
+
 
 def variant_recalibrator(variants, other_options, recal_output, tranches_output, R_output):
 

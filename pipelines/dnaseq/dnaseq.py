@@ -424,8 +424,10 @@ cp \\
             print_reads_output = duplicate_file_prefix + "recal.bam"
             base_recalibrator_output = duplicate_file_prefix + "recalibration_report.grp"
 
+            bed = self.samples[0].readsets[0].beds[0]
+
             jobs.append(concat_jobs([
-                gatk.base_recalibrator(input, base_recalibrator_output),
+                gatk.base_recalibrator(input, base_recalibrator_output, bed),
                 gatk.print_reads(input, print_reads_output, base_recalibrator_output),
                 Job(input_files=[print_reads_output], output_files=[print_reads_output + ".md5"], command="md5sum " + print_reads_output + " > " + print_reads_output + ".md5")
             ], name="recalibration." + sample.name))
@@ -858,7 +860,7 @@ pandoc \\
         ], name="dna_sample_metrics")
         job.input_files = [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.metrics") for sample in self.samples]
         if library == "PAIRED_END" :
-            job.input_files += [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.all.metrics.insert_size_metrics") for sample in self.samples]
+            job.input_files += [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.all.metrics.insert_size_metrics") for sample in self.samples]
         return [job]
 
     def generate_approximate_windows(self, nb_jobs):

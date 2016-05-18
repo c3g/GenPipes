@@ -122,7 +122,7 @@ def bcftools_cat(inputs, output):
         [output],
         [['bcftools_cat', 'module_samtools']],
         command="""\
-bcftools cat \\
+$BCFTOOLS_BIN/bcftools cat \\
   {inputs}{output}""".format(
         inputs=" \\\n  ".join(inputs),
         output=" \\\n  > " + output if output else ""
@@ -135,7 +135,7 @@ def bcftools_view(input, output, options="", pair_calling=False):
         [output],
         [['bcftools_view', 'module_samtools']],
         command="""\
-bcftools view {pair_calling} {options} \\
+$BCFTOOLS_BIN/bcftools view {pair_calling} {options} \\
   {input}{output}""".format(
         options=options,
         pair_calling="-T pair" if pair_calling else "",
