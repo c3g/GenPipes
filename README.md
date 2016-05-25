@@ -54,7 +54,7 @@ elif [[ $HOST == lg-* || $DNSDOMAIN == guillimin.clumeq.ca ]]; then
 
 elif [[ $BQMAMMOUTH == "mp2" ]]; then
 
-  export MUGQIC_INSTALL_HOME_DEV=$(share_nobackup bourque)/mugqic_dev
+  export MUGQIC_INSTALL_HOME_DEV=/nfs3_ib/bourque-mp2.nfs/tank/nfs/bourque/nobackup/share/mugqic_dev
 
 fi
     
