@@ -509,7 +509,7 @@ bcl2fastq\\
                 current_jobs.append(Job([], [], [["blast", "module_blast"]], command=command))
 
                 # filter and format the result to only have the sorted number of match and the species
-                command = """grep ">" {result_file} | awk ' {{ print $2 "_" $3}} ' | sort | uniq -c | sort -n -r | head -20 > {output}""".format(
+                command = """grep ">" {result_file} | awk ' {{ print $2 "_" $3}} ' | sort | uniq -c | sort -n -r | head -20 > {output} && true""".format(
                     result_file=result_file,
                     output=output
                 )
