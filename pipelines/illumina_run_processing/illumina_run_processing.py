@@ -918,8 +918,11 @@ bcl2fastq\\
             writer.writerow(csv_dict)
 
     def has_single_index(self):
-        """ Returns True when there is at least one sample on the lane that doesn't use double-indexing. """
-        return len([readset for readset in self.readsets if ("-" not in readset.index)]) > 0
+        """ Returns True when there is at least one sample on the lane that doesn't use double-indexing or we only have
+            one read of indexes.
+        """
+        return len([readset for readset in self.readsets if ("-" not in readset.index)]) > 0 or\
+               len([read for read in self.read_infos if read.is_index]) < 2
 
     def get_smallest_index_length(self):
         """
