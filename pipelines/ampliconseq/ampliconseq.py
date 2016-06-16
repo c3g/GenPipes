@@ -1402,14 +1402,14 @@ pandoc --to=markdown \\
         """
 
         jobs = []
-        sample_name =[]
 
         otu_directories = ['open_ref_otus', 'denovo_otus', 'closed_ref_otus']
 
         for method in ['css', 'rarefaction']:
 
-            otu_normalized_table = self.select_input_files([os.path.join(re.sub('otus', 'otu_' + method + '_normalized', otu_directory), "otu_normalized_table.biom")] for otu_directory in otu_directories)[0]
+            sample_name = []
 
+            otu_normalized_table = self.select_input_files([os.path.join(re.sub('otus', 'otu_' + method + '_normalized', otu_directory), "otu_normalized_table.biom")] for otu_directory in otu_directories)[0]
             otu_directory = re.sub('otu_' + method + '_normalized', 'otus', os.path.dirname(otu_normalized_table))
 
             alpha_directory = re.sub('otus', 'alpha_diversity', otu_directory)
