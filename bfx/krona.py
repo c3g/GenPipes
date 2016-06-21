@@ -2,10 +2,8 @@
 
 # Python Standard Modules
 import logging
-import os
 
 # MUGQIC Modules
-from core.config import *
 from core.job import *
 
 log = logging.getLogger(__name__)

@@ -2,7 +2,7 @@
 
 Reads with at least **$sequence_max_n$** 'N' base are discarded then chimera detection is applied to the merged reads using [Uchime]\ [@uchime]. Uchime performs reference based detection. The **$chimera_db$**\ [@$chimera_ref$] database is used for reference based detection.
 
-Table: Chimera detection Statistics per Readset ([download full table](uchimeReadsetTable.tsv))
+Table: Chimera Detection Statistics per Readset ([download full table](uchimeReadsetTable.tsv))
 
 $uchime_readset_table$
 

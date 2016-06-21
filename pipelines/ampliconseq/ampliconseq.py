@@ -40,7 +40,6 @@ from bfx.sequence_dictionary import *
 from pipelines import common
 from bfx import tools
 from bfx import flash
-from bfx import trimmomatic
 from bfx import qiime
 from bfx import vsearch
 from bfx import krona
@@ -57,7 +56,6 @@ class AmpliconSeq(common.Illumina):
 
     def flash(self):
         """
-        Step 3
         Merge paired end reads using [FLASh](http://ccb.jhu.edu/software/FLASH/).
         """
         jobs = []
@@ -97,7 +95,6 @@ class AmpliconSeq(common.Illumina):
 
     def merge_flash_stats(self):
         """
-        Step 4
         The paired end merge statistics per readset are merged at this step.
         """
 
@@ -123,6 +120,7 @@ printf '{sample}\t{readset}\t' \\
 
             # Retrieve merge statistics using re search in python.
             python_command = """\
+module load {module_python}; \\
 python -c 'import re; \\
 import sys; \\
 log_file = open("{flash_log}","r"); \\
@@ -134,6 +132,7 @@ log_file.seek(0); \\
 merge_stat.append([i.split()[3] for i in log_file if re.search("Percent combined",i)][0][:-1]); \\
 log_file.close(); \\
 print "\t".join(merge_stat)'""".format(
+                module_python=config.param('DEFAULT', 'module_python'),
                 flash_log=flash_log
             )
 
@@ -199,7 +198,6 @@ pandoc --to=markdown \\
     def catenate(self):
 
         """
-        Step 5
         Catenate all the reads in one file for further analysis.
 
         This step takes as input files:
@@ -251,7 +249,6 @@ pandoc --to=markdown \\
 
     def uchime(self):
         """
-        Step 6
         Reference based chimera detection is performed using [vsearch](https://github.com/torognes/vsearch)
 
         This step takes as input files:
@@ -293,7 +290,6 @@ pandoc --to=markdown \\
 
     def merge_uchime_stats(self):
         """
-        Step 7
         The chimeric sequences filtered out statistics per readset are merged at this step.
         """
 
@@ -396,7 +392,6 @@ pandoc --to=markdown \\
 
     def otu_picking(self):
         """
-        Step 8
         The OTU picking step (de novo & close_ref) assigns similar sequences to operational taxonomic units (OTUs) by clustering sequences based on a user-defined similarity threshold. Method per default uses [VSEARCH] (https://github.com/torognes/vsearch) and [Qiime] (http://qiime.org).
 
         This step takes as input file:
@@ -432,7 +427,6 @@ pandoc --to=markdown \\
 
     def otu_rep_picking(self):
         """
-        Step 9
         After picking OTUs, this step pick a representative sequence for each OTU.
 
         This step takes as input files:
@@ -457,7 +451,6 @@ pandoc --to=markdown \\
         job = qiime.otu_rep_picking(
             otu_file,
             filter_fasta,
-            output_directory,
             otu_rep_file
         )
 
@@ -471,7 +464,6 @@ pandoc --to=markdown \\
 
     def otu_assigning(self):
         """
-        Step 10
         Given a set of OTUS, this step attempts to assign the taxonomy of each OTU using [Uclust] (http://drive5.com/usearch/manual/uclust_algo.html).
 
         This step takes as input files:
@@ -505,7 +497,6 @@ pandoc --to=markdown \\
 
     def otu_table(self):
         """
-        Step 11
         This step make a consensus OTU table in biom format. It tabulates the number of times an OTU is found in each sample, and adds the taxonomic predictions for each OTU.
 
         This step takes as input files:
@@ -533,7 +524,6 @@ pandoc --to=markdown \\
         job = qiime.otu_table(
             otu_file,
             tax_assign_file,
-            otu_directory,
             otu_table_file,
             otu_table_summary
         )
@@ -598,7 +588,6 @@ $QIIME_HOME/biom summarize-table \\
 
     def otu_alignment(self):
         """
-        Step 12
         Align OTU representative sequences using [PyNAST] (http://biocore.github.io/pynast/).
 
         This step takes as input file:
@@ -629,7 +618,6 @@ $QIIME_HOME/biom summarize-table \\
 
     def filter_alignment(self):
         """
-        Step 13
         Filter the alignment by removing positions which are gaps in every sequence.
 
         This step takes as input file:
@@ -660,7 +648,6 @@ $QIIME_HOME/biom summarize-table \\
 
     def phylogeny(self):
         """
-        Step 14
         Build a phylogenetic tree from a multiple sequence alignment using [FastTree] (http://www.microbesonline.org/fasttree/).
 
         This step takes as input file:
@@ -693,7 +680,6 @@ $QIIME_HOME/biom summarize-table \\
 
     def qiime_report(self):
         """
-        Step 15
         1st part report for taxonomic affiliation.
         """
 
@@ -744,7 +730,6 @@ pandoc --to=markdown \\
 
     def multiple_rarefaction(self):
         """
-        Step 16
         1st step (/4) for rarefaction plot.
         Rarefies OTU table by random sampling (without replacement) at different depth in order to perform rarefaction analysis.
         You need to provide the minimum/maximum number of sequences per samples and the size of each steps between the min/max of seqs/sample.
@@ -781,7 +766,6 @@ pandoc --to=markdown \\
 
     def alpha_diversity(self):
         """
-        Step 17
         2nd step (/4) for rarefaction plot.
         Calculate alpha diversity on each sample using a variety of alpha diversity metrics (chao1, shannon, observed otus).
 
@@ -811,7 +795,6 @@ pandoc --to=markdown \\
 
     def collate_alpha(self):
         """
-        Step 18
         3rd step (/4) for rarefaction plot.
         Merge all the alpha diversity computed in the previous step.
         """
@@ -845,7 +828,6 @@ pandoc --to=markdown \\
 
     def sample_rarefaction_plot(self):
         """
-        Step 19
         Last step for rarefaction plot.
         Plot the rarefaction curve for each sample
         """
@@ -854,8 +836,6 @@ pandoc --to=markdown \\
 
         alpha_directories = ['open_ref_alpha_diversity', 'denovo_alpha_diversity', 'closed_ref_alpha_diversity']
         chao1_stat = self.select_input_files([os.path.join(alpha_directory, "alpha_diversity_collated", "merge_samples", "chao1.txt")] for alpha_directory in alpha_directories)[0]
-        observed_species_stat = self.select_input_files([os.path.join(alpha_directory, "alpha_diversity_collated", "merge_samples", "observed_species.txt")] for alpha_directory in alpha_directories)[0]
-        shannon_stat = self.select_input_files([os.path.join(alpha_directory, "alpha_diversity_collated", "merge_samples", "shannon.txt")] for alpha_directory in alpha_directories)[0]
 
         alpha_directory = os.path.dirname(os.path.dirname(os.path.dirname(chao1_stat)))
         alpha_diversity_collated_directory = os.path.dirname(os.path.dirname(chao1_stat))
@@ -864,7 +844,6 @@ pandoc --to=markdown \\
         alpha_diversity_collated_merge_directory = os.path.join(alpha_diversity_collated_directory, "merge_samples")
         alpha_diversity_rarefaction_directory = os.path.join(alpha_directory, "alpha_rarefaction")
 
-        chao1_stat = os.path.join(alpha_diversity_collated_merge_directory, "chao1.txt")
         observed_species_stat = os.path.join(alpha_diversity_collated_merge_directory, "observed_species.txt")
         shannon_stat = os.path.join(alpha_diversity_collated_merge_directory, "shannon.txt")
 
@@ -949,7 +928,6 @@ pandoc --to=markdown \\
 
     def qiime_report2(self):
         """
-        Step 20
         2nd part report for taxonomic affiliation. Plot rarefaction curve for each sample.
         """
 
@@ -999,7 +977,6 @@ pandoc --to=markdown \\
 
     def single_rarefaction(self):
         """
-        Step 21
         This step is recommended. It subsamples (rarefy) all the samples to an equal number of sequences for further comparaison.
         You have to provide the number of sequences to subsample per sample in the configuration file (single_rarefaction_depth).
 
@@ -1098,7 +1075,6 @@ pandoc --to=markdown \\
 
     def css_normalization(self):
         """
-        Step 22
         This step is recommended. Alternative method for normalization to rarefaction.
         Performs the CSS Matrix normalization.
 
@@ -1197,7 +1173,6 @@ pandoc --to=markdown \\
 
     def rarefaction_plot(self):
         """
-        Step 23
         Last step for rarefaction plot.
         Rarefaction curve for each sample on the same plot.
         """
@@ -1241,7 +1216,6 @@ pandoc --to=markdown \\
 
     def summarize_taxa(self):
         """
-        Step 24
         1st step (/3) for taxonomic affiliation plot.
         Summarize information of taxonomic groups within each sample at different taxonomic level.
 
@@ -1288,7 +1262,6 @@ pandoc --to=markdown \\
 
     def plot_taxa(self):
         """
-        Step 25
         2nd step (/3) for taxonomic affiliation plot.
         Make taxonomy summary bar plots based on taxonomy assignment.
 
@@ -1330,7 +1303,6 @@ pandoc --to=markdown \\
 
     def plot_heatmap(self):
         """
-        Step 26
         Last step for taxonomic affiliation plot.
         Make heatmap at phylum level.
 
@@ -1397,7 +1369,6 @@ pandoc --to=markdown \\
 
     def krona(self):
         """
-        Step 27
         Plot Krona chart for taxonomic affiliation
         """
 
@@ -1455,7 +1426,6 @@ $QIIME_HOME/biom convert -i {otu_normalized_table} \\
 
     def plot_to_alpha(self):
         """
-        Step 28
         Final report 1st part for the Amplicon-Seq pipeline. Display results (taxonomy, heatmap and alpha diversity).
         """
 
@@ -1516,7 +1486,6 @@ pandoc --to=markdown \\
 
     def beta_diversity(self):
         """
-        Step 29
         1st step (/3) for 2D PCoA plot.
         Calculate beta diversity (pairwise sample dissimilarity) on OTU table. The OTU table has to be normalized.
         Only works with >= 4 samples
@@ -1567,7 +1536,6 @@ pandoc --to=markdown \\
 
     def pcoa(self):
         """
-        Step 30
         2nd step (/3) for 2D PCoA plot.
         Compute coordinates pour PCoA
 
@@ -1623,7 +1591,6 @@ pandoc --to=markdown \\
 
     def pcoa_plot(self):
         """
-        Step 31
         Last step for 2D PCoA plot.
 
         This step takes as input file:
@@ -1665,7 +1632,6 @@ pandoc --to=markdown \\
 
                 job1 = qiime.pcoa_plot(
                     pcoa_unweighted_file,
-                    pcoa_directory,
                     map_file,
                     beta_diversity_pcoa_unweighted,
                     pcoa_plot_directory
@@ -1673,7 +1639,6 @@ pandoc --to=markdown \\
 
                 job2 = qiime.pcoa_plot(
                     pcoa_weighted_file,
-                    pcoa_directory,
                     map_file,
                     beta_diversity_pcoa_weighted,
                     pcoa_plot_directory
@@ -1690,7 +1655,6 @@ pandoc --to=markdown \\
 
                 job = qiime.pcoa_plot(
                     pcoa_euclidean_file,
-                    pcoa_directory,
                     map_file,
                     beta_diversity_pcoa_euclidean,
                     pcoa_plot_directory
@@ -1706,7 +1670,6 @@ pandoc --to=markdown \\
 
     def plot_to_beta(self):
         """
-        Step 32
         Final report's 2nd part for the Amplicon-Seq pipeline. Display results (beta diversity PCoA plots).
         """
 

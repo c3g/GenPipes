@@ -2,7 +2,6 @@
 
 # Python Standard Modules
 import logging
-import os
 
 # MUGQIC Modules
 from core.config import *
@@ -152,7 +151,6 @@ $QIIME_HOME/pick_otus.py \\
 def otu_rep_picking(
     otu_file,
     filter_fasta,
-    output_directory,
     otu_rep_file
     ):
 
@@ -171,11 +169,11 @@ $QIIME_HOME/pick_rep_set.py \\
   -i {otu_file} \\
   -f {filter_fasta} \\
   -m {method} \\
-  -o {output_directory}""".format(
+  -o {otu_rep_file}""".format(
         otu_file=otu_file,
         filter_fasta=filter_fasta,
         method=config.param('qiime_rep_picking', 'rep_set_picking_method'),
-        output_directory=otu_rep_file
+        otu_rep_file=otu_rep_file
         ),
         removable_files=[otu_rep_file]
     )
@@ -216,7 +214,6 @@ $QIIME_HOME/parallel_assign_taxonomy_uclust.py \\
 def otu_table(
     otu_file,
     tax_assign_file,
-    otu_directory,
     otu_table_file,
     otu_table_summary
     ):
@@ -443,7 +440,7 @@ MPLBACKEND=Agg $QIIME_HOME/make_rarefaction_plots.py \\
     )
 
 def single_rarefaction(
-    otu_table,
+    table_otu,
     chao1_rarefied_stat,
     observed_species_rarefied_stat,
     shannon_rarefied_stat,
@@ -451,7 +448,7 @@ def single_rarefaction(
     normalization_method
     ):
 
-    inputs = [otu_table]
+    inputs = [table_otu]
     outputs = [chao1_rarefied_stat,observed_species_rarefied_stat,shannon_rarefied_stat,otu_normalized_table,normalization_method]
 
     return Job(
@@ -463,10 +460,10 @@ def single_rarefaction(
 
         command="""\
 $QIIME_HOME/single_rarefaction.py \\
-  -i {otu_table} \\
+  -i {table_otu} \\
   -o {otu_normalized_table} \\
   -d {depth}""".format(
-        otu_table=otu_table,
+        table_otu=table_otu,
         otu_normalized_table=otu_normalized_table,
         depth=config.param('qiime_single_rarefaction', 'single_rarefaction_depth')
         ),
@@ -474,7 +471,7 @@ $QIIME_HOME/single_rarefaction.py \\
     )
 
 def css_normalization(
-    otu_table,
+    table_otu,
     chao1_rarefied_stat,
     observed_species_rarefied_stat,
     shannon_rarefied_stat,
@@ -482,7 +479,7 @@ def css_normalization(
     normalization_method
     ):
 
-    inputs = [otu_table]
+    inputs = [table_otu]
     outputs = [chao1_rarefied_stat,observed_species_rarefied_stat,shannon_rarefied_stat,otu_normalized_table,normalization_method]
 
     return Job(
@@ -495,10 +492,10 @@ def css_normalization(
 
         command="""\
 $QIIME_HOME/normalize_table.py \\
-  -i {otu_table} \\
+  -i {table_otu} \\
   -o {otu_normalized_table} \\
   -a {method}""".format(
-        otu_table=otu_table,
+        table_otu=table_otu,
         otu_normalized_table=otu_normalized_table,
         method="CSS"
         ),
@@ -717,7 +714,6 @@ $QIIME_HOME/principal_coordinates.py \\
 
 def pcoa_plot(
     pcoa_file,
-    pcoa_directory,
     map_file,
     beta_diversity_pcoa,
     pcoa_plot_directory
