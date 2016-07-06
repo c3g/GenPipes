@@ -561,9 +561,15 @@ pandoc \\
                 outputs = [[bed_graph_prefix + ".bedGraph", big_wig_prefix + ".bw"]]
 
             for bed_graph_output, big_wig_output in outputs:
+                if "forward" in bed_graph_output:
+                    in_bam = bam_file_prefix + "forward.bam"    # same as output_bam_f from previous picard job
+                elif "reverse" in bed_graph_output:
+                    in_bam = bam_file_prefix + "reverse.bam"    # same as output_bam_r from previous picard job
+                else:
+                    in_bam = input_bam
                 job = concat_jobs([
                     Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " " + os.path.join("tracks", "bigWig"), removable_files=["tracks"]),
-                    bedtools.graph(input_bam, bed_graph_output, big_wig_output,library[sample])
+                    bedtools.graph(in_bam, bed_graph_output, big_wig_output,library[sample])
                 ], name="wiggle." + re.sub(".bedGraph", "", os.path.basename(bed_graph_output)))
                 jobs.append(job)
 
