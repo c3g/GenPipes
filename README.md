@@ -225,14 +225,15 @@ are identical apart from `chr` sequence prefixes, document it):
             SOURCE=UCSC
             VERSION=2012-01-09
 
-* Running `bash $MUGQIC_PIPELINES_HOME/resources/genomes/<scientific_name>.<assembly>.sh` will install the genome in $MUGQIC_INSTALL_HOME_DEV (by default). Run `bash $MUGQIC_PIPELINES_HOME/resources/genomes/<scientific_name>.<assembly>.sh MUGQIC_INSTALL_HOME` to install it in $MUGQIC_INSTALL_HOME. This will download and install genomes, indexes and, for Ensembl only, annotations (GTF, VCF, etc.).
+* Running `bash $MUGQIC_PIPELINES_HOME/resources/genomes/<scientific_name>.<assembly>.sh` will install the genome in $MUGQIC_INSTALL_HOME_DEV (by default). This will download and install genomes, indexes and, for Ensembl only, annotations (GTF, VCF, etc.).
+[ADMINS ONLY] To install it in $MUGQIC_INSTALL_HOME run `bash $MUGQIC_PIPELINES_HOME/resources/genomes/<scientific_name>.<assembly>.sh MUGQIC_INSTALL_HOME`.
 
     If the genome is big, separate batch jobs will be submitted to the cluster for bwa, bowtie/tophat, star indexing.
     Check that jobs are completed OK.
 
-* If the new genome has been installed in `$MUGQIC_INSTALL_HOME_DEV`, to deploy in `$MUGQIC_INSTALL_HOME`:
+* [ADMINS ONLY] If the new genome has been installed in `$MUGQIC_INSTALL_HOME_DEV`, to deploy in `$MUGQIC_INSTALL_HOME`:
 
-        rsync -va --no-o --no-g --no-p --size-only -I -O --delete --ignore-times $MUGQIC_INSTALL_HOME_DEV/genomes/species/<scientific_name>.<assembly> $MUGQIC_INSTALL_HOME/genomes/species/
+        rsync -va --no-o --no-g --no-p --size-only -I -O --ignore-times $MUGQIC_INSTALL_HOME_DEV/genomes/species/<scientific_name>.<assembly> $MUGQIC_INSTALL_HOME/genomes/species/
 
 * Add the newly created INI file to the genome config files for further usage in pipeline command:
 

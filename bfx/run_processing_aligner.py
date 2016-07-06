@@ -47,7 +47,7 @@ class RunProcessingAligner(object):
     def get_reference_index(self):
         raise NotImplementedError("Please Implement this method")
 
-    def get_alignment_jobs(self, readset):
+    def get_alignment_job(self, readset):
         raise NotImplementedError("Please Implement this method")
 
     def get_metrics_jobs(self, readset):
@@ -72,7 +72,6 @@ class RunProcessingAligner(object):
 class BwaRunProcessingAligner(RunProcessingAligner):
     downloaded_bed_files = []
     created_interval_lists = []
-    filtered_annotation_files = []
 
     def get_reference_index(self):
         folder_name = os.path.basename(self.genome_folder)
@@ -104,8 +103,7 @@ class BwaRunProcessingAligner(RunProcessingAligner):
 
         return []
 
-    def get_alignment_jobs(self, readset):
-        jobs = []
+    def get_alignment_job(self, readset):
         output = readset.bam + ".bam"
         job = concat_jobs([
                               Job(command="mkdir -p " + os.path.dirname(output)),
@@ -122,10 +120,9 @@ class BwaRunProcessingAligner(RunProcessingAligner):
                                       "coordinate"
                                   )
                               ])
-                          ], name="bwa_mem_picard_sort_sam." + readset.name + "_" + readset.run + "_" + readset.lane)
+                          ], name="bwa_mem_picard_sort_sam." + readset.name + "." + readset.run + "." + readset.lane)
 
-        jobs.append(job)
-        return jobs
+        return job
 
     def get_metrics_jobs(self, readset):
         jobs = []
@@ -172,7 +169,7 @@ class BwaRunProcessingAligner(RunProcessingAligner):
             job.name = "picard_calculate_hs_metrics." + readset.name + ".hs" + "." + readset.run + "." + readset.lane
             jobs.append(job)
 
-        jobs.extend(self.verify_bam_id(readset, full_coverage_bed))
+        jobs.extend(self.verify_bam_id(readset))
 
         job = bvatools.depth_of_coverage(
             input,
@@ -186,14 +183,13 @@ class BwaRunProcessingAligner(RunProcessingAligner):
 
         return jobs
 
-    def verify_bam_id(self, readset, coverage_bed):
+    def verify_bam_id(self, readset):
         """
-        verifyBamID is a software that verifies whether the reads in particular file match previously known
-        genotypes for an individual (or group of individuals), and checks whether the reads are contaminated
-        as a mixture of two samples. verifyBamID can detect sample contamination and swaps when external
-        genotypes are available. When external genotypes are not available, verifyBamID still robustly
-        detects sample swaps.
-
+            verifyBamID is a software that verifies whether the reads in particular file match previously known
+            genotypes for an individual (or group of individuals), and checks whether the reads are contaminated
+            as a mixture of two samples. verifyBamID can detect sample contamination and swaps when external
+            genotypes are available. When external genotypes are not available, verifyBamID still robustly
+            detects sample swaps.
         """
         jobs = []
         if len(readset.annotation_files) > 0 and os.path.isfile(readset.annotation_files[0]):
@@ -204,24 +200,6 @@ class BwaRunProcessingAligner(RunProcessingAligner):
             input_bam = readset.bam + ".bam"
             output_prefix = readset.bam + ".metrics.verifyBamId"
 
-            # Check if target coverage exists, the known variants file is filtered
-            if coverage_bed:
-                known_variants_annotated_filtered = os.path.join(self.output_dir,
-                                                                 coverage_bed + "." + readset.run + "." + readset.lane +
-                                                                    ".vcf")
-                if known_variants_annotated_filtered not in BwaRunProcessingAligner.filtered_annotation_files:
-                    jobs.append(
-                        snpeff.snpsift_intervals_index(known_variants_annotated,
-                                                       coverage_bed,
-                                                       known_variants_annotated_filtered,
-                                                       "filter_annotated_known_variants." +
-                                                                 os.path.basename(coverage_bed) + "." + readset.run +
-                                                                 "." + readset.lane
-                                                       )
-                    )
-                    BwaRunProcessingAligner.filtered_annotation_files.append(known_variants_annotated_filtered)
-
-            # Run verifyBamID
             jobs.append(concat_jobs([
                 verify_bam_id.verify(
                     input_bam,
@@ -294,8 +272,7 @@ class StarRunProcessingAligner(RunProcessingAligner):
         else:
             return None
 
-    def get_alignment_jobs(self, readset):
-        jobs = []
+    def get_alignment_job(self, readset):
         output = readset.bam + ".bam"
 
         rg_center = config.param('star_align', 'sequencing_center', required=False)
@@ -328,8 +305,7 @@ class StarRunProcessingAligner(RunProcessingAligner):
             picard.build_bam_index(output, output[::-1].replace(".bam"[::-1], ".bai"[::-1], 1)[::-1])
         ])
         job.name = "star_align." + readset.name + "." + readset.run + "." + readset.lane
-        jobs.append(job)
-        return jobs
+        return job
 
     def get_metrics_jobs(self, readset):
         jobs = []
