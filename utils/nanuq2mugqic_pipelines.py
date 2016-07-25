@@ -190,7 +190,10 @@ def create_readsets(nanuq_readset_file, seq_type, mugqic_pipelines_readset_file=
         log.warning("File " + mugqic_pipelines_readset_file + " already exists! Skipping...")
     else:
         mugqic_pipelines_readset_csv = csv.DictWriter(open(mugqic_pipelines_readset_file, 'wb'), fieldnames=fieldnames, delimiter='\t')
-        mugqic_pipelines_readset_csv.writeheader()
+        try:
+            mugqic_pipelines_readset_csv.writeheader()
+        except AttributeError as ae:
+            log.error("This script requires at minimum Python 2.7/3.2.")
         mugqic_pipelines_readset_csv.writerows(mugqic_pipelines_readset_csv_rows)
 
 #-------------------------------------------------------------------------------
