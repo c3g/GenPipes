@@ -952,6 +952,8 @@ pandoc --to=markdown \\
 
         alpha_directory = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(curve_sample[0]))))
 
+        fig_src_link = "fig/" + alpha_directory + "/alpha.rarefaction_sample.png"
+
         jobs.append(Job(
             curve_sample,
             [report_file],
@@ -960,11 +962,13 @@ pandoc --to=markdown \\
 mkdir -p report/fig/{alpha_directory}/ && \\
 montage -mode concatenate -tile {plot_dimension} {curve_sample} report/fig/{alpha_directory}/alpha.rarefaction_sample.png  && \\
 pandoc --to=markdown \\
+  --variable fig_src_link="{fig_src_link}" \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}""".format(
                 alpha_directory=alpha_directory,
                 plot_dimension="3x"+str((num_sample/3)+1),
                 curve_sample=' '.join(curve_sample),
+                fig_src_link=fig_src_link,
                 report_template_dir=self.report_template_dir,
                 basename_report_file=os.path.basename(report_file),
                 report_file=report_file
@@ -1451,6 +1455,17 @@ $QIIME_HOME/biom convert -i {otu_normalized_table} \\
             beta_directory = re.sub('alpha_diversity', 'beta_diversity', alpha_directory)
             report_file = os.path.join("report", "AmpliconSeq.plot_to_alpha_" + method[:3] + ".md")
 
+            if method == 'rarefaction':
+                method_link = "These results have been generated after a rarefaction step. All the samples have been rarefied to **" + config.param('qiime_single_rarefaction', 'single_rarefaction_depth') + "** sequences."
+            else:
+                method_link = "These results have been generated after the [CSS]\ [@css] normalization method."
+
+            bar_plot_link = "[Interactive html plots available here](fig/" + alpha_directory + "/" + method + "/taxonomic_affiliation/bar_charts.html)"
+            krona_chart_link = "[available here](fig/" + alpha_directory + "/" + method + "/krona_chart/krona_chart.html)"
+            heatmap_otu_link = "[download OTU table](fig/" + alpha_directory + "/" + method + "/heatmap/otumat.tsv)"
+            heatmap_taxon_link = "[download taxon table](fig/" + alpha_directory + "/" + method + "/heatmap/taxmat.tsv))](fig/" + alpha_directory + "/" + method + "/heatmap/otu_heatmap.png)"
+            alpha_plots_link = "[Interactive html plots for alpha diversity available here](fig/" + alpha_directory + "/" + method + "/alpha_rarefaction/rarefaction_plots.html)"
+
             jobs.append(Job(
                 inputs,
                 [report_file],
@@ -1467,15 +1482,25 @@ cp {beta_directory}/{method}/heatmap/otumat.tsv report/fig/{beta_directory}/{met
 cp {beta_directory}/{method}/heatmap/taxmat.tsv report/fig/{beta_directory}/{method}/heatmap/taxmat.tsv && \\
 pandoc --to=markdown \\
   --template {report_template_dir}/{basename_report_file} \\
-  --variable single_rarefaction_depth="{single_rarefaction_depth}" \\
+  --variable method_link="{method_link}" \\
+  --variable bar_plot_link="{bar_plot_link}" \\
+  --variable krona_chart_link="{krona_chart_link}" \\
+  --variable heatmap_otu_link="{heatmap_otu_link}" \\
+  --variable heatmap_taxon_link="{heatmap_taxon_link}" \\
+  --variable alpha_plots_link="{alpha_plots_link}" \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}""".format(
                     alpha_directory=alpha_directory,
                     beta_directory=beta_directory,
                     method=method,
-                    single_rarefaction_depth=config.param('qiime_single_rarefaction', 'single_rarefaction_depth'),
+                    method_link=method_link,
+                    bar_plot_link=bar_plot_link,
+                    krona_chart_link=krona_chart_link,
+                    heatmap_otu_link=heatmap_otu_link,
+                    heatmap_taxon_link=heatmap_taxon_link,
+                    alpha_plots_link=alpha_plots_link,
                     report_template_dir=self.report_template_dir,
-                    basename_report_file=os.path.basename(report_file),
+                    basename_report_file=re.sub('_'+method[:3], '', os.path.basename(report_file)),
                     report_file=report_file
                 ),
                 report_files=[report_file],
@@ -1702,6 +1727,11 @@ pandoc --to=markdown \\
 
             report_file = os.path.join("report", "AmpliconSeq.plot_to_beta_" + method[:3] + ".md")
 
+            if method == 'rarefaction':
+                method_link = "These results have been generated after a rarefaction step. All the samples have been rarefied to **" + config.param('qiime_single_rarefaction', 'single_rarefaction_depth') + "** sequences."
+            else:
+                method_link = "These results have been generated after the [CSS]\ [@css] normalization method."
+
             jobs.append(Job(
                 inputs,
                 [report_file],
@@ -1711,6 +1741,7 @@ mkdir -p report/fig/{beta_directory}/{method} && \\
 cp -r {beta_directory}/{method}/2d_plots/ report/fig/{beta_directory}/{method}/2d_plots/ && \\
 pandoc --to=markdown \\
   --template {report_template_dir}/{basename_report_file} \\
+  --variable method_link="{method_link}" \\
   --variable description_metric="{description_metric}" \\
   --variable link_metric1="{link_metric1}" \\
   --variable link_metric2="{link_metric2}" \\
@@ -1718,11 +1749,12 @@ pandoc --to=markdown \\
   > {report_file}""".format(
                     beta_directory=beta_directory,
                     method=method,
+                    method_link=method_link,
                     description_metric=description_metric_t,
                     link_metric1=link_metric1_t,
                     link_metric2=link_metric2_t,
                     report_template_dir=self.report_template_dir,
-                    basename_report_file=os.path.basename(report_file),
+                    basename_report_file=re.sub('_'+method[:3], '', os.path.basename(report_file)),
                     report_file=report_file
                 ),
                 report_files=[report_file],
