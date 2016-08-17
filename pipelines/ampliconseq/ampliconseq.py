@@ -176,12 +176,12 @@ mkdir -p report && \\
 cp {readset_merge_flash_stats} {sample_merge_flash_stats} report/ && \\
 merge_readset_table_md=`LC_NUMERIC=en_CA awk -F "\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----|-----:|-----:|-----:"}} else {{print $1, $2, sprintf("%\\47d", $3), sprintf("%\\47d", $4), sprintf("%.1f", $5)}}}}' {readset_merge_flash_stats}` && \\
 pandoc --to=markdown \\
-  {report_template_dir}/{basename_report_file} \\
   --template {report_template_dir}/{basename_report_file} \\
-  --variable min_overlap={min_overlap} \\
-  --variable max_overlap={max_overlap} \\
-  --variable read_type={read_type} \\
+  --variable min_overlap="{min_overlap}" \\
+  --variable max_overlap="{max_overlap}" \\
+  --variable read_type="{read_type}" \\
   --variable merge_readset_table="$merge_readset_table_md" \\
+  {report_template_dir}/{basename_report_file} \\
   > {report_file}""".format(
                     min_overlap=config.param('flash', 'min_overlap', type='int'),
                     max_overlap=config.param('flash', 'max_overlap', type='int'),
@@ -369,13 +369,13 @@ mkdir -p report && \\
 cp {readset_merge_uchime_stats} {sample_merge_uchime_stats} report/ && \\
 uchime_readset_table_md=`LC_NUMERIC=en_CA awk -F "\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----|-----:|-----:|-----:"}} else {{print $1, $2, sprintf("%\\47d", $3), sprintf("%\\47d", $4), sprintf("%.1f", $5)}}}}' {readset_merge_uchime_stats}` && \\
 pandoc --to=markdown \\
-  {report_template_dir}/{basename_report_file} \\
   --template {report_template_dir}/{basename_report_file} \\
-  --variable read_type={read_type} \\
-  --variable sequence_max_n={sequence_max_n} \\
-  --variable chimera_db={chimera_db} \\
-  --variable chimera_ref={chimera_ref} \\
+  --variable read_type="{read_type}" \\
+  --variable sequence_max_n="{sequence_max_n}" \\
+  --variable chimera_db="{chimera_db}" \\
+  --variable chimera_ref="{chimera_ref}" \\
   --variable uchime_readset_table="$uchime_readset_table_md" \\
+  {report_template_dir}/{basename_report_file} \\
   > {report_file}""".format(
                     read_type="Paired",
                     report_template_dir=self.report_template_dir,
@@ -710,9 +710,9 @@ $QIIME_HOME/biom summarize-table \\
 mkdir -p report && \\
 pandoc --to=markdown \\
   --template {report_template_dir}/{basename_report_file} \\
-  --variable amplicon_type={amplicon_type} \\
-  --variable similarity={similarity} \\
-  --variable amplicon_db={amplicon_db} \\
+  --variable amplicon_type="{amplicon_type}" \\
+  --variable similarity="{similarity}" \\
+  --variable amplicon_db="{amplicon_db}" \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}""".format(
                 amplicon_type=config.param('qiime', 'amplicon_type'),
@@ -962,11 +962,12 @@ pandoc --to=markdown \\
 mkdir -p report/fig/{alpha_directory}/ && \\
 montage -mode concatenate -tile {plot_dimension} {curve_sample} report/fig/{alpha_directory}/alpha.rarefaction_sample.png  && \\
 pandoc --to=markdown \\
+  --template {report_template_dir}/{basename_report_file} \\
   --variable fig_src_link="{fig_src_link}" \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}""".format(
                 alpha_directory=alpha_directory,
-                plot_dimension="3x"+str((num_sample/3)+1),
+                plot_dimension=str(math.sqrt(num_sample)+1)+"x",  # "3x"+str((num_sample/3)+1)
                 curve_sample=' '.join(curve_sample),
                 fig_src_link=fig_src_link,
                 report_template_dir=self.report_template_dir,
@@ -1456,15 +1457,17 @@ $QIIME_HOME/biom convert -i {otu_normalized_table} \\
             report_file = os.path.join("report", "AmpliconSeq.plot_to_alpha_" + method[:3] + ".md")
 
             if method == 'rarefaction':
+                method_title = "from rarefaction"
                 method_link = "These results have been generated after a rarefaction step. All the samples have been rarefied to **" + config.param('qiime_single_rarefaction', 'single_rarefaction_depth') + "** sequences."
             else:
+                method_title = "from CSS normalization"
                 method_link = "These results have been generated after the [CSS]\ [@css] normalization method."
 
             bar_plot_link = "[Interactive html plots available here](fig/" + alpha_directory + "/" + method + "/taxonomic_affiliation/bar_charts.html)"
             krona_chart_link = "[available here](fig/" + alpha_directory + "/" + method + "/krona_chart/krona_chart.html)"
-            heatmap_otu_link = "[download OTU table](fig/" + alpha_directory + "/" + method + "/heatmap/otumat.tsv)"
-            heatmap_taxon_link = "[download taxon table](fig/" + alpha_directory + "/" + method + "/heatmap/taxmat.tsv))](fig/" + alpha_directory + "/" + method + "/heatmap/otu_heatmap.png)"
-            alpha_plots_link = "[Interactive html plots for alpha diversity available here](fig/" + alpha_directory + "/" + method + "/alpha_rarefaction/rarefaction_plots.html)"
+            heatmap_otu_link = "[download OTU table](fig/" + beta_directory + "/" + method + "/heatmap/otumat.tsv)"
+            heatmap_taxon_link = "[download taxon table](fig/" + beta_directory + "/" + method + "/heatmap/taxmat.tsv))](fig/" + beta_directory + "/" + method + "/heatmap/otu_heatmap.png"
+            alpha_plots_link = "[Interactive html plots for alpha diversity available here](fig/" + alpha_directory + "/alpha_rarefaction/" + method + "/rarefaction_plots.html)"
 
             jobs.append(Job(
                 inputs,
@@ -1482,6 +1485,7 @@ cp {beta_directory}/{method}/heatmap/otumat.tsv report/fig/{beta_directory}/{met
 cp {beta_directory}/{method}/heatmap/taxmat.tsv report/fig/{beta_directory}/{method}/heatmap/taxmat.tsv && \\
 pandoc --to=markdown \\
   --template {report_template_dir}/{basename_report_file} \\
+  --variable method_title="{method_title}" \\
   --variable method_link="{method_link}" \\
   --variable bar_plot_link="{bar_plot_link}" \\
   --variable krona_chart_link="{krona_chart_link}" \\
@@ -1493,6 +1497,7 @@ pandoc --to=markdown \\
                     alpha_directory=alpha_directory,
                     beta_directory=beta_directory,
                     method=method,
+                    method_title=method_title,
                     method_link=method_link,
                     bar_plot_link=bar_plot_link,
                     krona_chart_link=krona_chart_link,
@@ -1503,7 +1508,6 @@ pandoc --to=markdown \\
                     basename_report_file=re.sub('_'+method[:3], '', os.path.basename(report_file)),
                     report_file=report_file
                 ),
-                report_files=[report_file],
                 name="plot_to_alpha." + re.sub("_alpha_diversity", ".", alpha_directory) + method
             ))
 
@@ -1725,12 +1729,11 @@ pandoc --to=markdown \\
                 link_metric1_t = "Euclidean distance ([Interactive html plots available here](fig/" + beta_directory + "/" + method + "/2d_plots/pcoa_euclidean_otu_normalized_table_2D_PCoA_plots.html))"
                 link_metric2_t = " "
 
-            report_file = os.path.join("report", "AmpliconSeq.plot_to_beta_" + method[:3] + ".md")
+            report_file_beta = os.path.join("report", "AmpliconSeq.plot_to_beta_" + method[:3] + ".md")
+            report_file_alpha = re.sub("beta", "alpha", report_file_beta)
+            report_file = re.sub('plot_to_beta', 'taxonomic_affiliation', report_file_beta)
 
-            if method == 'rarefaction':
-                method_link = "These results have been generated after a rarefaction step. All the samples have been rarefied to **" + config.param('qiime_single_rarefaction', 'single_rarefaction_depth') + "** sequences."
-            else:
-                method_link = "These results have been generated after the [CSS]\ [@css] normalization method."
+            inputs.append(report_file_alpha)
 
             jobs.append(Job(
                 inputs,
@@ -1740,21 +1743,22 @@ pandoc --to=markdown \\
 mkdir -p report/fig/{beta_directory}/{method} && \\
 cp -r {beta_directory}/{method}/2d_plots/ report/fig/{beta_directory}/{method}/2d_plots/ && \\
 pandoc --to=markdown \\
-  --template {report_template_dir}/{basename_report_file} \\
-  --variable method_link="{method_link}" \\
+  --template {report_template_dir}/{basename_report_file_beta} \\
   --variable description_metric="{description_metric}" \\
   --variable link_metric1="{link_metric1}" \\
   --variable link_metric2="{link_metric2}" \\
-  {report_template_dir}/{basename_report_file} \\
-  > {report_file}""".format(
+  {report_template_dir}/{basename_report_file_beta} \\
+  > {report_file_beta} && \\
+cat {report_file_alpha} {report_file_beta} > {report_file}""".format(
                     beta_directory=beta_directory,
                     method=method,
-                    method_link=method_link,
                     description_metric=description_metric_t,
                     link_metric1=link_metric1_t,
                     link_metric2=link_metric2_t,
                     report_template_dir=self.report_template_dir,
-                    basename_report_file=re.sub('_'+method[:3], '', os.path.basename(report_file)),
+                    basename_report_file_beta=re.sub('_'+method[:3], '', os.path.basename(report_file_beta)),
+                    report_file_alpha=report_file_alpha,
+                    report_file_beta=report_file_beta,
                     report_file=report_file
                 ),
                 report_files=[report_file],
