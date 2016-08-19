@@ -9,20 +9,17 @@ set -eu -o pipefail
 # Also, once modified, delete this commented-out header and the ## comments
 ################################################################################
 
-SOFTWARE="minia"  
-VERSION="2.0.3" 
-ARCHIVE="$SOFTWARE-$VERSION-Linux.tar.gz"  
-ARCHIVE_URL=http://gatb-tools.gforge.inria.fr/versions/bin/$ARCHIVE
-SOFTWARE_DIR=$SOFTWARE-$VERSION-Linux
+SOFTWARE="SPAdes"  
+VERSION="3.9.0" 
+ARCHIVE="$SOFTWARE-$VERSION-Linux.tar.gz"
+ARCHIVE_URL="http://spades.bioinf.spbau.ru/release3.9.0/$ARCHIVE"
+SOFTWARE_DIR="SPAdes-3.9.0-Linux" 
 
 
 
-# Specific commands to extract and build the software
-# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
-# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
-  tar zxvf $ARCHIVE  
+  tar zxvf $ARCHIVE 
 
   # Install software
   cd $INSTALL_DOWNLOAD  ## TO BE ADDED AND MODIFIED IF NECESSARY
