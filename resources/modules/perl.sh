@@ -3,7 +3,8 @@
 set -eu -o pipefail
 
 SOFTWARE=perl
-VERSION=5.18.2
+VERSION=5.10.1
+#VERSION=5.18.2
 #VERSION=5.22.1
 ARCHIVE=$SOFTWARE-$VERSION.tar.gz
 ARCHIVE_URL=http://www.cpan.org/src/5.0/$ARCHIVE

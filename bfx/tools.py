@@ -28,7 +28,7 @@ from core.job import *
 
 ## functions for awk tools ##
 
-## functions for python tools ## 
+## functions for python tools ##
 def py_addLengthRay (file_scaffolds_fasta, length_file, output):
     return Job(
         [file_scaffolds_fasta, length_file],
@@ -101,10 +101,10 @@ python $PYTHON_TOOLS/rrnaBAMcounter.py \\
         )
     )
 # Parse Trinotate output, create best blast annotated file, GO terms and a list of filtered configs
-def py_parseTrinotateOutput(trinotate_annotation_report, trinotate_report_genes_prefix, trinotate_report_transcripts_prefix, gene_id_column, transcript_id_column, isoforms_lengths_file, job_name, filters=None):  
+def py_parseTrinotateOutput(trinotate_annotation_report, trinotate_report_genes_prefix, trinotate_report_transcripts_prefix, gene_id_column, transcript_id_column, isoforms_lengths_file, job_name, filters=None):
     return Job(
-        [trinotate_annotation_report, isoforms_lengths_file], 
-        [trinotate_report_genes_prefix + '_blast.tsv', trinotate_report_transcripts_prefix + '_blast.tsv' , 
+        [trinotate_annotation_report, isoforms_lengths_file],
+        [trinotate_report_genes_prefix + '_blast.tsv', trinotate_report_transcripts_prefix + '_blast.tsv' ,
         trinotate_report_genes_prefix + '_go.tsv', trinotate_report_transcripts_prefix + '_go.tsv',
         trinotate_report_transcripts_prefix + '_filtered.tsv'],
         [['DEFAULT', 'module_mugqic_tools'],
@@ -118,19 +118,19 @@ $PYTHON_TOOLS/parseTrinotateOutput.py -r {trinotate_annotation_report} -o {trino
         trinotate_report_genes_prefix=trinotate_report_genes_prefix,
         trinotate_report_transcripts_prefix=trinotate_report_transcripts_prefix,
         gene_id_column = gene_id_column,
-        isoforms_lengths=isoforms_lengths_file, 
+        isoforms_lengths=isoforms_lengths_file,
         transcript_id_column=transcript_id_column,
         filters="" if not filters else " -f " + ' and '.join(filters)
         )
     )
 
-def py_parseMergeCsv(input_files, delimiter, output , common, subset=None, exclude=None, left_join=None, sort_by=None, make_names=None, filters=None):  
+def py_parseMergeCsv(input_files, delimiter, output , common, subset=None, exclude=None, left_join=None, sort_by=None, make_names=None, filters=None):
     return Job(
-        input_files, 
+        input_files,
         [output],
         [['DEFAULT', 'module_mugqic_tools'],
          ['DEFAULT', 'module_python']
-         ], 
+         ],
         command="""\
 $PYTHON_TOOLS/parseMergeCsv.py -i {input_files} \\
       -o {output} \\
@@ -138,10 +138,10 @@ $PYTHON_TOOLS/parseMergeCsv.py -i {input_files} \\
       -d {delimiter} {subset}{toexclude}{left_outer_join}{sort_by_field}{make_names}{filters}""".format(
         input_files=" ".join(input_files),
         output=output,
-        common_columns=common,        
-        delimiter=delimiter, 
-        subset=" -s " + subset if subset else "", 
-        toexclude=" -x " + exclude if exclude else "", 
+        common_columns=common,
+        delimiter=delimiter,
+        subset=" -s " + subset if subset else "",
+        toexclude=" -x " + exclude if exclude else "",
         left_outer_join=" -l " if  left_join else "",
         sort_by_field=" -t " + sort_by if sort_by else "",
         make_names=" -n " if make_names else "",
@@ -149,13 +149,30 @@ $PYTHON_TOOLS/parseMergeCsv.py -i {input_files} \\
         )
     )
 
-def py_filterAssemblyToFastaToTsv(fasta_file, filter_file, fasta_id_column, output):  
+def py_ampliconSeq(input_files, output_files, function, supplemental_parameters):
     return Job(
-        [ fasta_file , filter_file], 
+        input_files,
+        output_files,
+        module_entries=[
+            ['DEFAULT', 'module_mugqic_tools'],
+            ['DEFAULT', 'module_python']
+        ],
+        command="""\
+python $PYTHON_TOOLS/AmpliconSeq_script.py \\
+  -m {function} \\
+  {supplemental_parameters}""".format(
+        function=function,
+        supplemental_parameters=supplemental_parameters
+        )
+    )
+
+def py_filterAssemblyToFastaToTsv(fasta_file, filter_file, fasta_id_column, output):
+    return Job(
+        [ fasta_file , filter_file],
         [ output + "." + ext for ext in ["fasta", "tsv"] ],
         [['DEFAULT', 'module_mugqic_tools'],
          ['DEFAULT', 'module_python']
-         ], 
+         ],
         command="""\
 $PYTHON_TOOLS/filterAssemblyToFastaToXls.py -f {fasta_file} \\
 -o {output} \\
@@ -163,13 +180,14 @@ $PYTHON_TOOLS/filterAssemblyToFastaToXls.py -f {fasta_file} \\
 -c {fasta_id_column} """.format(
         fasta_file = fasta_file,
         output=output,
-        filter_file=filter_file,        
+        filter_file=filter_file,
         fasta_id_column=fasta_id_column
         )
     )
 
 
 ## functions for perl tools ##
+
 def bed2interval_list(dictionary, bed, output):
     return Job(
         [dictionary, bed],
@@ -241,7 +259,7 @@ rm {input_filename} """.format(
         input_next=input_filename
     else :
         input_next=input
-        
+
     return Job(
         [input],
         [output],

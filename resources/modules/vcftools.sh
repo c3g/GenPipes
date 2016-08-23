@@ -4,6 +4,7 @@ set -eu -o pipefail
 
 SOFTWARE=vcftools
 VERSION=0.1.14
+#VERSION=0.1.13
 #VERSION=0.1.11
 ARCHIVE=${SOFTWARE}-$VERSION.tar.gz
 #ARCHIVE_URL=https://sourceforge.net/projects/$SOFTWARE/files/${SOFTWARE}_${VERSION}.tar.gz/download		# for version earlier than 0.1.14

@@ -12,8 +12,8 @@ export R_LIBS=
 ## Default arg values
 R_VERSION="latest" 
 INSTALL_PREFIX_ENV_VARNAME=""
-MODULEFILE_DIR="$MUGQIC_INSTALL_HOME_DEV/modulefiles/mugqic_dev"
-INSTALL_DIR="$MUGQIC_INSTALL_HOME_DEV/software"
+MODULEFILE_DIR="$MUGQIC_INSTALL_HOME_TMP/modulefiles/mugqic_dev"
+INSTALL_DIR="$MUGQIC_INSTALL_HOME_TMP/software"
 UPDATE_MODE=1
 
 ## Parse arguments

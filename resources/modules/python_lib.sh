@@ -16,17 +16,16 @@ easy_install pip
 easy_install http://cython.org/release/Cython-0.23.4.tar.gz
 
 # numpy
-easy_install http://downloads.sourceforge.net/project/numpy/NumPy/1.10.1/numpy-1.10.1.tar.gz
+easy_install numpy
 python -c 'import numpy; print numpy.__version__, numpy.__file__'
 
 # biopython
-easy_install http://biopython.org/DIST/biopython-1.66.tar.gz
+easy_install biopython
 python -c 'import Bio; print Bio.__version__, Bio.__file__'
 
-# matplotlib requires dateutil and pyparsing dependencies (matplotlib is stuck at version 1.4.3 for qiime compatibility)
 easy_install http://labix.org/download/python-dateutil/python-dateutil-1.5.tar.gz
-easy_install http://downloads.sourceforge.net/project/pyparsing/pyparsing/pyparsing-2.0.6/pyparsing-2.0.6.tar.gz
-easy_install https://downloads.sourceforge.net/project/matplotlib/matplotlib/matplotlib-1.4.3/matplotlib-1.4.3.tar.gz
+easy_install https://sourceforge.net/projects/pyparsing/files/pyparsing/pyparsing-2.1.1/pyparsing-2.1.1.tar.gz/download
+easy_install https://github.com/matplotlib/matplotlib/archive/v1.5.1.tar.gz
 python -c 'import matplotlib; print matplotlib.__version__, matplotlib.__file__'
 
 # HTseq
@@ -38,28 +37,25 @@ easy_install https://github.com/arq5x/bedtools-python/archive/master.zip
 python -c 'import bedtools; print  bedtools.__file__'
 
 # PyVCF
-easy_install https://pypi.python.org/packages/source/P/PyVCF/PyVCF-0.6.7.tar.gz
+easy_install https://pypi.python.org/packages/source/P/PyVCF/PyVCF-0.6.8.tar.gz
 python -c 'import vcf; print vcf.__file__'
 
 # pysam
-easy_install https://github.com/pysam-developers/pysam/archive/v0.8.4.tar.gz
+easy_install https://github.com/pysam-developers/pysam/archive/v0.9.0.tar.gz
 python -c 'import pysam; print pysam.__version__, pysam.__file__'
 
 # nextworkx
-easy_install http://networkx.lanl.gov/download/networkx/networkx-1.7.tar.gz
+easy_install https://github.com/networkx/networkx/archive/networkx-1.11.tar.gz
 python -c 'import networkx; print networkx.__version__, networkx.__file__'
 
 
 PIP_PATH=$(which pip)
 # scikit-bio
 ${PIP_PATH} install scikit-bio
-# qiime
-${PIP_PATH} install qiime
-
 #futures
 ${PIP_PATH} install futures
-
-
+# misopy
+${PIP_PATH} install misopy
 
 # Add permissions
 chmod -R ug+rwX,o+rX-w $PYTHON_HOME

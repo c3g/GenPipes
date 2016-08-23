@@ -50,7 +50,7 @@ get_dbNSFP() {
         unzip $ANNOTATIONS_DIR/$DBSNSFP_VERSION/$DBSNSFP_VERSION.zip -d $ANNOTATIONS_DIR/$DBSNSFP_VERSION/
         (head -n 1 $ANNOTATIONS_DIR/$DBSNSFP_VERSION/*_variant.chr1 ; cat $ANNOTATIONS_DIR/$DBSNSFP_VERSION/*_variant.chr* | grep -v "^#" ) > $DBSNSFP.txt
         module load $module_tabix
-        bgzip $DBSNSFP.txt      
+        bgzip $DBSNSFP.txt
         tabix -s 1 -b 2 -e 2 $DBSNSFP.txt.gz
         rm $ANNOTATIONS_DIR/$DBSNSFP_VERSION/*_variant.chr*
     fi
@@ -68,9 +68,8 @@ get_dbNSFP() {
         done
     fi
     # set the default allele frequency for a population (hapmap CEU)
-    population_AF=1000Gp1_EUR_AF    
+    population_AF=1000Gp1_EUR_AF
 }
-
 
 # Overwrite install_genome since NCBI genome is used instead of Ensembl
 install_genome() {
@@ -92,7 +91,7 @@ install_genome() {
   # set +e since gunzip human_g1k_v37.fasta.gz exit code != 0 ("gzip: human_g1k_v37.fasta.gz: decompression OK, trailing garbage ignored")
   set +e
   copy_files
-  get_dbNSFP  
+  get_dbNSFP
   set -e
   if ! is_up2date $ANNOTATIONS_DIR/$GTF.updated
   then

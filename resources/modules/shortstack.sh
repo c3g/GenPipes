@@ -5,7 +5,6 @@ set -eu -o pipefail
 #
 # Software_name ShortStack
 #
-
 echo "Be sure to load bowtie, samtools, ucsc & ViennaRNA modules before using ShortStack"
 
 SOFTWARE="ShortStack" 

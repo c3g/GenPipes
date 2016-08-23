@@ -101,14 +101,14 @@ set_urls() {
     BIOMART_GO_ID=go_id
     BIOMART_GO_NAME=name_1006
     BIOMART_GO_DEFINITION=definition_1006
-  
+
     # Before Ensembl release 76, release number was added in genome and ncrna file names
     if [ $VERSION -lt 76 ]
     then
       GENOME_URL=${GENOME_URL/$SPECIES.$ASSEMBLY/$SPECIES.$ASSEMBLY.$VERSION}
       NCRNA_URL=${NCRNA_URL/$SPECIES.$ASSEMBLY/$SPECIES.$ASSEMBLY.$VERSION}
     fi
-  
+
     # Check if a genome primary assembly is available for this species, otherwise use the toplevel assembly
     if ! is_url_valid $GENOME_URL
     then
@@ -129,7 +129,7 @@ set_urls() {
       echo "VCF tabix index not available for $SPECIES"
       VCF_TBI_URL=
     fi
-  
+
   #
   # Ensembl Genomes (non-vertebrate species)
   #
@@ -143,7 +143,7 @@ set_urls() {
 
     # Retrieve species division (Bacteria|Fungi|Metazoa|Plants|Protists)
     DIVISION=`echo "$SPECIES_LINE" | cut -f3 | sed "s/^Ensembl//"`
-  
+
     # Escherichia coli bacteria file paths are different
     # Retrieve which bacteria collection it belongs to and adjust paths accordingly
     CORE_DB_PREFIX=`echo "$SPECIES_LINE" | cut -f13 | perl -pe "s/_core_${VERSION}_\d+_\d+//"`
@@ -155,7 +155,7 @@ set_urls() {
       EG_SPECIES=${SPECIES,,}
       EG_BASENAME=$SPECIES.$ASSEMBLY.$VERSION
     fi
-  
+
     URL_PREFIX=$RELEASE_URL/${DIVISION,}
     GENOME_URL=$URL_PREFIX/fasta/$EG_SPECIES/dna/$EG_BASENAME.dna.genome.fa.gz
     NCRNA_URL=$URL_PREFIX/fasta/$EG_SPECIES/ncrna/$EG_BASENAME.ncrna.fa.gz
@@ -320,8 +320,9 @@ mkdir -p $BOWTIE2_INDEX_DIR && \
 ln -s -f -t $BOWTIE2_INDEX_DIR ../$GENOME_FASTA && \
 module load $module_bowtie && \
 LOG=$LOG_DIR/bowtie2_$TIMESTAMP.log && \
-bowtie2-build $BOWTIE2_INDEX_DIR/$GENOME_FASTA $BOWTIE2_INDEX_PREFIX > \$LOG 2>&1 && \
-chmod -R ug+rwX,o+rX $BOWTIE2_INDEX_DIR \$LOG && \
+ERR=$LOG_DIR/bowtie2_$TIMESTAMP.err && \
+bowtie2-build $BOWTIE2_INDEX_DIR/$GENOME_FASTA $BOWTIE2_INDEX_PREFIX > \$LOG 2> \$ERR && \
+chmod -R ug+rwX,o+rX $BOWTIE2_INDEX_DIR \$LOG \$ERR && \
 mkdir -p $TOPHAT_INDEX_DIR && \
 ln -s -f -t $TOPHAT_INDEX_DIR ../$GTF && \
 module load $module_samtools $module_tophat && \
@@ -356,8 +357,9 @@ create_star_index() {
 mkdir -p $INDEX_DIR && \
 module load $module_star && \
 LOG=$LOG_DIR/star_${sjdbOverhang}_$TIMESTAMP.log && \
-STAR --runMode genomeGenerate --genomeDir $INDEX_DIR --genomeFastaFiles $GENOME_DIR/$GENOME_FASTA --runThreadN $runThreadN --genomeSAindexNbases 8 --sjdbOverhang $sjdbOverhang --sjdbGTFfile $ANNOTATIONS_DIR/$GTF --outFileNamePrefix $INDEX_DIR/ > \$LOG 2>&1 && \
-chmod -R ug+rwX,o+rX $INDEX_DIR \$LOG"
+ERR=$LOG_DIR/star_${sjdbOverhang}_$TIMESTAMP.err && \
+STAR --runMode genomeGenerate --genomeDir $INDEX_DIR --genomeFastaFiles $GENOME_DIR/$GENOME_FASTA --runThreadN $runThreadN --sjdbOverhang $sjdbOverhang --genomeSAindexNbases 4 --limitGenomeGenerateRAM 86000000000 --sjdbGTFfile $ANNOTATIONS_DIR/$GTF --outFileNamePrefix $INDEX_DIR/ > \$LOG 2> \$ERR && \
+chmod -R ug+rwX,o+rX $INDEX_DIR \$LOG \$ERR"
       cmd_or_job STAR_CMD $runThreadN STAR_${sjdbOverhang}_CMD
     else
       echo
@@ -449,10 +451,10 @@ create_gene_annotations_flat() {
     echo "Creating gene refFlat file from GTF..."
     echo
     cd $ANNOTATIONS_DIR
-    module load $module_ucsc 
+    module load $module_ucsc
     gtfToGenePred -genePredExt -geneNameAsName2 ${ANNOTATION_PREFIX}.gtf ${ANNOTATION_PREFIX}.refFlat.tmp.txt
-    cut -f 12 ${ANNOTATION_PREFIX}.refFlat.tmp.txt  > ${ANNOTATION_PREFIX}.refFlat.tmp.2.txt 
-    cut -f 1-10 ${ANNOTATION_PREFIX}.refFlat.tmp.txt > ${ANNOTATION_PREFIX}.refFlat.tmp.3.txt 
+    cut -f 12 ${ANNOTATION_PREFIX}.refFlat.tmp.txt > ${ANNOTATION_PREFIX}.refFlat.tmp.2.txt
+    cut -f 1-10 ${ANNOTATION_PREFIX}.refFlat.tmp.txt > ${ANNOTATION_PREFIX}.refFlat.tmp.3.txt
     paste ${ANNOTATION_PREFIX}.refFlat.tmp.2.txt ${ANNOTATION_PREFIX}.refFlat.tmp.3.txt > ${ANNOTATION_PREFIX}.ref_flat.tsv
     rm ${ANNOTATION_PREFIX}.refFlat.tmp.txt ${ANNOTATION_PREFIX}.refFlat.tmp.2.txt ${ANNOTATION_PREFIX}.refFlat.tmp.3.txt
   else
@@ -461,7 +463,7 @@ create_gene_annotations_flat() {
     echo
   fi
 }
-  
+
 
 create_go_annotations() {
 
@@ -567,6 +569,28 @@ copy_files() {
     fi
 
     get_vcf_dbsnp
+
+  else
+    if ! is_up2date $ANNOTATIONS_DIR/$GTF
+    then
+      echo "Could not find $ANNOTATIONS_DIR/$GTF...\nyou might consider to manually download a gtf file from UCSC table browser (http://genome.ucsc.edu/cgi-bin/hgTables)"
+    else
+      TRANSCRIPT_ID_GTF=$ANNOTATIONS_DIR/${GTF/.gtf/.transcript_id.gtf}
+      if ! is_up2date $TRANSCRIPT_ID_GTF ; then grep -P "(^#|transcript_id)" $ANNOTATIONS_DIR/$GTF > $TRANSCRIPT_ID_GTF ; fi
+    fi
+
+    if ! is_up2date $ANNOTATIONS_DIR/$NCRNA
+    then
+      echo "Could not find $ANNOTATIONS_DIR/$NCRNA...\nyou might consider to use the ncrna.fa file from Ensembl... "
+    else
+      if [ $(grep -q -i "rRNA" $ANNOTATIONS_DIR/$NCRNA)$? == 0 ]
+      then
+        if ! is_up2date $ANNOTATIONS_DIR/$RRNA
+        then
+          grep -Pzoi "^>.*rRNA[^>]*" $ANNOTATIONS_DIR/$NCRNA | grep -v "^$" > $ANNOTATIONS_DIR/$RRNA
+        fi
+      fi
+    fi
   fi
 }
 
@@ -576,16 +600,15 @@ build_files() {
   create_samtools_index
   create_bwa_index
   create_star_index
+  create_bowtie2_tophat_index
+  create_ncrna_bwa_index
+  create_rrna_bwa_index
+  create_gene_annotations
+  create_gene_annotations_flat
 
   # Annotations are not installed for UCSC genomes
   if [[ $SOURCE != "UCSC" ]]
   then
-#    create_bowtie2_tophat_index
-    create_ncrna_bwa_index
-    create_rrna_bwa_index
-
-    create_gene_annotations
-    create_gene_annotations_flat
     create_go_annotations
   fi
 }
@@ -607,9 +630,9 @@ version=$VERSION" > $INI
 dbsnp_version=$DBSNP_VERSION" >> $INI
   fi
   if [ ! -z "${population_AF:-}" ]; then
-  echo -e "\npopulation_AF=$population_AF" >> $INI
-  fi    
-  
+    echo -e "\npopulation_AF=$population_AF" >> $INI
+  fi
+
 }
 
 install_genome() {

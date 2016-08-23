@@ -69,7 +69,7 @@ def main():
 
 def passFail(sampleStats):
     retVal=""
-    
+
     if float(sampleStats['depth']) < 30:
         retVal += "LowDepth "
     if float(sampleStats['identity']) < 0.90:
@@ -176,19 +176,19 @@ def getBarcode(sample, dir, sampleStats):
             sampleStats['barcode'] = values[0]
 
 def contact_server(host, url, auth_file=None):
-        https_connection = httplib.HTTPSConnection(host)
-        https_connection.set_debuglevel(0)
-        headers = {"Content-type": "application/x-www-form-urlencoded", "Accept": "text/plain"}
+    https_connection = httplib.HTTPSConnection(host)
+    https_connection.set_debuglevel(0)
+    headers = {"Content-type": "application/x-www-form-urlencoded", "Accept": "text/plain"}
 
-        if auth_file:
-            with open(auth_file) as auth_file_handle:
-                https_connection.request("POST", url, auth_file_handle, headers)
-        else:
-            https_connection.request("POST", url, None, headers)
-        http_response = https_connection.getresponse()
+    if auth_file:
+        with open(auth_file) as auth_file_handle:
+            https_connection.request("POST", url, auth_file_handle, headers)
+    else:
+        https_connection.request("POST", url, None, headers)
+    http_response = https_connection.getresponse()
 
-        https_connection.close()
-        return http_response.status
+    https_connection.close()
+    return http_response.status
 
 if __name__ == "__main__":
     main()
