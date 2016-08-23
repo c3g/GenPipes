@@ -20,7 +20,7 @@ module_java=mugqic/java/openjdk-jdk1.7.0_60
 # Download dbSNP directly from NCBI since it is more up to date
 get_vcf_dbsnp() {
   DBSNP_VERSION=142
-  DBSNP_URL=ftp://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606_b${DBSNP_VERSION}_GRCh38/VCF/All.vcf.gz
+  DBSNP_URL=ftp://ftp.ncbi.nlm.nih.gov/snp/organisms/archive/human_9606_b${DBSNP_VERSION}_GRCh38/VCF/All.vcf.gz
   DBSNP=$ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP$DBSNP_VERSION.vcf.gz
 
   if ! is_up2date $DBSNP $DBSNP.tbi

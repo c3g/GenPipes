@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=bwa
-VERSION=0.7.12
+VERSION=0.7.9a
 ARCHIVE=$SOFTWARE-$VERSION.tar.bz2
 ARCHIVE_URL=http://downloads.sourceforge.net/project/bio-bwa/$ARCHIVE
 SOFTWARE_DIR=$SOFTWARE-$VERSION

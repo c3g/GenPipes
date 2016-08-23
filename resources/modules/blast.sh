@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=blast
-VERSION=2.3.0+
+VERSION=2.2.29+
 ARCHIVE=ncbi-$SOFTWARE-$VERSION-x64-linux.tar.gz
 ARCHIVE_URL=ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/${VERSION%+}/$ARCHIVE
 SOFTWARE_DIR=ncbi-$SOFTWARE-$VERSION
@@ -27,7 +27,7 @@ module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
 prepend-path    PATH                \$root/bin
-prepend-path    BLASTDB             \$::env(MUGQIC_INSTALL_HOME)/genomes/blast_db
+prepend-path    BLASTDB             \$::env(MUGQIC_INSTALL_HOME_TMP)/genomes/blast_db
 "
 }
 

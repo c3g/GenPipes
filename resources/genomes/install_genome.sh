@@ -6,10 +6,10 @@ module_bowtie=mugqic/bowtie2/2.2.4
 module_bwa=mugqic/bwa/0.7.12
 module_java=mugqic/java/openjdk-jdk1.8.0_72
 module_mugqic_R_packages=mugqic/mugqic_R_packages/1.0.3
-module_picard=mugqic/picard/1.123
+module_picard=mugqic/picard/2.0.1
 module_R=mugqic/R_Bioconductor/3.1.2_3.0
 module_samtools=mugqic/samtools/1.3
-module_star=mugqic/star/2.5.1b
+module_star=mugqic/star/2.5.2a
 module_tabix=mugqic/tabix/0.2.6
 module_tophat=mugqic/tophat/2.0.14
 module_ucsc=mugqic/ucsc/v326
@@ -344,7 +344,7 @@ create_star_index() {
     runThreadN=1
   fi
 
-  for sjdbOverhang in 49 99 74 149
+  for sjdbOverhang in 49 74 99 124 149
   do
     INDEX_DIR=$INSTALL_DIR/genome/star_index/$SOURCE$VERSION.sjdbOverhang$sjdbOverhang
     if ! is_up2date $INDEX_DIR/SAindex
@@ -580,7 +580,7 @@ build_files() {
   # Annotations are not installed for UCSC genomes
   if [[ $SOURCE != "UCSC" ]]
   then
-    create_bowtie2_tophat_index
+#    create_bowtie2_tophat_index
     create_ncrna_bwa_index
     create_rrna_bwa_index
 

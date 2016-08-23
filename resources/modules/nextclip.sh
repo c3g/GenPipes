@@ -7,8 +7,8 @@ me=`basename $0`
 SOFTWARE="nextclip"
 WHATIS="NextClip: an analysis and read preparation tool for Nextera long mate pair libraries"
 VERSION="master"
-MODULEFILE_DIR="$MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE"
-INSTALL_DIR="$MUGQIC_INSTALL_HOME/software/$SOFTWARE"
+MODULEFILE_DIR="$MUGQIC_INSTALL_HOME_TMP/modulefiles/mugqic/$SOFTWARE"
+INSTALL_DIR="$MUGQIC_INSTALL_HOME_TMP/software/$SOFTWARE"
 FORCE_INSTALL=false
 
 ## Parse arguments
@@ -58,7 +58,7 @@ do
 done
 
 ## Tmp dir to work in
-#SOFTWARE="nextclip" ; VERSION="master" ; MODULEFILE_DIR="$MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE" ;INSTALL_DIR="$MUGQIC_INSTALL_HOME/software/$SOFTWARE"; FORCE_INSTALL=false
+#SOFTWARE="nextclip" ; VERSION="master" ; MODULEFILE_DIR="$MUGQIC_INSTALL_HOME_TMP/modulefiles/mugqic/$SOFTWARE" ;INSTALL_DIR="$MUGQIC_INSTALL_HOME_TMP/software/$SOFTWARE"; FORCE_INSTALL=false
 TEMPDIR=`mktemp -d -t $me.XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX` && cd $TEMPDIR 
 echo "Working in $TEMPDIR"
 
