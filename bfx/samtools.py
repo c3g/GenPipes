@@ -122,7 +122,7 @@ def bcftools_cat(inputs, output):
         [output],
         [['bcftools_cat', 'module_samtools']],
         command="""\
-bcftools cat \\
+bcftools concat \\
   {inputs}{output}""".format(
         inputs=" \\\n  ".join(inputs),
         output=" \\\n  > " + output if output else ""
@@ -143,3 +143,19 @@ bcftools view {pair_calling} {options} \\
         output=" \\\n  > " + output if output else ""
         )
     )
+
+def bcftools_call(input, output, options="", pair_calling=False):
+    return Job(
+        [input],
+        [output],
+        [['bcftools_view', 'module_samtools']],
+        command="""\
+bcftools call {pair_calling} {options} \\
+  {input}{output}""".format(
+        options=options,
+        pair_calling="-T pair" if pair_calling else "",
+        input=input,
+        output=" \\\n  > " + output if output else ""
+        )
+    )
+  
