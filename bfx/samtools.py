@@ -120,7 +120,7 @@ def bcftools_cat(inputs, output):
     return Job(
         inputs,
         [output],
-        [['bcftools_cat', 'module_samtools']],
+        [['bcftools_cat', 'module_bcftools']],
         command="""\
 bcftools concat \\
   {inputs}{output}""".format(
@@ -133,7 +133,7 @@ def bcftools_view(input, output, options="", pair_calling=False):
     return Job(
         [input],
         [output],
-        [['bcftools_view', 'module_samtools']],
+        [['bcftools_view', 'module_bcftools']],
         command="""\
 bcftools view {pair_calling} {options} \\
   {input}{output}""".format(
@@ -148,7 +148,7 @@ def bcftools_call(input, output, options="", pair_calling=False):
     return Job(
         [input],
         [output],
-        [['bcftools_view', 'module_samtools']],
+        [['bcftools_call', 'module_bcftools']],
         command="""\
 bcftools call {pair_calling} {options} \\
   {input}{output}""".format(
