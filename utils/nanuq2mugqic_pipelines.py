@@ -95,7 +95,11 @@ def create_readsets(nanuq_readset_file, seq_type, mugqic_pipelines_readset_file=
 
                 nb_basepairs = re.search("^\([^/]*/[^/]*/(.*)\)$", line['Longest Subreads (count mean bp)'])
                 mugqic_pipelines_readset_csv_row['NbBasePairs'] = re.sub(",", "", nb_basepairs.group(1))
+                mugqic_pipelines_readset_csv_row['EstimatedGenomeSize'] = line['Genome size from Nanuq reception (Mb)']
+                log.warning('EstimatedGenomeSize: ' + line['Genome size from Nanuq reception (Mb)'])
 
+                if mugqic_pipelines_readset_csv_row['EstimatedGenomeSize'] != '':
+                    mugqic_pipelines_readset_csv_row['EstimatedGenomeSize'] = int(float(mugqic_pipelines_readset_csv_row['EstimatedGenomeSize'])*1000*1000)
                 if line.get('Results Directory', None):
                     nanuq_readset_prefix = os.path.normpath(os.path.join(nanuq_readset_root_directory, line['Results Directory'], line['Movie name']))
                     for format in formats:
@@ -186,7 +190,10 @@ def create_readsets(nanuq_readset_file, seq_type, mugqic_pipelines_readset_file=
         log.warning("File " + mugqic_pipelines_readset_file + " already exists! Skipping...")
     else:
         mugqic_pipelines_readset_csv = csv.DictWriter(open(mugqic_pipelines_readset_file, 'wb'), fieldnames=fieldnames, delimiter='\t')
-        mugqic_pipelines_readset_csv.writeheader()
+        try:
+            mugqic_pipelines_readset_csv.writeheader()
+        except AttributeError as ae:
+            log.error("This script requires at minimum Python 2.7/3.2.")
         mugqic_pipelines_readset_csv.writerows(mugqic_pipelines_readset_csv_rows)
 
 #-------------------------------------------------------------------------------

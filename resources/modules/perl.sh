@@ -29,14 +29,14 @@ echo "\
 proc ModulesHelp { } {
   puts stderr \"\tMUGQIC - $SOFTWARE \"
 }
-module-whatis \"$SOFTWARE\"
+module-whatis \"$SOFTWARE-$VERSION\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
 setenv          PERL_HOME           \$root
 prepend-path    PATH                \$root/bin
 prepend-path    PERL5LIB            \$root/lib
 prepend-path    PERL5LIB            \$root/lib/$VERSION
-prepend-path    PERL5LIB            \$root/libsite_perl/$VERSION
+prepend-path    PERL5LIB            \$root/lib/site_perl/$VERSION
 "
 }
 

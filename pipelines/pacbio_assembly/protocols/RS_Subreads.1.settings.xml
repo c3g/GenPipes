@@ -51,6 +51,12 @@
     <moduleStage name="filtering" editable="true">
         <module label="SFilter v1" id="P_Filter" editableInJob="true">
             <description>This module filters reads based on a minimum subread length, polymerase read quality and polymerase read length.</description>
+            <!-- WHITELISTCOM
+            <param name="whiteList" label="Read IDs to whitelist">
+                <value>WHITELISTFILEPATH</value>
+                <title>Only use reads contained in the white list.</title>
+            </param>
+            WHITELISTCOM -->
             <param name="minSubReadLength" label="Minimum Subread Length">
                 <value>MINSUBREADLENGTH</value>
                 <title>Subreads shorter than this value (in base pairs) are filtered out and excluded from analysis.</title>

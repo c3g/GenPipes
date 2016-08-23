@@ -37,15 +37,15 @@ get_vcf_dbsnp() {
 
 # Download dbNSFP and generate vcfs required to run VerifyBamId
 get_dbNSFP() {
-    DBNSFP_URL=ftp://dbnsfp:dbnsfp@dbnsfp.softgenetics.com/dbNSFPv2.8.zip
-    DBSNSFP_VERSION=dbNSFPv2.8
+    DBNSFP_URL=ftp://dbnsfp:dbnsfp@dbnsfp.softgenetics.com/dbNSFPv3.1c.zip
+    DBSNSFP_VERSION=dbNSFPv3.1c
     DBSNSFP=$ANNOTATIONS_DIR/$DBSNSFP_VERSION/$DBSNSFP_VERSION.txt.gz
     if ! is_up2date $DBSNSFP.txt.gz
         then
         mkdir -p $ANNOTATIONS_DIR/$DBSNSFP_VERSION/
         if ! is_up2date `download_path $DBNSFP_URL`; then
             download_url $DBNSFP_URL
-            cp dbnsfp.softgenetics.com/dbNSFPv2.8.zip $ANNOTATIONS_DIR/$DBSNSFP_VERSION/
+            cp dbnsfp.softgenetics.com/dbNSFPv3.1c.zip $ANNOTATIONS_DIR/$DBSNSFP_VERSION/
         fi
         unzip $ANNOTATIONS_DIR/$DBSNSFP_VERSION/$DBSNSFP_VERSION.zip -d $ANNOTATIONS_DIR/$DBSNSFP_VERSION/
         (head -n 1 $ANNOTATIONS_DIR/$DBSNSFP_VERSION/*_variant.chr1 ; cat $ANNOTATIONS_DIR/$DBSNSFP_VERSION/*_variant.chr* | grep -v "^#" ) > $DBSNSFP.txt
@@ -54,7 +54,7 @@ get_dbNSFP() {
         tabix -s 1 -b 2 -e 2 $DBSNSFP.txt.gz
         rm $ANNOTATIONS_DIR/$DBSNSFP_VERSION/*_variant.chr*
     fi
-    # Extract allelic frequencies for HAPMAP human populations and annotate dbsnp VCF    
+    # Extract allelic frequencies for HAPMAP human populations and annotate dbsnp VCF
     DBSNP_ANNOTATED=$ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP${DBSNP_VERSION}_annotated.vcf
     if ! is_up2date $DBSNP_ANNOTATED; then
         module load $module_snpeff $module_java
@@ -63,13 +63,14 @@ get_dbNSFP() {
         do
             cat $DBSNP_ANNOTATED | sed -e 's/dbNSFP_'$POP_FREQ'/AF/g' > $ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP${DBSNP_VERSION}_${POP_FREQ}.vcf
         module load $module_tabix
-            # bgzip $ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP${DBSNP_VERSION}_${POP_FREQ}.vcf      
-            # tabix -vcf $ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP${DBSNP_VERSION}_${POP_FREQ}.vcf.gz           
+            # bgzip $ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP${DBSNP_VERSION}_${POP_FREQ}.vcf
+            # tabix -vcf $ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP${DBSNP_VERSION}_${POP_FREQ}.vcf.gz
         done
     fi
     # set the default allele frequency for a population (hapmap CEU)
     population_AF=1000Gp1_EUR_AF
 }
+
 
 # Overwrite install_genome since NCBI genome is used instead of Ensembl
 install_genome() {
@@ -101,7 +102,7 @@ install_genome() {
     # Update Ensembl GTF annotation IDs to match NCBI genome chromosome IDs
     grep "^>" $GENOME_DIR/$GENOME_FASTA | cut -f1 -d\  | cut -c 2- | perl -pe 's/^(chr([^_\n]*))$/\1\t\2/' | perl -pe 's/^(chr[^_]*_([^_\n]*)(_\S+)?)$/\1\t\2/' | awk -F"\t" 'FNR==NR{id[$2]=$1; next}{OFS="\t"; if (id[$1]) {print id[$1],$0} else {print $0}}' - $ANNOTATIONS_DIR/$GTF.tmp | cut -f1,3- > $ANNOTATIONS_DIR/$GTF
     rm $ANNOTATIONS_DIR/$GTF.tmp
-    touch $ANNOTATIONS_DIR/$GTF.updated
+    echo "Ensembl GTF up to date : match NCBI genome" > $ANNOTATIONS_DIR/$GTF.updated
   else
     echo
     echo "GTF up to date... skipping"

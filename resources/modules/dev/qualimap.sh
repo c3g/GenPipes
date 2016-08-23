@@ -17,11 +17,13 @@ SOFTWARE=qualimap
 # SOFTWARE_DIR=$SOFTWARE"_"$VERSION
 
 
-VERSION="build-09-02-15" 
-ARCHIVE=$SOFTWARE"_"$VERSION.zip  
-ARCHIVE_URL=http://www.dropbox.com/s/4konlqbullchrah/$ARCHIVE
-SOFTWARE_DIR=$SOFTWARE"_"$VERSION  
+VERSION="2.1.1" 
+ARCHIVE=$SOFTWARE"_v"$VERSION.zip  
+ARCHIVE_URL="https://bitbucket.org/kokonech/qualimap/downloads/$ARCHIVE"
+SOFTWARE_DIR=$SOFTWARE"_v"$VERSION  
 
+
+# https://bitbucket.org/kokonech/qualimap/downloads/qualimap_v2.1.1.zip
 
 # Specific commands to extract and build the software
 # $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically

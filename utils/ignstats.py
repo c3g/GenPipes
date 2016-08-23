@@ -15,6 +15,7 @@ def main():
     parser.add_argument('-v', '--vertical', help='Vertival Output', required=False, type=bool)
     parser.add_argument('-w', '--host', help='Nanuq host to send data', required=False)
     parser.add_argument('-x', '--authFile', help='Authentification file for connecting to host', required=False)
+    parser.add_argument('-m', '--manifest', help='Version of the Array Manifest (ex. 1.2)', required=False, default="NA" )
 
     args = parser.parse_args()
 
@@ -30,7 +31,7 @@ def main():
     getChimeras(args.sample, args.dir, sampleStats)
     getInsertSize(args.sample, args.dir, sampleStats)
     getDepth(args.sample, args.dir, sampleStats)
-    getArrayIdentity(args.sample, args.dir, sampleStats)
+    getArrayIdentity(args.sample, args.dir, args.manifest, sampleStats)
     getArrayCallRate(args.sample, args.arrayReport, sampleStats)
 
     if args.vertical:
@@ -67,33 +68,45 @@ def main():
         sys.exit(contact_server(args.host, url, auth_file=args.authFile) != 200)
 
 def passFail(sampleStats):
-  retVal=""
+    retVal=""
 
-  if float(sampleStats['depth']) < 30:
-    retVal += "LowDepth "
-  if float(sampleStats['identity']) < 0.90:
-    retVal += "IdentityLOW "
-  if float(sampleStats['meanISize']) < 50:
-    retVal += "InsertSizeLOW "
-  if float(sampleStats['meanISize']) > 2000:
-    retVal += "InsertSizeHIGH "
-  if float(sampleStats['chimeras']) > 0.1:
-    retVal += "chimericHIGH "
+    if float(sampleStats['depth']) < 30:
+        retVal += "LowDepth "
+    if float(sampleStats['identity']) < 0.90:
+        retVal += "IdentityLOW "
+    if float(sampleStats['meanISize']) < 50:
+        retVal += "InsertSizeLOW "
+    if float(sampleStats['meanISize']) > 2000:
+        retVal += "InsertSizeHIGH "
+    if float(sampleStats['chimeras']) > 0.1:
+        retVal += "chimericHIGH "
+    if float(sampleStats['callRate']) < 0.90 and float(sampleStats['callRate']) > 0.0 :
+        retVal += "callRateLOW "
+    elif float(sampleStats['callRate']) == 0.0 :
+        retVal += "callRateMISSING "
 
-  if len(retVal) == 0:
-    return "OK"
-  return retVal
+    if len(retVal) == 0:
+        return "OK"
+    return retVal
 
 def getArrayCallRate(sample, report, sampleStats):
     arrayMetrics = csv.DictReader(open(report, 'rb'), delimiter=',')
+    sample_not_found = True
     for line in arrayMetrics:
         if line['Name'] == sample:
+            sample_not_found = False
             sampleStats['callRate'] = str(float(line['Call Rate'].translate(None, "% "))/100)
             break
+    if sample_not_found:
+        print "---------\nWARNING sample ("+ sample + ") is not found in the array sample report\n------\n" 
+        sampleStats['callRate'] = str(0.0)
 
-def getArrayIdentity(sample, dir, sampleStats):
+
+def getArrayIdentity(sample, dir, ver, sampleStats):
+    version= "_v" + ver if ver != "NA" else "" 
+    snp_array_file='.snpArrayCmp'+ version +'.txt'
     MATCH_STR = '% Match : '
-    with open(dir + '/' + sample + '.snpArrayCmp.txt') as arrayMetrics:
+    with open(dir + '/' + sample + snp_array_file) as arrayMetrics:
         for line in arrayMetrics:
             if line.startswith(MATCH_STR):
                 sampleStats['identity'] = str(float(line[len(MATCH_STR):].rstrip('\n'))/100)
@@ -145,11 +158,11 @@ def getDups(sample, dir, sampleStats):
             if line == '\n':
                 break
             values = line.split('\t')
-            if not sampleStats['dupPct']:
-		    if not sampleStats['dupPct'] == '?':
-			    sampleStats['dupPct'] = values[7]
-            else:
-                sampleStats['dupPct'] += ',' + values[7]
+            if not values[7] == '?':
+                if not sampleStats['dupPct']:
+                    sampleStats['dupPct'] = values[7]
+                else:
+                    sampleStats['dupPct'] += ',' + values[7]
 
 def getBarcode(sample, dir, sampleStats):
     with open(dir + '/' + sample + '.sorted.dup.metrics') as dupMetric:
@@ -163,19 +176,19 @@ def getBarcode(sample, dir, sampleStats):
             sampleStats['barcode'] = values[0]
 
 def contact_server(host, url, auth_file=None):
-        https_connection = httplib.HTTPSConnection(host)
-        https_connection.set_debuglevel(0)
-        headers = {"Content-type": "application/x-www-form-urlencoded", "Accept": "text/plain"}
+    https_connection = httplib.HTTPSConnection(host)
+    https_connection.set_debuglevel(0)
+    headers = {"Content-type": "application/x-www-form-urlencoded", "Accept": "text/plain"}
 
-        if auth_file:
-            with open(auth_file) as auth_file_handle:
-                https_connection.request("POST", url, auth_file_handle, headers)
-        else:
-            https_connection.request("POST", url, None, headers)
-        http_response = https_connection.getresponse()
+    if auth_file:
+        with open(auth_file) as auth_file_handle:
+            https_connection.request("POST", url, auth_file_handle, headers)
+    else:
+        https_connection.request("POST", url, None, headers)
+    http_response = https_connection.getresponse()
 
-        https_connection.close()
-        return http_response.status
+    https_connection.close()
+    return http_response.status
 
 if __name__ == "__main__":
     main()

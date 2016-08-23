@@ -55,5 +55,6 @@ bwa mem {other_options}{read_group} \\
         in1fastq=in1fastq,
         in2fastq=" \\\n  " + in2fastq if in2fastq else "",
         out_sam=" \\\n  > " + out_sam if out_sam else ""
-        )
+        ),
+        removable_files=[out_sam]
     )

@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 # Python module where to install libs
-PYTHON_VERSION=2.7.8
+PYTHON_VERSION=2.7.11
 PYTHON_MODULE=mugqic/python/${PYTHON_VERSION}
 module load $PYTHON_MODULE
 
@@ -23,7 +23,6 @@ python -c 'import numpy; print numpy.__version__, numpy.__file__'
 easy_install biopython
 python -c 'import Bio; print Bio.__version__, Bio.__file__'
 
-# matplotlib requires dateutil and pyparsing dependencies
 easy_install http://labix.org/download/python-dateutil/python-dateutil-1.5.tar.gz
 easy_install https://sourceforge.net/projects/pyparsing/files/pyparsing/pyparsing-2.1.1/pyparsing-2.1.1.tar.gz/download
 easy_install https://github.com/matplotlib/matplotlib/archive/v1.5.1.tar.gz

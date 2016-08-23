@@ -22,6 +22,8 @@
 from core.job import *
 from core.config import *
 from bfx import bvatools
+from bfx import snpeff
+from bfx import verify_bam_id
 from bfx import bwa
 from bfx import metrics
 from bfx import picard
@@ -30,23 +32,28 @@ from bfx import tools
 
 
 class RunProcessingAligner(object):
-    def __init__(self, output_dir):
+    def __init__(self, output_dir, genome_folder):
         self._output_dir = output_dir
+        self._genome_folder = genome_folder
 
     @property
     def output_dir(self):
         return self._output_dir
 
-    def get_reference_index(self, genome_folder):
+    @property
+    def genome_folder(self):
+        return self._genome_folder
+
+    def get_reference_index(self):
         raise NotImplementedError("Please Implement this method")
 
-    def get_alignment_jobs(self, readset):
+    def get_alignment_job(self, readset):
         raise NotImplementedError("Please Implement this method")
 
     def get_metrics_jobs(self, readset):
         raise NotImplementedError("Please Implement this method")
 
-    def get_annotation_files(self, genome_folder):
+    def get_annotation_files(self):
         raise NotImplementedError("Please Implement this method")
 
     @staticmethod
@@ -63,30 +70,40 @@ class RunProcessingAligner(object):
 
 
 class BwaRunProcessingAligner(RunProcessingAligner):
-    @property
-    def created_interval_lists(self):
-        if not hasattr(self, "_created_interval_lists"):
-            self._created_interval_lists = []
-        return self._created_interval_lists
+    downloaded_bed_files = []
+    created_interval_lists = []
 
-    @property
-    def downloaded_bed_files(self):
-        if not hasattr(self, "_downloaded_bed_files"):
-            self._downloaded_bed_files = []
-        return self._downloaded_bed_files
-
-    def get_reference_index(self, genome_folder):
-        folder_name = os.path.basename(genome_folder)
-        return os.path.join(genome_folder,
+    def get_reference_index(self):
+        folder_name = os.path.basename(self.genome_folder)
+        return os.path.join(self.genome_folder,
                             "genome",
                             "bwa_index",
                             folder_name + ".fa")
 
-    def get_annotation_files(self, genome_folder):
+    def get_annotation_files(self):
+        folder_name = os.path.basename(self.genome_folder)
+        ini_file = os.path.join(self.genome_folder + os.sep + folder_name + ".ini")
+        if os.path.isfile(ini_file):
+            genome_config = ConfigParser.SafeConfigParser()
+            genome_config.read(ini_file)
+
+            section = "DEFAULT"
+            dbsnp_option_name = "dbsnp_version"
+            af_option_name = "population_AF"
+
+            if genome_config.has_option(section, dbsnp_option_name) and\
+                    genome_config.has_option(section, af_option_name):
+                dbsnp_version = genome_config.get(section, dbsnp_option_name)
+                af_name = genome_config.get(section, af_option_name)
+                return [
+                    os.path.join(self.genome_folder,
+                                 "annotations",
+                                 folder_name + ".dbSNP" + dbsnp_version + "_" + af_name + ".vcf"),
+                ]
+
         return []
 
-    def get_alignment_jobs(self, readset):
-        jobs = []
+    def get_alignment_job(self, readset):
         output = readset.bam + ".bam"
         job = concat_jobs([
                               Job(command="mkdir -p " + os.path.dirname(output)),
@@ -103,10 +120,9 @@ class BwaRunProcessingAligner(RunProcessingAligner):
                                       "coordinate"
                                   )
                               ])
-                          ], name="bwa_mem_picard_sort_sam." + readset.name + "_" + readset.run + "_" + readset.lane)
+                          ], name="bwa_mem_picard_sort_sam." + readset.name + "." + readset.run + "." + readset.lane)
 
-        jobs.append(job)
-        return jobs
+        return job
 
     def get_metrics_jobs(self, readset):
         jobs = []
@@ -127,30 +143,33 @@ class BwaRunProcessingAligner(RunProcessingAligner):
             full_coverage_bed = None
 
         if coverage_bed:
-            if (not os.path.exists(full_coverage_bed)) and (coverage_bed not in self.downloaded_bed_files):
+            if (not os.path.exists(full_coverage_bed)) and \
+                    (coverage_bed not in BwaRunProcessingAligner.downloaded_bed_files):
                 # Download the bed file
                 command = config.param('DEFAULT', 'fetch_bed_file_command').format(
                     output_directory=self.output_dir,
                     filename=coverage_bed
                 )
                 job = Job([], [full_coverage_bed], command=command, name="bed_download." + coverage_bed)
-                self.downloaded_bed_files.append(coverage_bed)
+                BwaRunProcessingAligner.downloaded_bed_files.append(coverage_bed)
                 jobs.append(job)
 
             interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
 
-            if interval_list not in self.created_interval_lists:
+            if interval_list not in BwaRunProcessingAligner.created_interval_lists:
                 # Create one job to generate the interval list from the bed file
                 ref_dict = os.path.splitext(readset.reference_file)[0] + '.dict'
                 job = tools.bed2interval_list(ref_dict, full_coverage_bed, interval_list)
                 job.name = "interval_list." + coverage_bed
-                self.created_interval_lists.append(interval_list)
+                BwaRunProcessingAligner.created_interval_lists.append(interval_list)
                 jobs.append(job)
 
             job = picard.calculate_hs_metrics(input_file_prefix + "bam", input_file_prefix + "metrics.onTarget.txt",
                                               interval_list, reference_sequence=readset.reference_file)
             job.name = "picard_calculate_hs_metrics." + readset.name + ".hs" + "." + readset.run + "." + readset.lane
             jobs.append(job)
+
+        jobs.extend(self.verify_bam_id(readset))
 
         job = bvatools.depth_of_coverage(
             input,
@@ -164,82 +183,129 @@ class BwaRunProcessingAligner(RunProcessingAligner):
 
         return jobs
 
+    def verify_bam_id(self, readset):
+        """
+            verifyBamID is a software that verifies whether the reads in particular file match previously known
+            genotypes for an individual (or group of individuals), and checks whether the reads are contaminated
+            as a mixture of two samples. verifyBamID can detect sample contamination and swaps when external
+            genotypes are available. When external genotypes are not available, verifyBamID still robustly
+            detects sample swaps.
+        """
+        jobs = []
+        if len(readset.annotation_files) > 0 and os.path.isfile(readset.annotation_files[0]):
+
+            known_variants_annotated = readset.annotation_files[0]
+            known_variants_annotated_filtered = known_variants_annotated
+
+            input_bam = readset.bam + ".bam"
+            output_prefix = readset.bam + ".metrics.verifyBamId"
+
+            jobs.append(concat_jobs([
+                verify_bam_id.verify(
+                    input_bam,
+                    known_variants_annotated_filtered,
+                    output_prefix,
+                ),
+                # the first column starts with a # (a comment for nanuq) so we remove the column and output the result
+                # in a file with the name supported by nanuq
+                Job([output_prefix + ".selfSM"],
+                    [output_prefix + ".tsv"],
+                    command="cut -f2- " + output_prefix + ".selfSM > " + output_prefix + ".tsv"
+                )
+                ],
+                name="verify_bam_id." + readset.name + "." + readset.run + "." + readset.lane
+            ))
+
+        return jobs
+
 
 class StarRunProcessingAligner(RunProcessingAligner):
-    def __init__(self, output_dir, nb_cycles):
-        super(StarRunProcessingAligner, self).__init__(output_dir)
+    def __init__(self, output_dir, genome_folder, nb_cycles):
+        super(StarRunProcessingAligner, self).__init__(output_dir, genome_folder)
         self._nb_cycles = nb_cycles
 
     @property
     def nb_cycles(self):
         return self._nb_cycles
 
-    def get_reference_index(self, genome_folder):
-        folder_name = os.path.basename(genome_folder)
-        ini_file = os.path.join(genome_folder + os.sep + folder_name + ".ini")
-        genome_config = ConfigParser.SafeConfigParser()
-        genome_config.read(ini_file)
+    def get_reference_index(self):
+        folder_name = os.path.basename(self.genome_folder)
+        ini_file = os.path.join(self.genome_folder + os.sep + folder_name + ".ini")
+        if os.path.isfile(ini_file):
+            genome_config = ConfigParser.SafeConfigParser()
+            genome_config.read(ini_file)
 
-        source = genome_config.get("DEFAULT", "source")
-        version = genome_config.get("DEFAULT", "version")
+            source = genome_config.get("DEFAULT", "source")
+            version = genome_config.get("DEFAULT", "version")
 
-        return os.path.join(genome_folder,
-                            "genome",
-                            "star_index",
-                            source + version + ".sjdbOverhang" + str(self.nb_cycles - 1))
+            return os.path.join(self.genome_folder,
+                                "genome",
+                                "star_index",
+                                source + version + ".sjdbOverhang" + str(self.nb_cycles - 1))
+        else:
+            return None
 
-    def get_annotation_files(self, genome_folder):
-        folder_name = os.path.basename(genome_folder)
-        ini_file = os.path.join(genome_folder + os.sep + folder_name + ".ini")
-        genome_config = ConfigParser.SafeConfigParser()
-        genome_config.read(ini_file)
+    def get_annotation_files(self):
+        folder_name = os.path.basename(self.genome_folder)
+        ini_file = os.path.join(self.genome_folder + os.sep + folder_name + ".ini")
+        if os.path.isfile(ini_file):
+            genome_config = ConfigParser.SafeConfigParser()
+            genome_config.read(ini_file)
 
-        source = genome_config.get("DEFAULT", "source")
-        version = genome_config.get("DEFAULT", "version")
+            source = genome_config.get("DEFAULT", "source")
+            version = genome_config.get("DEFAULT", "version")
 
-        return [
-            os.path.join(genome_folder,
-                         "annotations",
-                         folder_name + '.' + source + version + ".transcript_id.gtf"),
+            return [
+                os.path.join(self.genome_folder,
+                             "annotations",
+                             folder_name + '.' + source + version + ".transcript_id.gtf"),
 
-            os.path.join(genome_folder,
-                         "annotations",
-                         "rrna_bwa_index",
-                         folder_name + '.' + source + version + ".rrna.fa"),
+                os.path.join(self.genome_folder,
+                             "annotations",
+                             "rrna_bwa_index",
+                             folder_name + '.' + source + version + ".rrna.fa"),
 
-            os.path.join(genome_folder,
-                         "annotations",
-                         folder_name + '.' + source + version + ".ref_flat.tsv")
-        ]
+                os.path.join(self.genome_folder,
+                             "annotations",
+                             folder_name + '.' + source + version + ".ref_flat.tsv")
+            ]
+        else:
+            return None
 
-    def get_alignment_jobs(self, readset):
-        jobs = []
+    def get_alignment_job(self, readset):
         output = readset.bam + ".bam"
 
         rg_center = config.param('star_align', 'sequencing_center', required=False)
+
+        # We can't set the exact bam filename for STAR, so we output the result in a specific directory, and move the
+        # bam to the expected place with the right name.
         star_bam_name = "Aligned.sortedByCoord.out.bam"
+        star_output_directory = os.path.join(os.path.dirname(output), readset.library)
+
+        star_job = star.align(
+            reads1=readset.fastq1,
+            reads2=readset.fastq2,
+            output_directory=star_output_directory,
+            sort_bam=True,
+            genome_index_folder=readset.aligner_reference_index,
+            rg_id=readset.library + "_" + readset.run + "_" + readset.lane,
+            rg_sample=readset.sample.name,
+            rg_library=readset.library if readset.library else "",
+            rg_platform_unit=readset.run + "_" + readset.lane if readset.run and readset.lane else "",
+            rg_platform="Illumina",
+            rg_center=rg_center if rg_center else ""
+        )
+        # we clean the output of the star job since we move the file, and the moved file is the output of the move job
+        star_job._output_files = []
 
         job = concat_jobs([
-            star.align(
-                reads1=readset.fastq1,
-                reads2=readset.fastq2,
-                output_directory=os.path.dirname(output),
-                sort_bam=True,
-                genome_index_folder=readset.aligner_reference_index,
-                rg_id=readset.library + "_" + readset.run + "_" + readset.lane,
-                rg_sample=readset.sample.name,
-                rg_library=readset.library if readset.library else "",
-                rg_platform_unit=readset.run + "_" + readset.lane if readset.run and readset.lane else "",
-                rg_platform="Illumina",
-                rg_center=rg_center if rg_center else ""
-            ),
-            Job(output_files=[output], command="mv " + os.path.dirname(output) + os.sep + star_bam_name + " " + output),
-            Job(command="ln -s " + output + " " + os.path.dirname(output) + os.sep + star_bam_name),
+            star_job,
+            Job(output_files=[output], command="mv " + os.path.join(star_output_directory, star_bam_name) + " "
+                                               + output),
             picard.build_bam_index(output, output[::-1].replace(".bam"[::-1], ".bai"[::-1], 1)[::-1])
         ])
         job.name = "star_align." + readset.name + "." + readset.run + "." + readset.lane
-        jobs.append(job)
-        return jobs
+        return job
 
     def get_metrics_jobs(self, readset):
         jobs = []
@@ -280,7 +346,7 @@ class StarRunProcessingAligner(RunProcessingAligner):
                                       readset.sample.name + "." +
                                       readset.library +
                                       ".rnaseqc.sorted.dup.metrics.tsv"))
-                              ], name="rnaseqc" + readset.name + ".rnaseqc" + "." + readset.run + "." + readset.lane)
+                              ], name="rnaseqc." + readset.name + ".rnaseqc" + "." + readset.run + "." + readset.lane)
             jobs.append(job)
 
         return jobs
@@ -313,7 +379,6 @@ class StarRunProcessingAligner(RunProcessingAligner):
             jobs.append(job)
 
         return jobs
-
 
     @staticmethod
     def _estimate_ribosomal_rna(readset):

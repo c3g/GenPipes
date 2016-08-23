@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=star
-VERSION=2.5.0c
+VERSION=2.5.1b
 ARCHIVE=$VERSION.tar.gz
 ARCHIVE_URL=https://github.com/alexdobin/STAR/archive/$ARCHIVE
 SOFTWARE_DIR=${SOFTWARE^^}_$VERSION
@@ -14,7 +14,7 @@ SOFTWARE_DIR=${SOFTWARE^^}_$VERSION
 build() {
   cd $INSTALL_DOWNLOAD
   tar zxvf $ARCHIVE
-
+  
   # Remove "STAR-" prefix from top directory name
   mv ${SOFTWARE^^}-$VERSION $SOFTWARE_DIR
   cd $SOFTWARE_DIR/source
