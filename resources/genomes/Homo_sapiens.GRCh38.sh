@@ -71,7 +71,6 @@ get_dbNSFP() {
     population_AF=1000Gp1_EUR_AF
 }
 
-
 # Overwrite install_genome since NCBI genome is used instead of Ensembl
 install_genome() {
 

@@ -13,9 +13,6 @@ BIOMART_HOST=dec2015.archive.ensembl.org
 module_snpeff=mugqic/snpEff/4.2
 module_tabix=mugqic/tabix/0.2.6
 module_java=mugqic/java/openjdk-jdk1.8.0_72
-module_snpeff=mugqic/snpEff/4.2
-module_tabix=mugqic/tabix/0.2.6
-module_java=mugqic/java/openjdk-jdk1.8.0_72
 
 GENOME_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source $GENOME_INSTALL_SCRIPT_DIR/install_genome.sh
@@ -75,7 +72,6 @@ get_dbNSFP() {
     # set the default allele frequency for a population (hapmap CEU)
     population_AF=1000Gp1_EUR_AF
 }
-
 
 # Overwrite install_genome since NCBI genome is used instead of Ensembl
 install_genome() {
