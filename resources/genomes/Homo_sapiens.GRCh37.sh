@@ -14,7 +14,6 @@ module_snpeff=mugqic/snpEff/4.2
 module_tabix=mugqic/tabix/0.2.6
 module_java=mugqic/java/openjdk-jdk1.8.0_72
 
-
 GENOME_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source $GENOME_INSTALL_SCRIPT_DIR/install_genome.sh
 
@@ -23,6 +22,7 @@ get_vcf_dbsnp() {
   DBSNP_VERSION=142
   DBSNP_URL=ftp://ftp.ncbi.nih.gov/snp/organisms/human_9606_b${DBSNP_VERSION}_GRCh37p13/VCF/All.vcf.gz
   DBSNP=$ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP$DBSNP_VERSION.vcf.gz
+
   if ! is_up2date $DBSNP $DBSNP.tbi
   then
     download_url $DBSNP_URL
@@ -34,6 +34,7 @@ get_vcf_dbsnp() {
     echo "dbSNP file $DBSNP up to date... skipping"
   fi
 }
+
 # Download dbNSFP and generate vcfs required to run VerifyBamId
 get_dbNSFP() {        
     DBNSFP_URL=ftp://dbnsfp:dbnsfp@dbnsfp.softgenetics.com/dbNSFPv2.4.zip
