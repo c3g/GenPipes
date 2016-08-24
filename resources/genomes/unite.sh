@@ -1,5 +1,5 @@
 ##
-ROOT="$MUGQIC_INSTALL_HOME_DEV/genomes/unite_db/"; mkdir -p $ROOT ; cd $ROOT
+ROOT="$MUGQIC_INSTALL_HOME/genomes/unite_db/"; mkdir -p $ROOT ; cd $ROOT
 
 ## The last version is 1211 
 wget https://github.com/downloads/qiime/its-reference-otus/its_12_11_otus.tar.gz

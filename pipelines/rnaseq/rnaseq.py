@@ -153,7 +153,7 @@ class RnaSeq(common.Illumina):
             )
             job.name = "star_align.1." + readset.name
             jobs.append(job)
-        
+
         ######
         jobs.append(concat_jobs([
         #pass 1 - contatenate junction
@@ -212,7 +212,7 @@ class RnaSeq(common.Illumina):
                 sort_bam=True
             )
             job.input_files.append(os.path.join(project_index_directory, "SAindex"))
- 
+
             # If this readset is unique for this sample, further BAM merging is not necessary.
             # Thus, create a sample BAM symlink to the readset BAM.
             # remove older symlink before otherwise it raise an error if the link already exist (in case of redo)
@@ -312,7 +312,7 @@ pandoc --to=markdown \\
         """
         Generate a hardclipped version of the bam for the toxedo suite which doesn't support this official sam feature.
         """
-        
+
         jobs = []
         for sample in self.samples:
             alignment_input = os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.bam")
@@ -339,7 +339,7 @@ awk 'BEGIN {{OFS="\\t"}} {{if (substr($1,1,1)=="@") {{print;next}}; split($6,C,/
             job.name="tuxedo_hard_clip."+ sample.name
             jobs.append(job)
         return jobs
-    
+
 
     def rnaseqc(self):
         """
@@ -428,20 +428,20 @@ pandoc \\
         Computes a series of quality control metrics using both CollectRnaSeqMetrics and CollectAlignmentSummaryMetrics functions
         metrics are collected using [Picard](http://broadinstitute.github.io/picard/).
         """
-        
+
         jobs = []
         reference_file = config.param('picard_rna_metrics', 'genome_fasta', type='filepath')
         for sample in self.samples:
                 alignment_file = os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.bam")
                 output_directory = os.path.join("metrics", sample.name)
-                
+
                 job = concat_jobs([
                         Job(command="mkdir -p " + output_directory, removable_files=[output_directory]),
                         picard.collect_multiple_metrics(alignment_file, os.path.join(output_directory,sample.name),reference_file),
                         picard.collect_rna_metrics(alignment_file, os.path.join(output_directory,sample.name+".picard_rna_metrics"))
                 ],name="picard_rna_metrics."+ sample.name)
                 jobs.append(job)
-        
+
         return jobs
 
     def estimate_ribosomal_rna(self):
@@ -491,23 +491,23 @@ pandoc \\
                     )
                 ]),
                 tools.py_rrnaBAMcount (
-                    bam=readset_metrics_bam, 
-                    gtf=config.param('bwa_mem_rRNA', 'gtf'), 
+                    bam=readset_metrics_bam,
+                    gtf=config.param('bwa_mem_rRNA', 'gtf'),
                     output=os.path.join(output_folder,readset.name+"rRNA.stats.tsv"),
                     typ="transcript")], name="bwa_mem_rRNA." + readset.name )
-            
+
             job.removable_files=[readset_metrics_bam]
             jobs.append(job)
         return jobs
 
-        
+
     def wiggle(self):
         """
         Generate wiggle tracks suitable for multiple browsers.
         """
 
         jobs = []
-        
+
         ##check the library status
         library = {}
         for readset in self.readsets:
@@ -515,7 +515,7 @@ pandoc \\
                 library[readset.sample]="PAIRED_END"
             if readset.run_type == "SINGLE_END" :
                 library[readset.sample]="SINGLE_END"
-        
+
         for sample in self.samples:
             bam_file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.")
             input_bam = bam_file_prefix + "bam"
@@ -561,9 +561,15 @@ pandoc \\
                 outputs = [[bed_graph_prefix + ".bedGraph", big_wig_prefix + ".bw"]]
 
             for bed_graph_output, big_wig_output in outputs:
+                if "forward" in bed_graph_output:
+                    in_bam = bam_file_prefix + "forward.bam"    # same as output_bam_f from previous picard job
+                elif "reverse" in bed_graph_output:
+                    in_bam = bam_file_prefix + "reverse.bam"    # same as output_bam_r from previous picard job
+                else:
+                    in_bam = input_bam
                 job = concat_jobs([
                     Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " " + os.path.join("tracks", "bigWig"), removable_files=["tracks"]),
-                    bedtools.graph(input_bam, bed_graph_output, big_wig_output,library[sample])
+                    bedtools.graph(in_bam, bed_graph_output, big_wig_output,library[sample])
                 ], name="wiggle." + re.sub(".bedGraph", "", os.path.basename(bed_graph_output)))
                 jobs.append(job)
 
@@ -579,7 +585,7 @@ pandoc \\
         for sample in self.samples:
             alignment_file_prefix = os.path.join("alignment", sample.name, sample.name)
             input_bam = alignment_file_prefix + ".QueryNameSorted.bam"
-            
+
             # Count reads
             output_count = os.path.join("raw_counts", sample.name + ".readcounts.csv")
             stranded = "no" if config.param('DEFAULT', 'strand_info') == "fr-unstranded" else "reverse"
@@ -648,7 +654,7 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
                 library[readset.sample]="PAIRED_END"
             if readset.run_type == "SINGLE_END" :
                 library[readset.sample]="SINGLE_END"
-                
+
         wiggle_directory = os.path.join("tracks", "bigWig")
         wiggle_archive = "tracks.zip"
         big_wig_prefix = os.path.join("tracks", "bigWig", sample.name)
@@ -707,7 +713,7 @@ pandoc --to=markdown \\
         """
 
         jobs = []
-        
+
         gtf = config.param('cufflinks','gtf', type='filepath')
 
         for sample in self.samples:
@@ -721,7 +727,7 @@ pandoc --to=markdown \\
             jobs.append(job)
 
         return jobs
-    
+
     def cuffmerge(self):
         """
         Merge assemblies into a master transcriptome reference using [cuffmerge](http://cole-trapnell-lab.github.io/cufflinks/cuffmerge/).
@@ -731,21 +737,21 @@ pandoc --to=markdown \\
         sample_file = os.path.join("cufflinks", "cuffmerge.samples.txt")
         input_gtfs = [os.path.join("cufflinks", sample.name, "transcripts.gtf") for sample in self.samples]
         gtf = config.param('cuffmerge','gtf', type='filepath')
-        
-        
+
+
         job = concat_jobs([
             Job(command="mkdir -p " + output_directory),
             Job(input_gtfs, [sample_file], command="""\
 `cat > {sample_file} << END
 {sample_rows}
 END
-  
+
 `""".format(sample_rows="\n".join(input_gtfs), sample_file=sample_file)),
             cufflinks.cuffmerge(sample_file, output_directory, gtf_file=gtf)],
             name="cuffmerge")
-        
+
         return [job]
-        
+
     def cuffquant(self):
         """
         Compute expression profiles (abundances.cxb) using [cuffquant](http://cole-trapnell-lab.github.io/cufflinks/cuffquant/).
@@ -753,9 +759,9 @@ END
         """
 
         jobs = []
-        
+
         gtf = os.path.join("cufflinks", "AllSamples","merged.gtf")
-        
+
         for sample in self.samples:
             input_bam = os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.hardClip.bam")
             output_directory = os.path.join("cufflinks", sample.name)
@@ -766,7 +772,7 @@ END
             jobs.append(job)
 
         return jobs
-    
+
     def cuffdiff(self):
         """
         [Cuffdiff](http://cole-trapnell-lab.github.io/cufflinks/cuffdiff/) is used to calculate differential transcript expression levels and test them for significant differences.
@@ -791,7 +797,7 @@ END
             jobs.append(job)
 
         return jobs
-    
+
     def cuffnorm(self):
         """
         Global normalization of RNA-Seq expression levels using [Cuffnorm](http://cole-trapnell-lab.github.io/cufflinks/cuffnorm/).
@@ -808,7 +814,7 @@ END
              gtf,
              "cuffnorm",sample_labels)
         job.removable_files = ["cuffnorm"]
-        job.name = "cuffnorm" 
+        job.name = "cuffnorm"
         jobs.append(job)
 
         return jobs
@@ -822,9 +828,9 @@ END
         cuffnorm_transcript = os.path.join("cuffnorm","isoforms.fpkm_table")
         output_gene = os.path.join(output_directory,"gene_fpkm_correlation_matrix.tsv")
         cuffnorm_gene = os.path.join("cuffnorm","genes.fpkm_table")
-        
+
         jobs = []
-      
+
         job = concat_jobs([Job(command="mkdir -p " + output_directory),
                            utils.utils.fpkm_correlation_matrix(cuffnorm_transcript, output_transcript)])
         job.name="fpkm_correlation_matrix_transcript"
@@ -832,7 +838,7 @@ END
         job = utils.utils.fpkm_correlation_matrix(cuffnorm_gene, output_gene)
         job.name="fpkm_correlation_matrix_gene"
         jobs = jobs + [job]
-        
+
         return jobs
 
     def gq_seq_utils_exploratory_analysis_rnaseq(self):

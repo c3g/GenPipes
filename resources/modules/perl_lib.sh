@@ -3,7 +3,8 @@
 set -eu -o pipefail
 
 # Perl module where to install libs
-PERL_MODULE=mugqic/perl/5.18.2
+PERL_MODULE=mugqic/perl/5.10.1
+#PERL_MODULE=mugqic/perl/5.18.2
 #PERL_MODULE=mugqic/perl/5.22.1
 module load $PERL_MODULE
 

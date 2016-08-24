@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=scalpel
-VERSION=0.5.2
+VERSION=0.3.2
 PERL_VERSION=5.18.2
 ARCHIVE=$SOFTWARE-$VERSION.tar.gz
 ARCHIVE_URL=http://sourceforge.net/projects/scalpel/files/$ARCHIVE/download

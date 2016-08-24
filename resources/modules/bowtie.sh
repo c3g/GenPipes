@@ -3,10 +3,13 @@
 set -eu -o pipefail
 
 SOFTWARE=bowtie
-VERSION=1.0.0
-ARCHIVE=$SOFTWARE-$VERSION-src.zip
-ARCHIVE_URL=http://sourceforge.net/projects/bowtie-bio/files/$SOFTWARE/$VERSION/$ARCHIVE
-SOFTWARE_DIR=$SOFTWARE-$VERSION
+VERSION=2.1.0
+ARCHIVE=${SOFTWARE}2-$VERSION-source.zip
+#ARCHIVE=$SOFTWARE-$VERSION-src.zip	# for version <2.0.0
+#ARCHIVE_URL=https://sourceforge.net/projects/bowtie-bio/files/$SOFTWARE/$VERSION/$ARCHIVE	# for version <2.0.0
+ARCHIVE_URL=https://sourceforge.net/projects/bowtie-bio/files/${SOFTWARE}2/$VERSION/$ARCHIVE
+SOFTWARE_DIR=${SOFTWARE}-$VERSION
+#SOFTWARE_DIR=$SOFTWARE-$VERSION	# for version <2.0.0
 
 # Specific commands to extract and build the software
 # $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
@@ -15,6 +18,7 @@ build() {
   cd $INSTALL_DOWNLOAD
   unzip $ARCHIVE
 
+  mv ${SOFTWARE}2-$VERSION $SOFTWARE_DIR	# for version >= 2.0.0
   cd $SOFTWARE_DIR
   make
 

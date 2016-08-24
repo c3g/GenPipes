@@ -10,7 +10,7 @@ set -eu -o pipefail
 ################################################################################
 
 SOFTWARE="minia"  
-VERSION="2.0.2" 
+VERSION="2.0.3" 
 ARCHIVE="$SOFTWARE-$VERSION-Linux.tar.gz"  
 ARCHIVE_URL=http://gatb-tools.gforge.inria.fr/versions/bin/$ARCHIVE
 SOFTWARE_DIR=$SOFTWARE-$VERSION-Linux
@@ -38,7 +38,7 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-prepend-path    PATH                \$root/bin ;  ## TO BE ADDED IF NECESSARY
+prepend-path    PATH                \$root/bin ; 
 "
 }
 

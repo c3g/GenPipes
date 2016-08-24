@@ -16,14 +16,13 @@ easy_install pip
 easy_install http://cython.org/release/Cython-0.23.4.tar.gz
 
 # numpy
-easy_install https://github.com/numpy/numpy/archive/v1.11.0.tar.gz
+easy_install numpy
 python -c 'import numpy; print numpy.__version__, numpy.__file__'
 
 # biopython
-easy_install https://github.com/biopython/biopython/archive/biopython-166.tar.gz
+easy_install biopython
 python -c 'import Bio; print Bio.__version__, Bio.__file__'
 
-# matplotlib requires dateutil and pyparsing dependencies (matplotlib is stuck at version 1.4.3 for qiime compatibility)
 easy_install http://labix.org/download/python-dateutil/python-dateutil-1.5.tar.gz
 easy_install https://sourceforge.net/projects/pyparsing/files/pyparsing/pyparsing-2.1.1/pyparsing-2.1.1.tar.gz/download
 easy_install https://github.com/matplotlib/matplotlib/archive/v1.5.1.tar.gz
@@ -53,13 +52,10 @@ python -c 'import networkx; print networkx.__version__, networkx.__file__'
 PIP_PATH=$(which pip)
 # scikit-bio
 ${PIP_PATH} install scikit-bio
-# qiime
-${PIP_PATH} install qiime
-
 #futures
 ${PIP_PATH} install futures
-
-
+# misopy
+${PIP_PATH} install misopy
 
 # Add permissions
 chmod -R ug+rwX,o+rX-w $PYTHON_HOME

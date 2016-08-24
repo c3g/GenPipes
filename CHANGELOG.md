@@ -1,13 +1,16 @@
-11 tags, 2861 commits
+12 tags, 2862 commits
 
-HEAD        Mon Feb 8 11:46:42 2016 -0500        404 commits
+HEAD        Mon Feb 8 12:02:54 2016 -0500        0 commits
+
+2.2.0        Mon Feb 8 12:04:44 2016 -0500        405 commits
 
   dbujold <david.bujold@mail.mcgill.ca>      1 commits
 
        dc03d86 Added link to the GenAP project in front page.
 
-  Edouard Henrion <edouard.henrion@mcgill.ca>      62 commits
+  Edouard Henrion <edouard.henrion@mcgill.ca>      63 commits
 
+       477b332 Version bump to 2.2.0
        caa197d Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
        1d87ea7 BFXDEV-490 - updated base.ini files for chipseq dnaseq & rnaseq pipelines
        371dd66 add report section in DNA-Seq High Coverage pipeline ini file

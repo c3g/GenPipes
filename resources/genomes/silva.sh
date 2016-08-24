@@ -1,5 +1,5 @@
 ##
-ROOT="$MUGQIC_INSTALL_HOME_DEV/genomes/silva_db/"; mkdir -p $ROOT ; cd $ROOT
+ROOT="$MUGQIC_INSTALL_HOME/genomes/silva_db/"; mkdir -p $ROOT ; cd $ROOT
 
 ## The last version is 111 
 wget https://www.arb-silva.de/fileadmin/silva_databases/qiime/Silva_119_provisional_release.zip

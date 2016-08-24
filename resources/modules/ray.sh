@@ -37,7 +37,7 @@ proc ModulesHelp { } {
        puts stderr \"\tMUGQIC - $SOFTWARE \" ;
 }
 module-whatis \"$SOFTWARE  \" ;
-                      
+
 set             root                \$::env(MUGQIC_INSTALL_HOME_DEV)/software/$SOFTWARE/$SOFTWARE-$VERSION
 prepend-path    PATH                \$root;
 " > $VERSION

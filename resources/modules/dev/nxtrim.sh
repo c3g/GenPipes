@@ -10,11 +10,9 @@ set -eu -o pipefail
 ################################################################################
 
 # BOOST is necessary
-module load BOOST/1.57 
-export BOOST_ROOT="/software/CentOS-6/libraries/boost-1.57"
-
+module load boost64/1.61.0 
 SOFTWARE="NxTrim" 
-VERSION="0.3.0-alpha"  
+VERSION="0.4.1"  
 ARCHIVE="v$VERSION.tar.gz" 
 ARCHIVE_URL="https://github.com/sequencing/NxTrim/archive/$ARCHIVE" 
 SOFTWARE_DIR="$SOFTWARE-$VERSION"  
@@ -38,11 +36,9 @@ proc ModulesHelp { } {
   puts stderr \"\tMUGQIC - $SOFTWARE \"
 }
 module-whatis \"$SOFTWARE\"
-
+module load boost64/1.61.0  ;
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
 prepend-path    PATH                \$root ;
-module load BOOST/1.57 ;
-setenv BOOST_ROOT /software/CentOS-6/libraries/boost-1.57 ; 
 "
 }
 

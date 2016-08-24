@@ -3,9 +3,9 @@
 set -eu -o pipefail
 
 SOFTWARE=memtime
-VERSION=1.3
-ARCHIVE=$SOFTWARE-$VERSION.tar.gz
-ARCHIVE_URL=http://www.update.uu.se/~johanb/$SOFTWARE/$ARCHIVE
+VERSION=1.2
+ARCHIVE=v$VERSION.tar.gz
+ARCHIVE_URL=https://github.com/phuseman/$SOFTWARE/archive/$ARCHIVE
 SOFTWARE_DIR=$SOFTWARE-$VERSION
 
 # Specific commands to extract and build the software
