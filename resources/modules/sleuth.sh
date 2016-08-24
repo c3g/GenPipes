@@ -2,13 +2,6 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-################################################################################
-# This is a module install script template which should be copied and used for
-# consistency between module paths, permissions, etc.
-# Only lines marked as "## TO BE ADDED/MODIFIED" should be, indeed, modified.
-# Also, once modified, delete this commented-out header and the ## comments
-################################################################################
-
 SOFTWARE=software_name  ## TO BE MODIFIED WITH e.g. blast, hmmer, samtools, etc.
 VERSION=0.0.0  ## TO BE MODIFIED WITH e.g. 2.2.28+, 3.0, 0.1.19, etc.
 ARCHIVE=$SOFTWARE-$VERSION.(tar.gz|zip|tar.bz2)  ## TO BE MODIFIED WITH SPECIFIC ARCHIVE

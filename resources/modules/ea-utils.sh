@@ -6,7 +6,7 @@
 
 SOFTWARE=ea-utils
 VERSION=1.1.2-537
-INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/$SOFTWARE
+INSTALL_PATH=$MUGQIC_INSTALL_HOME_TMP/software/$SOFTWARE
 INSTALL_DOWNLOAD=$INSTALL_PATH/tmp
 mkdir -p $INSTALL_DOWNLOAD
 cd $INSTALL_DOWNLOAD
@@ -26,7 +26,7 @@ PREFIX=$INSTALL_PATH/$SOFTWARE.$VERSION make install
 # Add permissions and install software
 cd $INSTALL_DOWNLOAD
 chmod -R ug+rwX $INSTALL_PATH/$SOFTWARE.$VERSION .
-mv -i $SOFTWARE.$VERSION.tar.gz $MUGQIC_INSTALL_HOME/archive
+mv -i $SOFTWARE.$VERSION.tar.gz $MUGQIC_INSTALL_HOME_TMP/archive
 
 # Module file
 echo "#%Module1.0
@@ -35,7 +35,7 @@ proc ModulesHelp { } {
 }
 module-whatis \"$SOFTWARE  \"
 
-set             root                \$::env(MUGQIC_INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE.$VERSION
+set             root                \$::env(MUGQIC_INSTALL_HOME_TMP)/software/$SOFTWARE/$SOFTWARE.$VERSION
 prepend-path    PATH                \$root/bin
 " > $VERSION
 
@@ -47,9 +47,9 @@ echo "#%Module1.0
 set ModulesVersion \"$VERSION\"" > .version
 
 # Add permissions and install module
-mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
+mkdir -p $MUGQIC_INSTALL_HOME_TMP/modulefiles/mugqic/$SOFTWARE
 chmod -R ug+rwX $VERSION .version
-mv $VERSION .version $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
+mv $VERSION .version $MUGQIC_INSTALL_HOME_TMP/modulefiles/mugqic/$SOFTWARE
 
 # Clean up temporary installation files if any
 rm -rf $INSTALL_DOWNLOAD

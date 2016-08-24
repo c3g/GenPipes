@@ -6,7 +6,7 @@ SOFTWARE=trinity
 VERSION=2.1.1
 ARCHIVE=${SOFTWARE}rnaseq-$VERSION.tar.gz
 ARCHIVE_URL=https://github.com/trinityrnaseq/trinityrnaseq/archive/v$VERSION.tar.gz
-SOFTWARE_DIR=${SOFTWARE}rnaseq-$VERSION
+SOFTWARE_DIR=${SOFTWARE}rnaseq_$VERSION
 
 # Specific commands to extract and build the software
 # $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
@@ -17,7 +17,7 @@ build() {
 
   cd $SOFTWARE_DIR
   make
-  make plugins
+  if [[ ${VERSION:0:1} == 2 ]]; then echo $VERSION; make plugins; fi
 
   # Install software
   cd $INSTALL_DOWNLOAD

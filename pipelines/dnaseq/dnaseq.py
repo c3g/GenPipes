@@ -922,14 +922,13 @@ pandoc \\
         input_bams = [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam") for sample in self.samples]
         nb_jobs = config.param('snp_and_indel_bcf', 'approximate_nb_jobs', type='posint')
         output_directory = "variants/rawBCF"
-        bcftools_view_options = "-bvcg"
 
         if nb_jobs == 1:
             jobs.append(concat_jobs([
                 Job(command="mkdir -p " + output_directory),
                 pipe_jobs([
                     samtools.mpileup(input_bams, None, config.param('snp_and_indel_bcf', 'mpileup_other_options')),
-                    samtools.bcftools_view("-", os.path.join(output_directory, "allSamples.bcf"), bcftools_view_options),
+                    samtools.bcftools_call("-", os.path.join(output_directory, "allSamples.bcf"), config.param('snp_and_indel_bcf', 'bcftools_other_options')),
                 ])], name="snp_and_indel_bcf.allSamples"))
 
         else:
@@ -938,7 +937,7 @@ pandoc \\
                     Job(command="mkdir -p " + output_directory),
                     pipe_jobs([
                         samtools.mpileup(input_bams, None, config.param('snp_and_indel_bcf', 'mpileup_other_options'), region),
-                        samtools.bcftools_view("-", os.path.join(output_directory, "allSamples." + region + ".bcf"), bcftools_view_options),
+                        samtools.bcftools_call("-", os.path.join(output_directory, "allSamples." + region + ".bcf"), config.param('snp_and_indel_bcf', 'bcftools_other_options')),
                     ])], name="snp_and_indel_bcf.allSamples." + re.sub(":", "_", region)))
 
         return jobs

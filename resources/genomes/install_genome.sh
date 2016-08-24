@@ -6,10 +6,10 @@ module_bowtie=mugqic/bowtie2/2.2.4
 module_bwa=mugqic/bwa/0.7.12
 module_java=mugqic/java/openjdk-jdk1.8.0_72
 module_mugqic_R_packages=mugqic/mugqic_R_packages/1.0.3
-module_picard=mugqic/picard/1.123
+module_picard=mugqic/picard/2.0.1
 module_R=mugqic/R_Bioconductor/3.1.2_3.0
 module_samtools=mugqic/samtools/1.3
-module_star=mugqic/star/2.5.1b
+module_star=mugqic/star/2.5.2a
 module_tabix=mugqic/tabix/0.2.6
 module_tophat=mugqic/tophat/2.0.14
 module_ucsc=mugqic/ucsc/v326
@@ -101,14 +101,14 @@ set_urls() {
     BIOMART_GO_ID=go_id
     BIOMART_GO_NAME=name_1006
     BIOMART_GO_DEFINITION=definition_1006
-  
+
     # Before Ensembl release 76, release number was added in genome and ncrna file names
     if [ $VERSION -lt 76 ]
     then
       GENOME_URL=${GENOME_URL/$SPECIES.$ASSEMBLY/$SPECIES.$ASSEMBLY.$VERSION}
       NCRNA_URL=${NCRNA_URL/$SPECIES.$ASSEMBLY/$SPECIES.$ASSEMBLY.$VERSION}
     fi
-  
+
     # Check if a genome primary assembly is available for this species, otherwise use the toplevel assembly
     if ! is_url_valid $GENOME_URL
     then
@@ -129,7 +129,7 @@ set_urls() {
       echo "VCF tabix index not available for $SPECIES"
       VCF_TBI_URL=
     fi
-  
+
   #
   # Ensembl Genomes (non-vertebrate species)
   #
@@ -143,7 +143,7 @@ set_urls() {
 
     # Retrieve species division (Bacteria|Fungi|Metazoa|Plants|Protists)
     DIVISION=`echo "$SPECIES_LINE" | cut -f3 | sed "s/^Ensembl//"`
-  
+
     # Escherichia coli bacteria file paths are different
     # Retrieve which bacteria collection it belongs to and adjust paths accordingly
     CORE_DB_PREFIX=`echo "$SPECIES_LINE" | cut -f13 | perl -pe "s/_core_${VERSION}_\d+_\d+//"`
@@ -155,7 +155,7 @@ set_urls() {
       EG_SPECIES=${SPECIES,,}
       EG_BASENAME=$SPECIES.$ASSEMBLY.$VERSION
     fi
-  
+
     URL_PREFIX=$RELEASE_URL/${DIVISION,}
     GENOME_URL=$URL_PREFIX/fasta/$EG_SPECIES/dna/$EG_BASENAME.dna.genome.fa.gz
     NCRNA_URL=$URL_PREFIX/fasta/$EG_SPECIES/ncrna/$EG_BASENAME.ncrna.fa.gz
@@ -451,10 +451,10 @@ create_gene_annotations_flat() {
     echo "Creating gene refFlat file from GTF..."
     echo
     cd $ANNOTATIONS_DIR
-    module load $module_ucsc 
+    module load $module_ucsc
     gtfToGenePred -genePredExt -geneNameAsName2 ${ANNOTATION_PREFIX}.gtf ${ANNOTATION_PREFIX}.refFlat.tmp.txt
-    cut -f 12 ${ANNOTATION_PREFIX}.refFlat.tmp.txt > ${ANNOTATION_PREFIX}.refFlat.tmp.2.txt 
-    cut -f 1-10 ${ANNOTATION_PREFIX}.refFlat.tmp.txt > ${ANNOTATION_PREFIX}.refFlat.tmp.3.txt 
+    cut -f 12 ${ANNOTATION_PREFIX}.refFlat.tmp.txt > ${ANNOTATION_PREFIX}.refFlat.tmp.2.txt
+    cut -f 1-10 ${ANNOTATION_PREFIX}.refFlat.tmp.txt > ${ANNOTATION_PREFIX}.refFlat.tmp.3.txt
     paste ${ANNOTATION_PREFIX}.refFlat.tmp.2.txt ${ANNOTATION_PREFIX}.refFlat.tmp.3.txt > ${ANNOTATION_PREFIX}.ref_flat.tsv
     rm ${ANNOTATION_PREFIX}.refFlat.tmp.txt ${ANNOTATION_PREFIX}.refFlat.tmp.2.txt ${ANNOTATION_PREFIX}.refFlat.tmp.3.txt
   else
@@ -463,7 +463,7 @@ create_gene_annotations_flat() {
     echo
   fi
 }
-  
+
 
 create_go_annotations() {
 

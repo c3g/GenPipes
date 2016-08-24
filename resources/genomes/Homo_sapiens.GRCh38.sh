@@ -20,7 +20,7 @@ module_java=mugqic/java/openjdk-jdk1.7.0_60
 # Download dbSNP directly from NCBI since it is more up to date
 get_vcf_dbsnp() {
   DBSNP_VERSION=142
-  DBSNP_URL=ftp://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606_b${DBSNP_VERSION}_GRCh38/VCF/All.vcf.gz
+  DBSNP_URL=ftp://ftp.ncbi.nlm.nih.gov/snp/organisms/archive/human_9606_b${DBSNP_VERSION}_GRCh38/VCF/All.vcf.gz
   DBSNP=$ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP$DBSNP_VERSION.vcf.gz
 
   if ! is_up2date $DBSNP $DBSNP.tbi
@@ -36,7 +36,7 @@ get_vcf_dbsnp() {
 }
 
 # Download dbNSFP and generate vcfs required to run VerifyBamId
-get_dbNSFP() {
+get_dbNSFP() {        
     DBNSFP_URL=ftp://dbnsfp:dbnsfp@dbnsfp.softgenetics.com/dbNSFPv3.1c.zip
     DBSNSFP_VERSION=dbNSFPv3.1c
     DBSNSFP=$ANNOTATIONS_DIR/$DBSNSFP_VERSION/$DBSNSFP_VERSION.txt.gz

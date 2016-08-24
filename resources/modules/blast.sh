@@ -27,7 +27,7 @@ module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
 prepend-path    PATH                \$root/bin
-prepend-path    BLASTDB             \$::env(MUGQIC_INSTALL_HOME)/genomes/blast_db
+prepend-path    BLASTDB             \$::env(MUGQIC_INSTALL_HOME_TMP)/genomes/blast_db
 "
 }
 
