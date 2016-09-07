@@ -14,7 +14,7 @@ HOST=`hostname`;
 DNSDOMAIN=`dnsdomainname`;
 
 SOFTWARE=VarDictJava 
-VERSION=1.4.5
+VERSION=1.4.6
 ARCHIVE=$SOFTWARE-$VERSION.tar.gz
 ARCHIVE_URL=https://github.com/AstraZeneca-NGS/VarDictJava/archive/v$VERSION.tar.gz  
 SOFTWARE_DIR=$SOFTWARE-$VERSION 
@@ -33,19 +33,19 @@ build() {
   
   ##Modify Vardict bash script
   cd ../
-  if [[ $HOST == abacus* || $DNSDOMAIN == ferrier.genome.mcgill.ca ]]; then
+  #if [[ $HOST == abacus* || $DNSDOMAIN == ferrier.genome.mcgill.ca ]]; then
 
-     sed -i.bak -e "s/^DEFAULT_JVM_OPTS='/DEFAULT_JVM_OPTS=\'\"-Djava.io.tmpdir=\/lb\/scratch/\" \"-XX:ParallelGCThreads=1\" \"-Dsamjdk.buffer_size=4194304\" /g" bin/VarDict
+  #   sed -i.bak -e "s/^DEFAULT_JVM_OPTS=\'/DEFAULT_JVM_OPTS=\'\"-Djava.io.tmpdir=\/lb\/scratch/\" \"-XX:ParallelGCThreads=1\" \"-Dsamjdk.buffer_size=4194304\" /g" bin/VarDict
 
-  elif [[ $HOST == lg-* || $DNSDOMAIN == guillimin.clumeq.ca ]]; then
+  #elif [[ $HOST == lg-* || $DNSDOMAIN == guillimin.clumeq.ca ]]; then
 
-     sed -i.bak -e "s/^DEFAULT_JVM_OPTS='/DEFAULT_JVM_OPTS=\'\"-Djava.io.tmpdir=\/localscratch\/\" \"-XX:ParallelGCThreads=1\" \"-Dsamjdk.buffer_size=4194304\" /g" bin/VarDict
+  #   sed -i.bak -e "s/^DEFAULT_JVM_OPTS=\'/DEFAULT_JVM_OPTS=\'\"-Djava.io.tmpdir=\/localscratch\/\" \"-XX:ParallelGCThreads=1\" \"-Dsamjdk.buffer_size=4194304\" /g" bin/VarDict
 
-  elif [[ $BQMAMMOUTH == "mp2" ]]; then
+  #elif [[ $BQMAMMOUTH == "mp2" ]]; then
 
-     sed -i.bak -e "s/^DEFAULT_JVM_OPTS='/DEFAULT_JVM_OPTS=\'\"-Djava.io.tmpdir=\/lb\/scratch\/\" \"-XX:ParallelGCThreads=1\" \"-Dsamjdk.buffer_size=4194304\" /g" bin/VarDict
+  #   sed -i.bak -e "s/^DEFAULT_JVM_OPTS=\'/DEFAULT_JVM_OPTS=\'\"-Djava.io.tmpdir=\/lb\/scratch\/\" \"-XX:ParallelGCThreads=1\" \"-Dsamjdk.buffer_size=4194304\" /g" bin/VarDict
 
-  fi  
+  #fi  
   
   ##Install Vardict perl support files  
   rm -R VarDict

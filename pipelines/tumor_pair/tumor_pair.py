@@ -36,18 +36,19 @@ from core.pipeline import *
 from bfx.sample_tumor_pairs import *
 from bfx.sequence_dictionary import *
 
+from bfx import picard
+from bfx import samtools
+from bfx import vcflib
+from bfx import htslib
+from bfx import varscan
+from bfx import bamreadcount
 from bfx import bcftools
 from bfx import gq_seq_utils
 from bfx import gatk
-from bfx import picard
-from bfx import samtools
-from bfx import scalpel
 from bfx import tools
 from bfx import bed_file
 from bfx import vardict
 from bfx import bcbio_variation
-from bfx import htslib
-from bfx import vcflib
 from bfx import vt
 from bfx import snpeff
 from bfx import gemini
@@ -76,6 +77,285 @@ class TumorPair(dnaseq.DnaSeq):
             self._tumor_pairs = parse_tumor_pair_file(self.args.pairs.name, self.samples)
         return self._tumor_pairs
 
+    def gatk_indel_realigner(self):
+        """
+        Insertion and deletion realignment is performed on regions where multiple base mismatches
+        are preferred over indels by the aligner since it can appear to be less costly by the algorithm.
+        Such regions will introduce false positive variant calls which may be filtered out by realigning
+        those regions properly. Realignment is done using [GATK](https://www.broadinstitute.org/gatk/).
+        The reference genome is divided by a number regions given by the `nb_jobs` parameter.
+        """
+
+        jobs = []
+
+        nb_jobs = config.param('gatk_indel_realigner', 'nb_jobs', type='posint')
+        if nb_jobs > 50:
+            log.warning("Number of realign jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
+
+        for tumor_pair in self.tumor_pairs.itervalues():
+            normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name)
+            normal_realign_directory = os.path.join(normal_alignment_directory, "realign")
+            tumor_alignment_directory = os.path.join("alignment", tumor_pair.tumor.name)
+            tumor_realign_directory = os.path.join(tumor_alignment_directory, "realign")
+            
+            input_normal = os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.bam")
+            input_tumor = os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")
+
+            if nb_jobs == 1:
+                realign_intervals = os.path.join(tumor_realign_directory, "all.intervals")
+                bam_postfix = ".all.realigned.bam"
+                normal_bam = os.path.join(tumor_pair.normal.name + ".all.realigned.bam")
+                normal_index = re.sub("\.bam$", ".bai", normal_bam)
+                normal_output_bam = os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".realigned.qsorted.bam")
+                tumor_bam = os.path.join( tumor_pair.tumor.name + ".all.realigned.bam")
+                tumor_index = re.sub("\.bam$", ".bai", tumor_bam)
+                tumor_output_bam = os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".realigned.qsorted.bam")
+
+                jobs.append(concat_jobs([
+                    Job(command="mkdir -p " + normal_realign_directory, removable_files=[normal_realign_directory]),
+                    Job(command="mkdir -p " + tumor_realign_directory, removable_files=[tumor_realign_directory]),
+                    gatk.realigner_target_creator(input_normal, realign_intervals, input2=input_tumor),
+                    gatk.indel_realigner(input_normal, input2=input_tumor, output_norm_dep=normal_bam, output_tum_dep=tumor_bam, target_intervals=realign_intervals, optional=bam_postfix),
+                    # Move sample realign 
+                    Job([normal_bam], [normal_output_bam], command="mv " + normal_bam + " " + normal_output_bam + " && rm " + normal_index),
+                    Job([tumor_bam], [tumor_output_bam], command="mv " + tumor_bam + " " + tumor_output_bam + " && rm " + tumor_index)
+                ], name="gatk_indel_realigner." + tumor_pair.name))
+
+            else:
+                # The first sequences are the longest to process.
+                # Each of them must be processed in a separate job.
+                unique_sequences_per_job,unique_sequences_per_job_others = split_by_size(self.sequence_dictionary, nb_jobs - 1)
+
+                # Create one separate job for each of the first sequences
+                for idx,sequences in enumerate(unique_sequences_per_job):
+                    realign_prefix = os.path.join(tumor_realign_directory, str(idx))
+                    realign_intervals = realign_prefix + ".intervals"
+                    intervals = sequences
+                    if str(idx) == 0:
+                        intervals.append("unmapped")
+                    bam_postfix = ".realigned." + str(idx) + ".bam"
+                    normal_bam = os.path.join(tumor_pair.normal.name + ".sorted.realigned." + str(idx)  + ".bam")
+                    normal_index = re.sub("\.bam$", ".bai", normal_bam)
+                    tumor_bam = os.path.join(tumor_pair.tumor.name + ".sorted.realigned." + str(idx)  + ".bam")
+                    tumor_index = re.sub("\.bam$", ".bai", tumor_bam)
+                    normal_output_bam = os.path.join(normal_realign_directory, tumor_pair.normal.name + ".sorted.realigned." + str(idx) + ".bam")
+                    normal_output_index = re.sub("\.bam$", ".bai", normal_output_bam)
+                    tumor_output_bam = os.path.join(tumor_realign_directory, tumor_pair.tumor.name + ".sorted.realigned." + str(idx) + ".bam")
+                    tumor_output_index = re.sub("\.bam$", ".bai", tumor_output_bam)
+
+                    jobs.append(concat_jobs([
+                        # Create output directory since it is not done by default by GATK tools
+                        Job(command="mkdir -p " + normal_realign_directory, removable_files=[normal_realign_directory]),
+                        Job(command="mkdir -p " + tumor_realign_directory, removable_files=[tumor_realign_directory]),
+                        gatk.realigner_target_creator(input_normal, realign_intervals, input2=input_tumor, intervals=intervals),
+                        gatk.indel_realigner(input_normal, input2=input_tumor, output_norm_dep=normal_bam, output_tum_dep=tumor_bam, target_intervals=realign_intervals, intervals=intervals, optional=bam_postfix),
+                        Job([normal_bam], [normal_output_bam], command="mv " + normal_bam + " " + normal_output_bam + " && mv " + normal_index + " " + normal_output_index),
+                        Job([tumor_bam], [tumor_output_bam], command="mv " + tumor_bam + " " + tumor_output_bam + " && mv " + tumor_index + " " + tumor_output_index)
+                    ], name="gatk_indel_realigner." + tumor_pair.name + "." + str(idx)))
+
+                # Create one last job to process the last remaining sequences and 'others' sequences
+                realign_prefix = os.path.join(tumor_realign_directory, "others")
+                realign_intervals = realign_prefix + ".intervals"
+                bam_postfix = ".realigned.others.bam"
+                normal_bam = os.path.join(tumor_pair.normal.name + ".sorted.realigned.others.bam")
+                normal_index = re.sub("\.bam$", ".bai", normal_bam)
+                tumor_bam = os.path.join(tumor_pair.tumor.name + ".sorted.realigned.others.bam")
+                tumor_index = re.sub("\.bam$", ".bai", tumor_bam)
+                normal_output_bam = os.path.join(normal_realign_directory, tumor_pair.normal.name + ".sorted.realigned.others.bam")
+                normal_output_index = re.sub("\.bam$", ".bai", normal_output_bam)
+                tumor_output_bam = os.path.join(tumor_realign_directory, tumor_pair.tumor.name + ".sorted.realigned.others.bam")
+                tumor_output_index = re.sub("\.bam$", ".bai", tumor_output_bam)
+
+                jobs.append(concat_jobs([
+                    # Create output directory since it is not done by default by GATK tools
+                    Job(command="mkdir -p " + normal_realign_directory, removable_files=[normal_realign_directory]),
+                    Job(command="mkdir -p " + tumor_realign_directory, removable_files=[tumor_realign_directory]),
+                    gatk.realigner_target_creator(input_normal, realign_intervals, input2=input_tumor, exclude_intervals=unique_sequences_per_job_others),
+                    gatk.indel_realigner(input_normal, input2=input_tumor, output_norm_dep=normal_bam, output_tum_dep=tumor_bam, target_intervals=realign_intervals, exclude_intervals=unique_sequences_per_job_others, optional=bam_postfix),
+                    Job([normal_bam], [normal_output_bam], command="mv " + normal_bam + " " + normal_output_bam + " && mv " + normal_index + " " + normal_output_index),
+                    Job([tumor_bam], [tumor_output_bam], command="mv " + tumor_bam + " " + tumor_output_bam + " && mv " + tumor_index + " " + tumor_output_index)
+                ], name="gatk_indel_realigner." + tumor_pair.name + ".others"))
+
+        return jobs
+
+    def merge_realigned(self):
+        """
+        BAM files of regions of realigned reads are merged per sample using [Picard](http://broadinstitute.github.io/picard/).
+        """
+
+        jobs = []
+
+        nb_jobs = config.param('gatk_indel_realigner', 'nb_jobs', type='posint')
+
+        for sample in self.samples:
+            alignment_directory = os.path.join("alignment", sample.name)
+            realign_directory = os.path.join(alignment_directory, "realign")
+            merged_realigned_bam = os.path.join(alignment_directory, sample.name + ".realigned.qsorted.bam")
+              
+            if nb_jobs > 1:
+                unique_sequences_per_job,unique_sequences_per_job_others = split_by_size(self.sequence_dictionary, nb_jobs - 1)
+
+                inputBAMs = []
+                for idx,sequences in enumerate(unique_sequences_per_job):
+                    inputBAMs.append(os.path.join(realign_directory, sample.name + ".sorted.realigned." + str(idx) + ".bam"))
+                inputBAMs.append(os.path.join(realign_directory, sample.name + ".sorted.realigned.others.bam"))
+
+                job = picard.merge_sam_files(inputBAMs, merged_realigned_bam)
+                job.name = "merge_realigned." + sample.name
+                jobs.append(job)
+
+        report_file = os.path.join("report", "DnaSeq.gatk_indel_realigner.md")
+        jobs.append(
+            Job(
+                [os.path.join("alignment", sample.name, sample.name + ".realigned.qsorted.bam") for sample in self.samples],
+                [report_file],
+                command="""\
+mkdir -p report && \\
+cp \\
+  {report_template_dir}/{basename_report_file} \\
+  {report_file}""".format(
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="merge_realigned_report")
+        )
+
+        return jobs
+
+    def rawmpileup(self):
+        """
+        Full pileup (optional). A raw mpileup file is created using samtools mpileup and compressed in gz format.
+        One packaged mpileup file is created per sample/chromosome.
+        """
+
+        jobs = []
+        for tumor_pair in self.tumor_pairs.itervalues():
+            pair_directory = os.path.join("pairedVariants", tumor_pair.name)
+            varscan_directory = os.path.join(pair_directory, "rawVarscan2")
+
+            for sequence in self.sequence_dictionary:
+                normal_output = os.path.join(varscan_directory, tumor_pair.normal.name + "." + sequence['name'] + ".mpileup.gz")
+                tumor_output = os.path.join(varscan_directory, tumor_pair.tumor.name + "." + sequence['name'] + ".mpileup.gz")
+                jobs.append(concat_jobs([
+                    Job(command="mkdir -p " + varscan_directory, removable_files=[varscan_directory]),
+                    pipe_jobs([
+                        samtools.mpileup([os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.recal.bam")], None, config.param('rawmpileup', 'mpileup_other_options'), sequence['name']),
+                        Job(output_files=[normal_output], command="gzip -1 -cf > " + normal_output)
+                    ]),
+                    pipe_jobs([
+                        samtools.mpileup([os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.recal.bam")], None, config.param('rawmpileup', 'mpileup_other_options'), sequence['name']),
+                        Job(output_files=[tumor_output], command="gzip -1 -cf > " + tumor_output)
+                    ])], name="rawmpileup." + tumor_pair.name + "." + sequence['name']))
+
+        return jobs
+
+    def rawmpileup_cat(self):
+        """
+        Merge mpileup files per sample/chromosome into one compressed gzip file per sample.
+        """
+
+        jobs = []
+        for tumor_pair in self.tumor_pairs.itervalues():
+            pair_directory = os.path.join("pairedVariants", tumor_pair.name)
+            varscan_directory = os.path.join(pair_directory, "rawVarscan2")
+
+            mpileup_normal_file_prefix = os.path.join(varscan_directory, tumor_pair.normal.name + ".")
+            mpileup_normal_inputs = [mpileup_normal_file_prefix + sequence['name'] + ".mpileup.gz" for sequence in self.sequence_dictionary]
+
+            mpileup_tumor_file_prefix = os.path.join(varscan_directory, tumor_pair.tumor.name + ".")
+            mpileup_tumor_inputs = [mpileup_tumor_file_prefix + sequence['name'] + ".mpileup.gz" for sequence in self.sequence_dictionary]
+
+            normal_output = mpileup_normal_file_prefix + "mpileup"
+            tumor_output = mpileup_tumor_file_prefix + "mpileup"
+
+            jobs.append(concat_jobs([
+                Job(command="mkdir -p " + varscan_directory, removable_files=[varscan_directory]),
+                Job(mpileup_normal_inputs, [normal_output], command = "zcat \\\n  " + " \\\n  ".join(mpileup_normal_inputs) + " \\\n  > " + normal_output),
+                Job(mpileup_tumor_inputs, [tumor_output], command = "zcat \\\n  " + " \\\n  ".join(mpileup_tumor_inputs) + " \\\n  > " + tumor_output)
+            ], name = "rawmpileup_cat." + tumor_pair.name ))
+          
+        return jobs
+
+    
+
+    def paired_varscan2(self):
+        """
+        
+        """
+
+        jobs = []
+        for tumor_pair in self.tumor_pairs.itervalues():
+            pair_directory = os.path.join("pairedVariants", tumor_pair.name)
+            varscan_directory = os.path.join(pair_directory, "rawVarscan2")
+
+            input_normal = os.path.join(varscan_directory, tumor_pair.normal.name + ".mpileup")
+            input_tumor = os.path.join(varscan_directory, tumor_pair.tumor.name + ".mpileup")
+
+            output = os.path.join(varscan_directory, tumor_pair.name)
+            output_snp =  os.path.join(varscan_directory, tumor_pair.name + ".snp.vcf")
+            output_indel =  os.path.join(varscan_directory, tumor_pair.name + ".indel.vcf")
+            output_vcf = os.path.join(varscan_directory, tumor_pair.name + ".varscan2.vcf")
+           
+            jobs.append(concat_jobs([
+                Job(command="mkdir -p " + varscan_directory, removable_files=[varscan_directory]),
+                varscan.somatic(input_normal, input_tumor, output, config.param('varscan2_somatic', 'other_options'), output_snp_dep=output_snp, output_indel_dep=output_indel),
+                htslib.bgzip_tabix_vcf(output_snp, os.path.join(varscan_directory, tumor_pair.name + ".snp.vcf.gz")),
+                htslib.bgzip_tabix_vcf(output_indel, os.path.join(varscan_directory, tumor_pair.name + ".indel.vcf.gz")),
+                pipe_jobs([
+                    bcftools.concat([os.path.join(varscan_directory, tumor_pair.name + ".snp.vcf.gz"), os.path.join(varscan_directory, tumor_pair.name + ".indel.vcf.gz")], None),                           
+                    Job([None], [output_vcf], command="sed 's/TUMOR/"+ tumor_pair.tumor.name + "/g' | sed 's/NORMAL/"+ tumor_pair.normal.name + "/g' | grep -v \"INFO=<ID=SSC\" | sed -E \"s/SSC=(.*);//g\" > " + output_vcf)
+                ]),
+            ], name = "varscan2_somatic." + tumor_pair.name ))
+
+        return jobs
+
+    def varscan2_fpfilter(self):
+        """
+        """
+
+        jobs = []
+        for tumor_pair in self.tumor_pairs.itervalues():
+            pair_directory = os.path.join("pairedVariants", tumor_pair.name)
+            varscan_directory = os.path.join(pair_directory, "rawVarscan2")
+        
+            inputNormal = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.recal.bam")
+            inputTumor = os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.recal.bam")    
+
+            input_vcf =  os.path.join(varscan_directory, tumor_pair.name + ".varscan2.vcf")
+            output_bed = os.path.join(varscan_directory, tumor_pair.name + ".varscan2.bed")
+            output_normal_readcount = os.path.join(varscan_directory, tumor_pair.name + ".normal.readcount")
+            output_tumor_readcount =  os.path.join(varscan_directory, tumor_pair.name + ".tumor.readcount")
+
+            output_fpfilter_somatic =  os.path.join(pair_directory, tumor_pair.name + ".varscan2.fpfilter.somatic.vcf")
+            output_fpfilter_somatic_gz =  os.path.join(pair_directory, tumor_pair.name + ".varscan2.fpfilter.somatic.vcf.gz")
+            output_fpfilter_germline =  os.path.join(pair_directory, tumor_pair.name + ".varscan2.fpfilter.germline_loh.vcf")
+            output_fpfilter_germline_gz =  os.path.join(pair_directory, tumor_pair.name + ".varscan2.fpfilter.germline_loh.vcf.gz") 
+            output_vcf_somatic_gz = os.path.join(pair_directory, tumor_pair.name + ".varscan2.somatic.vcf.gz")            
+            output_vcf_germline_loh_gz = os.path.join(pair_directory, tumor_pair.name + ".varscan2.germline_loh.vcf.gz")
+
+            jobs.append(concat_jobs([
+                Job(command="mkdir -p " + varscan_directory, removable_files=[varscan_directory]),
+                tools.vcf2bed(input_vcf, output_bed),
+                bamreadcount.readcount(inputNormal, output_bed, output_normal_readcount),
+                bamreadcount.readcount(inputTumor, output_bed, output_tumor_readcount),
+                varscan.fpfilter_somatic(input_vcf, output_tumor_readcount, output_fpfilter_somatic),
+                htslib.bgzip_tabix_vcf(output_fpfilter_somatic, output_fpfilter_somatic_gz),
+                pipe_jobs([
+                    bcftools.view(output_fpfilter_somatic_gz, None, config.param('varscan2_readcount_fpfilter', 'somatic_filter_options')),
+                    htslib.bgzip_tabix_vcf(None, output_vcf_somatic_gz),
+                ]),
+                varscan.fpfilter_somatic(input_vcf, output_normal_readcount, output_fpfilter_germline),
+                htslib.bgzip_tabix_vcf(output_fpfilter_germline, output_fpfilter_germline_gz),
+                pipe_jobs([
+                    bcftools.view(output_fpfilter_germline_gz, None, config.param('varscan2_readcount_fpfilter', 'germline_loh_filter_options')),
+                    htslib.bgzip_tabix_vcf(None, output_vcf_germline_loh_gz),
+                ]),             
+            ], name = "varscan2_readcount_fpfilter." + tumor_pair.name ))
+
+        return jobs
+
     def paired_mutect2(self):
         """
         GATK MuTect2 caller for SNVs and Indels.
@@ -93,7 +373,7 @@ class TumorPair(dnaseq.DnaSeq):
             inputNormal = os.path.join("alignment",tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.recal.bam")
             inputTumor = os.path.join("alignment",tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
 
-            mkdir_job = Job(command="mkdir -p " + mutect_directory)
+            mkdir_job = Job(command="mkdir -p " + mutect_directory, removable_files=[mutect_directory])
             if nb_jobs == 1:
                 jobs.append(concat_jobs([
                     # Create output directory since it is not done by default by GATK tools
@@ -146,8 +426,8 @@ class TumorPair(dnaseq.DnaSeq):
                 jobs.append(concat_jobs([
                     Job([input], [output], command="ln -s -f " + input + " " + output), 
                     pipe_jobs([
-                        Job([output_gz], [None], command="zcat " + output + " | sed 's/TUMOR/"+ tumor_pair.tumor.name + "/g' | sed 's/NORMAL/"+ tumor_pair.normal.name + "/g' "),
-                        bcftools.pass_filter(None, None),
+                        Job([output_gz], [None], command="zcat " + output + " | sed 's/TUMOR/"+ tumor_pair.tumor.name + "/g' | sed 's/NORMAL/"+ tumor_pair.normal.name + "/g' | sed 's/Number=R/Number=./g' "),
+                        bcftools.view(None, None, config.param('gatk_cat_mutect', 'filter_options')),
                         htslib.bgzip_tabix_vcf(None, output_somatic),
                     ]),
                 ], name="symlink_mutect_vcf." + tumor_pair.name))
@@ -164,8 +444,8 @@ class TumorPair(dnaseq.DnaSeq):
                 jobs.append(concat_jobs([
                     gatk.cat_variants(inputVCFs, output),
                     pipe_jobs([
-                        Job([output_gz], [None], command="zcat " + output + " | sed 's/TUMOR/"+ tumor_pair.tumor.name + "/g' | sed 's/NORMAL/"+ tumor_pair.normal.name + "/g' "),
-                        bcftools.pass_filter(None, None),
+                        Job([output_gz], [None], command="zcat " + output + " | sed 's/TUMOR/"+ tumor_pair.tumor.name + "/g' | sed 's/NORMAL/"+ tumor_pair.normal.name + "/g' | sed 's/Number=R/Number=./g' "),
+                        bcftools.view(None, None, config.param('gatk_cat_mutect', 'filter_options')),
                         htslib.bgzip_tabix_vcf(None, output_somatic),
                      ]),
                  ], name = "gatk_cat_mutect." + tumor_pair.name))
@@ -193,7 +473,7 @@ class TumorPair(dnaseq.DnaSeq):
            
             if nb_jobs == 1:
                 jobs.append(concat_jobs([
-                    Job(command="mkdir -p " + samtools_directory),
+                    Job(command="mkdir -p " + samtools_directory, removable_files=[samtools_directory]),
                     pipe_jobs([
                         samtools.mpileup(paired_sample, None, config.param('samtools_paired', 'mpileup_other_options')),
                         samtools.bcftools_view("-", os.path.join(samtools_directory,  tumor_pair.name + ".bcf"), config.param('samtools_paired', 'bcftools_view_options'), pair_calling=True),
@@ -203,7 +483,7 @@ class TumorPair(dnaseq.DnaSeq):
             else:
                 for region in self.generate_approximate_windows(nb_jobs): #for idx,sequences in enumerate(unique_sequences_per_job):
                     jobs.append(concat_jobs([
-                        Job(command="mkdir -p " + samtools_directory),
+                        Job(command="mkdir -p " + samtools_directory, removable_files=[samtools_directory]),
                         pipe_jobs([
                             samtools.mpileup(paired_sample, None, config.param('samtools_paired', 'mpileup_other_options'), region),
                             samtools.bcftools_view("-", os.path.join(samtools_directory,  tumor_pair.name + "." + region + ".bcf"), config.param('samtools_paired', 'bcftools_view_options'), pair_calling=True),
@@ -234,6 +514,7 @@ class TumorPair(dnaseq.DnaSeq):
             output = os.path.join(samtools_directory,  tumor_pair.name + ".samtools.bcf")
             output_vcf = os.path.join(pair_directory,  tumor_pair.name + ".samtools.vcf.gz")
             output_somatics = os.path.join(pair_directory,  tumor_pair.name + ".samtools.somatic.vcf.gz")
+            output_germline_loh = os.path.join(pair_directory,  tumor_pair.name + ".samtools.germline_loh.vcf.gz")
 
             if nb_jobs == 1:
                 inputs = os.path.join(samtools_directory,  tumor_pair.name + ".bcf") 
@@ -241,12 +522,16 @@ class TumorPair(dnaseq.DnaSeq):
                     samtools.bcftools_cat(inputs, output),
                     pipe_jobs([
                         samtools.bcftools_view(output, None),
+                        vcflib.vcfsamplediff(tumor_pair.normal.name, tumor_pair.tumor.name, None, None),
                         htslib.bgzip_tabix_vcf(None, output_vcf),
                     ]),
                     pipe_jobs([
-                        vcflib.vcfsamplediff(tumor_pair.normal.name, tumor_pair.tumor.name, output_vcf, None),
-                        bcftools.filter(None, None, config.param('merge_filter_paired_samtools', 'samtools_filter_options')),
+                        bcftools.filter(output_vcf, None, config.param('merge_filter_paired_samtools', 'somatic_filter_options')),
                         htslib.bgzip_tabix_vcf(None, output_somatics),
+                    ]),
+                    pipe_jobs([
+                        bcftools.filter(output_vcf, None, config.param('merge_filter_paired_samtools', 'germline_loh_filter_options')),
+                        htslib.bgzip_tabix_vcf(None, output_germline_loh),
                     ]),
                 ], name = "merge_filter_paired_samtools." + tumor_pair.name))
 
@@ -256,12 +541,16 @@ class TumorPair(dnaseq.DnaSeq):
                     samtools.bcftools_cat(inputs, output),
                     pipe_jobs([
                         samtools.bcftools_view(output, None),
+                        vcflib.vcfsamplediff(tumor_pair.normal.name, tumor_pair.tumor.name, None, None),
                         htslib.bgzip_tabix_vcf(None, output_vcf),
                     ]),
                     pipe_jobs([
-                        vcflib.vcfsamplediff(tumor_pair.normal.name, tumor_pair.tumor.name, output_vcf, None),
-                        bcftools.filter(None, None, config.param('merge_filter_paired_samtools', 'somatic_filter_options')),
+                        bcftools.filter(output_vcf, None, config.param('merge_filter_paired_samtools', 'somatic_filter_options')),
                         htslib.bgzip_tabix_vcf(None, output_somatics),   
+                    ]),
+                     pipe_jobs([
+                        bcftools.filter(output_vcf, None, config.param('merge_filter_paired_samtools', 'germline_loh_filter_options')),
+                        htslib.bgzip_tabix_vcf(None, output_germline_loh),
                     ]),
                 ], name = "merge_filter_paired_samtools." + tumor_pair.name))                    
         
@@ -312,7 +601,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
             inputNormal = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.recal.bam")
             inputTumor = os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
 
-            mkdir_job = Job(command="mkdir -p " + vardict_directory)
+            mkdir_job = Job(command="mkdir -p " + vardict_directory, removable_files=[vardict_directory])
 
             if use_bed :
                 idx = 0
@@ -380,14 +669,19 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
             vardict_directory = os.path.join(pair_directory, "rawVardict")
             output = os.path.join(pair_directory,  tumor_pair.name + ".vardict.vcf.gz")
             output_somatic = os.path.join(pair_directory,  tumor_pair.name + ".vardict.somatic.vcf.gz")
+            output_germline_loh = os.path.join(pair_directory,  tumor_pair.name + ".vardict.germline_loh.vcf.gz")
 
             if nb_jobs == 1:
                 inputs = os.path.join(vardict_directory,  tumor_pair.name + ".0.vardict.vcf.gz")
                 jobs.append(concat_jobs([
                     Job([input], [output], command="ln -s -f " + input + " " + output),
                     pipe_jobs([
-                       bcftools.view(output, None, config.param('merge_paired_vardict', 'somatic_filter_options')),
+                       bcftools.view(output, None, config.param('merge_filter_paired_vardict', 'somatic_filter_options')),
                        htslib.bgzip_tabix_vcf(None, output_somatics),
+                    ]),
+                    pipe_jobs([
+                       bcftools.view(output, None, config.param('merge_filter_paired_vardict', 'germline_loh_filter_options')),
+                       htslib.bgzip_tabix_vcf(None, output_germline_loh),
                     ]),
                 ], removable_files=[output], name="symlink_vardict_vcf." + tumor_pair.name ))
             else:
@@ -405,14 +699,18 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
                        bcftools.view(output, None, config.param('merge_filter_paired_vardict', 'somatic_filter_options')),
                        htslib.bgzip_tabix_vcf(None, output_somatic),
                     ]),
+                    pipe_jobs([
+                       bcftools.view(output, None, config.param('merge_filter_paired_vardict', 'germline_loh_filter_options')),
+                       htslib.bgzip_tabix_vcf(None, output_germline_loh),
+                    ]),
                 ], name = "merge_filter_paired_vardict." + tumor_pair.name ))
 
         return jobs
 
 
-    def ensemble_tumor_pairs(self):
+    def ensemble_somatic(self):
         """
-        Apply Bcbio.variations ensemble approach for mutect2, Vardict and Samtools call
+        Apply Bcbio.variations ensemble approach for mutect2, Vardict, Samtools and VarScan2 calls
         Filter ensemble calls to retain only calls overlapping 2 or more callers
         """
 
@@ -422,31 +720,72 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         for tumor_pair in self.tumor_pairs.itervalues():
             paired_ensemble_directory = os.path.join(ensemble_directory, tumor_pair.name)
             input_directory = os.path.join("pairedVariants", tumor_pair.name)
+
             input_mutect2 = os.path.join(input_directory, tumor_pair.name + ".mutect2.somatic.vcf.gz")
             input_vardict = os.path.join(input_directory, tumor_pair.name + ".vardict.somatic.vcf.gz")
-            input_samtools = os.path.join(input_directory, tumor_pair.name + ".samtools.somatic.vcf.gz")        
-                    
-            output_ensemble = os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.vcf")
-            output_gz = os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.vcf.gz")
-            output_flt = os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.flt.vcf.gz")
+            input_samtools = os.path.join(input_directory, tumor_pair.name + ".samtools.somatic.vcf.gz")
+            input_varscan2 = os.path.join(input_directory, tumor_pair.name + ".varscan2.somatic.vcf.gz")        
+            inputSomaticVCFs = [input_mutect2, input_vardict, input_samtools, input_varscan2]
+                        
+        
+            output_ensemble = os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.somatic.vcf")
+            output_gz = os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.somatic.vcf.gz")
+            output_flt = os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.somatic.flt.vcf.gz")
 
             mkdir_job = Job(command="mkdir -p " + paired_ensemble_directory)   
        
             jobs.append(concat_jobs([
                     # Create output directory since it is not done by default by GATK tools
                     mkdir_job,
-                    bcbio_variation.tumor_pair_ensemble(input_mutect2, input_vardict, input_samtools, output_ensemble),
+                    bcbio_variation.tumor_pair_ensemble(inputSomaticVCFs, output_ensemble, config.param('bcbio_ensemble_somatic', 'config_yaml')),
                     htslib.bgzip_tabix_vcf(output_ensemble, output_gz),
                     pipe_jobs([
-                        Job([output_gz], [None], command="zgrep -Pv \"set=samtools\\t\" " + output_gz + " | grep -Pv \"set=vardict\\t\" "),
+                        Job([output_gz], [None], command="zgrep -Pv \"set=samtools\\t\" " + output_gz + " | grep -Pv \"set=vardict\\t\" " + " | grep -Pv \"set=varscan2\\t\" "),
                         htslib.bgzip_tabix_vcf(None, output_flt),
                     ]),
-                ], name="bcbio_ensemble." + tumor_pair.name))
+                ], name="bcbio_ensemble_somatic." + tumor_pair.name))
 
         return jobs
 
 
-    def gatk_variant_annotator(self):
+    def ensemble_germline_loh(self):
+        """
+        Apply Bcbio.variations ensemble approach for Vardict, Samtools and VarScan2 calls
+        Filter ensemble calls to retain only calls overlapping 2 or more callers
+        """
+
+        jobs = []
+        ensemble_directory = os.path.join("pairedVariants", "ensemble")
+
+        for tumor_pair in self.tumor_pairs.itervalues():
+            paired_ensemble_directory = os.path.join(ensemble_directory, tumor_pair.name)
+            input_directory = os.path.join("pairedVariants", tumor_pair.name)
+
+            input_vardict = os.path.join(input_directory, tumor_pair.name + ".vardict.germline_loh.vcf.gz")
+            input_samtools = os.path.join(input_directory, tumor_pair.name + ".samtools.germline_loh.vcf.gz")
+            input_varscan2 = os.path.join(input_directory, tumor_pair.name + ".varscan2.germline_loh.vcf.gz")
+            inputGermlineVCFs = [input_vardict, input_samtools, input_varscan2]
+
+            output_ensemble = os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.germline_loh.vcf")
+            output_gz = os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.germline_loh.vcf.gz")
+            output_flt = os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.germline_loh.flt.vcf.gz")
+
+            mkdir_job = Job(command="mkdir -p " + paired_ensemble_directory)
+
+            jobs.append(concat_jobs([
+                    # Create output directory since it is not done by default by GATK tools
+                    mkdir_job,
+                    bcbio_variation.tumor_pair_ensemble(inputGermlineVCFs, output_ensemble, config.param('bcbio_ensemble_germline_loh', 'config_yaml')),
+                    htslib.bgzip_tabix_vcf(output_ensemble, output_gz),
+                    pipe_jobs([
+                        Job([output_gz], [None], command="zgrep -Pv \"set=samtools\\t\" " + output_gz + " | grep -Pv \"set=vardict\\t\" " + " | grep -Pv \"set=varscan2\\t\" "),
+                        htslib.bgzip_tabix_vcf(None, output_flt),
+                    ]),
+                ], name="bcbio_ensemble_germline_loh." + tumor_pair.name))
+
+        return jobs
+
+    def gatk_variant_annotator_somatic(self):
         """
         Add vcf annotations to ensemble vcf: most importantly the AD field
         """
@@ -458,17 +797,38 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         for tumor_pair in self.tumor_pairs.itervalues():
             inputNormal = os.path.join("alignment",tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.recal.bam")
             inputTumor = os.path.join("alignment",tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
-            input_variants = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.flt.vcf.gz")
-            output_variants = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.annot.vcf.gz")
+            input_somatic_variants = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.flt.vcf.gz")
+            output_somatic_variants = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.flt.annot.vcf.gz")
 
-            job = gatk.variant_annotator( inputNormal, inputTumor, input_variants, output_variants)
-            job.name = "gatk_variant_annotator." + tumor_pair.name            
-        
-            jobs.append(job)
+            jobs.append(concat_jobs([
+                gatk.variant_annotator( inputNormal, inputTumor, input_somatic_variants, output_somatic_variants ),
+            ], name = "gatk_variant_annotator_somatic." + tumor_pair.name))            
         
         return jobs
 
-    def compute_cancer_effects(self):
+    def gatk_variant_annotator_germline(self):
+        """
+        Add vcf annotations to ensemble vcf: most importantly the AD field
+        """
+
+        jobs = []
+
+        ensemble_directory = os.path.join("pairedVariants", "ensemble")
+
+        for tumor_pair in self.tumor_pairs.itervalues():
+            inputNormal = os.path.join("alignment",tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.recal.bam")
+            inputTumor = os.path.join("alignment",tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
+            input_germline_loh_variants = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.germline_loh.flt.vcf.gz")
+            output_germline_loh_variants = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.germline_loh.flt.annot.vcf.gz")
+
+            jobs.append(concat_jobs([
+                gatk.variant_annotator( inputNormal, inputTumor, input_germline_loh_variants, output_germline_loh_variants ),
+            ], name = "gatk_variant_annotator_germline." + tumor_pair.name))
+
+        return jobs
+    
+
+    def compute_cancer_effects_somatic(self):
         """
         Variant effect annotation. The .vcf files are annotated for variant effects using the SnpEff software.
         SnpEff annotates and predicts the effects of variants on genes (such as amino acid changes).
@@ -481,23 +841,52 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
 
         for tumor_pair in self.tumor_pairs.itervalues():
             paired_directory = os.path.join(ensemble_directory, tumor_pair.name)
-            input = os.path.join(paired_directory, tumor_pair.name + ".ensemble.annot.vcf.gz")
-            output = os.path.join(paired_directory, tumor_pair.name + ".ensemble.annot.snpeff.vcf")         
-            output_gz = os.path.join(paired_directory, tumor_pair.name + ".ensemble.annot.snpeff.vcf.gz")
 
-            cancer_pair_filename = os.path.join(tumor_pair.name + '.tsv')
+            input_somatic = os.path.join(paired_directory, tumor_pair.name + ".ensemble.somatic.flt.annot.vcf.gz")
+            output_somatic = os.path.join(paired_directory, tumor_pair.name + ".ensemble.somatic.flt.annot.snpeff.vcf")         
+            output_somatic_gz = os.path.join(paired_directory, tumor_pair.name + ".ensemble.annot.snpeff.vcf.gz")              
+
+            cancer_pair_filename = os.path.join(paired_directory, tumor_pair.name + '.tsv')
             cancer_pair = open(cancer_pair_filename, 'w')
-            cancer_pairs = ("tumor_pair.normal.name\ttumor_pair.tumor.name\n")
-            cancer_pair.write(cancer_pairs)
-
+            cancer_pair.write( tumor_pair.normal.name + "\t" + tumor_pair.tumor.name + "\n" )
+            
             jobs.append(concat_jobs([           
-                snpeff.compute_cancer_effects(input, cancer_pair_filename, output),
-                htslib.bgzip_tabix_vcf(output, output_gz)      
+                snpeff.compute_effects(input_somatic, output_somatic, cancer_sample_file=cancer_pair_filename, options=config.param('compute_cancer_effects_somatic', 'options')),
+                htslib.bgzip_tabix_vcf(output_somatic, output_somatic_gz),
             ],name = "compute_cancer_effects." + tumor_pair.name))
 
         return jobs
 
-    def combine_tumor_pairs_callers(self):
+    def compute_cancer_effects_germline(self):
+        """
+        Variant effect annotation. The .vcf files are annotated for variant effects using the SnpEff software.
+        SnpEff annotates and predicts the effects of variants on genes (such as amino acid changes).
+        Modified arguments to consider paired cancer data.
+        """
+
+        jobs = []
+
+        ensemble_directory = os.path.join("pairedVariants", "ensemble")
+
+        for tumor_pair in self.tumor_pairs.itervalues():
+            paired_directory = os.path.join(ensemble_directory, tumor_pair.name)
+
+            input_germline = os.path.join(paired_directory, tumor_pair.name + ".ensemble.germline_loh.flt.annot.vcf.gz")
+            output_germline = os.path.join(paired_directory, tumor_pair.name + ".ensemble.germline_loh.flt.annot.snpeff.vcf")
+            output_germline_gz = os.path.join(paired_directory, tumor_pair.name + ".ensemble.germline_loh.annot.snpeff.vcf.gz")
+
+            cancer_pair_filename = os.path.join(paired_directory, tumor_pair.name + '.tsv')
+            cancer_pair = open(cancer_pair_filename, 'w')
+            cancer_pair.write( tumor_pair.normal.name + "\t" + tumor_pair.tumor.name + "\n" )
+
+            jobs.append(concat_jobs([
+                snpeff.compute_effects(input_germline, output_germline, options=config.param('compute_cancer_effects_germline', 'options')),
+                htslib.bgzip_tabix_vcf(output_germline, output_germline_gz),
+            ],name = "compute_cancer_effects." + tumor_pair.name))
+
+        return jobs
+
+    def combine_tumor_pairs_somatic(self):
         """
         Combine numerous ensemble vcfs into one vcf for gemini annotations
         """
@@ -505,11 +894,11 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         jobs = []
         
         ensemble_directory = os.path.join("pairedVariants", "ensemble")
-        input_merged_vcfs = [os.path.join(os.path.abspath(ensemble_directory), tumor_pair.name , tumor_pair.name + ".ensemble.annot.vcf.gz") for tumor_pair in self.tumor_pairs.itervalues()]
-        output = os.path.join(ensemble_directory, "allPairs.ensemble.vcf.gz")
+        input_merged_vcfs = [os.path.join(os.path.abspath(ensemble_directory), tumor_pair.name , tumor_pair.name + ".ensemble.somatic.flt.annot.vcf.gz") for tumor_pair in self.tumor_pairs.itervalues()]
+        output = os.path.join(ensemble_directory, "allPairs.ensemble.somatic.annot.vcf.gz")
 
         if len(input_merged_vcfs) == 1:
-            job = Job(input_merged_vcfs, [output], command="ln -s -f " + input_merged_vcfs.pop() + " " + output)
+            job = Job([input_merged_vcfs], [output], command="ln -s -f " + input_merged_vcfs.pop() + " " + output)
             job.name="combine_tumor_pairs.allPairs"
             jobs.append(job)
 
@@ -517,11 +906,35 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
             
             jobs.append(concat_jobs([
                 gatk.combine_variants(input_merged_vcfs, output)
-            ], name="combine_tumor_pairs.allPairs"))
+            ], name="combine_tumor_pairs.allPairs_somatic"))
 
         return jobs
 
-    def decompose_and_normalize_mnps(self):
+    def combine_tumor_pairs_germline(self):
+        """
+        Combine numerous ensemble vcfs into one vcf for gemini annotations
+        """
+
+        jobs = []
+
+        ensemble_directory = os.path.join("pairedVariants", "ensemble")
+        input_merged_vcfs = [os.path.join(os.path.abspath(ensemble_directory), tumor_pair.name , tumor_pair.name + ".ensemble.germline_loh.flt.annot.vcf.gz") for tumor_pair in self.tumor_pairs.itervalues()]
+        output = os.path.join(ensemble_directory, "allPairs.ensemble.germline_loh.annot.vcf.gz")
+
+        if len(input_merged_vcfs) == 1:
+            job = Job([input_merged_vcfs], [output], command="ln -s -f " + input_merged_vcfs.pop() + " " + output)
+            job.name="combine_tumor_pairs.allPairs"
+            jobs.append(job)
+
+        else:
+
+            jobs.append(concat_jobs([
+                gatk.combine_variants(input_merged_vcfs, output)
+            ], name="combine_tumor_pairs.allPairs_germline"))
+
+        return jobs
+
+    def decompose_and_normalize_mnps_somatic(self):
         """
         Processes include normalization and decomposition of MNPs by vt (http://genome.sph.umich.edu/wiki/Vt)
         """
@@ -529,17 +942,35 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         jobs = []
 
         ensemble_directory = os.path.join("pairedVariants", "ensemble")
-        input = os.path.join(ensemble_directory, "allPairs.ensemble.vcf.gz")
-        output = os.path.join(ensemble_directory, "allPairs.ensemble.vt.vcf.gz")
+        input = os.path.join(ensemble_directory, "allPairs.ensemble.somatic.annot.vcf.gz")
+        output = os.path.join(ensemble_directory, "allPairs.ensemble.somatic.annot.vt.vcf.gz")
 
         job = vt.decompose_and_normalize_mnps(input, output)
-        job.name = "decompose_and_normalize_mnps.allPairs"
+        job.name = "decompose_and_normalize_mnps.allPairs_somatic"
 
         jobs.append(job)
 
         return jobs
 
-    def all_pairs_compute_cancer_effect(self):
+    def decompose_and_normalize_mnps_germline(self):
+        """
+        Processes include normalization and decomposition of MNPs by vt (http://genome.sph.umich.edu/wiki/Vt)
+        """
+
+        jobs = []
+
+        ensemble_directory = os.path.join("pairedVariants", "ensemble")
+        input = os.path.join(ensemble_directory, "allPairs.ensemble.germline_loh.annot.vcf.gz")
+        output = os.path.join(ensemble_directory, "allPairs.ensemble.germline_loh.annot.vt.vcf.gz")
+
+        job = vt.decompose_and_normalize_mnps(input, output)
+        job.name = "decompose_and_normalize_mnps.allPairs_germline"
+
+        jobs.append(job)
+
+        return jobs
+
+    def all_pairs_compute_effects_somatic(self):
         """
         Variant effect annotation. The .vcf files are annotated for variant effects using the SnpEff software.
         SnpEff annotates and predicts the effects of variants on genes (such as amino acid changes).
@@ -550,25 +981,46 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         jobs = []
 
         ensemble_directory = os.path.join("pairedVariants", "ensemble")
-        input =  os.path.join(ensemble_directory, "allPairs.ensemble.vt.vcf.gz")
-        output = os.path.join(ensemble_directory, "allPairs.ensemble.vt.snpeff.vcf")
-        output_gz = os.path.join(ensemble_directory, "allPairs.ensemble.vt.snpeff.vcf.gz")
+        input =  os.path.join(ensemble_directory, "allPairs.ensemble.somatic.annot.vt.vcf.gz")
+        output = os.path.join(ensemble_directory, "allPairs.ensemble.somatic.annot.vt.snpeff.vcf")
+        output_gz = os.path.join(ensemble_directory, "allPairs.ensemble.somatic.annot.vt.snpeff.vcf.gz")
 
         cancer_pair_filename = os.path.join('cancer_snpeff.tsv')
         cancer_pair = open(cancer_pair_filename, 'w')
 
         for tumor_pair in self.tumor_pairs.itervalues():
-            cancer_pairs = (tumor_pair.normal.name +"\t" + tumor_pair.tumor.name + "\n")
-            cancer_pair.write(cancer_pairs)
-
+            cancer_pair.write(tumor_pair.normal.name + "\t" + tumor_pair.tumor.name + "\n")
+            
         jobs.append(concat_jobs([
-            snpeff.compute_cancer_effects(input, cancer_pair_filename, output),
+            snpeff.compute_effects(input, output, cancer_sample_file=cancer_pair_filename,options=config.param('compute_cancer_effects_somatic', 'options')),
             htslib.bgzip_tabix_vcf(output, output_gz),
-        ],name = "compute_cancer_effects." + tumor_pair.name))
+        ],name = "compute_effects.allPairs_somatic"))
 
         return jobs
 
-    def gemini_annotations(self):
+    def all_pairs_compute_effects_germline(self):
+        """
+        Variant effect annotation. The .vcf files are annotated for variant effects using the SnpEff software.
+        SnpEff annotates and predicts the effects of variants on genes (such as amino acid changes).
+        Modified arguments to consider paired cancer data.
+        Applied to all tumor pairs.
+        """
+
+        jobs = []
+
+        ensemble_directory = os.path.join("pairedVariants", "ensemble")
+        input =  os.path.join(ensemble_directory, "allPairs.ensemble.germline_loh.annot.vt.vcf.gz")
+        output = os.path.join(ensemble_directory, "allPairs.ensemble.germline_loh.annot.vt.snpeff.vcf")
+        output_gz = os.path.join(ensemble_directory, "allPairs.ensemble.germline_loh.annot.vt.snpeff.vcf.gz")      
+
+        jobs.append(concat_jobs([
+            snpeff.compute_effects(input, output, options=config.param('compute_cancer_effects_germline', 'options')),
+            htslib.bgzip_tabix_vcf(output, output_gz),
+        ],name = "compute_effects.allPair_germline"))
+
+        return jobs
+
+    def gemini_annotations_somatic(self):
         """
         Load functionally annotated vcf file into a mysql lite annotation database : http://gemini.readthedocs.org/en/latest/index.html
         """
@@ -577,14 +1029,34 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         
         ensemble_directory = os.path.join("pairedVariants", "ensemble")        
         temp_dir = os.path.join(os.getcwd(), ensemble_directory)
-        gemini_prefix = os.path.join(ensemble_directory, "allPairs")
+        gemini_prefix = os.path.join(ensemble_directory, "allPairs.somatic")
         gemini_module=config.param("DEFAULT", 'module_gemini').split(".")
         gemini_version = ".".join([gemini_module[-2],gemini_module[-1]])
 
         jobs.append(concat_jobs([
             Job(command="mkdir -p " + ensemble_directory),
-            gemini.gemini_annotations( gemini_prefix + ".ensemble.vt.snpeff.vcf.gz", gemini_prefix + ".gemini." + gemini_version + ".db", temp_dir)
-        ], name="gemini_annotations.allPairs"))
+            gemini.gemini_annotations( gemini_prefix + ".ensemble.somatic.annot.vt.snpeff.vcf.gz", gemini_prefix + ".gemini." + gemini_version + ".db", temp_dir)
+        ], name="gemini_annotations.allPairs_somatic"))
+
+        return jobs
+
+    def gemini_annotations_germline(self):
+        """
+        Load functionally annotated vcf file into a mysql lite annotation database : http://gemini.readthedocs.org/en/latest/index.html
+        """
+
+        jobs = []
+
+        ensemble_directory = os.path.join("pairedVariants", "ensemble")
+        temp_dir = os.path.join(os.getcwd(), ensemble_directory)
+        gemini_prefix = os.path.join(ensemble_directory, "allPairs.germline_loh")
+        gemini_module=config.param("DEFAULT", 'module_gemini').split(".")
+        gemini_version = ".".join([gemini_module[-2],gemini_module[-1]])
+
+        jobs.append(concat_jobs([
+            Job(command="mkdir -p " + ensemble_directory),
+            gemini.gemini_annotations( gemini_prefix + ".ensemble.germline_loh.annot.vt.snpeff.vcf.gz", gemini_prefix + ".gemini." + gemini_version + ".db", temp_dir)
+        ], name="gemini_annotations.allPairs_germline"))
 
         return jobs
 
@@ -606,19 +1078,30 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
             self.gatk_callable_loci,
             self.extract_common_snp_freq,
             self.baf_plot,
+            self.rawmpileup,
+            self.rawmpileup_cat,
+            self.paired_varscan2,
+            self.varscan2_fpfilter,
             self.paired_mutect2,
             self.merge_mutect2,
             self.samtools_paired,
             self.merge_filter_paired_samtools,
             self.vardict_paired,
             self.merge_filter_paired_vardict,
-            self.ensemble_tumor_pairs,
-            self.gatk_variant_annotator,
-            self.compute_cancer_effects,
-            self.combine_tumor_pairs_callers,
-            self.decompose_and_normalize_mnps,
-            self.all_pairs_compute_cancer_effect,
-            self.gemini_annotations
+            self.ensemble_somatic,
+            self.ensemble_germline_loh,
+            self.gatk_variant_annotator_somatic,
+            self.gatk_variant_annotator_germline,
+            self.compute_cancer_effects_somatic,
+            self.compute_cancer_effects_germline,
+            self.combine_tumor_pairs_somatic,
+            self.combine_tumor_pairs_germline,
+            self.decompose_and_normalize_mnps_somatic,
+            self.decompose_and_normalize_mnps_germline,
+            self.all_pairs_compute_effects_somatic,
+            self.all_pairs_compute_effects_germline,
+            self.gemini_annotations_somatic,
+            self.gemini_annotations_germline
         ]
 
 if __name__ == '__main__': 

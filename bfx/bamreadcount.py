@@ -26,30 +26,25 @@ import os
 from core.config import *
 from core.job import *
 
-def tumor_pair_ensemble(input_callers, output, config_yaml):
-    
+def readcount(input, bed, output):
+
     return Job(
-        input_callers,
+        [input],
         [output],
         [
-            ['bcbio_ensemble', 'module_java'],
-            ['bcbio_ensemble', 'module_bcbio_variation'],
-            ['bcbio_ensemble', 'module_bcftools']
+            [ 'varscan2_readcount_fpfilter', 'module_bamreadcount'],
         ],
         command="""\
-java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $BCBIO_VARIATION_JAR \\
-  variant-ensemble \\
-  {config_yaml} \\
-  {reference_sequence} \\
-  {output} \\
-  {input_callers}""".format(
-        tmp_dir=config.param('bcbio_ensemble_somatic', 'tmp_dir'),
-        java_other_options=config.param('bcbio_ensemble_somatic', 'java_other_options'),
-        ram=config.param('bcbio_ensemble_somatic', 'ram'),
-        reference_sequence=config.param('bcbio_ensemble_somatic', 'genome_fasta', type='filepath'),
-        config_yaml=config_yaml,
-        output=output,
-        input_callers="  ".join("  \\\n  " + caller for caller in input_callers)
+$BAMREADCOUNT_BIN/bam-readcount {options} \\
+  -f {reference_sequence} \\
+  {input} \\
+  -l {bed} \\
+  {output}""".format(
+        options=config.param('varscan2_readcount_fpfilter', 'readcount_options'),
+        reference_sequence=config.param('varscan2_readcount_fpfilter', 'genome_fasta', type='filepath'),
+        input=input,
+        bed=bed,
+        output="> " + output if output else ""
         )
     )
 

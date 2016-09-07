@@ -41,7 +41,7 @@ vcfsamplediff \\
   {output}""".format(
         input_normal=input_normal,
         input_tumor=input_tumor,
-        input_vcf=input_vcf,
+        input_vcf=input_vcf if input_vcf else " - ",
         output=" \\\n  > " + output if output else ""
         )
     )

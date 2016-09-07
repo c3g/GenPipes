@@ -25,7 +25,7 @@
 from core.config import *
 from core.job import *
 
-def base_recalibrator(input, output, intervals):
+def base_recalibrator(input, output, intervals=[]):
 
     return Job(
         [input],
@@ -84,7 +84,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         )
     )
 
-def cat_variants(variants, output):
+def cat_variants(variants, output=None):
 
     return Job(
         variants,
@@ -302,11 +302,11 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         )
     )
 
-def indel_realigner(input, output, target_intervals, intervals=[], exclude_intervals=[]):
+def indel_realigner(input, target_intervals, input2=[], output=[], output_norm_dep=[], output_tum_dep=[], intervals=[], exclude_intervals=[], optional=[]):
 
     return Job(
-        [input],
-        [output],
+        [input, input2],
+        [output, output_norm_dep, output_tum_dep],
         [
             ['gatk_indel_realigner', 'module_java'],
             ['gatk_indel_realigner', 'module_gatk']
@@ -315,20 +315,24 @@ def indel_realigner(input, output, target_intervals, intervals=[], exclude_inter
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --analysis_type IndelRealigner {other_options} \\
   --reference_sequence {reference_sequence} \\
+  {optional} \\
   --input_file {input} \\
+  {input2} \\
   --targetIntervals {target_intervals} \\
   --knownAlleles {known_indel_sites} \\
-  --out {output}{intervals}{exclude_intervals} \\
+  {output}{intervals}{exclude_intervals} \\
   --maxReadsInMemory {max_reads_in_memory}""".format(
         tmp_dir=config.param('gatk_indel_realigner', 'tmp_dir'),
         java_other_options=config.param('gatk_indel_realigner', 'java_other_options'),
         ram=config.param('gatk_indel_realigner', 'ram'),
         other_options=config.param('gatk_indel_realigner', 'other_options'),
         reference_sequence=config.param('gatk_indel_realigner', 'genome_fasta', type='filepath'),
+        optional="--nWayOut " + optional if optional else "",
         input=input,
+        input2="--input_file " + input2 if input2 else "",
         target_intervals=target_intervals,
         known_indel_sites=config.param('gatk_realigner_target_creator', 'known_indel_sites', type='filepath'),
-        output=output,
+        output=" \\\n  --out " + output if output else "",
         intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
         exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals),
         max_reads_in_memory=config.param('gatk_indel_realigner', 'max_reads_in_memory')
@@ -363,10 +367,10 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         )
     )
 
-def realigner_target_creator(input, output, intervals=[], exclude_intervals=[]):
+def realigner_target_creator(input, output, input2=[], intervals=[], exclude_intervals=[]):
 
     return Job(
-        [input],
+        [input, input2],
         [output],
         [
             ['gatk_realigner_target_creator', 'module_java'],
@@ -377,6 +381,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --analysis_type RealignerTargetCreator {other_options} \\
   --reference_sequence {reference_sequence} \\
   --input_file {input} \\
+  {input2} \\
   --known {known_indel_sites} \\
   --out {output}{intervals}{exclude_intervals}""".format(
         tmp_dir=config.param('gatk_realigner_target_creator', 'tmp_dir'),
@@ -385,6 +390,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         other_options=config.param('gatk_realigner_target_creator', 'other_options'),
         reference_sequence=config.param('gatk_realigner_target_creator', 'genome_fasta', type='filepath'),
         input=input,
+        input2="--input_file " + input2 if input2 else "",
         known_indel_sites=config.param('gatk_realigner_target_creator', 'known_indel_sites', type='filepath'),
         output=output,
         intervals="".join(" \\\n  --intervals " + interval for interval in intervals),

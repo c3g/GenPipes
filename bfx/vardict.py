@@ -62,7 +62,7 @@ def paired_java(input_normal, input_tumor, tumor_name, output=None, region=None)
         ['vardict_paired', 'module_R']
         ],
         command="""\
-java {java_other_options} -Xms768m -Xmx{ram} -classpath $VARDICT_HOME/lib/VarDict-1.4.5.jar:$VARDICT_HOME/lib/commons-cli-1.2.jar:$VARDICT_HOME/lib/jregex-1.2_01.jar:$VARDICT_HOME/lib/htsjdk-1.140.jar com.astrazeneca.vardict.Main \\
+java {java_other_options} -Xms768m -Xmx{ram} -classpath {classpath} \\
   -G {reference_fasta} \\
   -N {tumor_name} \\
   -b "{paired_samples}" \\
@@ -72,6 +72,7 @@ java {java_other_options} -Xms768m -Xmx{ram} -classpath $VARDICT_HOME/lib/VarDic
         paired_samples=input_tumor + "|" + input_normal,
         java_other_options=config.param('DEFAULT', 'java_other_options'),
         ram=config.param('vardict_paired', 'ram'),
+        classpath=config.param('vardict_paired', 'classpath'),
         vardict_options=config.param('vardict_paired', 'vardict_options'),
         region=" \\\n  " + region if region else "",
         output=" \\\n  > " + output if output else ""
