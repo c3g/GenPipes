@@ -635,7 +635,7 @@ do
   sort -k1,1 $read_count_file > {output_directory}/tmpSort.txt && \\
   join -1 1 -2 1 <(sort -k1,1 {output_directory}/tmpMatrix.txt) {output_directory}/tmpSort.txt > {output_directory}/tmpMatrix.2.txt && \\
   mv {output_directory}/tmpMatrix.2.txt {output_directory}/tmpMatrix.txt && \\
-  na=$(basename $read_count_file | cut -d. -f1) && \\
+  na=$(basename $read_count_file | rev | cut -d. -f2- | rev) && \\
   HEAD="$HEAD\\t$na"
 done && \\
 echo -e $HEAD | cat - {output_directory}/tmpMatrix.txt | tr ' ' '\\t' > {output_matrix} && \\

@@ -460,7 +460,7 @@ cp \\
         bases which have at least 50 reads). A TDF (.tdf) coverage track is also generated at this step
         for easy visualization of coverage in the IGV browser.
         """
-        
+
         ##check the library status
         library = {}
         for readset in self.readsets:
@@ -485,12 +485,12 @@ cp \\
 
             # Compute genome or target coverage with BVATools
             job = bvatools.depth_of_coverage(
-                input, 
-                recal_file_prefix + "coverage.tsv", 
-                bvatools.resolve_readset_coverage_bed(sample.readsets[0]), 
+                input,
+                recal_file_prefix + "coverage.tsv",
+                bvatools.resolve_readset_coverage_bed(sample.readsets[0]),
                 other_options=config.param('bvatools_depth_of_coverage', 'other_options', required=False)
             )
-            
+
             job.name = "bvatools_depth_of_coverage." + sample.name
             jobs.append(job)
 
@@ -650,7 +650,7 @@ cp \\
         jobs = []
         nb_haplotype_jobs = config.param('gatk_combine_gvcf', 'nb_haplotype', type='posint')
         nb_maxbatches_jobs = config.param('gatk_combine_gvcf', 'nb_batch', type='posint')
-        
+
         # merge all sample in one shot
         if nb_maxbatches_jobs == 1 :
             if nb_haplotype_jobs == 1:
@@ -694,7 +694,7 @@ cp \\
                             Job(command="mkdir -p variants",removable_files=[os.path.join("variants", "allSamples") + ".batch" + str(cpt) + "." + str(idx) + ".hc.g.vcf.bgz",os.path.join("variants", "allSamples") + ".batch" + str(cpt) + "." + str(idx) + ".hc.g.vcf.bgz.tbi"]),
                             gatk.combine_gvcf([ os.path.join("alignment", sample.name, sample.name)+".hc.g.vcf.bgz" for sample in batch ], os.path.join("variants", "allSamples") + ".batch" + str(cpt) + "." + str(idx) + ".hc.g.vcf.bgz", intervals=sequences)
                         ], name="gatk_combine_gvcf.AllSample" + ".batch" + str(cpt) + "." + str(idx)))
-                        
+
                     # Create one last job to process the last remaining sequences and 'others' sequences
                     job=gatk.combine_gvcf([ os.path.join("alignment", sample.name, sample.name)+".hc.g.vcf.bgz" for sample in batch ], os.path.join("variants", "allSamples" + ".batch" + str(cpt) + ".others.hc.g.vcf.bgz"), exclude_intervals=unique_sequences_per_job_others)
                     job.name="gatk_combine_gvcf.AllSample" + ".batch" + str(cpt) + ".others"
@@ -702,7 +702,7 @@ cp \\
                     jobs.append(job)
                 batches.append("batch" + str(cpt))
                 cpt = cpt + 1
-                
+
             #Combine batches altogether
             if nb_haplotype_jobs == 1:
                 job=gatk.combine_gvcf([ os.path.join("variants", "allSamples." + batch_idx + ".hc.g.vcf.bgz") for batch_idx in batches ], os.path.join("variants", "allSamples.hc.g.vcf.bgz"))
@@ -723,10 +723,10 @@ cp \\
                 job.name="gatk_combine_gvcf.AllSample" + ".others"
                 job.removable_files=[os.path.join("variants", "allSamples" + ".others.hc.g.vcf.bgz"),os.path.join("variants", "allSamples" + ".others.hc.g.vcf.bgz.tbi")]
                 jobs.append(job)
-        
+
         return jobs
-        
-        
+
+
     def merge_and_call_combined_gvcf(self):
         """
         Merges the combined gvcfs and also generates a general vcf containing genotypes.
@@ -747,7 +747,7 @@ cp \\
             job = gatk.cat_variants(gvcfs_to_merge, output_haplotype)
             job.name = "merge_and_call_combined_gvcf.merge.AllSample"
             jobs.append(job)
-            
+
         job = gatk.genotype_gvcf([output_haplotype], output_haplotype_genotyped ,config.param('gatk_merge_and_call_combined_gvcfs', 'options'))
         job.name = "merge_and_call_combined_gvcf.call.AllSample"
         jobs.append(job)
@@ -756,37 +756,37 @@ cp \\
 
     def variant_recalibrator(self):
         """
-        GATK VariantRecalibrator. 
-        The purpose of the variant recalibrator is to assign a well-calibrated probability to each variant call in a call set. 
-        You can then create highly accurate call sets by filtering based on this single estimate for the accuracy of each call. 
-        The approach taken by variant quality score recalibration is to develop a continuous, covarying estimate of the relationship 
-        between SNP call annotations (QD, MQ, HaplotypeScore, and ReadPosRankSum, for example) and the probability that a SNP 
-        is a true genetic variant versus a sequencing or data processing artifact. This model is determined adaptively based 
-        on "true sites" provided as input, typically HapMap 3 sites and those sites found to be polymorphic on the Omni 2.5M SNP 
-        chip array. This adaptive error model can then be applied to both known and novel variation discovered in the call set 
-        of interest to evaluate the probability that each call is real. The score that gets added to the INFO field of each variant 
+        GATK VariantRecalibrator.
+        The purpose of the variant recalibrator is to assign a well-calibrated probability to each variant call in a call set.
+        You can then create highly accurate call sets by filtering based on this single estimate for the accuracy of each call.
+        The approach taken by variant quality score recalibration is to develop a continuous, covarying estimate of the relationship
+        between SNP call annotations (QD, MQ, HaplotypeScore, and ReadPosRankSum, for example) and the probability that a SNP
+        is a true genetic variant versus a sequencing or data processing artifact. This model is determined adaptively based
+        on "true sites" provided as input, typically HapMap 3 sites and those sites found to be polymorphic on the Omni 2.5M SNP
+        chip array. This adaptive error model can then be applied to both known and novel variation discovered in the call set
+        of interest to evaluate the probability that each call is real. The score that gets added to the INFO field of each variant
         is called the VQSLOD. It is the log odds ratio of being a true variant versus being false under the trained Gaussian mixture model.
-        Using the tranche file generated by the previous step the ApplyRecalibration walker looks at each variant's VQSLOD value 
+        Using the tranche file generated by the previous step the ApplyRecalibration walker looks at each variant's VQSLOD value
         and decides which tranche it falls in. Variants in tranches that fall below the specified truth sensitivity filter level
-        have their filter field annotated with its tranche level. This will result in a call set that simultaneously is filtered 
-        to the desired level but also has the information necessary to pull out more variants for a higher sensitivity but a 
+        have their filter field annotated with its tranche level. This will result in a call set that simultaneously is filtered
+        to the desired level but also has the information necessary to pull out more variants for a higher sensitivity but a
         slightly lower quality level.
         """
 
         jobs = []
-        
+
         #generate the recalibration tranche files
         output_directory = "variants"
         recal_snps_other_options = config.param('variant_recalibrator', 'tranch_other_options_snps')
         recal_indels_other_options = config.param('variant_recalibrator', 'tranch_other_options_indels')
         variant_recal_snps_prefix = os.path.join(output_directory, "allSamples.hc.snps")
         variant_recal_indels_prefix = os.path.join(output_directory, "allSamples.hc.indels")
-                            
+
         jobs.append(concat_jobs([
             Job(command="mkdir -p " + output_directory),
             gatk.variant_recalibrator( [os.path.join(output_directory, "allSamples.hc.vcf.bgz")], recal_snps_other_options, variant_recal_snps_prefix + ".recal", variant_recal_snps_prefix + ".tranches", variant_recal_snps_prefix + ".R"),
             gatk.variant_recalibrator( [os.path.join(output_directory, "allSamples.hc.vcf.bgz")], recal_indels_other_options, variant_recal_indels_prefix + ".recal", variant_recal_indels_prefix + ".tranches", variant_recal_indels_prefix + ".R")
-        ], name="variant_recalibrator.tranch.allSamples"))              
+        ], name="variant_recalibrator.tranch.allSamples"))
 
 
         #aply the recalibration
@@ -800,9 +800,9 @@ cp \\
             gatk.apply_recalibration( os.path.join(output_directory, "allSamples.hc.vcf.bgz"), variant_apply_snps_prefix + ".recal", variant_apply_snps_prefix + ".tranches", apply_snps_other_options, variant_apply_snps_prefix + "_raw_indels.genotyped.vqsr.vcf.bgz"),
             gatk.apply_recalibration( variant_apply_snps_prefix + "_raw_indels.genotyped.vqsr.vcf.bgz", variant_apply_indels_prefix + ".recal", variant_apply_indels_prefix + ".tranches", apply_indels_other_options, os.path.join(output_directory, "allSamples.hc.vqsr.vcf"))
         ], name="variant_recalibrator.apply.allSamples"))
-        
+
         return jobs
-    
+
 
     def dna_sample_metrics(self):
         """
@@ -813,8 +813,8 @@ cp \\
         for readset in self.readsets:
             if readset.run_type == "PAIRED_END" :
                 library="PAIRED_END"
-        
-        
+
+
         trim_metrics_file = os.path.join("metrics", "trimSampleTable.tsv")
         metrics_file = os.path.join("metrics", "SampleMetrics.stats")
         report_metrics_file = os.path.join("report", "sequenceAlignmentTable.tsv")
@@ -986,8 +986,8 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         )
 
         return jobs
-    
-    
+
+
 
     def filter_nstretches(self, input_vcf = "variants/allSamples.merged.flt.vcf", output_vcf = "variants/allSamples.merged.flt.NFiltered.vcf", job_name = "filter_nstretches" ):
         """
@@ -998,28 +998,28 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         job = tools.filter_long_indel(input_vcf, output_vcf)
         job.name = job_name
         return [job]
-    
+
     def haplotype_caller_filter_nstretches(self):
         """
         See general filter_nstretches description !  Applied to haplotype caller vcf
         """
-        
+
         # Find input vcf first from VSQR, then from non recalibrate hapotype calleroriginal BAMs in the readset sheet.
         hc_vcf = self.select_input_files([["variants/allSamples.hc.vqsr.vcf"],["variants/allSamples.hc.vcf.bgz"]])
-        
+
         job = self.filter_nstretches(hc_vcf[0], "variants/allSamples.hc.vqsr.NFiltered.vcf", "haplotype_caller_filter_nstretches")
-        
+
         return job
-    
+
     def mpileup_filter_nstretches(self):
         """
         See general filter_nstretches description !  Applied to mpileup vcf
         """
-        
+
         job = self.filter_nstretches("variants/allSamples.merged.flt.vcf", "variants/allSamples.merged.flt.NFiltered.vcf", "mpileup_filter_nstretches")
-        
+
         return job
-        
+
 
 
     def flag_mappability(self, input_vcf = "variants/allSamples.merged.flt.NFiltered.vcf", output_vcf = "variants/allSamples.merged.flt.mil.vcf" ,job_name = "flag_mappability" ):
@@ -1033,14 +1033,14 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         return [job]
 
 
-    
+
     def haplotype_caller_flag_mappability(self) :
         """
         See general flag_mappability !  Applied to haplotype caller vcf
         """
-        
+
         job = self.flag_mappability("variants/allSamples.hc.vqsr.NFiltered.vcf", "variants/allSamples.hc.vqsr.mil.vcf", "haplotype_caller_flag_mappability" )
-        
+
         return job
 
 
@@ -1049,9 +1049,9 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         """
         See general flag_mappability !  Applied to mpileup vcf
         """
-        
+
         job = self.flag_mappability("variants/allSamples.merged.flt.NFiltered.vcf", "variants/allSamples.merged.flt.mil.vcf", "mpileup_flag_mappability")
-        
+
         return job
 
 
@@ -1070,9 +1070,9 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         """
         See general snp_id_annotation !  Applied to haplotype caller vcf
         """
-        
+
         job = self.snp_id_annotation("variants/allSamples.hc.vqsr.mil.vcf", "variants/allSamples.hc.vqsr.mil.snpId.vcf", "haplotype_caller_snp_id_annotation")
-        
+
         return job
 
 
@@ -1080,9 +1080,9 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         """
         See general snp_id_annotation !  Applied to mpileyp vcf
         """
-        
+
         job = self.snp_id_annotation("variants/allSamples.merged.flt.mil.vcf", "variants/allSamples.merged.flt.mil.snpId.vcf" , "mpileup_snp_id_annotation")
-        
+
         return job
 
 
@@ -1117,16 +1117,16 @@ cp \\
         )
 
         return jobs
-    
+
 
 
     def haplotype_caller_snp_effect(self):
         """
         See general snp_effect !  Applied to haplotype caller vcf
         """
-        
+
         jobs = self.snp_effect("variants/allSamples.hc.vqsr.mil.snpId.vcf", "variants/allSamples.hc.vqsr.mil.snpId.snpeff.vcf",  "haplotype_caller_snp_effect")
-            
+
         return jobs
 
 
@@ -1134,9 +1134,9 @@ cp \\
         """
         See general snp_effect !  Applied to mpileup vcf
         """
-        
+
         jobs = self.snp_effect("variants/allSamples.merged.flt.mil.snpId.vcf", "variants/allSamples.merged.flt.mil.snpId.snpeff.vcf",  "mpileup_snp_effect")
-            
+
         return jobs
 
 
@@ -1160,10 +1160,10 @@ cp \\
         """
         See general dbnsfp_annotation !  Applied to haplotype caller vcf
         """
-        
+
         job = self.dbnsfp_annotation("variants/allSamples.hc.vqsr.mil.snpId.snpeff.vcf",  "variants/allSamples.hc.vqsr.mil.snpId.snpeff.dbnsfp.vcf", "haplotype_caller_dbnsfp_annotation")
-        
-            
+
+
         return job
 
 
@@ -1171,10 +1171,10 @@ cp \\
         """
         See general dbnsfp_annotation !  Applied to mpileup vcf
         """
-        
+
         job = self.dbnsfp_annotation("variants/allSamples.merged.flt.mil.snpId.snpeff.vcf", "variants/allSamples.merged.flt.mil.snpId.snpeff.dbnsfp.vcf", "mpileup_dbnsfp_annotation")
-        
-            
+
+
         return job
 
 
@@ -1197,29 +1197,29 @@ cp \\
         """
         See general metrics_vcf_stats !  Applied to haplotype caller vcf
         """
-        
+
         job = self.metrics_vcf_stats("variants/allSamples.hc.vqsr.mil.snpId",  "haplotype_caller_metrics_change_rate")
-        
-            
+
+
         return job
-     
+
 
     def mpileup_metrics_vcf_stats(self):
         """
         See general metrics_vcf_stats !  Applied to mpileup caller vcf
         """
-        
+
         job = self.metrics_vcf_stats("variants/allSamples.merged.flt.mil.snpId" , "mpileup_metrics_change_rate")
-        
-            
+
+
         return job
-     
+
 
 
     def metrics_snv_graph_metrics(self, variants_file_prefix = "variants/allSamples.merged.flt.mil.snpId", snv_metrics_prefix = "metrics/allSamples.SNV",  job_name = "metrics_snv_graph"):
         """
         """
-       
+
         report_file = "report/DnaSeq.metrics_snv_graph_metrics.md"
         snv_metrics_files = [snv_metrics_prefix + ".SummaryTable.tsv", snv_metrics_prefix + ".EffectsFunctionalClass.tsv", snv_metrics_prefix + ".EffectsImpact.tsv"]
 
@@ -1274,9 +1274,9 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         """
         See general metrics_vcf_stats !  Applied to haplotype caller vcf
         """
-        
+
         jobs = self.metrics_snv_graph_metrics("variants/allSamples.hc.vqsr.mil.snpId", "metrics/allSamples.hc.vqsr.SNV", "haplotype_caller_metrics_snv_graph")
-        
+
         return jobs
 
 
@@ -1284,9 +1284,9 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         """
         See general metrics_vcf_stats !  Applied to mpileup vcf
         """
-        
+
         jobs = self.metrics_snv_graph_metrics("variants/allSamples.merged.flt.mil.snpId", "metrics/allSamples.mpileup.SNV", "mpileup_metrics_snv_graph")
-        
+
         return jobs
 
 
@@ -1332,8 +1332,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             self.mpileup_dbnsfp_annotation,
             self.mpileup_metrics_vcf_stats,
             self.mpileup_metrics_snv_graph_metrics
-            
+
         ]
 
-if __name__ == '__main__': 
+if __name__ == '__main__':
     DnaSeq()
