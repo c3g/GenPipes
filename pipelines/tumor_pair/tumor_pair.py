@@ -802,7 +802,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
 
             jobs.append(concat_jobs([
                 gatk.variant_annotator( inputNormal, inputTumor, input_somatic_variants, output_somatic_variants ),
-            ], name = "gatk_variant_annotator_somatic." + tumor_pair.name))            
+            ], name = "gatk_variant_annotator.somatic." + tumor_pair.name))            
         
         return jobs
 
@@ -823,7 +823,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
 
             jobs.append(concat_jobs([
                 gatk.variant_annotator( inputNormal, inputTumor, input_germline_loh_variants, output_germline_loh_variants ),
-            ], name = "gatk_variant_annotator_germline." + tumor_pair.name))
+            ], name = "gatk_variant_annotator.germline." + tumor_pair.name))
 
         return jobs
     
@@ -923,7 +923,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
 
         if len(input_merged_vcfs) == 1:
             job = Job([input_merged_vcfs], [output], command="ln -s -f " + input_merged_vcfs.pop() + " " + output)
-            job.name="combine_tumor_pairs.allPairs"
+            job.name="combine_tumor_pairs.allPairs_germline"
             jobs.append(job)
 
         else:
@@ -1029,13 +1029,13 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         
         ensemble_directory = os.path.join("pairedVariants", "ensemble")        
         temp_dir = os.path.join(os.getcwd(), ensemble_directory)
-        gemini_prefix = os.path.join(ensemble_directory, "allPairs.somatic")
+        gemini_prefix = os.path.join(ensemble_directory, "allPairs")
         gemini_module=config.param("DEFAULT", 'module_gemini').split(".")
         gemini_version = ".".join([gemini_module[-2],gemini_module[-1]])
 
         jobs.append(concat_jobs([
             Job(command="mkdir -p " + ensemble_directory),
-            gemini.gemini_annotations( gemini_prefix + ".ensemble.somatic.annot.vt.snpeff.vcf.gz", gemini_prefix + ".gemini." + gemini_version + ".db", temp_dir)
+            gemini.gemini_annotations( gemini_prefix + ".ensemble.somatic.annot.vt.snpeff.vcf.gz", gemini_prefix + ".somatic.gemini." + gemini_version + ".db", temp_dir)
         ], name="gemini_annotations.allPairs_somatic"))
 
         return jobs
@@ -1049,13 +1049,13 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
 
         ensemble_directory = os.path.join("pairedVariants", "ensemble")
         temp_dir = os.path.join(os.getcwd(), ensemble_directory)
-        gemini_prefix = os.path.join(ensemble_directory, "allPairs.germline_loh")
+        gemini_prefix = os.path.join(ensemble_directory, "allPairs")
         gemini_module=config.param("DEFAULT", 'module_gemini').split(".")
         gemini_version = ".".join([gemini_module[-2],gemini_module[-1]])
 
         jobs.append(concat_jobs([
             Job(command="mkdir -p " + ensemble_directory),
-            gemini.gemini_annotations( gemini_prefix + ".ensemble.germline_loh.annot.vt.snpeff.vcf.gz", gemini_prefix + ".gemini." + gemini_version + ".db", temp_dir)
+            gemini.gemini_annotations( gemini_prefix + ".ensemble.germline_loh.annot.vt.snpeff.vcf.gz", gemini_prefix + ".germline_loh.gemini." + gemini_version + ".db", temp_dir)
         ], name="gemini_annotations.allPairs_germline"))
 
         return jobs
