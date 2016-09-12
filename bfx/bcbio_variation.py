@@ -43,10 +43,10 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $BCBIO_VARIA
   {reference_sequence} \\
   {output} \\
   {input_callers}""".format(
-        tmp_dir=config.param('bcbio_ensemble_somatic', 'tmp_dir'),
-        java_other_options=config.param('bcbio_ensemble_somatic', 'java_other_options'),
-        ram=config.param('bcbio_ensemble_somatic', 'ram'),
-        reference_sequence=config.param('bcbio_ensemble_somatic', 'genome_fasta', type='filepath'),
+        tmp_dir=config.param('bcbio_ensemble', 'tmp_dir'),
+        java_other_options=config.param('bcbio_ensemble', 'java_other_options'),
+        ram=config.param('bcbio_ensemble', 'ram'),
+        reference_sequence=config.param('bcbio_ensemble', 'genome_fasta', type='filepath'),
         config_yaml=config_yaml,
         output=output,
         input_callers="  ".join("  \\\n  " + caller for caller in input_callers)

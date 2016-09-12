@@ -853,7 +853,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
             jobs.append(concat_jobs([           
                 snpeff.compute_effects(input_somatic, output_somatic, cancer_sample_file=cancer_pair_filename, options=config.param('compute_cancer_effects_somatic', 'options')),
                 htslib.bgzip_tabix_vcf(output_somatic, output_somatic_gz),
-            ],name = "compute_cancer_effects." + tumor_pair.name))
+            ],name = "compute_cancer_effects_somatic." + tumor_pair.name))
 
         return jobs
 
@@ -882,7 +882,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
             jobs.append(concat_jobs([
                 snpeff.compute_effects(input_germline, output_germline, options=config.param('compute_cancer_effects_germline', 'options')),
                 htslib.bgzip_tabix_vcf(output_germline, output_germline_gz),
-            ],name = "compute_cancer_effects." + tumor_pair.name))
+            ],name = "compute_cancer_effects_germline." + tumor_pair.name))
 
         return jobs
 
@@ -899,14 +899,14 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
 
         if len(input_merged_vcfs) == 1:
             job = Job([input_merged_vcfs], [output], command="ln -s -f " + input_merged_vcfs.pop() + " " + output)
-            job.name="combine_tumor_pairs.allPairs"
+            job.name="gatk_combine_variants.allPairs"
             jobs.append(job)
 
         else:
             
             jobs.append(concat_jobs([
                 gatk.combine_variants(input_merged_vcfs, output)
-            ], name="combine_tumor_pairs.allPairs_somatic"))
+            ], name="gatk_combine_variants.somatic.allPairs"))
 
         return jobs
 
@@ -923,14 +923,14 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
 
         if len(input_merged_vcfs) == 1:
             job = Job([input_merged_vcfs], [output], command="ln -s -f " + input_merged_vcfs.pop() + " " + output)
-            job.name="combine_tumor_pairs.allPairs_germline"
+            job.name="gatk_combine_variants.germline_loh.allPairs"
             jobs.append(job)
 
         else:
 
             jobs.append(concat_jobs([
                 gatk.combine_variants(input_merged_vcfs, output)
-            ], name="combine_tumor_pairs.allPairs_germline"))
+            ], name="gatk_combine_variants.germline_loh.allPairs"))
 
         return jobs
 
@@ -946,7 +946,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         output = os.path.join(ensemble_directory, "allPairs.ensemble.somatic.annot.vt.vcf.gz")
 
         job = vt.decompose_and_normalize_mnps(input, output)
-        job.name = "decompose_and_normalize_mnps.allPairs_somatic"
+        job.name = "decompose_and_normalize_mnps.somatic.allPairs"
 
         jobs.append(job)
 
@@ -964,7 +964,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         output = os.path.join(ensemble_directory, "allPairs.ensemble.germline_loh.annot.vt.vcf.gz")
 
         job = vt.decompose_and_normalize_mnps(input, output)
-        job.name = "decompose_and_normalize_mnps.allPairs_germline"
+        job.name = "decompose_and_normalize_mnps.germline.allPairs"
 
         jobs.append(job)
 
@@ -994,7 +994,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         jobs.append(concat_jobs([
             snpeff.compute_effects(input, output, cancer_sample_file=cancer_pair_filename,options=config.param('compute_cancer_effects_somatic', 'options')),
             htslib.bgzip_tabix_vcf(output, output_gz),
-        ],name = "compute_effects.allPairs_somatic"))
+        ],name = "compute_effects.somatic.allPairs"))
 
         return jobs
 
@@ -1016,7 +1016,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         jobs.append(concat_jobs([
             snpeff.compute_effects(input, output, options=config.param('compute_cancer_effects_germline', 'options')),
             htslib.bgzip_tabix_vcf(output, output_gz),
-        ],name = "compute_effects.allPair_germline"))
+        ],name = "compute_effects.germline.allPair"))
 
         return jobs
 
@@ -1036,7 +1036,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         jobs.append(concat_jobs([
             Job(command="mkdir -p " + ensemble_directory),
             gemini.gemini_annotations( gemini_prefix + ".ensemble.somatic.annot.vt.snpeff.vcf.gz", gemini_prefix + ".somatic.gemini." + gemini_version + ".db", temp_dir)
-        ], name="gemini_annotations.allPairs_somatic"))
+        ], name="gemini_annotations.somatic.allPairs"))
 
         return jobs
 
@@ -1056,7 +1056,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         jobs.append(concat_jobs([
             Job(command="mkdir -p " + ensemble_directory),
             gemini.gemini_annotations( gemini_prefix + ".ensemble.germline_loh.annot.vt.snpeff.vcf.gz", gemini_prefix + ".germline_loh.gemini." + gemini_version + ".db", temp_dir)
-        ], name="gemini_annotations.allPairs_germline"))
+        ], name="gemini_annotations.germline.allPairs"))
 
         return jobs
 
@@ -1089,18 +1089,18 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
             self.vardict_paired,
             self.merge_filter_paired_vardict,
             self.ensemble_somatic,
-            self.ensemble_germline_loh,
             self.gatk_variant_annotator_somatic,
-            self.gatk_variant_annotator_germline,
             self.compute_cancer_effects_somatic,
-            self.compute_cancer_effects_germline,
             self.combine_tumor_pairs_somatic,
-            self.combine_tumor_pairs_germline,
             self.decompose_and_normalize_mnps_somatic,
-            self.decompose_and_normalize_mnps_germline,
             self.all_pairs_compute_effects_somatic,
-            self.all_pairs_compute_effects_germline,
             self.gemini_annotations_somatic,
+            self.ensemble_germline_loh,
+            self.gatk_variant_annotator_germline,
+            self.compute_cancer_effects_germline,
+            self.combine_tumor_pairs_germline,
+            self.decompose_and_normalize_mnps_germline,
+            self.all_pairs_compute_effects_germline,
             self.gemini_annotations_germline
         ]
 
