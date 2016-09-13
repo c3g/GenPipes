@@ -427,7 +427,6 @@ cp \\
             print_reads_output = duplicate_file_prefix + "recal.bam"
             base_recalibrator_output = duplicate_file_prefix + "recalibration_report.grp"
 
-            #coverage_bed = self.samples[0].readsets[0].beds[0]
             coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
             if coverage_bed:
                 interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
@@ -438,11 +437,19 @@ cp \\
                     jobs.append(job)
                     #created_interval_lists.append(interval_list)           	
 
-            jobs.append(concat_jobs([
-                gatk.base_recalibrator(input, base_recalibrator_output, intervals=interval_list),
-                gatk.print_reads(input, print_reads_output, base_recalibrator_output),
-                Job(input_files=[print_reads_output], output_files=[print_reads_output + ".md5"], command="md5sum " + print_reads_output + " > " + print_reads_output + ".md5")
-            ], name="recalibration." + sample.name))
+                jobs.append(concat_jobs([
+                    gatk.base_recalibrator(input, base_recalibrator_output, intervals=interval_list),
+                    gatk.print_reads(input, print_reads_output, base_recalibrator_output),
+                    Job(input_files=[print_reads_output], output_files=[print_reads_output + ".md5"], command="md5sum " + print_reads_output + " > " + print_reads_output + ".md5")
+                ], name="recalibration." + sample.name))
+
+            else:
+
+                jobs.append(concat_jobs([
+                    gatk.base_recalibrator(input, base_recalibrator_output),
+                    gatk.print_reads(input, print_reads_output, base_recalibrator_output),
+                    Job(input_files=[print_reads_output], output_files=[print_reads_output + ".md5"], command="md5sum " + print_reads_output + " > " + print_reads_output + ".md5")
+                ], name="recalibration." + sample.name))
 
         report_file = os.path.join("report", "DnaSeq.recalibration.md")
         jobs.append(
