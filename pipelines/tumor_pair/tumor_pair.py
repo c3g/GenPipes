@@ -941,17 +941,11 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         mkdir_job = Job(command="mkdir -p " + ensemble_directory, removable_files=[output])
 
         if len(input_merged_vcfs) == 1:
-<<<<<<< HEAD
             jobs.append(concat_jobs([
                 mkdir_job,
                 Job([input_merged_vcfs[0]], [output], command="ln -s -f " + os.path.abspath(input_merged_vcfs[0]) + " " + output)
             ],name="gatk_combine_variants.somatic.allPairs"))
-=======
-            job = Job([input_merged_vcfs[0]], [output], command="ln -s -f " + os.path.abspath(input_merged_vcfs[0]) + " " + output)
-            job.name="gatk_combine_variants.allPairs"
-            jobs.append(job)
->>>>>>> 6c1e606023a0998f28294a2e9c70169d7a517952
-
+ 
         else:
             
             jobs.append(concat_jobs([
@@ -975,16 +969,10 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         mkdir_job = Job(command="mkdir -p " + ensemble_directory, removable_files=[output])
 
         if len(input_merged_vcfs) == 1:
-<<<<<<< HEAD
             jobs.append(concat_jobs([
                 mkdir_job,
                 Job([input_merged_vcfs[0]], [output], command="ln -s -f " + os.path.abspath(input_merged_vcfs[0]) + " " + output)
             ],name="gatk_combine_variants.germline_loh.allPairs"))
-=======
-            job = Job([input_merged_vcfs[0]], [output], command="ln -s -f " + os.path.abspath(input_merged_vcfs[0]) + " " + output)
-            job.name="gatk_combine_variants.germline_loh.allPairs"
-            jobs.append(job)
->>>>>>> 6c1e606023a0998f28294a2e9c70169d7a517952
 
         else:
 

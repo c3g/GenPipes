@@ -437,7 +437,6 @@ cp \\
                     jobs.append(job)
                     #created_interval_lists.append(interval_list)           	
 
-<<<<<<< HEAD
                 jobs.append(concat_jobs([
                     gatk.base_recalibrator(input, base_recalibrator_output, intervals=interval_list),
                     gatk.print_reads(input, print_reads_output, base_recalibrator_output),
@@ -451,13 +450,6 @@ cp \\
                     gatk.print_reads(input, print_reads_output, base_recalibrator_output),
                     Job(input_files=[print_reads_output], output_files=[print_reads_output + ".md5"], command="md5sum " + print_reads_output + " > " + print_reads_output + ".md5")
                 ], name="recalibration." + sample.name))
-=======
-            jobs.append(concat_jobs([
-                gatk.base_recalibrator(input, base_recalibrator_output, intervals=created_interval_lists),
-                gatk.print_reads(input, print_reads_output, base_recalibrator_output),
-                Job(input_files=[print_reads_output], output_files=[print_reads_output + ".md5"], command="md5sum " + print_reads_output + " > " + print_reads_output + ".md5")
-            ], name="recalibration." + sample.name))
->>>>>>> 6c1e606023a0998f28294a2e9c70169d7a517952
 
         report_file = os.path.join("report", "DnaSeq.recalibration.md")
         jobs.append(
