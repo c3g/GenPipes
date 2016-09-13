@@ -869,9 +869,13 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         jobs = []
 
         ensemble_directory = os.path.join("pairedVariants", "ensemble")
+        if not os.path.exists(ensemble_directory):
+            os.makedirs(ensemble_directory)
 
         for tumor_pair in self.tumor_pairs.itervalues():
             paired_directory = os.path.join(ensemble_directory, tumor_pair.name)
+            if not os.path.exists(paired_directory):
+                os.makedirs(paired_directory)
 
             input_somatic = os.path.join(paired_directory, tumor_pair.name + ".ensemble.somatic.flt.annot.vcf.gz")
             output_somatic = os.path.join(paired_directory, tumor_pair.name + ".ensemble.somatic.flt.annot.snpeff.vcf")         
@@ -937,10 +941,16 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         mkdir_job = Job(command="mkdir -p " + ensemble_directory, removable_files=[output])
 
         if len(input_merged_vcfs) == 1:
+<<<<<<< HEAD
             jobs.append(concat_jobs([
                 mkdir_job,
                 Job([input_merged_vcfs[0]], [output], command="ln -s -f " + os.path.abspath(input_merged_vcfs[0]) + " " + output)
             ],name="gatk_combine_variants.somatic.allPairs"))
+=======
+            job = Job([input_merged_vcfs[0]], [output], command="ln -s -f " + os.path.abspath(input_merged_vcfs[0]) + " " + output)
+            job.name="gatk_combine_variants.allPairs"
+            jobs.append(job)
+>>>>>>> 6c1e606023a0998f28294a2e9c70169d7a517952
 
         else:
             
@@ -965,10 +975,16 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         mkdir_job = Job(command="mkdir -p " + ensemble_directory, removable_files=[output])
 
         if len(input_merged_vcfs) == 1:
+<<<<<<< HEAD
             jobs.append(concat_jobs([
                 mkdir_job,
                 Job([input_merged_vcfs[0]], [output], command="ln -s -f " + os.path.abspath(input_merged_vcfs[0]) + " " + output)
             ],name="gatk_combine_variants.germline_loh.allPairs"))
+=======
+            job = Job([input_merged_vcfs[0]], [output], command="ln -s -f " + os.path.abspath(input_merged_vcfs[0]) + " " + output)
+            job.name="gatk_combine_variants.germline_loh.allPairs"
+            jobs.append(job)
+>>>>>>> 6c1e606023a0998f28294a2e9c70169d7a517952
 
         else:
 
