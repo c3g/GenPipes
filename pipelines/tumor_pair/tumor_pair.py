@@ -902,7 +902,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         output = os.path.join(ensemble_directory, "allPairs.ensemble.somatic.annot.vcf.gz")
 
         if len(input_merged_vcfs) == 1:
-            job = Job([input_merged_vcfs[0]], [output], command="ln -s -f " + input_merged_vcfs.pop() + " " + output)
+            job = Job([input_merged_vcfs[0]], [output], command="ln -s -f " + os.path.abspath(input_merged_vcfs[0]) + " " + output)
             job.name="gatk_combine_variants.allPairs"
             jobs.append(job)
 
@@ -926,7 +926,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         output = os.path.join(ensemble_directory, "allPairs.ensemble.germline_loh.annot.vcf.gz")
 
         if len(input_merged_vcfs) == 1:
-            job = Job([input_merged_vcfs[0]], [output], command="ln -s -f " + input_merged_vcfs.pop() + " " + output)
+            job = Job([input_merged_vcfs[0]], [output], command="ln -s -f " + os.path.abspath(input_merged_vcfs[0]) + " " + output)
             job.name="gatk_combine_variants.germline_loh.allPairs"
             jobs.append(job)
 
