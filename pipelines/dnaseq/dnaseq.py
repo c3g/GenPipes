@@ -439,7 +439,7 @@ cp \\
                     #created_interval_lists.append(interval_list)           	
 
             jobs.append(concat_jobs([
-                gatk.base_recalibrator(input, base_recalibrator_output, intervals=interval_list),
+                gatk.base_recalibrator(input, base_recalibrator_output, intervals=created_interval_lists),
                 gatk.print_reads(input, print_reads_output, base_recalibrator_output),
                 Job(input_files=[print_reads_output], output_files=[print_reads_output + ".md5"], command="md5sum " + print_reads_output + " > " + print_reads_output + ".md5")
             ], name="recalibration." + sample.name))
