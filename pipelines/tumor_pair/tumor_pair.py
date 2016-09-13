@@ -838,9 +838,13 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         jobs = []
 
         ensemble_directory = os.path.join("pairedVariants", "ensemble")
+        if not os.path.exists(ensemble_directory):
+            os.makedirs(ensemble_directory)
 
         for tumor_pair in self.tumor_pairs.itervalues():
             paired_directory = os.path.join(ensemble_directory, tumor_pair.name)
+            if not os.path.exists(paired_directory):
+                os.makedirs(paired_directory)
 
             input_somatic = os.path.join(paired_directory, tumor_pair.name + ".ensemble.somatic.flt.annot.vcf.gz")
             output_somatic = os.path.join(paired_directory, tumor_pair.name + ".ensemble.somatic.flt.annot.snpeff.vcf")         
@@ -894,11 +898,11 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         jobs = []
         
         ensemble_directory = os.path.join("pairedVariants", "ensemble")
-        input_merged_vcfs = [os.path.join(os.path.abspath(ensemble_directory), tumor_pair.name , tumor_pair.name + ".ensemble.somatic.flt.annot.vcf.gz") for tumor_pair in self.tumor_pairs.itervalues()]
+        input_merged_vcfs = [os.path.join(ensemble_directory, tumor_pair.name , tumor_pair.name + ".ensemble.somatic.flt.annot.vcf.gz") for tumor_pair in self.tumor_pairs.itervalues()]
         output = os.path.join(ensemble_directory, "allPairs.ensemble.somatic.annot.vcf.gz")
 
         if len(input_merged_vcfs) == 1:
-            job = Job([input_merged_vcfs], [output], command="ln -s -f " + input_merged_vcfs.pop() + " " + output)
+            job = Job([input_merged_vcfs[0]], [output], command="ln -s -f " + input_merged_vcfs.pop() + " " + output)
             job.name="gatk_combine_variants.allPairs"
             jobs.append(job)
 
@@ -918,11 +922,11 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         jobs = []
 
         ensemble_directory = os.path.join("pairedVariants", "ensemble")
-        input_merged_vcfs = [os.path.join(os.path.abspath(ensemble_directory), tumor_pair.name , tumor_pair.name + ".ensemble.germline_loh.flt.annot.vcf.gz") for tumor_pair in self.tumor_pairs.itervalues()]
+        input_merged_vcfs = [os.path.join(ensemble_directory, tumor_pair.name , tumor_pair.name + ".ensemble.germline_loh.flt.annot.vcf.gz") for tumor_pair in self.tumor_pairs.itervalues()]
         output = os.path.join(ensemble_directory, "allPairs.ensemble.germline_loh.annot.vcf.gz")
 
         if len(input_merged_vcfs) == 1:
-            job = Job([input_merged_vcfs], [output], command="ln -s -f " + input_merged_vcfs.pop() + " " + output)
+            job = Job([input_merged_vcfs[0]], [output], command="ln -s -f " + input_merged_vcfs.pop() + " " + output)
             job.name="gatk_combine_variants.germline_loh.allPairs"
             jobs.append(job)
 
