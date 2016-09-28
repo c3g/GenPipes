@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=rsem
-VERSION=1.2.12
+VERSION=1.2.8
 ARCHIVE=$SOFTWARE-$VERSION.tar.gz
 ARCHIVE_URL=http://deweylab.biostat.wisc.edu/rsem/src/$ARCHIVE
 SOFTWARE_DIR=$SOFTWARE-$VERSION

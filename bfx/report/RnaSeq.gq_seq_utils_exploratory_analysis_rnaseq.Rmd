@@ -24,10 +24,9 @@ summary = summary[ summary$"File" %>% basename  %in%  # some figures we don't wa
 summary = summary[,c("Description","File")]# we want to offer full package as zip
 summary %<>% rbind(c("All Figures","exploratory/all.zip"))
 summary$"File" %<>% sapply(function(fn){
-	hwrite( gsub(".*\\.","",fn) ,link=fn)
+       hwrite( gsub(".*\\.","",fn) ,link=fn)
 })
 ```
-
 #### Exploratory Analysis 
 
 Different exploratory data analysis (EDA) techniques are applied to gene and transcript expression levels, quantified  
@@ -55,4 +54,3 @@ plot is to get a rough overview of which genes or transcripts are contributing t
 ```{r summary_table, results="markup",echo=F,message=F,warning=F}
 kable(summary,align=c("l","r"),row.names=F)
 ```
-

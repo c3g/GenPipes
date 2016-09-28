@@ -3,8 +3,8 @@
 ###################
 ################### exonerate
 ###################
-VERSION="2.3"
-INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/pigz/
+VERSION="2.3.3"
+INSTALL_PATH=$MUGQIC_INSTALL_HOME_TMP/software/pigz/
 mkdir -p $INSTALL_PATH
 cd $INSTALL_PATH
 # Download
@@ -21,7 +21,7 @@ proc ModulesHelp { } {
 }
 module-whatis \"A parallel implementation of gzip for modern multi-processor, multi-core machines\"
             
-set             root               \$::env(MUGQIC_INSTALL_HOME)/software/pigz/pigz-${VERSION}
+set             root               \$::env(MUGQIC_INSTALL_HOME_TMP)/software/pigz/pigz-${VERSION}
 prepend-path    PATH               \$root
 " > $VERSION
 
@@ -30,7 +30,7 @@ echo "#%Module1.0
 set ModulesVersion \"$VERSION\"
 " > .version
 
-mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/pigz
-mv .version $VERSION $MUGQIC_INSTALL_HOME/modulefiles/mugqic/pigz/
+mkdir -p $MUGQIC_INSTALL_HOME_TMP/modulefiles/mugqic/pigz
+mv .version $VERSION $MUGQIC_INSTALL_HOME_TMP/modulefiles/mugqic/pigz/
 
 

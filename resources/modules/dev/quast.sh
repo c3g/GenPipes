@@ -9,12 +9,19 @@ set -eu -o pipefail
 # Also, once modified, delete this commented-out header and the ## comments
 ################################################################################
 
+
+# Java JDK (tested with OpenJDK 6) for GAGE
+# Time::HiRes perl module for GeneMark-ES
+# Boost (tested with v1.56.0) for Manta and E-MEM
+# cmake (tested with v2.8.12) for Manta
+
+module load cmake/3.3.1  jdk64/7u80 boost64/1.61.0  mugqic/perl/5.22.1 
+#cpan --install Time::HighRes
 SOFTWARE=quast  
-VERSION=2.3 
+VERSION=4.2
 ARCHIVE="$SOFTWARE-$VERSION.tar.gz" 
 ARCHIVE_URL="http://downloads.sourceforge.net/project/quast/$ARCHIVE" 
 SOFTWARE_DIR=$SOFTWARE-$VERSION 
-
 module load mugqic/python/2.7.8
 # Specific commands to extract and build the software
 # $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically

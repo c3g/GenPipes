@@ -5,8 +5,7 @@ set -eu -o pipefail
 SOFTWARE=usearch
 #VERSION=7.0.1090
 VERSION=8.1.1861
-ARCHIVE=usearch8.1.1861_i86linux32
-ARCHIVE_URL=
+ARCHIVE=usearch8.1.1861
 echo "Prior to install the usearch module, you must download the archive manually, if not done already, from http://www.drive5.com/usearch/download.html since it requires a license agreement.
 Once downloaded, copy it in \$MUGQIC_INSTALL_HOME_DEV/archive/ or \$MUGQIC_INSTALL_HOME/archive/ and rename it as ${SOFTWARE}${VERSION}"
 SOFTWARE_DIR=$SOFTWARE-$VERSION

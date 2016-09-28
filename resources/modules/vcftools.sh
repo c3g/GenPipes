@@ -3,10 +3,12 @@
 set -eu -o pipefail
 
 SOFTWARE=vcftools
-#VERSION=0.1.13
 VERSION=0.1.14
+#VERSION=0.1.13
+#VERSION=0.1.11
 ARCHIVE=${SOFTWARE}-$VERSION.tar.gz
-ARCHIVE_URL=https://github.com/$SOFTWARE/$SOFTWARE/releases/download/v${VERSION}/$ARCHIVE
+#ARCHIVE_URL=https://sourceforge.net/projects/$SOFTWARE/files/${SOFTWARE}_${VERSION}.tar.gz/download		# for version earlier than 0.1.14
+ARCHIVE_URL=https://github.com/$SOFTWARE/$SOFTWARE/releases/download/v${VERSION}/$ARCHIVE			# for version 0.1.14
 SOFTWARE_DIR=${SOFTWARE}-$VERSION
 
 # Specific commands to extract and build the software
@@ -18,7 +20,7 @@ build() {
 
   cd $SOFTWARE_DIR
   FULL_PATH=$(readlink -f .)
-  ./configure --prefix=$FULL_PATH
+  ./configure --prefix=$FULL_PATH			#  # for version 0.1.14
   make
   make install
 

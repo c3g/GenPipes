@@ -2,22 +2,15 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-################################################################################
-# This is a module install script template which should be copied and used for
-# consistency between module paths, permissions, etc.
-# Only lines marked as "## TO BE ADDED/MODIFIED" should be, indeed, modified.
-# Also, once modified, delete this commented-out header and the ## comments
-################################################################################
-
 SOFTWARE=gemini 
-VERSION=0.18.3  
+VERSION=0.18.3 
 ARCHIVE=${SOFTWARE}_v$VERSION.install.py
 ARCHIVE_URL=https://raw.github.com/arq5x/gemini/master/gemini/scripts/gemini_install.py
 #ARCHIVE_URL=https://raw.githubusercontent.com/arq5x/gemini/master/gemini/scripts/gemini_install.py
 #ARCHIVE_URL=https://raw.github.com/mbourgey/gemini/master/gemini/scripts/gemini_install.py
 #ARCHIVE_URL=https://raw.github.com/mbourgey/$SOFTWARE/v$VERSION/$SOFTWARE/scripts/${SOFTWARE}_install.py 
 SOFTWARE_DIR=$SOFTWARE-$VERSION 
-PYTHON_VERSION=2.7.11
+PYTHON_VERSION=2.7.8
 
 # Specific commands to extract and build the software
 # $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically

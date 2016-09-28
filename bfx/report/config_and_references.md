@@ -32,6 +32,18 @@ All analysis parameters are described in this [configuration file](config.ini).
 [Trimmomatic]: http://www.usadellab.org/cms/index.php?page=trimmomatic
 [Trinity]: https://trinityrnaseq.github.io/
 [UCSC]: http://genome.ucsc.edu/
+[FLASh]: http://ccb.jhu.edu/software/FLASH/
+[Uchime]: http://drive5.com/usearch/usearch_docs.html
+[Qiime]: http://qiime.org/
+[Usearch]: http://drive5.com/usearch/usearch_docs.html
+[Uclust]: http://drive5.com/usearch/manual/uclust_algo.html
+[PyNAST]: http://biocore.github.io/pynast/
+[FastTree]: http://www.microbesonline.org/fasttree/
+[Krona]: http://sourceforge.net/p/krona/home/krona/
+[VSEARCH]: https://github.com/torognes/vsearch
+[CSS]: http://bioconductor.org/packages/release/bioc/html/metagenomeSeq.html
+[GOLD]: http://microbiomeutil.sourceforge.net/
+[UNITE]: https://unite.ut.ee/repository.php
 
 ---
 references:
@@ -669,4 +681,331 @@ references:
   type: article-journal
   issued:
     year: 2011
+
+- id: flash
+  title: 'FLASH: Fast length adjustment of short reads to improve genome assemblies'
+  author:
+    - family: Magoc
+      given: T.
+    - family: Salzberg
+      given: S.       
+  container-title: Bioinformatics
+  volume: 27
+  URL: 'http://bioinformatics.oxfordjournals.org/content/early/2011/09/07/bioinformatics.btr507.short'
+  DOI: 10.1093/bioinformatics/btr507
+  issue: 21
+  page: 2957-2963
+  type: article-journal
+  issued:
+    year: 2011      
+        
+- id: uchime
+  title: 'UCHIME improves sensitivity and speed of chimera detection'
+  author:
+    - family: Edgar
+      given: R.C.
+    - family: Haas
+      given: B.J.
+    - family: Clemente
+      given: JC.
+    - family: Quince
+      given: C.
+    - family: Knight
+      given: R.          
+  container-title: Bioinformatics
+  volume: 27
+  URL: 'http://bioinformatics.oxfordjournals.org/content/early/2011/06/23/bioinformatics.btr381.short?rss=1'
+  DOI: 10.1093/bioinformatics/btr381
+  issue: 16
+  page: 2194-2200
+  type: article-journal
+  issued:
+    year: 2011     
+    
+- id: qiime
+  title: 'QIIME allows analysis of high-throughput community sequencing data'
+  author:
+    - family: Caporaso
+      given: J.G.
+    - family: Kuczynski
+      given: J.
+    - family: Stombaugh
+      given: J.
+    - family: Bittinger
+      given: K.
+    - family: Bushman
+      given: F.D.
+    - family: Costello
+      given: E.K.
+    - family: Fierer
+      given: N.
+    - family: Gonzalez Pena
+      given: A.
+    - family: Goodrich
+      given: J.K.
+    - family: Gordon
+      given: J.I.
+    - family: Huttley
+      given: G.A.
+    - family: Kelley
+      given: S.T.
+    - family: Knights
+      given: D.
+    - family: Koenig
+      given: J.E.
+    - family: Ley
+      given: R.E.
+    - family: Lozupone
+      given: C.A.
+    - family: McDonald
+      given: D.
+    - family: Muegge
+      given: B.D.
+    - family: Pirrung
+      given: M.
+    - family: Reeder
+      given: J.
+    - family: Sevinsky
+      given: J.R.
+    - family: Turnbaugh
+      given: P.J.
+    - family: Walters
+      given: W.A.
+    - family: Widmann
+      given: J.
+    - family: Yatsunenko
+      given: T.
+    - family: Zaneveld
+      given: J.
+    - family: Knight
+      given: R. 
+  container-title: Nature Methods
+  volume: 7
+  URL: 'http://www.nature.com/nmeth/journal/v7/n5/full/nmeth.f.303.html'
+  DOI: 10.1038/nmeth.f.303
+  issue: 5
+  page: 335-336
+  type: article-journal
+  issued:
+    year: 2010 
+
+- id: usearch
+  title: 'Search and clustering orders of magnitude faster than BLAST'
+  author:
+    - family: Edgar
+      given: R.C.         
+  container-title: Bioinformatics
+  volume: 26
+  URL: 'http://bioinformatics.oxfordjournals.org/content/26/19/2460'
+  DOI: 10.1093/bioinformatics/btq461
+  issue: 19
+  page: 2460-2461
+  type: article-journal
+  issued:
+    year: 2010  
+    
+- id: uclust
+  title: 'Search and clustering orders of magnitude faster than BLAST'
+  author:
+    - family: Edgar
+      given: R.C.         
+  container-title: Bioinformatics
+  volume: 26
+  URL: 'http://bioinformatics.oxfordjournals.org/content/26/19/2460'
+  DOI: 10.1093/bioinformatics/btq461
+  issue: 19
+  page: 2460-2461
+  type: article-journal
+  issued:
+    year: 2010  
+    
+- id: pynast
+  title: 'PyNAST: a flexible tool for aligning sequences to a template alignment'
+  author:
+    - family: Caporaso
+      given: J.G.
+    - family: Bittinger
+      given: K.
+    - family: Bushman
+      given: F.D.
+    - family: DeSantis
+      given: T.Z.
+    - family: Andersen
+      given: G.L.      
+    - family: Knight
+      given: R.           
+  container-title: Bioinformatics
+  volume: 26
+  URL: 'http://bioinformatics.oxfordjournals.org/content/26/2/266'
+  DOI: 10.1093/bioinformatics/btp636
+  issue: 2
+  page: 266-267
+  type: article-journal
+  issued:
+    year: 2011  
+
+- id: fasttree
+  title: 'FastTree: computing large minimum evolution trees with profiles instead of a distance matrix'
+  author:
+    - family: Price
+      given: M.N.
+    - family: Dehal
+      given: P.S.
+    - family: Arkin
+      given: A.P.       
+  container-title: Mol Biol Evol
+  volume: 26
+  URL: 'http://mbe.oxfordjournals.org/content/26/7/1641'
+  DOI: 10.1093/molbev/msp077
+  issue: 7
+  page: 1641-1650
+  type: article-journal
+  issued:
+    year: 2009
+
+- id: krona
+  title: 'Interactive metagenomic visualization in a Web browser'
+  author:
+    - family: Ondov
+      given: B.D.
+    - family: Bergman
+      given: N.H.
+    - family: Phillippy
+      given: A.M.       
+  container-title: BMC Bioinformatics
+  volume: 12
+  URL: 'http://www.biomedcentral.com/1471-2105/12/385'
+  DOI: 10.1186/1471-2105-12-385
+  issue: 1
+  page: 385
+  type: article-journal
+  issued:
+    year: 2011
+
+- id: vsearch
+  title: 'VSEARCH'
+  author:
+    - family: Flouri
+      given: T.
+    - family: Zeeshan
+      given: U.
+    - family: Mahé
+      given: F.       
+    - family: Nichols
+      given: B.   
+    - family: Quince
+      given: C. 
+    - family: Rognes
+      given: T. 
+  URL: 'https://github.com/torognes/vsearch'
+  DOI: 10.5281/zenodo.15524           
+  issued:
+    year: 2015
+
+- id: css
+  title: 'Differential abundance analysis for microbial marker-gene surveys'
+  author:
+    - family: Paulson
+      given: J.N.
+    - family: Stine
+      given: O.C.
+    - family: Bravo
+      given: H.C.   
+    - family: Pop
+      given: M.     
+  container-title: Nat Methods
+  volume: 12
+  URL: 'http://www.nature.com/nmeth/journal/v10/n12/full/nmeth.2658.html'
+  DOI: 10.1038/nmeth.2658
+  page: 1200
+  type: article-journal
+  issued:
+    year: 2013   
+
+- id: gold
+  title: 'Chimeric 16S rRNA sequence formation and detection in Sanger and 454-pyrosequenced PCR amplicons'
+  author:
+    - family: Haas
+      given: B.J.
+    - family: Gevers
+      given: D.
+    - family: Earl
+      given: A.   
+    - family: Feldgarden
+      given: M.   
+    - family: Ward
+      given: D.V.   
+    - family: Giannokous
+      given: G.
+    - family: Ciulla
+      given: D.
+    - family: Tabbaa
+      given: D.   
+    - family: Highlander
+      given: S.K.   
+    - family: Sodergren
+      given: E.  
+    - family: Methe
+      given: B.   
+    - family: Desantis
+      given: T.Z.   
+    - family: Petrosino
+      given: J.F.
+    - family: Knight
+      given: R.
+    - family: Birren
+      given: B.W.   
+  container-title: Genome Res
+  volume: 21
+  URL: 'http://genome.cshlp.org/content/21/3/494.long'
+  DOI: 10.1101/gr.112730.110
+  page: 494
+  type: article-journal
+  issued:
+    year: 2011     
+    
+- id: unite
+  title: 'A Comprehensive, Automatically Updated Fungal ITS Sequence Dataset for Reference-Based Chimera Control in Environmental Sequencing Efforts'
+  author:
+    - family: Nilsson
+      given: R.H.
+    - family: Tedersoo
+      given: L.
+    - family: Ryberg
+      given: M.   
+    - family: Kristiansson
+      given: E.   
+    - family: Hartmann
+      given: M.   
+    - family: Unterseher
+      given: M.
+    - family: Porter
+      given: T.M.
+    - family: Bengtsson-Palme
+      given: J.   
+    - family: Walker
+      given: D.M.   
+    - family: de Sousa
+      given: F.  
+    - family: Gamper
+      given: H.A.   
+    - family: Larsson
+      given: E.   
+    - family: Larsson
+      given: K.H.
+    - family: Kõljalg
+      given: U.
+    - family: Edgar
+      given: R.C.   
+    - family: Abarenkov
+      given: K.  
+  container-title: Microbes Environ
+  volume: 30
+  URL: 'https://www.jstage.jst.go.jp/article/jsme2/30/2/30_ME14121/_article'
+  DOI: 10.1264/jsme2.ME14121
+  page: 145
+  type: article-journal
+  issued:
+    year: 2015     
+                                                 
 ...

@@ -5,9 +5,9 @@
 ###################
 VERSION="1.1_2011_02_21"
 
-INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/breakdancer/
-mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/breakdancer/tmp/unzip
-cd $MUGQIC_INSTALL_HOME/modulefiles/mugqic/breakdancer/tmp
+INSTALL_PATH=$MUGQIC_INSTALL_HOME_TMP/software/breakdancer/
+mkdir -p $MUGQIC_INSTALL_HOME_TMP/modulefiles/mugqic/breakdancer/tmp/unzip
+cd $MUGQIC_INSTALL_HOME_TMP/modulefiles/mugqic/breakdancer/tmp
 
 # Download
 
@@ -22,8 +22,8 @@ tar xvjf samtools-0.1.6.tar.bz2
 
 cd ../..
 
-INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/breakdancer # where to install..
-ARCHIVE_PATH=$MUGQIC_INSTALL_HOME/archive/breakdancer 
+INSTALL_PATH=$MUGQIC_INSTALL_HOME_TMP/software/breakdancer # where to install..
+ARCHIVE_PATH=$MUGQIC_INSTALL_HOME_TMP/archive/breakdancer 
 mkdir -p $INSTALL_PATH $ARCHIVE_PATH
 cp -r unzip/breakdancer-${VERSION}  $INSTALL_PATH
 chmod -R 775 $INSTALL_PATH 
@@ -47,7 +47,7 @@ mv bam2cfg.pl originalBam2cfg.pl
 awk ' BEGIN {print "#!/usr/bin/perl"} NR>1 {print $0} ' originalBam2cfg.pl > bam2cfg.pl
 chmod 775 bam2cfg.pl
 
-cd $MUGQIC_INSTALL_HOME/modulefiles/mugqic/breakdancer/tmp
+cd $MUGQIC_INSTALL_HOME_TMP/modulefiles/mugqic/breakdancer/tmp
 
 
 # Module file
@@ -57,12 +57,12 @@ proc ModulesHelp { } {
 }
 module-whatis \"Breakdancer Structural Variant analyser\"
             
-set             root               \$::env(MUGQIC_INSTALL_HOME)/software/breakdancer/breakdancer-${VERSION}
+set             root               \$::env(MUGQIC_INSTALL_HOME_TMP)/software/breakdancer/breakdancer-${VERSION}
 prepend-path    PATH               \$root/cpp/
 prepend-path    PATH               \$root/perl/
 prepend-path    PATH               \$root/samtools-0.1.6/
 setenv          BRD_CPP            \$root/cpp/
-setenv          BRD_PERL            \$root/perl/
+setenv          BRD_PERL           \$root/perl/
 
 " > $VERSION
 
@@ -72,7 +72,7 @@ set ModulesVersion \"$VERSION\"
 " > .version
 
 
-mv .version $VERSION $MUGQIC_INSTALL_HOME/modulefiles/mugqic/breakdancer/
+mv .version $VERSION $MUGQIC_INSTALL_HOME_TMP/modulefiles/mugqic/breakdancer/
 
 cd ..
 rm -rf tmp
