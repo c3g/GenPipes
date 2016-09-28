@@ -2,13 +2,6 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-################################################################################
-# This is a module install script template which should be copied and used for
-# consistency between module paths, permissions, etc.
-# Only lines marked as "## TO BE ADDED/MODIFIED" should be, indeed, modified.
-# Also, once modified, delete this commented-out header and the ## comments
-################################################################################
-
 SOFTWARE=spladder
 VERSION=1.0.0
 ARCHIVE=$SOFTWARE-$VERSION.tar.gz
