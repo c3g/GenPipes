@@ -217,7 +217,7 @@ is_genome_big() {
 
 # Test if a list of files given as parameters exist, are regular files and are not zero size
 is_up2date() {
-  # By default, files are up to date
+  # By default, files are up to date : 0 is true, 1 is false
   IS_UP2DATE=0
 
   for f in $@
@@ -242,7 +242,7 @@ cmd_or_job() {
     echo "Submitting $JOB_PREFIX as job..."
     echo
     CORES=${2:-1}  # Nb cores = 2nd param if defined else 1
-    echo "${!CMD}" | qsub -m ae -M $JOB_MAIL -A $RAP_ID -W umask=0002 -d $INSTALL_DIR -j oe -o $LOG_DIR/${JOB_PREFIX}_$TIMESTAMP.log -N $JOB_PREFIX.$GENOME_FASTA -l pmem=10000m -l walltime=24:00:0 -l nodes=1:ppn=1
+    echo "${!CMD}" | qsub -m ae -M $JOB_MAIL -A $RAP_ID -W umask=0002 -d $INSTALL_DIR -j oe -o $LOG_DIR/${JOB_PREFIX}_$TIMESTAMP.log -N $JOB_PREFIX.$GENOME_FASTA -l pmem=10000m -l walltime=48:00:0 -l nodes=1:ppn=1
   else
     echo
     echo "Running $JOB_PREFIX..."
@@ -260,7 +260,7 @@ create_picard_index() {
     echo "Creating genome Picard sequence dictionary..."
     echo
     module load $module_picard $module_java
-    java -jar $PICARD_HOME/CreateSequenceDictionary.jar REFERENCE=$GENOME_DIR/$GENOME_FASTA OUTPUT=$GENOME_DICT GENOME_ASSEMBLY=${GENOME_FASTA/.fa} > $LOG_DIR/picard_$TIMESTAMP.log 2>&1
+    java -jar $PICARD_HOME/picard.jar CreateSequenceDictionary REFERENCE=$GENOME_DIR/$GENOME_FASTA OUTPUT=$GENOME_DICT GENOME_ASSEMBLY=${GENOME_FASTA/.fa} > $LOG_DIR/picard_$TIMESTAMP.log 2>&1
   else
     echo
     echo "Genome Picard sequence dictionary up to date... skipping"
