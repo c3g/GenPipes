@@ -2,15 +2,17 @@
 ###################
 ################### Beagle
 ###################
-VERSION="4.r1128"
-VERSION_DOC="4preview_27Jun13"
+VERSION="r1399"
+#VERSION="03May16.862"
+VERSION_DOC=".03Mar15"
+#VERSION_DOC="_4.1_03May16"
 
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/beagle/beagle-${VERSION}
 mkdir -p $INSTALL_PATH
 cd $INSTALL_PATH
 # Download
-wget --content-disposition http://faculty.washington.edu/browning/beagle/b${VERSION}.jar
-wget --content-disposition http://faculty.washington.edu/browning/beagle/b${VERSION_DOC}.pdf
+wget --content-disposition http://faculty.washington.edu/browning/beagle/beagle.${VERSION}.jar
+wget --content-disposition http://faculty.washington.edu/browning/beagle/beagle${VERSION_DOC}.pdf
 chmod -R g+w $INSTALL_PATH
 
 # Module file

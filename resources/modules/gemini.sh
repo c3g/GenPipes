@@ -10,7 +10,7 @@ set -eu -o pipefail
 ################################################################################
 
 SOFTWARE=gemini 
-VERSION=0.18.2  
+VERSION=0.18.3  
 ARCHIVE=${SOFTWARE}_v$VERSION.install.py
 ARCHIVE_URL=https://raw.github.com/arq5x/gemini/master/gemini/scripts/gemini_install.py
 #ARCHIVE_URL=https://raw.githubusercontent.com/arq5x/gemini/master/gemini/scripts/gemini_install.py
@@ -19,18 +19,20 @@ ARCHIVE_URL=https://raw.github.com/arq5x/gemini/master/gemini/scripts/gemini_ins
 SOFTWARE_DIR=$SOFTWARE-$VERSION 
 PYTHON_VERSION=2.7.11
 
-# Specific commands to extract and build the software
+# Specific commands to extract and build the software
 # $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
 # $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DIR
   mv tmp/* .
 
-  mkdir -p $SOFTWARE_DIR/shared_data $SOFTWARE_DIR/gemini_data
+#  mkdir -p $SOFTWARE_DIR/shared_data $INSTALL_HOME/software/${SOFTWARE}/gemini_data
+  mkdir -p $SOFTWARE_DIR/shared_data $INSTALL_DIR/shared
   module load mugqic/python/$PYTHON_VERSION
-  python ${SOFTWARE}_v$VERSION.install.py $SOFTWARE_DIR  $SOFTWARE_DIR
+#  python ${SOFTWARE}_v$VERSION.install.py $SOFTWARE_DIR $INSTALL_HOME/software/${SOFTWARE}/gemini_data
+  python ${SOFTWARE}_v$VERSION.install.py $SOFTWARE_DIR $INSTALL_DIR/shared
 
-  export PATH=$SOFTWARE_DIR/anaconda/bin:$PATH
+  export PATH=$INSTALL_DIR/shared/anaconda/bin:$PATH
 
   gemini update --dataonly --extra cadd_score --extra gerp_bp
 
@@ -48,13 +50,14 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
+set             anaconda_root       $INSTALL_DIR/shared/anaconda
 setenv          GEMINI_BIN          \$root/bin
 prepend-path    PATH                \$root/bin
-prepend-path    PATH                \$root/anaconda/bin
-prepend-path    PYTHONPATH          \$root/anaconda/lib/python2.7/site-packages
-prepend-path    PYTHONPATH          \$root/anaconda/lib/python2.7
-prepend-path    LD_LIBRARY_PATH     \$root/anaconda/lib/python2.7/site-packages
-prepend-path    LD_LIBRARY_PATH     \$root/anaconda/lib/python2.7
+prepend-path    PATH                \$anaconda_root/bin
+prepend-path    PYTHONPATH          \$anaconda_root/lib/python2.7/site-packages
+prepend-path    PYTHONPATH          \$anaconda_root/lib/python2.7
+prepend-path    LD_LIBRARY_PATH     \$anaconda_root/lib/python2.7/site-packages
+prepend-path    LD_LIBRARY_PATH     \$anaconda_root/lib/python2.7
 "
 }
 

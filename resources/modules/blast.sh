@@ -3,8 +3,8 @@
 set -eu -o pipefail
 
 SOFTWARE=blast
-VERSION=2.3.0+
-ARCHIVE=ncbi-$SOFTWARE-$VERSION-x64-linux.tar.gz
+VERSION=2.4.0+
+ARCHIVE=ncbi-$SOFTWARE-$VERSION-src.tar.gz
 ARCHIVE_URL=ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/${VERSION%+}/$ARCHIVE
 SOFTWARE_DIR=ncbi-$SOFTWARE-$VERSION
 
@@ -14,7 +14,11 @@ SOFTWARE_DIR=ncbi-$SOFTWARE-$VERSION
 build() {
   cd $INSTALL_DOWNLOAD
   tar zxvf $ARCHIVE
-  mv -i $SOFTWARE_DIR $INSTALL_DIR/
+
+  cd ${SOFTWARE_DIR}-src/c++
+  ./configure --prefix=$INSTALL_DIR/$SOFTWARE_DIR
+  make
+  make install
 }
 
 module_file() {
