@@ -130,10 +130,10 @@ class TumorPair(dnaseq.DnaSeq):
                     Job(command="mkdir -p " + normal_realign_directory, removable_files=[normal_realign_directory]),
                     Job(command="mkdir -p " + tumor_realign_directory, removable_files=[tumor_realign_directory]),
                     gatk.realigner_target_creator(input_normal, realign_intervals, input2=input_tumor),
-                    gatk.indel_realigner(input_normal, input2=input_tumor, output_norm_dep=normal_bam, output_tum_dep=tumor_bam, target_intervals=realign_intervals, optional=bam_postfix),
+                    gatk.indel_realigner(input_normal, input2=input_tumor, output_norm_dep=normal_output_bam, output_tum_dep=tumor_output_bam, target_intervals=realign_intervals, optional=bam_postfix),
                     # Move sample realign 
-                    Job([normal_bam], [normal_output_bam], command="mv " + normal_bam + " " + normal_output_bam + " && rm " + normal_index),
-                    Job([tumor_bam], [tumor_output_bam], command="mv " + tumor_bam + " " + tumor_output_bam + " && rm " + tumor_index)
+                    Job([input_normal], [normal_output_bam], command="mv " + normal_bam + " " + normal_output_bam + " && rm " + normal_index),
+                    Job([input_tumor], [tumor_output_bam], command="mv " + tumor_bam + " " + tumor_output_bam + " && rm " + tumor_index)
                 ], name="gatk_indel_realigner." + tumor_pair.name))
 
             else:
@@ -163,9 +163,9 @@ class TumorPair(dnaseq.DnaSeq):
                         Job(command="mkdir -p " + normal_realign_directory, removable_files=[normal_realign_directory]),
                         Job(command="mkdir -p " + tumor_realign_directory, removable_files=[tumor_realign_directory]),
                         gatk.realigner_target_creator(input_normal, realign_intervals, input2=input_tumor, intervals=intervals),
-                        gatk.indel_realigner(input_normal, input2=input_tumor, output_norm_dep=normal_bam, output_tum_dep=tumor_bam, target_intervals=realign_intervals, intervals=intervals, optional=bam_postfix),
-                        Job([normal_bam], [normal_output_bam], command="mv " + normal_bam + " " + normal_output_bam + " && mv " + normal_index + " " + normal_output_index),
-                        Job([tumor_bam], [tumor_output_bam], command="mv " + tumor_bam + " " + tumor_output_bam + " && mv " + tumor_index + " " + tumor_output_index)
+                        gatk.indel_realigner(input_normal, input2=input_tumor, output_norm_dep=normal_output_bam, output_tum_dep=tumor_output_bam, target_intervals=realign_intervals, intervals=intervals, optional=bam_postfix),
+                        Job([input_normal], [normal_output_bam], command="mv " + normal_bam + " " + normal_output_bam + " && mv " + normal_index + " " + normal_output_index),
+                        Job([input_tumor], [tumor_output_bam], command="mv " + tumor_bam + " " + tumor_output_bam + " && mv " + tumor_index + " " + tumor_output_index)
                     ], name="gatk_indel_realigner." + tumor_pair.name + "." + str(idx)))
 
                 # Create one last job to process the last remaining sequences and 'others' sequences
@@ -186,9 +186,9 @@ class TumorPair(dnaseq.DnaSeq):
                     Job(command="mkdir -p " + normal_realign_directory, removable_files=[normal_realign_directory]),
                     Job(command="mkdir -p " + tumor_realign_directory, removable_files=[tumor_realign_directory]),
                     gatk.realigner_target_creator(input_normal, realign_intervals, input2=input_tumor, exclude_intervals=unique_sequences_per_job_others),
-                    gatk.indel_realigner(input_normal, input2=input_tumor, output_norm_dep=normal_bam, output_tum_dep=tumor_bam, target_intervals=realign_intervals, exclude_intervals=unique_sequences_per_job_others, optional=bam_postfix),
-                    Job([normal_bam], [normal_output_bam], command="mv " + normal_bam + " " + normal_output_bam + " && mv " + normal_index + " " + normal_output_index),
-                    Job([tumor_bam], [tumor_output_bam], command="mv " + tumor_bam + " " + tumor_output_bam + " && mv " + tumor_index + " " + tumor_output_index)
+                    gatk.indel_realigner(input_normal, input2=input_tumor, output_norm_dep=normal_output_bam, output_tum_dep=tumor_output_bam, target_intervals=realign_intervals, exclude_intervals=unique_sequences_per_job_others, optional=bam_postfix),
+                    Job([input_normal], [normal_output_bam], command="mv " + normal_bam + " " + normal_output_bam + " && mv " + normal_index + " " + normal_output_index),
+                    Job([input_tumor], [tumor_output_bam], command="mv " + tumor_bam + " " + tumor_output_bam + " && mv " + tumor_index + " " + tumor_output_index)
                 ], name="gatk_indel_realigner." + tumor_pair.name + ".others"))
 
         return jobs
