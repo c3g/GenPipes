@@ -305,7 +305,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
 def indel_realigner(input, target_intervals, input2=[], output=[], output_norm_dep=[], output_tum_dep=[], intervals=[], exclude_intervals=[], optional=[]):
 
     return Job(
-        [input, input2],
+        [input, target_intervals, input2],
         [output, output_norm_dep, output_tum_dep],
         [
             ['gatk_indel_realigner', 'module_java'],
