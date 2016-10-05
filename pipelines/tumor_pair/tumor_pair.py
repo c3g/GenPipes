@@ -119,10 +119,10 @@ class TumorPair(dnaseq.DnaSeq):
             if nb_jobs == 1:
                 realign_intervals = os.path.join(tumor_realign_directory, "all.intervals")
                 bam_postfix = ".all.realigned.bam"
-                normal_bam = os.path.join(tumor_pair.normal.name + ".all.realigned.bam")
+                normal_bam = os.path.join(tumor_pair.normal.name + ".sorted.all.realigned.bam")
                 normal_index = re.sub("\.bam$", ".bai", normal_bam)
                 normal_output_bam = os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".realigned.qsorted.bam")
-                tumor_bam = os.path.join( tumor_pair.tumor.name + ".all.realigned.bam")
+                tumor_bam = os.path.join( tumor_pair.tumor.name + ".sorted.all.realigned.bam")
                 tumor_index = re.sub("\.bam$", ".bai", tumor_bam)
                 tumor_output_bam = os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".realigned.qsorted.bam")
 
@@ -132,8 +132,8 @@ class TumorPair(dnaseq.DnaSeq):
                     gatk.realigner_target_creator(input_normal, realign_intervals, input2=input_tumor),
                     gatk.indel_realigner(input_normal, input2=input_tumor, output_norm_dep=normal_output_bam, output_tum_dep=tumor_output_bam, target_intervals=realign_intervals, optional=bam_postfix),
                     # Move sample realign 
-                    Job([input_normal], [normal_output_bam], command="mv " + normal_bam + " " + normal_output_bam + " && rm " + normal_index),
-                    Job([input_tumor], [tumor_output_bam], command="mv " + tumor_bam + " " + tumor_output_bam + " && rm " + tumor_index)
+                    Job([input_normal], [normal_output_bam], command="mv " + normal_bam + " " + normal_output_bam + " && mv " + normal_index + " " + normal_output_index),
+                    Job([input_tumor], [tumor_output_bam], command="mv " + tumor_bam + " " + tumor_output_bam + " && mv " + tumor_index + " " + tumor_output_index)
                 ], name="gatk_indel_realigner." + tumor_pair.name))
 
             else:
