@@ -122,9 +122,11 @@ class TumorPair(dnaseq.DnaSeq):
                 normal_bam = os.path.join(tumor_pair.normal.name + ".sorted.all.realigned.bam")
                 normal_index = re.sub("\.bam$", ".bai", normal_bam)
                 normal_output_bam = os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".realigned.qsorted.bam")
+                normal_output_index = re.sub("\.bam$", ".bai", normal_output_bam)
                 tumor_bam = os.path.join( tumor_pair.tumor.name + ".sorted.all.realigned.bam")
                 tumor_index = re.sub("\.bam$", ".bai", tumor_bam)
                 tumor_output_bam = os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".realigned.qsorted.bam")
+                tumor_output_index = re.sub("\.bam$", ".bai", tumor_output_bam)
 
                 jobs.append(concat_jobs([
                     Job(command="mkdir -p " + normal_realign_directory, removable_files=[normal_realign_directory]),
