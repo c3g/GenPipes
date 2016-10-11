@@ -2,10 +2,10 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SPECIES=Macaca_mulatta
-COMMON_NAME="Macaque"
-ASSEMBLY=MMUL_1
-ASSEMBLY_SYNONYMS=rheMac3
+SPECIES=Pan_troglodytes
+COMMON_NAME="Chimpanzee"
+ASSEMBLY=CHIMP2.1.4
+ASSEMBLY_SYNONYMS=panTro4
 SOURCE=Ensembl
 VERSION=84
 BIOMART_HOST=mar2016.archive.ensembl.org

@@ -2,13 +2,12 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SPECIES=Macaca_mulatta
-COMMON_NAME="Macaque"
-ASSEMBLY=MMUL_1
-ASSEMBLY_SYNONYMS=rheMac3
-SOURCE=Ensembl
-VERSION=84
-BIOMART_HOST=mar2016.archive.ensembl.org
+SPECIES=Pan_troglodytes
+COMMON_NAME="Chimpanzee"
+ASSEMBLY=panTro4
+ASSEMBLY_SYNONYMS=CHIMP2.1.4
+SOURCE=UCSC
+VERSION=2012-01-09
 
 GENOME_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source $GENOME_INSTALL_SCRIPT_DIR/install_genome.sh

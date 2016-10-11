@@ -13,7 +13,8 @@ module load $PYTHON_MODULE
 easy_install pip
 
 # cython
-easy_install http://cython.org/release/Cython-0.23.4.tar.gz
+#easy_install http://cython.org/release/Cython-0.23.4.tar.gz
+pip install cython
 
 # numpy
 easy_install numpy

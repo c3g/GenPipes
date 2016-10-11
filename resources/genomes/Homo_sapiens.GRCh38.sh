@@ -7,15 +7,19 @@ COMMON_NAME="Human"
 ASSEMBLY=GRCh38
 ASSEMBLY_SYNONYMS=hg38
 SOURCE=Ensembl
-VERSION=83
-BIOMART_HOST=dec2015.archive.ensembl.org
+#VERSION=77
+#BIOMART_HOST=oct2014.archive.ensembl.org
+#VERSION=83
+#BIOMART_HOST=dec2015.archive.ensembl.org
+VERSION=84
+BIOMART_HOST=mar2016.archive.ensembl.org
+
+module_snpeff=mugqic/snpEff/4.2
+module_tabix=mugqic/tabix/0.2.6
+module_java=mugqic/java/openjdk-jdk1.8.0_72
 
 GENOME_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source $GENOME_INSTALL_SCRIPT_DIR/install_genome.sh
-
-module_snpeff=mugqic/snpEff/4.0
-module_tabix=mugqic/tabix/0.2.6
-module_java=mugqic/java/openjdk-jdk1.7.0_60
 
 # Download dbSNP directly from NCBI since it is more up to date
 get_vcf_dbsnp() {
@@ -99,15 +103,21 @@ install_genome() {
     # Remove Ensembl GTF haplotype annotations, adjust mitochondria and "GK" annotation version names
     grep -v "^CHR_H" $ANNOTATIONS_DIR/$GTF | sed 's/^MT\t/M\t/' | perl -pe "s/^([GK]\S+)\.(\d+)\t/\1v\2\t/" > $ANNOTATIONS_DIR/$GTF.tmp
     # Update Ensembl GTF annotation IDs to match NCBI genome chromosome IDs
-    grep "^>" $GENOME_DIR/$GENOME_FASTA | cut -f1 -d\  | cut -c 2- | perl -pe 's/^(chr([^_\n]*))$/\1\t\2/' | perl -pe 's/^(chr[^_]*_([^_\n]*)(_\S+)?)$/\1\t\2/' | awk -F"\t" 'FNR==NR{id[$2]=$1; next}{OFS="\t"; if (id[$1]) {print id[$1],$0} else {print $0}}' - $ANNOTATIONS_DIR/$GTF.tmp | cut -f1,3- > $ANNOTATIONS_DIR/$GTF
+    if [[ $VERSION == "77" ]]
+    then
+      grep "^>" $GENOME_DIR/$GENOME_FASTA | cut -f1 -d\  | cut -c 2- | perl -pe 's/^(chr([^_\n]*))$/\1\t\2/' | perl -pe 's/^(chr[^_]*_([^_\n]*)(_\S+)?)$/\1\t\2/' | awk -F"\t" 'FNR==NR{id[$2]=$1; next}{OFS="\t"; if (id[$1]) {print id[$1],$0} else {print $0}}' - $ANNOTATIONS_DIR/$GTF.tmp | cut -f1,3- > $ANNOTATIONS_DIR/$GTF
+    else
+      grep "^>" $GENOME_DIR/$GENOME_FASTA | cut -f1 -d\  | cut -c 2- | perl -pe 's/^(chr([^_\n]*))$/\1\t\2/' | perl -pe 's/^(chr[^_]*_([^_\n]*)(_\S+)?)$/\1\t\2/' | awk -F"\t" 'FNR==NR{id[$2]=$1; next}{OFS="\t"; if (id[$1]) {print id[$1],$0} else {print $0}}' - $ANNOTATIONS_DIR/$GTF.tmp > $ANNOTATIONS_DIR/$GTF
+    fi
     rm $ANNOTATIONS_DIR/$GTF.tmp
-    echo "Ensembl GTF up to date : match NCBI genome" > $ANNOTATIONS_DIR/$GTF.updated
+    echo "gtf updated" > $ANNOTATIONS_DIR/$GTF.updated
+    TRANSCRIPT_ID_GTF=$ANNOTATIONS_DIR/${GTF/.gtf/.transcript_id.gtf}
+    grep -P "(^#|transcript_id)" $ANNOTATIONS_DIR/$GTF > $TRANSCRIPT_ID_GTF
   else
     echo
     echo "GTF up to date... skipping"
     echo
   fi
-
   build_files
   create_genome_ini_file
 
