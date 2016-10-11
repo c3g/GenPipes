@@ -2,23 +2,25 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=OpenBLAS
-VERSION=0.2.17
-ARCHIVE=$SOFTWARE-$VERSION.tar.gz
-ARCHIVE_URL=https://github.com/xianyi/OpenBLAS/archive/v${VERSION}.tar.gz
+SOFTWARE=ATLAS
+VERSION=0.2.14
+ARCHIVE=$SOFTWARE-$VERSION.tar.bz2
+ARCHIVE_URL=http://sourceforge.net/projects/math-atlas/files/Stable/3.10.2/atlas3.10.2.tar.bz2/download
+ARCHIVE_URL=http://github.com/xianyi/ATLAS/archive/v${VERSION}.tar.gz
 SOFTWARE_DIR=$SOFTWARE-$VERSION
 
+# Specific commands to extract and build the software
 # $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
 # $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
-  tar zxvf $ARCHIVE
+  tar jxvf $ARCHIVE
 
   cd $SOFTWARE_DIR
   make DYNAMIC_ARCH=1 DYNAMIC_CORE="NEHALEM SANDYBRIDGE BARCELONA ATOM PRESCOTT PENRYN BOBCAT OPTERON NANO CORE2 OPTERON_SSE3 DUNNINGTON" TARGET="BARCELONA" CC=gcc FC=gfortran BINARY=64 NO_AVX=1
 
   # Install software
-  make PREFIX=$INSTALL_DIR/${SOFTWARE_DIR} install
+  make prefix=$INSTALL_DIR/${SOFTWARE_DIR} install
 }
 
 module_file() {

@@ -693,9 +693,9 @@ $QIIME_HOME/biom summarize-table \\
 
         report_file = os.path.join("report", "AmpliconSeq.qiime.md")
 
-        if config.param('qiime', 'amplicon_type') == '16s':
+        if config.param('qiime', 'amplicon_type') == '16S':
             amp_db = 'Greengenes'
-        elif config.param('qiime', 'amplicon_type') == '18s':
+        elif config.param('qiime', 'amplicon_type') == '18S':
             amp_db = 'Silva'
         elif config.param('qiime', 'amplicon_type') == 'ITS':
             amp_db = 'UNITE'
