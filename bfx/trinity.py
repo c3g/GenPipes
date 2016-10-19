@@ -123,7 +123,10 @@ align_and_estimate_abundance.pl \\
 --aln_method bowtie \\
 --trinity_mode \\
 --output_dir {output_directory} \\
---prep_reference""".format(transcripts=trinity_fasta),
+--prep_reference""".format(
+                transcripts=trinity_fasta,
+                output_directory=output_directory
+            ),
             name="align_and_estimate_abundance_prep_reference")
     else :
         # Run abundance estimates
