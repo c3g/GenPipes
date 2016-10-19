@@ -45,28 +45,30 @@ def parse_sequence_dictionary_file(sequence_dictionary_file):
 def split_by_size(sequence_dictionary, nbSplits):
     split_list = []
 
-    total = 0
+    total_genome = 0
     for sequence in sequence_dictionary:
-        total += sequence['length']
+        total_genome += sequence['length']
 
-    blockSize = int(total/nbSplits)
 
     total = 0
+    used_size = 0
     toExcludeChr = []
     currentChrs = []
     for sequence in sequence_dictionary:
+	blockSize = int((total_genome - used_size)/nbSplits)
         # Stop if we already reached our limit.
         # This can gappen since the size of chromosomes vary
         if len(split_list) == nbSplits:
             break
 
-        if total+sequence['length'] > blockSize:
+        currentChrs.append(sequence['name'])
+        total += sequence['length']
+	if total > blockSize:
             split_list.append(currentChrs)
             toExcludeChr.extend(currentChrs)
             currentChrs = []
+            used_size += total
             total = 0
-        currentChrs.append(sequence['name'])
-        total += sequence['length']
 
     # If the split gave a round number remove the last block and set it in other
     if len(split_list) == len(sequence_dictionary):
