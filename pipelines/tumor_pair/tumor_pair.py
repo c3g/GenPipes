@@ -609,6 +609,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         Note: variants are filtered to remove instantance where REF == ALT and REF modified to 'N' when REF is AUPAC nomenclature 
         """
 
+        ##TO DO - the BED system needs to be revisted !! 
         jobs = []
 
         nb_jobs = config.param('vardict_paired', 'nb_jobs', type='posint')
