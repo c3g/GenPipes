@@ -27,7 +27,7 @@ import re
 
 log = logging.getLogger(__name__)
 
-def parse_sequence_dictionary_file(sequence_dictionary_file):
+def parse_sequence_dictionary_file(sequence_dictionary_file, variant=False):
     sequence_dictionary = []
 
     log.info("Parse sequence dictionary " + sequence_dictionary_file + " ...")
@@ -36,7 +36,13 @@ def parse_sequence_dictionary_file(sequence_dictionary_file):
         for line in sdf:
             parsed_line = re.search("^@SQ\tSN:([^\t]+)\tLN:(\d+)", line)
             if parsed_line:
-                sequence_dictionary.append({'name': parsed_line.group(1), 'length': int(parsed_line.group(2))})
+                if variant:
+                    if "_" in parsed_line.group(1) or "." in parsed_line.group(1):
+                        continue
+                    else:
+                        sequence_dictionary.append({'name': parsed_line.group(1), 'length': int(parsed_line.group(2))})
+                else:
+                    sequence_dictionary.append({'name': parsed_line.group(1), 'length': int(parsed_line.group(2))})
 
     log.info(str(len(sequence_dictionary)) + " sequences parsed\n")
 
