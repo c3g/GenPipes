@@ -7,8 +7,8 @@ COMMON_NAME="Baboon"
 ASSEMBLY=PapAnu2.0
 ASSEMBLY_SYNONYMS=Panu_2
 SOURCE=Ensembl
-VERSION=85
-BIOMART_HOST=mars2016.archive.ensembl.org
+VERSION=86
+BIOMART_HOST=jul2016.archive.ensembl.org
 
 GENOME_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source $GENOME_INSTALL_SCRIPT_DIR/install_genome.sh
