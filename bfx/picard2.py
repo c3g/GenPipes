@@ -24,12 +24,12 @@
 # MUGQIC Modules
 from core.config import *
 from core.job import *
-import picard2
+import picard
 
 def build_bam_index(input, output):
 
-    if config.param('build_bam_index', 'module_picard') >= "2":
-        return picard2.build_bam_index(input, output)
+    if config.param('build_bam_index', 'module_picard') < "2":
+        return picard.build_bam_index(input, output)
     else:
         return Job(
             [input],
@@ -56,8 +56,8 @@ def calculate_hs_metrics(input, output, intervals, reference_sequence=None):
     baits_intervals = ""
     baits_intervals = config.param('picard_calculate_hs_metrics', 'baits_intervals', required = False)
 
-    if config.param('picard_calculate_hs_metrics', 'module_picard') >= "2":
-        return picard2.calculate_hs_metrics(input, output, intervals, reference_sequence)
+    if config.param('picard_calculate_hs_metrics', 'module_picard') < "2":
+        return picard.calculate_hs_metrics(input, output, intervals, reference_sequence)
     else:
         return Job(
             [input, intervals],
@@ -106,8 +106,8 @@ def collect_multiple_metrics(input, output, reference_sequence=None , library_ty
          output + ".quality_distribution.pdf"
         ]
 
-    if config.param('picard_collect_multiple_metrics', 'module_picard') >= "2":
-        return picard2.collect_multiple_metrics(input, output, reference_sequence, library_type)
+    if config.param('picard_collect_multiple_metrics', 'module_picard') < "2":
+        return picard.collect_multiple_metrics(input, output, reference_sequence, library_type)
     else:
         return Job(
             [input],
@@ -137,8 +137,8 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
 
 def fix_mate_information(input, output):
 
-    if config.param('fixmate', 'module_picard') >= "2":
-        return picard2.fix_mate_information(input, output)
+    if config.param('fixmate', 'module_picard') < "2":
+        return picard.fix_mate_information(input, output)
     else:
         return Job(
             [input],
@@ -166,8 +166,8 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
 
 def mark_duplicates(inputs, output, metrics_file):
 
-    if config.param('picard_mark_duplicates', 'module_picard') >= "2":
-        return picard2.mark_duplicates(inputs, output, metrics_file)
+    if config.param('picard_mark_duplicates', 'module_picard') < "2":
+        return picard.mark_duplicates(inputs, output, metrics_file)
     else:
         return Job(
             inputs,
@@ -197,8 +197,8 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
 
 def merge_sam_files(inputs, output):
 
-    if config.param('picard_merge_sam_files', 'module_picard') >= "2":
-        return picard2.merge_sam_files(inputs, output)
+    if config.param('picard_merge_sam_files', 'module_picard') < "2":
+        return picard.merge_sam_files(inputs, output)
     else:
         return Job(
             inputs,
@@ -227,8 +227,8 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
 # Reorder BAM/SAM files based on reference/dictionary
 def reorder_sam(input, output):
 
-    if config.param('reorder_sam', 'module_picard') >= "2":
-        return picard2.reorder_sam(input, output)
+    if config.param('reorder_sam', 'module_picard') < "2":
+        return picard.reorder_sam(input, output)
     else:
         return Job(
             [input],
@@ -259,8 +259,8 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
 # Convert SAM/BAM file to fastq format
 def sam_to_fastq(input, fastq, second_end_fastq=None):
 
-    if config.param('picard_sam_to_fastq', 'module_picard') >= "2":
-        return picard2.sam_to_fastq(input, fastq, second_end_fastq)
+    if config.param('picard_sam_to_fastq', 'module_picard') < "2":
+        return picard.sam_to_fastq(input, fastq, second_end_fastq)
     else:
         return Job(
             [input],
@@ -286,8 +286,8 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
 
 def sort_sam(input, output, sort_order="coordinate", ini_section='picard_sort_sam'):
 
-    if config.param(ini_section, 'module_picard') >= "2":
-        return picard2.sort_sam(input, output, sort_order, ini_section)
+    if config.param(ini_section, 'module_picard') < "2":
+        return picard.sort_sam(input, output, sort_order, ini_section)
     else:
         return Job(
             [input],
@@ -298,7 +298,7 @@ def sort_sam(input, output, sort_order="coordinate", ini_section='picard_sort_sa
                 [ini_section, 'module_picard']
             ],
             command="""\
-java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/SortSam.jar \\
+ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/SortSam.jar \\
  VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true \\
  TMP_DIR={tmp_dir} \\
  INPUT={input} \\
@@ -318,8 +318,8 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
 
 def sort_vcfs(inputs, output, ini_section='picard_sort_vcf'):
 
-    if config.param(ini_section, 'module_picard') >= "2":
-        return picard2.sort_vcfs(inputs, output, ini_section)
+    if config.param(ini_section, 'module_picard') < "2":
+        return picard.sort_vcfs(inputs, output, ini_section)
     else:
         return Job(
             inputs,
@@ -347,8 +347,8 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
 
 def collect_rna_metrics(input, output, annotation_flat=None,reference_sequence=None):
 
-    if config.param('picard_collect_rna_metrics', 'module_picard') >= "2":
-        return picard2.collect_rna_metrics(input, output, annotation_flat,reference_sequence)
+    if config.param('picard_collect_rna_metrics', 'module_picard') < "2":
+        return picard.collect_rna_metrics(input, output, annotation_flat,reference_sequence)
     else:
         return Job(
             [input],
