@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=exonerate
-VERSION=2.2.0
+VERSION=2.4.0
 ARCHIVE=$SOFTWARE-${VERSION}.tar.gz
 ARCHIVE_URL=http://ftp.ebi.ac.uk/pub/software/vertebrategenomics/$SOFTWARE/$ARCHIVE
 SOFTWARE_DIR=$SOFTWARE-$VERSION
