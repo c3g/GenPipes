@@ -57,6 +57,8 @@ ${PIP_PATH} install scikit-bio
 ${PIP_PATH} install futures
 # misopy
 ${PIP_PATH} install misopy
+# TEToolkit
+${PIP_PATH} install TEToolkit
 
 # Add permissions
 chmod -R ug+rwX,o+rX-w $PYTHON_HOME

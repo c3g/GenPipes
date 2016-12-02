@@ -3,10 +3,10 @@
 set -eu -o pipefail
 
 SOFTWARE=exonerate
-VERSION=2.2.0
-ARCHIVE=$SOFTWARE-$VERSION-x86_64.tar.gz
-ARCHIVE_URL=http://www.ebi.ac.uk/~guy/$SOFTWARE/$ARCHIVE
-SOFTWARE_DIR=$SOFTWARE-$VERSION-x86_64
+VERSION=2.4.0
+ARCHIVE=$SOFTWARE-${VERSION}.tar.gz
+ARCHIVE_URL=http://ftp.ebi.ac.uk/pub/software/vertebrategenomics/$SOFTWARE/$ARCHIVE
+SOFTWARE_DIR=$SOFTWARE-$VERSION
 
 # Specific commands to extract and build the software
 # $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
