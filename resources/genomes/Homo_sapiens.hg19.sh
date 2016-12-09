@@ -19,7 +19,8 @@ source $GENOME_INSTALL_SCRIPT_DIR/install_genome.sh
 # Download dbSNP directly from NCBI since it is more up to date
 get_vcf_dbsnp() {
   DBSNP_VERSION=142
-  DBSNP_URL=ftp://ftp.ncbi.nih.gov/snp/organisms/human_9606_b${DBSNP_VERSION}_GRCh37p13/VCF/All.vcf.gz
+  DBSNP_URL=ftp://ftp.ncbi.nih.gov/snp/organisms/archive/human_9606_b${DBSNP_VERSION}_GRCh37p13/VCF/All.vcf.gz    # to use with DBSNP_VERSION = 142 & 144
+#  DBSNP_URL=ftp://ftp.ncbi.nih.gov/snp/organisms/human_9606_b${DBSNP_VERSION}_GRCh37p13/VCF/All.vcf.gz          # to use with DBSNP_VERSION >= 146
   DBSNP=$ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP$DBSNP_VERSION.vcf.gz
 
   if ! is_up2date $DBSNP $DBSNP.tbi
