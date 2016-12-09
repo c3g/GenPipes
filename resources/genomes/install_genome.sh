@@ -20,7 +20,8 @@ init_install() {
 then
   INSTALL_HOME=MUGQIC_INSTALL_HOME
 else
-  INSTALL_HOME=MUGQIC_INSTALL_HOME_DEV
+#  INSTALL_HOME=MUGQIC_INSTALL_HOME_DEV
+  INSTALL_HOME=MUGQIC_INSTALL_HOME_ED
 fi
 
   INSTALL_DIR=${!INSTALL_HOME}/genomes/species/$SPECIES.$ASSEMBLY
@@ -241,8 +242,10 @@ cmd_or_job() {
     echo
     echo "Submitting $JOB_PREFIX as job..."
     echo
-    if [[ $BQMAMMOUTH == "mp2" || $HOST == "ip03" ]]; then
-      echo "${!CMD}" | qsub -m ae -M $JOB_MAIL -A $RAP_ID -W umask=0002 -d $INSTALL_DIR -j oe -o $LOG_DIR/${JOB_PREFIX}_$TIMESTAMP.log -N $JOB_PREFIX.$GENOME_FASTA -q qfat256 -l pmem=256000m -l walltime=24:00:0 -l nodes=1:ppn=1
+    if [[ ! -z $BQMAMMOUTH ]]; then
+      if [[$BQMAMMOUTH == "mp2" || $HOST == "ip03" ]]; then
+        echo "${!CMD}" | qsub -m ae -M $JOB_MAIL -A $RAP_ID -W umask=0002 -d $INSTALL_DIR -j oe -o $LOG_DIR/${JOB_PREFIX}_$TIMESTAMP.log -N $JOB_PREFIX.$GENOME_FASTA -q qfat256 -l pmem=256000m -l walltime=24:00:0 -l nodes=1:ppn=1
+      fi
     else
       CORES=${2:-1}  # Nb cores = 2nd param if defined else 1
       echo "${!CMD}" | qsub -m ae -M $JOB_MAIL -A $RAP_ID -W umask=0002 -d $INSTALL_DIR -j oe -o $LOG_DIR/${JOB_PREFIX}_$TIMESTAMP.log -N $JOB_PREFIX.$GENOME_FASTA -l pmem=10000m -l walltime=24:00:0 -l nodes=1:ppn=$CORES
