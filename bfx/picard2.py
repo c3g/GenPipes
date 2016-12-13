@@ -24,12 +24,12 @@
 # MUGQIC Modules
 from core.config import *
 from core.job import *
-import picard2
+import picard
 
 def build_bam_index(input, output):
 
-    if config.param('build_bam_index', 'module_picard') >= "2":
-        return picard2.build_bam_index(input, output)
+    if config.param('build_bam_index', 'module_picard') < "2":
+        return picard.build_bam_index(input, output)
     else:
         return Job(
             [input],
@@ -39,7 +39,7 @@ def build_bam_index(input, output):
                 ['build_bam_index', 'module_picard']
             ],
             command="""\
-java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/BuildBamIndex.jar \\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar BuildBamIndex \\
  VALIDATION_STRINGENCY=SILENT \\
  INPUT={input} \\
  OUTPUT={output} """.format(
@@ -56,8 +56,8 @@ def calculate_hs_metrics(input, output, intervals, reference_sequence=None):
     baits_intervals = ""
     baits_intervals = config.param('picard_calculate_hs_metrics', 'baits_intervals', required = False)
 
-    if config.param('picard_calculate_hs_metrics', 'module_picard') >= "2":
-        return picard2.calculate_hs_metrics(input, output, intervals, reference_sequence)
+    if config.param('picard_calculate_hs_metrics', 'module_picard') < "2":
+        return picard.calculate_hs_metrics(input, output, intervals, reference_sequence)
     else:
         return Job(
             [input, intervals],
@@ -67,7 +67,7 @@ def calculate_hs_metrics(input, output, intervals, reference_sequence=None):
                 ['picard_calculate_hs_metrics', 'module_picard']
             ],
             command="""\
-java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/CalculateHsMetrics.jar \\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar CalculateHsMetrics \\
  TMP_DIR={tmp_dir} \\
  INPUT={input} \\
  OUTPUT={output} \\
@@ -106,8 +106,8 @@ def collect_multiple_metrics(input, output, reference_sequence=None , library_ty
          output + ".quality_distribution.pdf"
         ]
 
-    if config.param('picard_collect_multiple_metrics', 'module_picard') >= "2":
-        return picard2.collect_multiple_metrics(input, output, reference_sequence, library_type)
+    if config.param('picard_collect_multiple_metrics', 'module_picard') < "2":
+        return picard.collect_multiple_metrics(input, output, reference_sequence, library_type)
     else:
         return Job(
             [input],
@@ -118,7 +118,7 @@ def collect_multiple_metrics(input, output, reference_sequence=None , library_ty
                 ['picard_collect_multiple_metrics', 'module_R']
             ],
             command="""\
-java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/CollectMultipleMetrics.jar \\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar CollectMultipleMetrics \\
  PROGRAM=CollectAlignmentSummaryMetrics PROGRAM=CollectInsertSizeMetrics VALIDATION_STRINGENCY=SILENT \\
  TMP_DIR={tmp_dir} \\
  REFERENCE_SEQUENCE={reference_sequence} \\
@@ -137,8 +137,8 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
 
 def fix_mate_information(input, output):
 
-    if config.param('fixmate', 'module_picard') >= "2":
-        return picard2.fix_mate_information(input, output)
+    if config.param('fixmate', 'module_picard') < "2":
+        return picard.fix_mate_information(input, output)
     else:
         return Job(
             [input],
@@ -148,7 +148,7 @@ def fix_mate_information(input, output):
                 ['fixmate', 'module_picard']
             ],
             command="""\
-java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/FixMateInformation.jar \\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar FixMateInformation \\
  VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true SORT_ORDER=coordinate \\
  TMP_DIR={tmp_dir} \\
  INPUT={input} \\
@@ -166,8 +166,8 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
 
 def mark_duplicates(inputs, output, metrics_file):
 
-    if config.param('picard_mark_duplicates', 'module_picard') >= "2":
-        return picard2.mark_duplicates(inputs, output, metrics_file)
+    if config.param('picard_mark_duplicates', 'module_picard') < "2":
+        return picard.mark_duplicates(inputs, output, metrics_file)
     else:
         return Job(
             inputs,
@@ -177,7 +177,7 @@ def mark_duplicates(inputs, output, metrics_file):
                 ['picard_mark_duplicates', 'module_picard']
             ],
             command="""\
-java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/MarkDuplicates.jar \\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar MarkDuplicates \\
  REMOVE_DUPLICATES=false VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true \\
  TMP_DIR={tmp_dir} \\
  {inputs} \\
@@ -197,8 +197,8 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
 
 def merge_sam_files(inputs, output):
 
-    if config.param('picard_merge_sam_files', 'module_picard') >= "2":
-        return picard2.merge_sam_files(inputs, output)
+    if config.param('picard_merge_sam_files', 'module_picard') < "2":
+        return picard.merge_sam_files(inputs, output)
     else:
         return Job(
             inputs,
@@ -208,7 +208,7 @@ def merge_sam_files(inputs, output):
                 ['picard_merge_sam_files', 'module_picard']
             ],
             command="""\
-java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/MergeSamFiles.jar \\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar MergeSamFiles \\
  VALIDATION_STRINGENCY=SILENT ASSUME_SORTED=true CREATE_INDEX=true \\
  TMP_DIR={tmp_dir} \\
  {inputs} \\
@@ -227,8 +227,8 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
 # Reorder BAM/SAM files based on reference/dictionary
 def reorder_sam(input, output):
 
-    if config.param('reorder_sam', 'module_picard') >= "2":
-        return picard2.reorder_sam(input, output)
+    if config.param('reorder_sam', 'module_picard') < "2":
+        return picard.reorder_sam(input, output)
     else:
         return Job(
             [input],
@@ -238,7 +238,7 @@ def reorder_sam(input, output):
                 ['reorder_sam', 'module_picard']
             ],
             command="""\
-java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/ReorderSam.jar \\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar ReorderSam \\
  VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true \\
  TMP_DIR={tmp_dir} \\
  INPUT={input} \\
@@ -259,8 +259,8 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
 # Convert SAM/BAM file to fastq format
 def sam_to_fastq(input, fastq, second_end_fastq=None):
 
-    if config.param('picard_sam_to_fastq', 'module_picard') >= "2":
-        return picard2.sam_to_fastq(input, fastq, second_end_fastq)
+    if config.param('picard_sam_to_fastq', 'module_picard') < "2":
+        return picard.sam_to_fastq(input, fastq, second_end_fastq)
     else:
         return Job(
             [input],
@@ -270,7 +270,7 @@ def sam_to_fastq(input, fastq, second_end_fastq=None):
                 ['picard_sam_to_fastq', 'module_picard']
             ],
             command="""\
-java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/SamToFastq.jar \\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar SamToFastq \\
  VALIDATION_STRINGENCY=LENIENT \\
  INPUT={input} \\
  FASTQ={fastq}{second_end_fastq}""".format(
@@ -286,8 +286,8 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
 
 def sort_sam(input, output, sort_order="coordinate", ini_section='picard_sort_sam'):
 
-    if config.param(ini_section, 'module_picard') >= "2":
-        return picard2.sort_sam(input, output, sort_order, ini_section)
+    if config.param(ini_section, 'module_picard') < "2":
+        return picard.sort_sam(input, output, sort_order, ini_section)
     else:
         return Job(
             [input],
@@ -298,7 +298,7 @@ def sort_sam(input, output, sort_order="coordinate", ini_section='picard_sort_sa
                 [ini_section, 'module_picard']
             ],
             command="""\
-java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/SortSam.jar \\
+ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar SortSam \\
  VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true \\
  TMP_DIR={tmp_dir} \\
  INPUT={input} \\
@@ -318,8 +318,8 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
 
 def sort_vcfs(inputs, output, ini_section='picard_sort_vcf'):
 
-    if config.param(ini_section, 'module_picard') >= "2":
-        return picard2.sort_vcfs(inputs, output, ini_section)
+    if config.param(ini_section, 'module_picard') < "2":
+        return picard.sort_vcfs(inputs, output, ini_section)
     else:
         return Job(
             inputs,
@@ -330,7 +330,7 @@ def sort_vcfs(inputs, output, ini_section='picard_sort_vcf'):
                 [ini_section, 'module_picard']
             ],
             command="""\
-java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/SortVcf.jar \\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar SortVcf \\
  VALIDATION_STRINGENCY=SILENT \\
  TMP_DIR={tmp_dir} \\
  {inputs} \\
@@ -347,8 +347,8 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
 
 def collect_rna_metrics(input, output, annotation_flat=None,reference_sequence=None):
 
-    if config.param('picard_collect_rna_metrics', 'module_picard') >= "2":
-        return picard2.collect_rna_metrics(input, output, annotation_flat,reference_sequence)
+    if config.param('picard_collect_rna_metrics', 'module_picard') < "2":
+        return picard.collect_rna_metrics(input, output, annotation_flat,reference_sequence)
     else:
         return Job(
             [input],
@@ -360,7 +360,7 @@ def collect_rna_metrics(input, output, annotation_flat=None,reference_sequence=N
                 ['picard_collect_rna_metrics', 'module_R']
             ],
             command="""\
-java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/CollectRnaSeqMetrics.jar \\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar CollectRnaSeqMetrics \\
  VALIDATION_STRINGENCY=SILENT  \\
  TMP_DIR={tmp_dir} \\
  INPUT={input} \\
@@ -380,5 +380,42 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             min_length=config.param('picard_collect_rna_metrics', 'minimum_length',type='int'),
             reference=reference_sequence if reference_sequence else config.param('picard_collect_rna_metrics', 'genome_fasta'),
             max_records_in_ram=config.param('picard_collect_rna_metrics', 'max_records_in_ram', type='int')
+            )
+        )
+
+def add_or_replace_read_groups(input, output, annotation_flat=None, reference_sequence=None):
+
+    if config.param('picard_collect_rna_metrics', 'module_picard') < "2":
+        return picard.collect_rna_metrics(input, output, annotation_flat, reference_sequence)
+    else:
+        return Job(
+            [input],
+            # collect specific RNA metrics (exon rate, strand specificity, etc...)
+            [output],
+            [
+                ['add_or_replace_read_groups', 'module_java'],
+                ['add_or_replace_read_groups', 'module_picard'],
+                ['add_or_replace_read_groups', 'module_R']
+            ],
+            command="""\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar AddOrReplaceReadGroups \\
+ SORT_ORDER=queryname \\
+ RGID=$tmpBarcode.X.$laneInfo.barcode \\
+ RGLB=$LibraryID \\
+ RGPL=ILLUMINA \\
+ RGPU=$runids_laneids \\
+ RGSM=$Samplename  \\
+ RGCN=\"McGill University and Genome Quebec Innovation Center\"
+""".format(
+            tmp_dir=config.param('add_or_replace_read_groups', 'tmp_dir'),
+            java_other_options=config.param('add_or_replace_read_groups', 'java_other_options'),
+            ram=config.param('add_or_replace_read_groups', 'ram'),
+            input=input,
+            output=output,
+            ref_flat=annotation_flat if annotation_flat else config.param('add_or_replace_read_groups', 'annotation_flat'),
+            strand_specificity=config.param('add_or_replace_read_groups', 'strand_info'),
+            min_length=config.param('add_or_replace_read_groups', 'minimum_length',type='int'),
+            reference=reference_sequence if reference_sequence else config.param('add_or_replace_read_groups', 'genome_fasta'),
+            max_records_in_ram=config.param('add_or_replace_read_groups', 'max_records_in_ram', type='int')
             )
         )
