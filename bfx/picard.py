@@ -190,7 +190,7 @@ def merge_sam_files(inputs, output):
         ],
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/MergeSamFiles.jar \\
-  VALIDATION_STRINGENCY=SILENT ASSUME_SORTED=true CREATE_INDEX=true \\
+  VALIDATION_STRINGENCY=SILENT ASSUME_SORTED=true CREATE_INDEX=true USE_THREADING=true \\
   TMP_DIR={tmp_dir} \\
   {inputs} \\
   OUTPUT={output} \\
