@@ -35,7 +35,7 @@ def align(input1, input2, output_directory, basename):
 
     return Job(
         inputs,
-        [basename +".bam"],
+        [basename + ".bam"],
         [
             ['bismark_align', 'module_bismark'],
             ['bismark_align', 'module_bowtie'],

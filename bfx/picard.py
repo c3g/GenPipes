@@ -382,3 +382,40 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             max_records_in_ram=config.param('picard_collect_rna_metrics', 'max_records_in_ram', type='int')
             )
         )
+
+def add_or_replace_read_groups(input, output, annotation_flat=None, reference_sequence=None):
+
+    if config.param('picard_collect_rna_metrics', 'module_picard') >= "2":
+        return picard2.collect_rna_metrics(input, output, annotation_flat,reference_sequence)
+    else:
+        return Job(
+            [input],
+            # collect specific RNA metrics (exon rate, strand specificity, etc...)
+            [output],
+            [
+                ['add_or_replace_read_groups', 'module_java'],
+                ['add_or_replace_read_groups', 'module_picard'],
+                ['add_or_replace_read_groups', 'module_R']
+            ],
+            command="""\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/AddOrReplaceReadGroups.jar \\
+ SORT_ORDER=queryname \\
+ RGID=$tmpBarcode.X.$laneInfo.barcode \\
+ RGLB=$LibraryID \\
+ RGPL=ILLUMINA \\
+ RGPU=$runids_laneids \\
+ RGSM=$Samplename  \\
+ RGCN=\"McGill University and Genome Quebec Innovation Center\"
+""".format(
+            tmp_dir=config.param('add_or_replace_read_groups', 'tmp_dir'),
+            java_other_options=config.param('add_or_replace_read_groups', 'java_other_options'),
+            ram=config.param('add_or_replace_read_groups', 'ram'),
+            input=input,
+            output=output,
+            ref_flat=annotation_flat if annotation_flat else config.param('add_or_replace_read_groups', 'annotation_flat'),
+            strand_specificity=config.param('add_or_replace_read_groups', 'strand_info'),
+            min_length=config.param('add_or_replace_read_groups', 'minimum_length',type='int'),
+            reference=reference_sequence if reference_sequence else config.param('add_or_replace_read_groups', 'genome_fasta'),
+            max_records_in_ram=config.param('add_or_replace_read_groups', 'max_records_in_ram', type='int')
+            )
+        )

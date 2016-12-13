@@ -34,9 +34,9 @@ from core.config import *
 from core.job import *
 from core.pipeline import *
 from bfx.readset import *
-from bfx.sequence_dictionary import *
 
 from bfx import bismark
+from bfx import picard2 as picard
 
 from pipelines.dnaseq import dnaseq
 
@@ -104,6 +104,8 @@ class MethylSeq(dnaseq.DnaSeq):
                         os.path.dirname(readset_bam),
                         os.path.basename(readset_bam)
                     )
+                    Job(command="mv " + os.path.join(os.path.dirname(readset_bam), "*.bam") + " " + os.path.join(os.path.dirname(readset_bam), os.path.basename(readset_bam)) + ".bam")
+                    Job(command="mv " + os.path.join(os.path.dirname(readset_bam), "*_report.txt") + " " + os.path.join(os.path.dirname(readset_bam), os.path.basename(readset_bam)) + "_report.txt")
                 ], name="bismark_align." + readset.name)
             )
 

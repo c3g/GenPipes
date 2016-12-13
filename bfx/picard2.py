@@ -386,7 +386,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
 def add_or_replace_read_groups(input, output, annotation_flat=None, reference_sequence=None):
 
     if config.param('picard_collect_rna_metrics', 'module_picard') < "2":
-        return picard.collect_rna_metrics(input, output, annotation_flat, reference_sequence)
+        return picard.add_or_replace_read_groups(input, output, annotation_flat, reference_sequence)
     else:
         return Job(
             [input],
