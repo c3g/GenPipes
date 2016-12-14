@@ -118,14 +118,14 @@ class MethylSeq(dnaseq.DnaSeq):
         jobs = []
         for readset in self.readsets:
             alignment_directory = os.path.join("alignment", readset.sample.name)
-            readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
+            readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted_noRG.bam")
 
             candidate_input_files = [[readset_bam]]
             if readset.bam:
                 candidate_input_files.append([readset.bam])
 
             [input_bam] = self.select_input_files(candidate_input_files)
-            output_bam = re.sub("_RG.bam", ".bam", input_bam)
+            output_bam = re.sub("_noRG.bam", ".bam", input_bam)
 
             job = picard.add_or_replace_read_groups(
                 input_bam,
