@@ -807,8 +807,8 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
             input_mutect2 = os.path.join(input_directory, tumor_pair.name + ".mutect2.somatic.vcf.gz")
             input_vardict = os.path.join(input_directory, tumor_pair.name + ".vardict.somatic.vcf.gz")
             input_samtools = os.path.join(input_directory, tumor_pair.name + ".samtools.somatic.vcf.gz")
-            input_varscan2 = os.path.join(input_directory, tumor_pair.name + ".varscan2.somatic.vcf.gz")        
-            inputSomaticVCFs = [input_mutect2, input_vardict, input_samtools, input_varscan2]
+            input_varscan2 = self.select_input_files([[os.path.join(input_directory, tumor_pair.name + ".varscan2.fpfilter.somatic.vcf.gz")],[os.path.join(input_directory, tumor_pair.name + ".varscan2.somatic.vcf.gz")]])        
+            inputSomaticVCFs = [input_mutect2, input_vardict, input_samtools, input_varscan2[0]]
                         
         
             output_ensemble = os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.somatic.vcf")
@@ -846,8 +846,8 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
 
             input_vardict = os.path.join(input_directory, tumor_pair.name + ".vardict.germline_loh.vcf.gz")
             input_samtools = os.path.join(input_directory, tumor_pair.name + ".samtools.germline_loh.vcf.gz")
-            input_varscan2 = os.path.join(input_directory, tumor_pair.name + ".varscan2.germline_loh.vcf.gz")
-            inputGermlineVCFs = [input_vardict, input_samtools, input_varscan2]
+            input_varscan2 =  self.select_input_files([[os.path.join(input_directory, tumor_pair.name + ".varscan2.fpfilter.germline_loh.vcf.gz")],[os.path.join(input_directory, tumor_pair.name + ".varscan2.germline_loh.vcf.gz")]])
+            inputGermlineVCFs = [input_vardict, input_samtools, input_varscan2[0]]
 
             output_ensemble = os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.germline_loh.vcf")
             output_gz = os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.germline_loh.vcf.gz")
