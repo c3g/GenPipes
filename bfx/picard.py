@@ -383,19 +383,19 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             )
         )
 
-def add_or_replace_read_groups(input, output, annotation_flat=None, reference_sequence=None):
+def add_or_replace_read_groups(input, output, readgroup, library, lane, sample, sort_order="queryname"):
 
-    if config.param('add_or_replace_read_groups', 'module_picard').split("/")[2] >= "2":
-        return picard2.add_or_replace_read_groups(input, output, annotation_flat,reference_sequence)
+    if config.param('picard_add_or_replace_read_groups', 'module_picard').split("/")[2] >= "2":
+        return picard2.add_or_replace_read_groups(input, output, readgroup, library, lane, sample, sort_order)
     else:
         return Job(
             [input],
             # collect specific RNA metrics (exon rate, strand specificity, etc...)
             [output],
             [
-                ['add_or_replace_read_groups', 'module_java'],
-                ['add_or_replace_read_groups', 'module_picard'],
-                ['add_or_replace_read_groups', 'module_R']
+                ['picard_add_or_replace_read_groups', 'module_java'],
+                ['picard_add_or_replace_read_groups', 'module_picard'],
+                ['picard_add_or_replace_read_groups', 'module_R']
             ],
             command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/AddOrReplaceReadGroups.jar \\

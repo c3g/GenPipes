@@ -125,14 +125,18 @@ class MethylSeq(dnaseq.DnaSeq):
                 candidate_input_files.append([readset.bam])
 
             [input_bam] = self.select_input_files(candidate_input_files)
+            output_bam = re.sub(".bam", "_RG.bam", input_bam)
 
-        picard.add_or_replace_read_groups(
-            readset.name,
-            readset.library,
-            readset.lane,
-            readset.sample.name,
-            "coordinate"
-        )
+            job = picard.add_or_replace_read_groups(
+                input_bam,
+                readset.name,
+                readset.library,
+                readset.lane,
+                readset.sample.name
+            )
+            job.name = "picard_add_read_groups." + readset.name
+            jobs.append(job)
+
         return jobs
 
     def bismark_dedup(self):
