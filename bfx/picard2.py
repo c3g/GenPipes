@@ -408,17 +408,17 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
  RGPU={lane} \\
  RGSM={sample}  \\
  RGCN={sequencing_center}""".format(
-            tmp_dir=config.param('add_or_replace_read_groups', 'tmp_dir'),
-            java_other_options=config.param('add_or_replace_read_groups', 'java_other_options'),
-            ram=config.param('add_or_replace_read_groups', 'ram'),
+            tmp_dir=config.param('picard_add_or_replace_read_groups', 'tmp_dir'),
+            java_other_options=config.param('picard_add_or_replace_read_groups', 'java_other_options'),
+            ram=config.param('picard_add_or_replace_read_groups', 'ram'),
             input=input,
             output=output,
             sort_order=sort_order,
             readgroup=readgroup,
             library=library,
-            platform=config.param('add_or_replace_read_groups', 'platform'),
+            platform=config.param('picard_add_or_replace_read_groups', 'platform'),
             lane=lane,
             sample=sample,
-            sequencing_center=config.param('add_or_replace_read_groups', 'sequencing_center'),
+            sequencing_center=config.param('picard_add_or_replace_read_groups', 'sequencing_center'),
             )
         )
