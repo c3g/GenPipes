@@ -26,7 +26,7 @@ import os
 from core.config import *
 from core.job import *
 
-def align(input1, input2, output_directory, basename):
+def align(input1, input2, output_directory, outfile):
 
     inputs = []
     inputs.append(input1)
@@ -35,7 +35,7 @@ def align(input1, input2, output_directory, basename):
 
     return Job(
         inputs,
-        [basename + ".bam"],
+        [outfile],
         [
             ['bismark_align', 'module_bismark'],
             ['bismark_align', 'module_bowtie'],

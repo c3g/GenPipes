@@ -102,7 +102,7 @@ class MethylSeq(dnaseq.DnaSeq):
                         fastq1,
                         fastq2,
                         os.path.dirname(readset_bam),
-                        os.path.basename(readset_bam)
+                        re.sub(".bam", "_noRG.bam", readset_bam)
                     ),
                     Job(command="mv " + os.path.join(os.path.dirname(readset_bam), "*.bam") + " " + re.sub(".bam", "_noRG.bam", readset_bam)),
                     Job(command="mv " + os.path.join(os.path.dirname(readset_bam), "*_report.txt") + " " + re.sub(".bam", "_noRG_report.txt", readset_bam))
