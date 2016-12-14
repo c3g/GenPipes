@@ -3,8 +3,8 @@
 set -eu -o pipefail
 
 SOFTWARE=samtools
-#VERSION=1.3
-VERSION=0.1.19
+VERSION=1.3.1
+#VERSION=0.1.19
 if [[ ${VERSION:0:1} == 1 ]]; then
   ARCHIVE=$SOFTWARE-$VERSION.tar.bz2
   ARCHIVE_URL=https://github.com/$SOFTWARE/$SOFTWARE/releases/download/$VERSION/$ARCHIVE
@@ -26,11 +26,14 @@ build() {
   fi
 
   cd $SOFTWARE_DIR
-  make
+
   # Install software
   if [[ ${VERSION:0:1} == 1 ]]; then
-    make prefix=$INSTALL_DIR/${SOFTWARE_DIR} install
+    ./configure --enable-plugins --enable-libcurl --without-curses prefix=$INSTALL_DIR/${SOFTWARE_DIR}
+    make all all-htslib
+    make install install-htslib
   else
+    make
     make razip
     mkdir -p bin
     cd bin
@@ -44,10 +47,11 @@ build() {
     ln -s ../samtools
     ln -s ../razip
     cd ..
+    cd $INSTALL_DOWNLOAD
+    mv $SOFTWARE_DIR $INSTALL_DIR/
+
   fi
 
-  cd $INSTALL_DOWNLOAD
-  mv $SOFTWARE_DIR $INSTALL_DIR/
 }
 
 module_file() {
@@ -66,3 +70,4 @@ prepend-path    PATH                \$root/bin
 # Call generic module install script once all variables and functions have been set
 MODULE_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source $MODULE_INSTALL_SCRIPT_DIR/install_module.sh $@
+
