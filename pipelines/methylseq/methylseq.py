@@ -129,6 +129,7 @@ class MethylSeq(dnaseq.DnaSeq):
 
             job = picard.add_or_replace_read_groups(
                 input_bam,
+                output_bam,
                 readset.name,
                 readset.library,
                 readset.lane,
