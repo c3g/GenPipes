@@ -104,8 +104,8 @@ class MethylSeq(dnaseq.DnaSeq):
                         os.path.dirname(readset_bam),
                         os.path.basename(readset_bam)
                     ),
-                    Job(command="mv " + os.path.join(os.path.dirname(readset_bam), "*.bam") + " " + readset_bam),
-                    Job(command="mv " + os.path.join(os.path.dirname(readset_bam), "*_report.txt") + " " + re.sub(".bam", "_report.txt", readset_bam))
+                    Job(command="mv " + os.path.join(os.path.dirname(readset_bam), "*.bam") + " " + re.sub(".bam", "_noRG.bam", readset_bam)),
+                    Job(command="mv " + os.path.join(os.path.dirname(readset_bam), "*_report.txt") + " " + re.sub(".bam", "_noRG_report.txt", readset_bam))
                 ], name="bismark_align." + readset.name)
             )
 
@@ -125,7 +125,7 @@ class MethylSeq(dnaseq.DnaSeq):
                 candidate_input_files.append([readset.bam])
 
             [input_bam] = self.select_input_files(candidate_input_files)
-            output_bam = re.sub(".bam", "_RG.bam", input_bam)
+            output_bam = re.sub("_RG.bam", ".bam", input_bam)
 
             job = picard.add_or_replace_read_groups(
                 input_bam,
