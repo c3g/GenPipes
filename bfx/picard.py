@@ -399,23 +399,26 @@ def add_or_replace_read_groups(input, output, annotation_flat=None, reference_se
             ],
             command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/AddOrReplaceReadGroups.jar \\
- SORT_ORDER=queryname \\
- RGID=$tmpBarcode.X.$laneInfo.barcode \\
- RGLB=$LibraryID \\
- RGPL=ILLUMINA \\
- RGPU=$runids_laneids \\
- RGSM=$Samplename  \\
- RGCN=\"McGill University and Genome Quebec Innovation Center\"
-""".format(
+ INPUT={input} \\
+ OUTPUT={output} \\
+ SORT_ORDER={sort_order} \\
+ RGID={readgroup} \\
+ RGLB={library} \\
+ RGPL={platform} \\
+ RGPU={lane} \\
+ RGSM={sample}  \\
+ RGCN={sequencing_center}""".format(
             tmp_dir=config.param('add_or_replace_read_groups', 'tmp_dir'),
             java_other_options=config.param('add_or_replace_read_groups', 'java_other_options'),
             ram=config.param('add_or_replace_read_groups', 'ram'),
             input=input,
             output=output,
-            ref_flat=annotation_flat if annotation_flat else config.param('add_or_replace_read_groups', 'annotation_flat'),
-            strand_specificity=config.param('add_or_replace_read_groups', 'strand_info'),
-            min_length=config.param('add_or_replace_read_groups', 'minimum_length',type='int'),
-            reference=reference_sequence if reference_sequence else config.param('add_or_replace_read_groups', 'genome_fasta'),
-            max_records_in_ram=config.param('add_or_replace_read_groups', 'max_records_in_ram', type='int')
+            sort_order=sort_order,
+            readgroup=readgroup,
+            library=library,
+            platform=config.param('add_or_replace_read_groups', 'platform'),
+            lane=lane,
+            sample=sample,
+            sequencing_center=config.param('add_or_replace_read_groups', 'sequencing_center'),
             )
         )

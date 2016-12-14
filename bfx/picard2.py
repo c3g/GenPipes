@@ -345,10 +345,10 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             )
         )
 
-def collect_rna_metrics(input, output, annotation_flat=None,reference_sequence=None):
+def collect_rna_metrics(input, output, annotation_flat=None, reference_sequence=None):
 
     if config.param('picard_collect_rna_metrics', 'module_picard').split("/")[2] < "2":
-        return picard.collect_rna_metrics(input, output, annotation_flat,reference_sequence)
+        return picard.collect_rna_metrics(input, output, annotation_flat, reference_sequence)
     else:
         return Job(
             [input],
@@ -383,10 +383,10 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             )
         )
 
-def add_or_replace_read_groups(input, output, readgroup, library, lane, sample):
+def add_or_replace_read_groups(input, output, readgroup, library, lane, sample, sort_order="queryname"):
 
     if config.param('add_or_replace_read_groups', 'module_picard').split("/")[2] < "2":
-        return picard.add_or_replace_read_groups(input, output, annotation_flat, reference_sequence)
+        return picard.add_or_replace_read_groups(input, output, readgroup, library, lane, sample, sort_order)
     else:
         return Job(
             [input],
@@ -401,21 +401,24 @@ def add_or_replace_read_groups(input, output, readgroup, library, lane, sample):
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar AddOrReplaceReadGroups \\
  INPUT={input} \\
  OUTPUT={output} \\
- SORT_ORDER=queryname \\
+ SORT_ORDER={sort_order} \\
  RGID={readgroup} \\
  RGLB={library} \\
- RGPL=ILLUMINA \\
+ RGPL={platform} \\
  RGPU={lane} \\
  RGSM={sample}  \\
- RGCN=\"McGill University and Genome Quebec Innovation Center\"""".format(
+ RGCN={sequencing_center}""".format(
             tmp_dir=config.param('add_or_replace_read_groups', 'tmp_dir'),
             java_other_options=config.param('add_or_replace_read_groups', 'java_other_options'),
             ram=config.param('add_or_replace_read_groups', 'ram'),
             input=input,
             output=output,
+            sort_order=sort_order,
             readgroup=readgroup,
             library=library,
+            platform=config.param('add_or_replace_read_groups', 'platform'),
             lane=lane,
-            sample=sample
+            sample=sample,
+            sequencing_center=config.param('add_or_replace_read_groups', 'sequencing_center'),
             )
         )
