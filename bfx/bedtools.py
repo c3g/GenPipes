@@ -61,36 +61,25 @@ bedGraphToBigWig \\
         )
     )
 
-def intersect(input_bam, output_bed_graph, output_wiggle, library_type="PAIRED_END"):
+def intersect(input_bam):
 
-    if library_type == "PAIRED_END":
-        samtools_options="-F 256 -f 81 "
-    else :
-        samtools_options="-F 256"
+    output_bam = re.sub(".bam", ".intersect.bam", input_bam)
 
     return Job(
         [input_bam],
-        [output_bed_graph, output_wiggle],
+        [output_bam],
         [
-            ['bedtools', 'module_samtools'],
-            ['bedtools', 'module_bedtools'],
-            ['bedtools', 'module_ucsc']
+            ['bedtools', 'module_bedtools']
         ],
         command="""\
-nmblines=$(samtools view {samtools_options} {input_bam} | wc -l) && \\
-scalefactor=0$(echo "scale=2; 1 / ($nmblines / 10000000);" | bc) && \\
-genomeCoverageBed -bg -split -scale $scalefactor \\
-  -ibam {input_bam} \\
-  -g {chromosome_size} \\
-  > {output_bed_graph} && \\
-sort -k1,1 -k2,2n {output_bed_graph} > {output_bed_graph}.sorted && \\
-bedGraphToBigWig \\
-  {output_bed_graph}.sorted \\
-  {chromosome_size} \\
-  {output_wiggle}""".format(
-        samtools_options=samtools_options,
+bedtools intersect
+  -a {input_bam}
+  -b {target_bed}
+  {other_options}
+""".format(
         input_bam=input_bam,
-        chromosome_size=config.param('bedtools', 'chromosome_size', type='filepath'),
+        target_bed=config.param('bedtools_intersect', 'target_bed', type='filepath'),
+        other_options=config.param('bedtools_intersect', 'other_options'),
         output_bed_graph=output_bed_graph,
         output_wiggle=output_wiggle
         )
