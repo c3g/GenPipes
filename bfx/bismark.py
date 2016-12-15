@@ -56,9 +56,10 @@ bismark -q \\
         )
     )
 
-def dedup(ref, query, output, other_options=""):
+def dedup((input, output, library_type="PAIRED_END"):
+
     return Job(
-        [ref, query],
+        [ref],
         [output],
         [
             ['bismark_dedup', 'module_bismark']
@@ -66,13 +67,12 @@ def dedup(ref, query, output, other_options=""):
             ['bismark_dedup', 'module_samtools']
         ],
         command="""\
-deduplicate_bismark -q \\
+deduplicate_bismark \\
+  {library} \\
   {other_options} \\
-  {genome_directory} \\
-  {output_directory}""".format(
-        other_option=config(param()),
-        query=query,
-        output=output,
-        other_options=other_options
+  {input}""".format(
+        other_option=config.param('bismark_dedup', 'other_options'),
+        library="-p" if library_type=="PAIRED_END" else "-s",
+        input=input
         )
     )

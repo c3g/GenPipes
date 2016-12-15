@@ -85,7 +85,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             )
         )
 
-def collect_multiple_metrics(input, output, reference_sequence=None , library_type="PAIRED_END"):
+def collect_multiple_metrics(input, output, reference_sequence=None, library_type="PAIRED_END"):
 
     if  library_type == "PAIRED_END" :
         outputs = [
@@ -383,7 +383,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             )
         )
 
-def add_or_replace_read_groups(input, output, readgroup, library, lane, sample, sort_order="queryname"):
+def add_or_replace_read_groups(input, output, readgroup, library, lane, sample, sort_order="coordinate"):
 
     if config.param('picard_add_or_replace_read_groups', 'module_picard').split("/")[2] < "2":
         return picard.add_or_replace_read_groups(input, output, readgroup, library, lane, sample, sort_order)

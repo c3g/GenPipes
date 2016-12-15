@@ -37,6 +37,7 @@ from bfx.readset import *
 
 from bfx import bismark
 from bfx import picard2 as picard
+from bfx import bedtools
 
 from pipelines.dnaseq import dnaseq
 
@@ -104,8 +105,8 @@ class MethylSeq(dnaseq.DnaSeq):
                         os.path.dirname(readset_bam),
                         re.sub(".bam", "_noRG.bam", readset_bam)
                     ),
-                    Job(command="mv " + os.path.join(os.path.dirname(readset_bam), "*.bam") + " " + re.sub(".bam", "_noRG.bam", readset_bam)),
-                    Job(command="mv " + os.path.join(os.path.dirname(readset_bam), "*_report.txt") + " " + re.sub(".bam", "_noRG_report.txt", readset_bam))
+                    Job(command="mv -f " + os.path.join(os.path.dirname(readset_bam), "*.bam") + " " + re.sub(".bam", "_noRG.bam", readset_bam)),
+                    Job(command="mv -f " + os.path.join(os.path.dirname(readset_bam), "*_report.txt") + " " + re.sub(".bam", "_noRG_report.txt", readset_bam))
                 ], name="bismark_align." + readset.name)
             )
 
@@ -136,6 +137,7 @@ class MethylSeq(dnaseq.DnaSeq):
                 readset.sample.name
             )
             job.name = "picard_add_read_groups." + readset.name
+
             jobs.append(job)
 
         return jobs
@@ -144,40 +146,37 @@ class MethylSeq(dnaseq.DnaSeq):
         """
         """
 
-        jobs = []
+        # Check the library status
+        library = {}
         for readset in self.readsets:
-            trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
-            alignment_directory = os.path.join("alignment", readset.sample.name)
-            readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
+            if not library.has_key(readset.sample) :
+                library[readset.sample]="SINGLE_END"
+            if readset.run_type == "PAIRED_END" :
+                library[readset.sample]="PAIRED_END"
 
-            # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
-            if readset.run_type == "PAIRED_END":
-                candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
-                if readset.fastq1 and readset.fastq2:
-                    candidate_input_files.append([readset.fastq1, readset.fastq2])
-                if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
-                [fastq1, fastq2] = self.select_input_files(candidate_input_files)
-            elif readset.run_type == "SINGLE_END":
-                candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
-                if readset.fastq1:
-                    candidate_input_files.append([readset.fastq1])
-                if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
-                [fastq1] = self.select_input_files(candidate_input_files)
-                fastq2 = None
-            else:
-                raise Exception("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+        jobs = []
+        for sample in self.samples:
+            alignment_directory = os.path.join("alignment", sample.name)
+            bam_input = os.path.join(alignment_directory, sample.name + ".sorted.bam")
+            bam_input_resorted = os.path.join(alignment_directory, sample.name + ".sorted.bam")
+            bam_dedup_output = re.sub(".bam", ".deduplicated.bam", bam_input)
 
-        job = concat_jobs([
-            Job(command="mkdir -p " + os.path.dirname(readset_bam)),
-            bismark.align(
-                bam_input,
-                bam_dedup_output,
-                options
-            )
-        ])
+            job = pipe_jobs([
+                picard.sort_sam(
+                    bam_input,
+                    bam_input_resorted,
+                    "queryname"
+                ),
+                bismark.dedup(
+                    bam_input_resorted,
+                    bam_dedup_output,
+                    library[sample]
+                )
+            ])
+            job.name = "bismark_dedup." + sample.name
+
+            jobs.append(job)
+
         return jobs
 
     def ontarget_mapping(self):
@@ -185,46 +184,16 @@ class MethylSeq(dnaseq.DnaSeq):
         """
 
         jobs = []
-        for readset in self.readsets:
-            trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
-            alignment_directory = os.path.join("alignment", readset.sample.name)
-            readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
+        jobs = []
+        for sample in self.samples:
+            alignment_directory = os.path.join("alignment", sample.name)
+            bam_input = os.path.join(alignment_directory, sample.name + ".sorted.deduplicated.bam")
 
-            # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
-            if readset.run_type == "PAIRED_END":
-                candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
-                if readset.fastq1 and readset.fastq2:
-                    candidate_input_files.append([readset.fastq1, readset.fastq2])
-                if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
-                [fastq1, fastq2] = self.select_input_files(candidate_input_files)
-            elif readset.run_type == "SINGLE_END":
-                candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
-                if readset.fastq1:
-                    candidate_input_files.append([readset.fastq1])
-                if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
-                [fastq1] = self.select_input_files(candidate_input_files)
-                fastq2 = None
-            else:
-                raise Exception("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+            job = bedtools.intersect(bam_input)
+            job.name = "ontarget_mapping." + sample.name
 
-        job = concat_jobs([
-            Job(command="mkdir -p " + os.path.dirname(readset_bam)),
-            bedtools.intersect(
-                fastq1,
-                fastq2,
-                read_group="'@RG" + \
-                    "\tID:" + readset.name + \
-                    "\tSM:" + readset.sample.name + \
-                    "\tLB:" + (readset.library if readset.library else readset.sample.name) + \
-                    ("\tPU:run" + readset.run + "_" + readset.lane if readset.run and readset.lane else "") + \
-                    ("\tCN:" + config.param('bwa_mem', 'sequencing_center') if config.param('bwa_mem', 'sequencing_center', required=False) else "") + \
-                    "\tPL:Illumina" + \
-                    "'"
-            )
-        ])
+            jobs.append(job)
+
         return jobs
 
     def flagstat(self):
