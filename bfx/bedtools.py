@@ -72,16 +72,14 @@ def intersect(input_bam):
             ['bedtools', 'module_bedtools']
         ],
         command="""\
-bedtools intersect
-  -a {input_bam}
-  -b {target_bed}
-  {other_options}
-""".format(
-        input_bam=input_bam,
-        target_bed=config.param('bedtools_intersect', 'target_bed', type='filepath'),
-        other_options=config.param('bedtools_intersect', 'other_options'),
-        output_bed_graph=output_bed_graph,
-        output_wiggle=output_wiggle
+bedtools intersect \\
+  -a {input_bam} \\
+  -b {target_bed} \\
+  {other_options} > {output_bam}""".format(
+            input_bam=input_bam,
+            target_bed=config.param('bedtools_intersect', 'target_bed', type='filepath'),
+            other_options=config.param('bedtools_intersect', 'other_options'),
+            output_bam=output_bam
         )
     )
 
