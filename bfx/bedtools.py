@@ -53,11 +53,11 @@ bedGraphToBigWig \\
   {output_bed_graph}.sorted \\
   {chromosome_size} \\
   {output_wiggle}""".format(
-        samtools_options=samtools_options,
-        input_bam=input_bam,
-        chromosome_size=config.param('bedtools', 'chromosome_size', type='filepath'),
-        output_bed_graph=output_bed_graph,
-        output_wiggle=output_wiggle
+            samtools_options=samtools_options,
+            input_bam=input_bam,
+            chromosome_size=config.param('bedtools', 'chromosome_size', type='filepath'),
+            output_bed_graph=output_bed_graph,
+            output_wiggle=output_wiggle
         )
     )
 
@@ -72,16 +72,14 @@ def intersect(input_bam):
             ['bedtools', 'module_bedtools']
         ],
         command="""\
-bedtools intersect
-  -a {input_bam}
-  -b {target_bed}
-  {other_options}
-""".format(
-        input_bam=input_bam,
-        target_bed=config.param('bedtools_intersect', 'target_bed', type='filepath'),
-        other_options=config.param('bedtools_intersect', 'other_options'),
-        output_bed_graph=output_bed_graph,
-        output_wiggle=output_wiggle
+bedtools intersect \\
+  -a {input_bam} \\
+  -b {target_bed} \\
+  {other_options} > {output_bam}""".format(
+            input_bam=input_bam,
+            target_bed=config.param('bedtools_intersect', 'target_bed', type='filepath'),
+            other_options=config.param('bedtools_intersect', 'other_options'),
+            output_bam=output_bam
         )
     )
 
@@ -97,7 +95,7 @@ def genomecov():
         [output_bed_graph, output_wiggle],
         [
             ['bedtools', 'module_samtools'],
-            ['bedtools', 'module_bedtools'],
+            ['bedtools', 'module_bedtools']
         ],
         command="""\
 
@@ -107,10 +105,10 @@ bedGraphToBigWig \\
   {output_bed_graph}.sorted \\
   {chromosome_size} \\
   {output_wiggle}""".format(
-        samtools_options=samtools_options,
-        input_bam=input_bam,
-        chromosome_size=config.param('bedtools', 'chromosome_size', type='filepath'),
-        output_bed_graph=output_bed_graph,
-        output_wiggle=output_wiggle
+            samtools_options=samtools_options,
+            input_bam=input_bam,
+            chromosome_size=config.param('bedtools', 'chromosome_size', type='filepath'),
+            output_bed_graph=output_bed_graph,
+            output_wiggle=output_wiggle
         )
     )

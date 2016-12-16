@@ -38,6 +38,7 @@ from bfx.readset import *
 from bfx import bismark
 from bfx import picard2 as picard
 from bfx import bedtools
+from bfx import gatk
 
 from pipelines.dnaseq import dnaseq
 
@@ -105,8 +106,8 @@ class MethylSeq(dnaseq.DnaSeq):
                         os.path.dirname(readset_bam),
                         re.sub(".bam", "_noRG.bam", readset_bam)
                     ),
-                    Job(command="mv -f " + os.path.join(os.path.dirname(readset_bam), "*.bam") + " " + re.sub(".bam", "_noRG.bam", readset_bam)),
-                    Job(command="mv -f " + os.path.join(os.path.dirname(readset_bam), "*_report.txt") + " " + re.sub(".bam", "_noRG_report.txt", readset_bam))
+                    Job(command="rename " + re.sub(".sorted.bam", "*bismark*.bam", readset_bam) + " " + re.sub(".bam", "_noRG.bam", readset_bam) + " " + os.path.join(os.path.dirname(readset_bam), "*.bam")),
+                    Job(command="rename " + re.sub(".sorted.bam", "*bismark*_report.txt", readset_bam) + " " + re.sub(".bam", "_noRG_report.txt", readset_bam) + " " + os.path.join(os.path.dirname(readset_bam), " *_report.txt"))
                 ], name="bismark_align." + readset.name)
             )
 
@@ -142,6 +143,39 @@ class MethylSeq(dnaseq.DnaSeq):
 
         return jobs
 
+    def genome_coverage_calculation(self):
+        """
+        """
+
+        # Check if bam files were provided in the readset file
+        bam = {}
+        for readset in self.readsets:
+            if not library.has_key(readset.sample):
+                library[readset.sample]=""
+            if readset.bam:
+                library[readset.sample]=readset.bam
+
+        jobs = []
+        for sample in self.samples:
+            file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.")
+            input_bam = file_prefix + "bam"
+
+            candidate_input_files = [[input_bam]]
+            if bam[sample]:
+                candidate_input_files.append([bam[sample]])
+
+            [input_file] = self.select_input_files(candidate_input_files)
+            job = gatk.depth_of_coverage(
+                input_file,
+                file_prefix + "all.coverage",
+                bvatools.resolve_readset_coverage_bed(sample.readsets[0])
+            )
+            job.name = "gatk_depth_of_coverage." + sample.name
+
+            jobs.append(job)
+
+        return jobs
+
     def bismark_dedup(self):
         """
         """
@@ -158,10 +192,10 @@ class MethylSeq(dnaseq.DnaSeq):
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
             bam_input = os.path.join(alignment_directory, sample.name + ".sorted.bam")
-            bam_input_resorted = os.path.join(alignment_directory, sample.name + ".sorted.bam")
+            bam_input_resorted = re.sub(".sorted.bam", ".readset_sorted.bam", bam_input)
             bam_dedup_output = re.sub(".bam", ".deduplicated.bam", bam_input)
 
-            job = pipe_jobs([
+            job = concat_jobs([
                 picard.sort_sam(
                     bam_input,
                     bam_input_resorted,
@@ -184,10 +218,9 @@ class MethylSeq(dnaseq.DnaSeq):
         """
 
         jobs = []
-        jobs = []
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
-            bam_input = os.path.join(alignment_directory, sample.name + ".sorted.deduplicated.bam")
+            bam_input = os.path.join(alignment_directory, sample.name + ".deduplicated.bam")
 
             job = bedtools.intersect(bam_input)
             job.name = "ontarget_mapping." + sample.name
@@ -201,38 +234,23 @@ class MethylSeq(dnaseq.DnaSeq):
         """
 
         jobs = []
-        for readset in self.readsets:
-            trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
-            alignment_directory = os.path.join("alignment", readset.sample.name)
-            readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
+        for sample in self.samples:
+            alignment_directory = os.path.join("alignment", sample.name)
+            ontarget_bam = os.path.join(alignment_directory, sample.name + ".deduplicated.intersect.bam")
+            dedup_bam = os.path.join(alignment_directory, sample.name + ".deduplicated.bam")
+            flagstat_output_file = os.path.join(alignment_directory, sample.name + "flagstat.txt")
 
-            # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
-            if readset.run_type == "PAIRED_END":
-                candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
-                if readset.fastq1 and readset.fastq2:
-                    candidate_input_files.append([readset.fastq1, readset.fastq2])
-                if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
-                [fastq1, fastq2] = self.select_input_files(candidate_input_files)
-            elif readset.run_type == "SINGLE_END":
-                candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
-                if readset.fastq1:
-                    candidate_input_files.append([readset.fastq1])
-                if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
-                [fastq1] = self.select_input_files(candidate_input_files)
-                fastq2 = None
-            else:
-                raise Exception("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+            candidate_input_files = [[ontarget_bam]]
+            candidate_input_files.append([dedup_bam])
 
-        job = concat_jobs([
-            Job(command="mkdir -p " + os.path.dirname(readset_bam)),
-            samtools.flagstat(
-                input_file,
-                output_file
-            )
-        ])
+            [input_file] = self.select_input_files(candidate_input_files)
+            job = concat_jobs([
+                Job(command="mkdir -p " + os.path.dirname(readset_bam)),
+                samtools.flagstat(
+                    input_file,
+                    flagstat_output_file
+                )
+            ])
         return jobs
 
     def index_dedup_bam(self):
@@ -270,45 +288,6 @@ class MethylSeq(dnaseq.DnaSeq):
             samtools.index(
                 dedup_bam_input,
             )
-        ])
-        return jobs
-
-    def genome_coverage_calculation(self):
-        """
-        """
-
-        jobs = []
-        for readset in self.readsets:
-            trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
-            alignment_directory = os.path.join("alignment", readset.sample.name)
-            readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
-
-            # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
-            if readset.run_type == "PAIRED_END":
-                candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
-                if readset.fastq1 and readset.fastq2:
-                    candidate_input_files.append([readset.fastq1, readset.fastq2])
-                if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
-                [fastq1, fastq2] = self.select_input_files(candidate_input_files)
-            elif readset.run_type == "SINGLE_END":
-                candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
-                if readset.fastq1:
-                    candidate_input_files.append([readset.fastq1])
-                if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
-                [fastq1] = self.select_input_files(candidate_input_files)
-                fastq2 = None
-            else:
-                raise Exception("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
-
-        job = concat_jobs([
-            Job(command="mkdir -p " + os.path.dirname(readset_bam)),
-            gatk.depth_of_coverage(
-                input,
-                recal_file_prefix + "all.coverage",
-                bvatools.resolve_readset_coverage_bed(sample.readsets[0]))
         ])
         return jobs
 
@@ -625,12 +604,12 @@ class MethylSeq(dnaseq.DnaSeq):
             self.bismark_align,
             self.picard_add_read_groups,
             self.picard_merge_sam_files,
+            self.genome_coverage_calculation,
             self.bismark_dedup,
             self.ontarget_mapping,
             self.flagstat,
             self.metrics,
             self.index_dedup_bam,
-            self.genome_coverage_calculation,
             self.methylation_call,
             self.bed_graph,
             self.wiggle_tracks,

@@ -56,14 +56,14 @@ bismark -q \\
         )
     )
 
-def dedup((input, output, library_type="PAIRED_END"):
+def dedup(input, output, library_type="PAIRED_END"):
 
     return Job(
-        [ref],
+        [input],
         [output],
         [
-            ['bismark_dedup', 'module_bismark']
-            ['bismark_dedup', 'module_bowtie']
+            ['bismark_dedup', 'module_bismark'],
+            ['bismark_dedup', 'module_bowtie'],
             ['bismark_dedup', 'module_samtools']
         ],
         command="""\
@@ -71,7 +71,7 @@ deduplicate_bismark \\
   {library} \\
   {other_options} \\
   {input}""".format(
-        other_option=config.param('bismark_dedup', 'other_options'),
+        other_options=config.param('bismark_dedup', 'other_options'),
         library="-p" if library_type=="PAIRED_END" else "-s",
         input=input
         )
