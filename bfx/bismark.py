@@ -65,6 +65,7 @@ def dedup(input, output, library_type="PAIRED_END"):
             ['bismark_dedup', 'module_bismark'],
             ['bismark_dedup', 'module_bowtie'],
             ['bismark_dedup', 'module_samtools']
+
         ],
         command="""\
 deduplicate_bismark \\

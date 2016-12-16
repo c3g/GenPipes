@@ -107,7 +107,7 @@ class MethylSeq(dnaseq.DnaSeq):
                         re.sub(".bam", "_noRG.bam", readset_bam)
                     ),
                     Job(command="rename " + re.sub(".sorted.bam", "*bismark*.bam", readset_bam) + " " + re.sub(".bam", "_noRG.bam", readset_bam) + " " + os.path.join(os.path.dirname(readset_bam), "*.bam")),
-                    Job(command="rename " + re.sub(".sorted.bam", "*bismark*_report.txt", readset_bam) + " " + re.sub(".bam", "_noRG_report.txt", readset_bam) + " " + os.path.join(os.path.dirname(readset_bam), " *_report.txt"))
+                    Job(command="rename " + re.sub(".sorted.bam", "*bismark*_report.txt", readset_bam) + " " + re.sub(".bam", "_noRG_report.txt", readset_bam) + " " + os.path.join(os.path.dirname(readset_bam), "*_report.txt"))
                 ], name="bismark_align." + readset.name)
             )
 
