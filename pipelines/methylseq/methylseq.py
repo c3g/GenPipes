@@ -38,7 +38,9 @@ from bfx.readset import *
 from bfx import bismark
 from bfx import picard2 as picard
 from bfx import bedtools
+from bfx import samtools
 from bfx import gatk
+from bfx import igvtools
 
 from pipelines.dnaseq import dnaseq
 
@@ -150,10 +152,10 @@ class MethylSeq(dnaseq.DnaSeq):
         # Check if bam files were provided in the readset file
         bam = {}
         for readset in self.readsets:
-            if not library.has_key(readset.sample):
-                library[readset.sample]=""
+            if not bam.has_key(readset.sample):
+                bam[readset.sample]=""
             if readset.bam:
-                library[readset.sample]=readset.bam
+                bam[readset.sample]=readset.bam
 
         jobs = []
         for sample in self.samples:
@@ -176,6 +178,66 @@ class MethylSeq(dnaseq.DnaSeq):
 
         return jobs
 
+    def metrics(self):
+        """
+        Compute metrics and generate coverage tracks per sample. Multiple metrics are computed at this stage:
+        Number of raw reads, Number of filtered reads, Number of aligned reads, Number of duplicate reads,
+        Median, mean and standard deviation of insert sizes of reads after alignment, percentage of bases
+        covered at X reads (%_bases_above_50 means the % of exons bases which have at least 50 reads)
+        whole genome or targeted percentage of bases covered at X reads (%_bases_above_50 means the % of exons
+        bases which have at least 50 reads). A TDF (.tdf) coverage track is also generated at this step
+        for easy visualization of coverage in the IGV browser.
+        """
+
+        ##check the library status
+        library, bam = {}, {}
+        for readset in self.readsets:
+            if not library.has_key(readset.sample) :
+                library[readset.sample]="SINGLE_END"
+            if readset.run_type == "PAIRED_END" :
+                library[readset.sample]="PAIRED_END"
+            if not bam.has_key(readset.sample):
+                bam[readset.sample]=""
+            if readset.bam:
+                bam[readset.sample]=readset.bam
+
+        jobs = []
+        for sample in self.samples:
+            file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.")
+            input_bam = file_prefix + "bam"
+
+            candidate_input_files = [[input_bam]]
+            if bam[sample]:
+                candidate_input_files.append([bam[sample]])
+
+            [input] = self.select_input_files(candidate_input_files)
+
+            job = picard.collect_multiple_metrics(input, file_prefix + "all.metrics",  library_type=library[sample])
+            job.name = "picard_collect_multiple_metrics." + sample.name
+            jobs.append(job)
+
+            # Compute genome coverage with GATK
+            job = gatk.depth_of_coverage(input, file_prefix + "all.coverage", bvatools.resolve_readset_coverage_bed(sample.readsets[0]))
+            job.name = "gatk_depth_of_coverage.genome." + sample.name
+            jobs.append(job)
+
+            # Compute genome or target coverage with BVATools
+            job = bvatools.depth_of_coverage(
+                input,
+                file_prefix + "coverage.tsv",
+                bvatools.resolve_readset_coverage_bed(sample.readsets[0]),
+                other_options=config.param('bvatools_depth_of_coverage', 'other_options', required=False)
+            )
+
+            job.name = "bvatools_depth_of_coverage." + sample.name
+            jobs.append(job)
+
+            job = igvtools.compute_tdf(input, input + ".tdf")
+            job.name = "igvtools_compute_tdf." + sample.name
+            jobs.append(job)
+
+        return jobs
+
     def bismark_dedup(self):
         """
         """
@@ -193,7 +255,7 @@ class MethylSeq(dnaseq.DnaSeq):
             alignment_directory = os.path.join("alignment", sample.name)
             bam_input = os.path.join(alignment_directory, sample.name + ".sorted.bam")
             bam_input_resorted = re.sub(".sorted.bam", ".readset_sorted.bam", bam_input)
-            bam_dedup_output = re.sub(".bam", ".deduplicated.bam", bam_input)
+            bam_dedup_output = re.sub(".bam", ".dedup.bam", bam_input)
 
             job = concat_jobs([
                 picard.sort_sam(
@@ -220,7 +282,7 @@ class MethylSeq(dnaseq.DnaSeq):
         jobs = []
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
-            bam_input = os.path.join(alignment_directory, sample.name + ".deduplicated.bam")
+            bam_input = os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")
 
             job = bedtools.intersect(bam_input)
             job.name = "ontarget_mapping." + sample.name
@@ -236,22 +298,22 @@ class MethylSeq(dnaseq.DnaSeq):
         jobs = []
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
-            ontarget_bam = os.path.join(alignment_directory, sample.name + ".deduplicated.intersect.bam")
-            dedup_bam = os.path.join(alignment_directory, sample.name + ".deduplicated.bam")
+            ontarget_bam = os.path.join(alignment_directory, sample.name + ".sorted.dedup.intersect.bam")
+            dedup_bam = os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")
             flagstat_output_file = os.path.join(alignment_directory, sample.name + "flagstat.txt")
 
             candidate_input_files = [[ontarget_bam]]
             candidate_input_files.append([dedup_bam])
 
             [input_file] = self.select_input_files(candidate_input_files)
-            job = concat_jobs([
-                Job(command="mkdir -p " + os.path.dirname(readset_bam)),
-                samtools.flagstat(
-                    input_file,
-                    flagstat_output_file
-                )
-            ])
+            job = samtools.flagstat(
+                input_file,
+                flagstat_output_file
+            )
+            job.name = "flagstat." + sample.name
+
         return jobs
+
 
     def index_dedup_bam(self):
         """
