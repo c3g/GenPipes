@@ -75,5 +75,29 @@ deduplicate_bismark \\
         other_options=config.param('bismark_dedup', 'other_options'),
         library="-p" if library_type=="PAIRED_END" else "-s",
         input=input
-        )
+        ),
+        removable_files=[re.sub(".bam", ".deduplicated.bam", input)]
+    )
+
+def methyl_call(input, output, library_type="PAIRED_END")
+
+    return Job(
+        [input],
+        [output],
+        [
+            ['bismark_dedup', 'module_bismark'],
+            ['bismark_dedup', 'module_bowtie'],
+            ['bismark_dedup', 'module_samtools']
+
+        ],
+        command="""\
+deduplicate_bismark \\
+  {library} \\
+  {other_options} \\
+  {input}""".format(
+        other_options=config.param('bismark_methyl_call', 'other_options'),
+        library="-p" if library_type=="PAIRED_END" else "-s",
+        input=input
+        ),
+        removable_files=[re.sub(".bam", ".deduplicated.bam", input)]
     )

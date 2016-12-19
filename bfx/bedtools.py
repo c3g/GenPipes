@@ -61,9 +61,16 @@ bedGraphToBigWig \\
         )
     )
 
-def intersect(input_bam):
+def intersect(input_bam, output_bam):
+    target_bed = config.param('bedtools_intersect', 'target_bed', required=False)
 
-    output_bam = re.sub(".bam", ".intersect.bam", input_bam)
+    if target_bed:
+        if target_bed == "auto":
+            if readset.beds:
+                target_bed = os.path.abspath(readset.beds[0])
+        else:
+            # Add filepath validation
+            target_bed = config.param('bedtools_intersect', 'target_bed', type='filepath')
 
     return Job(
         [input_bam],
@@ -77,7 +84,7 @@ bedtools intersect \\
   -b {target_bed} \\
   {other_options} > {output_bam}""".format(
             input_bam=input_bam,
-            target_bed=config.param('bedtools_intersect', 'target_bed', type='filepath'),
+            target_bed=target_bed,
             other_options=config.param('bedtools_intersect', 'other_options'),
             output_bam=output_bam
         )
