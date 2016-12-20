@@ -63,7 +63,7 @@ bcftools \\
         )
     )
 
-def concat(inputs, output):
+def concat(inputs, output, options=None):
     """
     Concatenate or combine VCF/BCF files
     """
@@ -75,9 +75,10 @@ def concat(inputs, output):
         ],
         command="""\
 bcftools \\
-  concat -a \\
+  concat -a {options} \\
   {inputs} \\
   {output}""".format(
+        options=options if options else "",
         inputs="".join(" \\\n  " + input for input in inputs),
         output=" \\\n > " + output if output else ""
         )

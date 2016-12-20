@@ -108,7 +108,9 @@ def view(input, output=None, options=""):
     return Job(
         [input],
         [output],
-        [['samtools_view', 'module_samtools']],
+        [
+            ['samtools_view', 'module_samtools']
+        ],
         command="""\
 samtools view {options} \\
   {input}{output}""".format(
@@ -123,7 +125,9 @@ def bcftools_cat(inputs, output):
     return Job(
         inputs,
         [output],
-        [['bcftools_cat', 'module_samtools']],
+        [
+            ['bcftools_cat', 'module_samtools']
+        ],
         command="""\
 $BCFTOOLS_BIN/bcftools cat \\
   {inputs}{output}""".format(
@@ -136,7 +140,9 @@ def bcftools_view(input, output, options="", pair_calling=False):
     return Job(
         [input],
         [output],
-        [['bcftools_view', 'module_samtools']],
+        [
+            ['bcftools_view', 'module_samtools']
+        ],
         command="""\
 $BCFTOOLS_BIN/bcftools view {pair_calling} {options} \\
   {input}{output}""".format(

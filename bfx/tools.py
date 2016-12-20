@@ -203,6 +203,23 @@ python $PYTHON_TOOLS/preprocess.py \\
         )
     )
 
+def fix_varscan_output(input, output, options=None):
+    return Job(
+        [input],
+        [output],
+        [
+            ['DEFAULT', 'module_mugqic_tools'],
+            ['DEFAULT', 'module_python']
+        ],
+        command="""\
+python $PYTHON_TOOLS/fixVS2VCF.py {options} {input} \\
+    {output}""".format(
+        options=options if options else "",
+        input=input if input else "",
+        output=output if input else "",
+        )
+    )
+
 ## functions for perl tools ##
 def bed2interval_list(dictionary, bed, output):
     return Job(
