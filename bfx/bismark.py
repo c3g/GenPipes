@@ -79,19 +79,17 @@ deduplicate_bismark \\
         removable_files=[re.sub(".bam", ".deduplicated.bam", input)]
     )
 
-def methyl_call(input, output, library_type="PAIRED_END")
+def methyl_call(input, output, library_type="PAIRED_END"):
 
     return Job(
         [input],
         [output],
         [
-            ['bismark_dedup', 'module_bismark'],
-            ['bismark_dedup', 'module_bowtie'],
-            ['bismark_dedup', 'module_samtools']
+            ['bismark_methyl_call', 'module_bismark']
 
         ],
         command="""\
-deduplicate_bismark \\
+bismark_methylation_extractor \\
   {library} \\
   {other_options} \\
   {input}""".format(
@@ -100,4 +98,23 @@ deduplicate_bismark \\
         input=input
         ),
         removable_files=[re.sub(".bam", ".deduplicated.bam", input)]
+    )
+
+def bed_graph(inputs, output):
+
+    return Job(
+        input,
+        [output],
+        [
+            ['bismark_bed_graph', 'module_bismark']
+        ],
+        command="""\
+bismark2bedgraph \\
+  {other_options} \\
+  -o {output} \\
+  {inputs}""".format(
+            inputs="".join([" \\\n  " + input_bam for input_bam in input_bams]),
+            output=output,
+            other_options=config.param(('bismark_bed_graph', 'other_options')
+        )
     )

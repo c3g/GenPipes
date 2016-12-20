@@ -219,65 +219,28 @@ class MethylSeq(dnaseq.DnaSeq):
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
             bam_input = os.path.join(alignment_directory, sample.name + ".sorted.bam")
-            bam_input_resorted = re.sub(".sorted.bam", ".readset_sorted.bam", bam_input)
-            bam_dedup_output = re.sub(".bam", ".dedup.bam", bam_input_resorted)
+            bam_readset_sorted = re.sub(".sorted.bam", ".readset_sorted.bam", bam_input)
+            dedup_bam_readset_sorted = re.sub(".bam", ".dedup.bam", bam_readset_sorted)
+            bam_output = re.sub("readset_", "", dedup_bam_readset_sorted)
 
             job = concat_jobs([
                 picard.sort_sam(
                     bam_input,
-                    bam_input_resorted,
+                    bam_readset_sorted,
                     "queryname"
                 ),
                 bismark.dedup(
-                    bam_input_resorted,
-                    bam_dedup_output,
+                    bam_readset_sorted,
+                    dedup_bam_readset_sorted,
                     library[sample]
                 ),
-                Job(command="mv " + re.sub(".bam", ".deduplicated.bam", bam_input_resorted) + " " + bam_dedup_output)
+                Job(command="mv " + re.sub(".bam", ".deduplicated.bam", bam_readset_sorted) + " " + dedup_bam_readset_sorted),
+                picard.sort_sam(
+                    dedup_bam_readset_sorted,
+                    bam_output
+                )
             ])
             job.name = "bismark_dedup." + sample.name
-
-            jobs.append(job)
-
-        return jobs
-
-    def ontarget_mapping(self):
-        """
-        """
-
-        jobs = []
-        for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
-            bam_input = os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.bam")
-            bam_output = re.sub(".bam", ".ontarget.bam", bam_input)
-
-            job = bedtools.intersect(bam_input, bam_output)
-            job.name = "ontarget_mapping." + sample.name
-
-            jobs.append(job)
-
-        return jobs
-
-    def flagstat(self):
-        """
-        """
-
-        jobs = []
-        for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
-            ontarget_bam = os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.ontarget.bam")
-            dedup_bam = os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.bam")
-            flagstat_output_file = os.path.join(alignment_directory, sample.name + ".flagstat.txt")
-
-            candidate_input_files = [[ontarget_bam]]
-            candidate_input_files.append([dedup_bam])
-            [input_file] = self.select_input_files(candidate_input_files)
-
-            job = samtools.flagstat(
-                input_file,
-                flagstat_output_file
-            )
-            job.name = "flagstat." + sample.name
 
             jobs.append(job)
 
@@ -290,11 +253,11 @@ class MethylSeq(dnaseq.DnaSeq):
         jobs = []
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
-            ontarget_bam = os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.ontarget.bam")
-            dedup_bam = os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.bam")
+            bam_input = os.path.join(alignment_directory, sample.name + ".sorted.bam")
+            dedup_bam_input = os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")
 
-            candidate_input_files = [[ontarget_bam]]
-            candidate_input_files.append([dedup_bam])
+            candidate_input_files = [dedup_bam_input]
+            candidate_input_files.append([bam_input])
             [input_file] = self.select_input_files(candidate_input_files)
 
             puc19_out_file = re.sub(".bam", ".pUC19_reads.txt", input_file)
@@ -304,8 +267,10 @@ class MethylSeq(dnaseq.DnaSeq):
                 [
                     ['puc19_lambda_reads', 'module_samtools']
                 ],
-                command="sammtools view " + input_file + " | grep pUC19 > " + puc19_out_file
-                name="pUC19." + sample.name,
+                command="samtools view " + input_file + " | grep pUC19 > " + puc19_out_file,
+                name="pUC19." + sample.name
+            )
+            jobs.append(puc19_job)
 
             lambda_out_file = re.sub(".bam", ".lambda_reads.txt", input_file)
             lambda_job = Job(
@@ -314,36 +279,10 @@ class MethylSeq(dnaseq.DnaSeq):
                 [
                     ['puc19_lambda_reads', 'module_samtools']
                 ],
-                command="sammtools view " + input_file + " | grep lambda > " + lambda_out_file
+                command="samtools view " + input_file + " | grep lambda > " + lambda_out_file,
                 name="lambda." + sample.name
-
-            jobs.append(
-                concat_jobs([
-                    puc19_job,
-                    lambda_job
-                ])
             )
-
-        return jobs
-
-    def index_dedup_bam(self):
-        """
-        """
-
-        jobs = []
-        for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
-            ontarget_bam = os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.ontarget.bam")
-            dedup_bam = os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.bam")
-
-            candidate_input_files = [[ontarget_bam]]
-            candidate_input_files.append([dedup_bam])
-            [input_file] = self.select_input_files(candidate_input_files)
-
-            job = samtools.index(input_file)
-            job.nanme = "index_dedup_bam." + sample.name
-
-            jobs.append(job)
+            jobs.append(lambda_job)
 
         return jobs
 
@@ -360,19 +299,22 @@ class MethylSeq(dnaseq.DnaSeq):
                 library[readset.sample]="PAIRED_END"
 
         jobs = []
-        for readset in self.readsets:
-            trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
-            alignment_directory = os.path.join("alignment", readset.sample.name)
-            readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
+        for sample in self.samples:
+            alignment_directory = os.path.join("alignment", sample.name)
+            bam_input = os.path.join(alignment_directory, sample.name + ".sorted.bam")
+            dedup_bam_input = os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")
 
-            job = concat_jobs([
-                Job(command="mkdir -p " + os.path.dirname(readset_bam)),
-                bismark.methyl_call(
-                    bam_input,
-                    library[sample]
-                ),
-                name = "bismark_methyl_call." + sample.name
-            ])
+            candidate_input_files = [dedup_bam_input]
+            candidate_input_files.append([bam_input])
+            [input_file] = self.select_input_files(candidate_input_files)
+            output_file = re.sub(".bam", ".bed", input_file)
+
+            job = bismark.methyl_call(
+                input_file,
+                output_file,
+                library[sample]
+            )
+            job.name = "bismark_methyl_call." + sample.name
 
             jobs.append(job)
 
@@ -382,40 +324,28 @@ class MethylSeq(dnaseq.DnaSeq):
         """
         """
 
-        jobs = []
+        # Check the library status
+        library = {}
         for readset in self.readsets:
-            trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
-            alignment_directory = os.path.join("alignment", readset.sample.name)
-            readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
+            if not library.has_key(readset.sample) :
+                library[readset.sample]="SINGLE_END"
+            if readset.run_type == "PAIRED_END" :
+                library[readset.sample]="PAIRED_END"
 
-            # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
-            if readset.run_type == "PAIRED_END":
-                candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
-                if readset.fastq1 and readset.fastq2:
-                    candidate_input_files.append([readset.fastq1, readset.fastq2])
-                if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
-                [fastq1, fastq2] = self.select_input_files(candidate_input_files)
-            elif readset.run_type == "SINGLE_END":
-                candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
-                if readset.fastq1:
-                    candidate_input_files.append([readset.fastq1])
-                if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
-                [fastq1] = self.select_input_files(candidate_input_files)
-                fastq2 = None
-            else:
-                raise Exception("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+        jobs = []
+        for sample in self.samples:
 
-        job = concat_jobs([
-            Job(command="mkdir -p " + os.path.dirname(readset_bam)),
-            bismark.bed_graph(
-                input,
-                output,
-                options="USAGE : bismark2bedGraph [options] -o <output> [methylation extractor input files]"
-            )
-        ])
+            job = concat_jobs([
+                Job(command="mkdir -p " + os.path.dirname(readset_bam)),
+                bismark.methyl_call(
+                    bam_input,
+                    library[sample]
+                )
+            ])
+            job.name = "bismark_bed_graph." + sample.name
+
+            jobs.append(job)
+
         return jobs
 
     def wiggle_tracks(self):
@@ -608,7 +538,6 @@ class MethylSeq(dnaseq.DnaSeq):
             self.metrics,
             self.bismark_dedup,
             self.puc19_lambda_reads,
-            self.index_dedup_bam,
             self.methylation_call,
             self.bed_graph,
             self.wiggle_tracks,
