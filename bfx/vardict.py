@@ -25,9 +25,9 @@
 from core.config import *
 from core.job import *
 
-def paired(input_normal, input_tumor, tumor_name, output=None, region=None):
+def paired(input_normal, input_tumor, tumor_name, output=None, region=[]):
     return Job(
-        [input_normal,input_tumor],
+        [input_normal, input_tumor, region],
         [output],
         [
         ['vardict_paired', 'module_vardict'],
@@ -50,9 +50,9 @@ vardict \\
         )
     )
 
-def paired_java(input_normal, input_tumor, tumor_name, output=None, region=None):
+def paired_java(input_normal, input_tumor, tumor_name, output=None, region=[]):
     return Job(
-        [input_normal,input_tumor],
+        [input_normal, input_tumor, region],
         [output],
         [
         ['vardict_paired', 'module_java'],

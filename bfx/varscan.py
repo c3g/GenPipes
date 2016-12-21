@@ -50,11 +50,11 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $VARSCAN2_JA
         )
     )
 
-def somatic(input_normal, input_tumor, output, other_options=None, output_snp_dep=[], output_indel_dep=[]):
+def somatic(input_normal, input_tumor, output, other_options=None, output_vcf_dep=[], output_snp_dep=[], output_indel_dep=[]):
 
     return Job(
         [input_normal, input_tumor],
-        [output_snp_dep, output_indel_dep],
+        [output, output_vcf_dep, output_snp_dep, output_indel_dep],
         [
             ['varscan', 'module_java'],
             ['varscan', 'module_varscan'],
