@@ -85,7 +85,8 @@ def methyl_call(input, output, library_type="PAIRED_END"):
         [input],
         [output],
         [
-            ['bismark_methyl_call', 'module_bismark']
+            ['bismark_methyl_call', 'module_bismark'],
+            ['bismark_methyl_call', 'module_samtools']
 
         ],
         command="""\
@@ -109,12 +110,12 @@ def bed_graph(inputs, output):
             ['bismark_bed_graph', 'module_bismark']
         ],
         command="""\
-bismark2bedgraph \\
+bismark2bedGraph \\
   {other_options} \\
   -o {output} \\
   {inputs}""".format(
             inputs="".join([" \\\n  " + input_bam for input_bam in input_bams]),
             output=output,
-            other_options=config.param(('bismark_bed_graph', 'other_options')
+            other_options=config.param('bismark_bed_graph', 'other_options')
         )
     )
