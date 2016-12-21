@@ -79,11 +79,11 @@ deduplicate_bismark \\
         removable_files=[re.sub(".bam", ".deduplicated.bam", input)]
     )
 
-def methyl_call(input, output, library_type="PAIRED_END"):
+def methyl_call(input, outputs, library_type="PAIRED_END"):
 
     return Job(
         [input],
-        [output],
+        outputs,
         [
             ['bismark_methyl_call', 'module_bismark'],
             ['bismark_methyl_call', 'module_samtools']
@@ -93,18 +93,20 @@ def methyl_call(input, output, library_type="PAIRED_END"):
 bismark_methylation_extractor \\
   {library} \\
   {other_options} \\
+  --output {output_directory} \\
   {input}""".format(
         other_options=config.param('bismark_methyl_call', 'other_options'),
         library="-p" if library_type=="PAIRED_END" else "-s",
-        input=input
+        input=input,
+        output_directory=os.path.dirname(input)
         ),
         removable_files=[re.sub(".bam", ".deduplicated.bam", input)]
     )
 
-def bed_graph(inputs, output):
+def bed_graph(inputs, output, output_directory):
 
     return Job(
-        input,
+        inputs,
         [output],
         [
             ['bismark_bed_graph', 'module_bismark']
@@ -112,10 +114,32 @@ def bed_graph(inputs, output):
         command="""\
 bismark2bedGraph \\
   {other_options} \\
-  -o {output} \\
+  --output {output} \\
+  --dir {directory} \\
   {inputs}""".format(
-            inputs="".join([" \\\n  " + input_bam for input_bam in input_bams]),
-            output=output,
+            inputs="".join([" \\\n  " + input for input in inputs]),
+            output=os.path.join(output_directory, output),
+            directory=output_directory,
             other_options=config.param('bismark_bed_graph', 'other_options')
+        )
+    )
+
+def coverage2cytosine(input, output, output_directory):
+    return Job(
+        inputs,
+        [output],
+        [
+            ['bismark_coverage2cytosine', 'module_bismark']
+        ],
+        command="""\
+coverage2cytosine \\
+  {other_options} \\
+  --dir {directory} \\
+  --output {output} \\
+  {input}""".format(
+            input=input,
+            output=os.path.join(output_directory, output),
+            directory=output_directory,
+            other_options=config.param('bismark_coverage2cytosine', 'other_options')
         )
     )

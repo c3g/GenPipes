@@ -130,17 +130,19 @@ class MethylSeq(dnaseq.DnaSeq):
             [input_bam] = self.select_input_files(candidate_input_files)
             output_bam = re.sub("_noRG.bam", ".bam", input_bam)
 
-            job = picard.add_or_replace_read_groups(
-                input_bam,
-                output_bam,
-                readset.name,
-                readset.library,
-                readset.lane,
-                readset.sample.name
+            jobs.append(
+                concat_jobs([
+                    Job(command="mkdir -p " + alignment_directory),
+                    picard.add_or_replace_read_groups(
+                        input_bam,
+                        output_bam,
+                        readset.name,
+                        readset.library,
+                        readset.lane,
+                        readset.sample.name
+                    )
+                ], name="picard_add_read_groups." + readset.name)
             )
-            job.name = "picard_add_read_groups." + readset.name
-
-            jobs.append(job)
 
         return jobs
 
@@ -224,6 +226,7 @@ class MethylSeq(dnaseq.DnaSeq):
             bam_output = re.sub("readset_", "", dedup_bam_readset_sorted)
 
             job = concat_jobs([
+                Job(command="mkdir -p " + alignment_directory),
                 picard.sort_sam(
                     bam_input,
                     bam_readset_sorted,
@@ -245,6 +248,47 @@ class MethylSeq(dnaseq.DnaSeq):
             jobs.append(job)
 
         return jobs
+
+    def wiggle_tracks(self):
+        """
+        Generate wiggle tracks suitable for multiple browsers.
+        """
+
+        jobs = []
+
+        ##check the library status
+        library = {}
+        for readset in self.readsets:
+            if not library.has_key(readset.sample) :
+                library[readset.sample]="PAIRED_END"
+            if readset.run_type == "SINGLE_END" :
+                library[readset.sample]="SINGLE_END"
+
+        for sample in self.samples:
+            alignment_directory = os.path.join("alignment", sample.name)
+            readset_sorted_dedup_bam_input = os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.bam")
+            dedup_bam_input = os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")
+
+            candidate_input_files = [[os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.bam")]]
+            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")])
+
+            [input_bam] = self.select_input_files(candidate_input_files)
+
+            bed_graph_prefix = os.path.join("tracks", sample.name, sample.name)
+            big_wig_prefix = os.path.join("tracks", "bigWig", sample.name)
+
+            bed_graph_output = bed_graph_prefix + ".bedGraph"
+            big_wig_output = big_wig_prefix + ".bw"
+
+            jobs.append(
+                concat_jobs([
+                    Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " " + os.path.join("tracks", "bigWig"), removable_files=["tracks"]),
+                    bedtools.graph(input_bam, bed_graph_output, big_wig_output, library[sample])
+                ], name="wiggle." + re.sub(".bedGraph", "", os.path.basename(bed_graph_output)))
+            )
+
+        return jobs
+
 
     def puc19_lambda_reads(self):
         """
@@ -270,7 +314,6 @@ class MethylSeq(dnaseq.DnaSeq):
                 command="samtools view " + input_file + " | grep pUC19 > " + puc19_out_file,
                 name="pUC19." + sample.name
             )
-            jobs.append(puc19_job)
 
             lambda_out_file = re.sub(".bam", ".lambda_reads.txt", input_file)
             lambda_job = Job(
@@ -282,7 +325,13 @@ class MethylSeq(dnaseq.DnaSeq):
                 command="samtools view " + input_file + " | grep lambda > " + lambda_out_file,
                 name="lambda." + sample.name
             )
-            jobs.append(lambda_job)
+            jobs.append(
+                concat_jobs([
+                    Job(command="mkdir -p " + alignment_directory),
+                    puc19_job,
+                    lambda_job
+                ], name="puc19_lambda_reads." + sample.name)
+            )
 
         return jobs
 
@@ -311,24 +360,27 @@ class MethylSeq(dnaseq.DnaSeq):
             [input_file] = self.select_input_files(candidate_input_files)
 
             methyl_directory = os.path.join("methylation_call", sample.name)
-            output_file = os.path.join(methyl_directory, "dummy.bismark_methylation_extractor")
+            output_files = [
+                os.path.join( methyl_directory, re.sub( ".bam", ".bedGraph.gz", os.path.basename(input_file) ) ),
+                os.path.join( methyl_directory, re.sub( ".bam", ".bismark.cov.gz", os.path.basename(input_file) ) )
+            ]
 
             if input_file == os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.bam") :
                 bismark_job = bismark.methyl_call(
                     input_file,
-                    output_file,
+                    output_files,
                     library[sample]
                 )
             else :
                 bismark_job = concat_jobs([
                     picard.sort_sam(
-                        bam_input,
-                        bam_readset_sorted,
+                        input_file,
+                        re.sub("sorted", "readset_sorted", input_file),
                         "queryname"
                     ),
                     bismark.methyl_call(
-                        input_file,
-                        output_file,
+                        re.sub("sorted", "readset_sorted", input_file),
+                        output_files,
                         library[sample]
                     )
                 ])
@@ -337,7 +389,6 @@ class MethylSeq(dnaseq.DnaSeq):
                 concat_jobs([
                     Job(command="mkdir -p " + methyl_directory),
                     bismark_job,
-                    Job(command="touch " + output_file)
                 ], name="bismark_methyl_call." + sample.name)
             )
 
@@ -350,67 +401,24 @@ class MethylSeq(dnaseq.DnaSeq):
         jobs = []
         for sample in self.samples:
             methyl_directory = os.path.join("methylation_call", sample.name)
+            input_file_prefix = os.path.join(methyl_directory, sample.name)
 
-            job = concat_jobs([
-                Job(command="mkdir -p " + os.path.dirname(readset_bam)),
-                bismark.methyl_call(
-                    bam_input,
-                    library[sample]
-                )
-            ])
-            job.name = "bismark_bed_graph." + sample.name
+            candidate_input_files = [[input_file_prefix + ".readset_sorted.dedup.bedGraph.gz", input_file_prefix + ".readset_sorted.dedup.bismark.cov.gz"]]
+            candidate_input_files.append([input_file_prefix + ".sorted.dedup.bedGraph.gz", input_file_prefix + ".sorted.dedup.bismark.cov.gz"])
+            candidate_input_files.append([input_file_prefix + ".sorted.bedGraph.gz", input_file_prefix + ".sorted.bismark.cov.gz"])
 
-            jobs.append(job)
+            [bedgraph_file, bismark_cov_file] = self.select_input_files(candidate_input_files)
+            jobs.append(
+                concat_jobs([
+                    Job(command="mkdir -p " + methyl_directory),
+                    bismark.bed_graph(
+                        [bedgraph_file, bismark_cov_file],
+                        sample.name + "bedGraph",
+                        methyl_directory
+                    )
+                ], name = "bismark_bed_graph." + sample.name)
+            )
 
-        return jobs
-
-    def wiggle_tracks(self):
-        """
-        """
-
-        jobs = []
-        for readset in self.readsets:
-            trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
-            alignment_directory = os.path.join("alignment", readset.sample.name)
-            readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
-
-            # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
-            if readset.run_type == "PAIRED_END":
-                candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
-                if readset.fastq1 and readset.fastq2:
-                    candidate_input_files.append([readset.fastq1, readset.fastq2])
-                if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
-                [fastq1, fastq2] = self.select_input_files(candidate_input_files)
-            elif readset.run_type == "SINGLE_END":
-                candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
-                if readset.fastq1:
-                    candidate_input_files.append([readset.fastq1])
-                if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
-                [fastq1] = self.select_input_files(candidate_input_files)
-                fastq2 = None
-            else:
-                raise Exception("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
-
-        job = concat_jobs([
-            Job(command="mkdir -p " + os.path.dirname(readset_bam)),
-            concat_jobs([
-                bismark.align(
-                    fastq1,
-                    fastq2,
-                    read_group="'@RG" + \
-                        "\tID:" + readset.name + \
-                        "\tSM:" + readset.sample.name + \
-                        "\tLB:" + (readset.library if readset.library else readset.sample.name) + \
-                        ("\tPU:run" + readset.run + "_" + readset.lane if readset.run and readset.lane else "") + \
-                        ("\tCN:" + config.param('bwa_mem', 'sequencing_center') if config.param('bwa_mem', 'sequencing_center', required=False) else "") + \
-                        "\tPL:Illumina" + \
-                        "'")
-                #bedtools.
-                ])
-        ])
         return jobs
 
     def methylation_profile(self):
@@ -418,128 +426,83 @@ class MethylSeq(dnaseq.DnaSeq):
         """
 
         jobs = []
-        for readset in self.readsets:
-            trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
-            alignment_directory = os.path.join("alignment", readset.sample.name)
-            readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
+        for sample in self.samples:
+            methyl_directory = os.path.join("methylation_call", sample.name)
+            input_file_prefix = os.path.join(methyl_directory, sample.name)
 
-            # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
-            if readset.run_type == "PAIRED_END":
-                candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
-                if readset.fastq1 and readset.fastq2:
-                    candidate_input_files.append([readset.fastq1, readset.fastq2])
-                if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
-                [fastq1, fastq2] = self.select_input_files(candidate_input_files)
-            elif readset.run_type == "SINGLE_END":
-                candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
-                if readset.fastq1:
-                    candidate_input_files.append([readset.fastq1])
-                if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
-                [fastq1] = self.select_input_files(candidate_input_files)
-                fastq2 = None
-            else:
-                raise Exception("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+            candidate_input_files = [[input_file_prefix + ".readset_sorted.dedup.bismark.cov.gz"]]
+            candidate_input_files.append([input_file_prefix + ".sorted.dedup.bismark.cov.gz"])
+            candidate_input_files.append([input_file_prefix + ".sorted.bismark.cov.gz"])
 
-        job = concat_jobs([
-            Job(command="mkdir -p " + os.path.dirname(readset_bam)),
-            bismark.methylation_extractor(
-                banm_input,
-                output,
-                options="-p --no_overlap --comprehensive  --gzip --multicore 6  --no_header  --bedGraph --buffer_size 20G --cytosine_report"
-            )
-        ])
-        return jobs
+            bismark_cov_file = self.select_input_files(candidate_input_files)
 
-    def sort_dedup_bam(self):
-        """
-        """
-
-        jobs = []
-        for readset in self.readsets:
-            trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
-            alignment_directory = os.path.join("alignment", readset.sample.name)
-            readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
-
-            # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
-            if readset.run_type == "PAIRED_END":
-                candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
-                if readset.fastq1 and readset.fastq2:
-                    candidate_input_files.append([readset.fastq1, readset.fastq2])
-                if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
-                [fastq1, fastq2] = self.select_input_files(candidate_input_files)
-            elif readset.run_type == "SINGLE_END":
-                candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
-                if readset.fastq1:
-                    candidate_input_files.append([readset.fastq1])
-                if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
-                [fastq1] = self.select_input_files(candidate_input_files)
-                fastq2 = None
-            else:
-                raise Exception("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
-
-        job = concat_jobs([
-            Job(command="mkdir -p " + os.path.dirname(readset_bam)),
-            samtools.sort(
-                input_bam,
-                output_prefix
-            ),
-            samtools.index(
-                sorted_input_bam
-            )
-        ])
+            job = concat_jobs([
+                Job(command="mkdir -p " + os.path.dirname(readset_bam)),
+                bismark.coverage2cytosine(
+                    bismark_cov_file,
+                    output,
+                    methyl_directory
+                )
+            ])
         return jobs
 
     def bis_snp(self):
         """
         """
 
-        jobs = []
+        # Check the library status
+        library = {}
         for readset in self.readsets:
-            trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
-            alignment_directory = os.path.join("alignment", readset.sample.name)
-            readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
+            if not library.has_key(readset.sample) :
+                library[readset.sample]="SINGLE_END"
+            if readset.run_type == "PAIRED_END" :
+                library[readset.sample]="PAIRED_END"
 
-            # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
-            if readset.run_type == "PAIRED_END":
-                candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
-                if readset.fastq1 and readset.fastq2:
-                    candidate_input_files.append([readset.fastq1, readset.fastq2])
-                if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
-                [fastq1, fastq2] = self.select_input_files(candidate_input_files)
-            elif readset.run_type == "SINGLE_END":
-                candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
-                if readset.fastq1:
-                    candidate_input_files.append([readset.fastq1])
-                if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
-                [fastq1] = self.select_input_files(candidate_input_files)
-                fastq2 = None
-            else:
-                raise Exception("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+        jobs = []
+        for sample in self.samples:
+            alignment_directory = os.path.join("alignment", sample.name)
+            readset_sorted_dedup_bam_input = os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.bam")
+            dedup_bam_input = os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")
+            bam_input = os.path.join(alignment_directory, sample.name + ".sorted.bam")
 
-        job = concat_jobs([
-            Job(command="mkdir -p " + os.path.dirname(readset_bam)),
-            bissnp.bissnp(
-                sorted_input_bam,
-                fastq2,
-                read_group="'@RG" + \
-                    "\tID:" + readset.name + \
-                    "\tSM:" + readset.sample.name + \
-                    "\tLB:" + (readset.library if readset.library else readset.sample.name) + \
-                    ("\tPU:run" + readset.run + "_" + readset.lane if readset.run and readset.lane else "") + \
-                    ("\tCN:" + config.param('bwa_mem', 'sequencing_center') if config.param('bwa_mem', 'sequencing_center', required=False) else "") + \
-                    "\tPL:Illumina" + \
-                    "'"
+            candidate_input_files = [[readset_sorted_dedup_bam_input]]
+            candidate_input_files.append([dedup_bam_input])
+            candidate_input_files.append([bam_input])
+            [input_file] = self.select_input_files(candidate_input_files)
+
+            methyl_directory = os.path.join("methylation_call", sample.name)
+            output_files = [
+                os.path.join( methyl_directory, re.sub( ".bam", ".bedGraph.gz", os.path.basename(input_file) ) ),
+                os.path.join( methyl_directory, re.sub( ".bam", ".bismark.cov.gz", os.path.basename(input_file) ) )
+            ]
+
+            if input_file != os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.bam") :
+                bismark_job = bismark.bis_snp(
+                    input_file,
+                    output_files,
+                    library[sample]
+                )
+            else :
+                bismark_job = concat_jobs([
+                    picard.sort_sam(
+                        input_file,
+                        re.sub("sorted", "readset_sorted", input_file),
+                        "coordinate"
+                    ),
+                    bismark.bis_snp(
+                        re.sub("sorted", "readset_sorted", input_file),
+                        output_files,
+                        library[sample]
+                    )
+                ])
+
+            jobs.append(
+                concat_jobs([
+                    Job(command="mkdir -p " + methyl_directory),
+                    bismark_job,
+                ], name="bismark_bis_snp." + sample.name)
             )
-        ])
+
         return jobs
 
     @property
@@ -549,17 +512,16 @@ class MethylSeq(dnaseq.DnaSeq):
             self.trimmomatic,
             self.merge_trimmomatic_stats,
             self.bismark_align,
-            self.picard_add_read_groups,
+            self.picard_add_read_groups,    # step 5
             self.picard_merge_sam_files,
             self.metrics,
             self.bismark_dedup,
-            self.puc19_lambda_reads,
+            self.wiggle_tracks,
+            self.puc19_lambda_reads,        # step 10
             self.methylation_call,
             self.bed_graph,
-            self.wiggle_tracks,
             self.methylation_profile,
-            self.sort_dedup_bam,
-            self.bis_snp,
+            self.bis_snp,                   # step 14
         ]
 
 if __name__ == '__main__': 
