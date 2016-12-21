@@ -259,22 +259,22 @@ pandoc --to=markdown \\
             else:
                 # The first sequences are the longest to process.
                 # Each of them must be processed in a separate job.
-                unique_sequences_per_job = [sequence['name'] for sequence in self.sequence_dictionary[0:min(nb_jobs - 1, len(self.sequence_dictionary))]]
+                unique_sequences_per_job,unique_sequences_per_job_others = split_by_size(self.sequence_dictionary, nb_jobs - 1)
 
                 # Create one separate job for each of the first sequences
-                for sequence in unique_sequences_per_job:
-                    realign_prefix = os.path.join(realign_directory, sequence)
+                for idx,sequence in enumerate(unique_sequences_per_job):
+                    realign_prefix = os.path.join(realign_directory, str(idx))
                     realign_intervals = realign_prefix + ".intervals"
-                    intervals=[sequence]
-                    if unique_sequences_per_job.index(sequence) == 0:
+                    intervals=sequence
+                    if str(idx) == 0:
                         intervals.append("unmapped")
                     output_bam = realign_prefix + ".bam"
                     jobs.append(concat_jobs([
                         # Create output directory since it is not done by default by GATK tools
                         Job(command="mkdir -p " + realign_directory, removable_files=[realign_directory]),
-                        gatk.realigner_target_creator(input, realign_intervals, intervals=[sequence]),
+                        gatk.realigner_target_creator(input, realign_intervals, intervals=intervals),
                         gatk.indel_realigner(input, output=output_bam, target_intervals=realign_intervals, intervals=intervals)
-                    ], name="gatk_indel_realigner." + sample.name + "." + sequence))
+                    ], name="gatk_indel_realigner." + sample.name + "." + str(idx)))
 
                 # Create one last job to process the last remaining sequences and 'others' sequences
                 realign_prefix = os.path.join(realign_directory, "others")
@@ -283,8 +283,8 @@ pandoc --to=markdown \\
                 jobs.append(concat_jobs([
                     # Create output directory since it is not done by default by GATK tools
                     Job(command="mkdir -p " + realign_directory, removable_files=[realign_directory]),
-                    gatk.realigner_target_creator(input, realign_intervals, exclude_intervals=unique_sequences_per_job),
-                    gatk.indel_realigner(input, output=output_bam, target_intervals=realign_intervals, exclude_intervals=unique_sequences_per_job)
+                    gatk.realigner_target_creator(input, realign_intervals, exclude_intervals=unique_sequences_per_job_others),
+                    gatk.indel_realigner(input, output=output_bam, target_intervals=realign_intervals, exclude_intervals=unique_sequences_per_job_others)
                 ], name="gatk_indel_realigner." + sample.name + ".others"))
 
         return jobs
@@ -305,10 +305,14 @@ pandoc --to=markdown \\
 
             # if nb_jobs == 1, symlink has been created in indel_realigner and merging is not necessary
             if nb_jobs > 1:
-                realigned_bams = [os.path.join(realign_directory, sequence['name'] + ".bam") for sequence in self.sequence_dictionary[0:min(nb_jobs - 1, len(self.sequence_dictionary))]]
-                realigned_bams.append(os.path.join(realign_directory, "others.bam"))
+                unique_sequences_per_job,unique_sequences_per_job_others = split_by_size(self.sequence_dictionary, nb_jobs - 1)
 
-                job = picard.merge_sam_files(realigned_bams, merged_realigned_bam)
+                inputBAMs = []
+                for idx,sequences in enumerate(unique_sequences_per_job):
+                    inputBAMs.append(os.path.join(realign_directory, str(idx) + ".bam"))
+                inputBAMs.append(os.path.join(realign_directory, "others.bam"))
+                
+                job = picard.merge_sam_files(inputBAMs, merged_realigned_bam)
                 job.name = "merge_realigned." + sample.name
                 jobs.append(job)
 

@@ -45,3 +45,21 @@ vcfsamplediff \\
         output=" \\\n  > " + output if output else ""
         )
     )
+
+def vcffilter(input_vcf, output_vcf, options):
+    return Job(
+        [input_vcf],
+        [output_vcf],
+        [
+            ['DEFAULT', 'module_vcflib']
+        ],
+        command="""\
+vcffilter \\
+  {options} \\
+  {input_vcf} \\
+  {output_vcf}""".format(
+        options=options,
+        input_vcf=input_vcf if input_vcf else "",
+        output_vcf=" \\\n  > " + output_vcf if output_vcf else ""
+        )
+    )

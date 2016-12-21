@@ -62,11 +62,12 @@ def paired_java(input_normal, input_tumor, tumor_name, output=None, region=None)
         ['vardict_paired', 'module_R']
         ],
         command="""\
-java {java_other_options} -Xms768m -Xmx{ram} -classpath {classpath} \\
+java {java_other_options} -Djava.io.tmpdir={tmp_dir} -Xms768m -Xmx{ram} -classpath {classpath} \\
   -G {reference_fasta} \\
   -N {tumor_name} \\
   -b "{paired_samples}" \\
   {vardict_options}{region}{output}""".format(
+        tmp_dir=config.param('vardict_paired', 'tmp_dir'),
         reference_fasta=config.param('vardict_paired', 'genome_fasta', type='filepath'),
         tumor_name=tumor_name,
         paired_samples=input_tumor + "|" + input_normal,
