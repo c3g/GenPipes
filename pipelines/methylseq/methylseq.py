@@ -122,9 +122,8 @@ class MethylSeq(dnaseq.DnaSeq):
         jobs = []
         for readset in self.readsets:
             alignment_directory = os.path.join("alignment", readset.sample.name)
-            readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted_noRG.bam")
 
-            candidate_input_files = [[readset_bam]]
+            candidate_input_files = [[os.path.join(alignment_directory, readset.name, readset.name + ".sorted_noRG.bam")]]
             if readset.bam:
                 candidate_input_files.append([readset.bam])
             [input_bam] = self.select_input_files(candidate_input_files)
@@ -172,9 +171,8 @@ class MethylSeq(dnaseq.DnaSeq):
         jobs = []
         for sample in self.samples:
             file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.")
-            input_bam = file_prefix + "bam"
 
-            candidate_input_files = [[input_bam]]
+            candidate_input_files = [[file_prefix + "bam"]]
             if bam[sample]:
                 candidate_input_files.append([bam[sample]])
             [input] = self.select_input_files(candidate_input_files)
@@ -266,8 +264,6 @@ class MethylSeq(dnaseq.DnaSeq):
 
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
-            readset_sorted_dedup_bam_input = os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.bam")
-            dedup_bam_input = os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")
 
             candidate_input_files = [[os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.bam")]]
             candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")])
@@ -310,11 +306,9 @@ class MethylSeq(dnaseq.DnaSeq):
         jobs = []
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
-            bam_input = os.path.join(alignment_directory, sample.name + ".sorted.bam")
-            dedup_bam_input = os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")
 
-            candidate_input_files = [[dedup_bam_input]]
-            candidate_input_files.append([bam_input])
+            candidate_input_files = [[os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")]]
+            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.bam")])
             [input_file] = self.select_input_files(candidate_input_files)
 
             puc19_out_file = re.sub(".bam", ".pUC19_reads.txt", input_file)
@@ -363,13 +357,10 @@ class MethylSeq(dnaseq.DnaSeq):
         jobs = []
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
-            readset_sorted_dedup_bam_input = os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.bam")
-            dedup_bam_input = os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")
-            bam_input = os.path.join(alignment_directory, sample.name + ".sorted.bam")
 
-            candidate_input_files = [[readset_sorted_dedup_bam_input]]
-            candidate_input_files.append([dedup_bam_input])
-            candidate_input_files.append([bam_input])
+            candidate_input_files = [[os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.bam")]]
+            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")])
+            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.bam")])
             [input_file] = self.select_input_files(candidate_input_files)
 
             methyl_directory = os.path.join("methylation_call", sample.name)
@@ -443,13 +434,9 @@ class MethylSeq(dnaseq.DnaSeq):
             methyl_directory = os.path.join("methylation_call", sample.name)
             input_file_prefix = os.path.join(methyl_directory, sample.name)
 
-            readset_sorted_dedup_cov_input = input_file_prefix + ".readset_sorted.dedup.bismark.cov.gz"
-            sorted_dedup_cov_input = input_file_prefix + ".sorted.dedup.bismark.cov.gz"
-            sorted_cov_input = input_file_prefix + ".sorted.bismark.cov.gz"
- 
-            candidate_input_files = [[readset_sorted_dedup_cov_input]]
-            candidate_input_files.append([sorted_dedup_cov_input])
-            candidate_input_files.append([sorted_cov_input])
+            candidate_input_files = [[input_file_prefix + ".readset_sorted.dedup.bismark.cov.gz"]]
+            candidate_input_files.append([input_file_prefix + ".sorted.dedup.bismark.cov.gz"])
+            candidate_input_files.append([input_file_prefix + ".sorted.bismark.cov.gz"])
 
             [bismark_cov_file] = self.select_input_files(candidate_input_files)
 

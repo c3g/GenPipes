@@ -98,9 +98,8 @@ bismark_methylation_extractor \\
         other_options=config.param('bismark_methyl_call', 'other_options'),
         library="-p" if library_type=="PAIRED_END" else "-s",
         input=input,
-        output_directory=os.path.dirname(input)
-        ),
-        removable_files=[re.sub(".bam", ".deduplicated.bam", input)]
+        output_directory=os.path.dirname(outputs[0])
+        )
     )
 
 def bed_graph(inputs, output, output_directory):
