@@ -405,18 +405,17 @@ class MethylSeq(dnaseq.DnaSeq):
         jobs = []
         for sample in self.samples:
             methyl_directory = os.path.join("methylation_call", sample.name)
-            input_file_prefix = os.path.join(methyl_directory, sample.name)
 
-            candidate_input_files = [[input_file_prefix + ".readset_sorted.dedup.bedGraph.gz", input_file_prefix + ".readset_sorted.dedup.bismark.cov.gz"]]
-            candidate_input_files.append([input_file_prefix + ".sorted.dedup.bedGraph.gz", input_file_prefix + ".sorted.dedup.bismark.cov.gz"])
-            candidate_input_files.append([input_file_prefix + ".sorted.bedGraph.gz", input_file_prefix + ".sorted.bismark.cov.gz"])
+            candidate_input_files = [[os.path.join(methyl_directory, "CpG_context_" + sample.name + ".readset_sorted.dedup.txt.gz")]]
+            candidate_input_files.append([os.path.join(methyl_directory, "CpG_context_" + sample.name + ".sorted.dedup.txt.gz")])
+            candidate_input_files.append([os.path.join(methyl_directory, "CpG_context_" + sample.name + ".sorted.txt.gz")])
 
-            [bedgraph_file, bismark_cov_file] = self.select_input_files(candidate_input_files)
+            [cpG_input_file] = self.select_input_files(candidate_input_files)
             jobs.append(
                 concat_jobs([
                     Job(command="mkdir -p " + methyl_directory),
                     bismark.bed_graph(
-                        [bedgraph_file, bismark_cov_file],
+                        [cpG_input_file],
                         sample.name + ".bedGraph",
                         methyl_directory
                     )
