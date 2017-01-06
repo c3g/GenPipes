@@ -280,12 +280,25 @@ class MethylSeq(dnaseq.DnaSeq):
             bed_graph_output = bed_graph_prefix + ".bedGraph"
             big_wig_output = big_wig_prefix + ".bw"
 
-            jobs.append(
-                concat_jobs([
-                    Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " " + os.path.join("tracks", "bigWig"), removable_files=["tracks"]),
-                    bedtools.graph(input_bam, bed_graph_output, big_wig_output, library[sample])
-                ], name="wiggle." + re.sub(".bedGraph", "", os.path.basename(bed_graph_output)))
-            )
+            if input_bam == os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.bam") :
+                jobs.append(
+                    concat_jobs([
+                        Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " " + os.path.join("tracks", "bigWig"), removable_files=["tracks"]),
+                        picard.sort_sam(
+                            input_bam,
+                            re.sub("readset_sorted", "sorted", input_bam),
+                            "coordinate"
+                        ),
+                        bedtools.graph(re.sub("readset_sorted", "sorted", input_bam), bed_graph_output, big_wig_output, library[sample])
+                    ], name="wiggle." + re.sub(".bedGraph", "", os.path.basename(bed_graph_output)))
+                )
+            else :
+                jobs.append(
+                    concat_jobs([
+                        Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " " + os.path.join("tracks", "bigWig"), removable_files=["tracks"]),
+                        bedtools.graph(input_bam, bed_graph_output, big_wig_output, library[sample])
+                    ], name="wiggle." + re.sub(".bedGraph", "", os.path.basename(bed_graph_output)))
+                )
 
         return jobs
 
@@ -413,7 +426,7 @@ class MethylSeq(dnaseq.DnaSeq):
                     Job(command="mkdir -p " + methyl_directory),
                     bismark.bed_graph(
                         [bedgraph_file, bismark_cov_file],
-                        sample.name + "bedGraph",
+                        sample.name + ".bedGraph",
                         methyl_directory
                     )
                 ], name = "bismark_bed_graph." + sample.name)
