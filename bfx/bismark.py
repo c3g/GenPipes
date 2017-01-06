@@ -126,7 +126,7 @@ bismark2bedGraph \\
 
 def coverage2cytosine(input, output, output_directory):
     return Job(
-        inputs,
+        input,
         [output],
         [
             ['bismark_coverage2cytosine', 'module_bismark']

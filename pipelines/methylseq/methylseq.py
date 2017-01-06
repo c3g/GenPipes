@@ -430,20 +430,27 @@ class MethylSeq(dnaseq.DnaSeq):
             methyl_directory = os.path.join("methylation_call", sample.name)
             input_file_prefix = os.path.join(methyl_directory, sample.name)
 
-            candidate_input_files = [[input_file_prefix + ".readset_sorted.dedup.bismark.cov.gz"]]
-            candidate_input_files.append([input_file_prefix + ".sorted.dedup.bismark.cov.gz"])
-            candidate_input_files.append([input_file_prefix + ".sorted.bismark.cov.gz"])
+            readset_sorted_dedup_cov_input = input_file_prefix + ".readset_sorted.dedup.bismark.cov.gz"
+            sorted_dedup_cov_input = input_file_prefix + ".sorted.dedup.bismark.cov.gz"
+            sorted_cov_input = input_file_prefix + ".sorted.bismark.cov.gz"
+ 
+            candidate_input_files = [[readset_sorted_dedup_cov_input]]
+            candidate_input_files.append([sorted_dedup_cov_input])
+            candidate_input_files.append([sorted_cov_input])
 
-            bismark_cov_file = self.select_input_files(candidate_input_files)
+            [bismark_cov_file] = self.select_input_files(candidate_input_files)
 
-            job = concat_jobs([
-                Job(command="mkdir -p " + os.path.dirname(readset_bam)),
-                bismark.coverage2cytosine(
-                    bismark_cov_file,
-                    output,
-                    methyl_directory
-                )
-            ])
+            jobs.append(
+                concat_jobs([
+                    Job(command="mkdir -p " + methyl_directory),
+                    bismark.coverage2cytosine(
+                        bismark_cov_file,
+                        bismark_cov_file + ".output",
+                        methyl_directory
+                    )
+                ], name="methylation_profile." + sample.name)
+           )
+
         return jobs
 
     def bis_snp(self):
