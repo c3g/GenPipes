@@ -102,11 +102,16 @@ bismark_methylation_extractor \\
         )
     )
 
-def bed_graph(inputs, output, output_directory):
+def bed_graph(inputs, output_prefixe, output_directory):
+
+    outputs = [
+        os.path.join(output_directory, output_prefixe + ".bedGraph.gz"),
+        os.path.join(output_directory, output_prefixe + ".bismark.cov.gz")
+    ]
 
     return Job(
         inputs,
-        [output],
+        outputs,
         [
             ['bismark_bed_graph', 'module_bismark']
         ],
@@ -117,7 +122,7 @@ bismark2bedGraph \\
   --dir {directory} \\
   {inputs}""".format(
             inputs="".join([" \\\n  " + input for input in inputs]),
-            output=output,
+            output=output_prefixe + ".bedGraph.gz",
             directory=output_directory,
             other_options=config.param('bismark_bed_graph', 'other_options')
         )
@@ -125,7 +130,7 @@ bismark2bedGraph \\
 
 def coverage2cytosine(input, output, output_directory):
     return Job(
-        input,
+        [input],
         [output],
         [
             ['bismark_coverage2cytosine', 'module_bismark']

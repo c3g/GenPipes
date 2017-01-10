@@ -416,7 +416,7 @@ class MethylSeq(dnaseq.DnaSeq):
                     Job(command="mkdir -p " + methyl_directory),
                     bismark.bed_graph(
                         [cpG_input_file],
-                        sample.name + ".bedGraph",
+                        sample.name,
                         methyl_directory
                     )
                 ], name = "bismark_bed_graph." + sample.name)
@@ -431,20 +431,14 @@ class MethylSeq(dnaseq.DnaSeq):
         jobs = []
         for sample in self.samples:
             methyl_directory = os.path.join("methylation_call", sample.name)
-            input_file_prefix = os.path.join(methyl_directory, sample.name)
-
-            candidate_input_files = [[input_file_prefix + ".readset_sorted.dedup.bismark.cov.gz"]]
-            candidate_input_files.append([input_file_prefix + ".sorted.dedup.bismark.cov.gz"])
-            candidate_input_files.append([input_file_prefix + ".sorted.bismark.cov.gz"])
-
-            [bismark_cov_file] = self.select_input_files(candidate_input_files)
+            bismark_cov_file = os.path.join(methyl_directory, sample.name + ".bismark.cov.gz")
 
             jobs.append(
                 concat_jobs([
                     Job(command="mkdir -p " + methyl_directory),
                     bismark.coverage2cytosine(
                         bismark_cov_file,
-                        bismark_cov_file + ".output",
+                        sample.name + ".bismark.cov.output",
                         methyl_directory
                     )
                 ], name="methylation_profile." + sample.name)
@@ -456,58 +450,29 @@ class MethylSeq(dnaseq.DnaSeq):
         """
         """
 
-        # Check the library status
-        library = {}
-        for readset in self.readsets:
-            if not library.has_key(readset.sample) :
-                library[readset.sample]="SINGLE_END"
-            if readset.run_type == "PAIRED_END" :
-                library[readset.sample]="PAIRED_END"
-
         jobs = []
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
-            readset_sorted_dedup_bam_input = os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.bam")
-            dedup_bam_input = os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")
-            bam_input = os.path.join(alignment_directory, sample.name + ".sorted.bam")
 
-            candidate_input_files = [[readset_sorted_dedup_bam_input]]
-            candidate_input_files.append([dedup_bam_input])
-            candidate_input_files.append([bam_input])
+            candidate_input_files = [[os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.bam")]]
+            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")])
+            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.bam")])
             [input_file] = self.select_input_files(candidate_input_files)
 
-            methyl_directory = os.path.join("methylation_call", sample.name)
-            output_files = [
-                os.path.join( methyl_directory, re.sub( ".bam", ".bedGraph.gz", os.path.basename(input_file) ) ),
-                os.path.join( methyl_directory, re.sub( ".bam", ".bismark.cov.gz", os.path.basename(input_file) ) )
-            ]
-
-            if input_file != os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.bam") :
-                bismark_job = bismark.bis_snp(
-                    input_file,
-                    output_files,
-                    library[sample]
-                )
-            else :
-                bismark_job = concat_jobs([
-                    picard.sort_sam(
-                        input_file,
-                        re.sub("sorted", "readset_sorted", input_file),
-                        "coordinate"
-                    ),
-                    bismark.bis_snp(
-                        re.sub("sorted", "readset_sorted", input_file),
-                        output_files,
-                        library[sample]
-                    )
-                ])
+            variant_directory = os.path.join("variants", sample.name)
+            cpg_output_file = os.path.join(variant_directory, sample.name + ".cpg.vcf")
+            snp_output_file = os.path.join(variant_directory, sample.name + ".snp.vcf")
 
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + methyl_directory),
-                    bismark_job,
-                ], name="bismark_bis_snp." + sample.name)
-            )
+                    Job(command="mkdir -p " + variant_directory),
+                    bissnp.bisulfite_genotyper(
+                        input,
+                        cpg_output_file,
+                        snp_output_file
+                    )
+                ], name="bisSNP." + sample.name)
+           )
 
         return jobs
 
