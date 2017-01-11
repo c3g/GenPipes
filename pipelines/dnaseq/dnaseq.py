@@ -1159,15 +1159,8 @@ cp \\
         """
         See general snp_effect !  Applied to mpileup vcf
         """
-<<<<<<< HEAD
-
-        jobs = self.snp_effect("variants/allSamples.merged.flt.mil.snpId.vcf", "variants/allSamples.merged.flt.mil.snpId.snpeff.vcf",  "mpileup_snp_effect")
-
-=======
-        
         jobs = self.snp_effect("variants/allSamples.merged.flt.mil.snpId.vcf", "variants/allSamples.merged.flt.mil.snpId.snpeff.vcf",  "mpileup_snp_effect", options=config.param('compute_cancer_effects', 'options'))
             
->>>>>>> tumor_pair
         return jobs
 
 
