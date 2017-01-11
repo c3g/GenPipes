@@ -2,6 +2,28 @@
 # Exit immediately on error
 set -eu -o pipefail
 
+<<<<<<< HEAD
+
+
+SOFTWARE=scalpel 
+VERSION=0.5.2  
+ARCHIVE=$SOFTWARE-$VERSION.tar.gz 
+ARCHIVE_URL=http://sourceforge.net/projects/${SOFTWARE}/files/${ARCHIVE} 
+SOFTWARE_DIR=$SOFTWARE-$VERSION 
+
+
+build() {
+  cd $INSTALL_DOWNLOAD
+  tar zxvf $ARCHIVE  
+
+  cd $SOFTWARE_DIR
+  make  
+  
+
+  # Install software
+  cd $INSTALL_DOWNLOAD  ## TO BE ADDED AND MODIFIED IF NECESSARY
+  mv -i $SOFTWARE_DIR $INSTALL_DIR/  ## TO BE ADDED AND MODIFIED IF NECESSARY
+=======
 SOFTWARE=scalpel
 VERSION=0.3.2
 PERL_VERSION=5.18.2
@@ -27,6 +49,7 @@ build() {
   # Install software
   cd $INSTALL_DOWNLOAD
   mv -i $SOFTWARE_DIR $INSTALL_DIR/
+>>>>>>> 5edde6884a6a5167ae55dfe97c8c6ecfd04e1ce8
 }
 
 module_file() {
@@ -39,7 +62,10 @@ module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
 prepend-path    PATH                \$root
+<<<<<<< HEAD
+=======
 prepend-path    LD_LIBRARY_PATH     \$root/bamtools-2.3.0/lib/
+>>>>>>> 5edde6884a6a5167ae55dfe97c8c6ecfd04e1ce8
 "
 }
 

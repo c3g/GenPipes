@@ -66,10 +66,13 @@ samtools flagstat \\
     )
 
 def mpileup(input_bams, output, other_options="", region=None, regionFile=None):
+
     return Job(
         input_bams,
         [output],
-        [['samtools_mpileup', 'module_samtools']],
+        [
+            ['rawmpileup', 'module_samtools']
+        ],
         command="""\
 samtools mpileup {other_options} \\
   -f {reference_fasta}{region}{regionFile}{input_bams}{output}""".format(
@@ -105,7 +108,9 @@ def view(input, output=None, options=""):
     return Job(
         [input],
         [output],
-        [['samtools_view', 'module_samtools']],
+        [
+            ['samtools_view', 'module_samtools']
+        ],
         command="""\
 samtools view {options} \\
   {input}{output}""".format(
@@ -120,9 +125,17 @@ def bcftools_cat(inputs, output):
     return Job(
         inputs,
         [output],
+<<<<<<< HEAD
         [['bcftools_cat', 'module_bcftools']],
         command="""\
 bcftools concat \\
+=======
+        [
+            ['bcftools_cat', 'module_samtools']
+        ],
+        command="""\
+$BCFTOOLS_BIN/bcftools cat \\
+>>>>>>> tumor_pair
   {inputs}{output}""".format(
         inputs=" \\\n  ".join(inputs),
         output=" \\\n  > " + output if output else ""
@@ -133,9 +146,15 @@ def bcftools_view(input, output, options="", pair_calling=False):
     return Job(
         [input],
         [output],
+<<<<<<< HEAD
         [['bcftools_view', 'module_bcftools']],
+=======
+        [
+            ['bcftools_view', 'module_samtools']
+        ],
+>>>>>>> tumor_pair
         command="""\
-bcftools view {pair_calling} {options} \\
+$BCFTOOLS_BIN/bcftools view {pair_calling} {options} \\
   {input}{output}""".format(
         options=options,
         pair_calling="-T pair" if pair_calling else "",

@@ -25,7 +25,7 @@
 from core.config import *
 from core.job import *
 
-def compute_effects(input, output, split=False):
+def compute_effects(input, output, split=False, cancer_sample_file=[], options=[] ):
     output_stats = output + ".stats.csv"
     output_stats_html = output + ".stats.html"
     job = Job(
@@ -37,6 +37,7 @@ def compute_effects(input, output, split=False):
         ],
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $SNPEFF_HOME/snpEff.jar eff {options} \\
+  {cancer_sample_file} \\
   -c $SNPEFF_HOME/snpEff.config \\
   -i vcf \\
   -o vcf \\
@@ -47,7 +48,8 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $SNPEFF_HOME
         tmp_dir=config.param('compute_effects', 'tmp_dir'),
         java_other_options=config.param('compute_effects', 'java_other_options'),
         ram=config.param('compute_effects', 'ram'),
-        options=config.param('compute_effects', 'options', required=False),
+        options=options if options else "",
+        cancer_sample_file="-cancerSamples " + cancer_sample_file if cancer_sample_file else "",
         output_stats=output_stats,
         output_stats_html=output_stats_html,
         reference_snpeff_genome=config.param('compute_effects', 'snpeff_genome'),

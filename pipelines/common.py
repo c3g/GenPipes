@@ -26,6 +26,7 @@ import re
 import socket
 import string
 import sys
+import md5
 
 # Append mugqic_pipelines directory to Python library path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0]))))
@@ -66,12 +67,19 @@ class MUGQICPipeline(Pipeline):
 
     def mugqic_log(self):
         server = "http://mugqic.hpc.mcgill.ca/cgi-bin/pipeline.cgi"
+        listName = {}
+        for readset in self.readsets:
+            if listName.has_key(readset.sample.name) :
+                listName[readset.sample.name]+="."+readset.name
+            else: 
+                listName[readset.sample.name]=readset.sample.name+"."+readset.name
         request = \
             "hostname=" + socket.gethostname() + "&" + \
             "ip=" + socket.gethostbyname(socket.gethostname()) + "&" + \
             "pipeline=" + self.__class__.__name__ + "&" + \
             "steps=" + ",".join([step.name for step in self.step_range]) + "&" + \
-            "samples=" + str(len(self.samples))
+            "samples=" + str(len(self.samples)) + "&" + \
+            "AnonymizedList=" + ",".join([md5.md5(self.__class__.__name__ + "." + value).hexdigest() for key, value in listName.iteritems()])
 
         print("""
 {separator_line}
