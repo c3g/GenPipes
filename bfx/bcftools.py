@@ -63,4 +63,64 @@ bcftools \\
         )
     )
 
+def concat(inputs, output, options=None):
+    """
+    Concatenate or combine VCF/BCF files
+    """
+    return Job(
+        inputs,
+        [output],
+        [
+            ['DEFAULT', 'module_bcftools']
+        ],
+        command="""\
+bcftools \\
+  concat -a {options} \\
+  {inputs} \\
+  {output}""".format(
+        options=options if options else "",
+        inputs="".join(" \\\n  " + input for input in inputs),
+        output=" \\\n > " + output if output else ""
+        )
+    )
+
+def view(input, output, filter_options):
+    """
+    Generalized view 
+    """
+    return Job(
+        [input],
+        [output],
+        [
+            ['DEFAULT', 'module_bcftools']
+        ],
+        command="""\
+bcftools \\
+  view {filter_options} \\
+  {input}{output}""".format(
+        filter_options=filter_options,
+        input=" \\\n " + input if input else "",
+        output=" \\\n > " + output if output else ""
+        )
+    )
+
+def filter(input, output, filter_options):
+    """
+    Generalized filter function
+    """
+    return Job(
+        [input],
+        [output],
+        [
+            ['DEFAULT', 'module_bcftools']
+        ],
+        command="""\
+bcftools \\
+  filter -m '+' -O v {filter_options} \\
+  {input}{output}""".format(
+        input=" \\\n " + input if input else "",
+        filter_options=filter_options,
+        output=" \\\n  > " + output if output else ""
+        )
+    )
 

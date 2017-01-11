@@ -2,22 +2,26 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=VarScan
-VERSION=2.4.2
-# Replace "." in official version number by "_" in archive version number
-ARCHIVE=${SOFTWARE}.v${VERSION}.jar
-ARCHIVE_URL=https://github.com/dkoboldt/varscan/releases/download/${VERSION}/$ARCHIVE
-SOFTWARE_DIR=${SOFTWARE}.v${VERSION}
+SOFTWARE=samtools
+VERSION=0.1.19
+ARCHIVE=$SOFTWARE-$VERSION.tar.bz2
+ARCHIVE_URL=https://sourceforge.net/projects/samtools/files/samtools/${VERSION}/$ARCHIVE
+SOFTWARE_DIR=$SOFTWARE-$VERSION
 
 # Specific commands to extract and build the software
 # $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
 # $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
+  tar jxvf $ARCHIVE
+
+  cd $SOFTWARE_DIR
 
   # Install software
-  mkdir -p $INSTALL_DIR/$SOFTWARE_DIR
-  cp -i $ARCHIVE $INSTALL_DIR/$SOFTWARE_DIR/
+  make prefix=$INSTALL_DIR/${SOFTWARE_DIR}
+ 
+  cd $INSTALL_DOWNLOAD
+  mv -i $SOFTWARE_DIR $INSTALL_DIR/
 }
 
 module_file() {
@@ -29,8 +33,8 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-setenv          VARSCAN2_HOME        \$root
-setenv          VARSCAN2_JAR         \$root/${SOFTWARE}.v${VERSION}.jar
+prepend-path    PATH                \$root ;
+setenv          BCFTOOLS_BIN        \$root/bcftools ;
 "
 }
 

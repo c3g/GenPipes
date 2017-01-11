@@ -83,7 +83,7 @@ class DnaSeq(common.Illumina):
     @property
     def sequence_dictionary(self):
         if not hasattr(self, "_sequence_dictionary"):
-            self._sequence_dictionary = parse_sequence_dictionary_file(config.param('DEFAULT', 'genome_dictionary', type='filepath'))
+            self._sequence_dictionary = parse_sequence_dictionary_file(config.param('DEFAULT', 'genome_dictionary', type='filepath'),variant=False)
         return self._sequence_dictionary
 
     def bwa_mem_picard_sort_sam(self):
@@ -251,7 +251,7 @@ pandoc --to=markdown \\
                 jobs.append(concat_jobs([
                     Job(command="mkdir -p " + realign_directory, removable_files=[realign_directory]),
                     gatk.realigner_target_creator(input, realign_intervals),
-                    gatk.indel_realigner(input, output_bam, target_intervals=realign_intervals),
+                    gatk.indel_realigner(input, output=output_bam, target_intervals=realign_intervals),
                     # Create sample realign symlink since no merging is required
                     Job([output_bam], [sample_output_bam], command="ln -s -f " + os.path.relpath(output_bam, os.path.dirname(sample_output_bam)) + " " + sample_output_bam)
                 ], name="gatk_indel_realigner." + sample.name))
@@ -259,22 +259,22 @@ pandoc --to=markdown \\
             else:
                 # The first sequences are the longest to process.
                 # Each of them must be processed in a separate job.
-                unique_sequences_per_job = [sequence['name'] for sequence in self.sequence_dictionary[0:min(nb_jobs - 1, len(self.sequence_dictionary))]]
+                unique_sequences_per_job,unique_sequences_per_job_others = split_by_size(self.sequence_dictionary, nb_jobs - 1)
 
                 # Create one separate job for each of the first sequences
-                for sequence in unique_sequences_per_job:
-                    realign_prefix = os.path.join(realign_directory, sequence)
+                for idx,sequence in enumerate(unique_sequences_per_job):
+                    realign_prefix = os.path.join(realign_directory, str(idx))
                     realign_intervals = realign_prefix + ".intervals"
-                    intervals=[sequence]
-                    if unique_sequences_per_job.index(sequence) == 0:
+                    intervals=sequence
+                    if str(idx) == 0:
                         intervals.append("unmapped")
                     output_bam = realign_prefix + ".bam"
                     jobs.append(concat_jobs([
                         # Create output directory since it is not done by default by GATK tools
                         Job(command="mkdir -p " + realign_directory, removable_files=[realign_directory]),
-                        gatk.realigner_target_creator(input, realign_intervals, intervals=[sequence]),
-                        gatk.indel_realigner(input, output_bam, target_intervals=realign_intervals, intervals=intervals)
-                    ], name="gatk_indel_realigner." + sample.name + "." + sequence))
+                        gatk.realigner_target_creator(input, realign_intervals, intervals=intervals),
+                        gatk.indel_realigner(input, output=output_bam, target_intervals=realign_intervals, intervals=intervals)
+                    ], name="gatk_indel_realigner." + sample.name + "." + str(idx)))
 
                 # Create one last job to process the last remaining sequences and 'others' sequences
                 realign_prefix = os.path.join(realign_directory, "others")
@@ -283,8 +283,8 @@ pandoc --to=markdown \\
                 jobs.append(concat_jobs([
                     # Create output directory since it is not done by default by GATK tools
                     Job(command="mkdir -p " + realign_directory, removable_files=[realign_directory]),
-                    gatk.realigner_target_creator(input, realign_intervals, exclude_intervals=unique_sequences_per_job),
-                    gatk.indel_realigner(input, output_bam, target_intervals=realign_intervals, exclude_intervals=unique_sequences_per_job)
+                    gatk.realigner_target_creator(input, realign_intervals, exclude_intervals=unique_sequences_per_job_others),
+                    gatk.indel_realigner(input, output=output_bam, target_intervals=realign_intervals, exclude_intervals=unique_sequences_per_job_others)
                 ], name="gatk_indel_realigner." + sample.name + ".others"))
 
         return jobs
@@ -305,10 +305,14 @@ pandoc --to=markdown \\
 
             # if nb_jobs == 1, symlink has been created in indel_realigner and merging is not necessary
             if nb_jobs > 1:
-                realigned_bams = [os.path.join(realign_directory, sequence['name'] + ".bam") for sequence in self.sequence_dictionary[0:min(nb_jobs - 1, len(self.sequence_dictionary))]]
-                realigned_bams.append(os.path.join(realign_directory, "others.bam"))
+                unique_sequences_per_job,unique_sequences_per_job_others = split_by_size(self.sequence_dictionary, nb_jobs - 1)
 
-                job = picard.merge_sam_files(realigned_bams, merged_realigned_bam)
+                inputBAMs = []
+                for idx,sequences in enumerate(unique_sequences_per_job):
+                    inputBAMs.append(os.path.join(realign_directory, str(idx) + ".bam"))
+                inputBAMs.append(os.path.join(realign_directory, "others.bam"))
+                
+                job = picard.merge_sam_files(inputBAMs, merged_realigned_bam)
                 job.name = "merge_realigned." + sample.name
                 jobs.append(job)
 
@@ -418,17 +422,38 @@ cp \\
         """
 
         jobs = []
+        
+        created_interval_lists = []        
+
         for sample in self.samples:
             duplicate_file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.")
             input = duplicate_file_prefix + "bam"
             print_reads_output = duplicate_file_prefix + "recal.bam"
             base_recalibrator_output = duplicate_file_prefix + "recalibration_report.grp"
 
-            jobs.append(concat_jobs([
-                gatk.base_recalibrator(input, base_recalibrator_output),
-                gatk.print_reads(input, print_reads_output, base_recalibrator_output),
-                Job(input_files=[print_reads_output], output_files=[print_reads_output + ".md5"], command="md5sum " + print_reads_output + " > " + print_reads_output + ".md5")
-            ], name="recalibration." + sample.name))
+            coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
+            if coverage_bed:
+                interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
+
+                if not interval_list in created_interval_lists:
+                    job = tools.bed2interval_list(None, coverage_bed, interval_list)
+                    job.name = "interval_list." + os.path.basename(coverage_bed)
+                    jobs.append(job)
+                    #created_interval_lists.append(interval_list)           	
+
+                jobs.append(concat_jobs([
+                    gatk.base_recalibrator(input, base_recalibrator_output, intervals=interval_list),
+                    gatk.print_reads(input, print_reads_output, base_recalibrator_output),
+                    Job(input_files=[print_reads_output], output_files=[print_reads_output + ".md5"], command="md5sum " + print_reads_output + " > " + print_reads_output + ".md5")
+                ], name="recalibration." + sample.name))
+
+            else:
+
+                jobs.append(concat_jobs([
+                    gatk.base_recalibrator(input, base_recalibrator_output),
+                    gatk.print_reads(input, print_reads_output, base_recalibrator_output),
+                    Job(input_files=[print_reads_output], output_files=[print_reads_output + ".md5"], command="md5sum " + print_reads_output + " > " + print_reads_output + ".md5")
+                ], name="recalibration." + sample.name))
 
         report_file = os.path.join("report", "DnaSeq.recalibration.md")
         jobs.append(
@@ -1095,7 +1120,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         report_file = "report/DnaSeq.snp_effect.md"
         jobs = []
 
-        job = snpeff.compute_effects(input_vcf, snpeff_file, split=True)
+        job = snpeff.compute_effects(input_vcf, snpeff_file, split=True, options=config.param('compute_cancer_effects', 'options'))
         job.name = job_name
         jobs.append(job)
 
@@ -1134,9 +1159,8 @@ cp \\
         """
         See general snp_effect !  Applied to mpileup vcf
         """
-
-        jobs = self.snp_effect("variants/allSamples.merged.flt.mil.snpId.vcf", "variants/allSamples.merged.flt.mil.snpId.snpeff.vcf",  "mpileup_snp_effect")
-
+        jobs = self.snp_effect("variants/allSamples.merged.flt.mil.snpId.vcf", "variants/allSamples.merged.flt.mil.snpId.snpeff.vcf",  "mpileup_snp_effect", options=config.param('compute_cancer_effects', 'options'))
+            
         return jobs
 
 

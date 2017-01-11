@@ -2,23 +2,21 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-VERSION=0.5.2  
-ARCHIVE=$SOFTWARE-$VERSION.tar.gz 
-ARCHIVE_URL=http://sourceforge.net/projects/${SOFTWARE}/files/${ARCHIVE} 
-SOFTWARE_DIR=$SOFTWARE-$VERSION 
+
+SOFTWARE=sambamba
+VERSION=0.6.5
+ARCHIVE=sambamba_v${VERSION}_linux.tar.bz2
+ARCHIVE_URL=https://github.com/lomereiter/sambamba/releases/download/v${VERSION}/sambamba_v${VERSION}_linux.tar.bz2
+SOFTWARE_DIR=sambamba-${VERSION}
 
 
 build() {
   cd $INSTALL_DOWNLOAD
-  tar zxvf $ARCHIVE  
+  tar -xjf sambamba_v${VERSION}_linux.tar.bz2
+  mkdir $SOFTWARE_DIR 
+  mv sambamba_v${VERSION} $SOFTWARE_DIR
 
-  cd $SOFTWARE_DIR
-  make  
-  
-
-  # Install software
-  cd $INSTALL_DOWNLOAD  ## TO BE ADDED AND MODIFIED IF NECESSARY
-  mv -i $SOFTWARE_DIR $INSTALL_DIR/  ## TO BE ADDED AND MODIFIED IF NECESSARY
+  mv -i $SOFTWARE_DIR $INSTALL_DIR/$SOFTWARE_DIR
 }
 
 module_file() {
@@ -30,8 +28,8 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-prepend-path    PATH                \$root
-prepend-path    LD_LIBRARY_PATH     \$root/bamtools-2.3.0/lib/
+prepend-path    PATH                \$root ; 
+setenv          SAMBAMBA_HOME       \$root ;
 "
 }
 
