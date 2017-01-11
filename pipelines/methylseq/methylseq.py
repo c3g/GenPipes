@@ -41,6 +41,7 @@ from bfx import bedtools
 from bfx import samtools
 from bfx import gatk
 from bfx import igvtools
+from bfx import bissnp
 
 from pipelines.dnaseq import dnaseq
 
@@ -364,15 +365,12 @@ class MethylSeq(dnaseq.DnaSeq):
             [input_file] = self.select_input_files(candidate_input_files)
 
             methyl_directory = os.path.join("methylation_call", sample.name)
-            output_files = [
-                os.path.join( methyl_directory, re.sub( ".bam", ".bedGraph.gz", os.path.basename(input_file) ) ),
-                os.path.join( methyl_directory, re.sub( ".bam", ".bismark.cov.gz", os.path.basename(input_file) ) )
-            ]
+            output_file = os.path.join(methyl_directory, "CpG_context_" + re.sub( ".bam", ".txt.gz", os.path.basename(input_file)))
 
             if input_file == os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.bam") :
                 bismark_job = bismark.methyl_call(
                     input_file,
-                    output_files,
+                    output_file,
                     library[sample]
                 )
             else :
@@ -384,7 +382,7 @@ class MethylSeq(dnaseq.DnaSeq):
                     ),
                     bismark.methyl_call(
                         re.sub("sorted", "readset_sorted", input_file),
-                        output_files,
+                        output_file,
                         library[sample]
                     )
                 ])
@@ -438,8 +436,7 @@ class MethylSeq(dnaseq.DnaSeq):
                     Job(command="mkdir -p " + methyl_directory),
                     bismark.coverage2cytosine(
                         bismark_cov_file,
-                        sample.name + ".bismark.cov.output",
-                        methyl_directory
+                        os.path.join(methyl_directory, sample.name + ".bismark.cov.output")
                     )
                 ], name="methylation_profile." + sample.name)
            )
@@ -454,8 +451,7 @@ class MethylSeq(dnaseq.DnaSeq):
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
 
-            candidate_input_files = [[os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.bam")]]
-            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")])
+            candidate_input_files = [[os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")]]
             candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.bam")])
             [input_file] = self.select_input_files(candidate_input_files)
 
@@ -467,14 +463,14 @@ class MethylSeq(dnaseq.DnaSeq):
                 concat_jobs([
                     Job(command="mkdir -p " + variant_directory),
                     bissnp.bisulfite_genotyper(
-                        input,
+                        input_file,
                         cpg_output_file,
                         snp_output_file
                     )
-                ], name="bisSNP." + sample.name)
-           )
+                ], name="bissnp." + sample.name)
+            )
 
-        return jobs
+        return jobs 
 
     @property
     def steps(self):

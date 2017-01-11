@@ -37,7 +37,7 @@ def bisulfite_genotyper(input, cpg_output, snp_output):
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $BISSNP_JAR \\
   --analysis_type BisulfiteGenotyper \\
-  --reference_sequence {reference_genome}/lb/project/mugqic/epigenome/genome_files/hg19/fasta/Bisulfite_Genome/hg19.fasta \\
+  --reference_sequence {reference_genome} \\
   --input_file {input} \\
   --dbsnp {dbsnp} \\
   --vcf_file_name_1 {cpg_output} \\

@@ -3,9 +3,9 @@
 set -eu -o pipefail
 
 # Perl module where to install libs
-PERL_MODULE=mugqic/perl/5.10.1
+#PERL_MODULE=mugqic/perl/5.10.1
 #PERL_MODULE=mugqic/perl/5.18.2
-#PERL_MODULE=mugqic/perl/5.22.1
+PERL_MODULE=mugqic_dev/perl/5.22.1
 module load $PERL_MODULE
 
 # Install Perl modules from CPAN
@@ -33,6 +33,8 @@ Text::CSV \
 Text::CSV::Encoded \
 Text::NSP::Measures::2D::Fisher::twotailed \
 XML::Simple \
+DB_File \
+Set::IntervalTree \
 ; do
 $PERL_HOME/bin/perl -MCPAN -e"CPAN::Shell->force(qw(install $MODULE))"
 # Test if module is properly installed

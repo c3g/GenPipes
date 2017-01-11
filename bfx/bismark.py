@@ -79,11 +79,11 @@ deduplicate_bismark \\
         removable_files=[re.sub(".bam", ".deduplicated.bam", input)]
     )
 
-def methyl_call(input, outputs, library_type="PAIRED_END"):
+def methyl_call(input, output, library_type="PAIRED_END"):
 
     return Job(
         [input],
-        outputs,
+        [output],
         [
             ['bismark_methyl_call', 'module_bismark'],
             ['bismark_methyl_call', 'module_samtools']
@@ -98,7 +98,7 @@ bismark_methylation_extractor \\
         other_options=config.param('bismark_methyl_call', 'other_options'),
         library="-p" if library_type=="PAIRED_END" else "-s",
         input=input,
-        output_directory=os.path.dirname(outputs[0])
+        output_directory=os.path.dirname(output)
         )
     )
 
@@ -128,7 +128,7 @@ bismark2bedGraph \\
         )
     )
 
-def coverage2cytosine(input, output, output_directory):
+def coverage2cytosine(input, output):
     return Job(
         [input],
         [output],
@@ -138,12 +138,10 @@ def coverage2cytosine(input, output, output_directory):
         command="""\
 coverage2cytosine \\
   {other_options} \\
-  --dir {directory} \\
   --output {output} \\
   {input}""".format(
             input=input,
-            output=os.path.join(output_directory, output),
-            directory=output_directory,
+            output=output,
             other_options=config.param('bismark_coverage2cytosine', 'other_options')
         )
     )
