@@ -1120,7 +1120,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         report_file = "report/DnaSeq.snp_effect.md"
         jobs = []
 
-        job = snpeff.compute_effects(input_vcf, snpeff_file, split=True, options=config.param('compute_cancer_effects', 'options'))
+        job = snpeff.compute_effects(input_vcf, snpeff_file, split=True, options=config.param('compute_cancer_effects', 'options', required=False))
         job.name = job_name
         jobs.append(job)
 
@@ -1159,7 +1159,8 @@ cp \\
         """
         See general snp_effect !  Applied to mpileup vcf
         """
-        jobs = self.snp_effect("variants/allSamples.merged.flt.mil.snpId.vcf", "variants/allSamples.merged.flt.mil.snpId.snpeff.vcf",  "mpileup_snp_effect", options=config.param('compute_cancer_effects', 'options'))
+#        jobs = self.snp_effect("variants/allSamples.merged.flt.mil.snpId.vcf", "variants/allSamples.merged.flt.mil.snpId.snpeff.vcf",  "mpileup_snp_effect", options=config.param('compute_cancer_effects', 'options'))
+        jobs = self.snp_effect("variants/allSamples.merged.flt.mil.snpId.vcf", "variants/allSamples.merged.flt.mil.snpId.snpeff.vcf",  "mpileup_snp_effect")
             
         return jobs
 
