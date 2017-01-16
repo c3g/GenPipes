@@ -19,28 +19,31 @@
 # along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-#!/usr/bin/env python
-
 # Python Standard Modules
+import os
 
 # MUGQIC Modules
 from core.config import *
 from core.job import *
 
-def decompose_and_normalize_mnps(input, vt_output=None):
-
+def ensemble(input_callers, output, options):
+    
     return Job(
-        [input],
-        [vt_output],
+        input_callers,
+        [output],
         [
-            ['DEFAULT', 'module_htslib'],
-            ['decompose_and_normalize_mnps', 'module_vt']
+            ['bcbio_ensemble', 'module_bcbio_variation_recall'],
         ],
         command="""\
-zless {input} | sed 's/ID=AD,Number=./ID=AD,Number=R/' | vt decompose -s - | vt normalize -r {reference_sequence} {vt_output} \\
-        """.format(
-        input=input,
-        reference_sequence=config.param('DEFAULT', 'genome_fasta', type='filepath'),
-        vt_output=" > " + vt_output if vt_output else "-",
+bcbio-variation-recall ensemble \\
+  {options} \\
+  {output} \\
+  {reference_sequence} \\
+  {input_callers}""".format(
+        options=options,
+        output=output if output else "-",
+        reference_sequence=config.param('bcbio_ensemble', 'genome_fasta', type='filepath'),
+        input_callers="  ".join("  \\\n  " + caller for caller in input_callers)
         )
     )
+

@@ -120,8 +120,8 @@ def dict2beds(dictionary,beds):
         [dictionary],
         beds,
         [
-            ['DEFAULT', 'module_mugqic_tools'],
-            ['DEFAULT', 'module_python']
+            ['vardict_paired', 'module_mugqic_tools'],
+            ['vardict_paired', 'module_python']
         ],
         command="""\
 dict2BEDs.py \\
