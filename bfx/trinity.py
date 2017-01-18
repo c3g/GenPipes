@@ -106,7 +106,7 @@ Trinity {other_options} \\
 
 def align_and_estimate_abundance(trinity_fasta, output_directory=None, prep_reference=True, left_or_single_reads=None, right_reads=None, sample_name=None):
     # Prepare reference
-    if prep_reference and left_or_single_reads is None and sample_name is None and output_directory is None:
+    if prep_reference and left_or_single_reads is None and sample_name is None:
         job=Job(
             [trinity_fasta],
             [trinity_fasta + ".RSEM.transcripts.fa",
@@ -122,7 +122,11 @@ align_and_estimate_abundance.pl \\
 --est_method RSEM \\
 --aln_method bowtie \\
 --trinity_mode \\
---prep_reference""".format(transcripts=trinity_fasta),
+--output_dir {output_directory} \\
+--prep_reference""".format(
+                transcripts=trinity_fasta,
+                output_directory=output_directory
+            ),
             name="align_and_estimate_abundance_prep_reference")
     else :
         # Run abundance estimates

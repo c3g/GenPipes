@@ -14,6 +14,8 @@ module_tabix=mugqic/tabix/0.2.6
 module_tophat=mugqic/tophat/2.0.14
 module_ucsc=mugqic/ucsc/v326
 
+HOST=`hostname`
+
 init_install() {
   # '$MUGQIC_INSTALL_HOME_DEV' for development, '$MUGQIC_INSTALL_HOME' for production
   if [[ ${1:-} == MUGQIC_INSTALL_HOME ]]
@@ -241,8 +243,12 @@ cmd_or_job() {
     echo
     echo "Submitting $JOB_PREFIX as job..."
     echo
-    CORES=${2:-1}  # Nb cores = 2nd param if defined else 1
-    echo "${!CMD}" | qsub -m ae -M $JOB_MAIL -A $RAP_ID -W umask=0002 -d $INSTALL_DIR -j oe -o $LOG_DIR/${JOB_PREFIX}_$TIMESTAMP.log -N $JOB_PREFIX.$GENOME_FASTA -l pmem=10000m -l walltime=48:00:0 -l nodes=1:ppn=1
+    if [[ $HOST == "ip03" ]]; then
+      echo "${!CMD}" | qsub -m ae -M $JOB_MAIL -A $RAP_ID -W umask=0002 -d $INSTALL_DIR -j oe -o $LOG_DIR/${JOB_PREFIX}_$TIMESTAMP.log -N $JOB_PREFIX.$GENOME_FASTA -q qfat256 -l pmem=256000m -l walltime=24:00:0 -l nodes=1:ppn=1
+    else
+      CORES=${2:-1}  # Nb cores = 2nd param if defined else 1
+      echo "${!CMD}" | qsub -m ae -M $JOB_MAIL -A $RAP_ID -W umask=0002 -d $INSTALL_DIR -j oe -o $LOG_DIR/${JOB_PREFIX}_$TIMESTAMP.log -N $JOB_PREFIX.$GENOME_FASTA -l pmem=10000m -l walltime=24:00:0 -l nodes=1:ppn=$CORES
+    fi
   else
     echo
     echo "Running $JOB_PREFIX..."
@@ -360,7 +366,7 @@ mkdir -p $INDEX_DIR && \
 module load $module_star && \
 LOG=$LOG_DIR/star_${sjdbOverhang}_$TIMESTAMP.log && \
 ERR=$LOG_DIR/star_${sjdbOverhang}_$TIMESTAMP.err && \
-STAR --runMode genomeGenerate --genomeDir $INDEX_DIR --genomeFastaFiles $GENOME_DIR/$GENOME_FASTA --runThreadN $runThreadN --sjdbOverhang $sjdbOverhang --genomeSAindexNbases 4 --limitGenomeGenerateRAM 86000000000 --sjdbGTFfile $ANNOTATIONS_DIR/$GTF --outFileNamePrefix $INDEX_DIR/ > \$LOG 2> \$ERR && \
+STAR --runMode genomeGenerate --genomeDir $INDEX_DIR --genomeFastaFiles $GENOME_DIR/$GENOME_FASTA --runThreadN $runThreadN --sjdbOverhang $sjdbOverhang --genomeSAindexNbases 4 --limitGenomeGenerateRAM 92798303616 --sjdbGTFfile $ANNOTATIONS_DIR/$GTF --outFileNamePrefix $INDEX_DIR/ > \$LOG 2> \$ERR && \
 chmod -R ug+rwX,o+rX $INDEX_DIR \$LOG \$ERR"
       cmd_or_job STAR_CMD $runThreadN STAR_${sjdbOverhang}_CMD
     else
@@ -454,7 +460,8 @@ create_gene_annotations_flat() {
     echo
     cd $ANNOTATIONS_DIR
     module load $module_ucsc
-    gtfToGenePred -genePredExt -geneNameAsName2 ${ANNOTATION_PREFIX}.gtf ${ANNOTATION_PREFIX}.refFlat.tmp.txt
+#    gtfToGenePred -genePredExt -geneNameAsName2 ${ANNOTATION_PREFIX}.gtf ${ANNOTATION_PREFIX}.refFlat.tmp.txt
+    gtfToGenePred -geneNameAsName2 ${ANNOTATION_PREFIX}.gtf ${ANNOTATION_PREFIX}.refFlat.tmp.txt
     cut -f 12 ${ANNOTATION_PREFIX}.refFlat.tmp.txt > ${ANNOTATION_PREFIX}.refFlat.tmp.2.txt
     cut -f 1-10 ${ANNOTATION_PREFIX}.refFlat.tmp.txt > ${ANNOTATION_PREFIX}.refFlat.tmp.3.txt
     paste ${ANNOTATION_PREFIX}.refFlat.tmp.2.txt ${ANNOTATION_PREFIX}.refFlat.tmp.3.txt > ${ANNOTATION_PREFIX}.ref_flat.tsv

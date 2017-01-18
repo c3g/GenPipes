@@ -10,6 +10,7 @@ SOFTWARE="mugqic_R_packages" # in case we don't like the name
 
 ## Default arg values
 REF="master"
+#REF=1.0.3
 INSTALL_PREFIX_ENV_VARNAME=""
 MODULEFILE_DIR="$MUGQIC_INSTALL_HOME_DEV/modulefiles/mugqic_dev"
 INSTALL_DIR="$MUGQIC_INSTALL_HOME_DEV/software"

@@ -3,10 +3,10 @@
 set -eu -o pipefail
 
 SOFTWARE=VarScan
-VERSION=2.3.9
+VERSION=2.4.2
 # Replace "." in official version number by "_" in archive version number
 ARCHIVE=${SOFTWARE}.v${VERSION}.jar
-ARCHIVE_URL=http://sourceforge.net/projects/varscan/files/$ARCHIVE
+ARCHIVE_URL=https://github.com/dkoboldt/varscan/releases/download/${VERSION}/$ARCHIVE
 SOFTWARE_DIR=${SOFTWARE}.v${VERSION}
 
 # Specific commands to extract and build the software
@@ -29,8 +29,8 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-setenv          VARSCAN_HOME        \$root
-setenv          VARSCAN_JAR         \$root/${SOFTWARE}.v${VERSION}.jar
+setenv          VARSCAN2_HOME        \$root
+setenv          VARSCAN2_JAR         \$root/${SOFTWARE}.v${VERSION}.jar
 "
 }
 

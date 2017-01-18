@@ -49,8 +49,10 @@ python -c 'import pysam; print pysam.__version__, pysam.__file__'
 easy_install networkx
 python -c 'import networkx; print networkx.__version__, networkx.__file__'
 
-#qiime
 PIP_PATH=$(which pip)
+# TEToolkit
+${PIP_PATH} install TEToolkit
+# qiime
 ${PIP_PATH} install qiime
 
 # Add permissions

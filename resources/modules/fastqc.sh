@@ -1,35 +1,38 @@
 #!/bin/bash
+# Exit immediately on error
+set -eu -o pipefail
 
-###################
-################### FASTQC
-###################
-VERSION="0.11.2"
-INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/fastqc/fastqc_v"$VERSION" # where to install..
-mkdir -p $INSTALL_PATH
-cd $INSTALL_PATH
-wget http://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v"$VERSION".zip
-unzip fastqc_v"$VERSION".zip
-rm fastqc_v"$VERSION".zip
-chmod +x FastQC/fastqc
-chmod -R g+w $INSTALL_PATH
+SOFTWARE=fastqc
+VERSION=0.11.5
+ARCHIVE=$SOFTWARE-$VERSION.zip
+ARCHIVE_URL=http://www.bioinformatics.bbsrc.ac.uk/projects/fastqc/fastqc_v${VERSION}.zip
+SOFTWARE_DIR=$SOFTWARE-$VERSION
 
-# Module file
-echo "#%Module1.0
-proc ModulesHelp { } {
-       puts stderr \"\tMUGQIC - FASTQC \"
+build() {
+  cd $INSTALL_DOWNLOAD
+  unzip $ARCHIVE
+  mv FastQC $SOFTWARE_DIR
+  chmod +x $SOFTWARE_DIR/fastqc
+  chmod -R g+w $SOFTWARE_DIR
+  sed -i s,"#\!/usr/bin/perl.*,#\!/usr/bin/env perl,g" $SOFTWARE_DIR/fastqc
+  mv -i $SOFTWARE_DIR $INSTALL_DIR/
 }
-module-whatis \"MUGQIC -FASTQC \"
+
+
+module_file() {
+echo "\
+#%Module1.0
+proc ModulesHelp { } {
+       puts stderr \"\tMUGQIC - $SOFTWARE \"
+}
+module-whatis \"$SOFTWARE\"
                       
-set             root                \$::env(MUGQIC_INSTALL_HOME)/software/fastqc/fastqc_v"$VERSION"/FastQC
-prepend-path    PATH               \$root
-" > $VERSION
+set             root                $INSTALL_DIR/$SOFTWARE_DIR
+prepend-path    PATH                \$root
+"
+}
 
-# Version file
-echo "#%Module1.0
-set ModulesVersion \"$VERSION\"
-" > .version
-
-mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/fastqc
-mv .version $VERSION $MUGQIC_INSTALL_HOME/modulefiles/mugqic/fastqc/
-
+# Call generic module install script once all variables and functions have been set
+MODULE_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source $MODULE_INSTALL_SCRIPT_DIR/install_module.sh $@
 

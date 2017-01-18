@@ -114,7 +114,6 @@ install_genome() {
     echo "GTF up to date... skipping"
     echo
   fi
-
   build_files
   create_genome_ini_file
 

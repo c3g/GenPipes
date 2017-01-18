@@ -13,7 +13,8 @@ module load $PYTHON_MODULE
 easy_install pip
 
 # cython
-easy_install http://cython.org/release/Cython-0.23.4.tar.gz
+#easy_install http://cython.org/release/Cython-0.23.4.tar.gz
+pip install cython
 
 # numpy
 easy_install numpy
@@ -56,6 +57,8 @@ ${PIP_PATH} install scikit-bio
 ${PIP_PATH} install futures
 # misopy
 ${PIP_PATH} install misopy
+# TEToolkit
+${PIP_PATH} install TEToolkit
 
 # Add permissions
 chmod -R ug+rwX,o+rX-w $PYTHON_HOME

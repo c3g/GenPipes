@@ -32,6 +32,8 @@ def deseq(
     output_dir
     ):
 
+    localfit = "-l" if config.param('differential_expression_deseq', 'localfit') else ""
+
     return  Job(
         [count_matrix],
         [os.path.join(output_dir, "deseq_results.csv"), os.path.join(output_dir, "dge_results.csv")],
@@ -43,10 +45,12 @@ def deseq(
 Rscript $R_TOOLS/deseq.R \\
   -d {design_file} \\
   -c {count_matrix} \\
-  -o {output_dir}""".format(
+  -o {output_dir} \\
+  {localfit}""".format(
         design_file=design_file,
         count_matrix=count_matrix,
-        output_dir=output_dir
+        output_dir=output_dir,
+        localfit=localfit
     ))
 
 def edger(

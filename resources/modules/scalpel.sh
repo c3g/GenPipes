@@ -2,31 +2,23 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=scalpel
-VERSION=0.3.2
-PERL_VERSION=5.18.2
-ARCHIVE=$SOFTWARE-$VERSION.tar.gz
-ARCHIVE_URL=http://sourceforge.net/projects/scalpel/files/$ARCHIVE/download
-SOFTWARE_DIR=$SOFTWARE-$VERSION
+VERSION=0.5.2  
+ARCHIVE=$SOFTWARE-$VERSION.tar.gz 
+ARCHIVE_URL=http://sourceforge.net/projects/${SOFTWARE}/files/${ARCHIVE} 
+SOFTWARE_DIR=$SOFTWARE-$VERSION 
 
-# Specific commands to extract and build the software
-# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
-# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
+
 build() {
   cd $INSTALL_DOWNLOAD
-  tar zxvf $ARCHIVE
+  tar zxvf $ARCHIVE  
 
   cd $SOFTWARE_DIR
-  module load mugqic/perl/$PERL_VERSION
-  make
-
-  # Update Perl script shebangs
-  sed -i s,"#\!/usr/bin/perl,#\!/usr/bin/env perl,g" *.pl scalpel*
-  chmod +x *.pl scalpel*
+  make  
+  
 
   # Install software
-  cd $INSTALL_DOWNLOAD
-  mv -i $SOFTWARE_DIR $INSTALL_DIR/
+  cd $INSTALL_DOWNLOAD  ## TO BE ADDED AND MODIFIED IF NECESSARY
+  mv -i $SOFTWARE_DIR $INSTALL_DIR/  ## TO BE ADDED AND MODIFIED IF NECESSARY
 }
 
 module_file() {

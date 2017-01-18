@@ -185,28 +185,6 @@ $PYTHON_TOOLS/filterAssemblyToFastaToXls.py -f {fasta_file} \\
         )
     )
 
-
-## functions for perl tools ##
-
-def bed2interval_list(dictionary, bed, output):
-    return Job(
-        [dictionary, bed],
-        [output],
-        [
-            ['DEFAULT', 'module_mugqic_tools'],
-            ['DEFAULT' , 'module_perl']
-        ],
-        command="""\
-bed2IntervalList.pl \\
-  --dict {dictionary} \\
-  --bed {bed} \\
-  > {output}""".format(
-        dictionary=dictionary if dictionary else config.param('DEFAULT', 'genome_dictionary', type='filepath'),
-        bed=bed,
-        output=output
-        )
-    )
-
 def dict2beds(dictionary,beds):
     return Job(
         [dictionary],
@@ -238,6 +216,43 @@ python $PYTHON_TOOLS/preprocess.py \\
   {input} \\
   | bgzip -cf > {output}""".format(
         input=input,
+        output=output
+        )
+    )
+
+def fix_varscan_output(input, output, options=None):
+    return Job(
+        [input],
+        [output],
+        [
+            ['DEFAULT', 'module_mugqic_tools'],
+            ['DEFAULT', 'module_python']
+        ],
+        command="""\
+python $PYTHON_TOOLS/fixVS2VCF.py {options} {input} \\
+    {output}""".format(
+        options=options if options else "",
+        input=input if input else "",
+        output=output if input else "",
+        )
+    )
+
+## functions for perl tools ##
+def bed2interval_list(dictionary, bed, output):
+    return Job(
+        [dictionary, bed],
+        [output],
+        [
+            ['DEFAULT', 'module_mugqic_tools'],
+            ['DEFAULT' , 'module_perl']
+        ],
+        command="""\
+bed2IntervalList.pl \\
+  --dict {dictionary} \\
+  --bed {bed} \\
+  > {output}""".format(
+        dictionary=dictionary if dictionary else config.param('DEFAULT', 'genome_dictionary', type='filepath'),
+        bed=bed,
         output=output
         )
     )
@@ -279,6 +294,23 @@ rm {input_filename} """.format(
         removable_files=[output]
     )
 
+def vcf2bed(input, output):
+    return Job(
+        [input],
+        [output],
+        [
+            ['DEFAULT', 'module_mugqic_tools'],
+            ['DEFAULT' , 'module_perl']
+        ],
+        command="""\
+cat {input} | perl $PERL_TOOLS/vcf2bed.pl - \\
+  > {output}""".format(
+        input=input,
+        output=output
+        )
+    )
+     
+   
 
 ## functions for R tools ##
 
