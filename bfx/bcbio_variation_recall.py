@@ -33,6 +33,7 @@ def ensemble(input_callers, output, options):
         [output],
         [
             ['bcbio_ensemble', 'module_bcbio_variation_recall'],
+            ['bcbio_ensemble', 'module_bcftools'],
         ],
         command="""\
 bcbio-variation-recall ensemble \\

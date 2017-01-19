@@ -63,3 +63,20 @@ vcffilter \\
         output_vcf=" \\\n  > " + output_vcf if output_vcf else ""
         )
     )
+
+
+def vcfstreamsort(input_vcf, output_vcf):
+    return Job(
+        [input_vcf],
+        [output_vcf],
+        [
+            ['DEFAULT', 'module_vcflib']
+        ],
+        command="""\
+vcfstreamsort \\
+  {input_vcf} \\
+  {output_vcf}""".format(
+        input_vcf=input_vcf if input_vcf else "",
+        output_vcf=" \\\n  > " + output_vcf if output_vcf else ""
+        )
+    )
