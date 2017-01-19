@@ -27,7 +27,7 @@
 from core.config import *
 from core.job import *
 
-def decompose_and_normalize_mnps(input, vt_output):
+def decompose_and_normalize_mnps(input, vt_output=None):
 
     return Job(
         [input],
@@ -37,10 +37,10 @@ def decompose_and_normalize_mnps(input, vt_output):
             ['decompose_and_normalize_mnps', 'module_vt']
         ],
         command="""\
-zcat {input} | sed 's/ID=AD,Number=./ID=AD,Number=R/' | vt decompose -s - | vt normalize -r {reference_sequence} - | bgzip -cf > {vt_output} \\
+zless {input} | sed 's/ID=AD,Number=./ID=AD,Number=R/' | vt decompose -s - | vt normalize -r {reference_sequence} {vt_output} \\
         """.format(
         input=input,
         reference_sequence=config.param('DEFAULT', 'genome_fasta', type='filepath'),
-        vt_output=vt_output
+        vt_output=" > " + vt_output if vt_output else "-",
         )
     )

@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 ################################################################################
 # Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
 #
@@ -17,31 +19,32 @@
 # along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-#!/usr/bin/env python
-
 # Python Standard Modules
+import os
 
 # MUGQIC Modules
 from core.config import *
 from core.job import *
 
-def gemini_annotations(variants, gemini_output, tmp_dir):
-
+def ensemble(input_callers, output, options):
+    
     return Job(
-        [variants],
-        [gemini_output],
+        input_callers,
+        [output],
         [
-            ['gemini_annotations', 'module_gemini'],
-            #['gemini_annotations', 'module_htslib']
+            ['bcbio_ensemble', 'module_bcbio_variation_recall'],
+            ['bcbio_ensemble', 'module_bcftools'],
         ],
         command="""\
-gemini load -v {variants} \\
+bcbio-variation-recall ensemble \\
   {options} \\
-  --tempdir {temp} \\
-  {output}""".format(
-        options=config.param('gemini_annotations', 'options'),
-        variants=variants,
-        output=gemini_output,
-        temp=tmp_dir
+  {output} \\
+  {reference_sequence} \\
+  {input_callers}""".format(
+        options=options,
+        output=output if output else "-",
+        reference_sequence=config.param('bcbio_ensemble', 'genome_fasta', type='filepath'),
+        input_callers="  ".join("  \\\n  " + caller for caller in input_callers)
         )
     )
+

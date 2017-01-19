@@ -49,7 +49,7 @@ from bfx import gatk
 from bfx import tools
 from bfx import bed_file
 from bfx import vardict
-from bfx import bcbio_variation
+from bfx import bcbio_variation_recall
 from bfx import vt
 from bfx import snpeff
 from bfx import gemini
@@ -545,15 +545,21 @@ cp \\
             outputFixGermline = prefix + ".varscan2.germline_loh.vt.vcf.gz"
 
             jobs.append(concat_jobs([
-                tools.preprocess_varscan( prefix + ".varscan2.somatic.vcf.gz",  prefix + ".prep.vcf.gz" ),
-                vt.decompose_and_normalize_mnps( prefix + ".prep.vcf.gz" , prefix + ".prep.vt.vcf.gz"),
-                Job([outputPreprocess], [outputFix], command="zcat " + outputPreprocess + " | grep -v 'ID=AD_O' | awk ' BEGIN {OFS=\"\\t\"; FS=\"\\t\"} {if (NF > 8) {for (i=9;i<=NF;i++) {x=split($i,na,\":\") ; if (x > 1) {tmp=na[1] ; for (j=2;j<x;j++){if (na[j] == \"AD_O\") {na[j]=\"AD\"} ; if (na[j] != \".\") {tmp=tmp\":\"na[j]}};$i=tmp}}};print $0} ' | bgzip -cf >  " + outputFix),
+                pipe_jobs([
+                    vt.decompose_and_normalize_mnps( prefix + ".varscan2.somatic.vcf.gz" , None),
+                    htslib.bgzip_tabix_vcf(None, prefix + ".prep.vt.vcf.gz"),
+                ]),
+                tools.preprocess_varscan( prefix + ".prep.vt.vcf.gz",  outputFix ),
+                #Job([outputPreprocess], [outputFix], command="zcat " + outputPreprocess + " | grep -v 'ID=AD_O' | awk ' BEGIN {OFS=\"\\t\"; FS=\"\\t\"} {if (NF > 8) {for (i=9;i<=NF;i++) {x=split($i,na,\":\") ; if (x > 1) {tmp=na[1] ; for (j=2;j<x;j++){if (na[j] == \"AD_O\") {na[j]=\"AD\"} ; if (na[j] != \".\") {tmp=tmp\":\"na[j]}};$i=tmp}}};print $0} ' | bgzip -cf >  " + outputFix),
             ], name="preprocess_vcf_panel.somatic." + tumor_pair.name ))
 
             jobs.append(concat_jobs([
-                tools.preprocess_varscan( prefix + ".varscan2.germline_loh.vcf.gz",  prefix + ".germline_loh.prep.vcf.gz" ),
-                vt.decompose_and_normalize_mnps( prefix + ".germline_loh.prep.vcf.gz" , prefix + ".germline_loh.prep.vt.vcf.gz"),
-                Job([outputPrepGermline], [outputFixGermline], command="zcat " + outputPrepGermline + " | grep -v 'ID=AD_O' | awk ' BEGIN {OFS=\"\\t\"; FS=\"\\t\"} {if (NF > 8) {for (i=9;i<=NF;i++) {x=split($i,na,\":\") ; if (x > 1) {tmp=na[1] ; for (j=2;j<x;j++){if (na[j] == \"AD_O\") {na[j]=\"AD\"} ; if (na[j] != \".\") {tmp=tmp\":\"na[j]}};$i=tmp}}};print $0} ' | bgzip -cf >  " + outputFixGermline),
+                pipe_jobs([
+                    vt.decompose_and_normalize_mnps( prefix + ".varscan2.germline_loh.vcf.gz" , None),
+                    htslib.bgzip_tabix_vcf(None,  prefix + ".germline_loh.prep.vt.vcf.gz"),
+                ]),
+                tools.preprocess_varscan( prefix + ".germline_loh.prep.vt.vcf.gz",  outputFixGermline ),
+                #Job([outputPrepGermline], [outputFixGermline], command="zcat " + outputPrepGermline + " | grep -v 'ID=AD_O' | awk ' BEGIN {OFS=\"\\t\"; FS=\"\\t\"} {if (NF > 8) {for (i=9;i<=NF;i++) {x=split($i,na,\":\") ; if (x > 1) {tmp=na[1] ; for (j=2;j<x;j++){if (na[j] == \"AD_O\") {na[j]=\"AD\"} ; if (na[j] != \".\") {tmp=tmp\":\"na[j]}};$i=tmp}}};print $0} ' | bgzip -cf >  " + outputFixGermline),
             ], name="preprocess_vcf_panel.germline." + tumor_pair.name ))
 
             
@@ -756,12 +762,14 @@ cp \\
                     htslib.bgzip_tabix_vcf(output_fpfilter_somatic, output_fpfilter_somatic_gz),
                     pipe_jobs([
                         bcftools.view(output_fpfilter_somatic_gz, None, config.param('varscan2_readcount_fpfilter', 'somatic_filter_options')),
+                        vcflib.vcfstreamsort(None, None),
                         htslib.bgzip_tabix_vcf(None, output_vcf_somatic_gz),
                     ]),
                     varscan.fpfilter_somatic(input_vcf, output_normal_readcount, output_fpfilter_germline),
                     htslib.bgzip_tabix_vcf(output_fpfilter_germline, output_fpfilter_germline_gz),
                     pipe_jobs([
                         bcftools.view(output_fpfilter_germline_gz, None, config.param('varscan2_readcount_fpfilter', 'germline_loh_filter_options')),
+                        vcflib.vcfstreamsort(None, None),
                         htslib.bgzip_tabix_vcf(None, output_vcf_germline_loh_gz),
                     ]),             
                 ], name = "varscan2_readcount_fpfilter." + tumor_pair.name + "." + sequence['name'] ) )
@@ -780,13 +788,16 @@ cp \\
 
             all_inputs = [os.path.join(varscan_directory, tumor_pair.name + "." + sequence['name'] + ".varscan2.vcf.gz") for sequence in self.sequence_dictionary_variant()]    
         
-            somatic_inputs = [os.path.join(varscan_directory, tumor_pair.name + "." + sequence['name'] + ".varscan2.somatic.vcf.gz") for sequence in self.sequence_dictionary_variant()]
+            #somatic_inputs = [os.path.join(varscan_directory, tumor_pair.name + "." + sequence['name'] + ".varscan2.somatic.vcf.gz") for sequence in self.sequence_dictionary_variant()]
 
-            germline_inputs = [os.path.join(varscan_directory, tumor_pair.name + "." + sequence['name'] + ".varscan2.germline_loh.vcf.gz") for sequence in self.sequence_dictionary_variant()]
+            #germline_inputs = [os.path.join(varscan_directory, tumor_pair.name + "." + sequence['name'] + ".varscan2.germline_loh.vcf.gz") for sequence in self.sequence_dictionary_variant()]
 
             all_output = os.path.join(pair_directory, tumor_pair.name + ".varscan2.vcf.gz")
-            somtic_output = os.path.join(pair_directory, tumor_pair.name + ".varscan2.somatic.vcf.gz")
-            germline_output = os.path.join(pair_directory, tumor_pair.name + ".varscan2.germline_loh.vcf.gz")
+            all_output_vt = os.path.join(pair_directory, tumor_pair.name + ".varscan2.vt.vcf.gz")
+            #somtic_output = os.path.join(pair_directory, tumor_pair.name + ".varscan2.somatic.vcf.gz")
+            somtic_output_vt = os.path.join(pair_directory, tumor_pair.name + ".varscan2.somatic.vt.vcf.gz")
+            #germline_output = os.path.join(pair_directory, tumor_pair.name + ".varscan2.germline_loh.vcf.gz")
+            germline_output_vt = os.path.join(pair_directory, tumor_pair.name + ".varscan2.germline_loh.vt.vcf.gz")
 
             jobs.append(concat_jobs([
                 pipe_jobs([
@@ -794,24 +805,21 @@ cp \\
                     tools.fix_varscan_output(None, None),
                     Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $4) } {print}'"),
                     Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $5) } {print}'"),
-                    Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '$1!~/^#/ && $4 == $5 {next} {print}'"),
+                    Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '$1!~/^#/ && $4 == $5 {next} {print}'"),                   
                     htslib.bgzip_tabix_vcf(None, all_output),
                 ]),
                 pipe_jobs([
-                    bcftools.concat(somatic_inputs, None),
-                    tools.fix_varscan_output(None, None),
-                    Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $4) } {print}'"),
-                    Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $5) } {print}'"),
-                    Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '$1!~/^#/ && $4 == $5 {next} {print}'"),
-                    htslib.bgzip_tabix_vcf(None, somtic_output),
+                    vt.decompose_and_normalize_mnps( all_output , None),
+                    vcflib.vcfstreamsort(None, None),
+                    htslib.bgzip_tabix_vcf(None,  all_output_vt),
                 ]),
-                 pipe_jobs([
-                    bcftools.concat(germline_inputs, None),
-                    tools.fix_varscan_output(None, None),
-                    Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $4) } {print}'"),
-                    Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $5) } {print}'"),
-                    Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '$1!~/^#/ && $4 == $5 {next} {print}'"),
-                    htslib.bgzip_tabix_vcf(None, germline_output),                 
+                pipe_jobs([
+                    bcftools.view(all_output_vt, None, config.param('varscan2_readcount_fpfilter', 'somatic_filter_options')),
+                    htslib.bgzip_tabix_vcf(None, somtic_output_vt),
+                ]),
+                pipe_jobs([
+                    bcftools.view(all_output_vt, None, config.param('varscan2_readcount_fpfilter', 'germline_loh_filter_options')),
+                    htslib.bgzip_tabix_vcf(None, germline_output_vt),
                 ]),
             ], name = "merge_varscan2." + tumor_pair.name ))
 
@@ -879,18 +887,27 @@ cp \\
             pair_directory = os.path.join("pairedVariants", tumor_pair.name)
             mutect_directory = os.path.join(pair_directory, "rawMuTect2")
             # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
-            output = os.path.join(pair_directory, tumor_pair.name + ".mutect2.vcf.gz")
             output_gz = os.path.join(pair_directory, tumor_pair.name + ".mutect2.vcf.gz")
-            output_somatic =  os.path.join(pair_directory, tumor_pair.name + ".mutect2.somatic.vcf.gz")
-
+            output_vt_gz = os.path.join(pair_directory, tumor_pair.name + ".mutect2.vt.vcf.gz")
+            output_somatic_vt = os.path.join(pair_directory, tumor_pair.name + ".mutect2.somatic.vt.vcf.gz")
+            
             if nb_jobs == 1:
                 input = os.path.join(mutect_directory, tumor_pair.name + ".mutect2.vcf.gz")
                 jobs.append(concat_jobs([
-                    Job([input], [output], command="ln -s -f " + input + " " + output), 
+                    Job([input], [output_gz], command="ln -s -f " + input + " " + output), 
                     pipe_jobs([
-                        Job([output_gz], [None], command="zcat " + output + " | sed 's/TUMOR/"+ tumor_pair.tumor.name + "/g' | sed 's/NORMAL/"+ tumor_pair.normal.name + "/g' | sed 's/Number=R/Number=./g' "),
+                        vt.decompose_and_normalize_mnps(output_gz, None),
+                        htslib.bgzip_tabix_vcf(None, output_vt_gz),
+                    ]),
+                    pipe_jobs([
+                        Job([output_vt_gz], [None], command="zcat " + output + " | sed 's/TUMOR/"+ tumor_pair.tumor.name + "/g' | sed 's/NORMAL/"+ tumor_pair.normal.name + "/g' | sed 's/Number=R/Number=./g' "),
                         bcftools.view(None, None, config.param('merge_filter_mutect2', 'filter_options')),
                         htslib.bgzip_tabix_vcf(None, output_somatic),
+                    ]),
+                     pipe_jobs([
+                        vt.decompose_and_normalize_mnps(output_somatic, None),
+                        vcflib.vcfstreamsort(None, None),
+                        htslib.bgzip_tabix_vcf(None, output_somatic_vt),
                     ]),
                 ], name="symlink_mutect_vcf." + tumor_pair.name))
     
@@ -904,12 +921,19 @@ cp \\
                 inputVCFs.append(os.path.join(mutect_directory, tumor_pair.name + ".others.mutect2.vcf.gz"))
 
                 jobs.append(concat_jobs([
-                    bcftools.concat(inputVCFs, output, config.param('merge_filter_mutect2', 'bcftools_options')),
-                    #gatk.cat_variants(inputVCFs, output),
+                    pipe_jobs([ 
+                        bcftools.concat(inputVCFs, None, config.param('merge_filter_mutect2', 'bcftools_options')),
+                        Job([None], [None], command="sed 's/TUMOR/"+ tumor_pair.tumor.name + "/g' | sed 's/NORMAL/"+ tumor_pair.normal.name + "/g' | sed 's/Number=R/Number=./g' " ),
+                        htslib.bgzip_tabix_vcf(None, output_gz),
+                    ]),
                     pipe_jobs([
-                        Job([output_gz], [None], command="zcat " + output + " | sed 's/TUMOR/"+ tumor_pair.tumor.name + "/g' | sed 's/NORMAL/"+ tumor_pair.normal.name + "/g' | sed 's/Number=R/Number=./g' "),
-                        bcftools.view(None, None, config.param('merge_filter_mutect2', 'filter_options')),
-                        htslib.bgzip_tabix_vcf(None, output_somatic),
+                        vt.decompose_and_normalize_mnps(output_gz, None),
+                        vcflib.vcfstreamsort(None, None),
+                        htslib.bgzip_tabix_vcf(None, output_vt_gz),
+                    ]),
+                    pipe_jobs([
+                        bcftools.view(output_vt_gz, None, config.param('merge_filter_mutect2', 'filter_options')),
+                        htslib.bgzip_tabix_vcf(None, output_somatic_vt),
                      ]),
                  ], name = "merge_filter_mutect2." + tumor_pair.name))
 
@@ -978,8 +1002,9 @@ cp \\
             samtools_directory = os.path.join(pair_directory, "rawSamtools")
             output = os.path.join(samtools_directory,  tumor_pair.name + ".samtools.bcf")
             output_vcf = os.path.join(pair_directory,  tumor_pair.name + ".samtools.vcf.gz")
-            output_somatics = os.path.join(pair_directory,  tumor_pair.name + ".samtools.somatic.vcf.gz")
-            output_germline_loh = os.path.join(pair_directory,  tumor_pair.name + ".samtools.germline_loh.vcf.gz")
+            output_vcf_vt = os.path.join(pair_directory,  tumor_pair.name + ".samtools.vt.vcf.gz")
+            output_somatics = os.path.join(pair_directory,  tumor_pair.name + ".samtools.somatic.vt.vcf.gz")
+            output_germline_loh = os.path.join(pair_directory,  tumor_pair.name + ".samtools.germline_loh.vt.vcf.gz")
 
             if nb_jobs == 1:
                 inputs = os.path.join(samtools_directory,  tumor_pair.name + ".bcf") 
@@ -994,12 +1019,17 @@ cp \\
                         htslib.bgzip_tabix_vcf(None, output_vcf),
                     ]),
                     pipe_jobs([
-                        bcftools.filter(output_vcf, None, config.param('merge_filter_paired_samtools', 'somatic_filter_options')),
+                        vt.decompose_and_normalize_mnps(output_vcf, None),
+                        vcflib.vcfstreamsort(None, None),
+                        htslib.bgzip_tabix_vcf(None, output_vcf_vt),
+                    ]),
+                    pipe_jobs([
+                        bcftools.filter(output_vcf_vt, None, config.param('merge_filter_paired_samtools', 'somatic_filter_options')),
                         vcflib.vcffilter(None, None, config.param('merge_filter_paired_samtools', 'somatic_vcffilter_options')),
                         htslib.bgzip_tabix_vcf(None, output_somatics),
                     ]),
                     pipe_jobs([
-                        bcftools.filter(output_vcf, None, config.param('merge_filter_paired_samtools', 'germline_loh_filter_options')),
+                        bcftools.filter(output_vcf_vt, None, config.param('merge_filter_paired_samtools', 'germline_loh_filter_options')),
                         htslib.bgzip_tabix_vcf(None, output_germline_loh),
                     ]),
                 ], name = "merge_filter_paired_samtools." + tumor_pair.name))
@@ -1017,12 +1047,17 @@ cp \\
                         htslib.bgzip_tabix_vcf(None, output_vcf),
                     ]),
                     pipe_jobs([
-                        bcftools.filter(output_vcf, None, config.param('merge_filter_paired_samtools', 'somatic_filter_options')),
-                        vcflib.vcffilter(None, None, config.param('merge_filter_paired_samtools', 'somatic_vcffilter_options')),
+                        vt.decompose_and_normalize_mnps(output_vcf, None),
+                        vcflib.vcfstreamsort(None, None),
+                        htslib.bgzip_tabix_vcf(None, output_vcf_vt),
+                    ]),
+                    pipe_jobs([
+                        bcftools.filter(output_vcf_vt, None, config.param('merge_filter_paired_samtools', 'somatic_filter_options')),
+                        #vcflib.vcffilter(None, None, config.param('merge_filter_paired_samtools', 'somatic_vcffilter_options')),
                         htslib.bgzip_tabix_vcf(None, output_somatics),   
                     ]),
                      pipe_jobs([
-                        bcftools.filter(output_vcf, None, config.param('merge_filter_paired_samtools', 'germline_loh_filter_options')),
+                        bcftools.filter(output_vcf_vt, None, config.param('merge_filter_paired_samtools', 'germline_loh_filter_options')),
                         htslib.bgzip_tabix_vcf(None, output_germline_loh),
                     ]),
                 ], name = "merge_filter_paired_samtools." + tumor_pair.name))                    
@@ -1067,7 +1102,13 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         if use_bed :
             bed = self.samples[0].readsets[0].beds[0]
             bed_intervals, interval_size = bed_file.parse_bed_file(bed)
-            bed_file_list = bed_file.split_by_size(bed_intervals, interval_size, nb_jobs, output="./vardict.tmp")
+            if not os.path.exists('vardict.tmp.0.bed'):
+                bed_file_list = bed_file.split_by_size(bed_intervals, interval_size, nb_jobs, output="./vardict.tmp")
+            else:
+                bed_file_list = []
+                for idx in range(nb_jobs):
+                    bed_file_list.append(os.path.join("vardict.tmp." + str(idx) + ".bed"))
+            
 
         for tumor_pair in self.tumor_pairs.itervalues():
             pair_directory = os.path.join("pairedVariants", tumor_pair.name)
@@ -1138,26 +1179,33 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         for tumor_pair in self.tumor_pairs.itervalues():
             pair_directory = os.path.join("pairedVariants", tumor_pair.name)
             vardict_directory = os.path.join(pair_directory, "rawVardict")
+            output_tmp = os.path.join(pair_directory,  tumor_pair.name + ".vardict.tmp.vcf.gz")
             output = os.path.join(pair_directory,  tumor_pair.name + ".vardict.vcf.gz")
-            output_somatic = os.path.join(pair_directory,  tumor_pair.name + ".vardict.somatic.vcf.gz")
-            output_germline_loh = os.path.join(pair_directory,  tumor_pair.name + ".vardict.germline_loh.vcf.gz")
+            output_vt = os.path.join(pair_directory,  tumor_pair.name + ".vardict.vt.vcf.gz")
+            output_somatic = os.path.join(pair_directory,  tumor_pair.name + ".vardict.somatic.vt.vcf.gz")
+            output_germline_loh = os.path.join(pair_directory,  tumor_pair.name + ".vardict.germline_loh.vt.vcf.gz")
 
             if nb_jobs == 1:
                 inputs = os.path.join(vardict_directory,  tumor_pair.name + ".0.vardict.vcf.gz")
                 jobs.append(concat_jobs([
-                    Job([input], [output], command="ln -s -f " + input + " " + output),
+                    Job([input], [output_tmp], command="ln -s -f " + input + " " + output_tmp),
                     pipe_jobs([
-                       bcftools.view(output, None, config.param('merge_filter_paired_vardict', 'somatic_filter_options')),
-                       Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $4) } {print}'"),
-                       Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $5) } {print}'"),
-                       Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '$1!~/^#/ && $4 == $5 {next} {print}'"), 
+                        Job([output_tmp], [None], command="zcat {output} | awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $4) } {print}'"),
+                        Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $5) } {print}'"),
+                        Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '$1!~/^#/ && $4 == $5 {next} {print}'"),
+                        htslib.bgzip_tabix_vcf(None, output)
+                    ]),
+                    pipe_jobs([
+                        vt.decompose_and_normalize_mnps(output, None),
+                        vcflib.vcfstreamsort(None, None),
+                        htslib.bgzip_tabix_vcf(None, output_vt),
+                    ]),
+                    pipe_jobs([
+                       bcftools.view(output_vt, None, config.param('merge_filter_paired_vardict', 'somatic_filter_options')),
                        htslib.bgzip_tabix_vcf(None, output_somatics),
                     ]),
                     pipe_jobs([
-                       bcftools.view(output, None, config.param('merge_filter_paired_vardict', 'germline_loh_filter_options')),
-                       Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $4) } {print}'"),
-                       Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $5) } {print}'"),
-                       Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '$1!~/^#/ && $4 == $5 {next} {print}'"),
+                       bcftools.view(output_vt, None, config.param('merge_filter_paired_vardict', 'germline_loh_filter_options')),
                        htslib.bgzip_tabix_vcf(None, output_germline_loh),
                     ]),
                 ], removable_files=[output], name="symlink_vardict_vcf." + tumor_pair.name ))
@@ -1167,7 +1215,6 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
                     inputVCFs.append(os.path.join(vardict_directory,  tumor_pair.name + "." + str(idx) + ".vardict.vcf.gz"))
                 
                 jobs.append(concat_jobs([
-                    #gatk.cat_variants(inputVCFs, output),
                     pipe_jobs([
                         bcftools.concat(inputVCFs, None),
                         Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $4) } {print}'"),
@@ -1176,11 +1223,16 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
                         htslib.bgzip_tabix_vcf(None, output),
                     ]),
                     pipe_jobs([
-                       bcftools.view(output, None, config.param('merge_filter_paired_vardict', 'somatic_filter_options')),
+                        vt.decompose_and_normalize_mnps(output, None),
+                        vcflib.vcfstreamsort(None, None),
+                        htslib.bgzip_tabix_vcf(None, output_vt),
+                    ]),
+                    pipe_jobs([
+                       bcftools.view(output_vt, None, config.param('merge_filter_paired_vardict', 'somatic_filter_options')),
                        htslib.bgzip_tabix_vcf(None, output_somatic),
                     ]),
                     pipe_jobs([
-                       bcftools.view(output, None, config.param('merge_filter_paired_vardict', 'germline_loh_filter_options')),
+                       bcftools.view(output_vt, None, config.param('merge_filter_paired_vardict', 'germline_loh_filter_options')),
                        htslib.bgzip_tabix_vcf(None, output_germline_loh),
                     ]),
                 ], name = "merge_filter_paired_vardict." + tumor_pair.name ))
@@ -1201,14 +1253,13 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
             paired_ensemble_directory = os.path.join(ensemble_directory, tumor_pair.name)
             input_directory = os.path.join("pairedVariants", tumor_pair.name)
 
-            input_mutect2 = os.path.join(input_directory, tumor_pair.name + ".mutect2.somatic.vcf.gz")
-            input_vardict = os.path.join(input_directory, tumor_pair.name + ".vardict.somatic.vcf.gz")
-            input_samtools = os.path.join(input_directory, tumor_pair.name + ".samtools.somatic.vcf.gz")
-            input_varscan2 = self.select_input_files([[os.path.join(input_directory, tumor_pair.name + ".varscan2.fpfilter.somatic.vcf.gz")],[os.path.join(input_directory, tumor_pair.name + ".varscan2.somatic.vcf.gz")]])        
-            inputSomaticVCFs = [input_mutect2, input_vardict, input_samtools, input_varscan2[0]]
+            input_mutect2 = os.path.join(input_directory, tumor_pair.name + ".mutect2.vt.vcf.gz")
+            input_vardict = os.path.join(input_directory, tumor_pair.name + ".vardict.somatic.vt.vcf.gz")
+            input_samtools = os.path.join(input_directory, tumor_pair.name + ".samtools.somatic.vt.vcf.gz")
+            input_varscan2 = os.path.join(input_directory, tumor_pair.name + ".varscan2.somatic.vt.vcf.gz")        
+            inputSomaticVCFs = [input_mutect2, input_vardict, input_samtools, input_varscan2]                       
         
-            output_ensemble = os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.somatic.vcf")
-            output_gz = os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.somatic.vcf.gz")
+            output_ensemble = os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.somatic.vt.vcf.gz")
             output_flt = os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.somatic.flt.vcf.gz")
 
             mkdir_job = Job(command="mkdir -p " + paired_ensemble_directory, removable_files=[os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.somatic-work"), output_ensemble] )   
@@ -1216,12 +1267,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
             jobs.append(concat_jobs([
                     # Create output directory since it is not done by default by GATK tools
                     mkdir_job,
-                    bcbio_variation.tumor_pair_ensemble(inputSomaticVCFs, output_ensemble, config.param('bcbio_ensemble_somatic', 'config_yaml')),
-                    htslib.bgzip_tabix_vcf(output_ensemble, output_gz),
-                    pipe_jobs([
-                        Job([output_gz], [None], command="zgrep -Pv \"set=samtools\\t\" " + output_gz + " | grep -Pv \"set=vardict\\t\" " + " | grep -Pv \"set=varscan2\\t\" "),
-                        htslib.bgzip_tabix_vcf(None, output_flt),
-                    ]),
+                    bcbio_variation_recall.ensemble(inputSomaticVCFs, output_ensemble, config.param('bcbio_ensemble_somatic', 'options')),
                 ], name="bcbio_ensemble_somatic." + tumor_pair.name))
 
         return jobs
@@ -1240,33 +1286,26 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
             paired_ensemble_directory = os.path.join(ensemble_directory, tumor_pair.name)
             input_directory = os.path.join("pairedVariants", tumor_pair.name)
 
-            input_vardict = os.path.join(input_directory, tumor_pair.name + ".vardict.germline_loh.vcf.gz")
-            input_samtools = os.path.join(input_directory, tumor_pair.name + ".samtools.germline_loh.vcf.gz")
-            input_varscan2 =  self.select_input_files([[os.path.join(input_directory, tumor_pair.name + ".varscan2.fpfilter.germline_loh.vcf.gz")],[os.path.join(input_directory, tumor_pair.name + ".varscan2.germline_loh.vcf.gz")]])
-            inputGermlineVCFs = [input_vardict, input_samtools, input_varscan2[0]]
+            input_vardict = os.path.join(input_directory, tumor_pair.name + ".vardict.germline_loh.vt.vcf.gz")
+            input_samtools = os.path.join(input_directory, tumor_pair.name + ".samtools.germline_loh.vt.vcf.gz")
+            input_varscan2 = os.path.join(input_directory, tumor_pair.name + ".varscan2.germline_loh.vt.vcf.gz")
+            inputGermlineVCFs = [input_vardict, input_samtools, input_varscan2]
 
-            output_ensemble = os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.germline_loh.vcf")
-            output_gz = os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.germline_loh.vcf.gz")
-            output_flt = os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.germline_loh.flt.vcf.gz")
+            output_ensemble = os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.germline_loh.vt.vcf.gz")
 
             mkdir_job = Job(command="mkdir -p " + paired_ensemble_directory, removable_files=[os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.germline_loh-work"), output_ensemble])
 
             jobs.append(concat_jobs([
                     # Create output directory since it is not done by default by GATK tools
                     mkdir_job,
-                    bcbio_variation.tumor_pair_ensemble(inputGermlineVCFs, output_ensemble, config.param('bcbio_ensemble_germline_loh', 'config_yaml')),
-                    htslib.bgzip_tabix_vcf(output_ensemble, output_gz),
-                    pipe_jobs([
-                        Job([output_gz], [None], command="zgrep -Pv \"set=samtools\\t\" " + output_gz + " | grep -Pv \"set=vardict\\t\" " + " | grep -Pv \"set=varscan2\\t\" "),
-                        htslib.bgzip_tabix_vcf(None, output_flt),
-                    ]),
+                    bcbio_variation_recall.ensemble(inputGermlineVCFs, output_ensemble, config.param('bcbio_ensemble_germline_loh', 'options')),
                 ], name="bcbio_ensemble_germline_loh." + tumor_pair.name))
 
         return jobs
 
     def gatk_variant_annotator_somatic(self):
         """
-        Add vcf annotations to ensemble vcf: most importantly the AD field
+        Add vcf annotations to ensemble vcf: Standard and Somatic annotations
         """
 
         jobs = []
@@ -1276,10 +1315,10 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         for tumor_pair in self.tumor_pairs.itervalues():
             inputNormal = os.path.join("alignment",tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.recal.bam")
             inputTumor = os.path.join("alignment",tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
-            input_somatic_variants = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.flt.vcf.gz")
+            input_somatic_variants = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.vt.vcf.gz")
 
             for sequence in self.sequence_dictionary_variant():
-                output_somatic_variants = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.flt.annot." + sequence['name'] + ".vcf.gz")
+                output_somatic_variants = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.vt.annot." + sequence['name'] + ".vcf.gz")
 
                 mkdir_job = Job(command="mkdir -p " + ensemble_directory, removable_files=[output_somatic_variants])
 
@@ -1302,10 +1341,10 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         for tumor_pair in self.tumor_pairs.itervalues():
             inputNormal = os.path.join("alignment",tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.recal.bam")
             inputTumor = os.path.join("alignment",tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
-            input_germline_loh_variants = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.germline_loh.flt.vcf.gz")
+            input_germline_loh_variants = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.germline_loh.vt.vcf.gz")
 
             for sequence in self.sequence_dictionary_variant():
-                output_germline_loh_variants = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.germline_loh.flt.annot." + sequence['name'] + ".vcf.gz")
+                output_germline_loh_variants = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.germline_loh.vt.annot." + sequence['name'] + ".vcf.gz")
 
                 mkdir_job = Job(command="mkdir -p " + ensemble_directory, removable_files=[output_germline_loh_variants])
 
@@ -1318,15 +1357,17 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
     
 
     def merge_gatk_variant_annotator_somatic(self):
-
+        """
+        Merge annotated somatic vcfs
+        """
         jobs = []
 
         ensemble_directory = os.path.join("pairedVariants", "ensemble")
 
         for tumor_pair in self.tumor_pairs.itervalues():
 
-            somatic_inputs = [os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.flt.annot." + sequence['name'] + ".vcf.gz") for sequence in self.sequence_dictionary_variant()]
-            somatic_output = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.flt.annot.vcf.gz")
+            somatic_inputs = [os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.vt.annot." + sequence['name'] + ".vcf.gz") for sequence in self.sequence_dictionary_variant()]
+            somatic_output = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.vt.annot.vcf.gz")
 
             jobs.append(concat_jobs([
                 pipe_jobs([
@@ -1338,15 +1379,17 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         return jobs
 
     def merge_gatk_variant_annotator_germline(self):
-
+        """
+        Merge annotated germline and LOH vcfs
+        """
         jobs = []
 
         ensemble_directory = os.path.join("pairedVariants", "ensemble")
 
         for tumor_pair in self.tumor_pairs.itervalues():
 
-            germline_inputs = [os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.germline_loh.flt.annot." + sequence['name'] + ".vcf.gz") for sequence in self.sequence_dictionary_variant()]
-            germline_output = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.germline_loh.flt.annot.vcf.gz")
+            germline_inputs = [os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.germline_loh.vt.annot." + sequence['name'] + ".vcf.gz") for sequence in self.sequence_dictionary_variant()]
+            germline_output = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.germline_loh.vt.annot.vcf.gz")
 
             jobs.append(concat_jobs([
                 pipe_jobs([
@@ -1375,9 +1418,9 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
             if not os.path.exists(paired_directory):
                 os.makedirs(paired_directory)
 
-            input_somatic = os.path.join(paired_directory, tumor_pair.name + ".ensemble.somatic.flt.annot.vcf.gz")
-            output_somatic = os.path.join(paired_directory, tumor_pair.name + ".ensemble.somatic.flt.annot.snpeff.vcf")         
-            output_somatic_gz = os.path.join(paired_directory, tumor_pair.name + ".ensemble.annot.snpeff.vcf.gz")              
+            input_somatic = os.path.join(paired_directory, tumor_pair.name + ".ensemble.somatic.vt.annot.vcf.gz")
+            output_somatic = os.path.join(paired_directory, tumor_pair.name + ".ensemble.somatic.vt.annot.snpeff.vcf")         
+            output_somatic_gz = os.path.join(paired_directory, tumor_pair.name + ".ensemble.somatic.vt.annot.snpeff.vcf.gz")              
 
             cancer_pair_filename = os.path.join(paired_directory, tumor_pair.name + '.tsv')
             cancer_pair = open(cancer_pair_filename, 'w')
@@ -1407,9 +1450,9 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         for tumor_pair in self.tumor_pairs.itervalues():
             paired_directory = os.path.join(ensemble_directory, tumor_pair.name)
 
-            input_germline = os.path.join(paired_directory, tumor_pair.name + ".ensemble.germline_loh.flt.annot.vcf.gz")
-            output_germline = os.path.join(paired_directory, tumor_pair.name + ".ensemble.germline_loh.flt.annot.snpeff.vcf")
-            output_germline_gz = os.path.join(paired_directory, tumor_pair.name + ".ensemble.germline_loh.annot.snpeff.vcf.gz")
+            input_germline = os.path.join(paired_directory, tumor_pair.name + ".ensemble.germline_loh.vt.annot.vcf.gz")
+            output_germline = os.path.join(paired_directory, tumor_pair.name + ".ensemble.germline_loh.vt.annot.snpeff.vcf")
+            output_germline_gz = os.path.join(paired_directory, tumor_pair.name + ".ensemble.germline_loh.vt.annot.snpeff.vcf.gz")
 
             cancer_pair_filename = os.path.join(paired_directory, tumor_pair.name + '.tsv')
             cancer_pair = open(cancer_pair_filename, 'w')
@@ -1433,8 +1476,8 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         jobs = []
         
         ensemble_directory = os.path.join("pairedVariants", "ensemble")
-        input_merged_vcfs = [os.path.join(ensemble_directory, tumor_pair.name , tumor_pair.name + ".ensemble.somatic.flt.annot.vcf.gz") for tumor_pair in self.tumor_pairs.itervalues()]
-        output = os.path.join(ensemble_directory, "allPairs.ensemble.somatic.annot.vcf.gz")
+        input_merged_vcfs = [os.path.join(ensemble_directory, tumor_pair.name , tumor_pair.name + ".ensemble.somatic.vt.annot.vcf.gz") for tumor_pair in self.tumor_pairs.itervalues()]
+        output = os.path.join(ensemble_directory, "allPairs.ensemble.somatic.vt.annot.vcf.gz")
 
         mkdir_job = Job(command="mkdir -p " + ensemble_directory, removable_files=[output])
 
@@ -1461,8 +1504,8 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         jobs = []
 
         ensemble_directory = os.path.join("pairedVariants", "ensemble")
-        input_merged_vcfs = [os.path.join(ensemble_directory, tumor_pair.name , tumor_pair.name + ".ensemble.germline_loh.flt.annot.vcf.gz") for tumor_pair in self.tumor_pairs.itervalues()]
-        output = os.path.join(ensemble_directory, "allPairs.ensemble.germline_loh.annot.vcf.gz")
+        input_merged_vcfs = [os.path.join(ensemble_directory, tumor_pair.name , tumor_pair.name + ".ensemble.germline_loh.vt.annot.vcf.gz") for tumor_pair in self.tumor_pairs.itervalues()]
+        output = os.path.join(ensemble_directory, "allPairs.ensemble.germline_loh.vt.annot.vcf.gz")
 
         mkdir_job = Job(command="mkdir -p " + ensemble_directory, removable_files=[output])
 
@@ -1490,7 +1533,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
 
         ensemble_directory = os.path.join("pairedVariants", "ensemble")
         input = os.path.join(ensemble_directory, "allPairs.ensemble.somatic.annot.vcf.gz")
-        output = os.path.join(ensemble_directory, "allPairs.ensemble.somatic.annot.vt.vcf.gz")
+        output = os.path.join(ensemble_directory, "allPairs.ensemble.somatic.vt.annot.vcf.gz")
 
         mkdir_job = Job(command="mkdir -p " + ensemble_directory, removable_files=[output])
     
@@ -1510,7 +1553,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
 
         ensemble_directory = os.path.join("pairedVariants", "ensemble")
         input = os.path.join(ensemble_directory, "allPairs.ensemble.germline_loh.annot.vcf.gz")
-        output = os.path.join(ensemble_directory, "allPairs.ensemble.germline_loh.annot.vt.vcf.gz")
+        output = os.path.join(ensemble_directory, "allPairs.ensemble.germline_loh.vt.annot.vcf.gz")
 
         job = vt.decompose_and_normalize_mnps(input, output)
         job.name = "decompose_and_normalize_mnps.germline.allPairs"
@@ -1535,9 +1578,9 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         jobs = []
 
         ensemble_directory = os.path.join("pairedVariants", "ensemble")
-        input =  os.path.join(ensemble_directory, "allPairs.ensemble.somatic.annot.vt.vcf.gz")
-        output = os.path.join(ensemble_directory, "allPairs.ensemble.somatic.annot.vt.snpeff.vcf")
-        output_gz = os.path.join(ensemble_directory, "allPairs.ensemble.somatic.annot.vt.snpeff.vcf.gz")
+        input =  os.path.join(ensemble_directory, "allPairs.ensemble.somatic.vt.annot.vcf.gz")
+        output = os.path.join(ensemble_directory, "allPairs.ensemble.somatic.vt.annot.snpeff.vcf")
+        output_gz = os.path.join(ensemble_directory, "allPairs.ensemble.somatic.vt.annot.snpeff.vcf.gz")
 
         cancer_pair_filename = os.path.join('cancer_snpeff.tsv')
         cancer_pair = open(cancer_pair_filename, 'w')
@@ -1566,9 +1609,9 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         jobs = []
 
         ensemble_directory = os.path.join("pairedVariants", "ensemble")
-        input =  os.path.join(ensemble_directory, "allPairs.ensemble.germline_loh.annot.vt.vcf.gz")
-        output = os.path.join(ensemble_directory, "allPairs.ensemble.germline_loh.annot.vt.snpeff.vcf")
-        output_gz = os.path.join(ensemble_directory, "allPairs.ensemble.germline_loh.annot.vt.snpeff.vcf.gz")      
+        input =  os.path.join(ensemble_directory, "allPairs.ensemble.germline_loh.vt.annot.vcf.gz")
+        output = os.path.join(ensemble_directory, "allPairs.ensemble.germline_loh.vt.annot.snpeff.vcf")
+        output_gz = os.path.join(ensemble_directory, "allPairs.ensemble.germline_loh.vt.annot.snpeff.vcf.gz")      
 
         mkdir_job = Job(command="mkdir -p " + ensemble_directory, removable_files=[output])
 
@@ -1595,7 +1638,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
 
         jobs.append(concat_jobs([
             Job(command="mkdir -p " + ensemble_directory),
-            gemini.gemini_annotations( gemini_prefix + ".ensemble.somatic.annot.vt.snpeff.vcf.gz", gemini_prefix + ".somatic.gemini." + gemini_version + ".db", temp_dir)
+            gemini.gemini_annotations( gemini_prefix + ".ensemble.somatic.vt.annot.snpeff.vcf.gz", gemini_prefix + ".somatic.gemini." + gemini_version + ".db", temp_dir)
         ], name="gemini_annotations.somatic.allPairs"))
 
         return jobs
@@ -1615,7 +1658,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
 
         jobs.append(concat_jobs([
             Job(command="mkdir -p " + ensemble_directory),
-            gemini.gemini_annotations( gemini_prefix + ".ensemble.germline_loh.annot.vt.snpeff.vcf.gz", gemini_prefix + ".germline_loh.gemini." + gemini_version + ".db", temp_dir)
+            gemini.gemini_annotations( gemini_prefix + ".ensemble.germline_loh.vt.annot.snpeff.vcf.gz", gemini_prefix + ".germline_loh.gemini." + gemini_version + ".db", temp_dir)
         ], name="gemini_annotations.germline.allPairs"))
 
         return jobs
@@ -1648,7 +1691,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
             self.rawmpileup,
             #self.rawmpileup_cat,
             self.paired_varscan2,
-            self.varscan2_fpfilter,
+            #self.varscan2_fpfilter,
             self.merge_varscan2,
             self.paired_mutect2,
             self.merge_mutect2,
@@ -1661,7 +1704,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
             self.merge_gatk_variant_annotator_somatic,
             self.compute_cancer_effects_somatic,
             self.combine_tumor_pairs_somatic,
-            self.decompose_and_normalize_mnps_somatic,
+            #self.decompose_and_normalize_mnps_somatic,
             self.all_pairs_compute_effects_somatic,
             self.gemini_annotations_somatic,
             self.ensemble_germline_loh,
@@ -1669,7 +1712,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
             self.merge_gatk_variant_annotator_germline,
             self.compute_cancer_effects_germline,
             self.combine_tumor_pairs_germline,
-            self.decompose_and_normalize_mnps_germline,
+            #self.decompose_and_normalize_mnps_germline,
             self.all_pairs_compute_effects_germline,
             self.gemini_annotations_germline
         ]

@@ -14,7 +14,7 @@ HOST=`hostname`;
 DNSDOMAIN=`dnsdomainname`;
 
 SOFTWARE=VarDictJava 
-VERSION=1.4.7
+VERSION=1.4.8
 ARCHIVE=$SOFTWARE-$VERSION.tar.gz
 ARCHIVE_URL=https://github.com/AstraZeneca-NGS/VarDictJava/archive/v$VERSION.tar.gz  
 SOFTWARE_DIR=$SOFTWARE-$VERSION 
