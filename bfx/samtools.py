@@ -65,13 +65,13 @@ samtools flagstat \\
         removable_files=[output]
     )
 
-def mpileup(input_bams, output, other_options="", region=None, regionFile=None):
+def mpileup(input_bams, output, ini='rawmpileup' ,other_options="", region=None, regionFile=None,):
 
     return Job(
         input_bams,
         [output],
         [
-            ['rawmpileup', 'module_samtools']
+            [ini, 'module_samtools']
         ],
         command="""\
 samtools mpileup {other_options} \\
@@ -164,3 +164,17 @@ bcftools call {pair_calling} {options} \\
         )
     )
   
+def bcftools_call_pair(input, output, options="", pair_calling=False):
+    return Job(
+        [input],
+        [output],
+        [['samtools_paired', 'module_samtools']],
+        command="""\
+$BCFTOOLS_BIN/bcftools view {pair_calling} {options} \\
+  {input}{output}""".format(
+        options=options,
+        pair_calling="-T pair" if pair_calling else "",
+        input=input,
+        output=" \\\n  > " + output if output else ""
+        )
+    )
