@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE="kallisto" 
-VERSION="0.42.2.1" 
+VERSION="0.43.0" 
 ARCHIVE="v$VERSION.tar.gz"
 ARCHIVE_URL="https://github.com/pachterlab/$SOFTWARE/archive/v$VERSION.tar.gz"
 SOFTWARE_DIR=$SOFTWARE-$VERSION  
