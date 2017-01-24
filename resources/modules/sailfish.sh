@@ -12,7 +12,7 @@
 #
 
 SOFTWARE=sailfish  ## TO BE MODIFIED WITH e.g. blast, hmmer, samtools, etc.
-VERSION=0.6.3  ## TO BE MODIFIED WITH e.g. 2.2.28+, 3.0, 0.1.19, etc.
+VERSION=0.9.2  ## TO BE MODIFIED WITH e.g. 2.2.28+, 3.0, 0.1.19, etc.
 
 # 'MUGQIC_INSTALL_HOME_TMP' for development, 'MUGQIC_INSTALL_HOME' for production (don't write '$' before!)
 INSTALL_HOME=MUGQIC_INSTALL_HOME_TMP  ## TO BE MODIFIED IF NECESSARY
