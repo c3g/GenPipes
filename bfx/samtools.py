@@ -65,13 +65,13 @@ samtools flagstat \\
         removable_files=[output]
     )
 
-def mpileup(input_bams, output, ini='rawmpileup' ,other_options="", region=None, regionFile=None,):
+def mpileup(input_bams, output, other_options="", region=None, regionFile=None, ini_section='rawmpileup'):
 
     return Job(
         input_bams,
         [output],
         [
-            [ini, 'module_samtools']
+            [ini_section, 'module_samtools']
         ],
         command="""\
 samtools mpileup {other_options} \\
