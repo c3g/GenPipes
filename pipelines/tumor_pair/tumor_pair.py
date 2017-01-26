@@ -962,7 +962,7 @@ cp \\
                 jobs.append(concat_jobs([
                     Job(command="mkdir -p " + samtools_directory, removable_files=[samtools_directory]),
                     pipe_jobs([
-                        samtools.mpileup(paired_sample, None, "samtools_paired", config.param('samtools_paired', 'mpileup_other_options')),
+                        samtools.mpileup(paired_sample, None, config.param('samtools_paired', 'mpileup_other_options'), ini_section="samtools_paired"),
                         samtools.bcftools_call_pair("-", os.path.join(samtools_directory,  tumor_pair.name + ".bcf"), config.param('samtools_paired', 'bcftools_view_options'), pair_calling=True),
                     ]),
                 ], name="samtools_paired." + tumor_pair.name))
@@ -972,7 +972,7 @@ cp \\
                     jobs.append(concat_jobs([
                         Job(command="mkdir -p " + samtools_directory, removable_files=[samtools_directory]),
                         pipe_jobs([
-                            samtools.mpileup(paired_sample, None, "samtools_paired", config.param('samtools_paired', 'mpileup_other_options'), region),
+                            samtools.mpileup(paired_sample, None, config.param('samtools_paired', 'mpileup_other_options'), region,  ini_section="samtools_paired"),
                             samtools.bcftools_call_pair("-", os.path.join(samtools_directory,  tumor_pair.name + "." + region + ".bcf"), config.param('samtools_paired', 'bcftools_view_options'), pair_calling=True),
                         ]),
                 ], name="samtools_paired." + tumor_pair.name + "." + region))
