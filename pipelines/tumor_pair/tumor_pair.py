@@ -810,7 +810,7 @@ cp \\
                 ]),
                 pipe_jobs([
                     vt.decompose_and_normalize_mnps( all_output , None),
-                    vcflib.vcfstreamsort(None, None),
+                    #vcflib.vcfstreamsort(None, None),
                     htslib.bgzip_tabix_vcf(None,  all_output_vt),
                 ]),
                 pipe_jobs([
@@ -906,7 +906,7 @@ cp \\
                     ]),
                      pipe_jobs([
                         vt.decompose_and_normalize_mnps(output_somatic, None),
-                        vcflib.vcfstreamsort(None, None),
+                        #vcflib.vcfstreamsort(None, None),
                         htslib.bgzip_tabix_vcf(None, output_somatic_vt),
                     ]),
                 ], name="symlink_mutect_vcf." + tumor_pair.name))
@@ -928,7 +928,7 @@ cp \\
                     ]),
                     pipe_jobs([
                         vt.decompose_and_normalize_mnps(output_gz, None),
-                        vcflib.vcfstreamsort(None, None),
+                        #vcflib.vcfstreamsort(None, None),
                         htslib.bgzip_tabix_vcf(None, output_vt_gz),
                     ]),
                     pipe_jobs([
@@ -1009,9 +1009,9 @@ cp \\
             if nb_jobs == 1:
                 inputs = os.path.join(samtools_directory,  tumor_pair.name + ".bcf") 
                 jobs.append(concat_jobs([
-                    samtools.bcftools_cat(inputs, output),
+                    samtools.bcftools_cat_pair(inputs, output),
                     pipe_jobs([
-                        samtools.bcftools_view(output, None),
+                        samtools.bcftools_view_pair(output, None),
                         vcflib.vcfsamplediff(tumor_pair.normal.name, tumor_pair.tumor.name, None, None),
                         Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $4) } {print}'"),
                         Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $5) } {print}'"),
@@ -1020,7 +1020,7 @@ cp \\
                     ]),
                     pipe_jobs([
                         vt.decompose_and_normalize_mnps(output_vcf, None),
-                        vcflib.vcfstreamsort(None, None),
+                        #vcflib.vcfstreamsort(None, None),
                         htslib.bgzip_tabix_vcf(None, output_vcf_vt),
                     ]),
                     pipe_jobs([
@@ -1037,9 +1037,9 @@ cp \\
             else:
                 inputs = [os.path.join(samtools_directory,  tumor_pair.name + "." + region + ".bcf") for region in self.generate_approximate_windows(nb_jobs)] #for idx,sequences in enumerate(unique_sequences_per_job):
                 jobs.append(concat_jobs([
-                    samtools.bcftools_cat(inputs, output),
+                    samtools.bcftools_cat_pair(inputs, output),
                     pipe_jobs([
-                        samtools.bcftools_view(output, None),
+                        samtools.bcftools_view_pair(output, None),
                         vcflib.vcfsamplediff(tumor_pair.normal.name, tumor_pair.tumor.name, None, None),
                         Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $4) } {print}'"),
                         Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $5) } {print}'"),
@@ -1048,7 +1048,7 @@ cp \\
                     ]),
                     pipe_jobs([
                         vt.decompose_and_normalize_mnps(output_vcf, None),
-                        vcflib.vcfstreamsort(None, None),
+                        #vcflib.vcfstreamsort(None, None),
                         htslib.bgzip_tabix_vcf(None, output_vcf_vt),
                     ]),
                     pipe_jobs([
