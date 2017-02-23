@@ -90,7 +90,6 @@ python -c 'import deeptools; print deeptools.__file__'
 $PIP_PATH install --upgrade sklearn
 python -c 'import sklearn; print sklearn.__version__; print sklearn.__file__'
 
-
 # RSeQC
 $PIP_PATH install --upgrade RSeQC
 

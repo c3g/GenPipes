@@ -6,7 +6,7 @@ SOFTWARE=bowtie
 VERSION=1.1.2
 ARCHIVE=$SOFTWARE-$VERSION-src.zip
 ARCHIVE_URL=https://sourceforge.net/projects/bowtie-bio/files/$SOFTWARE/$VERSION/$ARCHIVE
-SOFTWARE_DIR=$SOFTWARE-$VERSION	
+SOFTWARE_DIR=$SOFTWARE-$VERSION
 
 # Specific commands to extract and build the software
 # $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically

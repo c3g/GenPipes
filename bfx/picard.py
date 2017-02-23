@@ -28,7 +28,7 @@ import picard2
 
 def build_bam_index(input, output):
 
-    if config.param('build_bam_index', 'module_picard') >= "2":
+    if config.param('build_bam_index', 'module_picard').split("/")[2] >= "2":
         return picard2.build_bam_index(input, output)
     else:
         return Job(
@@ -56,7 +56,7 @@ def calculate_hs_metrics(input, output, intervals, reference_sequence=None):
     baits_intervals = ""
     baits_intervals = config.param('picard_calculate_hs_metrics', 'baits_intervals', required = False)
 
-    if config.param('picard_calculate_hs_metrics', 'module_picard') >= "2":
+    if config.param('picard_calculate_hs_metrics', 'module_picard').split("/")[2] >= "2":
         return picard2.calculate_hs_metrics(input, output, intervals, reference_sequence)
     else:
         return Job(
@@ -106,7 +106,7 @@ def collect_multiple_metrics(input, output, reference_sequence=None , library_ty
          output + ".quality_distribution.pdf"
         ]
 
-    if config.param('picard_collect_multiple_metrics', 'module_picard') >= "2":
+    if config.param('picard_collect_multiple_metrics', 'module_picard').split("/")[2] >= "2":
         return picard2.collect_multiple_metrics(input, output, reference_sequence, library_type)
     else:
         return Job(
@@ -137,7 +137,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
 
 def fix_mate_information(input, output):
 
-    if config.param('fixmate', 'module_picard') >= "2":
+    if config.param('fixmate', 'module_picard').split("/")[2] >= "2":
         return picard2.fix_mate_information(input, output)
     else:
         return Job(
@@ -166,7 +166,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
 
 def mark_duplicates(inputs, output, metrics_file):
 
-    if config.param('picard_mark_duplicates', 'module_picard') >= "2":
+    if config.param('picard_mark_duplicates', 'module_picard').split("/")[2] >= "2":
         return picard2.mark_duplicates(inputs, output, metrics_file)
     else:
         return Job(
@@ -197,7 +197,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
 
 def merge_sam_files(inputs, output):
 
-    if config.param('picard_merge_sam_files', 'module_picard') >= "2":
+    if config.param('picard_merge_sam_files', 'module_picard').split("/")[2] >= "2":
         return picard2.merge_sam_files(inputs, output)
     else:
         return Job(
@@ -209,25 +209,25 @@ def merge_sam_files(inputs, output):
             ],
             command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/MergeSamFiles.jar \\
- VALIDATION_STRINGENCY=SILENT ASSUME_SORTED=true CREATE_INDEX=true \\
- TMP_DIR={tmp_dir} \\
- {inputs} \\
- OUTPUT={output} \\
- MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
-            tmp_dir=config.param('picard_merge_sam_files', 'tmp_dir'),
-            java_other_options=config.param('picard_merge_sam_files', 'java_other_options'),
-            ram=config.param('picard_merge_sam_files', 'ram'),
-            inputs=" \\\n  ".join(["INPUT=" + input for input in inputs]),
-            output=output,
-            max_records_in_ram=config.param('picard_merge_sam_files', 'max_records_in_ram', type='int')
-            ),
-            removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output)]
-        )
+  VALIDATION_STRINGENCY=SILENT ASSUME_SORTED=true CREATE_INDEX=true USE_THREADING=true \\
+  TMP_DIR={tmp_dir} \\
+  {inputs} \\
+  OUTPUT={output} \\
+  MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
+        tmp_dir=config.param('picard_merge_sam_files', 'tmp_dir'),
+        java_other_options=config.param('picard_merge_sam_files', 'java_other_options'),
+        ram=config.param('picard_merge_sam_files', 'ram'),
+        inputs=" \\\n  ".join(["INPUT=" + input for input in inputs]),
+        output=output,
+        max_records_in_ram=config.param('picard_merge_sam_files', 'max_records_in_ram', type='int')
+        ),
+        removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output)]
+    )
 
 # Reorder BAM/SAM files based on reference/dictionary
 def reorder_sam(input, output):
 
-    if config.param('reorder_sam', 'module_picard') >= "2":
+    if config.param('reorder_sam', 'module_picard').split("/")[2] >= "2":
         return picard2.reorder_sam(input, output)
     else:
         return Job(
@@ -259,7 +259,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
 # Convert SAM/BAM file to fastq format
 def sam_to_fastq(input, fastq, second_end_fastq=None):
 
-    if config.param('picard_sam_to_fastq', 'module_picard') >= "2":
+    if config.param('picard_sam_to_fastq', 'module_picard').split("/")[2] >= "2":
         return picard2.sam_to_fastq(input, fastq, second_end_fastq)
     else:
         return Job(
@@ -286,7 +286,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
 
 def sort_sam(input, output, sort_order="coordinate", ini_section='picard_sort_sam'):
 
-    if config.param(ini_section, 'module_picard') >= "2":
+    if config.param(ini_section, 'module_picard').split("/")[2] >= "2":
         return picard2.sort_sam(input, output, sort_order, ini_section)
     else:
         return Job(
@@ -318,7 +318,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
 
 def sort_vcfs(inputs, output, ini_section='picard_sort_vcf'):
 
-    if config.param(ini_section, 'module_picard') >= "2":
+    if config.param(ini_section, 'module_picard').split("/")[2] >= "2":
         return picard2.sort_vcfs(inputs, output, ini_section)
     else:
         return Job(
@@ -347,7 +347,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
 
 def collect_rna_metrics(input, output, annotation_flat=None,reference_sequence=None):
 
-    if config.param('picard_collect_rna_metrics', 'module_picard') >= "2":
+    if config.param('picard_collect_rna_metrics', 'module_picard').split("/")[2] >= "2":
         return picard2.collect_rna_metrics(input, output, annotation_flat,reference_sequence)
     else:
         return Job(

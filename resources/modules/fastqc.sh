@@ -1,46 +1,37 @@
 #!/bin/bash
+# Exit immediately on error
+set -eu -o pipefail
 
-###################
-################### FASTQC
-###################
-VERSION="0.11.5"
-if [[ ${1:-} == MUGQIC_INSTALL_HOME ]]
-then
-  INSTALL_HOME=MUGQIC_INSTALL_HOME
-  MODULE=mugqic
-else
-  INSTALL_HOME=MUGQIC_INSTALL_HOME_DEV
-  MODULE=mugqic_dev
-fi
+SOFTWARE=fastqc
+VERSION=0.11.5
+ARCHIVE=$SOFTWARE-$VERSION.zip
+ARCHIVE_URL=http://www.bioinformatics.bbsrc.ac.uk/projects/fastqc/fastqc_v${VERSION}.zip
+SOFTWARE_DIR=$SOFTWARE-$VERSION
 
-INSTALL_PATH=${!INSTALL_HOME}/software/fastqc/fastqc_v"$VERSION" # where to install...
-
-mkdir -p $INSTALL_PATH
-cd $INSTALL_PATH
-wget http://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v"$VERSION".zip
-unzip fastqc_v"$VERSION".zip
-rm fastqc_v"$VERSION".zip
-chmod +x FastQC/fastqc
-chmod -R g+w $INSTALL_PATH
-sed -i s,"#\!/usr/bin/perl.*,#\!/usr/bin/env perl,g" FastQC/fastqc
-
-# Module file
-echo "#%Module1.0
-proc ModulesHelp { } {
-       puts stderr \"\tMUGQIC - FASTQC \"
+build() {
+  cd $INSTALL_DOWNLOAD
+  unzip $ARCHIVE
+  mv FastQC $SOFTWARE_DIR
+  chmod +x $SOFTWARE_DIR/fastqc
+  chmod -R g+w $SOFTWARE_DIR
+  sed -i s,"#\!/usr/bin/perl.*,#\!/usr/bin/env perl,g" $SOFTWARE_DIR/fastqc
+  mv -i $SOFTWARE_DIR $INSTALL_DIR/
 }
-module-whatis \"MUGQIC -FASTQC \"
+
+module_file() {
+echo "\
+#%Module1.0
+proc ModulesHelp { } {
+       puts stderr \"\tMUGQIC - $SOFTWARE \"
+}
+module-whatis \"$SOFTWARE\"
                       
-set             root                $INSTALL_PATH/FastQC
+set             root                $INSTALL_DIR/$SOFTWARE_DIR
 prepend-path    PATH                \$root
-" > $VERSION
+"
+}
 
-# Version file
-echo "#%Module1.0
-set ModulesVersion \"$VERSION\"
-" > .version
-
-mkdir -p ${!INSTALL_HOME}/modulefiles/$MODULE/fastqc
-mv .version $VERSION ${!INSTALL_HOME}/modulefiles/$MODULE/fastqc/
-
+# Call generic module install script once all variables and functions have been set
+MODULE_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source $MODULE_INSTALL_SCRIPT_DIR/install_module.sh $@
 

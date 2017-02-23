@@ -36,7 +36,7 @@ def mpileupcns(input, output, sampleNamesFile, other_options=None):
             ['varscan', 'module_varscan'],
         ],
         command="""\
-java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $VARSCAN_JAR mpileup2cns {other_options}\\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $VARSCAN2_JAR mpileup2cns {other_options}\\
   {input} \\
   --output-vcf 1 \\
   --vcf-sample-list {sampleNames}{output}""".format(
@@ -47,5 +47,56 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $VARSCAN_JAR
         input=" \\\n " + input if input else "",
         sampleNames=sampleNamesFile,
         output=" \\\n  > " + output if output else ""
+        )
+    )
+
+def somatic(input_normal, input_tumor, output, other_options=None, output_vcf_dep=[], output_snp_dep=[], output_indel_dep=[]):
+
+    return Job(
+        [input_normal, input_tumor],
+        [output_vcf_dep, output_snp_dep, output_indel_dep],
+        [
+            ['varscan', 'module_java'],
+            ['varscan', 'module_varscan'],
+        ],
+        command="""\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $VARSCAN2_JAR somatic \\
+  {input_normal} \\
+  {input_tumor} \\
+  {output} \\
+  {other_options} \\
+  --output-vcf 1""".format(
+        tmp_dir=config.param('varscan2_somatic', 'tmp_dir'),
+        java_other_options=config.param('varscan2_somatic', 'java_other_options'),
+        ram=config.param('varscan2_somatic', 'ram'),
+        other_options=other_options,
+        input_normal=input_normal,
+        input_tumor=input_tumor,
+        output=output
+        )
+    )
+
+def fpfilter_somatic(input_vcf, input_readcount, output=None):
+
+    return Job(
+        [input_vcf, input_readcount],
+        [output],
+        [
+            ['varscan', 'module_java'],
+            ['varscan', 'module_varscan'],
+        ],
+        command="""\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $VARSCAN2_JAR fpfilter \\
+  {input_vcf} \\
+  {input_readcount} \\
+  {options} \\
+  {output}""".format(
+        tmp_dir=config.param('varscan2_readcount_fpfilter', 'tmp_dir'),
+        java_other_options=config.param('varscan2_readcount_fpfilter', 'java_other_options'),
+        ram=config.param('varscan2_readcount_fpfilter', 'ram'),
+        options=config.param('varscan2_readcount_fpfilter', 'fpfilter_options'),
+        input_vcf=input_vcf,
+        input_readcount=input_readcount,
+        output="--output-file " + output if output else ""
         )
     )

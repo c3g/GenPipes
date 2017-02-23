@@ -65,11 +65,14 @@ samtools flagstat \\
         removable_files=[output]
     )
 
-def mpileup(input_bams, output, other_options="", region=None, regionFile=None):
+def mpileup(input_bams, output, other_options="", region=None, regionFile=None, ini_section='rawmpileup'):
+
     return Job(
         input_bams,
         [output],
-        [['samtools_mpileup', 'module_samtools']],
+        [
+            [ini_section, 'module_samtools']
+        ],
         command="""\
 samtools mpileup {other_options} \\
   -f {reference_fasta}{region}{regionFile}{input_bams}{output}""".format(
@@ -105,7 +108,9 @@ def view(input, output=None, options=""):
     return Job(
         [input],
         [output],
-        [['samtools_view', 'module_samtools']],
+        [
+            ['samtools_view', 'module_samtools']
+        ],
         command="""\
 samtools view {options} \\
   {input}{output}""".format(
@@ -159,3 +164,45 @@ bcftools call {pair_calling} {options} \\
         )
     )
   
+def bcftools_call_pair(input, output, options="", pair_calling=False):
+    return Job(
+        [input],
+        [output],
+        [['samtools_paired', 'module_samtools']],
+        command="""\
+$BCFTOOLS_BIN/bcftools view {pair_calling} {options} \\
+  {input}{output}""".format(
+        options=options,
+        pair_calling="-T pair" if pair_calling else "",
+        input=input,
+        output=" \\\n  > " + output if output else ""
+        )
+    )
+
+def bcftools_cat_pair(inputs, output):
+    return Job(
+        inputs,
+        [output],
+        [['samtools_paired', 'module_samtools']],
+        command="""\
+$BCFTOOLS_BIN/bcftools cat \\
+  {inputs}{output}""".format(
+        inputs=" \\\n  ".join(inputs),
+        output=" \\\n  > " + output if output else ""
+        )
+    )
+
+def bcftools_view_pair(input, output, options="", pair_calling=False):
+    return Job(
+        [input],
+        [output],
+        [['samtools_paired', 'module_samtools']],
+        command="""\
+$BCFTOOLS_BIN/bcftools view {pair_calling} {options} \\
+  {input}{output}""".format(
+        options=options,
+        pair_calling="-T pair" if pair_calling else "",
+        input=input,
+        output=" \\\n  > " + output if output else ""
+        )
+    )

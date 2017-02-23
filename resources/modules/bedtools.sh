@@ -6,7 +6,7 @@ SOFTWARE=bedtools
 VERSION=2.26.0
 ARCHIVE=$SOFTWARE-$VERSION.tar.gz
 #ARCHIVE_URL=https://bedtools.googlecode.com/files/BEDTools.v${VERSION}.tar.gz
-ARCHIVE_URL=https://github.com/arq5x/bedtools2/releases/download/v$VERSION/$ARCHIVE
+ARCHIVE_URL=https://github.com/arq5x/bedtools2/releases/download/v$VERSION/$ARCHIVE	# for v2.18 and above
 SOFTWARE_DIR=$SOFTWARE-$VERSION
 
 # Specific commands to extract and build the software

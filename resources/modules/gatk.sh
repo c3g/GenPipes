@@ -15,7 +15,7 @@ ARCHIVE_URL=https://www.broadinstitute.org/gatk/download/auth?package=GATK
 # $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   mkdir -p $INSTALL_DIR/$SOFTWARE_DIR
-  tar jxvf $INSTALL_DOWNLOAD/$ARCHIVE --directory=$INSTALL_DIR/$SOFTWARE_DIR
+  tar -xvf $INSTALL_DOWNLOAD/$ARCHIVE --directory=$INSTALL_DIR/$SOFTWARE_DIR
 }
 
 module_file() {

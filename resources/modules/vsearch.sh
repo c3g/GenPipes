@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=vsearch
-VERSION=1.11.1
+VERSION=2.3.4
 ARCHIVE=v${VERSION}.tar.gz
 ARCHIVE_URL=https://github.com/torognes/$SOFTWARE/archive/$ARCHIVE
 SOFTWARE_DIR=${SOFTWARE}-${VERSION}

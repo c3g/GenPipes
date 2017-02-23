@@ -27,10 +27,15 @@ from core.config import *
 from core.job import *
 
 def graph(input_bam, output_bed_graph, output_wiggle, library_type="PAIRED_END"):
-    
+
     if library_type == "PAIRED_END":
-        samtools_options="-F 256 -f 81 "
-    else :
+        if "forward" in output_bed_graph:
+            samtools_options="-F 256 -f 81 "
+        elif "reverse" in output_bed_graph:
+            samtools_options="-F 256 -f 97 "
+        else:
+            raise Exception("Error: PAIRED_END library was provided but no strand orientation could be determined from " + bed_graph_output + "...")
+    else:
         samtools_options="-F 256"
 
     return Job(
