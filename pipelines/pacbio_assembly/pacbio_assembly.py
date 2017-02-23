@@ -675,6 +675,59 @@ pandoc --to=markdown \\
 
         return jobs
 
+    def circlator(self):
+        """
+        Circularize the assembly contigs if possible.
+        User should launch this step after making sure the quality of the assembly is acceptable.
+        """
+
+        jobs = []
+
+        for sample in self.samples:
+            for coverage_cutoff in config.param('DEFAULT', 'coverage_cutoff', type='list'):
+                cutoff_x = coverage_cutoff + "X"
+                coverage_directory = os.path.join(sample.name, cutoff_x)
+                preassembly_directory = os.path.join(coverage_directory, "preassembly", "data")
+
+                for mer_size in config.param('DEFAULT', 'mer_sizes', type='list'):
+                    mer_size_text = "merSize" + mer_size
+                    mer_size_directory = os.path.join(coverage_directory, mer_size_text)
+                    circlator_directory = os.path.join(mer_size_directory, "circlator")
+                    circlator_file = os.path.join(circlator_directory, "output")
+
+                    polishing_rounds = config.param('DEFAULT', 'polishing_rounds', type='posint')
+                    if polishing_rounds > 4:
+                        raise Exception("Error: polishing_rounds \"" + str(polishing_rounds) + "\" is invalid (should be between 1 and 4)!")
+
+                    fasta_consensus = os.path.join(mer_size_directory, "polishing" + str(polishing_rounds), "data", "consensus.fasta")
+
+                jobs.append(concat_jobs([
+                    Job(command="mkdir -p " + circlator_directory),
+                    Job(
+                        [fasta_consensus, os.path.join(preassembly_directory, "corrected.fastq")],
+                        [circlator_file],
+                        [
+                            ['circlator', 'module_python'],
+                            ['circlator', 'module_bwa'],
+                            ['circlator', 'module_samtools'],
+                            ['circlator', 'module_mummer'],
+                            ['circlator', 'module_spades'],
+                            ['circlator', 'module_prodigal'],
+                        ],
+                        command="""\
+circlator all \\
+  {fasta_consensus} \\
+  {corrected_fastq} \\
+  {output}""".format(
+                            fasta_consensus=fasta_consensus,
+                            corrected_fastq=os.path.join(preassembly_directory, "corrected.fastq"),
+                            output=circlator_file
+                        )
+                    )
+                ], name = "circlator." + sample.name))
+
+        return jobs
+
     def report_jobs(self):
         """
         Overwrite core pipeline report_jobs method to perform it on every sample/coverage_cutoff/mer_size
@@ -701,7 +754,8 @@ pandoc --to=markdown \\
             self.pacbio_tools_assembly_stats,
             self.blast,
             self.mummer,
-            self.compile
+            self.compile,
+            self.circlator
         ]
 
 if __name__ == '__main__':

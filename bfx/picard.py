@@ -85,7 +85,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             )
         )
 
-def collect_multiple_metrics(input, output, reference_sequence=None , library_type="PAIRED_END"):
+def collect_multiple_metrics(input, output, reference_sequence=None, library_type="PAIRED_END"):
 
     if  library_type == "PAIRED_END" :
         outputs = [
