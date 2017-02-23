@@ -82,12 +82,12 @@ echo "Working in $TEMPDIR"
 ## If latest is requested, determine version number. Unfort., only way seem to download R-latest tar.gz!
 if [[  $R_VERSION == "latest" ]]
 then
-	wget --no-verbose http://cran.r-project.org/src/base/R-latest.tar.gz
+	wget --no-verbose https://cran.r-project.org/src/base/R-latest.tar.gz
 	tar -xf R-latest.tar.gz
 	R_VERSION=`cat ./*/VERSION`
 	rm -r R*
 	echo "Latest R version appears to be $R_VERSION"
-	BIOCVERSION=`wget -qO- http://bioconductor.org/packages/release/bioc/ | grep 'Bioconductor version: Release ' | grep -oE '[0-9]*\.[0-9]*'`  
+	BIOCVERSION=`wget -qO- https://bioconductor.org/packages/release/bioc/ | grep 'Bioconductor version: Release ' | grep -oE '[0-9]*\.[0-9]*'`  
 	echo "Latest Bioconductor version appears to be $BIOCVERSION"
 	VERSION="$R_VERSION""_""$BIOCVERSION"
 else
@@ -129,7 +129,7 @@ then
 	rm -rf $INSTALL_DIR $MODULEFILE $MODULEVERSIONFILE
  
 	# Download, compile, install
-	wget --no-verbose http://cran.r-project.org/src/base/R-${R_VERSION:0:1}/R-$R_VERSION.tar.gz
+	wget --no-verbose https://cran.r-project.org/src/base/R-${R_VERSION:0:1}/R-$R_VERSION.tar.gz
 	tar -xf R-$R_VERSION.tar.gz
 	cd R-$R_VERSION
 	
@@ -260,12 +260,12 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
 	## Force Rmarkdown and knitr, not available fot R 3.2
 	install.packages('knitr', repos='http://cran.rstudio.org')
 	install.packages('rmarkdown', repos='http://cran.rstudio.org')
-
-	## Sleuth
-	devtools::install_github("pachterlab/sleuth")
-
-
 EOF
+	## Sleuth
+#	devtools::install_github("pachterlab/sleuth")
+
+
+#EOF
 
 
 echo "R packages installation done."

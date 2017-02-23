@@ -3,8 +3,8 @@
 set -eu -o pipefail
 
 SOFTWARE=python
-VERSION=2.7.13
-SETUPTOOLS_VERSION=20.9.0
+VERSION=3.5.2
+SETUPTOOLS_VERSION=28.8.0
 # Remove the version last number
 LIBVERSION=${VERSION%.[0-9]*}
 # Uppercase first P in python
@@ -12,7 +12,7 @@ ARCHIVE=${SOFTWARE^}-$VERSION.tgz
 ARCHIVE_URL=http://www.python.org/ftp/$SOFTWARE/$VERSION/$ARCHIVE
 SOFTWARE_DIR=${SOFTWARE^}-$VERSION
 
-# Specific commands to extract and build the software
+# Specific commands to extract and build the software
 # $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
 # $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
@@ -30,15 +30,15 @@ build() {
   # Install setuptools => easy_install
   cd $INSTALL_DOWNLOAD
   SETUPTOOLS_ARCHIVE=setuptools-${SETUPTOOLS_VERSION}.tar.gz
-  download_archive https://pypi.python.org/packages/source/s/setuptools $SETUPTOOLS_ARCHIVE
-  tar zxvf $SETUPTOOLS_ARCHIVE
+  download_archive https://github.com/pypa/setuptools/archive v${SETUPTOOLS_VERSION}.tar.gz 
+  tar zxvf v${SETUPTOOLS_VERSION}.tar.gz
   cd ${SETUPTOOLS_ARCHIVE/.tar.gz/}
-  #SETUPTOOLS_ARCHIVE=v${SETUPTOOLS_VERSION}.tar.gz
-  #download_archive https://github.com/pypa/setuptools/archive $SETUPTOOLS_ARCHIVE
-  #tar zxvf $SETUPTOOLS_ARCHIVE
-  #cd setuptools-$SETUPTOOLS_VERSION
-  $INSTALL_DIR/$SOFTWARE_DIR/bin/python setup.py build
-  $INSTALL_DIR/$SOFTWARE_DIR/bin/python setup.py install
+  $INSTALL_DIR/$SOFTWARE_DIR/bin/python3 bootstrap.py
+  $INSTALL_DIR/$SOFTWARE_DIR/bin/python3 setup.py build
+  $INSTALL_DIR/$SOFTWARE_DIR/bin/python3 setup.py installi
+
+  cd $INSTALL_DIR/$SOFTWARE_DIR/bin
+  ln -s python3 python
 
 }
 
@@ -58,7 +58,6 @@ prepend-path    LIBRARY_PATH        \$root/lib/
 prepend-path    LD_LIBRARY_PATH     \$root/lib/
 prepend-path    CPATH               \$root/include:\$root/include/python$LIBVERSION
 prepend-path    PYTHONPATH          \$root/lib/python$LIBVERSION/site-packages:\$root/lib/python$LIBVERSION
-setenv          QIIME_HOME          \$root/bin
 "
 }
 

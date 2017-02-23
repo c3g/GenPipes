@@ -2,18 +2,19 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=bowtie
-VERSION=1.1.2
-ARCHIVE=$SOFTWARE-$VERSION-src.zip
-ARCHIVE_URL=https://sourceforge.net/projects/bowtie-bio/files/$SOFTWARE/$VERSION/$ARCHIVE
-SOFTWARE_DIR=$SOFTWARE-$VERSION	
+SOFTWARE=kentUtils
+VERSION=302.1.0
+ARCHIVE=v${VERSION}.tar.gz
+ARCHIVE_URL=https://github.com/ENCODE-DCC/${SOFTWARE}/archive/$ARCHIVE
 
-# Specific commands to extract and build the software
+SOFTWARE_DIR=$SOFTWARE-$VERSION
+
+# Specific commands to extract and build the software
 # $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
 # $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
-  unzip $ARCHIVE
+  tar zxvf $ARCHIVE
 
   cd $SOFTWARE_DIR
   make
@@ -32,7 +33,7 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-prepend-path    PATH                \$root
+prepend-path    PATH                \$root/bin
 "
 }
 

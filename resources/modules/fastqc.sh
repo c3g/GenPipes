@@ -3,7 +3,7 @@
 ###################
 ################### FASTQC
 ###################
-VERSION="0.11.2"
+VERSION="0.11.5"
 if [[ ${1:-} == MUGQIC_INSTALL_HOME ]]
 then
   INSTALL_HOME=MUGQIC_INSTALL_HOME

@@ -2,25 +2,22 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=bowtie
-VERSION=1.1.2
-ARCHIVE=$SOFTWARE-$VERSION-src.zip
-ARCHIVE_URL=https://sourceforge.net/projects/bowtie-bio/files/$SOFTWARE/$VERSION/$ARCHIVE
-SOFTWARE_DIR=$SOFTWARE-$VERSION	
+SOFTWARE=ViennaRNA
+VERSION=1.8.4
+VERSION_FAMILY=${VERSION:0:4}x
+ARCHIVE=$SOFTWARE-$VERSION.tar.gz
+ARCHIVE_URL=http://www.tbi.univie.ac.at/RNA/download/sourcecode/${VERSION_FAMILY//./_}/$ARCHIVE
 
-# Specific commands to extract and build the software
-# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
-# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
+SOFTWARE_DIR=$SOFTWARE-$VERSION
+
 build() {
   cd $INSTALL_DOWNLOAD
-  unzip $ARCHIVE
+  tar zxvf $ARCHIVE
 
   cd $SOFTWARE_DIR
-  make
-
-  # Install software
-  cd $INSTALL_DOWNLOAD
-  mv -i $SOFTWARE_DIR $INSTALL_DIR/
+  ./configure --prefix=$INSTALL_DIR/$SOFTWARE_DIR --datadir=$INSTALL_DIR/$SOFTWARE_DIR 
+  make 
+  make install
 }
 
 module_file() {
@@ -32,10 +29,11 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-prepend-path    PATH                \$root
+prepend-path    PATH                \$root/bin
 "
 }
 
 # Call generic module install script once all variables and functions have been set
 MODULE_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source $MODULE_INSTALL_SCRIPT_DIR/install_module.sh $@
+

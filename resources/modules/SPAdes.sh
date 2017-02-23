@@ -2,24 +2,17 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=bowtie
-VERSION=1.1.2
-ARCHIVE=$SOFTWARE-$VERSION-src.zip
-ARCHIVE_URL=https://sourceforge.net/projects/bowtie-bio/files/$SOFTWARE/$VERSION/$ARCHIVE
-SOFTWARE_DIR=$SOFTWARE-$VERSION	
+SOFTWARE=SPAdes
+VERSION=3.10.0
+ARCHIVE=${SOFTWARE}-${VERSION}-Linux.tar.gz
+ARCHIVE_URL=http://cab.spbu.ru/files/release${VERSION}/$ARCHIVE
+SOFTWARE_DIR=${SOFTWARE}-$VERSION
 
-# Specific commands to extract and build the software
-# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
-# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
-  unzip $ARCHIVE
+  tar xzvf $ARCHIVE
+  mv $SOFTWARE_DIR-Linux $SOFTWARE_DIR
 
-  cd $SOFTWARE_DIR
-  make
-
-  # Install software
-  cd $INSTALL_DOWNLOAD
   mv -i $SOFTWARE_DIR $INSTALL_DIR/
 }
 
@@ -32,7 +25,7 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-prepend-path    PATH                \$root
+prepend-path    PATH                \$root/bin
 "
 }
 

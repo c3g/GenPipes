@@ -9,9 +9,6 @@ ARCHIVE=$SOFTWARE-tools-$VERSION.zip
 ARCHIVE_URL=https://github.com/broadinstitute/picard/releases/download/$VERSION/$ARCHIVE
 SOFTWARE_DIR=$SOFTWARE-tools-$VERSION
 
-# Specific commands to extract and build the software
-# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
-# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
   unzip $ARCHIVE
