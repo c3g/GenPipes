@@ -233,7 +233,7 @@ are identical apart from `chr` sequence prefixes, document it):
 
 * [ADMINS ONLY] If the new genome has been installed in `$MUGQIC_INSTALL_HOME_DEV`, to deploy in `$MUGQIC_INSTALL_HOME`:
 
-        rsync -va --no-o --no-g --no-p --size-only -I -O --ignore-times $MUGQIC_INSTALL_HOME_DEV/genomes/species/<scientific_name>.<assembly> $MUGQIC_INSTALL_HOME/genomes/species/
+        rsync -vca --no-o --no-g --no-p --size-only -I -O --ignore-times $MUGQIC_INSTALL_HOME_DEV/genomes/species/<scientific_name>.<assembly> $MUGQIC_INSTALL_HOME/genomes/species/
 
 * Add the newly created INI file to the genome config files for further usage in pipeline command:
 
