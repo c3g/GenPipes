@@ -91,7 +91,7 @@ def collect_multiple_metrics(input, output, reference_sequence=None, library_typ
         outputs = [
          output + ".quality_by_cycle.pdf",
          output + ".alignment_summary_metrics",
-         output + ".insert_size_Histogram.pdf",
+         output + ".insert_size_histogram.pdf",
          output + ".insert_size_metrics",
          output + ".quality_by_cycle_metrics",
          output + ".quality_distribution_metrics",
@@ -286,7 +286,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
 
 def sort_sam(input, output, sort_order="coordinate", ini_section='picard_sort_sam'):
 
-    if config.param(ini_section, 'module_picard') < "2":
+    if config.param(ini_section, 'module_picard').split("/")[2] < "2":
         return picard.sort_sam(input, output, sort_order, ini_section)
     else:
         return Job(
@@ -318,7 +318,7 @@ def sort_sam(input, output, sort_order="coordinate", ini_section='picard_sort_sa
 
 def sort_vcfs(inputs, output, ini_section='picard_sort_vcf'):
 
-    if config.param(ini_section, 'module_picard') < "2":
+    if config.param(ini_section, 'module_picard').split("/")[2] < "2":
         return picard.sort_vcfs(inputs, output, ini_section)
     else:
         return Job(
@@ -345,10 +345,10 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             )
         )
 
-def collect_rna_metrics(input, output, annotation_flat=None, reference_sequence=None):
+def collect_rna_metrics(input, output, annotation_flat=None,reference_sequence=None):
 
     if config.param('picard_collect_rna_metrics', 'module_picard').split("/")[2] < "2":
-        return picard.collect_rna_metrics(input, output, annotation_flat, reference_sequence)
+        return picard.collect_rna_metrics(input, output, annotation_flat,reference_sequence)
     else:
         return Job(
             [input],

@@ -209,20 +209,20 @@ def merge_sam_files(inputs, output):
             ],
             command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/MergeSamFiles.jar \\
- VALIDATION_STRINGENCY=SILENT ASSUME_SORTED=true CREATE_INDEX=true \\
- TMP_DIR={tmp_dir} \\
- {inputs} \\
- OUTPUT={output} \\
- MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
-            tmp_dir=config.param('picard_merge_sam_files', 'tmp_dir'),
-            java_other_options=config.param('picard_merge_sam_files', 'java_other_options'),
-            ram=config.param('picard_merge_sam_files', 'ram'),
-            inputs=" \\\n  ".join(["INPUT=" + input for input in inputs]),
-            output=output,
-            max_records_in_ram=config.param('picard_merge_sam_files', 'max_records_in_ram', type='int')
-            ),
-            removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output)]
-        )
+  VALIDATION_STRINGENCY=SILENT ASSUME_SORTED=true CREATE_INDEX=true USE_THREADING=true \\
+  TMP_DIR={tmp_dir} \\
+  {inputs} \\
+  OUTPUT={output} \\
+  MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
+        tmp_dir=config.param('picard_merge_sam_files', 'tmp_dir'),
+        java_other_options=config.param('picard_merge_sam_files', 'java_other_options'),
+        ram=config.param('picard_merge_sam_files', 'ram'),
+        inputs=" \\\n  ".join(["INPUT=" + input for input in inputs]),
+        output=output,
+        max_records_in_ram=config.param('picard_merge_sam_files', 'max_records_in_ram', type='int')
+        ),
+        removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output)]
+    )
 
 # Reorder BAM/SAM files based on reference/dictionary
 def reorder_sam(input, output):
@@ -286,7 +286,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
 
 def sort_sam(input, output, sort_order="coordinate", ini_section='picard_sort_sam'):
 
-    if config.param(ini_section, 'module_picard') >= "2":
+    if config.param(ini_section, 'module_picard').split("/")[2] >= "2":
         return picard2.sort_sam(input, output, sort_order, ini_section)
     else:
         return Job(
@@ -318,7 +318,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
 
 def sort_vcfs(inputs, output, ini_section='picard_sort_vcf'):
 
-    if config.param(ini_section, 'module_picard') >= "2":
+    if config.param(ini_section, 'module_picard').split("/")[2] >= "2":
         return picard2.sort_vcfs(inputs, output, ini_section)
     else:
         return Job(

@@ -488,7 +488,7 @@ class MethylSeq(dnaseq.DnaSeq):
             self.methylation_call,
             self.bed_graph,
             self.methylation_profile,
-            self.bis_snp,                   # step 14
+            self.bis_snp                    # step 14
         ]
 
 if __name__ == '__main__': 
