@@ -17,7 +17,7 @@ PYTHON_VERSION=2.7.8
 # $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DIR
-  mv tmp/* .
+  cp tmp/* .
 
 #  mkdir -p $SOFTWARE_DIR/shared_data $INSTALL_HOME/software/${SOFTWARE}/gemini_data
   mkdir -p $SOFTWARE_DIR/shared_data $INSTALL_DIR/shared
@@ -29,9 +29,9 @@ build() {
 
   gemini update --dataonly --extra cadd_score --extra gerp_bp
 
-  # Install software
-#  cd $INSTALL_DOWNLOAD  ## TO BE ADDED AND MODIFIED IF NECESSARY
-#  mv -i $SOFTWARE_DIR $INSTALL_DIR/  ## TO BE ADDED AND MODIFIED IF NECESSARY
+  # Here we delete the python install script a.k.a. the archive since it's already stored
+  # by install_genome.sh in $INSTALL_HOME/archive during installation
+  rm -f $ARCHIVE
 }
 
 module_file() {

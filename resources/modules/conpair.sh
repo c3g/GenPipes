@@ -2,28 +2,21 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=bam-readcount
-VERSION=0.7.4
-ARCHIVE=v$VERSION.tar.gz
-ARCHIVE_URL=https://github.com/genome/bam-readcount/archive/$ARCHIVE
-
-SOFTWARE_DIR=$SOFTWARE-$VERSION
+SOFTWARE=Conpair
+VERSION=0.1
+ARCHIVE=${SOFTWARE}-${VERSION}.zip
+ARCHIVE_URL=https://github.com/nygenome/$SOFTWARE/archive/master.zip
+SOFTWARE_DIR=${SOFTWARE}-${VERSION}
 
 # Specific commands to extract and build the software
 # $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
 # $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
-  tar zxvf $ARCHIVE
-
-  cd $SOFTWARE_DIR
-  mkdir repo
-  cd repo
-  cmake ../ 
-  make
+  unzip $ARCHIVE
+  mv ${SOFTWARE}-master $SOFTWARE_DIR
 
   # Install software
-  cd $INSTALL_DOWNLOAD
   mv -i $SOFTWARE_DIR $INSTALL_DIR/
 }
 
@@ -35,9 +28,12 @@ proc ModulesHelp { } {
 }
 module-whatis \"$SOFTWARE\"
 
-set             root                $INSTALL_DIR/$SOFTWARE_DIR/repo
-prepend-path    PATH                \$root
-setenv          BAMREADCOUNT_BIN    \$root/bin
+set              root               $INSTALL_DIR/$SOFTWARE_DIR 
+prepend-path	 PATH               \$root/scripts
+setenv		 CONPAIR_DIR        \$root 
+setenv		 CONPAIR_SCRIPTS    \$root/scripts 
+setenv		 CONPAIR_DATA       \$root/data 
+prepend-path	 PYTHONPATH         \$root/modules
 "
 }
 
