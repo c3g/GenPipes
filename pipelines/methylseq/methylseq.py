@@ -35,6 +35,7 @@ from core.job import *
 from core.pipeline import *
 from bfx.readset import *
 
+from bfx import bvatools
 from bfx import bismark
 from bfx import picard2 as picard
 from bfx import bedtools
@@ -114,6 +115,30 @@ class MethylSeq(dnaseq.DnaSeq):
                 ], name="bismark_align." + readset.name)
             )
 
+        report_file = os.path.join("report", "MethylSeq.bismark_align.md")
+        jobs.append(
+            Job(
+                [os.path.join("alignment", readset.sample.name, readset.name, readset.name + ".sorted.bam") for readset in self.readsets],
+                [report_file],
+                [['bwa_mem_picard_sort_sam', 'module_pandoc']],
+                command="""\
+mkdir -p report && \\
+pandoc --to=markdown \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable scientific_name="{scientific_name}" \\
+  --variable assembly="{assembly}" \\
+  {report_template_dir}/{basename_report_file} \\
+  > {report_file}""".format(
+                    scientific_name=config.param('bwa_mem_picard_sort_sam', 'scientific_name'),
+                    assembly=config.param('bwa_mem_picard_sort_sam', 'assembly'),
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="bwa_mem_picard_sort_sam_report")
+        )
+
         return jobs
 
     def picard_add_read_groups(self):
@@ -143,6 +168,30 @@ class MethylSeq(dnaseq.DnaSeq):
                     )
                 ], name="picard_add_read_groups." + readset.name)
             )
+
+        report_file = os.path.join("report", "MethylSeq.picard_add_read_groups.md")
+        jobs.append(
+            Job(
+                [os.path.join("alignment", readset.sample.name, readset.name, readset.name + ".sorted.bam") for readset in self.readsets],
+                [report_file],
+                [['bwa_mem_picard_sort_sam', 'module_pandoc']],
+                command="""\
+mkdir -p report && \\
+pandoc --to=markdown \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable scientific_name="{scientific_name}" \\
+  --variable assembly="{assembly}" \\
+  {report_template_dir}/{basename_report_file} \\
+  > {report_file}""".format(
+                    scientific_name=config.param('bwa_mem_picard_sort_sam', 'scientific_name'),
+                    assembly=config.param('bwa_mem_picard_sort_sam', 'assembly'),
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="bwa_mem_picard_sort_sam_report")
+        )
 
         return jobs
 
@@ -246,6 +295,30 @@ class MethylSeq(dnaseq.DnaSeq):
 
             jobs.append(job)
 
+        report_file = os.path.join("report", "MethylSeq.picard_add_read_groups.md")
+        jobs.append(
+            Job(
+                [os.path.join("alignment", readset.sample.name, readset.name, readset.name + ".sorted.bam") for readset in self.readsets],
+                [report_file],
+                [['bwa_mem_picard_sort_sam', 'module_pandoc']],
+                command="""\
+mkdir -p report && \\
+pandoc --to=markdown \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable scientific_name="{scientific_name}" \\
+  --variable assembly="{assembly}" \\
+  {report_template_dir}/{basename_report_file} \\
+  > {report_file}""".format(
+                    scientific_name=config.param('bwa_mem_picard_sort_sam', 'scientific_name'),
+                    assembly=config.param('bwa_mem_picard_sort_sam', 'assembly'),
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="bwa_mem_picard_sort_sam_report")
+        )
+
         return jobs
 
     def wiggle_tracks(self):
@@ -299,7 +372,6 @@ class MethylSeq(dnaseq.DnaSeq):
 
         return jobs
 
-
     def puc19_lambda_reads(self):
         """
         """
@@ -322,6 +394,12 @@ class MethylSeq(dnaseq.DnaSeq):
                 command="samtools view " + input_file + " | grep pUC19 > " + puc19_out_file,
                 name="pUC19." + sample.name
             )
+            jobs.append(
+                concat_jobs([
+                    Job(command="mkdir -p " + alignment_directory),
+                    puc19_job
+                ], name="puc19_reads." + sample.name)
+            )
 
             lambda_out_file = re.sub(".bam", ".lambda_reads.txt", input_file)
             lambda_job = Job(
@@ -336,10 +414,33 @@ class MethylSeq(dnaseq.DnaSeq):
             jobs.append(
                 concat_jobs([
                     Job(command="mkdir -p " + alignment_directory),
-                    puc19_job,
                     lambda_job
-                ], name="puc19_lambda_reads." + sample.name)
+                ], name="lambda_reads." + sample.name)
             )
+
+        report_file = os.path.join("report", "MethylSeq.picard_add_read_groups.md")
+        jobs.append(
+            Job(
+                [os.path.join("alignment", readset.sample.name, readset.name, readset.name + ".sorted.bam") for readset in self.readsets],
+                [report_file],
+                [['bwa_mem_picard_sort_sam', 'module_pandoc']],
+                command="""\
+mkdir -p report && \\
+pandoc --to=markdown \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable scientific_name="{scientific_name}" \\
+  --variable assembly="{assembly}" \\
+  {report_template_dir}/{basename_report_file} \\
+  > {report_file}""".format(
+                    scientific_name=config.param('bwa_mem_picard_sort_sam', 'scientific_name'),
+                    assembly=config.param('bwa_mem_picard_sort_sam', 'assembly'),
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="bwa_mem_picard_sort_sam_report")
+        )
 
         return jobs
 
@@ -394,6 +495,30 @@ class MethylSeq(dnaseq.DnaSeq):
                 ], name="bismark_methyl_call." + sample.name)
             )
 
+        report_file = os.path.join("report", "MethylSeq.picard_add_read_groups.md")
+        jobs.append(
+            Job(
+                [os.path.join("alignment", readset.sample.name, readset.name, readset.name + ".sorted.bam") for readset in self.readsets],
+                [report_file],
+                [['bwa_mem_picard_sort_sam', 'module_pandoc']],
+                command="""\
+mkdir -p report && \\
+pandoc --to=markdown \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable scientific_name="{scientific_name}" \\
+  --variable assembly="{assembly}" \\
+  {report_template_dir}/{basename_report_file} \\
+  > {report_file}""".format(
+                    scientific_name=config.param('bwa_mem_picard_sort_sam', 'scientific_name'),
+                    assembly=config.param('bwa_mem_picard_sort_sam', 'assembly'),
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="bwa_mem_picard_sort_sam_report")
+        )
+
         return jobs
 
     def bed_graph(self):
@@ -420,6 +545,30 @@ class MethylSeq(dnaseq.DnaSeq):
                 ], name = "bismark_bed_graph." + sample.name)
             )
 
+        report_file = os.path.join("report", "MethylSeq.picard_add_read_groups.md")
+        jobs.append(
+            Job(
+                [os.path.join("alignment", readset.sample.name, readset.name, readset.name + ".sorted.bam") for readset in self.readsets],
+                [report_file],
+                [['bwa_mem_picard_sort_sam', 'module_pandoc']],
+                command="""\
+mkdir -p report && \\
+pandoc --to=markdown \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable scientific_name="{scientific_name}" \\
+  --variable assembly="{assembly}" \\
+  {report_template_dir}/{basename_report_file} \\
+  > {report_file}""".format(
+                    scientific_name=config.param('bwa_mem_picard_sort_sam', 'scientific_name'),
+                    assembly=config.param('bwa_mem_picard_sort_sam', 'assembly'),
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="bwa_mem_picard_sort_sam_report")
+        )
+
         return jobs
 
     def methylation_profile(self):
@@ -440,6 +589,30 @@ class MethylSeq(dnaseq.DnaSeq):
                     )
                 ], name="methylation_profile." + sample.name)
            )
+
+        report_file = os.path.join("report", "MethylSeq.picard_add_read_groups.md")
+        jobs.append(
+            Job(
+                [os.path.join("alignment", readset.sample.name, readset.name, readset.name + ".sorted.bam") for readset in self.readsets],
+                [report_file],
+                [['bwa_mem_picard_sort_sam', 'module_pandoc']],
+                command="""\
+mkdir -p report && \\
+pandoc --to=markdown \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable scientific_name="{scientific_name}" \\
+  --variable assembly="{assembly}" \\
+  {report_template_dir}/{basename_report_file} \\
+  > {report_file}""".format(
+                    scientific_name=config.param('bwa_mem_picard_sort_sam', 'scientific_name'),
+                    assembly=config.param('bwa_mem_picard_sort_sam', 'assembly'),
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="bwa_mem_picard_sort_sam_report")
+        )
 
         return jobs
 
@@ -469,6 +642,30 @@ class MethylSeq(dnaseq.DnaSeq):
                     )
                 ], name="bissnp." + sample.name)
             )
+
+        report_file = os.path.join("report", "MethylSeq.picard_add_read_groups.md")
+        jobs.append(
+            Job(
+                [os.path.join("alignment", readset.sample.name, readset.name, readset.name + ".sorted.bam") for readset in self.readsets],
+                [report_file],
+                [['bwa_mem_picard_sort_sam', 'module_pandoc']],
+                command="""\
+mkdir -p report && \\
+pandoc --to=markdown \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable scientific_name="{scientific_name}" \\
+  --variable assembly="{assembly}" \\
+  {report_template_dir}/{basename_report_file} \\
+  > {report_file}""".format(
+                    scientific_name=config.param('bwa_mem_picard_sort_sam', 'scientific_name'),
+                    assembly=config.param('bwa_mem_picard_sort_sam', 'assembly'),
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="bwa_mem_picard_sort_sam_report")
+        )
 
         return jobs 
 
