@@ -44,6 +44,7 @@ from bfx import gatk
 from bfx import igvtools
 from bfx import bissnp
 
+from pipelines import common
 from pipelines.dnaseq import dnaseq
 
 log = logging.getLogger(__name__)
@@ -118,9 +119,9 @@ class MethylSeq(dnaseq.DnaSeq):
         report_file = os.path.join("report", "MethylSeq.bismark_align.md")
         jobs.append(
             Job(
-                [os.path.join("alignment", readset.sample.name, readset.name, readset.name + ".sorted.bam") for readset in self.readsets],
+                [os.path.join("alignment", readset.sample.name, readset.name, readset.name + ".sorted_noRG.bam") for readset in self.readsets],
                 [report_file],
-                [['bwa_mem_picard_sort_sam', 'module_pandoc']],
+                [['bismark_align', 'module_pandoc']],
                 command="""\
 mkdir -p report && \\
 pandoc --to=markdown \\
@@ -129,8 +130,8 @@ pandoc --to=markdown \\
   --variable assembly="{assembly}" \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}""".format(
-                    scientific_name=config.param('bwa_mem_picard_sort_sam', 'scientific_name'),
-                    assembly=config.param('bwa_mem_picard_sort_sam', 'assembly'),
+                    scientific_name=config.param('bismark_align', 'scientific_name'),
+                    assembly=config.param('bismark_align', 'assembly'),
                     report_template_dir=self.report_template_dir,
                     basename_report_file=os.path.basename(report_file),
                     report_file=report_file
