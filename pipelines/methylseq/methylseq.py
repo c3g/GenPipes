@@ -220,7 +220,7 @@ pandoc --to=markdown \\
 
         jobs = []
         for sample in self.samples:
-            file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.")
+            file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.")
 
             candidate_input_files = [[file_prefix + "bam"]]
             if bam[sample]:
@@ -678,8 +678,8 @@ pandoc --to=markdown \\
             self.bismark_align,
             self.picard_add_read_groups,    # step 5
             self.picard_merge_sam_files,
-            self.metrics,
             self.bismark_dedup,
+            self.metrics,
             self.wiggle_tracks,
             self.puc19_lambda_reads,        # step 10
             self.methylation_call,
