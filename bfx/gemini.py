@@ -32,7 +32,7 @@ def gemini_annotations(variants, gemini_output, tmp_dir):
         [gemini_output],
         [
             ['gemini_annotations', 'module_gemini'],
-            #['gemini_annotations', 'module_htslib']
+            ['gemini_annotations', 'module_htslib']
         ],
         command="""\
 gemini load -v {variants} \\
