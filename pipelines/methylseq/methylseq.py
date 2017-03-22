@@ -137,7 +137,7 @@ pandoc --to=markdown \\
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="bwa_mem_picard_sort_sam_report")
+                name="bismark_align_report")
         )
 
         return jobs
@@ -175,7 +175,7 @@ pandoc --to=markdown \\
             Job(
                 [os.path.join("alignment", readset.sample.name, readset.name, readset.name + ".sorted.bam") for readset in self.readsets],
                 [report_file],
-                [['bwa_mem_picard_sort_sam', 'module_pandoc']],
+                [['picard_add_read_groups', 'module_pandoc']],
                 command="""\
 mkdir -p report && \\
 pandoc --to=markdown \\
@@ -184,14 +184,14 @@ pandoc --to=markdown \\
   --variable assembly="{assembly}" \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}""".format(
-                    scientific_name=config.param('bwa_mem_picard_sort_sam', 'scientific_name'),
-                    assembly=config.param('bwa_mem_picard_sort_sam', 'assembly'),
+                    scientific_name=config.param('picard_add_read_groups', 'scientific_name'),
+                    assembly=config.param('picard_add_read_groups', 'assembly'),
                     report_template_dir=self.report_template_dir,
                     basename_report_file=os.path.basename(report_file),
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="bwa_mem_picard_sort_sam_report")
+                name="picard_add_read_groups_report")
         )
 
         return jobs
@@ -296,12 +296,12 @@ pandoc --to=markdown \\
 
             jobs.append(job)
 
-        report_file = os.path.join("report", "MethylSeq.picard_add_read_groups.md")
+        report_file = os.path.join("report", "MethylSeq.bismark_dedup.md")
         jobs.append(
             Job(
                 [os.path.join("alignment", readset.sample.name, readset.name, readset.name + ".sorted.bam") for readset in self.readsets],
                 [report_file],
-                [['bwa_mem_picard_sort_sam', 'module_pandoc']],
+                [['bismark_dedup', 'module_pandoc']],
                 command="""\
 mkdir -p report && \\
 pandoc --to=markdown \\
@@ -310,14 +310,14 @@ pandoc --to=markdown \\
   --variable assembly="{assembly}" \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}""".format(
-                    scientific_name=config.param('bwa_mem_picard_sort_sam', 'scientific_name'),
-                    assembly=config.param('bwa_mem_picard_sort_sam', 'assembly'),
+                    scientific_name=config.param('bismark_dedup', 'scientific_name'),
+                    assembly=config.param('bismark_dedup', 'assembly'),
                     report_template_dir=self.report_template_dir,
                     basename_report_file=os.path.basename(report_file),
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="bwa_mem_picard_sort_sam_report")
+                name="bismark_dedup_report")
         )
 
         return jobs
@@ -419,12 +419,12 @@ pandoc --to=markdown \\
                 ], name="lambda_reads." + sample.name)
             )
 
-        report_file = os.path.join("report", "MethylSeq.picard_add_read_groups.md")
+        report_file = os.path.join("report", "MethylSeq.puc19_lambda_reads.md")
         jobs.append(
             Job(
                 [os.path.join("alignment", readset.sample.name, readset.name, readset.name + ".sorted.bam") for readset in self.readsets],
                 [report_file],
-                [['bwa_mem_picard_sort_sam', 'module_pandoc']],
+                [['puc19_lambda_reads', 'module_pandoc']],
                 command="""\
 mkdir -p report && \\
 pandoc --to=markdown \\
@@ -433,14 +433,14 @@ pandoc --to=markdown \\
   --variable assembly="{assembly}" \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}""".format(
-                    scientific_name=config.param('bwa_mem_picard_sort_sam', 'scientific_name'),
-                    assembly=config.param('bwa_mem_picard_sort_sam', 'assembly'),
+                    scientific_name=config.param('puc19_lambda_reads', 'scientific_name'),
+                    assembly=config.param('puc19_lambda_reads', 'assembly'),
                     report_template_dir=self.report_template_dir,
                     basename_report_file=os.path.basename(report_file),
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="bwa_mem_picard_sort_sam_report")
+                name="puc19_lambda_reads_report")
         )
 
         return jobs
@@ -496,12 +496,12 @@ pandoc --to=markdown \\
                 ], name="bismark_methyl_call." + sample.name)
             )
 
-        report_file = os.path.join("report", "MethylSeq.picard_add_read_groups.md")
+        report_file = os.path.join("report", "MethylSeq.methylation_call.md")
         jobs.append(
             Job(
                 [os.path.join("alignment", readset.sample.name, readset.name, readset.name + ".sorted.bam") for readset in self.readsets],
                 [report_file],
-                [['bwa_mem_picard_sort_sam', 'module_pandoc']],
+                [['methylation_call', 'module_pandoc']],
                 command="""\
 mkdir -p report && \\
 pandoc --to=markdown \\
@@ -510,14 +510,14 @@ pandoc --to=markdown \\
   --variable assembly="{assembly}" \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}""".format(
-                    scientific_name=config.param('bwa_mem_picard_sort_sam', 'scientific_name'),
-                    assembly=config.param('bwa_mem_picard_sort_sam', 'assembly'),
+                    scientific_name=config.param('methylation_call', 'scientific_name'),
+                    assembly=config.param('methylation_call', 'assembly'),
                     report_template_dir=self.report_template_dir,
                     basename_report_file=os.path.basename(report_file),
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="bwa_mem_picard_sort_sam_report")
+                name="methylation_call_report")
         )
 
         return jobs
@@ -546,12 +546,12 @@ pandoc --to=markdown \\
                 ], name = "bismark_bed_graph." + sample.name)
             )
 
-        report_file = os.path.join("report", "MethylSeq.picard_add_read_groups.md")
+        report_file = os.path.join("report", "MethylSeq.bed_graph.md")
         jobs.append(
             Job(
                 [os.path.join("alignment", readset.sample.name, readset.name, readset.name + ".sorted.bam") for readset in self.readsets],
                 [report_file],
-                [['bwa_mem_picard_sort_sam', 'module_pandoc']],
+                [['bed_graph', 'module_pandoc']],
                 command="""\
 mkdir -p report && \\
 pandoc --to=markdown \\
@@ -560,14 +560,14 @@ pandoc --to=markdown \\
   --variable assembly="{assembly}" \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}""".format(
-                    scientific_name=config.param('bwa_mem_picard_sort_sam', 'scientific_name'),
-                    assembly=config.param('bwa_mem_picard_sort_sam', 'assembly'),
+                    scientific_name=config.param('bed_graph', 'scientific_name'),
+                    assembly=config.param('bed_graph', 'assembly'),
                     report_template_dir=self.report_template_dir,
                     basename_report_file=os.path.basename(report_file),
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="bwa_mem_picard_sort_sam_report")
+                name="bed_graph_report")
         )
 
         return jobs
@@ -591,12 +591,12 @@ pandoc --to=markdown \\
                 ], name="methylation_profile." + sample.name)
            )
 
-        report_file = os.path.join("report", "MethylSeq.picard_add_read_groups.md")
+        report_file = os.path.join("report", "MethylSeq.methylation_profile.md")
         jobs.append(
             Job(
                 [os.path.join("alignment", readset.sample.name, readset.name, readset.name + ".sorted.bam") for readset in self.readsets],
                 [report_file],
-                [['bwa_mem_picard_sort_sam', 'module_pandoc']],
+                [['methylation_profile', 'module_pandoc']],
                 command="""\
 mkdir -p report && \\
 pandoc --to=markdown \\
@@ -605,14 +605,14 @@ pandoc --to=markdown \\
   --variable assembly="{assembly}" \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}""".format(
-                    scientific_name=config.param('bwa_mem_picard_sort_sam', 'scientific_name'),
-                    assembly=config.param('bwa_mem_picard_sort_sam', 'assembly'),
+                    scientific_name=config.param('methylation_profile', 'scientific_name'),
+                    assembly=config.param('methylation_profile', 'assembly'),
                     report_template_dir=self.report_template_dir,
                     basename_report_file=os.path.basename(report_file),
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="bwa_mem_picard_sort_sam_report")
+                name="methylation_profile_report")
         )
 
         return jobs
@@ -644,12 +644,12 @@ pandoc --to=markdown \\
                 ], name="bissnp." + sample.name)
             )
 
-        report_file = os.path.join("report", "MethylSeq.picard_add_read_groups.md")
+        report_file = os.path.join("report", "MethylSeq.bis_snp.md")
         jobs.append(
             Job(
                 [os.path.join("alignment", readset.sample.name, readset.name, readset.name + ".sorted.bam") for readset in self.readsets],
                 [report_file],
-                [['bwa_mem_picard_sort_sam', 'module_pandoc']],
+                [['bis_snp', 'module_pandoc']],
                 command="""\
 mkdir -p report && \\
 pandoc --to=markdown \\
@@ -658,14 +658,14 @@ pandoc --to=markdown \\
   --variable assembly="{assembly}" \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}""".format(
-                    scientific_name=config.param('bwa_mem_picard_sort_sam', 'scientific_name'),
-                    assembly=config.param('bwa_mem_picard_sort_sam', 'assembly'),
+                    scientific_name=config.param('bis_snp', 'scientific_name'),
+                    assembly=config.param('bis_snp', 'assembly'),
                     report_template_dir=self.report_template_dir,
                     basename_report_file=os.path.basename(report_file),
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="bwa_mem_picard_sort_sam_report")
+                name="bis_snp_report")
         )
 
         return jobs 
