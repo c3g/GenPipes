@@ -159,7 +159,7 @@ pandoc --to=markdown \\
             jobs.append(
                 concat_jobs([
                     Job(command="mkdir -p " + alignment_directory),
-                    picard.add_or_replace_read_groups(
+                    picard.add_read_groups(
                         input_bam,
                         output_bam,
                         readset.name,

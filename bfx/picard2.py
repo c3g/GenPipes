@@ -383,19 +383,19 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             )
         )
 
-def add_or_replace_read_groups(input, output, readgroup, library, lane, sample, sort_order="coordinate"):
+def add_read_groups(input, output, readgroup, library, lane, sample, sort_order="coordinate"):
 
-    if config.param('picard_add_or_replace_read_groups', 'module_picard').split("/")[2] < "2":
-        return picard.add_or_replace_read_groups(input, output, readgroup, library, lane, sample, sort_order)
+    if config.param('picard_add_read_groups', 'module_picard').split("/")[2] < "2":
+        return picard.add_read_groups(input, output, readgroup, library, lane, sample, sort_order)
     else:
         return Job(
             [input],
             # collect specific RNA metrics (exon rate, strand specificity, etc...)
             [output],
             [
-                ['picard_add_or_replace_read_groups', 'module_java'],
-                ['picard_add_or_replace_read_groups', 'module_picard'],
-                ['picard_add_or_replace_read_groups', 'module_R']
+                ['picard_add_read_groups', 'module_java'],
+                ['picard_add_read_groups', 'module_picard'],
+                ['picard_add_read_groups', 'module_R']
             ],
             command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar AddOrReplaceReadGroups \\
@@ -408,17 +408,17 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
  RGPU=\"{lane}\" \\
  RGSM=\"{sample}\"  \\
  RGCN=\"{sequencing_center}\"""".format(
-            tmp_dir=config.param('picard_add_or_replace_read_groups', 'tmp_dir'),
-            java_other_options=config.param('picard_add_or_replace_read_groups', 'java_other_options'),
-            ram=config.param('picard_add_or_replace_read_groups', 'ram'),
+            tmp_dir=config.param('picard_add_read_groups', 'tmp_dir'),
+            java_other_options=config.param('picard_add_read_groups', 'java_other_options'),
+            ram=config.param('picard_add_read_groups', 'ram'),
             input=input,
             output=output,
             sort_order=sort_order,
             readgroup=readgroup,
             library=library,
-            platform=config.param('picard_add_or_replace_read_groups', 'platform'),
+            platform=config.param('picard_add_read_groups', 'platform'),
             lane=lane,
             sample=sample,
-            sequencing_center=config.param('picard_add_or_replace_read_groups', 'sequencing_center'),
+            sequencing_center=config.param('picard_add_read_groups', 'sequencing_center'),
             )
         )
