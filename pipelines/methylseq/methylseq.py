@@ -168,6 +168,11 @@ pandoc --to=markdown \\
                         readset.library,
                         readset.lane,
                         readset.sample.name
+                    ),
+                    picard.build_bam_index(
+                        output_bam,
+                        re.sub(".bam", ".bai", output_bam),
+                        "picard_add_read_groups"
                     )
                 ], name="picard_add_read_groups." + readset.name)
             )
