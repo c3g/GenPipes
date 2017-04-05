@@ -194,7 +194,7 @@ def bed2interval_list(dictionary, bed, output):
         [output],
         [
             ['DEFAULT', 'module_mugqic_tools'],
-            ['DEFAULT' , 'module_perl']
+            ['DEFAULT', 'module_perl']
         ],
         command="""\
 bed2IntervalList.pl \\

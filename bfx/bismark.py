@@ -50,7 +50,7 @@ bismark -q \\
   --output_dir {output_directory} \\
   --temp_dir {tmp_dir}""".format(
             other_options=config.param('bismark_align', 'other_options'),
-            genome_directory=config.param('bismark_align', 'assembly_dir'),
+            genome_directory=config.param('bismark_align', 'bismark_assembly_dir'),
             input1="-1 "+input1,
             input2="-2 "+input2 if input2 else "",
             output_directory=output_directory,
