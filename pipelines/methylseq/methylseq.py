@@ -54,7 +54,7 @@ class MethylSeq(dnaseq.DnaSeq):
     Methyl-Seq Pipeline
     ================
 
-    The standard MUGQIC Methyle-Seq pipeline uses Bismark to align reads to the reference genome. Treatment
+    The standard MUGQIC Methyl-Seq pipeline uses Bismark to align reads to the reference genome. Treatment
     and filtering of mapped reads approaches as mark duplicate reads, recalibration
     and sort are executed using Picard and GATK. Samtools MPILEUP and bcftools are used to produce
     the standard SNP and indels variants file (VCF). Additional SVN annotations mostly applicable
@@ -74,6 +74,7 @@ class MethylSeq(dnaseq.DnaSeq):
 
     def bismark_align(self):
         """
+        Align reads with Bismark
         """
 
         jobs = []
@@ -144,6 +145,7 @@ pandoc --to=markdown \\
 
     def picard_add_read_groups(self):
         """
+        Add reads groups to our bam files since Bismarkl align did not do it previously, useful when merging differnent lanes for one sample
         """
 
         jobs = []
@@ -196,66 +198,9 @@ pandoc --to=markdown \\
 
         return jobs
 
-    def metrics(self):
-        """
-        Compute metrics and generate coverage tracks per sample. Multiple metrics are computed at this stage:
-        Number of raw reads, Number of filtered reads, Number of aligned reads, Number of duplicate reads,
-        Median, mean and standard deviation of insert sizes of reads after alignment, percentage of bases
-        covered at X reads (%_bases_above_50 means the % of exons bases which have at least 50 reads)
-        whole genome or targeted percentage of bases covered at X reads (%_bases_above_50 means the % of exons
-        bases which have at least 50 reads). A TDF (.tdf) coverage track is also generated at this step
-        for easy visualization of coverage in the IGV browser.
-        """
-
-        ##check the library status
-        library, bam = {}, {}
-        for readset in self.readsets:
-            if not library.has_key(readset.sample) :
-                library[readset.sample]="SINGLE_END"
-            if readset.run_type == "PAIRED_END" :
-                library[readset.sample]="PAIRED_END"
-            if not bam.has_key(readset.sample):
-                bam[readset.sample]=""
-            if readset.bam:
-                bam[readset.sample]=readset.bam
-
-        jobs = []
-        for sample in self.samples:
-            file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.")
-
-            candidate_input_files = [[file_prefix + "bam"]]
-            if bam[sample]:
-                candidate_input_files.append([bam[sample]])
-            [input] = self.select_input_files(candidate_input_files)
-
-            job = picard.collect_multiple_metrics(input, file_prefix + "all.metrics",  library_type=library[sample])
-            job.name = "picard_collect_multiple_metrics." + sample.name
-            jobs.append(job)
-
-            # Compute genome coverage with GATK
-            job = gatk.depth_of_coverage(input, file_prefix + "all.coverage", bvatools.resolve_readset_coverage_bed(sample.readsets[0]))
-            job.name = "gatk_depth_of_coverage.genome." + sample.name
-            jobs.append(job)
-
-            # Compute genome or target coverage with BVATools
-            job = bvatools.depth_of_coverage(
-                input,
-                file_prefix + "coverage.tsv",
-                bvatools.resolve_readset_coverage_bed(sample.readsets[0]),
-                other_options=config.param('bvatools_depth_of_coverage', 'other_options', required=False)
-            )
-
-            job.name = "bvatools_depth_of_coverage." + sample.name
-            jobs.append(job)
-
-            job = igvtools.compute_tdf(input, input + ".tdf")
-            job.name = "igvtools_compute_tdf." + sample.name
-            jobs.append(job)
-
-        return jobs
-
     def bismark_dedup(self):
         """
+        Remove deplicates reads with Bismark
         """
 
         # Check the library status
@@ -322,6 +267,115 @@ pandoc --to=markdown \\
 
         return jobs
 
+    def metrics(self):
+        """
+        Compute metrics and generate coverage tracks per sample. Multiple metrics are computed at this stage:
+        Number of raw reads, Number of filtered reads, Number of aligned reads, Number of duplicate reads,
+        Median, mean and standard deviation of insert sizes of reads after alignment, percentage of bases
+        covered at X reads (%_bases_above_50 means the % of exons bases which have at least 50 reads)
+        whole genome or targeted percentage of bases covered at X reads (%_bases_above_50 means the % of exons
+        bases which have at least 50 reads). A TDF (.tdf) coverage track is also generated at this step
+        for easy visualization of coverage in the IGV browser.
+        """
+
+        ##check the library status
+        library, bam = {}, {}
+        for readset in self.readsets:
+            if not library.has_key(readset.sample) :
+                library[readset.sample]="SINGLE_END"
+            if readset.run_type == "PAIRED_END" :
+                library[readset.sample]="PAIRED_END"
+            if not bam.has_key(readset.sample):
+                bam[readset.sample]=""
+            if readset.bam:
+                bam[readset.sample]=readset.bam
+
+        jobs = []
+        for sample in self.samples:
+            file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.")
+
+            candidate_input_files = [[file_prefix + "bam"]]
+            if bam[sample]:
+                candidate_input_files.append([bam[sample]])
+            [input] = self.select_input_files(candidate_input_files)
+
+            job = picard.collect_multiple_metrics(input, file_prefix + "all.metrics",  library_type=library[sample])
+            job.name = "picard_collect_multiple_metrics." + sample.name
+            jobs.append(job)
+
+            # Compute genome coverage with GATK
+            job = gatk.depth_of_coverage(input, file_prefix + "all.coverage", bvatools.resolve_readset_coverage_bed(sample.readsets[0]))
+            job.name = "gatk_depth_of_coverage.genome." + sample.name
+            jobs.append(job)
+
+            # Compute genome or target coverage with BVATools
+            job = bvatools.depth_of_coverage(
+                input,
+                file_prefix + "coverage.tsv",
+                bvatools.resolve_readset_coverage_bed(sample.readsets[0]),
+                other_options=config.param('bvatools_depth_of_coverage', 'other_options', required=False)
+            )
+
+            job.name = "bvatools_depth_of_coverage." + sample.name
+            jobs.append(job)
+
+            job = igvtools.compute_tdf(input, input + ".tdf")
+            job.name = "igvtools_compute_tdf." + sample.name
+            jobs.append(job)
+
+        return jobs
+
+    def picard_calculate_hs_metrics(self):
+        """
+        Compute on target percent of hybridisation based capture.
+        """
+
+        jobs = []
+
+        created_interval_lists = []
+
+        for sample in self.samples:
+            coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
+            if coverage_bed:
+                interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
+
+                if not interval_list in created_interval_lists:
+                    job = tools.bed2interval_list(None, coverage_bed, interval_list)
+                    job.name = "interval_list." + os.path.basename(coverage_bed)
+                    jobs.append(job)
+                    created_interval_lists.append(interval_list)
+
+                file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.")
+                job = picard.calculate_hs_metrics(file_prefix + "bam", file_prefix + "onTarget.tsv", interval_list)
+                job.name = "picard_calculate_hs_metrics." + sample.name
+
+                jobs.append(job)
+
+        return jobs
+
+    def mapping_quality_filter(self):
+        """
+        Optional step :
+        Filter bam files by the mapping quality of the deduplicated reads
+        """
+
+        jobs = []
+
+        for sample in self.samples:
+            alignment_directory = os.path.join("alignment", sample.name)
+            dedup_bam_sorted = os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")
+            filtered_dedup_bam_sorted = re.sub(".bam", ".filtered.bam", dedup_bam_sorted)
+            job = samtools.view(
+                    dedup_bam_sorted,
+                    filtered_dedup_bam_sorted,
+                    config.param('mapping_quality_filter', 'quality_threshold')
+            )
+            job.name = "mapping_quality_filter." + sample.name
+
+            jobs.append(job)
+
+        return jobs
+
     def wiggle_tracks(self):
         """
         Generate wiggle tracks suitable for multiple browsers.
@@ -340,8 +394,9 @@ pandoc --to=markdown \\
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
 
-            candidate_input_files = [[os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.bam")]]
+            candidate_input_files = [[os.path.join(alignment_directory, sample.name + ".sorted.dedup.filtered.bam")]]
             candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")])
+            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.bam")])
 
             [input_bam] = self.select_input_files(candidate_input_files)
 
@@ -381,7 +436,8 @@ pandoc --to=markdown \\
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
 
-            candidate_input_files = [[os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")]]
+            candidate_input_files = [[os.path.join(alignment_directory, sample.name + ".sorted.dedup.filtered.bam")]]
+            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")])
             candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.bam")])
             [input_file] = self.select_input_files(candidate_input_files)
 
@@ -461,8 +517,9 @@ pandoc --to=markdown \\
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
 
-            candidate_input_files = [[os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.bam")]]
+            candidate_input_files = [[os.path.join(alignment_directory, sample.name + ".sorted.dedup.filtered.bam")]]
             candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")])
+            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.bam")])
             candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.bam")])
             [input_file] = self.select_input_files(candidate_input_files)
 
@@ -530,8 +587,9 @@ pandoc --to=markdown \\
         for sample in self.samples:
             methyl_directory = os.path.join("methylation_call", sample.name)
 
-            candidate_input_files = [[os.path.join(methyl_directory, "CpG_context_" + sample.name + ".readset_sorted.dedup.txt.gz")]]
+            candidate_input_files = [[os.path.join(methyl_directory, "CpG_context_" + sample.name + ".sorted.dedup.filtered.txt.gz")]]
             candidate_input_files.append([os.path.join(methyl_directory, "CpG_context_" + sample.name + ".sorted.dedup.txt.gz")])
+            candidate_input_files.append([os.path.join(methyl_directory, "CpG_context_" + sample.name + ".readset_sorted.dedup.txt.gz")])
             candidate_input_files.append([os.path.join(methyl_directory, "CpG_context_" + sample.name + ".sorted.txt.gz")])
 
             [cpG_input_file] = self.select_input_files(candidate_input_files)
@@ -625,7 +683,9 @@ pandoc --to=markdown \\
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
 
-            candidate_input_files = [[os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")]]
+            candidate_input_files = [[os.path.join(alignment_directory, sample.name + ".sorted.dedup.filtered.bam")]]
+            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")])
+            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.bam")])
             candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.bam")])
             [input_file] = self.select_input_files(candidate_input_files)
 
@@ -681,12 +741,14 @@ pandoc --to=markdown \\
             self.picard_merge_sam_files,
             self.bismark_dedup,
             self.metrics,
+            self.picard_calculate_hs_metrics,
+            self.mapping_quality_filter,    # step 10
             self.wiggle_tracks,
-            self.puc19_lambda_reads,        # step 10
+            self.puc19_lambda_reads,
             self.methylation_call,
             self.bed_graph,
-            self.methylation_profile,
-            self.bis_snp                    # step 14
+            self.methylation_profile,       # step 15
+            self.bis_snp
         ]
 
 if __name__ == '__main__': 
