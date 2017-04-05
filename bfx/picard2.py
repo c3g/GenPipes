@@ -26,26 +26,26 @@ from core.config import *
 from core.job import *
 import picard
 
-def build_bam_index(input, output):
+def build_bam_index(input, output, ini_section='picard_build_bam_index'):
 
-    if config.param('build_bam_index', 'module_picard').split("/")[2] < "2":
+    if config.param(ini_section, 'module_picard').split("/")[2] < "2":
         return picard.build_bam_index(input, output)
     else:
         return Job(
             [input],
             [output],
             [
-                ['build_bam_index', 'module_java'],
-                ['build_bam_index', 'module_picard']
+                [ini_section, 'module_java'],
+                [ini_section, 'module_picard']
             ],
             command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar BuildBamIndex \\
  VALIDATION_STRINGENCY=SILENT \\
  INPUT={input} \\
  OUTPUT={output} """.format(
-            tmp_dir=config.param('build_bam_index', 'tmp_dir'),
-            java_other_options=config.param('build_bam_index', 'java_other_options'),
-            ram=config.param('build_bam_index', 'ram'),
+            tmp_dir=config.param(ini_section, 'tmp_dir'),
+            java_other_options=config.param(ini_section, 'java_other_options'),
+            ram=config.param(ini_section, 'ram'),
             input=input,
             output=output,
             )

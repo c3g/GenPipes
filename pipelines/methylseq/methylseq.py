@@ -365,11 +365,18 @@ pandoc --to=markdown \\
             alignment_directory = os.path.join("alignment", sample.name)
             dedup_bam_sorted = os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")
             filtered_dedup_bam_sorted = re.sub(".bam", ".filtered.bam", dedup_bam_sorted)
-            job = samtools.view(
+            job = concat_jobs([
+                samtools.view(
                     dedup_bam_sorted,
                     filtered_dedup_bam_sorted,
                     config.param('mapping_quality_filter', 'quality_threshold')
-            )
+                ),
+                picard.build_bam_index(
+                    filtered_dedup_bam_sorted,
+                    re.sub(".bam", ".bai", filtered_dedup_bam_sorted),
+                    "mapping_quality_filter"
+                )
+            ])
             job.name = "mapping_quality_filter." + sample.name
 
             jobs.append(job)
