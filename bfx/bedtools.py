@@ -61,7 +61,7 @@ bedGraphToBigWig \\
         )
     )
 
-def intersect(input_bam, output_bam):
+def intersect(input_bam, output_bam, readset):
     target_bed = config.param('bedtools_intersect', 'target_bed', required=False)
 
     if target_bed:
