@@ -74,9 +74,9 @@ deduplicate_bismark \\
   {library} \\
   {other_options} \\
   {input}""".format(
-        other_options=config.param('bismark_dedup', 'other_options'),
-        library="-p" if library_type=="PAIRED_END" else "-s",
-        input=input
+            other_options=config.param('bismark_dedup', 'other_options'),
+            library="-p" if library_type=="PAIRED_END" else "-s",
+            input=input
         ),
         removable_files=[re.sub(".bam", ".deduplicated.bam", input)]
     )
@@ -97,10 +97,10 @@ bismark_methylation_extractor \\
   {other_options} \\
   --output {output_directory} \\
   {input}""".format(
-        other_options=config.param('bismark_methyl_call', 'other_options'),
-        library="-p" if library_type=="PAIRED_END" else "-s",
-        input=input,
-        output_directory=os.path.dirname(output)
+            other_options=config.param('bismark_methyl_call', 'other_options'),
+            library="-p" if library_type=="PAIRED_END" else "-s",
+            input=input,
+            output_directory=os.path.dirname(output)
         )
     )
 
