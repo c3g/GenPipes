@@ -72,7 +72,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $VARSCAN2_JA
         other_options=other_options,
         input_normal=input_normal,
         input_tumor=input_tumor,
-        output=output
+        output=output,
         )
     )
 
