@@ -3,9 +3,9 @@
 set -eu -o pipefail
 
 SOFTWARE=snpEff
-VERSION=4.2
+VERSION=4.3
 # Replace "." in official version number by "_" in archive version number
-ARCHIVE=${SOFTWARE}_v${VERSION//./_}_core.zip
+ARCHIVE=${SOFTWARE}_v${VERSION//./_}k_core.zip
 ARCHIVE_URL=http://sourceforge.net/projects/snpeff/files/$ARCHIVE
 SOFTWARE_DIR=${SOFTWARE}_${VERSION//./_}
 
@@ -19,10 +19,16 @@ build() {
   # Install databases
   echo "Installing GRCh37.75 database"
   java -jar $SOFTWARE/snpEff.jar download GRCh37.75 -verbose
+  echo "Installing GRCh37.75 database"
+  java -jar $SOFTWARE/snpEff.jar download GRCh38.86 -verbose
   echo "Installing GRCm38.75 database"
-  java -jar $SOFTWARE/snpEff.jar download GRCm38.75 -verbose
+  java -jar $SOFTWARE/snpEff.jar download GRCm38.86 -verbose
   echo "Installing hg19 database"
   java -jar $SOFTWARE/snpEff.jar download hg19 -verbose
+  echo "Installing hg19 database"
+  java -jar $SOFTWARE/snpEff.jar download hg38 -verbose
+  echo "Installing hg19 database"
+  java -jar $SOFTWARE/snpEff.jar download mm10 -verbose
 
   # Install software
   mv -i $SOFTWARE $INSTALL_DIR/$SOFTWARE_DIR

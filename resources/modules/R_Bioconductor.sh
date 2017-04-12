@@ -26,6 +26,7 @@ This script installs R, installs the corresponding module and other dependencies
 
 OPTIONS:
    -v      Force a specifc R version different than latest, e.g. 3.1.1. Note that the Bioconductor version installed will always be the latest one for this R version.
+   -b      Force a specific Bioconductor version to be written in the installation path *** Caution : this will not force the download of a specific Bioconductor version, this is only use to build the installation paths of the software and the module !!! use with caution and make sure the version specified here is consistent with the one that will actually be installe during installation i.e. the specific Bioconductor version that is linked to the specified verson of R !!!!!!
    -r      Disable package update mode. If this flag is present, or if the R executable is not found or if the module file is not found, R base will be downloaded, compiled, installed, and all packages will be re-installed. 
    -p	   Name of an environnment variable which defines a prefix path to -m and -i. E.g. MUGQIC_INSTALL_HOME
    -m      The root folder for the module files, defaults to \$MUGQIC_INSTALL_HOME_DEV/modulefiles/mugqic_dev. 
@@ -45,7 +46,7 @@ NOTES:
 EOF
 }
 
-while getopts “v:p:m:i:rh” OPTION
+while getopts “v:b:p:m:i:rh” OPTION
 do
      case $OPTION in
          h)
@@ -54,13 +55,16 @@ do
              ;;
          v)
              R_VERSION=$OPTARG
+             ;;
+         b)
+             BIOCVERSION=$OPTARG
              ;; 
-		 p)
-		     INSTALL_PREFIX_ENV_VARNAME=$OPTARG
-		     ;;
-	     m)
-	         MODULEFILE_DIR=$OPTARG
-	         ;;
+	 p)
+	     INSTALL_PREFIX_ENV_VARNAME=$OPTARG
+	     ;;
+	 m)
+	     MODULEFILE_DIR=$OPTARG
+	    ;;
          i)
              INSTALL_DIR=$OPTARG
              ;;
@@ -90,6 +94,9 @@ then
 	BIOCVERSION=`wget -qO- https://bioconductor.org/packages/release/bioc/ | grep 'Bioconductor version: Release ' | grep -oE '[0-9]*\.[0-9]*'`  
 	echo "Latest Bioconductor version appears to be $BIOCVERSION"
 	VERSION="$R_VERSION""_""$BIOCVERSION"
+elif [[ $BIOCVERSION != "" ]]
+then
+        VERSION="$R_VERSION""_""$BIOCVERSION"
 else
 	VERSION=$R_VERSION
 fi
@@ -216,10 +223,10 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
 	## Define the list of packages to standard packages to install.
 	deps = c("affxparser","affy","affyio","affyPLM","akima","annotate","AnnotationDbi"
 	,"AnnotationForge","ape","ash","ballgown","BatchExperiments","BatchJobs","beanplot","Biobase","BiocGenerics"
-	,"BiocInstaller","bioDist","biomaRt","Biostrings","biovizBase","bit"
+	,"BiocInstaller","bioDist","biomaRt","Biostrings","biovizBase","bit", "bit64"
 	,"bitops","boot","brew","BSgenome","caTools","charm","charmData","circlize","class"
 	,"cluster","clusterStab","clusterProfiler","codetools","colorspace","ConsensusClusterPlus","corpcor","crlmm","ctc"
-	,"cummeRbund","datasets","DBI","DESeq","devtools","dendextend","dichromat","digest","dplyr","DNAcopy"
+	,"cummeRbund","datasets", "data.table", "DBI","DESeq","devtools","dendextend","dichromat","digest","dplyr","DNAcopy"
 	,"edgeR","ellipse","evaluate","fastcluster","ff","fields","FDb.InfiniumMethylation.hg19"
 	,"foreach","foreign","gcrma","gdata","genefilter","GenomicFeatures"
 	,"GenomicRanges","genoset","GEOquery","ggplot2","ggvis","googleVis","goseq"
@@ -233,8 +240,8 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
 	,"nnet","nondetects","nor1mix","Nozzle.R1","oligo","oligoClasses","outliers"
 	,"pd.charm.hg18.example","pheatmap","plotrix","plyr","plyr","preprocessCore"
 	,"proto","quantreg","R2HTML","RBGL","RColorBrewer","Rcpp","RcppEigen","RCurl","rhdf5"
-	,"ReportingTools","reshape","reshape2","rgl","RJSONIO","R.methodsS3","rmarkdown","roxygen2"
-	,"rpart","Rsamtools","RSQLite","rtracklayer","scales","sendmailR","shiny","ShortRead","siggenes","sleuth","snow"
+	,"ReportingTools","reshape","reshape2","rgl","RJSONIO", "Rmisc", "R.methodsS3","rmarkdown","roxygen2"
+	,"rpart","Rsamtools","RSQLite","rtracklayer", "Rtsne", "scales","sendmailR","shiny","ShortRead","siggenes","sleuth","snow"
 	,"SNPchip","SortableHTMLTables","spam","SparseM","spatial","SQN"
 	,"statmod","stringr","survival","sva","testthat","tidyr"
 	,"TxDb.Hsapiens.UCSC.hg19.knownGene","vioplot","vsn"

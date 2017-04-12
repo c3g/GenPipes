@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=star
-VERSION=2.5.2b
+VERSION=2.5.0c
 ARCHIVE=$VERSION.tar.gz # for 2.5.0b and newer
 #ARCHIVE=${SOFTWARE^^}_$VERSION.tar.gz # for 2.5.0a and older 
 ARCHIVE_URL=https://github.com/alexdobin/STAR/archive/$ARCHIVE
@@ -18,13 +18,12 @@ build() {
   
   # Remove "STAR-" prefix from top directory name
 #  mv ${SOFTWARE^^}-$SOFTWARE_DIR $SOFTWARE_DIR # for 2.5.0a and older
-  mv ${SOFTWARE^^}-$VERSION $SOFTWARE_DIR
-  cd $SOFTWARE_DIR/source
-  make -j8
+  cd ${SOFTWARE^^}-$VERSION/source
+  make STAR STARlong
 
   # Install software
   cd $INSTALL_DOWNLOAD
-  mv -i $SOFTWARE_DIR $INSTALL_DIR/
+  mv -i ${SOFTWARE^^}-$VERSION $INSTALL_DIR/$SOFTWARE_DIR
 }
 
 module_file() {

@@ -1,32 +1,22 @@
 #!/bin/bash
-
-################################################################################
-# This is a module install script template which should be copied and used for
-# consistency between module paths, permissions, etc.
-# Only lines marked as "## TO BE ADDED/MODIFIED" should be, indeed, modified.
-# You should probably also delete this commented-out header and the ## comments
-################################################################################
-
-
-#
-# Software_name snap.
-#
+# Exit immediately on error
+set -eu -o pipefail
 
 SOFTWARE=snap
-VERSION=2013-11-29
+#VERSION=2013-11-29
+VERSION=1.0beta.18
 ARCHIVE=$SOFTWARE-$VERSION.tar.gz
-ARCHIVE_URL=http://korflab.ucdavis.edu/Software/$ARCHIVE
+ARCHIVE_URL=https://github.com/amplab/$SOFTWARE/archive/v${VERSION}.tar.gz
+#ARCHIVE_URL=http://korflab.ucdavis.edu/Software/$ARCHIVE
 SOFTWARE_DIR=$SOFTWARE-$VERSION
 
 build() {
   cd $INSTALL_DOWNLOAD
   tar zxvf $ARCHIVE
 
-  # the extraction creates a folder named $SOFTWARE
-  # so let's rename it to $SOFTWARE_DIR
-  mv $SOFTWARE $SOFTWARE_DIR
   cd $SOFTWARE_DIR
   make
+  ln -s snap-aligner snap
 
   # Install software
   cd $INSTALL_DOWNLOAD
@@ -42,7 +32,7 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"  
                       
 set             root            $INSTALL_DIR/$SOFTWARE_DIR
-repend-path     PATH            \$root/bin
+prepend-path    PATH            \$root
 "
 }
 
