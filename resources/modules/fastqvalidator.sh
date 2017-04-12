@@ -2,19 +2,24 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=longranger
-VERSION=2.1.3
-ARCHIVE=$SOFTWARE-$VERSION.tar.gz
-# longranger archive has to be manually downloaded from https://support.10xgenomics.com/genome-exome/software/downloads/latest
-# and then stored in $MUGQIC_INSTALL_HOME/archive/ or/and $MUGQIC_INSTALL_HOME_DEV/archive/
-ARCHIVE_URL=
-SOFTWARE_DIR=$SOFTWARE-$VERSION
+SOFTWARE=FastQValidator
+VERSION=0.1.1a
+ARCHIVE=${SOFTWARE}-$VERSION.tar.gz 
+ARCHIVE_URL=https://github.com/statgen/${SOFTWARE,}/archive/v$VERSION.tar.gz
+SOFTWARE_DIR=${SOFTWARE,}-$VERSION
 
+# Specific commands to extract and build the software
+# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
+# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
   tar zxvf $ARCHIVE
 
-  # Move software
+  cd $SOFTWARE_DIR
+  make cloneLib
+  make
+
+  # Install software
   cd $INSTALL_DOWNLOAD
   mv -i $SOFTWARE_DIR $INSTALL_DIR/
 }
@@ -28,7 +33,7 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-prepend-path    PATH                \$root
+prepend-path    PATH                \$root/bin
 "
 }
 

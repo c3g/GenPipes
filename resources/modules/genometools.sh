@@ -1,26 +1,21 @@
+http://genometools.org/pub/genometools-1.5.9.tar.gz
 #!/bin/bash
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=snap
-#VERSION=2013-11-29
-VERSION=1.0beta.18
-ARCHIVE=$SOFTWARE-$VERSION.tar.gz
-ARCHIVE_URL=https://github.com/amplab/$SOFTWARE/archive/v${VERSION}.tar.gz
-#ARCHIVE_URL=http://korflab.ucdavis.edu/Software/$ARCHIVE
-SOFTWARE_DIR=$SOFTWARE-$VERSION
+SOFTWARE=GenomeTools
+VERSION=1.5.9
+ARCHIVE=${SOFTWARE,,}-${VERSION}.tar.gz
+ARCHIVE_URL=https://github.com/${SOFTWARE,,}/${SOFTWARE,,}/archive/v${VERSION}.tar.gz
+SOFTWARE_DIR=${SOFTWARE,,}-$VERSION
 
 build() {
   cd $INSTALL_DOWNLOAD
   tar zxvf $ARCHIVE
 
   cd $SOFTWARE_DIR
-  make
-  ln -s snap-aligner snap
-
-  # Install software
-  cd $INSTALL_DOWNLOAD
-  mv -i $SOFTWARE_DIR $INSTALL_DIR/
+  make -j4
+  make -j4 install prefix=$INSTALL_DIR/$SOFTWARE_DIR
 }
 
 module_file() {
@@ -32,7 +27,7 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"  
                       
 set             root            $INSTALL_DIR/$SOFTWARE_DIR
-prepend-path    PATH            \$root
+prepend-path    PATH            \$root/bin
 "
 }
 

@@ -2,19 +2,22 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=longranger
-VERSION=2.1.3
-ARCHIVE=$SOFTWARE-$VERSION.tar.gz
-# longranger archive has to be manually downloaded from https://support.10xgenomics.com/genome-exome/software/downloads/latest
-# and then stored in $MUGQIC_INSTALL_HOME/archive/ or/and $MUGQIC_INSTALL_HOME_DEV/archive/
-ARCHIVE_URL=
-SOFTWARE_DIR=$SOFTWARE-$VERSION
+SOFTWARE=velvet
+VERSION=1.2.10
+ARCHIVE=${SOFTWARE}-$VERSION.tgz
+ARCHIVE_URL=http://www.ebi.ac.uk/~zerbino/velvet/${SOFTWARE}_${VERSION}.tgz
+SOFTWARE_DIR=${SOFTWARE}_$VERSION
 
+# Specific commands to extract and build the software
+# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
+# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
   tar zxvf $ARCHIVE
 
-  # Move software
+  cd $SOFTWARE_DIR
+  make
+
   cd $INSTALL_DOWNLOAD
   mv -i $SOFTWARE_DIR $INSTALL_DIR/
 }
@@ -35,3 +38,4 @@ prepend-path    PATH                \$root
 # Call generic module install script once all variables and functions have been set
 MODULE_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source $MODULE_INSTALL_SCRIPT_DIR/install_module.sh $@
+

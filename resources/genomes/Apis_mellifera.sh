@@ -52,4 +52,3 @@ install_genome "$SPECIES" "$COMMON_NAME" "$ASSEMBLY" "$ASSEMBLY_SYNONYMS" "$SOUR
 
 ################################################################################
 # Write below all commands to install additional data files specific to this genome assembly
-

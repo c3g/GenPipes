@@ -2,12 +2,11 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=star
-VERSION=2.5.0c
-ARCHIVE=$VERSION.tar.gz # for 2.5.0b and newer
-#ARCHIVE=${SOFTWARE^^}_$VERSION.tar.gz # for 2.5.0a and older 
-ARCHIVE_URL=https://github.com/alexdobin/STAR/archive/$ARCHIVE
-SOFTWARE_DIR=${SOFTWARE^^}_$VERSION
+SOFTWARE=mafft
+VERSION=7.310
+ARCHIVE=${SOFTWARE}-$VERSION.tar.gz
+ARCHIVE_URL=http://mafft.cbrc.jp/alignment/software/${SOFTWARE}-${VERSION}-with-extensions-src.tgz
+SOFTWARE_DIR=${SOFTWARE}-$VERSION
 
 # Specific commands to extract and build the software
 # $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
@@ -15,15 +14,19 @@ SOFTWARE_DIR=${SOFTWARE^^}_$VERSION
 build() {
   cd $INSTALL_DOWNLOAD
   tar zxvf $ARCHIVE
-  
-  # Remove "STAR-" prefix from top directory name
-#  mv ${SOFTWARE^^}-$SOFTWARE_DIR $SOFTWARE_DIR # for 2.5.0a and older
-  cd ${SOFTWARE^^}-$VERSION/source
-  make STAR STARlong
+  mv ${SOFTWARE}-${VERSION}-with-extensions $SOFTWARE_DIR
 
-  # Install software
-  cd $INSTALL_DOWNLOAD
-  mv -i ${SOFTWARE^^}-$VERSION $INSTALL_DIR/$SOFTWARE_DIR
+  cd $SOFTWARE_DIR
+  OLD_PREFIX="PREFIX = \/usr\/local"
+  NEW_PREFIX="PREFIX = $INSTALL_DIR\/$SOFTWARE_DIR"
+  cd core
+  sed -i "s|$OLD_PREFIX|$NEW_PREFIX|" Makefile
+  make
+  make install
+  cd ../extensions
+  sed -i "s|$OLD_PREFIX|$NEW_PREFIX|" Makefile  
+  make
+  make install
 }
 
 module_file() {
@@ -35,10 +38,11 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-prepend-path    PATH                \$root/source
+prepend-path    PATH                \$root/bin
 "
 }
 
 # Call generic module install script once all variables and functions have been set
 MODULE_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source $MODULE_INSTALL_SCRIPT_DIR/install_module.sh $@
+

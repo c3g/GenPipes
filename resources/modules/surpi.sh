@@ -2,12 +2,11 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=star
-VERSION=2.5.0c
-ARCHIVE=$VERSION.tar.gz # for 2.5.0b and newer
-#ARCHIVE=${SOFTWARE^^}_$VERSION.tar.gz # for 2.5.0a and older 
-ARCHIVE_URL=https://github.com/alexdobin/STAR/archive/$ARCHIVE
-SOFTWARE_DIR=${SOFTWARE^^}_$VERSION
+SOFTWARE=SURPI
+VERSION=1.0.18
+ARCHIVE=${SOFTWARE,,}-$VERSION.tar.gz
+ARCHIVE_URL=https://github.com/chiulab/${SOFTWARE,,}/archive/v${VERSION}.tar.gz
+SOFTWARE_DIR=${SOFTWARE,,}-$VERSION
 
 # Specific commands to extract and build the software
 # $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
@@ -16,14 +15,22 @@ build() {
   cd $INSTALL_DOWNLOAD
   tar zxvf $ARCHIVE
   
-  # Remove "STAR-" prefix from top directory name
-#  mv ${SOFTWARE^^}-$SOFTWARE_DIR $SOFTWARE_DIR # for 2.5.0a and older
-  cd ${SOFTWARE^^}-$VERSION/source
-  make STAR STARlong
-
   # Install software
   cd $INSTALL_DOWNLOAD
-  mv -i ${SOFTWARE^^}-$VERSION $INSTALL_DIR/$SOFTWARE_DIR
+  mv -i $SOFTWARE_DIR $INSTALL_DIR/
+
+  cd $INSTALL_DIR/$SOFTWARE_DIR
+  sed -i "s|#!/usr/bin/perl -w|#!/usr/bin/env perl\nuse warnings;|" *.pl
+  sed -i "s|#!/usr/bin/perl|#!/usr/bin/env perl|" *.pl
+  sed -i "s|#!/usr/bin/python|#!/usr/bin/env python|" *.py
+
+  wget https://raw.github.com/attractivechaos/klib/master/khash.h
+  wget http://chiulab.ucsf.edu/SURPI/software/fqextract.c
+  gcc fqextract.c -o fqextract
+  chmod +x fqextract
+
+  gcc source/dropcache.c -o dropcache
+  chmod u+s dropcache
 }
 
 module_file() {
@@ -35,10 +42,11 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-prepend-path    PATH                \$root/source
+prepend-path    PATH                \$root
 "
 }
 
 # Call generic module install script once all variables and functions have been set
 MODULE_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source $MODULE_INSTALL_SCRIPT_DIR/install_module.sh $@
+

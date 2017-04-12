@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=GenomeAnalysisTK
-VERSION=3.7
+VERSION=3.6
 ARCHIVE=$SOFTWARE-$VERSION.tar.bz2
 echo "Prior to install the gatk module, you must download the archive $ARCHIVE manually, if not done already, from http://www.broadinstitute.org/gatk/download since it requires a license agreement.
 Once downloaded, copy it in \$MUGQIC_INSTALL_HOME_DEV/archive/ or \$MUGQIC_INSTALL_HOME/archive/"
@@ -15,7 +15,7 @@ ARCHIVE_URL=https://www.broadinstitute.org/gatk/download/auth?package=GATK
 # $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   mkdir -p $INSTALL_DIR/$SOFTWARE_DIR
-  tar -xvf $INSTALL_DOWNLOAD/$ARCHIVE --directory=$INSTALL_DIR/$SOFTWARE_DIR
+  tar -jxvf $INSTALL_DOWNLOAD/$ARCHIVE --directory=$INSTALL_DIR/$SOFTWARE_DIR
 }
 
 module_file() {

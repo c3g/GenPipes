@@ -1,13 +1,13 @@
+https://github.com/statgen/libStatGen/archive/v1.0.13.tar.gz
 #!/bin/bash
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=star
-VERSION=2.5.0c
-ARCHIVE=$VERSION.tar.gz # for 2.5.0b and newer
-#ARCHIVE=${SOFTWARE^^}_$VERSION.tar.gz # for 2.5.0a and older 
-ARCHIVE_URL=https://github.com/alexdobin/STAR/archive/$ARCHIVE
-SOFTWARE_DIR=${SOFTWARE^^}_$VERSION
+SOFTWARE=libStatGen
+VERSION=1.0.13
+ARCHIVE=${SOFTWARE}-$VERSION.tar.gz 
+ARCHIVE_URL=https://github.com/statgen/${SOFTWARE}/archive/v$VERSION.tar.gz
+SOFTWARE_DIR=${SOFTWARE}-$VERSION
 
 # Specific commands to extract and build the software
 # $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
@@ -15,15 +15,12 @@ SOFTWARE_DIR=${SOFTWARE^^}_$VERSION
 build() {
   cd $INSTALL_DOWNLOAD
   tar zxvf $ARCHIVE
-  
-  # Remove "STAR-" prefix from top directory name
-#  mv ${SOFTWARE^^}-$SOFTWARE_DIR $SOFTWARE_DIR # for 2.5.0a and older
-  cd ${SOFTWARE^^}-$VERSION/source
-  make STAR STARlong
+  cd $SOFTWARE_DIR
+  make
 
   # Install software
   cd $INSTALL_DOWNLOAD
-  mv -i ${SOFTWARE^^}-$VERSION $INSTALL_DIR/$SOFTWARE_DIR
+  mv -i $SOFTWARE_DIR $INSTALL_DIR/
 }
 
 module_file() {
@@ -35,7 +32,9 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-prepend-path    PATH                \$root/source
+prepend-path    CPP_INCLUDE_PATH    \$root/include
+prepend-path    LD_LIBRARY_PATH     \$root/
+prepend-path    LIBRARY_PATH        \$root/
 "
 }
 

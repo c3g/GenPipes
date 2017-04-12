@@ -2,12 +2,10 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=bowtie
-VERSION=1.2
-#ARCHIVE=$SOFTWARE-$VERSION.tar.gz
-ARCHIVE=$SOFTWARE-$VERSION.zip
-#ARCHIVE_URL=https://github.com/BenLangmead/${SOFTWARE}/archive/v${VERSION}.tar.gz
-ARCHIVE_URL=https://github.com/BenLangmead/${SOFTWARE}/releases/download/v${VERSION}.0/${SOFTWARE}-${VERSION}-src.zip
+SOFTWARE=bio-playground
+VERSION=master
+ARCHIVE=$SOFTWARE-${VERSION}.zip
+ARCHIVE_URL=https://github.com/brentp/$SOFTWARE/archive/$VERSION.zip
 SOFTWARE_DIR=$SOFTWARE-$VERSION
 
 # Specific commands to extract and build the software
@@ -15,15 +13,14 @@ SOFTWARE_DIR=$SOFTWARE-$VERSION
 # $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
-#  tar xzvf $ARCHIVE
   unzip $ARCHIVE
 
-  cd $SOFTWARE_DIR
-  make NO_TBB=1 
+  cd $SOFTWARE_DIR/reads-utils
+  g++ -O2 -o fastq fastq.cpp
 
-  # Install software
   cd $INSTALL_DOWNLOAD
-  mv -i $SOFTWARE_DIR $INSTALL_DIR/
+  mv $SOFTWARE_DIR $INSTALL_DIR/
+
 }
 
 module_file() {
@@ -34,11 +31,12 @@ proc ModulesHelp { } {
 }
 module-whatis \"$SOFTWARE\"
 
-set             root                $INSTALL_DIR/$SOFTWARE_DIR
-prepend-path    PATH                \$root
+set             root        $INSTALL_DIR/$SOFTWARE_DIR
+prepend-path    PATH        \$root/reads-utils
 "
 }
 
 # Call generic module install script once all variables and functions have been set
 MODULE_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source $MODULE_INSTALL_SCRIPT_DIR/install_module.sh $@
+
