@@ -85,6 +85,8 @@ XML::Simple \
 XML::Twig \
 XML::Writer \
 YAML \
+DB_File \
+Set::IntervalTree \
 ; do
 $PERL_HOME/bin/perl -MCPAN -e"CPAN::Shell->force(qw(install $MODULE))"
 # Test if module is properly installed

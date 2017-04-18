@@ -26,26 +26,26 @@ from core.config import *
 from core.job import *
 import picard
 
-def build_bam_index(input, output):
+def build_bam_index(input, output, ini_section='picard_build_bam_index'):
 
-    if config.param('build_bam_index', 'module_picard').split("/")[2] < "2":
+    if config.param(ini_section, 'module_picard').split("/")[2] < "2":
         return picard.build_bam_index(input, output)
     else:
         return Job(
             [input],
             [output],
             [
-                ['build_bam_index', 'module_java'],
-                ['build_bam_index', 'module_picard']
+                [ini_section, 'module_java'],
+                [ini_section, 'module_picard']
             ],
             command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar BuildBamIndex \\
  VALIDATION_STRINGENCY=SILENT \\
  INPUT={input} \\
  OUTPUT={output} """.format(
-            tmp_dir=config.param('build_bam_index', 'tmp_dir'),
-            java_other_options=config.param('build_bam_index', 'java_other_options'),
-            ram=config.param('build_bam_index', 'ram'),
+            tmp_dir=config.param(ini_section, 'tmp_dir'),
+            java_other_options=config.param(ini_section, 'java_other_options'),
+            ram=config.param(ini_section, 'ram'),
             input=input,
             output=output,
             )
@@ -91,7 +91,7 @@ def collect_multiple_metrics(input, output, reference_sequence=None, library_typ
         outputs = [
          output + ".quality_by_cycle.pdf",
          output + ".alignment_summary_metrics",
-         output + ".insert_size_Histogram.pdf",
+         output + ".insert_size_histogram.pdf",
          output + ".insert_size_metrics",
          output + ".quality_by_cycle_metrics",
          output + ".quality_distribution_metrics",
@@ -114,8 +114,7 @@ def collect_multiple_metrics(input, output, reference_sequence=None, library_typ
             outputs,
             [
                 ['picard_collect_multiple_metrics', 'module_java'],
-                ['picard_collect_multiple_metrics', 'module_picard'],
-                ['picard_collect_multiple_metrics', 'module_R']
+                ['picard_collect_multiple_metrics', 'module_picard']
             ],
             command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar CollectMultipleMetrics \\
@@ -380,5 +379,45 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             min_length=config.param('picard_collect_rna_metrics', 'minimum_length',type='int'),
             reference=reference_sequence if reference_sequence else config.param('picard_collect_rna_metrics', 'genome_fasta'),
             max_records_in_ram=config.param('picard_collect_rna_metrics', 'max_records_in_ram', type='int')
+            )
+        )
+
+def add_read_groups(input, output, readgroup, library, lane, sample, sort_order="coordinate"):
+
+    if config.param('picard_add_read_groups', 'module_picard').split("/")[2] < "2":
+        return picard.add_read_groups(input, output, readgroup, library, lane, sample, sort_order)
+    else:
+        return Job(
+            [input],
+            # collect specific RNA metrics (exon rate, strand specificity, etc...)
+            [output],
+            [
+                ['picard_add_read_groups', 'module_java'],
+                ['picard_add_read_groups', 'module_picard']
+            ],
+            command="""\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar AddOrReplaceReadGroups \\
+ CREATE_INDEX=true \\
+ INPUT={input} \\
+ OUTPUT={output} \\
+ SORT_ORDER=\"{sort_order}\" \\
+ RGID=\"{readgroup}\" \\
+ RGLB=\"{library}\" \\
+ RGPL=\"{platform}\" \\
+ RGPU=\"{lane}\" \\
+ RGSM=\"{sample}\"  \\
+ RGCN=\"{sequencing_center}\"""".format(
+            tmp_dir=config.param('picard_add_read_groups', 'tmp_dir'),
+            java_other_options=config.param('picard_add_read_groups', 'java_other_options'),
+            ram=config.param('picard_add_read_groups', 'ram'),
+            input=input,
+            output=output,
+            sort_order=sort_order,
+            readgroup=readgroup,
+            library=library,
+            platform=config.param('picard_add_read_groups', 'platform'),
+            lane=lane,
+            sample=sample,
+            sequencing_center=config.param('picard_add_read_groups', 'sequencing_center'),
             )
         )

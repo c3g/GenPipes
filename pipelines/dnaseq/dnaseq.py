@@ -751,7 +751,6 @@ cp \\
 
         return jobs
 
-
     def merge_and_call_combined_gvcf(self):
         """
         Merges the combined gvcfs and also generates a general vcf containing genotypes.
@@ -813,7 +812,6 @@ cp \\
             gatk.variant_recalibrator( [os.path.join(output_directory, "allSamples.hc.vcf.bgz")], recal_indels_other_options, variant_recal_indels_prefix + ".recal", variant_recal_indels_prefix + ".tranches", variant_recal_indels_prefix + ".R")
         ], name="variant_recalibrator.tranch.allSamples"))
 
-
         #aply the recalibration
         apply_snps_other_options = config.param('variant_recalibrator', 'apply_other_options_snps')
         apply_indels_other_options = config.param('variant_recalibrator', 'apply_other_options_indels')
@@ -838,7 +836,6 @@ cp \\
         for readset in self.readsets:
             if readset.run_type == "PAIRED_END" :
                 library="PAIRED_END"
-
 
         trim_metrics_file = os.path.join("metrics", "trimSampleTable.tsv")
         metrics_file = os.path.join("metrics", "SampleMetrics.stats")
@@ -1012,8 +1009,6 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
 
         return jobs
 
-
-
     def filter_nstretches(self, input_vcf = "variants/allSamples.merged.flt.vcf", output_vcf = "variants/allSamples.merged.flt.NFiltered.vcf", job_name = "filter_nstretches" ):
         """
         The final .vcf files are filtered for long 'N' INDELs which are sometimes introduced and cause excessive
@@ -1045,8 +1040,6 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
 
         return job
 
-
-
     def flag_mappability(self, input_vcf = "variants/allSamples.merged.flt.NFiltered.vcf", output_vcf = "variants/allSamples.merged.flt.mil.vcf" ,job_name = "flag_mappability" ):
         """
         Mappability annotation. An in-house database identifies regions in which reads are confidently mapped
@@ -1057,8 +1050,6 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         job.name = job_name
         return [job]
 
-
-
     def haplotype_caller_flag_mappability(self) :
         """
         See general flag_mappability !  Applied to haplotype caller vcf
@@ -1067,8 +1058,6 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         job = self.flag_mappability("variants/allSamples.hc.vqsr.NFiltered.vcf", "variants/allSamples.hc.vqsr.mil.vcf", "haplotype_caller_flag_mappability" )
 
         return job
-
-
 
     def mpileup_flag_mappability(self) :
         """
@@ -1079,8 +1068,6 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
 
         return job
 
-
-
     def snp_id_annotation(self, input_vcf = "variants/allSamples.merged.flt.mil.vcf", output_vcf = "variants/allSamples.merged.flt.mil.snpId.vcf" , job_name = "snp_id_annotation"):
         """
         dbSNP annotation. The .vcf files are annotated for dbSNP using the software SnpSift (from the [SnpEff suite](http://snpeff.sourceforge.net/)).
@@ -1089,7 +1076,6 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         job = snpeff.snpsift_annotate(input_vcf, output_vcf)
         job.name = job_name
         return [job]
-
 
     def haplotype_caller_snp_id_annotation(self):
         """
@@ -1100,7 +1086,6 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
 
         return job
 
-
     def mpileup_snp_id_annotation(self):
         """
         See general snp_id_annotation !  Applied to mpileyp vcf
@@ -1109,8 +1094,6 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         job = self.snp_id_annotation("variants/allSamples.merged.flt.mil.vcf", "variants/allSamples.merged.flt.mil.snpId.vcf" , "mpileup_snp_id_annotation")
 
         return job
-
-
 
     def snp_effect(self, input_vcf = "variants/allSamples.merged.flt.mil.snpId.vcf", snpeff_file = "variants/allSamples.merged.flt.mil.snpId.snpeff.vcf", job_name = "snp_effect"):
         """
@@ -1143,8 +1126,6 @@ cp \\
 
         return jobs
 
-
-
     def haplotype_caller_snp_effect(self):
         """
         See general snp_effect !  Applied to haplotype caller vcf
@@ -1154,17 +1135,14 @@ cp \\
 
         return jobs
 
-
     def mpileup_snp_effect(self):
         """
         See general snp_effect !  Applied to mpileup vcf
         """
-#        jobs = self.snp_effect("variants/allSamples.merged.flt.mil.snpId.vcf", "variants/allSamples.merged.flt.mil.snpId.snpeff.vcf",  "mpileup_snp_effect", options=config.param('compute_cancer_effects', 'options'))
+        
         jobs = self.snp_effect("variants/allSamples.merged.flt.mil.snpId.vcf", "variants/allSamples.merged.flt.mil.snpId.snpeff.vcf",  "mpileup_snp_effect")
             
         return jobs
-
-
 
     def dbnsfp_annotation(self, input_vcf = "variants/allSamples.merged.flt.mil.snpId.snpeff.vcf", output_vcf = "variants/allSamples.merged.flt.mil.snpId.snpeff.dbnsfp.vcf", job_name = "dbnsfp_annotation"):
         """
@@ -1188,9 +1166,7 @@ cp \\
 
         job = self.dbnsfp_annotation("variants/allSamples.hc.vqsr.mil.snpId.snpeff.vcf",  "variants/allSamples.hc.vqsr.mil.snpId.snpeff.dbnsfp.vcf", "haplotype_caller_dbnsfp_annotation")
 
-
         return job
-
 
     def mpileup_dbnsfp_annotation(self):
         """
@@ -1199,10 +1175,7 @@ cp \\
 
         job = self.dbnsfp_annotation("variants/allSamples.merged.flt.mil.snpId.snpeff.vcf", "variants/allSamples.merged.flt.mil.snpId.snpeff.dbnsfp.vcf", "mpileup_dbnsfp_annotation")
 
-
         return job
-
-
 
     def metrics_vcf_stats(self, variants_file_prefix = "variants/allSamples.merged.flt.mil.snpId" , job_name = "metrics_change_rate"):
         """
@@ -1217,7 +1190,6 @@ cp \\
         job.name = job_name
         return [job]
 
-
     def haplotype_caller_metrics_vcf_stats(self):
         """
         See general metrics_vcf_stats !  Applied to haplotype caller vcf
@@ -1225,9 +1197,7 @@ cp \\
 
         job = self.metrics_vcf_stats("variants/allSamples.hc.vqsr.mil.snpId",  "haplotype_caller_metrics_change_rate")
 
-
         return job
-
 
     def mpileup_metrics_vcf_stats(self):
         """
@@ -1236,10 +1206,7 @@ cp \\
 
         job = self.metrics_vcf_stats("variants/allSamples.merged.flt.mil.snpId" , "mpileup_metrics_change_rate")
 
-
         return job
-
-
 
     def metrics_snv_graph_metrics(self, variants_file_prefix = "variants/allSamples.merged.flt.mil.snpId", snv_metrics_prefix = "metrics/allSamples.SNV",  job_name = "metrics_snv_graph"):
         """
@@ -1251,7 +1218,6 @@ cp \\
         job = metrics.snv_graph_metrics(variants_file_prefix + ".snpeff.vcf.statsFile.txt", snv_metrics_prefix)
         job.output_files = snv_metrics_files
         job.name = job_name
-
 
         return [concat_jobs([
             job,
@@ -1304,7 +1270,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
         return jobs
 
-
     def mpileup_metrics_snv_graph_metrics(self):
         """
         See general metrics_vcf_stats !  Applied to mpileup vcf
@@ -1313,7 +1278,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         jobs = self.metrics_snv_graph_metrics("variants/allSamples.merged.flt.mil.snpId", "metrics/allSamples.mpileup.SNV", "mpileup_metrics_snv_graph")
 
         return jobs
-
 
     @property
     def steps(self):
@@ -1357,7 +1321,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             self.mpileup_dbnsfp_annotation,
             self.mpileup_metrics_vcf_stats,
             self.mpileup_metrics_snv_graph_metrics
-
         ]
 
 if __name__ == '__main__':
