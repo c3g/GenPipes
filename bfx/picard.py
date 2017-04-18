@@ -397,6 +397,7 @@ def add_read_groups(input, output, readgroup, library, lane, sample, sort_order=
             ],
             command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/AddOrReplaceReadGroups.jar \\
+ CREATE_INDEX=true \\
  INPUT={input} \\
  OUTPUT={output} \\
  SORT_ORDER=\"{sort_order}\" \\
