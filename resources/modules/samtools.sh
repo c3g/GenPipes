@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=samtools
-VERSION=1.3.1
+VERSION=1.4
 #VERSION=0.1.19
 if [[ ${VERSION:0:1} == 1 ]]; then
   ARCHIVE=$SOFTWARE-$VERSION.tar.bz2
@@ -29,7 +29,7 @@ build() {
 
   # Install software
   if [[ ${VERSION:0:1} == 1 ]]; then
-    ./configure --enable-plugins --enable-libcurl --without-curses prefix=$INSTALL_DIR/${SOFTWARE_DIR}
+    ./configure --enable-plugins --enable-libcurl prefix=$INSTALL_DIR/${SOFTWARE_DIR}
     make all all-htslib
     make install install-htslib
   else

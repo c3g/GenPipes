@@ -1,9 +1,10 @@
-t immediately on error
+#!/bin/bash
+# Exit immediately on error
 set -eu -o pipefail
 
 SOFTWARE=python
-VERSION=2.7.12
-SETUPTOOLS_VERSION=18.7.1
+VERSION=2.7.13
+SETUPTOOLS_VERSION=20.9.0
 # Remove the version last number
 LIBVERSION=${VERSION%.[0-9]*}
 # Uppercase first P in python
@@ -29,7 +30,7 @@ build() {
   # Install setuptools => easy_install
   cd $INSTALL_DOWNLOAD
   SETUPTOOLS_ARCHIVE=setuptools-${SETUPTOOLS_VERSION}.tar.gz
-  download_archive https://pypi.python.org/packages/source/s/setuptools $SETUPTOOLS_ARCHIVE 
+  download_archive https://pypi.python.org/packages/source/s/setuptools $SETUPTOOLS_ARCHIVE
   tar zxvf $SETUPTOOLS_ARCHIVE
   cd ${SETUPTOOLS_ARCHIVE/.tar.gz/}
   $INSTALL_DIR/$SOFTWARE_DIR/bin/python setup.py build
