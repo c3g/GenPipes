@@ -826,7 +826,6 @@ cp \\
 
         return jobs
 
-
     def dna_sample_metrics(self):
         """
         Merge metrics. Read metrics per sample are merged at this step.
@@ -1139,9 +1138,9 @@ cp \\
         """
         See general snp_effect !  Applied to mpileup vcf
         """
-        
+
         jobs = self.snp_effect("variants/allSamples.merged.flt.mil.snpId.vcf", "variants/allSamples.merged.flt.mil.snpId.snpeff.vcf",  "mpileup_snp_effect")
-            
+
         return jobs
 
     def dbnsfp_annotation(self, input_vcf = "variants/allSamples.merged.flt.mil.snpId.snpeff.vcf", output_vcf = "variants/allSamples.merged.flt.mil.snpId.snpeff.dbnsfp.vcf", job_name = "dbnsfp_annotation"):
@@ -1157,7 +1156,6 @@ cp \\
         job = snpeff.snpsift_dbnsfp(input_vcf, output_vcf)
         job.name = job_name
         return [job]
-
 
     def haplotype_caller_dbnsfp_annotation(self):
         """
@@ -1184,7 +1182,6 @@ cp \\
         counts by genomic region, SNV quality, coverage, InDel lengths, base changes,  transition-transversion rates,
         summary of allele frequencies, codon changes, amino acid changes, changes per chromosome, change rates.
         """
-
 
         job = metrics.vcf_stats(variants_file_prefix + ".vcf", variants_file_prefix + ".snpeff.vcf.part_changeRate.tsv", variants_file_prefix + ".snpeff.vcf.statsFile.txt")
         job.name = job_name

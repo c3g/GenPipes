@@ -418,6 +418,6 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             platform=config.param('picard_add_read_groups', 'platform'),
             lane=lane,
             sample=sample,
-            sequencing_center=config.param('picard_add_read_groups', 'sequencing_center'),
+            sequencing_center=config.param('picard_add_read_groups', 'sequencing_center')
             )
         )
