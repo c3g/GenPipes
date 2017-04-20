@@ -3,10 +3,10 @@
 set -eu -o pipefail
 
 SOFTWARE=seqtk
-VERSION=1.0-r82b
+VERSION=1.0
 ARCHIVE=${SOFTWARE}-$VERSION.tar.gz
-#ARCHIVE_URL=https://github.com/lh3/${SOFTWARE}/archive/v${VERSION}.tar.gz
-ARCHIVE_URL=https://github.com/ndaniel/seqtk/archive/1.0-r82b.tar.gz
+ARCHIVE_URL=https://github.com/lh3/${SOFTWARE}/archive/${VERSION}.tar.gz
+#ARCHIVE_URL=https://github.com/ndaniel/seqtk/archive/1.0-r82b.tar.gz
 SOFTWARE_DIR=${SOFTWARE}-$VERSION
 
 # Specific commands to extract and build the software
