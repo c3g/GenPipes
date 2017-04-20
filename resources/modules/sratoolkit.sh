@@ -2,21 +2,17 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=sambamba
-VERSION=0.6.6
-ARCHIVE=${SOFTWARE}_v${VERSION}_linux.tar.bz2
-ARCHIVE_URL=https://github.com/lomereiter/${SOFTWARE}/releases/download/v${VERSION}/$ARCHIVE
+SOFTWARE=sratoolkit
+VERSION=2.8.2-1
+ARCHIVE=${SOFTWARE}-${VERSION}.tar.gz
+ARCHIVE_URL=http://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/$VERSION/${SOFTWARE}.${VERSION}-centos_linux64.tar.gz
 SOFTWARE_DIR=${SOFTWARE}-${VERSION}
 
 build() {
   cd $INSTALL_DOWNLOAD
-  tar -xjf sambamba_v${VERSION}_linux.tar.bz2
-  mkdir $SOFTWARE_DIR 
-  mv ${SOFTWARE}_v${VERSION} $SOFTWARE_DIR
+  tar -zxvf $ARCHIVE
 
-  mv -i $SOFTWARE_DIR $INSTALL_DIR/$SOFTWARE_DIR
-  cd $INSTALL_DIR/$SOFTWARE_DIR
-  ln -s sambamba* sambamba
+  mv ${SOFTWARE}.${VERSION}-centos_linux64 $INSTALL_DIR/$SOFTWARE_DIR
 }
 
 module_file() {
@@ -28,8 +24,7 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-prepend-path    PATH                \$root ; 
-setenv          SAMBAMBA_HOME       \$root ;
+prepend-path    PATH                \$root/bin 
 "
 }
 

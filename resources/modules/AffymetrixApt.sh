@@ -16,6 +16,7 @@ build() {
   mv apt-* $SOFTWARE_DIR
   
   mv -i $SOFTWARE_DIR $INSTALL_DIR/
+  chmod a+x $INSTALL_DIR/$SOFTWARE_DIR/bin/*
 }
 
 module_file() {

@@ -2,23 +2,28 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=VarScan
-VERSION=2.4.3
-# Replace "." in official version number by "_" in archive version number
-ARCHIVE=${SOFTWARE}.v${VERSION}.jar
-#ARCHIVE_URL=https://github.com/dkoboldt/${SOFTWARE,,}/releases/download/${VERSION}/$ARCHIVE     # for version < 2.4.3
-ARCHIVE_URL=https://github.com/dkoboldt/${SOFTWARE,,}/blob/master/$ARCHIVE                      # for version = 2.4.3
-SOFTWARE_DIR=${SOFTWARE}.v${VERSION}
+SOFTWARE=bamtools
+VERSION=2.4.1
+ARCHIVE=$SOFTWARE-${VERSION}.tar.gz
+ARCHIVE_URL=https://github.com/pezmaster31/$SOFTWARE/archive/v${VERSION}.tar.gz
+SOFTWARE_DIR=$SOFTWARE-$VERSION
 
 # Specific commands to extract and build the software
 # $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
 # $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
+  tar -xzvf $ARCHIVE
 
-  # Install software
-  mkdir -p $INSTALL_DIR/$SOFTWARE_DIR
-  cp -i $ARCHIVE $INSTALL_DIR/$SOFTWARE_DIR/
+  cd $SOFTWARE_DIR
+  mkdir build
+  cd build
+  cmake ..
+  make
+
+  cd $INSTALL_DOWNLOAD
+  mv $SOFTWARE_DIR $INSTALL_DIR/
+
 }
 
 module_file() {
@@ -30,8 +35,10 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-setenv          VARSCAN2_HOME        \$root
-setenv          VARSCAN2_JAR         \$root/${SOFTWARE}.v${VERSION}.jar
+prepend-path    PATH                \$root/bin
+prepend-path    LD_LIBRARY_PATH     \$root/lib
+prepend-path    LIBRARY_PATH        \$root/lib
+prepend-path    CPATH               \$root/include
 "
 }
 
