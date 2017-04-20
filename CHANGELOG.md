@@ -1,6 +1,361 @@
-12 tags, 2862 commits
+14 tags, 3156 commits
 
-HEAD        Mon Feb 8 12:02:54 2016 -0500        0 commits
+HEAD        Mon Feb 27 12:47:44 2017 -0500        0 commits
+
+2.3.0        Mon Feb 27 13:40:01 2017 -0500        82 commits
+
+  Edouard Henrion <edouard.henrion@mcgill.ca>      13 commits
+
+       7717c35 Pre-release - adding the installation scripts for all the new software used by tumor_pair pipeline
+       8eada67 Merge branch 'master' of https://bitbucket.org/mugqic/mugqic_pipelines
+       8e17bca Merge branch 'master' of https://bitbucket.org/mugqic/mugqic_pipelines
+       59cf940 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       026ccb1 BFXDEV-602 - PacBio Assembly pipeline now contains a new optional step (step 10) to circularize the successful/clean assembly contigs with circlator - also comes with some minor unrelated updates
+       06e095f updates brought to many module install scripts, and adding of new modules
+       9d565ba RNASeq - corrected a typo inserted after correting bedtools bug...
+       982a014 RNASeq - corrected a bug bedtools.graph function : samtools_options now handles reverse strand specific parameters, avoiding an empty begGraph for reverse strand
+       72d1a3f updating python & python libraries installation bash scripts
+       6242c97 BUG correction within mpileup function : parameters were shift after introduction of 'ini_section' parameter for tumor_pair prpose
+       1ca38fa DNASeq - bug correction after merging tumor_pair branch to master
+       e6b482b Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       1d8876d FastQC - updated bash install script to match our standards
+
+  ehenrion <edouard.henrion@mcgill.ca>      1 commits
+
+       0e875a5 README.md edited online with Bitbucket
+
+  Mathieu Bourgey <mathieu.bourgey@mail.mcgill.ca>      9 commits
+
+       b5b1d51 tumor_pair - add comments to dict2beds function - BFXDEV-521
+       e0590a4 tumor_pair - add feature to dict2beds function - BFXDEV-521
+       7c0efb4 Merge branch 'tumor_pair' of bitbucket.org:mugqic/mugqic_pipelines into tumor_pair
+       bd7e169 tumor_pair - modify ini file to take into account the new version of scalpel (CVMFS) - BFXDEV-477
+       8e735ac tumor_pair - add space charter before scalpel option - BFXDEV-478
+       33a9347 pull origin Merge branch 'tumor_pair' of bitbucket.org:mugqic/mugqic_pipelines into tumor_pair
+       5ed5783 tumor_pair - add the two pass option to scalpel - BFXDEV-478
+       bf963a3 tumor_pair - corect bugs and typo in bed file integration of scalpel & rewrite to speed up the bed parsing - BFXDEV-476
+       18110f5 tumor_pair - corect bugs and typo in bed file integration of scalpel & rewrite to speed up the bed parsing
+
+  mathieu bourgey <mathieu.bourgey@mail.mcgill.ca>      39 commits
+
+       d6be75a remove .gitignore
+       3821384 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       8e31719 rnaseq - increase abacus ressource for STAR
+       6f5a17b remove conflict with tumor_pair changes
+       07cab4f remove bfx/samtools.py conflict with tumor_pair changes
+       abecc6c remove bfx/picard.py conflict with tumor_pair changes
+       4368b7c merge and remove conflicts
+       2d5b7c5 merge and remove conflicts
+       dfcbf62 tumor_pair- update germline_loh ensemble
+       376ff92 Merge branch 'tumor_pair' of bitbucket.org:mugqic/mugqic_pipelines into tumor_pair
+       07b9e8b add encode  sample+readaset+pipelien to log system
+       f4c9b60 Tumor pair - add comment on the bed system
+       ba47702 Tumor pair - change vardict input output to correct deepndency
+       0e20097 Tumor pair - change varscan input output to correct deepndency
+       4ab037e sequence_dictionary.py - split_by_size - correct bug create a first job with everybody when the nb of split was too high
+       b5a7b33 tumor_pair - add output bam index file when only 1 realignment is produced
+       a5b4491 tumor_pair - remove file name bug in indel realignement mv
+       4429b19 tumor_pair - rebuild gatk indel recalibration input/output scheme in tumor
+       b9030e5 bfx/gatk - indel realigner add target list file as input for dependency
+       440001c tumor_pair - remove duplicated lines in guillimin.ini file (from base.ini)
+       6c1e606 tumor_pair - correct symlink creation
+       b15f118 tumor_pair - remove few issues (paths, dependency, input/output)
+       329a56c tumor_pair - put WGS as default (instead of WES)
+       271ba29 remove issue with uncorrect interval list when no bed is attached to the project
+       517e8c3 adjusting tumor_pair
+       c049fe2 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines into tumor_pair
+       c2c0986 tumor_pair - debug bfx/bcbio_variation.py
+       5c6034d tumor_pair - remove conflicts
+       d2c0015 rtumor_pair - emove conflicts
+       7c4bd8a remove conflict
+       c67b837 Merge branch 'tumor_pair' of bitbucket.org:mugqic/mugqic_pipelines into tumor_pair
+       9cbd222 tumor_pair - correct typo in scapel download adress - BFXDEV-477
+       760faaa Merge branch 'tumor_pair' of bitbucket.org:mugqic/mugqic_pipelines into tumor_pair
+       8d2a243 tumor_pair - add scalpel install script - BFXDEV-477
+       e6beef4 tumor-pair - mv tools.py from highcov branch to tumor_pair - BFXDEV-475
+       1bc346f tumor-pair - adding bedfile spliting process - BFXDEV-476
+       5acad27 tumor_pair - extract tumor_pair code for the high coverage branch - BFXDEV-475
+       6c73c2b tumor-pair - adding bedfile spliting process & start implementation in tumor_pair.py - BFXDEV-476
+       905c1ac tumor_pair - extract tumor_pair code for the high coverage branch
+
+  robert.eveleigh@mcgill.ca <reveleig@abacus1.ferrier.genome.mcgill.ca>      5 commits
+
+       192f4d3 Bug squashes and speed improvements to ensemble processes
+       40df5d9 Merge branch 'tumor_pair' of bitbucket.org:mugqic/mugqic_pipelines into tumor_pair
+       93a2142 Modified to remove analyses of alt contigs + split Varscan2 by chromosome
+       8d3f03f Beta version: module files created and code tested on wes and wgs on abacus and guillimin
+       755b0c0 update to Mutect2, added Vardict, re-added samtools and added ensemble approach
+
+  robert.eveleigh@mcgill.ca <reveleig@abacus2.ferrier.genome.mcgill.ca>      4 commits
+
+       e94352f Fixes to samtools modules calling for pairs
+       9729909 Numerous speed improvements and addition of fast variant calling
+       3f1aceb Additional fixes to resource allocation issues
+       0f04f2a Dealt with comments, added paired indel realignment, varscan2, and seperate somatic and germline call files
+
+  Robert Eveleigh <robert.eveleigh@mcgill.ca>      11 commits
+
+       67b5c53 Debugging samtools pair bcftools
+       3a4996e Fixes to samtools due to dnaseq changes
+       a920ef8 Update README.md
+       2c7ce40 Bug squashes and preformance improvements to ensemble process
+       3349a81 Bug squashing and speed improvements to ensemble process
+       15a7f87 Dependency and other bug fixes. Guillimin ini and install scripts updated
+       a21682a tumor_pair - fixes to tumor_pair README.md
+       1966434 tumor_pair - fixes to README.md and resolving of conflicts
+       c53612c tumor_pair - corrected BQSR for WGS, added README.md, added removable_files
+       dd6df55 tumor_pair - corrected BQSR for WGS, added README.md, added removable_files
+       c708f88 Updates/fixes from guillimin test
+
+2.2.1        Mon Dec 19 10:57:33 2016 -0500        212 commits
+
+  dbujold <david.bujold@mail.mcgill.ca>      1 commits
+
+       cd7c8e7 Added proper error message when running script with too old Python version.
+
+  Edouard Henrion <edouard.henrion@mcgill.ca>      138 commits
+
+       68f0366 GenAP Pipelines - updated tmp_dir variable within all the .base.ini files for a better use of the memory in the compute nodes on abacus
+       c364c3e modules - updated version of VSEARCH (2.3.4) within the module installation script
+       ed99e0e GENAP PIPELINES - updated all the .base.ini files to set tmp_dir to /lb/scratch/ehenrion instead of /lb/scratch/ on abacus
+       d0faf2e RNASeq - added __init__.py
+       a8d1101 PICARD - bug correction in python wrappers (picard.py & picard2.py)
+       7d2e9b2 install_genome.sh - corrected MUGQIC_INSTALL_HOME_DEV link
+       b2ec14e install_genome.sh - set abacus2 variable to manage mammouth execution properly
+       c3549ed install_genome.sh - updated for a better handling of mammouth cases
+       4726932 Homo_sapiens.hg19.sh install script - updated URL to retrieve dbSNP vcf
+       b0dfe82 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       465b913 RNASeq denovo Assembly - updated mugqic_tools version to 2.1.6
+       55e6456 MUGQIC MODULES - updated bedtools version to 2.26.0 within the bash install script
+       797fe54 MUGQIC MODULES - updated samtools version to 1.3.1 within the bash install script
+       f846746 MUGQIC MODULES - updated bowtie2 version to 2.2.9 within the bash install script
+       7ef8596 MUGQIC MODULES - updated bowtie version to 1.1.2 within the bash install script
+       eca9f4d MUGQIC MODULES - updated bismark version to 0.16.3 within the bash install script
+       b92f63f Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       2b0f2e0 RNASeq_denovo_assembly - updated guillimin specific .ini file for trinity & insilico_read_normalization steps
+       5c11609 DNASeq - updated guillimin specific .ini file for snp_effect step
+       639668a DNASeq - updated .ini file for snp_effect step
+       14f4c0f Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       b3a054e PICARD 2.0.1 - updated picard2.py wrapper with proper syntax
+       7a20e2f briaree pipeline .ini files
+       b4b5e8c RNASeq_denovo_assembly - updated mammouth .ini file
+       b3ffcc7 python.sh - updated python version (2.7.12) within the bash installation script & added all the python library installation steps : no need for python_lib.sh anymore
+       731b029 Homo_sapiens.GRCh38.sh - updated Ensembl version (85) & dbNSFP version (3.2c)
+       ba15075 install_genome.sh - update cmd_or_job function to automatically handle mammouth environment cases
+       5d07d31 exonerate.sh - update version to 2.4.0
+       c1ac0e4 RNASeq_denovo_assembly - back to hmmer version 2.3.2 (from mugqic modules)
+       1f64757 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       16c3464 exonerate - within the bash install script : corrected broken link to the archive
+       875e3eb Genome reference .ini files updated for each reference installed on CVMFS
+       8c4c2ed module install script - corrected emboss.sh : unresoved conflicts are now resolved
+       21a06d7 module install script - corrected emboss.sh : unresoved conflicts are now resolved
+       5f46cf6 Python packages - added TEToolkit package to the installation scripts
+       f4a2adb FASTQC - updated installation script with newer version and integration of /lb/project/mugqic/analyste_dev as a possible installation path
+       a396762 RNASeq_deNovo_assembly - updated ini file with integration of picard v2.0.1 and working version of trinity (2.0.4)
+       916b8d6 PICARD 2.0.1 - added picard2.py to the bfx tools
+       ef03d6b commiting minor updates, prior the new release
+       aa0f55f RNASeq_denovo - briaree specific config for insilico_read_normalization_all
+       29fc52a Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       fd77e98 corrected version of mugqic_tools in rnaseq.base.ini
+       daad645 corrected version of mugqic_tools in rnaseq.base.ini
+       e2d140e RNASeq de-novo assembly - bug correction when calling trinity with new default parameters
+       87d6833 RNASeq de-novo assembly - updated ini file for briaree
+       1605b8f modules - new STAR version handled in the installation script
+       8f88daa RNASeq de-novo assembly - updated trinity call with newer version of trinity and new default parameter
+       73ca888 RNASeq - update differenial expression to handle local fit option if needed (i.e. if parametric dispersion fit fails)
+       ec71e94 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       3d0d765 new reference genome installation scripts (new species)
+       0029c2a metaMarkerSeq - guillimin .ini file adjustments regarding qiime
+       e4c1a5b Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       b5cc05d added butter installation script
+       8ec7a74 Merge branch 'master' of https://bitbucket.org/mugqic/mugqic_pipelines
+       16f2ae7 qiime db installation scripts and some new module scipts
+       8fe19f8 chimera_unite.sh added
+       ad09a1e new module installation scripts
+       a4f4b05 some updated & new module installation scripts
+       8fd6a71 updated genome installation scripts
+       083ff4e Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       846d931 metaMarkerSeq - removed bug with amplicon_type within the .ini file
+       2ba2d4c metaMarkerSeq - updated python & bash script as well as .ini with the newer silva db version
+       4504c46 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       e68ffa3 RNASeq - fixed bug in gq_seq_utils_exploratory_analysis_rnaseq
+       903ef8d mammouth ini files added for dnaseq_high_coverage
+       def0206 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       c822e0d mammouth ini files updated for pacbio & dnaseq
+       887e518 adding pipeline ini files specific to brairee environment
+       e5e3585 DNASeq - review some parameters within ini file during the pre-release pipeline testing
+       cece203 RNASeq - allow sample names to have '.' within their name without crashing during gq_seq_utils_exploratory_analysis_rnaseq
+       46d069f fixed typo
+       54f260b RNASeq - fix mammouth setting for htseq_count step in rnaseq.mammouth.ini
+       ada6738 RNASeq - restoring bfx/report/RnaSeq.gq_seq_utils_exploratory_analysis_rnaseq.Rmd
+       35c5cad ChIPSeq - metaMarkerSeq - adding briaree specific ini file
+       f0112e1 RNASeq - correct default genome in the ini file
+       4fb234d pushing ampliconseq.guillimin.ini after testing on guillimin
+       90ff7dc Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       4ec8c82 pushing ampliconseq.mammouth.ini after testing on mammouth
+       4d8e583 Corrected typo in dnaseq.base.ini
+       6e9c3b2 correct mammouth master branch divergence
+       8ab80b3 updating module and genome scripts from mammouth
+       7e28490 remove conflict
+       2c439fe conflicts resolution
+       4db2a9e some residual diffs to commit
+       de4c043 redo the call of bcftools module within samtools.py
+       b69fa6e Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       ad24f0c resolving conflicts after merging...
+       6330a7f commits before merging
+       5e4eac4 DNASeq/RNASeq - code correction after testing on briaree
+       580589a metaMarkerSeq - Merging branch to master git add resources/genomes/Bos_taurus.UMD3.1.sh resources/modules/perl.sh resources/modules/star.sh resources/modules/vcftools.sh
+       0fae673 metaMarkerSeq - reformat the report by removing some redundancies in the paragraphs and ensuring correct links to the tables/figures - BFXTD-26
+       8873109 BFXTD-26 - corrected the template and links used for report generation - MetaMarkerSeq
+       a0c0188 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       e18bb24 correct a bug in wiggle step which causes *forward.bedGraph and *reverse.bedGraph files to be identical
+       850b148 metaMarkerSeq - commits after reviewing pull request comments sent by Marc Michaud - BFXDEV-453
+       2390160 threshold instead of treshold
+       51848d9 metaMarkerSeq - debug Krona input generation and updated md files for report - BFXDEV-453
+       475035b meatMarkerSeq - get rid of remaining  variables - BFXDEV-453
+       0fd827d AmpliconSeq - debugging report template files
+       076e6f7 bug fixes and file names correction
+       0441415 ampliconseq - tuning of the ini file - BFXDEV-434 BFXDEV-448
+       feac3c0 ampliconseq - new/updated module install scripts related to the pipeline needs - BFXDEV-434 BFXDEV-448
+       3865cfa ampliconseq - code review & debug prior to relase - BFXDEV-434 BFXDEV-448
+       664910a AmpliconSeq - modified some parameters in .ini file & other minor syntax changes within the wrapper - BFXDEV-434
+       b22e6e2 ampliconseq - conflict resolution - BFXDEV-434
+       28788ce ampliconseq - code review of ampliconseq.py - BFXDEV-434
+       d07b3d8 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       ba4bca9 BFXDEV-523 - error correction & version update in the gemini installation script
+       4e7e0a6 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       f22df95 BFXDEV-516 - Macaque genome installation bash scripts + other minor updates
+       90d34cd BFX-4532 - added prepend-path entry for dnaseq_high_coverage in mugqic_pipelines.sh
+       7f41180 RNA-Seq - remove useless parameter from rnaseq.base.ini
+       7442c01 RNA-Seq - increase default walltime for star_align & star_index steps
+       c9d3694 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       4a9e67a Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       839b257 genomes - updated versions of genome installation scripts, essentially fixing STAR indexes installation - BFXDEV-494
+       a3da825 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       192a971 STAR - updated STAR version (to 2.5.1b) in the installation script (star.sh) as well as in the RNA-Seq pipeline .ini files - BFXDEV-514
+       646ad6a Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       394913d Version bump to 2.1.0-beta
+       0dac262 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       7a78685 BFXDEV-490 - recommit after conflict resolution
+       8fc43e3 BFXDEV-490 - updating chipseq.base.ini, dnaseq.base.ini, pacbio_assembly.base.ini, & rnaseq.base.ini
+       cfd56b9 ampliconseq - module - adding vsearch.sh in the module script folder - BFXDEV-434
+       fb1f4d2 ampliconseq - base ini file updated - BFXDEV-434
+       ed7611f ampliconseq - updated ampliconseq ini with new module versions - BFXDEV-434
+       8c047cc ampliconseq - updated module versions - BFXDEV-434
+       565ab99 Merge branch 'ampliconseq' of bitbucket.org:mugqic/mugqic_pipelines into ampliconseq
+       d2ef4f4 AmpliconSeq - parameter change in the .ini file for otu_picking step - BFXDEV-434
+       b15af32 AmpliconSeq - parameter change in the .ini file for otu_picking step - BFXDEX-434
+       ace14e4 AmpliconSeq - revised and standardized code of ampliconseq.py - BFXDEV-434
+       76c924e AmpliconSeq - updated ampliconseq.base.ini - BFXDEV-434
+       83d3b0e AmpliconSeq - new VSearch library added to bfx - BFXDEV-434
+       96ce607 AmpliconSeq - updated tools.py with AmpliconSeq functions in bfx - BFXDEV-434
+       b886764 AmpliconSeq - new Qiime library added to bfx - BFXDEV-434
+       bb008af AmpliconSeq - new Krona library added to bfx - BFXDEV-434
+       d9016c8 update of resources/modules/mugqic_tools.sh - BFXDEV-490
+       0611584 ampliconseq - updated syntax and some corrections
+
+  Edouard Henrion <henrione@briaree2.rqchp.qc.ca>      2 commits
+
+       91a47a5 RNASeq - adding .ini file for briaree
+       ce7f2ae small adjustments after cloning/before testing on briaree
+
+  edouard.henrion@mcgill.ca <ehenrion@abacus1.ferrier.genome.mcgill.ca>      1 commits
+
+       5806c4a ampliconseq - bump README.md to the latest version
+
+  ehenrion <edouard.henrion@mcgill.ca>      3 commits
+
+       62133d0 README.md edited online with Bitbucket
+       d988c47 README.md edited online with Bitbucket
+       5edde68 README.md edited online with Bitbucket
+
+  Francois Lefebvre <francois.lefebvre3@mail.mcgill.ca>      1 commits
+
+       0c86240 README.md edited online with Bitbucket
+
+  Francois Lefebvre <lefebvrf@gmail.com>      3 commits
+
+       7227342 mini and spades modules
+       be71d1c nxtrim and quest modules updates
+       5ec026e dev install scripts for MAKER
+
+  Mathieu Bourgey <mathieu.bourgey@mail.mcgill.ca>      5 commits
+
+       2f9db74 HighCoverage - add missing README.md file
+       21f73de Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       5e66e13 Removing unmaintained pipelines (PUURE & rRNATAGGER) from master
+       435f7d5 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       3366710 RNAseq synchromize mammouth ini with the base ini (missing tuxedo_hard_clip) - BFXDEV-515
+
+  mathieu bourgey <mathieu.bourgey@mail.mcgill.ca>      9 commits
+
+       a157437 AmpliconSeq - remove ini recursive interpolation
+       84a3e9b remove conflict
+       0e5bd2a High coverage - debug vt and gemini step - BFXDEV-542 BFXDEV-541
+       28ce1e1 ampliconseq - remove dependencies issues and remove try instances - BFXDEV-531
+       342169d Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       ed67908 DNASEQ - bwa always set LB in RG tags: when library barecode not given used sample name instead - BFXDEV-354
+       e28eff7 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       73bce2e ressource - python lib: add futures for multithearding
+       a7c0b13 update install module general script
+
+  mathieu bourgey <mathieu.bourgey@mcgill.ca>      5 commits
+
+       8a0bb76 dnaseq.py  - gatk DoC job name wasn't following the rule: <stepName>.<sampleName>.<OtherInfo> . corrected
+       5056c01 Merged in irp_modifications (pull request #17)
+       4991ce6 change mail for bug & issue in  README.md edited online with Bitbucket
+       ebe9e98 README.md edited online with Bitbucket
+       0cdc302 README.md edited online with Bitbucket
+
+  mmichaud <marc.michaud@mail.mcgill.ca>      20 commits
+
+       ed1aece Increase max jobs per step to 24 (cover most case without overloading the cluster) (cherry picked from commit 4b06703)
+       5836649 BFXDEV-559 Error when a lane contains only double-index librairies on a single-index run (cherry picked from commit 19bd532)
+       b2f9c7e Increase even more STAR walltime to allow fetching the reference index from cvmfs.
+       a8b9ffe Don't mark the blast job as failed if there is no blast results. If grep can't find any results, it exits with a code 1. After, when we test the $PIPESTATUS, we intercept that error code and mark the job as failed. By adding a " && true", we preserve exit codes but we reset the $PIPESTATUS.
+       5c5d933 Increase STAR walltime to allow fetching the reference index from cvmfs.
+       61b608b BFXDEV-538 Add perl for bed2interval_list
+       4d72471 BFXDEV-538 Update modules version
+       e39b202 BFX-4696 Use a newer version of python having all the needed packages.
+       d141b2f BFXDEV-544 VerifyBamId: Don't filter the variant file with the genomic target file.
+       0237e8a Merge branch 'master' into irp_modifications
+       5849c79 Illumina Run Processing: Accept "." in asembly name in the genomic database. (fix regex)
+       e020c64 Illumina Run Processing: Accept "." in asembly name in the genomic database.
+       8806df0 Illumina Run Processing: Use cvmfs version of verify_bam_id.
+       6735cae BFXDEV-512 Illumina Run Processing: Use "Parc" silva database.
+       8aa74f2 Illumina Run Processing: Add "nanuq_environment" configuration variable to be able to ease testing on the QC environment.
+       3d2bec9 BFXDEV-533 Illumina Run Processing: The exclude bam option doesn't exclude the sorted bam.
+       776850b BFXDEV-528 PacBio Assembly: Change settings for assembly up to 15Mb.
+       7d1694d BFXDEV-528 PacBio Assembly: Change settings for assembly up to 15Mb.
+       edfb2e4 BFXDEV-527 Illumina Run Processing: Merge jobs of a task when their count exceed a configurable threshold
+       cd6cfde Tweak cluster parameters : Use parallelGCThread for all available cores. BvaTools run faster with only 4 threads.
+
+  ptranvan <patrick.tranvan@mail.mcgill.ca>      24 commits
+
+       46ee612 Eulidean distance option for PCOA
+       8ca5e0e README link correction
+       18b9818 Module perl correction
+       d63b313 Module perl correction
+       b4fc989 Format edition
+       39c2882 . file deletion
+       c2cd2c3 BFXDEV-434 README update
+       e0d27cc BFXDEV-434 Create inis for other clusters
+       f4475b9 BFXDEV-434 Deploy db files in $MUGQIC_INSTALL_HOME
+       dc7f9fa - Other pipelines have been added to the branch. - Create inis for other clusters, leverage overlaading of parameters. - put db parameters in DEFAULT section,. - QIIME section has been exploded in the config file. - Tutorial in README file.
+       27f3fa5 README and configuration file correction
+       5a9fdb7 Configuration file modification.
+       3419fac Adding alternative normalization method
+       a7ade41 Dependance correction
+       d4e383d add a step (close ref)
+       6b63f3f CLuster algorithm change
+       a5d8876 tutorial.txt modification
+       72ef558 Minor modifications (report and option)
+       9cf47dc Amplicon-Seq pipeline + report upload for test.
+       c9c6125 Change name: metagenomic pipeline to Amplicon-Seq pipeline Adding new features (alpha, beta plots) Final step implemented
+       d7db137 Adding metagenomics pipeline (1st part)
+       075ec74 Adding metagenomics (amplicon) pipeline.
+       990ba4b Merge branch 'metagenomics' of https://bitbucket.org/mugqic/mugqic_pipelines into metagenomics
+       f779d06 test
 
 2.2.0        Mon Feb 8 12:04:44 2016 -0500        405 commits
 

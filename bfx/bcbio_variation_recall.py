@@ -34,6 +34,7 @@ def ensemble(input_callers, output, options):
         [
             ['bcbio_ensemble', 'module_bcbio_variation_recall'],
             ['bcbio_ensemble', 'module_bcftools'],
+            ['bcbio_ensemble', 'module_java'],
         ],
         command="""\
 bcbio-variation-recall ensemble \\

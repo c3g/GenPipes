@@ -185,6 +185,27 @@ $PYTHON_TOOLS/filterAssemblyToFastaToXls.py -f {fasta_file} \\
         )
     )
 
+## functions for perl tools ##
+
+def bed2interval_list(dictionary, bed, output):
+    return Job(
+        [dictionary, bed],
+        [output],
+        [
+            ['DEFAULT', 'module_mugqic_tools'],
+            ['DEFAULT', 'module_perl']
+        ],
+        command="""\
+bed2IntervalList.pl \\
+  --dict {dictionary} \\
+  --bed {bed} \\
+  > {output}""".format(
+        dictionary=dictionary if dictionary else config.param('DEFAULT', 'genome_dictionary', type='filepath'),
+        bed=bed,
+        output=output
+        )
+    )
+
 def dict2beds(dictionary,beds):
     return Job(
         [dictionary],
@@ -238,6 +259,7 @@ python $PYTHON_TOOLS/fixVS2VCF.py {options} {input} \\
     )
 
 ## functions for perl tools ##
+
 def bed2interval_list(dictionary, bed, output):
     return Job(
         [dictionary, bed],

@@ -58,10 +58,39 @@ bedGraphToBigWig \\
   {output_bed_graph}.sorted \\
   {chromosome_size} \\
   {output_wiggle}""".format(
-        samtools_options=samtools_options,
-        input_bam=input_bam,
-        chromosome_size=config.param('bedtools', 'chromosome_size', type='filepath'),
-        output_bed_graph=output_bed_graph,
-        output_wiggle=output_wiggle
+            samtools_options=samtools_options,
+            input_bam=input_bam,
+            chromosome_size=config.param('bedtools', 'chromosome_size', type='filepath'),
+            output_bed_graph=output_bed_graph,
+            output_wiggle=output_wiggle
+        )
+    )
+
+def intersect(input_bam, output_bam, readset):
+    target_bed = config.param('bedtools_intersect', 'target_bed', required=False)
+
+    if target_bed:
+        if target_bed == "auto":
+            if readset.beds:
+                target_bed = os.path.abspath(readset.beds[0])
+        else:
+            # Add filepath validation
+            target_bed = config.param('bedtools_intersect', 'target_bed', type='filepath')
+
+    return Job(
+        [input_bam],
+        [output_bam],
+        [
+            ['bedtools', 'module_bedtools']
+        ],
+        command="""\
+bedtools intersect \\
+  -a {input_bam} \\
+  -b {target_bed} \\
+  {other_options} > {output_bam}""".format(
+            input_bam=input_bam,
+            target_bed=target_bed,
+            other_options=config.param('bedtools_intersect', 'other_options'),
+            output_bam=output_bam
         )
     )
