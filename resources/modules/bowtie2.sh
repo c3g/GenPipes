@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=bowtie2
-VERSION=2.2.9
+VERSION=2.3.0
 ARCHIVE=$SOFTWARE-$VERSION-source.zip
 ARCHIVE_URL=http://sourceforge.net/projects/bowtie-bio/files/$SOFTWARE/$VERSION/$ARCHIVE
 SOFTWARE_DIR=$SOFTWARE-$VERSION
