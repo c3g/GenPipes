@@ -3,9 +3,10 @@
 set -eu -o pipefail
 
 SOFTWARE=RAPSearch2
-VERSION=2.24
+VERSION=2.12
 ARCHIVE=${SOFTWARE%?}-$VERSION.tar.gz
-ARCHIVE_URL=https://sourceforge.net/projects/${SOFTWARE,,}/files/${SOFTWARE%?}${VERSION}_64bits.tar.gz
+ARCHIVE_URL=https://sourceforge.net/projects/${SOFTWARE,,}/files/`echo "${SOFTWARE%?}" | tr '[:upper:]' '[:lower:]'`${VERSION}_pair_64bits.tar.gz	# for version < 2.15
+#ARCHIVE_URL=https://sourceforge.net/projects/${SOFTWARE,,}/files/${SOFTWARE%?}${VERSION}_64bits.tar.gz							# for version >= 2.15
 SOFTWARE_DIR=${SOFTWARE}-$VERSION
 
 # Specific commands to extract and build the software
@@ -14,7 +15,8 @@ SOFTWARE_DIR=${SOFTWARE}-$VERSION
 build() {
   cd $INSTALL_DOWNLOAD
   tar zxvf $ARCHIVE
-  mv ${SOFTWARE%?}${VERSION}_64bits $SOFTWARE_DIR
+  mv ${SOFTWARE%?}${VERSION}_pair_64bits $SOFTWARE_DIR		# for version < 2.12
+#  mv ${SOFTWARE%?}${VERSION}_64bits $SOFTWARE_DIR		# for version >= 2.12
 
   cd $SOFTWARE_DIR
   ./install
