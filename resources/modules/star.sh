@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=star
-VERSION=2.5.0c
+VERSION=2.5.3a
 ARCHIVE=$VERSION.tar.gz # for 2.5.0b and newer
 #ARCHIVE=${SOFTWARE^^}_$VERSION.tar.gz # for 2.5.0a and older 
 ARCHIVE_URL=https://github.com/alexdobin/STAR/archive/$ARCHIVE
@@ -36,6 +36,7 @@ module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
 prepend-path    PATH                \$root/source
+module load muqgic/gcc/4.9.3
 "
 }
 

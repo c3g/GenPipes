@@ -55,27 +55,6 @@ setenv          HOMER_HOME          \$root
 "
 }
 
-################################################################################
-# Everything below this line should be generic and not modified
-
-# Default module version file
-#echo "#%Module1.0
-#set ModulesVersion \"$VERSION\"" > .version
-
-# Set module directory path by lowercasing $INSTALL_HOME and removing '_install_home' in it
-#MODULE_DIR=${!INSTALL_HOME}/modulefiles/`echo ${INSTALL_HOME,,} | sed 's/_install_home//'`/$SOFTWARE
-
-# Create module directory with permissions if necessary
-#if [[ ! -d $MODULE_DIR ]]
-#then
-#  mkdir $MODULE_DIR
-#  chmod ug+rwX,o+rX-w $MODULE_DIR
-#fi
-
-# Add permissions and install module
-#chmod ug+rwX,o+rX-w $VERSION .version
-#mv $VERSION .version $MODULE_DIR/
-
 # Call generic module install script once all variables and functions have been set
 MODULE_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source $MODULE_INSTALL_SCRIPT_DIR/install_module.sh $@

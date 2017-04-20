@@ -22,9 +22,9 @@ build() {
   module load $module_perl $module_bowtie
   perl install.pl
 #  for i in `ls *.pl`; do sed -ir 's/#\!\/usr\/bin\/perl/#\!\/usr\/bin\/env perl/' $i; done				# for VERSION=0.0.5
-#  for i in `ls *.pl`; do sed -ir 's/#\!\/usr\/bin\/env perl -W/#\!\/usr\/bin\/env perl\nuse wanings;/' $i; done	# for VERSION=0.0.5
+#  for i in `ls *.pl`; do sed -ir 's/#\!\/usr\/bin\/env perl -W/#\!\/usr\/bin\/env perl\nuse warnings;/' $i; done	# for VERSION=0.0.5
   for i in `ls bin/*.pl`; do sed -ir 's/#\!\/usr\/bin\/perl/#\!\/usr\/bin\/env perl/' $i; done				# for VERSION=0.0.8
-  for i in `ls bin/*.pl`; do sed -ir 's/#\!\/usr\/bin\/env perl -W/#\!\/usr\/bin\/env perl\nuse wanings;/' $i; done	# for VERSION=0.0.8
+  for i in `ls bin/*.pl`; do sed -ir 's/#\!\/usr\/bin\/env perl -W/#\!\/usr\/bin\/env perl\nuse warnings;/' $i; done	# for VERSION=0.0.8
 
   cd $INSTALL_DOWNLOAD
   mv -i $SOFTWARE_DIR $INSTALL_DIR/
