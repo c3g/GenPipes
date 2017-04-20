@@ -4,7 +4,7 @@ set -eu -o pipefail
 
 SOFTWARE=snap
 #VERSION=2013-11-29
-VERSION=1.0beta.18
+VERSION=0.15
 ARCHIVE=$SOFTWARE-$VERSION.tar.gz
 ARCHIVE_URL=https://github.com/amplab/$SOFTWARE/archive/v${VERSION}.tar.gz
 #ARCHIVE_URL=http://korflab.ucdavis.edu/Software/$ARCHIVE
@@ -16,7 +16,7 @@ build() {
 
   cd $SOFTWARE_DIR
   make
-  ln -s snap-aligner snap
+#  ln -s snap-aligner snap
 
   # Install software
   cd $INSTALL_DOWNLOAD
