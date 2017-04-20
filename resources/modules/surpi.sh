@@ -43,6 +43,16 @@ module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
 prepend-path    PATH                \$root
+module load mugqic/FastQValidator/0.1.1a
+module load mugqic/AMOS/3.1.0
+module load mugqic/ABySS/1.3.5
+module load mugqic/RAPSearch2/2.12
+module load mugqic/seqtk/1.0
+module load mugqic/snap/0.15
+module load mugqic/GenomeTools/1.5.9
+module load mugqic/bio-playground/master
+module load mugqic/python/2.7.13
+module load mugqic/prinseq-lite/0.20.4
 "
 }
 
