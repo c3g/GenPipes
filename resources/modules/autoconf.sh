@@ -2,17 +2,20 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=sratoolkit
-VERSION=2.8.2-1
+SOFTWARE=autoconf
+VERSION=2.69 
 ARCHIVE=${SOFTWARE}-${VERSION}.tar.gz
-ARCHIVE_URL=http://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/$VERSION/${SOFTWARE}.${VERSION}-centos_linux64.tar.gz
-SOFTWARE_DIR=${SOFTWARE}-${VERSION}
+ARCHIVE_URL=http://ftp.gnu.org/gnu/$SOFTWARE/$ARCHIVE
+SOFTWARE_DIR=$SOFTWARE-$VERSION 
 
 build() {
   cd $INSTALL_DOWNLOAD
   tar -zxvf $ARCHIVE
 
-  mv ${SOFTWARE}.${VERSION}-centos_linux64 $INSTALL_DIR/$SOFTWARE_DIR
+  cd $SOFTWARE_DIR
+  ./configure --prefix=${INSTALL_DIR}/$SOFTWARE_DIR
+  make
+  make install
 }
 
 module_file() {
@@ -24,10 +27,11 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-prepend-path    PATH                \$root/bin 
+prepend-path    PATH                \$root/bin
 "
 }
 
 # Call generic module install script once all variables and functions have been set
 MODULE_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source $MODULE_INSTALL_SCRIPT_DIR/install_module.sh $@
+

@@ -10,7 +10,7 @@ ARCHIVE=${SOFTWARE}.v${VERSION}.jar
 ARCHIVE_URL=https://github.com/dkoboldt/${SOFTWARE,,}/blob/master/$ARCHIVE                      # for version = 2.4.3
 SOFTWARE_DIR=${SOFTWARE}.v${VERSION}
 
-# Specific commands to extract and build the software
+# Specific commands to extract and build the software
 # $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
 # $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {

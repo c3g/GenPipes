@@ -1,13 +1,11 @@
-t immediately on error
+#!/bin/bash
+# Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=bowtie
-VERSION=1.2.0
-#ARCHIVE=$SOFTWARE-$VERSION.tar.gz
-ARCHIVE=$SOFTWARE-$VERSION.zip
-#ARCHIVE_URL=https://github.com/BenLangmead/${SOFTWARE}/archive/v${VERSION}.tar.gz
-#ARCHIVE_URL=https://github.com/BenLangmead/${SOFTWARE}/releases/download/v${VERSION}.0/${SOFTWARE}-${VERSION}-src.zip
-ARCHIVE_URL=https://sourceforge.net/projects/${SOFTWARE}-bio/files/${SOFTWARE}/${VERSION}/${SOFTWARE}-${VERSION%??}-source.zip
+SOFTWARE=bamtools
+VERSION=2.4.1
+ARCHIVE=$SOFTWARE-${VERSION}.tar.gz
+ARCHIVE_URL=https://github.com/pezmaster31/$SOFTWARE/archive/v${VERSION}.tar.gz
 SOFTWARE_DIR=$SOFTWARE-$VERSION
 
 # Specific commands to extract and build the software
@@ -15,16 +13,17 @@ SOFTWARE_DIR=$SOFTWARE-$VERSION
 # $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
-#  tar xzvf $ARCHIVE
-  unzip $ARCHIVE
+  tar -xzvf $ARCHIVE
 
-  mv ${SOFTWARE}-${VERSION%??} $SOFTWARE_DIR
   cd $SOFTWARE_DIR
+  mkdir build
+  cd build
+  cmake ..
   make
 
-  # Install software
   cd $INSTALL_DOWNLOAD
-  mv -i $SOFTWARE_DIR $INSTALL_DIR/
+  mv $SOFTWARE_DIR $INSTALL_DIR/
+
 }
 
 module_file() {
@@ -36,7 +35,10 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-prepend-path    PATH                \$root
+prepend-path    PATH                \$root/bin
+prepend-path    LD_LIBRARY_PATH     \$root/lib
+prepend-path    LIBRARY_PATH        \$root/lib
+prepend-path    CPATH               \$root/include
 "
 }
 
