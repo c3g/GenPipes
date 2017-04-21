@@ -34,7 +34,7 @@ def graph(input_bam, output_bed_graph, output_wiggle, library_type="PAIRED_END")
         elif "reverse" in output_bed_graph:
             samtools_options="-F 256 -f 97 "
         else:
-            raise Exception("Error: PAIRED_END library was provided but no strand orientation could be determined from " + bed_graph_output + "...")
+            raise Exception("Error: PAIRED_END library was provided but no strand orientation could be determined from " + output_bed_graph + "...")
     else:
         samtools_options="-F 256"
 
