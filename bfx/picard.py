@@ -390,7 +390,7 @@ def add_read_groups(input, output, readgroup, library, lane, sample, sort_order=
         return Job(
             [input],
             # collect specific RNA metrics (exon rate, strand specificity, etc...)
-            [output],
+            [output, re.sub("\.([sb])am$", ".\\1ai", output)],
             [
                 ['picard_add_read_groups', 'module_java'],
                 ['picard_add_read_groups', 'module_picard']
