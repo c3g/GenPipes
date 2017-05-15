@@ -282,10 +282,14 @@ Pipelines require as input one Readset File, one or more Configuration File(s) a
 For more information about a specific pipeline, visit:
 
 ### [DNA-Seq Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/dnaseq/)
+### [DNA-Seq high Coverage Pipeline Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/dnaseq_high_coverage/)
 ### [RNA-Seq Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/rnaseq/)
 ### [RNA-Seq De Novo Assembly Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/rnaseq_denovo_assembly/)
 ### [PacBio Assembly Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/pacbio_assembly/)
 ### [ChIP-Seq Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/chipseq/)
+### [Amplicon-Seq Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/ampliconseq/)
+### [Tumor Pair Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/tumor_pair/)
+### [Methyl-Seq Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/methylseq/)
 ### [Illumina Run Processing Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/illumina_run_processing/)
 
 
@@ -303,6 +307,8 @@ The Readset File is a TAB-separated values plain text file with one line per rea
 * RunType: `PAIRED_END` or `SINGLE_END`; mandatory;
 * Run: optional;
 * Lane: optional;
+* Adapter1 : sequence of the forward trimming adapter
+* Adapter2 : sequence of the reverse trimming adapter
 * QualityOffset: quality score offset integer used for trimming; optional;
 * BED: relative or absolute path to BED file; optional;
 * FASTQ1: relative or absolute path to first FASTQ file for paired-end readset or single FASTQ file for single-end readset; mandatory if BAM value is missing;
