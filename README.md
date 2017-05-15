@@ -299,7 +299,7 @@ Readset File
 The Readset File is a TAB-separated values plain text file with one line per readset and the following columns in any order:
 
 
-### DNA-Seq, RNA-Seq, RNA-Seq De Novo Assembly, ChIP-Seq
+### DNA-Seq, DNA-Seq high Coverage, RNA-Seq, RNA-Seq De Novo Assembly, ChIP-Seq, Amplicon-Seq, Tumor Pair, Methyl-Seq
 
 * Sample: must contain letters A-Z, numbers 0-9, hyphens (-) or underscores (_) only; BAM files will be merged into a file named after this value; mandatory;
 * Readset: a unique readset name with the same allowed characters as above; mandatory;
@@ -317,11 +317,11 @@ The Readset File is a TAB-separated values plain text file with one line per rea
 
 Example:
 
-    Sample	Readset	Library	RunType	Run	Lane	QualityOffset	BED	FASTQ1	FASTQ2	BAM
-    sampleA	readset1	lib0001	PAIRED_END	run100	1	33	path/to/file.bed	path/to/readset1.paired1.fastq.gz	path/to/readset1.paired2.fastq.gz	path/to/readset1.bam
-    sampleA	readset2	lib0001	PAIRED_END	run100	2	33	path/to/file.bed	path/to/readset2.paired1.fastq.gz	path/to/readset2.paired2.fastq.gz	path/to/readset2.bam
-    sampleB	readset3	lib0002	PAIRED_END	run200	5	33	path/to/file.bed	path/to/readset3.paired1.fastq.gz	path/to/readset3.paired2.fastq.gz	path/to/readset3.bam
-    sampleB	readset4	lib0002	PAIRED_END	run200	6	33	path/to/file.bed	path/to/readset4.paired1.fastq.gz	path/to/readset4.paired2.fastq.gz	path/to/readset4.bam
+    Sample	Readset	Library	RunType	Run	Lane	Adapter1	Adapter2	QualityOffset	BED	FASTQ1	FASTQ2	BAM
+    sampleA	readset1	lib0001	PAIRED_END	run100	1	AGATCGGAAGAGCACACGTCTGAACTCCAGTCA	AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT	33	path/to/file.bed	path/to/readset1.paired1.fastq.gz	path/to/readset1.paired2.fastq.gz	path/to/readset1.bam
+    sampleA	readset2	lib0001	PAIRED_END	run100	2	AGATCGGAAGAGCACACGTCTGAACTCCAGTCA	AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT	33	path/to/file.bed	path/to/readset2.paired1.fastq.gz	path/to/readset2.paired2.fastq.gz	path/to/readset2.bam
+    sampleB	readset3	lib0002	PAIRED_END	run200	5	AGATCGGAAGAGCACACGTCTGAACTCCAGTCA	AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT	33	path/to/file.bed	path/to/readset3.paired1.fastq.gz	path/to/readset3.paired2.fastq.gz	path/to/readset3.bam
+    sampleB	readset4	lib0002	PAIRED_END	run200	6	AGATCGGAAGAGCACACGTCTGAACTCCAGTCA	AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT	33	path/to/file.bed	path/to/readset4.paired1.fastq.gz	path/to/readset4.paired2.fastq.gz	path/to/readset4.bam
 
 
 ### PacBio Assembly
