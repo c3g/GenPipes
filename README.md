@@ -71,7 +71,7 @@ MUGQIC pipelines and compatible Python version are already installed as modules 
 To use them by default, add in your *$HOME/.bash_profile*:
 ```
 #!bash
-module load mugqic/python/2.7.8
+module load mugqic/python/2.7.13
 module load mugqic/mugqic_pipelines/<latest_version>
 ```
 (find out the latest version with: "`module avail 2>&1 | grep mugqic/mugqic_pipelines`").
@@ -354,14 +354,14 @@ Those files have a structure similar to Microsoft Windows INI files e.g.:
 ```
 #!ini
 [DEFAULT]
-module_trimmomatic=mugqic/trimmomatic/0.32
+module_trimmomatic=mugqic/trimmomatic/0.36
 
 [trimmomatic]
 min_length=50
 ```
 
 A parameter value is first searched in its specific section, then, if not found, in the special `DEFAULT` section.
-The example above would resolve parameter `module_trimmomatic` value from section `trimmomatic` to `mugqic/trimmomatic/0.32`.
+The example above would resolve parameter `module_trimmomatic` value from section `trimmomatic` to `mugqic/trimmomatic/0.36`.
 
 Configuration files support interpolation. For example:
 ```
