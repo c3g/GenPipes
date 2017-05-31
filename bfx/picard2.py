@@ -583,17 +583,20 @@ def add_read_groups(input, output, readgroup, library, processing_unit, sample, 
     if config.param('picard_add_read_groups', 'module_picard').split("/")[2] < "2":
         return picard.add_read_groups(input, output, readgroup, library, processing_unit, sample, sort_order)
     else:
+        output_dep = output + ".bait_bias_summary_metrics" 
         return Job(
             [input],
             # collect specific RNA metrics (exon rate, strand specificity, etc...)
-            [output, re.sub("\.([sb])am$", ".\\1ai", output)],
+            [output_dep],
             [
-                ['picard_add_read_groups', 'module_java'],
-                ['picard_add_read_groups', 'module_picard']
+                ['picard_collect_sequencing_artifacts_metrics', 'module_java'],
+                ['picard_collect_sequencing_artifacts_metrics', 'module_picard'],
+                ['picard_collect_sequencing_artifacts_metrics', 'module_R']
             ],
             command="""\
-java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar AddOrReplaceReadGroups \\
- CREATE_INDEX=true \\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar CollectSequencingArtifactMetrics \\
+ VALIDATION_STRINGENCY=SILENT  \\
+ TMP_DIR={tmp_dir} \\
  INPUT={input} \\
  OUTPUT={output} \\
  SORT_ORDER=\"{sort_order}\" \\

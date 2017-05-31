@@ -2630,6 +2630,7 @@ pandoc \\
 
         return jobs
 
+
     def haplotype_caller_snp_id_annotation(self):
         """
         dbSNP annotation applied to haplotype caller vcf.
@@ -2749,6 +2750,7 @@ pandoc \\
         
         return jobs
 
+
     def haplotype_caller_dbnsfp_annotation(self):
         """
         Additional SVN annotations applied to haplotype caller vcf.
@@ -2759,7 +2761,6 @@ pandoc \\
         (SIFT, Polyphen2, LRT and MutationTaster), three conservation scores (PhyloP, GERP++ and SiPhy)
         and other function annotations).
         """
-
         job = self.dbnsfp_annotation(
             "variants/allSamples.hc.vqsr.vt.mil.snpId.snpeff.vcf.gz",
             "variants/allSamples.hc.vqsr.vt.mil.snpId.snpeff.dbnsfp.vcf",
@@ -2958,6 +2959,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             "haplotype_caller_metrics_snv_graph"
         )
         return jobs
+
 
     def mpileup_metrics_snv_graph_metrics(self):
         """
