@@ -64,6 +64,9 @@ from bfx import verify_bam_id
 from bfx import multiqc
 from bfx import deliverables
 from bfx import bash_cmd as bash
+from bfx import dna_damage
+
+from pipelines import common
 
 ##Structural variants
 from bfx import delly
@@ -547,7 +550,6 @@ END
                         samples=[sample]
                     )
                 )
-
         return jobs
 
     def picard_merge_sam_files(self):

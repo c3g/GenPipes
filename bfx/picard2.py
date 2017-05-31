@@ -592,7 +592,7 @@ def add_read_groups(input, output, readgroup, library, processing_unit, sample, 
                 ['picard_add_read_groups', 'module_picard']
             ],
             command="""\
-java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar AddOrReplaceReadGroups \\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/AddOrReplaceReadGroups.jar \\
  CREATE_INDEX=true \\
  INPUT={input} \\
  OUTPUT={output} \\
