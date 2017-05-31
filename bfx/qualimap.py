@@ -38,8 +38,8 @@ def bamqc(input_bam, output_directory, output, options):
         inputs,
         outputs,
         [
-            ['qualimap_bamqc', 'module_java'],
-            ['qualimap_bamqc', 'module_qualimap'],
+            ['DEFAULT', 'module_java'],
+            ['DEFAULT', 'module_qualimap'],
         ],
         command="""\
 qualimap bamqc {other_options} \\
@@ -48,7 +48,7 @@ qualimap bamqc {other_options} \\
             input_bam=input_bam,
             output_directory=output_directory,
             other_options=options,
-            ram=config.param('qualimap_bamqc', 'ram'),
+            ram=config.param('qualimap', 'ram'),
         ),
         removable_files=[]
     )
@@ -65,8 +65,8 @@ def rnaseq(input_bam, output_directory, output):
         inputs,
         outputs,
         [
-            ['qualimap_rnaseq', 'module_java'],
-            ['qualimap_rnaseq', 'module_qualimap'],
+            ['DEFAULT', 'module_java'],
+            ['qualimap', 'module_qualimap'],
         ],
         command="""\
 qualimap rnaseq \\
@@ -81,7 +81,7 @@ qualimap rnaseq \\
             output_directory=output_directory,
             output=output,
             ram=config.param('qualimap', 'ram'),
-            other_options=config.param('qualimap_rnaseq', 'other_options')
+            other_options=config.param('qualimap', 'other_options')
         ),
         removable_files=[]
     )

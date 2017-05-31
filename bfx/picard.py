@@ -26,26 +26,26 @@ from core.config import *
 from core.job import *
 import picard2
 
-def build_bam_index(input, output, ini_section='picard_build_bam_index'):
+def build_bam_index(input, output):
 
-    if config.param(ini_section, 'module_picard').split("/")[2] >= "2":
+    if config.param('build_bam_index', 'module_picard').split("/")[2] >= "2":
         return picard2.build_bam_index(input, output)
     else:
         return Job(
             [input],
             [output],
             [
-                [ini_section, 'module_java'],
-                [ini_section, 'module_picard']
+                ['build_bam_index', 'module_java'],
+                ['build_bam_index', 'module_picard']
             ],
             command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/BuildBamIndex.jar \\
  VALIDATION_STRINGENCY=SILENT \\
  INPUT={input} \\
  OUTPUT={output} """.format(
-            tmp_dir=config.param(ini_section, 'tmp_dir'),
-            java_other_options=config.param(ini_section, 'java_other_options'),
-            ram=config.param(ini_section, 'ram'),
+            tmp_dir=config.param('build_bam_index', 'tmp_dir'),
+            java_other_options=config.param('build_bam_index', 'java_other_options'),
+            ram=config.param('build_bam_index', 'ram'),
             input=input,
             output=output,
             )
@@ -85,7 +85,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             )
         )
 
-def collect_multiple_metrics(input, output, reference_sequence=None, library_type="PAIRED_END"):
+def collect_multiple_metrics(input, output, reference_sequence=None , library_type="PAIRED_END"):
 
     if  library_type == "PAIRED_END" :
         outputs = [
@@ -115,7 +115,7 @@ def collect_multiple_metrics(input, output, reference_sequence=None, library_typ
             [
                 ['picard_collect_multiple_metrics', 'module_java'],
                 ['picard_collect_multiple_metrics', 'module_picard'],
-                ['picard_collect_rna_metrics', 'module_R']
+                ['picard_collect_multiple_metrics', 'module_R']
             ],
             command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/CollectMultipleMetrics.jar \\
@@ -278,6 +278,7 @@ def sam_to_fastq(input, fastq, second_end_fastq=None):
             command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/SamToFastq.jar \\
  VALIDATION_STRINGENCY=LENIENT \\
+ CREATE_MD5_FILE=TRUE \\
  INPUT={input} \\
  FASTQ={fastq}{second_end_fastq}""".format(
             tmp_dir=config.param('picard_sam_to_fastq', 'tmp_dir'),
@@ -390,6 +391,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             max_records_in_ram=config.param('picard_collect_rna_metrics', 'max_records_in_ram', type='int')
             )
         )
+
 
 def add_read_groups(input, output, readgroup, library, processing_unit, sample, sort_order="coordinate"):
 

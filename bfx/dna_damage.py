@@ -19,44 +19,50 @@
 # along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
+#!/usr/bin/env python
+
 # Python Standard Modules
-import logging
-import os
 
 # MUGQIC Modules
 from core.config import *
 from core.job import *
 
-log = logging.getLogger(__name__)
-
-def trim( input1, input2, prefix, adapter_file ):
-    output_pair1 = prefix + "-trimmed-pair1.fastq.gz"
-    output_pair2 = prefix + "-trimmed-pair2.fastq.gz"
-    
-    if input2:  # Paired end reads
-        inputs = [input1, input2]
-        output = [output_pair1, output_pair2]
-    else:   # Single end reads
-        inputs = [input1]
-        output = [output_pair1]
+def estimate_damage(mpileup_r1, mpileup_r2, output, sample_id, options):
 
     return Job(
-        inputs,
-        output,
+        [mpileup_r1,mpileup_r2],
+        [output],
         [
-            ['skewer_trimming', 'module_skewer']
+            ['DEFAULT', 'module_dna_damage'],
         ],
-
         command="""\
-$SKEWER_HOME/./skewer --threads {threads} {options} \\
-  {adapter_file} \\
-  {inputs} \\
-  {outputs}""".format(
-        threads=config.param('skewer_trimming', 'threads', type='posint'),
-        options=config.param('skewer_trimming', 'options'),
-        adapter_file="-x " + adapter_file, 
-        inputs=" \\\n  ".join(inputs),
-        outputs="-o " + prefix,
-        ),
-        removable_files=[output]
+perl $DNA_DAMAGE_PATH/estimate_damage.pl {options} \\
+    --mpileup1 {mpileup_r1} \\
+    --mpileup2 {mpileup_r2} \\
+    --id {sample_id} \\
+    {output}""".format(
+        options=options,
+        mpileup_r1=mpileup_r1,
+        mpileup_r2=mpileup_r2,
+        sample_id=sample_id,
+        output="> " + output if output else "",
+        )
+    )
+
+def estimate_damage_r(input, output):
+
+    return Job(
+        [input],
+        [output],
+        [
+            ['DEFAULT', 'module_dna_damage'],
+            ['DEFAULT', 'module_R'],
+        ],
+        command="""\
+Rscript --vanilla $DNA_DAMAGE_PATH/plot_damage.R \\
+    {input} \\
+    {output}""".format(
+        input=input,
+        output=output,
+        )
     )

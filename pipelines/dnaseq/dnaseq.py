@@ -61,6 +61,9 @@ from bfx import fastqc
 from bfx import multiqc
 from bfx import deliverables
 from bfx import bash_cmd as bash
+from bfx import dna_damage
+
+from pipelines import common
 
 log = logging.getLogger(__name__)
 
@@ -187,6 +190,40 @@ class DnaSeqRaw(common.Illumina):
             jobs.append(sym_link_job)
 
         return jobs
+
+    def build_adapter_file(self, directory, readset):
+        adapter_file = os.path.join(directory, "adapter.tsv")
+        if readset.run_type == "SINGLE_END":
+            if readset.adapter1:
+                adapter_job = Job(
+                    command="""\
+`cat > {adapter_file} << END
+>Adapter\n{sequence}\n
+END
+`""".format(
+                        adapter_file=adapter_file,
+                        sequence=readset.adapter1
+                    )
+                )
+            else:
+                raise Exception("Error: missing adapter1 for SINGLE_END readset \"" + readset.name + "\", or missing adapter_file parameter in config file!")
+
+        elif readset.run_type == "PAIRED_END":
+            if readset.adapter1 and readset.adapter2:
+                adapter_job = Job(
+                    command="""\
+`cat > {adapter_file} << END
+>Adapter1\n{sequence1}\n
+>Adapter2\n{sequence2}\n
+END
+`""".format(
+                        adapter_file=adapter_file,
+                        sequence1=readset.adapter1,
+                        sequence2=readset.adapter2,
+                    )
+                )
+
+        return adapter_job
 
     def skewer_trimming(self):
         """
@@ -358,6 +395,53 @@ class DnaSeqRaw(common.Illumina):
         return jobs
 
     def sambamba_merge_sam_files(self):
+        """
+        BAM readset files are merged into one file per sample. Merge is done using [Picard](http://broadinstitute.github.io/picard/).
+
+        This step takes as input files:
+
+        1. Aligned and sorted BAM output files from previous bwa_mem_picard_sort_sam step if available
+        2. Else, BAM files from the readset file
+        """
+
+        jobs = []
+        for sample in self.samples:
+            alignment_directory = os.path.join("alignment", sample.name)
+            # Find input readset BAMs first from previous bwa_mem_picard_sort_sam job, then from original BAMs in the readset sheet.
+            readset_bams = self.select_input_files([[os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam") for readset in sample.readsets], [readset.bam for readset in sample.readsets]])
+            sample_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
+
+            mkdir_job = Job(command="mkdir -p " + os.path.dirname(sample_bam))
+
+            # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
+            if len(sample.readsets) == 1:
+                readset_bam = readset_bams[0]
+                if os.path.isabs(readset_bam):
+                    target_readset_bam = readset_bam
+                else:
+                    target_readset_bam = os.path.relpath(readset_bam, alignment_directory)
+                readset_index = re.sub("\.bam$", ".bai", readset_bam)
+                target_readset_index = re.sub("\.bam$", ".bai", target_readset_bam)
+                sample_index = re.sub("\.bam$", ".bai", sample_bam)
+
+                job = concat_jobs([
+                    mkdir_job,
+                    Job([readset_bam], [sample_bam], command="ln -s -f " + target_readset_bam + " " + sample_bam, removable_files=[sample_bam]),
+                    Job([readset_index], [sample_index], command="ln -s -f " + target_readset_index + " " + sample_index, removable_files=[sample_index])
+                ], name="symlink_readset_sample_bam." + sample.name)
+
+            elif len(sample.readsets) > 1:
+                job = concat_jobs([
+                    mkdir_job,
+                    sambamba.merge(readset_bams, sample_bam)
+                ])
+                job.name = "sambamba_merge_sam_files." + sample.name
+
+            jobs.append(job)
+
+        return jobs
+
+    def picard_merge_sam_files(self):
         """
         BAM readset files are merged into one file per sample. Merge is done using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
 
@@ -576,7 +660,6 @@ class DnaSeqRaw(common.Illumina):
                 jobs.append(job)
 
         return jobs
-
 
     def fix_mate_by_coordinate(self):
         """
@@ -2287,7 +2370,12 @@ pandoc \\
         )
         return jobs
 
-    def dbnsfp_annotation(self, input_vcf="variants/allSamples.merged.flt.vt.mil.snpId.snpeff.vcf.gz", output_vcf="variants/allSamples.merged.flt.vt.mil.snpId.snpeff.dbnsfp.vcf", job_name="dbnsfp_annotation"):
+    def dbnsfp_annotation(
+            self,
+            input_vcf="variants/allSamples.merged.flt.vt.mil.snpId.snpeff.vcf.gz",
+            output_vcf="variants/allSamples.merged.flt.vt.mil.snpId.snpeff.dbnsfp.vcf",
+            job_name="dbnsfp_annotation"
+            ):
         """
         Additional SVN annotations. Provides extra information about SVN by using numerous published databases.
         Applicable to human samples. Databases available include Biomart (adds GO annotations based on gene information)
@@ -2389,7 +2477,11 @@ pandoc \\
         return job
 
 
-    def metrics_vcf_stats(self, variants_file_prefix="variants/allSamples.hc.vqsr.vt.mil.snpId.snpeff", job_name="metrics_change_rate"):
+    def metrics_vcf_stats(
+            self,
+            variants_file_prefix="variants/allSamples.hc.vqsr.vt.mil.snpId.snpeff",
+            job_name="metrics_change_rate"
+            ):
         """
         Metrics SNV. Multiple metrics associated to annotations and effect prediction are generated at this step:
         change rate by chromosome, changes by type, effects by impact, effects by functional class, counts by effect,
@@ -2438,7 +2530,12 @@ pandoc \\
         )
         return job
 
-    def metrics_snv_graph_metrics(self, variants_file_prefix="variants/allSamples.merged.flt.mil.snpId", snv_metrics_prefix="metrics/allSamples.SNV", job_name="metrics_snv_graph"):
+    def metrics_snv_graph_metrics(
+            self,
+            variants_file_prefix="variants/allSamples.merged.flt.mil.snpId",
+            snv_metrics_prefix="metrics/allSamples.SNV",
+            job_name="metrics_snv_graph"
+            ):
         """
         """
 
