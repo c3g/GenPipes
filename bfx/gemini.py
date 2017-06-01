@@ -22,7 +22,6 @@
 # Python Standard Modules
 
 # MUGQIC Modules
-from core.config import *
 from core.job import *
 
 def gemini_annotations(variants, gemini_output, tmp_dir):
