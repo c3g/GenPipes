@@ -34,7 +34,6 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 # MUGQIC Modules
 from core.config import config, _raise, SanitycheckError
 from core.job import Job, concat_jobs, pipe_jobs
-from pipelines import common
 from bfx.sequence_dictionary import parse_sequence_dictionary_file, split_by_size
 import utils.utils
 
@@ -51,7 +50,6 @@ from bfx import tools
 from bfx import vcftools
 from bfx import skewer
 from bfx import sambamba
-from bfx import picard
 from bfx import picard2
 from bfx import vt
 from bfx import htslib
@@ -61,7 +59,6 @@ from bfx import fastqc
 from bfx import multiqc
 from bfx import deliverables
 from bfx import bash_cmd as bash
-from bfx import dna_damage
 
 from pipelines import common
 
@@ -1200,11 +1197,11 @@ END
         input_dep = []
         inputs = []
         for sample in self.samples:
-            input_oxog = os.path.join(metrics_directory, sample.name, "picard_metrics", sample.name + ".oxog_metrics.txt")
-            input_qcbias = os.path.join(metrics_directory, sample.name, "picard_metrics", sample.name + ".qcbias_metrics.txt")
-            input_all_picard = os.path.join(metrics_directory, sample.name, "picard_metrics", sample.name + ".all.metrics.quality_distribution.pdf")
-            input_qualimap = os.path.join(metrics_directory, sample.name, "qualimap", "genome_results.txt")
-            input_fastqc = os.path.join(metrics_directory, sample.name, "fastqc", sample.name + ".fastqc.zip")
+            input_oxog = os.path.join(metrics_directory, sample.name, "picard_metrics.oxog_metrics.txt")
+            input_qcbias = os.path.join(metrics_directory, sample.name, "picard_metrics.qcbias_metrics.txt")
+            input_all_picard = os.path.join(metrics_directory, sample.name, "picard_metrics.all.metrics.quality_distribution.pdf")
+            input_qualimap = os.path.join(metrics_directory, sample.name, "qualimap", sample.name, "genome_results.txt")
+            input_fastqc = os.path.join(metrics_directory, sample.name, "fastqc", sample.name + ".sorted.dup_fastqc.zip")
             input_flagstat = os.path.join(metrics_directory, sample.name, "flagstat", sample.name + ".flagstat")
 
             input_dep += [
