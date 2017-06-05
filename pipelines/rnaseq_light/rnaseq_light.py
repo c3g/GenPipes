@@ -56,53 +56,13 @@ log = logging.getLogger(__name__)
 
 class RNAseqLight(rnaseq.RnaSeq):
 	def __init__(self):
-	# Add pipeline specific arguments
-		self.argparser.add_argument("-d", "--design", help="design file", type=file)
 		super(RNAseqLight, self).__init__()
-
-	# def picard_sam_to_fastq_star(self):
- #      """
- #        Convert SAM/BAM files from the input readset file into FASTQ format
- #        if FASTQ files are not already specified in the readset file. Do nothing otherwise.
- #        Modified to take Star bam files
- #        """
- #        jobs = []
- #        for readset in self.readsets:
- #            # If readset FASTQ files are available, skip this step
- #            if not readset.fastq1:
- #                if readset.bam:
- #                    if readset.run_type == "PAIRED_END":
- #                        fastq1 = re.sub("\.bam$", ".pair1.fastq.gz", readset.bam)
- #                        fastq2 = re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)
- #                    elif readset.run_type == "SINGLE_END":
- #                        fastq1 = re.sub("\.bam$", ".single.fastq.gz", readset.bam)
- #                        fastq2 = None
- #                    else:
- #                        raise Exception("Error: run type \"" + readset.run_type +
- #                        "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
-
- #                    job = picard.sam_to_fastq(readset.bam, fastq1, fastq2)
- #                    job.name = "picard_sam_to_fastq." + readset.name
- #                    jobs.append(job)
- #                else:
- #                    raise Exception("Error: BAM file not available for readset \"" + readset.name + "\"!")
- #        return jobs
-
-	# 	INPUT=/home/emercier/projects/Moorehead_RNAseq_PRJBFX_1462/raw_reads/KW390ASoy200/KW390ASoy200.MPS12341978-E08.4045.6.bam FASTQ=/home/emercier/projects/Moorehead_RNAseq_PRJBFX_1462/raw_reads/KW390ASoy200/KW390ASoy200.MPS12341978-E08.4045.6.pair1.fastq.gz
-
-
-
-	# 	input_bam=os.path.join("alignment", readset.sample.name ,readset.sample.name + ".sorted.bam")
-	# 	output_fasta=[os.path.join("FILEDIRECTORY", readset.sample.name ,readset.sample.name + ".sorted.pair1.fastq.gz"), os.path.join("FILEDIRECTORY", readset.sample.name ,readset.sample.name + ".sorted.pair1.fastq.gz")]
-	# 	sam_to_fastq(input_bam, fastq, second_end_fastq=None)
-
-
 
 	def kallisto(self):
 		"""
 			Run Kallisto on fastq files for a fast esimate of abundance.
 		"""
-		transcriptome_file = config.param('kallisto', 'transcriptome', type="filepath")
+		transcriptome_file = config.param('kallisto', 'transcriptome_idx', type="filepath")
 		gtf_file = config.param('DEFAULT', 'gtf_transcript_id', type="filepath")
 
 		jobs = []
