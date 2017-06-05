@@ -13,6 +13,7 @@ module_star=mugqic/star/2.5.2a
 module_tabix=mugqic/tabix/0.2.6
 module_tophat=mugqic/tophat/2.0.14
 module_ucsc=mugqic/ucsc/v326
+module_kallisto_dev=mugqic_dev/kallisto/0.43.0
 
 HOST=`hostname`
 
@@ -39,6 +40,7 @@ fi
   RRNA=$SPECIES.$ASSEMBLY.$SOURCE$VERSION.rrna.fa
   VCF=$SPECIES.$ASSEMBLY.$SOURCE$VERSION.vcf.gz
   GO=$SPECIES.$ASSEMBLY.$SOURCE$VERSION.GO.tsv
+  CDNA=$SPECIES.$ASSEMBLY.$SOURCE$VERSION.cdna.fa
 
   echo "Installing genome for:"
   echo "species: $SPECIES"
@@ -411,6 +413,28 @@ create_rrna_bwa_index() {
     else
       echo
       echo "rRNA BWA index up to date... skipping"
+      echo
+    fi
+  fi
+}
+
+create_kallisto_index() {
+  if is_up2date $ANNOTATIONS_DIR/$CDNA
+  then
+    INDEX_DIR=$ANNOTATIONS_DIR/cdna_kallisto_index
+    if ! is_up2date $INDEX_DIR/$CDNA.idx
+    then
+      echo
+      echo "Creating cDNA Kallisto index..."
+      echo
+      mkdir -p $INDEX_DIR
+      ln -s -f -t $INDEX_DIR ../$CDNA
+      module load $module_kallisto_dev
+      kallisto index -i $INDEX_DIR/$CDNA.idx $INDEX_DIR/$CDNA > $LOG_DIR/cdna_kallisto_$TIMESTAMP.log 2>&1
+
+    else
+      echo
+      echo "cDNA Kallisto index up to date... skipping"
       echo
     fi
   fi

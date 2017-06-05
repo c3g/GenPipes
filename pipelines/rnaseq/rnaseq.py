@@ -899,6 +899,7 @@ cp \\
 
         return jobs
 
+
     def differential_expression(self):
         """
         Performs differential gene expression analysis using [DESEQ](http://bioconductor.org/packages/release/bioc/html/DESeq.html) and [EDGER](http://www.bioconductor.org/packages/release/bioc/html/edgeR.html).
@@ -1024,7 +1025,7 @@ done""".format(
             self.fpkm_correlation_matrix,
             self.gq_seq_utils_exploratory_analysis_rnaseq,
             self.differential_expression,
-            self.differential_expression_goseq
+            self.differential_expression_goseq,
         ]
 
 if __name__ == '__main__':

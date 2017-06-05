@@ -166,7 +166,7 @@ python $PYTHON_TOOLS/AmpliconSeq_script.py \\
         )
     )
 
-def py_filterAssemblyToFastaToTsv(fasta_file, filter_file, fasta_id_column, output):  
+def py_filterAssemblyToFastaToTsv(fasta_file, filter_file, fasta_id_column, output):
     return Job(
         [ fasta_file , filter_file],
         [ output + "." + ext for ext in ["fasta", "tsv"] ],
@@ -309,8 +309,40 @@ cat {input} | perl $PERL_TOOLS/vcf2bed.pl - \\
         output=output
         )
     )
-     
-   
+
+
+def rnaseqLight_kallisto(fastq_file1, fastq_file2, transcriptome_file, gtf_file, output_dir, job_name):
+    return Job(
+        input_files=[
+        fastq_file1,
+        fastq_file2,
+        transcriptome_file,
+        gtf_file],
+        output_files=[output_dir + "/" + "abundance_transcripts.tsv",
+                    output_dir + "/" + "abundance_genes.tsv",
+                    # output_dir + "/" + "abundance.h5",
+                    # output_dir + "/" + "run_info.json"
+                    ],
+        module_entries=[
+            # ['DEFAULT', 'module_mugqic_tools'],
+            ['kallisto', 'module_kallisto_dev']
+            ],
+        name=job_name,
+        command="""\
+            bash /home/emercier/bitbucket/RNAseq_light_dev/mugqic_tools/tools/rnaseq_light_kallisto.sh \\
+            {fastq_file1} \\
+            {fastq_file2} \\
+            {transcriptome_file} \\
+            {gtf_file} \\
+            {output_dir}""".format(
+            fastq_file1=fastq_file1,
+            fastq_file2=fastq_file2,
+            transcriptome_file=transcriptome_file,
+            gtf_file=gtf_file,
+            output_dir=output_dir
+                )
+     )
+
 
 ## functions for R tools ##
 
