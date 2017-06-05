@@ -125,63 +125,63 @@ class RNAseqLight(rnaseq.RnaSeq):
 			#SINGLE
 		return jobs
 
-	def gq_seq_utils_exploratory_analysis_rnaseq_light(self):
-	    """
-	    Exploratory analysis using the gqSeqUtils R package adapted for RNAseqLight
-	    """
+	# def gq_seq_utils_exploratory_analysis_rnaseq_light(self):
+	#     """
+	#     Exploratory analysis using the gqSeqUtils R package adapted for RNAseqLight
+	#     """
 
-	    jobs = []
+	#     jobs = []
 
-	    gqSeqUtils function call
-	    sample_fpkm_readcounts = [[
-	        sample.name,
-	        os.path.join("kallisto", sample.name, "abundance_transcripts.tsv"),
-	        os.path.join("kallisto", sample.name, "abundance_genes.tsv")
-	        # os.path.join("cufflinks", sample.name, "isoforms.fpkm_tracking"),
-	        # os.path.join("raw_counts", sample.name + ".readcounts.csv")
-	    ] for sample in self.samples]
-	    jobs.append(concat_jobs([
-	        Job(command="mkdir -p exploratory"),
-	        gq_seq_utils.exploratory_analysis_rnaseq(
-	            os.path.join("DGE", "rawCountMatrix.csv"),
-	            "cuffnorm",
-	            config.param('gq_seq_utils_exploratory_analysis_rnaseq', 'genes', type='filepath'),
-	            "exploratory"
-	        )
-	    ], name="gq_seq_utils_exploratory_analysis_rnaseq"))
+	#     gqSeqUtils function call
+	#     sample_fpkm_readcounts = [[
+	#         sample.name,
+	#         os.path.join("kallisto", sample.name, "abundance_transcripts.tsv"),
+	#         os.path.join("kallisto", sample.name, "abundance_genes.tsv")
+	#         # os.path.join("cufflinks", sample.name, "isoforms.fpkm_tracking"),
+	#         # os.path.join("raw_counts", sample.name + ".readcounts.csv")
+	#     ] for sample in self.samples]
+	#     jobs.append(concat_jobs([
+	#         Job(command="mkdir -p exploratory"),
+	#         gq_seq_utils.exploratory_analysis_rnaseq(
+	#             os.path.join("DGE", "rawCountMatrix.csv"),
+	#             "cuffnorm",
+	#             config.param('gq_seq_utils_exploratory_analysis_rnaseq', 'genes', type='filepath'),
+	#             "exploratory"
+	#         )
+	#     ], name="gq_seq_utils_exploratory_analysis_rnaseq"))
 
-	    Render Rmarkdown Report
-	    jobs.append(
-	        rmarkdown.render(
-	         job_input            = os.path.join("exploratory", "index.tsv"),
-	         job_name             = "gq_seq_utils_exploratory_analysis_rnaseq_report",
-	         input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeq.gq_seq_utils_exploratory_analysis_rnaseq.Rmd") ,
-	         render_output_dir    = 'report',
-	         module_section       = 'report', # TODO: this or exploratory?
-	         prerun_r             = 'report_dir="report";' # TODO: really necessary or should be hard-coded in exploratory.Rmd?
-	         )
-	    )
+	#     Render Rmarkdown Report
+	#     jobs.append(
+	#         rmarkdown.render(
+	#          job_input            = os.path.join("exploratory", "index.tsv"),
+	#          job_name             = "gq_seq_utils_exploratory_analysis_rnaseq_report",
+	#          input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeq.gq_seq_utils_exploratory_analysis_rnaseq.Rmd") ,
+	#          render_output_dir    = 'report',
+	#          module_section       = 'report', # TODO: this or exploratory?
+	#          prerun_r             = 'report_dir="report";' # TODO: really necessary or should be hard-coded in exploratory.Rmd?
+	#          )
+	#     )
 
-	    report_file = os.path.join("report", "RnaSeq.cuffnorm.md")
-	    jobs.append(
-	        Job(
-	            [os.path.join("cufflinks", "AllSamples","merged.gtf")],
-	            [report_file],
-	            command="""\
-				mkdir -p report && \\
-				zip -r report/cuffAnalysis.zip cufflinks/ cuffdiff/ cuffnorm/ && \\
-				cp \\
-				  {report_template_dir}/{basename_report_file} \\
-				  {report_file}""".format(
-	                report_template_dir=self.report_template_dir,
-	                basename_report_file=os.path.basename(report_file),
-	                report_file=report_file
-	            ),
-	            report_files=[report_file],
-	            name="cuffnorm_report")
-	    )
+	#     report_file = os.path.join("report", "RnaSeq.cuffnorm.md")
+	#     jobs.append(
+	#         Job(
+	#             [os.path.join("cufflinks", "AllSamples","merged.gtf")],
+	#             [report_file],
+	#             command="""\
+	# 			mkdir -p report && \\
+	# 			zip -r report/cuffAnalysis.zip cufflinks/ cuffdiff/ cuffnorm/ && \\
+	# 			cp \\
+	# 			  {report_template_dir}/{basename_report_file} \\
+	# 			  {report_file}""".format(
+	#                 report_template_dir=self.report_template_dir,
+	#                 basename_report_file=os.path.basename(report_file),
+	#                 report_file=report_file
+	#             ),
+	#             report_files=[report_file],
+	#             name="cuffnorm_report")
+	#     )
 
-		return jobs
+	# 	return jobs
 
 
 ############
