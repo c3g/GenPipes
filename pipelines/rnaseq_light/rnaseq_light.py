@@ -42,7 +42,7 @@ from bfx.readset import *
 from bfx import gq_seq_utils
 # from bfx import htseq
 # from bfx import metrics
-# from bfx import picard
+from bfx import picard
 # from bfx import samtools
 # from bfx import star
 # from bfx import bvatools
