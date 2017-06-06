@@ -85,6 +85,13 @@ class RNAseqLight(rnaseq.RnaSeq):
 			#SINGLE
 		return jobs
 
+	def mergeKallistoCounts():
+
+		kallisto_directory="kallisto"
+
+
+		return jobs
+
 	# def gq_seq_utils_exploratory_analysis_rnaseq_light(self):
 	#     """
 	#     Exploratory analysis using the gqSeqUtils R package adapted for RNAseqLight
@@ -153,7 +160,8 @@ class RNAseqLight(rnaseq.RnaSeq):
 			self.trimmomatic,
 			self.merge_trimmomatic_stats,
 			self.kallisto
-			#mergeKallistoCounts
+			#self.mergeKallistoCounts
+			#merge readsets to samples
 			# self.gq_seq_utils_exploratory_analysis_rnaseq_light
 			]
 

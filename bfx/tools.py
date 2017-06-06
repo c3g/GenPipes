@@ -324,8 +324,8 @@ def rnaseqLight_kallisto(fastq_file1, fastq_file2, transcriptome_file, gtf_file,
                     # output_dir + "/" + "run_info.json"
                     ],
         module_entries=[
-            # ['DEFAULT', 'module_mugqic_tools'],
-            ['kallisto', 'module_kallisto_dev']
+            ['DEFAULT', 'module_mugqic_tools'],
+            ['kallisto', 'module_kallisto']
             ],
         name=job_name,
         command="""\
