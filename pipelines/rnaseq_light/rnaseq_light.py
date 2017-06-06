@@ -152,7 +152,8 @@ class RNAseqLight(rnaseq.RnaSeq):
 			self.picard_sam_to_fastq,
 			self.trimmomatic,
 			self.merge_trimmomatic_stats,
-			self.kallisto #meme input que star
+			self.kallisto
+			#mergeKallistoCounts
 			# self.gq_seq_utils_exploratory_analysis_rnaseq_light
 			]
 
