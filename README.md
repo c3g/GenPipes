@@ -71,7 +71,7 @@ MUGQIC pipelines and compatible Python version are already installed as modules 
 To use them by default, add in your *$HOME/.bash_profile*:
 ```
 #!bash
-module load mugqic/python/2.7.8
+module load mugqic/python/2.7.13
 module load mugqic/mugqic_pipelines/<latest_version>
 ```
 (find out the latest version with: "`module avail 2>&1 | grep mugqic/mugqic_pipelines`").
@@ -282,10 +282,14 @@ Pipelines require as input one Readset File, one or more Configuration File(s) a
 For more information about a specific pipeline, visit:
 
 ### [DNA-Seq Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/dnaseq/)
+### [DNA-Seq high Coverage Pipeline Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/dnaseq_high_coverage/)
 ### [RNA-Seq Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/rnaseq/)
 ### [RNA-Seq De Novo Assembly Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/rnaseq_denovo_assembly/)
 ### [PacBio Assembly Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/pacbio_assembly/)
 ### [ChIP-Seq Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/chipseq/)
+### [Amplicon-Seq Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/ampliconseq/)
+### [Tumor Pair Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/tumor_pair/)
+### [Methyl-Seq Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/methylseq/)
 ### [Illumina Run Processing Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/illumina_run_processing/)
 
 
@@ -295,7 +299,7 @@ Readset File
 The Readset File is a TAB-separated values plain text file with one line per readset and the following columns in any order:
 
 
-### DNA-Seq, RNA-Seq, RNA-Seq De Novo Assembly, ChIP-Seq
+### DNA-Seq, DNA-Seq high Coverage, RNA-Seq, RNA-Seq De Novo Assembly, ChIP-Seq, Amplicon-Seq, Tumor Pair, Methyl-Seq
 
 * Sample: must contain letters A-Z, numbers 0-9, hyphens (-) or underscores (_) only; BAM files will be merged into a file named after this value; mandatory;
 * Readset: a unique readset name with the same allowed characters as above; mandatory;
@@ -303,6 +307,8 @@ The Readset File is a TAB-separated values plain text file with one line per rea
 * RunType: `PAIRED_END` or `SINGLE_END`; mandatory;
 * Run: optional;
 * Lane: optional;
+* Adapter1 : sequence of the forward trimming adapter
+* Adapter2 : sequence of the reverse trimming adapter
 * QualityOffset: quality score offset integer used for trimming; optional;
 * BED: relative or absolute path to BED file; optional;
 * FASTQ1: relative or absolute path to first FASTQ file for paired-end readset or single FASTQ file for single-end readset; mandatory if BAM value is missing;
@@ -311,11 +317,11 @@ The Readset File is a TAB-separated values plain text file with one line per rea
 
 Example:
 
-    Sample	Readset	Library	RunType	Run	Lane	QualityOffset	BED	FASTQ1	FASTQ2	BAM
-    sampleA	readset1	lib0001	PAIRED_END	run100	1	33	path/to/file.bed	path/to/readset1.paired1.fastq.gz	path/to/readset1.paired2.fastq.gz	path/to/readset1.bam
-    sampleA	readset2	lib0001	PAIRED_END	run100	2	33	path/to/file.bed	path/to/readset2.paired1.fastq.gz	path/to/readset2.paired2.fastq.gz	path/to/readset2.bam
-    sampleB	readset3	lib0002	PAIRED_END	run200	5	33	path/to/file.bed	path/to/readset3.paired1.fastq.gz	path/to/readset3.paired2.fastq.gz	path/to/readset3.bam
-    sampleB	readset4	lib0002	PAIRED_END	run200	6	33	path/to/file.bed	path/to/readset4.paired1.fastq.gz	path/to/readset4.paired2.fastq.gz	path/to/readset4.bam
+    Sample	Readset	Library	RunType	Run	Lane	Adapter1	Adapter2	QualityOffset	BED	FASTQ1	FASTQ2	BAM
+    sampleA	readset1	lib0001	PAIRED_END	run100	1	AGATCGGAAGAGCACACGTCTGAACTCCAGTCA	AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT	33	path/to/file.bed	path/to/readset1.paired1.fastq.gz	path/to/readset1.paired2.fastq.gz	path/to/readset1.bam
+    sampleA	readset2	lib0001	PAIRED_END	run100	2	AGATCGGAAGAGCACACGTCTGAACTCCAGTCA	AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT	33	path/to/file.bed	path/to/readset2.paired1.fastq.gz	path/to/readset2.paired2.fastq.gz	path/to/readset2.bam
+    sampleB	readset3	lib0002	PAIRED_END	run200	5	AGATCGGAAGAGCACACGTCTGAACTCCAGTCA	AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT	33	path/to/file.bed	path/to/readset3.paired1.fastq.gz	path/to/readset3.paired2.fastq.gz	path/to/readset3.bam
+    sampleB	readset4	lib0002	PAIRED_END	run200	6	AGATCGGAAGAGCACACGTCTGAACTCCAGTCA	AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT	33	path/to/file.bed	path/to/readset4.paired1.fastq.gz	path/to/readset4.paired2.fastq.gz	path/to/readset4.bam
 
 
 ### PacBio Assembly
@@ -348,14 +354,14 @@ Those files have a structure similar to Microsoft Windows INI files e.g.:
 ```
 #!ini
 [DEFAULT]
-module_trimmomatic=mugqic/trimmomatic/0.32
+module_trimmomatic=mugqic/trimmomatic/0.36
 
 [trimmomatic]
 min_length=50
 ```
 
 A parameter value is first searched in its specific section, then, if not found, in the special `DEFAULT` section.
-The example above would resolve parameter `module_trimmomatic` value from section `trimmomatic` to `mugqic/trimmomatic/0.32`.
+The example above would resolve parameter `module_trimmomatic` value from section `trimmomatic` to `mugqic/trimmomatic/0.36`.
 
 Configuration files support interpolation. For example:
 ```
