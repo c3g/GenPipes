@@ -88,16 +88,15 @@ class RNAseqLight(rnaseq.RnaSeq):
 	def mergeKallistoCounts(self):
 
 		kallisto_directory="kallisto"
-		input_abundance_files = [os.path.join(kallisto_directory, readset.sample.name, "abundance_genes.tsv") for readset in self.readsets]
+		input_abundance_files = [os.path.join(self.output_dir,kallisto_directory, readset.sample.name, "abundance_genes.tsv") for readset in self.readsets]
 
-		output_dir=self.output_dir+"/kallisto/"
+		output_dir=os.path.join(self.output_dir,kallisto_directory)
 		job_name = "merge_kallisto"
 		data_type="genes"
 
+		job=tools.r_merge_kallisto_counts(input_abundance_files, output_dir, data_type, job_name)
 
-		job=[tools.r_merge_kallisto_counts(input_abundance_files, output_dir, data_type, job_name)]
-
-		return job
+		return [job]
 
 	def gq_seq_utils_exploratory_analysis_rnaseq_light(self):
 		"""
@@ -105,19 +104,12 @@ class RNAseqLight(rnaseq.RnaSeq):
 		"""
 
 		jobs = []
-
+		abundance_file=os.path.join(self.output_dir,"kallisto", "all_samples.abundance_genes.csv")
 		# gqSeqUtils function call
-		sample_fpkm_readcounts = [[
-			sample.name,
-			os.path.join("kallisto", sample.name, "abundance_transcripts.tsv"),
-			os.path.join("kallisto", sample.name, "abundance_genes.tsv")
-			# os.path.join("cufflinks", sample.name, "isoforms.fpkm_tracking"),
-			# os.path.join("raw_counts", sample.name + ".readcounts.csv")
-		] for sample in self.samples]
 		jobs.append(concat_jobs([
 			Job(command="mkdir -p exploratory"),
 			gq_seq_utils.exploratory_analysis_rnaseq_light(
-				os.path.join("kallisto", "all_samples.abundance_genes.csv"),
+				abundance_file,
 				config.param('gq_seq_utils_exploratory_analysis_rnaseq_light', 'genes', type='filepath'),
 				"exploratory"
 			)

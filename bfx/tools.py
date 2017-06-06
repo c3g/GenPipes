@@ -319,10 +319,7 @@ def rnaseqLight_kallisto(fastq_file1, fastq_file2, transcriptome_file, gtf_file,
         transcriptome_file,
         gtf_file],
         output_files=[output_dir + "/" + "abundance_transcripts.tsv",
-                    output_dir + "/" + "abundance_genes.tsv",
-                    # output_dir + "/" + "abundance.h5",
-                    # output_dir + "/" + "run_info.json"
-                    ],
+                    output_dir + "/" + "abundance_genes.tsv" ],
         module_entries=[
             ['DEFAULT', 'module_mugqic_tools'],
             ['DEFAULT', 'module_R'],
@@ -349,10 +346,7 @@ def rnaseqLight_kallisto(fastq_file1, fastq_file2, transcriptome_file, gtf_file,
 def r_merge_kallisto_counts(input_abundance_files, output_dir, data_type, job_name):
     return Job(
         input_files=input_abundance_files,
-        output_files=[
-                # output_dir + "/" + "abundance_transcripts.tsv",
-                output_dir + "/" + "all_samples.abundance_" + data_type + ".tsv",
-                ],
+        output_files=[output_dir + "/" + "all_samples.abundance_" + data_type + ".csv"],
         module_entries=[['DEFAULT', 'module_mugqic_tools']],
         name=job_name,
         command="""\
