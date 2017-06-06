@@ -330,7 +330,7 @@ def rnaseqLight_kallisto(fastq_file1, fastq_file2, transcriptome_file, gtf_file,
             ],
         name=job_name,
         command="""\
-            bash mugqic_tools/tools/rnaseq_light_kallisto.sh \\
+            bash rnaseq_light_kallisto.sh \\
             {fastq_file1} \\
             {fastq_file2} \\
             {transcriptome_file} \\
