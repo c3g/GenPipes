@@ -351,7 +351,7 @@ def r_merge_kallisto_counts(input_abundance_files, output_dir, data_type, job_na
         input_files=input_abundance_files,
         output_files=[
                 # output_dir + "/" + "abundance_transcripts.tsv",
-                output_dir + "/" + "all_samples.abundance_genes.tsv",
+                output_dir + "/" + "all_samples.abundance_" + data_type + ".tsv",
                 ],
         module_entries=[['DEFAULT', 'module_mugqic_tools']],
         name=job_name,
