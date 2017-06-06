@@ -42,9 +42,9 @@ from bfx.readset import *
 # from bfx import gq_seq_utils
 # from bfx import htseq
 # from bfx import metrics
-from bfx import picard
-from bfx import samtools
-from bfx import star
+# from bfx import picard
+# from bfx import samtools
+# from bfx import star
 # from bfx import bvatools
 # from bfx import rmarkdown
 from pipelines import common
@@ -85,12 +85,19 @@ class RNAseqLight(rnaseq.RnaSeq):
 			#SINGLE
 		return jobs
 
-	def mergeKallistoCounts():
+	def mergeKallistoCounts(self):
 
 		kallisto_directory="kallisto"
+		input_abundance_files = [os.path.join(kallisto_directory, readset.sample.name, "abundance_genes.tsv") for readset in self.readsets]
+
+		output_dir=self.output_dir+"/kallisto/"
+		job_name = "merge_kallisto"
+		data_type="genes"
 
 
-		return jobs
+		job=[tools.r_merge_kallisto_counts(input_abundance_files, output_dir, data_type, job_name)]
+
+		return job
 
 	# def gq_seq_utils_exploratory_analysis_rnaseq_light(self):
 	#     """
@@ -159,8 +166,8 @@ class RNAseqLight(rnaseq.RnaSeq):
 			self.picard_sam_to_fastq,
 			self.trimmomatic,
 			self.merge_trimmomatic_stats,
-			self.kallisto
-			#self.mergeKallistoCounts
+			self.kallisto,
+			self.mergeKallistoCounts
 			#merge readsets to samples
 			# self.gq_seq_utils_exploratory_analysis_rnaseq_light
 			]

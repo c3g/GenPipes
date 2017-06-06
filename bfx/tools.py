@@ -325,6 +325,7 @@ def rnaseqLight_kallisto(fastq_file1, fastq_file2, transcriptome_file, gtf_file,
                     ],
         module_entries=[
             ['DEFAULT', 'module_mugqic_tools'],
+            ['DEFAULT', 'module_R'],
             ['kallisto', 'module_kallisto']
             ],
         name=job_name,
@@ -345,6 +346,26 @@ def rnaseqLight_kallisto(fastq_file1, fastq_file2, transcriptome_file, gtf_file,
 
 
 ## functions for R tools ##
+def r_merge_kallisto_counts(input_abundance_files, output_dir, data_type, job_name):
+    return Job(
+        input_files=input_abundance_files,
+        output_files=[
+                # output_dir + "/" + "abundance_transcripts.tsv",
+                output_dir + "/" + "all_samples.abundance_genes.tsv",
+                ],
+        module_entries=[['DEFAULT', 'module_mugqic_tools']],
+        name=job_name,
+        command="""\
+            R --no-save --args \\
+            {input_abundance_files} \\
+            {output_dir} \\
+            {data_type} \\
+            < $R_TOOLS/mergeKallistoCounts.R""".format(
+            input_abundance_files=",".join(input_abundance_files),
+            output_dir=output_dir,
+            data_type=data_type #transcripts or genes
+            )
+        )
 
 def r_select_scaffolds(input, output, folder_sca, kmer, name_sample, type_insert, min_insert_size=200):
     return Job(
