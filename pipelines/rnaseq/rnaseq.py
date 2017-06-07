@@ -965,6 +965,7 @@ pandoc \\
   --template {report_template_dir}/{basename_report_file} \\
   --variable design_table="`head -7 report/design.tsv | cut -f-8 | awk -F"\t" '{{OFS="\t"; if (NR==1) {{print; gsub(/[^\t]/, "-")}} print}}' | sed 's/\t/|/g'`" \\
   --variable raw_count_matrix_table="`head -7 report/rawCountMatrix.csv | cut -f-8 | awk -F"\t" '{{OFS="\t"; if (NR==1) {{print; gsub(/[^\t]/, "-")}} print}}' | sed 's/\t/|/g'`" \\
+  --variable adj_pvalue_threshold={adj_pvalue_threshold} \\
   --to markdown \\
   > {report_file} && \\
 for contrast in {contrasts}
@@ -989,6 +990,7 @@ done""".format(
                     design_file=os.path.abspath(self.args.design.name),
                     report_template_dir=self.report_template_dir,
                     basename_report_file=os.path.basename(report_file),
+                    adj_pvalue_threshold=config.param('differential_expression_goseq','other_options').split(" ")[1],
                     report_file=report_file,
                     contrasts=" ".join([contrast.name for contrast in self.contrasts])
                 ),
