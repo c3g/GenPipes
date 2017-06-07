@@ -952,10 +952,11 @@ cp \\
                 [os.path.join("cuffdiff", contrast.name, "isoform_exp.diff") for contrast in self.contrasts] +
                 [os.path.join("DGE", contrast.name, "gene_ontology_results.csv") for contrast in self.contrasts],
                 [report_file],
-                [['rnaseqc', 'module_pandoc']],
+                [['rnaseqc', 'module_python'], ['rnaseqc', 'module_pandoc']],
                 # Ugly awk to format differential expression results into markdown for genes, transcripts and GO if any; knitr may do this better
                 # Ugly awk and python to merge cuffdiff fpkm and isoforms into transcript expression results
                 command="""\
+set -eu -o pipefail && \\
 mkdir -p report && \\
 cp {design_file} report/design.tsv && \\
 cp DGE/rawCountMatrix.csv report/ && \\
