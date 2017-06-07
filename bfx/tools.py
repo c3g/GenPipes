@@ -347,7 +347,10 @@ def r_merge_kallisto_counts(input_abundance_files, output_dir, data_type, job_na
     return Job(
         input_files=input_abundance_files,
         output_files=[output_dir + "/" + "all_samples.abundance_" + data_type + ".csv"],
-        module_entries=[['DEFAULT', 'module_mugqic_tools']],
+        module_entries=[['DEFAULT', 'module_R'],
+                        ['DEFAULT', 'module_mugqic_R_packages'],
+                            ['DEFAULT', 'module_mugqic_tools']
+              ],
         name=job_name,
         command="""\
             R --no-save --args \\
