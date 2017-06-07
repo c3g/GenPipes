@@ -90,7 +90,8 @@ class RNAseqLight(rnaseq.RnaSeq):
 		kallisto_directory="kallisto"
 		input_abundance_files = [os.path.join(self.output_dir,kallisto_directory, readset.sample.name, "abundance_genes.tsv") for readset in self.readsets]
 
-		output_dir=os.path.join(self.output_dir,kallisto_directory)
+		all_samples_directory="All_samples"
+		output_dir=os.path.join(self.output_dir,kallisto_directory, all_samples_directory)
 		job_name = "merge_kallisto"
 		data_type="genes"
 
@@ -104,7 +105,7 @@ class RNAseqLight(rnaseq.RnaSeq):
 		"""
 
 		jobs = []
-		abundance_file=os.path.join(self.output_dir,"kallisto", "all_samples.abundance_genes.csv")
+		abundance_file=os.path.join(self.output_dir,"kallisto/All_samples", "all_samples.abundance_genes.csv")
 		# gqSeqUtils function call
 		jobs.append(concat_jobs([
 			Job(command="mkdir -p exploratory"),
