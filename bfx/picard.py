@@ -114,7 +114,8 @@ def collect_multiple_metrics(input, output, reference_sequence=None, library_typ
             outputs,
             [
                 ['picard_collect_multiple_metrics', 'module_java'],
-                ['picard_collect_multiple_metrics', 'module_picard']
+                ['picard_collect_multiple_metrics', 'module_picard'],
+                ['picard_collect_rna_metrics', 'module_R']
             ],
             command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/CollectMultipleMetrics.jar \\
