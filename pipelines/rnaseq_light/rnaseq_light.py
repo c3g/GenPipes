@@ -92,7 +92,7 @@ class RnaSeqLight(rnaseq.RnaSeq):
 
 		all_readset_directory="All_readsets"
 		output_dir=os.path.join(self.output_dir,kallisto_directory, all_readset_directory)
-		job_name = "merge_kallisto"
+		job_name = "create_kallisto_count_matrix"
 		data_type="genes"
 
 		job=tools.r_create_kallisto_count_matrix(input_abundance_files, output_dir, data_type, job_name)
