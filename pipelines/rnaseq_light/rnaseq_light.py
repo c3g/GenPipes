@@ -54,9 +54,9 @@ from pipelines.rnaseq import rnaseq
 
 log = logging.getLogger(__name__)
 
-class RNAseqLight(rnaseq.RnaSeq):
+class RnaSeqLight(rnaseq.RnaSeq):
 	def __init__(self):
-		super(RNAseqLight, self).__init__()
+		super(RnaSeqLight, self).__init__()
 
 	def kallisto(self):
 		"""
@@ -85,27 +85,27 @@ class RNAseqLight(rnaseq.RnaSeq):
 			#SINGLE
 		return jobs
 
-	def mergeKallistoCounts(self):
+	def kallisto_count_matrix(self):
 
 		kallisto_directory="kallisto"
 		input_abundance_files = [os.path.join(self.output_dir,kallisto_directory, readset.sample.name, "abundance_genes.tsv") for readset in self.readsets]
 
-		all_samples_directory="All_samples"
-		output_dir=os.path.join(self.output_dir,kallisto_directory, all_samples_directory)
+		all_readset_directory="All_readsets"
+		output_dir=os.path.join(self.output_dir,kallisto_directory, all_readset_directory)
 		job_name = "merge_kallisto"
 		data_type="genes"
 
-		job=tools.r_merge_kallisto_counts(input_abundance_files, output_dir, data_type, job_name)
+		job=tools.r_create_kallisto_count_matrix(input_abundance_files, output_dir, data_type, job_name)
 
 		return [job]
 
 	def gq_seq_utils_exploratory_analysis_rnaseq_light(self):
 		"""
-		Exploratory analysis using the gqSeqUtils R package adapted for RNAseqLight
+		Exploratory analysis using the gqSeqUtils R package adapted for RnaSeqLight
 		"""
 
 		jobs = []
-		abundance_file=os.path.join(self.output_dir,"kallisto/All_samples", "all_samples.abundance_genes.csv")
+		abundance_file=os.path.join(self.output_dir,"kallisto/All_readsets", "all_readsets.abundance_genes.csv")
 		# gqSeqUtils function call
 		jobs.append(concat_jobs([
 			Job(command="mkdir -p exploratory"),
@@ -117,25 +117,40 @@ class RNAseqLight(rnaseq.RnaSeq):
 		], name="gq_seq_utils_exploratory_analysis_rnaseq_light"))
 
 		# Render Rmarkdown Report
+		kallisto_directory="kallisto"
+		jobs.append(
+			rmarkdown.render(
+				job_input            = [os.path.join(self.output_dir,kallisto_directory, readset.sample.name, "abundance_genes.tsv") for readset in self.readsets],
+				job_name             = "kallisto_report",
+				input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeqLight.kallisto.Rmd") ,
+				render_output_dir    = 'report',
+				module_section       = 'report', # TODO: this or exploratory?
+				prerun_r             = 'report_dir="report";' # TODO: really necessary or should be hard-coded in exploratory.Rmd?
+			)
+		)
+
 		jobs.append(
 			rmarkdown.render(
 			 job_input            = os.path.join("exploratory", "index.tsv"),
 			 job_name             = "gq_seq_utils_exploratory_analysis_rnaseq_report",
-			 input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeq.gq_seq_utils_exploratory_analysis_rnaseq_light.Rmd") ,
+			 input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeqLight.gq_seq_utils_exploratory_analysis_rnaseq_light.Rmd") ,
 			 render_output_dir    = 'report',
 			 module_section       = 'report', # TODO: this or exploratory?
 			 prerun_r             = 'report_dir="report";' # TODO: really necessary or should be hard-coded in exploratory.Rmd?
 			 )
 		)
 
-		# report_file = os.path.join("report", "RnaSeq.kallisto.md")
+
+
+		# report_file = os.path.join(self.output_dir, "report", "RnaSeqLight.kallisto.md")
+		# print(report_file)
 		# jobs.append(
 		# 	Job(
-		# 		[os.path.join("cufflinks", "AllSamples","merged.gtf")],
+		# 		[os.path.join(self.output_dir, "kallisto", "All_samples","all_samples.abundance_genes.csv")],
 		# 		[report_file],
 		# 		command="""\
 		# 		mkdir -p report && \\
-		# 		zip -r report/cuffAnalysis.zip cufflinks/ cuffdiff/ kallisto/ && \\
+		# 		zip -r report/kallisto.zip kallisto/ && \\
 		# 		cp \\
 		# 		  {report_template_dir}/{basename_report_file} \\
 		# 		  {report_file}""".format(
@@ -159,11 +174,10 @@ class RNAseqLight(rnaseq.RnaSeq):
 			self.trimmomatic,
 			self.merge_trimmomatic_stats,
 			self.kallisto,
-			#merge readsets to samples
-			self.mergeKallistoCounts,
+			self.kallisto_count_matrix,
 			self.gq_seq_utils_exploratory_analysis_rnaseq_light
 			]
 
 if __name__ == '__main__':
-	RNAseqLight()
+	RnaSeqLight()
 

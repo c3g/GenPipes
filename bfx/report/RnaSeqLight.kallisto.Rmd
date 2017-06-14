@@ -1,0 +1,50 @@
+```{r preparation, results="hide",echo=F,message=F,warning=F}
+
+### DEFINED OUTSIDE
+# report_dir
+
+library(rmarkdown)
+library(knitr)
+library(hwriter)
+library(magrittr)
+library(jsonlite)
+options(stringsAsFactors=F)
+
+
+# Directories and cp data
+unlink( file.path(report_dir,"kallisto") , recursive = T)
+dir.create( file.path(report_dir,"kallisto"), showWarnings=F,recursive=T)
+file.copy(from = "kallisto", to = report_dir, overwrite = T, recursive = T)
+
+# Create summary table
+all_readsets=read.delim(file.path(report_dir,"kallisto/All_samples/all_samples.abundance_genes.csv"))
+readset_names=colnames(all_readsets)[-1]
+
+mat=data.frame(matrix(nrow=length(readset_names), ncol=8))
+rownames(mat)=readset_names
+colnames(mat)=c("Readset","Raw Paired Reads #", "Transcripts #", "Sum transcripts","%", "Genes #", "Sum genes","%")
+mat[,1]=readset_names
+for (i in seq(length(readset_names))){
+    readset=readset_names[i]
+    run_info=fromJSON(file.path(report_dir, "kallisto", readset, "run_info.json"))
+    mat[i,"Raw Paired Reads #"]=run_info$n_processed
+    mat[i,"Transcripts #"]=run_info$n_targets
+    transcript_count=read.delim(file.path(report_dir,"kallisto",readset,"abundance_transcripts.tsv"))
+    mat[i,"Sum transcripts"]=sum(transcript_count[,"est_counts"])
+    mat[i,5]=signif(mat[i,"Sum transcripts"]/mat[i,"Raw Paired Reads #"],3)*100
+    gene_count=read.delim(file.path(report_dir,"kallisto",readset,"abundance_genes.tsv"))
+    mat[i,"Genes #"]=nrow(gene_count)
+    mat[i,"Sum genes"]=sum(gene_count$counts)
+    mat[i,8]=signif(mat[i,"Sum genes"]/mat[i,"Raw Paired Reads #"],3)*100
+}
+
+```
+
+### Kallisto
+
+```{r summary_table, results="markup",echo=F,message=F,warning=F}
+kable(mat,align=c("l","r"),row.names=F)
+
+```
+
+blablabla
