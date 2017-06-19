@@ -26,22 +26,23 @@ import os
 from core.config import *
 from core.job import *
 
-def verify (input_bam, input_vcf, output_prefix, job_name = None ):
+def verify(input_bam, input_vcf, output_prefix, job_name = None):
     return Job(
-        [ input_bam, input_vcf ],
-        [ output_prefix + ".selfSM" ],
+        [input_bam, input_vcf],
+        [output_prefix + ".selfSM"],
         [
-            ['dnaseq_qc', 'module_verify_bam_ID']
+            ['verify_bam_id', 'module_verify_bam_id']
         ],
         command="""\
-verifyBamID  \\
---vcf {input_vcf} \\
---bam {input_bam} \\
---out {output_prefix} \\
---verbose --ignoreRG --noPhoneHome""".format(
+verifyBamID \\
+  --vcf {input_vcf} \\
+  --bam {input_bam} \\
+  --out {output_prefix} \\
+  {other_options}""".format(
             input_vcf=input_vcf,
             input_bam=input_bam,
-            output_prefix=output_prefix
+            output_prefix=output_prefix,
+            other_options=config.param('verify_bam_id', 'other_options')
         ),
         name=job_name if job_name else "verifyBamID"
     )
