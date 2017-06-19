@@ -141,7 +141,6 @@ class Job:
         # If all previous tests passed, job is up to date
         return True
 
-
 # Create a new job by concatenating a list of jobs together
 def concat_jobs(jobs, name=""):
 
