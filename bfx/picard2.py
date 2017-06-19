@@ -216,7 +216,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             tmp_dir=config.param('picard_merge_sam_files', 'tmp_dir'),
             java_other_options=config.param('picard_merge_sam_files', 'java_other_options'),
             ram=config.param('picard_merge_sam_files', 'ram'),
-            inputs=" \\\n  ".join(["INPUT=" + input for input in inputs]),
+            inputs=" \\\n ".join(["INPUT=" + input for input in inputs]),
             output=output,
             max_records_in_ram=config.param('picard_merge_sam_files', 'max_records_in_ram', type='int')
             ),
