@@ -41,7 +41,7 @@ from bfx import metrics
 from bfx import picard
 from bfx import trimmomatic
 from bfx import rmarkdown
-from bfx import jsonator
+#from bfx import jsonator
 
 log = logging.getLogger(__name__)
 
