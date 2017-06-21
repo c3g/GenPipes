@@ -240,6 +240,7 @@ class MethylSeq(dnaseq.DnaSeq):
                 bam[readset.sample]=readset.bam
 
         jobs = []
+        created_interval_lists = []
         for sample in self.samples:
             file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.")
             coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
