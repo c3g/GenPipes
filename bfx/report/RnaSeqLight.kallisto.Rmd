@@ -48,4 +48,6 @@ kable(mat,align="r",row.names=F, format.args = list(decimal.mark = ".", big.mark
 
 ```
 
-blablabla
+transcripts2genes file: ([file](Mus_musculus.GRCm38.Ensembl83.tx2gene))
+
+Gene level count were obtained using the tximport package v.ZZZ.

@@ -55,129 +55,166 @@ from pipelines.rnaseq import rnaseq
 log = logging.getLogger(__name__)
 
 class RnaSeqLight(rnaseq.RnaSeq):
-	def __init__(self):
-		super(RnaSeqLight, self).__init__()
+    def __init__(self):
+        super(RnaSeqLight, self).__init__()
 
-	def kallisto(self):
-		"""
-			Run Kallisto on fastq files for a fast esimate of abundance.
-		"""
-		transcriptome_file = config.param('kallisto', 'transcriptome_idx', type="filepath")
-		gtf_file = config.param('DEFAULT', 'gtf_transcript_id', type="filepath")
+    def kallisto(self):
+        """
+            Run Kallisto on fastq files for a fast esimate of abundance.
+        """
+        transcriptome_file = config.param('kallisto', 'transcriptome_idx', type="filepath")
+        tx2genes_file = config.param('kallisto', 'transcript2genes', type="filepath")
 
-		jobs = []
-		for readset in self.readsets:
-			trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
+        jobs = []
+        for readset in self.readsets:
+            trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
 
-			#PAIRED
-			candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
-			if readset.fastq1 and readset.fastq2:
-				candidate_input_files.append([readset.fastq1, readset.fastq2])
-			if readset.bam:
-				candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
-			[fastq1, fastq2] = self.select_input_files(candidate_input_files)
+            #PAIRED
+            if readset.run_type == "PAIRED_END":
+                candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
+                if readset.fastq1 and readset.fastq2:
+                    candidate_input_files.append([readset.fastq1, readset.fastq2])
+                if readset.bam:
+                    candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
+                [fastq1, fastq2] = self.select_input_files(candidate_input_files)
 
-			job_name = "kallisto." + readset.name
-			output_dir=self.output_dir+"/kallisto/" + readset.sample.name
-			job = tools.rnaseqLight_kallisto(fastq1, fastq2, transcriptome_file, gtf_file, output_dir, job_name)
-			jobs.append(job)
+                job_name = "kallisto." + readset.name
+                output_dir=self.output_dir+"/kallisto/" + readset.sample.name
+                parameters=""
+                job = tools.rnaseqLight_kallisto(fastq1, fastq2, transcriptome_file, tx2genes_file, output_dir, parameters, job_name)
+                jobs.append(job)
 
-			#SINGLE
-		return jobs
+            #SINGLE
+            elif readset.run_type == "SINGLE_END":
+                candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
+                if readset.fastq1:
+                    candidate_input_files.append([readset.fastq1])
+                if readset.bam:
+                    candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
+                [fastq1] = self.select_input_files(candidate_input_files)
 
-	def kallisto_count_matrix(self):
+                job_name = "kallisto." + readset.name
+                output_dir=self.output_dir+"/kallisto/" + readset.sample.name
+                fragment_length = config.param('kallisto', 'fragment_length')
+                fragment_length_sd = config.param('kallisto', 'fragment_length_sd')
+                #warn user to update parameters in ini file?
+                parameters="--single -l "+ fragment_length +" -s " + fragment_length_sd
+                job = tools.rnaseqLight_kallisto(fastq1, "", transcriptome_file, tx2genes_file, output_dir, parameters, job_name)
+            else:
+                raise Exception("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
 
-		kallisto_directory="kallisto"
-		input_abundance_files = [os.path.join(self.output_dir,kallisto_directory, readset.sample.name, "abundance_genes.tsv") for readset in self.readsets]
+        return jobs
 
-		all_readset_directory="All_readsets"
-		output_dir=os.path.join(self.output_dir,kallisto_directory, all_readset_directory)
-		job_name = "create_kallisto_count_matrix"
-		data_type="genes"
+    def kallisto_count_matrix(self):
 
-		job=tools.r_create_kallisto_count_matrix(input_abundance_files, output_dir, data_type, job_name)
+        kallisto_directory="kallisto"
+        input_abundance_files = [os.path.join(self.output_dir,kallisto_directory, readset.sample.name, "abundance_genes.tsv") for readset in self.readsets]
 
-		return [job]
+        all_readset_directory="All_readsets"
+        output_dir=os.path.join(self.output_dir,kallisto_directory, all_readset_directory)
+        job_name = "create_kallisto_count_matrix"
+        data_type="genes"
 
-	def gq_seq_utils_exploratory_analysis_rnaseq_light(self):
-		"""
-		Exploratory analysis using the gqSeqUtils R package adapted for RnaSeqLight
-		"""
+        job=tools.r_create_kallisto_count_matrix(input_abundance_files, output_dir, data_type, job_name)
 
-		jobs = []
-		abundance_file=os.path.join(self.output_dir,"kallisto/All_readsets", "all_readsets.abundance_genes.csv")
-		# gqSeqUtils function call
-		jobs.append(concat_jobs([
-			Job(command="mkdir -p exploratory"),
-			gq_seq_utils.exploratory_analysis_rnaseq_light(
-				abundance_file,
-				config.param('gq_seq_utils_exploratory_analysis_rnaseq_light', 'genes', type='filepath'),
-				"exploratory"
-			)
-		], name="gq_seq_utils_exploratory_analysis_rnaseq_light"))
+        return [job]
 
-		# Render Rmarkdown Report
-		kallisto_directory="kallisto"
-		jobs.append(
-			rmarkdown.render(
-				job_input            = [os.path.join(self.output_dir,kallisto_directory, readset.sample.name, "abundance_genes.tsv") for readset in self.readsets],
-				job_name             = "kallisto_report",
-				input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeqLight.kallisto.Rmd") ,
-				render_output_dir    = 'report',
-				module_section       = 'report', # TODO: this or exploratory?
-				prerun_r             = 'report_dir="report";' # TODO: really necessary or should be hard-coded in exploratory.Rmd?
-			)
-		)
+    def gq_seq_utils_exploratory_analysis_rnaseq_light(self):
+        """
+        Exploratory analysis using the gqSeqUtils R package adapted for RnaSeqLight
+        """
 
-		jobs.append(
-			rmarkdown.render(
-			 job_input            = os.path.join("exploratory", "index.tsv"),
-			 job_name             = "gq_seq_utils_exploratory_analysis_rnaseq_report",
-			 input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeqLight.gq_seq_utils_exploratory_analysis_rnaseq_light.Rmd") ,
-			 render_output_dir    = 'report',
-			 module_section       = 'report', # TODO: this or exploratory?
-			 prerun_r             = 'report_dir="report";' # TODO: really necessary or should be hard-coded in exploratory.Rmd?
-			 )
-		)
+        jobs = []
+        abundance_file=os.path.join(self.output_dir,"kallisto/All_readsets", "all_readsets.abundance_genes.csv")
+        # gqSeqUtils function call
+        jobs.append(concat_jobs([
+            Job(command="mkdir -p exploratory"),
+            gq_seq_utils.exploratory_analysis_rnaseq_light(
+                abundance_file,
+                config.param('gq_seq_utils_exploratory_analysis_rnaseq_light', 'genes', type='filepath'),
+                "exploratory"
+            )
+        ], name="gq_seq_utils_exploratory_analysis_rnaseq_light"))
 
+        # Render Rmarkdown Report
+        kallisto_directory="kallisto"
+        jobs.append(
+            rmarkdown.render(
+                job_input            = [os.path.join(self.output_dir,kallisto_directory, readset.sample.name, "abundance_genes.tsv") for readset in self.readsets],
+                job_name             = "kallisto_report",
+                input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeqLight.kallisto.Rmd") ,
+                render_output_dir    = 'report',
+                module_section       = 'report', # TODO: this or exploratory?
+                prerun_r             = 'report_dir="report";' # TODO: really necessary or should be hard-coded in exploratory.Rmd?
+            )
+        )
 
+        jobs.append(
+            rmarkdown.render(
+             job_input            = os.path.join("exploratory", "index.tsv"),
+             job_name             = "gq_seq_utils_exploratory_analysis_rnaseq_report",
+             input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeqLight.gq_seq_utils_exploratory_analysis_rnaseq_light.Rmd") ,
+             render_output_dir    = 'report',
+             module_section       = 'report', # TODO: this or exploratory?
+             prerun_r             = 'report_dir="report";' # TODO: really necessary or should be hard-coded in exploratory.Rmd?
+             )
+        )
 
-		# report_file = os.path.join(self.output_dir, "report", "RnaSeqLight.kallisto.md")
-		# print(report_file)
-		# jobs.append(
-		# 	Job(
-		# 		[os.path.join(self.output_dir, "kallisto", "All_samples","all_samples.abundance_genes.csv")],
-		# 		[report_file],
-		# 		command="""\
-		# 		mkdir -p report && \\
-		# 		zip -r report/kallisto.zip kallisto/ && \\
-		# 		cp \\
-		# 		  {report_template_dir}/{basename_report_file} \\
-		# 		  {report_file}""".format(
-		# 			report_template_dir=self.report_template_dir,
-		# 			basename_report_file=os.path.basename(report_file),
-		# 			report_file=report_file
-		# 		),
-		# 		report_files=[report_file],
-		# 		name="kallisto_report")
-		# )
+        #copy tx2genes files; FILE TOO BIG!
+        #Solution: 1. don't copy it, 2. only transcript and genes
+        # jobs.append(
+        #   Job(
+        #       [os.path.join(self.output_dir, "kallisto", "All_readsets","all_readsets.abundance_genes.csv")],
+        #       [],
+        #       command="""\
+        #       mkdir -p report && \\
+        #       zip -r report/kallisto.zip kallisto/ && \\
+        #       cp \\
+        #         {tx2genes_file} \\
+        #         {report_dir}""".format(
+        #           tx2genes_file=config.param('kallisto', 'transcript2genes', type="filepath"),
+        #           report_dir="report"
+        #       ),
+        #       name="zip_and_move_files")
+        # )
 
-		return jobs
+        # report_file = os.path.join(self.output_dir, "report", "RnaSeqLight.kallisto.md")
+        # print(report_file)
+        # jobs.append(
+        #   Job(
+        #       [os.path.join(self.output_dir, "kallisto", "All_samples","all_samples.abundance_genes.csv")],
+        #       [report_file],
+        #       command="""\
+        #       mkdir -p report && \\
+        #       zip -r report/kallisto.zip kallisto/ && \\
+        #       cp \\
+        #         {report_template_dir}/{basename_report_file} \\
+        #         {report_file}""".format(
+        #           report_template_dir=self.report_template_dir,
+        #           basename_report_file=os.path.basename(report_file),
+        #           report_file=report_file
+        #       ),
+        #       report_files=[report_file],
+        #       name="kallisto_report")
+        # )
+
+        return jobs
 
 
 ############
 
-	@property
-	def steps(self):
-		return [
-			self.picard_sam_to_fastq,
-			self.trimmomatic,
-			self.merge_trimmomatic_stats,
-			self.kallisto,
-			self.kallisto_count_matrix,
-			self.gq_seq_utils_exploratory_analysis_rnaseq_light
-			]
+    @property
+    def steps(self):
+        return [
+            self.picard_sam_to_fastq,
+            self.trimmomatic,
+            self.merge_trimmomatic_stats,
+            self.kallisto,
+            self.kallisto_count_matrix,
+            self.gq_seq_utils_exploratory_analysis_rnaseq_light
+            ]
 
 if __name__ == '__main__':
-	RnaSeqLight()
+    RnaSeqLight()
 

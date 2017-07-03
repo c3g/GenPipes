@@ -311,13 +311,13 @@ cat {input} | perl $PERL_TOOLS/vcf2bed.pl - \\
     )
 
 
-def rnaseqLight_kallisto(fastq_file1, fastq_file2, transcriptome_file, gtf_file, output_dir, job_name):
+def rnaseqLight_kallisto(fastq_file1, fastq_file2, transcriptome_file, tx2genes_file, output_dir, parameters, job_name):
     return Job(
         input_files=[
         fastq_file1,
         fastq_file2,
         transcriptome_file,
-        gtf_file],
+        tx2genes_file],
         output_files=[output_dir + "/" + "abundance_transcripts.tsv",
                     output_dir + "/" + "abundance_genes.tsv" ],
         module_entries=[
@@ -331,13 +331,16 @@ def rnaseqLight_kallisto(fastq_file1, fastq_file2, transcriptome_file, gtf_file,
             {fastq_file1} \\
             {fastq_file2} \\
             {transcriptome_file} \\
-            {gtf_file} \\
-            {output_dir}""".format(
+            {tx2genes_file} \\
+            {output_dir} \\
+            {parameters}
+            """.format(
             fastq_file1=fastq_file1,
             fastq_file2=fastq_file2,
             transcriptome_file=transcriptome_file,
-            gtf_file=gtf_file,
-            output_dir=output_dir
+            tx2genes_file=tx2genes_file,
+            output_dir=output_dir,
+            parameters=parameters
                 )
      )
 

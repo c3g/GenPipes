@@ -440,6 +440,28 @@ create_kallisto_index() {
   fi
 }
 
+create_transcripts2genes_file() {
+  ANNOTATION_GTF=$ANNOTATIONS_DIR/$GTF
+   if is_up2date $ANNOTATION_GTF
+    ANNOTATION_TX2GENES=$ANNOTATIONS_DIR/cdna_kallisto_index/${GTF/.gtf/.tx2gene}
+    if ! is_up2date ANNOTATION_TX2GENES
+      module load $module_R
+      module load $module_mugqic_R_packages
+      R --no-restore --no-save<<EOF
+      suppressPackageStartupMessages(library(rtracklayer))
+      print("Building transcripts2genes...")
+      gtf_file="$ANNOTATION_GTF"
+
+      gtf=import(gtf_file, format = "gff2")
+      tx2gene=cbind(tx_id=gtf$transcript_id, gene_id=gtf$gene_id) #gene_name
+      tx2gene=tx2gene[!is.na(tx2gene[,1]),]
+      tx2gene=unique(tx2gene)
+      tx2gene=as.data.frame(tx2gene)
+
+      write.table(x=tx2gene, file="$ANNOTATION_TX2GENES", sep="\t", col.names=T, row.names=F, quote=F)
+EOF
+}
+
 create_gene_annotations() {
   ANNOTATION_PREFIX=$ANNOTATIONS_DIR/${GTF/.gtf}
 
@@ -635,6 +657,8 @@ build_files() {
   create_bowtie2_tophat_index
   create_ncrna_bwa_index
   create_rrna_bwa_index
+  create_kallisto_index
+  create_transcripts2genes_file
   create_gene_annotations
   create_gene_annotations_flat
 
