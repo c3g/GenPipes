@@ -145,8 +145,8 @@ class RnaSeqLight(rnaseq.RnaSeq):
                 job_name             = "kallisto_report",
                 input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeqLight.kallisto.Rmd") ,
                 render_output_dir    = 'report',
-                module_section       = 'report', # TODO: this or exploratory?
-                prerun_r             = 'report_dir="report";' # TODO: really necessary or should be hard-coded in exploratory.Rmd?
+                module_section       = 'report',
+                prerun_r             = 'report_dir="report";'
             )
         )
 
@@ -156,28 +156,25 @@ class RnaSeqLight(rnaseq.RnaSeq):
              job_name             = "gq_seq_utils_exploratory_analysis_rnaseq_report",
              input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeqLight.gq_seq_utils_exploratory_analysis_rnaseq_light.Rmd") ,
              render_output_dir    = 'report',
-             module_section       = 'report', # TODO: this or exploratory?
-             prerun_r             = 'report_dir="report";' # TODO: really necessary or should be hard-coded in exploratory.Rmd?
+             module_section       = 'report',
+             prerun_r             = 'report_dir="report";'
              )
         )
 
-        #copy tx2genes files; FILE TOO BIG!
-        #Solution: 1. don't copy it, 2. only transcript and genes
-        # jobs.append(
-        #   Job(
-        #       [os.path.join(self.output_dir, "kallisto", "All_readsets","all_readsets.abundance_genes.csv")],
-        #       [],
-        #       command="""\
-        #       mkdir -p report && \\
-        #       zip -r report/kallisto.zip kallisto/ && \\
-        #       cp \\
-        #         {tx2genes_file} \\
-        #         {report_dir}""".format(
-        #           tx2genes_file=config.param('kallisto', 'transcript2genes', type="filepath"),
-        #           report_dir="report"
-        #       ),
-        #       name="zip_and_move_files")
-        # )
+        #copy tx2genes file
+        jobs.append(
+          Job(
+              [os.path.join(self.output_dir, "kallisto", "All_readsets","all_readsets.abundance_genes.csv")],
+              [],
+              command="""\
+               cp \\
+                {tx2genes_file} \\
+                {report_dir}""".format(
+                  tx2genes_file=config.param('kallisto', 'transcript2genes', type="filepath"),
+                  report_dir="report"
+              ),
+              name="copy_tx2genes_file")
+        )
 
         # report_file = os.path.join(self.output_dir, "report", "RnaSeqLight.kallisto.md")
         # print(report_file)

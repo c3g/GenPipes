@@ -27,11 +27,7 @@ summary$"File" %<>% sapply(function(fn){
 ```
 #### Exploratory Analysis 
 
-REMOVE MENTION OF CUFFLINKS
-
-Different exploratory data analysis (EDA) techniques are applied to gene and transcript expression levels, quantified  
-respectively by the HT-seq calculated log2(CPM) (counts-per-million reads) and cufflinks estimated 
-log2(FPKM) (fragments per kilobase of exon per million fragments mapped). Main goals of expression level EDA are 
+Different exploratory data analysis (EDA) techniques are applied to gene and transcript expression levels, quantified by Kallisto counts. Main goals of expression level EDA are 
 the detection of outliers, potential mislabeling,  to explore the homogeneity of biological replicates and  to appreciate 
 the global effects of the different experimental variables. EDA plots are therefore essential to insure clean data is 
 sent to differential analysis.

@@ -43,11 +43,17 @@ for (i in seq(length(readset_names))){
 
 ### Kallisto
 
+[Kallisto](https://pachterlab.github.io/kallisto/about) is a program for quantifying abundances of transcripts from RNA-Seq data, or more generally of target sequences using high-throughput sequencing reads. It is based on the novel idea of pseudoalignment for rapidly determining the compatibility of reads with targets, without the need for alignment.
+
+kallisto is ran fastq, producing raw count
+transcripts are then merged to give the count at the gene level
+
+transcripts2genes file: ([file](Mus_musculus.GRCm38.Ensembl83.tx2gene))
+
+Gene level count were obtained using the tximport package v.ZZZ.
+
 ```{r summary_table, results="markup",echo=F,message=F,warning=F}
 kable(mat,align="r",row.names=F, format.args = list(decimal.mark = ".", big.mark = ","))
 
 ```
 
-transcripts2genes file: ([file](Mus_musculus.GRCm38.Ensembl83.tx2gene))
-
-Gene level count were obtained using the tximport package v.ZZZ.
