@@ -26,7 +26,7 @@ import os
 from core.config import *
 from core.job import *
 
-def verify(input_bam, input_vcf, output_prefix, job_name = None):
+def verify(input_bam, input_vcf, output_prefix):
     return Job(
         [input_bam, input_vcf],
         [output_prefix + ".selfSM"],
@@ -43,6 +43,5 @@ verifyBamID \\
             input_bam=input_bam,
             output_prefix=output_prefix,
             other_options=config.param('verify_bam_id', 'other_options')
-        ),
-        name=job_name if job_name else "verifyBamID"
+        )
     )
