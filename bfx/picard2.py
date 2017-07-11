@@ -382,10 +382,10 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             )
         )
 
-def add_read_groups(input, output, readgroup, library, lane, sample, sort_order="coordinate"):
+def add_read_groups(input, output, readgroup, library, processing_unit, sample, sort_order="coordinate"):
 
     if config.param('picard_add_read_groups', 'module_picard').split("/")[2] < "2":
-        return picard.add_read_groups(input, output, readgroup, library, lane, sample, sort_order)
+        return picard.add_read_groups(input, output, readgroup, library, processing_unit, sample, sort_order)
     else:
         return Job(
             [input],
@@ -404,20 +404,20 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
  RGID=\"{readgroup}\" \\
  RGLB=\"{library}\" \\
  RGPL=\"{platform}\" \\
- RGPU=\"{lane}\" \\
- RGSM=\"{sample}\"  \\
- RGCN=\"{sequencing_center}\"""".format(
-            tmp_dir=config.param('picard_add_read_groups', 'tmp_dir'),
-            java_other_options=config.param('picard_add_read_groups', 'java_other_options'),
-            ram=config.param('picard_add_read_groups', 'ram'),
-            input=input,
-            output=output,
-            sort_order=sort_order,
-            readgroup=readgroup,
-            library=library,
-            platform=config.param('picard_add_read_groups', 'platform'),
-            lane=lane,
-            sample=sample,
-            sequencing_center=config.param('picard_add_read_groups', 'sequencing_center'),
+ RGPU=\"run{processing_unit}\" \\
+ RGSM=\"{sample}\" \\
+ {sequencing_center}""".format(
+                tmp_dir=config.param('picard_add_read_groups', 'tmp_dir'),
+                java_other_options=config.param('picard_add_read_groups', 'java_other_options'),
+                ram=config.param('picard_add_read_groups', 'ram'),
+                input=input,
+                output=output,
+                sort_order=sort_order,
+                readgroup=readgroup,
+                library=library,
+                platform=config.param('picard_add_read_groups', 'platform'),
+                processing_unit=processing_unit,
+                sample=sample,
+                sequencing_center=("RGCN=\"" + config.param('picard_add_read_groups', 'sequencing_center') + "\"" if config.param('picard_add_read_groups', 'sequencing_center', required=False) else "")
             )
         )
