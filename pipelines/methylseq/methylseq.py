@@ -317,6 +317,7 @@ class MethylSeq(dnaseq.DnaSeq):
                 )
             ])
             job.name = "mapping_quality_filter." + sample.name
+            jobs.append(job)
 
             # Calculate GC bias
             job = concat_jobs([
@@ -336,6 +337,7 @@ class MethylSeq(dnaseq.DnaSeq):
                 )
             ])
             job.name = "GC_bias." + sample.name
+            jobs.append(job)
 
             job = igvtools.compute_tdf(input, input + ".tdf")
             job.name = "igvtools_compute_tdf." + sample.name
