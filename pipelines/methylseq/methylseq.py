@@ -280,7 +280,7 @@ class MethylSeq(dnaseq.DnaSeq):
             if coverage_bed:
                 # Get on-target reads (if on-target context is detected)
                 ontarget_bam = re.sub("bam", "ontarget.bam", input)
-                flagstat_output = re.sub("bam", "bam.flagstat", input)
+                flagstat_output = re.sub("bam", "bam.flagstat", ontarget_bam)
                 job = concat_jobs([
                     bedtools.intersect(
                         input,
