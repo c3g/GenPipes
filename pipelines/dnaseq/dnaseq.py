@@ -36,6 +36,9 @@ from core.config import config, _raise, SanitycheckError
 from core.job import Job, concat_jobs, pipe_jobs
 from bfx.sequence_dictionary import parse_sequence_dictionary_file, split_by_size
 import utils.utils
+from pipelines import common
+from core.pipeline import *
+from bfx.readset import *
 
 from bfx import adapters
 from bfx import bvatools
@@ -540,6 +543,7 @@ END
                 realign_intervals = realign_prefix + ".intervals"
                 output_bam = realign_prefix + ".bam"
                 sample_output_bam = os.path.join(alignment_directory, sample.name + ".realigned.sorted.bam")
+                
                 jobs.append(
                     concat_jobs([
                         mkdir_job,
@@ -641,7 +645,6 @@ END
             # if nb_jobs == 1, symlink has been created in indel_realigner and merging is not necessary
             if nb_jobs > 1:
                 unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary, nb_jobs - 1)
-
                 inputs = []
                 for idx, sequences in enumerate(unique_sequences_per_job):
                     inputs.append(
@@ -930,7 +933,6 @@ END
                     )
 
         return jobs
-
 
     def sym_link_final_bam(self):
         jobs = []
@@ -1487,7 +1489,6 @@ END
                         samples=[sample]
                         )
                     )
-
             else:
                 unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary_variant(), nb_haplotype_jobs - 1, variant=True)
 
@@ -1525,7 +1526,6 @@ END
                         samples=[sample]
                         )
                     )
-
         return jobs
 
     def merge_and_call_individual_gvcf(self):
@@ -1796,9 +1796,9 @@ END
 
         if nb_haplotype_jobs > 1 and interval_list is None:
             unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary_variant(), nb_haplotype_jobs - 1, variant=True)
-
-            gvcfs_to_merge = [haplotype_file_prefix + "." + str(idx) + ".hc.g.vcf.bgz" for idx in xrange(len(unique_sequences_per_job))]
-            gvcfs_to_merge.append(haplotype_file_prefix + ".others.hc.g.vcf.bgz")
+            gvcfs_to_merge = [haplotype_file_prefix + "." + str(idx) + ".hc.g.vcf.gz" for idx in xrange(len(unique_sequences_per_job))]
+            
+            gvcfs_to_merge.append(haplotype_file_prefix + ".others.hc.g.vcf.gz")
 
             job = gatk4.cat_variants(
                 gvcfs_to_merge,
@@ -1848,7 +1848,6 @@ END
         variant_recal_indels_prefix = os.path.join(output_directory, "allSamples.hc.indels")
 
         mkdir_job = bash.mkdir(output_directory)
-
         jobs.append(
             concat_jobs([
                 mkdir_job,
@@ -1902,7 +1901,6 @@ END
                 samples=self.samples
                 )
             )
-
         return jobs
 
     def dna_sample_metrics(self):
@@ -2190,7 +2188,6 @@ pandoc \\
 
         # Find input vcf first from VSQR, then from non recalibrate hapotype calleroriginal BAMs in the readset sheet.
         hc_vcf = self.select_input_files([["variants/allSamples.hc.vqsr.vcf"], ["variants/allSamples.hc.vcf.gz"]])
-
         job = self.filter_nstretches(hc_vcf[0], "variants/allSamples.hc.vqsr.NFiltered.vcf", "haplotype_caller_filter_nstretches")
 
         #job.samples = self.samples

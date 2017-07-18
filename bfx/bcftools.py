@@ -63,6 +63,48 @@ bcftools \\
         )
     )
 
+def call(inputs, output, options=None):
+    """
+    New bcftools call function
+    """
+    return Job(
+        inputs,
+        [output],
+        [
+            ['DEFAULT', 'module_bcftools']
+        ],
+        command="""\
+bcftools \\
+  call {options} \\
+  {inputs} \\
+  {output}""".format(
+        options=options if options else "",
+        inputs="".join(" \\\n  " + input for input in inputs),
+        output=" \\\n > " + output if output else ""
+        )
+    )
+
+def index(inputs, options=None):
+    """
+    New bcftools index function
+    """
+    output = inputs + ".csi"
+
+    return Job(
+        [inputs],
+        [output],
+        [
+            ['DEFAULT', 'module_bcftools']
+        ],
+        command="""\
+bcftools \\
+  index -f {options} \\
+  {inputs}""".format(
+        options=options if options else "",
+        inputs="".join(" \\\n  " + input for input in inputs),
+        )
+    )
+
 def concat(inputs, output, options=None):
     """
     Concatenate or combine VCF/BCF files

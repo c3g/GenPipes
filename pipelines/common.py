@@ -36,7 +36,12 @@ from core.config import config, _raise, SanitycheckError
 from core.job import Job, concat_jobs
 from core.pipeline import Pipeline
 from bfx.design import parse_design_file
-from bfx.readset import parse_illumina_readset_file 
+from bfx.readset import parse_illumina_readset_file
+from core.job import *
+from core.pipeline import *
+from bfx.design import *
+from bfx.readset import *
+from bfx.sample_tumor_pairs import *
 
 from bfx import metrics
 from bfx import picard
@@ -204,8 +209,11 @@ class Illumina(MUGQICPipeline):
         if FASTQ files are not already specified in the readset file. Do nothing otherwise.
         """
         jobs = []
+        analyses_dir = os.path.join("analyses")
+
         for readset in self.readsets:
             # If readset FASTQ files are available, skip this step
+            sym_link_job = []
             if not readset.fastq1:
                 if readset.bam:
                     ## check if bam file has been sorted:
@@ -247,7 +255,6 @@ class Illumina(MUGQICPipeline):
                             )
                         ], name="picard_sam_to_fastq."+readset.name, samples=[readset.sample])
                     )
-
                 else:
                     _raise(SanitycheckError("Error: BAM file not available for readset \"" + readset.name + "\"!"))
         return jobs
