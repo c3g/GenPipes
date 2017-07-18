@@ -605,6 +605,7 @@ END
                 realign_prefix = os.path.join(realign_directory)
                 realign_intervals = os.path.join(realign_prefix, sample.name + ".sorted.realigned.others.intervals")
                 output_bam = os.path.join(realign_prefix, sample.name + ".sorted.realigned.others.bam")
+                
                 jobs.append(
                     concat_jobs([
                         # Create output directory since it is not done by default by GATK tools
@@ -625,7 +626,6 @@ END
                         samples=[sample]
                         )
                     )
-
         return jobs
 
     def sambamba_merge_realigned(self):
