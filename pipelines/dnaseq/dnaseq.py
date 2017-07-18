@@ -238,6 +238,56 @@ END
 
         return adapter_job
 
+    def sym_link_fastq(self):
+        """
+
+        :return:
+        """
+
+        jobs =[]
+        sym_link_job = []
+
+        for readset in self.readsets:
+            if readset.bam:
+                prefix = re.sub("\.bam$", ".", readset.bam)
+
+            if readset.run_type == "PAIRED_END":
+                if readset.fastq1 and readset.fastq2:
+                    sym_link_job= concat_jobs([
+                        deliverables.sym_link(readset.fastq1, readset, type="raw_reads"),
+                        deliverables.sym_link(readset.fastq2, readset, type="raw_reads"),
+                    ], name="sym_link_fastq.pair_end." + readset.name)
+
+                elif not readset.fastq1:
+                    if readset.bam:
+                        fastq1 = prefix + "pair1.fastq.gz"
+                        fastq2 = prefix + "pair2.fastq.gz"
+                        sym_link_job = concat_jobs([
+                            deliverables.sym_link(fastq1, readset, type="raw_reads"),
+                            deliverables.sym_link(fastq2, readset, type="raw_reads"),
+                        ], name="sym_link_fastq.pair_end." + readset.name)
+
+            elif readset.run_type == "SINGLE_END":
+                if readset.fastq1:
+                    sym_link_job = concat_jobs([
+                        deliverables.sym_link(readset.fastq1, readset, type="raw_reads"),
+                    ], name="sym_link_fastq.single_end." + readset.name)
+
+                elif not readset.fastq1:
+                    if readset.bam:
+                        fastq1 = prefix + "pair1.fastq.gz"
+                        sym_link_job = concat_jobs([
+                            deliverables.sym_link(fastq1, readset, type="raw_reads"),
+                        ], name="sym_link_fastq.single_end." + readset.name)
+
+            else:
+                raise Exception("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+
+            jobs.append(sym_link_job)
+
+        return jobs
+
     def skewer_trimming(self):
         """
         """
@@ -787,7 +837,6 @@ END
         need to be recalculated since the reads are realigned at positions that differ from their original alignment.
         Fixing the read mate positions is done using [BVATools](https://bitbucket.org/mugqic/bvatools).
         """
-
         jobs = []
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
@@ -2113,7 +2162,7 @@ END
         if nb_haplotype_jobs > 1 and interval_list is None:
             unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary_variant(), nb_haplotype_jobs - 1, variant=True)
             gvcfs_to_merge = [haplotype_file_prefix + "." + str(idx) + ".hc.g.vcf.gz" for idx in xrange(len(unique_sequences_per_job))]
-            
+
             gvcfs_to_merge.append(haplotype_file_prefix + ".others.hc.g.vcf.gz")
 
             job = gatk4.cat_variants(
