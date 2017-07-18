@@ -37,7 +37,7 @@ def ensemble(input_callers, output, options):
             ['bcbio_ensemble', 'module_java'],
         ],
         command="""\
-bcbio-variation-recall ensemble \\
+bcbio-variation-recall ensemble -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} \\
   {options} \\
   {output} \\
   {reference_sequence} \\
