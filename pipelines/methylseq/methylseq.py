@@ -73,19 +73,22 @@ class MethylSeq(dnaseq.DnaSeq):
     that have been passed to the pipeline main script.
     """
 
-    #def __init__(self):
-        #self.argparser.add_argument("-r", "--readsets", help="readset file", type=file)
-        #super(MethylSeq, self).__init__()
+    @property
+    def readsets(self):
+        if not hasattr(self, "_readsets"):
+            if self.args.readsets:
+                self._readsets = parse_illumina_readset_file(self.args.readsets.name)
+                for readset in self._readsets:
+                    if readset._run == "":
+                        raise Exception("Error: no run was provided for readset \"" + readset.name +
+                            "\"... Run has to be provided for all the readsets in order to use this pipeline.")
+                    if readset._lane == "":
+                        raise Exception("Error: no lane provided for readset \"" + readset.name +
+                            "\"... Lane has to be provided for all the readsets in order to use this pipeline.")
+            else:
+                self.argparser.error("argument -r/--readsets is required!")
 
-    #@property
-    #def readsets(self):
-        #if not hasattr(self, "_readsets"):
-            #if self.args.readsets:
-                #self._readsets = parse_illumina_readset_file_for_methylseq(self.args.readsets.name)
-            #else:
-                #self.argparser.error("argument -r/--readsets is required!")
-
-        #return self._readsets
+        return self._readsets
 
     def bismark_align(self):
         """
@@ -96,7 +99,8 @@ class MethylSeq(dnaseq.DnaSeq):
         for readset in self.readsets:
             trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
             alignment_directory = os.path.join("alignment", readset.sample.name)
-            readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted_noRG.bam")
+            no_readgroup_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted_noRG.bam")
+            output_bam = re.sub("_noRG.bam", ".bam", no_readgroup_bam)
 
             # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
             if readset.run_type == "PAIRED_END":
@@ -119,52 +123,36 @@ class MethylSeq(dnaseq.DnaSeq):
                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
 
             # Defining the bismark output files (bismark sets the names of its output files from the basename of fastq1)
-            # Note : these files will then be renamed (using a "mv" command) to fit with a more broad nomenclature (cf. readset_bam)
+            # Note : these files will then be renamed (using a "mv" command) to fit with the mugqic pipelines nomenclature (cf. no_readgroup_bam)
             bismark_out_bam = os.path.join(alignment_directory, readset.name, re.sub(r'(\.fastq\.gz|\.fq\.gz|\.fastq|\.fq)$', "_bismark_bt2_pe.bam", os.path.basename(fastq1)))
             bismark_out_report =  os.path.join(alignment_directory, readset.name, re.sub(r'(\.fastq\.gz|\.fq\.gz|\.fastq|\.fq)$', "_bismark_bt2_PE_report.txt", os.path.basename(fastq1)))
 
             jobs.append(
                 concat_jobs([
-                    Job(output_files=[readset_bam], command="mkdir -p " + os.path.dirname(readset_bam)),
+                    Job(output_files=[output_bam], command="mkdir -p " + os.path.dirname(output_bam), samples=[readset.sample]),
                     bismark.align(
                         fastq1,
                         fastq2,
-                        os.path.dirname(readset_bam),
-                        re.sub(".bam", "", os.path.basename(readset_bam)),
+                        os.path.dirname(no_readgroup_bam),
+                        no_readgroup_bam,
                     ),
-                    Job(command="mv " + bismark_out_bam + " " + readset_bam),
-                    Job(command="mv " + bismark_out_report + " " + re.sub(".bam", "_bismark_bt2_PE_report.txt", readset_bam))
+                    Job(command="mv " + bismark_out_bam + " " + no_readgroup_bam),
+                    Job(command="mv " + bismark_out_report + " " + re.sub(".bam", "_bismark_bt2_PE_report.txt", no_readgroup_bam)),
+                    #Job(samples=[readset.sample])
                 ], name="bismark_align." + readset.name)
             )
-
-        return jobs
-
-    def picard_add_read_groups(self):
-        """
-        Add reads groups to our bam files since Bismark align did not do it previously, useful when merging differnent lanes for one sample
-        """
-
-        jobs = []
-        for readset in self.readsets:
-            alignment_directory = os.path.join("alignment", readset.sample.name)
-
-            candidate_input_files = [[os.path.join(alignment_directory, readset.name, readset.name + ".sorted_noRG.bam")]]
-            if readset.bam:
-                candidate_input_files.append([readset.bam])
-            [input_bam] = self.select_input_files(candidate_input_files)
-            output_bam = re.sub("_noRG.bam", ".bam", input_bam)
-
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + alignment_directory),
+                    Job(command="mkdir -p " + alignment_directory, samples=[readset.sample]),
                     picard.add_read_groups(
-                        input_bam,
+                        no_readgroup_bam,
                         output_bam,
                         readset.name,
-                        readset.library,
-                        readset.lane,
+                        readset.library if readset.library else readset.sample.name,
+                        readset.run + "_" + readset.lane,
                         readset.sample.name
-                    )
+                    ),
+                    #Job(samples=[readset.sample])
                 ], name="picard_add_read_groups." + readset.name)
             )
 
@@ -186,10 +174,12 @@ class MethylSeq(dnaseq.DnaSeq):
         jobs = []
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
-            bam_input = os.path.join(alignment_directory, sample.name + ".sorted.bam")
-            bam_readset_sorted = re.sub(".sorted.bam", ".readset_sorted.bam", bam_input)
+            candidate_input_files = [[os.path.join(alignment_directory, sample.name + ".sorted.bam")]]
+            candidate_input_files.append([os.path.join(alignment_directory, readset.name, readset.name + ".sorted_noRG.bam")])
+            [bam_input] = self.select_input_files(candidate_input_files)
+            bam_readset_sorted = re.sub("sorted", "readset_sorted", bam_input)
             dedup_bam_readset_sorted = re.sub(".bam", ".dedup.bam", bam_readset_sorted)
-            bam_output = re.sub("readset_", "", dedup_bam_readset_sorted)
+            bam_output = os.path.join(alignment_directory, re.sub("readset_", "", os.path.basename(dedup_bam_readset_sorted)))
 
             job = concat_jobs([
                 Job(command="mkdir -p " + alignment_directory),
@@ -211,6 +201,7 @@ class MethylSeq(dnaseq.DnaSeq):
             ])
             job.name = "bismark_dedup." + sample.name
             job.removable_files = [dedup_bam_readset_sorted]
+            job.samples = [sample]
 
             jobs.append(job)
 
@@ -227,7 +218,7 @@ class MethylSeq(dnaseq.DnaSeq):
         for easy visualization of coverage in the IGV browser.
         """
 
-        ##check the library status
+        # check the library status
         library, bam = {}, {}
         for readset in self.readsets:
             if not library.has_key(readset.sample) :
@@ -240,6 +231,7 @@ class MethylSeq(dnaseq.DnaSeq):
                 bam[readset.sample]=readset.bam
 
         jobs = []
+        created_interval_lists = []
         for sample in self.samples:
             file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.")
             coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
@@ -255,6 +247,7 @@ class MethylSeq(dnaseq.DnaSeq):
                 library_type=library[sample]
             )
             job.name = "picard_collect_multiple_metrics." + sample.name
+            job.samples = [sample]
             jobs.append(job)
 
             # Compute genome coverage with GATK
@@ -264,6 +257,7 @@ class MethylSeq(dnaseq.DnaSeq):
                 coverage_bed
             )
             job.name = "gatk_depth_of_coverage.genome." + sample.name
+            job.samples = [sample]
             jobs.append(job)
 
             # Compute genome or target coverage with BVATools
@@ -274,12 +268,13 @@ class MethylSeq(dnaseq.DnaSeq):
                 other_options=config.param('bvatools_depth_of_coverage', 'other_options', required=False)
             )
             job.name = "bvatools_depth_of_coverage." + sample.name
+            job.samples = [sample]
             jobs.append(job)
 
             if coverage_bed:
                 # Get on-target reads (if on-target context is detected)
                 ontarget_bam = re.sub("bam", "ontarget.bam", input)
-                flagstat_output = re.sub("bam", "bam.flagstat", input)
+                flagstat_output = re.sub("bam", "bam.flagstat", ontarget_bam)
                 job = concat_jobs([
                     bedtools.intersect(
                         input,
@@ -293,6 +288,7 @@ class MethylSeq(dnaseq.DnaSeq):
                 ])
                 job.name = "ontarget_reads." + sample.name
                 job.removable_files=[ontarget_bam]
+                job.samples = [sample]
                 jobs.append(job)
 
                 # Compute on target percent of hybridisation based capture
@@ -300,11 +296,13 @@ class MethylSeq(dnaseq.DnaSeq):
                 if not interval_list in created_interval_lists:
                     job = tools.bed2interval_list(None, coverage_bed, interval_list)
                     job.name = "interval_list." + os.path.basename(coverage_bed)
+                    job.samples=[sample]
                     jobs.append(job)
                     created_interval_lists.append(interval_list)
                 file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.")
                 job = picard.calculate_hs_metrics(file_prefix + "bam", file_prefix + "onTarget.tsv", interval_list)
                 job.name = "picard_calculate_hs_metrics." + sample.name
+                job.samples = [sample]
                 jobs.append(job)
 
             # Calculate the number of reads with higher mapping quality than the threshold passed in the ini file
@@ -316,6 +314,8 @@ class MethylSeq(dnaseq.DnaSeq):
                 )
             ])
             job.name = "mapping_quality_filter." + sample.name
+            job.samples = [sample]
+            jobs.append(job)
 
             # Calculate GC bias
             job = concat_jobs([
@@ -335,9 +335,12 @@ class MethylSeq(dnaseq.DnaSeq):
                 )
             ])
             job.name = "GC_bias." + sample.name
+            job.samples = [sample]
+            jobs.append(job)
 
             job = igvtools.compute_tdf(input, input + ".tdf")
             job.name = "igvtools_compute_tdf." + sample.name
+            job.samples = [sample]
             jobs.append(job)
 
         return jobs
@@ -362,8 +365,8 @@ class MethylSeq(dnaseq.DnaSeq):
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
 
-            candidate_input_files = [[os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")]]
-            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.bam")])
+            candidate_input_files = [[os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.bam")]]
+            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")])
             candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.bam")])
             [input_file] = self.select_input_files(candidate_input_files)
 
@@ -397,8 +400,9 @@ class MethylSeq(dnaseq.DnaSeq):
 
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + methyl_directory),
+                    Job(command="mkdir -p " + methyl_directory, samples=[sample]),
                     bismark_job,
+                    #Job(samples=[sample])
                 ], name="bismark_methyl_call." + sample.name)
             )
 
@@ -429,20 +433,22 @@ class MethylSeq(dnaseq.DnaSeq):
             if input_bam == os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.bam") :
                 jobs.append(
                     concat_jobs([
-                        Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " " + os.path.join("tracks", "bigWig"), removable_files=["tracks"]),
+                        Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " " + os.path.join("tracks", "bigWig"), removable_files=["tracks"], samples=[sample]),
                         picard.sort_sam(
                             input_bam,
                             re.sub("readset_sorted", "sorted", input_bam),
                             "coordinate"
                         ),
-                        bedtools.graph(re.sub("readset_sorted", "sorted", input_bam), bed_graph_output, big_wig_output, "")
+                        bedtools.graph(re.sub("readset_sorted", "sorted", input_bam), bed_graph_output, big_wig_output, ""),
+                        #Job(samples=[sample])
                     ], name="wiggle." + re.sub(".bedGraph", "", os.path.basename(bed_graph_output)))
                 )
             else :
                 jobs.append(
                     concat_jobs([
-                        Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " " + os.path.join("tracks", "bigWig"), removable_files=["tracks"]),
-                        bedtools.graph(input_bam, bed_graph_output, big_wig_output, "")
+                        Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " " + os.path.join("tracks", "bigWig"), removable_files=["tracks"], samples=[sample]),
+                        bedtools.graph(input_bam, bed_graph_output, big_wig_output, ""),
+                        #Job(samples=[sample])
                     ], name="wiggle." + re.sub(".bedGraph", "", os.path.basename(bed_graph_output)))
                 )
 
@@ -456,12 +462,13 @@ class MethylSeq(dnaseq.DnaSeq):
 
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + methyl_directory),
+                    Job(command="mkdir -p " + methyl_directory, samples=[sample]),
                     ucsc.bedgraph_to_bigbwig(
                         input_bed_graph,
                         output_wiggle,
                         True
-                    )
+                    ),
+                    #Job(samples=[sample])
                 ], name = "bismark_bigWig." + sample.name)
             )
 
@@ -491,6 +498,7 @@ class MethylSeq(dnaseq.DnaSeq):
                 cpG_profile
             )
             job.name = "methylation_profile." + sample.name
+            job.samples = [sample]
             jobs.append(job)
 
             # Generate stats for lambda, pUC19 and regular CpGs
@@ -504,6 +512,7 @@ class MethylSeq(dnaseq.DnaSeq):
                 puc19_stats_output
             )
             job.name = "CpG_stats." + sample.name
+            job.samples = [sample]
             jobs.append(job)
 
             # Caluculate median & mean CpG coverage
@@ -513,6 +522,7 @@ class MethylSeq(dnaseq.DnaSeq):
                 median_CpG_coverage
             )
             job.name = "median_CpG_coverage." + sample.name
+            job.samples = [sample]
             jobs.append(job)
 
         return jobs
@@ -537,12 +547,13 @@ class MethylSeq(dnaseq.DnaSeq):
 
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + variant_directory),
+                    Job(command="mkdir -p " + variant_directory, samples=[sample]),
                     bissnp.bisulfite_genotyper(
                         input_file,
                         cpg_output_file,
                         snp_output_file
-                    )
+                    ),
+                    #Job(samples=[sample])
                 ], name="bissnp." + sample.name)
             )
 
@@ -555,15 +566,14 @@ class MethylSeq(dnaseq.DnaSeq):
             self.trimmomatic,
             self.merge_trimmomatic_stats,
             self.bismark_align,
-            self.picard_add_read_groups,    # step 5
-            self.picard_merge_sam_files,
+            self.picard_merge_sam_files,    # step 5
             self.bismark_dedup,
             self.metrics,
             self.verify_bam_id,
-            self.methylation_call,          # step 10
-            self.wiggle_tracks,
+            self.methylation_call,
+            self.wiggle_tracks,             # step 10
             self.methylation_profile,
-            self.bis_snp                    # step 13
+            self.bis_snp                    # step 12
         ]
 
 if __name__ == '__main__': 

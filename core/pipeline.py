@@ -304,7 +304,7 @@ Steps:
                     if os.path.exists(os.path.join(output_dir, report_file)) :
                         report_files.append(report_file)
                     else:
-                        log.warn("Report file: " + report_file + " not found!... skipping")  
+                        log.warn("Report file: " + report_file + " not found!... skipping")
         if report_files:
             # Copy images and other HTML dependencies into report directory
             # Print pandoc command with all markdown report files and config/references sections at the end
