@@ -41,7 +41,7 @@ from bfx import metrics
 from bfx import picard
 from bfx import trimmomatic
 from bfx import rmarkdown
-#from bfx import jsonator
+from bfx import jsonator
 
 log = logging.getLogger(__name__)
 
@@ -65,8 +65,6 @@ class MUGQICPipeline(Pipeline):
     def samples(self):
         if not hasattr(self, "_samples"):
             self._samples = list(collections.OrderedDict.fromkeys([readset.sample for readset in self.readsets]))
-            #for sample in self._samples:
-                #sample.json_dump = jsonator.create(self, sample)
         return self._samples
 
     def mugqic_log(self):
@@ -117,6 +115,12 @@ class Illumina(MUGQICPipeline):
         return self._readsets
 
     @property
+    def samples(self):
+        if not hasattr(self, "_samples"):
+            self._samples = list(collections.OrderedDict.fromkeys([readset.sample for readset in self.readsets]))
+        return self._samples
+
+    @property
     def run_type(self):
         run_types = [readset.run_type for readset in self.readsets]
         if len(set(run_types)) == 1 and re.search("^(PAIRED|SINGLE)_END$", run_types[0]):
@@ -156,6 +160,7 @@ class Illumina(MUGQICPipeline):
 
                     job = picard.sam_to_fastq(readset.bam, fastq1, fastq2)
                     job.name = "picard_sam_to_fastq." + readset.name
+                    job.samples = [readset.sample]
                     jobs.append(job)
                 else:
                     raise Exception("Error: BAM file not available for readset \"" + readset.name + "\"!")
@@ -254,7 +259,7 @@ END
                 job = concat_jobs([adapter_job, job])
             jobs.append(concat_jobs([
                 # Trimmomatic does not create output directory by default
-                Job(command="mkdir -p " + trim_directory),
+                Job(command="mkdir -p " + trim_directory, samples=[readset.sample]),
                 job
             ], name="trimmomatic." + readset.name))
         return jobs
@@ -289,7 +294,8 @@ awk '{{OFS="\t"; print $0, $4 / $3 * 100}}' \\
                         trim_log=trim_log,
                         perl_command=perl_command,
                         readset_merge_trim_stats=readset_merge_trim_stats
-                    )
+                    ),
+                    samples=[readset.sample]
                 )
             ])
 
@@ -376,13 +382,15 @@ pandoc \\
             coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
 
             # Run verifyBamID
-            jobs.append(
-                verify_bam_id.verify(
-                    input_bam,
-                    known_variants_annotated,
-                    output_prefix,
-                    job_name="verify_bam_id_" + sample.name
-            ))
+            job = verify_bam_id.verify(
+                input_bam,
+                known_variants_annotated,
+                output_prefix
+            )
+            job.name = "verify_bam_id_" + sample.name
+            job.samples = [sample]
+
+            jobs.append(job)
 
             verify_bam_results.extend([output_prefix + ".selfSM" ]) 
 
