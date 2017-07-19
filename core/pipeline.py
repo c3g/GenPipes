@@ -40,6 +40,8 @@ from job import *
 from scheduler import *
 from step import *
 
+from bfx import jsonator
+
 log = logging.getLogger(__name__)
 
 class Pipeline(object):
@@ -274,10 +276,17 @@ Steps:
                 job.done = os.path.join("job_output", step.name, job.name + "." + hashlib.md5(job.command_with_modules).hexdigest() + ".mugqic.done")
                 job.output_dir = self.output_dir
                 job.dependency_jobs = self.dependency_jobs(job)
+
                 if not self.force_jobs and job.is_up2date():
                     log.info("Job " + job.name + " up to date... skipping")
                 else:
                     step.add_job(job)
+                    if job.samples:
+                        for sample in job.samples:
+                            # Create the json dumps for all the samples if not already done
+                            if sample.json_dump == "":
+                                sample.json_dump = jsonator.create(self, sample)
+
             log.info("Step " + step.name + ": " + str(len(step.jobs)) + " job" + ("s" if len(step.jobs) > 1 else "") + " created" + ("" if step.jobs else "... skipping") + "\n")
         log.info("TOTAL: " + str(len(self.jobs)) + " job" + ("s" if len(self.jobs) > 1 else "") + " created" + ("" if self.jobs else "... skipping") + "\n")
 
