@@ -62,7 +62,8 @@ class HicSeq(common.Illumina):
     def __init__(self):
         super(HicSeq, self).__init__()
 
-    #@property
+
+#    @property
     def hicup_align(self):
         """
         Paired-end Hi-C reads are truncated, mapped and filtered using HiCUP. The resulting bam file is filtered for Hi-C artifacts and
@@ -71,12 +72,10 @@ class HicSeq(common.Illumina):
         For more detailed information about the HICUP process visit: [HiCUP] (https://www.bioinformatics.babraham.ac.uk/projects/hicup/overview/)
         """
 
-
         jobs = []
 
         # create hicup output directory:
-        output_directory = "HiCUP_Alignments"
-
+        output_directory = "hicup_align"
 
         for readset in self.readsets:
             sample_output_dir = os.path.join(output_directory, readset.name)
@@ -93,8 +92,7 @@ class HicSeq(common.Illumina):
                 candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
             [fastq1, fastq2] = self.select_input_files(candidate_input_files)
 
-
-            ## create HiCUP configuration file:
+            # create HiCUP configuration file:
             configFileContent = """
             Outdir: {sample_output_dir}
             Threads: {threads}
@@ -110,7 +108,7 @@ class HicSeq(common.Illumina):
             Shortest: {Shortest}
             {fastq1}
             {fastq2}
-            """.format(outDir = sample_output_dir,
+            """.format(sample_output_dir = sample_output_dir,
                 threads = config.param('hicup_align', 'threads'),
                 Quiet = config.param('hicup_align', 'Quiet'),
                 Keep = config.param('hicup_align', 'Keep'),
@@ -126,21 +124,24 @@ class HicSeq(common.Illumina):
                 fastq2 = fastq2)
 
             ## write configFileContent to temporary file:
-            with open("hicup_align." + readset.name + ".conf", "w") as conf_file:
+            fileName = "hicup_align." + readset.name + ".conf"
+            with open(fileName, "w") as conf_file:
                 conf_file.write(configFileContent)
 
-            ## hicup command
-            command="mkdir -p {sample_output_dir} && hicup -c {conf_file}".format(sample_output_dir= sample_output_dir, conf_file=conf_file)
-            job = Job(input_files= [fastq1, fastq2, conf_file],
-                    output_files=[".".join(fastq1, fastq2, "hicup.bam")],
-                    module_entries= ["module_bowtie2", "module_mugqic_R_packages", "module_perl", "module_R"],
+            # hicup command
+
+            command="mkdir -p {sample_output_dir} && hicup -c {fileName}".format(sample_output_dir= sample_output_dir, fileName=fileName)
+            job = Job(input_files= [fastq1, fastq2, fileName],
+                    output_files=[".".join((fastq1, fastq2, "hicup.bam"))],
+                    module_entries= [['hicup_align', 'module_bowtie2'], ['hicup_align', 'module_mugqic_R_packages'], ['hicup_align', 'module_perl'], ['hicup_align', 'module_R'], ['hicup_align', 'module_HiCUP']],
                     name= "hicup_align." + readset.name,
                     command=command,
-                    removable_files=[conf_file]
+                    removable_files=[fileName]
                     )
 
             jobs.append(job)
-            return jobs
+
+        return jobs
 
 
 
