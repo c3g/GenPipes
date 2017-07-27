@@ -448,3 +448,32 @@ R --no-save --args \\
         mean_read_length=mean_read_length
         )
     )
+
+def sh_ihec_rna_metrics(input_bam, input_name, input_picard_dup, output_dir):
+    output_metrics=os.path.join(output_dir, input_name+".read_stats.txt")
+    output_duplicates=os.path.join(output_dir, input_name+".duplicated.txt")
+    
+    return Job(
+        [input_bam, input_picard_dup],
+        [output_metrics, output_duplicates],
+        [
+            ['DEFAULT', 'module_mugqic_tools'],
+            ['DEFAULT', 'module_sambamba']
+        ],
+        command="""\
+IHEC_rnaseq_metrics.sh \\
+    {input_bam} \\
+    {input_name} \\
+    {input_picard_dup} \\
+    {intergenic_bed}
+    {rrna_bed}
+    {output_dir}""".format(
+        input_bam=input_bam,
+        input_name=input_name,
+        input_picard_dup=input_picard_dup,
+        intergenic_bed=config.param('IHEC_rnaseq_metrics', 'intergenic_bed', type='filepath',required=True),
+        rrna_bed=config.param('IHEC_rnaseq_metrics', 'ribo_rna_bed', type='filepath',required=True),
+        output_dir=output_dir
+        )
+    )
+
