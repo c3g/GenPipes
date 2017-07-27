@@ -85,7 +85,7 @@ class HicSeq(common.Illumina):
 
     @property
     def genome_digest(self):
-        genome_digest = config.param('hicup_align', "genome_digest_" + self.enzyme)
+        genome_digest = os.path.expandvars(config.param('hicup_align', "genome_digest_" + self.enzyme))
         return genome_digest
 
 #    @property
@@ -138,9 +138,9 @@ class HicSeq(common.Illumina):
                 Quiet = config.param('hicup_align', 'Quiet'),
                 Keep = config.param('hicup_align', 'Keep'),
                 Zip = config.param('hicup_align', 'Zip'),
-                Bowtie2_path = config.param('hicup_align', 'Bowtie2_path'),
-                R_path = config.param('hicup_align', 'R_path'),
-                Genome_Index_hicup = config.param('hicup_align', 'Genome_Index_hicup'),
+                Bowtie2_path = os.path.expandvars(config.param('hicup_align', 'Bowtie2_path')),
+                R_path = os.path.expandvars(config.param('hicup_align', 'R_path')),
+                Genome_Index_hicup = os.path.expandvars(config.param('hicup_align', 'Genome_Index_hicup')),
                 Genome_Digest = self.genome_digest,
                 Format = config.param('hicup_align', 'Format'),
                 Longest = config.param('hicup_align', 'Longest'),
