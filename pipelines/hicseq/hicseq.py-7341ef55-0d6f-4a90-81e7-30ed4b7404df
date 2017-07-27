@@ -85,7 +85,7 @@ class HicSeq(common.Illumina):
 
     @property
     def genome_digest(self):
-        genome_digest = config.param('hicup_align', "genome_digest_" + self.enzyme)
+        genome_digest = os.environ[config.param('hicup_align', "genome_digest_" + self.enzyme)]
         return genome_digest
 
 #    @property
