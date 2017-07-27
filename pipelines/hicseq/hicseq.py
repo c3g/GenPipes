@@ -60,8 +60,34 @@ class HicSeq(common.Illumina):
     """
 
     def __init__(self):
+        self.argparser.add_argument("-e", "--enzyme", help="Restriction Enzyme used to generate Hi-C library", choices=["DpnII", "HindIII", "NcoI", "MboI"])
         super(HicSeq, self).__init__()
 
+
+    @property
+    def enzyme(self):
+        return self.args.enzyme
+
+
+
+    @property
+    def restriction_site(self):
+        """ sets the restriction enzyme recogntition site and genome digest location based on enzyme"""
+        if (self.enzyme == "DpnII") or (self.enzyme == "MboI"):
+            restriction_site = "GATC"
+        elif self.enzyme == "HindIII":
+            restriction_site = "AAGCTT"
+        elif self.enzyme == "NcoI":
+            restriction_site = "CCATGG"
+        else:
+            raise Exception("Error: Selected Enzyme is not yet available for Hi-C analysis!")
+        restriction_site.genome_digest = config.param('hicup_align', "genome_digest_" + self.enzyme)
+        return restriction_site
+
+    @property
+    def genome_digest(self):
+        genome_digest = config.param('hicup_align', "genome_digest_" + self.enzyme)
+        return genome_digest
 
 #    @property
     def hicup_align(self):
@@ -116,7 +142,7 @@ class HicSeq(common.Illumina):
                 Bowtie2_path = config.param('hicup_align', 'Bowtie2_path'),
                 R_path = config.param('hicup_align', 'R_path'),
                 Genome_Index_hicup = config.param('hicup_align', 'Genome_Index_hicup'),
-                Genome_Digest = config.param('hicup_align', 'Genome_Digest'),
+                Genome_Digest = self.genome_digest,
                 Format = config.param('hicup_align', 'Format'),
                 Longest = config.param('hicup_align', 'Longest'),
                 Shortest = config.param('hicup_align', 'Shortest'),
@@ -133,7 +159,7 @@ class HicSeq(common.Illumina):
             command="mkdir -p {sample_output_dir} && hicup -c {fileName}".format(sample_output_dir= sample_output_dir, fileName=fileName)
             job = Job(input_files= [fastq1, fastq2, fileName],
                     output_files=[".".join((fastq1, fastq2, "hicup.bam"))],
-                    module_entries= [['hicup_align', 'module_bowtie2'], ['hicup_align', 'module_mugqic_R_packages'], ['hicup_align', 'module_perl'], ['hicup_align', 'module_R'], ['hicup_align', 'module_HiCUP']],
+                    module_entries= [['hicup_align', 'module_bowtie2'], ['hicup_align', 'module_R'], ['hicup_align', 'module_mugqic_R_packages'], ['hicup_align', 'module_perl'], ['hicup_align', 'module_HiCUP']],
                     name= "hicup_align." + readset.name,
                     command=command,
                     removable_files=[fileName]
