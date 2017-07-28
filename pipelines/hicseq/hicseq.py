@@ -88,7 +88,6 @@ class HicSeq(common.Illumina):
         genome_digest = os.path.expandvars(config.param('hicup_align', "genome_digest_" + self.enzyme))
         return genome_digest
 
-#    @property
     def hicup_align(self):
         """
         Paired-end Hi-C reads are truncated, mapped and filtered using HiCUP. The resulting bam file is filtered for Hi-C artifacts and
@@ -153,11 +152,14 @@ class HicSeq(common.Illumina):
             with open(fileName, "w") as conf_file:
                 conf_file.write(configFileContent)
 
-            # hicup command
+            hicup_prefix = ".trim.pair1_2.hicup.bam" if config.param('hicup_align', 'Zip') == 1 else ".trim.pair1_2.hicup.sam"
+            hicup_file_output = os.path.join("hicup_align", readset.name, readset.name + hicup_prefix)
 
-            command="mkdir -p {sample_output_dir} && hicup -c {fileName}".format(sample_output_dir= sample_output_dir, fileName=fileName)
+            # hicup command
+            ## delete directory if it exists since hicup will not run again unless old files are removed
+            command="rm -rf {sample_output_dir} && mkdir {sample_output_dir} && hicup -c {fileName}".format(sample_output_dir= sample_output_dir, fileName=fileName)
             job = Job(input_files= [fastq1, fastq2, fileName],
-                    output_files=[".".join((fastq1, fastq2, "hicup.bam"))],
+                    output_files=[hicup_file_output],
                     module_entries= [['hicup_align', 'module_bowtie2'], ['hicup_align', 'module_R'], ['hicup_align', 'module_mugqic_R_packages'], ['hicup_align', 'module_HiCUP']],
                     name= "hicup_align." + readset.name,
                     command=command,
@@ -170,13 +172,60 @@ class HicSeq(common.Illumina):
 
 
 
+    def homer_tag_directory(self):
+        """
+        The bam file produced by HiCUP is used to create a tag directory using HOMER for further analysis that includes interaction matrix generation,
+        compartments and identifying significant interactions.
+
+        For more detailed information about the HOMER process visit: [HOMER] (http://homer.ucsd.edu/homer/interactions/index.html)
+        """
+
+        jobs = []
+
+        output_directory = "homer_tag_directory"
+
+        for readset in self.readsets:
+            tagDirName = "_".join(("HTD", readset.name, self.enzyme))
+            sample_output_dir = os.path.join(output_directory, tagDirName)
+            hicup_prefix = ".trim.pair1_2.hicup.bam" if config.param('hicup_align', 'Zip') == 1 else ".trim.pair1_2.hicup.sam"
+            hicup_file_output = os.path.join("hicup_align", readset.name, readset.name + hicup_prefix)
+            
+            ## homer command
+            command="cd {output_directory} && makeTagDirectory {tagDirName} {hicup_file_output},{hicup_file_output} -genome {genome} -restrictionSite {restriction_site} -checkGC".format(output_directory= output_directory, tagDirName= tagDirName, hicup_file_output=hicup_file_output, genome=config.param('DEFAULT', 'assembly'), restriction_site= self.restriction_site)
+            job = Job(input_files= [hicup_file_output],
+                    output_files=[sample_output_dir],
+                    module_entries= [["homer_tag_directory", "module_homer"]],
+                    name= "homer_tag_directory." + readset.name,
+                    command=command,
+                    removable_files=[]
+                    )
+
+            jobs.append(job)
+        return jobs
+
+
+    def produce_interaction_matrices(self):
+        pass
+
+    def identify_compartments(self):
+        pass
+
+    def identify_TADs(self):
+        pass
+
+    def identify_peaks(self):
+        pass
+
+
+
     @property
     def steps(self):
         return [
             self.picard_sam_to_fastq,
             self.trimmomatic,
             self.merge_trimmomatic_stats,
-            self.hicup_align
+            self.hicup_align,
+            self.homer_tag_directory
         ]
 
 if __name__ == '__main__':
