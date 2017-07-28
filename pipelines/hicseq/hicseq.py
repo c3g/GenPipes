@@ -183,7 +183,7 @@ class HicSeq(common.Illumina):
         jobs = []
 
         output_directory = "homer_tag_directory"
-
+        ## assuming that reads are trimmed and have a .trim. prefix, otherwise, edit code
         for readset in self.readsets:
             tagDirName = "_".join(("HTD", readset.name, self.enzyme))
             sample_output_dir = os.path.join(output_directory, tagDirName)
@@ -205,15 +205,31 @@ class HicSeq(common.Illumina):
 
 
     def produce_interaction_matrices(self):
+        """
+        IntraChromosomal interaction matrices, as well as genome wide interaction matrices are produced by Homer at resolutions defined in the ini config file
+        For more detailed information about the HOMER matrices visit: [HOMER matrices] (http://homer.ucsd.edu/homer/interactions/HiCmatrices.html)
+        """
         pass
 
     def identify_compartments(self):
+        """
+        Genomic compartments are idetified using Homer at resolutions defined in the ini config file
+        For more detailed information about the HOMER compartments visit: [HOMER compartments] (http://homer.ucsd.edu/homer/interactions/HiCpca.html)
+        """
         pass
 
     def identify_TADs(self):
+        """
+        Topological associating Domains (TADs) are idetified using TopDom at resolutions defined in the ini config file
+        For more detailed information about the TopDom visit: [TopDom] (https://www.ncbi.nlm.nih.gov/pubmed/26704975)
+        """
         pass
 
     def identify_peaks(self):
+        """
+        Significant intraChromosomal interactions (peaks) are identified using Homer.
+        For more detailed information about the Homer peaks visit: [Homer peaks] (http://homer.ucsd.edu/homer/interactions/HiCinteractions.html)
+        """
         pass
 
 
