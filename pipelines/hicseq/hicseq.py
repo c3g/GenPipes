@@ -60,7 +60,7 @@ class HicSeq(common.Illumina):
     """
 
     def __init__(self):
-        self.argparser.add_argument("-e", "--enzyme", help="Restriction Enzyme used to generate Hi-C library", choices=["DpnII", "HindIII", "NcoI", "MboI"])
+        self.argparser.add_argument("-e", "--enzyme", help = "Restriction Enzyme used to generate Hi-C library", choices = ["DpnII", "HindIII", "NcoI", "MboI"])
         super(HicSeq, self).__init__()
 
 
@@ -152,18 +152,18 @@ class HicSeq(common.Illumina):
             with open(fileName, "w") as conf_file:
                 conf_file.write(configFileContent)
 
-            hicup_prefix = ".trim.pair1_2.hicup.bam" if config.param('hicup_align', 'Zip') == 1 else ".trim.pair1_2.hicup.sam"
+            hicup_prefix = ".trim.pair1_2.hicup.bam" if config.param('hicup_align', 'Zip') == "1" else ".trim.pair1_2.hicup.sam"
             hicup_file_output = os.path.join("hicup_align", readset.name, readset.name + hicup_prefix)
 
             # hicup command
             ## delete directory if it exists since hicup will not run again unless old files are removed
-            command="rm -rf {sample_output_dir} && mkdir {sample_output_dir} && hicup -c {fileName}".format(sample_output_dir= sample_output_dir, fileName=fileName)
-            job = Job(input_files= [fastq1, fastq2, fileName],
-                    output_files=[hicup_file_output],
-                    module_entries= [['hicup_align', 'module_bowtie2'], ['hicup_align', 'module_R'], ['hicup_align', 'module_mugqic_R_packages'], ['hicup_align', 'module_HiCUP']],
-                    name= "hicup_align." + readset.name,
-                    command=command,
-                    removable_files=[fileName]
+            command = "rm -rf {sample_output_dir} && mkdir {sample_output_dir} && hicup -c {fileName}".format(sample_output_dir = sample_output_dir, fileName = fileName)
+            job = Job(input_files = [fastq1, fastq2, fileName],
+                    output_files = [hicup_file_output],
+                    module_entries = [['hicup_align', 'module_bowtie2'], ['hicup_align', 'module_R'], ['hicup_align', 'module_mugqic_R_packages'], ['hicup_align', 'module_HiCUP']],
+                    name = "hicup_align." + readset.name,
+                    command = command,
+                    removable_files = [fileName]
                     )
 
             jobs.append(job)
@@ -187,29 +187,60 @@ class HicSeq(common.Illumina):
         for readset in self.readsets:
             tagDirName = "_".join(("HTD", readset.name, self.enzyme))
             sample_output_dir = os.path.join(output_directory, tagDirName)
-            hicup_prefix = ".trim.pair1_2.hicup.bam" if config.param('hicup_align', 'Zip') == 1 else ".trim.pair1_2.hicup.sam"
+            hicup_prefix = ".trim.pair1_2.hicup.bam" if config.param('hicup_align', 'Zip') == "1" else ".trim.pair1_2.hicup.sam"
             hicup_file_output = os.path.join("hicup_align", readset.name, readset.name + hicup_prefix)
             
             ## homer command
-            command="cd {output_directory} && makeTagDirectory {tagDirName} {hicup_file_output},{hicup_file_output} -genome {genome} -restrictionSite {restriction_site} -checkGC".format(output_directory= output_directory, tagDirName= tagDirName, hicup_file_output=hicup_file_output, genome=config.param('DEFAULT', 'assembly'), restriction_site= self.restriction_site)
-            job = Job(input_files= [hicup_file_output],
-                    output_files=[sample_output_dir],
-                    module_entries= [["homer_tag_directory", "module_homer"]],
-                    name= "homer_tag_directory." + readset.name,
-                    command=command,
-                    removable_files=[]
+            command_tagDir = "makeTagDirectory {sample_output_dir} {hicup_file_output},{hicup_file_output} -genome {genome} -restrictionSite {restriction_site} -checkGC".format(sample_output_dir = sample_output_dir, hicup_file_output = hicup_file_output, genome = config.param('DEFAULT', 'assembly'), restriction_site = self.restriction_site)
+
+            command_archive = "mkdir -p {archive_output_dir} && mv -t {archive_output_dir} *random*.tsv *chrUn*.tsv chrM*.tsv chrY*.tsv".format(archive_output_dir = os.path.join(sample_output_dir, "archive"))
+
+            #command_QcPlots = "makeTagDirectory {sample_output_dir} {hicup_file_output},{hicup_file_output} -genome {genome} -restrictionSite {restriction_site} -checkGC".format(sample_output_dir = sample_output_dir, hicup_file_output = hicup_file_output, genome = config.param('DEFAULT', 'assembly'), restriction_site = self.restriction_site)
+
+            job = Job(input_files = [hicup_file_output],
+                    output_files = [sample_output_dir],
+                    module_entries = [["homer_tag_directory", "module_homer"]],
+                    name = "homer_tag_directory." + readset.name,
+                    command = command_tagDir + " && " + command_archive,
+                    removable_files = []
                     )
 
             jobs.append(job)
         return jobs
 
 
-    def produce_interaction_matrices(self):
-        """
-        IntraChromosomal interaction matrices, as well as genome wide interaction matrices are produced by Homer at resolutions defined in the ini config file
-        For more detailed information about the HOMER matrices visit: [HOMER matrices] (http://homer.ucsd.edu/homer/interactions/HiCmatrices.html)
-        """
-        pass
+    # def interaction_matrices(self):
+    #     """
+    #     IntraChromosomal interaction matrices, as well as genome wide interaction matrices are produced by Homer at resolutions defined in the ini config file
+    #     For more detailed information about the HOMER matrices visit: [HOMER matrices] (http://homer.ucsd.edu/homer/interactions/HiCmatrices.html)
+    #     """
+        
+    #     jobs = []
+
+    #     chrs = config.param('interaction_matrices', 'chromosomes').split(",")
+    #     res_chr = config.param('interaction_matrices', 'resolution_chr_matrix').split(",")
+    #     res_genome = config.param('interaction_matrices', 'resolution_genome_matrix').split(",")
+        
+    #     output_directory = "interaction_matrices"
+        
+    #     for readset in self.readsets:
+    #         tagDirName = "_".join(("HTD", readset.name, self.enzyme))
+    #         homer_output_dir = os.path.join("homer_tag_directory", tagDirName)
+    #         sample_output_dir = os.path.join(output_directory, readset.name)
+            
+    #         ## homer interaction matrices Chr command
+    #         commandChr="makeTagDirectory {sample_output_dir} {hicup_file_output},{hicup_file_output} -genome {genome} -restrictionSite {restriction_site} -checkGC".format(sample_output_dir= sample_output_dir, hicup_file_output=hicup_file_output, genome=config.param('DEFAULT', 'assembly'), restriction_site= self.restriction_site)
+    #         job = Job(input_files= [hicup_file_output],
+    #                 output_files=[sample_output_dir],
+    #                 module_entries= [["homer_tag_directory", "module_homer"]],
+    #                 name= "homer_tag_directory." + readset.name,
+    #                 command=command,
+    #                 removable_files=[]
+    #                 )
+
+    #         jobs.append(job)
+    #     return jobs
+
 
     def identify_compartments(self):
         """
