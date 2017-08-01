@@ -88,6 +88,51 @@ class HicSeq(common.Illumina):
         genome_digest = os.path.expandvars(config.param('hicup_align', "genome_digest_" + self.enzyme))
         return genome_digest
 
+    def fastq_readName_Edit(self):
+        """
+        Removes the added /1 and /2 by picard's sam_to_fastq transformation to avoid issues with downstream software like HOMER
+        """
+        jobs=[]
+
+        for readset in self.readsets:
+            sample_output_dir = os.path.join(output_directory, readset.name)
+            trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
+
+            if readset.run_type != "PAIRED_END":
+                raise Exception("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END for Hi-C analysis)!")
+
+            candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
+            if readset.fastq1 and readset.fastq2:
+                candidate_input_files.append([readset.fastq1, readset.fastq2])
+            if readset.bam:
+                candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
+            [fastq1, fastq2] = self.select_input_files(candidate_input_files)
+
+            original_fastq1=fastq1 + "_original"
+            original_fastq2=fastq2 + "_original"
+
+            command = "mv {fastq1} {original_fastq1} && sed '/^@/s/\/[12]\>//g' {original_fastq1} > {fastq1}".format(fastq1 = fastq1, original_fastq1=original_fastq1)
+            job_fastq1 = Job(input_files = [fastq1],
+                    output_files = [fastq1],
+                    name = "fastq1_readName_Edit." + readset.name,
+                    command = command,
+                    removable_files = [original_fastq1]
+                    )
+
+            command = "mv {fastq2} {original_fastq2} && sed '/^@/s/\/[12]\>//g' {original_fastq2} > {fastq2}".format(fastq2 = fastq2, original_fastq2=original_fastq2)
+            job_fastq2 = Job(input_files = [fastq2],
+                    output_files = [fastq2],
+                    name = "fastq2_readName_Edit." + readset.name,
+                    command = command,
+                    removable_files = [original_fastq2]
+                    )
+
+            jobs.append(concat_jobs(job_fastq1, job_fastq2))
+
+        return jobs
+
+
     def hicup_align(self):
         """
         Paired-end Hi-C reads are truncated, mapped and filtered using HiCUP. The resulting bam file is filtered for Hi-C artifacts and
@@ -157,7 +202,7 @@ class HicSeq(common.Illumina):
 
             # hicup command
             ## delete directory if it exists since hicup will not run again unless old files are removed
-            command = "rm -rf {sample_output_dir} && mkdir {sample_output_dir} && hicup -c {fileName}".format(sample_output_dir = sample_output_dir, fileName = fileName)
+            command = "rm -rf {sample_output_dir} && mkdir -p {sample_output_dir} && hicup -c {fileName}".format(sample_output_dir = sample_output_dir, fileName = fileName)
             job = Job(input_files = [fastq1, fastq2, fileName],
                     output_files = [hicup_file_output],
                     module_entries = [['hicup_align', 'module_bowtie2'], ['hicup_align', 'module_R'], ['hicup_align', 'module_mugqic_R_packages'], ['hicup_align', 'module_HiCUP']],
@@ -169,6 +214,7 @@ class HicSeq(common.Illumina):
             jobs.append(job)
 
         return jobs
+
 
 
 
@@ -271,6 +317,7 @@ class HicSeq(common.Illumina):
             self.picard_sam_to_fastq,
             self.trimmomatic,
             self.merge_trimmomatic_stats,
+            fastq_readName_Edit,
             self.hicup_align,
             self.homer_tag_directory
         ]
