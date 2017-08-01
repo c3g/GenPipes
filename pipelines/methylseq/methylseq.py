@@ -296,7 +296,6 @@ class MethylSeq(dnaseq.DnaSeq):
                 if not interval_list in created_interval_lists:
                     job = tools.bed2interval_list(None, coverage_bed, interval_list)
                     job.name = "interval_list." + os.path.basename(coverage_bed)
-                    job.samples=[sample]
                     jobs.append(job)
                     created_interval_lists.append(interval_list)
                 file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.")
@@ -325,7 +324,7 @@ class MethylSeq(dnaseq.DnaSeq):
                         None
                     ),
                     bedtools.coverage(
-                        None,
+                        "/dev/stdin",
                         re.sub(".bam", ".gc_cov.1M.txt", input)
                     )
                 ]),
@@ -458,7 +457,7 @@ class MethylSeq(dnaseq.DnaSeq):
             candidate_input_files.append([os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup.bedGraph.gz")])
             candidate_input_files.append([os.path.join(methyl_directory, sample.name + ".sorted.bedGraph.gz")])
             [input_bed_graph] = self.select_input_files(candidate_input_files)
-            output_wiggle = os.path.join("tracks", "bigWig", re.sub(".bam", ".bw", os.path.basename(input_bed_graph)))
+            output_wiggle = os.path.join("tracks", "bigWig", re.sub(".bedGraph.gz", ".bw", os.path.basename(input_bed_graph)))
 
             jobs.append(
                 concat_jobs([
