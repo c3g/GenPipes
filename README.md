@@ -56,6 +56,10 @@ elif [[ $BQMAMMOUTH == "mp2" ]]; then
 
   export MUGQIC_INSTALL_HOME_DEV=/nfs3_ib/bourque-mp2.nfs/tank/nfs/bourque/nobackup/share/mugqic_dev
 
+elif [[ $HOST == cedar* || $DNSDOMAIN == cedar.computecanada.ca ]]; then
+
+  export MUGQIC_INSTALL_HOME_DEV=/project/6007512/C3G/analyste_dev
+
 fi
     
 module use $MUGQIC_INSTALL_HOME/modulefiles $MUGQIC_INSTALL_HOME_DEV/modulefiles
