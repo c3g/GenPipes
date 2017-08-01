@@ -317,19 +317,7 @@ class HicSeq(common.Illumina):
             self.picard_sam_to_fastq,
             self.trimmomatic,
             self.merge_trimmomatic_stats,
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
             self.fastq_readName_Edit,
-=======
-            fastq_readName_Edit,
->>>>>>> c545fc6294f5e862f9be2ce370e3637f9ebd679d
-=======
-            fastq_readName_Edit,
->>>>>>> c545fc6294f5e862f9be2ce370e3637f9ebd679d
-=======
-            fastq_readName_Edit,
->>>>>>> c545fc6294f5e862f9be2ce370e3637f9ebd679d
             self.hicup_align,
             self.homer_tag_directory
         ]
