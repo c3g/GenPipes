@@ -62,7 +62,8 @@ def bedgraph_to_bigbwig(input_bed_graph, output_wiggle, graph_header=False):
 bedGraphToBigWig \\
   {sorted_bed_graph} \\
   {chromosome_size} \\
-  {output_wiggle}""".format(
+  {output_wiggle} && \\
+  rm -f {sorted_bed_graph}""".format(
             sort_command=sort_command,
             chromosome_size=config.param('ucsc', 'chromosome_size', type='filepath'),
             sorted_bed_graph=sorted_bed_graph,
