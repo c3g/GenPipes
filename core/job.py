@@ -168,7 +168,7 @@ def concat_jobs(jobs, name=""):
     job.modules = modules
 
     # Merge commands
-    job.command = " && \\\n".join([job_item.command for job_item in jobs])
+    job.command = " && \\\n".join([job_item.command for job_item in jobs if job_item.command])
 
     return job
 
