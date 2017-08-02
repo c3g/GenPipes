@@ -234,19 +234,22 @@ class HicSeq(common.Illumina):
             sample_output_dir = os.path.join(output_directory, tagDirName)
             hicup_prefix = ".trim.pair1_2.hicup.bam" if config.param('hicup_align', 'Zip') == "1" else ".trim.pair1_2.hicup.sam"
             hicup_file_output = os.path.join("hicup_align", readset.name, readset.name + hicup_prefix)
-            
+            archive_output_dir = os.path.join(sample_output_dir, "archive")
+            QcPlots_output_dir = os.path.join(sample_output_dir, "HomerQcPlots")
+
             ## homer command
             command_tagDir = "makeTagDirectory {sample_output_dir} {hicup_file_output},{hicup_file_output} -genome {genome} -restrictionSite {restriction_site} -checkGC".format(sample_output_dir = sample_output_dir, hicup_file_output = hicup_file_output, genome = config.param('DEFAULT', 'assembly'), restriction_site = self.restriction_site)
 
-            command_archive = "mkdir -p {archive_output_dir} && mv -t {archive_output_dir} *random*.tsv *chrUn*.tsv chrM*.tsv chrY*.tsv".format(archive_output_dir = os.path.join(sample_output_dir, "archive"))
+            command_archive = "mkdir -p {archive_output_dir} && cd {sample_output_dir} && mv -t {archive} *random*.tsv *chrUn*.tsv *hap*.tsv chrM*.tsv chrY*.tsv".format(archive_output_dir = archive_output_dir, sample_output_dir = sample_output_dir, archive = "archive")
 
-            #command_QcPlots = "makeTagDirectory {sample_output_dir} {hicup_file_output},{hicup_file_output} -genome {genome} -restrictionSite {restriction_site} -checkGC".format(sample_output_dir = sample_output_dir, hicup_file_output = hicup_file_output, genome = config.param('DEFAULT', 'assembly'), restriction_site = self.restriction_site)
+            command_QcPlots = "Rscript {script} {name} {workingDir} {outDir}".format(script = os.path.expandvars("$myhicseq/HomerHiCQcPlotGenerator.R"),  name = readset.name, workingDir = sample_output_dir, outDir = "HomerQcPlots")
 
             job = Job(input_files = [hicup_file_output],
-                    output_files = [sample_output_dir],
-                    module_entries = [["homer_tag_directory", "module_homer"]],
+                    output_files = [sample_output_dir, ],
+                    module_entries = [["homer_tag_directory", "module_homer"], ["homer_tag_directory", "module_samtools"], ["homer_tag_directory", "module_R"]],
                     name = "homer_tag_directory." + readset.name,
-                    command = command_tagDir + " && " + command_archive,
+                    command = command_tagDir + " && " + command_archive + " && " + command_QcPlots,
+                    #command = command_QcPlots,
                     removable_files = []
                     )
 
@@ -271,20 +274,25 @@ class HicSeq(common.Illumina):
     #     for readset in self.readsets:
     #         tagDirName = "_".join(("HTD", readset.name, self.enzyme))
     #         homer_output_dir = os.path.join("homer_tag_directory", tagDirName)
-    #         sample_output_dir = os.path.join(output_directory, readset.name)
-            
+    #         sample_output_dir_chr = os.path.join(output_directory, readset.name, "chromosomeMatrices")
+    #         sample_output_dir_genome = os.path.join(output_directory, readset.name, "genomewideMatrices")
+            ## loop over chrs and res:
     #         ## homer interaction matrices Chr command
-    #         commandChr="makeTagDirectory {sample_output_dir} {hicup_file_output},{hicup_file_output} -genome {genome} -restrictionSite {restriction_site} -checkGC".format(sample_output_dir= sample_output_dir, hicup_file_output=hicup_file_output, genome=config.param('DEFAULT', 'assembly'), restriction_site= self.restriction_site)
-    #         job = Job(input_files= [hicup_file_output],
-    #                 output_files=[sample_output_dir],
-    #                 module_entries= [["homer_tag_directory", "module_homer"]],
-    #                 name= "homer_tag_directory." + readset.name,
-    #                 command=command,
-    #                 removable_files=[]
+    #         fileName = os.path.join(homer_output_dir, "_".join(tagDirName, chr, res, "raw.txt"))
+    #         fileNameRN = os.path.join(homer_output_dir, "_".join(tagDirName, chr, res, "rawRN.txt"))
+    #         commandChr="analyzeHiC {homer_output_dir} -res {res} -raw -chr {chr} > {fileName} && cut -f 2- {fileName} > {fileNameRN} && hicplotter -f {fileNameRN} -n {name} -chr {chr} -r {res} -fh 0 -o {sample_output_dir_chr} -ptr 0 -hmc {hmc}".format(homer_output_dir = homer_output_dir, res=res, chr=chr, fileName=fileName, fileNameRN=fileNameRN, name=readset.name, sample_output_dir_chr=sample_output_dir_chr, hmc=config.param('interaction_matrices', 'hmc'))
+
+    #         job = Job(input_files= [tagDirName],
+    #                 output_files=[fileNameRN, fileName],
+    #                 module_entries= [["homer_tag_directory", "module_homer"], ["homer_tag_directory", "module_HiCPlotter"]],
+    #                 name= "interaction_matrices." + readset.name,
+    #                 command=commandChr,
+    #                 removable_files=[fileName]
     #                 )
 
     #         jobs.append(job)
     #     return jobs
+
 
 
     def identify_compartments(self):
