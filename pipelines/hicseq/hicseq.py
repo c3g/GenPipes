@@ -95,7 +95,6 @@ class HicSeq(common.Illumina):
         jobs=[]
 
         for readset in self.readsets:
-            sample_output_dir = os.path.join(output_directory, readset.name)
             trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
 
             if readset.run_type != "PAIRED_END":
@@ -109,10 +108,10 @@ class HicSeq(common.Illumina):
                 candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
             [fastq1, fastq2] = self.select_input_files(candidate_input_files)
 
-            original_fastq1=fastq1 + "_original"
-            original_fastq2=fastq2 + "_original"
+            original_fastq1 = fastq1 + "original.gz"
+            original_fastq2 = fastq2 + "original.gz"
 
-            command = "mv {fastq1} {original_fastq1} && sed '/^@/s/\/[12]\>//g' {original_fastq1} > {fastq1}".format(fastq1 = fastq1, original_fastq1=original_fastq1)
+            command = "mv {fastq1} {original_fastq1} && zcat {original_fastq1} | sed '/^@/s/\/[12]\>//g' | gzip > {fastq1}".format(fastq1 = fastq1, original_fastq1=original_fastq1)
             job_fastq1 = Job(input_files = [fastq1],
                     output_files = [fastq1],
                     name = "fastq1_readName_Edit." + readset.name,
@@ -120,7 +119,7 @@ class HicSeq(common.Illumina):
                     removable_files = [original_fastq1]
                     )
 
-            command = "mv {fastq2} {original_fastq2} && sed '/^@/s/\/[12]\>//g' {original_fastq2} > {fastq2}".format(fastq2 = fastq2, original_fastq2=original_fastq2)
+            command = "mv {fastq2} {original_fastq2} && zcat {original_fastq2} | sed '/^@/s/\/[12]\>//g' | gzip > {fastq2}".format(fastq2 = fastq2, original_fastq2=original_fastq2)
             job_fastq2 = Job(input_files = [fastq2],
                     output_files = [fastq2],
                     name = "fastq2_readName_Edit." + readset.name,
@@ -128,7 +127,7 @@ class HicSeq(common.Illumina):
                     removable_files = [original_fastq2]
                     )
 
-            jobs.append(concat_jobs(job_fastq1, job_fastq2))
+            jobs.extend([job_fastq1, job_fastq2])
 
         return jobs
 
@@ -205,7 +204,7 @@ class HicSeq(common.Illumina):
             command = "rm -rf {sample_output_dir} && mkdir -p {sample_output_dir} && hicup -c {fileName}".format(sample_output_dir = sample_output_dir, fileName = fileName)
             job = Job(input_files = [fastq1, fastq2, fileName],
                     output_files = [hicup_file_output],
-                    module_entries = [['hicup_align', 'module_bowtie2'], ['hicup_align', 'module_R'], ['hicup_align', 'module_mugqic_R_packages'], ['hicup_align', 'module_HiCUP']],
+                    module_entries = [['hicup_align', 'module_bowtie2'], ['hicup_align', 'module_samtools'], ['hicup_align', 'module_R'], ['hicup_align', 'module_mugqic_R_packages'], ['hicup_align', 'module_HiCUP']],
                     name = "hicup_align." + readset.name,
                     command = command,
                     removable_files = [fileName]
