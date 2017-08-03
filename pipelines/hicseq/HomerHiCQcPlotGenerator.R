@@ -42,6 +42,8 @@ if(!is.na(args[3])){
   outputDir <- "HomerQcPlots"
 }
 
+print(workingDir)
+
 setwd(workingDir)
 if (!file.exists(outputDir)) {dir.create(outputDir)}
 
