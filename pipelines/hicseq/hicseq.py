@@ -338,88 +338,89 @@ class HicSeq(common.Illumina):
 
 
 
-    # def identify_compartments(self):
-    #     """
-    #     Genomic compartments are idetified using Homer at resolutions defined in the ini config file
-    #     For more detailed information about the HOMER compartments visit: [HOMER compartments] (http://homer.ucsd.edu/homer/interactions/HiCpca.html)
-    #     """
+    def identify_compartments(self):
+        """
+        Genomic compartments are identified using Homer at resolutions defined in the ini config file
+        For more detailed information about the HOMER compartments visit: [HOMER compartments] (http://homer.ucsd.edu/homer/interactions/HiCpca.html)
+        """
 
-    #     jobs = []
+        jobs = []
 
-    #     output_directory = "identify_compartments"
-    #     res = config.param('identify_compartments', 'res')
+        output_directory = "identify_compartments"
+        res = config.param('identify_compartments', 'resolution_cmpt')
 
-    #     for readset in self.readsets:
-    #         tagDirName = "_".join(("HTD", readset.name, self.enzyme))
-    #         homer_output_dir = os.path.join("homer_tag_directory", tagDirName)
-    #         sample_output_dir = os.path.join(output_directory, readset.name)
-    #         fileName = readset.name + "_homerPCA_Res" + res
-    #         fileName_PC1 = fileName + ".PC1.txt"
-    #         fileName_Comp = fileName + "_compartments"
-
-
-    #         command = "mkdir -p {sample_output_dir} && runHiCpca.pl {fileName} {tagDirName} -res {res} -genome {genome}; findHiCCompartments.pl {fileName_PC1}  > {fileName_Comp}".format(sample_output_dir = sample_output_dir, fileName = fileName, tagDirName = tagDirName, res = res, genome = config.param('DEFAULT', 'assembly'), fileName_PC1 = fileName_PC1, fileName_Comp = fileName_Comp)
-
-    #         job = Job(input_files = [homer_output_dir],
-    #                 output_files = [fileName, fileName_PC1, fileName_Comp],
-    #                 module_entries = [["identify_compartments", "module_R"]],
-    #                 name = "identify_compartments." + readset.name,
-    #                 command = command
-    #                 )
-
-    #         jobs.append(job)
-    #     return jobs
+        for readset in self.readsets:
+            tagDirName = "_".join(("HTD", readset.name, self.enzyme))
+            homer_output_dir = os.path.join("homer_tag_directory", tagDirName)
+            sample_output_dir = os.path.join(output_directory, readset.name)
+            fileName = os.path.join(output_directory, readset.name + "_homerPCA_Res" + res)
+            fileName_PC1 = os.path.join(output_directory, fileName + ".PC1.txt")
+            fileName_Comp = os.path.join(output_directory, fileName + "_compartments")
 
 
+            command = "mkdir -p {sample_output_dir} && runHiCpca.pl {fileName} {homer_output_dir} -res {res} -genome {genome}; findHiCCompartments.pl {fileName_PC1}  > {fileName_Comp}".format(sample_output_dir = sample_output_dir, fileName = fileName, homer_output_dir = homer_output_dir, res = res, genome = config.param('DEFAULT', 'assembly'), fileName_PC1 = fileName_PC1, fileName_Comp = fileName_Comp)
 
-    # def identify_TADs(self):
-    #     """
-    #     Topological associating Domains (TADs) are idetified using TopDom at resolutions defined in the ini config file
-    #     For more detailed information about the TopDom visit: [TopDom] (https://www.ncbi.nlm.nih.gov/pubmed/26704975)
-    #     """
+            job = Job(input_files = [homer_output_dir],
+                    output_files = [fileName, fileName_PC1, fileName_Comp],
+                    module_entries = [["identify_compartments", "module_homer"], ["identify_compartments", "module_R"]],
+                    name = "identify_compartments." + readset.name,
+                    command = command,
+                    removable_files = [fileName]
+                    )
 
-    #     jobs = []
-
-    #     chrs = config.param('identify_TADs', 'chromosomes').split(",")
-    #     res_chr = config.param('identify_TADs', 'resolution_chr').split(",")
-
-
-    #     output_directory = "identify_TADs"
-
-    #     for readset in self.readsets:
-    #         sample_output_dir = os.path.join(output_directory, readset.name)
-
-    #         for res in res_chr:
-    #             for chr in chrs:
-
-    #                 input_matrix = os.path.join("interaction_matrices", readset.name, "chromosomeMatrices", "_".join(("HTD", readset.name, self.enzyme, chr, res, "rawRN.txt")))
-    #                 tmp_matrix = os.path.join(sample_output_dir, "_".join(("HTD", readset.name, self.enzyme, chr, res, "rawRN.MatA")))
-    #                 output_matrix = os.path.join(sample_output_dir, "_".join(("HTD", readset.name, self.enzyme, chr, res, "rawRN.MatA.TopDom")))
-
-    #                 ## make TopDom R script:
-    #                 FileContent = """
-    #                 source(\"{script}\")
-    #                 TopDom(matrix.file={tmp_matrix}, window.size={n}, outFile={output_matrix}")
-    #                 """.format(script = os.path.expandvars("${myhicseq}TopDom_v0.0.2.R"), tmp_matrix = tmp_matrix, n = config.param('identify_TADs', 'TopDom_n'), output_matrix = self.output_matrix)
-
-    #                 ## write FileContent to temporary file:
-    #                 fileName = "identify_TADs_TopDom." + readset.name + ".R"
-    #                 with open(fileName, "w") as R_file:
-    #                     R_file.write(FileContent)
+            jobs.append(job)
+        return jobs
 
 
-    #                 command = "{script} {input} {res} && Rscript {Rscript}".format(script = os.path.expandvars("${myhicseq}CreateTopDomMat.sh"), input = input_matrix, res = res, Rscript = fileName)
 
-    #                 job = Job(input_files = [input_matrix],
-    #                         output_files = [output_matrix],
-    #                         module_entries = [["identify_TADs", "module_R"]],
-    #                         name = "identify_TADs." + readset.name,
-    #                         command = command,
-    #                         removable_files = [fileName, tmp_matrix]
-    #                         )
+    def identify_TADs(self):
+        """
+        Topological associating Domains (TADs) are idetified using TopDom at resolutions defined in the ini config file
+        For more detailed information about the TopDom visit: [TopDom] (https://www.ncbi.nlm.nih.gov/pubmed/26704975)
+        """
 
-    #                 jobs.append(job)
-    #     return jobs
+        jobs = []
+
+        chrs = config.param('identify_TADs', 'chromosomes').split(",")
+        res_chr = config.param('identify_TADs', 'resolution_TADs').split(",")
+
+
+        output_directory = "identify_TADs"
+
+        for readset in self.readsets:
+            sample_output_dir = os.path.join(output_directory, readset.name)
+
+            for res in res_chr:
+                for chr in chrs:
+
+                    input_matrix = os.path.join("interaction_matrices", readset.name, "chromosomeMatrices", "_".join(("HTD", readset.name, self.enzyme, chr, res, "rawRN.txt")))
+                    tmp_matrix = input_matrix + ".MatA"
+                    output_matrix = os.path.join(sample_output_dir, "_".join(("HTD", readset.name, self.enzyme, chr, res, "rawRN.MatA.TopDom")))
+
+                    ## make TopDom R script:
+                    FileContent = """
+                    source("{script}")
+                    TopDom(matrix.file="{tmp_matrix}", window.size={n}, outFile="{output_matrix}")
+                    """.format(script = os.path.expandvars("${myhicseq}TopDom_v0.0.2.R"), tmp_matrix = tmp_matrix, n = config.param('identify_TADs', 'TopDom_n'), output_matrix = output_matrix)
+
+                    ## write FileContent to temporary file:
+                    fileName = "identify_TADs_TopDom." + readset.name + ".R"
+                    with open(fileName, "w") as R_file:
+                        R_file.write(FileContent)
+
+
+                    command = "mkdir -p {sample_output_dir} && {script} {input} {res} && Rscript {Rscript}".format(sample_output_dir = sample_output_dir,script = os.path.expandvars("${myhicseq}CreateTopDomMat.sh"), input = input_matrix, res = res, Rscript = fileName)
+
+                    job = Job(input_files = [input_matrix],
+                            output_files = [output_matrix],
+                            module_entries = [["identify_TADs", "module_R"]],
+                            name = "identify_TADs." + readset.name,
+                            command = command,
+                            removable_files = [fileName, tmp_matrix]
+                            )
+
+                    jobs.append(job)
+        return jobs
 
 
 
@@ -465,7 +466,9 @@ class HicSeq(common.Illumina):
             self.hicup_align,
             self.homer_tag_directory,
             self.interaction_matrices_Chr,
-            self.interaction_matrices_genome
+            self.interaction_matrices_genome,
+            self.identify_compartments,
+            self.identify_TADs
         ]
 
 if __name__ == '__main__':
