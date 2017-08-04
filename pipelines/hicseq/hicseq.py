@@ -354,8 +354,8 @@ class HicSeq(common.Illumina):
             homer_output_dir = os.path.join("homer_tag_directory", tagDirName)
             sample_output_dir = os.path.join(output_directory, readset.name)
             fileName = os.path.join(sample_output_dir, readset.name + "_homerPCA_Res" + res)
-            fileName_PC1 = os.path.join(sample_output_dir, fileName + ".PC1.txt")
-            fileName_Comp = os.path.join(sample_output_dir, fileName + "_compartments")
+            fileName_PC1 = os.path.join(sample_output_dir, readset.name + "_homerPCA_Res" + res + ".PC1.txt")
+            fileName_Comp = os.path.join(sample_output_dir, readset.name + "_homerPCA_Res" + res + "_compartments")
 
 
             command = "mkdir -p {sample_output_dir} && runHiCpca.pl {fileName} {homer_output_dir} -res {res} -genome {genome}; findHiCCompartments.pl {fileName_PC1}  > {fileName_Comp}".format(sample_output_dir = sample_output_dir, fileName = fileName, homer_output_dir = homer_output_dir, res = res, genome = config.param('DEFAULT', 'assembly'), fileName_PC1 = fileName_PC1, fileName_Comp = fileName_Comp)
