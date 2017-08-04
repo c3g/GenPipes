@@ -2,7 +2,7 @@
 ##                                                                        ##
 ##                              Rola Dali                                 ##  
 ##                        Homer HiC QC autoPlot                           ##
-##                              April 2016                                ##
+##                               July 2017                                ##
 ##                                                                        ##
 ############################################################################
 
@@ -22,13 +22,11 @@
 
 #tagInfo.txt: number of tags per chr
 
+#petagDistDistribution.txt histogram describing the fraction of paired-end reads that are found at different distances from one another.  The file stops at 300 million bp, and is divided into 1kb bins.
+
 ####################################################################################
 
 ## Rscript HomerHiCQcPlotGenerator.R <SampleName> <WorkingDirectory> <OutputDirectory>
-
-
-
-## TODO: add plot for petagDistDistribution.txt
 
 
 ## command line arguments for R script:
@@ -62,76 +60,64 @@ print("... ... producing petagLocalDistribution.pdf")
 file <- list.files(pattern = "petag.LocalDistribution.txt", full = TRUE)
 
 if (length(file) != 0 ){
-if(length(file) >1){
-  file <- list.files(workingDir, pattern = paste(sampleName ,"_petag.LocalDistribution.txt", sep=""), full = TRUE)
-}
 
-data <- read.table(file, header=T, sep="\t")
-
-data <- melt(data = data, id="Local.Distance.in.bp.between.PE.tags")
-colnames(data) <- c("Local.Distance.in.bp.between.PE.tags", "strand", "value")
-
-pdf(file = paste(outputDir, "/", sampleName, "_petag.LocalDistribution.pdf", sep=""), width = 14)
-print(ggplot() + geom_line(data=data, aes(x=Local.Distance.in.bp.between.PE.tags, y=value , color=strand), size=1.5)  + xlim (-1000,1000) + xlab("Distance from 5end of First Read") + ylab("Counts per bp") + ggtitle(paste(sampleName, "_petag.LocalDistribution", sep="")) + theme_set(theme_bw(12) + theme_bw()+ theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank())))
-dev.off() } else { print ("file not found")}
+  data <- read.table(file, header=T, sep="\t")
+  
+  data <- melt(data = data, id="Local.Distance.in.bp.between.PE.tags")
+  colnames(data) <- c("Local.Distance.in.bp.between.PE.tags", "strand", "value")
+  
+  pdf(file = paste(outputDir, "/", sampleName, "_petag.LocalDistribution.pdf", sep=""), width = 14)
+  print(ggplot() + geom_line(data=data, aes(x=Local.Distance.in.bp.between.PE.tags, y=value , color=strand), size=1.5)  + xlim (-1000,1000) + xlab("Distance from 5end of First Read") + ylab("Counts per bp") + ggtitle(paste(sampleName, "_petag.LocalDistribution", sep="")) + theme_set(theme_bw(12) + theme_bw()+ theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank())))
+  dev.off() } else { print ("file not found")}
 
 print("... ... producing tagLengthDistribution.pdf")
 
 #tagLengthDistribution.txt
 file <- list.files(pattern = "tagLengthDistribution.txt", full = TRUE)
-#print(file)
+
 if (length(file) != 0 ){
-if(length(file) >1){
-  file <- list.files(workingDir, pattern = paste(sampleName ,"_tagLengthDistribution.txt", sep=""), full = TRUE)
-}
 
-data <- read.table(file, header=T, sep="\t")
-colnames(data) <- c("TagLength",  "FractionOfTags")
-
-pdf(file = paste(outputDir, "/",sampleName, "_tagLengthDistribution.pdf", sep=""), width = 14, height = 7)
-print(ggplot() + geom_line(data=data, aes(x=TagLength, y=FractionOfTags), color="red", size=1.5) + xlab(" Tag length") + ylab("Fraction of tags") + ggtitle(paste(sampleName, "_tagLengthDistribution", sep="")) + theme_set(theme_bw(12) + theme_bw()+ theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank())))
-dev.off() } else {print("file not found")}
+  data <- read.table(file, header=T, sep="\t")
+  colnames(data) <- c("TagLength",  "FractionOfTags")
+  
+  pdf(file = paste(outputDir, "/",sampleName, "_tagLengthDistribution.pdf", sep=""), width = 14, height = 7)
+  print(ggplot() + geom_line(data=data, aes(x=TagLength, y=FractionOfTags), color="red", size=1.5) + xlab(" Tag length") + ylab("Fraction of tags") + ggtitle(paste(sampleName, "_tagLengthDistribution", sep="")) + theme_set(theme_bw(12) + theme_bw()+ theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank())))
+  dev.off() } else {print("file not found")}
 
 print("... ... producing petagRestrictionDistribution.pdf")
 
 
 #petagRestrictionDistribution.<Res>.mis<0>.txt
 file <- list.files(pattern = "petagRestrictionDistribution", full = TRUE)
-
+  
 if (length(file) != 0 ){
-if(length(file) >1){
-  file <- list.files(workingDir, pattern = paste(sampleName ,"_petagRestrictionDistribution", sep=""), full = TRUE)
-}
-
-data <- read.table(file, header=T, sep="\t")
-colnames(data) <- c("DistanceFromResSite", "+Strand", "-Strand")
-data <- melt(data, id="DistanceFromResSite")
-colnames(data) <- c("DistanceFromResSite", "strand", "value")
-
-cutSite <- str_match(string = file, pattern = "petagRestrictionDistribution.*..mis")
-cutSite <- gsub(x = gsub(x= cutSite, pattern = "petagRestrictionDistribution.", replacement = ""), pattern = ".mis", replacement = "")
-
-pdf(file = paste(outputDir, "/", sampleName, "_petagRestrictionDistribution.pdf", sep=""), width = 14, height = 7)
-print(ggplot() + geom_line(data=data, aes(x=DistanceFromResSite, y=value, color=strand), size=1.5) + xlab("Distance From Restriction Site - ") + ylab("Fraction of tags") + ggtitle(paste(sampleName, "_tagLengthDistribution_", cutSite, sep="")) + theme_set(theme_bw(12) + theme_bw()+ theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank())))
-dev.off() } else {print("file not found")}
+  
+  data <- read.table(file, header=T, sep="\t")
+  colnames(data) <- c("DistanceFromResSite", "+Strand", "-Strand")
+  data <- melt(data, id="DistanceFromResSite")
+  colnames(data) <- c("DistanceFromResSite", "strand", "value")
+  
+  cutSite <- str_match(string = file, pattern = "petagRestrictionDistribution.*..mis")
+  cutSite <- gsub(x = gsub(x= cutSite, pattern = "petagRestrictionDistribution.", replacement = ""), pattern = ".mis", replacement = "")
+  
+  pdf(file = paste(outputDir, "/", sampleName, "_petagRestrictionDistribution.pdf", sep=""), width = 14, height = 7)
+  print(ggplot() + geom_line(data=data, aes(x=DistanceFromResSite, y=value, color=strand), size=1.5) + xlab("Distance From Restriction Site - ") + ylab("Fraction of tags") + ggtitle(paste(sampleName, "_tagLengthDistribution_", cutSite, sep="")) + theme_set(theme_bw(12) + theme_bw()+ theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank())))
+  dev.off() } else {print("file not found")}
 
 print("... ... producing tagCountDistribution.pdf")
 
 #tagCountDistribution.txt
 
 file <- list.files(pattern = "tagCountDistribution.txt", full = TRUE)
-
+  
 if (length(file) != 0 ){
-if(length(file) >1){
-  file <- list.files(workingDir, pattern = paste(sampleName ,"_tagCountDistribution.txt", sep=""), full = TRUE)
-}
-
-data <- read.table(file, header=T, sep="\t")
-colnames(data) <- c("TagsPerPosition", "FractionOfTags")
-
-pdf(file = paste(outputDir, "/", sampleName, "_tagCountDistribution.pdf", sep=""), width = 14, height = 7)
-print(ggplot(data=data, aes(TagsPerPosition, FractionOfTags)) + geom_bar(stat = "identity", fill="grey")  + xlab("Reads per position") + ylab("Fraction of total reads") + ggtitle(paste(sampleName, "_tagCountDistribution", sep="")) + theme_set(theme_bw(12) + theme_bw()+ theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank())) +  scale_x_continuous(limits=c(0.5, 10), breaks=1:10) )
-dev.off() } else {print("file not found")}
+  
+  data <- read.table(file, header=T, sep="\t")
+  colnames(data) <- c("TagsPerPosition", "FractionOfTags")
+  
+  pdf(file = paste(outputDir, "/", sampleName, "_tagCountDistribution.pdf", sep=""), width = 14, height = 7)
+  print(ggplot(data=data, aes(TagsPerPosition, FractionOfTags)) + geom_bar(stat = "identity", fill="grey")  + xlab("Reads per position") + ylab("Fraction of total reads") + ggtitle(paste(sampleName, "_tagCountDistribution", sep="")) + theme_set(theme_bw(12) + theme_bw()+ theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank())) +  scale_x_continuous(limits=c(0.5, 10), breaks=1:10) )
+  dev.off() } else {print("file not found")}
 
 print("... ... producing tagAutocorrelation.pdf")
 
@@ -141,19 +127,16 @@ print("... ... producing tagAutocorrelation.pdf")
 file <- list.files(pattern = "tagAutocorrelation.txt", full = TRUE)
 
 if (length(file) != 0 ){
-if(length(file) >1){
-  file <- list.files(workingDir, pattern = paste(sampleName ,"_tagAutocorrelation.txt", sep=""), full = TRUE)
-}
-
-data <- read.table(file, header=T, sep="\t")
-colnames(data) <- c("DistanceInBp", "+Strand", "-Strand")
-data <- melt(data, id="DistanceInBp")
-colnames(data) <- c("DistanceInBp", "strand", "value")
-
-
-pdf(file = paste(outputDir, "/",sampleName, "_tagAutocorrelation.pdf", sep=""), width = 14, height = 7)
-print(ggplot() + geom_line(data=data, aes(x=DistanceInBp, y=value, color=strand), size=1.5) + xlab("Relative distance btn Reads (bp)") + ylab("Total read pairs") + ggtitle(paste(sampleName, "_tagAutocorrelation", sep="")) + theme_set(theme_bw(12) + theme_bw()+ theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank())))
-dev.off() } else { print("file not found")}
+  
+  data <- read.table(file, header=T, sep="\t")
+  colnames(data) <- c("DistanceInBp", "+Strand", "-Strand")
+  data <- melt(data, id="DistanceInBp")
+  colnames(data) <- c("DistanceInBp", "strand", "value")
+  
+  
+  pdf(file = paste(outputDir, "/",sampleName, "_tagAutocorrelation.pdf", sep=""), width = 14, height = 7)
+  print(ggplot() + geom_line(data=data, aes(x=DistanceInBp, y=value, color=strand), size=1.5) + xlab("Relative distance btn Reads (bp)") + ylab("Total read pairs") + ggtitle(paste(sampleName, "_tagAutocorrelation", sep="")) + theme_set(theme_bw(12) + theme_bw()+ theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank())))
+  dev.off() } else { print("file not found")}
 
 print("... ... producing tagInfo.pdf")
 
@@ -161,19 +144,16 @@ print("... ... producing tagInfo.pdf")
 file <- list.files(pattern = "tagInfo.txt", full = TRUE)
 
 if (length(file) != 0 ){
-if(length(file) >1){
-  file <- list.files(workingDir, pattern = paste(sampleName ,"_tagInfo.txt", sep=""), full = TRUE)
-}
 
-data <- read.table(file, header=T, sep="\t", skip = 11)
-colnames(data) <- c("chr", "UniquePositions", "TotalTags")
-chrList <- paste("chr" , c( seq(1:22), "X", "Y"),sep="" )
-data <- data[data$chr %in% chrList,]
-data = melt(data, id="chr")
-
-pdf(file = paste(outputDir, "/",sampleName, "_tagInfo.pdf", sep=""), width = 14, height = 7)
-print(ggplot() + geom_point(data=data, aes(x=chr, y=value, color=variable)) + xlab("chr") + ylab("Tag Counts") + ggtitle(paste(sampleName, "_tagAutocorrelation", sep="")) + theme_set(theme_bw(12) + theme_bw()+ theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank())) + scale_x_discrete(limits=chrList) )
-dev.off() }  else { print("file not found")}
+  data <- read.table(file, header=T, sep="\t", skip = 11)
+  colnames(data) <- c("chr", "UniquePositions", "TotalTags")
+  chrList <- paste("chr" , c( seq(1:22), "X", "Y"),sep="" )
+  data <- data[data$chr %in% chrList,]
+  data = melt(data, id="chr")
+  
+  pdf(file = paste(outputDir, "/",sampleName, "_tagInfo.pdf", sep=""), width = 14, height = 7)
+  print(ggplot() + geom_point(data=data, aes(x=chr, y=value, color=variable)) + xlab("chr") + ylab("Tag Counts") + ggtitle(paste(sampleName, "_tagAutocorrelation", sep="")) + theme_set(theme_bw(12) + theme_bw()+ theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank())) + scale_x_discrete(limits=chrList) )
+  dev.off() }  else { print("file not found")}
 
 ## if GCcheck is Run, 3 more files would be produced. Check and plot:
 
@@ -182,20 +162,17 @@ dev.off() }  else { print("file not found")}
 file <- list.files(pattern = "tagFreq.txt", full = TRUE)
 
 if (length(file) != 0 ){
-print("... ... producing tagFreq.txt")
-
-if(length(file) >1){
-  file <- list.files(pattern = paste(sampleName ,"_tagFreq.txt", sep=""), full = TRUE)
-}
-
-data <- read.table(file, header=T, sep="\t")
-data <- data[,1:5]
-data <- melt(data, id="Offset")
-colnames(data) <- c("bp", "nucleotide", "value")
-
-pdf(file = paste(outputDir, "/",sampleName, "_tagFreq.pdf", sep=""), width = 14, height = 7)
-print(ggplot() + geom_line(data=data, aes(x=bp, y=value, color=nucleotide)) + xlab("Distance from 5end of Read") + ylab("Nucleotide Frequency") + ggtitle(paste(sampleName, "_tagFreq", sep="")) + theme_set(theme_bw(12) + theme_bw()+ theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank())) )
-dev.off()
+  print("... ... producing tagFreq.txt")
+  
+  
+  data <- read.table(file, header=T, sep="\t")
+  data <- data[,1:5]
+  data <- melt(data, id="Offset")
+  colnames(data) <- c("bp", "nucleotide", "value")
+  
+  pdf(file = paste(outputDir, "/",sampleName, "_tagFreq.pdf", sep=""), width = 14, height = 7)
+  print(ggplot() + geom_line(data=data, aes(x=bp, y=value, color=nucleotide)) + xlab("Distance from 5end of Read") + ylab("Nucleotide Frequency") + ggtitle(paste(sampleName, "_tagFreq", sep="")) + theme_set(theme_bw(12) + theme_bw()+ theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank())) )
+  dev.off()
 }
 
 
@@ -207,10 +184,6 @@ genomeFile <- list.files(pattern = "genomeGCcontent.txt", full = TRUE)
 if (length(file) != 0 ){
   print("... ... producing tagGCcontent.pdf")
   
-  if(length(file) >1){
-    file <- list.files(workingDir, pattern = paste(sampleName ,"_tagGCcontent.txt", sep=""), full = TRUE)
-    genomeFile <- list.files(workingDir, pattern = paste(sampleName ,"_genomeGCcontent.txt", sep=""), full = TRUE)
-  }
   
   data <- read.table(file, header=T, sep="\t")
   colnames(data) <- c("GC", "Total", "Normalized")
@@ -228,6 +201,34 @@ if (length(file) != 0 ){
   dev.off()
 }
 
+
+
+print("... ... producing petagDistDistribution.pdf")
+
+#petag.FreqDistribution_1000.txt
+
+file <- list.files(pattern = "petag.FreqDistribution_1000.txt", full = TRUE)
+
+if (length(file) != 0 ){
+  
+  data <- read.table(file, header=F, sep="\t")
+  colnames(data) <- c("bins", "FractionOfTags")
+  
+  interChr <- data[1,2]
+  interChr <- as.character(interChr)
+  interChr <- gsub(pattern = "Fraction of total PE tags", replacement = "", x = interChr)
+  
+  data <- data[-1,]
+  data[,1] <- as.character(data[,1])
+  data[nrow(data),1] <- 300000000
+  data[,1] <- as.numeric(data[,1])
+  data[,2] <- as.numeric(as.character(data[,2]))
+  
+  png(file = paste(outputDir, "/", sampleName, "_petag.FreqDistribution_1000.png", sep=""), width = 14 , height = 7, units = "in", res=150)
+  print(ggplot(data=data, aes(x= log10(bins), y=log10(FractionOfTags))) + xlab("Fraction of total PE tags") + geom_point() + geom_line () + ylab( "Fraction of Reads (1kb interval)") + ggtitle(paste(sampleName, "_petag.FreqDistribution_1000", sep="")) + theme_set(theme_bw(12) + theme_bw()+ theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank()))  + annotate("text", x=log10(data[nrow(data)/2,1]), y = log10(1000), label= interChr))
+  dev.off() } else {print("file not found")}
+
+
+
+
 print("... ... Script Complete")
-
-
