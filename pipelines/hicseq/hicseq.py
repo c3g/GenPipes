@@ -88,6 +88,19 @@ class HicSeq(common.Illumina):
         genome_digest = os.path.expandvars(config.param('hicup_align', "genome_digest_" + self.enzyme))
         return genome_digest
 
+
+    @property
+    def output_dirs(self):
+        dirs = {'hicup_output_directory': 'hicup_align',
+                'homer_output_directory': 'homer_tag_directory',
+                'matrices_output_directory': 'interaction_matrices',
+                'cmpt_output_directory': 'identify_compartments',
+                'TAD_output_directory': 'identify_TADs',
+                'peaks_output_directory': 'identify_peaks'}
+        return dirs
+
+
+
     def fastq_readName_Edit(self):
         """
         Removes the added /1 and /2 by picard's sam_to_fastq transformation to avoid issues with downstream software like HOMER
@@ -111,6 +124,7 @@ class HicSeq(common.Illumina):
             original_fastq1 = fastq1 + "original.gz"
             original_fastq2 = fastq2 + "original.gz"
 
+            ## assumes reads in fastq file start with @; if not change
             command = "mv {fastq1} {original_fastq1} && zcat {original_fastq1} | sed '/^@/s/\/[12]\>//g' | gzip > {fastq1}".format(fastq1 = fastq1, original_fastq1=original_fastq1)
             job_fastq1 = Job(input_files = [fastq1],
                     output_files = [fastq1],
@@ -142,11 +156,9 @@ class HicSeq(common.Illumina):
 
         jobs = []
 
-        # create hicup output directory:
-        output_directory = "hicup_align"
 
         for readset in self.readsets:
-            sample_output_dir = os.path.join(output_directory, readset.name)
+            sample_output_dir = os.path.join(self.output_dirs['hicup_output_directory'], readset.name)
             trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
 
             if readset.run_type != "PAIRED_END":
@@ -227,13 +239,12 @@ class HicSeq(common.Illumina):
 
         jobs = []
 
-        output_directory = "homer_tag_directory"
         ## assuming that reads are trimmed and have a .trim. prefix, otherwise, edit code
         for readset in self.readsets:
             tagDirName = "_".join(("HTD", readset.name, self.enzyme))
-            sample_output_dir = os.path.join(output_directory, tagDirName)
+            sample_output_dir = os.path.join(self.output_dirs['homer_output_directory'], tagDirName)
             hicup_prefix = ".trim.pair1_2.hicup.bam" if config.param('hicup_align', 'Zip') == "1" else ".trim.pair1_2.hicup.sam"
-            hicup_file_output = os.path.join("hicup_align", readset.name, readset.name + hicup_prefix)
+            hicup_file_output = os.path.join(self.output_dirs['hicup_output_directory'], readset.name, readset.name + hicup_prefix)
             archive_output_dir = os.path.join(sample_output_dir, "archive")
             QcPlots_output_dir = os.path.join(sample_output_dir, "HomerQcPlots")
 
@@ -269,12 +280,10 @@ class HicSeq(common.Illumina):
         chrs = config.param('interaction_matrices_Chr', 'chromosomes').split(",")
         res_chr = config.param('interaction_matrices_Chr', 'resolution_chr').split(",")
 
-        output_directory = "interaction_matrices"
-
         for readset in self.readsets:
             tagDirName = "_".join(("HTD", readset.name, self.enzyme))
-            homer_output_dir = os.path.join("homer_tag_directory", tagDirName)
-            sample_output_dir_chr = os.path.join(output_directory, readset.name, "chromosomeMatrices")
+            homer_output_dir = os.path.join(self.output_dirs['homer_output_directory'], tagDirName)
+            sample_output_dir_chr = os.path.join(self.output_dirs['matrices_output_directory'], readset.name, "chromosomeMatrices")
 
             # loop over chrs and res:
             for res in res_chr:
@@ -309,12 +318,11 @@ class HicSeq(common.Illumina):
 
         res_genome = config.param('interaction_matrices_genome', 'resolution_genome').split(",")
 
-        output_directory = "interaction_matrices"
 
         for readset in self.readsets:
             tagDirName = "_".join(("HTD", readset.name, self.enzyme))
-            homer_output_dir = os.path.join("homer_tag_directory", tagDirName)
-            sample_output_dir_genome = os.path.join(output_directory, readset.name, "genomewideMatrices")
+            homer_output_dir = os.path.join(self.output_dirs['homer_output_directory'], tagDirName)
+            sample_output_dir_genome = os.path.join(self.output_dirs['matrices_output_directory'], readset.name, "genomewideMatrices")
 
             for res in res_genome:
                 fileName = os.path.join(sample_output_dir_genome, "_".join((tagDirName, "genomewide_Res", res,"raw.txt")))
@@ -346,13 +354,12 @@ class HicSeq(common.Illumina):
 
         jobs = []
 
-        output_directory = "identify_compartments"
         res = config.param('identify_compartments', 'resolution_cmpt')
 
         for readset in self.readsets:
             tagDirName = "_".join(("HTD", readset.name, self.enzyme))
-            homer_output_dir = os.path.join("homer_tag_directory", tagDirName)
-            sample_output_dir = os.path.join(output_directory, readset.name)
+            homer_output_dir = os.path.join(self.output_dirs['homer_output_directory'], tagDirName)
+            sample_output_dir = os.path.join(self.output_dirs['cmpt_output_directory'], readset.name)
             fileName = os.path.join(sample_output_dir, readset.name + "_homerPCA_Res" + res)
             fileName_PC1 = os.path.join(sample_output_dir, readset.name + "_homerPCA_Res" + res + ".PC1.txt")
             fileName_Comp = os.path.join(sample_output_dir, readset.name + "_homerPCA_Res" + res + "_compartments")
@@ -385,15 +392,14 @@ class HicSeq(common.Illumina):
         res_chr = config.param('identify_TADs', 'resolution_TADs').split(",")
 
 
-        output_directory = "identify_TADs"
 
         for readset in self.readsets:
-            sample_output_dir = os.path.join(output_directory, readset.name)
+            sample_output_dir = os.path.join(self.output_dirs['TAD_output_directory'], readset.name)
 
             for res in res_chr:
                 for chr in chrs:
 
-                    input_matrix = os.path.join("interaction_matrices", readset.name, "chromosomeMatrices", "_".join(("HTD", readset.name, self.enzyme, chr, res, "rawRN.txt")))
+                    input_matrix = os.path.join(self.output_dirs['matrices_output_directory'], readset.name, "chromosomeMatrices", "_".join(("HTD", readset.name, self.enzyme, chr, res, "rawRN.txt")))
                     tmp_matrix = input_matrix + ".MatA"
                     output_matrix = os.path.join(sample_output_dir, "_".join(("HTD", readset.name, self.enzyme, chr, res, "rawRN.MatA.TopDom")))
 
@@ -432,13 +438,12 @@ class HicSeq(common.Illumina):
 
         jobs = []
 
-        output_directory = "identify_peaks"
         res = config.param('identify_peaks', 'resolution_pks')
 
         for readset in self.readsets:
             tagDirName = "_".join(("HTD", readset.name, self.enzyme))
-            homer_output_dir = os.path.join("homer_tag_directory", tagDirName)
-            sample_output_dir = os.path.join(output_directory, readset.name)
+            homer_output_dir = os.path.join(self.output_dirs['homer_output_directory'], tagDirName)
+            sample_output_dir = os.path.join(self.output_dirs['peaks_output_directory'], readset.name)
             fileName = os.path.join(sample_output_dir, readset.name + "IntraChrInteractionsRes" + res + ".txt")
             fileName_anno = os.path.join(sample_output_dir, readset.name + "IntraChrInteractionsRes" + res + "_Annotated.txt")
 
