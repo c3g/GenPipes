@@ -353,9 +353,9 @@ class HicSeq(common.Illumina):
             tagDirName = "_".join(("HTD", readset.name, self.enzyme))
             homer_output_dir = os.path.join("homer_tag_directory", tagDirName)
             sample_output_dir = os.path.join(output_directory, readset.name)
-            fileName = os.path.join(output_directory, readset.name + "_homerPCA_Res" + res)
-            fileName_PC1 = os.path.join(output_directory, fileName + ".PC1.txt")
-            fileName_Comp = os.path.join(output_directory, fileName + "_compartments")
+            fileName = os.path.join(sample_output_dir, readset.name + "_homerPCA_Res" + res)
+            fileName_PC1 = os.path.join(sample_output_dir, fileName + ".PC1.txt")
+            fileName_Comp = os.path.join(sample_output_dir, fileName + "_compartments")
 
 
             command = "mkdir -p {sample_output_dir} && runHiCpca.pl {fileName} {homer_output_dir} -res {res} -genome {genome}; findHiCCompartments.pl {fileName_PC1}  > {fileName_Comp}".format(sample_output_dir = sample_output_dir, fileName = fileName, homer_output_dir = homer_output_dir, res = res, genome = config.param('DEFAULT', 'assembly'), fileName_PC1 = fileName_PC1, fileName_Comp = fileName_Comp)
@@ -363,7 +363,7 @@ class HicSeq(common.Illumina):
             job = Job(input_files = [homer_output_dir],
                     output_files = [fileName, fileName_PC1, fileName_Comp],
                     module_entries = [["identify_compartments", "module_homer"], ["identify_compartments", "module_R"]],
-                    name = "identify_compartments." + readset.name,
+                    name = "identify_compartments." + readset.name + "_res" + res,
                     command = command,
                     removable_files = [fileName]
                     )
@@ -414,7 +414,7 @@ class HicSeq(common.Illumina):
                     job = Job(input_files = [input_matrix],
                             output_files = [output_matrix],
                             module_entries = [["identify_TADs", "module_R"]],
-                            name = "identify_TADs." + readset.name,
+                            name = "identify_TADs." + readset.name + "_" + chr + "_res" + res,
                             command = command,
                             removable_files = [fileName, tmp_matrix]
                             )
@@ -424,35 +424,35 @@ class HicSeq(common.Illumina):
 
 
 
-    # def identify_peaks(self):
-    #     """
-    #     Significant intraChromosomal interactions (peaks) are identified using Homer.
-    #     For more detailed information about the Homer peaks visit: [Homer peaks] (http://homer.ucsd.edu/homer/interactions/HiCinteractions.html)
-    #     """
+    def identify_peaks(self):
+        """
+        Significant intraChromosomal interactions (peaks) are identified using Homer.
+        For more detailed information about the Homer peaks visit: [Homer peaks] (http://homer.ucsd.edu/homer/interactions/HiCinteractions.html)
+        """
 
-    #     jobs = []
+        jobs = []
 
-    #     output_directory = "identify_peaks"
-    #     res = config.param('identify_peaks', 'res')
+        output_directory = "identify_peaks"
+        res = config.param('identify_peaks', 'resolution_pks')
 
-    #     for readset in self.readsets:
-    #         tagDirName = "_".join(("HTD", readset.name, self.enzyme))
-    #         homer_output_dir = os.path.join("homer_tag_directory", tagDirName)
-    #         sample_output_dir = os.path.join(output_directory, readset.name)
-    #         fileName = os.path.join(sample_output_dir, readset.name + "IntraChrInteractionsRes" + res + ".txt")
-    #         fileName_anno = os.path.join(sample_output_dir, readset.name + "IntraChrInteractionsRes" + res + "_Annotated.txt")
+        for readset in self.readsets:
+            tagDirName = "_".join(("HTD", readset.name, self.enzyme))
+            homer_output_dir = os.path.join("homer_tag_directory", tagDirName)
+            sample_output_dir = os.path.join(output_directory, readset.name)
+            fileName = os.path.join(sample_output_dir, readset.name + "IntraChrInteractionsRes" + res + ".txt")
+            fileName_anno = os.path.join(sample_output_dir, readset.name + "IntraChrInteractionsRes" + res + "_Annotated.txt")
 
-    #         command = "mkdir -p {sample_output_dir} && findHiCInteractionsByChr.pl {tagDirName} -res {res} > {fileName} && annotateInteractions.pl {fileName} {genome} {fileName_anno}".format(sample_output_dir = sample_output_dir, tagDirName = tagDirName, res = res, fileName = fileName, genome = config.param('DEFAULT', 'assembly'), fileName_anno = fileName_anno)
+            command = "mkdir -p {sample_output_dir} && findHiCInteractionsByChr.pl {homer_output_dir} -res {res} > {fileName} && annotateInteractions.pl {fileName} {genome} {fileName_anno}".format(sample_output_dir = sample_output_dir, homer_output_dir = homer_output_dir, res = res, fileName = fileName, genome = config.param('DEFAULT', 'assembly'), fileName_anno = fileName_anno)
 
-    #         job = Job(input_files = [homer_output_dir],
-    #                 output_files = [fileName, fileName_anno],
-    #                 module_entries = [["identify_peaks", "module_homer"]],
-    #                 name = "identify_compartments." + readset.name,
-    #                 command = command
-    #                 )
+            job = Job(input_files = [homer_output_dir],
+                    output_files = [fileName, fileName_anno],
+                    module_entries = [["identify_peaks", "module_homer"]],
+                    name = "identify_peaks." + readset.name + "_res" + res,
+                    command = command
+                    )
 
-    #         jobs.append(job)
-    #     return jobs
+            jobs.append(job)
+        return jobs
 
 
 
@@ -468,7 +468,8 @@ class HicSeq(common.Illumina):
             self.interaction_matrices_Chr,
             self.interaction_matrices_genome,
             self.identify_compartments,
-            self.identify_TADs
+            self.identify_TADs,
+            self.identify_peaks
         ]
 
 if __name__ == '__main__':
