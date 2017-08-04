@@ -93,6 +93,7 @@ class HicSeq(common.Illumina):
     def output_dirs(self):
         dirs = {'hicup_output_directory': 'hicup_align',
                 'homer_output_directory': 'homer_tag_directory',
+                'bams_output_directory': 'merged_bams',
                 'matrices_output_directory': 'interaction_matrices',
                 'cmpt_output_directory': 'identify_compartments',
                 'TAD_output_directory': 'identify_TADs',
@@ -226,6 +227,54 @@ class HicSeq(common.Illumina):
 
         return jobs
 
+
+    def samtools_merge_bams(self):
+        """
+        BAM readset files are merged into one file per sample. Merge is done using [samtools](http://samtools.sourceforge.net/).
+
+        This step takes as input files the aligned bams/sams from the hicup_align step
+        """
+
+        jobs = []
+        for sample in self.samples:
+            sample_output = os.path.join(self.output_dirs['bams_output_directory'], sample.name + ".merged.bam")
+            ## need to deal with sams if Zip=0
+            readset_bams = [os.path.join(self.output_dirs['hicup_output_directory'], readset.name, readset.name + ".trim.pair1_2.hicup.bam") for readset in sample.readsets]
+
+            mkdir_job = Job(command="mkdir -p " + self.output_dirs['bams_output_directory'])
+
+            # If this sample has one readset only, create a sample BAM symlink to the readset BAM.
+            if len(sample.readsets) == 1:
+                readset_bam = readset_bams[0]
+                if os.path.isabs(readset_bam):
+                    target_readset_bam = readset_bam
+                else:
+                    target_readset_bam = os.path.relpath(readset_bam, self.output_dirs['hicup_output_directory'])
+
+                job = concat_jobs([
+                    mkdir_job,
+                    Job(input_files = readset_bams,
+                    output_files = [sample_output],
+                    command="ln -s -f " + target_readset_bam + " " + sample_output),
+                ], name="symlink_readset_sample_bam." + sample.name)
+
+            elif len(sample.readsets) > 1:
+
+                samtools_merge = Job(input_files = readset_bams,
+                    output_files = [sample_output],
+                    module_entries = [['hicup_align', 'module_samtools']],
+                    command = "samtools merge {sample_output} {input_bams}".format(sample_output = sample_output, input_bams = " ".join(map(str.strip, readset_bams)))
+                    )
+
+                job = concat_jobs([
+                    mkdir_job,
+                    samtools_merge
+                ])
+                job.name = "samtools_merge_bams." + sample.name
+
+            jobs.append(job)
+
+        return jobs
 
 
 
@@ -469,6 +518,7 @@ class HicSeq(common.Illumina):
             self.merge_trimmomatic_stats,
             self.fastq_readName_Edit,
             self.hicup_align,
+            self.samtools_merge_bams,
             self.homer_tag_directory,
             self.interaction_matrices_Chr,
             self.interaction_matrices_genome,
