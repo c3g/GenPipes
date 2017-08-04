@@ -257,17 +257,17 @@ class HicSeq(common.Illumina):
 
 
 
-    def interaction_matrices(self):
+    def interaction_matrices_Chr(self):
         """
-        IntraChromosomal interaction matrices, as well as genome wide interaction matrices are produced by Homer at resolutions defined in the ini config file
+        IntraChromosomal interaction matrices are produced by Homer at resolutions defined in the ini config file and plotted by HiCPlotter.
         For more detailed information about the HOMER matrices visit: [HOMER matrices] (http://homer.ucsd.edu/homer/interactions/HiCmatrices.html)
+        For more detailed information about HiCPlotter visit: [HiCPlotter] (https://github.com/kcakdemir/HiCPlotter)
         """
 
         jobs = []
 
-        chrs = config.param('interaction_matrices', 'chromosomes').split(",")
-        res_chr = config.param('interaction_matrices', 'resolution_chr').split(",")
-        res_genome = config.param('interaction_matrices', 'resolution_genome').split(",")
+        chrs = config.param('interaction_matrices_Chr', 'chromosomes').split(",")
+        res_chr = config.param('interaction_matrices_Chr', 'resolution_chr').split(",")
 
         output_directory = "interaction_matrices"
 
@@ -275,7 +275,6 @@ class HicSeq(common.Illumina):
             tagDirName = "_".join(("HTD", readset.name, self.enzyme))
             homer_output_dir = os.path.join("homer_tag_directory", tagDirName)
             sample_output_dir_chr = os.path.join(output_directory, readset.name, "chromosomeMatrices")
-            sample_output_dir_genome = os.path.join(output_directory, readset.name, "genomewideMatrices")
 
             # loop over chrs and res:
             for res in res_chr:
@@ -284,17 +283,57 @@ class HicSeq(common.Illumina):
                     fileName = os.path.join(sample_output_dir_chr, "_".join((tagDirName, chr, res, "raw.txt")))
                     fileNameRN = os.path.join(sample_output_dir_chr, "_".join((tagDirName, chr, res, "rawRN.txt")))
                     commandChrMatrix="mkdir -p {sample_output_dir_chr} && analyzeHiC {homer_output_dir} -res {res} -raw -chr {chr} > {fileName} && cut -f 2- {fileName} > {fileNameRN}".format(sample_output_dir_chr = sample_output_dir_chr, homer_output_dir = homer_output_dir, res = res, chr = chr, fileName = fileName, fileNameRN = fileNameRN)
-                    #commandChrPlot = "hicplotter -f {fileNameRN} -n {name} -chr {chr} -r {res} -fh 0 -o {sample_output_dir_chr} -ptr 0 -hmc {hmc}".format(res=res, chr=chr, fileNameRN=fileNameRN, name=readset.name, sample_output_dir_chr=sample_output_dir_chr, hmc=config.param('interaction_matrices', 'hmc'))
+                    commandChrPlot = "HiCPlotter.py -f {fileNameRN} -n {name} -chr {chr} -r {res} -fh 0 -o {sample_output_dir_chr} -ptr 0 -hmc {hmc}".format(res=res, chr=chr, fileNameRN=fileNameRN, name=readset.name, sample_output_dir_chr=os.path.join(sample_output_dir_chr, "_".join((tagDirName, chr, res, "raw"))), hmc = config.param('interaction_matrices_Chr', 'hmc'))
 
                     job = Job(input_files = [homer_output_dir],
                             output_files = [fileNameRN, fileName],
-                            module_entries = [["interaction_matrices", "module_homer"], ["interaction_matrices", "module_HiCPlotter"]],
-                            name = "interaction_matrices." + readset.name + "_" + chr + "_res" + res,
-                            command = commandChrMatrix,
+                            module_entries = [["interaction_matrices_Chr", "module_homer"], ["interaction_matrices_Chr", "module_HiCPlotter"]],
+                            name = "interaction_matrices_Chr." + readset.name + "_" + chr + "_res" + res,
+                            command = commandChrMatrix + " && " + commandChrPlot,
                             removable_files = [fileName]
                             )
 
                     jobs.append(job)
+        return jobs
+
+
+
+    def interaction_matrices_genome(self):
+        """
+        Genomeside interaction matrices are produced by Homer at resolutions defined in the ini config file
+        For more detailed information about the HOMER matrices visit: [HOMER matrices] (http://homer.ucsd.edu/homer/interactions/HiCmatrices.html)
+        For more detailed information about HiCPlotter visit: [HiCPlotter] (https://github.com/kcakdemir/HiCPlotter)
+        """
+
+        jobs = []
+
+        res_genome = config.param('interaction_matrices_genome', 'resolution_genome').split(",")
+
+        output_directory = "interaction_matrices"
+
+        for readset in self.readsets:
+            tagDirName = "_".join(("HTD", readset.name, self.enzyme))
+            homer_output_dir = os.path.join("homer_tag_directory", tagDirName)
+            sample_output_dir_genome = os.path.join(output_directory, readset.name, "genomewideMatrices")
+
+            for res in res_genome:
+                fileName = os.path.join(sample_output_dir_genome, "_".join((tagDirName, "genomewide_Res", res,"raw.txt")))
+                fileNameRN = os.path.join(sample_output_dir_genome, "_".join((tagDirName, "genomewide_Res", res,"rawRN.txt")))
+
+                commandMatrix="mkdir -p {sample_output_dir_genome} && analyzeHiC {homer_output_dir} -res {res} -raw > {fileName} && cut -f 2- {fileName} > {fileNameRN}".format(sample_output_dir_genome = sample_output_dir_genome, homer_output_dir = homer_output_dir, res = res, chr = chr, fileName = fileName, fileNameRN = fileNameRN)
+
+                commandPlot = "HiCPlotter.py -f {fileNameRN} -n {name} -chr Genome -r {res} -fh 0 -o {sample_output_dir_genome} -ptr 0 -hmc {hmc} -wg 1".format(res=res, chr=chr, fileNameRN=fileNameRN, name=readset.name, sample_output_dir_genome=os.path.join(sample_output_dir_genome, "_".join((tagDirName, "genomewide", "raw"))), hmc = config.param('interaction_matrices_Chr', 'hmc'))
+
+
+                job = Job(input_files = [homer_output_dir],
+                                output_files = [fileNameRN, fileName],
+                                module_entries = [["interaction_matrices_genome", "module_homer"], ["interaction_matrices_genome", "module_HiCPlotter"]],
+                                name = "interaction_matrices_genome." + readset.name  + "_res" + res,
+                                command = commandMatrix + " && " + commandPlot,
+                                removable_files = [fileName]
+                                )
+
+                jobs.append(job)
         return jobs
 
 
@@ -333,12 +372,56 @@ class HicSeq(common.Illumina):
 
 
 
-    def identify_TADs(self):
-        """
-        Topological associating Domains (TADs) are idetified using TopDom at resolutions defined in the ini config file
-        For more detailed information about the TopDom visit: [TopDom] (https://www.ncbi.nlm.nih.gov/pubmed/26704975)
-        """
-        pass
+    # def identify_TADs(self):
+    #     """
+    #     Topological associating Domains (TADs) are idetified using TopDom at resolutions defined in the ini config file
+    #     For more detailed information about the TopDom visit: [TopDom] (https://www.ncbi.nlm.nih.gov/pubmed/26704975)
+    #     """
+
+    #     jobs = []
+
+    #     chrs = config.param('identify_TADs', 'chromosomes').split(",")
+    #     res_chr = config.param('identify_TADs', 'resolution_chr').split(",")
+
+
+    #     output_directory = "identify_TADs"
+
+    #     for readset in self.readsets:
+    #         sample_output_dir = os.path.join(output_directory, readset.name)
+
+    #         for res in res_chr:
+    #             for chr in chrs:
+
+    #                 input_matrix = os.path.join("interaction_matrices", readset.name, "chromosomeMatrices", "_".join(("HTD", readset.name, self.enzyme, chr, res, "rawRN.txt")))
+    #                 tmp_matrix = os.path.join(sample_output_dir, "_".join(("HTD", readset.name, self.enzyme, chr, res, "rawRN.MatA")))
+    #                 output_matrix = os.path.join(sample_output_dir, "_".join(("HTD", readset.name, self.enzyme, chr, res, "rawRN.MatA.TopDom")))
+
+    #                 ## make TopDom R script:
+    #                 FileContent = """
+    #                 source(\"{script}\")
+    #                 TopDom(matrix.file={tmp_matrix}, window.size={n}, outFile={output_matrix}")
+    #                 """.format(script = os.path.expandvars("${myhicseq}TopDom_v0.0.2.R"), tmp_matrix = tmp_matrix, n = config.param('identify_TADs', 'TopDom_n'), output_matrix = self.output_matrix)
+
+    #                 ## write FileContent to temporary file:
+    #                 fileName = "identify_TADs_TopDom." + readset.name + ".R"
+    #                 with open(fileName, "w") as R_file:
+    #                     R_file.write(FileContent)
+
+
+    #                 command = "{script} {input} {res} && Rscript {Rscript}".format(script = os.path.expandvars("${myhicseq}CreateTopDomMat.sh"), input = input_matrix, res = res, Rscript = fileName)
+
+    #                 job = Job(input_files = [input_matrix],
+    #                         output_files = [output_matrix],
+    #                         module_entries = [["identify_TADs", "module_R"]],
+    #                         name = "identify_TADs." + readset.name,
+    #                         command = command,
+    #                         removable_files = [fileName, tmp_matrix]
+    #                         )
+
+    #                 jobs.append(job)
+    #     return jobs
+
+
 
     # def identify_peaks(self):
     #     """
@@ -381,7 +464,8 @@ class HicSeq(common.Illumina):
             self.fastq_readName_Edit,
             self.hicup_align,
             self.homer_tag_directory,
-            self.interaction_matrices
+            self.interaction_matrices_Chr,
+            self.interaction_matrices_genome
         ]
 
 if __name__ == '__main__':
