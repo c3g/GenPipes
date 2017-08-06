@@ -179,7 +179,7 @@ class HicSeq(common.Illumina):
             Threads: {threads}
             Quiet:{Quiet}
             Keep:{Keep}
-            Zip:{Zip}
+            Zip:1
             Bowtie2: {Bowtie2_path}
             R: {R_path}
             Index: {Genome_Index_hicup}
@@ -193,7 +193,6 @@ class HicSeq(common.Illumina):
                 threads = config.param('hicup_align', 'threads'),
                 Quiet = config.param('hicup_align', 'Quiet'),
                 Keep = config.param('hicup_align', 'Keep'),
-                Zip = config.param('hicup_align', 'Zip'),
                 Bowtie2_path = os.path.expandvars(config.param('hicup_align', 'Bowtie2_path')),
                 R_path = os.path.expandvars(config.param('hicup_align', 'R_path')),
                 Genome_Index_hicup = os.path.expandvars(config.param('hicup_align', 'Genome_Index_hicup')),
@@ -209,7 +208,7 @@ class HicSeq(common.Illumina):
             with open(fileName, "w") as conf_file:
                 conf_file.write(configFileContent)
 
-            hicup_prefix = ".trim.pair1_2.hicup.bam" if config.param('hicup_align', 'Zip') == "1" else ".trim.pair1_2.hicup.sam"
+            hicup_prefix = ".trim.pair1_2.hicup.bam"
             hicup_file_output = os.path.join("hicup_align", readset.name, readset.name + hicup_prefix)
 
             # hicup command
@@ -238,7 +237,6 @@ class HicSeq(common.Illumina):
         jobs = []
         for sample in self.samples:
             sample_output = os.path.join(self.output_dirs['bams_output_directory'], sample.name + ".merged.bam")
-            ## need to deal with sams if Zip=0
             readset_bams = [os.path.join(self.output_dirs['hicup_output_directory'], readset.name, readset.name + ".trim.pair1_2.hicup.bam") for readset in sample.readsets]
 
             mkdir_job = Job(command="mkdir -p " + self.output_dirs['bams_output_directory'])
@@ -308,7 +306,7 @@ class HicSeq(common.Illumina):
                     output_files = [sample_output_dir, archive_output_dir, QcPlots_output_dir],
                     module_entries = [["homer_tag_directory", "module_homer"], ["homer_tag_directory", "module_samtools"], ["homer_tag_directory", "module_R"]],
                     name = "homer_tag_directory." + sample.name,
-                    command = command_tagDir + " && " + command_QcPlots + " && " + command_archive,
+                    command = command_tagDir + " && " + command_QcPlots + " && " + command_archive + " && cd ../../",
                     )
 
             jobs.append(job)
@@ -488,7 +486,7 @@ class HicSeq(common.Illumina):
 
         res = config.param('identify_peaks', 'resolution_pks')
 
-        for readset in self.readsets:
+        for sample in self.samples:
             tagDirName = "_".join(("HTD", sample.name, self.enzyme))
             homer_output_dir = os.path.join(self.output_dirs['homer_output_directory'], tagDirName)
             sample_output_dir = os.path.join(self.output_dirs['peaks_output_directory'], sample.name)
