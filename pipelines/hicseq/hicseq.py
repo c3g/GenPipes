@@ -102,6 +102,7 @@ class HicSeq(common.Illumina):
 
 
 
+
     def fastq_readName_Edit(self):
         """
         Removes the added /1 and /2 by picard's sam_to_fastq transformation to avoid issues with downstream software like HOMER
@@ -122,24 +123,22 @@ class HicSeq(common.Illumina):
                 candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
             [fastq1, fastq2] = self.select_input_files(candidate_input_files)
 
-            original_fastq1 = fastq1 + "original.gz"
-            original_fastq2 = fastq2 + "original.gz"
 
             ## assumes reads in fastq file start with @; if not change
-            command = "mv {fastq1} {original_fastq1} && zcat {original_fastq1} | sed '/^@/s/\/[12]\>//g' | gzip > {fastq1}".format(fastq1 = fastq1, original_fastq1=original_fastq1)
+            command = "zcat {fastq1} | sed '/^@/s/\/[12]\>//g' | gzip > {fastq1_edited}".format(fastq1 = fastq1, fastq1_edited = fastq1 + ".edited.gz")
             job_fastq1 = Job(input_files = [fastq1],
-                    output_files = [fastq1],
+                    output_files = [fastq1 + ".edited.gz"],
                     name = "fastq1_readName_Edit." + readset.name,
                     command = command,
-                    removable_files = [original_fastq1]
+                    removable_files = [fastq1 + ".edited.gz"]
                     )
 
-            command = "mv {fastq2} {original_fastq2} && zcat {original_fastq2} | sed '/^@/s/\/[12]\>//g' | gzip > {fastq2}".format(fastq2 = fastq2, original_fastq2=original_fastq2)
+            command = "zcat {fastq2} | sed '/^@/s/\/[12]\>//g' | gzip > {fastq2_edited}".format(fastq2 = fastq2, fastq2_edited = fastq2 + ".edited.gz")
             job_fastq2 = Job(input_files = [fastq2],
-                    output_files = [fastq2],
+                    output_files = [fastq2 + ".edited.gz"],
                     name = "fastq2_readName_Edit." + readset.name,
                     command = command,
-                    removable_files = [original_fastq2]
+                    removable_files = [fastq2 + ".edited.gz"]
                     )
 
             jobs.extend([job_fastq1, job_fastq2])
@@ -200,21 +199,21 @@ class HicSeq(common.Illumina):
                 Format = config.param('hicup_align', 'Format'),
                 Longest = config.param('hicup_align', 'Longest'),
                 Shortest = config.param('hicup_align', 'Shortest'),
-                fastq1 = fastq1,
-                fastq2 = fastq2)
+                fastq1 = fastq1 + ".edited.gz",
+                fastq2 = fastq2 + ".edited.gz")
 
             ## write configFileContent to temporary file:
             fileName = "hicup_align." + readset.name + ".conf"
             with open(fileName, "w") as conf_file:
                 conf_file.write(configFileContent)
 
-            hicup_prefix = ".trim.pair1_2.hicup.bam"
+            hicup_prefix = ".trim.pair1_2.fastq.gz.edited.hicup.bam"
             hicup_file_output = os.path.join("hicup_align", readset.name, readset.name + hicup_prefix)
 
             # hicup command
             ## delete directory if it exists since hicup will not run again unless old files are removed
             command = "rm -rf {sample_output_dir} && mkdir -p {sample_output_dir} && hicup -c {fileName}".format(sample_output_dir = sample_output_dir, fileName = fileName)
-            job = Job(input_files = [fastq1, fastq2, fileName],
+            job = Job(input_files = [fastq1 + ".edited.gz", fastq2 + ".edited.gz", fileName],
                     output_files = [hicup_file_output],
                     module_entries = [['hicup_align', 'module_bowtie2'], ['hicup_align', 'module_samtools'], ['hicup_align', 'module_R'], ['hicup_align', 'module_mugqic_R_packages'], ['hicup_align', 'module_HiCUP']],
                     name = "hicup_align." + readset.name,
@@ -237,7 +236,7 @@ class HicSeq(common.Illumina):
         jobs = []
         for sample in self.samples:
             sample_output = os.path.join(self.output_dirs['bams_output_directory'], sample.name + ".merged.bam")
-            readset_bams = [os.path.join(self.output_dirs['hicup_output_directory'], readset.name, readset.name + ".trim.pair1_2.hicup.bam") for readset in sample.readsets]
+            readset_bams = [os.path.join(self.output_dirs['hicup_output_directory'], readset.name, readset.name + ".trim.pair1_2.fastq.gz.edited.hicup.bam") for readset in sample.readsets]
 
             mkdir_job = Job(command="mkdir -p " + self.output_dirs['bams_output_directory'])
 
@@ -340,15 +339,22 @@ class HicSeq(common.Illumina):
                     commandChrMatrix="mkdir -p {sample_output_dir_chr} && analyzeHiC {homer_output_dir} -res {res} -raw -chr {chr} > {fileName} && cut -f 2- {fileName} > {fileNameRN}".format(sample_output_dir_chr = sample_output_dir_chr, homer_output_dir = homer_output_dir, res = res, chr = chr, fileName = fileName, fileNameRN = fileNameRN)
                     commandChrPlot = "HiCPlotter.py -f {fileNameRN} -n {name} -chr {chr} -r {res} -fh 0 -o {sample_output_dir_chr} -ptr 0 -hmc {hmc}".format(res=res, chr=chr, fileNameRN=fileNameRN, name=sample.name, sample_output_dir_chr=os.path.join(sample_output_dir_chr, "_".join((tagDirName, chr, res, "raw"))), hmc = config.param('interaction_matrices_Chr', 'hmc'))
 
-                    job = Job(input_files = [homer_output_dir],
+                    jobMatrix = Job(input_files = [homer_output_dir],
                             output_files = [fileNameRN, fileName],
-                            module_entries = [["interaction_matrices_Chr", "module_homer"], ["interaction_matrices_Chr", "module_HiCPlotter"]],
+                            module_entries = [["interaction_matrices_Chr", "module_homer"]],
                             name = "interaction_matrices_Chr." + sample.name + "_" + chr + "_res" + res,
-                            command = commandChrMatrix + " && " + commandChrPlot,
+                            command = commandChrMatrix,
                             removable_files = [fileName]
                             )
 
-                    jobs.append(job)
+                    jobPlot = Job(input_files = [fileNameRN],
+                            module_entries = [["interaction_matrices_Chr", "module_HiCPlotter"]],
+                            name = "interaction_matrices+plotting_Chr." + sample.name + "_" + chr + "_res" + res,
+                            command = commandChrPlot,
+                            )
+
+                    jobs.extend([jobMatrix, jobPlot])
+
         return jobs
 
 
