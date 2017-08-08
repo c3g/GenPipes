@@ -103,7 +103,7 @@ class ChipSeq(dnaseq.DnaSeq):
 
             job = samtools.view(readset_bam, filtered_readset_bam, "-b -F4 -q " + str(config.param('samtools_view_filter', 'min_mapq', type='int')))
             job.name = "samtools_view_filter." + readset.name
-            jobs.append(job)-
+            jobs.append(job)
 
         report_file = os.path.join("report", "ChipSeq.samtools_view_filter.md")
         jobs.append(
