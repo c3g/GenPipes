@@ -458,7 +458,7 @@ def sh_ihec_rna_metrics(input_bam, input_name, input_picard_dup, output_dir):
         [output_metrics, output_duplicates],
         [
             ['DEFAULT', 'module_mugqic_tools'],
-            ['DEFAULT', 'module_sambamba']
+            ['DEFAULT', 'module_samtools']
         ],
         command="""\
 IHEC_rnaseq_metrics.sh \\
@@ -477,7 +477,7 @@ IHEC_rnaseq_metrics.sh \\
         )
     )
 
-def sh_ihec_chip_metrics(chip_bam, input_bam, sample_name, chip_type, output_dir):
+def sh_ihec_chip_metrics(chip_bam, input_bam, sample_name, chip_type, chip_bed, output_dir):
     output_metrics=os.path.join(output_dir, sample_name+".read_stats.txt")
     output_fingerprints=os.path.join(output_dir, sample_name+".fingerprint.txt")
     output_fingerprints_png=os.path.join(output_dir, sample_name+".fingerprint.png")
@@ -492,7 +492,7 @@ def sh_ihec_chip_metrics(chip_bam, input_bam, sample_name, chip_type, output_dir
         [output_metrics],
         [
             ['DEFAULT', 'module_mugqic_tools'],
-            ['DEFAULT', 'module_sambamba']
+            ['DEFAULT', 'module_samtools']
             ['DEFAULT', 'module_deeptools']
         ],
         command="""\
