@@ -25,6 +25,7 @@ import math
 import os
 import re
 import sys
+import commands
 
 # Append mugqic_pipelines directory to Python library path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
@@ -128,7 +129,7 @@ class HicSeq(common.Illumina):
             command = "zcat {fastq1} | sed '/^@/s/\/[12]\>//g' | gzip > {fastq1_edited}".format(fastq1 = fastq1, fastq1_edited = fastq1 + ".edited.gz")
             job_fastq1 = Job(input_files = [fastq1],
                     output_files = [fastq1 + ".edited.gz"],
-                    name = "fastq1_readName_Edit." + readset.name,
+                    name = "fastq_readName_Edit.fq1." + readset.name,
                     command = command,
                     removable_files = [fastq1 + ".edited.gz"]
                     )
@@ -136,7 +137,7 @@ class HicSeq(common.Illumina):
             command = "zcat {fastq2} | sed '/^@/s/\/[12]\>//g' | gzip > {fastq2_edited}".format(fastq2 = fastq2, fastq2_edited = fastq2 + ".edited.gz")
             job_fastq2 = Job(input_files = [fastq2],
                     output_files = [fastq2 + ".edited.gz"],
-                    name = "fastq2_readName_Edit." + readset.name,
+                    name = "fastq_readName_Edit.fq2." + readset.name,
                     command = command,
                     removable_files = [fastq2 + ".edited.gz"]
                     )
@@ -202,19 +203,32 @@ class HicSeq(common.Illumina):
                 fastq1 = fastq1 + ".edited.gz",
                 fastq2 = fastq2 + ".edited.gz")
 
-            ## write configFileContent to temporary file:
+
             fileName = "hicup_align." + readset.name + ".conf"
-            with open(fileName, "w") as conf_file:
-                conf_file.write(configFileContent)
+
+
+            command_confFile ='echo \"{configFileContent}\" > {fileName}'.format(fileName=fileName, configFileContent=configFileContent)
 
             hicup_prefix = ".trim.pair1_2.fastq.gz.edited.hicup.bam"
             hicup_file_output = os.path.join("hicup_align", readset.name, readset.name + hicup_prefix)
 
             # hicup command
             ## delete directory if it exists since hicup will not run again unless old files are removed
-            command = "rm -rf {sample_output_dir} && mkdir -p {sample_output_dir} && hicup -c {fileName}".format(sample_output_dir = sample_output_dir, fileName = fileName)
-            job = Job(input_files = [fastq1 + ".edited.gz", fastq2 + ".edited.gz", fileName],
-                    output_files = [hicup_file_output],
+            command_hicup = "rm -rf {sample_output_dir} && mkdir -p {sample_output_dir} && hicup -c {fileName}".format(sample_output_dir = sample_output_dir, fileName = fileName)
+
+            command = command_hicup
+
+            ## check if config file exists and has the same content:
+            if os.path.isfile(fileName):
+                with open(fileName) as conf_file:
+                    if conf_file.read() != configFileContent:
+                        command = command_confFile + " && " + command_hicup
+            else:
+                command = command_confFile + " && " + command_hicup
+
+
+            job = Job(input_files = [fastq1 + ".edited.gz", fastq2 + ".edited.gz"],
+                    output_files = [hicup_file_output, fileName],
                     module_entries = [['hicup_align', 'module_bowtie2'], ['hicup_align', 'module_samtools'], ['hicup_align', 'module_R'], ['hicup_align', 'module_mugqic_R_packages'], ['hicup_align', 'module_HiCUP']],
                     name = "hicup_align." + readset.name,
                     command = command,
@@ -337,8 +351,7 @@ class HicSeq(common.Illumina):
                     fileName = os.path.join(sample_output_dir_chr, "_".join((tagDirName, chr, res, "raw.txt")))
                     fileNameRN = os.path.join(sample_output_dir_chr, "_".join((tagDirName, chr, res, "rawRN.txt")))
                     commandChrMatrix="mkdir -p {sample_output_dir_chr} && analyzeHiC {homer_output_dir} -res {res} -raw -chr {chr} > {fileName} && cut -f 2- {fileName} > {fileNameRN}".format(sample_output_dir_chr = sample_output_dir_chr, homer_output_dir = homer_output_dir, res = res, chr = chr, fileName = fileName, fileNameRN = fileNameRN)
-                    commandChrPlot = "HiCPlotter.py -f {fileNameRN} -n {name} -chr {chr} -r {res} -fh 0 -o {sample_output_dir_chr} -ptr 0 -hmc {hmc}".format(res=res, chr=chr, fileNameRN=fileNameRN, name=sample.name, sample_output_dir_chr=os.path.join(sample_output_dir_chr, "_".join((tagDirName, chr, res, "raw"))), hmc = config.param('interaction_matrices_Chr', 'hmc'))
-
+                    
                     jobMatrix = Job(input_files = [homer_output_dir],
                             output_files = [fileNameRN, fileName],
                             module_entries = [["interaction_matrices_Chr", "module_homer"]],
@@ -347,10 +360,17 @@ class HicSeq(common.Illumina):
                             removable_files = [fileName]
                             )
 
+
+                    fileNamePlot = os.path.join(sample_output_dir_chr, "".join((tagDirName,"_", chr,"_", res, "_raw-", chr, "\'.ofBins(0-\'*\')\'.", str(int(res)/1000), "K.jpeg")))
+                    newFileNamePlot = os.path.join(sample_output_dir_chr, "".join((tagDirName,"_", chr,"_", res, "_raw-", chr, ".all.", str(int(res)/1000), "K.jpeg")))
+                    commandChrPlot = "HiCPlotter.py -f {fileNameRN} -n {name} -chr {chr} -r {res} -fh 0 -o {sample_output_dir_chr} -ptr 0 -hmc {hmc} && mv {fileNamePlot} {newFileNamePlot}".format(res=res, chr=chr, fileNameRN=fileNameRN, name=sample.name, sample_output_dir_chr=os.path.join(sample_output_dir_chr, "_".join((tagDirName, chr, res, "raw"))), hmc = config.param('interaction_matrices_Chr', 'hmc'), fileNamePlot = fileNamePlot, newFileNamePlot= newFileNamePlot)
+
+                    
                     jobPlot = Job(input_files = [fileNameRN],
+                            output_files = [newFileNamePlot],
                             module_entries = [["interaction_matrices_Chr", "module_HiCPlotter"]],
-                            name = "interaction_matrices+plotting_Chr." + sample.name + "_" + chr + "_res" + res,
-                            command = commandChrPlot,
+                            name = "interaction_matrices_plotting_Chr." + sample.name + "_" + chr + "_res" + res,
+                            command = commandChrPlot
                             )
 
                     jobs.extend([jobMatrix, jobPlot])
@@ -420,7 +440,7 @@ class HicSeq(common.Illumina):
             command = "mkdir -p {sample_output_dir} && runHiCpca.pl {fileName} {homer_output_dir} -res {res} -genome {genome}; findHiCCompartments.pl {fileName_PC1}  > {fileName_Comp}".format(sample_output_dir = sample_output_dir, fileName = fileName, homer_output_dir = homer_output_dir, res = res, genome = config.param('DEFAULT', 'assembly'), fileName_PC1 = fileName_PC1, fileName_Comp = fileName_Comp)
 
             job = Job(input_files = [homer_output_dir],
-                    output_files = [fileName, fileName_PC1, fileName_Comp],
+                    output_files = [fileName_PC1, fileName_Comp],
                     module_entries = [["identify_compartments", "module_homer"], ["identify_compartments", "module_R"]],
                     name = "identify_compartments." + sample.name + "_res" + res,
                     command = command,
@@ -456,24 +476,18 @@ class HicSeq(common.Illumina):
                     output_matrix = os.path.join(sample_output_dir, "_".join(("HTD", sample.name, self.enzyme, chr, res, "rawRN.MatA.TopDom")))
 
                     ## make TopDom R script:
-                    FileContent = """
-                    source("{script}")
-                    TopDom(matrix.file="{tmp_matrix}", window.size={n}, outFile="{output_matrix}")
-                    """.format(script = os.path.expandvars("${myhicseq}TopDom_v0.0.2.R"), tmp_matrix = tmp_matrix, n = config.param('identify_TADs', 'TopDom_n'), output_matrix = output_matrix)
+                    FileContent = 'source(\"{script}\"); TopDom(matrix.file=\"{tmp_matrix}\", window.size={n}, outFile=\"{output_matrix}\")'.format(script = os.path.expandvars("${myhicseq}TopDom_v0.0.2.R"), tmp_matrix = tmp_matrix, n = config.param('identify_TADs', 'TopDom_n'), output_matrix = output_matrix)
 
-                    ## write FileContent to temporary file:
                     fileName = "identify_TADs_TopDom." + sample.name + ".R"
-                    with open(fileName, "w") as R_file:
-                        R_file.write(FileContent)
+                    command_RFile ='echo \'{FileContent}\' > {fileName}'.format(FileContent=FileContent, fileName=fileName)
 
-
-                    command = "mkdir -p {sample_output_dir} && {script} {input} {res} && Rscript {Rscript}".format(sample_output_dir = sample_output_dir,script = os.path.expandvars("${myhicseq}CreateTopDomMat.sh"), input = input_matrix, res = res, Rscript = fileName)
+                    command_TopDom = "mkdir -p {sample_output_dir} && {script} {input} {res} && Rscript {Rscript}".format(sample_output_dir = sample_output_dir, script = os.path.expandvars("${myhicseq}CreateTopDomMat.sh"), input = input_matrix, res = res, Rscript = fileName)
 
                     job = Job(input_files = [input_matrix],
-                            output_files = [output_matrix],
+                            output_files = [output_matrix + ".bed"],
                             module_entries = [["identify_TADs", "module_R"]],
                             name = "identify_TADs." + sample.name + "_" + chr + "_res" + res,
-                            command = command,
+                            command = command_RFile + " && " + command_TopDom,
                             removable_files = [fileName, tmp_matrix]
                             )
 
