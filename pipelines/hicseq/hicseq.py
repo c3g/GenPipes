@@ -102,7 +102,7 @@ class HicSeq(common.Illumina):
         return dirs
 
 
-
+#### To do: change ${myhicseq} into $MUGQIC_INSTALL_HOME/hicseq/ when merging
 
     def fastq_readName_Edit(self):
         """
@@ -216,22 +216,13 @@ class HicSeq(common.Illumina):
             ## delete directory if it exists since hicup will not run again unless old files are removed
             command_hicup = "rm -rf {sample_output_dir} && mkdir -p {sample_output_dir} && hicup -c {fileName}".format(sample_output_dir = sample_output_dir, fileName = fileName)
 
-            command = command_hicup
-
-            ## check if config file exists and has the same content:
-            if os.path.isfile(fileName):
-                with open(fileName) as conf_file:
-                    if conf_file.read() != configFileContent:
-                        command = command_confFile + " && " + command_hicup
-            else:
-                command = command_confFile + " && " + command_hicup
 
 
             job = Job(input_files = [fastq1 + ".edited.gz", fastq2 + ".edited.gz"],
                     output_files = [hicup_file_output, fileName],
                     module_entries = [['hicup_align', 'module_bowtie2'], ['hicup_align', 'module_samtools'], ['hicup_align', 'module_R'], ['hicup_align', 'module_mugqic_R_packages'], ['hicup_align', 'module_HiCUP']],
                     name = "hicup_align." + readset.name,
-                    command = command,
+                    command = command_confFile + " && " + command_hicup,
                     removable_files = [fileName]
                     )
 
@@ -525,11 +516,33 @@ class HicSeq(common.Illumina):
             jobs.append(job)
         return jobs
 
+    def multiqc_report(self):
+        """
+        A quality control report for all samples is generated.
+        For more detailed information about the MultiQc visit: [MultiQc] (http://multiqc.info/)
+        """
+        ## set multiQc config file so we can customize one for every pipeline:
+        os.environ['MULTIQC_CONFIG_PATH'] = "${myhicseq}multiqc_config.yaml"
+        jobs = []
+
+
+        command = "multiqc ."
+        ## for now multiqc will run after hicup alignments are complete. Once Homer is added to mutliqc, the input must change to refect homer tag dirs
+        job = Job(input_files = [os.path.join(self.output_dirs['bams_output_directory'], sample.name + ".merged.bam") for sample in self.samples],
+                output_files = ["Analysis_Summary_Report.html"],
+                module_entries = [["multiqc_report", "module_multiqc"]],
+                name = "multiqc_report",
+                command = command
+                )
+
+        jobs.append(job)
+        return jobs
 
 
     @property
     def steps(self):
         return [
+            self.samtools_bam_sort,
             self.picard_sam_to_fastq,
             self.trimmomatic,
             self.merge_trimmomatic_stats,
@@ -541,7 +554,8 @@ class HicSeq(common.Illumina):
             self.interaction_matrices_genome,
             self.identify_compartments,
             self.identify_TADs,
-            self.identify_peaks
+            self.identify_peaks,
+            self.multiqc_report
         ]
 
 if __name__ == '__main__':
