@@ -32,24 +32,25 @@ mat[,1]=readset_names
 for (i in seq(length(readset_names))){
     readset=readset_names[i]
 
-    mat[i,"Raw Reads #"]=all_readsets_triming_metrics[readset, "Paired Reads #"]
-    mat[i,"Surviving Reads"]=all_readsets_triming_metrics[readset,"Surviving Paired Reads #"]
+    run_info=fromJSON(file.path(report_dir, "kallisto", readset, "run_info.json"))
+    n_fastq=sum(grepl("fastq",strsplit(run_info$call," ")[[1]])) #check if paired or single
+    
+    mat[i,"Raw Reads #"]=all_readsets_triming_metrics[readset, "Paired Reads #"]*n_fastq #multiply by 2 if paired
+    mat[i,"Surviving Reads"]=all_readsets_triming_metrics[readset,"Surviving Paired Reads #"]*n_fastq #multiply by 2 if paired
     mat[i,4]=signif(all_readsets_triming_metrics[readset,"Surviving Paired Reads %"],3)
 
-    run_info=fromJSON(file.path(report_dir, "kallisto", readset, "run_info.json"))
     mat[i,"Transcriptome"]=run_info$n_targets
 
     transcript_count=all_readsets_abundance.transcripts[,readset]
     mat[i,"Transcripts"]=sum(transcript_count>=5)
-    mat[i, "Transcripts Reads #"]=sum(transcript_count)
+    mat[i, "Transcripts Reads #"]=sum(transcript_count)*n_fastq #multiply by 2 if paired
     mat[i,8]=signif(mat[i,"Transcripts Reads #"]/mat[i,"Raw Reads #"],3)*100
 
     gene_count=all_readsets_abundance.genes[,readset]
     mat[i,"Genes"]=sum(gene_count>=5)
-    mat[i,"Genes Reads #"]=sum(gene_count)
+    mat[i,"Genes Reads #"]=sum(gene_count)*n_fastq #multiply by 2 if paired
     mat[i,11]=signif(mat[i,"Genes Reads #"]/mat[i,"Raw Reads #"],3)*100
 }
-#mat=t(apply(mat, 1, function(x){prettyNum(x,big.mark=",",scientific=FALSE)}))
 
 ```
 

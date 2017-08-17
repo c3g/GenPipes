@@ -32,20 +32,20 @@ the detection of outliers, potential mislabeling,  to explore the homogeneity of
 the global effects of the different experimental variables. EDA plots are therefore essential to insure clean data is 
 sent to differential analysis.
 
-First, we analyze how samples are connected to each other using 
+First, we analyze how readsets are connected to each other using 
 hierarchical clustering on the log2(CPM) gene expression levels. The Ward method is applied 
 to the matrix of Pearson's correlation distance.
 
 Secondly, we perform principal component analysis (PCA) on gene expression levels (log2CPM). 
-A PCA plot shows the projection of the samples onto a two-dimensional space spanned by the first 
+A PCA plot shows the projection of the readsets onto a two-dimensional space spanned by the first 
 and second principal components. These are the orthogonal directions in which the data exhibits the largest and 
 second-largest variability. These two components are usually sufficient to 
-differentiate groups of samples describing the principal effects of the 
+differentiate groups of readsets describing the principal effects of the 
 experimental design.
 
 Next, genes and transcripts with the most variable expression levels 
-(log2CPM or log2FPKM standard deviation across all samples, usually the top 75) are used to cluster samples. The utility of such a 
-plot is to get a rough overview of which genes or transcripts are contributing the most to the samples clustering pattern.
+(log2CPM or log2FPKM standard deviation across all readsets, usually the top 75) are used to cluster readsets. The utility of such a 
+plot is to get a rough overview of which genes or transcripts are contributing the most to the readsets clustering pattern.
 
 ```{r summary_table, results="markup",echo=F,message=F,warning=F}
 kable(summary,align=c("l","r"),row.names=F)
