@@ -38,6 +38,8 @@ from bfx.design import *
 from bfx import gq_seq_utils
 from bfx import picard
 from bfx import samtools
+from bfx import tools
+from bfx import ucsc
 from pipelines.dnaseq import dnaseq
 
 log = logging.getLogger(__name__)
@@ -289,7 +291,7 @@ makeTagDirectory \\
   -checkGC -genome {genome}""".format(
                     output_dir=output_dir,
                     alignment_file=alignment_file,
-                    genome=config.param('homer_make_tag_directory', 'assembly')
+                    genome=config.param('homer_make_tag_directory', 'assembly_synonyms')
                 ),
                 name="homer_make_tag_directory." + sample.name,
                 removable_files=[output_dir]
@@ -351,24 +353,32 @@ done""".format(
         for sample in self.samples:
             tag_dir = os.path.join("tags", sample.name)
             bedgraph_dir = os.path.join("tracks", sample.name)
-            bedgraph_file = os.path.join(bedgraph_dir, sample.name + ".ucsc.bedGraph.gz")
+            bedgraph_file = os.path.join(bedgraph_dir, sample.name + ".ucsc.bedGraph")
+            bedgraph_file_gz = os.path.join(bedgraph_dir, sample.name + ".ucsc.bedGraph.gz")
+            big_wig_output = os.path.join(bedgraph_dir, "bigWig", sample.name + ".bw")
 
             jobs.append(Job(
                 [os.path.join(tag_dir, "tagInfo.txt")],
-                [bedgraph_file],
+                [bedgraph_file,bedgraph_file_gz],
                 [['homer_make_ucsc_files', 'module_homer']],
                 command="""\
 mkdir -p {bedgraph_dir} && \\
 makeUCSCfile \\
-  {tag_dir} | \\
-gzip -1 -c > {bedgraph_file}""".format(
+  {tag_dir} > {bedgraph_file} && \\
+gzip -c {bedgraph_file} > {bedgraph_file_gz}""".format(
                     tag_dir=tag_dir,
                     bedgraph_dir=bedgraph_dir,
-                    bedgraph_file=bedgraph_file
+                    bedgraph_file=bedgraph_file,
+                    bedgraph_file_gz=bedgraph_file_gz
                 ),
                 name="homer_make_ucsc_file." + sample.name,
                 removable_files=[bedgraph_dir]
             ))
+            job = concat_jobs([
+                  Job(command="mkdir -p " + os.path.join(bedgraph_dir, "bigWig")),
+                  ucsc.bedGraphToBigWig(bedgraph_file, big_wig_output)
+              ], name="homer_make_ucsc_file_bigWig."+ sample.name)
+            jobs.append(job)
 
         report_file = os.path.join("report", "ChipSeq.homer_make_ucsc_file.md")
         jobs.append(
@@ -436,6 +446,14 @@ macs2 callpeak {format}{other_options} \\
                     name="macs2_callpeak." + contrast.real_name,
                     removable_files=[output_dir]
                 ))
+              ## For ihec: exchange peak score by log10 q-value and generate bigBed 
+                job = concat_jobs([
+                    Job([os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak")],
+                        [os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak.bed")],
+                        command="awk ' {if ($9 > 1000) {$9 = 1000} ; printf( \"%s\\t%s\\t%s\\t%s\\t%0.f\\n\", $1,$2,$3,$4,$9)} ' " + os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak") + " > " + os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak.bed")),
+                    ucsc.bedToBigBed(os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak.bed"),  os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak.bb"))
+                ], name="macs2_callpeak_bigBed."+ contrast.real_name)
+                jobs.append(job)
             else:
                 log.warning("No treatment found for contrast " + contrast.name + "... skipping")
 
@@ -498,8 +516,8 @@ annotatePeaks.pl \\
   -genomeOntology {output_prefix} \\
   > {annotation_file}""".format(
                             peak_file=peak_file,
-                            genome=config.param('homer_annotate_peaks', 'assembly'),
-                            genome_size=config.param('homer_annotate_peaks', 'assembly'),
+                            genome=config.param('homer_annotate_peaks', 'assembly_synonyms'),
+                            genome_size=config.param('homer_annotate_peaks', 'assembly_synonyms'),
                             output_prefix=output_prefix,
                             annotation_file=annotation_file
                         )
@@ -595,7 +613,7 @@ findMotifsGenome.pl \\
   -preparsedDir {output_dir}/preparsed \\
   -p {threads}""".format(
                         peak_file=peak_file,
-                        genome=config.param('homer_find_motifs_genome', 'assembly'),
+                        genome=config.param('homer_find_motifs_genome', 'assembly_synonyms'),
                         output_dir=output_dir,
                         threads=config.param('homer_find_motifs_genome', 'threads', type='posint')
                     ),
@@ -732,7 +750,7 @@ done""".format(
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
             # Find input readset BAMs first from previous bwa_mem_picard_sort_sam job, then from original BAMs in the readset sheet.
-            readset_bams = [os.path.join(alignment_directory, readset.sample.name, readset.name, readset.name + ".sorted.bam") for readset in sample.readsets]
+            readset_bams = [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam") for readset in sample.readsets]
             sample_merge_bam = os.path.join(output_dir, sample.name + ".merged.bam")
             sample_merge_mdup_bam = os.path.join(output_dir, sample.name + ".merged.mdup.bam")
             sample_merge_mdup_metrics_file  = os.path.join(output_dir, sample.name + ".merged.mdup.metrics")
@@ -745,11 +763,11 @@ done""".format(
                 if os.path.isabs(readset_bam):
                     target_readset_bam = readset_bam
                 else:
-                    target_readset_bam = os.path.relpath(readset_bam, alignment_directory)
+                    target_readset_bam = os.path.relpath(readset_bam, output_dir)
 
                 job = concat_jobs([
                     mkdir_job,
-                    Job([readset_bam], [sample_bam], command="ln -s -f " + target_readset_bam + " " + sample_merge_bam, removable_files=[sample_merge_bam]),
+                    Job([readset_bam], [sample_merge_bam], command="ln -s -f " + target_readset_bam + " " + sample_merge_bam, removable_files=[sample_merge_bam]),
                 ], name="ihecs_preprocess_symlink." + sample.name)
 
             elif len(sample.readsets) > 1:
@@ -784,43 +802,45 @@ done""".format(
               if len(contrast.controls) > 1 :
                   raise Exception("Error: contrast name \"" + contrast.name + "\" has sevral imput file, please use one input for pairing!")
               else :
-                  input_file=contrast.controls[0]
+                  input_file=contrast.controls[0].name
                   for sample in contrast.treatments :
-                      if couples.has_key(sample) :
-                          if couples[sample][0] == input_file:
+                      log.debug("adding sample" + sample.name)
+                      if couples.has_key(sample.name) :
+                          if couples[sample.name][0] == input_file:
                               pass
                           else :
                               raise Exception("Error: contrast name \"" + contrast.name + "\" has sevral imput file, please use one input for pairing!")
-                          if couples[sample][1] == contrast.real_name and couples[sample][2] == contrast.type:
+                          if couples[sample.name][1] == contrast.real_name and couples[sample.name][2] == contrast.type:
                               pass
                           else :
-                              raise Exception("Error: sample \"" + sample+ "\" is involved in sevral different contrast, please use one contrast per sample !") 
+                              raise Exception("Error: sample \"" + sample.name + "\" is involved in sevral different contrast, please use one contrast per sample !") 
                       else :
-                          couples[sample]=[input_file, contrast.real_name, contrast.type]
+                          couples[sample.name]=[input_file, contrast.real_name, contrast.type]
                   for sample in contrast.controls :
-                      if couples.has_key(sample) :
-                          if couples[sample][0] == input_file:
+                      log.debug("adding sample" + sample.name)
+                      if couples.has_key(sample.name) :
+                          if couples[sample.name][0] == input_file:
                               pass
                           else :
                               raise Exception("Error: contrast name \"" + contrast.name + "\" has sevral imput file, please use one input for pairing!")
-                          if couples[sample][1] == contrast.real_name and couples[sample][2] == contrast.type:
+                          if couples[sample.name][1] == contrast.real_name and couples[sample.name][2] == contrast.type:
                               pass
                           else :
                               raise Exception("Error: sample \"" + sample+ "\" is involved in sevral different contrast, please use one contrast per sample !") 
                       else :
-                          couples[sample]=[input_file, contrast.real_name, contrast.type]
+                          couples[sample.name]=[input_file, contrast.real_name, contrast.type]
         
         
         for sample in self.samples:
             chip_bam = os.path.join("ihec_alignment", sample.name + ".merged.mdup.bam")
             input_bam = os.path.join("ihec_alignment", couples[sample.name][0] + ".merged.mdup.bam")
-            chip_type = config.param('IHEC_chipseq_metrics', 'chip_type', type='str' , required=True)
+            chip_type = config.param('IHEC_chipseq_metrics', 'chip_type', required=True)
             chip_bed = os.path.join("peak_call", couples[sample.name][1], couples[sample.name][1] + "_peaks." + couples[sample.name][2] + "Peak")
             
             job = concat_jobs([
                   Job(command="mkdir -p " + output_dir),
-                  tools.sh_ihec_chip_metrics(chip_bam, input_bam, sample.name,  chip_type, output_dir)
-              ], name="ihec_metrics")
+                  tools.sh_ihec_chip_metrics(chip_bam, input_bam, sample.name, couples[sample.name][0],  chip_type, chip_bed, output_dir)
+              ], name="ihec_metrics."+sample.name)
             jobs.append(job)
             
         return jobs
