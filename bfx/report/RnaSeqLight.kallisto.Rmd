@@ -57,3 +57,22 @@ kable(mat,align="r",row.names=F, format.args = list(decimal.mark = ".", big.mark
 
 ```
 
+
+"Readset","Raw Reads #", "Trancriptome", "Transcripts", "Reads transcripts #","% Read used", "Genes", "Reads genes #","% Read used"
+
+
+
+
+* Raw Reads: total number of reads obtained from the sequencer
+* Trancriptome: number of transcript targets
+* Transcripts: number of Transcripts with at least 5 reads
+* Reads transcripts #: number of aligned reads to a transcripts
+* % Read used: Reads transcripts # / Surviving reads
+* Alternative Alignments: number of duplicate read entries providing alternative coordinates
+* %: Alternative Alignments / Aligned Reads
+* rRNA Reads: number of reads aligning to rRNA regions as defined in the transcript model definition
+* %: rRNA Reads / Surviving Reads
+* Coverage: mean coverage = number of bp aligning to reference / total number of bp in the reference
+* Exonic Rate: fraction mapping reads within exons
+
+* Genes: number of Genes with at least 5 reads

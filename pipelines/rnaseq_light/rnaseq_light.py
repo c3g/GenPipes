@@ -35,17 +35,8 @@ from core.job import *
 from core.pipeline import *
 from bfx.design import *
 from bfx.readset import *
-
-# from bfx import bedtools
-# from bfx import cufflinks
-# from bfx import differential_expression
 from bfx import gq_seq_utils
-# from bfx import htseq
-# from bfx import metrics
 from bfx import picard
-# from bfx import samtools
-# from bfx import star
-# from bfx import bvatools
 from bfx import rmarkdown
 from pipelines import common
 import utils
@@ -109,14 +100,20 @@ class RnaSeqLight(rnaseq.RnaSeq):
     def kallisto_count_matrix(self):
 
         kallisto_directory="kallisto"
-        input_abundance_files = [os.path.join(self.output_dir,kallisto_directory, readset.sample.name, "abundance_genes.tsv") for readset in self.readsets]
-
         all_readset_directory="All_readsets"
         output_dir=os.path.join(self.output_dir,kallisto_directory, all_readset_directory)
-        job_name = "create_kallisto_count_matrix"
-        data_type="genes"
+        #per trancripts
+        input_abundance_files_transcripts = [os.path.join(self.output_dir,kallisto_directory, readset.sample.name, "abundance_transcripts.tsv") for readset in self.readsets]
+        job_name_transcripts="create_kallisto_transcripts_count_matrix"
+        data_type_transcripts="transcripts"
+        job=tools.r_create_kallisto_count_matrix(input_abundance_files_transcripts, output_dir, data_type_transcripts, job_name_transcripts)
+        #per genes
+        input_abundance_files_genes = [os.path.join(self.output_dir,kallisto_directory, readset.sample.name, "abundance_genes.tsv") for readset in self.readsets]
+        job_name_genes="create_kallisto_genes_count_matrix"
+        data_type_genes="genes"
+        job=tools.r_create_kallisto_count_matrix(input_abundance_files_genes, output_dir, data_type_genes, job_name_genes)
 
-        job=tools.r_create_kallisto_count_matrix(input_abundance_files, output_dir, data_type, job_name)
+
 
         return [job]
 
