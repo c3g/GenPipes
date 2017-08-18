@@ -346,7 +346,7 @@ class HicSeq(common.Illumina):
                     jobMatrix = Job(input_files = [homer_output_dir],
                             output_files = [fileNameRN, fileName],
                             module_entries = [["interaction_matrices_Chr", "module_homer"]],
-                            name = "interaction_matrices_Chr." + sample.name + "_" + chr + "_res" + res,
+                            name = "interaction_matrices_Chr.creating_matrix." + sample.name + "_" + chr + "_res" + res,
                             command = commandChrMatrix,
                             removable_files = [fileName]
                             )
@@ -360,7 +360,7 @@ class HicSeq(common.Illumina):
                     jobPlot = Job(input_files = [fileNameRN],
                             output_files = [newFileNamePlot],
                             module_entries = [["interaction_matrices_Chr", "module_HiCPlotter"]],
-                            name = "interaction_matrices_plotting_Chr." + sample.name + "_" + chr + "_res" + res,
+                            name = "interaction_matrices_Chr.plotting." + sample.name + "_" + chr + "_res" + res,
                             command = commandChrPlot
                             )
 
@@ -445,7 +445,7 @@ class HicSeq(common.Illumina):
 
     def identify_TADs(self):
         """
-        Topological associating Domains (TADs) are idetified using TopDom at resolutions defined in the ini config file
+        Topological associating Domains (TADs) are identified using TopDom at resolutions defined in the ini config file.
         For more detailed information about the TopDom visit: [TopDom] (https://www.ncbi.nlm.nih.gov/pubmed/26704975)
         """
 
@@ -469,20 +469,27 @@ class HicSeq(common.Illumina):
                     ## make TopDom R script:
                     FileContent = 'source(\"{script}\"); TopDom(matrix.file=\"{tmp_matrix}\", window.size={n}, outFile=\"{output_matrix}\")'.format(script = os.path.expandvars("${myhicseq}TopDom_v0.0.2.R"), tmp_matrix = tmp_matrix, n = config.param('identify_TADs', 'TopDom_n'), output_matrix = output_matrix)
 
-                    fileName = "identify_TADs_TopDom." + sample.name + ".R"
+                    fileName = "identify_TADs_TopDom." + sample.name + "_" + chr + "_res" + res + ".R"
                     command_RFile ='echo \'{FileContent}\' > {fileName}'.format(FileContent=FileContent, fileName=fileName)
 
-                    command_TopDom = "mkdir -p {sample_output_dir} && {script} {input} {res} && Rscript {Rscript}".format(sample_output_dir = sample_output_dir, script = os.path.expandvars("${myhicseq}CreateTopDomMat.sh"), input = input_matrix, res = res, Rscript = fileName)
+                    command_TopDom = "mkdir -p {sample_output_dir} && {script} {input} {res}".format(sample_output_dir = sample_output_dir, script = os.path.expandvars("${myhicseq}CreateTopDomMat.sh"), input = input_matrix, res = res)
 
-                    job = Job(input_files = [input_matrix],
-                            output_files = [output_matrix + ".bed"],
+                    job_inputFile = Job(input_files = [input_matrix],
+                            output_files = [tmp_matrix],
                             module_entries = [["identify_TADs", "module_R"]],
-                            name = "identify_TADs." + sample.name + "_" + chr + "_res" + res,
+                            name = "identify_TADs.create_input." + sample.name + "_" + chr + "_res" + res,
                             command = command_RFile + " && " + command_TopDom,
-                            removable_files = [fileName, tmp_matrix]
+                            removable_files = [tmp_matrix]
+                            )
+                    job_TADs = Job(input_files = [tmp_matrix],
+                            output_files = [output_matrix + ".bed", output_matrix + ".binSignal", output_matrix + ".domain"],
+                            module_entries = [["identify_TADs", "module_R"]],
+                            name = "identify_TADs.call_TADs." + sample.name + "_" + chr + "_res" + res,
+                            command = "Rscript {Rscript}".format(Rscript = fileName),
+                            removable_files = [fileName]
                             )
 
-                    jobs.append(job)
+                    jobs.extend([job_inputFile, job_TADs])
         return jobs
 
 
@@ -522,11 +529,10 @@ class HicSeq(common.Illumina):
         For more detailed information about the MultiQc visit: [MultiQc] (http://multiqc.info/)
         """
         ## set multiQc config file so we can customize one for every pipeline:
-        os.environ['MULTIQC_CONFIG_PATH'] = "${myhicseq}multiqc_config.yaml"
         jobs = []
 
 
-        command = "multiqc ."
+        command = "export MULTIQC_CONFIG_PATH={path} && multiqc .".format(path = os.path.expandvars(config.param('multiqc_report', 'MULTIQC_CONFIG_PATH')))
         ## for now multiqc will run after hicup alignments are complete. Once Homer is added to mutliqc, the input must change to refect homer tag dirs
         job = Job(input_files = [os.path.join(self.output_dirs['bams_output_directory'], sample.name + ".merged.bam") for sample in self.samples],
                 output_files = ["Analysis_Summary_Report.html"],

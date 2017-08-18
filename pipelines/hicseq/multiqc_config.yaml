@@ -15,16 +15,29 @@
 # It's recommended that you delete any that you don't need.
 
 ---
-# Title to use for the report.
 title: "C3G Analysis Report"
-#subtitle: "A subtitle to go underneath in grey"
-#intro_text: "MultiQC reports summarise analysis results."
-#report_comment: "This is a comment about this report."
-
-
+subtitle: "Hi-C analysis using MUGQIC pipeline hicseq v1.0"
+intro_text: null
+report_comment: null
+config_file: null
 custom_logo: '/home/rdali/.local/bin/c3g_source.png'
 #custom_logo_url: 'https://www.example.com'
 #custom_logo_title: 'C3G'
+simple_output: false
+template: 'default'
+pandoc_template: null
+read_count_multiplier: 0.000001
+read_count_prefix: 'M'
+read_count_desc: 'millions'
+base_count_multiplier: 0.000001
+base_count_prefix: 'Mb'
+base_count_desc: 'millions'
+output_fn_name: "HiC_Analysis_Summary_Report.html"
+data_dir_name: 'multiqc_data'
+plots_dir_name: 'multiqc_plots'
+data_format: 'tsv'
+
+
 
 
 # Add generic information to the top of reports
@@ -35,22 +48,39 @@ report_header_info:
 
 
 section_comments:
-    Trimmomatic: 'Reads are quality controlled and trimmed before alignment'
-    HiCUP: 'Trimmed reads are aligned using HiCUP'
+    - Trimmomatic: 'Reads are quality controlled and trimmed before alignment'
+    - HiCUP: 'Trimmed reads are aligned using HiCUP'
 
 
-# module order
-top_modules:
-    - 'HiCUP'
+# Order that modules should appear in report. Try to list in order of analysis.
+module_order:
+    - fastqc:
+        module_tag:
+            - RNA
+            - DNA
+    - trimmomatic:
+        module_tag:
+            - RNA
+            - DNA
+    - samtools:
+        module_tag:
+            - DNA
+            - RNA
+    - hicup:
+        module_tag:
+            - hi-c
+    - homer:
+        module_tag:
+            - RNA
+            - DNA
+            - chip
+
 
 
 # Prepend sample names with their directory. Useful if analysing the
 # sample samples with different parameters.
 prepend_dirs: False
 
-# Default output filenames
-output_fn_name: Analysis_Summary_Report.html
-data_dir_name: multiqc_data
 
 # Whether to create the parsed data directory in addition to the report
 make_data_dir: True
