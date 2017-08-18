@@ -130,6 +130,34 @@ class Illumina(MUGQICPipeline):
                 self.argparser.error("argument -d/--design is required!")
         return self._contrasts
 
+    def samtools_bam_sort(self):
+        """
+        Sorts bam by readname prior to picard_sam_tp_fastq step in order to minimize memory consumption.
+        If bam file is small and the memory requirements are reasonable, this step can be skipped.
+        """
+
+        jobs = []
+        for readset in self.readsets:
+            # If readset FASTQ files are available, skip this step
+            if not readset.fastq1:
+                if readset.bam:
+                    sortedBam = re.sub("\.bam$", ".sorted.bam", readset.bam)
+                    
+                    command = "samtools sort -n {bam} > {sortedBam}".format(bam = readset.bam, sortedBam = sortedBam)
+
+                    job = Job(input_files = [readset.bam],
+                    output_files = [sortedBam],
+                    module_entries = [['samtools_bam_sort', 'module_samtools']],
+                    name = "samtools_bam_sort." + readset.name,
+                    command = command,
+                    removable_files = [sortedBam]
+                    )
+                    jobs.append(job)
+                else:
+                    raise Exception("Error: BAM file not available for readset \"" + readset.name + "\"!")
+        return jobs
+
+
     def picard_sam_to_fastq(self):
         """
         Convert SAM/BAM files from the input readset file into FASTQ format
@@ -140,19 +168,37 @@ class Illumina(MUGQICPipeline):
             # If readset FASTQ files are available, skip this step
             if not readset.fastq1:
                 if readset.bam:
-                    if readset.run_type == "PAIRED_END":
-                        fastq1 = re.sub("\.bam$", ".pair1.fastq.gz", readset.bam)
-                        fastq2 = re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)
-                    elif readset.run_type == "SINGLE_END":
-                        fastq1 = re.sub("\.bam$", ".single.fastq.gz", readset.bam)
-                        fastq2 = None
-                    else:
-                        raise Exception("Error: run type \"" + readset.run_type +
-                        "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+                    ## check if bam file has been sorted:
+                    sortedBam = re.sub("\.bam$", ".sorted.bam", readset.bam)
+                    if not os.path.isfile(sortedBam): 
+                        if readset.run_type == "PAIRED_END":
+                            fastq1 = re.sub("\.bam$", ".pair1.fastq.gz", readset.bam)
+                            fastq2 = re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)
+                        elif readset.run_type == "SINGLE_END":
+                            fastq1 = re.sub("\.bam$", ".single.fastq.gz", readset.bam)
+                            fastq2 = None
+                        else:
+                            raise Exception("Error: run type \"" + readset.run_type +
+                            "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
 
-                    job = picard.sam_to_fastq(readset.bam, fastq1, fastq2)
-                    job.name = "picard_sam_to_fastq." + readset.name
-                    jobs.append(job)
+                        job = picard.sam_to_fastq(readset.bam, fastq1, fastq2)
+                        job.name = "picard_sam_to_fastq." + readset.name
+                        jobs.append(job)
+                    else:
+                        if readset.run_type == "PAIRED_END":
+                            fastq1 = re.sub("\.sorted.bam$", ".pair1.fastq.gz", sortedBam)
+                            fastq2 = re.sub("\.sorted.bam$", ".pair2.fastq.gz", sortedBam)
+                        elif readset.run_type == "SINGLE_END":
+                            fastq1 = re.sub("\.sorted.bam$", ".single.fastq.gz", sortedBam)
+                            fastq2 = None
+                        else:
+                            raise Exception("Error: run type \"" + readset.run_type +
+                            "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+
+                        job = picard.sam_to_fastq(sortedBam, fastq1, fastq2)
+                        job.name = "picard_sam_to_fastq." + readset.name
+                        jobs.append(job)
+
                 else:
                     raise Exception("Error: BAM file not available for readset \"" + readset.name + "\"!")
         return jobs
