@@ -238,7 +238,7 @@ if (length(file) != 0 ){
   data[,2] <- as.numeric(as.character(data[,2]))
   
   png(file = paste(outputDir, "/", sampleName, "_petag.FreqDistribution_1000.png", sep=""), width = 14 , height = 7, units = "in", res=150)
-  print(ggplot(data=data, aes(x= log10(bins), y=log10(FractionOfTags))) + xlab("Fraction of total PE tags") + geom_point() + geom_line () + ylab( "Fraction of Reads (1kb interval)") + ggtitle(paste(sampleName, "_petag.FreqDistribution_1000", sep="")) + theme_set(theme_bw(12) + theme_bw()+ theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank()))  + annotate("text", x=log10(data[nrow(data)/2,1]), y = log10(1000), label= interChr))
+  print(ggplot(data=data, aes(x= log10(bins), y=log10(FractionOfTags))) + xlab("Distance between Regions") + geom_point() + geom_line () + ylab( "Fraction of total PE tags") + ggtitle(paste(sampleName, "_petag.FreqDistribution_1000", sep="")) + theme_set(theme_bw(12) + theme_bw()+ theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank()))  + annotate("text", x=log10(data[nrow(data)/2,1]), y = log10(1000), label= interChr))
   dev.off() } else {print("file not found")}
 
 
