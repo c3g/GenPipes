@@ -1018,7 +1018,7 @@ done""".format(
             job = concat_jobs([
                   Job(command="mkdir -p " + output_dir),
                   tools.sh_ihec_rna_metrics(input_bam, sample.name, input_metrics, output_dir)
-              ], name="ihec_metrics")
+              ], name="ihec_metrics." + sample.name )
             jobs.append(job)
             
         return jobs
