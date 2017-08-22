@@ -132,7 +132,7 @@ class Illumina(MUGQICPipeline):
 
     def samtools_bam_sort(self):
         """
-        Sorts bam by readname prior to picard_sam_tp_fastq step in order to minimize memory consumption.
+        Sorts bam by readname prior to picard_sam_to_fastq step in order to minimize memory consumption.
         If bam file is small and the memory requirements are reasonable, this step can be skipped.
         """
 
@@ -169,38 +169,25 @@ class Illumina(MUGQICPipeline):
             if not readset.fastq1:
                 if readset.bam:
                     ## check if bam file has been sorted:
-                    sortedBam = re.sub("\.bam$", ".sorted.bam", readset.bam)
-                    if not os.path.isfile(sortedBam): 
-                        if readset.run_type == "PAIRED_END":
-                            fastq1 = re.sub("\.bam$", ".pair1.fastq.gz", readset.bam)
-                            fastq2 = re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)
-                        elif readset.run_type == "SINGLE_END":
-                            fastq1 = re.sub("\.bam$", ".single.fastq.gz", readset.bam)
-                            fastq2 = None
-                        else:
-                            raise Exception("Error: run type \"" + readset.run_type +
-                            "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
-
-                        job = picard.sam_to_fastq(readset.bam, fastq1, fastq2)
-                        job.name = "picard_sam_to_fastq." + readset.name
-                        jobs.append(job)
+                    sortedBam = re.sub("\.bam", ".sorted.bam", readset.bam.strip())
+                    candidate_input_files = [[sortedBam], [readset.bam]]
+                    [bam] = self.select_input_files(candidate_input_files)
+                    if readset.run_type == "PAIRED_END":
+                        fastq1 = re.sub("\.sorted.bam$|\.bam$", ".pair1.fastq.gz", bam.strip())
+                        fastq2 = re.sub("\.sorted.bam$|\.bam$", ".pair2.fastq.gz", bam.strip())
+                    elif readset.run_type == "SINGLE_END":
+                        fastq1 = re.sub("\.sorted.bam$|\.bam$", ".single.fastq.gz", bam.strip())
+                        fastq2 = None
                     else:
-                        if readset.run_type == "PAIRED_END":
-                            fastq1 = re.sub("\.sorted.bam$", ".pair1.fastq.gz", sortedBam)
-                            fastq2 = re.sub("\.sorted.bam$", ".pair2.fastq.gz", sortedBam)
-                        elif readset.run_type == "SINGLE_END":
-                            fastq1 = re.sub("\.sorted.bam$", ".single.fastq.gz", sortedBam)
-                            fastq2 = None
-                        else:
-                            raise Exception("Error: run type \"" + readset.run_type +
-                            "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+                        raise Exception("Error: run type \"" + readset.run_type +
+                        "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+                    
+                job = picard.sam_to_fastq(bam, fastq1, fastq2)
+                job.name = "picard_sam_to_fastq." + readset.name
+                jobs.append(job)
 
-                        job = picard.sam_to_fastq(sortedBam, fastq1, fastq2)
-                        job.name = "picard_sam_to_fastq." + readset.name
-                        jobs.append(job)
-
-                else:
-                    raise Exception("Error: BAM file not available for readset \"" + readset.name + "\"!")
+            else:
+                raise Exception("Error: BAM file not available for readset \"" + readset.name + "\"!")
         return jobs
 
     def trimmomatic(self):

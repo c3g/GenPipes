@@ -18,7 +18,7 @@ Usage
 ```
 #!text
 
-usage: hicseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS] [-e Restriction_Enzyme]
+usage: hicseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS] [-e Restriction_Enzyme {DpnII, MboI, HindIII, NcoI}]
                   [-o OUTPUT_DIR] [-j {pbs,batch}] [-f] [--report] [--clean]
                   [-l {debug,info,warning,error,critical}] [-d DESIGN]
                   [-r READSETS] [-v]
@@ -37,6 +37,7 @@ optional arguments:
                         step range e.g. '1-5', '3,6,7', '2,4-8'
   -e Restriction_Enzyme --enzyme Restriction_Enzyme
                         restriction enzyme used in generating Hi-C library
+                        enzymes currently supported: DpnII, MboI, HindIII, NcoI
   -o OUTPUT_DIR, --output-dir OUTPUT_DIR
                         output directory (default: current)
   -j {pbs,batch}, --job-scheduler {pbs,batch}
@@ -62,25 +63,34 @@ optional arguments:
 
 Steps:
 ------
-1- picard_sam_to_fastq
-2- trimmomatic
-3- merge_trimmomatic_stats
-4- hicup_align
-5- merge_sample_replicates
-6- picard_remove_duplicates
-7- create_tag_directory
-8- produce_interaction_matrices
-9- identify_compartments
-10- identify_TADs
-11- identify_peaks
+1- samtools_bam_sort
+2- picard_sam_to_fastq
+3- trimmomatic
+4- merge_trimmomatic_stats
+5- fastq_readName_Edit
+6- hicup_align
+7- samtools_merge_bams
+8- homer_tag_directory
+9- interaction_matrices_Chr
+10- interaction_matrices_genome
+11- identify_compartments
+12- identify_TADs
+13- identify_peaks
+14- multiqc_report
 
 ```
-1- picard_sam_to_fastq
+1- samtools_bam_sort
+----------------------
+Sorts bam by readname prior to picard_sam_to_fastq step in order to minimize memory consumption.
+If bam file is small and the memory requirements are reasonable, this step can be skipped.
+
+
+2- picard_sam_to_fastq
 ----------------------
 Convert SAM/BAM files from the input readset file into FASTQ format
 if FASTQ files are not already specified in the readset file. Do nothing otherwise.
 
-2- trimmomatic
+3- trimmomatic
 --------------
 Raw reads quality trimming and removing of Illumina adapters is performed using [Trimmomatic](http://www.usadellab.org/cms/index.php?page=trimmomatic).
 If an adapter FASTA file is specified in the config file (section 'trimmomatic', param 'adapter_fasta'),
@@ -94,16 +104,83 @@ This step takes as input files:
 1. FASTQ files from the readset file if available
 2. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
 
-3- merge_trimmomatic_stats
+4- merge_trimmomatic_stats
 --------------------------
 The trim statistics per readset are merged at this step.
 
-4- hicup_align
+
+5- fastq_readName_Edit
+----------------------
+Removes the added /1 and /2 by picard's sam_to_fastq transformation to avoid issues with downstream software like HOMER
+      
+
+6- hicup_align
 --------------------------
 Paired-end Hi-C reads are truncated, mapped and filtered using HiCUP. The resulting bam file is filtered for Hi-C artifacts and duplicated reads. It is ready for use as input for downstream analysis.
 
 For more detailed information about the HICUP process visit: [HiCUP] (https://www.bioinformatics.babraham.ac.uk/projects/hicup/overview/)
+   
 
-5- 
+7- samtools_merge_bams
+-----------------------
+BAM readset files are merged into one file per sample. Merge is done using [samtools](http://samtools.sourceforge.net/). This step takes as input files the aligned bams/sams from the hicup_align step.
+    
+
+
+8- homer_tag_directory
+-----------------------
+The bam file produced by HiCUP is used to create a tag directory using HOMER for further analysis that includes interaction matrix generation, compartments and identifying significant interactions.
+
+For more detailed information about the HOMER process visit: [HOMER] (http://homer.ucsd.edu/homer/interactions/index.html)
+   
+
+9- interaction_matrices_Chr
+---------------------------
+
+IntraChromosomal interaction matrices are produced by Homer at resolutions defined in the ini config file and plotted by HiCPlotter.
+
+For more detailed information about the HOMER matrices visit: [HOMER matrices] (http://homer.ucsd.edu/homer/interactions/HiCmatrices.html)
+
+For more detailed information about HiCPlotter visit: [HiCPlotter] (https://github.com/kcakdemir/HiCPlotter)
+
+10- interaction_matrices_genome
+--------------------------------
+
+Genomewide interaction matrices are produced by Homer at resolutions defined in the ini config file
+
+For more detailed information about the HOMER matrices visit: [HOMER matrices] (http://homer.ucsd.edu/homer/interactions/HiCmatrices.html)
+
+For more detailed information about HiCPlotter visit: [HiCPlotter] (https://github.com/kcakdemir/HiCPlotter)
+        
+
+11- identify_compartments
 --------------------------
+
+Genomic compartments are identified using Homer at resolutions defined in the ini config file
+
+For more detailed information about the HOMER compartments visit: [HOMER compartments] (http://homer.ucsd.edu/homer/interactions/HiCpca.html)
+        
+
+12- identify_TADs
+------------------
+
+Topological associating Domains (TADs) are identified using TopDom at resolutions defined in the ini config file.
+
+For more detailed information about the TopDom visit: [TopDom] (https://www.ncbi.nlm.nih.gov/pubmed/26704975)
+
+
+
+13- identify_peaks
+-------------------
+
+Significant intraChromosomal interactions (peaks) are identified using Homer.
+
+For more detailed information about the Homer peaks visit: [Homer peaks] (http://homer.ucsd.edu/homer/interactions/HiCinteractions.html)
+       
+
+14- multiqc_report
+-------------------
+A quality control report for all samples is generated.
+
+For more detailed information about the MultiQc visit: [MultiQc] (http://multiqc.info/)
 

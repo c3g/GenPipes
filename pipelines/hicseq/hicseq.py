@@ -102,8 +102,6 @@ class HicSeq(common.Illumina):
         return dirs
 
 
-#### To do: change ${myhicseq} into $MUGQIC_INSTALL_HOME/hicseq/ when merging
-
     def fastq_readName_Edit(self):
         """
         Removes the added /1 and /2 by picard's sam_to_fastq transformation to avoid issues with downstream software like HOMER
@@ -121,7 +119,7 @@ class HicSeq(common.Illumina):
             if readset.fastq1 and readset.fastq2:
                 candidate_input_files.append([readset.fastq1, readset.fastq2])
             if readset.bam:
-                candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
+                candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam.strip())])
             [fastq1, fastq2] = self.select_input_files(candidate_input_files)
 
 
@@ -214,7 +212,7 @@ class HicSeq(common.Illumina):
 
             # hicup command
             ## delete directory if it exists since hicup will not run again unless old files are removed
-            command_hicup = "rm -rf {sample_output_dir} && mkdir -p {sample_output_dir} && hicup -c {fileName}".format(sample_output_dir = sample_output_dir, fileName = fileName)
+            command_hicup = "rm -rf {sample_output_dir} && mkdir -p {sample_output_dir} && hicup -c {fileName} && rm {fileName}".format(sample_output_dir = sample_output_dir, fileName = fileName)
 
 
 
@@ -223,7 +221,6 @@ class HicSeq(common.Illumina):
                     module_entries = [['hicup_align', 'module_bowtie2'], ['hicup_align', 'module_samtools'], ['hicup_align', 'module_R'], ['hicup_align', 'module_mugqic_R_packages'], ['hicup_align', 'module_HiCUP']],
                     name = "hicup_align." + readset.name,
                     command = command_confFile + " && " + command_hicup,
-                    removable_files = [fileName]
                     )
 
             jobs.append(job)
@@ -301,14 +298,14 @@ class HicSeq(common.Illumina):
             ## homer command
             command_tagDir = "rm -rf {sample_output_dir} && makeTagDirectory {sample_output_dir} {hicup_file_output},{hicup_file_output} -genome {genome} -restrictionSite {restriction_site} -checkGC".format(sample_output_dir = sample_output_dir, hicup_file_output = hicup_file_output, genome = config.param('DEFAULT', 'assembly'), restriction_site = self.restriction_site)
 
-            command_QcPlots = "Rscript {script} {name} {workingDir} {outDir}".format(script = os.path.expandvars("${myhicseq}HomerHiCQcPlotGenerator.R"),  name = sample.name, workingDir = sample_output_dir, outDir = "HomerQcPlots")
+            command_QcPlots = "Rscript {script} {name} {workingDir} {outDir}".format(script = os.path.expandvars("${R_TOOLS}/HomerHiCQcPlotGenerator.R"),  name = sample.name, workingDir = sample_output_dir, outDir = "HomerQcPlots")
 
             command_archive = "mkdir -p {archive_output_dir} && cd {sample_output_dir} && mv -t {archive} *random*.tsv *chrUn*.tsv *hap*.tsv chrM*.tsv chrY*.tsv".format(archive_output_dir = archive_output_dir, sample_output_dir = sample_output_dir, archive = "archive")
 
 
             job = Job(input_files = [hicup_file_output],
                     output_files = [sample_output_dir, archive_output_dir, QcPlots_output_dir],
-                    module_entries = [["homer_tag_directory", "module_homer"], ["homer_tag_directory", "module_samtools"], ["homer_tag_directory", "module_R"]],
+                    module_entries = [["homer_tag_directory", "module_homer"], ["homer_tag_directory", "module_samtools"], ["homer_tag_directory", "module_R"], ["homer_tag_directory", "module_mugqic_tools"]],
                     name = "homer_tag_directory." + sample.name,
                     command = command_tagDir + " && " + command_QcPlots + " && " + command_archive + " && cd ../../",
                     )
@@ -341,14 +338,13 @@ class HicSeq(common.Illumina):
 
                     fileName = os.path.join(sample_output_dir_chr, "_".join((tagDirName, chr, res, "raw.txt")))
                     fileNameRN = os.path.join(sample_output_dir_chr, "_".join((tagDirName, chr, res, "rawRN.txt")))
-                    commandChrMatrix="mkdir -p {sample_output_dir_chr} && analyzeHiC {homer_output_dir} -res {res} -raw -chr {chr} > {fileName} && cut -f 2- {fileName} > {fileNameRN}".format(sample_output_dir_chr = sample_output_dir_chr, homer_output_dir = homer_output_dir, res = res, chr = chr, fileName = fileName, fileNameRN = fileNameRN)
+                    commandChrMatrix="mkdir -p {sample_output_dir_chr} && analyzeHiC {homer_output_dir} -res {res} -raw -chr {chr} > {fileName} && cut -f 2- {fileName} > {fileNameRN} && rm {fileName}".format(sample_output_dir_chr = sample_output_dir_chr, homer_output_dir = homer_output_dir, res = res, chr = chr, fileName = fileName, fileNameRN = fileNameRN)
                     
                     jobMatrix = Job(input_files = [homer_output_dir],
                             output_files = [fileNameRN, fileName],
                             module_entries = [["interaction_matrices_Chr", "module_homer"]],
                             name = "interaction_matrices_Chr.creating_matrix." + sample.name + "_" + chr + "_res" + res,
                             command = commandChrMatrix,
-                            removable_files = [fileName]
                             )
 
 
@@ -372,7 +368,7 @@ class HicSeq(common.Illumina):
 
     def interaction_matrices_genome(self):
         """
-        Genomeside interaction matrices are produced by Homer at resolutions defined in the ini config file
+        Genomewide interaction matrices are produced by Homer at resolutions defined in the ini config file
         For more detailed information about the HOMER matrices visit: [HOMER matrices] (http://homer.ucsd.edu/homer/interactions/HiCmatrices.html)
         For more detailed information about HiCPlotter visit: [HiCPlotter] (https://github.com/kcakdemir/HiCPlotter)
         """
@@ -391,7 +387,7 @@ class HicSeq(common.Illumina):
                 fileName = os.path.join(sample_output_dir_genome, "_".join((tagDirName, "genomewide_Res", res,"raw.txt")))
                 fileNameRN = os.path.join(sample_output_dir_genome, "_".join((tagDirName, "genomewide_Res", res,"rawRN.txt")))
 
-                commandMatrix="mkdir -p {sample_output_dir_genome} && analyzeHiC {homer_output_dir} -res {res} -raw > {fileName} && cut -f 2- {fileName} > {fileNameRN}".format(sample_output_dir_genome = sample_output_dir_genome, homer_output_dir = homer_output_dir, res = res, chr = chr, fileName = fileName, fileNameRN = fileNameRN)
+                commandMatrix="mkdir -p {sample_output_dir_genome} && analyzeHiC {homer_output_dir} -res {res} -raw > {fileName} && cut -f 2- {fileName} > {fileNameRN} && rm {fileName}".format(sample_output_dir_genome = sample_output_dir_genome, homer_output_dir = homer_output_dir, res = res, chr = chr, fileName = fileName, fileNameRN = fileNameRN)
 
                 commandPlot = "HiCPlotter.py -f {fileNameRN} -n {name} -chr Genome -r {res} -fh 0 -o {sample_output_dir_genome} -ptr 0 -hmc {hmc} -wg 1".format(res=res, chr=chr, fileNameRN=fileNameRN, name=sample.name, sample_output_dir_genome=os.path.join(sample_output_dir_genome, "_".join((tagDirName, "genomewide", "raw"))), hmc = config.param('interaction_matrices_Chr', 'hmc'))
 
@@ -401,7 +397,6 @@ class HicSeq(common.Illumina):
                                 module_entries = [["interaction_matrices_genome", "module_homer"], ["interaction_matrices_genome", "module_HiCPlotter"]],
                                 name = "interaction_matrices_genome." + sample.name  + "_res" + res,
                                 command = commandMatrix + " && " + commandPlot,
-                                removable_files = [fileName]
                                 )
 
                 jobs.append(job)
@@ -467,26 +462,25 @@ class HicSeq(common.Illumina):
                     output_matrix = os.path.join(sample_output_dir, "_".join(("HTD", sample.name, self.enzyme, chr, res, "rawRN.MatA.TopDom")))
 
                     ## make TopDom R script:
-                    FileContent = 'source(\"{script}\"); TopDom(matrix.file=\"{tmp_matrix}\", window.size={n}, outFile=\"{output_matrix}\")'.format(script = os.path.expandvars("${myhicseq}TopDom_v0.0.2.R"), tmp_matrix = tmp_matrix, n = config.param('identify_TADs', 'TopDom_n'), output_matrix = output_matrix)
+                    FileContent = 'source(\"{script}\"); TopDom(matrix.file=\"{tmp_matrix}\", window.size={n}, outFile=\"{output_matrix}\")'.format(script = os.path.expandvars("${R_TOOLS}/TopDom_v0.0.2.R"), tmp_matrix = tmp_matrix, n = config.param('identify_TADs', 'TopDom_n'), output_matrix = output_matrix)
 
                     fileName = "identify_TADs_TopDom." + sample.name + "_" + chr + "_res" + res + ".R"
                     command_RFile ='echo \'{FileContent}\' > {fileName}'.format(FileContent=FileContent, fileName=fileName)
 
-                    command_TopDom = "mkdir -p {sample_output_dir} && {script} {input} {res}".format(sample_output_dir = sample_output_dir, script = os.path.expandvars("${myhicseq}CreateTopDomMat.sh"), input = input_matrix, res = res)
+                    command_TopDom = "mkdir -p {sample_output_dir} && {script} {input} {res}".format(sample_output_dir = sample_output_dir, script = "CreateTopDomMat.sh", input = input_matrix, res = res)
 
                     job_inputFile = Job(input_files = [input_matrix],
                             output_files = [tmp_matrix],
-                            module_entries = [["identify_TADs", "module_R"]],
+                            module_entries = [["identify_TADs", "module_R"],["identify_TADs", "module_mugqic_tools"]],
                             name = "identify_TADs.create_input." + sample.name + "_" + chr + "_res" + res,
                             command = command_RFile + " && " + command_TopDom,
                             removable_files = [tmp_matrix]
                             )
                     job_TADs = Job(input_files = [tmp_matrix],
                             output_files = [output_matrix + ".bed", output_matrix + ".binSignal", output_matrix + ".domain"],
-                            module_entries = [["identify_TADs", "module_R"]],
+                            module_entries = [["identify_TADs", "module_R"], ["identify_TADs", "module_mugqic_tools"]],
                             name = "identify_TADs.call_TADs." + sample.name + "_" + chr + "_res" + res,
-                            command = "Rscript {Rscript}".format(Rscript = fileName),
-                            removable_files = [fileName]
+                            command = "Rscript {fileName} && rm {fileName} {tmp_matrix}".format(fileName = fileName, tmp_matrix=tmp_matrix)
                             )
 
                     jobs.extend([job_inputFile, job_TADs])
@@ -536,7 +530,7 @@ class HicSeq(common.Illumina):
         ## for now multiqc will run after hicup alignments are complete. Once Homer is added to mutliqc, the input must change to refect homer tag dirs
         job = Job(input_files = [os.path.join(self.output_dirs['bams_output_directory'], sample.name + ".merged.bam") for sample in self.samples],
                 output_files = ["Analysis_Summary_Report.html"],
-                module_entries = [["multiqc_report", "module_multiqc"]],
+                module_entries = [["multiqc_report", "module_multiqc"], ["multiqc_reports", "module_mugqic_tools"]],
                 name = "multiqc_report",
                 command = command
                 )
