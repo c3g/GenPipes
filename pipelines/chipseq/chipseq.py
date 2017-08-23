@@ -376,7 +376,7 @@ gzip -c {bedgraph_file} > {bedgraph_file_gz}""".format(
             ))
             job = concat_jobs([
                   Job(command="mkdir -p " + os.path.join(bedgraph_dir, "bigWig")),
-                  ucsc.bedGraphToBigWig(bedgraph_file, big_wig_output)
+                  ucsc.bedGraphToBigWig(bedgraph_file, big_wig_output, header = True)
               ], name="homer_make_ucsc_file_bigWig."+ sample.name)
             jobs.append(job)
 
@@ -800,7 +800,7 @@ done""".format(
         for contrast in self.contrasts:
           if contrast.treatments:
               if len(contrast.controls) > 1 :
-                  raise Exception("Error: contrast name \"" + contrast.name + "\" has sevral imput file, please use one input for pairing!")
+                  raise Exception("Error: contrast name \"" + contrast.name + "\" has several input files, please use one input for pairing!")
               else :
                   input_file=contrast.controls[0].name
                   for sample in contrast.treatments :
@@ -809,11 +809,11 @@ done""".format(
                           if couples[sample.name][0] == input_file:
                               pass
                           else :
-                              raise Exception("Error: contrast name \"" + contrast.name + "\" has sevral imput file, please use one input for pairing!")
+                              raise Exception("Error: contrast name \"" + contrast.name + "\" has several input files, please use one input for pairing!")
                           if couples[sample.name][1] == contrast.real_name and couples[sample.name][2] == contrast.type:
                               pass
                           else :
-                              raise Exception("Error: sample \"" + sample.name + "\" is involved in sevral different contrast, please use one contrast per sample !") 
+                              raise Exception("Error: sample \"" + sample.name + "\" is involved in several different contrasts, please use one contrast per sample !") 
                       else :
                           couples[sample.name]=[input_file, contrast.real_name, contrast.type]
                   for sample in contrast.controls :
@@ -822,11 +822,11 @@ done""".format(
                           if couples[sample.name][0] == input_file:
                               pass
                           else :
-                              raise Exception("Error: contrast name \"" + contrast.name + "\" has sevral imput file, please use one input for pairing!")
+                              raise Exception("Error: contrast name \"" + contrast.name + "\" has several input files, please use one input for pairing!")
                           if couples[sample.name][1] == contrast.real_name and couples[sample.name][2] == contrast.type:
                               pass
                           else :
-                              raise Exception("Error: sample \"" + sample+ "\" is involved in sevral different contrast, please use one contrast per sample !") 
+                              raise Exception("Error: sample \"" + sample+ "\" is involved in several different contrasts, please use one contrast per sample !") 
                       else :
                           couples[sample.name]=[input_file, contrast.real_name, contrast.type]
         

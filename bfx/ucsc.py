@@ -27,7 +27,21 @@ from core.config import *
 from core.job import *
 
 
-def bedGraphToBigWig(output_bed_graph, output_wiggle):
+def bedGraphToBigWig(output_bed_graph, output_wiggle,header=True):
+    
+    if header :
+        remove_head_command="""\
+head -n 1  {output_bed_graph} > {output_bed_graph}.head.tmp && \\
+awk ' NR > 1 ' {output_bed_graph} | sort -k1,1 -k2,2n > {output_bed_graph}.body.tmp && \\
+cat {output_bed_graph}.head.tmp {output_bed_graph}.body.tmp > {output_bed_graph}.sorted && \\
+rm {output_bed_graph}.head.tmp {output_bed_graph}.body.tmp""".format(
+            output_bed_graph=output_bed_graph
+        )
+    else:
+        remove_head_command="""\
+sort -k1,1 -k2,2n {output_bed_graph} > {output_bed_graph}.sorted""".format(
+            output_bed_graph=output_bed_graph
+        )
     
     return Job(
         [output_bed_graph],
@@ -36,14 +50,12 @@ def bedGraphToBigWig(output_bed_graph, output_wiggle):
             ['bedtools', 'module_ucsc']
         ],
         command="""\
-head -n 1  {output_bed_graph} > {output_bed_graph}.head.tmp && \\
-awk ' NR > 1 ' {output_bed_graph} | sort -k1,1 -k2,2n > {output_bed_graph}.body.tmp && \\
-cat {output_bed_graph}.head.tmp {output_bed_graph}.body.tmp > {output_bed_graph}.sorted && \\
-rm {output_bed_graph}.head.tmp {output_bed_graph}.body.tmp && \\
+{remove_head_command} && \\
 bedGraphToBigWig \\
   {output_bed_graph}.sorted \\
   {chromosome_size} \\
   {output_wiggle}""".format(
+            remove_head_command=remove_head_command,
             chromosome_size=config.param('bedtools', 'chromosome_size', type='filepath'),
             output_bed_graph=output_bed_graph,
             output_wiggle=output_wiggle
