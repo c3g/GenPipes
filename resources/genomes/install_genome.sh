@@ -674,11 +674,12 @@ build_files() {
   create_bwa_index
   create_star_index
   create_bowtie2_tophat_index
+  create_genome_digest
   create_ncrna_bwa_index
   create_rrna_bwa_index
   create_gene_annotations
   create_gene_annotations_flat
-  create_genome_digest
+  
 
   # Annotations are not installed for UCSC genomes
   if [[ $SOURCE != "UCSC" ]]
