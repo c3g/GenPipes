@@ -2,10 +2,11 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=HiCUP
+SOFTWARE=hicup
 VERSION=v0.5.9
-ARCHIVE_URL=https://www.bioinformatics.babraham.ac.uk/projects/${SOFTWARE}/${SOFTWARE}_${VERSION}.tar.gz
-SOFTWARE_DIR=${SOFTWARE}-$VERSION
+ARCHIVE=${SOFTWARE}_${VERSION}.tar.gz
+ARCHIVE_URL=https://www.bioinformatics.babraham.ac.uk/projects/${SOFTWARE}/${ARCHIVE}
+SOFTWARE_DIR=${SOFTWARE}_$VERSION
 
 # Specific commands to extract and build the software
 # $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
@@ -15,8 +16,13 @@ build() {
   tar zxvf $ARCHIVE
 
 
+  cd $INSTALL_DOWNLOAD
+  mv -i $SOFTWARE_DIR $INSTALL_DIR/
+
   ## change "-p1" for Bowtie2 to "-p8 --reorder" to force faster alignment in hicup_mapper in #Subroutine "map_file":
-  sed -i -e 's/\-\-very\-sensitive  \-x \$config{index} \-\-no\-unal \-p 1/XYZ/g' /tmp/file.txt
+
+  cd $INSTALL_DIR/$SOFTWARE_DIR
+  sed -i "s|\-\-very\-sensitive  \-x \$config{index} \-\-no\-unal \-p 1|-\-very\-sensitive  \-x \$config{index} \-\-no\-unal \-p 8 --reorder|" hicup_mapper 
 }
 
 
