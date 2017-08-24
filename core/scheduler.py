@@ -140,7 +140,7 @@ COMMAND=$(cat << '{limit_string}'
     -b \\"$JOB_DONE\\" \\
     -l \\"$JOB_OUTPUT\\" \\
     -j \\"{jsonfiles}\\" \\
-    -g \\"$MUGQIC_STATE"\\" \\
+    -g \\"$MUGQIC_STATE"\\ \\
     {job_dependencies} ;\\n""".format(
                         step=step,
                         job=job,
