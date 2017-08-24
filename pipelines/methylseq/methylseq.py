@@ -156,6 +156,30 @@ class MethylSeq(dnaseq.DnaSeq):
                 ], name="picard_add_read_groups." + readset.name)
             )
 
+        report_file = os.path.join("report", "MethylSeq.bismark_align.md")
+        jobs.append(
+            Job(
+                [os.path.join("alignment", readset.sample.name, readset.name, readset.name + ".sorted.bam") for readset in self.readsets],
+                [report_file],
+                [['bismark_align', 'module_pandoc']],
+                command="""\
+mkdir -p report && \\
+pandoc --to=markdown \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable scientific_name="{scientific_name}" \\
+  --variable assembly="{assembly}" \\
+  {report_template_dir}/{basename_report_file} \\
+  > {report_file}""".format(
+                    scientific_name=config.param('bismark_align', 'scientific_name'),
+                    assembly=config.param('bismark_align', 'assembly'),
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="bismark_align_report")
+        )
+
         return jobs
 
     def bismark_dedup(self):
@@ -174,9 +198,7 @@ class MethylSeq(dnaseq.DnaSeq):
         jobs = []
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
-            candidate_input_files = [[os.path.join(alignment_directory, sample.name + ".sorted.bam")]]
-            candidate_input_files.append([os.path.join(alignment_directory, readset.name, readset.name + ".sorted_noRG.bam")])
-            [bam_input] = self.select_input_files(candidate_input_files)
+            bam_input = os.path.join(alignment_directory, sample.name + ".sorted.bam")
             bam_readset_sorted = re.sub("sorted", "readset_sorted", bam_input)
             dedup_bam_readset_sorted = re.sub(".bam", ".dedup.bam", bam_readset_sorted)
             bam_output = os.path.join(alignment_directory, re.sub("readset_", "", os.path.basename(dedup_bam_readset_sorted)))
@@ -204,6 +226,25 @@ class MethylSeq(dnaseq.DnaSeq):
             job.samples = [sample]
 
             jobs.append(job)
+
+        report_file = os.path.join("report", "MethylSeq.bismark_dedup.md")
+        jobs.append(
+            Job(
+                [os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.bam") for sample in self.samples],
+                [report_file],
+                command="""\
+mkdir -p report && \\
+cp \\
+  {report_template_dir}/{basename_report_file} \\
+  {report_file}""".format(
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="bismark_dedup_report")
+        )
+
 
         return jobs
 
@@ -318,16 +359,20 @@ class MethylSeq(dnaseq.DnaSeq):
 
             # Calculate GC bias
             job = concat_jobs([
-                pipe_jobs([
-                    bedtools.bamtobed(
-                        input,
-                        None
-                    ),
-                    bedtools.coverage(
-                        "/dev/stdin",
-                        re.sub(".bam", ".gc_cov.1M.txt", input)
-                    )
-                ]),
+                #pipe_jobs([
+                    #bedtools.bamtobed(
+                        #input,
+                        #None
+                    #),
+                    #bedtools.coverage(
+                        #"stdin",
+                        #re.sub(".bam", ".gc_cov.1M.txt", input)
+                    #)
+                #]),
+                bedtools.coverage(
+                    input,
+                    re.sub(".bam", ".gc_cov.1M.txt", input)
+                ),
                 metrics.gc_bias(
                     re.sub(".bam", ".gc_cov.1M.txt", input),
                     re.sub(".bam", ".GCBias_all.txt", input)
@@ -366,7 +411,6 @@ class MethylSeq(dnaseq.DnaSeq):
 
             candidate_input_files = [[os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.bam")]]
             candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")])
-            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.bam")])
             [input_file] = self.select_input_files(candidate_input_files)
 
             methyl_directory = os.path.join("methylation_call", sample.name)
@@ -455,7 +499,6 @@ class MethylSeq(dnaseq.DnaSeq):
             methyl_directory = os.path.join("methylation_call", sample.name)
             candidate_input_files = [[os.path.join(methyl_directory, sample.name + ".sorted.dedup.bedGraph.gz")]]
             candidate_input_files.append([os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup.bedGraph.gz")])
-            candidate_input_files.append([os.path.join(methyl_directory, sample.name + ".sorted.bedGraph.gz")])
             [input_bed_graph] = self.select_input_files(candidate_input_files)
             output_wiggle = os.path.join("tracks", "bigWig", re.sub(".bedGraph.gz", ".bw", os.path.basename(input_bed_graph)))
 
@@ -485,27 +528,25 @@ class MethylSeq(dnaseq.DnaSeq):
 
             candidate_input_files = [[os.path.join(methyl_directory, sample.name + ".sorted.dedup.CpG_report.txt.gz")]]
             candidate_input_files.append([os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup.CpG_report.txt.gz")])
-            candidate_input_files.append([os.path.join(methyl_directory, sample.name + ".sorted.CpG_report.txt.gz")])
-            candidate_input_files.append([os.path.join(methyl_directory, sample.name + ".readset_sorted.CpG_report.txt.gz")])
 
-            [cpG_input_file] = self.select_input_files(candidate_input_files)
-            cpG_profile = re.sub(".CpG_report.txt.gz", ".CpG_profile.strand.combined.csv", cpG_input_file)
+            [cpg_input_file] = self.select_input_files(candidate_input_files)
+            cpg_profile = re.sub(".CpG_report.txt.gz", ".CpG_profile.strand.combined.csv", cpg_input_file)
 
             # Generate CpG methylation profile
             job = methyl_profile.combine(
-                cpG_input_file,
-                cpG_profile
+                cpg_input_file,
+                cpg_profile
             )
             job.name = "methylation_profile." + sample.name
             job.samples = [sample]
             jobs.append(job)
 
             # Generate stats for lambda, pUC19 and regular CpGs
-            cg_stats_output = re.sub(".CpG_report.txt.gz", ".profile.cgstats.txt", cpG_input_file)
-            lambda_stats_output = re.sub(".CpG_report.txt.gz", ".profile.lambda.conversion.rate.tsv", cpG_input_file)
-            puc19_stats_output = re.sub(".CpG_report.txt.gz", ".profile.pUC19.txt", cpG_input_file)
+            cg_stats_output = re.sub(".CpG_report.txt.gz", ".profile.cgstats.txt", cpg_input_file)
+            lambda_stats_output = re.sub(".CpG_report.txt.gz", ".profile.lambda.conversion.rate.tsv", cpg_input_file)
+            puc19_stats_output = re.sub(".CpG_report.txt.gz", ".profile.pUC19.txt", cpg_input_file)
             job = methyl_profile.cpg_stats(
-                cpG_profile,
+                cpg_profile,
                 cg_stats_output,
                 lambda_stats_output,
                 puc19_stats_output
@@ -514,15 +555,200 @@ class MethylSeq(dnaseq.DnaSeq):
             job.samples = [sample]
             jobs.append(job)
 
+            target_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
+            if target_bed:
+                # Create targeted combined file
+                target_cpg_profile = re.sub("combined", "combined.on_target", cpg_profile)
+                bedtools.intersect(cpg_profile, target_cpg_profile, target_bed)
+                cpg_profile = target_cpg_profile
+
             # Caluculate median & mean CpG coverage
-            median_CpG_coverage = re.sub(".CpG_report.txt.gz", ".median_CpG_coverage.txt", cpG_input_file)
+            median_CpG_coverage = re.sub(".CpG_report.txt.gz", ".median_CpG_coverage.txt", cpg_input_file)
             job = methyl_profile.cpg_cov_stats(
-                cpG_profile,
+                cpg_profile,
                 median_CpG_coverage
             )
             job.name = "median_CpG_coverage." + sample.name
             job.samples = [sample]
+            if target_bed:
+                job.removable_files = [target_cpg_profile]
             jobs.append(job)
+
+        return jobs
+
+    def all_sample_metrics_report(self):
+        """
+        Retrieve all the computed metrics (alignment metrics as well as methylation metrics) to build a tsv report table
+        """
+
+        jobs = []
+
+        target_bed = bvatools.resolve_readset_coverage_bed(self.samples[0].readsets[0])
+        metrics_file = os.path.join("metrics", "sampleMetrics.stats")
+        report_metrics_file = os.path.join("report", "sampleMetricsTable.tsv")
+
+        if target_bed:
+            report_file = os.path.join("report", "MethylSeq.all_sample_metrics_targeted_report.md")
+        else:
+            report_file = os.path.join("report", "MethylSeq.all_sample_metrics_report.md")
+
+        # Create the list of input files to handle job dependencies
+        inputs = []
+        sample_list = []
+        for sample in self.samples:
+            sample_list.append(sample.name)
+
+            # Trim log files
+            for readset in sample.readsets:
+                inputs.append(os.path.join("trim", sample.name, readset.name + ".trim.log"))
+
+            # Dedupplication report files
+            inputs.append(os.path.join("alignment", sample.name, sample.name + ".readset_sorted.deduplication_report.txt"))
+
+            # Coverage summary files
+            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.all.coverage.sample_summary"))
+
+            # Lambda conversion rate files
+            [lambda_conv_file] = self.select_input_files([
+                [os.path.join("methylation_call", sample.name, sample.name + ".sorted.dedup.profile.lambda.conversion.rate.tsv")],
+                [os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.profile.lambda.conversion.rate.tsv")]
+            ])
+            inputs.append(lambda_conv_file)
+
+            # CG stat files
+            [cgstats_file] = self.select_input_files([
+                [os.path.join("methylation_call", sample.name, sample.name + ".sorted.dedup.profile.cgstats.txt")],
+                [os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.profile.cgstats.txt")]
+            ])
+            inputs.append(cgstats_file)
+
+            # Flagstat file if in targeted context
+            if target_bed : inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.filtered.ontarget.bam.flagstat"))
+
+        jobs.append(
+            concat_jobs([
+                Job(command="mkdir -p metrics"),
+                methyl_profile.metrics_report(sample_list, inputs, metrics_file, target_bed),
+                Job(
+                    [metrics_file],
+                    [report_file],
+                    [['all_sample_metrics_report', 'module_pandoc']],
+                    command="""\
+mkdir -p report && \\
+cp {metrics_file} {report_metrics_file} && \\
+metrics_table_md=`sed 's/\t/|/g' {report_metrics_file}`
+pandoc \\
+  {report_template_dir}/{basename_report_file} \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable sequence_alignment_table="$metrics_table_md" \\
+  --to markdown \\
+  > {report_file}""".format(
+                        report_template_dir=self.report_template_dir,
+                        metrics_file=metrics_file,
+                        basename_report_file=os.path.basename(report_file),
+                        report_metrics_file=report_metrics_file,
+                        report_file=report_file
+                    ),
+                    report_files=[report_file]
+                )
+            ], name="all_sample_metrics_report")
+        )
+
+        return jobs
+
+    def ihec_sample_metrics_report(self):
+        """
+        Retrieve the computed metrics which fit the IHEC standards and build a tsv report table for IHEC
+        """
+
+        jobs = []
+
+        target_bed = bvatools.resolve_readset_coverage_bed(self.samples[0].readsets[0])
+        metrics_file = os.path.join("metrics", "IHEC.sampleMetrics.stats")
+        report_metrics_file = os.path.join("report", "IHEC.sampleMetricsTable.tsv")
+
+        if target_bed:
+            report_file = os.path.join("report", "MethylSeq.ihec_sample_metrics_targeted_report.md")
+        else:
+            report_file = os.path.join("report", "MethylSeq.ihec_sample_metrics_report.md")
+
+        # Create the list of input files to handle job dependencies
+        inputs = []
+        sample_list = []
+        for sample in self.samples:
+            sample_list.append(sample.name)
+
+            # Trim log files
+            for readset in sample.readsets:
+                inputs.append(os.path.join("trim", sample.name, readset.name + ".trim.log"))
+
+            # Dedupplication report files
+            inputs.append(os.path.join("alignment", sample.name, sample.name + ".readset_sorted.deduplication_report.txt"))
+
+            # Coverage summary files
+            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.all.coverage.sample_summary"))
+
+            # Filtered reads count files
+            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.filtered_reads.counts.txt"))
+
+            # GC bias files
+            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.GCBias_all.txt"))
+
+            # Bismark alignment files
+            for readset in sample.readsets:
+                inputs.append(os.path.join("alignment", sample.name, readset.name, readset.name + ".sorted_noRG_bismark_bt2_PE_report.txt"))
+
+            # CpG coverage files
+            inputs.append(os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.median_CpG_coverage.txt"))
+
+            # pUC19 methylation files
+            inputs.append(os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.profile.pUC19.txt"))
+
+            # Lambda conversion rate files
+            [lambda_conv_file] = self.select_input_files([
+                [os.path.join("methylation_call", sample.name, sample.name + ".sorted.dedup.profile.lambda.conversion.rate.tsv")],
+                [os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.profile.lambda.conversion.rate.tsv")]
+            ])
+            inputs.append(lambda_conv_file)
+
+            # CG stat files
+            [cgstats_file] = self.select_input_files([
+                [os.path.join("methylation_call", sample.name, sample.name + ".sorted.dedup.profile.cgstats.txt")],
+                [os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.profile.cgstats.txt")]
+            ])
+            inputs.append(cgstats_file)
+
+            # Flagstat file if in targeted context
+            if target_bed : inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.filtered.ontarget.bam.flagstat"))
+
+        jobs.append(
+            concat_jobs([
+                Job(command="mkdir -p metrics"),
+                methyl_profile.ihec_metrics_report(sample_list, inputs, metrics_file, target_bed),
+                Job(
+                    [metrics_file],
+                    [report_file],
+                    [['ihec_sample_metrics_report', 'module_pandoc']],
+                    command="""\
+mkdir -p report && \\
+cp {metrics_file} {report_metrics_file} && \\
+metrics_table_md=`sed 's/\t/|/g' {report_metrics_file}`
+pandoc \\
+  {report_template_dir}/{basename_report_file} \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable sequence_alignment_table="$metrics_table_md" \\
+  --to markdown \\
+  > {report_file}""".format(
+                        report_template_dir=self.report_template_dir,
+                        metrics_file=metrics_file,
+                        basename_report_file=os.path.basename(report_file),
+                        report_metrics_file=report_metrics_file,
+                        report_file=report_file
+                    ),
+                    report_files=[report_file]
+                )
+            ], name="ihec_sample_metrics_report")
+        )
 
         return jobs
 
@@ -537,7 +763,6 @@ class MethylSeq(dnaseq.DnaSeq):
 
             candidate_input_files = [[os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")]]
             candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.bam")])
-            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.bam")])
             [input_file] = self.select_input_files(candidate_input_files)
 
             variant_directory = os.path.join("variants", sample.name)
@@ -551,8 +776,7 @@ class MethylSeq(dnaseq.DnaSeq):
                         input_file,
                         cpg_output_file,
                         snp_output_file
-                    ),
-                    #Job(samples=[sample])
+                    )
                 ], name="bissnp." + sample.name)
             )
 
@@ -572,7 +796,9 @@ class MethylSeq(dnaseq.DnaSeq):
             self.methylation_call,
             self.wiggle_tracks,             # step 10
             self.methylation_profile,
-            self.bis_snp                    # step 12
+            self.all_sample_metrics_report,
+            self.ihec_sample_metrics_report,
+            self.bis_snp                    # step 14
         ]
 
 if __name__ == '__main__': 
