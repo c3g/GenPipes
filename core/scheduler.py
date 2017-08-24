@@ -129,8 +129,8 @@ COMMAND=$(cat << '{limit_string}'
                         )
                     )
                     json_file_list = ",".join([os.path.join(pipeline.output_dir, "json", sample.name, sample.json_file) for sample in job.samples])
-                    jsonify_cmd = """\
-  $MUGQIC_PIPELINES_HOME/utils/Jsonify.py \\
+                    job2json_cmd = """\
+  $MUGQIC_PIPELINES_HOME/utils/job2json.py \\
     -s \\"{step.name}\\" \\
     -n \\"$JOB_NAME\\" \\
     -i \\"{job.id}\\" \\
@@ -153,13 +153,13 @@ COMMAND=$(cat << '{limit_string}'
 echo "rm -f $JOB_DONE && $COMMAND
 MUGQIC_STATE=\$PIPESTATUS
 echo MUGQICexitStatus:\$MUGQIC_STATE
-{jsonify}
+{job2json}
 if [ \$MUGQIC_STATE -eq 0 ] ; then
   touch $JOB_DONE ;
 fi
 exit \$MUGQIC_STATE" | \\
 """.format(
-                        jsonify=jsonify_cmd,
+                        job2json=job2json_cmd,
                     )
 
                     # Cluster settings section must match job name prefix before first "."
