@@ -51,7 +51,6 @@ class AmpliconSeq(common.Illumina):
     Amplicon-Seq Pipeline
     ================
 
-    T
     """
 
     def flash(self):

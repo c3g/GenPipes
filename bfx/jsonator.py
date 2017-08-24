@@ -54,44 +54,50 @@ def create(pipeline, sample):
 
         # Prepare the general information hash
         general_info = {}
-        if pipeline.__class__.__name__ == "AmpliconSeq"
-            
-        else
-            general_info = [
+        if pipeline.__class__.__name__ == "AmpliconSeq":
+            general_info = {
+                'amplicon_type' : config.param("DEFAULT", 'amplicon_type'),
+                'db_name' : config.param("DEFAULT", 'db_name'),
+                'db_version' : config.param("DEFAULT", 'db_version'),
+                'similarity_threshold' : config.param("DEFAULT", 'similarity_threshold')
+            }
+        elif pipeline.__class__.__name__ == "PacBioAssembly":
+            general_info = {
+                'library_type' : config.param("DEFAULT", 'library_type'),
+                'blast_db' : config.param("DEFAULT", 'blast_db')
+            }
+        else :
+            general_info = {
                 'analysed_species' : config.param("DEFAULT", 'scientific_name'),
-                'assembly_used' : config.param("DEFAULT", 'assembly'),
-                'dbSNP_version' : config.param("DEFAULT", 'dbsnp_version')
-            ]
+                'assembly_used' : config.param("DEFAULT", 'assembly')
+            }
+            if config.param("DEFAULT", 'dbsnp_version') : general_info['dbSNP_version'] = config.param("DEFAULT", 'dbsnp_version')
 
         current_json = json.dumps(
-            {'sample': {
-                'name': sample.name,
-                'readsets': [{
-                    "name": readset.name,
-                    "library": readset.library,
-                    "runType": readset.run_type,
-                    "run": readset.run,
-                    "lane": readset.lane,
-                    "adapter1": readset.adapter1,
-                    "adapter2": readset.adapter2,
-                    "qualityoffset": readset.quality_offset,
-                    "bed": [bed for bed in readset.beds],
-                    "fastq1": readset.fastq1,
-                    "fastq2": readset.fastq2,
-                    "bam": readset.bam,
+            {'sample' : {
+                'name' : sample.name,
+                'readset' : [{
+                    "name" : readset.name,
+                    "library" : readset.library,
+                    "runType" : readset.run_type,
+                    "run" : readset.run,
+                    "lane" : readset.lane,
+                    "adapter1" : readset.adapter1,
+                    "adapter2" : readset.adapter2,
+                    "qualityoffset" : readset.quality_offset,
+                    "bed" : [bed for bed in readset.beds],
+                    "fastq1" : os.path.realpath(readset.fastq1),
+                    "fastq2" : os.path.realpath(readset.fastq2),
+                    "bam" : os.path.realpath(readset.bam),
                 } for readset in sample.readsets],
                 'pipeline' : {
                     'name' : pipeline.__class__.__name__,
-                    'general_information': {
-                        'analysed_species' : config.param("DEFAULT", 'scientific_name'),
-                        'assembly_used' : config.param("DEFAULT", 'assembly'),
-                        'dbSNP_version' : config.param("DEFAULT", 'dbsnp_version')
-                    },
-                    'softwares' : [{
+                    'general_information': general_info,
+                    'software' : [{
                         'name' : software['name'],
                         'version' : software['version']
                     } for software in softwares],
-                    'steps' : []
+                    'step' : []
                 }
             }}, indent=4)
 
@@ -109,38 +115,38 @@ def resume(pipeline, sample, step, job):
 
     step_found = False
 
-    for jstep in current_json['sample']['pipeline']['steps']:
+    for jstep in current_json['sample']['pipeline']['step']:
         if jstep['name'] == step.name:
             step_found = True
-            jstep['jobs'].append(
+            jstep['job'].append(
                 {
-                    "name": job.name,
-                    "id": job.id,
-                    "command": job.command_with_modules,
-                    "input_files": job.input_files,
-                    "output_files": job.output_files,
-                    "dependencies": [dependency_job.id for dependency_job in job.dependency_jobs],
-                    "done_file": job.done
+                    "name" : job.name,
+                    "id" : job.id,
+                    "command" : job.command_with_modules,
+                    "input_file" : [input_file for input_file in job.input_files],
+                    "output_file" : [output_file for output_file in job.output_files],
+                    "dependency" : [dependency_job.id for dependency_job in job.dependency_jobs],
+                    "done_file" : job.done
                 }
             )
     if not step_found:
-        current_json['sample']['pipeline']['steps'].append(
+        current_json['sample']['pipeline']['step'].append(
             {
-                'name': step.name,
-                'jobs': [{
-                    "name": job.name,
-                    "id": job.id,
-                    "command": job.command_with_modules,
-                    "input_files": job.input_files,
-                    "output_files": job.output_files,
-                    "dependencies": [dependency_job.id for dependency_job in job.dependency_jobs],
-                    "done_file": job.done
+                'name' : step.name,
+                'job' : [{
+                    "name" : job.name,
+                    "id" : job.id,
+                    "command" : job.command_with_modules,
+                    "input_file" : [input_file for input_file in job.input_files],
+                    "output_file" : [output_file for output_file in job.output_files],
+                    "dependency" : [dependency_job.id for dependency_job in job.dependency_jobs],
+                    "done_file" : job.done
                 }]
             }
         )
 
     # Print to file
     with open(os.path.join(pipeline.output_dir, "." + sample.json_file), 'w') as out_json:
-        json.dump(current_json, out_json, indent=4)
+        json.dump(current_json, out_json, indent=4, sort_keys=True)
 
     return json.dumps(current_json, indent=4)

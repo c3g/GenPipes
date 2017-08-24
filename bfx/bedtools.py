@@ -104,21 +104,21 @@ bedtools bamtobed \\
         )
     )
 
-def coverage(input_bed, output_file):
+def coverage(input_file, output_file):
 
     return Job(
-        [input_bed],
+        [input_file],
         [output_file],
         [
             ['bedtools_intersect', 'module_bedtools']
         ],
         command="""\
 bedtools coverage \\
-  -b {input_bed} \\
   -a {intervals} \\
+  -b {input} \\
   {other_options} > {output_file}""".format(
-            input_bed=input_bed,
             intervals=config.param('bedtools_coverage', 'gc_intervals'),
+            input=input_file,
             other_options=config.param('bedtools_coverage', 'other_options'),
             output_file=output_file
         )

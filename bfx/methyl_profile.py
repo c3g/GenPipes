@@ -23,6 +23,7 @@
 import os
 
 # MUGQIC Modules
+from core.pipeline import *
 from core.config import *
 from core.job import *
 
@@ -78,4 +79,40 @@ python $PYTHON_TOOLS/CpG_coverageStats.py \\
             input=input,
             output=output
          )
+    )
+
+def metrics_report(sample_list, inputs, output, target_bed):
+    return Job(
+        inputs,
+        [output],
+        [
+            ['DEFAULT', 'module_mugqic_tools']
+        ],
+        command="""\
+bash methylseq_metrics.sh \\
+  {sample_list} \\
+  {output_file} \\
+  {targeted_flag}""".format(
+            sample_list=",".join(sample_list),
+            output_file=output,
+            targeted_flag=1 if target_bed else 0
+        )
+    )
+
+def ihec_metrics_report(sample_list, inputs, output, target_bed):
+    return Job(
+        inputs,
+        [output],
+        [
+            ['DEFAULT', 'module_mugqic_tools']
+        ],
+        command="""\
+bash methylseq_metrics_for_ihec.sh \\
+  {sample_list} \\
+  {input_files} \\
+  {targeted_flag}""".format(
+            sample_list=",".join(sample_list),
+            input_files=" \\\n  ".join(inputs),
+            targeted_flag=1 if target_bed else 0
+        )
     )

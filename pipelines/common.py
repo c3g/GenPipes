@@ -215,7 +215,6 @@ END
                     else:
                         raise Exception("Error: missing adapter1 for SINGLE_END readset \"" + readset.name + "\", or missing adapter_fasta parameter in config file!")
 
-
             trim_stats = trim_file_prefix + "stats.csv"
             if readset.run_type == "PAIRED_END":
                 candidate_input_files = [[readset.fastq1, readset.fastq2]]

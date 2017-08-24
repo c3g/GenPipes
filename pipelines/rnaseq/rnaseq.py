@@ -1024,7 +1024,8 @@ done""".format(
             self.fpkm_correlation_matrix,
             self.gq_seq_utils_exploratory_analysis_rnaseq,
             self.differential_expression,
-            self.differential_expression_goseq
+            self.differential_expression_goseq,
+            self.verify_bam_id
         ]
 
 if __name__ == '__main__':

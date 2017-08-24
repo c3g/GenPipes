@@ -128,11 +128,8 @@ COMMAND=$(cat << '{limit_string}'
                             limit_string=os.path.basename(job.done)
                         )
                     )
-                    cmd = """\
-echo "rm -f $JOB_DONE && $COMMAND
-MUGQIC_STATE=\$PIPESTATUS
-echo MUGQICexitStatus:\$MUGQIC_STATE
-if [ \$MUGQIC_STATE -eq 0 ] ; then
+                    json_file_list = ",".join([os.path.join(pipeline.output_dir, "json", sample.name, sample.json_file) for sample in job.samples])
+                    jsonify_cmd = """\
   $MUGQIC_PIPELINES_HOME/utils/Jsonify.py \\
     -s \\"{step.name}\\" \\
     -n \\"$JOB_NAME\\" \\
@@ -141,18 +138,28 @@ if [ \$MUGQIC_STATE -eq 0 ] ; then
     -f \\"{job_inputs}\\" \\
     -o \\"{job_outputs}\\" \\
     -b \\"$JOB_DONE\\" \\
+    -l \\"$JOB_OUTPUT\\" \\
     -j \\"{jsonfiles}\\" \\
-    {job_dependencies} ;
-  touch $JOB_DONE ;
-fi
-exit \$MUGQIC_STATE" | \\
-""".format(
+    -g \\"$MUGQIC_STATE"\\" \\
+    {job_dependencies} ;\\n""".format(
                         step=step,
                         job=job,
                         job_inputs=",".join(job.input_files),
                         job_outputs=",".join(job.output_files),
-                        jsonfiles=",".join([os.path.join(pipeline.output_dir, "json", sample.name, sample.json_file) for sample in job.samples]),
+                        jsonfiles=json_file_list,
                         job_dependencies="-d " + ",".join([dependency_job.id for dependency_job in job.dependency_jobs]) if len(job.dependency_jobs)>0 else ""
+                    ) if json_file_list else ""
+                    cmd = """\
+echo "rm -f $JOB_DONE && $COMMAND
+MUGQIC_STATE=\$PIPESTATUS
+echo MUGQICexitStatus:\$MUGQIC_STATE
+{jsonify}
+if [ \$MUGQIC_STATE -eq 0 ] ; then
+  touch $JOB_DONE ;
+fi
+exit \$MUGQIC_STATE" | \\
+""".format(
+                        jsonify=jsonify_cmd,
                     )
 
                     # Cluster settings section must match job name prefix before first "."
