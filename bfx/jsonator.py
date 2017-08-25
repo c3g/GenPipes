@@ -30,8 +30,8 @@ from core.job import *
 def create(pipeline, sample):
     # First check if json file has already been created (during a previous pipeline execution for instance)
     # If it does :
-    if os.path.exists(os.path.join(pipeline.output_dir, "json", sample.name, sample.json_file)):
-        with open(os.path.join(pipeline.output_dir, "json", sample.name, sample.json_file), 'r') as json_file:
+    if os.path.exists(os.path.join(pipeline.output_dir, "json", sample.json_file)):
+        with open(os.path.join(pipeline.output_dir, "json", sample.json_file), 'r') as json_file:
             current_json = json.load(json_file)
 
     # If the json file has not been created yet :
@@ -105,48 +105,7 @@ def create(pipeline, sample):
             os.makedirs(os.path.join(pipeline.output_dir, "json", sample.name))
 
         # Print to file
-        with open(os.path.join(pipeline.output_dir, "json", sample.name, sample.json_file), 'w') as out_json:
+        with open(os.path.join(pipeline.output_dir, "json", sample.json_file), 'w') as out_json:
             out_json.write(current_json)
 
     return current_json
-
-def resume(pipeline, sample, step, job):
-    current_json = json.loads(sample.json_dump)
-
-    step_found = False
-
-    for jstep in current_json['sample']['pipeline']['step']:
-        if jstep['name'] == step.name:
-            step_found = True
-            jstep['job'].append(
-                {
-                    "name" : job.name,
-                    "id" : job.id,
-                    "command" : job.command_with_modules,
-                    "input_file" : [input_file for input_file in job.input_files],
-                    "output_file" : [output_file for output_file in job.output_files],
-                    "dependency" : [dependency_job.id for dependency_job in job.dependency_jobs],
-                    "done_file" : job.done
-                }
-            )
-    if not step_found:
-        current_json['sample']['pipeline']['step'].append(
-            {
-                'name' : step.name,
-                'job' : [{
-                    "name" : job.name,
-                    "id" : job.id,
-                    "command" : job.command_with_modules,
-                    "input_file" : [input_file for input_file in job.input_files],
-                    "output_file" : [output_file for output_file in job.output_files],
-                    "dependency" : [dependency_job.id for dependency_job in job.dependency_jobs],
-                    "done_file" : job.done
-                }]
-            }
-        )
-
-    # Print to file
-    with open(os.path.join(pipeline.output_dir, "." + sample.json_file), 'w') as out_json:
-        json.dump(current_json, out_json, indent=4, sort_keys=True)
-
-    return json.dumps(current_json, indent=4)
