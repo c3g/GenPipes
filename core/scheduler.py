@@ -128,7 +128,7 @@ COMMAND=$(cat << '{limit_string}'
                             limit_string=os.path.basename(job.done)
                         )
                     )
-                    json_file_list = ",".join([os.path.join(pipeline.output_dir, "json", sample.name, sample.json_file) for sample in job.samples])
+                    json_file_list = ",".join([os.path.join(pipeline.output_dir, "json", sample.json_file) for sample in job.samples])
                     job2json_cmd = """\
   $MUGQIC_PIPELINES_HOME/utils/job2json.py \\
     -s \\"{step.name}\\" \\
