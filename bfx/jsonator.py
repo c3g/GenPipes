@@ -101,8 +101,8 @@ def create(pipeline, sample):
                 }
             }}, indent=4)
 
-        if not os.path.exists(os.path.join(pipeline.output_dir, "json", sample.name)):
-            os.makedirs(os.path.join(pipeline.output_dir, "json", sample.name))
+        if not os.path.exists(os.path.join(pipeline.output_dir, "json")):
+            os.makedirs(os.path.join(pipeline.output_dir, "json"))
 
         # Print to file
         with open(os.path.join(pipeline.output_dir, "json", sample.json_file), 'w') as out_json:
