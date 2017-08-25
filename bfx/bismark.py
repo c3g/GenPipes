@@ -26,7 +26,7 @@ import os
 from core.config import *
 from core.job import *
 
-def align(input1, input2, output_directory, output):
+def align(input1, input2, output_directory, outputs):
 
     inputs = []
     inputs.append(input1)
@@ -35,7 +35,7 @@ def align(input1, input2, output_directory, output):
 
     return Job(
         inputs,
-        [output],
+        outputs,
         [
             ['bismark_align', 'module_bismark'],
             ['bismark_align', 'module_bowtie'],
@@ -58,11 +58,11 @@ bismark -q \\
         )
     )
 
-def dedup(input, output, library_type="PAIRED_END"):
+def dedup(input, outputs, library_type="PAIRED_END"):
 
     return Job(
         [input],
-        [output],
+        outputs,
         [
             ['bismark_dedup', 'module_bismark'],
             ['bismark_dedup', 'module_bowtie'],

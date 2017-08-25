@@ -134,7 +134,7 @@ class MethylSeq(dnaseq.DnaSeq):
                         fastq1,
                         fastq2,
                         os.path.dirname(no_readgroup_bam),
-                        no_readgroup_bam,
+                        [no_readgroup_bam, re.sub(".bam", "_bismark_bt2_PE_report.txt", no_readgroup_bam)],
                     ),
                     Job(command="mv " + bismark_out_bam + " " + no_readgroup_bam),
                     Job(command="mv " + bismark_out_report + " " + re.sub(".bam", "_bismark_bt2_PE_report.txt", no_readgroup_bam)),
@@ -201,6 +201,7 @@ pandoc --to=markdown \\
             bam_input = os.path.join(alignment_directory, sample.name + ".sorted.bam")
             bam_readset_sorted = re.sub("sorted", "readset_sorted", bam_input)
             dedup_bam_readset_sorted = re.sub(".bam", ".dedup.bam", bam_readset_sorted)
+            dedup_report = os.path.join(alignment_directory, sample.name + ".readset_sorted.deduplication_report.txt")
             bam_output = os.path.join(alignment_directory, re.sub("readset_", "", os.path.basename(dedup_bam_readset_sorted)))
 
             job = concat_jobs([
@@ -212,7 +213,7 @@ pandoc --to=markdown \\
                 ),
                 bismark.dedup(
                     bam_readset_sorted,
-                    dedup_bam_readset_sorted,
+                    [dedup_bam_readset_sorted, dedup_report],
                     library[sample]
                 ),
                 Job(command="mv " + re.sub(".bam", ".deduplicated.bam", bam_readset_sorted) + " " + dedup_bam_readset_sorted),
