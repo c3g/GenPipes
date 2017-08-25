@@ -98,7 +98,8 @@ class HicSeq(common.Illumina):
                 'matrices_output_directory': 'interaction_matrices',
                 'cmpt_output_directory': 'identify_compartments',
                 'TAD_output_directory': 'identify_TADs',
-                'peaks_output_directory': 'identify_peaks'}
+                'peaks_output_directory': 'identify_peaks',
+                'hicfiles_output_directory': 'hicFiles'}
         return dirs
 
 
@@ -462,7 +463,7 @@ class HicSeq(common.Illumina):
                     output_matrix = os.path.join(sample_output_dir, "_".join(("HTD", sample.name, self.enzyme, chr, res, "rawRN.MatA.TopDom")))
 
                     ## make TopDom R script:
-                    FileContent = 'source(\"{script}\"); TopDom(matrix.file=\"{tmp_matrix}\", window.size={n}, outFile=\"{output_matrix}\")'.format(script = os.path.expandvars("${R_TOOLS}/TopDom_v0.0.2.R"), tmp_matrix = tmp_matrix, n = config.param('identify_TADs', 'TopDom_n'), output_matrix = output_matrix)
+                    FileContent = "source(\"{script}\"); TopDom(matrix.file=\"{tmp_matrix}\", window.size={n}, outFile=\"{output_matrix}\")".format(script = os.path.expandvars("${R_TOOLS}/TopDom_v0.0.2.R"), tmp_matrix = tmp_matrix, n = config.param('identify_TADs', 'TopDom_n'), output_matrix = output_matrix)
 
                     fileName = "identify_TADs_TopDom." + sample.name + "_" + chr + "_res" + res + ".R"
                     command_RFile ='echo \'{FileContent}\' > {fileName}'.format(FileContent=FileContent, fileName=fileName)
@@ -517,6 +518,37 @@ class HicSeq(common.Illumina):
             jobs.append(job)
         return jobs
 
+    def create_hic_file(self):
+        """
+        A .hic file is created per sample in order to visualize in JuiceBox, WashU epigenome browser or as input for other tools.
+        For more detailed information about the JuiceBox visit: [JuiceBox] (http://www.aidenlab.org/software.html)
+        """
+
+        jobs = []
+
+        for sample in self.samples:
+            sample_input = os.path.join(self.output_dirs['bams_output_directory'], sample.name + ".merged.bam")
+            sortedBam = re.sub("\.merge.bam", "merge.sorted.bam", sample_input.strip())
+            hic_output = os.path.join(self.output_dirs['hicfiles_output_directory'], sample.name + ".hic"
+
+            command_sort = "samtools sort -n {sample_input} > {sortedBam}".format(sample_input = sample_input, sortedBam = sortedBam)
+
+            command_input = "bash {CreateHicFileInput} {sortedBam} {name} {tmpDir}".format(CreateHicFileInput = config.param('create_hic_file', 'CreateHicFileInput'), sortedBam = sortedBam, name = sample.name, tmpDir = os.path.expandvars("$(pwd)"))
+
+            command_juicebox = "java -jar {juicer} pre -q 10 {name} {output} {assembly}".format(juicebox = os.path.expandvars(config.param('create_hic_file', 'JuicerPath')), name = sample.name + ".juicebox.input.sorted", output = hic_output, assembly = config.param('DEFAULT', 'assembly'))
+
+            job = Job(input_files = [sample_input],
+                output_files = [sample.name + ".juicebox.input", sample.name + ".juicebox.input.sorted", sortedBam, hic_output],
+                module_entries = [["create_hic_file", "module_samtools"], ["create_hic_file", "module_java"]],
+                name = "create_hic_file." + sample.name,
+                command = command_sort + " && " + command_input + " && " + command_juicebox,
+                removable_files = [sample.name + ".juicebox.input", sample.name + ".juicebox.input.sorted", sortedBam]
+                )
+
+            jobs.append(job)
+        return jobs
+
+
     def multiqc_report(self):
         """
         A quality control report for all samples is generated.
@@ -555,6 +587,7 @@ class HicSeq(common.Illumina):
             self.identify_compartments,
             self.identify_TADs,
             self.identify_peaks,
+            self.create_hic_file,
             self.multiqc_report
         ]
 

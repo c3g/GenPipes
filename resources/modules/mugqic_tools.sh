@@ -38,7 +38,7 @@ prepend-path    PATH                \$root/multiqc-tools
 setenv          R_TOOLS             \$root/R-tools
 setenv          PERL_TOOLS          \$root/perl-tools
 setenv          PYTHON_TOOLS        \$root/python-tools
-setenv          MULTIQC-TOOLS       \$root/multiqc-tools
+setenv          MULTIQC_TOOLS       \$root/multiqc-tools
 "
 }
 
