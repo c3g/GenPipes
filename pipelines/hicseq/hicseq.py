@@ -528,14 +528,14 @@ class HicSeq(common.Illumina):
 
         for sample in self.samples:
             sample_input = os.path.join(self.output_dirs['bams_output_directory'], sample.name + ".merged.bam")
-            sortedBam = re.sub("\.merge.bam", "merge.sorted.bam", sample_input.strip())
-            hic_output = os.path.join(self.output_dirs['hicfiles_output_directory'], sample.name + ".hic"
+            sortedBam = re.sub("\.merged.bam", ".merged.sorted.bam", sample_input.strip())
+            hic_output = os.path.join(self.output_dirs['hicfiles_output_directory'], sample.name + ".hic")
 
             command_sort = "samtools sort -n {sample_input} > {sortedBam}".format(sample_input = sample_input, sortedBam = sortedBam)
 
             command_input = "bash {CreateHicFileInput} {sortedBam} {name} {tmpDir}".format(CreateHicFileInput = config.param('create_hic_file', 'CreateHicFileInput'), sortedBam = sortedBam, name = sample.name, tmpDir = os.path.expandvars("$(pwd)"))
 
-            command_juicebox = "java -jar {juicer} pre -q 10 {name} {output} {assembly}".format(juicebox = os.path.expandvars(config.param('create_hic_file', 'JuicerPath')), name = sample.name + ".juicebox.input.sorted", output = hic_output, assembly = config.param('DEFAULT', 'assembly'))
+            command_juicebox = "mkdir -p {hic_output} && java -jar {juicer} pre -q {q} {name} {output} {assembly}".format(hic_output = self.output_dirs['hicfiles_output_directory'], juicer = os.path.expandvars(config.param('create_hic_file', 'JuicerPath')), q = config.param('create_hic_file', 'q'), name = sample.name + ".juicebox.input.sorted", output = hic_output, assembly = config.param('DEFAULT', 'assembly'))
 
             job = Job(input_files = [sample_input],
                 output_files = [sample.name + ".juicebox.input", sample.name + ".juicebox.input.sorted", sortedBam, hic_output],

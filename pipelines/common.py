@@ -182,9 +182,9 @@ class Illumina(MUGQICPipeline):
                         raise Exception("Error: run type \"" + readset.run_type +
                         "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
                     
-                job = picard.sam_to_fastq(bam, fastq1, fastq2)
-                job.name = "picard_sam_to_fastq." + readset.name
-                jobs.append(job)
+                    job = picard.sam_to_fastq(bam, fastq1, fastq2)
+                    job.name = "picard_sam_to_fastq." + readset.name
+                    jobs.append(job)
 
             else:
                 raise Exception("Error: BAM file not available for readset \"" + readset.name + "\"!")
