@@ -134,7 +134,7 @@ def main():
                         jjob['output_file'] = [output_files]
                         jjob['dependency'] = [job_dependencies]
                         jjob['log_file'] = job_log
-                        if success
+                        if success:
                             jjob['completion'] = "job successfully completed"
                             jjob['done_file'] = job_done
                         else:
