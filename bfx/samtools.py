@@ -99,7 +99,7 @@ samtools sort {other_options}{sort_by_name} \\
         other_options=config.param('samtools_sort', 'other_options', required=False),
         sort_by_name=" -n" if sort_by_name else "",
         input_bam=input_bam,
-        output_prefix=output_prefix
+        output_prefix=output_prefix if config.param('samtools_sort', 'module_samtools').split("/")[2] == "0.1.19" else "> " + output_prefix + ".bam"
         ),
         removable_files=[output_bam]
     )

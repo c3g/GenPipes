@@ -7,6 +7,8 @@ __all__ = [
     "gatk",
     "gq_seq_utils",
     "htseq",
+    "hicup",
+    "homer",
     "igvtools",
     "metrics",
     "mummer",
