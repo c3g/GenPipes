@@ -26,6 +26,9 @@ import os
 import re
 import sys
 import commands
+import gzip
+import subprocess
+import pysam
 
 # Append mugqic_pipelines directory to Python library path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
@@ -37,8 +40,12 @@ from core.pipeline import *
 from bfx.design import *
 from pipelines import common
 
+
 from bfx import picard
 from bfx import samtools
+from bfx import hicup
+from bfx import homer
+from bfx import multiqc
 
 log = logging.getLogger(__name__)
 
@@ -92,9 +99,9 @@ class HicSeq(common.Illumina):
 
     @property
     def output_dirs(self):
-        dirs = {'hicup_output_directory': 'hicup_align',
+        dirs = {'hicup_output_directory': 'alignment',
                 'homer_output_directory': 'homer_tag_directory',
-                'bams_output_directory': 'merged_bams',
+                'bams_output_directory': 'alignment',
                 'matrices_output_directory': 'interaction_matrices',
                 'cmpt_output_directory': 'identify_compartments',
                 'TAD_output_directory': 'identify_TADs',
@@ -125,7 +132,16 @@ class HicSeq(common.Illumina):
 
 
             ## assumes reads in fastq file start with @; if not change
-            command = "zcat {fastq1} | sed '/^@/s/\/[12]\>//g' | gzip > {fastq1_edited}".format(fastq1 = fastq1, fastq1_edited = fastq1 + ".edited.gz")
+            command = """readID=$(head -n 1 {fastq1})
+                if grep -q '^@.*/[12]$' <<< $readID; then
+                    zcat {fastq1} | sed '/^@/s/\/[12]\>//g' | gzip > {fastq1_edited}
+                else
+                    ln -s {fastq1} {fastq1_edited}
+                fi
+            """.format(
+                fastq1 = fastq1, 
+                fastq1_edited = os.path.abspath(fastq1) + ".edited.gz")
+
             job_fastq1 = Job(input_files = [fastq1],
                     output_files = [fastq1 + ".edited.gz"],
                     name = "fastq_readName_Edit.fq1." + readset.name,
@@ -133,7 +149,16 @@ class HicSeq(common.Illumina):
                     removable_files = [fastq1 + ".edited.gz"]
                     )
 
-            command = "zcat {fastq2} | sed '/^@/s/\/[12]\>//g' | gzip > {fastq2_edited}".format(fastq2 = fastq2, fastq2_edited = fastq2 + ".edited.gz")
+            command = """readID=$(head -n 1 {fastq2})
+                if grep -q '^@.*/[12]$' <<< $readID; then
+                    zcat {fastq2} | sed '/^@/s/\/[12]\>//g' | gzip > {fastq2_edited}
+                else
+                    ln -s {fastq2} {fastq2_edited}
+                fi
+            """.format(
+                fastq2 = fastq2, 
+                fastq2_edited = os.path.abspath(fastq2) + ".edited.gz")
+            
             job_fastq2 = Job(input_files = [fastq2],
                     output_files = [fastq2 + ".edited.gz"],
                     name = "fastq_readName_Edit.fq2." + readset.name,
@@ -141,7 +166,10 @@ class HicSeq(common.Illumina):
                     removable_files = [fastq2 + ".edited.gz"]
                     )
 
+
+            
             jobs.extend([job_fastq1, job_fastq2])
+
 
         return jobs
 
@@ -158,7 +186,7 @@ class HicSeq(common.Illumina):
 
 
         for readset in self.readsets:
-            sample_output_dir = os.path.join(self.output_dirs['hicup_output_directory'], readset.name)
+            sample_output_dir = os.path.join(self.output_dirs['hicup_output_directory'], readset.sample.name, readset.name)
             trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
 
             if readset.run_type != "PAIRED_END":
@@ -172,58 +200,13 @@ class HicSeq(common.Illumina):
                 candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
             [fastq1, fastq2] = self.select_input_files(candidate_input_files)
 
-            # create HiCUP configuration file:
-            configFileContent = """
-            Outdir: {sample_output_dir}
-            Threads: {threads}
-            Quiet:{Quiet}
-            Keep:{Keep}
-            Zip:1
-            Bowtie2: {Bowtie2_path}
-            R: {R_path}
-            Index: {Genome_Index_hicup}
-            Digest: {Genome_Digest}
-            Format: {Format}
-            Longest: {Longest}
-            Shortest: {Shortest}
-            {fastq1}
-            {fastq2}
-            """.format(sample_output_dir = sample_output_dir,
-                threads = config.param('hicup_align', 'threads'),
-                Quiet = config.param('hicup_align', 'Quiet'),
-                Keep = config.param('hicup_align', 'Keep'),
-                Bowtie2_path = os.path.expandvars(config.param('hicup_align', 'Bowtie2_path')),
-                R_path = os.path.expandvars(config.param('hicup_align', 'R_path')),
-                Genome_Index_hicup = os.path.expandvars(config.param('hicup_align', 'Genome_Index_hicup')),
-                Genome_Digest = self.genome_digest,
-                Format = config.param('hicup_align', 'Format'),
-                Longest = config.param('hicup_align', 'Longest'),
-                Shortest = config.param('hicup_align', 'Shortest'),
-                fastq1 = fastq1 + ".edited.gz",
-                fastq2 = fastq2 + ".edited.gz")
+            job_confFile = hicup.create_hicup_conf(readset.name, fastq1, fastq2, sample_output_dir, self.genome_digest)
 
-
-            fileName = "hicup_align." + readset.name + ".conf"
-
-
-            command_confFile ='echo \"{configFileContent}\" > {fileName}'.format(fileName=fileName, configFileContent=configFileContent)
-
-            hicup_prefix = ".trim.pair1_2.fastq.gz.edited.hicup.bam"
-            hicup_file_output = os.path.join("hicup_align", readset.name, readset.name + hicup_prefix)
-
-            # hicup command
-            ## delete directory if it exists since hicup will not run again unless old files are removed
-            command_hicup = "rm -rf {sample_output_dir} && mkdir -p {sample_output_dir} && hicup -c {fileName} && rm {fileName}".format(sample_output_dir = sample_output_dir, fileName = fileName)
-
-
-
-            job = Job(input_files = [fastq1 + ".edited.gz", fastq2 + ".edited.gz"],
-                    output_files = [hicup_file_output, fileName],
-                    module_entries = [['hicup_align', 'module_bowtie2'], ['hicup_align', 'module_samtools'], ['hicup_align', 'module_R'], ['hicup_align', 'module_mugqic_R_packages'], ['hicup_align', 'module_HiCUP']],
-                    name = "hicup_align." + readset.name,
-                    command = command_confFile + " && " + command_hicup,
-                    )
-
+            job_hicup = hicup.hicup_run(readset.name, "hicup_align." + readset.name + ".conf", sample_output_dir)
+ 
+            job = concat_jobs([job_confFile, job_hicup])
+            job.name = "hicup_align." + readset.name
+            
             jobs.append(job)
 
         return jobs
@@ -238,8 +221,8 @@ class HicSeq(common.Illumina):
 
         jobs = []
         for sample in self.samples:
-            sample_output = os.path.join(self.output_dirs['bams_output_directory'], sample.name + ".merged.bam")
-            readset_bams = [os.path.join(self.output_dirs['hicup_output_directory'], readset.name, readset.name + ".trim.pair1_2.fastq.gz.edited.hicup.bam") for readset in sample.readsets]
+            sample_output = os.path.join(self.output_dirs['bams_output_directory'], sample.name, sample.name + ".merged.bam")
+            readset_bams = [os.path.join(self.output_dirs['hicup_output_directory'], readset.sample.name, readset.name, readset.name + ".trim.pair1_2.fastq.gz.edited.hicup.bam") for readset in sample.readsets]
 
             mkdir_job = Job(command="mkdir -p " + self.output_dirs['bams_output_directory'])
 
@@ -260,11 +243,7 @@ class HicSeq(common.Illumina):
 
             elif len(sample.readsets) > 1:
 
-                samtools_merge = Job(input_files = readset_bams,
-                    output_files = [sample_output],
-                    module_entries = [['hicup_align', 'module_samtools']],
-                    command = "samtools merge {sample_output} {input_bams}".format(sample_output = sample_output, input_bams = " ".join(map(str.strip, readset_bams)))
-                    )
+                samtools_merge = samtools.merge(sample_output, readset_bams)
 
                 job = concat_jobs([
                     mkdir_job,
@@ -288,28 +267,23 @@ class HicSeq(common.Illumina):
 
         jobs = []
 
-        ## assuming that reads are trimmed and have a .trim. prefix, otherwise, edit code
         for sample in self.samples:
             tagDirName = "_".join(("HTD", sample.name, self.enzyme))
             sample_output_dir = os.path.join(self.output_dirs['homer_output_directory'], tagDirName)
-            hicup_file_output = os.path.join(self.output_dirs['bams_output_directory'], sample.name + ".merged.bam")
-            archive_output_dir = os.path.join(sample_output_dir, "archive")
-            QcPlots_output_dir = os.path.join(sample_output_dir, "HomerQcPlots")
-
-            ## homer command
-            command_tagDir = "rm -rf {sample_output_dir} && makeTagDirectory {sample_output_dir} {hicup_file_output},{hicup_file_output} -genome {genome} -restrictionSite {restriction_site} -checkGC".format(sample_output_dir = sample_output_dir, hicup_file_output = hicup_file_output, genome = config.param('DEFAULT', 'assembly'), restriction_site = self.restriction_site)
-
-            command_QcPlots = "Rscript {script} {name} {workingDir} {outDir}".format(script = os.path.expandvars("${R_TOOLS}/HomerHiCQcPlotGenerator.R"),  name = sample.name, workingDir = sample_output_dir, outDir = "HomerQcPlots")
-
-            command_archive = "mkdir -p {archive_output_dir} && cd {sample_output_dir} && mv -t {archive} *random*.tsv *chrUn*.tsv *hap*.tsv chrM*.tsv chrY*.tsv".format(archive_output_dir = archive_output_dir, sample_output_dir = sample_output_dir, archive = "archive")
+            hicup_file_output = os.path.join(self.output_dirs['bams_output_directory'], sample.name, sample.name + ".merged.bam")
 
 
-            job = Job(input_files = [hicup_file_output],
-                    output_files = [sample_output_dir, archive_output_dir, QcPlots_output_dir],
-                    module_entries = [["homer_tag_directory", "module_homer"], ["homer_tag_directory", "module_samtools"], ["homer_tag_directory", "module_R"], ["homer_tag_directory", "module_mugqic_tools"]],
-                    name = "homer_tag_directory." + sample.name,
-                    command = command_tagDir + " && " + command_QcPlots + " && " + command_archive + " && cd ../../",
-                    )
+            PEflag = eval(config.param('homer_tag_directory', 'illuminaPE'))
+            genome = config.param('DEFAULT', 'assembly')
+
+            checkReadID_job = homer.check_readName_format(hicup_file_output, PEflag)
+            tagDir_job = homer.makeTagDir_hic(sample_output_dir, hicup_file_output, genome, self.restriction_site, illuminaPE=PEflag)
+            QcPlots_job = homer.tagDirQcPlots_hic(sample.name, sample_output_dir)
+            archive_job = homer.archive_contigs_hic(sample_output_dir)
+
+
+            job = concat_jobs([checkReadID_job, tagDir_job, QcPlots_job, archive_job])
+            job.name = "homer_tag_directory" + sample.name
 
             jobs.append(job)
         return jobs
@@ -339,14 +313,8 @@ class HicSeq(common.Illumina):
 
                     fileName = os.path.join(sample_output_dir_chr, "_".join((tagDirName, chr, res, "raw.txt")))
                     fileNameRN = os.path.join(sample_output_dir_chr, "_".join((tagDirName, chr, res, "rawRN.txt")))
-                    commandChrMatrix="mkdir -p {sample_output_dir_chr} && analyzeHiC {homer_output_dir} -res {res} -raw -chr {chr} > {fileName} && cut -f 2- {fileName} > {fileNameRN} && rm {fileName}".format(sample_output_dir_chr = sample_output_dir_chr, homer_output_dir = homer_output_dir, res = res, chr = chr, fileName = fileName, fileNameRN = fileNameRN)
-                    
-                    jobMatrix = Job(input_files = [homer_output_dir],
-                            output_files = [fileNameRN, fileName],
-                            module_entries = [["interaction_matrices_Chr", "module_homer"]],
-                            name = "interaction_matrices_Chr.creating_matrix." + sample.name + "_" + chr + "_res" + res,
-                            command = commandChrMatrix,
-                            )
+
+                    jobMatrix = homer.interactionMatrix_chr_hic (sample.name, sample_output_dir_chr, homer_output_dir, res, chr, fileName, fileNameRN)
 
 
                     fileNamePlot = os.path.join(sample_output_dir_chr, "".join((tagDirName,"_", chr,"_", res, "_raw-", chr, "\'.ofBins(0-\'*\')\'.", str(int(res)/1000), "K.jpeg")))
@@ -388,19 +356,20 @@ class HicSeq(common.Illumina):
                 fileName = os.path.join(sample_output_dir_genome, "_".join((tagDirName, "genomewide_Res", res,"raw.txt")))
                 fileNameRN = os.path.join(sample_output_dir_genome, "_".join((tagDirName, "genomewide_Res", res,"rawRN.txt")))
 
-                commandMatrix="mkdir -p {sample_output_dir_genome} && analyzeHiC {homer_output_dir} -res {res} -raw > {fileName} && cut -f 2- {fileName} > {fileNameRN} && rm {fileName}".format(sample_output_dir_genome = sample_output_dir_genome, homer_output_dir = homer_output_dir, res = res, chr = chr, fileName = fileName, fileNameRN = fileNameRN)
+
+                jobMatrix = homer.interactionMatrix_genome_hic (sample.name, sample_output_dir_genome, homer_output_dir, res, fileName, fileNameRN)
+
 
                 commandPlot = "HiCPlotter.py -f {fileNameRN} -n {name} -chr Genome -r {res} -fh 0 -o {sample_output_dir_genome} -ptr 0 -hmc {hmc} -wg 1".format(res=res, chr=chr, fileNameRN=fileNameRN, name=sample.name, sample_output_dir_genome=os.path.join(sample_output_dir_genome, "_".join((tagDirName, "genomewide", "raw"))), hmc = config.param('interaction_matrices_Chr', 'hmc'))
+                
+                jobPlot = Job(input_files = [fileNameRN],
+                        module_entries = [["interaction_matrices_Chr", "module_HiCPlotter"]],
+                        name = "interaction_matrices_genome.plotting." + sample.name + "_res" + res,
+                        command = commandPlot
+                        )
 
+                jobs.extend([jobMatrix, jobPlot])
 
-                job = Job(input_files = [homer_output_dir],
-                                output_files = [fileNameRN, fileName],
-                                module_entries = [["interaction_matrices_genome", "module_homer"], ["interaction_matrices_genome", "module_HiCPlotter"]],
-                                name = "interaction_matrices_genome." + sample.name  + "_res" + res,
-                                command = commandMatrix + " && " + commandPlot,
-                                )
-
-                jobs.append(job)
         return jobs
 
 
@@ -414,6 +383,7 @@ class HicSeq(common.Illumina):
         jobs = []
 
         res = config.param('identify_compartments', 'resolution_cmpt')
+        genome = config.param('DEFAULT', 'assembly')
 
         for sample in self.samples:
             tagDirName = "_".join(("HTD", sample.name, self.enzyme))
@@ -424,17 +394,9 @@ class HicSeq(common.Illumina):
             fileName_Comp = os.path.join(sample_output_dir, sample.name + "_homerPCA_Res" + res + "_compartments")
 
 
-            command = "mkdir -p {sample_output_dir} && runHiCpca.pl {fileName} {homer_output_dir} -res {res} -genome {genome}; findHiCCompartments.pl {fileName_PC1}  > {fileName_Comp}".format(sample_output_dir = sample_output_dir, fileName = fileName, homer_output_dir = homer_output_dir, res = res, genome = config.param('DEFAULT', 'assembly'), fileName_PC1 = fileName_PC1, fileName_Comp = fileName_Comp)
-
-            job = Job(input_files = [homer_output_dir],
-                    output_files = [fileName_PC1, fileName_Comp],
-                    module_entries = [["identify_compartments", "module_homer"], ["identify_compartments", "module_R"]],
-                    name = "identify_compartments." + sample.name + "_res" + res,
-                    command = command,
-                    removable_files = [fileName]
-                    )
-
+            job = homer.compartments_hic (sample.name, sample_output_dir, fileName, homer_output_dir, res, genome, fileName_PC1, fileName_Comp)
             jobs.append(job)
+
         return jobs
 
 
@@ -498,6 +460,7 @@ class HicSeq(common.Illumina):
         jobs = []
 
         res = config.param('identify_peaks', 'resolution_pks')
+        genome = config.param('DEFAULT', 'assembly')
 
         for sample in self.samples:
             tagDirName = "_".join(("HTD", sample.name, self.enzyme))
@@ -506,16 +469,9 @@ class HicSeq(common.Illumina):
             fileName = os.path.join(sample_output_dir, sample.name + "IntraChrInteractionsRes" + res + ".txt")
             fileName_anno = os.path.join(sample_output_dir, sample.name + "IntraChrInteractionsRes" + res + "_Annotated.txt")
 
-            command = "mkdir -p {sample_output_dir} && findHiCInteractionsByChr.pl {homer_output_dir} -res {res} > {fileName} && annotateInteractions.pl {fileName} {genome} {fileName_anno}".format(sample_output_dir = sample_output_dir, homer_output_dir = homer_output_dir, res = res, fileName = fileName, genome = config.param('DEFAULT', 'assembly'), fileName_anno = fileName_anno)
-
-            job = Job(input_files = [homer_output_dir],
-                    output_files = [fileName, fileName_anno],
-                    module_entries = [["identify_peaks", "module_homer"]],
-                    name = "identify_peaks." + sample.name + "_res" + res,
-                    command = command
-                    )
-
+            job = homer.peaks_hic(sample.name, sample_output_dir, homer_output_dir, res, genome, fileName, fileName_anno)
             jobs.append(job)
+
         return jobs
 
     def create_hic_file(self):
@@ -527,23 +483,32 @@ class HicSeq(common.Illumina):
         jobs = []
 
         for sample in self.samples:
-            sample_input = os.path.join(self.output_dirs['bams_output_directory'], sample.name + ".merged.bam")
-            sortedBam = re.sub("\.merged.bam", ".merged.sorted.bam", sample_input.strip())
+            sample_input = os.path.join(self.output_dirs['bams_output_directory'], sample.name, sample.name + ".merged.bam")
+            sortedBamPrefix = re.sub("\.merged.bam", ".merged.sorted", sample_input.strip())
+            sortedBam = sortedBamPrefix + ".bam"
             hic_output = os.path.join(self.output_dirs['hicfiles_output_directory'], sample.name + ".hic")
 
-            command_sort = "samtools sort -n {sample_input} > {sortedBam}".format(sample_input = sample_input, sortedBam = sortedBam)
+            command_sort = samtools.sort(sample_input, sortedBamPrefix, sort_by_name = True)
+           
 
-            command_input = "bash {CreateHicFileInput} {sortedBam} {name} {tmpDir}".format(CreateHicFileInput = config.param('create_hic_file', 'CreateHicFileInput'), sortedBam = sortedBam, name = sample.name, tmpDir = os.path.expandvars("$(pwd)"))
-
-            command_juicebox = "mkdir -p {hic_output} && java -jar {juicer} pre -q {q} {name} {output} {assembly}".format(hic_output = self.output_dirs['hicfiles_output_directory'], juicer = os.path.expandvars(config.param('create_hic_file', 'JuicerPath')), q = config.param('create_hic_file', 'q'), name = sample.name + ".juicebox.input.sorted", output = hic_output, assembly = config.param('DEFAULT', 'assembly'))
-
-            job = Job(input_files = [sample_input],
-                output_files = [sample.name + ".juicebox.input", sample.name + ".juicebox.input.sorted", sortedBam, hic_output],
-                module_entries = [["create_hic_file", "module_samtools"], ["create_hic_file", "module_java"]],
+            command_input = Job(input_files = [sortedBam],
+                output_files = [sample.name + ".juicebox.input", sample.name + ".juicebox.input.sorted"],
+                module_entries = [["create_hic_file", "module_mugqic_tools"]],
                 name = "create_hic_file." + sample.name,
-                command = command_sort + " && " + command_input + " && " + command_juicebox,
+                command = "bash {CreateHicFileInput} {sortedBam} {name} {tmpDir}".format(CreateHicFileInput = 'CreateHicFileInput.sh', sortedBam = sortedBam, name = sample.name, tmpDir = os.path.expandvars("$(pwd)")),
                 removable_files = [sample.name + ".juicebox.input", sample.name + ".juicebox.input.sorted", sortedBam]
                 )
+
+
+            command_juicebox = Job(input_files = [sample.name + ".juicebox.input.sorted"],
+                output_files = [hic_output],
+                module_entries = [["create_hic_file", "module_java"]],
+                name = "create_hic_file." + sample.name,
+                command = "mkdir -p {hic_output} && java -jar {juicer} pre -q {q} {name} {output} {assembly}".format(hic_output = self.output_dirs['hicfiles_output_directory'], juicer = os.path.expandvars(config.param('create_hic_file', 'JuicerPath')), q = config.param('create_hic_file', 'q'), name = sample.name + ".juicebox.input.sorted", output = hic_output, assembly = config.param('DEFAULT', 'assembly')),
+                )
+
+            job = concat_jobs([command_sort, command_input, command_juicebox])
+            job.name = "create_hic_file." + sample.name
 
             jobs.append(job)
         return jobs
@@ -557,15 +522,9 @@ class HicSeq(common.Illumina):
         ## set multiQc config file so we can customize one for every pipeline:
         jobs = []
 
-
-        command = "export MULTIQC_CONFIG_PATH={path} && multiqc .".format(path = os.path.expandvars(config.param('multiqc_report', 'MULTIQC_CONFIG_PATH')))
-        ## for now multiqc will run after hicup alignments are complete. Once Homer is added to mutliqc, the input must change to refect homer tag dirs
-        job = Job(input_files = [os.path.join(self.output_dirs['bams_output_directory'], sample.name + ".merged.bam") for sample in self.samples],
-                output_files = ["Analysis_Summary_Report.html"],
-                module_entries = [["multiqc_report", "module_multiqc"], ["multiqc_reports", "module_mugqic_tools"]],
-                name = "multiqc_report",
-                command = command
-                )
+        yamlFile = os.path.expandvars(config.param('multiqc_report', 'MULTIQC_CONFIG_PATH'))
+        input_files = [os.path.join(self.output_dirs['bams_output_directory'], sample.name, sample.name + ".merged.bam") for sample in self.samples]
+        job = multiqc.mutliqc_run(yamlFile, input_files)
 
         jobs.append(job)
         return jobs

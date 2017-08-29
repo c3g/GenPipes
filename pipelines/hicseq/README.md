@@ -76,7 +76,8 @@ Steps:
 11- identify_compartments
 12- identify_TADs
 13- identify_peaks
-14- multiqc_report
+14- create_hic_file
+15- multiqc_report
 
 ```
 1- samtools_bam_sort
@@ -178,7 +179,15 @@ Significant intraChromosomal interactions (peaks) are identified using Homer.
 For more detailed information about the Homer peaks visit: [Homer peaks] (http://homer.ucsd.edu/homer/interactions/HiCinteractions.html)
        
 
-14- multiqc_report
+4- create_hic_file
+-------------------
+
+A .hic file is created per sample in order to visualize in JuiceBox, WashU epigenome browser or as input for other tools.
+
+For more detailed information about the JuiceBox visit: [JuiceBox] (http://www.aidenlab.org/software.html)
+
+
+15- multiqc_report
 -------------------
 A quality control report for all samples is generated.
 

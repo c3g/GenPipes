@@ -40,6 +40,8 @@ from bfx.readset import *
 from bfx import metrics
 from bfx import picard
 from bfx import trimmomatic
+from bfx import samtools
+
 
 log = logging.getLogger(__name__)
 
@@ -141,17 +143,11 @@ class Illumina(MUGQICPipeline):
             # If readset FASTQ files are available, skip this step
             if not readset.fastq1:
                 if readset.bam:
-                    sortedBam = re.sub("\.bam$", ".sorted.bam", readset.bam)
+                    sortedBamPrefix = re.sub("\.bam$", ".sorted", readset.bam.strip())
                     
-                    command = "samtools sort -n {bam} > {sortedBam}".format(bam = readset.bam, sortedBam = sortedBam)
-
-                    job = Job(input_files = [readset.bam],
-                    output_files = [sortedBam],
-                    module_entries = [['samtools_bam_sort', 'module_samtools']],
-                    name = "samtools_bam_sort." + readset.name,
-                    command = command,
-                    removable_files = [sortedBam]
-                    )
+                    job = samtools.sort(readset.bam, sortedBamPrefix, sort_by_name = True)
+                    job.name = "samtools_bam_sort." + readset.name
+                    job.removable_files = [sortedBamPrefix + ".bam"]
                     jobs.append(job)
                 else:
                     raise Exception("Error: BAM file not available for readset \"" + readset.name + "\"!")
