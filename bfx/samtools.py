@@ -85,6 +85,25 @@ samtools mpileup {other_options} \\
         )
     )
 
+
+
+def merge(sample_output, input_bams):
+    """
+    merges an array of bams into a single bam
+    """
+
+
+    command = "samtools merge {sample_output} {input_bams}".format(sample_output = sample_output, input_bams = " ".join(map(str.strip, input_bams)))
+
+
+    return Job( input_files = input_bams,
+                    output_files = [sample_output],
+                    module_entries = [['hicup_align', 'module_samtools']],
+                    command = command
+                )
+
+
+
 def sort(input_bam, output_prefix, sort_by_name=False):
     output_bam = output_prefix + ".bam"
 
