@@ -26,59 +26,73 @@ import os
 from core.config import *
 from core.job import *
 
+def bedGraphToBigWig(input_bed_graph, output_wiggle, header=True):
 
-def bedGraphToBigWig(output_bed_graph, output_wiggle,header=True):
-    
+    # Check it the input is a real bedGrah (i.e. contains the bedGraph header : track type=bedGraph)
+    # or if it is just a regular bed file (i.e. no bedGraph header)
     if header :
-        remove_head_command="""\
-head -n 1  {output_bed_graph} > {output_bed_graph}.head.tmp && \\
-awk ' NR > 1 ' {output_bed_graph} | sort -k1,1 -k2,2n > {output_bed_graph}.body.tmp && \\
-cat {output_bed_graph}.head.tmp {output_bed_graph}.body.tmp > {output_bed_graph}.sorted && \\
-rm {output_bed_graph}.head.tmp {output_bed_graph}.body.tmp""".format(
-            output_bed_graph=output_bed_graph
-        )
+        if os.path.splitext(input_bed_graph)[1] == ".gz":
+            remove_head_command="""\
+zcat {input_bed_graph} | head -n 1 > {input_bed_graph}.head.tmp && \\
+zcat {input_bed_graph} | awk ' NR > 1 ' | sort -k1,1 -k2,2n > {input_bed_graph}.body.tmp && \\
+cat {input_bed_graph}.head.tmp {input_bed_graph}.body.tmp > {input_bed_graph}.sorted && \\
+rm {input_bed_graph}.head.tmp {input_bed_graph}.body.tmp""".format(
+                input_bed_graph=input_bed_graph
+        else:
+            remove_head_command="""\
+head -n 1  {input_bed_graph} > {input_bed_graph}.head.tmp && \\
+awk ' NR > 1 ' {input_bed_graph} | sort -k1,1 -k2,2n > {input_bed_graph}.body.tmp && \\
+cat {input_bed_graph}.head.tmp {input_bed_graph}.body.tmp > {input_bed_graph}.sorted && \\
+rm {input_bed_graph}.head.tmp {input_bed_graph}.body.tmp""".format(
+                input_bed_graph=input_bed_graph
+            )
     else:
-        remove_head_command="""\
-sort -k1,1 -k2,2n {output_bed_graph} > {output_bed_graph}.sorted""".format(
-            output_bed_graph=output_bed_graph
-        )
-    
+        if os.path.splitext(input_bed_graph)[1] == ".gz":
+          remove_head_command="""\
+zcat {input_bed_graph} | sort -k1,1 -k2,2n > {input_bed_graph}.sorted""".format(
+                input_bed_graph=input_bed_graph
+            )
+        else:
+            remove_head_command="""\
+sort -k1,1 -k2,2n {input_bed_graph} > {input_bed_graph}.sorted""".format(
+                input_bed_graph=input_bed_graph
+            )
+
     return Job(
-        [output_bed_graph],
-        [output_bed_graph+".sorted", output_wiggle],
+        [input_bed_graph],
+        [input_bed_graph+".sorted", output_wiggle],
         [
-            ['bedtools', 'module_ucsc']
+            ['ucsc', 'module_ucsc']
         ],
         command="""\
 {remove_head_command} && \\
 bedGraphToBigWig \\
-  {output_bed_graph}.sorted \\
+  {input_bed_graph}.sorted \\
   {chromosome_size} \\
   {output_wiggle}""".format(
             remove_head_command=remove_head_command,
-            chromosome_size=config.param('bedtools', 'chromosome_size', type='filepath'),
-            output_bed_graph=output_bed_graph,
+            chromosome_size=config.param('ucsc', 'chromosome_size', type='filepath'),
+            input_bed_graph=input_bed_graph,
             output_wiggle=output_wiggle
         ),
-        removable_files=[output_bed_graph+".sorted"]
+        removable_files=[input_bed_graph+".sorted"]
     )
 
 def bedToBigBed(bed_file, bigBed_file):
-    
+
     return Job(
         [bed_file],
         [bigBed_file],
         [
-            ['bedtools', 'module_ucsc']
+            ['ucsc', 'module_ucsc']
         ],
         command="""\
 bedToBigBed \\
   {bed_file} \\
   {chromosome_size} \\
   {bigBed_file}""".format(
-            chromosome_size=config.param('bedtools', 'chromosome_size', type='filepath'),
+            chromosome_size=config.param('ucsc', 'chromosome_size', type='filepath'),
             bed_file=bed_file,
             bigBed_file=bigBed_file
-        ),
+        )
     )
-
