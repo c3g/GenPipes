@@ -26,47 +26,73 @@ import os
 from core.config import *
 from core.job import *
 
-def bedgraph_to_bigbwig(input_bed_graph, output_wiggle, graph_header=False):
+def bedGraphToBigWig(input_bed_graph, output_wiggle, header=True):
 
-    if os.path.splitext(input_bed_graph)[1] == ".gz":
-        sorted_bed_graph = re.sub(".gz", ".sorted", input_bed_graph)
-        sort_command = """zcat {input_bed_graph} | sort -k1,1 -k2,2n > {sorted_bed_graph}""".format(
-            input_bed_graph=input_bed_graph,
-            sorted_bed_graph=sorted_bed_graph
-        )
-        if graph_header:
-            sort_command = """zcat {input_bed_graph} | tail -n +2 | sort -k1,1 -k2,2n > {sorted_bed_graph}""".format(
-                input_bed_graph=input_bed_graph,
-                sorted_bed_graph=sorted_bed_graph
+    # Check it the input is a real bedGrah (i.e. contains the bedGraph header : track type=bedGraph)
+    # or if it is just a regular bed file (i.e. no bedGraph header)
+    if header :
+        if os.path.splitext(input_bed_graph)[1] == ".gz":
+            remove_head_command="""\
+zcat {input_bed_graph} | head -n 1 > {input_bed_graph}.head.tmp && \\
+zcat {input_bed_graph} | awk ' NR > 1 ' | sort -k1,1 -k2,2n > {input_bed_graph}.body.tmp && \\
+cat {input_bed_graph}.head.tmp {input_bed_graph}.body.tmp > {input_bed_graph}.sorted && \\
+rm {input_bed_graph}.head.tmp {input_bed_graph}.body.tmp""".format(
+                input_bed_graph=input_bed_graph
+        else:
+            remove_head_command="""\
+head -n 1  {input_bed_graph} > {input_bed_graph}.head.tmp && \\
+awk ' NR > 1 ' {input_bed_graph} | sort -k1,1 -k2,2n > {input_bed_graph}.body.tmp && \\
+cat {input_bed_graph}.head.tmp {input_bed_graph}.body.tmp > {input_bed_graph}.sorted && \\
+rm {input_bed_graph}.head.tmp {input_bed_graph}.body.tmp""".format(
+                input_bed_graph=input_bed_graph
             )
     else:
-        sorted_bed_graph = input_bed_graph + ".sorted"
-        sort_command = """sort -k1,1 -k2,2n {input_bed_graph} > {sorted_bed_graph}""".format(
-            input_bed_graph=input_bed_graph,
-            sorted_bed_graph=sorted_bed_graph
-        )
-        if graph_header:
-            sort_command = """cat {input_bed_graph} | tail -n +2 | sort -k1,1 -k2,2n > {sorted_bed_graph}""".format(
-                input_bed_graph=input_bed_graph,
-                sorted_bed_graph=sorted_bed_graph
+        if os.path.splitext(input_bed_graph)[1] == ".gz":
+          remove_head_command="""\
+zcat {input_bed_graph} | sort -k1,1 -k2,2n > {input_bed_graph}.sorted""".format(
+                input_bed_graph=input_bed_graph
+            )
+        else:
+            remove_head_command="""\
+sort -k1,1 -k2,2n {input_bed_graph} > {input_bed_graph}.sorted""".format(
+                input_bed_graph=input_bed_graph
             )
 
     return Job(
         [input_bed_graph],
-        [output_wiggle],
+        [input_bed_graph+".sorted", output_wiggle],
         [
             ['ucsc', 'module_ucsc']
         ],
         command="""\
-{sort_command} && \\
+{remove_head_command} && \\
 bedGraphToBigWig \\
-  {sorted_bed_graph} \\
+  {input_bed_graph}.sorted \\
   {chromosome_size} \\
-  {output_wiggle} && \\
-  rm -f {sorted_bed_graph}""".format(
-            sort_command=sort_command,
+  {output_wiggle}""".format(
+            remove_head_command=remove_head_command,
             chromosome_size=config.param('ucsc', 'chromosome_size', type='filepath'),
-            sorted_bed_graph=sorted_bed_graph,
+            input_bed_graph=input_bed_graph,
             output_wiggle=output_wiggle
+        ),
+        removable_files=[input_bed_graph+".sorted"]
+    )
+
+def bedToBigBed(bed_file, bigBed_file):
+
+    return Job(
+        [bed_file],
+        [bigBed_file],
+        [
+            ['ucsc', 'module_ucsc']
+        ],
+        command="""\
+bedToBigBed \\
+  {bed_file} \\
+  {chromosome_size} \\
+  {bigBed_file}""".format(
+            chromosome_size=config.param('ucsc', 'chromosome_size', type='filepath'),
+            bed_file=bed_file,
+            bigBed_file=bigBed_file
         )
     )

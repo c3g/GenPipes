@@ -45,8 +45,8 @@ def graph(input_bam, output_bed_graph, output_wiggle, library_type="PAIRED_END")
             [input_bam],
             [output_bed_graph, output_wiggle],
             [
-                ['bedtools_graph', 'module_samtools'],
-                ['bedtools_graph', 'module_bedtools']
+                ['bedtools', 'module_samtools'],
+                ['bedtools', 'module_bedtools']
             ],
             command="""\
 nmblines=$(samtools view {samtools_options} {input_bam} | wc -l) && \\
@@ -62,9 +62,10 @@ genomeCoverageBed -bg -split -scale $scalefactor \\
                 output_bed_graph=output_bed_graph
             )
         ),
-        ucsc.bedgraph_to_bigbwig(
+        ucsc.bedGraphToBigWig(
             output_bed_graph,
-            output_wiggle
+            output_wiggle,
+            False
         )
     ])
 
@@ -74,7 +75,7 @@ def intersect(input_bam, output_bam, target_bed):
         [input_bam],
         [output_bam],
         [
-            ['bedtools_intersect', 'module_bedtools']
+            ['bedtools', 'module_bedtools']
         ],
         command="""\
 bedtools intersect \\
@@ -94,7 +95,7 @@ def bamtobed(input_bam, output_bed):
         [input_bam],
         [output_bed],
         [
-            ['bedtools_intersect', 'module_bedtools']
+            ['bedtools', 'module_bedtools']
         ],
         command="""\
 bedtools bamtobed \\
@@ -110,7 +111,7 @@ def coverage(input_file, output_file):
         [input_file],
         [output_file],
         [
-            ['bedtools_intersect', 'module_bedtools']
+            ['bedtools', 'module_bedtools']
         ],
         command="""\
 bedtools coverage \\
