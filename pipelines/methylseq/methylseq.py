@@ -506,10 +506,9 @@ cp \\
             jobs.append(
                 concat_jobs([
                     Job(command="mkdir -p " + methyl_directory, samples=[sample]),
-                    ucsc.bedgraph_to_bigbwig(
+                    ucsc.bedGraphToBigWig(
                         input_bed_graph,
-                        output_wiggle,
-                        True
+                        output_wiggle
                     ),
                     #Job(samples=[sample])
                 ], name = "bismark_bigWig." + sample.name)
