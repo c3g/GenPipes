@@ -140,7 +140,7 @@ def main():
                         else:
                             jjob['completion'] = "job failed..."
                 # if job does not exists already, add it to the current step
-                if not job_found :
+                if job_found == False :
                     if success:
                         jstep['job'].append(
                             {
@@ -168,7 +168,7 @@ def main():
                                 "completion": "job failed..."
                             }
         # if step does not exists already, create it as well as the current job
-        if not step_found:
+        if step_found == False :
             if success:
                 current_json['sample']['pipeline']['step'].append(
                     {
