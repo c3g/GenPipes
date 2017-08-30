@@ -37,17 +37,17 @@ def check_readName_format (input_bam, illuminaPE):
     if grep -q '^.*/[12]$' <<< $readID; then
         if [ "$illuminaPE" = "False" ]; then
         echo "Error! Your bam readIds contain /1 , /2 endings. Please edit the ini File to illuminaPE=True OR run the pipeline with the fastq_readName_Edit method!" 1>&2
-        #exit 1
+        exit 1
         fi
     else
        if [ "$illuminaPE" = "True" ]; then
         echo "Error! Your bam readIds do not contain /1 , /2 endings. Please edit the ini File to illuminaPE=False OR run the pipeline without the fastq_readName_Edit method!" 1>&2
-        #exit 1
+        exit 1
         fi
-    fi
-""".format(input_bam = input_bam, illuminaPE = illuminaPE)
+    fi""".format(input_bam = input_bam, illuminaPE = illuminaPE)
 
 	return Job(input_files = [input_bam],
+            module_entries = [["homer_tag_directory", "module_samtools"]],
             command = command
             )
 
@@ -93,7 +93,8 @@ def archive_contigs_hic (homerTagDir, output_dir = "archive"):
 
     command_archive = """cd {homerTagDir} && \\
     mkdir -p {output_dir} && \\
-    mv -t {output_dir} *random*.tsv *chrUn*.tsv *hap*.tsv chrM*.tsv chrY*.tsv""".format(
+    mv -t {output_dir} *random*.tsv *chrUn*.tsv *hap*.tsv chrM*.tsv chrY*.tsv || echo "not all files found"
+    cd ../../""".format(
     	homerTagDir = homerTagDir, 
     	output_dir = output_dir)
 
@@ -108,8 +109,7 @@ def interactionMatrix_chr_hic (name, output_dir, homer_dir, res, chr, fileName, 
 # norm can be "raw", "simpleNorm", "norm"
 
     commandChrMatrix = """mkdir -p {output_dir} && \\
-                analyzeHiC {homer_dir} -res {res} -{norm} -chr {chr} > {fileName}
-                """.format(
+                analyzeHiC {homer_dir} -res {res} -{norm} -chr {chr} > {fileName}""".format(
                 output_dir = output_dir, 
                 homer_dir = homer_dir, 
                 res = res, 

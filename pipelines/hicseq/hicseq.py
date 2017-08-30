@@ -132,15 +132,16 @@ class HicSeq(common.Illumina):
 
 
             ## assumes reads in fastq file start with @; if not change
-            command = """readID=$(head -n 1 {fastq1})
+            command = """readID=$(zcat {fastq1} | head -n 1)
                 if grep -q '^@.*/[12]$' <<< $readID; then
                     zcat {fastq1} | sed '/^@/s/\/[12]\>//g' | gzip > {fastq1_edited}
                 else
-                    ln -s {fastq1} {fastq1_edited}
+                    ln -s -f {fastq1_abs} {fastq1_edited}
                 fi
-            """.format(
-                fastq1 = fastq1, 
-                fastq1_edited = os.path.abspath(fastq1) + ".edited.gz")
+            """.format(fastq1 = fastq1, 
+                fastq1_edited = fastq1 + ".edited.gz",
+                fastq1_abs = os.path.abspath(fastq1)
+                )
 
             job_fastq1 = Job(input_files = [fastq1],
                     output_files = [fastq1 + ".edited.gz"],
@@ -149,15 +150,17 @@ class HicSeq(common.Illumina):
                     removable_files = [fastq1 + ".edited.gz"]
                     )
 
-            command = """readID=$(head -n 1 {fastq2})
+            command = """readID=$(zcat {fastq2} | head -n 1)
                 if grep -q '^@.*/[12]$' <<< $readID; then
                     zcat {fastq2} | sed '/^@/s/\/[12]\>//g' | gzip > {fastq2_edited}
                 else
-                    ln -s {fastq2} {fastq2_edited}
+                    ln -s -f {fastq2_abs} {fastq2_edited}
                 fi
             """.format(
                 fastq2 = fastq2, 
-                fastq2_edited = os.path.abspath(fastq2) + ".edited.gz")
+                fastq2_edited = fastq2 + ".edited.gz", 
+                fastq2_abs = os.path.abspath(fastq2)
+                )
             
             job_fastq2 = Job(input_files = [fastq2],
                     output_files = [fastq2 + ".edited.gz"],
@@ -202,7 +205,7 @@ class HicSeq(common.Illumina):
 
             job_confFile = hicup.create_hicup_conf(readset.name, fastq1, fastq2, sample_output_dir, self.genome_digest)
 
-            job_hicup = hicup.hicup_run(readset.name, "hicup_align." + readset.name + ".conf", sample_output_dir)
+            job_hicup = hicup.hicup_run(readset.name, "hicup_align." + readset.name + ".conf", sample_output_dir, fastq1, fastq2)
  
             job = concat_jobs([job_confFile, job_hicup])
             job.name = "hicup_align." + readset.name
@@ -276,14 +279,14 @@ class HicSeq(common.Illumina):
             PEflag = eval(config.param('homer_tag_directory', 'illuminaPE'))
             genome = config.param('DEFAULT', 'assembly')
 
-            checkReadID_job = homer.check_readName_format(hicup_file_output, PEflag)
+            #checkReadID_job = homer.check_readName_format(hicup_file_output, PEflag)
             tagDir_job = homer.makeTagDir_hic(sample_output_dir, hicup_file_output, genome, self.restriction_site, illuminaPE=PEflag)
             QcPlots_job = homer.tagDirQcPlots_hic(sample.name, sample_output_dir)
             archive_job = homer.archive_contigs_hic(sample_output_dir)
 
 
-            job = concat_jobs([checkReadID_job, tagDir_job, QcPlots_job, archive_job])
-            job.name = "homer_tag_directory" + sample.name
+            job = concat_jobs([tagDir_job, QcPlots_job, archive_job])
+            job.name = "homer_tag_directory." + sample.name
 
             jobs.append(job)
         return jobs
@@ -362,7 +365,10 @@ class HicSeq(common.Illumina):
 
                 commandPlot = "HiCPlotter.py -f {fileNameRN} -n {name} -chr Genome -r {res} -fh 0 -o {sample_output_dir_genome} -ptr 0 -hmc {hmc} -wg 1".format(res=res, chr=chr, fileNameRN=fileNameRN, name=sample.name, sample_output_dir_genome=os.path.join(sample_output_dir_genome, "_".join((tagDirName, "genomewide", "raw"))), hmc = config.param('interaction_matrices_Chr', 'hmc'))
                 
+                outputFile = tagDirName + "_genomewide_raw-WholeGenome-" + str(float(res)/1000) + "K.jpeg"
+
                 jobPlot = Job(input_files = [fileNameRN],
+                        output_files = [outputFile],
                         module_entries = [["interaction_matrices_Chr", "module_HiCPlotter"]],
                         name = "interaction_matrices_genome.plotting." + sample.name + "_res" + res,
                         command = commandPlot
@@ -425,12 +431,22 @@ class HicSeq(common.Illumina):
                     output_matrix = os.path.join(sample_output_dir, "_".join(("HTD", sample.name, self.enzyme, chr, res, "rawRN.MatA.TopDom")))
 
                     ## make TopDom R script:
-                    FileContent = "source(\"{script}\"); TopDom(matrix.file=\"{tmp_matrix}\", window.size={n}, outFile=\"{output_matrix}\")".format(script = os.path.expandvars("${R_TOOLS}/TopDom_v0.0.2.R"), tmp_matrix = tmp_matrix, n = config.param('identify_TADs', 'TopDom_n'), output_matrix = output_matrix)
+                    FileContent = """source(\\\"{script}\\\"); TopDom(matrix.file=\'{tmp_matrix}\', window.size={n}, outFile=\'{output_matrix}\')""".format(
+                                    script = os.path.expandvars("${R_TOOLS}/TopDom_v0.0.2.R"), 
+                                    tmp_matrix = tmp_matrix, 
+                                    n = config.param('identify_TADs', 'TopDom_n'), 
+                                    output_matrix = output_matrix
+                                )
 
                     fileName = "identify_TADs_TopDom." + sample.name + "_" + chr + "_res" + res + ".R"
-                    command_RFile ='echo \'{FileContent}\' > {fileName}'.format(FileContent=FileContent, fileName=fileName)
+                    command_RFile ="""echo \"{FileContent}\" > {fileName}""".format(FileContent=FileContent, fileName=fileName)
 
-                    command_TopDom = "mkdir -p {sample_output_dir} && {script} {input} {res}".format(sample_output_dir = sample_output_dir, script = "CreateTopDomMat.sh", input = input_matrix, res = res)
+                    command_TopDom = """mkdir -p {sample_output_dir} && {script} {input} {res}""".format(
+                                sample_output_dir = sample_output_dir, 
+                                script = "CreateTopDomMat.sh", 
+                                input = input_matrix, 
+                                res = res
+                            )
 
                     job_inputFile = Job(input_files = [input_matrix],
                             output_files = [tmp_matrix],

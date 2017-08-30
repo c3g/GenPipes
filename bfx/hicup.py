@@ -61,14 +61,13 @@ def create_hicup_conf(name, fastq1, fastq2, sample_output_dir, genome_digest):
     command_confFile ='echo \"{configFileContent}\" > {fileName}'.format(fileName=fileName, configFileContent=configFileContent)
 
     return Job(input_files = [fastq1 + ".edited.gz", fastq2 + ".edited.gz"],
-            output_files = [fileName],
             name = "hicup_align.create_hicup_conf." + name,
             command = command_confFile,
             removable_files = [fileName]
             )
 
 
-def hicup_run (name, confFile, sample_output_dir):
+def hicup_run (name, confFile, sample_output_dir, fastq1, fastq2):
 
     command_hicup = "rm -rf {sample_output_dir} && \
                     mkdir -p {sample_output_dir} && \
@@ -77,7 +76,7 @@ def hicup_run (name, confFile, sample_output_dir):
     hicup_prefix = ".trim.pair1_2.fastq.gz.edited.hicup.bam"
     hicup_file_output = os.path.join(sample_output_dir, name + hicup_prefix)
 
-    return Job(input_files = [confFile],
+    return Job(input_files = [fastq1 + ".edited.gz", fastq2 + ".edited.gz"],
             output_files = [hicup_file_output],
             module_entries = [['hicup_align', 'module_bowtie2'], ['hicup_align', 'module_samtools'], ['hicup_align', 'module_R'], ['hicup_align', 'module_mugqic_R_packages'], ['hicup_align', 'module_HiCUP']],
             name = "hicup_align." + name,
