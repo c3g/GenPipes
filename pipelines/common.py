@@ -182,8 +182,8 @@ class Illumina(MUGQICPipeline):
                     job.name = "picard_sam_to_fastq." + readset.name
                     jobs.append(job)
 
-            else:
-                raise Exception("Error: BAM file not available for readset \"" + readset.name + "\"!")
+                else:
+                    raise Exception("Error: BAM file not available for readset \"" + readset.name + "\"!")
         return jobs
 
     def trimmomatic(self):

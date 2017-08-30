@@ -365,7 +365,7 @@ class HicSeq(common.Illumina):
 
                 commandPlot = "HiCPlotter.py -f {fileNameRN} -n {name} -chr Genome -r {res} -fh 0 -o {sample_output_dir_genome} -ptr 0 -hmc {hmc} -wg 1".format(res=res, chr=chr, fileNameRN=fileNameRN, name=sample.name, sample_output_dir_genome=os.path.join(sample_output_dir_genome, "_".join((tagDirName, "genomewide", "raw"))), hmc = config.param('interaction_matrices_Chr', 'hmc'))
                 
-                outputFile = tagDirName + "_genomewide_raw-WholeGenome-" + str(float(res)/1000) + "K.jpeg"
+                outputFile = os.path.join(sample_output_dir_genome, tagDirName + "_genomewide_raw-WholeGenome-" + str(int(res)/1000) + "K.jpeg")
 
                 jobPlot = Job(input_files = [fileNameRN],
                         output_files = [outputFile],
@@ -459,7 +459,8 @@ class HicSeq(common.Illumina):
                             output_files = [output_matrix + ".bed", output_matrix + ".binSignal", output_matrix + ".domain"],
                             module_entries = [["identify_TADs", "module_R"], ["identify_TADs", "module_mugqic_tools"]],
                             name = "identify_TADs.call_TADs." + sample.name + "_" + chr + "_res" + res,
-                            command = "Rscript {fileName} && rm {fileName} {tmp_matrix}".format(fileName = fileName, tmp_matrix=tmp_matrix)
+                            command = "Rscript {fileName} && rm {fileName}".format(fileName = fileName, tmp_matrix=tmp_matrix),
+                            removable_files = [tmp_matrix]
                             )
 
                     jobs.extend([job_inputFile, job_TADs])

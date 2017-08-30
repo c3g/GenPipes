@@ -11,6 +11,7 @@ __all__ = [
     "homer",
     "igvtools",
     "metrics",
+    "multiqc",
     "mummer",
     "pacbio_tools",
     "picard",
