@@ -46,6 +46,7 @@ from bfx import samtools
 from bfx import hicup
 from bfx import homer
 from bfx import multiqc
+from bfx import genome
 
 log = logging.getLogger(__name__)
 
@@ -103,11 +104,22 @@ class HicSeq(common.Illumina):
                 'homer_output_directory': 'homer_tag_directory',
                 'bams_output_directory': 'alignment',
                 'matrices_output_directory': 'interaction_matrices',
-                'cmpt_output_directory': 'identify_compartments',
-                'TAD_output_directory': 'identify_TADs',
-                'peaks_output_directory': 'identify_peaks',
+                'cmpt_output_directory': 'compartments',
+                'TAD_output_directory': 'TADs',
+                'peaks_output_directory': 'peaks',
                 'hicfiles_output_directory': 'hicFiles'}
         return dirs
+
+
+    @property
+    def genome(self):
+        genome_source = config.param('DEFAULT', 'source')
+        if genome_source == "UCSC":
+            genome = config.param('DEFAULT', 'assembly')
+        else:
+            genome = config.param('DEFAULT', 'assembly_synonym')
+        return genome
+
 
 
     def fastq_readName_Edit(self):
@@ -277,10 +289,9 @@ class HicSeq(common.Illumina):
 
 
             PEflag = eval(config.param('homer_tag_directory', 'illuminaPE'))
-            genome = config.param('DEFAULT', 'assembly')
 
             #checkReadID_job = homer.check_readName_format(hicup_file_output, PEflag)
-            tagDir_job = homer.makeTagDir_hic(sample_output_dir, hicup_file_output, genome, self.restriction_site, illuminaPE=PEflag)
+            tagDir_job = homer.makeTagDir_hic(sample_output_dir, hicup_file_output, self.genome, self.restriction_site, illuminaPE=PEflag)
             QcPlots_job = homer.tagDirQcPlots_hic(sample.name, sample_output_dir)
             archive_job = homer.archive_contigs_hic(sample_output_dir)
 
@@ -302,8 +313,17 @@ class HicSeq(common.Illumina):
 
         jobs = []
 
-        chrs = config.param('interaction_matrices_Chr', 'chromosomes').split(",")
+        
+        chrs = config.param('interaction_matrices_Chr', 'chromosomes')
         res_chr = config.param('interaction_matrices_Chr', 'resolution_chr').split(",")
+
+        
+        if chrs == "All":
+            genome_dict = os.path.expandvars(config.param('DEFAULT', 'genome_dictionary', type='filepath'))
+            chrs = genome.chr_names_conv(genome_dict)
+        else:
+            chrs = chrs.split(",")
+
 
         for sample in self.samples:
             tagDirName = "_".join(("HTD", sample.name, self.enzyme))
@@ -389,7 +409,6 @@ class HicSeq(common.Illumina):
         jobs = []
 
         res = config.param('identify_compartments', 'resolution_cmpt')
-        genome = config.param('DEFAULT', 'assembly')
 
         for sample in self.samples:
             tagDirName = "_".join(("HTD", sample.name, self.enzyme))
@@ -400,7 +419,7 @@ class HicSeq(common.Illumina):
             fileName_Comp = os.path.join(sample_output_dir, sample.name + "_homerPCA_Res" + res + "_compartments")
 
 
-            job = homer.compartments_hic (sample.name, sample_output_dir, fileName, homer_output_dir, res, genome, fileName_PC1, fileName_Comp)
+            job = homer.compartments_hic (sample.name, sample_output_dir, fileName, homer_output_dir, res, self.genome, fileName_PC1, fileName_Comp, 3)
             jobs.append(job)
 
         return jobs
@@ -415,8 +434,15 @@ class HicSeq(common.Illumina):
 
         jobs = []
 
-        chrs = config.param('identify_TADs', 'chromosomes').split(",")
+        chrs = config.param('identify_TADs', 'chromosomes')
         res_chr = config.param('identify_TADs', 'resolution_TADs').split(",")
+
+        
+        if chrs == "All":
+            genome_dict = os.path.expandvars(config.param('DEFAULT', 'genome_dictionary', type='filepath'))
+            chrs = genome.chr_names_conv(genome_dict)
+        else:
+            chrs = chrs.split(",")
 
 
 
@@ -477,16 +503,15 @@ class HicSeq(common.Illumina):
         jobs = []
 
         res = config.param('identify_peaks', 'resolution_pks')
-        genome = config.param('DEFAULT', 'assembly')
 
         for sample in self.samples:
             tagDirName = "_".join(("HTD", sample.name, self.enzyme))
             homer_output_dir = os.path.join(self.output_dirs['homer_output_directory'], tagDirName)
             sample_output_dir = os.path.join(self.output_dirs['peaks_output_directory'], sample.name)
             fileName = os.path.join(sample_output_dir, sample.name + "IntraChrInteractionsRes" + res + ".txt")
-            fileName_anno = os.path.join(sample_output_dir, sample.name + "IntraChrInteractionsRes" + res + "_Annotated.txt")
+            fileName_anno = os.path.join(sample_output_dir, sample.name + "IntraChrInteractionsRes" + res + "_Annotated")
 
-            job = homer.peaks_hic(sample.name, sample_output_dir, homer_output_dir, res, genome, fileName, fileName_anno)
+            job = homer.peaks_hic(sample.name, sample_output_dir, homer_output_dir, res, self.genome, fileName, fileName_anno, 3)
             jobs.append(job)
 
         return jobs

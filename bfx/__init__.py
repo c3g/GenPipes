@@ -5,6 +5,7 @@ __all__ = [
     "cufflinks",
     "differential_expression",
     "gatk",
+    "genome",
     "gq_seq_utils",
     "htseq",
     "hicup",

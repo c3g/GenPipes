@@ -173,16 +173,17 @@ def interactionMatrix_genome_hic(name, output_dir, homer_dir, res, fileName, fil
                     removable_files = [fileName]
                     )
 
-def compartments_hic (name, output_dir, fileName, homer_dir, res, genome, fileName_PC1, fileName_Comp):
+def compartments_hic (name, output_dir, fileName, homer_dir, res, genome, fileName_PC1, fileName_Comp, cpu):
 
     command = """mkdir -p {output_dir} && \\
-    runHiCpca.pl {fileName} {homer_dir} -res {res} -genome {genome} && \\
+    runHiCpca.pl {fileName} {homer_dir} -res {res} -genome {genome} -cpu {cpu} && \\
     findHiCCompartments.pl {fileName_PC1}  > {fileName_Comp}""".format(
         output_dir = output_dir, 
         fileName = fileName, 
         homer_dir = homer_dir, 
         res = res, 
-        genome = genome, 
+        genome = genome,
+        cpu = cpu, 
         fileName_PC1 = fileName_PC1, 
         fileName_Comp = fileName_Comp)
 
@@ -195,17 +196,18 @@ def compartments_hic (name, output_dir, fileName, homer_dir, res, genome, fileNa
             )
 
 
-def peaks_hic(name, output_dir, homer_dir, res, genome, fileName, fileName_anno):
+def peaks_hic(name, output_dir, homer_dir, res, genome, fileName, fileName_anno, cpu=1):
 
     command = """mkdir -p {output_dir} && \\
-    findHiCInteractionsByChr.pl {homer_dir} -res {res} > {fileName} && \\
+    findHiCInteractionsByChr.pl {homer_dir} -res {res} -cpu {cpu} > {fileName} && \\
     annotateInteractions.pl {fileName} {genome} {fileName_anno}""".format(
         output_dir = output_dir, 
         homer_dir = homer_dir, 
         res = res, 
         fileName = fileName, 
         genome = genome, 
-        fileName_anno = fileName_anno)
+        fileName_anno = fileName_anno, 
+        cpu = cpu)
 
 
     return Job(input_files = [homer_dir],
