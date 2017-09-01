@@ -134,14 +134,14 @@ def main():
                         jjob['output_file'] = [output_files]
                         jjob['dependency'] = [job_dependencies]
                         jjob['log_file'] = job_log
-                        if success:
+                        if success == "0":
                             jjob['completion'] = "job successfully completed"
                             jjob['done_file'] = job_done
                         else:
                             jjob['completion'] = "job failed..."
                 # if job does not exists already, add it to the current step
-                if job_found == False :
-                    if success:
+                if not job_found :
+                    if success == "0":
                         jstep['job'].append(
                             {
                                 "name": job_name,
@@ -167,9 +167,10 @@ def main():
                                 "log_file": job_log,
                                 "completion": "job failed..."
                             }
+                        )
         # if step does not exists already, create it as well as the current job
-        if step_found == False :
-            if success:
+        if not step_found :
+            if success == "0":
                 current_json['sample']['pipeline']['step'].append(
                     {
                         'name': step_name,
