@@ -51,14 +51,14 @@ def graph(input_bam, output_bed_graph, output_wiggle, library_type="PAIRED_END")
             command="""\
 nmblines=$(samtools view {samtools_options} {input_bam} | wc -l) && \\
 scalefactor=0$(echo "scale=2; 1 / ($nmblines / 10000000);" | bc) && \\
-genomeCoverageBed -bg -split -scale $scalefactor \\
+genomeCoverageBed {other_options} -bg -split -scale $scalefactor \\
   -ibam {input_bam} \\
   -g {chromosome_size} \\
   > {output_bed_graph}""".format(
                 samtools_options=samtools_options,
                 input_bam=input_bam,
                 chromosome_size=config.param('bedtools_graph', 'chromosome_size', type='filepath'),
-                other_options=config.param('bedtools_graph', 'other_options'),
+                other_options=config.param('bedtools_graph', 'other_options') if config.param('bedtools_graph', 'other_options') else "",
                 output_bed_graph=output_bed_graph
             )
         ),
@@ -78,10 +78,10 @@ def intersect(input_bam, output_bam, target_bed):
             ['bedtools', 'module_bedtools']
         ],
         command="""\
-bedtools intersect \\
+bedtools intersect {other_options} \\
   -a {input_bam} \\
   -b {target_bed} \\
-  {other_options} > {output_bam}""".format(
+  > {output_bam}""".format(
             input_bam=input_bam,
             target_bed=target_bed,
             other_options=config.param('bedtools_intersect', 'other_options'),
@@ -114,13 +114,13 @@ def coverage(input_file, output_file):
             ['bedtools', 'module_bedtools']
         ],
         command="""\
-bedtools coverage \\
+bedtools coverage {other_options} \\
   -a {intervals} \\
   -b {input} \\
-  {other_options} > {output_file}""".format(
+  > {output_file}""".format(
             intervals=config.param('bedtools_coverage', 'gc_intervals'),
             input=input_file,
-            other_options=config.param('bedtools_coverage', 'other_options'),
+            other_options=config.param('bedtools_coverage', 'other_options') if config.param('bedtools_coverage', 'other_options') else "",
             output_file=output_file
         )
     )
