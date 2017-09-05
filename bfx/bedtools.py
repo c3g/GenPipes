@@ -51,10 +51,9 @@ def graph(input_bam, output_bed_graph, output_wiggle, library_type="PAIRED_END")
             command="""\
 nmblines=$(samtools view {samtools_options} {input_bam} | wc -l) && \\
 scalefactor=0$(echo "scale=2; 1 / ($nmblines / 10000000);" | bc) && \\
-genomeCoverageBed -bg -split -scale $scalefactor \\
+genomeCoverageBed {other_options} -bg -split -scale $scalefactor \\
   -ibam {input_bam} \\
   -g {chromosome_size} \\
-  {other_options} \\
   > {output_bed_graph}""".format(
                 samtools_options=samtools_options,
                 input_bam=input_bam,
