@@ -38,6 +38,7 @@ zcat {input_bed_graph} | awk ' NR > 1 ' | sort -k1,1 -k2,2n > {input_bed_graph}.
 cat {input_bed_graph}.head.tmp {input_bed_graph}.body.tmp > {input_bed_graph}.sorted && \\
 rm {input_bed_graph}.head.tmp {input_bed_graph}.body.tmp""".format(
                 input_bed_graph=input_bed_graph
+            )
         else:
             remove_head_command="""\
 head -n 1  {input_bed_graph} > {input_bed_graph}.head.tmp && \\
