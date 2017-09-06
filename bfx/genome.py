@@ -76,16 +76,16 @@ def chr_sizes(genome_dict_file):
 def chr_names_conv(genome_dict_file, chrX=True, chrY=False, chrM=False, otherPatterns=None):
     """
     extracts chromosome ids from the genome_dictionary file.
-    Removes all non chnventional chromosomes containing "random", "hap", "chrUn".
+    Removes all non conventional chromosomes containing "random", "hap", "chrUn".
     Can also remove chrX, chrM, chrY if params set to false.
     To remove other chr patterns list them as an array in otherChr.
     Returns array of chr names in the order they are in genome_dictionary.
     """
 
-    ## extract chrs using chr_names then filter unwated ones:
+    ## extract chrs using chr_names then filter unwanted ones:
     chrs = chr_names(genome_dict_file)
     chrs_conv = []
-    remove = ["hap", "random", "chrUn"]
+    remove = ["hap", "random", "chrUn", "EBV"]
 
     if not chrY:
         remove.append("chrY")
@@ -108,7 +108,7 @@ def chr_names_conv(genome_dict_file, chrX=True, chrY=False, chrM=False, otherPat
 
 def genome_size(genome_dict_file):
     """
-    Estimates genome size by adding all chrs and contigs in genome_dict_file.
+    Estimates genome size by adding all chrs and contig sizes in genome_dict_file.
     """
     chrs = chr_sizes(genome_dict_file)
     return sum(chrs.values())
@@ -116,7 +116,7 @@ def genome_size(genome_dict_file):
 
 def genome_size_conv(genome_dict_file):
     """
-    Estimates genome size by adding conventional chrs in genome_dict_file. It ignores contigs.
+    Estimates genome size by adding conventional chr sizes in genome_dict_file. It ignores contigs.
     """
     chrs = chr_sizes(genome_dict_file)
     chrs_conv = chr_names_conv(genome_dict_file)

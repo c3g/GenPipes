@@ -78,7 +78,7 @@ def hicup_run (name, confFile, sample_output_dir, fastq1, fastq2):
 
     return Job(input_files = [fastq1 + ".edited.gz", fastq2 + ".edited.gz"],
             output_files = [hicup_file_output],
-            module_entries = [['hicup_align', 'module_bowtie2'], ['hicup_align', 'module_samtools'], ['hicup_align', 'module_R'], ['hicup_align', 'module_mugqic_R_packages'], ['hicup_align', 'module_HiCUP']],
+            module_entries = [['hicup_align', 'module_perl'], ['hicup_align', 'module_bowtie2'], ['hicup_align', 'module_samtools'], ['hicup_align', 'module_R'], ['hicup_align', 'module_mugqic_R_packages'], ['hicup_align', 'module_HiCUP']],
             name = "hicup_align." + name,
             command = command_hicup,
             )

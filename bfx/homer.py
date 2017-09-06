@@ -69,7 +69,7 @@ def makeTagDir_hic (output_dir, input_bam, genome, restriction_site, illuminaPE=
 
 	return Job(input_files = [input_bam],
             output_files = [output_dir],
-            module_entries = [["homer_tag_directory", "module_homer"], ["homer_tag_directory", "module_samtools"]],
+            module_entries = [["homer_tag_directory", "module_perl"], ["homer_tag_directory", "module_homer"], ["homer_tag_directory", "module_samtools"]],
             command = command_tagDir
             )
 
@@ -134,7 +134,7 @@ def interactionMatrix_chr_hic (name, output_dir, homer_dir, res, chr, fileName, 
                     
     return Job(input_files = [homer_dir],
         output_files = [fileNameRN, fileName],
-        module_entries = [["interaction_matrices_Chr", "module_homer"]],
+        module_entries = [["interaction_matrices_Chr", "module_perl"], ["interaction_matrices_Chr", "module_homer"]],
         command = command,
         name = "interaction_matrices_Chr.plotting." + name + "_" + chr + "_res" + res,
         removable_files = [fileName]
@@ -167,7 +167,7 @@ def interactionMatrix_genome_hic(name, output_dir, homer_dir, res, fileName, fil
 
     return Job(input_files = [homer_dir],
                     output_files = [fileNameRN, fileName],
-                    module_entries = [["interaction_matrices_genome", "module_homer"]],
+                    module_entries = [["interaction_matrices_genome", "module_perl"], ["interaction_matrices_genome", "module_homer"]],
                     name = "interaction_matrices_genome." + name  + "_res" + res,
                     command = command,
                     removable_files = [fileName]
@@ -189,7 +189,7 @@ def compartments_hic (name, output_dir, fileName, homer_dir, res, genome, fileNa
 
     return Job(input_files = [homer_dir],
             output_files = [fileName_PC1, fileName_Comp],
-            module_entries = [["identify_compartments", "module_homer"], ["identify_compartments", "module_R"]],
+            module_entries = [["identify_compartments", "module_perl"], ["identify_compartments", "module_homer"], ["identify_compartments", "module_R"]],
             name = "identify_compartments." + name + "_res" + res,
             command = command,
             removable_files = [fileName]
@@ -212,7 +212,7 @@ def peaks_hic(name, output_dir, homer_dir, res, genome, fileName, fileName_anno,
 
     return Job(input_files = [homer_dir],
         output_files = [fileName, fileName_anno],
-        module_entries = [["identify_peaks", "module_homer"]],
+        module_entries = [["identify_peaks", "module_perl"], ["identify_peaks", "module_homer"]],
         name = "identify_peaks." + name + "_res" + res,
         command = command
         )

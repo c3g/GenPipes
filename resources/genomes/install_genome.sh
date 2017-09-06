@@ -639,7 +639,7 @@ create_genome_digest() {
   
   for enzyme in "${!enzymes[@]}"; do 
     #echo "$enzyme - ${enzymes[$enzyme]}";
-    ## hicup pnly accepts alphanumeric and underscores
+    ## hicup only accepts alphanumeric and underscores
     GENOME_DIGEST_FILE=HiCUP_Digest_${SPECIES}_${ASSEMBLY}_${enzyme}.txt
   
     if ! is_up2date $GENOME_DIGEST/$GENOME_DIGEST_FILE

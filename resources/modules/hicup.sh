@@ -19,9 +19,20 @@ build() {
   cd $INSTALL_DOWNLOAD
   mv -i $SOFTWARE_DIR $INSTALL_DIR/
 
-  ## change "-p1" for Bowtie2 to "-p8 --reorder" to force faster alignment in hicup_mapper in #Subroutine "map_file":
+
+  ## change shebang to use loaded perl:
+  # sed -i "s|#!/usr/bin/perl -w|#!/usr/bin/env perl\nuse warnings;|" *.pl
+  # sed -i "s|#!/usr/bin/perl|#!/usr/bin/env perl|" *.pl
+  # sed -i "s|#!/usr/bin/python|#!/usr/bin/env python|" *.py
 
   cd $INSTALL_DIR/$SOFTWARE_DIR
+
+  sed -i "s|#!/usr/bin/perl -w|#!/usr/bin/env perl\nuse warnings;|" hicup_*
+  sed -i "s|#!/usr/bin/perl|#!/usr/bin/env perl|" hicup_*
+
+
+  ## change "-p1" for Bowtie2 to "-p8 --reorder" to force faster alignment in hicup_mapper in #Subroutine "map_file":
+  
   sed -i "s|\-\-very\-sensitive  \-x \$config{index} \-\-no\-unal \-p 1|-\-very\-sensitive  \-x \$config{index} \-\-no\-unal \-p 8 --reorder|" hicup_mapper 
 }
 

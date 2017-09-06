@@ -34,11 +34,9 @@ prepend-path    PATH                \$root/R-tools
 prepend-path    PATH                \$root/python-tools
 prepend-path    PATH                \$root/RRNATagger-tools
 prepend-path    PERL5LIB            \$root/perl-tools
-prepend-path    PATH                \$root/multiqc-tools
 setenv          R_TOOLS             \$root/R-tools
 setenv          PERL_TOOLS          \$root/perl-tools
 setenv          PYTHON_TOOLS        \$root/python-tools
-setenv          MULTIQC_TOOLS       \$root/multiqc-tools
 "
 }
 
