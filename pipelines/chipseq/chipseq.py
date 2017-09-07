@@ -38,6 +38,8 @@ from bfx.design import *
 from bfx import gq_seq_utils
 from bfx import picard
 from bfx import samtools
+from bfx import tools
+from bfx import ucsc
 from pipelines.dnaseq import dnaseq
 
 log = logging.getLogger(__name__)
@@ -289,7 +291,7 @@ makeTagDirectory \\
   -checkGC -genome {genome}""".format(
                     output_dir=output_dir,
                     alignment_file=alignment_file,
-                    genome=config.param('homer_make_tag_directory', 'assembly')
+                    genome=config.param('homer_make_tag_directory', 'assembly_synonyms')
                 ),
                 name="homer_make_tag_directory." + sample.name,
                 removable_files=[output_dir]
@@ -351,24 +353,32 @@ done""".format(
         for sample in self.samples:
             tag_dir = os.path.join("tags", sample.name)
             bedgraph_dir = os.path.join("tracks", sample.name)
-            bedgraph_file = os.path.join(bedgraph_dir, sample.name + ".ucsc.bedGraph.gz")
+            bedgraph_file = os.path.join(bedgraph_dir, sample.name + ".ucsc.bedGraph")
+            bedgraph_file_gz = os.path.join(bedgraph_dir, sample.name + ".ucsc.bedGraph.gz")
+            big_wig_output = os.path.join(bedgraph_dir, "bigWig", sample.name + ".bw")
 
             jobs.append(Job(
                 [os.path.join(tag_dir, "tagInfo.txt")],
-                [bedgraph_file],
+                [bedgraph_file,bedgraph_file_gz],
                 [['homer_make_ucsc_files', 'module_homer']],
                 command="""\
 mkdir -p {bedgraph_dir} && \\
 makeUCSCfile \\
-  {tag_dir} | \\
-gzip -1 -c > {bedgraph_file}""".format(
+  {tag_dir} > {bedgraph_file} && \\
+gzip -c {bedgraph_file} > {bedgraph_file_gz}""".format(
                     tag_dir=tag_dir,
                     bedgraph_dir=bedgraph_dir,
-                    bedgraph_file=bedgraph_file
+                    bedgraph_file=bedgraph_file,
+                    bedgraph_file_gz=bedgraph_file_gz
                 ),
                 name="homer_make_ucsc_file." + sample.name,
                 removable_files=[bedgraph_dir]
             ))
+            job = concat_jobs([
+                  Job(command="mkdir -p " + os.path.join(bedgraph_dir, "bigWig")),
+                  ucsc.bedGraphToBigWig(bedgraph_file, big_wig_output, header = True)
+              ], name="homer_make_ucsc_file_bigWig."+ sample.name)
+            jobs.append(job)
 
         report_file = os.path.join("report", "ChipSeq.homer_make_ucsc_file.md")
         jobs.append(
@@ -436,6 +446,14 @@ macs2 callpeak {format}{other_options} \\
                     name="macs2_callpeak." + contrast.real_name,
                     removable_files=[output_dir]
                 ))
+              ## For ihec: exchange peak score by log10 q-value and generate bigBed 
+                job = concat_jobs([
+                    Job([os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak")],
+                        [os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak.bed")],
+                        command="awk ' {if ($9 > 1000) {$9 = 1000} ; printf( \"%s\\t%s\\t%s\\t%s\\t%0.f\\n\", $1,$2,$3,$4,$9)} ' " + os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak") + " > " + os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak.bed")),
+                    ucsc.bedToBigBed(os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak.bed"),  os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak.bb"))
+                ], name="macs2_callpeak_bigBed."+ contrast.real_name)
+                jobs.append(job)
             else:
                 log.warning("No treatment found for contrast " + contrast.name + "... skipping")
 
@@ -498,8 +516,8 @@ annotatePeaks.pl \\
   -genomeOntology {output_prefix} \\
   > {annotation_file}""".format(
                             peak_file=peak_file,
-                            genome=config.param('homer_annotate_peaks', 'assembly'),
-                            genome_size=config.param('homer_annotate_peaks', 'assembly'),
+                            genome=config.param('homer_annotate_peaks', 'assembly_synonyms'),
+                            genome_size=config.param('homer_annotate_peaks', 'assembly_synonyms'),
                             output_prefix=output_prefix,
                             annotation_file=annotation_file
                         )
@@ -595,7 +613,7 @@ findMotifsGenome.pl \\
   -preparsedDir {output_dir}/preparsed \\
   -p {threads}""".format(
                         peak_file=peak_file,
-                        genome=config.param('homer_find_motifs_genome', 'assembly'),
+                        genome=config.param('homer_find_motifs_genome', 'assembly_synonyms'),
                         output_dir=output_dir,
                         threads=config.param('homer_find_motifs_genome', 'threads', type='posint')
                     ),
@@ -719,6 +737,116 @@ done""".format(
             removable_files=output_files
         )]
 
+
+
+
+    def ihec_preprocess_files(self):
+        """
+        Generate IHEC's files.
+        
+        """
+        output_dir="ihec_alignment"
+        jobs = []
+        for sample in self.samples:
+            alignment_directory = os.path.join("alignment", sample.name)
+            # Find input readset BAMs first from previous bwa_mem_picard_sort_sam job, then from original BAMs in the readset sheet.
+            readset_bams = [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam") for readset in sample.readsets]
+            sample_merge_bam = os.path.join(output_dir, sample.name + ".merged.bam")
+            sample_merge_mdup_bam = os.path.join(output_dir, sample.name + ".merged.mdup.bam")
+            sample_merge_mdup_metrics_file  = os.path.join(output_dir, sample.name + ".merged.mdup.metrics")
+
+            mkdir_job = Job(command="mkdir -p " + output_dir)
+
+            # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
+            if len(sample.readsets) == 1:
+                readset_bam = readset_bams[0]
+                if os.path.isabs(readset_bam):
+                    target_readset_bam = readset_bam
+                else:
+                    target_readset_bam = os.path.relpath(readset_bam, output_dir)
+
+                job = concat_jobs([
+                    mkdir_job,
+                    Job([readset_bam], [sample_merge_bam], command="ln -s -f " + target_readset_bam + " " + sample_merge_bam, removable_files=[sample_merge_bam]),
+                ], name="ihecs_preprocess_symlink." + sample.name)
+
+            elif len(sample.readsets) > 1:
+                job = concat_jobs([
+                    mkdir_job,
+                    picard.merge_sam_files(readset_bams, sample_merge_bam)
+                ])
+                job.name = "ihecs_preprocess_merge." + sample.name
+
+            jobs.append(job)
+
+            job = picard.mark_duplicates([sample_merge_bam], sample_merge_mdup_bam, sample_merge_mdup_metrics_file)
+            job.name = "ihecs_preprocess_mark_duplicates." + sample.name
+            jobs.append(job)
+            
+        return jobs
+
+
+    def ihec_metrics(self):
+        """
+        Generate IHEC's standard metrics.
+        
+        """
+        #sh_ihec_chip_metrics(chip_bam, input_bam, sample_name, chip_type, chip_bed, output_dir)
+        jobs = []
+        output_dir="ihec_metrics"
+        
+        ##generate couples chip/input/treatment_name/peak_type
+        couples = {}
+        for contrast in self.contrasts:
+          if contrast.treatments:
+              if len(contrast.controls) > 1 :
+                  raise Exception("Error: contrast name \"" + contrast.name + "\" has several input files, please use one input for pairing!")
+              else :
+                  input_file=contrast.controls[0].name
+                  for sample in contrast.treatments :
+                      log.debug("adding sample" + sample.name)
+                      if couples.has_key(sample.name) :
+                          if couples[sample.name][0] == input_file:
+                              pass
+                          else :
+                              raise Exception("Error: contrast name \"" + contrast.name + "\" has several input files, please use one input for pairing!")
+                          if couples[sample.name][1] == contrast.real_name and couples[sample.name][2] == contrast.type:
+                              pass
+                          else :
+                              raise Exception("Error: sample \"" + sample.name + "\" is involved in several different contrasts, please use one contrast per sample !") 
+                      else :
+                          couples[sample.name]=[input_file, contrast.real_name, contrast.type]
+                  for sample in contrast.controls :
+                      log.debug("adding sample" + sample.name)
+                      if couples.has_key(sample.name) :
+                          if couples[sample.name][0] == input_file:
+                              pass
+                          else :
+                              raise Exception("Error: contrast name \"" + contrast.name + "\" has several input files, please use one input for pairing!")
+                          if couples[sample.name][1] == contrast.real_name and couples[sample.name][2] == contrast.type:
+                              pass
+                          else :
+                              raise Exception("Error: sample \"" + sample+ "\" is involved in several different contrasts, please use one contrast per sample !") 
+                      else :
+                          couples[sample.name]=[input_file, contrast.real_name, contrast.type]
+        
+        
+        for sample in self.samples:
+            chip_bam = os.path.join("ihec_alignment", sample.name + ".merged.mdup.bam")
+            input_bam = os.path.join("ihec_alignment", couples[sample.name][0] + ".merged.mdup.bam")
+            chip_type = config.param('IHEC_chipseq_metrics', 'chip_type', required=True)
+            chip_bed = os.path.join("peak_call", couples[sample.name][1], couples[sample.name][1] + "_peaks." + couples[sample.name][2] + "Peak")
+            
+            job = concat_jobs([
+                  Job(command="mkdir -p " + output_dir),
+                  tools.sh_ihec_chip_metrics(chip_bam, input_bam, sample.name, couples[sample.name][0],  chip_type, chip_bed, output_dir)
+              ], name="ihec_metrics."+sample.name)
+            jobs.append(job)
+            
+        return jobs
+
+
+
     @property
     def steps(self):
         return [
@@ -736,7 +864,9 @@ done""".format(
             self.macs2_callpeak,
             self.homer_annotate_peaks,
             self.homer_find_motifs_genome,
-            self.annotation_graphs
+            self.annotation_graphs,
+            self.ihec_preprocess_files,
+            self.ihec_metrics
         ]
 
 if __name__ == '__main__': 

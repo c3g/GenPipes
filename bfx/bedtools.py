@@ -26,45 +26,48 @@ import os
 from core.config import *
 from core.job import *
 
+from bfx import ucsc
+
 def graph(input_bam, output_bed_graph, output_wiggle, library_type="PAIRED_END"):
 
     if library_type == "PAIRED_END":
         if "forward" in output_bed_graph:
-            samtools_options="-F 256 -f 81 "
+            samtools_options = "-F 256 -f 81 "
         elif "reverse" in output_bed_graph:
-            samtools_options="-F 256 -f 97 "
+            samtools_options = "-F 256 -f 97 "
         else:
             raise Exception("Error: PAIRED_END library was provided but no strand orientation could be determined from " + output_bed_graph + "...")
     else:
-        samtools_options="-F 256"
+        samtools_options = "-F 256"
 
-    return Job(
-        [input_bam],
-        [output_bed_graph, output_wiggle],
-        [
-            ['bedtools', 'module_samtools'],
-            ['bedtools', 'module_bedtools'],
-            ['bedtools', 'module_ucsc']
-        ],
-        command="""\
+    return concat_jobs([
+        Job(
+            [input_bam],
+            [output_bed_graph, output_wiggle],
+            [
+                ['bedtools', 'module_samtools'],
+                ['bedtools', 'module_bedtools']
+            ],
+            command="""\
 nmblines=$(samtools view {samtools_options} {input_bam} | wc -l) && \\
 scalefactor=0$(echo "scale=2; 1 / ($nmblines / 10000000);" | bc) && \\
-genomeCoverageBed -bg -split -scale $scalefactor \\
+genomeCoverageBed {other_options} -bg -split -scale $scalefactor \\
   -ibam {input_bam} \\
   -g {chromosome_size} \\
-  > {output_bed_graph} && \\
-sort -k1,1 -k2,2n {output_bed_graph} > {output_bed_graph}.sorted && \\
-bedGraphToBigWig \\
-  {output_bed_graph}.sorted \\
-  {chromosome_size} \\
-  {output_wiggle}""".format(
-            samtools_options=samtools_options,
-            input_bam=input_bam,
-            chromosome_size=config.param('bedtools', 'chromosome_size', type='filepath'),
-            output_bed_graph=output_bed_graph,
-            output_wiggle=output_wiggle
+  > {output_bed_graph}""".format(
+                samtools_options=samtools_options,
+                input_bam=input_bam,
+                chromosome_size=config.param('bedtools_graph', 'chromosome_size', type='filepath'),
+                other_options=config.param('bedtools_graph', 'other_options') if config.param('bedtools_graph', 'other_options') else "",
+                output_bed_graph=output_bed_graph
+            )
+        ),
+        ucsc.bedGraphToBigWig(
+            output_bed_graph,
+            output_wiggle,
+            False
         )
-    )
+    ])
 
 def intersect(input_bam, output_bam, readset):
     target_bed = config.param('bedtools_intersect', 'target_bed', required=False)
