@@ -117,7 +117,7 @@ class HicSeq(common.Illumina):
         if genome_source == "UCSC":
             genome = config.param('DEFAULT', 'assembly')
         else:
-            genome = config.param('DEFAULT', 'assembly_synonym')
+            genome = config.param('DEFAULT', 'assembly_synonyms')
         return genome
 
 
@@ -546,7 +546,7 @@ class HicSeq(common.Illumina):
                 output_files = [hic_output],
                 module_entries = [["create_hic_file", "module_java"]],
                 name = "create_hic_file." + sample.name,
-                command = "mkdir -p {hic_output} && java -jar {juicer} pre -q {q} {name} {output} {assembly}".format(hic_output = self.output_dirs['hicfiles_output_directory'], juicer = os.path.expandvars(config.param('create_hic_file', 'JuicerPath')), q = config.param('create_hic_file', 'q'), name = sample.name + ".juicebox.input.sorted", output = hic_output, assembly = config.param('DEFAULT', 'assembly')),
+                command = "mkdir -p {hic_output} && java -jar {juicer} pre -q {q} {name} {output} {assembly}".format(hic_output = self.output_dirs['hicfiles_output_directory'], juicer = os.path.expandvars(config.param('create_hic_file', 'JuicerPath')), q = config.param('create_hic_file', 'q'), name = sample.name + ".juicebox.input.sorted", output = hic_output, assembly = self.genome)
                 )
 
             job = concat_jobs([command_sort, command_input, command_juicebox])

@@ -76,7 +76,7 @@ def chr_sizes(genome_dict_file):
 def chr_names_conv(genome_dict_file, chrX=True, chrY=False, chrM=False, otherPatterns=None):
     """
     extracts chromosome ids from the genome_dictionary file.
-    Removes all non conventional chromosomes containing "random", "hap", "chrUn".
+    Removes all non conventional chromosomes containing "random", "hap", "chrUn", "GL", "NT_".
     Can also remove chrX, chrM, chrY if params set to false.
     To remove other chr patterns list them as an array in otherChr.
     Returns array of chr names in the order they are in genome_dictionary.
@@ -85,16 +85,19 @@ def chr_names_conv(genome_dict_file, chrX=True, chrY=False, chrM=False, otherPat
     ## extract chrs using chr_names then filter unwanted ones:
     chrs = chr_names(genome_dict_file)
     chrs_conv = []
-    remove = ["hap", "random", "chrUn", "EBV"]
+    remove = ["hap", "random", "chrUn", "EBV", "GL", "NT_"]
 
     if not chrY:
         remove.append("chrY")
+        remove.append("Y")
 
     if not chrM:
         remove.append("chrM")
+        remove.append("MT")
 
     if not chrX:
         remove.append("chrX")
+        remove.append("X")
 
     if otherPatterns is not None:
         remove.extend(otherPatterns)

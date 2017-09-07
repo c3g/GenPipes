@@ -93,7 +93,7 @@ def archive_contigs_hic (homerTagDir, output_dir = "archive"):
 
     command_archive = """cd {homerTagDir} && \\
     mkdir -p {output_dir} && \\
-    mv -t {output_dir} *random*.tsv *chrUn*.tsv *hap*.tsv chrM*.tsv chrY*.tsv || echo "not all files found"
+    mv -t {output_dir} *random*.tsv *chrUn*.tsv *hap*.tsv chrM*.tsv MT*.tsv *Y*.tsv *EBV*.tsv *GL*.tsv NT_*.tsv || echo "not all files found"
     cd ../../""".format(
     	homerTagDir = homerTagDir, 
     	output_dir = output_dir)

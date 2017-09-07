@@ -27,8 +27,8 @@ build() {
 
   cd $INSTALL_DIR/$SOFTWARE_DIR
 
-  sed -i "s|#!/usr/bin/perl -w|#!/usr/bin/env perl\nuse warnings;|" hicup_*
-  sed -i "s|#!/usr/bin/perl|#!/usr/bin/env perl|" hicup_*
+  sed -i "s|#!/usr/bin/perl -w|#!/usr/bin/env perl\nuse warnings;|" hicup*
+  sed -i "s|#!/usr/bin/perl|#!/usr/bin/env perl|" hicup*
 
 
   ## change "-p1" for Bowtie2 to "-p8 --reorder" to force faster alignment in hicup_mapper in #Subroutine "map_file":
