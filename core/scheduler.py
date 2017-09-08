@@ -236,15 +236,23 @@ COMMAND=$(cat << '{limit_string}'
                     )
 
                     cmd = """\
-echo -e "#! /bin/bash \n 
+echo "#! /bin/bash 
+echo '#######################################'
+echo 'SLURM FAKE PROLOGUE (MUGQIC)'
 date 
-sstat -j \$SLURM_JOB_ID 
+scontrol show job \$SLURM_JOBID
+sstat -j \$SLURM_JOBID 
+echo '#######################################'
 rm -f $JOB_DONE && $COMMAND
 MUGQIC_STATE=\$PIPESTATUS
 echo MUGQICexitStatus:\$MUGQIC_STATE
 if [ \$MUGQIC_STATE -eq 0 ] ; then touch $JOB_DONE ; fi
-sstat -j \$SLURM_JOB_ID 
-date
+echo '#######################################'
+echo 'SLURM FAKE EPILOGUE (MUGQIC)'
+date 
+scontrol show job \$SLURM_JOBID
+sstat -j \$SLURM_JOBID 
+echo '#######################################'
 exit \$MUGQIC_STATE" | \\
 """.format(job=job)
 
@@ -271,6 +279,9 @@ exit \$MUGQIC_STATE" | \\
 
                     # Write job parameters in job list file
                     cmd += "\necho \"$" + job.id + "\t$JOB_NAME\t$JOB_DEPENDENCIES\t$JOB_OUTPUT_RELATIVE_PATH\" >> $JOB_LIST\n"
+                    
+                    #add 2s sleep to let slurm submiting the job correctly
+                    cmd += "\nsleep 2\n"
 
                     print cmd
 
