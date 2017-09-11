@@ -318,8 +318,8 @@ def rnaseqLight_kallisto(fastq_file1, fastq_file2, transcriptome_file, tx2genes_
         fastq_file2,
         transcriptome_file,
         tx2genes_file],
-        output_files=[output_dir + "/" + "abundance_transcripts.tsv",
-                    output_dir + "/" + "abundance_genes.tsv" ],
+        output_files=[ os.path.join(output_dir, "abundance_transcripts.tsv"),
+                     os.path.join(output_dir, "abundance_genes.tsv") ],
         module_entries=[
             ['DEFAULT', 'module_mugqic_tools'],
             ['DEFAULT', 'module_R'],
