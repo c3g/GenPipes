@@ -28,51 +28,75 @@ from core.job import *
 
 # Start creating the json dump for the passed sample
 def create(pipeline, sample):
-    # First check if json file has already been created (during a previous pipeline execution for instance)
+    # Prepare the general information hash
+    general_info = {}
+    if pipeline.__class__.__name__ == "AmpliconSeq":
+        general_info = {
+            'amplicon_type' : config.param("DEFAULT", 'amplicon_type'),
+            'db_name' : config.param("DEFAULT", 'db_name'),
+            'db_version' : config.param("DEFAULT", 'db_version'),
+            'similarity_threshold' : config.param("DEFAULT", 'similarity_threshold')
+        }
+    elif pipeline.__class__.__name__ == "PacBioAssembly":
+        general_info = {
+            'library_type' : config.param("DEFAULT", 'library_type'),
+            'blast_db' : config.param("DEFAULT", 'blast_db')
+        }
+    else :
+        general_info = {
+            'analysed_species' : config.param("DEFAULT", 'scientific_name'),
+            'assembly_used' : config.param("DEFAULT", 'assembly')
+        }
+    if config.param("DEFAULT", 'dbsnp_version') : general_info['dbSNP_version'] = config.param("DEFAULT", 'dbsnp_version')
+    if config.param("DEFAULT", 'cluster_hpc_center'):
+        general_info['HPC_center'] = config.param("DEFAULT", 'cluster_hpc_center')
+        general_info['analysis_path'] = pipeline.output_dir
+
+    # Prepare the software hash by first retrieving all unique module version values in config files
+    # assuming that all module key names start with "module_"
+    modules = []
+    for section in config.sections():
+        for name, value in config.items(section):
+            if re.search("^module_", name) and value not in modules:
+                modules.append(value)
+
+    # Then from the modules, build the list of softwares with names and versions
+    softwares = []
+    for module in modules:
+        softwares.append({
+            'name' : module.split("/")[1],
+            'version' : module.split("/")[2]
+        })
+
+    # Check if json file has already been created (during a previous pipeline execution for instance)
     # If it does :
-    if os.path.exists(os.path.join(pipeline.output_dir, "json", sample.json_file)):
+    if os.path.exists(os.path.join(pipeline.output_dir, "json", sample.json_file)) and os.stat(os.path.join(pipeline.output_dir, "json", sample.json_file)).st_size != 0:
         with open(os.path.join(pipeline.output_dir, "json", sample.json_file), 'r') as json_file:
-            current_json = json.load(json_file)
+            current_json_hash = json.load(json_file)
+
+        # Then check if information is up-to-date by comparing it with the previously retrieved informations
+        for info_key in general_info.keys():
+            if not current_json_hash['sample']['pipeline']['general_information'].has_key(info_key) or current_json_hash['sample']['pipeline']['general_information'][info_key] != general_info[info_key] :
+                current_json_hash['sample']['pipeline']['general_information'][info_key] = general_info[info_key]
+
+        # And do the same checking with the list of softwares
+        for soft in softwares:
+            soft_found = False
+            for jsoft in current_json_hash['sample']['pipeline']['software']:
+                if soft['name'] == jsoft['name']:
+                    soft_found = True
+                    if soft['version'] != jsoft['version']:
+                        jsoft['version'] = soft['version']
+            if not soft_found:
+                jsoft.append({
+                    'name' : soft['name'],
+                    'version' : soft['version']
+                })
+        current_json = json.dumps(current_json_hash, indent=4, sort_keys=True)
 
     # If the json file has not been created yet :
     else :
-        # Retrieve all unique module version values in config files
-        # assuming that all module key names start with "module_"
-        modules = []
-        for section in config.sections():
-            for name, value in config.items(section):
-                if re.search("^module_", name) and value not in modules:
-                    modules.append(value)
-
-        # From the modules, build the list of softwares with names and versions
-        softwares = []
-        for module in modules:
-            softwares.append({
-                'name' : module.split("/")[1],
-                'version' : module.split("/")[2]
-            })
-
-        # Prepare the general information hash
-        general_info = {}
-        if pipeline.__class__.__name__ == "AmpliconSeq":
-            general_info = {
-                'amplicon_type' : config.param("DEFAULT", 'amplicon_type'),
-                'db_name' : config.param("DEFAULT", 'db_name'),
-                'db_version' : config.param("DEFAULT", 'db_version'),
-                'similarity_threshold' : config.param("DEFAULT", 'similarity_threshold')
-            }
-        elif pipeline.__class__.__name__ == "PacBioAssembly":
-            general_info = {
-                'library_type' : config.param("DEFAULT", 'library_type'),
-                'blast_db' : config.param("DEFAULT", 'blast_db')
-            }
-        else :
-            general_info = {
-                'analysed_species' : config.param("DEFAULT", 'scientific_name'),
-                'assembly_used' : config.param("DEFAULT", 'assembly')
-            }
-            if config.param("DEFAULT", 'dbsnp_version') : general_info['dbSNP_version'] = config.param("DEFAULT", 'dbsnp_version')
-
+        # Then create from the previously retrieved informations
         current_json = json.dumps(
             {'sample' : {
                 'name' : sample.name,
@@ -99,13 +123,13 @@ def create(pipeline, sample):
                     } for software in softwares],
                     'step' : []
                 }
-            }}, indent=4)
+            }}, indent=4, sort_keys=True)
 
-        if not os.path.exists(os.path.join(pipeline.output_dir, "json")):
-            os.makedirs(os.path.join(pipeline.output_dir, "json"))
+    if not os.path.exists(os.path.join(pipeline.output_dir, "json")):
+        os.makedirs(os.path.join(pipeline.output_dir, "json"))
 
-        # Print to file
-        with open(os.path.join(pipeline.output_dir, "json", sample.json_file), 'w') as out_json:
-            out_json.write(current_json)
+    # Print to file
+    with open(os.path.join(pipeline.output_dir, "json", sample.json_file), 'w') as out_json:
+        out_json.write(current_json)
 
     return current_json
