@@ -138,7 +138,6 @@ class MethylSeq(dnaseq.DnaSeq):
                     ),
                     Job(command="mv " + bismark_out_bam + " " + no_readgroup_bam),
                     Job(command="mv " + bismark_out_report + " " + re.sub(".bam", "_bismark_bt2_PE_report.txt", no_readgroup_bam)),
-                    #Job(samples=[readset.sample])
                 ], name="bismark_align." + readset.name)
             )
             jobs.append(
@@ -151,8 +150,7 @@ class MethylSeq(dnaseq.DnaSeq):
                         readset.library if readset.library else readset.sample.name,
                         readset.run + "_" + readset.lane,
                         readset.sample.name
-                    ),
-                    #Job(samples=[readset.sample])
+                    )
                 ], name="picard_add_read_groups." + readset.name)
             )
 
@@ -360,16 +358,7 @@ cp \\
 
             # Calculate GC bias
             job = concat_jobs([
-                #pipe_jobs([
-                    #bedtools.bamtobed(
-                        #input,
-                        #None
-                    #),
-                    #bedtools.coverage(
-                        #"stdin",
-                        #re.sub(".bam", ".gc_cov.1M.txt", input)
-                    #)
-                #]),
+                
                 bedtools.coverage(
                     input,
                     re.sub(".bam", ".gc_cov.1M.txt", input)
@@ -445,8 +434,7 @@ cp \\
             jobs.append(
                 concat_jobs([
                     Job(command="mkdir -p " + methyl_directory, samples=[sample]),
-                    bismark_job,
-                    #Job(samples=[sample])
+                    bismark_job
                 ], name="bismark_methyl_call." + sample.name)
             )
 
@@ -483,16 +471,14 @@ cp \\
                             re.sub("readset_sorted", "sorted", input_bam),
                             "coordinate"
                         ),
-                        bedtools.graph(re.sub("readset_sorted", "sorted", input_bam), bed_graph_output, big_wig_output, ""),
-                        #Job(samples=[sample])
+                        bedtools.graph(re.sub("readset_sorted", "sorted", input_bam), bed_graph_output, big_wig_output, "")
                     ], name="wiggle." + re.sub(".bedGraph", "", os.path.basename(bed_graph_output)))
                 )
             else :
                 jobs.append(
                     concat_jobs([
                         Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " " + os.path.join("tracks", "bigWig"), removable_files=["tracks"], samples=[sample]),
-                        bedtools.graph(input_bam, bed_graph_output, big_wig_output, ""),
-                        #Job(samples=[sample])
+                        bedtools.graph(input_bam, bed_graph_output, big_wig_output, "")
                     ], name="wiggle." + re.sub(".bedGraph", "", os.path.basename(bed_graph_output)))
                 )
 
@@ -509,8 +495,7 @@ cp \\
                     ucsc.bedGraphToBigWig(
                         input_bed_graph,
                         output_wiggle
-                    ),
-                    #Job(samples=[sample])
+                    )
                 ], name = "bismark_bigWig." + sample.name)
             )
 
@@ -720,6 +705,36 @@ pandoc \\
 
             # Flagstat file if in targeted context
             if target_bed : inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.filtered.ontarget.bam.flagstat"))
+
+            jobs.append(
+            concat_jobs([
+                Job(command="mkdir -p metrics"),
+                methyl_profile.ihec_metrics_report(sample_list, inputs, metrics_file, target_bed),
+                Job(
+                    [metrics_file],
+                    [report_file],
+                    [['ihec_sample_metrics_report', 'module_pandoc']],
+                    command="""\
+mkdir -p report && \\
+cp {metrics_file} {report_metrics_file} && \\
+metrics_table_md=`sed 's/\t/|/g' {report_metrics_file}`
+pandoc \\
+  {report_template_dir}/{basename_report_file} \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable sequence_alignment_table="$metrics_table_md" \\
+  --to markdown \\
+  > {report_file}""".format(
+                        report_template_dir=self.report_template_dir,
+                        metrics_file=metrics_file,
+                        basename_report_file=os.path.basename(report_file),
+                        report_metrics_file=report_metrics_file,
+                        report_file=report_file
+                    ),
+                    report_files=[report_file]
+                )
+            ], name="ihec_sample_metrics_report")
+        )
+
 
         jobs.append(
             concat_jobs([
