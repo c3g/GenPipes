@@ -1026,6 +1026,7 @@ done""".format(
             self.gq_seq_utils_exploratory_analysis_rnaseq,
             self.differential_expression,
             self.differential_expression_goseq,
+            self.ihec_metrics
         ]
 
 if __name__ == '__main__':
