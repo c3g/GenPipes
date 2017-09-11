@@ -164,19 +164,6 @@ class RnaSeqLight(rnaseq.RnaSeq):
             )
         ], name="gq_seq_utils_exploratory_analysis_rnaseq_light"))
 
-        # Render Rmarkdown Report
-        # kallisto_directory="kallisto"
-        # jobs.append(
-        #     rmarkdown.render(
-        #         job_input            = [os.path.join(self.output_dir,kallisto_directory, readset.sample.name, "abundance_genes.tsv") for readset in self.readsets],
-        #         job_name             = "report.kallisto",
-        #         input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeqLight.kallisto.Rmd") ,
-        #         render_output_dir    = 'report',
-        #         module_section       = 'report',
-        #         prerun_r             = 'report_dir="report";'
-        #     )
-        # )
-
         jobs.append(
             rmarkdown.render(
              job_input            = os.path.join("exploratory", "index.tsv"),
@@ -187,42 +174,6 @@ class RnaSeqLight(rnaseq.RnaSeq):
              prerun_r             = 'report_dir="report";'
              )
         )
-
-        #copy tx2genes file
-        # jobs.append(
-        #   Job(
-        #       [os.path.join(self.output_dir, "kallisto", "All_readsets","all_readsets.abundance_genes.csv")],
-        #       [],
-        #       command="""\
-        #        cp \\
-        #         {tx2genes_file} \\
-        #         {report_dir}""".format(
-        #           tx2genes_file=config.param('kallisto', 'transcript2genes', type="filepath"),
-        #           report_dir="report"
-        #       ),
-        #       name="report.copy_tx2genes_file")
-        # )
-
-
-        # report_file = os.path.join(self.output_dir, "report", "RnaSeqLight.kallisto.md")
-        # print(report_file)
-        # jobs.append(
-        #   Job(
-        #       [os.path.join(self.output_dir, "kallisto", "All_samples","all_samples.abundance_genes.csv")],
-        #       [report_file],
-        #       command="""\
-        #       mkdir -p report && \\
-        #       zip -r report/kallisto.zip kallisto/ && \\
-        #       cp \\
-        #         {report_template_dir}/{basename_report_file} \\
-        #         {report_file}""".format(
-        #           report_template_dir=self.report_template_dir,
-        #           basename_report_file=os.path.basename(report_file),
-        #           report_file=report_file
-        #       ),
-        #       report_files=[report_file],
-        #       name="kallisto_report")
-        # )
 
         return jobs
 
