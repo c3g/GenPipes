@@ -109,10 +109,10 @@ def ihec_metrics_report(sample_list, inputs, output, target_bed):
         command="""\
 bash methylseq_metrics_for_ihec.sh \\
   {sample_list} \\
-  {input_files} \\
+  {output_file} \\
   {targeted_flag}""".format(
             sample_list=",".join(sample_list),
-            input_files=" \\\n  ".join(inputs),
+            output_file=output,
             targeted_flag=1 if target_bed else 0
         )
     )
