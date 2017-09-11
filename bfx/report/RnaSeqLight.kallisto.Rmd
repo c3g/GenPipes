@@ -16,8 +16,8 @@ dir.create( file.path(report_dir,"kallisto"), showWarnings=F,recursive=T)
 file.copy(from = "kallisto", to = report_dir, overwrite = T, recursive = T)
 
 # Create summary table
-all_readsets_abundance.transcripts=read.delim(file.path(report_dir,"kallisto/All_readsets/all_readsets.abundance_transcripts.csv"), as.is=T)
-all_readsets_abundance.genes=read.delim(file.path(report_dir,"kallisto/All_readsets/all_readsets.abundance_genes.csv"), as.is=T)
+all_readsets_abundance.transcripts=read.delim(file.path(report_dir,"kallisto/All_readsets/all_readsets.abundance_transcripts.csv"), as.is=T, check.names = FALSE) #to allow the use of dash in sample names
+all_readsets_abundance.genes=read.delim(file.path(report_dir,"kallisto/All_readsets/all_readsets.abundance_genes.csv"), as.is=T, check.names = FALSE)
 
 all_readsets_triming_metrics=read.delim("metrics/trimReadsetTable.tsv", as.is=T)
 colnames(all_readsets_triming_metrics)=c("Sample","Readset Raw","Paired Reads #","Surviving Paired Reads #","Surviving Paired Reads %")
