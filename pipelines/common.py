@@ -40,6 +40,7 @@ from bfx.readset import *
 from bfx import metrics
 from bfx import picard
 from bfx import trimmomatic
+from bfx import samtools
 from bfx import rmarkdown
 from bfx import jsonator
 
