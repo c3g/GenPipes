@@ -97,6 +97,19 @@ class RnaSeqLight(rnaseq.RnaSeq):
                 raise Exception("Error: run type \"" + readset.run_type +
                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
 
+              # Render Rmarkdown Report
+        kallisto_directory="kallisto"
+        jobs.append(
+            rmarkdown.render(
+                job_input            = [os.path.join(self.output_dir,kallisto_directory, readset.sample.name, "abundance_genes.tsv") for readset in self.readsets],
+                job_name             = "report.kallisto",
+                input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeqLight.kallisto.Rmd") ,
+                render_output_dir    = 'report',
+                module_section       = 'report',
+                prerun_r             = 'report_dir="report";'
+            )
+        )
+
         return jobs
 
     def kallisto_count_matrix(self):
@@ -118,6 +131,20 @@ class RnaSeqLight(rnaseq.RnaSeq):
         job=tools.r_create_kallisto_count_matrix(input_abundance_files_genes, output_dir, data_type_genes, job_name_genes)
         jobs.append(job)
 
+        jobs.append(
+          Job(
+              [os.path.join(self.output_dir, "kallisto", "All_readsets","all_readsets.abundance_genes.csv")],
+              [],
+              command="""\
+               cp \\
+                {tx2genes_file} \\
+                {report_dir}""".format(
+                  tx2genes_file=config.param('kallisto', 'transcript2genes', type="filepath"),
+                  report_dir="report"
+              ),
+              name="report.copy_tx2genes_file")
+        )
+
         return jobs
 
     def gq_seq_utils_exploratory_analysis_rnaseq_light(self):
@@ -138,17 +165,17 @@ class RnaSeqLight(rnaseq.RnaSeq):
         ], name="gq_seq_utils_exploratory_analysis_rnaseq_light"))
 
         # Render Rmarkdown Report
-        kallisto_directory="kallisto"
-        jobs.append(
-            rmarkdown.render(
-                job_input            = [os.path.join(self.output_dir,kallisto_directory, readset.sample.name, "abundance_genes.tsv") for readset in self.readsets],
-                job_name             = "report.kallisto",
-                input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeqLight.kallisto.Rmd") ,
-                render_output_dir    = 'report',
-                module_section       = 'report',
-                prerun_r             = 'report_dir="report";'
-            )
-        )
+        # kallisto_directory="kallisto"
+        # jobs.append(
+        #     rmarkdown.render(
+        #         job_input            = [os.path.join(self.output_dir,kallisto_directory, readset.sample.name, "abundance_genes.tsv") for readset in self.readsets],
+        #         job_name             = "report.kallisto",
+        #         input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeqLight.kallisto.Rmd") ,
+        #         render_output_dir    = 'report',
+        #         module_section       = 'report',
+        #         prerun_r             = 'report_dir="report";'
+        #     )
+        # )
 
         jobs.append(
             rmarkdown.render(
@@ -162,19 +189,20 @@ class RnaSeqLight(rnaseq.RnaSeq):
         )
 
         #copy tx2genes file
-        jobs.append(
-          Job(
-              [os.path.join(self.output_dir, "kallisto", "All_readsets","all_readsets.abundance_genes.csv")],
-              [],
-              command="""\
-               cp \\
-                {tx2genes_file} \\
-                {report_dir}""".format(
-                  tx2genes_file=config.param('kallisto', 'transcript2genes', type="filepath"),
-                  report_dir="report"
-              ),
-              name="report.copy_tx2genes_file")
-        )
+        # jobs.append(
+        #   Job(
+        #       [os.path.join(self.output_dir, "kallisto", "All_readsets","all_readsets.abundance_genes.csv")],
+        #       [],
+        #       command="""\
+        #        cp \\
+        #         {tx2genes_file} \\
+        #         {report_dir}""".format(
+        #           tx2genes_file=config.param('kallisto', 'transcript2genes', type="filepath"),
+        #           report_dir="report"
+        #       ),
+        #       name="report.copy_tx2genes_file")
+        # )
+
 
         # report_file = os.path.join(self.output_dir, "report", "RnaSeqLight.kallisto.md")
         # print(report_file)
