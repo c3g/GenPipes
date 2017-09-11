@@ -372,7 +372,7 @@ cp \\
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="fix_mate_by_coordinate_report"),
+                name="fix_mate_by_coordinate_report")
         )
 
         return jobs
