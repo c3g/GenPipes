@@ -58,7 +58,7 @@ genomeCoverageBed {other_options} -bg -split -scale $scalefactor \\
                 samtools_options=samtools_options,
                 input_bam=input_bam,
                 chromosome_size=config.param('bedtools_graph', 'chromosome_size', type='filepath'),
-                other_options=config.param('bedtools_graph', 'other_options') if config.param('bedtools_graph', 'other_options') else "",
+                other_options=config.param('bedtools_graph', 'other_options', required=False),
                 output_bed_graph=output_bed_graph
             )
         ),
@@ -84,7 +84,7 @@ bedtools intersect {other_options} \\
   > {output_bam}""".format(
             input_bam=input_bam,
             target_bed=target_bed,
-            other_options=config.param('bedtools_intersect', 'other_options'),
+            other_options=config.param('bedtools_intersect', 'other_options', required=False),
             output_bam=output_bam
         )
     )
@@ -98,9 +98,10 @@ def bamtobed(input_bam, output_bed):
             ['bedtools', 'module_bedtools']
         ],
         command="""\
-bedtools bamtobed \\
+bedtools bamtobed {other_options} \\
   -i {input_bam}{output_bed}""".format(
             input_bam=input_bam,
+            other_options=config.param('bedtools_coverage', 'other_options', required=False),
             output_bed=" \\\n  > " + output_bed if output_bed else ""
         )
     )
@@ -120,7 +121,7 @@ bedtools coverage {other_options} \\
   > {output_file}""".format(
             intervals=config.param('bedtools_coverage', 'gc_intervals'),
             input=input_file,
-            other_options=config.param('bedtools_coverage', 'other_options') if config.param('bedtools_coverage', 'other_options') else "",
+            other_options=config.param('bedtools_coverage', 'other_options', required=False),
             output_file=output_file
         )
     )
