@@ -357,14 +357,48 @@ cp \\
             jobs.append(job)
 
             # Calculate GC bias
+            # For captured analysis
+            #if coverage_bed:
+                #target_input = re.sub(".bam", ".targeted.bam", input)
+                #job = concat_jobs([
+                    #bedtools.intersect(
+                        #input,
+                        #target_input,
+                        #coverage_bed
+                    #)
+                    #bedtools.coverage(
+                        #target_input,
+                        #re.sub(".bam", ".gc_cov.1M.txt", target_input)
+                    #),
+                    #metrics.gc_bias(
+                        #re.sub(".bam", ".gc_cov.1M.txt", target_input),
+                        #re.sub(".bam", ".GCBias_all.txt", target_input)
+                    #)
+                #])
+            # Or for whole genome analysis
+            #else:
+            gc_content_file = re.sub(".bam", ".gc_cov.1M.txt", input)
+            job = bedtools.coverage(
+                input,
+                gc_content_file,
+                coverage_bed
+            )
+            if coverage_bed:
+                gc_content_on_target_file = re.sub(".bam", ".gc_cov.1M.on_target.txt", input)
+                gc_ontent_target_job = bedtools.intersect(
+                    gc_content_file,
+                    gc_content_on_target_file,
+                    coverage_bed
+                )
+                gc_content_file = gc_content_on_target_file
+                job = concat_jobs([
+                    job,
+                    gc_ontent_target_job
+                ])
             job = concat_jobs([
-                
-                bedtools.coverage(
-                    input,
-                    re.sub(".bam", ".gc_cov.1M.txt", input)
-                ),
+                job,
                 metrics.gc_bias(
-                    re.sub(".bam", ".gc_cov.1M.txt", input),
+                    gc_content_file,
                     re.sub(".bam", ".GCBias_all.txt", input)
                 )
             ])
@@ -544,7 +578,14 @@ cp \\
             if target_bed:
                 # Create targeted combined file
                 target_cpg_profile = re.sub("combined", "combined.on_target", cpg_profile)
-                bedtools.intersect(cpg_profile, target_cpg_profile, target_bed)
+                job = bedtools.intersect(
+                    cpg_profile,
+                    target_cpg_profile,
+                    target_bed
+                )
+                job.name = "extract_target_CpG_profile." + sample.name
+                job.samples = [sample]
+                jobs.append(job)
                 cpg_profile = target_cpg_profile
 
             # Caluculate median & mean CpG coverage

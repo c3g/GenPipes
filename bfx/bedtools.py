@@ -106,7 +106,7 @@ bedtools bamtobed {other_options} \\
         )
     )
 
-def coverage(input_file, output_file):
+def coverage(input_file, output_file, target_bed):
 
     return Job(
         [input_file],
