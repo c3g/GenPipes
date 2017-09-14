@@ -64,7 +64,7 @@ def getarg(argument):
             if str(value) == "" :
                 sys.exit("Error - job_log (-l, --job_log) not provided...\n")
             else :
-                job_done = str(value)
+                job_log = str(value)
         if option in ("-b", "--job_done"):
             if str(value) == "" :
                 sys.exit("Error - job_done (-b, --job_done) not provided...\n")
