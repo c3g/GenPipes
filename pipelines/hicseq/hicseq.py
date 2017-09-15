@@ -41,6 +41,7 @@ from bfx.design import *
 from pipelines import common
 
 
+
 from bfx import picard
 from bfx import samtools
 from bfx import hicup
@@ -80,35 +81,25 @@ class HicSeq(common.Illumina):
     [Here](<url>) is more information about Hi-C pipeline that you may find interesting.
     """
 
-    global protocol
-
+    global protocolType
+    
     def __init__(self):
         self.argparser.add_argument("-e", "--enzyme", help = "Restriction Enzyme used to generate Hi-C library", choices = ["DpnII", "HindIII", "NcoI", "MboI"], required=True)
-        #self.argparser.add_argument("-t", "--type", help = "Hi-C experiment type", choices = ["hic", "capture"], default="hic", required=True)
+        self.argparser.add_argument("-t", "--type", help = "Hi-C experiment type", choices = ["hic", "capture"], default="hic", required=True)
         super(HicSeq, self).__init__()
 
-    protocol = "capture"
+    protocolType = "hic"
 
     @property
     def enzyme(self):
         return self.args.enzyme
 
 
-    # @property
-    # def protocol(self):
-    #     options = ["hic", "capture"]
-    #     if not hasattr(self, "type"):
-    #         self._type =  config.param('HiC', 'protocol')
-    #     if self._type not in options:
-    #         raise Exception("Error: Experiment protocol must be hic or capture. Change 'type' in ini file to \"hic\" or \"capture\"!")
-    #     return self._type
-
-    # @property
-    # def protocol(self):
-    #     return self.args.type
-
-
-
+    @property
+    def protocol(self):
+        return self.args.type
+    
+    
     @property
     def restriction_site(self):
         """ sets the restriction enzyme recogntition site and genome digest location based on enzyme"""
@@ -724,7 +715,7 @@ class HicSeq(common.Illumina):
 
     @property
     def steps(self):
-        if protocol == "hic":
+        if protocolType == "hic":
             ## HiC workflow:
             steplist = [
                 self.samtools_bam_sort,
@@ -743,7 +734,7 @@ class HicSeq(common.Illumina):
                 self.create_hic_file,
                 self.multiqc_report
             ]
-        elif protocol == "capture":
+        elif protocolType == "capture":
             ## capture HiC workflow:
             steplist = [
                 self.samtools_bam_sort,
