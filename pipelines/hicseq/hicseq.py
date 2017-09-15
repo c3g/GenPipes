@@ -54,6 +54,8 @@ from bfx import chicago
 
 log = logging.getLogger(__name__)
 
+test='hic'
+
 class HicSeq(common.Illumina):
     """
     Hi-C Pipeline
@@ -83,23 +85,15 @@ class HicSeq(common.Illumina):
 
     global protocolType
     
-    def __init__(self):
+    def __init__(self, protocol=None):
+        self._protocol=protocol
         self.argparser.add_argument("-e", "--enzyme", help = "Restriction Enzyme used to generate Hi-C library", choices = ["DpnII", "HindIII", "NcoI", "MboI"], required=True)
         self.argparser.add_argument("-t", "--type", help = "Hi-C experiment type", choices = ["hic", "capture"], default="hic", required=True)
         super(HicSeq, self).__init__()
 
-    protocolType = "hic"
-
-    @property
-    def enzyme(self):
-        return self.args.enzyme
+    #protocolType = "hic"
 
 
-    @property
-    def protocol(self):
-        return self.args.type
-    
-    
     @property
     def restriction_site(self):
         """ sets the restriction enzyme recogntition site and genome digest location based on enzyme"""
@@ -713,47 +707,47 @@ class HicSeq(common.Illumina):
     # def steps(self):
     #     return [fns[step] for step in self.stepList]
 
-    @property
-    def steps(self):
-        if protocolType == "hic":
-            ## HiC workflow:
-            steplist = [
-                self.samtools_bam_sort,
-                self.picard_sam_to_fastq,
-                self.trimmomatic,
-                self.merge_trimmomatic_stats,
-                self.fastq_readName_Edit,
-                self.hicup_align,
-                self.samtools_merge_bams,
-                self.homer_tag_directory,
-                self.interaction_matrices_Chr,
-                self.interaction_matrices_genome,
-                self.identify_compartments,
-                self.identify_TADs,
-                self.identify_peaks,
-                self.create_hic_file,
-                self.multiqc_report
-            ]
-        elif protocolType == "capture":
-            ## capture HiC workflow:
-            steplist = [
-                self.samtools_bam_sort,
-                self.picard_sam_to_fastq,
-                self.trimmomatic,
-                self.merge_trimmomatic_stats,
-                self.fastq_readName_Edit,
-                self.hicup_align,
-                self.samtools_merge_bams,
-                self.create_rmap_file,
-                self.create_baitmap_file,
-                self.create_design_files,
-                self.create_input_files,
-                self.multiqc_report
-            ]
-        else:
-            raise Exception("Error: --type should be set to \"hic\" or \"capture\"")
-
-        return steplist
+    #@property
+    #def steps(self):
+    #    analyse_type=self.protocol
+    #    if analyse_type == "hic":
+    #        ## HiC workflow:
+    #        steplist = [
+    #            self.samtools_bam_sort,
+    #            self.picard_sam_to_fastq,
+    #            self.trimmomatic,
+    #            self.merge_trimmomatic_stats,
+    #            self.fastq_readName_Edit,
+    #            self.hicup_align,
+    #            self.samtools_merge_bams,
+    #            self.homer_tag_directory,
+    #            self.interaction_matrices_Chr,
+    #            self.interaction_matrices_genome,
+    #            self.identify_compartments,
+    #            self.identify_TADs,
+    #            self.identify_peaks,
+    #            self.create_hic_file,
+    #            self.multiqc_report
+    #        ]
+    #    elif analyse_type == "capture":
+    #        ## capture HiC workflow:
+    #        steplist = [
+    #            self.samtools_bam_sort,
+    #            self.picard_sam_to_fastq,
+    #            self.trimmomatic,
+    #            self.merge_trimmomatic_stats,
+    #            self.fastq_readName_Edit,
+    #            self.hicup_align,
+    #            self.samtools_merge_bams,
+    #            self.create_rmap_file,
+    #            self.create_baitmap_file,
+    #            self.create_design_files,
+    #            self.create_input_files,
+    #            self.multiqc_report
+    #        ]
+    #    else:
+    #        raise Exception("Error: --type should be set to \"hic\" or \"capture\"")
+    #    return steplist
 
 
     # @property
@@ -778,26 +772,39 @@ class HicSeq(common.Illumina):
     #     return steplist
 
 
-    # @property
-    # def steps(self):
-    #     return [
-    #         self.samtools_bam_sort,
-    #         self.picard_sam_to_fastq,
-    #         self.trimmomatic,
-    #         self.merge_trimmomatic_stats,
-    #         self.fastq_readName_Edit,
-    #         self.hicup_align,
-    #         self.samtools_merge_bams,
-    #         self.homer_tag_directory,
-    #         self.interaction_matrices_Chr,
-    #         self.interaction_matrices_genome,
-    #         self.identify_compartments,
-    #         self.identify_TADs,
-    #         self.identify_peaks,
-    #         self.create_hic_file,
-    #         self.multiqc_report
-    #     ]
+    @property
+    def steps(self):
+        #print self.protocol
+        return [
+            [self.samtools_bam_sort,
+            self.picard_sam_to_fastq,
+            self.trimmomatic,
+            self.merge_trimmomatic_stats,
+            self.fastq_readName_Edit,
+            self.hicup_align,
+            self.samtools_merge_bams,
+            self.homer_tag_directory,
+            self.interaction_matrices_Chr,
+            self.interaction_matrices_genome,
+            self.identify_compartments,
+            self.identify_TADs,
+            self.identify_peaks,
+            self.create_hic_file,
+            self.multiqc_report],
+            [self.samtools_bam_sort,
+            self.picard_sam_to_fastq,
+            self.trimmomatic,
+            self.merge_trimmomatic_stats,
+            self.fastq_readName_Edit,
+            self.hicup_align,
+            self.samtools_merge_bams,
+            self.create_rmap_file,
+            self.create_baitmap_file,
+            self.create_design_files,
+            self.create_input_files,
+            self.multiqc_report]
+        ]
 
 
 if __name__ == '__main__':
-    HicSeq()
+    HicSeq(protocol=['hic','capture'])
