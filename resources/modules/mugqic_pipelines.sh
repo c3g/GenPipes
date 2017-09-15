@@ -41,7 +41,6 @@ prepend-path    PATH                  \$root/pipelines/rnaseq
 prepend-path    PATH                  \$root/pipelines/rnaseq_denovo_assembly
 prepend-path    PATH                  \$root/pipelines/tumor_pair
 prepend-path    PATH                  \$root/pipelines/hicseq
-prepend-path    PATH                  \$root/pipelines/chicseq
 "
 }
 

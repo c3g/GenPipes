@@ -47,6 +47,9 @@ from bfx import hicup
 from bfx import homer
 from bfx import multiqc
 from bfx import genome
+from bfx import bedtools
+from bfx import chicago
+
 
 log = logging.getLogger(__name__)
 
@@ -56,11 +59,20 @@ class HicSeq(common.Illumina):
     ==============
 
     Hi-C experiments allow researchers to understand chromosomal folding and structure using proximity ligation techniques.
-    The pipeline starts by trimming adaptors and low quality bases. It then maps the reads to a reference genome using HiCUP.
+    This pipeline analyzes both Hi-C experimental data (-t hic) and capture Hi-C data (-t capture).
+    The Hi-C pipeline, selected using the "-t hic" parameter, starts by trimming adaptors and low quality bases. 
+    It then maps the reads to a reference genome using HiCUP.
     HiCUP first truncates chimeric reads, maps reads to the genome, then it filters Hi-C artifacts and removes read duplicates.
     Samples from different lanes are merged and a tag directory is created by Homer, which is also used to produce the interaction
     matrices and compartments. TopDom is used to predict topologically associating domains (TADs) and homer is used to identify
     significant interactions.
+
+    The capture Hi-C pipeline, selected using the "-t capture" parameter, starts by trimming adaptors and low quality bases. 
+    It then maps the reads to a reference genome using HiCUP.
+    HiCUP first truncates chimeric reads, maps reads to the genome, then it filters Hi-C artifacts and removes read duplicates.
+    Samples from different lanes are merged and CHiCAGO is then used to filter capture-specific artifacts and call significant 
+    interactions. This pipeline also identifies enrichement of regulatory features when provided with ChIP-Seq marks and also 
+    identifies enrichement of GWAS SNPs.
 
     An example of the Hi-C report for an analysis on public data (GM12878 Rao. et al.) is available for illustration purpose only:
     [Hi-C report](<url>).
@@ -68,14 +80,32 @@ class HicSeq(common.Illumina):
     [Here](<url>) is more information about Hi-C pipeline that you may find interesting.
     """
 
+    global protocol
+
     def __init__(self):
-        self.argparser.add_argument("-e", "--enzyme", help = "Restriction Enzyme used to generate Hi-C library", choices = ["DpnII", "HindIII", "NcoI", "MboI"])
+        self.argparser.add_argument("-e", "--enzyme", help = "Restriction Enzyme used to generate Hi-C library", choices = ["DpnII", "HindIII", "NcoI", "MboI"], required=True)
+        #self.argparser.add_argument("-t", "--type", help = "Hi-C experiment type", choices = ["hic", "capture"], default="hic", required=True)
         super(HicSeq, self).__init__()
 
+    protocol = "capture"
 
     @property
     def enzyme(self):
         return self.args.enzyme
+
+
+    # @property
+    # def protocol(self):
+    #     options = ["hic", "capture"]
+    #     if not hasattr(self, "type"):
+    #         self._type =  config.param('HiC', 'protocol')
+    #     if self._type not in options:
+    #         raise Exception("Error: Experiment protocol must be hic or capture. Change 'type' in ini file to \"hic\" or \"capture\"!")
+    #     return self._type
+
+    # @property
+    # def protocol(self):
+    #     return self.args.type
 
 
 
@@ -107,7 +137,10 @@ class HicSeq(common.Illumina):
                 'cmpt_output_directory': 'compartments',
                 'TAD_output_directory': 'TADs',
                 'peaks_output_directory': 'peaks',
-                'hicfiles_output_directory': 'hicFiles'}
+                'hicfiles_output_directory': 'hicFiles', 
+                'chicago_input_files': 'input_files',
+                'chicago_output_directory': 'chicago'
+                }
         return dirs
 
 
@@ -572,25 +605,208 @@ class HicSeq(common.Illumina):
         return jobs
 
 
+        ## capture HiC methods:
+
+    def create_rmap_file(self):
+        ## return 1 rmap per enzyme
+        output = os.path.join(self.output_dirs['chicago_input_files'], self.enzyme + ".rmap")
+        input_file = self.genome_digest
+
+        command = """mkdir -p {dir} && \\
+        cut -f 1-3 {input_file} > {output}.tmp && \\
+        awk 'BEGIN {{FS=\"\\t\"; OFS=\"\\t\"}} NR>2 {{print $0, NR}}' {output}.tmp > {output} && \\
+        rm {output}.tmp""".format(dir = self.output_dirs['chicago_input_files'], input_file = input_file, output = output)
+
+        return [Job(input_files = [input_file], 
+            output_files = [output], 
+            command = command, 
+            name = "create_rmap_file." + self.enzyme)]
+
+
+    def create_baitmap_file(self):
+        ## return 1 baitmap per enzyme/capture array combination
+        
+        input_rmap = os.path.join(self.output_dirs['chicago_input_files'], self.enzyme + ".rmap")
+        input_bait = config.param('create_baitmap_file', "baitBed")
+        output_file = re.sub("\.bed", "", os.path.basename(input_bait)) + "_" + self.enzyme + ".baitmap"
+        output = os.path.join(self.output_dirs['chicago_input_files'], output_file)
+        annotation = config.param('create_baitmap_file', "annotation")
+
+        job_intersectBeds = bedtools.intersect_beds(input_rmap, input_bait, output + ".tmp", "-wa -u")
+
+        job_anno = Job(input_files = [output + ".tmp"], 
+            output_files = [output], 
+            command = """awk 'BEGIN {{FS=\"\\t\"; OFS=\"\\t\"}}{{print $0, \"{annotation}\"NR}}' {outputTmp}  >  {output}""".format(annotation = annotation, outputTmp = output + ".tmp", output = output),
+            name = "create_baitmap_file.addAnno." + output,
+            removable_files = [output + ".tmp"]
+            )
+
+        job = concat_jobs([job_intersectBeds, job_anno])
+        job.name = "create_baitmap_file." + output_file
+        return [job]
+
+
+    def create_design_files(self):
+        rmapfile = os.path.join(self.output_dirs['chicago_input_files'], self.enzyme + ".rmap")
+        baitmapfile = os.path.join(self.output_dirs['chicago_input_files'], os.path.basename(re.sub("\.bed$", "", config.param('create_baitmap_file', "baitBed")) + "_" + self.enzyme + ".baitmap"))
+        other_options = config.param('create_design_files', 'other_options')
+        designDir = self.output_dirs['chicago_input_files']
+        outfilePrefix = os.path.join(self.output_dirs['chicago_input_files'], os.path.basename(re.sub("\.bed$", "", config.param('create_baitmap_file', "baitBed")) + "_" + self.enzyme))
+        job = chicago.makeDesignFiles(rmapfile, baitmapfile, outfilePrefix, designDir, other_options)
+
+        return [job]
+
+
+    def create_input_files(self):
+        jobs = []
+        rmapfile = os.path.join(self.output_dirs['chicago_input_files'], self.enzyme + ".rmap")
+        baitmapfile = os.path.join(self.output_dirs['chicago_input_files'], os.path.basename(re.sub("\.bed$", "", config.param('create_baitmap_file', "baitBed")) + "_" + self.enzyme + ".baitmap"))
+        other_options=""
+
+
+        for sample in self.samples:
+            name = os.path.join(self.output_dirs['chicago_input_files'], sample.name)
+            bam = os.path.join(self.output_dirs['bams_output_directory'], sample.name, sample.name + ".merged.bam")
+            job = chicago.bam2chicago(bam, baitmapfile, rmapfile, name, other_options)
+            jobs.append(job)
+
+        return jobs
+
+    # @property
+    # def fns(self):
+    #     fns = {'samtools_bam_sort': 'self.samtools_bam_sort',
+    #             'picard_sam_to_fastq': 'self.picard_sam_to_fastq',
+    #             'trimmomatic': 'self.trimmomatic',
+    #             'merge_trimmomatic_stats': 'self.merge_trimmomatic_stats',
+    #             'fastq_readName_Edit': 'self.fastq_readName_Edit',
+    #             'hicup_align': 'self.hicup_align',
+    #             'samtools_merge_bams': 'self.samtools_merge_bams',
+    #             'homer_tag_directory': 'self.homer_tag_directory', 
+    #             }
+    #     return fns
+
+
+
+    # @property
+    # def stepList(self):
+    #     if self.protocol == "hic":
+    #         ## HiC workflow:
+    #         steplist = [
+    #             'samtools_bam_sort',
+    #             'picard_sam_to_fastq',
+    #             'trimmomatic',
+    #             'merge_trimmomatic_stats',
+    #             'astq_readName_Edit',
+    #             'hicup_align',
+    #             'samtools_merge_bams',
+    #             'homer_tag_directory',
+
+    #         ]
+    #     elif self.protocol == "capture":
+    #         ## capture HiC workflow:
+    #         steplist = [
+    #             'samtools_bam_sort',
+    #             'picard_sam_to_fastq',
+    #             'trimmomatic',
+    #             'merge_trimmomatic_stats',
+    #             'astq_readName_Edit',
+    #             'hicup_align',
+    #             'samtools_merge_bams'
+    #         ]
+    #     else:
+    #         raise Exception("Error: --type should be set to \"hic\" or \"capture\"")
+
+    #     return steplist
+
+    # @property
+    # def steps(self):
+    #     return [fns[step] for step in self.stepList]
+
     @property
     def steps(self):
-        return [
-            self.samtools_bam_sort,
-            self.picard_sam_to_fastq,
-            self.trimmomatic,
-            self.merge_trimmomatic_stats,
-            self.fastq_readName_Edit,
-            self.hicup_align,
-            self.samtools_merge_bams,
-            self.homer_tag_directory,
-            self.interaction_matrices_Chr,
-            self.interaction_matrices_genome,
-            self.identify_compartments,
-            self.identify_TADs,
-            self.identify_peaks,
-            self.create_hic_file,
-            self.multiqc_report
-        ]
+        if protocol == "hic":
+            ## HiC workflow:
+            steplist = [
+                self.samtools_bam_sort,
+                self.picard_sam_to_fastq,
+                self.trimmomatic,
+                self.merge_trimmomatic_stats,
+                self.fastq_readName_Edit,
+                self.hicup_align,
+                self.samtools_merge_bams,
+                self.homer_tag_directory,
+                self.interaction_matrices_Chr,
+                self.interaction_matrices_genome,
+                self.identify_compartments,
+                self.identify_TADs,
+                self.identify_peaks,
+                self.create_hic_file,
+                self.multiqc_report
+            ]
+        elif protocol == "capture":
+            ## capture HiC workflow:
+            steplist = [
+                self.samtools_bam_sort,
+                self.picard_sam_to_fastq,
+                self.trimmomatic,
+                self.merge_trimmomatic_stats,
+                self.fastq_readName_Edit,
+                self.hicup_align,
+                self.samtools_merge_bams,
+                self.create_rmap_file,
+                self.create_baitmap_file,
+                self.create_design_files,
+                self.create_input_files,
+                self.multiqc_report
+            ]
+        else:
+            raise Exception("Error: --type should be set to \"hic\" or \"capture\"")
+
+        return steplist
+
+
+    # @property
+    # def steps(self):
+    #     if protocol == "hic":
+    #         steplist = [
+    #                 self.samtools_bam_sort,
+    #                 self.picard_sam_to_fastq,
+    #                 self.trimmomatic,
+    #                 self.merge_trimmomatic_stats,
+    #                 self.fastq_readName_Edit,
+    #                 self.hicup_align,
+    #                 self.samtools_merge_bams,
+    #                 self.homer_tag_directory,
+    #                 self.interaction_matrices_Chr,
+    #                 self.interaction_matrices_genome,
+    #                 self.identify_compartments,
+    #                 self.identify_TADs,
+    #                 self.identify_peaks,
+    #                 self.create_hic_file,
+    #                 self.multiqc_report]
+    #     return steplist
+
+
+    # @property
+    # def steps(self):
+    #     return [
+    #         self.samtools_bam_sort,
+    #         self.picard_sam_to_fastq,
+    #         self.trimmomatic,
+    #         self.merge_trimmomatic_stats,
+    #         self.fastq_readName_Edit,
+    #         self.hicup_align,
+    #         self.samtools_merge_bams,
+    #         self.homer_tag_directory,
+    #         self.interaction_matrices_Chr,
+    #         self.interaction_matrices_genome,
+    #         self.identify_compartments,
+    #         self.identify_TADs,
+    #         self.identify_peaks,
+    #         self.create_hic_file,
+    #         self.multiqc_report
+    #     ]
+
 
 if __name__ == '__main__':
     HicSeq()
