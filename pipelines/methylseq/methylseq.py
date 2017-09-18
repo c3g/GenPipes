@@ -649,7 +649,7 @@ cp \\
             inputs.append(cgstats_file)
 
             # Flagstat file if in targeted context
-            if target_bed : inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.filtered.ontarget.bam.flagstat"))
+            if target_bed : inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.ontarget.bam.flagstat"))
 
         jobs.append(
             concat_jobs([
@@ -745,7 +745,7 @@ pandoc \\
             inputs.append(cgstats_file)
 
             # Flagstat file if in targeted context
-            if target_bed : inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.filtered.ontarget.bam.flagstat"))
+            if target_bed : inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.ontarget.bam.flagstat"))
 
             jobs.append(
             concat_jobs([
