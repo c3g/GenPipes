@@ -54,6 +54,8 @@ from bfx import chicago
 
 log = logging.getLogger(__name__)
 
+test='hic'
+
 class HicSeq(common.Illumina):
     """
     Hi-C Pipeline
@@ -83,24 +85,19 @@ class HicSeq(common.Illumina):
 
     global protocolType
     
-    def __init__(self):
+    def __init__(self, protocol=None):
+        self._protocol=protocol
         self.argparser.add_argument("-e", "--enzyme", help = "Restriction Enzyme used to generate Hi-C library", choices = ["DpnII", "HindIII", "NcoI", "MboI"], required=True)
         self.argparser.add_argument("-t", "--type", help = "Hi-C experiment type", choices = ["hic", "capture"], default="hic", required=True)
         super(HicSeq, self).__init__()
 
-    #protocolType = config.param('DEFAULT', "protocol")
-    protocolType = "capture"
+    protocolType = "hic"
     
     @property
     def enzyme(self):
         return self.args.enzyme
 
 
-    @property
-    def protocol(self):
-        return self.args.type
-    
-    
     @property
     def restriction_site(self):
         """ sets the restriction enzyme recogntition site and genome digest location based on enzyme"""
@@ -664,7 +661,6 @@ class HicSeq(common.Illumina):
 
         return jobs
 
-
     @property
     def steps(self):
         if protocolType == "hic":
@@ -709,26 +705,5 @@ class HicSeq(common.Illumina):
 
 
 
-    # @property
-    # def steps(self):
-    #     return [
-    #         self.samtools_bam_sort,
-    #         self.picard_sam_to_fastq,
-    #         self.trimmomatic,
-    #         self.merge_trimmomatic_stats,
-    #         self.fastq_readName_Edit,
-    #         self.hicup_align,
-    #         self.samtools_merge_bams,
-    #         self.homer_tag_directory,
-    #         self.interaction_matrices_Chr,
-    #         self.interaction_matrices_genome,
-    #         self.identify_compartments,
-    #         self.identify_TADs,
-    #         self.identify_peaks,
-    #         self.create_hic_file,
-    #         self.multiqc_report
-    #     ]
-
-
 if __name__ == '__main__':
-    HicSeq()
+    HicSeq(protocol=['hic','capture'])
