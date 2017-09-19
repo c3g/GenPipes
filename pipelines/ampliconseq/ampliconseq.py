@@ -53,6 +53,12 @@ class AmpliconSeq(common.Illumina):
 
     T
     """
+  
+    def __init__(self, protocol=None):
+        self._protocol=protocol
+        # Add pipeline specific arguments
+        super(AmpliconSeq, self).__init__(protocol)
+
 
     def flash(self):
         """

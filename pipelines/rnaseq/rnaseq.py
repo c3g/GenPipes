@@ -94,7 +94,7 @@ class RnaSeq(common.Illumina):
         self._protocol=protocol
         # Add pipeline specific arguments
         self.argparser.add_argument("-d", "--design", help="design file", type=file)
-        super(RnaSeq, self).__init__()
+        super(RnaSeq, self).__init__(protocol)
 
     def star(self):
         """

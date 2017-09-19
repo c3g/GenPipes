@@ -68,7 +68,7 @@ class DnaSeqHighCoverage(dnaseq.DnaSeq):
     def __init__(self, protocol=None):
         self._protocol=protocol
         # Add pipeline specific arguments
-        super(DnaSeqHighCoverage, self).__init__()
+        super(DnaSeqHighCoverage, self).__init__(protocol)
 
     def picard_fixmate(self):
         """

@@ -139,7 +139,7 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
                                     action="store_true",
                                     dest="force_download")
 
-        super(IlluminaRunProcessing, self).__init__()
+        super(IlluminaRunProcessing, self).__init__(protocol)
 
     @property
     def readsets(self):
