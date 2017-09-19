@@ -120,7 +120,8 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
             sample47,,MPS1047,Library,Nextera XT,1419,2,toto.bed,sample47_MPS1047
     """
 
-    def __init__(self):
+    def __init__(self, protocol=None):
+        self._protocol=protocol
         self.copy_job_inputs = []
         self.argparser.add_argument("-d", "--run", help="run directory", required=False, dest="run_dir")
         self.argparser.add_argument("--lane", help="lane number", type=int, required=False, dest="lane_number")

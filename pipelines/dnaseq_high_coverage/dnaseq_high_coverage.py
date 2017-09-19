@@ -65,7 +65,8 @@ class DnaSeqHighCoverage(dnaseq.DnaSeq):
     don't fare well with the high coverage.
     """
 
-    def __init__(self):
+    def __init__(self, protocol=None):
+        self._protocol=protocol
         # Add pipeline specific arguments
         super(DnaSeqHighCoverage, self).__init__()
 
