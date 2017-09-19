@@ -85,11 +85,11 @@ class HicSeq(common.Illumina):
 
     global protocolType
     
-    def __init__(self, protocol=None):
+    def __init__(self, protocol='hic'):
         self._protocol=protocol
         self.argparser.add_argument("-e", "--enzyme", help = "Restriction Enzyme used to generate Hi-C library", choices = ["DpnII", "HindIII", "NcoI", "MboI"], required=True)
-        self.argparser.add_argument("-t", "--type", help = "Hi-C experiment type", choices = ["hic", "capture"], default="hic", required=True)
-        super(HicSeq, self).__init__()
+        self.argparser.add_argument("-t", "--type", help = "Hi-C experiment type", choices = ["hic", "capture"], default="hic")
+        super(HicSeq, self).__init__(protocol)
 
     #protocolType = "hic"
     
