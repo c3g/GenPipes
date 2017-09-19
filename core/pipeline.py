@@ -196,10 +196,6 @@ Steps:
         return self._protocol
 
     @property
-    def enzyme(self):
-        return self._enzyme
-
-    @property
     def steps(self):
         # Needs to be defined in pipeline child class
         raise NotImplementedError
