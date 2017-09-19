@@ -59,9 +59,37 @@ def bam2chicago (bam, baitmap, rmap, sample, other_options=""):
         )
 
     return Job(input_files = [bam, baitmap, rmap],
-            output_files = [sample + ".chinput"],
+            output_files = [os.path.join(sample, os.path.basename(sample) + ".chinput")],
             module_entries = [['create_input_files', 'module_chicago'], ['create_input_files', 'module_bedtools']],
             name = "create_input_files." + os.path.basename(sample),
+            command = command,
+            )
+
+
+def runChicago(design_dir, sample, output_prefix, design_file_prefix, other_options=""):
+
+
+#runChicago.R -e seqMonk,interBed,washU_text,washU_track --export-order score --design-dir input_files input_files/BT416P4_HiC/BT416P4_HiC.chinput chicago_output
+
+## to assess featues:
+#--features-only --en-full-cis-range --en-trans
+ 
+    command = """runChicago.R {other_options}\\
+    -e seqMonk,interBed,washU_text,washU_track \\
+    --export-order score  \\
+    --design-dir {design_dir}\\
+    {input} \\
+    {output_prefix}\\""" .format(
+        other_options = other_options,
+        design_dir = design_dir,
+        input = os.path.join(design_dir, sample, sample + ".chinput"), 
+        output_prefix = output_prefix
+        )
+
+    return Job(input_files = [os.path.join(design_dir, design_file_prefix + ".baitmap"), os.path.join(design_dir, design_file_prefix + ".npb"), os.path.join(design_dir, design_file_prefix + ".poe"), os.path.join(design_dir, design_file_prefix + ".nbpb"), os.path.join(design_dir, sample, sample + ".chinput")],
+            output_files = [output_prefix],
+            module_entries = [['runChicago', 'module_chicago'], ['runChicago', 'module_R']],
+            name = "runChicago." + sample,
             command = command,
             )
 
