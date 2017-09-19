@@ -68,7 +68,7 @@ class ChipSeq(dnaseq.DnaSeq):
         self._protocol=protocol
         # Add pipeline specific arguments
         self.argparser.add_argument("-d", "--design", help="design file", type=file)
-        super(ChipSeq, self).__init__()
+        super(ChipSeq, self).__init__(protocol)
 
     @property
     def contrasts(self):
