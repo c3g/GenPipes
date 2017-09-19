@@ -92,6 +92,10 @@ class HicSeq(common.Illumina):
         super(HicSeq, self).__init__()
 
     #protocolType = "hic"
+    
+    @property
+    def enzyme(self):
+        return self.args.enzyme
 
 
     @property
@@ -656,121 +660,6 @@ class HicSeq(common.Illumina):
             jobs.append(job)
 
         return jobs
-
-    # @property
-    # def fns(self):
-    #     fns = {'samtools_bam_sort': 'self.samtools_bam_sort',
-    #             'picard_sam_to_fastq': 'self.picard_sam_to_fastq',
-    #             'trimmomatic': 'self.trimmomatic',
-    #             'merge_trimmomatic_stats': 'self.merge_trimmomatic_stats',
-    #             'fastq_readName_Edit': 'self.fastq_readName_Edit',
-    #             'hicup_align': 'self.hicup_align',
-    #             'samtools_merge_bams': 'self.samtools_merge_bams',
-    #             'homer_tag_directory': 'self.homer_tag_directory', 
-    #             }
-    #     return fns
-
-
-
-    # @property
-    # def stepList(self):
-    #     if self.protocol == "hic":
-    #         ## HiC workflow:
-    #         steplist = [
-    #             'samtools_bam_sort',
-    #             'picard_sam_to_fastq',
-    #             'trimmomatic',
-    #             'merge_trimmomatic_stats',
-    #             'astq_readName_Edit',
-    #             'hicup_align',
-    #             'samtools_merge_bams',
-    #             'homer_tag_directory',
-
-    #         ]
-    #     elif self.protocol == "capture":
-    #         ## capture HiC workflow:
-    #         steplist = [
-    #             'samtools_bam_sort',
-    #             'picard_sam_to_fastq',
-    #             'trimmomatic',
-    #             'merge_trimmomatic_stats',
-    #             'astq_readName_Edit',
-    #             'hicup_align',
-    #             'samtools_merge_bams'
-    #         ]
-    #     else:
-    #         raise Exception("Error: --type should be set to \"hic\" or \"capture\"")
-
-    #     return steplist
-
-    # @property
-    # def steps(self):
-    #     return [fns[step] for step in self.stepList]
-
-    #@property
-    #def steps(self):
-    #    analyse_type=self.protocol
-    #    if analyse_type == "hic":
-    #        ## HiC workflow:
-    #        steplist = [
-    #            self.samtools_bam_sort,
-    #            self.picard_sam_to_fastq,
-    #            self.trimmomatic,
-    #            self.merge_trimmomatic_stats,
-    #            self.fastq_readName_Edit,
-    #            self.hicup_align,
-    #            self.samtools_merge_bams,
-    #            self.homer_tag_directory,
-    #            self.interaction_matrices_Chr,
-    #            self.interaction_matrices_genome,
-    #            self.identify_compartments,
-    #            self.identify_TADs,
-    #            self.identify_peaks,
-    #            self.create_hic_file,
-    #            self.multiqc_report
-    #        ]
-    #    elif analyse_type == "capture":
-    #        ## capture HiC workflow:
-    #        steplist = [
-    #            self.samtools_bam_sort,
-    #            self.picard_sam_to_fastq,
-    #            self.trimmomatic,
-    #            self.merge_trimmomatic_stats,
-    #            self.fastq_readName_Edit,
-    #            self.hicup_align,
-    #            self.samtools_merge_bams,
-    #            self.create_rmap_file,
-    #            self.create_baitmap_file,
-    #            self.create_design_files,
-    #            self.create_input_files,
-    #            self.multiqc_report
-    #        ]
-    #    else:
-    #        raise Exception("Error: --type should be set to \"hic\" or \"capture\"")
-    #    return steplist
-
-
-    # @property
-    # def steps(self):
-    #     if protocol == "hic":
-    #         steplist = [
-    #                 self.samtools_bam_sort,
-    #                 self.picard_sam_to_fastq,
-    #                 self.trimmomatic,
-    #                 self.merge_trimmomatic_stats,
-    #                 self.fastq_readName_Edit,
-    #                 self.hicup_align,
-    #                 self.samtools_merge_bams,
-    #                 self.homer_tag_directory,
-    #                 self.interaction_matrices_Chr,
-    #                 self.interaction_matrices_genome,
-    #                 self.identify_compartments,
-    #                 self.identify_TADs,
-    #                 self.identify_peaks,
-    #                 self.create_hic_file,
-    #                 self.multiqc_report]
-    #     return steplist
-
 
     @property
     def steps(self):
