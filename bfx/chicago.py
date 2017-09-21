@@ -66,30 +66,65 @@ def bam2chicago (bam, baitmap, rmap, sample, other_options=""):
             )
 
 
-def runChicago(design_dir, sample, output_prefix, design_file_prefix, other_options=""):
+def runChicago(design_dir, sample, output_dir, design_file_prefix, other_options=""):
 
 
-#runChicago.R -e seqMonk,interBed,washU_text,washU_track --export-order score --design-dir input_files input_files/BT416P4_HiC/BT416P4_HiC.chinput chicago_output
-
-## to assess featues:
 #--features-only --en-full-cis-range --en-trans
  
     command = """runChicago.R {other_options}\\
     -e seqMonk,interBed,washU_text,washU_track \\
     --export-order score  \\
     --design-dir {design_dir}\\
+    -o {output_dir}\\
     {input} \\
     {output_prefix}\\""" .format(
         other_options = other_options,
         design_dir = design_dir,
+        output_dir = os.path.join(output_dir, sample),
         input = os.path.join(design_dir, sample, sample + ".chinput"), 
-        output_prefix = output_prefix
+        output_prefix = sample
         )
 
-    return Job(input_files = [os.path.join(design_dir, design_file_prefix + ".baitmap"), os.path.join(design_dir, design_file_prefix + ".npb"), os.path.join(design_dir, design_file_prefix + ".poe"), os.path.join(design_dir, design_file_prefix + ".nbpb"), os.path.join(design_dir, sample, sample + ".chinput")],
-            output_files = [output_prefix],
+    return Job(input_files = [os.path.join(design_dir, design_file_prefix + ".baitmap"),
+                            os.path.join(design_dir, design_file_prefix + ".npb"), 
+                            os.path.join(design_dir, design_file_prefix + ".poe"), 
+                            os.path.join(design_dir, design_file_prefix + ".nbpb"), 
+                            os.path.join(design_dir, sample, sample + ".chinput")], 
+            output_files = [os.path.join(output_dir, sample, "data", sample + ".Rds"),
+                            os.path.join(output_dir, sample, "data", sample + ".ibed"),
+                            os.path.join(output_dir, sample, "data", sample + "_washU_track.txt"),
+                            os.path.join(output_dir, sample, "data", sample + "_washU_text.txt"),
+                            os.path.join(output_dir, sample, "data", sample + "_washU_track.txt.gz.tbi"),
+                            os.path.join(output_dir, sample, "data", sample + "_seqmonk.txt")],
             module_entries = [['runChicago', 'module_chicago'], ['runChicago', 'module_R']],
             name = "runChicago." + sample,
             command = command,
             )
 
+def runChicago_featureOverlap(featuresBed, sample, output_dir, design_file_prefix, other_options=""):
+
+
+    command = """runChicago.R {other_options}\\
+    --features-only\\
+    --en-feat-list {featuresBed}\\
+    --en-full-cis-range\\
+    --en-trans\\
+    -o {output_dir}\\
+    {input} \\
+    {output_prefix}\\""" .format(
+        other_options = other_options,
+        featuresBed = featuresBed,
+        output_dir = os.path.join(output_dir, sample),
+        input = os.path.join(output_dir, sample, "data", sample + ".Rds"), 
+        output_prefix = sample
+        )
+
+    return Job(input_files = [os.path.join(output_dir, sample, "data", sample + ".Rds"),
+                            featuresBed], 
+            output_files = [os.path.join(output_dir, sample, "enrichment_data", sample + "_feature_overlaps.pdf"),
+                            os.path.join(output_dir, sample, "enrichment_data", sample + "_feature_overlaps.txt")
+                           ],
+            module_entries = [['runChicago', 'module_chicago'], ['runChicago', 'module_R']],
+            name = "runChicago_featureOverlap." + sample,
+            command = command,
+            )

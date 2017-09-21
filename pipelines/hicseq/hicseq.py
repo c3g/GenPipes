@@ -54,7 +54,6 @@ from bfx import chicago
 
 log = logging.getLogger(__name__)
 
-test='hic'
 
 class HicSeq(common.Illumina):
     """
@@ -83,7 +82,6 @@ class HicSeq(common.Illumina):
     [Here](<url>) is more information about Hi-C pipeline that you may find interesting.
     """
 
-    global protocolType
     
     def __init__(self, protocol='hic'):
         self._protocol=protocol
@@ -91,11 +89,11 @@ class HicSeq(common.Illumina):
         self.argparser.add_argument("-t", "--type", help = "Hi-C experiment type", choices = ["hic", "capture"], default="hic")
         super(HicSeq, self).__init__(protocol)
 
-    protocolType = "hic"
     
     @property
     def enzyme(self):
         return self.args.enzyme
+
 
 
     @property
@@ -597,6 +595,9 @@ class HicSeq(common.Illumina):
         ## capture HiC methods:
 
     def create_rmap_file(self):
+        """
+        rmap file for Chicago capture analysis is created using the hicup digestion file.
+        """
         ## return 1 rmap per enzyme
         output = os.path.join(self.output_dirs['chicago_input_files'], self.enzyme + ".rmap")
         input_file = self.genome_digest
@@ -613,6 +614,9 @@ class HicSeq(common.Illumina):
 
 
     def create_baitmap_file(self):
+        """
+        baitmap file for Chicago capture analysis is created using the created rmap file and the probe capture bed file.
+        """
         ## return 1 baitmap per enzyme/capture array combination
         
         input_rmap = os.path.join(self.output_dirs['chicago_input_files'], self.enzyme + ".rmap")
@@ -636,9 +640,12 @@ class HicSeq(common.Illumina):
 
 
     def create_design_files(self):
+        """
+        design files (nperbin file (.npb), nbaitsperbin file (.nbpb), proxOE file (.poe)) for Chicago capture analysis are created using the rmap file and the baitmap file.
+        """
         rmapfile = os.path.join(self.output_dirs['chicago_input_files'], self.enzyme + ".rmap")
         baitmapfile = os.path.join(self.output_dirs['chicago_input_files'], os.path.basename(re.sub("\.bed$", "", config.param('create_baitmap_file', "baitBed")) + "_" + self.enzyme + ".baitmap"))
-        other_options = config.param('create_design_files', 'other_options')
+        other_options = config.param('create_design_files', 'other_options', required = False)
         designDir = self.output_dirs['chicago_input_files']
         outfilePrefix = os.path.join(self.output_dirs['chicago_input_files'], os.path.basename(re.sub("\.bed$", "", config.param('create_baitmap_file', "baitBed")) + "_" + self.enzyme))
         job = chicago.makeDesignFiles(rmapfile, baitmapfile, outfilePrefix, designDir, other_options)
@@ -647,10 +654,14 @@ class HicSeq(common.Illumina):
 
 
     def create_input_files(self):
+        """
+        input file (sample.chinput) for Chicago capture analysis is created using the rmap file, the baitmap file and the hicup aligned bam.
+        """
         jobs = []
         rmapfile = os.path.join(self.output_dirs['chicago_input_files'], self.enzyme + ".rmap")
         baitmapfile = os.path.join(self.output_dirs['chicago_input_files'], os.path.basename(re.sub("\.bed$", "", config.param('create_baitmap_file', "baitBed")) + "_" + self.enzyme + ".baitmap"))
-        other_options=""
+        other_options = config.param('create_input_files', 'other_options', required = False)
+
 
 
         for sample in self.samples:
@@ -661,48 +672,79 @@ class HicSeq(common.Illumina):
 
         return jobs
 
+
+
+    def runChicago(self):
+        """
+        Chicago is run on capture data. Chicago will filter capture hic artifacts and identify significant interactions. It will output data as a bed file and will also output SeqMonk and WashU tracks.
+        For more detailed information about the Chicago, including how to interpret the plots, please visit: [Chicago] https://bioconductor.org/packages/release/bioc/vignettes/Chicago/inst/doc/Chicago.html
+        """
+        jobs = []
+        design_dir = self.output_dirs['chicago_input_files']
+        output_dir = self.output_dirs['chicago_output_directory']
+        design_file_prefix = os.path.basename(re.sub("\.bed$", "", config.param('create_baitmap_file', "baitBed")) + "_" + self.enzyme)
+        other_options = config.param('runChicago', 'other_options', required = False)
+
+
+        for sample in self.samples:
+            job = chicago.runChicago(design_dir, sample, output_dir, design_file_prefix, other_options)
+            jobs.append(job)
+
+        return jobs
+
+    def runChicago_featureOverlap(self):
+        """
+        Runs the feature enrichement of chicago significant interactions.
+        For more detailed information about the Chicago, including how to interpret the plots, please visit: [Chicago] https://bioconductor.org/packages/release/bioc/vignettes/Chicago/inst/doc/Chicago.html
+        """
+        jobs = []
+        design_dir = self.output_dirs['chicago_input_files']
+        output_dir = self.output_dirs['chicago_output_directory']
+        design_file_prefix = os.path.basename(re.sub("\.bed$", "", config.param('create_baitmap_file', "baitBed")) + "_" + self.enzyme)
+        other_options = config.param('runChicago_featureOverlap', 'other_options', required = False)
+        features_file = config.param('runChicago_featureOverlap', 'features_file', required = True)
+
+
+        for sample in self.samples:
+            job = chicago.runChicago_featureOverlap(features_file, sample, output_dir, design_file_prefix, other_options)
+            jobs.append(job)
+
+        return jobs
+
+
     @property
     def steps(self):
-        if protocolType == "hic":
-            ## HiC workflow:
-            steplist = [
-                self.samtools_bam_sort,
-                self.picard_sam_to_fastq,
-                self.trimmomatic,
-                self.merge_trimmomatic_stats,
-                self.fastq_readName_Edit,
-                self.hicup_align,
-                self.samtools_merge_bams,
-                self.homer_tag_directory,
-                self.interaction_matrices_Chr,
-                self.interaction_matrices_genome,
-                self.identify_compartments,
-                self.identify_TADs,
-                self.identify_peaks,
-                self.create_hic_file,
-                self.multiqc_report
-            ]
-        elif protocolType == "capture":
-            ## capture HiC workflow:
-            steplist = [
-                self.samtools_bam_sort,
-                self.picard_sam_to_fastq,
-                self.trimmomatic,
-                self.merge_trimmomatic_stats,
-                self.fastq_readName_Edit,
-                self.hicup_align,
-                self.samtools_merge_bams,
-                self.create_rmap_file,
-                self.create_baitmap_file,
-                self.create_design_files,
-                self.create_input_files,
-                self.multiqc_report
-            ]
-        else:
-            raise Exception("Error: --type should be set to \"hic\" or \"capture\"")
-
-        return steplist
-
+        return [
+            [self.samtools_bam_sort,
+            self.picard_sam_to_fastq,
+            self.trimmomatic,
+            self.merge_trimmomatic_stats,
+            self.fastq_readName_Edit,
+            self.hicup_align,
+            self.samtools_merge_bams,
+            self.homer_tag_directory,
+            self.interaction_matrices_Chr,
+            self.interaction_matrices_genome,
+            self.identify_compartments,
+            self.identify_TADs,
+            self.identify_peaks,
+            self.create_hic_file,
+            self.multiqc_report],
+            [self.samtools_bam_sort,
+            self.picard_sam_to_fastq,
+            self.trimmomatic,
+            self.merge_trimmomatic_stats,
+            self.fastq_readName_Edit,
+            self.hicup_align,
+            self.samtools_merge_bams,
+            self.create_rmap_file,
+            self.create_baitmap_file,
+            self.create_design_files,
+            self.create_input_files,
+            self.runChicago,
+            self.runChicago_featureOverlap,
+            self.multiqc_report]
+        ]
 
 
 if __name__ == '__main__':
