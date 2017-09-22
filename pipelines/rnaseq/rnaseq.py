@@ -48,6 +48,7 @@ from bfx import samtools
 from bfx import star
 from bfx import bvatools
 from bfx import rmarkdown
+from bfx import tools
 from pipelines import common
 import utils
 
@@ -952,10 +953,11 @@ cp \\
                 [os.path.join("cuffdiff", contrast.name, "isoform_exp.diff") for contrast in self.contrasts] +
                 [os.path.join("DGE", contrast.name, "gene_ontology_results.csv") for contrast in self.contrasts],
                 [report_file],
-                [['rnaseqc', 'module_pandoc']],
+                [['rnaseqc', 'module_python'], ['rnaseqc', 'module_pandoc']],
                 # Ugly awk to format differential expression results into markdown for genes, transcripts and GO if any; knitr may do this better
                 # Ugly awk and python to merge cuffdiff fpkm and isoforms into transcript expression results
                 command="""\
+set -eu -o pipefail && \\
 mkdir -p report && \\
 cp {design_file} report/design.tsv && \\
 cp DGE/rawCountMatrix.csv report/ && \\
@@ -964,6 +966,7 @@ pandoc \\
   --template {report_template_dir}/{basename_report_file} \\
   --variable design_table="`head -7 report/design.tsv | cut -f-8 | awk -F"\t" '{{OFS="\t"; if (NR==1) {{print; gsub(/[^\t]/, "-")}} print}}' | sed 's/\t/|/g'`" \\
   --variable raw_count_matrix_table="`head -7 report/rawCountMatrix.csv | cut -f-8 | awk -F"\t" '{{OFS="\t"; if (NR==1) {{print; gsub(/[^\t]/, "-")}} print}}' | sed 's/\t/|/g'`" \\
+  --variable adj_pvalue_threshold={adj_pvalue_threshold} \\
   --to markdown \\
   > {report_file} && \\
 for contrast in {contrasts}
@@ -988,16 +991,38 @@ done""".format(
                     design_file=os.path.abspath(self.args.design.name),
                     report_template_dir=self.report_template_dir,
                     basename_report_file=os.path.basename(report_file),
+                    adj_pvalue_threshold=config.param('differential_expression_goseq','other_options').split(" ")[1],
                     report_file=report_file,
                     contrasts=" ".join([contrast.name for contrast in self.contrasts])
                 ),
                 report_files=[report_file],
                 name="differential_expression_goseq_report")
         )
-
 ############
-
         return jobs
+
+
+    def ihec_metrics(self):
+        """
+        Generate IHEC's standard metrics.
+        """
+
+        jobs = []
+        output_dir="ihec_metrics"
+        
+        for sample in self.samples:
+            bam_file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.")
+            input_bam = bam_file_prefix + "bam"
+            input_metrics = bam_file_prefix + "metrics"
+            
+            job = concat_jobs([
+                  Job(command="mkdir -p " + output_dir),
+                  tools.sh_ihec_rna_metrics(input_bam, sample.name, input_metrics, output_dir)
+              ], name="ihec_metrics." + sample.name )
+            jobs.append(job)
+            
+        return jobs
+
 
     @property
     def steps(self):
@@ -1024,7 +1049,8 @@ done""".format(
             self.fpkm_correlation_matrix,
             self.gq_seq_utils_exploratory_analysis_rnaseq,
             self.differential_expression,
-            self.differential_expression_goseq
+            self.differential_expression_goseq,
+            self.ihec_metrics
         ]
 
 if __name__ == '__main__':

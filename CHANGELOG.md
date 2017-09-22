@@ -1,11 +1,56 @@
-14 tags, 3156 commits
+14 tags, 3245 commits
 
-HEAD        Mon Feb 27 12:47:44 2017 -0500        0 commits
+HEAD        Thu Apr 20 14:07:38 2017 -0400        0 commits
 
-2.3.0        Mon Feb 27 13:40:01 2017 -0500        82 commits
+2.3.1        Thu Apr 20 14:25:22 2017 -0400        171 commits
 
-  Edouard Henrion <edouard.henrion@mcgill.ca>      13 commits
+  Edouard Henrion <edouard.henrion@mcgill.ca>      93 commits
 
+       0f801b8 updated Homo_sapiens.GRCh38.sh install script with Ensembl87, dbSNP_149 and dbNSFPv3.4
+       ec64899 updated rnammer_transcriptome resources within rnaseq_denovo_assembly.guillimin.ini
+       ae6119c updated surpi.sh install script
+       ae8ebb5 updated snap.sh install script
+       08908b5 updated seqtk.sh install script
+       b6d06b8 updated bowtie2.sh install script
+       f040ef6 updated RAPSearch2.sh install script
+       ad4b019 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       41fdf29 corrected bowtie.sh install script
+       e977277 Merge branch 'master' of https://bitbucket.org/mugqic/mugqic_pipelines
+       79bb77e updated versions of some module install scripts and added some other
+       3f90a97 updated versions of some module install scripts
+       f6ffda1 MethylSeq pipeline - adjuted resource allocation for bismark align step
+       53c3d85 resolving conflicts and merging
+       e5e0074 minor changes to resolve conflicts before merging mMaster with MethylSeq
+       eb21575 Small changes and updates before merging MethylSeq branch to Master to prevent conflicts
+       93d9f01 MethylSeq pipeline - updates done after pur pull request review
+       e5eb8fa Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       adb1cbe updated version to v346 in UCSC module installation script
+       faa8215 AmpliconSeq pipeline - updated version of R_Bioconductor to 3.3.3_3.4
+       23d2966 new genome installation script : Apis_mallifera.sh
+       9173ee8 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       396af25 updated mirbase installation script : removed useless loading of mugqic/R_Bioconductor/3.2.3_3.2
+       15d7243 Apis_mellifera.sh
+       834765f updated module installation scripts
+       996b10f new bash scripts for new modules
+       08b52b0 MethylSeq pipeline - few minor corrections before the pull request
+       dced67c MethylSeq pipeline - adding of the README.md file
+       212451e MethylSeq pipeline - reducing ram to 25G for bissnp step to avoid 'out of memory' issue
+       e3d09b5 MethylSeq pipeline - added index creation at then end of picard_add_read_groups step to avoid error in next step (picard_merge_sam_files) when only one readset per sample
+       571d0f8 MethylSeq pipeline - corrected ini file for bismark_methyl_call and bismark_coverage2cytosine section where assembly_dir was used instead of bismark_assembly_dir
+       f837d91 MethylSeq pipeline - added the creation of the bam index after filtering is done, and updated picard.build_sam_index regarding the ini_section parameter
+       dafcd65 MethylSeq pipeline - reducing ram for bissnp step to avoid 'out of memory' issue
+       0f4507d MethylSeq pipeline - pipeline with the mapping quality filter step as well as with the picard_calculate_hs_metric step to get ontarget mapping rate
+       67e3842 MethylSeq pipeline - updated ini file with newer module versions as well as removing all MUGQIC_INSTALL_HOME_DEV reference and setting them to MUGQIC_INSTALL_HOME
+       8f2a7dc MethylSeq pipeline - updates after correction of the section name within the base.ini file
+       e6dfe0c MethylSeq pipeline - corrected section name within the base.ini file
+       9c5c314 MethylSeq pipeline - corrected typo in the bismark python wrapper
+       af1f9f9 MethylSeq pipeline - added tmp_dir parameter to bismark_align step
+       ccbf775 MethylSeq pipeilne - addings of .md files for the first steps
+       aaf3ba3 MethylSeq pipeline - corrected dependency problem within bismark_align step
+       57db20f MethylSeq pipeline - corrected metrics input and step order
+       6248dbf MethylSeq pipeline - addings for report generation
+       deb45a6 Merge branch 'methylseq' of bitbucket.org:mugqic/mugqic_pipelines into methylseq
+       02259ac MethylSeq - corrected typo within the picard2_collect_multiple_metrics which caused to always restart the step
        7717c35 Pre-release - adding the installation scripts for all the new software used by tumor_pair pipeline
        8eada67 Merge branch 'master' of https://bitbucket.org/mugqic/mugqic_pipelines
        8e17bca Merge branch 'master' of https://bitbucket.org/mugqic/mugqic_pipelines
@@ -19,9 +64,46 @@ HEAD        Mon Feb 27 12:47:44 2017 -0500        0 commits
        1ca38fa DNASeq - bug correction after merging tumor_pair branch to master
        e6b482b Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
        1d8876d FastQC - updated bash install script to match our standards
+       83cecac MethylSeq - Updates and corrections, pipeline is now fully functionnal on test data
+       8bd10db MethylSeq - BisSNP step implemented
+       77176b4 MethylSeq - debugging bed_graph step
+       b58b12d MethyleSeq - correct output files directory for methylation_call step
+       d8d7c74 Merge branch 'methylseq' of bitbucket.org:mugqic/mugqic_pipelines into methylseq
+       1422706 MethylSeq - debugging methylation_profile step
+       ae3a9df MethylSeq - updates and corrections, wiggle traks are now generated properly
+       4b96e31 MethylSeq - updated pipeline up to 'methylation_profile', still need to work on BisSNP (last step)
+       7a2a721 MethylSeq - minor bug corrections
+       6b0f820 MethylSeq - First working version of the pipeline : generates bismark alignment and metrics
+       89f4a60 MethylSeq - updates of pipeline up to methylation call & also removed/merged some metrics steps
+       86a9ae4 MethylSeq - refine metrics calling and preparation, up to pUC19 & lambda reads step
+       ce3c86d MethylSeq - updated pipeline until metrics step
+       ff5bee3 Merge branch 'methylseq' of bitbucket.org:mugqic/mugqic_pipelines into methylseq
+       78c8fd0 MethylSeq - updates and corrections up to step 10 flagstat
+       5a55472 Methylseq - updates and corrections up to step 10 flagstat
+       7b0a9a9 MethylSeq - setps 7 & 8 added
+       88dfebd update bedtools version in the /bedtools.sh module installation script
+       8f9c198 BEDTools - added intersect function to bedtools.px wrapper
+       63b4628 MethylSeq - debugging wrong dependencies du to wrong output file names
+       17746b5 MethyleSeq - debugging file names in step 4 & 5 inorder to make step6 picard_merge_sam_files work
+       5057bc0 MethyleSeq - defining parameter of step6 picard_merge_sam_files within the .ini file
+       b63b02c MethylSeq - preparing step 6 picard_merge_sam_file by reviewing/changing file names upstream (steps 4 & 5)
+       c589684 MethyleSeq - bug fix : quoted parameters of add_or_replace_read_groups function in picard(2).py wrappers
+       206f128 MethyleSeq - corrected wrong reference to .ini file section regarding step5 picard_add_read_groups
+       d0006b1 MethylSeq - missing output file is now passed to the picard.add_or_replace_read_groups function
+       cae1cdf MethylSeq - corrected step5 picard_add_read_groups
+       6294b65 MethylSeq - updated step5 of the pipeline : AddOrReplaceReadGroups
+       0019f59 updated module installation scripts for bowties2 htslib python & samtools
+       a8e9c4a PICARD - bug correction in python wrappers (picard.py & picard2.py)
+       acd0257 GENAP MODULES - added bismark.sh script for Bismark module installation
+       9c70103 MethylSeq - redefined output file for bismark_align step and added AddOrReplaceReadGroups function to picard(2).py wrappers
+       222ce02 MethylSeq - python wrappers and scripts updates
+       edb1d9b MethySeq - corrected typo in __init__.py
+       41f69bd MethyleSeq - creation of the (empty) files as a first commit to the branch
 
-  ehenrion <edouard.henrion@mcgill.ca>      1 commits
+  ehenrion <edouard.henrion@mcgill.ca>      3 commits
 
+       a42811f bedtools.py edited online with Bitbucket removed unused and unfinished function genomecov...
+       e76018c bedtools.py edited online with Bitbucket
        0e875a5 README.md edited online with Bitbucket
 
   Mathieu Bourgey <mathieu.bourgey@mail.mcgill.ca>      9 commits
@@ -78,8 +160,9 @@ HEAD        Mon Feb 27 12:47:44 2017 -0500        0 commits
        6c73c2b tumor-pair - adding bedfile spliting process & start implementation in tumor_pair.py - BFXDEV-476
        905c1ac tumor_pair - extract tumor_pair code for the high coverage branch
 
-  robert.eveleigh@mcgill.ca <reveleig@abacus1.ferrier.genome.mcgill.ca>      5 commits
+  robert.eveleigh@mcgill.ca <reveleig@abacus1.ferrier.genome.mcgill.ca>      6 commits
 
+       df577fb Minor bug fixes and addition of base exome ini
        192f4d3 Bug squashes and speed improvements to ensemble processes
        40df5d9 Merge branch 'tumor_pair' of bitbucket.org:mugqic/mugqic_pipelines into tumor_pair
        93a2142 Modified to remove analyses of alt contigs + split Varscan2 by chromosome
@@ -106,6 +189,21 @@ HEAD        Mon Feb 27 12:47:44 2017 -0500        0 commits
        c53612c tumor_pair - corrected BQSR for WGS, added README.md, added removable_files
        dd6df55 tumor_pair - corrected BQSR for WGS, added README.md, added removable_files
        c708f88 Updates/fixes from guillimin test
+
+  Xiaojian SHAO <xshao@lg-1r14-n04.guillimin.clumeq.ca>      2 commits
+
+       6ddab51 add ppn to wiggle_tracks step
+       06bd6a7 add ppn to wiggle_tracks step
+
+  Xiaojian SHAO <xshao@lg-1r17-n03.guillimin.clumeq.ca>      3 commits
+
+       6fd6ec5 Merge branch 'methylseq' of bitbucket.org:mugqic/mugqic_pipelines into methylseq
+       cd938a3 add walltime to bismark aligner
+       8a5b826 ppn_Changes_in_Guillimin.ini
+
+  Xiaojian SHAO <xshao@lg-1r17-n04.guillimin.clumeq.ca>      1 commits
+
+       db2901f methylseq: edit on ppn setting. -xiaojian
 
 2.2.1        Mon Dec 19 10:57:33 2016 -0500        212 commits
 

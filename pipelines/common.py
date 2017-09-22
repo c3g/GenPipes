@@ -40,6 +40,8 @@ from bfx.readset import *
 from bfx import metrics
 from bfx import picard
 from bfx import trimmomatic
+from bfx import samtools
+
 
 log = logging.getLogger(__name__)
 
@@ -130,6 +132,28 @@ class Illumina(MUGQICPipeline):
                 self.argparser.error("argument -d/--design is required!")
         return self._contrasts
 
+    def samtools_bam_sort(self):
+        """
+        Sorts bam by readname prior to picard_sam_to_fastq step in order to minimize memory consumption.
+        If bam file is small and the memory requirements are reasonable, this step can be skipped.
+        """
+
+        jobs = []
+        for readset in self.readsets:
+            # If readset FASTQ files are available, skip this step
+            if not readset.fastq1:
+                if readset.bam:
+                    sortedBamPrefix = re.sub("\.bam$", ".sorted", readset.bam.strip())
+                    
+                    job = samtools.sort(readset.bam, sortedBamPrefix, sort_by_name = True)
+                    job.name = "samtools_bam_sort." + readset.name
+                    job.removable_files = [sortedBamPrefix + ".bam"]
+                    jobs.append(job)
+                else:
+                    raise Exception("Error: BAM file not available for readset \"" + readset.name + "\"!")
+        return jobs
+
+
     def picard_sam_to_fastq(self):
         """
         Convert SAM/BAM files from the input readset file into FASTQ format
@@ -140,19 +164,24 @@ class Illumina(MUGQICPipeline):
             # If readset FASTQ files are available, skip this step
             if not readset.fastq1:
                 if readset.bam:
+                    ## check if bam file has been sorted:
+                    sortedBam = re.sub("\.bam", ".sorted.bam", readset.bam.strip())
+                    candidate_input_files = [[sortedBam], [readset.bam]]
+                    [bam] = self.select_input_files(candidate_input_files)
                     if readset.run_type == "PAIRED_END":
-                        fastq1 = re.sub("\.bam$", ".pair1.fastq.gz", readset.bam)
-                        fastq2 = re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)
+                        fastq1 = re.sub("\.sorted.bam$|\.bam$", ".pair1.fastq.gz", bam.strip())
+                        fastq2 = re.sub("\.sorted.bam$|\.bam$", ".pair2.fastq.gz", bam.strip())
                     elif readset.run_type == "SINGLE_END":
-                        fastq1 = re.sub("\.bam$", ".single.fastq.gz", readset.bam)
+                        fastq1 = re.sub("\.sorted.bam$|\.bam$", ".single.fastq.gz", bam.strip())
                         fastq2 = None
                     else:
                         raise Exception("Error: run type \"" + readset.run_type +
                         "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
-
-                    job = picard.sam_to_fastq(readset.bam, fastq1, fastq2)
+                    
+                    job = picard.sam_to_fastq(bam, fastq1, fastq2)
                     job.name = "picard_sam_to_fastq." + readset.name
                     jobs.append(job)
+
                 else:
                     raise Exception("Error: BAM file not available for readset \"" + readset.name + "\"!")
         return jobs

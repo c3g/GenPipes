@@ -337,28 +337,69 @@ class MethylSeq(dnaseq.DnaSeq):
             bed_graph_prefix = os.path.join("tracks", sample.name, sample.name)
             big_wig_prefix = os.path.join("tracks", "bigWig", sample.name)
 
-            bed_graph_output = bed_graph_prefix + ".bedGraph"
-            big_wig_output = big_wig_prefix + ".bw"
+            if library[sample] == "PAIRED_END":
+                input_bam_f1 = re.sub("bam", "tmp1.forward.bam", input_bam)
+                input_bam_f2 = re.sub("bam", "tmp2.forward.bam", input_bam)
+                input_bam_r1 = re.sub("bam", "tmp1.reverse.bam", input_bam)
+                input_bam_r2 = re.sub("bam", "tmp2.reverse.bam", input_bam)
+                output_bam_f = re.sub("bam", "forward.bam", input_bam)
+                output_bam_r = re.sub("bam", "reverse.bam", input_bam)
 
-            if input_bam == os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.bam") :
-                jobs.append(
-                    concat_jobs([
-                        Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " " + os.path.join("tracks", "bigWig"), removable_files=["tracks"]),
-                        picard.sort_sam(
-                            input_bam,
-                            re.sub("readset_sorted", "sorted", input_bam),
-                            "coordinate"
-                        ),
-                        bedtools.graph(re.sub("readset_sorted", "sorted", input_bam), bed_graph_output, big_wig_output, library[sample])
-                    ], name="wiggle." + re.sub(".bedGraph", "", os.path.basename(bed_graph_output)))
-                )
-            else :
-                jobs.append(
-                    concat_jobs([
-                        Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " " + os.path.join("tracks", "bigWig"), removable_files=["tracks"]),
-                        bedtools.graph(input_bam, bed_graph_output, big_wig_output, library[sample])
-                    ], name="wiggle." + re.sub(".bedGraph", "", os.path.basename(bed_graph_output)))
-                )
+                bam_f_job = concat_jobs([
+                    samtools.view(input_bam, input_bam_f1, "-bh -F 256 -f 97"),
+                    samtools.view(input_bam, input_bam_f2, "-bh -F 256 -f 145"),
+                    picard.merge_sam_files([input_bam_f1, input_bam_f2], output_bam_f),
+                    Job(command="rm " + input_bam_f1 + " " + input_bam_f2)
+                ], name="wiggle." + sample.name + ".forward_strandspec")
+                # Remove temporary-then-deleted files from job output files, otherwise job is never up to date
+                bam_f_job.output_files.remove(input_bam_f1)
+                bam_f_job.output_files.remove(input_bam_f2)
+
+                bam_r_job = concat_jobs([
+                    Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " " + os.path.join("tracks", "bigWig")),
+                    samtools.view(input_bam, input_bam_r1, "-bh -F 256 -f 81"),
+                    samtools.view(input_bam, input_bam_r2, "-bh -F 256 -f 161"),
+                    picard.merge_sam_files([input_bam_r1, input_bam_r2], output_bam_r),
+                    Job(command="rm " + input_bam_r1 + " " + input_bam_r2)
+                ], name="wiggle." + sample.name + ".reverse_strandspec")
+                # Remove temporary-then-deleted files from job output files, otherwise job is never up to date
+                bam_r_job.output_files.remove(input_bam_r1)
+                bam_r_job.output_files.remove(input_bam_r2)
+
+                jobs.extend([bam_f_job, bam_r_job])
+                outputs = [
+                    [bed_graph_prefix + ".forward.bedGraph", big_wig_prefix + ".forward.bw"],
+                    [bed_graph_prefix + ".reverse.bedGraph", big_wig_prefix + ".reverse.bw"],
+                ]
+            else:
+                outputs = [[bed_graph_prefix + ".bedGraph", big_wig_prefix + ".bw"]]
+
+            for bed_graph_output, big_wig_output in outputs:
+                if "forward" in bed_graph_output:
+                    in_bam = re.sub("bam", "forward.bam", input_bam)    # same as output_bam_f from previous picard job
+                elif "reverse" in bed_graph_output:
+                    in_bam = re.sub("bam", "reverse.bam", input_bam)    # same as output_bam_r from previous picard job
+                else:
+                    in_bam = input_bam
+                if "readset_sorted" in in_bam:
+                    jobs.append(
+                        concat_jobs([
+                            Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " " + os.path.join("tracks", "bigWig"), removable_files=["tracks"]),
+                            picard.sort_sam(
+                                in_bam,
+                                re.sub("readset_sorted", "sorted", in_bam),
+                                "coordinate"
+                            ),
+                            bedtools.graph(re.sub("readset_sorted", "sorted", in_bam), bed_graph_output, big_wig_output, library[sample])
+                        ], name="wiggle." + re.sub(".bedGraph", "", os.path.basename(bed_graph_output)))
+                    )
+                else :
+                    jobs.append(
+                        concat_jobs([
+                            Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " " + os.path.join("tracks", "bigWig"), removable_files=["tracks"]),
+                            bedtools.graph(in_bam, bed_graph_output, big_wig_output, library[sample])
+                        ], name="wiggle." + re.sub(".bedGraph", "", os.path.basename(bed_graph_output)))
+                    )
 
         return jobs
 
