@@ -25,22 +25,24 @@
 from core.job import *
 
 
-def makeDesignFiles (rmapfile, baitmapfile, outfilePrefix, designDir = ".", other_options=""):
+def makeDesignFiles (rmapfile, baitmapfile, file_prefix, design_dir = ".", other_options=""):
 
     command = """makeDesignFiles.py {other_options}\\
     --rmapfile {rmapfile}\\
     --baitmapfile {baitmapfile}\\
-    --designDir {designDir}\\
-    --outfilePrefix {outfilePrefix}""" .format(other_options = other_options, 
-        rmapfile = rmapfile, 
+    --designDir {design_dir}\\
+    --outfilePrefix {file_prefix}""" .format(other_options = other_options,
+        rmapfile = rmapfile,
         baitmapfile = baitmapfile,
-        designDir = designDir, 
-        outfilePrefix = outfilePrefix)
+        design_dir = design_dir,
+        file_prefix = file_prefix)
 
     return Job(input_files = [rmapfile, baitmapfile],
-            output_files = [outfilePrefix + ".nbp", outfilePrefix + ".nbpb", outfilePrefix + ".poe"],
+            output_files = [file_prefix + ".npb",
+            file_prefix + ".poe",
+            file_prefix + ".nbpb"],
             module_entries = [['create_design_files', 'module_chicago']],
-            name = "create_design_files." + os.path.basename(outfilePrefix),
+            name = "create_design_files." + os.path.basename(file_prefix),
             command = command,
             )
 
@@ -52,9 +54,9 @@ def bam2chicago (bam, baitmap, rmap, sample, other_options=""):
     {baitmap}\\
     {rmap}\\
     {sample}""" .format(other_options = other_options,
-        bam = bam, 
+        bam = bam,
         baitmap = baitmap,
-        rmap = rmap, 
+        rmap = rmap,
         sample = sample
         )
 
@@ -68,28 +70,25 @@ def bam2chicago (bam, baitmap, rmap, sample, other_options=""):
 
 def runChicago(design_dir, sample, output_dir, design_file_prefix, other_options=""):
 
-
-#--features-only --en-full-cis-range --en-trans
- 
     command = """runChicago.R {other_options}\\
     -e seqMonk,interBed,washU_text,washU_track \\
     --export-order score  \\
     --design-dir {design_dir}\\
-    -o {output_dir}\\
+    -o {output}\\
     {input} \\
-    {output_prefix}\\""" .format(
+    {output_prefix}""" .format(
         other_options = other_options,
         design_dir = design_dir,
-        output_dir = os.path.join(output_dir, sample),
-        input = os.path.join(design_dir, sample, sample + ".chinput"), 
+        output = os.path.join(output_dir, sample),
+        input = os.path.join(design_dir, sample, sample + ".chinput"),
         output_prefix = sample
         )
 
     return Job(input_files = [os.path.join(design_dir, design_file_prefix + ".baitmap"),
-                            os.path.join(design_dir, design_file_prefix + ".npb"), 
-                            os.path.join(design_dir, design_file_prefix + ".poe"), 
-                            os.path.join(design_dir, design_file_prefix + ".nbpb"), 
-                            os.path.join(design_dir, sample, sample + ".chinput")], 
+                            os.path.join(design_dir, design_file_prefix + ".npb"),
+                            os.path.join(design_dir, design_file_prefix + ".poe"),
+                            os.path.join(design_dir, design_file_prefix + ".nbpb"),
+                            os.path.join(design_dir, sample, sample + ".chinput")],
             output_files = [os.path.join(output_dir, sample, "data", sample + ".Rds"),
                             os.path.join(output_dir, sample, "data", sample + ".ibed"),
                             os.path.join(output_dir, sample, "data", sample + "_washU_track.txt"),
@@ -103,7 +102,6 @@ def runChicago(design_dir, sample, output_dir, design_file_prefix, other_options
 
 def runChicago_featureOverlap(featuresBed, sample, output_dir, design_file_prefix, other_options=""):
 
-
     command = """runChicago.R {other_options}\\
     --features-only\\
     --en-feat-list {featuresBed}\\
@@ -111,16 +109,16 @@ def runChicago_featureOverlap(featuresBed, sample, output_dir, design_file_prefi
     --en-trans\\
     -o {output_dir}\\
     {input} \\
-    {output_prefix}\\""" .format(
+    {output_prefix}""" .format(
         other_options = other_options,
         featuresBed = featuresBed,
         output_dir = os.path.join(output_dir, sample),
-        input = os.path.join(output_dir, sample, "data", sample + ".Rds"), 
+        input = os.path.join(output_dir, sample, "data", sample + ".Rds"),
         output_prefix = sample
         )
 
     return Job(input_files = [os.path.join(output_dir, sample, "data", sample + ".Rds"),
-                            featuresBed], 
+                            featuresBed],
             output_files = [os.path.join(output_dir, sample, "enrichment_data", sample + "_feature_overlaps.pdf"),
                             os.path.join(output_dir, sample, "enrichment_data", sample + "_feature_overlaps.txt")
                            ],

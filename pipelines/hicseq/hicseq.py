@@ -50,6 +50,7 @@ from bfx import multiqc
 from bfx import genome
 from bfx import bedtools
 from bfx import chicago
+from bfx import bedops
 
 
 log = logging.getLogger(__name__)
@@ -82,14 +83,30 @@ class HicSeq(common.Illumina):
     [Here](<url>) is more information about Hi-C pipeline that you may find interesting.
     """
 
-    
+
     def __init__(self, protocol='hic'):
         self._protocol=protocol
         self.argparser.add_argument("-e", "--enzyme", help = "Restriction Enzyme used to generate Hi-C library", choices = ["DpnII", "HindIII", "NcoI", "MboI"], required=True)
         self.argparser.add_argument("-t", "--type", help = "Hi-C experiment type", choices = ["hic", "capture"], default="hic")
         super(HicSeq, self).__init__(protocol)
 
-    
+
+    @property
+    def output_dirs(self):
+        dirs = {'hicup_output_directory': 'alignment',
+                'homer_output_directory': 'homer_tag_directory',
+                'bams_output_directory': 'alignment',
+                'matrices_output_directory': 'interaction_matrices',
+                'cmpt_output_directory': 'compartments',
+                'TAD_output_directory': 'TADs',
+                'peaks_output_directory': 'peaks',
+                'hicfiles_output_directory': 'hicFiles',
+                'chicago_input_files': 'input_files',
+                'chicago_output_directory': 'chicago'
+                }
+        return dirs
+
+
     @property
     def enzyme(self):
         return self.args.enzyme
@@ -110,28 +127,6 @@ class HicSeq(common.Illumina):
         return restriction_site
 
     @property
-    def genome_digest(self):
-        genome_digest = os.path.expandvars(config.param('hicup_align', "genome_digest_" + self.enzyme))
-        return genome_digest
-
-
-    @property
-    def output_dirs(self):
-        dirs = {'hicup_output_directory': 'alignment',
-                'homer_output_directory': 'homer_tag_directory',
-                'bams_output_directory': 'alignment',
-                'matrices_output_directory': 'interaction_matrices',
-                'cmpt_output_directory': 'compartments',
-                'TAD_output_directory': 'TADs',
-                'peaks_output_directory': 'peaks',
-                'hicfiles_output_directory': 'hicFiles', 
-                'chicago_input_files': 'input_files',
-                'chicago_output_directory': 'chicago'
-                }
-        return dirs
-
-
-    @property
     def genome(self):
         genome_source = config.param('DEFAULT', 'source')
         if genome_source == "UCSC":
@@ -140,6 +135,11 @@ class HicSeq(common.Illumina):
             genome = config.param('DEFAULT', 'assembly_synonyms')
         return genome
 
+
+    @property
+    def genome_digest(self):
+        genome_digest = os.path.expandvars(config.param('hicup_align', "genome_digest_" + self.enzyme))
+        return genome_digest
 
 
     def fastq_readName_Edit(self):
@@ -170,7 +170,7 @@ class HicSeq(common.Illumina):
                 else
                     ln -s -f {fastq1_abs} {fastq1_edited}
                 fi
-            """.format(fastq1 = fastq1, 
+            """.format(fastq1 = fastq1,
                 fastq1_edited = fastq1 + ".edited.gz",
                 fastq1_abs = os.path.abspath(fastq1)
                 )
@@ -189,11 +189,11 @@ class HicSeq(common.Illumina):
                     ln -s -f {fastq2_abs} {fastq2_edited}
                 fi
             """.format(
-                fastq2 = fastq2, 
-                fastq2_edited = fastq2 + ".edited.gz", 
+                fastq2 = fastq2,
+                fastq2_edited = fastq2 + ".edited.gz",
                 fastq2_abs = os.path.abspath(fastq2)
                 )
-            
+
             job_fastq2 = Job(input_files = [fastq2],
                     output_files = [fastq2 + ".edited.gz"],
                     name = "fastq_readName_Edit.fq2." + readset.name,
@@ -201,8 +201,6 @@ class HicSeq(common.Illumina):
                     removable_files = [fastq2 + ".edited.gz"]
                     )
 
-
-            
             jobs.extend([job_fastq1, job_fastq2])
 
 
@@ -238,10 +236,10 @@ class HicSeq(common.Illumina):
             job_confFile = hicup.create_hicup_conf(readset.name, fastq1, fastq2, sample_output_dir, self.genome_digest)
 
             job_hicup = hicup.hicup_run(readset.name, "hicup_align." + readset.name + ".conf", sample_output_dir, fastq1, fastq2)
- 
+
             job = concat_jobs([job_confFile, job_hicup])
             job.name = "hicup_align." + readset.name
-            
+
             jobs.append(job)
 
         return jobs
@@ -333,11 +331,9 @@ class HicSeq(common.Illumina):
 
         jobs = []
 
-        
         chrs = config.param('interaction_matrices_Chr', 'chromosomes')
         res_chr = config.param('interaction_matrices_Chr', 'resolution_chr').split(",")
 
-        
         if chrs == "All":
             genome_dict = os.path.expandvars(config.param('DEFAULT', 'genome_dictionary', type='filepath'))
             chrs = genome.chr_names_conv(genome_dict)
@@ -364,7 +360,6 @@ class HicSeq(common.Illumina):
                     newFileNamePlot = os.path.join(sample_output_dir_chr, "".join((tagDirName,"_", chr,"_", res, "_raw-", chr, ".all.", str(int(res)/1000), "K.jpeg")))
                     commandChrPlot = "HiCPlotter.py -f {fileNameRN} -n {name} -chr {chr} -r {res} -fh 0 -o {sample_output_dir_chr} -ptr 0 -hmc {hmc} && mv {fileNamePlot} {newFileNamePlot}".format(res=res, chr=chr, fileNameRN=fileNameRN, name=sample.name, sample_output_dir_chr=os.path.join(sample_output_dir_chr, "_".join((tagDirName, chr, res, "raw"))), hmc = config.param('interaction_matrices_Chr', 'hmc'), fileNamePlot = fileNamePlot, newFileNamePlot= newFileNamePlot)
 
-                    
                     jobPlot = Job(input_files = [fileNameRN],
                             output_files = [newFileNamePlot],
                             module_entries = [["interaction_matrices_Chr", "module_HiCPlotter"]],
@@ -404,7 +399,7 @@ class HicSeq(common.Illumina):
 
 
                 commandPlot = "HiCPlotter.py -f {fileNameRN} -n {name} -chr Genome -r {res} -fh 0 -o {sample_output_dir_genome} -ptr 0 -hmc {hmc} -wg 1".format(res=res, chr=chr, fileNameRN=fileNameRN, name=sample.name, sample_output_dir_genome=os.path.join(sample_output_dir_genome, "_".join((tagDirName, "genomewide", "raw"))), hmc = config.param('interaction_matrices_Chr', 'hmc'))
-                
+
                 outputFile = os.path.join(sample_output_dir_genome, tagDirName + "_genomewide_raw-WholeGenome-" + str(int(res)/1000) + "K.jpeg")
 
                 jobPlot = Job(input_files = [fileNameRN],
@@ -457,7 +452,6 @@ class HicSeq(common.Illumina):
         chrs = config.param('identify_TADs', 'chromosomes')
         res_chr = config.param('identify_TADs', 'resolution_TADs').split(",")
 
-        
         if chrs == "All":
             genome_dict = os.path.expandvars(config.param('DEFAULT', 'genome_dictionary', type='filepath'))
             chrs = genome.chr_names_conv(genome_dict)
@@ -478,9 +472,9 @@ class HicSeq(common.Illumina):
 
                     ## make TopDom R script:
                     FileContent = """source(\\\"{script}\\\"); TopDom(matrix.file=\'{tmp_matrix}\', window.size={n}, outFile=\'{output_matrix}\')""".format(
-                                    script = os.path.expandvars("${R_TOOLS}/TopDom_v0.0.2.R"), 
-                                    tmp_matrix = tmp_matrix, 
-                                    n = config.param('identify_TADs', 'TopDom_n'), 
+                                    script = os.path.expandvars("${R_TOOLS}/TopDom_v0.0.2.R"),
+                                    tmp_matrix = tmp_matrix,
+                                    n = config.param('identify_TADs', 'TopDom_n'),
                                     output_matrix = output_matrix
                                 )
 
@@ -488,9 +482,9 @@ class HicSeq(common.Illumina):
                     command_RFile ="""echo \"{FileContent}\" > {fileName}""".format(FileContent=FileContent, fileName=fileName)
 
                     command_TopDom = """mkdir -p {sample_output_dir} && {script} {input} {res}""".format(
-                                sample_output_dir = sample_output_dir, 
-                                script = "CreateTopDomMat.sh", 
-                                input = input_matrix, 
+                                sample_output_dir = sample_output_dir,
+                                script = "CreateTopDomMat.sh",
+                                input = input_matrix,
                                 res = res
                             )
 
@@ -551,7 +545,6 @@ class HicSeq(common.Illumina):
             hic_output = os.path.join(self.output_dirs['hicfiles_output_directory'], sample.name + ".hic")
 
             command_sort = samtools.sort(sample_input, sortedBamPrefix, sort_by_name = True)
-           
 
             command_input = Job(input_files = [sortedBam],
                 output_files = [sample.name + ".juicebox.input", sample.name + ".juicebox.input.sorted"],
@@ -600,17 +593,25 @@ class HicSeq(common.Illumina):
         """
         ## return 1 rmap per enzyme
         output = os.path.join(self.output_dirs['chicago_input_files'], self.enzyme + ".rmap")
+        sorted_output = re.sub("\.rmap", ".sorted.rmap", output)
         input_file = self.genome_digest
 
         command = """mkdir -p {dir} && \\
         cut -f 1-3 {input_file} > {output}.tmp && \\
-        awk 'BEGIN {{FS=\"\\t\"; OFS=\"\\t\"}} NR>2 {{print $0, NR}}' {output}.tmp > {output} && \\
+        awk 'BEGIN {{FS=\"\\t\"; OFS=\"\\t\"}} NR>2 {{if ($2 != $3) print $0, NR}}' {output}.tmp > {output} && \\
         rm {output}.tmp""".format(dir = self.output_dirs['chicago_input_files'], input_file = input_file, output = output)
 
-        return [Job(input_files = [input_file], 
-            output_files = [output], 
-            command = command, 
-            name = "create_rmap_file." + self.enzyme)]
+        job_rmap = Job(input_files = [input_file],
+            output_files = [output],
+            command = command,
+            name = "create_rmap_file." + self.enzyme)
+
+        job_sort = bedops.sort_bed(output, sorted_output)
+
+        job = concat_jobs([job_rmap, job_sort])
+        job.name = "create_rmap_file." + os.path.basename(input_file)
+        return [job]
+
 
 
     def create_baitmap_file(self):
@@ -618,24 +619,40 @@ class HicSeq(common.Illumina):
         baitmap file for Chicago capture analysis is created using the created rmap file and the probe capture bed file.
         """
         ## return 1 baitmap per enzyme/capture array combination
-        
-        input_rmap = os.path.join(self.output_dirs['chicago_input_files'], self.enzyme + ".rmap")
+
+        input_rmap = os.path.join(self.output_dirs['chicago_input_files'], self.enzyme + ".sorted.rmap")
         input_bait = config.param('create_baitmap_file', "baitBed")
-        output_file = re.sub("\.bed", "", os.path.basename(input_bait)) + "_" + self.enzyme + ".baitmap"
-        output = os.path.join(self.output_dirs['chicago_input_files'], output_file)
+        sorted_input_bait = re.sub("\.bed", ".sorted.bed", input_bait)
+        output_file_name = re.sub("\.bed", "", os.path.basename(input_bait)) + "_" + self.enzyme + ".baitmap"
+        output_file = os.path.join(self.output_dirs['chicago_input_files'], output_file_name)
         annotation = config.param('create_baitmap_file', "annotation")
 
-        job_intersectBeds = bedtools.intersect_beds(input_rmap, input_bait, output + ".tmp", "-wa -u")
+        job_sort = bedops.sort_bed(input_bait, sorted_input_bait)
 
-        job_anno = Job(input_files = [output + ".tmp"], 
-            output_files = [output], 
-            command = """awk 'BEGIN {{FS=\"\\t\"; OFS=\"\\t\"}}{{print $0, \"{annotation}\"NR}}' {outputTmp}  >  {output}""".format(annotation = annotation, outputTmp = output + ".tmp", output = output),
-            name = "create_baitmap_file.addAnno." + output,
-            removable_files = [output + ".tmp"]
+        job_intersectBeds = bedtools.intersect_beds(input_rmap, sorted_input_bait, output_file + ".tmp", "-wa -u")
+
+        ## annotate file with annotation in baitBed otherwise annotate with random ids
+        job_anno = Job(input_files = [output_file + ".tmp"],
+            output_files = [output_file],
+            command = """column_num=$(awk 'NR <2 {{print NF}}' {input_bait})
+            if [[ \"$column_num\" -eq 4 ]]; then
+                bedmap --echo --echo-map-id {outputTmp} {sorted_input_bait} > {outputTmp2}
+                tr '|' '\\t' < {outputTmp2}  >  {output_file}
+            else
+                awk 'BEGIN {{FS=\"\\t\"; OFS=\"\\t\"}}{{print $0, \"{annotation}\"NR}}' {outputTmp}  >  {output_file}
+            fi; 
+            rm {outputTmp} {outputTmp2}""".format(
+                input_bait = input_bait,
+                outputTmp = output_file + ".tmp",
+                outputTmp2 = output_file + ".tmp2",
+                sorted_input_bait= sorted_input_bait,
+                annotation = annotation,
+                output_file = output_file),
+            name = "create_baitmap_file.addAnno." + output_file_name
             )
 
-        job = concat_jobs([job_intersectBeds, job_anno])
-        job.name = "create_baitmap_file." + output_file
+        job = concat_jobs([job_sort, job_intersectBeds, job_anno])
+        job.name = "create_baitmap_file." + output_file_name
         return [job]
 
 
@@ -643,7 +660,7 @@ class HicSeq(common.Illumina):
         """
         design files (nperbin file (.npb), nbaitsperbin file (.nbpb), proxOE file (.poe)) for Chicago capture analysis are created using the rmap file and the baitmap file.
         """
-        rmapfile = os.path.join(self.output_dirs['chicago_input_files'], self.enzyme + ".rmap")
+        rmapfile = os.path.join(self.output_dirs['chicago_input_files'], self.enzyme + ".sorted.rmap")
         baitmapfile = os.path.join(self.output_dirs['chicago_input_files'], os.path.basename(re.sub("\.bed$", "", config.param('create_baitmap_file', "baitBed")) + "_" + self.enzyme + ".baitmap"))
         other_options = config.param('create_design_files', 'other_options', required = False)
         designDir = self.output_dirs['chicago_input_files']
@@ -687,7 +704,7 @@ class HicSeq(common.Illumina):
 
 
         for sample in self.samples:
-            job = chicago.runChicago(design_dir, sample, output_dir, design_file_prefix, other_options)
+            job = chicago.runChicago(design_dir, sample.name, output_dir, design_file_prefix, other_options)
             jobs.append(job)
 
         return jobs
@@ -702,12 +719,12 @@ class HicSeq(common.Illumina):
         output_dir = self.output_dirs['chicago_output_directory']
         design_file_prefix = os.path.basename(re.sub("\.bed$", "", config.param('create_baitmap_file', "baitBed")) + "_" + self.enzyme)
         other_options = config.param('runChicago_featureOverlap', 'other_options', required = False)
-        features_file = config.param('runChicago_featureOverlap', 'features_file', required = True)
+        features_file = config.param('runChicago_featureOverlap', 'features_file', required = False)
 
-
-        for sample in self.samples:
-            job = chicago.runChicago_featureOverlap(features_file, sample, output_dir, design_file_prefix, other_options)
-            jobs.append(job)
+        if features_file is not None:
+            for sample in self.samples:
+                job = chicago.runChicago_featureOverlap(features_file, sample.name, output_dir, design_file_prefix, other_options)
+                jobs.append(job)
 
         return jobs
 
