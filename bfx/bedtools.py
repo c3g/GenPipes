@@ -99,7 +99,7 @@ bedtools intersect \\
     )
 
 
-def intersect_beds(bed1, bed2, output_bed, other_options):
+def intersect_beds(bed1, bed2, output_bed, other_options=""):
 
     return Job(
         [bed1, bed2],
@@ -108,10 +108,10 @@ def intersect_beds(bed1, bed2, output_bed, other_options):
             ['bedtools', 'module_bedtools']
         ],
         command="""\
-bedtools intersect \\
+bedtools intersect {other_options}\\
   -a {bed1} \\
   -b {bed2} \\
-  {other_options} > {output_bed}""".format(
+  > {output_bed}""".format(
             bed1 = bed1,
             bed2 = bed2,
             other_options = other_options,

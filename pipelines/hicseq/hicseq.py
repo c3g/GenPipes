@@ -74,8 +74,8 @@ class HicSeq(common.Illumina):
     It then maps the reads to a reference genome using HiCUP.
     HiCUP first truncates chimeric reads, maps reads to the genome, then it filters Hi-C artifacts and removes read duplicates.
     Samples from different lanes are merged and CHiCAGO is then used to filter capture-specific artifacts and call significant 
-    interactions. This pipeline also identifies enrichement of regulatory features when provided with ChIP-Seq marks and also 
-    identifies enrichement of GWAS SNPs.
+    interactions. This pipeline also identifies enrichement of regulatory features when provided with ChIP-Seq marks. It can also 
+    return bed interctions with significant baits (bait_intersect step) or with captured interactions (capture_intersect step). 
 
     An example of the Hi-C report for an analysis on public data (GM12878 Rao. et al.) is available for illustration purpose only:
     [Hi-C report](<url>).
@@ -102,7 +102,8 @@ class HicSeq(common.Illumina):
                 'peaks_output_directory': 'peaks',
                 'hicfiles_output_directory': 'hicFiles',
                 'chicago_input_files': 'input_files',
-                'chicago_output_directory': 'chicago'
+                'chicago_output_directory': 'chicago',
+                'intersect_ouput_directory': 'bed_intersect'
                 }
         return dirs
 
@@ -592,8 +593,8 @@ class HicSeq(common.Illumina):
         rmap file for Chicago capture analysis is created using the hicup digestion file.
         """
         ## return 1 rmap per enzyme
-        output = os.path.join(self.output_dirs['chicago_input_files'], self.enzyme + ".rmap")
-        sorted_output = re.sub("\.rmap", ".sorted.rmap", output)
+        output = os.path.join(self.output_dirs['chicago_input_files'], self.enzyme + ".Initialrmap")
+        sorted_output = re.sub("\.Initialrmap", ".sorted.rmap", output)
         input_file = self.genome_digest
 
         command = """mkdir -p {dir} && \\
@@ -602,7 +603,7 @@ class HicSeq(common.Illumina):
         rm {output}.tmp""".format(dir = self.output_dirs['chicago_input_files'], input_file = input_file, output = output)
 
         job_rmap = Job(input_files = [input_file],
-            output_files = [output],
+            output_files = [output, sorted_output],
             command = command,
             name = "create_rmap_file." + self.enzyme)
 
@@ -637,18 +638,19 @@ class HicSeq(common.Illumina):
             command = """column_num=$(awk 'NR <2 {{print NF}}' {input_bait})
             if [[ \"$column_num\" -eq 4 ]]; then
                 bedmap --echo --echo-map-id {outputTmp} {sorted_input_bait} > {outputTmp2}
-                tr '|' '\\t' < {outputTmp2}  >  {output_file}
+                tr '|' '\\t' < {outputTmp2}  >  {output_file};
+                rm {outputTmp2};
             else
                 awk 'BEGIN {{FS=\"\\t\"; OFS=\"\\t\"}}{{print $0, \"{annotation}\"NR}}' {outputTmp}  >  {output_file}
-            fi; 
-            rm {outputTmp} {outputTmp2}""".format(
+            fi""".format(
                 input_bait = input_bait,
                 outputTmp = output_file + ".tmp",
                 outputTmp2 = output_file + ".tmp2",
                 sorted_input_bait= sorted_input_bait,
                 annotation = annotation,
                 output_file = output_file),
-            name = "create_baitmap_file.addAnno." + output_file_name
+                removable_files = [output_file + ".tmp"],
+                name = "create_baitmap_file.addAnno." + output_file_name
             )
 
         job = concat_jobs([job_sort, job_intersectBeds, job_anno])
@@ -675,7 +677,7 @@ class HicSeq(common.Illumina):
         input file (sample.chinput) for Chicago capture analysis is created using the rmap file, the baitmap file and the hicup aligned bam.
         """
         jobs = []
-        rmapfile = os.path.join(self.output_dirs['chicago_input_files'], self.enzyme + ".rmap")
+        rmapfile = os.path.join(self.output_dirs['chicago_input_files'], self.enzyme + ".sorted.rmap")
         baitmapfile = os.path.join(self.output_dirs['chicago_input_files'], os.path.basename(re.sub("\.bed$", "", config.param('create_baitmap_file', "baitBed")) + "_" + self.enzyme + ".baitmap"))
         other_options = config.param('create_input_files', 'other_options', required = False)
 
@@ -719,11 +721,123 @@ class HicSeq(common.Illumina):
         output_dir = self.output_dirs['chicago_output_directory']
         design_file_prefix = os.path.basename(re.sub("\.bed$", "", config.param('create_baitmap_file', "baitBed")) + "_" + self.enzyme)
         other_options = config.param('runChicago_featureOverlap', 'other_options', required = False)
-        features_file = config.param('runChicago_featureOverlap', 'features_file', required = False)
+        features_file = config.param('runChicago_featureOverlap', 'features_file', required = True)
 
-        if features_file is not None:
+        if features_file != "None":
             for sample in self.samples:
                 job = chicago.runChicago_featureOverlap(features_file, sample.name, output_dir, design_file_prefix, other_options)
+                jobs.append(job)
+
+        return jobs
+
+
+    def bait_intersect(self):
+        """
+        provided with a bed file, for example a bed of GWAS snps or features of interest, this method returns the lines in the bed file that intersect with the baits that have significant interactions. 
+        Input bed must have 4 columns (<chr> <start> <end> <annotation>) and must be tab separated.
+        """
+        jobs = []
+        chicago_output_dir = self.output_dirs['chicago_output_directory']
+        intersect_output_dir = self.output_dirs['intersect_ouput_directory']
+        other_options = config.param('bait_intersect', 'other_options', required = False)
+        features_file = config.param('bait_intersect', 'features_file', required = True)
+
+        sorted_features_file = os.path.splitext(features_file)[0] + ".sorted.bed"
+        output_dir = os.path.join(chicago_output_dir, intersect_output_dir)        
+        
+
+        if features_file != "None":
+            
+            job_create_dir = Job(command = "mkdir -p {output_dir}".format(output_dir = output_dir))
+            job_sort_features_file = bedops.sort_bed(features_file, sorted_features_file)
+
+            job = concat_jobs([job_create_dir, job_sort_features_file])
+            job.name = "bait_intersect.sort_feature." + os.path.basename(sorted_features_file)
+            job.removable_files = [sorted_features_file]
+            jobs.append(job)
+
+
+            for sample in self.samples:
+                sample_output_dir = os.path.join(chicago_output_dir, sample.name, "data")
+                ibed_file = os.path.join(sample_output_dir, sample.name + ".ibed")
+                sorted_ibed_file = re.sub("\.ibed$", ".bait.sorted.bed", ibed_file)
+
+                output_file_prefix = os.path.join(output_dir, os.path.splitext(os.path.basename(features_file))[0] + "_" + os.path.splitext(os.path.basename(ibed_file))[0])
+
+
+
+                job_extract_bait_bed = Job(input_files = [ibed_file],
+                        output_files = [ibed_file + ".bait"],
+                        name = "extract_bait_bed." + sample.name,
+                        command = """awk 'BEGIN {{FS=\"\\t\"; OFS=\"\\t\"}} NR>1 {{print $1,$2,$3,$4}}' {input} > {outputTmp} && \\
+                        awk '!a[$0]++' {outputTmp} > {output} && \\
+                        rm {outputTmp}""".format(input= ibed_file, 
+                                            outputTmp = ibed_file + ".bait.tmp", 
+                                            output = ibed_file + ".bait"),
+                        removable_files = [ibed_file + ".bait"]
+                        )
+
+                job_sort_ibed = bedops.sort_bed(ibed_file + ".bait", sorted_ibed_file)
+                job_intersect = bedtools.intersect_beds(sorted_features_file, sorted_ibed_file, output_file_prefix + ".tmp", "-wa -u")
+                job_bedopsMap = bedops.bedmap_echoMapId(output_file_prefix + ".tmp", sorted_ibed_file, output_file_prefix + ".bait_intersect.bed")
+                job = concat_jobs([job_extract_bait_bed, job_sort_ibed, job_intersect, job_bedopsMap])
+                job.name = "bait_intersect." + sample.name
+                job.removable_files = [sorted_ibed_file, sorted_features_file, output_file_prefix + ".tmp", ibed_file + ".bait"]
+                jobs.append(job)
+
+        return jobs
+
+
+    def capture_intersect(self):
+        """
+        provided with a bed file, for example a bed of GWAS snps or features of interest, this method returns the lines in the bed file that intersect with the captured ends ("Other Ends") that have significant interactions. 
+        Input bed must have 4 columns (<chr> <start> <end> <annotation>) and must be tab separated.
+        """
+        jobs = []
+        chicago_output_dir = self.output_dirs['chicago_output_directory']
+        intersect_output_dir = self.output_dirs['intersect_ouput_directory']
+        other_options = config.param('capture_intersect', 'other_options', required = False)
+        features_file = config.param('capture_intersect', 'features_file', required = True)
+
+        sorted_features_file = os.path.splitext(features_file)[0] + ".sorted.bed"
+        output_dir = os.path.join(chicago_output_dir, intersect_output_dir)        
+        
+
+        if features_file != "None":
+            job_create_dir = Job(command = "mkdir -p {output_dir}".format(output_dir = output_dir))
+            job_sort_features_file = bedops.sort_bed(features_file, sorted_features_file)
+
+            job = concat_jobs([job_create_dir, job_sort_features_file])
+            job.name = "capture_intersect.sort_feature." + os.path.basename(sorted_features_file)
+            job.removable_files = [sorted_features_file]
+            jobs.append(job)
+
+            for sample in self.samples:
+                sample_output_dir = os.path.join(chicago_output_dir, sample.name, "data")
+                ibed_file = os.path.join(sample_output_dir, sample.name + ".ibed")
+                sorted_ibed_file = re.sub("\.ibed$", ".capture.sorted.bed", ibed_file)
+
+
+                output_file_prefix = os.path.join(output_dir, os.path.splitext(os.path.basename(features_file))[0] + "_" + os.path.splitext(os.path.basename(ibed_file))[0])
+
+                
+                job_extract_capture_bed = Job(input_files = [ibed_file],
+                        output_files = [ibed_file + ".capture"],
+                        name = "extract_capture_bed." + sample.name,
+                        command = """awk 'BEGIN {{FS=\"\\t\"; OFS=\"\\t\"}} NR>1 {{if ($8 == ".") {{id = $5":"$6"-"$7}} else {{id = $8}} print $5,$6,$7,id}}' {input} > {outputTmp} && \\
+                        awk '!a[$0]++' {outputTmp} > {output} && \\
+                        rm {outputTmp}""".format(input= ibed_file, 
+                                            outputTmp = ibed_file + ".capture.tmp", 
+                                            output = ibed_file + ".capture"),
+                        removable_files = [ibed_file + ".capture"]
+                        )
+
+                job_sort_ibed = bedops.sort_bed(ibed_file + ".capture", sorted_ibed_file)
+                job_intersect = bedtools.intersect_beds(sorted_features_file, sorted_ibed_file, output_file_prefix + ".tmp", "-wa -u")
+                job_bedopsMap = bedops.bedmap_echoMapId(output_file_prefix + ".tmp", sorted_ibed_file, output_file_prefix + ".capture_intersect.bed")
+                job = concat_jobs([job_extract_capture_bed, job_sort_ibed, job_intersect, job_bedopsMap])
+                job.name = "capture_intersect." + sample.name
+                job.removable_files = [sorted_ibed_file, output_file_prefix + ".tmp", ibed_file + ".capture"]
                 jobs.append(job)
 
         return jobs
@@ -760,6 +874,8 @@ class HicSeq(common.Illumina):
             self.create_input_files,
             self.runChicago,
             self.runChicago_featureOverlap,
+            self.bait_intersect,
+            self.capture_intersect,
             self.multiqc_report]
         ]
 
