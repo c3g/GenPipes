@@ -43,7 +43,7 @@ from bfx import samtools
 from bfx import gatk
 from bfx import igvtools
 from bfx import bissnp
-from bfx import methyl_profile
+from bfx import tools
 from bfx import ucsc
 
 from pipelines import common
@@ -552,7 +552,7 @@ cp \\
             cpg_profile = re.sub(".CpG_report.txt.gz", ".CpG_profile.strand.combined.csv", cpg_input_file)
 
             # Generate CpG methylation profile
-            job = methyl_profile.combine(
+            job = tools.bismark_combine(
                 cpg_input_file,
                 cpg_profile
             )
@@ -564,7 +564,7 @@ cp \\
             cg_stats_output = re.sub(".CpG_report.txt.gz", ".profile.cgstats.txt", cpg_input_file)
             lambda_stats_output = re.sub(".CpG_report.txt.gz", ".profile.lambda.conversion.rate.tsv", cpg_input_file)
             puc19_stats_output = re.sub(".CpG_report.txt.gz", ".profile.pUC19.txt", cpg_input_file)
-            job = methyl_profile.cpg_stats(
+            job = tools.cpg_stats(
                 cpg_profile,
                 cg_stats_output,
                 lambda_stats_output,
@@ -590,7 +590,7 @@ cp \\
 
             # Caluculate median & mean CpG coverage
             median_CpG_coverage = re.sub(".CpG_report.txt.gz", ".median_CpG_coverage.txt", cpg_input_file)
-            job = methyl_profile.cpg_cov_stats(
+            job = tools.cpg_cov_stats(
                 cpg_profile,
                 median_CpG_coverage
             )
@@ -654,7 +654,7 @@ cp \\
         jobs.append(
             concat_jobs([
                 Job(command="mkdir -p metrics"),
-                methyl_profile.metrics_report(sample_list, inputs, metrics_file, target_bed),
+                tools.methylseq_metrics_report(sample_list, inputs, metrics_file, target_bed),
                 Job(
                     [metrics_file],
                     [report_file],
@@ -702,7 +702,6 @@ pandoc \\
         inputs = []
         sample_list = []
         for sample in self.samples:
-            sample_list.append(sample.name)
 
             # Trim log files
             for readset in sample.readsets:
@@ -750,7 +749,7 @@ pandoc \\
             jobs.append(
             concat_jobs([
                 Job(command="mkdir -p metrics"),
-                methyl_profile.ihec_metrics_report(sample_list, inputs, metrics_file, target_bed),
+                tools.methylseq_ihec_metrics_report(sample.name, inputs, metrics_file, target_bed),
                 Job(
                     [metrics_file],
                     [report_file],
@@ -780,7 +779,7 @@ pandoc \\
         jobs.append(
             concat_jobs([
                 Job(command="mkdir -p metrics"),
-                methyl_profile.ihec_metrics_report(sample_list, inputs, metrics_file, target_bed),
+                tools.methylseq_ihec_metrics_report(sample_list, inputs, metrics_file, target_bed),
                 Job(
                     [metrics_file],
                     [report_file],

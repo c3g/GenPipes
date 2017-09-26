@@ -443,3 +443,95 @@ R --no-save --args \\
         mean_read_length=mean_read_length
         )
     )
+
+## methylseq tools
+
+def bismark_combine(input, output):
+    return Job(
+        [input],
+        [output],
+        [
+            ['DEFAULT', 'module_mugqic_tools'],
+            ['DEFAULT', 'module_perl']
+        ],
+        command="""\
+methylProfile.bismark.pl \\
+ -i {input} \\
+ -o {output}""".format(
+            input=input,
+            output=output
+         )
+    )
+
+def cpg_stats(input, cg_stats, lambda_stats, puc19_stats):
+    return Job(
+        [input],
+        [cg_stats, lambda_stats, puc19_stats],
+        [
+            ['DEFAULT', 'module_mugqic_tools']
+        ],
+        command="""\
+bash cpgStats.sh \\
+  {input} \\
+  {cg_stats} \\
+  {lambda_stats} \\
+  {puc19_stats}""".format(
+            input=input,
+            cg_stats=cg_stats,
+            lambda_stats=lambda_stats,
+            puc19_stats=puc19_stats
+        )
+    )
+
+def cpg_cov_stats(input, output):
+    return Job(
+        [input],
+        [output],
+        [
+            ['DEFAULT', 'module_mugqic_tools'],
+            ['DEFAULT', 'module_python']
+        ],
+        command="""\
+python $PYTHON_TOOLS/CpG_coverageStats.py \\
+ -i {input} \\
+ -o {output}""".format(
+            input=input,
+            output=output
+         )
+    )
+
+def methylseq_metrics_report(sample_list, inputs, output, target_bed):
+    return Job(
+        inputs,
+        [output],
+        [
+            ['DEFAULT', 'module_mugqic_tools']
+        ],
+        command="""\
+bash methylseq_metrics.sh \\
+  {sample_list} \\
+  {output_file} \\
+  {targeted_flag}""".format(
+            sample_list=",".join(sample_list),
+            output_file=output,
+            targeted_flag=1 if target_bed else 0
+        )
+    )
+
+def methylseq_ihec_metrics_report(sample_list, inputs, output, target_bed):
+    return Job(
+        inputs,
+        [output],
+        [
+            ['DEFAULT', 'module_mugqic_tools']
+        ],
+        command="""\
+bash methylseq_metrics_for_ihec.sh \\
+  {sample_list} \\
+  {output_file} \\
+  {targeted_flag}""".format(
+            sample_list=",".join(sample_list),
+            output_file=output,
+            targeted_flag=1 if target_bed else 0
+        )
+    )
