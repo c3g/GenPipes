@@ -50,13 +50,15 @@ rm {input_bed_graph}.head.tmp {input_bed_graph}.body.tmp""".format(
     else:
         if os.path.splitext(input_bed_graph)[1] == ".gz":
           remove_head_command="""\
-zcat {input_bed_graph} | sort -k1,1 -k2,2n > {input_bed_graph}.sorted""".format(
-                input_bed_graph=input_bed_graph
+zcat {input_bed_graph} | sort --temporary-directory={temp_dir} -k1,1 -k2,2n > {input_bed_graph}.sorted""".format(
+                input_bed_graph=input_bed_graph,
+                temp_dir=config.param('ucsc', 'tmp_dir', type='filepath', required=True)
             )
         else:
             remove_head_command="""\
-sort -k1,1 -k2,2n {input_bed_graph} > {input_bed_graph}.sorted""".format(
-                input_bed_graph=input_bed_graph
+sort --temporary-directory={temp_dir} -k1,1 -k2,2n {input_bed_graph} > {input_bed_graph}.sorted""".format(
+                input_bed_graph=input_bed_graph,
+                temp_dir=config.param('ucsc', 'tmp_dir', type='filepath', required=True)
             )
 
     return Job(
