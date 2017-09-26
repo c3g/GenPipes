@@ -690,7 +690,7 @@ pandoc \\
         jobs = []
 
         target_bed = bvatools.resolve_readset_coverage_bed(self.samples[0].readsets[0])
-        metrics_file = os.path.join("metrics", "IHEC.sampleMetrics.stats")
+        metrics_all_file = os.path.join("metrics", "IHEC.sampleMetrics.stats")
         report_metrics_file = os.path.join("report", "IHEC.sampleMetricsTable.tsv")
 
         if target_bed:
@@ -701,8 +701,10 @@ pandoc \\
         # Create the list of input files to handle job dependencies
         inputs = []
         sample_list = []
+        counter=0
         for sample in self.samples:
-
+            sample_list.append(sample.name)
+            metrics_file =  os.path.join("ihec_metrics", sample.name + ".sampleMetrics.stats")
             # Trim log files
             for readset in sample.readsets:
                 inputs.append(os.path.join("trim", sample.name, readset.name + ".trim.log"))
@@ -748,40 +750,18 @@ pandoc \\
 
             jobs.append(
             concat_jobs([
-                Job(command="mkdir -p metrics"),
-                tools.methylseq_ihec_metrics_report(sample.name, inputs, metrics_file, target_bed),
-                Job(
-                    [metrics_file],
-                    [report_file],
-                    [['ihec_sample_metrics_report', 'module_pandoc']],
-                    command="""\
-mkdir -p report && \\
-cp {metrics_file} {report_metrics_file} && \\
-metrics_table_md=`sed 's/\t/|/g' {report_metrics_file}`
-pandoc \\
-  {report_template_dir}/{basename_report_file} \\
-  --template {report_template_dir}/{basename_report_file} \\
-  --variable sequence_alignment_table="$metrics_table_md" \\
-  --to markdown \\
-  > {report_file}""".format(
-                        report_template_dir=self.report_template_dir,
-                        metrics_file=metrics_file,
-                        basename_report_file=os.path.basename(report_file),
-                        report_metrics_file=report_metrics_file,
-                        report_file=report_file
-                    ),
-                    report_files=[report_file]
-                )
+                Job(command="mkdir -p ihec_metrics metrics"),
+                tools.methylseq_ihec_metrics_report(sample.name, inputs, metrics_file, metrics_all_file, target_bed, counter),
             ], name="ihec_sample_metrics_report")
-        )
+            )
+            counter+=1
 
 
         jobs.append(
             concat_jobs([
                 Job(command="mkdir -p metrics"),
-                tools.methylseq_ihec_metrics_report(sample_list, inputs, metrics_file, target_bed),
                 Job(
-                    [metrics_file],
+                    [metrics_all_file],
                     [report_file],
                     [['ihec_sample_metrics_report', 'module_pandoc']],
                     command="""\

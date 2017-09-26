@@ -518,20 +518,24 @@ bash methylseq_metrics.sh \\
         )
     )
 
-def methylseq_ihec_metrics_report(sample_list, inputs, output, target_bed):
+def methylseq_ihec_metrics_report(sample_name, inputs, output, output_all, target_bed, count):
     return Job(
         inputs,
-        [output],
+        [output,output_all],
         [
             ['DEFAULT', 'module_mugqic_tools']
         ],
         command="""\
-bash methylseq_metrics_for_ihec.sh \\
-  {sample_list} \\
+bash IHEC_methylseq_metrics.sh \\
+  {sample_name} \\
   {output_file} \\
-  {targeted_flag}""".format(
+  {output_all_file} \\
+  {targeted_flag} \\
+  {counter}""".format(
             sample_list=",".join(sample_list),
             output_file=output,
+            output_all_file=output_all,
+            counter=count,
             targeted_flag=1 if target_bed else 0
         )
     )
