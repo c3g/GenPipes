@@ -38,6 +38,7 @@ from bfx.readset import *
 from bfx import gq_seq_utils
 from bfx import picard
 from bfx import rmarkdown
+from bfx import tools
 from pipelines import common
 import utils
 
@@ -70,7 +71,7 @@ class RnaSeqLight(rnaseq.RnaSeq):
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
 
                 job_name = "kallisto." + readset.name
-                output_dir=self.output_dir+"/kallisto/" + readset.sample.name
+                output_dir= os.path.join(self.output_dir, "kallisto", readset.sample.name)
                 parameters=""
                 job = tools.rnaseqLight_kallisto(fastq1, fastq2, transcriptome_file, tx2genes_file, output_dir, parameters, job_name)
                 jobs.append(job)
@@ -85,7 +86,7 @@ class RnaSeqLight(rnaseq.RnaSeq):
                 [fastq1] = self.select_input_files(candidate_input_files)
 
                 job_name = "kallisto." + readset.name
-                output_dir=self.output_dir+"/kallisto/" + readset.sample.name
+                output_dir=os.path.join(self.output_dir, "kallisto", readset.sample.name)
                 fragment_length = config.param('kallisto', 'fragment_length')
                 fragment_length_sd = config.param('kallisto', 'fragment_length_sd')
                 #warn user to update parameters in ini file?

@@ -349,7 +349,7 @@ def rnaseqLight_kallisto(fastq_file1, fastq_file2, transcriptome_file, tx2genes_
 def r_create_kallisto_count_matrix(input_abundance_files, output_dir, data_type, job_name):
     return Job(
         input_files=input_abundance_files,
-        output_files=[output_dir + "/" + "all_readsets.abundance_" + data_type + ".csv"],
+        output_files=[os.path.join(output_dir, "all_readsets.abundance_" + data_type + ".csv")],
         module_entries=[['DEFAULT', 'module_mugqic_tools'],
                          ['DEFAULT', 'module_R'],
                         ['DEFAULT', 'module_mugqic_R_packages']
