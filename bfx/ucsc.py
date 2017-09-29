@@ -34,31 +34,33 @@ def bedGraphToBigWig(input_bed_graph, output_wiggle, header=True):
         if os.path.splitext(input_bed_graph)[1] == ".gz":
             remove_head_command="""\
 zcat {input_bed_graph} | head -n 1 > {input_bed_graph}.head.tmp && \\
-zcat {input_bed_graph} | awk ' NR > 1 ' | sort -k1,1 -k2,2n > {input_bed_graph}.body.tmp && \\
+zcat {input_bed_graph} | awk ' NR > 1 ' | sort  --temporary-directory={temp_dir} -k1,1 -k2,2n > {input_bed_graph}.body.tmp && \\
 cat {input_bed_graph}.head.tmp {input_bed_graph}.body.tmp > {input_bed_graph}.sorted && \\
 rm {input_bed_graph}.head.tmp {input_bed_graph}.body.tmp""".format(
-                input_bed_graph=input_bed_graph
+                input_bed_graph=input_bed_graph,
+                temp_dir=config.param('ucsc', 'tmp_dir',  required=True)
             )
         else:
             remove_head_command="""\
 head -n 1  {input_bed_graph} > {input_bed_graph}.head.tmp && \\
-awk ' NR > 1 ' {input_bed_graph} | sort -k1,1 -k2,2n > {input_bed_graph}.body.tmp && \\
+awk ' NR > 1 ' {input_bed_graph} | sort  --temporary-directory={temp_dir} -k1,1 -k2,2n > {input_bed_graph}.body.tmp && \\
 cat {input_bed_graph}.head.tmp {input_bed_graph}.body.tmp > {input_bed_graph}.sorted && \\
 rm {input_bed_graph}.head.tmp {input_bed_graph}.body.tmp""".format(
-                input_bed_graph=input_bed_graph
+                input_bed_graph=input_bed_graph,
+                temp_dir=config.param('ucsc', 'tmp_dir',  required=True)
             )
     else:
         if os.path.splitext(input_bed_graph)[1] == ".gz":
           remove_head_command="""\
 zcat {input_bed_graph} | sort --temporary-directory={temp_dir} -k1,1 -k2,2n > {input_bed_graph}.sorted""".format(
                 input_bed_graph=input_bed_graph,
-                temp_dir=config.param('ucsc', 'tmp_dir', type='filepath', required=True)
+                temp_dir=config.param('ucsc', 'tmp_dir',  required=True)
             )
         else:
             remove_head_command="""\
 sort --temporary-directory={temp_dir} -k1,1 -k2,2n {input_bed_graph} > {input_bed_graph}.sorted""".format(
                 input_bed_graph=input_bed_graph,
-                temp_dir=config.param('ucsc', 'tmp_dir', type='filepath', required=True)
+                temp_dir=config.param('ucsc', 'tmp_dir', required=True)
             )
 
     return Job(

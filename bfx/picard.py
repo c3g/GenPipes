@@ -163,10 +163,10 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output), output + ".md5"]
         )
 
-def mark_duplicates(inputs, output, metrics_file):
+def mark_duplicates(inputs, output, metrics_file, remove_duplicates="false"):
 
     if config.param('picard_mark_duplicates', 'module_picard').split("/")[2] >= "2":
-        return picard2.mark_duplicates(inputs, output, metrics_file)
+        return picard2.mark_duplicates(inputs, output, metrics_file, remove_duplicates="false")
     else:
         return Job(
             inputs,
@@ -177,7 +177,7 @@ def mark_duplicates(inputs, output, metrics_file):
             ],
             command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/MarkDuplicates.jar \\
- REMOVE_DUPLICATES=false VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true \\
+ REMOVE_DUPLICATES={remove_duplicates} VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true \\
  TMP_DIR={tmp_dir} \\
  {inputs} \\
  OUTPUT={output} \\
@@ -186,6 +186,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             tmp_dir=config.param('picard_mark_duplicates', 'tmp_dir'),
             java_other_options=config.param('picard_mark_duplicates', 'java_other_options'),
             ram=config.param('picard_mark_duplicates', 'ram'),
+            remove_duplicates=remove_duplicates,
             inputs=" \\\n  ".join(["INPUT=" + input for input in inputs]),
             output=output,
             metrics_file=metrics_file,

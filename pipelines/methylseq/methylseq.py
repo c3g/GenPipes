@@ -180,57 +180,101 @@ pandoc --to=markdown \\
 
         return jobs
 
-    def bismark_dedup(self):
-        """
-        Remove duplicates reads with Bismark
-        """
+    #def bismark_dedup(self):
+        #"""
+        #Remove duplicates reads with Bismark
+        #"""
 
-        # Check the library status
-        library = {}
-        for readset in self.readsets:
-            if not library.has_key(readset.sample) :
-                library[readset.sample]="SINGLE_END"
-            if readset.run_type == "PAIRED_END" :
-                library[readset.sample]="PAIRED_END"
+        ## Check the library status
+        #library = {}
+        #for readset in self.readsets:
+            #if not library.has_key(readset.sample) :
+                #library[readset.sample]="SINGLE_END"
+            #if readset.run_type == "PAIRED_END" :
+                #library[readset.sample]="PAIRED_END"
+
+        #jobs = []
+        #for sample in self.samples:
+            #alignment_directory = os.path.join("alignment", sample.name)
+            #bam_input = os.path.join(alignment_directory, sample.name + ".sorted.bam")
+            #bam_readset_sorted = re.sub("sorted", "readset_sorted", bam_input)
+            #dedup_bam_readset_sorted = re.sub(".bam", ".dedup.bam", bam_readset_sorted)
+            #dedup_report = os.path.join(alignment_directory, sample.name + ".readset_sorted.deduplication_report.txt")
+            #bam_output = os.path.join(alignment_directory, re.sub("readset_", "", os.path.basename(dedup_bam_readset_sorted)))
+
+            #job = concat_jobs([
+                #Job(command="mkdir -p " + alignment_directory),
+                #picard.sort_sam(
+                    #bam_input,
+                    #bam_readset_sorted,
+                    #"queryname"
+                #),
+                #bismark.dedup(
+                    #bam_readset_sorted,
+                    #[dedup_bam_readset_sorted, dedup_report],
+                    #library[sample]
+                #),
+                #Job(command="mv " + re.sub(".bam", ".deduplicated.bam", bam_readset_sorted) + " " + dedup_bam_readset_sorted),
+                #picard.sort_sam(
+                    #dedup_bam_readset_sorted,
+                    #bam_output
+                #)
+            #])
+            #job.name = "bismark_dedup." + sample.name
+            #job.removable_files = [dedup_bam_readset_sorted]
+            #job.samples = [sample]
+
+            #jobs.append(job)
+
+        #report_file = os.path.join("report", "MethylSeq.bismark_dedup.md")
+        #jobs.append(
+            #Job(
+                #[os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.bam") for sample in self.samples],
+                #[report_file],
+                #command="""\
+#mkdir -p report && \\
+#cp \\
+  #{report_template_dir}/{basename_report_file} \\
+  #{report_file}""".format(
+                    #report_template_dir=self.report_template_dir,
+                    #basename_report_file=os.path.basename(report_file),
+                    #report_file=report_file
+                #),
+                #report_files=[report_file],
+                #name="bismark_dedup_report")
+        #)
+
+
+        #return jobs
+
+    def picard_remove_duplicates(self):
+        """
+        Remove duplicates. Aligned reads per sample are duplicates if they have the same 5' alignment positions
+        (for both mates in the case of paired-end reads). All but the best pair (based on alignment score)
+        will be removed as a duplicate in the BAM file. Removing duplicates is done using [Picard](http://broadinstitute.github.io/picard/).
+        """
 
         jobs = []
         for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
-            bam_input = os.path.join(alignment_directory, sample.name + ".sorted.bam")
-            bam_readset_sorted = re.sub("sorted", "readset_sorted", bam_input)
-            dedup_bam_readset_sorted = re.sub(".bam", ".dedup.bam", bam_readset_sorted)
-            dedup_report = os.path.join(alignment_directory, sample.name + ".readset_sorted.deduplication_report.txt")
-            bam_output = os.path.join(alignment_directory, re.sub("readset_", "", os.path.basename(dedup_bam_readset_sorted)))
+            alignment_file_prefix = os.path.join("alignment", sample.name, sample.name + ".")
+            input = alignment_file_prefix + "sorted.bam"
+            #bam_readset_sorted = alignment_file_prefix + "readset_sorted.bam"
+            bam_output = alignment_file_prefix + "sorted.dedup.bam"
+            metrics_file = alignment_file_prefix + "sorted.dedup.metrics"
+            dedup_bam_readset_sorted = alignment_file_prefix + "readset_sorted.dedup.bam"
 
-            job = concat_jobs([
-                Job(command="mkdir -p " + alignment_directory),
-                picard.sort_sam(
-                    bam_input,
-                    bam_readset_sorted,
-                    "queryname"
-                ),
-                bismark.dedup(
-                    bam_readset_sorted,
-                    [dedup_bam_readset_sorted, dedup_report],
-                    library[sample]
-                ),
-                Job(command="mv " + re.sub(".bam", ".deduplicated.bam", bam_readset_sorted) + " " + dedup_bam_readset_sorted),
-                picard.sort_sam(
-                    dedup_bam_readset_sorted,
-                    bam_output
-                )
-            ])
-            job.name = "bismark_dedup." + sample.name
-            job.removable_files = [dedup_bam_readset_sorted]
-            job.samples = [sample]
-
+            job = picard.mark_duplicates([input], bam_output, metrics_file, remove_duplicates="true")
+            job.name = "picard_mark_duplicates." + sample.name
+            jobs.append(job)
+            job = picard.sort_sam(bam_output, dedup_bam_readset_sorted, "queryname")
+            job.name = "picard_queryname_sort." + sample.name
             jobs.append(job)
 
-        report_file = os.path.join("report", "MethylSeq.bismark_dedup.md")
+        report_file = os.path.join("report", "methylseq.picard_remove_duplicates.md")
         jobs.append(
-            Job(
+              Job(
                 [os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.bam") for sample in self.samples],
-                [report_file],
+                [metrics_file],
                 command="""\
 mkdir -p report && \\
 cp \\
@@ -238,14 +282,14 @@ cp \\
   {report_file}""".format(
                     report_template_dir=self.report_template_dir,
                     basename_report_file=os.path.basename(report_file),
-                    report_file=report_file
+                    report_file=metrics_file
                 ),
-                report_files=[report_file],
-                name="bismark_dedup_report")
+                report_files=[metrics_file],
+                name="picard_remove_duplicates_report")
         )
 
-
         return jobs
+
 
     def metrics(self):
         """
@@ -629,7 +673,7 @@ cp \\
                 inputs.append(os.path.join("trim", sample.name, readset.name + ".trim.log"))
 
             # Dedupplication report files
-            inputs.append(os.path.join("alignment", sample.name, sample.name + ".readset_sorted.deduplication_report.txt"))
+            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.metrics"))
 
             # Coverage summary files
             inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.all.coverage.sample_summary"))
@@ -704,13 +748,13 @@ pandoc \\
         counter=0
         for sample in self.samples:
             sample_list.append(sample.name)
-            metrics_file =  os.path.join("ihec_metrics", sample.name + ".sampleMetrics.stats")
+            metrics_file =  os.path.join("ihec_metrics", sample.name + ".read_stats.txt")
             # Trim log files
             for readset in sample.readsets:
                 inputs.append(os.path.join("trim", sample.name, readset.name + ".trim.log"))
 
             # Dedupplication report files
-            inputs.append(os.path.join("alignment", sample.name, sample.name + ".readset_sorted.deduplication_report.txt"))
+            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.metrics"))
 
             # Coverage summary files
             inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.all.coverage.sample_summary"))
@@ -825,7 +869,8 @@ pandoc \\
             self.merge_trimmomatic_stats,
             self.bismark_align,
             self.picard_merge_sam_files,    # step 5
-            self.bismark_dedup,
+#            self.bismark_dedup,
+            self.picard_remove_duplicates,
             self.metrics,
             self.verify_bam_id,
             self.methylation_call,

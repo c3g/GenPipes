@@ -532,7 +532,7 @@ bash IHEC_methylseq_metrics.sh \\
   {output_all_file} \\
   {targeted_flag} \\
   {counter}""".format(
-            sample_list=",".join(sample_list),
+            sample_name=sample_name,
             output_file=output,
             output_all_file=output_all,
             counter=count,
