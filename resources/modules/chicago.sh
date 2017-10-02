@@ -62,4 +62,3 @@ set ModulesVersion \"$VERSION\"
 " > .version
 
 mv .version $VERSION $INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
-
