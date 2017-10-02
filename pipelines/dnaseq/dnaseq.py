@@ -80,6 +80,13 @@ class DnaSeq(common.Illumina):
     is more information about DNA-Seq pipeline that you may find interesting.
     """
 
+
+    def __init__(self, protocol=None):
+        self._protocol=protocol
+        # Add pipeline specific arguments
+        super(DnaSeq, self).__init__(protocol)
+
+
     @property
     def sequence_dictionary(self):
         if not hasattr(self, "_sequence_dictionary"):

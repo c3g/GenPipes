@@ -29,6 +29,7 @@ R  --no-save --no-restore  <<-'EOF'
 ## will need to install R libraries:
   install.packages("httr", repos="http://cran.rstudio.com/")
   install.packages("devtools", repos="http://cran.rstudio.com/")
+  install.packages("argparser", repos="http://cran.rstudio.com/")
   library(httr)
   set_config(config(ssl_verifypeer = 0L))
   library(devtools)
