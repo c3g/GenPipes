@@ -14,7 +14,8 @@ module_star=mugqic/star/2.5.2a
 module_tabix=mugqic/tabix/0.2.6
 module_tophat=mugqic/tophat/2.0.14
 module_ucsc=mugqic/ucsc/v326
-module_hicup=mugqic/hicup/v0.5.9 
+module_hicup=mugqic/hicup/v0.5.9
+module_kallisto_dev=mugqic_dev/kallisto/0.43.0
 
 HOST=`hostname`
 
@@ -41,6 +42,7 @@ fi
   RRNA=$SPECIES.$ASSEMBLY.$SOURCE$VERSION.rrna.fa
   VCF=$SPECIES.$ASSEMBLY.$SOURCE$VERSION.vcf.gz
   GO=$SPECIES.$ASSEMBLY.$SOURCE$VERSION.GO.tsv
+  CDNA=$SPECIES.$ASSEMBLY.$SOURCE$VERSION.cdna.fa
 
   echo "Installing genome for:"
   echo "species: $SPECIES"
@@ -445,6 +447,50 @@ create_rrna_bwa_index() {
   fi
 }
 
+create_kallisto_index() {
+  if is_up2date $ANNOTATIONS_DIR/$CDNA
+  then
+    INDEX_DIR=$ANNOTATIONS_DIR/cdna_kallisto_index
+    if ! is_up2date $INDEX_DIR/$CDNA.idx
+    then
+      echo
+      echo "Creating cDNA Kallisto index..."
+      echo
+      mkdir -p $INDEX_DIR
+      ln -s -f -t $INDEX_DIR ../$CDNA
+      module load $module_kallisto_dev
+      kallisto index -i $INDEX_DIR/$CDNA.idx $INDEX_DIR/$CDNA > $LOG_DIR/cdna_kallisto_$TIMESTAMP.log 2>&1
+
+    else
+      echo
+      echo "cDNA Kallisto index up to date... skipping"
+      echo
+    fi
+  fi
+}
+
+create_transcripts2genes_file() {
+  ANNOTATION_GTF=$ANNOTATIONS_DIR/$GTF
+   if is_up2date $ANNOTATION_GTF
+    ANNOTATION_TX2GENES=$ANNOTATIONS_DIR/cdna_kallisto_index/${GTF/.gtf/.tx2gene}
+    if ! is_up2date ANNOTATION_TX2GENES
+      module load $module_R
+      module load $module_mugqic_R_packages
+      R --no-restore --no-save<<EOF
+      suppressPackageStartupMessages(library(rtracklayer))
+      print("Building transcripts2genes...")
+      gtf_file="$ANNOTATION_GTF"
+
+      gtf=import(gtf_file, format = "gff2")
+      tx2gene=cbind(tx_id=gtf$transcript_id, gene_id=gtf$gene_id) #gene_name
+      tx2gene=tx2gene[!is.na(tx2gene[,1]),]
+      tx2gene=unique(tx2gene)
+      tx2gene=as.data.frame(tx2gene)
+
+      write.table(x=tx2gene, file="$ANNOTATION_TX2GENES", sep="\t", col.names=T, row.names=F, quote=F)
+EOF
+}
+
 create_gene_annotations() {
   ANNOTATION_PREFIX=$ANNOTATIONS_DIR/${GTF/.gtf}
 
@@ -634,14 +680,14 @@ copy_files() {
 create_genome_digest() {
 
   GENOME_DIGEST=$GENOME_DIR/genome_digest/
-  
+
   declare -A enzymes=( ["DpnII"]="^GATC" ["MboI"]="^GATC" ["HindIII"]="A^AGCTT" ["NcoI"]="C^CATGG")
-  
-  for enzyme in "${!enzymes[@]}"; do 
+
+  for enzyme in "${!enzymes[@]}"; do
     #echo "$enzyme - ${enzymes[$enzyme]}";
     ## hicup only accepts alphanumeric and underscores
     GENOME_DIGEST_FILE=HiCUP_Digest_${SPECIES}_${ASSEMBLY}_${enzyme}.txt
-  
+
     if ! is_up2date $GENOME_DIGEST/$GENOME_DIGEST_FILE
     then
       echo
@@ -677,9 +723,11 @@ build_files() {
   create_genome_digest
   create_ncrna_bwa_index
   create_rrna_bwa_index
+  create_kallisto_index
+  create_transcripts2genes_file
   create_gene_annotations
   create_gene_annotations_flat
-  
+
 
   # Annotations are not installed for UCSC genomes
   if [[ $SOURCE != "UCSC" ]]
