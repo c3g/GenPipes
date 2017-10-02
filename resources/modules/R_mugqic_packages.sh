@@ -119,7 +119,6 @@ proc ModulesHelp { } {
         puts stderr "MUGQIC - Adds the R mugqic packages to your R_LIBS"
 }
 module-whatis "MUGQIC -  Adds the R mugqic packages to your R_LIB"
-prereq $R_MODULE
 set root $TCLROOT
 prepend-path R_LIBS \$root
 EOF

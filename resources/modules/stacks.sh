@@ -2,25 +2,26 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=bwa
-VERSION=0.7.15
-ARCHIVE=$SOFTWARE-$VERSION.tar.bz2
-ARCHIVE_URL=https://downloads.sourceforge.net/project/bio-bwa/$ARCHIVE
-SOFTWARE_DIR=$SOFTWARE-$VERSION
+
+SOFTWARE=Stacks
+VERSION=1.46
+ARCHIVE=${SOFTWARE,}-${VERSION}.tar.gz
+ARCHIVE_URL=http://catchenlab.life.illinois.edu/${SOFTWARE,}/source/$ARCHIVE
+SOFTWARE_DIR=${SOFTWARE,}-${VERSION}
 
 # Specific commands to extract and build the software
 # $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
 # $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
+
 build() {
   cd $INSTALL_DOWNLOAD
-  tar jxvf $ARCHIVE
+  tar xfvz $ARCHIVE
 
   cd $SOFTWARE_DIR
-  make -j8
+  ./configure --prefix=$INSTALL_DIR/$SOFTWARE_DIR --enable-sparsehash --with-sparsehash-include-path=/cvmfs/soft.mugqic/CentOS6/software/sparsehash_libs/sparsehash-2.0.2/include
+  make -j 8
 
-  # Install software
-  cd $INSTALL_DOWNLOAD
-  mv -i $SOFTWARE_DIR $INSTALL_DIR/
+  make install
 }
 
 module_file() {
@@ -32,7 +33,9 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-prepend-path    PATH                \$root
+prepend-path    PATH                \$root/bin
+prepend-path    LD_LIBRARY_PATH     /cvmfs/soft.mugqic/CentOS6/software/sparsehash_libs/sparsehash-2.0.2/lib
+prepend-path    CPLUS_INCLUDE_PATH  /cvmfs/soft.mugqic/CentOS6/software/sparsehash_libs/sparsehash-2.0.2/include
 "
 }
 

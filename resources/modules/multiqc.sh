@@ -51,4 +51,3 @@ prepend-path    PYTHONPATH          \$root/lib/python2.7/site-packages
 MODULE_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source $MODULE_INSTALL_SCRIPT_DIR/install_module.sh $@
 
-
