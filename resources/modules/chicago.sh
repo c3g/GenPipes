@@ -6,11 +6,9 @@ SOFTWARE=chicago
 VERSION=1.1.5
 SOFTWARE_DIR=${SOFTWARE}_$VERSION
 
-INSTALL_HOME=$MUGQIC_INSTALL_HOME_DEV
-#INSTALL_HOME=$MUGQIC_INSTALL_HOME
+INSTALL_HOME=$MUGQIC_INSTALL_HOME
 
-#MODULE_R=mugqic/R_Bioconductor/3.2.3_3.2
-MODULE_R=mugqic_dev/R_Bioconductor/3.2.3_3.2
+MODULE_R=mugqic/R_Bioconductor/3.2.3_3.2
 
 INSTALL_PATH=$INSTALL_HOME/software/$SOFTWARE/$SOFTWARE_DIR
 mkdir -p $INSTALL_PATH
@@ -24,7 +22,7 @@ chmod 775 $INSTALL_PATH/chicagoTools/*.R
 chmod 775 $INSTALL_PATH/chicagoTools/*.py
 
 ## module file
-mkdir -p $INSTALL_HOME/modulefiles/mugqic_dev/$SOFTWARE
+mkdir -p $INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
 
 module load $MODULE_R
 R  --no-save --no-restore  <<-'EOF'
@@ -63,6 +61,5 @@ echo "#%Module1.0
 set ModulesVersion \"$VERSION\"
 " > .version
 
-mv .version $VERSION $INSTALL_HOME/modulefiles/mugqic_dev/$SOFTWARE
-#mv .version $VERSION $INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
+mv .version $VERSION $INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
 

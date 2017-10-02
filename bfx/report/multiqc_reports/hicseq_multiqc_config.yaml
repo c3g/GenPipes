@@ -20,7 +20,7 @@ subtitle: "Hi-C analysis using MUGQIC pipeline hicseq v1.0"
 intro_text: null
 report_comment: null
 config_file: null
-custom_logo: '/home/rdali/.local/bin/c3g_source.png'
+custom_logo: '${MUGQIC_PIPELINES_HOME}/bfx/report/images/logo/c3gLogo.png'
 #custom_logo_url: 'https://www.example.com'
 #custom_logo_title: 'C3G'
 simple_output: false

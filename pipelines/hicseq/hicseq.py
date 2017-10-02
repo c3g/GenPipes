@@ -733,7 +733,7 @@ class HicSeq(common.Illumina):
 
     def bait_intersect(self):
         """
-        provided with a bed file, for example a bed of GWAS snps or features of interest, this method returns the lines in the bed file that intersect with the baits that have significant interactions. 
+        provided with a bed file, for example a bed of GWAS snps or features of interest, this method returns the lines in the bed file that intersect with the baits that have significant interactions.
         Input bed must have 4 columns (<chr> <start> <end> <annotation>) and must be tab separated.
         """
         jobs = []
@@ -743,11 +743,11 @@ class HicSeq(common.Illumina):
         features_file = config.param('bait_intersect', 'features_file', required = True)
 
         sorted_features_file = os.path.splitext(features_file)[0] + ".sorted.bed"
-        output_dir = os.path.join(chicago_output_dir, intersect_output_dir)        
-        
+        output_dir = os.path.join(chicago_output_dir, intersect_output_dir)
+
 
         if features_file != "None":
-            
+
             job_create_dir = Job(command = "mkdir -p {output_dir}".format(output_dir = output_dir))
             job_sort_features_file = bedops.sort_bed(features_file, sorted_features_file)
 
@@ -772,7 +772,7 @@ class HicSeq(common.Illumina):
                         command = """awk 'BEGIN {{FS=\"\\t\"; OFS=\"\\t\"}} NR>1 {{print $1,$2,$3,$4}}' {input} > {outputTmp} && \\
                         awk '!a[$0]++' {outputTmp} > {output} && \\
                         rm {outputTmp}""".format(input= ibed_file, 
-                                            outputTmp = ibed_file + ".bait.tmp", 
+                                            outputTmp = ibed_file + ".bait.tmp",
                                             output = ibed_file + ".bait"),
                         removable_files = [ibed_file + ".bait"]
                         )
@@ -820,7 +820,6 @@ class HicSeq(common.Illumina):
 
                 output_file_prefix = os.path.join(output_dir, os.path.splitext(os.path.basename(features_file))[0] + "_" + os.path.splitext(os.path.basename(ibed_file))[0])
 
-                
                 job_extract_capture_bed = Job(input_files = [ibed_file],
                         output_files = [ibed_file + ".capture"],
                         name = "extract_capture_bed." + sample.name,
