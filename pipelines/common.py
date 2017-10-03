@@ -48,9 +48,9 @@ log = logging.getLogger(__name__)
 # Abstract pipeline gathering common features of all MUGQIC pipelines (readsets, samples, remote log, etc.)
 class MUGQICPipeline(Pipeline):
 
-    def __init__(self):
+    def __init__(self, protocol):
         self.version = open(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "VERSION"), 'r').read().split('\n')[0]
-
+        self._protocol=protocol
         # Add pipeline specific arguments
         self.argparser.description = "Version: " + self.version + "\n\nFor more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/"
         self.argparser.add_argument("-v", "--version", action="version", version="mugqic_pipelines " + self.version, help="show the version information and exit")
@@ -101,9 +101,10 @@ wget "{server}?{request}" --quiet --output-document=/dev/null
 # Specific steps must be defined in Illumina children pipelines.
 class Illumina(MUGQICPipeline):
 
-    def __init__(self):
+    def __init__(self, protocol):
+        self._protocol=protocol
         self.argparser.add_argument("-r", "--readsets", help="readset file", type=file)
-        super(Illumina, self).__init__()
+        super(Illumina, self).__init__(protocol)
 
     @property
     def readsets(self):

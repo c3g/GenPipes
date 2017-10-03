@@ -2,19 +2,22 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=juicer
-VERSION=0.7.0
-ARCHIVE=${SOFTWARE}_tools_${VERSION}.jar
-ARCHIVE_URL=http://hicfiles.tc4ga.com.s3.amazonaws.com/public/juicer/${ARCHIVE}
-SOFTWARE_DIR=${SOFTWARE}_$VERSION
+SOFTWARE=bedops
+VERSION=v2.4.28
+ARCHIVE=${SOFTWARE}_linux_x86_64-${VERSION}.tar.bz2
+ARCHIVE_URL=https://github.com/${SOFTWARE}/${SOFTWARE}/releases/download/${VERSION}/${ARCHIVE}
+SOFTWARE_DIR=${SOFTWARE}_${VERSION}
 
 # Specific commands to extract and build the software
 # $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
 # $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
+  tar jxvf $ARCHIVE
+
   mkdir -p $INSTALL_DIR/$SOFTWARE_DIR
-  cp -i $ARCHIVE $INSTALL_DIR/$SOFTWARE_DIR/  
+  cd $INSTALL_DOWNLOAD
+  mv -i bin $INSTALL_DIR/$SOFTWARE_DIR/
 }
 
 
@@ -25,12 +28,10 @@ echo "\
 proc ModulesHelp { } {
        puts stderr \"\tMUGQIC - $SOFTWARE \"
 }
-module-whatis \"Juicer tools for Hi-C\"
+module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-prepend-path    PATH                \$root
-setenv          ${SOFTWARE}_JAR     \$root/${ARCHIVE}
-
+prepend-path    PATH                \$root/bin
 "
 }
 
@@ -38,3 +39,4 @@ setenv          ${SOFTWARE}_JAR     \$root/${ARCHIVE}
 # Call generic module install script once all variables and functions have been set
 MODULE_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source $MODULE_INSTALL_SCRIPT_DIR/install_module.sh $@
+

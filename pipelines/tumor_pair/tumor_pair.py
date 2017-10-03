@@ -80,10 +80,11 @@ class TumorPair(dnaseq.DnaSeq):
     -p pairs : format - patient_name,normal_sample_name,tumor_sample_name 
     """
 
-    def __init__(self):
+    def __init__(self, protocol=None):
+        self._protocol=protocol
         # Add pipeline specific arguments
         self.argparser.add_argument("-p", "--pairs", help="pairs file", type=file)
-        super(TumorPair, self).__init__()
+        super(TumorPair, self).__init__(protocol)
 
     @property
     def tumor_pairs(self):

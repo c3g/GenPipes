@@ -90,10 +90,11 @@ class RnaSeq(common.Illumina):
     information about the RNA-Seq pipeline that you may find interesting.
     """
 
-    def __init__(self):
+    def __init__(self, protocol=None):
+        self._protocol=protocol
         # Add pipeline specific arguments
         self.argparser.add_argument("-d", "--design", help="design file", type=file)
-        super(RnaSeq, self).__init__()
+        super(RnaSeq, self).__init__(protocol)
 
     def star(self):
         """

@@ -1,11 +1,24 @@
 [TOC]
 
 
-Hi-C Pipeline
-==============
+    Hi-C Pipeline
+    ==============
 
-Hi-C experiments allow researchers to understand chromosomal folding and structure using proximity ligation techniques. 
-The pipeline starts by trimming adaptors and low quality bases. It then maps the reads to a reference genome using HiCUP. HiCUP first truncates chimeric reads, maps reads to the genome, then it filters Hi-C artifacts and removes read duplicates. Samples from different lanes are merged and a tag directory is created by Homer, which is also used to produce the interaction matrices and compartments. TopDom is used to predict topologically associating domains (TADs) and homer is used to identify significant interactions.
+    Hi-C experiments allow researchers to understand chromosomal folding and structure using proximity ligation techniques.
+    This pipeline analyzes both Hi-C experimental data (-t hic) and capture Hi-C data (-t capture).
+    The Hi-C pipeline, selected using the "-t hic" parameter, starts by trimming adaptors and low quality bases. 
+    It then maps the reads to a reference genome using HiCUP.
+    HiCUP first truncates chimeric reads, maps reads to the genome, then it filters Hi-C artifacts and removes read duplicates.
+    Samples from different lanes are merged and a tag directory is created by Homer, which is also used to produce the interaction
+    matrices and compartments. TopDom is used to predict topologically associating domains (TADs) and homer is used to identify
+    significant interactions.
+
+    The capture Hi-C pipeline, selected using the "-t capture" parameter, starts by trimming adaptors and low quality bases. 
+    It then maps the reads to a reference genome using HiCUP.
+    HiCUP first truncates chimeric reads, maps reads to the genome, then it filters Hi-C artifacts and removes read duplicates.
+    Samples from different lanes are merged and CHiCAGO is then used to filter capture-specific artifacts and call significant 
+    interactions. This pipeline also identifies enrichement of regulatory features when provided with ChIP-Seq marks. It can also 
+    return bed interctions with significant baits (bait_intersect step) or with captured interactions (capture_intersect step). 
 
     An example of the Hi-C report for an analysis on public data (GM12878 Rao. et al.) is available for illustration purpose only:
     [Hi-C report](<url>).
@@ -18,13 +31,6 @@ Usage
 ```
 #!text
 
-usage: hicseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS] [-e Restriction_Enzyme {DpnII, MboI, HindIII, NcoI}]
-                  [-o OUTPUT_DIR] [-j {pbs,batch}] [-f] [--report] [--clean]
-                  [-l {debug,info,warning,error,critical}] [-d DESIGN]
-                  [-r READSETS] [-v]
-
-Version: 1.0.0
-
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
 optional arguments:
@@ -35,9 +41,6 @@ optional arguments:
                         overwritten based on files order
   -s STEPS, --steps STEPS
                         step range e.g. '1-5', '3,6,7', '2,4-8'
-  -e Restriction_Enzyme --enzyme Restriction_Enzyme
-                        restriction enzyme used in generating Hi-C library
-                        enzymes currently supported: DpnII, MboI, HindIII, NcoI
   -o OUTPUT_DIR, --output-dir OUTPUT_DIR
                         output directory (default: current)
   -j {pbs,batch}, --job-scheduler {pbs,batch}
@@ -55,14 +58,19 @@ optional arguments:
                         date status are ignored (default: false)
   -l {debug,info,warning,error,critical}, --log {debug,info,warning,error,critical}
                         log level (default: info)
-  -d DESIGN, --design DESIGN
-                        design file
+  -e {DpnII,HindIII,NcoI,MboI}, --enzyme {DpnII,HindIII,NcoI,MboI}
+                        Restriction Enzyme used to generate Hi-C library
+  -t {hic,capture}, --type {hic,capture}
+                        Hi-C experiment type
   -r READSETS, --readsets READSETS
                         readset file
   -v, --version         show the version information and exit
 
 Steps:
 ------
+
+----
+hic:
 1- samtools_bam_sort
 2- picard_sam_to_fastq
 3- trimmomatic
@@ -78,6 +86,25 @@ Steps:
 13- identify_peaks
 14- create_hic_file
 15- multiqc_report
+----
+capture:
+1- samtools_bam_sort
+2- picard_sam_to_fastq
+3- trimmomatic
+4- merge_trimmomatic_stats
+5- fastq_readName_Edit
+6- hicup_align
+7- samtools_merge_bams
+8- create_rmap_file
+9- create_baitmap_file
+10- create_design_files
+11- create_input_files
+12- runChicago
+13- runChicago_featureOverlap
+14- bait_intersect
+15- capture_intersect
+16- multiqc_report
+
 
 ```
 1- samtools_bam_sort
@@ -179,7 +206,7 @@ Significant intraChromosomal interactions (peaks) are identified using Homer.
 For more detailed information about the Homer peaks visit: [Homer peaks] (http://homer.ucsd.edu/homer/interactions/HiCinteractions.html)
        
 
-4- create_hic_file
+14- create_hic_file
 -------------------
 
 A .hic file is created per sample in order to visualize in JuiceBox, WashU epigenome browser or as input for other tools.
@@ -193,3 +220,55 @@ A quality control report for all samples is generated.
 
 For more detailed information about the MultiQc visit: [MultiQc] (http://multiqc.info/)
 
+
+----------------------------------------- Capture specific steps:
+
+
+8- create_rmap_file
+--------------------
+
+rmap file for Chicago capture analysis is created using the hicup digestion file.
+
+
+9- create_baitmap_file
+-----------------------
+
+baitmap file for Chicago capture analysis is created using the created rmap file and the probe capture bed file.
+
+
+10- create_design_files
+------------------------
+
+design files (nperbin file (.npb), nbaitsperbin file (.nbpb), proxOE file (.poe)) for Chicago capture analysis are created using the rmap file and the baitmap file.
+
+
+11- create_input_files
+-----------------------
+
+input file (sample.chinput) for Chicago capture analysis is created using the rmap file, the baitmap file and the hicup aligned bam.
+
+
+12- runChicago
+---------------
+
+Chicago is run on capture data. Chicago will filter capture hic artifacts and identify significant interactions. It will output data as a bed file and will also output SeqMonk and WashU tracks.
+For more detailed information about the Chicago, including how to interpret the plots, please visit: [Chicago] https://bioconductor.org/packages/release/bioc/vignettes/Chicago/inst/doc/Chicago.html
+
+
+13- runChicago_featureOverlap
+------------------------------
+
+Runs the feature enrichement of chicago significant interactions.
+For more detailed information about the Chicago, including how to interpret the plots, please visit: [Chicago] https://bioconductor.org/packages/release/bioc/vignettes/Chicago/inst/doc/Chicago.html
+
+14- bait_intersect
+-------------------
+
+provided with a bed file, for example a bed of GWAS snps or features of interest, this method returns the lines in the bed file that intersect with the baits that have significant interactions. 
+Input bed must have 4 columns (<chr> <start> <end> <annotation>) and must be tab separated.
+
+15- capture_intersect
+----------------------
+
+provided with a bed file, for example a bed of GWAS snps or features of interest, this method returns the lines in the bed file that intersect with the captured ends ("Other Ends") that have significant interactions. 
+Input bed must have 4 columns (<chr> <start> <end> <annotation>) and must be tab separated.
