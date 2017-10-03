@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=bismark
-VERSION=0.16.3
+VERSION=0.18.2
 ARCHIVE=$SOFTWARE-$VERSION.tar.gz
 ARCHIVE_URL=https://github.com/FelixKrueger/${SOFTWARE^}/archive/$VERSION.tar.gz
 SOFTWARE_DIR=${SOFTWARE^}-$VERSION  ## TO BE MODIFIED WITH SPECIFIC SOFTWARE DIRECTORY IF NECESSARY
@@ -33,4 +33,3 @@ prepend-path    PATH                \$root
 # Call generic module install script once all variables and functions have been set
 MODULE_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source $MODULE_INSTALL_SCRIPT_DIR/install_module.sh $@
-

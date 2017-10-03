@@ -1,112 +1,49 @@
 #!/bin/bash
-set -e
-umask 0002
-me=`basename $0`
+# Exit immediately on error
+set -eu -o pipefail
 
-## Default arg values
-INSTALL_HOME=$MUGQIC_INSTALL_HOME_DEV
-SOFTWARE="vcflib"
-WHATIS="vcflib: a simple C++ library for parsing and manipulating VCF files, + many command-line utilities"
-VERSION="master"
-MODULEFILE_DIR="$INSTALL_HOME/modulefiles/mugqic_dev/$SOFTWARE"
-INSTALL_DIR="$INSTALL_HOME/software/$SOFTWARE"
-FORCE_INSTALL=false
+# Here we set these variable for the sake of install_genome.sh
+# The archive will be downloaded but we actually will clone the vcflib github repository
+# in order to install tjhe software
+SOFTWARE=vcflib
+VERSION=1.0.0-rc0
+ARCHIVE=$SOFTWARE-${VERSION%%-*}.tar.gz
+ARCHIVE_URL=https://github.com/$SOFTWARE/$SOFTWARE/archive/v$VERSION.tar.gz
+SOFTWARE_DIR=$SOFTWARE-${VERSION%%-*}
 
-## Parse arguments
-usage()
-{
-cat << EOF
-usage: $0 options
+# Here we chop the VERSION to only keep relevant digits
+# before it is passed to install_module.sh
+VERSION=${VERSION%%-*}
 
-NextClip installation
+# Specific commands to extract and build the software
+# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
+# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
+build() {
+  cd $INSTALL_DOWNLOAD
+  tar zxvf $ARCHIVE
+  git clone --recursive git://github.com/ekg/vcflib.git $SOFTWARE_DIR
 
-OPTIONS:
-   -v      Force a specifc commit instead of latest
-   -f      Force re-install, i.e. overwrite module  and installation even if module already exists
-   -m      Where to write the module file
-   -i	   Installation directory. Actual install dir will be reassigned to <-i>/$SOFTWARE-version
-   -h      Print this message
+  # Install software
+  cd $SOFTWARE_DIR
+  make
 
-NOTES: 
-   ...
-EOF
+  cd $INSTALL_DOWNLOAD
+  mv -i $SOFTWARE_DIR $INSTALL_DIR/
 }
 
-while getopts “v:m:i:fh” OPTION
-do
-     case $OPTION in
-         h)
-             usage
-             exit 1
-             ;;
-         v)
-             VERSION=$OPTARG
-             ;;
-	     m)
-	         MODULEFILE_DIR=$OPTARG
-	         ;;
-         i)
-             INSTALL_DIR=$OPTARG
-             ;;
-         f)
-             FORCE_INSTALL=true
-             ;;
-         ?)
-             usage
-             exit
-             ;;
-     esac
-done
+module_file() {
+echo "\
+#%Module1.0
+proc ModulesHelp { } {
+  puts stderr \"\tMUGQIC - $SOFTWARE \"
+}
+module-whatis \"$SOFTWARE\"
 
-## Tmp dir to work in
-#SOFTWARE="nextclip" ; VERSION="master" ; MODULEFILE_DIR="$MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE" ;INSTALL_DIR="$MUGQIC_INSTALL_HOME/software/$SOFTWARE"; FORCE_INSTALL=false
-TEMPDIR=`mktemp -d -t $me.XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX` && cd $TEMPDIR 
-echo "Working in $TEMPDIR"
+set             root                $INSTALL_DIR/$SOFTWARE_DIR
+prepend-path    PATH                \$root/bin
+"
+}
 
-## Get commit
-git clone --recursive https://github.com/ekg/vcflib.git
-cd vcflib
-git checkout $VERSION
-VERSION=`git log --pretty=format:'%h' -n 1` # rename to pretty commit hash number
-
-# Compile
-make
-
-## Paths, mkdirs
-INSTALL_DIR=$INSTALL_DIR/$SOFTWARE-$VERSION
-MODULEFILE="$MODULEFILE_DIR/$VERSION"
-MODULEVERSIONFILE="$MODULEFILE_DIR/.version"
-
-## Install if required by force or absence of module files
-if  [ ! -f $MODULEFILE ] || $FORCE_INSTALL
-then
-	# Prelim. cleanup
-	rm -rf $INSTALL_DIR $MODULEFILE $MODULEVERSIONFILE
-	mkdir -p $MODULEFILE_DIR $INSTALL_DIR
- 
-	# move
-	cp -rf ./* $INSTALL_DIR/
-	
-	# Create module files
-	cat > $MODULEFILE <<-EOF	
-		#%Module1.0
-		proc ModulesHelp { } {
-		puts stderr "MUGQIC - $WHATIS"
-		}
-		module-whatis "MUGQIC - $WHATIS"
-		
-		set             root               $INSTALL_DIR          
-		prepend-path    PATH               \$root/bin
-        setenv          VCFLIB_BIN         \$root/bin
-		EOF
-	cat > $MODULEVERSIONFILE <<-EOF
-		#%Module1.0
-		set ModulesVersion $VERSION
-		EOF
-fi
-
-## Adjust permissions
-chmod -R ug+rwX  $INSTALL_DIR $MODULEFILE $MODULEVERSIONFILE
-chmod -R o+rX    $INSTALL_DIR $MODULEFILE $MODULEVERSIONFILE
-
-exit
+# Call generic module install script once all variables and functions have been set
+MODULE_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source $MODULE_INSTALL_SCRIPT_DIR/install_module.sh $@

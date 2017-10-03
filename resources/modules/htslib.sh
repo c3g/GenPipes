@@ -3,8 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=htslib
-#VERSION=1.3
-VERSION=1.2.1
+VERSION=1.4.1
 ARCHIVE=$SOFTWARE-$VERSION.tar.bz2
 ARCHIVE_URL=https://github.com/samtools/htslib/releases/download/${VERSION}/${ARCHIVE}
 SOFTWARE_DIR=$SOFTWARE-$VERSION
@@ -31,7 +30,8 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-prepend-path    PATH                \$root/bin/
+prepend-path    PATH                \$root/bin
+prepend-path    PATH                \$root/lib
 "
 }
 

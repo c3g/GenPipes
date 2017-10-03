@@ -2,13 +2,14 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-module_bowtie=mugqic/bowtie2/2.2.4
+module_bowtie=mugqic/bowtie/1.1.2
+module_bowtie2=mugqic/bowtie2/2.2.9
 module_bwa=mugqic/bwa/0.7.12
 module_java=mugqic/java/openjdk-jdk1.8.0_72
 module_mugqic_R_packages=mugqic/mugqic_R_packages/1.0.3
 module_picard=mugqic/picard/2.0.1
 module_R=mugqic/R_Bioconductor/3.1.2_3.0
-module_samtools=mugqic/samtools/1.3
+module_samtools=mugqic/samtools/1.3.1
 module_star=mugqic/star/2.5.2a
 module_tabix=mugqic/tabix/0.2.6
 module_tophat=mugqic/tophat/2.0.14
@@ -314,6 +315,33 @@ chmod -R ug+rwX,o+rX $INDEX_DIR \$LOG"
   fi
 }
 
+create_bowtie_tophat_index() {
+  BOWTIE_INDEX_DIR=$GENOME_DIR/bowtie_index
+  BOWTIE_INDEX_PREFIX=$BOWTIE_INDEX_DIR/${GENOME_FASTA/.fa}
+  TOPHAT_INDEX_DIR=$ANNOTATIONS_DIR/gtf_tophat_index
+  TOPHAT_INDEX_PREFIX=$TOPHAT_INDEX_DIR/${GTF/.gtf}
+
+  if ! is_up2date $BOWTIE_INDEX_PREFIX.[1-4].bt $BOWTIE_INDEX_PREFIX.rev.[12].bt $TOPHAT_INDEX_PREFIX.[1-4].bt $TOPHAT_INDEX_PREFIX.rev.[12].bt
+  then
+    echo
+    echo "Creating genome Bowtie index and gtf TopHat index..."
+    echo
+    BOWTIE_CMD="\
+mkdir -p $BOWTIE_INDEX_DIR && \
+ln -s -f -t $BOWTIE_INDEX_DIR ../$GENOME_FASTA && \
+module load $module_bowtie && \
+LOG=$LOG_DIR/bowtie_$TIMESTAMP.log && \
+ERR=$LOG_DIR/bowtie_$TIMESTAMP.err && \
+bowtie-build $BOWTIE_INDEX_DIR/$GENOME_FASTA $BOWTIE_INDEX_PREFIX > \$LOG 2> \$ERR && \
+chmod -R ug+rwX,o+rX $BOWTIE_INDEX_DIR \$LOG \$ERR"
+  cmd_or_job BOWTIE_CMD 4
+  else
+    echo
+    echo "Genome Bowtie index and gtf TopHat index up to date... skipping"
+    echo
+  fi
+}
+
 create_bowtie2_tophat_index() {
   BOWTIE2_INDEX_DIR=$GENOME_DIR/bowtie2_index
   BOWTIE2_INDEX_PREFIX=$BOWTIE2_INDEX_DIR/${GENOME_FASTA/.fa}
@@ -328,7 +356,7 @@ create_bowtie2_tophat_index() {
     BOWTIE2_TOPHAT_CMD="\
 mkdir -p $BOWTIE2_INDEX_DIR && \
 ln -s -f -t $BOWTIE2_INDEX_DIR ../$GENOME_FASTA && \
-module load $module_bowtie && \
+module load $module_bowtie2 && \
 LOG=$LOG_DIR/bowtie2_$TIMESTAMP.log && \
 ERR=$LOG_DIR/bowtie2_$TIMESTAMP.err && \
 bowtie2-build $BOWTIE2_INDEX_DIR/$GENOME_FASTA $BOWTIE2_INDEX_PREFIX > \$LOG 2> \$ERR && \
@@ -649,6 +677,42 @@ copy_files() {
   fi
 }
 
+create_genome_digest() {
+
+  GENOME_DIGEST=$GENOME_DIR/genome_digest/
+  
+  declare -A enzymes=( ["DpnII"]="^GATC" ["MboI"]="^GATC" ["HindIII"]="A^AGCTT" ["NcoI"]="C^CATGG")
+  
+  for enzyme in "${!enzymes[@]}"; do 
+    #echo "$enzyme - ${enzymes[$enzyme]}";
+    ## hicup only accepts alphanumeric and underscores
+    GENOME_DIGEST_FILE=HiCUP_Digest_${SPECIES}_${ASSEMBLY}_${enzyme}.txt
+  
+    if ! is_up2date $GENOME_DIGEST/$GENOME_DIGEST_FILE
+    then
+      echo
+      echo "Creating ${enzyme} genome digest..."
+      echo
+      Digest_CMD="mkdir -p $GENOME_DIGEST && \
+      cd $GENOME_DIGEST  && \
+      ln -s -f -t $GENOME_DIGEST ../$GENOME_FASTA && \
+      module load $module_hicup && \
+      LOG=$LOG_DIR/${enzyme}_digest_$TIMESTAMP.log && \
+      hicup_digester --genome $ASSEMBLY --re1 ${enzymes[$enzyme]},${enzyme} $GENOME_DIGEST/$GENOME_FASTA > \$LOG 2>&1 && \
+      mv Digest_${ASSEMBLY}_${enzyme}_None_*.txt $GENOME_DIGEST_FILE && \
+      chmod -R ug+rwX,o+rX $GENOME_DIGEST \$LOG"
+      cmd_or_job Digest_CMD 2
+    else
+      echo
+      echo "${enzyme} genome digest is up to date... skipping"
+      echo
+    fi
+
+  done
+}
+
+
+
 build_files() {
   # Create indexes
   create_picard_index
@@ -656,12 +720,14 @@ build_files() {
   create_bwa_index
   create_star_index
   create_bowtie2_tophat_index
+  create_genome_digest
   create_ncrna_bwa_index
   create_rrna_bwa_index
   create_kallisto_index
   create_transcripts2genes_file
   create_gene_annotations
   create_gene_annotations_flat
+  
 
   # Annotations are not installed for UCSC genomes
   if [[ $SOURCE != "UCSC" ]]
@@ -711,3 +777,4 @@ install_genome() {
   # Add permissions
   chmod -R ug+rwX,o+rX $INSTALL_DIR
 }
+

@@ -9,7 +9,7 @@ ARCHIVE_URL=http://sourceforge.net/projects/math-atlas/files/Stable/3.10.2/atlas
 ARCHIVE_URL=http://github.com/xianyi/ATLAS/archive/v${VERSION}.tar.gz
 SOFTWARE_DIR=$SOFTWARE-$VERSION
 
-# Specific commands to extract and build the software
+# Specific commands to extract and build the software
 # $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
 # $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {

@@ -3,9 +3,9 @@
 set -eu -o pipefail
 
 SOFTWARE=emboss
-VERSION=6.5.7
+VERSION=6.6.0
 ARCHIVE=${SOFTWARE^^}-$VERSION.tar.gz
-ARCHIVE_URL=ftp://emboss.open-bio.org/pub/${SOFTWARE^^}/old/$VERSION/$ARCHIVE
+ARCHIVE_URL=ftp://emboss.open-bio.org/pub/${SOFTWARE^^}/$ARCHIVE
 SOFTWARE_DIR=${SOFTWARE^^}-$VERSION
 
 # $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically

@@ -65,13 +65,13 @@ samtools flagstat \\
         removable_files=[output]
     )
 
-def mpileup(input_bams, output, other_options="", region=None, regionFile=None):
+def mpileup(input_bams, output, other_options="", region=None, regionFile=None, ini_section='rawmpileup'):
 
     return Job(
         input_bams,
         [output],
         [
-            ['rawmpileup', 'module_samtools']
+            [ini_section, 'module_samtools']
         ],
         command="""\
 samtools mpileup {other_options} \\
@@ -84,6 +84,25 @@ samtools mpileup {other_options} \\
         output=" \\\n  > " + output if output else ""
         )
     )
+
+
+
+def merge(sample_output, input_bams):
+    """
+    merges an array of bams into a single bam
+    """
+
+
+    command = "samtools merge {sample_output} {input_bams}".format(sample_output = sample_output, input_bams = " ".join(map(str.strip, input_bams)))
+
+
+    return Job( input_files = input_bams,
+                    output_files = [sample_output],
+                    module_entries = [['hicup_align', 'module_samtools']],
+                    command = command
+                )
+
+
 
 def sort(input_bam, output_prefix, sort_by_name=False):
     output_bam = output_prefix + ".bam"
@@ -99,7 +118,7 @@ samtools sort {other_options}{sort_by_name} \\
         other_options=config.param('samtools_sort', 'other_options', required=False),
         sort_by_name=" -n" if sort_by_name else "",
         input_bam=input_bam,
-        output_prefix=output_prefix
+        output_prefix=output_prefix if config.param('samtools_sort', 'module_samtools').split("/")[2] == "0.1.19" else "> " + output_prefix + ".bam"
         ),
         removable_files=[output_bam]
     )
@@ -164,3 +183,45 @@ bcftools call {pair_calling} {options} \\
         )
     )
   
+def bcftools_call_pair(input, output, options="", pair_calling=False):
+    return Job(
+        [input],
+        [output],
+        [['samtools_paired', 'module_samtools']],
+        command="""\
+$BCFTOOLS_BIN/bcftools view {pair_calling} {options} \\
+  {input}{output}""".format(
+        options=options,
+        pair_calling="-T pair" if pair_calling else "",
+        input=input,
+        output=" \\\n  > " + output if output else ""
+        )
+    )
+
+def bcftools_cat_pair(inputs, output):
+    return Job(
+        inputs,
+        [output],
+        [['samtools_paired', 'module_samtools']],
+        command="""\
+$BCFTOOLS_BIN/bcftools cat \\
+  {inputs}{output}""".format(
+        inputs=" \\\n  ".join(inputs),
+        output=" \\\n  > " + output if output else ""
+        )
+    )
+
+def bcftools_view_pair(input, output, options="", pair_calling=False):
+    return Job(
+        [input],
+        [output],
+        [['samtools_paired', 'module_samtools']],
+        command="""\
+$BCFTOOLS_BIN/bcftools view {pair_calling} {options} \\
+  {input}{output}""".format(
+        options=options,
+        pair_calling="-T pair" if pair_calling else "",
+        input=input,
+        output=" \\\n  > " + output if output else ""
+        )
+    )

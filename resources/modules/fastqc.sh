@@ -18,7 +18,6 @@ build() {
   mv -i $SOFTWARE_DIR $INSTALL_DIR/
 }
 
-
 module_file() {
 echo "\
 #%Module1.0

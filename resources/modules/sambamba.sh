@@ -2,21 +2,21 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-
 SOFTWARE=sambamba
-VERSION=0.6.5
-ARCHIVE=sambamba_v${VERSION}_linux.tar.bz2
-ARCHIVE_URL=https://github.com/lomereiter/sambamba/releases/download/v${VERSION}/sambamba_v${VERSION}_linux.tar.bz2
-SOFTWARE_DIR=sambamba-${VERSION}
-
+VERSION=0.6.6
+ARCHIVE=${SOFTWARE}_v${VERSION}_linux.tar.bz2
+ARCHIVE_URL=https://github.com/lomereiter/${SOFTWARE}/releases/download/v${VERSION}/$ARCHIVE
+SOFTWARE_DIR=${SOFTWARE}-${VERSION}
 
 build() {
   cd $INSTALL_DOWNLOAD
   tar -xjf sambamba_v${VERSION}_linux.tar.bz2
   mkdir $SOFTWARE_DIR 
-  mv sambamba_v${VERSION} $SOFTWARE_DIR
+  mv ${SOFTWARE}_v${VERSION} $SOFTWARE_DIR
 
   mv -i $SOFTWARE_DIR $INSTALL_DIR/$SOFTWARE_DIR
+  cd $INSTALL_DIR/$SOFTWARE_DIR
+  ln -s sambamba* sambamba
 }
 
 module_file() {

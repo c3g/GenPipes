@@ -13,10 +13,14 @@ SOURCE=Ensembl
 #BIOMART_HOST=dec2015.archive.ensembl.org
 #VERSION=84
 #BIOMART_HOST=mar2016.archive.ensembl.org
-VERSION=85
-BIOMART_HOST=jul2016.archive.ensembl.org
+#VERSION=85
+#BIOMART_HOST=jul2016.archive.ensembl.org
+#VERSION=86
+#BIOMART_HOST=oct2016.archive.ensembl.org
+VERSION=87
+BIOMART_HOST=dec2016.archive.ensembl.org
 
-module_snpeff=mugqic/snpEff/4.2
+module_snpeff=mugqic/snpEff/4.3
 module_tabix=mugqic/tabix/0.2.6
 module_java=mugqic/java/openjdk-jdk1.8.0_72
 
@@ -25,8 +29,9 @@ source $GENOME_INSTALL_SCRIPT_DIR/install_genome.sh
 
 # Download dbSNP directly from NCBI since it is more up to date
 get_vcf_dbsnp() {
-  DBSNP_VERSION=142
-  DBSNP_URL=ftp://ftp.ncbi.nlm.nih.gov/snp/organisms/archive/human_9606_b${DBSNP_VERSION}_GRCh38/VCF/All.vcf.gz
+  DBSNP_VERSION=149
+#  DBSNP_URL=ftp://ftp.ncbi.nlm.nih.gov/snp/organisms/archive/human_9606_b${DBSNP_VERSION}_GRCh38p7/VCF/All.vcf.gz
+  DBSNP_URL=ftp://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606_b${DBSNP_VERSION}_GRCh38p7/VCF/All_20161122.vcf.gz
   DBSNP=$ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP$DBSNP_VERSION.vcf.gz
 
   if ! is_up2date $DBSNP $DBSNP.tbi
@@ -42,16 +47,16 @@ get_vcf_dbsnp() {
 }
 
 # Download dbNSFP and generate vcfs required to run VerifyBamId
-get_dbNSFP() {        
-    DBNSFP_URL=ftp://dbnsfp:dbnsfp@dbnsfp.softgenetics.com/dbNSFPv3.2c.zip
-    DBSNSFP_VERSION=dbNSFPv3.2c
+get_dbNSFP() {
+    DBSNSFP_VERSION=dbNSFPv3.4c 
+    DBNSFP_URL=ftp://dbnsfp:dbnsfp@dbnsfp.softgenetics.com/${DBSNSFP_VERSION}.zip
     DBSNSFP=$ANNOTATIONS_DIR/$DBSNSFP_VERSION/$DBSNSFP_VERSION.txt.gz
     if ! is_up2date $DBSNSFP.txt.gz
         then
         mkdir -p $ANNOTATIONS_DIR/$DBSNSFP_VERSION/
         if ! is_up2date `download_path $DBNSFP_URL`; then
             download_url $DBNSFP_URL
-            cp dbnsfp.softgenetics.com/dbNSFPv3.2c.zip $ANNOTATIONS_DIR/$DBSNSFP_VERSION/
+            cp dbnsfp.softgenetics.com/${DBSNSFP_VERSION} $ANNOTATIONS_DIR/$DBSNSFP_VERSION/
         fi
         unzip $ANNOTATIONS_DIR/$DBSNSFP_VERSION/$DBSNSFP_VERSION.zip -d $ANNOTATIONS_DIR/$DBSNSFP_VERSION/
         (head -n 1 $ANNOTATIONS_DIR/$DBSNSFP_VERSION/*_variant.chr1 ; cat $ANNOTATIONS_DIR/$DBSNSFP_VERSION/*_variant.chr* | grep -v "^#" ) > $DBSNSFP.txt
@@ -107,7 +112,7 @@ install_genome() {
     # Update Ensembl GTF annotation IDs to match NCBI genome chromosome IDs
 #    if [[ $VERSION == "77" ]]
 #    then
-      grep "^>" $GENOME_DIR/$GENOME_FASTA | cut -f1 -d\  | cut -c 2- | perl -pe 's/^(chr([^_\n]*))$/\1\t\2/' | perl -pe 's/^(chr[^_]*_([^_\n]*)(_\S+)?)$/\1\t\2/' | awk -F"\t" 'FNR==NR{id[$2]=$1; next}{OFS="\t"; if (id[$1]) {print id[$1],$0} else {print $0}}' - $ANNOTATIONS_DIR/$GTF.tmp | cut -f1,3- > $ANNOTATIONS_DIR/$GTF
+    grep "^>" $GENOME_DIR/$GENOME_FASTA | cut -f1 -d\  | cut -c 2- | perl -pe 's/^(chr([^_\n]*))$/\1\t\2/' | perl -pe 's/^(chr[^_]*_([^_\n]*)(_\S+)?)$/\1\t\2/' | awk -F"\t" 'FNR==NR{id[$2]=$1; next}{OFS="\t"; if (id[$1]) {print id[$1],$0} else {print $0}}' - $ANNOTATIONS_DIR/$GTF.tmp | cut -f1,3- > $ANNOTATIONS_DIR/$GTF
 #    else
 #      grep "^>" $GENOME_DIR/$GENOME_FASTA | cut -f1 -d\  | cut -c 2- | perl -pe 's/^(chr([^_\n]*))$/\1\t\2/' | perl -pe 's/^(chr[^_]*_([^_\n]*)(_\S+)?)$/\1\t\2/' | awk -F"\t" 'FNR==NR{id[$2]=$1; next}{OFS="\t"; if (id[$1]) {print id[$1],$0} else {print $0}}' - $ANNOTATIONS_DIR/$GTF.tmp > $ANNOTATIONS_DIR/$GTF
 #    fi

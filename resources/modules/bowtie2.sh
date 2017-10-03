@@ -3,9 +3,9 @@
 set -eu -o pipefail
 
 SOFTWARE=bowtie2
-VERSION=2.2.9
-ARCHIVE=$SOFTWARE-$VERSION-source.zip
-ARCHIVE_URL=http://sourceforge.net/projects/bowtie-bio/files/$SOFTWARE/$VERSION/$ARCHIVE
+VERSION=2.3.1
+ARCHIVE=$SOFTWARE-$VERSION.zip
+ARCHIVE_URL=https://sourceforge.net/projects/bowtie-bio/files/$SOFTWARE/$VERSION/${SOFTWARE}-${VERSION}-linux-x86_64.zip
 SOFTWARE_DIR=$SOFTWARE-$VERSION
 
 # Specific commands to extract and build the software
@@ -15,8 +15,8 @@ build() {
   cd $INSTALL_DOWNLOAD
   unzip $ARCHIVE
 
-  cd $SOFTWARE_DIR
-  make -j8
+#  cd $SOFTWARE_DIR	# uncomment this if source code has been downloaded instead of binaries
+#  make -j8
 
   # Install software
   cd $INSTALL_DOWNLOAD

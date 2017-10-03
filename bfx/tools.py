@@ -185,6 +185,27 @@ $PYTHON_TOOLS/filterAssemblyToFastaToXls.py -f {fasta_file} \\
         )
     )
 
+## functions for perl tools ##
+
+def bed2interval_list(dictionary, bed, output):
+    return Job(
+        [dictionary, bed],
+        [output],
+        [
+            ['DEFAULT', 'module_mugqic_tools'],
+            ['DEFAULT', 'module_perl']
+        ],
+        command="""\
+bed2IntervalList.pl \\
+  --dict {dictionary} \\
+  --bed {bed} \\
+  > {output}""".format(
+        dictionary=dictionary if dictionary else config.param('DEFAULT', 'genome_dictionary', type='filepath'),
+        bed=bed,
+        output=output
+        )
+    )
+
 def dict2beds(dictionary,beds):
     return Job(
         [dictionary],
@@ -238,6 +259,7 @@ python $PYTHON_TOOLS/fixVS2VCF.py {options} {input} \\
     )
 
 ## functions for perl tools ##
+
 def bed2interval_list(dictionary, bed, output):
     return Job(
         [dictionary, bed],
@@ -478,4 +500,71 @@ R --no-save --args \\
         min_num_read=min_num_read,
         mean_read_length=mean_read_length
         )
+    )
+
+def sh_ihec_rna_metrics(input_bam, input_name, input_picard_dup, output_dir):
+    output_metrics=os.path.join(output_dir, input_name+".read_stats.txt")
+    output_duplicates=os.path.join(output_dir, input_name+".duplicated.txt")
+    
+    return Job(
+        [input_bam, input_picard_dup],
+        [output_metrics, output_duplicates],
+        [
+            ['DEFAULT', 'module_mugqic_tools'],
+            ['DEFAULT', 'module_samtools']
+        ],
+        command="""\
+IHEC_rnaseq_metrics.sh \\
+    {input_bam} \\
+    {input_name} \\
+    {input_picard_dup} \\
+    {intergenic_bed} \\
+    {rrna_bed} \\
+    {output_dir}""".format(
+        input_bam=input_bam,
+        input_name=input_name,
+        input_picard_dup=input_picard_dup,
+        intergenic_bed=config.param('IHEC_rnaseq_metrics', 'intergenic_bed', type='filepath',required=True),
+        rrna_bed=config.param('IHEC_rnaseq_metrics', 'ribo_rna_bed', type='filepath',required=True),
+        output_dir=output_dir
+        )
+    )
+
+def sh_ihec_chip_metrics(chip_bam, input_bam, sample_name, input_name, chip_type, chip_bed, output_dir):
+    output_metrics=os.path.join(output_dir, sample_name+".read_stats.txt")
+    output_fingerprints=os.path.join(output_dir, sample_name+".fingerprint.txt")
+    output_fingerprints_png=os.path.join(output_dir, sample_name+".fingerprint.png")
+    output_dedup_chip_bam=os.path.join(output_dir, sample_name+".dedup.bam")
+    output_dedup_chip_bai=os.path.join(output_dir, sample_name+".dedup.bai")
+    output_dedup_input_bam=os.path.join(output_dir, sample_name+"_IMPUT.dedup.bam")
+    output_dedup_input_bai=os.path.join(output_dir, sample_name+"_IMPUT.dedup.bai")
+    output_flagstats=os.path.join(output_dir, sample_name+".markDup_flagstat.txt")
+    return Job(
+        [input_bam, chip_bam, chip_bed],
+        [output_metrics, output_fingerprints, output_fingerprints_png, output_dedup_chip_bam, output_dedup_chip_bai, output_dedup_input_bam, output_dedup_input_bai, output_flagstats],
+        [
+            ['DEFAULT', 'module_mugqic_tools'],
+            ['DEFAULT', 'module_samtools'],
+            ['DEFAULT', 'module_deeptools']
+        ],
+        command="""\
+IHEC_chipseq_metrics.sh \\
+    -d {chip_bam} \\
+    -i {input_bam} \\
+    -s {sample_name} \\
+    -j {input_name} \\
+    -t {chip_type} \\
+    -n {threads} \\
+    -p {chip_bed} \\
+    -o {output_dir}""".format(
+        input_bam=input_bam,
+        input_name=input_name,
+        sample_name=sample_name,
+        chip_bam=chip_bam,
+        chip_type=chip_type,
+        threads=config.param('IHEC_chipseq_metrics', 'thread', type='int') if config.param('IHEC_chipseq_metrics', 'thread', type='int',required=False) else 1,
+        chip_bed=chip_bed,
+        output_dir=output_dir
+        ),
+        removable_files=[output_fingerprints,output_fingerprints_png,output_dedup_chip_bam,output_dedup_chip_bam,output_dedup_chip_bai,output_dedup_input_bam,output_dedup_input_bai,output_flagstats]
     )

@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=samtools
-VERSION=1.3.1
+VERSION=1.4.1
 #VERSION=0.1.19
 if [[ ${VERSION:0:1} == 1 ]]; then
   ARCHIVE=$SOFTWARE-$VERSION.tar.bz2
@@ -29,9 +29,10 @@ build() {
 
   # Install software
   if [[ ${VERSION:0:1} == 1 ]]; then
-    ./configure --enable-plugins --enable-libcurl prefix=$INSTALL_DIR/${SOFTWARE_DIR}
+    ./configure --enable-plugins --enable-libcurl prefix=$INSTALL_DIR/$SOFTWARE_DIR
     make all all-htslib
     make install install-htslib
+    mv libbam.a $INSTALL_DIR/${SOFTWARE_DIR}/lib/
   else
     make
     make razip
@@ -64,6 +65,8 @@ module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
 prepend-path    PATH                \$root/bin
+prepend-path    LIBRARY_PATH        \$root/lib
+prepend-path    LD_LIBRARY_PATH     \$root/lib
 "
 }
 

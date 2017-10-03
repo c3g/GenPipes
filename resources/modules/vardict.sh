@@ -2,52 +2,35 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-################################################################################
-# This is a module install script template which should be copied and used for
-# consistency between module paths, permissions, etc.
-# Only lines marked as "## TO BE ADDED/MODIFIED" should be, indeed, modified.
-# Also, once modified, delete this commented-out header and the ## comments
-################################################################################
-
-HOST=`hostname`;
-
-DNSDOMAIN=`dnsdomainname`;
-
 SOFTWARE=VarDictJava 
-VERSION=1.4.8
+VERSION=1.4.9
 ARCHIVE=$SOFTWARE-$VERSION.tar.gz
-ARCHIVE_URL=https://github.com/AstraZeneca-NGS/VarDictJava/archive/v$VERSION.tar.gz  
+ARCHIVE_URL=https://github.com/AstraZeneca-NGS/$SOFTWARE/archive/v$VERSION.tar.gz  
 SOFTWARE_DIR=$SOFTWARE-$VERSION 
 
-# Specific commands to extract and build the software
+# Specific commands to extract and build the software
 # $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
 # $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
   tar zxvf $ARCHIVE  
 
-  ##Unzip compile version
+  #Unzip compile version
   cd $SOFTWARE_DIR/dist
+  if [[ $VERSION == "1.4.10" ]]
+  then
+    wget https://github.com/AstraZeneca-NGS/$SOFTWARE/files/758679/VarDict-1.4.10.zip
+  elif [[ $VERSION == 1.4.9 ]]
+  then
+    wget https://github.com/AstraZeneca-NGS/$SOFTWARE/files/748361/VarDict-1.4.9.zip
+  fi
+
   unzip VarDict-${VERSION}.zip
   mv VarDict-${VERSION}/* ../
   
-  ##Modify Vardict bash script
   cd ../
-  #if [[ $HOST == abacus* || $DNSDOMAIN == ferrier.genome.mcgill.ca ]]; then
-
-  #   sed -i.bak -e "s/^DEFAULT_JVM_OPTS=\'/DEFAULT_JVM_OPTS=\'\"-Djava.io.tmpdir=\/lb\/scratch/\" \"-XX:ParallelGCThreads=1\" \"-Dsamjdk.buffer_size=4194304\" /g" bin/VarDict
-
-  #elif [[ $HOST == lg-* || $DNSDOMAIN == guillimin.clumeq.ca ]]; then
-
-  #   sed -i.bak -e "s/^DEFAULT_JVM_OPTS=\'/DEFAULT_JVM_OPTS=\'\"-Djava.io.tmpdir=\/localscratch\/\" \"-XX:ParallelGCThreads=1\" \"-Dsamjdk.buffer_size=4194304\" /g" bin/VarDict
-
-  #elif [[ $BQMAMMOUTH == "mp2" ]]; then
-
-  #   sed -i.bak -e "s/^DEFAULT_JVM_OPTS=\'/DEFAULT_JVM_OPTS=\'\"-Djava.io.tmpdir=\/lb\/scratch\/\" \"-XX:ParallelGCThreads=1\" \"-Dsamjdk.buffer_size=4194304\" /g" bin/VarDict
-
-  #fi  
   
-  ##Install Vardict perl support files  
+  #Install Vardict perl support files  
   rm -R VarDict
   git clone https://github.com/AstraZeneca-NGS/VarDict.git
  

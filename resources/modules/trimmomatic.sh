@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=trimmomatic
-VERSION=0.35
+VERSION=0.36
 ARCHIVE=${SOFTWARE^}-$VERSION.zip
 ARCHIVE_URL=http://www.usadellab.org/cms/uploads/supplementary/${SOFTWARE^}/$ARCHIVE
 SOFTWARE_DIR=${SOFTWARE^}-$VERSION

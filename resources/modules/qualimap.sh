@@ -10,11 +10,8 @@ ARCHIVE=$SOFTWARE-$VERSION.zip
 ARCHIVE_URL=https://bitbucket.org/kokonech/$SOFTWARE/downloads/${SOFTWARE}_v${VERSION}.zip
 SOFTWARE_DIR=$SOFTWARE-$VERSION
 
-R_MODULE=mugqic_dev/R_Bioconductor/3.2.3_3.2
+R_MODULE=mugqic/R_Bioconductor/3.2.3_3.2
 
-# Specific commands to extract and build the software
-# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
-# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
   unzip $ARCHIVE

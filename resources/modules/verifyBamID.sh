@@ -4,25 +4,24 @@ set -eu -o pipefail
 
 
 SOFTWARE=verifyBamID
-VERSION=devMaster_20151216
-ARCHIVE=${SOFTWARE}_${VERSION}.zip
-ARCHIVE_URL=https://github.com/statgen/verifyBamID/archive/master.zip
-SOFTWARE_DIR=${SOFTWARE}_${VERSION}
+VERSION=1.1.3
+ARCHIVE=${SOFTWARE}_${VERSION}.tar.gz
+ARCHIVE_URL=https://github.com/statgen/${SOFTWARE}/releases/download/v${VERSION}/${SOFTWARE}LibStatGen.${VERSION}.tgz
+SOFTWARE_DIR=${SOFTWARE}-${VERSION}
 
-# Specific commands to extract and build the software
+# Specific commands to extract and build the software
 # $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
 # $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 
 build() {
-  echo -e "INSTALL_DOWNLOAD =$INSTALL_DOWNLOAD"
   cd $INSTALL_DOWNLOAD
-  unzip ${SOFTWARE}_${VERSION}.zip
-  # Transfer immediately from tmp to INSTALL_DIR
-  mv -i $INSTALL_DOWNLOAD/verifyBamID-master/ $INSTALL_DIR/$SOFTWARE_DIR/
+  tar -zxvf $ARCHIVE
+
+  cd ${SOFTWARE}_${VERSION}
+  make
+  make install INSTALLDIR=$INSTALL_DIR/$SOFTWARE_DIR
+
   cd $INSTALL_DIR/$SOFTWARE_DIR
-  mkdir -p bin/
-  make cloneLib
-  make install INSTALLDIR=$INSTALL_DIR/$SOFTWARE_DIR/bin/ || echo "complete make didn t pass, create module file anyways" 
 }
 
 module_file() {
@@ -33,8 +32,8 @@ proc ModulesHelp { } {
 }
 module-whatis \"$SOFTWARE\"
 
-set             root                $INSTALL_DIR/$SOFTWARE_DIR/bin
-prepend-path    PATH                \$root ;
+set             root                $INSTALL_DIR/$SOFTWARE_DIR
+prepend-path    PATH                \$root
 "
 }
 
