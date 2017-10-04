@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=mugqic_tools
-VERSION=2.1.7
+VERSION=2.1.9
 ARCHIVE=$SOFTWARE-$VERSION.tar.gz
 ARCHIVE_URL=https://bitbucket.org/mugqic/$SOFTWARE/downloads/$ARCHIVE
 SOFTWARE_DIR=$SOFTWARE-$VERSION
