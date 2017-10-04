@@ -1,0 +1,80 @@
+```{r preparation, results="hide",echo=F,message=F,warning=F}
+
+### DEFINED OUTSIDE
+# report_dir
+
+library(rmarkdown)
+library(knitr)
+library(hwriter)
+library(magrittr)
+library(jsonlite)
+options(stringsAsFactors=F)
+
+# Directories and cp data
+unlink(file.path(report_dir,"kallisto") , recursive = T)
+dir.create( file.path(report_dir,"kallisto"), showWarnings=F,recursive=T)
+file.copy(from = "kallisto", to = report_dir, overwrite = T, recursive = T)
+
+# Create summary table
+all_readsets_abundance.transcripts=read.delim(file.path(report_dir,"kallisto/All_readsets/all_readsets.abundance_transcripts.csv"), as.is=T, check.names = FALSE) #to allow the use of dash in sample names
+all_readsets_abundance.genes=read.delim(file.path(report_dir,"kallisto/All_readsets/all_readsets.abundance_genes.csv"), as.is=T, check.names = FALSE)
+
+all_readsets_triming_metrics=read.delim("metrics/trimReadsetTable.tsv", as.is=T)
+colnames(all_readsets_triming_metrics)=c("Sample","Readset Raw","Paired Reads #","Surviving Paired Reads #","Surviving Paired Reads %")
+rownames(all_readsets_triming_metrics)=all_readsets_triming_metrics$Sample
+readset_names=all_readsets_triming_metrics$Sample
+
+mat_colnames=c("Readset","Raw Reads #", "Surviving Reads", "%", "Transcriptome", "Transcripts", "Transcripts Reads #","%", "Genes", "Genes Reads #","%")
+mat=data.frame(matrix(nrow=length(readset_names), ncol=length(mat_colnames)))
+rownames(mat)=readset_names
+colnames(mat)=mat_colnames
+mat[,1]=readset_names
+for (i in seq(length(readset_names))){
+    readset=readset_names[i]
+
+    run_info=fromJSON(file.path(report_dir, "kallisto", readset, "run_info.json"))
+    n_fastq=sum(grepl("fastq",strsplit(run_info$call," ")[[1]])) #check if paired or single
+    
+    mat[i,"Raw Reads #"]=all_readsets_triming_metrics[readset, "Paired Reads #"]*n_fastq #multiply by 2 if paired
+    mat[i,"Surviving Reads"]=all_readsets_triming_metrics[readset,"Surviving Paired Reads #"]*n_fastq #multiply by 2 if paired
+    mat[i,4]=signif(all_readsets_triming_metrics[readset,"Surviving Paired Reads %"],3)
+
+    mat[i,"Transcriptome"]=run_info$n_targets
+
+    transcript_count=all_readsets_abundance.transcripts[,readset]
+    mat[i,"Transcripts"]=sum(transcript_count>=5)
+    mat[i, "Transcripts Reads #"]=sum(transcript_count)*n_fastq #multiply by 2 if paired
+    mat[i,8]=signif(mat[i,"Transcripts Reads #"]/mat[i,"Raw Reads #"],3)*100
+
+    gene_count=all_readsets_abundance.genes[,readset]
+    mat[i,"Genes"]=sum(gene_count>=5)
+    mat[i,"Genes Reads #"]=sum(gene_count)*n_fastq #multiply by 2 if paired
+    mat[i,11]=signif(mat[i,"Genes Reads #"]/mat[i,"Raw Reads #"],3)*100
+}
+
+```
+
+### Kallisto
+
+[Kallisto](https://pachterlab.github.io/kallisto/about) is a program for quantifying abundances of transcripts from RNA-Seq data, or more generally of target sequences using high-throughput sequencing reads. It is based on the novel idea of pseudoalignment for rapidly determining the compatibility of reads with targets, without the need for alignment.
+
+Kallisto is ran on fastq files, producing raw count estimates at the transcript level. Then, the R package tximport is used to aggregate the transcripts in order to generate the count at the gene level. It is based on a transcript to gene correspondence file available [here](Mus_musculus.GRCm38.Ensembl83.tx2gene).
+
+
+```{r summary_table, results="markup",echo=F,message=F,warning=F}
+kable(mat,align="r",row.names=F, format.args = list(decimal.mark = ".", big.mark = ","))
+
+```
+
+
+* Raw Reads: total number of reads obtained from the sequencer
+* Surviving Reads: number of remaining reads after the trimming step
+* %: Surviving Reads / Raw Reads
+* Transcriptome: number of transcript targets
+* Transcripts: number of Transcripts with at least 5 reads
+* Transcripts Reads: total number of reads covering the transcripts
+* %: Transcripts Reads # / Surviving reads
+* Genes: number of Genes with at least 5 reads
+* Genes Reads: total number of reads covering the genes
+* %: Genes Reads # / Surviving reads
+
