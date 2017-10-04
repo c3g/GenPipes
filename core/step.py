@@ -23,7 +23,7 @@
 import re
 
 class Step:
-    def __init__(self, create_jobs):
+    def __init__(self, create_jobs, analyse_type=None):
         # Step name is used in Bash $JOB_ID variable, hence only alphanumeric and "_" characters are allowed
         step_name = create_jobs.__name__
         if re.search("^[a-zA-Z]\w+$", step_name):
@@ -35,6 +35,7 @@ class Step:
         self._name = step_name
         self._create_jobs = create_jobs
         self._jobs = []
+        self._analyse_type = analyse_type
 
     @property
     def name(self):
@@ -47,6 +48,10 @@ class Step:
     @property
     def jobs(self):
         return self._jobs
+
+    @property
+    def analyse_type(self):
+        return self._analyse_type
 
     def add_job(self, job):
         self.jobs.append(job)

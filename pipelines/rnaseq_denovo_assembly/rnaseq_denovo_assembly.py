@@ -108,11 +108,12 @@ class RnaSeqDeNovoAssembly(common.Illumina):
     to the pipeline main script.
     """
 
-    def __init__(self):
+    def __init__(self, protocol=None):
+        self._protocol=protocol
         # Add pipeline specific arguments
         self.argparser.add_argument("-d", "--design", help="design file", type=file)
 
-        super(RnaSeqDeNovoAssembly, self).__init__()
+        super(RnaSeqDeNovoAssembly, self).__init__(protocol)
 
     def insilico_read_normalization_readsets(self):
         """

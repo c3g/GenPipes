@@ -3,9 +3,9 @@
 set -eu -o pipefail
 
 SOFTWARE=usearch
-#VERSION=7.0.1090
-VERSION=8.1.1861
-ARCHIVE=usearch8.1.1861
+VERSION=10.0.240
+ARCHIVE=${SOFTWARE}${VERSION}
+ARCHIVE_URL=
 echo "Prior to install the usearch module, you must download the archive manually, if not done already, from http://www.drive5.com/usearch/download.html since it requires a license agreement.
 Once downloaded, copy it in \$MUGQIC_INSTALL_HOME_DEV/archive/ or \$MUGQIC_INSTALL_HOME/archive/ and rename it as ${SOFTWARE}${VERSION}"
 SOFTWARE_DIR=$SOFTWARE-$VERSION
@@ -17,6 +17,8 @@ build() {
   mkdir $INSTALL_DIR/$SOFTWARE_DIR
   echo "mv $INSTALL_DOWNLOAD/${SOFTWARE}* $INSTALL_DIR/$SOFTWARE_DIR/${SOFTWARE}${VERSION}"
   mv $INSTALL_DOWNLOAD/${SOFTWARE}* $INSTALL_DIR/$SOFTWARE_DIR/${SOFTWARE}${VERSION}
+  cd $INSTALL_DIR/$SOFTWARE_DIR/ 
+  ln -s ${SOFTWARE}${VERSION} ${SOFTWARE}
 }
 
 module_file() {
