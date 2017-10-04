@@ -28,6 +28,7 @@ module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
 prepend-path    PATH                \$root
+setenv          IGVTOOLS_JAR        \$root/igvtools.jar
 "
 }
 

@@ -3,9 +3,10 @@
 set -eu -o pipefail
 
 SOFTWARE=AffymetrixApt
-VERSION=1.18.0
-ARCHIVE=${SOFTWARE}-${VERSION}_x86_64_binaries.zip
-# Archive has be manually downloaded form affymetrix website : http://www.affymetrix.com/estore/partners_programs/programs/developer/tools/powertools.affx
+VERSION=1.20.5
+ARCHIVE=${SOFTWARE}-${VERSION}_x86_64_intel_linux.zip
+# Archive has be manually downloaded form ThermoFisher website
+# https://www.thermofisher.com/ca/en/home/life-science/microarray-analysis/microarray-analysis-partners-programs/affymetrix-developers-network/affymetrix-power-tools.html
 # THEN renamed as above and put in the $MUGQIC_INSTALL_HOME/archive or $MUGQIC_INSTALL_HOME_DEV/archive folder
 ARCHIVE_URL=
 SOFTWARE_DIR=${SOFTWARE}-$VERSION
