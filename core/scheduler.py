@@ -241,7 +241,7 @@ echo '#######################################'
 echo 'SLURM FAKE PROLOGUE (MUGQIC)'
 date 
 scontrol show job \$SLURM_JOBID
-sstat -j \$SLURM_JOBID 
+sstat -j \$SLURM_JOBID.batch 
 echo '#######################################'
 rm -f $JOB_DONE && $COMMAND
 MUGQIC_STATE=\$PIPESTATUS
@@ -251,7 +251,7 @@ echo '#######################################'
 echo 'SLURM FAKE EPILOGUE (MUGQIC)'
 date 
 scontrol show job \$SLURM_JOBID
-sstat -j \$SLURM_JOBID 
+sstat -j \$SLURM_JOBID.batch 
 echo '#######################################'
 exit \$MUGQIC_STATE" | \\
 """.format(job=job)
