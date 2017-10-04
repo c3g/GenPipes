@@ -47,8 +47,9 @@ from pipelines.rnaseq import rnaseq
 log = logging.getLogger(__name__)
 
 class RnaSeqLight(rnaseq.RnaSeq):
-    def __init__(self):
-        super(RnaSeqLight, self).__init__()
+    def __init__(self,protocol=None):
+        self._protocol=protocol
+        super(RnaSeqLight, self).__init__(protocol)
 
     def kallisto(self):
         """
