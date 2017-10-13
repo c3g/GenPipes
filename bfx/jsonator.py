@@ -47,10 +47,15 @@ def create(pipeline, sample):
             'analysed_species' : config.param("DEFAULT", 'scientific_name'),
             'assembly_used' : config.param("DEFAULT", 'assembly')
         }
-    if config.param("DEFAULT", 'dbsnp_version') : general_info['dbSNP_version'] = config.param("DEFAULT", 'dbsnp_version')
+        with open(os.path.expandvars(os.path.join(config.param("DEFAULT", 'assembly_dir'), config.param("DEFAULT", 'scientific_name') + "." + config.param("DEFAULT", 'assembly') + ".ini")), 'r') as ini_file:
+            pattern = re.compile("^source=(.*)\n?$")
+            for line in ini_file.readlines():
+                for match in re.finditer(pattern, line):
+                    general_info['assembly_source'] = match.groups()[0]
+    if config.param("DEFAULT", 'dbsnp_version') : general_info['dbsnp_version'] = config.param("DEFAULT", 'dbsnp_version')
     if config.param("DEFAULT", 'cluster_hpc_center'):
-        general_info['HPC_center'] = config.param("DEFAULT", 'cluster_hpc_center')
-        general_info['analysis_path'] = pipeline.output_dir
+        general_info['hpc_center'] = config.param("DEFAULT", 'cluster_hpc_center')
+        general_info['analysis_folder'] = pipeline.output_dir + "/"
 
     # Prepare the software hash by first retrieving all unique module version values in config files
     # assuming that all module key names start with "module_"
@@ -68,6 +73,9 @@ def create(pipeline, sample):
             'version' : module.split("/")[2]
         })
 
+    with open(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "VERSION"), 'r') as version_file:
+        general_info['pipeline_version'] = re.sub("\n?$", "", version_file.readlines()[0])
+
     # Check if json file has already been created (during a previous pipeline execution for instance)
     # If it does :
     if os.path.exists(os.path.join(pipeline.output_dir, "json", sample.json_file)) and os.stat(os.path.join(pipeline.output_dir, "json", sample.json_file)).st_size != 0:
@@ -76,13 +84,13 @@ def create(pipeline, sample):
 
         # Then check if information is up-to-date by comparing it with the previously retrieved informations
         for info_key in general_info.keys():
-            if not current_json_hash['sample']['pipeline']['general_information'].has_key(info_key) or current_json_hash['sample']['pipeline']['general_information'][info_key] != general_info[info_key] :
-                current_json_hash['sample']['pipeline']['general_information'][info_key] = general_info[info_key]
+            if not current_json_hash['pipeline']['general_information'].has_key(info_key) or current_json_hash['pipeline']['general_information'][info_key] != general_info[info_key] :
+                current_json_hash['pipeline']['general_information'][info_key] = general_info[info_key]
 
         # And do the same checking with the list of softwares
         for soft in softwares:
             soft_found = False
-            for jsoft in current_json_hash['sample']['pipeline']['software']:
+            for jsoft in current_json_hash['pipeline']['software']:
                 if soft['name'] == jsoft['name']:
                     soft_found = True
                     if soft['version'] != jsoft['version']:
@@ -92,38 +100,57 @@ def create(pipeline, sample):
                     'name' : soft['name'],
                     'version' : soft['version']
                 })
-        current_json = json.dumps(current_json_hash, indent=4, sort_keys=True)
+        current_json = json.dumps(current_json_hash, indent=4)
 
     # If the json file has not been created yet :
     else :
-        # Then create from the previously retrieved informations
-        current_json = json.dumps(
-            {'sample' : {
-                'name' : sample.name,
-                'readset' : [{
-                    "name" : readset.name,
-                    "library" : readset.library,
-                    "runType" : readset.run_type,
-                    "run" : readset.run,
-                    "lane" : readset.lane,
-                    "adapter1" : readset.adapter1,
-                    "adapter2" : readset.adapter2,
-                    "qualityoffset" : readset.quality_offset,
-                    "bed" : [bed for bed in readset.beds],
-                    "fastq1" : os.path.realpath(readset.fastq1),
-                    "fastq2" : os.path.realpath(readset.fastq2),
-                    "bam" : os.path.realpath(readset.bam),
-                } for readset in sample.readsets],
-                'pipeline' : {
-                    'name' : pipeline.__class__.__name__,
-                    'general_information': general_info,
-                    'software' : [{
-                        'name' : software['name'],
-                        'version' : software['version']
-                    } for software in softwares],
-                    'step' : []
-                }
-            }}, indent=4, sort_keys=True)
+        # Then create it !!
+        json_hash = {
+            'sample_name' : sample.name,
+            'readset' : [{
+                "name" : readset.name,
+                "library" : readset.library,
+                "runType" : readset.run_type,
+                "run" : readset.run,
+                "lane" : readset.lane,
+                "adapter1" : readset.adapter1,
+                "adapter2" : readset.adapter2,
+                "qualityoffset" : readset.quality_offset,
+                "bed" : [bed for bed in readset.beds],
+                "fastq1" : os.path.realpath(readset.fastq1),
+                "fastq2" : os.path.realpath(readset.fastq2),
+                "bam" : os.path.realpath(readset.bam),
+            } for readset in sample.readsets],
+            'pipeline' : {
+                'name' : pipeline.__class__.__name__,
+                'general_information': general_info,
+                'software' : [{
+                    'name' : software['name'],
+                    'version' : software['version']
+                } for software in softwares],
+                'step': []
+            }
+        }
+        for step in pipeline.step_range:
+            jsonify_step = False
+            for job in step.jobs:
+                if sample in job.samples:
+                    jsonify_step = True
+            if jsonify_step:
+                json_hash['pipeline']['step'].append(
+                    {
+                        'name': step.name,
+                        'job': [{
+                            "name": job.name,
+                            "id": job.id,
+                            "command": re.sub("\\\\\n", "", job.command_with_modules),
+                            "input_file": job.input_files,
+                            "output_file": job.output_files,
+                            "dependency": [dependency_job.id for dependency_job in job.dependency_jobs]
+                        } for job in step.jobs if sample in job.samples]
+                    }
+                )
+        current_json = json.dumps(json_hash, indent=4)
 
     if not os.path.exists(os.path.join(pipeline.output_dir, "json")):
         os.makedirs(os.path.join(pipeline.output_dir, "json"))

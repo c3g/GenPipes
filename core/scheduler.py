@@ -22,6 +22,7 @@
 # Python Standard Modules
 import json
 import os
+import random
 
 # MUGQIC Modules
 from config import *
@@ -109,6 +110,7 @@ class PBSScheduler(Scheduler):
                     else:
                         job_dependencies = "JOB_DEPENDENCIES="
 
+                    sleepTime = random.randint(10, 100)
                     print("""
 {separator_line}
 # JOB: {job.id}: {job.name}
@@ -128,38 +130,43 @@ COMMAND=$(cat << '{limit_string}'
                             limit_string=os.path.basename(job.done)
                         )
                     )
+
                     json_file_list = ",".join([os.path.join(pipeline.output_dir, "json", sample.json_file) for sample in job.samples])
-                    job2json_cmd = """\
-  $MUGQIC_PIPELINES_HOME/utils/job2json.py \\
-    -s \\"{step.name}\\" \\
-    -n \\"$JOB_NAME\\" \\
-    -i \\"{job.id}\\" \\
-    -c \\"$COMMAND\\" \\
-    -f \\"{job_inputs}\\" \\
-    -o \\"{job_outputs}\\" \\
-    -b \\"$JOB_DONE\\" \\
-    -l \\"$JOB_OUTPUT\\" \\
-    -j \\"{jsonfiles}\\" \\
-    -g \\"$PIPESTATUS\\" \\
-    {job_dependencies} ;\\n""".format(
+                    job_start2json_cmd = """\
+$MUGQIC_PIPELINES_HOME/utils/job2json.py \\
+  -s \\"{step.name}\\" \\
+  -j \\"$JOB_NAME\\" \\
+  -d \\"$JOB_DONE\\" \\
+  -l \\"$JOB_OUTPUT\\" \\
+  -o \\"{jsonfiles}\\" \\
+  -f \\"running\\" &&""".format(
                         step=step,
-                        job=job,
-                        job_inputs=",".join(job.input_files),
-                        job_outputs=",".join(job.output_files),
                         jsonfiles=json_file_list,
-                        job_dependencies="-d " + ",".join([dependency_job.id for dependency_job in job.dependency_jobs]) if len(job.dependency_jobs)>0 else ""
+                    ) if json_file_list else ""
+                    job_end2json_cmd = """\
+$MUGQIC_PIPELINES_HOME/utils/job2json.py \\
+  -s \\"{step.name}\\" \\
+  -j \\"$JOB_NAME\\" \\
+  -d \\"$JOB_DONE\\" \\
+  -l \\"$JOB_OUTPUT\\" \\
+  -o \\"{jsonfiles}\\" \\
+  -f \\"$PIPESTATUS\\" """.format(
+                        step=step,
+                        jsonfiles=json_file_list,
                     ) if json_file_list else ""
                     cmd = """\
-echo "rm -f $JOB_DONE && $COMMAND
+echo "rm -f $JOB_DONE && {job_start2json} $COMMAND
 MUGQIC_STATE=\$PIPESTATUS
 echo MUGQICexitStatus:\$MUGQIC_STATE
-{job2json}
+{job_end2json}
 if [ \$MUGQIC_STATE -eq 0 ] ; then
   touch $JOB_DONE ;
 fi
 exit \$MUGQIC_STATE" | \\
 """.format(
-                        job2json=job2json_cmd,
+                        job_start2json=job_start2json_cmd,
+                        job_end2json=job_end2json_cmd,
+                        sleep_time=sleepTime
                     )
 
                     # Cluster settings section must match job name prefix before first "."
@@ -174,6 +181,14 @@ exit \$MUGQIC_STATE" | \\
                         config.param(job_name_prefix, 'cluster_walltime') + " " + \
                         config.param(job_name_prefix, 'cluster_queue') + " " + \
                         config.param(job_name_prefix, 'cluster_cpu')
+                    #cmd += \
+                        #config.param(job_name_prefix, 'cluster_submit_cmd') + " " + \
+                        #config.param(job_name_prefix, 'cluster_other_arg') + " " + \
+                        #config.param(job_name_prefix, 'cluster_work_dir_arg') + " $OUTPUT_DIR " + \
+                        #config.param(job_name_prefix, 'cluster_output_dir_arg') + " $JOB_OUTPUT " + \
+                        #config.param(job_name_prefix, 'cluster_job_name_arg') + " $JOB_NAME " + \
+                        #config.param(job_name_prefix, 'cluster_queue') + " -l walltime=1:00:0 -l nodes=1:ppn=1 "
+
                     if job.dependency_jobs:
                         cmd += " " + config.param(job_name_prefix, 'cluster_dependency_arg') + "$JOB_DEPENDENCIES"
                     cmd += " " + config.param(job_name_prefix, 'cluster_submit_cmd_suffix')

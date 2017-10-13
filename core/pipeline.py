@@ -259,6 +259,7 @@ Steps:
         return dependency_jobs
 
     def create_jobs(self):
+        sample_list = []
         for step in self.step_range:
             log.info("Create jobs for step " + step.name + "...")
             jobs = step.create_jobs()
@@ -283,11 +284,15 @@ Steps:
                     step.add_job(job)
                     if job.samples:
                         for sample in job.samples:
-                            # Create the json dumps for all the samples if not already done
-                            if sample.json_dump == "":
-                                sample.json_dump = jsonator.create(self, sample)
+                            if sample not in sample_list : sample_list.append(sample)
 
             log.info("Step " + step.name + ": " + str(len(step.jobs)) + " job" + ("s" if len(step.jobs) > 1 else "") + " created" + ("" if step.jobs else "... skipping") + "\n")
+
+        # Now create the json dumps for all the samples if not already done
+        for sample in sample_list:
+            if sample.json_dump == "":
+                sample.json_dump = jsonator.create(self, sample)
+
         log.info("TOTAL: " + str(len(self.jobs)) + " job" + ("s" if len(self.jobs) > 1 else "") + " created" + ("" if self.jobs else "... skipping") + "\n")
 
     def submit_jobs(self):
