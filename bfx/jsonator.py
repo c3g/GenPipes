@@ -53,8 +53,8 @@ def create(pipeline, sample):
                 for match in re.finditer(pattern, line):
                     general_info['assembly_source'] = match.groups()[0]
     if config.param("DEFAULT", 'dbsnp_version') : general_info['dbsnp_version'] = config.param("DEFAULT", 'dbsnp_version')
-    if config.param("DEFAULT", 'cluster_hpc_center'):
-        general_info['hpc_center'] = config.param("DEFAULT", 'cluster_hpc_center')
+    if config.param("DEFAULT", 'cluster_server'):
+        general_info['server'] = config.param("DEFAULT", 'cluster_server')
         general_info['analysis_folder'] = pipeline.output_dir + "/"
 
     # Prepare the software hash by first retrieving all unique module version values in config files
