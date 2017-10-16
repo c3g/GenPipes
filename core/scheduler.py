@@ -133,24 +133,30 @@ COMMAND=$(cat << '{limit_string}'
 
                     json_file_list = ",".join([os.path.join(pipeline.output_dir, "json", sample.json_file) for sample in job.samples])
                     job_start2json_cmd = """\
+module load {module_python}
 $MUGQIC_PIPELINES_HOME/utils/job2json.py \\
   -s \\"{step.name}\\" \\
   -j \\"$JOB_NAME\\" \\
   -d \\"$JOB_DONE\\" \\
   -l \\"$JOB_OUTPUT\\" \\
   -o \\"{jsonfiles}\\" \\
-  -f \\"running\\" &&""".format(
+  -f \\"running\\"
+module unload {module_python} &&""".format(
+                        module_python=config.param('DEFAULT', 'module_python'),
                         step=step,
                         jsonfiles=json_file_list,
                     ) if json_file_list else ""
                     job_end2json_cmd = """\
+module load {module_python}
 $MUGQIC_PIPELINES_HOME/utils/job2json.py \\
   -s \\"{step.name}\\" \\
   -j \\"$JOB_NAME\\" \\
   -d \\"$JOB_DONE\\" \\
   -l \\"$JOB_OUTPUT\\" \\
   -o \\"{jsonfiles}\\" \\
-  -f \\"$PIPESTATUS\\" """.format(
+  -f \\$MUGQIC_STATE
+module unload {module_python}""".format(
+                        module_python=config.param('DEFAULT', 'module_python'),
                         step=step,
                         jsonfiles=json_file_list,
                     ) if json_file_list else ""
