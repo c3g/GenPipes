@@ -270,7 +270,7 @@ pandoc --to=markdown \\
             job.name = "picard_queryname_sort." + sample.name
             jobs.append(job)
 
-        report_file = os.path.join("report", "methylseq.picard_remove_duplicates.md")
+        report_file = os.path.join("report", "MethylSeq.picard_remove_duplicates.md")
         jobs.append(
               Job(
                 [os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.bam") for sample in self.samples],
@@ -282,9 +282,9 @@ cp \\
   {report_file}""".format(
                     report_template_dir=self.report_template_dir,
                     basename_report_file=os.path.basename(report_file),
-                    report_file=metrics_file
+                    report_file=report_file
                 ),
-                report_files=[metrics_file],
+                report_files=[report_file],
                 name="picard_remove_duplicates_report")
         )
 
