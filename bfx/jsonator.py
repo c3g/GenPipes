@@ -125,6 +125,7 @@ def create(pipeline, sample):
                         } for job in step.jobs if sample in job.samples]
                     }
                 )
+        current_json = json.dumps(json_hash, indent=4)
 
     # If the json file has already been created (during a previous pipeline execution for instance) :
     else :
@@ -150,7 +151,6 @@ def create(pipeline, sample):
                     'version' : soft['version']
                 })
         current_json = json.dumps(current_json_hash, indent=4)
-        current_json = json.dumps(json_hash, indent=4)
 
     if not os.path.exists(os.path.join(pipeline.output_dir, "json")):
         os.makedirs(os.path.join(pipeline.output_dir, "json"))
