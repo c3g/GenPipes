@@ -76,35 +76,10 @@ def create(pipeline, sample):
     with open(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "VERSION"), 'r') as version_file:
         general_info['pipeline_version'] = re.sub("\n?$", "", version_file.readlines()[0])
 
-    # Check if json file has already been created (during a previous pipeline execution for instance)
-    # If it does :
-    if os.path.exists(os.path.join(pipeline.output_dir, "json", sample.json_file)) and os.stat(os.path.join(pipeline.output_dir, "json", sample.json_file)).st_size != 0:
-        with open(os.path.join(pipeline.output_dir, "json", sample.json_file), 'r') as json_file:
-            current_json_hash = json.load(json_file)
-
-        # Then check if information is up-to-date by comparing it with the previously retrieved informations
-        for info_key in general_info.keys():
-            if not current_json_hash['pipeline']['general_information'].has_key(info_key) or current_json_hash['pipeline']['general_information'][info_key] != general_info[info_key] :
-                current_json_hash['pipeline']['general_information'][info_key] = general_info[info_key]
-
-        # And do the same checking with the list of softwares
-        for soft in softwares:
-            soft_found = False
-            for jsoft in current_json_hash['pipeline']['software']:
-                if soft['name'] == jsoft['name']:
-                    soft_found = True
-                    if soft['version'] != jsoft['version']:
-                        jsoft['version'] = soft['version']
-            if not soft_found:
-                jsoft.append({
-                    'name' : soft['name'],
-                    'version' : soft['version']
-                })
-        current_json = json.dumps(current_json_hash, indent=4)
-
-    # If the json file has not been created yet :
-    else :
-        # Then create it !!
+    # Check if 'force_jobs' is 'True'
+    # Or    if the json file has not been created yet :
+    if pipeline.force_jobs or not os.path.exists(os.path.join(pipeline.output_dir, "json", sample.json_file)) or os.stat(os.path.join(pipeline.output_dir, "json", sample.json_file)).st_size == 0:
+        # Then (re-)create it !!
         json_hash = {
             'sample_name' : sample.name,
             'readset' : [{
@@ -150,6 +125,31 @@ def create(pipeline, sample):
                         } for job in step.jobs if sample in job.samples]
                     }
                 )
+
+    # If the json file has already been created (during a previous pipeline execution for instance) :
+    else :
+        with open(os.path.join(pipeline.output_dir, "json", sample.json_file), 'r') as json_file:
+            current_json_hash = json.load(json_file)
+
+        # Then check if information is up-to-date by comparing it with the previously retrieved informations
+        for info_key in general_info.keys():
+            if not current_json_hash['pipeline']['general_information'].has_key(info_key) or current_json_hash['pipeline']['general_information'][info_key] != general_info[info_key] :
+                current_json_hash['pipeline']['general_information'][info_key] = general_info[info_key]
+
+        # And do the same checking with the list of softwares
+        for soft in softwares:
+            soft_found = False
+            for jsoft in current_json_hash['pipeline']['software']:
+                if soft['name'] == jsoft['name']:
+                    soft_found = True
+                    if soft['version'] != jsoft['version']:
+                        jsoft['version'] = soft['version']
+            if not soft_found:
+                jsoft.append({
+                    'name' : soft['name'],
+                    'version' : soft['version']
+                })
+        current_json = json.dumps(current_json_hash, indent=4)
         current_json = json.dumps(json_hash, indent=4)
 
     if not os.path.exists(os.path.join(pipeline.output_dir, "json")):
