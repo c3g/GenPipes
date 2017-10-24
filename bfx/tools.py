@@ -521,9 +521,10 @@ bash methylseq_metrics.sh \\
 def methylseq_ihec_metrics_report(sample_name, inputs, output, output_all, target_bed, count):
     return Job(
         inputs,
-        [output,output_all],
+        [output, output_all],
         [
-            ['DEFAULT', 'module_mugqic_tools']
+            ['DEFAULT', 'module_mugqic_tools'],
+            ['DEFAULT', 'module_samtools']
         ],
         command="""\
 bash IHEC_methylseq_metrics.sh \\
