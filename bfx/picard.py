@@ -166,7 +166,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
 def mark_duplicates(inputs, output, metrics_file, remove_duplicates="false"):
 
     if config.param('picard_mark_duplicates', 'module_picard').split("/")[2] >= "2":
-        return picard2.mark_duplicates(inputs, output, metrics_file, remove_duplicates="false")
+        return picard2.mark_duplicates(inputs, output, metrics_file, remove_duplicates)
     else:
         return Job(
             inputs,
