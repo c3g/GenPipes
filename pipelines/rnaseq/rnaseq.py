@@ -567,11 +567,18 @@ pandoc \\
                     in_bam = bam_file_prefix + "reverse.bam"    # same as output_bam_r from previous picard job
                 else:
                     in_bam = input_bam
-                job = concat_jobs([
-                    Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " " + os.path.join("tracks", "bigWig"), removable_files=["tracks"]),
-                    bedtools.graph(in_bam, bed_graph_output, big_wig_output,library[sample])
-                ], name="wiggle." + re.sub(".bedGraph", "", os.path.basename(bed_graph_output)))
-                jobs.append(job)
+                jobs.append(
+                    concat_jobs([
+                        Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " ", removable_files=["tracks"]),
+                        bedtools.graph(in_bam, bed_graph_output, library[sample])
+                    ], name="bed_graph." + re.sub(".bedGraph", "", os.path.basename(bed_graph_output)))
+                )
+                jobs.append(
+                    concat_jobs([
+                        Job(command="mkdir -p " + os.path.join("tracks", "bigWig"), samples=[sample]),
+                        ucsc.bedGraphToBigWig(bed_graph_output, big_wig_output, False)
+                    ], name="wiggle." + re.sub(".bw", "", os.path.basename(big_wig_output)))
+                )
 
         return jobs
 

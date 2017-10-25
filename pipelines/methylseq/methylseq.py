@@ -520,7 +520,9 @@ cp \\
 
     def wiggle_tracks(self):
         """
-        Generate wiggle tracks suitable for multiple browsers, to show coverage and methylation data
+        Generate wiggle tracks suitable for multiple browsers, to show coverage and methylation data.
+        When using GRCh37 build of Human genome, to be compatible with the UCSC Genome Browser we only keep chromosomes 1-22, X, Y and MT,
+        and we also rename them by prefixing "chr" to the chromosome anme (e.g. "1" becomes "chr1"), and changing the mitocondrial chromosome from "MT" to "chrM", and keeping the GRCh37 coordinates.
         """
 
         jobs = []
@@ -549,23 +551,30 @@ cp \\
                             re.sub("readset_sorted", "sorted", input_bam),
                             "coordinate"
                         ),
-                        bedtools.graph(re.sub("readset_sorted", "sorted", input_bam), bed_graph_output, big_wig_output, "")
-                    ], name="wiggle." + re.sub(".bedGraph", "", os.path.basename(bed_graph_output)))
+                        bedtools.graph(re.sub("readset_sorted", "sorted", input_bam), bed_graph_output, "")
+                    ], name="bed_graph." + re.sub(".bedGraph", "", os.path.basename(bed_graph_output)))
                 )
             else :
                 jobs.append(
                     concat_jobs([
                         Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " " + os.path.join("tracks", "bigWig"), removable_files=["tracks"], samples=[sample]),
-                        bedtools.graph(input_bam, bed_graph_output, big_wig_output, "")
-                    ], name="wiggle." + re.sub(".bedGraph", "", os.path.basename(bed_graph_output)))
+                        bedtools.graph(input_bam, bed_graph_output, "")
+                    ], name="bed_graph." + re.sub(".bedGraph", "", os.path.basename(bed_graph_output)))
                 )
+
+            jobs.append(
+                concat_jobs([
+                    Job(command="mkdir -p " + os.path.join("tracks", "bigWig"), samples=[sample]),
+                    ucsc.bedGraphToBigWig(bed_graph_output, big_wig_output, False)
+                ], name="wiggle." + re.sub(".bw", "", os.path.basename(big_wig_output)))
+            )
 
             # Generation of a bigWig from the methylation bedGraph
             methyl_directory = os.path.join("methylation_call", sample.name)
             candidate_input_files = [[os.path.join(methyl_directory, sample.name + ".sorted.dedup.bedGraph.gz")]]
             candidate_input_files.append([os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup.bedGraph.gz")])
             [input_bed_graph] = self.select_input_files(candidate_input_files)
-            output_wiggle = os.path.join("tracks", "bigWig", re.sub(".bedGraph.gz", ".bw", os.path.basename(input_bed_graph)))
+            output_wiggle = os.path.join("tracks", "bigWig", re.sub(".bedGraph.gz", "methylation.bw", os.path.basename(input_bed_graph)))
 
             jobs.append(
                 concat_jobs([
@@ -672,8 +681,11 @@ cp \\
             for readset in sample.readsets:
                 inputs.append(os.path.join("trim", sample.name, readset.name + ".trim.log"))
 
-            # Dedupplication report files
-            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.metrics"))
+            # Aligned pre-deduplicated bam files
+            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.bam"))
+
+            # Deduplicated bam files
+            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.bam"))
 
             # Coverage summary files
             inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.all.coverage.sample_summary"))
@@ -753,8 +765,11 @@ pandoc \\
             for readset in sample.readsets:
                 inputs.append(os.path.join("trim", sample.name, readset.name + ".trim.log"))
 
-            # Dedupplication report files
-            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.metrics"))
+            # Aligned pre-deduplicated bam files
+            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.bam"))
+
+            # Deduplicated bam files
+            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.bam"))
 
             # Coverage summary files
             inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.all.coverage.sample_summary"))
@@ -793,10 +808,10 @@ pandoc \\
             if target_bed : inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.ontarget.bam.flagstat"))
 
             jobs.append(
-            concat_jobs([
-                Job(command="mkdir -p ihec_metrics metrics"),
-                tools.methylseq_ihec_metrics_report(sample.name, inputs, metrics_file, metrics_all_file, target_bed, counter),
-            ], name="ihec_sample_metrics_report")
+                concat_jobs([
+                    Job(command="mkdir -p ihec_metrics metrics"),
+                    tools.methylseq_ihec_metrics_report(sample.name, inputs, metrics_file, metrics_all_file, target_bed, counter),
+                ], name="ihec_sample_metrics_report")
             )
             counter+=1
 
