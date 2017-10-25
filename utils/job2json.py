@@ -60,6 +60,13 @@ def getarg(argument):
     return step_name, job_name, job_log, job_done, json_files, status
 
 def usage():
+    print "\n-------------------------------------------------------------------------------------------"
+    print "job2json.py will append a JSON section describing a pipeline job that has just finished"
+    print "to a JSON file which was pre-generated when the pipeline was launched."
+    print "This script is usually launched automatically before and after each pipeline job."
+    print "This program was written by Edouard HENRION"
+    print "For more information, contact: edouard.henrion@computationalgenomics.ca"
+    print "-------------------------------------------------------------------------------------------\n"
     print "USAGE : job2json.py [option] "
     print "       -s    --step_name     : name of the step of the current job"
     print "       -j    --job_name      : name of the current job"
@@ -70,23 +77,10 @@ def usage():
     print "       -h    --help          : this help \n"
 
 def main():
-    print "\n-------------------------------------------------------------------------------------------"
-    print "job2json.py will append a JSON section describing a pipeline job that has just finished"
-    print "to a JSON file which was pre-generated when the pipeline was launched."
-    print "This script is usually launched automatically after each pipeline job has run successfully."
-    print "This program was written by Edouard HENRION"
-    print "For more information, contact: edouard.henrion@computationalgenomics.ca"
-    print "-------------------------------------------------------------------------------------------\n"
-
     print "command line used :\n" + " ".join(sys.argv[:])
 
     step_name, job_name, job_log, job_done, json_files, status = getarg(sys.argv)
-    print step_name
-    print job_name
-    print job_log
-    print job_done
-    print json_files
-    print status
+
     for jfile in json_files.split(","):
         with open(jfile, 'r') as json_file:
             current_json = json.load(json_file)
