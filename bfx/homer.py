@@ -27,6 +27,8 @@ import re
 from core.config import *
 from core.job import *
 
+##### Homer for HiC:
+
 def check_readName_format (input_bam, illuminaPE):
 	
 	## if bam read names end with /1 and /2 then -illuminaPE flag should be used, otherwise not. Check first read in bam to see is it contains /1  or /2
@@ -217,5 +219,90 @@ def peaks_hic(name, output_dir, homer_dir, res, genome, fileName, fileName_anno,
         command = command
         )
 
+##### Homer for ChIP-Seq:
 
 
+def makeTagDir_chipseq (output_dir, input_bam, genome, other_options=None):
+
+    command_tagDir = """makeTagDirectory {output_dir} \\
+            {input_bam} \\
+            -genome {genome} \\
+            -checkGC{other_options}""".format(
+                output_dir = output_dir, 
+                input_bam = input_bam, 
+                genome = genome, 
+                other_options=" \\\n " + other_options if other_options is not None else "")
+
+
+    return Job(input_files = [input_bam],
+            output_files = [os.path.join(output_dir, "tagInfo.txt")],
+            module_entries = [["makeTagDir_chipseq", "module_perl"], ["makeTagDir_chipseq", "module_homer"], ["makeTagDir_chipseq", "module_samtools"]],
+            command = command_tagDir, 
+            name="homer_make_tag_directory"
+            )
+
+
+def makeUCSCfile(tag_dir, bedgraph_file):
+
+    bedgraph_file_gz = bedgraph_file + ".gz"
+
+    cmd = """makeUCSCfile \\
+        {tag_dir} > {bedgraph_file} && \\
+        gzip -c {bedgraph_file} > {bedgraph_file_gz}""".format(
+                    tag_dir = tag_dir,
+                    bedgraph_file = bedgraph_file,
+                    bedgraph_file_gz = bedgraph_file_gz)
+
+    return Job(input_files = [os.path.join(tag_dir, "tagInfo.txt")],
+            output_files = [bedgraph_file, bedgraph_file_gz],
+            module_entries = [["homer_make_ucsc_files", "module_perl"], ["homer_make_ucsc_files", "module_homer"]],
+            command = cmd, 
+            name="homer_make_ucsc_file"
+            )
+
+
+def annotatePeaks(peak_file, genome, output_prefix, annotation_file):
+    cmd = """annotatePeaks.pl \\
+    {peak_file} \\
+    {genome} \\
+    -gsize {genome} \\
+    -cons -CpG \\
+    -go {output_prefix} \\
+    -genomeOntology {output_prefix} \\
+    > {annotation_file}""".format(
+                            peak_file = peak_file,
+                            genome = genome,
+                            output_prefix = output_prefix,
+                            annotation_file = annotation_file)
+    
+    return Job(input_files = [peak_file],
+            output_files = [   annotation_file,
+                            os.path.join(output_prefix, "geneOntology.html"),
+                            os.path.join(output_prefix, "GenomeOntology.html")],
+            module_entries = [["homer_annotate_peaks", "module_perl"], ["homer_annotate_peaks", "module_homer"]],
+            command = cmd, 
+            name="homer_make_ucsc_file"
+            )
+
+def findMotifsGenome(peak_file, genome, output_dir, threads):
+
+    cmd = """findMotifsGenome.pl \\
+  {peak_file} \\
+  {genome} \\
+  {output_dir} \\
+  -preparsedDir {output_dir}/preparsed \\
+  -p {threads}""".format(
+                        peak_file = peak_file,
+                        genome = genome,
+                        output_dir= output_dir,
+                        threads = threads,
+                        name="homer_find_motifs_genome"
+                )
+
+    return Job(input_files = [peak_file],
+            output_files = [os.path.join(output_dir, "homerResults.html"),
+                            os.path.join(output_dir, "knownResults.html")],
+            module_entries = [["homer_find_motifs_genome", "module_perl"], ["homer_find_motifs_genome", "module_homer"],["homer_find_motifs_genome", "module_weblogo"]],
+            command = cmd, 
+            name="homer_find_motifs_genome"
+            )
