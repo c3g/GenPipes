@@ -505,7 +505,8 @@ def methylseq_metrics_report(sample_list, inputs, output, target_bed):
         inputs,
         [output],
         [
-            ['DEFAULT', 'module_mugqic_tools']
+            ['DEFAULT', 'module_mugqic_tools'],
+            ['DEFAULT', 'module_samtools']
         ],
         command="""\
 bash methylseq_metrics.sh \\
