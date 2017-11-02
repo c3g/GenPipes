@@ -52,10 +52,9 @@ def create(pipeline, sample):
             for line in ini_file.readlines():
                 for match in re.finditer(pattern, line):
                     general_info['assembly_source'] = match.groups()[0]
-    if config.param("DEFAULT", 'dbsnp_version') : general_info['dbsnp_version'] = config.param("DEFAULT", 'dbsnp_version')
-    if config.param("DEFAULT", 'cluster_server'):
-        general_info['server'] = config.param("DEFAULT", 'cluster_server')
-        general_info['analysis_folder'] = pipeline.output_dir + "/"
+    if config.param("DEFAULT", 'dbsnp_version', required=False) : general_info['dbsnp_version'] = config.param("DEFAULT", 'dbsnp_version', required=False)
+    general_info['server'] = config.param("DEFAULT", 'cluster_server', required=True)
+    general_info['analysis_folder'] = pipeline.output_dir + "/"
 
     # Prepare the software hash by first retrieving all unique module version values in config files
     # assuming that all module key names start with "module_"
