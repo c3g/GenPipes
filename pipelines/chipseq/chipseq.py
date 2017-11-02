@@ -103,6 +103,7 @@ class ChipSeq(dnaseq.DnaSeq):
 
             job = samtools.view(readset_bam, filtered_readset_bam, "-b -F4 -q " + str(config.param('samtools_view_filter', 'min_mapq', type='int')))
             job.name = "samtools_view_filter." + readset.name
+            job.samples = [readset.sample]
             jobs.append(job)
 
         report_file = os.path.join("report", "ChipSeq.samtools_view_filter.md")
@@ -159,13 +160,16 @@ pandoc --to=markdown \\
                 job = concat_jobs([
                     mkdir_job,
                     Job([readset_bam], [sample_bam], command="ln -s -f " + target_readset_bam + " " + sample_bam, removable_files=[sample_bam]),
-                ], name="symlink_readset_sample_bam." + sample.name)
+                ])
+                job.sample = [sample]
+                job.name = "symlink_readset_sample_bam." + sample.name
 
             elif len(sample.readsets) > 1:
                 job = concat_jobs([
                     mkdir_job,
                     picard.merge_sam_files(readset_bams, sample_bam)
                 ])
+                job.sample = [sample]
                 job.name = "picard_merge_sam_files." + sample.name
 
             jobs.append(job)
@@ -188,6 +192,7 @@ pandoc --to=markdown \\
 
             job = picard.mark_duplicates([input], output, metrics_file)
             job.name = "picard_mark_duplicates." + sample.name
+            job.sample = [sample]
             jobs.append(job)
 
         report_file = os.path.join("report", "ChipSeq.picard_mark_duplicates.md")
@@ -262,6 +267,7 @@ pandoc --to=markdown \\
                     report_file=report_file
                 ),
                 name="metrics_report",
+                samples=self.samples,
                 removable_files=[report_metrics_file],
                 report_files=[report_file]
             )
@@ -292,6 +298,7 @@ makeTagDirectory \\
                     genome=config.param('homer_make_tag_directory', 'assembly')
                 ),
                 name="homer_make_tag_directory." + sample.name,
+                samples=[sample],
                 removable_files=[output_dir]
             ))
 
@@ -337,6 +344,7 @@ done""".format(
                 report_file=report_file
             ),
             name="qc_plots_R",
+            samples=self.samples,
             removable_files=output_files,
             report_files=[report_file]
         )]
@@ -367,6 +375,7 @@ gzip -1 -c > {bedgraph_file}""".format(
                     bedgraph_file=bedgraph_file
                 ),
                 name="homer_make_ucsc_file." + sample.name,
+                samples=[sample],
                 removable_files=[bedgraph_dir]
             ))
 
@@ -434,6 +443,7 @@ macs2 callpeak {format}{other_options} \\
                         output_prefix_name=os.path.join(output_dir, contrast.real_name)
                     ),
                     name="macs2_callpeak." + contrast.real_name,
+                    samples = contrast.controls + contrast.treatments,
                     removable_files=[output_dir]
                 ))
             else:
@@ -479,7 +489,7 @@ done""".format(
                 annotation_file = output_prefix + ".annotated.csv"
 
                 jobs.append(concat_jobs([
-                    Job(command="mkdir -p " + output_prefix),
+                    Job(command="mkdir -p " + output_prefix, samples=contrast.treatments),
                     Job(
                         [peak_file],
                         [
@@ -600,6 +610,7 @@ findMotifsGenome.pl \\
                         threads=config.param('homer_find_motifs_genome', 'threads', type='posint')
                     ),
                     name="homer_find_motifs_genome." + contrast.real_name,
+                    samples=contrast.treatments,
                     removable_files=[os.path.join("annotation", contrast.real_name)]
                 ))
             else:
@@ -715,6 +726,7 @@ done""".format(
                 report_file=report_file
             ),
             name="annotation_graphs",
+            samples=contrast.treatments,
             report_files=[report_file],
             removable_files=output_files
         )]
