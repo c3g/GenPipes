@@ -530,14 +530,14 @@ IHEC_rnaseq_metrics.sh \\
         )
     )
 
-def sh_ihec_chip_metrics(chip_bam, input_bam, sample_name, input_name, chip_type, chip_bed, output_dir):
+def sh_ihec_chip_metrics(chip_bam, input_bam, sample_name, input_name, chip_type, chip_bed, output_dir, assembly):
     output_metrics=os.path.join(output_dir, sample_name+".read_stats.txt")
     output_fingerprints=os.path.join(output_dir, sample_name+".fingerprint.txt")
     output_fingerprints_png=os.path.join(output_dir, sample_name+".fingerprint.png")
     output_dedup_chip_bam=os.path.join(output_dir, sample_name+".dedup.bam")
-    output_dedup_chip_bai=os.path.join(output_dir, sample_name+".dedup.bai")
+    output_dedup_chip_bai=os.path.join(output_dir, sample_name+".dedup.bam.bai")
     output_dedup_input_bam=os.path.join(output_dir, sample_name+"_IMPUT.dedup.bam")
-    output_dedup_input_bai=os.path.join(output_dir, sample_name+"_IMPUT.dedup.bai")
+    output_dedup_input_bai=os.path.join(output_dir, sample_name+"_IMPUT.dedup.bam.bai")
     output_flagstats=os.path.join(output_dir, sample_name+".markDup_flagstat.txt")
     return Job(
         [input_bam, chip_bam, chip_bed],
@@ -548,7 +548,7 @@ def sh_ihec_chip_metrics(chip_bam, input_bam, sample_name, input_name, chip_type
             ['DEFAULT', 'module_deeptools']
         ],
         command="""\
-IHEC_chipseq_metrics.sh \\
+IHEC_chipseq_metrics_max.sh \\
     -d {chip_bam} \\
     -i {input_bam} \\
     -s {sample_name} \\
@@ -556,7 +556,8 @@ IHEC_chipseq_metrics.sh \\
     -t {chip_type} \\
     -n {threads} \\
     -p {chip_bed} \\
-    -o {output_dir}""".format(
+    -o {output_dir} \\
+    -a {assembly}""".format(
         input_bam=input_bam,
         input_name=input_name,
         sample_name=sample_name,
@@ -564,7 +565,8 @@ IHEC_chipseq_metrics.sh \\
         chip_type=chip_type,
         threads=config.param('IHEC_chipseq_metrics', 'thread', type='int') if config.param('IHEC_chipseq_metrics', 'thread', type='int',required=False) else 1,
         chip_bed=chip_bed,
-        output_dir=output_dir
+        output_dir=output_dir, 
+        assembly=assembly
         ),
         removable_files=[output_fingerprints,output_fingerprints_png,output_dedup_chip_bam,output_dedup_chip_bam,output_dedup_chip_bai,output_dedup_input_bam,output_dedup_input_bai,output_flagstats]
     )

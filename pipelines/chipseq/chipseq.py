@@ -41,6 +41,7 @@ from bfx import samtools
 from bfx import tools
 from bfx import ucsc
 from bfx import homer
+from bfx import macs2
 from pipelines.dnaseq import dnaseq
 
 log = logging.getLogger(__name__)
@@ -425,6 +426,14 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
                 control_files = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.dup.bam") for sample in contrast.controls]
                 output_dir = os.path.join(self.output_dirs['macs_output_directory'], contrast.real_name)
 
+
+                ## set macs2 variables: 
+
+                format = "--format " + ("BAMPE" if self.run_type == "PAIRED_END" else "BAM")
+                genome_size = self.mappable_genome_size()
+                output_prefix_name = os.path.join(output_dir, contrast.real_name)
+                output = os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak")
+
                 if contrast.type == 'broad':  # Broad region
                   other_options = " --broad --nomodel"
                 else:  # Narrow region
@@ -433,29 +442,16 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
                     else:
                         other_options = " --fix-bimodal"
 
-                jobs.append(Job(
-                    treatment_files + control_files,
-                    [os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak")],
-                    [['macs2_callpeak', 'module_python'], ['macs2_callpeak', 'module_macs2']],
-                    command="""\
-mkdir -p {output_dir} && \\
-macs2 callpeak {format}{other_options} \\
-  --gsize {genome_size} \\
-  --treatment \\
-  {treatment_files}{control_files} \\
-  --name {output_prefix_name} \\
-  >& {output_prefix_name}.diag.macs.out""".format(
-                        output_dir=output_dir,
-                        format="--format " + ("BAMPE" if self.run_type == "PAIRED_END" else "BAM"),
-                        other_options=other_options,
-                        genome_size=self.mappable_genome_size(),
-                        treatment_files=" \\\n  ".join(treatment_files),
-                        control_files=" \\\n  --control \\\n  " + " \\\n  ".join(control_files) if control_files else " \\\n  --nolambda",
-                        output_prefix_name=os.path.join(output_dir, contrast.real_name)
-                    ),
-                    name="macs2_callpeak." + contrast.real_name,
-                    removable_files=[output_dir]
-                ))
+                mkdir_job = Job(command="mkdir -p " + output_dir)
+
+                macs_job = macs2.callpeak (format, genome_size, treatment_files, control_files, output_prefix_name, output, other_options)
+
+                job = concat_jobs([mkdir_job, macs_job])
+                job.name="macs2_callpeak." + contrast.real_name
+                job.removable_files=[output_dir]
+
+                jobs.append(job)
+
               ## For ihec: exchange peak score by log10 q-value and generate bigBed 
                 job = concat_jobs([
                     Job([os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak")],
@@ -582,6 +578,7 @@ done""".format(
 
         jobs = []
 
+        counter = 0
         for contrast in self.contrasts:
             # Don't find motifs for broad peaks
             if contrast.type == 'narrow' and contrast.treatments:
@@ -599,33 +596,36 @@ done""".format(
                 job.name = "homer_find_motifs_genome." + contrast.real_name
                 job.removable_files=[os.path.join(self.output_dirs['anno_output_directory'], contrast.real_name)]
                 jobs.append(job)
+                counter = counter +1
             else:
-                log.warning("No treatment found for contrast " + contrast.name + "... skipping")
+                #log.warning("No treatment found for contrast " + contrast.name + "... skipping")
+                log.warning("Contrast " + contrast.name + " is broad; homer_find_motifs_genome is run on narrow peaks ... skipping")
 
-        report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.homer_find_motifs_genome.md")
-        jobs.append(
-            Job(
-                [os.path.join(self.output_dirs['anno_output_directory'], contrast.real_name, contrast.real_name, "homerResults.html") for contrast in self.contrasts if contrast.type == 'narrow' and contrast.treatments] +
-                [os.path.join(self.output_dirs['anno_output_directory'], contrast.real_name, contrast.real_name, "knownResults.html") for contrast in self.contrasts if contrast.type == 'narrow' and contrast.treatments],
-                [report_file],
-                command="""\
-mkdir -p {report_dir}/annotation/ && \\
-cp {report_template_dir}/{basename_report_file} {report_dir}/ && \\
-for contrast in {contrasts}
-do
-  rsync -avP annotation/$contrast {report_dir}/annotation/ && \\
-  echo -e "* [HOMER _De Novo_ Motif Results for Design $contrast](annotation/$contrast/$contrast/homerResults.html)\n* [HOMER Known Motif Results for Design $contrast](annotation/$contrast/$contrast/knownResults.html)" \\
-  >> {report_file}
-done""".format(
-                    contrasts=" ".join([contrast.real_name for contrast in self.contrasts if contrast.type == 'narrow' and contrast.treatments]),
-                    report_template_dir=self.report_template_dir,
-                    basename_report_file=os.path.basename(report_file),
-                    report_file=report_file, 
-                    report_dir = self.output_dirs['report_output_directory']
-                ),
-                report_files=[report_file],
-                name="homer_find_motifs_genome_report")
-        )
+        if counter > 0:
+            report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.homer_find_motifs_genome.md")
+            jobs.append(
+                Job(
+                    [os.path.join(self.output_dirs['anno_output_directory'], contrast.real_name, contrast.real_name, "homerResults.html") for contrast in self.contrasts if contrast.type == 'narrow' and contrast.treatments] +
+                    [os.path.join(self.output_dirs['anno_output_directory'], contrast.real_name, contrast.real_name, "knownResults.html") for contrast in self.contrasts if contrast.type == 'narrow' and contrast.treatments],
+                    [report_file],
+                    command="""\
+    mkdir -p {report_dir}/annotation/ && \\
+    cp {report_template_dir}/{basename_report_file} {report_dir}/ && \\
+    for contrast in {contrasts}
+    do
+      rsync -avP annotation/$contrast {report_dir}/annotation/ && \\
+      echo -e "* [HOMER _De Novo_ Motif Results for Design $contrast](annotation/$contrast/$contrast/homerResults.html)\n* [HOMER Known Motif Results for Design $contrast](annotation/$contrast/$contrast/knownResults.html)" \\
+      >> {report_file}
+    done""".format(
+                        contrasts=" ".join([contrast.real_name for contrast in self.contrasts if contrast.type == 'narrow' and contrast.treatments]),
+                        report_template_dir=self.report_template_dir,
+                        basename_report_file=os.path.basename(report_file),
+                        report_file=report_file, 
+                        report_dir = self.output_dirs['report_output_directory']
+                    ),
+                    report_files=[report_file],
+                    name="homer_find_motifs_genome_report")
+            )
 
         return jobs
 
@@ -654,7 +654,7 @@ done""".format(
             input_files.append(annotation_prefix + ".intron.stats.csv")
             input_files.append(annotation_prefix + ".tss.distance.csv")
 
-            output_files.append(os.path.join(self.output_dirs['graphs_output_directory'], contrast.real_name + "_Misc_Graphs.ps"))
+            #output_files.append(os.path.join(self.output_dirs['graphs_output_directory'], contrast.real_name + "_Misc_Graphs.ps"))
 
         peak_stats_file = os.path.join(self.output_dirs['anno_output_directory'], "peak_stats.csv")
         output_files.append(peak_stats_file)
@@ -784,50 +784,48 @@ done""".format(
           if contrast.treatments:
               if len(contrast.controls) > 1 :
                   raise Exception("Error: contrast name \"" + contrast.name + "\" has several input files, please use one input for pairing!")
-              else :
+              elif len(contrast.controls) == 1:
                   input_file=contrast.controls[0].name
-                  for sample in contrast.treatments :
-                      log.debug("adding sample" + sample.name)
-                      if couples.has_key(sample.name) :
-                          if couples[sample.name][0] == input_file:
-                              pass
-                          else :
-                              raise Exception("Error: contrast name \"" + contrast.name + "\" has several input files, please use one input for pairing!")
-                          if couples[sample.name][1] == contrast.real_name and couples[sample.name][2] == contrast.type:
-                              pass
-                          else :
-                              raise Exception("Error: sample \"" + sample.name + "\" is involved in several different contrasts, please use one contrast per sample !") 
+              elif len(contrast.controls) == 0:
+                  input_file="no_input"
+              for sample in contrast.treatments :
+                  log.debug("adding sample" + sample.name)
+                  if couples.has_key(sample.name) :
+                      if couples[sample.name][0] == input_file:
+                          pass
                       else :
-                          couples[sample.name]=[input_file, contrast.real_name, contrast.type]
-                  for sample in contrast.controls :
-                      log.debug("adding sample" + sample.name)
-                      if couples.has_key(sample.name) :
-                          if couples[sample.name][0] == input_file:
-                              pass
-                          else :
-                              raise Exception("Error: contrast name \"" + contrast.name + "\" has several input files, please use one input for pairing!")
-                          if couples[sample.name][1] == contrast.real_name and couples[sample.name][2] == contrast.type:
-                              pass
-                          else :
-                              raise Exception("Error: sample \"" + sample+ "\" is involved in several different contrasts, please use one contrast per sample !") 
+                          raise Exception("Error: contrast name \"" + contrast.name + "\" has several input files, please use one input for pairing!")
+                      if couples[sample.name][1] == contrast.real_name and couples[sample.name][2] == contrast.type:
+                          pass
                       else :
-                          couples[sample.name]=[input_file, contrast.real_name, contrast.type]
-        
-        
-        for sample in self.samples:
-            chip_bam = os.path.join(self.output_dirs['ihecA_output_directory'], sample.name + ".merged.mdup.bam")
-            input_bam = os.path.join(self.output_dirs['ihecA_output_directory'], couples[sample.name][0] + ".merged.mdup.bam")
+                          raise Exception("Error: sample \"" + sample.name + "\" is involved in several different contrasts, please use one contrast per sample !") 
+                  else :
+                      couples[sample.name]=[input_file, contrast.real_name, contrast.type]
+       
+
+
+
+        for key, values in couples.iteritems():
+            chip_bam = os.path.join(self.output_dirs['ihecA_output_directory'], key + ".merged.mdup.bam")
+            input_sample = values[0] if values[0] is not "no_input" else key
+            input_bam = os.path.join(self.output_dirs['ihecA_output_directory'], input_sample + ".merged.mdup.bam")
             chip_type = config.param('IHEC_chipseq_metrics', 'chip_type', required=True)
-            chip_bed = os.path.join(self.output_dirs['macs_output_directory'], couples[sample.name][1], couples[sample.name][1] + "_peaks." + couples[sample.name][2] + "Peak")
+            chip_bed = os.path.join(self.output_dirs['macs_output_directory'], values[1], values[1] + "_peaks." + values[2] + "Peak")
+            genome = config.param('ihec_metrics', 'assembly_synonyms')
             
+            # cmd=""
+            # cmd = cmd + "key: " + str(key) + "     value is: " + str(values) + "\n"
+            # cmd = cmd + " chip bam: " + str(chip_bam) + "     input bam: " + str(input_bam)  + "     chip_type: " + str(chip_type) + "      chipbed: " + str(chip_bed) + "\n"
+            # job = Job(command=cmd, name="contrast content")
+
+
             job = concat_jobs([
                   Job(command="mkdir -p " + output_dir),
-                  tools.sh_ihec_chip_metrics(chip_bam, input_bam, sample.name, couples[sample.name][0],  chip_type, chip_bed, output_dir)
+                  tools.sh_ihec_chip_metrics(chip_bam, input_bam, sample.name, values[0],  chip_type, chip_bed, output_dir, genome)
               ], name="ihec_metrics."+sample.name)
             jobs.append(job)
             
         return jobs
-
 
 
     @property
