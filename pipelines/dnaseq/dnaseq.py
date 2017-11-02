@@ -126,7 +126,7 @@ class DnaSeq(common.Illumina):
                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
 
             job = concat_jobs([
-                Job(command="mkdir -p " + os.path.dirname(readset_bam), samples = [readset.sample]),
+                Job(command="mkdir -p " + os.path.dirname(readset_bam)),
                 pipe_jobs([
                     bwa.mem(
                         fastq1,
@@ -146,7 +146,9 @@ class DnaSeq(common.Illumina):
                         "coordinate"
                     )
                 ])
-            ], name="bwa_mem_picard_sort_sam." + readset.name)
+            ])
+            job.name = "bwa_mem_picard_sort_sam." + readset.name
+            job.samples = [readset.sample]
 
             jobs.append(job)
 
@@ -251,12 +253,12 @@ pandoc --to=markdown \\
                 output_bam = realign_prefix + ".bam"
                 sample_output_bam = os.path.join(alignment_directory, sample.name + ".realigned.qsorted.bam")
                 jobs.append(concat_jobs([
-                    Job(command="mkdir -p " + realign_directory, removable_files=[realign_directory], samples = [sample]),
+                    Job(command="mkdir -p " + realign_directory, removable_files=[realign_directory]),
                     gatk.realigner_target_creator(input, realign_intervals),
                     gatk.indel_realigner(input, output=output_bam, target_intervals=realign_intervals),
                     # Create sample realign symlink since no merging is required
                     Job([output_bam], [sample_output_bam], command="ln -s -f " + os.path.relpath(output_bam, os.path.dirname(sample_output_bam)) + " " + sample_output_bam)
-                ], name="gatk_indel_realigner." + sample.name))
+                ], name="gatk_indel_realigner." + sample.name, samples=[sample]))
 
             else:
                 # The first sequences are the longest to process.
@@ -273,7 +275,7 @@ pandoc --to=markdown \\
                     output_bam = realign_prefix + ".bam"
                     jobs.append(concat_jobs([
                         # Create output directory since it is not done by default by GATK tools
-                        Job(command="mkdir -p " + realign_directory, removable_files=[realign_directory], samples = [sample]),
+                        Job(command="mkdir -p " + realign_directory, removable_files=[realign_directory], samples=[sample]),
                         gatk.realigner_target_creator(input, realign_intervals, intervals=intervals),
                         gatk.indel_realigner(input, output=output_bam, target_intervals=realign_intervals, intervals=intervals)
                     ], name="gatk_indel_realigner." + sample.name + "." + str(idx)))
@@ -284,7 +286,7 @@ pandoc --to=markdown \\
                 output_bam = realign_prefix + ".bam"
                 jobs.append(concat_jobs([
                     # Create output directory since it is not done by default by GATK tools
-                    Job(command="mkdir -p " + realign_directory, removable_files=[realign_directory], samples = [sample]),
+                    Job(command="mkdir -p " + realign_directory, removable_files=[realign_directory], samples=[sample]),
                     gatk.realigner_target_creator(input, realign_intervals, exclude_intervals=unique_sequences_per_job_others),
                     gatk.indel_realigner(input, output=output_bam, target_intervals=realign_intervals, exclude_intervals=unique_sequences_per_job_others)
                 ], name="gatk_indel_realigner." + sample.name + ".others"))
