@@ -762,7 +762,8 @@ done""".format(
 
             jobs.append(job)
 
-            job = picard.mark_duplicates([sample_merge_bam], sample_merge_mdup_bam, sample_merge_mdup_metrics_file)
+            tmp_dir = config.param('ihec_preprocess_files', 'tmp_dir')
+            job = concat_jobs([Job(command = "export TMPDIR={tmp_dir}".format(tmp_dir = tmp_dir)), picard.mark_duplicates([sample_merge_bam], sample_merge_mdup_bam, sample_merge_mdup_metrics_file)])
             job.name = "ihecs_preprocess_mark_duplicates." + sample.name
             jobs.append(job)
             
