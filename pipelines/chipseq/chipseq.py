@@ -822,7 +822,7 @@ done""".format(
 
             job = concat_jobs([
                   Job(command="mkdir -p " + output_dir),
-                  tools.sh_ihec_chip_metrics(chip_bam, input_bam, sample.name, values[0],  chip_type, chip_bed, output_dir, genome)
+                  tools.sh_ihec_chip_metrics(chip_bam, input_bam, key, values[0],  chip_type, chip_bed, output_dir, genome)
               ], name="ihec_metrics."+sample.name)
             jobs.append(job)
             
