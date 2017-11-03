@@ -385,8 +385,11 @@ done""".format(
 
             mkdir_job = Job(command="mkdir -p " + os.path.join(bedgraph_dir, "bigWig"))
 
+            tmp_dir = config.param('ihec_preprocess_files', 'tmp_dir')
+
             job = concat_jobs([mkdir_job,
-                  ucsc.bedGraphToBigWig(bedgraph_file, big_wig_output, header = True)],
+                Job(command = "export TMPDIR={tmp_dir}".format(tmp_dir = tmp_dir)),
+                ucsc.bedGraphToBigWig(bedgraph_file, big_wig_output, header = True)],
                 name="homer_make_ucsc_file_bigWig."+ sample.name)
             jobs.append(job)
 
