@@ -79,32 +79,56 @@ def create(pipeline, sample):
     # Or    if the json file has not been created yet :
     if pipeline.force_jobs or not os.path.exists(os.path.join(pipeline.output_dir, "json", sample.json_file)) or os.stat(os.path.join(pipeline.output_dir, "json", sample.json_file)).st_size == 0:
         # Then (re-)create it !!
-        json_hash = {
-            'sample_name' : sample.name,
-            'readset' : [{
-                "name" : readset.name,
-                "library" : readset.library,
-                "runType" : readset.run_type,
-                "run" : readset.run,
-                "lane" : readset.lane,
-                "adapter1" : readset.adapter1,
-                "adapter2" : readset.adapter2,
-                "qualityoffset" : readset.quality_offset,
-                "bed" : [bed for bed in readset.beds],
-                "fastq1" : os.path.realpath(readset.fastq1),
-                "fastq2" : os.path.realpath(readset.fastq2),
-                "bam" : os.path.realpath(readset.bam),
-            } for readset in sample.readsets],
-            'pipeline' : {
-                'name' : pipeline.__class__.__name__,
-                'general_information': general_info,
-                'software' : [{
-                    'name' : software['name'],
-                    'version' : software['version']
-                } for software in softwares],
-                'step': []
+        if pipeline.__class__.__name__ == "PacBioAssembly":
+            json_hash = {
+                'sample_name' : sample.name,
+                'readset' : [{
+                    "name" : readset.name,
+                    "run" : readset.run,
+                    "smartcell" : readset.smartcell,
+                    "protocol" : readset.protocol,
+                    "nb_base_pairs" : readset.nb_base_pairs,
+                    "estimated_genome_size" : readset.estimated_genome_size,
+                    "bas" : [os.path.realpath(bas) for bas in readset.bas_files],
+                    "bax" : [os.path.realpath(bax) for bax in readset.bax_files]
+                } for readset in sample.readsets],
+                'pipeline' : {
+                    'name' : pipeline.__class__.__name__,
+                    'general_information': general_info,
+                    'software' : [{
+                        'name' : software['name'],
+                        'version' : software['version']
+                    } for software in softwares],
+                    'step': []
+                }
             }
-        }
+        else :
+            json_hash = {
+                'sample_name' : sample.name,
+                'readset' : [{
+                    "name" : readset.name,
+                    "library" : readset.library,
+                    "runType" : readset.run_type,
+                    "run" : readset.run,
+                    "lane" : readset.lane,
+                    "adapter1" : readset.adapter1,
+                    "adapter2" : readset.adapter2,
+                    "qualityoffset" : readset.quality_offset,
+                    "bed" : [bed for bed in readset.beds],
+                    "fastq1" : os.path.realpath(readset.fastq1),
+                    "fastq2" : os.path.realpath(readset.fastq2),
+                    "bam" : os.path.realpath(readset.bam)
+                } for readset in sample.readsets],
+                'pipeline' : {
+                    'name' : pipeline.__class__.__name__,
+                    'general_information': general_info,
+                    'software' : [{
+                        'name' : software['name'],
+                        'version' : software['version']
+                    } for software in softwares],
+                    'step': []
+                }
+            }
         for step in pipeline.step_range:
             jsonify_step = False
             for job in step.jobs:
