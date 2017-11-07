@@ -253,12 +253,20 @@ pandoc --to=markdown \\
                 output_bam = realign_prefix + ".bam"
                 sample_output_bam = os.path.join(alignment_directory, sample.name + ".realigned.qsorted.bam")
                 jobs.append(concat_jobs([
-                    Job(command="mkdir -p " + realign_directory, removable_files=[realign_directory]),
+                    Job(
+                        command="mkdir -p " + realign_directory,
+                        removable_files=[realign_directory],
+                        samples=[sample]
+                    ),
                     gatk.realigner_target_creator(input, realign_intervals),
                     gatk.indel_realigner(input, output=output_bam, target_intervals=realign_intervals),
                     # Create sample realign symlink since no merging is required
-                    Job([output_bam], [sample_output_bam], command="ln -s -f " + os.path.relpath(output_bam, os.path.dirname(sample_output_bam)) + " " + sample_output_bam)
-                ], name="gatk_indel_realigner." + sample.name, samples=[sample]))
+                    Job(
+                        [output_bam],
+                        [sample_output_bam],
+                        command="ln -s -f " + os.path.relpath(output_bam, os.path.dirname(sample_output_bam)) + " " + sample_output_bam
+                    )
+                ], name="gatk_indel_realigner." + sample.name))
 
             else:
                 # The first sequences are the longest to process.
