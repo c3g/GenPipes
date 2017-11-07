@@ -48,7 +48,14 @@ class Pipeline(object):
     def __init__(self):
         self._timestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
         self._args = self.argparser.parse_args()
-
+        if self.protocol == None :
+            step_list=self.steps
+        else :
+            pos=0
+            for i in range(0,len(self.protocol)):
+                if self.protocol[i] == self.args.type:
+                    pos=i
+            step_list=self.steps[pos]
         logging.basicConfig(level=getattr(logging, self.args.log.upper()))
 
         if self.args.help:
@@ -69,7 +76,7 @@ Usage
             pipeline_doc=textwrap.dedent(self.__doc__) if self.__doc__ else "",
             help=self.argparser.format_help(),
             overview=self.__doc__ if self.__doc__ else "",
-            step_doc="\n".join([str(idx + 1) + "- " + step.__name__ + "\n" + "-" * len(str(idx + 1) + "- " + step.__name__) + (textwrap.dedent(step.__doc__) if step.__doc__ else "") for idx, step in enumerate(self.steps)])
+            step_doc="\n".join([str(idx + 1) + "- " + step.__name__ + "\n" + "-" * len(str(idx + 1) + "- " + step.__name__) + (textwrap.dedent(step.__doc__) if step.__doc__ else "") for idx, step in enumerate(step_list)])
             )
             self.argparser.exit()
 
@@ -96,12 +103,12 @@ Usage
             self._output_dir = os.path.abspath(self.args.output_dir)
             self._scheduler = create_scheduler(self.args.job_scheduler)
 
-            step_counter = collections.Counter(self.steps)
+            step_counter = collections.Counter(step_list)
             duplicated_steps = [step.__name__ for step in step_counter if step_counter[step] > 1]
             if duplicated_steps:
                 raise Exception("Error: pipeline contains duplicated steps: " + ", ".join(duplicated_steps) + "!")
             else:
-                self._step_list = [Step(step) for step in self.steps]
+                self._step_list = [Step(step) for step in step_list]
 
             if self.args.steps:
                 if re.search("^\d+([,-]\d+)*$", self.args.steps):
@@ -130,13 +137,19 @@ Usage
     # Pipeline command line arguments parser
     @property
     def argparser(self):
+        if self.protocol == None :
+            steps="\n".join([str(idx + 1) + "- " + step.__name__  for idx, step in enumerate(self.steps)])
+        else :
+            steps=""
+            for i in range(0,len(self.protocol)):
+                steps+="\n----\n"+self.protocol[i]+":\n"+"\n".join([str(idx + 1) + "- " + step.__name__  for idx, step in enumerate(self.steps[i])])
         if not hasattr(self, "_argparser"):
             epilog = """\
 Steps:
 ------
 {steps}
 """.format(
-            steps="\n".join([str(idx + 1) + "- " + step.__name__  for idx, step in enumerate(self.steps)])
+            steps=steps
             )
 
             # Create ArgumentParser with numbered step list and description as epilog
@@ -179,6 +192,10 @@ Steps:
     @property
     def force_jobs(self):
         return self._force_jobs
+
+    @property
+    def protocol(self):
+        return self._protocol
 
     @property
     def steps(self):
