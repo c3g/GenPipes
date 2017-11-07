@@ -105,7 +105,7 @@ class PacBioAssembly(common.MUGQICPipeline):
             filtering_directory = os.path.join(sample.name, "filtering")
 
             jobs.append(concat_jobs([
-                Job(command="mkdir -p fofns"),
+                Job(command="mkdir -p fofns", samples=[sample]),
                 Job(input_files, [fofn], command="""\
 `cat > {fofn} << END
 {input_files}
@@ -161,7 +161,7 @@ END
                 log.info("COVERAGE_CUTOFF: " + coverage_cutoff + "_X_coverage")
 
                 jobs.append(concat_jobs([
-                    Job(command="mkdir -p " + os.path.join(coverage_directory, "preassembly")),
+                    Job(command="mkdir -p " + os.path.join(coverage_directory, "preassembly"), samples=[sample]),
                     pacbio_tools.get_cutoff(
                         os.path.join(sample.name, "filtering", "data", "filtered_subreads.fasta"),
                         estimated_coverage,
@@ -194,7 +194,7 @@ END
                 job_name_suffix = sample.name + ".coverage_cutoff" + cutoff_x
 
                 jobs.append(concat_jobs([
-                    Job(command="mkdir -p " + preassembly_directory),
+                    Job(command="mkdir -p " + preassembly_directory, samples=[sample]),
                     pacbio_tools.split_reads(
                         os.path.join(sample.name, "filtering", "data", "filtered_subreads.fasta"),
                         os.path.join(coverage_directory, "preassemblyMinReadSize.txt"),
@@ -210,6 +210,7 @@ END
                     os.path.join(preassembly_directory, "seeds.m4.fofn")
                 )
                 job.name = "smrtanalysis_blasr." + job_name_suffix
+                job.samples = [sample]
                 jobs.append(job)
 
                 job = smrtanalysis.m4topre(
@@ -219,6 +220,7 @@ END
                     os.path.join(preassembly_directory, "aln.pre")
                 )
                 job.name = "smrtanalysis_m4topre." + job_name_suffix
+                job.samples = [sample]
                 jobs.append(job)
 
                 job = smrtanalysis.pbdagcon(
@@ -227,6 +229,7 @@ END
                     os.path.join(preassembly_directory, "corrected.fastq")
                 )
                 job.name = "smrtanalysis_pbdagcon." + job_name_suffix
+                job.samples = [sample]
                 jobs.append(job)
 
         return jobs
@@ -257,7 +260,7 @@ END
                     assembly_directory = os.path.join(mer_size_directory, "assembly")
 
                     jobs.append(concat_jobs([
-                        Job(command="mkdir -p " + assembly_directory),
+                        Job(command="mkdir -p " + assembly_directory, samples=[sample]),
                         pacbio_tools.celera_config(
                             mer_size,
                             config.param('DEFAULT', 'celera_settings'),
@@ -271,10 +274,11 @@ END
                         os.path.join(preassembly_directory, "corrected.frg")
                     )
                     job.name = "smrtanalysis_fastq_to_ca." + sample_cutoff_mer_size
+                    job.samples = [sample]
                     jobs.append(job)
 
                     jobs.append(concat_jobs([
-                        Job(command="rm -rf " + assembly_directory),
+                        Job(command="rm -rf " + assembly_directory, samples=[sample]),
                         smrtanalysis.run_ca(
                             os.path.join(preassembly_directory, "corrected.frg"),
                             os.path.join(mer_size_directory, "celera_assembly.ini"),
@@ -293,6 +297,7 @@ END
                         os.path.join(config.param('smrtanalysis_pbutgcns', 'tmp_dir', type='dirpath'), sample_cutoff_mer_size)
                     )
                     job.name = "smrtanalysis_pbutgcns." + sample_cutoff_mer_size
+                    job.samples = [sample]
                     jobs.append(job)
 
         return jobs
@@ -338,7 +343,7 @@ END
                             fasta_file = os.path.join(mer_size_directory, "polishing" + str(polishing_round - 1), "data", "consensus.fasta")
 
                         jobs.append(concat_jobs([
-                            Job(command="mkdir -p " + os.path.join(polishing_round_directory, "data")),
+                            Job(command="mkdir -p " + os.path.join(polishing_round_directory, "data"), samples=[sample]),
                             smrtanalysis.reference_uploader(
                                 polishing_round_directory,
                                 sample_cutoff_mer_size_polishing_round,
@@ -354,9 +359,11 @@ END
                             os.path.join(config.param('smrtanalysis_pbalign', 'tmp_dir', type='dirpath'), sample_cutoff_mer_size_polishing_round)
                         )
                         job.name = "smrtanalysis_pbalign." + job_name_suffix
+                        job.samples = [sample]
                         jobs.append(job)
 
                         jobs.append(concat_jobs([
+                            Job(samples=[sample]),
                             smrtanalysis.load_chemistry(
                                 os.path.join(polishing_round_directory, "data", "aligned_reads.cmp.h5"),
                                 os.path.join(sample.name, "filtering", "input.fofn"),
@@ -374,6 +381,7 @@ END
                             os.path.join(polishing_round_directory, "data", "aligned_reads.sorted.cmp.h5")
                         )
                         job.name = "smrtanalysis_cmph5tools_sort." + job_name_suffix
+                        job.samples=[sample]
                         jobs.append(job)
 
                         job = smrtanalysis.variant_caller(
@@ -384,6 +392,7 @@ END
                             os.path.join(polishing_round_directory, "data", "consensus.fastq.gz")
                         )
                         job.name = "smrtanalysis_variant_caller." + job_name_suffix
+                        job.samples=[sample]
                         jobs.append(job)
 
                         job = smrtanalysis.summarize_polishing(
@@ -399,6 +408,7 @@ END
                             os.path.join(polishing_round_directory, "data", "variants.vcf")
                         )
                         job.name = "smrtanalysis_summarize_polishing." + job_name_suffix
+                        job.samples=[sample]
                         jobs.append(job)
 
         return jobs
@@ -427,7 +437,7 @@ END
                     smartcells = len(set([(readset.run, readset.smartcell) for readset in sample.readsets]))
 
                     jobs.append(concat_jobs([
-                        Job(command="mkdir -p " + report_directory),
+                        Job(command="mkdir -p " + report_directory, samples=[sample]),
                         # Generate table(s) and figures
                         pacbio_tools.assembly_stats(
                             os.path.join(preassembly_directory, "filtered_shortreads.fa"),
@@ -514,7 +524,7 @@ pandoc --to=markdown \\
 
                     # Blast contigs against nt
                     jobs.append(concat_jobs([
-                        Job(command="mkdir -p " + blast_directory),
+                        Job(command="mkdir -p " + blast_directory, samples=[sample]),
                         blast.dcmegablast(
                             os.path.join(polishing_round_directory, "data", "consensus.fasta"),
                             "7",
@@ -531,6 +541,7 @@ pandoc --to=markdown \\
                         os.path.join(blast_directory, "nt_reference.fasta"),
                     )
                     job.name = "blast_blastdbcmd." + sample_cutoff_mer_size
+                    job.samples=[sample]
                     jobs.append(job)
 
                     report_directory = os.path.join(mer_size_directory, "report")
@@ -590,7 +601,7 @@ pandoc --to=markdown \\
 
                     # Run nucmer
                     jobs.append(concat_jobs([
-                        Job(command="mkdir -p " + mummer_directory),
+                        Job(command="mkdir -p " + mummer_directory, samples=[sample]),
                         mummer.reference(
                             mummer_file_prefix + "nucmer",
                             fasta_reference,
@@ -605,7 +616,7 @@ pandoc --to=markdown \\
                     ], name="mummer_reference." + sample_cutoff_mer_size_nucmer))
 
                     jobs.append(concat_jobs([
-                        Job(command="mkdir -p " + mummer_directory),
+                        Job(command="mkdir -p " + mummer_directory, samples=[sample]),
                         mummer.self(
                             mummer_file_prefix + "nucmer.self",
                             fasta_consensus,
@@ -671,6 +682,7 @@ pandoc --to=markdown \\
             ]
 
             job.name = "pacbio_tools_compile." + sample.name
+            job.samples=[sample]
             jobs.append(job)
 
         return jobs
@@ -702,7 +714,7 @@ pandoc --to=markdown \\
                     fasta_consensus = os.path.join(mer_size_directory, "polishing" + str(polishing_rounds), "data", "consensus.fasta")
 
                 jobs.append(concat_jobs([
-                    Job(command="mkdir -p " + circlator_directory),
+                    Job(command="mkdir -p " + circlator_directory, samples=[sample]),
                     Job(
                         [fasta_consensus, os.path.join(preassembly_directory, "corrected.fastq")],
                         [circlator_file],
