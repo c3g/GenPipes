@@ -680,14 +680,14 @@ copy_files() {
 create_genome_digest() {
 
   GENOME_DIGEST=$GENOME_DIR/genome_digest/
-  
+
   declare -A enzymes=( ["DpnII"]="^GATC" ["MboI"]="^GATC" ["HindIII"]="A^AGCTT" ["NcoI"]="C^CATGG")
-  
-  for enzyme in "${!enzymes[@]}"; do 
+
+  for enzyme in "${!enzymes[@]}"; do
     #echo "$enzyme - ${enzymes[$enzyme]}";
     ## hicup only accepts alphanumeric and underscores
     GENOME_DIGEST_FILE=HiCUP_Digest_${SPECIES}_${ASSEMBLY}_${enzyme}.txt
-  
+
     if ! is_up2date $GENOME_DIGEST/$GENOME_DIGEST_FILE
     then
       echo
@@ -727,7 +727,7 @@ build_files() {
   create_transcripts2genes_file
   create_gene_annotations
   create_gene_annotations_flat
-  
+
 
   # Annotations are not installed for UCSC genomes
   if [[ $SOURCE != "UCSC" ]]
