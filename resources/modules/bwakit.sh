@@ -5,8 +5,8 @@ set -eu -o pipefail
 SOFTWARE=bwakit
 VERSION=0.7.12
 ARCHIVE=${SOFTWARE}-${VERSION}_x64-linux.tar.bz2
-ARCHIVE_URL=http://downloads.sourceforge.net/project/bio-bwa/${SOFTWARE}/$ARCHIVE
-SOFTWARE_DIR=bwa.kit
+ARCHIVE_URL=https://downloads.sourceforge.net/project/bio-bwa/${SOFTWARE}/$ARCHIVE
+SOFTWARE_DIR=${SOFTWARE}-${VERSION}
 
 # Specific commands to extract and build the software
 # $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
@@ -17,7 +17,7 @@ build() {
 
   # Install software
   cd $INSTALL_DOWNLOAD
-  mv -i $SOFTWARE_DIR $INSTALL_DIR/
+  mv -i bwa.kit $INSTALL_DIR/$SOFTWARE_DIR
 }
 
 module_file() {

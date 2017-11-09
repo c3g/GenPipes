@@ -166,7 +166,7 @@ python $PYTHON_TOOLS/AmpliconSeq_script.py \\
         )
     )
 
-def py_filterAssemblyToFastaToTsv(fasta_file, filter_file, fasta_id_column, output):  
+def py_filterAssemblyToFastaToTsv(fasta_file, filter_file, fasta_id_column, output):
     return Job(
         [ fasta_file , filter_file],
         [ output + "." + ext for ext in ["fasta", "tsv"] ],
@@ -363,6 +363,26 @@ def rnaseqLight_kallisto(fastq_file1, fastq_file2, transcriptome_file, tx2genes_
      )
 
 ## functions for R tools ##
+def r_create_kallisto_count_matrix(input_abundance_files, output_dir, data_type, job_name):
+    return Job(
+        input_files=input_abundance_files,
+        output_files=[os.path.join(output_dir, "all_readsets.abundance_" + data_type + ".csv")],
+        module_entries=[['DEFAULT', 'module_mugqic_tools'],
+                         ['DEFAULT', 'module_R'],
+                        ['DEFAULT', 'module_mugqic_R_packages']
+              ],
+        name=job_name,
+        command="""\
+            R --no-save --args \\
+            {input_abundance_files} \\
+            {output_dir} \\
+            {data_type} \\
+            < $R_TOOLS/mergeKallistoCounts.R""".format(
+            input_abundance_files=",".join(input_abundance_files),
+            output_dir=output_dir,
+            data_type=data_type #transcripts or genes
+            )
+        )
 
 def r_create_kallisto_count_matrix(input_abundance_files, output_dir, data_type, job_name):
     return Job(

@@ -206,7 +206,7 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
         .libPaths(.Library) # useful because e.g. devtools::install() installs in .libPaths()[1], and the latter will be ~/R/... if user library exists...
 
         ## biocLite
-        source("http://bioconductor.org/biocLite.R")
+        source("https://bioconductor.org/biocLite.R")
 
         ## RcppArmadillo temporary patch: CentOS 6 is old and using an old gcc (4.4.7) which is incompatible with the latest armadillo libs. The easiest workaround seems to force install
         # of an archived version of RcppArmadillo. Note that update attempts below will fail with ERROR.
@@ -214,7 +214,7 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
         # http://stackoverflow.com/questions/27296522/rcpparmadillo-failing-to-install-on-centos
         biocLite("RcppArmadillo",ask=FALSE) # despite failing, this will install Rcpparmadillo dependencies for us
         rcpp.armadillo.archive="RcppArmadillo_0.4.500.0.tar.gz"
-        download.file(sprintf("http://cran.r-project.org/src/contrib/Archive/RcppArmadillo/%s",rcpp.armadillo.archive),destfile=rcpp.armadillo.archive)
+        download.file(sprintf("https://cran.r-project.org/src/contrib/Archive/RcppArmadillo/%s",rcpp.armadillo.archive),destfile=rcpp.armadillo.archive)
         install.packages(rcpp.armadillo.archive,repos=NULL,type="source",lib=.Library)
 
         ## Define the list of packages to standard packages to install.
@@ -260,7 +260,7 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
 
 
         ## Install Vennerable, since not yet in CRAN
-        install.packages("Vennerable", repos="http://R-Forge.R-project.org",lib=.Library, type='source')
+        install.packages("Vennerable", repos="https://R-Forge.R-project.org",lib=.Library, type='source')
         ## Force Rmarkdown and knitr, not available fot R 3.2
         install.packages('knitr', repos='http://cran.rstudio.org')
         install.packages('rmarkdown', repos='http://cran.rstudio.org')

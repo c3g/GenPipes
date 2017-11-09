@@ -35,7 +35,7 @@ build() {
   cd ${SETUPTOOLS_ARCHIVE/.tar.gz/}
   $INSTALL_DIR/$SOFTWARE_DIR/bin/python3 bootstrap.py
   $INSTALL_DIR/$SOFTWARE_DIR/bin/python3 setup.py build
-  $INSTALL_DIR/$SOFTWARE_DIR/bin/python3 setup.py installi
+  $INSTALL_DIR/$SOFTWARE_DIR/bin/python3 setup.py install
 
   cd $INSTALL_DIR/$SOFTWARE_DIR/bin
   ln -s python3 python

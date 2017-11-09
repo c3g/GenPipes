@@ -50,6 +50,7 @@ from bfx import bvatools
 from bfx import rmarkdown
 from bfx import tools
 from bfx import ucsc
+
 from pipelines import common
 import utils
 
@@ -909,6 +910,7 @@ cp \\
 
         return jobs
 
+
     def differential_expression(self):
         """
         Performs differential gene expression analysis using [DESEQ](http://bioconductor.org/packages/release/bioc/html/DESeq.html) and [EDGER](http://www.bioconductor.org/packages/release/bioc/html/edgeR.html).
@@ -1007,9 +1009,7 @@ done""".format(
                 report_files=[report_file],
                 name="differential_expression_goseq_report")
         )
-
 ############
-
         return jobs
 
     def ihec_metrics(self):
@@ -1027,7 +1027,7 @@ done""".format(
             job = concat_jobs([
                 Job(command="mkdir -p " + output_dir),
                 tools.sh_ihec_rna_metrics(input_bam, sample.name, input_metrics, output_dir)
-            ], name="ihec_metrics." + sample.name )
+            ], name="ihec_metrics." + sample.name)
             jobs.append(job)
 
         return jobs

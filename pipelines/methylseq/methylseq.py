@@ -90,6 +90,11 @@ class MethylSeq(dnaseq.DnaSeq):
 
         return self._readsets
 
+    def __init__(self, protocol=None):
+        self._protocol=protocol
+        # Add pipeline specific arguments
+        super(MethylSeq, self).__init__(protocol)
+
     def bismark_align(self):
         """
         Align reads with Bismark

@@ -4,7 +4,7 @@ set -eu -o pipefail
 
 SOFTWARE=python
 VERSION=2.7.13
-SETUPTOOLS_VERSION=20.9.0
+SETUPTOOLS_VERSION=36.4.0
 # Remove the version last number
 LIBVERSION=${VERSION%.[0-9]*}
 # Uppercase first P in python
@@ -21,7 +21,9 @@ build() {
 
   cd $SOFTWARE_DIR
   # Compile with --enable-unicode=ucs4 to fix error "ImportError: numpy-1.8.1-py2.7-linux-x86_64.egg/numpy/core/multiarray.so: undefined symbol: PyUnicodeUCS2_AsASCIIString"
-  ./configure --prefix=$INSTALL_DIR/$SOFTWARE_DIR --enable-unicode=ucs4 --with-zlib-dir=/usr/lib64 --with-ensurepip=install
+  #./configure --prefix=$INSTALL_DIR/$SOFTWARE_DIR --enable-unicode=ucs4 --with-zlib-dir=/usr/lib64 --with-ensurepip=install
+  #./configure --prefix=$INSTALL_DIR/$SOFTWARE_DIR --enable-unicode=ucs4 --with-zlib-dir=$LFS/tools/usr/lib --with-ensurepip=install
+  ./configure --prefix=$INSTALL_DIR/$SOFTWARE_DIR --enable-unicode=ucs4 --with-zlib-dir=$LFS/tools/usr/lib --with-ensurepip=install
   make -j8
   make install
 

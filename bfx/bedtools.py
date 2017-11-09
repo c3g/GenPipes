@@ -60,7 +60,7 @@ genomeCoverageBed {other_options} -bg -split -scale $scalefactor \\
             other_options=config.param('bedtools_graph', 'other_options', required=False),
             output_bed_graph=output_bed_graph
         )
-    )
+    ])
 
 def intersect(input_bam, output_bam, target_bed):
 
@@ -79,6 +79,26 @@ bedtools intersect {other_options} \\
             target_bed=target_bed,
             other_options=config.param('bedtools_intersect', 'other_options', required=False),
             output_bam=output_bam
+        )
+    )
+
+def intersect_beds(bed1, bed2, output_bed, other_options=""):
+
+    return Job(
+        [bed1, bed2],
+        [output_bed],
+        [
+            ['bedtools', 'module_bedtools']
+        ],
+        command="""\
+bedtools intersect {other_options}\\
+  -a {bed1} \\
+  -b {bed2} \\
+  > {output_bed}""".format(
+            bed1 = bed1,
+            bed2 = bed2,
+            other_options = other_options,
+            output_bed = output_bed
         )
     )
 

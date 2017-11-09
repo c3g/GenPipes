@@ -191,6 +191,7 @@ class Illumina(MUGQICPipeline):
                     job.name = "picard_sam_to_fastq." + readset.name
                     job.samples = [readset.sample]
                     jobs.append(job)
+
                 else:
                     raise Exception("Error: BAM file not available for readset \"" + readset.name + "\"!")
         return jobs

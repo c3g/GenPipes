@@ -63,9 +63,10 @@ class PacBioAssembly(common.MUGQICPipeline):
     the `EstimatedGenomeSize` column in your readset file).
     """
 
-    def __init__(self):
+    def __init__(self, protocol=None):
+        self._protocol=protocol
         self.argparser.add_argument("-r", "--readsets", help="readset file", type=file)
-        super(PacBioAssembly, self).__init__()
+        super(PacBioAssembly, self).__init__(protocol)
 
     @property
     def readsets(self):
