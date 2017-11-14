@@ -456,9 +456,10 @@ bcl2fastq\\
         """
         jobs = []
         for readset in [readset for readset in self.readsets if readset.bam]:
-            job = readset.aligner.get_metrics_jobs(readset)
-            job.samples = [readset.sample]
-            jobs.extend(job)
+            job_list = readset.aligner.get_metrics_jobs(readset)
+            for job in job_list:
+                job.samples = [readset.sample]
+            jobs.extend(job_list)
         self.add_copy_job_inputs(jobs)
         return self.throttle_jobs(jobs)
 
@@ -566,7 +567,7 @@ bcl2fastq\\
             # merge all blast steps of the readset into one job
             job = concat_jobs(current_jobs,
                               name="blast." + readset.name + ".blast." + self.run_id + "." + str(self.lane_number))
-            job.samples = readset.sample
+            job.samples = [readset.sample]
             jobs.append(job)
         self.add_copy_job_inputs(jobs)
         return self.throttle_jobs(jobs)
@@ -643,7 +644,7 @@ bcl2fastq\\
             job = concat_jobs(current_jobs,
                               name="md5." + readset.name + ".md5." + self.run_id + "." + str(self.lane_number))
 
-            job.samples = readset.sample
+            job.samples = [readset.sample]
             jobs.append(job)
 
         if config.param('md5', 'one_job', required=False, type="boolean"):
