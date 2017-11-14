@@ -795,7 +795,7 @@ done""".format(
 
             job = Job(input_files = [sample_merge_mdup_bam],
                             output_files = [output],
-                            module_entries = [['run_spp', 'module_mugqic_tools'], ['run_spp', 'module_R']],
+                            module_entries = [['run_spp', 'module_samtools'],['run_spp', 'module_mugqic_tools'], ['run_spp', 'module_R']],
                             name = "run_spp." + sample.name,
                             command = spp_cmd)
             jobs.append(job)    
