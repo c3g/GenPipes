@@ -83,7 +83,8 @@ class ChipSeq(dnaseq.DnaSeq):
                 'tracks_output_directory': 'tracks',
                 'macs_output_directory': 'peak_call',
                 'anno_output_directory': 'annotation',
-                'ihecA_output_directory': 'ihec_alignment'
+                'ihecA_output_directory': 'ihec_alignment',
+                'ihecM_output_directory': 'ihec_metrics'
                 }
         return dirs
 
@@ -772,6 +773,35 @@ done""".format(
             
         return jobs
 
+    def run_spp(self):
+        """
+        runs spp to estimate NSC and RSC ENCODE metrics. For more information: https://github.com/kundajelab/phantompeakqualtools
+        
+        """
+        jobs = []
+        alignment_dir = self.output_dirs['ihecA_output_directory']
+        output_dir = self.output_dirs['ihecM_output_directory']
+        tmpDir = config.param('run_spp', 'tmp_dir')
+
+        for sample in self.samples:
+            sample_merge_mdup_bam = os.path.join(alignment_dir, sample.name + ".merged.mdup.bam")
+            output = os.path.join(output_dir, sample.name + ".crosscor")
+            
+            spp_cmd = """Rscript $R_TOOLS/run_spp.R -c={sample_merge_mdup_bam} -savp -out={output} -rf -tmpdir={tmpDir}""".format(
+                sample_merge_mdup_bam = sample_merge_mdup_bam, 
+                output = output, 
+                tmpDir = tmpDir)
+
+
+            job = Job(input_files = [sample_merge_mdup_bam],
+                            output_files = [output],
+                            module_entries = [['run_spp', 'module_mugqic_tools'], ['run_spp', 'module_R']],
+                            name = "run_spp." + sample.name,
+                            command = spp_cmd)
+            jobs.append(job)    
+
+        return jobs
+
 
     def ihec_metrics(self):
         """
@@ -780,7 +810,7 @@ done""".format(
         """
         #sh_ihec_chip_metrics(chip_bam, input_bam, sample_name, chip_type, chip_bed, output_dir)
         jobs = []
-        output_dir="ihec_metrics"
+        output_dir=self.output_dirs['ihecM_output_directory']
         
         ##generate couples chip/input/treatment_name/peak_type
         couples = {}
@@ -851,6 +881,7 @@ done""".format(
             self.homer_find_motifs_genome,
             self.annotation_graphs,
             self.ihec_preprocess_files,
+            self.run_spp,
             self.ihec_metrics
         ]
 
