@@ -852,11 +852,10 @@ done""".format(
             # cmd = cmd + " chip bam: " + str(chip_bam) + "     input bam: " + str(input_bam)  + "     chip_type: " + str(chip_type) + "      chipbed: " + str(chip_bed) + "\n"
             # job = Job(command=cmd, name="contrast content")
 
-
             job = concat_jobs([
                   Job(command="mkdir -p " + output_dir),
                   tools.sh_ihec_chip_metrics(chip_bam, input_bam, key, values[0],  chip_type, chip_bed, output_dir, genome)
-              ], name="ihec_metrics."+sample.name)
+              ], name="ihec_metrics." + key)
             jobs.append(job)
             
         return jobs
