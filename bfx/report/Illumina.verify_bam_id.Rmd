@@ -1,0 +1,57 @@
+```{r preparation, results="hide",echo=F,message=F,warning=F}
+
+### DEFINED OUTSIDE
+# report_dir
+# source_dir
+# params
+
+
+library(rmarkdown)
+library(knitr)
+library(hwriter)
+library(magrittr)
+options(stringsAsFactors=F)
+
+
+# Directories and cp data
+resultsFiles = list.files(source_dir, pattern="selfSM$", full.names=TRUE)
+results=data.frame(NULL)
+readset_names=c()
+for (fi in resultsFiles){
+    readset_names=c(readset_names,gsub(".selfSM$","",basename(fi)))
+    results=rbind(results,read.delim(fi, header=T,check.names=F,stringsAsFactors=F,comment.char=''))
+}
+results=cbind(readset_names,results)
+write.table(results, file.path(report_dir,"all_samples_vs_variants_verifyBAMID_results.tsv"), sep="\t", row.names=F,col.names=T,quote=F,append=F)
+
+if (params["coverage_bed"] != "" ){
+    target_bed=paste("* Off-target markers are excluded from the variants file. This markers are not likely to have multiple non-duplicated reads at the marker position, and it may create artifacts in the analysis due to overlapping fragments. SnpSift is used to filter markers within the ", params["coverage_bed"] , " intervals file." )
+}else{
+    target_bed=""
+}
+variants_file=params["verifyBamID_variants_file"]
+dbnsfp_af_field=params["dbnsfp_af_field"]
+
+```
+
+### Verify contamination and sample swaps
+
+[VerifyBamID]\ [@verifybamid] is a software that verifies whether the reads in particular file match previously known genotypes for an individual (or group of individuals), and checks whether the reads are contaminated as a mixture of two samples. verifyBamID can detect sample contamination and swaps when external genotypes are available. When external genotypes are not available, it still robustly detects sample swaps.
+
+VerifyBamID requires two input files: a VCF file containing external genotypes or allele frequency information, and the BAM file.
+
+The variants file used is: `r variants_file`. This file is modified to met several additional contraints from verifyBamID:
+    
+* The SNPs are annotated using the dbNSFP database. The alternative allele frequency for each variant correspond to the "`r  dbnsfp_af_field`" field. 
+`r  target_bed`
+* Currently, verifyBamID takes only autosomal chromosomes as input VCF. 
+
+
+#### Contamination and Sample Swaps Results
+
+VerifyBamID provides a series of information that could be used to determine whether the sample is possibly contaminated or swapped, but there is no single criteria that works for every circumstances. There are a few unmodeled factor in the estimation of [SELF-IBD]/[BEST-IBD] and [%MIX], so please note that the MLE estimation may not always exactly match to the true amount of contamination.
+
+Each sample can be checked in this way. When FREEMIX >> 0.02, meaning 2% or more of non-reference bases are observed in reference sites, the authors recommend to examine the data more carefully for the possibility of contamination.
+When genotype data is not available but allele-frequency-based estimates of [FREEMIX] >= 0.03 and [FREELK1]-[FREELK0] is large, then it is possible that the sample is contaminated with other sample. 
+
+The VerifyBamID Output for all samples compared to known variants is available here  ([download full table](all_samples_vs_variants_verifyBAMID_results.tsv))

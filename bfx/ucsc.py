@@ -28,34 +28,53 @@ from core.job import *
 
 def bedGraphToBigWig(input_bed_graph, output_wiggle, header=True):
 
+    # If using GRCh37 assembly then create temporary dict file
+    # only using autosomal + X + Y chromosomes and adding chr (e.g. chr1, instead of 1)
+    if (config.param('DEFAULT', 'assembly') == 'GRCh37'):
+        chromosome_size_file = re.sub(".fa.fai", ".withchr.fa.fai", config.param('ucsc', 'chromosome_size', type='filepath'))
+    else :
+        chromosome_size_file = config.param('ucsc', 'chromosome_size', type='filepath')
+
     # Check it the input is a real bedGrah (i.e. contains the bedGraph header : track type=bedGraph)
     # or if it is just a regular bed file (i.e. no bedGraph header)
     if header :
         if os.path.splitext(input_bed_graph)[1] == ".gz":
             remove_head_command="""\
 zcat {input_bed_graph} | head -n 1 > {input_bed_graph}.head.tmp && \\
-zcat {input_bed_graph} | awk ' NR > 1 ' | sort -k1,1 -k2,2n > {input_bed_graph}.body.tmp && \\
+zcat {input_bed_graph} | awk ' NR > 1 ' | sort  --temporary-directory={temp_dir} -k1,1 -k2,2n | \\
+awk '{{if($0 !~ /^[A-W]/) print "chr"$0; else print $0}}' | grep -vP "GL|lambda|pUC19" | sed 's/MT/chrM/' | \\
+awk '{{printf "%s\\t%d\\t%d\\t%4.4g\\n", $1,$2,$3,$4}}' > {input_bed_graph}.body.tmp && \\
 cat {input_bed_graph}.head.tmp {input_bed_graph}.body.tmp > {input_bed_graph}.sorted && \\
 rm {input_bed_graph}.head.tmp {input_bed_graph}.body.tmp""".format(
-                input_bed_graph=input_bed_graph
+                input_bed_graph=input_bed_graph,
+                temp_dir=config.param('ucsc', 'tmp_dir', required=True)
             )
         else:
             remove_head_command="""\
 head -n 1  {input_bed_graph} > {input_bed_graph}.head.tmp && \\
-awk ' NR > 1 ' {input_bed_graph} | sort -k1,1 -k2,2n > {input_bed_graph}.body.tmp && \\
+awk ' NR > 1 ' {input_bed_graph} | sort  --temporary-directory={temp_dir} -k1,1 -k2,2n | \\
+awk '{{if($0 !~ /^[A-W]/) print "chr"$0; else print $0}}' | grep -vP "GL|lambda|pUC19" | sed 's/MT/chrM/' | \\
+awk '{{printf "%s\\t%d\\t%d\\t%4.4g\\n", $1,$2,$3,$4}}' > {input_bed_graph}.body.tmp && \\
 cat {input_bed_graph}.head.tmp {input_bed_graph}.body.tmp > {input_bed_graph}.sorted && \\
 rm {input_bed_graph}.head.tmp {input_bed_graph}.body.tmp""".format(
-                input_bed_graph=input_bed_graph
+                input_bed_graph=input_bed_graph,
+                temp_dir=config.param('ucsc', 'tmp_dir', required=True)
             )
     else:
         if os.path.splitext(input_bed_graph)[1] == ".gz":
           remove_head_command="""\
-zcat {input_bed_graph} | sort -k1,1 -k2,2n > {input_bed_graph}.sorted""".format(
-                input_bed_graph=input_bed_graph
+zcat {input_bed_graph} | sort --temporary-directory={temp_dir} -k1,1 -k2,2n | \\
+awk '{{if($0 !~ /^[A-W]/) print "chr"$0; else print $0}}' | grep -vP "GL|lambda|pUC19" | sed 's/MT/chrM/' | \\
+awk '{{printf "%s\\t%d\\t%d\\t%4.4g\\n", $1,$2,$3,$4}}' > {input_bed_graph}.sorted""".format(
+                input_bed_graph=input_bed_graph,
+                temp_dir=config.param('ucsc', 'tmp_dir', required=True)
             )
         else:
             remove_head_command="""\
-sort -k1,1 -k2,2n {input_bed_graph} > {input_bed_graph}.sorted""".format(
+sort --temporary-directory={temp_dir} -k1,1 -k2,2n {input_bed_graph} | \\
+awk '{{if($0 !~ /^[A-W]/) print "chr"$0; else print $0}}' | grep -vP "GL|lambda|pUC19" | sed 's/MT/chrM/' | \\
+awk '{{printf "%s\\t%d\\t%d\\t%4.4g\\n", $1,$2,$3,$4}}' > {input_bed_graph}.sorted""".format(
+                temp_dir=config.param('ucsc', 'tmp_dir', required=True),
                 input_bed_graph=input_bed_graph
             )
 
@@ -72,7 +91,7 @@ bedGraphToBigWig \\
   {chromosome_size} \\
   {output_wiggle}""".format(
             remove_head_command=remove_head_command,
-            chromosome_size=config.param('ucsc', 'chromosome_size', type='filepath'),
+            chromosome_size=chromosome_size_file,
             input_bed_graph=input_bed_graph,
             output_wiggle=output_wiggle
         ),

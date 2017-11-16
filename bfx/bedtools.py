@@ -28,7 +28,7 @@ from core.job import *
 
 from bfx import ucsc
 
-def graph(input_bam, output_bed_graph, output_wiggle, library_type="PAIRED_END"):
+def graph(input_bam, output_bed_graph, library_type="PAIRED_END"):
 
     if library_type == "PAIRED_END":
         if "forward" in output_bed_graph:
@@ -40,45 +40,29 @@ def graph(input_bam, output_bed_graph, output_wiggle, library_type="PAIRED_END")
     else:
         samtools_options = "-F 256"
 
-    return concat_jobs([
-        Job(
-            [input_bam],
-            [output_bed_graph, output_wiggle],
-            [
-                ['bedtools', 'module_samtools'],
-                ['bedtools', 'module_bedtools']
-            ],
-            command="""\
+    return Job(
+        [input_bam],
+        [output_bed_graph],
+        [
+            ['bedtools', 'module_samtools'],
+            ['bedtools', 'module_bedtools']
+        ],
+        command="""\
 nmblines=$(samtools view {samtools_options} {input_bam} | wc -l) && \\
 scalefactor=0$(echo "scale=2; 1 / ($nmblines / 10000000);" | bc) && \\
 genomeCoverageBed {other_options} -bg -split -scale $scalefactor \\
   -ibam {input_bam} \\
   -g {chromosome_size} \\
   > {output_bed_graph}""".format(
-                samtools_options=samtools_options,
-                input_bam=input_bam,
-                chromosome_size=config.param('bedtools_graph', 'chromosome_size', type='filepath'),
-                other_options=config.param('bedtools_graph', 'other_options', required=False),
-                output_bed_graph=output_bed_graph
-            )
-        ),
-        ucsc.bedGraphToBigWig(
-            output_bed_graph,
-            output_wiggle,
-            False
+            samtools_options=samtools_options,
+            input_bam=input_bam,
+            chromosome_size=config.param('bedtools_graph', 'chromosome_size', type='filepath'),
+            other_options=config.param('bedtools_graph', 'other_options', required=False),
+            output_bed_graph=output_bed_graph
         )
-    ])
+    )
 
-def intersect(input_bam, output_bam, readset):
-    target_bed = config.param('bedtools_intersect', 'target_bed', required=False)
-
-    if target_bed:
-        if target_bed == "auto":
-            if readset.beds:
-                target_bed = os.path.abspath(readset.beds[0])
-        else:
-            # Add filepath validation
-            target_bed = config.param('bedtools_intersect', 'target_bed', type='filepath')
+def intersect(input_bam, output_bam, target_bed):
 
     return Job(
         [input_bam],
@@ -87,17 +71,16 @@ def intersect(input_bam, output_bam, readset):
             ['bedtools', 'module_bedtools']
         ],
         command="""\
-bedtools intersect \\
+bedtools intersect {other_options} \\
   -a {input_bam} \\
   -b {target_bed} \\
-  {other_options} > {output_bam}""".format(
+  > {output_bam}""".format(
             input_bam=input_bam,
             target_bed=target_bed,
-            other_options=config.param('bedtools_intersect', 'other_options'),
+            other_options=config.param('bedtools_intersect', 'other_options', required=False),
             output_bam=output_bam
         )
     )
-
 
 def intersect_beds(bed1, bed2, output_bed, other_options=""):
 
@@ -116,5 +99,42 @@ bedtools intersect {other_options}\\
             bed2 = bed2,
             other_options = other_options,
             output_bed = output_bed
+        )
+    )
+
+def bamtobed(input_bam, output_bed):
+
+    return Job(
+        [input_bam],
+        [output_bed],
+        [
+            ['bedtools', 'module_bedtools']
+        ],
+        command="""\
+bedtools bamtobed {other_options} \\
+  -i {input_bam}{output_bed}""".format(
+            input_bam=input_bam,
+            other_options=config.param('bedtools_coverage', 'other_options', required=False),
+            output_bed=" \\\n  > " + output_bed if output_bed else ""
+        )
+    )
+
+def coverage(input_file, output_file, target_bed):
+
+    return Job(
+        [input_file],
+        [output_file],
+        [
+            ['bedtools', 'module_bedtools']
+        ],
+        command="""\
+bedtools coverage {other_options} \\
+  -a {intervals} \\
+  -b {input} \\
+  > {output_file}""".format(
+            intervals=config.param('bedtools_coverage', 'gc_intervals'),
+            input=input_file,
+            other_options=config.param('bedtools_coverage', 'other_options', required=False),
+            output_file=output_file
         )
     )

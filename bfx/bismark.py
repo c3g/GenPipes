@@ -26,7 +26,7 @@ import os
 from core.config import *
 from core.job import *
 
-def align(input1, input2, output_directory, outfile):
+def align(input1, input2, output_directory, outputs):
 
     inputs = []
     inputs.append(input1)
@@ -35,7 +35,7 @@ def align(input1, input2, output_directory, outfile):
 
     return Job(
         inputs,
-        [outfile],
+        outputs,
         [
             ['bismark_align', 'module_bismark'],
             ['bismark_align', 'module_bowtie'],
@@ -58,11 +58,11 @@ bismark -q \\
         )
     )
 
-def dedup(input, output, library_type="PAIRED_END"):
+def dedup(input, outputs, library_type="PAIRED_END"):
 
     return Job(
         [input],
-        [output],
+        outputs,
         [
             ['bismark_dedup', 'module_bismark'],
             ['bismark_dedup', 'module_bowtie'],
@@ -81,11 +81,11 @@ deduplicate_bismark \\
         removable_files=[re.sub(".bam", ".deduplicated.bam", input)]
     )
 
-def methyl_call(input, output, library_type="PAIRED_END"):
+def methyl_call(input, outputs, library_type="PAIRED_END"):
 
     return Job(
         [input],
-        [output],
+        outputs,
         [
             ['bismark_methyl_call', 'module_bismark'],
             ['bismark_methyl_call', 'module_samtools']
@@ -100,7 +100,7 @@ bismark_methylation_extractor \\
             other_options=config.param('bismark_methyl_call', 'other_options'),
             library="-p" if library_type=="PAIRED_END" else "-s",
             input=input,
-            output_directory=os.path.dirname(output)
+            output_directory=os.path.dirname(outputs[0])
         )
     )
 

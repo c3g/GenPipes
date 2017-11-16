@@ -40,17 +40,19 @@ from job import *
 from scheduler import *
 from step import *
 
+from bfx import jsonator
+
 log = logging.getLogger(__name__)
 
 class Pipeline(object):
     def __init__(self):
         self._timestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
         self._args = self.argparser.parse_args()
-	if self.protocol == None :
+        if self.protocol == None :
             step_list=self.steps
         else :
             pos=0
-	    for i in range(0,len(self.protocol)):
+            for i in range(0,len(self.protocol)):
                 if self.protocol[i] == self.args.type:
                     pos=i
             step_list=self.steps[pos]
@@ -158,7 +160,7 @@ Steps:
             self._argparser.add_argument("-c", "--config", help="config INI-style list of files; config parameters are overwritten based on files order", nargs="+", type=file)
             self._argparser.add_argument("-s", "--steps", help="step range e.g. '1-5', '3,6,7', '2,4-8'")
             self._argparser.add_argument("-o", "--output-dir", help="output directory (default: current)", default=os.getcwd())
-            self._argparser.add_argument("-j", "--job-scheduler", help="job scheduler type (default: pbs)", choices=["pbs", "batch"], default="pbs")
+            self._argparser.add_argument("-j", "--job-scheduler", help="job scheduler type (default: pbs)", choices=["pbs", "batch", "daemon"], default="pbs")
             self._argparser.add_argument("-f", "--force", help="force creation of jobs even if up to date (default: false)", action="store_true")
             self._argparser.add_argument("--report", help="create 'pandoc' command to merge all job markdown report files in the given step range into HTML, if they exist; if --report is set, --job-scheduler, --force, --clean options and job up-to-date status are ignored (default: false)", action="store_true")
             self._argparser.add_argument("--clean", help="create 'rm' commands for all job removable files in the given step range, if they exist; if --clean is set, --job-scheduler, --force options and job up-to-date status are ignored (default: false)", action="store_true")
@@ -274,6 +276,7 @@ Steps:
         return dependency_jobs
 
     def create_jobs(self):
+        sample_list = []
         for step in self.step_range:
             log.info("Create jobs for step " + step.name + "...")
             jobs = step.create_jobs()
@@ -291,11 +294,22 @@ Steps:
                 job.done = os.path.join("job_output", step.name, job.name + "." + hashlib.md5(job.command_with_modules).hexdigest() + ".mugqic.done")
                 job.output_dir = self.output_dir
                 job.dependency_jobs = self.dependency_jobs(job)
+
                 if not self.force_jobs and job.is_up2date():
                     log.info("Job " + job.name + " up to date... skipping")
                 else:
                     step.add_job(job)
+                    if job.samples:
+                        for sample in job.samples:
+                            if sample not in sample_list : sample_list.append(sample)
+
             log.info("Step " + step.name + ": " + str(len(step.jobs)) + " job" + ("s" if len(step.jobs) > 1 else "") + " created" + ("" if step.jobs else "... skipping") + "\n")
+
+        # Now create the json dumps for all the samples if not already done
+        for sample in sample_list:
+            if sample.json_dump == "":
+                sample.json_dump = jsonator.create(self, sample)
+
         log.info("TOTAL: " + str(len(self.jobs)) + " job" + ("s" if len(self.jobs) > 1 else "") + " created" + ("" if self.jobs else "... skipping") + "\n")
 
     def submit_jobs(self):
@@ -312,7 +326,7 @@ Steps:
                     if os.path.exists(os.path.join(output_dir, report_file)) :
                         report_files.append(report_file)
                     else:
-                        log.warn("Report file: " + report_file + " not found!... skipping")  
+                        log.warn("Report file: " + report_file + " not found!... skipping")
         if report_files:
             # Copy images and other HTML dependencies into report directory
             # Print pandoc command with all markdown report files and config/references sections at the end
