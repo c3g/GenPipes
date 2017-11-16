@@ -816,7 +816,7 @@ pandoc \\
                 concat_jobs([
                     Job(command="mkdir -p ihec_metrics metrics"),
                     tools.methylseq_ihec_metrics_report(sample.name, inputs, metrics_file, metrics_all_file, target_bed, counter),
-                ], name="ihec_sample_metrics_report")
+                ], name=sample.name + ".ihec_sample_metrics_report")
             )
             counter+=1
 
