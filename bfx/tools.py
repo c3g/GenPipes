@@ -185,27 +185,6 @@ $PYTHON_TOOLS/filterAssemblyToFastaToXls.py -f {fasta_file} \\
         )
     )
 
-## functions for perl tools ##
-
-def bed2interval_list(dictionary, bed, output):
-    return Job(
-        [dictionary, bed],
-        [output],
-        [
-            ['DEFAULT', 'module_mugqic_tools'],
-            ['DEFAULT', 'module_perl']
-        ],
-        command="""\
-bed2IntervalList.pl \\
-  --dict {dictionary} \\
-  --bed {bed} \\
-  > {output}""".format(
-        dictionary=dictionary if dictionary else config.param('DEFAULT', 'genome_dictionary', type='filepath'),
-        bed=bed,
-        output=output
-        )
-    )
-
 def dict2beds(dictionary,beds):
     return Job(
         [dictionary],
@@ -258,6 +237,24 @@ python $PYTHON_TOOLS/fixVS2VCF.py {options} {input} \\
         )
     )
 
+
+def cpg_cov_stats(input, output):
+    return Job(
+        [input],
+        [output],
+        [
+            ['DEFAULT', 'module_mugqic_tools'],
+            ['DEFAULT', 'module_python']
+        ],
+        command="""\
+python $PYTHON_TOOLS/CpG_coverageStats.py \\
+ -i {input} \\
+ -o {output}""".format(
+            input=input,
+            output=output
+         )
+    )
+
 ## functions for perl tools ##
 
 def bed2interval_list(dictionary, bed, output):
@@ -266,7 +263,7 @@ def bed2interval_list(dictionary, bed, output):
         [output],
         [
             ['DEFAULT', 'module_mugqic_tools'],
-            ['DEFAULT' , 'module_perl']
+            ['DEFAULT', 'module_perl']
         ],
         command="""\
 bed2IntervalList.pl \\
@@ -322,7 +319,7 @@ def vcf2bed(input, output):
         [output],
         [
             ['DEFAULT', 'module_mugqic_tools'],
-            ['DEFAULT' , 'module_perl']
+            ['DEFAULT', 'module_perl']
         ],
         command="""\
 cat {input} | perl $PERL_TOOLS/vcf2bed.pl - \\
@@ -331,7 +328,6 @@ cat {input} | perl $PERL_TOOLS/vcf2bed.pl - \\
         output=output
         )
     )
-
 
 def rnaseqLight_kallisto(fastq_file1, fastq_file2, transcriptome_file, tx2genes_file, output_dir, parameters, job_name):
     return Job(
@@ -366,8 +362,28 @@ def rnaseqLight_kallisto(fastq_file1, fastq_file2, transcriptome_file, tx2genes_
                 )
      )
 
-
 ## functions for R tools ##
+def r_create_kallisto_count_matrix(input_abundance_files, output_dir, data_type, job_name):
+    return Job(
+        input_files=input_abundance_files,
+        output_files=[os.path.join(output_dir, "all_readsets.abundance_" + data_type + ".csv")],
+        module_entries=[['DEFAULT', 'module_mugqic_tools'],
+                         ['DEFAULT', 'module_R'],
+                        ['DEFAULT', 'module_mugqic_R_packages']
+              ],
+        name=job_name,
+        command="""\
+            R --no-save --args \\
+            {input_abundance_files} \\
+            {output_dir} \\
+            {data_type} \\
+            < $R_TOOLS/mergeKallistoCounts.R""".format(
+            input_abundance_files=",".join(input_abundance_files),
+            output_dir=output_dir,
+            data_type=data_type #transcripts or genes
+            )
+        )
+
 def r_create_kallisto_count_matrix(input_abundance_files, output_dir, data_type, job_name):
     return Job(
         input_files=input_abundance_files,
@@ -505,7 +521,7 @@ R --no-save --args \\
 def sh_ihec_rna_metrics(input_bam, input_name, input_picard_dup, output_dir):
     output_metrics=os.path.join(output_dir, input_name+".read_stats.txt")
     output_duplicates=os.path.join(output_dir, input_name+".duplicated.txt")
-    
+
     return Job(
         [input_bam, input_picard_dup],
         [output_metrics, output_duplicates],
@@ -567,4 +583,85 @@ IHEC_chipseq_metrics.sh \\
         output_dir=output_dir
         ),
         removable_files=[output_fingerprints,output_fingerprints_png,output_dedup_chip_bam,output_dedup_chip_bam,output_dedup_chip_bai,output_dedup_input_bam,output_dedup_input_bai,output_flagstats]
+    )
+
+## methylseq tools
+
+def bismark_combine(input, output):
+    return Job(
+        [input],
+        [output],
+        [
+            ['DEFAULT', 'module_mugqic_tools'],
+            ['DEFAULT', 'module_perl']
+        ],
+        command="""\
+methylProfile.bismark.pl \\
+ -i {input} \\
+ -o {output}""".format(
+            input=input,
+            output=output
+         )
+    )
+
+def cpg_stats(input, cg_stats, lambda_stats, puc19_stats):
+    return Job(
+        [input],
+        [cg_stats, lambda_stats, puc19_stats],
+        [
+            ['DEFAULT', 'module_mugqic_tools']
+        ],
+        command="""\
+bash cpgStats.sh \\
+  {input} \\
+  {cg_stats} \\
+  {lambda_stats} \\
+  {puc19_stats}""".format(
+            input=input,
+            cg_stats=cg_stats,
+            lambda_stats=lambda_stats,
+            puc19_stats=puc19_stats
+        )
+    )
+
+def methylseq_metrics_report(sample_list, inputs, output, target_bed):
+    return Job(
+        inputs,
+        [output],
+        [
+            ['DEFAULT', 'module_mugqic_tools'],
+            ['DEFAULT', 'module_samtools']
+        ],
+        command="""\
+bash methylseq_metrics.sh \\
+  {sample_list} \\
+  {output_file} \\
+  {targeted_flag}""".format(
+            sample_list=",".join(sample_list),
+            output_file=output,
+            targeted_flag=1 if target_bed else 0
+        )
+    )
+
+def methylseq_ihec_metrics_report(sample_name, inputs, output, output_all, target_bed, count):
+    return Job(
+        inputs,
+        [output, output_all],
+        [
+            ['DEFAULT', 'module_mugqic_tools'],
+            ['DEFAULT', 'module_samtools']
+        ],
+        command="""\
+bash IHEC_methylseq_metrics.sh \\
+  {sample_name} \\
+  {output_file} \\
+  {output_all_file} \\
+  {targeted_flag} \\
+  {counter}""".format(
+            sample_name=sample_name,
+            output_file=output,
+            output_all_file=output_all,
+            counter=count,
+            targeted_flag=1 if target_bed else 0
+        )
     )

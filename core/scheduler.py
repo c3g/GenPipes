@@ -22,9 +22,11 @@
 # Python Standard Modules
 import json
 import os
+import random
 
 # MUGQIC Modules
 from config import *
+from bfx import jsonator
 
 # Output comment separator line
 separator_line = "#" + "-" * 79
@@ -108,6 +110,7 @@ class PBSScheduler(Scheduler):
                     else:
                         job_dependencies = "JOB_DEPENDENCIES="
 
+                    sleepTime = random.randint(10, 100)
                     print("""
 {separator_line}
 # JOB: {job.id}: {job.name}
@@ -128,13 +131,49 @@ COMMAND=$(cat << '{limit_string}'
                         )
                     )
 
+                    json_file_list = ",".join([os.path.join(pipeline.output_dir, "json", sample.json_file) for sample in job.samples])
+                    job_start2json_cmd = """\
+module load {module_python}
+$MUGQIC_PIPELINES_HOME/utils/job2json.py \\
+  -s \\"{step.name}\\" \\
+  -j \\"$JOB_NAME\\" \\
+  -d \\"$JOB_DONE\\" \\
+  -l \\"$JOB_OUTPUT\\" \\
+  -o \\"{jsonfiles}\\" \\
+  -f \\"running\\"
+module unload {module_python} &&""".format(
+                        module_python=config.param('DEFAULT', 'module_python'),
+                        step=step,
+                        jsonfiles=json_file_list,
+                    ) if json_file_list else ""
+                    job_end2json_cmd = """\
+module load {module_python}
+$MUGQIC_PIPELINES_HOME/utils/job2json.py \\
+  -s \\"{step.name}\\" \\
+  -j \\"$JOB_NAME\\" \\
+  -d \\"$JOB_DONE\\" \\
+  -l \\"$JOB_OUTPUT\\" \\
+  -o \\"{jsonfiles}\\" \\
+  -f \\$MUGQIC_STATE
+module unload {module_python}""".format(
+                        module_python=config.param('DEFAULT', 'module_python'),
+                        step=step,
+                        jsonfiles=json_file_list,
+                    ) if json_file_list else ""
                     cmd = """\
-echo "rm -f $JOB_DONE && $COMMAND
+echo "rm -f $JOB_DONE && {job_start2json} $COMMAND
 MUGQIC_STATE=\$PIPESTATUS
 echo MUGQICexitStatus:\$MUGQIC_STATE
-if [ \$MUGQIC_STATE -eq 0 ] ; then touch $JOB_DONE ; fi
+{job_end2json}
+if [ \$MUGQIC_STATE -eq 0 ] ; then
+  touch $JOB_DONE ;
+fi
 exit \$MUGQIC_STATE" | \\
-""".format(job=job)
+""".format(
+                        job_start2json=job_start2json_cmd,
+                        job_end2json=job_end2json_cmd,
+                        sleep_time=sleepTime
+                    )
 
                     # Cluster settings section must match job name prefix before first "."
                     # e.g. "[trimmomatic] cluster_cpu=..." for job name "trimmomatic.readset1"
@@ -148,6 +187,14 @@ exit \$MUGQIC_STATE" | \\
                         config.param(job_name_prefix, 'cluster_walltime') + " " + \
                         config.param(job_name_prefix, 'cluster_queue') + " " + \
                         config.param(job_name_prefix, 'cluster_cpu')
+                    #cmd += \
+                        #config.param(job_name_prefix, 'cluster_submit_cmd') + " " + \
+                        #config.param(job_name_prefix, 'cluster_other_arg') + " " + \
+                        #config.param(job_name_prefix, 'cluster_work_dir_arg') + " $OUTPUT_DIR " + \
+                        #config.param(job_name_prefix, 'cluster_output_dir_arg') + " $JOB_OUTPUT " + \
+                        #config.param(job_name_prefix, 'cluster_job_name_arg') + " $JOB_NAME " + \
+                        #config.param(job_name_prefix, 'cluster_queue') + " -l walltime=1:00:0 -l nodes=1:ppn=1 "
+
                     if job.dependency_jobs:
                         cmd += " " + config.param(job_name_prefix, 'cluster_dependency_arg') + "$JOB_DEPENDENCIES"
                     cmd += " " + config.param(job_name_prefix, 'cluster_submit_cmd_suffix')
@@ -201,9 +248,28 @@ class DaemonScheduler(Scheduler):
         print self.json(pipeline)
 
     def json(self, pipeline):
+        #with open('sample.json', 'w') as json_file:
+        #json.dump(the_dump, json_file)
         return json.dumps(
             {'pipeline': {
                 'output_dir': pipeline.output_dir,
+                'samples': [{
+                    'name': sample.name,
+                    'readsets': [{
+                        "name": readset.name,
+                        "library": readset.library,
+                        "runType": readset.run_type,
+                        "run": readset.run,
+                        "lane": readset.lane,
+                        "adapter1": readset.adapter1,
+                        "adapter2": readset.adapter2,
+                        "qualityoffset": readset.quality_offset,
+                        "bed": [bed for bed in readset.beds],
+                        "fastq1": readset.fastq1,
+                        "fastq2": readset.fastq2,
+                        "bam": readset.bam,
+                     } for readset in pipeline.readsets if readset.sample.name == sample.name]
+                } for sample in pipeline.samples],
                 'steps': [{
                     'name': step.name,
                     'jobs': [{
