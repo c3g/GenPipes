@@ -181,7 +181,7 @@ def create(pipeline, sample):
                     if soft['version'] != jsoft['version']:
                         jsoft['version'] = soft['version']
             if not soft_found:
-                jsoft.append({
+                current_json_hash['pipeline']['software'].append({
                     'name' : soft['name'],
                     'version' : soft['version']
                 })
