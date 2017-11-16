@@ -104,9 +104,11 @@ python $PYTHON_TOOLS/rrnaBAMcounter.py \\
 def py_parseTrinotateOutput(trinotate_annotation_report, trinotate_report_genes_prefix, trinotate_report_transcripts_prefix, gene_id_column, transcript_id_column, isoforms_lengths_file, job_name, filters=None):
     return Job(
         [trinotate_annotation_report, isoforms_lengths_file],
-        [trinotate_report_genes_prefix + '_blast.tsv', trinotate_report_transcripts_prefix + '_blast.tsv' ,
-        trinotate_report_genes_prefix + '_go.tsv', trinotate_report_transcripts_prefix + '_go.tsv',
-        trinotate_report_transcripts_prefix + '_filtered.tsv'],
+        [
+            trinotate_report_genes_prefix + '_blast.tsv', trinotate_report_transcripts_prefix + '_blast.tsv' ,
+            trinotate_report_genes_prefix + '_go.tsv', trinotate_report_transcripts_prefix + '_go.tsv',
+            trinotate_report_transcripts_prefix + '_filtered.tsv'
+        ],
         [
             ['DEFAULT', 'module_mugqic_tools'],
             ['DEFAULT', 'module_python']
@@ -170,8 +172,8 @@ python $PYTHON_TOOLS/AmpliconSeq_script.py \\
 
 def py_filterAssemblyToFastaToTsv(fasta_file, filter_file, fasta_id_column, output):
     return Job(
-        [ fasta_file , filter_file],
-        [ output + "." + ext for ext in ["fasta", "tsv"] ],
+        [fasta_file , filter_file],
+        [output + "." + ext for ext in ["fasta", "tsv"]],
         [
             ['DEFAULT', 'module_mugqic_tools'],
             ['DEFAULT', 'module_python']
@@ -412,10 +414,10 @@ R --no-save --args \\
         )
     )
 
-def r_select_scaffolds(input, output, folder_sca, kmer, name_sample, type_insert, min_insert_size=200):
+def r_select_scaffolds(inputs, outputs, folder_sca, kmer, name_sample, type_insert, min_insert_size=200):
     return Job(
-        input,
-        output,
+        inputs,
+        outputs,
         [
             ['DEFAULT', 'module_mugqic_tools'],
             ['DEFAULT', 'module_R']
@@ -436,10 +438,10 @@ R --no-save --args \\
         )
     )
 
-def r_find_cluster(input, output, folder_sca, kmer, unmap_type, name_sample, type_insert, max_insert_size=200, min_mapping_quality=10):
+def r_find_cluster(inputs, outputs, folder_sca, kmer, unmap_type, name_sample, type_insert, max_insert_size=200, min_mapping_quality=10):
     return Job(
-        input,
-        output,
+        inputs,
+        outputs,
         [
             ['DEFAULT', 'module_mugqic_tools'],
             ['DEFAULT', 'module_R']
@@ -463,10 +465,10 @@ R --no-save --args \\
         )
     )
 
-def r_find_insert(input, output, folder_sca, kmer, name_sample, type_insert, mean_coverage=20, max_insert_size=200, min_overlap=2, exclu_file="None"):
+def r_find_insert(inputs, outputs, folder_sca, kmer, name_sample, type_insert, mean_coverage=20, max_insert_size=200, min_overlap=2, exclu_file="None"):
     return Job(
-        input,
-        output,
+        inputs,
+        outputs,
         [
             ['DEFAULT', 'module_mugqic_tools'],
             ['DEFAULT', 'module_R']
@@ -493,10 +495,10 @@ R --no-save --args \\
         )
     )
 
-def r_filter_insert(input, output, folder_sca, kmer, name_sample, type_insert, mean_coverage=20, max_insert_size=200, strand=1, min_num_read=1, mean_read_length=100):
+def r_filter_insert(inputs, outputs, folder_sca, kmer, name_sample, type_insert, mean_coverage=20, max_insert_size=200, strand=1, min_num_read=1, mean_read_length=100):
     return Job(
-        input,
-        output,
+        inputs,
+        outputs,
         [
             ['DEFAULT', 'module_mugqic_tools'],
             ['DEFAULT', 'module_R']
