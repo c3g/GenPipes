@@ -1009,21 +1009,9 @@ done""".format(
         Generate IHEC's standard metrics.
         """
 
-        jobs = []
-        output_dir="ihec_metrics"
-        
-        for sample in self.samples:
-            bam_file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.")
-            input_bam = bam_file_prefix + "bam"
-            input_metrics = bam_file_prefix + "metrics"
-            
-            job = concat_jobs([
-                  Job(command="mkdir -p " + output_dir),
-                  tools.sh_ihec_rna_metrics(input_bam, sample.name, input_metrics, output_dir)
-              ], name="ihec_metrics." + sample.name )
-            jobs.append(job)
-            
-        return jobs
+        genome = config.param('ihec_metrics', 'assembly')
+         
+        return [metrics.ihec_metrics_rnaseq(genome)]
 
 
     @property
