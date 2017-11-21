@@ -134,7 +134,7 @@ class MethylSeq(dnaseq.DnaSeq):
 
             jobs.append(
                 concat_jobs([
-                    Job(output_files=[output_bam], command="mkdir -p " + os.path.dirname(output_bam), samples=[readset.sample]),
+                    Job(command="mkdir -p " + os.path.dirname(output_bam), samples=[readset.sample]),
                     bismark.align(
                         fastq1,
                         fastq2,
@@ -279,7 +279,7 @@ pandoc --to=markdown \\
         jobs.append(
               Job(
                 [os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.bam") for sample in self.samples],
-                [metrics_file],
+                [report_file],
                 command="""\
 mkdir -p report && \\
 cp \\
