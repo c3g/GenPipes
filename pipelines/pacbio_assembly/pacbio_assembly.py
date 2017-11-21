@@ -33,6 +33,7 @@ from core.job import *
 from bfx.readset import *
 
 from bfx import blast
+from bfx import circlator
 from bfx import gq_seq_utils
 from bfx import mummer
 from bfx import pacbio_tools
@@ -716,27 +717,7 @@ pandoc --to=markdown \\
 
                 jobs.append(concat_jobs([
                     Job(command="mkdir -p " + circlator_directory, samples=[sample]),
-                    Job(
-                        [fasta_consensus, os.path.join(preassembly_directory, "corrected.fastq")],
-                        [circlator_file],
-                        [
-                            ['circlator', 'module_python'],
-                            ['circlator', 'module_bwa'],
-                            ['circlator', 'module_samtools'],
-                            ['circlator', 'module_mummer'],
-                            ['circlator', 'module_spades'],
-                            ['circlator', 'module_prodigal'],
-                        ],
-                        command="""\
-circlator all \\
-  {fasta_consensus} \\
-  {corrected_fastq} \\
-  {output}""".format(
-                            fasta_consensus=fasta_consensus,
-                            corrected_fastq=os.path.join(preassembly_directory, "corrected.fastq"),
-                            output=circlator_file
-                        )
-                    )
+                    circlator.circularize(fasta_consensus, os.path.join(preassembly_directory, "corrected.fastq"), circlator_file)
                 ], name = "circlator." + sample.name))
 
         return jobs
