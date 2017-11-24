@@ -54,7 +54,7 @@ def align(
         [['star_align', 'module_star']],
         removable_files=[os.path.join(output_directory, bam_name)]
     )
-    
+
     ## Get param from config file
     num_threads = config.param('star_align', 'threads', type='int')
     ram_limit = config.param('star_align', 'ram')
@@ -64,7 +64,7 @@ def align(
     stranded = config.param('star_align', 'strand_info')
     wig_prefix = config.param('star_align', 'wig_prefix')
     chimere_segment_min = config.param('star_align','chimere_segment_min', type='int', required=False)
-    
+
     ## Wiggle information
     if create_wiggle_track:
         wig_cmd = "--outWigType wiggle read1_5p"
@@ -78,13 +78,13 @@ def align(
             wig_cmd = wig_cmd + " --outWigReferencesPrefix " + str(wig_prefix)
     else:
         wig_cmd = ""
-    
+
     ## Chimeric information
     if search_chimeres and chimere_segment_min != "":
         chim_cmd = "--chimSegmentMin " + str(chimere_segment_min)
     else:
         chim_cmd = ""
-    
+
     ## Check strandness if cufflinks will be run afterwards
     if cuff_follow:
         if stranded.lower() == "stranded":
@@ -178,7 +178,7 @@ STAR --runMode genomeGenerate \\
         sjdbOverhang=" \\\n  --sjdbOverhang " + str(read_size - 1) if read_size else "",
         other_options=" \\\n  " + other_options if other_options else ""
     )
-    
+
     return job
 
 def concatenate_junction(
@@ -199,5 +199,5 @@ awk 'BEGIN {{OFS="\t"; strChar[0]="."; strChar[1]="+"; strChar[2]="-"}} {{if($5>
     file_list=" \\\n  ".join(input_junction_files_list),
     output_junction_file=output_junction_file
     )
-    
+
     return job

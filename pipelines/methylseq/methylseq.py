@@ -43,6 +43,8 @@ from bfx import samtools
 from bfx import gatk
 from bfx import igvtools
 from bfx import bissnp
+from bfx import tools
+from bfx import ucsc
 
 from pipelines import common
 from pipelines.dnaseq import dnaseq
@@ -71,11 +73,27 @@ class MethylSeq(dnaseq.DnaSeq):
     that have been passed to the pipeline main script.
     """
 
+    @property
+    def readsets(self):
+        if not hasattr(self, "_readsets"):
+            if self.args.readsets:
+                self._readsets = parse_illumina_readset_file(self.args.readsets.name)
+                for readset in self._readsets:
+                    if readset._run == "":
+                        raise Exception("Error: no run was provided for readset \"" + readset.name +
+                            "\"... Run has to be provided for all the readsets in order to use this pipeline.")
+                    if readset._lane == "":
+                        raise Exception("Error: no lane provided for readset \"" + readset.name +
+                            "\"... Lane has to be provided for all the readsets in order to use this pipeline.")
+            else:
+                self.argparser.error("argument -r/--readsets is required!")
+
+        return self._readsets
+
     def __init__(self, protocol=None):
         self._protocol=protocol
         # Add pipeline specific arguments
         super(MethylSeq, self).__init__(protocol)
-
 
     def bismark_align(self):
         """
@@ -86,7 +104,8 @@ class MethylSeq(dnaseq.DnaSeq):
         for readset in self.readsets:
             trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
             alignment_directory = os.path.join("alignment", readset.sample.name)
-            readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
+            no_readgroup_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted_noRG.bam")
+            output_bam = re.sub("_noRG.bam", ".bam", no_readgroup_bam)
 
             # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
             if readset.run_type == "PAIRED_END":
@@ -108,97 +127,174 @@ class MethylSeq(dnaseq.DnaSeq):
                 raise Exception("Error: run type \"" + readset.run_type +
                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
 
+            # Defining the bismark output files (bismark sets the names of its output files from the basename of fastq1)
+            # Note : these files will then be renamed (using a "mv" command) to fit with the mugqic pipelines nomenclature (cf. no_readgroup_bam)
+            bismark_out_bam = os.path.join(alignment_directory, readset.name, re.sub(r'(\.fastq\.gz|\.fq\.gz|\.fastq|\.fq)$', "_bismark_bt2_pe.bam", os.path.basename(fastq1)))
+            bismark_out_report =  os.path.join(alignment_directory, readset.name, re.sub(r'(\.fastq\.gz|\.fq\.gz|\.fastq|\.fq)$', "_bismark_bt2_PE_report.txt", os.path.basename(fastq1)))
+
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + os.path.dirname(readset_bam)),
+                    Job(command="mkdir -p " + os.path.dirname(output_bam), samples=[readset.sample]),
                     bismark.align(
                         fastq1,
                         fastq2,
-                        os.path.dirname(readset_bam),
-                        re.sub(".bam", "_noRG.bam", readset_bam)
+                        os.path.dirname(no_readgroup_bam),
+                        [no_readgroup_bam, re.sub(".bam", "_bismark_bt2_PE_report.txt", no_readgroup_bam)],
                     ),
-                    Job(command="rename " + re.sub(".sorted.bam", "*bismark*.bam", readset_bam) + " " + re.sub(".bam", "_noRG.bam", readset_bam) + " " + os.path.join(os.path.dirname(readset_bam), "*.bam")),
-                    Job(command="rename " + re.sub(".sorted.bam", "*bismark*_report.txt", readset_bam) + " " + re.sub(".bam", "_noRG_report.txt", readset_bam) + " " + os.path.join(os.path.dirname(readset_bam), "*_report.txt"))
+                    Job(command="mv " + bismark_out_bam + " " + no_readgroup_bam),
+                    Job(command="mv " + bismark_out_report + " " + re.sub(".bam", "_bismark_bt2_PE_report.txt", no_readgroup_bam)),
                 ], name="bismark_align." + readset.name)
             )
-
-        return jobs
-
-    def picard_add_read_groups(self):
-        """
-        Add reads groups to our bam files since Bismark align did not do it previously, useful when merging differnent lanes for one sample
-        """
-
-        jobs = []
-        for readset in self.readsets:
-            alignment_directory = os.path.join("alignment", readset.sample.name)
-
-            candidate_input_files = [[os.path.join(alignment_directory, readset.name, readset.name + ".sorted_noRG.bam")]]
-            if readset.bam:
-                candidate_input_files.append([readset.bam])
-            [input_bam] = self.select_input_files(candidate_input_files)
-            output_bam = re.sub("_noRG.bam", ".bam", input_bam)
-
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + alignment_directory),
+                    Job(command="mkdir -p " + alignment_directory, samples=[readset.sample]),
                     picard.add_read_groups(
-                        input_bam,
+                        no_readgroup_bam,
                         output_bam,
                         readset.name,
-                        readset.library,
-                        readset.lane,
+                        readset.library if readset.library else readset.sample.name,
+                        readset.run + "_" + readset.lane,
                         readset.sample.name
                     )
                 ], name="picard_add_read_groups." + readset.name)
             )
 
+        report_file = os.path.join("report", "MethylSeq.bismark_align.md")
+        jobs.append(
+            Job(
+                [os.path.join("alignment", readset.sample.name, readset.name, readset.name + ".sorted.bam") for readset in self.readsets],
+                [report_file],
+                [['bismark_align', 'module_pandoc']],
+                command="""\
+mkdir -p report && \\
+pandoc --to=markdown \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable scientific_name="{scientific_name}" \\
+  --variable assembly="{assembly}" \\
+  {report_template_dir}/{basename_report_file} \\
+  > {report_file}""".format(
+                    scientific_name=config.param('bismark_align', 'scientific_name'),
+                    assembly=config.param('bismark_align', 'assembly'),
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="bismark_align_report")
+        )
+
         return jobs
 
-    def bismark_dedup(self):
-        """
-        Remove duplicates reads with Bismark
-        """
+    #def bismark_dedup(self):
+        #"""
+        #Remove duplicates reads with Bismark
+        #"""
 
-        # Check the library status
-        library = {}
-        for readset in self.readsets:
-            if not library.has_key(readset.sample) :
-                library[readset.sample]="SINGLE_END"
-            if readset.run_type == "PAIRED_END" :
-                library[readset.sample]="PAIRED_END"
+        ## Check the library status
+        #library = {}
+        #for readset in self.readsets:
+            #if not library.has_key(readset.sample) :
+                #library[readset.sample]="SINGLE_END"
+            #if readset.run_type == "PAIRED_END" :
+                #library[readset.sample]="PAIRED_END"
+
+        #jobs = []
+        #for sample in self.samples:
+            #alignment_directory = os.path.join("alignment", sample.name)
+            #bam_input = os.path.join(alignment_directory, sample.name + ".sorted.bam")
+            #bam_readset_sorted = re.sub("sorted", "readset_sorted", bam_input)
+            #dedup_bam_readset_sorted = re.sub(".bam", ".dedup.bam", bam_readset_sorted)
+            #dedup_report = os.path.join(alignment_directory, sample.name + ".readset_sorted.deduplication_report.txt")
+            #bam_output = os.path.join(alignment_directory, re.sub("readset_", "", os.path.basename(dedup_bam_readset_sorted)))
+
+            #job = concat_jobs([
+                #Job(command="mkdir -p " + alignment_directory),
+                #picard.sort_sam(
+                    #bam_input,
+                    #bam_readset_sorted,
+                    #"queryname"
+                #),
+                #bismark.dedup(
+                    #bam_readset_sorted,
+                    #[dedup_bam_readset_sorted, dedup_report],
+                    #library[sample]
+                #),
+                #Job(command="mv " + re.sub(".bam", ".deduplicated.bam", bam_readset_sorted) + " " + dedup_bam_readset_sorted),
+                #picard.sort_sam(
+                    #dedup_bam_readset_sorted,
+                    #bam_output
+                #)
+            #])
+            #job.name = "bismark_dedup." + sample.name
+            #job.removable_files = [dedup_bam_readset_sorted]
+            #job.samples = [sample]
+
+            #jobs.append(job)
+
+        #report_file = os.path.join("report", "MethylSeq.bismark_dedup.md")
+        #jobs.append(
+            #Job(
+                #[os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.bam") for sample in self.samples],
+                #[report_file],
+                #command="""\
+#mkdir -p report && \\
+#cp \\
+  #{report_template_dir}/{basename_report_file} \\
+  #{report_file}""".format(
+                    #report_template_dir=self.report_template_dir,
+                    #basename_report_file=os.path.basename(report_file),
+                    #report_file=report_file
+                #),
+                #report_files=[report_file],
+                #name="bismark_dedup_report")
+        #)
+
+
+        #return jobs
+
+    def picard_remove_duplicates(self):
+        """
+        Remove duplicates. Aligned reads per sample are duplicates if they have the same 5' alignment positions
+        (for both mates in the case of paired-end reads). All but the best pair (based on alignment score)
+        will be removed as a duplicate in the BAM file. Removing duplicates is done using [Picard](http://broadinstitute.github.io/picard/).
+        """
 
         jobs = []
         for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
-            bam_input = os.path.join(alignment_directory, sample.name + ".sorted.bam")
-            bam_readset_sorted = re.sub(".sorted.bam", ".readset_sorted.bam", bam_input)
-            dedup_bam_readset_sorted = re.sub(".bam", ".dedup.bam", bam_readset_sorted)
-            bam_output = re.sub("readset_", "", dedup_bam_readset_sorted)
+            alignment_file_prefix = os.path.join("alignment", sample.name, sample.name + ".")
+            input = alignment_file_prefix + "sorted.bam"
+            #bam_readset_sorted = alignment_file_prefix + "readset_sorted.bam"
+            bam_output = alignment_file_prefix + "sorted.dedup.bam"
+            metrics_file = alignment_file_prefix + "sorted.dedup.metrics"
+            dedup_bam_readset_sorted = alignment_file_prefix + "readset_sorted.dedup.bam"
 
-            job = concat_jobs([
-                Job(command="mkdir -p " + alignment_directory),
-                picard.sort_sam(
-                    bam_input,
-                    bam_readset_sorted,
-                    "queryname"
-                ),
-                bismark.dedup(
-                    bam_readset_sorted,
-                    dedup_bam_readset_sorted,
-                    library[sample]
-                ),
-                Job(command="mv " + re.sub(".bam", ".deduplicated.bam", bam_readset_sorted) + " " + dedup_bam_readset_sorted),
-                picard.sort_sam(
-                    dedup_bam_readset_sorted,
-                    bam_output
-                )
-            ])
-            job.name = "bismark_dedup." + sample.name
-
+            job = picard.mark_duplicates([input], bam_output, metrics_file, remove_duplicates="true")
+            job.name = "picard_mark_duplicates." + sample.name
+            jobs.append(job)
+            job = picard.sort_sam(bam_output, dedup_bam_readset_sorted, "queryname")
+            job.name = "picard_queryname_sort." + sample.name
             jobs.append(job)
 
+        report_file = os.path.join("report", "MethylSeq.picard_remove_duplicates.md")
+        jobs.append(
+              Job(
+                [os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.bam") for sample in self.samples],
+                [report_file],
+                command="""\
+mkdir -p report && \\
+cp \\
+  {report_template_dir}/{basename_report_file} \\
+  {report_file}""".format(
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="picard_remove_duplicates_report")
+        )
+
         return jobs
+
 
     def metrics(self):
         """
@@ -211,7 +307,7 @@ class MethylSeq(dnaseq.DnaSeq):
         for easy visualization of coverage in the IGV browser.
         """
 
-        ##check the library status
+        # check the library status
         library, bam = {}, {}
         for readset in self.readsets:
             if not library.has_key(readset.sample) :
@@ -224,240 +320,145 @@ class MethylSeq(dnaseq.DnaSeq):
                 bam[readset.sample]=readset.bam
 
         jobs = []
+        created_interval_lists = []
         for sample in self.samples:
             file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.")
+            coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
 
             candidate_input_files = [[file_prefix + "bam"]]
             if bam[sample]:
                 candidate_input_files.append([bam[sample]])
             [input] = self.select_input_files(candidate_input_files)
 
-            job = picard.collect_multiple_metrics(input, file_prefix + "all.metrics",  library_type=library[sample])
+            job = picard.collect_multiple_metrics(
+                input,
+                re.sub("bam", "all.metrics", input),
+                library_type=library[sample]
+            )
             job.name = "picard_collect_multiple_metrics." + sample.name
+            job.samples = [sample]
             jobs.append(job)
 
             # Compute genome coverage with GATK
-            job = gatk.depth_of_coverage(input, file_prefix + "all.coverage", bvatools.resolve_readset_coverage_bed(sample.readsets[0]))
+            job = gatk.depth_of_coverage(
+                input,
+                re.sub("bam", "all.coverage", input),
+                coverage_bed
+            )
             job.name = "gatk_depth_of_coverage.genome." + sample.name
+            job.samples = [sample]
             jobs.append(job)
 
             # Compute genome or target coverage with BVATools
             job = bvatools.depth_of_coverage(
                 input,
-                file_prefix + "coverage.tsv",
-                bvatools.resolve_readset_coverage_bed(sample.readsets[0]),
+                re.sub("bam", "coverage.tsv", input),
+                coverage_bed,
                 other_options=config.param('bvatools_depth_of_coverage', 'other_options', required=False)
             )
-
             job.name = "bvatools_depth_of_coverage." + sample.name
+            job.samples = [sample]
             jobs.append(job)
 
-            job = igvtools.compute_tdf(input, input + ".tdf")
-            job.name = "igvtools_compute_tdf." + sample.name
-            jobs.append(job)
-
-        return jobs
-
-    def picard_calculate_hs_metrics(self):
-        """
-        Compute on target percent of hybridisation based capture.
-        """
-
-        jobs = []
-
-        created_interval_lists = []
-
-        for sample in self.samples:
-            coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
             if coverage_bed:
-                interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
+                # Get on-target reads (if on-target context is detected)
+                ontarget_bam = re.sub("bam", "ontarget.bam", input)
+                flagstat_output = re.sub("bam", "bam.flagstat", ontarget_bam)
+                job = concat_jobs([
+                    bedtools.intersect(
+                        input,
+                        ontarget_bam,
+                        coverage_bed
+                    ),
+                    samtools.flagstat(
+                        ontarget_bam,
+                        flagstat_output
+                    )
+                ])
+                job.name = "ontarget_reads." + sample.name
+                job.removable_files=[ontarget_bam]
+                job.samples = [sample]
+                jobs.append(job)
 
+                # Compute on target percent of hybridisation based capture
+                interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
                 if not interval_list in created_interval_lists:
                     job = tools.bed2interval_list(None, coverage_bed, interval_list)
                     job.name = "interval_list." + os.path.basename(coverage_bed)
                     jobs.append(job)
                     created_interval_lists.append(interval_list)
-
                 file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.")
                 job = picard.calculate_hs_metrics(file_prefix + "bam", file_prefix + "onTarget.tsv", interval_list)
                 job.name = "picard_calculate_hs_metrics." + sample.name
-
+                job.samples = [sample]
                 jobs.append(job)
 
-        return jobs
-
-    def mapping_quality_filter(self):
-        """
-        Optional step :
-        Filter bam files by the mapping quality of the deduplicated reads
-        """
-
-        jobs = []
-
-        for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
-            dedup_bam_sorted = os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")
-            filtered_dedup_bam_sorted = re.sub(".bam", ".filtered.bam", dedup_bam_sorted)
+            # Calculate the number of reads with higher mapping quality than the threshold passed in the ini file
             job = concat_jobs([
                 samtools.view(
-                    dedup_bam_sorted,
-                    filtered_dedup_bam_sorted,
-                    config.param('mapping_quality_filter', 'quality_threshold')
-                ),
-                picard.build_bam_index(
-                    filtered_dedup_bam_sorted,
-                    re.sub(".bam", ".bai", filtered_dedup_bam_sorted),
-                    "mapping_quality_filter"
+                    input,
+                    re.sub(".bam", ".filtered_reads.counts.txt", input),
+                    "-c " + config.param('mapping_quality_filter', 'quality_threshold')
                 )
             ])
             job.name = "mapping_quality_filter." + sample.name
-
+            job.samples = [sample]
             jobs.append(job)
 
-        return jobs
-
-    def wiggle_tracks(self):
-        """
-        Generate wiggle tracks suitable for multiple browsers.
-        """
-
-        jobs = []
-
-        ##check the library status
-        library = {}
-        for readset in self.readsets:
-            if not library.has_key(readset.sample) :
-                library[readset.sample]="PAIRED_END"
-            if readset.run_type == "SINGLE_END" :
-                library[readset.sample]="SINGLE_END"
-
-        for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
-
-            candidate_input_files = [[os.path.join(alignment_directory, sample.name + ".sorted.dedup.filtered.bam")]]
-            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")])
-            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.bam")])
-
-            [input_bam] = self.select_input_files(candidate_input_files)
-
-            bed_graph_prefix = os.path.join("tracks", sample.name, sample.name)
-            big_wig_prefix = os.path.join("tracks", "bigWig", sample.name)
-
-            if library[sample] == "PAIRED_END":
-                input_bam_f1 = re.sub("bam", "tmp1.forward.bam", input_bam)
-                input_bam_f2 = re.sub("bam", "tmp2.forward.bam", input_bam)
-                input_bam_r1 = re.sub("bam", "tmp1.reverse.bam", input_bam)
-                input_bam_r2 = re.sub("bam", "tmp2.reverse.bam", input_bam)
-                output_bam_f = re.sub("bam", "forward.bam", input_bam)
-                output_bam_r = re.sub("bam", "reverse.bam", input_bam)
-
-                bam_f_job = concat_jobs([
-                    samtools.view(input_bam, input_bam_f1, "-bh -F 256 -f 97"),
-                    samtools.view(input_bam, input_bam_f2, "-bh -F 256 -f 145"),
-                    picard.merge_sam_files([input_bam_f1, input_bam_f2], output_bam_f),
-                    Job(command="rm " + input_bam_f1 + " " + input_bam_f2)
-                ], name="wiggle." + sample.name + ".forward_strandspec")
-                # Remove temporary-then-deleted files from job output files, otherwise job is never up to date
-                bam_f_job.output_files.remove(input_bam_f1)
-                bam_f_job.output_files.remove(input_bam_f2)
-
-                bam_r_job = concat_jobs([
-                    Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " " + os.path.join("tracks", "bigWig")),
-                    samtools.view(input_bam, input_bam_r1, "-bh -F 256 -f 81"),
-                    samtools.view(input_bam, input_bam_r2, "-bh -F 256 -f 161"),
-                    picard.merge_sam_files([input_bam_r1, input_bam_r2], output_bam_r),
-                    Job(command="rm " + input_bam_r1 + " " + input_bam_r2)
-                ], name="wiggle." + sample.name + ".reverse_strandspec")
-                # Remove temporary-then-deleted files from job output files, otherwise job is never up to date
-                bam_r_job.output_files.remove(input_bam_r1)
-                bam_r_job.output_files.remove(input_bam_r2)
-
-                jobs.extend([bam_f_job, bam_r_job])
-                outputs = [
-                    [bed_graph_prefix + ".forward.bedGraph", big_wig_prefix + ".forward.bw"],
-                    [bed_graph_prefix + ".reverse.bedGraph", big_wig_prefix + ".reverse.bw"],
-                ]
-            else:
-                outputs = [[bed_graph_prefix + ".bedGraph", big_wig_prefix + ".bw"]]
-
-            for bed_graph_output, big_wig_output in outputs:
-                if "forward" in bed_graph_output:
-                    in_bam = re.sub("bam", "forward.bam", input_bam)    # same as output_bam_f from previous picard job
-                elif "reverse" in bed_graph_output:
-                    in_bam = re.sub("bam", "reverse.bam", input_bam)    # same as output_bam_r from previous picard job
-                else:
-                    in_bam = input_bam
-                if "readset_sorted" in in_bam:
-                    jobs.append(
-                        concat_jobs([
-                            Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " " + os.path.join("tracks", "bigWig"), removable_files=["tracks"]),
-                            picard.sort_sam(
-                                in_bam,
-                                re.sub("readset_sorted", "sorted", in_bam),
-                                "coordinate"
-                            ),
-                            bedtools.graph(re.sub("readset_sorted", "sorted", in_bam), bed_graph_output, big_wig_output, library[sample])
-                        ], name="wiggle." + re.sub(".bedGraph", "", os.path.basename(bed_graph_output)))
-                    )
-                else :
-                    jobs.append(
-                        concat_jobs([
-                            Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " " + os.path.join("tracks", "bigWig"), removable_files=["tracks"]),
-                            bedtools.graph(in_bam, bed_graph_output, big_wig_output, library[sample])
-                        ], name="wiggle." + re.sub(".bedGraph", "", os.path.basename(bed_graph_output)))
-                    )
-
-        return jobs
-
-    def puc19_lambda_reads(self):
-        """
-        To assess the bisulfite conversion rate efficiency.
-        lamba phage, which is entirely unmethylated, would ideally show a 100% conversion rate.
-        puC19, which is protected against methylation, should show a very small rate of methylation ; too much conversion would mean over-methylation.
-        """
-
-        jobs = []
-        for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
-
-            candidate_input_files = [[os.path.join(alignment_directory, sample.name + ".sorted.dedup.filtered.bam")]]
-            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")])
-            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.bam")])
-            [input_file] = self.select_input_files(candidate_input_files)
-
-            puc19_out_file = re.sub(".bam", ".pUC19_reads.txt", input_file)
-            puc19_job = Job(
-                [input_file],
-                [puc19_out_file],
-                [
-                    ['puc19_lambda_reads', 'module_samtools']
-                ],
-                command="samtools view " + input_file + " | grep pUC19 > " + puc19_out_file,
-                name="pUC19." + sample.name
+            # Calculate GC bias
+            # For captured analysis
+            #if coverage_bed:
+                #target_input = re.sub(".bam", ".targeted.bam", input)
+                #job = concat_jobs([
+                    #bedtools.intersect(
+                        #input,
+                        #target_input,
+                        #coverage_bed
+                    #)
+                    #bedtools.coverage(
+                        #target_input,
+                        #re.sub(".bam", ".gc_cov.1M.txt", target_input)
+                    #),
+                    #metrics.gc_bias(
+                        #re.sub(".bam", ".gc_cov.1M.txt", target_input),
+                        #re.sub(".bam", ".GCBias_all.txt", target_input)
+                    #)
+                #])
+            # Or for whole genome analysis
+            #else:
+            gc_content_file = re.sub(".bam", ".gc_cov.1M.txt", input)
+            job = bedtools.coverage(
+                input,
+                gc_content_file,
+                coverage_bed
             )
-            jobs.append(
-                concat_jobs([
-                    Job(command="mkdir -p " + alignment_directory),
-                    puc19_job
-                ], name="puc19_reads." + sample.name)
-            )
+            if coverage_bed:
+                gc_content_on_target_file = re.sub(".bam", ".gc_cov.1M.on_target.txt", input)
+                gc_ontent_target_job = bedtools.intersect(
+                    gc_content_file,
+                    gc_content_on_target_file,
+                    coverage_bed
+                )
+                gc_content_file = gc_content_on_target_file
+                job = concat_jobs([
+                    job,
+                    gc_ontent_target_job
+                ])
+            job = concat_jobs([
+                job,
+                metrics.gc_bias(
+                    gc_content_file,
+                    re.sub(".bam", ".GCBias_all.txt", input)
+                )
+            ])
+            job.name = "GC_bias." + sample.name
+            job.samples = [sample]
+            jobs.append(job)
 
-            lambda_out_file = re.sub(".bam", ".lambda_reads.txt", input_file)
-            lambda_job = Job(
-                [input_file],
-                [lambda_out_file],
-                [
-                    ['puc19_lambda_reads', 'module_samtools']
-                ],
-                command="samtools view " + input_file + " | grep lambda > " + lambda_out_file,
-                name="lambda_phage." + sample.name
-            )
-            jobs.append(
-                concat_jobs([
-                    Job(command="mkdir -p " + alignment_directory),
-                    lambda_job
-                ], name="lambda_reads." + sample.name)
-            )
+            job = igvtools.compute_tdf(input, input + ".tdf")
+            job.name = "igvtools_compute_tdf." + sample.name
+            job.samples = [sample]
+            jobs.append(job)
 
         return jobs
 
@@ -466,6 +467,7 @@ class MethylSeq(dnaseq.DnaSeq):
         The script reads in a bisulfite read alignment file produced by the Bismark bisulfite mapper
         and extracts the methylation information for individual cytosines.
         The methylation extractor outputs result files for cytosines in CpG, CHG and CHH context.
+        It also outputs bedGraph, a coverage file from positional methylation data and cytosine methylation report
         """
 
         # Check the library status
@@ -480,23 +482,25 @@ class MethylSeq(dnaseq.DnaSeq):
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
 
-            candidate_input_files = [[os.path.join(alignment_directory, sample.name + ".sorted.dedup.filtered.bam")]]
+            candidate_input_files = [[os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.bam")]]
             candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")])
-            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.bam")])
-            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.bam")])
             [input_file] = self.select_input_files(candidate_input_files)
 
             methyl_directory = os.path.join("methylation_call", sample.name)
-            output_file = os.path.join(methyl_directory, "CpG_context_" + re.sub( ".bam", ".txt.gz", os.path.basename(input_file)))
+            outputs = [
+                os.path.join(methyl_directory, "CpG_context_" + re.sub( ".bam", ".txt.gz", os.path.basename(input_file))),
+                os.path.join(methyl_directory, re.sub(".bam", ".bedGraph.gz", os.path.basename(input_file))),
+                os.path.join(methyl_directory, re.sub(".bam", ".CpG_report.txt.gz", os.path.basename(input_file)))
+            ]
 
             if input_file == os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.bam") :
                 bismark_job = bismark.methyl_call(
                     input_file,
-                    output_file,
+                    outputs,
                     library[sample]
                 )
             else :
-                output_file = re.sub("sorted", "readset_sorted", output_file)
+                outputs = [re.sub("sorted", "readset_sorted", output) for output in outputs]
                 bismark_job = concat_jobs([
                     picard.sort_sam(
                         input_file,
@@ -505,66 +509,345 @@ class MethylSeq(dnaseq.DnaSeq):
                     ),
                     bismark.methyl_call(
                         re.sub("sorted", "readset_sorted", input_file),
-                        output_file,
+                        outputs,
                         library[sample]
                     )
                 ])
 
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + methyl_directory),
-                    bismark_job,
+                    Job(command="mkdir -p " + methyl_directory, samples=[sample]),
+                    bismark_job
                 ], name="bismark_methyl_call." + sample.name)
             )
 
         return jobs
 
-    def bed_graph(self):
+    def wiggle_tracks(self):
         """
-        Generation of a bedGraph file as well as a coverage file from positional methylation data generated by the Bismark methylation extractor (i.e. methylation call step)
+        Generate wiggle tracks suitable for multiple browsers, to show coverage and methylation data.
+        When using GRCh37 build of Human genome, to be compatible with the UCSC Genome Browser we only keep chromosomes 1-22, X, Y and MT,
+        and we also rename them by prefixing "chr" to the chromosome anme (e.g. "1" becomes "chr1"), and changing the mitocondrial chromosome from "MT" to "chrM", and keeping the GRCh37 coordinates.
         """
 
         jobs = []
+
         for sample in self.samples:
-            methyl_directory = os.path.join("methylation_call", sample.name)
+            alignment_directory = os.path.join("alignment", sample.name)
 
-            candidate_input_files = [[os.path.join(methyl_directory, "CpG_context_" + sample.name + ".readset_sorted.dedup.filtered.txt.gz")]]
-            candidate_input_files.append([os.path.join(methyl_directory, "CpG_context_" + sample.name + ".readset_sorted.dedup.txt.gz")])
-            candidate_input_files.append([os.path.join(methyl_directory, "CpG_context_" + sample.name + ".readset_sorted.txt.gz")])
+            # Generation of a bedGraph and a bigWig track to show the genome coverage
+            candidate_input_files = [[os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")]]
+            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.bam")])
 
-            [cpG_input_file] = self.select_input_files(candidate_input_files)
+            [input_bam] = self.select_input_files(candidate_input_files)
+
+            bed_graph_prefix = os.path.join("tracks", sample.name, sample.name)
+            big_wig_prefix = os.path.join("tracks", "bigWig", sample.name)
+
+            bed_graph_output = bed_graph_prefix + ".bedGraph"
+            big_wig_output = big_wig_prefix + ".bw"
+
+            if input_bam == os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.bam") :
+                jobs.append(
+                    concat_jobs([
+                        Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " " + os.path.join("tracks", "bigWig"), removable_files=["tracks"], samples=[sample]),
+                        picard.sort_sam(
+                            input_bam,
+                            re.sub("readset_sorted", "sorted", input_bam),
+                            "coordinate"
+                        ),
+                        bedtools.graph(re.sub("readset_sorted", "sorted", input_bam), bed_graph_output, "")
+                    ], name="bed_graph." + re.sub(".bedGraph", "", os.path.basename(bed_graph_output)))
+                )
+            else :
+                jobs.append(
+                    concat_jobs([
+                        Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " " + os.path.join("tracks", "bigWig"), removable_files=["tracks"], samples=[sample]),
+                        bedtools.graph(input_bam, bed_graph_output, "")
+                    ], name="bed_graph." + re.sub(".bedGraph", "", os.path.basename(bed_graph_output)))
+                )
+
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + methyl_directory),
-                    bismark.bed_graph(
-                        [cpG_input_file],
-                        sample.name,
-                        methyl_directory
+                    Job(command="mkdir -p " + os.path.join("tracks", "bigWig"), samples=[sample]),
+                    ucsc.bedGraphToBigWig(bed_graph_output, big_wig_output, False)
+                ], name="wiggle." + re.sub(".bw", "", os.path.basename(big_wig_output)))
+            )
+
+            # Generation of a bigWig from the methylation bedGraph
+            methyl_directory = os.path.join("methylation_call", sample.name)
+            candidate_input_files = [[os.path.join(methyl_directory, sample.name + ".sorted.dedup.bedGraph.gz")]]
+            candidate_input_files.append([os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup.bedGraph.gz")])
+            [input_bed_graph] = self.select_input_files(candidate_input_files)
+            output_wiggle = os.path.join("tracks", "bigWig", re.sub(".bedGraph.gz", "methylation.bw", os.path.basename(input_bed_graph)))
+
+            jobs.append(
+                concat_jobs([
+                    Job(command="mkdir -p " + methyl_directory, samples=[sample]),
+                    ucsc.bedGraphToBigWig(
+                        input_bed_graph,
+                        output_wiggle
                     )
-                ], name = "bismark_bed_graph." + sample.name)
+                ], name = "bismark_bigWig." + sample.name)
             )
 
         return jobs
 
     def methylation_profile(self):
         """
-        Generation of a cytosine methylation report
+        Generation of a CpG methylation profile by combining both forward and reverse strand Cs.
+        Also generating of all the methylatoin metrics : CpG stats, pUC19 CpG stats, lambda conversion rate, median CpG coverage, GC bias
         """
 
         jobs = []
         for sample in self.samples:
             methyl_directory = os.path.join("methylation_call", sample.name)
-            bismark_cov_file = os.path.join(methyl_directory, sample.name + ".bismark.cov.gz")
+
+            candidate_input_files = [[os.path.join(methyl_directory, sample.name + ".sorted.dedup.CpG_report.txt.gz")]]
+            candidate_input_files.append([os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup.CpG_report.txt.gz")])
+
+            [cpg_input_file] = self.select_input_files(candidate_input_files)
+            cpg_profile = re.sub(".CpG_report.txt.gz", ".CpG_profile.strand.combined.csv", cpg_input_file)
+
+            # Generate CpG methylation profile
+            job = tools.bismark_combine(
+                cpg_input_file,
+                cpg_profile
+            )
+            job.name = "methylation_profile." + sample.name
+            job.samples = [sample]
+            jobs.append(job)
+
+            # Generate stats for lambda, pUC19 and regular CpGs
+            cg_stats_output = re.sub(".CpG_report.txt.gz", ".profile.cgstats.txt", cpg_input_file)
+            lambda_stats_output = re.sub(".CpG_report.txt.gz", ".profile.lambda.conversion.rate.tsv", cpg_input_file)
+            puc19_stats_output = re.sub(".CpG_report.txt.gz", ".profile.pUC19.txt", cpg_input_file)
+            job = tools.cpg_stats(
+                cpg_profile,
+                cg_stats_output,
+                lambda_stats_output,
+                puc19_stats_output
+            )
+            job.name = "CpG_stats." + sample.name
+            job.samples = [sample]
+            jobs.append(job)
+
+            target_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
+            if target_bed:
+                # Create targeted combined file
+                target_cpg_profile = re.sub("combined", "combined.on_target", cpg_profile)
+                job = bedtools.intersect(
+                    cpg_profile,
+                    target_cpg_profile,
+                    target_bed
+                )
+                job.name = "extract_target_CpG_profile." + sample.name
+                job.samples = [sample]
+                jobs.append(job)
+                cpg_profile = target_cpg_profile
+
+            # Caluculate median & mean CpG coverage
+            median_CpG_coverage = re.sub(".CpG_report.txt.gz", ".median_CpG_coverage.txt", cpg_input_file)
+            job = tools.cpg_cov_stats(
+                cpg_profile,
+                median_CpG_coverage
+            )
+            job.name = "median_CpG_coverage." + sample.name
+            job.samples = [sample]
+            if target_bed:
+                job.removable_files = [target_cpg_profile]
+            jobs.append(job)
+
+        return jobs
+
+    def all_sample_metrics_report(self):
+        """
+        Retrieve all the computed metrics (alignment metrics as well as methylation metrics) to build a tsv report table
+        """
+
+        jobs = []
+
+        target_bed = bvatools.resolve_readset_coverage_bed(self.samples[0].readsets[0])
+        metrics_file = os.path.join("metrics", "sampleMetrics.stats")
+        report_metrics_file = os.path.join("report", "sampleMetricsTable.tsv")
+
+        if target_bed:
+            report_file = os.path.join("report", "MethylSeq.all_sample_metrics_targeted_report.md")
+        else:
+            report_file = os.path.join("report", "MethylSeq.all_sample_metrics_report.md")
+
+        # Create the list of input files to handle job dependencies
+        inputs = []
+        sample_list = []
+        for sample in self.samples:
+            sample_list.append(sample.name)
+
+            # Trim log files
+            for readset in sample.readsets:
+                inputs.append(os.path.join("trim", sample.name, readset.name + ".trim.log"))
+
+            # Aligned pre-deduplicated bam files
+            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.bam"))
+
+            # Deduplicated bam files
+            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.bam"))
+
+            # Coverage summary files
+            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.all.coverage.sample_summary"))
+
+            # Lambda conversion rate files
+            [lambda_conv_file] = self.select_input_files([
+                [os.path.join("methylation_call", sample.name, sample.name + ".sorted.dedup.profile.lambda.conversion.rate.tsv")],
+                [os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.profile.lambda.conversion.rate.tsv")]
+            ])
+            inputs.append(lambda_conv_file)
+
+            # CG stat files
+            [cgstats_file] = self.select_input_files([
+                [os.path.join("methylation_call", sample.name, sample.name + ".sorted.dedup.profile.cgstats.txt")],
+                [os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.profile.cgstats.txt")]
+            ])
+            inputs.append(cgstats_file)
+
+            # Flagstat file if in targeted context
+            if target_bed : inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.ontarget.bam.flagstat"))
+
+        jobs.append(
+            concat_jobs([
+                Job(command="mkdir -p metrics"),
+                tools.methylseq_metrics_report(sample_list, inputs, metrics_file, target_bed),
+                Job(
+                    [metrics_file],
+                    [report_file],
+                    [['all_sample_metrics_report', 'module_pandoc']],
+                    command="""\
+mkdir -p report && \\
+cp {metrics_file} {report_metrics_file} && \\
+metrics_table_md=`sed 's/\t/|/g' {report_metrics_file}`
+pandoc \\
+  {report_template_dir}/{basename_report_file} \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable sequence_alignment_table="$metrics_table_md" \\
+  --to markdown \\
+  > {report_file}""".format(
+                        report_template_dir=self.report_template_dir,
+                        metrics_file=metrics_file,
+                        basename_report_file=os.path.basename(report_file),
+                        report_metrics_file=report_metrics_file,
+                        report_file=report_file
+                    ),
+                    report_files=[report_file]
+                )
+            ], name="all_sample_metrics_report")
+        )
+
+        return jobs
+
+    def ihec_sample_metrics_report(self):
+        """
+        Retrieve the computed metrics which fit the IHEC standards and build a tsv report table for IHEC
+        """
+
+        jobs = []
+
+        target_bed = bvatools.resolve_readset_coverage_bed(self.samples[0].readsets[0])
+        metrics_all_file = os.path.join("metrics", "IHEC.sampleMetrics.stats")
+        report_metrics_file = os.path.join("report", "IHEC.sampleMetricsTable.tsv")
+
+        if target_bed:
+            report_file = os.path.join("report", "MethylSeq.ihec_sample_metrics_targeted_report.md")
+        else:
+            report_file = os.path.join("report", "MethylSeq.ihec_sample_metrics_report.md")
+
+        # Create the list of input files to handle job dependencies
+        inputs = []
+        sample_list = []
+        counter=0
+        for sample in self.samples:
+            sample_list.append(sample.name)
+            metrics_file =  os.path.join("ihec_metrics", sample.name + ".read_stats.txt")
+            # Trim log files
+            for readset in sample.readsets:
+                inputs.append(os.path.join("trim", sample.name, readset.name + ".trim.log"))
+
+            # Aligned pre-deduplicated bam files
+            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.bam"))
+
+            # Deduplicated bam files
+            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.bam"))
+
+            # Coverage summary files
+            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.all.coverage.sample_summary"))
+
+            # Filtered reads count files
+            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.filtered_reads.counts.txt"))
+
+            # GC bias files
+            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.GCBias_all.txt"))
+
+            # Bismark alignment files
+            for readset in sample.readsets:
+                inputs.append(os.path.join("alignment", sample.name, readset.name, readset.name + ".sorted_noRG_bismark_bt2_PE_report.txt"))
+
+            # CpG coverage files
+            inputs.append(os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.median_CpG_coverage.txt"))
+
+            # pUC19 methylation files
+            inputs.append(os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.profile.pUC19.txt"))
+
+            # Lambda conversion rate files
+            [lambda_conv_file] = self.select_input_files([
+                [os.path.join("methylation_call", sample.name, sample.name + ".sorted.dedup.profile.lambda.conversion.rate.tsv")],
+                [os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.profile.lambda.conversion.rate.tsv")]
+            ])
+            inputs.append(lambda_conv_file)
+
+            # CG stat files
+            [cgstats_file] = self.select_input_files([
+                [os.path.join("methylation_call", sample.name, sample.name + ".sorted.dedup.profile.cgstats.txt")],
+                [os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.profile.cgstats.txt")]
+            ])
+            inputs.append(cgstats_file)
+
+            # Flagstat file if in targeted context
+            if target_bed : inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.ontarget.bam.flagstat"))
 
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + methyl_directory),
-                    bismark.coverage2cytosine(
-                        bismark_cov_file,
-                        os.path.join(methyl_directory, sample.name + ".bismark.cov.output")
-                    )
-                ], name="methylation_profile." + sample.name)
-           )
+                    Job(command="mkdir -p ihec_metrics metrics"),
+                    tools.methylseq_ihec_metrics_report(sample.name, inputs, metrics_file, metrics_all_file, target_bed, counter),
+                ], name=sample.name + ".ihec_sample_metrics_report")
+            )
+            counter+=1
+
+
+        jobs.append(
+            concat_jobs([
+                Job(command="mkdir -p metrics"),
+                Job(
+                    [metrics_all_file],
+                    [report_file],
+                    [['ihec_sample_metrics_report', 'module_pandoc']],
+                    command="""\
+mkdir -p report && \\
+cp {metrics_file} {report_metrics_file} && \\
+metrics_table_md=`sed 's/\t/|/g' {report_metrics_file}`
+pandoc \\
+  {report_template_dir}/{basename_report_file} \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable sequence_alignment_table="$metrics_table_md" \\
+  --to markdown \\
+  > {report_file}""".format(
+                        report_template_dir=self.report_template_dir,
+                        metrics_file=metrics_file,
+                        basename_report_file=os.path.basename(report_file),
+                        report_metrics_file=report_metrics_file,
+                        report_file=report_file
+                    ),
+                    report_files=[report_file]
+                )
+            ], name="ihec_sample_metrics_report")
+        )
 
         return jobs
 
@@ -577,10 +860,8 @@ class MethylSeq(dnaseq.DnaSeq):
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
 
-            candidate_input_files = [[os.path.join(alignment_directory, sample.name + ".sorted.dedup.filtered.bam")]]
-            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")])
+            candidate_input_files = [[os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")]]
             candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.bam")])
-            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.bam")])
             [input_file] = self.select_input_files(candidate_input_files)
 
             variant_directory = os.path.join("variants", sample.name)
@@ -589,7 +870,7 @@ class MethylSeq(dnaseq.DnaSeq):
 
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + variant_directory),
+                    Job(command="mkdir -p " + variant_directory, samples=[sample]),
                     bissnp.bisulfite_genotyper(
                         input_file,
                         cpg_output_file,
@@ -607,18 +888,17 @@ class MethylSeq(dnaseq.DnaSeq):
             self.trimmomatic,
             self.merge_trimmomatic_stats,
             self.bismark_align,
-            self.picard_add_read_groups,    # step 5
-            self.picard_merge_sam_files,
-            self.bismark_dedup,
+            self.picard_merge_sam_files,    # step 5
+#            self.bismark_dedup,
+            self.picard_remove_duplicates,
             self.metrics,
-            self.picard_calculate_hs_metrics,
-            self.mapping_quality_filter,    # step 10
-            self.wiggle_tracks,
-            self.puc19_lambda_reads,
+            self.verify_bam_id,
             self.methylation_call,
-            self.bed_graph,
-            self.methylation_profile,       # step 15
-            self.bis_snp
+            self.wiggle_tracks,             # step 10
+            self.methylation_profile,
+            self.all_sample_metrics_report,
+            self.ihec_sample_metrics_report,
+            self.bis_snp                    # step 14
         ]
 
 if __name__ == '__main__': 

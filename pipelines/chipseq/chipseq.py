@@ -125,6 +125,7 @@ class ChipSeq(dnaseq.DnaSeq):
 
             job = samtools.view(readset_bam, filtered_readset_bam, "-b -F4 -q " + str(config.param('samtools_view_filter', 'min_mapq', type='int')))
             job.name = "samtools_view_filter." + readset.name
+            job.samples = [readset.sample]
             jobs.append(job)
 
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.samtools_view_filter.md")
@@ -182,13 +183,16 @@ pandoc --to=markdown \\
                 job = concat_jobs([
                     mkdir_job,
                     Job([readset_bam], [sample_bam], command="ln -s -f " + target_readset_bam + " " + sample_bam, removable_files=[sample_bam]),
-                ], name="symlink_readset_sample_bam." + sample.name)
+                ])
+                job.sample = [sample]
+                job.name = "symlink_readset_sample_bam." + sample.name
 
             elif len(sample.readsets) > 1:
                 job = concat_jobs([
                     mkdir_job,
                     picard.merge_sam_files(readset_bams, sample_bam)
                 ])
+                job.sample = [sample]
                 job.name = "picard_merge_sam_files." + sample.name
 
             jobs.append(job)
@@ -211,6 +215,7 @@ pandoc --to=markdown \\
 
             job = picard.mark_duplicates([input], output, metrics_file)
             job.name = "picard_mark_duplicates." + sample.name
+            job.sample = [sample]
             jobs.append(job)
 
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.picard_mark_duplicates.md")
@@ -288,6 +293,7 @@ pandoc --to=markdown \\
                     report_dir = self.output_dirs['report_output_directory']
                 ),
                 name="metrics_report",
+                samples=self.samples,
                 removable_files=[report_metrics_file],
                 report_files=[report_file]
             )
@@ -356,6 +362,7 @@ done""".format(
                 graphs_dir = self.output_dirs['graphs_output_directory']
             ),
             name="qc_plots_R",
+            samples=self.samples,
             removable_files=output_files,
             report_files=[report_file]
         )]
@@ -720,6 +727,7 @@ done""".format(
 
             ),
             name="annotation_graphs",
+            samples=contrast.treatments,
             report_files=[report_file],
             removable_files=output_files
         )]
