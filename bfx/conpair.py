@@ -96,7 +96,7 @@ estimate_tumor_normal_contamination.py {options} \\
         markers=config.param('conpair_concordance_contamination', 'markers_txt'),
         input_normal=input_normal,
         input_tumor=input_tumor,
-        output=" > " + output
+        output=" --outfile " + output
         )
     )
 

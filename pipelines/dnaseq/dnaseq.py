@@ -419,7 +419,7 @@ END
                 if os.path.isabs(readset_bam):
                     target_readset_bam = readset_bam
                 else:
-                    target_readset_bam = os.path.relpath(readset_bam, alignment_directory)
+                    target_readset_bam = os.path.abspath(readset_bam)
                 readset_index = re.sub("\.bam$", ".bai", readset_bam)
                 target_readset_index = re.sub("\.bam$", ".bai", target_readset_bam)
                 sample_index = re.sub("\.bam$", ".bai", sample_bam)

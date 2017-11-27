@@ -122,6 +122,26 @@ samtools merge \\
             )
         )
 
+def bcftools_mpileup(input_bams, output, other_options="", region=None, regionFile=None, ini_section='rawmpileup'):
+
+    return Job(
+        input_bams,
+        [output],
+        [
+            [ini_section, 'module_samtools']
+        ],
+    command="""\
+bcftools mpileup {other_options} \\
+  -f {reference_fasta}{region}{regionFile}{input_bams}{output}""".format(
+        other_options=other_options,
+        reference_fasta=config.param('samtools_mpileup', 'genome_fasta', type='filepath'),
+        regionFile=" \\\n  -l " + regionFile if regionFile else "",
+        region=" \\\n  -r " + region if region else "",
+        input_bams="".join([" \\\n  " + input_bam for input_bam in input_bams]),
+        output=" \\\n  > " + output if output else ""
+         )
+    )
+
 def sort(input_bam, output_prefix, sort_by_name=False):
     output_bam = output_prefix + ".bam"
     return Job(

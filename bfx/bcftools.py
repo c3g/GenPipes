@@ -63,6 +63,33 @@ bcftools \\
         )
     )
 
+def mpileup(inputs, output, options=None, regions=None):
+    """
+    New bcftools mpileup function
+    """
+    return Job(
+        inputs,
+        [output],
+        [
+            ['DEFAULT', 'module_bcftools']
+        ],
+        command="""\
+bcftools \\
+  mpileup {options} \\
+  -f {reference_fasta} \\
+  {inputs} \\
+  {regions} \\
+  {output}""".format(
+        options=options if options else "",
+        reference_fasta=config.param('samtools_mpileup', 'genome_fasta', type='filepath'),
+        inputs="".join(" \\\n  " + input for input in inputs),
+        regions="-r " + regions,
+        #regions="".join("," + region for region in regions),
+        output=" \\\n > " + output if output else ""
+        )
+    )
+
+
 def call(inputs, output, options=None):
     """
     New bcftools call function
@@ -80,7 +107,7 @@ bcftools \\
   {output}""".format(
         options=options if options else "",
         inputs="".join(" \\\n  " + input for input in inputs),
-        output=" \\\n > " + output if output else ""
+        output=" \\\n -o " + output if output else ""
         )
     )
 
@@ -129,7 +156,7 @@ bcftools \\
         )
     )
 
-def view(input, output, filter_options):
+def view(input, output, filter_options=None):
     """
     Generalized view 
     """
@@ -143,7 +170,7 @@ def view(input, output, filter_options):
 bcftools \\
   view {filter_options} \\
   {input}{output}""".format(
-        filter_options=filter_options,
+        filter_options=filter_options if filter_options else "",
         input=" \\\n " + input if input else "",
         output=" \\\n > " + output if output else ""
         )
