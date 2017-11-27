@@ -301,18 +301,18 @@ class HicSeq(common.Illumina):
 
         jobs = []
 
+        makeDirTag_hic_other_options=config.param('homer_tag_directory', 'other_options', required=False)
+        PEflag = eval(config.param('homer_tag_directory', 'illuminaPE'))
+
         for sample in self.samples:
             tagDirName = "_".join(("HTD", sample.name, self.enzyme))
             sample_output_dir = os.path.join(self.output_dirs['homer_output_directory'], tagDirName)
             hicup_file_output = os.path.join(self.output_dirs['bams_output_directory'], sample.name, sample.name + ".merged.bam")
+            input_bam = ",".join([hicup_file_output, hicup_file_output])
 
-
-            PEflag = eval(config.param('homer_tag_directory', 'illuminaPE'))
-
-            #checkReadID_job = homer.check_readName_format(hicup_file_output, PEflag)
-            tagDir_job = homer.makeTagDir_hic(sample_output_dir, hicup_file_output, self.genome, self.restriction_site, illuminaPE=PEflag)
-            QcPlots_job = homer.tagDirQcPlots_hic(sample.name, sample_output_dir)
-            archive_job = homer.archive_contigs_hic(sample_output_dir)
+            tagDir_job = homer.makeTagDir(sample_output_dir, input_bam, self.genome, self.restriction_site, PEflag, makeDirTag_hic_other_options)
+            QcPlots_job = homer.hic_tagDirQcPlots(sample.name, sample_output_dir)
+            archive_job = homer.archive_contigs(sample_output_dir)
 
 
             job = concat_jobs([tagDir_job, QcPlots_job, archive_job])
@@ -354,7 +354,7 @@ class HicSeq(common.Illumina):
                     fileName = os.path.join(sample_output_dir_chr, "_".join((tagDirName, chr, res, "raw.txt")))
                     fileNameRN = os.path.join(sample_output_dir_chr, "_".join((tagDirName, chr, res, "rawRN.txt")))
 
-                    jobMatrix = homer.interactionMatrix_chr_hic (sample.name, sample_output_dir_chr, homer_output_dir, res, chr, fileName, fileNameRN)
+                    jobMatrix = homer.hic_interactionMatrix_chr (sample.name, sample_output_dir_chr, homer_output_dir, res, chr, fileName, fileNameRN)
 
 
                     fileNamePlot = os.path.join(sample_output_dir_chr, "".join((tagDirName,"_", chr,"_", res, "_raw-", chr, "\'.ofBins(0-\'*\')\'.", str(int(res)/1000), "K.jpeg")))
@@ -396,7 +396,7 @@ class HicSeq(common.Illumina):
                 fileNameRN = os.path.join(sample_output_dir_genome, "_".join((tagDirName, "genomewide_Res", res,"rawRN.txt")))
 
 
-                jobMatrix = homer.interactionMatrix_genome_hic (sample.name, sample_output_dir_genome, homer_output_dir, res, fileName, fileNameRN)
+                jobMatrix = homer.hic_interactionMatrix_genome (sample.name, sample_output_dir_genome, homer_output_dir, res, fileName, fileNameRN)
 
 
                 commandPlot = "HiCPlotter.py -f {fileNameRN} -n {name} -chr Genome -r {res} -fh 0 -o {sample_output_dir_genome} -ptr 0 -hmc {hmc} -wg 1".format(res=res, chr=chr, fileNameRN=fileNameRN, name=sample.name, sample_output_dir_genome=os.path.join(sample_output_dir_genome, "_".join((tagDirName, "genomewide", "raw"))), hmc = config.param('interaction_matrices_Chr', 'hmc'))
@@ -435,7 +435,7 @@ class HicSeq(common.Illumina):
             fileName_Comp = os.path.join(sample_output_dir, sample.name + "_homerPCA_Res" + res + "_compartments")
 
 
-            job = homer.compartments_hic (sample.name, sample_output_dir, fileName, homer_output_dir, res, self.genome, fileName_PC1, fileName_Comp, 3)
+            job = homer.hic_compartments (sample.name, sample_output_dir, fileName, homer_output_dir, res, self.genome, fileName_PC1, fileName_Comp, 3)
             jobs.append(job)
 
         return jobs
@@ -526,7 +526,7 @@ class HicSeq(common.Illumina):
             fileName = os.path.join(sample_output_dir, sample.name + "IntraChrInteractionsRes" + res + ".txt")
             fileName_anno = os.path.join(sample_output_dir, sample.name + "IntraChrInteractionsRes" + res + "_Annotated")
 
-            job = homer.peaks_hic(sample.name, sample_output_dir, homer_output_dir, res, self.genome, fileName, fileName_anno, 3)
+            job = homer.hic_peaks(sample.name, sample_output_dir, homer_output_dir, res, self.genome, fileName, fileName_anno, 3)
             jobs.append(job)
 
         return jobs

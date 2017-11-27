@@ -310,8 +310,9 @@ pandoc --to=markdown \\
             alignment_file = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.dup.bam")
             output_dir = os.path.join(self.output_dirs['homer_output_directory'], sample.name)
             genome = config.param('homer_make_tag_directory', 'assembly_synonyms')
+            other_options = config.param('homer_make_tag_directory', 'other_options', required=False)
 
-            job = homer.makeTagDir_chipseq(output_dir, alignment_file, genome)
+            job = homer.makeTagDir(output_dir, alignment_file, genome, restriction_site=None, illuminaPE=False, other_options=other_options)
             job.name = "homer_make_tag_directory." + sample.name
             job.removable_files=[output_dir]
 
@@ -865,6 +866,10 @@ done""".format(
                   tools.sh_ihec_chip_metrics(chip_bam, input_bam, key, values[0],  chip_type, chip_bed, output_dir, genome)
               ], name="ihec_metrics." + key)
             jobs.append(job)
+
+        chip_type = config.param('ihec_metrics', 'chip_type')
+        if (chip_type == "TF"):
+            log.warning("chip_type is set to default value of 'TF'. If you are using a histone mark, please modify the chip_type in the ini file to the name of the mark. Otherwise, some metrics wont be accurate!")
             
         return jobs
 
