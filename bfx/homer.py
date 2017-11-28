@@ -63,7 +63,7 @@ def makeTagDir (output_dir, input_bam, genome, restriction_site=None, illuminaPE
     input_bam_file = input_bam.split(",")[0]
 
     return Job(input_files = [input_bam_file],
-            output_files = [os.path.join(output_dir, "tagInfo.txt")],
+            output_files = [output_dir],
             module_entries = [["homer_tag_directory", "module_perl"], ["homer_tag_directory", "module_homer"], ["homer_tag_directory", "module_samtools"]],
             command = command_tagDir,
             name="homer_make_tag_directory"
