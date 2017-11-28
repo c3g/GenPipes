@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=gemini 
-VERSION=0.18.3 
+VERSION=0.20.1 
 ARCHIVE=${SOFTWARE}_v$VERSION.install.py
 ARCHIVE_URL=https://raw.github.com/arq5x/gemini/master/gemini/scripts/gemini_install.py
 SOFTWARE_DIR=$SOFTWARE-$VERSION 

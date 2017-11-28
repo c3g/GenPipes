@@ -27,54 +27,55 @@ import re
 from core.config import *
 from core.job import *
 
-def check_readName_format (input_bam, illuminaPE):
-	
-	## if bam read names end with /1 and /2 then -illuminaPE flag should be used, otherwise not. Check first read in bam to see is it contains /1  or /2
+##### General Homer:
 
-	## extract first read name in bam
-	command = """readID=$(samtools view {input_bam} | head -n 1 | cut -f 1)
-	
-    if grep -q '^.*/[12]$' <<< $readID; then
-        if [ "$illuminaPE" = "False" ]; then
-        echo "Error! Your bam readIds contain /1 , /2 endings. Please edit the ini File to illuminaPE=True OR run the pipeline with the fastq_readName_Edit method!" 1>&2
-        exit 1
-        fi
-    else
-       if [ "$illuminaPE" = "True" ]; then
-        echo "Error! Your bam readIds do not contain /1 , /2 endings. Please edit the ini File to illuminaPE=False OR run the pipeline without the fastq_readName_Edit method!" 1>&2
-        exit 1
-        fi
-    fi""".format(input_bam = input_bam, illuminaPE = illuminaPE)
+def archive_contigs (homerTagDir, output_dir = "archive"):
 
-	return Job(input_files = [input_bam],
-            module_entries = [["homer_tag_directory", "module_samtools"]],
-            command = command
-            )
+    command_archive = """cd {homerTagDir} && \\
+    mkdir -p {output_dir} && \\
+    mv -t {output_dir} *random*.tsv *chrUn*.tsv *hap*.tsv chrM*.tsv MT*.tsv *Y*.tsv *EBV*.tsv *GL*.tsv NT_*.tsv || echo "not all files found"
+    cd ../../""".format(
+        homerTagDir = homerTagDir, 
+        output_dir = output_dir)
+
+    return Job(input_files = [homerTagDir],
+            output_files = [os.path.join(homerTagDir, output_dir)],
+            command = command_archive
+        )
 
 
-def makeTagDir_hic (output_dir, input_bam, genome, restriction_site, illuminaPE=False, ini_section='homer_tag_directory'):
-
-	command_tagDir = """rm -rf {output_dir} && \\
-		 	makeTagDirectory {output_dir} {input_bam},{input_bam} \\
-		 	-genome {genome} \\
-		 	-restrictionSite {restriction_site} \\
-		 	-checkGC{illuminaPE}{makeDirTag_hic_other_options}""".format(
-		 		output_dir = output_dir, 
-		 		input_bam = input_bam, 
-		 		genome = genome, 
-		 		restriction_site = restriction_site,
-		 		illuminaPE=" \\\n -illuminaPE" if illuminaPE else "",
-				makeDirTag_hic_other_options=config.param(ini_section, 'other_options', required=False))
 
 
-	return Job(input_files = [input_bam],
-            output_files = [output_dir],
+def makeTagDir (output_dir, input_bam, genome, restriction_site=None, illuminaPE=False, other_options=None):
+    ## if hic experiment then input_bam should be provided twice: {input_bam},{input_bam}
+    command_tagDir = """makeTagDirectory {output_dir} \\
+            {input_bam} \\
+            -genome {genome} \\
+            -checkGC{illuminaPE}{restriction_site}{other_options}""".format(
+                output_dir = output_dir, 
+                input_bam = input_bam, 
+                genome = genome, 
+                illuminaPE=" \\\n -illuminaPE" if illuminaPE else "",
+                restriction_site = " \\\n -restrictionSite " + restriction_site if restriction_site is not None else "",
+                other_options=" \\\n " + other_options if other_options is not None else ""
+                )
+
+    input_bam_file = input_bam.split(",")[0]
+
+    return Job(input_files = [input_bam_file],
+            output_files = [os.path.join(output_dir, "tagInfo.txt")],
             module_entries = [["homer_tag_directory", "module_perl"], ["homer_tag_directory", "module_homer"], ["homer_tag_directory", "module_samtools"]],
-            command = command_tagDir
+            command = command_tagDir,
+            name="homer_make_tag_directory"
             )
 
 
-def tagDirQcPlots_hic (name, working_dir, output_dir = "HomerQcPlots"):
+
+##### Homer for HiC:
+
+
+
+def hic_tagDirQcPlots (name, working_dir, output_dir = "HomerQcPlots"):
 
 	command_QcPlots = "Rscript {script} {name} {working_dir} {output_dir}".format(
 		script = os.path.expandvars("${R_TOOLS}/HomerHiCQcPlotGenerator.R"),  
@@ -89,22 +90,8 @@ def tagDirQcPlots_hic (name, working_dir, output_dir = "HomerQcPlots"):
             )
 
 
-def archive_contigs_hic (homerTagDir, output_dir = "archive"):
 
-    command_archive = """cd {homerTagDir} && \\
-    mkdir -p {output_dir} && \\
-    mv -t {output_dir} *random*.tsv *chrUn*.tsv *hap*.tsv chrM*.tsv MT*.tsv *Y*.tsv *EBV*.tsv *GL*.tsv NT_*.tsv || echo "not all files found"
-    cd ../../""".format(
-    	homerTagDir = homerTagDir, 
-    	output_dir = output_dir)
-
-    return Job(input_files = [homerTagDir],
-            output_files = [os.path.join(homerTagDir, output_dir)],
-            command = command_archive
-        )
-
-
-def interactionMatrix_chr_hic (name, output_dir, homer_dir, res, chr, fileName, fileNameRN=None, norm="raw", format = True):
+def hic_interactionMatrix_chr (name, output_dir, homer_dir, res, chr, fileName, fileNameRN=None, norm="raw", format = True):
 
 # norm can be "raw", "simpleNorm", "norm"
 
@@ -140,7 +127,7 @@ def interactionMatrix_chr_hic (name, output_dir, homer_dir, res, chr, fileName, 
         removable_files = [fileName]
         )
 
-def interactionMatrix_genome_hic(name, output_dir, homer_dir, res, fileName, fileNameRN=None, norm="raw", format = True):
+def hic_interactionMatrix_genome(name, output_dir, homer_dir, res, fileName, fileNameRN=None, norm="raw", format = True):
 
     commandMatrix="""mkdir -p {output_dir} && \\
             analyzeHiC {homer_dir} -res {res} -{norm} > {fileName}""".format(
@@ -173,7 +160,7 @@ def interactionMatrix_genome_hic(name, output_dir, homer_dir, res, fileName, fil
                     removable_files = [fileName]
                     )
 
-def compartments_hic (name, output_dir, fileName, homer_dir, res, genome, fileName_PC1, fileName_Comp, cpu):
+def hic_compartments (name, output_dir, fileName, homer_dir, res, genome, fileName_PC1, fileName_Comp, cpu):
 
     command = """mkdir -p {output_dir} && \\
     runHiCpca.pl {fileName} {homer_dir} -res {res} -genome {genome} -cpu {cpu} && \\
@@ -196,7 +183,7 @@ def compartments_hic (name, output_dir, fileName, homer_dir, res, genome, fileNa
             )
 
 
-def peaks_hic(name, output_dir, homer_dir, res, genome, fileName, fileName_anno, cpu=1):
+def hic_peaks(name, output_dir, homer_dir, res, genome, fileName, fileName_anno, cpu=1):
 
     command = """mkdir -p {output_dir} && \\
     findHiCInteractionsByChr.pl {homer_dir} -res {res} -cpu {cpu} > {fileName} && \\
@@ -217,5 +204,70 @@ def peaks_hic(name, output_dir, homer_dir, res, genome, fileName, fileName_anno,
         command = command
         )
 
+##### Homer for ChIP-Seq:
 
 
+def makeUCSCfile(tag_dir, bedgraph_file):
+
+    bedgraph_file_gz = bedgraph_file + ".gz"
+
+    cmd = """makeUCSCfile \\
+        {tag_dir} > {bedgraph_file} && \\
+        gzip -c {bedgraph_file} > {bedgraph_file_gz}""".format(
+                    tag_dir = tag_dir,
+                    bedgraph_file = bedgraph_file,
+                    bedgraph_file_gz = bedgraph_file_gz)
+
+    return Job(input_files = [os.path.join(tag_dir, "tagInfo.txt")],
+            output_files = [bedgraph_file, bedgraph_file_gz],
+            module_entries = [["homer_make_ucsc_files", "module_perl"], ["homer_make_ucsc_files", "module_homer"]],
+            command = cmd, 
+            name="homer_make_ucsc_file"
+            )
+
+
+def annotatePeaks(peak_file, genome, output_prefix, annotation_file):
+    cmd = """annotatePeaks.pl \\
+    {peak_file} \\
+    {genome} \\
+    -gsize {genome} \\
+    -cons -CpG \\
+    -go {output_prefix} \\
+    -genomeOntology {output_prefix} \\
+    > {annotation_file}""".format(
+                            peak_file = peak_file,
+                            genome = genome,
+                            output_prefix = output_prefix,
+                            annotation_file = annotation_file)
+    
+    return Job(input_files = [peak_file],
+            output_files = [   annotation_file,
+                            os.path.join(output_prefix, "geneOntology.html"),
+                            os.path.join(output_prefix, "GenomeOntology.html")],
+            module_entries = [["homer_annotate_peaks", "module_perl"], ["homer_annotate_peaks", "module_homer"]],
+            command = cmd, 
+            name="homer_make_ucsc_file"
+            )
+
+def findMotifsGenome(peak_file, genome, output_dir, threads):
+
+    cmd = """findMotifsGenome.pl \\
+  {peak_file} \\
+  {genome} \\
+  {output_dir} \\
+  -preparsedDir {output_dir}/preparsed \\
+  -p {threads}""".format(
+                        peak_file = peak_file,
+                        genome = genome,
+                        output_dir= output_dir,
+                        threads = threads,
+                        name="homer_find_motifs_genome"
+                )
+
+    return Job(input_files = [peak_file],
+            output_files = [os.path.join(output_dir, "homerResults.html"),
+                            os.path.join(output_dir, "knownResults.html")],
+            module_entries = [["homer_find_motifs_genome", "module_perl"], ["homer_find_motifs_genome", "module_homer"],["homer_find_motifs_genome", "module_weblogo"]],
+            command = cmd, 
+            name="homer_find_motifs_genome"
+            )

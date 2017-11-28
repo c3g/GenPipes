@@ -39,10 +39,11 @@ Rscript $R_TOOLS/DNAsampleMetrics.R \\
   {input_directory} \\
   {output} \\
   {experiment_type}""".format(
-        input_directory=input_directory,
-        output=output,
-        experiment_type=experiment_type
-    ))
+            input_directory=input_directory,
+            output=output,
+            experiment_type=experiment_type
+        )
+    )
 
 def rnaseqc(sample_file, output_directory, is_single_end=False, gtf_file=None, reference=None, ribosomal_interval_file=None):
     return Job(
@@ -61,17 +62,17 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $RNASEQC_JAR
   -r {reference_genome_fasta} \\
   -s {sample_file} \\
   -t {gtf_file}{other_options}{single_end}{ribosomal_interval_file}""".format(
-        tmp_dir=config.param('rnaseqc', 'tmp_dir'),
-        java_other_options=config.param('rnaseqc', 'java_other_options'),
-        ram=config.param('rnaseqc', 'ram'),
-        number_top_transcripts=config.param('rnaseqc', 'number_top_transcript', type='int'),
-        output_directory=output_directory,
-        reference_genome_fasta=reference if reference else config.param('rnaseqc', 'genome_fasta', type='filepath'),
-        sample_file=sample_file,
-        gtf_file=gtf_file if gtf_file else config.param('rnaseqc', 'gtf', type='filepath'),
-        other_options=" \\\n  " + config.param('rnaseqc', 'other_options', required=False) if config.param('rnaseqc', 'other_options', required=False) else "",
-        single_end=" \\\n  -singleEnd" if is_single_end else "",
-        ribosomal_interval_file= " \\\n  -rRNA " + ribosomal_interval_file if ribosomal_interval_file else "\\\n  -BWArRNA dummy_rRNA.fa"
+            tmp_dir=config.param('rnaseqc', 'tmp_dir'),
+            java_other_options=config.param('rnaseqc', 'java_other_options'),
+            ram=config.param('rnaseqc', 'ram'),
+            number_top_transcripts=config.param('rnaseqc', 'number_top_transcript', type='int'),
+            output_directory=output_directory,
+            reference_genome_fasta=reference if reference else config.param('rnaseqc', 'genome_fasta', type='filepath'),
+            sample_file=sample_file,
+            gtf_file=gtf_file if gtf_file else config.param('rnaseqc', 'gtf', type='filepath'),
+            other_options=" \\\n  " + config.param('rnaseqc', 'other_options', required=False) if config.param('rnaseqc', 'other_options', required=False) else "",
+            single_end=" \\\n  -singleEnd" if is_single_end else "",
+            ribosomal_interval_file= " \\\n  -rRNA " + ribosomal_interval_file if ribosomal_interval_file else "\\\n  -BWArRNA dummy_rRNA.fa"
         ),
         removable_files=["dummy_rRNA.fa"]
     )
@@ -93,12 +94,12 @@ Rscript $R_TOOLS/rpkmSaturation.R \\
   {threads} \\
   {other_options} && \\
 zip -r {saturation_directory}.zip {saturation_directory}""".format(
-        count_file=count_file,
-        gene_size_file=gene_size_file,
-        rpkm_directory=rpkm_directory,
-        saturation_directory=saturation_directory,
-        threads=config.param('rpkm_saturation', 'threads', type='posint'),
-        other_options=config.param('rpkm_saturation', 'other_options', required=False)
+            count_file=count_file,
+            gene_size_file=gene_size_file,
+            rpkm_directory=rpkm_directory,
+            saturation_directory=saturation_directory,
+            threads=config.param('rpkm_saturation', 'threads', type='posint'),
+            other_options=config.param('rpkm_saturation', 'other_options', required=False)
         ),
         removable_files=[saturation_directory]
     )
@@ -115,8 +116,8 @@ def snv_graph_metrics(list, output_basename):
 Rscript $R_TOOLS/snvGraphMetrics.R \\
   {list} \\
   {output_basename}""".format(
-        list=list,
-        output_basename=output_basename
+            list=list,
+            output_basename=output_basename
         )
     )
 
@@ -134,9 +135,44 @@ python $PYTHON_TOOLS/vcfStats.py \\
   -d {dictionary} \\
   -o {output} \\
   -f {list}""".format(
-        input=input,
-        dictionary=config.param('vcf_stats', 'genome_dictionary', type='filepath'),
-        output=output,
-        list=list
+            input=input,
+            dictionary=config.param('vcf_stats', 'genome_dictionary', type='filepath'),
+            output=output,
+            list=list
         )
     )
+
+def gc_bias(input, output):
+    return Job(
+        [input],
+        [output],
+        [
+            ['gc_bias', 'module_R'],
+            ['gc_bias', 'module_mugqic_tools']
+        ],
+        command="""\
+Rscript $R_TOOLS/GCbias_all.R \\
+  {input} > {output}""".format(
+            input=input,
+            output=output
+        )
+    )
+
+def ihec_metrics_rnaseq(genome):
+  ''' Outputs the ihec metrics file for all samples'''
+
+  ## will parse metrics/rnaseqRep/metrics.tsv to output needed columns only
+
+  command = "python $PYTHON_TOOLS/ihec_metrics_rnaseq.py {genome}".format(genome = genome)
+
+  return Job(input_files = ["metrics/rnaseqRep/metrics.tsv", "report/trimAlignmentTable.tsv"],
+            output_files = ["IHEC_metrics_rnaseq_All.txt"],
+            module_entries = [["ihec_metrics_rnaseq", "module_mugqic_tools"],["ihec_metrics_rnaseq", "module_samtools"]],
+            name = "ihec_metrics_rnaseq",
+            command = command
+            )
+
+
+
+
+

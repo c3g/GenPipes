@@ -20,28 +20,33 @@
 ################################################################################
 
 # Python Standard Modules
-import os
 
 # MUGQIC Modules
 from core.config import *
 from core.job import *
 
-def verify(input_bam, input_vcf, output_prefix):
+def circularize(fasta_consensus, corrected_fastq, circlator_output):
+
+    inputs = [fasta_consensus, corrected_fastq]
+    outputs = [circlator_output]
     return Job(
-        [input_bam, input_vcf],
-        [output_prefix + ".selfSM"],
+        inputs,
+        outputs,
         [
-            ['verify_bam_id', 'module_verify_bam_id']
+            ['circlator', 'module_python'],
+            ['circlator', 'module_bwa'],
+            ['circlator', 'module_samtools'],
+            ['circlator', 'module_mummer'],
+            ['circlator', 'module_spades'],
+            ['circlator', 'module_prodigal'],
         ],
         command="""\
-verifyBamID \\
-  --vcf {input_vcf} \\
-  --bam {input_bam} \\
-  --out {output_prefix} \\
-  {other_options}""".format(
-            input_vcf=input_vcf,
-            input_bam=input_bam,
-            output_prefix=output_prefix,
-            other_options=config.param('verify_bam_id', 'other_options')
+circlator all \\
+  {fasta} \\
+  {fastq} \\
+  {output}""".format(
+            fasta=fasta_consensus,
+            fastq=corrected_fastq,
+            output=circlator_output
         )
     )
