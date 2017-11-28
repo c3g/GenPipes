@@ -1,4 +1,4 @@
-# Here the release instructions
+# Here are the release instructions
 
 # Version bump the value. Remove '-beta'
 vim VERSION
@@ -21,7 +21,7 @@ for f in \
   pipelines/rnaseq_denovo_assembly/rnaseq_denovo_assembly.py \
   pipelines/rnaseq_light/rnaseq_light.py \
   pipelines/tumor_pair/tumor_pair.py \
-; do echo $f; $f --help > `dirname $f`/README.md; done
+; do echo $f; $f -h > `dirname $f`/README.md; done
 
 git commit -a -m "Version bump to 3.0.0"
 
@@ -40,7 +40,7 @@ vim VERSION
 git commit -m "Version bump to 3.1.0-beta" VERSION
 git push
 
-# Deploy mugqic_pipelines-<VERSION> as a module on all clusters
+# Deploy GenAP_Pipes-<VERSION> as a module on all clusters
 
 # Send a message to the mailing list:
 mugqic_pipelines@googlegroups.com
