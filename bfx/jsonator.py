@@ -80,8 +80,8 @@ def create(pipeline, sample):
     softwares = []
     for module in modules:
         softwares.append({
-            'name' : module.split("/")[1],
-            'version' : module.split("/")[2]
+            'name' : module.split("/")[-2],
+            'version' : module.split("/")[-1]
         })
 
     with open(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "VERSION"), 'r') as version_file:
