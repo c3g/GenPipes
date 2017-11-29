@@ -38,7 +38,7 @@ def archive_contigs (homerTagDir, output_dir = "archive"):
         homerTagDir = homerTagDir, 
         output_dir = output_dir)
 
-    return Job(input_files = [homerTagDir],
+    return Job(input_files = [os.path.join(homerTagDir, "tagInfo.txt")],
             output_files = [os.path.join(homerTagDir, output_dir)],
             command = command_archive
         )
@@ -63,7 +63,7 @@ def makeTagDir (output_dir, input_bam, genome, restriction_site=None, illuminaPE
     input_bam_file = input_bam.split(",")[0]
 
     return Job(input_files = [input_bam_file],
-            output_files = [output_dir],
+            output_files = [os.path.join(output_dir, "tagInfo.txt")],
             module_entries = [["homer_tag_directory", "module_perl"], ["homer_tag_directory", "module_homer"], ["homer_tag_directory", "module_samtools"]],
             command = command_tagDir,
             name="homer_make_tag_directory"
@@ -83,7 +83,7 @@ def hic_tagDirQcPlots (name, working_dir, output_dir = "HomerQcPlots"):
 		working_dir = working_dir, 
 		output_dir = output_dir)
 
-	return Job(input_files = [working_dir],
+	return Job(input_files = [os.path.join(working_dir, "tagInfo.txt")],
             output_files = [os.path.join(working_dir, output_dir)],
             module_entries = [["homer_tag_directory", "module_R"], ["homer_tag_directory", "module_mugqic_tools"]],
             command = command_QcPlots
@@ -119,7 +119,7 @@ def hic_interactionMatrix_chr (name, output_dir, homer_dir, res, chr, fileName, 
     else:
         command = commandChrMatrix
                     
-    return Job(input_files = [homer_dir],
+    return Job(input_files = [os.path.join(homer_dir, "tagInfo.txt")],
         output_files = [fileNameRN, fileName],
         module_entries = [["interaction_matrices_Chr", "module_perl"], ["interaction_matrices_Chr", "module_homer"]],
         command = command,
@@ -152,7 +152,7 @@ def hic_interactionMatrix_genome(name, output_dir, homer_dir, res, fileName, fil
         command = commandMatrix
 
 
-    return Job(input_files = [homer_dir],
+    return Job(input_files = [os.path.join(homer_dir, "tagInfo.txt")],
                     output_files = [fileNameRN, fileName],
                     module_entries = [["interaction_matrices_genome", "module_perl"], ["interaction_matrices_genome", "module_homer"]],
                     name = "interaction_matrices_genome." + name  + "_res" + res,
@@ -174,7 +174,7 @@ def hic_compartments (name, output_dir, fileName, homer_dir, res, genome, fileNa
         fileName_PC1 = fileName_PC1, 
         fileName_Comp = fileName_Comp)
 
-    return Job(input_files = [homer_dir],
+    return Job(input_files = [os.path.join(homer_dir, "tagInfo.txt")],
             output_files = [fileName_PC1, fileName_Comp],
             module_entries = [["identify_compartments", "module_perl"], ["identify_compartments", "module_homer"], ["identify_compartments", "module_R"]],
             name = "identify_compartments." + name + "_res" + res,
@@ -197,7 +197,7 @@ def hic_peaks(name, output_dir, homer_dir, res, genome, fileName, fileName_anno,
         cpu = cpu)
 
 
-    return Job(input_files = [homer_dir],
+    return Job(input_files = [os.path.join(homer_dir, "tagInfo.txt")],
         output_files = [fileName, fileName_anno],
         module_entries = [["identify_peaks", "module_perl"], ["identify_peaks", "module_homer"]],
         name = "identify_peaks." + name + "_res" + res,
