@@ -1,11 +1,18 @@
-15 tags, 3573 commits
+15 tags, 3580 commits
 
-HEAD        Tue Nov 28 16:24:06 2017 -0500        0 commits
+HEAD        Thu Nov 30 11:41:06 2017 -0500        0 commits
 
-3.0.0        Wed Nov 29 11:44:43 2017 -0500        417 commits
+3.0.0        Thu Nov 30 11:43:18 2017 -0500        424 commits
 
-  Edouard Henrion <edouard.henrion@mcgill.ca>      227 commits
+  Edouard Henrion <edouard.henrion@mcgill.ca>      234 commits
 
+       3844eee Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       c9ad368 added tagInfo.txt in homer.py
+       3370260 DNA-Seq pipeline - update base.ini file by removing all the paths which were still pointing to a '_dev' location
+       7b15520 BFXDEV-674 - MethylSeq pipeline - updated bedtools.py intersect function to carry header from input bed to output bed
+       da1ece6 added tagInfo.txt
+       1b84ec6 Version bump to 3.1.0-beta
+       03f3dda Version bump to 3.0.0
        5d0a774 added the README file for RNA-Seq Light Pipeline
        837b4fa slightly updated release instructions
        1343ab6 Version bump to 3.0.1-beta

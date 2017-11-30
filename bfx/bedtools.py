@@ -78,7 +78,7 @@ bedtools intersect {other_options} {include_header} \\
             input_bam=input_bam,
             target_bed=target_bed,
             other_options=config.param('bedtools_intersect', 'other_options', required=False),
-            include_header="-header" if include_header else ""
+            include_header="-header" if include_header else "",
             output_bam=output_bam
         )
     )

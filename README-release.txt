@@ -23,11 +23,13 @@ for f in \
   pipelines/tumor_pair/tumor_pair.py \
 ; do echo $f; $f -h > `dirname $f`/README.md; done
 
-git commit -a -m "Version bump to 3.0.0"
-
 # Tag the branch and push the tag. You'll need to have a gpg signature for this. Extra precaution
 git tag -s 3.0.0 -m 'Release 3.0.0'
 git push -u origin --tags
+
+# Recreate the CHANGELOG.md
+bash ~/work/repo/dump_ChangeLog.sh > CHANGELOG.md
+git commit -a -m "Version bump to 3.0.0"
 
 # Create a release tarball archive
 git archive --format=tar --prefix=GenAP_Pipes-3.0.0/ 3.0.0 | gzip > GenAP_Pipes-3.0.0.tar.gz
