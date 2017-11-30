@@ -639,7 +639,8 @@ cp \\
                 job = bedtools.intersect(
                     cpg_profile,
                     target_cpg_profile,
-                    target_bed
+                    target_bed,
+                    include_header=True
                 )
                 job.name = "extract_target_CpG_profile." + sample.name
                 job.samples = [sample]
