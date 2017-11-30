@@ -1,9 +1,18 @@
+[TOC]
+
+
+
+Usage
+-----
+```
+#!text
+
 usage: rnaseq_light.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                        [-o OUTPUT_DIR] [-j {pbs,batch,daemon}] [-f] [--report]
                        [--clean] [-l {debug,info,warning,error,critical}]
                        [-d DESIGN] [-r READSETS] [-v]
 
-Version: 3.0.0
+Version: 3.0.1-beta
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
@@ -46,3 +55,39 @@ Steps:
 4- kallisto
 5- kallisto_count_matrix
 6- gq_seq_utils_exploratory_analysis_rnaseq_light
+
+```
+1- picard_sam_to_fastq
+----------------------
+Convert SAM/BAM files from the input readset file into FASTQ format
+if FASTQ files are not already specified in the readset file. Do nothing otherwise.
+
+2- trimmomatic
+--------------
+Raw reads quality trimming and removing of Illumina adapters is performed using [Trimmomatic](http://www.usadellab.org/cms/index.php?page=trimmomatic).
+If an adapter FASTA file is specified in the config file (section 'trimmomatic', param 'adapter_fasta'),
+it is used first. Else, 'Adapter1' and 'Adapter2' columns from the readset file are used to create
+an adapter FASTA file, given then to Trimmomatic. For PAIRED_END readsets, readset adapters are
+reversed-complemented and swapped, to match Trimmomatic Palindrome strategy. For SINGLE_END readsets,
+only Adapter1 is used and left unchanged.
+
+This step takes as input files:
+
+1. FASTQ files from the readset file if available
+2. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
+
+3- merge_trimmomatic_stats
+--------------------------
+The trim statistics per readset are merged at this step.
+
+4- kallisto
+-----------
+Run Kallisto on fastq files for a fast esimate of abundance.
+
+5- kallisto_count_matrix
+------------------------
+6- gq_seq_utils_exploratory_analysis_rnaseq_light
+-------------------------------------------------
+Exploratory analysis using the gqSeqUtils R package adapted for RnaSeqLight
+
+
