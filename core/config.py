@@ -60,8 +60,8 @@ class Config(ConfigParser.SafeConfigParser):
         log.info("Check modules...")
         for module in modules:
             # Bash shell must be invoked in order to find "module" cmd
-            module_show_output = subprocess.check_output(["bash", "-c", "module show " + module], stderr=subprocess.STDOUT)
-            if re.search("Error", module_show_output, re.IGNORECASE):
+            module_show_output = subprocess.check_output(["bash", "-c", "module spider " + module], stderr=subprocess.STDOUT)
+            if re.search("error", module_show_output, re.IGNORECASE):
                 raise Exception("Error in config file(s) with " + module + ":\n" + module_show_output)
             else:
                 log.info("Module " + module + " OK")
