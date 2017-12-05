@@ -41,11 +41,11 @@ Usage
 #!text
 
 usage: rnaseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
-                 [-o OUTPUT_DIR] [-j {pbs,batch}] [-f] [--report] [--clean]
-                 [-l {debug,info,warning,error,critical}] [-d DESIGN]
-                 [-r READSETS] [-v]
+                 [-o OUTPUT_DIR] [-j {pbs,batch,daemon}] [-f] [--report]
+                 [--clean] [-l {debug,info,warning,error,critical}]
+                 [-d DESIGN] [-r READSETS] [-v]
 
-Version: 2.2.0
+Version: 3.0.1-beta
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
@@ -59,7 +59,7 @@ optional arguments:
                         step range e.g. '1-5', '3,6,7', '2,4-8'
   -o OUTPUT_DIR, --output-dir OUTPUT_DIR
                         output directory (default: current)
-  -j {pbs,batch}, --job-scheduler {pbs,batch}
+  -j {pbs,batch,daemon}, --job-scheduler {pbs,batch,daemon}
                         job scheduler type (default: pbs)
   -f, --force           force creation of jobs even if up to date (default:
                         false)
@@ -105,6 +105,8 @@ Steps:
 21- gq_seq_utils_exploratory_analysis_rnaseq
 22- differential_expression
 23- differential_expression_goseq
+24- ihec_metrics
+25- verify_bam_id
 
 ```
 1- picard_sam_to_fastq
@@ -230,5 +232,17 @@ Merge the results of the analysis in a single csv file.
 ---------------------------------
 Gene Ontology analysis for RNA-Seq using the Bioconductor's R package [goseq](http://www.bioconductor.org/packages/release/bioc/html/goseq.html).
 Generates GO annotations for differential gene expression analysis.
+
+24- ihec_metrics
+----------------
+Generate IHEC's standard metrics.
+
+25- verify_bam_id
+-----------------
+verifyBamID is a software that verifies whether the reads in particular file match previously known
+genotypes for an individual (or group of individuals), and checks whether the reads are contaminated
+as a mixture of two samples. verifyBamID can detect sample contamination and swaps when external
+genotypes are available. When external genotypes are not available, verifyBamID still robustly
+detects sample swaps.
 
 
