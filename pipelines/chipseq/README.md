@@ -25,11 +25,11 @@ Usage
 #!text
 
 usage: chipseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
-                  [-o OUTPUT_DIR] [-j {pbs,batch}] [-f] [--report] [--clean]
-                  [-l {debug,info,warning,error,critical}] [-d DESIGN]
-                  [-r READSETS] [-v]
+                  [-o OUTPUT_DIR] [-j {pbs,batch,daemon}] [-f] [--report]
+                  [--clean] [-l {debug,info,warning,error,critical}]
+                  [-d DESIGN] [-r READSETS] [-v]
 
-Version: 2.2.0
+Version: 3.0.1-beta
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
@@ -43,7 +43,7 @@ optional arguments:
                         step range e.g. '1-5', '3,6,7', '2,4-8'
   -o OUTPUT_DIR, --output-dir OUTPUT_DIR
                         output directory (default: current)
-  -j {pbs,batch}, --job-scheduler {pbs,batch}
+  -j {pbs,batch,daemon}, --job-scheduler {pbs,batch,daemon}
                         job scheduler type (default: pbs)
   -f, --force           force creation of jobs even if up to date (default:
                         false)
@@ -81,6 +81,9 @@ Steps:
 13- homer_annotate_peaks
 14- homer_find_motifs_genome
 15- annotation_graphs
+16- ihec_preprocess_files
+17- run_spp
+18- ihec_metrics
 
 ```
 1- picard_sam_to_fastq
@@ -180,5 +183,20 @@ Gene desert (>= 100 kb upstream or downstream of a transcription start site), Ot
 not included in the above categories); The distribution of peaks found within exons and introns;
 The distribution of peak distance relative to the transcription start sites (TSS);
 the Location of peaks per design.
+
+16- ihec_preprocess_files
+-------------------------
+Generate IHEC's files.
+
+
+17- run_spp
+-----------
+runs spp to estimate NSC and RSC ENCODE metrics. For more information: https://github.com/kundajelab/phantompeakqualtools
+
+
+18- ihec_metrics
+----------------
+Generate IHEC's standard metrics.
+
 
 

@@ -3,13 +3,13 @@
 set -eu -o pipefail
 
 SOFTWARE=python
-VERSION=2.7.13
+VERSION=2.7.14
 SETUPTOOLS_VERSION=36.4.0
 # Remove the version last number
 LIBVERSION=${VERSION%.[0-9]*}
 # Uppercase first P in python
 ARCHIVE=${SOFTWARE^}-$VERSION.tgz
-ARCHIVE_URL=http://www.python.org/ftp/$SOFTWARE/$VERSION/$ARCHIVE
+ARCHIVE_URL=https://www.python.org/ftp/$SOFTWARE/$VERSION/$ARCHIVE
 SOFTWARE_DIR=${SOFTWARE^}-$VERSION
 
 # Specific commands to extract and build the software
@@ -62,7 +62,7 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-setenv          PYTHON_HOME         \$root
+setenv          PYTHONHOME          \$root
 prepend-path    PATH                \$root/bin
 prepend-path    MANPATH             \$root/share/man
 prepend-path    LIBRARY_PATH        \$root/lib/
