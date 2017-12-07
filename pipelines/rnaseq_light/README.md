@@ -12,7 +12,7 @@ usage: rnaseq_light.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                        [--clean] [-l {debug,info,warning,error,critical}]
                        [-d DESIGN] [-r READSETS] [-v]
 
-Version: 3.0.1-beta
+Version: 3.0.0
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
