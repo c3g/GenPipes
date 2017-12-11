@@ -729,6 +729,106 @@ circlator all \\
 
         return jobs
 
+    def basemodification(self):
+        """
+        Run ipdSummary.py for in silico detection of modified bases
+        """
+
+        jobs = []
+
+        for sample in self.samples:
+            for coverage_cutoff in config.param('DEFAULT', 'coverage_cutoff', type='list'):
+                cutoff_x = coverage_cutoff + "X"
+                coverage_directory = os.path.join(sample.name, cutoff_x)
+                preassembly_directory = os.path.join(coverage_directory, "preassembly", "data")
+
+                for mer_size in config.param('DEFAULT', 'mer_sizes', type='list'):
+                    mer_size_text = "merSize" + mer_size
+                    mer_size_directory = os.path.join(coverage_directory, mer_size_text)
+                    basemodification_directory = os.path.join(mer_size_directory, "basemodification")
+                    basemodification_file_prefix = os.path.join(basemodification_directory, sample.name + ".basemod")
+
+                    polishing_rounds = config.param('DEFAULT', 'polishing_rounds', type='posint')
+                    if polishing_rounds > 4:
+                        raise Exception("Error: polishing_rounds \"" + str(polishing_rounds) + "\" is invalid (should be between 1 and 4)!")
+                        
+                    fasta_consensus = os.path.join(mer_size_directory, "polishing" + str(polishing_rounds - 1), "data", "consensus.fasta")
+                    aligned_reads = os.path.join(mer_size_directory, "polishing" + str(polishing_rounds), "data", "aligned_reads.sorted.cmp.h5")
+                    output_gff = basemodification_file_prefix
+
+                jobs.append(concat_jobs([
+                    Job(command="mkdir -p " + basemodification_directory),
+                    Job(
+                       [aligned_reads, fasta_consensus],
+                       [basemodification_file_prefix],
+                       [
+                           ['basemodification', 'module_smrtanalysis'],
+                        ],
+                        command="""\
+source /cvmfs/soft.mugqic/CentOS6/software/smrtanalysis/smrtanalysis_2.3.0.140936.p5/etc/setup.sh && ipdSummary.py {aligned_reads} --reference {fasta_consensus}  --identify m6A,m4C  --methylFraction --paramsPath /cvmfs/soft.mugqic/CentOS6/software/smrtanalysis/smrtanalysis_2.3.0.140936.p5/analysis/etc/algorithm_parameters/2015-11/kineticsTools/ --numWorkers 12 --outfile \\
+   {output_gff}""".format(
+                              fasta_consensus=os.path.join(mer_size_directory, "polishing" + str(polishing_rounds - 1), "data", "consensus.fasta"),
+                              aligned_reads=os.path.join(mer_size_directory, "polishing" + str(polishing_rounds), "data", "aligned_reads.sorted.cmp.h5"),
+                              output_gff = basemodification_file_prefix
+                            )
+                        )
+                ], name = "basemodification." + sample.name))
+
+        return jobs
+
+
+    def motifMaker(self):
+        """
+        Run motifMaker to generate motif_summary.csv
+        """
+
+        jobs = []
+
+        for sample in self.samples:
+            for coverage_cutoff in config.param('DEFAULT', 'coverage_cutoff', type='list'):
+                cutoff_x = coverage_cutoff + "X"
+                coverage_directory = os.path.join(sample.name, cutoff_x)
+                preassembly_directory = os.path.join(coverage_directory, "preassembly", "data")
+
+                for mer_size in config.param('DEFAULT', 'mer_sizes', type='list'):
+                    mer_size_text = "merSize" + mer_size
+                    mer_size_directory = os.path.join(coverage_directory, mer_size_text)
+                    basemodification_directory = os.path.join(mer_size_directory, "basemodification")
+                    basemodification_file_prefix = os.path.join(basemodification_directory, sample.name + ".basemod")
+                    motifMaker_directory = os.path.join(mer_size_directory, "motifMaker")
+                    motifMaker_file = os.path.join(motifMaker_directory, (sample.name + ".motif_summary.csv"))
+                    output_gff = basemodification_file_prefix + ".gff"
+
+                    polishing_rounds = config.param('DEFAULT', 'polishing_rounds', type='posint')
+                    if polishing_rounds > 4:
+                        raise Exception("Error: polishing_rounds \"" + str(polishing_rounds) + "\" is invalid (should be between 1 and 4)!")
+                        
+                    fasta_consensus = os.path.join(mer_size_directory, "polishing" + str(polishing_rounds - 1), "data", "consensus.fasta")
+                    output_gff = basemodification_file_prefix + ".gff"
+
+                jobs.append(concat_jobs([
+                    Job(command="mkdir -p " + motifMaker_directory),
+                    Job(
+                       [fasta_consensus, basemodification_file_prefix],
+                       [motifMaker_file],
+                       [
+                           ['motifMaker', 'module_smrtanalysis'],
+                           ['motifMaker', 'module_java'],
+                        ],
+                        command="""\
+source /cvmfs/soft.mugqic/CentOS6/software/smrtanalysis/smrtanalysis_2.3.0.140936.p5/etc/setup.sh && motifMaker.sh find -f {fasta_consensus} -g {output_gff}  -o \\
+   {output}""".format(
+                              fasta_consensus=os.path.join(mer_size_directory, "polishing" + str(polishing_rounds - 1), "data", "consensus.fasta"),
+                              output_gff = basemodification_file_prefix + ".gff" ,
+                              output=motifMaker_file
+                            )
+                        )
+                ], name = "motifMaker." + sample.name))
+
+        return jobs
+
+
+
     def report_jobs(self):
         """
         Overwrite core pipeline report_jobs method to perform it on every sample/coverage_cutoff/mer_size
@@ -756,7 +856,9 @@ circlator all \\
             self.blast,
             self.mummer,
             self.compile,
-            self.circlator
+            self.circlator,
+            self.basemodification,
+            self.motifMaker
         ]
 
 if __name__ == '__main__':
