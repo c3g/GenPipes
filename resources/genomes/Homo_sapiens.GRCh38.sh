@@ -56,9 +56,10 @@ get_dbNSFP() {
         mkdir -p $ANNOTATIONS_DIR/$DBSNSFP_VERSION/
         if ! is_up2date `download_path $DBNSFP_URL`; then
             download_url $DBNSFP_URL
-            cp dbnsfp.softgenetics.com/${DBSNSFP_VERSION} $ANNOTATIONS_DIR/$DBSNSFP_VERSION/
+            cp dbnsfp.softgenetics.com/${DBSNSFP_VERSION}.zip $ANNOTATIONS_DIR/$DBSNSFP_VERSION/
         fi
         unzip $ANNOTATIONS_DIR/$DBSNSFP_VERSION/$DBSNSFP_VERSION.zip -d $ANNOTATIONS_DIR/$DBSNSFP_VERSION/
+        rm $ANNOTATIONS_DIR/$DBSNSFP_VERSION/$DBSNSFP_VERSION.zip
         (head -n 1 $ANNOTATIONS_DIR/$DBSNSFP_VERSION/*_variant.chr1 ; cat $ANNOTATIONS_DIR/$DBSNSFP_VERSION/*_variant.chr* | grep -v "^#" ) > $DBSNSFP.txt
         module load $module_tabix
         bgzip $DBSNSFP.txt
@@ -73,9 +74,9 @@ get_dbNSFP() {
         for POP_FREQ in 1000Gp1_EUR_AF 1000Gp1_AFR_AF 1000Gp1_ASN_AF;
         do
             cat $DBSNP_ANNOTATED | sed -e 's/dbNSFP_'$POP_FREQ'/AF/g' > $ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP${DBSNP_VERSION}_${POP_FREQ}.vcf
-        module load $module_tabix
-            # bgzip $ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP${DBSNP_VERSION}_${POP_FREQ}.vcf
-            # tabix -vcf $ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP${DBSNP_VERSION}_${POP_FREQ}.vcf.gz
+            module load $module_tabix
+            bgzip $ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP${DBSNP_VERSION}_${POP_FREQ}.vcf
+            tabix -p vcf $ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP${DBSNP_VERSION}_${POP_FREQ}.vcf.gz
         done
     fi
     # set the default allele frequency for a population (hapmap CEU)

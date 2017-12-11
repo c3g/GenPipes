@@ -50,7 +50,7 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-setenv          PYTHON_HOME         \$root
+setenv          PYTHONHOME          \$root
 prepend-path    PATH                \$root/bin
 prepend-path    MANPATH             \$root/share/man
 prepend-path    LIBRARY_PATH        \$root/lib/

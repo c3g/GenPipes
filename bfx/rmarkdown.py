@@ -30,12 +30,12 @@ from core.job import *
 def render(job_input, job_name, input_rmarkdown_file, render_output_dir, module_section="DEFAULT", prerun_r=""):
     # input_rmarkdown_file='/root/blu/awe.some.Rmd';render_output_dir='report'
     output_markdown_file = os.path.join(render_output_dir, os.path.splitext( os.path.basename(input_rmarkdown_file) )[0] + '.md')
-    
+
     if not isinstance(job_input, list):
         job_input = [job_input]
-    
+
     return Job(
-        job_input,[output_markdown_file],
+        job_input, [output_markdown_file],
         [
             [module_section, 'module_R'],
             [module_section, 'module_pandoc']
