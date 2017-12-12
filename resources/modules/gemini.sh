@@ -49,6 +49,7 @@ set             anaconda_root       \$root/shared/anaconda
 setenv          GEMINI_BIN          \$root/bin
 prepend-path    PATH                \$root/bin
 prepend-path    PATH                \$anaconda_root/bin
+prepend-path    PYTHONHOME          \$anaconda_root
 prepend-path    PYTHONPATH          \$anaconda_root/lib/python2.7/site-packages
 prepend-path    PYTHONPATH          \$anaconda_root/lib/python2.7
 prepend-path    LD_LIBRARY_PATH     \$anaconda_root/lib/python2.7/site-packages
