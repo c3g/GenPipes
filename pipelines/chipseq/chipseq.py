@@ -852,7 +852,8 @@ done""".format(
             chip_bam = os.path.join(self.output_dirs['ihecA_output_directory'], key + ".merged.mdup.bam")
             input_sample = values[0] if values[0] is not "no_input" else key
             input_bam = os.path.join(self.output_dirs['ihecA_output_directory'], input_sample + ".merged.mdup.bam")
-            chip_type = config.param('IHEC_chipseq_metrics', 'chip_type', required=True)
+            #chip_type = config.param('IHEC_chipseq_metrics', 'chip_type', required=True)
+            chip_type = values[2]
             chip_bed = os.path.join(self.output_dirs['macs_output_directory'], values[1], values[1] + "_peaks." + values[2] + "Peak")
             genome = config.param('ihec_metrics', 'assembly_synonyms')
             
@@ -867,9 +868,9 @@ done""".format(
               ], name="ihec_metrics." + key)
             jobs.append(job)
 
-        chip_type = config.param('ihec_metrics', 'chip_type')
-        if (chip_type == "TF"):
-            log.warning("chip_type is set to default value of 'TF'. If you are using a histone mark, please modify the chip_type in the ini file to the name of the mark. Otherwise, some metrics wont be accurate!")
+        #chip_type = config.param('ihec_metrics', 'chip_type')
+        #if (chip_type == "TF"):
+        #    log.warning("chip_type is set to default value of 'TF'. If you are using a histone mark, please modify the chip_type in the ini file to the name of the mark. Otherwise, some metrics wont be accurate!")
             
         return jobs
 
