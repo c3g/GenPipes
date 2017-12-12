@@ -1,11 +1,21 @@
-15 tags, 3580 commits
+15 tags, 3600 commits
 
-HEAD        Thu Nov 30 11:41:06 2017 -0500        0 commits
+HEAD        Thu Dec 7 19:14:59 2017 +0000        0 commits
 
-3.0.0        Thu Nov 30 11:43:18 2017 -0500        424 commits
+3.0.0        Thu Dec 7 14:19:49 2017 -0500        444 commits
 
-  Edouard Henrion <edouard.henrion@mcgill.ca>      234 commits
+  Edouard Henrion <edouard.henrion@mcgill.ca>      247 commits
 
+       8c5a5c6 MethylSeq pipeline - BFXDEV-674 - updated wiggle_tracks step with more comprehensive output file names
+       2024838 updated ucsc.py with simplified if-else statement for more clarity and corrected the 'chr' prefixing behavior
+       bcf3d8a Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines into IHEC_metrics
+       8594288 updated Homo_sapiens.GRCh38.sh installation script with vcf indexes
+       cb43d49 updated jellyfish installation script with version 2.2.3
+       9e3c955 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       7e14f09 Updated README for all the pipelines
+       a6b244e updated mugqic_pipelines.sh script with the most recent version of the mugqic_pipelines, now called GenAP_Pipes, version 3.0.0
+       86092c6 Version bump to 3.0.1-beta
+       b8f4310 Version bump to 3.0.0
        3844eee Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
        c9ad368 added tagInfo.txt in homer.py
        3370260 DNA-Seq pipeline - update base.ini file by removing all the paths which were still pointing to a '_dev' location
@@ -44,6 +54,7 @@ HEAD        Thu Nov 30 11:41:06 2017 -0500        0 commits
        763aac0 BFXDEV-673 - adding analysis JSON file generation to the Illumina Run Processing pipeline
        8b40129 BFXDEV-673 - adding analysis JSON file generation to the Tumor Pair pipeline
        9653250 BFXDEV-673 - adding analysis JSON file generation to the RNA-Seq De Novo Assembly pipeline
+       f961ef1 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
        1dcae3f BFXDEV-673 - added the analysis JSON file generation to the RnaSeq pipeline
        f107e04 BFXDEV-673 - added the analysis JSON file generation to the PacBio Assembly pipeline
        b806ac6 BFXDEV-673 - updated jsonator.py to handle PacBio Assembly readset files when generating JSON analysis file for PacBio Assembly pipeline
@@ -67,6 +78,8 @@ HEAD        Thu Nov 30 11:41:06 2017 -0500        0 commits
        c777a64 BFXDEV-673 - updated core/pipeline.py for a better generation of the json analysis file
        1d735a0 BFXDEV-673 - updated bfx/jsonator.py
        1b0b956 BFXDEV-673 - updated utils/job2json.py
+       98b0d7f Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       625ca4f added optparse library installation in R_Bioconductor.sh
        f751eb5 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
        c41c514 removing MULTIQC from mugqic tools and updating version to 2.1.9
        00118d6 version 1.0.5 of R_mugqic_packages
@@ -263,8 +276,10 @@ HEAD        Thu Nov 30 11:41:06 2017 -0500        0 commits
        a42811f bedtools.py edited online with Bitbucket removed unused and unfinished function genomecov...
        e76018c bedtools.py edited online with Bitbucket
 
-  Eloi Mercier <emercier@jonquille.genome.mcgill.ca>      41 commits
+  Eloi Mercier <emercier@jonquille.genome.mcgill.ca>      43 commits
 
+       33f242d removed depreciated reasignment of module_snpeff in snpsift_annotate step in dnaseq.base.ini
+       bad3d89 renamed and duplicated snp_effect section in mammouth.ino to mpileup_snp_effect and haplotype_caller_snp_effect in order to correctly set ppn=1
        54251b5 Moved report.kallisto job after kallisto_count_matrix since the it needs the output of kallisto_count_matrix; added dependancies to copy_tx2genes_file so it waits until kallisto_count_matrix is done
        19a3beb Merge branch 'master' of https://bitbucket.org/mugqic/mugqic_pipelines
        73b4c97 Merge branch 'master' of https://bitbucket.org/mugqic/mugqic_pipelines
@@ -375,8 +390,13 @@ HEAD        Thu Nov 30 11:41:06 2017 -0500        0 commits
 
        46371a9 starting the hicup_align step
 
-  Rola Dali <rola.dali@mail.mcgill.ca>      83 commits
+  Rola Dali <rola.dali@mail.mcgill.ca>      88 commits
 
+       9be3474 Merged in IHEC_metrics (pull request #27)
+       130d0b5 changes to mammouth.ini to set all ppn=1; changed module spider back to module show since it is incompatible with abacus
+       71cbe96 Merge branch 'IHEC_metrics' of bitbucket.org:mugqic/mugqic_pipelines into IHEC_metrics
+       f93c39e module show changed to module spider in config.py to accelerate module checking
+       a64c34f fixing homer dependencies
        d274293 editing homer tag directory output back to folder
        78dc2fc Merged in IHEC_metrics (pull request #26)
        6b97871 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines into IHEC_metrics
