@@ -45,11 +45,12 @@ from bfx import trinity
 from bfx import trinotate
 from bfx import blast
 from bfx import exonerate
+from pipelines.rnaseq import rnaseq
 
 
 log = logging.getLogger(__name__)
 
-class RnaSeqDeNovoAssembly(common.Illumina):
+class RnaSeqDeNovoAssembly(rnaseq.RnaSeq):
     """
     RNA-Seq De Novo Assembly Pipeline
     =================================
@@ -111,9 +112,8 @@ class RnaSeqDeNovoAssembly(common.Illumina):
     def __init__(self, protocol=None):
         self._protocol=protocol
         # Add pipeline specific arguments
-        self.argparser.add_argument("-d", "--design", help="design file", type=file)
-
         super(RnaSeqDeNovoAssembly, self).__init__(protocol)
+
 
     def insilico_read_normalization_readsets(self):
         """
