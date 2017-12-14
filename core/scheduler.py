@@ -93,6 +93,25 @@ mkdir -p $JOB_OUTPUT_DIR/$STEP
 """.format(separator_line=separator_line, step=step)
         )
 
+    def job2json(self, pipeline, step, job, job_status):
+        json_file_list = ",".join([os.path.join(pipeline.output_dir, "json", sample.json_file) for sample in job.samples])
+        return """\
+module load {module_python}
+$MUGQIC_PIPELINES_HOME/utils/job2json.py \\
+  -s \\"{step.name}\\" \\
+  -j \\"$JOB_NAME\\" \\
+  -d \\"$JOB_DONE\\" \\
+  -l \\"$JOB_OUTPUT\\" \\
+  -o \\"{jsonfiles}\\" \\
+  -f {status}
+module unload {module_python} {command_separator}""".format(
+            module_python=config.param('DEFAULT', 'module_python'),
+            step=step,
+            jsonfiles=json_file_list,
+            status=job_status,
+            command_separator="&&" if (job_status=='\\"running\\"') else ""
+        ) if json_file_list else ""
+
 class PBSScheduler(Scheduler):
     def submit(self, pipeline):
         self.print_header(pipeline)
@@ -110,7 +129,7 @@ class PBSScheduler(Scheduler):
                     else:
                         job_dependencies = "JOB_DEPENDENCIES="
 
-                    sleepTime = random.randint(10, 100)
+                    #sleepTime = random.randint(10, 100)
                     print("""
 {separator_line}
 # JOB: {job.id}: {job.name}
@@ -131,49 +150,20 @@ COMMAND=$(cat << '{limit_string}'
                         )
                     )
 
-                    json_file_list = ",".join([os.path.join(pipeline.output_dir, "json", sample.json_file) for sample in job.samples])
-                    job_start2json_cmd = """\
-module load {module_python}
-$MUGQIC_PIPELINES_HOME/utils/job2json.py \\
-  -s \\"{step.name}\\" \\
-  -j \\"$JOB_NAME\\" \\
-  -d \\"$JOB_DONE\\" \\
-  -l \\"$JOB_OUTPUT\\" \\
-  -o \\"{jsonfiles}\\" \\
-  -f \\"running\\"
-module unload {module_python} &&""".format(
-                        module_python=config.param('DEFAULT', 'module_python'),
-                        step=step,
-                        jsonfiles=json_file_list,
-                    ) if json_file_list else ""
-                    job_end2json_cmd = """\
-module load {module_python}
-$MUGQIC_PIPELINES_HOME/utils/job2json.py \\
-  -s \\"{step.name}\\" \\
-  -j \\"$JOB_NAME\\" \\
-  -d \\"$JOB_DONE\\" \\
-  -l \\"$JOB_OUTPUT\\" \\
-  -o \\"{jsonfiles}\\" \\
-  -f \\$MUGQIC_STATE
-module unload {module_python}""".format(
-                        module_python=config.param('DEFAULT', 'module_python'),
-                        step=step,
-                        jsonfiles=json_file_list,
-                    ) if json_file_list else ""
                     cmd = """\
-echo "rm -f $JOB_DONE && {job_start2json} $COMMAND
+echo "rm -f $JOB_DONE && {job2json_start} $COMMAND
 MUGQIC_STATE=\$PIPESTATUS
 echo MUGQICexitStatus:\$MUGQIC_STATE
-{job_end2json}
+{job2json_end}
 if [ \$MUGQIC_STATE -eq 0 ] ; then
   touch $JOB_DONE ;
 fi
 exit \$MUGQIC_STATE" | \\
 """.format(
-                        job_start2json=job_start2json_cmd,
-                        job_end2json=job_end2json_cmd,
-                        sleep_time=sleepTime
+                        job2json_start=self.job2json(pipeline, step, job, '\\"running\\"'),
+                        job2json_end=self.job2json(pipeline, step, job, '\\$MUGQIC_STATE')
                     )
+                        #sleep_time=sleepTime
 
                     # Cluster settings section must match job name prefix before first "."
                     # e.g. "[trimmomatic] cluster_cpu=..." for job name "trimmomatic.readset1"
@@ -231,15 +221,18 @@ JOB_NAME={job.name}
 JOB_DONE={job.done}
 printf "\\n$SEPARATOR_LINE\\n"
 echo "Begin MUGQIC Job $JOB_NAME at `date +%FT%H:%M:%S`" && \\
-rm -f $JOB_DONE && \\
+rm -f $JOB_DONE && {job2json_start} \\
 {job.command_with_modules}
 MUGQIC_STATE=$PIPESTATUS
 echo "End MUGQIC Job $JOB_NAME at `date +%FT%H:%M:%S`"
 echo MUGQICexitStatus:$MUGQIC_STATE
+{job2json_end}
 if [ $MUGQIC_STATE -eq 0 ] ; then touch $JOB_DONE ; else exit $MUGQIC_STATE ; fi
 """.format(
                             job=job,
-                            separator_line=separator_line
+                            separator_line=separator_line,
+                            job2json_start=self.job2json(pipeline, step, job, '\\"running\\"'),
+                            job2json_end=self.job2json(pipeline, step, job, '\\$MUGQIC_STATE')
                         )
                     )
 
