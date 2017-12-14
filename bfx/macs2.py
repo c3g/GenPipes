@@ -28,6 +28,7 @@ from core.job import *
 def callpeak (format, genome_size, treatment_files, control_files, output_prefix_name, output, other_options=""):
 
     command = """macs2 callpeak {format}{other_options} \\
+          --tempdir $SCRATCH \\
           --gsize {genome_size} \\
           --treatment \\
           {treatment_files}{control_files} \\

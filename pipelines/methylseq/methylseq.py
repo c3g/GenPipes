@@ -545,7 +545,7 @@ cp \\
             big_wig_prefix = os.path.join("tracks", "bigWig", sample.name)
 
             bed_graph_output = bed_graph_prefix + ".bedGraph"
-            big_wig_output = big_wig_prefix + ".bw"
+            big_wig_output = big_wig_prefix + ".coverage.bw"
 
             if input_bam == os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.bam") :
                 jobs.append(
@@ -556,21 +556,33 @@ cp \\
                             re.sub("readset_sorted", "sorted", input_bam),
                             "coordinate"
                         ),
-                        bedtools.graph(re.sub("readset_sorted", "sorted", input_bam), bed_graph_output, "")
+                        bedtools.graph(
+                            re.sub("readset_sorted", "sorted", input_bam),
+                            bed_graph_output,
+                            ""
+                        )
                     ], name="bed_graph." + re.sub(".bedGraph", "", os.path.basename(bed_graph_output)))
                 )
             else :
                 jobs.append(
                     concat_jobs([
                         Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " " + os.path.join("tracks", "bigWig"), removable_files=["tracks"], samples=[sample]),
-                        bedtools.graph(input_bam, bed_graph_output, "")
+                        bedtools.graph(
+                            input_bam,
+                            bed_graph_output,
+                            ""
+                        )
                     ], name="bed_graph." + re.sub(".bedGraph", "", os.path.basename(bed_graph_output)))
                 )
 
             jobs.append(
                 concat_jobs([
                     Job(command="mkdir -p " + os.path.join("tracks", "bigWig"), samples=[sample]),
-                    ucsc.bedGraphToBigWig(bed_graph_output, big_wig_output, False)
+                    ucsc.bedGraphToBigWig(
+                        bed_graph_output,
+                        big_wig_output,
+                        False
+                    )
                 ], name="wiggle." + re.sub(".bw", "", os.path.basename(big_wig_output)))
             )
 
@@ -579,7 +591,7 @@ cp \\
             candidate_input_files = [[os.path.join(methyl_directory, sample.name + ".sorted.dedup.bedGraph.gz")]]
             candidate_input_files.append([os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup.bedGraph.gz")])
             [input_bed_graph] = self.select_input_files(candidate_input_files)
-            output_wiggle = os.path.join("tracks", "bigWig", re.sub(".bedGraph.gz", "methylation.bw", os.path.basename(input_bed_graph)))
+            output_wiggle = os.path.join("tracks", "bigWig", sample.name + ".methylation.bw")
 
             jobs.append(
                 concat_jobs([

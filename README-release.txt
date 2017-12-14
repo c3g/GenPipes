@@ -13,7 +13,6 @@ for f in \
   pipelines/chipseq/chipseq.py \
   pipelines/dnaseq/dnaseq.py \
   pipelines/dnaseq_high_coverage/dnaseq_high_coverage.py \
-  pipelines/hicseq/hicseq.py \
   pipelines/illumina_run_processing/illumina_run_processing.py \
   pipelines/methylseq/methylseq.py \
   pipelines/pacbio_assembly/pacbio_assembly.py \
@@ -21,7 +20,8 @@ for f in \
   pipelines/rnaseq_denovo_assembly/rnaseq_denovo_assembly.py \
   pipelines/rnaseq_light/rnaseq_light.py \
   pipelines/tumor_pair/tumor_pair.py \
-; do echo $f; $f -h > `dirname $f`/README.md; done
+; do echo $f; $f --help > `dirname $f`/README.md; done
+pipelines/hicseq/hicseq.py -e DpnII --help > pipelines/hicseq/README.md
 
 # Tag the branch and push the tag. You'll need to have a gpg signature for this. Extra precaution
 git tag -s 3.0.0 -m 'Release 3.0.0'
