@@ -16,7 +16,8 @@ $sequence_alignment_table$
 * deduplicated_aligned_reads: aligned_reads - duplicated_reads
 * %_useful_aligned_rate: deduplicated_aligned_reads / raw_reads * 100 
 * %_lambda_conversion_rate: C->T conversion rate on the lambda phage * 100 
-* estimate_average_genome_coverage: aligned_reads / genome size
+* estimated_average_genome_coverage: aligned_reads / genome size
 * #_CG_1X: total number of CpGs with a coverage >= 1x
 * #_CG_10X: total number of CpGs with a coverage >= 10x
 * #_CG_30X: total number of CpGs with a coverage >= 30x
+
