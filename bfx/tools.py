@@ -415,6 +415,9 @@ R --no-save --args \\
     )
 
 def r_select_scaffolds(inputs, outputs, folder_sca, kmer, name_sample, type_insert, min_insert_size=200):
+    if not isinstance(inputs, list):
+        inputs=[inputs]
+    
     return Job(
         inputs,
         outputs,
@@ -439,6 +442,9 @@ R --no-save --args \\
     )
 
 def r_find_cluster(inputs, outputs, folder_sca, kmer, unmap_type, name_sample, type_insert, max_insert_size=200, min_mapping_quality=10):
+    if not isinstance(inputs, list):
+        inputs=[inputs]
+    
     return Job(
         inputs,
         outputs,
@@ -466,6 +472,9 @@ R --no-save --args \\
     )
 
 def r_find_insert(inputs, outputs, folder_sca, kmer, name_sample, type_insert, mean_coverage=20, max_insert_size=200, min_overlap=2, exclu_file="None"):
+    if not isinstance(inputs, list):
+        inputs=[inputs]
+    
     return Job(
         inputs,
         outputs,
@@ -496,6 +505,9 @@ R --no-save --args \\
     )
 
 def r_filter_insert(inputs, outputs, folder_sca, kmer, name_sample, type_insert, mean_coverage=20, max_insert_size=200, strand=1, min_num_read=1, mean_read_length=100):
+    if not isinstance(inputs, list):
+        inputs=[inputs]
+    
     return Job(
         inputs,
         outputs,
@@ -636,6 +648,9 @@ bash cpgStats.sh \\
     )
 
 def methylseq_metrics_report(sample_list, inputs, output, target_bed):
+    if not isinstance(inputs, list):
+        inputs=[inputs]
+    
     return Job(
         inputs,
         [output],
@@ -655,6 +670,9 @@ bash methylseq_metrics.sh \\
     )
 
 def methylseq_ihec_metrics_report(sample_name, inputs, output, output_all, target_bed, count):
+    if not isinstance(inputs, list):
+        inputs=[inputs]
+    
     return Job(
         inputs,
         [output, output_all],

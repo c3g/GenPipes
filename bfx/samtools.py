@@ -141,6 +141,8 @@ samtools view {options} \\
     )
 
 def bcftools_cat(inputs, output):
+    if not isinstance(inputs, list):
+        inputs=[inputs]
     return Job(
         inputs,
         [output],
@@ -199,6 +201,8 @@ $BCFTOOLS_BIN/bcftools view {pair_calling} {options} \\
     )
 
 def bcftools_cat_pair(inputs, output):
+    if not isinstance(inputs, list):
+        inputs=[inputs]
     return Job(
         inputs,
         [output],

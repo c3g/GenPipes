@@ -401,6 +401,9 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
 
 def combine_gvcf(inputs, output, intervals=[], exclude_intervals=[]):
 
+    if not isinstance(inputs, list):
+        inputs=[inputs]
+    
     return Job(
         inputs,
         [output],

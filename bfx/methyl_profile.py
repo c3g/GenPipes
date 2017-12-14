@@ -82,6 +82,9 @@ python $PYTHON_TOOLS/CpG_coverageStats.py \\
     )
 
 def metrics_report(sample_list, inputs, output, target_bed):
+    if not isinstance(inputs, list):
+        inputs=[inputs]
+    
     return Job(
         inputs,
         [output],
@@ -100,6 +103,9 @@ bash methylseq_metrics.sh \\
     )
 
 def ihec_metrics_report(sample_list, inputs, output, target_bed):
+  if not isinstance(inputs, list):
+        inputs=[inputs]
+  
     return Job(
         inputs,
         [output],
