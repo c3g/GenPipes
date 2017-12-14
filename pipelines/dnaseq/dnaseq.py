@@ -84,6 +84,7 @@ class DnaSeq(common.Illumina):
     def __init__(self, protocol=None):
         self._protocol=protocol
         # Add pipeline specific arguments
+        self.argparser.add_argument("-t", "--type", help = "DNAseq analysis type", choices = ["mugqic", "mpileup"], default="mugqic")
         super(DnaSeq, self).__init__(protocol)
 
 
@@ -1324,7 +1325,36 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
     @property
     def steps(self):
         return [
-            self.picard_sam_to_fastq,
+            [self.picard_sam_to_fastq,
+            self.trimmomatic,
+            self.merge_trimmomatic_stats,
+            self.bwa_mem_picard_sort_sam,
+            self.picard_merge_sam_files,
+            self.gatk_indel_realigner,
+            self.merge_realigned,
+            self.fix_mate_by_coordinate,
+            self.picard_mark_duplicates,
+            self.recalibration,
+            self.verify_bam_id,
+            self.metrics,
+            self.picard_calculate_hs_metrics,
+            self.gatk_callable_loci,
+            self.extract_common_snp_freq,
+            self.baf_plot,
+            self.gatk_haplotype_caller,
+            self.merge_and_call_individual_gvcf,
+            self.combine_gvcf,
+            self.merge_and_call_combined_gvcf,
+            self.variant_recalibrator,
+            self.dna_sample_metrics,
+            self.haplotype_caller_filter_nstretches,
+            self.haplotype_caller_flag_mappability,
+            self.haplotype_caller_snp_id_annotation,
+            self.haplotype_caller_snp_effect,
+            self.haplotype_caller_dbnsfp_annotation,
+            self.haplotype_caller_metrics_vcf_stats,
+            self.haplotype_caller_metrics_snv_graph_metrics],
+            [self.picard_sam_to_fastq,
             self.trimmomatic,
             self.merge_trimmomatic_stats,
             self.bwa_mem_picard_sort_sam,
@@ -1344,15 +1374,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             self.combine_gvcf,
             self.merge_and_call_combined_gvcf,
             self.variant_recalibrator,
-            self.dna_sample_metrics,
-            self.haplotype_caller_filter_nstretches,
-            self.haplotype_caller_flag_mappability,
-            self.haplotype_caller_snp_id_annotation,
-            self.haplotype_caller_snp_effect,
-            self.haplotype_caller_dbnsfp_annotation,
-            self.haplotype_caller_metrics_vcf_stats,
-            self.haplotype_caller_metrics_snv_graph_metrics,
-            self.rawmpileup,
+            self.dna_sample_metrics,self.rawmpileup,
             self.rawmpileup_cat,
             self.snp_and_indel_bcf,
             self.merge_filter_bcf,
@@ -1363,8 +1385,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             self.mpileup_dbnsfp_annotation,
             self.mpileup_metrics_vcf_stats,
             self.mpileup_metrics_snv_graph_metrics,
-            self.verify_bam_id
+            self.verify_bam_id]
         ]
 
 if __name__ == '__main__':
-    DnaSeq()
+    DnaSeq(protocol=['mugqic', 'mpileup'])
