@@ -18,7 +18,7 @@ $sequence_alignment_table$
 * %_proportion_unique_filtered_reads_MAPQ>10: deduplicated_aligned_reads with mapping quality > 10 / trimmed_reads * 100
 * on_target_reads: number of aligned reads to the reference that match with the capture region
 * %_on_target_rate: on_target_reads / deduplicated_aligned_reads * 100
-* %on_target_vs_raw_reads: on_target_reads / raw_reads * 100
+* %_on_target_vs_raw_reads: on_target_reads / raw_reads * 100
 * GC_bias: the Pearson correlation between coverage values and GC content for 1000 bins of 100 base pair across genome
 * %_pUC19_methylation_rate: 100 - C->T conversion rate on pUC19 * 100 
 * %_lambda_conversion_rate: C->T conversion rate on the lambda phage * 100 

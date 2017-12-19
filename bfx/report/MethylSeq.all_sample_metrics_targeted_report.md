@@ -17,7 +17,7 @@ $metrics_table_md$
 * %_useful_aligned_rate: deduplicated_aligned_reads / raw_reads * 100 
 * on_target_reads: number of aligned reads to the reference that match with the capture region
 * %_on_target_rate: on_target_reads / deduplicated_aligned_reads * 100
-* %on_target_vs_raw_reads: on_target_reads / raw_reads * 100
+* %_on_target_vs_raw_reads: on_target_reads / raw_reads * 100
 * %_lambda_conversion_rate: C->T conversion rate on the lambda phage * 100 
 * estimated_average_genome_coverage: aligned_reads / genome size
 * #_CG_1X: total number of CpGs with a coverage >= 1x
