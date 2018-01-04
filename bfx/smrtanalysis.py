@@ -514,3 +514,49 @@ gunzip -c \\
         outfile_fastq=outfile_fastq,
         outfile_fasta_uncompressed=outfile_fasta_uncompressed
     ))
+
+
+def basemodification(
+    fasta_consensus,
+    aligned_reads,
+    basemodification_file_prefix,
+    mer_size_directory,
+    polishing_rounds
+    ):
+
+    return Job(
+        [fasta_consensus, aligned_reads],
+        [basemodification_file_prefix],
+        [
+            ['basemodification', 'module_smrtanalysis']
+        ],
+        command="""\
+source /cvmfs/soft.mugqic/CentOS6/software/smrtanalysis/smrtanalysis_2.3.0.140936.p5/etc/setup.sh && ipdSummary.py {aligned_reads} --reference {fasta_consensus}  --identify m6A,m4C  --methylFraction --paramsPath /cvmfs/soft.mugqic/CentOS6/software/smrtanalysis/smrtanalysis_2.3.0.140936.p5/analysis/etc/algorithm_parameters/2015-11/kineticsTools/ --numWorkers 12 --outfile \\
+   {output_gff}""".format(
+          fasta_consensus=os.path.join(mer_size_directory, "polishing" + str(polishing_rounds - 1), "data", "consensus.fasta"),
+          aligned_reads=os.path.join(mer_size_directory, "polishing" + str(polishing_rounds), "data", "aligned_reads.sorted.cmp.h5"),
+          output_gff = basemodification_file_prefix
+    ))
+
+def motifMaker(
+    fasta_consensus,
+    basemodification_file_prefix,
+    mer_size_directory,
+    polishing_rounds,
+    motifMaker_file
+    ):
+
+    return Job(
+        [fasta_consensus, basemodification_file_prefix],
+        [motifMaker_file],
+        [
+                  ['motifMaker', 'module_smrtanalysis'],
+                  ['motifMaker', 'module_java'],
+        ],
+        command="""\
+source /cvmfs/soft.mugqic/CentOS6/software/smrtanalysis/smrtanalysis_2.3.0.140936.p5/etc/setup.sh && motifMaker.sh find -f {fasta_consensus} -g {output_gff}  -o \\
+   {output}""".format(
+                              fasta_consensus=os.path.join(mer_size_directory, "polishing" + str(polishing_rounds - 1), "data", "consensus.fasta"),
+                              output_gff = basemodification_file_prefix + ".gff" ,
+                              output=motifMaker_file
+    ))
