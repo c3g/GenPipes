@@ -58,19 +58,19 @@ blasr \\
   -maxLCPLength {max_lcp_length}{sam} && \\
 echo {outfile} > {outfile_fofn} &&
 filterm4.py {outfile} > {outfile_filtered} 2> {outfile_filtered}.log'""".format(
-        infile=infile,
-        infile_long=infile_long,
-        outfile=outfile,
-        m=config.param('smrtanalysis_blasr', 'm', type='int'),
-        threads=config.param('smrtanalysis_blasr', 'threads', type='posint'),
-        bestn=config.param('smrtanalysis_blasr', 'bestn', type='int'),
-        n_candidates=config.param('smrtanalysis_blasr', 'n_candidates', type='int'),
-        min_read_length=config.param('smrtanalysis_blasr', 'min_read_length', type='int'),
-        max_score=config.param('smrtanalysis_blasr', 'max_score', type='int'),
-        max_lcp_length=config.param('smrtanalysis_blasr', 'max_lcp_length', type='int'),
-        sam=" \\\n  -sam" if sam else "",
-        outfile_fofn=outfile_fofn,
-        outfile_filtered=outfile_filtered
+            infile=infile,
+            infile_long=infile_long,
+            outfile=outfile,
+            m=config.param('smrtanalysis_blasr', 'm', type='int'),
+            threads=config.param('smrtanalysis_blasr', 'threads', type='posint'),
+            bestn=config.param('smrtanalysis_blasr', 'bestn', type='int'),
+            n_candidates=config.param('smrtanalysis_blasr', 'n_candidates', type='int'),
+            min_read_length=config.param('smrtanalysis_blasr', 'min_read_length', type='int'),
+            max_score=config.param('smrtanalysis_blasr', 'max_score', type='int'),
+            max_lcp_length=config.param('smrtanalysis_blasr', 'max_lcp_length', type='int'),
+            sam=" \\\n  -sam" if sam else "",
+            outfile_fofn=outfile_fofn,
+            outfile_filtered=outfile_filtered
     ))
 
 def cmph5tools_sort(
@@ -90,8 +90,8 @@ cmph5tools.py -vv sort --deep --inPlace \\
   --outFile {cmph5_out} \\
   {cmph5} \\
   > /dev/null'""".format(
-        cmph5=cmph5,
-        cmph5_out=cmph5_out
+            cmph5=cmph5,
+            cmph5_out=cmph5_out
     ))
 
 def fastq_to_ca(
@@ -114,9 +114,9 @@ fastqToCA \\
   -libraryname {libraryname} \\
   -reads {reads} \\
   > {outfile}'""".format(
-        libraryname=libraryname,
-        reads=reads,
-        outfile=outfile
+            libraryname=libraryname,
+            reads=reads,
+            outfile=outfile
     ))
 
 def filtering(
@@ -159,20 +159,20 @@ prinseq-lite.pl \\
   -fastq {output_fastq} \\
   -out_format 1 \\
   -out_good {output_dir}/data/filtered_subreads""".format(
-        fofn=fofn,
-        input_fofn=input_fofn,
-        input_xml=input_xml,
-        min_subread_length=config.param('smrtanalysis_filtering', 'min_subread_length'),
-        min_read_length=config.param('smrtanalysis_filtering', 'min_read_length'),
-        min_qual=config.param('smrtanalysis_filtering', 'min_qual'),
-        whitelist_param=' -e "s|<\!-- WHITELISTCOM||g" -e "s|WHITELISTCOM -->||g" -e "s|WHITELISTFILEPATH|'+white_path+'|g"' if white_path != "" else '',
-        ref_params_xml=ref_params_xml,
-        params_xml=params_xml,
-        threads=config.param('smrtanalysis_filtering', 'threads'),
-        tmp_dir=config.param('smrtanalysis_filtering', 'tmp_dir', type='dirpath'),
-        output_dir=output_dir,
-        log=log,
-        output_fastq=output_fastq
+            fofn=fofn,
+            input_fofn=input_fofn,
+            input_xml=input_xml,
+            min_subread_length=config.param('smrtanalysis_filtering', 'min_subread_length'),
+            min_read_length=config.param('smrtanalysis_filtering', 'min_read_length'),
+            min_qual=config.param('smrtanalysis_filtering', 'min_qual'),
+            whitelist_param=' -e "s|<\!-- WHITELISTCOM||g" -e "s|WHITELISTCOM -->||g" -e "s|WHITELISTFILEPATH|'+white_path+'|g"' if white_path != "" else '',
+            ref_params_xml=ref_params_xml,
+            params_xml=params_xml,
+            threads=config.param('smrtanalysis_filtering', 'threads'),
+            tmp_dir=config.param('smrtanalysis_filtering', 'tmp_dir', type='dirpath'),
+            output_dir=output_dir,
+            log=log,
+            output_fastq=output_fastq
     ))
 
 def load_chemistry(
@@ -194,9 +194,9 @@ bash -c 'set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
 loadChemistry.py \\
   {input_fofn} \\
   {cmph5_output}'""".format(
-        input_fofn=input_fofn,
-        cmph5=cmph5,
-        cmph5_output=cmph5_output
+            input_fofn=input_fofn,
+            cmph5=cmph5,
+            cmph5_output=cmph5_output
     ))
 
 def load_pulses(
@@ -219,9 +219,9 @@ loadPulses \\
   {input_fofn} \\
   {cmph5_output} \\
   -metrics DeletionQV,IPD,InsertionQV,PulseWidth,QualityValue,MergeQV,SubstitutionQV,DeletionTag -byread'""".format(
-        input_fofn=input_fofn,
-        cmph5=cmph5,
-        cmph5_output=cmph5_output
+            input_fofn=input_fofn,
+            cmph5=cmph5,
+            cmph5_output=cmph5_output
     ))
 
 def m4topre(
@@ -245,11 +245,11 @@ m4topre.py \\
   {subreads} \\
   {bestn} \\
   > {outfile}'""".format(
-        infile=infile,
-        allm4=allm4,
-        subreads=subreads,
-        bestn=config.param('smrtanalysis_m4topre', 'bestn', type='int'),
-        outfile=outfile
+            infile=infile,
+            allm4=allm4,
+            subreads=subreads,
+            bestn=config.param('smrtanalysis_m4topre', 'bestn', type='int'),
+            outfile=outfile
     ))
 
 def pbalign(
@@ -277,12 +277,12 @@ pbalign \\
   -vv \\
   --nproc={threads} \\
   --regionTable={control_regions_fofn}'""".format(
-        input_fofn=input_fofn,
-        ref_upload=ref_upload,
-        cmph5=cmph5,
-        tmp_dir=tmp_dir,
-        threads=config.param('smrtanalysis_pbalign', 'threads', type='posint'),
-        control_regions_fofn=control_regions_fofn
+            input_fofn=input_fofn,
+            ref_upload=ref_upload,
+            cmph5=cmph5,
+            tmp_dir=tmp_dir,
+            threads=config.param('smrtanalysis_pbalign', 'threads', type='posint'),
+            control_regions_fofn=control_regions_fofn
     ))
 
 def pbdagcon(
@@ -304,10 +304,10 @@ pbdagcon -a -j {threads} \\
   > {outfile}' && \\
 awk '{{if ($0~/>/) {{sub(/>/,"@",$0);print;}} else {{l=length($0);q=""; while (l--) {{q=q "9"}}printf("%s\\n+\\n%s\\n",$0,q)}}}}' {outfile} \\
   > {outfile_fastq}""".format(
-        threads=config.param('smrtanalysis_pbdagcon', 'threads', type='posint'),
-        infile=infile,
-        outfile=outfile,
-        outfile_fastq=outfile_fastq
+            threads=config.param('smrtanalysis_pbdagcon', 'threads', type='posint'),
+            infile=infile,
+            outfile=outfile,
+            outfile_fastq=outfile_fastq
     ))
 
 def pbutgcns(
@@ -341,14 +341,14 @@ utg={unitigs_list} \\
 nprocs={threads} \\
 cns={outfile} \\
 pbutgcns_wf.sh'""".format(
-        gpk_store=gpk_store,
-        tig_store=tig_store,
-        unitigs_list=unitigs_list,
-        outdir=outdir,
-        tmp_dir=tmp_dir,
-        prefix=prefix,
-        threads=config.param('smrtanalysis_pbutgcns', 'threads', type='posint'),
-        outfile=outfile
+            gpk_store=gpk_store,
+            tig_store=tig_store,
+            unitigs_list=unitigs_list,
+            outdir=outdir,
+            tmp_dir=tmp_dir,
+            prefix=prefix,
+            threads=config.param('smrtanalysis_pbutgcns', 'threads', type='posint'),
+            outfile=outfile
     ))
 
 def reference_uploader(
@@ -374,9 +374,9 @@ referenceUploader \\
   --fastaFile {fasta} \\
   --saw="sawriter -blt 8 -welter" --jobId="Anonymous" \\
   --samIdx="samtools faidx" --jobId="Anonymous" --verbose'""".format(
-        prefix=prefix,
-        sample_name=sample_name,
-        fasta=fasta
+            prefix=prefix,
+            sample_name=sample_name,
+            fasta=fasta
     ))
 
 def run_ca(
@@ -403,10 +403,10 @@ runCA \\
   -p {prefix} \\
   -d {outdir} \\
   {infile}'""".format(
-        infile=infile,
-        ini=ini,
-        prefix=prefix,
-        outdir=outdir
+            infile=infile,
+            ini=ini,
+            prefix=prefix,
+            outdir=outdir
     ))
 
 def summarize_polishing(
@@ -460,16 +460,16 @@ gffToVcf.py \\
   --globalReference={sample_name} \\
   {variants_gff} \\
   > {variants_vcf}'""".format(
-        reference=reference,
-        aligned_reads_cmph5=aligned_reads_cmph5,
-        alignment_summary=alignment_summary,
-        coverage_bed=coverage_bed,
-        input_fofn=input_fofn,
-        aligned_reads_sam=aligned_reads_sam,
-        variants_gff=variants_gff,
-        variants_bed=variants_bed,
-        sample_name=sample_name,
-        variants_vcf=variants_vcf
+            reference=reference,
+            aligned_reads_cmph5=aligned_reads_cmph5,
+            alignment_summary=alignment_summary,
+            coverage_bed=coverage_bed,
+            input_fofn=input_fofn,
+            aligned_reads_sam=aligned_reads_sam,
+            variants_gff=variants_gff,
+            variants_bed=variants_bed,
+            sample_name=sample_name,
+            variants_vcf=variants_vcf
     ))
 
 def variant_caller(
@@ -504,13 +504,68 @@ variantCaller.py \\
 gunzip -c \\
   {outfile_fasta} \\
   > {outfile_fasta_uncompressed}""".format(
-        protocol=config.param('smrtanalysis_variant_caller', 'protocol', type='dirpath'),
-        threads=config.param('smrtanalysis_variant_caller', 'threads', type='posint'),
-        algorithm=config.param('smrtanalysis_variant_caller', 'algorithm'),
-        cmph5=cmph5,
-        ref_fasta=ref_fasta,
-        outfile_variants=outfile_variants,
-        outfile_fasta=outfile_fasta,
-        outfile_fastq=outfile_fastq,
-        outfile_fasta_uncompressed=outfile_fasta_uncompressed
+            protocol=config.param('smrtanalysis_variant_caller', 'protocol', type='dirpath'),
+            threads=config.param('smrtanalysis_variant_caller', 'threads', type='posint'),
+            algorithm=config.param('smrtanalysis_variant_caller', 'algorithm'),
+            cmph5=cmph5,
+            ref_fasta=ref_fasta,
+            outfile_variants=outfile_variants,
+            outfile_fasta=outfile_fasta,
+            outfile_fastq=outfile_fastq,
+            outfile_fasta_uncompressed=outfile_fasta_uncompressed
+    ))
+
+
+def basemodification(
+    fasta_consensus,
+    aligned_reads,
+    basemodification_file_prefix,
+    mer_size_directory,
+    polishing_rounds
+    ):
+
+    return Job(
+        [fasta_consensus, aligned_reads],
+        [basemodification_file_prefix],
+        [
+            ['basemodification', 'module_smrtanalysis']
+        ],
+        command="""\
+source /cvmfs/soft.mugqic/CentOS6/software/smrtanalysis/smrtanalysis_2.3.0.140936.p5/etc/setup.sh && \\
+ipdSummary.py {aligned_reads} \\
+  --reference {fasta_consensus} \\
+  --identify m6A,m4C \\
+  --methylFraction \\
+  --paramsPath /cvmfs/soft.mugqic/CentOS6/software/smrtanalysis/smrtanalysis_2.3.0.140936.p5/analysis/etc/algorithm_parameters/2015-11/kineticsTools/ \\
+  --numWorkers 12 \\
+  --outfile {output_gff}""".format(
+            fasta_consensus=os.path.join(mer_size_directory, "polishing" + str(polishing_rounds - 1), "data", "consensus.fasta"),
+            aligned_reads=os.path.join(mer_size_directory, "polishing" + str(polishing_rounds), "data", "aligned_reads.sorted.cmp.h5"),
+            output_gff = basemodification_file_prefix
+    ))
+
+def motifMaker(
+    fasta_consensus,
+    basemodification_file_prefix,
+    mer_size_directory,
+    polishing_rounds,
+    motifMaker_file
+    ):
+
+    return Job(
+        [fasta_consensus, basemodification_file_prefix],
+        [motifMaker_file],
+        [
+                  ['motifMaker', 'module_smrtanalysis'],
+                  ['motifMaker', 'module_java'],
+        ],
+        command="""\
+source /cvmfs/soft.mugqic/CentOS6/software/smrtanalysis/smrtanalysis_2.3.0.140936.p5/etc/setup.sh && \\
+motifMaker.sh find \\
+  -f {fasta_consensus} \\
+  -g {output_gff} \\
+  -o {output}""".format(
+            fasta_consensus=os.path.join(mer_size_directory, "polishing" + str(polishing_rounds - 1), "data", "consensus.fasta"),
+            output_gff = basemodification_file_prefix + ".gff" ,
+            output=motifMaker_file
     ))
