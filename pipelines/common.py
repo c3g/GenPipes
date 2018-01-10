@@ -40,15 +40,18 @@ from bfx.readset import *
 from bfx import metrics
 from bfx import picard
 from bfx import trimmomatic
+from bfx import samtools
+from bfx import rmarkdown
+from bfx import jsonator
 
 log = logging.getLogger(__name__)
 
 # Abstract pipeline gathering common features of all MUGQIC pipelines (readsets, samples, remote log, etc.)
 class MUGQICPipeline(Pipeline):
 
-    def __init__(self):
+    def __init__(self, protocol):
         self.version = open(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "VERSION"), 'r').read().split('\n')[0]
-
+        self._protocol=protocol
         # Add pipeline specific arguments
         self.argparser.description = "Version: " + self.version + "\n\nFor more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/"
         self.argparser.add_argument("-v", "--version", action="version", version="mugqic_pipelines " + self.version, help="show the version information and exit")
@@ -99,9 +102,10 @@ wget "{server}?{request}" --quiet --output-document=/dev/null
 # Specific steps must be defined in Illumina children pipelines.
 class Illumina(MUGQICPipeline):
 
-    def __init__(self):
+    def __init__(self, protocol):
+        self._protocol=protocol
         self.argparser.add_argument("-r", "--readsets", help="readset file", type=file)
-        super(Illumina, self).__init__()
+        super(Illumina, self).__init__(protocol)
 
     @property
     def readsets(self):
@@ -111,6 +115,12 @@ class Illumina(MUGQICPipeline):
             else:
                 self.argparser.error("argument -r/--readsets is required!")
         return self._readsets
+
+    @property
+    def samples(self):
+        if not hasattr(self, "_samples"):
+            self._samples = list(collections.OrderedDict.fromkeys([readset.sample for readset in self.readsets]))
+        return self._samples
 
     @property
     def run_type(self):
@@ -130,6 +140,29 @@ class Illumina(MUGQICPipeline):
                 self.argparser.error("argument -d/--design is required!")
         return self._contrasts
 
+    def samtools_bam_sort(self):
+        """
+        Sorts bam by readname prior to picard_sam_to_fastq step in order to minimize memory consumption.
+        If bam file is small and the memory requirements are reasonable, this step can be skipped.
+        """
+
+        jobs = []
+        for readset in self.readsets:
+            # If readset FASTQ files are available, skip this step
+            if not readset.fastq1:
+                if readset.bam:
+                    sortedBamPrefix = re.sub("\.bam$", ".sorted", readset.bam.strip())
+
+                    job = samtools.sort(readset.bam, sortedBamPrefix, sort_by_name = True)
+                    job.name = "samtools_bam_sort." + readset.name
+                    job.removable_files = [sortedBamPrefix + ".bam"]
+                    job.samples = [readset.sample]
+                    jobs.append(job)
+                else:
+                    raise Exception("Error: BAM file not available for readset \"" + readset.name + "\"!")
+        return jobs
+
+
     def picard_sam_to_fastq(self):
         """
         Convert SAM/BAM files from the input readset file into FASTQ format
@@ -140,19 +173,25 @@ class Illumina(MUGQICPipeline):
             # If readset FASTQ files are available, skip this step
             if not readset.fastq1:
                 if readset.bam:
+                    ## check if bam file has been sorted:
+                    sortedBam = re.sub("\.bam", ".sorted.bam", readset.bam.strip())
+                    candidate_input_files = [[sortedBam], [readset.bam]]
+                    [bam] = self.select_input_files(candidate_input_files)
                     if readset.run_type == "PAIRED_END":
-                        fastq1 = re.sub("\.bam$", ".pair1.fastq.gz", readset.bam)
-                        fastq2 = re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)
+                        fastq1 = re.sub("\.sorted.bam$|\.bam$", ".pair1.fastq.gz", bam.strip())
+                        fastq2 = re.sub("\.sorted.bam$|\.bam$", ".pair2.fastq.gz", bam.strip())
                     elif readset.run_type == "SINGLE_END":
-                        fastq1 = re.sub("\.bam$", ".single.fastq.gz", readset.bam)
+                        fastq1 = re.sub("\.sorted.bam$|\.bam$", ".single.fastq.gz", bam.strip())
                         fastq2 = None
                     else:
                         raise Exception("Error: run type \"" + readset.run_type +
                         "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
 
-                    job = picard.sam_to_fastq(readset.bam, fastq1, fastq2)
+                    job = picard.sam_to_fastq(bam, fastq1, fastq2)
                     job.name = "picard_sam_to_fastq." + readset.name
+                    job.samples = [readset.sample]
                     jobs.append(job)
+
                 else:
                     raise Exception("Error: BAM file not available for readset \"" + readset.name + "\"!")
         return jobs
@@ -206,7 +245,6 @@ END
                     else:
                         raise Exception("Error: missing adapter1 for SINGLE_END readset \"" + readset.name + "\", or missing adapter_fasta parameter in config file!")
 
-
             trim_stats = trim_file_prefix + "stats.csv"
             if readset.run_type == "PAIRED_END":
                 candidate_input_files = [[readset.fastq1, readset.fastq2]]
@@ -250,7 +288,7 @@ END
                 job = concat_jobs([adapter_job, job])
             jobs.append(concat_jobs([
                 # Trimmomatic does not create output directory by default
-                Job(command="mkdir -p " + trim_directory),
+                Job(command="mkdir -p " + trim_directory, samples=[readset.sample]),
                 job
             ], name="trimmomatic." + readset.name))
         return jobs
@@ -285,7 +323,8 @@ awk '{{OFS="\t"; print $0, $4 / $3 * 100}}' \\
                         trim_log=trim_log,
                         perl_command=perl_command,
                         readset_merge_trim_stats=readset_merge_trim_stats
-                    )
+                    ),
+                    samples=[readset.sample]
                 )
             ])
 
@@ -332,3 +371,72 @@ pandoc \\
                 ),
                 report_files=[report_file]
             )], name="merge_trimmomatic_stats")]
+
+    def verify_bam_id(self):
+        """
+        verifyBamID is a software that verifies whether the reads in particular file match previously known
+        genotypes for an individual (or group of individuals), and checks whether the reads are contaminated
+        as a mixture of two samples. verifyBamID can detect sample contamination and swaps when external
+        genotypes are available. When external genotypes are not available, verifyBamID still robustly
+        detects sample swaps.
+        """
+
+        # Known variants file
+        population_AF = config.param('verify_bam_id', 'population_AF', required=False)
+        known_variants_annotated = config.param('verify_bam_id', 'verifyBamID_variants_file', required=False)
+        verify_bam_id_directory = "verify_bam_id"
+        variants_directory = "variants"
+
+        jobs = []
+
+        verify_bam_results = []
+
+        jobs.append(
+            Job(
+                [known_variants_annotated],
+                [variants_directory, verify_bam_id_directory],
+                command="mkdir -p " + variants_directory + " " + verify_bam_id_directory, 
+                name = "verify_bam_id_create_directories"
+        ))
+
+        for sample in self.samples:
+            alignment_directory = os.path.join("alignment", sample.name)
+
+            candidate_input_files = [[os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")]]
+            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")])
+            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.mdup.bam")]) # this one is for RnaSeq pipeline
+            [input_bam] = self.select_input_files(candidate_input_files)
+
+            output_prefix = os.path.join(verify_bam_id_directory, sample.name)
+
+            coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
+
+            # Run verifyBamID
+            job = verify_bam_id.verify(
+                input_bam,
+                known_variants_annotated,
+                output_prefix
+            )
+            job.name = "verify_bam_id_" + sample.name
+            job.samples = [sample]
+
+            jobs.append(job)
+
+            verify_bam_results.extend([output_prefix + ".selfSM" ]) 
+
+        # Coverage bed is null if whole genome experiment
+        target_bed=coverage_bed if coverage_bed else ""
+
+        # Render Rmarkdown Report
+        jobs.append(
+            rmarkdown.render(
+                job_input            = verify_bam_results ,
+                job_name             = "verify_bam_id_report",
+                input_rmarkdown_file = os.path.join(self.report_template_dir, "Illumina.verify_bam_id.Rmd") ,
+                render_output_dir    = 'report',
+                module_section       = 'report', 
+                prerun_r             = 'source_dir="' + verify_bam_id_directory + '"; report_dir="report" ; params=list(verifyBamID_variants_file="' + known_variants_annotated  + '", dbnsfp_af_field="' + population_AF + '", coverage_bed="' + target_bed + '");' 
+            )
+        )
+
+        return jobs

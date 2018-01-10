@@ -85,6 +85,25 @@ samtools mpileup {other_options} \\
         )
     )
 
+
+
+def merge(sample_output, input_bams):
+    """
+    merges an array of bams into a single bam
+    """
+
+
+    command = "samtools merge {sample_output} {input_bams}".format(sample_output = sample_output, input_bams = " ".join(map(str.strip, input_bams)))
+
+
+    return Job( input_files = input_bams,
+                    output_files = [sample_output],
+                    module_entries = [['hicup_align', 'module_samtools']],
+                    command = command
+                )
+
+
+
 def sort(input_bam, output_prefix, sort_by_name=False):
     output_bam = output_prefix + ".bam"
 
@@ -99,7 +118,7 @@ samtools sort {other_options}{sort_by_name} \\
         other_options=config.param('samtools_sort', 'other_options', required=False),
         sort_by_name=" -n" if sort_by_name else "",
         input_bam=input_bam,
-        output_prefix=output_prefix
+        output_prefix=output_prefix if config.param('samtools_sort', 'module_samtools').split("/")[2] == "0.1.19" else "> " + output_prefix + ".bam"
         ),
         removable_files=[output_bam]
     )
@@ -122,6 +141,8 @@ samtools view {options} \\
     )
 
 def bcftools_cat(inputs, output):
+    if not isinstance(inputs, list):
+        inputs=[inputs]
     return Job(
         inputs,
         [output],
@@ -180,6 +201,8 @@ $BCFTOOLS_BIN/bcftools view {pair_calling} {options} \\
     )
 
 def bcftools_cat_pair(inputs, output):
+    if not isinstance(inputs, list):
+        inputs=[inputs]
     return Job(
         inputs,
         [output],

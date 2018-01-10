@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=longranger
-VERSION=2.1.3
+VERSION=2.1.6
 ARCHIVE=$SOFTWARE-$VERSION.tar.gz
 # longranger archive has to be manually downloaded from https://support.10xgenomics.com/genome-exome/software/downloads/latest
 # and then stored in $MUGQIC_INSTALL_HOME/archive/ or/and $MUGQIC_INSTALL_HOME_DEV/archive/

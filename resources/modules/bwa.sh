@@ -3,12 +3,12 @@
 set -eu -o pipefail
 
 SOFTWARE=bwa
-VERSION=0.7.9a
+VERSION=0.7.15
 ARCHIVE=$SOFTWARE-$VERSION.tar.bz2
-ARCHIVE_URL=http://downloads.sourceforge.net/project/bio-bwa/$ARCHIVE
+ARCHIVE_URL=https://downloads.sourceforge.net/project/bio-bwa/$ARCHIVE
 SOFTWARE_DIR=$SOFTWARE-$VERSION
 
-# Specific commands to extract and build the software
+# Specific commands to extract and build the software
 # $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
 # $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {

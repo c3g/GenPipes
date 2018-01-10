@@ -3,13 +3,13 @@
 set -eu -o pipefail
 
 SOFTWARE=python
-VERSION=2.7.13
-SETUPTOOLS_VERSION=20.9.0
+VERSION=2.7.14
+SETUPTOOLS_VERSION=36.4.0
 # Remove the version last number
 LIBVERSION=${VERSION%.[0-9]*}
 # Uppercase first P in python
 ARCHIVE=${SOFTWARE^}-$VERSION.tgz
-ARCHIVE_URL=http://www.python.org/ftp/$SOFTWARE/$VERSION/$ARCHIVE
+ARCHIVE_URL=https://www.python.org/ftp/$SOFTWARE/$VERSION/$ARCHIVE
 SOFTWARE_DIR=${SOFTWARE^}-$VERSION
 
 # Specific commands to extract and build the software
@@ -21,7 +21,9 @@ build() {
 
   cd $SOFTWARE_DIR
   # Compile with --enable-unicode=ucs4 to fix error "ImportError: numpy-1.8.1-py2.7-linux-x86_64.egg/numpy/core/multiarray.so: undefined symbol: PyUnicodeUCS2_AsASCIIString"
-  ./configure --prefix=$INSTALL_DIR/$SOFTWARE_DIR --enable-unicode=ucs4 --with-zlib-dir=/usr/lib64 --with-ensurepip=install
+  #./configure --prefix=$INSTALL_DIR/$SOFTWARE_DIR --enable-unicode=ucs4 --with-zlib-dir=/usr/lib64 --with-ensurepip=install
+  #./configure --prefix=$INSTALL_DIR/$SOFTWARE_DIR --enable-unicode=ucs4 --with-zlib-dir=$LFS/tools/usr/lib --with-ensurepip=install
+  ./configure --prefix=$INSTALL_DIR/$SOFTWARE_DIR --enable-unicode=ucs4 --with-zlib-dir=$LFS/tools/usr/lib --with-ensurepip=install
   make -j8
   make install
 
@@ -60,7 +62,7 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-setenv          PYTHON_HOME         \$root
+setenv          PYTHONHOME          \$root
 prepend-path    PATH                \$root/bin
 prepend-path    MANPATH             \$root/share/man
 prepend-path    LIBRARY_PATH        \$root/lib/

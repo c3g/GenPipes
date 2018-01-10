@@ -51,8 +51,13 @@ class AmpliconSeq(common.Illumina):
     Amplicon-Seq Pipeline
     ================
 
-    T
     """
+  
+    def __init__(self, protocol=None):
+        self._protocol=protocol
+        # Add pipeline specific arguments
+        super(AmpliconSeq, self).__init__(protocol)
+
 
     def flash(self):
         """
@@ -84,6 +89,7 @@ class AmpliconSeq(common.Illumina):
                 readset.name,
                 merge_file_prefix_log
             )
+            job.samples = [readset.sample]
 
             jobs.append(concat_jobs([
                 # FLASh does not create output directory by default
@@ -109,13 +115,16 @@ class AmpliconSeq(common.Illumina):
 
             job = concat_jobs([
                 job,
-                Job(command="""\
+                Job(
+                    command="""\
 printf '{sample}\t{readset}\t' \\
   >> {stats}""".format(
-                    sample=readset.sample.name,
-                    readset=readset.name,
-                    stats=readset_merge_flash_stats
-                ))
+                        sample=readset.sample.name,
+                        readset=readset.name,
+                        stats=readset_merge_flash_stats,
+                        ),
+                    samples=[readset.sample]
+                )
             ])
 
             # Retrieve merge statistics using re search in python.
@@ -225,6 +234,7 @@ pandoc --to=markdown \\
                 catenate_fasta
             )
             job.name = "catenate"
+            job.samples = self.samples
             jobs.append(job)
         else:
             mapbuild_job = tools.py_ampliconSeq(
@@ -240,6 +250,7 @@ pandoc --to=markdown \\
                 sample_name,
                 catenate_fasta
             )
+            catenate_job.samples = self.samples
             jobs.append(concat_jobs([
                 mapbuild_job,
                 catenate_job
@@ -268,6 +279,7 @@ pandoc --to=markdown \\
             cat_sequence_fasta,
             filter_fasta
         )
+        uchime_job.samples = self.samples
 
         job_log = tools.py_ampliconSeq(
             [filter_fasta],
@@ -315,14 +327,16 @@ pandoc --to=markdown \\
 
             job = concat_jobs([
                 job,
-                Job(command="""\
+                Job(
+                    command="""\
 printf '{sample}\t{readset}\t' \\
   >> {stats}""".format(
-                    sample=readset.sample.name,
-                    readset=readset.name,
-                    stats=readset_merge_uchime_stats
-                ))
-            ])
+                        sample=readset.sample.name,
+                        readset=readset.name,
+                        stats=readset_merge_uchime_stats
+                    ),
+                    samples=[readset.sample]
+            )])
 
             job = concat_jobs([
                 job,
@@ -416,6 +430,7 @@ pandoc --to=markdown \\
             output_directory,
             otu_file
         )
+        job.samples = self.samples
 
         jobs.append(concat_jobs([
             # Create an output directory
@@ -453,6 +468,7 @@ pandoc --to=markdown \\
             filter_fasta,
             otu_rep_file
         )
+        job.samples = self.samples
 
         jobs.append(concat_jobs([
             # Create an output directory
@@ -486,6 +502,7 @@ pandoc --to=markdown \\
             output_directory,
             tax_assign_file
         )
+        job.samples = self.samples
 
         jobs.append(concat_jobs([
             # Create an output directory
@@ -527,6 +544,7 @@ pandoc --to=markdown \\
             otu_table_file,
             otu_table_summary
         )
+        job.samples = self.samples
 
         # Remove singleton
         job_filter = Job(
@@ -610,6 +628,7 @@ $QIIME_HOME/biom summarize-table \\
             output_directory,
             align_seq_fasta
         )
+        job.samples = self.samples
 
         job.name = "qiime_otu_alignment." + re.sub("_otus", "", otu_directory)
         jobs.append(job)
@@ -640,6 +659,7 @@ $QIIME_HOME/biom summarize-table \\
             output_directory,
             filter_align_fasta
         )
+        job.samples = self.samples
 
         job.name = "qiime_filter_alignment." + re.sub("_otus", "", otu_directory)
         jobs.append(job)
@@ -669,6 +689,7 @@ $QIIME_HOME/biom summarize-table \\
             filter_align_fasta,
             phylo_file
         )
+        job.samples = self.samples
 
         jobs.append(concat_jobs([
             # Create an output directory
@@ -723,7 +744,8 @@ pandoc --to=markdown \\
                 report_file=report_file
             ),
             report_files=[report_file],
-            name="qiime_report." + re.sub("_otus", "", otu_directory)
+            name="qiime_report." + re.sub("_otus", "", otu_directory),
+            samples=self.samples
         ))
 
         return jobs
@@ -755,6 +777,7 @@ pandoc --to=markdown \\
             otus_input,
             rarefied_otu_directory
         )
+        job.samples = self.samples
 
         jobs.append(concat_jobs([
             # Create an output directory
@@ -787,8 +810,9 @@ pandoc --to=markdown \\
             rarefied_otu_directory,
             alpha_diversity_directory
         )
-
+        job.samples = self.samples
         job.name = "qiime_alpha_diversity." + re.sub("_alpha_diversity", "", alpha_directory)
+
         jobs.append(job)
 
         return jobs
@@ -818,6 +842,7 @@ pandoc --to=markdown \\
             observed_species_stat,
             shannon_stat
         )
+        job.samples = self.samples
 
         jobs.append(concat_jobs([
             Job(command="mkdir -p " + alpha_diversity_collated_directory),
@@ -868,6 +893,7 @@ pandoc --to=markdown \\
                 sample_rarefaction_directory,
                 curve_sample,
             )
+            job.samples = [readset.sample]
 
             jobs.append(concat_jobs([
                 Job(command="mkdir -p " + sample_collated_directory),
@@ -975,6 +1001,7 @@ pandoc --to=markdown \\
                 report_file=report_file
             ),
             report_files=[report_file],
+            samples=self.samples,
             name="qiime_report2." + re.sub("_alpha_diversity", "", alpha_directory))
         )
 
@@ -1022,6 +1049,7 @@ pandoc --to=markdown \\
             otu_normalized_table,
             normalization_method
         )
+        job.samples = self.samples
 
         job_chao1 = tools.py_ampliconSeq(
             [chao1_stat],
@@ -1120,6 +1148,7 @@ pandoc --to=markdown \\
             otu_normalized_table,
             normalization_method
         )
+        job.samples = self.samples
 
         job_chao1 = tools.py_ampliconSeq(
             [chao1_stat],
@@ -1213,6 +1242,7 @@ pandoc --to=markdown \\
                 alpha_diversity_rarefaction_file,
                 alpha_diversity_rarefaction_rarefied_directory
             )
+            job.samples = self.samples
 
             job.name = "qiime_rarefaction_plot." + re.sub("_alpha_diversity", ".", alpha_directory[0] + method)
             jobs.append(job)
@@ -1256,6 +1286,7 @@ pandoc --to=markdown \\
                 taxonomic_family,
                 taxonomic_genus
             )
+            job.samples = self.samples
 
             jobs.append(concat_jobs([
                 # Create an output directory
@@ -1300,6 +1331,7 @@ pandoc --to=markdown \\
                 alpha_diversity_taxonomy_bar_plot,
                 taxonomic_directory
             )
+            job.samples = self.samples
 
             job.name = "qiime_plot_taxa." + re.sub("_alpha_diversity", ".", alpha_directory) + method
             jobs.append(job)
@@ -1354,6 +1386,7 @@ pandoc --to=markdown \\
                     taxon_lvl=1
                 )
             )
+            job.samples = self.samples
 
             jobR = Job(
                 [heatmap_script, heatmap_otu_data_R, heatmap_otu_name_R, heatmap_otu_tax_R],
@@ -1400,6 +1433,7 @@ pandoc --to=markdown \\
                 sample_name,
                 alpha_diversity_krona_file,
             )
+            job.samples = self.samples
 
             jobs.append(concat_jobs([
                 # Create an output directory
@@ -1508,6 +1542,7 @@ pandoc --to=markdown \\
                     basename_report_file=re.sub('_'+method[:3], '', os.path.basename(report_file)),
                     report_file=report_file
                 ),
+                samples=self.samples,
                 name="plot_to_alpha." + re.sub("_alpha_diversity", ".", alpha_directory) + method
             ))
 
@@ -1554,6 +1589,7 @@ pandoc --to=markdown \\
                 dm_weighted_file,
                 dm_euclidean_file
             )
+            job.samples = self.samples
 
             jobs.append(concat_jobs([
                 # Create an output directory
@@ -1609,6 +1645,7 @@ pandoc --to=markdown \\
                 pcoa_weighted_file,
                 pcoa_euclidean_file
             )
+            job.samples = self.samples
 
             jobs.append(concat_jobs([
                 # Create an output directory
@@ -1665,6 +1702,7 @@ pandoc --to=markdown \\
                     beta_diversity_pcoa_unweighted,
                     pcoa_plot_directory
                 )
+                job1.samples = self.samples
 
                 job2 = qiime.pcoa_plot(
                     pcoa_weighted_file,
@@ -1688,6 +1726,7 @@ pandoc --to=markdown \\
                     beta_diversity_pcoa_euclidean,
                     pcoa_plot_directory
                 )
+                job.samples = self.samples
 
                 jobs.append(concat_jobs([
                     # Create an output directory
@@ -1762,6 +1801,7 @@ cat {report_file_alpha} {report_file_beta} > {report_file}""".format(
                     report_file=report_file
                 ),
                 report_files=[report_file],
+                samples=self.samples,
                 name="plot_to_beta." + re.sub("_beta_diversity", ".", beta_directory) + method
             ))
 

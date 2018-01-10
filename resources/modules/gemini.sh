@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=gemini 
-VERSION=0.19.1 
+VERSION=0.20.1 
 ARCHIVE=${SOFTWARE}_v$VERSION.install.py
 ARCHIVE_URL=https://raw.github.com/arq5x/gemini/master/gemini/scripts/gemini_install.py
 SOFTWARE_DIR=$SOFTWARE-$VERSION 
@@ -49,6 +49,7 @@ set             anaconda_root       \$root/shared/anaconda
 setenv          GEMINI_BIN          \$root/bin
 prepend-path    PATH                \$root/bin
 prepend-path    PATH                \$anaconda_root/bin
+prepend-path    PYTHONHOME          \$anaconda_root
 prepend-path    PYTHONPATH          \$anaconda_root/lib/python2.7/site-packages
 prepend-path    PYTHONPATH          \$anaconda_root/lib/python2.7
 prepend-path    LD_LIBRARY_PATH     \$anaconda_root/lib/python2.7/site-packages

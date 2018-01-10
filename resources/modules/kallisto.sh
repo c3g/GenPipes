@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE="kallisto" 
-VERSION="0.42.2.1" 
+VERSION="0.43.0" 
 ARCHIVE="v$VERSION.tar.gz"
 ARCHIVE_URL="https://github.com/pachterlab/$SOFTWARE/archive/v$VERSION.tar.gz"
 SOFTWARE_DIR=$SOFTWARE-$VERSION  
@@ -22,7 +22,7 @@ build() {
   mkdir build
  	cd build
 	
-	module load  itgenome/gcc/4.8.5  # abacus
+	module load mugqic_dev/gcc/4.8.5   # abacus
 	
 	# module load cmake/2.8.8 hdf5/1.8.9  # mammouth
 	# - CMake version >= 2.8.12
@@ -45,7 +45,7 @@ proc ModulesHelp { } {
 }
 module-whatis \"$SOFTWARE\"
 
-module load itgenome/gcc/4.8.5
+module load mugqic_dev/gcc/4.8.5 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
 prepend-path    PATH                \$root/bin ; 
 "

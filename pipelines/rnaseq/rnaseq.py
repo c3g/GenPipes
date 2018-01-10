@@ -49,6 +49,8 @@ from bfx import star
 from bfx import bvatools
 from bfx import rmarkdown
 from bfx import tools
+from bfx import ucsc
+
 from pipelines import common
 import utils
 
@@ -90,10 +92,11 @@ class RnaSeq(common.Illumina):
     information about the RNA-Seq pipeline that you may find interesting.
     """
 
-    def __init__(self):
+    def __init__(self, protocol=None):
+        self._protocol=protocol
         # Add pipeline specific arguments
         self.argparser.add_argument("-d", "--design", help="design file", type=file)
-        super(RnaSeq, self).__init__()
+        super(RnaSeq, self).__init__(protocol)
 
     def star(self):
         """
@@ -153,19 +156,21 @@ class RnaSeq(common.Illumina):
                 rg_center=rg_center if rg_center else ""
             )
             job.name = "star_align.1." + readset.name
+            job.samples = [readset.sample]
             jobs.append(job)
 
         ######
         jobs.append(concat_jobs([
-        #pass 1 - contatenate junction
-        star.concatenate_junction(
-            input_junction_files_list=individual_junction_list,
-            output_junction_file=project_junction_file
-        ),
-        #pass 1 - genome indexing
-        star.index(
-            genome_index_folder=project_index_directory,
-            junction_file=project_junction_file
+            #pass 1 - contatenate junction
+            Job(samples=self.samples),
+            star.concatenate_junction(
+                input_junction_files_list=individual_junction_list,
+                output_junction_file=project_junction_file
+            ),
+            #pass 1 - genome indexing
+            star.index(
+                genome_index_folder=project_index_directory,
+                junction_file=project_junction_file
         )], name = "star_index.AllSamples"))
 
         ######
@@ -212,6 +217,7 @@ class RnaSeq(common.Illumina):
                 cuff_follow=True,
                 sort_bam=True
             )
+            job.samples = [readset.sample]
             job.input_files.append(os.path.join(project_index_directory, "SAindex"))
 
             # If this readset is unique for this sample, further BAM merging is not necessary.
@@ -268,6 +274,7 @@ pandoc --to=markdown \\
 
                 job = picard.merge_sam_files(inputs, output)
                 job.name = "picard_merge_sam_files." + sample.name
+                job.samples = [sample]
                 jobs.append(job)
         return jobs
 
@@ -286,6 +293,7 @@ pandoc --to=markdown \\
                 "queryname"
             )
             job.name = "picard_sort_sam." + sample.name
+            job.samples = [sample]
             jobs.append(job)
         return jobs
 
@@ -306,6 +314,7 @@ pandoc --to=markdown \\
                 alignment_file_prefix + "mdup.metrics"
             )
             job.name = "picard_mark_duplicates." + sample.name
+            job.samples = [sample]
             jobs.append(job)
         return jobs
 
@@ -338,9 +347,9 @@ awk 'BEGIN {{OFS="\\t"}} {{if (substr($1,1,1)=="@") {{print;next}}; split($6,C,/
                 ),
             ])
             job.name="tuxedo_hard_clip."+ sample.name
+            job.samples = [sample]
             jobs.append(job)
         return jobs
-
 
     def rnaseqc(self):
         """
@@ -356,7 +365,7 @@ awk 'BEGIN {{OFS="\\t"}} {{if (substr($1,1,1)=="@") {{print;next}}; split($6,C,/
         gtf_transcript_id = config.param('rnaseqc', 'gtf_transcript_id', type='filepath')
 
         jobs.append(concat_jobs([
-            Job(command="mkdir -p " + output_directory, removable_files=[output_directory]),
+            Job(command="mkdir -p " + output_directory, removable_files=[output_directory], samples=self.samples),
             Job(input_bams, [sample_file], command="""\
 echo "Sample\tBamFile\tNote
 {sample_rows}" \\
@@ -423,7 +432,6 @@ pandoc \\
 
         return jobs
 
-
     def picard_rna_metrics(self):
         """
         Computes a series of quality control metrics using both CollectRnaSeqMetrics and CollectAlignmentSummaryMetrics functions
@@ -437,9 +445,9 @@ pandoc \\
                 output_directory = os.path.join("metrics", sample.name)
 
                 job = concat_jobs([
-                        Job(command="mkdir -p " + output_directory, removable_files=[output_directory]),
-                        picard.collect_multiple_metrics(alignment_file, os.path.join(output_directory,sample.name),reference_file),
-                        picard.collect_rna_metrics(alignment_file, os.path.join(output_directory,sample.name+".picard_rna_metrics"))
+                    Job(command="mkdir -p " + output_directory, removable_files=[output_directory], samples=[sample]),
+                    picard.collect_multiple_metrics(alignment_file, os.path.join(output_directory, sample.name), reference_file),
+                    picard.collect_rna_metrics(alignment_file, os.path.join(output_directory, sample.name+".picard_rna_metrics"))
                 ],name="picard_rna_metrics."+ sample.name)
                 jobs.append(job)
 
@@ -498,6 +506,7 @@ pandoc \\
                     typ="transcript")], name="bwa_mem_rRNA." + readset.name )
 
             job.removable_files=[readset_metrics_bam]
+            job.samples = [readset.sample]
             jobs.append(job)
         return jobs
 
@@ -537,6 +546,7 @@ pandoc \\
                     picard.merge_sam_files([input_bam_f1, input_bam_f2], output_bam_f),
                     Job(command="rm " + input_bam_f1 + " " + input_bam_f2)
                 ], name="wiggle." + sample.name + ".forward_strandspec")
+                bam_f_job.samples = [sample]
                 # Remove temporary-then-deleted files from job output files, otherwise job is never up to date
                 bam_f_job.output_files.remove(input_bam_f1)
                 bam_f_job.output_files.remove(input_bam_f2)
@@ -548,6 +558,7 @@ pandoc \\
                     picard.merge_sam_files([input_bam_r1, input_bam_r2], output_bam_r),
                     Job(command="rm " + input_bam_r1 + " " + input_bam_r2)
                 ], name="wiggle." + sample.name + ".reverse_strandspec")
+                bam_r_job.samples = [sample]
                 # Remove temporary-then-deleted files from job output files, otherwise job is never up to date
                 bam_r_job.output_files.remove(input_bam_r1)
                 bam_r_job.output_files.remove(input_bam_r2)
@@ -568,11 +579,18 @@ pandoc \\
                     in_bam = bam_file_prefix + "reverse.bam"    # same as output_bam_r from previous picard job
                 else:
                     in_bam = input_bam
-                job = concat_jobs([
-                    Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " " + os.path.join("tracks", "bigWig"), removable_files=["tracks"]),
-                    bedtools.graph(in_bam, bed_graph_output, big_wig_output,library[sample])
-                ], name="wiggle." + re.sub(".bedGraph", "", os.path.basename(bed_graph_output)))
-                jobs.append(job)
+                jobs.append(
+                    concat_jobs([
+                        Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " ", removable_files=["tracks"], samples=[sample]),
+                        bedtools.graph(in_bam, bed_graph_output, library[sample])
+                    ], name="bed_graph." + re.sub(".bedGraph", "", os.path.basename(bed_graph_output)))
+                )
+                jobs.append(
+                    concat_jobs([
+                        Job(command="mkdir -p " + os.path.join("tracks", "bigWig"), samples=[sample]),
+                        ucsc.bedGraphToBigWig(bed_graph_output, big_wig_output, False)
+                    ], name="wiggle." + re.sub(".bw", "", os.path.basename(big_wig_output)))
+                )
 
         return jobs
 
@@ -606,6 +624,7 @@ pandoc \\
                         )
                 ])
             ], name="htseq_count." + sample.name)
+            job.samples = [sample]
             jobs.append(job)
 
         return jobs
@@ -646,6 +665,7 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
             read_count_files=" \\\n  ".join(read_count_files),
             output_matrix=output_matrix
         )
+        job.samples = self.samples
         jobs.append(job)
 
         # Create Wiggle tracks archive
@@ -677,6 +697,7 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
             Job(command="mkdir -p " + saturation_directory),
             metrics.rpkm_saturation(count_file, gene_size_file, rpkm_directory, saturation_directory)
         ], name="rpkm_saturation")
+        job.samples = self.samples
         jobs.append(job)
 
         report_file = os.path.join("report", "RnaSeq.raw_counts_metrics.md")
@@ -725,6 +746,7 @@ pandoc --to=markdown \\
             job = cufflinks.cufflinks(input_bam, output_directory, gtf)
             job.removable_files = ["cufflinks"]
             job.name = "cufflinks."+sample.name
+            job.samples = [sample]
             jobs.append(job)
 
         return jobs
@@ -741,7 +763,7 @@ pandoc --to=markdown \\
 
 
         job = concat_jobs([
-            Job(command="mkdir -p " + output_directory),
+            Job(command="mkdir -p " + output_directory, samples=self.samples),
             Job(input_gtfs, [sample_file], command="""\
 `cat > {sample_file} << END
 {sample_rows}
@@ -770,6 +792,7 @@ END
             #Quantification
             job = cufflinks.cuffquant(input_bam, output_directory, gtf)
             job.name = "cuffquant."+sample.name
+            job.samples = [sample]
             jobs.append(job)
 
         return jobs
@@ -793,6 +816,8 @@ END
                 gtf,
                 os.path.join("cuffdiff", contrast.name)
             )
+            for group in contrast.controls, contrast.treatments:
+                job.samples = [sample for sample in group]
             job.removable_files = ["cuffdiff"]
             job.name = "cuffdiff." + contrast.name
             jobs.append(job)
@@ -811,11 +836,15 @@ END
         sample_labels = ",".join([sample.name for sample in self.samples])
 
         # Perform cuffnorm using every samples
-        job = cufflinks.cuffnorm([os.path.join(fpkm_directory, sample.name, "abundances.cxb") for sample in self.samples],
-             gtf,
-             "cuffnorm",sample_labels)
+        job = cufflinks.cuffnorm(
+            [os.path.join(fpkm_directory, sample.name, "abundances.cxb") for sample in self.samples],
+            gtf,
+            "cuffnorm",
+            sample_labels
+        )
         job.removable_files = ["cuffnorm"]
         job.name = "cuffnorm"
+        job.samples = self.samples
         jobs.append(job)
 
         return jobs
@@ -832,12 +861,17 @@ END
 
         jobs = []
 
-        job = concat_jobs([Job(command="mkdir -p " + output_directory),
-                           utils.utils.fpkm_correlation_matrix(cuffnorm_transcript, output_transcript)])
+        job = concat_jobs([
+            Job(command="mkdir -p " + output_directory),
+            utils.utils.fpkm_correlation_matrix(cuffnorm_transcript, output_transcript)
+        ])
         job.name="fpkm_correlation_matrix_transcript"
+        job.samples = self.samples
         jobs = jobs + [job]
+
         job = utils.utils.fpkm_correlation_matrix(cuffnorm_gene, output_gene)
         job.name="fpkm_correlation_matrix_gene"
+        job.samples = self.samples
         jobs = jobs + [job]
 
         return jobs
@@ -856,7 +890,7 @@ END
             os.path.join("raw_counts", sample.name + ".readcounts.csv")
         ] for sample in self.samples]
         jobs.append(concat_jobs([
-            Job(command="mkdir -p exploratory"),
+            Job(command="mkdir -p exploratory", samples=self.samples),
             gq_seq_utils.exploratory_analysis_rnaseq(
                 os.path.join("DGE", "rawCountMatrix.csv"),
                 "cuffnorm",
@@ -900,6 +934,7 @@ cp \\
 
         return jobs
 
+
     def differential_expression(self):
         """
         Performs differential gene expression analysis using [DESEQ](http://bioconductor.org/packages/release/bioc/html/DESeq.html) and [EDGER](http://www.bioconductor.org/packages/release/bioc/html/edgeR.html).
@@ -914,9 +949,11 @@ cp \\
 
         edger_job = differential_expression.edger(design_file, count_matrix, output_directory)
         edger_job.output_files = [os.path.join(output_directory, contrast.name, "edger_results.csv") for contrast in self.contrasts]
+        edger_job.samples = self.samples
 
         deseq_job = differential_expression.deseq(design_file, count_matrix, output_directory)
         deseq_job.output_files = [os.path.join(output_directory, contrast.name, "dge_results.csv") for contrast in self.contrasts]
+        deseq_job.samples = self.samples
 
         return [concat_jobs([
             Job(command="mkdir -p " + output_directory),
@@ -940,6 +977,8 @@ cp \\
                 os.path.join("DGE", contrast.name, "gene_ontology_results.csv")
             )
             job.name = "differential_expression_goseq.dge." + contrast.name
+            for group in contrast.controls, contrast.treatments:
+                job.samples = [sample for sample in group]
             jobs.append(job)
 
 
@@ -998,30 +1037,16 @@ done""".format(
                 report_files=[report_file],
                 name="differential_expression_goseq_report")
         )
-############
         return jobs
-
 
     def ihec_metrics(self):
         """
         Generate IHEC's standard metrics.
         """
 
-        jobs = []
-        output_dir="ihec_metrics"
-        
-        for sample in self.samples:
-            bam_file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.")
-            input_bam = bam_file_prefix + "bam"
-            input_metrics = bam_file_prefix + "metrics"
-            
-            job = concat_jobs([
-                  Job(command="mkdir -p " + output_dir),
-                  tools.sh_ihec_rna_metrics(input_bam, sample.name, input_metrics, output_dir)
-              ], name="ihec_metrics." + sample.name )
-            jobs.append(job)
-            
-        return jobs
+        genome = config.param('ihec_metrics', 'assembly')
+         
+        return [metrics.ihec_metrics_rnaseq(genome)]
 
 
     @property
@@ -1050,7 +1075,8 @@ done""".format(
             self.gq_seq_utils_exploratory_analysis_rnaseq,
             self.differential_expression,
             self.differential_expression_goseq,
-            self.ihec_metrics
+            self.ihec_metrics,
+            self.verify_bam_id
         ]
 
 if __name__ == '__main__':

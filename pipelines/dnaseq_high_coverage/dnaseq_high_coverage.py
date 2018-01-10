@@ -65,9 +65,10 @@ class DnaSeqHighCoverage(dnaseq.DnaSeq):
     don't fare well with the high coverage.
     """
 
-    def __init__(self):
+    def __init__(self, protocol=None):
+        self._protocol=protocol
         # Add pipeline specific arguments
-        super(DnaSeqHighCoverage, self).__init__()
+        super(DnaSeqHighCoverage, self).__init__(protocol)
 
     def picard_fixmate(self):
         """
@@ -80,6 +81,7 @@ class DnaSeqHighCoverage(dnaseq.DnaSeq):
 
             job = picard.fix_mate_information(input_file, output_file)
             job.name = "picard_fix_mate_information." + sample.name
+            job.samples = [sample]
             jobs.append(job)
 
         return jobs
@@ -102,6 +104,7 @@ class DnaSeqHighCoverage(dnaseq.DnaSeq):
 
             job = picard.collect_multiple_metrics(input, input_file_prefix + "all.metrics")
             job.name = "picard_collect_multiple_metrics." + sample.name
+            job.samples = [sample]
             jobs.append(job)
 
             # Compute genome or target coverage with BVATools
@@ -111,12 +114,13 @@ class DnaSeqHighCoverage(dnaseq.DnaSeq):
                 bvatools.resolve_readset_coverage_bed(sample.readsets[0]),
                 other_options=config.param('bvatools_depth_of_coverage', 'other_options', required=False)
             )
-
             job.name = "bvatools_depth_of_coverage." + sample.name
+            job.samples = [sample]
             jobs.append(job)
 
             job = igvtools.compute_tdf(input, input + ".tdf")
             job.name = "igvtools_compute_tdf." + sample.name
+            job.samples = [sample]
             jobs.append(job)
 
         return jobs
@@ -144,6 +148,7 @@ class DnaSeqHighCoverage(dnaseq.DnaSeq):
                 input_file_prefix = os.path.join("alignment", sample.name, sample.name + ".matefixed.sorted.")
                 job = picard.calculate_hs_metrics(input_file_prefix + "bam", input_file_prefix + "onTarget.tsv", interval_list)
                 job.name = "picard_calculate_hs_metrics." + sample.name
+                job.samples = [sample]
                 jobs.append(job)
         return jobs
 
@@ -159,6 +164,7 @@ class DnaSeqHighCoverage(dnaseq.DnaSeq):
 
             job = gatk.callable_loci(alignment_file_prefix + "matefixed.sorted.bam", alignment_file_prefix + "callable.bed", alignment_file_prefix + "callable.summary.txt")
             job.name = "gatk_callable_loci." + sample.name
+            job.samples = [sample]
             jobs.append(job)
 
         return jobs
@@ -182,10 +188,13 @@ class DnaSeqHighCoverage(dnaseq.DnaSeq):
             beds.append(os.path.join(varscan_directory, 'chrs.' + str(idx) + '.bed'))
 
         genome_dictionary = config.param('DEFAULT', 'genome_dictionary', type='filepath')
-        
+
         if nb_jobs > 1:
             bedJob = tools.dict2beds(genome_dictionary, beds)
-            jobs.append(concat_jobs([mkdir_job,bedJob], name="varscan.genome.beds"))
+            jobs.append(concat_jobs([
+                Job(command="mkdir -p " + varscan_directory),
+                bedJob
+            ], name="varscan.genome.beds"))
 
         bams=[]
         sampleNamesFile = 'varscan_samples.tsv'
@@ -201,7 +210,7 @@ class DnaSeqHighCoverage(dnaseq.DnaSeq):
 
         if nb_jobs == 1:
             job = concat_jobs([
-                Job(command="mkdir -p " + varscan_directory),
+                Job(command="mkdir -p " + varscan_directory, samples=self.samples),
                 pipe_jobs([
                     samtools.mpileup(bams, None, config.param('varscan', 'mpileup_other_options'), regionFile=bedfile),
                     varscan.mpileupcns(None, None, sampleNamesFile, config.param('varscan', 'other_options')),
@@ -220,11 +229,13 @@ class DnaSeqHighCoverage(dnaseq.DnaSeq):
                     varscan.mpileupcns(None, None, sampleNamesFile, config.param('varscan', 'other_options')),
                     htslib.bgzip_tabix_vcf(None, output_vcf)
                 ], name = "varscan." + str(idx))
+                varScanJob.samples = self.samples
                 output_vcfs.append(output_vcf)
                 jobs.append(varScanJob)
 
-            job=gatk.cat_variants(output_vcfs, os.path.join(variants_directory, "allSamples.vcf.gz"))
+            job = gatk.cat_variants(output_vcfs, os.path.join(variants_directory, "allSamples.vcf.gz"))
             job.name="gatk_cat_varscan"
+            job.samples = self.samples
             jobs.append(job)
         return jobs
 
@@ -245,10 +256,15 @@ class DnaSeqHighCoverage(dnaseq.DnaSeq):
         jobs.append(concat_jobs([
             tools.preprocess_varscan( prefix + ".vcf.gz",  prefix + ".prep.vcf.gz" ), 
             vt.decompose_and_normalize_mnps( prefix + ".prep.vcf.gz" , prefix + ".prep.vt.vcf.gz"),
-            Job([outputPreprocess], [outputFix], command="zcat " + outputPreprocess + " | grep -v 'ID=AD_O' | awk ' BEGIN {OFS=\"\\t\"; FS=\"\\t\"} {if (NF > 8) {for (i=9;i<=NF;i++) {x=split($i,na,\":\") ; if (x > 1) {tmp=na[1] ; for (j=2;j<x;j++){if (na[j] == \"AD_O\") {na[j]=\"AD\"} ; if (na[j] != \".\") {tmp=tmp\":\"na[j]}};$i=tmp}}};print $0} ' | bgzip -cf >  " + outputFix),
+            Job(
+                [outputPreprocess],
+                [outputFix],
+                command="zcat " + outputPreprocess + " | grep -v 'ID=AD_O' | awk ' BEGIN {OFS=\"\\t\"; FS=\"\\t\"} {if (NF > 8) {for (i=9;i<=NF;i++) {x=split($i,na,\":\") ; if (x > 1) {tmp=na[1] ; for (j=2;j<x;j++){if (na[j] == \"AD_O\") {na[j]=\"AD\"} ; if (na[j] != \".\") {tmp=tmp\":\"na[j]}};$i=tmp}}};print $0} ' | bgzip -cf >  " + outputFix,
+                samples=self.samples
+            ),
             tools.preprocess_varscan( outputFix,  prefix + ".vt.vcf.gz" )
         ], name="preprocess_vcf.allSamples"))
-        
+
         return jobs
 
     def snp_effect(self):
@@ -263,7 +279,7 @@ class DnaSeqHighCoverage(dnaseq.DnaSeq):
         snpeff_prefix = os.path.join(output_directory, "allSamples")
 
         jobs.append(concat_jobs([
-            Job(command="mkdir -p " + output_directory),
+            Job(command="mkdir -p " + output_directory, samples=self.samples),
             snpeff.compute_effects( snpeff_prefix + ".vt.vcf.gz", snpeff_prefix + ".vt.snpeff.vcf", split=True),
             htslib.bgzip_tabix_vcf( snpeff_prefix + ".vt.snpeff.vcf", snpeff_prefix + ".vt.snpeff.vcf.gz")            
         ], name="compute_effects.allSamples"))
@@ -276,7 +292,7 @@ class DnaSeqHighCoverage(dnaseq.DnaSeq):
         """
 
         jobs = []
-                
+
         output_directory = "variants"
         temp_dir = os.path.join(os.getcwd(), output_directory)
         gemini_prefix = os.path.join(output_directory, "allSamples")
@@ -284,12 +300,11 @@ class DnaSeqHighCoverage(dnaseq.DnaSeq):
         gemini_version = ".".join([gemini_module[-2],gemini_module[-1]])
 
         jobs.append(concat_jobs([
-            Job(command="mkdir -p " + output_directory),
+            Job(command="mkdir -p " + output_directory, samples=self.samples),
             gemini.gemini_annotations( gemini_prefix + ".vt.snpeff.vcf.gz", gemini_prefix + ".gemini."+gemini_version+".db", temp_dir)
         ], name="gemini_annotations.allSamples"))
 
         return jobs
-
 
     @property
     def steps(self):

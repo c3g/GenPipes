@@ -164,10 +164,12 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output), output + ".md5"]
         )
 
-def mark_duplicates(inputs, output, metrics_file):
+def mark_duplicates(inputs, output, metrics_file, remove_duplicates="false"):
 
+    if not isinstance(inputs, list):
+        inputs=[inputs]
     if config.param('picard_mark_duplicates', 'module_picard').split("/")[2] < "2":
-        return picard.mark_duplicates(inputs, output, metrics_file)
+        return picard.mark_duplicates(inputs, output, metrics_file, remove_duplicates)
     else:
         return Job(
             inputs,
@@ -178,7 +180,7 @@ def mark_duplicates(inputs, output, metrics_file):
             ],
             command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar MarkDuplicates \\
- REMOVE_DUPLICATES=false VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true \\
+ REMOVE_DUPLICATES={remove_duplicates} VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true \\
  TMP_DIR={tmp_dir} \\
  {inputs} \\
  OUTPUT={output} \\
@@ -187,6 +189,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             tmp_dir=config.param('picard_mark_duplicates', 'tmp_dir'),
             java_other_options=config.param('picard_mark_duplicates', 'java_other_options'),
             ram=config.param('picard_mark_duplicates', 'ram'),
+            remove_duplicates=remove_duplicates,
             inputs=" \\\n  ".join(["INPUT=" + input for input in inputs]),
             output=output,
             metrics_file=metrics_file,
@@ -197,6 +200,8 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
 
 def merge_sam_files(inputs, output):
 
+    if not isinstance(inputs, list):
+        inputs=[inputs]
     if config.param('picard_merge_sam_files', 'module_picard').split("/")[2] < "2":
         return picard.merge_sam_files(inputs, output)
     else:
@@ -217,7 +222,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             tmp_dir=config.param('picard_merge_sam_files', 'tmp_dir'),
             java_other_options=config.param('picard_merge_sam_files', 'java_other_options'),
             ram=config.param('picard_merge_sam_files', 'ram'),
-            inputs=" \\\n  ".join(["INPUT=" + input for input in inputs]),
+            inputs=" \\\n ".join(["INPUT=" + input for input in inputs]),
             output=output,
             max_records_in_ram=config.param('picard_merge_sam_files', 'max_records_in_ram', type='int')
             ),
@@ -227,6 +232,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
 # Reorder BAM/SAM files based on reference/dictionary
 def reorder_sam(input, output):
 
+    
     if config.param('reorder_sam', 'module_picard').split("/")[2] < "2":
         return picard.reorder_sam(input, output)
     else:
@@ -318,6 +324,8 @@ def sort_sam(input, output, sort_order="coordinate", ini_section='picard_sort_sa
 
 def sort_vcfs(inputs, output, ini_section='picard_sort_vcf'):
 
+    if not isinstance(inputs, list):
+        inputs=[inputs]
     if config.param(ini_section, 'module_picard').split("/")[2] < "2":
         return picard.sort_vcfs(inputs, output, ini_section)
     else:
@@ -383,10 +391,10 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             )
         )
 
-def add_read_groups(input, output, readgroup, library, lane, sample, sort_order="coordinate"):
+def add_read_groups(input, output, readgroup, library, processing_unit, sample, sort_order="coordinate"):
 
     if config.param('picard_add_read_groups', 'module_picard').split("/")[2] < "2":
-        return picard.add_read_groups(input, output, readgroup, library, lane, sample, sort_order)
+        return picard.add_read_groups(input, output, readgroup, library, processing_unit, sample, sort_order)
     else:
         return Job(
             [input],
@@ -405,20 +413,20 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
  RGID=\"{readgroup}\" \\
  RGLB=\"{library}\" \\
  RGPL=\"{platform}\" \\
- RGPU=\"{lane}\" \\
- RGSM=\"{sample}\"  \\
- RGCN=\"{sequencing_center}\"""".format(
-            tmp_dir=config.param('picard_add_read_groups', 'tmp_dir'),
-            java_other_options=config.param('picard_add_read_groups', 'java_other_options'),
-            ram=config.param('picard_add_read_groups', 'ram'),
-            input=input,
-            output=output,
-            sort_order=sort_order,
-            readgroup=readgroup,
-            library=library,
-            platform=config.param('picard_add_read_groups', 'platform'),
-            lane=lane,
-            sample=sample,
-            sequencing_center=config.param('picard_add_read_groups', 'sequencing_center'),
+ RGPU=\"run{processing_unit}\" \\
+ RGSM=\"{sample}\" \\
+ {sequencing_center}""".format(
+                tmp_dir=config.param('picard_add_read_groups', 'tmp_dir'),
+                java_other_options=config.param('picard_add_read_groups', 'java_other_options'),
+                ram=config.param('picard_add_read_groups', 'ram'),
+                input=input,
+                output=output,
+                sort_order=sort_order,
+                readgroup=readgroup,
+                library=library,
+                platform=config.param('picard_add_read_groups', 'platform'),
+                processing_unit=processing_unit,
+                sample=sample,
+                sequencing_center=("RGCN=\"" + config.param('picard_add_read_groups', 'sequencing_center') + "\"" if config.param('picard_add_read_groups', 'sequencing_center', required=False) else "")
             )
         )

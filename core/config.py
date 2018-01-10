@@ -49,18 +49,22 @@ class Config(ConfigParser.SafeConfigParser):
     # Check by a system call if all modules defined in config files are available
     def check_modules(self):
         modules = []
-
+        query_module = "show"
         # Retrieve all unique module version values in config files
         # assuming that all module key names start with "module_"
         for section in self.sections():
             for name, value in self.items(section):
                 if re.search("^module_", name) and value not in modules:
                     modules.append(value)
+                if re.search("^query_module", name):
+                    query_module = value
 
         log.info("Check modules...")
+        cmd_query_module = "module {query_module} ".format(query_module  = query_module)
         for module in modules:
             # Bash shell must be invoked in order to find "module" cmd
-            module_show_output = subprocess.check_output(["bash", "-c", "module show " + module], stderr=subprocess.STDOUT)
+            module_show_output = subprocess.check_output(["bash", "-c", cmd_query_module + module], stderr=subprocess.STDOUT)
+            ## "Error" result for module show while "error" for module spider. seems to be handeled well by re.IGNORECASE
             if re.search("Error", module_show_output, re.IGNORECASE):
                 raise Exception("Error in config file(s) with " + module + ":\n" + module_show_output)
             else:

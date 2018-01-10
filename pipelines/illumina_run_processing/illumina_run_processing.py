@@ -120,7 +120,8 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
             sample47,,MPS1047,Library,Nextera XT,1419,2,toto.bed,sample47_MPS1047
     """
 
-    def __init__(self):
+    def __init__(self, protocol=None):
+        self._protocol=protocol
         self.copy_job_inputs = []
         self.argparser.add_argument("-d", "--run", help="run directory", required=False, dest="run_dir")
         self.argparser.add_argument("--lane", help="lane number", type=int, required=False, dest="lane_number")
@@ -138,7 +139,7 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
                                     action="store_true",
                                     dest="force_download")
 
-        super(IlluminaRunProcessing, self).__init__()
+        super(IlluminaRunProcessing, self).__init__(protocol)
 
     @property
     def readsets(self):
@@ -291,6 +292,7 @@ java -Djava.io.tmpdir={tmp_dir}\\
                 read_structure=mask,
                 output=output
             )
+            job.samples = self.samples
             jobs.append(job)
 
         self.add_copy_job_inputs(jobs)
@@ -352,7 +354,8 @@ bcl2fastq\\
                   fastq_outputs,
                   [('fastq', 'module_bcl_to_fastq'), ('fastq', 'module_gcc')],
                   command=command,
-                  name="fastq." + self.run_id + "." + str(self.lane_number)
+                  name="fastq." + self.run_id + "." + str(self.lane_number),
+                  samples=self.samples
                   )
 
         jobs.append(job)
@@ -373,7 +376,8 @@ bcl2fastq\\
             # Use the same inputs and output of fastq job to send a notification each time the fastq job run
             job = Job([input], ["notificationFastqStart." + str(self.lane_number) + ".out"],
                       name="fastq_notification_start." + self.run_id + "." + str(self.lane_number),
-                      command=notification_command_start)
+                      command=notification_command_start,
+                      samples=self.samples)
             jobs.append(job)
 
         notification_command_end = config.param('fastq_notification_end', 'notification_command', required=False)
@@ -386,7 +390,8 @@ bcl2fastq\\
             )
             job = Job(fastq_outputs, ["notificationFastqEnd." + str(self.lane_number) + ".out"],
                       name="fastq_notification_end." + self.run_id + "." + str(self.lane_number),
-                      command=notification_command_end)
+                      command=notification_command_end,
+                      samples=self.samples)
             jobs.append(job)
 
         return jobs
@@ -406,7 +411,9 @@ bcl2fastq\\
         """
         jobs = []
         for readset in [readset for readset in self.readsets if readset.bam]:
-            jobs.append(readset.aligner.get_alignment_job(readset))
+            job = readset.aligner.get_alignment_job(readset)
+            job.samples = [readset.sample]
+            jobs.append(job)
         self.add_copy_job_inputs(jobs)
         return self.throttle_jobs(jobs)
 
@@ -423,6 +430,7 @@ bcl2fastq\\
 
             job = picard.mark_duplicates([input], output, metrics_file)
             job.name = "picard_mark_duplicates." + readset.name + ".dup." + self.run_id + "." + str(self.lane_number)
+            job.samples = [readset.sample]
             jobs.append(job)
 
         self.add_copy_job_inputs(jobs)
@@ -448,7 +456,10 @@ bcl2fastq\\
         """
         jobs = []
         for readset in [readset for readset in self.readsets if readset.bam]:
-            jobs.extend(readset.aligner.get_metrics_jobs(readset))
+            job_list = readset.aligner.get_metrics_jobs(readset)
+            for job in job_list:
+                job.samples = [readset.sample]
+            jobs.extend(job_list)
         self.add_copy_job_inputs(jobs)
         return self.throttle_jobs(jobs)
 
@@ -556,6 +567,7 @@ bcl2fastq\\
             # merge all blast steps of the readset into one job
             job = concat_jobs(current_jobs,
                               name="blast." + readset.name + ".blast." + self.run_id + "." + str(self.lane_number))
+            job.samples = [readset.sample]
             jobs.append(job)
         self.add_copy_job_inputs(jobs)
         return self.throttle_jobs(jobs)
@@ -598,6 +610,7 @@ bcl2fastq\\
             )
 
             job.name = "qc." + readset.name + ".qc." + self.run_id + "." + str(self.lane_number)
+            job.samples = [readset.sample]
             jobs.append(job)
 
         self.add_copy_job_inputs(jobs)
@@ -631,6 +644,7 @@ bcl2fastq\\
             job = concat_jobs(current_jobs,
                               name="md5." + readset.name + ".md5." + self.run_id + "." + str(self.lane_number))
 
+            job.samples = [readset.sample]
             jobs.append(job)
 
         if config.param('md5', 'one_job', required=False, type="boolean"):
@@ -670,6 +684,7 @@ bcl2fastq\\
                 output2=output2,
                 lane_number=self.lane_number
             )
+            job.samples = self.samples
             jobs_to_concat.append(job)
 
         # Actual copy
@@ -702,7 +717,7 @@ bcl2fastq\\
                 source=self.run_dir,
                 run_name=os.path.basename(self.run_dir)
             )
-            jobs_to_concat.append(Job(inputs, [output], command=copy_command_run_folder))
+            jobs_to_concat.append(Job(inputs, [output], command=copy_command_run_folder, samples=self.samples))
 
         copy_command_output_folder = config.param('copy', 'copy_command', required=False).format(
             exclusion_clauses="\\\n".join(
@@ -713,8 +728,8 @@ bcl2fastq\\
             source=self.output_dir,
             run_name=os.path.basename(self.run_dir)
         )
-        jobs_to_concat.append(Job(inputs, [output], command=copy_command_output_folder))
-        jobs_to_concat.append(Job(command="touch " + output))
+        jobs_to_concat.append(Job(inputs, [output], command=copy_command_output_folder, samples=self.samples))
+        jobs_to_concat.append(Job(command="touch " + output, samples=self.samples))
 
         job = concat_jobs(jobs_to_concat, "copy." + self.run_id + "." + str(self.lane_number))
 
@@ -745,6 +760,7 @@ bcl2fastq\\
                 output=output,
                 lane_number=self.lane_number
             )
+            job.samples = self.samples
             jobs.append(job)
 
         return jobs
