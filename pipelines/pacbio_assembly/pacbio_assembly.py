@@ -722,6 +722,79 @@ pandoc --to=markdown \\
 
         return jobs
 
+    def basemodification(self):
+        """
+        Run ipdSummary.py for in silico detection of modified bases
+        """
+
+        jobs = []
+
+        for sample in self.samples:
+            for coverage_cutoff in config.param('DEFAULT', 'coverage_cutoff', type='list'):
+                cutoff_x = coverage_cutoff + "X"
+                coverage_directory = os.path.join(sample.name, cutoff_x)
+                preassembly_directory = os.path.join(coverage_directory, "preassembly", "data")
+
+                for mer_size in config.param('DEFAULT', 'mer_sizes', type='list'):
+                    mer_size_text = "merSize" + mer_size
+                    mer_size_directory = os.path.join(coverage_directory, mer_size_text)
+                    basemodification_directory = os.path.join(mer_size_directory, "basemodification")
+                    basemodification_file_prefix = os.path.join(basemodification_directory, sample.name + ".basemod")
+
+                    polishing_rounds = config.param('DEFAULT', 'polishing_rounds', type='posint')
+                    if polishing_rounds > 4:
+                        raise Exception("Error: polishing_rounds \"" + str(polishing_rounds) + "\" is invalid (should be between 1 and 4)!")
+                        
+                    fasta_consensus = os.path.join(mer_size_directory, "polishing" + str(polishing_rounds - 1), "data", "consensus.fasta")
+                    aligned_reads = os.path.join(mer_size_directory, "polishing" + str(polishing_rounds), "data", "aligned_reads.sorted.cmp.h5")
+                    output_gff = basemodification_file_prefix
+
+                jobs.append(concat_jobs([
+                    Job(command="mkdir -p " + basemodification_directory),
+                    smrtanalysis.basemodification(fasta_consensus, aligned_reads, basemodification_file_prefix, mer_size_directory, polishing_rounds)                 
+                ], name = "basemodification." + sample.name))
+
+        return jobs
+
+
+    def motifMaker(self):
+        """
+        Run motifMaker to generate motif_summary.csv
+        """
+
+        jobs = []
+
+        for sample in self.samples:
+            for coverage_cutoff in config.param('DEFAULT', 'coverage_cutoff', type='list'):
+                cutoff_x = coverage_cutoff + "X"
+                coverage_directory = os.path.join(sample.name, cutoff_x)
+                preassembly_directory = os.path.join(coverage_directory, "preassembly", "data")
+
+                for mer_size in config.param('DEFAULT', 'mer_sizes', type='list'):
+                    mer_size_text = "merSize" + mer_size
+                    mer_size_directory = os.path.join(coverage_directory, mer_size_text)
+                    basemodification_directory = os.path.join(mer_size_directory, "basemodification")
+                    basemodification_file_prefix = os.path.join(basemodification_directory, sample.name + ".basemod")
+                    motifMaker_directory = os.path.join(mer_size_directory, "motifMaker")
+                    motifMaker_file = os.path.join(motifMaker_directory, (sample.name + ".motif_summary.csv"))
+                    output_gff = basemodification_file_prefix + ".gff"
+
+                    polishing_rounds = config.param('DEFAULT', 'polishing_rounds', type='posint')
+                    if polishing_rounds > 4:
+                        raise Exception("Error: polishing_rounds \"" + str(polishing_rounds) + "\" is invalid (should be between 1 and 4)!")
+                        
+                    fasta_consensus = os.path.join(mer_size_directory, "polishing" + str(polishing_rounds - 1), "data", "consensus.fasta")
+                    output_gff = basemodification_file_prefix + ".gff"
+
+                jobs.append(concat_jobs([
+                    Job(command="mkdir -p " + motifMaker_directory),
+                    smrtanalysis.motifMaker(fasta_consensus, basemodification_file_prefix, mer_size_directory, polishing_rounds, motifMaker_file)
+                ], name = "motifMaker." + sample.name))
+
+        return jobs
+
+
+
     def report_jobs(self):
         """
         Overwrite core pipeline report_jobs method to perform it on every sample/coverage_cutoff/mer_size
@@ -749,7 +822,9 @@ pandoc --to=markdown \\
             self.blast,
             self.mummer,
             self.compile,
-            self.circlator
+            self.circlator,
+            self.basemodification,
+            self.motifMaker
         ]
 
 if __name__ == '__main__':

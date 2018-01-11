@@ -20,8 +20,9 @@ $sequence_alignment_table$
 * %_pUC19_methylation_rate: 100 - C->T conversion rate on pUC19 * 100 
 * %_lambda_conversion_rate: C->T conversion rate on the lambda phage * 100 
 * %_human_conversion_rate: estimation of non-CpG methylation * 100 
-* estimate_average_genome_coverage: aligned_reads / genome size
+* estimated_average_genome_coverage: aligned_reads / genome size
 * median_CpG_coverage: median read coverage for on-target CpGs
 * #_CG_1X: total number of CpGs with a coverage >= 1x
 * #_CG_10X: total number of CpGs with a coverage >= 10x
 * #_CG_30X: total number of CpGs with a coverage >= 30x
+

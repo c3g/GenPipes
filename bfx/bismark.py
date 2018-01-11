@@ -106,6 +106,8 @@ bismark_methylation_extractor \\
 
 def bed_graph(inputs, output_prefixe, output_directory):
 
+    if not isinstance(inputs, list):
+        inputs=[inputs]
     outputs = [
         os.path.join(output_directory, output_prefixe + ".bedGraph.gz"),
         os.path.join(output_directory, output_prefixe + ".bismark.cov.gz")
