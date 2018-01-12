@@ -27,8 +27,9 @@ from core.job import *
 
 def callpeak (format, genome_size, treatment_files, control_files, output_prefix_name, output, other_options=""):
 
+
     command = """macs2 callpeak {format}{other_options} \\
-          --tempdir $SCRATCH \\
+          --tempdir {tmp_dir} \\
           --gsize {genome_size} \\
           --treatment \\
           {treatment_files}{control_files} \\
@@ -36,6 +37,7 @@ def callpeak (format, genome_size, treatment_files, control_files, output_prefix
           >& {output_prefix_name}.diag.macs.out""".format(
                         format = format,
                         other_options = other_options,
+                        tmp_dir = config.param('callpeak', "tmp_dir"),
                         genome_size = genome_size,
                         treatment_files=" \\\n  ".join(treatment_files),
                         control_files=" \\\n  --control \\\n  " + " \\\n  ".join(control_files) if control_files else " \\\n  --nolambda",
