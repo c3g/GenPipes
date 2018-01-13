@@ -100,6 +100,17 @@ build() {
   $INSTALL_DIR/$SOFTWARE_DIR/bin/python -c 'import misopy; print misopy.__version__, misopy.__file__'
 
   # qiime
+  # emperor is needed for QIIME but some versions have toubles to install through pip
+  # so here, we manually download the emperor archive to install with a `python setup.py install` command
+  EMPEROR_VERSION=0.9.60
+  EMPEROR_ARCHIVE=emperor-${EMPEROR_VERSION}.tar.gz
+  wget --no-check-certificate https://github.com/biocore/emperor/archive/${EMPEROR_VERSION}.tar.gz --output-document=$EMPEROR_ARCHIVE
+  tar -zxvf $EMPEROR_ARCHIVE
+  cd emperor-${EMPEROR_VERSION}
+  $INSTALL_DIR/$SOFTWARE_DIR/bin/python setup.py install
+  cd ..
+  rm -r $EMPEROR_ARCHIVE emperor-${EMPEROR_VERSION}
+  # And now, proceed to the QIIME installation itself
   $PIP_PATH install --upgrade qiime
   $INSTALL_DIR/$SOFTWARE_DIR/bin/python -c 'import qiime; print qiime.__version__, qiime.__file__'
 
