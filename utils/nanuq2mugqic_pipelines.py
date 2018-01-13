@@ -64,7 +64,9 @@ def get_nanuq_bed_file(nanuq_auth_file, bed_file):
 
 def create_readsets(nanuq_readset_file, seq_type, mugqic_pipelines_readset_file="readsets.tsv", args_nanuq_auth_file=None):
     # Lowercase the first seq_type character
-    lcfirst_seq_type = seq_type[0].lower() + seq_type[1:]
+    lcfirst_seq_type = seq_type[0].lower() + seq_type[1:] 
+    if seq_type == "NovaSeq" : 
+        lcfirst_seq_type = seq_type
 
     nanuq_readset_root_directory = "/lb/robot/" + lcfirst_seq_type + "Sequencer/" + lcfirst_seq_type + "Runs"
     raw_reads_directory = "raw_reads"
@@ -206,7 +208,7 @@ group = parser.add_mutually_exclusive_group(required=True)
 group.add_argument("-p", "--nanuq-project-id", help="Nanuq project ID used to fetch readset file from server (incompatible with --nanuq-readset-file)")
 group.add_argument("-r", "--nanuq-readset-file", help="Nanuq readset file to use instead of fetching it from server (incompatible with --nanuq-project-id)", type=file)
 
-parser.add_argument("-s", "--seq-type", help="Sequencing type (default: HiSeq)", choices=["HiSeq", "MiSeq", "Pacbio"], default="HiSeq")
+parser.add_argument("-s", "--seq-type", help="Sequencing type (default: HiSeq)", choices=["HiSeq", "NovaSeq","MiSeq", "Pacbio"], default="HiSeq")
 parser.add_argument("-a", "--nanuq-auth-file", help="Nanuq authentication file containing your Nanuq username and password e.g. $HOME/.nanuqAuth.txt\nTo create it:\n$ echo -n \"user=<USERNAME>&password=<PASSWORD>\" > $HOME/.nanuqAuth.txt ; chmod u+r,go-rwx $HOME/.nanuqAuth.txt\nNote '-n' option since trailing newline is not allowed at the end of the file.", type=file)
 parser.add_argument("-nl", "--no-links", help="Do not create raw_reads directory and symlinks (default: false)", action="store_true")
 parser.add_argument("-l", "--log", help="log level (default: info)", choices=["debug", "info", "warning", "error", "critical"], default="info")
