@@ -84,7 +84,7 @@ class DnaSeq(common.Illumina):
     def __init__(self, protocol=None):
         self._protocol=protocol
         # Add pipeline specific arguments
-        self.argparser.add_argument("-t", "--type", help = "DNAseq analysis type", choices = ["mugqic", "mpileup"], default="mugqic")
+        self.argparser.add_argument("-t", "--type", help = "DNAseq analysis type", choices = ["mugqic", "mpileup", "forge"], default="mugqic")
         super(DnaSeq, self).__init__(protocol)
 
 
