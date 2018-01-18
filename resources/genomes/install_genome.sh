@@ -472,6 +472,7 @@ create_kallisto_index() {
 create_transcripts2genes_file() {
   ANNOTATION_GTF=$ANNOTATIONS_DIR/$GTF
   if is_up2date $ANNOTATION_GTF
+  then
     ANNOTATION_TX2GENES=$ANNOTATIONS_DIR/cdna_kallisto_index/${GTF/.gtf/.tx2gene}
     if ! is_up2date ANNOTATION_TX2GENES
     then
