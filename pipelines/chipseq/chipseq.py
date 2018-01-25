@@ -90,6 +90,16 @@ class ChipSeq(dnaseq.DnaSeq):
 
 
     @property
+    def ucsc_genome(self):
+        genome_source = config.param('DEFAULT', 'source')
+        if genome_source == "UCSC":
+            genome = config.param('DEFAULT', 'assembly')
+        else:
+            genome = config.param('DEFAULT', 'assembly_synonyms')
+        return genome
+
+
+    @property
     def contrasts(self):
         contrasts = super(ChipSeq, self).contrasts
 
@@ -305,14 +315,14 @@ pandoc --to=markdown \\
         The Homer Tag directories, used to check for quality metrics, are computed at this step. 
         """
 
+
         jobs = []
         for sample in self.samples:
             alignment_file = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.dup.bam")
             output_dir = os.path.join(self.output_dirs['homer_output_directory'], sample.name)
-            genome = config.param('homer_make_tag_directory', 'assembly_synonyms')
             other_options = config.param('homer_make_tag_directory', 'other_options', required=False)
 
-            job = homer.makeTagDir(output_dir, alignment_file, genome, restriction_site=None, illuminaPE=False, other_options=other_options)
+            job = homer.makeTagDir(output_dir, alignment_file, self.ucsc_genome, restriction_site=None, illuminaPE=False, other_options=other_options)
             job.name = "homer_make_tag_directory." + sample.name
             job.removable_files=[output_dir]
 
@@ -515,11 +525,10 @@ done""".format(
                 peak_file = os.path.join(self.output_dirs['macs_output_directory'], contrast.real_name, contrast.real_name + "_peaks." + contrast.type + "Peak")
                 output_prefix = os.path.join(self.output_dirs['anno_output_directory'], contrast.real_name, contrast.real_name)
                 annotation_file = output_prefix + ".annotated.csv"
-                genome = config.param('homer_annotate_peaks', 'assembly_synonyms')
 
                 mkdir_job = Job(command="mkdir -p " + output_prefix)
 
-                anno_job  = homer.annotatePeaks(peak_file, genome, output_prefix, annotation_file)
+                anno_job  = homer.annotatePeaks(peak_file, self.ucsc_genome, output_prefix, annotation_file)
                 metrics_job = Job(
                         [annotation_file],
                         [
@@ -596,13 +605,12 @@ done""".format(
             if contrast.type == 'narrow' and contrast.treatments:
                 peak_file = os.path.join(self.output_dirs['macs_output_directory'], contrast.real_name, contrast.real_name + "_peaks." + contrast.type + "Peak")
                 output_dir = os.path.join(self.output_dirs['anno_output_directory'], contrast.real_name, contrast.real_name)
-                genome = config.param('homer_find_motifs_genome', 'assembly_synonyms')
                 threads = config.param('homer_find_motifs_genome', 'threads', type='posint')
 
 
                 mkdir_job = Job(command="mkdir -p " + output_dir)
 
-                motifs_job  = homer.findMotifsGenome(peak_file, genome, output_dir, threads)
+                motifs_job  = homer.findMotifsGenome(peak_file, self.ucsc_genome, output_dir, threads)
 
                 job = concat_jobs([mkdir_job, motifs_job])
                 job.name = "homer_find_motifs_genome." + contrast.real_name
@@ -791,7 +799,7 @@ done""".format(
         alignment_dir = self.output_dirs['ihecA_output_directory']
         output_dir = self.output_dirs['ihecM_output_directory']
         tmpDir = config.param('run_spp', 'tmp_dir')
-
+        
         for sample in self.samples:
             sample_merge_mdup_bam = os.path.join(alignment_dir, sample.name + ".merged.mdup.bam")
             output = os.path.join(output_dir, sample.name + ".crosscor")
@@ -802,11 +810,14 @@ done""".format(
                 tmpDir = tmpDir)
 
 
-            job = Job(input_files = [sample_merge_mdup_bam],
+            job = concat_jobs([
+                        Job(command="mkdir -p " + output_dir),
+                        Job(input_files = [sample_merge_mdup_bam],
                             output_files = [output],
                             module_entries = [['run_spp', 'module_samtools'],['run_spp', 'module_mugqic_tools'], ['run_spp', 'module_R']],
                             name = "run_spp." + sample.name,
-                            command = spp_cmd)
+                            command = spp_cmd)], name = "run_spp." + sample.name)
+
             jobs.append(job)    
 
         return jobs
@@ -855,7 +866,7 @@ done""".format(
             #chip_type = config.param('IHEC_chipseq_metrics', 'chip_type', required=True)
             chip_type = values[2]
             chip_bed = os.path.join(self.output_dirs['macs_output_directory'], values[1], values[1] + "_peaks." + values[2] + "Peak")
-            genome = config.param('ihec_metrics', 'assembly_synonyms')
+            genome = config.param('ihec_metrics', 'assembly')
             
             # cmd=""
             # cmd = cmd + "key: " + str(key) + "     value is: " + str(values) + "\n"

@@ -471,9 +471,11 @@ create_kallisto_index() {
 
 create_transcripts2genes_file() {
   ANNOTATION_GTF=$ANNOTATIONS_DIR/$GTF
-   if is_up2date $ANNOTATION_GTF
+  if is_up2date $ANNOTATION_GTF
+  then
     ANNOTATION_TX2GENES=$ANNOTATIONS_DIR/cdna_kallisto_index/${GTF/.gtf/.tx2gene}
     if ! is_up2date ANNOTATION_TX2GENES
+    then
       module load $module_R
       module load $module_mugqic_R_packages
       R --no-restore --no-save<<EOF
@@ -489,6 +491,12 @@ create_transcripts2genes_file() {
 
       write.table(x=tx2gene, file="$ANNOTATION_TX2GENES", sep="\t", col.names=T, row.names=F, quote=F)
 EOF
+    else
+      echo
+      echo "transcripts2genes file up to date... skipping"
+      echo
+    fi
+  fi
 }
 
 create_gene_annotations() {

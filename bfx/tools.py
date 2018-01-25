@@ -568,7 +568,7 @@ IHEC_rnaseq_metrics.sh \\
     )
 
 def sh_ihec_chip_metrics(chip_bam, input_bam, sample_name, input_name, chip_type, chip_bed, output_dir, assembly):
-    output_metrics=os.path.join(output_dir, sample_name+".read_stats.txt")
+    output_metrics=os.path.join(output_dir, "IHEC_metrics_chipseq_"+ sample_name + ".txt")
     output_fingerprints=os.path.join(output_dir, sample_name+".fingerprint.txt")
     output_fingerprints_png=os.path.join(output_dir, sample_name+".fingerprint.png")
     output_dedup_chip_bam=os.path.join(output_dir, sample_name+".dedup.bam")
