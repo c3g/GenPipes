@@ -18,6 +18,13 @@ build() {
   # Install software
   cd $INSTALL_DOWNLOAD
   mv -i $SOFTWARE_DIR $INSTALL_DIR/
+
+  MODULE_PERL=mugqic/perl/5.22.1
+  MODULE_BLAST=mugqic/blast/2.3.0+
+  cd $INSTALL_DIR/$SOFTWARE_DIR/bin
+  module load $MODULE_PERL $MODULE_BLAST
+  ./prokka --setupdb
+  
 }
 
 module_file() {
