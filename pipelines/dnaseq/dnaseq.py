@@ -1385,8 +1385,29 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             self.mpileup_dbnsfp_annotation,
             self.mpileup_metrics_vcf_stats,
             self.mpileup_metrics_snv_graph_metrics,
-            self.verify_bam_id]
+            self.verify_bam_id],
+            [self.picard_sam_to_fastq,
+            self.trimmomatic,
+            self.merge_trimmomatic_stats,
+            self.bwa_mem_picard_sort_sam,
+            self.picard_merge_sam_files,
+            self.gatk_indel_realigner,
+            self.merge_realigned,
+            self.fix_mate_by_coordinate,
+            self.picard_mark_duplicates,
+            self.recalibration,
+            self.metrics,
+            self.picard_calculate_hs_metrics,
+            self.gatk_callable_loci,
+            self.extract_common_snp_freq,
+            self.baf_plot,
+            self.gatk_haplotype_caller,
+            self.merge_and_call_individual_gvcf,
+            self.combine_gvcf,
+            self.merge_and_call_combined_gvcf,
+            self.variant_recalibrator,
+            self.dna_sample_metrics]
         ]
 
 if __name__ == '__main__':
-    DnaSeq(protocol=['mugqic', 'mpileup'])
+    DnaSeq(protocol=['mugqic', 'mpileup', 'forge'])
