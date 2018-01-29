@@ -579,7 +579,7 @@ def sh_ihec_chip_metrics(chip_bam, input_bam, sample_name, input_name, chip_type
     crosscor_input =os.path.join(output_dir, sample_name + ".crosscor")
     return Job(
         [input_bam, chip_bam, chip_bed, crosscor_input],
-        [output_metrics, output_fingerprints, output_fingerprints_png, output_dedup_chip_bam, output_dedup_chip_bai, output_dedup_input_bam, output_dedup_input_bai, output_flagstats],
+        [output_metrics, output_dedup_chip_bam, output_dedup_chip_bai, output_flagstats],
         [
             ['DEFAULT', 'module_mugqic_tools'],
             ['DEFAULT', 'module_samtools'],
