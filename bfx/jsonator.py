@@ -194,4 +194,10 @@ def create(pipeline, sample):
     with open(os.path.join(pipeline.output_dir, "json", sample.json_file), 'w') as out_json:
         out_json.write(current_json)
 
+    # Print a copy of it for the monitoring interface
+    portal_output_dir = config.param('DEFAULT', 'portal_output_dir', required = False)
+    if portal_output_dir != '':
+        with open(os.path.join(portal_output_dir, sample.json_file), 'w') as out_json:
+            out_json.write(current_json)
+
     return current_json
