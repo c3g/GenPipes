@@ -10,7 +10,6 @@ import requests
 def main():
 
     options = get_arguments()
-    url = options.url + '/' + options.user_name
 
     print('Watching for JSON files in %s' % options.watch_folder)
 
@@ -27,7 +26,7 @@ def send_files(options, files):
     for file in files:
         fullpath = os.path.join(options.watch_folder, file)
         try:
-            res = requests.post(url, readfile(fullpath))
+            res = requests.post(options.url + '/' + options.user_name, readfile(fullpath))
         except Exception as e:
             print(red('Got network error while sending files. Skipping update.'))
             print(e)
