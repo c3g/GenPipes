@@ -11,6 +11,9 @@ import json
 import subprocess
 import datetime
 
+# MUGQIC Modules
+from core.config import *
+
 def getarg(argument):
     step_name = ""
     job_name = ""
@@ -124,5 +127,12 @@ def main():
         # Print to file
         with open(jfile, 'w') as out_json:
             json.dump(current_json, out_json, indent=4)
+
+        # Print a copy of it for the monitoring interface
+        portal_output_dir = config.param('DEFAULT', 'portal_output_dir', required = False)
+        if portal_output_dir != '':
+            with open(os.path.join(portal_output_dir, sample.json_file), 'w') as out_json:
+                json.dump(current_json, out_json, indent=4)
+
 
 main()
