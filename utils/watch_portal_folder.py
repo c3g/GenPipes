@@ -2,6 +2,7 @@
 from __future__ import print_function
 import os
 import sys
+import json
 import time
 import getopt
 import requests
@@ -23,20 +24,21 @@ def main():
 
 
 def send_files(options, files):
+    url = options.url + '/' + options.user_name
     for file in files:
         fullpath = os.path.join(options.watch_folder, file)
         try:
-            res = requests.post(options.url + '/' + options.user_name, readfile(fullpath))
+            res = requests.post(url, json = json.loads(readfile(fullpath)))
         except Exception as e:
-            print(red('Got network error while sending files. Skipping update.'))
+            print(red('Got error while sending files. Skipping update.'))
             print(e)
             return
 
-        if res.status_code == 200:
+        if res.status_code == 200 and res.json()['ok'] == True:
             os.remove(fullpath)
             print('Sent %s' % file)
         else:
-            print(red('Request failed %d ' % res.status_code) + ('[%s] %s: %s' % (bold(url), file, res.reason)))
+            print(red('Request failed %d ' % res.status_code) + ('[%s] %s: %s : %s' % (bold(url), file, res.reason, res.text)))
 
 def readfile(filename):
     with open(filename, 'r') as file:
