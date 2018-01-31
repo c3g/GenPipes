@@ -101,8 +101,8 @@ def bold(text):
 def red(text):
     return '\x1b[31m%s\x1b[39m' % text
 
-def exit(message):
-    sys.exit(red(message))
+def exit(message = None):
+    sys.exit(red(message) if message else None)
 
 class dotdict(dict):
     __getattr__ = dict.get
