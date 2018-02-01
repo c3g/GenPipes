@@ -28,17 +28,18 @@ def send_files(options, files):
     for file in files:
         fullpath = os.path.join(options.watch_folder, file)
         try:
-            res = requests.post(url, json = json.loads(readfile(fullpath)))
+            response = requests.post(url, json = json.loads(readfile(fullpath)))
+            result   = response.json()
         except Exception as e:
             print(red('Got error while sending files. Skipping update.'))
             print(e)
             return
 
-        if res.status_code == 200 and res.json()['ok'] == True:
+        if response.status_code == 200 and result.get('ok') == True:
             os.remove(fullpath)
             print('Sent %s' % file)
         else:
-            print(red('Request failed %d ' % res.status_code) + ('[%s] %s: %s : %s' % (bold(url), file, res.reason, res.text)))
+            print(red('Request failed %d ' % response.status_code) + ('[%s] %s: %s : %s' % (bold(url), file, response.reason, response.text)))
 
 def readfile(filename):
     with open(filename, 'r') as file:
