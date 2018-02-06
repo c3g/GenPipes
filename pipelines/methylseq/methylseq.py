@@ -158,6 +158,15 @@ class MethylSeq(dnaseq.DnaSeq):
                     )
                 ], name="picard_add_read_groups." + readset.name)
             )
+            jobs.append(
+                concat_jobs([
+                    Job(command="mkdir -p " + alignment_directory, samples=[readset.sample]),
+                    samtools.flagstat(
+                        output_bam,
+                        re.sub(".bam", "_flagstat.txt", output_bam),
+                    )
+                ], name="samtools_flagstat." + readset.name)
+            )
 
         report_file = os.path.join("report", "MethylSeq.bismark_align.md")
         jobs.append(
@@ -268,11 +277,29 @@ pandoc --to=markdown \\
             metrics_file = alignment_file_prefix + "sorted.dedup.metrics"
             dedup_bam_readset_sorted = alignment_file_prefix + "readset_sorted.dedup.bam"
 
-            job = picard.mark_duplicates([input], bam_output, metrics_file, remove_duplicates="true")
+            job = picard.mark_duplicates(
+                [input],
+                bam_output,
+                metrics_file,
+                remove_duplicates="true"
+            )
             job.name = "picard_mark_duplicates." + sample.name
             jobs.append(job)
-            job = picard.sort_sam(bam_output, dedup_bam_readset_sorted, "queryname")
+
+            job = picard.sort_sam(
+                bam_output,
+                dedup_bam_readset_sorted,
+                "queryname"
+            )
             job.name = "picard_queryname_sort." + sample.name
+            jobs.append(job)
+
+            job = samtools.flagstat(
+                bam_output,
+                re.sub(".bam", "_flagstat.txt", bam_output),
+            )
+            job.name = "samtools_flagstat_dedup." + sample.name
+            job.samples = [sample]
             jobs.append(job)
 
         report_file = os.path.join("report", "MethylSeq.picard_remove_duplicates.md")
@@ -784,10 +811,10 @@ pandoc \\
                 inputs.append(os.path.join("trim", sample.name, readset.name + ".trim.log"))
 
             # Aligned pre-deduplicated bam files
-            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.bam"))
+            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted_flagstat.txt"))
 
             # Deduplicated bam files
-            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.bam"))
+            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup_flagstat.txt"))
 
             # Coverage summary files
             inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.all.coverage.sample_summary"))
