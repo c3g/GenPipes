@@ -96,12 +96,12 @@ Download and setup for external users
 
 ### Download
 
-Visit our [Download page](https://bitbucket.org/mugqic/mugqic_pipelines/downloads) to get the latest stable release.
+Visit our [Download page](https://bitbucket.org/mugqic/genpipes/downloads) to get the latest stable release.
 
 If you want to use the most recent development version:
 ```
 #!bash
-git clone git@bitbucket.org:mugqic/mugqic_pipelines.git
+git clone git@bitbucket.org:mugqic/genpipes.git
 ```
 
 
@@ -110,7 +110,7 @@ git clone git@bitbucket.org:mugqic/mugqic_pipelines.git
 Set `MUGQIC_PIPELINES_HOME` to your local copy path, in your *$HOME/.bash_profile*:
 ```
 #!bash
-export MUGQIC_PIPELINES_HOME=/path/to/your/local/mugqic_pipelines
+export MUGQIC_PIPELINES_HOME=/path/to/your/local/genpipes
 ```
 
 MUGQIC Pipelines require genomes and modules resources to run properly.
