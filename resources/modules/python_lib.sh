@@ -18,6 +18,10 @@ PIP_PATH=$(which pip)
 $PIP_PATH install --upgrade cython
 python -c 'import cython; print cython.__version__, cython.__file__'
 
+# docopt
+$PIP_PATH install --upgrade docopt
+python -c 'import docopt; print docopt.__version__, docopt.__file__'
+
 # numpy
 $PIP_PATH install --upgrade numpy
 python -c 'import numpy; print numpy.__version__, numpy.__file__'
@@ -94,4 +98,4 @@ python -c 'import sklearn; print sklearn.__version__; print sklearn.__file__'
 $PIP_PATH install --upgrade RSeQC
 
 #A permissions
-chmod -R ug+rwX,o+rX-w $PYTHON_HOME
+chmod -R ug+rwX,o+rX-w $PYTHONHOME

@@ -157,3 +157,22 @@ Rscript $R_TOOLS/GCbias_all.R \\
             output=output
         )
     )
+
+def ihec_metrics_rnaseq(genome):
+  ''' Outputs the ihec metrics file for all samples'''
+
+  ## will parse metrics/rnaseqRep/metrics.tsv to output needed columns only
+
+  command = "python $PYTHON_TOOLS/ihec_metrics_rnaseq.py {genome}".format(genome = genome)
+
+  return Job(input_files = ["metrics/rnaseqRep/metrics.tsv"],
+            output_files = ["IHEC_metrics_rnaseq_All.txt"],
+            module_entries = [["ihec_metrics_rnaseq", "module_mugqic_tools"],["ihec_metrics_rnaseq", "module_samtools"]],
+            name = "ihec_metrics_rnaseq",
+            command = command
+            )
+
+
+
+
+

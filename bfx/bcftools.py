@@ -67,6 +67,9 @@ def concat(inputs, output, options=None):
     """
     Concatenate or combine VCF/BCF files
     """
+    if not isinstance(inputs, list):
+        inputs=[inputs]
+    
     return Job(
         inputs,
         [output],

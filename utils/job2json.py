@@ -77,7 +77,7 @@ def usage():
     print "       -h    --help          : this help \n"
 
 def main():
-    print "command line used :\n" + " ".join(sys.argv[:])
+    #print "command line used :\n" + " ".join(sys.argv[:])
 
     step_name, job_name, job_log, job_done, json_files, status = getarg(sys.argv)
 

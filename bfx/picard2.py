@@ -166,6 +166,8 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
 
 def mark_duplicates(inputs, output, metrics_file, remove_duplicates="false"):
 
+    if not isinstance(inputs, list):
+        inputs=[inputs]
     if config.param('picard_mark_duplicates', 'module_picard').split("/")[2] < "2":
         return picard.mark_duplicates(inputs, output, metrics_file, remove_duplicates)
     else:
@@ -198,6 +200,8 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
 
 def merge_sam_files(inputs, output):
 
+    if not isinstance(inputs, list):
+        inputs=[inputs]
     if config.param('picard_merge_sam_files', 'module_picard').split("/")[2] < "2":
         return picard.merge_sam_files(inputs, output)
     else:
@@ -228,6 +232,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
 # Reorder BAM/SAM files based on reference/dictionary
 def reorder_sam(input, output):
 
+    
     if config.param('reorder_sam', 'module_picard').split("/")[2] < "2":
         return picard.reorder_sam(input, output)
     else:
@@ -319,6 +324,8 @@ def sort_sam(input, output, sort_order="coordinate", ini_section='picard_sort_sa
 
 def sort_vcfs(inputs, output, ini_section='picard_sort_vcf'):
 
+    if not isinstance(inputs, list):
+        inputs=[inputs]
     if config.param(ini_section, 'module_picard').split("/")[2] < "2":
         return picard.sort_vcfs(inputs, output, ini_section)
     else:

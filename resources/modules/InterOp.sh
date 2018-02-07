@@ -2,21 +2,22 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=longranger
-VERSION=2.1.6
-ARCHIVE=$SOFTWARE-$VERSION.tar.gz
-# longranger archive has to be manually downloaded from https://support.10xgenomics.com/genome-exome/software/downloads/latest
-# and then stored in $MUGQIC_INSTALL_HOME/archive/ or/and $MUGQIC_INSTALL_HOME_DEV/archive/
-ARCHIVE_URL=
-SOFTWARE_DIR=$SOFTWARE-$VERSION
+SOFTWARE=InterOp
+VERSION=1.1.1
+ARCHIVE=${SOFTWARE}-${VERSION}-Linux-GNU.tar.gz
+ARCHIVE_URL=https://github.com/Illumina/${SOFTWARE,,}/releases/download/v${VERSION}/${ARCHIVE}
 
+SOFTWARE_DIR=${SOFTWARE}-$VERSION
+
+# Specific commands to extract�| and build the software
+# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
+# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
   tar zxvf $ARCHIVE
 
-  # Move software
-  cd $INSTALL_DOWNLOAD
-  mv -i $SOFTWARE_DIR $INSTALL_DIR/
+  # Install software
+  mv -i $SOFTWARE_DIR-Linux-GNU $INSTALL_DIR/$SOFTWARE_DIR
 }
 
 module_file() {
@@ -28,7 +29,7 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-prepend-path    PATH                \$root
+prepend-path    PATH                \$root/bin
 "
 }
 

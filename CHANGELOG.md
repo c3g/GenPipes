@@ -1,11 +1,178 @@
-14 tags, 3245 commits
+15 tags, 3600 commits
 
-HEAD        Thu Apr 20 14:07:38 2017 -0400        0 commits
+HEAD        Thu Dec 7 19:14:59 2017 +0000        0 commits
 
-2.3.1        Thu Apr 20 14:25:22 2017 -0400        171 commits
+3.0.0        Thu Dec 7 14:19:49 2017 -0500        444 commits
 
-  Edouard Henrion <edouard.henrion@mcgill.ca>      93 commits
+  Edouard Henrion <edouard.henrion@mcgill.ca>      247 commits
 
+       8c5a5c6 MethylSeq pipeline - BFXDEV-674 - updated wiggle_tracks step with more comprehensive output file names
+       2024838 updated ucsc.py with simplified if-else statement for more clarity and corrected the 'chr' prefixing behavior
+       bcf3d8a Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines into IHEC_metrics
+       8594288 updated Homo_sapiens.GRCh38.sh installation script with vcf indexes
+       cb43d49 updated jellyfish installation script with version 2.2.3
+       9e3c955 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       7e14f09 Updated README for all the pipelines
+       a6b244e updated mugqic_pipelines.sh script with the most recent version of the mugqic_pipelines, now called GenAP_Pipes, version 3.0.0
+       86092c6 Version bump to 3.0.1-beta
+       b8f4310 Version bump to 3.0.0
+       3844eee Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       c9ad368 added tagInfo.txt in homer.py
+       3370260 DNA-Seq pipeline - update base.ini file by removing all the paths which were still pointing to a '_dev' location
+       7b15520 BFXDEV-674 - MethylSeq pipeline - updated bedtools.py intersect function to carry header from input bed to output bed
+       da1ece6 added tagInfo.txt
+       1b84ec6 Version bump to 3.1.0-beta
+       03f3dda Version bump to 3.0.0
+       5d0a774 added the README file for RNA-Seq Light Pipeline
+       837b4fa slightly updated release instructions
+       1343ab6 Version bump to 3.0.1-beta
+       188037f Version bump to 3.1.0-beta
+       03638bd Version bump to 3.0.0
+       4c027b6 Merge branch 'master' of https://bitbucket.org/mugqic/mugqic_pipelines
+       8768a77 updated version to 2.0.2 for cellranger in the bash installation script
+       00eb96b RNA-Seq pipeline - updated .base.ini file : removed specific module loading for differential expression step + minor indentation updates within trinity.py for RNA-Seq de-novo Assembly pipeline
+       a4ab697 RNA-Seq pipeline - update .base.ini file with newer software versions
+       626856f DNA-Seq pipeline - updated base.ini with GATK version 3.7
+       a7b56ba updated base.ini with GATK version 3.7
+       dde4f14 master VERSION changed to 3.0.0-beta
+       bfdcbae PacBio Assembly Pipeline - updated circlator step : created a circlator.py within the bfx folder and review the coding/calling of the circlator step within the pipeline python wrapper
+       132f2f2 BFXDEV-674 - updated MethylSeq pipeline to correct wrong dependencies causing some jobs to always be consider as 'NOT up to date'
+       8cbbff9 BFXDEV-673 - corrected error in bfx/jsonator.py occuring when modifying the list of softwares from an already existing JSON file
+       9428046 some more minor updates on bfx/tools.py regarding standard indentation and parameters naming
+       1aaf4f9 MethylSeq - IHEC metric report jobs are now labelled with the sample name
+       29e74ac minor updates on bfx/tools.py especially to make indentation uniform across the whole file
+       573dba5 updated & added software install scripts
+       c8fa5cd Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       3d964b2 commit prior merging to avoid conflict
+       2baf982 AmpliconSeq pipeline - adding mammouth walltime for qiime_otu_assigning step
+       fb8c75d resolving conflicts in bfx/tools.py
+       fdddddb BFXDEV-673 - adding analysis JSON file generation to the RNA-Seq pipeline
+       c961e15 corrected typo introduced after resolving conflicts...
+       f4116b0 BFXDEV-673 - updated jsonator.py to handle Illumina Run Processing ini file entries when generating JSON analysis file for Illumina Run Processing pipeline
+       d573722 BFXDEV-673 - adding analysis JSON file generation to the Illumina Run Processing pipeline
+       fb346c9 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines into methylseq
+       763aac0 BFXDEV-673 - adding analysis JSON file generation to the Illumina Run Processing pipeline
+       8b40129 BFXDEV-673 - adding analysis JSON file generation to the Tumor Pair pipeline
+       9653250 BFXDEV-673 - adding analysis JSON file generation to the RNA-Seq De Novo Assembly pipeline
+       f961ef1 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       1dcae3f BFXDEV-673 - added the analysis JSON file generation to the RnaSeq pipeline
+       f107e04 BFXDEV-673 - added the analysis JSON file generation to the PacBio Assembly pipeline
+       b806ac6 BFXDEV-673 - updated jsonator.py to handle PacBio Assembly readset files when generating JSON analysis file for PacBio Assembly pipeline
+       fdd8577 BFXDEV-673 - added JSON analysis file generation to the DnaSeq high Coverage Pipeline
+       d48d642 BFXDEV-673 - adding JSON analysis file generation to DnaSeq pipeline
+       b8824ef BFXDEV-673 - adding JSON analysis file generation ito ChipSeq pipeline
+       d19b304 BFXDEV-673 - updated AmpliconSeq pipeline with analysis JSON file generation
+       102f66c BFXDEV-673 - updating jsonator.py to generalized the way dbsnp_version and server entries are handled
+       054e410 BFXDEV-674 - MethylSeq pipeline - adding samtools to the loaded modules for methylseq_metrics_report
+       0169e50 BFXDEV-673 - minor update to the help content
+       18e8e68 BFXDEV-674 - updated wiggle tracks generation tools by spliting bedgraph and wiggle traks into 2 different jobs, also managing .bw file for GRCh37 build to make it UCSC compatible
+       cc7af63 updated 'tmp_dir' in guillimin .ini files : now using  space which is automatically cleaned up after the job ends
+       04d9fed BFXDEV-674 - updated methylseq_ihec_metrics_report to reflect changes in mugqic_tools IHEC_methylseq_metrics.sh
+       6e854c2 Picard mark_duplicate minor update
+       8958fae BFXDEV-673 - corrected error in variable assignment within jsonator.py
+       4872276 BFXDEV-673 - jasonataor.py now handles the case where user has used the 'force' argument for his pipeline execution in order to entirely re-create the analysis JSON file
+       22c477d BFXDEV-673 - review job2json.py passed parameters to handle start & end job date/time
+       61225ee BFXDEV-673 - JSON analysis file key 'hpc_center' changed to 'server'
+       4b2da7f BFXDEV-674 - MethylSeq pipline - updated mugqic_tools from dev to prod within pipelines/methylseq/methylseq.base.ini
+       3e8afc3 BFXDEV-673 - updated core/scheduler.py to handle both job_start_date and jobs_end_date for the json analysis file
+       c777a64 BFXDEV-673 - updated core/pipeline.py for a better generation of the json analysis file
+       1d735a0 BFXDEV-673 - updated bfx/jsonator.py
+       1b0b956 BFXDEV-673 - updated utils/job2json.py
+       98b0d7f Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       625ca4f added optparse library installation in R_Bioconductor.sh
+       f751eb5 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       c41c514 removing MULTIQC from mugqic tools and updating version to 2.1.9
+       00118d6 version 1.0.5 of R_mugqic_packages
+       18ab851 BFXDEV-674 - removed useless bedtools parameters from mammouth and guillimin ini files
+       a17600f Merge branch 'master' of https://bitbucket.org/mugqic/mugqic_pipelines
+       b98dcf9 adding some new bash install scripts
+       89a48fd add chicago module
+       0c6d44a fix conflicts
+       9919d1a keep locale module change on libuser version of the repo
+       6a3eff8 keep locale module change on libuser version of the repo
+       2b55b3f BFXDEV-674 - corrected input flagstat file name for metrics steps
+       9ac6e81 BFXDEV-674 - adding on_target context handling
+       69eb2bb BFXDEV-673 - corrected log file assignment to the JSON file
+       7dd7c0d BFXDEV-673 - BFXDEV-674 - updated syntax and added IHEC metrics report
+       5fccb8b importing samtools from common.py
+       18e87a5 BFXDEV-668 - added ihec_metrics step to rnaseq.py
+       167e9c3 BFXDEV-674 - removed useless parameter settings from ini file
+       f7e2c94 BFXDEV-673 - updated cluster_hpc_center parameter within the ini files
+       5ca6c52 removed unnecessary trailing comma dnaseq.py
+       62c711a removed unnecessary parameters from dnaseq.mammouth.ini
+       e3186d4 BFXDEV-674 - corrected call of the bash script which generate the metrisc for IHEC
+       10c042d BFXDEV-673 - updated jsonator for a better behavior of json file updates
+       bfc0042 updated syntax for unrequired paramaters in bedtools.py
+       8e42663 BFXDEV-674 - updated bedtools with proper syntax standards
+       f9538e8 BFXDEV-668 - BFXDEV-675 - updated bedtools graph other_options parameter to fit with group syntax standards
+       790234e BFXDEV-668 - BFXDEV-675 - corrected typo in ucsc.py and bedtools.py
+       af16960 BFXDEV-674 - adjusted walltime for bissnp step
+       ba015ef BFXDEV-673 - corrected error in job2json.py
+       3f5c34e BFXDEV-674 - corrected typo in ucsc.py
+       47cd3f0 BFXDEV-674 - updated guillimin.ini
+       fb5d03c BFXDEV674 - updated base ini
+       9100666 unset batch.ini file
+       4b8594c BFXDEV-674 - briaree ini file
+       14ae3c1 BFXDEV-674 - mammouth ini file
+       58f6b28 BFXDEV-673 - updated some 'if' statements to avoid syntax errors...
+       f036046 BFXDEV-674 - updated call of ucsc.bedGraphToBigWig within the pipeline wrapper
+       8e187ab BFXDEV-674 - added walltime to bismark align step
+       a2bcb0c BFXDEV-674 - updated bedGraphToBigWig subroutine in ucsc.py, added bedToBigBed to ucsc.py, and updated minor things in bedtools.py
+       0506547 BFXDEV-668 - BFXDEV-675 - updated bedtools.py graph subroutine which nows calls ucsc.py to avoid code redundancy of bedGraphToBigWig
+       4a6e9cd BFXDEV-668 - BFXDEV-675 - updated ucsc.py to handle cases where bedGraph is in .gz format
+       895d820 BFXDEV-674 - type correction in job2json.py
+       a322705 BFXDEV-674 - cancel the creation of one folder per sample for the json files as on file per sample is enough
+       12a085c BFXDEV-674 - updated json file path in scheduler.py
+       c2f2827 BFXDEV-674 - updated bismark align & dedup outputs in order to create good dependencies for all_sample_metrics_report and ihec_sample_metrics_report steps
+       607ee22 BFXDEV-674 - changed the json file location to a more simple one and got rid of the resume subroutine since not used anymore
+       5b6f982 BFXDEV-674 - corrected error in scheduler when launching job2json command
+       25a4ede BFXDEV-674 - another typo correted in core/scheduler.py and removed the dev references from pipelines/methylseq/methylseq.base.ini
+       d5aa74d BFXDEV-674 - correcting typo in core/scheduler.py during Json generation
+       1dd7bd4 BFXDEV-674 - added some missig report files and updated job2json file command and tool
+       c8266f3 Merge branch 'methylseq' of bitbucket.org:mugqic/mugqic_pipelines into methylseq
+       da1de3c BFXDEV-674 - updated pipeline wrapper with report files, ihec metrics and updated metrics computing
+       c59a302 BFXDEV-674 - added HPC center name to the ini files
+       a128e70 BFXDEV-674 - updated bedtools when working on MethylSeq pipeline to a better handling of job piping from bamtobed to coverage
+       57b0229 MethylSeq pipeline - updated pipeline python wrapper - BFXDEV-674
+       807a26b BFXDEV-673 - add a python script in utils to handle the appending of information to the JSON file
+       31a092d BFXDEV-673 - add the bfx python wrapper to take care of the creation of the JSON file
+       4c575e9 BFXDEV-673 - added a sample list object to the Job class to handle JSON file generation
+       c9e342e ucsc bfx tools - bedgraph_to_bigbwig : removal of the temporary sorted bedgraph after bigWig is created
+       f7f0113 MethylSeq pipeline - updated version of the pipeline : steps have been condensed, json file for each sample has been added, more metrics have been added to fit with HiHeq requirements, whole genome datasets are now handle correctly
+       be4179e MethylSeq pipeline - updated guillimin ini file for bismark_dedup and bissnp requested resources
+       3ee60cd MethylSeq pipeline - very minor changes within the base ini file
+       34cddb6 DNA-Seq pipeline - added the verifyBamID step to the pipeline (BFXDEV-619) and json file generation add-on
+       a638e4c DNA-Seq pipeline - added verifyBamID settings to the base ini file - BFXDEV-619
+       52fb55a MethylSeq pipeline - updated common.py so that all the common functions (i.e. sam_to_fastq, timmomatic, merge_trimmomatic_stats, verify_bam_id) now generate a json dump to be append to each sample json file
+       1425d42 MethylSeq pipeline - updated scheduler.py to handle the json file generation while the pipeline is running, i.e. adds a json section sample json files as soon as a job successfully ends
+       5dae040 MethylSeq pipeline - updated pipeline.py to take care of the creation of the json file for each sample
+       8a91523 MethylSeq pipeline - modified sample.py to handle json file creation during pipeline execution
+       16c8f93 MethylSeq pipeline - minor update of the verifyBamID python wrapper
+       c330a37 MethylSeq pipeline - reviewed picard add_read_group command
+       585c92b MethylSeq pipeline - reviewed parameters passed to bismark align
+       fc34adf MethylSeq pipeline - removed jsonator import from bfx, waiting for it to be fully implemented
+       3674baf MethylSeq pipeline - updated the pipeline with new metrics calculations as well as merged some steps together
+       b579365 BFXDEV-619 - added verifyBamID .Rmd template file for report
+       91071fe MethylSeq pipeline - added a python wrapper for all the tools related to methylation profiling
+       9a2defc BFXDEV-619 - added verifyBamID in pipelines/common.py
+       a3b94d3 MethylSeq pipeline - added GC Bias R tools to metrics
+       5513358 BFXDEV-619 - added verifyBamID in bfx/tools.py
+       168fb69 MethylSeq pipeline - Added ucsc.py, with 'bedgraph_to_bigbwig' which is now called by new bedtools.graph function. Also called from methylseq.py
+       c3ce449 MethylSeq pipeline - added bedtools 'coverage' & 'bamtobed' to bfx/bedtools.py, also updated 'graph' & 'intersect'
+       946bd70 BFXDEV-661 - DNAseq - added the use module R_Bioconductor within picard_collect_multiple_metrics
+       a5b24ac BFXDEV-642 - RNAseq - passed the adjusted p-value as a markdown parameter to the differential expression report
+       6e5470a BFXDEV-644 - RNAseq - added the loading of module_python and the use of 'bash pipefail' for step differential_expression_goseq_report
+       38db219 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       d8a33d9 execute permissions updated
+       1d8f3a7 Merge branch 'methylseq' of bitbucket.org:mugqic/mugqic_pipelines into methylseq
+       dee964a MethylSeq pipeline - create specific ini file to handle capture datasets
+       3ce2005 MethylSeq pipeline - create specific ini file to handle capture datasets
+       c042cb2 corrected typo in python3.sh install script
+       6406b9c added index file as part of the output files in add_read_groups function, in picard.py
+       8a940f3 added index file as part of the output files in add_read_groups function
+       1c2f36a MethylSeq pipeline - updated wiggle track step with splitted forward and reverse strand reads
+       040eefb MethylSeq pipeline - corrected typo in bfx/bedtools.py
+       a1c2b6c new CHANGELOG coming along release v2.3.1
        0f801b8 updated Homo_sapiens.GRCh38.sh install script with Ensembl87, dbSNP_149 and dbNSFPv3.4
        ec64899 updated rnammer_transcriptome resources within rnaseq_denovo_assembly.guillimin.ini
        ae6119c updated surpi.sh install script
@@ -51,19 +218,6 @@ HEAD        Thu Apr 20 14:07:38 2017 -0400        0 commits
        6248dbf MethylSeq pipeline - addings for report generation
        deb45a6 Merge branch 'methylseq' of bitbucket.org:mugqic/mugqic_pipelines into methylseq
        02259ac MethylSeq - corrected typo within the picard2_collect_multiple_metrics which caused to always restart the step
-       7717c35 Pre-release - adding the installation scripts for all the new software used by tumor_pair pipeline
-       8eada67 Merge branch 'master' of https://bitbucket.org/mugqic/mugqic_pipelines
-       8e17bca Merge branch 'master' of https://bitbucket.org/mugqic/mugqic_pipelines
-       59cf940 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
-       026ccb1 BFXDEV-602 - PacBio Assembly pipeline now contains a new optional step (step 10) to circularize the successful/clean assembly contigs with circlator - also comes with some minor unrelated updates
-       06e095f updates brought to many module install scripts, and adding of new modules
-       9d565ba RNASeq - corrected a typo inserted after correting bedtools bug...
-       982a014 RNASeq - corrected a bug bedtools.graph function : samtools_options now handles reverse strand specific parameters, avoiding an empty begGraph for reverse strand
-       72d1a3f updating python & python libraries installation bash scripts
-       6242c97 BUG correction within mpileup function : parameters were shift after introduction of 'ini_section' parameter for tumor_pair prpose
-       1ca38fa DNASeq - bug correction after merging tumor_pair branch to master
-       e6b482b Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
-       1d8876d FastQC - updated bash install script to match our standards
        83cecac MethylSeq - Updates and corrections, pipeline is now fully functionnal on test data
        8bd10db MethylSeq - BisSNP step implemented
        77176b4 MethylSeq - debugging bed_graph step
@@ -100,10 +254,268 @@ HEAD        Thu Apr 20 14:07:38 2017 -0400        0 commits
        edb1d9b MethySeq - corrected typo in __init__.py
        41f69bd MethyleSeq - creation of the (empty) files as a first commit to the branch
 
-  ehenrion <edouard.henrion@mcgill.ca>      3 commits
+  ehenrion <edouard.henrion@mcgill.ca>      19 commits
 
+       4e7c266 BFXDEV-673 - updated jsonator.py for a better handling of module names & versions
+       39aac2d Merged in methylseq (pull request #23)
+       11c2e27 chipseq.base.ini : edited module_deeptools to remove reference to mugqic_dev
+       bc8a9be README.md updated RAC_ID export line
+       a29213c README.md edited : added the export of the $RAC_ID variable which will be used on Cedar for job sumission
+       5f66230 README.md edited : added $MUGQIC_INSTALL_HOME_DEV setting for cedar
+       27a43ac MethylSeq pipeline - edited guillimin ini file : more walltime for gatk_depth_of_coverage & more cores for bismark_dedup
+       0c5f3a0 MethylSeq pipeline - changed flagstat output name so it is more obviously related to ontarget bam
+       3c1f730 MethylSeq pipeline - inverted order of input file for methylation_call step : "*.readset_sorted.dedup.bam" is now set before "*.sorted.dedup.bam" to avoid unnecessary sorting of bam files...
+       f79719e MethylSeq pipeline - GCbias and mapping_qual_fileter jobs have been added to metrics, their commands were created but not submitted...
+       e77d93e MethylSeq pipeline - methylseq.guillimin.ini adjusted some ppn values for guillimin
+       793836e MethylSeq pipeline - methylseq.base.ini edited bismark align parameters
+       4d6b5d0 MethylSeq pipeline - methylseq.base.ini added module_R
+       c6a2446 methylseq.py : added missing variable
+       4f247e6 README.md edited online with Bitbucket
+       321816e README.md edited online with Bitbucket
+       0bb51e1 README.md edited online with Bitbucket
        a42811f bedtools.py edited online with Bitbucket removed unused and unfinished function genomecov...
        e76018c bedtools.py edited online with Bitbucket
+
+  Eloi Mercier <emercier@jonquille.genome.mcgill.ca>      43 commits
+
+       33f242d removed depreciated reasignment of module_snpeff in snpsift_annotate step in dnaseq.base.ini
+       bad3d89 renamed and duplicated snp_effect section in mammouth.ino to mpileup_snp_effect and haplotype_caller_snp_effect in order to correctly set ppn=1
+       54251b5 Moved report.kallisto job after kallisto_count_matrix since the it needs the output of kallisto_count_matrix; added dependancies to copy_tx2genes_file so it waits until kallisto_count_matrix is done
+       19a3beb Merge branch 'master' of https://bitbucket.org/mugqic/mugqic_pipelines
+       73b4c97 Merge branch 'master' of https://bitbucket.org/mugqic/mugqic_pipelines
+       eac4107 fixing local merge conflict resolution issue
+       e4a5abe (hopefully) fixed conflict
+       1596188 added a few more os.path.join; added an import to tools
+       d4e5e0f removing kallisto.sh from module/dev
+       5f0a9b8 remove all compiled files
+       220ed53 adding os.path.join where possible
+       030d09d remove unused sections in mammouth and guillimin ini files
+       87289ad resolve merge conflicts
+       46cb645 remove commented lines
+       2941bfa move rmarkdown calls to appropriate step
+       b25aef3 fix ini file to correctly set walltime
+       76e4c73 fix an issue with dash in sample names in report
+       fa04e0a minor improvments to kallisto report
+       b55eb98 change path to file in kallisto.Rmd
+       6d3e20f change job names to fit sections in ini file; replace mention of samples by readsets in md files
+       4fd75b2 Changed R code in kallisto.Rmd; add more columns and fix error in the stat table; changed kallisto method text
+       1728a1c add step to generate transcript count matrix
+       341b0fd Change text RNAseq report for differential expression
+       1431e2e update report files
+       9bb9dbf added option for single reads, added new parameters in ini file
+       f9310f0 added trimmomatic stats to report
+       f81641c added first version of RNAseq Light report
+       7e53c0f added a mkdir command to the merge script
+       efb008f Change path of merged abudance file
+       d8dedd1 fix job dependancies
+       1639f59 fix exploratory function
+       9d875eb change path for call to rnaseq_light_kallisto.sh
+       4fc4f3b adding new step for exploratory analysis
+       3831ba6 added a step for merging individual abundance files
+       d720876 add call to module_tools
+       d2996e1 fix path to abundanceTranscript2geneLevel function
+       5dc4760 adding configuration ini files for mammouth and guillimin
+       6c2900a make it clear transcrptome must end by idx
+       feca8f7 fix path, disable exploratory
+       aed4e03 new RNAseq_light pipeline with kallisto, dev version
+       053dbf0 added RSEM 1.3.0
+       2c86a7f updated kallisto
+       74e5c0c update sailfish to 0.9.2
+
+  eloi.mercier@mcgill.ca <eloi.mercier@mcgill.ca>      1 commits
+
+       c82520a Approval granted by Rola. Merged in RNAseq_light_dev (pull request #24)
+
+  eloi.mercier@mcgill.ca <emercier@abacus1.ferrier.genome.mcgill.ca>      3 commits
+
+       22084d1 revert sailfish version change
+       c8ecd2c ajout Salmon 0.8.0
+       e2986c5 mise a jour kallisto 0.43.0
+
+  Mathieu Bourgey <mathieu.bourgey@mail.mcgill.ca>      10 commits
+
+       34124b6 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       a9f69a4 add protocole compatibility to rnaseq_light
+       cd1caeb Make other pipeline supporting several prtocols - BFXDEV-692
+       ffdf4f6 Create 2 protocols with different steps for hicseq - BFXDEV-692
+       554f8ad Make other pipeline supporting several prtocols - BFXDEV-692
+       5ac65fc allow several prtocols with different step list - BFXDEV-692
+       e634cd2 Create 2 protocols with different steps for hicseq - BFXDEV-692
+       ece6ab0 test multi protocole pipeline
+       b109814  RNAseq & ChIPseq-   Update ini file for the new release of mugqic_tools 2.1.9 - BFXDEV-668  - BFXDEV-675
+       e057114 ChipSeq - finish ihec metrics, preprocess and reformat -  BFXDEV-675
+
+  mathieu bourgey <mathieu.bourgey@mail.mcgill.ca>      21 commits
+
+       6150a8a remove bad output in ihec_metrics_report
+       07709bf Merge branch 'methylseq' of bitbucket.org:mugqic/mugqic_pipelines into methylseq
+       cc3d29d MethylSeq - add MethylSeq.picard_remove_duplicates.md report file
+       f8a97db fixing conflict in resources/genomes/install_genome.sh
+       2a9190b change Dedup from bismark to remove duplicat from picard
+       9a9b70f change ihec methylseq metrics to work on single sample
+       7206787 methylseq - generate ihexc report per sample and move methyl_profile lib to tools lib
+       900f112 add specific temp dir to the sort step while generating bigwig
+       a9b1ed3 increase general recalibration walltime in  Dnaseq to 96h
+       764bb1d Allow bedtools.graph to support not having the other_options set in the ini
+       961e0e1 removing .DS_store file
+       fc1defd ChIPseq - address reviewer coments - BFXDEV-675
+       f8bf304 Merge branch 'IHEC_metrics' of bitbucket.org:mugqic/mugqic_pipelines into IHEC_metrics
+       cb48b45 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines into IHEC_metrics
+       1162758 RNAseq - add concat job  - BFXDEV-668
+       c859120  ChIPseq-   Update (chip) IHEC metrics steps -  BFXDEV-675
+       ee2eab0  ChIPseq-   Update (chip) IHEC metrics steps -  BFXDEV-675
+       188462d  ChIPseq-   Update (chip) IHEC metrics steps -  BFXDEV-675
+       ba1f73c  RNAseq & ChIPseq-   Update (chip) and debug (Rna) IHEC metrics steps - BFXDEV-668  - BFXDEV-675
+       9e71317  RNAseq -  implement IHEC RNA metrics step - BFXDEV-668
+       7cfbb6d  RNAseq - BFX - implement mugqic_tools module for the IHEC RNA metrics generation script - BFXDEV-668
+
+  mathieu bourgey <mathieu.bourgey@mcgill.ca>      1 commits
+
+       f19e749 Merged in IHEC_metrics (pull request #21)
+
+  pascale.marquis2@mcgill.ca <pmarquis@abacus2.ferrier.genome.mcgill.ca>      2 commits
+
+       852ef1c /#cluster_queue
+       eb94727 python/2.7.12
+
+  Pascale Marquis <pmarquis@lg-1r17-n03.guillimin.clumeq.ca>      1 commits
+
+       1052ba1 update tumor_pair.base.ini
+
+  robert.eveleigh@mcgill.ca <reveleig@abacus1.ferrier.genome.mcgill.ca>      1 commits
+
+       df577fb Minor bug fixes and addition of base exome ini
+
+  Rola Dali <rdali@lg-1r17-n04.guillimin.clumeq.ca>      1 commits
+
+       46371a9 starting the hicup_align step
+
+  Rola Dali <rola.dali@mail.mcgill.ca>      88 commits
+
+       9be3474 Merged in IHEC_metrics (pull request #27)
+       130d0b5 changes to mammouth.ini to set all ppn=1; changed module spider back to module show since it is incompatible with abacus
+       71cbe96 Merge branch 'IHEC_metrics' of bitbucket.org:mugqic/mugqic_pipelines into IHEC_metrics
+       f93c39e module show changed to module spider in config.py to accelerate module checking
+       a64c34f fixing homer dependencies
+       d274293 editing homer tag directory output back to folder
+       78dc2fc Merged in IHEC_metrics (pull request #26)
+       6b97871 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines into IHEC_metrics
+       ac73327 homer edits to generalize methods
+       649af97 resolving merge conflicts
+       fd5cb38 dependencies in rnaseq metrics
+       23921c9 rnaseq metrics
+       62da3e6 fix ihec_metric job names
+       fb83174 adding chip_type to ini to avoid pipeline crash
+       b7e2090 run_spp fuctional
+       85dd69a added run_spp to calculate dnsc and rsc. TO TEST on mp2
+       1459b13 adding TMPDIR to bigWig creation
+       a058aa1 sample name change in ihec_metrics
+       31c83eb fixing TMPDir issues on guillimin-to test
+       80e315f pipeline to run without input & chnage in ihec_metrics format
+       14fde80 moving homer code to homer.py moduke
+       d33094e Merged in hicseq (pull request #25)
+       fe6d261 resolving juicer conflict
+       3cd0685 resolve merge conflict
+       eff83a2 resolving merge conflict
+       574b511 adding C3G logo
+       400b590 commit for pull request
+       18c1112 commit for pull request
+       27b87a3 adding bedops to annotate capture file
+       198416b adding runchicago to capture hic
+       742376e Merge branch 'hicseq' of bitbucket.org:mugqic/mugqic_pipelines into hicseq
+       c26ea1d Resolved merge conflict
+       cc289e6 commit before Mathieu's pull
+       64cd090 adding capture seq
+       46b4f6b merging capture hicseq with hicseq
+       4b96552 chicseq
+       b19d167 Merged in hicseq (pull request #22)
+       a25f08b added new chromosome contigs based on ensemble and NCBI genomes BFXDEV-670
+       11b2bb9 changing perl to perl/env  BFXDEV-670
+       a790fa1 added genome.py for genome related methods BFXDEV-670
+       6a63124 changes for pull request BFXDEV-670
+       f9a2552 changes for pull request BFXDEV-670
+       0d65329 changes for pull request BFXDEV-670
+       aa2e874 edits for merge request:wrappers. BFXDEV-670
+       de38b5a BFXDEV-670 hicseq merge edits
+       d69045f creat_hic_file edits BFXDEV-670
+       1649642 adding juicer.sh installation script BFXDEV-670
+       665ea38 Merge branch 'hicseq' of bitbucket.org:mugqic/mugqic_pipelines into hicseq
+       c4adfa9 testing create_hic_file BFXDEV-670
+       4a67afe modified hicseq.briaree.ini and batch BFXDEV-670
+       a37fe8a deleted files moved to mugqic_tools BFXDEV-670
+       bcf5b1a moved genome_digest before ncrna method which is failing in install_genome.sh BFXDEV-670
+       861cc79 added module install files and genome digest BFXDEV-670
+       1523060 changes for pull request
+       ad4a141 commit before merge changes
+       98d7947 added samtools_bam_sort BFXDEV-670
+       6fd3b93 edited ini files BFXDEV-670
+       18e0774 samtools_bam_sort and multiqc_report in testing
+       3c9468b Fixed hicup/TAD/HiCPlotter restrart bugs BFXDEV-670
+       6a58aa4 split chr interaction matrices from plotting BFXDEV-670
+       dca827d HiC v1.0 is ready for testing on guillimin and abacus BFXDEV-670
+       2b40a8c bam merging in testing BFXDEV-670
+       65763b1 samtools_merge_bams in testing BFXDEV-670
+       d2ff711 added petagDistDistribution to HomerQc plots BFXDEV-670
+       e8edda6 added output_dir property to reduce code redundancy
+       ded82f6 fixed path in identify_compartments
+       1b31f40 added identify_peaks BFXDEV-670
+       d212eba compartments and TAD identification now working BFXDEV-670
+       384d836 chr and genome interaction system now working BFXDEV-670
+       6714aab interaction matrix plots testing BFXDEV-670
+       edadc74 homer archiving and Qc plotting now working
+       8c94b93 first 6 steps working BFXDEV-670
+       5c3eb28 resolving git merge issues
+       e1d46d6 Merge branch 'hicseq' of bitbucket.org:mugqic/mugqic_pipelines into hicseq
+       399cc72 syntax changes
+       c545fc6 added fastq_readName_Edit() BFXDEV-670
+       2b7ee9e mammouth.ini cpu set to 1
+       4afc530 genome digests on mammouth
+       e4e52d3 update genome digest files
+       9277398 homer_tag_directory archiving in testing BFXDEV-670
+       acb862f basic formatting changes
+       53257d6 make_tag_directory in testing
+       148eb65 works to produce hicup bam and library Qc. ITS ALIVE :)
+       958242d ITS ALIVE
+       c446402 need to expand  variables
+       099e5ef pipeline now accepts enzyme
+       ffbdf83 hicup_align producing script; to test tomo
+       884af26 initialising hicseq analysis pipeline
+
+  Xiaojian SHAO <xshao@lg-1r14-n04.guillimin.clumeq.ca>      2 commits
+
+       6ddab51 add ppn to wiggle_tracks step
+       06bd6a7 add ppn to wiggle_tracks step
+
+  Xiaojian SHAO <xshao@lg-1r17-n03.guillimin.clumeq.ca>      3 commits
+
+       6fd6ec5 Merge branch 'methylseq' of bitbucket.org:mugqic/mugqic_pipelines into methylseq
+       cd938a3 add walltime to bismark aligner
+       8a5b826 ppn_Changes_in_Guillimin.ini
+
+  Xiaojian SHAO <xshao@lg-1r17-n04.guillimin.clumeq.ca>      1 commits
+
+       db2901f methylseq: edit on ppn setting. -xiaojian
+
+2.3.0        Mon Feb 27 13:40:01 2017 -0500        82 commits
+
+  Edouard Henrion <edouard.henrion@mcgill.ca>      13 commits
+
+       7717c35 Pre-release - adding the installation scripts for all the new software used by tumor_pair pipeline
+       8eada67 Merge branch 'master' of https://bitbucket.org/mugqic/mugqic_pipelines
+       8e17bca Merge branch 'master' of https://bitbucket.org/mugqic/mugqic_pipelines
+       59cf940 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       026ccb1 BFXDEV-602 - PacBio Assembly pipeline now contains a new optional step (step 10) to circularize the successful/clean assembly contigs with circlator - also comes with some minor unrelated updates
+       06e095f updates brought to many module install scripts, and adding of new modules
+       9d565ba RNASeq - corrected a typo inserted after correting bedtools bug...
+       982a014 RNASeq - corrected a bug bedtools.graph function : samtools_options now handles reverse strand specific parameters, avoiding an empty begGraph for reverse strand
+       72d1a3f updating python & python libraries installation bash scripts
+       6242c97 BUG correction within mpileup function : parameters were shift after introduction of 'ini_section' parameter for tumor_pair prpose
+       1ca38fa DNASeq - bug correction after merging tumor_pair branch to master
+       e6b482b Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       1d8876d FastQC - updated bash install script to match our standards
+
+  ehenrion <edouard.henrion@mcgill.ca>      1 commits
+
        0e875a5 README.md edited online with Bitbucket
 
   Mathieu Bourgey <mathieu.bourgey@mail.mcgill.ca>      9 commits
@@ -160,9 +572,8 @@ HEAD        Thu Apr 20 14:07:38 2017 -0400        0 commits
        6c73c2b tumor-pair - adding bedfile spliting process & start implementation in tumor_pair.py - BFXDEV-476
        905c1ac tumor_pair - extract tumor_pair code for the high coverage branch
 
-  robert.eveleigh@mcgill.ca <reveleig@abacus1.ferrier.genome.mcgill.ca>      6 commits
+  robert.eveleigh@mcgill.ca <reveleig@abacus1.ferrier.genome.mcgill.ca>      5 commits
 
-       df577fb Minor bug fixes and addition of base exome ini
        192f4d3 Bug squashes and speed improvements to ensemble processes
        40df5d9 Merge branch 'tumor_pair' of bitbucket.org:mugqic/mugqic_pipelines into tumor_pair
        93a2142 Modified to remove analyses of alt contigs + split Varscan2 by chromosome
@@ -189,21 +600,6 @@ HEAD        Thu Apr 20 14:07:38 2017 -0400        0 commits
        c53612c tumor_pair - corrected BQSR for WGS, added README.md, added removable_files
        dd6df55 tumor_pair - corrected BQSR for WGS, added README.md, added removable_files
        c708f88 Updates/fixes from guillimin test
-
-  Xiaojian SHAO <xshao@lg-1r14-n04.guillimin.clumeq.ca>      2 commits
-
-       6ddab51 add ppn to wiggle_tracks step
-       06bd6a7 add ppn to wiggle_tracks step
-
-  Xiaojian SHAO <xshao@lg-1r17-n03.guillimin.clumeq.ca>      3 commits
-
-       6fd6ec5 Merge branch 'methylseq' of bitbucket.org:mugqic/mugqic_pipelines into methylseq
-       cd938a3 add walltime to bismark aligner
-       8a5b826 ppn_Changes_in_Guillimin.ini
-
-  Xiaojian SHAO <xshao@lg-1r17-n04.guillimin.clumeq.ca>      1 commits
-
-       db2901f methylseq: edit on ppn setting. -xiaojian
 
 2.2.1        Mon Dec 19 10:57:33 2016 -0500        212 commits
 

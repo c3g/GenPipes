@@ -32,51 +32,36 @@ def bedGraphToBigWig(input_bed_graph, output_wiggle, header=True):
     # only using autosomal + X + Y chromosomes and adding chr (e.g. chr1, instead of 1)
     if (config.param('DEFAULT', 'assembly') == 'GRCh37'):
         chromosome_size_file = re.sub(".fa.fai", ".withchr.fa.fai", config.param('ucsc', 'chromosome_size', type='filepath'))
+        chromosome_prefix = "chr"
     else :
         chromosome_size_file = config.param('ucsc', 'chromosome_size', type='filepath')
+        chromosome_prefix = ""
 
     # Check it the input is a real bedGrah (i.e. contains the bedGraph header : track type=bedGraph)
     # or if it is just a regular bed file (i.e. no bedGraph header)
     if header :
-        if os.path.splitext(input_bed_graph)[1] == ".gz":
-            remove_head_command="""\
-zcat {input_bed_graph} | head -n 1 > {input_bed_graph}.head.tmp && \\
-zcat {input_bed_graph} | awk ' NR > 1 ' | sort  --temporary-directory={temp_dir} -k1,1 -k2,2n | \\
-awk '{{if($0 !~ /^[A-W]/) print "chr"$0; else print $0}}' | grep -vP "GL|lambda|pUC19" | sed 's/MT/chrM/' | \\
+        remove_head_command="""\
+{open} {input_bed_graph} | head -n 1 > {input_bed_graph}.head.tmp && \\
+{open} {input_bed_graph} | awk ' NR > 1 ' | sort  --temporary-directory={temp_dir} -k1,1 -k2,2n | \\
+awk '{{if($0 !~ /^[A-W]/) print "{chrom}"$0; else print $0}}' | grep -vP "GL|lambda|pUC19" | sed 's/MT/chrM/' | \\
 awk '{{printf "%s\\t%d\\t%d\\t%4.4g\\n", $1,$2,$3,$4}}' > {input_bed_graph}.body.tmp && \\
 cat {input_bed_graph}.head.tmp {input_bed_graph}.body.tmp > {input_bed_graph}.sorted && \\
 rm {input_bed_graph}.head.tmp {input_bed_graph}.body.tmp""".format(
-                input_bed_graph=input_bed_graph,
-                temp_dir=config.param('ucsc', 'tmp_dir', required=True)
-            )
-        else:
-            remove_head_command="""\
-head -n 1  {input_bed_graph} > {input_bed_graph}.head.tmp && \\
-awk ' NR > 1 ' {input_bed_graph} | sort  --temporary-directory={temp_dir} -k1,1 -k2,2n | \\
-awk '{{if($0 !~ /^[A-W]/) print "chr"$0; else print $0}}' | grep -vP "GL|lambda|pUC19" | sed 's/MT/chrM/' | \\
-awk '{{printf "%s\\t%d\\t%d\\t%4.4g\\n", $1,$2,$3,$4}}' > {input_bed_graph}.body.tmp && \\
-cat {input_bed_graph}.head.tmp {input_bed_graph}.body.tmp > {input_bed_graph}.sorted && \\
-rm {input_bed_graph}.head.tmp {input_bed_graph}.body.tmp""".format(
-                input_bed_graph=input_bed_graph,
-                temp_dir=config.param('ucsc', 'tmp_dir', required=True)
-            )
+            open="zcat" if (os.path.splitext(input_bed_graph)[1] == ".gz") else "cat",
+            input_bed_graph=input_bed_graph,
+            temp_dir=config.param('ucsc', 'tmp_dir', required=True),
+            chrom=chromosome_prefix
+        )
     else:
-        if os.path.splitext(input_bed_graph)[1] == ".gz":
-          remove_head_command="""\
-zcat {input_bed_graph} | sort --temporary-directory={temp_dir} -k1,1 -k2,2n | \\
-awk '{{if($0 !~ /^[A-W]/) print "chr"$0; else print $0}}' | grep -vP "GL|lambda|pUC19" | sed 's/MT/chrM/' | \\
+        remove_head_command="""\
+{open} {input_bed_graph} | sort --temporary-directory={temp_dir} -k1,1 -k2,2n | \\
+awk '{{if($0 !~ /^[A-W]/) print "{chrom}"$0; else print $0}}' | grep -vP "GL|lambda|pUC19" | sed 's/MT/chrM/' | \\
 awk '{{printf "%s\\t%d\\t%d\\t%4.4g\\n", $1,$2,$3,$4}}' > {input_bed_graph}.sorted""".format(
-                input_bed_graph=input_bed_graph,
-                temp_dir=config.param('ucsc', 'tmp_dir', required=True)
-            )
-        else:
-            remove_head_command="""\
-sort --temporary-directory={temp_dir} -k1,1 -k2,2n {input_bed_graph} | \\
-awk '{{if($0 !~ /^[A-W]/) print "chr"$0; else print $0}}' | grep -vP "GL|lambda|pUC19" | sed 's/MT/chrM/' | \\
-awk '{{printf "%s\\t%d\\t%d\\t%4.4g\\n", $1,$2,$3,$4}}' > {input_bed_graph}.sorted""".format(
-                temp_dir=config.param('ucsc', 'tmp_dir', required=True),
-                input_bed_graph=input_bed_graph
-            )
+            open="zcat" if (os.path.splitext(input_bed_graph)[1] == ".gz") else "cat",
+            input_bed_graph=input_bed_graph,
+            temp_dir=config.param('ucsc', 'tmp_dir', required=True),
+            chrom=chromosome_prefix
+        )
 
     return Job(
         [input_bed_graph],

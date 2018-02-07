@@ -75,7 +75,7 @@ do
      esac
 done
 
-module load mugqic/openssl/1.1.0 mugqic/autoconf/2.69
+#module load mugqic/openssl/1.1.0 mugqic/autoconf/2.69
 
 ## Tmp dir to work in
 TEMPDIR=`mktemp -d -t $me.XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX` && cd $TEMPDIR
@@ -188,7 +188,7 @@ EOF
 
 fi
 
-module load mugqic/gcc/4.9.3
+#module load mugqic/gcc/4.9.3
 
 
 ## Finally, update/install library!
@@ -234,7 +234,7 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
         ,"lumi","LVSmiRNA","magrittr","maps","markdown","MASS","Matrix","matrixStats","mclust"
         ,"memoise","methyAnalysis","methylumi","mgcv","minfi","mirbase.db","misc3d"
         ,"multtest","munsell","mvtnorm","NBPSeq","nleqslv","nlme","NMF"
-        ,"nnet","nondetects","nor1mix","Nozzle.R1","oligo","oligoClasses","outliers"
+        ,"nnet","nondetects","nor1mix","Nozzle.R1","oligo","oligoClasses","optparse","outliers"
         ,"pd.charm.hg18.example","pheatmap","plotrix","plyr","plyr","preprocessCore"
         ,"proto","quantreg","R2HTML","RBGL","RColorBrewer","Rcpp","RcppEigen","RCurl","rhdf5"
         ,"ReportingTools","reshape","reshape2","rgl","RJSONIO", "Rmisc", "R.methodsS3","rmarkdown","roxygen2"

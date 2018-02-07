@@ -36,6 +36,9 @@ def catenate(
 
     inputs = input_fastq
     outputs = [catenate_fasta]
+    
+    if not isinstance(inputs, list):
+        inputs=[inputs]
 
     return Job(
         inputs,
@@ -346,7 +349,10 @@ def multiple_rarefaction(
 
     inputs = otus_input
     outputs = [rarefied_otu_directory]
-
+    
+    if not isinstance(inputs, list):
+        inputs=[inputs]
+    
     return Job(
         inputs,
         outputs,
@@ -593,6 +599,9 @@ def plot_taxa(
     inputs = taxonomic_input
     outputs = [alpha_diversity_taxonomy_bar_plot]
 
+    if not isinstance(inputs, list):
+        inputs=[inputs]
+    
     return Job(
         inputs,
         outputs,

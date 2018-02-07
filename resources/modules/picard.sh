@@ -4,7 +4,7 @@ set -eu -o pipefail
 
 SOFTWARE=picard
 #version 2 or later require JDK1.8
-VERSION=2.9.0
+VERSION=2.17.3
 #ARCHIVE=$SOFTWARE-tools-$VERSION.zip								# for version < 2.6.0
 #ARCHIVE_URL=https://github.com/broadinstitute/picard/releases/download/$VERSION/$ARCHIVE       # for version < 2.6.0
 #SOFTWARE_DIR=$SOFTWARE-tools-$VERSION								# for version < 2.6.0

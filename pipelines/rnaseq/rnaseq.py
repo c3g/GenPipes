@@ -1037,29 +1037,17 @@ done""".format(
                 report_files=[report_file],
                 name="differential_expression_goseq_report")
         )
-############
         return jobs
 
     def ihec_metrics(self):
         """
         Generate IHEC's standard metrics.
         """
-        jobs = []
-        output_dir="ihec_metrics"
 
-        for sample in self.samples:
-            bam_file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.")
-            input_bam = bam_file_prefix + "bam"
-            input_metrics = bam_file_prefix + "metrics"
+        genome = config.param('ihec_metrics', 'assembly')
+         
+        return [metrics.ihec_metrics_rnaseq(genome)]
 
-            job = concat_jobs([
-                Job(command="mkdir -p " + output_dir),
-                tools.sh_ihec_rna_metrics(input_bam, sample.name, input_metrics, output_dir)
-            ], name="ihec_metrics." + sample.name)
-            job.samples = [sample]
-            jobs.append(job)
-
-        return jobs
 
     @property
     def steps(self):
