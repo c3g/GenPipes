@@ -86,8 +86,8 @@ class HicSeq(common.Illumina):
 
     def __init__(self, protocol='hic'):
         self._protocol=protocol
-        self.argparser.add_argument("-e", "--enzyme", help = "Restriction Enzyme used to generate Hi-C library", choices = ["DpnII", "HindIII", "NcoI", "MboI"], required=True)
-        self.argparser.add_argument("-t", "--type", help = "Hi-C experiment type", choices = ["hic", "capture"], default="hic")
+        self.argparser.add_argument("-e", "--enzyme", help = "Restriction Enzyme used to generate Hi-C library (default DpnII)", choices = ["DpnII", "HindIII", "NcoI", "MboI"], required=True, default="DpnII")
+        self.argparser.add_argument("-t", "--type", help = "Hi-C experiment type (default hic)", choices = ["hic", "capture"], default="hic")
         super(HicSeq, self).__init__(protocol)
 
 
