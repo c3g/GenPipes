@@ -76,7 +76,7 @@ MUGQIC pipelines and compatible Python version are already installed as modules 
 To use them by default, add in your *$HOME/.bash_profile*:
 ```
 #!bash
-module load mugqic/python/2.7.13
+module load mugqic/python/2.7.14
 module load mugqic/mugqic_pipelines/<latest_version>
 ```
 (find out the latest version with: "`module avail 2>&1 | grep mugqic/mugqic_pipelines`").
@@ -286,16 +286,16 @@ Pipelines require as input one Readset File, one or more Configuration File(s) a
 
 For more information about a specific pipeline, visit:
 
-### [DNA-Seq Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/dnaseq/)
-### [DNA-Seq high Coverage Pipeline Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/dnaseq_high_coverage/)
-### [RNA-Seq Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/rnaseq/)
-### [RNA-Seq De Novo Assembly Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/rnaseq_denovo_assembly/)
-### [PacBio Assembly Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/pacbio_assembly/)
-### [ChIP-Seq Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/chipseq/)
-### [Amplicon-Seq Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/ampliconseq/)
-### [Tumor Pair Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/tumor_pair/)
-### [Methyl-Seq Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/methylseq/)
-### [Illumina Run Processing Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/illumina_run_processing/)
+### [DNA-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/dnaseq/)
+### [DNA-Seq high Coverage Pipeline Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/dnaseq_high_coverage/)
+### [RNA-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/rnaseq/)
+### [RNA-Seq De Novo Assembly Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/rnaseq_denovo_assembly/)
+### [PacBio Assembly Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/pacbio_assembly/)
+### [ChIP-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/chipseq/)
+### [Amplicon-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/ampliconseq/)
+### [Tumor Pair Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/tumor_pair/)
+### [Methyl-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/methylseq/)
+### [Illumina Run Processing Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/illumina_run_processing/)
 
 
 Readset File
