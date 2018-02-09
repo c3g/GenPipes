@@ -43,4 +43,4 @@ python $SVANNOT_PATH/simple_sv_annotation.py \\
             input=input,
             output=output,
         )
-    )
+ )

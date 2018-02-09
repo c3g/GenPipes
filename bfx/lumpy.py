@@ -56,4 +56,4 @@ def lumpyexpress_pair(normal_bam, tumor_bam, output_vcf, spl_normal=[], spl_tumo
             discordant_normal=dis_normal if dis_normal else "",
         )
     )
-            
+    

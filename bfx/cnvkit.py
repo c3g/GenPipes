@@ -187,10 +187,10 @@ cnvkit.py segmetrics {options} \\
         )
     )
 
-def select_background(inputs, output):
+def select_background(input_cnr, input_cns, output):
     
     return Job(
-        inputs,
+        [input_cnr, input_cns],
         output,
         [
             ['cnvkit_batch', 'module_python'],
