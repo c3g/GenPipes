@@ -19,47 +19,32 @@
 # along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-#!/usr/bin/env python
-
 # Python Standard Modules
+import os
 
 # MUGQIC Modules
 from core.config import *
 from core.job import *
 
-def decompose_and_normalize_mnps(inputs, vt_output=None):
-    if not isinstance(inputs, list):
-        inputs = [inputs]
+def genotyper(input_bam, input_normal, input_vcf, output_vcf):
+    inputs=[input_bam, input_normal]
 
     return Job(
-        inputs,
-        [vt_output],
+        [input_bam, input_normal, input_vcf],
+        [output_vcf],
         [
-            ['decompose_and_normalize_mnps', 'module_htslib'],
-            ['decompose_and_normalize_mnps', 'module_vt']
+            #['DEFAULT', 'module_svtyper'],
+            ['DEFAULT', 'module_python'],
         ],
         command="""\
-zless {input} | sed 's/ID=AD,Number=./ID=AD,Number=R/' | vt decompose -s - | vt normalize -r {reference_sequence} -  \\
-        {vt_output}""".format(
-        input=" \\\n  ".join(input for input in inputs),
-        reference_sequence=config.param('decompose_and_normalize_mnps', 'genome_fasta', type='filepath'),
-        vt_output="> " + vt_output if vt_output else " ",
-        )
-    )
-
-def sort(input, output, options):
-
-    return Job(
-        [input],
-        [output],
-        [
-            ['vt_sort', 'module_htslib'],
-            ['vt_sort', 'module_vt']
-        ],
-        command="""\
-vt sort {options} -o {output} {input}""".format(
-        options=options,
-        input=" \\\n " + input if input else "-",
-        output=output
+svtyper --max_reads 5000 \\
+  -T {ref_fastq} \\
+  -B {input_bam} \\
+  {input_vcf} \\
+  {output_vcf}""".format(
+        ref_fastq=config.param('DEFAULT', 'genome_fasta', type='filepath'),
+        input_bam=",".join([input for input in inputs]),
+        input_vcf="-i " + input_vcf if input_vcf else "",
+        output_vcf="> " + output_vcf if output_vcf else "",
         )
     )

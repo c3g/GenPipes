@@ -1,0 +1,200 @@
+#!/usr/bin/env python
+
+################################################################################
+# Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
+#
+# This file is part of MUGQIC Pipelines.
+#
+# MUGQIC Pipelines is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# MUGQIC Pipelines is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
+################################################################################
+
+# Python Standard Modules
+import os
+
+# MUGQIC Modules
+from core.config import *
+from core.job import *
+
+def batch(tumor_bam, normal_bam, output_cnn, outdir, tar_dep=[], antitar_dep=[], target_bed=None):
+    return Job(
+        [tumor_bam, normal_bam],
+        [output_cnn, tar_dep, antitar_dep],
+        [
+            ['cnvkit_batch', 'module_python'],
+            ['cnvkit_batch', 'module_R'],
+        ],
+        command="""\
+cnvkit.py batch {options} \\
+  -p {threads} \\
+  --fasta {genome} \\
+  --access {access} \\
+  --annotate {annotate} \\
+  {target_bed} \\
+  --output-reference {output_cnn} \\
+  --output-dir {outdir} \\
+  --normal {normal_bam} \\
+  {tumor_bam}""".format(
+        options=config.param('cnvkit_batch','batch_options'),
+        threads=config.param('cnvkit_batch','threads'),
+        genome=config.param('cnvkit_batch','genome_fasta',type='filepath'),
+        access=config.param('cnvkit_batch','access',type='filepath'),
+        annotate=config.param('cnvkit_batch','refFlat',type='filepath'),            
+        target_bed="--targets " + target_bed if target_bed else "",
+        output_cnn=output_cnn,
+        outdir=outdir,
+        normal_bam=normal_bam,
+        tumor_bam=tumor_bam,
+        )
+    )
+
+def fix(target_cov, antitarget_cov, ref_cnn, output_cnr):
+    return Job(
+        [target_cov, antitarget_cov, ref_cnn],
+        [output_cnr],
+        [
+            ['cnvkit_batch', 'module_python'],
+            ['cnvkit_batch', 'module_R'],
+        ],
+        command="""\
+cnvkit.py fix {options} \\
+  {target_cov} \\
+  {antitarget_cov} \\
+  {ref_cnn} \\
+  -o {output_cnr}""".format(
+        options=config.param('cnvkit_batch','fix_options'),
+        target_cov=target_cov,
+        antitarget_cov=antitarget_cov,
+        ref_cnn=ref_cnn,
+        output_cnr=output_cnr,
+        )
+    )
+
+def segment(input_cnr, output_cns):
+    return Job(
+        [input_cnr],
+        [output_cns],
+        [
+            ['cnvkit_batch', 'module_python'],
+            ['cnvkit_batch', 'module_R'],
+        ],
+        command="""\
+cnvkit.py segment {options} \\
+  -p {threads} \\
+  {input_cnr} \\
+  -o {output_cns}""".format(
+        options=config.param('cnvkit_batch','segment_options'),
+        threads=config.param('cnvkit_batch','threads'),
+        input_cnr=input_cnr,
+        output_cns=output_cns,
+        )
+    )
+
+def call(input_cns, output_cns):
+    return Job(
+        [input_cns],
+        [output_cns],
+        [
+            ['cnvkit_batch', 'module_python'],
+            ['cnvkit_batch', 'module_R'],
+        ],
+        command="""\
+cnvkit.py call {options} \\
+  {input_cns} \\
+  -o {output_cns}""".format(
+        options=config.param('cnvkit_batch','call_options'),
+        input_cns=input_cns,
+        output_cns=output_cns,
+        )
+    )
+
+def export(tumor_cns, output, sample_id=None):
+    return Job(
+        [tumor_cns],
+        [output],
+        [
+            ['cnvkit_batch', 'module_python'],
+        ],
+        command="""\
+cnvkit.py export {options} \\
+  {sample_id} \\
+  {output} \\
+  {tumor_cns}""".format(
+        options=config.param('cnvkit_batch','export_options'),
+        sample_id="-i " + '"' + sample_id + '"' if sample_id else "",
+        output="-o " + output if output else "" ,
+        tumor_cns=tumor_cns,
+        )
+    )
+
+def metrics(input_cnr, input_cns, output):
+    return Job(
+        [input_cnr, input_cns],
+        [output],
+        [
+            ['cnvkit_batch', 'module_python'],
+            ['cnvkit_batch', 'module_R'],
+        ],
+        command="""\
+cnvkit.py metrics {options} \\
+  {input_cnr} \\
+  -s {input_cns} \\
+  -o {output}""".format(
+        options=config.param('cnvkit_batch','metrics_options'),
+        input_cnr=input_cnr,
+        input_cns=input_cns,
+        output=output,
+        )
+    )
+def scatter(input_cnr, input_cns, output, vcf=None, normal=None, tumor=None):
+    return Job(
+        [input_cnr, input_cns, vcf],
+        [output],
+        [
+            ['cnvkit_batch', 'module_python'],
+            ['cnvkit_batch', 'module_R'],
+        ],
+        command="""\
+cnvkit.py scatter {options} \\
+  {input_cnr} \\
+  -s {input_cns} \\
+  -o {output} {vcf} {tumor} {normal}""".format(
+        options=config.param('cnvkit_batch','scatter_options'),
+        input_cnr=input_cnr,
+        input_cns=input_cns,
+        output=output,
+        vcf="-v " + vcf if vcf else "",
+        tumor="-i " + tumor if tumor else "",
+        normal="-n " + normal if normal else "",
+        )
+    )
+
+def diagram(input_cnr, input_cns, output):
+    return Job(
+        [input_cnr, input_cns],
+        [output],
+        [
+            ['cnvkit_batch', 'module_python'],
+            ['cnvkit_batch', 'module_R'],
+        ],
+        command="""\
+cnvkit.py diagram {options} \\
+  {input_cnr} \\
+  -s {input_cns} \\
+  -o {output}""".format(
+        options=config.param('cnvkit_batch','diagram_options'),
+        input_cnr=input_cnr,
+        input_cns=input_cns,
+        output=output,
+        )
+    )

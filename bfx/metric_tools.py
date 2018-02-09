@@ -20,43 +20,24 @@
 ################################################################################
 
 # Python Standard Modules
-import logging
 import os
 
 # MUGQIC Modules
 from core.config import *
 from core.job import *
 
-log = logging.getLogger(__name__)
+## functions for awk tools ##
 
-def trim( input1, input2, prefix, adapter_file ):
-    output_pair1 = prefix + "-trimmed-pair1.fastq.gz"
-    output_pair2 = prefix + "-trimmed-pair2.fastq.gz"
-    
-    if input2:  # Paired end reads
-        inputs = [input1, input2]
-        output = [output_pair1, output_pair2]
-    else:   # Single end reads
-        inputs = [input1]
-        output = [output_pair1]
+## functions for python tools ##
+def extract_isize(file):
+    with open(file, "r") as fd:
+        lines = fd.readlines()
+        for i in range(0, len(lines)):
+            line = lines[i]
+            if line.startswith('MEDIAN_INSERT_SIZE'):
+                ne = lines[i + 1]
+                isize_mean = ne.split("\t")[4]
+                isize_sd = ne.split("\t")[5]                   
+                break
 
-    return Job(
-        inputs,
-        output,
-        [
-            ['skewer_trimming', 'module_skewer']
-        ],
-
-        command="""\
-$SKEWER_HOME/./skewer --threads {threads} {options} \\
-  {adapter_file} \\
-  {inputs} \\
-  {outputs}""".format(
-        threads=config.param('skewer_trimming', 'threads', type='posint'),
-        options=config.param('skewer_trimming', 'options'),
-        adapter_file="-x " + adapter_file, 
-        inputs=" \\\n  ".join(inputs),
-        outputs="-o " + prefix,
-        ),
-        removable_files=[output]
-    )
+    return isize_mean, isize_sd

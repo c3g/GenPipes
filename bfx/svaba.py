@@ -19,47 +19,36 @@
 # along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-#!/usr/bin/env python
-
 # Python Standard Modules
 
 # MUGQIC Modules
 from core.config import *
 from core.job import *
 
-def decompose_and_normalize_mnps(inputs, vt_output=None):
-    if not isinstance(inputs, list):
-        inputs = [inputs]
+def run(tumor, patient_name, normal=None):
+    somatic_sv = patient_name + ".svaba.somatic.sv.vcf"
+    germline_sv = patient_name + ".svaba.germline.sv.vcf"
+    output = [somatic_sv, germline_sv]
 
     return Job(
-        inputs,
-        [vt_output],
+        [normal, tumor],
+        output,
         [
-            ['decompose_and_normalize_mnps', 'module_htslib'],
-            ['decompose_and_normalize_mnps', 'module_vt']
+            ['svaba_run', 'module_svaba'],
+            ['svaba_run', 'module_gcc']
         ],
         command="""\
-zless {input} | sed 's/ID=AD,Number=./ID=AD,Number=R/' | vt decompose -s - | vt normalize -r {reference_sequence} -  \\
-        {vt_output}""".format(
-        input=" \\\n  ".join(input for input in inputs),
-        reference_sequence=config.param('decompose_and_normalize_mnps', 'genome_fasta', type='filepath'),
-        vt_output="> " + vt_output if vt_output else " ",
-        )
-    )
-
-def sort(input, output, options):
-
-    return Job(
-        [input],
-        [output],
-        [
-            ['vt_sort', 'module_htslib'],
-            ['vt_sort', 'module_vt']
-        ],
-        command="""\
-vt sort {options} -o {output} {input}""".format(
-        options=options,
-        input=" \\\n " + input if input else "-",
-        output=output
+svaba run {options} \\
+        -G {ref} \\
+        {dbsnp} \\
+        -a {name} \\
+        -t {tumor} \\
+        {normal}""".format(
+            options=config.param('svaba_run', 'options'),
+            ref=config.param('svaba_run', 'ref', type='filepath'),
+            dbsnp=config.param('svaba_run', 'dbsnp'),
+            name=patient_name,
+            normal="-n " + normal if normal else "",
+            tumor=tumor,
         )
     )

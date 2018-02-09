@@ -19,47 +19,48 @@
 # along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-#!/usr/bin/env python
-
 # Python Standard Modules
 
 # MUGQIC Modules
 from core.config import *
 from core.job import *
 
-def decompose_and_normalize_mnps(inputs, vt_output=None):
-    if not isinstance(inputs, list):
-        inputs = [inputs]
-
-    return Job(
-        inputs,
-        [vt_output],
-        [
-            ['decompose_and_normalize_mnps', 'module_htslib'],
-            ['decompose_and_normalize_mnps', 'module_vt']
-        ],
-        command="""\
-zless {input} | sed 's/ID=AD,Number=./ID=AD,Number=R/' | vt decompose -s - | vt normalize -r {reference_sequence} -  \\
-        {vt_output}""".format(
-        input=" \\\n  ".join(input for input in inputs),
-        reference_sequence=config.param('decompose_and_normalize_mnps', 'genome_fasta', type='filepath'),
-        vt_output="> " + vt_output if vt_output else " ",
-        )
-    )
-
-def sort(input, output, options):
-
+def somatic(input, normal_name, tumor_name, output):
     return Job(
         [input],
         [output],
         [
-            ['vt_sort', 'module_htslib'],
-            ['vt_sort', 'module_vt']
+            ['vawk', 'module_vawk'],
         ],
         command="""\
-vt sort {options} -o {output} {input}""".format(
-        options=options,
-        input=" \\\n " + input if input else "-",
-        output=output
+zcat {input} | \\ 
+        vawk --header \\
+        '(S${tumor_name}$GT!="0/0" && S${tumor_name}$GT!="./." \\
+        && S${tumor_name}$GT!=S${normal_name}$GT) \\
+        && (S${normal_name}$GT=="0/0" || S${normal_name}$GT=="./.")' \\
+        {output}""".format(
+            input=input,
+            normal_name=normal_name,
+            tumor_name=tumor_name,
+            output="> " + output if output else "",
+        )
+    )
+
+def germline(input, normal_name, tumor_name, output):
+    return Job(
+        [input],
+        [output],
+        [
+            ['vawk', 'module_vawk'],
+        ],
+        command="""\
+zcat {input} | \\ 
+        vawk --header \\
+        '(S${normal_name}$GT!="0/0" && S${normal_name}$GT!="./." && S${tumor_name}$GT!="./.")' \\
+        {output}""".format(
+            input=input,
+            normal_name=normal_name,
+            tumor_name=tumor_name,
+            output="> " + output if output else "",
         )
     )

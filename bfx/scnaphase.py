@@ -19,44 +19,29 @@
 # along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-# Python Standard Modules
-import logging
-import os
-
-# MUGQIC Modules
 from core.config import *
 from core.job import *
 
-log = logging.getLogger(__name__)
+#Assuming that the module file has already been written and the scripts have been added to path
 
-def trim( input1, input2, prefix, adapter_file ):
-    output_pair1 = prefix + "-trimmed-pair1.fastq.gz"
-    output_pair2 = prefix + "-trimmed-pair2.fastq.gz"
-    
-    if input2:  # Paired end reads
-        inputs = [input1, input2]
-        output = [output_pair1, output_pair2]
-    else:   # Single end reads
-        inputs = [input1]
-        output = [output_pair1]
+def run(sample_name, normal_name, tumor_name):
+    normal_inputs = [os.path.join("pairedVariants", sample_name, "sCNAphase", normal_name + ".chr" + str(chr) + ".haps") for chr in range(1, 22)]
+    #tumor_inputs = [os.path.join(tumor_name + ".chr" + str(chr) + ".vcf") for chr in range(1, 22)]
 
     return Job(
-        inputs,
-        output,
+        normal_inputs,
+        [None],
         [
-            ['skewer_trimming', 'module_skewer']
+            ['scnaphase', 'module_mugqic_tools'],
+            ['scnaphase', 'module_R'],
         ],
-
-        command="""\
-$SKEWER_HOME/./skewer --threads {threads} {options} \\
-  {adapter_file} \\
-  {inputs} \\
-  {outputs}""".format(
-        threads=config.param('skewer_trimming', 'threads', type='posint'),
-        options=config.param('skewer_trimming', 'options'),
-        adapter_file="-x " + adapter_file, 
-        inputs=" \\\n  ".join(inputs),
-        outputs="-o " + prefix,
-        ),
-        removable_files=[output]
+        command="""\\
+Rscript $R_TOOLS/RunsCNAphaseAnalysis.R \\
+    {output_base_name} \\
+    {normal_name}   \\
+    {tumor_name}""".format(
+            normal_name=normal_name,
+            tumor_name=tumor_name,
+            output_base_name=sample_name + ".inferCN",
+        )
     )

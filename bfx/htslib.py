@@ -73,7 +73,8 @@ bgzip -cf \\
 {output} && tabix -pvcf {output} \\
         """.format(
         input=" \\\n " + input if input else "",
-        output=output
+        output=output,
+        options=config.param('DEFAULT', 'tabix_options', required=False),
         )
     )
 
@@ -83,7 +84,7 @@ def tabix_split(input, output, chr):
         [input],
         [output],
         [
-            ['htslib_tabixsplit', 'module_htslib'],
+            ['DEFAULT', 'module_htslib'],
         ],
         command="""\
 tabix -h {input} {chr} \\

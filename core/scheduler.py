@@ -258,8 +258,6 @@ module unload {module_python} {command_separator}""".format(
             command_separator="&&" if (job_status=='\\"running\\"') else ""
         ) if json_file_list else ""
 
-
-
 class PBSScheduler(Scheduler):
 
     def __init__(self, *args, **kwargs):

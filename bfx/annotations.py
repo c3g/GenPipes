@@ -19,47 +19,27 @@
 # along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-#!/usr/bin/env python
-
 # Python Standard Modules
 
 # MUGQIC Modules
 from core.config import *
 from core.job import *
 
-def decompose_and_normalize_mnps(inputs, vt_output=None):
-    if not isinstance(inputs, list):
-        inputs = [inputs]
-
-    return Job(
-        inputs,
-        [vt_output],
-        [
-            ['decompose_and_normalize_mnps', 'module_htslib'],
-            ['decompose_and_normalize_mnps', 'module_vt']
-        ],
-        command="""\
-zless {input} | sed 's/ID=AD,Number=./ID=AD,Number=R/' | vt decompose -s - | vt normalize -r {reference_sequence} -  \\
-        {vt_output}""".format(
-        input=" \\\n  ".join(input for input in inputs),
-        reference_sequence=config.param('decompose_and_normalize_mnps', 'genome_fasta', type='filepath'),
-        vt_output="> " + vt_output if vt_output else " ",
-        )
-    )
-
-def sort(input, output, options):
-
+def structural_variants(input, output):
     return Job(
         [input],
         [output],
         [
-            ['vt_sort', 'module_htslib'],
-            ['vt_sort', 'module_vt']
+            ['sv_annotation', 'module_python'],
+            ['sv_annotation', 'module_sv_annotations']
         ],
         command="""\
-vt sort {options} -o {output} {input}""".format(
-        options=options,
-        input=" \\\n " + input if input else "-",
-        output=output
+python $SVANNOT_PATH/simple_sv_annotation.py \\
+        -g $SVANNOT_PATH/az-cancer-panel.txt \\
+        -k $SVANNOT_PATH/fusion_pairs.txt  \\
+        -o {output} \\
+        {input}""".format(
+            input=input,
+            output=output,
         )
     )

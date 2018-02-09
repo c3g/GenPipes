@@ -136,14 +136,11 @@ def concat(inputs, output, options=None):
     """
     Concatenate or combine VCF/BCF files
     """
-    if not isinstance(inputs, list):
-        inputs=[inputs]
-    
     return Job(
         inputs,
         [output],
         [
-            ['bcftools_concat', 'module_bcftools']
+            ['DEFAULT', 'module_bcftools']
         ],
         command="""\
 bcftools \\
@@ -164,7 +161,7 @@ def view(input, output, filter_options=None):
         [input],
         [output],
         [
-            ['bcftools_view', 'module_bcftools']
+            ['DEFAULT', 'module_bcftools']
         ],
         command="""\
 bcftools \\
@@ -184,7 +181,7 @@ def filter(input, output, filter_options):
         [input],
         [output],
         [
-            ['bcftools_filter', 'module_bcftools']
+            ['DEFAULT', 'module_bcftools']
         ],
         command="""\
 bcftools \\
@@ -196,3 +193,22 @@ bcftools \\
         )
     )
 
+def annotate(input, output, options):
+    """
+    Generalized merge
+    """
+    return Job(
+        [input],
+        [output],
+        [
+            ['DEFAULT', 'module_bcftools']
+        ],
+        command="""\
+bcftools \\
+  annotate {options} \\
+  {input}{output}""".format(
+        options=options if options else "",
+        input=" \\\n " + input if input else "",
+        output=" \\\n -o " + output if output else ""
+        )
+    )

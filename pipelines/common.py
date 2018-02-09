@@ -354,7 +354,7 @@ END
 
             jobs.append(concat_jobs([
                 # Trimmomatic does not create output directory by default
-                Job(command="mkdir -p " + trim_directory),
+                Job(command="mkdir -p " + trim_directory, samples=[readset.sample]),
                 job
             ], name="trimmomatic." + readset.name, samples=[readset.sample]))
         return jobs
@@ -552,5 +552,4 @@ pandoc \\
 
             jobs.append(job)
             
-        return jobs    
- 
+        return jobs
