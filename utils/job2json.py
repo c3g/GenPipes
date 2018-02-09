@@ -12,6 +12,9 @@ import subprocess
 import datetime
 from uuid import uuid4
 
+# Append mugqic_pipelines directory to Python library path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+
 # MUGQIC Modules
 from core.config import *
 
