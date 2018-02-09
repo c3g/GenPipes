@@ -82,7 +82,7 @@ from bfx import annotations
 
 log = logging.getLogger(__name__)
 
-class TumorPair(dnaseq.DnaSeq):
+class TumorPair(dnaseq.DnaSeqRaw):
     """
     Tumor Pair Pipeline
     =================
@@ -104,12 +104,22 @@ class TumorPair(dnaseq.DnaSeq):
     -p pairs : format - patient_name,normal_sample_name,tumor_sample_name 
     """
 
-    def __init__(self, protocol='ensemble'):
+    def __init__(self, protocol=None):
         self._protocol = protocol
-        self.argparser.add_argument("-t", "--type", help="Tumor pair analysis type", choices=["fastpass", "ensemble", "sv"], default="ensemble")
         self.argparser.add_argument("-p", "--pairs", help="pairs file", type=file)
         self.argparser.add_argument("--profyle", help="adjust deliverables to PROFYLE folder conventions (Default: False)", action="store_true")
+        self.argparser.add_argument("-t", "--type", help="Tumor pair analysis type",choices = ["fastpass", "ensemble", "sv"], default="ensemble")
         super(TumorPair, self).__init__(protocol)
+
+        
+
+
+    #def __args__(self):
+        #self.args.type.help = "Tumor pair analysis type"
+        #self.args.type.choices = ["fastpass", "ensemble", "sv"]
+        #self.args.type.default="ensemble"
+        #return self.args
+
 
     @property
     def tumor_pairs(self):
