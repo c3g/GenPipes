@@ -1,1 +1,1 @@
-mugqic_pipelines is now decypated please use: [GenPipes](https://bitbucket.org/mugqic/genpipes)
+mugqic_pipelines is now deprecated. Please use: [GenPipes](https://bitbucket.org/mugqic/genpipes) instead.
