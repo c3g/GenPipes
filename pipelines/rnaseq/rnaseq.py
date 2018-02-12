@@ -446,7 +446,7 @@ pandoc \\
 
                 job = concat_jobs([
                     Job(command="mkdir -p " + output_directory, removable_files=[output_directory], samples=[sample]),
-                    picard.collect_multiple_metrics(alignment_file, os.path.join(output_directory, sample.name), reference_file),
+                    picard.collect_multiple_metrics(alignment_file, os.path.join(output_directory, sample.name), reference_file, library_type=sample.readsets[0].run_type),
                     picard.collect_rna_metrics(alignment_file, os.path.join(output_directory, sample.name+".picard_rna_metrics"))
                 ],name="picard_rna_metrics."+ sample.name)
                 jobs.append(job)
