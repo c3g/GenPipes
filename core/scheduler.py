@@ -31,7 +31,7 @@ from bfx import jsonator
 # Output comment separator line
 separator_line = "#" + "-" * 79
 
-def create_scheduler(type):
+def create_scheduler(type, config_files):
     if type == "pbs":
         return PBSScheduler()
     elif type == "batch":
@@ -42,6 +42,9 @@ def create_scheduler(type):
         raise Exception("Error: scheduler type \"" + type + "\" is invalid!")
 
 class Scheduler:
+    def __init__(self, config_files):
+        self._config_files = config_files
+
     def submit(self, pipeline):
         # Needs to be defined in scheduler child class
         raise NotImplementedError
@@ -75,11 +78,13 @@ OUTPUT_DIR={pipeline.output_dir}
 JOB_OUTPUT_DIR=$OUTPUT_DIR/job_output
 TIMESTAMP=`date +%FT%H.%M.%S`
 JOB_LIST=$JOB_OUTPUT_DIR/{pipeline.__class__.__name__}_job_list_$TIMESTAMP
+export CONFIG_FILES="{config_files}"
 mkdir -p $OUTPUT_DIR
 cd $OUTPUT_DIR
 """
                 .format(
                     pipeline=pipeline,
+                    config_files=";".join([ c.name for c in self._config_files ])
                 )
             )
 

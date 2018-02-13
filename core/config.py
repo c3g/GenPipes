@@ -128,3 +128,7 @@ class Config(ConfigParser.SafeConfigParser):
 
 # Global config object used throughout the whole pipeline
 config = Config()
+
+if "CONFIG_FILES" in os.environ:
+    config_files = os.getenv('CONFIG_FILES').split(';')
+    config.parse_files(config_file)
