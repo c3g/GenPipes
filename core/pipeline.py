@@ -101,7 +101,7 @@ Usage
                 config.filepath = os.path.abspath(config_trace.name)
 
             self._output_dir = os.path.abspath(self.args.output_dir)
-            self._scheduler = create_scheduler(self.args.job_scheduler)
+            self._scheduler = create_scheduler(self.args.job_scheduler, self.args.config)
 
             step_counter = collections.Counter(step_list)
             duplicated_steps = [step.__name__ for step in step_counter if step_counter[step] > 1]
