@@ -84,7 +84,7 @@ cd $OUTPUT_DIR
 """
                 .format(
                     pipeline=pipeline,
-                    config_files=";".join([ c.name for c in self._config_files ])
+                    config_files=",".join([ c.name for c in self._config_files ])
                 )
             )
 
@@ -103,6 +103,7 @@ mkdir -p $JOB_OUTPUT_DIR/$STEP
         return """\
 module load {module_python}
 $MUGQIC_PIPELINES_HOME/utils/job2json.py \\
+  -c \\"{config_files}\\" \\
   -s \\"{step.name}\\" \\
   -j \\"$JOB_NAME\\" \\
   -d \\"$JOB_DONE\\" \\
@@ -113,6 +114,7 @@ module unload {module_python} {command_separator}""".format(
             module_python=config.param('DEFAULT', 'module_python'),
             step=step,
             jsonfiles=json_file_list,
+            config_files=",".join([ c.name for c in self._config_files ]),
             status=job_status,
             command_separator="&&" if (job_status=='\\"running\\"') else ""
         ) if json_file_list else ""
