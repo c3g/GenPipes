@@ -33,11 +33,11 @@ separator_line = "#" + "-" * 79
 
 def create_scheduler(type, config_files):
     if type == "pbs":
-        return PBSScheduler()
+        return PBSScheduler(config_files)
     elif type == "batch":
-        return BatchScheduler()
+        return BatchScheduler(config_files)
     elif type == "daemon":
-        return DaemonScheduler()
+        return DaemonScheduler(config_files)
     else:
         raise Exception("Error: scheduler type \"" + type + "\" is invalid!")
 
