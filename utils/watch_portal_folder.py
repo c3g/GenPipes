@@ -33,6 +33,8 @@ def send_files(options, files):
         except Exception as e:
             print(red('Got error while sending files. Skipping update.'))
             print(e)
+            print(options)
+            print(url)
             return
 
         if response.status_code == 200 and result.get('ok') == True:
@@ -55,8 +57,8 @@ def usage():
     print("    -w, --watch     - folder to watch")
     print("    -u, --url       - URL to send the JSON files to")
     print("    -i, --interval  - folder check interval (in seconds) (default: 5)")
-    print("        --username  - user name to append to the URL (default: system)")
-    print("        --help      - display this message")
+    print("    -n, --name      - user name to append to the URL (default: system)")
+    print("    -h, --help      - display this message")
 
 def get_arguments():
     options = dotdict({})
@@ -65,7 +67,7 @@ def get_arguments():
     options.url             = 'http://localhost:3000'
     options.update_interval = 5
 
-    optli, arg = getopt.getopt(sys.argv[1:], 'w:u:i:h', ['watch=', 'url=', 'interval=', 'username=', 'help'])
+    optli, arg = getopt.getopt(sys.argv[1:], 'w:u:i:n:h', ['watch=', 'url=', 'interval=', 'name=', 'help'])
 
     if len(optli) == 0 :
         usage()
@@ -82,9 +84,9 @@ def get_arguments():
                 exit('Error: --url not provided\n')
             else:
                 options.url = str(value)
-        if option in ('--username'):
+        if option in ('-n', '--name'):
             if str(value) == '':
-                exit('Error: --username not provided\n')
+                exit('Error: --name not provided\n')
             else:
                 options.user_name = str(value)
         if option in ('-i', '--interval'):
