@@ -19,6 +19,7 @@ def main():
         time.sleep(options.update_interval)
 
         files = [ file for file in os.listdir(options.watch_folder) if file.endswith('.json') ]
+        files.sort(key=lambda x: os.path.getmtime(x))
 
         send_files(options, files)
 
