@@ -18,7 +18,7 @@ def main():
 
         time.sleep(options.update_interval)
 
-        files = [ file for file in os.listdir(options.watch_folder) if file.endswith('.json') ]
+        files = [ os.path.join(options.watch_folder, file) for file in os.listdir(options.watch_folder) if file.endswith('.json') ]
         files.sort(key=lambda x: os.path.getmtime(x))
 
         send_files(options, files)
@@ -27,7 +27,7 @@ def main():
 def send_files(options, files):
     url = options.url + '/' + options.user_name
     for file in files:
-        fullpath = os.path.join(options.watch_folder, file)
+        fullpath = file
         try:
             response = requests.post(url, json = json.loads(readfile(fullpath)))
             result   = response.json()
