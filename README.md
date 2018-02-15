@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 MUGQIC Pipelines
 ================
 This repository holds several bioinformatics pipelines developed at [McGill University and Génome Québec Innovation Centre](http://gqinnovationcenter.com) (MUGQIC), as part of the [GenAP project](https://genap.ca).
@@ -527,3 +528,6 @@ You can also report bugs at [pipelines@computationalgenomics.ca](mailto:pipeline
 * Include the pipeline version number in your message (and the commit number if applicable).
 * Provide the following information relevant to the problem encountered: the python command, the bash submission script, the output (job_outputs/*/*.o) file, 
 * An error message or code snippet illustrating your request is normally very useful.
+=======
+mugqic_pipelines is now deprecated. Please use: [GenPipes](https://bitbucket.org/mugqic/genpipes) instead.
+>>>>>>> 36a72b4e11853dd54baa9a67df1da15c0323730a
