@@ -25,15 +25,16 @@ def getarg(argument):
     job_done = ""
     json_files = ""
     config_files = []
+    user = ""
     status = True
 
-    optli,arg = getopt.getopt(argument[1:], "s:j:l:d:o:c:f:h", ['step_name', 'job_name', 'job_log', 'job_done', 'json_outfiles', 'config', 'status', 'help'])
+    options, _ = getopt.getopt(argument[1:], "s:j:l:d:o:c:u:f:h", ['step_name', 'job_name', 'job_log', 'job_done', 'json_outfiles', 'config', 'user', 'status', 'help'])
 
-    if len(optli) == 0 :
+    if len(options) == 0:
         usage()
         sys.exit("Error : No argument given")
 
-    for option, value in optli:
+    for option, value in options:
         if option in ("-s", "--step_name"):
             if str(value) == "" :
                 sys.exit("Error - step_name (-s, --step_name) not provided...\n" + str(value))
@@ -59,6 +60,11 @@ def getarg(argument):
                 sys.exit("Error - config_files (-c, --config) not provided...\n")
             else :
                 config_files = str(value).split(',')
+        if option in ("-u", "--user"):
+            if str(value) == "" :
+                sys.exit("Error - user (-u, --user) not provided...\n")
+            else :
+                user = str(value)
         if option in ("-o", "--json_outfiles"):
             if str(value) == "" :
                 sys.exit("Error - json_outfiles (-j, --json_outfiles) not provided...\n")
@@ -70,7 +76,7 @@ def getarg(argument):
             usage()
             sys.exit()
 
-    return step_name, job_name, job_log, job_done, json_files, config_files, status
+    return step_name, job_name, job_log, job_done, json_files, config_files, user, status
 
 def usage():
     print "\n-------------------------------------------------------------------------------------------"
@@ -92,7 +98,7 @@ def usage():
 def main():
     #print "command line used :\n" + " ".join(sys.argv[:])
 
-    step_name, job_name, job_log, job_done, json_files, config_files, status = getarg(sys.argv)
+    step_name, job_name, job_log, job_done, json_files, config_files, user, status = getarg(sys.argv)
 
     config.parse_files(config_files)
 
@@ -143,7 +149,7 @@ def main():
         # Print a copy of it for the monitoring interface
         portal_output_dir = config.param('DEFAULT', 'portal_output_dir', required=False, type='dirpath')
         if portal_output_dir != '':
-            with open(os.path.join(portal_output_dir, uuid4().get_hex() + '.json'), 'w') as out_json:
+            with open(os.path.join(portal_output_dir, user + '.' + uuid4().get_hex() + '.json'), 'w') as out_json:
                 json.dump(current_json, out_json, indent=4)
 
 

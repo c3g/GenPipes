@@ -103,6 +103,7 @@ mkdir -p $JOB_OUTPUT_DIR/$STEP
         return """\
 module load {module_python}
 $MUGQIC_PIPELINES_HOME/utils/job2json.py \\
+  -u \\"{user}\\" \\
   -c \\"{config_files}\\" \\
   -s \\"{step.name}\\" \\
   -j \\"$JOB_NAME\\" \\
@@ -111,6 +112,7 @@ $MUGQIC_PIPELINES_HOME/utils/job2json.py \\
   -o \\"{jsonfiles}\\" \\
   -f {status}
 module unload {module_python} {command_separator}""".format(
+            user=os.getenv('USER'),
             module_python=config.param('DEFAULT', 'module_python'),
             step=step,
             jsonfiles=json_file_list,

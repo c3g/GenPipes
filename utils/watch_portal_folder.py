@@ -18,18 +18,18 @@ def main():
 
         time.sleep(options.update_interval)
 
-        files = [ os.path.join(options.watch_folder, file) for file in os.listdir(options.watch_folder) if file.endswith('.json') ]
-        files.sort(key=lambda x: os.path.getmtime(x))
+        files = [ file for file in os.listdir(options.watch_folder) if file.endswith('.json') ]
+        files.sort(key=lambda file: os.path.getmtime(os.path.join(options.watch_folder, file)))
 
         send_files(options, files)
 
 
 def send_files(options, files):
-    url = options.url + '/' + options.user_name
     for file in files:
-        fullpath = file
+        url = options.url + '/' + file.split('.')[0]
+        fullpath = os.path.join(options.watch_folder, file)
         try:
-            response = requests.post(url, json = json.loads(readfile(fullpath)))
+            response = requests.post(url, json=json.loads(readfile(fullpath)))
             result   = response.json()
         except Exception as e:
             print(red('Got error while sending files. Skipping update.'))
@@ -38,7 +38,7 @@ def send_files(options, files):
             print(url)
             return
 
-        if response.status_code == 200 and result.get('ok') == True:
+        if response.status_code == 200 and result.get('ok') is True:
             os.remove(fullpath)
             print('Sent %s' % file)
         else:
@@ -58,17 +58,15 @@ def usage():
     print("    -w, --watch     - folder to watch")
     print("    -u, --url       - URL to send the JSON files to")
     print("    -i, --interval  - folder check interval (in seconds) (default: 5)")
-    print("    -n, --name      - user name to append to the URL (default: system)")
     print("    -h, --help      - display this message")
 
 def get_arguments():
     options = dotdict({})
-    options.user_name       = 'system'
     options.watch_folder    = './buffer'
     options.url             = 'http://localhost:3000'
     options.update_interval = 5
 
-    optli, arg = getopt.getopt(sys.argv[1:], 'w:u:i:n:h', ['watch=', 'url=', 'interval=', 'name=', 'help'])
+    optli, arg = getopt.getopt(sys.argv[1:], 'w:u:i:h', ['watch=', 'url=', 'interval=', 'help'])
 
     if len(optli) == 0 :
         usage()
@@ -85,11 +83,6 @@ def get_arguments():
                 exit('Error: --url not provided\n')
             else:
                 options.url = str(value)
-        if option in ('-n', '--name'):
-            if str(value) == '':
-                exit('Error: --name not provided\n')
-            else:
-                options.user_name = str(value)
         if option in ('-i', '--interval'):
             if int(value) == '':
                 exit('Error: --interval not provided\n')
