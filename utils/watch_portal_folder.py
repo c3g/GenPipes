@@ -58,17 +58,15 @@ def usage():
     print("    -w, --watch     - folder to watch")
     print("    -u, --url       - URL to send the JSON files to")
     print("    -i, --interval  - folder check interval (in seconds) (default: 5)")
-    print("    -n, --name      - user name to append to the URL (default: system)")
     print("    -h, --help      - display this message")
 
 def get_arguments():
     options = dotdict({})
-    options.user_name       = 'system'
     options.watch_folder    = './buffer'
     options.url             = 'http://localhost:3000'
     options.update_interval = 5
 
-    optli, arg = getopt.getopt(sys.argv[1:], 'w:u:i:n:h', ['watch=', 'url=', 'interval=', 'name=', 'help'])
+    optli, arg = getopt.getopt(sys.argv[1:], 'w:u:i:h', ['watch=', 'url=', 'interval=', 'help'])
 
     if len(optli) == 0 :
         usage()
@@ -85,11 +83,6 @@ def get_arguments():
                 exit('Error: --url not provided\n')
             else:
                 options.url = str(value)
-        if option in ('-n', '--name'):
-            if str(value) == '':
-                exit('Error: --name not provided\n')
-            else:
-                options.user_name = str(value)
         if option in ('-i', '--interval'):
             if int(value) == '':
                 exit('Error: --interval not provided\n')
