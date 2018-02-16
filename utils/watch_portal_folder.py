@@ -18,18 +18,18 @@ def main():
 
         time.sleep(options.update_interval)
 
-        files = [ os.path.join(options.watch_folder, file) for file in os.listdir(options.watch_folder) if file.endswith('.json') ]
-        files.sort(key=lambda x: os.path.getmtime(x))
+        files = [ file for file in os.listdir(options.watch_folder) if file.endswith('.json') ]
+        files.sort(key=lambda file: os.path.getmtime(os.path.join(options.watch_folder, file)))
 
         send_files(options, files)
 
 
 def send_files(options, files):
-    url = options.url + '/' + options.user_name
     for file in files:
-        fullpath = file
+        url = options.url + '/' + file.split('.')[0]
+        fullpath = os.path.join(options.watch_folder, file)
         try:
-            response = requests.post(url, json = json.loads(readfile(fullpath)))
+            response = requests.post(url, json=json.loads(readfile(fullpath)))
             result   = response.json()
         except Exception as e:
             print(red('Got error while sending files. Skipping update.'))
@@ -38,7 +38,7 @@ def send_files(options, files):
             print(url)
             return
 
-        if response.status_code == 200 and result.get('ok') == True:
+        if response.status_code == 200 and result.get('ok') is True:
             os.remove(fullpath)
             print('Sent %s' % file)
         else:
