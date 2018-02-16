@@ -19,10 +19,12 @@ source $GENOME_INSTALL_SCRIPT_DIR/install_genome.sh
 
 # Download dbSNP directly from NCBI since it is more up to date
 get_vcf_dbsnp() {
-  DBSNP_VERSION=142
-  DBSNP_URL=ftp://ftp.ncbi.nih.gov/snp/organisms/archive/human_9606_b${DBSNP_VERSION}_GRCh37p13/VCF/All.vcf.gz    # to use with DBSNP_VERSION = 142 & 144
-#  DBSNP_URL=ftp://ftp.ncbi.nih.gov/snp/organisms/human_9606_b${DBSNP_VERSION}_GRCh37p13/VCF/All.vcf.gz          # to use with DBSNP_VERSION >= 146
+  DBSNP_VERSION=149
+#  DBSNP_URL=ftp://ftp.ncbi.nih.gov/snp/organisms/archive/human_9606_b${DBSNP_VERSION}_GRCh37p13/VCF/00-All.vcf.gz    # to use with DBSNP_VERSION = 142 & 144
+  DBSNP_URL=ftp://ftp.ncbi.nih.gov/snp/organisms/human_9606_b${DBSNP_VERSION}_GRCh37p13/VCF/00-All.vcf.gz          # to use with DBSNP_VERSION >= 146
   DBSNP=$ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP$DBSNP_VERSION.vcf.gz
+
+
 
   if ! is_up2date $DBSNP $DBSNP.tbi
   then
@@ -38,24 +40,23 @@ get_vcf_dbsnp() {
 
 # Download dbNSFP and generate vcfs required to run VerifyBamId
 get_dbNSFP() {
-    DBNSFP_URL=ftp://dbnsfp:dbnsfp@dbnsfp.softgenetics.com/dbNSFPv2.4.zip
-    DBSNSFP_VERSION=dbNSFPv2.4
+    DBSNSFP_VERSION=dbNSFPv3.5a
+    DBNSFP_URL=ftp://dbnsfp:dbnsfp@dbnsfp.softgenetics.com/${DBSNSFP_VERSION}.zip
     DBSNSFP=$ANNOTATIONS_DIR/$DBSNSFP_VERSION/$DBSNSFP_VERSION
     if ! is_up2date $DBSNSFP.txt.gz
-    then
+        then
         mkdir -p $ANNOTATIONS_DIR/$DBSNSFP_VERSION/
         if ! is_up2date `download_path $DBNSFP_URL`; then
             download_url $DBNSFP_URL
-            cp dbnsfp.softgenetics.com/dbNSFPv2.4.zip $ANNOTATIONS_DIR/$DBSNSFP_VERSION/
+            cp dbnsfp.softgenetics.com/${DBSNSFP_VERSION}.zip $ANNOTATIONS_DIR/$DBSNSFP_VERSION/
         fi
         unzip $ANNOTATIONS_DIR/$DBSNSFP_VERSION/$DBSNSFP_VERSION.zip -d $ANNOTATIONS_DIR/$DBSNSFP_VERSION/
+        rm $ANNOTATIONS_DIR/$DBSNSFP_VERSION/$DBSNSFP_VERSION.zip
         (head -n 1 $ANNOTATIONS_DIR/$DBSNSFP_VERSION/*_variant.chr1 ; cat $ANNOTATIONS_DIR/$DBSNSFP_VERSION/*_variant.chr* | grep -v "^#" ) > $DBSNSFP.txt
         module load $module_tabix
         bgzip $DBSNSFP.txt
         tabix -s 1 -b 2 -e 2 $DBSNSFP.txt.gz
         rm $ANNOTATIONS_DIR/$DBSNSFP_VERSION/*_variant.chr*
-    else
-        echo "$DBSNSFP is up to date... skipping"
     fi
     # Extract allelic frequencies for HAPMAP human populations and annotate dbsnp VCF
     DBSNP_ANNOTATED=$ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP${DBSNP_VERSION}_annotated.vcf
