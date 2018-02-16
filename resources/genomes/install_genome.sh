@@ -96,6 +96,7 @@ set_urls() {
     URL_PREFIX=ftp://ftp.ensembl.org/pub/release-$VERSION
     GENOME_URL=$URL_PREFIX/fasta/${SPECIES,,}/dna/$SPECIES.$ASSEMBLY.dna.primary_assembly.fa.gz
     NCRNA_URL=$URL_PREFIX/fasta/${SPECIES,,}/ncrna/$SPECIES.$ASSEMBLY.ncrna.fa.gz
+    CDNA_URL=$URL_PREFIX/fasta/${SPECIES,,}/cdna/$SPECIES.$ASSEMBLY.cdna.all.fa.gz
     GTF_URL=$URL_PREFIX/gtf/${SPECIES,,}/$SPECIES.$ASSEMBLY.$VERSION.gtf.gz
     VCF_URL=$URL_PREFIX/variation/vcf/${SPECIES,,}/$SPECIES.vcf.gz
     VCF_TBI_URL=$VCF_URL.tbi
@@ -113,6 +114,7 @@ set_urls() {
     then
       GENOME_URL=${GENOME_URL/$SPECIES.$ASSEMBLY/$SPECIES.$ASSEMBLY.$VERSION}
       NCRNA_URL=${NCRNA_URL/$SPECIES.$ASSEMBLY/$SPECIES.$ASSEMBLY.$VERSION}
+      CDNA_URL=${CDNA_URL/$SPECIES.$ASSEMBLY/$SPECIES.$ASSEMBLY.$VERSION}
     fi
 
     # Check if a genome primary assembly is available for this species, otherwise use the toplevel assembly
@@ -166,6 +168,7 @@ set_urls() {
     URL_PREFIX=$RELEASE_URL/${DIVISION,}
     GENOME_URL=$URL_PREFIX/fasta/$EG_SPECIES/dna/$EG_BASENAME.dna.genome.fa.gz
     NCRNA_URL=$URL_PREFIX/fasta/$EG_SPECIES/ncrna/$EG_BASENAME.ncrna.fa.gz
+    CDNA_URL=$URL_PREFIX/fasta/$EG_SPECIES/cdna/$EG_BASENAME.cdna.all.fa.gz
     GTF_URL=$URL_PREFIX/gtf/$EG_SPECIES/$EG_BASENAME.gtf.gz
     if [[ `echo "$SPECIES_LINE" | cut -f8` == "Y"  ]]
     then
@@ -198,6 +201,7 @@ download_urls() {
   then
     download_url $GTF_URL
     download_url $NCRNA_URL
+    download_url $CDNA_URL
     if [ ! -z "${VCF_URL:-}" ]
     then
       download_url $VCF_URL
@@ -634,6 +638,7 @@ copy_files() {
     TRANSCRIPT_ID_GTF=$ANNOTATIONS_DIR/${GTF/.gtf/.transcript_id.gtf}
     if ! is_up2date $TRANSCRIPT_ID_GTF ; then grep -P "(^#|transcript_id)" $ANNOTATIONS_DIR/$GTF > $TRANSCRIPT_ID_GTF ; fi
     if ! is_up2date $ANNOTATIONS_DIR/$NCRNA ; then gunzip -c `download_path $NCRNA_URL` > $ANNOTATIONS_DIR/$NCRNA ; fi
+    if ! is_up2date $ANNOTATIONS_DIR/$CDNA ; then gunzip -c `download_path $CDNA_URL` > $ANNOTATIONS_DIR/$CDNA ; fi
 
     # Create rRNA FASTA as subset of ncRNA FASTA keeping only sequences with "rRNA" (ignore case) in their descriptions
     if [ $(grep -q -i "rRNA" $ANNOTATIONS_DIR/$NCRNA)$? == 0 ]
@@ -682,6 +687,12 @@ copy_files() {
         fi
       fi
     fi
+
+    if ! is_up2date $ANNOTATIONS_DIR/$CDNA
+    then
+      echo "Could not find $ANNOTATIONS_DIR/$CDNA...\nyou might consider to use the ncrna.fa file from Ensembl... "
+    fi
+
   fi
 }
 
