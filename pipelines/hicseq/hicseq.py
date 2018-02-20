@@ -442,7 +442,7 @@ class HicSeq(common.Illumina):
 
 
 
-    def identify_TADs(self):
+    def identify_TADs_TopDom(self):
         """
         Topological associating Domains (TADs) are identified using TopDom at resolutions defined in the ini config file.
         For more detailed information about the TopDom visit: [TopDom] (https://www.ncbi.nlm.nih.gov/pubmed/26704975)
@@ -462,7 +462,7 @@ class HicSeq(common.Illumina):
 
 
         for sample in self.samples:
-            sample_output_dir = os.path.join(self.output_dirs['TAD_output_directory'], sample.name)
+            sample_output_dir = os.path.join(self.output_dirs['TAD_output_directory'], sample.name, "TopDom")
 
             for res in res_chr:
                 for chr in chrs:
@@ -492,14 +492,14 @@ class HicSeq(common.Illumina):
                     job_inputFile = Job(input_files = [input_matrix],
                             output_files = [tmp_matrix],
                             module_entries = [["identify_TADs", "module_R"],["identify_TADs", "module_mugqic_tools"]],
-                            name = "identify_TADs.create_input." + sample.name + "_" + chr + "_res" + res,
+                            name = "identify_TADs.TopDom_create_input." + sample.name + "_" + chr + "_res" + res,
                             command = command_RFile + " && " + command_TopDom,
                             removable_files = [tmp_matrix]
                             )
                     job_TADs = Job(input_files = [tmp_matrix],
                             output_files = [output_matrix + ".bed", output_matrix + ".binSignal", output_matrix + ".domain"],
                             module_entries = [["identify_TADs", "module_R"], ["identify_TADs", "module_mugqic_tools"]],
-                            name = "identify_TADs.call_TADs." + sample.name + "_" + chr + "_res" + res,
+                            name = "identify_TADs.TopDom_call_TADs." + sample.name + "_" + chr + "_res" + res,
                             command = "Rscript {fileName} && rm {fileName}".format(fileName = fileName, tmp_matrix=tmp_matrix),
                             removable_files = [tmp_matrix]
                             )
@@ -507,6 +507,56 @@ class HicSeq(common.Illumina):
                     jobs.extend([job_inputFile, job_TADs])
         return jobs
 
+
+
+    def identify_TADs_RobusTAD(self):
+        """
+        Topological associating Domain (TAD) scores are calculated using RobusTAD for every bin in the genome.
+        RobusTAD is resolution-independant and will use the first resolution in "resolution_TADs"  under [identify_TADs] in the ini file.
+        For more detailed information about the RobusTAD visit: [RobusTAD] (https://github.com/rdali/RobusTAD)
+        """
+
+        jobs = []
+
+        chrs = config.param('identify_TADs', 'chromosomes')
+        res = config.param('identify_TADs', 'resolution_TADs').split(",")[0]
+
+        if chrs == "All":
+            genome_dict = os.path.expandvars(config.param('DEFAULT', 'genome_dictionary', type='filepath'))
+            chrs = genome.chr_names_conv(genome_dict)
+        else:
+            chrs = chrs.split(",")
+
+
+
+        for sample in self.samples:
+            sample_output_dir = os.path.join(self.output_dirs['TAD_output_directory'], sample.name, "RobusTAD")
+
+            for chr in chrs:
+
+                input_matrix = os.path.join(self.output_dirs['matrices_output_directory'], sample.name, "chromosomeMatrices", "_".join(("HTD", sample.name, self.enzyme, chr, res, "rawRN.txt")))
+                prefix = os.path.splitext(os.path.basename(input_matrix))[0]
+                output_Scores = os.path.join(sample_output_dir, "".join(("BoundaryScores_", prefix, "_binSize" , str(int(res)/1000) ,"_minW250_maxW500_minRatio1.5.txt")))
+                output_calls = os.path.join(sample_output_dir, "".join(("TADBoundaryCalls_", prefix, "_binSize" , str(int(res)/1000) ,"_minW250_maxW500_minRatio1.5_threshold0.2.txt")))
+
+
+                ## make TopDom R script:
+                RobusTAD_command = """mkdir -p {ouput_dir} && Rscript {RobusTAD} -i {input_matrix} -H -b {res} -o {ouput_dir}""".format(
+                                ouput_dir = sample_output_dir,
+                                RobusTAD = os.path.expandvars("${R_TOOLS}/RobusTAD.R"),
+                                input_matrix = input_matrix,
+                                res = int(res)/1000
+                            )
+
+                job = Job(input_files = [input_matrix],
+                        output_files = [output_Scores, output_calls],
+                        module_entries = [["identify_TADs", "module_R"], ["identify_TADs", "module_mugqic_tools"]],
+                        name = "identify_TADs.RobusTAD." + sample.name + "_" + chr,
+                        command = RobusTAD_command,
+                        )
+
+                jobs.append(job)
+        return jobs
 
 
     def identify_peaks(self):
@@ -856,7 +906,8 @@ class HicSeq(common.Illumina):
             self.interaction_matrices_Chr,
             self.interaction_matrices_genome,
             self.identify_compartments,
-            self.identify_TADs,
+            self.identify_TADs_TopDom,
+            self.identify_TADs_RobusTAD,
             self.identify_peaks,
             self.create_hic_file,
             self.multiqc_report],
