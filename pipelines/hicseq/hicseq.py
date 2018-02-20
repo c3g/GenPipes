@@ -926,6 +926,7 @@ class HicSeq(common.Illumina):
             self.runChicago_featureOverlap,
             self.bait_intersect,
             self.capture_intersect,
+            self.create_hic_file,
             self.multiqc_report]
         ]
 
