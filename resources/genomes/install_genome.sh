@@ -6,14 +6,14 @@ module_bowtie=mugqic/bowtie/1.1.2
 module_bowtie2=mugqic/bowtie2/2.2.9
 module_bwa=mugqic/bwa/0.7.12
 module_java=mugqic/java/openjdk-jdk1.8.0_72
-module_mugqic_R_packages=mugqic/mugqic_R_packages/1.0.3
+module_mugqic_R_packages=mugqic/mugqic_R_packages/1.0.5
 module_picard=mugqic/picard/2.0.1
-module_R=mugqic/R_Bioconductor/3.1.2_3.0
+module_R=mugqic/R_Bioconductor/3.4.2_3.6
 module_samtools=mugqic/samtools/1.3.1
-module_star=mugqic/star/2.5.2a
+module_star=mugqic/star/2.5.4b
 module_tabix=mugqic/tabix/0.2.6
 module_tophat=mugqic/tophat/2.0.14
-module_ucsc=mugqic/ucsc/v326
+module_ucsc=mugqic/ucsc/v359
 module_hicup=mugqic/hicup/v0.5.9
 module_kallisto=mugqic/kallisto/0.44.0
 
@@ -463,7 +463,7 @@ create_kallisto_index() {
       mkdir -p $INDEX_DIR
       ln -s -f -t $INDEX_DIR ../$CDNA
       module load $module_kallisto_dev
-      kallisto index -i $INDEX_DIR/$CDNA.idx $INDEX_DIR/$CDNA > $LOG_DIR/cdna_kallisto_$TIMESTAMP.log 2>&1
+      kallisto index -i $INDEX_DIR/$CDNA.idx $INDEX_DIR/$CDNA > $LOG_DIR/cdna_kallisto_$TIMESTAMP.log 2> $LOG_DIR/cdna_kallisto_$TIMESTAMP.err
 
     else
       echo
@@ -483,17 +483,17 @@ create_transcripts2genes_file() {
       module load $module_R
       module load $module_mugqic_R_packages
       R --no-restore --no-save<<EOF
-      suppressPackageStartupMessages(library(rtracklayer))
-      print("Building transcripts2genes...")
-      gtf_file="$ANNOTATION_GTF"
+suppressPackageStartupMessages(library(rtracklayer))
+print("Building transcripts2genes...")
+gtf_file = "$ANNOTATION_GTF"
 
-      gtf=import(gtf_file, format = "gff2")
-      tx2gene=cbind(tx_id=gtf\$transcript_id, gene_id=gtf\$gene_id) #gene_name
-      tx2gene=tx2gene[!is.na(tx2gene[,1]),]
-      tx2gene=unique(tx2gene)
-      tx2gene=as.data.frame(tx2gene)
+gtf = import(gtf_file, format = "gff2")
+tx2gene = cbind(tx_id=gtf\$transcript_id, gene_id=gtf\$gene_id) #gene_name
+tx2gene = tx2gene[!is.na(tx2gene[,1]),]
+tx2gene = unique(tx2gene)
+tx2gene = as.data.frame(tx2gene)
 
-      write.table(x=tx2gene, file="$ANNOTATION_TX2GENES", sep="\t", col.names=T, row.names=F, quote=F)
+write.table(x=tx2gene, file="$ANNOTATION_TX2GENES", sep="\t", col.names=T, row.names=F, quote=F)
 EOF
     else
       echo
