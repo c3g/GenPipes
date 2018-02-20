@@ -15,7 +15,7 @@ module_tabix=mugqic/tabix/0.2.6
 module_tophat=mugqic/tophat/2.0.14
 module_ucsc=mugqic/ucsc/v326
 module_hicup=mugqic/hicup/v0.5.9
-module_kallisto_dev=mugqic_dev/kallisto/0.43.0
+module_kallisto=mugqic/kallisto/0.44.0
 
 HOST=`hostname`
 
@@ -488,7 +488,7 @@ create_transcripts2genes_file() {
       gtf_file="$ANNOTATION_GTF"
 
       gtf=import(gtf_file, format = "gff2")
-      tx2gene=cbind(tx_id=gtf$transcript_id, gene_id=gtf$gene_id) #gene_name
+      tx2gene=cbind(tx_id=gtf\$transcript_id, gene_id=gtf\$gene_id) #gene_name
       tx2gene=tx2gene[!is.na(tx2gene[,1]),]
       tx2gene=unique(tx2gene)
       tx2gene=as.data.frame(tx2gene)
