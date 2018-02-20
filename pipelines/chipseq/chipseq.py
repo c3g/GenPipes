@@ -42,6 +42,7 @@ from bfx import tools
 from bfx import ucsc
 from bfx import homer
 from bfx import macs2
+from bfx import multiqc
 from pipelines.dnaseq import dnaseq
 
 log = logging.getLogger(__name__)
@@ -885,6 +886,20 @@ done""".format(
             
         return jobs
 
+    def multiqc_report(self):
+        """
+        A quality control report for all samples is generated.
+        For more detailed information about the MultiQc visit: [MultiQc] (http://multiqc.info/)
+        """
+        ## set multiQc config file so we can customize one for every pipeline:
+        jobs = []
+
+        yamlFile = os.path.expandvars(config.param('multiqc_report', 'MULTIQC_CONFIG_PATH'))
+        input_files = [os.path.join(self.output_dirs['homer_output_directory'], sample.name, "tagInfo.txt") for sample in self.samples]
+        job = multiqc.mutliqc_run(yamlFile, input_files)
+
+        jobs.append(job)
+        return jobs
 
     @property
     def steps(self):
@@ -906,7 +921,8 @@ done""".format(
             self.annotation_graphs,
             self.ihec_preprocess_files,
             self.run_spp,
-            self.ihec_metrics
+            self.ihec_metrics,
+            self.multiqc_report
         ]
 
 if __name__ == '__main__': 
