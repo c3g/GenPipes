@@ -462,7 +462,7 @@ create_kallisto_index() {
       echo
       mkdir -p $INDEX_DIR
       ln -s -f -t $INDEX_DIR ../$CDNA
-      module load $module_kallisto_dev
+      module load $module_kallisto
       kallisto index -i $INDEX_DIR/$CDNA.idx $INDEX_DIR/$CDNA > $LOG_DIR/cdna_kallisto_$TIMESTAMP.log 2> $LOG_DIR/cdna_kallisto_$TIMESTAMP.err
 
     else
