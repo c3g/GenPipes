@@ -99,7 +99,6 @@ else
         VERSION=$R_VERSION
 fi
 
-
 ## Paths, mkdirs
 INSTALL_DIR="$INSTALL_DIR/$SOFTWARE/$SOFTWARE-$VERSION"
 MODULEFILE_DIR="$MODULEFILE_DIR/$SOFTWARE"
@@ -120,7 +119,6 @@ echo "The software install location is $INSTALL_DIR"
 echo "The module file directory is $MODULEFILE_DIR"
 echo "The module file is $MODULEFILE"
 echo "The module version file is $MODULEVERSIONFILE"
-
 
 ## Dir creation
 mkdir -p $MODULEFILE_DIR $INSTALL_DIR
@@ -164,132 +162,127 @@ cat > $MODULEVERSIONFILE <<-EOF
 set ModulesVersion $VERSION
 EOF
 
-
-                ## Define Rprofile.site: 
-                # On headless nodes, can only use cairo backend OR have Xvb running
-                # so we can have cairo-devel.x86_64 installed by admins, and then re-compile R. It should
-                # then have cairo support. There is a weird behavior though. Accoring to the R-doc, cairo
-                # is supposed to be set as the default backend -> getOption("bitmapType") on linux instead
-                # of Xlib if cairo is available.
-                # However it is not always the case. Not sure if this is a bug, might have something to do with pango present or not:
-                # http://r.789695.n4.nabble.com/cairo-is-not-the-default-when-available-td4666691.html
-                # http://r.789695.n4.nabble.com/Xll-options-td3725879.html
-                #  so the only other way is to set options(bitmapType="cairo")
-                # This can be set in R/lib64/etc/Rprofile.site, but then R should not be invked with R --vanilla
-                # because vanilla will ignore Rprofile.site.
+## Define Rprofile.site: 
+# On headless nodes, can only use cairo backend OR have Xvb running
+# so we can have cairo-devel.x86_64 installed by admins, and then re-compile R. It should
+# then have cairo support. There is a weird behavior though. Accoring to the R-doc, cairo
+# is supposed to be set as the default backend -> getOption("bitmapType") on linux instead
+# of Xlib if cairo is available.
+# However it is not always the case. Not sure if this is a bug, might have something to do with pango present or not:
+# http://r.789695.n4.nabble.com/cairo-is-not-the-default-when-available-td4666691.html
+# http://r.789695.n4.nabble.com/Xll-options-td3725879.html
+#  so the only other way is to set options(bitmapType="cairo")
+# This can be set in R/lib64/etc/Rprofile.site, but then R should not be invked with R --vanilla
+# because vanilla will ignore Rprofile.site.
 
 cat > $INSTALL_DIR/lib64/R/etc/Rprofile.site <<-'EOF'
 if(capabilities()["cairo"]){ options(bitmapType="cairo") }
 Sys.umask("002")                        
 EOF
 
-
-
-
 fi
 
-#module load mugqic/gcc/4.9.3
-
+## Load the Boost libraries so they are available to any potential packages which needs those during its installation
+module load mugqic/boost
 
 ## Finally, update/install library!
 $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
 
-        #' This script:
-        #' 1) Installs or update all packages hard-coded below
-        #' 2) Installs or updates all Bioconductor org.* packages 
-        #' 3) Installs one non-CRAN/Biocuctor packages (Vennerable)
-        #' 4) Installs "gqUtils","gqSeqUtils","gqData","gqMicroarrays" from the *master* branch of Rpackages i.e.
-        #'       https://bitbucket.org/mugqic/rpackages/get/master.zip
-        #' 5) Grants +rX permission to all and +w to group on package library (.Library)
+    #' This script:
+    #' 1) Installs or update all packages hard-coded below
+    #' 2) Installs or updates all Bioconductor org.* packages 
+    #' 3) Installs one non-CRAN/Biocuctor packages (Vennerable)
+    #' 4) Installs "gqUtils", "gqSeqUtils", "gqData", "gqMicroarrays" from the *master* branch of Rpackages i.e.
+    #'       https://bitbucket.org/mugqic/rpackages/get/master.zip
+    #' 5) Grants +rX permission to all and +w to group on package library (.Library)
 
-        ## Install library path
-        .libPaths(.Library) # useful because e.g. devtools::install() installs in .libPaths()[1], and the latter will be ~/R/... if user library exists...
+    ## Install library path
+    .libPaths(.Library) # useful because e.g. devtools::install() installs in .libPaths()[1], and the latter will be ~/R/... if user library exists...
 
-        ## biocLite
-        source("https://bioconductor.org/biocLite.R")
+    ## biocLite
+    source("https://bioconductor.org/biocLite.R")
 
-        ## RcppArmadillo temporary patch: CentOS 6 is old and using an old gcc (4.4.7) which is incompatible with the latest armadillo libs. The easiest workaround seems to force install
-        # of an archived version of RcppArmadillo. Note that update attempts below will fail with ERROR.
-        # https://github.com/RcppCore/RcppArmadillo/issues/30
-        # http://stackoverflow.com/questions/27296522/rcpparmadillo-failing-to-install-on-centos
-        biocLite("RcppArmadillo",ask=FALSE) # despite failing, this will install Rcpparmadillo dependencies for us
-        rcpp.armadillo.archive="RcppArmadillo_0.4.500.0.tar.gz"
-        download.file(sprintf("https://cran.r-project.org/src/contrib/Archive/RcppArmadillo/%s",rcpp.armadillo.archive),destfile=rcpp.armadillo.archive)
-        install.packages(rcpp.armadillo.archive,repos=NULL,type="source",lib=.Library)
+    ## RcppArmadillo temporary patch: CentOS 6 is old and using an old gcc (4.4.7) which is incompatible with the latest armadillo libs. The easiest workaround seems to force install
+    # of an archived version of RcppArmadillo. Note that update attempts below will fail with ERROR.
+    # https://github.com/RcppCore/RcppArmadillo/issues/30
+    # http://stackoverflow.com/questions/27296522/rcpparmadillo-failing-to-install-on-centos
+    biocLite("RcppArmadillo", ask=FALSE) # despite failing, this will install Rcpparmadillo dependencies for us
+    rcpp.armadillo.archive="RcppArmadillo_0.4.500.0.tar.gz"
+    download.file(sprintf("https://cran.r-project.org/src/contrib/Archive/RcppArmadillo/%s", rcpp.armadillo.archive), destfile=rcpp.armadillo.archive)
+    install.packages(rcpp.armadillo.archive, repos=NULL, type="source", lib=.Library)
 
-        ## Define the list of packages to standard packages to install.
-        deps = c("affxparser","affy","affyio","affyPLM","akima","annotate","AnnotationDbi"
-        ,"AnnotationForge","ape","ash","ballgown","BatchExperiments","BatchJobs","beanplot","Biobase","BiocGenerics"
-        ,"BiocInstaller","bioDist","biomaRt","Biostrings","biovizBase","bit", "bit64"
-        ,"bitops","boot","brew","BSgenome","caTools","charm","charmData","circlize","class"
-        ,"cluster","clusterStab","clusterProfiler","codetools","colorspace","ConsensusClusterPlus","corpcor","crlmm","ctc"
-        ,"cummeRbund","datasets", "data.table", "DBI", "DESeq","devtools","dendextend","dichromat","digest","dplyr","DNAcopy"
-        ,"edgeR","ellipse","evaluate","fastcluster","ff","fields","FDb.InfiniumMethylation.hg19"
-        ,"foreach","foreign","gcrma","gdata","genefilter","GenomicFeatures"
-        ,"GenomicRanges","genoset","GEOquery","ggplot2","ggvis","googleVis","goseq"
-        ,"gplots","graph","gsalib","gtable","gtools"
-        ,"Gviz","hdrcde","Hmisc","hwriter","HTqPCR","HTSFilter","hopach","igraph"
-        ,"IlluminaHumanMethylation450kmanifest","IlluminaHumanMethylation450kanno.ilmn12.hg19","impute","IRanges","iterators"
-        ,"KernSmooth","ks","labeling","lattice","latticeExtra","limma","locfit"
-        ,"lumi","LVSmiRNA","magrittr","maps","markdown","MASS","Matrix","matrixStats","mclust"
-        ,"memoise","methyAnalysis","methylumi","mgcv","minfi","mirbase.db","misc3d"
-        ,"multtest","munsell","mvtnorm","NBPSeq","nleqslv","nlme","NMF"
-        ,"nnet","nondetects","nor1mix","Nozzle.R1","oligo","oligoClasses","optparse","outliers"
-        ,"pd.charm.hg18.example","pheatmap","plotrix","plyr","plyr","preprocessCore"
-        ,"proto","quantreg","R2HTML","RBGL","RColorBrewer","Rcpp","RcppEigen","RCurl","rhdf5"
-        ,"ReportingTools","reshape","reshape2","rgl","RJSONIO", "Rmisc", "R.methodsS3","rmarkdown","roxygen2"
-        ,"rpart","Rsamtools","RSQLite","rtracklayer", "Rtsne", "scales","sendmailR","shiny","ShortRead","siggenes","sleuth","snow"
-        ,"SNPchip","SortableHTMLTables","spam","SparseM","spatial","SQN"
-        ,"statmod","stringr","survival","sva","testthat","tidyr"
-        ,"TxDb.Hsapiens.UCSC.hg19.knownGene","vioplot","vsn"
-        ,"WriteXLS","XML","xtable","zlibbioc")
+    ## Define the list of packages to standard packages to install.
+    deps = c("affxparser", "affy", "affyio", "affyPLM", "akima", "allgown", "annotate", "AnnotationDbi", "AnnotationForge", "ape", "ash", "ASCAT",
+    "BatchExperiments", "BatchJobs", "beanplot", "Biobase", "BiocGenerics", "BiocInstaller", "bioDist", "biomaRt", "Biostrings", "biovizBase", "bit",
+    "bit64", "bitops", "boot", "brew", "BSgenome",
+    "caTools", "charm", "charmData", "circlize", "class", "cluster", "clusterStab", "clusterProfiler", "codetools", "colorspace", "ConsensusClusterPlus",
+    "corpcor", "crlmm", "ctc", "cummeRbund",
+    "datasets", "data.table", "DBI", "DESeq", "devtools", "dendextend", "dichromat", "digest", "dplyr", "DNAcopy",
+    "edgeR", "ellipse", "evaluate",
+    "fastcluster", "ff", "fields", "FDb.InfiniumMethylation.hg19", "foreach", "foreign",
+    "gcrma", "gdata", "genefilter", "GenomicFeatures", "GenomicRanges", "genoset", "GEOquery", "ggplot2", "ggvis", "googleVis", "goseq", "gplots", "graph",
+    "gsalib", "gtable", "gtools", "Gviz",
+    "hdrcde", "Hmisc", "hwriter", "HTqPCR", "HTSFilter", "hopach",
+    "igraph", "IlluminaHumanMethylation450kmanifest", "IlluminaHumanMethylation450kanno.ilmn12.hg19", "impute", "IRanges", "iterators",
+    "KernSmooth", "ks",
+    "labeling", "lattice", "latticeExtra", "limma", "locfit", "lumi", "LVSmiRNA",
+    "magrittr", "maps", "markdown", "MASS", "Matrix", "matrixStats", "mclust", "memoise", "methyAnalysis", "methylumi", "mgcv", "minfi", "mirbase.db",
+    "misc3d", "multtest", "munsell", "mvtnorm",
+    "NBPSeq", "nleqslv", "nlme", "NMF", "nnet", "nondetects", "nor1mix", "Nozzle.R1",
+    "oligo", "oligoClasses", "optparse", "outliers",
+    "pd.charm.hg18.example", "pheatmap", "plotrix", "plyr", "plyr", "preprocessCore", "proto",
+    "qqman", "quantreg",
+    "R2HTML", "RBGL", "RColorBrewer", "Rcpp", "RcppEigen", "RCurl", "rhdf5", "ReportingTools", "reshape", "reshape2", "rgl", "RJSONIO", "Rmisc", "R.methodsS3",
+    "rmarkdown", "roxygen2", "rpart", "Rsamtools", "RSQLite", "rtracklayer", "Rtsne",
+    "scales", "sendmailR", "Seurat", "shiny", "ShortRead", "siggenes", "sleuth", "snow", "SNPchip", "SortableHTMLTables", "spam", "SparseM", "spatial", "SQN",
+    "statmod", "stringr", "survival", "sva",
+    "testthat", "tidyr", "TxDb.Hsapiens.UCSC.hg19.knownGene",
+    "vioplot", "vsn",
+    "WriteXLS",
+    "XML", "xtable",
+    "zlibbioc")
 
         ## Programmatically add all the org packages (excluding MeSH mess which takes too long)
         contribUrl = contrib.url(biocinstallRepos(), type = 'source')
         availPkgs  = available.packages(contribUrl, type = 'source')    
         org.packages = rownames(availPkgs)[grepl("^org", rownames(availPkgs))]
-        org.packages = org.packages[!grepl("^org.MeSH.",org.packages)]
-        deps = c(deps,org.packages)
+        org.packages = org.packages[!grepl("^org.MeSH.", org.packages)]
+        deps = c(deps, org.packages)
 
         ## Install pkgs not already installed, with ask=FALSE biocLite() takes care of updating if necessary
         biocLite(ask=FALSE)
-        deps = setdiff(deps,rownames(installed.packages())) # Define packages that need actual install
-        biocLite(deps,lib=.Library,ask=FALSE)
-        deps = setdiff(deps,rownames(installed.packages()))
-        biocLite(deps,lib=.Library,ask=FALSE) # twice, just to make sure
-
+        deps = setdiff(deps, rownames(installed.packages())) # Define packages that need actual install
+        biocLite(deps, lib=.Library, ask=FALSE)
+        deps = setdiff(deps, rownames(installed.packages()))
+        biocLite(deps, lib=.Library, ask=FALSE) # twice, just to make sure
 
         ## Install Vennerable, since not yet in CRAN
-        install.packages("Vennerable", repos="https://R-Forge.R-project.org",lib=.Library, type='source')
+        install.packages("Vennerable", repos="https://R-Forge.R-project.org", lib=.Library, type='source')
         ## Force Rmarkdown and knitr, not available fot R 3.2
         install.packages('knitr', repos='http://cran.rstudio.org')
         install.packages('rmarkdown', repos='http://cran.rstudio.org')
-EOF
+
+        require(devtools)
+        ## SPP
+        devtools::install_github('hms-dbmi/spp')
         ## Sleuth
 #       devtools::install_github("pachterlab/sleuth")
-
-
-#EOF
-
+EOF
 
 echo "R packages installation done."
-
 
 ## Adjust permissions
 chmod -R ug+rwX  $INSTALL_DIR $MODULEFILE $MODULEVERSIONFILE
 chmod -R o+rX    $INSTALL_DIR $MODULEFILE $MODULEVERSIONFILE
 
-
-
 exit 0 ;
-
 
 # ### Blurb to test graphics
 # # module load mugqic/R/3.0.2
 # # R --no-save <<'EOF'
 #  capabilities()
-#  getOption("bitmapType") # returns default bitmap device: abacus=cairo,guil=cairo,mp2=Xlib
-#  jpeg("temp.jpeg")#,type='cairo')
+#  getOption("bitmapType") # returns default bitmap device: abacus=cairo, guil=cairo, mp2=Xlib
+#  jpeg("temp.jpeg")#, type='cairo')
 #  plot(1)
 #  dev.off()
 # # EOF
@@ -301,13 +294,11 @@ exit 0 ;
 
 # #     require(roxygen2)
 #       require(devtools)
-#       deps = c("gqUtils","gqSeqUtils","gqData","gqMicroarrays")
-#       download.file("https://bitbucket.org/mugqic/rpackages/get/master.zip",destfile='.packages.zip',method='wget')
-#       unzip(".packages.zip",exdir='.packages')
-#       deps = file.path( list.files(".packages",full.names=TRUE), deps )
-# #     sapply(deps,roxygenize) # msg sent to R-help; roxygen2 not available R 3.0.0 or 3.0.1 !!!
+#       deps = c("gqUtils", "gqSeqUtils", "gqData", "gqMicroarrays")
+#       download.file("https://bitbucket.org/mugqic/rpackages/get/master.zip", destfile='.packages.zip', method='wget')
+#       unzip(".packages.zip", exdir='.packages')
+#       deps = file.path( list.files(".packages", full.names=TRUE), deps )
+# #     sapply(deps, roxygenize) # msg sent to R-help; roxygen2 not available R 3.0.0 or 3.0.1 !!!
 #       install_local(deps)
-#       unlink(c(".packages.zip",".packages"),recursive=TRUE)
-
-
+#       unlink(c(".packages.zip", ".packages"), recursive=TRUE)
 
