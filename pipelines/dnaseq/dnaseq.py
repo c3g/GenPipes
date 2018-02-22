@@ -47,6 +47,9 @@ from bfx import samtools
 from bfx import snpeff
 from bfx import tools
 from bfx import vcftools
+from bfx import bcftools
+from bfx import tabix
+from bfx import forge_tools
 from pipelines import common
 
 log = logging.getLogger(__name__)
@@ -84,7 +87,8 @@ class DnaSeq(common.Illumina):
     def __init__(self, protocol=None):
         self._protocol=protocol
         # Add pipeline specific arguments
-        self.argparser.add_argument("-t", "--type", help = "DNAseq analysis type", choices = ["mugqic", "mpileup", "forge"], default="mugqic")
+        self.argparser.add_argument("-t", "--type", help = "DNAseq analysis type", choices = ["mugqic", "mpileup", "forge"], default="forge")
+        self.argparser.add_argument("--familyinfo", help="a file that includes family ids followed by a comma-separated list of member ids on each line", type=file)
         super(DnaSeq, self).__init__(protocol)
 
 
@@ -93,6 +97,23 @@ class DnaSeq(common.Illumina):
         if not hasattr(self, "_sequence_dictionary"):
             self._sequence_dictionary = parse_sequence_dictionary_file(config.param('DEFAULT', 'genome_dictionary', type='filepath'),variant=False)
         return self._sequence_dictionary
+
+    @property
+    def family_info(self):
+        if not self.args.familyinfo:
+            return None
+        if not hasattr(self, "_family_info"):
+            self._family_info = {}
+            family_info_file = self.args.familyinfo.name
+            with open(family_info_file, 'r') as f:
+                for line in f:
+                    tmp = line.split()
+                    family_id = tmp[0]
+                    member_list = tmp[1].split(",")
+                    if family_id in self._family_info:
+                        raise Exception("Error: Duplicate family id:" + family_id)
+                    self._family_info.setdefault(family_id, member_list)
+        return self._family_info
 
     def bwa_mem_picard_sort_sam(self):
         """
