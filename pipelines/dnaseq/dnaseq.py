@@ -953,6 +953,33 @@ pandoc \\
                     windows.append(sequence['name'] + ":" + str(start) + "-" + str(end))
             return windows
 
+    def split_multiSampleToFamilyVCF(self):
+        """
+        Divide the multi-sample variants/allSamples.hc.vqsr.vcf and variants/allSamples.hc.vcf.bgz files into single sample files
+        """
+
+        jobs = []
+        VQSRinput = "variants/allSamples.hc.vqsr.vcf"
+
+        if self.family_info:
+            for family_id in self.family_info:
+                out_dir = os.path.join("variants", "family_" + family_id)
+                output_vqsr = os.path.join(out_dir, family_id + ".hc.vqsr.vcf")
+                member_list = self.family_info[family_id]
+                jobs.append(concat_jobs([
+                    Job(command="mkdir -p " + out_dir),
+                    bcftools.multiSample2familyVCF(VQSRinput, member_list, output_vqsr)
+                    ], name="spllit-multiSampleToFamilyVCF_"+family_id))
+        else:
+            for sample in self.samples:   
+                out_dir = os.path.join("variants", "sample_" + sample.name)
+                output_vqsr = os.path.join(out_dir, sample.name + ".hc.vqsr.vcf") 
+                jobs.append(concat_jobs([
+                    Job(command="mkdir -p " + out_dir),
+                    bcftools.multiSample2familyVCF(VQSRinput, sample.name, output_vqsr)
+                    ], name="split_multiToSingleSampleVCF_"+sample.name))
+        return jobs
+
     def rawmpileup(self):
         """
         Full pileup (optional). A raw mpileup file is created using samtools mpileup and compressed in gz format.
@@ -1427,7 +1454,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             self.combine_gvcf,
             self.merge_and_call_combined_gvcf,
             self.variant_recalibrator,
-            self.dna_sample_metrics]
+            self.dna_sample_metrics,
+            self.split_multiSampleToFamilyVCF]
         ]
 
 if __name__ == '__main__':

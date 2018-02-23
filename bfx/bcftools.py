@@ -127,3 +127,22 @@ bcftools \\
         )
     )
 
+def multiSample2familyVCF(input, samples, output):
+    """
+    Split multiple-sample VCF files into family/single sample files
+    """
+    return Job(
+        [input],
+        [output],
+        [
+            ['bcftools_view', 'module_bcftools']
+        ],
+        command="""\
+bcftools \\
+  view -c1 -Ov -s {samples} -U -o \\
+  {output} {input}""".format(
+        input=input,
+        samples=",".join(samples) if not isinstance(samples,str) else samples,
+        output=output
+        )
+    )
