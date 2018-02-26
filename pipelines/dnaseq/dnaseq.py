@@ -50,6 +50,7 @@ from bfx import vcftools
 from bfx import bcftools
 from bfx import tabix
 from bfx import forge_tools
+from bfx import varscan
 from pipelines import common
 
 log = logging.getLogger(__name__)
@@ -1370,6 +1371,68 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
         return jobs
 
+    def varscan_per_region(self):
+        """
+	Call varscan (mpileup2cns) on the mpileup file of each chromosome region
+        """
+
+        jobs = []
+        input_bams = [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam") for sample in self.samples]
+        nb_jobs = config.param('varscan_per_region', 'approximate_nb_jobs', type='posint')
+        bcftools_view_options = config.param('varscan_per_region', 'bcftools_view_options')
+        output_directory = "variants/rawVarscan"
+        vcf_sample_list = os.path.join("variants", "samples.list")
+        samples_list = [sample.name for sample in self.samples]
+
+        jobs.append(Job(input_files=input_bams, output_files=[vcf_sample_list], command='echo -e "' + "\\n".join(samples_list)+'" > ' + vcf_sample_list, name="create_sample_name"))
+
+        if nb_jobs == 1:
+            jobs.append(concat_jobs([
+                Job(input_files=[vcf_sample_list], command="mkdir -p " + output_directory, samples=self.samples),
+                pipe_jobs([
+                    samtools.mpileup(input_bams, None, config.param('varscan_per_region', 'mpileup_other_options')),
+                    varscan.mpileupcns("-", os.path.join(output_directory, "allSamples.varscan.vcf"), vcf_sample_list, config.param('varscan_per_region', 'other_options')),
+                Job(command="bgzip " + os.path.join(output_directory, "allSamples.varscan.vcf")),
+                tabix.tabix_index(os.path.join(output_directory, "allSamples.varscan.vcf.gz"), "vcf")
+                ])], name="varscan_per_region.allSamples"))
+
+        else:
+            for region in self.generate_approximate_windows(nb_jobs):
+                if not ('chrUn' in region or 'random' in region or 'EBV' in region):
+                        vcf_prefix = os.path.join(output_directory, "allSamples." + region + ".varscan.vcf")
+			jobs.append(concat_jobs([
+			    Job(input_files=[vcf_sample_list], command="mkdir -p " + output_directory, samples=self.samples),
+			    pipe_jobs([
+				samtools.mpileup(input_bams, None, config.param('varscan_per_region', 'mpileup_other_options'), region),
+				varscan.mpileupcns("-", vcf_prefix, vcf_sample_list, config.param('varscan_per_region', 'other_options'))]),
+                            Job(output_files=[vcf_prefix + ".gz"], command="bgzip " + vcf_prefix),
+                            tabix.tabix_index(vcf_prefix + ".gz", "vcf")
+			    ], name="varscan_per_region.allSamples." + re.sub(":", "_", region)))
+
+        return jobs
+
+    def merge_varscan(self):
+        """
+        Merge the varscan vcf files generated for each chromosome region by the "varscan_per_region" step
+        """
+
+        jobs=[]
+        nb_jobs = config.param('varscan_per_region', 'approximate_nb_jobs', type='posint')
+
+        if nb_jobs == 1:
+            inputs = ["variants/rawVarscan/allSamples.varscan.vcf"]
+        else:
+	    inputs = ["variants/rawVarscan/allSamples." + region + ".varscan.vcf.gz" for region in self.generate_approximate_windows(nb_jobs) if not ('chrUn' in region or 'random' in region or 'EBV' in region)]
+        output_file = "variants/allSamples.merged.varscan.vcf"
+
+        jobs.append(concat_jobs([
+            Job(samples=self.samples),
+            samtools.bcftools_cat(inputs, output_file)
+        ], name = "merge_varscan"))
+
+        return jobs
+ 
+
     @property
     def steps(self):
         return [
@@ -1455,6 +1518,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             self.merge_and_call_combined_gvcf,
             self.variant_recalibrator,
             self.dna_sample_metrics,
+            self.varscan_per_region,
+            self.merge_varscan,
             self.split_multiSampleToFamilyVCF]
         ]
 
