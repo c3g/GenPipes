@@ -8,13 +8,9 @@ ARCHIVE="v$VERSION.tar.gz"
 ARCHIVE_URL="https://github.com/pachterlab/$SOFTWARE/archive/v$VERSION.tar.gz"
 SOFTWARE_DIR=$SOFTWARE-$VERSION  
 
-
-# Specific commands to extract and build the software
-# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
-# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
-  tar zxvf $ARCHIVE  ## TO BE MODIFIED WITH SPECIFIC COMMAND
+  tar zxvf $ARCHIVE
 
   cd $SOFTWARE_DIR
   module load mugqic/HDF5 mugqic/autoconf
@@ -27,6 +23,7 @@ build() {
   mkdir build
   cd build
 
+  module load mugqic/HDF5 mugqic/autoconf 
   cmake -DCMAKE_INSTALL_PREFIX:PATH=$INSTALL_DIR/$SOFTWARE_DIR ..
   make
   make install

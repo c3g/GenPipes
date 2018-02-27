@@ -6,16 +6,16 @@ module_bowtie=mugqic/bowtie/1.1.2
 module_bowtie2=mugqic/bowtie2/2.2.9
 module_bwa=mugqic/bwa/0.7.12
 module_java=mugqic/java/openjdk-jdk1.8.0_72
-module_mugqic_R_packages=mugqic/mugqic_R_packages/1.0.3
+module_mugqic_R_packages=mugqic/mugqic_R_packages/1.0.5
 module_picard=mugqic/picard/2.0.1
-module_R=mugqic/R_Bioconductor/3.1.2_3.0
+module_R=mugqic/R_Bioconductor/3.4.2_3.6
 module_samtools=mugqic/samtools/1.3.1
-module_star=mugqic/star/2.5.2a
+module_star=mugqic/star/2.5.4b
 module_tabix=mugqic/tabix/0.2.6
 module_tophat=mugqic/tophat/2.0.14
-module_ucsc=mugqic/ucsc/v326
+module_ucsc=mugqic/ucsc/v359
 module_hicup=mugqic/hicup/v0.5.9
-module_kallisto_dev=mugqic_dev/kallisto/0.43.0
+module_kallisto=mugqic/kallisto/0.44.0
 
 HOST=`hostname`
 
@@ -96,6 +96,7 @@ set_urls() {
     URL_PREFIX=ftp://ftp.ensembl.org/pub/release-$VERSION
     GENOME_URL=$URL_PREFIX/fasta/${SPECIES,,}/dna/$SPECIES.$ASSEMBLY.dna.primary_assembly.fa.gz
     NCRNA_URL=$URL_PREFIX/fasta/${SPECIES,,}/ncrna/$SPECIES.$ASSEMBLY.ncrna.fa.gz
+    CDNA_URL=$URL_PREFIX/fasta/${SPECIES,,}/cdna/$SPECIES.$ASSEMBLY.cdna.all.fa.gz
     GTF_URL=$URL_PREFIX/gtf/${SPECIES,,}/$SPECIES.$ASSEMBLY.$VERSION.gtf.gz
     VCF_URL=$URL_PREFIX/variation/vcf/${SPECIES,,}/$SPECIES.vcf.gz
     VCF_TBI_URL=$VCF_URL.tbi
@@ -113,6 +114,7 @@ set_urls() {
     then
       GENOME_URL=${GENOME_URL/$SPECIES.$ASSEMBLY/$SPECIES.$ASSEMBLY.$VERSION}
       NCRNA_URL=${NCRNA_URL/$SPECIES.$ASSEMBLY/$SPECIES.$ASSEMBLY.$VERSION}
+      CDNA_URL=${CDNA_URL/$SPECIES.$ASSEMBLY/$SPECIES.$ASSEMBLY.$VERSION}
     fi
 
     # Check if a genome primary assembly is available for this species, otherwise use the toplevel assembly
@@ -166,6 +168,7 @@ set_urls() {
     URL_PREFIX=$RELEASE_URL/${DIVISION,}
     GENOME_URL=$URL_PREFIX/fasta/$EG_SPECIES/dna/$EG_BASENAME.dna.genome.fa.gz
     NCRNA_URL=$URL_PREFIX/fasta/$EG_SPECIES/ncrna/$EG_BASENAME.ncrna.fa.gz
+    CDNA_URL=$URL_PREFIX/fasta/$EG_SPECIES/cdna/$EG_BASENAME.cdna.all.fa.gz
     GTF_URL=$URL_PREFIX/gtf/$EG_SPECIES/$EG_BASENAME.gtf.gz
     if [[ `echo "$SPECIES_LINE" | cut -f8` == "Y"  ]]
     then
@@ -198,6 +201,7 @@ download_urls() {
   then
     download_url $GTF_URL
     download_url $NCRNA_URL
+    download_url $CDNA_URL
     if [ ! -z "${VCF_URL:-}" ]
     then
       download_url $VCF_URL
@@ -458,8 +462,8 @@ create_kallisto_index() {
       echo
       mkdir -p $INDEX_DIR
       ln -s -f -t $INDEX_DIR ../$CDNA
-      module load $module_kallisto_dev
-      kallisto index -i $INDEX_DIR/$CDNA.idx $INDEX_DIR/$CDNA > $LOG_DIR/cdna_kallisto_$TIMESTAMP.log 2>&1
+      module load $module_kallisto
+      kallisto index -i $INDEX_DIR/$CDNA.idx $INDEX_DIR/$CDNA > $LOG_DIR/cdna_kallisto_$TIMESTAMP.log 2> $LOG_DIR/cdna_kallisto_$TIMESTAMP.err
 
     else
       echo
@@ -479,17 +483,17 @@ create_transcripts2genes_file() {
       module load $module_R
       module load $module_mugqic_R_packages
       R --no-restore --no-save<<EOF
-      suppressPackageStartupMessages(library(rtracklayer))
-      print("Building transcripts2genes...")
-      gtf_file="$ANNOTATION_GTF"
+suppressPackageStartupMessages(library(rtracklayer))
+print("Building transcripts2genes...")
+gtf_file = "$ANNOTATION_GTF"
 
-      gtf=import(gtf_file, format = "gff2")
-      tx2gene=cbind(tx_id=gtf$transcript_id, gene_id=gtf$gene_id) #gene_name
-      tx2gene=tx2gene[!is.na(tx2gene[,1]),]
-      tx2gene=unique(tx2gene)
-      tx2gene=as.data.frame(tx2gene)
+gtf = import(gtf_file, format = "gff2")
+tx2gene = cbind(tx_id=gtf\$transcript_id, gene_id=gtf\$gene_id) #gene_name
+tx2gene = tx2gene[!is.na(tx2gene[,1]),]
+tx2gene = unique(tx2gene)
+tx2gene = as.data.frame(tx2gene)
 
-      write.table(x=tx2gene, file="$ANNOTATION_TX2GENES", sep="\t", col.names=T, row.names=F, quote=F)
+write.table(x=tx2gene, file="$ANNOTATION_TX2GENES", sep="\t", col.names=T, row.names=F, quote=F)
 EOF
     else
       echo
@@ -634,6 +638,7 @@ copy_files() {
     TRANSCRIPT_ID_GTF=$ANNOTATIONS_DIR/${GTF/.gtf/.transcript_id.gtf}
     if ! is_up2date $TRANSCRIPT_ID_GTF ; then grep -P "(^#|transcript_id)" $ANNOTATIONS_DIR/$GTF > $TRANSCRIPT_ID_GTF ; fi
     if ! is_up2date $ANNOTATIONS_DIR/$NCRNA ; then gunzip -c `download_path $NCRNA_URL` > $ANNOTATIONS_DIR/$NCRNA ; fi
+    if ! is_up2date $ANNOTATIONS_DIR/$CDNA ; then gunzip -c `download_path $CDNA_URL` > $ANNOTATIONS_DIR/$CDNA ; fi
 
     # Create rRNA FASTA as subset of ncRNA FASTA keeping only sequences with "rRNA" (ignore case) in their descriptions
     if [ $(grep -q -i "rRNA" $ANNOTATIONS_DIR/$NCRNA)$? == 0 ]
@@ -682,6 +687,12 @@ copy_files() {
         fi
       fi
     fi
+
+    if ! is_up2date $ANNOTATIONS_DIR/$CDNA
+    then
+      echo "Could not find $ANNOTATIONS_DIR/$CDNA...\nyou might consider to use the ncrna.fa file from Ensembl... "
+    fi
+
   fi
 }
 
