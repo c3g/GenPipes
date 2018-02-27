@@ -51,6 +51,7 @@ from bfx import bcftools
 from bfx import tabix
 from bfx import forge_tools
 from bfx import varscan
+from bfx import freebayes
 from pipelines import common
 
 log = logging.getLogger(__name__)
@@ -1392,8 +1393,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 pipe_jobs([
                     samtools.mpileup(input_bams, None, config.param('varscan_per_region', 'mpileup_other_options')),
                     varscan.mpileupcns("-", os.path.join(output_directory, "allSamples.varscan.vcf"), vcf_sample_list, config.param('varscan_per_region', 'other_options')),
-                Job(command="bgzip " + os.path.join(output_directory, "allSamples.varscan.vcf")),
-                tabix.tabix_index(os.path.join(output_directory, "allSamples.varscan.vcf.gz"), "vcf")
+                Job(module_entries=[['varscan_per_region','module_tabix']], command="bgzip " + os.path.join(output_directory, "allSamples.varscan.vcf")),
+                Job(module_entries=[['varscan_per_region','module_tabix']], command="tabix " + os.path.join(output_directory, "allSamples.varscan.vcf.gz") + " -p vcf")
                 ])], name="varscan_per_region.allSamples"))
 
         else:
@@ -1405,8 +1406,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 			    pipe_jobs([
 				samtools.mpileup(input_bams, None, config.param('varscan_per_region', 'mpileup_other_options'), region),
 				varscan.mpileupcns("-", vcf_prefix, vcf_sample_list, config.param('varscan_per_region', 'other_options'))]),
-                            Job(output_files=[vcf_prefix + ".gz"], command="bgzip " + vcf_prefix),
-                            tabix.tabix_index(vcf_prefix + ".gz", "vcf")
+                            Job(output_files=[vcf_prefix + ".gz"], module_entries=[['varscan_per_region','module_tabix']], command="bgzip " + vcf_prefix),
+                            Job(module_entries=[['varscan_per_region','module_tabix']], command="tabix " + vcf_prefix + ".gz" + " -p vcf")
 			    ], name="varscan_per_region.allSamples." + re.sub(":", "_", region)))
 
         return jobs
@@ -1416,11 +1417,11 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         Merge the varscan vcf files generated for each chromosome region by the "varscan_per_region" step
         """
 
-        jobs=[]
+        jobs = []
         nb_jobs = config.param('varscan_per_region', 'approximate_nb_jobs', type='posint')
 
         if nb_jobs == 1:
-            inputs = ["variants/rawVarscan/allSamples.varscan.vcf"]
+            inputs = ["variants/rawVarscan/allSamples.varscan.vcf.gz"]
         else:
 	    inputs = ["variants/rawVarscan/allSamples." + region + ".varscan.vcf.gz" for region in self.generate_approximate_windows(nb_jobs) if not ('chrUn' in region or 'random' in region or 'EBV' in region)]
         output_file = "variants/allSamples.merged.varscan.vcf"
@@ -1431,7 +1432,59 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         ], name = "merge_varscan"))
 
         return jobs
- 
+
+    def freebayes_per_region(self):
+        """
+        Perform freebayes on each chromosome region
+        """
+
+        jobs = []
+        input_bams = [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam") for sample in self.samples]
+        nb_jobs = config.param('freebayes_per_region', 'approximate_nb_jobs', type='posint')
+        output_directory = "variants/rawFreebayes"
+
+        if nb_jobs == 1:
+            jobs.append(concat_jobs([
+                Job(input_files=[vcf_sample_list], command="mkdir -p " + output_directory, samples=self.samples),
+                freebayes.freebayes_varcall(input_bams, os.path.join(output_directory, "allSamples.freebayes.vcf")),
+                Job(module_entries=[['freebayes_per_region','module_tabix']], command="bgzip " + os.path.join(output_directory, "allSamples.freebayes.vcf")),
+                Job(module_entries=[['freebayes_per_region','module_tabix']], command="tabix " + os.path.join(output_directory, "allSamples.freebayes.vcf.gz") + " -p vcf")
+                ], name="freebayes_per_region.allSamples"))
+
+        else:
+            for region in self.generate_approximate_windows(nb_jobs):
+                if not ('chrUn' in region or 'random' in region or 'EBV' in region):
+                        output_vcf = os.path.join(output_directory, "allSamples." + region + ".freebayes.vcf")
+                        jobs.append(concat_jobs([
+                            Job(command="mkdir -p " + output_directory, samples=self.samples),
+                            freebayes.freebayes_varcall(input_bams, output_vcf, region),
+                            Job(module_entries=[['freebayes_per_region','module_tabix']], output_files=[output_vcf + ".gz"], command="bgzip " + output_vcf),
+                            Job(module_entries=[['freebayes_per_region','module_tabix']], command="tabix " + output_vcf + ".gz" + " -p vcf")
+                            ], name="freebayes_per_region.allSamples." + re.sub(":", "_", region)))
+
+        return jobs
+
+    def merge_freebayes(self):
+        """
+        Merge the freebayes vcf files generated for each chromosome region by the "freebayes_per_region" step
+        """
+
+        jobs = []
+        nb_jobs = config.param('freebayes_per_region', 'approximate_nb_jobs', type='posint')
+
+        if nb_jobs == 1:
+            inputs = ["variants/rawFreebayes/allSamples.freebayes.vcf"]
+        else:
+            inputs = ["variants/rawFreebayes/allSamples." + region + ".freebayes.vcf.gz" for region in self.generate_approximate_windows(nb_jobs) if not ('chrUn' in region or 'random' in region or 'EBV' in region)]
+        output_file = "variants/allSamples.merged.freebayes_C10.vcf"
+
+        jobs.append(concat_jobs([
+            Job(samples=self.samples),
+            samtools.bcftools_cat(inputs, output_file)
+        ], name = "merge_freebayes"))
+
+        return jobs
+
 
     @property
     def steps(self):
@@ -1520,6 +1573,10 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             self.dna_sample_metrics,
             self.varscan_per_region,
             self.merge_varscan,
+            self.freebayes_per_region,
+            self.merge_freebayes,
+            self.snp_and_indel_bcf,
+            self.merge_filter_bcf,
             self.split_multiSampleToFamilyVCF]
         ]
 
