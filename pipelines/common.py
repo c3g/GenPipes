@@ -383,7 +383,9 @@ pandoc \\
 
         # Known variants file
         population_AF = config.param('verify_bam_id', 'population_AF', required=False)
-        known_variants_annotated = config.param('verify_bam_id', 'verifyBamID_variants_file', required=False)
+        candidate_input_files = [[config.param('verify_bam_id', 'verifyBamID_variants_file', required=False)]]
+        candidate_input_files.append([config.param('verify_bam_id', 'verifyBamID_variants_file', required=False) + ".gz"])
+        [known_variants_annotated] = self.select_input_files(candidate_input_files)
         verify_bam_id_directory = "verify_bam_id"
         variants_directory = "variants"
 
