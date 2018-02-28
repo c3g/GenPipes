@@ -98,4 +98,4 @@ python -c 'import sklearn; print sklearn.__version__; print sklearn.__file__'
 $PIP_PATH install --upgrade RSeQC
 
 #A permissions
-chmod -R ug+rwX,o+rX-w $PYTHON_HOME
+chmod -R ug+rwX,o+rX-w $PYTHONHOME

@@ -2,21 +2,29 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=cellranger
-VERSION=2.1.1
-ARCHIVE=$SOFTWARE-$VERSION.tar.gz
-# cellranger archive has to be manually downloaded from https://support.10xgenomics.com/single-cell/software/downloads/latest
-# and then stored in $MUGQIC_INSTALL_HOME/archive/ or/and $MUGQIC_INSTALL_HOME_DEV/archive/
-ARCHIVE_URL=
-SOFTWARE_DIR=$SOFTWARE-$VERSION
+SOFTWARE="Prokka"
+VERSION="1.12"
+ARCHIVE=${SOFTWARE,}-$VERSION.tar.gz
+ARCHIVE_URL=http://www.vicbioinformatics.com/$ARCHIVE
+SOFTWARE_DIR=${SOFTWARE,}-$VERSION
 
+# Specific commands to extract and build the software
+# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
+# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
   tar zxvf $ARCHIVE
 
-  # Move software
+  # Install software
   cd $INSTALL_DOWNLOAD
   mv -i $SOFTWARE_DIR $INSTALL_DIR/
+
+  MODULE_PERL=mugqic/perl/5.22.1
+  MODULE_BLAST=mugqic/blast/2.3.0+
+  cd $INSTALL_DIR/$SOFTWARE_DIR/bin
+  module load $MODULE_PERL $MODULE_BLAST
+  ./prokka --setupdb
+  
 }
 
 module_file() {
@@ -28,7 +36,7 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-prepend-path    PATH                \$root
+prepend-path    PATH                \$root/bin
 "
 }
 

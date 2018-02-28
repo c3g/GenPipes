@@ -101,7 +101,7 @@ Usage
                 config.filepath = os.path.abspath(config_trace.name)
 
             self._output_dir = os.path.abspath(self.args.output_dir)
-            self._scheduler = create_scheduler(self.args.job_scheduler)
+            self._scheduler = create_scheduler(self.args.job_scheduler, self.args.config)
 
             step_counter = collections.Counter(step_list)
             duplicated_steps = [step.__name__ for step in step_counter if step_counter[step] > 1]
@@ -162,6 +162,7 @@ Steps:
             self._argparser.add_argument("-o", "--output-dir", help="output directory (default: current)", default=os.getcwd())
             self._argparser.add_argument("-j", "--job-scheduler", help="job scheduler type (default: pbs)", choices=["pbs", "batch", "daemon"], default="pbs")
             self._argparser.add_argument("-f", "--force", help="force creation of jobs even if up to date (default: false)", action="store_true")
+            self._argparser.add_argument("--json", help="create a JSON file per analysed sample to track the analysis status (default: false)", action="store_true")
             self._argparser.add_argument("--report", help="create 'pandoc' command to merge all job markdown report files in the given step range into HTML, if they exist; if --report is set, --job-scheduler, --force, --clean options and job up-to-date status are ignored (default: false)", action="store_true")
             self._argparser.add_argument("--clean", help="create 'rm' commands for all job removable files in the given step range, if they exist; if --clean is set, --job-scheduler, --force options and job up-to-date status are ignored (default: false)", action="store_true")
             self._argparser.add_argument("-l", "--log", help="log level (default: info)", choices=["debug", "info", "warning", "error", "critical"], default="info")
@@ -306,9 +307,10 @@ Steps:
             log.info("Step " + step.name + ": " + str(len(step.jobs)) + " job" + ("s" if len(step.jobs) > 1 else "") + " created" + ("" if step.jobs else "... skipping") + "\n")
 
         # Now create the json dumps for all the samples if not already done
-        for sample in sample_list:
-            if sample.json_dump == "":
-                sample.json_dump = jsonator.create(self, sample)
+        if self.args.json:
+            for sample in sample_list:
+                if sample.json_dump == "":
+                    sample.json_dump = jsonator.create(self, sample)
 
         log.info("TOTAL: " + str(len(self.jobs)) + " job" + ("s" if len(self.jobs) > 1 else "") + " created" + ("" if self.jobs else "... skipping") + "\n")
 

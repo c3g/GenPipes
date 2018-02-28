@@ -28,11 +28,11 @@ Usage
 
 usage: pacbio_assembly.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                           [-o OUTPUT_DIR] [-j {pbs,batch,daemon}] [-f]
-                          [--report] [--clean]
+                          [--json] [--report] [--clean]
                           [-l {debug,info,warning,error,critical}]
                           [-r READSETS] [-v]
 
-Version: 3.0.0
+Version: 3.0.1-beta
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
@@ -50,6 +50,8 @@ optional arguments:
                         job scheduler type (default: pbs)
   -f, --force           force creation of jobs even if up to date (default:
                         false)
+  --json                create a JSON file per analysed sample to track the
+                        analysis status (default: false)
   --report              create 'pandoc' command to merge all job markdown
                         report files in the given step range into HTML, if
                         they exist; if --report is set, --job-scheduler,
@@ -77,6 +79,8 @@ Steps:
 8- mummer
 9- compile
 10- circlator
+11- basemodification
+12- motifMaker
 
 ```
 1- smrtanalysis_filtering
@@ -158,5 +162,13 @@ Compile assembly stats of all conditions used in the pipeline (useful when multi
 -------------
 Circularize the assembly contigs if possible.
 User should launch this step after making sure the quality of the assembly is acceptable.
+
+11- basemodification
+--------------------
+Run ipdSummary.py for in silico detection of modified bases
+
+12- motifMaker
+--------------
+Run motifMaker to generate motif_summary.csv
 
 

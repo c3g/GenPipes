@@ -17,8 +17,10 @@ SOURCE=Ensembl
 #BIOMART_HOST=jul2016.archive.ensembl.org
 #VERSION=86
 #BIOMART_HOST=oct2016.archive.ensembl.org
-VERSION=87
-BIOMART_HOST=dec2016.archive.ensembl.org
+#VERSION=87
+#BIOMART_HOST=dec2016.archive.ensembl.org
+VERSION=90
+BIOMART_HOST=aug2017.archive.ensembl.org
 
 module_snpeff=mugqic/snpEff/4.3
 module_tabix=mugqic/tabix/0.2.6
@@ -29,9 +31,9 @@ source $GENOME_INSTALL_SCRIPT_DIR/install_genome.sh
 
 # Download dbSNP directly from NCBI since it is more up to date
 get_vcf_dbsnp() {
-  DBSNP_VERSION=149
+  DBSNP_VERSION=150
 #  DBSNP_URL=ftp://ftp.ncbi.nlm.nih.gov/snp/organisms/archive/human_9606_b${DBSNP_VERSION}_GRCh38p7/VCF/All.vcf.gz
-  DBSNP_URL=ftp://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606_b${DBSNP_VERSION}_GRCh38p7/VCF/All_20161122.vcf.gz
+  DBSNP_URL=ftp://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606_b${DBSNP_VERSION}_GRCh38p7/VCF/00-All.vcf.gz
   DBSNP=$ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP$DBSNP_VERSION.vcf.gz
 
   if ! is_up2date $DBSNP $DBSNP.tbi
@@ -48,7 +50,7 @@ get_vcf_dbsnp() {
 
 # Download dbNSFP and generate vcfs required to run VerifyBamId
 get_dbNSFP() {
-    DBSNSFP_VERSION=dbNSFPv3.4c 
+    DBSNSFP_VERSION=dbNSFPv3.5a 
     DBNSFP_URL=ftp://dbnsfp:dbnsfp@dbnsfp.softgenetics.com/${DBSNSFP_VERSION}.zip
     DBSNSFP=$ANNOTATIONS_DIR/$DBSNSFP_VERSION/$DBSNSFP_VERSION.txt.gz
     if ! is_up2date $DBSNSFP.txt.gz
