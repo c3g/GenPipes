@@ -53,6 +53,7 @@ from bfx import forge_tools
 from bfx import varscan
 from bfx import freebayes
 from bfx import vt
+from bfx import bcbio_variation_recall
 from pipelines import common
 
 log = logging.getLogger(__name__)
@@ -898,7 +899,7 @@ cp \\
         input_vcf = os.path.join("variants", "allSamples.hc.vcf")
 
         jobs.append(concat_jobs([
-            Job([input_vcf_gz], command = "zcat " + input_vcf_gz + " > " + input_vcf),
+            Job([input_vcf_gz], output_files=[input_vcf], command = "zcat " + input_vcf_gz + " > " + input_vcf),
             bcftools.bcftools_varfilter(input_vcf, os.path.join("variants", "allSamples.merged.gatk_flt.vcf")),
             ], name = "bcftools_varfilter"))
 
@@ -972,50 +973,6 @@ pandoc \\
                 for start, end in [[pos, min(pos + approximate_window_size - 1, sequence['length'])] for pos in range(1, sequence['length'] + 1, approximate_window_size)]:
                     windows.append(sequence['name'] + ":" + str(start) + "-" + str(end))
             return windows
-
-    def split_multiSampleToFamilyVCF(self):
-        """
-        Divide the multi-sample variants/allSamples.hc.vqsr.vcf and variants/allSamples.hc.vcf.bgz files into single sample files
-        """
-
-        jobs = []
-        gatk_flt_input = "variants/allSamples.merged.gatk_flt.vt.vcf"
-        snp_and_indel_bcf_input = "variants/allSamples.merged.flt.vt.vcf"
-        varscan_input = "variants/allSamples.merged.varscan.vt.vcf"
-        freebayes_input = "variants/allSamples.merged.freebayes.vt.vcf"
-
-        if self.family_info:
-            for family_id in self.family_info:
-                out_dir = os.path.join("variants", "family_" + family_id)
-                gatk_flt_output = os.path.join(out_dir, family_id + ".gatk_flt.vt.vcf")
-                snp_and_indel_bcf_output = os.path.join(out_dir, family_id + ".flt.vt.vcf")
-                varscan_output = os.path.join(out_dir, family_id + ".varscan.vt.vcf")
-                freebayes_output = os.path.join(out_dir, family_id + ".freebayes.vt.vcf")
-
-                member_list = self.family_info[family_id]
-                jobs.append(concat_jobs([
-                    Job(command="mkdir -p " + out_dir),
-                    bcftools.multiSample2familyVCF(gatk_flt_input, member_list, gatk_flt_output),
-                    bcftools.multiSample2familyVCF(snp_and_indel_bcf_input, member_list, snp_and_indel_bcf_output),
-                    bcftools.multiSample2familyVCF(varscan_input, member_list, varscan_output),
-                    bcftools.multiSample2familyVCF(freebayes_input, member_list, freebayes_output)
-                    ], name="split_multiSampleToFamilyVCF_"+family_id))
-        else:
-            for sample in self.samples:   
-                out_dir = os.path.join("variants", "sample_" + sample.name)
-                gatk_flt_output = os.path.join(out_dir, sample.name + ".gatk_flt.vt.vcf")
-                snp_and_indel_bcf_output = os.path.join(out_dir, sample.name + ".flt.vt.vcf")
-                varscan_output = os.path.join(out_dir, sample.name + ".varscan.vt.vcf")
-                freebayes_output = os.path.join(out_dir, sample.name + ".freebayes.vt.vcf")
-
-                jobs.append(concat_jobs([
-                    Job(command="mkdir -p " + out_dir),
-                    bcftools.multiSample2familyVCF(gatk_flt_input, sample.name, gatk_flt_output),
-                    bcftools.multiSample2familyVCF(snp_and_indel_bcf_input, sample.name, snp_and_indel_bcf_output),
-                    bcftools.multiSample2familyVCF(varscan_input, sample.name, varscan_output),
-                    bcftools.multiSample2familyVCF(freebayes_input, sample.name, freebayes_output)
-                    ], name="split_multiToSingleSampleVCF_"+sample.name))
-        return jobs
 
     def rawmpileup(self):
         """
@@ -1537,6 +1494,101 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
         return jobs
 
+    def split_multiSampleToFamilyVCF(self):
+        """
+        Divide the multi-sample variants/allSamples.hc.vqsr.vcf and variants/allSamples.hc.vcf.bgz files into single sample files
+        """
+
+        jobs = []
+        gatk_flt_input = "variants/allSamples.merged.gatk_flt.vt.vcf"
+        snp_and_indel_bcf_input = "variants/allSamples.merged.flt.vt.vcf"
+        varscan_input = "variants/allSamples.merged.varscan.vt.vcf"
+        freebayes_input = "variants/allSamples.merged.freebayes.vt.vcf"
+
+        if self.family_info:
+            for family_id in self.family_info:
+
+                member_list = self.family_info[family_id]
+                input_mergedVcf_prefix = "variants/allSamples.merged."
+                out_dir = os.path.join("variants", "family_" + family_id)
+                output_familyVcf_prefix = os.path.join(out_dir, family_id + ".")
+
+                varcallers = ["gatk_flt","flt","varscan","freebayes"]
+                jobs.append(Job(command="mkdir -p " + out_dir, name="mkdir_"+family_id))                
+
+                for varcaller in varcallers:
+                    input_vcf = input_mergedVcf_prefix + varcaller + ".vt.vcf"
+                    output_vcf = output_familyVcf_prefix + varcaller + ".vt.vcf"
+                    jobs.append(concat_jobs([
+                        bcftools.multiSample2familyVCF(input_vcf, member_list, output_vcf),
+                        Job(output_files=[output_vcf + ".gz"], module_entries=[['multiSample2familyVCF','module_tabix']], command="bgzip " + output_vcf),
+                        Job(module_entries=[['multiSample2familyVCF','module_tabix']], command="tabix " + output_vcf + ".gz" + " -p vcf")
+                        ], name="split_multiSampleToFamilyVCF_"+family_id+"_"+varcaller))
+                        
+        else:
+            for sample in self.samples:
+
+                input_mergedVcf_prefix = "variants/allSamples.merged."
+                out_dir = os.path.join("variants", "sample_" + sample.name)
+                output_sampleVcf_prefix = os.path.join(out_dir, sample.name + ".")
+
+                varcallers = ["gatk_flt","flt","varscan","freebayes"]
+                jobs.append(Job(command="mkdir -p " + out_dir, name="mkdir_"+sample.name))
+
+                for varcaller in varcallers:
+                    input_vcf = input_mergedVcf_prefix + varcaller + ".vt.vcf"
+                    output_vcf = output_sampleVcf_prefix + varcaller + ".vt.vcf"
+                    jobs.append(concat_jobs([
+                        bcftools.multiSample2familyVCF(input_vcf, sample.name, output_vcf),
+                        Job(output_files=[output_vcf + ".gz"], module_entries=[['multiSample2familyVCF','module_tabix']], command="bgzip " + output_vcf),
+                        Job(module_entries=[['multiSample2familyVCF','module_tabix']], command="tabix " + output_vcf + ".gz" + " -p vcf")
+                        ], name="split_multiSampleToFamilyVCF_"+sample.name+"_"+varcaller))
+
+        return jobs
+
+    def bcbio_ensemble(self):
+        """
+        Ensemble calling on variants called with multiple variant callers. Uses an intersection based approach, selecting
+        variants present in at least "n" callers, where "n" is chosen by the user
+        """
+
+        jobs = []
+
+        if self.family_info:
+            for family_id in self.family_info:
+                out_dir = os.path.join("variants", "family_" + family_id)
+
+                gatk_flt_input = os.path.join(out_dir, family_id + ".gatk_flt.vt.vcf.gz")
+                snp_and_indel_bcf_input = os.path.join(out_dir, family_id + ".flt.vt.vcf.gz")
+                varscan_input = os.path.join(out_dir, family_id + ".varscan.vt.vcf.gz")
+                freebayes_input = os.path.join(out_dir, family_id + ".freebayes.vt.vcf.gz")
+
+                input_VCFs = [gatk_flt_input, snp_and_indel_bcf_input, varscan_input, freebayes_input]
+                output_ensemble = os.path.join(out_dir, family_id + ".ensemble.out.vcf")
+
+                jobs.append(concat_jobs([
+                    bcbio_variation_recall.ensemble(input_VCFs, output_ensemble, config.param('bcbio_ensemble', 'options')),
+                    Job(command="zcat " + output_ensemble + ".gz > " + output_ensemble)
+                    ], name="bcbio_variation_recall." + family_id))                
+
+        else:
+            for sample in self.samples:
+                out_dir = os.path.join("variants", "sample_" + sample.name)
+
+                gatk_flt_input = os.path.join(out_dir, sample.name + ".gatk_flt.vt.vcf.gz")
+                snp_and_indel_bcf_input = os.path.join(out_dir, sample.name + ".flt.vt.vcf.gz")
+                varscan_input = os.path.join(out_dir, sample.name + ".varscan.vt.vcf.gz")
+                freebayes_input = os.path.join(out_dir, sample.name + ".freebayes.vt.vcf.gz")
+
+                input_VCFs = [gatk_flt_input, snp_and_indel_bcf_input, varscan_input, freebayes_input]
+                output_ensemble = os.path.join(out_dir, sample.name + ".ensemble.out.vcf")
+
+                jobs.append(concat_jobs([
+                    bcbio_variation_recall.ensemble(input_VCFs, output_ensemble, config.param('bcbio_ensemble', 'options')),
+                    Job(command="zcat " + output_ensemble + ".gz > " + output_ensemble)
+                    ], name="bcbio_variation_recall." + sample.name))
+
+        return jobs
 
     @property
     def steps(self):
@@ -1631,7 +1683,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             self.snp_and_indel_bcf,
             self.merge_filter_bcf,
             self.vt,
-            self.split_multiSampleToFamilyVCF]
+            self.split_multiSampleToFamilyVCF,
+            self.bcbio_ensemble]
         ]
 
 if __name__ == '__main__':
