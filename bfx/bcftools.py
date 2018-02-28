@@ -146,3 +146,19 @@ bcftools \\
         output=output
         )
     )
+
+def bcftools_varfilter(input, output, ini_section="bcftools_varfilter"):
+
+    return Job(
+        [input],
+        [output],
+        [['bcftools_varfilter', 'module_samtools']],
+        command="""\
+perl {vcfutils} varFilter {other_options} {input} \\
+  > {output}""".format(
+        vcfutils=config.param(ini_section, 'vcfutils_call'),
+        other_options = config.param(ini_section, 'other_options', required=False),
+        input=input,
+        output=output
+        )
+    )

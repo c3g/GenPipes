@@ -44,3 +44,22 @@ zless {input} | sed 's/ID=AD,Number=./ID=AD,Number=R/' | vt decompose -s - | vt 
         vt_output=" > " + vt_output if vt_output else "-",
         )
     )
+
+def decompose_uniq_and_normalize_mnps(input_vcf, vt_output):
+        ## iupac code is not supported by bcbio_variation_recall, remove variants with these code
+        iupac_ambigous_code = ["R", "Y", "S", "W", "K", "M", "B", "D", "H", "V"]
+        return Job(
+                [input_vcf],
+                [vt_output],
+                [
+                        ['decompose_and_normalize_mnps', 'module_vt']
+                ],
+                command="""\
+cat {input_vcf} | sed 's/ID=AD,Number=./ID=AD,Number=R/' | awk '$1~/#/ || ($4$5)!~/{iupac_str}/' | vt decompose -s - | vt uniq - | vt normalize - -r {reference_sequence} -o {vt_output} \\
+                """.format(
+                input_vcf=input_vcf,
+                reference_sequence=config.param('vt', 'genome_fasta', type='filepath'),
+                vt_output=vt_output,
+                iupac_str="|".join(iupac_ambigous_code)
+                )
+        )

@@ -52,6 +52,7 @@ from bfx import tabix
 from bfx import forge_tools
 from bfx import varscan
 from bfx import freebayes
+from bfx import vt
 from pipelines import common
 
 log = logging.getLogger(__name__)
@@ -886,6 +887,23 @@ cp \\
 
         return jobs
 
+    def varfilter(self):
+        """
+        Filter variants based on read depth and quality
+        """
+
+        jobs = []
+        ref_fasta = config.param("bcftools_varfilter", "genome_fasta", type="filepath")
+        input_vcf_gz = os.path.join("variants", "allSamples.hc.vcf.bgz")
+        input_vcf = os.path.join("variants", "allSamples.hc.vcf")
+
+        jobs.append(concat_jobs([
+            Job([input_vcf_gz], command = "zcat " + input_vcf_gz + " > " + input_vcf),
+            bcftools.bcftools_varfilter(input_vcf, os.path.join("variants", "allSamples.merged.gatk_flt.vcf")),
+            ], name = "bcftools_varfilter"))
+
+        return jobs
+
     def dna_sample_metrics(self):
         """
         Merge metrics. Read metrics per sample are merged at this step.
@@ -961,24 +979,41 @@ pandoc \\
         """
 
         jobs = []
-        VQSRinput = "variants/allSamples.hc.vqsr.vcf"
+        gatk_flt_input = "variants/allSamples.merged.gatk_flt.vt.vcf"
+        snp_and_indel_bcf_input = "variants/allSamples.merged.flt.vt.vcf"
+        varscan_input = "variants/allSamples.merged.varscan.vt.vcf"
+        freebayes_input = "variants/allSamples.merged.freebayes.vt.vcf"
 
         if self.family_info:
             for family_id in self.family_info:
                 out_dir = os.path.join("variants", "family_" + family_id)
-                output_vqsr = os.path.join(out_dir, family_id + ".hc.vqsr.vcf")
+                gatk_flt_output = os.path.join(out_dir, family_id + ".gatk_flt.vt.vcf")
+                snp_and_indel_bcf_output = os.path.join(out_dir, family_id + ".flt.vt.vcf")
+                varscan_output = os.path.join(out_dir, family_id + ".varscan.vt.vcf")
+                freebayes_output = os.path.join(out_dir, family_id + ".freebayes.vt.vcf")
+
                 member_list = self.family_info[family_id]
                 jobs.append(concat_jobs([
                     Job(command="mkdir -p " + out_dir),
-                    bcftools.multiSample2familyVCF(VQSRinput, member_list, output_vqsr)
-                    ], name="spllit-multiSampleToFamilyVCF_"+family_id))
+                    bcftools.multiSample2familyVCF(gatk_flt_input, member_list, gatk_flt_output),
+                    bcftools.multiSample2familyVCF(snp_and_indel_bcf_input, member_list, snp_and_indel_bcf_output),
+                    bcftools.multiSample2familyVCF(varscan_input, member_list, varscan_output),
+                    bcftools.multiSample2familyVCF(freebayes_input, member_list, freebayes_output)
+                    ], name="split_multiSampleToFamilyVCF_"+family_id))
         else:
             for sample in self.samples:   
                 out_dir = os.path.join("variants", "sample_" + sample.name)
-                output_vqsr = os.path.join(out_dir, sample.name + ".hc.vqsr.vcf") 
+                gatk_flt_output = os.path.join(out_dir, sample.name + ".gatk_flt.vt.vcf")
+                snp_and_indel_bcf_output = os.path.join(out_dir, sample.name + ".flt.vt.vcf")
+                varscan_output = os.path.join(out_dir, sample.name + ".varscan.vt.vcf")
+                freebayes_output = os.path.join(out_dir, sample.name + ".freebayes.vt.vcf")
+
                 jobs.append(concat_jobs([
                     Job(command="mkdir -p " + out_dir),
-                    bcftools.multiSample2familyVCF(VQSRinput, sample.name, output_vqsr)
+                    bcftools.multiSample2familyVCF(gatk_flt_input, sample.name, gatk_flt_output),
+                    bcftools.multiSample2familyVCF(snp_and_indel_bcf_input, sample.name, snp_and_indel_bcf_output),
+                    bcftools.multiSample2familyVCF(varscan_input, sample.name, varscan_output),
+                    bcftools.multiSample2familyVCF(freebayes_input, sample.name, freebayes_output)
                     ], name="split_multiToSingleSampleVCF_"+sample.name))
         return jobs
 
@@ -1476,12 +1511,29 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             inputs = ["variants/rawFreebayes/allSamples.freebayes.vcf"]
         else:
             inputs = ["variants/rawFreebayes/allSamples." + region + ".freebayes.vcf.gz" for region in self.generate_approximate_windows(nb_jobs) if not ('chrUn' in region or 'random' in region or 'EBV' in region)]
-        output_file = "variants/allSamples.merged.freebayes_C10.vcf"
+        output_file = "variants/allSamples.merged.freebayes.vcf"
 
         jobs.append(concat_jobs([
             Job(samples=self.samples),
             samtools.bcftools_cat(inputs, output_file)
         ], name = "merge_freebayes"))
+
+        return jobs
+
+    def vt(self):
+        """
+        Use vt to decompose, normalize, and obtain unique variants. 
+        """
+
+        jobs = []
+
+        varcallers = ["gatk_flt", "freebayes", "varscan", "flt"]
+        for varcaller in varcallers:
+            input_vcf = os.path.join("variants/allSamples.merged." + varcaller + ".vcf")
+            out_vcf = os.path.join("variants/allSamples.merged." + varcaller + ".vt.vcf")
+            jobs.append(concat_jobs([
+                vt.decompose_uniq_and_normalize_mnps(input_vcf, out_vcf)
+                ], name="vt."+varcaller))
 
         return jobs
 
@@ -1570,6 +1622,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             self.combine_gvcf,
             self.merge_and_call_combined_gvcf,
             self.variant_recalibrator,
+            self.varfilter,
             self.dna_sample_metrics,
             self.varscan_per_region,
             self.merge_varscan,
@@ -1577,6 +1630,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             self.merge_freebayes,
             self.snp_and_indel_bcf,
             self.merge_filter_bcf,
+            self.vt,
             self.split_multiSampleToFamilyVCF]
         ]
 
