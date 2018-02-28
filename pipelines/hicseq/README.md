@@ -32,12 +32,12 @@ Usage
 #!text
 
 usage: hicseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
-                 [-o OUTPUT_DIR] [-j {pbs,batch,daemon}] [-f] [--report]
-                 [--clean] [-l {debug,info,warning,error,critical}] -e
-                 {DpnII,HindIII,NcoI,MboI} [-t {hic,capture}] [-r READSETS]
+                 [-o OUTPUT_DIR] [-j {pbs,batch,daemon}] [-f] [--json]
+                 [--report] [--clean] [-l {debug,info,warning,error,critical}]
+                 -e {DpnII,HindIII,NcoI,MboI} [-t {hic,capture}] [-r READSETS]
                  [-v]
 
-Version: 3.0.0
+Version: 3.0.1-beta
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
@@ -55,6 +55,8 @@ optional arguments:
                         job scheduler type (default: pbs)
   -f, --force           force creation of jobs even if up to date (default:
                         false)
+  --json                create a JSON file per analysed sample to track the
+                        analysis status (default: false)
   --report              create 'pandoc' command to merge all job markdown
                         report files in the given step range into HTML, if
                         they exist; if --report is set, --job-scheduler,

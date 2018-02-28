@@ -43,7 +43,11 @@ class Config(ConfigParser.SafeConfigParser):
         # Make option names case sensitive
         self.optionxform = str
         for config_file in config_files:
-            self.readfp(config_file)
+            if isinstance(config_file, file):
+                self.readfp(config_file)
+            else:
+                with open(config_file, 'r') as f:
+                    self.readfp(f)
         self.check_modules()
 
     # Check by a system call if all modules defined in config files are available

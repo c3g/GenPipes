@@ -31,19 +31,22 @@ from bfx import jsonator
 # Output comment separator line
 separator_line = "#" + "-" * 79
 
-def create_scheduler(type):
+def create_scheduler(type, config_files):
     if type == "pbs":
-        return PBSScheduler()
+        return PBSScheduler(config_files)
     elif type == "batch":
-        return BatchScheduler()
+        return BatchScheduler(config_files)
     elif type == "daemon":
-        return DaemonScheduler()
+        return DaemonScheduler(config_files)
     elif type == "slurm":
         return SlurmScheduler()
     else:
         raise Exception("Error: scheduler type \"" + type + "\" is invalid!")
 
 class Scheduler:
+    def __init__(self, config_files):
+        self._config_files = config_files
+
     def submit(self, pipeline):
         # Needs to be defined in scheduler child class
         raise NotImplementedError
@@ -77,11 +80,13 @@ OUTPUT_DIR={pipeline.output_dir}
 JOB_OUTPUT_DIR=$OUTPUT_DIR/job_output
 TIMESTAMP=`date +%FT%H.%M.%S`
 JOB_LIST=$JOB_OUTPUT_DIR/{pipeline.__class__.__name__}_job_list_$TIMESTAMP
+export CONFIG_FILES="{config_files}"
 mkdir -p $OUTPUT_DIR
 cd $OUTPUT_DIR
 """
                 .format(
                     pipeline=pipeline,
+                    config_files=",".join([ c.name for c in self._config_files ])
                 )
             )
 
@@ -100,6 +105,8 @@ mkdir -p $JOB_OUTPUT_DIR/$STEP
         return """\
 module load {module_python}
 $MUGQIC_PIPELINES_HOME/utils/job2json.py \\
+  -u \\"{user}\\" \\
+  -c \\"{config_files}\\" \\
   -s \\"{step.name}\\" \\
   -j \\"$JOB_NAME\\" \\
   -d \\"$JOB_DONE\\" \\
@@ -107,9 +114,11 @@ $MUGQIC_PIPELINES_HOME/utils/job2json.py \\
   -o \\"{jsonfiles}\\" \\
   -f {status}
 module unload {module_python} {command_separator}""".format(
+            user=os.getenv('USER'),
             module_python=config.param('DEFAULT', 'module_python'),
             step=step,
             jsonfiles=json_file_list,
+            config_files=",".join([ c.name for c in self._config_files ]),
             status=job_status,
             command_separator="&&" if (job_status=='\\"running\\"') else ""
         ) if json_file_list else ""
