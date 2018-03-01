@@ -103,8 +103,8 @@ mkdir -p $JOB_OUTPUT_DIR/$STEP
     def job2json(self, pipeline, step, job, job_status):
         json_file_list = ",".join([os.path.join(pipeline.output_dir, "json", sample.json_file) for sample in job.samples])
         return """\
-module load {module_python}
-$MUGQIC_PIPELINES_HOME/utils/job2json.py \\
+module load {module_python} {module_mugqic_tools}
+{job2json_script} \\
   -u \\"{user}\\" \\
   -c \\"{config_files}\\" \\
   -s \\"{step.name}\\" \\
@@ -113,9 +113,11 @@ $MUGQIC_PIPELINES_HOME/utils/job2json.py \\
   -l \\"$JOB_OUTPUT\\" \\
   -o \\"{jsonfiles}\\" \\
   -f {status}
-module unload {module_python} {command_separator}""".format(
+module unload {module_python} {module_mugqic_tools} {command_separator}""".format(
             user=os.getenv('USER'),
+            job2json_script=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "utils", "job2json.py"),
             module_python=config.param('DEFAULT', 'module_python'),
+            module_mugqic_tools=config.param('DEFAULT', 'module_mugqic_tools'),
             step=step,
             jsonfiles=json_file_list,
             config_files=",".join([ c.name for c in self._config_files ]),
