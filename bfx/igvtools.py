@@ -34,10 +34,11 @@ def compute_tdf(input, output):
             ['compute_tdf', 'module_igvtools']
         ],
         command="""\
-igvtools count {option} \\
+ java -Xmx{ram}  -Djava.awt.headless=true -jar $IGVTOOLS_JAR count {option} \\
   {input} \\
   {output} \\
   {genome}""".format(
+        ram=config.param('igvtools_compute_tdf', 'ram'),
         option=config.param('igvtools_compute_tdf', 'option'),
         input=input,
         output=output,
