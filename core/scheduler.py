@@ -294,9 +294,10 @@ date
 scontrol show job \$SLURM_JOBID
 sstat -j \$SLURM_JOBID.batch 
 echo '#######################################'
-rm -f $JOB_DONE && $COMMAND
+rm -f $JOB_DONE && {job2json_start} $COMMAND
 MUGQIC_STATE=\$PIPESTATUS
 echo MUGQICexitStatus:\$MUGQIC_STATE
+{job2json_end}
 if [ \$MUGQIC_STATE -eq 0 ] ; then touch $JOB_DONE ; fi
 echo '#######################################'
 echo 'SLURM FAKE EPILOGUE (MUGQIC)'
@@ -305,7 +306,11 @@ scontrol show job \$SLURM_JOBID
 sstat -j \$SLURM_JOBID.batch 
 echo '#######################################'
 exit \$MUGQIC_STATE" | \\
-""".format(job=job)
+""".format(
+                        job=job,
+                        job2json_start=self.job2json(pipeline, step, job, '\\"running\\"'),
+                        job2json_end=self.job2json(pipeline, step, job, '\\$MUGQIC_STATE')
+)
 
                     # Cluster settings section must match job name prefix before first "."
                     # e.g. "[trimmomatic] cluster_cpu=..." for job name "trimmomatic.readset1"
