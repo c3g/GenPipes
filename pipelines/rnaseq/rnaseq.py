@@ -191,7 +191,7 @@ class RnaSeq(common.Illumina):
             elif readset.run_type == "SINGLE_END":
                 candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
                 if readset.fastq1:
-                    candidate_input_files.append([readset.fastq2])
+                    candidate_input_files.append([readset.fastq1])
                 if readset.bam:
                     candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
                 [fastq1] = self.select_input_files(candidate_input_files)
