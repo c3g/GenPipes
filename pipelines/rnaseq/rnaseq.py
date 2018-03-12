@@ -743,8 +743,9 @@ pandoc --to=markdown \\
             input_bam = os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.hardClip.bam")
             output_directory = os.path.join("stringtie", sample.name)
 
-            job = stringtie.stringtie(input_bam, output_directory, gtf, samples=sample)
+            job = stringtie.stringtie(input_bam, output_directory, gtf)
             job.name = "stringtie." + sample.name
+			job.samples = [sample]
             jobs.append(job)
 
         return jobs
