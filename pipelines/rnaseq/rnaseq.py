@@ -745,7 +745,7 @@ pandoc --to=markdown \\
 
             job = stringtie.stringtie(input_bam, output_directory, gtf)
             job.name = "stringtie." + sample.name
-			job.samples = [sample]
+            job.samples = [sample]
             jobs.append(job)
 
         return jobs
