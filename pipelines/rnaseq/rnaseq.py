@@ -743,10 +743,9 @@ pandoc --to=markdown \\
             input_bam = os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.hardClip.bam")
             output_directory = os.path.join("stringtie", sample.name)
 
-            job = stringtie.stringtie(input_bam, output_directory, gtf)
+            job = stringtie.stringtie(input_bam, output_directory, gtf, samples=sample)
             job.name = "stringtie." + sample.name
-            job.samples = [sample]
-            job.append(job)
+            jobs.append(job)
 
         return jobs
 
@@ -794,15 +793,6 @@ END
             job.append(job)
 
         return jobs
-
-    def stringtie_merge(self): 
-        """
-        Merge assemblies into a master teranscriptome reference using [stringtie](https://ccb.jhu.edu/software/stringtie/index.shtml).
-        Warning: still in testing
-        """
-
-        output_directory = os.path.join("stringtie", "AllSamples")
-        sample_file = os.path.join("stringtie", "stringtie-merge.samples.txt")
 
     def cufflinks(self):
         """
