@@ -770,7 +770,7 @@ pandoc --to=markdown \\
 END
 
 `""".format(sample_rows="\n".join(input_gtfs), sample_file=sample_file)),
-            sringtie.stringtie_merge(sample_file, output_directory, gtf)],
+            stringtie.stringtie_merge(sample_file, output_directory, gtf)],
             name="stringtie-merge")
 
         return [job]
