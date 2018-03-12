@@ -42,10 +42,10 @@ def stringtie(input_bam, output_directory, gtf=None, abund=False):
 
     ## Define output files depending on whether or not abundances will be calculated
     if abund: 
-        out_files = [os.path.join(output_directory , sample.name + ".transcripts.gtf"),
-        os.path.join(output_directory , sample.name + ".abundance.tab")]
+        out_files = [os.path.join(output_directory , "transcripts.gtf"),
+        os.path.join(output_directory , "abundance.tab")]
     else:
-        out_files = [os.path.join(output_directory , sample.name + ".transcripts.gtf")] 
+        out_files = [os.path.join(output_directory ,"transcripts.gtf")] 
 
     return Job(
         [input_bam],
@@ -62,11 +62,11 @@ stringtie {other_options}{strd_cmd}{gtf}{abund_cmd} \\
       other_options=config.param('stringtie','other_options', required=False),
       strd_cmd="\\\n  " + strd_cmd if strd_cmd else "",
       gtf="\\\n  -G " + gtf if gtf else "", 
-      abund_cmd="\\\n   -eB -A " + os.path.join(output_directory, sample.name + ".abundance.tab") if abund else "",
+      abund_cmd="\\\n   -eB -A " + os.path.join(output_directory, "abundance.tab") if abund else "",
       num_threads=config.param('stringtie','threads', type='posint'),
       min_length=config.param('stringtie', 'min_length', type='posint'),
-      outgtf=os.path.join(output_directory, sample.name + ".transcripts.gtf"), 
-      outabund=os.path.join(output_directory, sample.name + ".abundance.tab"),
+      outgtf=os.path.join(output_directory, "transcripts.gtf"), 
+      outabund=os.path.join(output_directory, "abundance.tab"),
       input_bam=input_bam
         )
     )
