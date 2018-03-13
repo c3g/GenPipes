@@ -219,7 +219,7 @@ pandoc --to=markdown \\
                 job = concat_jobs([
                     mkdir_job,
                     Job([readset_bam], [sample_bam], command="ln -s -f " + target_readset_bam + " " + sample_bam, removable_files=[sample_bam]),
-                    Job([readset_index], [sample_index], command="ln -s -f " + target_readset_index + " " + sample_index, removable_files=[sample_index])
+                    Job([readset_index], [sample_index], command="ln -s -f " + target_readset_index + " " + sample_index + " && sleep 180", removable_files=[sample_index])
                 ], name="symlink_readset_sample_bam." + sample.name)
                 job.samples=[sample]
 
