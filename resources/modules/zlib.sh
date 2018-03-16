@@ -2,20 +2,17 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=blast
-VERSION=2.5.0+
-ARCHIVE=ncbi-$SOFTWARE-$VERSION-src.tar.gz
-ARCHIVE_URL=ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/${VERSION%+}/$ARCHIVE
-SOFTWARE_DIR=ncbi-$SOFTWARE-$VERSION
+SOFTWARE=zlib
+VERSION=1.2.11
+ARCHIVE=${SOFTWARE}-${VERSION}.tar.gz
+ARCHIVE_URL=https://zlib.net/$ARCHIVE
+SOFTWARE_DIR=$SOFTWARE-$VERSION  
 
-# Specific commands to extract and build the software
-# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
-# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
   tar zxvf $ARCHIVE
 
-  cd ${SOFTWARE_DIR}-src/c++
+  cd $SOFTWARE_DIR
   ./configure --prefix=$INSTALL_DIR/$SOFTWARE_DIR
   make
   make install
@@ -30,11 +27,17 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-prepend-path    PATH                \$root/bin
-prepend-path    BLASTDB             \$::env(MUGQIC_INSTALL_HOME)/genomes/blast_db
+prepend-path    LIBRARY_PATH        \$root/lib 
+prepend-path    LD_LIBRARY_PATH     \$root/lib
+prepend-path    C_INCLUDE_PATH      \$root/include
+prepend-path    CPATH               \$root/include
+prepend-path --delim \" \" LDFLAGS    -L\$root/lib
+prepend-path --delim \" \" CPPFLAGS   -I\$root/include
+
 "
 }
 
 # Call generic module install script once all variables and functions have been set
 MODULE_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source $MODULE_INSTALL_SCRIPT_DIR/install_module.sh $@
+

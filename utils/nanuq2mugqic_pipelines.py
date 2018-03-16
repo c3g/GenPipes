@@ -63,9 +63,10 @@ def get_nanuq_bed_file(nanuq_auth_file, bed_file):
 
 
 def create_readsets(nanuq_readset_file, seq_type, mugqic_pipelines_readset_file="readsets.tsv", args_nanuq_auth_file=None):
-    # Lowercase the first seq_type character
-    lcfirst_seq_type = seq_type[0].lower() + seq_type[1:] 
-    if seq_type == "NovaSeq" : 
+    if seq_type != "NovaSeq":
+        # Lowercase the first seq_type character
+        lcfirst_seq_type = seq_type[0].lower() + seq_type[1:]
+    else:
         lcfirst_seq_type = seq_type
 
     nanuq_readset_root_directory = "/lb/robot/" + lcfirst_seq_type + "Sequencer/" + lcfirst_seq_type + "Runs"
@@ -111,7 +112,7 @@ def create_readsets(nanuq_readset_file, seq_type, mugqic_pipelines_readset_file=
                         for nanuq_readset_path, mugqic_pipelines_readset_path in zip(nanuq_readset_paths, mugqic_pipelines_readset_paths):
                             symlinks.append([nanuq_readset_path, mugqic_pipelines_readset_path])
 
-            else:  # seq_type = HiSeq or MiSeq
+            else:  # seq_type = HiSeq or MiSeq or NovaSeq
                 mugqic_pipelines_readset_csv_row['Sample'] = line['Sample Group'] if line.has_key('Sample Group') and line['Sample Group'] != "" else line['Name']
                 mugqic_pipelines_readset_csv_row['Readset'] = ".".join([line['Name'], line['Library Barcode'], line['Run'], line['Region']])
 
@@ -222,13 +223,13 @@ if args.nanuq_project_id:
         raise Exception("Error: missing Nanuq authentication file (use -a or --nanuq-auth-file)!")
 
     nanuq_readset_file = "project.nanuq." + args.nanuq_project_id + ".csv"
-    mugqic_pipelines_readset_file = "readsets." + args.nanuq_project_id + ".tsv"
+    mugqic_pipelines_readset_file = "readsets." + args.seq_type + "." + args.nanuq_project_id + ".tsv"
 
     get_nanuq_readset_file(args.nanuq_auth_file.name, args.nanuq_project_id, nanuq_readset_file, args.seq_type)
 
 elif args.nanuq_readset_file:
     nanuq_readset_file = args.nanuq_readset_file.name
-    mugqic_pipelines_readset_file = "readsets.tsv"
+    mugqic_pipelines_readset_file = "readsets."+ args.seq_type +".tsv"
 
 if not args.no_links:
     create_readsets(nanuq_readset_file, args.seq_type, mugqic_pipelines_readset_file, args.nanuq_auth_file)

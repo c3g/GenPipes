@@ -2,20 +2,17 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=blast
-VERSION=2.5.0+
-ARCHIVE=ncbi-$SOFTWARE-$VERSION-src.tar.gz
-ARCHIVE_URL=ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/${VERSION%+}/$ARCHIVE
-SOFTWARE_DIR=ncbi-$SOFTWARE-$VERSION
+SOFTWARE=HDF5
+VERSION=1.8.20 
+ARCHIVE=${SOFTWARE,,}-${VERSION}.tar.gz
+ARCHIVE_URL=https://support.hdfgroup.org/ftp/$SOFTWARE/current18/src/$ARCHIVE
+SOFTWARE_DIR=${SOFTWARE,,}-$VERSION  
 
-# Specific commands to extract and build the software
-# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
-# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
   tar zxvf $ARCHIVE
 
-  cd ${SOFTWARE_DIR}-src/c++
+  cd $SOFTWARE_DIR
   ./configure --prefix=$INSTALL_DIR/$SOFTWARE_DIR
   make
   make install
@@ -27,11 +24,14 @@ echo "\
 proc ModulesHelp { } {
   puts stderr \"\tMUGQIC - $SOFTWARE \"
 }
-module-whatis \"$SOFTWARE\"
+module-whatis \"adds $SOFTWARE environment variables\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-prepend-path    PATH                \$root/bin
-prepend-path    BLASTDB             \$::env(MUGQIC_INSTALL_HOME)/genomes/blast_db
+prepend-path    PATH                \$root/bin ; 
+prepend-path    CPATH               \$root/include
+prepend-path    FPATH               \$root/include
+prepend-path    LIBRARY_PATH        \$root/lib
+prepend-path    LD_LIBRARY_PATH     \$root/lib
 "
 }
 

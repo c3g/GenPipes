@@ -27,25 +27,28 @@ from core.job import *
 
 def callpeak (format, genome_size, treatment_files, control_files, output_prefix_name, output, other_options=""):
 
-    command = """macs2 callpeak {format}{other_options} \\
-          --tempdir $SCRATCH \\
-          --gsize {genome_size} \\
-          --treatment \\
-          {treatment_files}{control_files} \\
-          --name {output_prefix_name} \\
-          >& {output_prefix_name}.diag.macs.out""".format(
-                        format = format,
-                        other_options = other_options,
-                        genome_size = genome_size,
-                        treatment_files=" \\\n  ".join(treatment_files),
-                        control_files=" \\\n  --control \\\n  " + " \\\n  ".join(control_files) if control_files else " \\\n  --nolambda",
-                        output_prefix_name = output_prefix_name)
-
-
-
-    return Job(input_files = treatment_files + control_files,
-            output_files = [output],
-            module_entries = [['macs2_callpeak', 'module_python'], ['macs2_callpeak', 'module_macs2']],
-            name = "macs2_callpeak",
-            command = command,
-            )
+    return Job(
+            [treatment_files + control_files],
+            [output],
+            [
+                ['macs2_callpeak', 'module_python'],
+                ['macs2_callpeak', 'module_macs2']
+            ],
+            command="""\
+macs2 callpeak {format}{other_options} \\
+  --tempdir {tmp_dir} \\
+  --gsize {genome_size} \\
+  --treatment \\
+  {treatment_files}{control_files} \\
+  --name {output_prefix_name} \\
+  >& {output_prefix_name}.diag.macs.out""".format(
+                format=format,
+                other_options=other_options,
+                tmp_dir=config.param('callpeak', "tmp_dir"),
+                genome_size=genome_size,
+                treatment_files=" \\\n  ".join(treatment_files),
+                control_files=" \\\n  --control \\\n  " + " \\\n  ".join(control_files) if control_files else " \\\n  --nolambda",
+                output_prefix_name=output_prefix_name
+            ),
+            name="macs2_callpeak"
+        )

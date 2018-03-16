@@ -25,11 +25,12 @@ Usage
 #!text
 
 usage: chipseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
-                  [-o OUTPUT_DIR] [-j {pbs,batch,daemon}] [-f] [--report]
-                  [--clean] [-l {debug,info,warning,error,critical}]
-                  [-d DESIGN] [-r READSETS] [-v]
+                  [-o OUTPUT_DIR] [-j {pbs,batch,daemon}] [-f] [--json]
+                  [--report] [--clean]
+                  [-l {debug,info,warning,error,critical}] [-d DESIGN]
+                  [-t {mugqic,mpileup}] [-r READSETS] [-v]
 
-Version: 3.0.0
+Version: 3.0.1-beta
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
@@ -47,6 +48,8 @@ optional arguments:
                         job scheduler type (default: pbs)
   -f, --force           force creation of jobs even if up to date (default:
                         false)
+  --json                create a JSON file per analysed sample to track the
+                        analysis status (default: false)
   --report              create 'pandoc' command to merge all job markdown
                         report files in the given step range into HTML, if
                         they exist; if --report is set, --job-scheduler,
@@ -60,6 +63,8 @@ optional arguments:
                         log level (default: info)
   -d DESIGN, --design DESIGN
                         design file
+  -t {mugqic,mpileup}, --type {mugqic,mpileup}
+                        DNAseq analysis type
   -r READSETS, --readsets READSETS
                         readset file
   -v, --version         show the version information and exit
