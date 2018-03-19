@@ -34,7 +34,7 @@ def genotyper(input_bam, input_normal, input_vcf, output_vcf):
         [output_vcf],
         [
             #['DEFAULT', 'module_svtyper'],
-            ['DEFAULT', 'module_python'],
+            ['lumpy_paired_sv_calls', 'module_python'],
         ],
         command="""\
 svtyper --max_reads 5000 \\

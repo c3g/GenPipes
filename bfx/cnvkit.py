@@ -26,10 +26,10 @@ import os
 from core.config import *
 from core.job import *
 
-def batch(tumor_bam, normal_bam, output_cnn, outdir, tar_dep=[], antitar_dep=[], target_bed=None):
+def batch(tumor_bam, normal_bam, outdir, tar_dep=[], antitar_dep=[], target_bed=None, reference=None, output_cnn=None):
     return Job(
         [tumor_bam, normal_bam],
-        [output_cnn, tar_dep, antitar_dep],
+        [tar_dep, antitar_dep],
         [
             ['cnvkit_batch', 'module_python'],
             ['cnvkit_batch', 'module_R'],
@@ -40,8 +40,9 @@ cnvkit.py batch {options} \\
   --fasta {genome} \\
   --access {access} \\
   --annotate {annotate} \\
+  {reference} \\
   {target_bed} \\
-  --output-reference {output_cnn} \\
+  {output_cnn} \\
   --output-dir {outdir} \\
   --normal {normal_bam} \\
   {tumor_bam}""".format(
@@ -49,18 +50,19 @@ cnvkit.py batch {options} \\
         threads=config.param('cnvkit_batch','threads'),
         genome=config.param('cnvkit_batch','genome_fasta',type='filepath'),
         access=config.param('cnvkit_batch','access',type='filepath'),
-        annotate=config.param('cnvkit_batch','refFlat',type='filepath'),            
+        annotate=config.param('cnvkit_batch','refFlat',type='filepath'),
+        reference="--reference " + reference if reference else "",            
         target_bed="--targets " + target_bed if target_bed else "",
-        output_cnn=output_cnn,
+        output_cnn="--output-reference " + output_cnn if output_cnn else "",
         outdir=outdir,
         normal_bam=normal_bam,
         tumor_bam=tumor_bam,
         )
     )
 
-def fix(target_cov, antitarget_cov, ref_cnn, output_cnr):
+def fix(target_cov, antitarget_cov, output_cnr, reference=None, ref_cnn=None):
     return Job(
-        [target_cov, antitarget_cov, ref_cnn],
+        [target_cov, antitarget_cov],
         [output_cnr],
         [
             ['cnvkit_batch', 'module_python'],
@@ -70,12 +72,14 @@ def fix(target_cov, antitarget_cov, ref_cnn, output_cnr):
 cnvkit.py fix {options} \\
   {target_cov} \\
   {antitarget_cov} \\
+  {reference} \\
   {ref_cnn} \\
   -o {output_cnr}""".format(
         options=config.param('cnvkit_batch','fix_options'),
         target_cov=target_cov,
         antitarget_cov=antitarget_cov,
-        ref_cnn=ref_cnn,
+        reference=reference if reference else "",
+        ref_cnn=ref_cnn if ref_cnn else "",
         output_cnr=output_cnr,
         )
     )

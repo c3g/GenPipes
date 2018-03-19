@@ -128,7 +128,7 @@ bcftools \\
   index -f {options} \\
   {inputs}""".format(
         options=options if options else "",
-        inputs="".join(" \\\n  " + input for input in inputs),
+        inputs=inputs,
         )
     )
 

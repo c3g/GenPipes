@@ -33,7 +33,7 @@ def somatic(input, normal_name, tumor_name, output):
             ['vawk', 'module_vawk'],
         ],
         command="""\
-zcat {input} | \\ 
+zless {input} | \\
         vawk --header \\
         '(S${tumor_name}$GT!="0/0" && S${tumor_name}$GT!="./." \\
         && S${tumor_name}$GT!=S${normal_name}$GT) \\
@@ -54,13 +54,36 @@ def germline(input, normal_name, tumor_name, output):
             ['vawk', 'module_vawk'],
         ],
         command="""\
-zcat {input} | \\ 
+zless {input} | \\
         vawk --header \\
         '(S${normal_name}$GT!="0/0" && S${normal_name}$GT!="./." && S${tumor_name}$GT!="./.")' \\
         {output}""".format(
             input=input,
             normal_name=normal_name,
             tumor_name=tumor_name,
+            output="> " + output if output else "",
+        )
+    )
+
+def sv(input, normal_name, tumor_name, caller, output):
+    return Job(
+        [input],
+        [output],
+        [
+            ['vawk', 'module_vawk'],
+        ],
+        command="""\
+vawk -v CALLER={caller} -v SNAME={tumor_name} \\
+        '{{if (($7=="PASS" || $7 == ".") && (S${tumor_name}$GT!="0/0" && S${tumor_name}$GT!="./." && S${normal_name}$GT!="./.")) \\
+        print CALLER,I$SV_HIGHEST_TIER,SNAME,$1,$2,I$END,I$SVTYPE=="BND" ? I$SVTYPE":"$3":"I$MATEID : I$SVTYPE, I$LOF, I$SIMPLE_ANN, I$PE, I$SR, \\
+        S${tumor_name}$SR, S${normal_name}$SR, S${tumor_name}$PE, S${normal_name}$PE, S${tumor_name}$PR, S${normal_name}$PR, \\
+        S${tumor_name}$RS, S${tumor_name}$AS, S${normal_name}$RS, S${normal_name}$AS, S${tumor_name}$DV, S${normal_name}$DV }}' \\
+        {input} \\
+        {output}""".format(
+            input=input,
+            normal_name=normal_name,
+            tumor_name=tumor_name,
+            caller=caller,
             output="> " + output if output else "",
         )
     )
