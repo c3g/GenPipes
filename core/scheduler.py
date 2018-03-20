@@ -26,7 +26,6 @@ import random
 
 # MUGQIC Modules
 from config import *
-from bfx import jsonator
 
 # Output comment separator line
 separator_line = "#" + "-" * 79
