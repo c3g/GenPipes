@@ -38,6 +38,8 @@ def create_scheduler(type, config_files):
         return BatchScheduler(config_files)
     elif type == "daemon":
         return DaemonScheduler(config_files)
+    elif type == "slurm":
+        return SlurmScheduler()
     else:
         raise Exception("Error: scheduler type \"" + type + "\" is invalid!")
 
@@ -101,8 +103,8 @@ mkdir -p $JOB_OUTPUT_DIR/$STEP
     def job2json(self, pipeline, step, job, job_status):
         json_file_list = ",".join([os.path.join(pipeline.output_dir, "json", sample.json_file) for sample in job.samples])
         return """\
-module load {module_python}
-$MUGQIC_PIPELINES_HOME/utils/job2json.py \\
+module load {module_python} {module_mugqic_tools}
+{job2json_script} \\
   -u \\"{user}\\" \\
   -c \\"{config_files}\\" \\
   -s \\"{step.name}\\" \\
@@ -111,9 +113,11 @@ $MUGQIC_PIPELINES_HOME/utils/job2json.py \\
   -l \\"$JOB_OUTPUT\\" \\
   -o \\"{jsonfiles}\\" \\
   -f {status}
-module unload {module_python} {command_separator}""".format(
+module unload {module_python} {module_mugqic_tools} {command_separator}""".format(
             user=os.getenv('USER'),
+            job2json_script=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "utils", "job2json.py"),
             module_python=config.param('DEFAULT', 'module_python'),
+            module_mugqic_tools=config.param('DEFAULT', 'module_mugqic_tools'),
             step=step,
             jsonfiles=json_file_list,
             config_files=",".join([ c.name for c in self._config_files ]),
@@ -244,6 +248,104 @@ if [ $MUGQIC_STATE -eq 0 ] ; then touch $JOB_DONE ; else exit $MUGQIC_STATE ; fi
                             job2json_end=self.job2json(pipeline, step, job, '\\$MUGQIC_STATE')
                         )
                     )
+
+class SlurmScheduler(Scheduler):
+    def submit(self, pipeline):
+        self.print_header(pipeline)
+        for step in pipeline.step_range:
+            if step.jobs:
+                self.print_step(step)
+                for job in step.jobs:
+                    if job.dependency_jobs:
+                        # Chunk JOB_DEPENDENCIES on multiple lines to avoid lines too long
+                        max_dependencies_per_line = 50
+                        dependency_chunks = [job.dependency_jobs[i:i + max_dependencies_per_line] for i in range(0, len(job.dependency_jobs), max_dependencies_per_line)]
+                        job_dependencies = "JOB_DEPENDENCIES=" + ":".join(["$" + dependency_job.id for dependency_job in dependency_chunks[0]])
+                        for dependency_chunk in dependency_chunks[1:]:
+                            job_dependencies += "\nJOB_DEPENDENCIES=$JOB_DEPENDENCIES:" + ":".join(["$" + dependency_job.id for dependency_job in dependency_chunk])
+                    else:
+                        job_dependencies = "JOB_DEPENDENCIES="
+
+                    print("""
+{separator_line}
+# JOB: {job.id}: {job.name}
+{separator_line}
+JOB_NAME={job.name}
+{job_dependencies}
+JOB_DONE={job.done}
+JOB_OUTPUT_RELATIVE_PATH=$STEP/${{JOB_NAME}}_$TIMESTAMP.o
+JOB_OUTPUT=$JOB_OUTPUT_DIR/$JOB_OUTPUT_RELATIVE_PATH
+COMMAND=$(cat << '{limit_string}'
+{job.command_with_modules}
+{limit_string}
+)""".format(
+                            job=job,
+                            job_dependencies=job_dependencies,
+                            separator_line=separator_line,
+                            limit_string=os.path.basename(job.done)
+                        )
+                    )
+
+                    cmd = """\
+echo "#! /bin/bash 
+echo '#######################################'
+echo 'SLURM FAKE PROLOGUE (MUGQIC)'
+date 
+scontrol show job \$SLURM_JOBID
+sstat -j \$SLURM_JOBID.batch 
+echo '#######################################'
+rm -f $JOB_DONE && {job2json_start} $COMMAND
+MUGQIC_STATE=\$PIPESTATUS
+echo MUGQICexitStatus:\$MUGQIC_STATE
+{job2json_end}
+if [ \$MUGQIC_STATE -eq 0 ] ; then touch $JOB_DONE ; fi
+echo '#######################################'
+echo 'SLURM FAKE EPILOGUE (MUGQIC)'
+date 
+scontrol show job \$SLURM_JOBID
+sstat -j \$SLURM_JOBID.batch 
+echo '#######################################'
+exit \$MUGQIC_STATE" | \\
+""".format(
+                        job=job,
+                        job2json_start=self.job2json(pipeline, step, job, '\\"running\\"'),
+                        job2json_end=self.job2json(pipeline, step, job, '\\$MUGQIC_STATE')
+)
+
+                    # Cluster settings section must match job name prefix before first "."
+                    # e.g. "[trimmomatic] cluster_cpu=..." for job name "trimmomatic.readset1"
+                    job_name_prefix = job.name.split(".")[0]
+                    cmd += \
+                        config.param(job_name_prefix, 'cluster_submit_cmd') + " " + \
+                        config.param(job_name_prefix, 'cluster_other_arg') + " " + \
+                        config.param(job_name_prefix, 'cluster_work_dir_arg') + " $OUTPUT_DIR " + \
+                        config.param(job_name_prefix, 'cluster_output_dir_arg') + " $JOB_OUTPUT " + \
+                        config.param(job_name_prefix, 'cluster_job_name_arg') + " $JOB_NAME " + \
+                        config.param(job_name_prefix, 'cluster_walltime') + " " + \
+                        config.param(job_name_prefix, 'cluster_queue') + " " + \
+                        config.param(job_name_prefix, 'cluster_cpu')
+                    if job.dependency_jobs:
+                        cmd += " " + config.param(job_name_prefix, 'cluster_dependency_arg') + "$JOB_DEPENDENCIES"
+                    cmd += " " + config.param(job_name_prefix, 'cluster_submit_cmd_suffix')
+
+                    if config.param(job_name_prefix, 'cluster_cmd_produces_job_id'):
+                        cmd = job.id + "=$(" + cmd + ")"
+                    else:
+                        cmd += "\n" + job.id + "=" + job.name
+
+                    # Write job parameters in job list file
+                    cmd += "\necho \"$" + job.id + "\t$JOB_NAME\t$JOB_DEPENDENCIES\t$JOB_OUTPUT_RELATIVE_PATH\" >> $JOB_LIST\n"
+                    
+                    #add 0.5s sleep to let slurm submiting the job correctly
+                    cmd += "\nsleep 0.5\n"
+
+                    print cmd
+
+        # Check cluster maximum job submission
+        cluster_max_jobs = config.param('DEFAULT', 'cluster_max_jobs', type='posint', required=False)
+        if cluster_max_jobs and len(pipeline.jobs) > cluster_max_jobs:
+            log.warning("Number of jobs: " + str(len(pipeline.jobs)) + " > Cluster maximum number of jobs: " + str(cluster_max_jobs) + "!")
+
 
 class DaemonScheduler(Scheduler):
     def submit(self, pipeline):
