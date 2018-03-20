@@ -251,6 +251,7 @@ module load {module_python}
 module unload {module_python} {command_separator}""".format(
             job2json_script=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "utils", "job2json.py"),
             module_python=config.param('DEFAULT', 'module_python'),
+            module_mugqic_tools=config.param('DEFAULT', 'module_mugqic_tools'),
             step=step,
             jsonfiles=json_file_list,
             config_files=",".join([ os.path.abspath(c.name) for c in self._config_files ]),
