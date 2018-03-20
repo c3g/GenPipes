@@ -10,6 +10,7 @@ import re
 import json
 import subprocess
 import datetime
+import time
 from uuid import uuid4
 
 # Append mugqic_pipelines directory to Python library path
@@ -103,6 +104,10 @@ def main():
     config.parse_files(config_files)
 
     for jfile in json_files.split(","):
+
+        wait_for_lock(jfile)
+        lock(jfile)
+
         with open(jfile, 'r') as json_file:
             current_json = json.load(json_file)
 
@@ -152,5 +157,20 @@ def main():
             with open(os.path.join(portal_output_dir, user + '.' + uuid4().get_hex() + '.json'), 'w') as out_json:
                 json.dump(current_json, out_json, indent=4)
 
+        unlock(jfile)
+
+def wait_for_lock(filepath):
+    while os.path.isfile(filepath + '.lock'):
+        time.sleep(1)
+
+def lock(filepath):
+    with open(filepath + '.lock', 'w') as file:
+        file.write('')
+
+def unlock(filepath):
+    try:
+        os.remove(filepath + '.lock')
+    except:
+        pass
 
 main()
