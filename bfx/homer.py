@@ -123,7 +123,7 @@ def hic_interactionMatrix_chr (name, output_dir, homer_dir, res, chr, fileName, 
         output_files = [fileNameRN, fileName],
         module_entries = [["interaction_matrices_Chr", "module_perl"], ["interaction_matrices_Chr", "module_homer"]],
         command = command,
-        name = "interaction_matrices_Chr.plotting." + name + "_" + chr + "_res" + res,
+        name = "interaction_matrices_Chr." + name + "_" + chr + "_res" + res,
         removable_files = [fileName]
         )
 
