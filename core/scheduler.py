@@ -102,7 +102,7 @@ mkdir -p $JOB_OUTPUT_DIR/$STEP
     def job2json(self, pipeline, step, job, job_status):
         json_file_list = ",".join([os.path.join(pipeline.output_dir, "json", sample.json_file) for sample in job.samples])
         return """\
-module load {module_python} {module_mugqic_tools}
+module load {module_python}
 {job2json_script} \\
   -u \\"{user}\\" \\
   -c \\"{config_files}\\" \\
@@ -112,11 +112,10 @@ module load {module_python} {module_mugqic_tools}
   -l \\"$JOB_OUTPUT\\" \\
   -o \\"{jsonfiles}\\" \\
   -f {status}
-module unload {module_python} {module_mugqic_tools} {command_separator}""".format(
+module unload {module_python} {command_separator}""".format(
             user=os.getenv('USER'),
             job2json_script=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "utils", "job2json.py"),
             module_python=config.param('DEFAULT', 'module_python'),
-            module_mugqic_tools=config.param('DEFAULT', 'module_mugqic_tools'),
             step=step,
             jsonfiles=json_file_list,
             config_files=",".join([ c.name for c in self._config_files ]),
@@ -334,7 +333,7 @@ exit \$MUGQIC_STATE" | \\
 
                     # Write job parameters in job list file
                     cmd += "\necho \"$" + job.id + "\t$JOB_NAME\t$JOB_DEPENDENCIES\t$JOB_OUTPUT_RELATIVE_PATH\" >> $JOB_LIST\n"
-                    
+
                     #add 0.5s sleep to let slurm submiting the job correctly
                     cmd += "\nsleep 0.5\n"
 
