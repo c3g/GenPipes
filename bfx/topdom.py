@@ -25,10 +25,7 @@
 from core.config import *
 from core.job import *
 
-def create_input(input_matrix, output_matrix, output_script, res):
-
-    tmp_matrix = input_matrix + ".MatA"
-
+def create_input(input_matrix, tmp_matrix, output_matrix, output_script, res):
     ## make TopDom R script:
     FileContent="""
 source(\\\"{script}\\\"); \\
@@ -58,9 +55,9 @@ echo \"{FileContent}\" > {fileName} && \\
         removable_files=[tmp_matrix]
     )
 
-def call_TADs(tmp_matrix, matrix, R_script):
+def call_TADs(input_matrix, matrix, R_script):
     return Job(
-        [tmp_matrix],
+        [input_matrix],
         [matrix + ".bed", matrix + ".binSignal", matrix + ".domain"],
         [
             ["identify_TADs", "module_R"],
@@ -71,5 +68,5 @@ Rscript {fileName} && \\
 rm {fileName}""".format(
             fileName=R_script
         ),
-        removable_files=[tmp_matrix]
+        removable_files=[input_matrix]
     )
