@@ -11,6 +11,8 @@ import json
 import subprocess
 import datetime
 import time
+import random
+
 from uuid import uuid4
 
 # Append mugqic_pipelines directory to Python library path
@@ -101,6 +103,7 @@ def main():
 
     step_name, job_name, job_log, job_done, json_files, config_files, user, status = getarg(sys.argv)
 
+    print config_files
     config.parse_files(config_files)
 
     for jfile in json_files.split(","):
@@ -110,6 +113,7 @@ def main():
 
         with open(jfile, 'r') as json_file:
             current_json = json.load(json_file)
+        json_file.close()
 
         # Make sure the job_log file is not in absolute path anymore
         if current_json['pipeline']['general_information']['analysis_folder']:
@@ -150,22 +154,26 @@ def main():
         # Print to file
         with open(jfile, 'w') as out_json:
             json.dump(current_json, out_json, indent=4)
+        out_json.close()
 
         # Print a copy of it for the monitoring interface
         portal_output_dir = config.param('DEFAULT', 'portal_output_dir', required=False, type='dirpath')
         if portal_output_dir != '':
             with open(os.path.join(portal_output_dir, user + '.' + uuid4().get_hex() + '.json'), 'w') as out_json:
                 json.dump(current_json, out_json, indent=4)
+            out_json.close()
 
         unlock(jfile)
 
 def wait_for_lock(filepath):
     while os.path.isfile(filepath + '.lock'):
-        time.sleep(1)
+        sleep_time = random.randint(1, 100)
+        time.sleep(sleep_time)
 
 def lock(filepath):
-    with open(filepath + '.lock', 'w') as file:
-        file.write('')
+    with open(filepath + '.lock', 'w') as lockfile:
+        lockfile.write('')
+    lockfile.close()
 
 def unlock(filepath):
     try:
