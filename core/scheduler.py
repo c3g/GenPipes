@@ -100,8 +100,9 @@ mkdir -p $JOB_OUTPUT_DIR/$STEP
         )
 
     def job2json(self, pipeline, step, job, job_status):
-        json_file_list = ",".join([os.path.join(pipeline.output_dir, "json", sample.json_file) for sample in job.samples])
-        return """\
+        if pipeline.args.json:
+            json_file_list = ",".join([os.path.join(pipeline.output_dir, "json", sample.json_file) for sample in job.samples])
+            return """\
 module load {module_python}
 {job2json_script} \\
   -u \\"{user}\\" \\
@@ -113,15 +114,17 @@ module load {module_python}
   -o \\"{jsonfiles}\\" \\
   -f {status}
 module unload {module_python} {command_separator}""".format(
-            user=os.getenv('USER'),
-            job2json_script=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "utils", "job2json.py"),
-            module_python=config.param('DEFAULT', 'module_python'),
-            step=step,
-            jsonfiles=json_file_list,
-            config_files=",".join([ c.name for c in self._config_files ]),
-            status=job_status,
-            command_separator="&&" if (job_status=='\\"running\\"') else ""
-        ) if json_file_list else ""
+                user=os.getenv('USER'),
+                job2json_script=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "utils", "job2json.py"),
+                module_python=config.param('DEFAULT', 'module_python'),
+                step=step,
+                jsonfiles=json_file_list,
+                config_files=",".join([ c.name for c in self._config_files ]),
+                status=job_status,
+                command_separator="&&" if (job_status=='\\"running\\"') else ""
+            ) if json_file_list else ""
+        else:
+            return ""
 
 class PBSScheduler(Scheduler):
     def submit(self, pipeline):
