@@ -38,7 +38,7 @@ def create_scheduler(type, config_files):
     elif type == "daemon":
         return DaemonScheduler(config_files)
     elif type == "slurm":
-        return SlurmScheduler()
+        return SlurmScheduler(config_files)
     else:
         raise Exception("Error: scheduler type \"" + type + "\" is invalid!")
 
