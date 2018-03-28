@@ -20,48 +20,48 @@
 ################################################################################
 
 # Python Standard Modules
-import re
 
 # MUGQIC Modules
+from core.config import *
 from core.job import *
 
-
-def sort_bed(input_bed, output_file, other_options=""):
+def create_input(bam_input, sample_name):
     return Job(
-        [input_bed],
-        [output_file],
+        [bam_input],
+        [sample_name + ".juicebox.input", sample_name + ".juicebox.input.sorted"],
         [
-            ['bed_sort', 'module_bedops']
+            ["create_hic_file", "module_mugqic_tools"]
         ],
-        name="bed_sort." + os.path.basename(input_bed),
         command="""
-sort-bed {other_options} \\
-  {input} \\
-  > {output}""".format(
-            other_options=other_options,
-            input=input_bed,
-            output=output_file
-        )
+bash CreateHicFileInput.sh \\
+{bam} \\
+{name} \\
+{tmpDir}""".format(
+            bam=bam_input,
+            name=sample_name,
+            tmpDir=os.path.expandvars("$(pwd)")
+        ),
+        removable_files=[sample_name + ".juicebox.input", sample_name + ".juicebox.input.sorted", bam_input]
     )
 
-def bedmap_echoMapId(bed1, bed2, output, split=True, other_options=""):
+def create_hic(juicebox_input, hic_output, assembly):
     return Job(
-        [bed1, bed2],
-        [output],
+        [juicebox_input],
+        [hic_output],
         [
-            ['bedmap_echoMapId', 'module_bedops']
+            ["create_hic_file", "module_java"]
         ],
-        name="bedmap_echoMapId." + os.path.basename(output),
         command="""
-bedmap {other_options} \\
-  --echo --echo-map-id \\
-  {bed1} \\
-  {bed2} \\
-  {split} > {output}""" .format(
-            other_options=other_options,
-            bed1=bed1,
-            bed2=bed2,
-            split=" | tr '|' '\\t' " if split else "",
-            output=output
+java -jar {juicer} \\
+  pre \\
+  -q {q} \\
+  {input} \\
+  {output} \\
+  {assembly}""".format(
+            juicer=os.path.expandvars(config.param('create_hic_file', 'JuicerPath')),
+            q=config.param('create_hic_file', 'q'),
+            input=juicebox_input,
+            output=hic_output,
+            assembly=assembly
         )
     )

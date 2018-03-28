@@ -20,48 +20,35 @@
 ################################################################################
 
 # Python Standard Modules
-import re
 
 # MUGQIC Modules
+from core.config import *
 from core.job import *
 
+def call_TADs(matrix, output_dir, res):
 
-def sort_bed(input_bed, output_file, other_options=""):
-    return Job(
-        [input_bed],
-        [output_file],
-        [
-            ['bed_sort', 'module_bedops']
-        ],
-        name="bed_sort." + os.path.basename(input_bed),
-        command="""
-sort-bed {other_options} \\
-  {input} \\
-  > {output}""".format(
-            other_options=other_options,
-            input=input_bed,
-            output=output_file
-        )
-    )
+    prefix = os.path.splitext(os.path.basename(matrix))[0]
 
-def bedmap_echoMapId(bed1, bed2, output, split=True, other_options=""):
+    output_Scores = os.path.join(output_dir, "".join(("BoundaryScores_", prefix, "_binSize" , str(int(res)/1000) ,"_minW250_maxW500_minRatio1.5.txt")))
+    output_calls = os.path.join(output_dir, "".join(("TADBoundaryCalls_", prefix, "_binSize" , str(int(res)/1000) ,"_minW250_maxW500_minRatio1.5_threshold0.2.txt")))
+
     return Job(
-        [bed1, bed2],
-        [output],
+        [matrix],
+        [output_Scores, output_calls],
         [
-            ['bedmap_echoMapId', 'module_bedops']
+            ["identify_TADs", "module_R"],
+            ["identify_TADs", "module_mugqic_tools"]
         ],
-        name="bedmap_echoMapId." + os.path.basename(output),
         command="""
-bedmap {other_options} \\
-  --echo --echo-map-id \\
-  {bed1} \\
-  {bed2} \\
-  {split} > {output}""" .format(
-            other_options=other_options,
-            bed1=bed1,
-            bed2=bed2,
-            split=" | tr '|' '\\t' " if split else "",
-            output=output
-        )
+Rscript {RobusTAD} \\
+  -i {input_matrix} \\
+  -H \\
+  -b {res} \\
+  -o {ouput_dir}""".format(
+            ouput_dir=output_dir,
+            RobusTAD=os.path.expandvars("${R_TOOLS}/RobusTAD.R"),
+            input_matrix=matrix,
+            res=int(res)/1000
+        ),
+        removable_files=[matrix]
     )

@@ -65,6 +65,7 @@ def create(pipeline, sample):
             for line in ini_file.readlines():
                 for match in re.finditer(pattern, line):
                     general_info['assembly_source'] = match.groups()[0]
+        ini_file.close()
     if config.param("DEFAULT", 'dbsnp_version', required=False) : general_info['dbsnp_version'] = config.param("DEFAULT", 'dbsnp_version', required=False)
     general_info['server'] = config.param("DEFAULT", 'cluster_server', required=True)
     general_info['analysis_folder'] = pipeline.output_dir + "/"
@@ -87,6 +88,7 @@ def create(pipeline, sample):
 
     with open(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "VERSION"), 'r') as version_file:
         general_info['pipeline_version'] = re.sub("\n?$", "", version_file.readlines()[0])
+    version_file.close()
 
     # Check if 'force_jobs' is 'True'
     # Or    if the json file has not been created yet :
@@ -143,6 +145,7 @@ def create(pipeline, sample):
                 }
             }
         for step in pipeline.step_range:
+            # First verify if the step is meant to be "jsonified"
             jsonify_step = False
             for job in step.jobs:
                 if sample in job.samples:
@@ -167,6 +170,7 @@ def create(pipeline, sample):
     else :
         with open(os.path.join(pipeline.output_dir, "json", sample.json_file), 'r') as json_file:
             current_json_hash = json.load(json_file)
+        json_file.close()
 
         # Then check if information is up-to-date by comparing it with the previously retrieved informations
         for info_key in general_info.keys():
@@ -186,6 +190,46 @@ def create(pipeline, sample):
                     'name' : soft['name'],
                     'version' : soft['version']
                 })
+
+        # Finally check if the requested steps/jobs are already in the JSON :
+        #   if so  : update them with the current information
+        #   if not : add them to the json object
+        for step in pipeline.step_range:
+            # First make sure the step is meant to be "jsonified"
+            jsonify_step = False
+            if step.jobs:
+                for job in step.jobs:
+                    if sample in job.samples:
+                        jsonify_step = True
+
+            if jsonify_step:
+                # Then check if the step is found in the current json
+                step_found = False
+                for jstep in current_json_hash['pipeline']['step']:
+                    if step.name == jstep['name']:
+                        step_found = True
+
+                # If step is found, then remove it from the json object (so that it can be replaced by the new one if needed)
+                if step_found:
+                    for i in range(len(current_json_hash['pipeline']['step'])):
+                        if current_json_hash['pipeline']['step'][i]['name'] == step.name:
+                            del current_json_hash['pipeline']['step'][i]
+                            break
+
+                # Now it is time to add the current step record (with its jobs) to the json object
+                current_json_hash['pipeline']['step'].append(
+                    {
+                        'name': step.name,
+                        'job': [{
+                            "name": job.name,
+                            "id": job.id,
+                            "command": re.sub("\\\\\n", "", job.command_with_modules),
+                            "input_file": job.input_files,
+                            "output_file": job.output_files,
+                            "dependency": [dependency_job.id for dependency_job in job.dependency_jobs]
+                        } for job in step.jobs if sample in job.samples]
+                    }
+                )
         current_json = json.dumps(current_json_hash, indent=4)
 
     if not os.path.exists(os.path.join(pipeline.output_dir, "json")):
@@ -194,11 +238,13 @@ def create(pipeline, sample):
     # Print to file
     with open(os.path.join(pipeline.output_dir, "json", sample.json_file), 'w') as out_json:
         out_json.write(current_json)
+    out_json.close()
 
     # Print a copy of it for the monitoring interface
     portal_output_dir = config.param('DEFAULT', 'portal_output_dir', required=False, type='dirpath')
     if portal_output_dir != '':
         with open(os.path.join(portal_output_dir, os.getenv('USER') + '.' + uuid4().get_hex() + '.json'), 'w') as out_json:
             out_json.write(current_json)
+        out_json.close()
 
     return current_json
