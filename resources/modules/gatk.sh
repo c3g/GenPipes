@@ -35,7 +35,7 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-prepend_path    PATH	            \$root
+prepend-path    PATH	            \$root
 setenv          GATK_JAR            \$root/$JAR
 "
 }
