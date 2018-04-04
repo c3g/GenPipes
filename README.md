@@ -1,9 +1,8 @@
-<<<<<<< HEAD
-MUGQIC Pipelines
+GenPipes
 ================
 This repository holds several bioinformatics pipelines developed at [McGill University and Génome Québec Innovation Centre](http://gqinnovationcenter.com) (MUGQIC), as part of the [GenAP project](https://genap.ca).
 
-MUGQIC pipelines consist of Python scripts which create a list of jobs running Bash commands. Those scripts support dependencies between jobs and smart restart mechanism if some jobs fail during pipeline execution. Jobs can be submitted in different ways: by being sent to a PBS scheduler like Torque or by being run as a series of commands in batch through a Bash script. Job commands and parameters can be modified through several configuration files.
+GenPipes consist of Python scripts which create a list of jobs running Bash commands. Those scripts support dependencies between jobs and smart restart mechanism if some jobs fail during pipeline execution. Jobs can be submitted in different ways: by being sent to a PBS scheduler like Torque or by being run as a series of commands in batch through a Bash script. Job commands and parameters can be modified through several configuration files.
 
 On this page:
 
@@ -12,7 +11,7 @@ On this page:
 
 Software requirement
 --------------------
-MUGQIC pipelines have been tested with Python 2.7.
+GenPipes have been tested with Python 2.7.
 
 
 Quick setup for abacus, guillimin and mammouth users
@@ -514,7 +513,7 @@ Data collected:
 
 Contact us
 ----------
-Please visit our [mailing list](https://groups.google.com/forum/#!forum/mugqic_pipelines) to find questions and answers about MUGQIC Pipelines.
+Please visit our [mailing list](https://groups.google.com/forum/#!forum/genpipes) to find questions and answers about GenPipes.
 
 To subscribe to the mailing list and receive other people's messages, send an e-mail at [mugqic_pipelines+subscribe@googlegroups.com](mailto:mugqic_pipelines+subscribe@googlegroups.com).
 You will receive an invitation which you must accept.

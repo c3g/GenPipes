@@ -13,6 +13,13 @@ build() {
   tar zxvf $ARCHIVE
 
   cd $SOFTWARE_DIR
+  module load mugqic/HDF5 mugqic/autoconf
+
+  cd ext/htslib
+  autoheader
+  autoconf
+
+  cd ../..
   mkdir build
   cd build
 
@@ -20,7 +27,6 @@ build() {
   cmake -DCMAKE_INSTALL_PREFIX:PATH=$INSTALL_DIR/$SOFTWARE_DIR ..
   make
   make install
-	
 }
 
 module_file() {

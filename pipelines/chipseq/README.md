@@ -25,11 +25,12 @@ Usage
 #!text
 
 usage: chipseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
-                  [-o OUTPUT_DIR] [-j {pbs,batch,daemon}] [-f] [--report]
-                  [--clean] [-l {debug,info,warning,error,critical}]
-                  [-d DESIGN] [-r READSETS] [-v]
+                  [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f] [--json]
+                  [--report] [--clean]
+                  [-l {debug,info,warning,error,critical}] [-d DESIGN]
+                  [-t {mugqic,mpileup}] [-r READSETS] [-v]
 
-Version: 3.0.0
+Version: 3.1.0
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
@@ -43,10 +44,12 @@ optional arguments:
                         step range e.g. '1-5', '3,6,7', '2,4-8'
   -o OUTPUT_DIR, --output-dir OUTPUT_DIR
                         output directory (default: current)
-  -j {pbs,batch,daemon}, --job-scheduler {pbs,batch,daemon}
+  -j {pbs,batch,daemon,slurm}, --job-scheduler {pbs,batch,daemon,slurm}
                         job scheduler type (default: pbs)
   -f, --force           force creation of jobs even if up to date (default:
                         false)
+  --json                create a JSON file per analysed sample to track the
+                        analysis status (default: false)
   --report              create 'pandoc' command to merge all job markdown
                         report files in the given step range into HTML, if
                         they exist; if --report is set, --job-scheduler,
@@ -60,6 +63,8 @@ optional arguments:
                         log level (default: info)
   -d DESIGN, --design DESIGN
                         design file
+  -t {mugqic,mpileup}, --type {mugqic,mpileup}
+                        DNAseq analysis type
   -r READSETS, --readsets READSETS
                         readset file
   -v, --version         show the version information and exit
@@ -84,6 +89,7 @@ Steps:
 16- ihec_preprocess_files
 17- run_spp
 18- ihec_metrics
+19- multiqc_report
 
 ```
 1- picard_sam_to_fastq
@@ -198,5 +204,10 @@ runs spp to estimate NSC and RSC ENCODE metrics. For more information: https://g
 ----------------
 Generate IHEC's standard metrics.
 
+
+19- multiqc_report
+------------------
+A quality control report for all samples is generated.
+For more detailed information about the MultiQc visit: [MultiQc] (http://multiqc.info/)
 
 

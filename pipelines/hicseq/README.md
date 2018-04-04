@@ -6,19 +6,19 @@ Hi-C Pipeline
 
 Hi-C experiments allow researchers to understand chromosomal folding and structure using proximity ligation techniques.
 This pipeline analyzes both Hi-C experimental data (-t hic) and capture Hi-C data (-t capture).
-The Hi-C pipeline, selected using the "-t hic" parameter, starts by trimming adaptors and low quality bases. 
+The Hi-C pipeline, selected using the "-t hic" parameter, starts by trimming adaptors and low quality bases.
 It then maps the reads to a reference genome using HiCUP.
 HiCUP first truncates chimeric reads, maps reads to the genome, then it filters Hi-C artifacts and removes read duplicates.
 Samples from different lanes are merged and a tag directory is created by Homer, which is also used to produce the interaction
 matrices and compartments. TopDom is used to predict topologically associating domains (TADs) and homer is used to identify
 significant interactions.
 
-The capture Hi-C pipeline, selected using the "-t capture" parameter, starts by trimming adaptors and low quality bases. 
+The capture Hi-C pipeline, selected using the "-t capture" parameter, starts by trimming adaptors and low quality bases.
 It then maps the reads to a reference genome using HiCUP.
 HiCUP first truncates chimeric reads, maps reads to the genome, then it filters Hi-C artifacts and removes read duplicates.
-Samples from different lanes are merged and CHiCAGO is then used to filter capture-specific artifacts and call significant 
-interactions. This pipeline also identifies enrichement of regulatory features when provided with ChIP-Seq marks. It can also 
-return bed interctions with significant baits (bait_intersect step) or with captured interactions (capture_intersect step). 
+Samples from different lanes are merged and CHiCAGO is then used to filter capture-specific artifacts and call significant
+interactions. This pipeline also identifies enrichement of regulatory features when provided with ChIP-Seq marks. It can also
+return bed interctions with significant baits (bait_intersect step) or with captured interactions (capture_intersect step).
 
 An example of the Hi-C report for an analysis on public data (GM12878 Rao. et al.) is available for illustration purpose only:
 [Hi-C report](<url>).
@@ -32,12 +32,12 @@ Usage
 #!text
 
 usage: hicseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
-                 [-o OUTPUT_DIR] [-j {pbs,batch,daemon}] [-f] [--report]
-                 [--clean] [-l {debug,info,warning,error,critical}] -e
-                 {DpnII,HindIII,NcoI,MboI} [-t {hic,capture}] [-r READSETS]
+                 [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f] [--json]
+                 [--report] [--clean] [-l {debug,info,warning,error,critical}]
+                 -e {DpnII,HindIII,NcoI,MboI} [-t {hic,capture}] [-r READSETS]
                  [-v]
 
-Version: 3.0.0
+Version: 3.1.0
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
@@ -51,10 +51,12 @@ optional arguments:
                         step range e.g. '1-5', '3,6,7', '2,4-8'
   -o OUTPUT_DIR, --output-dir OUTPUT_DIR
                         output directory (default: current)
-  -j {pbs,batch,daemon}, --job-scheduler {pbs,batch,daemon}
+  -j {pbs,batch,daemon,slurm}, --job-scheduler {pbs,batch,daemon,slurm}
                         job scheduler type (default: pbs)
   -f, --force           force creation of jobs even if up to date (default:
                         false)
+  --json                create a JSON file per analysed sample to track the
+                        analysis status (default: false)
   --report              create 'pandoc' command to merge all job markdown
                         report files in the given step range into HTML, if
                         they exist; if --report is set, --job-scheduler,
@@ -68,8 +70,9 @@ optional arguments:
                         log level (default: info)
   -e {DpnII,HindIII,NcoI,MboI}, --enzyme {DpnII,HindIII,NcoI,MboI}
                         Restriction Enzyme used to generate Hi-C library
+                        (default DpnII)
   -t {hic,capture}, --type {hic,capture}
-                        Hi-C experiment type
+                        Hi-C experiment type (default hic)
   -r READSETS, --readsets READSETS
                         readset file
   -v, --version         show the version information and exit
@@ -90,10 +93,11 @@ hic:
 9- interaction_matrices_Chr
 10- interaction_matrices_genome
 11- identify_compartments
-12- identify_TADs
-13- identify_peaks
-14- create_hic_file
-15- multiqc_report
+12- identify_TADs_TopDom
+13- identify_TADs_RobusTAD
+14- identify_peaks
+15- create_hic_file
+16- multiqc_report
 ----
 capture:
 1- samtools_bam_sort
@@ -111,7 +115,8 @@ capture:
 13- runChicago_featureOverlap
 14- bait_intersect
 15- capture_intersect
-16- multiqc_report
+16- create_hic_file
+17- multiqc_report
 
 ```
 1- samtools_bam_sort
@@ -183,22 +188,28 @@ For more detailed information about HiCPlotter visit: [HiCPlotter] (https://gith
 Genomic compartments are identified using Homer at resolutions defined in the ini config file
 For more detailed information about the HOMER compartments visit: [HOMER compartments] (http://homer.ucsd.edu/homer/interactions/HiCpca.html)
 
-12- identify_TADs
------------------
+12- identify_TADs_TopDom
+------------------------
 Topological associating Domains (TADs) are identified using TopDom at resolutions defined in the ini config file.
 For more detailed information about the TopDom visit: [TopDom] (https://www.ncbi.nlm.nih.gov/pubmed/26704975)
 
-13- identify_peaks
+13- identify_TADs_RobusTAD
+--------------------------
+Topological associating Domain (TAD) scores are calculated using RobusTAD for every bin in the genome.
+RobusTAD is resolution-independant and will use the first resolution in "resolution_TADs"  under [identify_TADs] in the ini file.
+For more detailed information about the RobusTAD visit: [RobusTAD] (https://github.com/rdali/RobusTAD)
+
+14- identify_peaks
 ------------------
 Significant intraChromosomal interactions (peaks) are identified using Homer.
 For more detailed information about the Homer peaks visit: [Homer peaks] (http://homer.ucsd.edu/homer/interactions/HiCinteractions.html)
 
-14- create_hic_file
+15- create_hic_file
 -------------------
 A .hic file is created per sample in order to visualize in JuiceBox, WashU epigenome browser or as input for other tools.
 For more detailed information about the JuiceBox visit: [JuiceBox] (http://www.aidenlab.org/software.html)
 
-15- multiqc_report
+16- multiqc_report
 ------------------
 A quality control report for all samples is generated.
 For more detailed information about the MultiQc visit: [MultiQc] (http://multiqc.info/)

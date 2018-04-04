@@ -34,11 +34,11 @@ Usage
 #!text
 
 usage: dnaseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
-                 [-o OUTPUT_DIR] [-j {pbs,batch,daemon}] [-f] [--report]
-                 [--clean] [-l {debug,info,warning,error,critical}]
-                 [-r READSETS] [-v]
+                 [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f] [--json]
+                 [--report] [--clean] [-l {debug,info,warning,error,critical}]
+                 [-t {mugqic,mpileup}] [-r READSETS] [-v]
 
-Version: 3.0.0
+Version: 3.1.0
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
@@ -52,10 +52,12 @@ optional arguments:
                         step range e.g. '1-5', '3,6,7', '2,4-8'
   -o OUTPUT_DIR, --output-dir OUTPUT_DIR
                         output directory (default: current)
-  -j {pbs,batch,daemon}, --job-scheduler {pbs,batch,daemon}
+  -j {pbs,batch,daemon,slurm}, --job-scheduler {pbs,batch,daemon,slurm}
                         job scheduler type (default: pbs)
   -f, --force           force creation of jobs even if up to date (default:
                         false)
+  --json                create a JSON file per analysed sample to track the
+                        analysis status (default: false)
   --report              create 'pandoc' command to merge all job markdown
                         report files in the given step range into HTML, if
                         they exist; if --report is set, --job-scheduler,
@@ -67,12 +69,48 @@ optional arguments:
                         date status are ignored (default: false)
   -l {debug,info,warning,error,critical}, --log {debug,info,warning,error,critical}
                         log level (default: info)
+  -t {mugqic,mpileup}, --type {mugqic,mpileup}
+                        DNAseq analysis type
   -r READSETS, --readsets READSETS
                         readset file
   -v, --version         show the version information and exit
 
 Steps:
 ------
+
+----
+mugqic:
+1- picard_sam_to_fastq
+2- trimmomatic
+3- merge_trimmomatic_stats
+4- bwa_mem_picard_sort_sam
+5- picard_merge_sam_files
+6- gatk_indel_realigner
+7- merge_realigned
+8- fix_mate_by_coordinate
+9- picard_mark_duplicates
+10- recalibration
+11- verify_bam_id
+12- metrics
+13- picard_calculate_hs_metrics
+14- gatk_callable_loci
+15- extract_common_snp_freq
+16- baf_plot
+17- gatk_haplotype_caller
+18- merge_and_call_individual_gvcf
+19- combine_gvcf
+20- merge_and_call_combined_gvcf
+21- variant_recalibrator
+22- dna_sample_metrics
+23- haplotype_caller_filter_nstretches
+24- haplotype_caller_flag_mappability
+25- haplotype_caller_snp_id_annotation
+26- haplotype_caller_snp_effect
+27- haplotype_caller_dbnsfp_annotation
+28- haplotype_caller_metrics_vcf_stats
+29- haplotype_caller_metrics_snv_graph_metrics
+----
+mpileup:
 1- picard_sam_to_fastq
 2- trimmomatic
 3- merge_trimmomatic_stats
@@ -94,25 +132,18 @@ Steps:
 19- merge_and_call_combined_gvcf
 20- variant_recalibrator
 21- dna_sample_metrics
-22- haplotype_caller_filter_nstretches
-23- haplotype_caller_flag_mappability
-24- haplotype_caller_snp_id_annotation
-25- haplotype_caller_snp_effect
-26- haplotype_caller_dbnsfp_annotation
-27- haplotype_caller_metrics_vcf_stats
-28- haplotype_caller_metrics_snv_graph_metrics
-29- rawmpileup
-30- rawmpileup_cat
-31- snp_and_indel_bcf
-32- merge_filter_bcf
-33- mpileup_filter_nstretches
-34- mpileup_flag_mappability
-35- mpileup_snp_id_annotation
-36- mpileup_snp_effect
-37- mpileup_dbnsfp_annotation
-38- mpileup_metrics_vcf_stats
-39- mpileup_metrics_snv_graph_metrics
-40- verify_bam_id
+22- rawmpileup
+23- rawmpileup_cat
+24- snp_and_indel_bcf
+25- merge_filter_bcf
+26- mpileup_filter_nstretches
+27- mpileup_flag_mappability
+28- mpileup_snp_id_annotation
+29- mpileup_snp_effect
+30- mpileup_dbnsfp_annotation
+31- mpileup_metrics_vcf_stats
+32- mpileup_metrics_snv_graph_metrics
+33- verify_bam_id
 
 ```
 1- picard_sam_to_fastq
@@ -192,7 +223,15 @@ Moreover, the recalibration tool attempts to correct for variation in quality wi
 and sequence context, and by doing so, provides not only more accurate quality scores but also
 more widely dispersed ones.
 
-11- metrics
+11- verify_bam_id
+-----------------
+verifyBamID is a software that verifies whether the reads in particular file match previously known
+genotypes for an individual (or group of individuals), and checks whether the reads are contaminated
+as a mixture of two samples. verifyBamID can detect sample contamination and swaps when external
+genotypes are available. When external genotypes are not available, verifyBamID still robustly
+detects sample swaps.
+
+12- metrics
 -----------
 Compute metrics and generate coverage tracks per sample. Multiple metrics are computed at this stage:
 Number of raw reads, Number of filtered reads, Number of aligned reads, Number of duplicate reads,
@@ -202,39 +241,39 @@ whole genome or targeted percentage of bases covered at X reads (%_bases_above_5
 bases which have at least 50 reads). A TDF (.tdf) coverage track is also generated at this step
 for easy visualization of coverage in the IGV browser.
 
-12- picard_calculate_hs_metrics
+13- picard_calculate_hs_metrics
 -------------------------------
 Compute on target percent of hybridisation based capture.
 
-13- gatk_callable_loci
+14- gatk_callable_loci
 ----------------------
 Computes the callable region or the genome as a bed track.
 
-14- extract_common_snp_freq
+15- extract_common_snp_freq
 ---------------------------
 Extracts allele frequencies of possible variants accross the genome.
 
-15- baf_plot
+16- baf_plot
 ------------
 Plots DepthRatio and B allele frequency of previously extracted alleles.
 
-16- gatk_haplotype_caller
+17- gatk_haplotype_caller
 -------------------------
 GATK haplotype caller for snps and small indels.
 
-17- merge_and_call_individual_gvcf
+18- merge_and_call_individual_gvcf
 ----------------------------------
 Merges the gvcfs of haplotype caller and also generates a per sample vcf containing genotypes.
 
-18- combine_gvcf
+19- combine_gvcf
 ----------------
 Combine the per sample gvcfs of haplotype caller into one main file for all sample.
 
-19- merge_and_call_combined_gvcf
+20- merge_and_call_combined_gvcf
 --------------------------------
 Merges the combined gvcfs and also generates a general vcf containing genotypes.
 
-20- variant_recalibrator
+21- variant_recalibrator
 ------------------------
 GATK VariantRecalibrator.
 The purpose of the variant recalibrator is to assign a well-calibrated probability to each variant call in a call set.
@@ -252,93 +291,36 @@ have their filter field annotated with its tranche level. This will result in a 
 to the desired level but also has the information necessary to pull out more variants for a higher sensitivity but a
 slightly lower quality level.
 
-21- dna_sample_metrics
+22- dna_sample_metrics
 ----------------------
 Merge metrics. Read metrics per sample are merged at this step.
 
-22- haplotype_caller_filter_nstretches
+23- haplotype_caller_filter_nstretches
 --------------------------------------
 See general filter_nstretches description !  Applied to haplotype caller vcf
 
-23- haplotype_caller_flag_mappability
+24- haplotype_caller_flag_mappability
 -------------------------------------
 See general flag_mappability !  Applied to haplotype caller vcf
 
-24- haplotype_caller_snp_id_annotation
+25- haplotype_caller_snp_id_annotation
 --------------------------------------
 See general snp_id_annotation !  Applied to haplotype caller vcf
 
-25- haplotype_caller_snp_effect
+26- haplotype_caller_snp_effect
 -------------------------------
 See general snp_effect !  Applied to haplotype caller vcf
 
-26- haplotype_caller_dbnsfp_annotation
+27- haplotype_caller_dbnsfp_annotation
 --------------------------------------
 See general dbnsfp_annotation !  Applied to haplotype caller vcf
 
-27- haplotype_caller_metrics_vcf_stats
+28- haplotype_caller_metrics_vcf_stats
 --------------------------------------
 See general metrics_vcf_stats !  Applied to haplotype caller vcf
 
-28- haplotype_caller_metrics_snv_graph_metrics
+29- haplotype_caller_metrics_snv_graph_metrics
 ----------------------------------------------
 See general metrics_vcf_stats !  Applied to haplotype caller vcf
-
-29- rawmpileup
---------------
-Full pileup (optional). A raw mpileup file is created using samtools mpileup and compressed in gz format.
-One packaged mpileup file is created per sample/chromosome.
-
-30- rawmpileup_cat
-------------------
-Merge mpileup files per sample/chromosome into one compressed gzip file per sample.
-
-31- snp_and_indel_bcf
----------------------
-Mpileup and Variant calling. Variants (SNPs and INDELs) are called using
-[SAMtools](http://samtools.sourceforge.net/) mpileup. bcftools view is used to produce binary bcf files.
-
-32- merge_filter_bcf
---------------------
-bcftools is used to merge the raw binary variants files created in the snpAndIndelBCF step.
-The output of bcftools is fed to varfilter, which does an additional filtering of the variants
-and transforms the output into the VCF (.vcf) format. One vcf file contain the SNP/INDEL calls
-for all samples in the experiment.
-
-33- mpileup_filter_nstretches
------------------------------
-See general filter_nstretches description !  Applied to mpileup vcf
-
-34- mpileup_flag_mappability
-----------------------------
-See general flag_mappability !  Applied to mpileup vcf
-
-35- mpileup_snp_id_annotation
------------------------------
-See general snp_id_annotation !  Applied to mpileyp vcf
-
-36- mpileup_snp_effect
-----------------------
-See general snp_effect !  Applied to mpileup vcf
-
-37- mpileup_dbnsfp_annotation
------------------------------
-See general dbnsfp_annotation !  Applied to mpileup vcf
-
-38- mpileup_metrics_vcf_stats
------------------------------
-See general metrics_vcf_stats !  Applied to mpileup caller vcf
-
-39- mpileup_metrics_snv_graph_metrics
--------------------------------------
-See general metrics_vcf_stats !  Applied to mpileup vcf
-
-40- verify_bam_id
------------------
-verifyBamID is a software that verifies whether the reads in particular file match previously known
-genotypes for an individual (or group of individuals), and checks whether the reads are contaminated
-as a mixture of two samples. verifyBamID can detect sample contamination and swaps when external
-genotypes are available. When external genotypes are not available, verifyBamID still robustly
-detects sample swaps.
 
 
