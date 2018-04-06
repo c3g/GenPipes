@@ -208,7 +208,8 @@ pandoc --to=markdown \\
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="insilico_read_normalization_all_report")
+                name="insilico_read_normalization_all_report",
+                samples=self.samples)
         )
 
         return jobs
@@ -274,7 +275,8 @@ pandoc --to=markdown \\
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="trinity_report")
+                name="trinity_report",
+                samples=self.samples)
         )
 
         return jobs
@@ -376,7 +378,8 @@ pandoc --to=markdown \\
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="blastx_trinity_uniprot_merge_report")
+                name="blastx_trinity_uniprot_merge_report",
+                samples=self.samples)
         )
 
         return jobs
@@ -492,7 +495,8 @@ pandoc --to=markdown \\
             rmarkdown.render(
                 job_input            = os.path.join("trinotate", "trinotate_annotation_report.tsv"),
                 job_name             = "trinotate_report",
-                input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeqDeNovoAssembly.trinotate.Rmd") ,
+                input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeqDeNovoAssembly.trinotate.Rmd"),
+                samples              = self.samples,
                 render_output_dir    = 'report',
                 module_section       = 'report',
                 prerun_r             = 'report_dir="report"; source_dir="trinotate";'
@@ -612,12 +616,13 @@ pandoc --to=markdown \\
         # Render Rmarkdown Report
         jobs.append(
             rmarkdown.render(
-             job_input            = os.path.join("exploratory", "index.tsv"),
-             job_name             = "gq_seq_utils_exploratory_analysis_rnaseq_denovo_report",
-             input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeqDeNovoAssembly.gq_seq_utils_exploratory_analysis_rnaseq.Rmd") ,
-             render_output_dir    = 'report',
-             module_section       = 'report', # TODO: this or exploratory?
-             prerun_r             = 'report_dir="report";' # TODO: really necessary or should be hard-coded in exploratory.Rmd?
+                job_input            = os.path.join("exploratory", "index.tsv"),
+                job_name             = "gq_seq_utils_exploratory_analysis_rnaseq_denovo_report",
+                input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeqDeNovoAssembly.gq_seq_utils_exploratory_analysis_rnaseq.Rmd"),
+                samples              = self.samples,
+                render_output_dir    = 'report',
+                module_section       = 'report', # TODO: this or exploratory?
+                prerun_r             = 'report_dir="report";' # TODO: really necessary or should be hard-coded in exploratory.Rmd?
              )
         )
 
@@ -683,7 +688,8 @@ pandoc --to=markdown \\
                     filter_string="" if not config.param('filter_annotated_components', 'filters_trinotate', required=False) else config.param('filter_annotated_components', 'filters_trinotate', required=False)
                     ),
                 name="filter_annotated_components_report",
-                report_files=[report_file]
+                report_files=[report_file],
+                samples=self.samples
                 )
             )
 
@@ -741,13 +747,14 @@ pandoc --to=markdown \\
         # Render Rmarkdown Report
         jobs.append(
             rmarkdown.render(
-             job_input            = os.path.join(exploratory_output_dir, "index.tsv"),
-             job_name             = "gq_seq_utils_exploratory_analysis_rnaseq_denovo_filtered_report",
-             input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeqDeNovoAssembly.gq_seq_utils_exploratory_analysis_rnaseq_filtered.Rmd") ,
-             render_output_dir    = 'report',
-             module_section       = 'report',
-             prerun_r             = 'report_dir="report/filtered_assembly"; exploratory_dir="' + exploratory_output_dir + '";'
-             )
+                job_input            = os.path.join(exploratory_output_dir, "index.tsv"),
+                job_name             = "gq_seq_utils_exploratory_analysis_rnaseq_denovo_filtered_report",
+                input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeqDeNovoAssembly.gq_seq_utils_exploratory_analysis_rnaseq_filtered.Rmd"),
+                samples              = self.samples,
+                render_output_dir    = 'report',
+                module_section       = 'report',
+                prerun_r             = 'report_dir="report/filtered_assembly"; exploratory_dir="' + exploratory_output_dir + '";'
+            )
         )
         return jobs
 
@@ -836,14 +843,16 @@ pandoc --to=markdown \\
         # DGE Report
         # Render Rmarkdown Report
         output_files = []
-        for job_item in jobs:
-            output_files.extend([output_file for output_file in job_item.output_files if output_file not in output_files])
+        for job in jobs:
+            job.samples = self.samples
+            output_files.extend([output_file for output_file in job.output_files if output_file not in output_files])
 
         jobs.append(
             rmarkdown.render(
                 job_input            = output_files,
                 job_name             = "differential_expression_goseq_rnaseq_denovo_report",
                 input_rmarkdown_file = input_rmarkdown_file,
+                samples              = self.samples,
                 render_output_dir    = 'report',
                 module_section       = 'report',
                 prerun_r             = 'design_file="' +  os.path.relpath(self.args.design.name, self.output_dir) +
@@ -911,8 +920,9 @@ pandoc --to=markdown \\
 
         # Dependencies for report
         output_files = []
-        for job_item in jobs:
-            output_files.extend([output_file for output_file in job_item.output_files if output_file not in output_files])
+        for job in jobs:
+            job.samples = self.samples
+            output_files.extend([output_file for output_file in job.output_files if output_file not in output_files])
 
         # DGE Report
         # Render Rmarkdown Report
@@ -921,6 +931,7 @@ pandoc --to=markdown \\
                 job_input            = output_files,
                 job_name             = "differential_expression_goseq_rnaseq_denovo_filtered_report",
                 input_rmarkdown_file = input_rmarkdown_file ,
+                samples              = self.samples,
                 render_output_dir    = 'report',
                 module_section       = 'report',
                 prerun_r             = 'report_dir="' + report_dir + '"; source_dir="' + output_directory + '"; ' + 'top_n_results=10; contrasts=c("' + '","'.join(contrast.name for contrast in self.contrasts) + '");'

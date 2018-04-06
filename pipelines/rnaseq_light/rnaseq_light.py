@@ -75,6 +75,7 @@ class RnaSeqLight(rnaseq.RnaSeq):
                 output_dir= os.path.join(self.output_dir, "kallisto", readset.sample.name)
                 parameters=""
                 job = tools.rnaseqLight_kallisto(fastq1, fastq2, transcriptome_file, tx2genes_file, output_dir, parameters, job_name)
+                job.samples = [readset.sample]
                 jobs.append(job)
 
             #SINGLE
@@ -94,6 +95,7 @@ class RnaSeqLight(rnaseq.RnaSeq):
                 print("Please make sure to update fragment_length and fragment_length_sd in the ini file!")
                 parameters="--single -l "+ fragment_length +" -s " + fragment_length_sd
                 job = tools.rnaseqLight_kallisto(fastq1, "", transcriptome_file, tx2genes_file, output_dir, parameters, job_name)
+                job.samples = [readset.sample]
                 jobs.append(job)
             else:
                 raise Exception("Error: run type \"" + readset.run_type +
@@ -107,32 +109,38 @@ class RnaSeqLight(rnaseq.RnaSeq):
         kallisto_directory="kallisto"
         all_readset_directory="All_readsets"
         output_dir=os.path.join(self.output_dir,kallisto_directory, all_readset_directory)
+
         #per trancripts
         input_abundance_files_transcripts = [os.path.join(self.output_dir,kallisto_directory, readset.sample.name, "abundance_transcripts.tsv") for readset in self.readsets]
         job_name_transcripts="kallisto_count_matrix.transcripts"
         data_type_transcripts="transcripts"
         job=tools.r_create_kallisto_count_matrix(input_abundance_files_transcripts, output_dir, data_type_transcripts, job_name_transcripts)
+        job.samples = self.samples
         jobs.append(job)
+
         #per genes
         input_abundance_files_genes = [os.path.join(self.output_dir,kallisto_directory, readset.sample.name, "abundance_genes.tsv") for readset in self.readsets]
         job_name_genes="kallisto_count_matrix.genes"
         data_type_genes="genes"
         job=tools.r_create_kallisto_count_matrix(input_abundance_files_genes, output_dir, data_type_genes, job_name_genes)
+        job.samples = [readset.sample]
         jobs.append(job)
 
         #copy tx2genes file
         jobs.append(
-          Job(
-              [os.path.join(self.output_dir, "kallisto", "All_readsets","all_readsets.abundance_genes.csv"), os.path.join(self.output_dir, "kallisto", "All_readsets","all_readsets.abundance_transcripts.csv")],
-              [],
-              command="""\
-               cp \\
-                {tx2genes_file} \\
-                {report_dir}""".format(
-                  tx2genes_file=config.param('kallisto', 'transcript2genes', type="filepath"),
-                  report_dir="report"
-              ),
-              name="report.copy_tx2genes_file")
+            Job(
+                [os.path.join(self.output_dir, "kallisto", "All_readsets","all_readsets.abundance_genes.csv"), os.path.join(self.output_dir, "kallisto", "All_readsets","all_readsets.abundance_transcripts.csv")],
+                [],
+                command="""\
+cp \\
+  {tx2genes_file} \\
+  {report_dir}""".format(
+                    tx2genes_file=config.param('kallisto', 'transcript2genes', type="filepath"),
+                    report_dir="report"
+                ),
+                name="report.copy_tx2genes_file",
+                self.samples=samples
+            )
         )
 
         # Create kallisto report
@@ -140,7 +148,8 @@ class RnaSeqLight(rnaseq.RnaSeq):
             rmarkdown.render(
                 job_input            = [os.path.join(self.output_dir, "kallisto", "All_readsets","all_readsets.abundance_genes.csv"), os.path.join(self.output_dir, "kallisto", "All_readsets","all_readsets.abundance_transcripts.csv")],
                 job_name             = "report.kallisto_count_matrix",
-                input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeqLight.kallisto.Rmd") ,
+                input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeqLight.kallisto.Rmd"),
+                samples              = self.samples,
                 render_output_dir    = 'report',
                 module_section       = 'report',
                 prerun_r             = 'report_dir="report";'
@@ -164,17 +173,18 @@ class RnaSeqLight(rnaseq.RnaSeq):
                 config.param('gq_seq_utils_exploratory_analysis_rnaseq_light', 'genes', type='filepath'),
                 "exploratory"
             )
-        ], name="gq_seq_utils_exploratory_analysis_rnaseq_light"))
+        ], name="gq_seq_utils_exploratory_analysis_rnaseq_light", samples=self.samples))
 
         jobs.append(
             rmarkdown.render(
-             job_input            = os.path.join("exploratory", "index.tsv"),
-             job_name             = "report.gq_seq_utils_exploratory_analysis_rnaseq",
-             input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeqLight.gq_seq_utils_exploratory_analysis_rnaseq_light.Rmd") ,
-             render_output_dir    = 'report',
-             module_section       = 'report',
-             prerun_r             = 'report_dir="report";'
-             )
+                job_input            = os.path.join("exploratory", "index.tsv"),
+                job_name             = "report.gq_seq_utils_exploratory_analysis_rnaseq",
+                input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeqLight.gq_seq_utils_exploratory_analysis_rnaseq_light.Rmd"),
+                job.samples          = self.samples
+                render_output_dir    = 'report',
+                module_section       = 'report',
+                prerun_r             = 'report_dir="report";'
+            )
         )
 
         return jobs
