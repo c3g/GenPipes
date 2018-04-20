@@ -405,7 +405,7 @@ cp \\
         jobs = []
         for sample in self.samples:
             alignment_file_prefix = os.path.join("alignment", sample.name, sample.name + ".")
-            input = alignment_file_prefix + "matefixed.sorted.bam"
+            input =  self.select_input_files([[alignment_file_prefix + "matefixed.sorted.bam"] , [ alignment_file_prefix +"realigned.qsorted.bam"], [alignment_file_prefix + "sorted.bam"]])
             output = alignment_file_prefix + "sorted.dup.bam"
             metrics_file = alignment_file_prefix + "sorted.dup.metrics"
 
@@ -643,7 +643,7 @@ cp \\
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
             haplotype_directory = os.path.join(alignment_directory, "rawHaplotypeCaller")
-            input = os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")
+            input = self.select_input_files(os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam"),os.path.join(alignment_directory, sample.name + ".sorted.dup.bam"),os.path.join(alignment_directory, sample.name + ".sorted.bam"))
 
             if nb_haplotype_jobs == 1:
                 jobs.append(concat_jobs([
