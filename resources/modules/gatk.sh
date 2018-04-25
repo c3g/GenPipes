@@ -24,6 +24,8 @@ build() {
   mkdir -p $INSTALL_DIR
   cd $INSTALL_DOWNLOAD
   unzip $ARCHIVE -d $INSTALL_DIR/$SOFTWARE_DIR
+  mv $INSTALL_DIR/$SOFTWARE_DIR/${ARCHIVE//.zip/}/* $INSTALL_DIR/$SOFTWARE_DIR/
+  rm -rf $INSTALL_DIR/$SOFTWARE_DIR/${ARCHIVE//.zip/}
 }
 
 module_file() {
