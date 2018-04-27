@@ -23,25 +23,30 @@
 from core.config import *
 from core.job import *
 
-def manta_pair_config(input_normal,input_tumor, output_dir):
+def manta_config(input_normal, input_tumor, output_dir):
+    if input_tumor is not None:
+        inputs = [input_normal, input_tumor]
+    else:
+        inputs = [input_normal]
+        
     return Job(
-        [input_normal, input_tumor],
+        inputs,
         [output_dir],
         [
-            ['manta', 'module_python'],
-            ['manta', 'module_manta']
+            ['manta_sv', 'module_python'],
+            ['manta_sv', 'module_manta']
         ],
         command="""\
  python $MANTA_HOME/bin/configManta.py \\
         --normalBam {normal} \\
-        --tumorBam {tumor} \\
+        {tumor} \\
         --referenceFasta {genome} \\
         {experiment_type} \\
         --runDir {output}""".format(
             normal=input_normal,
-            tumor=input_tumor,
-            genome=config.param('manta_pair_sv_calls','genome_fasta',type='filepath'),
-            experiment_type=config.param('manta_pair_sv_calls','experiment_type_option') if config.param('manta_pair_sv_calls','experiment_type_option') else "",
+            tumor="--tumorBam " + input_tumor if input_tumor else "",
+            genome=config.param('manta_sv','genome_fasta',type='filepath'),
+            experiment_type=config.param('manta_sv','experiment_type_option') if config.param('manta_sv','experiment_type_option') else "",
             output=output_dir
         )
     )
@@ -51,8 +56,8 @@ def manta_run(input_dir, output_dep=[]):
         [input_dir],
         output_dep,
         [
-            ['manta', 'module_python'],
-            ['manta', 'module_manta']
+            ['manta_sv', 'module_python'],
+            ['manta_sv', 'module_manta']
         ],    
         command="""\
 python {input_dir}/runWorkflow.py \\
@@ -61,8 +66,8 @@ python {input_dir}/runWorkflow.py \\
         -g {ram} \\
         --quiet""".format(
             input_dir=input_dir,
-            mode=config.param('manta_pair_sv_calls','option_mode'),
-            nodes=config.param('manta_pair_sv_calls','option_nodes'),
-            ram=config.param('manta_pair_sv_calls','ram')
+            mode=config.param('manta_sv','option_mode'),
+            nodes=config.param('manta_sv','option_nodes'),
+            ram=config.param('manta_sv','ram')
         )
     )

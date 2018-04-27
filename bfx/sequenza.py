@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+ #!/usr/bin/env python
 
 ################################################################################
 # Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
@@ -89,10 +89,11 @@ python $SEQUENZA_BIN/sequenza-utils.py  \\
         )
     )
 
-def sequenza_main(seqz,output_folder,sample_name):
+def sequenza_main(seqz, output_folder, sample_name):
+    output = sample_name + "_ploidy_celularity.tsv"
     return Job(
         [seqz],
-        [None],
+        [output],
         [
             ['sequenza', 'module_mugqic_tools'],
             ['sequenza', 'module_R'],

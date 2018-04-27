@@ -75,13 +75,13 @@ samtools flagstat \\
         removable_files=[output]
         )
 
-def mpileup(input_bams, output, other_options="", region=None, regionFile=None, ini_section='rawmpileup'):
+def mpileup(inputs, output, options="", region=None, regionFile=None, ini_section='rawmpileup'):
 
-    if not isinstance(input_bams, list):
-        input_bams = [input_bams]
+    if not isinstance(inputs, list):
+        inputs = [inputs]
 
     return Job(
-        input_bams,
+        inputs,
         [output],
         [
             [ini_section, 'module_samtools']
@@ -93,11 +93,11 @@ samtools mpileup {other_options} \\
   {regionFile} \\
   {input_bams} \\
   {output}""".format(
-            other_options=other_options,
+            other_options=options,
             reference_fasta="-f " + config.param('samtools_mpileup', 'genome_fasta', type='filepath') if config.param('samtools_mpileup', 'genome_fasta', type='filepath') else "",
             region="-r " + region if region else "",
             regionFile="-l " + regionFile if regionFile else "",
-            input_bams="\\\n  ".join([input_bam for input_bam in input_bams]),
+            input_bams="\\\n  ".join([input_bam for input_bam in inputs]),
             output="> " + output if output else ""
             )
         )
@@ -122,22 +122,22 @@ samtools merge \\
             )
         )
 
-def bcftools_mpileup(input_bams, output, other_options="", region=None, regionFile=None, ini_section='rawmpileup'):
+def bcftools_mpileup(inputs, output, options, region=None, regionFile=None, ini_section='rawmpileup'):
 
     return Job(
-        input_bams,
+        inputs,
         [output],
         [
             [ini_section, 'module_samtools']
         ],
     command="""\
-bcftools mpileup {other_options} \\
-  -f {reference_fasta}{region}{regionFile}{input_bams}{output}""".format(
-        other_options=other_options,
+bcftools mpileup {options} \\
+  -f {reference_fasta}{region}{regionFile}{inputs}{output}""".format(
+        options=options if options else "",
         reference_fasta=config.param('samtools_mpileup', 'genome_fasta', type='filepath'),
         regionFile=" \\\n  -l " + regionFile if regionFile else "",
         region=" \\\n  -r " + region if region else "",
-        input_bams="".join([" \\\n  " + input_bam for input_bam in input_bams]),
+        inputs="".join([" \\\n  " + input for input in inputs]),
         output=" \\\n  > " + output if output else ""
          )
     )
@@ -206,7 +206,7 @@ def bcftools_cat(inputs, output):
 
     if not isinstance(inputs, list):
         inputs = [inputs]
-
+        
     return Job(
         inputs,
         [output],

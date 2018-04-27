@@ -901,3 +901,20 @@ bash IHEC_methylseq_metrics.sh \\
             targeted_flag=1 if target_bed else 0
         )
     )
+
+def r_somatic_signature(input, output, remove_file=None):
+    return Job(
+        [input],
+        [os.path.join(output,"Alexandrov_weigth.tsv")],
+        [
+            ['somatic_signature', 'module_mugqic_tools'],
+            ['somatic_signature', 'module_R']
+        ],
+        command="""\
+Rscript $R_TOOLS/somaticSignatureAlexandrov.R \\
+  {input} \\
+  {output} """.format(
+        input=input,
+        output=output
+        ),removable_files=remove_file
+    )

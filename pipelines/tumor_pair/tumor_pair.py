@@ -111,15 +111,6 @@ class TumorPair(dnaseq.DnaSeqRaw):
         self.argparser.add_argument("-t", "--type", help="Tumor pair analysis type",choices = ["fastpass", "ensemble", "sv"], default="ensemble")
         super(TumorPair, self).__init__(protocol)
 
-        
-
-
-    #def __args__(self):
-        #self.args.type.help = "Tumor pair analysis type"
-        #self.args.type.choices = ["fastpass", "ensemble", "sv"]
-        #self.args.type.default="ensemble"
-        #return self.args
-
 
     @property
     def tumor_pairs(self):
@@ -1038,10 +1029,8 @@ cp \\
         for tumor_pair in self.tumor_pairs.itervalues():
             pair_directory = os.path.join("pairedVariants", tumor_pair.name)
             samtools_directory = os.path.join(pair_directory, "rawSamtools")
-            input_normal = os.path.join("alignment", tumor_pair.normal.name,
-                                        tumor_pair.normal.name + ".sorted.dup.recal.bam")
-            input_tumor = os.path.join("alignment", tumor_pair.tumor.name,
-                                       tumor_pair.tumor.name + ".sorted.dup.recal.bam")
+            input_normal = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.recal.bam")
+            input_tumor = os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
 
             paired_sample = [input_normal, input_tumor]
 
@@ -1325,8 +1314,8 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
                         stderr.write("Incomplete vardict vcf: %s\n" % input_vcf)
 
                 jobs.append(concat_jobs([
+                    Job(samples=[tumor_pair.normal, tumor_pair.tumor]),
                     pipe_jobs([
-                        Job(samples=[tumor_pair.normal, tumor_pair.tumor]),
                         bcftools.concat(inputVCFs, None),
                         Job([None], [None],
                             command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $4) } {print}'"),
@@ -1552,6 +1541,45 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
 
         return jobs
 
+    def somatic_signature(self):
+        """
+		Extract somatic signature composition of each sample based on Alexandrov signature reference
+		Analysis is done using the SomaticSignatures and the deconstructSigs R packages
+		"""
+    
+        jobs = []
+    
+        ensemble_directory = os.path.join("pairedVariants", "ensemble")
+        somatic_signature_directory = os.path.join("somaticSignature")
+        # input_merged_vcfs = [os.path.join(ensemble_directory, tumor_pair.name , tumor_pair.name + ".ensemble.somatic.vt.annot.vcf.gz") for tumor_pair in self.tumor_pairs.itervalues()]
+
+        for tumor_pair in self.tumor_pairs.itervalues():
+            jobs.append(concat_jobs([
+                Job(command="mkdir -p " + somatic_signature_directory + "/tmp_vcf"),
+                Job([os.path.join(ensemble_directory, tumor_pair.name,
+                                  tumor_pair.name + ".ensemble.somatic.vt.annot.vcf.gz")],
+                    [os.path.join(somatic_signature_directory, "tmp_vcf", tumor_pair.name + "list_tmp.tsv")],
+                    command="echo -e '" + tumor_pair.tumor.name + "\t" + os.path.join(ensemble_directory, tumor_pair.name,
+                                  tumor_pair.name + ".ensemble.somatic.vt.annot.vcf.gz") + "' > " + os.path.join(
+                        somatic_signature_directory, "tmp_vcf", tumor_pair.name + "list_tmp.tsv"))
+            ], name="somatic_signature.gzip." + tumor_pair.name)
+            )
+    
+        input_list = [os.path.join(somatic_signature_directory, "tmp_vcf", tumor_pair.name + "list_tmp.tsv") for
+                      tumor_pair in self.tumor_pairs.itervalues()]
+    
+        jobs.append(concat_jobs([
+            Job(input_list, [os.path.join(somatic_signature_directory, "Samplelist.tsv")],
+                command="echo -e 'tumor\tpath' > " + os.path.join(somatic_signature_directory,
+                                                                  "Samplelist.tsv") + " && cat " + " ".join(
+                    input_list) + " >> " + os.path.join(somatic_signature_directory, "Samplelist.tsv"),
+                removable_files=input_list),
+            tools.r_somatic_signature(os.path.join(somatic_signature_directory, "Samplelist.tsv"),
+                                      somatic_signature_directory)
+        ], name="somatic_signature.allPairs"))
+    
+        return jobs
+
     def compute_cancer_effects_somatic(self):
         """
         Variant effect annotation. The .vcf files are annotated for variant effects using the SnpEff software.
@@ -1739,8 +1767,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
 
         ensemble_directory = os.path.join("pairedVariants", "ensemble")
         input_merged_vcfs = [
-            os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.vt.annot.vcf.gz") for
-            tumor_pair in self.tumor_pairs.itervalues()]
+            os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.vt.annot.vcf.gz") for tumor_pair in self.tumor_pairs.itervalues()]
         output = os.path.join(ensemble_directory, "allPairs.ensemble.somatic.vt.annot.vcf.gz")
 
         mkdir_job = Job(command="mkdir -p " + ensemble_directory, removable_files=[output], samples=[self.tumor_pairs.normal, self.tumor_pairs.tumor])
@@ -1853,7 +1880,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         cancer_pair_filename = os.path.join('cancer_snpeff.tsv')
         cancer_pair = open(cancer_pair_filename, 'w')
 
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pair.itervalues():
             cancer_pair.write(tumor_pair.normal.name + "\t" + tumor_pair.tumor.name + "\n")
 
         mkdir_job = Job(command="mkdir -p " + ensemble_directory, removable_files=[output], samples=[self.tumor_pairs.normal, self.tumor_pairs.tumor])
@@ -1927,7 +1954,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         gemini_version = ".".join([gemini_module[-2], gemini_module[-1]])
 
         jobs.append(concat_jobs([
-            Job(command="mkdir -p " + ensemble_directory, samples=[self.tumor_pairs.normal, self.tumor_pairs.tumor]),
+            Job(command="mkdir -p " + ensemble_directory, samples=[self.tumor_pairs.normal, self.tumor_pairss.tumor]),
             gemini.gemini_annotations(gemini_prefix + ".ensemble.germline_loh.vt.annot.snpeff.vcf.gz",
                                       gemini_prefix + ".germline_loh.gemini." + gemini_version + ".db", temp_dir)
         ], name="gemini_annotations.germline.allPairs"))
@@ -2053,11 +2080,10 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         jobs = []
         for tumor_pair in self.tumor_pairs.itervalues():
             pair_directory = os.path.join("pairedVariants", tumor_pair.name)
+            raw_directory = os.path.join(pair_directory, "sCNAphase", "rawsCNAphase")
             scnaphase_directory = os.path.join(pair_directory, "sCNAphase")
-            inputNormal = os.path.join("alignment", tumor_pair.normal.name,
-                                       tumor_pair.normal.name + ".sorted.dup.recal.bam")
-            inputTumor = os.path.join("alignment", tumor_pair.tumor.name,
-                                      tumor_pair.tumor.name + ".sorted.dup.recal.bam")
+            inputNormal = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.recal.bam")
+            inputTumor = os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
             output_normal_vcf = os.path.join(scnaphase_directory, tumor_pair.normal.name + ".vcf.gz")
             output_normal_vcf_vt = os.path.join(scnaphase_directory, tumor_pair.normal.name + ".vt.vcf.gz")
             output_normal_vcf_vt_flt = os.path.join(scnaphase_directory, tumor_pair.normal.name + ".vt.flt.vcf.gz")
@@ -2065,7 +2091,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
             output_tumor_vcf_vt = os.path.join(scnaphase_directory, tumor_pair.tumor.name + ".vt.vcf.gz")
             output_tumor_vcf_vt_flt = os.path.join(scnaphase_directory, tumor_pair.tumor.name + ".vt.flt.vcf.gz")
 
-            mkdir_job=Job(command="mkdir -p " + scnaphase_directory, removable_files=[scnaphase_directory], samples=[tumor_pair.normal, tumor_pair.tumor]),
+            mkdir_job=Job(command="mkdir -p " + raw_directory, removable_files=[raw_directory], samples=[tumor_pair.normal, tumor_pair.tumor])
 
             nb_jobs = config.param('samtools_single', 'nb_jobs', type='posint')
 
@@ -2073,92 +2099,75 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
                 jobs.append(concat_jobs([
                     mkdir_job,
                     pipe_jobs([
-                        samtools.mpileup([inputNormal], None, config.param('samtools_single', 'mpileup_other_options'),
-                                         ini_section="samtools_paired"),
-                        samtools.bcftools_call_pair("-",
-                                                    os.path.join(scnaphase_directory, tumor_pair.normal.name + ".bcf"),
-                                                    config.param('samtools_single', 'bcftools_view_options')),
+                        samtools.mpileup([inputNormal], None, config.param('samtools_single', 'mpileup_other_options'), ini_section="samtools_single"),
+                        samtools.bcftools_view("-", os.path.join(raw_directory, tumor_pair.normal.name + ".bcf"),
+                                                    config.param('samtools_single', 'bcftools_view_options'), ini_section="samtools_single"),
                     ]),
                 ], name="samtools_single." + tumor_pair.normal.name))
 
                 jobs.append(concat_jobs([
                     mkdir_job,
                     pipe_jobs([
-                        samtools.mpileup([inputTumor], None, config.param('samtools_single', 'mpileup_other_options'),
-                                         ini_section="samtools_paired"),
-                        samtools.bcftools_call_pair("-",
-                                                    os.path.join(scnaphase_directory, tumor_pair.tumor.name + ".bcf"),
-                                                    config.param('samtools_single', 'bcftools_view_options')),
+                        samtools.mpileup([inputTumor], None, config.param('samtools_single', 'mpileup_other_options'), ini_section="samtools_single"),
+                        samtools.bcftools_view("-", os.path.join(raw_directory, tumor_pair.tumor.name + ".bcf"),
+                                                    config.param('samtools_single', 'bcftools_view_options'), ini_section="samtools_single"),
                     ]),
                 ], name="samtools_single." + tumor_pair.tumor.name))
 
             else:
-                for region in self.generate_approximate_windows(
-                        nb_jobs):  # for idx,sequences in enumerate(unique_sequences_per_job):
+                for region in self.generate_approximate_windows(nb_jobs):  # for idx,sequences in enumerate(unique_sequences_per_job):
                     jobs.append(concat_jobs([
                         mkdir_job,
                         pipe_jobs([
-                            samtools.mpileup([inputNormal], None,
-                                             config.param('samtools_single', 'mpileup_other_options'), region,
-                                             ini_section="samtools_paired"),
-                            samtools.bcftools_call_pair("-", os.path.join(scnaphase_directory,
-                                                                          tumor_pair.normal.name + "." + region + ".bcf"),
-                                                        config.param('samtools_single', 'bcftools_view_options')),
+                            samtools.mpileup([inputNormal], None, config.param('samtools_single', 'mpileup_other_options'), region, ini_section="samtools_single"),
+                            samtools.bcftools_view("-", os.path.join(raw_directory, tumor_pair.normal.name + "." + region + ".bcf"),
+                                                        config.param('samtools_single', 'bcftools_view_options'), ini_section="samtools_single"),
                         ]),
                     ], name="samtools_single." + tumor_pair.normal.name + "." + region))
 
                     jobs.append(concat_jobs([
                         mkdir_job,
                         pipe_jobs([
-                            samtools.mpileup([inputTumor], None,
-                                             config.param('samtools_single', 'mpileup_other_options'), region,
-                                             ini_section="samtools_paired"),
-                            samtools.bcftools_call_pair("-", os.path.join(scnaphase_directory,
-                                                                          tumor_pair.tumor.name + "." + region + ".bcf"),
-                                                        config.param('samtools_single', 'bcftools_view_options')),
+                            samtools.mpileup([inputTumor], None, config.param('samtools_single', 'mpileup_other_options'), region, ini_section="samtools_single"),
+                            samtools.bcftools_view("-", os.path.join(raw_directory, tumor_pair.tumor.name + "." + region + ".bcf"),
+                                                        config.param('samtools_single', 'bcftools_view_options'), ini_section="samtools_single"),
                         ]),
                     ], name="samtools_single." + tumor_pair.tumor.name + "." + region))
 
-                inputsNormal = [os.path.join(scnaphase_directory, tumor_pair.normal.name + "." + region + ".bcf") for
-                                region in
+                inputsNormal = [os.path.join(raw_directory, tumor_pair.normal.name + "." + region + ".bcf") for region in
                                 self.generate_approximate_windows(nb_jobs)]
+                
                 jobs.append(concat_jobs([
                     pipe_jobs([
-                        samtools.bcftools_cat_pair(inputsNormal, None),
-                        samtools.bcftools_view_pair("-", None),
-                        Job([None], [None],
-                            command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $4) } {print}'"),
-                        Job([None], [None],
-                            command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $5) } {print}'"),
+                        samtools.bcftools_cat(inputsNormal, None, ini_section="samtools_single"),
+                        samtools.bcftools_view("-", None, ini_section="samtools_single"),
+                        Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $4) } {print}'"),
+                        Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $5) } {print}'"),
                         Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '$1!~/^#/ && $4 == $5 {next} {print}'"),
                         htslib.bgzip_tabix(None, output_normal_vcf),
                     ]),
                     vt.decompose_and_normalize_mnps(output_normal_vcf, output_normal_vcf_vt),
                     pipe_jobs([
-                        Job([output_normal_vcf_vt], [None],
-                            command="zgrep -Pv '\\tN\\t' " + output_normal_vcf_vt + " | grep -v 'INDEL' | grep -v '\.\/' | grep -v '\/\.' "),
+                        Job([output_normal_vcf_vt], [None], command="zgrep -Pv '\\tN\\t' " + output_normal_vcf_vt + " | grep -v 'INDEL' | grep -v '\.\/' | grep -v '\/\.' "),
                         htslib.bgzip_tabix(None, output_normal_vcf_vt_flt),
                     ]),
                 ], name="merge_samtools_single." + tumor_pair.normal.name))
 
-                inputsTumor = [os.path.join(scnaphase_directory, tumor_pair.tumor.name + "." + region + ".bcf") for
+                inputsTumor = [os.path.join(raw_directory, tumor_pair.tumor.name + "." + region + ".bcf") for
                                region in
                                self.generate_approximate_windows(nb_jobs)]
                 jobs.append(concat_jobs([
                     pipe_jobs([
-                        samtools.bcftools_cat_pair(inputsTumor, None),
-                        samtools.bcftools_view_pair("-", None),
-                        Job([None], [None],
-                            command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $4) } {print}'"),
-                        Job([None], [None],
-                            command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $5) } {print}'"),
+                        samtools.bcftools_cat(inputsTumor, None, ini_section="samtools_single"),
+                        samtools.bcftools_view("-", None, ini_section="samtools_single"),
+                        Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $4) } {print}'"),
+                        Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $5) } {print}'"),
                         Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '$1!~/^#/ && $4 == $5 {next} {print}'"),
                         htslib.bgzip_tabix(None, output_tumor_vcf),
                     ]),
                     vt.decompose_and_normalize_mnps(output_tumor_vcf, output_tumor_vcf_vt),
                     pipe_jobs([
-                        Job([output_tumor_vcf_vt], [None],
-                            command="zgrep -Pv '\\tN\\t' " + output_tumor_vcf_vt + " | grep -v 'INDEL' | grep -v '\.\/' | grep -v '\/\.' "),
+                        Job([output_tumor_vcf_vt], [None], command="zgrep -Pv '\\tN\\t' " + output_tumor_vcf_vt + " | grep -v 'INDEL' | grep -v '\.\/' | grep -v '\/\.' "),
                         htslib.bgzip_tabix(None, output_tumor_vcf_vt_flt),
                     ]),
                 ], name="merge_samtools_single." + tumor_pair.tumor.name))
@@ -2310,7 +2319,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
             
         return jobs
         
-    def manta_pair_sv_calls(self):
+    def manta_sv_calls(self):
         """
         Manta calls structural variants (SVs) and indels from mapped paired-end sequencing reads. It is optimized for
         analysis of germline variation in small sets of individuals and somatic variation in tumor/normal sample pairs.
@@ -2327,7 +2336,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
             manta_directory = os.path.abspath(os.path.join(pair_directory, "rawManta"))
             output_prefix = os.path.abspath(os.path.join(pair_directory, tumor_pair.name))
 
-            mkdir_job = Job(command="mkdir -p " + manta_directory, samples = [tumor_pair.normal, tumor_pair.tumor])
+            mkdir_job = Job(command="mkdir -p " + manta_directory, removable_files=[manta_directory], samples = [tumor_pair.normal, tumor_pair.tumor])
 
             inputNormal = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.recal.bam")
             inputTumor = os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
@@ -2340,7 +2349,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
 
             jobs.append(concat_jobs([
                 mkdir_job,
-                manta.manta_pair_config(inputNormal, inputTumor, manta_directory),
+                manta.manta_config(inputNormal, inputTumor, manta_directory),
                 manta.manta_run(manta_directory, output_dep=output_dep),
                 Job([manta_somatic_output], [output_prefix + ".manta.somatic.vcf.gz"],
                     command="ln -sf " + manta_somatic_output + " " + output_prefix + ".manta.somatic.vcf.gz"),
@@ -2350,7 +2359,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
                     command="ln -sf " + manta_germline_output + " " + output_prefix + ".manta.germline.vcf.gz"),
                 Job([manta_germline_output_tbi], [output_prefix + ".manta.germline.vcf.gz"],
                     command="ln -sf " + manta_germline_output_tbi + " " + output_prefix + ".manta.germline.vcf.gz.tbi"),
-            ], name="manta_pair_sv_calls." + tumor_pair.name))
+            ], name="manta_sv." + tumor_pair.name))
 
         return jobs
 
@@ -2431,7 +2440,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
 
             genotype_vcf = os.path.join(pair_directory, tumor_pair.name + ".lumpy.genotyped.vcf")
 
-            mkdir_job = Job(command="mkdir -p " + lumpy_directory, samples = [tumor_pair.normal, tumor_pair.tumor])
+            mkdir_job = Job(command="mkdir -p " + lumpy_directory, removable_files=[lumpy_directory], samples = [tumor_pair.normal, tumor_pair.tumor])
 
             jobs.append(concat_jobs([
                 mkdir_job,
@@ -2568,7 +2577,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
             somatic_vcf = os.path.join(pair_directory, tumor_pair.name + ".wham.somatic.vcf.gz")
             germline_vcf = os.path.join(pair_directory, tumor_pair.name + ".wham.germline.vcf.gz")
 
-            mkdir_job = Job(command="mkdir -p " + wham_directory, samples = [tumor_pair.normal, tumor_pair.tumor])
+            mkdir_job = Job(command="mkdir -p " + wham_directory, removable_files=[wham_directory], samples = [tumor_pair.normal, tumor_pair.tumor])
 
             jobs.append(concat_jobs([
                 mkdir_job,
@@ -2578,7 +2587,11 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
 
             jobs.append(concat_jobs([
                 mkdir_job,
-                vt.sort(merge_vcf, os.path.join(pair_directory, tumor_pair.name + ".wham.sorted.vcf"), "-m full"),
+                pipe_jobs([
+                    Job([merge_vcf], [None], command="cat " + merge_vcf + " | grep -v \"^##contig\""),
+                    bcftools.annotate(None, None, config.param('wham_call_sv', 'header_options')),
+                    vt.sort("-", os.path.join(pair_directory, tumor_pair.name + ".wham.sorted.vcf"), "-m full"),
+                ]),
                 pipe_jobs([
                     svtyper.genotyper(inputTumor, inputNormal,
                                   os.path.join(pair_directory, tumor_pair.name + ".wham.sorted.vcf"), None),
@@ -2703,7 +2716,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
                 normal = None
                 tumor = None
 
-            mkdir_job = Job(command="mkdir -p " + cnvkit_dir, samples = [tumor_pair.normal, tumor_pair.tumor])
+            mkdir_job = Job(command="mkdir -p " + cnvkit_dir, removable_files=[cnvkit_dir], samples = [tumor_pair.normal, tumor_pair.tumor])
 
             jobs.append(concat_jobs([
                 mkdir_job,
@@ -2933,7 +2946,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
             germline_input = tumor_pair.name + ".svaba.germline.sv.vcf"
             germline_output = os.path.join(os.path.abspath(pair_directory), tumor_pair.name + ".svaba.germline.vcf")
 
-            mkdir_job = Job(command="mkdir -p " + svaba_directory, samples = [tumor_pair.normal, tumor_pair.tumor])
+            mkdir_job = Job(command="mkdir -p " + svaba_directory, removable_files=[svaba_directory], samples = [tumor_pair.normal, tumor_pair.tumor])
             cd_job = Job(command="cd " + svaba_directory)
 
             jobs.append(concat_jobs([
@@ -3007,7 +3020,6 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         return [
             [
                 self.picard_sam_to_fastq,
-                self.sym_link_fastq_pair,
                 self.trimmomatic,
                 self.merge_trimmomatic_stats,
                 self.skewer_trimming,
@@ -3023,17 +3035,17 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
                 self.snp_effect_panel,
                 self.gemini_annotations_panel,
                 self.set_somatic_and_actionable_mutations_panel,
-                self.sym_link_panel,
                 self.metrics_dna_picard_metrics,
                 self.metrics_dna_sample_qualimap,
                 self.metrics_dna_sambamba_flagstat,
                 self.metrics_dna_fastqc,
                 self.run_pair_multiqc,
-                self.sym_link_report
+                self.sym_link_report,
+                self.sym_link_fastq_pair,
+                self.sym_link_panel,
             ],
             [
                 self.picard_sam_to_fastq,
-                self.sym_link_fastq_pair,
                 self.trimmomatic,
                 self.merge_trimmomatic_stats,
                 self.skewer_trimming,
@@ -3043,14 +3055,12 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
                 self.sambamba_merge_realigned,
                 self.sambamba_mark_duplicates,
                 self.recalibration,
-                self.sym_link_final_bam,
                 self.conpair_concordance_contamination,
                 self.metrics_dna_picard_metrics,
                 self.metrics_dna_sample_qualimap,
                 self.metrics_dna_sambamba_flagstat,
                 self.metrics_dna_fastqc,
                 self.run_pair_multiqc,
-                self.sym_link_report,
                 self.rawmpileup,
                 self.paired_varscan2,
                 self.merge_varscan2,
@@ -3063,19 +3073,23 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
                 self.ensemble_somatic,
                 self.gatk_variant_annotator_somatic,
                 self.merge_gatk_variant_annotator_somatic,
+                #self.somatic_signature,
                 self.compute_cancer_effects_somatic,
                 self.sample_gemini_annotations_somatic,
                 self.set_somatic_and_actionable_mutations,
-                self.sym_link_ensemble,
-                self.combine_tumor_pairs_somatic,
-                self.decompose_and_normalize_mnps_somatic,
-                self.all_pairs_compute_effects_somatic,
-                self.gemini_annotations_somatic,
                 self.ensemble_germline_loh,
                 self.gatk_variant_annotator_germline,
                 self.merge_gatk_variant_annotator_germline,
                 self.compute_cancer_effects_germline,
                 self.sample_gemini_annotations_germline,
+                self.sym_link_fastq_pair,
+                self.sym_link_final_bam,
+                self.sym_link_report,
+                self.sym_link_ensemble,
+                self.combine_tumor_pairs_somatic,
+                self.decompose_and_normalize_mnps_somatic,
+                self.all_pairs_compute_effects_somatic,
+                self.gemini_annotations_somatic,
                 self.combine_tumor_pairs_germline,
                 self.decompose_and_normalize_mnps_germline,
                 self.all_pairs_compute_effects_germline,
@@ -3096,7 +3110,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
                 self.sCNAphase,
                 self.delly_call_filter,
                 self.delly_sv_annotation,
-                self.manta_pair_sv_calls,
+                self.manta_sv_calls,
                 self.manta_sv_annotation,
                 self.lumpy_paired_sv,
                 self.lumpy_sv_annotation,
@@ -3105,10 +3119,10 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
                 self.cnvkit_batch,
                 self.cnvkit_sv_annotation,
                 self.scones,
-                self.ensemble_metasv,
-                self.metasv_sv_annotation,
                 self.svaba_assemble,
                 self.svaba_sv_annotation,
+                self.ensemble_metasv,
+                self.metasv_sv_annotation,
                 self.sym_link_sequenza,
                 self.sym_link_manta,
                 self.sym_link_lumpy,
