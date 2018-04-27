@@ -271,7 +271,7 @@ Usage
 
 For each pipeline, get help about usage, arguments and steps with:
 
-* if you use a `mugqic/mugqic_pipelines/<version>` module on our clusters, simply:
+* if you use a `mugqic/genpipes/<version>` module on our clusters (or `mugqic/mugqic_pipelines/<version>`), simply:
 ```
 #!bash
 <pipeline_name>.py --help
