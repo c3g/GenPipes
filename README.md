@@ -515,10 +515,10 @@ Contact us
 ----------
 Please visit our [mailing list](https://groups.google.com/forum/#!forum/genpipes) to find questions and answers about GenPipes.
 
-To subscribe to the mailing list and receive other people's messages, send an e-mail at [mugqic_pipelines+subscribe@googlegroups.com](mailto:mugqic_pipelines+subscribe@googlegroups.com).
+To subscribe to the mailing list and receive other people's messages, send an e-mail at [genpipes+subscribe@googlegroups.com](mailto:genpipes+subscribe@googlegroups.com).
 You will receive an invitation which you must accept.
 
-To use it, send us an e-mail at [mugqic_pipelines@googlegroups.com](mailto:mugqic_pipelines@googlegroups.com).
+To use it, send us an e-mail at [genpipes@googlegroups.com](mailto:genpipes@googlegroups.com).
 
 You can also report bugs at [pipelines@computationalgenomics.ca](mailto:pipelines@computationalgenomics.ca).
 
