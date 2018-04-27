@@ -77,9 +77,9 @@ To use them by default, add in your *$HOME/.bash_profile*:
 ```
 #!bash
 module load mugqic/python/2.7.14
-module load mugqic/mugqic_pipelines/<latest_version>
+module load mugqic/genpipes/<latest_version>
 ```
-(find out the latest version with: "`module avail 2>&1 | grep mugqic/mugqic_pipelines`").
+(find out the latest version with: "`module avail 2>&1 | grep mugqic/genpipes`").
 
 
 ### For guillimin and mammouth users
@@ -113,7 +113,7 @@ Set `MUGQIC_PIPELINES_HOME` to your local copy path, in your *$HOME/.bash_profil
 export MUGQIC_PIPELINES_HOME=/path/to/your/local/genpipes
 ```
 
-MUGQIC Pipelines require genomes and modules resources to run properly.
+GenPipes (formerly called MUGQIC Pipelines) require genomes and modules resources to run properly.
 First, set `MUGQIC_INSTALL_HOME` to the directory where you want to install those resources, in your *$HOME/.bash_profile*:
 ```
 #!bash
