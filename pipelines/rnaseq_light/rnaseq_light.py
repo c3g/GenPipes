@@ -57,6 +57,7 @@ class RnaSeqLight(rnaseq.RnaSeq):
         """
         transcriptome_file = config.param('kallisto', 'transcriptome_idx', type="filepath")
         tx2genes_file = config.param('kallisto', 'transcript2genes', type="filepath")
+        other_param = config.param('kallisto', 'other_options', required=False)
 
         jobs = []
         for readset in self.readsets:
@@ -73,7 +74,7 @@ class RnaSeqLight(rnaseq.RnaSeq):
 
                 job_name = "kallisto." + readset.name
                 output_dir= os.path.join(self.output_dir, "kallisto", readset.sample.name)
-                parameters=""
+                parameters= other_param if other_param else ""
                 job = tools.rnaseqLight_kallisto(fastq1, fastq2, transcriptome_file, tx2genes_file, output_dir, parameters, job_name)
                 jobs.append(job)
 
@@ -93,6 +94,7 @@ class RnaSeqLight(rnaseq.RnaSeq):
                 #warn user to update parameters in ini file?
                 print("Please make sure to update fragment_length and fragment_length_sd in the ini file!")
                 parameters="--single -l "+ fragment_length +" -s " + fragment_length_sd
+                parameters = other_param + parameters if other_param else parameters
                 job = tools.rnaseqLight_kallisto(fastq1, "", transcriptome_file, tx2genes_file, output_dir, parameters, job_name)
                 jobs.append(job)
             else:
