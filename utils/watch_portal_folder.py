@@ -12,16 +12,21 @@ def main():
 
     options = get_arguments()
 
+    if options.update_interval is None:
+        run(options)
+        sys.exit()
+
     print('Watching for JSON files in %s' % options.watch_folder)
 
     while True:
-
         time.sleep(options.update_interval)
+        run(options)
 
-        files = [ file for file in os.listdir(options.watch_folder) if file.endswith('.json') ]
-        files.sort(key=lambda file: os.path.getmtime(os.path.join(options.watch_folder, file)))
 
-        send_files(options, files)
+def run(options):
+    files = [f for f in os.listdir(options.watch_folder) if f.endswith('.json')]
+    files.sort(key=lambda file: os.path.getmtime(os.path.join(options.watch_folder, file)))
+    send_files(options, files)
 
 
 def send_files(options, files):
@@ -57,14 +62,14 @@ def usage():
     print(bold("Options:"))
     print("    -w, --watch     - folder to watch")
     print("    -u, --url       - URL to send the JSON files to")
-    print("    -i, --interval  - folder check interval (in seconds) (default: 5)")
+    print("    -i, --interval  - folder check interval (in seconds) (default: None - doesnt watch)")
     print("    -h, --help      - display this message")
 
 def get_arguments():
     options = dotdict({})
     options.watch_folder    = './buffer'
     options.url             = 'http://localhost:3000'
-    options.update_interval = 5
+    options.update_interval = None
 
     optli, arg = getopt.getopt(sys.argv[1:], 'w:u:i:h', ['watch=', 'url=', 'interval=', 'help'])
 
