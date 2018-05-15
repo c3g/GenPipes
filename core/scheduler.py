@@ -248,7 +248,7 @@ module load {module_python}
   -j \\"$JOB_NAME\\" \\
   -d \\"$JOB_DONE\\" \\
   -l \\"$JOB_OUTPUT\\" \\
-  -o {jsonfiles} \\
+  -o \\"{jsonfiles}\\" \\
   -f {status}
 module unload {module_python} {command_separator}
 """.format(
