@@ -333,24 +333,6 @@ END`""".format(
             job.samples=[sample]
             jobs.append(job)
 
-        report_file = os.path.join("report", "DnaSeq.picard_mark_duplicates.md")
-        jobs.append(
-            Job(
-                [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam") for sample in self.samples],
-                [report_file],
-                command="""\
-mkdir -p report && \\
-cp \\
-  {report_template_dir}/{basename_report_file} \\
-  {report_file}""".format(
-                    report_template_dir=self.report_template_dir,
-                    basename_report_file=os.path.basename(report_file),
-                    report_file=report_file
-                ),
-                report_files=[report_file],
-                name="picard_mark_duplicates_report")
-        )
-
         return jobs
 
     def sym_link_final_bam(self):
@@ -364,9 +346,9 @@ cp \\
             for key, input in inputs.iteritems():
                 for sample_bam in input:
                     jobs.append(concat_jobs([
-                        deliverables.sym_link_pair(sample_bam + ".bam", tumor_pair, type="final_data", sample=key, profyle=self.args.profyle),
-                        deliverables.sym_link_pair(sample_bam + ".bai", tumor_pair, type="final_data", sample=key, profyle=self.args.profyle),
-                        deliverables.sym_link_pair(sample_bam + ".bam.md5", tumor_pair, type="final_data", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample_bam + ".bam", tumor_pair, type="alignment", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample_bam + ".bai", tumor_pair, type="alignment", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample_bam + ".bam.md5", tumor_pair, type="alignment", sample=key, profyle=self.args.profyle),
                     ], name="sym_link_final_bam.pairs." + tumor_pair.name + "." + key))
 
         return jobs
@@ -673,14 +655,14 @@ cp \\
             for key, input in inputs.iteritems():
                 for sample in input:
                     jobs.append(concat_jobs([
-                        deliverables.sym_link_pair(sample + ".varscan2.vcf.gz", tumor_pair, type="panel", sample=key, profyle=self.args.profyle),
-                        deliverables.sym_link_pair(sample + ".varscan2.vcf.gz.tbi", tumor_pair, type="panel", sample=key, profyle=self.args.profyle),
-                        deliverables.sym_link_pair(sample + ".varscan2.somatic.vt.snpeff.vcf.gz", tumor_pair, type="panel",sample=key, profyle=self.args.profyle),
-                        deliverables.sym_link_pair(sample + ".varscan2.somatic.vt.snpeff.vcf.gz.tbi", tumor_pair, type="panel", sample=key, profyle=self.args.profyle),
-                        deliverables.sym_link_pair(sample + ".varscan2.germline_loh.vt.snpeff.vcf.gz", tumor_pair, type="panel", sample=key, profyle=self.args.profyle),
-                        deliverables.sym_link_pair(sample + ".varscan2.germline_loh.vt.snpeff.vcf.gz.tbi", tumor_pair, type="panel", sample=key, profyle=self.args.profyle),
-                        deliverables.sym_link_pair(sample + ".varscan2.somatic.gemini.set_somatic.tsv", tumor_pair, type="panel", sample=key, profyle=self.args.profyle),
-                        deliverables.sym_link_pair(sample + ".varscan2.somatic.gemini.actionable.tsv", tumor_pair, type="panel", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample + ".varscan2.vcf.gz", tumor_pair, type="snv/panel", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample + ".varscan2.vcf.gz.tbi", tumor_pair, type="snv/panel", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample + ".varscan2.somatic.vt.snpeff.vcf.gz", tumor_pair, type="snv/panel",sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample + ".varscan2.somatic.vt.snpeff.vcf.gz.tbi", tumor_pair, type="snv/panel", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample + ".varscan2.germline_loh.vt.snpeff.vcf.gz", tumor_pair, type="snv/panel", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample + ".varscan2.germline_loh.vt.snpeff.vcf.gz.tbi", tumor_pair, type="snv/panel", sample=key, profyle=self.args.profyle),
+                        #deliverables.sym_link_pair(sample + ".varscan2.somatic.gemini.set_somatic.tsv", tumor_pair, type="snv/panel", sample=key, profyle=self.args.profyle),
+                        #deliverables.sym_link_pair(sample + ".varscan2.somatic.gemini.actionable.tsv", tumor_pair, type="snv/panel", sample=key, profyle=self.args.profyle),
                     ], name="sym_link_panel." + tumor_pair.name + "." + key))
 
         return jobs
@@ -1149,26 +1131,6 @@ cp \\
                         htslib.bgzip_tabix(None, output_germline_loh),
                     ]),
                 ], name="merge_filter_paired_samtools." + tumor_pair.name))
-
-        report_file = os.path.join("report", "DnaSeq.merge_filter_bcf.md")
-        jobs.append(
-            Job(
-                [output_vcf],
-                [report_file],
-                command="""\
-mkdir -p report && \\
-cp \\
-  {report_template_dir}/{basename_report_file} \\
-  {report_template_dir}/HumanVCFformatDescriptor.tsv \\
-  report/ && \\
-sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {report_file}""".format(
-                    report_template_dir=self.report_template_dir,
-                    basename_report_file=os.path.basename(report_file),
-                    report_file=report_file
-                ),
-                report_files=[report_file],
-                name="merge_filter_bcf_report")
-        )
 
         return jobs
 
@@ -1744,16 +1706,16 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
             for key,input in inputs.iteritems():
                 for sample in input:
                     jobs.append(concat_jobs([
-                        deliverables.sym_link_pair(sample + ".ensemble.somatic.vt.vcf.gz", tumor_pair, type="ensemble", sample=key, profyle=self.args.profyle),
-                        deliverables.sym_link_pair(sample + ".ensemble.somatic.vt.vcf.gz.tbi", tumor_pair, type="ensemble", sample=key, profyle=self.args.profyle),
-                        deliverables.sym_link_pair(sample + ".ensemble.somatic.vt.annot.snpeff.vcf.gz", tumor_pair, type="ensemble", sample=key, profyle=self.args.profyle),
-                        deliverables.sym_link_pair(sample + ".ensemble.somatic.vt.annot.snpeff.vcf.gz.tbi", tumor_pair, type="ensemble", sample=key, profyle=self.args.profyle),
-                        deliverables.sym_link_pair(sample + ".somatic.gemini.set_somatic.tsv", tumor_pair, type="ensemble", sample=key, profyle=self.args.profyle),
-                        deliverables.sym_link_pair(sample + ".somatic.gemini.actionable.tsv", tumor_pair, type="ensemble", sample=key, profyle=self.args.profyle),
-                        deliverables.sym_link_pair(sample + ".ensemble.germline_loh.vt.vcf.gz", tumor_pair, type="ensemble", sample=key, profyle=self.args.profyle),
-                        deliverables.sym_link_pair(sample + ".ensemble.germline_loh.vt.vcf.gz.tbi", tumor_pair, type="ensemble", sample=key, profyle=self.args.profyle),
-                        deliverables.sym_link_pair(sample + ".ensemble.germline_loh.vt.annot.snpeff.vcf.gz", tumor_pair, type="ensemble", sample=key, profyle=self.args.profyle),
-                        deliverables.sym_link_pair(sample + ".ensemble.germline_loh.vt.annot.snpeff.vcf.gz.tbi", tumor_pair, type="ensemble", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample + ".ensemble.somatic.vt.vcf.gz", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample + ".ensemble.somatic.vt.vcf.gz.tbi", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample + ".ensemble.somatic.vt.annot.snpeff.vcf.gz", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample + ".ensemble.somatic.vt.annot.snpeff.vcf.gz.tbi", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
+                        #deliverables.sym_link_pair(sample + ".somatic.gemini.set_somatic.tsv", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
+                        #deliverables.sym_link_pair(sample + ".somatic.gemini.actionable.tsv", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample + ".ensemble.germline_loh.vt.vcf.gz", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample + ".ensemble.germline_loh.vt.vcf.gz.tbi", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample + ".ensemble.germline_loh.vt.annot.snpeff.vcf.gz", tumor_pair, type="svn/ensemble", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample + ".ensemble.germline_loh.vt.annot.snpeff.vcf.gz.tbi", tumor_pair, type="svn/ensemble", sample=key, profyle=self.args.profyle),
                     ], name="sym_link_ensemble." + tumor_pair.name + "." + key))
 
         return jobs
@@ -1954,7 +1916,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         gemini_version = ".".join([gemini_module[-2], gemini_module[-1]])
 
         jobs.append(concat_jobs([
-            Job(command="mkdir -p " + ensemble_directory, samples=[self.tumor_pairs.normal, self.tumor_pairss.tumor]),
+            Job(command="mkdir -p " + ensemble_directory, samples=[self.tumor_pairs.normal, self.tumor_pairs.tumor]),
             gemini.gemini_annotations(gemini_prefix + ".ensemble.germline_loh.vt.annot.snpeff.vcf.gz",
                                       gemini_prefix + ".germline_loh.gemini." + gemini_version + ".db", temp_dir)
         ], name="gemini_annotations.germline.allPairs"))
@@ -2066,7 +2028,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
             for key, input in inputs.iteritems():
                 for sample in input:
                     jobs.append(concat_jobs([
-                        deliverables.sym_link_pair(sample, tumor_pair, type="cnv", sample=key,
+                        deliverables.sym_link_pair(sample, tumor_pair, type="sv/cnv", sample=key,
                                                    profyle=self.args.profyle),
                     ], name="sym_link_fastq.report." + tumor_pair.name + "." + key))
 
@@ -2318,6 +2280,35 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
             ], name="sv_annotation.delly.germline." + tumor_pair.name))
             
         return jobs
+    
+    def sym_link_delly(self):
+        jobs = []
+
+        inputs = dict()
+        for tumor_pair in self.tumor_pairs.itervalues():
+            pair_directory = os.path.abspath(os.path.join("SVariants", tumor_pair.name, tumor_pair.name))
+            inputs["Tumor"] = [os.path.join(pair_directory + ".delly.somatic.snpeff.annot.vcf"),
+                               pair_directory + ".delly.somatic.prioritize.tsv"]
+
+            for key, input in inputs.iteritems():
+                for sample in input:
+                    jobs.append(concat_jobs([
+                        deliverables.sym_link_pair(sample, tumor_pair, type="sv", sample=key, profyle=self.args.profyle),
+                    ], name="sym_link_delly.somatic." + tumor_pair.name + "." + key))
+
+        inputs = dict()
+        for tumor_pair in self.tumor_pairs.itervalues():
+            inputs["Tumor"] = [os.path.join(pair_directory + ".delly.germline.snpeff.annot.vcf"),
+                               pair_directory + ".delly.germline.prioritize.tsv"]
+
+            for key, input in inputs.iteritems():
+                for sample in input:
+                    jobs.append(concat_jobs([
+                        deliverables.sym_link_pair(sample, tumor_pair, type="sv", sample=key, profyle=self.args.profyle),
+                    ], name="sym_link_delly.germline." + tumor_pair.name + "." + key))
+
+        return jobs
+    
         
     def manta_sv_calls(self):
         """
@@ -2398,7 +2389,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
             for key, input in inputs.iteritems():
                 for sample in input:
                     jobs.append(concat_jobs([
-                        deliverables.sym_link_pair(sample, tumor_pair, type="sv_somatic", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample, tumor_pair, type="sv", sample=key, profyle=self.args.profyle),
                     ], name="sym_link_manta.somatic." + tumor_pair.name + "." + key))
 
         inputs = dict()
@@ -2409,7 +2400,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
             for key, input in inputs.iteritems():
                 for sample in input:
                     jobs.append(concat_jobs([
-                        deliverables.sym_link_pair(sample, tumor_pair, type="sv_germline", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample, tumor_pair, type="sv", sample=key, profyle=self.args.profyle),
                     ], name="sym_link_manta.germline." + tumor_pair.name + "." + key))
 
         return jobs
@@ -2539,7 +2530,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
             for key, input in inputs.iteritems():
                 for sample in input:
                     jobs.append(concat_jobs([
-                        deliverables.sym_link_pair(sample, tumor_pair, type="sv_somatic", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample, tumor_pair, type="sv", sample=key, profyle=self.args.profyle),
                     ], name="sym_link_lumpy.somatic." + tumor_pair.name + "." + key))
 
         inputs = dict()
@@ -2551,7 +2542,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
             for key, input in inputs.iteritems():
                 for sample in input:
                     jobs.append(concat_jobs([
-                        deliverables.sym_link_pair(sample, tumor_pair, type="sv_germline", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample, tumor_pair, type="sv", sample=key, profyle=self.args.profyle),
                     ], name="sym_link_lumpy.germline." + tumor_pair.name + "." + key))
 
         return jobs
@@ -2650,7 +2641,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
             for key, input in inputs.iteritems():
                 for sample in input:
                     jobs.append(concat_jobs([
-                        deliverables.sym_link_pair(sample, tumor_pair, type="sv_somatic", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample, tumor_pair, type="sv", sample=key, profyle=self.args.profyle),
                     ], name="sym_link_wham.somatic." + tumor_pair.name + "." + key))
 
         inputs = dict()
@@ -2661,7 +2652,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
             for key, input in inputs.iteritems():
                 for sample in input:
                     jobs.append(concat_jobs([
-                        deliverables.sym_link_pair(sample, tumor_pair, type="sv_germline", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample, tumor_pair, type="sv", sample=key, profyle=self.args.profyle),
                     ], name="sym_link_wham.germline." + tumor_pair.name + "." + key))
 
         return jobs
@@ -2778,7 +2769,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
             for key, input in inputs.iteritems():
                 for sample in input:
                     jobs.append(concat_jobs([
-                        deliverables.sym_link_pair(sample, tumor_pair, type="sv_somatic", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample, tumor_pair, type="sv", sample=key, profyle=self.args.profyle),
                     ], name="sym_link_cnvkit.somatic." + tumor_pair.name + "." + key))
      
 
@@ -2996,7 +2987,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
             for key, input in inputs.iteritems():
                 for sample in input:
                     jobs.append(concat_jobs([
-                        deliverables.sym_link_pair(sample, tumor_pair, type="sv_somatic", sample=key,
+                        deliverables.sym_link_pair(sample, tumor_pair, type="sv", sample=key,
                                                    profyle=self.args.profyle),
                     ], name="sym_link_svaba.somatic." + tumor_pair.name + "." + key))
 
@@ -3009,7 +3000,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
             for key, input in inputs.iteritems():
                 for sample in input:
                     jobs.append(concat_jobs([
-                        deliverables.sym_link_pair(sample, tumor_pair, type="sv_germline", sample=key,
+                        deliverables.sym_link_pair(sample, tumor_pair, type="sv", sample=key,
                                                    profyle=self.args.profyle),
                     ], name="sym_link_svaba.germline." + tumor_pair.name + "." + key))
 
@@ -3034,7 +3025,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
                 self.preprocess_vcf_panel,
                 self.snp_effect_panel,
                 self.gemini_annotations_panel,
-                self.set_somatic_and_actionable_mutations_panel,
+                #self.set_somatic_and_actionable_mutations_panel,
                 self.metrics_dna_picard_metrics,
                 self.metrics_dna_sample_qualimap,
                 self.metrics_dna_sambamba_flagstat,
@@ -3076,7 +3067,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
                 #self.somatic_signature,
                 self.compute_cancer_effects_somatic,
                 self.sample_gemini_annotations_somatic,
-                self.set_somatic_and_actionable_mutations,
+                #self.set_somatic_and_actionable_mutations,
                 self.ensemble_germline_loh,
                 self.gatk_variant_annotator_germline,
                 self.merge_gatk_variant_annotator_germline,
@@ -3124,6 +3115,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
                 self.ensemble_metasv,
                 self.metasv_sv_annotation,
                 self.sym_link_sequenza,
+                self.sym_link_delly,
                 self.sym_link_manta,
                 self.sym_link_lumpy,
                 self.sym_link_wham,

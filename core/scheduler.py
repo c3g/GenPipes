@@ -246,7 +246,7 @@ module load {module_python}
   -j \\"$JOB_NAME\\" \\
   -d \\"$JOB_DONE\\" \\
   -l \\"$JOB_OUTPUT\\" \\
-  -o {jsonfiles} \\
+  -o \\"{jsonfiles}\\" \\
   -f {status}
 module unload {module_python} {command_separator}""".format(
             job2json_script=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "utils", "job2json.py"),
