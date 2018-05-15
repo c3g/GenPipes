@@ -75,11 +75,7 @@ samtools flagstat \\
         removable_files=[output]
         )
 
-<<<<<<< HEAD
-def mpileup(inputs, output, other_options=None, region=None, regionFile=None, ini_section='rawmpileup'):
-=======
 def mpileup(inputs, output, options="", region=None, regionFile=None, ini_section='rawmpileup'):
->>>>>>> fixes to sCNAphase
 
     if not isinstance(inputs, list):
         inputs = [inputs]
