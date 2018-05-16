@@ -92,8 +92,8 @@ class RnaSeqLight(rnaseq.RnaSeq):
                 fragment_length = config.param('kallisto', 'fragment_length')
                 fragment_length_sd = config.param('kallisto', 'fragment_length_sd')
                 #warn user to update parameters in ini file?
-                print("Please make sure to update fragment_length and fragment_length_sd in the ini file!")
-                parameters="--single -l "+ fragment_length +" -s " + fragment_length_sd
+                # print("Please make sure to update fragment_length and fragment_length_sd in the ini file!")
+                parameters=" --single -l "+ fragment_length +" -s " + fragment_length_sd
                 parameters = other_param + parameters if other_param else parameters
                 job = tools.rnaseqLight_kallisto(fastq1, "", transcriptome_file, tx2genes_file, output_dir, parameters, job_name)
                 jobs.append(job)
