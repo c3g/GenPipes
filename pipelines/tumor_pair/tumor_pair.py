@@ -184,7 +184,7 @@ END`""".format(
                     jobs.append(concat_jobs([
                         deliverables.sym_link_pair(readset + ".pair1.fastq.gz", tumor_pair, type="raw_reads", sample=key, profyle=self.args.profyle),
                         deliverables.sym_link_pair(readset + ".pair2.fastq.gz", tumor_pair, type="raw_reads", sample=key, profyle=self.args.profyle),
-                    ], name="sym_link_fastq.pairs." + readset))
+                    ], name="sym_link_fastq.pairs." + tumor_pair.name + "." + key))
 
         return jobs
 
@@ -602,13 +602,13 @@ END`""".format(
             jobs.append(concat_jobs([
                 Job(samples=[tumor_pair.normal, tumor_pair.tumor]),
                 gemini.gemini_annotations(gemini_prefix + ".varscan2.somatic.vt.snpeff.vcf.gz",
-                                          gemini_prefix + ".somatic.gemini." + gemini_version + ".db", temp_dir)
+                                          gemini_prefix + ".somatic.gemini.db", temp_dir)
             ], name="gemini_annotations.somatic." + tumor_pair.name))
 
             jobs.append(concat_jobs([
                 Job(samples=[tumor_pair.normal, tumor_pair.tumor]),
                 gemini.gemini_annotations(gemini_prefix + ".varscan2.germline_loh.vt.snpeff.vcf.gz",
-                                          gemini_prefix + ".germline_loh.gemini." + gemini_version + ".db", temp_dir)
+                                          gemini_prefix + ".germline_loh.gemini.db", temp_dir)
             ], name="gemini_annotations.germline." + tumor_pair.name))
 
         return jobs
@@ -637,9 +637,9 @@ END`""".format(
             jobs.append(concat_jobs([
                 Job(command="mkdir -p " + paired_directory),
                 ped_job,
-                gemini.set_somatic(ped_file, gemini_prefix + ".somatic.gemini." + gemini_version + ".db",
+                gemini.set_somatic(ped_file, gemini_prefix + ".somatic.gemini.db",
                                    gemini_prefix + ".varscan2.somatic.gemini.set_somatic.tsv"),
-                gemini.actionable_mutations(gemini_prefix + ".somatic.gemini." + gemini_version + ".db",
+                gemini.actionable_mutations(gemini_prefix + ".somatic.gemini.db",
                                             gemini_prefix + ".varscan2.somatic.gemini.actionable.tsv")
             ], name="set_somatic_and_actionable_mutations." + tumor_pair.name))
 
@@ -661,8 +661,8 @@ END`""".format(
                         deliverables.sym_link_pair(sample + ".varscan2.somatic.vt.snpeff.vcf.gz.tbi", tumor_pair, type="snv/panel", sample=key, profyle=self.args.profyle),
                         deliverables.sym_link_pair(sample + ".varscan2.germline_loh.vt.snpeff.vcf.gz", tumor_pair, type="snv/panel", sample=key, profyle=self.args.profyle),
                         deliverables.sym_link_pair(sample + ".varscan2.germline_loh.vt.snpeff.vcf.gz.tbi", tumor_pair, type="snv/panel", sample=key, profyle=self.args.profyle),
-                        #deliverables.sym_link_pair(sample + ".varscan2.somatic.gemini.set_somatic.tsv", tumor_pair, type="snv/panel", sample=key, profyle=self.args.profyle),
-                        #deliverables.sym_link_pair(sample + ".varscan2.somatic.gemini.actionable.tsv", tumor_pair, type="snv/panel", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample + ".somatic.gemini.db", tumor_pair, type="snv/panel", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample + ".germline_loh.gemini.db", tumor_pair, type="snv/panel", sample=key, profyle=self.args.profyle),
                     ], name="sym_link_panel." + tumor_pair.name + "." + key))
 
         return jobs
@@ -694,16 +694,12 @@ END`""".format(
                         input_tumor_flagstat]
 
             input = [os.path.join(metrics_directory, tumor_pair.normal.name), os.path.join(metrics_directory,tumor_pair.tumor.name)]
-            output = os.path.join(metrics_directory, tumor_pair.name + ".multiqc.html")
+            output = os.path.join(metrics_directory, tumor_pair.name + ".multiqc")
             inputs.append(input)
             outputs.append(output)
 
             jobs.append(concat_jobs([
-                Job(command="mkdir -p " + os.path.join(metrics_directory, tumor_pair.normal.name) + " " +
-                            os.path.join(metrics_directory, tumor_pair.normal.name + "_json"), samples=[tumor_pair.normal, tumor_pair.tumor]),
-                Job(command="mkdir -p " + os.path.join(metrics_directory, tumor_pair.tumor.name) + " " +
-                            os.path.join(metrics_directory, tumor_pair.tumor.name + "_json"), samples=[tumor_pair.normal, tumor_pair.tumor]),
-                multiqc.run(input, output, input_dep=input_dep, sample=metrics_directory),
+                multiqc.run(input, output, input_dep=input_dep),
             ], name="multiqc." + tumor_pair.name))
 
         #jobs.append(concat_jobs([
@@ -1897,7 +1893,7 @@ END`""".format(
         jobs.append(concat_jobs([
             Job(command="mkdir -p " + ensemble_directory, samples=[self.tumor_pairs.normal, self.tumor_pairs.tumor]),
             gemini.gemini_annotations(gemini_prefix + ".ensemble.somatic.vt.annot.snpeff.vcf.gz",
-                                      gemini_prefix + ".somatic.gemini." + gemini_version + ".db", temp_dir)
+                                      gemini_prefix + ".somatic.gemini.db", temp_dir)
         ], name="gemini_annotations.somatic.allPairs"))
 
         return jobs
@@ -1918,7 +1914,7 @@ END`""".format(
         jobs.append(concat_jobs([
             Job(command="mkdir -p " + ensemble_directory, samples=[self.tumor_pairs.normal, self.tumor_pairs.tumor]),
             gemini.gemini_annotations(gemini_prefix + ".ensemble.germline_loh.vt.annot.snpeff.vcf.gz",
-                                      gemini_prefix + ".germline_loh.gemini." + gemini_version + ".db", temp_dir)
+                                      gemini_prefix + ".germline_loh.gemini.db", temp_dir)
         ], name="gemini_annotations.germline.allPairs"))
 
         return jobs

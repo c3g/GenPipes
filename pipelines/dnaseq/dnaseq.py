@@ -39,6 +39,12 @@ import utils.utils
 from pipelines import common
 from core.pipeline import *
 from bfx.readset import *
+from core.config import *
+from core.job import *
+from pipelines import common
+from core.pipeline import *
+from bfx.readset import *
+from bfx.sequence_dictionary import *
 
 from bfx import adapters
 from bfx import bvatools
@@ -57,6 +63,9 @@ from bfx import picard2
 from bfx import vt
 from bfx import htslib
 from bfx import gemini
+from bfx import dna_damage
+from bfx import picard
+from bfx import picard2
 from bfx import qualimap
 from bfx import fastqc
 from bfx import multiqc
@@ -130,7 +139,6 @@ class DnaSeqRaw(common.Illumina):
 
         :return:
         """
-
         jobs = []
         sym_link_job = ""
         for readset in self.readsets:
@@ -305,8 +313,7 @@ END
         """
         The filtered reads are aligned to a reference genome. The alignment is done per sequencing readset.
         The alignment software used is [BWA](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem.
-        BWA output BAM files are then sorted by coordinate using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
-
+        BWA output BAM files are then sorted by coordinate using [Sambamba](http://lomereiter.github.io/sambamba/index.html)
         This step takes as input files:
 
         1. Trimmed FASTQ files if available
@@ -391,7 +398,6 @@ END
                     samples=[readset.sample]
                     )
                 )
-
         return jobs
 
     def sambamba_merge_sam_files(self):
@@ -855,7 +861,7 @@ END
             job.name = "sambamba_mark_duplicates." + sample.name
             job.samples = [sample]
             jobs.append(job)
-
+            
         return jobs
 
     def recalibration(self):
@@ -2104,7 +2110,6 @@ pandoc \\
                             samples=self.samples
                             )
                         )
-
         return jobs
 
     def merge_filter_bcf(self):

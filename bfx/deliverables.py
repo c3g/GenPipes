@@ -81,6 +81,7 @@ def sym_link_pair(input, tumor_pair, out_dir, type=None, sample=None, profyle=Fa
         [output],
         command="""\
 mkdir -p {prefix} && \\       
+<<<<<<< HEAD
 ln -s -f \\
   {input} \\
   {output}""".format(

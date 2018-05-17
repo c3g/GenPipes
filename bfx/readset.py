@@ -442,7 +442,6 @@ def parse_pacbio_readset_file(pacbio_readset_file):
     log.info(str(len(samples)) + " sample" + ("s" if len(samples) > 1 else "") + " parsed\n")
     return readsets
 
-
 class NanoporeReadset(Readset):
 
     @property

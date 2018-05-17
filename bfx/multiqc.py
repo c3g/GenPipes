@@ -25,7 +25,6 @@
 from core.config import *
 from core.job import *
 
-
 def mutliqc_run(yamlFile, input_files):
 
 
@@ -47,6 +46,7 @@ def run(inputs, output, input_dep=False):
         [output],
         [
             ['multiqc', 'module_multiqc'],
+            ['multiqc', 'module_python'],
         ],
         command="""\
 multiqc -f {options} \\
