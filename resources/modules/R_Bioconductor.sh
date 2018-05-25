@@ -230,7 +230,7 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
     "misc3d", "multtest", "munsell", "mvtnorm",
     "NBPSeq", "nleqslv", "nlme", "NMF", "nnet", "nondetects", "nor1mix", "Nozzle.R1",
     "oligo", "oligoClasses", "optparse", "outliers",
-    "pd.charm.hg18.example", "pheatmap", "plotrix", "plyr", "plyr", "preprocessCore", "proto",
+    "pd.charm.hg18.example", "pheatmap", "plotrix","purr", "plyr", "plyr", "preprocessCore", "proto",
     "qqman", "quantreg",
     "R2HTML", "RBGL", "RColorBrewer", "Rcpp", "RcppEigen", "RCurl", "rhdf5", "ReportingTools", "reshape", "reshape2", "rgl", "RJSONIO", "Rmisc", "R.methodsS3",
     "rmarkdown", "roxygen2", "rpart", "Rsamtools", "RSQLite", "rtracklayer", "Rtsne",
