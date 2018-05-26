@@ -30,17 +30,18 @@ from config import *
 # Output comment separator line
 separator_line = "#" + "-" * 79
 
-def create_scheduler(type, config_files):
-    if type == "pbs":
+
+def create_scheduler(s_type, config_files):
+    if s_type == "pbs":
         return PBSScheduler(config_files)
-    elif type == "batch":
+    elif s_type == "batch":
         return BatchScheduler(config_files)
-    elif type == "daemon":
+    elif s_type == "daemon":
         return DaemonScheduler(config_files)
-    elif type == "slurm":
+    elif s_type == "slurm":
         return SlurmScheduler(config_files)
     else:
-        raise Exception("Error: scheduler type \"" + type + "\" is invalid!")
+        raise Exception("Error: scheduler type \"" + s_type + "\" is invalid!")
 
 class Scheduler:
     def __init__(self, config_files):
