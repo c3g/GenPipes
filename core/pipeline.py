@@ -178,6 +178,11 @@ class Pipeline(object):
             self._argparser.add_argument("--report", help="create 'pandoc' command to merge all job markdown report files in the given step range into HTML, if they exist; if --report is set, --job-scheduler, --force, --clean options and job up-to-date status are ignored (default: false)", action="store_true")
             self._argparser.add_argument("--clean", help="create 'rm' commands for all job removable files in the given step range, if they exist; if --clean is set, --job-scheduler, --force options and job up-to-date status are ignored (default: false)", action="store_true")
             self._argparser.add_argument("-l", "--log", help="log level (default: info)", choices=["debug", "info", "warning", "error", "critical"], default="info")
+            self._argparser.add_argument("--containerize",
+                                         help="run pipeline inside a container providing a container image path or "
+                                              "accessible docker/singularity hub path",
+                                         nargs=2, metavar=("{docker,singularity}",
+                                                           "{<CONTAINER PATH>, <CONTAINER NAME>}"))
 
         return self._argparser
 
