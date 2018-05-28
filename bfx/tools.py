@@ -554,8 +554,8 @@ IHEC_rnaseq_metrics.sh \\
             input_bam=input_bam,
             input_name=input_name,
             input_picard_dup=input_picard_dup,
-            intergenic_bed=config.param('IHEC_rnaseq_metrics', 'intergenic_bed', type='filepath',required=True),
-            rrna_bed=config.param('IHEC_rnaseq_metrics', 'ribo_rna_bed', type='filepath',required=True),
+            intergenic_bed=config.param('IHEC_rnaseq_metrics', 'intergenic_bed', type='filepath', required=True),
+            rrna_bed=config.param('IHEC_rnaseq_metrics', 'ribo_rna_bed', type='filepath', required=True),
             output_dir=output_dir
         )
     )
@@ -594,7 +594,7 @@ IHEC_chipseq_metrics_max.sh \\
             sample_name=sample_name,
             chip_bam=chip_bam,
             chip_type=chip_type,
-            threads=config.param('IHEC_chipseq_metrics', 'thread', type='int') if config.param('IHEC_chipseq_metrics', 'thread', type='int',required=False) else 1,
+            threads=config.param('IHEC_chipseq_metrics', 'thread', type='int') if config.param('IHEC_chipseq_metrics', 'thread', type='int', required=False) else 1,
             chip_bed=chip_bed,
             output_dir=output_dir,
             assembly=assembly
