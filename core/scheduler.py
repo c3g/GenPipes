@@ -23,33 +23,80 @@
 import json
 import os
 import random
+import tempfile
 
 # MUGQIC Modules
-from config import *
+from config import config, Config
+from utils import utils
 
 # Output comment separator line
 separator_line = "#" + "-" * 79
 
 
-def create_scheduler(s_type, config_files):
+def create_scheduler(s_type, config_files, container=None):
     if s_type == "pbs":
-        return PBSScheduler(config_files)
+        return PBSScheduler(config_files, container=container)
     elif s_type == "batch":
         return BatchScheduler(config_files)
     elif s_type == "daemon":
         return DaemonScheduler(config_files)
     elif s_type == "slurm":
-        return SlurmScheduler(config_files)
+        return SlurmScheduler(config_files, container=container)
     else:
         raise Exception("Error: scheduler type \"" + s_type + "\" is invalid!")
 
 class Scheduler:
-    def __init__(self, config_files):
+    def __init__(self, config_files, container=None, **kwargs):
         self._config_files = config_files
+        self.container = container
 
     def submit(self, pipeline):
         # Needs to be defined in scheduler child class
         raise NotImplementedError
+
+    @property
+    def container(self):
+        return self._conainer
+
+    @property
+    def container_line(self):
+        if self.container:
+            tmp_dir = config.param("DEFAULT", 'tmp_dir', required=True)
+            tmp_dir = utils.expandvars(tmp_dir)
+            if not tmp_dir:
+                tmp_dir = None
+
+            bind = config.param("container", 'bind_list', required=False, type=list)
+            host_cvmfs_cache = config.param("container", 'host_cvmfs_cache'
+                                            , required=False, type="string")
+            cvmfs_cache = config.param("container", 'cvmfs_cache', required=False, type="string")
+
+            if not host_cvmfs_cache:
+                host_cvmfs_cache = tempfile.mkdtemp(prefix="genpipes_cvmfs", dir=tmp_dir)
+            if not cvmfs_cache:
+                cvmfs_cache = "/cvmfs-cache"
+
+            if self.container.name == 'docker':
+                v_opt = ' -v {}:{}'.format(host_cvmfs_cache, cvmfs_cache)
+                for b in bind:
+                    v_opt += ' -v {0}:{0}'.format(b)
+                network = " --network host"
+                user = " --user $UID:$GROUPS"
+                return ('docker run --env-file <( env| cut -f1 -d= ) --privileged '
+                        '{network} {user} {v_opt} {name} -e'
+                        .format(network=network, user=user, v_opt=v_opt
+                                , name=self.container.name))
+
+            elif self.container == 'singularity':
+                b_opt = ' -B {}:{}'.format(host_cvmfs_cache, cvmfs_cache)
+                for b in bind:
+                    b_opt += ' -B {0}:{0}'.format(b)
+
+                return ("singulatity run {b_opt} {name} -e \\ "
+                        .format(b_opt=b_opt, name=self.container.name))
+            else:
+                return None
+
 
     def print_header(self, pipeline):
         print("""\
@@ -86,7 +133,7 @@ cd $OUTPUT_DIR
 """
                 .format(
                     pipeline=pipeline,
-                    config_files=",".join([ c.name for c in self._config_files ])
+                    config_files=",".join([c.name for c in self._config_files ])
                 )
             )
 
@@ -155,13 +202,15 @@ JOB_DONE={job.done}
 JOB_OUTPUT_RELATIVE_PATH=$STEP/${{JOB_NAME}}_$TIMESTAMP.o
 JOB_OUTPUT=$JOB_OUTPUT_DIR/$JOB_OUTPUT_RELATIVE_PATH
 COMMAND=$(cat << '{limit_string}'
+{container_line}
 {job.command_with_modules}
 {limit_string}
 )""".format(
                             job=job,
                             job_dependencies=job_dependencies,
                             separator_line=separator_line,
-                            limit_string=os.path.basename(job.done)
+                            limit_string=os.path.basename(job.done),
+                            container_line=self.container_line
                         )
                     )
 
@@ -278,13 +327,15 @@ JOB_DONE={job.done}
 JOB_OUTPUT_RELATIVE_PATH=$STEP/${{JOB_NAME}}_$TIMESTAMP.o
 JOB_OUTPUT=$JOB_OUTPUT_DIR/$JOB_OUTPUT_RELATIVE_PATH
 COMMAND=$(cat << '{limit_string}'
+{container_line}
 {job.command_with_modules}
 {limit_string}
 )""".format(
                             job=job,
                             job_dependencies=job_dependencies,
                             separator_line=separator_line,
-                            limit_string=os.path.basename(job.done)
+                            limit_string=os.path.basename(job.done),
+                            container_line=self.container_line
                         )
                     )
 
