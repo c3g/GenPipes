@@ -463,7 +463,7 @@ create_kallisto_index() {
       mkdir -p $INDEX_DIR
       ln -s -f -t $INDEX_DIR ../$CDNA
       module load $module_kallisto
-      kallisto index -i $INDEX_DIR/$CDNA.idx $INDEX_DIR/$CDNA > $LOG_DIR/cdna_kallisto_$TIMESTAMP.log 2> $LOG_DIR/cdna_kallisto_$TIMESTAMP.err
+      kallisto index -i $INDEX_DIR/$CDNA.idx $INDEX_DIR/$CDNA > $LOG_DIR/cdna_kallisto_$TIMESTAMP.err 2> $LOG_DIR/cdna_kallisto_$TIMESTAMP.log
 
     else
       echo
@@ -488,8 +488,13 @@ print("Building transcripts2genes...")
 gtf_file = "$ANNOTATION_GTF"
 
 gtf = import(gtf_file, format = "gff2")
-tx2gene = cbind(tx_id=gtf\$transcript_id, gene_id=gtf\$gene_id) #gene_name
-tx2gene = tx2gene[!is.na(tx2gene[,1]),]
+gtf=gtf[!is.na(gtf\$transcript_id),]
+if ("transcript_version" %in% names(gtf@elementMetadata)){
+    tx_id=paste(gtf\$transcript_id, gtf\$transcript_version, sep=".")
+} else {
+    tx_id=gtf\$transcript_id
+}
+tx2gene = cbind(tx_id=tx_id, gene_id=gtf\$gene_id)
 tx2gene = unique(tx2gene)
 tx2gene = as.data.frame(tx2gene)
 

@@ -94,7 +94,7 @@ wget "{server}?{request}" --quiet --output-document=/dev/null
 
     def submit_jobs(self):
         super(MUGQICPipeline, self).scheduler.submit(self)
-        if self.jobs and self.args.job_scheduler in ["pbs", "batch"]:
+        if self.jobs and self.args.job_scheduler in ["pbs", "batch", "slurm"]:
             self.mugqic_log()
 
 
@@ -419,7 +419,7 @@ pandoc \\
                 known_variants_annotated,
                 output_prefix
             )
-            job.name = "verify_bam_id_" + sample.name
+            job.name = "verify_bam_id." + sample.name
             job.samples = [sample]
 
             jobs.append(job)
@@ -434,10 +434,11 @@ pandoc \\
             rmarkdown.render(
                 job_input            = verify_bam_results ,
                 job_name             = "verify_bam_id_report",
-                input_rmarkdown_file = os.path.join(self.report_template_dir, "Illumina.verify_bam_id.Rmd") ,
+                input_rmarkdown_file = os.path.join(self.report_template_dir, "Illumina.verify_bam_id.Rmd"),
+                samples              = self.samples,
                 render_output_dir    = 'report',
                 module_section       = 'report', 
-                prerun_r             = 'source_dir="' + verify_bam_id_directory + '"; report_dir="report" ; params=list(verifyBamID_variants_file="' + known_variants_annotated  + '", dbnsfp_af_field="' + population_AF + '", coverage_bed="' + target_bed + '");' 
+                prerun_r             = 'source_dir="' + verify_bam_id_directory + '"; report_dir="report" ; params=list(verifyBamID_variants_file="' + known_variants_annotated  + '", dbnsfp_af_field="' + population_AF + '", coverage_bed="' + target_bed + '");'
             )
         )
 

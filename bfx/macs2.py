@@ -28,7 +28,7 @@ from core.job import *
 def callpeak (format, genome_size, treatment_files, control_files, output_prefix_name, output, other_options=""):
 
     return Job(
-            [treatment_files + control_files],
+            treatment_files + control_files,
             [output],
             [
                 ['macs2_callpeak', 'module_python'],

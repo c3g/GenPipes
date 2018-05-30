@@ -213,14 +213,14 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
 
     ## Define the list of packages to standard packages to install.
     deps = c("affxparser", "affy", "affyio", "affyPLM", "akima", "allgown", "annotate", "AnnotationDbi", "AnnotationForge", "ape", "ash", "ASCAT",
-    "BatchExperiments", "BatchJobs", "beanplot", "Biobase", "BiocGenerics", "BiocInstaller", "bioDist", "biomaRt", "Biostrings", "biovizBase", "bit",
+    "BatchExperiments", "BatchJobs","batchtools", "beanplot", "Biobase", "BiocGenerics", "BiocInstaller", "bioDist", "biomaRt", "Biostrings", "biovizBase", "bit",
     "bit64", "bitops", "boot", "brew", "BSgenome",
     "caTools", "charm", "charmData", "circlize", "class", "cluster", "clusterStab", "clusterProfiler", "codetools", "colorspace", "ConsensusClusterPlus",
     "corpcor", "crlmm", "ctc", "cummeRbund",
     "datasets", "data.table", "DBI", "DESeq", "devtools", "dendextend", "dichromat", "digest", "dplyr", "DNAcopy",
     "edgeR", "ellipse", "evaluate",
-    "fastcluster", "ff", "fields", "FDb.InfiniumMethylation.hg19", "foreach", "foreign",
-    "gcrma", "gdata", "genefilter", "GenomicFeatures", "GenomicRanges", "genoset", "GEOquery", "ggplot2", "ggvis", "googleVis", "goseq", "gplots", "graph",
+    "fastcluster" ,"fdrtool", "ff", "fields", "FDb.InfiniumMethylation.hg19", "foreach", "foreign",
+    "gcrma", "gdata", "genefilter", "GenomicFeatures", "GenomicRanges", "GenomeInfoDb","genoset", "GEOquery", "ggplot2", "ggvis", "googleVis", "goseq", "gplots", "graph",
     "gsalib", "gtable", "gtools", "Gviz",
     "hdrcde", "Hmisc", "hwriter", "HTqPCR", "HTSFilter", "hopach",
     "igraph", "IlluminaHumanMethylation450kmanifest", "IlluminaHumanMethylation450kanno.ilmn12.hg19", "impute", "IRanges", "iterators",
@@ -230,7 +230,7 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
     "misc3d", "multtest", "munsell", "mvtnorm",
     "NBPSeq", "nleqslv", "nlme", "NMF", "nnet", "nondetects", "nor1mix", "Nozzle.R1",
     "oligo", "oligoClasses", "optparse", "outliers",
-    "pd.charm.hg18.example", "pheatmap", "plotrix", "plyr", "plyr", "preprocessCore", "proto",
+    "pd.charm.hg18.example", "pheatmap", "plotrix","purr", "plyr", "plyr", "preprocessCore", "proto",
     "qqman", "quantreg",
     "R2HTML", "RBGL", "RColorBrewer", "Rcpp", "RcppEigen", "RCurl", "rhdf5", "ReportingTools", "reshape", "reshape2", "rgl", "RJSONIO", "Rmisc", "R.methodsS3",
     "rmarkdown", "roxygen2", "rpart", "Rsamtools", "RSQLite", "rtracklayer", "Rtsne",
@@ -240,7 +240,7 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
     "vioplot", "vsn",
     "WriteXLS",
     "XML", "xtable",
-    "zlibbioc")
+    "zlibbioc")  
 
         ## Programmatically add all the org packages (excluding MeSH mess which takes too long)
         contribUrl = contrib.url(biocinstallRepos(), type = 'source')
@@ -267,6 +267,8 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
         devtools::install_github('hms-dbmi/spp')
         ## Sleuth
 #       devtools::install_github("pachterlab/sleuth")
+        ## PopSV
+        #devtools::install_github("jmonlong/PopSV")
 EOF
 
 echo "R packages installation done."

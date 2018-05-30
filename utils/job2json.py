@@ -4,12 +4,16 @@
 ### job2json
 
 import os
+import errno
 import sys
 import getopt
 import re
 import json
 import subprocess
 import datetime
+import time
+import random
+
 from uuid import uuid4
 
 # Append mugqic_pipelines directory to Python library path
@@ -100,11 +104,19 @@ def main():
 
     step_name, job_name, job_log, job_done, json_files, config_files, user, status = getarg(sys.argv)
 
+    #print config_files
     config.parse_files(config_files)
 
     for jfile in json_files.split(","):
+
+        # First lock the file to avoid multiple and synchronous writing atemps
+        #print "Now locking the file..."
+        lock(jfile)
+        #print "File locked !!"
+
         with open(jfile, 'r') as json_file:
             current_json = json.load(json_file)
+        json_file.close()
 
         # Make sure the job_log file is not in absolute path anymore
         if current_json['pipeline']['general_information']['analysis_folder']:
@@ -145,12 +157,44 @@ def main():
         # Print to file
         with open(jfile, 'w') as out_json:
             json.dump(current_json, out_json, indent=4)
+        out_json.close()
 
         # Print a copy of it for the monitoring interface
         portal_output_dir = config.param('DEFAULT', 'portal_output_dir', required=False, type='dirpath')
         if portal_output_dir != '':
             with open(os.path.join(portal_output_dir, user + '.' + uuid4().get_hex() + '.json'), 'w') as out_json:
                 json.dump(current_json, out_json, indent=4)
+            out_json.close()
 
+        # Finally unlock the file
+        #print "Now unlocking the file..."
+        unlock(jfile)
+        #print "File unlocked !!"
+
+def lock(filepath):
+    unlocked = True
+    while unlocked :
+        try :
+            os.makedirs(filepath + '.lock')
+        except OSError as exception :
+            if exception.errno == errno.EEXIST and os.path.isdir(filepath + '.lock'):
+                # The lock folder already exists, we need to wait for it to be deleted
+                sleep_time = random.randint(1, 100)
+                time.sleep(sleep_time)
+                pass
+            else :
+                # An unexpected error has occured : let's stop the program and raise the error"
+                #print exception.errno
+                #print errno.EEXIST
+                raise
+        else :
+            # The lock folder was successfully created !"
+            unlocked = False
+
+def unlock(filepath):
+    try :
+        os.rmdir(filepath + '.lock')
+    except :
+        raise
 
 main()

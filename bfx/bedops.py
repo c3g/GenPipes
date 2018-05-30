@@ -27,34 +27,41 @@ from core.job import *
 
 
 def sort_bed(input_bed, output_file, other_options=""):
-    command = """sort-bed {other_options}\\
-    {input_bed} \\
-    > {output_file}""" .format(other_options = other_options,
-        input_bed = input_bed,
-        output_file = output_file)
+    return Job(
+        [input_bed],
+        [output_file],
+        [
+            ['bed_sort', 'module_bedops']
+        ],
+        name="bed_sort." + os.path.basename(input_bed),
+        command="""
+sort-bed {other_options} \\
+  {input} \\
+  > {output}""".format(
+            other_options=other_options,
+            input=input_bed,
+            output=output_file
+        )
+    )
 
-    return Job(input_files = [input_bed],
-            output_files = [output_file],
-            module_entries = [['bed_sort', 'module_bedops']],
-            name = "bed_sort." + os.path.basename(input_bed),
-            command = command
-            )
-
-
-def bedmap_echoMapId(bed1, bed2, output, split = True, other_options=""):
-    command = """bedmap {other_options}\\
-    --echo --echo-map-id\\
-    {bed1}\\
-    {bed2}\\
-    {split}> {output}""" .format(other_options = other_options,
-        bed1 = bed1,
-        bed2 = bed2,
-        split = " | tr '|' '\\t' " if split else "",
-        output = output)
-
-    return Job(input_files = [bed1, bed2],
-            output_files = [output],
-            module_entries = [['bedmap_echoMapId', 'module_bedops']],
-            name = "bedmap_echoMapId." + os.path.basename(output),
-            command = command
-            )
+def bedmap_echoMapId(bed1, bed2, output, split=True, other_options=""):
+    return Job(
+        [bed1, bed2],
+        [output],
+        [
+            ['bedmap_echoMapId', 'module_bedops']
+        ],
+        name="bedmap_echoMapId." + os.path.basename(output),
+        command="""
+bedmap {other_options} \\
+  --echo --echo-map-id \\
+  {bed1} \\
+  {bed2} \\
+  {split} > {output}""" .format(
+            other_options=other_options,
+            bed1=bed1,
+            bed2=bed2,
+            split=" | tr '|' '\\t' " if split else "",
+            output=output
+        )
+    )
