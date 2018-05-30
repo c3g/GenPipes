@@ -267,6 +267,8 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
         devtools::install_github('hms-dbmi/spp')
         ## Sleuth
 #       devtools::install_github("pachterlab/sleuth")
+        ## PopSV
+        #devtools::install_github("jmonlong/PopSV")
 EOF
 
 echo "R packages installation done."
