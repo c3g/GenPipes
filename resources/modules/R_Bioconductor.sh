@@ -213,14 +213,14 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
 
     ## Define the list of packages to standard packages to install.
     deps = c("affxparser", "affy", "affyio", "affyPLM", "akima", "allgown", "annotate", "AnnotationDbi", "AnnotationForge", "ape", "ash", "ASCAT",
-    "BatchExperiments", "BatchJobs", "beanplot", "Biobase", "BiocGenerics", "BiocInstaller", "bioDist", "biomaRt", "Biostrings", "biovizBase", "bit",
+    "BatchExperiments", "BatchJobs","batchtools", "beanplot", "Biobase", "BiocGenerics", "BiocInstaller", "bioDist", "biomaRt", "Biostrings", "biovizBase", "bit",
     "bit64", "bitops", "boot", "brew", "BSgenome",
     "caTools", "charm", "charmData", "circlize", "class", "cluster", "clusterStab", "clusterProfiler", "codetools", "colorspace", "ConsensusClusterPlus",
     "corpcor", "crlmm", "ctc", "cummeRbund",
     "datasets", "data.table", "DBI", "DESeq", "devtools", "dendextend", "dichromat", "digest", "dplyr", "DNAcopy",
     "edgeR", "ellipse", "evaluate",
-    "fastcluster", "ff", "fields", "FDb.InfiniumMethylation.hg19", "foreach", "foreign",
-    "gcrma", "gdata", "genefilter", "GenomicFeatures", "GenomicRanges", "genoset", "GEOquery", "ggplot2", "ggvis", "googleVis", "goseq", "gplots", "graph",
+    "fastcluster" ,"fdrtool", "ff", "fields", "FDb.InfiniumMethylation.hg19", "foreach", "foreign",
+    "gcrma", "gdata", "genefilter", "GenomicFeatures", "GenomicRanges", "GenomeInfoDb","genoset", "GEOquery", "ggplot2", "ggvis", "googleVis", "goseq", "gplots", "graph",
     "gsalib", "gtable", "gtools", "Gviz",
     "hdrcde", "Hmisc", "hwriter", "HTqPCR", "HTSFilter", "hopach",
     "igraph", "IlluminaHumanMethylation450kmanifest", "IlluminaHumanMethylation450kanno.ilmn12.hg19", "impute", "IRanges", "iterators",
@@ -240,7 +240,7 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
     "vioplot", "vsn",
     "WriteXLS",
     "XML", "xtable",
-    "zlibbioc")
+    "zlibbioc")  
 
         ## Programmatically add all the org packages (excluding MeSH mess which takes too long)
         contribUrl = contrib.url(biocinstallRepos(), type = 'source')
