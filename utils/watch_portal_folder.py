@@ -37,11 +37,13 @@ def send_files(options, files):
             response = requests.post(url, json=json.loads(readfile(fullpath)))
             result   = response.json()
         except Exception as e:
-            print(red('Got error while sending files. Skipping update.'))
+            print(red('Got error while sending file. Skipping.'))
             print(e)
             print(options)
-            print(url)
-            return
+            print('Url: ' + url)
+            print('Filepath: ' + fullpath)
+            print('Content:\n----------\n' + response.text + '\n----------')
+            continue
 
         if response.status_code == 200 and result.get('ok') is True:
             os.remove(fullpath)
