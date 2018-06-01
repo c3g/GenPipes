@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 import os
+import os.path
 import sys
 import json
 import time
@@ -33,6 +34,11 @@ def send_files(options, files):
     for file in files:
         url = options.url + '/' + file.split('.')[0]
         fullpath = os.path.join(options.watch_folder, file)
+
+        if not os.path.isfile(fullpath):
+            print('File %s not on disk anymore. Skipping.' % file)
+            continue
+
         try:
             response = requests.post(url, json=json.loads(readfile(fullpath)))
             result   = response.json()
