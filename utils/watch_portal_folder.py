@@ -13,11 +13,11 @@ def main():
 
     options = get_arguments()
 
+    print('Checking for JSON files in %s' % options.watch_folder)
+
     if options.update_interval is None:
         run(options)
         sys.exit()
-
-    print('Watching for JSON files in %s' % options.watch_folder)
 
     while True:
         time.sleep(options.update_interval)
@@ -27,6 +27,7 @@ def main():
 def run(options):
     files = [f for f in os.listdir(options.watch_folder) if f.endswith('.json')]
     files.sort(key=lambda file: os.path.getmtime(os.path.join(options.watch_folder, file)))
+    print('Found %i files' % len(files))
     send_files(options, files)
 
 
@@ -81,7 +82,7 @@ def get_arguments():
 
     optli, arg = getopt.getopt(sys.argv[1:], 'w:u:i:h', ['watch=', 'url=', 'interval=', 'help'])
 
-    if len(optli) == 0 :
+    if len(optli) == 0:
         usage()
         exit('Error: No arguments given')
 
