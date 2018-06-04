@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 import os
+import os.path
 import sys
 import json
 import time
@@ -12,11 +13,11 @@ def main():
 
     options = get_arguments()
 
+    print('Checking for JSON files in %s' % options.watch_folder)
+
     if options.update_interval is None:
         run(options)
         sys.exit()
-
-    print('Watching for JSON files in %s' % options.watch_folder)
 
     while True:
         time.sleep(options.update_interval)
@@ -26,6 +27,7 @@ def main():
 def run(options):
     files = [f for f in os.listdir(options.watch_folder) if f.endswith('.json')]
     files.sort(key=lambda file: os.path.getmtime(os.path.join(options.watch_folder, file)))
+    print('Found %i files' % len(files))
     send_files(options, files)
 
 
@@ -33,15 +35,22 @@ def send_files(options, files):
     for file in files:
         url = options.url + '/' + file.split('.')[0]
         fullpath = os.path.join(options.watch_folder, file)
+
+        if not os.path.isfile(fullpath):
+            print('File %s not on disk anymore. Skipping.' % file)
+            continue
+
         try:
             response = requests.post(url, json=json.loads(readfile(fullpath)))
             result   = response.json()
         except Exception as e:
-            print(red('Got error while sending files. Skipping update.'))
+            print(red('Got error while sending file. Skipping.'))
             print(e)
             print(options)
-            print(url)
-            return
+            print('Url: ' + url)
+            print('Filepath: ' + fullpath)
+            print('Content:\n----------\n' + response.text + '\n----------')
+            continue
 
         if response.status_code == 200 and result.get('ok') is True:
             os.remove(fullpath)
@@ -73,7 +82,7 @@ def get_arguments():
 
     optli, arg = getopt.getopt(sys.argv[1:], 'w:u:i:h', ['watch=', 'url=', 'interval=', 'help'])
 
-    if len(optli) == 0 :
+    if len(optli) == 0:
         usage()
         exit('Error: No arguments given')
 
