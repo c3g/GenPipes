@@ -38,6 +38,7 @@ from bfx.readset import *
 from bfx import gq_seq_utils
 from bfx import picard
 from bfx import rmarkdown
+from bfx import differential_expression
 from bfx import tools
 from pipelines import common
 import utils
@@ -141,7 +142,7 @@ cp \\
                     report_dir="report"
                 ),
                 name="report.copy_tx2genes_file",
-                self.samples=samples
+                samples=self.samples
             )
         )
 
@@ -182,7 +183,7 @@ cp \\
                 job_input            = os.path.join("exploratory", "index.tsv"),
                 job_name             = "report.gq_seq_utils_exploratory_analysis_rnaseq",
                 input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeqLight.gq_seq_utils_exploratory_analysis_rnaseq_light.Rmd"),
-                job.samples          = self.samples
+                samples          = self.samples,
                 render_output_dir    = 'report',
                 module_section       = 'report',
                 prerun_r             = 'report_dir="report";'
@@ -190,6 +191,30 @@ cp \\
         )
 
         return jobs
+        
+    def sleuth_differential_expression(self): 
+            """
+            Performs differential gene expression analysis using [Sleuth](http://pachterlab.github.io/sleuth/). 
+            Analysis are performed both at a transcript and gene level, using two different tests: LRT and WT. 
+
+            Still in development, use with caution. 
+            """
+
+            # If --design <design file> option is missing, self.contrasts call will raise an Exception
+
+            if self.contrasts: 
+                    design_file = os.path.relpath(self.args.design.name, self.output_dir)
+            output_directory = "sleuth" 
+            count_matrix = os.path.join(self.output_dir, "kallisto", "All_readsets","all_readsets.abundance_genes.csv")
+            tx2gene = config.param('sleuth', 'tx2gene')
+            
+            sleuth_job = differential_expression.sleuth(design_file, count_matrix, tx2gene, output_directory)
+            sleuth_job.output_files = [os.path.join(output_directory, contrast.name, "results.wt.gene.csv") for contrast in self.contrasts]
+            sleuth_job.samples = self.samples
+
+            return [concat_jobs([
+                Job(command="mkdir -p " + output_directory), 
+                sleuth_job], name="sleuth_differential_expression")]
 
 
 ############
@@ -202,7 +227,8 @@ cp \\
             self.merge_trimmomatic_stats,
             self.kallisto,
             self.kallisto_count_matrix,
-            self.gq_seq_utils_exploratory_analysis_rnaseq_light
+            self.gq_seq_utils_exploratory_analysis_rnaseq_light,
+            self.sleuth_differential_expression
             ]
 
 if __name__ == '__main__':

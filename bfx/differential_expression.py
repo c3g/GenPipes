@@ -105,3 +105,27 @@ Rscript $R_TOOLS/goseq.R {other_options} \\
         input_columns=input_columns,
         output_file=output_file
     ))
+
+def sleuth(
+    design_file,
+    count_matrix,
+    tx2gene_file,
+    output_dir
+    ): 
+    
+    return Job(
+        [count_matrix],
+        [os.path.join(output_dir, "results.wt.gene.csv")],
+        [
+            ['differential_expression_sleuth', 'module_mugqic_tools'],
+            ['differential_expression_sleuth', 'module_R']
+        ],
+        command="""\
+Rscript $R_TOOLS/sleuth.R \\
+  -d {design_file} \\
+  -t {tx2gene_file} \\
+  -o {output_dir}""".format(
+          design_file=design_file,
+          tx2gene_file=tx2gene_file,
+          output_dir=output_dir
+    ))
