@@ -153,7 +153,7 @@ def get_arguments():
     options.url             = 'http://localhost:3000'
     options.update_interval = None
 
-    optli, arg = getopt.getopt(sys.argv[1:], 'w:u:i:h', ['watch=', 'url=', 'interval=', 'help'])
+    optli, arg = getopt.getopt(sys.argv[1:], 'w:c:u:i:h', ['watch=', 'cache=', 'url=', 'interval=', 'help'])
 
     if len(optli) == 0:
         usage()
