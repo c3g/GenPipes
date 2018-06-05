@@ -169,7 +169,7 @@ def get_arguments():
             if str(value) == '':
                 exit('Error: --cache folder not provided\n')
             else:
-                options.watch_folder = str(value)
+                options.cache_folder = str(value)
         if option in ('-u', '--url'):
             if str(value) == '':
                 exit('Error: --url not provided\n')
