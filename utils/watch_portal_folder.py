@@ -40,34 +40,11 @@ def run(options):
     print('Found %i files' % len(files))
 
     details = []
-    for i, filename in enumerate(files):
-        filepath = os.path.join(options.watch_folder, filename)
-
-        if not os.path.isfile(filepath):
-            print(red('  File %s does not exist anymore. Skipping' % filename))
-            continue
-
-        try:
-            content = read_file(filepath)
-        except Exception as e:
-            print(e)
-            print(red('  Failed to read file "%s". Skipping' % filename))
-            continue
-
-        try:
-            data = json.loads(content)
-        except Exception as e:
-            print(e)
-            print(red('  Failed to parse JSON "%s". Skipping' % filename))
-            continue
-
-        print('  Read %s (%i/%i)' % (filename, i + 1, len(files)))
+    for filename in files:
         details.append({
-            "filepath": filepath,
-            "sample_name": data['sample_name']
+            "filepath": os.path.join(options.watch_folder, filename),
+            "sample_name": filename.split('.')[1]
         })
-
-    print('Read %i files' % len(details))
 
     details_by_sample = group_by(details, lambda detail: detail['sample_name'])
     for sample_name in details_by_sample:
@@ -88,12 +65,24 @@ def send_files(options, sample_name, details):
     detail = details[0]
     filepath = detail['filepath']
 
+    if not os.path.isfile(filepath):
+        print(red('File %s does not exist anymore. Skipping' % filename))
+        return
+
     try:
-        data = read_json(filepath)
+        content = read_file(filepath)
     except Exception as e:
         print(e)
-        print(red('Failed to read file "%s": ' % filename))
+        print(red('Failed to read file "%s". Skipping' % filename))
         return
+
+    try:
+        data = json.loads(content)
+    except Exception as e:
+        print(e)
+        print(red('Failed to parse JSON "%s". Skipping' % filename))
+        return
+
 
     previous_data = None
     if os.path.isfile(cache_filepath):
