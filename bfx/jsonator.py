@@ -243,7 +243,8 @@ def create(pipeline, sample):
     # Print a copy of it for the monitoring interface
     portal_output_dir = config.param('DEFAULT', 'portal_output_dir', required=False, type='dirpath')
     if portal_output_dir != '':
-        with open(os.path.join(portal_output_dir, os.getenv('USER') + '.' + current_json_hash['sample_name'] + '.' + uuid4().get_hex() + '.json'), 'w') as out_json:
+#        with open(os.path.join(portal_output_dir, os.getenv('USER') + '.' + current_json_hash['sample_name'] + '.' + uuid4().get_hex() + '.json'), 'w') as out_json:
+        with open(os.path.join(portal_output_dir, os.getenv('USER') + '.' + uuid4().get_hex() + '.json'), 'w') as out_json:
             out_json.write(current_json)
         out_json.close()
 
