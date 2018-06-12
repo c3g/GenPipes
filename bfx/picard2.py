@@ -190,7 +190,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             java_other_options=config.param('picard_mark_duplicates', 'java_other_options'),
             ram=config.param('picard_mark_duplicates', 'ram'),
             remove_duplicates=remove_duplicates,
-            inputs=" \\\n  ".join(["INPUT=" + input for input in inputs]),
+            inputs=" \\\n  ".join(["INPUT=" + str(input) for input in inputs]),
             output=output,
             metrics_file=metrics_file,
             max_records_in_ram=config.param('picard_mark_duplicates', 'max_records_in_ram', type='int')
