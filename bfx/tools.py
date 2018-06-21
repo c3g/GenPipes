@@ -362,11 +362,11 @@ bash rnaseq_light_kallisto.sh \\
   {fastq_file1} \\
   {fastq_file2}""".format(
             output_dir=output_dir,
-            parameters=parameters
+            parameters=parameters,
             transcriptome_file=transcriptome_file,
             tx2genes_file=tx2genes_file,
             fastq_file1=fastq_file1,
-            fastq_file2=fastq_file2,
+            fastq_file2=fastq_file2
         ),
         multiqc_files=[os.path.join(output_dir, "kallisto_quant.log")]
      )
