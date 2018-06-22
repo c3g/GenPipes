@@ -54,6 +54,8 @@ from bfx import varscan
 from bfx import freebayes
 from bfx import vt
 from bfx import bcbio_variation_recall
+from bfx import gemini
+from bfx import annovar
 from pipelines import common
 
 log = logging.getLogger(__name__)
@@ -1494,7 +1496,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
         return jobs
 
-    def split_multiSampleToFamilyVCF(self):
+    def split_multiSampleVCF(self):
         """
         Divide the multi-sample variants/allSamples.hc.vqsr.vcf and variants/allSamples.hc.vcf.bgz files into single sample files
         """
@@ -1523,13 +1525,13 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                         bcftools.multiSample2familyVCF(input_vcf, member_list, output_vcf),
                         Job(output_files=[output_vcf + ".gz"], module_entries=[['multiSample2familyVCF','module_tabix']], command="bgzip " + output_vcf),
                         Job(module_entries=[['multiSample2familyVCF','module_tabix']], command="tabix " + output_vcf + ".gz" + " -p vcf")
-                        ], name="split_multiSampleToFamilyVCF_"+family_id+"_"+varcaller))
+                        ], name="split_multiSampleVCF_"+family_id+"_"+varcaller))
                         
         else:
             for sample in self.samples:
 
                 input_mergedVcf_prefix = "variants/allSamples.merged."
-                out_dir = os.path.join("variants", "sample_" + sample.name)
+                out_dir = os.path.join("variants", sample.name)
                 output_sampleVcf_prefix = os.path.join(out_dir, sample.name + ".")
 
                 varcallers = ["gatk_flt","flt","varscan","freebayes"]
@@ -1542,7 +1544,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                         bcftools.multiSample2familyVCF(input_vcf, sample.name, output_vcf),
                         Job(output_files=[output_vcf + ".gz"], module_entries=[['multiSample2familyVCF','module_tabix']], command="bgzip " + output_vcf),
                         Job(module_entries=[['multiSample2familyVCF','module_tabix']], command="tabix " + output_vcf + ".gz" + " -p vcf")
-                        ], name="split_multiSampleToFamilyVCF_"+sample.name+"_"+varcaller))
+                        ], name="split_multiSampleVCF_"+sample.name+"_"+varcaller))
 
         return jobs
 
@@ -1568,12 +1570,12 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
                 jobs.append(concat_jobs([
                     bcbio_variation_recall.ensemble(input_VCFs, output_ensemble, config.param('bcbio_ensemble', 'options')),
-                    Job(command="zcat " + output_ensemble + ".gz > " + output_ensemble)
+                    Job(output_files=[output_ensemble + ".gz"], command="zcat " + output_ensemble + ".gz > " + output_ensemble)
                     ], name="bcbio_variation_recall." + family_id))                
 
         else:
             for sample in self.samples:
-                out_dir = os.path.join("variants", "sample_" + sample.name)
+                out_dir = os.path.join("variants", sample.name)
 
                 gatk_flt_input = os.path.join(out_dir, sample.name + ".gatk_flt.vt.vcf.gz")
                 snp_and_indel_bcf_input = os.path.join(out_dir, sample.name + ".flt.vt.vcf.gz")
@@ -1585,10 +1587,88 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
                 jobs.append(concat_jobs([
                     bcbio_variation_recall.ensemble(input_VCFs, output_ensemble, config.param('bcbio_ensemble', 'options')),
-                    Job(command="zcat " + output_ensemble + ".gz > " + output_ensemble)
+                    Job(output_files=[output_ensemble + ".gz"], command="zcat " + output_ensemble + ".gz > " + output_ensemble)
                     ], name="bcbio_variation_recall." + sample.name))
 
         return jobs
+
+    def gemini_annotation(self):
+        """
+        Annotate the ensemble vcf file with Gemini
+        """
+
+        jobs = []
+
+        if self.family_info:
+            for family_id in self.family_info:
+                out_dir = os.path.join("variants", "family_" + family_id)
+                input_family_ensembleVCF = os.path.join(out_dir, family_id + ".ensemble.out.vcf.gz")
+                gemini_dir = os.path.join(out_dir, "gemini")
+                gemdir_fam_prefix = os.path.join(gemini_dir, family_id)
+                temp_file = os.path.join(gemini_dir, "temp.txt")
+                multianno_file = gemdir_fam_prefix + ".hg38_multianno.vcf"
+                multianno_norm_file = gemdir_fam_prefix + ".hg38_multianno.norm.vcf.gz"
+                multianno_anno_file = gemdir_fam_prefix + ".hg38_multianno.anno.vcf.gz"
+                gem_db = gemdir_fam_prefix + ".db"
+
+                jobs.append(concat_jobs([
+                    Job(command="mkdir -p " + gemini_dir),
+                    pipe_jobs([
+                        bcftools.annotate(input_family_ensembleVCF, None),
+                        Job(command="grep -v -P '^#' -  | cut -f 1-10 | awk '{gsub (\"chr\",\"\");print $0;}'"),
+                        annovar.table_annovar("-", gemdir_fam_prefix, gemdir_fam_prefix + ".hg38_multianno.vcf")
+                    ]),
+                    Job(module_entries=[['gemini_annotations','module_tabix']], command="tabix -H " + input_family_ensembleVCF + " | head -n -1 > " + temp_file),
+                    Job(command="cat " + config.param('table_annovar','annovar_header') + " >> " + temp_file),
+                    Job(module_entries=[['gemini_annotations','module_tabix']], command="tabix -H " + input_family_ensembleVCF + " >> " + temp_file),
+                    Job(command="paste " + multianno_file + " <(zcat " + input_family_ensembleVCF + " | grep -v -P \"^#\" | uniq -c | awk '{if (1 == 1) print $0}' | cut -f 11-) >> " + temp_file),
+                    pipe_jobs([
+                        Job(command="awk '{ if($0 !~ /^#/) print \"chr\"$0; else if(match($0,/(##contig=<ID=)(.*)/,m)) print m[1]\"chr\"m[2]; else print $0 }' " + temp_file),
+                        Job(command="bgzip -c > " + multianno_file + ".gz") 
+                    ]),
+                    Job(module_entries=[['gemini_annotations','module_tabix']], command="tabix -p vcf " + multianno_file + ".gz"),
+                    Job([multianno_file], [multianno_norm_file], command="sh " + config.param('gemini_annotations','gemini_script') + " " + multianno_file + ".gz all 16 " + gemini_dir),
+                    gemini.vcfanno(multianno_norm_file, multianno_anno_file), 
+                    gemini.vcf2db(multianno_anno_file, gem_db),
+                    Job(module_entries=[['gemini_annotations','module_tabix']], command="tabix -p vcf " + multianno_anno_file)
+                ], name="annovar_annotation." + family_id))
+
+        else:
+            for sample in self.samples:
+                out_dir = os.path.join("variants", sample.name)
+                input_sample_ensembleVCF = os.path.join(out_dir, sample.name + ".ensemble.out.vcf.gz")
+                gemini_dir = os.path.join(out_dir, "gemini")
+                gemdir_sample_prefix = os.path.join(gemini_dir, sample.name)
+                temp_file = os.path.join(gemini_dir, "temp.txt")
+                multianno_file = gemdir_sample_prefix + ".hg38_multianno.vcf"
+                multianno_norm_file = gemdir_sample_prefix + ".hg38_multianno.norm.vcf.gz"
+                multianno_anno_file = gemdir_sample_prefix + ".hg38_multianno.anno.vcf.gz"
+                gem_db = gemdir_sample_prefix + ".db"
+
+                jobs.append(concat_jobs([
+                    Job(command="mkdir -p " + gemini_dir),
+                    pipe_jobs([
+                        bcftools.annotate(input_sample_ensembleVCF, None),
+                        Job(command="grep -v -P '^#' -  | cut -f 1-10 | awk '{gsub (\"chr\",\"\");print $0;}'"),
+			nnovar.table_annovar("-", gemdir_sample_prefix, gemdir_sample_prefix + ".hg38_multianno.vcf")
+                    ]), 
+                    Job(module_entries=[['gemini_annotations','module_tabix']], command="tabix -H " + input_sample_ensembleVCF + " | head -n -1 > " + temp_file),
+                    Job(command="cat " + config.param('table_annovar','annovar_header') + " >> " + temp_file),
+                    Job(module_entries=[['gemini_annotations','module_tabix']], command="tabix -H " + input_sample_ensembleVCF + " >> " + temp_file),
+                    Job(command="paste " + multianno_file + " <(zcat " + input_sample_ensembleVCF + " | grep -v -P \"^#\" | uniq -c | awk '{if (1 == 1) print $0}' | cut -f 11-) >> " + temp_file),
+                    pipe_jobs([
+                        Job(command="awk '{ if($0 !~ /^#/) print \"chr\"$0; else if(match($0,/(##contig=<ID=)(.*)/,m)) print m[1]\"chr\"m[2]; else print $0 }' " + temp_file),
+                        Job(command="bgzip -c > " + multianno_file + ".gz")
+                    ]),
+                    Job(module_entries=[['gemini_annotations','module_tabix']], command="tabix -p vcf " + multianno_file + ".gz"),
+                    Job([multianno_file], [multianno_norm_file], command="sh " + config.param('gemini_annotations','gemini_script') + " " + multianno_file + ".gz all 16 " + gemini_dir),
+                    gemini.vcfanno(multianno_norm_file, multianno_anno_file),
+                    gemini.vcf2db(multianno_anno_file, gem_db),
+                    Job(module_entries=[['gemini_annotations','module_tabix']], command="tabix -p vcf " + multianno_anno_file)
+                ], name="annovar_annotation." + sample.name))
+
+        return jobs
+
 
     @property
     def steps(self):
@@ -1683,8 +1763,9 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             self.snp_and_indel_bcf,
             self.merge_filter_bcf,
             self.vt,
-            self.split_multiSampleToFamilyVCF,
-            self.bcbio_ensemble]
+            self.split_multiSampleVCF,
+            self.bcbio_ensemble,
+            self.gemini_annotation]
         ]
 
 if __name__ == '__main__':
