@@ -77,9 +77,9 @@ To use them by default, add in your *$HOME/.bash_profile*:
 ```
 #!bash
 module load mugqic/python/2.7.14
-module load mugqic/mugqic_pipelines/<latest_version>
+module load mugqic/genpipes/<latest_version>
 ```
-(find out the latest version with: "`module avail 2>&1 | grep mugqic/mugqic_pipelines`").
+(find out the latest version with: "`module avail 2>&1 | grep mugqic/genpipes`").
 
 
 ### For guillimin and mammouth users
@@ -113,7 +113,7 @@ Set `MUGQIC_PIPELINES_HOME` to your local copy path, in your *$HOME/.bash_profil
 export MUGQIC_PIPELINES_HOME=/path/to/your/local/genpipes
 ```
 
-MUGQIC Pipelines require genomes and modules resources to run properly.
+GenPipes (formerly called MUGQIC Pipelines) require genomes and modules resources to run properly.
 First, set `MUGQIC_INSTALL_HOME` to the directory where you want to install those resources, in your *$HOME/.bash_profile*:
 ```
 #!bash
@@ -271,7 +271,7 @@ Usage
 
 For each pipeline, get help about usage, arguments and steps with:
 
-* if you use a `mugqic/mugqic_pipelines/<version>` module on our clusters, simply:
+* if you use a `mugqic/genpipes/<version>` module on our clusters (or `mugqic/mugqic_pipelines/<version>`), simply:
 ```
 #!bash
 <pipeline_name>.py --help
@@ -515,10 +515,10 @@ Contact us
 ----------
 Please visit our [mailing list](https://groups.google.com/forum/#!forum/genpipes) to find questions and answers about GenPipes.
 
-To subscribe to the mailing list and receive other people's messages, send an e-mail at [mugqic_pipelines+subscribe@googlegroups.com](mailto:mugqic_pipelines+subscribe@googlegroups.com).
+To subscribe to the mailing list and receive other people's messages, send an e-mail at [genpipes+subscribe@googlegroups.com](mailto:genpipes+subscribe@googlegroups.com).
 You will receive an invitation which you must accept.
 
-To use it, send us an e-mail at [mugqic_pipelines@googlegroups.com](mailto:mugqic_pipelines@googlegroups.com).
+To use it, send us an e-mail at [genpipes@googlegroups.com](mailto:genpipes@googlegroups.com).
 
 You can also report bugs at [pipelines@computationalgenomics.ca](mailto:pipelines@computationalgenomics.ca).
 

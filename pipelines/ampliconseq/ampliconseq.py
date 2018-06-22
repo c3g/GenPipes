@@ -202,7 +202,7 @@ pandoc --to=markdown \\
                     report_file=report_file
                 ),
                 report_files=[report_file]
-            )], name="merge_flash_stats")]
+            )], name="merge_flash_stats", samples=self.samples)]
 
     def catenate(self):
 
@@ -402,7 +402,7 @@ pandoc --to=markdown \\
                     report_file=report_file
                 ),
                 report_files=[report_file]
-            )], name="merge_uchime_stats")]
+            )], name="merge_uchime_stats", samples=self.samples)]
 
     def otu_picking(self):
         """
