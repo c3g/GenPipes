@@ -162,3 +162,21 @@ perl {vcfutils} varFilter {other_options} {input} \\
         output=output
         )
     )
+
+def annotate(input, output, options=None): 
+
+    return Job(
+        [input],
+        [output],
+        [
+            ['DEFAULT', 'module_bcftools']
+        ],
+        command="""\
+bcftools annotate {other_options} {input} \\
+{output}""".format(
+        other_options=config.param('bcftools_annotate', 'other_options'),
+        input=input,
+        output="- o " + output if output else "",
+        )
+    )
+
