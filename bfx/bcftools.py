@@ -127,7 +127,7 @@ bcftools \\
         )
     )
 
-def multiSample2familyVCF(input, samples, output):
+def splitMultiSampleVCF(input, samples, output):
     """
     Split multiple-sample VCF files into family/single sample files
     """
