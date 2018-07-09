@@ -344,7 +344,8 @@ def rnaseqLight_kallisto(fastq_file1, fastq_file2, transcriptome_file, tx2genes_
         ],
         [
             os.path.join(output_dir, "abundance_transcripts.tsv"),
-            os.path.join(output_dir, "abundance_genes.tsv")
+            os.path.join(output_dir, "abundance_genes.tsv"),
+            os.path.join(output_dir, "kallisto_quant.log")
         ],
         [
             ['DEFAULT', 'module_mugqic_tools'],
@@ -354,19 +355,20 @@ def rnaseqLight_kallisto(fastq_file1, fastq_file2, transcriptome_file, tx2genes_
         name=job_name,
         command="""\
 bash rnaseq_light_kallisto.sh \\
-  {fastq_file1} \\
-  {fastq_file2} \\
+  {output_dir} \\
+  {parameters} \\
   {transcriptome_file} \\
   {tx2genes_file} \\
-  {output_dir} \\
-  {parameters}""".format(
-            fastq_file1=fastq_file1,
-            fastq_file2=fastq_file2,
+  {fastq_file1} \\
+  {fastq_file2}""".format(
+            output_dir=output_dir,
+            parameters=parameters,
             transcriptome_file=transcriptome_file,
             tx2genes_file=tx2genes_file,
-            output_dir=output_dir,
-            parameters=parameters
-        )
+            fastq_file1=fastq_file1,
+            fastq_file2=fastq_file2
+        ),
+        multiqc_files=[os.path.join(output_dir, "kallisto_quant.log")]
      )
 
 ## functions for R tools ##
