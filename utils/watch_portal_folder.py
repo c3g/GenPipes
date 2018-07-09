@@ -42,21 +42,34 @@ def run(options):
     details = []
     for i, filename in enumerate(files):
         filepath = os.path.join(options.watch_folder, filename)
+
+        if not os.path.isfile(filepath):
+            print(red('  File %s does not exist anymore. Skipping' % filename))
+            continue
+
         try:
-            data = read_json(filepath)
+            content = read_file(filepath)
         except Exception as e:
             print(e)
-            print(red('Failed to read file "%s". Skipping' % filename))
+            print(red('  Failed to read file "%s". Skipping' % filename))
             continue
+
+        try:
+            data = json.loads(content)
+        except Exception as e:
+            print(e)
+            print(red('  Failed to parse JSON "%s". Skipping' % filename))
+            continue
+
         print('  Read %s (%i/%i)' % (filename, i + 1, len(files)))
         details.append({
             "filepath": filepath,
-            "data": data
+            "sample_name": data['sample_name']
         })
 
     print('Read %i files' % len(details))
 
-    details_by_sample = group_by(details, lambda detail: detail['data']['sample_name'])
+    details_by_sample = group_by(details, lambda detail: detail['sample_name'])
     for sample_name in details_by_sample:
         details = details_by_sample[sample_name]
         details.sort(key=lambda detail: os.path.getmtime(detail['filepath']))
@@ -74,7 +87,13 @@ def send_files(options, sample_name, details):
     # First detail is of the newest file
     detail = details[0]
     filepath = detail['filepath']
-    data = detail['data']
+
+    try:
+        data = read_json(filepath)
+    except Exception as e:
+        print(e)
+        print(red('Failed to read file "%s": ' % filename))
+        return
 
     previous_data = None
     if os.path.isfile(cache_filepath):
