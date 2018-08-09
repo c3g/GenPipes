@@ -83,21 +83,21 @@ class MUGQICPipeline(Pipeline):
         # - Server name
         # - Readset File
 
-        serverName = socket.gethostbyname(socket.gethostname())
+        hostName = socket.gethostname()
+        serverIP = socket.gethostbyname(hostName)
         pipelineName = self.__class__.__name__
-        readsetFiles = ",".join(d.values())
-        uniqueIdentifier = "{serverName}-{pipelineName}-{readsetFiles}" \
-            .format(serverName=serverName, pipelineName=pipelineName, readsetFiles=readsetFiles) \
+        readsetFiles = ",".join(listName.values())
+        uniqueIdentifier = "{serverIP}-{pipelineName}-{readsetFiles}" \
+            .format(serverIP=serverIP, pipelineName=pipelineName, readsetFiles=readsetFiles) \
             .replace("'", "''")
 
-        request = '&'.join(
-            "hostname=" + socket.gethostname(),
-            "ip=" + serverName,
+        request = '&'.join([
+            "hostname=" + hostName,
+            "ip=" + serverIP,
             "pipeline=" + pipelineName,
             "steps=" + ",".join([step.name for step in self.step_range]),
-            "samples=" + str(len(self.samples)),
-            "AnonymizedList=" + ",".join([md5.md5(pipelineName + "." + value).hexdigest() for key, value in listName.iteritems()])
-        )
+            "samples=" + str(len(self.samples))
+        ])
 
         print("""
 {separator_line}
