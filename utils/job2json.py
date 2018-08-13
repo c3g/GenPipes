@@ -190,4 +190,6 @@ def unlock(filepath):
     except :
         raise
 
-main()
+
+if __name__ == '__main__':
+    main()
