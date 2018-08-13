@@ -74,7 +74,7 @@ class MUGQICPipeline(Pipeline):
         for readset in self.readsets:
             if listName.has_key(readset.sample.name) :
                 listName[readset.sample.name]+="."+readset.name
-            else: 
+            else:
                 listName[readset.sample.name]=readset.sample.name+"."+readset.name
         request = \
             "hostname=" + socket.gethostname() + "&" + \
@@ -91,9 +91,8 @@ class MUGQICPipeline(Pipeline):
 wget "{server}?{request}" --quiet --output-document=/dev/null
 """.format(separator_line = "#" + "-" * 79, server=server, request=request))
 
-
     def submit_jobs(self):
-        super(MUGQICPipeline, self).scheduler.submit(self)
+        super(MUGQICPipeline, self).submit_jobs()
         if self.jobs and self.args.job_scheduler in ["pbs", "batch", "slurm"]:
             self.mugqic_log()
 
@@ -397,7 +396,7 @@ pandoc \\
             Job(
                 [known_variants_annotated],
                 [variants_directory, verify_bam_id_directory],
-                command="mkdir -p " + variants_directory + " " + verify_bam_id_directory, 
+                command="mkdir -p " + variants_directory + " " + verify_bam_id_directory,
                 name = "verify_bam_id_create_directories"
         ))
 
@@ -424,7 +423,7 @@ pandoc \\
 
             jobs.append(job)
 
-            verify_bam_results.extend([output_prefix + ".selfSM" ]) 
+            verify_bam_results.extend([output_prefix + ".selfSM" ])
 
         # Coverage bed is null if whole genome experiment
         target_bed=coverage_bed if coverage_bed else ""
@@ -437,7 +436,7 @@ pandoc \\
                 input_rmarkdown_file = os.path.join(self.report_template_dir, "Illumina.verify_bam_id.Rmd"),
                 samples              = self.samples,
                 render_output_dir    = 'report',
-                module_section       = 'report', 
+                module_section       = 'report',
                 prerun_r             = 'source_dir="' + verify_bam_id_directory + '"; report_dir="report" ; params=list(verifyBamID_variants_file="' + known_variants_annotated  + '", dbnsfp_af_field="' + population_AF + '", coverage_bed="' + target_bed + '");'
             )
         )

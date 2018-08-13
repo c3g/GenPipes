@@ -33,6 +33,7 @@ import logging
 import os
 import re
 import textwrap
+from uuid import uuid4
 
 # MUGQIC Modules
 from config import config
@@ -117,6 +118,9 @@ class Pipeline(object):
                     "\" is invalid (should match \d+([,-]\d+)*)!")
         else:
             self.argparser.error("argument -s/--steps is required!")
+
+        self._sample_list = []
+        self._sample_paths = []
 
         # For job reporting, all jobs must be created first, no matter whether they are up to date or not
         if self.args.report:
@@ -213,6 +217,14 @@ class Pipeline(object):
         return self._step_range
 
     @property
+    def sample_list(self):
+        return self._sample_list
+
+    @property
+    def sample_paths(self):
+        return self._sample_paths
+
+    @property
     def jobs(self):
         jobs = []
         for step in self.step_range:
@@ -278,7 +290,6 @@ class Pipeline(object):
         return dependency_jobs
 
     def create_jobs(self):
-        sample_list = []
         for step in self.step_range:
             log.info("Create jobs for step " + step.name + "...")
             jobs = step.create_jobs()
@@ -303,20 +314,38 @@ class Pipeline(object):
                     step.add_job(job)
                     if job.samples:
                         for sample in job.samples:
-                            if sample not in sample_list:
-                                sample_list.append(sample)
+                            if sample not in self.sample_list:
+                                self.sample_list.append(sample)
 
             log.info("Step " + step.name + ": " + str(len(step.jobs)) + " job" + ("s" if len(step.jobs) > 1 else "") + " created" + ("" if step.jobs else "... skipping") + "\n")
 
         # Now create the json dumps for all the samples if not already done
         if self.args.json:
-            for sample in sample_list:
-                jsonator.create(self, sample)
+            for sample in self.sample_list:
+                self.sample_paths.append(jsonator.create(self, sample))
 
         log.info("TOTAL: " + str(len(self.jobs)) + " job" + ("s" if len(self.jobs) > 1 else "") + " created" + ("" if self.jobs else "... skipping") + "\n")
 
     def submit_jobs(self):
         self.scheduler.submit(self)
+
+        # Print a copy of sample JSONs for the genpipes dashboard
+        portal_output_dir = config.param('DEFAULT', 'portal_output_dir', required=False, type='dirpath')
+        if self.args.json and portal_output_dir != "":
+            copy_commands = []
+            for i, sample in enumerate(self.sample_list):
+                input_file = self.sample_paths[i]
+                output_file = os.path.join(portal_output_dir, '$USER.' + sample.name + '.' + uuid4().get_hex() + '.json')
+                copy_commands.append("cp \"{input_file}\" \"{output_file}\"".format(
+                    input_file=input_file, output_file=output_file))
+
+            print(textwrap.dedent("""
+                #------------------------------------------------------------------------------
+                # Print a copy of sample JSONs for the genpipes dashboard
+                #------------------------------------------------------------------------------
+                {copy_commands}
+            """).format(copy_commands='\n'.join(copy_commands)))
+
 
     def report_jobs(self, output_dir=None):
         if not output_dir:
