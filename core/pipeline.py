@@ -303,15 +303,15 @@ class Pipeline(object):
                     step.add_job(job)
                     if job.samples:
                         for sample in job.samples:
-                            if sample not in sample_list : sample_list.append(sample)
+                            if sample not in sample_list:
+                                sample_list.append(sample)
 
             log.info("Step " + step.name + ": " + str(len(step.jobs)) + " job" + ("s" if len(step.jobs) > 1 else "") + " created" + ("" if step.jobs else "... skipping") + "\n")
 
         # Now create the json dumps for all the samples if not already done
         if self.args.json:
             for sample in sample_list:
-                if sample.json_dump == "":
-                    sample.json_dump = jsonator.create(self, sample)
+                jsonator.create(self, sample)
 
         log.info("TOTAL: " + str(len(self.jobs)) + " job" + ("s" if len(self.jobs) > 1 else "") + " created" + ("" if self.jobs else "... skipping") + "\n")
 
