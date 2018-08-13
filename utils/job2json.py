@@ -154,14 +154,12 @@ def main():
         # Print to file
         with open(jfile, 'w') as out_json:
             json.dump(current_json, out_json, indent=4)
-        out_json.close()
 
         # Print a copy of it for the monitoring interface
         portal_output_dir = config.param('DEFAULT', 'portal_output_dir', required=False, type='dirpath')
         if portal_output_dir != '':
             with open(os.path.join(portal_output_dir, user + '.' + uuid4().get_hex() + '.json'), 'w') as out_json:
                 json.dump(current_json, out_json, indent=4)
-            out_json.close()
 
         # Finally unlock the file
         unlock(jfile)
