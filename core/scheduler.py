@@ -116,7 +116,6 @@ module load {module_python}
   -o \\"{jsonfiles}\\" \\
   -f {status}
 module unload {module_python} {command_separator}""".format(
-            user=os.getenv('USER'),
             job2json_script=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "utils", "job2json.py"),
             module_python=config.param('DEFAULT', 'module_python'),
             step=step,
