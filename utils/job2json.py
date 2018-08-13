@@ -9,7 +9,6 @@ import sys
 import getopt
 import re
 import json
-import subprocess
 import datetime
 import time
 import random
@@ -110,9 +109,7 @@ def main():
     for jfile in json_files.split(","):
 
         # First lock the file to avoid multiple and synchronous writing atemps
-        #print "Now locking the file..."
         lock(jfile)
-        #print "File locked !!"
 
         with open(jfile, 'r') as json_file:
             current_json = json.load(json_file)
@@ -167,9 +164,7 @@ def main():
             out_json.close()
 
         # Finally unlock the file
-        #print "Now unlocking the file..."
         unlock(jfile)
-        #print "File unlocked !!"
 
 def lock(filepath):
     unlocked = True
@@ -184,9 +179,7 @@ def lock(filepath):
                 pass
             else :
                 # An unexpected error has occured : let's stop the program and raise the error"
-                #print exception.errno
-                #print errno.EEXIST
-                raise
+                raise exception
         else :
             # The lock folder was successfully created !"
             unlocked = False
