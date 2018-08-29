@@ -24,6 +24,8 @@ build() {
   mkdir -p $INSTALL_DIR
   cd $INSTALL_DOWNLOAD
   unzip $ARCHIVE -d $INSTALL_DIR/$SOFTWARE_DIR
+  mv $INSTALL_DIR/$SOFTWARE_DIR/${ARCHIVE//.zip/}/* $INSTALL_DIR/$SOFTWARE_DIR/
+  rm -rf $INSTALL_DIR/$SOFTWARE_DIR/${ARCHIVE//.zip/}
 }
 
 module_file() {
@@ -35,7 +37,7 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-prepend_path    PATH	            \$root
+prepend-path    PATH	            \$root
 setenv          GATK_JAR            \$root/$JAR
 "
 }

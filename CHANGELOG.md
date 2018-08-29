@@ -1,6 +1,256 @@
-15 tags, 3600 commits
+16 tags, 3788 commits
 
-HEAD        Thu Dec 7 19:14:59 2017 +0000        0 commits
+HEAD        Wed Mar 28 14:51:10 2018 -0400        0 commits
+
+3.1.0        Wed Mar 28 15:46:33 2018 -0400        188 commits
+
+  Edouard Henrion <edouard.henrion@mcgill.ca>      77 commits
+
+       ff52e7c MethylSeq - added 'ram' parameter to the igvtools_compute_tdf step in methylseq.base.ini
+       68661e8 updated jb2json.py with a better locking system : now creates a folder instead of a file in order to create the lock
+       55bf1b0 Merge branch 'master' of bitbucket.org:mugqic/genpipes into IHEC_metrics
+       43c9cc1 updated core/scheduler.py to remove job2json call when --json parameter is omitted
+       21b3bdf updated gatk.sh with version gatk-4.0.2.1
+       9908731 updated longranger.sh with LongRanger version 2.2.2
+       d03abd5 updated hicseq.py : calling of the newly built bfx libraries and minor indentations changes
+       c52b582 reviewed topdom.py wrapper for a better handling of input and putput files, so that job dependencies do not break...
+       8ae89bd aded locking file system to jsonator.py and job2json.py to avoid multiple and synchronous writing attempts to JSON file
+       4d1eaa6 Merge branch 'master' of bitbucket.org:mugqic/genpipes into IHEC_metrics
+       70ddf87 updated hicseq.base.ini with newer version of mugqic_tools (2.1.11) and with revised resource allocation for hic_align step
+       3f79827 removed useless loading of mugqic_tools module when calling job2json.py
+       4d7da45 added locking file system to job2json to avoid multiple and synchronous writing attempts to the JSON file
+       6aafbf0 removed useless loading of mugqic_tools module when calling job2json.py
+       205d577 mugqic_tools.sh : swith to mugqic_tools version 2.1.11
+       0ea6336 improved the process regarding the update of the analysis JSON file when resuming a pipeline execution
+       62dd71d removed useless import from core/scheduler.py
+       ac6e9ce added the locking file system to avoid multiple & simultaneous writing attempts on the same file
+       ffd35a6 Merge branch 'master' of bitbucket.org:mugqic/genpipes into IHEC_metrics
+       e654508 added new bash tools wrappers to be called by hicseq.py pipeline script + some minor indentation & syntaxe updates
+       843d657 added new bfx libraries to be called by hicseq.py pipeline script
+       1f6be1b Merge branch 'master' of bitbucket.org:mugqic/genpipes
+       e1dd68f added some new software installation scripts
+       e2abf45 updated 'core/job.py' : added 'samples' parameter to 'concat_jobs' and 'pipe_jobs'
+       8cf84f4 added the initialisation of 'portal_output_dir' to '/lb/project/mugqic/analyste_dev/portal_output_dir' within all of the pipeline .base.ini files
+       9bae17c added the generation of the analysis JSON file to the SLURM scheduler class
+       6e6363d Merge branch 'master' of bitbucket.org:mugqic/genpipes into cedar
+       87fb014 updated core/scheduler.py : call of job2json.py is now done without /home/ehenrion/work/portal_repo/genpipes
+       1681c6f Merge branch 'master' of bitbucket.org:mugqic/genpipes into IHEC_metrics
+       f95e690 corrected trimmomatic input selection to reflect the file names what might be outputed from picard_sam_to_fastq
+       f22ee01 update verifyBamID subroutine within common.py so that it now accepts .vcf.gz files (formerly was only accepting .vcf files)
+       998e1bf updated version of cellranger to 2.1.1 within the bash installation script
+       ba5099f updated pipeline READMEs
+       b5cecbd updated core/pipeline.py to make the analysis JSON file creation optional : no JSON file created by default
+       3fae6e8 updated bfx/macs2.py so that it follows the C3G coding standards
+       3b426ea added installation script for hdf5 and zlib libraries
+       2e82f07 corrected typo in install_genome.sh
+       ff59b0a updated install_genome.sh script with newer software version as well as minor indentation fixes
+       3d26798 Merge branch 'master' of bitbucket.org:mugqic/genpipes
+       1bd0b98 updated kallisto installation script
+       cf3219a updated STAR version in the installation script
+       19997fa updated dbSNP version to 150 for Homo_sapiens GRCh37 installation script
+       1e6f032 Merge branch 'master' of bitbucket.org:mugqic/genpipes
+       f89e056 updated kallisto version to 0.44.0 in the genome installation script - corrected typo within create_transcripts2genes_file subroutine
+       7bf13a9 updated dbSNP and dbNSFP in Homo_sapiens genome installation scipts
+       30299e2 added cDNA fasta to the genome installation scripts
+       e17fcb1 added the portal_ouput_dir to in base ini file
+       acea9bf Merge branch 'master' of bitbucket.org:mugqic/genpipes into portal-integration
+       fe61627 Merge branch 'portal-integration' of bitbucket.org:mugqic/genpipes into portal-integration
+       e0010e2 Merge branch 'master' of bitbucket.org:mugqic/genpipes into portal-integration
+       1f63dc5 Added README-GenAP_coding_standards.txt which gives the coding guidelines for who may want to participate in the C3G/GenAP developments
+       ed345d2 BFXDEV-721 - updated install_genome.sh script : corrected create_transcripts2genes_file() subroutine with missing “then” and “fi” within the 'if/else' statement
+       9a59536 updated install_genome.sh script : corrected create_transcripts2genes_file() subroutine with missing “then” and “fi” within the 'if/else' statement
+       0ed0ef6 updated Prokka installation script so that 'prokka --setupdb' is launched afer the installation
+       743668f Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       22b2601 updated Supernova bash installation script to version 2.0.0
+       c62cf42 updated the bash installation script of python : installation of QIIME has been updated so that emperor is well installed before QIIME
+       96c98a4 added the initialization of the LFS variable, otherwise it is recognize on guillimin...
+       b02491e updated the bash installation script of python : after the installation of the specified version of Python is successfull, the script now also takes care of the installation of all the needed python libraries
+       7609147 update type within python_lib.sh script
+       1ab7a7e RNASeq pipeline : value of parameter 'localfit' used by DESeq, is set to default i.e. empty (which also means 'false'), so Parametric Dispertion Fit is performed by default instead of Local Fit
+       896c3b2 DNASeq pipeline : updated versions of mugqic_tools (to 2.1.10) and of samtools (to 1.4.1) within the base.ini file
+       74a5c9a updated picard installation script : now installs version 2.17.3
+       8d2dde0 added the installation script of Prokka, a tool for prokaryotic genome annotation
+       cbfe9d7 BFXDEV-673 - remove some verbose during the execution of job2json.py
+       66893f8 updated mugqic_tools.sh so it now installs version 2.1.10
+       170f39b added the bash installation script for the Illumina InterOp parser
+       dc0ebcb BFXDEV-674 - MethylSeq pipeline - minor updates within the metrics .md report template file, for standardization purpose
+       d9e7b0b updated ortograph within sample metrics .md report files
+       e0b41ff BFXDEV-673 - updated scheduler.py to generalize the use of job2json to all schedulers
+       5250d80 BFXDEV-674 - added a report .md file for IHEC metrics reports for targeted anaylsis
+       cb466e7 BFXDEV-674 - updated .md files for metrics reporting : revised headers & descriptions
+       460f24a Merge branch 'master' of https://bitbucket.org/mugqic/mugqic_pipelines
+       2833f6a updated gemini.sh bash installation script : added PYTHONHOME setting when loading the gemini modules
+       f483e37 update release instructions to generate proper README for all the pipelines including HicSeq
+       2d70be4 Version bump to 3.0.1-beta
+       3cb8610 Version bump to 3.0.0 - updated
+
+  Édouard Henrion <henrione@cedar5.cedar.computecanada.ca>      2 commits
+
+       8983180 Merge branch 'master' of bitbucket.org:mugqic/genpipes
+       49c6b32 updated kallisto bash installation script
+
+  ehenrion <edouard.henrion@computationalgenomics.ca>      3 commits
+
+       3f60795 updated R_Bioconductor.sh with good indentation and new packages installation
+       b1215c3 corrected wrong environment variable name within blast.sh
+       dc4fbb7 updated the version to v359 within ucsc.sh script
+
+  ehenrion <edouard.henrion@mcgill.ca>      6 commits
+
+       39fea26 rnaseq_denovo_assembly.base.ini edited online with Bitbucket
+       f9278f9 README.md edited : "MUGQIC pipelines" replaced by "GenPipes"
+       e6abfd9 apis_mellifera.sh deleted : was the exact replicate of Apis_mellifera.sh
+       8e9ab1c README.md edited Updated links to the pipeline pages
+       469b9b4 README.md edited online with Bitbucket updated some links to reflect the repository renaming to genpipes
+       87524a9 smrtanalysis.py - standardized command-line format and indentation
+
+  Eloi Mercier <emercier@jonquille.genome.mcgill.ca>      3 commits
+
+       99b1a5d removing pyc files from rnaseq
+       1c7731a in rnaseq.mammouth.ini add section for bed_graph to set up ppn to 1
+       6d91088 In nanuq2mugqic: change readset file name to readset_<seq_type>.tsv
+
+  Eric Fournier <ericfournier2@yahoo.ca>      2 commits
+
+       6fafc8d Merged in ericfournier2/genpipes (pull request #35)
+       4138a72 Fix list within list bug which breaks chipseq pipeline.
+
+  Gary Leveque <gary.leveque@gmail.com>      1 commits
+
+       6857307 Merged in gary_pacbio_assembly (pull request #29)
+
+  gary.leveque@mail.mcgill.ca <gleveque@abacus2.ferrier.genome.mcgill.ca>      7 commits
+
+       fd1e91c additions made to smrtanalysis.py for basemodification and motifMaker steps
+       b88dd9e Addressed issues commented by Edouard; tested on abacus and mammouth
+       39f57bc added cluster_server= to pacbio_assembly.mammouth.ini
+       b135ae0 revised versions of .base and mammouth.ini files; I was changing between sw and lm nodes
+       6bac368 revision of pacbio_assembly.mammouth.ini, back to qwork
+       356aadc Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines into gary_pacbio_assembly
+       a24451f Addition of base modification detection and generation of a motif_summary.csv steps to the pacbio HGAP assembly pipeline;  see BFXDEV-703
+
+  Jose Hector Galvez <jose.hector.galvez@computationalgenomics.ca>      1 commits
+
+       2455b6d Merged in hector-cedar (pull request #37)
+
+  José Héctor Gálvez López <hgalvez@cedar5.cedar.computecanada.ca>      1 commits
+
+       36b892f Corrected minor bug in the create_scheduler() function that was creating errors when using slurm
+
+  mathieu bourgey <mathieu.bourgey@mail.mcgill.ca>      14 commits
+
+       05bbcec Merge branch 'master' of bitbucket.org:mugqic/genpipes
+       3b818dc externalize excluded chormosome to be specified in the genome ini
+       a2d807b remove conflict
+       3896d77 uniformize verify_bam_id vcf path
+       f4bf8cc add a delay (sleep) after the symlink creation to avoid issue (Invalid Job Dependency) during submission
+       322348d Merge branch 'master' of bitbucket.org:mugqic/genpipes
+       f734dfb test new url
+       3752940 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       f0834b9 add NovaSeq to nanuq2mugqic script
+       0dd2ba3 DNAseq - split the pipeline into 2 different pipeline GATK best_practice or old mpileup - BFXDEV-716
+       5c586ff Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       9d48a58 chnage RNAseq_denovo inheritance to RNAseq
+       8a250c8 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       7716f96 include a test of inputs type for some library function which does not enforce the list type
+
+  Mathieu Bourgey <mathieu.bourgey@mcgill.ca>      24 commits
+
+       e2b2a7a resolve conflict with master
+       82d1bee Merge branch 'cedar' of bitbucket.org:mugqic/genpipes into cedar
+       443fcf6 restore low memory ini now the slurm bug is corrected
+       78d156b update rnaseq for cedar
+       62520da update rnaseqDN on cedar
+       9a27402 update hicseq on cedar
+       b9842b9 update dnaseq ini on cedar
+       b695bcf add more more RAM to compensate slurm bug
+       924fff5 add 0.5s sleep to let slurm submiting the job correctly
+       282fa9e Increase memory request to avoid I/O buffering hit the memory limit
+       5f157cd Changing I/O block size
+       3b395c5 Changing I/O block size
+       614564d remove confilct pulling master
+       be81579 Modifying I/O block size for cedar
+       496e10d update ini file
+       7f77b19 update log with slurm scheduler
+       8180609 add chipseq ini file for cedar
+       0e27909 update RNAseq and link to mugqic_dev
+       d26fef6 update DNAseq and link to mugqic_dev
+       10c2069 remove lattency for jobsubimission to slurm
+       d192a91 remove conflict
+       77e5d35 update cedar scheduler
+       67b8006 update cedar ini
+       120f92d DNAseq -ini file for cedar
+
+  mathieu bourgey <mathieu.bourgey@mcgill.ca>      1 commits
+
+       804ae6c Merged in cedar (pull request #34)
+
+  Mathieu Bourgey <mbourgey@cedar5.cedar.computecanada.ca>      9 commits
+
+       9a9ab77 DNAseq - update ini file
+       910be76 remove scheduler module testing
+       9e416b1 change igvtools exe to igvtools jar in order to have control of the ram usage
+       9d3c7bd adjust RNA and DNA ini files;  generate fake prologue and epilogue; add 2s delay between each job submission- BFXDEV-683
+       95f20c6 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines into cedar
+       f247a6a create RNAseq ini file - BFXDEV-683
+       6f5cca5 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines into cedar
+       297a2c6 create a DNAseq ini for cedar; remove typo in base DNaseq ini  - BFXDEV-683
+       1dce04b create a version of the scheuler class for slurm  - BFXDEV-683
+
+  Mathieu Bourgey <mbourgey@gra-login4.graham.sharcnet>      1 commits
+
+       fea1501 Add Graham ini for RNA and DNA
+
+  Rola Dali <rola.dali@mail.mcgill.ca>      17 commits
+
+       6978e14 Merged in IHEC_metrics (pull request #33)
+       d66737b added .hic file generation to capture hic
+       3a9b9a3 adding RobusTAD TAD scoring to hicseq.py
+       3c79721 adding multiqc to chipseq. should customize yaml file and check homer module
+       ad0ff99 changing rnaseq dependencies to ensure no repeats when job is complete
+       e581c3a adding mugqicValidator.py to utils to validate basic structure of readset and design file
+       8ee1083 removing job outputs from chipseq ihec metric method to accomodate samples running without input
+       befab29 Merged in IHEC_metrics (pull request #31)
+       2a0d785 fixing the tmp_dir for macs
+       6a363de Merge branch 'IHEC_metrics' of bitbucket.org:mugqic/mugqic_pipelines into IHEC_metrics
+       a10ad51 changing genome to fit with merged homer.maketagdir and changing ihec matrics output name
+       bba10e0 Merged in IHEC_metrics (pull request #28)
+       28850c5 config.py edited online with Bitbucket
+       00b9e34 adding query_module=spider to mammouth ini
+       00a746f allowing module spider on mammouth to reduce module loading time--committing to test on guillimin and abacus
+       e3c9fab Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       fea082b fixing MACS bug BFXDEV-712
+
+  romain.gregoire@mcgill.ca <rgregoir@abacus2.ferrier.genome.mcgill.ca>      2 commits
+
+       53fe3b9 pass config files directly to job2json.py
+       94d21ed Merge branch 'portal-integration' of https://bitbucket.org/mugqic/genpipes into portal-integration
+
+  Romain Gregoire <romgrk.cc@gmail.com>      1 commits
+
+       655f7c9 watch_portal_folder.py: fix --username argument
+
+  Romain Grégoire <romgrk.cc@gmail.com>      1 commits
+
+       2bcae74 Merged in portal-integration (pull request #32)
+
+  Rom Grk <romgrk.cc@gmail.com>      15 commits
+
+       c3a0080 watch_portal_folder.py: remove username option
+       f3c3f34 send $USER to portal integration
+       bdb24f8 watch_portal_folder.py: fix file path
+       4981525 watch_portal_folder.py: sort files sent by modification time
+       e1f361a export CONFIG_FILES to allow loading config from pipeline
+       430d0c4 export CONFIG_FILES to allow loading config from pipeline
+       446122c job2json.py: add mugqic dir to python path
+       c35b6f9 watch_portal_folder.py: safer handling of response
+       13196bf watch_portal_folder.py: fix data posting
+       bbbfe8a watch_portal_folder.py: fix script exit
+       bff9c64 watch_portal_folder.py: fix argument passing
+       47b1073 use uuid to avoid collisions when buffering JSON files
+       7f99bdc job2json.py: make a copy of the updated JSON files for the portal
+       629cef6 add watch_portal_folder.py
+       63e4de6 jsonator.py: make a copy of the JSON files to a buffer folder
 
 3.0.0        Thu Dec 7 14:19:49 2017 -0500        444 commits
 

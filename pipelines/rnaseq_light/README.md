@@ -8,12 +8,12 @@ Usage
 #!text
 
 usage: rnaseq_light.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
-                       [-o OUTPUT_DIR] [-j {pbs,batch,daemon}] [-f] [--json]
-                       [--report] [--clean]
+                       [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f]
+                       [--json] [--report] [--clean]
                        [-l {debug,info,warning,error,critical}] [-d DESIGN]
                        [-r READSETS] [-v]
 
-Version: 3.0.1-beta
+Version: 3.1.0
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
@@ -27,7 +27,7 @@ optional arguments:
                         step range e.g. '1-5', '3,6,7', '2,4-8'
   -o OUTPUT_DIR, --output-dir OUTPUT_DIR
                         output directory (default: current)
-  -j {pbs,batch,daemon}, --job-scheduler {pbs,batch,daemon}
+  -j {pbs,batch,daemon,slurm}, --job-scheduler {pbs,batch,daemon,slurm}
                         job scheduler type (default: pbs)
   -f, --force           force creation of jobs even if up to date (default:
                         false)
