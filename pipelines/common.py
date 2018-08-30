@@ -106,9 +106,8 @@ LOG_MD5=$(echo $USER-'{uniqueIdentifier}' | md5sum | awk '{{ print $1 }}')
 wget "{server}?{request}&md5=$LOG_MD5" --quiet --output-document=/dev/null
 """.format(separator_line = "#" + "-" * 79, server=server, request=request, uniqueIdentifier=uniqueIdentifier))
 
-
     def submit_jobs(self):
-        super(MUGQICPipeline, self).scheduler.submit(self)
+        super(MUGQICPipeline, self).submit_jobs()
         if self.jobs and self.args.job_scheduler in ["pbs", "batch", "slurm"]:
             self.mugqic_log()
 

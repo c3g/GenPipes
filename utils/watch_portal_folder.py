@@ -42,29 +42,38 @@ def run(options):
     details = []
     for i, filename in enumerate(files):
         filepath = os.path.join(options.watch_folder, filename)
+        sample_name = None
+        filename_parts = filename.split('.')
 
-        if not os.path.isfile(filepath):
-            print(red('  File %s does not exist anymore. Skipping' % filename))
-            continue
+        if len(filename_parts) < 4:
+            # Old filename format: $USER.[UUID].json: we need to read the content to know the sample_name
+            if not os.path.isfile(filepath):
+                print(red('  File %s does not exist anymore. Skipping' % filename))
+                continue
 
-        try:
-            content = read_file(filepath)
-        except Exception as e:
-            print(e)
-            print(red('  Failed to read file "%s". Skipping' % filename))
-            continue
+            try:
+                content = read_file(filepath)
+            except Exception as e:
+                print(e)
+                print(red('  Failed to read file "%s". Skipping' % filename))
+                continue
 
-        try:
-            data = json.loads(content)
-        except Exception as e:
-            print(e)
-            print(red('  Failed to parse JSON "%s". Skipping' % filename))
-            continue
+            try:
+                data = json.loads(content)
+            except Exception as e:
+                print(e)
+                print(red('  Failed to parse JSON "%s". Skipping' % filename))
+                continue
+
+            sample_name = data['sample_name']
+        else:
+            # New filename format: $USER.[sample_name].[UUID].json
+            sample_name = '.'.join(filename_parts[1:-2])
 
         print('  Read %s (%i/%i)' % (filename, i + 1, len(files)))
         details.append({
             "filepath": filepath,
-            "sample_name": data['sample_name']
+            "sample_name": sample_name
         })
 
     print('Read %i files' % len(details))
