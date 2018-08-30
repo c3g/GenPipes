@@ -124,7 +124,7 @@ cuffmerge {gtf} \\
   --num-threads {num_threads} \\
   {sample_file}""".format(
         gtf=" \\\n  --ref-gtf " + gtf_file if gtf_file else "",
-        reference_sequence=config.param('cuffmerge', 'genome_fasta', type='filepath', required=True),
+        reference_sequence=config.param('cuffmerge', 'genome_fasta', type='filepath',required=True),
         output_directory=output_directory,
         num_threads=config.param('cuffmerge', 'threads', type='posint'),
         sample_file=sample_file
