@@ -106,12 +106,11 @@ class Scheduler(object):
     def disable_modulercfile(self):
         if self.container:
             return 'unset MODULERCFILE'
-        return None
+        return ""
 
     @property
     def container_line(self):
         if self.container:
-
             if self.container.type == 'docker':
                 v_opt = ' -v {}:{}'.format(self.host_cvmfs_cache, self.cvmfs_cache)
                 for b in self.bind:
@@ -132,8 +131,8 @@ class Scheduler(object):
 
                 return ("singularity run {b_opt} {name}   "
                         .format(b_opt=b_opt, name=self.container.name))
-            else:
-                return None
+        else:
+            return ""
 
 
     def print_header(self, pipeline):
@@ -258,7 +257,7 @@ COMMAND=$(cat << '{limit_string}'
                     )
 
                     cmd = """\
-echo "rm -f $JOB_DONE && {job2json_start} {container_line} \"$COMMAND\"
+echo "rm -f $JOB_DONE && {job2json_start} $COMMAND
 MUGQIC_STATE=\$PIPESTATUS
 echo MUGQICexitStatus:\$MUGQIC_STATE
 {job2json_end}
@@ -268,8 +267,7 @@ fi
 exit \$MUGQIC_STATE" | \\
 """.format(
                         job2json_start=self.job2json(pipeline, step, job, '\\"running\\"'),
-                        job2json_end=self.job2json(pipeline, step, job, '\\$MUGQIC_STATE'),
-                        container_line=self.container_line
+                        job2json_end=self.job2json(pipeline, step, job, '\\$MUGQIC_STATE')
                     )
                         #sleep_time=sleepTime
 
