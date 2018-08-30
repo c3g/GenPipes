@@ -385,7 +385,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             output=output,
             ref_flat=annotation_flat if annotation_flat else config.param('picard_collect_rna_metrics', 'annotation_flat'),
             strand_specificity=config.param('picard_collect_rna_metrics', 'strand_info'),
-            min_length=config.param('picard_collect_rna_metrics', 'minimum_length', type='int'),
+            min_length=config.param('picard_collect_rna_metrics', 'minimum_length',type='int'),
             reference=reference_sequence if reference_sequence else config.param('picard_collect_rna_metrics', 'genome_fasta'),
             max_records_in_ram=config.param('picard_collect_rna_metrics', 'max_records_in_ram', type='int')
             )

@@ -23,130 +23,41 @@
 import json
 import os
 import random
-import tempfile
 
 # MUGQIC Modules
-from config import config, Config
-from utils import utils
+from config import *
 
 # Output comment separator line
 separator_line = "#" + "-" * 79
 
-
-def create_scheduler(s_type, config_files, container=None):
-    if s_type == "pbs":
-        return PBSScheduler(config_files, container=container)
-    elif s_type == "batch":
+def create_scheduler(type, config_files):
+    if type == "pbs":
+        return PBSScheduler(config_files)
+    elif type == "batch":
         return BatchScheduler(config_files)
-    elif s_type == "daemon":
+    elif type == "daemon":
         return DaemonScheduler(config_files)
-    elif s_type == "slurm":
-        return SlurmScheduler(config_files, container=container)
+    elif type == "slurm":
+        return SlurmScheduler(config_files)
     else:
-        raise Exception("Error: scheduler type \"" + s_type + "\" is invalid!")
+        raise Exception("Error: scheduler type \"" + type + "\" is invalid!")
 
-
-class Scheduler(object):
-
-    def __init__(self, config_files, container=None, **kwargs):
-
-        self.name = 'generic'
+class Scheduler:
+    def __init__(self, config_files):
         self._config_files = config_files
-        self._container = container
-        self._host_cvmfs_cache = None
-        self._cvmfs_cache = None
-        self._bind = None
 
     def submit(self, pipeline):
         # Needs to be defined in scheduler child class
         raise NotImplementedError
 
-    @property
-    def container(self):
-        return self._container
-
-    @property
-    def host_cvmfs_cache(self):
-
-        if self._host_cvmfs_cache is None:
-
-            self._host_cvmfs_cache = config.param("container", 'host_cvmfs_cache'
-                                            , required=False, type="string")
-
-            if not self._host_cvmfs_cache:
-
-                tmp_dir = config.param("DEFAULT", 'tmp_dir', required=True)
-                tmp_dir = utils.expandvars(tmp_dir)
-
-                if not tmp_dir:
-                    tmp_dir = None
-
-                self._host_cvmfs_cache = tempfile.mkdtemp(prefix="genpipes_cvmfs_", dir=tmp_dir)
-
-        return self._host_cvmfs_cache
-
-    @property
-    def cvmfs_cache(self):
-
-        if self._cvmfs_cache is None:
-            self._cvmfs_cache = config.param("container", 'cvmfs_cache', required=False, type="string")
-            if not self._cvmfs_cache:
-                self._cvmfs_cache = "/cvmfs-cache"
-
-        return self._cvmfs_cache
-
-    @property
-    def bind(self):
-        if self._bind is None:
-            self._bind = config.param("container", 'bind_list', required=False, type='list')
-
-            if not self._bind:
-                bind = ['/tmp', '/home']
-        return self._bind
-
-    @property
-    def disable_modulercfile(self):
-        if self.container:
-            return 'unset MODULERCFILE'
-        return None
-
-    @property
-    def container_line(self):
-        if self.container:
-
-            if self.container.type == 'docker':
-                v_opt = ' -v {}:{}'.format(self.host_cvmfs_cache, self.cvmfs_cache)
-                for b in self.bind:
-                    v_opt += ' -v {0}:{0}'.format(b)
-                network = " --network host"
-                user = " --user $UID:$GROUPS"
-
-                mount_point=''
-                return ('docker run --env-file <( env| cut -f1 -d= ) --privileged '
-                        '{network} {user} {v_opt} {name} '
-                        .format(network=network, user=user, v_opt=v_opt
-                                , name=self.container.name))
-
-            elif self.container.type == 'singularity':
-                b_opt = ' -B {}:{}'.format(self.host_cvmfs_cache, self.cvmfs_cache)
-                for b in self.bind:
-                    b_opt += ' -B {0}:{0}'.format(b)
-
-                return ("singularity run {b_opt} {name}   "
-                        .format(b_opt=b_opt, name=self.container.name))
-            else:
-                return None
-
-
     def print_header(self, pipeline):
         print("""\
 #!/bin/bash
 # Exit immediately on error
-{scheduler.disable_modulercfile}
 set -eu -o pipefail
 
 {separator_line}
-# {pipeline.__class__.__name__} {scheduler.name} Job Submission Bash script
+# {pipeline.__class__.__name__} {scheduler.__class__.__name__} Job Submission Bash script
 # Version: {pipeline.version}
 # Created on: {pipeline.timestamp}
 # Steps:
@@ -174,7 +85,7 @@ cd $OUTPUT_DIR
 """
                 .format(
                     pipeline=pipeline,
-                    config_files=",".join([c.name for c in self._config_files ])
+                    config_files=",".join([ c.name for c in self._config_files ])
                 )
             )
 
@@ -215,13 +126,7 @@ module unload {module_python} {command_separator}""".format(
         else:
             return ""
 
-
 class PBSScheduler(Scheduler):
-
-    def __init__(self, *args, **kwargs):
-        super(PBSScheduler, self).__init__(*args, **kwargs)
-        self.name = 'PBS/TORQUE'
-
     def submit(self, pipeline):
         self.print_header(pipeline)
         for step in pipeline.step_range:
@@ -260,7 +165,7 @@ COMMAND=$(cat << '{limit_string}'
                     )
 
                     cmd = """\
-echo "rm -f $JOB_DONE && {job2json_start} {container_line} \"$COMMAND\"
+echo "rm -f $JOB_DONE && {job2json_start} $COMMAND
 MUGQIC_STATE=\$PIPESTATUS
 echo MUGQICexitStatus:\$MUGQIC_STATE
 {job2json_end}
@@ -270,8 +175,7 @@ fi
 exit \$MUGQIC_STATE" | \\
 """.format(
                         job2json_start=self.job2json(pipeline, step, job, '\\"running\\"'),
-                        job2json_end=self.job2json(pipeline, step, job, '\\$MUGQIC_STATE'),
-                        container_line=self.container_line
+                        job2json_end=self.job2json(pipeline, step, job, '\\$MUGQIC_STATE')
                     )
                         #sleep_time=sleepTime
 
@@ -314,13 +218,7 @@ exit \$MUGQIC_STATE" | \\
         if cluster_max_jobs and len(pipeline.jobs) > cluster_max_jobs:
             log.warning("Number of jobs: " + str(len(pipeline.jobs)) + " > Cluster maximum number of jobs: " + str(cluster_max_jobs) + "!")
 
-
 class BatchScheduler(Scheduler):
-
-    def __init__(self, *args, **kwargs):
-        super(BatchScheduler, self ).__init__(*args, **kwargs)
-        self.name = 'Batch'
-
     def submit(self, pipeline):
         self.print_header(pipeline)
         if pipeline.jobs:
@@ -352,13 +250,7 @@ if [ $MUGQIC_STATE -eq 0 ] ; then touch $JOB_DONE ; else exit $MUGQIC_STATE ; fi
                         )
                     )
 
-
 class SlurmScheduler(Scheduler):
-
-    def __init__(self, *args, **kwargs):
-        super(SlurmScheduler, self).__init__(*args, **kwargs)
-        self.name = 'SLURM'
-
     def submit(self, pipeline):
         self.print_header(pipeline)
         for step in pipeline.step_range:
@@ -384,18 +276,16 @@ JOB_NAME={job.name}
 JOB_DONE={job.done}
 JOB_OUTPUT_RELATIVE_PATH=$STEP/${{JOB_NAME}}_$TIMESTAMP.o
 JOB_OUTPUT=$JOB_OUTPUT_DIR/$JOB_OUTPUT_RELATIVE_PATH
-COMMAND=$JOB_OUTPUT_DIR/$STEP/${{JOB_NAME}}_$TIMESTAMP.sh
-cat << '{limit_string}' > $COMMAND
+COMMAND=$(cat << '{limit_string}'
 {job.command_with_modules}
 {limit_string}
-chmod 755 $COMMAND
-""".format(
+)""".format(
                             job=job,
                             job_dependencies=job_dependencies,
                             separator_line=separator_line,
                             limit_string=os.path.basename(job.done)
-                    )
                         )
+                    )
 
                     cmd = """\
 echo "#! /bin/bash 
@@ -405,7 +295,7 @@ date
 scontrol show job \$SLURM_JOBID
 sstat -j \$SLURM_JOBID.batch 
 echo '#######################################'
-rm -f $JOB_DONE && {job2json_start} {container_line}  $COMMAND
+rm -f $JOB_DONE && {job2json_start} $COMMAND
 MUGQIC_STATE=\$PIPESTATUS
 echo MUGQICexitStatus:\$MUGQIC_STATE
 {job2json_end}
@@ -420,8 +310,7 @@ exit \$MUGQIC_STATE" | \\
 """.format(
                         job=job,
                         job2json_start=self.job2json(pipeline, step, job, '\\"running\\"'),
-                        job2json_end=self.job2json(pipeline, step, job, '\\$MUGQIC_STATE') ,
-                        container_line=self.container_line
+                        job2json_end=self.job2json(pipeline, step, job, '\\$MUGQIC_STATE')
 )
 
                     # Cluster settings section must match job name prefix before first "."
@@ -460,11 +349,6 @@ exit \$MUGQIC_STATE" | \\
 
 
 class DaemonScheduler(Scheduler):
-
-    def __init__(self, *args, **kwargs):
-        super(DaemonScheduler, self).__init__(*args, **kwargs)
-        self.name = 'DAEMON'
-
     def submit(self, pipeline):
         print self.json(pipeline)
 
