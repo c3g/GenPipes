@@ -91,7 +91,7 @@ class DnaSeq(common.Illumina):
     @property
     def sequence_dictionary(self):
         if not hasattr(self, "_sequence_dictionary"):
-            self._sequence_dictionary = parse_sequence_dictionary_file(config.param('DEFAULT', 'genome_dictionary', type='filepath'),variant=False)
+            self._sequence_dictionary = parse_sequence_dictionary_file(config.param('DEFAULT', 'genome_dictionary', type='filepath'), variant=False)
         return self._sequence_dictionary
 
     def bwa_mem_picard_sort_sam(self):
