@@ -257,7 +257,7 @@ COMMAND=$(cat << '{limit_string}'
                     )
 
                     cmd = """\
-echo "rm -f $JOB_DONE && {job2json_start} $COMMAND
+echo "rm -f $JOB_DONE && {job2json_start} {container_line} $COMMAND
 MUGQIC_STATE=\$PIPESTATUS
 echo MUGQICexitStatus:\$MUGQIC_STATE
 {job2json_end}
