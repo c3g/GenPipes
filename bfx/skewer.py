@@ -19,48 +19,44 @@
 # along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-#!/usr/bin/env python
-
 # Python Standard Modules
+import logging
+import os
 
 # MUGQIC Modules
 from core.config import *
 from core.job import *
 
-def decompose_and_normalize_mnps(inputs, vt_output=None):
-    if not isinstance(inputs, list):
-        inputs = [inputs]
+log = logging.getLogger(__name__)
+
+def trim( input1, input2, prefix, adapter_file ):
+    output_pair1 = prefix + "-trimmed-pair1.fastq.gz"
+    output_pair2 = prefix + "-trimmed-pair2.fastq.gz"
+    
+    if input2:  # Paired end reads
+        inputs = [input1, input2]
+        output = [output_pair1, output_pair2]
+    else:   # Single end reads
+        inputs = [input1]
+        output = [output_pair1]
 
     return Job(
         inputs,
-        [vt_output],
+        output,
         [
-            ['DEFAULT', 'module_htslib'],
-            ['decompose_and_normalize_mnps', 'module_vt']
+            ['skewer_trimming', 'module_skewer']
         ],
+
         command="""\
-zless {input} | sed 's/ID=AD,Number=./ID=AD,Number=R/' | vt decompose -s - | vt normalize -r {reference_sequence} -  \\
-        {vt_output}""".format(
-        input=" \\\n  ".join(input for input in inputs),
-        reference_sequence=config.param('DEFAULT', 'genome_fasta', type='filepath'),
-        vt_output="> " + vt_output if vt_output else " ",
-        )
+$SKEWER_HOME/./skewer --threads {threads} {options} \\
+  {adapter_file} \\
+  {inputs} \\
+  {outputs}""".format(
+        threads=config.param('skewer_trimming', 'threads', type='posint'),
+        options=config.param('skewer_trimming', 'options'),
+        adapter_file="-x " + adapter_file, 
+        inputs=" \\\n  ".join(inputs),
+        outputs="-o " + prefix,
+        ),
+#        removable_files=output
     )
-
-def sort(input, output, options):
-
-    return Job(
-        [input],
-        [output],
-        [
-            ['DEFAULT', 'module_htslib'],
-            ['decompose_and_normalize_mnps', 'module_vt']
-        ],
-        command="""\
-vt sort {options} -o {output} {input}""".format(
-        options=options,
-        input=" \\\n " + input if input else "-",
-        output=output
-        )
-    )
-

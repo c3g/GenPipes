@@ -19,48 +19,48 @@
 # along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-#!/usr/bin/env python
-
 # Python Standard Modules
+import logging
+import os
 
 # MUGQIC Modules
 from core.config import *
-from core.job import *
+from core.job import * 
 
-def decompose_and_normalize_mnps(inputs, vt_output=None):
-    if not isinstance(inputs, list):
-        inputs = [inputs]
+def fastqc(input1, input2, output_directory, output, adapter_file):
+
+    if input2:  # Paired end reads
+        inputs = [input1, input2]
+    else:       # Single end reads
+        inputs = [input1]
+
+    outputs = [output]
+
+    (input_basename, file_format) = os.path.splitext(input1)
+    file_format = re.sub("^\.", "", file_format)
+    if file_format == 'gz':
+        (input_basename, file_format) = os.path.splitext(input_basename)
+        file_format = re.sub("^\.", "", file_format)
 
     return Job(
         inputs,
-        [vt_output],
+        outputs,
         [
-            ['DEFAULT', 'module_htslib'],
-            ['decompose_and_normalize_mnps', 'module_vt']
+            ['fastqc', 'module_fastqc'],
+            ['fastqc', 'module_java']
         ],
         command="""\
-zless {input} | sed 's/ID=AD,Number=./ID=AD,Number=R/' | vt decompose -s - | vt normalize -r {reference_sequence} -  \\
-        {vt_output}""".format(
-        input=" \\\n  ".join(input for input in inputs),
-        reference_sequence=config.param('DEFAULT', 'genome_fasta', type='filepath'),
-        vt_output="> " + vt_output if vt_output else " ",
-        )
+fastqc \\
+  -o {output_directory} \\
+  -t {threads} \\
+  -a {adapter_file} \\
+  -f {file_format} \\
+  {inputs}""".format(
+        threads=config.param('fastqc', 'threads', type='posint'),
+        inputs=" \\\n  ".join(inputs),
+        output_directory=output_directory,
+        adapter_file=adapter_file,
+        file_format=file_format,
+        ),
+        removable_files=[]
     )
-
-def sort(input, output, options):
-
-    return Job(
-        [input],
-        [output],
-        [
-            ['DEFAULT', 'module_htslib'],
-            ['decompose_and_normalize_mnps', 'module_vt']
-        ],
-        command="""\
-vt sort {options} -o {output} {input}""".format(
-        options=options,
-        input=" \\\n " + input if input else "-",
-        output=output
-        )
-    )
-

@@ -24,24 +24,28 @@
 # MUGQIC Modules
 from core.config import *
 from core.job import *
+import gatk4
 
-def base_recalibrator(input, output, intervals=[]):
-
-    return Job(
-        [input],
-        [output],
-        [
-            ['gatk_base_recalibrator', 'module_java'],
-            ['gatk_base_recalibrator', 'module_gatk']
-        ],
+def base_recalibrator(input, output, intervals):
+    if config.param('gatk_base_recalibrator', 'module_gatk').split("/")[2] >= "4":
+        return gatk4.base_recalibrator(input, output, intervals)
+    else:
+        return Job(
+            [input, intervals],
+            [output],
+            [
+                ['gatk_base_recalibrator', 'module_java'],
+                ['gatk_base_recalibrator', 'module_gatk']
+            ],
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --analysis_type BaseRecalibrator \\
-  --num_cpu_threads_per_data_thread {threads} \\
+  -nt 1 --num_cpu_threads_per_data_thread {threads} \\
   --input_file {input} \\
   --reference_sequence {reference_sequence} {intervals} \\
-  --knownSites {known_snp_sites} \\
-  --knownSites {known_indel_sites} \\
+  --knownSites {known_dbsnp} \\
+  --knownSites {known_gnomad} \\
+  --knownSites {known_mills} \\
   --out {output}""".format(
         tmp_dir=config.param('gatk_base_recalibrator', 'tmp_dir'),
         java_other_options=config.param('gatk_base_recalibrator', 'java_other_options'),
@@ -50,8 +54,9 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         input=input,
         intervals=" \\\n  --intervals " + intervals if intervals else "",
         reference_sequence=config.param('gatk_base_recalibrator', 'genome_fasta', type='filepath'),
-        known_snp_sites=config.param('gatk_base_recalibrator', 'known_snp_sites', type='filepath'),
-        known_indel_sites=config.param('gatk_base_recalibrator', 'known_indel_sites', type='filepath'),
+        known_dbsnp=config.param('gatk_base_recalibrator', 'known_dbsnp', type='filepath'),
+        known_gnomad=config.param('gatk_base_recalibrator', 'known_gnomad', type='filepath'),
+        known_mills=config.param('gatk_base_recalibrator', 'known_mills', type='filepath'),
         output=output
         ),
         removable_files=[output]
@@ -85,14 +90,16 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
     )
 
 def cat_variants(variants, output=None):
-
-    return Job(
-        variants,
-        [output],
-        [
-            ['gatk_cat_variants', 'module_java'],
-            ['gatk_cat_variants', 'module_gatk']
-        ],
+    if config.param('gatk_cat_variants', 'module_gatk').split("/")[2] >= "4":
+        return gatk4.cat_variants(variants, output)
+    else:
+        return Job(
+            variants,
+            [output],
+            [
+                ['gatk_cat_variants', 'module_java'],
+                ['gatk_cat_variants', 'module_gatk']
+            ],
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -cp $GATK_JAR \\
   org.broadinstitute.gatk.tools.CatVariants {options} \\
@@ -110,14 +117,16 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -cp $GATK_JAR \\
 
 
 def combine_variants(variants, output):
-
-    return Job(
-        variants,
-        [output],
-        [
-            ['gatk_combine_variants', 'module_java'],
-            ['gatk_combine_variants', 'module_gatk']
-        ],
+    if config.param('gatk_combine_variants', 'module_gatk').split("/")[2] >= "4":
+        return gatk4.combine_variants(variants, output)
+    else:
+        return Job(
+            variants,
+            [output],
+            [
+                ['gatk_combine_variants', 'module_java'],
+                ['gatk_combine_variants', 'module_gatk']
+            ],
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --analysis_type CombineVariants --genotypemergeoption UNSORTED \\
@@ -134,7 +143,6 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
 
 
 def depth_of_coverage(input, output_prefix, intervals):
-
 
     summary_coverage_thresholds = sorted(config.param('gatk_depth_of_coverage', 'summary_coverage_thresholds', type='list'), key=int)
 
@@ -175,14 +183,16 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
     )
 
 def genotype_gvcf(variants, output, options):
-
-    return Job(
-        variants,
-        [output],
-        [
-            ['gatk_genotype_gvcf', 'module_java'],
-            ['gatk_genotype_gvcf', 'module_gatk']
-        ],
+    if config.param('gatk_genotype_gvcf', 'module_gatk').split("/")[2] >= "4":
+        return gatk4.genotype_gvcf(variants, output, options)
+    else:
+        return Job(
+            variants,
+            [output],
+            [
+                ['gatk_genotype_gvcf', 'module_java'],
+                ['gatk_genotype_gvcf', 'module_gatk']
+            ],
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --analysis_type GenotypeGVCFs {options} \\
@@ -199,28 +209,34 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         )
     )
 
-def haplotype_caller(input, output, intervals=[], exclude_intervals=[]):
-
-    return Job(
-        [input],
-        [output],
-        [
-            ['gatk_haplotype_caller', 'module_java'],
-            ['gatk_haplotype_caller', 'module_gatk']
-        ],
+def haplotype_caller(inputs, output, intervals=[], exclude_intervals=[], interval_list=None):
+    if not isinstance(inputs, list):
+        inputs=[inputs, interval_list]
+        
+    if config.param('gatk_haplotype_caller', 'module_gatk').split("/")[2] >= "4":
+        return gatk4.haplotype_caller(inputs, output, intervals, exclude_intervals, interval_list)
+    else:
+        return Job(
+            inputs,
+            [output],
+            [
+                ['gatk_haplotype_caller', 'module_java'],
+                ['gatk_haplotype_caller', 'module_gatk']
+            ],
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --analysis_type HaplotypeCaller {options} \\
   --disable_auto_index_creation_and_locking_when_reading_rods \\
   --reference_sequence {reference_sequence} \\
   --input_file {input} \\
-  --out {output}{intervals}{exclude_intervals}""".format(
+  --out {output}{interval_list}{intervals}{exclude_intervals}""".format(
         tmp_dir=config.param('gatk_haplotype_caller', 'tmp_dir'),
         java_other_options=config.param('gatk_haplotype_caller', 'java_other_options'),
         ram=config.param('gatk_haplotype_caller', 'ram'),
         options=config.param('gatk_haplotype_caller', 'options'),
         reference_sequence=config.param('gatk_haplotype_caller', 'genome_fasta', type='filepath'),
-        input=input,
+        interval_list=" \\\n  --interval-padding 100 --intervals " + interval_list if interval_list else "",
+        input=" \\\n  ".join(input for input in inputs),
         output=output,
         intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
         exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals)
@@ -265,19 +281,22 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $MUTECT_JAR 
         )
     )
 
-def mutect2(inputNormal, inputTumor, outputVCF, intervals=[], exclude_intervals=[]):
+def mutect2(inputNormal, normal_name, inputTumor, tumor_name, outputVCF, intervals=[], exclude_intervals=[], interval_list=None):
     cosmic = config.param('gatk_mutect2', 'cosmic', type='filepath', required=False)
     # if set add arg prefix
     if cosmic :
         cosmic = " --cosmic " + cosmic
-
-    return Job(
-        [inputNormal, inputTumor],
-        [outputVCF],
-        [
-            ['gatk_mutect2', 'module_java'],
-            ['gatk_mutect2', 'module_gatk']
-        ],
+        
+    if config.param('gatk_mutect2', 'module_gatk').split("/")[2] >= "4":
+        return gatk4.mutect2(inputNormal, normal_name, inputTumor, tumor_name, outputVCF, intervals, exclude_intervals, interval_list)
+    else:
+        return Job(
+            [inputNormal, inputTumor, interval_list],
+            [outputVCF],
+            [
+                ['gatk_mutect2', 'module_java'],
+                ['gatk_mutect2', 'module_gatk']
+            ],
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --analysis_type MuTect2 {options} \\
@@ -286,17 +305,18 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --dbsnp {known_sites}{cosmic} \\
   --input_file:normal {inputNormal} \\
   --input_file:tumor {inputTumor} \\
-  --out {outputVCF}{intervals}{exclude_intervals}""".format(
+  --out {outputVCF}{interval_list}{intervals}{exclude_intervals}""".format(
         tmp_dir=config.param('gatk_mutect', 'tmp_dir'),
         java_other_options=config.param('gatk_mutect2', 'java_other_options'),
         ram=config.param('gatk_mutect2', 'ram'),
         options=config.param('gatk_mutect2', 'options'),
         reference_sequence=config.param('gatk_mutect2', 'genome_fasta', type='filepath'),
-        known_sites=config.param('gatk_mutect2', 'known_variants', type='filepath'),
+        known_sites=config.param('gatk_mutect2', 'dbsnp', type='filepath'),
         cosmic=cosmic,
         inputNormal=inputNormal,
         inputTumor=inputTumor,
         outputVCF=outputVCF,
+        interval_list=" \\\n  --interval-padding 100 --intervals " + interval_list if interval_list else "",
         intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
         exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals)
         )
@@ -319,7 +339,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --input_file {input} \\
   {input2} \\
   --targetIntervals {target_intervals} \\
-  --knownAlleles {known_indel_sites} \\
+  --knownAlleles {known_mills} \\
   {output}{intervals}{exclude_intervals} \\
   --maxReadsInMemory {max_reads_in_memory}""".format(
         tmp_dir=config.param('gatk_indel_realigner', 'tmp_dir'),
@@ -331,7 +351,9 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         input=input,
         input2="--input_file " + input2 if input2 else "",
         target_intervals=target_intervals,
-        known_indel_sites=config.param('gatk_realigner_target_creator', 'known_indel_sites', type='filepath'),
+        #known_indel_sites=config.param('gatk_realigner_target_creator', 'known_indel_sites', type='filepath'),
+        known_mills=config.param('gatk_realigner_target_creator', 'known_mills', type='filepath'),
+        #known_1000G=config.param('gatk_realigner_target_creator', 'known_1000G', type='filepath'),
         output=" \\\n  --out " + output if output else "",
         intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
         exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals),
@@ -340,18 +362,20 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
     )
 
 def print_reads(input, output, base_quality_score_recalibration):
-
-    return Job(
-        [input],
-        [output, re.sub("\.([sb])am$", ".\\1ai", output)],
-        [
-            ['gatk_print_reads', 'module_java'],
-            ['gatk_print_reads', 'module_gatk']
-        ],
+    if config.param('gatk_print_reads', 'module_gatk').split("/")[2] >= "4":
+        return gatk4.print_reads(input, output, base_quality_score_recalibration)
+    else:
+        return Job(
+            [input, base_quality_score_recalibration],
+            [output, re.sub("\.([sb])am$", ".\\1ai", output)],
+            [
+                ['gatk_print_reads', 'module_java'],
+                ['gatk_print_reads', 'module_gatk']
+            ],
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
-  --analysis_type PrintReads \\
-  --num_cpu_threads_per_data_thread {threads} \\
+  --analysis_type PrintReads --generate_md5 \\
+  -nt 1 --num_cpu_threads_per_data_thread {threads} \\
   --input_file {input} \\
   --reference_sequence {reference_sequence} \\
   --BQSR {base_quality_score_recalibration} \\
@@ -382,7 +406,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --reference_sequence {reference_sequence} \\
   --input_file {input} \\
   {input2} \\
-  --known {known_indel_sites} \\
+  --known {known_mills} \\
   --out {output}{intervals}{exclude_intervals}""".format(
         tmp_dir=config.param('gatk_realigner_target_creator', 'tmp_dir'),
         java_other_options=config.param('gatk_realigner_target_creator', 'java_other_options'),
@@ -391,7 +415,8 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         reference_sequence=config.param('gatk_realigner_target_creator', 'genome_fasta', type='filepath'),
         input=input,
         input2="--input_file " + input2 if input2 else "",
-        known_indel_sites=config.param('gatk_realigner_target_creator', 'known_indel_sites', type='filepath'),
+        known_mills=config.param('gatk_realigner_target_creator', 'known_mills', type='filepath'),
+        #known_1000G=config.param('gatk_realigner_target_creator', 'known_1000G', type='filepath'),
         output=output,
         intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
         exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals)
@@ -404,13 +429,16 @@ def combine_gvcf(inputs, output, intervals=[], exclude_intervals=[]):
     if not isinstance(inputs, list):
         inputs=[inputs]
     
-    return Job(
-        inputs,
-        [output],
-        [
-            ['gatk_combine_gvcf', 'module_java'],
-            ['gatk_combine_gvcf', 'module_gatk']
-        ],
+    if config.param('gatk_combine_gvcf', 'module_gatk').split("/")[2] >= "4":
+        return gatk4.combine_gvcf(inputs, output, intervals, exclude_intervals)
+    else:
+        return Job(
+            inputs,
+            [output],
+            [
+                ['gatk_combine_gvcf', 'module_java'],
+                ['gatk_combine_gvcf', 'module_gatk']
+            ],
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --analysis_type CombineGVCFs {other_options} \\
@@ -436,8 +464,8 @@ def variant_annotator(input_normal, input_tumor, input_variants, output, interva
         [input_normal, input_tumor, input_variants],
         [output],
         [
-            ['gatk_combine_gvcf', 'module_java'],
-            ['gatk_combine_gvcf', 'module_gatk']
+            ['gatk_variant_annotator', 'module_java'],
+            ['gatk_variant_annotator', 'module_gatk']
         ],
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
@@ -462,18 +490,20 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
     )
 
 
-def variant_recalibrator(variants, other_options, recal_output, tranches_output, R_output):
-
-    return Job(
-        variants,
-        [recal_output, tranches_output, R_output],
-        [
-            ['gatk_variant_recalibrator', 'module_java'],
-            ['gatk_variant_recalibrator', 'module_gatk'],
-            ['gatk_variant_recalibrator', 'module_R']
-        ],
+def variant_recalibrator(variants, other_options, recal_output, tranches_output, R_output, tmp_dir):
+    if config.param('gatk_print_reads', 'module_gatk').split("/")[2] >= "4":
+        return gatk4.combine_gvcf(variants, other_options, recal_output, tranches_output, R_output, tmp_dir)
+    else:
+        return Job(
+            variants,
+            [recal_output, tranches_output, R_output],
+            [
+                ['gatk_variant_recalibrator', 'module_java'],
+                ['gatk_variant_recalibrator', 'module_gatk'],
+                ['gatk_variant_recalibrator', 'module_R']
+            ],
         command="""\
-java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
+java {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --analysis_type VariantRecalibrator {options} \\
   --disable_auto_index_creation_and_locking_when_reading_rods \\
   --reference_sequence {reference_sequence}{variants} \\
@@ -488,6 +518,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         reference_sequence=config.param('gatk_variant_recalibrator', 'genome_fasta', type='filepath'),
         variants="".join(" \\\n  -input " + variant for variant in variants),
         other_options=other_options,
+        #tmp_dir="--TMP_DIR " + tmp_dir if tmp_dir else "",
         recal_output=recal_output,
         tranches_output=tranches_output,
         R_output=R_output
@@ -527,3 +558,57 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         )
     )
 
+
+def split_n_cigar_reads(input, output, intervals=[], exclude_intervals=[]):
+    return Job(
+        [input],
+        [output],
+        [
+            ['gatk_split_N_trim', 'module_java'],
+            ['gatk_split_N_trim', 'module_gatk']
+        ],
+        command="""\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
+  --analysis_type SplitNCigarReads {other_options} \\
+  --reference_sequence {reference_sequence} \\
+  --input_file {input} \\
+  --out {output}{intervals}{exclude_intervals}""".format(
+            tmp_dir=config.param('gatk_split_N_trim', 'tmp_dir'),
+            java_other_options=config.param('gatk_split_N_trim', 'java_other_options'),
+            ram=config.param('gatk_split_N_trim', 'ram'),
+            other_options=config.param('gatk_split_N_trim', 'other_options', required=False),
+            reference_sequence=config.param('gatk_split_N_trim', 'reference', type='filepath'),
+            input=input,
+            output=output,
+            intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
+            exclude_intervals="".join(
+                " \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals)
+        )
+    )
+
+
+def variant_filtration(input, output, other_options):
+    return Job(
+        [input],
+        [output],
+        [
+            ['gatk_variant_filtration', 'module_java'],
+            ['gatk_variant_filtration', 'module_gatk']
+        ],
+        command="""\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
+  --analysis_type VariantFiltration \\
+  --disable_auto_index_creation_and_locking_when_reading_rods \\
+  --reference_sequence {reference_sequence} \\
+  --variant {variants} \\
+  {other_options} \\
+  --out {output}""".format(
+            tmp_dir=config.param('gatk_variant_filtration', 'tmp_dir'),
+            java_other_options=config.param('gatk_variant_filtration', 'java_other_options'),
+            ram=config.param('gatk_variant_filtration', 'ram'),
+            reference_sequence=config.param('gatk_variant_filtration', 'genome_fasta', type='filepath'),
+            variants=input,
+            other_options=other_options,
+            output=output
+        )
+    )
