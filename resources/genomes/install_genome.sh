@@ -185,6 +185,48 @@ set_urls() {
     BIOMART_GO_DEFINITION=go_definition_1006
 
   #
+  # Ensembl Plants
+  #
+  elif [[ $SOURCE == "EnsemblPlants" ]]
+  then
+    RELEASE_URL=ftp://ftp.ensemblgenomes.org/pub/plants/release-$VERSION
+
+    # Retrieve Ensembl Genomes species information
+    SPECIES_URL=$RELEASE_URL/species_EnsemblPlants.txt
+    download_url $SPECIES_URL
+    SPECIES_LINE="`awk -F"\t" -v species=${SPECIES,,} '$2 == species' $(download_path $SPECIES_URL)`"
+
+
+    CORE_DB_PREFIX=`echo "$SPECIES_LINE" | cut -f13 | perl -pe "s/_core_${VERSION}_\d+_\d+//"`
+    if [[ $CORE_DB_PREFIX != ${SPECIES,,} ]]
+    then
+      EG_SPECIES=$CORE_DB_PREFIX/${SPECIES,,}
+      EG_BASENAME=$SPECIES.`echo "$SPECIES_LINE" | cut -f6`.$VERSION
+    else
+      EG_SPECIES=${SPECIES,,}
+      EG_BASENAME=$SPECIES.$ASSEMBLY
+    fi
+
+    URL_PREFIX=$RELEASE_URL
+    GENOME_URL=$URL_PREFIX/fasta/$EG_SPECIES/dna/$EG_BASENAME.dna.toplevel.fa.gz
+    NCRNA_URL=$URL_PREFIX/fasta/$EG_SPECIES/ncrna/$EG_BASENAME.ncrna.fa.gz
+    CDNA_URL=$URL_PREFIX/fasta/$EG_SPECIES/cdna/$EG_BASENAME.cdna.all.fa.gz
+    GTF_URL=$URL_PREFIX/gtf/$EG_SPECIES/$EG_BASENAME.$VERSION.gtf.gz
+    if [[ `echo "$SPECIES_LINE" | cut -f8` == "Y"  ]]
+    then
+      VCF_URL=$URL_PREFIX/vcf/${SPECIES,,}/${SPECIES,,}.vcf.gz
+    else
+      echo "VCF not available for $SPECIES"
+    fi
+    # Retrieve species short name e.g. "athaliana" for "Arabidopsis_thaliana"
+    SPECIES_SHORT_NAME=`echo ${SPECIES:0:1}${SPECIES#*_} | tr [:upper:] [:lower:]`
+    BIOMART_DATASET=${SPECIES_SHORT_NAME}_eg_gene
+    BIOMART_GENE_ID=ensembl_gene_id
+    BIOMART_GO_ID=go_accession
+    BIOMART_GO_NAME=go_name_1006
+    BIOMART_GO_DEFINITION=go_definition_1006
+
+  #
   # UCSC
   #
   elif [[ $SOURCE == "UCSC" ]]
