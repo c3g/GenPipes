@@ -56,6 +56,8 @@ data <- read.csv(file, as.is=T)
 
 keep <- c("Name", "Library.Name", "Library.Barcode", "Run.Type", "Run", "Region", "Adaptor.Read.1..NOTE..Usage.is.bound.by.Illumina.Disclaimer.found.on.Nanuq.Project.Page.", "Adaptor.Read.2..NOTE..Usage.is.bound.by.Illumina.Disclaimer.found.on.Nanuq.Project.Page.", "Quality.Offset", "BED.Files", "Filename.Prefix")
 
+keepFinal <- c(keep[-length(keep)], "1",  "2",  "3")
+
 data <- data[, colnames(data) %in% keep]
 
 
@@ -89,10 +91,13 @@ fill_files <- function (data) {
 
 
 files <- t(apply(data, 1, function(x) fill_files(x)))
-data <- data[,-11]
+idx <- which(colnames(data) == "Filename.Prefix")
+data <- data[,-idx]
 data <- cbind(data, files)
 
 data[is.na(data)] <- ""
+
+data <- data[, keepFinal]
 
 colnames(data) <- fields
 

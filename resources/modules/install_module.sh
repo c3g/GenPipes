@@ -50,6 +50,7 @@ store_archive() {
   fi
 }
 
+# OBSOLETE : KEEPING this for posterity ! :)
 create_c3g_wrappers() {
   for i in `find $INSTALL_DIR/$SOFTWARE_DIR/ -type f -executable -exec file {} \; | grep ELF | grep -vP "\.so" | cut -d":" -f1`; do
     mv $i $i.raw;
@@ -62,11 +63,11 @@ patch_c3g_binaries() {
     if readelf -l $i | grep go.build > /dev/null
     then
       echo "GO Done" > /dev/null
-    elif [ ${i##*.} == "so" ] || [[ ${i##*/} =~ "so"*(\.[0-9])*$ ]]
+    elif [ ${i##*.} == "so" ] || [[ ${i##*/} =~ "so"*(\.[0-9]{1,2})*$ ]]
     then
-      $MUGQIC_INSTALL_HOME/software/PatchELF/PatchELF-0.9/bin/patchelf --set-rpath $C3G_SYSTEM_LIBRARY/usr/lib64/ $i
+      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-rpath $C3G_SYSTEM_LIBRARY/usr/lib64/ $i
     else
-      $MUGQIC_INSTALL_HOME/software/PatchELF/PatchELF-0.9/bin/patchelf --set-interpreter $C3G_SYSTEM_LIBRARY/lib64/ld-linux-x86-64.so.2 --set-rpath $C3G_SYSTEM_LIBRARY/usr/lib64/ $i
+      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-interpreter $C3G_SYSTEM_LIBRARY/lib64/ld-linux-x86-64.so.2 --set-rpath $C3G_SYSTEM_LIBRARY/usr/lib64/ $i
     fi
   done
 }

@@ -14,8 +14,8 @@ build() {
   tar zxvf $ARCHIVE
 
   cd $SOFTWARE_DIR
-  make -j4
-  make -j4 install prefix=$INSTALL_DIR/$SOFTWARE_DIR
+  make -j12
+  make install prefix=$INSTALL_DIR/$SOFTWARE_DIR
 }
 
 module_file() {

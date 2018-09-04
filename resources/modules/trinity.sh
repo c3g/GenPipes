@@ -16,8 +16,8 @@ build() {
   tar zxvf $ARCHIVE
 
   cd $SOFTWARE_DIR
-  make
-  if [[ ${VERSION:0:1} == 2 ]]; then echo $VERSION; make plugins; fi
+  make -j12
+  if [[ ${VERSION:0:1} == 2 ]]; then echo $VERSION; make -j12 plugins; fi
 
   # Install software
   cd $INSTALL_DOWNLOAD

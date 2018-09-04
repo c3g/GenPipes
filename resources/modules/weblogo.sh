@@ -62,32 +62,32 @@ if [[ $VERSION > 3.4 ]]
 then
   module_file() {
   echo "\
-  #%Module1.0
-  proc ModulesHelp { } {
-    puts stderr \"\tMUGQIC - $SOFTWARE \"
-  }
-  module-whatis \"$SOFTWARE\"
-  
-  set             root                $INSTALL_DIR/../python/Python-${PYTHON_VERSION}
-  prepend-path    PATH                \$root
-  prepend-path    PYTHONPATH          \$root/lib/python2.7/site-packages
-  setenv          WEBLOGO_HOME        \$root
-  "
+#%Module1.0
+proc ModulesHelp { } {
+  puts stderr \"\tMUGQIC - $SOFTWARE \"
+}
+module-whatis \"$SOFTWARE\"
+
+set             root                $INSTALL_DIR/../python/Python-${PYTHON_VERSION}
+prepend-path    PATH                \$root
+prepend-path    PYTHONPATH          \$root/lib/python2.7/site-packages
+setenv          WEBLOGO_HOME        \$root
+"
   }
 else
   module_file() {
   echo "\
-  #%Module1.0
-  proc ModulesHelp { } {
-    puts stderr \"\tMUGQIC - $SOFTWARE \"
-  }
-  module-whatis \"$SOFTWARE\"
-  
-  set             root                $INSTALL_DIR/$SOFTWARE_DIR
-  prepend-path    PATH                \$root
-  prepend-path    PYTHONPATH          \$root/lib/python2.7/site-packages
-  setenv          WEBLOGO_HOME        \$root
-  "
+#%Module1.0
+proc ModulesHelp { } {
+  puts stderr \"\tMUGQIC - $SOFTWARE \"
+}
+module-whatis \"$SOFTWARE\"
+
+set             root                $INSTALL_DIR/$SOFTWARE_DIR
+prepend-path    PATH                \$root
+prepend-path    PYTHONPATH          \$root/lib/python2.7/site-packages
+setenv          WEBLOGO_HOME        \$root
+"
   }
 fi
 

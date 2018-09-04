@@ -62,7 +62,7 @@ SOFTWARE_DIR=Sailfish-$VERSION-Linux_x86-64
 # cmake -DFETCH_BOOST=TRUE ..
 #
 #
-# make -j8
+# make -j12
 #
 #
 # make install

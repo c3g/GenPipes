@@ -28,7 +28,7 @@ build() {
   else
     ./configure --prefix=$INSTALL_DIR/$SOFTWARE_DIR
   fi
-  make
+  make -j12
   make install
 }
 
