@@ -2,21 +2,22 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=prodigal
-VERSION=2.6.3
-ARCHIVE=${SOFTWARE}-${VERSION}.tar.gz
-ARCHIVE_URL=https://github.com/hyattpd/${SOFTWARE^}/archive/v${VERSION}.tar.gz
-SOFTWARE_DIR=${SOFTWARE^}-$VERSION
+SOFTWARE=vcf2db
+VERSION=master_20180427
+ARCHIVE=$SOFTWARE-${VERSION}.zip
+ARCHIVE_URL=https://github.com/quinlan-lab/vcf2db/archive/master.zip
+SOFTWARE_DIR=$SOFTWARE-${VERSION}
 
 build() {
-  cd $INSTALL_DOWNLOAD
-  tar xzvf $ARCHIVE
-
+  cd $INSTALL_DIR
+  git clone https://github.com/quinlan-lab/vcf2db
+  mv vcf2db $SOFTWARE_DIR
   cd $SOFTWARE_DIR
-  make -j12
-
-  cd $INSTALL_DOWNLOAD
-  mv -i $SOFTWARE_DIR $INSTALL_DIR/
+  module load mugqic/anaconda/2-4.0.0
+  conda install -y gcc snappy # install the C library for snappy
+  conda install -c conda-forge python-snappy
+  conda install -c bioconda cyvcf2 peddy
+  module unload module load mugqic/anaconda/2-4.0.0
 }
 
 module_file() {

@@ -13,7 +13,7 @@ build() {
   tar zxvf $ARCHIVE  
 
   cd $SOFTWARE_DIR
-  make  
+  make -j12  
   
 
   # Install software

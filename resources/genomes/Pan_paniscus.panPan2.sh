@@ -2,12 +2,12 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SPECIES=Pan_troglodytes
-COMMON_NAME="Chimpanzee"
-ASSEMBLY=panTro4
-ASSEMBLY_SYNONYMS=CHIMP2.1.4
+SPECIES=Pan_paniscus
+COMMON_NAME="Bonobo"
+ASSEMBLY=panPan2
+ASSEMBLY_SYNONYMS=panpan1.1
 SOURCE=UCSC
-VERSION=2012-01-09
+VERSION=2016-05-05
 
 GENOME_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source $GENOME_INSTALL_SCRIPT_DIR/install_genome.sh
@@ -16,4 +16,3 @@ install_genome "$SPECIES" "$COMMON_NAME" "$ASSEMBLY" "$ASSEMBLY_SYNONYMS" "$SOUR
 
 ################################################################################
 # Write below all commands to install additional data files specific to this genome assembly
-

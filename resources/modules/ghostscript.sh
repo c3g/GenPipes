@@ -15,7 +15,7 @@ wget http://sourceforge.net/projects/ghostscript/files/GPL%20Ghostscript/8.70/gh
 tar -jxvf $SOFTWARE-$VERSION.tar.bz2
 cd $SOFTWARE-$VERSION
 ./configure --prefix=$INSTALL_PATH/$SOFTWARE-$VERSION
-make
+make -j12
 make install
 
 # Add permissions and install software

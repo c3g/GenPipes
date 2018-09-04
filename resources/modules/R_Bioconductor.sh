@@ -220,7 +220,7 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
     install.packages('udunits2', repos="http://cran.us.r-project.org/", configure.args='--with-udunits2-include=/usr/include/udunits2', lib=.Library)
 
     ## Define the list of packages to standard packages to install.
-    deps = c("affxparser", "affy", "affyio", "affyPLM", "akima", "annotate", "AnnotationDbi", "AnnotationForge", "ape", "ash",
+    deps = c("affxparser", "affy", "affyio", "affyPLM", "akima", "allgown", "annotate", "AnnotationDbi", "AnnotationForge", "ape", "ash", "ASCAT",
     "BatchExperiments", "BatchJobs", "batchtools", "beanplot", "Biobase", "BiocGenerics", "BiocInstaller", "bioDist", "biomaRt", "Biostrings", "biovizBase", "bit",
     "bit64", "bitops", "boot", "brew", "BSgenome", "bumphunter",
     "caTools", "charm", "charmData", "circlize", "class", "cluster", "clusterStab", "clusterProfiler", "codetools", "colorspace", "ConsensusClusterPlus",
@@ -262,7 +262,7 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
     deps = setdiff(deps, rownames(installed.packages())) # Define packages that need actual install
     biocLite(deps, lib=.Library, ask=FALSE)
     deps = setdiff(deps, rownames(installed.packages()))
-    biocLite(deps, lib=.Library, ask=FALSE) # twice, just to make -j12 sure
+    biocLite(deps, lib=.Library, ask=FALSE) # twice, just to make sure
 
     ## Install Vennerable, since not yet in CRAN
     install.packages("Vennerable", repos="http://R-Forge.R-project.org", lib=.Library)
