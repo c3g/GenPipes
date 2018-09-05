@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>GenAP Pipelines Usage</title>
+
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+          integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+    <!-- D3 -->
+    <script src="//cdnjs.cloudflare.com/ajax/libs/d3/4.7.2/d3.min.js"></script>
+
+    <!-- d3pie -->
+    <script src="https://rawgit.com/benkeen/d3pie/0.2.1/d3pie/d3pie.min.js" crossorigin="anonymous"></script>
+
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"
+            integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
+            crossorigin="anonymous"></script>
+</head>
+<body>
+<h1>GenAP Pipelines Usage</h1>
+
+<h3>Settings</h3>
+<table id="settings_table" class="table table-hover"></table>
+
+<div style="float: left;">
+    <h3>Distribution by Submission</h3>
+    <div id="pieChart_submissions"></div>
+</div>
+<div style="float: left;">
+    <h3>Distribution by Samples</h3>
+    <div id="pieChart_samples"></div>
+</div>
+<div style="clear: both;"></div>
+
+<h3>Per Pipeline</h3>
+<table id="pipeline_usage_table" class="table table-hover"></table>
+
+<script>
+    d3.json('/cgi-bin/logToJson.py' + location.search, function (data) {
+
+        //Fill settings table
+        var settings_data = data.settings;
+        var settings_table = d3.select("#settings_table");
+        var tbody = settings_table.append("tbody");
+        tr = tbody.append("tr");
+        tr.append("td").text("Start Date");
+        tr.append("td").text(settings_data.start);
+
+        tr = tbody.append("tr");
+        tr.append("td").text("End Date");
+        tr.append("td").text(settings_data.end);
+
+        tr = tbody.append("tr");
+        tr.append("td").text("Nb Samples");
+        tr.append("td").text(settings_data.nb_samples);
+
+        tr = tbody.append("tr");
+        tr.append("td").text("Nb Submissions");
+        tr.append("td").text(settings_data.nb_submissions);
+
+        tr = tbody.append("tr");
+        tr.append("td").text("Avg Samples per Job");
+        tr.append("td").text(settings_data.average_samples_per_job);
+
+
+        //Fill pipelines stats table
+        var per_pipeline_data = data.per_pipeline;
+
+        var table = d3.select("#pipeline_usage_table");
+        var thead = table.append("thead").append("tr");
+        thead.append("th").text("Pipeline");
+        thead.append("th").text("Nb Submissions");
+        thead.append("th").text("Nb Samples");
+        thead.append("th").text("Avg Samples / Submission");
+
+        tr = table.append("tbody").selectAll("tr").data(per_pipeline_data).enter().append("tr");
+        tr.append("td").text(function (p) {
+            return p.pipeline_name;
+        });
+        tr.append("td").text(function (p) {
+            return p.nb_submissions;
+        });
+        tr.append("td").text(function (p) {
+            return p.nb_samples;
+        });
+        tr.append("td").text(function (p) {
+            return p.average_samples_per_job;
+        });
+
+
+        //Generate pie charts
+        var pie_perSubmission_data = per_pipeline_data.reduce(function (a, b) {
+            a.push({"label": b.pipeline_name, "value": b.nb_submissions});
+            return a;
+        }, []);
+        var pie_perNbSamples_data = per_pipeline_data.reduce(function (a, b) {
+            a.push({"label": b.pipeline_name, "value": b.nb_samples});
+            return a;
+        }, []);
+
+        drawPipelineChart("pieChart_submissions", pie_perSubmission_data);
+        drawPipelineChart("pieChart_samples", pie_perNbSamples_data);
+    });
+
+
+    function drawPipelineChart(div, data) {
+        var pie = new d3pie(div, {
+            "size": {
+                "canvasWidth": 600,
+                "canvasHeight": 400,
+                "pieOuterRadius": "80%"
+            },
+            "data": {
+                "sortOrder": "value-desc",
+                "content": data,
+                "smallSegmentGrouping": {
+                    "enabled": true,
+                    "value": 2
+                },
+            },
+            "labels": {
+                "outer": {
+                    "pieDistance": 32
+                },
+                "inner": {
+                    "hideWhenLessThanPercentage": 2
+                },
+                "mainLabel": {
+                    "fontSize": 11
+                },
+                "percentage": {
+                    "color": "#ffffff",
+                    "decimalPlaces": 0
+                },
+                "value": {
+                    "color": "#adadad",
+                    "fontSize": 11
+                },
+                "lines": {
+                    "enabled": true
+                },
+                "truncation": {
+                    "enabled": true
+                }
+            },
+            "misc": {
+                "gradient": {
+                    "enabled": true,
+                    "percentage": 100
+                }
+            }
+        });
+    }
+
+</script>
+
+
+</body>
+</html>
+

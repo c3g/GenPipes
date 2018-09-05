@@ -33,7 +33,6 @@ class Sample:
         self._readsets = []
 
         self._json_file = name + ".json"
-        self._json_dump = ""
 
     def show(self):
         print("Sample -- name: " + self._name + ", readsets: " +
@@ -50,10 +49,6 @@ class Sample:
     @property
     def json_file(self):
         return self._json_file
-
-    @property
-    def json_dump(self):
-        return self._json_dump
 
     def readsets_by_name(self, name):
         return [readset for readset in self.readsets if readset.name == name]

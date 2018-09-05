@@ -20,7 +20,7 @@ build() {
 
   mv ${SOFTWARE}-${VERSION%??} $SOFTWARE_DIR
   cd $SOFTWARE_DIR
-  make
+  make -j12
 
   # Install software
   cd $INSTALL_DOWNLOAD

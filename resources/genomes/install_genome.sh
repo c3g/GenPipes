@@ -180,6 +180,48 @@ set_urls() {
     SPECIES_SHORT_NAME=`echo ${SPECIES:0:1}${SPECIES#*_} | tr [:upper:] [:lower:]`
     BIOMART_DATASET=${SPECIES_SHORT_NAME}_eg_gene
     BIOMART_GENE_ID=ensembl_gene_id
+    BIOMART_GO_ID=go_id
+    BIOMART_GO_NAME=name_1006
+    BIOMART_GO_DEFINITION=definition_1006
+
+  #
+  # Ensembl Plants
+  #
+  elif [[ $SOURCE == "EnsemblPlants" ]]
+  then
+    RELEASE_URL=ftp://ftp.ensemblgenomes.org/pub/plants/release-$VERSION
+
+    # Retrieve Ensembl Genomes species information
+    SPECIES_URL=$RELEASE_URL/species_EnsemblPlants.txt
+    download_url $SPECIES_URL
+    SPECIES_LINE="`awk -F"\t" -v species=${SPECIES,,} '$2 == species' $(download_path $SPECIES_URL)`"
+
+
+    CORE_DB_PREFIX=`echo "$SPECIES_LINE" | cut -f13 | perl -pe "s/_core_${VERSION}_\d+_\d+//"`
+    if [[ $CORE_DB_PREFIX != ${SPECIES,,} ]]
+    then
+      EG_SPECIES=$CORE_DB_PREFIX/${SPECIES,,}
+      EG_BASENAME=$SPECIES.`echo "$SPECIES_LINE" | cut -f6`.$VERSION
+    else
+      EG_SPECIES=${SPECIES,,}
+      EG_BASENAME=$SPECIES.$ASSEMBLY
+    fi
+
+    URL_PREFIX=$RELEASE_URL
+    GENOME_URL=$URL_PREFIX/fasta/$EG_SPECIES/dna/$EG_BASENAME.dna.toplevel.fa.gz
+    NCRNA_URL=$URL_PREFIX/fasta/$EG_SPECIES/ncrna/$EG_BASENAME.ncrna.fa.gz
+    CDNA_URL=$URL_PREFIX/fasta/$EG_SPECIES/cdna/$EG_BASENAME.cdna.all.fa.gz
+    GTF_URL=$URL_PREFIX/gtf/$EG_SPECIES/$EG_BASENAME.$VERSION.gtf.gz
+    if [[ `echo "$SPECIES_LINE" | cut -f8` == "Y"  ]]
+    then
+      VCF_URL=$URL_PREFIX/vcf/${SPECIES,,}/${SPECIES,,}.vcf.gz
+    else
+      echo "VCF not available for $SPECIES"
+    fi
+    # Retrieve species short name e.g. "athaliana" for "Arabidopsis_thaliana"
+    SPECIES_SHORT_NAME=`echo ${SPECIES:0:1}${SPECIES#*_} | tr [:upper:] [:lower:]`
+    BIOMART_DATASET=${SPECIES_SHORT_NAME}_eg_gene
+    BIOMART_GENE_ID=ensembl_gene_id
     BIOMART_GO_ID=go_accession
     BIOMART_GO_NAME=go_name_1006
     BIOMART_GO_DEFINITION=go_definition_1006
@@ -319,13 +361,11 @@ chmod -R ug+rwX,o+rX $INDEX_DIR \$LOG"
   fi
 }
 
-create_bowtie_tophat_index() {
+create_bowtie_index() {
   BOWTIE_INDEX_DIR=$GENOME_DIR/bowtie_index
   BOWTIE_INDEX_PREFIX=$BOWTIE_INDEX_DIR/${GENOME_FASTA/.fa}
-  TOPHAT_INDEX_DIR=$ANNOTATIONS_DIR/gtf_tophat_index
-  TOPHAT_INDEX_PREFIX=$TOPHAT_INDEX_DIR/${GTF/.gtf}
 
-  if ! is_up2date $BOWTIE_INDEX_PREFIX.[1-4].bt $BOWTIE_INDEX_PREFIX.rev.[12].bt $TOPHAT_INDEX_PREFIX.[1-4].bt $TOPHAT_INDEX_PREFIX.rev.[12].bt
+  if ! is_up2date $BOWTIE_INDEX_PREFIX.[1-4].ebwt $BOWTIE_INDEX_PREFIX.rev.[12].ebwt
   then
     echo
     echo "Creating genome Bowtie index and gtf TopHat index..."
@@ -695,7 +735,7 @@ copy_files() {
 
     if ! is_up2date $ANNOTATIONS_DIR/$CDNA
     then
-      echo "Could not find $ANNOTATIONS_DIR/$CDNA...\nyou might consider to use the ncrna.fa file from Ensembl... "
+      echo "Could not find $ANNOTATIONS_DIR/$CDNA...\nyou might consider to use the cdna.fa file from Ensembl... "
     fi
 
   fi
@@ -716,14 +756,15 @@ create_genome_digest() {
     then
       echo
       echo "Creating ${enzyme} genome digest..."
+      echo "mv Digest_${ASSEMBLY//-/_}_${enzyme}_None_*.txt $GENOME_DIGEST_FILE"
       echo
       Digest_CMD="mkdir -p $GENOME_DIGEST && \
       cd $GENOME_DIGEST  && \
       ln -s -f -t $GENOME_DIGEST ../$GENOME_FASTA && \
       module load $module_hicup && \
       LOG=$LOG_DIR/${enzyme}_digest_$TIMESTAMP.log && \
-      hicup_digester --genome $ASSEMBLY --re1 ${enzymes[$enzyme]},${enzyme} $GENOME_DIGEST/$GENOME_FASTA > \$LOG 2>&1 && \
-      mv Digest_${ASSEMBLY}_${enzyme}_None_*.txt $GENOME_DIGEST_FILE && \
+      hicup_digester --genome ${ASSEMBLY//-/_} --re1 ${enzymes[$enzyme]},${enzyme} $GENOME_DIGEST/$GENOME_FASTA > \$LOG 2>&1 && \
+      mv Digest_${ASSEMBLY//-/_}_${enzyme}_None_*.txt $GENOME_DIGEST_FILE && \
       chmod -R ug+rwX,o+rX $GENOME_DIGEST \$LOG"
       cmd_or_job Digest_CMD 2
     else
@@ -743,15 +784,43 @@ build_files() {
   create_samtools_index
   create_bwa_index
   create_star_index
-  create_bowtie2_tophat_index
   create_genome_digest
-  create_ncrna_bwa_index
-  create_rrna_bwa_index
-  create_kallisto_index
-  create_transcripts2genes_file
-  create_gene_annotations
-  create_gene_annotations_flat
 
+  if is_up2date $ANNOTATIONS_DIR/$NCRNA
+  then
+    create_ncrna_bwa_index
+    create_rrna_bwa_index
+  else
+    echo echo "Could not find $ANNOTATIONS_DIR/$NCRNA..."
+    echo "No ncRNA bwa index will be created... this step is skipped..."
+    echo "No rRNA bwa index will be created... this step is skipped..."
+    echo "You might consider to use the ncrna.fa file from Ensembl, if available... "
+  fi
+
+  if is_up2date $ANNOTATIONS_DIR/$CDNA
+  then
+    create_kallisto_index
+    create_transcripts2genes_file
+  else
+    echo "Could not find $ANNOTATIONS_DIR/$CDNA..."
+    echo "No cDNA kallisto index will be created... this step is skipped..."
+    echo "No tx2gene file will be created...this step is skipped..."
+    echo "You might consider to use the cdna.fa file from Ensembl, if available... "
+  fi
+
+  if is_up2date $ANNOTATIONS_DIR/$GTF
+  then
+    create_bowtie_index
+    create_bowtie2_tophat_index
+    create_gene_annotations
+    create_gene_annotations_flat
+  else
+    echo echo "Could not find $ANNOTATIONS_DIR/$GTF..."
+    echo "No bowtie tophat index will be created... this step is skipped..."
+    echo "No bowtie2 tophat index will be created... this step is skipped..."
+    echo "No gene annotations will be performed... this step is skipped..."
+    echo "You might consider to manually download a gtf file from UCSC table browser (http://genome.ucsc.edu/cgi-bin/hgTables)"
+  fi
 
   # Annotations are not installed for UCSC genomes
   if [[ $SOURCE != "UCSC" ]]

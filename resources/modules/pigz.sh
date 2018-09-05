@@ -12,7 +12,7 @@ wget --content-disposition http://zlib.net/pigz/pigz-${VERSION}.tar.gz
 tar xvzf pigz-${VERSION}.tar.gz
 # Compile
 cd pigz-${VERSION}
-make
+make -j12
 
 # Module file
 echo "#%Module1.0
