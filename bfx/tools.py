@@ -539,6 +539,9 @@ R --no-save --args \\
         )
     )
 
+
+## functions for bash tools ##
+
 def sh_ihec_rna_metrics(input_bam, input_name, input_picard_dup, output_dir):
     output_metrics=os.path.join(output_dir, input_name+".read_stats.txt")
     output_duplicates=os.path.join(output_dir, input_name+".duplicated.txt")
@@ -608,8 +611,6 @@ IHEC_chipseq_metrics_max.sh \\
         ),
         removable_files=[output_fingerprints,output_fingerprints_png,output_dedup_chip_bam,output_dedup_chip_bam,output_dedup_chip_bai,output_dedup_input_bam,output_dedup_input_bai,output_flagstats]
     )
-
-## functions for bash tools ##
 
 def sh_fastq_readname_edit(fastq, job_name):
     return Job(
@@ -713,6 +714,25 @@ bash extractCaptureBed.sh \\
         ),
         name="extract_capture_bed." + sample_name,
         removable_files=[ibed_file + ".capture"]
+    )
+
+def clean_otu(otu_table):
+    """
+    Used by ampliconseq pipeline
+    Cleans the OTU table : removes all the lines containing characters (e.g. division, OP3, WS6...)
+    """
+    bkp_otu_table = re.sub('OTU_data', 'OTU_data_BACKUP', otu_table)
+    return Job(
+        [otu_table],
+        [bkp_otu_table],
+        [
+            ['DEFAULT', 'module_mugqic_tools'],
+        ],
+        command="""\
+cleanOTUtable.sh \\
+ {otu}""".format(
+            otu=otu_table,
+         )
     )
 
 ## methylseq tools
