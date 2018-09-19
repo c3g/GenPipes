@@ -1388,6 +1388,9 @@ pandoc --to=markdown \\
             )
             job.samples = self.samples
 
+            # Create a job that cleans the generated OTU_data.txt i.e. removes the lines with characters
+            jobClean = tools.clean_otu([heatmap_otu_data_R])
+
             jobR = Job(
                 [heatmap_script, heatmap_otu_data_R, heatmap_otu_name_R, heatmap_otu_tax_R],
                 [heatmap_chart, heatmap_otu_table, heatmap_tax_table],
@@ -1400,6 +1403,7 @@ pandoc --to=markdown \\
                 Job(command="mkdir -p " + heatmap_directory),
                 job,
                 Job(command="chmod +x " + heatmap_directory + "/OTU_Phylum_to_R.R"),
+                jobClean,
                 jobR
             ], name="plot_heatmap." + re.sub("_otus", ".", otu_directory) + method))
 

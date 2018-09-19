@@ -27,9 +27,11 @@ def krona(
         ],
 
         command="""\
-  $PERL_HOME/bin/perl $KRONA_HOME/ImportText.pl \\
-  {sample_name} \\
-  -o {alpha_diversity_krona_file}""".format(
+cat {sample_name} > _temp && \\
+$PERL_HOME/bin/perl $KRONA_HOME/ImportText.pl \\
+  _temp \\
+  -o {alpha_diversity_krona_file}
+rm -f _temp""".format(
         sample_name=' '.join(sample_name),
         alpha_diversity_krona_file=alpha_diversity_krona_file
         ),
