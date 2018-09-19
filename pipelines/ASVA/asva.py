@@ -30,7 +30,8 @@ import glob
 
 
 # Append mugqic_pipelines directory to Python library path
-sys.path.append('/lb/project/mugqic/projects/Tdada_branch_20180718/genpipes')
+#sys.path.append('/lb/project/mugqic/projects/Tdada_branch_20180718/genpipes')
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # MUGQIC Modules
 from core.config import *
