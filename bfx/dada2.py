@@ -37,10 +37,11 @@ def dada2(
         [rawReadsFolder, ampliconLengthFile],
         [output_directory],
         [
-            ['database','module_R']
+            ['dada2','module_R'],
+            ['dada2','module_mugqic_tools'],
         ],
         command="""\
-Rscript /home/egonzale/Tdada_branch_20180718/genpipes/pipelines/ASVA/asva.R \\
+Rscript $R_TOOLS/asva.R \\
   -r {rawReadsFolder} \\
   -d {designFile} \\
   -o {output_directory} \\
