@@ -126,7 +126,7 @@ java -XX:ParallelGCThreads=1 -Xmx{ram} -jar $TRIMMOMATIC_JAR {mode} \\
   HEADCROP:{headcrop_length} \\
   2> {trim_log}""".format(
         ram=config.param('trimmomatic', 'ram'),
-        mode = "PE",
+        mode = "PE" if input2 else "SE",
         threads=config.param('trimmomatic', 'threads', type='posint'),
         quality_offset=quality_offset if quality_offset == 64 else "33",
         inputs=" \\\n  ".join(inputs),
