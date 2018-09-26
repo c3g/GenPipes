@@ -32,7 +32,6 @@ def dada2(
     ampliconLengthFile
     ):
 
-
     return  Job(
         [rawReadsFolder, ampliconLengthFile],
         [output_directory],
@@ -52,7 +51,4 @@ Rscript $R_TOOLS/asva.R \\
         output_directory=output_directory,
         trainset=config.param('database', 'trainset'),
         taxonomy=config.param('database', 'taxonomy')
-
     ))
-
-
