@@ -139,7 +139,7 @@ cp \\
                     report_dir="report"
                 ),
                 name="report.copy_tx2genes_file",
-                self.samples=samples
+                samples=self.samples
             )
         )
 
