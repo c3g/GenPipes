@@ -30,7 +30,7 @@ usage: chipseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                   [-l {debug,info,warning,error,critical}] [-d DESIGN]
                   [-t {mugqic,mpileup}] [-r READSETS] [-v]
 
-Version: 3.1.0
+Version: 3.1.1-beta
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
@@ -70,6 +70,9 @@ optional arguments:
   -v, --version         show the version information and exit
 
 Steps:
+```
+![workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_chipseq.resized.png)
+```
 ------
 1- picard_sam_to_fastq
 2- trimmomatic

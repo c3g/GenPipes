@@ -38,7 +38,7 @@ usage: dnaseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                  [--report] [--clean] [-l {debug,info,warning,error,critical}]
                  [-t {mugqic,mpileup}] [-r READSETS] [-v]
 
-Version: 3.1.0
+Version: 3.1.1-beta
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
@@ -79,6 +79,9 @@ Steps:
 ------
 
 ----
+```
+![workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_dnaseq_mugqic.resized.png)
+```
 mugqic:
 1- picard_sam_to_fastq
 2- trimmomatic
@@ -110,6 +113,9 @@ mugqic:
 28- haplotype_caller_metrics_vcf_stats
 29- haplotype_caller_metrics_snv_graph_metrics
 ----
+```
+![workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_dnaseq_mpileup.resized.png)
+```
 mpileup:
 1- picard_sam_to_fastq
 2- trimmomatic

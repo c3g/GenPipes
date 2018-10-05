@@ -32,7 +32,7 @@ usage: tumor_pair.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                      [-l {debug,info,warning,error,critical}] [-p PAIRS]
                      [-t {mugqic,mpileup}] [-r READSETS] [-v]
 
-Version: 3.1.0
+Version: 3.1.1-beta
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 

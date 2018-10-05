@@ -37,7 +37,7 @@ usage: hicseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                  -e {DpnII,HindIII,NcoI,MboI} [-t {hic,capture}] [-r READSETS]
                  [-v]
 
-Version: 3.1.0
+Version: 3.1.1-beta
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
@@ -81,6 +81,9 @@ Steps:
 ------
 
 ----
+```
+![workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_hicseq_hic.resized.png)
+```
 hic:
 1- samtools_bam_sort
 2- picard_sam_to_fastq
@@ -99,6 +102,9 @@ hic:
 15- create_hic_file
 16- multiqc_report
 ----
+```
+![workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_hicseq_capture.resized.png)
+```
 capture:
 1- samtools_bam_sort
 2- picard_sam_to_fastq
