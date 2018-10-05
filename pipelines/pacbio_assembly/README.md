@@ -70,7 +70,7 @@ optional arguments:
 Steps:
 ```
 ![pacbio_assembly workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_pacbio_assembly.resized.png)
-[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_pacbio_assembly.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_pacbio_assembly.png)
 ```
 ------
 1- smrtanalysis_filtering

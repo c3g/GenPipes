@@ -26,15 +26,15 @@ do
   $script --help > `dirname $script`/README.md
   if grep -PA1 "^----$" `dirname $script`/README.md | grep -P "\w+:"
   then
-    perl -pi -e 'undef $/; s#----\n(\w*):\n#----\n```\n!['$pipeline' $1 workflow diagram]('$diagram_folder_path'GenPipes_'$pipeline'_$1.resized.png)\n[download full-size diagram]('$diagram_folder_path'GenPipes_'$pipeline'_$1.resized.png)\n```\n$1:\n#g' `dirname "$script"`/README.md
+    perl -pi -e 'undef $/; s#----\n(\w*):\n#----\n```\n!['$pipeline' $1 workflow diagram]('$diagram_folder_path'GenPipes_'$pipeline'_$1.resized.png)\n[download full-size diagram]('$diagram_folder_path'GenPipes_'$pipeline'_$1.png)\n```\n$1:\n#g' `dirname "$script"`/README.md
   else
-    perl -pi -e 'undef $/; s#Steps:\n------\n#Steps:\n```\n!['$pipeline' workflow diagram]('$diagram_folder_path'GenPipes_'$pipeline'.resized.png)\n[download full-size diagram]('$diagram_folder_path'GenPipes_'$pipeline'.resized.png)\n```\n------\n#g' `dirname "$script"`/README.md
+    perl -pi -e 'undef $/; s#Steps:\n------\n#Steps:\n```\n!['$pipeline' workflow diagram]('$diagram_folder_path'GenPipes_'$pipeline'.resized.png)\n[download full-size diagram]('$diagram_folder_path'GenPipes_'$pipeline'.png)\n```\n------\n#g' `dirname "$script"`/README.md
   fi
 done
 
 # Special case for HiCSeq pipeline which needs an extra '-e' parameter to output the README properly
 pipelines/hicseq/hicseq.py -e DpnII --help > pipelines/hicseq/README.md
-perl -pi -e 'undef $/; s#----\n(\w*):\n#----\n```\n![hicseq $1 workflow diagram]('$diagram_folder_path'GenPipes_hicseq_$1.resized.png)\n[download full-size diagram]('$diagram_folder_path'GenPipes_hicseq_$1.resized.png)\n```\n$1:\n#g' pipelines/hicseq/README.md
+perl -pi -e 'undef $/; s#----\n(\w*):\n#----\n```\n![hicseq $1 workflow diagram]('$diagram_folder_path'GenPipes_hicseq_$1.resized.png)\n[download full-size diagram]('$diagram_folder_path'GenPipes_hicseq_$1.png)\n```\n$1:\n#g' pipelines/hicseq/README.md
 
 # For Tumor Pair pipeline, produce a regular README until Rob's branch is merge to master : will then contain 3 tumor pair protocols for which we alraedy have workflow diagrams ready.
 pipelines/tumor_pair/tumor_pair.py --help > pipelines/tumor_pair/README.md

@@ -55,7 +55,7 @@ optional arguments:
 Steps:
 ```
 ![ampliconseq workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_ampliconseq.resized.png)
-[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_ampliconseq.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_ampliconseq.png)
 ```
 ------
 1- trimmomatic
