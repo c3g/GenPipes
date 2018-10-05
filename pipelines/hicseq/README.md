@@ -82,7 +82,8 @@ Steps:
 
 ----
 ```
-![workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_hicseq_hic.resized.png)
+![hicseq hic workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_hicseq_hic.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_hicseq_hic.resized.png)
 ```
 hic:
 1- samtools_bam_sort
@@ -103,7 +104,8 @@ hic:
 16- multiqc_report
 ----
 ```
-![workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_hicseq_capture.resized.png)
+![hicseq capture workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_hicseq_capture.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_hicseq_capture.resized.png)
 ```
 capture:
 1- samtools_bam_sort

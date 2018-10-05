@@ -109,7 +109,8 @@ optional arguments:
 
 Steps:
 ```
-![workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_denovo_assembly.resized.png)
+![rnaseq_denovo_assembly workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_denovo_assembly.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_denovo_assembly.resized.png)
 ```
 ------
 1- picard_sam_to_fastq

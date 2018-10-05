@@ -64,7 +64,8 @@ optional arguments:
 
 Steps:
 ```
-![workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_dnaseq_high_coverage.resized.png)
+![dnaseq_high_coverage workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_dnaseq_high_coverage.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_dnaseq_high_coverage.resized.png)
 ```
 ------
 1- picard_sam_to_fastq

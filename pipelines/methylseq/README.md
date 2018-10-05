@@ -71,7 +71,8 @@ optional arguments:
 
 Steps:
 ```
-![workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_methylseq.resized.png)
+![methylseq workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_methylseq.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_methylseq.resized.png)
 ```
 ------
 1- picard_sam_to_fastq

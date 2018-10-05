@@ -84,7 +84,8 @@ optional arguments:
 
 Steps:
 ```
-![workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq.resized.png)
+![rnaseq workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq.resized.png)
 ```
 ------
 1- picard_sam_to_fastq
