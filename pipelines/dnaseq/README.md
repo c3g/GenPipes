@@ -154,13 +154,13 @@ mpileup:
 33- verify_bam_id
 
 ```
-1- picard_sam_to_fastq
-----------------------
+picard_sam_to_fastq
+-------------------
 Convert SAM/BAM files from the input readset file into FASTQ format
 if FASTQ files are not already specified in the readset file. Do nothing otherwise.
 
-2- trimmomatic
---------------
+trimmomatic
+-----------
 Raw reads quality trimming and removing of Illumina adapters is performed using [Trimmomatic](http://www.usadellab.org/cms/index.php?page=trimmomatic).
 If an adapter FASTA file is specified in the config file (section 'trimmomatic', param 'adapter_fasta'),
 it is used first. Else, 'Adapter1' and 'Adapter2' columns from the readset file are used to create
@@ -173,12 +173,12 @@ This step takes as input files:
 1. FASTQ files from the readset file if available
 2. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
 
-3- merge_trimmomatic_stats
---------------------------
+merge_trimmomatic_stats
+-----------------------
 The trim statistics per readset are merged at this step.
 
-4- bwa_mem_picard_sort_sam
---------------------------
+bwa_mem_picard_sort_sam
+-----------------------
 The filtered reads are aligned to a reference genome. The alignment is done per sequencing readset.
 The alignment software used is [BWA](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem.
 BWA output BAM files are then sorted by coordinate using [Picard](http://broadinstitute.github.io/picard/).
@@ -189,8 +189,8 @@ This step takes as input files:
 2. Else, FASTQ files from the readset file if available
 3. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
 
-5- picard_merge_sam_files
--------------------------
+picard_merge_sam_files
+----------------------
 BAM readset files are merged into one file per sample. Merge is done using [Picard](http://broadinstitute.github.io/picard/).
 
 This step takes as input files:
@@ -198,32 +198,32 @@ This step takes as input files:
 1. Aligned and sorted BAM output files from previous bwa_mem_picard_sort_sam step if available
 2. Else, BAM files from the readset file
 
-6- gatk_indel_realigner
------------------------
+gatk_indel_realigner
+--------------------
 Insertion and deletion realignment is performed on regions where multiple base mismatches
 are preferred over indels by the aligner since it can appear to be less costly by the algorithm.
 Such regions will introduce false positive variant calls which may be filtered out by realigning
 those regions properly. Realignment is done using [GATK](https://www.broadinstitute.org/gatk/).
 The reference genome is divided by a number regions given by the `nb_jobs` parameter.
 
-7- merge_realigned
-------------------
+merge_realigned
+---------------
 BAM files of regions of realigned reads are merged per sample using [Picard](http://broadinstitute.github.io/picard/).
 
-8- fix_mate_by_coordinate
--------------------------
+fix_mate_by_coordinate
+----------------------
 Fix the read mates. Once local regions are realigned, the read mate coordinates of the aligned reads
 need to be recalculated since the reads are realigned at positions that differ from their original alignment.
 Fixing the read mate positions is done using [BVATools](https://bitbucket.org/mugqic/bvatools).
 
-9- picard_mark_duplicates
--------------------------
+picard_mark_duplicates
+----------------------
 Mark duplicates. Aligned reads per sample are duplicates if they have the same 5' alignment positions
 (for both mates in the case of paired-end reads). All but the best pair (based on alignment score)
 will be marked as a duplicate in the BAM file. Marking duplicates is done using [Picard](http://broadinstitute.github.io/picard/).
 
-10- recalibration
------------------
+recalibration
+-------------
 Recalibrate base quality scores of sequencing-by-synthesis reads in an aligned BAM file. After recalibration,
 the quality scores in the QUAL field in each read in the output BAM are more accurate in that
 the reported quality score is closer to its actual probability of mismatching the reference genome.
@@ -231,16 +231,16 @@ Moreover, the recalibration tool attempts to correct for variation in quality wi
 and sequence context, and by doing so, provides not only more accurate quality scores but also
 more widely dispersed ones.
 
-11- verify_bam_id
------------------
+verify_bam_id
+-------------
 verifyBamID is a software that verifies whether the reads in particular file match previously known
 genotypes for an individual (or group of individuals), and checks whether the reads are contaminated
 as a mixture of two samples. verifyBamID can detect sample contamination and swaps when external
 genotypes are available. When external genotypes are not available, verifyBamID still robustly
 detects sample swaps.
 
-12- metrics
------------
+metrics
+-------
 Compute metrics and generate coverage tracks per sample. Multiple metrics are computed at this stage:
 Number of raw reads, Number of filtered reads, Number of aligned reads, Number of duplicate reads,
 Median, mean and standard deviation of insert sizes of reads after alignment, percentage of bases
@@ -249,40 +249,40 @@ whole genome or targeted percentage of bases covered at X reads (%_bases_above_5
 bases which have at least 50 reads). A TDF (.tdf) coverage track is also generated at this step
 for easy visualization of coverage in the IGV browser.
 
-13- picard_calculate_hs_metrics
--------------------------------
+picard_calculate_hs_metrics
+---------------------------
 Compute on target percent of hybridisation based capture.
 
-14- gatk_callable_loci
-----------------------
+gatk_callable_loci
+------------------
 Computes the callable region or the genome as a bed track.
 
-15- extract_common_snp_freq
----------------------------
+extract_common_snp_freq
+-----------------------
 Extracts allele frequencies of possible variants accross the genome.
 
-16- baf_plot
-------------
+baf_plot
+--------
 Plots DepthRatio and B allele frequency of previously extracted alleles.
 
-17- gatk_haplotype_caller
--------------------------
+gatk_haplotype_caller
+---------------------
 GATK haplotype caller for snps and small indels.
 
-18- merge_and_call_individual_gvcf
-----------------------------------
+merge_and_call_individual_gvcf
+------------------------------
 Merges the gvcfs of haplotype caller and also generates a per sample vcf containing genotypes.
 
-19- combine_gvcf
-----------------
+combine_gvcf
+------------
 Combine the per sample gvcfs of haplotype caller into one main file for all sample.
 
-20- merge_and_call_combined_gvcf
---------------------------------
+merge_and_call_combined_gvcf
+----------------------------
 Merges the combined gvcfs and also generates a general vcf containing genotypes.
 
-21- variant_recalibrator
-------------------------
+variant_recalibrator
+--------------------
 GATK VariantRecalibrator.
 The purpose of the variant recalibrator is to assign a well-calibrated probability to each variant call in a call set.
 You can then create highly accurate call sets by filtering based on this single estimate for the accuracy of each call.
@@ -299,36 +299,85 @@ have their filter field annotated with its tranche level. This will result in a 
 to the desired level but also has the information necessary to pull out more variants for a higher sensitivity but a
 slightly lower quality level.
 
-22- dna_sample_metrics
-----------------------
+dna_sample_metrics
+------------------
 Merge metrics. Read metrics per sample are merged at this step.
 
-23- haplotype_caller_filter_nstretches
---------------------------------------
+haplotype_caller_filter_nstretches
+----------------------------------
 See general filter_nstretches description !  Applied to haplotype caller vcf
 
-24- haplotype_caller_flag_mappability
--------------------------------------
+haplotype_caller_flag_mappability
+---------------------------------
 See general flag_mappability !  Applied to haplotype caller vcf
 
-25- haplotype_caller_snp_id_annotation
---------------------------------------
+haplotype_caller_snp_id_annotation
+----------------------------------
 See general snp_id_annotation !  Applied to haplotype caller vcf
 
-26- haplotype_caller_snp_effect
--------------------------------
+haplotype_caller_snp_effect
+---------------------------
 See general snp_effect !  Applied to haplotype caller vcf
 
-27- haplotype_caller_dbnsfp_annotation
---------------------------------------
+haplotype_caller_dbnsfp_annotation
+----------------------------------
 See general dbnsfp_annotation !  Applied to haplotype caller vcf
 
-28- haplotype_caller_metrics_vcf_stats
---------------------------------------
+haplotype_caller_metrics_vcf_stats
+----------------------------------
 See general metrics_vcf_stats !  Applied to haplotype caller vcf
 
-29- haplotype_caller_metrics_snv_graph_metrics
-----------------------------------------------
+haplotype_caller_metrics_snv_graph_metrics
+------------------------------------------
 See general metrics_vcf_stats !  Applied to haplotype caller vcf
+
+rawmpileup
+----------
+Full pileup (optional). A raw mpileup file is created using samtools mpileup and compressed in gz format.
+One packaged mpileup file is created per sample/chromosome.
+
+rawmpileup_cat
+--------------
+Merge mpileup files per sample/chromosome into one compressed gzip file per sample.
+
+snp_and_indel_bcf
+-----------------
+Mpileup and Variant calling. Variants (SNPs and INDELs) are called using
+[SAMtools](http://samtools.sourceforge.net/) mpileup. bcftools view is used to produce binary bcf files.
+
+merge_filter_bcf
+----------------
+bcftools is used to merge the raw binary variants files created in the snpAndIndelBCF step.
+The output of bcftools is fed to varfilter, which does an additional filtering of the variants
+and transforms the output into the VCF (.vcf) format. One vcf file contain the SNP/INDEL calls
+for all samples in the experiment.
+
+mpileup_filter_nstretches
+-------------------------
+See general filter_nstretches description !  Applied to mpileup vcf
+
+mpileup_flag_mappability
+------------------------
+See general flag_mappability !  Applied to mpileup vcf
+
+mpileup_snp_id_annotation
+-------------------------
+See general snp_id_annotation !  Applied to mpileyp vcf
+
+mpileup_snp_effect
+------------------
+See general snp_effect !  Applied to mpileup vcf
+
+mpileup_dbnsfp_annotation
+-------------------------
+See general dbnsfp_annotation !  Applied to mpileup vcf
+
+mpileup_metrics_vcf_stats
+-------------------------
+See general metrics_vcf_stats !  Applied to mpileup caller vcf
+
+mpileup_metrics_snv_graph_metrics
+---------------------------------
+See general metrics_vcf_stats !  Applied to mpileup vcf
 
 

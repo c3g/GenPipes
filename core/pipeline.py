@@ -51,6 +51,12 @@ class Pipeline(object):
         self._args = self.argparser.parse_args()
         if self.protocol is None:
             step_list = self.steps
+        elif self.args.help:
+            step_list = []
+            for i in range(0, len(self.protocol)):
+                step_list = step_list + self.steps[i]
+            tmp_set_list = {}
+            step_list = [tmp_set_list.setdefault(step, step) for step in step_list if step not in tmp_set_list]
         else:
             pos = 0
             for i in range(0, len(self.protocol)):
@@ -77,7 +83,8 @@ class Pipeline(object):
             pipeline_doc=textwrap.dedent(self.__doc__ or ""),
             help=self.argparser.format_help(),
             overview=self.__doc__ or "",
-            step_doc="\n".join([str(idx + 1) + "- " + step.__name__ + "\n" + "-" * len(str(idx + 1) + "- " + step.__name__) + (textwrap.dedent(step.__doc__) if step.__doc__ else "") for idx, step in enumerate(step_list)])
+            #step_doc="\n".join([str(idx + 1) + "- " + step.__name__ + "\n" + "-" * len(str(idx + 1) + "- " + step.__name__) + (textwrap.dedent(step.__doc__) if step.__doc__ else "") for idx, step in enumerate(step_list)])
+            step_doc="\n".join([step.__name__ + "\n" + "-" * len(step.__name__) + (textwrap.dedent(step.__doc__) if step.__doc__ else "") for step in step_list])
             )
             self.argparser.exit()
 
