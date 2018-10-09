@@ -178,8 +178,8 @@ EOF
 
 cat > $INSTALL_DIR/lib64/R/etc/Rprofile.site <<-'EOF'
 if(capabilities()["cairo"]){ options(bitmapType="cairo") }
-prepend-path PAGER /usr/bin/less
-Sys.umask("002")                        
+Sys.setenv(PAGER="/usr/bin/less")
+Sys.umask("002")
 EOF
 
 fi
