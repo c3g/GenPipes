@@ -15,6 +15,7 @@ INSTALL_PREFIX_ENV_VARNAME=""
 MODULEFILE_DIR="$MUGQIC_INSTALL_HOME_TMP/modulefiles/mugqic_dev"
 INSTALL_DIR="$MUGQIC_INSTALL_HOME_TMP/software"
 UPDATE_MODE=1
+C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/yum/centos7/1.0/
 
 ## Parse arguments
 usage()
@@ -140,7 +141,7 @@ then
         sed -i 's/Sys.umask("022")/Sys\.umask("002")/g' src/library/tools/R/build.R
 
         ./configure --enable-R-shlib --prefix=$INSTALL_DIR  # --enable-R-shlib  is for Rpy
-        make -j8
+        make -j12
         make install
         cd $TEMPDIR
 
@@ -183,7 +184,7 @@ EOF
 fi
 
 ## Load the Boost libraries so they are available to any potential packages which needs those during its installation
-module load mugqic/boost
+#module load mugqic/boost
 
 ## Finally, update/install library!
 $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
@@ -199,6 +200,9 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
     ## Install library path
     .libPaths(.Library) # useful because e.g. devtools::install() installs in .libPaths()[1], and the latter will be ~/R/... if user library exists...
 
+    ## Install udunits2 as it is needed as a dependency for some of the below packages
+    install.packages("udunits2", configure.args='--with-udunits2-include=/usr/include/udunits2/', repos='http://cran.rstudio.org', lib=.Library)
+
     ## biocLite
     source("https://bioconductor.org/biocLite.R")
 
@@ -210,71 +214,129 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
     rcpp.armadillo.archive="RcppArmadillo_0.4.500.0.tar.gz"
     download.file(sprintf("https://cran.r-project.org/src/contrib/Archive/RcppArmadillo/%s", rcpp.armadillo.archive), destfile=rcpp.armadillo.archive)
     install.packages(rcpp.armadillo.archive, repos=NULL, type="source", lib=.Library)
+    install.packages("slam", repos="http://cran.us.r-project.org/", lib=.Library)
+    # Since R3.5 'udunits2' needs to be installed so that 'clusterProfiler' and its dependencies get installed properly
+    # Also, 'udunits2' installation requires hard-coding the 'configure.args' parameter
+    install.packages('udunits2', repos="http://cran.us.r-project.org/", configure.args='--with-udunits2-include=/usr/include/udunits2', lib=.Library)
 
     ## Define the list of packages to standard packages to install.
     deps = c("affxparser", "affy", "affyio", "affyPLM", "akima", "allgown", "annotate", "AnnotationDbi", "AnnotationForge", "ape", "ash", "ASCAT",
-    "BatchExperiments", "BatchJobs", "beanplot", "Biobase", "BiocGenerics", "BiocInstaller", "bioDist", "biomaRt", "Biostrings", "biovizBase", "bit",
-    "bit64", "bitops", "boot", "brew", "BSgenome",
+    "BatchExperiments", "BatchJobs", "batchtools", "beanplot", "Biobase", "BiocGenerics", "BiocInstaller", "bioDist", "biomaRt", "Biostrings", "biovizBase", "bit",
+    "bit64", "bitops", "boot", "brew", "BSgenome", "bumphunter",
     "caTools", "charm", "charmData", "circlize", "class", "cluster", "clusterStab", "clusterProfiler", "codetools", "colorspace", "ConsensusClusterPlus",
     "corpcor", "crlmm", "ctc", "cummeRbund",
     "datasets", "data.table", "DBI", "DESeq", "devtools", "dendextend", "dichromat", "digest", "dplyr", "DNAcopy",
     "edgeR", "ellipse", "evaluate",
-    "fastcluster", "ff", "fields", "FDb.InfiniumMethylation.hg19", "foreach", "foreign",
-    "gcrma", "gdata", "genefilter", "GenomicFeatures", "GenomicRanges", "genoset", "GEOquery", "ggplot2", "ggvis", "googleVis", "goseq", "gplots", "graph",
+    "fastcluster", "fdrtool", "ff", "fields", "FDb.InfiniumMethylation.hg19", "foreach", "foreign",
+    "gcrma", "gdata", "genefilter", "GenomicFeatures", "GenomicRanges", "GenomeInfoDb", "genoset", "GEOquery", "ggplot2", "ggvis", "googleVis", "goseq", "gplots", "graph",
     "gsalib", "gtable", "gtools", "Gviz",
     "hdrcde", "Hmisc", "hwriter", "HTqPCR", "HTSFilter", "hopach",
     "igraph", "IlluminaHumanMethylation450kmanifest", "IlluminaHumanMethylation450kanno.ilmn12.hg19", "impute", "IRanges", "iterators",
     "KernSmooth", "ks",
     "labeling", "lattice", "latticeExtra", "limma", "locfit", "lumi", "LVSmiRNA",
-    "magrittr", "maps", "markdown", "MASS", "Matrix", "matrixStats", "mclust", "memoise", "methyAnalysis", "methylumi", "mgcv", "minfi", "mirbase.db",
-    "misc3d", "multtest", "munsell", "mvtnorm",
+    "magrittr", "maps", "markdown", "MASS", "MAST", "Matrix", "matrixStats", "mclust", "memoise", "methyAnalysis", "methylumi", "mgcv", "minfi", "mirbase.db",
+    "misc3d", "monocle", "multtest", "munsell", "mvtnorm",
     "NBPSeq", "nleqslv", "nlme", "NMF", "nnet", "nondetects", "nor1mix", "Nozzle.R1",
     "oligo", "oligoClasses", "optparse", "outliers",
-    "pd.charm.hg18.example", "pheatmap", "plotrix", "plyr", "plyr", "preprocessCore", "proto",
+    "pd.charm.hg18.example", "pheatmap", "plotrix", "plyr", "preprocessCore", "proto",
     "qqman", "quantreg",
-    "R2HTML", "RBGL", "RColorBrewer", "Rcpp", "RcppEigen", "RCurl", "rhdf5", "ReportingTools", "reshape", "reshape2", "rgl", "RJSONIO", "Rmisc", "R.methodsS3",
+    "R2HTML", "RBGL", "RColorBrewer", "Rcpp", "RcppEigen", "RCurl", "remotes", "rhdf5", "ReportingTools", "reshape", "reshape2", "rgl", "RJSONIO", "Rmisc", "R.methodsS3",
     "rmarkdown", "roxygen2", "rpart", "Rsamtools", "RSQLite", "rtracklayer", "Rtsne",
-    "scales", "sendmailR", "Seurat", "shiny", "ShortRead", "siggenes", "sleuth", "snow", "SNPchip", "SortableHTMLTables", "spam", "SparseM", "spatial", "SQN",
-    "statmod", "stringr", "survival", "sva",
-    "testthat", "tidyr", "TxDb.Hsapiens.UCSC.hg19.knownGene",
+    "scales", "sendmailR", "Seurat", "shiny", "ShortRead", "siggenes", "slam", "snow", "SNPchip", "SortableHTMLTables", "spam", "SparseM", "spatial", "spp", "SQN",
+    "statmod", "stringi", "stringr", "survival", "sva",
+    "testthat", "tidyr", "tidyverse", "TxDb.Hsapiens.UCSC.hg19.knownGene",
     "vioplot", "vsn",
     "WriteXLS",
     "XML", "xtable",
     "zlibbioc")
 
-        ## Programmatically add all the org packages (excluding MeSH mess which takes too long)
-        contribUrl = contrib.url(biocinstallRepos(), type = 'source')
-        availPkgs  = available.packages(contribUrl, type = 'source')    
-        org.packages = rownames(availPkgs)[grepl("^org", rownames(availPkgs))]
-        org.packages = org.packages[!grepl("^org.MeSH.", org.packages)]
-        deps = c(deps, org.packages)
+    ## Programmatically add all the org packages (excluding MeSH mess which takes too long)
+    contribUrl = contrib.url(biocinstallRepos(), type = 'source')
+    availPkgs  = available.packages(contribUrl, type = 'source')    
+    org.packages = rownames(availPkgs)[grepl("^org", rownames(availPkgs))]
+    org.packages = org.packages[!grepl("^org.MeSH.", org.packages)]
+    deps = c(deps, org.packages)
 
-        ## Install pkgs not already installed, with ask=FALSE biocLite() takes care of updating if necessary
-        biocLite(ask=FALSE)
-        deps = setdiff(deps, rownames(installed.packages())) # Define packages that need actual install
-        biocLite(deps, lib=.Library, ask=FALSE)
-        deps = setdiff(deps, rownames(installed.packages()))
-        biocLite(deps, lib=.Library, ask=FALSE) # twice, just to make sure
+    ## Install pkgs not already installed, with ask=FALSE biocLite() takes care of updating if necessary
+    biocLite(ask=FALSE)
+    deps = setdiff(deps, rownames(installed.packages())) # Define packages that need actual install
+    biocLite(deps, lib=.Library, ask=FALSE)
+    deps = setdiff(deps, rownames(installed.packages()))
+    biocLite(deps, lib=.Library, ask=FALSE) # twice, just to make sure
 
-        ## Install Vennerable, since not yet in CRAN
-        install.packages("Vennerable", repos="https://R-Forge.R-project.org", lib=.Library, type='source')
-        ## Force Rmarkdown and knitr, not available fot R 3.2
-        install.packages('knitr', repos='http://cran.rstudio.org')
-        install.packages('rmarkdown', repos='http://cran.rstudio.org')
+    ## Install Vennerable, since not yet in CRAN
+    install.packages("Vennerable", repos="http://R-Forge.R-project.org", lib=.Library)
+    ## Force Rmarkdown and knitr, not available fot R 3.2
+    install.packages('knitr', repos='http://cran.rstudio.org', lib=.Library)
+    install.packages('rmarkdown', repos='http://cran.rstudio.org', lib=.Library)
 
-        require(devtools)
-        ## SPP
-        devtools::install_github('hms-dbmi/spp')
-        ## Sleuth
-#       devtools::install_github("pachterlab/sleuth")
+    ## Sleuth : needs devtools and remotes to be installed (both done above) 
+    biocLite("pachterlab/sleuth")
+
+    require(devtools)
+    ## PopSV
+    devtools::install_github("jmonlong/PopSV")
+    ## ASCAT
+    devtools::install_github("Crick-CancerGenomics/ascat/ASCAT")
 EOF
 
-echo "R packages installation done."
+#echo "building C3G wrappers for executables..."
+#mkdir -p $INSTALL_DIR/lib64/R/bin/exec.wrap
+#cat > $INSTALL_DIR/lib64/R/bin/exec.wrap/R <<-EOF
+#/cvmfs/soft.mugqic/yum/centos7/1.0/lib64/ld-linux-x86-64.so.2 --library-path /cvmfs/soft.mugqic/yum/centos7/1.0/lib64:/cvmfs/soft.mugqic/yum/centos7/1.0/lib64/mysql:$INSTALL_DIR/lib64/R/lib $INSTALL_DIR/lib64/R/bin/exec/R \${args} \${@}  
+#EOF
+#sed -i "s,R_binary=\"\${R_HOME}\/bin\/exec\${R_ARCH}\/R\",R_binary=\"\${R_HOME}\/bin\/exec\${R_ARCH}.wrap\/R\"," $INSTALL_DIR/bin/R
+#sed -i "s,R_binary=\"\${R_HOME}\/bin\/exec\${R_ARCH}\/R\",R_binary=\"\${R_HOME}\/bin\/exec\${R_ARCH}.wrap\/R\"," $INSTALL_DIR/lib64/R/bin/R
+#for i in $INSTALL_DIR/bin/Rscript $INSTALL_DIR/lib64/R/bin/Rscript; do
+#  mv $i $i.raw;
+#  echo "$C3G_SYSTEM_LIBRARY/lib64/ld-linux-x86-64.so.2 --library-path $C3G_SYSTEM_LIBRARY/lib64:$C3G_SYSTEM_LIBRARY/lib64/mysql:$INSTALL_DIR/lib64/R/lib $i.raw \${@}" > $i;
+#  chmod 775 $i;
+#done
 
+echo "Patching C3G executables..."
+for i in `find $INSTALL_DIR/ -type f -executable -exec file {} \; | grep ELF | cut -d":" -f1`; do
+  if readelf -l $i | grep go.build > /dev/null
+  then
+    echo "GO Done" > /dev/null
+  elif [ ${i##*.} == "so" ]
+  then
+    $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-rpath $C3G_SYSTEM_LIBRARY/usr/lib64/ $i
+  else
+    if [ ${i##*/} == "R" ] || [ ${i##*/} == "Rscript" ]
+    then
+      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libR.so $i
+      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libRblas.so $i
+      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libgomp.so.1 $i
+      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libpthread.so.0 $i
+      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libc.so.6 $i
+      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libgfortran.so.3 $i
+      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libm.so.6 $i
+      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libquadmath.so.0 $i
+      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libreadline.so.6 $i
+      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libtre.so.5 $i
+      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libpcre.so.1 $i
+      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed liblzma.so.5 $i
+      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libbz2.so.1 $i
+      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libz.so.1 $i
+      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed librt.so.1 $i
+      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libdl.so.2 $i
+      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libicuuc.so.50 $i
+      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libicui18n.so.50 $i
+      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libgcc_s.so.1 $i
+      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libtinfo.so.5 $i
+      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libicudata.so.50 $i
+      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libstdc++.so.6 $i
+    fi
+    $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-interpreter $C3G_SYSTEM_LIBRARY/lib64/ld-linux-x86-64.so.2 --set-rpath $C3G_SYSTEM_LIBRARY/usr/lib64/ $i
+  fi
+done
+
+echo "Adjusting permissions..."
 ## Adjust permissions
 chmod -R ug+rwX  $INSTALL_DIR $MODULEFILE $MODULEVERSIONFILE
 chmod -R o+rX    $INSTALL_DIR $MODULEFILE $MODULEVERSIONFILE
 
+echo "R packages installation done."
 exit 0 ;
 
 # ### Blurb to test graphics

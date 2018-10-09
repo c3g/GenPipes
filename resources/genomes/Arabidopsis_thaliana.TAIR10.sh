@@ -9,7 +9,7 @@ ASSEMBLY_SYNONYMS=
 SOURCE=EnsemblGenomes
 VERSION=23
 BIOMART_HOST=plants.ensembl.org
-BIOMART_MART=plants_mart_24
+BIOMART_MART=plants_mart
 
 GENOME_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source $GENOME_INSTALL_SCRIPT_DIR/install_genome.sh

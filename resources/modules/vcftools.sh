@@ -21,7 +21,7 @@ build() {
   cd $SOFTWARE_DIR
   FULL_PATH=$(readlink -f .)
   ./configure --prefix=$FULL_PATH			#  # for version 0.1.14
-  make
+  make -j12
   make install
 
   # Install software

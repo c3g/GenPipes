@@ -19,7 +19,7 @@ build() {
   # Remove "STAR-" prefix from top directory name
 #  mv ${SOFTWARE^^}-$SOFTWARE_DIR $SOFTWARE_DIR # for 2.5.0a and older
   cd ${SOFTWARE^^}-$VERSION/source
-  make STAR STARlong
+  make -j12 STAR STARlong
 
   # Install software
   cd $INSTALL_DOWNLOAD

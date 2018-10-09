@@ -31,7 +31,7 @@ mv breakdancer-${VERSION}.zip $ARCHIVE_PATH
 mv unzip/breakdancer-${VERSION}/samtools-0.1.6.tar.bz2 $ARCHIVE_PATH
 
 cd ${INSTALL_PATH}/breakdancer-${VERSION}/samtools-0.1.6
-make -j8
+make -j12
 
 
 #install
@@ -39,7 +39,7 @@ cd ../cpp
 mv Makefile originalMakefile
 echo -e "all:\n\tg++ -g -Wall -O2 -I${INSTALL_PATH}/breakdancer-${VERSION}/samtools-0.1.6/ BreakDancerMax.cpp AlnParser.cpp Poisson.cpp -o breakdancer_max -lm -lz -L${INSTALL_PATH}/breakdancer-${VERSION}/samtools-0.1.6/ -lbam\n" > Makefile
 
-make
+make -j12
 
 
 cd ../perl

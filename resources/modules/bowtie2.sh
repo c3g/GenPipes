@@ -16,7 +16,7 @@ build() {
   unzip $ARCHIVE
 
 #  cd $SOFTWARE_DIR	# uncomment this if source code has been downloaded instead of binaries
-#  make -j8
+#  make -j12
 
   # Install software
   cd $INSTALL_DOWNLOAD

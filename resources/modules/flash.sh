@@ -5,7 +5,7 @@ set -eu -o pipefail
 SOFTWARE=FLASH
 VERSION=1.2.11
 ARCHIVE=$SOFTWARE-$VERSION.tar.gz
-ARCHIVE_URL=http://sourceforge.net/projects/flashpage/files/latest/download?source=dlp
+ARCHIVE_URL=https://sourceforge.net/projects/flashpage/files/$ARCHIVE
 SOFTWARE_DIR=$SOFTWARE-$VERSION
 
 build() {
@@ -14,7 +14,7 @@ build() {
 
   # Install software
   cd $SOFTWARE_DIR
-  make
+  make -j12
 
   # Add permissions and install software
   chmod -R 775 *

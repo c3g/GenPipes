@@ -34,11 +34,11 @@ Usage
 #!text
 
 usage: dnaseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
-                 [-o OUTPUT_DIR] [-j {pbs,batch,daemon}] [-f] [--json]
+                 [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f] [--json]
                  [--report] [--clean] [-l {debug,info,warning,error,critical}]
                  [-t {mugqic,mpileup}] [-r READSETS] [-v]
 
-Version: 3.0.1-beta
+Version: 3.1.1-beta
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
@@ -52,7 +52,7 @@ optional arguments:
                         step range e.g. '1-5', '3,6,7', '2,4-8'
   -o OUTPUT_DIR, --output-dir OUTPUT_DIR
                         output directory (default: current)
-  -j {pbs,batch,daemon}, --job-scheduler {pbs,batch,daemon}
+  -j {pbs,batch,daemon,slurm}, --job-scheduler {pbs,batch,daemon,slurm}
                         job scheduler type (default: pbs)
   -f, --force           force creation of jobs even if up to date (default:
                         false)
@@ -79,6 +79,10 @@ Steps:
 ------
 
 ----
+```
+![dnaseq mugqic workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_dnaseq_mugqic.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_dnaseq_mugqic.png)
+```
 mugqic:
 1- picard_sam_to_fastq
 2- trimmomatic
@@ -110,6 +114,10 @@ mugqic:
 28- haplotype_caller_metrics_vcf_stats
 29- haplotype_caller_metrics_snv_graph_metrics
 ----
+```
+![dnaseq mpileup workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_dnaseq_mpileup.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_dnaseq_mpileup.png)
+```
 mpileup:
 1- picard_sam_to_fastq
 2- trimmomatic

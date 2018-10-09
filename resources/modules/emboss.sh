@@ -16,7 +16,7 @@ build() {
 
   cd $SOFTWARE_DIR
   ./configure --prefix=$INSTALL_DIR/$SOFTWARE_DIR
-  make
+  make -j12
   make install
 
 #  # Install software

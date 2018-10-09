@@ -27,12 +27,12 @@ Usage
 #!text
 
 usage: pacbio_assembly.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
-                          [-o OUTPUT_DIR] [-j {pbs,batch,daemon}] [-f]
+                          [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f]
                           [--json] [--report] [--clean]
                           [-l {debug,info,warning,error,critical}]
                           [-r READSETS] [-v]
 
-Version: 3.0.1-beta
+Version: 3.1.1-beta
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
@@ -46,7 +46,7 @@ optional arguments:
                         step range e.g. '1-5', '3,6,7', '2,4-8'
   -o OUTPUT_DIR, --output-dir OUTPUT_DIR
                         output directory (default: current)
-  -j {pbs,batch,daemon}, --job-scheduler {pbs,batch,daemon}
+  -j {pbs,batch,daemon,slurm}, --job-scheduler {pbs,batch,daemon,slurm}
                         job scheduler type (default: pbs)
   -f, --force           force creation of jobs even if up to date (default:
                         false)
@@ -68,6 +68,10 @@ optional arguments:
   -v, --version         show the version information and exit
 
 Steps:
+```
+![pacbio_assembly workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_pacbio_assembly.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_pacbio_assembly.png)
+```
 ------
 1- smrtanalysis_filtering
 2- pacbio_tools_get_cutoff

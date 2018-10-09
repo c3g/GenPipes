@@ -173,7 +173,7 @@ class RnaSeq(common.Illumina):
             star.index(
                 genome_index_folder=project_index_directory,
                 junction_file=project_junction_file
-        )], name = "star_index.AllSamples"))
+        )], name = "star_index.AllSamples", samples=self.samples))
 
         ######
         #Pass 2 - alignment
@@ -256,7 +256,9 @@ pandoc --to=markdown \\
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="star_report")
+                name="star_report",
+                samples=self.samples
+            )
         )
 
         return jobs
@@ -428,7 +430,8 @@ pandoc \\
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="rnaseqc_report"
+                name="rnaseqc_report",
+                samples=self.samples
             )
         )
 
@@ -448,7 +451,7 @@ pandoc \\
 
                 job = concat_jobs([
                     Job(command="mkdir -p " + output_directory, removable_files=[output_directory], samples=[sample]),
-                    picard.collect_multiple_metrics(alignment_file, os.path.join(output_directory, sample.name), reference_file),
+                    picard.collect_multiple_metrics(alignment_file, os.path.join(output_directory, sample.name), reference_file, library_type=sample.readsets[0].run_type),
                     picard.collect_rna_metrics(alignment_file, os.path.join(output_directory, sample.name+".picard_rna_metrics"))
                 ],name="picard_rna_metrics."+ sample.name)
                 jobs.append(job)
@@ -687,7 +690,7 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
                 wiggle_files.extend([os.path.join(wiggle_directory, sample.name) + ".forward.bw", os.path.join(wiggle_directory, sample.name) + ".reverse.bw"])
         else:
             wiggle_files = [os.path.join(wiggle_directory, sample.name + ".bw") for sample in self.samples]
-        jobs.append(Job(wiggle_files, [wiggle_archive], name="metrics.wigzip", command="zip -r " + wiggle_archive + " " + wiggle_directory))
+        jobs.append(Job(wiggle_files, [wiggle_archive], name="metrics.wigzip", command="zip -r " + wiggle_archive + " " + wiggle_directory, samples=self.samples))
 
         # RPKM and Saturation
         count_file = os.path.join("DGE", "rawCountMatrix.csv")
@@ -725,7 +728,9 @@ pandoc --to=markdown \\
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="raw_count_metrics_report")
+                name="raw_count_metrics_report",
+                samples = self.samples
+            )
         )
 
         return jobs
@@ -969,13 +974,14 @@ END
         # Render Rmarkdown Report
         jobs.append(
             rmarkdown.render(
-             job_input            = os.path.join("exploratory", "index.tsv"),
-             job_name             = "gq_seq_utils_exploratory_analysis_rnaseq_report",
-             input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeq.gq_seq_utils_exploratory_analysis_rnaseq.Rmd") ,
-             render_output_dir    = 'report',
-             module_section       = 'report', # TODO: this or exploratory?
-             prerun_r             = 'report_dir="report";' # TODO: really necessary or should be hard-coded in exploratory.Rmd?
-             )
+                job_input            = os.path.join("exploratory", "index.tsv"),
+                job_name             = "gq_seq_utils_exploratory_analysis_rnaseq_report",
+                input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeq.gq_seq_utils_exploratory_analysis_rnaseq.Rmd"),
+                samples              = self.samples,
+                render_output_dir    = 'report',
+                module_section       = 'report', # TODO: this or exploratory?
+                prerun_r             = 'report_dir="report";' # TODO: really necessary or should be hard-coded in exploratory.Rmd?
+            )
         )
 
 
@@ -996,7 +1002,9 @@ cp \\
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="cuffnorm_report")
+                name="cuffnorm_report",
+                samples=self.samples
+            )
         )
 
         return jobs
@@ -1102,7 +1110,9 @@ done""".format(
                     contrasts=" ".join([contrast.name for contrast in self.contrasts])
                 ),
                 report_files=[report_file],
-                name="differential_expression_goseq_report")
+                name="differential_expression_goseq_report",
+                samples=self.samples
+            )
         )
         return jobs
 
@@ -1112,7 +1122,7 @@ done""".format(
         """
 
         genome = config.param('ihec_metrics', 'assembly')
-         
+
         return [metrics.ihec_metrics_rnaseq(genome)]
 
 

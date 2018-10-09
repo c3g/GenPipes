@@ -25,7 +25,7 @@ build() {
 
   module load mugqic/HDF5 mugqic/autoconf 
   cmake -DCMAKE_INSTALL_PREFIX:PATH=$INSTALL_DIR/$SOFTWARE_DIR ..
-  make
+  make -j12
   make install
 }
 

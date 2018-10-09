@@ -30,12 +30,12 @@ build() {
   # Install software
   if [[ ${VERSION:0:1} == 1 ]]; then
     ./configure --enable-plugins --enable-libcurl prefix=$INSTALL_DIR/$SOFTWARE_DIR
-    make all all-htslib
+    make -j12 all all-htslib
     make install install-htslib
     mv libbam.a $INSTALL_DIR/${SOFTWARE_DIR}/lib/
   else
-    make
-    make razip
+    make -j12
+    make -j12 razip
     mkdir -p bin
     cd bin
     ln -s ../misc/wgsim

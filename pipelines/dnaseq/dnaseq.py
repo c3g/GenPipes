@@ -219,7 +219,7 @@ pandoc --to=markdown \\
                 job = concat_jobs([
                     mkdir_job,
                     Job([readset_bam], [sample_bam], command="ln -s -f " + target_readset_bam + " " + sample_bam, removable_files=[sample_bam]),
-                    Job([readset_index], [sample_index], command="ln -s -f " + target_readset_index + " " + sample_index, removable_files=[sample_index])
+                    Job([readset_index], [sample_index], command="ln -s -f " + target_readset_index + " " + sample_index + " && sleep 180", removable_files=[sample_index])
                 ], name="symlink_readset_sample_bam." + sample.name)
                 job.samples=[sample]
 
@@ -405,7 +405,8 @@ cp \\
         jobs = []
         for sample in self.samples:
             alignment_file_prefix = os.path.join("alignment", sample.name, sample.name + ".")
-            input = alignment_file_prefix + "matefixed.sorted.bam"
+            input_list =  self.select_input_files([[alignment_file_prefix + "matefixed.sorted.bam"] , [ alignment_file_prefix +"realigned.qsorted.bam"], [alignment_file_prefix + "sorted.bam"]])
+            input=input_list[0]
             output = alignment_file_prefix + "sorted.dup.bam"
             metrics_file = alignment_file_prefix + "sorted.dup.metrics"
 
@@ -643,7 +644,8 @@ cp \\
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
             haplotype_directory = os.path.join(alignment_directory, "rawHaplotypeCaller")
-            input = os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")
+            input_list = self.select_input_files([[os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],[os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],[os.path.join(alignment_directory, sample.name + ".sorted.bam")]])
+            input=input_list[0]
 
             if nb_haplotype_jobs == 1:
                 jobs.append(concat_jobs([
@@ -719,7 +721,7 @@ cp \\
 
                 # Create one separate job for each of the first sequences
                 for idx,sequences in enumerate(unique_sequences_per_job):
-                    obs.append(concat_jobs([
+                    jobs.append(concat_jobs([
                         Job(command="mkdir -p variants", removable_files=[os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.bgz",os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.bgz.tbi"], samples=self.samples),
                         gatk.combine_gvcf([ os.path.join("alignment", sample.name, sample.name)+".hc.g.vcf.bgz" for sample in self.samples ], os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.bgz", intervals=sequences)
                     ], name="gatk_combine_gvcf.AllSample" + "." + str(idx)))

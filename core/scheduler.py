@@ -26,7 +26,6 @@ import random
 
 # MUGQIC Modules
 from config import *
-from bfx import jsonator
 
 # Output comment separator line
 separator_line = "#" + "-" * 79
@@ -39,7 +38,7 @@ def create_scheduler(type, config_files):
     elif type == "daemon":
         return DaemonScheduler(config_files)
     elif type == "slurm":
-        return SlurmScheduler()
+        return SlurmScheduler(config_files)
     else:
         raise Exception("Error: scheduler type \"" + type + "\" is invalid!")
 
@@ -101,11 +100,14 @@ mkdir -p $JOB_OUTPUT_DIR/$STEP
         )
 
     def job2json(self, pipeline, step, job, job_status):
+        if not pipeline.args.json:
+            return ""
+
         json_file_list = ",".join([os.path.join(pipeline.output_dir, "json", sample.json_file) for sample in job.samples])
         return """\
-module load {module_python} {module_mugqic_tools}
+module load {module_python}
 {job2json_script} \\
-  -u \\"{user}\\" \\
+  -u \\"$USER\\" \\
   -c \\"{config_files}\\" \\
   -s \\"{step.name}\\" \\
   -j \\"$JOB_NAME\\" \\
@@ -113,17 +115,16 @@ module load {module_python} {module_mugqic_tools}
   -l \\"$JOB_OUTPUT\\" \\
   -o \\"{jsonfiles}\\" \\
   -f {status}
-module unload {module_python} {module_mugqic_tools} {command_separator}""".format(
-            user=os.getenv('USER'),
+module unload {module_python} {command_separator}""".format(
             job2json_script=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "utils", "job2json.py"),
             module_python=config.param('DEFAULT', 'module_python'),
-            module_mugqic_tools=config.param('DEFAULT', 'module_mugqic_tools'),
             step=step,
             jsonfiles=json_file_list,
             config_files=",".join([ c.name for c in self._config_files ]),
             status=job_status,
             command_separator="&&" if (job_status=='\\"running\\"') else ""
         ) if json_file_list else ""
+
 
 class PBSScheduler(Scheduler):
     def submit(self, pipeline):
@@ -287,12 +288,12 @@ COMMAND=$(cat << '{limit_string}'
                     )
 
                     cmd = """\
-echo "#! /bin/bash 
+echo "#! /bin/bash
 echo '#######################################'
 echo 'SLURM FAKE PROLOGUE (MUGQIC)'
-date 
+date
 scontrol show job \$SLURM_JOBID
-sstat -j \$SLURM_JOBID.batch 
+sstat -j \$SLURM_JOBID.batch
 echo '#######################################'
 rm -f $JOB_DONE && {job2json_start} $COMMAND
 MUGQIC_STATE=\$PIPESTATUS
@@ -301,9 +302,9 @@ echo MUGQICexitStatus:\$MUGQIC_STATE
 if [ \$MUGQIC_STATE -eq 0 ] ; then touch $JOB_DONE ; fi
 echo '#######################################'
 echo 'SLURM FAKE EPILOGUE (MUGQIC)'
-date 
+date
 scontrol show job \$SLURM_JOBID
-sstat -j \$SLURM_JOBID.batch 
+sstat -j \$SLURM_JOBID.batch
 echo '#######################################'
 exit \$MUGQIC_STATE" | \\
 """.format(
@@ -335,9 +336,9 @@ exit \$MUGQIC_STATE" | \\
 
                     # Write job parameters in job list file
                     cmd += "\necho \"$" + job.id + "\t$JOB_NAME\t$JOB_DEPENDENCIES\t$JOB_OUTPUT_RELATIVE_PATH\" >> $JOB_LIST\n"
-                    
-                    #add 0.5s sleep to let slurm submiting the job correctly
-                    cmd += "\nsleep 0.5\n"
+
+                    #add 0.2s sleep to let slurm submiting the job correctly
+                    cmd += "\nsleep 0.2\n"
 
                     print cmd
 
