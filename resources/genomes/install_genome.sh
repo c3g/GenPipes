@@ -745,7 +745,7 @@ create_genome_digest() {
 
   GENOME_DIGEST=$GENOME_DIR/genome_digest/
 
-  declare -A enzymes=( ["DpnII"]="^GATC" ["MboI"]="^GATC" ["HindIII"]="A^AGCTT" ["NcoI"]="C^CATGG")
+  declare -A enzymes=( ["DpnII"]="^GATC" ["MboI"]="^GATC" ["HindIII"]="A^AGCTT" ["NcoI"]="C^CATGG" ["Arima"]="^GATC,DpnII:G^ANTC")
 
   for enzyme in "${!enzymes[@]}"; do
     #echo "$enzyme - ${enzymes[$enzyme]}";
