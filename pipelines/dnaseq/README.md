@@ -305,27 +305,43 @@ Merge metrics. Read metrics per sample are merged at this step.
 
 haplotype_caller_filter_nstretches
 ----------------------------------
-See general filter_nstretches description !  Applied to haplotype caller vcf
+The final haplotype caller .vcf files are filtered for long 'N' INDELs which are sometimes introduced and cause excessive
+memory usage by downstream tools. !
 
 haplotype_caller_flag_mappability
 ---------------------------------
-See general flag_mappability !  Applied to haplotype caller vcf
+Mappability annotation applied to haplotype caller vcf.
+An in-house database identifies regions in which reads are confidently mapped
+to the reference genome.
 
 haplotype_caller_snp_id_annotation
 ----------------------------------
-See general snp_id_annotation !  Applied to haplotype caller vcf
+dbSNP annotation applied to haplotype caller vcf.
+The .vcf files are annotated for dbSNP using the software SnpSift (from the [SnpEff suite](http://snpeff.sourceforge.net/)).
 
 haplotype_caller_snp_effect
 ---------------------------
-See general snp_effect !  Applied to haplotype caller vcf
+Variant effect annotation applied to haplotype caller vcf.
+The .vcf files are annotated for variant effects using the SnpEff software.
+SnpEff annotates and predicts the effects of variants on genes (such as amino acid changes).
 
 haplotype_caller_dbnsfp_annotation
 ----------------------------------
-See general dbnsfp_annotation !  Applied to haplotype caller vcf
+Additional SVN annotations applied to haplotype caller vcf.
+Provides extra information about SVN by using numerous published databases.
+Applicable to human samples. Databases available include Biomart (adds GO annotations based on gene information)
+and dbNSFP (an integrated database of functional annotations from multiple sources for the comprehensive
+collection of human non-synonymous SNPs. It compiles prediction scores from four prediction algorithms
+(SIFT, Polyphen2, LRT and MutationTaster), three conservation scores (PhyloP, GERP++ and SiPhy)
+and other function annotations).
 
 haplotype_caller_metrics_vcf_stats
 ----------------------------------
-See general metrics_vcf_stats !  Applied to haplotype caller vcf
+Metrics SNV applied to haplotype caller vcf.
+Multiple metrics associated to annotations and effect prediction are generated at this step:
+change rate by chromosome, changes by type, effects by impact, effects by functional class, counts by effect,
+counts by genomic region, SNV quality, coverage, InDel lengths, base changes,  transition-transversion rates,
+summary of allele frequencies, codon changes, amino acid changes, changes per chromosome, change rates.
 
 haplotype_caller_metrics_snv_graph_metrics
 ------------------------------------------
@@ -354,27 +370,43 @@ for all samples in the experiment.
 
 mpileup_filter_nstretches
 -------------------------
-See general filter_nstretches description !  Applied to mpileup vcf
+The final mpileup .vcf files are filtered for long 'N' INDELs which are sometimes introduced and cause excessive
+memory usage by downstream tools.
 
 mpileup_flag_mappability
 ------------------------
-See general flag_mappability !  Applied to mpileup vcf
+Mappability annotation applied to mpileup vcf.
+An in-house database identifies regions in which reads are confidently mapped
+to the reference genome.
 
 mpileup_snp_id_annotation
 -------------------------
-See general snp_id_annotation !  Applied to mpileyp vcf
+dbSNP annotation applied to mpileyp vcf.
+The .vcf files are annotated for dbSNP using the software SnpSift (from the [SnpEff suite](http://snpeff.sourceforge.net/)).
 
 mpileup_snp_effect
 ------------------
-See general snp_effect !  Applied to mpileup vcf
+Variant effect annotation applied to mpileup vcf.
+The .vcf files are annotated for variant effects using the SnpEff software.
+SnpEff annotates and predicts the effects of variants on genes (such as amino acid changes).
 
 mpileup_dbnsfp_annotation
 -------------------------
-See general dbnsfp_annotation !  Applied to mpileup vcf
+Additional SVN annotations applied to mpileup vcf.
+Provides extra information about SVN by using numerous published databases.
+Applicable to human samples. Databases available include Biomart (adds GO annotations based on gene information)
+and dbNSFP (an integrated database of functional annotations from multiple sources for the comprehensive
+collection of human non-synonymous SNPs. It compiles prediction scores from four prediction algorithms
+(SIFT, Polyphen2, LRT and MutationTaster), three conservation scores (PhyloP, GERP++ and SiPhy)
+and other function annotations).
 
 mpileup_metrics_vcf_stats
 -------------------------
-See general metrics_vcf_stats !  Applied to mpileup caller vcf
+Metrics SNV applied to mpileup caller vcf.
+Multiple metrics associated to annotations and effect prediction are generated at this step:
+change rate by chromosome, changes by type, effects by impact, effects by functional class, counts by effect,
+counts by genomic region, SNV quality, coverage, InDel lengths, base changes,  transition-transversion rates,
+summary of allele frequencies, codon changes, amino acid changes, changes per chromosome, change rates.
 
 mpileup_metrics_snv_graph_metrics
 ---------------------------------
