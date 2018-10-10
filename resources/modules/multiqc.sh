@@ -3,10 +3,11 @@
 set -eu -o pipefail
 
 SOFTWARE=MultiQC
-VERSION=v1.3dev
+VERSION=1.6
 ARCHIVE=${SOFTWARE}-${VERSION}.zip
-ARCHIVE_URL=https://github.com/ewels/$SOFTWARE/archive/master.zip
+ARCHIVE_URL=https://github.com/ewels/$SOFTWARE/archive/v${VERSION}.zip
 SOFTWARE_DIR=${SOFTWARE}-$VERSION
+PYTHON_MODULE=mugqic/python/2.7.13
 
 # Specific commands to extract and build the software
 # $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
@@ -15,9 +16,11 @@ build() {
 
   cd $INSTALL_DOWNLOAD
   unzip $ARCHIVE
-  mv ${SOFTWARE}-master $SOFTWARE_DIR
+#  mv ${SOFTWARE}-master $SOFTWARE_DIR
 
   mv -i $SOFTWARE_DIR $INSTALL_DIR/
+
+  module load $PYTHON_MODULE
 
   mkdir -p $INSTALL_DIR/$SOFTWARE_DIR/lib/python2.7/site-packages
   export PYTHONPATH=${PYTHONPATH}:$INSTALL_DIR/$SOFTWARE_DIR/lib/python2.7/site-packages
