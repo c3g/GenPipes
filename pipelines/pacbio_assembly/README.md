@@ -32,7 +32,7 @@ usage: pacbio_assembly.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                           [-l {debug,info,warning,error,critical}]
                           [-r READSETS] [-v]
 
-Version: 3.1.0
+Version: 3.1.1-beta
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
@@ -68,6 +68,10 @@ optional arguments:
   -v, --version         show the version information and exit
 
 Steps:
+```
+![pacbio_assembly workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_pacbio_assembly.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_pacbio_assembly.png)
+```
 ------
 1- smrtanalysis_filtering
 2- pacbio_tools_get_cutoff
@@ -83,8 +87,8 @@ Steps:
 12- motifMaker
 
 ```
-1- smrtanalysis_filtering
--------------------------
+smrtanalysis_filtering
+----------------------
 Filter reads and subreads based on their length and QVs, using smrtpipe.py (from the SmrtAnalysis package).
 
 1. fofnToSmrtpipeInput.py
@@ -94,8 +98,8 @@ Filter reads and subreads based on their length and QVs, using smrtpipe.py (from
 
 Informative run metrics such as loading efficiency, read lengths and base quality are generated in this step as well.
 
-2- pacbio_tools_get_cutoff
---------------------------
+pacbio_tools_get_cutoff
+-----------------------
 Cutoff value for splitting long reads from short reads is done here using
 estimated coverage and estimated genome size.
 
@@ -113,8 +117,8 @@ size) * $percentageCutoff (e.g. 0.10), we have our threshold. The idea is to
 consider all reads above that threshold to be seeding reads to which will be
 aligned lower shorter subreads.
 
-3- preassembly
---------------
+preassembly
+-----------
 Having in hand a cutoff value, filtered reads are splitted between short and long reads. Short reads
 are aligned against long reads and consensus (e.g. corrected reads) are generated from these alignments.
 
@@ -123,8 +127,8 @@ are aligned against long reads and consensus (e.g. corrected reads) are generate
 3. m4topre: convert .m4 blasr output in .pre format
 4. pbdagcon (aka HGAP2): generate corrected reads from alignments
 
-4- assembly
------------
+assembly
+--------
 Corrected reads are assembled to generates contigs. Please see the
 [Celera documentation](http://wgs-assembler.sourceforge.net/wiki/index.php?title=RunCA).
 Quality of assembly seems to be highly sensitive to parameters you give Celera.
@@ -133,8 +137,8 @@ Quality of assembly seems to be highly sensitive to parameters you give Celera.
 2. fastqToCA: generate input file compatible with the Celera assembler
 3. runCA: run the Celera assembler
 
-5- polishing
-------------
+polishing
+---------
 Align raw reads on the Celera assembly with BLASR. Load pulse information from bax or bas files into aligned file. Sort that file and run quiver (variantCaller.py).
 
 1. generate fofn
@@ -144,31 +148,31 @@ Align raw reads on the Celera assembly with BLASR. Load pulse information from b
 5. sort .cmp.h5 file
 6. variantCaller.py
 
-6- pacbio_tools_assembly_stats
-------------------------------
-7- blast
---------
+pacbio_tools_assembly_stats
+---------------------------
+blast
+-----
 Blast polished assembly against nr using dc-megablast.
 
-8- mummer
----------
+mummer
+------
 Using MUMmer, align polished assembly against best hit from blast job. Also align polished assembly against itself to detect structure variation such as repeats, etc.
 
-9- compile
-----------
+compile
+-------
 Compile assembly stats of all conditions used in the pipeline (useful when multiple assemblies are performed).
 
-10- circlator
--------------
+circlator
+---------
 Circularize the assembly contigs if possible.
 User should launch this step after making sure the quality of the assembly is acceptable.
 
-11- basemodification
---------------------
+basemodification
+----------------
 Run ipdSummary.py for in silico detection of modified bases
 
-12- motifMaker
---------------
+motifMaker
+----------
 Run motifMaker to generate motif_summary.csv
 
 

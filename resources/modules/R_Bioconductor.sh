@@ -1,5 +1,5 @@
 #!/bin/bash
-# set -e
+#set -e
 umask 0002
 me=`basename $0`
 
@@ -179,7 +179,7 @@ EOF
 cat > $INSTALL_DIR/lib64/R/etc/Rprofile.site <<-'EOF'
 if(capabilities()["cairo"]){ options(bitmapType="cairo") }
 Sys.setenv(PAGER="/usr/bin/less")
-Sys.umask("002")                        
+Sys.umask("002")
 EOF
 
 fi
@@ -279,6 +279,9 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
     devtools::install_github("jmonlong/PopSV")
     ## ASCAT
     devtools::install_github("Crick-CancerGenomics/ascat/ASCAT")
+    ## ChIAnalysis (with its eric.utils dependency)
+    devtools::install_bitbucket("ericfournier2/sb_lab/eric.utils")
+    #devtools::install_github("ArnaudDroitLab/ChIAnalysis")
 EOF
 
 #echo "building C3G wrappers for executables..."
