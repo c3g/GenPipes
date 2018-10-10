@@ -48,7 +48,7 @@ def stringtie(input_bam, output_directory, gtf=None, abund=False):
         out_files = [os.path.join(output_directory ,"transcripts.gtf")] 
 
     return Job(
-        [input_bam],
+        [input_bam, gtf],
         out_files,
         [["stringtie", "module_stringtie"]],
         command="""\
@@ -62,7 +62,7 @@ stringtie {other_options}{strd_cmd}{gtf}{abund_cmd} \\
       other_options=config.param('stringtie','other_options', required=False),
       strd_cmd="\\\n  " + strd_cmd if strd_cmd else "",
       gtf="\\\n  -G " + gtf if gtf else "", 
-      abund_cmd="\\\n   -eB -A " + os.path.join(output_directory, "abundance.tab") if abund else "",
+      abund_cmd="\\\n  -eB -A " + os.path.join(output_directory, "abundance.tab") if abund else "",
       num_threads=config.param('stringtie','threads', type='posint'),
       min_length=config.param('stringtie', 'min_length', type='posint'),
       outgtf=os.path.join(output_directory, "transcripts.gtf"), 
@@ -75,7 +75,7 @@ def stringtie_merge(gtf_list, output_prefix, gtf=None):
 
     return Job(
         [gtf_list],
-        [output_prefix + ".merged.gtf"]
+        [os.path.join(output_prefix, "merged.gtf")],
         [["stringtie", "module_stringtie"]],
         command="""\
 mkdir -p {output_directory} &&\\
@@ -85,7 +85,7 @@ stringtie --merge {other_options}{gtf} \\
       output_directory=os.path.dirname(output_prefix),
       other_options=config.param('stringtie_merge','other_options', required=False),
       gtf="\\\n -G " + gtf if gtf else "", 
-      outfile=output_prefix + "merged.gtf", 
+      outfile=os.path.join(output_prefix, "merged.gtf"), 
       gtf_list=gtf_list
         )
     )

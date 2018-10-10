@@ -763,7 +763,7 @@ pandoc --to=markdown \\
 
         output_directory = os.path.join("stringtie", "AllSamples")
         sample_file = os.path.join("stringtie", "stringtie-merge.samples.txt")
-        input_gtfs = [os.path.join("stringtie", sample.name, sample.name + ".transcripts.gtf") for sample in self.samples]
+        input_gtfs = [os.path.join("stringtie", sample.name, "transcripts.gtf") for sample in self.samples]
         gtf = config.param('stringtie','gtf', type='filepath')
 
 
@@ -796,7 +796,7 @@ END
             job = stringtie.stringtie(input_bam, output_directory, gtf, abund=True)
             job.name = "stringtie_abund." + sample.name
             job.samples = [sample]
-            job.append(job)
+            jobs.append(job)
 
         return jobs
 
