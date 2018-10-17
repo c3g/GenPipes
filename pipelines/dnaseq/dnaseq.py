@@ -66,6 +66,9 @@ from bfx import gemini
 from bfx import dna_damage
 from bfx import picard
 from bfx import picard2
+from bfx import vt
+from bfx import htslib
+from bfx import gemini
 from bfx import qualimap
 from bfx import fastqc
 from bfx import multiqc
@@ -1020,7 +1023,6 @@ END
             ])
             # log.info(input)
             mkdir_job = bash.mkdir(picard_directory, remove=True)
-
             jobs.append(
                 concat_jobs([
                     mkdir_job,

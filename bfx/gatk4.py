@@ -340,7 +340,6 @@ def variant_annotator(
         exclude_intervals
     )
 
-
 #####################
 # GATK4 - Diagnostics and Quality Control
 

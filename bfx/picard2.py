@@ -561,8 +561,7 @@ def bed2interval_list(dictionary, bed, output):
             dictionary,
             bed,
             output
-            )
-
+        )
     return Job(
         [dictionary, bed],
         [output],

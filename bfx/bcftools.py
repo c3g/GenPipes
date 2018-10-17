@@ -63,7 +63,7 @@ bcftools \\
         )
     )
 
-def mpileup(inputs, output, options=None, regions=None):
+def mpileup(inputs, output, options=None, regions=None, regionFile=None):
     """
     New bcftools mpileup function
     """
@@ -84,7 +84,7 @@ bcftools \\
         reference_fasta=config.param('samtools_mpileup', 'genome_fasta', type='filepath'),
         inputs="".join(" \\\n  " + input for input in inputs),
         regions="-r " + regions,
-        #regions="".join("," + region for region in regions),
+        regionFile="-T " + regionFile if regionFile else "",
         output=" \\\n > " + output if output else ""
         )
     )

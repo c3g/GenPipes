@@ -23,11 +23,11 @@
 from core.config import *
 from core.job import *
 
-def manta_config(input_normal, input_tumor, output_dir):
+def manta_config(input_normal, input_tumor, output_dir, callRegion=None):
     if input_tumor is not None:
-        inputs = [input_normal, input_tumor]
+        inputs = [input_normal, input_tumor, callRegion]
     else:
-        inputs = [input_normal]
+        inputs = [input_normal, callRegion]
         
     return Job(
         inputs,
@@ -41,12 +41,13 @@ def manta_config(input_normal, input_tumor, output_dir):
         --normalBam {normal} \\
         {tumor} \\
         --referenceFasta {genome} \\
-        {experiment_type} \\
+        {experiment_type} {callRegion} \\
         --runDir {output}""".format(
             normal=input_normal,
             tumor="--tumorBam " + input_tumor if input_tumor else "",
             genome=config.param('manta_sv','genome_fasta',type='filepath'),
             experiment_type=config.param('manta_sv','experiment_type_option') if config.param('manta_sv','experiment_type_option') else "",
+            callRegion="\\\n        --callRegions " + callRegion if callRegion else "",
             output=output_dir
         )
     )

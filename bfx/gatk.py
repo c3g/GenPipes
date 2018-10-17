@@ -26,6 +26,8 @@ import re
 from core.job import *
 import core.config
 import gatk4
+import picard
+import picard2
 
 config = core.config.config
 
@@ -322,7 +324,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --dbsnp {known_sites}{cosmic} \\
   --input_file:normal {inputNormal} \\
   --input_file:tumor {inputTumor} \\
-  --out {outputVCF}{interval_list}{intervals}{exclude_intervals}""".format(
+  --out {outputVCF}{intervals}{exclude_intervals}{interval_list}""".format(
         tmp_dir=config.param('gatk_mutect', 'tmp_dir'),
         java_other_options=config.param('gatk_mutect2', 'java_other_options'),
         ram=config.param('gatk_mutect2', 'ram'),
@@ -333,7 +335,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         inputNormal=inputNormal,
         inputTumor=inputTumor,
         outputVCF=outputVCF,
-        interval_list=" \\\n  --interval-padding 100 --intervals " + interval_list if interval_list else "",
+        interval_list=" \\\n  --interval-padding 250 --intervals " + interval_list if interval_list else "",
         intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
         exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals)
         )
