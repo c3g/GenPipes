@@ -31,7 +31,7 @@ def annotate_mappability(input, output):
         [output],
         [
             ['annotate_mappability', 'module_vcftools'],
-            ['annotate_mappability', 'module_tabix']
+            ['annotate_mappability', 'module_htslib']
         ],
         command="""\
 vcf-annotate \\

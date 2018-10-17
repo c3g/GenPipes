@@ -3163,11 +3163,11 @@ END`""".format(
                 self.ensemble_metasv,
                 self.metasv_sv_annotation,
                 self.sym_link_sequenza,
-                self.sym_link_delly,
-                self.sym_link_manta,
-                self.sym_link_lumpy,
-                self.sym_link_wham,
-                self.sym_link_svaba
+                #self.sym_link_delly,
+                #self.sym_link_manta,
+                #self.sym_link_lumpy,
+                #self.sym_link_wham,
+                #self.sym_link_svaba
             ]
         ]
 
