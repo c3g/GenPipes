@@ -71,7 +71,7 @@ usage: illumina_run_processing.py [-h] [--help] [-c CONFIG [CONFIG ...]]
                                   [-x FIRST_INDEX] [-y LAST_INDEX]
                                   [-m NUMBER_OF_MISMATCHES] [-w] [-v]
 
-Version: 3.1.0
+Version: 3.1.1-beta
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
@@ -137,8 +137,8 @@ Steps:
 10- end_copy_notification
 
 ```
-1- index
---------
+index
+-----
 Generate a file with all the indexes found in the index-reads of the run.
 
 The input barcode file is a two columns tsv file. Each line has a
@@ -150,8 +150,8 @@ saved in the output directory. This file has four columns, the barcode/index
 sequence, the index name, the number of reads and the number of reads that have
 passed the filter.
 
-2- fastq
---------
+fastq
+-----
 Launch fastq generation from Illumina raw data using BCL2FASTQ conversion
 software.
 
@@ -165,8 +165,8 @@ the lane.
 An optional notification command can be launched to notify the start of the
 fastq generation with the calculated mask.
 
-3- align
---------
+align
+-----
 Align the reads from the fastq file, sort the resulting .bam and create an index
 of that .bam.
 
@@ -178,12 +178,12 @@ corresponding genome (and indexes) are installed.
 `library_source` is `cDNA` or contains `RNA`; otherwise `BWA_mem` is used to
 align the reads.
 
-4- picard_mark_duplicates
--------------------------
+picard_mark_duplicates
+----------------------
 Runs Picard mark duplicates on the sorted bam file.
 
-5- metrics
-----------
+metrics
+-------
 This step runs a series of multiple metrics collection jobs and the output bam
 from mark duplicates.
 
@@ -200,8 +200,8 @@ calculate the coverage of each target region.
 metrics from the BAM file. The bait and interval list is automatically created
 from the specicied `BED Files`.
 
-6- blast
---------
+blast
+-----
 Run blast on a subsample of the reads of each sample to find the 20 most
 frequent hits.
 
@@ -209,8 +209,8 @@ The `runBlast.sh` tool from MUGQIC Tools is used. The number of reads to
 subsample can be configured by sample or for the whole lane. The output will be
 in the `Blast_sample` folder, under the Unaligned folder.
 
-7- qc_graphs
-------------
+qc_graphs
+---------
 Generate some QC Graphics and a summary XML file for each sample using 
 [BVATools](https://bitbucket.org/mugqic/bvatools/).
 
@@ -221,15 +221,15 @@ output graphic:
 - Known sequences (adaptors);
 - Abundant Duplicates;
 
-8- md5
-------
+md5
+---
 Create md5 checksum files for the fastq, bam and bai using the system 'md5sum'
 util.
 
 One checksum file is created for each file.
 
-9- copy
--------
+copy
+----
 Copy processed files to another place where they can be served or loaded into a
 LIMS.
 
@@ -238,8 +238,8 @@ file.
 
 An optional notification can be sent before the copy. The command used is in the configuration file.
 
-10- end_copy_notification
--------------------------
+end_copy_notification
+---------------------
 Send an optional notification to notify that the copy is finished.
 
 The command used is in the configuration file. This step is skipped when no

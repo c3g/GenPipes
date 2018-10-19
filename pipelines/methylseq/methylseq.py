@@ -773,10 +773,10 @@ pandoc \\
             report_file = os.path.join("report", "MethylSeq.ihec_sample_metrics_report.md")
 
         # Create the list of input files to handle job dependencies
-        inputs = []
         sample_list = []
         counter=0
         for sample in self.samples:
+            inputs = []
             sample_list.append(sample.name)
             metrics_file =  os.path.join("ihec_metrics", sample.name + ".read_stats.txt")
             # Trim log files
