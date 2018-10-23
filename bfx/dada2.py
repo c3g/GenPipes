@@ -49,6 +49,6 @@ Rscript $R_TOOLS/asva.R \\
         rawReadsFolder=rawReadsFolder,
         designFile=designFile,
         output_directory=output_directory,
-        trainset=config.param('database', 'trainset'),
-        taxonomy=config.param('database', 'taxonomy')
+        trainset=config.param('database', 'dada2_trainset'),
+        taxonomy=config.param('database', 'dada2_taxonomy')
     ))

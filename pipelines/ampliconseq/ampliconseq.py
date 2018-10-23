@@ -44,7 +44,7 @@ from bfx import flash
 from bfx import qiime
 from bfx import vsearch
 from bfx import krona
-from bfx import trimmomatic16S
+from bfx import trimmomatic
 
 log = logging.getLogger(__name__)
 
@@ -231,10 +231,9 @@ pandoc \\
         for readset in self.readsets:
             trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
             merge_directory = os.path.join("merge", readset.sample.name)
-            flash_fastq = os.path.join(merge_directory, readset.name + ".extendedFrags.fastq")
-            flash_log = os.path.join(merge_directory, readset.name + ".log")
-            flash_hist = os.path.join(merge_directory, readset.name + ".hist")
-            
+            flash_fastq = os.path.join(merge_directory, readset.name + ".flash_pass2.extendedFrags.fastq") if flash_stats_file else os.path.join(merge_directory, readset.name + ".flash.extendedFrags.fastq")
+            flash_log = os.path.join(merge_directory, readset.name + ".flash_pass2.log") if flash_stats_file else os.path.join(merge_directory, readset.name + ".flash.log")
+            flash_hist = os.path.join(merge_directory, readset.name + ".flash_pass2.hist") if flash_stats_file else os.path.join(merge_directory, readset.name + ".flash.hist")
 
             # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
             if readset.run_type == "PAIRED_END":
@@ -242,21 +241,17 @@ pandoc \\
                 if readset.fastq1 and readset.fastq2:
                     candidate_input_files.append([readset.fastq1, readset.fastq2])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
-
             else:
                 raise Exception("Error: run type \"" + readset.run_type + "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END)!")
 
             job = flash.flash(
                 fastq1,
                 fastq2,
-                merge_directory,
                 flash_fastq,
                 readset.name,
                 flash_log,
                 flash_hist,
-                flash_stats_file,
-                flash_min,
-                flash_max
+                flash_stats_file
             )
             job.samples = [readset.sample]
 
@@ -269,17 +264,13 @@ pandoc \\
         return jobs    
 
     def flash_pass1(self):
-        job = self.flash()
-        return job
+        jobs = self.flash()
+        return jobs
 
     def flash_pass2(self):
         flash_stats_file = os.path.join("metrics", "FlashLengths.tsv")
-        with open('testFile.txt', 'r') as f:
-        for line in f:
-            splitLine = line.split()
-            newDict[int(splitLine[0])] = ",".join(splitLine[1:])
-        job = self.flash(flash_stats_file)
-        return job
+        jobs = self.flash(flash_stats_file)
+        return jobs
 
     def merge_flash_stats(self):
         """
@@ -293,7 +284,7 @@ pandoc \\
         ])
 
         for readset in self.readsets:
-            flash_log = os.path.join("merge", readset.sample.name, readset.name + ".log")
+            flash_log = os.path.join("merge", readset.sample.name, readset.name + ".flash_pass2.log")
 
             job = concat_jobs([
                 job,
@@ -395,23 +386,37 @@ pandoc --to=markdown \\
 
         job = concat_jobs([
             Job(command="mkdir -p metrics"),
-            Job(command="echo 'Sample\tReadset\tMinimum Amplicon Length\tMaximum Amplicon Length' > " + readset_merge_flash_stats)
+            Job(command="echo 'Sample\tReadset\tMinimum Amplicon Length\tMaximum Amplicon Length\tMinimum Flash Overlap\tMaximum Flash Overlap' > " + readset_merge_flash_stats)
         ])
 
         for readset in self.readsets:
-            flash_log = os.path.join("merge", readset.sample.name, readset.name + ".log")
-            flash_hist = os.path.join("merge", readset.sample.name, readset.name + ".hist")
+            trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
+
+            # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
+            if readset.run_type == "PAIRED_END":
+                candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
+                if readset.fastq1 and readset.fastq2:
+                    candidate_input_files.append([readset.fastq1, readset.fastq2])
+                [fastq1, fastq2] = self.select_input_files(candidate_input_files)
+            else:
+                raise Exception("Error: run type \"" + readset.run_type + "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END)!")
+
+            flash_hist = os.path.join("merge", readset.sample.name, readset.name + ".flash.hist")
             job = concat_jobs([
                 job,
                 Job(
-                    [flash_log],
+                    [fastq1, flash_hist],
                     [readset_merge_flash_stats],
                     command="""\
+frag_length=$(less {fastq} | head -n2 | tail -n1 | awk '{{print length($0)}}')
 minCount=$(cut -f2 {hist} | sort -n | awk ' {{ sum+=$1;i++ }} END {{ print sum/100; }}' | cut -d"." -f1)
 minLen=$(awk -F'\t' -v var=$minCount '$2>var' {hist} | cut -f1 | sort -g | head -n1)
 maxLen=$(awk -F'\t' -v var=$minCount '$2>var' {hist} | cut -f1 | sort -gr | head -n1)
-printf "{sample}\t{readset}\t${{minLen}}\t${{maxLen}}\n" \\
+minFlashOverlap=$(( 2 * frag_length - maxLen ))
+maxFlashOverlap=$(( 2 * frag_length - minLen ))
+printf "{sample}\t{readset}\t${{minLen}}\t${{maxLen}}\t${{minFlashOverlap}}\t${{maxFlashOverlap}}\n" \\
   >> {stats}""".format(
+                        fastq=fastq1,
                         hist=flash_hist,
                         sample=readset.sample.name,
                         readset=readset.name,
@@ -444,7 +449,7 @@ printf "{sample}\t{readset}\t${{minLen}}\t${{maxLen}}\n" \\
 
         for readset in self.readsets:
             merge_directory = os.path.join("merge", readset.sample.name)
-            merge_file_prefix = os.path.join(merge_directory, readset.name + ".extendedFrags.fastq")
+            merge_file_prefix = os.path.join(merge_directory, readset.name + ".flash_pass2.extendedFrags.fastq")
 
             # Find input readset FASTQs first from previous FLASh job,
             input_files.append(merge_file_prefix)
@@ -1612,7 +1617,7 @@ pandoc --to=markdown \\
             job.samples = self.samples
 
             # Create a job that cleans the generated OTU_data.txt i.e. removes the lines with characters
-            jobClean = tools.clean_otu([heatmap_otu_data_R])
+            jobClean = tools.clean_otu(heatmap_otu_data_R)
 
             jobR = Job(
                 [heatmap_script, heatmap_otu_data_R, heatmap_otu_name_R, heatmap_otu_tax_R],
@@ -2147,9 +2152,9 @@ cat {report_file_alpha} {report_file_beta} > {report_file}""".format(
             [self.trimmomatic16S,
             self.merge_trimmomatic_stats16S,
             self.flash_pass1,
-            self.merge_flash_stats,
             self.ampliconLengthParser,
             self.flash_pass2,
+            self.merge_flash_stats,
             self.asva]
         ]
 
