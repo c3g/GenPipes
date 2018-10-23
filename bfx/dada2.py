@@ -45,10 +45,12 @@ Rscript $R_TOOLS/asva.R \\
   -d {designFile} \\
   -o {output_directory} \\
   -tr {trainset} \\
-  -tax {taxonomy}""".format(
+  -tax {taxonomy}\\
+  -p {pool_parameter}""".format(
         rawReadsFolder=rawReadsFolder,
         designFile=designFile,
         output_directory=output_directory,
         trainset=config.param('database', 'dada2_trainset'),
-        taxonomy=config.param('database', 'dada2_taxonomy')
+        taxonomy=config.param('database', 'dada2_taxonomy'),
+        pool_parameter=config.param('dada2', 'pool_parameter')
     ))
