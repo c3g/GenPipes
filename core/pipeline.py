@@ -337,8 +337,10 @@ class Pipeline(object):
         self.scheduler.submit(self)
 
         # Print a copy of sample JSONs for the genpipes dashboard
-        portal_output_dir = config.param('DEFAULT', 'portal_output_dir', required=False, type='dirpath')
+        portal_output_dir = config.param('DEFAULT', 'portal_output_dir', required=False)
         if self.args.json and portal_output_dir != "":
+            if not os.path.isdir(portal_output_dir):
+                raise Exception("Directory path \"" + portal_output_dir + "\" does not exist or is not a valid directory!")
             copy_commands = []
             for i, sample in enumerate(self.sample_list):
                 input_file = self.sample_paths[i]

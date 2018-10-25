@@ -139,6 +139,10 @@ build() {
 
   # RSeQC
   $PIP_PATH install --upgrade RSeQC
+
+  # For some reason, pysam installation is often broken at this step, therefore let's remove & re-install it
+  $PIP_PATH uninstall pysam
+  $PIP_PATH install --upgrade pysam
 }
 
 module_file() {
