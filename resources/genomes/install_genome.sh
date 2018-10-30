@@ -830,7 +830,7 @@ build_files() {
 }
 
 create_genome_ini_file() {
-  INI=$INSTALL_DIR/$SPECIES.$ASSEMBLY.ini
+  INI=$INSTALL_DIR/$SPECIES.$ASSEMBLY.${SOURCE}${VERSION}.ini
   echo "\
 [DEFAULT]
 scientific_name=$SPECIES
@@ -842,13 +842,11 @@ version=$VERSION" > $INI
 
   if [ ! -z "${DBSNP_VERSION:-}" ]
   then
+    mv $INI ${INI/ini/dbSNP${DBSNP_VERSION}.ini}
+    INI=${INI/ini/dbSNP${DBSNP_VERSION}.ini}
     echo "\
 dbsnp_version=$DBSNP_VERSION" >> $INI
   fi
-  if [ ! -z "${population_AF:-}" ]; then
-    echo -e "\npopulation_AF=$population_AF" >> $INI
-  fi
-
 }
 
 install_genome() {
