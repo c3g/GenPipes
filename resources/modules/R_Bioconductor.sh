@@ -1,5 +1,5 @@
 #!/bin/bash
-#set -e
+set -e
 umask 0002
 me=`basename $0`
 
@@ -222,7 +222,7 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
 
     ## Define the list of packages to standard packages to install.
     deps = c("affxparser", "affy", "affyio", "affyPLM", "akima", "allgown", "annotate", "AnnotationDbi", "AnnotationForge", "ape", "ash", "ASCAT",
-    "BatchExperiments", "BatchJobs", "batchtools", "beanplot", "Biobase", "BiocGenerics", "BiocInstaller", "bioDist", "biomaRt", "biomformat", "Biostrings", "biovizBase", "bit",
+    "ballgown", "BatchExperiments", "BatchJobs", "batchtools", "beanplot", "Biobase", "BiocGenerics", "BiocInstaller", "bioDist", "biomaRt", "biomformat", "Biostrings", "biovizBase", "bit",
     "bit64", "bitops", "boot", "brew", "BSgenome", "BSgenome.Hsapiens.UCSC.hg19", "bumphunter",
     "caTools", "charm", "charmData", "ChIPseeker", "circlize", "class", "cluster", "clusterStab", "clusterProfiler", "codetools", "colorspace", "ConsensusClusterPlus",
     "corpcor", "crlmm", "ctc", "cummeRbund",
@@ -264,6 +264,8 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
     biocLite(deps, lib=.Library, ask=FALSE)
     deps = setdiff(deps, rownames(installed.packages()))
     biocLite(deps, lib=.Library, ask=FALSE) # twice, just to make sure
+    deps = setdiff(deps, rownames(installed.packages()))
+    biocLite(deps, lib=.Library, ask=FALSE) # and why not a third time !
 
     ## Install Vennerable, since not yet in CRAN
     install.packages("Vennerable", repos="http://R-Forge.R-project.org", lib=.Library)
@@ -272,66 +274,36 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
     install.packages('rmarkdown', repos='http://cran.rstudio.org', lib=.Library)
 
     ## Sleuth : needs devtools and remotes to be installed (both done above) 
-    biocLite("pachterlab/sleuth")
+    biocLite("pachterlab/sleuth", lib=.Library, ask=FALSE)
 
     require(devtools)
     ## PopSV
     devtools::install_github("jmonlong/PopSV")
     ## ASCAT
     devtools::install_github("Crick-CancerGenomics/ascat/ASCAT")
-    ## ChIAnalysis (with its eric.utils dependency)
-    devtools::install_bitbucket("ericfournier2/sb_lab/eric.utils")
-    #devtools::install_github("ArnaudDroitLab/ChIAnalysis")
 EOF
 
-#echo "building C3G wrappers for executables..."
-#mkdir -p $INSTALL_DIR/lib64/R/bin/exec.wrap
-#cat > $INSTALL_DIR/lib64/R/bin/exec.wrap/R <<-EOF
-#/cvmfs/soft.mugqic/yum/centos7/1.0/lib64/ld-linux-x86-64.so.2 --library-path /cvmfs/soft.mugqic/yum/centos7/1.0/lib64:/cvmfs/soft.mugqic/yum/centos7/1.0/lib64/mysql:$INSTALL_DIR/lib64/R/lib $INSTALL_DIR/lib64/R/bin/exec/R \${args} \${@}  
-#EOF
-#sed -i "s,R_binary=\"\${R_HOME}\/bin\/exec\${R_ARCH}\/R\",R_binary=\"\${R_HOME}\/bin\/exec\${R_ARCH}.wrap\/R\"," $INSTALL_DIR/bin/R
-#sed -i "s,R_binary=\"\${R_HOME}\/bin\/exec\${R_ARCH}\/R\",R_binary=\"\${R_HOME}\/bin\/exec\${R_ARCH}.wrap\/R\"," $INSTALL_DIR/lib64/R/bin/R
-#for i in $INSTALL_DIR/bin/Rscript $INSTALL_DIR/lib64/R/bin/Rscript; do
-#  mv $i $i.raw;
-#  echo "$C3G_SYSTEM_LIBRARY/lib64/ld-linux-x86-64.so.2 --library-path $C3G_SYSTEM_LIBRARY/lib64:$C3G_SYSTEM_LIBRARY/lib64/mysql:$INSTALL_DIR/lib64/R/lib $i.raw \${@}" > $i;
-#  chmod 775 $i;
-#done
+echo "building C3G wrappers for executables..."
+mkdir -p $INSTALL_DIR/lib64/R/bin/exec.wrap
+cat > $INSTALL_DIR/lib64/R/bin/exec.wrap/R <<-EOF
+/cvmfs/soft.mugqic/yum/centos7/1.0/lib64/ld-linux-x86-64.so.2 --library-path /cvmfs/soft.mugqic/yum/centos7/1.0/lib64:/cvmfs/soft.mugqic/yum/centos7/1.0/lib64/mysql:$INSTALL_DIR/lib64/R/lib $INSTALL_DIR/lib64/R/bin/exec/R \${args} \${@}  
+EOF
+sed -i "s,R_binary=\"\${R_HOME}\/bin\/exec\${R_ARCH}\/R\",R_binary=\"\${R_HOME}\/bin\/exec\${R_ARCH}.wrap\/R\"," $INSTALL_DIR/bin/R
+sed -i "s,R_binary=\"\${R_HOME}\/bin\/exec\${R_ARCH}\/R\",R_binary=\"\${R_HOME}\/bin\/exec\${R_ARCH}.wrap\/R\"," $INSTALL_DIR/lib64/R/bin/R
+chmod 775 $INSTALL_DIR/lib64/R/bin/exec.wrap/R
+for i in $INSTALL_DIR/bin/Rscript $INSTALL_DIR/lib64/R/bin/Rscript; do
+  mv $i $i.raw;
+  echo "$C3G_SYSTEM_LIBRARY/lib64/ld-linux-x86-64.so.2 --library-path $C3G_SYSTEM_LIBRARY/lib64:$C3G_SYSTEM_LIBRARY/lib64/mysql:$INSTALL_DIR/lib64/R/lib $i.raw \${@}" > $i;
+  chmod 775 $i;
+done
 
 echo "Patching C3G executables..."
 for i in `find $INSTALL_DIR/ -type f -executable -exec file {} \; | grep ELF | cut -d":" -f1`; do
   if readelf -l $i | grep go.build > /dev/null
   then
     echo "GO Done" > /dev/null
-  elif [ ${i##*.} == "so" ]
-  then
-    $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-rpath $C3G_SYSTEM_LIBRARY/usr/lib64/ $i
   else
-    if [ ${i##*/} == "R" ] || [ ${i##*/} == "Rscript" ]
-    then
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libR.so $i
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libRblas.so $i
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libgomp.so.1 $i
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libpthread.so.0 $i
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libc.so.6 $i
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libgfortran.so.3 $i
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libm.so.6 $i
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libquadmath.so.0 $i
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libreadline.so.6 $i
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libtre.so.5 $i
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libpcre.so.1 $i
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed liblzma.so.5 $i
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libbz2.so.1 $i
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libz.so.1 $i
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed librt.so.1 $i
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libdl.so.2 $i
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libicuuc.so.50 $i
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libicui18n.so.50 $i
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libgcc_s.so.1 $i
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libtinfo.so.5 $i
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libicudata.so.50 $i
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libstdc++.so.6 $i
-    fi
-    $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-interpreter $C3G_SYSTEM_LIBRARY/lib64/ld-linux-x86-64.so.2 --set-rpath $C3G_SYSTEM_LIBRARY/usr/lib64/ $i
+    $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-rpath $C3G_SYSTEM_LIBRARY/usr/lib64/ $i
   fi
 done
 
