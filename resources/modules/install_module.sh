@@ -54,7 +54,7 @@ store_archive() {
 create_c3g_wrappers() {
   for i in `find $INSTALL_DIR/$SOFTWARE_DIR/ -type f -executable -exec file {} \; | grep ELF | grep -vP "\.so" | cut -d":" -f1`; do
     mv $i $i.raw;
-    echo "$C3G_SYSTEM_LIBRARY/lib64/ld-linux-x86-64.so.2 --library-path $C3G_SYSTEM_LIBRARY/lib64:$C3G_SYSTEM_LIBRARY/lib64/mysql $i.raw \${@}" > $i;
+    echo "$C3G_SYSTEM_LIBRARY/lib64/ld-linux-x86-64.so.2 --library-path $LIBDIR $i.raw \${@}" > $i;
   done
 }
 
@@ -65,9 +65,9 @@ patch_c3g_binaries() {
       echo "GO Done" > /dev/null
     elif [ ${i##*.} == "so" ] || [[ ${i##*/} =~ "so"*(\.[0-9]{1,2})*$ ]]
     then
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-rpath $C3G_SYSTEM_LIBRARY/usr/lib64/ $i
+      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-rpath $C3G_SYSTEM_LIBRARY/usr/$LIB $i
     else
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-interpreter $C3G_SYSTEM_LIBRARY/lib64/ld-linux-x86-64.so.2 --set-rpath $C3G_SYSTEM_LIBRARY/usr/lib64/ $i
+      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-interpreter $C3G_SYSTEM_LIBRARY/lib64/ld-linux-x86-64.so.2 --set-rpath $C3G_SYSTEM_LIBRARY/usr/$LIB $i
     fi
   done
 }
@@ -91,7 +91,23 @@ ARCHIVE_DIR=${!INSTALL_HOME}/archive
 MODULE_DIR=${!INSTALL_HOME}/modulefiles/`echo ${INSTALL_HOME,,} | sed 's/_install_home//'`/$SOFTWARE
 
 # Set path to C3G system libraries
-C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/yum/centos7/1.0
+if [ `lsb_release -i | cut -f 2` == "Ubuntu" ]
+then
+  echo "Ubuntu" > /dev/null
+  C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/apt/ubuntu16.04/1.0
+  LIB=lib
+  LIBDIR=$C3G_SYSTEM_LIBRARY/usr/$LIB:$INSTALL_DIR/$LIB/R/lib
+elif [ `lsb_release -i | cut -f 2` == "CentOS" ]
+then
+  echo "CentOS" > /dev/null
+  C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/yum/centos7/1.0
+  LIB=lib64
+  LIBDIR=$C3G_SYSTEM_LIBRARY/usr/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB/mysql:$INSTALL_DIR/$LIB/R/lib
+else
+  echo "*** ERROR ***"
+  echo "'"`lsb_release -i | cut -f 2`"' OS detected... should be either 'Ubuntu' neither 'CentOS'..."
+  exit 1
+fi
 
 echo "Installing $SOFTWARE version $VERSION in \$$INSTALL_HOME..."
 echo
