@@ -93,6 +93,7 @@ def create(pipeline, sample):
         # Then (re-)create it !!
         if pipeline.__class__.__name__ == "PacBioAssembly":
             json_hash = {
+                'version': '1.0.0',
                 'sample_name' : sample.name,
                 'readset' : [{
                     "name" : readset.name,
@@ -116,6 +117,7 @@ def create(pipeline, sample):
             }
         else :
             json_hash = {
+                'version': '1.0.0',
                 'sample_name' : sample.name,
                 'readset' : [{
                     "name" : readset.name,
