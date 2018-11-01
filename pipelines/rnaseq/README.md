@@ -45,7 +45,7 @@ usage: rnaseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                  [--report] [--clean] [-l {debug,info,warning,error,critical}]
                  [-d DESIGN] [-r READSETS] [-v]
 
-Version: 3.1.1-beta
+Version: 3.1.1
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
