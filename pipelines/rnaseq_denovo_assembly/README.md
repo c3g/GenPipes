@@ -70,7 +70,7 @@ usage: rnaseq_denovo_assembly.py [-h] [--help] [-c CONFIG [CONFIG ...]]
                                  [-l {debug,info,warning,error,critical}]
                                  [-d DESIGN] [-r READSETS] [-v]
 
-Version: 3.1.0
+Version: 3.1.1
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
@@ -108,6 +108,10 @@ optional arguments:
   -v, --version         show the version information and exit
 
 Steps:
+```
+![rnaseq_denovo_assembly workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_denovo_assembly.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_denovo_assembly.png)
+```
 ------
 1- picard_sam_to_fastq
 2- trimmomatic
@@ -134,13 +138,13 @@ Steps:
 23- differential_expression_filtered
 
 ```
-1- picard_sam_to_fastq
-----------------------
+picard_sam_to_fastq
+-------------------
 Convert SAM/BAM files from the input readset file into FASTQ format
 if FASTQ files are not already specified in the readset file. Do nothing otherwise.
 
-2- trimmomatic
---------------
+trimmomatic
+-----------
 Raw reads quality trimming and removing of Illumina adapters is performed using [Trimmomatic](http://www.usadellab.org/cms/index.php?page=trimmomatic).
 If an adapter FASTA file is specified in the config file (section 'trimmomatic', param 'adapter_fasta'),
 it is used first. Else, 'Adapter1' and 'Adapter2' columns from the readset file are used to create
@@ -153,92 +157,92 @@ This step takes as input files:
 1. FASTQ files from the readset file if available
 2. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
 
-3- merge_trimmomatic_stats
---------------------------
+merge_trimmomatic_stats
+-----------------------
 The trim statistics per readset are merged at this step.
 
-4- insilico_read_normalization_readsets
----------------------------------------
+insilico_read_normalization_readsets
+------------------------------------
 Normalize each readset, using the Trinity normalization utility.
 
-5- insilico_read_normalization_all
-----------------------------------
+insilico_read_normalization_all
+-------------------------------
 Merge all normalized readsets together and normalize the result, using the Trinity normalization utility.
 
-6- trinity
-----------
+trinity
+-------
 Create a de novo assembly from normalized readsets using [Trinity](http://trinityrnaseq.sourceforge.net/).
 
-7- exonerate_fastasplit
------------------------
+exonerate_fastasplit
+--------------------
 Split the Trinity assembly FASTA into chunks for further parallel BLAST annotations.
 
-8- blastx_trinity_uniprot
--------------------------
+blastx_trinity_uniprot
+----------------------
 Annotate Trinity FASTA chunks with Swiss-Prot and UniRef databases using [blastx](http://blast.ncbi.nlm.nih.gov/).
 
-9- blastx_trinity_uniprot_merge
--------------------------------
+blastx_trinity_uniprot_merge
+----------------------------
 Merge blastx Swiss-Prot and UniRef chunks results.
 
-10- transdecoder
-----------------
+transdecoder
+------------
 Identifies candidate coding regions within transcript sequences using [Transdecoder](http://transdecoder.github.io/).
 
-11- hmmer
----------
+hmmer
+-----
 Identifies protein domains using [HMMR](http://hmmer.janelia.org/).
 
-12- rnammer_transcriptome
--------------------------
+rnammer_transcriptome
+---------------------
 Identify potential rRNA transcripts using [RNAmmer](http://www.cbs.dtu.dk/cgi-bin/sw_request?rnammer).
 
-13- blastp_transdecoder_uniprot
--------------------------------
+blastp_transdecoder_uniprot
+---------------------------
 Search Transdecoder-predicted coding regions for sequence homologies on UniProt using [blastp](http://blast.ncbi.nlm.nih.gov/).
 
-14- signalp
------------
+signalp
+-------
 Predict signal peptides using [SignalP](http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?signalp).
 
-15- tmhmm
----------
+tmhmm
+-----
 Predict transmembrane regions using [TMHMM](http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?tmhmm).
 
-16- trinotate
--------------
+trinotate
+---------
 Perform transcriptome functional annotation and analysis using [Trinotate](http://trinotate.sourceforge.net/).
 All functional annotation data is integrated into a SQLite database and a whole annotation report is created.
 
-17- align_and_estimate_abundance_prep_reference
------------------------------------------------
+align_and_estimate_abundance_prep_reference
+-------------------------------------------
 Index Trinity FASTA file for further abundance estimation using [Trinity align_and_estimate_abundance.pl utility](http://trinityrnaseq.sourceforge.net/analysis/abundance_estimation.html).
 
-18- align_and_estimate_abundance
---------------------------------
+align_and_estimate_abundance
+----------------------------
 Estimate transcript abundance using [RSEM](http://deweylab.biostat.wisc.edu/rsem/) via
 [Trinity align_and_estimate_abundance.pl utility](http://trinityrnaseq.sourceforge.net/analysis/abundance_estimation.html).
 
-19- gq_seq_utils_exploratory_analysis_rnaseq_denovo
----------------------------------------------------
+gq_seq_utils_exploratory_analysis_rnaseq_denovo
+-----------------------------------------------
 Exploratory analysis using the gqSeqUtils R package.
 
-20- differential_expression
----------------------------
+differential_expression
+-----------------------
 Performs differential gene expression analysis using [DESEQ](http://bioconductor.org/packages/release/bioc/html/DESeq.html) and [EDGER](http://www.bioconductor.org/packages/release/bioc/html/edgeR.html).
 Merge the results of the analysis in a single csv file. Also, performs Gene Ontology analysis for RNA-Seq denovo Assembly using the Bioconductor's R package [goseq](http://www.bioconductor.org/packages/release/bioc/html/goseq.html).
 Generates GO annotations for differential genes and isoforms expression analysis, based on associated GOTERMS generated by trinotate.
 
-21- filter_annotated_components
--------------------------------
+filter_annotated_components
+---------------------------
 Filter high quality contigs based on values in trinotate annotations. Recreate a high quality contigs fasta file and run Assembly statistics using the gqSeqUtils R package.
 
-22- gq_seq_utils_exploratory_analysis_rnaseq_denovo_filtered
-------------------------------------------------------------
+gq_seq_utils_exploratory_analysis_rnaseq_denovo_filtered
+--------------------------------------------------------
 Exploratory analysis using the gqSeqUtils R package using a subset of filtered transcripts
 
-23- differential_expression_filtered
-------------------------------------
+differential_expression_filtered
+--------------------------------
 Differential Expression and GOSEQ analysis based on filtered transcripts and genes
 
 

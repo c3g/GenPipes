@@ -21,7 +21,6 @@
 
 import os
 import json
-from uuid import uuid4
 
 # MUGQIC Modules
 from core.config import *
@@ -65,7 +64,6 @@ def create(pipeline, sample):
             for line in ini_file.readlines():
                 for match in re.finditer(pattern, line):
                     general_info['assembly_source'] = match.groups()[0]
-        ini_file.close()
     if config.param("DEFAULT", 'dbsnp_version', required=False) : general_info['dbsnp_version'] = config.param("DEFAULT", 'dbsnp_version', required=False)
     general_info['server'] = config.param("DEFAULT", 'cluster_server', required=True)
     general_info['analysis_folder'] = pipeline.output_dir + "/"
@@ -88,7 +86,6 @@ def create(pipeline, sample):
 
     with open(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "VERSION"), 'r') as version_file:
         general_info['pipeline_version'] = re.sub("\n?$", "", version_file.readlines()[0])
-    version_file.close()
 
     # Check if 'force_jobs' is 'True'
     # Or    if the json file has not been created yet :
@@ -96,6 +93,7 @@ def create(pipeline, sample):
         # Then (re-)create it !!
         if pipeline.__class__.__name__ == "PacBioAssembly":
             json_hash = {
+                'version': '1.0.0',
                 'sample_name' : sample.name,
                 'readset' : [{
                     "name" : readset.name,
@@ -119,6 +117,7 @@ def create(pipeline, sample):
             }
         else :
             json_hash = {
+                'version': '1.0.0',
                 'sample_name' : sample.name,
                 'readset' : [{
                     "name" : readset.name,
@@ -170,7 +169,6 @@ def create(pipeline, sample):
     else :
         with open(os.path.join(pipeline.output_dir, "json", sample.json_file), 'r') as json_file:
             current_json_hash = json.load(json_file)
-        json_file.close()
 
         # Then check if information is up-to-date by comparing it with the previously retrieved informations
         for info_key in general_info.keys():
@@ -236,15 +234,8 @@ def create(pipeline, sample):
         os.makedirs(os.path.join(pipeline.output_dir, "json"))
 
     # Print to file
-    with open(os.path.join(pipeline.output_dir, "json", sample.json_file), 'w') as out_json:
+    filepath = os.path.join(pipeline.output_dir, "json", sample.json_file)
+    with open(filepath, 'w') as out_json:
         out_json.write(current_json)
-    out_json.close()
 
-    # Print a copy of it for the monitoring interface
-    portal_output_dir = config.param('DEFAULT', 'portal_output_dir', required=False, type='dirpath')
-    if portal_output_dir != '':
-        with open(os.path.join(portal_output_dir, os.getenv('USER') + '.' + uuid4().get_hex() + '.json'), 'w') as out_json:
-            out_json.write(current_json)
-        out_json.close()
-
-    return current_json
+    return filepath

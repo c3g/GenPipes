@@ -69,7 +69,7 @@ git checkout $VERSION
 VERSION=`git log --pretty=format:'%h' -n 1` # rename to pretty commit hash number
 
 # Compile
-make all
+make -j12 all
 
 ## Paths, mkdirs
 INSTALL_DIR=$INSTALL_DIR/$SOFTWARE-$VERSION

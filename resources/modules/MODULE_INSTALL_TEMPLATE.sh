@@ -24,7 +24,7 @@ build() {
 
   cd $SOFTWARE_DIR
   ./configure --prefix=$INSTALL_DIR/$SOFTWARE_DIR  ## TO BE ADDED AND MODIFIED IF NECESSARY
-  make  ## TO BE ADDED AND MODIFIED IF NECESSARY
+  make -j12  ## TO BE ADDED AND MODIFIED IF NECESSARY
   make install  ## TO BE ADDED IF NECESSARY
 
   # Install software

@@ -810,8 +810,8 @@ cp \\
             germline_output_vt = os.path.join(pair_directory, tumor_pair.name + ".varscan2.germline_loh.vt.vcf.gz")
 
             jobs.append(concat_jobs([
+                Job(samples=[tumor_pair.normal, tumor_pair.tumor]),
                 pipe_jobs([
-                    Job(samples=[tumor_pair.normal, tumor_pair.tumor]),
                     bcftools.concat(all_inputs, None),
                     tools.fix_varscan_output(None, None),
                     Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $4) } {print}'"),

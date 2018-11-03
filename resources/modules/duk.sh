@@ -19,7 +19,7 @@ cd $SOFTWARE-$VERSION
 echo "#include <cstring>" | cat - duk.cpp > duk.cpp2; mv duk.cpp2 duk.cpp
 echo "#include <stdlib.h>" | cat - parseOpts.cpp > parseOpts.cpp2; mv parseOpts.cpp2 parseOpts.cpp
 
-make
+make -j12
 
 # Add permissions and install software
 chmod -R 775 *

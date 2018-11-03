@@ -37,7 +37,7 @@ usage: hicseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                  -e {DpnII,HindIII,NcoI,MboI} [-t {hic,capture}] [-r READSETS]
                  [-v]
 
-Version: 3.1.0
+Version: 3.1.1
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
@@ -81,6 +81,10 @@ Steps:
 ------
 
 ----
+```
+![hicseq hic workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_hicseq_hic.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_hicseq_hic.png)
+```
 hic:
 1- samtools_bam_sort
 2- picard_sam_to_fastq
@@ -99,6 +103,10 @@ hic:
 15- create_hic_file
 16- multiqc_report
 ----
+```
+![hicseq capture workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_hicseq_capture.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_hicseq_capture.png)
+```
 capture:
 1- samtools_bam_sort
 2- picard_sam_to_fastq
@@ -119,18 +127,18 @@ capture:
 17- multiqc_report
 
 ```
-1- samtools_bam_sort
---------------------
+samtools_bam_sort
+-----------------
 Sorts bam by readname prior to picard_sam_to_fastq step in order to minimize memory consumption.
 If bam file is small and the memory requirements are reasonable, this step can be skipped.
 
-2- picard_sam_to_fastq
-----------------------
+picard_sam_to_fastq
+-------------------
 Convert SAM/BAM files from the input readset file into FASTQ format
 if FASTQ files are not already specified in the readset file. Do nothing otherwise.
 
-3- trimmomatic
---------------
+trimmomatic
+-----------
 Raw reads quality trimming and removing of Illumina adapters is performed using [Trimmomatic](http://www.usadellab.org/cms/index.php?page=trimmomatic).
 If an adapter FASTA file is specified in the config file (section 'trimmomatic', param 'adapter_fasta'),
 it is used first. Else, 'Adapter1' and 'Adapter2' columns from the readset file are used to create
@@ -143,75 +151,111 @@ This step takes as input files:
 1. FASTQ files from the readset file if available
 2. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
 
-4- merge_trimmomatic_stats
---------------------------
+merge_trimmomatic_stats
+-----------------------
 The trim statistics per readset are merged at this step.
 
-5- fastq_readName_Edit
-----------------------
+fastq_readName_Edit
+-------------------
 Removes the added /1 and /2 by picard's sam_to_fastq transformation to avoid issues with downstream software like HOMER
 
-6- hicup_align
---------------
+hicup_align
+-----------
 Paired-end Hi-C reads are truncated, mapped and filtered using HiCUP. The resulting bam file is filtered for Hi-C artifacts and
 duplicated reads. It is ready for use as input for downstream analysis.
 
 For more detailed information about the HICUP process visit: [HiCUP] (https://www.bioinformatics.babraham.ac.uk/projects/hicup/overview/)
 
-7- samtools_merge_bams
-----------------------
+samtools_merge_bams
+-------------------
 BAM readset files are merged into one file per sample. Merge is done using [samtools](http://samtools.sourceforge.net/).
 
 This step takes as input files the aligned bams/sams from the hicup_align step
 
-8- homer_tag_directory
-----------------------
+homer_tag_directory
+-------------------
 The bam file produced by HiCUP is used to create a tag directory using HOMER for further analysis that includes interaction matrix generation,
 compartments and identifying significant interactions.
 
 For more detailed information about the HOMER process visit: [HOMER] (http://homer.ucsd.edu/homer/interactions/index.html)
 
-9- interaction_matrices_Chr
----------------------------
+interaction_matrices_Chr
+------------------------
 IntraChromosomal interaction matrices are produced by Homer at resolutions defined in the ini config file and plotted by HiCPlotter.
 For more detailed information about the HOMER matrices visit: [HOMER matrices] (http://homer.ucsd.edu/homer/interactions/HiCmatrices.html)
 For more detailed information about HiCPlotter visit: [HiCPlotter] (https://github.com/kcakdemir/HiCPlotter)
 
-10- interaction_matrices_genome
--------------------------------
+interaction_matrices_genome
+---------------------------
 Genomewide interaction matrices are produced by Homer at resolutions defined in the ini config file
 For more detailed information about the HOMER matrices visit: [HOMER matrices] (http://homer.ucsd.edu/homer/interactions/HiCmatrices.html)
 For more detailed information about HiCPlotter visit: [HiCPlotter] (https://github.com/kcakdemir/HiCPlotter)
 
-11- identify_compartments
--------------------------
+identify_compartments
+---------------------
 Genomic compartments are identified using Homer at resolutions defined in the ini config file
 For more detailed information about the HOMER compartments visit: [HOMER compartments] (http://homer.ucsd.edu/homer/interactions/HiCpca.html)
 
-12- identify_TADs_TopDom
-------------------------
+identify_TADs_TopDom
+--------------------
 Topological associating Domains (TADs) are identified using TopDom at resolutions defined in the ini config file.
 For more detailed information about the TopDom visit: [TopDom] (https://www.ncbi.nlm.nih.gov/pubmed/26704975)
 
-13- identify_TADs_RobusTAD
---------------------------
+identify_TADs_RobusTAD
+----------------------
 Topological associating Domain (TAD) scores are calculated using RobusTAD for every bin in the genome.
 RobusTAD is resolution-independant and will use the first resolution in "resolution_TADs"  under [identify_TADs] in the ini file.
 For more detailed information about the RobusTAD visit: [RobusTAD] (https://github.com/rdali/RobusTAD)
 
-14- identify_peaks
-------------------
+identify_peaks
+--------------
 Significant intraChromosomal interactions (peaks) are identified using Homer.
 For more detailed information about the Homer peaks visit: [Homer peaks] (http://homer.ucsd.edu/homer/interactions/HiCinteractions.html)
 
-15- create_hic_file
--------------------
+create_hic_file
+---------------
 A .hic file is created per sample in order to visualize in JuiceBox, WashU epigenome browser or as input for other tools.
 For more detailed information about the JuiceBox visit: [JuiceBox] (http://www.aidenlab.org/software.html)
 
-16- multiqc_report
-------------------
+multiqc_report
+--------------
 A quality control report for all samples is generated.
 For more detailed information about the MultiQc visit: [MultiQc] (http://multiqc.info/)
+
+create_rmap_file
+----------------
+rmap file for Chicago capture analysis is created using the hicup digestion file.
+
+create_baitmap_file
+-------------------
+baitmap file for Chicago capture analysis is created using the created rmap file and the probe capture bed file.
+
+create_design_files
+-------------------
+design files (nperbin file (.npb), nbaitsperbin file (.nbpb), proxOE file (.poe)) for Chicago capture analysis are created using the rmap file and the baitmap file.
+
+create_input_files
+------------------
+input file (sample.chinput) for Chicago capture analysis is created using the rmap file, the baitmap file and the hicup aligned bam.
+
+runChicago
+----------
+Chicago is run on capture data. Chicago will filter capture hic artifacts and identify significant interactions. It will output data as a bed file and will also output SeqMonk and WashU tracks.
+For more detailed information about the Chicago, including how to interpret the plots, please visit: [Chicago] https://bioconductor.org/packages/release/bioc/vignettes/Chicago/inst/doc/Chicago.html
+
+runChicago_featureOverlap
+-------------------------
+Runs the feature enrichement of chicago significant interactions.
+For more detailed information about the Chicago, including how to interpret the plots, please visit: [Chicago] https://bioconductor.org/packages/release/bioc/vignettes/Chicago/inst/doc/Chicago.html
+
+bait_intersect
+--------------
+provided with a bed file, for example a bed of GWAS snps or features of interest, this method returns the lines in the bed file that intersect with the baits that have significant interactions.
+Input bed must have 4 columns (<chr> <start> <end> <annotation>) and must be tab separated.
+
+capture_intersect
+-----------------
+provided with a bed file, for example a bed of GWAS snps or features of interest, this method returns the lines in the bed file that intersect with the captured ends ("Other Ends") that have significant interactions.
+Input bed must have 4 columns (<chr> <start> <end> <annotation>) and must be tab separated.
 
 

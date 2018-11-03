@@ -33,9 +33,10 @@ import logging
 import os
 import re
 import textwrap
+from uuid import uuid4
 
 # MUGQIC Modules
-from config import *
+from config import config
 from job import *
 from scheduler import *
 from step import *
@@ -48,112 +49,123 @@ class Pipeline(object):
     def __init__(self):
         self._timestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
         self._args = self.argparser.parse_args()
-        if self.protocol == None :
-            step_list=self.steps
-        else :
-            pos=0
-            for i in range(0,len(self.protocol)):
+        if self.protocol is None:
+            step_list = self.steps
+        elif self.args.help:
+            step_list = []
+            for i in range(0, len(self.protocol)):
+                step_list = step_list + self.steps[i]
+            tmp_set_list = {}
+            step_list = [tmp_set_list.setdefault(step, step) for step in step_list if step not in tmp_set_list]
+        else:
+            pos = 0
+            for i in range(0, len(self.protocol)):
                 if self.protocol[i] == self.args.type:
-                    pos=i
-            step_list=self.steps[pos]
+                    pos = i
+            step_list = self.steps[pos]
         logging.basicConfig(level=getattr(logging, self.args.log.upper()))
 
         if self.args.help:
-            print """\
-[TOC]
+            print textwrap.dedent("""\
+              [TOC]
 
-{pipeline_doc}
+              {pipeline_doc}
 
-Usage
------
-```
-#!text
+              Usage
+              -----
+              ```
+              #!text
 
-{help}
-```
-{step_doc}
-""".format(
-            pipeline_doc=textwrap.dedent(self.__doc__) if self.__doc__ else "",
+              {help}
+              ```
+              {step_doc}
+            """).format(
+            pipeline_doc=textwrap.dedent(self.__doc__ or ""),
             help=self.argparser.format_help(),
-            overview=self.__doc__ if self.__doc__ else "",
-            step_doc="\n".join([str(idx + 1) + "- " + step.__name__ + "\n" + "-" * len(str(idx + 1) + "- " + step.__name__) + (textwrap.dedent(step.__doc__) if step.__doc__ else "") for idx, step in enumerate(step_list)])
+            overview=self.__doc__ or "",
+            #step_doc="\n".join([str(idx + 1) + "- " + step.__name__ + "\n" + "-" * len(str(idx + 1) + "- " + step.__name__) + (textwrap.dedent(step.__doc__) if step.__doc__ else "") for idx, step in enumerate(step_list)])
+            step_doc="\n".join([step.__name__ + "\n" + "-" * len(step.__name__) + (textwrap.dedent(step.__doc__) if step.__doc__ else "") for step in step_list])
             )
             self.argparser.exit()
 
         # Normal pipeline execution
+        if self.args.config:
+            config.parse_files(self.args.config)
         else:
-            if self.args.config:
-                config.parse_files(self.args.config)
+            self.argparser.error("argument -c/--config is required!")
+
+        # Create a config trace from merged config file values
+        with open(self.__class__.__name__ + ".config.trace.ini", 'wb') as config_trace:
+            config_trace.write(textwrap.dedent("""\
+              # {self.__class__.__name__} Config Trace
+              # Created on: {self.timestamp}
+              # From:
+              #   {config_files}
+              # DO NOT EDIT THIS AUTOMATICALLY GENERATED FILE - edit the master config files
+
+            """).format(config_files="\n#   ".join([config_file.name for config_file in self.args.config]), self=self))
+            config.write(config_trace)
+            config.filepath = os.path.abspath(config_trace.name)
+
+        self._output_dir = os.path.abspath(self.args.output_dir)
+        self._scheduler = create_scheduler(self.args.job_scheduler, self.args.config)
+
+        step_counter = collections.Counter(step_list)
+        duplicated_steps = [step.__name__ for step in step_counter if step_counter[step] > 1]
+        if duplicated_steps:
+            raise Exception("Error: pipeline contains duplicated steps: " + ", ".join(duplicated_steps) + "!")
+        else:
+            self._step_list = [Step(step) for step in step_list]
+
+        if self.args.steps:
+            if re.search("^\d+([,-]\d+)*$", self.args.steps):
+                self._step_range = [self.step_list[i - 1] for i in parse_range(self.args.steps)]
             else:
-                self.argparser.error("argument -c/--config is required!")
+                raise Exception("Error: step range \"" + self.args.steps +
+                    "\" is invalid (should match \d+([,-]\d+)*)!")
+        else:
+            self.argparser.error("argument -s/--steps is required!")
 
-            # Create a config trace from merged config file values
-            with open(self.__class__.__name__ + ".config.trace.ini", 'wb') as config_trace:
-                config_trace.write("""\
-# {self.__class__.__name__} Config Trace
-# Created on: {self.timestamp}
-# From:
-#   {config_files}
-# DO NOT EDIT THIS AUTOMATICALLY GENERATED FILE - edit the master config files
+        self._sample_list = []
+        self._sample_paths = []
 
-""".format(config_files="\n#   ".join([config_file.name for config_file in self.args.config]), self=self))
-                config.write(config_trace)
-                config.filepath = os.path.abspath(config_trace.name)
-
-            self._output_dir = os.path.abspath(self.args.output_dir)
-            self._scheduler = create_scheduler(self.args.job_scheduler, self.args.config)
-
-            step_counter = collections.Counter(step_list)
-            duplicated_steps = [step.__name__ for step in step_counter if step_counter[step] > 1]
-            if duplicated_steps:
-                raise Exception("Error: pipeline contains duplicated steps: " + ", ".join(duplicated_steps) + "!")
-            else:
-                self._step_list = [Step(step) for step in step_list]
-
-            if self.args.steps:
-                if re.search("^\d+([,-]\d+)*$", self.args.steps):
-                    self._step_range = [self.step_list[i - 1] for i in parse_range(self.args.steps)]
-                else:
-                    raise Exception("Error: step range \"" + self.args.steps +
-                        "\" is invalid (should match \d+([,-]\d+)*)!")
-            else:
-                self.argparser.error("argument -s/--steps is required!")
-
-            # For job reporting, all jobs must be created first, no matter whether they are up to date or not
-            if self.args.report:
-                self._force_jobs = True
-                self.create_jobs()
-                self.report_jobs()
-            # For job cleaning, all jobs must be created first, no matter whether they are up to date or not
-            elif self.args.clean:
-                self._force_jobs = True
-                self.create_jobs()
-                self.clean_jobs()
-            else:
-                self._force_jobs = self.args.force
-                self.create_jobs()
-                self.submit_jobs()
+        # For job reporting, all jobs must be created first, no matter whether they are up to date or not
+        if self.args.report:
+            self._force_jobs = True
+            self.create_jobs()
+            self.report_jobs()
+        # For job cleaning, all jobs must be created first, no matter whether they are up to date or not
+        elif self.args.clean:
+            self._force_jobs = True
+            self.create_jobs()
+            self.clean_jobs()
+        else:
+            self._force_jobs = self.args.force
+            self.create_jobs()
+            self.submit_jobs()
 
     # Pipeline command line arguments parser
     @property
     def argparser(self):
-        if self.protocol == None :
-            steps="\n".join([str(idx + 1) + "- " + step.__name__  for idx, step in enumerate(self.steps)])
-        else :
-            steps=""
-            for i in range(0,len(self.protocol)):
-                steps+="\n----\n"+self.protocol[i]+":\n"+"\n".join([str(idx + 1) + "- " + step.__name__  for idx, step in enumerate(self.steps[i])])
+        if self.protocol is None:
+            steps = "\n".join([str(idx + 1) + "- " + step.__name__  for idx, step in enumerate(self.steps)])
+        else:
+            steps = ""
+            for i in range(0, len(self.protocol)):
+                steps += "\n----\n"+self.protocol[i]+":\n"+"\n".join([str(idx + 1) + "- " + step.__name__  for idx, step in enumerate(self.steps[i])])
+
         if not hasattr(self, "_argparser"):
-            epilog = """\
-Steps:
-------
-{steps}
-""".format(
-            steps=steps
-            )
+            epilog = textwrap.dedent("""\
+                Steps:
+                ------
+                {steps}
+            """).format(steps=steps)
 
             # Create ArgumentParser with numbered step list and description as epilog
-            self._argparser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, epilog=epilog, conflict_handler='resolve')
+            self._argparser = argparse.ArgumentParser(
+                    formatter_class=argparse.RawDescriptionHelpFormatter,
+                    epilog=epilog,
+                    conflict_handler='resolve')
 
             # Common options for all pipelines
             self._argparser.add_argument("--help", help="show detailed description of pipeline and steps", action="store_true")
@@ -210,6 +222,14 @@ Steps:
     @property
     def step_range(self):
         return self._step_range
+
+    @property
+    def sample_list(self):
+        return self._sample_list
+
+    @property
+    def sample_paths(self):
+        return self._sample_paths
 
     @property
     def jobs(self):
@@ -277,7 +297,6 @@ Steps:
         return dependency_jobs
 
     def create_jobs(self):
-        sample_list = []
         for step in self.step_range:
             log.info("Create jobs for step " + step.name + "...")
             jobs = step.create_jobs()
@@ -302,20 +321,40 @@ Steps:
                     step.add_job(job)
                     if job.samples:
                         for sample in job.samples:
-                            if sample not in sample_list : sample_list.append(sample)
+                            if sample not in self.sample_list:
+                                self.sample_list.append(sample)
 
             log.info("Step " + step.name + ": " + str(len(step.jobs)) + " job" + ("s" if len(step.jobs) > 1 else "") + " created" + ("" if step.jobs else "... skipping") + "\n")
 
         # Now create the json dumps for all the samples if not already done
         if self.args.json:
-            for sample in sample_list:
-                if sample.json_dump == "":
-                    sample.json_dump = jsonator.create(self, sample)
+            for sample in self.sample_list:
+                self.sample_paths.append(jsonator.create(self, sample))
 
         log.info("TOTAL: " + str(len(self.jobs)) + " job" + ("s" if len(self.jobs) > 1 else "") + " created" + ("" if self.jobs else "... skipping") + "\n")
 
     def submit_jobs(self):
         self.scheduler.submit(self)
+
+        # Print a copy of sample JSONs for the genpipes dashboard
+        portal_output_dir = config.param('DEFAULT', 'portal_output_dir', required=False)
+        if self.args.json and portal_output_dir != "":
+            if not os.path.isdir(portal_output_dir):
+                raise Exception("Directory path \"" + portal_output_dir + "\" does not exist or is not a valid directory!")
+            copy_commands = []
+            for i, sample in enumerate(self.sample_list):
+                input_file = self.sample_paths[i]
+                output_file = os.path.join(portal_output_dir, '$USER.' + sample.name + '.' + uuid4().get_hex() + '.json')
+                copy_commands.append("cp \"{input_file}\" \"{output_file}\"".format(
+                    input_file=input_file, output_file=output_file))
+
+            print(textwrap.dedent("""
+                #------------------------------------------------------------------------------
+                # Print a copy of sample JSONs for the genpipes dashboard
+                #------------------------------------------------------------------------------
+                {copy_commands}
+            """).format(copy_commands='\n'.join(copy_commands)))
+
 
     def report_jobs(self, output_dir=None):
         if not output_dir:
@@ -381,6 +420,7 @@ pandoc \\
         for removable_file in list(collections.OrderedDict.fromkeys(abspath_removable_files)):
             if os.path.exists(removable_file):
                 print("rm -rf " + removable_file)
+
 
 # Return a range list given a string.
 # e.g. parse_range('1,3,5-12') returns [1, 3, 5, 6, 7, 8, 9, 10, 11, 12]
