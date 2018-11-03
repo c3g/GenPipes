@@ -1370,7 +1370,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
     def varscan_per_region(self):
         """
-	Call varscan (mpileup2cns) on the mpileup file of each chromosome region
+        Call varscan (mpileup2cns) on the mpileup file of each chromosome region
         """
 
         jobs = []
@@ -1381,7 +1381,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         vcf_sample_list = os.path.join("variants", "samples.list")
         samples_list = [sample.name for sample in self.samples]
 
-	jobs.append(concat_jobs([
+        jobs.append(concat_jobs([
             Job(command="mkdir -p variants"),
             Job(input_files=input_bams, output_files=[vcf_sample_list], command='echo -e "' + "\\n".join(samples_list)+'" > ' + vcf_sample_list),
             ],name="create_sample_name"))
@@ -1398,16 +1398,18 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
         else:
             for region in self.generate_approximate_windows(nb_jobs):
-                if not ('chrUn' in region or 'random' in region or 'EBV' in region):
-                        vcf_prefix = os.path.join(output_directory, "allSamples." + region + ".varscan.vcf")
-			jobs.append(concat_jobs([
-			    Job(input_files=[vcf_sample_list], command="mkdir -p " + output_directory, samples=self.samples),
-			    pipe_jobs([
-				samtools.mpileup(input_bams, None, config.param('varscan_per_region', 'mpileup_other_options'), region),
-				varscan.mpileupcns("-", vcf_prefix, vcf_sample_list, config.param('varscan_per_region', 'other_options'))]),
-                            Job(output_files=[vcf_prefix + ".gz"], module_entries=[['varscan_per_region','module_tabix']], command="bgzip -f " + vcf_prefix),
-                            Job(module_entries=[['varscan_per_region','module_tabix']], command="tabix " + vcf_prefix + ".gz" + " -p vcf")
-			    ], name="varscan_per_region.allSamples." + re.sub(":", "_", region)))
+		vcf_prefix = os.path.join(output_directory, "allSamples." + region + ".varscan.vcf")
+		jobs.append(concat_jobs([
+		    Job(input_files=[vcf_sample_list], command="mkdir -p " + output_directory, samples=self.samples),
+		    pipe_jobs([
+			samtools.mpileup(input_bams, None, config.param('varscan_per_region', 'mpileup_other_options'), region),
+			varscan.mpileupcns("-", vcf_prefix, vcf_sample_list, config.param('varscan_per_region', 'other_options'))])
+		    ], name="varscan_per_region.allSamples." + re.sub(":", "_", region)))
+
+		jobs.append(concat_jobs([
+		    Job(input_files=[vcf_prefix],output_files=[vcf_prefix + ".gz"], module_entries=[['varscan_per_region','module_tabix']], command="bgzip -f " + vcf_prefix),
+		    Job(module_entries=[['varscan_per_region','module_tabix']], command="tabix " + vcf_prefix + ".gz" + " -p vcf")
+		    ], name="varscan_per_region_compress.allSamples." + re.sub(":", "_", region)))
 
         return jobs
 
@@ -1422,7 +1424,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         if nb_jobs == 1:
             inputs = ["variants/rawVarscan/allSamples.varscan.vcf.gz"]
         else:
-	    inputs = ["variants/rawVarscan/allSamples." + region + ".varscan.vcf.gz" for region in self.generate_approximate_windows(nb_jobs) if not ('chrUn' in region or 'random' in region or 'EBV' in region)]
+            inputs = ["variants/rawVarscan/allSamples." + region + ".varscan.vcf.gz" for region in self.generate_approximate_windows(nb_jobs)]
         output_file = "variants/allSamples.merged.varscan.vcf"
 
         jobs.append(concat_jobs([
@@ -1452,14 +1454,13 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
         else:
             for region in self.generate_approximate_windows(nb_jobs):
-                if not ('chrUn' in region or 'random' in region or 'EBV' in region):
-                        output_vcf = os.path.join(output_directory, "allSamples." + region + ".freebayes.vcf")
-                        jobs.append(concat_jobs([
-                            Job(command="mkdir -p " + output_directory, samples=self.samples),
-                            freebayes.freebayes_varcall(input_bams, output_vcf, region),
-                            Job(module_entries=[['freebayes_per_region','module_tabix']], output_files=[output_vcf + ".gz"], command="bgzip -f " + output_vcf),
-                            Job(module_entries=[['freebayes_per_region','module_tabix']], command="tabix " + output_vcf + ".gz" + " -p vcf")
-                            ], name="freebayes_per_region.allSamples." + re.sub(":", "_", region)))
+                output_vcf = os.path.join(output_directory, "allSamples." + region + ".freebayes.vcf")
+                jobs.append(concat_jobs([
+                    Job(command="mkdir -p " + output_directory, samples=self.samples),
+                    freebayes.freebayes_varcall(input_bams, output_vcf, region),
+                    Job(module_entries=[['freebayes_per_region','module_tabix']], output_files=[output_vcf + ".gz"], command="bgzip -f " + output_vcf),
+                    Job(module_entries=[['freebayes_per_region','module_tabix']], command="tabix " + output_vcf + ".gz" + " -p vcf")
+                    ], name="freebayes_per_region.allSamples." + re.sub(":", "_", region)))
 
         return jobs
 
@@ -1474,7 +1475,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         if nb_jobs == 1:
             inputs = ["variants/rawFreebayes/allSamples.freebayes.vcf"]
         else:
-            inputs = ["variants/rawFreebayes/allSamples." + region + ".freebayes.vcf.gz" for region in self.generate_approximate_windows(nb_jobs) if not ('chrUn' in region or 'random' in region or 'EBV' in region)]
+            inputs = ["variants/rawFreebayes/allSamples." + region + ".freebayes.vcf.gz" for region in self.generate_approximate_windows(nb_jobs)]
         output_file = "variants/allSamples.merged.freebayes.vcf"
 
         jobs.append(concat_jobs([
@@ -1503,7 +1504,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
     def split_multiSampleVCF(self):
         """
-        Divide the multi-sample variants/allSamples.hc.vqsr.vcf and variants/allSamples.hc.vcf.bgz files into single sample files
+        Divide the multi-sample VCF files into family-based or single sample VCF files
         """
 
         jobs = []
@@ -1638,7 +1639,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                     gemini.vcfanno(multianno_norm_file, multianno_anno_file), 
                     gemini.vcf2db(multianno_anno_file, gem_db),
                     Job(module_entries=[['gemini_annotations','module_tabix']], command="tabix -p vcf " + multianno_anno_file)
-                ], name="annovar_annotation." + family_id))
+                ], name="gemini_annotation." + family_id))
 
         else:
             for sample in self.samples:
@@ -1657,7 +1658,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                     pipe_jobs([
                         bcftools.annotate(input_sample_ensembleVCF, None),
                         Job(command="grep -v -P '^#' -  | cut -f 1-10 | awk '{gsub (\"chr\",\"\");print $0;}'"),
-			annovar.table_annovar("-", gemdir_sample_prefix, gemdir_sample_prefix + ".hg38_multianno.vcf")
+                        annovar.table_annovar("-", gemdir_sample_prefix, gemdir_sample_prefix + ".hg38_multianno.vcf")
                     ]), 
                     Job(module_entries=[['gemini_annotations','module_tabix']], command="tabix -H " + input_sample_ensembleVCF + " | head -n -1 > " + temp_file),
                     Job(command="cat " + config.param('table_annovar','annovar_header') + " >> " + temp_file),
@@ -1672,7 +1673,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                     gemini.vcfanno(multianno_norm_file, multianno_anno_file),
                     gemini.vcf2db(multianno_anno_file, gem_db),
                     Job(module_entries=[['gemini_annotations','module_tabix']], command="tabix -p vcf " + multianno_anno_file)
-                ], name="annovar_annotation." + sample.name))
+                ], name="gemini_annotation." + sample.name))
 
         return jobs
 
