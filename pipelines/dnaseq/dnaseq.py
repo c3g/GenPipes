@@ -1632,83 +1632,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
         return jobs
 
-    def gemini_annotation(self):
-        """
-        Annotate the ensemble vcf file with Gemini
-        """
-
-        jobs = []
-
-        if self.family_info:
-            for family_id in self.family_info:
-                out_dir = os.path.join("variants", "family_" + family_id)
-                input_family_ensembleVCF = os.path.join(out_dir, family_id + ".ensemble.out.vcf.gz")
-                gemini_dir = os.path.join(out_dir, "gemini")
-                gemdir_fam_prefix = os.path.join(gemini_dir, family_id)
-                temp_file = os.path.join(gemini_dir, "temp.txt")
-                multianno_file = gemdir_fam_prefix + ".hg38_multianno.vcf"
-                multianno_norm_file = gemdir_fam_prefix + ".hg38_multianno.norm.vcf.gz"
-                multianno_anno_file = gemdir_fam_prefix + ".hg38_multianno.anno.vcf.gz"
-                gem_db = gemdir_fam_prefix + ".db"
-
-                jobs.append(concat_jobs([
-                    Job(command="mkdir -p " + gemini_dir),
-                    pipe_jobs([
-                        bcftools.annotate(input_family_ensembleVCF, None),
-                        Job(command="grep -v -P '^#' -  | cut -f 1-10 | awk '{gsub (\"chr\",\"\");print $0;}'"),
-                        annovar.table_annovar("-", gemdir_fam_prefix, gemdir_fam_prefix + ".hg38_multianno.vcf")
-                    ]),
-                    Job(module_entries=[['gemini_annotations','module_tabix']], command="tabix -H " + input_family_ensembleVCF + " | head -n -1 > " + temp_file),
-                    Job(command="cat " + config.param('table_annovar','annovar_header') + " >> " + temp_file),
-                    Job(module_entries=[['gemini_annotations','module_tabix']], command="tabix -H " + input_family_ensembleVCF + " >> " + temp_file),
-                    Job(command="paste " + multianno_file + " <(zcat " + input_family_ensembleVCF + " | grep -v -P \"^#\" | uniq -c | awk '{if (1 == 1) print $0}' | cut -f 11-) >> " + temp_file),
-                    pipe_jobs([
-                        Job(command="awk '{ if($0 !~ /^#/) print \"chr\"$0; else if(match($0,/(##contig=<ID=)(.*)/,m)) print m[1]\"chr\"m[2]; else print $0 }' " + temp_file),
-                        Job(command="bgzip -c > " + multianno_file + ".gz") 
-                    ]),
-                    Job(module_entries=[['gemini_annotations','module_tabix']], command="tabix -p vcf " + multianno_file + ".gz"),
-                    Job([multianno_file], [multianno_norm_file], command="sh " + config.param('gemini_annotations','gemini_script') + " " + multianno_file + ".gz all 16 " + gemini_dir),
-                    gemini.vcfanno(multianno_norm_file, multianno_anno_file), 
-                    gemini.vcf2db(multianno_anno_file, gem_db),
-                    Job(module_entries=[['gemini_annotations','module_tabix']], command="tabix -p vcf " + multianno_anno_file)
-                ], name="gemini_annotation." + family_id))
-
-        else:
-            for sample in self.samples:
-                out_dir = os.path.join("variants", sample.name)
-                input_sample_ensembleVCF = os.path.join(out_dir, sample.name + ".ensemble.out.vcf.gz")
-                gemini_dir = os.path.join(out_dir, "gemini")
-                gemdir_sample_prefix = os.path.join(gemini_dir, sample.name)
-                temp_file = os.path.join(gemini_dir, "temp.txt")
-                multianno_file = gemdir_sample_prefix + ".hg38_multianno.vcf"
-                multianno_norm_file = gemdir_sample_prefix + ".hg38_multianno.norm.vcf.gz"
-                multianno_anno_file = gemdir_sample_prefix + ".hg38_multianno.anno.vcf.gz"
-                gem_db = gemdir_sample_prefix + ".db"
-
-                jobs.append(concat_jobs([
-                    Job(command="mkdir -p " + gemini_dir),
-                    pipe_jobs([
-                        bcftools.annotate(input_sample_ensembleVCF, None),
-                        Job(command="grep -v -P '^#' -  | cut -f 1-10 | awk '{gsub (\"chr\",\"\");print $0;}'"),
-                        annovar.table_annovar("-", gemdir_sample_prefix, gemdir_sample_prefix + ".hg38_multianno.vcf")
-                    ]), 
-                    Job(module_entries=[['gemini_annotations','module_tabix']], command="tabix -H " + input_sample_ensembleVCF + " | head -n -1 > " + temp_file),
-                    Job(command="cat " + config.param('table_annovar','annovar_header') + " >> " + temp_file),
-                    Job(module_entries=[['gemini_annotations','module_tabix']], command="tabix -H " + input_sample_ensembleVCF + " >> " + temp_file),
-                    Job(command="paste " + multianno_file + " <(zcat " + input_sample_ensembleVCF + " | grep -v -P \"^#\" | uniq -c | awk '{if (1 == 1) print $0}' | cut -f 11-) >> " + temp_file),
-                    pipe_jobs([
-                        Job(command="awk '{ if($0 !~ /^#/) print \"chr\"$0; else if(match($0,/(##contig=<ID=)(.*)/,m)) print m[1]\"chr\"m[2]; else print $0 }' " + temp_file),
-                        Job(command="bgzip -c > " + multianno_file + ".gz")
-                    ]),
-                    Job(module_entries=[['gemini_annotations','module_tabix']], command="tabix -p vcf " + multianno_file + ".gz"),
-                    Job([multianno_file], [multianno_norm_file], command="sh " + config.param('gemini_annotations','gemini_script') + " " + multianno_file + ".gz all 16 " + gemini_dir),
-                    gemini.vcfanno(multianno_norm_file, multianno_anno_file),
-                    gemini.vcf2db(multianno_anno_file, gem_db),
-                    Job(module_entries=[['gemini_annotations','module_tabix']], command="tabix -p vcf " + multianno_anno_file)
-                ], name="gemini_annotation." + sample.name))
-
-        return jobs
-
 
     @property
     def steps(self):
@@ -1804,8 +1727,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             self.merge_filter_bcf,
             self.vt,
             self.split_multiSampleVCF,
-            self.bcbio_ensemble,
-            self.gemini_annotation]
+            self.bcbio_ensemble]
         ]
 
 if __name__ == '__main__':
