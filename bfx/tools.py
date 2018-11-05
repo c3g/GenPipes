@@ -632,7 +632,7 @@ bash FastqReadNameEdit.sh \\
         removable_files = [fastq + ".edited.gz"]
     )
 
-def sh_create_rmap(genome_digest_input, rmap_output):
+def sh_create_rmap(genome_digest_input, rmap_output, job_name):
     return Job(
         [genome_digest_input],
         [rmap_output],
@@ -646,13 +646,13 @@ bash createRmapFile.sh \\
             infile=genome_digest_input,
             outfile=rmap_output
         ),
-        name = "create_rmap_file." + self.enzyme
+        name=job_name
     )
 
 
 def sh_create_baitmap(bait, sorted_bait, annotation, output):
     return Job(
-        [input],
+        [output + ".tmp", bait],
         [output],
         [
             ['DEFAULT', 'module_mugqic_tools']

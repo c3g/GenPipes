@@ -564,7 +564,7 @@ class HicSeq(common.Illumina):
 
         job = concat_jobs([
             Job(command="mkdir -p " + self.output_dirs['chicago_input_files']),
-            tools.sh_create_rmap(input_file, output),
+            tools.sh_create_rmap(input_file, output, "create_rmap_file." + self.enzyme),
             bedops.sort_bed(output, sorted_output)
         ])
         job.name = "create_rmap_file." + os.path.basename(input_file)
