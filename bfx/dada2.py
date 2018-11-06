@@ -26,6 +26,7 @@ import os
 from core.config import *
 from core.job import *
 def dada2(
+    inputs,
     rawReadsFolder,
     designFile,
     output_directory,
@@ -33,7 +34,7 @@ def dada2(
     ):
 
     return  Job(
-        [rawReadsFolder, ampliconLengthFile],
+        [inputs, ampliconLengthFile],
         [output_directory],
         [
             ['dada2','module_R'],

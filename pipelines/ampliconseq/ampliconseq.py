@@ -2052,59 +2052,43 @@ cat {report_file_alpha} {report_file_beta} > {report_file}""".format(
         jobs = []
 
         #Create folders in the output folder
-        mainPath=os.getcwd()
-        output_directory = mainPath + "/dada2_Analysis"
-        #output_directory = os.path.join("dada2_Analysis")
-        checkTrimmo = mainPath + "/trim"
-        lnkRawReadsFolder = os.path.join(output_directory, "trim")
+        dada2_directory = "dada2_Analysis"
+        lnkRawReadsFolder = os.path.join(dada2_directory, "trim")
         ampliconLengthFile = os.path.join("metrics/FlashLengths.tsv")
-        #if not os.path.exists(ampliconLengthFile):
-        #    raise Exception("trim/metrics/FlashLengths.tsv file not found. Step ampliconLengthParser is necessary for dada2 to run. Be sure to run it!")
-        if not os.path.exists(output_directory):
-            os.makedirs(output_directory)
-        if not os.path.exists(lnkRawReadsFolder):
-            os.makedirs(lnkRawReadsFolder)
-        #We'll link the readset fastq files into the raw_reads folder just created
-        if os.path.exists(checkTrimmo):
-            for readset in self.readsets:
-                readSetPrefix = os.path.join(lnkRawReadsFolder, readset.name)
-                trimmedReadsR1 = os.path.join(mainPath,"trim", readset.sample.name, readset.name + ".trim.pair1.fastq.gz")
-                trimmedReadsR2 = os.path.join(mainPath,"trim", readset.sample.name, readset.name + ".trim.pair2.fastq.gz")
-                if readset.run_type == "PAIRED_END":
-                    left_or_single_reads = readSetPrefix + ".pair1.fastq.gz"
-                    right_reads = readSetPrefix + ".pair2.fastq.gz"
-                    os.system("ln -nsf " + trimmedReadsR1 + " " + left_or_single_reads)
-                    os.system("ln -nsf " + trimmedReadsR2 + " " + right_reads)
-                #single reads will mainly be for PacBio CCS although I didn't test it yet
-                elif readset.run_type == "SINGLE_END":
-                    left_or_single_reads = readSetPrefix + ".single.fastq.gz"
-                    right_reads = ""
-                    os.system("ln -nsf " + trimmedReadsR1 + " " + left_or_single_reads)
-                else:
-                    raise Exception("Error: run type \"" + readset.run_type +
-                    "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
-        else:
-            for readset in self.readsets:
-                readSetPrefix = os.path.join(lnkRawReadsFolder, readset.name)
-                trimmedReadsR1 = os.path.join(mainPath,"trim", readset.sample.name, readset.name + ".trim.pair1.fastq.gz")
-                trimmedReadsR2 = os.path.join(mainPath,"trim", readset.sample.name, readset.name + ".trim.pair2.fastq.gz")
-                if readset.run_type == "PAIRED_END":
-                    left_or_single_reads = readSetPrefix + ".pair1.fastq.gz"
-                    right_reads = readSetPrefix + ".pair2.fastq.gz"
-                    os.system("ln -nsf " + trimmedReadsR1 + " " + left_or_single_reads)
-                    os.system("ln -nsf " + trimmedReadsR2 + " " + right_reads)
-                #single reads will mainly be for PacBio CCS although I didn't test it yet
-                elif readset.run_type == "SINGLE_END":
-                    left_or_single_reads = readSetPrefix + ".single.fastq.gz"
-                    right_reads = ""
-                    os.system("ln -nsf " + readset.fastq1 + " " + left_or_single_reads)
-                else:
-                    raise Exception("Error: run type \"" + readset.run_type +
-                    "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
 
-        dada2_job = dada2.dada2(lnkRawReadsFolder, designFile, output_directory, ampliconLengthFile)
+        #We'll link the readset fastq files into the raw_reads folder just created
+        raw_reads_jobs = []
+        dada2_inputs = []
+        for readset in self.readsets:
+            readSetPrefix = os.path.join(lnkRawReadsFolder, readset.name)
+            trimmedReadsR1 = os.path.join("trim", readset.sample.name, readset.name + ".trim.pair1.fastq.gz")
+            trimmedReadsR2 = os.path.join("trim", readset.sample.name, readset.name + ".trim.pair2.fastq.gz")
+            if readset.run_type == "PAIRED_END":
+                left_or_single_reads = readSetPrefix + ".pair1.fastq.gz"
+                right_reads = readSetPrefix + ".pair2.fastq.gz"
+                raw_reads_jobs.append(
+                    Job([trimmedReadsR1], [left_or_single_reads], command="ln -nsf " + trimmedReadsR1 + " " + left_or_single_reads),
+                    Job([trimmedReadsR2], [right_reads], command="ln -nsf " + trimmedReadsR2 + " " + rigth_reads)
+                )
+                dada2_inputs.append(left_or_single_reads)
+                dada2_inputs.append(right_reads)
+            #single reads will mainly be for PacBio CCS although I didn't test it yet
+            elif readset.run_type == "SINGLE_END":
+                left_or_single_reads = readSetPrefix + ".single.fastq.gz"
+                right_reads = ""
+                raw_reads_jobs.append(
+                    Job([trimmedReadsR1], [left_or_single_reads], command="ln -nsf " + trimmedReadsR1 + " " + left_or_single_reads),
+                )
+                dada2_inputs.append(left_or_single_reads)
+            else:
+                raise Exception("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+
+        dada2_job = dada2.dada2(dada2_inputs, lnkRawReadsFolder, designFile, output_directory, ampliconLengthFile)
 
         jobs.append(concat_jobs([
+            Job(command="mkdir -p " + lnkRawReadsFolder),
+            raw_reads_jobs,
             dada2_job,
         ], name="dada2.run"))
 
