@@ -54,7 +54,7 @@ git commit -a -m "Version bump to 3.1.1"
 git archive --format=tar --prefix=genpipes-3.1.1/ 3.1.1 | gzip > genpipes-3.1.1.tar.gz
 
 # Upload this archive in
-https://bitbucket.org/mugqic/mugqic_pipelines/downloads
+https://bitbucket.org/mugqic/genpipes/downloads
 
 # Version bump the value. Until the next release, add '-beta' e.g. 3.1.2-beta
 vim VERSION
