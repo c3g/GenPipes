@@ -1389,7 +1389,7 @@ pandoc --to=markdown \\
             job.samples = self.samples
 
             # Create a job that cleans the generated OTU_data.txt i.e. removes the lines with characters
-            jobClean = tools.clean_otu([heatmap_otu_data_R])
+            jobClean = tools.clean_otu(heatmap_otu_data_R)
 
             jobR = Job(
                 [heatmap_script, heatmap_otu_data_R, heatmap_otu_name_R, heatmap_otu_tax_R],
