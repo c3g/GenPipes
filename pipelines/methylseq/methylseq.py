@@ -197,6 +197,7 @@ pandoc --to=markdown \\
             alignment_directory = os.path.join("alignment", readset.sample.name)
             input_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
             output_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.UMI.bam")
+            output_bai = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.UMI.bai")
             input_umi = readset.umi if readset.umi else None
 
             jobs.append(
@@ -205,7 +206,8 @@ pandoc --to=markdown \\
                     fgbio.addumi(
                         input_bam,
                         input_umi,
-                        output_bam
+                        output_bam,
+                        output_bai
                     ),
                 ], name="fgbio_addumi." + readset.name)
             )
