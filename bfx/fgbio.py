@@ -32,11 +32,12 @@ log = logging.getLogger(__name__)
 def addumi(
     input_bam,
     input_umi,
-    output_bam
+    output_bam,
+    output_bai
     ):
 
     inputs = [input_bam, input_umi]
-    outputs = [output_bam]
+    outputs = [output_bam,output_bai]
     return Job(
         inputs,
         outputs,
