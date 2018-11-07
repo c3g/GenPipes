@@ -54,9 +54,10 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $FGBIO_JAR A
         tmp_dir=config.param('fgbio_addumi', 'tmp_dir'),
         java_other_options=config.param('fgbio_addumi', 'java_other_options'),
         ram=config.param('fgbio_addumi', 'ram'),
-        input_bam=input_bam
-        input_umi=input_umi
-        output_bam=output_bam
+        input_bam=input_bam,
+        input_umi=input_umi,
+        output_bam=output_bam,
+	other_options=config.param('fgbio_addumi', 'other_options') if config.param('fgbio_addumi', 'other_options',required=False) else ""
         ),
         removable_files=[output_bam]
     )
