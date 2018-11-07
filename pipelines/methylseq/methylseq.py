@@ -45,6 +45,7 @@ from bfx import igvtools
 from bfx import bissnp
 from bfx import tools
 from bfx import ucsc
+from bfx import fgbio
 
 from pipelines import common
 from pipelines.dnaseq import dnaseq
@@ -182,6 +183,56 @@ pandoc --to=markdown \\
                 report_files=[report_file],
                 name="bismark_align_report")
         )
+
+        return jobs
+    
+    
+    def add_bam_umi(self):
+        """
+        Add read UMI tag to individual bam files using fgbio
+        """
+        
+        jobs = []
+        for readset in self.readsets:
+            alignment_directory = os.path.join("alignment", readset.sample.name)
+            input_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
+            output_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.UMI.bam")
+            input_umi = readset.umi if readset.umi else None
+
+            jobs.append(
+                concat_jobs([
+                    Job(command="mkdir -p " + os.path.dirname(output_bam), samples=[readset.sample]),
+                    fgbio.addumi(
+                        input_bam,
+                        input_umi,
+                        output_bam
+                    ),
+                ], name="fgbio_addumi." + readset.name)
+            )
+
+        #report_file = os.path.join("report", "MethylSeq.bismark_align.md")
+        #jobs.append(
+            #Job(
+                #[os.path.join("alignment", readset.sample.name, readset.name, readset.name + ".sorted.bam") for readset in self.readsets],
+                #[report_file],
+                #[['bismark_align', 'module_pandoc']],
+                #command="""\
+#mkdir -p report && \\
+#pandoc --to=markdown \\
+  #--template {report_template_dir}/{basename_report_file} \\
+  #--variable scientific_name="{scientific_name}" \\
+  #--variable assembly="{assembly}" \\
+  #{report_template_dir}/{basename_report_file} \\
+  #> {report_file}""".format(
+                    #scientific_name=config.param('bismark_align', 'scientific_name'),
+                    #assembly=config.param('bismark_align', 'assembly'),
+                    #report_template_dir=self.report_template_dir,
+                    #basename_report_file=os.path.basename(report_file),
+                    #report_file=report_file
+                #),
+                #report_files=[report_file],
+                #name="bismark_align_report")
+        #)
 
         return jobs
 
@@ -903,6 +954,7 @@ pandoc \\
             self.trimmomatic,
             self.merge_trimmomatic_stats,
             self.bismark_align,
+            self.add_bam_umi,
             self.picard_merge_sam_files,    # step 5
 #            self.bismark_dedup,
             self.picard_remove_duplicates,
