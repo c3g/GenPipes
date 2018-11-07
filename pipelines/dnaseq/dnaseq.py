@@ -200,7 +200,7 @@ pandoc --to=markdown \\
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
             # Find input readset BAMs first from previous bwa_mem_picard_sort_sam job, then from original BAMs in the readset sheet.
-            readset_bams = self.select_input_files([[os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam") for readset in sample.readsets], [readset.bam for readset in sample.readsets]])
+            readset_bams = self.select_input_files([[os.path.join(alignment_directory, readset.name, readset.name + ".sorted.UMI.bam") for readset in sample.readsets], [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam") for readset in sample.readsets], [readset.bam for readset in sample.readsets]])
             sample_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
 
             mkdir_job = Job(command="mkdir -p " + os.path.dirname(sample_bam))
