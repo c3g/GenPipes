@@ -75,6 +75,13 @@ class IlluminaReadset(Readset):
             return None
         else:
             return self._bam
+    
+    @property
+    def umi(self):
+        if not hasattr(self, "_umi"):
+            return None
+        else:
+            return self._umi
 
     @property
     def library(self):
