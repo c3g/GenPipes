@@ -536,7 +536,7 @@ class DnaSeqRaw(common.Illumina):
             output = alignment_file_prefix + "sorted.dup.bam"
             metrics_file = alignment_file_prefix + "sorted.dup.metrics"
 
-            job = gatk4.picard_mark_duplicates(input, output, metrics_file)
+            job = picard2.mark_duplicates(input, output, metrics_file)
             job.name = "picard_mark_duplicates." + sample.name
             job.samples = [sample]
             jobs.append(job)
