@@ -94,14 +94,16 @@ MODULE_DIR=${!INSTALL_HOME}/modulefiles/`echo ${INSTALL_HOME,,} | sed 's/_instal
 if [ `lsb_release -i | cut -f 2` == "Ubuntu" ]
 then
   echo "Ubuntu" > /dev/null
-  C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/apt/ubuntu16.04/1.0
+  C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/apt/ubuntu1604/1.0
   LIB=lib
+  INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu/ld-linux-x86-64.so.2
   LIBDIR=$C3G_SYSTEM_LIBRARY/usr/$LIB:$INSTALL_DIR/$LIB/R/lib
 elif [ `lsb_release -i | cut -f 2` == "CentOS" ]
 then
   echo "CentOS" > /dev/null
   C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/yum/centos7/1.0
   LIB=lib64
+  INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/ld-linux-x86-64.so.2
   LIBDIR=$C3G_SYSTEM_LIBRARY/usr/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB/mysql:$INSTALL_DIR/$LIB/R/lib
 else
   echo "*** ERROR ***"
