@@ -174,5 +174,30 @@ def ihec_metrics_rnaseq(genome):
 
 
 
+def metrics.target_cpg_profile(
+    input,
+    output,
+    sample,
+    coverage_list = [1,10,15,20,25,30]
+    ):
+    
+    
+    return Job(
+        [input],
+        [output],
+        [],
+        command="""\
+echo -e 'Sample\t1\t10\t15\t20\t25\t30' > {output} &&  \\
+out={sample} &&  \\
+for readcov in {cov_value} ; do cov=$(sed 1d {input} | awk '$11>'$readcov'' |wc -l) ; out='$out\t$cov' ; done  &&  \\
+echo -e '$out' >> {output} """.format(
+            input=input,
+            output=output,
+            sample=sample,
+            cov_value=" ".join(str(x) for x in coverage_list)
+        )
+    )
 
+
+   
 
