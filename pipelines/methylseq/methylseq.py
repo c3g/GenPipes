@@ -427,24 +427,32 @@ cp \\
             jobs.append(job)
 
             if coverage_bed:
-                # Get on-target reads (if on-target context is detected)
-                ontarget_bam = re.sub("bam", "ontarget.bam", input)
-                flagstat_output = re.sub("bam", "bam.flagstat", ontarget_bam)
-                job = concat_jobs([
-                    bedtools.intersect(
-                        input,
-                        ontarget_bam,
-                        coverage_bed
-                    ),
-                    samtools.flagstat(
-                        ontarget_bam,
-                        flagstat_output
-                    )
-                ])
-                job.name = "ontarget_reads." + sample.name
-                job.removable_files=[ontarget_bam]
+                # Get on-target reads (if on-target context is detected) raw and after duplication
+                dedup_bam = os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.bam")
+                raw_bam = os.path.join("alignment", sample.name, sample.name + ".sorted.bam")
+                
+                count_dedup_output = os.path.join("alignment", sample.name, sample.name + ".onTarget.dedup.count")
+                count_raw_output = os.path.join("alignment", sample.name, sample.name + ".onTarget.raw.count")
+                job = samtool.mapped_count(
+                    raw_bam,
+                    count_raw_output,
+                    coverage_bed
+                )
+                job.name = "ontarget_count.raw." + sample.name
+                job.removable_files=[count_dedup_output,count_raw_output]
                 job.samples = [sample]
                 jobs.append(job)
+                
+                job = samtool.mapped_count(
+                    dedup_bam,
+                    count_dedup_output,
+                    coverage_bed
+                )
+                job.name = "ontarget_count.dedup." + sample.name
+                job.removable_files=[count_dedup_output,count_raw_output]
+                job.samples = [sample]
+                jobs.append(job)
+                
 
                 # Compute on target percent of hybridisation based capture
                 interval_list = re.sub("\.[^.]+$", ".interval_list", os.path.basename(coverage_bed))
@@ -726,6 +734,18 @@ cp \\
                 job.samples = [sample]
                 jobs.append(job)
                 cpg_profile = target_cpg_profile
+                
+                target_cpg_profile_count=os.path.join(methyl_directory, sample.name + "readset_sorted.dedup.CpG_profile.strand.combined.on_target.count")
+                job = metrics.target_cpg_profile(
+                    target_cpg_profile,
+                    target_cpg_profile_count,
+                    sample.name
+                )
+                job.name = "metrics_target_CpG_profile." + sample.name
+                job.samples = [sample]
+                jobs.append(job)
+                
+                
 
             # Caluculate median & mean CpG coverage
             median_CpG_coverage = re.sub(".CpG_report.txt.gz", ".median_CpG_coverage.txt", cpg_input_file)
@@ -791,7 +811,8 @@ cp \\
             inputs.append(cgstats_file)
 
             # Flagstat file if in targeted context
-            if target_bed : inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.ontarget.bam.flagstat"))
+            if target_bed : 
+                inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.ontarget.bam.flagstat"))
 
         jobs.append(
             concat_jobs([
@@ -889,9 +910,15 @@ pandoc \\
                 [os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.profile.cgstats.txt")]
             ])
             inputs.append(cgstats_file)
+            
+            #Estimated library sizes
+            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.metrics"))
 
-            # Flagstat file if in targeted context
-            if target_bed : inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.ontarget.bam.flagstat"))
+            # read count (raw, dedup)  and CpG_profyle in targeted context
+            if target_bed : 
+                inputs.append(os.path.join("alignment", sample.name, sample.name + ".onTarget.dedup.count"))
+                inputs.append(os.path.join("alignment", sample.name, sample.name + ".onTarget.raw.count"))
+                inputs.append(os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup.CpG_profile.strand.combined.on_target.count"))
 
             jobs.append(
                 concat_jobs([
