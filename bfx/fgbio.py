@@ -62,3 +62,29 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $FGBIO_JAR A
         ),
         removable_files=[output_bam]
     )
+
+
+def correct_readname(
+    input_umi,
+    output_umi_corrected
+    ):
+    
+    inputs = [input_umi]
+    outputs = [output_umi_corrected]
+    
+    if input_umi.lower().endswith('.gz') :
+        input_opener="zcat "
+    else:
+        input_opener="cat "
+        
+    return Job(
+        inputs,
+        outputs,        
+        command="""\
+{input_opener} {input_umi} | tr ' ' '_' | gzip -c - > {output_umi_corrected}""".format(
+        input_opener=input_opener,
+        input_umi=input_umi,
+        output_umi_corrected=output_umi_corrected
+        ),
+        removable_files=[output_umi_corrected]
+    )

@@ -199,13 +199,26 @@ pandoc --to=markdown \\
             output_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.UMI.bam")
             output_bai = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.UMI.bai")
             input_umi = readset.umi if readset.umi else None
+            input_umi_corrected = os.path.join("corrected_umi", readset.name, readset.name + ".corrected.fastq.gz")
+            
+            #correct umi fastq name (removing space)
+            
+            jobs.append(
+                concat_jobs([
+                    Job(command="mkdir -p corrected_umi/" + readset.name , samples=[readset.sample]),
+                    fgbio.correct_readname(
+                        input_umi,
+                        input_umi_corrected
+                    ),
+                ], name="fgbio_correct_readname." + readset.name)
+            )
 
             jobs.append(
                 concat_jobs([
                     Job(command="mkdir -p " + os.path.dirname(output_bam), samples=[readset.sample]),
                     fgbio.addumi(
                         input_bam,
-                        input_umi,
+                        input_umi_corrected,
                         output_bam,
                         output_bai
                     ),
