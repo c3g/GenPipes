@@ -174,7 +174,7 @@ def ihec_metrics_rnaseq(genome):
 
 
 
-def metrics.target_cpg_profile(
+def target_cpg_profile(
     input,
     output,
     sample,

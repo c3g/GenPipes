@@ -433,7 +433,7 @@ cp \\
                 
                 count_dedup_output = os.path.join("alignment", sample.name, sample.name + ".onTarget.dedup.count")
                 count_raw_output = os.path.join("alignment", sample.name, sample.name + ".onTarget.raw.count")
-                job = samtool.mapped_count(
+                job = samtools.mapped_count(
                     raw_bam,
                     count_raw_output,
                     coverage_bed
@@ -443,7 +443,7 @@ cp \\
                 job.samples = [sample]
                 jobs.append(job)
                 
-                job = samtool.mapped_count(
+                job = samtools.mapped_count(
                     dedup_bam,
                     count_dedup_output,
                     coverage_bed
@@ -918,8 +918,9 @@ pandoc \\
             if target_bed : 
                 inputs.append(os.path.join("alignment", sample.name, sample.name + ".onTarget.dedup.count"))
                 inputs.append(os.path.join("alignment", sample.name, sample.name + ".onTarget.raw.count"))
-                inputs.append(os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup.CpG_profile.strand.combined.on_target.count"))
-
+                inputs.append(os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.CpG_profile.strand.combined.on_target.count"))
+	    
+            
             jobs.append(
                 concat_jobs([
                     Job(command="mkdir -p ihec_metrics metrics"),
