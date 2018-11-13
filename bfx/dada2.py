@@ -27,14 +27,14 @@ from core.config import *
 from core.job import *
 def dada2(
     inputs,
+    ampliconLengthFile,
     rawReadsFolder,
     designFile,
-    output_directory,
-    ampliconLengthFile
+    output_directory
     ):
-
+    inputs.append(ampliconLengthFile)
     return  Job(
-        [inputs, ampliconLengthFile],
+        inputs,
         [output_directory],
         [
             ['dada2','module_R'],
@@ -46,12 +46,17 @@ Rscript $R_TOOLS/asva.R \\
   -d {designFile} \\
   -o {output_directory} \\
   -tr {trainset} \\
-  -tax {taxonomy}\\
-  -p {pool_parameter}""".format(
-        rawReadsFolder=rawReadsFolder,
-        designFile=designFile,
-        output_directory=output_directory,
-        trainset=config.param('database', 'dada2_trainset'),
-        taxonomy=config.param('database', 'dada2_taxonomy'),
-        pool_parameter=config.param('dada2', 'pool_parameter')
-    ))
+  -tax {taxonomy} \\
+  -p {pool_parameter} \\
+  -amp {amplicon_length_file}""".format(
+            rawReadsFolder=rawReadsFolder,
+            designFile=designFile,
+            output_directory=output_directory,
+            trainset=config.param('database', 'dada2_trainset'),
+            taxonomy=config.param('database', 'dada2_taxonomy'),
+            pool_parameter=config.param('dada2', 'pool_parameter'),
+            amplicon_length_file=ampliconLengthFile
+        ),
+        name="dada2.run"
+    )
+

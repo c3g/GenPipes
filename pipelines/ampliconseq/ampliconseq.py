@@ -2056,42 +2056,59 @@ cat {report_file_alpha} {report_file_beta} > {report_file}""".format(
         lnkRawReadsFolder = os.path.join(dada2_directory, "trim")
         ampliconLengthFile = os.path.join("metrics/FlashLengths.tsv")
 
+        mkdir_job = Job(command="mkdir -p " + lnkRawReadsFolder)
+ 
         #We'll link the readset fastq files into the raw_reads folder just created
         raw_reads_jobs = []
         dada2_inputs = []
         for readset in self.readsets:
             readSetPrefix = os.path.join(lnkRawReadsFolder, readset.name)
-            trimmedReadsR1 = os.path.join("trim", readset.sample.name, readset.name + ".trim.pair1.fastq.gz")
-            trimmedReadsR2 = os.path.join("trim", readset.sample.name, readset.name + ".trim.pair2.fastq.gz")
+            trimmedReadsR1 = os.path.abspath(os.path.join("trim", readset.sample.name, readset.name + ".trim.pair1.fastq.gz"))
+            trimmedReadsR2 = os.path.abspath(os.path.join("trim", readset.sample.name, readset.name + ".trim.pair2.fastq.gz"))
+
             if readset.run_type == "PAIRED_END":
                 left_or_single_reads = readSetPrefix + ".pair1.fastq.gz"
-                right_reads = readSetPrefix + ".pair2.fastq.gz"
-                raw_reads_jobs.append(
-                    Job([trimmedReadsR1], [left_or_single_reads], command="ln -nsf " + trimmedReadsR1 + " " + left_or_single_reads),
-                    Job([trimmedReadsR2], [right_reads], command="ln -nsf " + trimmedReadsR2 + " " + rigth_reads)
-                )
                 dada2_inputs.append(left_or_single_reads)
+
+                right_reads = readSetPrefix + ".pair2.fastq.gz"
                 dada2_inputs.append(right_reads)
+
+                raw_reads_jobs.append(concat_jobs([
+                    Job(
+                        [trimmedReadsR1],
+                        [left_or_single_reads],
+                        command="ln -nsf " + trimmedReadsR1 + " " + left_or_single_reads,
+                        samples=[readset.sample]
+                    ),
+                    Job(
+                        [trimmedReadsR2],
+                        [right_reads],
+                        command="ln -nsf " + trimmedReadsR2 + " " + right_reads,
+                        samples=[readset.sample]
+                    )
+                ]))
+
             #single reads will mainly be for PacBio CCS although I didn't test it yet
             elif readset.run_type == "SINGLE_END":
                 left_or_single_reads = readSetPrefix + ".single.fastq.gz"
-                right_reads = ""
-                raw_reads_jobs.append(
-                    Job([trimmedReadsR1], [left_or_single_reads], command="ln -nsf " + trimmedReadsR1 + " " + left_or_single_reads),
-                )
+                raw_reads_jobs.append(concat_jobs([
+                    Job(
+                        [trimmedReadsR1],
+                        [left_or_single_reads],
+                        command="ln -nsf " + trimmedReadsR1 + " " + left_or_single_reads,
+                        samples=[readset.sample]
+                    )
+                ]))
                 dada2_inputs.append(left_or_single_reads)
+
             else:
                 raise Exception("Error: run type \"" + readset.run_type +
                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
 
-        dada2_job = dada2.dada2(dada2_inputs, lnkRawReadsFolder, designFile, output_directory, ampliconLengthFile)
-
-        jobs.append(concat_jobs([
-            Job(command="mkdir -p " + lnkRawReadsFolder),
-            raw_reads_jobs,
-            dada2_job,
-        ], name="dada2.run"))
-
+        jobs.append(concat_jobs(
+            [mkdir_job] +
+            raw_reads_jobs +
+            [dada2.dada2(dada2_inputs, ampliconLengthFile, lnkRawReadsFolder, designFile, dada2_directory)], name="dada2.run"))
        
         return jobs
 
