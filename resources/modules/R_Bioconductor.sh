@@ -16,24 +16,6 @@ MODULEFILE_DIR="$MUGQIC_INSTALL_HOME_DEV/modulefiles/mugqic_dev"
 INSTALL_DIR="$MUGQIC_INSTALL_HOME_DEV/software"
 UPDATE_MODE=1
 
-if [ `lsb_release -i | cut -f 2` == "Ubuntu" ]
-then
-  echo "Ubuntu" > /dev/null
-  C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/apt/ubuntu16.04/1.0
-  LIB=lib
-  LIBDIR=$C3G_SYSTEM_LIBRARY/usr/$LIB:$INSTALL_DIR/$LIB/R/lib
-elif [ `lsb_release -i | cut -f 2` == "CentOS" ]
-then
-  echo "CentOS" > /dev/null
-  C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/yum/centos7/1.0
-  LIB=lib64
-  LIBDIR=$C3G_SYSTEM_LIBRARY/usr/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB/mysql:$INSTALL_DIR/$LIB/R/lib
-else
-  echo "*** ERROR ***"
-  echo "'"`lsb_release -i | cut -f 2`"' OS detected... should be either 'Ubuntu' neither 'CentOS'..."
-  exit 1
-fi
-
 ## Parse arguments
 usage()
 {
@@ -133,6 +115,26 @@ MODULEVERSIONFILE="$MODULEFILE_DIR/.version"
 # NOTE: this is somewhat complicated because we want the ROOT dir MUGQIC_INSTALL_HOME to be resolved at module execution.
 # TCLROOT is just a variable holding the TCL script value for the 'root' variable in the module file.
 
+if [ `lsb_release -i | cut -f 2` == "Ubuntu" ]
+then
+  echo "Ubuntu" > /dev/null
+  C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/apt/ubuntu1604/1.0
+  LIB=lib
+  INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu/ld-linux-x86-64.so.2
+  LIBDIR=$C3G_SYSTEM_LIBRARY/usr/$LIB:$INSTALL_DIR/$LIB/R/lib
+elif [ `lsb_release -i | cut -f 2` == "CentOS" ]
+then
+  echo "CentOS" > /dev/null
+  C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/yum/centos7/1.0
+  LIB=lib64
+  INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/ld-linux-x86-64.so.2
+  LIBDIR=$C3G_SYSTEM_LIBRARY/usr/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB/mysql:$INSTALL_DIR/$LIB/R/lib
+else
+  echo "*** ERROR ***"
+  echo "'"`lsb_release -i | cut -f 2`"' OS detected... should be either 'Ubuntu' neither 'CentOS'..."
+  exit 1
+fi
+
 echo "The software install location is $INSTALL_DIR"
 echo "The module file directory is $MODULEFILE_DIR"
 echo "The module file is $MODULEFILE"
@@ -203,6 +205,17 @@ fi
 
 ## Load the Boost libraries so they are available to any potential packages which needs those during its installation
 #module load mugqic/boost
+
+#if [ "`echo -e "${BIOCVERSION}\n3.7" | sort -V  | head -n1`" = "3.7" ]
+#then
+#  # Nothing to do if the version if 3.8 or above
+#  echo "version greater than 3.7" > /dev/null
+#  BIOC="BiocManager"
+#else
+#  # For early versions (earlier than 3.7)
+#  echo "version smaller than 3.7" > /dev/null
+#  BIOC="biocLite"
+#fi
 
 ## Finally, update/install library!
 $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
@@ -308,19 +321,20 @@ for i in `find $INSTALL_DIR/ -type f -executable -exec file {} \; | grep ELF | c
   if readelf -l $i | grep go.build > /dev/null
   then
     echo "GO Done" > /dev/null
-  elif [ ${i##*.} == "so" ]
+  elif [ ${i##*.} == "so" ] || [[ ${i##*/} =~ "so"*(\.[0-9]{1,2})*$ ]]
   then
     $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-rpath $C3G_SYSTEM_LIBRARY/usr/$LIB $i
   else
-    $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-interpreter $C3G_SYSTEM_LIBRARY/lib64/ld-linux-x86-64.so.2 --set-rpath $C3G_SYSTEM_LIBRARY/usr/$LIB $i
+    echo $i
+    $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-interpreter $INTERPRETER --set-rpath $C3G_SYSTEM_LIBRARY/usr/$LIB $i
   fi
 done
 
 echo "Building C3G wrappers for executables..."
-sed -i "s,exec \"\${R_binary}\"  \${args} \"\${@}\",exec \$C3G_SYSTEM_LIBRARY\/lib64\/ld-linux-x86-64.so.2 --library-path \"\$LIBDIR\" \"\${R_binary}\"  \${args} \"\${@}\"," $INSTALL_DIR/bin/R
+sed -i "s,exec \"\${R_binary}\"  \${args} \"\${@}\",exec $INTERPRETER --library-path \"$LIBDIR\" \"\${R_binary}\"  \${args} \"\${@}\"," $INSTALL_DIR/bin/R
 for i in $INSTALL_DIR/bin/Rscript; do
   mv $i $i.raw;
-  echo "$C3G_SYSTEM_LIBRARY/lib64/ld-linux-x86-64.so.2 --library-path $LIBDIR $i.raw \${@}" > $i;
+  echo "$INTERPRETER --library-path $LIBDIR $i.raw \${@}" > $i;
   chmod 775 $i;
 done
 
