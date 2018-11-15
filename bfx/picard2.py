@@ -168,7 +168,7 @@ def mark_duplicates(inputs, output, metrics_file, remove_duplicates="false"):
 
     if not isinstance(inputs, list):
         inputs=[inputs]
-    if config.param('picard_mark_duplicates', 'module_picard').split("/")[2] < "2":
+    if config.param('picard_mark_duplicates', 'module_picard').split("/")[2] < "2" and config.param('picard_mark_duplicates', 'module_gatk').split("/")[2] < "4":
         return picard.mark_duplicates(inputs, output, metrics_file, remove_duplicates)
     else:
         return Job(

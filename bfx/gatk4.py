@@ -90,7 +90,7 @@ def base_recalibrator(input, output, intervals=None):
 		],
 		command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
-  BaseRecalibratorSpark \\
+  BaseRecalibratorSpark {options} \\
   --input {input} \\
   --reference {reference_sequence} {intervals} \\
   --known-sites {known_dbsnp} \\
@@ -100,11 +100,12 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   --output {output}""".format(
 			tmp_dir=config.param('gatk_base_recalibrator', 'tmp_dir'),
 			java_other_options=config.param('gatk_base_recalibrator', 'java_other_options'),
+			options=config.param('gatk_base_recalibrator', 'options'),
 			ram=config.param('gatk_base_recalibrator', 'ram'),
 			threads=config.param('gatk_base_recalibrator', 'threads', type='int'),
 			input=input,
 			intervals=" \\\n  --intervals " + intervals if intervals else "",
-			reference_sequence=config.param('gatk_base_recalibrator', 'genome_2bit', type='filepath'),
+			reference_sequence=config.param('gatk_base_recalibrator', 'genome_fasta', type='filepath'),
 			known_dbsnp=config.param('gatk_base_recalibrator', 'known_dbsnp', type='filepath'),
 			known_gnomad=config.param('gatk_base_recalibrator', 'known_gnomad', type='filepath'),
 			known_mills=config.param('gatk_base_recalibrator', 'known_mills', type='filepath'),
@@ -228,7 +229,7 @@ gatk --java-options "{java_other_options} -Xmx{ram}" \\
 				reference_sequence=config.param('gatk_haplotype_caller', 'genome_fasta', type='filepath'),
 				input=" \\\n  ".join(input for input in inputs),
 				output=output,
-				interval_list=" \\\n  --interval-padding 100 --intervals " + interval_list if interval_list else "",
+				interval_list=" \\\n --interval-padding 100 --intervals " + interval_list if interval_list else "",
 				intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
 				exclude_intervals="".join(
 					" \\\n  --exclude-intervals " + exclude_interval for exclude_interval in exclude_intervals)
@@ -583,10 +584,14 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
 
 
 def picard_mark_duplicates(inputs, output, metrics_file, remove_duplicates="false"):
-	if not isinstance(inputs, list):
-		inputs = [inputs]
+    if not isinstance(inputs, list):
+	    inputs = [inputs]
 
-	return Job(
+    if config.param('picard_mark_duplicates', 'module_gatk').split("/")[2] < "4":
+        return picard2.mark_duplicates(inputs, output, metrics_file, remove_duplicates)
+    else:
+
+		return Job(
 		inputs,
 		[output, re.sub("\.([sb])am$", ".\\1ai", output), metrics_file],
 		[

@@ -40,7 +40,6 @@ from bfx.sequence_dictionary import *
 from bfx import adapters
 from bfx import bvatools
 from bfx import bwa
-from bfx import gatk
 from bfx import gatk4
 from bfx import igvtools
 from bfx import metrics
@@ -302,7 +301,7 @@ class DnaSeqRaw(common.Illumina):
                 job = concat_jobs([
                     mkdir_job,
                     Job([readset_bam], [sample_bam], command="ln -s -f " + target_readset_bam + " " + sample_bam, removable_files=[sample_bam]),
-                    Job([readset_index], [sample_index], command="ln -s -f " + target_readset_index + " " + sample_index, removable_files=[sample_index])
+                    Job([readset_index], [sample_index], command="ln -s -f " + target_readset_index + " " + sample_index + " && sleep 180", removable_files=[sample_index])
                 ], name="symlink_readset_sample_bam." + sample.name)
 
             elif len(sample.readsets) > 1:
@@ -536,7 +535,7 @@ class DnaSeqRaw(common.Illumina):
             output = alignment_file_prefix + "sorted.dup.bam"
             metrics_file = alignment_file_prefix + "sorted.dup.metrics"
 
-            job = picard2.mark_duplicates(input, output, metrics_file)
+            job = gatk4.picard_mark_duplicates(input, output, metrics_file)
             job.name = "picard_mark_duplicates." + sample.name
             job.samples = [sample]
             jobs.append(job)
@@ -938,7 +937,7 @@ class DnaSeqRaw(common.Illumina):
                     jobs.append(job)
                     created_interval_lists.append(interval_list)
                     
-            if nb_haplotype_jobs == 1:
+            if nb_haplotype_jobs == 1 or interval_list is not None:
                 jobs.append(concat_jobs([
                     # Create output directory since it is not done by default by GATK tools
                     Job(command="mkdir -p " + haplotype_directory,removable_files=[haplotype_directory], samples=[sample]),
@@ -976,19 +975,39 @@ class DnaSeqRaw(common.Illumina):
         for sample in self.samples:
             haplotype_file_prefix = os.path.join("alignment", sample.name, "rawHaplotypeCaller", sample.name)
             output_haplotype_file_prefix = os.path.join("alignment", sample.name, sample.name)
-            if nb_haplotype_jobs == 1:
-                gvcfs_to_merge = [haplotype_file_prefix + ".hc.g.vcf.gz"]
+
+            interval_list = None
+
+            coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
+            if coverage_bed:
+                interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
+
+            if nb_haplotype_jobs == 1 or interval_list is not None:
+
+                jobs.append(concat_jobs([
+                    Job(samples=[sample]),
+                    Job([os.path.abspath(haplotype_file_prefix + ".hc.g.vcf.gz")], [output_haplotype_file_prefix + ".hc.g.vcf.gz"],
+                        command="ln -sf " + os.path.abspath(haplotype_file_prefix + ".hc.g.vcf.gz") + " " + output_haplotype_file_prefix + ".hc.g.vcf.gz"),
+                    Job([os.path.abspath(haplotype_file_prefix + ".hc.g.vcf.gz.tbi")], [output_haplotype_file_prefix + ".hc.g.vcf.gz.tbi"],
+                        command="ln -sf " + os.path.abspath(haplotype_file_prefix + ".hc.g.vcf.gz.tbi") + " " + output_haplotype_file_prefix + ".hc.g.vcf.gz.tbi"),
+                    gatk4.genotype_gvcf([output_haplotype_file_prefix + ".hc.g.vcf.gz"], output_haplotype_file_prefix + ".hc.vcf.gz", config.param('gatk_genotype_gvcf', 'options'))
+                ], name="merge_and_call_individual_gvcf.call." + sample.name))
+                
             else:
                 unique_sequences_per_job,unique_sequences_per_job_others = split_by_size(self.sequence_dictionary, nb_haplotype_jobs - 1)
                 gvcfs_to_merge = [haplotype_file_prefix + "." + str(idx) + ".hc.g.vcf.gz" for idx in xrange(len(unique_sequences_per_job))]
                 
                 gvcfs_to_merge.append(haplotype_file_prefix + ".others.hc.g.vcf.gz")
 
-            jobs.append(concat_jobs([
-                Job(samples=[sample]),
-                gatk4.cat_variants(gvcfs_to_merge, output_haplotype_file_prefix + ".hc.g.vcf.gz"),
-                gatk4.genotype_gvcf([output_haplotype_file_prefix + ".hc.g.vcf.gz"], output_haplotype_file_prefix + ".hc.vcf.gz",config.param('gatk_genotype_gvcf', 'options'))
-            ], name="merge_and_call_individual_gvcf." + sample.name))
+                jobs.append(concat_jobs([
+                    Job(samples=[sample]),
+                    gatk4.cat_variants(gvcfs_to_merge, output_haplotype_file_prefix + ".hc.g.vcf.gz"),
+                ], name="merge_and_call_individual_gvcf.merge." + sample.name))
+
+                jobs.append(concat_jobs([
+                    Job(samples=[sample]),
+                    gatk4.genotype_gvcf([output_haplotype_file_prefix + ".hc.g.vcf.gz"], output_haplotype_file_prefix + ".hc.vcf.gz",config.param('gatk_genotype_gvcf', 'options'))
+                ], name="merge_and_call_individual_gvcf.call." + sample.name))
             
         return jobs
 
@@ -1018,7 +1037,7 @@ class DnaSeqRaw(common.Illumina):
                     ], name="gatk_combine_gvcf.AllSample" + "." + str(idx)))
 
                 # Create one last job to process the last remaining sequences and 'others' sequences
-                job=gatk4.combine_gvcf([ os.path.join("alignment", sample.name, sample.name)+".hc.g.vcf.gz" for sample in self.samples ], os.path.join("alignment", "allSamples.others.hc.g.vcf.gz"), exclude_intervals=unique_sequences_per_job_others)
+                job=gatk4.combine_gvcf([ os.path.join("alignment", sample.name, sample.name)+".hc.g.vcf.gz" for sample in self.samples ], os.path.join("variants", "allSamples.others.hc.g.vcf.gz"), exclude_intervals=unique_sequences_per_job_others)
                 job.name="gatk_combine_gvcf.AllSample" + ".others"
                 job.removable_files=[os.path.join("variants", "allSamples.others.hc.g.vcf.gz"),os.path.join("variants", "allSamples.others.hc.g.vcf.gz.tbi") ]
                 job.samples=self.samples
@@ -1099,6 +1118,7 @@ class DnaSeqRaw(common.Illumina):
             gvcfs_to_merge.append(haplotype_file_prefix + ".others.hc.g.vcf.gz")
 
             job = gatk4.cat_variants(gvcfs_to_merge, output_haplotype)
+            #job = bcftools.concat(gvcfs_to_merge, output_haplotype, options="-Oz")
             job.name = "merge_and_call_combined_gvcf.merge.AllSample"
             job.samples = self.samples
             jobs.append(job)
@@ -1469,7 +1489,7 @@ pandoc \\
         jobs = []
 
         jobs.append(concat_jobs([
-            snpeff.compute_effects(input_vcf, snpeff_file, options=config.param('compute_cancer_effects', 'options', required=False)),
+            snpeff.compute_effects(input_vcf, snpeff_file, options=config.param('compute_effects', 'options', required=False)),
             htslib.bgzip_tabix(snpeff_file, snpeff_file + ".gz"),
         ], name=job_name))
         #jobs.samples = self.samples

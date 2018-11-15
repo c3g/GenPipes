@@ -39,7 +39,7 @@ def base_recalibrator(input, output, intervals):
             ],
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
-  --analysis_type BaseRecalibrator \\
+  --analysis_type BaseRecalibrator {options} \\
   -nt 1 --num_cpu_threads_per_data_thread {threads} \\
   --input_file {input} \\
   --reference_sequence {reference_sequence} {intervals} \\
@@ -49,6 +49,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --out {output}""".format(
         tmp_dir=config.param('gatk_base_recalibrator', 'tmp_dir'),
         java_other_options=config.param('gatk_base_recalibrator', 'java_other_options'),
+        options=config.param('gatk_base_recalibrator', 'options'),
         ram=config.param('gatk_base_recalibrator', 'ram'),
         threads=config.param('gatk_base_recalibrator', 'threads', type='int'),
         input=input,
@@ -235,7 +236,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         ram=config.param('gatk_haplotype_caller', 'ram'),
         options=config.param('gatk_haplotype_caller', 'options'),
         reference_sequence=config.param('gatk_haplotype_caller', 'genome_fasta', type='filepath'),
-        interval_list=" \\\n  --interval-padding 100 --intervals " + interval_list if interval_list else "",
+        interval_list=" \\\n  --interval_padding 100 --intervals " + interval_list if interval_list else "",
         input=" \\\n  ".join(input for input in inputs),
         output=output,
         intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
@@ -490,9 +491,9 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
     )
 
 
-def variant_recalibrator(variants, other_options, recal_output, tranches_output, R_output, tmp_dir):
+def variant_recalibrator(variants, other_options, recal_output, tranches_output, R_output):
     if config.param('gatk_print_reads', 'module_gatk').split("/")[2] >= "4":
-        return gatk4.combine_gvcf(variants, other_options, recal_output, tranches_output, R_output, tmp_dir)
+        return gatk4.combine_gvcf(variants, other_options, recal_output, tranches_output, R_output)
     else:
         return Job(
             variants,
