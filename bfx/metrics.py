@@ -187,10 +187,10 @@ def target_cpg_profile(
         [output],
         [],
         command="""\
-echo -e 'Sample\t1\t10\t15\t20\t25\t30' > {output} &&  \\
+echo -e 'Sample\\t1\\t10\\t15\\t20\\t25\\t30' > {output} &&  \\
 out={sample} &&  \\
-for readcov in {cov_value} ; do cov=$(sed 1d {input} | awk '$11>'$readcov'' |wc -l) ; out='$out\t$cov' ; done  &&  \\
-echo -e '$out' >> {output} """.format(
+for readcov in {cov_value} ; do cov=$(sed 1d {input} | awk '$11>'$readcov'' |wc -l) ; out="$out\\t$cov" ; done  &&  \\
+echo -e "$out" >> {output} """.format(
             input=input,
             output=output,
             sample=sample,

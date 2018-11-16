@@ -425,11 +425,37 @@ cp \\
             job.name = "bvatools_depth_of_coverage." + sample.name
             job.samples = [sample]
             jobs.append(job)
+            
+            # Get reads# raw and after duplication
+            dedup_bam = os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.bam")
+            raw_bam = os.path.join("alignment", sample.name, sample.name + ".sorted.bam")
+            
+            count_dedup_output = os.path.join("alignment", sample.name, sample.name + ".dedup.count")
+            count_raw_output = os.path.join("alignment", sample.name, sample.name + ".raw.count")
+            
+            
+            job = samtools.mapped_count(
+                raw_bam,
+                count_raw_output,
+                None
+            )
+            job.name = "count.raw." + sample.name
+            job.removable_files=[count_dedup_output,count_raw_output]
+            job.samples = [sample]
+            jobs.append(job)
+            
+            job = samtools.mapped_count(
+                dedup_bam,
+                count_dedup_output,
+                None
+            )
+            job.name = "count.dedup." + sample.name
+            job.removable_files=[count_dedup_output,count_raw_output]
+            job.samples = [sample]
+            jobs.append(job)
 
             if coverage_bed:
                 # Get on-target reads (if on-target context is detected) raw and after duplication
-                dedup_bam = os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.bam")
-                raw_bam = os.path.join("alignment", sample.name, sample.name + ".sorted.bam")
                 
                 count_dedup_output = os.path.join("alignment", sample.name, sample.name + ".onTarget.dedup.count")
                 count_raw_output = os.path.join("alignment", sample.name, sample.name + ".onTarget.raw.count")
@@ -735,7 +761,7 @@ cp \\
                 jobs.append(job)
                 cpg_profile = target_cpg_profile
                 
-                target_cpg_profile_count=os.path.join(methyl_directory, sample.name + "readset_sorted.dedup.CpG_profile.strand.combined.on_target.count")
+                target_cpg_profile_count=os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup.CpG_profile.strand.combined.on_target.count")
                 job = metrics.target_cpg_profile(
                     target_cpg_profile,
                     target_cpg_profile_count,
@@ -864,10 +890,17 @@ pandoc \\
         # Create the list of input files to handle job dependencies
         sample_list = []
         counter=0
+        metrics_output_list=[]
+        metrics_output_list.append(None)
         for sample in self.samples:
             inputs = []
             sample_list.append(sample.name)
             metrics_file =  os.path.join("ihec_metrics", sample.name + ".read_stats.txt")
+            
+            metrics_output_list.append(metrics_file)
+            #add dependency for previous job in order to fill the allSample output correctly
+            inputs.append(metrics_output_list[counter])
+            
             # Trim log files
             for readset in sample.readsets:
                 inputs.append(os.path.join("trim", sample.name, readset.name + ".trim.log"))
@@ -913,6 +946,10 @@ pandoc \\
             
             #Estimated library sizes
             inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.metrics"))
+            
+            # read count (raw, dedup) 
+            inputs.append(os.path.join("alignment", sample.name, sample.name + ".dedup.count"))
+            inputs.append(os.path.join("alignment", sample.name, sample.name + ".raw.count"))
 
             # read count (raw, dedup)  and CpG_profyle in targeted context
             if target_bed : 
@@ -925,7 +962,7 @@ pandoc \\
                 concat_jobs([
                     Job(command="mkdir -p ihec_metrics metrics"),
                     tools.methylseq_ihec_metrics_report(sample.name, inputs, metrics_file, metrics_all_file, target_bed, counter),
-                ], name=sample.name + ".ihec_sample_metrics_report")
+                ], name="ihec_sample_metrics." + sample.name)
             )
             counter+=1
 
