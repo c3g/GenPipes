@@ -220,7 +220,7 @@ pandoc \\
                     report_file=report_file
                 ),
                 report_files=[report_file]
-            )], name="merge_trimmomatic_stats")]
+            )], name="merge_trimmomatic_stats16S")]
 
     def flash(self, flash_stats_file=None):
         """
