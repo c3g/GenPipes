@@ -231,7 +231,7 @@ $BCFTOOLS_BIN/bcftools view {pair_calling} {options} \\
     )
 
 
-def mapped_count(bam, output=None, bed=None, options=""):
+def mapped_count(bam, output=None, bed=None, options=None):
     return Job(
         [bam],
         [output],
@@ -239,12 +239,12 @@ def mapped_count(bam, output=None, bed=None, options=""):
             ['samtools_count', 'module_samtools']
         ],
         command="""\
-samtools view -F4 {options} \\
-  {input}{output}{target_option} """.format(
-        options=options,
-        input=input,
-        output=" \\\n  > " + output if output else "",
-        target_option=" -L " + bed if bed else ""
+samtools view -F4 {options} -c \\
+  {input} {target_option} {output}""".format(
+        options=options if options else " ",
+        input=bam,
+        output=" \\\n  > " + output if output else " ",
+        target_option=" -L " + bed if bed else " "
         ),
         removable_files=[output]
     )
