@@ -2063,8 +2063,8 @@ cat {report_file_alpha} {report_file_beta} > {report_file}""".format(
         dada2_inputs = []
         for readset in self.readsets:
             readSetPrefix = os.path.join(lnkRawReadsFolder, readset.name)
-            trimmedReadsR1 = os.path.abspath(os.path.join("trim", readset.sample.name, readset.name + ".trim.pair1.fastq.gz"))
-            trimmedReadsR2 = os.path.abspath(os.path.join("trim", readset.sample.name, readset.name + ".trim.pair2.fastq.gz"))
+            trimmedReadsR1 = os.path.join("trim", readset.sample.name, readset.name + ".trim.pair1.fastq.gz")
+            trimmedReadsR2 = os.path.join("trim", readset.sample.name, readset.name + ".trim.pair2.fastq.gz")
 
             if readset.run_type == "PAIRED_END":
                 left_or_single_reads = readSetPrefix + ".pair1.fastq.gz"
@@ -2077,13 +2077,13 @@ cat {report_file_alpha} {report_file_beta} > {report_file}""".format(
                     Job(
                         [trimmedReadsR1],
                         [left_or_single_reads],
-                        command="ln -nsf " + trimmedReadsR1 + " " + left_or_single_reads,
+                        command="ln -nsf " + os.path.abspath(trimmedReadsR1) + " " + left_or_single_reads,
                         samples=[readset.sample]
                     ),
                     Job(
                         [trimmedReadsR2],
                         [right_reads],
-                        command="ln -nsf " + trimmedReadsR2 + " " + right_reads,
+                        command="ln -nsf " + os.path.abspath(trimmedReadsR2) + " " + right_reads,
                         samples=[readset.sample]
                     )
                 ]))
