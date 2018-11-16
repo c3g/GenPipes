@@ -37,7 +37,7 @@ usage: hicseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                  -e {DpnII,HindIII,NcoI,MboI} [-t {hic,capture}] [-r READSETS]
                  [-v]
 
-Version: 3.1.1-beta
+Version: 3.1.1
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 

@@ -11,7 +11,7 @@ SOFTWARE_DIR=$SOFTWARE-${VERSION}
 build() {
   cd $INSTALL_DOWNLOAD
   unzip $ARCHIVE
-  ./smrtlink_6.0.0.47841.run --rootdir $INSTALL_DIR/$SOFTWARE_DIR --smrttools-only
+  ./${SOFTWARE,,}_${VERSION}.47841.run --rootdir $INSTALL_DIR/$SOFTWARE_DIR --smrttools-only
 }
 
 module_file() {
