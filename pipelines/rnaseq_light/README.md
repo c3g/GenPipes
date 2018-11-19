@@ -8,11 +8,12 @@ Usage
 #!text
 
 usage: rnaseq_light.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
-                       [-o OUTPUT_DIR] [-j {pbs,batch,daemon}] [-f] [--report]
-                       [--clean] [-l {debug,info,warning,error,critical}]
-                       [-d DESIGN] [-r READSETS] [-v]
+                       [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f]
+                       [--json] [--report] [--clean]
+                       [-l {debug,info,warning,error,critical}] [-d DESIGN]
+                       [-r READSETS] [-v]
 
-Version: 3.0.0
+Version: 3.1.1
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
@@ -26,10 +27,12 @@ optional arguments:
                         step range e.g. '1-5', '3,6,7', '2,4-8'
   -o OUTPUT_DIR, --output-dir OUTPUT_DIR
                         output directory (default: current)
-  -j {pbs,batch,daemon}, --job-scheduler {pbs,batch,daemon}
+  -j {pbs,batch,daemon,slurm}, --job-scheduler {pbs,batch,daemon,slurm}
                         job scheduler type (default: pbs)
   -f, --force           force creation of jobs even if up to date (default:
                         false)
+  --json                create a JSON file per analysed sample to track the
+                        analysis status (default: false)
   --report              create 'pandoc' command to merge all job markdown
                         report files in the given step range into HTML, if
                         they exist; if --report is set, --job-scheduler,
@@ -48,6 +51,10 @@ optional arguments:
   -v, --version         show the version information and exit
 
 Steps:
+```
+![rnaseq_light workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_light.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_light.png)
+```
 ------
 1- picard_sam_to_fastq
 2- trimmomatic
@@ -57,13 +64,13 @@ Steps:
 6- gq_seq_utils_exploratory_analysis_rnaseq_light
 
 ```
-1- picard_sam_to_fastq
-----------------------
+picard_sam_to_fastq
+-------------------
 Convert SAM/BAM files from the input readset file into FASTQ format
 if FASTQ files are not already specified in the readset file. Do nothing otherwise.
 
-2- trimmomatic
---------------
+trimmomatic
+-----------
 Raw reads quality trimming and removing of Illumina adapters is performed using [Trimmomatic](http://www.usadellab.org/cms/index.php?page=trimmomatic).
 If an adapter FASTA file is specified in the config file (section 'trimmomatic', param 'adapter_fasta'),
 it is used first. Else, 'Adapter1' and 'Adapter2' columns from the readset file are used to create
@@ -76,18 +83,18 @@ This step takes as input files:
 1. FASTQ files from the readset file if available
 2. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
 
-3- merge_trimmomatic_stats
---------------------------
+merge_trimmomatic_stats
+-----------------------
 The trim statistics per readset are merged at this step.
 
-4- kallisto
------------
+kallisto
+--------
 Run Kallisto on fastq files for a fast esimate of abundance.
 
-5- kallisto_count_matrix
-------------------------
-6- gq_seq_utils_exploratory_analysis_rnaseq_light
--------------------------------------------------
+kallisto_count_matrix
+---------------------
+gq_seq_utils_exploratory_analysis_rnaseq_light
+----------------------------------------------
 Exploratory analysis using the gqSeqUtils R package adapted for RnaSeqLight
 
 

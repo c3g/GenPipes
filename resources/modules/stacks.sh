@@ -19,7 +19,7 @@ build() {
 
   cd $SOFTWARE_DIR
   ./configure --prefix=$INSTALL_DIR/$SOFTWARE_DIR --enable-sparsehash --with-sparsehash-include-path=/cvmfs/soft.mugqic/CentOS6/software/sparsehash_libs/sparsehash-2.0.2/include
-  make -j 8
+  make -j12
 
   make install
 }

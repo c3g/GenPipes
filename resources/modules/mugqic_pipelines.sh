@@ -3,10 +3,11 @@
 set -eu -o pipefail
 
 #SOFTWARE=mugqic_pipelines
-SOFTWARE=GenAP_Pipes
-VERSION=3.0.0
+#SOFTWARE=GenAP_Pipes
+SOFTWARE=genpipes
+VERSION=3.1.1
 ARCHIVE=$SOFTWARE-$VERSION.tar.gz
-ARCHIVE_URL=https://bitbucket.org/mugqic/mugqic_pipelines/downloads/$ARCHIVE
+ARCHIVE_URL=https://bitbucket.org/mugqic/genpipes/downloads/$ARCHIVE
 SOFTWARE_DIR=$SOFTWARE-$VERSION
 
 # Specific commands to extract and build the software
@@ -40,6 +41,7 @@ prepend-path    PATH                  \$root/pipelines/methylseq
 prepend-path    PATH                  \$root/pipelines/pacbio_assembly
 prepend-path    PATH                  \$root/pipelines/rnaseq
 prepend-path    PATH                  \$root/pipelines/rnaseq_denovo_assembly
+prepend-path    PATH                  \$root/pipelines/rnaseq_light
 prepend-path    PATH                  \$root/pipelines/tumor_pair
 prepend-path    PATH                  \$root/pipelines/hicseq
 "

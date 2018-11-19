@@ -296,7 +296,7 @@ END
                         os.path.join(assembly_directory, sample_cutoff_mer_size),
                         os.path.join(assembly_directory, "9-terminator"),
                         os.path.join(assembly_directory, "9-terminator", sample_cutoff_mer_size + ".ctg.fasta"),
-                        os.path.join(config.param('smrtanalysis_pbutgcns', 'tmp_dir', type='dirpath'), sample_cutoff_mer_size)
+                        os.path.join(config.param('smrtanalysis_pbutgcns', 'tmp_dir'), sample_cutoff_mer_size)
                     )
                     job.name = "smrtanalysis_pbutgcns." + sample_cutoff_mer_size
                     job.samples = [sample]
@@ -358,7 +358,7 @@ END
                             os.path.join(sample.name, "filtering", "data", "filtered_regions.fofn"),
                             os.path.join(sample.name, "filtering", "input.fofn"),
                             os.path.join(polishing_round_directory, sample_cutoff_mer_size_polishing_round, "sequence", sample_cutoff_mer_size_polishing_round + ".fasta"),
-                            os.path.join(config.param('smrtanalysis_pbalign', 'tmp_dir', type='dirpath'), sample_cutoff_mer_size_polishing_round)
+                            os.path.join(config.param('smrtanalysis_pbalign', 'tmp_dir'), sample_cutoff_mer_size_polishing_round)
                         )
                         job.name = "smrtanalysis_pbalign." + job_name_suffix
                         job.samples = [sample]

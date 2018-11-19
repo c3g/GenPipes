@@ -20,11 +20,8 @@ build() {
   tar zxvf $ARCHIVE
 
   cd $SOFTWARE_DIR
-  # Compile with --enable-unicode=ucs4 to fix error "ImportError: numpy-1.8.1-py2.7-linux-x86_64.egg/numpy/core/multiarray.so: undefined symbol: PyUnicodeUCS2_AsASCIIString"
-  #./configure --prefix=$INSTALL_DIR/$SOFTWARE_DIR --enable-unicode=ucs4 --with-zlib-dir=/usr/lib64 --with-ensurepip=install
-  LFS=/cvmfs/soft.mugqic/lfs/7.6  
-  ./configure --prefix=$INSTALL_DIR/$SOFTWARE_DIR --enable-unicode=ucs4 --with-zlib-dir=$LFS/tools/usr/lib --with-ensurepip=install
-  make -j8
+  ./configure --prefix=$INSTALL_DIR/$SOFTWARE_DIR --enable-optimizations --enable-unicode=ucs4 --with-ensurepip=install
+  make -j12
   make install
 
   echo "General Python installation done.... processing packages"
@@ -46,6 +43,24 @@ build() {
   # numpy
   $PIP_PATH install --upgrade numpy
   $INSTALL_DIR/$SOFTWARE_DIR/bin/python -c 'import numpy; print numpy.__version__, numpy.__file__'
+
+  # scipy
+  $PIP_PATH install --upgrade scipy
+  $INSTALL_DIR/$SOFTWARE_DIR/bin/python -c 'import scipy; print scipy.__version__, scipy.__file__'
+
+  # scikit-learn
+  $PIP_PATH install --upgrade scikit-learn
+  $PIP_PATH install --upgrade sklearn
+  $INSTALL_DIR/$SOFTWARE_DIR/bin/python -c 'import sklearn; print sklearn.__version__; print sklearn.__file__'
+
+  # numba
+  $PIP_PATH install --upgrade numba
+  $INSTALL_DIR/$SOFTWARE_DIR/bin/python -c 'import numba; print numba.__version__, numba.__file__'
+
+  # umap-learn
+  $PIP_PATH install --upgrade umap
+  $PIP_PATH install --upgrade umap-learn
+  $INSTALL_DIR/$SOFTWARE_DIR/bin/python -c 'import umap; print umap.__version__; print umap.__file__'
 
   # biopython
   $PIP_PATH install --upgrade biopython
@@ -122,15 +137,12 @@ build() {
   $PIP_PATH install --upgrade deeptools
   $INSTALL_DIR/$SOFTWARE_DIR/bin/python -c 'import deeptools; print deeptools.__file__'
 
-  # sklearn
-  $PIP_PATH install --upgrade sklearn
-  $INSTALL_DIR/$SOFTWARE_DIR/bin/python -c 'import sklearn; print sklearn.__version__; print sklearn.__file__'
-
   # RSeQC
   $PIP_PATH install --upgrade RSeQC
-  
-  #Add permissions
-  chmod -R ug+rwX,o+rX-w $INSTALL_DIR/$SOFTWARE_DIR
+
+  # For some reason, pysam installation is often broken at this step, therefore let's remove & re-install it
+  $PIP_PATH uninstall pysam
+  $PIP_PATH install --upgrade pysam
 }
 
 module_file() {

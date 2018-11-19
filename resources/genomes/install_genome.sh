@@ -6,16 +6,16 @@ module_bowtie=mugqic/bowtie/1.1.2
 module_bowtie2=mugqic/bowtie2/2.2.9
 module_bwa=mugqic/bwa/0.7.12
 module_java=mugqic/java/openjdk-jdk1.8.0_72
-module_mugqic_R_packages=mugqic/mugqic_R_packages/1.0.3
+module_mugqic_R_packages=mugqic/mugqic_R_packages/1.0.5
 module_picard=mugqic/picard/2.0.1
-module_R=mugqic/R_Bioconductor/3.1.2_3.0
+module_R=mugqic/R_Bioconductor/3.4.2_3.6
 module_samtools=mugqic/samtools/1.3.1
-module_star=mugqic/star/2.5.2a
+module_star=mugqic/star/2.5.4b
 module_tabix=mugqic/tabix/0.2.6
 module_tophat=mugqic/tophat/2.0.14
-module_ucsc=mugqic/ucsc/v326
+module_ucsc=mugqic/ucsc/v359
 module_hicup=mugqic/hicup/v0.5.9
-module_kallisto_dev=mugqic_dev/kallisto/0.43.0
+module_kallisto=mugqic/kallisto/0.44.0
 
 HOST=`hostname`
 
@@ -96,6 +96,7 @@ set_urls() {
     URL_PREFIX=ftp://ftp.ensembl.org/pub/release-$VERSION
     GENOME_URL=$URL_PREFIX/fasta/${SPECIES,,}/dna/$SPECIES.$ASSEMBLY.dna.primary_assembly.fa.gz
     NCRNA_URL=$URL_PREFIX/fasta/${SPECIES,,}/ncrna/$SPECIES.$ASSEMBLY.ncrna.fa.gz
+    CDNA_URL=$URL_PREFIX/fasta/${SPECIES,,}/cdna/$SPECIES.$ASSEMBLY.cdna.all.fa.gz
     GTF_URL=$URL_PREFIX/gtf/${SPECIES,,}/$SPECIES.$ASSEMBLY.$VERSION.gtf.gz
     VCF_URL=$URL_PREFIX/variation/vcf/${SPECIES,,}/$SPECIES.vcf.gz
     VCF_TBI_URL=$VCF_URL.tbi
@@ -113,6 +114,7 @@ set_urls() {
     then
       GENOME_URL=${GENOME_URL/$SPECIES.$ASSEMBLY/$SPECIES.$ASSEMBLY.$VERSION}
       NCRNA_URL=${NCRNA_URL/$SPECIES.$ASSEMBLY/$SPECIES.$ASSEMBLY.$VERSION}
+      CDNA_URL=${CDNA_URL/$SPECIES.$ASSEMBLY/$SPECIES.$ASSEMBLY.$VERSION}
     fi
 
     # Check if a genome primary assembly is available for this species, otherwise use the toplevel assembly
@@ -166,7 +168,50 @@ set_urls() {
     URL_PREFIX=$RELEASE_URL/${DIVISION,}
     GENOME_URL=$URL_PREFIX/fasta/$EG_SPECIES/dna/$EG_BASENAME.dna.genome.fa.gz
     NCRNA_URL=$URL_PREFIX/fasta/$EG_SPECIES/ncrna/$EG_BASENAME.ncrna.fa.gz
+    CDNA_URL=$URL_PREFIX/fasta/$EG_SPECIES/cdna/$EG_BASENAME.cdna.all.fa.gz
     GTF_URL=$URL_PREFIX/gtf/$EG_SPECIES/$EG_BASENAME.gtf.gz
+    if [[ `echo "$SPECIES_LINE" | cut -f8` == "Y"  ]]
+    then
+      VCF_URL=$URL_PREFIX/vcf/${SPECIES,,}/${SPECIES,,}.vcf.gz
+    else
+      echo "VCF not available for $SPECIES"
+    fi
+    # Retrieve species short name e.g. "athaliana" for "Arabidopsis_thaliana"
+    SPECIES_SHORT_NAME=`echo ${SPECIES:0:1}${SPECIES#*_} | tr [:upper:] [:lower:]`
+    BIOMART_DATASET=${SPECIES_SHORT_NAME}_eg_gene
+    BIOMART_GENE_ID=ensembl_gene_id
+    BIOMART_GO_ID=go_id
+    BIOMART_GO_NAME=name_1006
+    BIOMART_GO_DEFINITION=definition_1006
+
+  #
+  # Ensembl Plants
+  #
+  elif [[ $SOURCE == "EnsemblPlants" ]]
+  then
+    RELEASE_URL=ftp://ftp.ensemblgenomes.org/pub/plants/release-$VERSION
+
+    # Retrieve Ensembl Genomes species information
+    SPECIES_URL=$RELEASE_URL/species_EnsemblPlants.txt
+    download_url $SPECIES_URL
+    SPECIES_LINE="`awk -F"\t" -v species=${SPECIES,,} '$2 == species' $(download_path $SPECIES_URL)`"
+
+
+    CORE_DB_PREFIX=`echo "$SPECIES_LINE" | cut -f13 | perl -pe "s/_core_${VERSION}_\d+_\d+//"`
+    if [[ $CORE_DB_PREFIX != ${SPECIES,,} ]]
+    then
+      EG_SPECIES=$CORE_DB_PREFIX/${SPECIES,,}
+      EG_BASENAME=$SPECIES.`echo "$SPECIES_LINE" | cut -f6`.$VERSION
+    else
+      EG_SPECIES=${SPECIES,,}
+      EG_BASENAME=$SPECIES.$ASSEMBLY
+    fi
+
+    URL_PREFIX=$RELEASE_URL
+    GENOME_URL=$URL_PREFIX/fasta/$EG_SPECIES/dna/$EG_BASENAME.dna.toplevel.fa.gz
+    NCRNA_URL=$URL_PREFIX/fasta/$EG_SPECIES/ncrna/$EG_BASENAME.ncrna.fa.gz
+    CDNA_URL=$URL_PREFIX/fasta/$EG_SPECIES/cdna/$EG_BASENAME.cdna.all.fa.gz
+    GTF_URL=$URL_PREFIX/gtf/$EG_SPECIES/$EG_BASENAME.$VERSION.gtf.gz
     if [[ `echo "$SPECIES_LINE" | cut -f8` == "Y"  ]]
     then
       VCF_URL=$URL_PREFIX/vcf/${SPECIES,,}/${SPECIES,,}.vcf.gz
@@ -198,6 +243,7 @@ download_urls() {
   then
     download_url $GTF_URL
     download_url $NCRNA_URL
+    download_url $CDNA_URL
     if [ ! -z "${VCF_URL:-}" ]
     then
       download_url $VCF_URL
@@ -315,13 +361,11 @@ chmod -R ug+rwX,o+rX $INDEX_DIR \$LOG"
   fi
 }
 
-create_bowtie_tophat_index() {
+create_bowtie_index() {
   BOWTIE_INDEX_DIR=$GENOME_DIR/bowtie_index
   BOWTIE_INDEX_PREFIX=$BOWTIE_INDEX_DIR/${GENOME_FASTA/.fa}
-  TOPHAT_INDEX_DIR=$ANNOTATIONS_DIR/gtf_tophat_index
-  TOPHAT_INDEX_PREFIX=$TOPHAT_INDEX_DIR/${GTF/.gtf}
 
-  if ! is_up2date $BOWTIE_INDEX_PREFIX.[1-4].bt $BOWTIE_INDEX_PREFIX.rev.[12].bt $TOPHAT_INDEX_PREFIX.[1-4].bt $TOPHAT_INDEX_PREFIX.rev.[12].bt
+  if ! is_up2date $BOWTIE_INDEX_PREFIX.[1-4].ebwt $BOWTIE_INDEX_PREFIX.rev.[12].ebwt
   then
     echo
     echo "Creating genome Bowtie index and gtf TopHat index..."
@@ -458,8 +502,8 @@ create_kallisto_index() {
       echo
       mkdir -p $INDEX_DIR
       ln -s -f -t $INDEX_DIR ../$CDNA
-      module load $module_kallisto_dev
-      kallisto index -i $INDEX_DIR/$CDNA.idx $INDEX_DIR/$CDNA > $LOG_DIR/cdna_kallisto_$TIMESTAMP.log 2>&1
+      module load $module_kallisto
+      kallisto index -i $INDEX_DIR/$CDNA.idx $INDEX_DIR/$CDNA > $LOG_DIR/cdna_kallisto_$TIMESTAMP.err 2> $LOG_DIR/cdna_kallisto_$TIMESTAMP.log
 
     else
       echo
@@ -479,17 +523,22 @@ create_transcripts2genes_file() {
       module load $module_R
       module load $module_mugqic_R_packages
       R --no-restore --no-save<<EOF
-      suppressPackageStartupMessages(library(rtracklayer))
-      print("Building transcripts2genes...")
-      gtf_file="$ANNOTATION_GTF"
+suppressPackageStartupMessages(library(rtracklayer))
+print("Building transcripts2genes...")
+gtf_file = "$ANNOTATION_GTF"
 
-      gtf=import(gtf_file, format = "gff2")
-      tx2gene=cbind(tx_id=gtf$transcript_id, gene_id=gtf$gene_id) #gene_name
-      tx2gene=tx2gene[!is.na(tx2gene[,1]),]
-      tx2gene=unique(tx2gene)
-      tx2gene=as.data.frame(tx2gene)
+gtf = import(gtf_file, format = "gff2")
+gtf=gtf[!is.na(gtf\$transcript_id),]
+if ("transcript_version" %in% names(gtf@elementMetadata)){
+    tx_id=paste(gtf\$transcript_id, gtf\$transcript_version, sep=".")
+} else {
+    tx_id=gtf\$transcript_id
+}
+tx2gene = cbind(tx_id=tx_id, gene_id=gtf\$gene_id)
+tx2gene = unique(tx2gene)
+tx2gene = as.data.frame(tx2gene)
 
-      write.table(x=tx2gene, file="$ANNOTATION_TX2GENES", sep="\t", col.names=T, row.names=F, quote=F)
+write.table(x=tx2gene, file="$ANNOTATION_TX2GENES", sep="\t", col.names=T, row.names=F, quote=F)
 EOF
     else
       echo
@@ -634,6 +683,7 @@ copy_files() {
     TRANSCRIPT_ID_GTF=$ANNOTATIONS_DIR/${GTF/.gtf/.transcript_id.gtf}
     if ! is_up2date $TRANSCRIPT_ID_GTF ; then grep -P "(^#|transcript_id)" $ANNOTATIONS_DIR/$GTF > $TRANSCRIPT_ID_GTF ; fi
     if ! is_up2date $ANNOTATIONS_DIR/$NCRNA ; then gunzip -c `download_path $NCRNA_URL` > $ANNOTATIONS_DIR/$NCRNA ; fi
+    if ! is_up2date $ANNOTATIONS_DIR/$CDNA ; then gunzip -c `download_path $CDNA_URL` > $ANNOTATIONS_DIR/$CDNA ; fi
 
     # Create rRNA FASTA as subset of ncRNA FASTA keeping only sequences with "rRNA" (ignore case) in their descriptions
     if [ $(grep -q -i "rRNA" $ANNOTATIONS_DIR/$NCRNA)$? == 0 ]
@@ -682,6 +732,12 @@ copy_files() {
         fi
       fi
     fi
+
+    if ! is_up2date $ANNOTATIONS_DIR/$CDNA
+    then
+      echo "Could not find $ANNOTATIONS_DIR/$CDNA...\nyou might consider to use the cdna.fa file from Ensembl... "
+    fi
+
   fi
 }
 
@@ -700,14 +756,15 @@ create_genome_digest() {
     then
       echo
       echo "Creating ${enzyme} genome digest..."
+      echo "mv Digest_${ASSEMBLY//-/_}_${enzyme}_None_*.txt $GENOME_DIGEST_FILE"
       echo
       Digest_CMD="mkdir -p $GENOME_DIGEST && \
       cd $GENOME_DIGEST  && \
       ln -s -f -t $GENOME_DIGEST ../$GENOME_FASTA && \
       module load $module_hicup && \
       LOG=$LOG_DIR/${enzyme}_digest_$TIMESTAMP.log && \
-      hicup_digester --genome $ASSEMBLY --re1 ${enzymes[$enzyme]},${enzyme} $GENOME_DIGEST/$GENOME_FASTA > \$LOG 2>&1 && \
-      mv Digest_${ASSEMBLY}_${enzyme}_None_*.txt $GENOME_DIGEST_FILE && \
+      hicup_digester --genome ${ASSEMBLY//-/_} --re1 ${enzymes[$enzyme]},${enzyme} $GENOME_DIGEST/$GENOME_FASTA > \$LOG 2>&1 && \
+      mv Digest_${ASSEMBLY//-/_}_${enzyme}_None_*.txt $GENOME_DIGEST_FILE && \
       chmod -R ug+rwX,o+rX $GENOME_DIGEST \$LOG"
       cmd_or_job Digest_CMD 2
     else
@@ -727,15 +784,43 @@ build_files() {
   create_samtools_index
   create_bwa_index
   create_star_index
-  create_bowtie2_tophat_index
   create_genome_digest
-  create_ncrna_bwa_index
-  create_rrna_bwa_index
-  create_kallisto_index
-  create_transcripts2genes_file
-  create_gene_annotations
-  create_gene_annotations_flat
 
+  if is_up2date $ANNOTATIONS_DIR/$NCRNA
+  then
+    create_ncrna_bwa_index
+    create_rrna_bwa_index
+  else
+    echo echo "Could not find $ANNOTATIONS_DIR/$NCRNA..."
+    echo "No ncRNA bwa index will be created... this step is skipped..."
+    echo "No rRNA bwa index will be created... this step is skipped..."
+    echo "You might consider to use the ncrna.fa file from Ensembl, if available... "
+  fi
+
+  if is_up2date $ANNOTATIONS_DIR/$CDNA
+  then
+    create_kallisto_index
+    create_transcripts2genes_file
+  else
+    echo "Could not find $ANNOTATIONS_DIR/$CDNA..."
+    echo "No cDNA kallisto index will be created... this step is skipped..."
+    echo "No tx2gene file will be created...this step is skipped..."
+    echo "You might consider to use the cdna.fa file from Ensembl, if available... "
+  fi
+
+  if is_up2date $ANNOTATIONS_DIR/$GTF
+  then
+    create_bowtie_index
+    create_bowtie2_tophat_index
+    create_gene_annotations
+    create_gene_annotations_flat
+  else
+    echo echo "Could not find $ANNOTATIONS_DIR/$GTF..."
+    echo "No bowtie tophat index will be created... this step is skipped..."
+    echo "No bowtie2 tophat index will be created... this step is skipped..."
+    echo "No gene annotations will be performed... this step is skipped..."
+    echo "You might consider to manually download a gtf file from UCSC table browser (http://genome.ucsc.edu/cgi-bin/hgTables)"
+  fi
 
   # Annotations are not installed for UCSC genomes
   if [[ $SOURCE != "UCSC" ]]
@@ -745,7 +830,7 @@ build_files() {
 }
 
 create_genome_ini_file() {
-  INI=$INSTALL_DIR/$SPECIES.$ASSEMBLY.ini
+  INI=$INSTALL_DIR/$SPECIES.$ASSEMBLY.${SOURCE}${VERSION}.ini
   echo "\
 [DEFAULT]
 scientific_name=$SPECIES
@@ -757,13 +842,11 @@ version=$VERSION" > $INI
 
   if [ ! -z "${DBSNP_VERSION:-}" ]
   then
+    mv $INI ${INI/ini/dbSNP${DBSNP_VERSION}.ini}
+    INI=${INI/ini/dbSNP${DBSNP_VERSION}.ini}
     echo "\
 dbsnp_version=$DBSNP_VERSION" >> $INI
   fi
-  if [ ! -z "${population_AF:-}" ]; then
-    echo -e "\npopulation_AF=$population_AF" >> $INI
-  fi
-
 }
 
 install_genome() {

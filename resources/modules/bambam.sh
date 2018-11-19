@@ -16,7 +16,7 @@ build() {
 
   mv $SOFTWARE $SOFTWARE_DIR
   cd $SOFTWARE_DIR
-  make all
+  make -j12 all
 
   cd $INSTALL_DOWNLOAD
   mv $SOFTWARE_DIR $INSTALL_DIR/

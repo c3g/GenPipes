@@ -26,7 +26,6 @@ import re
 import socket
 import string
 import sys
-import md5
 
 # Append mugqic_pipelines directory to Python library path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0]))))
@@ -74,27 +73,42 @@ class MUGQICPipeline(Pipeline):
         for readset in self.readsets:
             if listName.has_key(readset.sample.name) :
                 listName[readset.sample.name]+="."+readset.name
-            else: 
+            else:
                 listName[readset.sample.name]=readset.sample.name+"."+readset.name
-        request = \
-            "hostname=" + socket.gethostname() + "&" + \
-            "ip=" + socket.gethostbyname(socket.gethostname()) + "&" + \
-            "pipeline=" + self.__class__.__name__ + "&" + \
-            "steps=" + ",".join([step.name for step in self.step_range]) + "&" + \
-            "samples=" + str(len(self.samples)) + "&" + \
-            "AnonymizedList=" + ",".join([md5.md5(self.__class__.__name__ + "." + value).hexdigest() for key, value in listName.iteritems()])
+
+        # The unique identifier is computed from:
+        # - Pipeline name
+        # - Username (at runtime, not at script creation)
+        # - Server name
+        # - Readset File
+
+        hostName = socket.gethostname()
+        serverIP = socket.gethostbyname(hostName)
+        pipelineName = self.__class__.__name__
+        readsetFiles = ",".join(listName.values())
+        uniqueIdentifier = "{serverIP}-{pipelineName}-{readsetFiles}" \
+            .format(serverIP=serverIP, pipelineName=pipelineName, readsetFiles=readsetFiles) \
+            .replace("'", "''")
+
+        request = '&'.join([
+            "hostname=" + hostName,
+            "ip=" + serverIP,
+            "pipeline=" + pipelineName,
+            "steps=" + ",".join([step.name for step in self.step_range]),
+            "samples=" + str(len(self.samples))
+        ])
 
         print("""
 {separator_line}
 # Call home with pipeline statistics
 {separator_line}
-wget "{server}?{request}" --quiet --output-document=/dev/null
-""".format(separator_line = "#" + "-" * 79, server=server, request=request))
-
+LOG_MD5=$(echo $USER-'{uniqueIdentifier}' | md5sum | awk '{{ print $1 }}')
+wget "{server}?{request}&md5=$LOG_MD5" --quiet --output-document=/dev/null
+""".format(separator_line = "#" + "-" * 79, server=server, request=request, uniqueIdentifier=uniqueIdentifier))
 
     def submit_jobs(self):
-        super(MUGQICPipeline, self).scheduler.submit(self)
-        if self.jobs and self.args.job_scheduler in ["pbs", "batch"]:
+        super(MUGQICPipeline, self).submit_jobs()
+        if self.jobs and self.args.job_scheduler in ["pbs", "batch", "slurm"]:
             self.mugqic_log()
 
 
@@ -249,7 +263,7 @@ END
             if readset.run_type == "PAIRED_END":
                 candidate_input_files = [[readset.fastq1, readset.fastq2]]
                 if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
+                    candidate_input_files.append([re.sub("\.sorted.bam$|\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.sorted.bam$|\.bam$", ".pair2.fastq.gz", readset.bam)])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
                 job = trimmomatic.trimmomatic(
                     fastq1,
@@ -266,7 +280,7 @@ END
             elif readset.run_type == "SINGLE_END":
                 candidate_input_files = [[readset.fastq1]]
                 if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
+                    candidate_input_files.append([re.sub("\.sorted.bam$|\.bam$", ".single.fastq.gz", readset.bam)])
                 [fastq1] = self.select_input_files(candidate_input_files)
                 job = trimmomatic.trimmomatic(
                     fastq1,
@@ -383,7 +397,9 @@ pandoc \\
 
         # Known variants file
         population_AF = config.param('verify_bam_id', 'population_AF', required=False)
-        known_variants_annotated = config.param('verify_bam_id', 'verifyBamID_variants_file', required=False)
+        candidate_input_files = [[config.param('verify_bam_id', 'verifyBamID_variants_file', required=False)]]
+        candidate_input_files.append([config.param('verify_bam_id', 'verifyBamID_variants_file', required=False) + ".gz"])
+        [known_variants_annotated] = self.select_input_files(candidate_input_files)
         verify_bam_id_directory = "verify_bam_id"
         variants_directory = "variants"
 
@@ -395,7 +411,7 @@ pandoc \\
             Job(
                 [known_variants_annotated],
                 [variants_directory, verify_bam_id_directory],
-                command="mkdir -p " + variants_directory + " " + verify_bam_id_directory, 
+                command="mkdir -p " + variants_directory + " " + verify_bam_id_directory,
                 name = "verify_bam_id_create_directories"
         ))
 
@@ -417,12 +433,12 @@ pandoc \\
                 known_variants_annotated,
                 output_prefix
             )
-            job.name = "verify_bam_id_" + sample.name
+            job.name = "verify_bam_id." + sample.name
             job.samples = [sample]
 
             jobs.append(job)
 
-            verify_bam_results.extend([output_prefix + ".selfSM" ]) 
+            verify_bam_results.extend([output_prefix + ".selfSM" ])
 
         # Coverage bed is null if whole genome experiment
         target_bed=coverage_bed if coverage_bed else ""
@@ -432,10 +448,11 @@ pandoc \\
             rmarkdown.render(
                 job_input            = verify_bam_results ,
                 job_name             = "verify_bam_id_report",
-                input_rmarkdown_file = os.path.join(self.report_template_dir, "Illumina.verify_bam_id.Rmd") ,
+                input_rmarkdown_file = os.path.join(self.report_template_dir, "Illumina.verify_bam_id.Rmd"),
+                samples              = self.samples,
                 render_output_dir    = 'report',
-                module_section       = 'report', 
-                prerun_r             = 'source_dir="' + verify_bam_id_directory + '"; report_dir="report" ; params=list(verifyBamID_variants_file="' + known_variants_annotated  + '", dbnsfp_af_field="' + population_AF + '", coverage_bed="' + target_bed + '");' 
+                module_section       = 'report',
+                prerun_r             = 'source_dir="' + verify_bam_id_directory + '"; report_dir="report" ; params=list(verifyBamID_variants_file="' + known_variants_annotated  + '", dbnsfp_af_field="' + population_AF + '", coverage_bed="' + target_bed + '");'
             )
         )
 

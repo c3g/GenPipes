@@ -21,11 +21,11 @@ build() {
   NEW_PREFIX="PREFIX = $INSTALL_DIR\/$SOFTWARE_DIR"
   cd core
   sed -i "s|$OLD_PREFIX|$NEW_PREFIX|" Makefile
-  make
+  make -j12
   make install
   cd ../extensions
   sed -i "s|$OLD_PREFIX|$NEW_PREFIX|" Makefile  
-  make
+  make -j12
   make install
 }
 

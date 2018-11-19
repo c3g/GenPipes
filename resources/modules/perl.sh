@@ -3,9 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=perl
-#VERSION=5.10.1
-#VERSION=5.18.2
-VERSION=5.22.1
+VERSION=5.26.2
 ARCHIVE=$SOFTWARE-$VERSION.tar.gz
 ARCHIVE_URL=http://www.cpan.org/src/5.0/$ARCHIVE
 SOFTWARE_DIR=$SOFTWARE-$VERSION
@@ -19,7 +17,7 @@ build() {
 
   cd $SOFTWARE_DIR
   ./Configure -des -Dusethreads -Dprefix=$INSTALL_DIR/$SOFTWARE_DIR
-  make
+  make -j12
   make install
 }
 

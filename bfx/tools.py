@@ -417,7 +417,7 @@ R --no-save --args \\
 def r_select_scaffolds(inputs, outputs, folder_sca, kmer, name_sample, type_insert, min_insert_size=200):
     if not isinstance(inputs, list):
         inputs=[inputs]
-    
+
     return Job(
         inputs,
         outputs,
@@ -444,7 +444,7 @@ R --no-save --args \\
 def r_find_cluster(inputs, outputs, folder_sca, kmer, unmap_type, name_sample, type_insert, max_insert_size=200, min_mapping_quality=10):
     if not isinstance(inputs, list):
         inputs=[inputs]
-    
+
     return Job(
         inputs,
         outputs,
@@ -474,7 +474,7 @@ R --no-save --args \\
 def r_find_insert(inputs, outputs, folder_sca, kmer, name_sample, type_insert, mean_coverage=20, max_insert_size=200, min_overlap=2, exclu_file="None"):
     if not isinstance(inputs, list):
         inputs=[inputs]
-    
+
     return Job(
         inputs,
         outputs,
@@ -507,7 +507,7 @@ R --no-save --args \\
 def r_filter_insert(inputs, outputs, folder_sca, kmer, name_sample, type_insert, mean_coverage=20, max_insert_size=200, strand=1, min_num_read=1, mean_read_length=100):
     if not isinstance(inputs, list):
         inputs=[inputs]
-    
+
     return Job(
         inputs,
         outputs,
@@ -538,6 +538,9 @@ R --no-save --args \\
             mean_read_length=mean_read_length
         )
     )
+
+
+## functions for bash tools ##
 
 def sh_ihec_rna_metrics(input_bam, input_name, input_picard_dup, output_dir):
     output_metrics=os.path.join(output_dir, input_name+".read_stats.txt")
@@ -579,7 +582,7 @@ def sh_ihec_chip_metrics(chip_bam, input_bam, sample_name, input_name, chip_type
     crosscor_input =os.path.join(output_dir, sample_name + ".crosscor")
     return Job(
         [input_bam, chip_bam, chip_bed, crosscor_input],
-        [output_metrics, output_fingerprints, output_fingerprints_png, output_dedup_chip_bam, output_dedup_chip_bai, output_dedup_input_bam, output_dedup_input_bai, output_flagstats],
+        [output_metrics, output_dedup_chip_bam, output_dedup_chip_bai, output_flagstats],
         [
             ['DEFAULT', 'module_mugqic_tools'],
             ['DEFAULT', 'module_samtools'],
@@ -596,17 +599,140 @@ IHEC_chipseq_metrics_max.sh \\
     -p {chip_bed} \\
     -o {output_dir} \\
     -a {assembly}""".format(
-        input_bam=input_bam,
-        input_name=input_name,
-        sample_name=sample_name,
-        chip_bam=chip_bam,
-        chip_type=chip_type,
-        threads=config.param('IHEC_chipseq_metrics', 'thread', type='int') if config.param('IHEC_chipseq_metrics', 'thread', type='int',required=False) else 1,
-        chip_bed=chip_bed,
-        output_dir=output_dir, 
-        assembly=assembly
+            input_bam=input_bam,
+            input_name=input_name,
+            sample_name=sample_name,
+            chip_bam=chip_bam,
+            chip_type=chip_type,
+            threads=config.param('IHEC_chipseq_metrics', 'thread', type='int') if config.param('IHEC_chipseq_metrics', 'thread', type='int',required=False) else 1,
+            chip_bed=chip_bed,
+            output_dir=output_dir,
+            assembly=assembly
         ),
         removable_files=[output_fingerprints,output_fingerprints_png,output_dedup_chip_bam,output_dedup_chip_bam,output_dedup_chip_bai,output_dedup_input_bam,output_dedup_input_bai,output_flagstats]
+    )
+
+def sh_fastq_readname_edit(fastq, job_name):
+    return Job(
+        [fastq],
+        [fastq + ".edited.gz"],
+        [
+            ['DEFAULT', 'module_mugqic_tools'],
+        ],
+        command="""\
+bash FastqReadNameEdit.sh \\
+  -i {input_fastq} \\
+  -o {output_fastq} \\
+  -p {fastq_abs_path}""".format(
+            input_fastq=fastq,
+            output_fastq=fastq + ".edited.gz",
+            fastq_abs_path=os.path.abspath(fastq)
+        ),
+        name=job_name,
+        removable_files = [fastq + ".edited.gz"]
+    )
+
+def sh_create_rmap(genome_digest_input, rmap_output, job_name):
+    return Job(
+        [genome_digest_input],
+        [rmap_output],
+        [
+            ['DEFAULT', 'module_mugqic_tools']
+        ],
+        command="""
+bash createRmapFile.sh \\
+  {infile} \\
+  {outfile}""".format(
+            infile=genome_digest_input,
+            outfile=rmap_output
+        ),
+        name=job_name
+    )
+
+
+def sh_create_baitmap(bait, sorted_bait, annotation, output):
+    return Job(
+        [output + ".tmp", bait],
+        [output],
+        [
+            ['DEFAULT', 'module_mugqic_tools']
+        ],
+        command="""
+bash createBaitMapFile.sh \\
+  {input_file}
+  {bait_file} \\
+  {sorted_bait_file} \\
+  {annotation} \\
+  {tmp_file} \\
+  {output_file}""".format(
+            input_file=output + ".tmp",
+            bait_file=bait,
+            sorted_bait_file=sorted_bait,
+            annotation=annotation,
+            tmp_file=output + ".tmp2",
+            output_file=output
+        ),
+        removable_files=[input],
+        name="create_baitmap_file.addAnno." + os.path.basename(output)
+    )
+
+def sh_extract_bait_bed(ibed_file, sample_name):
+    return Job(
+        [ibed_file],
+        [ibed_file + ".bait"],
+        [
+            ['DEFAULT', 'module_mugqic_tools']
+        ],
+        command = """
+bash extractBaitBed.sh \\
+  {input_file} \\
+  {output_tmp} \\
+  {output_file}""".format(
+            input_file=ibed_file,
+            output_tmp=ibed_file + ".bait.tmp",
+            output_file=ibed_file + ".bait"
+        ),
+        name="extract_bait_bed." + sample_name,
+        removable_files=[ibed_file + ".bait"]
+    )
+
+def sh_extract_capture_bed(ibed_file, sample_name):
+    return Job(
+        [ibed_file],
+        [ibed_file + ".capture"],
+        [
+            ['DEFAULT', 'module_mugqic_tools']
+        ],
+        command = """
+bash extractCaptureBed.sh \\
+  {input_file} \\
+  {output_tmp} \\
+  {output_file}""".format(
+            input_file=ibed_file,
+            output_tmp=ibed_file + ".capture.tmp",
+            output_file=ibed_file + ".capture"
+        ),
+        name="extract_capture_bed." + sample_name,
+        removable_files=[ibed_file + ".capture"]
+    )
+
+def clean_otu(otu_table):
+    """
+    Used by ampliconseq pipeline
+    Cleans the OTU table : removes all the lines containing characters (e.g. division, OP3, WS6...)
+    """
+    bkp_otu_table = re.sub('OTU_data', 'OTU_data_BACKUP', otu_table)
+    return Job(
+        [otu_table],
+        [bkp_otu_table],
+        [
+            ['DEFAULT', 'module_mugqic_tools'],
+        ],
+        command="""\
+cleanOTUtable.sh \\
+ {otu}""".format(
+            otu=otu_table,
+         )
     )
 
 ## methylseq tools
@@ -651,7 +777,7 @@ bash cpgStats.sh \\
 def methylseq_metrics_report(sample_list, inputs, output, target_bed):
     if not isinstance(inputs, list):
         inputs=[inputs]
-    
+
     return Job(
         inputs,
         [output],
@@ -673,7 +799,7 @@ bash methylseq_metrics.sh \\
 def methylseq_ihec_metrics_report(sample_name, inputs, output, output_all, target_bed, count):
     if not isinstance(inputs, list):
         inputs=[inputs]
-    
+
     return Job(
         inputs,
         [output, output_all],

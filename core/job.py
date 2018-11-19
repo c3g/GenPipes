@@ -147,7 +147,7 @@ class Job:
         return True
 
 # Create a new job by concatenating a list of jobs together
-def concat_jobs(jobs, name=""):
+def concat_jobs(jobs, name="", samples=[]):
 
     # Merge all input/output/report/removable files and modules
     input_files = []
@@ -155,16 +155,16 @@ def concat_jobs(jobs, name=""):
     report_files = []
     removable_files = []
     modules = []
-    samples = []
+    sample_list = samples
     for job_item in jobs:
         input_files.extend([input_file for input_file in job_item.input_files if input_file not in input_files and input_file not in output_files])
         output_files.extend([output_file for output_file in job_item.output_files if output_file not in output_files])
         report_files.extend([report_file for report_file in job_item.report_files if report_file not in report_files])
         removable_files.extend([removable_file for removable_file in job_item.removable_files if removable_file not in removable_files])
         modules.extend([module for module in job_item.modules if module not in modules])
-        samples.extend([sample for sample in job_item.samples if sample not in samples])
+        sample_list.extend([sample for sample in job_item.samples if sample not in sample_list])
 
-    job = Job(input_files, output_files, name=name, report_files=report_files, removable_files=removable_files, samples=samples)
+    job = Job(input_files, output_files, name=name, report_files=report_files, removable_files=removable_files, samples=sample_list)
     job.modules = modules
 
     # Merge commands
@@ -173,7 +173,7 @@ def concat_jobs(jobs, name=""):
     return job
 
 # Create a new job by piping a list of jobs together
-def pipe_jobs(jobs, name=""):
+def pipe_jobs(jobs, name="", samples=[]):
 
     job = Job(jobs[0].input_files, jobs[-1].output_files, name=name)
 
@@ -181,12 +181,12 @@ def pipe_jobs(jobs, name=""):
     report_files = []
     removable_files = []
     modules = []
-    samples = []
+    sample_list = samples
     for job_item in jobs:
         report_files.extend(job_item.report_files)
         removable_files.extend(job_item.removable_files)
         modules.extend(job_item.modules)
-        samples.extend([sample for sample in job_item.samples if sample not in samples])
+        sample_list.extend([sample for sample in job_item.samples if sample not in sample_list])
 
     # Remove duplicates if any, keeping the order
     report_files = list(collections.OrderedDict.fromkeys([report_file for report_file in report_files]))
@@ -195,8 +195,8 @@ def pipe_jobs(jobs, name=""):
     job.removable_files = removable_files
     modules = list(collections.OrderedDict.fromkeys([module for module in modules]))
     job.modules = modules
-    samples = list(collections.OrderedDict.fromkeys([sample for sample in samples]))
-    job.samples = samples
+    sample_list = list(collections.OrderedDict.fromkeys([sample for sample in sample_list]))
+    job.samples = sample_list
 
     # Merge commands
     job.command = " | \\\n".join([job_item.command for job_item in jobs])

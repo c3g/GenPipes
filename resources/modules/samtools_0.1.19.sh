@@ -18,7 +18,7 @@ build() {
   cd $SOFTWARE_DIR
 
   # Install software
-  make prefix=$INSTALL_DIR/${SOFTWARE_DIR}
+  make -j12 prefix=$INSTALL_DIR/${SOFTWARE_DIR}
  
   cd $INSTALL_DOWNLOAD
   mv -i $SOFTWARE_DIR $INSTALL_DIR/

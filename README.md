@@ -1,8 +1,11 @@
-MUGQIC Pipelines
+GenPipes
 ================
 This repository holds several bioinformatics pipelines developed at [McGill University and Génome Québec Innovation Centre](http://gqinnovationcenter.com) (MUGQIC), as part of the [GenAP project](https://genap.ca).
 
-MUGQIC pipelines consist of Python scripts which create a list of jobs running Bash commands. Those scripts support dependencies between jobs and smart restart mechanism if some jobs fail during pipeline execution. Jobs can be submitted in different ways: by being sent to a PBS scheduler like Torque or by being run as a series of commands in batch through a Bash script. Job commands and parameters can be modified through several configuration files.
+GenPipes consist of Python scripts which create a list of jobs running Bash commands. Those scripts support dependencies between jobs and smart restart mechanism if some jobs fail during pipeline execution. Jobs can be submitted in different ways: by being sent to a PBS scheduler like Torque or by being run as a series of commands in batch through a Bash script. Job commands and parameters can be modified through several configuration files.
+
+**For a more detailed tutorial on how to use GenPipes, please visit our [tutorial page](http://www.computationalgenomics.ca/tutorials/).**  
+
 
 On this page:
 
@@ -11,7 +14,7 @@ On this page:
 
 Software requirement
 --------------------
-MUGQIC pipelines have been tested with Python 2.7.
+GenPipes have been tested with Python 2.7.
 
 
 Quick setup for abacus, guillimin and mammouth users
@@ -76,10 +79,10 @@ MUGQIC pipelines and compatible Python version are already installed as modules 
 To use them by default, add in your *$HOME/.bash_profile*:
 ```
 #!bash
-module load mugqic/python/2.7.13
-module load mugqic/mugqic_pipelines/<latest_version>
+module load mugqic/python/2.7.14
+module load mugqic/genpipes/<latest_version>
 ```
-(find out the latest version with: "`module avail 2>&1 | grep mugqic/mugqic_pipelines`").
+(find out the latest version with: "`module avail 2>&1 | grep mugqic/genpipes`").
 
 
 ### For guillimin and mammouth users
@@ -96,12 +99,12 @@ Download and setup for external users
 
 ### Download
 
-Visit our [Download page](https://bitbucket.org/mugqic/mugqic_pipelines/downloads) to get the latest stable release.
+Visit our [Download page](https://bitbucket.org/mugqic/genpipes/downloads) to get the latest stable release.
 
 If you want to use the most recent development version:
 ```
 #!bash
-git clone git@bitbucket.org:mugqic/mugqic_pipelines.git
+git clone git@bitbucket.org:mugqic/genpipes.git
 ```
 
 
@@ -110,10 +113,10 @@ git clone git@bitbucket.org:mugqic/mugqic_pipelines.git
 Set `MUGQIC_PIPELINES_HOME` to your local copy path, in your *$HOME/.bash_profile*:
 ```
 #!bash
-export MUGQIC_PIPELINES_HOME=/path/to/your/local/mugqic_pipelines
+export MUGQIC_PIPELINES_HOME=/path/to/your/local/genpipes
 ```
 
-MUGQIC Pipelines require genomes and modules resources to run properly.
+GenPipes (formerly called MUGQIC Pipelines) require genomes and modules resources to run properly.
 First, set `MUGQIC_INSTALL_HOME` to the directory where you want to install those resources, in your *$HOME/.bash_profile*:
 ```
 #!bash
@@ -271,7 +274,7 @@ Usage
 
 For each pipeline, get help about usage, arguments and steps with:
 
-* if you use a `mugqic/mugqic_pipelines/<version>` module on our clusters, simply:
+* if you use a `mugqic/genpipes/<version>` module on our clusters (or `mugqic/mugqic_pipelines/<version>`), simply:
 ```
 #!bash
 <pipeline_name>.py --help
@@ -286,16 +289,16 @@ Pipelines require as input one Readset File, one or more Configuration File(s) a
 
 For more information about a specific pipeline, visit:
 
-### [DNA-Seq Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/dnaseq/)
-### [DNA-Seq high Coverage Pipeline Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/dnaseq_high_coverage/)
-### [RNA-Seq Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/rnaseq/)
-### [RNA-Seq De Novo Assembly Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/rnaseq_denovo_assembly/)
-### [PacBio Assembly Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/pacbio_assembly/)
-### [ChIP-Seq Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/chipseq/)
-### [Amplicon-Seq Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/ampliconseq/)
-### [Tumor Pair Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/tumor_pair/)
-### [Methyl-Seq Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/methylseq/)
-### [Illumina Run Processing Pipeline](https://bitbucket.org/mugqic/mugqic_pipelines/src/master/pipelines/illumina_run_processing/)
+### [DNA-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/dnaseq/)
+### [DNA-Seq high Coverage Pipeline Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/dnaseq_high_coverage/)
+### [RNA-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/rnaseq/)
+### [RNA-Seq De Novo Assembly Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/rnaseq_denovo_assembly/)
+### [PacBio Assembly Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/pacbio_assembly/)
+### [ChIP-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/chipseq/)
+### [Amplicon-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/ampliconseq/)
+### [Tumor Pair Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/tumor_pair/)
+### [Methyl-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/methylseq/)
+### [Illumina Run Processing Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/illumina_run_processing/)
 
 
 Readset File
@@ -497,6 +500,9 @@ which will output e.g.:
 ...
 ```
 
+A Note about Cedar and Graham
+------------
+The default scheduler in GenPipes is the PBS scheduler. Cedar and Graham use the SLURM scheduler. To use GenPipes on Cedar or Graham, don't forget to add the "-j slurm" option.
 
 Call home
 ---------
@@ -513,12 +519,12 @@ Data collected:
 
 Contact us
 ----------
-Please visit our [mailing list](https://groups.google.com/forum/#!forum/mugqic_pipelines) to find questions and answers about MUGQIC Pipelines.
+Please visit our [mailing list](https://groups.google.com/forum/#!forum/genpipes) to find questions and answers about GenPipes.
 
-To subscribe to the mailing list and receive other people's messages, send an e-mail at [mugqic_pipelines+subscribe@googlegroups.com](mailto:mugqic_pipelines+subscribe@googlegroups.com).
+To subscribe to the mailing list and receive other people's messages, send an e-mail at [genpipes+subscribe@googlegroups.com](mailto:genpipes+subscribe@googlegroups.com).
 You will receive an invitation which you must accept.
 
-To use it, send us an e-mail at [mugqic_pipelines@googlegroups.com](mailto:mugqic_pipelines@googlegroups.com).
+To use it, send us an e-mail at [genpipes@googlegroups.com](mailto:genpipes@googlegroups.com).
 
 You can also report bugs at [pipelines@computationalgenomics.ca](mailto:pipelines@computationalgenomics.ca).
 

@@ -18,7 +18,7 @@ build() {
   cd $SOFTWARE_DIR
   module load mugqic/sparsehash
   ./configure --prefix=$INSTALL_DIR/$SOFTWARE_DIR
-  make
+  make -j12
   make install
 }
 

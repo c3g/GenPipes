@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=blast
-VERSION=2.4.0+
+VERSION=2.7.1+
 ARCHIVE=ncbi-$SOFTWARE-$VERSION-src.tar.gz
 ARCHIVE_URL=ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/${VERSION%+}/$ARCHIVE
 SOFTWARE_DIR=ncbi-$SOFTWARE-$VERSION
@@ -17,7 +17,7 @@ build() {
 
   cd ${SOFTWARE_DIR}-src/c++
   ./configure --prefix=$INSTALL_DIR/$SOFTWARE_DIR
-  make
+  make -j12
   make install
 }
 
@@ -31,7 +31,7 @@ module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
 prepend-path    PATH                \$root/bin
-prepend-path    BLASTDB             \$::env(MUGQIC_INSTALL_HOME_TMP)/genomes/blast_db
+prepend-path    BLASTDB             \$::env(MUGQIC_INSTALL_HOME)/genomes/blast_db
 "
 }
 

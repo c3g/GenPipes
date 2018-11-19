@@ -5,7 +5,7 @@ set -eu -o pipefail
 SOFTWARE=ucsc
 # By default, the latest remote version will be downloaded and the version date set appropriately.
 # To use a local archive specific version, uncomment and update VERSION
-VERSION=v346
+VERSION=v359
 #VERSION=latest
 #VERSION=20140212
 if [[ $VERSION == latest ]]
@@ -42,7 +42,7 @@ build() {
   mv userApps $SOFTWARE_DIR
 
   cd $SOFTWARE_DIR
-  make
+  make -j12
 
   # Install software
   cd $INSTALL_DOWNLOAD
