@@ -1533,9 +1533,9 @@ END`""".format(
                         tumor_pair.tumor.name,
                         os.path.join(mutect_directory, tumor_pair.name + ".others.mutect2.vcf.gz"),
                         exclude_intervals=unique_sequences_per_job_others,
-                        interval_list=interval_list
-                    )
-                ], name="gatk_mutect2." + tumor_pair.name + ".others"))
+                        interval_list=interval_list,
+                        )
+                    ], name="gatk_mutect2." + tumor_pair.name + ".others"))
 
         return jobs
 
