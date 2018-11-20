@@ -719,7 +719,6 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
             )
         )
 
-
 def variant_recalibrator(variants,
                          other_options,
                          recal_output,
@@ -1102,7 +1101,7 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
                 reference=reference_sequence if reference_sequence else config.param('picard_convert_sequencing_artifacts_metrics', 'genome_fasta'),
             )
         )
-
+    
 def collect_oxog_metrics(
     input,
     output,
@@ -1237,7 +1236,6 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
                 output + ".md5"
             ]
         )
-
 
 def picard_mark_duplicates(
     inputs,
