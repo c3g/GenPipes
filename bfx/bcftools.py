@@ -83,7 +83,7 @@ bcftools \\
         options=options if options else "",
         reference_fasta=config.param('samtools_mpileup', 'genome_fasta', type='filepath'),
         inputs="".join(" \\\n  " + input for input in inputs),
-        regions="-r " + regions,
+        regions="-r " + regions if regions else "",
         regionFile="-T " + regionFile if regionFile else "",
         output=" \\\n > " + output if output else ""
         )
@@ -166,10 +166,10 @@ def view(input, output, filter_options=None):
         command="""\
 bcftools \\
   view {filter_options} \\
-  {input}{output}""".format(
+  {output}{input}""".format(
         filter_options=filter_options if filter_options else "",
         input=" \\\n " + input if input else "",
-        output=" \\\n > " + output if output else ""
+        output=" \\\n -o " + output if output else ""
         )
     )
 
