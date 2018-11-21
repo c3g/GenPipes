@@ -923,6 +923,93 @@ pandoc \\
 
         return jobs 
 
+    def filter_snp_cpg(self):
+        """
+        SNP CpGs filtering
+        """
+
+        jobs = []
+        for sample in self.samples:
+            methyl_directory = os.path.join("methylation_call", sample.name)
+
+            candidate_input_files = [[os.path.join(methyl_directory, sample.name + ".sorted.dedup.CpG_profile.strand.combined.csv")]]
+            candidate_input_files.append([os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup.CpG_profile.stran.combined.csv")])
+            [input_file] = self.select_input_files(candidate_input_files)
+
+            output_file = re.sub("CpG_profile.strand.combined.csv", ".filtered", input_file)
+
+            jobs.append(
+                concat_jobs([
+                    Job(command="mkdir -p " + methyl_directory, samples=[sample]),
+                    tools.filter_snp_cpg(
+                        input_file,
+                        output_file
+                    )
+                ], name="filter_snp_cpg." + sample.name)
+            )
+        return jobs
+
+    def prepare_methylkit(self):
+        """
+        Prepare input file for methylKit analysis
+        """
+
+        jobs = []
+        for sample in self.samples:
+            methyl_directory = os.path.join("methylation_call", sample.name)
+            output_directory = os.path.join("methylkit_dmr", sample_name)
+
+            candidate_input_files = [[os.path.join(methyl_directory, sample.name + ".sorted.dedup.filtered")]]
+            candidate_input_files.append([os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup.filtered")])
+            [input_file] = self.select_input_files(candidate_input_files)
+
+            output_file = os.path.join(output_directory, re.sub("filtered", "map.input", os.path.basename(input_file)))
+
+            jobs.append(
+                concat_jobs([
+                    Job(command="mkdir -p " + output_directory, samples=[sample]),
+                    tools.prepare_methylkit(
+                        input_file,
+                        output_file
+                    )
+                ], name="prepare_methylkit." + sample.name)
+            )
+        return jobs
+
+    def methylkit_dmr(self):
+        """
+        Run methylKit to get DMCs for different designeds comparisons
+        """
+
+        jobs = []
+        for contrast in self.contrasts:
+            methylkit_dmr_directory = os.path.join("methylkit_dmr", sample.name)
+
+            candidate_input_files = [[os.path.join(methylkit_dmr_directory, sample.name +, ".sorted.dedup.map.input") for sample in group] for group in contrast.treatments]
+            candidate_input_files.append([os.path.join(methylkit_dmr_directory, sample.name + ".readset_sorted.dedup.map.input") for sample in group] for group in contrast.treatments])
+            [treatment_input_file] = self.select_input_files(candidate_input_files)
+
+            candidate_input_files = [[os.path.join(methylkit_dmr_directory, sample.name +, ".sorted.dedup.map.input") for sample in group] for group in contrast.controls]
+            candidate_input_files.append([os.path.join(methylkit_dmr_directory, sample.name + ".readset_sorted.dedup.map.input") for sample in group] for group in contrast.controls])
+            [control_input_file] = self.select_input_files(candidate_input_files)
+
+            dmr_job = tools.methylkit_dmr(
+                treatment_input_file,
+                control_input_file,
+                contrast.name,
+                methylkit_dmr_directory
+            )
+            dmr_job.samples = [[sample for sample in group] for group in contrast.controls, contrast.treatments]
+
+            jobs.append(
+                concat_jobs([
+                    Job(command="mkdir -p " + methylkit_dmr_directory),
+                    dmr_job
+                ], name="methylkit_dmr." + contrast.name)
+            )
+        return jobs
+
+
     @property
     def steps(self):
         return [
@@ -940,7 +1027,10 @@ pandoc \\
             self.methylation_profile,
             self.all_sample_metrics_report,
             self.ihec_sample_metrics_report,
-            self.bis_snp                    # step 14
+            self.bis_snp,
+            self.filter_snp_cpg,            # step 15
+            self.prepare_methylkit,
+            self.methylkit_dmr
         ]
 
 if __name__ == '__main__': 
