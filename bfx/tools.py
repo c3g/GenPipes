@@ -774,6 +774,70 @@ bash cpgStats.sh \\
         )
     )
 
+def filter_snp_cpg(input, output):
+    return Job(
+        [input],
+        [output],
+        [
+            ['DEFAULT', 'module_mugqic_tools']
+        ],
+        command="""\
+cat {input} | \\
+awk '$11>=5' | \\
+sort -k1,1V -k2,2n | \\
+bedtools intersect \\
+  -a stdin \\
+  -b {filter_file} -v 
+  > {output}""".format(
+            input=input,
+            filter_file=config.param('filter_snp_cpg', 'snp_cpg_fileter_file'),
+            output=output
+        )
+    )
+
+def prepare_methylkit(input, output):
+    return Job(
+        [input],
+        [output],
+        [
+            []
+        ],
+        command="""\
+echo -e \"chrBase\tchr\tbase\tstrand\tcoverage\tfreqC\tfreqT\" \\
+  > {output} && \\
+cat {input} | \\
+awk -F"\t" '$11>=5 {print $1"."$2"\t"$1"\t"$2"\tF\t"$11"\t"$12"\t"(100-$12)}' \\
+  >> {output}
+""".format(
+            input=input,
+            output=output
+        )
+    )
+
+def methylkit(treatment_files, control_files, contrast_name, out_dir):
+    
+    return Job(
+        treatment_files + control_files,
+        [output],
+        [
+            ['DEFAULT', 'module_mugqic_tools'],
+            ['DEFAULT', 'module_R']
+        ],
+        command="""\
+echo \"{contrast};{treatments};{controls}\" \\
+  > {output_dir}/designFile.{contrast}.csv && \\
+Rscript $R_TOOLS/MethylKit.dmr.r designFile.{contrast}.csv hg38 10 500 500 3 10 FALSE $nsample"
+echo "module load mugqic/R_Bioconductor/3.3.3_3.4 && Rscript MESO.MethylKit.dmr.r designFile.$types.csv hg38 10 500 500 3 10 FALSE $nsample"|msub -V -l walltime=20:00:0 -l nodes=1:ppn=4 -j oe -o methylKit.$project.$types -N methylKit.$project.$types -d `pwd` -m ae -M shao.xiaojian@mail.mcgill.ca 
+done
+done
+#### parameters are : design file, genome version, read coverage per CpGs, tile size (for the DMR analysis purpose), step size, min#CpGs in the tile; min methylation difference; whether strands need to be merged; min#sample per group.""".format(
+            contrast=contrast_name,
+            treatments=",".join(treatment_files),
+            controls=",".join(control_files),
+            output_dir=out_dir
+        )
+    )
+
 def methylseq_metrics_report(sample_list, inputs, output, target_bed):
     if not isinstance(inputs, list):
         inputs=[inputs]
