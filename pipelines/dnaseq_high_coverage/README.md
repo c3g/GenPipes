@@ -25,7 +25,7 @@ usage: dnaseq_high_coverage.py [-h] [--help] [-c CONFIG [CONFIG ...]]
                                [-l {debug,info,warning,error,critical}]
                                [-t {mugqic,mpileup}] [-r READSETS] [-v]
 
-Version: 3.1.0
+Version: 3.1.1
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
@@ -63,6 +63,10 @@ optional arguments:
   -v, --version         show the version information and exit
 
 Steps:
+```
+![dnaseq_high_coverage workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_dnaseq_high_coverage.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_dnaseq_high_coverage.png)
+```
 ------
 1- picard_sam_to_fastq
 2- trimmomatic
@@ -81,13 +85,13 @@ Steps:
 15- gemini_annotations
 
 ```
-1- picard_sam_to_fastq
-----------------------
+picard_sam_to_fastq
+-------------------
 Convert SAM/BAM files from the input readset file into FASTQ format
 if FASTQ files are not already specified in the readset file. Do nothing otherwise.
 
-2- trimmomatic
---------------
+trimmomatic
+-----------
 Raw reads quality trimming and removing of Illumina adapters is performed using [Trimmomatic](http://www.usadellab.org/cms/index.php?page=trimmomatic).
 If an adapter FASTA file is specified in the config file (section 'trimmomatic', param 'adapter_fasta'),
 it is used first. Else, 'Adapter1' and 'Adapter2' columns from the readset file are used to create
@@ -100,12 +104,12 @@ This step takes as input files:
 1. FASTQ files from the readset file if available
 2. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
 
-3- merge_trimmomatic_stats
---------------------------
+merge_trimmomatic_stats
+-----------------------
 The trim statistics per readset are merged at this step.
 
-4- bwa_mem_picard_sort_sam
---------------------------
+bwa_mem_picard_sort_sam
+-----------------------
 The filtered reads are aligned to a reference genome. The alignment is done per sequencing readset.
 The alignment software used is [BWA](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem.
 BWA output BAM files are then sorted by coordinate using [Picard](http://broadinstitute.github.io/picard/).
@@ -116,8 +120,8 @@ This step takes as input files:
 2. Else, FASTQ files from the readset file if available
 3. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
 
-5- picard_merge_sam_files
--------------------------
+picard_merge_sam_files
+----------------------
 BAM readset files are merged into one file per sample. Merge is done using [Picard](http://broadinstitute.github.io/picard/).
 
 This step takes as input files:
@@ -125,23 +129,23 @@ This step takes as input files:
 1. Aligned and sorted BAM output files from previous bwa_mem_picard_sort_sam step if available
 2. Else, BAM files from the readset file
 
-6- gatk_indel_realigner
------------------------
+gatk_indel_realigner
+--------------------
 Insertion and deletion realignment is performed on regions where multiple base mismatches
 are preferred over indels by the aligner since it can appear to be less costly by the algorithm.
 Such regions will introduce false positive variant calls which may be filtered out by realigning
 those regions properly. Realignment is done using [GATK](https://www.broadinstitute.org/gatk/).
 The reference genome is divided by a number regions given by the `nb_jobs` parameter.
 
-7- merge_realigned
-------------------
+merge_realigned
+---------------
 BAM files of regions of realigned reads are merged per sample using [Picard](http://broadinstitute.github.io/picard/).
 
-8- picard_fixmate
------------------
+picard_fixmate
+--------------
 
-9- metrics
-----------
+metrics
+-------
 Compute metrics and generate coverage tracks per sample. Multiple metrics are computed at this stage:
 Number of raw reads, Number of filtered reads, Number of aligned reads, Number of duplicate reads,
 Median, mean and standard deviation of insert sizes of reads after alignment, percentage of bases
@@ -150,31 +154,31 @@ whole genome or targeted percentage of bases covered at X reads (%_bases_above_5
 bases which have at least 50 reads). A TDF (.tdf) coverage track is also generated at this step
 for easy visualization of coverage in the IGV browser.
 
-10- picard_calculate_hs_metrics
--------------------------------
+picard_calculate_hs_metrics
+---------------------------
 Compute on target percent of hybridisation based capture.
 
-11- gatk_callable_loci
-----------------------
+gatk_callable_loci
+------------------
 Computes the callable region or the genome as a bed track.
 
-12- call_variants
------------------
+call_variants
+-------------
 VarScan caller for insertions and deletions.
 
-13- preprocess_vcf
-------------------
+preprocess_vcf
+--------------
 Preprocess vcf for loading into a annotation database - gemini : http://gemini.readthedocs.org/en/latest/index.html
 Processes include normalization and decomposition of MNPs by vt (http://genome.sph.umich.edu/wiki/Vt) and 
 vcf FORMAT modification for correct loading into gemini
 
-14- snp_effect
---------------
+snp_effect
+----------
 Variant effect annotation. The .vcf files are annotated for variant effects using the SnpEff software.
 SnpEff annotates and predicts the effects of variants on genes (such as amino acid changes).
 
-15- gemini_annotations
-----------------------
+gemini_annotations
+------------------
 Load functionally annotated vcf file into a mysql lite annotation database : http://gemini.readthedocs.org/en/latest/index.html
 
 

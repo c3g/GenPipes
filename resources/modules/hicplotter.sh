@@ -19,7 +19,7 @@ build() {
 
   mv -i $SOFTWARE_DIR $INSTALL_DIR/
 
-  ## add Shebang to make it easier to call:
+  ## add Shebang to make -j12 it easier to call:
   cd $INSTALL_DIR/$SOFTWARE_DIR
   sed -i '1i#!/usr/bin/env python\n' ${SOFTWARE}.py
   chmod 775 ${SOFTWARE}.py

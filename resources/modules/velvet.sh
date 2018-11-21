@@ -16,7 +16,7 @@ build() {
   tar zxvf $ARCHIVE
 
   cd $SOFTWARE_DIR
-  make
+  make -j12
 
   cd $INSTALL_DOWNLOAD
   mv -i $SOFTWARE_DIR $INSTALL_DIR/

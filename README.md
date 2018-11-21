@@ -4,6 +4,9 @@ This repository holds several bioinformatics pipelines developed at [McGill Univ
 
 GenPipes consist of Python scripts which create a list of jobs running Bash commands. Those scripts support dependencies between jobs and smart restart mechanism if some jobs fail during pipeline execution. Jobs can be submitted in different ways: by being sent to a PBS scheduler like Torque or by being run as a series of commands in batch through a Bash script. Job commands and parameters can be modified through several configuration files.
 
+**For a more detailed tutorial on how to use GenPipes, please visit our [tutorial page](http://www.computationalgenomics.ca/tutorials/).**  
+
+
 On this page:
 
 [TOC]
@@ -497,6 +500,9 @@ which will output e.g.:
 ...
 ```
 
+A Note about Cedar and Graham
+------------
+The default scheduler in GenPipes is the PBS scheduler. Cedar and Graham use the SLURM scheduler. To use GenPipes on Cedar or Graham, don't forget to add the "-j slurm" option.
 
 Call home
 ---------

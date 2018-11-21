@@ -32,7 +32,7 @@ tar zxvf $ARCHIVE
 SOFTWARE_DIR=$SOFTWARE-$VERSION
 cd $SOFTWARE_DIR
 ./configure --prefix=$INSTALL_DIR/$SOFTWARE_DIR
-make
+make -j12
 make install
 
 # Add permissions and install software

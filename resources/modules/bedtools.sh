@@ -20,7 +20,7 @@ build() {
   mv bedtools2 $SOFTWARE_DIR			# for v2.18 and above
 #  mv BEDTools-Version-2.16.2 $SOFTWARE_DIR	# for v2.16.2
   cd $SOFTWARE_DIR
-  make -j8
+  make -j12
 
   # Install software
   cd $INSTALL_DOWNLOAD

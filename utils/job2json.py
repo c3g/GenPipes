@@ -9,7 +9,6 @@ import sys
 import getopt
 import re
 import json
-import subprocess
 import datetime
 import time
 import random
@@ -110,9 +109,7 @@ def main():
     for jfile in json_files.split(","):
 
         # First lock the file to avoid multiple and synchronous writing atemps
-        #print "Now locking the file..."
         lock(jfile)
-        #print "File locked !!"
 
         with open(jfile, 'r') as json_file:
             current_json = json.load(json_file)
@@ -157,19 +154,15 @@ def main():
         # Print to file
         with open(jfile, 'w') as out_json:
             json.dump(current_json, out_json, indent=4)
-        out_json.close()
 
         # Print a copy of it for the monitoring interface
         portal_output_dir = config.param('DEFAULT', 'portal_output_dir', required=False, type='dirpath')
         if portal_output_dir != '':
-            with open(os.path.join(portal_output_dir, user + '.' + uuid4().get_hex() + '.json'), 'w') as out_json:
+            with open(os.path.join(portal_output_dir, user + '.' + current_json['sample_name'] + '.' + uuid4().get_hex() + '.json'), 'w') as out_json:
                 json.dump(current_json, out_json, indent=4)
-            out_json.close()
 
         # Finally unlock the file
-        #print "Now unlocking the file..."
         unlock(jfile)
-        #print "File unlocked !!"
 
 def lock(filepath):
     unlocked = True
@@ -184,9 +177,7 @@ def lock(filepath):
                 pass
             else :
                 # An unexpected error has occured : let's stop the program and raise the error"
-                #print exception.errno
-                #print errno.EEXIST
-                raise
+                raise exception
         else :
             # The lock folder was successfully created !"
             unlocked = False
@@ -197,4 +188,6 @@ def unlock(filepath):
     except :
         raise
 
-main()
+
+if __name__ == '__main__':
+    main()

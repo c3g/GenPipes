@@ -25,14 +25,14 @@ tar -xvf $LIBNAME.tar.gz
 
 cd $LIBNAME
 ./configure --prefix=$INSTALL_PATH
-make
+make -j12
 make install
 cd ..
 
 export PKG_CONFIG_PATH=$INSTALL_PATH/lib/pkgconfig
 cd $NAME
 ./configure --prefix=$INSTALL_PATH
-make
+make -j12
 make install
 cd ..
 

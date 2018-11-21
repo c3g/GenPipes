@@ -18,7 +18,7 @@ build() {
   tar -zxvf $ARCHIVE
 
   cd ${SOFTWARE}_${VERSION}
-  make
+  make -j12
   make install INSTALLDIR=$INSTALL_DIR/$SOFTWARE_DIR
 
   cd $INSTALL_DIR/$SOFTWARE_DIR

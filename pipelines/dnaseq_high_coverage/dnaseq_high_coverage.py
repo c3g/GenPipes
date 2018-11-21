@@ -137,7 +137,7 @@ class DnaSeqHighCoverage(dnaseq.DnaSeq):
         for sample in self.samples:
             coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
             if coverage_bed:
-                interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
+                interval_list = re.sub("\.[^.]+$", ".interval_list", os.path.basename(coverage_bed))
 
                 if not interval_list in created_interval_lists:
                     job = tools.bed2interval_list(None, coverage_bed, interval_list)

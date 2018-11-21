@@ -31,6 +31,7 @@ set_urls() {
     URL_PREFIX=$RELEASE_URL/${DIVISION,}
     GENOME_URL=$URL_PREFIX/fasta/$EG_SPECIES/dna/$EG_BASENAME.dna.toplevel.fa.gz
     NCRNA_URL=$URL_PREFIX/fasta/$EG_SPECIES/ncrna/$EG_BASENAME.ncrna.fa.gz
+    CDNA_URL=$URL_PREFIX/fasta/$EG_SPECIES/cdna/$EG_BASENAME.cdna.all.fa.gz
     GTF_URL=$URL_PREFIX/gtf/$EG_SPECIES/$EG_BASENAME.$VERSION.gtf.gz
     if [[ `echo "$SPECIES_LINE" | cut -f8` == "Y"  ]]
     then
@@ -42,9 +43,9 @@ set_urls() {
     SPECIES_SHORT_NAME=`echo ${SPECIES:0:1}${SPECIES#*_} | tr [:upper:] [:lower:]`
     BIOMART_DATASET=${SPECIES_SHORT_NAME}_eg_gene
     BIOMART_GENE_ID=ensembl_gene_id
-    BIOMART_GO_ID=go_accession
-    BIOMART_GO_NAME=go_name_1006
-    BIOMART_GO_DEFINITION=go_definition_1006
+    BIOMART_GO_ID=go_id
+    BIOMART_GO_NAME=name_1006
+    BIOMART_GO_DEFINITION=definition_1006
 }
 
 

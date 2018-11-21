@@ -5,7 +5,7 @@ set -eu -o pipefail
 SPECIES=Danio_rerio
 COMMON_NAME="Zebrafish"
 ASSEMBLY=GRCz11
-ASSEMBLY_SYNONYMS=GRCz11
+ASSEMBLY_SYNONYMS=danRer11
 SOURCE=Ensembl
 VERSION=92
 BIOMART_HOST=apr2018.archive.ensembl.org

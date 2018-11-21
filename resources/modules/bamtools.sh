@@ -19,7 +19,7 @@ build() {
   mkdir build
   cd build
   cmake ..
-  make
+  make -j12
 
   cd $INSTALL_DOWNLOAD
   mv $SOFTWARE_DIR $INSTALL_DIR/

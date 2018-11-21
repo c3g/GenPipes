@@ -40,24 +40,51 @@ def run(options):
     print('Found %i files' % len(files))
 
     details = []
-    for filename in files:
+    for i, filename in enumerate(files):
         filepath = os.path.join(options.watch_folder, filename)
-        try:
-            data = read_json(filepath)
-        except Exception as e:
-            print(e)
-            print(red('Failed to read file "%s". Skipping' % filename))
-            continue
+        sample_name = None
+        filename_parts = filename.split('.')
+
+        if len(filename_parts) < 4:
+            # Old filename format: $USER.[UUID].json: we need to read the content to know the sample_name
+            if not os.path.isfile(filepath):
+                print(red('  File %s does not exist anymore. Skipping' % filename))
+                continue
+
+            try:
+                content = read_file(filepath)
+            except Exception as e:
+                print(e)
+                print(red('  Failed to read file "%s". Skipping' % filename))
+                continue
+
+            try:
+                data = json.loads(content)
+            except Exception as e:
+                print(e)
+                print(red('  Failed to parse JSON "%s". Skipping' % filename))
+                continue
+
+            sample_name = data['sample_name']
+        else:
+            # New filename format: $USER.[sample_name].[UUID].json
+            sample_name = '.'.join(filename_parts[1:-2])
+
+        print('  Read %s (%i/%i)' % (filename, i + 1, len(files)))
         details.append({
             "filepath": filepath,
-            "data": data
+            "sample_name": sample_name
         })
 
-    details_by_sample = group_by(details, lambda detail: detail['data']['sample_name'])
+    print('Read %i files' % len(details))
+
+    details_by_sample = group_by(details, lambda detail: detail['sample_name'])
     for sample_name in details_by_sample:
         details = details_by_sample[sample_name]
         details.sort(key=lambda detail: os.path.getmtime(detail['filepath']))
         details.reverse()
+
+    print('Found %i samples' % len(details_by_sample.keys()))
 
     for sample_name in details_by_sample:
         send_files(options, sample_name, details_by_sample[sample_name])
@@ -69,7 +96,13 @@ def send_files(options, sample_name, details):
     # First detail is of the newest file
     detail = details[0]
     filepath = detail['filepath']
-    data = detail['data']
+
+    try:
+        data = read_json(filepath)
+    except Exception as e:
+        print(e)
+        print(red('Failed to read file "%s": ' % filename))
+        return
 
     previous_data = None
     if os.path.isfile(cache_filepath):
@@ -113,7 +146,7 @@ def send_files(options, sample_name, details):
             return
 
         if response.status_code == 200 and result.get('ok') is True:
-            print('Sent %s' % filepath)
+            print('Sent %s (deleting %i files)' % (filepath, len(details)))
         else:
             print(red('Request failed %d ' % response.status_code) + ('[%s] %s: %s : %s' % (bold(url), file, response.reason, response.text)))
             return
@@ -261,6 +294,20 @@ def get_path_from_key(key):
 
 def get_value_from_key(root, key):
     return eval(key)
+
+
+# Benchmarking helpers
+
+def get_current_milliseconds():
+    return int(round(time.time() * 1000))
+
+labels = {}
+
+def start_timer(label):
+    labels[label] = get_current_milliseconds()
+
+def end_timer(label):
+    print('%s: %i' % (label, get_current_milliseconds() - labels[label]))
 
 
 if __name__ == '__main__':
