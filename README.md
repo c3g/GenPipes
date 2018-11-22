@@ -293,6 +293,7 @@ For more information about a specific pipeline, visit:
 ### [DNA-Seq high Coverage Pipeline Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/dnaseq_high_coverage/)
 ### [RNA-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/rnaseq/)
 ### [RNA-Seq De Novo Assembly Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/rnaseq_denovo_assembly/)
+### [RNA-Seq Light Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/rnaseq_light/)
 ### [PacBio Assembly Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/pacbio_assembly/)
 ### [ChIP-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/chipseq/)
 ### [Amplicon-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/ampliconseq/)
