@@ -234,6 +234,7 @@ pandoc \\
             flash_fastq = os.path.join(merge_directory, readset.name + ".flash_pass2.extendedFrags.fastq") if flash_stats_file else os.path.join(merge_directory, readset.name + ".flash.extendedFrags.fastq")
             flash_log = os.path.join(merge_directory, readset.name + ".flash_pass2.log") if flash_stats_file else os.path.join(merge_directory, readset.name + ".flash.log")
             flash_hist = os.path.join(merge_directory, readset.name + ".flash_pass2.hist") if flash_stats_file else os.path.join(merge_directory, readset.name + ".flash.hist")
+            job_name_prefix = "flash_pass2." if flash_stats_file else "flash_pass1."
 
             # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
             if readset.run_type == "PAIRED_END":
@@ -259,7 +260,7 @@ pandoc \\
                 # FLASh does not create output directory by default
                 Job(command="mkdir -p " + merge_directory),
                 job
-            ], name="flash." + readset.sample.name))
+            ], name=job_name_prefix + readset.sample.name))
 
         return jobs    
 
@@ -408,7 +409,7 @@ pandoc --to=markdown \\
                     [fastq1, flash_hist],
                     [readset_merge_flash_stats],
                     command="""\
-frag_length=$(less {fastq} | head -n2 | tail -n1 | awk '{{print length($0)}}')
+frag_length=$(zless {fastq} | head -n2 | tail -n1 | awk '{{print length($0)}}')
 minCount=$(cut -f2 {hist} | sort -n | awk ' {{ sum+=$1;i++ }} END {{ print sum/100; }}' | cut -d"." -f1)
 minLen=$(awk -F'\t' -v var=$minCount '$2>var' {hist} | cut -f1 | sort -g | head -n1)
 maxLen=$(awk -F'\t' -v var=$minCount '$2>var' {hist} | cut -f1 | sort -gr | head -n1)
