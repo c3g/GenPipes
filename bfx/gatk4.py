@@ -338,7 +338,57 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
 #####################
 # GATK4 - Variant Filtering
 
-def filter_mutect_calls(variants, output):
+def get_pileup_summaries(input_bam, output):
+	return Job(
+		[input_bam],
+		[output],
+		[
+			['get_pileup_summaries', 'module_java'],
+			['get_pileup_summaries', 'module_gatk']
+		],
+		command="""\
+	gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
+	  GetPileupSummaries {options} \\
+	  --input {input_bam} \\
+	  --variant {variants} \\
+	  --intervals {intervals} \\
+	  --output {output}""".format(
+			tmp_dir=config.param('get_pileup_summaries', 'tmp_dir'),
+			java_other_options=config.param('get_pileup_summaries', 'java_other_options'),
+			ram=config.param('get_pileup_summaries', 'ram'),
+			options=config.param('get_pileup_summaries', 'options'),
+			variants=config.param('get_pileup_summaries', 'known_sites', type='filepath'),
+			intervals=config.param('get_pileup_summaries', 'intervals', type='filepath'),
+			input_bam=input_bam,
+			output=output,
+		)
+	)
+
+def calculate_contamination(input, output, match_normal=None):
+	return Job(
+		[input],
+		[output],
+		[
+			['get_pileup_summaries', 'module_java'],
+			['get_pileup_summaries', 'module_gatk']
+		],
+		command="""\
+	gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
+	  CalculateContamination {options} \\
+	  --input {input} \\
+	  {normal} \\
+	  --output {output}""".format(
+			tmp_dir=config.param('get_pileup_summaries', 'tmp_dir'),
+			java_other_options=config.param('get_pileup_summaries', 'java_other_options'),
+			ram=config.param('get_pileup_summaries', 'ram'),
+			options=config.param('get_pileup_summaries', 'options'),
+			input=input,
+			normal=" \\\n --matched-normal " + match_normal if match_normal else "",
+			output=output,
+		)
+	)
+
+def filter_mutect_calls(variants, output, contamination=None):
 		return Job(
 			[variants],
 			[output],
@@ -350,12 +400,14 @@ def filter_mutect_calls(variants, output):
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
   FilterMutectCalls {options} \\
   --variant {variants} \\
+  {contamination_table} \\
   --output {output}""".format(
 				tmp_dir=config.param('gatk_filter_mutect_call', 'tmp_dir'),
 				java_other_options=config.param('gatk_filter_mutect_call', 'java_other_options'),
 				ram=config.param('gatk_filter_mutect_call', 'ram'),
 				options=config.param('gatk_filter_mutect_call', 'options'),
 				variants=variants,
+				contamination_table=" \\\n --contamination-table " + contamination if contamination else "",
 				output=output
 			)
 		)
@@ -466,7 +518,7 @@ def calculate_hs_metrics(input, output, intervals, reference_sequence=None):
 	baits_intervals = ""
 	baits_intervals = config.param('picard_calculate_hs_metrics', 'baits_intervals', required=False)
 	
-	if config.param('calculate_hs_metrics', 'module_gatk').split("/")[2] < "4":
+	if config.param('picard_calculate_hs_metrics', 'module_gatk').split("/")[2] < "4":
 		return picard2.calculate_hs_metrics(input, output, intervals, reference_sequence)
 	else:
 
@@ -521,14 +573,19 @@ def collect_multiple_metrics(input, output, reference_sequence=None, library_typ
 			output + ".quality_distribution.pdf"
 		]
 
-	return Job(
-		[input],
-		outputs,
-		[
-			['picard_collect_multiple_metrics', 'module_java'],
-			['picard_collect_multiple_metrics', 'module_gatk'],
-			['picard_collect_multiple_metrics', 'module_R']
-		],
+	if config.param('picard_collect_multiple_metrics', 'module_gatk').split("/")[2] < "4":
+		return picard2.collect_multiple_metrics(input, output, reference_sequence, library_type)
+	
+	else:
+		
+		return Job(
+			[input],
+			outputs,
+			[
+				['picard_collect_multiple_metrics', 'module_java'],
+				['picard_collect_multiple_metrics', 'module_gatk'],
+				['picard_collect_multiple_metrics', 'module_R']
+			],
 			command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
  CollectMultipleMetrics \\
@@ -551,6 +608,158 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
 			)
 		)
 
+
+def collect_sequencing_artifacts_metrics(input, output, annotation_flat=None, reference_sequence=None):
+	output_dep = output + ".bait_bias_summary_metrics"
+	
+	if config.param('picard_collect_sequencing_artifacts_metrics', 'module_gatk').split("/")[2] < "4":
+		return picard2.collect_sequencing_artifacts_metrics(input, output, annotation_flat, reference_sequence)
+	
+	else:
+	
+		return Job(
+			[input],
+			[output_dep],
+			[
+				['picard_collect_sequencing_artifacts_metrics', 'module_java'],
+				['picard_collect_sequencing_artifacts_metrics', 'module_gatk'],
+				['picard_collect_sequencing_artifacts_metrics', 'module_R']
+			],
+		command="""\
+gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
+ CollectSequencingArtifactMetrics \\
+ --VALIDATION_STRINGENCY=SILENT {options} \\
+ --TMP_DIR={tmp_dir} \\
+ --INPUT={input} \\
+ --OUTPUT={output} \\
+ --REFERENCE_SEQUENCE={reference} \\
+ --MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
+			options=config.param('picard_collect_sequencing_artifacts_metrics', 'options'),
+			tmp_dir=config.param('picard_collect_sequencing_artifacts_metrics', 'tmp_dir'),
+			java_other_options=config.param('picard_collect_sequencing_artifacts_metrics', 'java_other_options'),
+			ram=config.param('picard_collect_sequencing_artifacts_metrics', 'ram'),
+			input=input,
+			output=output,
+			reference=reference_sequence if reference_sequence else config.param(
+				'picard_collect_sequencing_artifacts_metrics', 'genome_fasta'),
+			max_records_in_ram=config.param('picard_collect_sequencing_artifacts_metrics', 'max_records_in_ram',
+			                                type='int')
+		)
+	)
+
+
+def convert_sequencing_artifacts_metrics(input, output, annotation_flat=None, reference_sequence=None):
+	input_dep = input + ".bait_bias_summary_metrics"
+	
+	if config.param('picard_convert_sequencing_artifacts_metrics', 'module_gatk').split("/")[2] < "4":
+		return picard2.convert_sequencing_artifacts_metrics(input, output, annotation_flat, reference_sequence)
+	
+	else:
+		
+		return Job(
+			[input_dep],
+			[output],
+			[
+				['picard_convert_sequencing_artifacts_metrics', 'module_java'],
+				['picard_convert_sequencing_artifacts_metrics', 'module_gatk'],
+				['picard_convert_sequencing_artifacts_metrics', 'module_R']
+			],
+			command="""\
+gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
+ ConvertSequencingArtifactToOxoG \\
+ --VALIDATION_STRINGENCY=SILENT  \\
+ --TMP_DIR={tmp_dir} \\
+ --INPUT_BASE={input} \\
+ --OUTPUT_BASE={output} \\
+ --REFERENCE_SEQUENCE={reference}""".format(
+				tmp_dir=config.param('picard_convert_sequencing_artifacts_metrics', 'tmp_dir'),
+				java_other_options=config.param('picard_convert_sequencing_artifacts_metrics', 'java_other_options'),
+				ram=config.param('picard_convert_sequencing_artifacts_metrics', 'ram'),
+				input=input,
+				output=output,
+				reference=reference_sequence if reference_sequence else config.param(
+					'picard_convert_sequencing_artifacts_metrics', 'genome_fasta'),
+			)
+		)
+
+
+def collect_oxog_metrics(input, output, annotation_flat=None, reference_sequence=None):
+	
+	if config.param('picard_collect_oxog_metrics', 'module_gatk').split("/")[2] < "4":
+		return picard2.collect_oxog_metrics(input, output, annotation_flat, reference_sequence)
+	
+	else:
+		
+		return Job(
+			[input],
+			[output],
+			[
+				['picard_collect_sequencing_artifacts_metrics', 'module_java'],
+				['picard_collect_sequencing_artifacts_metrics', 'module_gatk'],
+				['picard_collect_sequencing_artifacts_metrics', 'module_R']
+			],
+		command="""\
+gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
+ CollectOxoGMetrics \\
+ --VALIDATION_STRINGENCY=SILENT  \\
+ --TMP_DIR={tmp_dir} \\
+ --INPUT={input} \\
+ --OUTPUT={output} \\
+ --DB_SNP={dbsnp} \\
+ --REFERENCE_SEQUENCE={reference} \\
+ --MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
+			tmp_dir=config.param('picard_collect_oxog_metrics', 'tmp_dir'),
+			java_other_options=config.param('picard_collect_oxog_metrics', 'java_other_options'),
+			ram=config.param('picard_collect_oxog_metrics', 'ram'),
+			input=input,
+			output=output,
+			dbsnp=config.param('picard_collect_oxog_metrics', 'known_variants'),
+			reference=reference_sequence if reference_sequence else config.param('picard_collect_oxog_metrics',
+			                                                                     'genome_fasta'),
+			max_records_in_ram=config.param('picard_collect_oxog_metrics', 'max_records_in_ram', type='int')
+		)
+	)
+
+
+def collect_gcbias_metrics(input, output, chart, summary_file, annotation_flat=None, reference_sequence=None):
+	
+	if config.param('picard_collect_gcbias_metrics', 'module_gatk').split("/")[2] < "4":
+		return picard2.collect_gcbias_metrics(input, output, chart, summary_file, annotation_flat, reference_sequence)
+	
+	else:
+		
+		return Job(
+			[input],
+			[output],
+			[
+				['picard_collect_gcbias_metrics', 'module_java'],
+				['picard_collect_gcbias_metrics', 'module_gatk'],
+				['picard_collect_gcbias_metrics', 'module_R']
+			],
+		command="""\
+gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
+ CollectGcBiasMetrics \\
+ --VALIDATION_STRINGENCY=SILENT \\
+ --ALSO_IGNORE_DUPLICATES=TRUE \\
+ --TMP_DIR={tmp_dir} \\
+ --INPUT={input} \\
+ --OUTPUT={output} \\
+ --CHART={chart} \\
+ --SUMMARY_OUTPUT={summary_file} \\
+ --REFERENCE_SEQUENCE={reference} \\
+ --MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
+			tmp_dir=config.param('picard_collect_gcbias_metrics', 'tmp_dir'),
+			java_other_options=config.param('picard_collect_gcbias_metrics', 'java_other_options'),
+			ram=config.param('picard_collect_gcbias_metrics', 'ram'),
+			input=input,
+			output=output,
+			chart=chart,
+			summary_file=summary_file,
+			reference=reference_sequence if reference_sequence else config.param('picard_collect_gcbias_metrics',
+			                                                                     'genome_fasta'),
+			max_records_in_ram=config.param('picard_collect_gcbias_metrics', 'max_records_in_ram', type='int')
+		)
+	)
 
 def fix_mate_information(input, output):
 	if config.param('fix_mate_information', 'module_gatk').split("/")[2] < "4":
@@ -584,12 +793,13 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
 
 
 def picard_mark_duplicates(inputs, output, metrics_file, remove_duplicates="false"):
-    if not isinstance(inputs, list):
-	    inputs = [inputs]
-
-    if config.param('picard_mark_duplicates', 'module_gatk').split("/")[2] < "4":
-        return picard2.mark_duplicates(inputs, output, metrics_file, remove_duplicates)
-    else:
+	if not isinstance(inputs, list):
+		inputs = [inputs]
+		
+	if config.param('picard_mark_duplicates', 'module_gatk').split("/")[2] < "4":
+		return picard2.mark_duplicates(inputs, output, metrics_file, remove_duplicates)
+	
+	else:
 
 		return Job(
 		inputs,
@@ -815,135 +1025,3 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
 			)
 		)
 
-
-def collect_sequencing_artifacts_metrics(input, output, annotation_flat=None, reference_sequence=None):
-	output_dep = output + ".bait_bias_summary_metrics"
-	
-	return Job(
-		[input],
-		# collect specific RNA metrics (exon rate, strand specificity, etc...)
-		[output_dep],
-		[
-			['picard_collect_sequencing_artifacts_metrics', 'module_java'],
-			['picard_collect_sequencing_artifacts_metrics', 'module_gatk'],
-			['picard_collect_sequencing_artifacts_metrics', 'module_R']
-		],
-		command="""\
-gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
- CollectSequencingArtifactMetrics \\
- --VALIDATION_STRINGENCY=SILENT {options} \\
- --TMP_DIR={tmp_dir} \\
- --INPUT={input} \\
- --OUTPUT={output} \\
- --REFERENCE_SEQUENCE={reference} \\
- --MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
-			options=config.param('picard_collect_sequencing_artifacts_metrics', 'options'),
-			tmp_dir=config.param('picard_collect_sequencing_artifacts_metrics', 'tmp_dir'),
-			java_other_options=config.param('picard_collect_sequencing_artifacts_metrics', 'java_other_options'),
-			ram=config.param('picard_collect_sequencing_artifacts_metrics', 'ram'),
-			input=input,
-			output=output,
-			reference=reference_sequence if reference_sequence else config.param(
-				'picard_collect_sequencing_artifacts_metrics', 'genome_fasta'),
-			max_records_in_ram=config.param('picard_collect_sequencing_artifacts_metrics', 'max_records_in_ram',
-			                                type='int')
-		)
-	)
-
-
-def convert_sequencing_artifacts_metrics(input, output, annotation_flat=None, reference_sequence=None):
-	input_dep = input + ".bait_bias_summary_metrics"
-	
-	return Job(
-		[input_dep],
-		[output],
-		[
-			['picard_convert_sequencing_artifacts_metrics', 'module_java'],
-			['picard_convert_sequencing_artifacts_metrics', 'module_gatk'],
-			['picard_convert_sequencing_artifacts_metrics', 'module_R']
-		],
-		command="""\
-gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
- ConvertSequencingArtifactToOxoG \\
- --VALIDATION_STRINGENCY=SILENT  \\
- --TMP_DIR={tmp_dir} \\
- --INPUT_BASE={input} \\
- --OUTPUT_BASE={output} \\
- --REFERENCE_SEQUENCE={reference}""".format(
-			tmp_dir=config.param('picard_convert_sequencing_artifacts_metrics', 'tmp_dir'),
-			java_other_options=config.param('picard_convert_sequencing_artifacts_metrics', 'java_other_options'),
-			ram=config.param('picard_convert_sequencing_artifacts_metrics', 'ram'),
-			input=input,
-			output=output,
-			reference=reference_sequence if reference_sequence else config.param(
-				'picard_convert_sequencing_artifacts_metrics', 'genome_fasta'),
-		)
-	)
-
-
-def collect_oxog_metrics(input, output, annotation_flat=None, reference_sequence=None):
-	return Job(
-		[input],
-		# collect specific RNA metrics (exon rate, strand specificity, etc...)
-		[output],
-		[
-			['picard_collect_sequencing_artifacts_metrics', 'module_java'],
-			['picard_collect_sequencing_artifacts_metrics', 'module_gatk'],
-			['picard_collect_sequencing_artifacts_metrics', 'module_R']
-		],
-		command="""\
-gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
- CollectOxoGMetrics \\
- --VALIDATION_STRINGENCY=SILENT  \\
- --TMP_DIR={tmp_dir} \\
- --INPUT={input} \\
- --OUTPUT={output} \\
- --DB_SNP={dbsnp} \\
- --REFERENCE_SEQUENCE={reference} \\
- --MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
-			tmp_dir=config.param('picard_collect_oxog_metrics', 'tmp_dir'),
-			java_other_options=config.param('picard_collect_oxog_metrics', 'java_other_options'),
-			ram=config.param('picard_collect_oxog_metrics', 'ram'),
-			input=input,
-			output=output,
-			dbsnp=config.param('picard_collect_oxog_metrics', 'known_variants'),
-			reference=reference_sequence if reference_sequence else config.param('picard_collect_oxog_metrics',
-			                                                                     'genome_fasta'),
-			max_records_in_ram=config.param('picard_collect_oxog_metrics', 'max_records_in_ram', type='int')
-		)
-	)
-
-
-def collect_gcbias_metrics(input, output, chart, summary_file, annotation_flat=None, reference_sequence=None):
-	return Job(
-		[input],
-		[output],
-		[
-			['picard_collect_gcbias_metrics', 'module_java'],
-			['picard_collect_gcbias_metrics', 'module_gatk'],
-			['picard_collect_gcbias_metrics', 'module_R']
-		],
-		command="""\
-gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
- CollectGcBiasMetrics \\
- --VALIDATION_STRINGENCY=SILENT \\
- --ALSO_IGNORE_DUPLICATES=TRUE \\
- --TMP_DIR={tmp_dir} \\
- --INPUT={input} \\
- --OUTPUT={output} \\
- --CHART={chart} \\
- --SUMMARY_OUTPUT={summary_file} \\
- --REFERENCE_SEQUENCE={reference} \\
- --MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
-			tmp_dir=config.param('picard_collect_gcbias_metrics', 'tmp_dir'),
-			java_other_options=config.param('picard_collect_gcbias_metrics', 'java_other_options'),
-			ram=config.param('picard_collect_gcbias_metrics', 'ram'),
-			input=input,
-			output=output,
-			chart=chart,
-			summary_file=summary_file,
-			reference=reference_sequence if reference_sequence else config.param('picard_collect_gcbias_metrics',
-			                                                                     'genome_fasta'),
-			max_records_in_ram=config.param('picard_collect_gcbias_metrics', 'max_records_in_ram', type='int')
-		)
-	)

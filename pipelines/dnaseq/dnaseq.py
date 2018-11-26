@@ -1405,8 +1405,6 @@ pandoc \\
 
         return job
 
-
-
     def flag_mappability(self, input_vcf = "variants/allSamples.merged.flt.vt.vcf", output_vcf = "variants/allSamples.merged.flt.vt.mil.vcf" ,job_name = "flag_mappability" ):
         """
         Mappability annotation. An in-house database identifies regions in which reads are confidently mapped
@@ -1420,8 +1418,6 @@ pandoc \\
         #job.samples = self.samples
         return jobs
 
-
-
     def haplotype_caller_flag_mappability(self) :
         """
         See general flag_mappability !  Applied to haplotype caller vcf
@@ -1432,8 +1428,6 @@ pandoc \\
 
         return job
 
-
-
     def mpileup_flag_mappability(self) :
         """
         See general flag_mappability !  Applied to mpileup vcf
@@ -1443,8 +1437,6 @@ pandoc \\
         #job.samples = self.samples
 
         return job
-
-
 
     def snp_id_annotation(self, input_vcf = "variants/allSamples.merged.flt.vt.mil.vcf.gz", output_vcf = "variants/allSamples.merged.flt.vt.mil.snpId.vcf.gz" , job_name = "snp_id_annotation"):
         """
@@ -1458,7 +1450,6 @@ pandoc \\
         #job.samples = self.samples
         return jobs
 
-
     def haplotype_caller_snp_id_annotation(self):
         """
         See general snp_id_annotation !  Applied to haplotype caller vcf
@@ -1468,7 +1459,6 @@ pandoc \\
         #job.samples = self.samples
 
         return job
-
 
     def mpileup_snp_id_annotation(self):
         """
@@ -1496,8 +1486,6 @@ pandoc \\
 
         return jobs
 
-
-
     def haplotype_caller_snp_effect(self):
         """
         See general snp_effect !  Applied to haplotype caller vcf
@@ -1507,7 +1495,6 @@ pandoc \\
         #jobs.samples = self.samples
 
         return jobs
-
 
     def mpileup_snp_effect(self):
         """
@@ -1538,7 +1525,6 @@ pandoc \\
         
         return jobs
 
-
     def haplotype_caller_dbnsfp_annotation(self):
         """
         See general dbnsfp_annotation !  Applied to haplotype caller vcf
@@ -1548,7 +1534,6 @@ pandoc \\
         #job.samples = self.samples
 
         return job
-
 
     def mpileup_dbnsfp_annotation(self):
         """
@@ -1560,7 +1545,7 @@ pandoc \\
 
         return job
 
-    def gemini_annotations(self, input="variants/allSamples.merged.flt.vt.mil.snpId.snpeff.dbnsfp.vcf.gz", output="variants/allSamples.gemini.db", temp_dir="variants", job_name="gemini_annotations"):
+    def gemini_annotations(self, input="variants/allSamples.merged.flt.vt.mil.snpId.snpeff.dbnsfp.vcf.gz", output="variants/allSamples.gemini.db", temp_dir="config.param('DEFAULT', 'tmp_dir')", job_name="gemini_annotations"):
         """
         Load functionally annotated vcf file into a mysql lite annotation database : http://gemini.readthedocs.org/en/latest/index.html
         """
@@ -1572,18 +1557,20 @@ pandoc \\
 
     def haplotype_caller_gemini_annotations(self):
         
-        job = self.gemini_annotations("variants/allSamples.hc.vqsr.vt.mil.snpId.snpeff.dbnsfp.vcf.gz", "variants/allSamples.gemini.db", "variants", "gemini_annotations"),
+        tmp_dir = config.param('DEFAULT', 'tmp_dir')
+        job = self.gemini_annotations("variants/allSamples.hc.vqsr.vt.mil.snpId.snpeff.dbnsfp.vcf.gz", "variants/allSamples.gemini.db", temp_dir=tmp_dir, job_name="gemini_annotations"),
         
         return job
 
     def mpileup_gemini_annotations(self):
     
-        job = self.gemini_annotations("variants/allSamples.merged.flt.vt.mil.snpId.snpeff.dbnsfp.vcf.gz", "variants/allSamples.gemini.db", "variants", "gemini_annotations"),
+        tmp_dir = config.param('DEFAULT', 'tmp_dir')
+        job = self.gemini_annotations("variants/allSamples.merged.flt.vt.mil.snpId.snpeff.dbnsfp.vcf.gz", "variants/allSamples.gemini.db", temp_dir=tmp_dir, job_name="gemini_annotations"),
     
         return job
 
 
-    def metrics_vcf_stats(self, variants_file_prefix = "variants/allSamples.merged.flt.mil.snpId" , job_name = "metrics_change_rate"):
+    def metrics_vcf_stats(self, variants_file_prefix = "variants/allSamples.hc.vqsr.vt.mil.snpId.snpeff.dbnsfp" , job_name = "metrics_change_rate"):
         """
         Metrics SNV. Multiple metrics associated to annotations and effect prediction are generated at this step:
         change rate by chromosome, changes by type, effects by impact, effects by functional class, counts by effect,
@@ -1592,7 +1579,7 @@ pandoc \\
         """
 
 
-        job = metrics.vcf_stats(variants_file_prefix + ".vcf", variants_file_prefix + ".snpeff.vcf.part_changeRate.tsv", variants_file_prefix + ".snpeff.vcf.statsFile.txt")
+        job = metrics.vcf_stats(variants_file_prefix + ".vcf.gz", variants_file_prefix + ".snpeff.vcf.part_changeRate.tsv", variants_file_prefix + ".snpeff.vcf.statsFile.txt")
         job.name = job_name
         #job.samples = self.samples
         return [job]
@@ -1603,7 +1590,7 @@ pandoc \\
         See general metrics_vcf_stats !  Applied to haplotype caller vcf
         """
 
-        job = self.metrics_vcf_stats("variants/allSamples.hc.vqsr.mil.snpId",  "haplotype_caller_metrics_change_rate")
+        job = self.metrics_vcf_stats("variants/allSamples.hc.vqsr.vt.mil.snpId.snpeff.dbnsfp",  "haplotype_caller_metrics_change_rate")
         #job.samples = self.samples
 
         return job
@@ -1614,7 +1601,7 @@ pandoc \\
         See general metrics_vcf_stats !  Applied to mpileup caller vcf
         """
 
-        job = self.metrics_vcf_stats("variants/allSamples.merged.flt.mil.snpId" , "mpileup_metrics_change_rate")
+        job = self.metrics_vcf_stats("variants/allSamples.merged.flt.vt.mil.snpId.snpeff.dbnsfp" , "mpileup_metrics_change_rate")
         #job.samples = self.samples
 
         return job
@@ -1735,7 +1722,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.haplotype_caller_dbnsfp_annotation,
                 self.haplotype_caller_gemini_annotations,
                 self.haplotype_caller_metrics_vcf_stats,
-                self.haplotype_caller_metrics_snv_graph_metrics,
+                #self.haplotype_caller_metrics_snv_graph_metrics,
                 self.run_multiqc,
             ],
             [
@@ -1772,7 +1759,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.mpileup_dbnsfp_annotation,
                 self.mpileup_gemini_annotations,
                 self.mpileup_metrics_vcf_stats,
-                self.mpileup_metrics_snv_graph_metrics,
+                #self.mpileup_metrics_snv_graph_metrics,
                 self.run_multiqc
             ],
             [

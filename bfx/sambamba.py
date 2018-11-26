@@ -102,3 +102,40 @@ sambamba markdup {options} \\
         temp=tmp_dir
         )
     )
+
+def view(input_bam, output_bam, options, chr=[]):
+
+    return Job(
+        [input_bam],
+        [output_bam],
+        [
+            ['DEFAULT', 'module_sambamba'],
+        ],
+        command="""\
+sambamba view {options} \\
+  {input} \\
+  {output} {chr}""".format(
+        options=options,
+        input=input_bam,
+        output="-o " + output_bam,
+        chr=chr if chr else "",
+        )
+    )
+
+def flagstat(input, output, options):
+
+    return Job(
+        [input],
+        [output],
+        [
+            ['DEFAULT', 'module_sambamba'],
+        ],
+        command="""\
+sambamba flagstat {options} \\
+  {input} \\
+  {output}""".format(
+        options=options,
+        input=input,
+        output="> " + output,
+        )
+    )
