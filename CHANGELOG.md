@@ -1,6 +1,50 @@
-17 tags, 3949 commits
+18 tags, 3979 commits
 
-HEAD        Thu Nov 1 15:20:11 2018 -0400        0 commits
+HEAD        Wed Nov 21 12:58:53 2018 -0500        0 commits
+
+3.1.2        Wed Nov 21 15:05:01 2018 -0500        30 commits
+
+  Edouard Henrion <edouard.henrion@mcgill.ca>      17 commits
+
+       be396f0 updated mugqic_tools version 2.1.12
+       f187cdf removed _dev modules from ini files
+       2bfc307 Updated R_Bioconductor.sh : pointing to system libraries improved
+       e80f729 PacBio Assembly pipeline - corrected incompatibility bug with Guillimin
+       1be0124 updated install_module.sh to accomodate both CentOS7 & Ubuntu16.04 system libraries
+       ff709f1 update HiCUP install script with latest version 0.7.0
+       659fbc9 corrected typo in ampliconseq.py causing pipeline crach at plot heatmap
+       c8b5634 updated README-release.txt with correct URL for GenPipes download page
+       09fe369 Changing resources requirements for [gatk_merge_and_call_individual_gvcfs] in DNA=-Seq pipeline
+       30a9d33 corrected reference to kallisto tx2gene file in the RNA-Seq light pipeline
+       0e7dae6 corrected reference to kallisto index in the RNA-Seq light pipeline
+       e8ec0ac Corrected bug in HicSeq pipeline when running in capture mode
+       58841e5 updated RNASeq light base ini file with kallisto version on CVMFS
+       78a4d4b corrected core/pipeline.py to avoid pipeline erroring when using '--json' parameter...
+       1e2ef94 corrected typo in R_Bioconductor.sh
+       e4f493f Version bump to 3.1.2-beta
+       c6b48be Version bump to 3.1.1
+
+  Édouard Henrion <henrione@gra-login1.graham.sharcnet>      4 commits
+
+       929e37c Merge branch 'master' of bitbucket.org:mugqic/genpipes
+       f4479be freebayes install script
+       9fadba9 platypus install script
+       7909a4e vcfanno fgbio & delly install scripts
+
+  ehenrion <edouard.henrion@mcgill.ca>      7 commits
+
+       362f101 Merged in hicup_arima (pull request #51)
+       f3593a6 tumor_pair.base.ini : changed gemini version to 0.20.1
+       31d2d00 tumor_pair.guillimin.ini : removed some more _dev modules
+       b689763 tumor_pair.guillimin.ini : removed mugqic_dev module
+       6e9b3f9 hicseq.base.ini : updated HiCUP version to 0.7.0
+       07b9a21 dnaseq_high_coverage.base.ini : setting ram parameter witin section igvtools_compute_tdf
+       d210893 Tumor_pair pipeline : bug fix in bfx/bcbio_variation_recall.py Correted typo in the executable call
+
+  Rola Dali <rola.dali@mail.mcgill.ca>      2 commits
+
+       6d94474 editing hicseq.py for Arima compatibility
+       33d597d adding HiC Arima digest to install_genome
 
 3.1.1        Thu Nov 1 15:32:25 2018 -0400        161 commits
 
