@@ -40,8 +40,37 @@ def indel_realigner(input, target_intervals, input2=[], output=[], output_norm_d
 	return gatk.indel_realigner(input, target_intervals, input2, output, output_norm_dep, output_tum_dep, intervals,
                     exclude_intervals, optional)
 
-def split_n_cigar_reads(input, output, intervals=[], exclude_intervals=[]):
-	return gatk.split_n_cigar_reads(input, output, intervals, exclude_intervals)
+def split_n_cigar_reads(input, output, intervals=[], exclude_intervals=[], interval_list=None):
+	if config.param('gatk_split_N_trim', 'module_gatk').split("/")[2] < "4":
+		return gatk.split_n_cigar_reads(input, output, intervals, exclude_intervals, interval_list)
+	
+	else:
+		return Job(
+			[input],
+			[output],
+			[
+				['gatk_split_N_trim', 'module_java'],
+				['gatk_split_N_trim', 'module_gatk']
+			],
+		command="""\
+gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
+  SplitNCigarReads {other_options} \\
+  --TMP_DIR {tmp_dir} \\
+  --reference_sequence {reference_sequence} \\
+  --input_file {input} \\
+  --out {output}{intervals}{exclude_intervals}""".format(
+			tmp_dir=config.param('gatk_split_N_trim', 'tmp_dir'),
+			java_other_options=config.param('gatk_split_N_trim', 'java_other_options'),
+			ram=config.param('gatk_split_N_trim', 'ram'),
+			other_options=config.param('gatk_split_N_trim', 'other_options', required=False),
+			reference_sequence=config.param('gatk_split_N_trim', 'reference', type='filepath'),
+			input=input,
+			output=output,
+			intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
+			interval_list=" \\\n --interval-padding 100 --intervals " + interval_list if interval_list else "",
+			exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals)
+		)
+	)
 
 def mark_duplicates(inputs, output, metrics_file, remove_duplicates="false"):
 
@@ -57,13 +86,13 @@ def mark_duplicates(inputs, output, metrics_file, remove_duplicates="false"):
         ],
             command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
- MarkDuplicatesGATK \\
- --REMOVE_DUPLICATES={remove_duplicates} --VALIDATION_STRINGENCY SILENT --CREATE_INDEX true \\
- --TMP_DIR {tmp_dir} \\
- {inputs} \\
- --metrics-file {metrics_file} \\
- --output {output} \\
- --MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
+  MarkDuplicatesGATK \\
+  --REMOVE_DUPLICATES={remove_duplicates} --VALIDATION_STRINGENCY SILENT --CREATE_INDEX true \\
+  --TMP_DIR {tmp_dir} \\
+  {inputs} \\
+  --metrics-file {metrics_file} \\
+  --output {output} \\
+  --MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
             tmp_dir=config.param('gatk_mark_duplicates', 'tmp_dir'),
             java_other_options=config.param('gatk_mark_duplicates', 'java_other_options'),
             ram=config.param('gatk_mark_duplicates', 'ram'),
@@ -168,6 +197,7 @@ def cat_variants(variants, output=None):
 			command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
   MergeVcfs {options} \\
+  --TMP_DIR {tmp_dir} \\
   --REFERENCE_SEQUENCE {reference}{variants} \\
   --OUTPUT {output}""".format(
 				tmp_dir=config.param('gatk_merge_vcfs', 'tmp_dir'),
@@ -219,6 +249,7 @@ def haplotype_caller(inputs, output, intervals=[], exclude_intervals=[], interva
 			command="""\
 gatk --java-options "{java_other_options} -Xmx{ram}" \\
   HaplotypeCaller {options} \\
+  --tmp_dir {tmp_dir} \\
   --reference {reference_sequence} \\
   --input {input} \\
   --output {output}{intervals}{exclude_intervals}""".format(
@@ -252,6 +283,7 @@ def combine_gvcf(inputs, output, intervals=[], exclude_intervals=[]):
 		command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
   CombineGVCFs {other_options} \\
+  --tmp_dir {tmp_dir} \\
   --reference {reference_sequence} \\
   {input} \\
   --output {output}{intervals}{exclude_intervals}""".format(
@@ -282,6 +314,7 @@ def genotype_gvcf(variants, output, options):
 		command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
   GenotypeGVCFs {options} \\
+  --tmp_dir {tmp_dir} \\
   --reference {reference_sequence}{variants} \\
   --output {output}""".format(
 			tmp_dir=config.param('gatk_genotype_gvcf', 'tmp_dir'),
@@ -309,6 +342,7 @@ def mutect2(inputNormal, normal_name, inputTumor, tumor_name, outputVCF, interva
 		command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
   Mutect2 {options} \\
+  --tmp_dir {tmp_dir} \\
   --reference {reference_sequence} \\
   --input {inputTumor} \\
   --tumor-sample {tumor_name} \\
@@ -347,12 +381,12 @@ def get_pileup_summaries(input_bam, output):
 			['get_pileup_summaries', 'module_gatk']
 		],
 		command="""\
-	gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
-	  GetPileupSummaries {options} \\
-	  --input {input_bam} \\
-	  --variant {variants} \\
-	  --intervals {intervals} \\
-	  --output {output}""".format(
+gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
+  GetPileupSummaries {options} \\
+  --input {input_bam} \\
+  --variant {variants} \\
+  --intervals {intervals} \\
+  --output {output}""".format(
 			tmp_dir=config.param('get_pileup_summaries', 'tmp_dir'),
 			java_other_options=config.param('get_pileup_summaries', 'java_other_options'),
 			ram=config.param('get_pileup_summaries', 'ram'),
@@ -373,11 +407,12 @@ def calculate_contamination(input, output, match_normal=None):
 			['get_pileup_summaries', 'module_gatk']
 		],
 		command="""\
-	gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
-	  CalculateContamination {options} \\
-	  --input {input} \\
-	  {normal} \\
-	  --output {output}""".format(
+gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
+  CalculateContamination {options} \\
+  --tmp_dir {tmp_dir} \\
+  --input {input} \\
+  {normal} \\
+  --output {output}""".format(
 			tmp_dir=config.param('get_pileup_summaries', 'tmp_dir'),
 			java_other_options=config.param('get_pileup_summaries', 'java_other_options'),
 			ram=config.param('get_pileup_summaries', 'ram'),
@@ -399,6 +434,7 @@ def filter_mutect_calls(variants, output, contamination=None):
 			command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
   FilterMutectCalls {options} \\
+  --tmp_dir {tmp_dir} \\
   --variant {variants} \\
   {contamination_table} \\
   --output {output}""".format(
@@ -427,6 +463,7 @@ def variant_recalibrator(variants, other_options, recal_output, tranches_output,
 		command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
   VariantRecalibrator {options} \\
+  --tmp_dir {tmp_dir} \\
   --reference {reference_sequence}{variants} \\
   {other_options} \\
   --output {recal_output} \\
@@ -461,6 +498,7 @@ def apply_recalibration(variants, recal_input, tranches_input, other_options, ap
 		command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
   ApplyVQSR {options} \\
+  --tmp_dir {tmp_dir} \\
   --reference {reference_sequence} \\
   --variant {variants} \\
   {other_options} \\
@@ -501,10 +539,11 @@ def build_bam_index(input, output):
 			],
 			command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
- BuildBamIndex \\
- VALIDATION_STRINGENCY=SILENT \\
- --INPUT={input} \\
- --OUTPUT={output} """.format(
+  BuildBamIndex \\
+  VALIDATION_STRINGENCY=SILENT \\
+  --TMP_DIR {tmp_dir} \\
+  --INPUT={input} \\
+  --OUTPUT={output} """.format(
 				tmp_dir=config.param('build_bam_index', 'tmp_dir'),
 				java_other_options=config.param('build_bam_index', 'java_other_options'),
 				ram=config.param('build_bam_index', 'ram'),
@@ -531,13 +570,13 @@ def calculate_hs_metrics(input, output, intervals, reference_sequence=None):
 			],
 			command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
- CollectHsMetrics \\
- --TMP_DIR={tmp_dir} \\
- --INPUT={input} \\
- --OUTPUT={output} \\
- --BAIT_INTERVALS={baits} \\
- --TARGET_INTERVALS={intervals} \\
- --REFERENCE_SEQUENCE={reference_sequence}""".format(
+  CollectHsMetrics \\
+  --TMP_DIR={tmp_dir} \\
+  --INPUT={input} \\
+  --OUTPUT={output} \\
+  --BAIT_INTERVALS={baits} \\
+  --TARGET_INTERVALS={intervals} \\
+  --REFERENCE_SEQUENCE={reference_sequence}""".format(
 				tmp_dir=config.param('picard_calculate_hs_metrics', 'tmp_dir'),
 				java_other_options=config.param('picard_calculate_hs_metrics', 'java_other_options'),
 				ram=config.param('picard_calculate_hs_metrics', 'ram'),
@@ -588,15 +627,15 @@ def collect_multiple_metrics(input, output, reference_sequence=None, library_typ
 			],
 			command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
- CollectMultipleMetrics \\
- --PROGRAM=CollectAlignmentSummaryMetrics \\
- --PROGRAM=CollectInsertSizeMetrics \\
- --VALIDATION_STRINGENCY=SILENT \\
- --TMP_DIR={tmp_dir} \\
- --REFERENCE_SEQUENCE={reference_sequence} \\
- --INPUT={input} \\
- --OUTPUT={output} \\
- --MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
+  CollectMultipleMetrics \\
+  --PROGRAM=CollectAlignmentSummaryMetrics \\
+  --PROGRAM=CollectInsertSizeMetrics \\
+  --VALIDATION_STRINGENCY=SILENT \\
+  --TMP_DIR={tmp_dir} \\
+  --REFERENCE_SEQUENCE={reference_sequence} \\
+  --INPUT={input} \\
+  --OUTPUT={output} \\
+  --MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
 				tmp_dir=config.param('picard_collect_multiple_metrics', 'tmp_dir'),
 				java_other_options=config.param('picard_collect_multiple_metrics', 'java_other_options'),
 				ram=config.param('picard_collect_multiple_metrics', 'ram'),
@@ -628,12 +667,12 @@ def collect_sequencing_artifacts_metrics(input, output, annotation_flat=None, re
 		command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
  CollectSequencingArtifactMetrics \\
- --VALIDATION_STRINGENCY=SILENT {options} \\
- --TMP_DIR={tmp_dir} \\
- --INPUT={input} \\
- --OUTPUT={output} \\
- --REFERENCE_SEQUENCE={reference} \\
- --MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
+  --VALIDATION_STRINGENCY=SILENT {options} \\
+  --TMP_DIR={tmp_dir} \\
+  --INPUT={input} \\
+  --OUTPUT={output} \\
+  --REFERENCE_SEQUENCE={reference} \\
+  --MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
 			options=config.param('picard_collect_sequencing_artifacts_metrics', 'options'),
 			tmp_dir=config.param('picard_collect_sequencing_artifacts_metrics', 'tmp_dir'),
 			java_other_options=config.param('picard_collect_sequencing_artifacts_metrics', 'java_other_options'),
@@ -666,12 +705,12 @@ def convert_sequencing_artifacts_metrics(input, output, annotation_flat=None, re
 			],
 			command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
- ConvertSequencingArtifactToOxoG \\
- --VALIDATION_STRINGENCY=SILENT  \\
- --TMP_DIR={tmp_dir} \\
- --INPUT_BASE={input} \\
- --OUTPUT_BASE={output} \\
- --REFERENCE_SEQUENCE={reference}""".format(
+  ConvertSequencingArtifactToOxoG \\
+  --VALIDATION_STRINGENCY=SILENT  \\
+  --TMP_DIR={tmp_dir} \\
+  --INPUT_BASE={input} \\
+  --OUTPUT_BASE={output} \\
+  --REFERENCE_SEQUENCE={reference}""".format(
 				tmp_dir=config.param('picard_convert_sequencing_artifacts_metrics', 'tmp_dir'),
 				java_other_options=config.param('picard_convert_sequencing_artifacts_metrics', 'java_other_options'),
 				ram=config.param('picard_convert_sequencing_artifacts_metrics', 'ram'),
@@ -700,14 +739,14 @@ def collect_oxog_metrics(input, output, annotation_flat=None, reference_sequence
 			],
 		command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
- CollectOxoGMetrics \\
- --VALIDATION_STRINGENCY=SILENT  \\
- --TMP_DIR={tmp_dir} \\
- --INPUT={input} \\
- --OUTPUT={output} \\
- --DB_SNP={dbsnp} \\
- --REFERENCE_SEQUENCE={reference} \\
- --MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
+  CollectOxoGMetrics \\
+  --VALIDATION_STRINGENCY=SILENT  \\
+  --TMP_DIR={tmp_dir} \\
+  --INPUT={input} \\
+  --OUTPUT={output} \\
+  --DB_SNP={dbsnp} \\
+  --REFERENCE_SEQUENCE={reference} \\
+  --MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
 			tmp_dir=config.param('picard_collect_oxog_metrics', 'tmp_dir'),
 			java_other_options=config.param('picard_collect_oxog_metrics', 'java_other_options'),
 			ram=config.param('picard_collect_oxog_metrics', 'ram'),
@@ -738,16 +777,16 @@ def collect_gcbias_metrics(input, output, chart, summary_file, annotation_flat=N
 			],
 		command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
- CollectGcBiasMetrics \\
- --VALIDATION_STRINGENCY=SILENT \\
- --ALSO_IGNORE_DUPLICATES=TRUE \\
- --TMP_DIR={tmp_dir} \\
- --INPUT={input} \\
- --OUTPUT={output} \\
- --CHART={chart} \\
- --SUMMARY_OUTPUT={summary_file} \\
- --REFERENCE_SEQUENCE={reference} \\
- --MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
+  CollectGcBiasMetrics \\
+  --VALIDATION_STRINGENCY=SILENT \\
+  --ALSO_IGNORE_DUPLICATES=TRUE \\
+  --TMP_DIR={tmp_dir} \\
+  --INPUT={input} \\
+  --OUTPUT={output} \\
+  --CHART={chart} \\
+  --SUMMARY_OUTPUT={summary_file} \\
+  --REFERENCE_SEQUENCE={reference} \\
+  --MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
 			tmp_dir=config.param('picard_collect_gcbias_metrics', 'tmp_dir'),
 			java_other_options=config.param('picard_collect_gcbias_metrics', 'java_other_options'),
 			ram=config.param('picard_collect_gcbias_metrics', 'ram'),
@@ -762,6 +801,7 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
 	)
 
 def fix_mate_information(input, output):
+	
 	if config.param('fix_mate_information', 'module_gatk').split("/")[2] < "4":
 		return picard2.fix_mate_information(input, output)
 	else:
@@ -775,12 +815,12 @@ def fix_mate_information(input, output):
 			],
 			command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
- FixMateInformation \\
- --VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true SORT_ORDER=coordinate \\
- --TMP_DIR={tmp_dir} \\
- --INPUT={input} \\
- --OUTPUT={output} \\
- --MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
+  FixMateInformation \\
+  --VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true SORT_ORDER=coordinate \\
+  --TMP_DIR={tmp_dir} \\
+  --INPUT={input} \\
+  --OUTPUT={output} \\
+  --MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
 				tmp_dir=config.param('picard_fix_mate_information', 'tmp_dir'),
 				java_other_options=config.param('picard_fix_mate_information', 'java_other_options'),
 				ram=config.param('picard_fix_mate_information', 'ram'),
@@ -810,15 +850,15 @@ def picard_mark_duplicates(inputs, output, metrics_file, remove_duplicates="fals
 		],
 			command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
- MarkDuplicates \\
- --REMOVE_DUPLICATES={remove_duplicates} \\
- --VALIDATION_STRINGENCY=SILENT \\
- --CREATE_INDEX=true \\
- --TMP_DIR={tmp_dir} \\
- {inputs} \\
- --OUTPUT={output} \\
- --METRICS_FILE={metrics_file} \\
- --MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
+  MarkDuplicates \\
+  --REMOVE_DUPLICATES={remove_duplicates} \\
+  --VALIDATION_STRINGENCY=SILENT \\
+  --CREATE_INDEX=true \\
+  --TMP_DIR={tmp_dir} \\
+  {inputs} \\
+  --OUTPUT={output} \\
+  --METRICS_FILE={metrics_file} \\
+  --MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
 				tmp_dir=config.param('picard_mark_duplicates', 'tmp_dir'),
 				java_other_options=config.param('picard_mark_duplicates', 'java_other_options'),
 				ram=config.param('picard_mark_duplicates', 'ram'),
@@ -849,14 +889,14 @@ def merge_sam_files(inputs, output):
 			],
 			command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
- MergeSamFiles \\
- --VALIDATION_STRINGENCY=SILENT \\
- --ASSUME_SORTED=true \\
- --CREATE_INDEX=true \\
- --TMP_DIR={tmp_dir} \\
- {inputs} \\
- --OUTPUT={output} \\
- --MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
+  MergeSamFiles \\
+  --VALIDATION_STRINGENCY=SILENT \\
+  --ASSUME_SORTED=true \\
+  --CREATE_INDEX=true \\
+  --TMP_DIR={tmp_dir} \\
+  {inputs} \\
+  --OUTPUT={output} \\
+  --MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
 				tmp_dir=config.param('picard_merge_sam_files', 'tmp_dir'),
 				java_other_options=config.param('picard_merge_sam_files', 'java_other_options'),
 				ram=config.param('picard_merge_sam_files', 'ram'),
@@ -879,14 +919,14 @@ def reorder_sam(input, output):
 		],
 			command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
- ReorderSam \\
- --VALIDATION_STRINGENCY=SILENT \\
- --CREATE_INDEX=true \\
- --TMP_DIR={tmp_dir} \\
- --INPUT={input} \\
- --OUTPUT={output} \\
- --REFERENCE={reference} \\
- --MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
+  ReorderSam \\
+  --VALIDATION_STRINGENCY=SILENT \\
+  --CREATE_INDEX=true \\
+  --TMP_DIR={tmp_dir} \\
+  --INPUT={input} \\
+  --OUTPUT={output} \\
+  --REFERENCE={reference} \\
+  --MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
 				tmp_dir=config.param('picard_reorder_sam', 'tmp_dir'),
 				java_other_options=config.param('picard_reorder_sam', 'java_other_options'),
 				ram=config.param('picard_reorder_sam', 'ram'),
@@ -910,11 +950,12 @@ def sam_to_fastq(input, fastq, second_end_fastq=None):
 		],
 			command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
- SamToFastq \\
- --VALIDATION_STRINGENCY=LENIENT \\
- --CREATE_MD5_FILE=TRUE \\
- --INPUT={input} \\
- --FASTQ={fastq}{second_end_fastq}""".format(
+  SamToFastq \\
+  --VALIDATION_STRINGENCY=LENIENT \\
+  --CREATE_MD5_FILE=TRUE \\
+  --TMP_DIR={tmp_dir} \\
+  --INPUT={input} \\
+  --FASTQ={fastq}{second_end_fastq}""".format(
 				tmp_dir=config.param('picard_sam_to_fastq', 'tmp_dir'),
 				java_other_options=config.param('picard_sam_to_fastq', 'java_other_options'),
 				ram=config.param('picard_sam_to_fastq', 'ram'),
@@ -927,25 +968,30 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
 
 
 def sort_sam(input, output, sort_order="coordinate", ini_section='picard_sort_sam'):
+	
+	if config.param('sort_sam', 'module_gatk').split("/")[2] < "4":
+		return picard2.sort_sam(input, output)
+	
+	else:
 
-	return Job(
-		[input],
-		# Add SAM/BAM index as output only when writing a coordinate-sorted BAM file
-		[output, re.sub("\.([sb])am$", ".\\1ai", output) if sort_order == "coordinate" else None],
-		[
-			[ini_section, 'module_java'],
-			[ini_section, 'module_gatk']
-		],
+		return Job(
+			[input],
+			# Add SAM/BAM index as output only when writing a coordinate-sorted BAM file
+			[output, re.sub("\.([sb])am$", ".\\1ai", output) if sort_order == "coordinate" else None],
+			[
+				[ini_section, 'module_java'],
+				[ini_section, 'module_gatk']
+			],
 			command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
- SortSam \\
- --VALIDATION_STRINGENCY=SILENT \\
- --CREATE_INDEX=true \\
- --TMP_DIR={tmp_dir} \\
- --INPUT={input} \\
- --OUTPUT={output} \\
- --SORT_ORDER={sort_order} \\
- --MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
+  SortSam \\
+  --VALIDATION_STRINGENCY=SILENT \\
+  --CREATE_INDEX=true \\
+  --TMP_DIR={tmp_dir} \\
+  --INPUT={input} \\
+  --OUTPUT={output} \\
+  --SORT_ORDER={sort_order} \\
+  --MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
 				tmp_dir=config.param(ini_section, 'tmp_dir'),
 				java_other_options=config.param(ini_section, 'java_other_options'),
 				ram=config.param(ini_section, 'ram'),
@@ -972,12 +1018,12 @@ def sort_vcfs(inputs, output, ini_section='picard_sort_vcf'):
 		],
 			command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
- SortVcf \\
- VALIDATION_STRINGENCY=SILENT \\
- TMP_DIR={tmp_dir} \\
- {inputs} \\
- OUTPUT={output} \\
- SEQUENCE_DICTIONARY={seq_dict}""".format(
+  SortVcf \\
+  VALIDATION_STRINGENCY=SILENT \\
+  TMP_DIR={tmp_dir} \\
+  {inputs} \\
+  OUTPUT={output} \\
+  SEQUENCE_DICTIONARY={seq_dict}""".format(
 				tmp_dir=config.param(ini_section, 'tmp_dir'),
 				java_other_options=config.param(ini_section, 'java_other_options'),
 				ram=config.param(ini_section, 'ram'),
@@ -1000,16 +1046,16 @@ def collect_rna_metrics(input, output, annotation_flat=None, reference_sequence=
 		],
 			command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
- CollectRnaSeqMetrics \\
- --VALIDATION_STRINGENCY=SILENT  \\
- --TMP_DIR={tmp_dir} \\
- --INPUT={input} \\
- --OUTPUT={output} \\
- --REF_FLAT={ref_flat} \\
- --STRAND_SPECIFICITY={strand_specificity} \\
- --MINIMUM_LENGTH={min_length} \\
- --REFERENCE_SEQUENCE={reference} \\
- --MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
+  CollectRnaSeqMetrics \\
+  --VALIDATION_STRINGENCY=SILENT  \\
+  --TMP_DIR={tmp_dir} \\
+  --INPUT={input} \\
+  --OUTPUT={output} \\
+  --REF_FLAT={ref_flat} \\
+  --STRAND_SPECIFICITY={strand_specificity} \\
+  --MINIMUM_LENGTH={min_length} \\
+  --REFERENCE_SEQUENCE={reference} \\
+  --MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
 				tmp_dir=config.param('picard_collect_rna_metrics', 'tmp_dir'),
 				java_other_options=config.param('picard_collect_rna_metrics', 'java_other_options'),
 				ram=config.param('picard_collect_rna_metrics', 'ram'),

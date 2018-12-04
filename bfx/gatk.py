@@ -469,7 +469,7 @@ def variant_annotator(input_normal, input_tumor, input_variants, output, interva
             ['gatk_variant_annotator', 'module_gatk']
         ],
         command="""\
-java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
+java {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --analysis_type VariantAnnotator {other_options} \\
   --disable_auto_index_creation_and_locking_when_reading_rods \\
   --reference_sequence {reference_sequence} \\
@@ -504,7 +504,7 @@ def variant_recalibrator(variants, other_options, recal_output, tranches_output,
                 ['gatk_variant_recalibrator', 'module_R']
             ],
         command="""\
-java {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --analysis_type VariantRecalibrator {options} \\
   --disable_auto_index_creation_and_locking_when_reading_rods \\
   --reference_sequence {reference_sequence}{variants} \\
@@ -560,7 +560,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
     )
 
 
-def split_n_cigar_reads(input, output, intervals=[], exclude_intervals=[]):
+def split_n_cigar_reads(input, output, intervals=[], exclude_intervals=[], interval_list=None):
     return Job(
         [input],
         [output],
@@ -582,8 +582,8 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
             input=input,
             output=output,
             intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
-            exclude_intervals="".join(
-                " \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals)
+            interval_list=" \\\n --interval-padding 100 --intervals " + interval_list if interval_list else "",
+            exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals)
         )
     )
 
