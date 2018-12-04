@@ -17,6 +17,8 @@ build() {
   cd $INSTALL_DOWNLOAD
   unzip $ARCHIVE
 
+  sed -ie 's/command -v bin/command -v $AMP_SCANNER_HOME\/bin/' $SOFTWARE_DIR/Proteome_AMP_Scanner.sh
+
   mv $SOFTWARE_DIR $INSTALL_DIR/
 }
 
@@ -29,7 +31,9 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
+prepend-path    PATH                \$root
 prepend-path    PATH                \$root/bin
+setenv          AMP_SCANNER_HOME    \$root
 prereq mugqic/Ruby/2.5.3 mugqic/R_Bioconductor/3.4.4_3.6 mugqic/emboss/6.6.0
 "
 }
