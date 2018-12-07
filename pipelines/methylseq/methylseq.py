@@ -25,6 +25,7 @@ import math
 import os
 import re
 import sys
+import itertools
 
 # Append mugqic_pipelines directory to Python library path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
@@ -45,6 +46,7 @@ from bfx import igvtools
 from bfx import bissnp
 from bfx import tools
 from bfx import ucsc
+from bfx import methylkit
 
 from pipelines import common
 from pipelines.dnaseq import dnaseq
@@ -93,6 +95,7 @@ class MethylSeq(dnaseq.DnaSeq):
     def __init__(self, protocol=None):
         self._protocol=protocol
         # Add pipeline specific arguments
+        self.argparser.add_argument("-d", "--design", help="design file", type=file)
         super(MethylSeq, self).__init__(protocol)
 
     def bismark_align(self):
@@ -194,72 +197,6 @@ pandoc --to=markdown \\
 
         return jobs
 
-    #def bismark_dedup(self):
-        #"""
-        #Remove duplicates reads with Bismark
-        #"""
-
-        ## Check the library status
-        #library = {}
-        #for readset in self.readsets:
-            #if not library.has_key(readset.sample) :
-                #library[readset.sample]="SINGLE_END"
-            #if readset.run_type == "PAIRED_END" :
-                #library[readset.sample]="PAIRED_END"
-
-        #jobs = []
-        #for sample in self.samples:
-            #alignment_directory = os.path.join("alignment", sample.name)
-            #bam_input = os.path.join(alignment_directory, sample.name + ".sorted.bam")
-            #bam_readset_sorted = re.sub("sorted", "readset_sorted", bam_input)
-            #dedup_bam_readset_sorted = re.sub(".bam", ".dedup.bam", bam_readset_sorted)
-            #dedup_report = os.path.join(alignment_directory, sample.name + ".readset_sorted.deduplication_report.txt")
-            #bam_output = os.path.join(alignment_directory, re.sub("readset_", "", os.path.basename(dedup_bam_readset_sorted)))
-
-            #job = concat_jobs([
-                #Job(command="mkdir -p " + alignment_directory),
-                #picard.sort_sam(
-                    #bam_input,
-                    #bam_readset_sorted,
-                    #"queryname"
-                #),
-                #bismark.dedup(
-                    #bam_readset_sorted,
-                    #[dedup_bam_readset_sorted, dedup_report],
-                    #library[sample]
-                #),
-                #Job(command="mv " + re.sub(".bam", ".deduplicated.bam", bam_readset_sorted) + " " + dedup_bam_readset_sorted),
-                #picard.sort_sam(
-                    #dedup_bam_readset_sorted,
-                    #bam_output
-                #)
-            #])
-            #job.name = "bismark_dedup." + sample.name
-            #job.removable_files = [dedup_bam_readset_sorted]
-            #job.samples = [sample]
-
-            #jobs.append(job)
-
-        #report_file = os.path.join("report", "MethylSeq.bismark_dedup.md")
-        #jobs.append(
-            #Job(
-                #[os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.bam") for sample in self.samples],
-                #[report_file],
-                #command="""\
-#mkdir -p report && \\
-#cp \\
-  #{report_template_dir}/{basename_report_file} \\
-  #{report_file}""".format(
-                    #report_template_dir=self.report_template_dir,
-                    #basename_report_file=os.path.basename(report_file),
-                    #report_file=report_file
-                #),
-                #report_files=[report_file],
-                #name="bismark_dedup_report")
-        #)
-
-
-        #return jobs
 
     def picard_remove_duplicates(self):
         """
@@ -284,14 +221,6 @@ pandoc --to=markdown \\
                 remove_duplicates="true"
             )
             job.name = "picard_mark_duplicates." + sample.name
-            jobs.append(job)
-
-            job = picard.sort_sam(
-                bam_output,
-                dedup_bam_readset_sorted,
-                "queryname"
-            )
-            job.name = "picard_queryname_sort." + sample.name
             jobs.append(job)
 
             job = samtools.flagstat(
@@ -509,9 +438,7 @@ cp \\
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
 
-            candidate_input_files = [[os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.bam")]]
-            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")])
-            [input_file] = self.select_input_files(candidate_input_files)
+            input_file = os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")
 
             methyl_directory = os.path.join("methylation_call", sample.name)
             outputs = [
@@ -520,35 +447,23 @@ cp \\
                 os.path.join(methyl_directory, re.sub(".bam", ".CpG_report.txt.gz", os.path.basename(input_file)))
             ]
 
-            if input_file == os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.bam") :
-                jobs.append(
-                    concat_jobs([
-                        Job(command="mkdir -p " + methyl_directory, samples=[sample]),
-                        bismark.methyl_call(
-                            input_file,
-                            outputs,
-                            library[sample]
+            jobs.append(
+                concat_jobs([
+                    Job(command="mkdir -p " + methyl_directory, samples=[sample]),
+                    bismark.sort_sam(
+                        input_file,
+                        re.sub("sorted", "readset_sorted", input_file),
+                        "queryname"
                         )
-                    ], name="bismark_methyl_call." + sample.name)
-                )
-            else :
-                jobs.append(
-                    concat_jobs([
-                        Job(command="mkdir -p " + methyl_directory, samples=[sample]),
-                        bismark.sort_sam(
-                            input_file,
-                            re.sub("sorted", "readset_sorted", input_file),
-                            "queryname"
-                            )
-                    ], name="picard_sort_sam." + sample.name)
-                )
-                outputs = [re.sub("sorted", "readset_sorted", output) for output in outputs]
-                bismark_job = bismark.methyl_call(
-                    re.sub("sorted", "readset_sorted", input_file),
-                    outputs,
-                    library[sample]
-                )
-                jobs.append( bismark_job )
+                ], name="picard_sort_sam." + sample.name)
+            )
+            outputs = [re.sub("sorted", "readset_sorted", output) for output in outputs]
+            bismark_job = bismark.methyl_call(
+                re.sub("sorted", "readset_sorted", input_file),
+                outputs,
+                library[sample]
+            )
+            jobs.append( bismark_job )
 
         return jobs
 
@@ -644,10 +559,7 @@ cp \\
         for sample in self.samples:
             methyl_directory = os.path.join("methylation_call", sample.name)
 
-            candidate_input_files = [[os.path.join(methyl_directory, sample.name + ".sorted.dedup.CpG_report.txt.gz")]]
-            candidate_input_files.append([os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup.CpG_report.txt.gz")])
-
-            [cpg_input_file] = self.select_input_files(candidate_input_files)
+            cpg_input_file = os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup.CpG_report.txt.gz")
             cpg_profile = re.sub(".CpG_report.txt.gz", ".CpG_profile.strand.combined.csv", cpg_input_file)
 
             # Generate CpG methylation profile
@@ -738,18 +650,10 @@ cp \\
             inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.all.coverage.sample_summary"))
 
             # Lambda conversion rate files
-            [lambda_conv_file] = self.select_input_files([
-                [os.path.join("methylation_call", sample.name, sample.name + ".sorted.dedup.profile.lambda.conversion.rate.tsv")],
-                [os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.profile.lambda.conversion.rate.tsv")]
-            ])
-            inputs.append(lambda_conv_file)
+            inputs.append(os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.profile.lambda.conversion.rate.tsv"))
 
             # CG stat files
-            [cgstats_file] = self.select_input_files([
-                [os.path.join("methylation_call", sample.name, sample.name + ".sorted.dedup.profile.cgstats.txt")],
-                [os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.profile.cgstats.txt")]
-            ])
-            inputs.append(cgstats_file)
+            inputs.append(os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.profile.cgstats.txt"))
 
             # Flagstat file if in targeted context
             if target_bed : inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.ontarget.bam.flagstat"))
@@ -838,18 +742,10 @@ pandoc \\
             inputs.append(os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.profile.pUC19.txt"))
 
             # Lambda conversion rate files
-            [lambda_conv_file] = self.select_input_files([
-                [os.path.join("methylation_call", sample.name, sample.name + ".sorted.dedup.profile.lambda.conversion.rate.tsv")],
-                [os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.profile.lambda.conversion.rate.tsv")]
-            ])
-            inputs.append(lambda_conv_file)
+            inputs.append(os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.profile.lambda.conversion.rate.tsv"))
 
             # CG stat files
-            [cgstats_file] = self.select_input_files([
-                [os.path.join("methylation_call", sample.name, sample.name + ".sorted.dedup.profile.cgstats.txt")],
-                [os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.profile.cgstats.txt")]
-            ])
-            inputs.append(cgstats_file)
+            inputs.append(os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.profile.cgstats.txt"))
 
             # Flagstat file if in targeted context
             if target_bed : inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.ontarget.bam.flagstat"))
@@ -902,9 +798,7 @@ pandoc \\
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
 
-            candidate_input_files = [[os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")]]
-            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.bam")])
-            [input_file] = self.select_input_files(candidate_input_files)
+            input_file = os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.bam")
 
             variant_directory = os.path.join("variants", sample.name)
             cpg_output_file = os.path.join(variant_directory, sample.name + ".cpg.vcf")
@@ -931,12 +825,9 @@ pandoc \\
         jobs = []
         for sample in self.samples:
             methyl_directory = os.path.join("methylation_call", sample.name)
+            input_file = os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup.CpG_profile.strand.combined.csv")
 
-            candidate_input_files = [[os.path.join(methyl_directory, sample.name + ".sorted.dedup.CpG_profile.strand.combined.csv")]]
-            candidate_input_files.append([os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup.CpG_profile.stran.combined.csv")])
-            [input_file] = self.select_input_files(candidate_input_files)
-
-            output_file = re.sub("CpG_profile.strand.combined.csv", ".filtered", input_file)
+            output_file = re.sub("CpG_profile.strand.combined.csv", "filtered", input_file)
 
             jobs.append(
                 concat_jobs([
@@ -951,18 +842,15 @@ pandoc \\
 
     def prepare_methylkit(self):
         """
-        Prepare input file for methylKit analysis
+        Prepare input file for methylKit differential analysis
         """
 
         jobs = []
         for sample in self.samples:
             methyl_directory = os.path.join("methylation_call", sample.name)
-            output_directory = os.path.join("methylkit_dmr", sample_name)
+            input_file = os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup.filtered")
 
-            candidate_input_files = [[os.path.join(methyl_directory, sample.name + ".sorted.dedup.filtered")]]
-            candidate_input_files.append([os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup.filtered")])
-            [input_file] = self.select_input_files(candidate_input_files)
-
+            output_directory = os.path.join("methylkit", "inputs")
             output_file = os.path.join(output_directory, re.sub("filtered", "map.input", os.path.basename(input_file)))
 
             jobs.append(
@@ -976,39 +864,37 @@ pandoc \\
             )
         return jobs
 
-    def methylkit_dmr(self):
+    def methylkit_differential_analysis(self):
         """
-        Run methylKit to get DMCs for different designeds comparisons
+        Run methylKit to get DMCs & DMRs for different designeds comparisons
         """
 
         jobs = []
+        # If --design <design_file> option is missing, self.contrasts call will raise an Exception
+        if self.contrasts:
+            design_file = os.path.relpath(self.args.design.name, self.output_dir)
+
+        input_directory = os.path.join("methylkit", "inputs")
+        input_files = []
         for contrast in self.contrasts:
-            methylkit_dmr_directory = os.path.join("methylkit_dmr", sample.name)
+            input_files.extend([[os.path.join(input_directory, sample.name + ".readset_sorted.dedup.map.input")for sample in group] for group in contrast.controls, contrast.treatments])
 
-            candidate_input_files = [[os.path.join(methylkit_dmr_directory, sample.name +, ".sorted.dedup.map.input") for sample in group] for group in contrast.treatments]
-            candidate_input_files.append([os.path.join(methylkit_dmr_directory, sample.name + ".readset_sorted.dedup.map.input") for sample in group] for group in contrast.treatments])
-            [treatment_input_file] = self.select_input_files(candidate_input_files)
+        input_files = list(itertools.chain.from_iterable(input_files))
 
-            candidate_input_files = [[os.path.join(methylkit_dmr_directory, sample.name +, ".sorted.dedup.map.input") for sample in group] for group in contrast.controls]
-            candidate_input_files.append([os.path.join(methylkit_dmr_directory, sample.name + ".readset_sorted.dedup.map.input") for sample in group] for group in contrast.controls])
-            [control_input_file] = self.select_input_files(candidate_input_files)
+        output_directory = os.path.join("methylkit", "results")
+        output_files = [os.path.join(output_directory, "Rdata_files", contrast.name, "perbase.testingresults.txt.gz") for contrast in self.contrasts]
 
-            dmr_job = tools.methylkit_dmr(
-                treatment_input_file,
-                control_input_file,
-                contrast.name,
-                methylkit_dmr_directory
-            )
-            dmr_job.samples = [[sample for sample in group] for group in contrast.controls, contrast.treatments]
+        methylkit_job = methylkit.differential_analysis(
+            design_file,
+            input_files,
+            output_files,
+            output_directory
+        )
 
-            jobs.append(
-                concat_jobs([
-                    Job(command="mkdir -p " + methylkit_dmr_directory),
-                    dmr_job
-                ], name="methylkit_dmr." + contrast.name)
-            )
-        return jobs
-
+        return [concat_jobs([
+            Job(command="mkdir -p " + output_directory),
+            methylkit_job
+        ], name="methylkit_differential_analysis")]
 
     @property
     def steps(self):
@@ -1018,7 +904,6 @@ pandoc \\
             self.merge_trimmomatic_stats,
             self.bismark_align,
             self.picard_merge_sam_files,    # step 5
-#            self.bismark_dedup,
             self.picard_remove_duplicates,
             self.metrics,
             self.verify_bam_id,
@@ -1030,7 +915,7 @@ pandoc \\
             self.bis_snp,
             self.filter_snp_cpg,            # step 15
             self.prepare_methylkit,
-            self.methylkit_dmr
+            self.methylkit_differential_analysis
         ]
 
 if __name__ == '__main__': 
