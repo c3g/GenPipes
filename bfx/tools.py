@@ -779,18 +779,17 @@ def filter_snp_cpg(input, output):
         [input],
         [output],
         [
-            ['DEFAULT', 'module_mugqic_tools']
+            ['DEFAULT', 'module_bedtools']
         ],
         command="""\
-cat {input} | \\
-awk '$11>=5' | \\
+awk '$11>=5' {input} | \\
 sort -k1,1V -k2,2n | \\
 bedtools intersect \\
   -a stdin \\
-  -b {filter_file} -v 
+  -b {filter_file} -v \\
   > {output}""".format(
             input=input,
-            filter_file=config.param('filter_snp_cpg', 'snp_cpg_fileter_file'),
+            filter_file=config.param('filter_snp_cpg', 'known_variants'),
             output=output
         )
     )
@@ -800,38 +799,16 @@ def prepare_methylkit(input, output):
         [input],
         [output],
         [
-            []
+            ['DEFAULT', 'module_mugqic_tools']
         ],
         command="""\
 echo -e \"chrBase\tchr\tbase\tstrand\tcoverage\tfreqC\tfreqT\" \\
   > {output} && \\
 cat {input} | \\
-awk -F"\t" '$11>=5 {print $1"."$2"\t"$1"\t"$2"\tF\t"$11"\t"$12"\t"(100-$12)}' \\
-  >> {output}
-""".format(
+awk -F"\t" '$11>=5 {{print $1"."$2"\t"$1"\t"$2"\tF\t"$11"\t"$12"\t"(100-$12)}}' \\
+  >> {output}""".format(
             input=input,
             output=output
-        )
-    )
-
-def methylkit_dmr(treatment_files, control_files, contrast_name, out_dir):
-    
-    return Job(
-        treatment_files + control_files,
-        [output],
-        [
-            ['DEFAULT', 'module_mugqic_tools'],
-            ['DEFAULT', 'module_R']
-        ],
-        command="""\
-echo \"{contrast};{treatments};{controls}\" \\
-  > {output_dir}/designFile.{contrast}.csv && \\
-Rscript $R_TOOLS/MethylKit.dmr.r {output_dir}/designFile.{contrast}.csv hg38 10 500 500 3 10 FALSE {nsample}""".format(
-            contrast=contrast_name,
-            treatments=",".join(treatment_files),
-            controls=",".join(control_files),
-            output_dir=out_dir,
-            nsample=config.param('methylkit_dmr', 'nsample')
         )
     )
 
