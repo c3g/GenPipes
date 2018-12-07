@@ -63,7 +63,7 @@ patch_c3g_binaries() {
     if readelf -l $i | grep go.build > /dev/null
     then
       echo "GO Done" > /dev/null
-    elif [ ${i##*.} == "so" ] || [[ ${i##*/} =~ "so"*(\.[0-9]{1,2})*$ ]]
+    elif [ ${i##*.} == "so" ] || [[ ${i##*/} =~ "so"*(\.[0-9]+)*$ ]]
     then
       $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-rpath $C3G_SYSTEM_LIBRARY/usr/$LIB $i
     else
