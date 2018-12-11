@@ -84,7 +84,9 @@ sambamba merge {options} \\
         )
     )
 
-def markdup(input_bam, output_bam, tmp_dir):
+def markdup(input_bam, output_bam):
+    if not isinstance(input_bam, list):
+        input_bam=[input_bam]
 
     return Job(
         [input_bam],

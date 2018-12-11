@@ -859,7 +859,6 @@ END
             job = sambamba.markdup(
                 input,
                 output,
-                config.param('sambamba_mark_duplicates', 'tmp_dir', required=True)
             )
             job.name = "sambamba_mark_duplicates." + sample.name
             job.samples = [sample]

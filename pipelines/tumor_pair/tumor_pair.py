@@ -121,23 +121,19 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
     def sequence_dictionary_variant(self):
         if not hasattr(self, "_sequence_dictionary_variant"):
-            self._sequence_dictionary_variant = parse_sequence_dictionary_file(
-                config.param('DEFAULT', 'genome_dictionary', type='filepath'), variant=True)
+            self._sequence_dictionary_variant = parse_sequence_dictionary_file(config.param('DEFAULT', 'genome_dictionary', type='filepath'), variant=True)
         return self._sequence_dictionary_variant
 
     def generate_approximate_windows(self, nb_jobs):
         if nb_jobs <= len(self.sequence_dictionary_variant()):
-            return [sequence['name'] + ":1-" + str(sequence['length']) for sequence in
-                    self.sequence_dictionary_variant()]
+            return [sequence['name'] + ":1-" + str(sequence['length']) for sequence in self.sequence_dictionary_variant()]
         else:
             total_length = sum([sequence['length'] for sequence in self.sequence_dictionary_variant()])
-            approximate_window_size = int(
-                math.floor(total_length / (nb_jobs - len(self.sequence_dictionary_variant()))))
+            approximate_window_size = int(math.floor(total_length / (nb_jobs - len(self.sequence_dictionary_variant()))))
             windows = []
 
             for sequence in self.sequence_dictionary_variant():
-                for start, end in [[pos, min(pos + approximate_window_size - 1, sequence['length'])] for pos in
-                                   range(1, sequence['length'] + 1, approximate_window_size)]:
+                for start, end in [[pos, min(pos + approximate_window_size - 1, sequence['length'])] for pos in range(1, sequence['length'] + 1, approximate_window_size)]:
                     windows.append(sequence['name'] + ":" + str(start) + "-" + str(end))
 
         return windows
@@ -861,7 +857,7 @@ END`""".format(
 
             all_inputs = []
             if nb_jobs == 1:
-                all_inputs = [os.path.join(varscan_directory, tumor_pair.name + ".varscan2.vcf.gz")]
+                all_inputs = os.path.join(varscan_directory, tumor_pair.name + ".varscan2.vcf.gz")
                 
             else:
                 all_inputs = [os.path.join(varscan_directory, tumor_pair.name + "." + sequence['name'] + ".varscan2.vcf.gz")
@@ -877,18 +873,48 @@ END`""".format(
             somtic_output_vt = os.path.join(pair_directory, tumor_pair.name + ".varscan2.somatic.vt.vcf.gz")
             germline_output_vt = os.path.join(pair_directory, tumor_pair.name + ".varscan2.germline_loh.vt.vcf.gz")
 
-            jobs.append(concat_jobs([
-                Job(samples=[tumor_pair.normal, tumor_pair.tumor]),
-                pipe_jobs([
-                    bcftools.concat(all_inputs, None),
+            if nb_jobs == 1:
+                jobs.append(concat_jobs([
+                    Job(samples=[tumor_pair.normal, tumor_pair.tumor]),
+                    pipe_jobs([
+                    bcftools.view(all_inputs, None),
                     tools.fix_varscan_output(None, None),
                     Job([None], [None],
-                        command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $4) } {print}'"),
+                    command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $4) } {print}'"),
                     Job([None], [None],
-                        command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $5) } {print}'"),
+                    command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $5) } {print}'"),
                     Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '$1!~/^#/ && $4 == $5 {next} {print}'"),
                     htslib.bgzip_tabix(None, all_output),
                 ]),
+                pipe_jobs([
+                    vt.decompose_and_normalize_mnps(all_output, None),
+                    htslib.bgzip_tabix(None, all_output_vt),
+                ]),
+                pipe_jobs([
+                    bcftools.view(all_output_vt, None,
+                                  config.param('varscan2_readcount_fpfilter', 'somatic_filter_options')),
+                    htslib.bgzip_tabix(None, somtic_output_vt),
+                ]),
+                pipe_jobs([
+                    bcftools.view(all_output_vt, None,
+                                  config.param('varscan2_readcount_fpfilter', 'germline_loh_filter_options')),
+                    htslib.bgzip_tabix(None, germline_output_vt),
+                ]),
+            	], name="merge_varscan2." + tumor_pair.name))
+
+            else:
+                jobs.append(concat_jobs([
+                    Job(samples=[tumor_pair.normal, tumor_pair.tumor]),
+                    pipe_jobs([
+                        bcftools.concat(all_inputs, None),
+                        tools.fix_varscan_output(None, None),
+                        Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $4) } {print}'"),
+                        Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $5) } {print}'"),
+                        Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '$1!~/^#/ && $4 == $5 {next} {print}'"),
+                        #vt.sort("-", all_output, "-m full"),
+                        htslib.bgzip_tabix(None, all_output),
+                ]),
+                #htslib.tabix(all_output),
                 pipe_jobs([
                     vt.decompose_and_normalize_mnps(all_output, None),
                     htslib.bgzip_tabix(None, all_output_vt),
@@ -942,8 +968,7 @@ END`""".format(
                 ], name="gatk_mutect2." + tumor_pair.name))
 
             else:
-                unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(
-                    self.sequence_dictionary_variant(), nb_jobs - 1)
+                unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary_variant(), nb_jobs - 1, variant=True)
 
                 # Create one separate job for each of the first sequences
                 for idx, sequences in enumerate(unique_sequences_per_job):
@@ -1043,8 +1068,6 @@ END`""".format(
             strelka2_directory = os.path.abspath(os.path.join(pair_directory, "rawStrelka2"))
             output_prefix = os.path.abspath(os.path.join(pair_directory, tumor_pair.name))
 
-            mkdir_job = Job(command="mkdir -p " + strelka2_directory, removable_files=[strelka2_directory], samples = [tumor_pair.normal, tumor_pair.tumor])
-
             input_normal = self.select_input_files(
                 [[os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.recal.bam")],
                  [os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.bam")],
@@ -1076,7 +1099,8 @@ END`""".format(
             output_dep = [strelka2_snvs, strelka2_indels]
 
             jobs.append(concat_jobs([
-                mkdir_job,
+                Job(command="rm -rf " + strelka2_directory),
+                Job(command="mkdir -p " + strelka2_directory, removable_files=[strelka2_directory], samples=[tumor_pair.normal, tumor_pair.tumor]),
                 strelka2.somatic_config(input_normal[0], input_tumor[0], strelka2_directory, bed_file, mantaIndels),
                 strelka2.run(strelka2_directory, output_dep=output_dep),
                 pipe_jobs([
@@ -1292,7 +1316,7 @@ END`""".format(
                             vardict.paired_java(input_normal[0], input_tumor[0], tumor_pair.name, None, bf),
                             vardict.testsomatic(None, None),
                             vardict.var2vcf(None, tumor_pair.normal.name, tumor_pair.tumor.name, None),
-                            htslib.bgzip_tabix(None, output),
+                            htslib.bgzip_tabix(None, os.path.abspath(output)),
                         ]),
                     ], name="vardict_paired." + tumor_pair.name + "." + str(idx)))
                     idx += 1
@@ -1310,7 +1334,7 @@ END`""".format(
                             vardict.paired_java(input_normal[0], input_tumor[0], tumor_pair.name, None, beds.pop()),
                             vardict.testsomatic(None, None),
                             vardict.var2vcf(None, tumor_pair.normal.name, tumor_pair.tumor.name, None),
-                            htslib.bgzip_tabix(None, output),
+                            htslib.bgzip_tabix(None, os.path.abspath(output)),
                         ]),
                     ], name="vardict_paired." + tumor_pair.name + ".0"))
                 else:
@@ -1505,26 +1529,41 @@ END`""".format(
 
         ensemble_directory = os.path.join("pairedVariants", "ensemble")
 
+        nb_jobs = config.param('gatk_variant_annotator', 'nb_jobs', type='posint')
+        if nb_jobs > 50:
+            log.warning("Number of jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
+
         for tumor_pair in self.tumor_pairs.itervalues():
-            input_normal = os.path.join("alignment", tumor_pair.normal.name,
-                                        tumor_pair.normal.name + ".sorted.dup.recal.bam")
-            input_tumor = os.path.join("alignment", tumor_pair.tumor.name,
-                                       tumor_pair.tumor.name + ".sorted.dup.recal.bam")
-            input_somatic_variants = os.path.join(ensemble_directory, tumor_pair.name,
-                                                  tumor_pair.name + ".ensemble.somatic.vt.vcf.gz")
+            input_normal = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.recal.bam")
+            input_tumor = os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
+            input_somatic_variants = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.vt.vcf.gz")
 
-            for sequence in self.sequence_dictionary_variant():
-                output_somatic_variants = os.path.join(ensemble_directory, tumor_pair.name,
-                                                       tumor_pair.name + ".ensemble.somatic.vt.annot." + sequence[
-                                                           'name'] + ".vcf.gz")
+            if nb_jobs == 1:
+                output_somatic_variants = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.vt.annot.vcf.gz")
+    
+                jobs.append(concat_jobs([
+                    Job(command="mkdir -p " + ensemble_directory, removable_files=[output_somatic_variants],
+                        samples=[tumor_pair.normal, tumor_pair.tumor]),
+                    gatk.variant_annotator(input_normal, input_tumor, input_somatic_variants, output_somatic_variants),
+                ], name="gatk_variant_annotator.somatic." + tumor_pair.name))
+                
+            else:
+                unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary, nb_jobs - 1)
+                for idx, sequences in enumerate(unique_sequences_per_job):
+                    output_somatic_variants = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.vt.annot." + str(idx) + ".vcf.gz")
 
-                mkdir_job = Job(command="mkdir -p " + ensemble_directory, removable_files=[output_somatic_variants], samples=[tumor_pair.normal, tumor_pair.tumor])
+                    jobs.append(concat_jobs([
+                        Job(command="mkdir -p " + ensemble_directory, removable_files=[output_somatic_variants], samples=[tumor_pair.normal, tumor_pair.tumor]),
+                        gatk.variant_annotator(input_normal, input_tumor, input_somatic_variants, output_somatic_variants, intervals=sequences),
+                    ], name="gatk_variant_annotator.somatic." + str(idx) + "." + tumor_pair.name))
+
+                output_somatic_variants = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.vt.annot.others.vcf.gz")
 
                 jobs.append(concat_jobs([
-                    mkdir_job,
+                    Job(command="mkdir -p " + ensemble_directory, removable_files=[output_somatic_variants], samples=[tumor_pair.normal, tumor_pair.tumor]),
                     gatk.variant_annotator(input_normal, input_tumor, input_somatic_variants, output_somatic_variants,
-                                           intervals=[sequence['name']]),
-                ], name="gatk_variant_annotator.somatic." + sequence['name'] + "." + tumor_pair.name))
+                                           exclude_intervals=unique_sequences_per_job_others),
+                ], name="gatk_variant_annotator.somatic.others." + tumor_pair.name))
 
         return jobs
 
@@ -1537,27 +1576,39 @@ END`""".format(
 
         ensemble_directory = os.path.join("pairedVariants", "ensemble")
 
+        nb_jobs = config.param('gatk_variant_annotator', 'nb_jobs', type='posint')
+        if nb_jobs > 50:
+            log.warning("Number of jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
+
         for tumor_pair in self.tumor_pairs.itervalues():
-            input_normal = os.path.join("alignment", tumor_pair.normal.name,
-                                        tumor_pair.normal.name + ".sorted.dup.recal.bam")
-            input_tumor = os.path.join("alignment", tumor_pair.tumor.name,
-                                        tumor_pair.tumor.name + ".sorted.dup.recal.bam")
-            input_germline_loh_variants = os.path.join(ensemble_directory, tumor_pair.name,
-                                                       tumor_pair.name + ".ensemble.germline_loh.vt.vcf.gz")
-
-            for sequence in self.sequence_dictionary_variant():
-                output_germline_loh_variants = os.path.join(ensemble_directory, tumor_pair.name,
-                                                            tumor_pair.name + ".ensemble.germline_loh.vt.annot." +
-                                                            sequence['name'] + ".vcf.gz")
-
-                mkdir_job = Job(command="mkdir -p " + ensemble_directory,
-                                removable_files=[output_germline_loh_variants], samples=[tumor_pair.normal, tumor_pair.tumor])
-
+            input_normal = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.recal.bam")
+            input_tumor = os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
+            input_germline_variants = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.germline_loh.vt.vcf.gz")
+    
+            if nb_jobs == 1:
+                output_germline_variants = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.germline_loh.vt.annot.vcf.gz")
+        
                 jobs.append(concat_jobs([
-                    mkdir_job,
-                    gatk.variant_annotator(input_normal, input_tumor, input_germline_loh_variants,
-                                           output_germline_loh_variants, intervals=[sequence['name']]),
-                ], name="gatk_variant_annotator.germline." + sequence['name'] + "." + tumor_pair.name))
+                    Job(command="mkdir -p " + ensemble_directory, removable_files=[output_germline_variants], samples=[tumor_pair.normal, tumor_pair.tumor]),
+                    gatk.variant_annotator(input_normal, input_tumor, input_germline_variants, output_germline_variants),
+                ], name="gatk_variant_annotator.germline." + tumor_pair.name))
+    
+            else:
+                unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary, nb_jobs - 1)
+                for idx, sequences in enumerate(unique_sequences_per_job):
+                    output_germline_variants = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.germline_loh.vt.annot." + str(idx) + ".vcf.gz")
+            
+                    jobs.append(concat_jobs([
+                        Job(command="mkdir -p " + ensemble_directory, removable_files=[output_germline_variants], samples=[tumor_pair.normal, tumor_pair.tumor]),
+                        gatk.variant_annotator(input_normal, input_tumor, input_germline_variants, output_germline_variants, intervals=sequences),
+                    ], name="gatk_variant_annotator.germline." + str(idx) + "." + tumor_pair.name))
+        
+                output_germline_variants = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.germline_loh.vt.annot.others.vcf.gz")
+        
+                jobs.append(concat_jobs([
+                    Job(command="mkdir -p " + ensemble_directory, removable_files=[output_germline_variants], samples=[tumor_pair.normal, tumor_pair.tumor]),
+                    gatk.variant_annotator(input_normal, input_tumor, input_germline_variants, output_germline_variants, exclude_intervals=unique_sequences_per_job_others),
+                ], name="gatk_variant_annotator.germline.others." + tumor_pair.name))
 
         return jobs
 
@@ -1569,20 +1620,24 @@ END`""".format(
 
         ensemble_directory = os.path.join("pairedVariants", "ensemble")
 
-        for tumor_pair in self.tumor_pairs.itervalues():
-            inputs_somatic = [os.path.join(ensemble_directory, tumor_pair.name,
-                                           tumor_pair.name + ".ensemble.somatic.vt.annot." + sequence[
-                                               'name'] + ".vcf.gz") for sequence in self.sequence_dictionary_variant()]
-            ouputs_somatic = os.path.join(ensemble_directory, tumor_pair.name,
-                                          tumor_pair.name + ".ensemble.somatic.vt.annot.vcf.gz")
+        nb_jobs = config.param('gatk_variant_annotator', 'nb_jobs', type='posint')
 
-            jobs.append(concat_jobs([
-                Job(samples=[tumor_pair.normal, tumor_pair.tumor]),
-                pipe_jobs([
-                    bcftools.concat(inputs_somatic, None),
-                    htslib.bgzip_tabix(None, ouputs_somatic),
-                ]),
-            ], name="merge_gatk_variant_annotator.somatic." + tumor_pair.name))
+        for tumor_pair in self.tumor_pairs.itervalues():
+            output_somatic = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.vt.annot.vcf.gz")
+            if nb_jobs > 1:
+                unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary, nb_jobs - 1)
+                vcfs_to_merge = [os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.vt.annot." + str(idx) +".vcf.gz")
+                                  for idx in xrange(len(unique_sequences_per_job))]
+                
+                vcfs_to_merge.append(os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.vt.annot.others.vcf.gz"))
+                
+                jobs.append(concat_jobs([
+                    Job(samples=[tumor_pair.normal, tumor_pair.tumor]),
+                    pipe_jobs([
+                        bcftools.concat(vcfs_to_merge, None),
+                        htslib.bgzip_tabix(None, output_somatic),
+                    ]),
+                ], name="merge_gatk_variant_annotator.somatic." + tumor_pair.name))
 
         return jobs
 
@@ -1594,20 +1649,24 @@ END`""".format(
 
         ensemble_directory = os.path.join("pairedVariants", "ensemble")
 
-        for tumor_pair in self.tumor_pairs.itervalues():
-            germline_inputs = [os.path.join(ensemble_directory, tumor_pair.name,
-                                            tumor_pair.name + ".ensemble.germline_loh.vt.annot." + sequence[
-                                                'name'] + ".vcf.gz") for sequence in self.sequence_dictionary_variant()]
-            germline_output = os.path.join(ensemble_directory, tumor_pair.name,
-                                           tumor_pair.name + ".ensemble.germline_loh.vt.annot.vcf.gz")
+        nb_jobs = config.param('gatk_variant_annotator', 'nb_jobs', type='posint')
 
-            jobs.append(concat_jobs([
-                Job(samples=[tumor_pair.normal, tumor_pair.tumor]),
-                pipe_jobs([
-                    bcftools.concat(germline_inputs, None),
-                    htslib.bgzip_tabix(None, germline_output),
-                ]),
-            ], name="merge_gatk_variant_annotator.germline." + tumor_pair.name))
+        for tumor_pair in self.tumor_pairs.itervalues():
+            output_germline = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.germline_loh.vt.annot.vcf.gz")
+            if nb_jobs > 1:
+                unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary, nb_jobs - 1)
+                vcfs_to_merge = [os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.germline_loh.vt.annot." + str(idx) + ".vcf.gz")
+                                 for idx in xrange(len(unique_sequences_per_job))]
+
+                vcfs_to_merge.append(os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.germline_loh.vt.annot.others.vcf.gz"))
+        
+                jobs.append(concat_jobs([
+                    Job(samples=[tumor_pair.normal, tumor_pair.tumor]),
+                    pipe_jobs([
+                        bcftools.concat(vcfs_to_merge, None),
+                        htslib.bgzip_tabix(None, output_germline),
+                    ]),
+                ], name="merge_gatk_variant_annotator.germline." + tumor_pair.name))
 
         return jobs
 

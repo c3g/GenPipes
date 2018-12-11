@@ -303,7 +303,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $MUTECT_JAR 
 def mutect2(inputNormal, normal_name, inputTumor, tumor_name, outputVCF, intervals=[], exclude_intervals=[], interval_list=None):
     cosmic = config.param('gatk_mutect2', 'cosmic', type='filepath', required=False)
     # if set add arg prefix
-    if cosmic :
+    if cosmic and os.path.isfile(cosmic):
         cosmic = " --cosmic " + cosmic
         
     if config.param('gatk_mutect2', 'module_gatk').split("/")[2] >= "4":
@@ -335,7 +335,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         inputNormal=inputNormal,
         inputTumor=inputTumor,
         outputVCF=outputVCF,
-        interval_list=" \\\n  --interval-padding 250 --intervals " + interval_list if interval_list else "",
+        interval_list=" \\\n  --interval_padding 100 --intervals " + interval_list if interval_list else "",
         intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
         exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals)
         )
