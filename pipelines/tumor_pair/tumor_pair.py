@@ -1432,8 +1432,8 @@ END`""".format(
                         germline_output_vt
                     ),
                 ]),
-            ], name="merge_varscan2." + tumor_pair.name))
-
+            	], name="merge_varscan2." + tumor_pair.name))
+             
         return jobs
 
     def paired_mutect2(self):
