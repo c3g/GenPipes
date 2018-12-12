@@ -34,10 +34,10 @@ Usage
 usage: hicseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                  [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f] [--json]
                  [--report] [--clean] [-l {debug,info,warning,error,critical}]
-                 -e {DpnII,HindIII,NcoI,MboI} [-t {hic,capture}] [-r READSETS]
-                 [-v]
+                 -e {DpnII,HindIII,NcoI,MboI,Arima} [-t {hic,capture}]
+                 [-r READSETS] [-v]
 
-Version: 3.1.1-beta
+Version: 3.1.2
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
@@ -68,7 +68,7 @@ optional arguments:
                         date status are ignored (default: false)
   -l {debug,info,warning,error,critical}, --log {debug,info,warning,error,critical}
                         log level (default: info)
-  -e {DpnII,HindIII,NcoI,MboI}, --enzyme {DpnII,HindIII,NcoI,MboI}
+  -e {DpnII,HindIII,NcoI,MboI,Arima}, --enzyme {DpnII,HindIII,NcoI,MboI,Arima}
                         Restriction Enzyme used to generate Hi-C library
                         (default DpnII)
   -t {hic,capture}, --type {hic,capture}

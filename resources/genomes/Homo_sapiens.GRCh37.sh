@@ -9,6 +9,8 @@ ASSEMBLY_SYNONYMS=hg19
 SOURCE=Ensembl
 VERSION=75
 BIOMART_HOST=dec2015.archive.ensembl.org
+DBSNP_VERSION=150
+ONEKG_PHASE="p3"
 
 module_snpeff=mugqic/snpEff/4.2
 module_tabix=mugqic/tabix/0.2.6
@@ -19,7 +21,6 @@ source $GENOME_INSTALL_SCRIPT_DIR/install_genome.sh
 
 # Download dbSNP directly from NCBI since it is more up to date
 get_vcf_dbsnp() {
-  DBSNP_VERSION=150
 #  DBSNP_URL=ftp://ftp.ncbi.nih.gov/snp/organisms/archive/human_9606_b${DBSNP_VERSION}_GRCh37p13/VCF/00-All.vcf.gz    # to use with DBSNP_VERSION = 142 & 144
   DBSNP_URL=ftp://ftp.ncbi.nih.gov/snp/organisms/human_9606_b${DBSNP_VERSION}_GRCh37p13/VCF/00-All.vcf.gz          # to use with DBSNP_VERSION >= 146
   DBSNP=$ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP$DBSNP_VERSION.vcf.gz
@@ -63,7 +64,7 @@ get_dbNSFP() {
     if ! is_up2date $DBSNP_ANNOTATED; then
         module load $module_snpeff $module_java
         java -Xmx8G -jar $SNPEFF_HOME/SnpSift.jar dbnsfp -v -db $DBSNSFP.txt.gz $DBSNP > $DBSNP_ANNOTATED
-        for POP_FREQ in 1000Gp1_EUR_AF 1000Gp1_AFR_AF 1000Gp1_ASN_AF;
+        for POP_FREQ in 1000G${ONEKG_PHASE}_EUR_AF 1000G${ONEKG_PHASE}_AFR_AF 1000G${ONEKG_PHASE}_ASN_AF;
         do
             cat $DBSNP_ANNOTATED | sed -e 's/dbNSFP_'$POP_FREQ'/AF/g' > $ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP${DBSNP_VERSION}_${POP_FREQ}.vcf
             #bgzip $ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP${DBSNP_VERSION}_${POP_FREQ}.vcf
@@ -74,7 +75,7 @@ get_dbNSFP() {
     fi
 
     # set the default allele frequency for a population (hapmap CEU)
-    population_AF=1000Gp1_EUR_AF
+    population_AF=1000G${ONEKG_PHASE}_EUR_AF
 }
 
 # Overwrite install_genome since NCBI genome is used instead of Ensembl

@@ -381,7 +381,7 @@ cp \\
                 jobs.append(job)
 
                 # Compute on target percent of hybridisation based capture
-                interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
+                interval_list = re.sub("\.[^.]+$", ".interval_list", os.path.basename(coverage_bed))
                 if not interval_list in created_interval_lists:
                     job = tools.bed2interval_list(None, coverage_bed, interval_list)
                     job.name = "interval_list." + os.path.basename(coverage_bed)
@@ -494,32 +494,34 @@ cp \\
             ]
 
             if input_file == os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.bam") :
+                jobs.append(
+                    concat_jobs([
+                        Job(command="mkdir -p " + methyl_directory, samples=[sample]),
+                        bismark.methyl_call(
+                            input_file,
+                            outputs,
+                            library[sample]
+                        )
+                    ], name="bismark_methyl_call." + sample.name)
+                )
+            else :
+                jobs.append(
+                    concat_jobs([
+                        Job(command="mkdir -p " + methyl_directory, samples=[sample]),
+                        bismark.sort_sam(
+                            input_file,
+                            re.sub("sorted", "readset_sorted", input_file),
+                            "queryname"
+                            )
+                    ], name="picard_sort_sam." + sample.name)
+                )
+                outputs = [re.sub("sorted", "readset_sorted", output) for output in outputs]
                 bismark_job = bismark.methyl_call(
-                    input_file,
+                    re.sub("sorted", "readset_sorted", input_file),
                     outputs,
                     library[sample]
                 )
-            else :
-                outputs = [re.sub("sorted", "readset_sorted", output) for output in outputs]
-                bismark_job = concat_jobs([
-                    picard.sort_sam(
-                        input_file,
-                        re.sub("sorted", "readset_sorted", input_file),
-                        "queryname"
-                    ),
-                    bismark.methyl_call(
-                        re.sub("sorted", "readset_sorted", input_file),
-                        outputs,
-                        library[sample]
-                    )
-                ])
-
-            jobs.append(
-                concat_jobs([
-                    Job(command="mkdir -p " + methyl_directory, samples=[sample]),
-                    bismark_job
-                ], name="bismark_methyl_call." + sample.name)
-            )
+                jobs.append( bismark_job )
 
         return jobs
 

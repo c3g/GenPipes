@@ -5,7 +5,7 @@ vim VERSION
 
 # Update mugqic_pipelines module version
 vim resources/modules/mugqic_pipelines.sh
-(VERSION=3.1.0)
+(VERSION=3.1.1)
 
 # Recreate the pipelines/<pipeline>/README.md using --help with markdown output
 for script in \
@@ -43,22 +43,22 @@ pipelines/tumor_pair/tumor_pair.py --help > pipelines/tumor_pair/README.md
 pipelines/illumina_run_processing/illumina_run_processing.py --help > pipelines/illumina_run_processing/README.md
 
 # Tag the branch and push the tag. You'll need to have a gpg signature for this. Extra precaution
-git tag -s 3.1.0 -m 'Release 3.1.0'
+git tag -s 3.1.1 -m 'Release 3.1.1'
 git push -u origin --tags
 
 # Recreate the CHANGELOG.md
 bash ~/work/repo/dump_ChangeLog.sh > CHANGELOG.md
-git commit -a -m "Version bump to 3.1.0"
+git commit -a -m "Version bump to 3.1.1"
 
 # Create a release tarball archive
-git archive --format=tar --prefix=genpipes-3.1.0/ 3.1.0 | gzip > genpipes-3.1.0.tar.gz
+git archive --format=tar --prefix=genpipes-3.1.1/ 3.1.1 | gzip > genpipes-3.1.1.tar.gz
 
 # Upload this archive in
-https://bitbucket.org/mugqic/mugqic_pipelines/downloads
+https://bitbucket.org/mugqic/genpipes/downloads
 
-# Version bump the value. Until the next release, add '-beta' e.g. 3.1.1-beta
+# Version bump the value. Until the next release, add '-beta' e.g. 3.1.2-beta
 vim VERSION
-git commit -m "Version bump to 3.1.1-beta" VERSION
+git commit -m "Version bump to 3.1.2-beta" VERSION
 git push
 
 # Deploy GenAP_Pipes-<VERSION> as a module on all clusters
