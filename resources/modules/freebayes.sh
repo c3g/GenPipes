@@ -2,33 +2,37 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=supernova
-VERSION=2.1.1
+SOFTWARE=freebayes
+VERSION=1.2.0
 ARCHIVE=$SOFTWARE-$VERSION.tar.gz
-# supernova archive has to be manually downloaded from https://support.10xgenomics.com/de-novo-assembly/software/downloads/latest
-# and then stored in $MUGQIC_INSTALL_HOME/archive/ or/and $MUGQIC_INSTALL_HOME_DEV/archive/
-ARCHIVE_URL=
+ARCHIVE_URL=https://github.com/ekg/${SOFTWARE}/archive/v${VERSION}.tar.gz
 SOFTWARE_DIR=$SOFTWARE-$VERSION
 
+# Specific commands to extract and build the software
+# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
+# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
-  tar zxvf $ARCHIVE
+  git clone --recursive git://github.com/ekg/freebayes.git -b v1.2.0
 
-  # Move software
+  cd $SOFTWARE
+  make
+
+  # Install software
   cd $INSTALL_DOWNLOAD
-  mv -i $SOFTWARE_DIR $INSTALL_DIR/
+  mv -i $SOFTWARE $INSTALL_DIR/${SOFTWARE_DIR}
 }
 
 module_file() {
 echo "\
 #%Module1.0
 proc ModulesHelp { } {
-  puts stderr \"\tMUGQIC - $SOFTWARE \"
+ puts stderr \"\tMUGQIC - $SOFTWARE \"
 }
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-prepend-path    PATH                \$root
+prepend-path    PATH                \$root/bin/
 "
 }
 

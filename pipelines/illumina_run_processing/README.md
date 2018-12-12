@@ -71,7 +71,7 @@ usage: illumina_run_processing.py [-h] [--help] [-c CONFIG [CONFIG ...]]
                                   [-x FIRST_INDEX] [-y LAST_INDEX]
                                   [-m NUMBER_OF_MISMATCHES] [-w] [-v]
 
-Version: 3.1.1
+Version: 3.1.2
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 

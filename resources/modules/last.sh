@@ -2,21 +2,19 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=supernova
-VERSION=2.1.1
-ARCHIVE=$SOFTWARE-$VERSION.tar.gz
-# supernova archive has to be manually downloaded from https://support.10xgenomics.com/de-novo-assembly/software/downloads/latest
-# and then stored in $MUGQIC_INSTALL_HOME/archive/ or/and $MUGQIC_INSTALL_HOME_DEV/archive/
-ARCHIVE_URL=
-SOFTWARE_DIR=$SOFTWARE-$VERSION
+SOFTWARE=LAST
+VERSION=959
+ARCHIVE=${SOFTWARE,,}-$VERSION.zip
+ARCHIVE_URL=http://last.cbrc.jp/$ARCHIVE
+SOFTWARE_DIR=${SOFTWARE,,}-$VERSION
 
 build() {
   cd $INSTALL_DOWNLOAD
-  tar zxvf $ARCHIVE
+  unzip $ARCHIVE
 
-  # Move software
-  cd $INSTALL_DOWNLOAD
-  mv -i $SOFTWARE_DIR $INSTALL_DIR/
+  cd $SOFTWARE_DIR
+  make -j12
+  make install prefix=$INSTALL_DIR/$SOFTWARE_DIR
 }
 
 module_file() {
@@ -29,6 +27,8 @@ module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
 prepend-path    PATH                \$root
+prepend-path    PATH                \$root/bin
+setenv          LAST_HOME           \$root
 "
 }
 
