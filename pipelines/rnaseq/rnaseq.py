@@ -40,6 +40,7 @@ from bfx.readset import *
 from bfx import bedtools
 from bfx import cufflinks
 from bfx import stringtie
+from bfx import ballgown
 from bfx import differential_expression
 from bfx import gq_seq_utils
 from bfx import htseq
@@ -93,7 +94,7 @@ class RnaSeq(common.Illumina):
     information about the RNA-Seq pipeline that you may find interesting.
     """
 
-    def __init__(self, protocol='cufflinks'):
+    def __init__(self, protocol='stringtie'):
         self._protocol=protocol
         # Add pipeline specific arguments
         self.argparser.add_argument("-d", "--design", help="design file", type=file)
@@ -800,6 +801,29 @@ END
 
         return jobs
 
+    def ballgown(self):
+        """
+        [Ballgown](https://bioconductor.org/packages/release/bioc/html/ballgown.html) is used to calculate differential transcript and gene expression levels and test them for significant differences.
+
+        Warning: still in testing
+        """
+
+        jobs = []
+
+        # Perform ballgown on each design contrast
+        # If --design <design_file> option is missing, self.contrasts call will raise an Exception
+        if self.contrasts: 
+            design_file = os.path.relpath(self.args.design.name, self.output_dir)        
+        output_directory = "ballgown" 
+        input_abund = [os.path.join("stringtie", sample.name, "abundance.tab") for sample in self.samples]
+
+        ballgown_job = ballgown.ballgown(input_abund, design_file, output_directory)
+        ballgown_job.name = "ballgown"
+        ballgown_job.samples = self.samples
+        jobs.append(ballgown_job)
+
+        return jobs
+
     def cufflinks(self):
         """
         Compute RNA-Seq data expression using [cufflinks](http://cole-trapnell-lab.github.io/cufflinks/cufflinks/).
@@ -1171,6 +1195,7 @@ done""".format(
             self.stringtie,
             self.stringtie_merge,
             self.stringtie_abund,
+            self.ballgown,
             self.differential_expression,
             self.differential_expression_goseq,
             self.ihec_metrics,
