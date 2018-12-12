@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+#set -e
 umask 0002
 me=`basename $0`
 
@@ -178,7 +178,8 @@ EOF
 
 cat > $INSTALL_DIR/lib64/R/etc/Rprofile.site <<-'EOF'
 if(capabilities()["cairo"]){ options(bitmapType="cairo") }
-Sys.umask("002")                        
+Sys.setenv(PAGER="/usr/bin/less")
+Sys.umask("002")
 EOF
 
 fi
@@ -221,30 +222,30 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
 
     ## Define the list of packages to standard packages to install.
     deps = c("affxparser", "affy", "affyio", "affyPLM", "akima", "allgown", "annotate", "AnnotationDbi", "AnnotationForge", "ape", "ash", "ASCAT",
-    "BatchExperiments", "BatchJobs", "batchtools", "beanplot", "Biobase", "BiocGenerics", "BiocInstaller", "bioDist", "biomaRt", "Biostrings", "biovizBase", "bit",
-    "bit64", "bitops", "boot", "brew", "BSgenome", "bumphunter",
-    "caTools", "charm", "charmData", "circlize", "class", "cluster", "clusterStab", "clusterProfiler", "codetools", "colorspace", "ConsensusClusterPlus",
+    "BatchExperiments", "BatchJobs", "batchtools", "beanplot", "Biobase", "BiocGenerics", "BiocInstaller", "bioDist", "biomaRt", "biomformat", "Biostrings", "biovizBase", "bit",
+    "bit64", "bitops", "boot", "brew", "BSgenome", "BSgenome.Hsapiens.UCSC.hg19", "bumphunter",
+    "caTools", "charm", "charmData", "ChIPseeker", "circlize", "class", "cluster", "clusterStab", "clusterProfiler", "codetools", "colorspace", "ConsensusClusterPlus",
     "corpcor", "crlmm", "ctc", "cummeRbund",
-    "datasets", "data.table", "DBI", "DESeq", "devtools", "dendextend", "dichromat", "digest", "dplyr", "DNAcopy",
+    "dada2", "datasets", "data.table", "DBI", "DESeq", "devtools", "dendextend", "dichromat", "diffHic", "digest", "dplyr", "DNAcopy",
     "edgeR", "ellipse", "evaluate",
-    "fastcluster", "fdrtool", "ff", "fields", "FDb.InfiniumMethylation.hg19", "foreach", "foreign",
+    "farver", "fastcluster", "fdrtool", "ff", "fields", "FDb.InfiniumMethylation.hg19", "foreach", "foreign",
     "gcrma", "gdata", "genefilter", "GenomicFeatures", "GenomicRanges", "GenomeInfoDb", "genoset", "GEOquery", "ggplot2", "ggvis", "googleVis", "goseq", "gplots", "graph",
     "gsalib", "gtable", "gtools", "Gviz",
     "hdrcde", "Hmisc", "hwriter", "HTqPCR", "HTSFilter", "hopach",
-    "igraph", "IlluminaHumanMethylation450kmanifest", "IlluminaHumanMethylation450kanno.ilmn12.hg19", "impute", "IRanges", "iterators",
+    "igraph", "IlluminaHumanMethylation450kmanifest", "IlluminaHumanMethylation450kanno.ilmn12.hg19", "impute", "InteractionSet", "IRanges", "iterators",
     "KernSmooth", "ks",
-    "labeling", "lattice", "latticeExtra", "limma", "locfit", "lumi", "LVSmiRNA",
+    "labeling", "lattice", "latticeExtra", "limma", "lme4", "locfit", "lumi", "LVSmiRNA",
     "magrittr", "maps", "markdown", "MASS", "MAST", "Matrix", "matrixStats", "mclust", "memoise", "methyAnalysis", "methylumi", "mgcv", "minfi", "mirbase.db",
     "misc3d", "monocle", "multtest", "munsell", "mvtnorm",
     "NBPSeq", "nleqslv", "nlme", "NMF", "nnet", "nondetects", "nor1mix", "Nozzle.R1",
     "oligo", "oligoClasses", "optparse", "outliers",
-    "pd.charm.hg18.example", "pheatmap", "plotrix", "plyr", "preprocessCore", "proto",
+    "pd.charm.hg18.example", "pheatmap", "phyloseq", "plotrix", "plyr", "preprocessCore", "proto",
     "qqman", "quantreg",
     "R2HTML", "RBGL", "RColorBrewer", "Rcpp", "RcppEigen", "RCurl", "remotes", "rhdf5", "ReportingTools", "reshape", "reshape2", "rgl", "RJSONIO", "Rmisc", "R.methodsS3",
     "rmarkdown", "roxygen2", "rpart", "Rsamtools", "RSQLite", "rtracklayer", "Rtsne",
     "scales", "sendmailR", "Seurat", "shiny", "ShortRead", "siggenes", "slam", "snow", "SNPchip", "SortableHTMLTables", "spam", "SparseM", "spatial", "spp", "SQN",
     "statmod", "stringi", "stringr", "survival", "sva",
-    "testthat", "tidyr", "tidyverse", "TxDb.Hsapiens.UCSC.hg19.knownGene",
+    "testthat", "tidyr", "tidyverse", "tweenr", "TxDb.Hsapiens.UCSC.hg19.knownGene",
     "vioplot", "vsn",
     "WriteXLS",
     "XML", "xtable",
@@ -278,6 +279,9 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
     devtools::install_github("jmonlong/PopSV")
     ## ASCAT
     devtools::install_github("Crick-CancerGenomics/ascat/ASCAT")
+    ## ChIAnalysis (with its eric.utils dependency)
+    devtools::install_bitbucket("ericfournier2/sb_lab/eric.utils")
+    #devtools::install_github("ArnaudDroitLab/ChIAnalysis")
 EOF
 
 #echo "building C3G wrappers for executables..."

@@ -91,13 +91,13 @@ Steps:
 14- bis_snp
 
 ```
-1- picard_sam_to_fastq
-----------------------
+picard_sam_to_fastq
+-------------------
 Convert SAM/BAM files from the input readset file into FASTQ format
 if FASTQ files are not already specified in the readset file. Do nothing otherwise.
 
-2- trimmomatic
---------------
+trimmomatic
+-----------
 Raw reads quality trimming and removing of Illumina adapters is performed using [Trimmomatic](http://www.usadellab.org/cms/index.php?page=trimmomatic).
 If an adapter FASTA file is specified in the config file (section 'trimmomatic', param 'adapter_fasta'),
 it is used first. Else, 'Adapter1' and 'Adapter2' columns from the readset file are used to create
@@ -110,16 +110,16 @@ This step takes as input files:
 1. FASTQ files from the readset file if available
 2. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
 
-3- merge_trimmomatic_stats
---------------------------
+merge_trimmomatic_stats
+-----------------------
 The trim statistics per readset are merged at this step.
 
-4- bismark_align
-----------------
+bismark_align
+-------------
 Align reads with Bismark
 
-5- picard_merge_sam_files
--------------------------
+picard_merge_sam_files
+----------------------
 BAM readset files are merged into one file per sample. Merge is done using [Picard](http://broadinstitute.github.io/picard/).
 
 This step takes as input files:
@@ -127,14 +127,14 @@ This step takes as input files:
 1. Aligned and sorted BAM output files from previous bwa_mem_picard_sort_sam step if available
 2. Else, BAM files from the readset file
 
-6- picard_remove_duplicates
----------------------------
+picard_remove_duplicates
+------------------------
 Remove duplicates. Aligned reads per sample are duplicates if they have the same 5' alignment positions
 (for both mates in the case of paired-end reads). All but the best pair (based on alignment score)
 will be removed as a duplicate in the BAM file. Removing duplicates is done using [Picard](http://broadinstitute.github.io/picard/).
 
-7- metrics
-----------
+metrics
+-------
 Compute metrics and generate coverage tracks per sample. Multiple metrics are computed at this stage:
 Number of raw reads, Number of filtered reads, Number of aligned reads, Number of duplicate reads,
 Median, mean and standard deviation of insert sizes of reads after alignment, percentage of bases
@@ -143,42 +143,42 @@ whole genome or targeted percentage of bases covered at X reads (%_bases_above_5
 bases which have at least 50 reads). A TDF (.tdf) coverage track is also generated at this step
 for easy visualization of coverage in the IGV browser.
 
-8- verify_bam_id
-----------------
+verify_bam_id
+-------------
 verifyBamID is a software that verifies whether the reads in particular file match previously known
 genotypes for an individual (or group of individuals), and checks whether the reads are contaminated
 as a mixture of two samples. verifyBamID can detect sample contamination and swaps when external
 genotypes are available. When external genotypes are not available, verifyBamID still robustly
 detects sample swaps.
 
-9- methylation_call
--------------------
+methylation_call
+----------------
 The script reads in a bisulfite read alignment file produced by the Bismark bisulfite mapper
 and extracts the methylation information for individual cytosines.
 The methylation extractor outputs result files for cytosines in CpG, CHG and CHH context.
 It also outputs bedGraph, a coverage file from positional methylation data and cytosine methylation report
 
-10- wiggle_tracks
------------------
+wiggle_tracks
+-------------
 Generate wiggle tracks suitable for multiple browsers, to show coverage and methylation data.
 When using GRCh37 build of Human genome, to be compatible with the UCSC Genome Browser we only keep chromosomes 1-22, X, Y and MT,
 and we also rename them by prefixing "chr" to the chromosome anme (e.g. "1" becomes "chr1"), and changing the mitocondrial chromosome from "MT" to "chrM", and keeping the GRCh37 coordinates.
 
-11- methylation_profile
------------------------
+methylation_profile
+-------------------
 Generation of a CpG methylation profile by combining both forward and reverse strand Cs.
 Also generating of all the methylatoin metrics : CpG stats, pUC19 CpG stats, lambda conversion rate, median CpG coverage, GC bias
 
-12- all_sample_metrics_report
------------------------------
+all_sample_metrics_report
+-------------------------
 Retrieve all the computed metrics (alignment metrics as well as methylation metrics) to build a tsv report table
 
-13- ihec_sample_metrics_report
-------------------------------
+ihec_sample_metrics_report
+--------------------------
 Retrieve the computed metrics which fit the IHEC standards and build a tsv report table for IHEC
 
-14- bis_snp
------------
+bis_snp
+-------
 SNP calling with BisSNP
 
 
