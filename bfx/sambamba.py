@@ -46,20 +46,22 @@ sambamba sort {options} \\
         )
     )
 
-def index(input_bam, tmp_dir, output_dep=[]):
+def index(input, output):
 
     return Job(
-        [input_bam],
-        [output_dep],
+        [input],
+        [output],
         [
             ['sambamba_index', 'module_samtools'],
             ['sambamba_index', 'module_sambamba']
         ],
         command="""\
 sambamba index {options} \\
-  {input}""".format(
+  {input} \\
+  {output}""".format(
         options=config.param('sambamba_index', 'options'),
         input=input,
+        output=output,
         )
     )
 
@@ -97,9 +99,9 @@ sambamba markdup {options} \\
   --tmpdir {temp} \\
   {output}""".format(
         options=config.param('sambamba_mark_duplicates', 'options'),
+	temp=config.param('sambamba_mark_duplicate', 'tmp_dir'),
         input=input_bam,
         output=output_bam,
-        temp=tmp_dir
         )
     )
 

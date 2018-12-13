@@ -101,8 +101,21 @@ class DnaSeqRaw(common.Illumina):
     @property
     def sequence_dictionary(self):
         if not hasattr(self, "_sequence_dictionary"):
-            self._sequence_dictionary = parse_sequence_dictionary_file(config.param('DEFAULT', 'genome_dictionary', type='filepath'),variant=False)
+            self._sequence_dictionary = parse_sequence_dictionary_file(config.param('DEFAULT', 'genome_dictionary', type='filepath'), variant=True)
         return self._sequence_dictionary
+
+    def generate_approximate_windows(self, nb_jobs):
+        if nb_jobs <= len(self.sequence_dictionary):
+            return [sequence['name'] + ":1-" + str(sequence['length']) for sequence in self.sequence_dictionary]
+        else:
+            total_length = sum([sequence['length'] for sequence in self.sequence_dictionary])
+            approximate_window_size = int(math.floor(total_length / (nb_jobs - len(self.sequence_dictionary))))
+            windows = []
+
+            for sequence in self.sequence_dictionary:
+                for start, end in [[pos, min(pos + approximate_window_size - 1, sequence['length'])] for pos in range(1, sequence['length'] + 1, approximate_window_size)]:
+                    windows.append(sequence['name'] + ":" + str(start) + "-" + str(end))
+            return windows
 
     def sym_link_fastq(self):
         """
@@ -577,7 +590,7 @@ class DnaSeqRaw(common.Illumina):
             input = self.select_input_files([[alignment_file_prefix + "matefixed.sorted.bam"],[alignment_file_prefix + "realigned.sorted.bam"],[alignment_file_prefix + "sorted.bam"]])
             output = alignment_file_prefix + "sorted.dup.bam"
 
-            job = sambamba.markdup(input, output, os.path.join("alignment", sample.name, sample.name))
+            job = sambamba.markdup(input, output)
             job.name = "sambamba_mark_duplicates." + sample.name
             job.samples = [sample]
             jobs.append(job)
@@ -619,10 +632,17 @@ class DnaSeqRaw(common.Illumina):
             jobs.append(concat_jobs([
                 gatk4.base_recalibrator(input, base_recalibrator_output, intervals=interval_list),
             ], name="gatk_base_recalibrator." + sample.name))
-        
-            jobs.append(concat_jobs([
-                gatk4.print_reads(input, print_reads_output, base_recalibrator_output),
-            ], name="gatk_print_reads." + sample.name))
+
+            if config.param('gatk_apply_bqsr', 'module_gatk').split("/")[2] > "3":
+                jobs.append(concat_jobs([
+                    gatk4.print_reads(input, print_reads_output, base_recalibrator_output),
+		    sambamba.index(print_reads_output, print_reads_output + ".bai")
+                ], name="gatk_print_reads." + sample.name))
+
+            else:
+                jobs.append(concat_jobs([
+                    gatk4.print_reads(input, print_reads_output, base_recalibrator_output),
+            	], name="gatk_print_reads." + sample.name))
 
         return jobs
 
@@ -751,6 +771,7 @@ class DnaSeqRaw(common.Illumina):
         jobs = []
 
         metrics_directory = os.path.join("metrics", "dna")
+        input_dep = []
         inputs = []
         for sample in self.samples:
             input_oxog = os.path.join(metrics_directory, sample.name, "picard_metrics.oxog_metrics.txt")
@@ -763,13 +784,14 @@ class DnaSeqRaw(common.Illumina):
             input_dep = [input_oxog, input_qcbias, input_all_picard, input_qualimap, input_fastqc, input_flagstat]
 
             input = os.path.join(metrics_directory, sample.name)
-            output = os.path.join(metrics_directory, sample.name + ".multiqc")
+        
             inputs.append(input)
-
-            jobs.append(concat_jobs([
-                Job(samples=[sample]),
-                multiqc.run(inputs, output, input_dep),
-            ], name="multiqc." + sample.name))
+            
+        output = os.path.join(metrics_directory, "multiqc_report")
+        jobs.append(concat_jobs([
+            #Job(samples=[sample]),
+            multiqc.run(inputs, output, input_dep),
+        ], name="multiqc." + sample.name))
 
         return jobs
 
@@ -945,7 +967,7 @@ class DnaSeqRaw(common.Illumina):
                 ], name="gatk_haplotype_caller." + sample.name))
             
             else:
-                unique_sequences_per_job,unique_sequences_per_job_others = split_by_size(self.sequence_dictionary, nb_haplotype_jobs - 1)
+                unique_sequences_per_job,unique_sequences_per_job_others = split_by_size(self.sequence_dictionary_variant(), nb_haplotype_jobs - 1, variant=True)
        
                 # Create one separate job for each of the first sequences
                 for idx,sequences in enumerate(unique_sequences_per_job):
@@ -994,7 +1016,7 @@ class DnaSeqRaw(common.Illumina):
                 ], name="merge_and_call_individual_gvcf.call." + sample.name))
                 
             else:
-                unique_sequences_per_job,unique_sequences_per_job_others = split_by_size(self.sequence_dictionary, nb_haplotype_jobs - 1)
+                unique_sequences_per_job,unique_sequences_per_job_others = split_by_size(self.sequence_dictionary_variant(), nb_haplotype_jobs - 1, variant=True)
                 gvcfs_to_merge = [haplotype_file_prefix + "." + str(idx) + ".hc.g.vcf.gz" for idx in xrange(len(unique_sequences_per_job))]
                 
                 gvcfs_to_merge.append(haplotype_file_prefix + ".others.hc.g.vcf.gz")
@@ -1027,7 +1049,7 @@ class DnaSeqRaw(common.Illumina):
                     gatk4.combine_gvcf([ os.path.join("alignment", sample.name, sample.name)+".hc.g.vcf.gz" for sample in self.samples ], os.path.join("variants", "allSamples.hc.g.vcf.gz"))],
                     name="gatk_combine_gvcf.AllSamples"))
             else :
-                unique_sequences_per_job,unique_sequences_per_job_others = split_by_size(self.sequence_dictionary, nb_haplotype_jobs - 1)
+                unique_sequences_per_job,unique_sequences_per_job_others = split_by_size(self.sequence_dictionary_variant(), nb_haplotype_jobs - 1, variant=True)
 
                 # Create one separate job for each of the first sequences
                 for idx,sequences in enumerate(unique_sequences_per_job):
@@ -1055,7 +1077,7 @@ class DnaSeqRaw(common.Illumina):
                         gatk4.combine_gvcf([ os.path.join("alignment", sample.name, sample.name)+".hc.g.vcf.gz" for sample in batch ], os.path.join("variants", "allSamples.batch" + str(cpt) + ".hc.g.vcf.gz"))
                     ], name="gatk_combine_gvcf.AllSamples.batch" + str(cpt)))
                 else :
-                    unique_sequences_per_job,unique_sequences_per_job_others = split_by_size(self.sequence_dictionary, nb_haplotype_jobs - 1)
+                    unique_sequences_per_job,unique_sequences_per_job_others = split_by_size(self.sequence_dictionary_variant(), nb_haplotype_jobs - 1, variant=True)
 
                     # Create one separate job for each of the first sequences
                     for idx,sequences in enumerate(unique_sequences_per_job):
@@ -1080,7 +1102,7 @@ class DnaSeqRaw(common.Illumina):
                 job.samples = self.samples
                 jobs.append(job)
             else :
-                unique_sequences_per_job,unique_sequences_per_job_others = split_by_size(self.sequence_dictionary, nb_haplotype_jobs - 1)
+                unique_sequences_per_job,unique_sequences_per_job_others = split_by_size(self.sequence_dictionary_variant(), nb_haplotype_jobs - 1, variant=True)
 
                 # Create one separate job for each of the first sequences
                 for idx,sequences in enumerate(unique_sequences_per_job):
@@ -1112,13 +1134,12 @@ class DnaSeqRaw(common.Illumina):
         output_haplotype = os.path.join("variants", "allSamples.hc.g.vcf.gz")
         output_haplotype_genotyped = os.path.join("variants", "allSamples.hc.vcf.gz")
         if nb_haplotype_jobs > 1:
-            unique_sequences_per_job,unique_sequences_per_job_others = split_by_size(self.sequence_dictionary, nb_haplotype_jobs - 1)
+            unique_sequences_per_job,unique_sequences_per_job_others = split_by_size(self.sequence_dictionary_variant(), nb_haplotype_jobs - 1, variant=True)
 
             gvcfs_to_merge = [haplotype_file_prefix + "." + str(idx) + ".hc.g.vcf.gz" for idx in xrange(len(unique_sequences_per_job))]
             gvcfs_to_merge.append(haplotype_file_prefix + ".others.hc.g.vcf.gz")
 
             job = gatk4.cat_variants(gvcfs_to_merge, output_haplotype)
-            #job = bcftools.concat(gvcfs_to_merge, output_haplotype, options="-Oz")
             job.name = "merge_and_call_combined_gvcf.merge.AllSample"
             job.samples = self.samples
             jobs.append(job)
@@ -1237,19 +1258,6 @@ pandoc \\
             job.input_files += [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.all.metrics.insert_size_metrics") for sample in self.samples]
         return [job]
 
-    def generate_approximate_windows(self, nb_jobs):
-        if nb_jobs <= len(self.sequence_dictionary):
-            return [sequence['name'] + ":1-" + str(sequence['length']) for sequence in self.sequence_dictionary]
-        else:
-            total_length = sum([sequence['length'] for sequence in self.sequence_dictionary])
-            approximate_window_size = int(math.floor(total_length / (nb_jobs - len(self.sequence_dictionary))))
-            windows = []
-
-            for sequence in self.sequence_dictionary:
-                for start, end in [[pos, min(pos + approximate_window_size - 1, sequence['length'])] for pos in range(1, sequence['length'] + 1, approximate_window_size)]:
-                    windows.append(sequence['name'] + ":" + str(start) + "-" + str(end))
-            return windows
-
     def rawmpileup(self):
         """
         Full pileup (optional). A raw mpileup file is created using samtools mpileup and compressed in gz format.
@@ -1261,13 +1269,15 @@ pandoc \\
             mpileup_directory = os.path.join("alignment", sample.name, "mpileup")
 
             for sequence in self.sequence_dictionary:
-                output = os.path.join(mpileup_directory, sample.name + "." + sequence['name'] + ".mpileup.gz")
-                jobs.append(concat_jobs([
-                    Job(command="mkdir -p " + mpileup_directory, samples=[sample]),
-                    pipe_jobs([
-                        samtools.mpileup([os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")], None, config.param('rawmpileup', 'mpileup_other_options'), sequence['name']),
-                        Job(output_files=[output], command="gzip -1 -c > " + output, samples=[sample])
-                    ])], name="rawmpileup." + sample.name + "." + sequence['name']))
+                if sequence['type'] is 'primary':
+                    output = os.path.join(mpileup_directory, sample.name + "." + sequence['name'] + ".mpileup.gz")
+                    jobs.append(concat_jobs([
+                        Job(command="mkdir -p " + mpileup_directory, samples=[sample]),
+                        pipe_jobs([
+                            samtools.mpileup([os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")], None, config.param('rawmpileup', 'mpileup_other_options'), sequence['name']),
+                            Job(output_files=[output], command="gzip -1 -c > " + output, samples=[sample])
+                        ])
+                    ], name="rawmpileup." + sample.name + "." + sequence['name']))
 
         return jobs
 
@@ -1279,7 +1289,7 @@ pandoc \\
         jobs = []
         for sample in self.samples:
             mpileup_file_prefix = os.path.join("alignment", sample.name, "mpileup", sample.name + ".")
-            mpileup_inputs = [mpileup_file_prefix + sequence['name'] + ".mpileup.gz" for sequence in self.sequence_dictionary]
+            mpileup_inputs = [mpileup_file_prefix + sequence['name'] + ".mpileup.gz" for sequence in self.sequence_dictionary if sequence['type'] is 'primary']
 
             gzip_output = mpileup_file_prefix + "mpileup.gz"
             job = Job(mpileup_inputs, [gzip_output])

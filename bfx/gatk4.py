@@ -249,7 +249,6 @@ def haplotype_caller(inputs, output, intervals=[], exclude_intervals=[], interva
 			command="""\
 gatk --java-options "{java_other_options} -Xmx{ram}" \\
   HaplotypeCaller {options} \\
-  --tmp_dir {tmp_dir} \\
   --reference {reference_sequence} \\
   --input {input} \\
   --output {output}{intervals}{exclude_intervals}""".format(
@@ -283,7 +282,6 @@ def combine_gvcf(inputs, output, intervals=[], exclude_intervals=[]):
 		command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
   CombineGVCFs {other_options} \\
-  --tmp_dir {tmp_dir} \\
   --reference {reference_sequence} \\
   {input} \\
   --output {output}{intervals}{exclude_intervals}""".format(
@@ -314,7 +312,6 @@ def genotype_gvcf(variants, output, options):
 		command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
   GenotypeGVCFs {options} \\
-  --tmp_dir {tmp_dir} \\
   --reference {reference_sequence}{variants} \\
   --output {output}""".format(
 			tmp_dir=config.param('gatk_genotype_gvcf', 'tmp_dir'),
@@ -342,7 +339,6 @@ def mutect2(inputNormal, normal_name, inputTumor, tumor_name, outputVCF, interva
 		command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
   Mutect2 {options} \\
-  --tmp_dir {tmp_dir} \\
   --reference {reference_sequence} \\
   --input {inputTumor} \\
   --tumor-sample {tumor_name} \\
@@ -463,7 +459,6 @@ def variant_recalibrator(variants, other_options, recal_output, tranches_output,
 		command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
   VariantRecalibrator {options} \\
-  --tmp_dir {tmp_dir} \\
   --reference {reference_sequence}{variants} \\
   {other_options} \\
   --output {recal_output} \\
@@ -498,7 +493,6 @@ def apply_recalibration(variants, recal_input, tranches_input, other_options, ap
 		command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
   ApplyVQSR {options} \\
-  --tmp_dir {tmp_dir} \\
   --reference {reference_sequence} \\
   --variant {variants} \\
   {other_options} \\

@@ -46,7 +46,7 @@ def run(inputs, output, input_dep=False):
         input_dep,
         [output],
         [
-            ['multiqc', 'module_python'],
+            ['multiqc', 'module_multiqc'],
         ],
         command="""\
 multiqc -f {options} \\
