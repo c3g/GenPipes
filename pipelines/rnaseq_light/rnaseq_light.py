@@ -139,7 +139,7 @@ cp \\
                     report_dir="report"
                 ),
                 name="report.copy_tx2genes_file",
-                self.samples=samples
+                samples=self.samples
             )
         )
 
@@ -180,7 +180,7 @@ cp \\
                 job_input            = os.path.join("exploratory", "index.tsv"),
                 job_name             = "report.gq_seq_utils_exploratory_analysis_rnaseq",
                 input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeqLight.gq_seq_utils_exploratory_analysis_rnaseq_light.Rmd"),
-                job.samples          = self.samples
+                samples              = self.samples,
                 render_output_dir    = 'report',
                 module_section       = 'report',
                 prerun_r             = 'report_dir="report";'

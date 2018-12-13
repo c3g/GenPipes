@@ -1,6 +1,3 @@
-https://ftp.gnu.org/gnu/gettext/gettext-0.19.8.1.tar.gz
-
-
 #!/bin/bash
 # Exit immediately on error
 set -eu -o pipefail
@@ -17,7 +14,7 @@ build() {
 
   cd $SOFTWARE_DIR
   ./configure --prefix=$INSTALL_DIR/$SOFTWARE_DIR
-  make
+  make -j12
   make install
 }
 

@@ -169,7 +169,7 @@ prinseq-lite.pl \\
             ref_params_xml=ref_params_xml,
             params_xml=params_xml,
             threads=config.param('smrtanalysis_filtering', 'threads'),
-            tmp_dir=config.param('smrtanalysis_filtering', 'tmp_dir', type='dirpath'),
+            tmp_dir=config.param('smrtanalysis_filtering', 'tmp_dir'),
             output_dir=output_dir,
             log=log,
             output_fastq=output_fastq

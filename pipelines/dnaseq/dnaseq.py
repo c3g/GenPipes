@@ -621,7 +621,7 @@ class DnaSeqRaw(common.Illumina):
             
             coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
             if coverage_bed:
-                interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
+                interval_list = re.sub("\.[^.]+$", ".interval_list", os.path.basename(coverage_bed))
 
                 if not interval_list in created_interval_lists:
                     job = tools.bed2interval_list(None, coverage_bed, interval_list)
@@ -861,7 +861,7 @@ class DnaSeqRaw(common.Illumina):
         for sample in self.samples:
             coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
             if coverage_bed:
-                interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
+                interval_list = re.sub("\.[^.]+$", ".interval_list", os.path.basename(coverage_bed))
 
                 if not interval_list in created_interval_lists:
                     job = tools.bed2interval_list(None, coverage_bed, interval_list)
@@ -1054,8 +1054,8 @@ class DnaSeqRaw(common.Illumina):
                 # Create one separate job for each of the first sequences
                 for idx,sequences in enumerate(unique_sequences_per_job):
                     jobs.append(concat_jobs([
-                        Job(command="mkdir -p variants",removable_files=[os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.gz",os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.gz.tbi"], samples=self.samples),
-                        gatk4.combine_gvcf([ os.path.join("alignment", sample.name, sample.name)+".hc.g.vcf.gz" for sample in self.samples ], os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.gz", intervals=sequences)
+                        Job(command="mkdir -p variants", removable_files=[os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.bgz",os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.bgz.tbi"], samples=self.samples),
+                        gatk.combine_gvcf([ os.path.join("alignment", sample.name, sample.name)+".hc.g.vcf.bgz" for sample in self.samples ], os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.bgz", intervals=sequences)
                     ], name="gatk_combine_gvcf.AllSample" + "." + str(idx)))
 
                 # Create one last job to process the last remaining sequences and 'others' sequences
@@ -1392,7 +1392,8 @@ pandoc \\
 
     def haplotype_caller_filter_nstretches(self):
         """
-        See general filter_nstretches description !  Applied to haplotype caller vcf
+        The final haplotype caller .vcf files are filtered for long 'N' INDELs which are sometimes introduced and cause excessive
+        memory usage by downstream tools. !
         """
 
         # Find input vcf first from VSQR, then from non recalibrate hapotype calleroriginal BAMs in the readset sheet.
@@ -1406,7 +1407,8 @@ pandoc \\
 
     def mpileup_filter_nstretches(self):
         """
-        See general filter_nstretches description !  Applied to mpileup vcf
+        The final mpileup .vcf files are filtered for long 'N' INDELs which are sometimes introduced and cause excessive
+        memory usage by downstream tools.
         """
 
         job = self.filter_nstretches("variants/allSamples.merged.flt.vcf", "variants/allSamples.merged.flt.NFiltered.vcf", "mpileup_filter_nstretches")
@@ -1430,7 +1432,9 @@ pandoc \\
 
     def haplotype_caller_flag_mappability(self) :
         """
-        See general flag_mappability !  Applied to haplotype caller vcf
+        Mappability annotation applied to haplotype caller vcf.
+        An in-house database identifies regions in which reads are confidently mapped
+        to the reference genome.
         """
 
         job = self.flag_mappability("variants/allSamples.hc.vqsr.vt.vcf.gz", "variants/allSamples.hc.vqsr.vt.mil.vcf.gz", "haplotype_caller_flag_mappability" )
@@ -1440,7 +1444,9 @@ pandoc \\
 
     def mpileup_flag_mappability(self) :
         """
-        See general flag_mappability !  Applied to mpileup vcf
+        Mappability annotation applied to mpileup vcf.
+        An in-house database identifies regions in which reads are confidently mapped
+        to the reference genome.
         """
 
         job = self.flag_mappability("variants/allSamples.merged.flt.vt.vcf.gz", "variants/allSamples.merged.flt.vt.mil.vcf.gz", "mpileup_flag_mappability")
@@ -1462,7 +1468,8 @@ pandoc \\
 
     def haplotype_caller_snp_id_annotation(self):
         """
-        See general snp_id_annotation !  Applied to haplotype caller vcf
+        dbSNP annotation applied to haplotype caller vcf.
+        The .vcf files are annotated for dbSNP using the software SnpSift (from the [SnpEff suite](http://snpeff.sourceforge.net/)).
         """
 
         job = self.snp_id_annotation("variants/allSamples.hc.vqsr.vt.mil.vcf.gz", "variants/allSamples.hc.vqsr.vt.mil.snpId.vcf.gz", "haplotype_caller_snp_id_annotation")
@@ -1472,7 +1479,8 @@ pandoc \\
 
     def mpileup_snp_id_annotation(self):
         """
-        See general snp_id_annotation !  Applied to mpileyp vcf
+        dbSNP annotation applied to mpileyp vcf.
+        The .vcf files are annotated for dbSNP using the software SnpSift (from the [SnpEff suite](http://snpeff.sourceforge.net/)).
         """
 
         job = self.snp_id_annotation("variants/allSamples.merged.flt.vt.mil.vcf.gz", "variants/allSamples.merged.flt.vt.mil.snpId.vcf.gz" , "mpileup_snp_id_annotation")
@@ -1498,7 +1506,9 @@ pandoc \\
 
     def haplotype_caller_snp_effect(self):
         """
-        See general snp_effect !  Applied to haplotype caller vcf
+        Variant effect annotation applied to haplotype caller vcf.
+        The .vcf files are annotated for variant effects using the SnpEff software.
+        SnpEff annotates and predicts the effects of variants on genes (such as amino acid changes).
         """
 
         jobs = self.snp_effect("variants/allSamples.hc.vqsr.vt.mil.snpId.vcf.gz", "variants/allSamples.hc.vqsr.vt.mil.snpId.snpeff.vcf",  "haplotype_caller_snp_effect")
@@ -1508,7 +1518,9 @@ pandoc \\
 
     def mpileup_snp_effect(self):
         """
-        See general snp_effect !  Applied to mpileup vcf
+        Variant effect annotation applied to mpileup vcf.
+        The .vcf files are annotated for variant effects using the SnpEff software.
+        SnpEff annotates and predicts the effects of variants on genes (such as amino acid changes).
         """
 #        jobs = self.snp_effect("variants/allSamples.merged.flt.mil.snpId.vcf", "variants/allSamples.merged.flt.mil.snpId.snpeff.vcf",  "mpileup_snp_effect", options=config.param('compute_cancer_effects', 'options'))
         jobs = self.snp_effect("variants/allSamples.merged.flt.vt.mil.snpId.vcf.gz", "variants/allSamples.merged.flt.vt.mil.snpId.snpeff.vcf",  "mpileup_snp_effect")
@@ -1537,7 +1549,13 @@ pandoc \\
 
     def haplotype_caller_dbnsfp_annotation(self):
         """
-        See general dbnsfp_annotation !  Applied to haplotype caller vcf
+        Additional SVN annotations applied to haplotype caller vcf.
+        Provides extra information about SVN by using numerous published databases.
+        Applicable to human samples. Databases available include Biomart (adds GO annotations based on gene information)
+        and dbNSFP (an integrated database of functional annotations from multiple sources for the comprehensive
+        collection of human non-synonymous SNPs. It compiles prediction scores from four prediction algorithms
+        (SIFT, Polyphen2, LRT and MutationTaster), three conservation scores (PhyloP, GERP++ and SiPhy)
+        and other function annotations).
         """
 
         job = self.dbnsfp_annotation("variants/allSamples.hc.vqsr.vt.mil.snpId.snpeff.vcf.gz", "variants/allSamples.hc.vqsr.vt.mil.snpId.snpeff.dbnsfp.vcf", "dbnsfp_annotation")
@@ -1547,7 +1565,13 @@ pandoc \\
 
     def mpileup_dbnsfp_annotation(self):
         """
-        See general dbnsfp_annotation !  Applied to mpileup vcf
+        Additional SVN annotations applied to mpileup vcf.
+        Provides extra information about SVN by using numerous published databases.
+        Applicable to human samples. Databases available include Biomart (adds GO annotations based on gene information)
+        and dbNSFP (an integrated database of functional annotations from multiple sources for the comprehensive
+        collection of human non-synonymous SNPs. It compiles prediction scores from four prediction algorithms
+        (SIFT, Polyphen2, LRT and MutationTaster), three conservation scores (PhyloP, GERP++ and SiPhy)
+        and other function annotations).
         """
 
         job = self.dbnsfp_annotation("variants/allSamples.merged.flt.vt.mil.snpId.snpeff.vcf.gz", "variants/allSamples.merged.flt.vt.mil.snpId.snpeff.dbnsfp.vcf.gz", "dbnsfp_annotation")
@@ -1597,7 +1621,11 @@ pandoc \\
 
     def haplotype_caller_metrics_vcf_stats(self):
         """
-        See general metrics_vcf_stats !  Applied to haplotype caller vcf
+        Metrics SNV applied to haplotype caller vcf.
+        Multiple metrics associated to annotations and effect prediction are generated at this step:
+        change rate by chromosome, changes by type, effects by impact, effects by functional class, counts by effect,
+        counts by genomic region, SNV quality, coverage, InDel lengths, base changes,  transition-transversion rates,
+        summary of allele frequencies, codon changes, amino acid changes, changes per chromosome, change rates.
         """
 
         job = self.metrics_vcf_stats("variants/allSamples.hc.vqsr.vt.mil.snpId.snpeff.dbnsfp",  "haplotype_caller_metrics_change_rate")
@@ -1608,7 +1636,11 @@ pandoc \\
 
     def mpileup_metrics_vcf_stats(self):
         """
-        See general metrics_vcf_stats !  Applied to mpileup caller vcf
+        Metrics SNV applied to mpileup caller vcf.
+        Multiple metrics associated to annotations and effect prediction are generated at this step:
+        change rate by chromosome, changes by type, effects by impact, effects by functional class, counts by effect,
+        counts by genomic region, SNV quality, coverage, InDel lengths, base changes,  transition-transversion rates,
+        summary of allele frequencies, codon changes, amino acid changes, changes per chromosome, change rates.
         """
 
         job = self.metrics_vcf_stats("variants/allSamples.merged.flt.vt.mil.snpId.snpeff.dbnsfp" , "mpileup_metrics_change_rate")

@@ -51,6 +51,12 @@ class Pipeline(object):
         self._args = self.argparser.parse_args()
         if self.protocol is None:
             step_list = self.steps
+        elif self.args.help:
+            step_list = []
+            for i in range(0, len(self.protocol)):
+                step_list = step_list + self.steps[i]
+            tmp_set_list = {}
+            step_list = [tmp_set_list.setdefault(step, step) for step in step_list if step not in tmp_set_list]
         else:
             pos = 0
             for i in range(0, len(self.protocol)):
@@ -77,7 +83,8 @@ class Pipeline(object):
             pipeline_doc=textwrap.dedent(self.__doc__ or ""),
             help=self.argparser.format_help(),
             overview=self.__doc__ or "",
-            step_doc="\n".join([str(idx + 1) + "- " + step.__name__ + "\n" + "-" * len(str(idx + 1) + "- " + step.__name__) + (textwrap.dedent(step.__doc__) if step.__doc__ else "") for idx, step in enumerate(step_list)])
+            #step_doc="\n".join([str(idx + 1) + "- " + step.__name__ + "\n" + "-" * len(str(idx + 1) + "- " + step.__name__) + (textwrap.dedent(step.__doc__) if step.__doc__ else "") for idx, step in enumerate(step_list)])
+            step_doc="\n".join([step.__name__ + "\n" + "-" * len(step.__name__) + (textwrap.dedent(step.__doc__) if step.__doc__ else "") for step in step_list])
             )
             self.argparser.exit()
 
@@ -165,7 +172,7 @@ class Pipeline(object):
             self._argparser.add_argument("-c", "--config", help="config INI-style list of files; config parameters are overwritten based on files order", nargs="+", type=file)
             self._argparser.add_argument("-s", "--steps", help="step range e.g. '1-5', '3,6,7', '2,4-8'")
             self._argparser.add_argument("-o", "--output-dir", help="output directory (default: current)", default=os.getcwd())
-            self._argparser.add_argument("-j", "--job-scheduler", help="job scheduler type (default: pbs)", choices=["pbs", "batch", "daemon", "slurm"], default="pbs")
+            self._argparser.add_argument("-j", "--job-scheduler", help="job scheduler type (default: pbs)", choices=["pbs", "batch", "daemon", "slurm"], default="slurm")
             self._argparser.add_argument("-f", "--force", help="force creation of jobs even if up to date (default: false)", action="store_true")
             self._argparser.add_argument("--json", help="create a JSON file per analysed sample to track the analysis status (default: false)", action="store_true")
             self._argparser.add_argument("--report", help="create 'pandoc' command to merge all job markdown report files in the given step range into HTML, if they exist; if --report is set, --job-scheduler, --force, --clean options and job up-to-date status are ignored (default: false)", action="store_true")
@@ -330,8 +337,10 @@ class Pipeline(object):
         self.scheduler.submit(self)
 
         # Print a copy of sample JSONs for the genpipes dashboard
-        portal_output_dir = config.param('DEFAULT', 'portal_output_dir', required=False, type='dirpath')
+        portal_output_dir = config.param('DEFAULT', 'portal_output_dir', required=False)
         if self.args.json and portal_output_dir != "":
+            if not os.path.isdir(os.path.expandvars(portal_output_dir)):
+                raise Exception("Directory path \"" + portal_output_dir + "\" does not exist or is not a valid directory!")
             copy_commands = []
             for i, sample in enumerate(self.sample_list):
                 input_file = self.sample_paths[i]

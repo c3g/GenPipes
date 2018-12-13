@@ -89,7 +89,7 @@ set -eu -o pipefail
 #   ./configure --prefix=/path/to/install
 #   (If you have libraries in non-standard directory, please try
 #    ./configure --prefix=/path/to/install LDFLAGS=-L/path/to/library to include the directory containing libR.so)
-#   make
+#   make -j12
 #   make install
 #
 # (Important Note: '''make sure to specify --prefix=/path/to/install''' to avoid installing to the default path /usr/local/, which you may not have the permission. /home/your_userid/epacts might be a good one, if you are not sure where to install)
@@ -120,7 +120,7 @@ build() {
   cd $SOFTWARE_DIR
 	module load $PREREQS
   ./configure --prefix=$INSTALL_DIR/$SOFTWARE_DIR  
-  make 
+  make -j12 
   make install  
 	
 	$INSTALL_DIR/$SOFTWARE_DIR/bin/epacts download

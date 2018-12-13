@@ -3,9 +3,9 @@
 set -eu -o pipefail
 
 SOFTWARE=HDF5
-VERSION=1.8.20 
+VERSION=1.10.4 
 ARCHIVE=${SOFTWARE,,}-${VERSION}.tar.gz
-ARCHIVE_URL=https://support.hdfgroup.org/ftp/$SOFTWARE/current18/src/$ARCHIVE
+ARCHIVE_URL=https://support.hdfgroup.org/ftp/$SOFTWARE/current/src/$ARCHIVE
 SOFTWARE_DIR=${SOFTWARE,,}-$VERSION  
 
 build() {
@@ -14,7 +14,7 @@ build() {
 
   cd $SOFTWARE_DIR
   ./configure --prefix=$INSTALL_DIR/$SOFTWARE_DIR
-  make
+  make -j12
   make install
 }
 
@@ -32,6 +32,8 @@ prepend-path    CPATH               \$root/include
 prepend-path    FPATH               \$root/include
 prepend-path    LIBRARY_PATH        \$root/lib
 prepend-path    LD_LIBRARY_PATH     \$root/lib
+prepend-path --delim \" \" LDFLAGS  -L\$root/lib
+prepend-path --delim \" \" CPPFLAGS -I\$root/include
 "
 }
 

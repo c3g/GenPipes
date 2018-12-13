@@ -14,7 +14,7 @@ build() {
 
   cd $SOFTWARE_DIR
   ./config --prefix=${INSTALL_DIR}/$SOFTWARE_DIR --openssldir=${INSTALL_DIR}/$SOFTWARE_DIR
-  make
+  make -j12
   make install
 }
 

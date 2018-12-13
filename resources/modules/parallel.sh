@@ -17,7 +17,7 @@ mv parallel-$VERSION parallel-${VERSION}-src
 # Compile
 cd parallel-${VERSION}-src
 ./configure --prefix=$MUGQIC_INSTALL_HOME/software/parallel/parallel-${VERSION}
-make
+make -j12
 make install
 cd ..
 rm -r parallel-${VERSION}-src

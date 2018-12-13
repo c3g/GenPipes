@@ -16,7 +16,7 @@ build() {
   tar jxvf $ARCHIVE
 
   cd $SOFTWARE_DIR
-  make -j8
+  make -j12
 
   # Install software
   cd $INSTALL_DOWNLOAD
