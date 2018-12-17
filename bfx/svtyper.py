@@ -33,7 +33,6 @@ def genotyper(input_bam, input_normal, input_vcf, output_vcf):
         [input_bam, input_normal, input_vcf],
         [output_vcf],
         [
-            #['DEFAULT', 'module_svtyper'],
             ['lumpy_paired_sv_calls', 'module_python'],
         ],
         command="""\

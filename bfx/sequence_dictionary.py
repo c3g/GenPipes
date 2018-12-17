@@ -42,7 +42,6 @@ def parse_sequence_dictionary_file(sequence_dictionary_file, variant=False):
                         continue
                     else:
                         sequence_dictionary.append({'name': parsed_line.group(1), 'length': int(parsed_line.group(2)),'type': str('primary')})
-                        
                 else:
                     sequence_dictionary.append({'name': parsed_line.group(1), 'length': int(parsed_line.group(2)), 'type': str('primary')})
 

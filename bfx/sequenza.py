@@ -31,7 +31,7 @@ def genome_gz(output):
         [output],
         [
             ['sequenza', 'module_python'],
-            ['sequenza', 'module_sequenza'],
+            #['sequenza', 'module_sequenza'],
         ],
         command="""\\
 python $SEQUENZA_BIN/sequenza-utils.py \\
