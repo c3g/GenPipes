@@ -2,20 +2,21 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=Manta
-VERSION=1.5.0
-ARCHIVE=${SOFTWARE,}-${VERSION}.release_src.tar.bz2
-ARCHIVE_URL=https://github.com/Illumina/${SOFTWARE,}/releases/download/v${VERSION}/$ARCHIVE
-SOFTWARE_DIR=${SOFTWARE,}-${VERSION}
+SOFTWARE=CNVkit
+VERSION=0.9.5
+ARCHIVE=${SOFTWARE,,}-${VERSION}.tar.gz
+ARCHIVE_URL=https://github.com/etal/${SOFTWARE,,}/archive/v${VERSION}.tar.gz
+SOFTWARE_DIR=${SOFTWARE,,}-${VERSION}
 
 build() {
   cd $INSTALL_DOWNLOAD
-  tar -xjf $ARCHIVE
+  git clone --recursive https://github.com/etal/${SOFTWARE,,} -b v${VERSION}
+  module load mugqic/python/2.7.14
+  cd ${SOFTWARE,,}
+  pip install -e .
 
-  # Install software
-  mkdir build && cd build
-  ../${SOFTWARE,}-${VERSION}.release_src/configure --jobs=4 --prefix=$INSTALL_DIR/$SOFTWARE_DIR
-  make -j4 install
+  cd $INSTALL_DOWNLOAD
+  mv -i ${SOFTWARE,,} $INSTALL_DIR/$SOFTWARE_DIR
 }
 
 module_file() {
@@ -27,8 +28,8 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set              root               $INSTALL_DIR/$SOFTWARE_DIR 
-prepend-path     PATH               \$root/bin
-setenv           MANTA_HOME         \$root
+prepend-path     PATH               \$root
+prepend-path     PYTHONPATH         \$root
 "
 }
 

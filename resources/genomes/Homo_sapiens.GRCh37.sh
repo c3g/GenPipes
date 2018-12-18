@@ -67,8 +67,8 @@ get_dbNSFP() {
         for POP_FREQ in 1000G${ONEKG_PHASE}_EUR_AF 1000G${ONEKG_PHASE}_AFR_AF 1000G${ONEKG_PHASE}_ASN_AF;
         do
             cat $DBSNP_ANNOTATED | sed -e 's/dbNSFP_'$POP_FREQ'/AF/g' > $ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP${DBSNP_VERSION}_${POP_FREQ}.vcf
-            #bgzip $ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP${DBSNP_VERSION}_${POP_FREQ}.vcf
-            #tabix -s 1 -b 2 -e 2 $ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP${DBSNP_VERSION}_${POP_FREQ}.vcf.gz
+            bgzip $ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP${DBSNP_VERSION}_${POP_FREQ}.vcf
+            tabix -s 1 -b 2 -e 2 $ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP${DBSNP_VERSION}_${POP_FREQ}.vcf.gz
         done
     else
         echo "$DBSNP_ANNOTATED is up to date... skipping"

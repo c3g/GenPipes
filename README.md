@@ -107,6 +107,10 @@ If you want to use the most recent development version:
 git clone git@bitbucket.org:mugqic/genpipes.git
 ```
 
+#### GenPipes' Container:
+
+To download and use the GenPipes' Docker container, please visit [genpipes_in_a_container](https://bitbucket.org/mugqic/genpipes_in_a_container/src/master).
+
 
 ### Setup
 

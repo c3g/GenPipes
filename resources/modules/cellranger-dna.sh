@@ -2,22 +2,20 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=SPAdes
-VERSION=3.13.0
-ARCHIVE=${SOFTWARE}-${VERSION}-Linux.tar.gz
-#ARCHIVE=${SOFTWARE}-${VERSION}.tar.gz
-ARCHIVE_URL=http://cab.spbu.ru/files/release${VERSION}/$ARCHIVE
-SOFTWARE_DIR=${SOFTWARE}-$VERSION
+SOFTWARE=cellranger-dna
+VERSION=1.0.0
+ARCHIVE=$SOFTWARE-$VERSION.tar.gz
+# cellranger archive has to be manually downloaded from https://support.10xgenomics.com/single-cell/software/downloads/latest
+# and then stored in $MUGQIC_INSTALL_HOME/archive/ or/and $MUGQIC_INSTALL_HOME_DEV/archive/
+ARCHIVE_URL=
+SOFTWARE_DIR=$SOFTWARE-$VERSION
 
 build() {
   cd $INSTALL_DOWNLOAD
-  tar xzvf $ARCHIVE
+  tar zxvf $ARCHIVE
 
-#  cd $SOFTWARE_DIR
-#  PREFIX=$INSTALL_DIR/$SOFTWARE_DIR ./spades_compile.sh
-
-  mv $SOFTWARE_DIR-Linux $SOFTWARE_DIR
-
+  # Move software
+  cd $INSTALL_DOWNLOAD
   mv -i $SOFTWARE_DIR $INSTALL_DIR/
 }
 
@@ -30,7 +28,7 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-prepend-path    PATH                \$root/bin
+prepend-path    PATH                \$root
 "
 }
 

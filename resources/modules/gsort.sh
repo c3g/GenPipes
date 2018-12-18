@@ -2,23 +2,19 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=SPAdes
-VERSION=3.13.0
-ARCHIVE=${SOFTWARE}-${VERSION}-Linux.tar.gz
-#ARCHIVE=${SOFTWARE}-${VERSION}.tar.gz
-ARCHIVE_URL=http://cab.spbu.ru/files/release${VERSION}/$ARCHIVE
-SOFTWARE_DIR=${SOFTWARE}-$VERSION
+SOFTWARE=gsort
+VERSION=0.0.6
+ARCHIVE=${SOFTWARE}-${VERSION}_linux_amd64
+ARCHIVE_URL=https://github.com/brentp/${SOFTWARE}/releases/download/v${VERSION}/${SOFTWARE}_linux_amd64
+SOFTWARE_DIR=${SOFTWARE}-${VERSION}
 
 build() {
   cd $INSTALL_DOWNLOAD
-  tar xzvf $ARCHIVE
 
-#  cd $SOFTWARE_DIR
-#  PREFIX=$INSTALL_DIR/$SOFTWARE_DIR ./spades_compile.sh
+  mkdir -p $INSTALL_DIR/$SOFTWARE_DIR  
+  cp $ARCHIVE $INSTALL_DIR/$SOFTWARE_DIR/$SOFTWARE
 
-  mv $SOFTWARE_DIR-Linux $SOFTWARE_DIR
-
-  mv -i $SOFTWARE_DIR $INSTALL_DIR/
+  chmod 775 $INSTALL_DIR/$SOFTWARE_DIR/$SOFTWARE
 }
 
 module_file() {
@@ -30,7 +26,7 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-prepend-path    PATH                \$root/bin
+prepend-path    PATH                \$root
 "
 }
 
