@@ -1043,7 +1043,7 @@ pandoc \\
             self.methylation_call,
             self.wiggle_tracks,             # step 10
             self.methylation_profile,
-            self.all_sample_metrics_report,
+            #self.all_sample_metrics_report,
             self.ihec_sample_metrics_report,
             self.bis_snp                    # step 14
         ]
