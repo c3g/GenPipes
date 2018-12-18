@@ -787,89 +787,89 @@ cp \\
 
         return jobs
 
-    def all_sample_metrics_report(self):
-        """
-        Retrieve all the computed metrics (alignment metrics as well as methylation metrics) to build a tsv report table
-        """
-
-        jobs = []
-
-        target_bed = bvatools.resolve_readset_coverage_bed(self.samples[0].readsets[0])
-        metrics_file = os.path.join("metrics", "sampleMetrics.stats")
-        report_metrics_file = os.path.join("report", "sampleMetricsTable.tsv")
-
-        if target_bed:
-            report_file = os.path.join("report", "MethylSeq.all_sample_metrics_targeted_report.md")
-        else:
-            report_file = os.path.join("report", "MethylSeq.all_sample_metrics_report.md")
-
-        # Create the list of input files to handle job dependencies
-        inputs = []
-        sample_list = []
-        for sample in self.samples:
-            sample_list.append(sample.name)
-
-            # Trim log files
-            for readset in sample.readsets:
-                inputs.append(os.path.join("trim", sample.name, readset.name + ".trim.log"))
-
-            # Aligned pre-deduplicated bam files
-            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.bam"))
-
-            # Deduplicated bam files
-            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.bam"))
-
-            # Coverage summary files
-            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.all.coverage.sample_summary"))
-
-            # Lambda conversion rate files
-            [lambda_conv_file] = self.select_input_files([
-                [os.path.join("methylation_call", sample.name, sample.name + ".sorted.dedup.profile.lambda.conversion.rate.tsv")],
-                [os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.profile.lambda.conversion.rate.tsv")]
-            ])
-            inputs.append(lambda_conv_file)
-
-            # CG stat files
-            [cgstats_file] = self.select_input_files([
-                [os.path.join("methylation_call", sample.name, sample.name + ".sorted.dedup.profile.cgstats.txt")],
-                [os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.profile.cgstats.txt")]
-            ])
-            inputs.append(cgstats_file)
-
-            # Flagstat file if in targeted context
-            if target_bed : 
-                inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.ontarget.bam.flagstat"))
-
-        jobs.append(
-            concat_jobs([
-                Job(command="mkdir -p metrics"),
-                tools.methylseq_metrics_report(sample_list, inputs, metrics_file, target_bed),
-                Job(
-                    [metrics_file],
-                    [report_file],
-                    [['all_sample_metrics_report', 'module_pandoc']],
-                    command="""\
-mkdir -p report && \\
-cp {metrics_file} {report_metrics_file} && \\
-metrics_table_md=`sed 's/\t/|/g' {report_metrics_file}`
-pandoc \\
-  {report_template_dir}/{basename_report_file} \\
-  --template {report_template_dir}/{basename_report_file} \\
-  --variable sequence_alignment_table="$metrics_table_md" \\
-  --to markdown \\
-  > {report_file}""".format(
-                        report_template_dir=self.report_template_dir,
-                        metrics_file=metrics_file,
-                        basename_report_file=os.path.basename(report_file),
-                        report_metrics_file=report_metrics_file,
-                        report_file=report_file
-                    ),
-                    report_files=[report_file]
-                )
-            ], name="all_sample_metrics_report")
-        )
-
-        return jobs
+#    def all_sample_metrics_report(self):
+#        """
+#        Retrieve all the computed metrics (alignment metrics as well as methylation metrics) to build a tsv report table
+#        """
+#
+#        jobs = []
+#
+#        target_bed = bvatools.resolve_readset_coverage_bed(self.samples[0].readsets[0])
+#        metrics_file = os.path.join("metrics", "sampleMetrics.stats")
+#        report_metrics_file = os.path.join("report", "sampleMetricsTable.tsv")
+#
+#        if target_bed:
+#            report_file = os.path.join("report", "MethylSeq.all_sample_metrics_targeted_report.md")
+#        else:
+#            report_file = os.path.join("report", "MethylSeq.all_sample_metrics_report.md")
+#
+#        # Create the list of input files to handle job dependencies
+#        inputs = []
+#        sample_list = []
+#        for sample in self.samples:
+#            sample_list.append(sample.name)
+#
+#            # Trim log files
+#            for readset in sample.readsets:
+#                inputs.append(os.path.join("trim", sample.name, readset.name + ".trim.log"))
+#
+#            # Aligned pre-deduplicated bam files
+#            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.bam"))
+#
+#            # Deduplicated bam files
+#            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.bam"))
+#
+#            # Coverage summary files
+#            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.all.coverage.sample_summary"))
+#
+#            # Lambda conversion rate files
+#            [lambda_conv_file] = self.select_input_files([
+#                [os.path.join("methylation_call", sample.name, sample.name + ".sorted.dedup.profile.lambda.conversion.rate.tsv")],
+#                [os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.profile.lambda.conversion.rate.tsv")]
+#            ])
+#            inputs.append(lambda_conv_file)
+#
+#            # CG stat files
+#            [cgstats_file] = self.select_input_files([
+#                [os.path.join("methylation_call", sample.name, sample.name + ".sorted.dedup.profile.cgstats.txt")],
+#                [os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.profile.cgstats.txt")]
+#            ])
+#            inputs.append(cgstats_file)
+#
+#            # Flagstat file if in targeted context
+#            if target_bed : 
+#                inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.ontarget.bam.flagstat"))
+#
+#        jobs.append(
+#            concat_jobs([
+#                Job(command="mkdir -p metrics"),
+#                tools.methylseq_metrics_report(sample_list, inputs, metrics_file, target_bed),
+#                Job(
+#                    [metrics_file],
+#                    [report_file],
+#                    [['all_sample_metrics_report', 'module_pandoc']],
+#                    command="""\
+#mkdir -p report && \\
+#cp {metrics_file} {report_metrics_file} && \\
+#metrics_table_md=`sed 's/\t/|/g' {report_metrics_file}`
+#pandoc \\
+#  {report_template_dir}/{basename_report_file} \\
+#  --template {report_template_dir}/{basename_report_file} \\
+#  --variable sequence_alignment_table="$metrics_table_md" \\
+#  --to markdown \\
+#  > {report_file}""".format(
+#                        report_template_dir=self.report_template_dir,
+#                        metrics_file=metrics_file,
+#                        basename_report_file=os.path.basename(report_file),
+#                        report_metrics_file=report_metrics_file,
+#                        report_file=report_file
+#                    ),
+#                    report_files=[report_file]
+#                )
+#            ], name="all_sample_metrics_report")
+#        )
+#
+#        return jobs
 
     def ihec_sample_metrics_report(self):
         """
