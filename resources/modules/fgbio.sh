@@ -4,20 +4,17 @@ set -eu -o pipefail
 
 SOFTWARE=fgbio
 VERSION=0.6.1
-ARCHIVE=${SOFTWARE}-${VERSION}.tar.gz
-ARCHIVE_URL=https://github.com/fulcrumgenomics/${SOFTWARE}/archive/${VERSION}.tar.gz
-SOFTWARE_DIR=${SOFTWARE,,}-${VERSION}
+ARCHIVE=${SOFTWARE}-${VERSION}.jar
+ARCHIVE_URL=https://github.com/fulcrumgenomics/${SOFTWARE}/releases/download/${VERSION}/${ARCHIVE}
+SOFTWARE_DIR=${SOFTWARE}-${VERSION}
 
 build() {
   cd $INSTALL_DOWNLOAD
-  git clone --recursive https://github.com/fulcrumgenomics/fgbio.git -b $VERSION
 
-  cd ${SOFTWARE}
-  sbt assembly
+  mkdir -p $SOFTWARE_DIR
+  cp $ARCHIVE $SOFTWARE_DIR/
 
-  # Install software
-  cd $INSTALL_DOWNLOAD
-  mv -i ${SOFTWARE} $INSTALL_DIR/${SOFTWARE_DIR}
+  mv -i $SOFTWARE_DIR $INSTALL_DIR/
 }
 
 module_file() {

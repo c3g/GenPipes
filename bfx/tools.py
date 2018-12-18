@@ -842,8 +842,8 @@ def methylseq_ihec_metrics_report(sample_name, inputs, output, output_all, targe
         inputs,
         [output, output_all],
         [
-            ['DEFAULT', 'module_mugqic_tools'],
-            ['DEFAULT', 'module_samtools']
+            ['ihec_sample_metrics', 'module_mugqic_tools'],
+            ['ihec_sample_metrics', 'module_samtools']
         ],
         command="""\
 bash IHEC_methylseq_metrics.sh \\

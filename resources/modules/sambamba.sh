@@ -3,20 +3,18 @@
 set -eu -o pipefail
 
 SOFTWARE=sambamba
-VERSION=0.6.6
-ARCHIVE=${SOFTWARE}_v${VERSION}_linux.tar.bz2
-ARCHIVE_URL=https://github.com/lomereiter/${SOFTWARE}/releases/download/v${VERSION}/$ARCHIVE
+VERSION=0.6.8
+ARCHIVE=${SOFTWARE}-${VERSION}.gz
+ARCHIVE_URL=https://github.com/biod/${SOFTWARE}/releases/download/v${VERSION}/${SOFTWARE}-${VERSION}-linux-static.gz
 SOFTWARE_DIR=${SOFTWARE}-${VERSION}
 
 build() {
   cd $INSTALL_DOWNLOAD
-  tar -xjf sambamba_v${VERSION}_linux.tar.bz2
-  mkdir $SOFTWARE_DIR 
-  mv ${SOFTWARE}_v${VERSION} $SOFTWARE_DIR
+  mkdir $SOFTWARE_DIR
 
-  mv -i $SOFTWARE_DIR $INSTALL_DIR/$SOFTWARE_DIR
-  cd $INSTALL_DIR/$SOFTWARE_DIR
-  ln -s sambamba* sambamba
+  gunzip -c $ARCHIVE > $SOFTWARE_DIR/$SOFTWARE
+
+  mv -i $SOFTWARE_DIR $INSTALL_DIR/
 }
 
 module_file() {

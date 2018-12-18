@@ -38,30 +38,39 @@ def parse_sequence_dictionary_file(sequence_dictionary_file, variant=False):
             if parsed_line:
                 if variant:
                     if "_" in parsed_line.group(1) or "." in parsed_line.group(1):
+                        sequence_dictionary.append({'name': parsed_line.group(1), 'length': int(parsed_line.group(2)), 'type': str('alt')})
                         continue
                     else:
-                        sequence_dictionary.append({'name': parsed_line.group(1), 'length': int(parsed_line.group(2))})
+                        sequence_dictionary.append({'name': parsed_line.group(1), 'length': int(parsed_line.group(2)),'type': str('primary')})
+                        
                 else:
-                    sequence_dictionary.append({'name': parsed_line.group(1), 'length': int(parsed_line.group(2))})
+                    sequence_dictionary.append({'name': parsed_line.group(1), 'length': int(parsed_line.group(2)), 'type': str('primary')})
 
     log.info(str(len(sequence_dictionary)) + " sequences parsed\n")
 
     return sequence_dictionary
 
-def split_by_size(sequence_dictionary, nbSplits):
+def split_by_size(sequence_dictionary, nbSplits, variant=False):
     split_list = []
+    altsToExclude = []
 
     total_genome = 0
     for sequence in sequence_dictionary:
-        total_genome += sequence['length']
-
+        if variant and sequence['type'] is 'alt':
+            altsToExclude.append(sequence['name'])
+    
+        if variant and sequence['type'] is not 'alt':
+            total_genome += sequence['length']
+            
+        else:
+            total_genome += sequence['length']
 
     total = 0
     used_size = 0
     toExcludeChr = []
     currentChrs = []
     for sequence in sequence_dictionary:
-	blockSize = int((total_genome - used_size)/nbSplits)
+        blockSize = int((total_genome - used_size)/nbSplits)
         # Stop if we already reached our limit.
         # This can gappen since the size of chromosomes vary
         if len(split_list) == nbSplits:
@@ -69,7 +78,7 @@ def split_by_size(sequence_dictionary, nbSplits):
 
         currentChrs.append(sequence['name'])
         total += sequence['length']
-	if total > blockSize:
+        if total > blockSize:
             split_list.append(currentChrs)
             toExcludeChr.extend(currentChrs)
             currentChrs = []
@@ -82,5 +91,7 @@ def split_by_size(sequence_dictionary, nbSplits):
         for sequence in toRemove:
           toExcludeChr.pop()
         
+    if variant and altsToExclude:
+        toExcludeChr = toExcludeChr + altsToExclude
 
     return split_list,toExcludeChr

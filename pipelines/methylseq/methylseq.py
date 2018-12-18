@@ -47,6 +47,7 @@ from bfx import bissnp
 from bfx import tools
 from bfx import ucsc
 from bfx import methylkit
+from bfx import fgbio
 
 from pipelines import common
 from pipelines.dnaseq import dnaseq
@@ -196,6 +197,71 @@ pandoc --to=markdown \\
         )
 
         return jobs
+    
+    
+    def add_bam_umi(self):
+        """
+        Add read UMI tag to individual bam files using fgbio
+        """
+        
+        jobs = []
+        for readset in self.readsets:
+            alignment_directory = os.path.join("alignment", readset.sample.name)
+            input_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
+            output_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.UMI.bam")
+            output_bai = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.UMI.bai")
+            input_umi = readset.umi if readset.umi else None
+            input_umi_corrected = os.path.join("corrected_umi", readset.name, readset.name + ".corrected.fastq.gz")
+            
+            #correct umi fastq name (removing space)
+            
+            jobs.append(
+                concat_jobs([
+                    Job(command="mkdir -p corrected_umi/" + readset.name , samples=[readset.sample]),
+                    fgbio.correct_readname(
+                        input_umi,
+                        input_umi_corrected
+                    ),
+                ], name="fgbio_correct_readname." + readset.name)
+            )
+
+            jobs.append(
+                concat_jobs([
+                    Job(command="mkdir -p " + os.path.dirname(output_bam), samples=[readset.sample]),
+                    fgbio.addumi(
+                        input_bam,
+                        input_umi_corrected,
+                        output_bam,
+                        output_bai
+                    ),
+                ], name="fgbio_addumi." + readset.name)
+            )
+
+        #report_file = os.path.join("report", "MethylSeq.bismark_align.md")
+        #jobs.append(
+            #Job(
+                #[os.path.join("alignment", readset.sample.name, readset.name, readset.name + ".sorted.bam") for readset in self.readsets],
+                #[report_file],
+                #[['bismark_align', 'module_pandoc']],
+                #command="""\
+#mkdir -p report && \\
+#pandoc --to=markdown \\
+  #--template {report_template_dir}/{basename_report_file} \\
+  #--variable scientific_name="{scientific_name}" \\
+  #--variable assembly="{assembly}" \\
+  #{report_template_dir}/{basename_report_file} \\
+  #> {report_file}""".format(
+                    #scientific_name=config.param('bismark_align', 'scientific_name'),
+                    #assembly=config.param('bismark_align', 'assembly'),
+                    #report_template_dir=self.report_template_dir,
+                    #basename_report_file=os.path.basename(report_file),
+                    #report_file=report_file
+                #),
+                #report_files=[report_file],
+                #name="bismark_align_report")
+        #)
+
+        return jobs
 
 
     def picard_remove_duplicates(self):
@@ -315,26 +381,60 @@ cp \\
             job.name = "bvatools_depth_of_coverage." + sample.name
             job.samples = [sample]
             jobs.append(job)
+            
+            # Get reads# raw and after duplication
+            dedup_bam = os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.bam")
+            raw_bam = os.path.join("alignment", sample.name, sample.name + ".sorted.bam")
+            
+            count_dedup_output = os.path.join("alignment", sample.name, sample.name + ".dedup.count")
+            count_raw_output = os.path.join("alignment", sample.name, sample.name + ".raw.count")
+            
+            
+            job = samtools.mapped_count(
+                raw_bam,
+                count_raw_output,
+                None
+            )
+            job.name = "count.raw." + sample.name
+            job.removable_files=[count_dedup_output,count_raw_output]
+            job.samples = [sample]
+            jobs.append(job)
+            
+            job = samtools.mapped_count(
+                dedup_bam,
+                count_dedup_output,
+                None
+            )
+            job.name = "count.dedup." + sample.name
+            job.removable_files=[count_dedup_output,count_raw_output]
+            job.samples = [sample]
+            jobs.append(job)
 
             if coverage_bed:
-                # Get on-target reads (if on-target context is detected)
-                ontarget_bam = re.sub("bam", "ontarget.bam", input)
-                flagstat_output = re.sub("bam", "bam.flagstat", ontarget_bam)
-                job = concat_jobs([
-                    bedtools.intersect(
-                        input,
-                        ontarget_bam,
-                        coverage_bed
-                    ),
-                    samtools.flagstat(
-                        ontarget_bam,
-                        flagstat_output
-                    )
-                ])
-                job.name = "ontarget_reads." + sample.name
-                job.removable_files=[ontarget_bam]
+                # Get on-target reads (if on-target context is detected) raw and after duplication
+                
+                count_dedup_output = os.path.join("alignment", sample.name, sample.name + ".onTarget.dedup.count")
+                count_raw_output = os.path.join("alignment", sample.name, sample.name + ".onTarget.raw.count")
+                job = samtools.mapped_count(
+                    raw_bam,
+                    count_raw_output,
+                    coverage_bed
+                )
+                job.name = "ontarget_count.raw." + sample.name
+                job.removable_files=[count_dedup_output,count_raw_output]
                 job.samples = [sample]
                 jobs.append(job)
+                
+                job = samtools.mapped_count(
+                    dedup_bam,
+                    count_dedup_output,
+                    coverage_bed
+                )
+                job.name = "ontarget_count.dedup." + sample.name
+                job.removable_files=[count_dedup_output,count_raw_output]
+                job.samples = [sample]
+                jobs.append(job)
+                
 
                 # Compute on target percent of hybridisation based capture
                 interval_list = re.sub("\.[^.]+$", ".interval_list", os.path.basename(coverage_bed))
@@ -599,6 +699,18 @@ cp \\
                 job.samples = [sample]
                 jobs.append(job)
                 cpg_profile = target_cpg_profile
+                
+                target_cpg_profile_count=os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup.CpG_profile.strand.combined.on_target.count")
+                job = metrics.target_cpg_profile(
+                    target_cpg_profile,
+                    target_cpg_profile_count,
+                    sample.name
+                )
+                job.name = "metrics_target_CpG_profile." + sample.name
+                job.samples = [sample]
+                jobs.append(job)
+                
+                
 
             # Caluculate median & mean CpG coverage
             median_CpG_coverage = re.sub(".CpG_report.txt.gz", ".median_CpG_coverage.txt", cpg_input_file)
@@ -614,80 +726,89 @@ cp \\
 
         return jobs
 
-    def all_sample_metrics_report(self):
-        """
-        Retrieve all the computed metrics (alignment metrics as well as methylation metrics) to build a tsv report table
-        """
-
-        jobs = []
-
-        target_bed = bvatools.resolve_readset_coverage_bed(self.samples[0].readsets[0])
-        metrics_file = os.path.join("metrics", "sampleMetrics.stats")
-        report_metrics_file = os.path.join("report", "sampleMetricsTable.tsv")
-
-        if target_bed:
-            report_file = os.path.join("report", "MethylSeq.all_sample_metrics_targeted_report.md")
-        else:
-            report_file = os.path.join("report", "MethylSeq.all_sample_metrics_report.md")
-
-        # Create the list of input files to handle job dependencies
-        inputs = []
-        sample_list = []
-        for sample in self.samples:
-            sample_list.append(sample.name)
-
-            # Trim log files
-            for readset in sample.readsets:
-                inputs.append(os.path.join("trim", sample.name, readset.name + ".trim.log"))
-
-            # Aligned pre-deduplicated bam files
-            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.bam"))
-
-            # Deduplicated bam files
-            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.bam"))
-
-            # Coverage summary files
-            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.all.coverage.sample_summary"))
-
-            # Lambda conversion rate files
-            inputs.append(os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.profile.lambda.conversion.rate.tsv"))
-
-            # CG stat files
-            inputs.append(os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.profile.cgstats.txt"))
-
-            # Flagstat file if in targeted context
-            if target_bed : inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.ontarget.bam.flagstat"))
-
-        jobs.append(
-            concat_jobs([
-                Job(command="mkdir -p metrics"),
-                tools.methylseq_metrics_report(sample_list, inputs, metrics_file, target_bed),
-                Job(
-                    [metrics_file],
-                    [report_file],
-                    [['all_sample_metrics_report', 'module_pandoc']],
-                    command="""\
-mkdir -p report && \\
-cp {metrics_file} {report_metrics_file} && \\
-metrics_table_md=`sed 's/\t/|/g' {report_metrics_file}`
-pandoc \\
-  {report_template_dir}/{basename_report_file} \\
-  --template {report_template_dir}/{basename_report_file} \\
-  --variable sequence_alignment_table="$metrics_table_md" \\
-  --to markdown \\
-  > {report_file}""".format(
-                        report_template_dir=self.report_template_dir,
-                        metrics_file=metrics_file,
-                        basename_report_file=os.path.basename(report_file),
-                        report_metrics_file=report_metrics_file,
-                        report_file=report_file
-                    ),
-                    report_files=[report_file]
-                )
-            ], name="all_sample_metrics_report")
-        )
-
-        return jobs
+#    def all_sample_metrics_report(self):
+#        """
+#        Retrieve all the computed metrics (alignment metrics as well as methylation metrics) to build a tsv report table
+#        """
+#
+#        jobs = []
+#
+#        target_bed = bvatools.resolve_readset_coverage_bed(self.samples[0].readsets[0])
+#        metrics_file = os.path.join("metrics", "sampleMetrics.stats")
+#        report_metrics_file = os.path.join("report", "sampleMetricsTable.tsv")
+#
+#        if target_bed:
+#            report_file = os.path.join("report", "MethylSeq.all_sample_metrics_targeted_report.md")
+#        else:
+#            report_file = os.path.join("report", "MethylSeq.all_sample_metrics_report.md")
+#
+#        # Create the list of input files to handle job dependencies
+#        inputs = []
+#        sample_list = []
+#        for sample in self.samples:
+#            sample_list.append(sample.name)
+#
+#            # Trim log files
+#            for readset in sample.readsets:
+#                inputs.append(os.path.join("trim", sample.name, readset.name + ".trim.log"))
+#
+#            # Aligned pre-deduplicated bam files
+#            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.bam"))
+#
+#            # Deduplicated bam files
+#            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.bam"))
+#
+#            # Coverage summary files
+#            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.all.coverage.sample_summary"))
+#
+#            # Lambda conversion rate files
+#            [lambda_conv_file] = self.select_input_files([
+#                [os.path.join("methylation_call", sample.name, sample.name + ".sorted.dedup.profile.lambda.conversion.rate.tsv")],
+#                [os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.profile.lambda.conversion.rate.tsv")]
+#            ])
+#            inputs.append(lambda_conv_file)
+#
+#            # CG stat files
+#            [cgstats_file] = self.select_input_files([
+#                [os.path.join("methylation_call", sample.name, sample.name + ".sorted.dedup.profile.cgstats.txt")],
+#                [os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.profile.cgstats.txt")]
+#            ])
+#            inputs.append(cgstats_file)
+#
+#            # Flagstat file if in targeted context
+#            if target_bed : 
+#                inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.ontarget.bam.flagstat"))
+#
+#        jobs.append(
+#            concat_jobs([
+#                Job(command="mkdir -p metrics"),
+#                tools.methylseq_metrics_report(sample_list, inputs, metrics_file, target_bed),
+#                Job(
+#                    [metrics_file],
+#                    [report_file],
+#                    [['all_sample_metrics_report', 'module_pandoc']],
+#                    command="""\
+#mkdir -p report && \\
+#cp {metrics_file} {report_metrics_file} && \\
+#metrics_table_md=`sed 's/\t/|/g' {report_metrics_file}`
+#pandoc \\
+#  {report_template_dir}/{basename_report_file} \\
+#  --template {report_template_dir}/{basename_report_file} \\
+#  --variable sequence_alignment_table="$metrics_table_md" \\
+#  --to markdown \\
+#  > {report_file}""".format(
+#                        report_template_dir=self.report_template_dir,
+#                        metrics_file=metrics_file,
+#                        basename_report_file=os.path.basename(report_file),
+#                        report_metrics_file=report_metrics_file,
+#                        report_file=report_file
+#                    ),
+#                    report_files=[report_file]
+#                )
+#            ], name="all_sample_metrics_report")
+#        )
+#
+#        return jobs
 
     def ihec_sample_metrics_report(self):
         """
@@ -708,10 +829,17 @@ pandoc \\
         # Create the list of input files to handle job dependencies
         sample_list = []
         counter=0
+        metrics_output_list=[]
+        metrics_output_list.append(None)
         for sample in self.samples:
             inputs = []
             sample_list.append(sample.name)
             metrics_file =  os.path.join("ihec_metrics", sample.name + ".read_stats.txt")
+            
+            metrics_output_list.append(metrics_file)
+            #add dependency for previous job in order to fill the allSample output correctly
+            inputs.append(metrics_output_list[counter])
+            
             # Trim log files
             for readset in sample.readsets:
                 inputs.append(os.path.join("trim", sample.name, readset.name + ".trim.log"))
@@ -745,16 +873,31 @@ pandoc \\
             inputs.append(os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.profile.lambda.conversion.rate.tsv"))
 
             # CG stat files
-            inputs.append(os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.profile.cgstats.txt"))
+            [cgstats_file] = self.select_input_files([
+                [os.path.join("methylation_call", sample.name, sample.name + ".sorted.dedup.profile.cgstats.txt")],
+                [os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.profile.cgstats.txt")]
+            ])
+            inputs.append(cgstats_file)
+            
+            #Estimated library sizes
+            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.metrics"))
+            
+            # read count (raw, dedup) 
+            inputs.append(os.path.join("alignment", sample.name, sample.name + ".dedup.count"))
+            inputs.append(os.path.join("alignment", sample.name, sample.name + ".raw.count"))
 
-            # Flagstat file if in targeted context
-            if target_bed : inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.ontarget.bam.flagstat"))
-
+            # read count (raw, dedup)  and CpG_profyle in targeted context
+            if target_bed : 
+                inputs.append(os.path.join("alignment", sample.name, sample.name + ".onTarget.dedup.count"))
+                inputs.append(os.path.join("alignment", sample.name, sample.name + ".onTarget.raw.count"))
+                inputs.append(os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.CpG_profile.strand.combined.on_target.count"))
+	    
+            
             jobs.append(
                 concat_jobs([
                     Job(command="mkdir -p ihec_metrics metrics"),
                     tools.methylseq_ihec_metrics_report(sample.name, inputs, metrics_file, metrics_all_file, target_bed, counter),
-                ], name=sample.name + ".ihec_sample_metrics_report")
+                ], name="ihec_sample_metrics." + sample.name)
             )
             counter+=1
 
@@ -903,6 +1046,7 @@ pandoc \\
             self.trimmomatic,
             self.merge_trimmomatic_stats,
             self.bismark_align,
+            self.add_bam_umi,
             self.picard_merge_sam_files,    # step 5
             self.picard_remove_duplicates,
             self.metrics,
@@ -910,7 +1054,7 @@ pandoc \\
             self.methylation_call,
             self.wiggle_tracks,             # step 10
             self.methylation_profile,
-            self.all_sample_metrics_report,
+            #self.all_sample_metrics_report,
             self.ihec_sample_metrics_report,
             self.bis_snp,
             self.filter_snp_cpg,            # step 15
