@@ -25,7 +25,41 @@
 from core.config import *
 from core.job import *
 
-def bgzip_tabix_vcf(input, output):
+def bgzip(input, output):
+
+    return Job(
+        [input],
+        [output],
+        [
+            ['DEFAULT', 'module_htslib'],
+        ],
+        command="""\
+bgzip -cf \\
+{input} > \\
+{output}""".format(
+        input=" \\\n " + input if input else "",
+        output=output
+        )
+    )
+
+def tabix(input, options=None):
+    output = input + ".tbi"
+    return Job(
+        [input],
+        [output],
+        [
+            ['DEFAULT', 'module_htslib'],
+        ],
+        command="""\
+tabix {options}  \\
+{input} \\
+        """.format(
+        input=input,
+        options=options,
+        )
+    )
+
+def bgzip_tabix(input, output):
 
     return Job(
         [input],
@@ -39,11 +73,12 @@ bgzip -cf \\
 {output} && tabix -pvcf {output} \\
         """.format(
         input=" \\\n " + input if input else "",
-        output=output
+        output=output,
+        options=config.param('DEFAULT', 'tabix_options', required=False),
         )
     )
 
-def bgzip_tabix_bed(input, output):
+def tabix_split(input, output, chr):
 
     return Job(
         [input],
@@ -52,11 +87,11 @@ def bgzip_tabix_bed(input, output):
             ['DEFAULT', 'module_htslib'],
         ],
         command="""\
-bgzip -cf \\
-{input} \\
-{output} && tabix -pbed {output} \\
+tabix -h {input} {chr} \\
+         {output} \\
         """.format(
-        input=" \\\n  > " + input if input else "",
-        output=output
+        input=" \\\n " + input if input else "",
+        chr=chr,
+        output=" > " + output if output else ""
         )
     )
