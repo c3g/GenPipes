@@ -140,7 +140,7 @@ def filtering(
             ['smrtanalysis_filtering', 'module_prinseq'],
             ['smrtanalysis_filtering', 'module_smrtanalysis']
         ],
-        command="""\
+        command=    """\
 bash -c 'set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
 fofnToSmrtpipeInput.py {fofn} > {input_xml} && \\
 cp {fofn} {input_fofn} && \\
@@ -148,7 +148,7 @@ sed -e "s|MINSUBREADLENGTH|{min_subread_length}|g" -e "s|MINREADLENGTH|{min_read
   < {ref_params_xml} > {params_xml} && \\
 smrtpipe.py \\
   -D NPROC={threads} \\
-  -D TMP={tmp_dir} \\
+  -D TMP=${{SMRT_ORIGUSERENV_{tmp_dir}}} \\
   --params={params_xml} \\
   --output={output_dir} \\
   --debug \\
@@ -169,7 +169,7 @@ prinseq-lite.pl \\
             ref_params_xml=ref_params_xml,
             params_xml=params_xml,
             threads=config.param('smrtanalysis_filtering', 'threads'),
-            tmp_dir=config.param('smrtanalysis_filtering', 'tmp_dir'),
+            tmp_dir=re.sub("^\$", "", config.param('smrtanalysis_filtering', 'tmp_dir')),
             output_dir=output_dir,
             log=log,
             output_fastq=output_fastq
@@ -273,7 +273,7 @@ pbalign \\
   {ref_upload} \\
   {cmph5} \\
    --seed=1 --minAccuracy=0.75 --minLength=50 --algorithmOptions="-useQuality" --algorithmOptions=" -minMatch 12 -bestn 10 -minPctIdentity 70.0" --hitPolicy=randombest \\
-  --tmpDir={tmp_dir} \\
+  --tmpDir=${{SMRT_ORIGUSERENV_{tmp_dir}}} \\
   -vv \\
   --nproc={threads} \\
   --regionTable={control_regions_fofn}'""".format(
@@ -335,7 +335,7 @@ awk 'BEGIN{{t=0}}$1=="numFrags"{{if ($2 > 1) {{print t, $2}} t++}}' | sort -nrk2
   > {unitigs_list} && \\
 mkdir -p {outdir} && \\
 bash -c 'set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
-tmp={tmp_dir} \\
+tmp=${{SMRT_ORIGUSERENV_{tmp_dir}}} \\
 cap={prefix} \\
 utg={unitigs_list} \\
 nprocs={threads} \\
