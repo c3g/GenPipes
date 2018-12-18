@@ -3,21 +3,31 @@
 set -eu -o pipefail
 
 SOFTWARE=Delly
-VERSION=0.7.7
+VERSION=0.7.8
 ARCHIVE=${SOFTWARE,,}-${VERSION}.tar.gz
 ARCHIVE_URL=https://github.com/dellytools/${SOFTWARE,,}/archive/v${VERSION}.tar.gz
 SOFTWARE_DIR=${SOFTWARE,,}-${VERSION}
 
 build() {
   cd $INSTALL_DOWNLOAD
-  git clone --recursive git://github.com/dellytools/delly.git -b v$VERSION
 
-  cd ${SOFTWARE,,}
+  # What follows are intructions to install the binary version of Delly
+#  mkdir -p $SOFTWARE_DIR
+#  cd $SOFTWARE_DIR
+#  wget --no-check-certificate https://github.com/dellytools/${SOFTWARE,,}/releases/download/v${VERSION}/${SOFTWARE,,}_v${VERSION}_linux_x86_64bit
+#  wget --no-check-certificate https://github.com/dellytools/${SOFTWARE,,}/releases/download/v${VERSION}/${SOFTWARE,,}_v${VERSION}_parallel_linux_x86_64bit
+#  ln -s ${SOFTWARE,,}_v${VERSION}_parallel_linux_x86_64bit ${SOFTWARE,,}
+#  chmod 775 ${SOFTWARE,,}*
+
+  # What follows is the installation from source (often problematic...)
+  git clone --recursive git://github.com/dellytools/delly.git -b v$VERSION
+  mv ${SOFTWARE,,} $SOFTWARE_DIR
+  cd $SOFTWARE_DIR
   make all
 
   # Install software
   cd $INSTALL_DOWNLOAD
-  mv -i ${SOFTWARE,,} $INSTALL_DIR/${SOFTWARE_DIR}
+  mv -i $SOFTWARE_DIR $INSTALL_DIR/
 }
 
 module_file() {
@@ -29,7 +39,8 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-prepend-path    PATH                \$root/src  
+prepend-path    PATH                \$root
+prepend-path    PATH                \$root/src
 "
 }
 

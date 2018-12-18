@@ -2,20 +2,22 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=Manta
-VERSION=1.5.0
-ARCHIVE=${SOFTWARE,}-${VERSION}.release_src.tar.bz2
-ARCHIVE_URL=https://github.com/Illumina/${SOFTWARE,}/releases/download/v${VERSION}/$ARCHIVE
-SOFTWARE_DIR=${SOFTWARE,}-${VERSION}
+SOFTWARE=Strelka2
+VERSION=2.9.10
+ARCHIVE=${SOFTWARE,,}-${VERSION}.tar.gz
+ARCHIVE_URL=https://github.com/Illumina/strelka/archive/v2.9.10.tar.gz
+SOFTWARE_DIR=strelka-${VERSION}
 
 build() {
   cd $INSTALL_DOWNLOAD
-  tar -xjf $ARCHIVE
+  tar zxvf $ARCHIVE
 
-  # Install software
-  mkdir build && cd build
-  ../${SOFTWARE,}-${VERSION}.release_src/configure --jobs=4 --prefix=$INSTALL_DIR/$SOFTWARE_DIR
-  make -j4 install
+  # Install softwre
+  mkdir -p build
+  cd build
+  ../$SOFTWARE_DIR/configure --prefix=$INSTALL_DIR/$SOFTWARE_DIR
+  make -j12
+  make install
 }
 
 module_file() {
@@ -28,7 +30,6 @@ module-whatis \"$SOFTWARE\"
 
 set              root               $INSTALL_DIR/$SOFTWARE_DIR 
 prepend-path     PATH               \$root/bin
-setenv           MANTA_HOME         \$root
 "
 }
 

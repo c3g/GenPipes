@@ -2,20 +2,22 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=Manta
-VERSION=1.5.0
-ARCHIVE=${SOFTWARE,}-${VERSION}.release_src.tar.bz2
-ARCHIVE_URL=https://github.com/Illumina/${SOFTWARE,}/releases/download/v${VERSION}/$ARCHIVE
-SOFTWARE_DIR=${SOFTWARE,}-${VERSION}
+SOFTWARE=LUMPY-SV
+VERSION=0.2.13
+ARCHIVE=${SOFTWARE,,}-${VERSION}.tar.gz
+ARCHIVE_URL=https://github.com/arq5x/${SOFTWARE,,}/releases/download/${VERSION}/${SOFTWARE,,}-v${VERSION}.tar.gz
+SOFTWARE_DIR=${SOFTWARE,,}-${VERSION}
 
 build() {
   cd $INSTALL_DOWNLOAD
-  tar -xjf $ARCHIVE
+  tar zxvf $ARCHIVE
+  mv ${SOFTWARE,,}-v${VERSION} $SOFTWARE_DIR
 
   # Install software
-  mkdir build && cd build
-  ../${SOFTWARE,}-${VERSION}.release_src/configure --jobs=4 --prefix=$INSTALL_DIR/$SOFTWARE_DIR
-  make -j4 install
+  cd $SOFTWARE_DIR
+  make -j12
+  cd $INSTALL_DOWNLOAD
+  mv -i $SOFTWARE_DIR $INSTALL_DIR/
 }
 
 module_file() {
@@ -28,7 +30,9 @@ module-whatis \"$SOFTWARE\"
 
 set              root               $INSTALL_DIR/$SOFTWARE_DIR 
 prepend-path     PATH               \$root/bin
-setenv           MANTA_HOME         \$root
+setenv           LUMPY_HOME         \$root
+setenv           LUMPY_SCRIPTS      \$root/scripts
+prereq mugqic/python/2.7.14 mugqic/samblaster/0.1.24 mugqic/sambamba/0.6.6 mugqic/samtools/1.4.1
 "
 }
 

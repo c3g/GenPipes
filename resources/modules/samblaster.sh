@@ -2,23 +2,23 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=htslib
-VERSION=1.9
-ARCHIVE=$SOFTWARE-$VERSION.tar.bz2
-ARCHIVE_URL=https://github.com/samtools/htslib/releases/download/${VERSION}/${ARCHIVE}
-SOFTWARE_DIR=$SOFTWARE-$VERSION
+SOFTWARE=samblaster
+VERSION=0.1.24
+ARCHIVE=${SOFTWARE}-${VERSION}.tar.gz
+ARCHIVE_URL=https://github.com/GregoryFaust/${SOFTWARE}/archive/v.${VERSION}.tar.gz
+SOFTWARE_DIR=${SOFTWARE}-${VERSION}
 
-# Specific commands to extract and build the software
-# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
-# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
-  tar jxvf $ARCHIVE
 
+  git clone --recursive git://github.com/GregoryFaust/${SOFTWARE}.git -b v.${VERSION}
+  mv $SOFTWARE $SOFTWARE_DIR
   cd $SOFTWARE_DIR
-  make -j12
+  make
+
   # Install software
-  make -j12 prefix=$INSTALL_DIR/${SOFTWARE_DIR} install
+  cd $INSTALL_DOWNLOAD
+  mv -i $SOFTWARE_DIR $INSTALL_DIR/
 }
 
 module_file() {
@@ -30,8 +30,7 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-prepend-path    PATH                \$root/bin
-prepend-path    PATH                \$root/lib
+prepend-path    PATH                \$root
 "
 }
 
