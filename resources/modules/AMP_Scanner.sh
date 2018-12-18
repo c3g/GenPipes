@@ -17,7 +17,9 @@ build() {
   cd $INSTALL_DOWNLOAD
   unzip $ARCHIVE
 
-  sed -ie 's/command -v bin/command -v $AMP_SCANNER_HOME\/bin/' $SOFTWARE_DIR/Proteome_AMP_Scanner.sh
+  sed -i -e 's/command -v bin/command -v $AMP_SCANNER_HOME\/bin/' $SOFTWARE_DIR/Proteome_AMP_Scanner.sh
+  sed -i -e 's/ruby script/ruby $AMP_SCANNER_HOME\/script/' $SOFTWARE_DIR/Proteome_AMP_Scanner.sh
+  sed -i -e 's/Rscript script/Rscript $AMP_SCANNER_HOME\/script/' $SOFTWARE_DIR/Proteome_AMP_Scanner.sh
 
   mv $SOFTWARE_DIR $INSTALL_DIR/
 }
