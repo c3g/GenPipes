@@ -50,7 +50,7 @@ def addumi(
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $FGBIO_JAR AnnotateBamWithUmis \\
   --input {input_bam} \\
   --fastq {input_umi} \\
-  --output {output_bam}
+  --output {output_bam} \\
   {other_options}""".format(
         tmp_dir=config.param('fgbio_addumi', 'tmp_dir'),
         java_other_options=config.param('fgbio_addumi', 'java_other_options'),
