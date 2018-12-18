@@ -185,7 +185,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
  {inputs} \\
  OUTPUT={output} \\
  METRICS_FILE={metrics_file} \\
- MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
+ MAX_RECORDS_IN_RAM={max_records_in_ram} {other_options}""".format(
             tmp_dir=config.param('picard_mark_duplicates', 'tmp_dir'),
             java_other_options=config.param('picard_mark_duplicates', 'java_other_options'),
             ram=config.param('picard_mark_duplicates', 'ram'),
@@ -193,7 +193,8 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             inputs=" \\\n  ".join(["INPUT=" + str(input) for input in inputs]),
             output=output,
             metrics_file=metrics_file,
-            max_records_in_ram=config.param('picard_mark_duplicates', 'max_records_in_ram', type='int')
+            max_records_in_ram=config.param('picard_mark_duplicates', 'max_records_in_ram', type='int'),
+            other_options=config.param('picard_mark_duplicates', 'other_options')
             ),
             removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output), output + ".md5"]
         )

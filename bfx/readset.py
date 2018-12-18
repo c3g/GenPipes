@@ -75,6 +75,13 @@ class IlluminaReadset(Readset):
             return None
         else:
             return self._bam
+    
+    @property
+    def umi(self):
+        if not hasattr(self, "_umi"):
+            return None
+        else:
+            return self._umi
 
     @property
     def library(self):
@@ -142,6 +149,7 @@ def parse_illumina_readset_file(illumina_readset_file):
                 line[format] = os.path.normpath(line[format])
 
         readset._bam = line.get('BAM', None)
+        readset._umi = line.get('UMI', None)
         readset.fastq1 = line.get('FASTQ1', None)
         readset.fastq2 = line.get('FASTQ2', None)
         readset._library = line.get('Library', None)
