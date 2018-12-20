@@ -1,6 +1,425 @@
-16 tags, 3788 commits
+19 tags, 4072 commits
 
-HEAD        Wed Mar 28 14:51:10 2018 -0400        0 commits
+HEAD        Tue Dec 18 21:05:54 2018 +0000        0 commits
+
+3.1.3        Tue Dec 18 16:40:21 2018 -0500        93 commits
+
+  Edouard Henrion <edouard.henrion@mcgill.ca>      37 commits
+
+       6cd0351 Merge branch 'master' of bitbucket.org:mugqic/genpipes into dada2
+       43c5f25 Merge branch 'master' of bitbucket.org:mugqic/genpipes
+       1b3f70c Software installation scripts : new ones (mainly for Tumor SV pipeline) and updated ones Genome installation scripts : updated Homo_sapiens.GRCh37.sh (uncommented some useful commands) & Homo_sapiens.hg19.sh (updated vcf annotation process)
+       8d3a636 Merge branch 'master' of bitbucket.org:mugqic/genpipes
+       0a312f3 updated version of mugqic_tools
+       395c7dc Merge branch 'master' of bitbucket.org:mugqic/genpipes into dada2
+       e6a306d new addings to AMP_Scanner installation script
+       0c798db Merge branch 'master' of bitbucket.org:mugqic/genpipes into dada2
+       f6047c4 updated VarScan installation script with lates VarScan version v2.4.3
+       efa28c8 Merge branch 'master' of bitbucket.org:mugqic/genpipes into dada2
+       869f99c updated Conpair installation script to latest Conpair version v0.2
+       7e29421 added Manta installation script
+       2233a27 Merge branch 'master' of bitbucket.org:mugqic/genpipes
+       ad29c15 added Ruby, LAST & Picky installation scripts
+       f085968 Merge branch 'master' of bitbucket.org:mugqic/genpipes into dada2
+       0683e04 updated AMP_Scanner.sh installation script
+       498f190 Merge branch 'master' of bitbucket.org:mugqic/genpipes
+       41a042a add AMP_Scanner installation script
+       2de2537 updated regexp in install_module.sh
+       934fdec update supernova.sh with latest version 2.1.1
+       6a82f17 update cellranger.sh with latest version 3.0.0
+       36e6b1c Merge branch 'master' of bitbucket.org:mugqic/genpipes
+       bad5792 CCCG-1143 - added Caenorhabditis_elegans.ce11 genome installation script
+       7033838 BFXDEV-578 - updated FasTree installatino script
+       c35f7b2 BFXDEV-756 - changed the '-j' pipeline parameter default value to 'slurm' instead of 'pbs'
+       4847e41 added StringTie installation script
+       6cc4a37 added RNA-Seq Light section in the README
+       90ea223 Version bump to 3.1.3-beta
+       0b4dcef Version bump to 3.1.2
+       2e259ec MethylSeq - updating ini files after testings on guillimin
+       19568c7 Merge branch 'master' of bitbucket.org:mugqic/genpipes into dada2
+       685e8a5 Merge branch 'master' of bitbucket.org:mugqic/genpipes into dada2
+       e7f4335 fixing ini for trimmomatic16S and updating mammouth ini for dada2 protocol steps
+       b716290 AmpliconSeq : resolving asva step dependencies
+       57f08b8 Merge branch 'master' of bitbucket.org:mugqic/genpipes into dada2
+       e8af44b AmpliconSeq - updates to Dada2 protocol
+       523d1da AmpliconSeq - updated last step of dada2 protocol for better dependencies and coding standards
+
+  Édouard Henrion <henrione@cedar1.cedar.computecanada.ca>      2 commits
+
+       7670b7e ChIP-Seq pipeline - correcting cedar.ini file for missing 'homer_make_ucsc_file' step requirements
+       b66e935 AmpliconSeq - call 'zless' instead of 'less' to avoid issues on Graham and Cedar systems
+
+  Édouard Henrion <henrione@cedar5.cedar.computecanada.ca>      3 commits
+
+       fcafa26 Merge branch 'dada2' of bitbucket.org:mugqic/genpipes into dada2
+       fa5e298 Merge branch 'master' of bitbucket.org:mugqic/genpipes into dada2
+       a92edf3 AmpliconSeq - adding cedar ini file
+
+  edouard.henrion@mcgill.ca <ehenrion@abacus1.ferrier.genome.mcgill.ca>      6 commits
+
+       d6515ac Merge branch 'master' of bitbucket.org:mugqic/genpipes into dada2
+       c3180f2 update database references in ampliconseq.base.ini
+       37685bd asva.py pipeline merged to ampliconseq as another protocol asva.R deleted because moved to mugqic_tools new trimmomatic16S function added in bfx/trimmomatic.py
+       5181050 update nanuq2mugqic_pipelines.py to also fetch the primer sequences ; needed by the new AmpliconSeq protocol (dada2)
+       0694899 removed cutPrimer and set sys.path correctly
+       dfe1513 Creating dada2 branch content
+
+  edouard.henrion@mcgill.ca <ehenrion@abacus2.ferrier.genome.mcgill.ca>      4 commits
+
+       c54fe2b added pool parameter to bfx/dada2.py & pipelines/ampliconseq/ampliconseq.base.ini
+       94f9800 removing deprecated pipelines/ASVA/asva.py
+       9b09c66 first working verson of dada2 protocol for ampliconseq pipeline
+       5acf527 minor updates (line break & indentation)
+
+  ehenrion <edouard.henrion@mcgill.ca>      7 commits
+
+       5627b8e GATK4 Updates - gatk4.ini - removed mugqic_dev module
+       0f32dbf Updates GATK4 - dnaseq.cedar.ini - removed mugqic_dev module
+       75b9153 Updatres GATK4 - dnaseq.base.ini - remove mugqic_dev module
+       dfda31e MethylSeq UMI - methylseq.base.ini - updated mugqic_tools to mugqic/mugqic_tools/2.2.0 for fgbio tools
+       7c9c703 MethylSeq UMI - methylseq.base.ini - updated module_fgbio to cvmfs version of the module
+       b29b117 methylseq.py - commented subroutine all_sample_metrics_report as it has been remove from the pipeline (because useless)
+       b8f3fb6 fgbio.py - correted typo in addumi surbroutine
+
+  Emmanuel Gonzalez <emmanuel.gonzalez@mcgill.ca>      1 commits
+
+       223052d Merged in dada2 (pull request #49)
+
+  Francois Lefebvre <francois.lefebvre@mcgill.ca>      2 commits
+
+       e1c7ef8 README.md edited online with Bitbucket
+       6d1bd5c README.md edited online with Bitbucket
+
+  mathieu bourgey <mathieu.bourgey@mail.mcgill.ca>      9 commits
+
+       a6fe363 remove all_sample_metrics_report as it does the same as ihec_metrics
+       b446c86 change the ini section for module in tools.methylseq_ihec_metrics_report
+       598028b Merge branch 'master' of bitbucket.org:mugqic/genpipes into methylSeq_UMI
+       cee0464 adding umi and on-target metrics
+       96f4dec adding the missing count parameter -c to samtools.count
+       ba6545f correct typos
+       0d03902 correct small bugs for UMI integration
+       317fe6a Merge branch 'methylSeq_UMI' of bitbucket.org:mugqic/genpipes into methylSeq_UMI
+       acb5536 corect typo
+
+  Mathieu Bourgey <mathieu.bourgey@mcgill.ca>      11 commits
+
+       1d2a7d3 add on target metrics and UMI
+       86cea70 add target_cpg_profile function in metrics lib
+       ad2dd57 add samtools mapped_count function
+       b322c94 add samtools mapped_count function
+       9d49c2a correst typo
+       6ccf4ee integrate UMI step in ini file
+       cf4c008 include bam UMI annotation step
+       f74f1ae include UMI annotated bam to the select input file of the picard_merge_sam_files step
+       5c52b3d Add other_option  system to MarkDuplicate
+       2efad22 add the UMI field in the readset file
+       9ef8610 add the UMI field in the readset file
+
+  mathieu bourgey <mathieu.bourgey@mcgill.ca>      1 commits
+
+       7f369e1 Merged in methylSeq_UMI (pull request #52)
+
+  Robert Eveleigh <eveleigh@cedar1.cedar.computecanada.ca>      1 commits
+
+       cf47de1 updates to cedar ini
+
+  Robert Eveleigh <eveleigh@cedar5.cedar.computecanada.ca>      2 commits
+
+       5b912aa Cedar resource and gatk4 metric fixes
+       672ad33 Updates to cedar.ini
+
+  Robert Eveleigh <eveleigh@ip16.m>      2 commits
+
+       4177822 GATK4 mp2b file added and improvements to alt contig exclusions
+       91fb349 Added mp2b ini and exome improvements
+
+  robert.eveleigh@mcgill.ca <reveleig@abacus1.ferrier.genome.mcgill.ca>      1 commits
+
+       e9c66c6 Updates GATK4 and annotations
+
+  robert.eveleigh@mcgill.ca <reveleig@abacus2.ferrier.genome.mcgill.ca>      2 commits
+
+       3c0ac31 Resolve conflicts
+       71b7496 improvements to exome handling
+
+  Robert Eveleigh <robert.eveleigh@mcgill.ca>      1 commits
+
+       ad3caf1 Merged in dnaseq_gatk4 (pull request #47)
+
+  Rola Dali <rola.dali@mail.mcgill.ca>      1 commits
+
+       dc7996d README.md edited online with Bitbucket
+
+3.1.2        Wed Nov 21 15:05:01 2018 -0500        30 commits
+
+  Edouard Henrion <edouard.henrion@mcgill.ca>      17 commits
+
+       be396f0 updated mugqic_tools version 2.1.12
+       f187cdf removed _dev modules from ini files
+       2bfc307 Updated R_Bioconductor.sh : pointing to system libraries improved
+       e80f729 PacBio Assembly pipeline - corrected incompatibility bug with Guillimin
+       1be0124 updated install_module.sh to accomodate both CentOS7 & Ubuntu16.04 system libraries
+       ff709f1 update HiCUP install script with latest version 0.7.0
+       659fbc9 corrected typo in ampliconseq.py causing pipeline crach at plot heatmap
+       c8b5634 updated README-release.txt with correct URL for GenPipes download page
+       09fe369 Changing resources requirements for [gatk_merge_and_call_individual_gvcfs] in DNA=-Seq pipeline
+       30a9d33 corrected reference to kallisto tx2gene file in the RNA-Seq light pipeline
+       0e7dae6 corrected reference to kallisto index in the RNA-Seq light pipeline
+       e8ec0ac Corrected bug in HicSeq pipeline when running in capture mode
+       58841e5 updated RNASeq light base ini file with kallisto version on CVMFS
+       78a4d4b corrected core/pipeline.py to avoid pipeline erroring when using '--json' parameter...
+       1e2ef94 corrected typo in R_Bioconductor.sh
+       e4f493f Version bump to 3.1.2-beta
+       c6b48be Version bump to 3.1.1
+
+  Édouard Henrion <henrione@gra-login1.graham.sharcnet>      4 commits
+
+       929e37c Merge branch 'master' of bitbucket.org:mugqic/genpipes
+       f4479be freebayes install script
+       9fadba9 platypus install script
+       7909a4e vcfanno fgbio & delly install scripts
+
+  ehenrion <edouard.henrion@mcgill.ca>      7 commits
+
+       362f101 Merged in hicup_arima (pull request #51)
+       f3593a6 tumor_pair.base.ini : changed gemini version to 0.20.1
+       31d2d00 tumor_pair.guillimin.ini : removed some more _dev modules
+       b689763 tumor_pair.guillimin.ini : removed mugqic_dev module
+       6e9b3f9 hicseq.base.ini : updated HiCUP version to 0.7.0
+       07b9a21 dnaseq_high_coverage.base.ini : setting ram parameter witin section igvtools_compute_tdf
+       d210893 Tumor_pair pipeline : bug fix in bfx/bcbio_variation_recall.py Correted typo in the executable call
+
+  Rola Dali <rola.dali@mail.mcgill.ca>      2 commits
+
+       6d94474 editing hicseq.py for Arima compatibility
+       33d597d adding HiC Arima digest to install_genome
+
+3.1.1        Thu Nov 1 15:32:25 2018 -0400        161 commits
+
+  David Bujold <david.bujold@mail.mcgill.ca>      1 commits
+
+       b0adf94 Merged in pipeline_stats (pull request #20)
+
+  dbujold <david.bujold@mail.mcgill.ca>      2 commits
+
+       86c8a72 Display JSON log statistics into tables and figures on the log VM.
+       6f716cb Python CGI script to tranform pipelines stats log file into a JSON document.
+
+  Edouard Henrion <edouard.henrion@mcgill.ca>      32 commits
+
+       2495721 Merge branch 'master' of bitbucket.org:mugqic/genpipes
+       b14189d update install_module.sh script with integration of apt along yum as system libraries resources
+       0de17dd update R installation script with integration of apt along yum as system libraries resources
+       7a57dfe Merge branch 'master' of bitbucket.org:mugqic/genpipes
+       de73f87 update dnaseq.py, dnaseq_high_coverage.py & methylseq.py so that interval_list file is created locally instead of where the bed file is (which leads to an error non read-only systems)
+       cd6f62a update dnaseq.py, dnaseq_high_coverage.py & methylseq.py so that interval_list file is created locally instead of where the bed file is (which leads to an error non read-only systems)
+       052e9fc Merge branch 'master' of bitbucket.org:mugqic/genpipes
+       e8af086 updating genome ini file generation with versioning
+       e2f53d8 Merge branch 'master' of bitbucket.org:mugqic/genpipes
+       b929742 update smrtlink.sh with latest SMRTLink version
+       8130d05 Merge branch 'master' of bitbucket.org:mugqic/genpipes
+       13080e2 updated R_Bioconductor.sh with new packages and corrections
+       63e12b5 new version of multiqc.sh to install latest version
+       f499c1b aded popoolation2 installation script
+       211dc62 Merge branch 'master' of bitbucket.org:mugqic/genpipes
+       d58b1c3 updated gatk.sh so it can handle both versions 3 & 4 installation
+       4b5565f Merge branch 'master' of bitbucket.org:mugqic/genpipes
+       c4004ed updated R_Bioconductor.sh - new libraries & patches
+       38e01cd updated python.sh : make -j12 & configure command
+       b06c410 resources/modules/install_module.sh
+       d1fe8bf update flash.sh with parallele make -j12
+       6eca5f3 watch_portal_folder: removed sample_name in filename
+       f0e6222 Merge branch 'master' of bitbucket.org:mugqic/genpipes
+       1ef165c corrected gatk.sh : paths in the modulefile were wrong
+       749cd97 updated rnaseq.py : report steps are now included in the analysis JSON file
+       8978a59 updated ampiconseq.py : both steps merge_flash_stats & merge_uchime_stats are now inclded in the analysis JSON file
+       b4d4b04 updated rnaseq_light.py : samples added to each job including report jobs, reviewed indentations and spacing
+       8e75e02 updated rnaseq_denovo_assembly.py : samples added to each job (some were still remaining) including report jobs
+       61af5bf updated common.py : added samples to the call of rmarkdown.render
+       cc974a3 updated bfx rmarkdown wrapper : JSON file generation added
+       1d9b834 Version bump to 3.1.1-beta
+       bd721f1 Version bump to 3.1.0
+
+  Édouard Henrion <henrione@cedar5.cedar.computecanada.ca>      1 commits
+
+       b3e4560 removing all the remaining MUGQIC_INSTALL_HOME_DEV in all the ini files
+
+  Édouard Henrion <henrione@gra-login1.graham.sharcnet>      6 commits
+
+       4a4d0e5 Merge branch 'master' of bitbucket.org:mugqic/genpipes
+       ca805a0 updated install_module.sh : new installation procedure integration, adding the patching the C3G executatbles with patchelf : making sure all system libraries are now searched in /cvmfs/soft.mugqic/yum/centos7/1.0
+       f771e9b updated python.sh with some new package : umap-learn
+       63a855e udpated R_Bioconductor.sh with new packages. Also, now integrates the new installation procedures including pathcing the C3G executables (i.e. use of patchelf)
+       41fcad8 Merge branch 'master' of bitbucket.org:mugqic/genpipes
+       4a5958c updated archive URL in flash.sh install script
+
+  edouard.henrion@mcgill.ca <ehenrion@abacus1.ferrier.genome.mcgill.ca>      7 commits
+
+       c243ec8 updated R_Bioconductor.sh script : set the PAGER variable to /usr/bin/less
+       f315771 updated pipeline READMEs : all the steps are now shown independently of the available pipeline protocols
+       5fa7bb4 updated R_Bioconductor.sh with some new packages in the install list
+       1c468e0 Merge branch 'master' of bitbucket.org:mugqic/genpipes
+       b24d7f8 updated silva.sh to install latest vesion of silva DB
+       04140e3 Merge branch 'master' of bitbucket.org:mugqic/genpipes
+       e9fcbff added Glycine_max.v2.sh installatino script for Glycine (Soybean) genome installation
+
+  edouard.henrion@mcgill.ca <ehenrion@abacus2.ferrier.genome.mcgill.ca>      16 commits
+
+       bdf93cc updated hicup.sh
+       795b9e5 updated smrtlink.sh with the version 6.0.0 of SMRTLink
+       0a9fb4b Merge branch 'master' of bitbucket.org:mugqic/genpipes
+       e141ec7 updated pipeline cedar ini files to avoid using java from CC software stack
+       efbf07a modified core/pipeline.py to avoid having to set  when not generating the anaylsis JSON file
+       256907f modified DNA-Seq README with better step descriptions
+       76a26cb Updated the pipeline workflow diagram download links : path of the full-size picture instead of the resized one
+       d0fd874 Added a link to download the pipeline workflow diagram along with the diagram picture itself
+       11cbf4a Updated pipeline README.md files, with workflow diagram pictures embeded
+       30c53cc deleted pipelines/tumor_pair.base.exome.ini
+       bd6f000 moving tumor_pair.base.exome.ini from 'pipelines/' to 'pipelines/tumor_pair/'
+       9362d72 Merge branch 'master' of bitbucket.org:mugqic/genpipes
+       baf53ba updated ampliconseq pipeline following Emmanuel gonzalez comments
+       6a85b8f added source EnsemblPlants to install_genome.sh script
+       690f20b added skewer installation script
+       59996b5 BFXDEV-591 - updated ampliconseq.base.ini based on Emmanuel Gonzalez feedback
+
+  ehenrion <edouard.henrion@computationalgenomics.ca>      2 commits
+
+       3b3ff68 updated mugqic_pipelines.sh so that it now refers to genpipes repository on bitbucket
+       97a4552 corrected typo within gatk.sh installation script
+
+  ehenrion <edouard.henrion@mcgill.ca>      18 commits
+
+       1238882 methylseq.py : corrected dependencies assignment for ihect_sample_metrics_report step
+       85bfc18 rnaseq_light.py : typo correction
+       2057f1e rnaseq_light.py : corrected typo
+       91be7b8 rnaseq_light.py : corrected typo in job parameter assignement
+       5de9c4e dnaseq.cedar.ini removed 'module_java=java/1.8.0_121' from cedar.ini
+       b4ce9ef methylseq.base.ini : modified [bismark_align] section : maximum insert_size now set to 1000
+       146eaa7 methylseq.mammouth.ini : modified bismark align section
+       a4eea15 methylseq.cedar.ini : modified bismark_align walltime
+       a22490f methylseq.base.ini modified [bismark_methyl_call] section within the base.ini
+       a5276a3 methylseq.base.ini - modified bismark_align parameters and resources within the base.ini file
+       4fd03a1 dnaseq.py edited online with Bitbucket Correct typo at line 724 : "jobs" replaces "obs"
+       425c086 dnaseq.cedar.ini : added variant_recalibrator section to defined resources on cedar
+       d55362f Merged in revert-pr-41 (pull request #46)
+       17aa18f Revert "Can run on HPC with slurm and  containers (pull request #41)"
+       60be1aa rnaseq.py edited online with Bitbucket added missing job (metrics.wigzip) to the json analysis file
+       1c5f56d README.md edited online with Bitbucket
+       6dccf5b README.md edited online with Bitbucket
+       3b3407b README.md edited online with Bitbucket
+
+  Éloi Mercier <emercier@cedar5.cedar.computecanada.ca>      1 commits
+
+       c6593cf in cedar.ini and graham ini of rnaseq, chipseq and dnaseq: change assembly_dir to MUGQIC_INSTALL; in dnaseq.graham.ini: uncomment assembly_dir variable
+
+  emercier <eloi.mercier@mcgill.ca>      10 commits
+
+       ec3183f all pyc files removed
+       f0568f4 Update R_module in ini files to mugqic/R_Bioconductor/3.5.0_3.7 (except for illumina_run_processing)
+       5a14b4d in ampliconseq, pacbio and rnaseq.guillimin.ini: change lm queue (depreciated) to meta queue
+       e13be16 in modules/weblogo.sh: remove whitespaces at the beginning of the echo blocks
+       4675ad6 in dnaseq and rnaseq.base.ini: change R_Bioconductor to stable version 3.4.3_3.6
+       fcad025 in install_all_genome.sh: add Danio_rerio.GRCz11.sh
+       d353ecf add install script for genome zebrafish Danio_rerio.GRCz11
+       9416156 Merge branch 'master' of https://bitbucket.org/mugqic/genpipes
+       0b53f64 in install_genome.sh: small fix to create_kallisto_index and create_transcripts2genes_file functions
+       f5681c4 in install_genome.sh: fix bug in create_transcripts2genes_file to work with recent version of Ensembl
+
+  Francois Lefebvre <francois.lefebvre3@mail.mcgill.ca>      4 commits
+
+       53d11f3 rnaseq.base.ini edited online with Bitbucket: commented explicit adapter file parameter
+       8653d02 R_Bioconductor.sh edited online with Bitbucket: added PopSV. Currently commented out since not tested
+       0b42f96 R_Bioconductor.sh edited online with Bitbucket: Added a few dependencies to the list
+       3a268e6 R_Bioconductor.sh edited online with Bitbucket
+
+  Francois Lefebvre <lefebvrf@gmail.com>      1 commits
+
+       a23ba48 Added dev install scripts for delly, lumpy, sv, vcfanno
+
+  José Héctor Gálvez López <hgalvez@ip16.m>      2 commits
+
+       88e4929 Further refinements to Mp2b based on feedback from mammouth admins
+       39bf760 Added ini files tailored for Mp2b based on Cedar ini files for the following pipelines: RNA-seq, RNA-seq de novo, DNA-seq, Hi-C seq, Methylseq, and ChIP-seq.
+
+  mathieu bourgey <mathieu.bourgey@mail.mcgill.ca>      6 commits
+
+       1f95d68 Add cedar ini file for methylSeq
+       8b07176 Merge branch 'master' of bitbucket.org:mugqic/genpipes
+       b1ed77c removing pipe empty of jobs in tumor_pair
+       7e70dc5 Merge branch 'master' of bitbucket.org:mugqic/genpipes
+       db20957 Merge branch 'master' of bitbucket.org:mugqic/genpipes
+       9e0178b correct bug in ucsc bedGraphToBigWig which raise an error for specie with MT chromosome name except for GRCh37 - BFXDEV-737
+
+  Mathieu Bourgey <mathieu.bourgey@mcgill.ca>      7 commits
+
+       2e021f6 Merge branch 'master' of bitbucket.org:mugqic/genpipes
+       85ead2b resolve issue with multiple inputs in DNAseq picard markduplicates
+       1e00830 resolve pull conflict
+       b0042a0 update dnaseq.cedar.in file
+       4074ab5 adjust dnaseqto add select input file to some of the steps - need to be continued
+       e38920e modify Slurm scheduler delay (sleep) from 0.5 to 0.2
+       b1d3d4b ChipSeq - add mutliqc param in the cedar ini
+
+  Pierre-Olivier Quirion <pierre-olivier.quirion@computationalgenomics.ca>      1 commits
+
+       9c7c815 Merged in add_container (pull request #41)
+
+  P-O Quirion <pioliqui@gmail.com>      5 commits
+
+       cfa63b2 Merge branch 'master' into add_container
+       44274bd Basic container ini file
+       4296d31 Working singularity version tested on graham
+       b14afd9 WIP exec line prototype
+       8b92416 add container option
+
+  Rola Dali <rola.dali@mail.mcgill.ca>      8 commits
+
+       795776b methylseq.cedar.ini edited online with Bitbucket: added cluster_walltime to ini to avoid errors
+       47addd2 chipseq.base.ini edited online with Bitbucket: bigwig and run_spp resources are not enough; edited them to avoid failure
+       50747a7 Merged in IHEC_metrics (pull request #44)
+       bdb0b76 dnaseq.base.ini edited online with Bitbucket: change threads for GATK due to errors
+       142921b update csvToreadset.R in utils to use column names due to changes in nanuq csv
+       40cdff0 Merge branch 'master' of bitbucket.org:mugqic/genpipes into IHEC_metrics
+       8709b9d README.md edited online with Bitbucket
+       13f08a5 README.md edited online with Bitbucket: -j slurm and tutorial
+
+  Romain Grégoire <romgrk.cc@gmail.com>      3 commits
+
+       6f8ea86 Merged in add-json-version (pull request #50)
+       1271bc1 Merged in dashboard-display-launching-user (pull request #43)
+       73e768a Merged in logs-add-checksum (pull request #42)
+
+  Rom Grk <romgrk.cc@gmail.com>      28 commits
+
+       ff11dbc jsonator.py: add version number
+       bb72124 watch_portal_folder: read sample_name from filename but stay backward-compatible
+       921e54d job2json: add sample_name to file for genpipes dashboard
+       784848f copy sample json files during script run
+       b414b04 scheduler.py: clean unused value
+       5a9d8af Sample: remove .json_dump property
+       7d45ce1 lint pipeline.py
+       337a1c8 lint job2json
+       014c19d job2json: guard __main__
+       26b9ef9 lint job2json
+       bf4f976 job2json: use $USER of user running script
+       8980701 common.py: remove unused import
+       622b611 common.py: fix log issues
+       676f7be common.py: add unique md5 checksum to logs
+       56545fe Revert "watch_portal_folder: put sample_name in filename"
+       a8badcd Merge branch 'master' of https://bitbucket.org/mugqic/genpipes
+       0526ecc watch_portal_folder: put sample_name in filename
+       13b5638 Merge branch 'master' of https://bitbucket.org/mugqic/genpipes
+       0411ae9 watch_portal_folder: fix memory errors
+       e5e3579 watch_portal_folder: add logging
+       46d8a35 watch_portal_folder: fix typo
+       f54a127 watch_portal_folder: add cache option
+       7f89e82 Merge branch 'master' of https://bitbucket.org/mugqic/genpipes
+       2fbdca8 watch_portal_folder: implement update by diff
+       45cc189 watch_portal_folder: update script
+       67c1471 watch_portal_folder: skip missing files
+       8a9dd08 watch_portal_folder: more resilient to network errors
+       32bf92a watch_portal_folder.py: dont watch if no interval is provided
 
 3.1.0        Wed Mar 28 15:46:33 2018 -0400        188 commits
 

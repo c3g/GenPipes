@@ -12,10 +12,9 @@ export R_LIBS=
 ## Default arg values
 R_VERSION="latest"
 INSTALL_PREFIX_ENV_VARNAME=""
-MODULEFILE_DIR="$MUGQIC_INSTALL_HOME_TMP/modulefiles/mugqic_dev"
-INSTALL_DIR="$MUGQIC_INSTALL_HOME_TMP/software"
+MODULEFILE_DIR="$MUGQIC_INSTALL_HOME_DEV/modulefiles/mugqic_dev"
+INSTALL_DIR="$MUGQIC_INSTALL_HOME_DEV/software"
 UPDATE_MODE=1
-C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/yum/centos7/1.0
 
 ## Parse arguments
 usage()
@@ -116,6 +115,26 @@ MODULEVERSIONFILE="$MODULEFILE_DIR/.version"
 # NOTE: this is somewhat complicated because we want the ROOT dir MUGQIC_INSTALL_HOME to be resolved at module execution.
 # TCLROOT is just a variable holding the TCL script value for the 'root' variable in the module file.
 
+if [ `lsb_release -i | cut -f 2` == "Ubuntu" ]
+then
+  echo "Ubuntu" > /dev/null
+  C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/apt/ubuntu1604/1.0
+  LIB=lib
+  INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu/ld-linux-x86-64.so.2
+  LIBDIR=$C3G_SYSTEM_LIBRARY/usr/$LIB:$INSTALL_DIR/$LIB/R/lib
+elif [ `lsb_release -i | cut -f 2` == "CentOS" ]
+then
+  echo "CentOS" > /dev/null
+  C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/yum/centos7/1.0
+  LIB=lib64
+  INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/ld-linux-x86-64.so.2
+  LIBDIR=$C3G_SYSTEM_LIBRARY/usr/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB/mysql:$INSTALL_DIR/$LIB/R/lib
+else
+  echo "*** ERROR ***"
+  echo "'"`lsb_release -i | cut -f 2`"' OS detected... should be either 'Ubuntu' neither 'CentOS'..."
+  exit 1
+fi
+
 echo "The software install location is $INSTALL_DIR"
 echo "The module file directory is $MODULEFILE_DIR"
 echo "The module file is $MODULEFILE"
@@ -153,7 +172,7 @@ puts stderr "MUGQIC - Adds R to your environment"
 }
 module-whatis "MUGQIC - Adds R to your environment"     
 set             root               $TCLROOT
-setenv          R_LIBS             \$root/lib64/R/library           
+setenv          R_LIBS             \$root/$LIB/R/library           
 prepend-path    PATH               \$root/bin
 EOF
 
@@ -173,10 +192,10 @@ EOF
 # http://r.789695.n4.nabble.com/cairo-is-not-the-default-when-available-td4666691.html
 # http://r.789695.n4.nabble.com/Xll-options-td3725879.html
 #  so the only other way is to set options(bitmapType="cairo")
-# This can be set in R/lib64/etc/Rprofile.site, but then R should not be invked with R --vanilla
+# This can be set in R/lib64(or lib)/etc/Rprofile.site, but then R should not be invked with R --vanilla
 # because vanilla will ignore Rprofile.site.
 
-cat > $INSTALL_DIR/lib64/R/etc/Rprofile.site <<-'EOF'
+cat > $INSTALL_DIR/$LIB/R/etc/Rprofile.site <<-'EOF'
 if(capabilities()["cairo"]){ options(bitmapType="cairo") }
 Sys.setenv(PAGER="/usr/bin/less")
 Sys.umask("002")
@@ -186,6 +205,17 @@ fi
 
 ## Load the Boost libraries so they are available to any potential packages which needs those during its installation
 #module load mugqic/boost
+
+#if [ "`echo -e "${BIOCVERSION}\n3.7" | sort -V  | head -n1`" = "3.7" ]
+#then
+#  # Nothing to do if the version if 3.8 or above
+#  echo "version greater than 3.7" > /dev/null
+#  BIOC="BiocManager"
+#else
+#  # For early versions (earlier than 3.7)
+#  echo "version smaller than 3.7" > /dev/null
+#  BIOC="biocLite"
+#fi
 
 ## Finally, update/install library!
 $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
@@ -281,30 +311,31 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
     devtools::install_github("jmonlong/PopSV")
     ## ASCAT
     devtools::install_github("Crick-CancerGenomics/ascat/ASCAT")
+    ## ChIAnalysis (with its eric.utils dependency)
+    devtools::install_bitbucket("ericfournier2/sb_lab/eric.utils")
+    #devtools::install_github("ArnaudDroitLab/ChIAnalysis")
 EOF
-
-echo "building C3G wrappers for executables..."
-mkdir -p $INSTALL_DIR/lib64/R/bin/exec.wrap
-cat > $INSTALL_DIR/lib64/R/bin/exec.wrap/R <<-EOF
-/cvmfs/soft.mugqic/yum/centos7/1.0/lib64/ld-linux-x86-64.so.2 --library-path /cvmfs/soft.mugqic/yum/centos7/1.0/lib64:/cvmfs/soft.mugqic/yum/centos7/1.0/lib64/mysql:$INSTALL_DIR/lib64/R/lib $INSTALL_DIR/lib64/R/bin/exec/R \${args} \${@}  
-EOF
-sed -i "s,R_binary=\"\${R_HOME}\/bin\/exec\${R_ARCH}\/R\",R_binary=\"\${R_HOME}\/bin\/exec\${R_ARCH}.wrap\/R\"," $INSTALL_DIR/bin/R
-sed -i "s,R_binary=\"\${R_HOME}\/bin\/exec\${R_ARCH}\/R\",R_binary=\"\${R_HOME}\/bin\/exec\${R_ARCH}.wrap\/R\"," $INSTALL_DIR/lib64/R/bin/R
-chmod 775 $INSTALL_DIR/lib64/R/bin/exec.wrap/R
-for i in $INSTALL_DIR/bin/Rscript $INSTALL_DIR/lib64/R/bin/Rscript; do
-  mv $i $i.raw;
-  echo "$C3G_SYSTEM_LIBRARY/lib64/ld-linux-x86-64.so.2 --library-path $C3G_SYSTEM_LIBRARY/lib64:$C3G_SYSTEM_LIBRARY/lib64/mysql:$INSTALL_DIR/lib64/R/lib $i.raw \${@}" > $i;
-  chmod 775 $i;
-done
 
 echo "Patching C3G executables..."
 for i in `find $INSTALL_DIR/ -type f -executable -exec file {} \; | grep ELF | cut -d":" -f1`; do
   if readelf -l $i | grep go.build > /dev/null
   then
     echo "GO Done" > /dev/null
+  elif [ ${i##*.} == "so" ] || [[ ${i##*/} =~ "so"*(\.[0-9]{1,2})*$ ]]
+  then
+    $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-rpath $C3G_SYSTEM_LIBRARY/usr/$LIB $i
   else
-    $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-rpath $C3G_SYSTEM_LIBRARY/usr/lib64/ $i
+    echo $i
+    $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-interpreter $INTERPRETER --set-rpath $C3G_SYSTEM_LIBRARY/usr/$LIB $i
   fi
+done
+
+echo "Building C3G wrappers for executables..."
+sed -i "s,exec \"\${R_binary}\"  \${args} \"\${@}\",exec $INTERPRETER --library-path \"$LIBDIR\" \"\${R_binary}\"  \${args} \"\${@}\"," $INSTALL_DIR/bin/R
+for i in $INSTALL_DIR/bin/Rscript; do
+  mv $i $i.raw;
+  echo "$INTERPRETER --library-path $LIBDIR $i.raw \${@}" > $i;
+  chmod 775 $i;
 done
 
 echo "Adjusting permissions..."

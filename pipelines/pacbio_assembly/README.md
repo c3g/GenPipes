@@ -32,7 +32,7 @@ usage: pacbio_assembly.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                           [-l {debug,info,warning,error,critical}]
                           [-r READSETS] [-v]
 
-Version: 3.1.1-beta
+Version: 3.1.3
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 

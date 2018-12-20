@@ -745,7 +745,7 @@ create_genome_digest() {
 
   GENOME_DIGEST=$GENOME_DIR/genome_digest/
 
-  declare -A enzymes=( ["DpnII"]="^GATC" ["MboI"]="^GATC" ["HindIII"]="A^AGCTT" ["NcoI"]="C^CATGG")
+  declare -A enzymes=( ["DpnII"]="^GATC" ["MboI"]="^GATC" ["HindIII"]="A^AGCTT" ["NcoI"]="C^CATGG" ["Arima"]="^GATC,DpnII:G^ANTC")
 
   for enzyme in "${!enzymes[@]}"; do
     #echo "$enzyme - ${enzymes[$enzyme]}";
@@ -830,7 +830,7 @@ build_files() {
 }
 
 create_genome_ini_file() {
-  INI=$INSTALL_DIR/$SPECIES.$ASSEMBLY.ini
+  INI=$INSTALL_DIR/$SPECIES.$ASSEMBLY.${SOURCE}${VERSION}.ini
   echo "\
 [DEFAULT]
 scientific_name=$SPECIES
@@ -847,13 +847,6 @@ version=$VERSION" > $INI
     echo "\
 dbsnp_version=$DBSNP_VERSION" >> $INI
   fi
-  if [ ! -z "${population_AF:-}" ]
-  then
-    mv $INI ${INI/ini/${population_AF}.ini}
-    INI=${INI/ini/${population_AF}.ini}
-    echo -e "\npopulation_AF=$population_AF" >> $INI  
-  fi
-
 }
 
 install_genome() {

@@ -86,7 +86,7 @@ class HicSeq(common.Illumina):
 
     def __init__(self, protocol='hic'):
         self._protocol=protocol
-        self.argparser.add_argument("-e", "--enzyme", help = "Restriction Enzyme used to generate Hi-C library (default DpnII)", choices = ["DpnII", "HindIII", "NcoI", "MboI"], required=True, default="DpnII")
+        self.argparser.add_argument("-e", "--enzyme", help = "Restriction Enzyme used to generate Hi-C library (default DpnII)", choices = ["DpnII", "HindIII", "NcoI", "MboI", "Arima"], required=True, default="DpnII")
         self.argparser.add_argument("-t", "--type", help = "Hi-C experiment type (default hic)", choices = ["hic", "capture"], default="hic")
         super(HicSeq, self).__init__(protocol)
 
@@ -113,7 +113,8 @@ class HicSeq(common.Illumina):
     @property
     def restriction_site(self):
         """ sets the restriction enzyme recogntition site and genome digest location based on enzyme"""
-        if (self.enzyme == "DpnII") or (self.enzyme == "MboI"):
+        # Used only for Homer tag directory for QC of read location. For Arima, Homer doesn't accept multiple enzymes, use DpnII site
+        if (self.enzyme == "DpnII") or (self.enzyme == "MboI") or (self.enzyme == "Arima"):
             restriction_site = "GATC"
         elif self.enzyme == "HindIII":
             restriction_site = "AAGCTT"
@@ -564,7 +565,7 @@ class HicSeq(common.Illumina):
 
         job = concat_jobs([
             Job(command="mkdir -p " + self.output_dirs['chicago_input_files']),
-            tools.sh_create_rmap(input_file, output),
+            tools.sh_create_rmap(input_file, output, "create_rmap_file." + self.enzyme),
             bedops.sort_bed(output, sorted_output)
         ])
         job.name = "create_rmap_file." + os.path.basename(input_file)

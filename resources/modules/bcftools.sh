@@ -3,14 +3,11 @@
 set -eu -o pipefail
 
 SOFTWARE=bcftools
-VERSION=1.2
+VERSION=1.9
 ARCHIVE=$SOFTWARE-$VERSION.tar.bz2
 ARCHIVE_URL=https://github.com/samtools/bcftools/releases/download/${VERSION}/${ARCHIVE}
 SOFTWARE_DIR=$SOFTWARE-$VERSION
 
-# Specific commands to extract and build the software
-# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
-# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
   tar jxvf $ARCHIVE

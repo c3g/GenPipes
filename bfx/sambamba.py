@@ -46,20 +46,22 @@ sambamba sort {options} \\
         )
     )
 
-def index(input_bam, tmp_dir, output_dep=[]):
+def index(input, output):
 
     return Job(
-        [input_bam],
-        [output_dep],
+        [input],
+        [output],
         [
             ['sambamba_index', 'module_samtools'],
             ['sambamba_index', 'module_sambamba']
         ],
         command="""\
 sambamba index {options} \\
-  {input}""".format(
+  {input} \\
+  {output}""".format(
         options=config.param('sambamba_index', 'options'),
         input=input,
+        output=output,
         )
     )
 
@@ -97,8 +99,45 @@ sambamba markdup {options} \\
   --tmpdir {temp} \\
   {output}""".format(
         options=config.param('sambamba_mark_duplicates', 'options'),
+	temp=config.param('sambamba_mark_duplicate', 'tmp_dir'),
         input=input_bam,
         output=output_bam,
-        temp=tmp_dir
+        )
+    )
+
+def view(input_bam, output_bam, options, chr=[]):
+
+    return Job(
+        [input_bam],
+        [output_bam],
+        [
+            ['DEFAULT', 'module_sambamba'],
+        ],
+        command="""\
+sambamba view {options} \\
+  {input} \\
+  {output} {chr}""".format(
+        options=options,
+        input=input_bam,
+        output="-o " + output_bam,
+        chr=chr if chr else "",
+        )
+    )
+
+def flagstat(input, output, options):
+
+    return Job(
+        [input],
+        [output],
+        [
+            ['DEFAULT', 'module_sambamba'],
+        ],
+        command="""\
+sambamba flagstat {options} \\
+  {input} \\
+  {output}""".format(
+        options=options,
+        input=input,
+        output="> " + output,
         )
     )
