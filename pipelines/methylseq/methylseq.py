@@ -1040,7 +1040,7 @@ pandoc \\
 #            self.bismark_dedup,
             self.picard_remove_duplicates,
             self.metrics,
-            self.verify_bam_id,
+#            self.verify_bam_id,
             self.methylation_call,
             self.wiggle_tracks,             # step 10
             self.methylation_profile,
