@@ -653,7 +653,7 @@ class DnaSeqRaw(common.Illumina):
             inputs = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal")
 
             jobs.append(concat_jobs([
-                deliverables.md5sum(inputs + ".bam",inputs + ".bam.md5")
+                deliverables.md5sum(inputs + ".bam",inputs + ".bam.md5"),
                 deliverables.sym_link(inputs + ".bam", sample, type="alignment"),
                 deliverables.sym_link(inputs + ".bai", sample, type="alignment"),
                 deliverables.sym_link(inputs + ".bam.md5", sample, type="alignment")
