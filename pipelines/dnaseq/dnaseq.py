@@ -103,6 +103,11 @@ class DnaSeqRaw(common.Illumina):
         if not hasattr(self, "_sequence_dictionary"):
             self._sequence_dictionary = parse_sequence_dictionary_file(config.param('DEFAULT', 'genome_dictionary', type='filepath'), variant=True)
         return self._sequence_dictionary
+    
+    def sequence_dictionary_variant(self):
+        if not hasattr(self, "_sequence_dictionary_variant"):
+            self._sequence_dictionary_variant = parse_sequence_dictionary_file(config.param('DEFAULT', 'genome_dictionary', type='filepath'), variant=True)
+        return self._sequence_dictionary_variant
 
     def generate_approximate_windows(self, nb_jobs):
         if nb_jobs <= len(self.sequence_dictionary):
