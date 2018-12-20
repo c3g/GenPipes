@@ -871,14 +871,14 @@ cp \\
                     jobs.append(concat_jobs([
                         # Create output directory since it is not done by default by GATK tools
                         mkdir_job,
-                        gatk.mutect2(inputNormal, inputTumor, os.path.join(mutect_directory, outPrefix + ".vcf.gz"), intervals=sequences)
+                        gatk.mutect2(inputNormal, tumor_pair.normal.name, inputTumor, tumor_pair.tumor.name, os.path.join(mutect_directory, outPrefix + ".vcf.gz"), intervals=sequences)
                     ], name="gatk_mutect2." + tumor_pair.name + "." + str(idx)))
 
                 # Create one last job to process the last remaining sequences and 'others' sequences
                 jobs.append(concat_jobs([
                     # Create output directory since it is not done by default by GATK tools
                     mkdir_job,
-                    gatk.mutect2(inputNormal, inputTumor, os.path.join(mutect_directory, tumor_pair.name + ".others.mutect2.vcf.gz"), exclude_intervals=unique_sequences_per_job_others)
+                    gatk.mutect2(inputNormal, tumor_pair.normal.name, inputTumor, tumor_pair.tumor.name, os.path.join(mutect_directory, tumor_pair.name + ".others.mutect2.vcf.gz"), exclude_intervals=unique_sequences_per_job_others)
                 ], name="gatk_mutect2." + tumor_pair.name + ".others"))
 
         return jobs
