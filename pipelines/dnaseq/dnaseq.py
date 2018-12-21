@@ -1061,8 +1061,8 @@ class DnaSeqRaw(common.Illumina):
                 # Create one separate job for each of the first sequences
                 for idx,sequences in enumerate(unique_sequences_per_job):
                     jobs.append(concat_jobs([
-                        Job(command="mkdir -p variants", removable_files=[os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.bgz",os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.bgz.tbi"], samples=self.samples),
-                        gatk.combine_gvcf([ os.path.join("alignment", sample.name, sample.name)+".hc.g.vcf.bgz" for sample in self.samples ], os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.bgz", intervals=sequences)
+                        Job(command="mkdir -p variants", removable_files=[os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.gz",os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.gz.tbi"], samples=self.samples),
+                        gatk.combine_gvcf([ os.path.join("alignment", sample.name, sample.name)+".hc.g.vcf.gz" for sample in self.samples ], os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.bgz", intervals=sequences)
                     ], name="gatk_combine_gvcf.AllSample" + "." + str(idx)))
 
                 # Create one last job to process the last remaining sequences and 'others' sequences
