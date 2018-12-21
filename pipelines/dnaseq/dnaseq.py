@@ -41,6 +41,7 @@ from bfx import adapters
 from bfx import bvatools
 from bfx import bwa
 from bfx import gatk4
+from bfx import gatk
 from bfx import igvtools
 from bfx import metrics
 from bfx import samtools
