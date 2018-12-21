@@ -1047,10 +1047,18 @@ class DnaSeqRaw(common.Illumina):
         jobs = []
         nb_haplotype_jobs = config.param('gatk_combine_gvcf', 'nb_haplotype', type='posint')
         nb_maxbatches_jobs = config.param('gatk_combine_gvcf', 'nb_batch', type='posint')
+        
+        interval_list = None
+
+        coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
+        if coverage_bed:
+            interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
+
+            #if nb_haplotype_jobs == 1 or interval_list is not None:
 
         # merge all sample in one shot
         if nb_maxbatches_jobs == 1 :
-            if nb_haplotype_jobs == 1:
+            if nb_haplotype_jobs == 1 or interval_list is not None:
                 jobs.append(concat_jobs([
                     Job(command="mkdir -p variants", samples=self.samples),
                     gatk4.combine_gvcf([ os.path.join("alignment", sample.name, sample.name)+".hc.g.vcf.gz" for sample in self.samples ], os.path.join("variants", "allSamples.hc.g.vcf.gz"))],
@@ -1078,7 +1086,7 @@ class DnaSeqRaw(common.Illumina):
             cpt = 0
             batches = []
             for batch in batch_of_sample :
-                if nb_haplotype_jobs == 1:
+                if nb_haplotype_jobs == 1 or interval_list is not None:
                     jobs.append(concat_jobs([
                         Job(command="mkdir -p variants",removable_files=[os.path.join("variants", "allSamples.batch" + str(cpt) + ".hc.g.vcf.gz"),os.path.join("variants", "allSamples.batch" + str(cpt) + ".hc.g.vcf.gz.tbi")], samples=self.samples),
                         gatk4.combine_gvcf([ os.path.join("alignment", sample.name, sample.name)+".hc.g.vcf.gz" for sample in batch ], os.path.join("variants", "allSamples.batch" + str(cpt) + ".hc.g.vcf.gz"))
@@ -1103,7 +1111,7 @@ class DnaSeqRaw(common.Illumina):
                 cpt = cpt + 1
 
             #Combine batches altogether
-            if nb_haplotype_jobs == 1:
+            if nb_haplotype_jobs == 1 or interval_list is not None:
                 job=gatk4.combine_gvcf([ os.path.join("variants", "allSamples." + batch_idx + ".hc.g.vcf.gz") for batch_idx in batches ], os.path.join("variants", "allSamples.hc.g.vcf.gz"))
                 job.name="gatk_combine_gvcf.AllSamples.batches"
                 job.samples = self.samples
@@ -1136,11 +1144,16 @@ class DnaSeqRaw(common.Illumina):
 
         jobs = []
         nb_haplotype_jobs = config.param('gatk_combine_gvcf', 'nb_haplotype', type='posint')
-
         haplotype_file_prefix = os.path.join("variants","allSamples")
         output_haplotype = os.path.join("variants", "allSamples.hc.g.vcf.gz")
         output_haplotype_genotyped = os.path.join("variants", "allSamples.hc.vcf.gz")
-        if nb_haplotype_jobs > 1:
+        
+        coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
+        if coverage_bed:
+            interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
+
+            #if nb_haplotype_jobs == 1 or interval_list is not None:
+        if nb_haplotype_jobs > 1 and interval_list is None:
             unique_sequences_per_job,unique_sequences_per_job_others = split_by_size(self.sequence_dictionary_variant(), nb_haplotype_jobs - 1, variant=True)
 
             gvcfs_to_merge = [haplotype_file_prefix + "." + str(idx) + ".hc.g.vcf.gz" for idx in xrange(len(unique_sequences_per_job))]
