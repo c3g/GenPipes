@@ -1050,7 +1050,7 @@ class DnaSeqRaw(common.Illumina):
         
         interval_list = None
 
-        coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
+        coverage_bed = bvatools.resolve_readset_coverage_bed(self.samples[0].readsets[0])
         if coverage_bed:
             interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
 
@@ -1148,7 +1148,7 @@ class DnaSeqRaw(common.Illumina):
         output_haplotype = os.path.join("variants", "allSamples.hc.g.vcf.gz")
         output_haplotype_genotyped = os.path.join("variants", "allSamples.hc.vcf.gz")
         
-        coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
+        coverage_bed = bvatools.resolve_readset_coverage_bed(self.samples[0].readsets[0])
         if coverage_bed:
             interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
 
