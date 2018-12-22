@@ -570,7 +570,7 @@ printf '{sample}\t{readset}\t' \\
             job = concat_jobs([
                 job,
                 tools.py_ampliconSeq(
-                    [filter_log, flash_log],
+                    [filter_log, flash_log[0]],
                     [readset_merge_uchime_stats],
                     'uchime',
                     """\
