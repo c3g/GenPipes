@@ -1061,7 +1061,7 @@ class DnaSeqRaw(common.Illumina):
             if nb_haplotype_jobs == 1 or interval_list is not None:
                 jobs.append(concat_jobs([
                     Job(command="mkdir -p variants", samples=self.samples),
-                    gatk4.combine_gvcf([ os.path.join("alignment", sample.name, sample.name)+".hc.g.vcf.gz" for sample in self.samples ], os.path.join("variants", "allSamples.hc.g.vcf.gz"))],
+                    gatk4.combine_gvcf([ os.path.join("alignment", sample.name, sample.name)+".hc.g.vcf.gz" for sample in self.samples ], os.path.join("variants", "allSamples.hc.g.vcf.bgz"))],
                     name="gatk_combine_gvcf.AllSamples"))
             else :
                 unique_sequences_per_job,unique_sequences_per_job_others = split_by_size(self.sequence_dictionary_variant(), nb_haplotype_jobs - 1, variant=True)
@@ -1074,9 +1074,9 @@ class DnaSeqRaw(common.Illumina):
                     ], name="gatk_combine_gvcf.AllSample" + "." + str(idx)))
 
                 # Create one last job to process the last remaining sequences and 'others' sequences
-                job=gatk4.combine_gvcf([ os.path.join("alignment", sample.name, sample.name)+".hc.g.vcf.gz" for sample in self.samples ], os.path.join("variants", "allSamples.others.hc.g.vcf.gz"), exclude_intervals=unique_sequences_per_job_others)
+                job=gatk4.combine_gvcf([ os.path.join("alignment", sample.name, sample.name)+".hc.g.vcf.gz" for sample in self.samples ], os.path.join("variants", "allSamples.others.hc.g.vcf.bgz"), exclude_intervals=unique_sequences_per_job_others)
                 job.name="gatk_combine_gvcf.AllSample" + ".others"
-                job.removable_files=[os.path.join("variants", "allSamples.others.hc.g.vcf.gz"),os.path.join("variants", "allSamples.others.hc.g.vcf.gz.tbi") ]
+                job.removable_files=[os.path.join("variants", "allSamples.others.hc.g.vcf.bgz"),os.path.join("variants", "allSamples.others.hc.g.vcf.gz.tbi") ]
                 job.samples=self.samples
                 jobs.append(job)
         else:
@@ -1112,7 +1112,7 @@ class DnaSeqRaw(common.Illumina):
 
             #Combine batches altogether
             if nb_haplotype_jobs == 1 or interval_list is not None:
-                job=gatk4.combine_gvcf([ os.path.join("variants", "allSamples." + batch_idx + ".hc.g.vcf.gz") for batch_idx in batches ], os.path.join("variants", "allSamples.hc.g.vcf.gz"))
+                job=gatk4.combine_gvcf([ os.path.join("variants", "allSamples." + batch_idx + ".hc.g.vcf.gz") for batch_idx in batches ], os.path.join("variants", "allSamples.hc.g.vcf.bgz"))
                 job.name="gatk_combine_gvcf.AllSamples.batches"
                 job.samples = self.samples
                 jobs.append(job)
@@ -1121,16 +1121,16 @@ class DnaSeqRaw(common.Illumina):
 
                 # Create one separate job for each of the first sequences
                 for idx,sequences in enumerate(unique_sequences_per_job):
-                    job=gatk4.combine_gvcf([ os.path.join("variants", "allSamples." + batch_idx + "." + str(idx) + ".hc.g.vcf.gz") for batch_idx in batches ], os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.gz", intervals=sequences)
+                    job=gatk4.combine_gvcf([ os.path.join("variants", "allSamples." + batch_idx + "." + str(idx) + ".hc.g.vcf.gz") for batch_idx in batches ], os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.bgz", intervals=sequences)
                     job.name="gatk_combine_gvcf.AllSample" + "." + str(idx)
-                    job.removable_files=[os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.gz",os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.gz.tbi"]
+                    job.removable_files=[os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.bgz",os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.bgz.tbi"]
                     job.samples = self.samples
                     jobs.append(job)
 
                 # Create one last job to process the last remaining sequences and 'others' sequences
-                job=gatk4.combine_gvcf([ os.path.join("variants", "allSamples." + batch_idx + ".others.hc.g.vcf.gz") for batch_idx in batches ], os.path.join("variants", "allSamples" + ".others.hc.g.vcf.gz"), exclude_intervals=unique_sequences_per_job_others)
+                job=gatk4.combine_gvcf([ os.path.join("variants", "allSamples." + batch_idx + ".others.hc.g.vcf.gz") for batch_idx in batches ], os.path.join("variants", "allSamples" + ".others.hc.g.vcf.bgz"), exclude_intervals=unique_sequences_per_job_others)
                 job.name="gatk_combine_gvcf.AllSample" + ".others"
-                job.removable_files=[os.path.join("variants", "allSamples" + ".others.hc.g.vcf.gz"),os.path.join("variants", "allSamples" + ".others.hc.g.vcf.gz.tbi")]
+                job.removable_files=[os.path.join("variants", "allSamples" + ".others.hc.g.vcf.bgz"),os.path.join("variants", "allSamples" + ".others.hc.g.vcf.bgz.tbi")]
                 job.samples = self.samples
                 jobs.append(job)
                 
@@ -1158,8 +1158,8 @@ class DnaSeqRaw(common.Illumina):
         if nb_haplotype_jobs > 1 and interval_list is None:
             unique_sequences_per_job,unique_sequences_per_job_others = split_by_size(self.sequence_dictionary_variant(), nb_haplotype_jobs - 1, variant=True)
 
-            gvcfs_to_merge = [haplotype_file_prefix + "." + str(idx) + ".hc.g.vcf.gz" for idx in xrange(len(unique_sequences_per_job))]
-            gvcfs_to_merge.append(haplotype_file_prefix + ".others.hc.g.vcf.gz")
+            gvcfs_to_merge = [haplotype_file_prefix + "." + str(idx) + ".hc.g.vcf.bgz" for idx in xrange(len(unique_sequences_per_job))]
+            gvcfs_to_merge.append(haplotype_file_prefix + ".others.hc.g.vcf.bgz")
 
             job = gatk4.cat_variants(gvcfs_to_merge, output_haplotype)
             job.name = "merge_and_call_combined_gvcf.merge.AllSample"
