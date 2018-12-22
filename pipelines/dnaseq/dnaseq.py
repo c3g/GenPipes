@@ -1045,7 +1045,7 @@ class DnaSeqRaw(common.Illumina):
         Combine the per sample gvcfs of haplotype caller into one main file for all sample.
         """
         jobs = []
-        nb_haplotype_jobs = config.param('gatk_haplotype_caller', 'nb_haplotype', type='posint')
+        nb_haplotype_jobs = config.param('gatk_combine_gvcf', 'nb_haplotype', type='posint')
         nb_maxbatches_jobs = config.param('gatk_combine_gvcf', 'nb_batch', type='posint')
         
         interval_list = None
@@ -1143,7 +1143,7 @@ class DnaSeqRaw(common.Illumina):
         """
 
         jobs = []
-        nb_haplotype_jobs = config.param('gatk_haplotype_caller', 'nb_haplotype', type='posint')
+        nb_haplotype_jobs = config.param('gatk_combine_gvcf', 'nb_haplotype', type='posint')
         haplotype_file_prefix = os.path.join("variants","allSamples")
         output_haplotype = os.path.join("variants", "allSamples.hc.g.vcf.gz")
         output_haplotype_genotyped = os.path.join("variants", "allSamples.hc.vcf.gz")
