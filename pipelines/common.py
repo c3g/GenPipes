@@ -300,9 +300,11 @@ END
 
             if adapter_job:
                 job = concat_jobs([adapter_job, job])
+            job.samples = [readset.sample]
+
             jobs.append(concat_jobs([
                 # Trimmomatic does not create output directory by default
-                Job(command="mkdir -p " + trim_directory, samples=[readset.sample]),
+                Job(command="mkdir -p " + trim_directory),
                 job
             ], name="trimmomatic." + readset.name))
         return jobs
