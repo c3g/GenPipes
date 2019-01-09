@@ -194,7 +194,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             output=output,
             metrics_file=metrics_file,
             max_records_in_ram=config.param('picard_mark_duplicates', 'max_records_in_ram', type='int'),
-            other_options=config.param('picard_mark_duplicates', 'other_options')
+            other_options= config.param('picard_mark_duplicates', 'other_options',required = False) if config.param('picard_mark_duplicates', 'other_options',required = False) else ""
             ),
             removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output), output + ".md5"]
         )

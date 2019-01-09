@@ -70,7 +70,7 @@ usage: rnaseq_denovo_assembly.py [-h] [--help] [-c CONFIG [CONFIG ...]]
                                  [-l {debug,info,warning,error,critical}]
                                  [-d DESIGN] [-r READSETS] [-v]
 
-Version: 3.1.2
+Version: 3.1.3
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 

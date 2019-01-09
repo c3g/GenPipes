@@ -105,11 +105,17 @@ class IlluminaReadset(Readset):
     
     @property
     def primer1(self):
-        return self._primer1
+        if not hasattr(self, "_primer1"):
+            return None
+        else:
+            return self._primer1
     
     @property
     def primer2(self):
-        return self._primer2
+        if not hasattr(self, "_primer2"):
+            return None
+        else:
+            return self._primer2
 
     @property
     def quality_offset(self):
@@ -161,8 +167,10 @@ def parse_illumina_readset_file(illumina_readset_file):
         readset._primer1 = line.get('primer1', None)
         readset._primer2 = line.get('primer2', None)
         #remove the adapter from the primer sequences
-        readset._primer1 = readset._primer1.replace(readset._adapter1,"")
-        readset._primer2 = readset._primer2.replace(readset._adapter2,"")
+        if readset._primer1 :
+            readset._primer1 = readset._primer1.replace(readset._adapter1,"")
+        if readset._primer2 :
+            readset._primer2 = readset._primer2.replace(readset._adapter2,"")
         
         readset._quality_offset = int(line['QualityOffset']) if line.get('QualityOffset', None) else None
         readset._beds = line['BED'].split(";") if line.get('BED', None) else []
