@@ -50,7 +50,6 @@ store_archive() {
   fi
 }
 
-# OBSOLETE : KEEPING this for posterity ! :)
 create_c3g_wrappers() {
   for i in `find $INSTALL_DIR/$SOFTWARE_DIR/ -type f -executable -exec file {} \; | grep ELF | grep -vP "\.so" | cut -d":" -f1`; do
     mv $i $i.raw;
