@@ -27,23 +27,26 @@
 from core.config import *
 from core.job import *
 
-def decompose_and_normalize_mnps(input, vt_output=None):
+def decompose_and_normalize_mnps(inputs, vt_output=None):
+    if not isinstance(inputs, list):
+        inputs = [inputs]
 
     return Job(
-        [input],
+        inputs,
         [vt_output],
         [
             ['DEFAULT', 'module_htslib'],
             ['decompose_and_normalize_mnps', 'module_vt']
         ],
         command="""\
-zless {input} | sed 's/ID=AD,Number=./ID=AD,Number=R/' | vt decompose -s - | vt normalize -r {reference_sequence} {vt_output} \\
-        """.format(
-        input=input,
+zless {input} | sed 's/ID=AD,Number=./ID=AD,Number=R/' | vt decompose -s - | vt normalize -r {reference_sequence} -  \\
+        {vt_output}""".format(
+        input=" \\\n  ".join(input for input in inputs),
         reference_sequence=config.param('DEFAULT', 'genome_fasta', type='filepath'),
-        vt_output=" > " + vt_output if vt_output else "-",
+        vt_output="> " + vt_output if vt_output else " ",
         )
     )
+
 
 def decompose_uniq_and_normalize_mnps(input_vcf, vt_output):
         ## iupac code is not supported by bcbio_variation_recall, remove variants with these code
@@ -63,3 +66,22 @@ cat {input_vcf} | sed 's/ID=AD,Number=./ID=AD,Number=R/' | awk '$1~/#/ || ($4$5)
                 iupac_str="|".join(iupac_ambigous_code)
                 )
         )
+
+def sort(input, output, options):
+
+    return Job(
+        [input],
+        [output],
+        [
+            ['DEFAULT', 'module_htslib'],
+            ['decompose_and_normalize_mnps', 'module_vt']
+        ],
+        command="""\
+vt sort {options} -o {output} {input}""".format(
+        options=options,
+        input=" \\\n " + input if input else "-",
+        output=output
+        )
+    )
+
+

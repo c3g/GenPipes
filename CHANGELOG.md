@@ -1,6 +1,199 @@
-17 tags, 3949 commits
+19 tags, 4072 commits
 
-HEAD        Thu Nov 1 15:20:11 2018 -0400        0 commits
+HEAD        Tue Dec 18 21:05:54 2018 +0000        0 commits
+
+3.1.3        Tue Dec 18 16:40:21 2018 -0500        93 commits
+
+  Edouard Henrion <edouard.henrion@mcgill.ca>      37 commits
+
+       6cd0351 Merge branch 'master' of bitbucket.org:mugqic/genpipes into dada2
+       43c5f25 Merge branch 'master' of bitbucket.org:mugqic/genpipes
+       1b3f70c Software installation scripts : new ones (mainly for Tumor SV pipeline) and updated ones Genome installation scripts : updated Homo_sapiens.GRCh37.sh (uncommented some useful commands) & Homo_sapiens.hg19.sh (updated vcf annotation process)
+       8d3a636 Merge branch 'master' of bitbucket.org:mugqic/genpipes
+       0a312f3 updated version of mugqic_tools
+       395c7dc Merge branch 'master' of bitbucket.org:mugqic/genpipes into dada2
+       e6a306d new addings to AMP_Scanner installation script
+       0c798db Merge branch 'master' of bitbucket.org:mugqic/genpipes into dada2
+       f6047c4 updated VarScan installation script with lates VarScan version v2.4.3
+       efa28c8 Merge branch 'master' of bitbucket.org:mugqic/genpipes into dada2
+       869f99c updated Conpair installation script to latest Conpair version v0.2
+       7e29421 added Manta installation script
+       2233a27 Merge branch 'master' of bitbucket.org:mugqic/genpipes
+       ad29c15 added Ruby, LAST & Picky installation scripts
+       f085968 Merge branch 'master' of bitbucket.org:mugqic/genpipes into dada2
+       0683e04 updated AMP_Scanner.sh installation script
+       498f190 Merge branch 'master' of bitbucket.org:mugqic/genpipes
+       41a042a add AMP_Scanner installation script
+       2de2537 updated regexp in install_module.sh
+       934fdec update supernova.sh with latest version 2.1.1
+       6a82f17 update cellranger.sh with latest version 3.0.0
+       36e6b1c Merge branch 'master' of bitbucket.org:mugqic/genpipes
+       bad5792 CCCG-1143 - added Caenorhabditis_elegans.ce11 genome installation script
+       7033838 BFXDEV-578 - updated FasTree installatino script
+       c35f7b2 BFXDEV-756 - changed the '-j' pipeline parameter default value to 'slurm' instead of 'pbs'
+       4847e41 added StringTie installation script
+       6cc4a37 added RNA-Seq Light section in the README
+       90ea223 Version bump to 3.1.3-beta
+       0b4dcef Version bump to 3.1.2
+       2e259ec MethylSeq - updating ini files after testings on guillimin
+       19568c7 Merge branch 'master' of bitbucket.org:mugqic/genpipes into dada2
+       685e8a5 Merge branch 'master' of bitbucket.org:mugqic/genpipes into dada2
+       e7f4335 fixing ini for trimmomatic16S and updating mammouth ini for dada2 protocol steps
+       b716290 AmpliconSeq : resolving asva step dependencies
+       57f08b8 Merge branch 'master' of bitbucket.org:mugqic/genpipes into dada2
+       e8af44b AmpliconSeq - updates to Dada2 protocol
+       523d1da AmpliconSeq - updated last step of dada2 protocol for better dependencies and coding standards
+
+  Édouard Henrion <henrione@cedar1.cedar.computecanada.ca>      2 commits
+
+       7670b7e ChIP-Seq pipeline - correcting cedar.ini file for missing 'homer_make_ucsc_file' step requirements
+       b66e935 AmpliconSeq - call 'zless' instead of 'less' to avoid issues on Graham and Cedar systems
+
+  Édouard Henrion <henrione@cedar5.cedar.computecanada.ca>      3 commits
+
+       fcafa26 Merge branch 'dada2' of bitbucket.org:mugqic/genpipes into dada2
+       fa5e298 Merge branch 'master' of bitbucket.org:mugqic/genpipes into dada2
+       a92edf3 AmpliconSeq - adding cedar ini file
+
+  edouard.henrion@mcgill.ca <ehenrion@abacus1.ferrier.genome.mcgill.ca>      6 commits
+
+       d6515ac Merge branch 'master' of bitbucket.org:mugqic/genpipes into dada2
+       c3180f2 update database references in ampliconseq.base.ini
+       37685bd asva.py pipeline merged to ampliconseq as another protocol asva.R deleted because moved to mugqic_tools new trimmomatic16S function added in bfx/trimmomatic.py
+       5181050 update nanuq2mugqic_pipelines.py to also fetch the primer sequences ; needed by the new AmpliconSeq protocol (dada2)
+       0694899 removed cutPrimer and set sys.path correctly
+       dfe1513 Creating dada2 branch content
+
+  edouard.henrion@mcgill.ca <ehenrion@abacus2.ferrier.genome.mcgill.ca>      4 commits
+
+       c54fe2b added pool parameter to bfx/dada2.py & pipelines/ampliconseq/ampliconseq.base.ini
+       94f9800 removing deprecated pipelines/ASVA/asva.py
+       9b09c66 first working verson of dada2 protocol for ampliconseq pipeline
+       5acf527 minor updates (line break & indentation)
+
+  ehenrion <edouard.henrion@mcgill.ca>      7 commits
+
+       5627b8e GATK4 Updates - gatk4.ini - removed mugqic_dev module
+       0f32dbf Updates GATK4 - dnaseq.cedar.ini - removed mugqic_dev module
+       75b9153 Updatres GATK4 - dnaseq.base.ini - remove mugqic_dev module
+       dfda31e MethylSeq UMI - methylseq.base.ini - updated mugqic_tools to mugqic/mugqic_tools/2.2.0 for fgbio tools
+       7c9c703 MethylSeq UMI - methylseq.base.ini - updated module_fgbio to cvmfs version of the module
+       b29b117 methylseq.py - commented subroutine all_sample_metrics_report as it has been remove from the pipeline (because useless)
+       b8f3fb6 fgbio.py - correted typo in addumi surbroutine
+
+  Emmanuel Gonzalez <emmanuel.gonzalez@mcgill.ca>      1 commits
+
+       223052d Merged in dada2 (pull request #49)
+
+  Francois Lefebvre <francois.lefebvre@mcgill.ca>      2 commits
+
+       e1c7ef8 README.md edited online with Bitbucket
+       6d1bd5c README.md edited online with Bitbucket
+
+  mathieu bourgey <mathieu.bourgey@mail.mcgill.ca>      9 commits
+
+       a6fe363 remove all_sample_metrics_report as it does the same as ihec_metrics
+       b446c86 change the ini section for module in tools.methylseq_ihec_metrics_report
+       598028b Merge branch 'master' of bitbucket.org:mugqic/genpipes into methylSeq_UMI
+       cee0464 adding umi and on-target metrics
+       96f4dec adding the missing count parameter -c to samtools.count
+       ba6545f correct typos
+       0d03902 correct small bugs for UMI integration
+       317fe6a Merge branch 'methylSeq_UMI' of bitbucket.org:mugqic/genpipes into methylSeq_UMI
+       acb5536 corect typo
+
+  Mathieu Bourgey <mathieu.bourgey@mcgill.ca>      11 commits
+
+       1d2a7d3 add on target metrics and UMI
+       86cea70 add target_cpg_profile function in metrics lib
+       ad2dd57 add samtools mapped_count function
+       b322c94 add samtools mapped_count function
+       9d49c2a correst typo
+       6ccf4ee integrate UMI step in ini file
+       cf4c008 include bam UMI annotation step
+       f74f1ae include UMI annotated bam to the select input file of the picard_merge_sam_files step
+       5c52b3d Add other_option  system to MarkDuplicate
+       2efad22 add the UMI field in the readset file
+       9ef8610 add the UMI field in the readset file
+
+  mathieu bourgey <mathieu.bourgey@mcgill.ca>      1 commits
+
+       7f369e1 Merged in methylSeq_UMI (pull request #52)
+
+  Robert Eveleigh <eveleigh@cedar1.cedar.computecanada.ca>      1 commits
+
+       cf47de1 updates to cedar ini
+
+  Robert Eveleigh <eveleigh@cedar5.cedar.computecanada.ca>      2 commits
+
+       5b912aa Cedar resource and gatk4 metric fixes
+       672ad33 Updates to cedar.ini
+
+  Robert Eveleigh <eveleigh@ip16.m>      2 commits
+
+       4177822 GATK4 mp2b file added and improvements to alt contig exclusions
+       91fb349 Added mp2b ini and exome improvements
+
+  robert.eveleigh@mcgill.ca <reveleig@abacus1.ferrier.genome.mcgill.ca>      1 commits
+
+       e9c66c6 Updates GATK4 and annotations
+
+  robert.eveleigh@mcgill.ca <reveleig@abacus2.ferrier.genome.mcgill.ca>      2 commits
+
+       3c0ac31 Resolve conflicts
+       71b7496 improvements to exome handling
+
+  Robert Eveleigh <robert.eveleigh@mcgill.ca>      1 commits
+
+       ad3caf1 Merged in dnaseq_gatk4 (pull request #47)
+
+  Rola Dali <rola.dali@mail.mcgill.ca>      1 commits
+
+       dc7996d README.md edited online with Bitbucket
+
+3.1.2        Wed Nov 21 15:05:01 2018 -0500        30 commits
+
+  Edouard Henrion <edouard.henrion@mcgill.ca>      17 commits
+
+       be396f0 updated mugqic_tools version 2.1.12
+       f187cdf removed _dev modules from ini files
+       2bfc307 Updated R_Bioconductor.sh : pointing to system libraries improved
+       e80f729 PacBio Assembly pipeline - corrected incompatibility bug with Guillimin
+       1be0124 updated install_module.sh to accomodate both CentOS7 & Ubuntu16.04 system libraries
+       ff709f1 update HiCUP install script with latest version 0.7.0
+       659fbc9 corrected typo in ampliconseq.py causing pipeline crach at plot heatmap
+       c8b5634 updated README-release.txt with correct URL for GenPipes download page
+       09fe369 Changing resources requirements for [gatk_merge_and_call_individual_gvcfs] in DNA=-Seq pipeline
+       30a9d33 corrected reference to kallisto tx2gene file in the RNA-Seq light pipeline
+       0e7dae6 corrected reference to kallisto index in the RNA-Seq light pipeline
+       e8ec0ac Corrected bug in HicSeq pipeline when running in capture mode
+       58841e5 updated RNASeq light base ini file with kallisto version on CVMFS
+       78a4d4b corrected core/pipeline.py to avoid pipeline erroring when using '--json' parameter...
+       1e2ef94 corrected typo in R_Bioconductor.sh
+       e4f493f Version bump to 3.1.2-beta
+       c6b48be Version bump to 3.1.1
+
+  Édouard Henrion <henrione@gra-login1.graham.sharcnet>      4 commits
+
+       929e37c Merge branch 'master' of bitbucket.org:mugqic/genpipes
+       f4479be freebayes install script
+       9fadba9 platypus install script
+       7909a4e vcfanno fgbio & delly install scripts
+
+  ehenrion <edouard.henrion@mcgill.ca>      7 commits
+
+       362f101 Merged in hicup_arima (pull request #51)
+       f3593a6 tumor_pair.base.ini : changed gemini version to 0.20.1
+       31d2d00 tumor_pair.guillimin.ini : removed some more _dev modules
+       b689763 tumor_pair.guillimin.ini : removed mugqic_dev module
+       6e9b3f9 hicseq.base.ini : updated HiCUP version to 0.7.0
+       07b9a21 dnaseq_high_coverage.base.ini : setting ram parameter witin section igvtools_compute_tdf
+       d210893 Tumor_pair pipeline : bug fix in bfx/bcbio_variation_recall.py Correted typo in the executable call
+
+  Rola Dali <rola.dali@mail.mcgill.ca>      2 commits
+
+       6d94474 editing hicseq.py for Arima compatibility
+       33d597d adding HiC Arima digest to install_genome
 
 3.1.1        Thu Nov 1 15:32:25 2018 -0400        161 commits
 

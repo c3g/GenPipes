@@ -30,9 +30,9 @@ usage: methylseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                     [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f]
                     [--json] [--report] [--clean]
                     [-l {debug,info,warning,error,critical}]
-                    [-t {mugqic,mpileup}] [-r READSETS] [-v]
+                    [-t {mugqic,mpileup,light}] [-r READSETS] [-v]
 
-Version: 3.1.1
+Version: 3.1.3
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
@@ -63,7 +63,7 @@ optional arguments:
                         date status are ignored (default: false)
   -l {debug,info,warning,error,critical}, --log {debug,info,warning,error,critical}
                         log level (default: info)
-  -t {mugqic,mpileup}, --type {mugqic,mpileup}
+  -t {mugqic,mpileup,light}, --type {mugqic,mpileup,light}
                         DNAseq analysis type
   -r READSETS, --readsets READSETS
                         readset file
@@ -79,14 +79,14 @@ Steps:
 2- trimmomatic
 3- merge_trimmomatic_stats
 4- bismark_align
-5- picard_merge_sam_files
-6- picard_remove_duplicates
-7- metrics
-8- verify_bam_id
-9- methylation_call
-10- wiggle_tracks
-11- methylation_profile
-12- all_sample_metrics_report
+5- add_bam_umi
+6- picard_merge_sam_files
+7- picard_remove_duplicates
+8- metrics
+9- verify_bam_id
+10- methylation_call
+11- wiggle_tracks
+12- methylation_profile
 13- ihec_sample_metrics_report
 14- bis_snp
 
@@ -117,6 +117,10 @@ The trim statistics per readset are merged at this step.
 bismark_align
 -------------
 Align reads with Bismark
+
+add_bam_umi
+-----------
+Add read UMI tag to individual bam files using fgbio
 
 picard_merge_sam_files
 ----------------------
@@ -168,10 +172,6 @@ methylation_profile
 -------------------
 Generation of a CpG methylation profile by combining both forward and reverse strand Cs.
 Also generating of all the methylatoin metrics : CpG stats, pUC19 CpG stats, lambda conversion rate, median CpG coverage, GC bias
-
-all_sample_metrics_report
--------------------------
-Retrieve all the computed metrics (alignment metrics as well as methylation metrics) to build a tsv report table
 
 ihec_sample_metrics_report
 --------------------------

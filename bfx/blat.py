@@ -30,7 +30,7 @@ def blat_dna_vs_dna(ref, query, output, other_options=""):
     return Job(
         [ref, query],
         [output],
-        [['DEFAULT', 'module_ucsc']],
+        [['blat_dnavsdna', 'module_ucsc']],
         command="""\
 blat -t=dna -q=dna \\
   {ref} \\

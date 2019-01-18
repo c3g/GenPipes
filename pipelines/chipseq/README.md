@@ -28,9 +28,9 @@ usage: chipseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                   [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f] [--json]
                   [--report] [--clean]
                   [-l {debug,info,warning,error,critical}] [-d DESIGN]
-                  [-t {mugqic,mpileup}] [-r READSETS] [-v]
+                  [-t {mugqic,mpileup,light}] [-r READSETS] [-v]
 
-Version: 3.1.1
+Version: 3.1.3
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
@@ -63,7 +63,7 @@ optional arguments:
                         log level (default: info)
   -d DESIGN, --design DESIGN
                         design file
-  -t {mugqic,mpileup}, --type {mugqic,mpileup}
+  -t {mugqic,mpileup,light}, --type {mugqic,mpileup,light}
                         DNAseq analysis type
   -r READSETS, --readsets READSETS
                         readset file

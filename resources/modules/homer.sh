@@ -14,7 +14,7 @@ set -eu -o pipefail
 # perl configureHomer.pl –install hg19r    (to download the hg19 repeat masked version of the human genome)
 
 SOFTWARE=homer
-VERSION=4.9.1
+VERSION=4.10
 ARCHIVE_URL=http://homer.salk.edu/$SOFTWARE/configureHomer.pl
 ARCHIVE=configureHomer.pl
 SOFTWARE_DIR=$SOFTWARE-$VERSION
@@ -35,6 +35,7 @@ build() {
   perl configureHomer.pl -install mm9
   perl configureHomer.pl -install rn5
   perl configureHomer.pl -install rn6
+  perl configureHomer.pl -install dm3
 
   # Update Perl scripts shebang
   find . -name "*.pl" | while read f ; do sed -i s,"#\!/usr/bin/perl -w,#\!/usr/bin/env perl\nuse warnings;,g" $f ; done

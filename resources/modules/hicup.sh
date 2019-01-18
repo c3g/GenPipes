@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=hicup
-VERSION=v0.5.9
+VERSION=v0.7.0
 ARCHIVE=${SOFTWARE}_${VERSION}.tar.gz
 ARCHIVE_URL=https://www.bioinformatics.babraham.ac.uk/projects/${SOFTWARE}/${ARCHIVE}
 SOFTWARE_DIR=${SOFTWARE}_$VERSION
@@ -25,7 +25,7 @@ build() {
 
   if [ "`echo -e "${VERSION5/v/}\n${VERSION6/v/}" | sort -V  | head -n1`" = "0.5.9" ]
   then
-    # Nothing to do if the version if 6.0.0 or above
+    # Nothing to do if the version if 0.6.0 or above
     echo "version greater than 0.5.9" > /dev/null
   else
     # For early versions (earlier than 0.5.9), we change "-p1" for Bowtie2 to "-p8 --reorder" to force faster alignment in hicup_mapper in #Subroutine "map_file":

@@ -123,6 +123,8 @@ def create_readsets(nanuq_readset_file, seq_type, mugqic_pipelines_readset_file=
                     ['Region', 'Lane'],
                     ['Adaptor Read 1 (NOTE: Usage is bound by Illumina Disclaimer found on Nanuq Project Page)', 'Adapter1'],
                     ['Adaptor Read 2 (NOTE: Usage is bound by Illumina Disclaimer found on Nanuq Project Page)', 'Adapter2'],
+                    ['Forward Primer Sequence', 'Primer1'],
+                    ['Reverse Primer Sequence', 'Primer2'],
                     ['Quality Offset', 'QualityOffset'],
                     ['BED Files', 'BED']
                 ]
