@@ -243,23 +243,6 @@ python $PYTHON_TOOLS/fixVS2VCF.py {options} {input} \\
     )
 
 
-def cpg_cov_stats(input, output):
-    return Job(
-        [input],
-        [output],
-        [
-            ['DEFAULT', 'module_mugqic_tools'],
-            ['DEFAULT', 'module_python']
-        ],
-        command="""\
-python $PYTHON_TOOLS/CpG_coverageStats.py \\
- -i {input} \\
- -o {output}""".format(
-            input=input,
-            output=output
-         )
-    )
-
 ## functions for perl tools ##
 
 def bed2interval_list(dictionary, bed, output):
@@ -771,6 +754,23 @@ bash cpgStats.sh \\
             cg_stats=cg_stats,
             lambda_stats=lambda_stats,
             puc19_stats=puc19_stats
+        )
+    )
+
+def cpg_cov_stats(input, output):
+    return Job(
+        [input],
+        [output],
+        [
+            ['DEFAULT', 'module_mugqic_tools'],
+            ['DEFAULT', 'module_python']
+        ],
+        command="""\
+python $PYTHON_TOOLS/CpG_coverageStats.py \\
+ -i {input} \\
+ -o {output}""".format(
+            input=input,
+            output=output
         )
     )
 

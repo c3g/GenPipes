@@ -111,7 +111,7 @@ def view(input_bam, output_bam, options, chr=[]):
         [input_bam],
         [output_bam],
         [
-            ['DEFAULT', 'module_sambamba'],
+            ['sambamba_view', 'module_sambamba'],
         ],
         command="""\
 sambamba view {options} \\
@@ -130,7 +130,7 @@ def flagstat(input, output, options):
         [input],
         [output],
         [
-            ['DEFAULT', 'module_sambamba'],
+            ['sambamba_flagstat', 'module_sambamba'],
         ],
         command="""\
 sambamba flagstat {options} \\
