@@ -30,7 +30,7 @@ def bedGraphToBigWig(input_bed_graph, output_wiggle, header=True):
 
     # If using GRCh37 assembly then create temporary dict file
     # only using autosomal + X + Y chromosomes and adding chr (e.g. chr1, instead of 1)
-    if (config.param('DEFAULT', 'assembly') == 'GRCh37') or (config.param('DEFAULT', 'assembly') == 'GRCm38'):
+    if (config.param('DEFAULT', 'assembly') == 'GRCh37') or (config.param('DEFAULT', 'assembly') == 'GRCm38') or (config.param('DEFAULT', 'assembly') == 'GRCz11'):
         chromosome_size_file = re.sub(".fa.fai", ".withchr.fa.fai", config.param('ucsc', 'chromosome_size', type='filepath'))
         chromosome_prefix = "chr"
         chromosome_sed = "| sed 's/MT/chrM/'"
