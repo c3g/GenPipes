@@ -1452,9 +1452,10 @@ END`""".format(
             input_mutect2 = os.path.join(input_directory, tumor_pair.name + ".mutect2.somatic.vt.vcf.gz")
             input_strelka2 = os.path.abspath(os.path.join(input_directory, tumor_pair.name + ".strelka2.somatic.vt.vcf.gz"))
             input_vardict = os.path.join(input_directory, tumor_pair.name + ".vardict.somatic.vt.vcf.gz")
-            input_samtools = os.path.join(input_directory, tumor_pair.name + ".samtools.somatic.vt.vcf.gz")
+            #input_samtools = os.path.join(input_directory, tumor_pair.name + ".samtools.somatic.vt.vcf.gz")
             input_varscan2 = os.path.join(input_directory, tumor_pair.name + ".varscan2.somatic.vt.vcf.gz")
-            inputs_somatic = [input_mutect2, input_strelka2, input_vardict, input_varscan2, input_samtools]
+            #inputs_somatic = [input_mutect2, input_strelka2, input_vardict, input_varscan2, input_samtools]
+            inputs_somatic = [input_mutect2, input_strelka2, input_vardict, input_varscan2]
 
             for input_vcf in inputs_somatic:
                 if not self.is_gz_file(input_vcf):
@@ -2115,57 +2116,57 @@ END`""".format(
             mkdir_job = Job(command="mkdir -p " + rawSequenza_directory, removable_files=[rawSequenza_directory], samples=[tumor_pair.normal, tumor_pair.tumor])
 
             for sequence in self.sequence_dictionary_variant():
-                normal_mpileup = os.path.join(sequenza_directory, "rawSequenza", tumor_pair.normal.name + "." + sequence['name'] + ".mpileup")
-                tumor_mpileup = os.path.join(sequenza_directory, "rawSequenza", tumor_pair.tumor.name + "." + sequence['name'] + ".mpileup")
-                normal_gz = os.path.join(sequenza_directory, "rawSequenza", tumor_pair.normal.name + "." + sequence['name'] + ".mpileup.gz")
-                tumor_gz = os.path.join(sequenza_directory, "rawSequenza", tumor_pair.tumor.name + "." + sequence['name'] + ".mpileup.gz")
-                out_seqz = os.path.join(sequenza_directory, "rawSequenza", tumor_pair.name + "." + sequence['name'] + ".seqz.gz")
-                binned_seqz = os.path.join(sequenza_directory, "rawSequenza", tumor_pair.name + ".binned.seqz." + sequence['name'] + ".gz")
+                if sequence['type'] is 'primary':
+                    normal_mpileup = os.path.join(sequenza_directory, "rawSequenza", tumor_pair.normal.name + "." + sequence['name'] + ".mpileup")
+                    tumor_mpileup = os.path.join(sequenza_directory, "rawSequenza", tumor_pair.tumor.name + "." + sequence['name'] + ".mpileup")
+                    normal_gz = os.path.join(sequenza_directory, "rawSequenza", tumor_pair.normal.name + "." + sequence['name'] + ".mpileup.gz")
+                    tumor_gz = os.path.join(sequenza_directory, "rawSequenza", tumor_pair.tumor.name + "." + sequence['name'] + ".mpileup.gz")
+                    out_seqz = os.path.join(sequenza_directory, "rawSequenza", tumor_pair.name + "." + sequence['name'] + ".seqz.gz")
+                    binned_seqz = os.path.join(sequenza_directory, "rawSequenza", tumor_pair.name + ".binned.seqz." + sequence['name'] + ".gz")
 
-                if os.path.isfile(normal_mpileup) and os.path.isfile(tumor_mpileup):
+                    if os.path.isfile(normal_mpileup) and os.path.isfile(tumor_mpileup):
 
-                    jobs.append(concat_jobs([
-                        mkdir_job,
-                        Job([normal_mpileup], [normal_gz], command="gzip -cf " + normal_mpileup + " > " + normal_gz),
-                        Job([tumor_mpileup], [tumor_gz], command="gzip -cf " + tumor_mpileup + " > " + tumor_gz),
-                        pipe_jobs([
-                            sequenza.sequenza_seqz(normal_gz, tumor_gz, config.param('sequenza', 'gc_file'), None),
-                            Job([None], [out_seqz], command="gzip -cf > " + out_seqz)
-                        ]),
-                        pipe_jobs([
-                            sequenza.sequenza_bin(out_seqz, None),
-                            Job([None], [binned_seqz], command="gzip -c > " + binned_seqz),
-                        ]),
-                    ], name="sequenza.create_seqz." + sequence['name'] + "." + tumor_pair.name))
+                        jobs.append(concat_jobs([
+                            mkdir_job,
+                            Job([normal_mpileup], [normal_gz], command="gzip -cf " + normal_mpileup + " > " + normal_gz),
+                            Job([tumor_mpileup], [tumor_gz], command="gzip -cf " + tumor_mpileup + " > " + tumor_gz),
+                            pipe_jobs([
+                                sequenza.sequenza_seqz(normal_gz, tumor_gz, config.param('sequenza', 'gc_file'), None),
+                                Job([None], [out_seqz], command="gzip -cf > " + out_seqz)
+                            ]),
+                            pipe_jobs([
+                                sequenza.sequenza_bin(out_seqz, None),
+                                Job([None], [binned_seqz], command="gzip -c > " + binned_seqz),
+                            ]),
+                        ], name="sequenza.create_seqz." + sequence['name'] + "." + tumor_pair.name))
 
-                else:
+                    else:
 
-                    jobs.append(concat_jobs([
-                        mkdir_job,
-                        pipe_jobs([
-                            samtools.mpileup([inputNormal], None, config.param('sequenza', 'mpileup_options'), sequence['name'], bed_file),
-                            Job([None], [normal_gz], command="gzip -cf > " + normal_gz),
-                        ]),
-                        pipe_jobs([
-                            samtools.mpileup([inputTumor], None, config.param('sequenza', 'mpileup_options'), sequence['name'], bed_file),
-                            Job([None], [tumor_gz], command="gzip -cf > " + tumor_gz),
-                        ]),
-                    ], name="mpileup_sequenza." + sequence['name'] + "." + tumor_pair.name))
+                        jobs.append(concat_jobs([
+                            mkdir_job,
+                            pipe_jobs([
+                                samtools.mpileup([inputNormal], None, config.param('sequenza', 'mpileup_options'), sequence['name'], bed_file),
+                                Job([None], [normal_gz], command="gzip -cf > " + normal_gz),
+                            ]),
+                            pipe_jobs([
+                                samtools.mpileup([inputTumor], None, config.param('sequenza', 'mpileup_options'), sequence['name'], bed_file),
+                                Job([None], [tumor_gz], command="gzip -cf > " + tumor_gz),
+                            ]),
+                        ], name="mpileup_sequenza." + sequence['name'] + "." + tumor_pair.name))
 
-                    jobs.append(concat_jobs([
-                        mkdir_job,
-                        pipe_jobs([
-                            sequenza.sequenza_seqz(normal_gz, tumor_gz, config.param('sequenza', 'gc_file'), None),
-                            Job([None], [out_seqz], command="gzip -c > " + out_seqz),
-                        ]),
-                        pipe_jobs([
-                            sequenza.sequenza_bin(out_seqz, None),
-                            Job([None], [binned_seqz], command="gzip -c > " + binned_seqz),
-                        ]),
-                    ], name="sequenza.create_seqz." + sequence['name'] + "." + tumor_pair.name))
+                        jobs.append(concat_jobs([
+                            mkdir_job,
+                            pipe_jobs([
+                                sequenza.sequenza_seqz(normal_gz, tumor_gz, config.param('sequenza', 'gc_file'), None),
+                                Job([None], [out_seqz], command="gzip -c > " + out_seqz),
+                            ]),
+                            pipe_jobs([
+                                sequenza.sequenza_bin(out_seqz, None),
+                                Job([None], [binned_seqz], command="gzip -c > " + binned_seqz),
+                            ]),
+                        ], name="sequenza.create_seqz." + sequence['name'] + "." + tumor_pair.name))
 
-            seqz_outputs = [os.path.join(sequenza_directory, "rawSequenza", tumor_pair.name + ".binned.seqz." + sequence['name'] + ".gz") for sequence
-                            in self.sequence_dictionary_variant()]
+            seqz_outputs = [os.path.join(sequenza_directory, "rawSequenza", tumor_pair.name + ".binned.seqz." + sequence['name'] + ".gz") for sequence in self.sequence_dictionary_variant() if sequence['type'] is 'primary']
             seqz_input = os.path.join(sequenza_directory, "rawSequenza", tumor_pair.name + ".binned.seqz.1.gz")
             header = os.path.join(sequenza_directory, tumor_pair.name + ".header.gz")
             tmp_output = os.path.join(sequenza_directory, tumor_pair.name + ".tmp.seqz.gz")
@@ -2174,9 +2175,7 @@ END`""".format(
             jobs.append(concat_jobs([
                 mkdir_job,
                 Job([seqz_input], [header], command="zcat " + seqz_input + " | head -1 | gzip -cf > " + header, removable_files=[header]),
-                Job(seqz_outputs, [tmp_output],
-                    command="zcat \\\n  " + " \\\n  ".join(seqz_outputs) + " \\\n  | grep -v 'chrom' | grep -v 'MT' | gzip -cf > " + tmp_output,
-                    removable_files=[tmp_output]),
+                Job(seqz_outputs, [tmp_output], command="zcat \\\n  " + " \\\n  ".join(seqz_outputs) + " \\\n  | grep -v 'chrom' | grep -v 'MT' | gzip -cf > " + tmp_output, removable_files=[tmp_output]),
                 Job([tmp_output], [merged_seqz], command="zcat " + header + " " + tmp_output + " | gzip -cf > " + merged_seqz),
             ], name="sequenza.merge_binned_seqz." + tumor_pair.name))
 
@@ -2362,8 +2361,6 @@ END`""".format(
             pair_directory = os.path.join("SVariants", tumor_pair.name)
             delly_directory = os.path.join(pair_directory, "rawDelly")
 
-            os.system("mkdir -p " + delly_directory)
-
             cancer_pair_filename = os.path.join(delly_directory, tumor_pair.name + '.tsv')
             cancer_pair = open(cancer_pair_filename, 'w')
             cancer_pair.write(tumor_pair.tumor.name + "\ttumor\n")
@@ -2374,7 +2371,7 @@ END`""".format(
             inputTumor = os.path.join("alignment", tumor_pair.tumor.name,
                                       tumor_pair.tumor.name + ".sorted.dup.recal.bam")
 
-            tumorPair = [inputTumor, inputNormal]
+            inputs = [inputTumor, inputNormal]
 
             mkdir_job = Job(command="mkdir -p " + delly_directory, removable_files=[delly_directory], samples = [tumor_pair.normal, tumor_pair.tumor])
 
@@ -2391,7 +2388,7 @@ END`""".format(
 
                 jobs.append(concat_jobs([
                     mkdir_job,
-                    delly.call(tumorPair, output_bcf, sv_type),
+                    delly.call(inputs, output_bcf, sv_type),
                     pipe_jobs([
                         bcftools.view(output_bcf, None, config.param('delly_call_filter_somatic', 'bcftools_options')),
                         htslib.bgzip_tabix(None, output_vcf),
@@ -2437,7 +2434,7 @@ END`""".format(
             ], name="sv_annotation.delly.merge_sort_filter." + tumor_pair.name))
 
             jobs.append(concat_jobs([
-                vawk.somatic(output_flt_vcf, tumor_pair.normal.name, tumor_pair.tumor.name, final_directory + ".delly.somatic.vcf"),
+                vawk.paired_somatic(output_flt_vcf, tumor_pair.normal.name, tumor_pair.tumor.name, final_directory + ".delly.somatic.vcf"),
                 snpeff.compute_effects(final_directory + ".delly.somatic.vcf", final_directory + ".delly.somatic.snpeff.vcf"),
                 annotations.structural_variants(final_directory + ".delly.somatic.snpeff.vcf",
                                                 final_directory + ".delly.somatic.snpeff.annot.vcf"),
@@ -2446,7 +2443,7 @@ END`""".format(
             ], name="sv_annotation.delly.somatic." + tumor_pair.name))
 
             jobs.append(concat_jobs([
-                vawk.germline(output_flt_vcf, tumor_pair.normal.name, tumor_pair.tumor.name, final_directory + ".delly.germline.vcf"),
+                vawk.paired_germline(output_flt_vcf, tumor_pair.normal.name, tumor_pair.tumor.name, final_directory + ".delly.germline.vcf"),
                 snpeff.compute_effects(final_directory + ".delly.germline.vcf", final_directory + ".delly.germline.snpeff.vcf"),
                 annotations.structural_variants(final_directory + ".delly.germline.snpeff.vcf", final_directory + ".delly.germline.snpeff.annot.vcf"),
                 vawk.sv(final_directory + ".delly.germline.snpeff.annot.vcf", tumor_pair.normal.name, tumor_pair.tumor.name, "DELLY",
@@ -2678,11 +2675,11 @@ END`""".format(
 
             jobs.append(concat_jobs([
                 pipe_jobs([
-                    vawk.somatic(genotype_vcf, tumor_pair.normal.name, tumor_pair.tumor.name, None),
+                    vawk.paired_somatic(genotype_vcf, tumor_pair.normal.name, tumor_pair.tumor.name, None),
                     htslib.bgzip(None, somatic_vcf),
                 ]),
                 pipe_jobs([
-                    vawk.germline(genotype_vcf, tumor_pair.normal.name, tumor_pair.tumor.name, None),
+                    vawk.paired_germline(genotype_vcf, tumor_pair.normal.name, tumor_pair.tumor.name, None),
                     htslib.bgzip(None, germline_vcf),
                 ]),
             ], name="sv_annotation.lumpy.genotypes." + tumor_pair.name))
@@ -2875,7 +2872,6 @@ END`""".format(
             if coverage_bed:
                 bed = coverage_bed
 
-            #mutect2_vcf = os.path.join("pairedVariants", tumor_pair.name, tumor_pair.name + ".mutect2.vcf.gz")
             vardict_vcf = os.path.join("pairedVariants", tumor_pair.name, tumor_pair.name + ".vardict.germline_loh.vt.vcf.gz")
 
             if os.path.isfile(vardict_vcf):
@@ -2953,8 +2949,6 @@ END`""".format(
                         deliverables.sym_link_pair(sample, tumor_pair, type="sv", sample=key, profyle=self.args.profyle),
                     ], name="sym_link_cnvkit.somatic." + tumor_pair.name + "." + key))
      
-
-
     def ensemble_metasv(self):
         """
 
@@ -2987,27 +2981,20 @@ END`""".format(
             else:
                 raise Exception("Error " + isize_file + " does not exist. Please run metrics step\n")
 
+            input_wham = None
             if os.path.isfile(wham_vcf):
                 input_wham = wham_vcf
 
-            else:
-                input_wham = None
-
+            input_delly = None
             if os.path.isfile(delly_vcf):
                 input_delly = delly_vcf
 
-            else:
-                input_delly = None
-
+            gatk_pass = None
             if os.path.isfile(gatk_vcf):
                 jobs.append(concat_jobs([
                     mkdir_job,
                     vcflib.vcffilter(gatk_vcf, gatk_pass, config.param('metasv_ensemble', 'filter_pass_options')),
                 ], name="metasv_ensemble.gatk_pass." + tumor_pair.name))
-
-            else:
-                gatk_pass = None
-            
             
             jobs.append(concat_jobs([
                 mkdir_job,
@@ -3195,7 +3182,7 @@ END`""".format(
                 self.trimmomatic,
                 self.merge_trimmomatic_stats,
                 self.skewer_trimming,
-                self.bwa_mem_picard_sort_sam,
+                self.bwa_mem_sambamba_sort_sam,
                 self.sambamba_merge_sam_files,
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
@@ -3221,7 +3208,7 @@ END`""".format(
                 self.trimmomatic,
                 self.merge_trimmomatic_stats,
                 self.skewer_trimming,
-                self.bwa_mem_picard_sort_sam,
+                self.bwa_mem_sambamba_sort_sam,
                 self.sambamba_merge_sam_files,
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
@@ -3237,8 +3224,8 @@ END`""".format(
                 self.merge_varscan2,
                 self.paired_mutect2,
                 self.merge_mutect2,
-                self.samtools_paired,
-                self.merge_filter_paired_samtools,
+                #self.samtools_paired,
+                #self.merge_filter_paired_samtools,
                 self.vardict_paired,
                 self.merge_filter_paired_vardict,
                 self.strelka2_paired_somatic,
@@ -3273,7 +3260,7 @@ END`""".format(
                 self.trimmomatic,
                 self.merge_trimmomatic_stats,
                 self.skewer_trimming,
-                self.bwa_mem_picard_sort_sam,
+                self.bwa_mem_sambamba_sort_sam,
                 self.sambamba_merge_sam_files,
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
@@ -3282,15 +3269,15 @@ END`""".format(
                 self.sequenza,
                 self.sCNAphase,
                 self.delly_call_filter,
-                #self.delly_sv_annotation,
+                self.delly_sv_annotation,
                 self.manta_sv_calls,
-                #self.manta_sv_annotation,
+                self.manta_sv_annotation,
                 self.lumpy_paired_sv,
-                #self.lumpy_sv_annotation,
+                self.lumpy_sv_annotation,
                 self.wham_call_sv,
-                #self.wham_sv_annotation,
+                self.wham_sv_annotation,
                 self.cnvkit_batch,
-                #self.cnvkit_sv_annotation,
+                self.cnvkit_sv_annotation,
                 self.scones,
                 self.svaba_assemble,
                 #self.svaba_sv_annotation,

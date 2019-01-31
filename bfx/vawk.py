@@ -25,7 +25,7 @@
 from core.config import *
 from core.job import *
 
-def somatic(input, normal_name, tumor_name, output):
+def paired_somatic(input, normal_name, tumor_name, output):
     return Job(
         [input],
         [output],
@@ -46,7 +46,7 @@ zless {input} | \\
         )
     )
 
-def germline(input, normal_name, tumor_name, output):
+def paired_germline(input, normal_name, tumor_name, output):
     return Job(
         [input],
         [output],
@@ -61,6 +61,24 @@ zless {input} | \\
             input=input,
             normal_name=normal_name,
             tumor_name=tumor_name,
+            output="> " + output if output else "",
+        )
+    )
+
+def single_germline(input, normal_name, output):
+    return Job(
+        [input],
+        [output],
+        [
+            ['vawk', 'module_vawk'],
+        ],
+        command="""\
+zless {input} | \\
+        vawk --header \\
+        '(S${normal_name}$GT!="0/0" && S${normal_name}$GT!="./.")' \\
+        {output}""".format(
+            input=input,
+            normal_name=normal_name,
             output="> " + output if output else "",
         )
     )

@@ -23,29 +23,35 @@ from core.config import *
 from core.job import *
 
 def lumpyexpress_pair(normal_bam, tumor_bam, output_vcf, spl_normal=[], spl_tumor=[], dis_normal=[], dis_tumor=[]):
+    if tumor_bam is not None and spl_tumor is not None and dis_tumor is not None:
+        inputs = [normal_bam, tumor_bam, spl_normal, spl_tumor, dis_normal, dis_tumor]
     
+    else:
+        inputs = [normal_bam, spl_normal, dis_normal]
+        
     return Job(
-        [normal_bam, tumor_bam, spl_normal, spl_tumor, dis_normal, dis_tumor],
+        inputs,
         [output_vcf],
         [
             ['lumpy_paired_sv_calls', 'module_python'],
             ['lumpy_paired_sv_calls', 'module_lumpy'],
             ['lumpy_paired_sv_calls', 'module_samtools'],
+            ['lumpy_paired_sv_calls', 'module_sambamba'],
         ],
         command="""\
         lumpyexpress {options} \\
-        -B {tumor_bam},{normal_bam} \\
+        -B {tumor_bam}{normal_bam} \\
         -o {output_vcf} \\
-        {splitter_tumor},{splitter_normal} \\
-        {discordant_tumor},{discordant_normal} \\
+        -S {splitter_tumor}{splitter_normal} \\
+        -D {discordant_tumor}{discordant_normal} \\
         -K $LUMPY_SCRIPTS/lumpyexpress.config""".format(
             options=config.param('lumpy_paired_sv_calls','options') if config.param('lumpy_paired_sv_calls','options') else "",
-            tumor_bam=tumor_bam,
+            tumor_bam=tumor_bam + "," if tumor_bam else "",
             normal_bam=normal_bam,
             output_vcf=output_vcf,
-            splitter_tumor="-S " + spl_tumor if spl_tumor else "",
+            splitter_tumor=spl_tumor + "," if spl_tumor else "",
             splitter_normal=spl_normal if spl_normal else "",
-            discordant_tumor="-D " + dis_tumor if dis_tumor else "",
+            discordant_tumor=dis_tumor + "," if dis_tumor else "",
             discordant_normal=dis_normal if dis_normal else "",
         )
     )

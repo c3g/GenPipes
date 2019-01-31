@@ -24,9 +24,14 @@ from core.config import *
 from core.job import *
 
 def call_sv(input_normal, input_tumor, output):
+    if input_tumor is not None:
+        inputs = [input_normal, input_tumor]
+        
+    else:
+        inputs = [input_normal]
 
     return Job(
-        [input_normal, input_tumor],
+        inputs,
         [output],
         [
             ['wham_call_sv', 'module_wham']
@@ -38,12 +43,12 @@ WHAM-GRAPHENING \\
     -x {cores}  \\
     -e $EXCLUDE \\
     -a {genome} \\
-    -f {input_tumor},{input_normal} \\
+    -f {input_tumor}{input_normal} \\
     {output}""".format(
             exclude=config.param('wham_call_sv','exclude'),
             cores=config.param('wham_call_sv','cores'),
             genome=config.param('wham_call_sv','genome_fasta',type='filepath'),
-            input_tumor=input_tumor,
+            input_tumor=input_tumor + "," if input_tumor else "",
             input_normal=input_normal,
             output=" \\\n  > " + output if output else ""
         )
@@ -67,9 +72,14 @@ mergeIndvs  \\
 
 
 def genotype(input_vcf, input_normal, input_tumor, output):
-
+    if input_tumor is not None:
+        inputs = [input_vcf, input_normal, input_tumor]
+    
+    else:
+        inputs = [input_vcf, input_normal]
+        
     return Job(
-        [input_vcf, input_normal, input_tumor],
+        inputs,
         [output],
         [
             ['wham_call_sv', 'module_wham']
@@ -79,12 +89,12 @@ WHAM-GRAPHENING \\
     -b {input_vcf}  \\
     -x {cores}  \\
     -a {genome} \\
-    -f {input_tumor},{input_normal} \\
+    -f {input_tumor}{input_normal} \\
     {output}""".format(
             input_vcf=input_vcf,
             cores=config.param('wham_call_sv','cores'),
             genome=config.param('wham_call_sv','genome_fasta',type='filepath'),
-            input_tumor=input_tumor,
+            input_tumor=input_tumor + "," if input_tumor else "",
             input_normal=input_normal,
             output=" \\\n  > " + output if output else ""
         )

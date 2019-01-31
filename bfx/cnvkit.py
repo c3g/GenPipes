@@ -27,8 +27,13 @@ from core.config import *
 from core.job import *
 
 def batch(tumor_bam, normal_bam, outdir, tar_dep=[], antitar_dep=[], target_bed=None, reference=None, output_cnn=None):
+    if tumor_bam is not None:
+        inputs = [tumor_bam, normal_bam]
+    else:
+        inputs = [normal_bam]
+        
     return Job(
-        [tumor_bam, normal_bam],
+        inputs,
         [tar_dep, antitar_dep],
         [
             ['cnvkit_batch', 'module_python'],
@@ -56,7 +61,7 @@ cnvkit.py batch {options} \\
         output_cnn="--output-reference " + output_cnn if output_cnn else "",
         outdir=outdir,
         normal_bam=normal_bam,
-        tumor_bam=tumor_bam,
+        tumor_bam=tumor_bam if tumor_bam else "",
         )
     )
 
@@ -84,7 +89,7 @@ cnvkit.py fix {options} \\
         )
     )
 
-def segment(input_cnr, output_cns):
+def segment(input_cnr, output_cns, vcf=None, sample_id=None, normal_id=None):
     return Job(
         [input_cnr],
         [output_cns],
@@ -94,13 +99,14 @@ def segment(input_cnr, output_cns):
         ],
         command="""\
 cnvkit.py segment {options} \\
-  -p {threads} \\
-  {input_cnr} \\
+  {input_cnr} {vcf} {sample_id} \\
   -o {output_cns}""".format(
         options=config.param('cnvkit_batch','segment_options'),
-        threads=config.param('cnvkit_batch','threads'),
         input_cnr=input_cnr,
         output_cns=output_cns,
+        vcf="--vcf " + vcf if vcf else "",
+        sample_id="--sample-id " + sample_id if sample_id else "",
+        normal_id="--normal-id " + normal_id if normal_id else "",
         )
     )
 
@@ -160,6 +166,14 @@ cnvkit.py metrics {options} \\
         output=output,
         )
     )
+
+def read_metrics_file(in_file):
+    with open(in_file) as in_handle:
+        header = next(in_handle).strip().split("\t")[1:]
+        vals = map(float, next(in_handle).strip().split("\t")[1:])
+    return dict(zip(header, vals))
+    
+
 def scatter(input_cnr, input_cns, output, vcf=None, normal=None, tumor=None):
     return Job(
         [input_cnr, input_cns, vcf],

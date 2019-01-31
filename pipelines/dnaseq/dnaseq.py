@@ -75,7 +75,19 @@ from bfx import multiqc
 from bfx import deliverables
 from bfx import bash_cmd as bash
 
-from pipelines import common
+##Structural variants
+from bfx import delly
+from bfx import manta
+from bfx import lumpy
+from bfx import wham
+from bfx import cnvkit
+from bfx import metasv
+from bfx import svtyper
+from bfx import bcftools
+from bfx import vcflib
+from bfx import metric_tools
+from bfx import annotations
+from bfx import vawk
 
 log = logging.getLogger(__name__)
 
@@ -1480,7 +1492,7 @@ END
                     job.name = "interval_list." + os.path.basename(coverage_bed)
                     jobs.append(job)
                     created_interval_lists.append(interval_list)
-
+                    
             if nb_haplotype_jobs == 1 or interval_list:
                 jobs.append(
                     concat_jobs([
@@ -2162,7 +2174,7 @@ pandoc \\
 
     def haplotype_caller_decompose_and_normalize(self):
     
-        input_vcf = self.select_input_files([["variants/allSamples.hc.vqsr.vcf"], ["variants/allSamples.hc.vcf.gz"]])
+        input_vcf = self.select_input_files([["variants/allSamples.hc.vqsr.vcf.gz"], ["variants/allSamples.hc.vcf.gz"]])
     
         job = self.vt_decompose_and_normalize(input_vcf, "variants/allSamples.hc.vqsr.vt.vcf.gz")
         return job
@@ -2624,6 +2636,460 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         )
         return jobs
 
+    def delly_call_filter(self):
+        """
+        Delly2 is an integrated structural variant prediction method that can
+        discover, genotype and visualize deletions, tandem duplications, inversions and translocations
+        at single-nucleotide resolution in short-read massively parallel sequencing data. It uses paired-ends
+        and split-reads to sensitively and accurately delineate genomic rearrangements throughout the genome.
+        Structural variants can be visualized using Delly-maze and Delly-suave.
+        input: normal and tumor final bams
+        Returns:bcf file
+
+        """
+
+        jobs = []
+        for sample in self.samples:
+
+            pair_directory = os.path.join("SVariants", sample.name)
+            delly_directory = os.path.join(pair_directory, "rawDelly")
+
+            input = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")
+
+            inputs = [input]
+
+            mkdir_job = Job(command="mkdir -p " + delly_directory, removable_files=[delly_directory], samples = [sample.name])
+
+            SV_types = config.param('delly_call_filter', 'sv_types_options').split(",")
+
+            for sv_type in SV_types:
+                output_bcf = os.path.join(delly_directory, sample.name + ".delly." + str(sv_type) + ".bcf")
+                output_vcf = os.path.join(delly_directory, sample.name + ".delly." + str(sv_type) + ".germline.flt.vcf.gz")
+
+                jobs.append(concat_jobs([
+                    mkdir_job,
+                    delly.call(inputs, output_bcf, sv_type),
+                    pipe_jobs([
+                        bcftools.view(output_bcf, None, config.param('delly_call_filter_germline', 'bcftools_options')),
+                        htslib.bgzip_tabix(None, output_vcf),
+                    ]),
+                    #delly.filter(output_bcf, output_filter_germline_bcf, sv_type,
+                    #             config.param('delly_call_filter_germline', 'type_options'),
+                    #             config.param('delly_call_filter_germline', sv_type + '_options'))
+                ], name="delly_call_filter." + str(sv_type) + "." + sample.name))
+
+        return jobs
+
+    def delly_sv_annotation(self):
+        jobs = []
+
+        for sample in self.samples:
+        
+            directory = os.path.join("SVariants", sample.name)
+            final_directory = os.path.join("SVariants", sample.name, sample.name)
+            delly_directory = os.path.join(directory, "rawDelly")
+            output_vcf = os.path.join(delly_directory, sample.name + ".delly.merge.sort.vcf.gz")
+            germline_vcf = os.path.join(directory, sample.name + ".delly.germline.vcf.gz")
+        
+            SV_types = config.param('delly_call_filter', 'sv_types_options').split(",")
+        
+            inputBCF = []
+            for sv_type in SV_types:
+                inputBCF.append(os.path.join(delly_directory, sample.name + ".delly." + str(sv_type) + ".bcf"))
+        
+            jobs.append(concat_jobs([
+                pipe_jobs([
+                    bcftools.concat(inputBCF, None, "-O v"),
+                    vt.sort("-", "-", "-m full"),
+                    htslib.bgzip(None, output_vcf),
+                ]),
+                pipe_jobs([
+                    vawk.single_germline(output_vcf, sample.name, None),
+                    htslib.bgzip_tabix(None, germline_vcf),
+                ]),
+                #pipe_jobs([
+                #    bcftools.view(output_vcf, None, "-f PASS"),
+                #    htslib.bgzip(None, germline_vcf),
+                #]),
+            ], name="sv_annotation.delly.merge_sort_filter." + sample.name))
+        
+            jobs.append(concat_jobs([
+                snpeff.compute_effects(germline_vcf, final_directory + ".delly.germline.snpeff.vcf.gz"),
+                #annotations.structural_variants(final_directory + ".delly.germline.snpeff.vcf", final_directory + ".delly.germline.snpeff.annot.vcf"),
+                #vawk.sv(final_directory + ".delly.germline.snpeff.annot.vcf", sample.normal.name, sample.tumor.name, "DELLY",
+                #        final_directory + ".delly.germline.prioritize.tsv"),
+            ], name="sv_annotation.delly.germline." + sample.name))
+    
+        return jobs
+
+    def manta_sv_calls(self):
+        """
+        Manta calls structural variants (SVs) and indels from mapped paired-end sequencing reads. It is optimized for
+        analysis of germline variation in small sets of individuals and somatic variation in tumor/normal sample pairs.
+        Manta discovers, assembles and scores large-scale SVs, medium-sized indels and large insertions within a
+        single efficient workflow.
+        Returns:Manta accepts input read mappings from BAM or CRAM files and reports all SV and indel inferences
+         in VCF 4.1 format.
+
+        """
+        jobs = []
+
+        for sample in self.samples:
+            pair_directory = os.path.join("SVariants", sample.name)
+            manta_directory = os.path.abspath(os.path.join(pair_directory, "rawManta"))
+            output_prefix = os.path.abspath(os.path.join(pair_directory, sample.name))
+
+            mkdir_job = Job(command="mkdir -p " + manta_directory, removable_files=[manta_directory], samples = [sample.name])
+
+            input = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")
+        
+            manta_germline_output = os.path.join(manta_directory, "results/variants/diploidSV.vcf.gz")
+            manta_germline_output_tbi = os.path.join(manta_directory, "results/variants/diploidSV.vcf.gz.tbi")
+
+            bed_file = None
+            coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
+
+            if coverage_bed:
+                bed_file = coverage_bed + ".gz"
+                jobs.append(concat_jobs([
+                    Job([coverage_bed], [coverage_bed + ".sort"], command="sort -V -k1,1 -k2,2n -k3,3n " + coverage_bed + " | sed 's#chr##g' > " + coverage_bed + ".sort"),
+                    htslib.bgzip(coverage_bed + ".sort", coverage_bed + ".gz"),
+                    htslib.tabix(coverage_bed + ".gz", "-p bed"),
+                 ],name="bed_index." + sample.name))
+
+            output_dep = [manta_germline_output, manta_germline_output_tbi]
+
+            jobs.append(concat_jobs([
+                mkdir_job,
+                manta.manta_config(input, None, manta_directory, bed_file),
+                manta.manta_run(manta_directory, output_dep=output_dep),
+                Job([manta_germline_output], [output_prefix + ".manta.germline.vcf.gz"],
+                    command="ln -sf " + manta_germline_output + " " + output_prefix + ".manta.germline.vcf.gz"),
+                Job([manta_germline_output_tbi], [output_prefix + ".manta.germline.vcf.gz"],
+                    command="ln -sf " + manta_germline_output_tbi + " " + output_prefix + ".manta.germline.vcf.gz.tbi"),
+            ], name="manta_sv." + sample.name))
+
+        return jobs
+
+    def manta_sv_annotation(self):
+
+        jobs = []
+
+        for sample in self.samples:
+            pair_directory = os.path.abspath(os.path.join("SVariants", sample.name, sample.name))
+
+            jobs.append(concat_jobs([
+                snpeff.compute_effects(pair_directory + ".manta.germline.vcf.gz", pair_directory + ".manta.germline.snpeff.vcf.gz"),
+                #vawk.sv(pair_directory + ".manta.germline.snpeff.annot.vcf", sample.normal.name, sample.tumor.name, "MANTA",
+                #        pair_directory + ".manta.germline.prioritize.tsv")
+            ], name="sv_annotation.manta_germline." + sample.name))
+
+        return jobs
+
+    def lumpy_paired_sv(self):
+        """
+        A probabilistic framework for structural variant discovery.
+        Lumpy traditional with paired ends and split reads on tumor normal pair.
+        Returns:bams.
+
+        """
+        jobs = []
+    
+        for sample in self.samples:
+            pair_directory = os.path.join("SVariants", sample.name)
+            lumpy_directory = os.path.join(pair_directory, "rawLumpy")
+            inputNormal = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")
+        
+            discordants_normal = os.path.join(lumpy_directory, sample.name + ".discordants.sorted.bam")
+        
+            splitters_normal = os.path.join(lumpy_directory, sample.name + ".splitters.sorted.bam")
+        
+            output_vcf = os.path.join(pair_directory, sample.name + ".lumpy.vcf")
+            gzip_vcf = os.path.join(pair_directory, sample.name + ".lumpy.vcf.gz")
+        
+            genotype_vcf = os.path.join(pair_directory, sample.name + ".lumpy.genotyped.vcf")
+        
+            mkdir_job = Job(command="mkdir -p " + lumpy_directory, removable_files=[lumpy_directory], samples=[sample.name])
+        
+            jobs.append(concat_jobs([
+                mkdir_job,
+                pipe_jobs([
+                    samtools.view(inputNormal, None, "-b -F 1294"),
+                    sambamba.sort("/dev/stdin", discordants_normal, lumpy_directory, config.param('extract_discordant_reads', 'discordants_sort_option')),
+                ]),
+            ], name="extract_discordant_reads." + sample.name))
+        
+            jobs.append(concat_jobs([
+                mkdir_job,
+                pipe_jobs([
+                    samtools.view(inputNormal, None, "-h"),
+                    Job([None], [None], [['lumpy_sv', 'module_lumpy']], command="$LUMPY_SCRIPTS/extractSplitReads_BwaMem -i stdin"),
+                    samtools.view("-", None, " -Sb "),
+                    sambamba.sort("/dev/stdin", splitters_normal, lumpy_directory, config.param('extract_split_reads', 'split_sort_option')),
+                ]),
+            ], name="extract_split_reads." + sample.name))
+            
+            jobs.append(concat_jobs([
+                mkdir_job,
+                lumpy.lumpyexpress_pair(inputNormal, None, output_vcf, spl_normal=splitters_normal, dis_normal=discordants_normal),
+                htslib.bgzip(output_vcf, gzip_vcf),
+            ], name="lumpy_paired_sv_calls." + sample.name))
+        
+            jobs.append(concat_jobs([
+                pipe_jobs([
+                    Job([gzip_vcf], [None], command="zcat " + gzip_vcf + " | grep -v \"^##contig\""),
+                    bcftools.annotate(None, None, config.param('lumpy_paired_sv_calls', 'header_options')),
+                    vt.sort("-", os.path.join(pair_directory, sample.name + ".lumpy.sorted.vcf"), "-m full"),
+                ]),
+                svtyper.genotyper(None, inputNormal, os.path.join(pair_directory, sample.name + ".lumpy.sorted.vcf"), genotype_vcf),
+            ], name="lumpy_paired_sv_calls.genotype." + sample.name))
+    
+        return jobs
+
+    def lumpy_sv_annotation(self):
+    
+        jobs = []
+    
+        for sample in self.samples:
+            pair_directory = os.path.join("SVariants", sample.name)
+            prefix = os.path.join("SVariants", sample.name, sample.name)
+        
+            genotype_vcf = os.path.join(pair_directory, sample.name + ".lumpy.genotyped.vcf")
+            germline_vcf = os.path.join(pair_directory, sample.name + ".lumpy.germline.vcf.gz")
+        
+            jobs.append(concat_jobs([
+                pipe_jobs([
+                    vawk.single_germline(genotype_vcf, sample.name, None),
+                    htslib.bgzip_tabix(None, germline_vcf),
+                ]),
+                snpeff.compute_effects(germline_vcf, prefix + ".lumpy.germline.snpeff.vcf.gz"),
+            ], name="sv_annotation.lumpy.germline." + sample.name))
+    
+        return jobs
+
+    def wham_call_sv(self):
+        """
+        Wham (Whole-genome Alignment Metrics) to provide a single, integrated framework for both structural variant
+        calling and association testing, thereby bypassing many of the difficulties that currently frustrate attempts
+        to employ SVs in association testing.
+        Returns:vcf.
+
+        """
+        jobs = []
+    
+        for sample in self.samples:
+            pair_directory = os.path.join("SVariants", sample.name)
+            wham_directory = os.path.join(pair_directory, "rawWham")
+            inputNormal = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")
+        
+            output_vcf = os.path.join(wham_directory, sample.name + ".wham.vcf")
+            merge_vcf = os.path.join(wham_directory, sample.name + ".wham.merged.vcf")
+            genotyped_vcf = os.path.join(pair_directory, sample.name + ".wham.merged.genotyped.vcf.gz")
+        
+            mkdir_job = Job(command="mkdir -p " + wham_directory, removable_files=[wham_directory], samples=[sample.name])
+        
+            jobs.append(concat_jobs([
+                mkdir_job,
+                wham.call_sv(inputNormal, None, output_vcf),
+                pipe_jobs([
+                    wham.merge(output_vcf, None),
+                    Job([None], [merge_vcf], command="sed 's/NONE/" + sample.name + "/g' | sed -e 's#\"\"#\"#g' > " + merge_vcf),
+                ]),
+            ], name="wham_call_sv.call_merge." + sample.name))
+        
+            jobs.append(concat_jobs([
+                mkdir_job,
+                pipe_jobs([
+                    Job([merge_vcf], [None], command="cat " + merge_vcf + " | grep -v \"^##contig\""),
+                    bcftools.annotate(None, None, config.param('wham_call_sv', 'header_options')),
+                    vt.sort("-", os.path.join(pair_directory, sample.name + ".wham.sorted.vcf"), "-m full"),
+                ]),
+                pipe_jobs([
+                    svtyper.genotyper(None, inputNormal, os.path.join(pair_directory, sample.name + ".wham.sorted.vcf"), None),
+                    htslib.bgzip_tabix(None, genotyped_vcf),
+                ]),
+            ], name="wham_call_sv.genotype." + sample.name))
+    
+        return jobs
+
+    def wham_sv_annotation(self):
+    
+        jobs = []
+    
+        for sample in self.samples:
+            pair_directory = os.path.join("SVariants", sample.name)
+            genotyped_vcf = os.path.join(pair_directory, sample.name + ".wham.merged.genotyped.vcf.gz")
+            
+            germline_vcf = os.path.join(pair_directory, sample.name + ".wham.germline.vcf.gz")
+        
+            jobs.append(concat_jobs([
+                pipe_jobs([
+                     vawk.single_germline(genotyped_vcf, sample.name, None),
+                     htslib.bgzip_tabix(None, germline_vcf),
+                ]),
+                snpeff.compute_effects(germline_vcf, pair_directory + ".wham.germline.snpeff.vcf.gz"),
+            ], name="sv_annotation.wham.germline." + sample.name))
+    
+        return jobs
+    
+    def cnvkit_batch(self):
+        """
+        """
+        jobs = []
+        
+        #print len(self.samples)
+        
+        for sample in self.samples:
+            pair_directory = os.path.join("SVariants", sample.name)
+            cnvkit_dir = os.path.join(pair_directory, "rawCNVkit")
+            inputNormal = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")
+            
+            tarcov_cnn = os.path.join(cnvkit_dir, sample.name + ".sorted.dup.targetcoverage.cnn")
+            antitarcov_cnn = os.path.join(cnvkit_dir, sample.name + ".sorted.dup.antitargetcoverage.cnn")
+            ref_cnn = os.path.join(cnvkit_dir, sample.name + ".reference.cnn")
+
+            metrics = os.path.join("SVariants", "cnvkit_background")
+            poolRef = os.path.join(metrics, "pooledReference.cnn")
+
+            if os.path.isfile(poolRef):
+                pool_ref_cnn = poolRef
+                ref_cnn = None
+
+            else:
+                pool_ref_cnn = None
+
+            coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
+
+            bed = None
+
+            if coverage_bed:
+                bed = coverage_bed
+
+            gatk_vcf = os.path.join("alignment", sample.name, sample.name + ".hc.vcf.gz")
+
+            if os.path.isfile(gatk_vcf):
+                input_vcf = gatk_vcf
+                normal = sample.name
+
+            else:
+                input_vcf = None
+                normal = None
+
+            mkdir_job = Job(command="mkdir -p " + cnvkit_dir, removable_files=[cnvkit_dir], samples = [sample.name])
+
+            jobs.append(concat_jobs([
+                mkdir_job,
+                cnvkit.batch(None, inputNormal, cnvkit_dir, tar_dep=tarcov_cnn, antitar_dep=antitarcov_cnn, target_bed=bed, reference=pool_ref_cnn, output_cnn=ref_cnn),
+            ], name="cnvkit_batch." + sample.name))
+
+            jobs.append(concat_jobs([
+                mkdir_job,
+                cnvkit.fix(tarcov_cnn, antitarcov_cnn, os.path.join(cnvkit_dir, sample.name + ".cnr"), reference=pool_ref_cnn, ref_cnn=ref_cnn),
+                cnvkit.segment(os.path.join(cnvkit_dir, sample.name + ".cnr"), os.path.join(cnvkit_dir, sample.name + ".cns"), vcf=input_vcf, sample_id=sample.name),
+                cnvkit.metrics(os.path.join(cnvkit_dir, sample.name + ".cnr"), os.path.join(cnvkit_dir, sample.name + ".cns"), os.path.join(metrics, sample.name + ".metrics.tsv")),
+            ], name="cnvkit_batch.correction." + sample.name))
+            
+            if len(self.samples) > config.param('cnvkit_batch', 'min_background_samples'):
+                background = []
+                for sample in self.samples:
+                    background[sample.name] = cnvkit.read_metrics_file(os.path.join(metrics, sample.name + ".metrics.tsv"))
+                    
+
+            jobs.append(concat_jobs([
+                mkdir_job,
+                cnvkit.call(os.path.join(cnvkit_dir, sample.name + ".cns"), os.path.join(cnvkit_dir, sample.name + ".call.cns")),
+                #cnvkit.metrics(os.path.join(cnvkit_dir, sample.name + ".cnr"), os.path.join(cnvkit_dir, sample.name + ".call.cns"), os.path.join(metrics, sample.name + ".metrics.tsv")),
+                pipe_jobs([
+                    cnvkit.export(os.path.join(cnvkit_dir, sample.name + ".call.cns"), None, sample_id=sample.name),
+                    htslib.bgzip_tabix(None, os.path.join(pair_directory, sample.name + ".cnvkit.germline.vcf.gz")),
+                ]),
+            ], name="cnvkit_batch.call." + sample.name))
+
+            jobs.append(concat_jobs([
+                mkdir_job,
+                cnvkit.metrics(os.path.join(cnvkit_dir, sample.name + ".cnr"),
+                               os.path.join(cnvkit_dir, sample.name + ".call.cns"), os.path.join(metrics, sample.name + ".metrics.tsv")),
+                cnvkit.scatter(os.path.join(cnvkit_dir, sample.name + ".cnr"),
+                               os.path.join(cnvkit_dir, sample.name + ".call.cns"),
+                               os.path.join(cnvkit_dir, sample.name + ".scatter.pdf"), input_vcf, normal),
+                cnvkit.diagram(os.path.join(cnvkit_dir, sample.name + ".cnr"),
+                               os.path.join(cnvkit_dir, sample.name + ".call.cns"),
+                               os.path.join(cnvkit_dir, sample.name + ".diagram.pdf")),
+            ], name="cnvkit_batch.metrics." + sample.name))
+
+        return jobs
+    
+    def cnvkit_sv_annotation(self):
+
+        jobs = []
+
+        for sample in self.samples.itervalues():
+            pair_directory = os.path.join("SVariants", sample.name, sample.name)
+
+            jobs.append(concat_jobs([
+                snpeff.compute_effects(pair_directory + ".cnvkit.vcf.gz", pair_directory + ".cnvkit.snpeff.vcf"),
+                annotations.structural_variants(pair_directory + ".cnvkit.snpeff.vcf", pair_directory + ".cnvkit.snpeff.annot.vcf"),
+            ], name="sv_annotation.cnvkit." + sample.name))
+
+        return jobs
+
+    def ensemble_metasv(self):
+        """
+
+		"""
+        jobs = []
+	
+        for sample in self.samples:
+            pair_directory = os.path.join("SVariants", sample.name)
+            ensemble_directory = os.path.join("SVariants", "ensemble", sample.name)
+		
+            inputTumor = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")
+            isize_file = os.path.join("metrics", "dna", sample.name, "picard_metrics.all.metrics.insert_size_metrics")
+            gatk_vcf = os.path.join("alignment", sample.name, sample.name + ".hc.vcf.gz")
+            gatk_pass = os.path.join("alignment", sample.name, sample.name + ".hc.flt.vcf.gz")
+            lumpy_vcf = os.path.join(pair_directory, sample.name + ".lumpy.germline.vcf.gz")
+            manta_vcf = os.path.join(pair_directory, sample.name + ".manta.germline.vcf.gz")
+            abs_manta = os.path.abspath(manta_vcf)
+            wham_vcf = os.path.join(pair_directory, sample.name + ".wham.germline.vcf.gz")
+            delly_vcf = os.path.join(pair_directory, sample.name + ".delly.germline.vcf.gz")
+            cnvkit_vcf = os.path.join(pair_directory, sample.name + ".cnvkit.germline.vcf.gz")
+
+            mkdir_job = Job(command="mkdir -p " + ensemble_directory, samples=[sample.name])
+		
+            if os.path.isfile(isize_file):
+                isize_mean, isize_sd = metric_tools.extract_isize(isize_file)
+		
+            else:
+                raise Exception("Error " + isize_file + " does not exist. Please run metrics step\n")
+			
+            input_wham = None
+            if os.path.isfile(wham_vcf):
+                input_wham = wham_vcf
+
+            input_delly = None
+            if os.path.isfile(delly_vcf):
+                input_delly = delly_vcf
+	
+            input_cnvkit = None
+            if os.path.isfile(cnvkit_vcf):
+                input_cnvkit = cnvkit_vcf
+	
+            if os.path.isfile(gatk_vcf):
+                jobs.append(concat_jobs([
+	                mkdir_job,
+	                bcftools.view(gatk_vcf, gatk_pass, config.param('metasv_ensemble', 'filter_pass_options')),
+                ], name="metasv_ensemble.gatk_pass." + sample.name))
+                
+            jobs.append(concat_jobs([
+                mkdir_job,
+	            metasv.ensemble(lumpy_vcf, abs_manta, input_cnvkit, input_wham, input_delly, gatk_pass, inputTumor,
+	                    sample.name, os.path.join(ensemble_directory, "rawMetaSV"), ensemble_directory,
+	                    isize_mean=str(isize_mean), isize_sd=str(isize_sd), output_vcf=[]),
+	                    # input_wham=input_wham, input_gatk=gatk_pass, output_vcf=[]),
+            ], name="metasv_ensemble." + sample.name))
+	        
+        return jobs
+
     @property
     def steps(self):
         return [
@@ -2704,6 +3170,35 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.run_multiqc,
                 self.cram_output
             ],
+            # [
+            #     self.picard_sam_to_fastq,
+            #     self.skewer_trimming,
+            #     self.bwa_mem_picard_sort_sam,
+            #     self.sambamba_merge_sam_files,
+            #     self.gatk_indel_realigner,
+            #     self.sambamba_merge_realigned,
+            #     self.sambamba_mark_duplicates,
+            #     self.metrics_dna_picard_metrics,
+            #     self.metrics_dna_sample_qualimap,
+            #     self.metrics_dna_sambamba_flagstat,
+            #     self.metrics_dna_fastqc,
+            #     self.picard_calculate_hs_metrics,
+            #     self.gatk_callable_loci,
+            #     self.extract_common_snp_freq,
+            #     self.baf_plot,
+            #     self.gatk_haplotype_caller,
+            #     self.merge_and_call_individual_gvcf,
+            #     self.combine_gvcf,
+            #     self.merge_and_call_combined_gvcf,
+            #     self.variant_recalibrator,
+            #     self.haplotype_caller_decompose_and_normalize,
+            #     self.haplotype_caller_flag_mappability,
+            #     self.haplotype_caller_snp_id_annotation,
+            #     self.haplotype_caller_snp_effect,
+            #     self.haplotype_caller_dbnsfp_annotation,
+            #     self.haplotype_caller_gemini_annotations,
+            #     self.run_multiqc,
+            # ],
             [
                 self.picard_sam_to_fastq,
                 self.skewer_trimming,
@@ -2711,28 +3206,20 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.sambamba_merge_sam_files,
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
-                self.sambamba_mark_duplicates,
-                self.metrics_dna_picard_metrics,
-                self.metrics_dna_sample_qualimap,
-                self.metrics_dna_sambamba_flagstat,
-                self.metrics_dna_fastqc,
-                self.picard_calculate_hs_metrics,
-                self.gatk_callable_loci,
-                self.extract_common_snp_freq,
-                self.baf_plot,
-                self.gatk_haplotype_caller,
-                self.merge_and_call_individual_gvcf,
-                self.combine_gvcf,
-                self.merge_and_call_combined_gvcf,
-                self.variant_recalibrator,
-                self.haplotype_caller_decompose_and_normalize,
-                self.haplotype_caller_flag_mappability,
-                self.haplotype_caller_snp_id_annotation,
-                self.haplotype_caller_snp_effect,
-                self.haplotype_caller_dbnsfp_annotation,
-                self.haplotype_caller_gemini_annotations,
-                self.run_multiqc,
-                self.cram_output
+                self.picard_mark_duplicates,
+                self.recalibration,
+                self.sym_link_final_bam,
+                self.delly_call_filter,
+                self.delly_sv_annotation,
+                self.manta_sv_calls,
+                self.manta_sv_annotation,
+                self.lumpy_paired_sv,
+                self.lumpy_sv_annotation,
+                self.wham_call_sv,
+                self.wham_sv_annotation,
+                self.cnvkit_batch,
+                self.cnvkit_sv_annotation,
+	            self.ensemble_metasv,
             ]
         ]
 
@@ -2740,8 +3227,7 @@ class DnaSeq(DnaSeqRaw):
     def __init__(self, protocol=None):
         self._protocol = protocol
         # Add pipeline specific arguments
-        self.argparser.add_argument("-t", "--type", help="DNAseq analysis type", choices=["mugqic", "mpileup", "light"],
-                                    default="mugqic")
+        self.argparser.add_argument("-t", "--type", help="DNAseq analysis type", choices=["mugqic", "mpileup", "sv"], default="mugqic")
         super(DnaSeq, self).__init__(protocol)
 
 if __name__ == '__main__':
@@ -2749,4 +3235,4 @@ if __name__ == '__main__':
     if '--wrap' in argv:
         utils.utils.container_wrapper_argparse(argv)
     else:
-        DnaSeq(protocol=['mugqic', 'mpileup', "light"])
+        DnaSeq(protocol=['mugqic', 'mpileup', "sv"])

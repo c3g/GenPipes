@@ -26,11 +26,15 @@ import os
 from core.config import *
 from core.job import *
 
-def genotyper(input_bam, input_normal, input_vcf, output_vcf):
-    inputs=[input_bam, input_normal]
-
+def genotyper(input_tumor, input_normal, input_vcf, output_vcf):
+    if input_tumor is not None:
+        inputs=[input_tumor, input_normal]
+        
+    else:
+        inputs=[input_normal]
+        
     return Job(
-        [input_bam, input_normal, input_vcf],
+        inputs,
         [output_vcf],
         [
             ['lumpy_paired_sv_calls', 'module_python'],
