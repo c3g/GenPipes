@@ -4761,7 +4761,6 @@ END`""".format(
 
             if coverage_bed:
                 bed = coverage_bed
-
             vardict_vcf = os.path.join("pairedVariants", tumor_pair.name,
                                        tumor_pair.name + ".vardict.germline.vt.vcf.gz")
 
@@ -5422,8 +5421,8 @@ END`""".format(
                 self.merge_varscan2,
                 self.paired_mutect2,
                 self.merge_mutect2,
-                self.samtools_paired,
-                self.merge_filter_paired_samtools,
+                #self.samtools_paired,
+                #self.merge_filter_paired_samtools,
                 self.vardict_paired,
                 self.merge_filter_paired_vardict,
                 self.strelka2_paired_somatic,
@@ -5467,15 +5466,15 @@ END`""".format(
                 self.sequenza,
                 #self.sCNAphase,
                 self.delly_call_filter,
-                #self.delly_sv_annotation,
+                self.delly_sv_annotation,
                 self.manta_sv_calls,
-                #self.manta_sv_annotation,
+                self.manta_sv_annotation,
                 self.lumpy_paired_sv,
-                #self.lumpy_sv_annotation,
+                self.lumpy_sv_annotation,
                 self.wham_call_sv,
-                #self.wham_sv_annotation,
+                self.wham_sv_annotation,
                 self.cnvkit_batch,
-                #self.cnvkit_sv_annotation,
+                self.cnvkit_sv_annotation,
                 self.scones,
                 self.svaba_assemble,
                 self.svaba_sv_annotation,
