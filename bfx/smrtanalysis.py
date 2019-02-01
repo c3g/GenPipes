@@ -140,7 +140,7 @@ def filtering(
             ['smrtanalysis_filtering', 'module_prinseq'],
             ['smrtanalysis_filtering', 'module_smrtanalysis']
         ],
-        command=    """\
+        command="""\
 bash -c 'set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
 fofnToSmrtpipeInput.py {fofn} > {input_xml} && \\
 cp {fofn} {input_fofn} && \\
