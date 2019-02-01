@@ -48,19 +48,19 @@ def ray(pathOut, pair1=[], pair2=[], single=[], options=""):
          os.path.join(pathOut, "ScaffoldLengths.txt")
         ], 
         [
-         ['DEFAULT', 'module_gcc'],
-         ['DEFAULT', 'module_openmpi'],
-         ['DEFAULT', 'module_ray']
+            ['ray_assembly', 'module_gcc'],
+            ['ray_assembly', 'module_openmpi'],
+            ['ray_assembly', 'module_ray']
         ],
         command="""\
 mpiexec {optionmpi} Ray -k {kmer} \\
   {pair} \\
   {single} \\
   -o {output}""".format(
-        optionmpi=config.param('DEFAULT', 'openmpi_options', required=False),
+        optionmpi=config.param('ray_assembly', 'openmpi_options', required=False),
         rmdir=pathOut,
         mkdir=pathOut,
-        kmer=config.param('assembly_of_unmap', 'kmer'),
+        kmer=config.param('ray_assembly', 'kmer'),
         options=options,
         pair=strPair,
         single=strSingle,

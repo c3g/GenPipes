@@ -74,7 +74,7 @@ def concat(inputs, output, options=None):
         inputs,
         [output],
         [
-            ['DEFAULT', 'module_bcftools']
+            ['bcftools_concat', 'module_bcftools']
         ],
         command="""\
 bcftools \\
@@ -95,7 +95,7 @@ def view(input, output, filter_options):
         [input],
         [output],
         [
-            ['DEFAULT', 'module_bcftools']
+            ['bcftools_view', 'module_bcftools']
         ],
         command="""\
 bcftools \\
@@ -115,7 +115,7 @@ def filter(input, output, filter_options):
         [input],
         [output],
         [
-            ['DEFAULT', 'module_bcftools']
+            ['bcftools_filter', 'module_bcftools']
         ],
         command="""\
 bcftools \\

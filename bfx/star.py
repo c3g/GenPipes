@@ -157,7 +157,7 @@ def index(
     max_ram = int(utils.number_symbol_converter(ram_limit))
     io_limit = config.param('star_index', 'io_buffer')
     io_max = int(utils.number_symbol_converter(io_limit))
-    read_size = config.param('star_index', 'cycle_number', type='posint')
+    read_size = config.param('star_index', 'star_cycle_number', type='posint')
     other_options = config.param('star_index', 'other_options', required=False)
      
     job.command = """\
@@ -175,7 +175,7 @@ STAR --runMode genomeGenerate \\
         junction_file=junction_file,
         gtf=" \\\n  --sjdbGTFfile " + gtf if gtf else "",
         io_limit_size=" \\\n  --limitIObufferSize " + str(io_max) if io_max else "",
-        sjdbOverhang=" \\\n  --sjdbOverhang " + str(read_size - 1) if read_size else "",
+        sjdbOverhang=" \\\n  --sjdbOverhang " + str(read_size) if read_size else "",
         other_options=" \\\n  " + other_options if other_options else ""
     )
 

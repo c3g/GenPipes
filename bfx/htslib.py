@@ -31,7 +31,7 @@ def bgzip(input, output):
         [input],
         [output],
         [
-            ['DEFAULT', 'module_htslib'],
+            ['htslib_bgzip', 'module_htslib'],
         ],
         command="""\
 bgzip -cf \\
@@ -48,7 +48,7 @@ def tabix(input, options=None):
         [input],
         [output],
         [
-            ['DEFAULT', 'module_htslib'],
+            ['htslib_tabix', 'module_htslib'],
         ],
         command="""\
 tabix {options}  \\
@@ -65,7 +65,7 @@ def bgzip_tabix(input, output):
         [input],
         [output],
         [
-            ['DEFAULT', 'module_htslib'],
+            ['htslib_bgziptabix', 'module_htslib'],
         ],
         command="""\
 bgzip -cf \\
@@ -73,8 +73,7 @@ bgzip -cf \\
 {output} && tabix -pvcf {output} \\
         """.format(
         input=" \\\n " + input if input else "",
-        output=output,
-        options=config.param('DEFAULT', 'tabix_options', required=False),
+        output=output
         )
     )
 
@@ -84,7 +83,7 @@ def tabix_split(input, output, chr):
         [input],
         [output],
         [
-            ['DEFAULT', 'module_htslib'],
+            ['htslib_tabixsplit', 'module_htslib'],
         ],
         command="""\
 tabix -h {input} {chr} \\
