@@ -169,7 +169,7 @@ prinseq-lite.pl \\
             ref_params_xml=ref_params_xml,
             params_xml=params_xml,
             threads=config.param('smrtanalysis_filtering', 'threads'),
-            tmp_dir=re.sub("^\$", "", config.param('smrtanalysis_filtering', 'tmp_dir')),
+            tmp_dir=re.sub("^\$", "", config.param('smrtanalysis_filtering', 'tmp_dir')) if (config.param('smrtanalysis_filtering', 'tmp_dir').startswith("$")) else config.param('smrtanalysis_filtering', 'tmp_dir'),
             output_dir=output_dir,
             log=log,
             output_fastq=output_fastq
@@ -280,7 +280,7 @@ pbalign \\
             input_fofn=input_fofn,
             ref_upload=ref_upload,
             cmph5=cmph5,
-            tmp_dir=tmp_dir,
+            tmp_dir=re.sub("^\$", "", tmp_dir) if (tmp_dir.startswith("$")) else tmp_dir,
             threads=config.param('smrtanalysis_pbalign', 'threads', type='posint'),
             control_regions_fofn=control_regions_fofn
     ))
@@ -345,7 +345,7 @@ pbutgcns_wf.sh'""".format(
             tig_store=tig_store,
             unitigs_list=unitigs_list,
             outdir=outdir,
-            tmp_dir=tmp_dir,
+            tmp_dir=re.sub("^\$", "", tmp_dir) if (tmp_dir.startswith("$")) else tmp_dir,
             prefix=prefix,
             threads=config.param('smrtanalysis_pbutgcns', 'threads', type='posint'),
             outfile=outfile
