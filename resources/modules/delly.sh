@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=Delly
-VERSION=0.7.8
+VERSION=0.8.1
 ARCHIVE=${SOFTWARE,,}-${VERSION}.tar.gz
 ARCHIVE_URL=https://github.com/dellytools/${SOFTWARE,,}/archive/v${VERSION}.tar.gz
 SOFTWARE_DIR=${SOFTWARE,,}-${VERSION}
@@ -39,7 +39,7 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-prepend-path    PATH                \$root
+setenv          DELLY_PATH          \$root
 prepend-path    PATH                \$root/src
 "
 }
