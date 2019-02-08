@@ -848,10 +848,10 @@ cp \\
                 inputs.append(os.path.join("trim", sample.name, readset.name + ".trim.log"))
 
             # Aligned pre-deduplicated bam files
-            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted_flagstat.txt"))
+            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.bam"))
 
             # Deduplicated bam files
-            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup_flagstat.txt"))
+            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.bam"))
 
             # Coverage summary files
             inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.all.coverage.sample_summary"))
