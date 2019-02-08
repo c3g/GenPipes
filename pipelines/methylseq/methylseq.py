@@ -551,7 +551,7 @@ cp \\
             jobs.append(
                 concat_jobs([
                     Job(command="mkdir -p " + methyl_directory, samples=[sample]),
-                    bismark.sort_sam(
+                    picard.sort_sam(
                         input_file,
                         re.sub("sorted", "readset_sorted", input_file),
                         "queryname"
@@ -564,6 +564,8 @@ cp \\
                 outputs,
                 library[sample]
             )
+            bismark_job.name = "bismark_methyl_call." + sample.name
+            bismark_job.samples = [sample]
             jobs.append( bismark_job )
 
         return jobs
