@@ -16,6 +16,11 @@ build() {
   # Install software
   cd $SOFTWARE_DIR
   make -j12
+
+  # Correct lumpyexpress.config
+  cd scripts
+  sed -i 's/LUMPY_HOME=~\/lumpy-sv/#LUMPY_HOME=~\/lumpy-sv/g' lumpyexpress.config
+
   cd $INSTALL_DOWNLOAD
   mv -i $SOFTWARE_DIR $INSTALL_DIR/
 }
