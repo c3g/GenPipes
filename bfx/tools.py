@@ -760,13 +760,15 @@ def filter_snp_cpg(input, output):
             ['filter_snp_cpg', 'module_bedtools']
         ],
         command="""\
-awk '$11>=5' {input} | \\
-sort -k1,1V -k2,2n | \\
+awk '$11>=5' {input} > {tmp1}
+sort -k1,1V -k2,2n {tmp1} > {tmp2}
 bedtools intersect \\
-  -a stdin \\
+  -a {tmp2} \\
   -b {filter_file} -v \\
   > {output}""".format(
             input=input,
+            tmp1=os.path.join(config.param('filter_snp_cpg', 'tmp_dir'), os.path.basename(output)+".1.tmp"),
+            tmp2=os.path.join(config.param('filter_snp_cpg', 'tmp_dir'), os.path.basename(output)+".2.tmp"),
             filter_file=config.param('filter_snp_cpg', 'known_variants'),
             output=output
         )
