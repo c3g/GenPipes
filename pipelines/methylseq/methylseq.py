@@ -276,10 +276,8 @@ pandoc --to=markdown \\
         for sample in self.samples:
             alignment_file_prefix = os.path.join("alignment", sample.name, sample.name + ".")
             input = alignment_file_prefix + "sorted.bam"
-            #bam_readset_sorted = alignment_file_prefix + "readset_sorted.bam"
             bam_output = alignment_file_prefix + "sorted.dedup.bam"
             metrics_file = alignment_file_prefix + "sorted.dedup.metrics"
-            dedup_bam_readset_sorted = alignment_file_prefix + "readset_sorted.dedup.bam"
 
             job = picard.mark_duplicates(
                 [input],
@@ -463,44 +461,24 @@ cp \\
             jobs.append(job)
 
             # Calculate GC bias
-            # For captured analysis
-            #if coverage_bed:
-                #target_input = re.sub(".bam", ".targeted.bam", input)
-                #job = concat_jobs([
-                    #bedtools.intersect(
-                        #input,
-                        #target_input,
-                        #coverage_bed
-                    #)
-                    #bedtools.coverage(
-                        #target_input,
-                        #re.sub(".bam", ".gc_cov.1M.txt", target_input)
-                    #),
-                    #metrics.gc_bias(
-                        #re.sub(".bam", ".gc_cov.1M.txt", target_input),
-                        #re.sub(".bam", ".GCBias_all.txt", target_input)
-                    #)
-                #])
-            # Or for whole genome analysis
-            #else:
             gc_content_file = re.sub(".bam", ".gc_cov.1M.txt", input)
             job = bedtools.coverage(
                 input,
-                gc_content_file,
-                coverage_bed
+                gc_content_file
             )
+            # For captured analysis
             if coverage_bed:
                 gc_content_on_target_file = re.sub(".bam", ".gc_cov.1M.on_target.txt", input)
-                gc_ontent_target_job = bedtools.intersect(
+                gc_content_target_job = bedtools.intersect(
                     gc_content_file,
                     gc_content_on_target_file,
                     coverage_bed
                 )
-                gc_content_file = gc_content_on_target_file
                 job = concat_jobs([
                     job,
-                    gc_ontent_target_job
+                    gc_content_target_job
                 ])
+                gc_content_file = gc_content_on_target_file
             job = concat_jobs([
                 job,
                 metrics.gc_bias(
@@ -583,45 +561,22 @@ cp \\
             alignment_directory = os.path.join("alignment", sample.name)
 
             # Generation of a bedGraph and a bigWig track to show the genome coverage
-            candidate_input_files = [[os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")]]
-            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.bam")])
-
-            [input_bam] = self.select_input_files(candidate_input_files)
-
+            input_bam = os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")
             bed_graph_prefix = os.path.join("tracks", sample.name, sample.name)
             big_wig_prefix = os.path.join("tracks", "bigWig", sample.name)
-
             bed_graph_output = bed_graph_prefix + ".bedGraph"
             big_wig_output = big_wig_prefix + ".coverage.bw"
 
-            if input_bam == os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.bam") :
-                jobs.append(
-                    concat_jobs([
-                        Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " " + os.path.join("tracks", "bigWig"), removable_files=["tracks"], samples=[sample]),
-                        picard.sort_sam(
-                            input_bam,
-                            re.sub("readset_sorted", "sorted", input_bam),
-                            "coordinate"
-                        ),
-                        bedtools.graph(
-                            re.sub("readset_sorted", "sorted", input_bam),
-                            bed_graph_output,
-                            ""
-                        )
-                    ], name="bed_graph." + re.sub(".bedGraph", "", os.path.basename(bed_graph_output)))
-                )
-            else :
-                jobs.append(
-                    concat_jobs([
-                        Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " " + os.path.join("tracks", "bigWig"), removable_files=["tracks"], samples=[sample]),
-                        bedtools.graph(
-                            input_bam,
-                            bed_graph_output,
-                            ""
-                        )
-                    ], name="bed_graph." + re.sub(".bedGraph", "", os.path.basename(bed_graph_output)))
-                )
-
+            jobs.append(
+                concat_jobs([
+                    Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " " + os.path.join("tracks", "bigWig"), removable_files=["tracks"], samples=[sample]),
+                    bedtools.graph(
+                        input_bam,
+                        bed_graph_output,
+                        ""
+                    )
+                ], name="bed_graph." + re.sub(".bedGraph", "", os.path.basename(bed_graph_output)))
+            )
             jobs.append(
                 concat_jobs([
                     Job(command="mkdir -p " + os.path.join("tracks", "bigWig"), samples=[sample]),
@@ -635,9 +590,7 @@ cp \\
 
             # Generation of a bigWig from the methylation bedGraph
             methyl_directory = os.path.join("methylation_call", sample.name)
-            candidate_input_files = [[os.path.join(methyl_directory, sample.name + ".sorted.dedup.bedGraph.gz")]]
-            candidate_input_files.append([os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup.bedGraph.gz")])
-            [input_bed_graph] = self.select_input_files(candidate_input_files)
+            input_bed_graph = os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup.bedGraph.gz")
             output_wiggle = os.path.join("tracks", "bigWig", sample.name + ".methylation.bw")
 
             jobs.append(
@@ -728,90 +681,6 @@ cp \\
             jobs.append(job)
 
         return jobs
-
-#    def all_sample_metrics_report(self):
-#        """
-#        Retrieve all the computed metrics (alignment metrics as well as methylation metrics) to build a tsv report table
-#        """
-#
-#        jobs = []
-#
-#        target_bed = bvatools.resolve_readset_coverage_bed(self.samples[0].readsets[0])
-#        metrics_file = os.path.join("metrics", "sampleMetrics.stats")
-#        report_metrics_file = os.path.join("report", "sampleMetricsTable.tsv")
-#
-#        if target_bed:
-#            report_file = os.path.join("report", "MethylSeq.all_sample_metrics_targeted_report.md")
-#        else:
-#            report_file = os.path.join("report", "MethylSeq.all_sample_metrics_report.md")
-#
-#        # Create the list of input files to handle job dependencies
-#        inputs = []
-#        sample_list = []
-#        for sample in self.samples:
-#            sample_list.append(sample.name)
-#
-#            # Trim log files
-#            for readset in sample.readsets:
-#                inputs.append(os.path.join("trim", sample.name, readset.name + ".trim.log"))
-#
-#            # Aligned pre-deduplicated bam files
-#            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.bam"))
-#
-#            # Deduplicated bam files
-#            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.bam"))
-#
-#            # Coverage summary files
-#            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.all.coverage.sample_summary"))
-#
-#            # Lambda conversion rate files
-#            [lambda_conv_file] = self.select_input_files([
-#                [os.path.join("methylation_call", sample.name, sample.name + ".sorted.dedup.profile.lambda.conversion.rate.tsv")],
-#                [os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.profile.lambda.conversion.rate.tsv")]
-#            ])
-#            inputs.append(lambda_conv_file)
-#
-#            # CG stat files
-#            [cgstats_file] = self.select_input_files([
-#                [os.path.join("methylation_call", sample.name, sample.name + ".sorted.dedup.profile.cgstats.txt")],
-#                [os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.profile.cgstats.txt")]
-#            ])
-#            inputs.append(cgstats_file)
-#
-#            # Flagstat file if in targeted context
-#            if target_bed : 
-#                inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.ontarget.bam.flagstat"))
-#
-#        jobs.append(
-#            concat_jobs([
-#                Job(command="mkdir -p metrics"),
-#                tools.methylseq_metrics_report(sample_list, inputs, metrics_file, target_bed),
-#                Job(
-#                    [metrics_file],
-#                    [report_file],
-#                    [['all_sample_metrics_report', 'module_pandoc']],
-#                    command="""\
-#mkdir -p report && \\
-#cp {metrics_file} {report_metrics_file} && \\
-#metrics_table_md=`sed 's/\t/|/g' {report_metrics_file}`
-#pandoc \\
-#  {report_template_dir}/{basename_report_file} \\
-#  --template {report_template_dir}/{basename_report_file} \\
-#  --variable sequence_alignment_table="$metrics_table_md" \\
-#  --to markdown \\
-#  > {report_file}""".format(
-#                        report_template_dir=self.report_template_dir,
-#                        metrics_file=metrics_file,
-#                        basename_report_file=os.path.basename(report_file),
-#                        report_metrics_file=report_metrics_file,
-#                        report_file=report_file
-#                    ),
-#                    report_files=[report_file]
-#                )
-#            ], name="all_sample_metrics_report")
-#        )
-#
-#        return jobs
 
     def ihec_sample_metrics_report(self):
         """
@@ -944,7 +813,7 @@ pandoc \\
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
 
-            input_file = os.path.join(alignment_directory, sample.name + ".readset_sorted.dedup.bam")
+            input_file = os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")
 
             variant_directory = os.path.join("variants", sample.name)
             cpg_output_file = os.path.join(variant_directory, sample.name + ".cpg.vcf")
@@ -1049,19 +918,17 @@ pandoc \\
             self.trimmomatic,
             self.merge_trimmomatic_stats,
             self.bismark_align,
-            self.add_bam_umi,
-            self.picard_merge_sam_files,    # step 5
+            self.add_bam_umi,               # step 5
+            self.picard_merge_sam_files,
             self.picard_remove_duplicates,
             self.metrics,
-#            self.verify_bam_id,
             self.methylation_call,
             self.wiggle_tracks,             # step 10
             self.methylation_profile,
-            #self.all_sample_metrics_report,
             self.ihec_sample_metrics_report,
             self.bis_snp,
-            self.filter_snp_cpg,            # step 15
-            self.prepare_methylkit,
+            self.filter_snp_cpg,
+            self.prepare_methylkit,         # step 15
             self.methylkit_differential_analysis
         ]
 
