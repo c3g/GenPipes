@@ -3429,7 +3429,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 background = [os.path.join(metrics, sample.name + ".metrics.tsv") for sample in self.samples]
 
             else:
-           
                 jobs.append(concat_jobs([
                     bash.mkdir(cnvkit_dir, remove=True),
                     cnvkit.batch(None, inputNormal, cnvkit_dir, tar_dep=tarcov_cnn, antitar_dep=antitarcov_cnn, target_bed=bed, reference=pool_ref_cnn, output_cnn=ref_cnn),
