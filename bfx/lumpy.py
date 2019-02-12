@@ -34,9 +34,9 @@ def lumpyexpress_pair(normal_bam, tumor_bam, output_vcf, spl_normal=[], spl_tumo
         [output_vcf],
         [
             ['lumpy_paired_sv_calls', 'module_python'],
-            ['lumpy_paired_sv_calls', 'module_lumpy'],
             ['lumpy_paired_sv_calls', 'module_samtools'],
             ['lumpy_paired_sv_calls', 'module_sambamba'],
+	    ['lumpy_paired_sv_calls', 'module_lumpy'],
         ],
         command="""\
         lumpyexpress {options} \\

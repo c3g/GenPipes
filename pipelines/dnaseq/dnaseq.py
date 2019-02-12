@@ -2906,6 +2906,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 ]),
                 pipe_jobs([
                     svtyper.genotyper(None, inputNormal, os.path.join(pair_directory, sample.name + ".wham.sorted.vcf"), None),
+                    Job([None], [None], command="sed -e 's#\"\"#\"#g'"),
                     htslib.bgzip_tabix(None, genotyped_vcf),
                 ]),
             ], name="wham_call_sv.genotype." + sample.name))
@@ -2976,46 +2977,62 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 normal = None
 
             mkdir_job = Job(command="mkdir -p " + cnvkit_dir, removable_files=[cnvkit_dir], samples = [sample.name])
-
-            jobs.append(concat_jobs([
-                mkdir_job,
-                cnvkit.batch(None, inputNormal, cnvkit_dir, tar_dep=tarcov_cnn, antitar_dep=antitarcov_cnn, target_bed=bed, reference=pool_ref_cnn, output_cnn=ref_cnn),
-            ], name="cnvkit_batch." + sample.name))
-
-            jobs.append(concat_jobs([
-                mkdir_job,
-                cnvkit.fix(tarcov_cnn, antitarcov_cnn, os.path.join(cnvkit_dir, sample.name + ".cnr"), reference=pool_ref_cnn, ref_cnn=ref_cnn),
-                cnvkit.segment(os.path.join(cnvkit_dir, sample.name + ".cnr"), os.path.join(cnvkit_dir, sample.name + ".cns"), vcf=input_vcf, sample_id=sample.name),
-                cnvkit.metrics(os.path.join(cnvkit_dir, sample.name + ".cnr"), os.path.join(cnvkit_dir, sample.name + ".cns"), os.path.join(metrics, sample.name + ".metrics.tsv")),
-            ], name="cnvkit_batch.correction." + sample.name))
             
             if len(self.samples) > config.param('cnvkit_batch', 'min_background_samples'):
-                background = []
-                for sample in self.samples:
-                    background[sample.name] = cnvkit.read_metrics_file(os.path.join(metrics, sample.name + ".metrics.tsv"))
-                    
+                jobs.append(concat_jobs([
+                    mkdir_job,
+                    cnvkit.batch(None, inputNormal, cnvkit_dir, tar_dep=tarcov_cnn, antitar_dep=antitarcov_cnn,
+                                 target_bed=bed, reference=pool_ref_cnn, output_cnn=ref_cnn),
+                ], name="cnvkit_batch." + sample.name))
+    
+                jobs.append(concat_jobs([
+                    mkdir_job,
+                    cnvkit.fix(tarcov_cnn, antitarcov_cnn, os.path.join(cnvkit_dir, sample.name + ".cnr"),
+                               reference=pool_ref_cnn, ref_cnn=ref_cnn),
+                    cnvkit.segment(os.path.join(cnvkit_dir, sample.name + ".cnr"),
+                                   os.path.join(cnvkit_dir, sample.name + ".cns"), vcf=input_vcf,
+                                   sample_id=sample.name),
+                    cnvkit.metrics(os.path.join(cnvkit_dir, sample.name + ".cnr"),
+                                   os.path.join(cnvkit_dir, sample.name + ".cns"),
+                                   os.path.join(metrics, sample.name + ".metrics.tsv")),
+                ], name="cnvkit_batch.correction." + sample.name))
+                
+                background = [os.path.join(metrics, sample.name + ".metrics.tsv") for sample in self.samples]
 
-            jobs.append(concat_jobs([
-                mkdir_job,
-                cnvkit.call(os.path.join(cnvkit_dir, sample.name + ".cns"), os.path.join(cnvkit_dir, sample.name + ".call.cns")),
-                #cnvkit.metrics(os.path.join(cnvkit_dir, sample.name + ".cnr"), os.path.join(cnvkit_dir, sample.name + ".call.cns"), os.path.join(metrics, sample.name + ".metrics.tsv")),
-                pipe_jobs([
-                    cnvkit.export(os.path.join(cnvkit_dir, sample.name + ".call.cns"), None, sample_id=sample.name),
-                    htslib.bgzip_tabix(None, os.path.join(pair_directory, sample.name + ".cnvkit.germline.vcf.gz")),
-                ]),
-            ], name="cnvkit_batch.call." + sample.name))
+            else:
+           
+                jobs.append(concat_jobs([
+                    mkdir_job,
+                    cnvkit.batch(None, inputNormal, cnvkit_dir, tar_dep=tarcov_cnn, antitar_dep=antitarcov_cnn, target_bed=bed, reference=pool_ref_cnn, output_cnn=ref_cnn),
+                ], name="cnvkit_batch." + sample.name))
 
-            jobs.append(concat_jobs([
-                mkdir_job,
-                cnvkit.metrics(os.path.join(cnvkit_dir, sample.name + ".cnr"),
-                               os.path.join(cnvkit_dir, sample.name + ".call.cns"), os.path.join(metrics, sample.name + ".metrics.tsv")),
-                cnvkit.scatter(os.path.join(cnvkit_dir, sample.name + ".cnr"),
-                               os.path.join(cnvkit_dir, sample.name + ".call.cns"),
-                               os.path.join(cnvkit_dir, sample.name + ".scatter.pdf"), input_vcf, normal),
-                cnvkit.diagram(os.path.join(cnvkit_dir, sample.name + ".cnr"),
-                               os.path.join(cnvkit_dir, sample.name + ".call.cns"),
-                               os.path.join(cnvkit_dir, sample.name + ".diagram.pdf")),
-            ], name="cnvkit_batch.metrics." + sample.name))
+                jobs.append(concat_jobs([
+                    mkdir_job,
+                    cnvkit.fix(tarcov_cnn, antitarcov_cnn, os.path.join(cnvkit_dir, sample.name + ".cnr"), reference=pool_ref_cnn, ref_cnn=ref_cnn),
+                    cnvkit.segment(os.path.join(cnvkit_dir, sample.name + ".cnr"), os.path.join(cnvkit_dir, sample.name + ".cns"), vcf=input_vcf, sample_id=sample.name),
+                    cnvkit.metrics(os.path.join(cnvkit_dir, sample.name + ".cnr"), os.path.join(cnvkit_dir, sample.name + ".cns"), os.path.join(metrics, sample.name + ".metrics.tsv")),
+                ], name="cnvkit_batch.correction." + sample.name))
+            
+                jobs.append(concat_jobs([
+                    mkdir_job,
+                    cnvkit.call(os.path.join(cnvkit_dir, sample.name + ".cns"), os.path.join(cnvkit_dir, sample.name + ".call.cns")),
+                    #cnvkit.metrics(os.path.join(cnvkit_dir, sample.name + ".cnr"), os.path.join(cnvkit_dir, sample.name + ".call.cns"), os.path.join(metrics, sample.name + ".metrics.tsv")),
+                    pipe_jobs([
+                        cnvkit.export(os.path.join(cnvkit_dir, sample.name + ".call.cns"), None, sample_id=sample.name),
+                        htslib.bgzip_tabix(None, os.path.join(pair_directory, sample.name + ".cnvkit.germline.vcf.gz")),
+                    ]),
+                ], name="cnvkit_batch.call." + sample.name))
+
+                jobs.append(concat_jobs([
+                    mkdir_job,
+                    cnvkit.metrics(os.path.join(cnvkit_dir, sample.name + ".cnr"),
+                                   os.path.join(cnvkit_dir, sample.name + ".call.cns"), os.path.join(metrics, sample.name + ".metrics.tsv")),
+                    cnvkit.scatter(os.path.join(cnvkit_dir, sample.name + ".cnr"), os.path.join(cnvkit_dir, sample.name + ".call.cns"),
+                                   os.path.join(cnvkit_dir, sample.name + ".scatter.pdf"), input_vcf, normal),
+                    cnvkit.diagram(os.path.join(cnvkit_dir, sample.name + ".cnr"),
+                                   os.path.join(cnvkit_dir, sample.name + ".call.cns"),
+                                   os.path.join(cnvkit_dir, sample.name + ".diagram.pdf")),
+                ], name="cnvkit_batch.metrics." + sample.name))
 
         return jobs
     
@@ -3074,6 +3091,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             if os.path.isfile(cnvkit_vcf):
                 input_cnvkit = cnvkit_vcf
 	
+            gatk_pass = None
             if os.path.isfile(gatk_vcf):
                 jobs.append(concat_jobs([
 	                mkdir_job,
@@ -3209,6 +3227,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.picard_mark_duplicates,
                 self.recalibration,
                 self.sym_link_final_bam,
+                self.metrics_dna_picard_metrics,
                 self.delly_call_filter,
                 self.delly_sv_annotation,
                 self.manta_sv_calls,

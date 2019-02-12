@@ -167,6 +167,27 @@ cnvkit.py metrics {options} \\
         )
     )
 
+def select_background(inputs, output):
+    
+    return Job(
+        inputs,
+        output,
+        [
+            ['cnvkit_batch', 'module_python'],
+            ['cnvkit_batch', 'module_R'],
+        ],
+        command="""\
+	cnvkit.py metrics {options} \\
+	  {input_cnr} \\
+	  -s {input_cns} \\
+	  -o {output}""".format(
+            options=config.param('cnvkit_batch', 'metrics_options'),
+            input_cnr=input_cnr,
+            input_cns=input_cns,
+            output=output,
+        )
+    )
+
 def read_metrics_file(in_file):
     with open(in_file) as in_handle:
         header = next(in_handle).strip().split("\t")[1:]

@@ -36,8 +36,8 @@ def extract_isize(file):
             line = lines[i]
             if line.startswith('MEDIAN_INSERT_SIZE'):
                 ne = lines[i + 1]
-                isize_mean = ne.split("\t")[4]
-                isize_sd = ne.split("\t")[5]                   
+                isize_mean = ne.split("\t")[5]
+                isize_sd = ne.split("\t")[6]
                 break
 
     return isize_mean, isize_sd

@@ -31,8 +31,8 @@ def ensemble(input_lumpy, input_manta, input_cnvkit, input_wham, input_delly, in
         [input_lumpy, input_manta, input_cnvkit, input_wham, input_delly, input_gatk, input_bam],
         [output_vcf],
         [
-            ['metasv_ensemble', 'module_spades'],
-            ['metasv_ensemble', 'module_age'],
+            #['metasv_ensemble', 'module_spades'],
+            #['metasv_ensemble', 'module_age'],
             ['metasv_ensemble', 'module_python'],
             ['metasv_ensemble', 'module_bedtools'],
         ],
