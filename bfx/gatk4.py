@@ -867,6 +867,36 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
 	)
 
 #####################
+#  Copy Number Variant Discovery
+
+def preprocessIntervals(input, output, intervals):
+	return Job(
+		[input],
+		[output],
+		[
+			['gatk_processIntervals', 'module_java'],
+			['gatk_processIntervals', 'module_gatk4']
+		],
+		command="""\
+gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
+  PreprocessIntervals {options} --interval-merging-rule OVERLAPPING_ONLY \\
+  --reference {reference_sequence} {intervals} \\
+  --bin-length {bin_length} \\
+  --padding {padding} \\
+  --output {output}""".format(
+			tmp_dir=config.param('gatk_processIntervals', 'tmp_dir'),
+			java_other_options=config.param('gatk_processIntervals', 'java_other_options'),
+			ram=config.param('gatk_processIntervals', 'ram'),
+			options=config.param('gatk_processIntervals', 'options'),
+			reference_sequence=config.param('gatk_processIntervals', 'genome_fasta', type='filepath'),
+			intervals=" \\\n --intervals " + intervals if intervals else "",
+			bin_length=config.param('gatk_processIntervals', 'bin-length'),
+			padding=config.param('gatk_processIntervals', 'padding'),
+			output=output
+		)
+	)
+
+#####################
 # PICARD imported functions
 
 def build_bam_index(
