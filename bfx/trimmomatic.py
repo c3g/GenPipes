@@ -87,3 +87,52 @@ java -XX:ParallelGCThreads=1 -Xmx{ram} -jar $TRIMMOMATIC_JAR {mode} \\
         ),
         removable_files=[paired_output1, unpaired_output1, paired_output2, unpaired_output2, single_output]
     )
+
+def trimmomatic16S(
+    input1,
+    input2,
+    paired_output1,
+    unpaired_output1,
+    paired_output2,
+    unpaired_output2,
+    single_output,
+    quality_offset,
+    trim_log,
+    headcrop
+    ):
+
+    if input2:  # Paired end reads
+        inputs = [input1, input2]
+        outputs = [paired_output1, unpaired_output1, paired_output2, unpaired_output2]
+    else:   # Single end reads
+        inputs = [input1]
+        outputs = [single_output]
+
+    headcrop_length = str(headcrop)
+
+    return Job(
+        inputs,
+        outputs + [trim_log],
+        [
+            ['trimmomatic', 'module_java'],
+            ['trimmomatic', 'module_trimmomatic']
+        ],
+        command="""\
+java -XX:ParallelGCThreads=1 -Xmx{ram} -jar $TRIMMOMATIC_JAR {mode} \\
+  -threads {threads} \\
+  -phred{quality_offset} \\
+  {inputs} \\
+  {outputs} \\
+  HEADCROP:{headcrop_length} \\
+  2> {trim_log}""".format(
+        ram=config.param('trimmomatic16S', 'ram'),
+        mode = "PE" if input2 else "SE",
+        threads=config.param('trimmomatic16S', 'threads', type='posint'),
+        quality_offset=quality_offset if quality_offset == 64 else "33",
+        inputs=" \\\n  ".join(inputs),
+        outputs=" \\\n  ".join(outputs),
+        headcrop_length=str(headcrop_length),
+        trim_log=trim_log
+        ),
+        removable_files=[paired_output1, unpaired_output1, paired_output2, unpaired_output2, single_output]
+    )

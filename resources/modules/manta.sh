@@ -27,11 +27,8 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set              root               $INSTALL_DIR/$SOFTWARE_DIR 
-prepend-path     PATH               \$root/scripts
-setenv           CONPAIR_DIR        \$root 
-setenv           CONPAIR_SCRIPTS    \$root/scripts 
-setenv           CONPAIR_DATA       \$root/data 
-prepend-path     PYTHONPATH         \$root/modules
+prepend-path     PATH               \$root/bin
+setenv           MANTA_HOME         \$root
 "
 }
 

@@ -127,11 +127,17 @@ def filtering(
     log
     ):
 
-    ref_params_xml=config.param('smrtanalysis_filtering', 'filtering_settings')
-    white_path=config.param('smrtanalysis_filtering', 'whitelist_path',required=False)
+    ref_params_xml = config.param('smrtanalysis_filtering', 'filtering_settings')
+
     output_prefix = os.path.join(output_dir, "data", "filtered_subreads.")
     input_fofn = os.path.join(output_dir, "input.fofn")
     output_fastq = output_prefix + "fastq"
+
+    white_path = config.param('smrtanalysis_filtering', 'whitelist_path',required=False)
+
+    temp_dir = config.param('smrtanalysis_filtering', 'tmp_dir')
+    if (config.param('smrtanalysis_filtering', 'tmp_dir').startswith("$")):
+        temp_dir = re.sub("^\$", "$SMRT_ORIGUSERENV_", temp_dir)
 
     return Job(
         [fofn, ref_params_xml],
@@ -169,7 +175,7 @@ prinseq-lite.pl \\
             ref_params_xml=ref_params_xml,
             params_xml=params_xml,
             threads=config.param('smrtanalysis_filtering', 'threads'),
-            tmp_dir=config.param('smrtanalysis_filtering', 'tmp_dir'),
+            tmp_dir=temp_dir,
             output_dir=output_dir,
             log=log,
             output_fastq=output_fastq
@@ -253,12 +259,21 @@ m4topre.py \\
     ))
 
 def pbalign(
-    cmph5,
-    control_regions_fofn,
-    input_fofn,
-    ref_upload,
-    tmp_dir
+    polishing_round_directory,
+    sample_name,
+    sample_cutoff_mer_size_polishing_round
     ):
+
+    input_fofn = os.path.join(sample_name, "filtering", "input.fofn")
+    ref_upload = os.path.join(polishing_round_directory, sample_cutoff_mer_size_polishing_round, "sequence", sample_cutoff_mer_size_polishing_round + ".fasta")
+
+    cmph5 = os.path.join(polishing_round_directory, "data", "aligned_reads.cmp.h5")
+
+    control_regions_fofn = os.path.join(sample_name, "filtering", "data", "filtered_regions.fofn")
+
+    temp_dir = os.path.join(config.param('smrtanalysis_filtering', 'tmp_dir'), sample_cutoff_mer_size_polishing_round)
+    if (config.param('smrtanalysis_pbutgcns', 'tmp_dir').startswith("$")):
+        temp_dir = re.sub("^\$", "$SMRT_ORIGUSERENV_", temp_dir)
 
     return Job(
         [input_fofn, ref_upload],
@@ -280,7 +295,7 @@ pbalign \\
             input_fofn=input_fofn,
             ref_upload=ref_upload,
             cmph5=cmph5,
-            tmp_dir=tmp_dir,
+            tmp_dir=temp_dir,
             threads=config.param('smrtanalysis_pbalign', 'threads', type='posint'),
             control_regions_fofn=control_regions_fofn
     ))
@@ -311,14 +326,23 @@ awk '{{if ($0~/>/) {{sub(/>/,"@",$0);print;}} else {{l=length($0);q=""; while (l
     ))
 
 def pbutgcns(
-    gpk_store,
-    tig_store,
-    unitigs_list,
-    prefix,
-    outdir,
-    outfile,
-    tmp_dir
+    assembly_directory,
+    sample_cutoff_mer_size,
+    mer_size_directory
     ):
+
+    gpk_store = os.path.join(assembly_directory, sample_cutoff_mer_size + ".gkpStore")
+    tig_store = os.path.join(assembly_directory, sample_cutoff_mer_size + ".tigStore")
+
+    outfile = os.path.join(assembly_directory, "9-terminator", sample_cutoff_mer_size + ".ctg.fasta")
+
+    unitigs_list = os.path.join(mer_size_directory, "unitigs.lst")
+    prefix = os.path.join(assembly_directory, sample_cutoff_mer_size)
+    outdir = os.path.join(assembly_directory, "9-terminator")
+
+    temp_dir = os.path.join(config.param('smrtanalysis_filtering', 'tmp_dir'), sample_cutoff_mer_size)
+    if (config.param('smrtanalysis_pbutgcns', 'tmp_dir').startswith("$")):
+        temp_dir = re.sub("^\$", "$SMRT_ORIGUSERENV_", temp_dir)
 
     return Job(
         [gpk_store, tig_store],
@@ -345,7 +369,7 @@ pbutgcns_wf.sh'""".format(
             tig_store=tig_store,
             unitigs_list=unitigs_list,
             outdir=outdir,
-            tmp_dir=tmp_dir,
+            tmp_dir=temp_dir,
             prefix=prefix,
             threads=config.param('smrtanalysis_pbutgcns', 'threads', type='posint'),
             outfile=outfile

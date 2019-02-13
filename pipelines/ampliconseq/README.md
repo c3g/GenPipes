@@ -14,10 +14,10 @@ Usage
 usage: ampliconseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                       [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f]
                       [--json] [--report] [--clean]
-                      [-l {debug,info,warning,error,critical}] [-r READSETS]
-                      [-v]
+                      [-l {debug,info,warning,error,critical}]
+                      [-t {qiime,dada2}] [-d DESIGN] [-r READSETS] [-v]
 
-Version: 3.1.2
+Version: 3.1.3
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
@@ -48,72 +48,94 @@ optional arguments:
                         date status are ignored (default: false)
   -l {debug,info,warning,error,critical}, --log {debug,info,warning,error,critical}
                         log level (default: info)
+  -t {qiime,dada2}, --type {qiime,dada2}
+                        AmpliconSeq analysis type
+  -d DESIGN, --design DESIGN
+                        design file
   -r READSETS, --readsets READSETS
                         readset file
   -v, --version         show the version information and exit
 
 Steps:
-```
-![ampliconseq workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_ampliconseq.resized.png)
-[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_ampliconseq.png)
-```
 ------
-1- trimmomatic
-2- merge_trimmomatic_stats
-3- flash
-4- merge_flash_stats
-5- catenate
-6- uchime
-7- merge_uchime_stats
-8- otu_picking
-9- otu_rep_picking
-10- otu_assigning
-11- otu_table
-12- otu_alignment
-13- filter_alignment
-14- phylogeny
-15- qiime_report
-16- multiple_rarefaction
-17- alpha_diversity
-18- collate_alpha
-19- sample_rarefaction_plot
-20- qiime_report2
-21- single_rarefaction
-22- css_normalization
-23- rarefaction_plot
-24- summarize_taxa
-25- plot_taxa
-26- plot_heatmap
-27- krona
-28- plot_to_alpha
-29- beta_diversity
-30- pcoa
-31- pcoa_plot
-32- plot_to_beta
+
+----
+```
+![ampliconseq qiime workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_ampliconseq_qiime.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_ampliconseq_qiime.png)
+```
+qiime:
+1- trimmomatic16S
+2- merge_trimmomatic_stats16S
+3- flash_pass1
+4- ampliconLengthParser
+5- flash_pass2
+6- merge_flash_stats
+7- catenate
+8- uchime
+9- merge_uchime_stats
+10- otu_picking
+11- otu_rep_picking
+12- otu_assigning
+13- otu_table
+14- otu_alignment
+15- filter_alignment
+16- phylogeny
+17- qiime_report
+18- multiple_rarefaction
+19- alpha_diversity
+20- collate_alpha
+21- sample_rarefaction_plot
+22- qiime_report2
+23- single_rarefaction
+24- css_normalization
+25- rarefaction_plot
+26- summarize_taxa
+27- plot_taxa
+28- plot_heatmap
+29- krona
+30- plot_to_alpha
+31- beta_diversity
+32- pcoa
+33- pcoa_plot
+34- plot_to_beta
+----
+```
+![ampliconseq dada2 workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_ampliconseq_dada2.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_ampliconseq_dada2.png)
+```
+dada2:
+1- trimmomatic16S
+2- merge_trimmomatic_stats16S
+3- flash_pass1
+4- ampliconLengthParser
+5- flash_pass2
+6- merge_flash_stats
+7- asva
 
 ```
-trimmomatic
------------
-Raw reads quality trimming and removing of Illumina adapters is performed using [Trimmomatic](http://www.usadellab.org/cms/index.php?page=trimmomatic).
+trimmomatic16S
+--------------
+MiSeq raw reads adapter & primers trimming and basic QC is performed using [Trimmomatic](http://www.usadellab.org/cms/index.php?page=trimmomatic).
 If an adapter FASTA file is specified in the config file (section 'trimmomatic', param 'adapter_fasta'),
-it is used first. Else, 'Adapter1' and 'Adapter2' columns from the readset file are used to create
-an adapter FASTA file, given then to Trimmomatic. For PAIRED_END readsets, readset adapters are
-reversed-complemented and swapped, to match Trimmomatic Palindrome strategy. For SINGLE_END readsets,
-only Adapter1 is used and left unchanged.
+it is used first. Else, Adapter1, Adapter2, Primer1 and Primer2 columns from the readset file are used to create
+an adapter FASTA file, given then to Trimmomatic. Sequences are reversed-complemented and swapped. 
 
 This step takes as input files:
+1. MiSeq paired-End FASTQ files from the readset file
 
-1. FASTQ files from the readset file if available
-2. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
-
-merge_trimmomatic_stats
------------------------
+merge_trimmomatic_stats16S
+--------------------------
 The trim statistics per readset are merged at this step.
 
-flash
------
-Merge paired end reads using [FLASh](http://ccb.jhu.edu/software/FLASH/).
+flash_pass1
+-----------
+ampliconLengthParser
+--------------------
+look at FLASH output to set amplicon lengths input for dada2. As minimum elligible length, a given length needs to have at least 1% of the total number of amplicons
 
+flash_pass2
+-----------
 merge_flash_stats
 -----------------
 The paired end merge statistics per readset are merged at this step.
@@ -124,7 +146,7 @@ Catenate all the reads in one file for further analysis.
 
 This step takes as input files:
 
-1. Merged FASTQ files from previous step flash.
+1. Merged FASTQ files from previous flash step.
 
 uchime
 ------
@@ -340,5 +362,9 @@ This step takes as input file:
 plot_to_beta
 ------------
 Final report's 2nd part for the Amplicon-Seq pipeline. Display results (beta diversity PCoA plots).
+
+asva
+----
+check for design file (required for PCA plots)
 
 

@@ -129,9 +129,9 @@ def create(pipeline, sample):
                     "adapter2" : readset.adapter2,
                     "qualityoffset" : readset.quality_offset,
                     "bed" : [bed for bed in readset.beds],
-                    "fastq1" : os.path.realpath(readset.fastq1),
-                    "fastq2" : os.path.realpath(readset.fastq2),
-                    "bam" : os.path.realpath(readset.bam)
+                    "fastq1" : os.path.realpath(readset.fastq1) if readset.fastq1 else "",
+                    "fastq2" : os.path.realpath(readset.fastq2) if readset.fastq2 else "",
+                    "bam" : os.path.realpath(readset.bam) if readset.bam else ""
                 } for readset in sample.readsets],
                 'pipeline' : {
                     'name' : pipeline.__class__.__name__,

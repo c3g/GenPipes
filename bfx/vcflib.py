@@ -31,7 +31,7 @@ def vcfsamplediff(input_normal, input_tumor, input_vcf, output):
         [input_vcf],
         [output],
         [
-            ['DEFAULT', 'module_vcflib']
+            ['vcflib_vcfsamplediff', 'module_vcflib']
         ],
         command="""\
 vcfsamplediff \\
@@ -51,7 +51,7 @@ def vcffilter(input_vcf, output_vcf, options):
         [input_vcf],
         [output_vcf],
         [
-            ['DEFAULT', 'module_vcflib']
+            ['vcflib_vcffilter', 'module_vcflib']
         ],
         command="""\
 vcffilter \\
@@ -64,13 +64,12 @@ vcffilter \\
         )
     )
 
-
 def vcfstreamsort(input_vcf, output_vcf):
     return Job(
         [input_vcf],
         [output_vcf],
         [
-            ['DEFAULT', 'module_vcflib']
+            ['vcflib_vcfstreamsort', 'module_vcflib']
         ],
         command="""\
 vcfstreamsort \\

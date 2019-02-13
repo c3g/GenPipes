@@ -3,14 +3,19 @@
 set -eu -o pipefail
 
 SOFTWARE=SPAdes
-VERSION=3.10.0
+VERSION=3.13.0
 ARCHIVE=${SOFTWARE}-${VERSION}-Linux.tar.gz
+#ARCHIVE=${SOFTWARE}-${VERSION}.tar.gz
 ARCHIVE_URL=http://cab.spbu.ru/files/release${VERSION}/$ARCHIVE
 SOFTWARE_DIR=${SOFTWARE}-$VERSION
 
 build() {
   cd $INSTALL_DOWNLOAD
   tar xzvf $ARCHIVE
+
+#  cd $SOFTWARE_DIR
+#  PREFIX=$INSTALL_DIR/$SOFTWARE_DIR ./spades_compile.sh
+
   mv $SOFTWARE_DIR-Linux $SOFTWARE_DIR
 
   mv -i $SOFTWARE_DIR $INSTALL_DIR/
