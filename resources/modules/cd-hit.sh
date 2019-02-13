@@ -16,7 +16,7 @@ build() {
   tar zxvf $ARCHIVE
 
   cd $SOFTWARE_DIR
-  make -j8 openmp=yes
+  make -j12 openmp=yes
 
   # Install software
   cd $INSTALL_DOWNLOAD

@@ -45,7 +45,7 @@ usage: rnaseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                  [--report] [--clean] [-l {debug,info,warning,error,critical}]
                  [-d DESIGN] [-r READSETS] [-v]
 
-Version: 3.1.0
+Version: 3.1.3
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
@@ -83,6 +83,10 @@ optional arguments:
   -v, --version         show the version information and exit
 
 Steps:
+```
+![rnaseq workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq.png)
+```
 ------
 1- picard_sam_to_fastq
 2- trimmomatic
@@ -111,13 +115,13 @@ Steps:
 25- verify_bam_id
 
 ```
-1- picard_sam_to_fastq
-----------------------
+picard_sam_to_fastq
+-------------------
 Convert SAM/BAM files from the input readset file into FASTQ format
 if FASTQ files are not already specified in the readset file. Do nothing otherwise.
 
-2- trimmomatic
---------------
+trimmomatic
+-----------
 Raw reads quality trimming and removing of Illumina adapters is performed using [Trimmomatic](http://www.usadellab.org/cms/index.php?page=trimmomatic).
 If an adapter FASTA file is specified in the config file (section 'trimmomatic', param 'adapter_fasta'),
 it is used first. Else, 'Adapter1' and 'Adapter2' columns from the readset file are used to create
@@ -130,12 +134,12 @@ This step takes as input files:
 1. FASTQ files from the readset file if available
 2. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
 
-3- merge_trimmomatic_stats
---------------------------
+merge_trimmomatic_stats
+-----------------------
 The trim statistics per readset are merged at this step.
 
-4- star
--------
+star
+----
 The filtered reads are aligned to a reference genome. The alignment is done per readset of sequencing
 using the [STAR](https://code.google.com/p/rna-star/) software. It generates a Binary Alignment Map file (.bam).
 
@@ -145,27 +149,27 @@ This step takes as input files:
 2. Else, FASTQ files from the readset file if available
 3. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
 
-5- picard_merge_sam_files
--------------------------
+picard_merge_sam_files
+----------------------
 BAM readset files are merged into one file per sample. Merge is done using [Picard](http://broadinstitute.github.io/picard/).
 
-6- picard_sort_sam
-------------------
+picard_sort_sam
+---------------
 The alignment file is reordered (QueryName) using [Picard](http://broadinstitute.github.io/picard/). The QueryName-sorted bam files will be used to determine raw read counts.
 
-7- picard_mark_duplicates
--------------------------
+picard_mark_duplicates
+----------------------
 Mark duplicates. Aligned reads per sample are duplicates if they have the same 5' alignment positions
 (for both mates in the case of paired-end reads). All but the best pair (based on alignment score)
 will be marked as a duplicate in the BAM file. Marking duplicates is done using [Picard](http://broadinstitute.github.io/picard/).
 
-8- picard_rna_metrics
----------------------
+picard_rna_metrics
+------------------
 Computes a series of quality control metrics using both CollectRnaSeqMetrics and CollectAlignmentSummaryMetrics functions
 metrics are collected using [Picard](http://broadinstitute.github.io/picard/).
 
-9- estimate_ribosomal_rna
--------------------------
+estimate_ribosomal_rna
+----------------------
 Use bwa mem to align reads on the rRNA reference fasta and count the number of read mapped
 The filtered reads are aligned to a reference fasta file of ribosomal sequence. The alignment is done per sequencing readset.
 The alignment software used is [BWA](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem.
@@ -175,72 +179,72 @@ This step takes as input files:
 
 readset Bam files
 
-10- bam_hard_clip
------------------
+bam_hard_clip
+-------------
 Generate a hardclipped version of the bam for the toxedo suite which doesn't support this official sam feature.
 
-11- rnaseqc
------------
+rnaseqc
+-------
 Computes a series of quality control metrics using [RNA-SeQC](https://www.broadinstitute.org/cancer/cga/rna-seqc).
 
-12- wiggle
-----------
+wiggle
+------
 Generate wiggle tracks suitable for multiple browsers.
 
-13- raw_counts
---------------
+raw_counts
+----------
 Count reads in features using [htseq-count](http://www-huber.embl.de/users/anders/HTSeq/doc/count.html).
 
-14- raw_counts_metrics
-----------------------
+raw_counts_metrics
+------------------
 Create rawcount matrix, zip the wiggle tracks and create the saturation plots based on standardized read counts.
 
-15- cufflinks
--------------
+cufflinks
+---------
 Compute RNA-Seq data expression using [cufflinks](http://cole-trapnell-lab.github.io/cufflinks/cufflinks/).
 Warning: It needs to use a hard clipped bam file while Tuxedo tools do not support official soft clip SAM format
 
-16- cuffmerge
--------------
+cuffmerge
+---------
 Merge assemblies into a master transcriptome reference using [cuffmerge](http://cole-trapnell-lab.github.io/cufflinks/cuffmerge/).
 
-17- cuffquant
--------------
+cuffquant
+---------
 Compute expression profiles (abundances.cxb) using [cuffquant](http://cole-trapnell-lab.github.io/cufflinks/cuffquant/).
 Warning: It needs to use a hard clipped bam file while Tuxedo tools do not support official soft clip SAM format
 
-18- cuffdiff
-------------
+cuffdiff
+--------
 [Cuffdiff](http://cole-trapnell-lab.github.io/cufflinks/cuffdiff/) is used to calculate differential transcript expression levels and test them for significant differences.
 
-19- cuffnorm
-------------
+cuffnorm
+--------
 Global normalization of RNA-Seq expression levels using [Cuffnorm](http://cole-trapnell-lab.github.io/cufflinks/cuffnorm/).
 
-20- fpkm_correlation_matrix
----------------------------
+fpkm_correlation_matrix
+-----------------------
 Compute the pearson corrleation matrix of gene and transcripts FPKM. FPKM data are those estimated by cuffnorm.
 
-21- gq_seq_utils_exploratory_analysis_rnaseq
---------------------------------------------
+gq_seq_utils_exploratory_analysis_rnaseq
+----------------------------------------
 Exploratory analysis using the gqSeqUtils R package.
 
-22- differential_expression
----------------------------
+differential_expression
+-----------------------
 Performs differential gene expression analysis using [DESEQ](http://bioconductor.org/packages/release/bioc/html/DESeq.html) and [EDGER](http://www.bioconductor.org/packages/release/bioc/html/edgeR.html).
 Merge the results of the analysis in a single csv file.
 
-23- differential_expression_goseq
----------------------------------
+differential_expression_goseq
+-----------------------------
 Gene Ontology analysis for RNA-Seq using the Bioconductor's R package [goseq](http://www.bioconductor.org/packages/release/bioc/html/goseq.html).
 Generates GO annotations for differential gene expression analysis.
 
-24- ihec_metrics
-----------------
+ihec_metrics
+------------
 Generate IHEC's standard metrics.
 
-25- verify_bam_id
------------------
+verify_bam_id
+-------------
 verifyBamID is a software that verifies whether the reads in particular file match previously known
 genotypes for an individual (or group of individuals), and checks whether the reads are contaminated
 as a mixture of two samples. verifyBamID can detect sample contamination and swaps when external

@@ -21,7 +21,7 @@ def uchime(
         inputs,
         outputs,
         [
-            ['DEFAULT', 'module_vsearch'],
+            ['uchime', 'module_vsearch'],
         ],
         command="""\
   $VSEARCH_HOME/usearch61 \\

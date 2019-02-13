@@ -76,7 +76,7 @@ class DnaSeqHighCoverage(dnaseq.DnaSeq):
         jobs = []
         for sample in self.samples:
             sample_directory = os.path.join("alignment", sample.name)
-            input_file = os.path.join(sample_directory, sample.name + ".realigned.qsorted.bam")
+            input_file = os.path.join(sample_directory, sample.name + ".realigned.sorted.bam")
             output_file = os.path.join(sample_directory, sample.name + ".matefixed.sorted.bam")
 
             job = picard.fix_mate_information(input_file, output_file)
@@ -137,7 +137,7 @@ class DnaSeqHighCoverage(dnaseq.DnaSeq):
         for sample in self.samples:
             coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
             if coverage_bed:
-                interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
+                interval_list = re.sub("\.[^.]+$", ".interval_list", os.path.basename(coverage_bed))
 
                 if not interval_list in created_interval_lists:
                     job = tools.bed2interval_list(None, coverage_bed, interval_list)
@@ -214,7 +214,7 @@ class DnaSeqHighCoverage(dnaseq.DnaSeq):
                 pipe_jobs([
                     samtools.mpileup(bams, None, config.param('varscan', 'mpileup_other_options'), regionFile=bedfile),
                     varscan.mpileupcns(None, None, sampleNamesFile, config.param('varscan', 'other_options')),
-                    htslib.bgzip_tabix_vcf(None, os.path.join(variants_directory, "allSamples.vcf.gz"))
+                    htslib.bgzip_tabix(None, os.path.join(variants_directory, "allSamples.vcf.gz"))
                 ])
             ], name="varscan.single")
 
@@ -227,7 +227,7 @@ class DnaSeqHighCoverage(dnaseq.DnaSeq):
                 varScanJob = pipe_jobs([
                     samtools.mpileup(bams, None, config.param('varscan', 'mpileup_other_options'), regionFile=beds[idx]),
                     varscan.mpileupcns(None, None, sampleNamesFile, config.param('varscan', 'other_options')),
-                    htslib.bgzip_tabix_vcf(None, output_vcf)
+                    htslib.bgzip_tabix(None, output_vcf)
                 ], name = "varscan." + str(idx))
                 varScanJob.samples = self.samples
                 output_vcfs.append(output_vcf)
@@ -281,7 +281,7 @@ class DnaSeqHighCoverage(dnaseq.DnaSeq):
         jobs.append(concat_jobs([
             Job(command="mkdir -p " + output_directory, samples=self.samples),
             snpeff.compute_effects( snpeff_prefix + ".vt.vcf.gz", snpeff_prefix + ".vt.snpeff.vcf", split=True),
-            htslib.bgzip_tabix_vcf( snpeff_prefix + ".vt.snpeff.vcf", snpeff_prefix + ".vt.snpeff.vcf.gz")            
+            htslib.bgzip_tabix( snpeff_prefix + ".vt.snpeff.vcf", snpeff_prefix + ".vt.snpeff.vcf.gz")            
         ], name="compute_effects.allSamples"))
 
         return jobs

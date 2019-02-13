@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=htslib
-VERSION=1.4.1
+VERSION=1.9
 ARCHIVE=$SOFTWARE-$VERSION.tar.bz2
 ARCHIVE_URL=https://github.com/samtools/htslib/releases/download/${VERSION}/${ARCHIVE}
 SOFTWARE_DIR=$SOFTWARE-$VERSION
@@ -16,9 +16,9 @@ build() {
   tar jxvf $ARCHIVE
 
   cd $SOFTWARE_DIR
-  make
+  make -j12
   # Install software
-  make prefix=$INSTALL_DIR/${SOFTWARE_DIR} install
+  make -j12 prefix=$INSTALL_DIR/${SOFTWARE_DIR} install
 }
 
 module_file() {

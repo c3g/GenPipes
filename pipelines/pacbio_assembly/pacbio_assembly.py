@@ -290,13 +290,9 @@ END
                     ], name="smrtanalysis_run_ca." + sample_cutoff_mer_size))
 
                     job = smrtanalysis.pbutgcns(
-                        os.path.join(assembly_directory, sample_cutoff_mer_size + ".gkpStore"),
-                        os.path.join(assembly_directory, sample_cutoff_mer_size + ".tigStore"),
-                        os.path.join(mer_size_directory, "unitigs.lst"),
-                        os.path.join(assembly_directory, sample_cutoff_mer_size),
-                        os.path.join(assembly_directory, "9-terminator"),
-                        os.path.join(assembly_directory, "9-terminator", sample_cutoff_mer_size + ".ctg.fasta"),
-                        os.path.join(config.param('smrtanalysis_pbutgcns', 'tmp_dir', type='dirpath'), sample_cutoff_mer_size)
+                        assembly_directory, 
+                        sample_cutoff_mer_size,
+                        mer_size_directory
                     )
                     job.name = "smrtanalysis_pbutgcns." + sample_cutoff_mer_size
                     job.samples = [sample]
@@ -354,11 +350,9 @@ END
                         ], name="smrtanalysis_reference_uploader." + job_name_suffix))
 
                         job = smrtanalysis.pbalign(
-                            os.path.join(polishing_round_directory, "data", "aligned_reads.cmp.h5"),
-                            os.path.join(sample.name, "filtering", "data", "filtered_regions.fofn"),
-                            os.path.join(sample.name, "filtering", "input.fofn"),
-                            os.path.join(polishing_round_directory, sample_cutoff_mer_size_polishing_round, "sequence", sample_cutoff_mer_size_polishing_round + ".fasta"),
-                            os.path.join(config.param('smrtanalysis_pbalign', 'tmp_dir', type='dirpath'), sample_cutoff_mer_size_polishing_round)
+                            polishing_round_directory,
+                            sample.name,
+                            sample_cutoff_mer_size_polishing_round
                         )
                         job.name = "smrtanalysis_pbalign." + job_name_suffix
                         job.samples = [sample]

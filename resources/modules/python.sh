@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=python
-VERSION=2.7.14
+VERSION=2.7.15
 SETUPTOOLS_VERSION=36.4.0
 # Remove the version last number
 LIBVERSION=${VERSION%.[0-9]*}
@@ -20,11 +20,8 @@ build() {
   tar zxvf $ARCHIVE
 
   cd $SOFTWARE_DIR
-  # Compile with --enable-unicode=ucs4 to fix error "ImportError: numpy-1.8.1-py2.7-linux-x86_64.egg/numpy/core/multiarray.so: undefined symbol: PyUnicodeUCS2_AsASCIIString"
-  #./configure --prefix=$INSTALL_DIR/$SOFTWARE_DIR --enable-unicode=ucs4 --with-zlib-dir=/usr/lib64 --with-ensurepip=install
-  LFS=/cvmfs/soft.mugqic/lfs/7.6  
-  ./configure --prefix=$INSTALL_DIR/$SOFTWARE_DIR --enable-unicode=ucs4 --with-zlib-dir=$LFS/tools/usr/lib --with-ensurepip=install
-  make -j8
+  ./configure --prefix=$INSTALL_DIR/$SOFTWARE_DIR --enable-optimizations --enable-unicode=ucs4 --with-ensurepip=install
+  make -j12
   make install
 
   echo "General Python installation done.... processing packages"
@@ -142,6 +139,10 @@ build() {
 
   # RSeQC
   $PIP_PATH install --upgrade RSeQC
+
+  # For some reason, pysam installation is often broken at this step, therefore let's remove & re-install it
+  $PIP_PATH uninstall pysam
+  $PIP_PATH install --upgrade pysam
 }
 
 module_file() {

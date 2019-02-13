@@ -20,7 +20,7 @@ build() {
   mkdir repo
   cd repo
   cmake ../ 
-  make
+  make -j12
 
   # Install software
   cd $INSTALL_DOWNLOAD

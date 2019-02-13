@@ -12,10 +12,9 @@ export R_LIBS=
 ## Default arg values
 R_VERSION="latest"
 INSTALL_PREFIX_ENV_VARNAME=""
-MODULEFILE_DIR="$MUGQIC_INSTALL_HOME_TMP/modulefiles/mugqic_dev"
-INSTALL_DIR="$MUGQIC_INSTALL_HOME_TMP/software"
+MODULEFILE_DIR="$MUGQIC_INSTALL_HOME_DEV/modulefiles/mugqic_dev"
+INSTALL_DIR="$MUGQIC_INSTALL_HOME_DEV/software"
 UPDATE_MODE=1
-C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/yum/centos7/1.0/
 
 ## Parse arguments
 usage()
@@ -116,6 +115,26 @@ MODULEVERSIONFILE="$MODULEFILE_DIR/.version"
 # NOTE: this is somewhat complicated because we want the ROOT dir MUGQIC_INSTALL_HOME to be resolved at module execution.
 # TCLROOT is just a variable holding the TCL script value for the 'root' variable in the module file.
 
+if [ `lsb_release -i | cut -f 2` == "Ubuntu" ]
+then
+  echo "Ubuntu" > /dev/null
+  C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/apt/ubuntu1604/1.0
+  LIB=lib
+  INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu/ld-linux-x86-64.so.2
+  LIBDIR=$C3G_SYSTEM_LIBRARY/usr/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB/x86_64-linux-gnu:$INSTALL_DIR/$LIB/R/lib
+elif [ `lsb_release -i | cut -f 2` == "CentOS" ]
+then
+  echo "CentOS" > /dev/null
+  C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/yum/centos7/1.0
+  LIB=lib64
+  INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/ld-linux-x86-64.so.2
+  LIBDIR=$C3G_SYSTEM_LIBRARY/usr/local/c3g/rpm/usr/lib64:$C3G_SYSTEM_LIBRARY/usr/local/c3g/compile/lib:$C3G_SYSTEM_LIBRARY/$LIB:$C3G_SYSTEM_LIBRARY/$LIB/mysql:$INSTALL_DIR/$LIB/R/lib
+else
+  echo "*** ERROR ***"
+  echo "'"`lsb_release -i | cut -f 2`"' OS detected... should be either 'Ubuntu' neither 'CentOS'..."
+  exit 1
+fi
+
 echo "The software install location is $INSTALL_DIR"
 echo "The module file directory is $MODULEFILE_DIR"
 echo "The module file is $MODULEFILE"
@@ -153,7 +172,7 @@ puts stderr "MUGQIC - Adds R to your environment"
 }
 module-whatis "MUGQIC - Adds R to your environment"     
 set             root               $TCLROOT
-setenv          R_LIBS             \$root/lib64/R/library           
+setenv          R_LIBS             \$root/$LIB/R/library           
 prepend-path    PATH               \$root/bin
 EOF
 
@@ -173,18 +192,30 @@ EOF
 # http://r.789695.n4.nabble.com/cairo-is-not-the-default-when-available-td4666691.html
 # http://r.789695.n4.nabble.com/Xll-options-td3725879.html
 #  so the only other way is to set options(bitmapType="cairo")
-# This can be set in R/lib64/etc/Rprofile.site, but then R should not be invked with R --vanilla
+# This can be set in R/lib64(or lib)/etc/Rprofile.site, but then R should not be invked with R --vanilla
 # because vanilla will ignore Rprofile.site.
 
-cat > $INSTALL_DIR/lib64/R/etc/Rprofile.site <<-'EOF'
+cat > $INSTALL_DIR/$LIB/R/etc/Rprofile.site <<-'EOF'
 if(capabilities()["cairo"]){ options(bitmapType="cairo") }
-Sys.umask("002")                        
+Sys.setenv(PAGER="/usr/bin/less")
+Sys.umask("002")
 EOF
 
 fi
 
 ## Load the Boost libraries so they are available to any potential packages which needs those during its installation
 #module load mugqic/boost
+
+#if [ "`echo -e "${BIOCVERSION}\n3.7" | sort -V  | head -n1`" = "3.7" ]
+#then
+#  # Nothing to do if the version if 3.8 or above
+#  echo "version greater than 3.7" > /dev/null
+#  BIOC="BiocManager"
+#else
+#  # For early versions (earlier than 3.7)
+#  echo "version smaller than 3.7" > /dev/null
+#  BIOC="biocLite"
+#fi
 
 ## Finally, update/install library!
 $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
@@ -220,31 +251,31 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
     install.packages('udunits2', repos="http://cran.us.r-project.org/", configure.args='--with-udunits2-include=/usr/include/udunits2', lib=.Library)
 
     ## Define the list of packages to standard packages to install.
-    deps = c("affxparser", "affy", "affyio", "affyPLM", "akima", "annotate", "AnnotationDbi", "AnnotationForge", "ape", "ash",
-    "BatchExperiments", "BatchJobs", "batchtools", "beanplot", "Biobase", "BiocGenerics", "BiocInstaller", "bioDist", "biomaRt", "Biostrings", "biovizBase", "bit",
-    "bit64", "bitops", "boot", "brew", "BSgenome", "bumphunter",
-    "caTools", "charm", "charmData", "circlize", "class", "cluster", "clusterStab", "clusterProfiler", "codetools", "colorspace", "ConsensusClusterPlus",
+    deps = c("affxparser", "affy", "affyio", "affyPLM", "akima", "allgown", "annotate", "AnnotationDbi", "AnnotationForge", "ape", "ash", "ASCAT",
+    "ballgown", "BatchExperiments", "BatchJobs", "batchtools", "beanplot", "Biobase", "BiocGenerics", "BiocInstaller", "bioDist", "biomaRt", "biomformat", "Biostrings", "biovizBase", "bit",
+    "bit64", "bitops", "boot", "brew", "BSgenome", "BSgenome.Hsapiens.UCSC.hg19", "bumphunter",
+    "caTools", "charm", "charmData", "ChIPseeker", "circlize", "class", "cluster", "clusterStab", "clusterProfiler", "codetools", "colorspace", "ConsensusClusterPlus",
     "corpcor", "crlmm", "ctc", "cummeRbund",
-    "datasets", "data.table", "DBI", "DESeq", "devtools", "dendextend", "dichromat", "digest", "dplyr", "DNAcopy",
+    "dada2", "datasets", "data.table", "DBI", "DESeq", "devtools", "dendextend", "dichromat", "diffHic", "digest", "dplyr", "DNAcopy",
     "edgeR", "ellipse", "evaluate",
-    "fastcluster", "fdrtool", "ff", "fields", "FDb.InfiniumMethylation.hg19", "foreach", "foreign",
+    "farver", "fastcluster", "fdrtool", "ff", "fields", "FDb.InfiniumMethylation.hg19", "foreach", "foreign",
     "gcrma", "gdata", "genefilter", "GenomicFeatures", "GenomicRanges", "GenomeInfoDb", "genoset", "GEOquery", "ggplot2", "ggvis", "googleVis", "goseq", "gplots", "graph",
     "gsalib", "gtable", "gtools", "Gviz",
     "hdrcde", "Hmisc", "hwriter", "HTqPCR", "HTSFilter", "hopach",
-    "igraph", "IlluminaHumanMethylation450kmanifest", "IlluminaHumanMethylation450kanno.ilmn12.hg19", "impute", "IRanges", "iterators",
+    "igraph", "IlluminaHumanMethylation450kmanifest", "IlluminaHumanMethylation450kanno.ilmn12.hg19", "impute", "InteractionSet", "IRanges", "iterators",
     "KernSmooth", "ks",
-    "labeling", "lattice", "latticeExtra", "limma", "locfit", "lumi", "LVSmiRNA",
+    "labeling", "lattice", "latticeExtra", "limma", "lme4", "locfit", "lumi", "LVSmiRNA",
     "magrittr", "maps", "markdown", "MASS", "MAST", "Matrix", "matrixStats", "mclust", "memoise", "methyAnalysis", "methylumi", "mgcv", "minfi", "mirbase.db",
     "misc3d", "monocle", "multtest", "munsell", "mvtnorm",
     "NBPSeq", "nleqslv", "nlme", "NMF", "nnet", "nondetects", "nor1mix", "Nozzle.R1",
     "oligo", "oligoClasses", "optparse", "outliers",
-    "pd.charm.hg18.example", "pheatmap", "plotrix", "plyr", "preprocessCore", "proto",
+    "pd.charm.hg18.example", "pheatmap", "phyloseq", "plotrix", "plyr", "preprocessCore", "proto",
     "qqman", "quantreg",
     "R2HTML", "RBGL", "RColorBrewer", "Rcpp", "RcppEigen", "RCurl", "remotes", "rhdf5", "ReportingTools", "reshape", "reshape2", "rgl", "RJSONIO", "Rmisc", "R.methodsS3",
     "rmarkdown", "roxygen2", "rpart", "Rsamtools", "RSQLite", "rtracklayer", "Rtsne",
     "scales", "sendmailR", "Seurat", "shiny", "ShortRead", "siggenes", "slam", "snow", "SNPchip", "SortableHTMLTables", "spam", "SparseM", "spatial", "spp", "SQN",
     "statmod", "stringi", "stringr", "survival", "sva",
-    "testthat", "tidyr", "tidyverse", "TxDb.Hsapiens.UCSC.hg19.knownGene",
+    "testthat", "tidyr", "tidyverse", "tweenr", "TxDb.Hsapiens.UCSC.hg19.knownGene",
     "vioplot", "vsn",
     "WriteXLS",
     "XML", "xtable",
@@ -262,7 +293,9 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
     deps = setdiff(deps, rownames(installed.packages())) # Define packages that need actual install
     biocLite(deps, lib=.Library, ask=FALSE)
     deps = setdiff(deps, rownames(installed.packages()))
-    biocLite(deps, lib=.Library, ask=FALSE) # twice, just to make -j12 sure
+    biocLite(deps, lib=.Library, ask=FALSE) # twice, just to make sure
+    deps = setdiff(deps, rownames(installed.packages()))
+    biocLite(deps, lib=.Library, ask=FALSE) # and why not a third time !
 
     ## Install Vennerable, since not yet in CRAN
     install.packages("Vennerable", repos="http://R-Forge.R-project.org", lib=.Library)
@@ -271,64 +304,42 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
     install.packages('rmarkdown', repos='http://cran.rstudio.org', lib=.Library)
 
     ## Sleuth : needs devtools and remotes to be installed (both done above) 
-    biocLite("pachterlab/sleuth")
+    biocLite("pachterlab/sleuth", lib=.Library, ask=FALSE)
 
     require(devtools)
     ## PopSV
     devtools::install_github("jmonlong/PopSV")
     ## ASCAT
     devtools::install_github("Crick-CancerGenomics/ascat/ASCAT")
+    ## ChIAnalysis (with its eric.utils dependency)
+    devtools::install_bitbucket("ericfournier2/sb_lab/eric.utils")
+    #devtools::install_github("ArnaudDroitLab/ChIAnalysis")
 EOF
-
-#echo "building C3G wrappers for executables..."
-#mkdir -p $INSTALL_DIR/lib64/R/bin/exec.wrap
-#cat > $INSTALL_DIR/lib64/R/bin/exec.wrap/R <<-EOF
-#/cvmfs/soft.mugqic/yum/centos7/1.0/lib64/ld-linux-x86-64.so.2 --library-path /cvmfs/soft.mugqic/yum/centos7/1.0/lib64:/cvmfs/soft.mugqic/yum/centos7/1.0/lib64/mysql:$INSTALL_DIR/lib64/R/lib $INSTALL_DIR/lib64/R/bin/exec/R \${args} \${@}  
-#EOF
-#sed -i "s,R_binary=\"\${R_HOME}\/bin\/exec\${R_ARCH}\/R\",R_binary=\"\${R_HOME}\/bin\/exec\${R_ARCH}.wrap\/R\"," $INSTALL_DIR/bin/R
-#sed -i "s,R_binary=\"\${R_HOME}\/bin\/exec\${R_ARCH}\/R\",R_binary=\"\${R_HOME}\/bin\/exec\${R_ARCH}.wrap\/R\"," $INSTALL_DIR/lib64/R/bin/R
-#for i in $INSTALL_DIR/bin/Rscript $INSTALL_DIR/lib64/R/bin/Rscript; do
-#  mv $i $i.raw;
-#  echo "$C3G_SYSTEM_LIBRARY/lib64/ld-linux-x86-64.so.2 --library-path $C3G_SYSTEM_LIBRARY/lib64:$C3G_SYSTEM_LIBRARY/lib64/mysql:$INSTALL_DIR/lib64/R/lib $i.raw \${@}" > $i;
-#  chmod 775 $i;
-#done
 
 echo "Patching C3G executables..."
 for i in `find $INSTALL_DIR/ -type f -executable -exec file {} \; | grep ELF | cut -d":" -f1`; do
   if readelf -l $i | grep go.build > /dev/null
   then
     echo "GO Done" > /dev/null
-  elif [ ${i##*.} == "so" ]
+  elif [ ${i##*.} == "so" ] || [[ ${i##*/} =~ "so"*(\.[0-9]{1,2})*$ ]]
   then
-    $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-rpath $C3G_SYSTEM_LIBRARY/usr/lib64/ $i
+    $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-rpath $C3G_SYSTEM_LIBRARY/usr/$LIB $i
   else
-    if [ ${i##*/} == "R" ] || [ ${i##*/} == "Rscript" ]
-    then
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libR.so $i
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libRblas.so $i
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libgomp.so.1 $i
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libpthread.so.0 $i
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libc.so.6 $i
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libgfortran.so.3 $i
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libm.so.6 $i
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libquadmath.so.0 $i
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libreadline.so.6 $i
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libtre.so.5 $i
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libpcre.so.1 $i
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed liblzma.so.5 $i
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libbz2.so.1 $i
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libz.so.1 $i
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed librt.so.1 $i
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libdl.so.2 $i
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libicuuc.so.50 $i
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libicui18n.so.50 $i
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libgcc_s.so.1 $i
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libtinfo.so.5 $i
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libicudata.so.50 $i
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --add-needed libstdc++.so.6 $i
-    fi
-    $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-interpreter $C3G_SYSTEM_LIBRARY/lib64/ld-linux-x86-64.so.2 --set-rpath $C3G_SYSTEM_LIBRARY/usr/lib64/ $i
+    echo $i
+    $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-interpreter $INTERPRETER --set-rpath $C3G_SYSTEM_LIBRARY/usr/$LIB $i
   fi
+done
+
+echo "Building C3G wrappers for executables..."
+sed -i "s,R_binary=\"\${R_HOME}/bin/exec\${R_ARCH}/R,R_binary=\"\${R_HOME}/bin/exec\${R_ARCH}.wrap/R," $INSTALL_DIR/bin/R
+sed -i "s,R_binary=\"\${R_HOME}/bin/exec\${R_ARCH}/R,R_binary=\"\${R_HOME}/bin/exec\${R_ARCH}.wrap/R," $INSTALL_DIR/$LIB/R/bin/R
+mkdir $INSTALL_DIR/$LIB/R/bin/exec.wrap
+echo "$INTERPRETER --library-path $LIBDIR $INSTALL_DIR/$LIB/R/bin/exec/R \${args} \${i}" > $INSTALL_DIR/$LIB/R/bin/exec.wrap/R
+chmod 775 $INSTALL_DIR/$LIB/R/bin/exec.wrap/R
+for i in $INSTALL_DIR/bin/Rscript $INSTALL_DIR/$LIB/R/bin/Rscript; do
+  mv $i $i.raw;
+  echo "$INTERPRETER --library-path $LIBDIR $i.raw \${@}" > $i;
+  chmod 775 $i;
 done
 
 echo "Adjusting permissions..."

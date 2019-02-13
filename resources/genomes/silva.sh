@@ -9,28 +9,43 @@ else
   INSTALL_HOME=MUGQIC_INSTALL_HOME_DEV
 fi
 
-ROOT="${!INSTALL_HOME}/genomes/silva_db/"; mkdir -p $ROOT ; cd $ROOT
+ROOT="${!INSTALL_HOME}/genomes/silva_db/";
+mkdir -p $ROOT; 
+cd $ROOT
 
-#VERSION=119
-VERSION=123 # The last version is 123
-wget https://www.arb-silva.de/fileadmin/silva_databases/qiime/Silva_${VERSION}_release.zip
-unzip Silva_${VERSION}_release.zip
+VERSION=132 # The last version is 132
+ARCHIVE=Silva_${VERSION}_release.zip
+ARCHIVE_URL=https://www.arb-silva.de/fileadmin/silva_databases/qiime/${ARCHIVE}
+
+# If archive was previously downloaded, use the local one, otherwise get it from remote site
+if [[ -f $ARCHIVE ]]
+then
+  echo "Archive $ARCHIVE already in $ROOT/: using it..."
+else
+  echo "Archive $ARCHIVE not in $ROOT/: downloading it..."
+  wget --no-check-certificate ${ARCHIVE_URL} --output-document=$ROOT/$ARCHIVE
+fi
+
+unzip $ARCHIVE
 
 rm -rf __MACOSX
-mv SILVA${VERSION}_QIIME_release $VERSION
+mv SILVA_${VERSION}_QIIME_release $VERSION
 rm -f Silva_${VERSION}_provisional_release.zip
 
 ## Rename files for configuration pattern.
-cd 123/taxonomy/16S_only/
-cp 90/taxonomy_all_levels.txt 90_otu_taxonomy.txt
-cp 94/taxonomy_all_levels.txt 94_otu_taxonomy.txt
-cp 97/taxonomy_all_levels.txt 97_otu_taxonomy.txt
-cp 99/taxonomy_all_levels.txt 99_otu_taxonomy.txt
+for i in 16S 18S
+do
+  cd $ROOT/${VERSION}/taxonomy/${i}_only/
+  for j in 90 94 97 99
+  do
+    cp ${j}/taxonomy_all_levels.txt ${j}_otu_taxonomy.txt
+  done
 
-cd $ROOT
-cd 123/rep_set/rep_set_16S_only/
-cp 90/90_otus_16S.fasta 90_otus.fasta
-cp 94/94_otus_16S.fasta 94_otus.fasta
-cp 97/97_otus_16S.fasta 97_otus.fasta
-cp 99/99_otus_16S.fasta 99_otus.fasta
+  cd $ROOT/${VERSION}/rep_set/rep_set_${i}_only/
+  for j in 90 94 97 99
+  do
+    file=`ls $j/*`
+    cp $file ${j}_otus.fasta
+  done
 
+done 

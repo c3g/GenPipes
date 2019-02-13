@@ -482,12 +482,12 @@ cp \\
                 jobs.append(concat_jobs([
                     Job(command="mkdir -p " + varscan_directory, removable_files=[varscan_directory], samples=[tumor_pair.normal, tumor_pair.tumor]),
                     varscan.somatic(input_normal, input_tumor, output, config.param('varscan2_somatic_panel', 'other_options'), output_vcf_dep=output_vcf_gz, output_snp_dep=output_snp, output_indel_dep=output_indel),
-                    htslib.bgzip_tabix_vcf(output_snp, os.path.join(varscan_directory, tumor_pair.name + ".snp." + sequence['name'] + ".vcf.gz")),
-                    htslib.bgzip_tabix_vcf(output_indel, os.path.join(varscan_directory, tumor_pair.name + ".indel." + sequence['name'] + ".vcf.gz")),
+                    htslib.bgzip_tabix(output_snp, os.path.join(varscan_directory, tumor_pair.name + ".snp." + sequence['name'] + ".vcf.gz")),
+                    htslib.bgzip_tabix(output_indel, os.path.join(varscan_directory, tumor_pair.name + ".indel." + sequence['name'] + ".vcf.gz")),
                     pipe_jobs([
                         bcftools.concat([os.path.join(varscan_directory, tumor_pair.name + ".snp." + sequence['name'] + ".vcf.gz"), os.path.join(varscan_directory, tumor_pair.name + ".indel." + sequence['name'] + ".vcf.gz")], None),
                         Job([None], [None], command="sed 's/TUMOR/"+ tumor_pair.tumor.name + "/g' | sed 's/NORMAL/"+ tumor_pair.normal.name + "/g' " ),
-                        htslib.bgzip_tabix_vcf(None, output_vcf_gz),
+                        htslib.bgzip_tabix(None, output_vcf_gz),
                     ]),
                 ], name = "varscan2_somatic_panel." + tumor_pair.name + "." + sequence['name'] ) )
 
@@ -517,15 +517,15 @@ cp \\
                     Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $4) } {print}'"),
                     Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $5) } {print}'"),
                     Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '$1!~/^#/ && $4 == $5 {next} {print}'"),
-                    htslib.bgzip_tabix_vcf(None, all_output),
+                    htslib.bgzip_tabix(None, all_output),
                 ]),
                 pipe_jobs([
                     bcftools.view(all_output, None, config.param('merge_varscan2', 'somatic_filter_options')),
-                    htslib.bgzip_tabix_vcf(None, somatic_output),
+                    htslib.bgzip_tabix(None, somatic_output),
                 ]),
                 pipe_jobs([
                     bcftools.view(all_output, None, config.param('merge_varscan2', 'germline_loh_filter_options')),
-                    htslib.bgzip_tabix_vcf(None, germline_output),
+                    htslib.bgzip_tabix(None, germline_output),
                 ]),
             ], name = "merge_varscan2." + tumor_pair.name ))
 
@@ -555,7 +555,7 @@ cp \\
                 Job(samples=[tumor_pair.normal, tumor_pair.tumor]),
                 pipe_jobs([
                     vt.decompose_and_normalize_mnps( prefix + ".varscan2.somatic.vcf.gz" , None),
-                    htslib.bgzip_tabix_vcf(None, prefix + ".prep.vt.vcf.gz"),
+                    htslib.bgzip_tabix(None, prefix + ".prep.vt.vcf.gz"),
                 ]),
                 tools.preprocess_varscan( prefix + ".prep.vt.vcf.gz",  outputFix ),
                 #Job([outputPreprocess], [outputFix], command="zcat " + outputPreprocess + " | grep -v 'ID=AD_O' | awk ' BEGIN {OFS=\"\\t\"; FS=\"\\t\"} {if (NF > 8) {for (i=9;i<=NF;i++) {x=split($i,na,\":\") ; if (x > 1) {tmp=na[1] ; for (j=2;j<x;j++){if (na[j] == \"AD_O\") {na[j]=\"AD\"} ; if (na[j] != \".\") {tmp=tmp\":\"na[j]}};$i=tmp}}};print $0} ' | bgzip -cf >  " + outputFix),
@@ -565,7 +565,7 @@ cp \\
                 Job(samples=[tumor_pair.normal, tumor_pair.tumor]),
                 pipe_jobs([
                     vt.decompose_and_normalize_mnps( prefix + ".varscan2.germline_loh.vcf.gz" , None),
-                    htslib.bgzip_tabix_vcf(None,  prefix + ".germline_loh.prep.vt.vcf.gz"),
+                    htslib.bgzip_tabix(None,  prefix + ".germline_loh.prep.vt.vcf.gz"),
                 ]),
                 tools.preprocess_varscan( prefix + ".germline_loh.prep.vt.vcf.gz",  outputFixGermline ),
                 #Job([outputPrepGermline], [outputFixGermline], command="zcat " + outputPrepGermline + " | grep -v 'ID=AD_O' | awk ' BEGIN {OFS=\"\\t\"; FS=\"\\t\"} {if (NF > 8) {for (i=9;i<=NF;i++) {x=split($i,na,\":\") ; if (x > 1) {tmp=na[1] ; for (j=2;j<x;j++){if (na[j] == \"AD_O\") {na[j]=\"AD\"} ; if (na[j] != \".\") {tmp=tmp\":\"na[j]}};$i=tmp}}};print $0} ' | bgzip -cf >  " + outputFixGermline),
@@ -603,13 +603,13 @@ cp \\
             jobs.append(concat_jobs([
                 Job(samples=[tumor_pair.normal, tumor_pair.tumor]),
                 snpeff.compute_effects(input_somatic, output_somatic, cancer_sample_file=cancer_pair_filename, options=config.param('compute_cancer_effects_somatic', 'options')),
-                htslib.bgzip_tabix_vcf(output_somatic, output_somatic_gz),
+                htslib.bgzip_tabix(output_somatic, output_somatic_gz),
             ], name = "compute_cancer_effects_somatic." + tumor_pair.name))
 
             jobs.append(concat_jobs([
                 Job(samples=[tumor_pair.normal, tumor_pair.tumor]),
                 snpeff.compute_effects(input_germline, output_germline, cancer_sample_file=cancer_pair_filename, options=config.param('compute_cancer_effects_germline', 'options')),
-                htslib.bgzip_tabix_vcf(output_germline, output_germline_gz),
+                htslib.bgzip_tabix(output_germline, output_germline_gz),
             ], name = "compute_cancer_effects_germline." + tumor_pair.name))
 
         return jobs
@@ -722,13 +722,13 @@ cp \\
                 jobs.append(concat_jobs([
                     Job(command="mkdir -p " + varscan_directory, removable_files=[varscan_directory], samples=[tumor_pair.normal, tumor_pair.tumor]),
                     varscan.somatic(input_normal, input_tumor, output, config.param('varscan2_somatic', 'other_options'), output_vcf_dep=output_vcf, output_snp_dep=output_snp, output_indel_dep=output_indel),
-                    htslib.bgzip_tabix_vcf(output_snp, os.path.join(varscan_directory, tumor_pair.name + "." + sequence['name'] + ".snp.vcf.gz")),
-                    htslib.bgzip_tabix_vcf(output_indel, os.path.join(varscan_directory, tumor_pair.name + "." + sequence['name'] + ".indel.vcf.gz")),
+                    htslib.bgzip_tabix(output_snp, os.path.join(varscan_directory, tumor_pair.name + "." + sequence['name'] + ".snp.vcf.gz")),
+                    htslib.bgzip_tabix(output_indel, os.path.join(varscan_directory, tumor_pair.name + "." + sequence['name'] + ".indel.vcf.gz")),
                     pipe_jobs([
                         bcftools.concat([os.path.join(varscan_directory, tumor_pair.name + "." + sequence['name'] + ".snp.vcf.gz"), os.path.join(varscan_directory, tumor_pair.name + "." + sequence['name'] + ".indel.vcf.gz")], None),
                         Job([None], [output_vcf], command="sed 's/TUMOR/"+ tumor_pair.tumor.name + "/g' | sed 's/NORMAL/"+ tumor_pair.normal.name + "/g' | grep -v \"INFO=<ID=SSC\" | sed -E \"s/SSC=(.*);//g\" > " + output_vcf),
                     ]),
-                    htslib.bgzip_tabix_vcf(output_vcf, output_vcf_gz),
+                    htslib.bgzip_tabix(output_vcf, output_vcf_gz),
                 ], name = "varscan2_somatic." + tumor_pair.name + "." + sequence['name'] ) )
 
         return jobs
@@ -769,18 +769,18 @@ cp \\
                     bamreadcount.readcount(inputNormal, output_bed, output_normal_readcount),
                     bamreadcount.readcount(inputTumor, output_bed, output_tumor_readcount),
                     varscan.fpfilter_somatic(input_vcf, output_tumor_readcount, output_fpfilter_somatic),
-                    htslib.bgzip_tabix_vcf(output_fpfilter_somatic, output_fpfilter_somatic_gz),
+                    htslib.bgzip_tabix(output_fpfilter_somatic, output_fpfilter_somatic_gz),
                     pipe_jobs([
                         bcftools.view(output_fpfilter_somatic_gz, None, config.param('varscan2_readcount_fpfilter', 'somatic_filter_options')),
                         vcflib.vcfstreamsort(None, None),
-                        htslib.bgzip_tabix_vcf(None, output_vcf_somatic_gz),
+                        htslib.bgzip_tabix(None, output_vcf_somatic_gz),
                     ]),
                     varscan.fpfilter_somatic(input_vcf, output_normal_readcount, output_fpfilter_germline),
-                    htslib.bgzip_tabix_vcf(output_fpfilter_germline, output_fpfilter_germline_gz),
+                    htslib.bgzip_tabix(output_fpfilter_germline, output_fpfilter_germline_gz),
                     pipe_jobs([
                         bcftools.view(output_fpfilter_germline_gz, None, config.param('varscan2_readcount_fpfilter', 'germline_loh_filter_options')),
                         vcflib.vcfstreamsort(None, None),
-                        htslib.bgzip_tabix_vcf(None, output_vcf_germline_loh_gz),
+                        htslib.bgzip_tabix(None, output_vcf_germline_loh_gz),
                     ])
                 ], name = "varscan2_readcount_fpfilter." + tumor_pair.name + "." + sequence['name'] ) )
 
@@ -810,27 +810,27 @@ cp \\
             germline_output_vt = os.path.join(pair_directory, tumor_pair.name + ".varscan2.germline_loh.vt.vcf.gz")
 
             jobs.append(concat_jobs([
+                Job(samples=[tumor_pair.normal, tumor_pair.tumor]),
                 pipe_jobs([
-                    Job(samples=[tumor_pair.normal, tumor_pair.tumor]),
                     bcftools.concat(all_inputs, None),
                     tools.fix_varscan_output(None, None),
                     Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $4) } {print}'"),
                     Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $5) } {print}'"),
                     Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '$1!~/^#/ && $4 == $5 {next} {print}'"),
-                    htslib.bgzip_tabix_vcf(None, all_output),
+                    htslib.bgzip_tabix(None, all_output),
                 ]),
                 pipe_jobs([
                     vt.decompose_and_normalize_mnps( all_output , None),
                     #vcflib.vcfstreamsort(None, None),
-                    htslib.bgzip_tabix_vcf(None,  all_output_vt),
+                    htslib.bgzip_tabix(None,  all_output_vt),
                 ]),
                 pipe_jobs([
                     bcftools.view(all_output_vt, None, config.param('varscan2_readcount_fpfilter', 'somatic_filter_options')),
-                    htslib.bgzip_tabix_vcf(None, somtic_output_vt),
+                    htslib.bgzip_tabix(None, somtic_output_vt),
                 ]),
                 pipe_jobs([
                     bcftools.view(all_output_vt, None, config.param('varscan2_readcount_fpfilter', 'germline_loh_filter_options')),
-                    htslib.bgzip_tabix_vcf(None, germline_output_vt),
+                    htslib.bgzip_tabix(None, germline_output_vt),
                 ]),
             ], name = "merge_varscan2." + tumor_pair.name ))
 
@@ -871,14 +871,14 @@ cp \\
                     jobs.append(concat_jobs([
                         # Create output directory since it is not done by default by GATK tools
                         mkdir_job,
-                        gatk.mutect2(inputNormal, inputTumor, os.path.join(mutect_directory, outPrefix + ".vcf.gz"), intervals=sequences)
+                        gatk.mutect2(inputNormal, tumor_pair.normal.name, inputTumor, tumor_pair.tumor.name, os.path.join(mutect_directory, outPrefix + ".vcf.gz"), intervals=sequences)
                     ], name="gatk_mutect2." + tumor_pair.name + "." + str(idx)))
 
                 # Create one last job to process the last remaining sequences and 'others' sequences
                 jobs.append(concat_jobs([
                     # Create output directory since it is not done by default by GATK tools
                     mkdir_job,
-                    gatk.mutect2(inputNormal, inputTumor, os.path.join(mutect_directory, tumor_pair.name + ".others.mutect2.vcf.gz"), exclude_intervals=unique_sequences_per_job_others)
+                    gatk.mutect2(inputNormal, tumor_pair.normal.name, inputTumor, tumor_pair.tumor.name, os.path.join(mutect_directory, tumor_pair.name + ".others.mutect2.vcf.gz"), exclude_intervals=unique_sequences_per_job_others)
                 ], name="gatk_mutect2." + tumor_pair.name + ".others"))
 
         return jobs
@@ -908,17 +908,17 @@ cp \\
                     Job([input], [output_gz], command="ln -s -f " + input + " " + output, samples=[tumor_pair.normal, tumor_pair.tumor]),
                     pipe_jobs([
                         vt.decompose_and_normalize_mnps(output_gz, None),
-                        htslib.bgzip_tabix_vcf(None, output_vt_gz),
+                        htslib.bgzip_tabix(None, output_vt_gz),
                     ]),
                     pipe_jobs([
                         Job([output_vt_gz], [None], command="zcat " + output + " | sed 's/TUMOR/"+ tumor_pair.tumor.name + "/g' | sed 's/NORMAL/"+ tumor_pair.normal.name + "/g' | sed 's/Number=R/Number=./g' "),
                         bcftools.view(None, None, config.param('merge_filter_mutect2', 'filter_options')),
-                        htslib.bgzip_tabix_vcf(None, output_somatic),
+                        htslib.bgzip_tabix(None, output_somatic),
                     ]),
                     pipe_jobs([
                         vt.decompose_and_normalize_mnps(output_somatic, None),
                         #vcflib.vcfstreamsort(None, None),
-                        htslib.bgzip_tabix_vcf(None, output_somatic_vt),
+                        htslib.bgzip_tabix(None, output_somatic_vt),
                     ]),
                 ], name="symlink_mutect_vcf." + tumor_pair.name))
 
@@ -936,16 +936,16 @@ cp \\
                     pipe_jobs([
                         bcftools.concat(inputVCFs, None, config.param('merge_filter_mutect2', 'bcftools_options')),
                         Job([None], [None], command="sed 's/TUMOR/"+ tumor_pair.tumor.name + "/g' | sed 's/NORMAL/"+ tumor_pair.normal.name + "/g' | sed 's/Number=R/Number=./g' " ),
-                        htslib.bgzip_tabix_vcf(None, output_gz),
+                        htslib.bgzip_tabix(None, output_gz),
                     ]),
                     pipe_jobs([
                         vt.decompose_and_normalize_mnps(output_gz, None),
                         #vcflib.vcfstreamsort(None, None),
-                        htslib.bgzip_tabix_vcf(None, output_vt_gz),
+                        htslib.bgzip_tabix(None, output_vt_gz),
                     ]),
                     pipe_jobs([
                         bcftools.view(output_vt_gz, None, config.param('merge_filter_mutect2', 'filter_options')),
-                        htslib.bgzip_tabix_vcf(None, output_somatic_vt),
+                        htslib.bgzip_tabix(None, output_somatic_vt),
                      ]),
                  ], name = "merge_filter_mutect2." + tumor_pair.name))
 
@@ -1029,21 +1029,21 @@ cp \\
                         Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $4) } {print}'"),
                         Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $5) } {print}'"),
                         Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '$1!~/^#/ && $4 == $5 {next} {print}'"),
-                        htslib.bgzip_tabix_vcf(None, output_vcf),
+                        htslib.bgzip_tabix(None, output_vcf),
                     ]),
                     pipe_jobs([
                         vt.decompose_and_normalize_mnps(output_vcf, None),
                         #vcflib.vcfstreamsort(None, None),
-                        htslib.bgzip_tabix_vcf(None, output_vcf_vt),
+                        htslib.bgzip_tabix(None, output_vcf_vt),
                     ]),
                     pipe_jobs([
                         bcftools.filter(output_vcf_vt, None, config.param('merge_filter_paired_samtools', 'somatic_filter_options')),
                         vcflib.vcffilter(None, None, config.param('merge_filter_paired_samtools', 'somatic_vcffilter_options')),
-                        htslib.bgzip_tabix_vcf(None, output_somatics),
+                        htslib.bgzip_tabix(None, output_somatics),
                     ]),
                     pipe_jobs([
                         bcftools.filter(output_vcf_vt, None, config.param('merge_filter_paired_samtools', 'germline_loh_filter_options')),
-                        htslib.bgzip_tabix_vcf(None, output_germline_loh),
+                        htslib.bgzip_tabix(None, output_germline_loh),
                     ]),
                 ], name = "merge_filter_paired_samtools." + tumor_pair.name))
 
@@ -1058,21 +1058,21 @@ cp \\
                         Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $4) } {print}'"),
                         Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $5) } {print}'"),
                         Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '$1!~/^#/ && $4 == $5 {next} {print}'"),
-                        htslib.bgzip_tabix_vcf(None, output_vcf),
+                        htslib.bgzip_tabix(None, output_vcf),
                     ]),
                     pipe_jobs([
                         vt.decompose_and_normalize_mnps(output_vcf, None),
                         #vcflib.vcfstreamsort(None, None),
-                        htslib.bgzip_tabix_vcf(None, output_vcf_vt),
+                        htslib.bgzip_tabix(None, output_vcf_vt),
                     ]),
                     pipe_jobs([
                         bcftools.filter(output_vcf_vt, None, config.param('merge_filter_paired_samtools', 'somatic_filter_options')),
                         #vcflib.vcffilter(None, None, config.param('merge_filter_paired_samtools', 'somatic_vcffilter_options')),
-                        htslib.bgzip_tabix_vcf(None, output_somatics),
+                        htslib.bgzip_tabix(None, output_somatics),
                     ]),
                      pipe_jobs([
                         bcftools.filter(output_vcf_vt, None, config.param('merge_filter_paired_samtools', 'germline_loh_filter_options')),
-                        htslib.bgzip_tabix_vcf(None, output_germline_loh),
+                        htslib.bgzip_tabix(None, output_germline_loh),
                     ]),
                 ], name = "merge_filter_paired_samtools." + tumor_pair.name))
 
@@ -1141,7 +1141,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
                             vardict.paired_java(inputNormal, inputTumor, tumor_pair.name, None, bf),
                             vardict.testsomatic(None,None),
                             vardict.var2vcf(None, tumor_pair.normal.name, tumor_pair.tumor.name, None ),
-                            htslib.bgzip_tabix_vcf(None, output),
+                            htslib.bgzip_tabix(None, output),
                         ]),
                     ], name="vardict_paired." + tumor_pair.name + "." + str(idx) ))
                     idx += 1
@@ -1159,7 +1159,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
                             vardict.paired_java(inputNormal, inputTumor, tumor_pair.name, None, beds.pop()),
                             vardict.testsomatic(None,None),
                             vardict.var2vcf(None, tumor_pair.normal.name, tumor_pair.tumor.name, None ),
-                            htslib.bgzip_tabix_vcf(None, output),
+                            htslib.bgzip_tabix(None, output),
                         ]),
                      ], name="vardict_paired." + tumor_pair.name + ".0"))
                 else:
@@ -1177,7 +1177,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
                                 vardict.paired_java(inputNormal, inputTumor, tumor_pair.name, None, beds[idx]),
                                 vardict.testsomatic(None, None),
                                 vardict.var2vcf(None, tumor_pair.normal.name, tumor_pair.tumor.name, None),
-                                htslib.bgzip_tabix_vcf(None, output),
+                                htslib.bgzip_tabix(None, output),
                             ]),
                         ], name="vardict_paired." + tumor_pair.name + "." + str(idx) ))
         return jobs
@@ -1209,20 +1209,20 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
                         Job([output_tmp], [None], command="zcat {output} | awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $4) } {print}'"),
                         Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $5) } {print}'"),
                         Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '$1!~/^#/ && $4 == $5 {next} {print}'"),
-                        htslib.bgzip_tabix_vcf(None, output)
+                        htslib.bgzip_tabix(None, output)
                     ]),
                     pipe_jobs([
                         vt.decompose_and_normalize_mnps(output, None),
                         vcflib.vcfstreamsort(None, None),
-                        htslib.bgzip_tabix_vcf(None, output_vt),
+                        htslib.bgzip_tabix(None, output_vt),
                     ]),
                     pipe_jobs([
                        bcftools.view(output_vt, None, config.param('merge_filter_paired_vardict', 'somatic_filter_options')),
-                       htslib.bgzip_tabix_vcf(None, output_somatics),
+                       htslib.bgzip_tabix(None, output_somatics),
                     ]),
                     pipe_jobs([
                        bcftools.view(output_vt, None, config.param('merge_filter_paired_vardict', 'germline_loh_filter_options')),
-                       htslib.bgzip_tabix_vcf(None, output_germline_loh),
+                       htslib.bgzip_tabix(None, output_germline_loh),
                     ]),
                 ], removable_files=[output], name="symlink_vardict_vcf." + tumor_pair.name ))
             else:
@@ -1237,20 +1237,20 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
                         Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $4) } {print}'"),
                         Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $5) } {print}'"),
                         Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '$1!~/^#/ && $4 == $5 {next} {print}'"),
-                        htslib.bgzip_tabix_vcf(None, output),
+                        htslib.bgzip_tabix(None, output),
                     ]),
                     pipe_jobs([
                         vt.decompose_and_normalize_mnps(output, None),
                         vcflib.vcfstreamsort(None, None),
-                        htslib.bgzip_tabix_vcf(None, output_vt),
+                        htslib.bgzip_tabix(None, output_vt),
                     ]),
                     pipe_jobs([
                        bcftools.view(output_vt, None, config.param('merge_filter_paired_vardict', 'somatic_filter_options')),
-                       htslib.bgzip_tabix_vcf(None, output_somatic),
+                       htslib.bgzip_tabix(None, output_somatic),
                     ]),
                     pipe_jobs([
                        bcftools.view(output_vt, None, config.param('merge_filter_paired_vardict', 'germline_loh_filter_options')),
-                       htslib.bgzip_tabix_vcf(None, output_germline_loh),
+                       htslib.bgzip_tabix(None, output_germline_loh),
                     ]),
                 ], name = "merge_filter_paired_vardict." + tumor_pair.name))
 
@@ -1389,7 +1389,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
                 Job(samples=[tumor_pair.normal, tumor_pair.tumor]),
                 pipe_jobs([
                     bcftools.concat(somatic_inputs, None),
-                    htslib.bgzip_tabix_vcf(None, somatic_output),
+                    htslib.bgzip_tabix(None, somatic_output),
                 ]),
             ], name = "merge_gatk_variant_annotator.somatic." + tumor_pair.name))
 
@@ -1412,7 +1412,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
                 Job(samples=[tumor_pair.normal, tumor_pair.tumor]),
                 pipe_jobs([
                     bcftools.concat(germline_inputs, None),
-                    htslib.bgzip_tabix_vcf(None, germline_output),
+                    htslib.bgzip_tabix(None, germline_output),
                 ]),
             ], name = "merge_gatk_variant_annotator.germline." + tumor_pair.name))
 
@@ -1449,7 +1449,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
             jobs.append(concat_jobs([
                 mkdir_job,
                 snpeff.compute_effects(input_somatic, output_somatic, cancer_sample_file=cancer_pair_filename, options=config.param('compute_cancer_effects_somatic', 'options')),
-                htslib.bgzip_tabix_vcf(output_somatic, output_somatic_gz),
+                htslib.bgzip_tabix(output_somatic, output_somatic_gz),
             ], name = "compute_cancer_effects_somatic." + tumor_pair.name))
 
         return jobs
@@ -1481,7 +1481,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
             jobs.append(concat_jobs([
                 mkdir_job,
                 snpeff.compute_effects(input_germline, output_germline, options=config.param('compute_cancer_effects_germline', 'options')),
-                htslib.bgzip_tabix_vcf(output_germline, output_germline_gz),
+                htslib.bgzip_tabix(output_germline, output_germline_gz),
             ], name = "compute_cancer_effects_germline." + tumor_pair.name))
 
         return jobs
@@ -1610,7 +1610,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         jobs.append(concat_jobs([
             mkdir_job,
             snpeff.compute_effects(input, output, cancer_sample_file=cancer_pair_filename,options=config.param('compute_cancer_effects_somatic', 'options')),
-            htslib.bgzip_tabix_vcf(output, output_gz),
+            htslib.bgzip_tabix(output, output_gz),
         ],name = "compute_effects.somatic.allPairs"))
 
         return jobs
@@ -1635,7 +1635,7 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         jobs.append(concat_jobs([
             mkdir_job,
             snpeff.compute_effects(input, output, options=config.param('compute_cancer_effects_germline', 'options')),
-            htslib.bgzip_tabix_vcf(output, output_gz),
+            htslib.bgzip_tabix(output, output_gz),
         ], name = "compute_effects.germline.allPair"))
 
         return jobs

@@ -14,10 +14,10 @@ build() {
 
   cd $SOFTWARE_DIR 
   ./configure --prefix=$INSTALL_DIR/$SOFTWARE_DIR
-  make -C ngs-sdk
-  make -C ngs-java
-  make -C ngs-sdk install
-  make -C ngs-java install
+  make -j12 -C ngs-sdk
+  make -j12 -C ngs-java
+  make -j12 -C ngs-sdk install
+  make -j12 -C ngs-java install
 }
 
 module_file() {

@@ -1,54 +1,37 @@
-#!/bin/sh
+#!/bin/bash
+# Exit immediately on error
+set -eu -o pipefail
 
-################################################################################
-# This is a module install script template which should be copied and used for
-# consistency between module paths, permissions, etc.
-# Only lines marked as "## TO BE ADDED/MODIFIED" should be, indeed, modified.
-# You should probably also delete this commented-out header and the ## comments
-################################################################################
+SOFTWARE=FastTree
+VERSION=2.1.10
+ARCHIVE=${SOFTWARE}-${VERSION}.c
+ARCHIVE_URL=http://www.microbesonline.org/${SOFTWARE,,}/$ARCHIVE
+SOFTWARE_DIR=${SOFTWARE}-${VERSION}
 
+build() {
+  cd $INSTALL_DOWNLOAD
+  gcc -O3 -finline-functions -funroll-loops -Wall -o ${SOFTWARE} ${ARCHIVE} -lm
+  gcc -DOPENMP -fopenmp -O3 -finline-functions -funroll-loops -Wall -o ${SOFTWARE}MP ${ARCHIVE} -lm
 
-#
-# Software_name  gnuplot.
-#
+  mkdir -p $INSTALL_DIR/$SOFTWARE_DIR
+  mv ${SOFTWARE} ${SOFTWARE}MP $INSTALL_DIR/$SOFTWARE_DIR/
 
-SOFTWARE=fasttree
-VERSION=2.1.7 
-INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/$SOFTWARE
-INSTALL_DOWNLOAD=$INSTALL_PATH/tmp
-mkdir -p $INSTALL_DOWNLOAD
-cd $INSTALL_DOWNLOAD
-
-# Download, extract, build
-# Write here the specific commands to download, extract, build the software, typically similar to:
-wget http://www.microbesonline.org/fasttree/FastTree  
-
-# Add permissions and install software
-chmod -R 775 *
-
-# Module file
-echo "#%Module1.0
-proc ModulesHelp { } {
-       puts stderr \"\tMUGQIC - $SOFTWARE-$VERSION \" ;
+  chmod -R 775 $INSTALL_DIR/$SOFTWARE_DIR/*
 }
-module-whatis \"$SOFTWARE  \" ; 
-                      
-set             root                \$::env(MUGQIC_INSTALL_HOME)/software/$SOFTWARE/$SOFTWARE-$VERSION ;
-prepend-path    PATH                \$root/bin ;  
-" > $VERSION
 
-################################################################################
-# Everything below this line should be generic and not modified
+module_file() {
+echo "\
+#%Module1.0
+proc ModulesHelp { } {
+  puts stderr \"\tMUGQIC - $SOFTWARE \"
+}
+module-whatis \"$SOFTWARE\"
 
-# Default module version file
-echo "#%Module1.0
-set ModulesVersion \"$VERSION\"" > .version
+set             root                $INSTALL_DIR/$SOFTWARE_DIR
+prepend-path    PATH                \$root
+"
+}
 
-# Add permissions and install module
-mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
-chmod -R ug+rwX $VERSION .version
-chmod -R o+rX $VERSION .version
-mv $VERSION .version $MUGQIC_INSTALL_HOME/modulefiles/mugqic/$SOFTWARE
-
-# Clean up temporary installation files if any
-rm -rf $INSTALL_DOWNLOAD
+# Call generic module install script once all variables and functions have been set
+MODULE_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source $MODULE_INSTALL_SCRIPT_DIR/install_module.sh $@
