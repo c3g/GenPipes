@@ -66,17 +66,33 @@ class Job(object):
     def input_files(self):
         return self._input_files
 
+    @input_files.setter
+    def input_files(self, value):
+        self._input_files = value
+
     @property
     def output_files(self):
         return self._output_files
+
+    @output_files.setter
+    def output_files(self, value):
+        self._output_files = value
 
     @property
     def report_files(self):
         return self._report_files
 
+    @report_files.setter
+    def report_files(self, value):
+        self._report_files = value
+
     @property
     def removable_files(self):
         return self._removable_files
+
+    @removable_files.setter
+    def removable_files(self, value):
+        self._removable_files = value
 
     @property
     def done(self):
