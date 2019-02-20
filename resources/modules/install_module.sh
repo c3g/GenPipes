@@ -51,7 +51,7 @@ store_archive() {
 }
 
 create_c3g_wrappers() {
-  for i in `find $INSTALL_DIR/$SOFTWARE_DIR/ -type f -executable -exec file {} \; | grep ELF | grep -vP "\.so(\.\d+)*$" | cut -d":" -f1`; do
+  for i in `find $INSTALL_DIR/$SOFTWARE_DIR/ -type f -executable -exec file {} \; | grep -v "statically linked" | grep ELF | cut -d":" -f1 | grep -vP "\.so(\.\d+)*$"`; do
     mv $i $i.raw;
     echo "$INTERPRETER --library-path $LIBDIR $i.raw \${@}" > $i;
     chmod a+x $i
@@ -59,7 +59,7 @@ create_c3g_wrappers() {
 }
 
 patch_c3g_binaries() {
-  for i in `find $INSTALL_DIR/$SOFTWARE_DIR/ -type f -executable -exec file {} \; | grep ELF | grep -v "statically linked" | cut -d":" -f1`; do
+  for i in `find $INSTALL_DIR/$SOFTWARE_DIR/ -type f -executable -exec file {} \; | grep -v "statically linked" | grep ELF | cut -d":" -f1`; do
     if readelf -l $i | grep go.build > /dev/null
     then
       echo "GO Done" > /dev/null
