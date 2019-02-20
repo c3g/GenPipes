@@ -757,22 +757,26 @@ def filter_snp_cpg(input, output):
         [input],
         [output],
         [
-            ['filter_snp_cpg', 'module_bedtools']
+            ['filter_snp_cpg', 'module_bedops']
         ],
         command="""\
-awk '$11>=5' {input} > {tmp1}
-sort -k1,1V -k2,2n {tmp1} > {tmp2}
-bedtools intersect \\
-  -a {tmp2} \\
-  -b {filter_file} -v \\
-  > {output}""".format(
+awk '$11>=5' {input} | sort-bed - > {sorted_bed} && \\
+zcat {filter_file} | vcf2bed - > {filter_sorted_bed} && \\
+bedops --not-element-of \\
+  {sorted_bed} \\
+  {filter_sorted_bed} \\
+  > {output}""". format(
             input=input,
-            tmp1=os.path.join(config.param('filter_snp_cpg', 'tmp_dir'), os.path.basename(output)+".1.tmp"),
-            tmp2=os.path.join(config.param('filter_snp_cpg', 'tmp_dir'), os.path.basename(output)+".2.tmp"),
+            sorted_bed=os.path.join(config.param('filter_snp_cpg', 'tmp_dir'), os.path.basename(input)+".tmp.sorted.bed"),
             filter_file=config.param('filter_snp_cpg', 'known_variants'),
+            filter_sorted_bed=os.path.join(config.param('filter_snp_cpg', 'tmp_dir'), os.path.basename(config.param('filter_snp_cpg', 'known_variants'))+".tmp.sorted.bed"),
             output=output
         )
     )
+#sort-bed {filter_bed} > {filter_sorted_bed} && \\
+#echo $? && \\
+#echo "sort-bed done" && \\
+
 
 def prepare_methylkit(input, output):
     return Job(
