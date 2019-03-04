@@ -23,9 +23,9 @@ usage: dnaseq_high_coverage.py [-h] [--help] [-c CONFIG [CONFIG ...]]
                                [-j {pbs,batch,daemon,slurm}] [-f] [--json]
                                [--report] [--clean]
                                [-l {debug,info,warning,error,critical}]
-                               [-t {mugqic,mpileup}] [-r READSETS] [-v]
+                               [-t {mugqic,mpileup,light}] [-r READSETS] [-v]
 
-Version: 3.1.2
+Version: 3.1.3
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
@@ -56,7 +56,7 @@ optional arguments:
                         date status are ignored (default: false)
   -l {debug,info,warning,error,critical}, --log {debug,info,warning,error,critical}
                         log level (default: info)
-  -t {mugqic,mpileup}, --type {mugqic,mpileup}
+  -t {mugqic,mpileup,light}, --type {mugqic,mpileup,light}
                         DNAseq analysis type
   -r READSETS, --readsets READSETS
                         readset file

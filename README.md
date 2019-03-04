@@ -53,9 +53,9 @@ if [[ $HOST == abacus* || $DNSDOMAIN == ferrier.genome.mcgill.ca ]]; then
 
 elif [[ $HOST == lg-* || $DNSDOMAIN == guillimin.clumeq.ca ]]; then
 
-  export MUGQIC_INSTALL_HOME_DEV=/gs/project/mugqic/analyste_dev/phase2
+  export MUGQIC_INSTALL_HOME_DEV=/genfs/gs/project/mugqic/analyste_dev/phase2
 
-elif [[ $BQMAMMOUTH == "mp2" ]]; then
+elif [[ $BQMAMMOUTH == "mp2" || $DNSDOMAIN == m  ]]; then
 
   export MUGQIC_INSTALL_HOME_DEV=/nfs3_ib/bourque-mp2.nfs/tank/nfs/bourque/nobackup/share/mugqic_dev
 
@@ -106,6 +106,10 @@ If you want to use the most recent development version:
 #!bash
 git clone git@bitbucket.org:mugqic/genpipes.git
 ```
+
+#### GenPipes' Container:
+
+To download and use the GenPipes' Docker container, please visit [genpipes_in_a_container](https://bitbucket.org/mugqic/genpipes_in_a_container/src/master).
 
 
 ### Setup
@@ -293,6 +297,7 @@ For more information about a specific pipeline, visit:
 ### [DNA-Seq high Coverage Pipeline Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/dnaseq_high_coverage/)
 ### [RNA-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/rnaseq/)
 ### [RNA-Seq De Novo Assembly Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/rnaseq_denovo_assembly/)
+### [RNA-Seq Light Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/rnaseq_light/)
 ### [PacBio Assembly Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/pacbio_assembly/)
 ### [ChIP-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/chipseq/)
 ### [Amplicon-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/ampliconseq/)

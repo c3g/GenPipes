@@ -53,7 +53,7 @@ def blastn_on_db(db, query, output, other_options=""):
     return Job(
         [query],
         [output],
-        [['DEFAULT', 'module_blast']],
+        [['blast_blastnondb', 'module_blast']],
         command="""\
 blastn {other_options} \\
   -db {db} \\

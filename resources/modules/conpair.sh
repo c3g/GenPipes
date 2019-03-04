@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=Conpair
-VERSION=0.1
+VERSION=0.2
 ARCHIVE=${SOFTWARE}-${VERSION}.zip
 ARCHIVE_URL=https://github.com/nygenome/$SOFTWARE/archive/master.zip
 SOFTWARE_DIR=${SOFTWARE}-${VERSION}
