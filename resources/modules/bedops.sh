@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=bedops
-VERSION=v2.4.28
+VERSION=v2.4.35
 ARCHIVE=${SOFTWARE}_linux_x86_64-${VERSION}.tar.bz2
 ARCHIVE_URL=https://github.com/${SOFTWARE}/${SOFTWARE}/releases/download/${VERSION}/${ARCHIVE}
 SOFTWARE_DIR=${SOFTWARE}_${VERSION}

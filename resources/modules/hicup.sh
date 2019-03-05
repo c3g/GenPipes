@@ -2,23 +2,20 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=hicup
-VERSION=v0.7.0
-ARCHIVE=${SOFTWARE}_${VERSION}.tar.gz
-ARCHIVE_URL=https://www.bioinformatics.babraham.ac.uk/projects/${SOFTWARE}/${ARCHIVE}
-SOFTWARE_DIR=${SOFTWARE}_$VERSION
+SOFTWARE=HiCUP
+VERSION=v0.7.2
+ARCHIVE=${SOFTWARE,,}_${VERSION}.tar.gz
+ARCHIVE_URL=https://www.bioinformatics.babraham.ac.uk/projects/${SOFTWARE,,}/${ARCHIVE}
+SOFTWARE_DIR=${SOFTWARE,,}_$VERSION
 
 build() {
   cd $INSTALL_DOWNLOAD
   tar zxvf $ARCHIVE
 
-
-  cd $INSTALL_DOWNLOAD
-  mv -i $SOFTWARE_DIR $INSTALL_DIR/
-
-
+  mv -i ${SOFTWARE}-master $INSTALL_DIR/$SOFTWARE_DIR
 
   cd $INSTALL_DIR/$SOFTWARE_DIR
+  pwd
   ## change shebang to use loaded perl:
   sed -i "s|#!/usr/bin/perl -w|#!/usr/bin/env perl\nuse warnings;|" hicup*
   sed -i "s|#!/usr/bin/perl|#!/usr/bin/env perl|" hicup*
