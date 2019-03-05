@@ -66,7 +66,6 @@ stringtie -v {other_options}{strd_cmd}{gtf}{abund_cmd} \\
       num_threads=config.param('stringtie','threads', type='posint'),
       min_length=config.param('stringtie', 'min_length', type='posint'),
       outgtf=os.path.join(output_directory, "transcripts.gtf"), 
-      outabund=os.path.join(output_directory, "abundance.tab"),
       input_bam=input_bam
         )
     )

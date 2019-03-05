@@ -98,7 +98,7 @@ class RnaSeq(common.Illumina):
         self._protocol=protocol
         # Add pipeline specific arguments
         self.argparser.add_argument("-d", "--design", help="design file", type=file)
-        self.argparser.add_argument("-t", "--type", help="Type of RNA-seq assembly method (default cufflinks)", choices = ["cufflinks", "stringtie"], default="cufflinks")
+        self.argparser.add_argument("-t", "--type", help="Type of RNA-seq assembly method (default cufflinks)", choices = ["cufflinks", "stringtie"], default="stringtie")
         super(RnaSeq, self).__init__(protocol)
 
     def star(self):
@@ -1197,9 +1197,7 @@ done""".format(
             self.stringtie_abund,
             self.ballgown,
             self.differential_expression,
-            self.differential_expression_goseq,
-            self.ihec_metrics,
-            self.verify_bam_id]
+            ]
         ]
 
 if __name__ == '__main__':
