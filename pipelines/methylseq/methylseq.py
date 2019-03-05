@@ -842,7 +842,7 @@ pandoc \\
             methyl_directory = os.path.join("methylation_call", sample.name)
             input_file = os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup.CpG_profile.strand.combined.csv")
 
-            output_file = re.sub("CpG_profile.strand.combined.csv", "filtered", input_file)
+            output_file = re.sub("CpG_profile.strand.combined.csv", "filtered.bed", input_file)
 
             jobs.append(
                 concat_jobs([
@@ -863,10 +863,10 @@ pandoc \\
         jobs = []
         for sample in self.samples:
             methyl_directory = os.path.join("methylation_call", sample.name)
-            input_file = os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup.filtered")
+            input_file = os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup.filtered.bed")
 
             output_directory = os.path.join("methylkit", "inputs")
-            output_file = os.path.join(output_directory, re.sub("filtered", "map.input", os.path.basename(input_file)))
+            output_file = os.path.join(output_directory, re.sub("filtered.bed", "map.input", os.path.basename(input_file)))
 
             jobs.append(
                 concat_jobs([
