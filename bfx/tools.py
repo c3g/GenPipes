@@ -773,10 +773,6 @@ bedops --not-element-of \\
             output=output
         )
     )
-#sort-bed {filter_bed} > {filter_sorted_bed} && \\
-#echo $? && \\
-#echo "sort-bed done" && \\
-
 
 def prepare_methylkit(input, output):
     return Job(
