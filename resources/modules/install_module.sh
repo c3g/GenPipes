@@ -65,9 +65,9 @@ patch_c3g_binaries() {
       echo "GO Done" > /dev/null
     elif [ ${i##*.} == "so" ] || [[ ${i##*/} =~ "so"*(\.[0-9]+)*$ ]]
     then
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-rpath $C3G_SYSTEM_LIBRARY/usr/$LIB $i
+      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-rpath $LIBDIR $i
     else
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-interpreter $INTERPRETER --set-rpath $C3G_SYSTEM_LIBRARY/usr/$LIB $i
+      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-interpreter $INTERPRETER --set-rpath $LIBDIR $i
     fi
   done
 }
@@ -97,14 +97,14 @@ then
   C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/apt/ubuntu1604/1.0
   LIB=lib
   INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu/ld-linux-x86-64.so.2
-  LIBDIR=$C3G_SYSTEM_LIBRARY/usr/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/usr/$LIB/R/lib:$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu
+  LIBDIR=$C3G_SYSTEM_LIBRARY/usr/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu:$LD_LIBRARY_PATH
 elif [ `lsb_release -i | cut -f 2` == "CentOS" ]
 then
   echo "CentOS" > /dev/null
   C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/yum/centos7/1.0
   LIB=lib64
   INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/ld-linux-x86-64.so.2
-  LIBDIR=$C3G_SYSTEM_LIBRARY/usr/local/c3g/rpm/usr/lib64:$C3G_SYSTEM_LIBRARY/usr/local/c3g/compile/lib:$C3G_SYSTEM_LIBRARY/usr/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB/mysql:$C3G_SYSTEM_LIBRARY/usr/$LIB/R/lib
+  LIBDIR=$C3G_SYSTEM_LIBRARY/usr/local/c3g/rpm/usr/$LIB:$C3G_SYSTEM_LIBRARY/usr/local/c3g/compile/lib:$C3G_SYSTEM_LIBRARY/usr/local/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB:$LD_LIBRARY_PATH
 else
   echo "*** ERROR ***"
   echo "'"`lsb_release -i | cut -f 2`"' OS detected... should be either 'Ubuntu' neither 'CentOS'..."
@@ -124,8 +124,18 @@ fi
 create_dir $INSTALL_DIR
 download_archive
 build
-patch_c3g_binaries
-create_c3g_wrappers
+if [ -z ${NOPATCH+x} ]
+then
+  # go ! patch ! Go !
+  echo "Patching executable binaries..."
+  patch_c3g_binaries
+fi
+if [ -z ${NOWRAP+x} ]
+then
+  # go ! wrap ! Go !
+  echo "Wrapping..."
+  create_c3g_wrappers
+fi
 
 chmod -R ug+rwX,o+rX-w $INSTALL_DIR/$SOFTWARE_DIR
 
