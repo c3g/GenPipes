@@ -58,6 +58,7 @@ class RnaSeqLight(rnaseq.RnaSeq):
         """
         transcriptome_file = config.param('kallisto', 'transcriptome_idx', type="filepath")
         tx2genes_file = config.param('kallisto', 'transcript2genes', type="filepath")
+        bootstraps = config.param('kallisto', 'bootstraps')
         other_param = config.param('kallisto', 'other_options', required=False)
 
         jobs = []
@@ -75,7 +76,8 @@ class RnaSeqLight(rnaseq.RnaSeq):
 
                 job_name = "kallisto." + readset.name
                 output_dir= os.path.join(self.output_dir, "kallisto", readset.sample.name)
-                parameters= other_param if other_param else ""
+                parameters ="--bootstrap-samples=" + str(bootstraps)
+                parameters= other_param + parameters if other_param else parameters
                 job = tools.rnaseqLight_kallisto(fastq1, fastq2, transcriptome_file, tx2genes_file, output_dir, parameters, job_name)
                 job.samples = [readset.sample]
                 jobs.append(job)
