@@ -555,7 +555,7 @@ def basemodification(
             ['basemodification', 'module_smrtanalysis']
         ],
         command="""\
-source /cvmfs/soft.mugqic/CentOS6/software/smrtanalysis/smrtanalysis_2.3.0.140936.p5/etc/setup.sh && \\
+bash -c 'set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
 ipdSummary.py {aligned_reads} \\
   --reference {fasta_consensus} \\
   --identify m6A,m4C \\
@@ -584,7 +584,7 @@ def motifMaker(
                   ['motifMaker', 'module_java'],
         ],
         command="""\
-source /cvmfs/soft.mugqic/CentOS6/software/smrtanalysis/smrtanalysis_2.3.0.140936.p5/etc/setup.sh && \\
+bash -c 'set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
 motifMaker.sh find \\
   -f {fasta_consensus} \\
   -g {output_gff} \\

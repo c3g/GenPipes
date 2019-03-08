@@ -2,21 +2,21 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=bwa
-VERSION=0.7.17
-ARCHIVE=$SOFTWARE-$VERSION.tar.bz2
-ARCHIVE_URL=https://downloads.sourceforge.net/project/bio-bwa/$ARCHIVE
-SOFTWARE_DIR=$SOFTWARE-$VERSION
+SOFTWARE=CMake
+VERSION=3.14.0
+ARCHIVE=${SOFTWARE,,}-${VERSION}.tar.gz
+ARCHIVE_URL=https://github.com/Kitware/${SOFTWARE}/releases/download/v${VERSION}-rc2/${SOFTWARE,,}-${VERSION}-rc2.tar.gz
+SOFTWARE_DIR=${SOFTWARE,,}-${VERSION}
 
-# Specific commands to extract and build the software
-# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
-# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
-  tar jxvf $ARCHIVE
+  tar zxvf $ARCHIVE
+  mv ${SOFTWARE,,}-${VERSION}-rc2 $SOFTWARE_DIR
 
   cd $SOFTWARE_DIR
-  make -j12
+  ./bootstrap --prefix=$INSTALL_DIR/$SOFTWARE_DIR
+  make
+  make install
 
   # Install software
   cd $INSTALL_DOWNLOAD
@@ -32,10 +32,12 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-prepend-path    PATH                \$root
+setenv          DELLY_PATH          \$root
+prepend-path    PATH                \$root/src
 "
 }
 
 # Call generic module install script once all variables and functions have been set
 MODULE_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source $MODULE_INSTALL_SCRIPT_DIR/install_module.sh $@
+

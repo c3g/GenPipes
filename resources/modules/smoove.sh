@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=Smoove
-VERSION=0.2.2
+VERSION=0.2.3
 ARCHIVE=${SOFTWARE,}-${VERSION}
 ARCHIVE_URL=https://github.com/brentp/${SOFTWARE,}/releases/download/v${VERSION}/${SOFTWARE,}
 SOFTWARE_DIR=${SOFTWARE,}-${VERSION}
@@ -27,7 +27,7 @@ module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
 prepend-path    PATH                \$root
-prereq mugqic/LUMPY-SV/ mugqic/samtools/1.4.1 mugqic/gsort/0.0.6 mugqic/htslib/1.8 mugqic/SVTyper/0.7.0 mugqic/python/2.7.14 mugqic/mosdepth/0.2.4 mugqic/bcftools/1.9 mugqic/duphold/0.1.1
+prereq mugqic/LUMPY-SV/master_20190208 mugqic/samtools/1.9 mugqic/gsort/0.0.6 mugqic/htslib/1.9 mugqic/SVTyper/0.7.0 mugqic/python/2.7.14 mugqic/mosdepth/0.2.4 mugqic/bcftools/1.9 mugqic/duphold/0.1.1
 "
 }
 
