@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=CTPR
-VERSION=master_20190114
+VERSION=master_20190115
 ARCHIVE=$SOFTWARE-${VERSION}.zip
 ARCHIVE_URL=https://github.com/wonilchung/$SOFTWARE/archive/master.zip
 SOFTWARE_DIR=$SOFTWARE-${VERSION}

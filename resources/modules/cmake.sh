@@ -2,22 +2,23 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=cellranger-atac
-VERSION=1.0.1
-ARCHIVE=$SOFTWARE-$VERSION.tar.gz
-# cellranger archive has to be manually downloaded from https://support.10xgenomics.com/single-cell/software/downloads/latest
-# and then stored in $MUGQIC_INSTALL_HOME/archive/ or/and $MUGQIC_INSTALL_HOME_DEV/archive/
-ARCHIVE_URL=
-SOFTWARE_DIR=$SOFTWARE-$VERSION
-# Do not patch the executable binaries
-NOWRAP=1
-NOPTACH=1
+SOFTWARE=CMake
+VERSION=3.14.0
+ARCHIVE=${SOFTWARE,,}-${VERSION}.tar.gz
+ARCHIVE_URL=https://github.com/Kitware/${SOFTWARE}/releases/download/v${VERSION}-rc2/${SOFTWARE,,}-${VERSION}-rc2.tar.gz
+SOFTWARE_DIR=${SOFTWARE,,}-${VERSION}
 
 build() {
   cd $INSTALL_DOWNLOAD
   tar zxvf $ARCHIVE
+  mv ${SOFTWARE,,}-${VERSION}-rc2 $SOFTWARE_DIR
 
-  # Move software
+  cd $SOFTWARE_DIR
+  ./bootstrap --prefix=$INSTALL_DIR/$SOFTWARE_DIR
+  make
+  make install
+
+  # Install software
   cd $INSTALL_DOWNLOAD
   mv -i $SOFTWARE_DIR $INSTALL_DIR/
 }
@@ -31,10 +32,12 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-prepend-path    PATH                \$root
+setenv          DELLY_PATH          \$root
+prepend-path    PATH                \$root/src
 "
 }
 
 # Call generic module install script once all variables and functions have been set
 MODULE_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source $MODULE_INSTALL_SCRIPT_DIR/install_module.sh $@
+

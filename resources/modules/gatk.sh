@@ -14,7 +14,7 @@ SOFTWARE=GenomeAnalysisTK
 #JAR=$SOFTWARE.jar
 
 # What follows stands for version > 3.8
-VERSION=4.0.10.1
+VERSION=4.1.0.0
 ARCHIVE=gatk-${VERSION}.zip
 SOFTWARE_DIR=${SOFTWARE}-${VERSION}
 ARCHIVE_URL=https://github.com/broadinstitute/gatk/releases/download/${VERSION}/gatk-${VERSION}.zip
