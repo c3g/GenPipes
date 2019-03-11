@@ -90,6 +90,13 @@ ARCHIVE_DIR=${!INSTALL_HOME}/archive
 # Set module directory path by lowercasing $INSTALL_HOME and removing '_install_home' in it
 MODULE_DIR=${!INSTALL_HOME}/modulefiles/`echo ${INSTALL_HOME,,} | sed 's/_install_home//'`/$SOFTWARE
 
+# If LD_LIBRARY_PATH is not defined, then define it as an empty string
+if [ -z ${LD_LIBRARY_PATH+x} ]
+then
+  LD_LIBRARY_PATH=
+fi
+
+
 # Set path to C3G system libraries
 if [ `lsb_release -i | cut -f 2` == "Ubuntu" ]
 then
