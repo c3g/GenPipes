@@ -35,8 +35,8 @@ def differential_analysis(design_file, input_files, outputfiles, output_dir):
         input_files,
         outputfiles,
         [
-            ['methlykit_differential_analysis', 'module_R'],
-            ['methlykit_differential_analysis', 'module_mugqic_tools']
+            ['methylkit_differential_analysis', 'module_R'],
+            ['methylkit_differential_analysis', 'module_mugqic_tools']
         ],
         command="""\
 R --no-save '--args \\
@@ -47,10 +47,10 @@ R --no-save '--args \\
   {other_options}' \\
   < $R_TOOLS/methylKit.R""".format(
             design_file=design_file,
-            genome=config.param('methlykit_differential_analysis', 'assembly'),
+            genome=config.param('methylkit_differential_analysis', 'assembly'),
             output_folder=output_dir,
             input_suffix=suffix,
-            other_options=config.param('methlykit_differential_analysis', 'other_options')
+            other_options=config.param('methylkit_differential_analysis', 'other_options')
         )
     )
     
