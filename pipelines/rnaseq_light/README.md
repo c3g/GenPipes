@@ -8,6 +8,8 @@ This alternative RNA-Seq pipeline is designed for fast, easy estimation of trans
 
 Currently, this pipeline only fully supports *paired-end libraries* with only *one readset per sample* and at least *3 biological replicates* per exeprimental group. Additional functionality will be added in future versions. 
 
+**Note**: As of version 3.1.4, only Homo_sapiens.GRCh37 and Mus_musculus.GRCm38 are supported by default. Support for additional genomes will be added gradually. Users can also generate the required tx2gene files for their genome of preference to use this pipeline.  
+
 Usage
 -----
 ```
