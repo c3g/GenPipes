@@ -754,6 +754,46 @@ python $PYTHON_TOOLS/CpG_coverageStats.py \\
         )
     )
 
+def filter_snp_cpg(input, output):
+    return Job(
+        [input],
+        [output],
+        [
+            ['filter_snp_cpg', 'module_bedops']
+        ],
+        command="""\
+awk '$11>=5' {input} | sort-bed - > {sorted_bed} && \\
+zcat {filter_file} | vcf2bed - > {filter_sorted_bed} && \\
+bedops --not-element-of \\
+  {sorted_bed} \\
+  {filter_sorted_bed} \\
+  > {output}""". format(
+            input=input,
+            sorted_bed=os.path.join(config.param('filter_snp_cpg', 'tmp_dir'), os.path.basename(input)+".tmp.sorted.bed"),
+            filter_file=config.param('filter_snp_cpg', 'known_variants'),
+            filter_sorted_bed=os.path.join(config.param('filter_snp_cpg', 'tmp_dir'), os.path.basename(config.param('filter_snp_cpg', 'known_variants'))+".tmp.sorted.bed"),
+            output=output
+        )
+    )
+
+def prepare_methylkit(input, output):
+    return Job(
+        [input],
+        [output],
+        [
+            ['prepare_methylkit', 'module_mugqic_tools']
+        ],
+        command="""\
+echo -e \"chrBase\tchr\tbase\tstrand\tcoverage\tfreqC\tfreqT\" \\
+  > {output} && \\
+cat {input} | \\
+awk -F"\t" '$11>=5 {{print $1"."$2"\t"$1"\t"$2"\tF\t"$11"\t"$12"\t"(100-$12)}}' \\
+  >> {output}""".format(
+            input=input,
+            output=output
+        )
+    )
+
 def methylseq_metrics_report(sample_list, inputs, output, target_bed):
     if not isinstance(inputs, list):
         inputs=[inputs]
