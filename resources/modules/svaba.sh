@@ -3,18 +3,14 @@
 set -eu -o pipefail
 
 SOFTWARE=SvABA
-VERSION=0.2.2-beta
-#VERSION=0.2.1
-ARCHIVE=${SOFTWARE,,}-${VERSION}.zip
-#ARCHIVE=${SOFTWARE,,}-${VERSION}.tar.gz
-ARCHIVE_URL=https://github.com/walaj/svaba/archive/master.zip
-#ARCHIVE_URL=https://github.com/walaj/${SOFTWARE,,}/archive/v${VERSION}.tar.gz
+VERSION=1.1.0
+ARCHIVE=${SOFTWARE,,}-${VERSION}.tar.gz
+ARCHIVE_URL=https://github.com/walaj/${SOFTWARE,,}/archive/${VERSION}.tar.gz
 SOFTWARE_DIR=${SOFTWARE,,}-${VERSION}
 
 build() {
   cd $INSTALL_DOWNLOAD
-  git clone --recursive https://github.com/walaj/${SOFTWARE,,}
-  #git clone --recursive https://github.com/walaj/${SOFTWARE,,} -b ${VERSION}
+  git clone --recursive https://github.com/walaj/${SOFTWARE,,} -b ${VERSION}
 
   # Install
   cd ${SOFTWARE,,}
