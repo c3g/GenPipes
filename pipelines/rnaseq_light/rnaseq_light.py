@@ -38,6 +38,7 @@ from bfx.readset import *
 from bfx import gq_seq_utils
 from bfx import picard
 from bfx import rmarkdown
+from bfx import differential_expression
 from bfx import tools
 from pipelines import common
 import utils
@@ -57,6 +58,8 @@ class RnaSeqLight(rnaseq.RnaSeq):
         """
         transcriptome_file = config.param('kallisto', 'transcriptome_idx', type="filepath")
         tx2genes_file = config.param('kallisto', 'transcript2genes', type="filepath")
+        bootstraps = config.param('kallisto', 'bootstraps')
+        other_param = config.param('kallisto', 'other_options', required=False)
 
         jobs = []
         for readset in self.readsets:
@@ -73,7 +76,8 @@ class RnaSeqLight(rnaseq.RnaSeq):
 
                 job_name = "kallisto." + readset.name
                 output_dir= os.path.join(self.output_dir, "kallisto", readset.sample.name)
-                parameters=""
+                parameters ="--bootstrap-samples=" + str(bootstraps)
+                parameters= other_param + parameters if other_param else parameters
                 job = tools.rnaseqLight_kallisto(fastq1, fastq2, transcriptome_file, tx2genes_file, output_dir, parameters, job_name)
                 job.samples = [readset.sample]
                 jobs.append(job)
@@ -92,8 +96,9 @@ class RnaSeqLight(rnaseq.RnaSeq):
                 fragment_length = config.param('kallisto', 'fragment_length')
                 fragment_length_sd = config.param('kallisto', 'fragment_length_sd')
                 #warn user to update parameters in ini file?
-                print("Please make sure to update fragment_length and fragment_length_sd in the ini file!")
-                parameters="--single -l "+ fragment_length +" -s " + fragment_length_sd
+                # print("Please make sure to update fragment_length and fragment_length_sd in the ini file!")
+                parameters=" --single -l "+ fragment_length +" -s " + fragment_length_sd
+                parameters = other_param + parameters if other_param else parameters
                 job = tools.rnaseqLight_kallisto(fastq1, "", transcriptome_file, tx2genes_file, output_dir, parameters, job_name)
                 job.samples = [readset.sample]
                 jobs.append(job)
@@ -188,6 +193,30 @@ cp \\
         )
 
         return jobs
+        
+    def sleuth_differential_expression(self): 
+            """
+            Performs differential gene expression analysis using [Sleuth](http://pachterlab.github.io/sleuth/). 
+            Analysis are performed both at a transcript and gene level, using two different tests: LRT and WT. 
+
+            Still in development, use with caution. 
+            """
+
+            # If --design <design file> option is missing, self.contrasts call will raise an Exception
+
+            if self.contrasts: 
+                    design_file = os.path.relpath(self.args.design.name, self.output_dir)
+            output_directory = "sleuth" 
+            count_matrix = os.path.join(self.output_dir, "kallisto", "All_readsets","all_readsets.abundance_genes.csv")
+            tx2gene = config.param('sleuth', 'tx2gene')
+            
+            sleuth_job = differential_expression.sleuth(design_file, count_matrix, tx2gene, output_directory)
+            sleuth_job.output_files = [os.path.join(output_directory, contrast.name, "results.wt.gene.csv") for contrast in self.contrasts]
+            sleuth_job.samples = self.samples
+
+            return [concat_jobs([
+                Job(command="mkdir -p " + output_directory), 
+                sleuth_job], name="sleuth_differential_expression")]
 
 
 ############
@@ -200,7 +229,8 @@ cp \\
             self.merge_trimmomatic_stats,
             self.kallisto,
             self.kallisto_count_matrix,
-            self.gq_seq_utils_exploratory_analysis_rnaseq_light
+            self.gq_seq_utils_exploratory_analysis_rnaseq_light,
+            self.sleuth_differential_expression
             ]
 
 if __name__ == '__main__':
