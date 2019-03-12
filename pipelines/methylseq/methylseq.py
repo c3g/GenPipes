@@ -46,7 +46,6 @@ from bfx import igvtools
 from bfx import bissnp
 from bfx import tools
 from bfx import ucsc
-from bfx import methylkit
 from bfx import fgbio
 
 from pipelines import common
@@ -899,7 +898,7 @@ pandoc \\
         output_directory = os.path.join("methylkit", "results")
         output_files = [os.path.join(output_directory, "Rdata_files", contrast.name, "perbase.testingresults.txt.gz") for contrast in self.contrasts]
 
-        methylkit_job = methylkit.differential_analysis(
+        methylkit_job = tools.methylkit_differential_analysis(
             design_file,
             input_files,
             output_files,
