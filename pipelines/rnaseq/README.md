@@ -12,6 +12,7 @@ the [Cufflinks](http://cufflinks.cbcb.umd.edu/) suite. Whereas
 [DESeq](http://bioconductor.org/packages/release/bioc/html/DESeq.html) and
 [edgeR](http://bioconductor.org/packages/release/bioc/html/edgeR.html) are used for the gene analysis.
 
+
 The RNAseq pipeline requires a design file which is used to define group comparison
 in the differential analyses. The design file format is described
 [here](https://bitbucket.org/mugqic/mugqic_pipelines/src#markdown-header-design-file)
@@ -32,6 +33,7 @@ that have been passed to the pipeline main script.
 [Here](https://bitbucket.org/mugqic/mugqic_pipelines/downloads/MUGQIC_Bioinfo_RNA-Seq.pptx) is more
 information about the RNA-Seq pipeline that you may find interesting.
 
+**NOTE**: Starting from version 3.1.4, the RNAseq pipeline will default to the _stringtie_ protocol. This means that it will run only steps 1-19 and the report functionality will be limited. However, it should run faster than the _cufflinks_ protocol. To run the original _cufflinks_ protocol, please specify it with the following flag: -t cufflinks. Going forward, active development will continue mainly in the _stringtie_ protocol, althought _cufflinks_ will still be supported for legacy purposes. Thank you for your understanding.   
 
 Usage
 -----
