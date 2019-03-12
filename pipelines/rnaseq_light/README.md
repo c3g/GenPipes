@@ -1,6 +1,14 @@
 [TOC]
 
 
+RNA-Seq Light Pipeline
+======================
+
+This alternative RNA-Seq pipeline is designed for fast, easy estimation of transcript abundances using the [Kallisto](http://pachterlab.github.io/kallisto) pseudoaligner. It requires a fully annotated refrence genome and will only estimate abundances of transcripts that are fully annotated. The [Sleuth](http://pachterlab.github.io/sleuth/) R-package is used perform differential transcript and gene analysis. The main use of this pipeline is for simple experiments on model organisms, where *fast turnaround time* and *efficient use of computing resources* are important. It is _not_ recommended for complex analyses, since it does not produce alignment files, nor does it support novel transcript detection.   
+
+Currently, this pipeline only fully supports *paired-end libraries* with only *one readset per sample* and at least *3 biological replicates* per exeprimental group. Additional functionality will be added in future versions. 
+
+**Note**: As of version 3.1.4, only Homo_sapiens.GRCh37 and Mus_musculus.GRCm38 are supported by default. Support for additional genomes will be added gradually. Users can also generate the required tx2gene files for their genome of preference to use this pipeline.  
 
 Usage
 -----
@@ -52,8 +60,6 @@ optional arguments:
 
 Steps:
 ```
-![rnaseq_light workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_light.resized.png)
-[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_light.png)
 ```
 ------
 1- picard_sam_to_fastq
@@ -62,8 +68,10 @@ Steps:
 4- kallisto
 5- kallisto_count_matrix
 6- gq_seq_utils_exploratory_analysis_rnaseq_light
+7- sleuth_differential_expresssion
 
 ```
+
 picard_sam_to_fastq
 -------------------
 Convert SAM/BAM files from the input readset file into FASTQ format
@@ -89,12 +97,17 @@ The trim statistics per readset are merged at this step.
 
 kallisto
 --------
-Run Kallisto on fastq files for a fast esimate of abundance.
+Run [Kallisto](http://pachterlab.github.io/kallisto) on fastq files for a fast esimate of abundance.
 
 kallisto_count_matrix
 ---------------------
+Generate a kallisto pseudo-count matrix with appropriate format for following steps.
+
 gq_seq_utils_exploratory_analysis_rnaseq_light
 ----------------------------------------------
 Exploratory analysis using the gqSeqUtils R package adapted for RnaSeqLight
 
+sleuth_differential_expression
+------------------------------
+Use [Sleuth](http://pachterlab.github.io/sleuth/) to perform differential gene and transcript expression. Requires a reference tx2gene file. 
 
