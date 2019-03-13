@@ -52,8 +52,7 @@ def tabix(input, options=None):
         ],
         command="""\
 tabix {options}  \\
-{input} \\
-        """.format(
+{input}""".format(
         input=input,
         options=options,
         )

@@ -88,6 +88,7 @@ from bfx import vcflib
 from bfx import metric_tools
 from bfx import annotations
 from bfx import vawk
+from bfx import svaba
 
 log = logging.getLogger(__name__)
 
@@ -2734,6 +2735,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         """
         jobs = []
 
+        bed_file = None
         for sample in self.samples:
             pair_directory = os.path.join("SVariants", sample.name)
             manta_directory = os.path.abspath(os.path.join(pair_directory, "rawManta"))
@@ -2746,14 +2748,13 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             manta_germline_output = os.path.join(manta_directory, "results/variants/diploidSV.vcf.gz")
             manta_germline_output_tbi = os.path.join(manta_directory, "results/variants/diploidSV.vcf.gz.tbi")
 
-            bed_file = None
             coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
 
-            if coverage_bed:
+            if coverage_bed and not bed_file:
                 bed_file = coverage_bed + ".gz"
                 jobs.append(concat_jobs([
                     Job([coverage_bed], [coverage_bed + ".sort"], command="sort -V -k1,1 -k2,2n -k3,3n " + coverage_bed + " | sed 's#chr##g' > " + coverage_bed + ".sort"),
-                    htslib.bgzip(coverage_bed + ".sort", coverage_bed + ".gz"),
+                    htslib.bgzip(coverage_bed + ".sort", bed_file),
                     htslib.tabix(coverage_bed + ".gz", "-p bed"),
                  ],name="bed_index." + sample.name))
 
@@ -3108,6 +3109,56 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 	        
         return jobs
 
+    def svaba_assemble(self):
+        jobs = []
+
+        for sample in self.samples:
+            pair_directory = os.path.join("SVariants", sample.name)
+            svaba_directory = os.path.join(pair_directory, "rawSvaba")
+            input_normal = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")
+
+            germline_input = os.path.join(svaba_directory, sample.name + ".svaba.sv.vcf")
+            germline_output = os.path.join(os.path.abspath(pair_directory), sample.name + ".svaba.germline.vcf.gz")
+
+            mkdir_job = Job(command="mkdir -p " + svaba_directory, removable_files=[svaba_directory], samples = [sample.name])
+            #cd_job = Job(command="cd " + svaba_directory)
+
+            coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
+
+            bed = None
+
+            if coverage_bed:
+                bed = coverage_bed
+
+            jobs.append(concat_jobs([
+                mkdir_job,
+                #cd_job,
+                svaba.run(input_normal, os.path.join(svaba_directory, sample.name), None, bed),
+                pipe_jobs([
+                    Job([germline_input], [None], command="sed -e 's#" + os.path.abspath(input_normal) + "#" + sample.name + "#g' " + germline_input),
+                    htslib.bgzip_tabix(None, germline_output)
+                ]),
+            ], name="svaba_run." + sample.name))
+
+        return jobs
+
+    def svaba_sv_annotation(self):
+
+        jobs = []
+
+        for sample in self.samples:
+            pair_directory = os.path.join("SVariants", sample.name)
+
+            jobs.append(concat_jobs([
+                snpeff.compute_effects(os.path.join(os.path.abspath(pair_directory), sample.name + ".svaba.germline.vcf.gz"), os.path.join(pair_directory, sample.name + ".svaba.germline.snpeff.vcf")),
+                htslib.bgzip_tabix(os.path.join(pair_directory, sample.name + ".svaba.germline.snpeff.vcf"), os.path.join(pair_directory, sample.name + ".svaba.germline.snpeff.vcf.gz")),
+                #annotations.structural_variants(pair_directory + ".svaba.germline.snpeff.vcf", pair_directory + ".svaba.germline.snpeff.annot.vcf"),
+                #vawk.sv(pair_directory + ".svaba.germline.snpeff.annot.vcf", tumor_pair.normal.name, tumor_pair.tumor.name, "SVABA",
+                #        pair_directory + ".svaba.germline.prioritize.tsv"),
+            ], name="sv_annotation.svaba_germline." + sample.name))
+
+        return jobs
+
     @property
     def steps(self):
         return [
@@ -3239,6 +3290,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.cnvkit_batch,
                 self.cnvkit_sv_annotation,
 	            self.ensemble_metasv,
+                self.svaba_assemble,
+                self.svaba_sv_annotation
             ]
         ]
 

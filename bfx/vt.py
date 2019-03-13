@@ -39,7 +39,7 @@ def decompose_and_normalize_mnps(inputs, vt_output=None):
             ['decompose_and_normalize_mnps', 'module_vt']
         ],
         command="""\
-zless {input} | sed 's/ID=AD,Number=./ID=AD,Number=R/' | vt decompose -s - | vt normalize -r {reference_sequence} -  \\
+zless {input} | sed 's/ID=AD,Number=./ID=AD,Number=R/' | vt decompose -s - | vt normalize -r {reference_sequence} - | sed -e '#0/.#0/0#' \\
         {vt_output}""".format(
         input=" \\\n  ".join(input for input in inputs),
         reference_sequence=config.param('decompose_and_normalize_mnps', 'genome_fasta', type='filepath'),
