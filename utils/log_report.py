@@ -48,7 +48,9 @@ class JobStat(object):
             pro, epi = [i for i, x in enumerate(all_value[self.JOBID])
                         if self.number == int(x)]
         except ValueError:
-            logger.warning('{} log is not in {}'.format(self.number, self._path))
+            logger.error('{} log is not in {}, there is a mismatch '
+                         'between the job number and the output'
+                         .format(self.number, self._path))
 
             # Get the closest number
             diff = [abs(int(v) - self.number) for v in all_value[self.JOBID]]
