@@ -56,6 +56,10 @@ class Job(object):
         self._id = value
 
     @property
+    def name(self, value):
+        self._name = value
+
+    @name.setter
     def name(self):
         return self._name
 
@@ -94,6 +98,10 @@ class Job(object):
     @property
     def multiqc_files(self):
         return self._multiqc_files
+
+    @multiqc_files.setter
+    def multiqc_files(self, value):
+        self._multiqc_files = value
 
     @property
     def removable_files(self):
