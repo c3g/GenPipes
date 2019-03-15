@@ -30,7 +30,7 @@ from config import *
 
 log = logging.getLogger(__name__)
 
-class Job:
+class Job(object):
 
     def __init__(self, input_files=[], output_files=[], module_entries = [], name="", command="", report_files=[], multiqc_files=[], removable_files=[], samples=[]):
         # Remove undefined input/output/removable files if any
@@ -51,6 +51,10 @@ class Job:
     def id(self):
         return self._id
 
+    @id.setter
+    def id(self, value):
+        self._id = value
+
     @property
     def name(self):
         return self._name
@@ -59,17 +63,33 @@ class Job:
     def output_dir(self):
         return self._output_dir
 
+    @output_dir.setter
+    def output_dir(self, value):
+        self._output_dir = value
+
     @property
     def input_files(self):
         return self._input_files
+
+    @input_files.setter
+    def input_files(self, value):
+        self._input_files = value
 
     @property
     def output_files(self):
         return self._output_files
 
+    @output_files.setter
+    def output_files(self, value):
+        self._output_files = value
+
     @property
     def report_files(self):
         return self._report_files
+
+    @report_files.setter
+    def report_files(self, value):
+        self._report_files = value
 
     @property
     def multiqc_files(self):
@@ -79,25 +99,49 @@ class Job:
     def removable_files(self):
         return self._removable_files
 
+    @removable_files.setter
+    def removable_files(self, value):
+        self._removable_files = value
+
     @property
     def done(self):
         return self._done
+
+    @done.setter
+    def done(self, value):
+        self._done = value
 
     @property
     def dependency_jobs(self):
         return self._dependency_jobs
 
+    @dependency_jobs.setter
+    def dependency_jobs(self, value):
+        self._dependency_jobs = value
+
     @property
     def modules(self):
         return self._modules
+
+    @modules.setter
+    def modules(self, value):
+        self._modules = value
 
     @property
     def command(self):
         return self._command
 
+    @command.setter
+    def command(self, value):
+        self._command = value
+
     @property
     def samples(self):
         return self._samples
+
+    @samples.setter
+    def samples(self, value):
+        self._samples = value
 
     @property
     def command_with_modules(self):

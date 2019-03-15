@@ -22,7 +22,7 @@
 # Python Standard Modules
 import re
 
-class Step:
+class Step(object):
     def __init__(self, create_jobs, analyse_type=None):
         # Step name is used in Bash $JOB_ID variable, hence only alphanumeric and "_" characters are allowed
         step_name = create_jobs.__name__
@@ -41,17 +41,33 @@ class Step:
     def name(self):
         return self._name
 
+    @name.setter
+    def name(self, value):
+        self._name = value
+
     @property
     def create_jobs(self):
         return self._create_jobs
+
+    @create_jobs.setter
+    def create_jobs(self, value):
+        self._create_jobs = value
 
     @property
     def jobs(self):
         return self._jobs
 
+    @jobs.setter
+    def jobs(self, value):
+        self._jobs = value
+
     @property
     def analyse_type(self):
         return self._analyse_type
+
+    @analyse_type.setter
+    def analyse_type(self, value):
+        self._analyse_type = value
 
     def add_job(self, job):
         self.jobs.append(job)
