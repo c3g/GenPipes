@@ -20,9 +20,9 @@ class JobStat(object):
     MEM = 'mem'
     REQUEUE = 'Requeue'
     RESTARTS = 'Restarts'
+    RUNTIME = 'RunTime'
 
-
-    def __init__(self, path, number=None, depenendency=None, name=None):
+    def __init__(self, path, number=None, depenendency=None, name=None, parsed_after_header=50):
         self._path = path
         self._number = number
         self._dependency = depenendency
@@ -30,16 +30,48 @@ class JobStat(object):
         self._prologue = {}
         self._epiloque = {}
         self._delta = None
+        # Real slurm job number, if not none. There is a problem with
+        # the pipeline output path
         self._id = None
         self._start = None
         self._stop = None
+        self._parsed_after_header = parsed_after_header
+        self._mugqic_exit_status = None
 
         self.fill_from_file(self._path)
 
+    def __str__(self):
+
+        return '{} {} {} {} {} {} {}'.format(self.number, self._id, self.name, self.n_cpu,
+                                             self.mem, self.runtime, self.exit_status)
+
     def fill_from_file(self, path):
         # parse stdout and get all the prologue and epilogues values
-        slurm_stdtout = open(path).read()
-        bidon = re.findall(r"(\w+)=(\S+)\s", slurm_stdtout)
+        slurm_stdtout = open(path).readlines()
+
+        to_parse = False
+        n = 0
+        lines_to_parse = []
+        for line in open(path):
+
+            if "SLURM FAKE PROLOGUE" in line:
+                n = 0
+                to_parse = True
+            elif "SLURM FAKE EPILOGUE" in line:
+                n = 0
+                to_parse = True
+            elif "MUGQICexitStatus" in line:
+                self._mugqic_exit_status = line.strip('\n')
+
+            if n >= self._parsed_after_header:
+                to_parse = False
+
+            if to_parse:
+                lines_to_parse.append(line)
+                n += 1
+
+        to_parse = ' '.join(lines_to_parse)
+        bidon = re.findall(r"(\w+)=(\S+)\s", to_parse)
         all_value = {}
         for k, v in bidon:
             all_value.setdefault(k, []).append(v)
@@ -66,13 +98,16 @@ class JobStat(object):
              except IndexError:
                 logger.warning('{} = {} in not a slurm prologue/epilogue value or is ambiguous'.format(k, v))
 
-        tres = re.findall(r"TRES=cpu=(\d+),mem=(\d+\w)", slurm_stdtout)
+        tres = re.findall(r"TRES=cpu=(\d+),mem=(\d+\w)", to_parse)
         self._prologue[self.NUMCPUS] = tres[pro][0]
         self._epiloque[self.NUMCPUS] = tres[epi][0]
         self._prologue[self.MEM] = tres[pro][1]
         self._epiloque[self.MEM] = tres[epi][1]
 
 
+    @property
+    def exit_status(self):
+        return self._mugqic_exit_status.split(':')[1]
 
     @property
     def runtime(self):
@@ -85,7 +120,6 @@ class JobStat(object):
             self._delta = self._stop - self._start
 
         return self._delta
-
 
     @property
     def prologue_time(self):
@@ -132,9 +166,6 @@ def get_report(job_list_tsv=None):
 
             stats.append(JobStat(path=os.path.join(job_output_path, job[3]),
                                  name=job[1], number=job[0], depenendency=job[2]))
-            # j = stats[-1]
-            # print ('{} {} {} {} {} {}'.format(j.number, j._id , j.name, j.n_cpu, j.mem, j.runtime))
-            # i = i + 1
 
     return stats
 
@@ -145,7 +176,7 @@ def print_report(stats):
     total_machine = datetime.timedelta(0)
     total_machine_core = datetime.timedelta(0)
     for j in stats:
-        print ('{} {} {} {} {} {}'.format(j.number, j._id, j.name, j.n_cpu, j.mem, j.runtime))
+        print (j)
 
         min_start.append(j.prologue_time)
         max_stop.append(j.epilogue_time)
@@ -168,8 +199,47 @@ def print_report(stats):
     #     dict_writer.writeheader()
     #     dict_writer.writerows(toCSV)
 
-if __name__ == '__main__':
 
+def fine_grain(stats):
+
+    total = datetime.timedelta(0)
+    max_r = datetime.timedelta(0)
+    max_h = datetime.timedelta(0)
+    for job in stats:
+        if "NA12878_PCRFRee_gatk4" in job.name:
+            if 'realigner' in job.name:
+                mar_r = max(max_r, job.runtime)
+            if 'haplotype_caller' in job.name:
+                mar_h = max(max_h, job.runtime)
+            else:
+                total = total + job.runtime
+
+        elif job.number in [336, 338]:
+            total = total + job.runtime
+
+    total = total + max_h + max_r
+
+    print(total.total_seconds()/3600.)
+
+    total = datetime.timedelta(0)
+    max_r = datetime.timedelta(0)
+    max_h = datetime.timedelta(0)
+    for job in stats:
+        if "NA12878_PCRFRee_20170509" in job.name:
+            if 'realigner' in job.name:
+                mar_r = max(max_r, job.runtime)
+            if 'haplotype_caller' in job.name:
+                mar_h = max(max_h, job.runtime)
+            elif job.number in [336,338]:
+                pass
+            else:
+                total = total + job.runtime
+
+    total = total + max_h + max_r
+
+    print(total.total_seconds()/3600.)
+
+if __name__ == '__main__':
 
 
         logging.basicConfig(level=logging.INFO)
@@ -184,3 +254,5 @@ if __name__ == '__main__':
         stats = get_report(path)
 
         print_report(stats)
+
+        # fine_grain(stats)
