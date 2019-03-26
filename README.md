@@ -63,6 +63,11 @@ elif [[ $HOST == cedar* || $DNSDOMAIN == cedar.computecanada.ca ]]; then
 
   export MUGQIC_INSTALL_HOME_DEV=/project/6007512/C3G/analyste_dev
   export RAC_ID=<my-rac-id>
+  
+elif [[ $HOST == beluga* || $DNSDOMAIN == beluga.computecanada.ca ]]; then
+
+  export MUGQIC_INSTALL_HOME_DEV=/project/6007512/C3G/analyste_dev
+  export RAC_ID=<my-rac-id>
 
 fi
     

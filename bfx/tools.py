@@ -502,6 +502,33 @@ R --no-save --args \\
         )
     )
 
+def methylkit_differential_analysis(design_file, input_files, outputfiles, output_dir):
+
+    suffix = re.sub(".*\.readset_", ".readset_", input_files[0])
+
+    return Job(
+        input_files,
+        outputfiles,
+        [
+            ['methylkit_differential_analysis', 'module_R'],
+            ['methylkit_differential_analysis', 'module_mugqic_tools']
+        ],
+        command="""\
+R --no-save '--args \\
+  -design {design_file} \\
+  -outdir {output_folder} \\
+  -build {genome} \\
+  -suff {input_suffix} \\
+  {other_options}' \\
+  < $R_TOOLS/methylKit.R""".format(
+            design_file=design_file,
+            genome=config.param('methylkit_differential_analysis', 'assembly'),
+            output_folder=output_dir,
+            input_suffix=suffix,
+            other_options=config.param('methylkit_differential_analysis', 'other_options')
+        )
+    )
+
 
 ## functions for bash tools ##
 
