@@ -21,7 +21,7 @@
 
 import re
 
-class Sample:
+class Sample(object):
 
     def __init__(self, name):
         if re.search("^\w[\w.-]*$", name):

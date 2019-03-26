@@ -782,8 +782,8 @@ cp \\
                     [['ihec_sample_metrics_report', 'module_pandoc']],
                     command="""\
 mkdir -p report && \\
-cp {metrics_file} {report_metrics_file} && \\
-metrics_table_md=`sed 's/\t/|/g' {report_metrics_file}`
+cp {metrics_all_file} {report_metrics_file} && \\
+metrics_table_md=`sed 's/\t/|/g' {metrics_file}`
 pandoc \\
   {report_template_dir}/{basename_report_file} \\
   --template {report_template_dir}/{basename_report_file} \\
@@ -791,6 +791,7 @@ pandoc \\
   --to markdown \\
   > {report_file}""".format(
                         report_template_dir=self.report_template_dir,
+                        metrics_all_file=metrics_all_file,
                         metrics_file=metrics_file,
                         basename_report_file=os.path.basename(report_file),
                         report_metrics_file=report_metrics_file,

@@ -30,7 +30,8 @@ from sample import *
 
 log = logging.getLogger(__name__)
 
-class Contrast:
+
+class Contrast(object):
 
     def __init__(self, name):
         self._name = name
@@ -41,13 +42,25 @@ class Contrast:
     def name(self):
         return self._name
 
+    @name.setter
+    def name(self, value):
+        self._name = value
+
     @property
     def controls(self):
         return self._controls
 
+    @controls.setter
+    def controls(self, value):
+        self._controls = value
+
     @property
     def treatments(self):
         return self._treatments
+
+    @treatments.setter
+    def treatments(self, value):
+        self._treatments = value
 
 
 def parse_new_design_file(design_file, samples):
