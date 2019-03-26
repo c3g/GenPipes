@@ -794,11 +794,9 @@ class DnaSeqRaw(common.Illumina):
         
             inputs.append(input)
             
-        output = os.path.join(metrics_directory, "multiqc_report")
-        jobs.append(concat_jobs([
-            #Job(samples=[sample]),
-            multiqc.run(inputs, output, input_dep),
-        ], name="multiqc." + sample.name))
+            output = os.path.join(metrics_directory, "multiqc_report")
+            jobs.append(concat_jobs([multiqc.run(inputs, output, input_dep), ]
+                                    , name="multiqc." + sample.name))
 
         return jobs
 
