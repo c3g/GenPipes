@@ -48,7 +48,6 @@ from bfx import samtools
 from bfx import snpeff
 from bfx import tools
 from bfx import vcftools
-<<<<<<< HEAD
 from bfx import bcftools
 from bfx import tabix
 from bfx import forge_tools
@@ -59,7 +58,6 @@ from bfx import bcbio_variation_recall
 from bfx import gemini
 from bfx import annovar
 from pipelines import common
-=======
 from bfx import skewer
 from bfx import sambamba
 from bfx import picard
@@ -71,7 +69,6 @@ from bfx import qualimap
 from bfx import fastqc
 from bfx import multiqc
 from bfx import deliverables
->>>>>>> 5b03880f47d7f371ede8cfed877ffe2ae9fe756b
 
 log = logging.getLogger(__name__)
 
@@ -110,14 +107,7 @@ class DnaSeqRaw(common.Illumina):
     def __init__(self, protocol=None):
         self._protocol=protocol
         # Add pipeline specific arguments
-<<<<<<< HEAD
-        self.argparser.add_argument("-t", "--type", help = "DNAseq analysis type", choices = ["mugqic", "mpileup", "forge"], default="forge")
-        self.argparser.add_argument("--familyinfo", help="a file that includes family ids followed by a comma-separated list of member ids on each line", type=file)
-        super(DnaSeq, self).__init__(protocol)
-
-=======
         super(DnaSeqRaw, self).__init__(protocol)
->>>>>>> 5b03880f47d7f371ede8cfed877ffe2ae9fe756b
 
     @property
     def sequence_dictionary(self):
@@ -1259,7 +1249,6 @@ class DnaSeqRaw(common.Illumina):
 
         return jobs
 
-<<<<<<< HEAD
     def varfilter(self):
         """
         Filter variants based on read depth and quality
@@ -1276,8 +1265,6 @@ class DnaSeqRaw(common.Illumina):
             ], name = "bcftools_varfilter"))
 
         return jobs
-=======
->>>>>>> 5b03880f47d7f371ede8cfed877ffe2ae9fe756b
 
     def dna_sample_metrics(self):
         """
@@ -1803,7 +1790,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
         return jobs
 
-<<<<<<< HEAD
     def varscan_per_region(self):
         """
         Call varscan (mpileup2cns) on the mpileup file of each chromosome region
@@ -1968,7 +1954,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                         bcftools.splitMultiSampleVCF(input_vcf, member_list, output_vcf),
                         Job(output_files=[output_vcf + ".gz"], module_entries=[['split_multiSampleVCF','module_tabix']], command="bgzip -f " + output_vcf),
                         Job(module_entries=[['split_multiSampleVCF','module_tabix']], command="tabix " + output_vcf + ".gz" + " -p vcf")
-                        ], name="split_multiSampleVCF_"+family_id+"_"+varcaller))
+                        ], name="split_multiSampleVCF."+family_id+"_"+varcaller))
                         
         else:
             for sample in self.samples:
@@ -1988,7 +1974,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                         bcftools.splitMultiSampleVCF(input_vcf, sample.name, output_vcf),
                         Job(output_files=[output_vcf + ".gz"], module_entries=[['split_multiSampleVCF','module_tabix']], command="bgzip -f " + output_vcf),
                         Job(module_entries=[['split_multiSampleVCF','module_tabix']], command="tabix " + output_vcf + ".gz" + " -p vcf")
-                        ], name="split_multiSampleVCF_"+sample.name+"_"+varcaller))
+                        ], name="split_multiSampleVCF."+sample.name+"_"+varcaller))
 
         return jobs
 
@@ -2015,7 +2001,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 jobs.append(concat_jobs([
                     bcbio_variation_recall.ensemble(input_VCFs, output_ensemble, config.param('bcbio_ensemble', 'options')),
                     Job(output_files=[output_ensemble + ".gz"], command="zcat " + output_ensemble + ".gz > " + output_ensemble)
-                    ], name="bcbio_variation_recall." + family_id))                
+                    ], name="bcbio_ensemble." + family_id))                
 
         else:
             for sample in self.samples:
@@ -2032,110 +2018,14 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 jobs.append(concat_jobs([
                     bcbio_variation_recall.ensemble(input_VCFs, output_ensemble, config.param('bcbio_ensemble', 'options')),
                     Job(output_files=[output_ensemble + ".gz"], command="zcat " + output_ensemble + ".gz > " + output_ensemble)
-                    ], name="bcbio_variation_recall." + sample.name))
+                    ], name="bcbio_ensemble." + sample.name))
 
         return jobs
 
-=======
->>>>>>> 5b03880f47d7f371ede8cfed877ffe2ae9fe756b
 
     @property
     def steps(self):
         return [
-<<<<<<< HEAD
-            [self.picard_sam_to_fastq,
-            self.trimmomatic,
-            self.merge_trimmomatic_stats,
-            self.bwa_mem_picard_sort_sam,
-            self.picard_merge_sam_files,
-            self.gatk_indel_realigner,
-            self.merge_realigned,
-            self.fix_mate_by_coordinate,
-            self.picard_mark_duplicates,
-            self.recalibration,
-            self.verify_bam_id,
-            self.metrics,
-            self.picard_calculate_hs_metrics,
-            self.gatk_callable_loci,
-            self.extract_common_snp_freq,
-            self.baf_plot,
-            self.gatk_haplotype_caller,
-            self.merge_and_call_individual_gvcf,
-            self.combine_gvcf,
-            self.merge_and_call_combined_gvcf,
-            self.variant_recalibrator,
-            self.dna_sample_metrics,
-            self.haplotype_caller_filter_nstretches,
-            self.haplotype_caller_flag_mappability,
-            self.haplotype_caller_snp_id_annotation,
-            self.haplotype_caller_snp_effect,
-            self.haplotype_caller_dbnsfp_annotation,
-            self.haplotype_caller_metrics_vcf_stats,
-            self.haplotype_caller_metrics_snv_graph_metrics],
-            [self.picard_sam_to_fastq,
-            self.trimmomatic,
-            self.merge_trimmomatic_stats,
-            self.bwa_mem_picard_sort_sam,
-            self.picard_merge_sam_files,
-            self.gatk_indel_realigner,
-            self.merge_realigned,
-            self.fix_mate_by_coordinate,
-            self.picard_mark_duplicates,
-            self.recalibration,
-            self.metrics,
-            self.picard_calculate_hs_metrics,
-            self.gatk_callable_loci,
-            self.extract_common_snp_freq,
-            self.baf_plot,
-            self.gatk_haplotype_caller,
-            self.merge_and_call_individual_gvcf,
-            self.combine_gvcf,
-            self.merge_and_call_combined_gvcf,
-            self.variant_recalibrator,
-            self.dna_sample_metrics,self.rawmpileup,
-            self.rawmpileup_cat,
-            self.snp_and_indel_bcf,
-            self.merge_filter_bcf,
-            self.mpileup_filter_nstretches,
-            self.mpileup_flag_mappability,
-            self.mpileup_snp_id_annotation,
-            self.mpileup_snp_effect,
-            self.mpileup_dbnsfp_annotation,
-            self.mpileup_metrics_vcf_stats,
-            self.mpileup_metrics_snv_graph_metrics,
-            self.verify_bam_id],
-            [self.picard_sam_to_fastq,
-            self.trimmomatic,
-            self.merge_trimmomatic_stats,
-            self.bwa_mem_picard_sort_sam,
-            self.picard_merge_sam_files,
-            self.gatk_indel_realigner,
-            self.merge_realigned,
-            self.fix_mate_by_coordinate,
-            self.picard_mark_duplicates,
-            self.recalibration,
-            self.metrics,
-            self.picard_calculate_hs_metrics,
-            self.gatk_callable_loci,
-            self.extract_common_snp_freq,
-            self.baf_plot,
-            self.gatk_haplotype_caller,
-            self.merge_and_call_individual_gvcf,
-            self.combine_gvcf,
-            self.merge_and_call_combined_gvcf,
-            self.variant_recalibrator,
-            self.varfilter,
-            self.dna_sample_metrics,
-            self.varscan_per_region,
-            self.merge_varscan,
-            self.freebayes_per_region,
-            self.merge_freebayes,
-            self.snp_and_indel_bcf,
-            self.merge_filter_bcf,
-            self.vt,
-            self.split_multiSampleVCF,
-            self.bcbio_ensemble]
-=======
             [
                 self.picard_sam_to_fastq,
                 self.sym_link_fastq,
@@ -2239,16 +2129,50 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.haplotype_caller_dbnsfp_annotation,
                 self.haplotype_caller_gemini_annotations,
                 self.run_multiqc,
+            ],
+            [
+                self.picard_sam_to_fastq,
+                self.trimmomatic,
+                self.merge_trimmomatic_stats,
+                self.bwa_mem_picard_sort_sam,
+                self.sambamba_merge_sam_files,
+                self.gatk_indel_realigner,
+                self.sambamba_merge_realigned,
+                self.fix_mate_by_coordinate,
+                self.picard_mark_duplicates,
+                self.recalibration,
+                self.metrics,
+                self.picard_calculate_hs_metrics,
+                self.gatk_callable_loci,
+                self.extract_common_snp_freq,
+                self.baf_plot,
+                self.gatk_haplotype_caller,
+                self.merge_and_call_individual_gvcf,
+                self.combine_gvcf,
+                self.merge_and_call_combined_gvcf,
+                self.variant_recalibrator,
+                self.varfilter,
+                self.dna_sample_metrics,
+                self.varscan_per_region,
+                self.merge_varscan,
+                self.freebayes_per_region,
+                self.merge_freebayes,
+                self.snp_and_indel_bcf,
+                self.merge_filter_bcf,
+                self.vt,
+                self.split_multiSampleVCF,
+                self.bcbio_ensemble,
+		self.run_multiqc
             ]
->>>>>>> 5b03880f47d7f371ede8cfed877ffe2ae9fe756b
         ]
 
 class DnaSeq(DnaSeqRaw):
     def __init__(self, protocol=None):
         self._protocol = protocol
         # Add pipeline specific arguments
-        self.argparser.add_argument("-t", "--type", help="DNAseq analysis type", choices=["mugqic", "mpileup", "light"], default="mugqic")
+        self.argparser.add_argument("-t", "--type", help="DNAseq analysis type", choices=["mugqic", "mpileup", "light", "forge"], default="forge")
+        self.argparser.add_argument("--familyinfo", help="a file that includes family ids followed by a comma-separated list of member ids on each line", type=file)
         super(DnaSeq, self).__init__(protocol)
 
 if __name__ == '__main__':
-    DnaSeq(protocol=['mugqic', 'mpileup', 'forge'])
+    DnaSeq(protocol=['mugqic', 'mpileup', 'light', 'forge'])
