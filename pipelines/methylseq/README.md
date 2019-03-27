@@ -29,10 +29,10 @@ Usage
 usage: methylseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                     [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f]
                     [--json] [--report] [--clean]
-                    [-l {debug,info,warning,error,critical}]
+                    [-l {debug,info,warning,error,critical}] [-d DESIGN]
                     [-t {mugqic,mpileup,light}] [-r READSETS] [-v]
 
-Version: 3.1.3
+Version: 3.1.4
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
@@ -47,7 +47,7 @@ optional arguments:
   -o OUTPUT_DIR, --output-dir OUTPUT_DIR
                         output directory (default: current)
   -j {pbs,batch,daemon,slurm}, --job-scheduler {pbs,batch,daemon,slurm}
-                        job scheduler type (default: pbs)
+                        job scheduler type (default: slurm)
   -f, --force           force creation of jobs even if up to date (default:
                         false)
   --json                create a JSON file per analysed sample to track the
@@ -63,6 +63,8 @@ optional arguments:
                         date status are ignored (default: false)
   -l {debug,info,warning,error,critical}, --log {debug,info,warning,error,critical}
                         log level (default: info)
+  -d DESIGN, --design DESIGN
+                        design file
   -t {mugqic,mpileup,light}, --type {mugqic,mpileup,light}
                         DNAseq analysis type
   -r READSETS, --readsets READSETS
@@ -83,12 +85,14 @@ Steps:
 6- picard_merge_sam_files
 7- picard_remove_duplicates
 8- metrics
-9- verify_bam_id
-10- methylation_call
-11- wiggle_tracks
-12- methylation_profile
-13- ihec_sample_metrics_report
-14- bis_snp
+9- methylation_call
+10- wiggle_tracks
+11- methylation_profile
+12- ihec_sample_metrics_report
+13- bis_snp
+14- filter_snp_cpg
+15- prepare_methylkit
+16- methylkit_differential_analysis
 
 ```
 picard_sam_to_fastq
@@ -147,14 +151,6 @@ whole genome or targeted percentage of bases covered at X reads (%_bases_above_5
 bases which have at least 50 reads). A TDF (.tdf) coverage track is also generated at this step
 for easy visualization of coverage in the IGV browser.
 
-verify_bam_id
--------------
-verifyBamID is a software that verifies whether the reads in particular file match previously known
-genotypes for an individual (or group of individuals), and checks whether the reads are contaminated
-as a mixture of two samples. verifyBamID can detect sample contamination and swaps when external
-genotypes are available. When external genotypes are not available, verifyBamID still robustly
-detects sample swaps.
-
 methylation_call
 ----------------
 The script reads in a bisulfite read alignment file produced by the Bismark bisulfite mapper
@@ -180,5 +176,17 @@ Retrieve the computed metrics which fit the IHEC standards and build a tsv repor
 bis_snp
 -------
 SNP calling with BisSNP
+
+filter_snp_cpg
+--------------
+SNP CpGs filtering
+
+prepare_methylkit
+-----------------
+Prepare input file for methylKit differential analysis
+
+methylkit_differential_analysis
+-------------------------------
+Run methylKit to get DMCs & DMRs for different designeds comparisons
 
 

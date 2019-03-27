@@ -51,22 +51,23 @@ store_archive() {
 }
 
 create_c3g_wrappers() {
-  for i in `find $INSTALL_DIR/$SOFTWARE_DIR/ -type f -executable -exec file {} \; | grep ELF | grep -vP "\.so" | cut -d":" -f1`; do
+  for i in `find $INSTALL_DIR/$SOFTWARE_DIR/ -type f -executable -exec file {} \; | grep -v "statically linked" | grep ELF | cut -d":" -f1 | grep -vP "\.so(\.\d+)*$"`; do
     mv $i $i.raw;
-    echo "$C3G_SYSTEM_LIBRARY/lib64/ld-linux-x86-64.so.2 --library-path $LIBDIR $i.raw \${@}" > $i;
+    echo "$INTERPRETER --library-path $LIBDIR $i.raw \${@}" > $i;
+    chmod a+x $i
   done
 }
 
 patch_c3g_binaries() {
-  for i in `find $INSTALL_DIR/$SOFTWARE_DIR/ -type f -executable -exec file {} \; | grep ELF | grep -v "statically linked" | cut -d":" -f1`; do
+  for i in `find $INSTALL_DIR/$SOFTWARE_DIR/ -type f -executable -exec file {} \; | grep -v "statically linked" | grep ELF | cut -d":" -f1`; do
     if readelf -l $i | grep go.build > /dev/null
     then
       echo "GO Done" > /dev/null
     elif [ ${i##*.} == "so" ] || [[ ${i##*/} =~ "so"*(\.[0-9]+)*$ ]]
     then
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-rpath $C3G_SYSTEM_LIBRARY/usr/$LIB $i
+      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-rpath $LIBDIR $i
     else
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-interpreter $INTERPRETER --set-rpath $C3G_SYSTEM_LIBRARY/usr/$LIB $i
+      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-interpreter $INTERPRETER --set-rpath $LIBDIR $i
     fi
   done
 }
@@ -89,6 +90,13 @@ ARCHIVE_DIR=${!INSTALL_HOME}/archive
 # Set module directory path by lowercasing $INSTALL_HOME and removing '_install_home' in it
 MODULE_DIR=${!INSTALL_HOME}/modulefiles/`echo ${INSTALL_HOME,,} | sed 's/_install_home//'`/$SOFTWARE
 
+# If LD_LIBRARY_PATH is not defined, then define it as an empty string
+if [ -z ${LD_LIBRARY_PATH+x} ]
+then
+  LD_LIBRARY_PATH=
+fi
+
+
 # Set path to C3G system libraries
 if [ `lsb_release -i | cut -f 2` == "Ubuntu" ]
 then
@@ -96,14 +104,14 @@ then
   C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/apt/ubuntu1604/1.0
   LIB=lib
   INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu/ld-linux-x86-64.so.2
-  LIBDIR=$C3G_SYSTEM_LIBRARY/usr/local/c3g/rpm/usr/lib64:$C3G_SYSTEM_LIBRARY/usr/local/c3g/compile/lib:$C3G_SYSTEM_LIBRARY/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB:
+  LIBDIR=$C3G_SYSTEM_LIBRARY/usr/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu:$LD_LIBRARY_PATH
 elif [ `lsb_release -i | cut -f 2` == "CentOS" ]
 then
   echo "CentOS" > /dev/null
   C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/yum/centos7/1.0
   LIB=lib64
   INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/ld-linux-x86-64.so.2
-  LIBDIR=$C3G_SYSTEM_LIBRARY/usr/local/c3g/rpm/usr/lib64:$C3G_SYSTEM_LIBRARY/usr/local/c3g/compile/lib:$C3G_SYSTEM_LIBRARY/usr/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB/mysql
+  LIBDIR=$C3G_SYSTEM_LIBRARY/usr/local/c3g/rpm/usr/$LIB:$C3G_SYSTEM_LIBRARY/usr/local/c3g/compile/lib:$C3G_SYSTEM_LIBRARY/usr/local/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB:$LD_LIBRARY_PATH
 else
   echo "*** ERROR ***"
   echo "'"`lsb_release -i | cut -f 2`"' OS detected... should be either 'Ubuntu' neither 'CentOS'..."
@@ -123,8 +131,18 @@ fi
 create_dir $INSTALL_DIR
 download_archive
 build
-patch_c3g_binaries
-create_c3g_wrappers
+if [ -z ${NOPATCH+x} ]
+then
+  # go ! patch ! Go !
+  echo "Patching executable binaries..."
+  patch_c3g_binaries
+fi
+if [ -z ${NOWRAP+x} ]
+then
+  # go ! wrap ! Go !
+  echo "Wrapping..."
+  create_c3g_wrappers
+fi
 
 chmod -R ug+rwX,o+rX-w $INSTALL_DIR/$SOFTWARE_DIR
 

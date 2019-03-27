@@ -42,7 +42,7 @@ def create_scheduler(type, config_files):
     else:
         raise Exception("Error: scheduler type \"" + type + "\" is invalid!")
 
-class Scheduler:
+class Scheduler(object):
     def __init__(self, config_files):
         self._config_files = config_files
 

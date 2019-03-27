@@ -41,6 +41,7 @@ def circularize(fasta_consensus, corrected_fastq, circlator_output):
             ['circlator', 'module_prodigal'],
         ],
         command="""\
+rm -rf {output} && \\
 circlator all \\
   {fasta} \\
   {fastq} \\

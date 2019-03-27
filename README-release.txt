@@ -4,7 +4,7 @@
 vim VERSION
 
 # Update mugqic_pipelines module version
-vim resources/modules/mugqic_genpipes.sh
+vim resources/modules/genpipes.sh
 (VERSION=3.1.3)
 
 # Recreate the pipelines/<pipeline>/README.md using --help with markdown output

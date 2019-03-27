@@ -43,9 +43,9 @@ Usage
 usage: rnaseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                  [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f] [--json]
                  [--report] [--clean] [-l {debug,info,warning,error,critical}]
-                 [-d DESIGN] [-r READSETS] [-v]
+                 [-d DESIGN] [-t {cufflinks,stringtie}] [-r READSETS] [-v]
 
-Version: 3.1.3
+Version: 3.1.4
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
@@ -60,7 +60,7 @@ optional arguments:
   -o OUTPUT_DIR, --output-dir OUTPUT_DIR
                         output directory (default: current)
   -j {pbs,batch,daemon,slurm}, --job-scheduler {pbs,batch,daemon,slurm}
-                        job scheduler type (default: pbs)
+                        job scheduler type (default: slurm)
   -f, --force           force creation of jobs even if up to date (default:
                         false)
   --json                create a JSON file per analysed sample to track the
@@ -78,16 +78,21 @@ optional arguments:
                         log level (default: info)
   -d DESIGN, --design DESIGN
                         design file
+  -t {cufflinks,stringtie}, --type {cufflinks,stringtie}
+                        Type of RNA-seq assembly method (default cufflinks)
   -r READSETS, --readsets READSETS
                         readset file
   -v, --version         show the version information and exit
 
 Steps:
-```
-![rnaseq workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq.resized.png)
-[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq.png)
-```
 ------
+
+----
+```
+![rnaseq cufflinks workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_cufflinks.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_cufflinks.png)
+```
+cufflinks:
 1- picard_sam_to_fastq
 2- trimmomatic
 3- merge_trimmomatic_stats
@@ -113,6 +118,31 @@ Steps:
 23- differential_expression_goseq
 24- ihec_metrics
 25- verify_bam_id
+----
+```
+![rnaseq stringtie workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_stringtie.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_stringtie.png)
+```
+stringtie:
+1- picard_sam_to_fastq
+2- trimmomatic
+3- merge_trimmomatic_stats
+4- star
+5- picard_merge_sam_files
+6- picard_sort_sam
+7- picard_mark_duplicates
+8- picard_rna_metrics
+9- estimate_ribosomal_rna
+10- bam_hard_clip
+11- rnaseqc
+12- wiggle
+13- raw_counts
+14- raw_counts_metrics
+15- stringtie
+16- stringtie_merge
+17- stringtie_abund
+18- ballgown
+19- differential_expression
 
 ```
 picard_sam_to_fastq
@@ -250,5 +280,26 @@ genotypes for an individual (or group of individuals), and checks whether the re
 as a mixture of two samples. verifyBamID can detect sample contamination and swaps when external
 genotypes are available. When external genotypes are not available, verifyBamID still robustly
 detects sample swaps.
+
+stringtie
+---------
+Assemble transcriptome using [stringtie](https://ccb.jhu.edu/software/stringtie/index.shtml).
+Warning: Still in testing.
+
+stringtie_merge
+---------------
+Merge assemblies into a master teranscriptome reference using [stringtie](https://ccb.jhu.edu/software/stringtie/index.shtml).
+Warning: still in testing
+
+stringtie_abund
+---------------
+Assemble transcriptome and compute RNA-seq expression using [stringtie](https://ccb.jhu.edu/software/stringtie/index.shtml).
+Warning: Still in testing.
+
+ballgown
+--------
+[Ballgown](https://bioconductor.org/packages/release/bioc/html/ballgown.html) is used to calculate differential transcript and gene expression levels and test them for significant differences.
+
+Warning: still in testing
 
 

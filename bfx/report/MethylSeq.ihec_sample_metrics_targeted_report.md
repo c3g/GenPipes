@@ -2,7 +2,7 @@
 
 General summary statistics are provided per sample. Sample readsets are merged for clarity.
 
-Table: Sequencing, Alignment and Methylation Statistics per Sample (**partial table**; [download full table](sequenceAlignmentTable.tsv))
+Table: Sequencing, Alignment and Methylation Statistics per Sample (**partial table**; [download full table](IHEC.sampleMetricsTable.tsv))
 
 $sequence_alignment_table$
 
