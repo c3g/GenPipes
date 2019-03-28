@@ -62,16 +62,16 @@ elif [[ $BQMAMMOUTH == "mp2" || $DNSDOMAIN == m  ]]; then
 elif [[ $HOST == cedar* || $DNSDOMAIN == cedar.computecanada.ca ]]; then
 
   export MUGQIC_INSTALL_HOME_DEV=/project/6007512/C3G/analyste_dev
-  export RAC_ID=<my-rac-id>
+
   
 elif [[ $HOST == beluga* || $DNSDOMAIN == beluga.computecanada.ca ]]; then
 
   export MUGQIC_INSTALL_HOME_DEV=/project/6007512/C3G/analyste_dev
-  export RAC_ID=<my-rac-id>
 
 fi
     
 module use $MUGQIC_INSTALL_HOME/modulefiles $MUGQIC_INSTALL_HOME_DEV/modulefiles
+export RAP_ID=<my-rap-id>
 ```    
 
 Also, set `JOB_MAIL` in your *$HOME/.bash_profile* to receive PBS job logs:
