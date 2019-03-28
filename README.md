@@ -90,7 +90,7 @@ module load mugqic/genpipes/<latest_version>
 (find out the latest version with: "`module avail 2>&1 | grep mugqic/genpipes`").
 
 
-### For guillimin and mammouth users
+### For Compute Canada users
 Set your `RAP_ID` (Resource Allocation Project ID from Compute Canada) in your *$HOME/.bash_profile*:
 ```
 #!bash
