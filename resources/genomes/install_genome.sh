@@ -339,6 +339,34 @@ create_samtools_index() {
   fi
 }
 
+create_bismark_genome_reference() {
+  BISMARK_INDEX_DIR=$GENOME_DIR/bismark_index
+  if ! is_up2date $BISMARK_INDEX_DIR/$GENOME_FASTA
+  then
+    echo
+    echo "Creating Bisulfite Genome Reference with Bismark..."
+    echo
+    BISMARK_CMD="\
+mkdir -p $BISMARK_INDEX_DIR && \
+cat $GENOME_DIR/$GENOME_FASTA.fa ${!INSTALL_HOME}/genomes/lamba_phage.fa ${!INSTALL_HOME}/pUC19.fa > $BISMARK_INDEX_DIR/$GENOME_FASTA.fa && \
+module load $module_samtools && \
+SAM_LOG=$LOG_DIR/samtools_for_bismark_$TIMESTAMP.log && \
+samtools faidx $GENOME_DIR/bismark_index/$GENOME_FASTA > $SAM_LOG 2>&1 && \
+module load $module_picard $module_java && \
+PIC_LOG=$LOG_DIR/picard_for_bismark_$TIMESTAMP.log && \
+java -jar $PICARD_HOME/picard.jar CreateSequenceDictionary REFERENCE=$BISMARK_INDEX_DIR/bismark_index/$GENOME_FASTA OUTPUT=$BISMARK_INDEX_DIR/{$GENOME_FASTA/.fa/.dict} GENOME_ASSEMBLY=${GENOME_FASTA/.fa} > $PIC_LOG 2>&1 && \
+module load mugqic/bismark mugqic/bowtie2 && \
+BIS_LOG=$LOG_DIR/bismark_genokme_preparation_$TIMESTAMP.log && \
+bismark_genome_preparation $BISMARK_INDEX_DIR > $BIS_LOG 2>&1 && \
+chmod -R ug+rwX,o+rX $BISMARK_INDEX_DIR \$SAM_LOG \$PIC_LOG \$BIS_LOG"
+    cmd_or_job BISMARK_CMD 8
+  else
+    echo
+    echo "Bisulfite Genome Reference with Bismark is up to date... skipping"
+    echo
+  fi
+}
+
 create_bwa_index() {
   INDEX_DIR=$GENOME_DIR/bwa_index
   if ! is_up2date $INDEX_DIR/$GENOME_FASTA.sa
