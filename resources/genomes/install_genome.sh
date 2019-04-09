@@ -6,6 +6,7 @@ module_bowtie=mugqic/bowtie/1.1.2
 module_bowtie2=mugqic/bowtie2/2.2.9
 module_bwa=mugqic/bwa/0.7.12
 module_java=mugqic/java/openjdk-jdk1.8.0_72
+module_mugqic_tools=mugqic/mugqic_tools/2.2.2
 module_mugqic_R_packages=mugqic/mugqic_R_packages/1.0.5
 module_picard=mugqic/picard/2.0.1
 module_R=mugqic/R_Bioconductor/3.5.1_3.7
@@ -358,7 +359,10 @@ java -jar $PICARD_HOME/picard.jar CreateSequenceDictionary REFERENCE=$BISMARK_IN
 module load mugqic/bismark mugqic/bowtie2 && \
 BIS_LOG=$LOG_DIR/bismark_genokme_preparation_$TIMESTAMP.log && \
 bismark_genome_preparation $BISMARK_INDEX_DIR > $BIS_LOG 2>&1 && \
-chmod -R ug+rwX,o+rX $BISMARK_INDEX_DIR \$SAM_LOG \$PIC_LOG \$BIS_LOG"
+module load $module_mugqic_tools && \
+BIN_LOG=$LOG_DIR/wgbs_bin100bp_GC_$TIMESTAMP.log && \
+$PYTHON_TOOLS/getFastaBinedGC.py -s 100 -r $BISMARK_INDEX_DIR/$GENOME_FASTA.fa -o $ANNOTATION_DIR/${ASSEMBLY}_wgbs_bin100bp_GC.bed > $BIN_LOG 2>&1 && \
+chmod -R ug+rwX,o+rX $BISMARK_INDEX_DIR \$SAM_LOG \$PIC_LOG \$BIS_LOG \$BIN_LOG"
     cmd_or_job BISMARK_CMD 8
   else
     echo
