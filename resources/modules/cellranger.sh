@@ -11,7 +11,7 @@ ARCHIVE_URL=
 SOFTWARE_DIR=$SOFTWARE-$VERSION
 # Do not patch the executable binaries
 NOWRAP=1
-NOPTACH=1
+NOPATCH=1
 
 build() {
   cd $INSTALL_DOWNLOAD
