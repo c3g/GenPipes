@@ -62,7 +62,7 @@ def get_nanuq_bed_file(nanuq_auth_file, bed_file):
     get_nanuq_file(nanuq_auth_file, "/nanuqLimsCgi/targetRegion/downloadBed.cgi?bedName=" + bed_file, bed_file)
 
 
-def create_readsets(nanuq_readset_file, seq_type, mugqic_pipelines_readset_file="readsets.tsv", args_nanuq_auth_file=None):
+def create_readsets(nanuq_readset_file, seq_type, mugqic_pipelines_readset_file="readsets.tsv", args_nanuq_auth_file=None, args_run=None):
     if seq_type != "NovaSeq":
         # Lowercase the first seq_type character
         lcfirst_seq_type = seq_type[0].lower() + seq_type[1:]
@@ -83,98 +83,104 @@ def create_readsets(nanuq_readset_file, seq_type, mugqic_pipelines_readset_file=
         if line['Status'] and line['Status'] == "Data is valid":
             mugqic_pipelines_readset_csv_row = {}
 
-            if seq_type == "Pacbio":
-                mugqic_pipelines_readset_csv_row['Sample'] = line['Sample Group'] if line.has_key('Sample Group') and line['Sample Group'] != "" else line['Name']
-                mugqic_pipelines_readset_csv_row['Readset'] = ".".join([line['Name'], line['Library Barcode'], line['Run'], line['Well']])
+            if (not args_run) or (line['Run'] in args_run):
+                log.info("Parsing Nanuq run " + line['Run'] + " ...")
 
-                nanuq_vs_mugqic_pipelines_readset_keys = [
-                    ['Run', 'Run'],
-                    ['Well', 'Smartcell'],
-                    ['Collection Protocol', 'Protocol']
-                ]
-                formats = ['BAS', 'BAX']
+                if seq_type == "Pacbio":
+                    mugqic_pipelines_readset_csv_row['Sample'] = line['Sample Group'] if line.has_key('Sample Group') and line['Sample Group'] != "" else line['Name']
+                    mugqic_pipelines_readset_csv_row['Readset'] = ".".join([line['Name'], line['Library Barcode'], line['Run'], line['Well']])
 
-                fieldnames = ['Sample', 'Readset'] + [key[1] for key in nanuq_vs_mugqic_pipelines_readset_keys] + ['NbBasePairs', 'EstimatedGenomeSize'] + formats
+                    nanuq_vs_mugqic_pipelines_readset_keys = [
+                        ['Run', 'Run'],
+                        ['Well', 'Smartcell'],
+                        ['Collection Protocol', 'Protocol']
+                    ]
+                    formats = ['BAS', 'BAX']
 
-                nb_basepairs = re.search("^\([^/]*/[^/]*/(.*)\)$", line['Longest Subreads (count mean bp)'])
-                mugqic_pipelines_readset_csv_row['NbBasePairs'] = re.sub(",", "", nb_basepairs.group(1))
-                mugqic_pipelines_readset_csv_row['EstimatedGenomeSize'] = line['Genome size from Nanuq reception (Mb)']
-                log.warning('EstimatedGenomeSize: ' + line['Genome size from Nanuq reception (Mb)'])
+                    fieldnames = ['Sample', 'Readset'] + [key[1] for key in nanuq_vs_mugqic_pipelines_readset_keys] + ['NbBasePairs', 'EstimatedGenomeSize'] + formats
 
-                if mugqic_pipelines_readset_csv_row['EstimatedGenomeSize'] != '':
-                    mugqic_pipelines_readset_csv_row['EstimatedGenomeSize'] = int(float(mugqic_pipelines_readset_csv_row['EstimatedGenomeSize'])*1000*1000)
-                if line.get('Results Directory', None):
-                    nanuq_readset_prefix = os.path.normpath(os.path.join(nanuq_readset_root_directory, line['Results Directory'], line['Movie name']))
+                    nb_basepairs = re.search("^\([^/]*/[^/]*/(.*)\)$", line['Longest Subreads (count mean bp)'])
+                    mugqic_pipelines_readset_csv_row['NbBasePairs'] = re.sub(",", "", nb_basepairs.group(1))
+                    mugqic_pipelines_readset_csv_row['EstimatedGenomeSize'] = line['Genome size from Nanuq reception (Mb)']
+                    log.warning('EstimatedGenomeSize: ' + line['Genome size from Nanuq reception (Mb)'])
+
+                    if mugqic_pipelines_readset_csv_row['EstimatedGenomeSize'] != '':
+                        mugqic_pipelines_readset_csv_row['EstimatedGenomeSize'] = int(float(mugqic_pipelines_readset_csv_row['EstimatedGenomeSize'])*1000*1000)
+                    if line.get('Results Directory', None):
+                        nanuq_readset_prefix = os.path.normpath(os.path.join(nanuq_readset_root_directory, line['Results Directory'], line['Movie name']))
+                        for format in formats:
+                            nanuq_readset_paths = sorted(glob.glob(nanuq_readset_prefix + "*." + format.lower() + ".h5"))
+                            mugqic_pipelines_readset_paths = [os.path.join(raw_reads_directory, line['Name'], os.path.basename(nanuq_readset_path)) for nanuq_readset_path in nanuq_readset_paths]
+                            mugqic_pipelines_readset_csv_row[format] = ",".join(mugqic_pipelines_readset_paths)
+                            for nanuq_readset_path, mugqic_pipelines_readset_path in zip(nanuq_readset_paths, mugqic_pipelines_readset_paths):
+                                symlinks.append([nanuq_readset_path, mugqic_pipelines_readset_path])
+
+                else:  # seq_type = HiSeq or MiSeq or NovaSeq
+                    mugqic_pipelines_readset_csv_row['Sample'] = line['Sample Group'] if line.has_key('Sample Group') and line['Sample Group'] != "" else line['Name']
+                    mugqic_pipelines_readset_csv_row['Readset'] = ".".join([line['Name'], line['Library Barcode'], line['Run'], line['Region']])
+
+                    nanuq_vs_mugqic_pipelines_readset_keys = [
+                        ['Library Barcode', 'Library'],
+                        ['Run Type', 'RunType'],
+                        ['Run', 'Run'],
+                        ['Region', 'Lane'],
+                        ['Adaptor Read 1 (NOTE: Usage is bound by Illumina Disclaimer found on Nanuq Project Page)', 'Adapter1'],
+                        ['Adaptor Read 2 (NOTE: Usage is bound by Illumina Disclaimer found on Nanuq Project Page)', 'Adapter2'],
+                        ['Forward Primer Sequence', 'Primer1'],
+                        ['Reverse Primer Sequence', 'Primer2'],
+                        ['Quality Offset', 'QualityOffset'],
+                        ['BED Files', 'BED']
+                    ]
+                    formats = ['FASTQ1', 'FASTQ2', 'BAM']
+
+                    fieldnames = ['Sample', 'Readset'] + [key[1] for key in nanuq_vs_mugqic_pipelines_readset_keys] + formats
+
                     for format in formats:
-                        nanuq_readset_paths = sorted(glob.glob(nanuq_readset_prefix + "*." + format.lower() + ".h5"))
-                        mugqic_pipelines_readset_paths = [os.path.join(raw_reads_directory, line['Name'], os.path.basename(nanuq_readset_path)) for nanuq_readset_path in nanuq_readset_paths]
-                        mugqic_pipelines_readset_csv_row[format] = ",".join(mugqic_pipelines_readset_paths)
-                        for nanuq_readset_path, mugqic_pipelines_readset_path in zip(nanuq_readset_paths, mugqic_pipelines_readset_paths):
-                            symlinks.append([nanuq_readset_path, mugqic_pipelines_readset_path])
+                        if line.get(format, None):
+                            nanuq_readset_path = os.path.normpath(os.path.join(nanuq_readset_root_directory, line[format]))
+                            if os.path.isfile(nanuq_readset_path) and (format != 'FASTQ2' or line['Run Type'] != 'SINGLE_END'):  # Ignore FASTQ2 value if any, in case of SINGLE_END readset
+                                if format == 'BAM':
+                                    mugqic_pipelines_readset_basename = mugqic_pipelines_readset_csv_row['Readset'] + ".bam"
+                                else:  # format = FASTQ1 or FASTQ2
+                                    if line['Run Type'] == 'PAIRED_END':
+                                        mugqic_pipelines_readset_basename = mugqic_pipelines_readset_csv_row['Readset'] + ".pair" + format[-1] + ".fastq.gz"
+                                    else:  # format = FASTQ1 and Run Type = SINGLE_END
+                                        mugqic_pipelines_readset_basename = mugqic_pipelines_readset_csv_row['Readset'] + ".single.fastq.gz"
 
-            else:  # seq_type = HiSeq or MiSeq or NovaSeq
-                mugqic_pipelines_readset_csv_row['Sample'] = line['Sample Group'] if line.has_key('Sample Group') and line['Sample Group'] != "" else line['Name']
-                mugqic_pipelines_readset_csv_row['Readset'] = ".".join([line['Name'], line['Library Barcode'], line['Run'], line['Region']])
+                                mugqic_pipelines_readset_path = os.path.join(raw_reads_directory, mugqic_pipelines_readset_csv_row['Sample'], mugqic_pipelines_readset_basename)
+                                symlinks.append([nanuq_readset_path, mugqic_pipelines_readset_path])
+                                mugqic_pipelines_readset_csv_row[format] = mugqic_pipelines_readset_path
 
-                nanuq_vs_mugqic_pipelines_readset_keys = [
-                    ['Library Barcode', 'Library'],
-                    ['Run Type', 'RunType'],
-                    ['Run', 'Run'],
-                    ['Region', 'Lane'],
-                    ['Adaptor Read 1 (NOTE: Usage is bound by Illumina Disclaimer found on Nanuq Project Page)', 'Adapter1'],
-                    ['Adaptor Read 2 (NOTE: Usage is bound by Illumina Disclaimer found on Nanuq Project Page)', 'Adapter2'],
-                    ['Forward Primer Sequence', 'Primer1'],
-                    ['Reverse Primer Sequence', 'Primer2'],
-                    ['Quality Offset', 'QualityOffset'],
-                    ['BED Files', 'BED']
-                ]
-                formats = ['FASTQ1', 'FASTQ2', 'BAM']
+                                # Add BAM index to symlinks if it exists, log a warning otherwise
+                                if format == 'BAM':
+                                    nanuq_readset_index_path = re.sub("\.bam$", ".bai", nanuq_readset_path)
+                                    if os.path.isfile(nanuq_readset_index_path):
+                                        symlinks.append([nanuq_readset_index_path, re.sub("\.bam$", ".bai", mugqic_pipelines_readset_path)])
+                                    else:
+                                        log.warning("Nanuq readset index path " + nanuq_readset_index_path + " is invalid!")
+                            else:
+                                raise Exception("Error: Nanuq readset path " + nanuq_readset_path + " is invalid!")
 
-                fieldnames = ['Sample', 'Readset'] + [key[1] for key in nanuq_vs_mugqic_pipelines_readset_keys] + formats
+                    # BED files
+                    # Filter empty strings returned by split with string ";" separator
+                    for bed_file in filter(None, line['BED Files'].split(';')):
+                        # Retrieve BED file if not previously done
+                        if bed_file not in bed_files:
+                            if args_nanuq_auth_file:
+                                get_nanuq_bed_file(args_nanuq_auth_file.name, bed_file)
+                            else:
+                                log.warning("Nanuq authentication file missing: skipping retrieval of " + bed_file + "...")
+                            bed_files.add(bed_file)
 
-                for format in formats:
-                    if line.get(format, None):
-                        nanuq_readset_path = os.path.normpath(os.path.join(nanuq_readset_root_directory, line[format]))
-                        if os.path.isfile(nanuq_readset_path) and (format != 'FASTQ2' or line['Run Type'] != 'SINGLE_END'):  # Ignore FASTQ2 value if any, in case of SINGLE_END readset
-                            if format == 'BAM':
-                                mugqic_pipelines_readset_basename = mugqic_pipelines_readset_csv_row['Readset'] + ".bam"
-                            else:  # format = FASTQ1 or FASTQ2
-                                if line['Run Type'] == 'PAIRED_END':
-                                    mugqic_pipelines_readset_basename = mugqic_pipelines_readset_csv_row['Readset'] + ".pair" + format[-1] + ".fastq.gz"
-                                else:  # format = FASTQ1 and Run Type = SINGLE_END
-                                    mugqic_pipelines_readset_basename = mugqic_pipelines_readset_csv_row['Readset'] + ".single.fastq.gz"
+                for nanuq_key, mugqic_pipelines_key in nanuq_vs_mugqic_pipelines_readset_keys:
+                    value = line.get(nanuq_key, None)
+                    if value:
+                        mugqic_pipelines_readset_csv_row[mugqic_pipelines_key] = value
 
-                            mugqic_pipelines_readset_path = os.path.join(raw_reads_directory, mugqic_pipelines_readset_csv_row['Sample'], mugqic_pipelines_readset_basename)
-                            symlinks.append([nanuq_readset_path, mugqic_pipelines_readset_path])
-                            mugqic_pipelines_readset_csv_row[format] = mugqic_pipelines_readset_path
+                mugqic_pipelines_readset_csv_rows.append(mugqic_pipelines_readset_csv_row)
 
-                            # Add BAM index to symlinks if it exists, log a warning otherwise
-                            if format == 'BAM':
-                                nanuq_readset_index_path = re.sub("\.bam$", ".bai", nanuq_readset_path)
-                                if os.path.isfile(nanuq_readset_index_path):
-                                    symlinks.append([nanuq_readset_index_path, re.sub("\.bam$", ".bai", mugqic_pipelines_readset_path)])
-                                else:
-                                    log.warning("Nanuq readset index path " + nanuq_readset_index_path + " is invalid!")
-                        else:
-                            raise Exception("Error: Nanuq readset path " + nanuq_readset_path + " is invalid!")
-
-                # BED files
-                # Filter empty strings returned by split with string ";" separator
-                for bed_file in filter(None, line['BED Files'].split(';')):
-                    # Retrieve BED file if not previously done
-                    if bed_file not in bed_files:
-                        if args_nanuq_auth_file:
-                            get_nanuq_bed_file(args_nanuq_auth_file.name, bed_file)
-                        else:
-                            log.warning("Nanuq authentication file missing: skipping retrieval of " + bed_file + "...")
-                        bed_files.add(bed_file)
-
-            for nanuq_key, mugqic_pipelines_key in nanuq_vs_mugqic_pipelines_readset_keys:
-                value = line.get(nanuq_key, None)
-                if value:
-                    mugqic_pipelines_readset_csv_row[mugqic_pipelines_key] = value
-
-            mugqic_pipelines_readset_csv_rows.append(mugqic_pipelines_readset_csv_row)
+            else:
+                log.debug(str(line) + " line data is not in requested runs... skipping")
         else:
             log.warning(str(line) + " line data is not valid... skipping")
 
@@ -210,7 +216,7 @@ parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
 group = parser.add_mutually_exclusive_group(required=True)
 group.add_argument("-p", "--nanuq-project-id", help="Nanuq project ID used to fetch readset file from server (incompatible with --nanuq-readset-file)")
 group.add_argument("-r", "--nanuq-readset-file", help="Nanuq readset file to use instead of fetching it from server (incompatible with --nanuq-project-id)", type=file)
-
+parser.add_argument("-rn", "--run", help="Nanuq run ID to fetch only readset procesed in specified run(s). Multiple runs can be provided, should they be comma-separated")
 parser.add_argument("-s", "--seq-type", help="Sequencing type (default: HiSeq)", choices=["HiSeq", "NovaSeq","MiSeq", "Pacbio"], default="HiSeq")
 parser.add_argument("-a", "--nanuq-auth-file", help="Nanuq authentication file containing your Nanuq username and password e.g. $HOME/.nanuqAuth.txt\nTo create it:\n$ echo -n \"user=<USERNAME>&password=<PASSWORD>\" > $HOME/.nanuqAuth.txt ; chmod u+r,go-rwx $HOME/.nanuqAuth.txt\nNote '-n' option since trailing newline is not allowed at the end of the file.", type=file)
 parser.add_argument("-nl", "--no-links", help="Do not create raw_reads directory and symlinks (default: false)", action="store_true")
@@ -234,4 +240,4 @@ elif args.nanuq_readset_file:
     mugqic_pipelines_readset_file = "readsets."+ args.seq_type +".tsv"
 
 if not args.no_links:
-    create_readsets(nanuq_readset_file, args.seq_type, mugqic_pipelines_readset_file, args.nanuq_auth_file)
+    create_readsets(nanuq_readset_file, args.seq_type, mugqic_pipelines_readset_file, args.nanuq_auth_file, args.run)
