@@ -34,7 +34,7 @@ def genome_gz(output):
             #['sequenza', 'module_sequenza'],
         ],
         command="""\\
-python $SEQUENZA_BIN/sequenza-utils.py \\
+sequenza-utils \\
     GC-windows -w {window} \\
     {input} \\
     | gzip > \\
@@ -42,7 +42,7 @@ python $SEQUENZA_BIN/sequenza-utils.py \\
         input=config.param('samtools_mpileup','genome_fasta',type='filepath'),
         out=output,
         window=config.param('sequenza','window_length')
-    ),  
+    ),
   )
 
 
@@ -52,15 +52,14 @@ def sequenza_seqz(normal_gz, tumor_gz, genome, output):
         [output],
         [
             ['sequenza', 'module_python'],
-            ['sequenza', 'module_sequenza'],
+            #['sequenza', 'module_sequenza'],
         ],
         command="""\\
-python $SEQUENZA_BIN/sequenza-utils.py \\
-    pileup2seqz  {pileup_options} \\
+sequenza-utils \\
+    bam2seqz {pileup_options} \\
     -gc  {gen}   \\
     -n {normal}  \\
-    -t {tumor}   \\
-    {out}""".format(
+    -t {tumor}{out}""".format(
         gen=genome,
         normal=normal_gz,
         tumor=tumor_gz,
@@ -75,11 +74,11 @@ def sequenza_bin(seqz_gz, output):
         [output],
         [
             ['sequenza', 'module_python'],
-            ['sequenza', 'module_sequenza'],
+            #['sequenza', 'module_sequenza'],
         ],
         command="""\\
-python $SEQUENZA_BIN/sequenza-utils.py  \\
-    seqz-binning  \\
+sequenza-utils  \\
+    seqz_binning  \\
     -w {window}  \\
     -s {seqz_gz} \\
     {output}""".format(

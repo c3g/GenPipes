@@ -31,7 +31,7 @@ def sort(input_bam, output_bam, tmp_dir, options):
         [input_bam],
         [output_bam],
         [
-            ['sambamba_sort_sam', 'module_samtools'],
+            #['sambamba_sort_sam', 'module_samtools'],
             ['sambamba_sort_sam', 'module_sambamba']
         ],
         command="""\
@@ -52,7 +52,7 @@ def index(input, output, other_options=config.param('sambamba_index', 'options',
         [input],
         [output],
         [
-            ['sambamba_index', 'module_samtools'],
+            #['sambamba_index', 'module_samtools'],
             ['sambamba_index', 'module_sambamba']
         ],
         command="""\

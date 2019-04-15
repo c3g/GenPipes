@@ -37,7 +37,7 @@ def genotyper(input_tumor, input_normal, input_vcf, output_vcf):
         inputs,
         [output_vcf],
         [
-            ['lumpy_paired_sv_calls', 'module_python'],
+            ['wham_call_sv', 'module_python'],
         ],
         command="""\
 svtyper --max_reads 5000 \\

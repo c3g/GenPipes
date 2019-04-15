@@ -25,7 +25,7 @@ from core.job import *
 def scones_pair(bined_file, output_basename, window):
     
     models= [0,2,3,4,5,6,7]
-    scones_outputs=[output_basename + "_Model_" + str(i) + "_GenomicRatios.png" for i in models ] + [output_basename + "_Model_" + str(i) + "_CNVcalls.txt" for i in models ]
+    scones_outputs=[output_basename + "_Model_" + str(i) + "_GenomicRatios.pdf" for i in models ] + [output_basename + "_Model_" + str(i) + "_CNVcalls.txt" for i in models ]
     
     return Job(
         [bined_file],

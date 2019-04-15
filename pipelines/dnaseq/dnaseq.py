@@ -3164,7 +3164,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         return [
             [
                 self.picard_sam_to_fastq,
-                self.sym_link_fastq,
                 self.trimmomatic,
                 self.merge_trimmomatic_stats,
                 self.skewer_trimming,
@@ -3176,7 +3175,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.fix_mate_by_coordinate_samtools,
                 self.picard_mark_duplicates,
                 self.recalibration,
-                self.sym_link_final_bam,
                 self.metrics_dna_picard_metrics,
                 self.metrics_dna_sample_qualimap,
                 self.metrics_dna_sambamba_flagstat,
@@ -3204,7 +3202,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             ],
             [
                 self.picard_sam_to_fastq,
-                self.sym_link_fastq,
                 self.trimmomatic,
                 self.merge_trimmomatic_stats,
                 self.skewer_trimming,
@@ -3216,7 +3213,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.fix_mate_by_coordinate_samtools,
                 self.picard_mark_duplicates,
                 self.recalibration,
-                self.sym_link_final_bam,
                 self.metrics_dna_picard_metrics,
                 self.metrics_dna_sample_qualimap,
                 self.metrics_dna_sambamba_flagstat,
@@ -3236,8 +3232,10 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.mpileup_dbnsfp_annotation,
                 self.mpileup_gemini_annotations,
                 self.mpileup_metrics_vcf_stats,
+                #self.mpileup_metrics_snv_graph_metrics,
                 self.run_multiqc,
-                self.cram_output
+                self.sym_link_fastq,
+                self.sym_link_final_bam
             ],
             # [
             #     self.picard_sam_to_fastq,
