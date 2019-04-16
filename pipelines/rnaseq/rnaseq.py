@@ -39,6 +39,8 @@ from bfx.readset import *
 
 from bfx import bedtools
 from bfx import cufflinks
+from bfx import stringtie
+from bfx import ballgown
 from bfx import differential_expression
 from bfx import gq_seq_utils
 from bfx import htseq
@@ -92,10 +94,11 @@ class RnaSeq(common.Illumina):
     information about the RNA-Seq pipeline that you may find interesting.
     """
 
-    def __init__(self, protocol=None):
+    def __init__(self, protocol='stringtie'):
         self._protocol=protocol
         # Add pipeline specific arguments
         self.argparser.add_argument("-d", "--design", help="design file", type=file)
+        self.argparser.add_argument("-t", "--type", help="Type of RNA-seq assembly method (default cufflinks)", choices = ["cufflinks", "stringtie"], default="stringtie")
         super(RnaSeq, self).__init__(protocol)
 
     def star(self):
@@ -732,6 +735,94 @@ pandoc --to=markdown \\
         )
 
         return jobs
+    
+    def stringtie(self):
+        """
+        Assemble transcriptome using [stringtie](https://ccb.jhu.edu/software/stringtie/index.shtml).
+        Warning: Still in testing.
+        """
+        jobs = []
+
+        gtf = config.param('stringtie','gtf', type='filepath')
+
+        for sample in self.samples:
+            input_bam = os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.hardClip.bam")
+            output_directory = os.path.join("stringtie", sample.name)
+
+            job = stringtie.stringtie(input_bam, output_directory, gtf)
+            job.name = "stringtie." + sample.name
+            job.samples = [sample]
+            jobs.append(job)
+
+        return jobs
+
+    def stringtie_merge(self): 
+        """
+        Merge assemblies into a master teranscriptome reference using [stringtie](https://ccb.jhu.edu/software/stringtie/index.shtml).
+        Warning: still in testing
+        """
+
+        output_directory = os.path.join("stringtie", "AllSamples")
+        sample_file = os.path.join("stringtie", "stringtie-merge.samples.txt")
+        input_gtfs = [os.path.join("stringtie", sample.name, "transcripts.gtf") for sample in self.samples]
+        gtf = config.param('stringtie','gtf', type='filepath')
+
+
+        job = concat_jobs([
+            Job(command="mkdir -p " + output_directory, samples=self.samples),
+            Job(input_gtfs, [sample_file], command="""\
+`cat > {sample_file} << END
+{sample_rows}
+END
+
+`""".format(sample_rows="\n".join(input_gtfs), sample_file=sample_file)),
+            stringtie.stringtie_merge(sample_file, output_directory, gtf)],
+            name="stringtie-merge")
+
+        return [job]
+
+    def stringtie_abund(self):
+        """
+        Assemble transcriptome and compute RNA-seq expression using [stringtie](https://ccb.jhu.edu/software/stringtie/index.shtml).
+        Warning: Still in testing.
+        """
+        jobs = []
+
+        gtf = os.path.join("stringtie", "AllSamples", "merged.gtf")
+
+        for sample in self.samples:
+            input_bam = os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.hardClip.bam")
+            output_directory = os.path.join("stringtie", sample.name)
+
+            job = stringtie.stringtie(input_bam, output_directory, gtf, abund=True)
+            job.name = "stringtie_abund." + sample.name
+            job.samples = [sample]
+            jobs.append(job)
+
+        return jobs
+
+    def ballgown(self):
+        """
+        [Ballgown](https://bioconductor.org/packages/release/bioc/html/ballgown.html) is used to calculate differential transcript and gene expression levels and test them for significant differences.
+
+        Warning: still in testing
+        """
+
+        jobs = []
+
+        # Perform ballgown on each design contrast
+        # If --design <design_file> option is missing, self.contrasts call will raise an Exception
+        if self.contrasts: 
+            design_file = os.path.relpath(self.args.design.name, self.output_dir)        
+        output_directory = "ballgown" 
+        input_abund = [os.path.join("stringtie", sample.name, "abundance.tab") for sample in self.samples]
+
+        ballgown_job = ballgown.ballgown(input_abund, design_file, output_directory)
+        ballgown_job.name = "ballgown"
+        ballgown_job.samples = self.samples
+        jobs.append(ballgown_job)
+
+        return jobs
 
     def cufflinks(self):
         """
@@ -1062,7 +1153,7 @@ done""".format(
     @property
     def steps(self):
         return [
-            self.picard_sam_to_fastq,
+            [self.picard_sam_to_fastq,
             self.trimmomatic,
             self.merge_trimmomatic_stats,
             self.star,
@@ -1086,8 +1177,28 @@ done""".format(
             self.differential_expression,
             self.differential_expression_goseq,
             self.ihec_metrics,
-            self.verify_bam_id
+            self.verify_bam_id],
+            [self.picard_sam_to_fastq,
+            self.trimmomatic,
+            self.merge_trimmomatic_stats,
+            self.star,
+            self.picard_merge_sam_files,
+            self.picard_sort_sam,
+            self.picard_mark_duplicates,
+            self.picard_rna_metrics,
+            self.estimate_ribosomal_rna,
+            self.bam_hard_clip,
+            self.rnaseqc,
+            self.wiggle,
+            self.raw_counts,
+            self.raw_counts_metrics,
+            self.stringtie,
+            self.stringtie_merge,
+            self.stringtie_abund,
+            self.ballgown,
+            self.differential_expression,
+            ]
         ]
 
 if __name__ == '__main__':
-    RnaSeq()
+    RnaSeq(protocol=['cufflinks','stringtie'])

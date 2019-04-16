@@ -25,7 +25,7 @@ usage: dnaseq_high_coverage.py [-h] [--help] [-c CONFIG [CONFIG ...]]
                                [-l {debug,info,warning,error,critical}]
                                [-t {mugqic,mpileup,light}] [-r READSETS] [-v]
 
-Version: 3.1.3
+Version: 3.1.4
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
@@ -40,7 +40,7 @@ optional arguments:
   -o OUTPUT_DIR, --output-dir OUTPUT_DIR
                         output directory (default: current)
   -j {pbs,batch,daemon,slurm}, --job-scheduler {pbs,batch,daemon,slurm}
-                        job scheduler type (default: pbs)
+                        job scheduler type (default: slurm)
   -f, --force           force creation of jobs even if up to date (default:
                         false)
   --json                create a JSON file per analysed sample to track the

@@ -2,7 +2,7 @@ GenPipes
 ================
 This repository holds several bioinformatics pipelines developed at [McGill University and Génome Québec Innovation Centre](http://gqinnovationcenter.com) (MUGQIC), as part of the [GenAP project](https://genap.ca).
 
-GenPipes consist of Python scripts which create a list of jobs running Bash commands. Those scripts support dependencies between jobs and smart restart mechanism if some jobs fail during pipeline execution. Jobs can be submitted in different ways: by being sent to a PBS scheduler like Torque or by being run as a series of commands in batch through a Bash script. Job commands and parameters can be modified through several configuration files.
+GenPipes consists of Python scripts which create a list of jobs running Bash commands. Those scripts support dependencies between jobs and smart restart mechanism if some jobs fail during pipeline execution. Jobs can be submitted in different ways: by being sent to a PBS scheduler like Torque or by being run as a series of commands in batch through a Bash script. Job commands and parameters can be modified through several configuration files.
 
 **For a more detailed tutorial on how to use GenPipes, please visit our [tutorial page](http://www.computationalgenomics.ca/tutorials/).**  
 
@@ -62,11 +62,16 @@ elif [[ $BQMAMMOUTH == "mp2" || $DNSDOMAIN == m  ]]; then
 elif [[ $HOST == cedar* || $DNSDOMAIN == cedar.computecanada.ca ]]; then
 
   export MUGQIC_INSTALL_HOME_DEV=/project/6007512/C3G/analyste_dev
-  export RAC_ID=<my-rac-id>
+
+  
+elif [[ $HOST == beluga* || $DNSDOMAIN == beluga.computecanada.ca ]]; then
+
+  export MUGQIC_INSTALL_HOME_DEV=/project/6007512/C3G/analyste_dev
 
 fi
     
 module use $MUGQIC_INSTALL_HOME/modulefiles $MUGQIC_INSTALL_HOME_DEV/modulefiles
+export RAP_ID=<my-rap-id>
 ```    
 
 Also, set `JOB_MAIL` in your *$HOME/.bash_profile* to receive PBS job logs:
@@ -85,7 +90,7 @@ module load mugqic/genpipes/<latest_version>
 (find out the latest version with: "`module avail 2>&1 | grep mugqic/genpipes`").
 
 
-### For guillimin and mammouth users
+### For Compute Canada users
 Set your `RAP_ID` (Resource Allocation Project ID from Compute Canada) in your *$HOME/.bash_profile*:
 ```
 #!bash

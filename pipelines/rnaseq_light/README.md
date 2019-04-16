@@ -11,9 +11,9 @@ usage: rnaseq_light.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                        [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f]
                        [--json] [--report] [--clean]
                        [-l {debug,info,warning,error,critical}] [-d DESIGN]
-                       [-r READSETS] [-v]
+                       [-t {cufflinks,stringtie}] [-r READSETS] [-v]
 
-Version: 3.1.3
+Version: 3.1.4
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
@@ -28,7 +28,7 @@ optional arguments:
   -o OUTPUT_DIR, --output-dir OUTPUT_DIR
                         output directory (default: current)
   -j {pbs,batch,daemon,slurm}, --job-scheduler {pbs,batch,daemon,slurm}
-                        job scheduler type (default: pbs)
+                        job scheduler type (default: slurm)
   -f, --force           force creation of jobs even if up to date (default:
                         false)
   --json                create a JSON file per analysed sample to track the
@@ -46,6 +46,8 @@ optional arguments:
                         log level (default: info)
   -d DESIGN, --design DESIGN
                         design file
+  -t {cufflinks,stringtie}, --type {cufflinks,stringtie}
+                        Type of RNA-seq assembly method (default cufflinks)
   -r READSETS, --readsets READSETS
                         readset file
   -v, --version         show the version information and exit
@@ -62,6 +64,7 @@ Steps:
 4- kallisto
 5- kallisto_count_matrix
 6- gq_seq_utils_exploratory_analysis_rnaseq_light
+7- sleuth_differential_expression
 
 ```
 picard_sam_to_fastq
@@ -96,5 +99,12 @@ kallisto_count_matrix
 gq_seq_utils_exploratory_analysis_rnaseq_light
 ----------------------------------------------
 Exploratory analysis using the gqSeqUtils R package adapted for RnaSeqLight
+
+sleuth_differential_expression
+------------------------------
+Performs differential gene expression analysis using [Sleuth](http://pachterlab.github.io/sleuth/). 
+Analysis are performed both at a transcript and gene level, using two different tests: LRT and WT. 
+
+Still in development, use with caution. 
 
 

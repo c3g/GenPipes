@@ -30,13 +30,14 @@ from config import *
 
 log = logging.getLogger(__name__)
 
-class Job:
+class Job(object):
 
-    def __init__(self, input_files=[], output_files=[], module_entries = [], name="", command="", report_files=[], removable_files=[], samples=[]):
+    def __init__(self, input_files=[], output_files=[], module_entries = [], name="", command="", report_files=[], multiqc_files=[], removable_files=[], samples=[]):
         # Remove undefined input/output/removable files if any
         self._input_files = filter(None, input_files)
         self._output_files = filter(None, output_files)
         self._report_files = filter(None, report_files)
+        self._multiqc_files = filter(None, multiqc_files)
         self._removable_files = filter(None, removable_files)
 
         # Retrieve modules from config, removing duplicates but keeping the order
@@ -50,49 +51,105 @@ class Job:
     def id(self):
         return self._id
 
+    @id.setter
+    def id(self, value):
+        self._id = value
+
     @property
     def name(self):
         return self._name
+
+    @name.setter
+    def name(self, value):
+        self._name = value
 
     @property
     def output_dir(self):
         return self._output_dir
 
+    @output_dir.setter
+    def output_dir(self, value):
+        self._output_dir = value
+
     @property
     def input_files(self):
         return self._input_files
+
+    @input_files.setter
+    def input_files(self, value):
+        self._input_files = value
 
     @property
     def output_files(self):
         return self._output_files
 
+    @output_files.setter
+    def output_files(self, value):
+        self._output_files = value
+
     @property
     def report_files(self):
         return self._report_files
+
+    @report_files.setter
+    def report_files(self, value):
+        self._report_files = value
+
+    @property
+    def multiqc_files(self):
+        return self._multiqc_files
+
+    @multiqc_files.setter
+    def multiqc_files(self, value):
+        self._multiqc_files = value
 
     @property
     def removable_files(self):
         return self._removable_files
 
+    @removable_files.setter
+    def removable_files(self, value):
+        self._removable_files = value
+
     @property
     def done(self):
         return self._done
+
+    @done.setter
+    def done(self, value):
+        self._done = value
 
     @property
     def dependency_jobs(self):
         return self._dependency_jobs
 
+    @dependency_jobs.setter
+    def dependency_jobs(self, value):
+        self._dependency_jobs = value
+
     @property
     def modules(self):
         return self._modules
+
+    @modules.setter
+    def modules(self, value):
+        self._modules = value
 
     @property
     def command(self):
         return self._command
 
+    @command.setter
+    def command(self, value):
+        self._command = value
+
     @property
     def samples(self):
         return self._samples
+
+    @samples.setter
+    def samples(self, value):
+        self._samples = value
 
     @property
     def command_with_modules(self):
@@ -153,6 +210,7 @@ def concat_jobs(jobs, name="", samples=[]):
     input_files = []
     output_files = []
     report_files = []
+    multiqc_files = []
     removable_files = []
     modules = []
     sample_list = samples
@@ -160,11 +218,12 @@ def concat_jobs(jobs, name="", samples=[]):
         input_files.extend([input_file for input_file in job_item.input_files if input_file not in input_files and input_file not in output_files])
         output_files.extend([output_file for output_file in job_item.output_files if output_file not in output_files])
         report_files.extend([report_file for report_file in job_item.report_files if report_file not in report_files])
+        multiqc_files.extend([multiqc_file for multiqc_file in job_item.multiqc_files if multiqc_file not in multiqc_files])
         removable_files.extend([removable_file for removable_file in job_item.removable_files if removable_file not in removable_files])
         modules.extend([module for module in job_item.modules if module not in modules])
         sample_list.extend([sample for sample in job_item.samples if sample not in sample_list])
 
-    job = Job(input_files, output_files, name=name, report_files=report_files, removable_files=removable_files, samples=sample_list)
+    job = Job(input_files, output_files, name=name, report_files=report_files, multiqc_files=multiqc_files, removable_files=removable_files, samples=sample_list)
     job.modules = modules
 
     # Merge commands
@@ -179,11 +238,13 @@ def pipe_jobs(jobs, name="", samples=[]):
 
     # Merge all report/removable files and modules
     report_files = []
+    multiqc_files = []
     removable_files = []
     modules = []
     sample_list = samples
     for job_item in jobs:
         report_files.extend(job_item.report_files)
+        multiqc_files.extend(job_item.multiqc_files)
         removable_files.extend(job_item.removable_files)
         modules.extend(job_item.modules)
         sample_list.extend([sample for sample in job_item.samples if sample not in sample_list])
@@ -191,6 +252,8 @@ def pipe_jobs(jobs, name="", samples=[]):
     # Remove duplicates if any, keeping the order
     report_files = list(collections.OrderedDict.fromkeys([report_file for report_file in report_files]))
     job.report_files = report_files
+    multiqc_files = list(collections.OrderedDict.fromkeys([multiqc_file for multiqc_file in multiqc_files]))
+    job.multiqc_files = multiqc_files
     removable_files = list(collections.OrderedDict.fromkeys([removable_file for removable_file in removable_files]))
     job.removable_files = removable_files
     modules = list(collections.OrderedDict.fromkeys([module for module in modules]))

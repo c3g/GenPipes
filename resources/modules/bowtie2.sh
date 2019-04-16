@@ -3,14 +3,13 @@
 set -eu -o pipefail
 
 SOFTWARE=bowtie2
-VERSION=2.3.1
+VERSION=2.3.5
 ARCHIVE=$SOFTWARE-$VERSION.zip
 ARCHIVE_URL=https://sourceforge.net/projects/bowtie-bio/files/$SOFTWARE/$VERSION/${SOFTWARE}-${VERSION}-linux-x86_64.zip
 SOFTWARE_DIR=$SOFTWARE-$VERSION
+NOWRAP=1
+NOPATCH=1
 
-# Specific commands to extract and build the software
-# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
-# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
   unzip $ARCHIVE
@@ -20,7 +19,7 @@ build() {
 
   # Install software
   cd $INSTALL_DOWNLOAD
-  mv -i $SOFTWARE_DIR $INSTALL_DIR/
+  mv -i ${SOFTWARE}-${VERSION}-linux-x86_64 $INSTALL_DIR/$SOFTWARE_DIR
 }
 
 module_file() {

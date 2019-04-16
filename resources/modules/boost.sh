@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=boost
-VERSION=1.63.0
+VERSION=1.66.0
 ARCHIVE=$SOFTWARE-$VERSION.tar.bz2
 ARCHIVE_URL=https://sourceforge.net/projects/${SOFTWARE}/files/${SOFTWARE}/${VERSION}/${SOFTWARE}_${VERSION//./_}.tar.bz2
 SOFTWARE_DIR=$SOFTWARE-$VERSION

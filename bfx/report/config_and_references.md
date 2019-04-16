@@ -44,6 +44,7 @@ All analysis parameters are described in this [configuration file](config.ini).
 [CSS]: http://bioconductor.org/packages/release/bioc/html/metagenomeSeq.html
 [GOLD]: http://microbiomeutil.sourceforge.net/
 [UNITE]: https://unite.ut.ee/repository.php
+[BISMARK]: https://www.bioinformatics.babraham.ac.uk/projects/bismark/
 
 ---
 references:
@@ -1007,5 +1008,22 @@ references:
   type: article-journal
   issued:
     year: 2015     
+
+- id: bismark
+  title: 'Bismark: a flexible aligner and methylation caller for Bisulfite-Seq applications.'
+  author:
+    - family: Krueger
+      given: Felix
+    - family: Andrews
+      given: Simon R.
+  container-title: Bioinformatics
+  volume: 27
+  URL: 'https://www.ncbi.nlm.nih.gov/pubmed/21493656'
+  DOI: 10.1093/bioinformatics/btr167
+  page: 1571
+  type: article-journal
+  issued:
+    year: 2011
                                                  
 ...
+

@@ -121,14 +121,14 @@ then
   C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/apt/ubuntu1604/1.0
   LIB=lib
   INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu/ld-linux-x86-64.so.2
-  LIBDIR=$C3G_SYSTEM_LIBRARY/usr/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB/x86_64-linux-gnu:$INSTALL_DIR/$LIB/R/lib
+  LIBDIR=$INSTALL_DIR/$LIB/R/lib:$C3G_SYSTEM_LIBRARY/usr/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB/x86_64-linux-gnu
 elif [ `lsb_release -i | cut -f 2` == "CentOS" ]
 then
   echo "CentOS" > /dev/null
   C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/yum/centos7/1.0
   LIB=lib64
   INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/ld-linux-x86-64.so.2
-  LIBDIR=$C3G_SYSTEM_LIBRARY/usr/local/c3g/rpm/usr/lib64:$C3G_SYSTEM_LIBRARY/usr/local/c3g/compile/lib:$C3G_SYSTEM_LIBRARY/$LIB:$C3G_SYSTEM_LIBRARY/$LIB/mysql:$INSTALL_DIR/$LIB/R/lib
+  LIBDIR=$C3G_SYSTEM_LIBRARY/usr/local/c3g/rpm/usr/lib64:$C3G_SYSTEM_LIBRARY/usr/local/c3g/compile/lib:$C3G_SYSTEM_LIBRARY/usr/local/lib64:$C3G_SYSTEM_LIBRARY/usr/lib64:$C3G_SYSTEM_LIBRARY/usr/lib:$C3G_SYSTEM_LIBRARY/usr/lib64/mysql:$C3G_SYSTEM_LIBRARY/$LIB/mysql:$INSTALL_DIR/$LIB/R/lib
 else
   echo "*** ERROR ***"
   echo "'"`lsb_release -i | cut -f 2`"' OS detected... should be either 'Ubuntu' neither 'CentOS'..."
@@ -323,10 +323,10 @@ for i in `find $INSTALL_DIR/ -type f -executable -exec file {} \; | grep ELF | c
     echo "GO Done" > /dev/null
   elif [ ${i##*.} == "so" ] || [[ ${i##*/} =~ "so"*(\.[0-9]{1,2})*$ ]]
   then
-    $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-rpath $C3G_SYSTEM_LIBRARY/usr/$LIB $i
+    $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-rpath $LIBDIR $i
   else
     echo $i
-    $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-interpreter $INTERPRETER --set-rpath $C3G_SYSTEM_LIBRARY/usr/$LIB $i
+    $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-interpreter $INTERPRETER --set-rpath $LIBDIR $i
   fi
 done
 
@@ -334,7 +334,7 @@ echo "Building C3G wrappers for executables..."
 sed -i "s,R_binary=\"\${R_HOME}/bin/exec\${R_ARCH}/R,R_binary=\"\${R_HOME}/bin/exec\${R_ARCH}.wrap/R," $INSTALL_DIR/bin/R
 sed -i "s,R_binary=\"\${R_HOME}/bin/exec\${R_ARCH}/R,R_binary=\"\${R_HOME}/bin/exec\${R_ARCH}.wrap/R," $INSTALL_DIR/$LIB/R/bin/R
 mkdir $INSTALL_DIR/$LIB/R/bin/exec.wrap
-echo "$INTERPRETER --library-path $LIBDIR $INSTALL_DIR/$LIB/R/bin/exec/R \${args} \${i}" > $INSTALL_DIR/$LIB/R/bin/exec.wrap/R
+echo "$INTERPRETER --library-path $LIBDIR $INSTALL_DIR/$LIB/R/bin/exec/R \${args} \${@}" > $INSTALL_DIR/$LIB/R/bin/exec.wrap/R
 chmod 775 $INSTALL_DIR/$LIB/R/bin/exec.wrap/R
 for i in $INSTALL_DIR/bin/Rscript $INSTALL_DIR/$LIB/R/bin/Rscript; do
   mv $i $i.raw;

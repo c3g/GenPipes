@@ -327,7 +327,8 @@ def rnaseqLight_kallisto(fastq_file1, fastq_file2, transcriptome_file, tx2genes_
         ],
         [
             os.path.join(output_dir, "abundance_transcripts.tsv"),
-            os.path.join(output_dir, "abundance_genes.tsv")
+            os.path.join(output_dir, "abundance_genes.tsv"),
+            os.path.join(output_dir, "kallisto_quant.log")
         ],
         [
             ['kallisto', 'module_mugqic_tools'],
@@ -337,19 +338,20 @@ def rnaseqLight_kallisto(fastq_file1, fastq_file2, transcriptome_file, tx2genes_
         name=job_name,
         command="""\
 bash rnaseq_light_kallisto.sh \\
-  {fastq_file1} \\
-  {fastq_file2} \\
+  {output_dir} \\
+  {parameters} \\
   {transcriptome_file} \\
   {tx2genes_file} \\
-  {output_dir} \\
-  {parameters}""".format(
-            fastq_file1=fastq_file1,
-            fastq_file2=fastq_file2,
+  {fastq_file1} \\
+  {fastq_file2}""".format(
+            output_dir=output_dir,
+            parameters=parameters,
             transcriptome_file=transcriptome_file,
             tx2genes_file=tx2genes_file,
-            output_dir=output_dir,
-            parameters=parameters
-        )
+            fastq_file1=fastq_file1,
+            fastq_file2=fastq_file2
+        ),
+        multiqc_files=[os.path.join(output_dir, "kallisto_quant.log")]
      )
 
 ## functions for R tools ##
@@ -497,6 +499,33 @@ R --no-save --args \\
             strand=strand,
             min_num_read=min_num_read,
             mean_read_length=mean_read_length
+        )
+    )
+
+def methylkit_differential_analysis(design_file, input_files, outputfiles, output_dir):
+
+    suffix = re.sub(".*\.readset_", ".readset_", input_files[0])
+
+    return Job(
+        input_files,
+        outputfiles,
+        [
+            ['methylkit_differential_analysis', 'module_R'],
+            ['methylkit_differential_analysis', 'module_mugqic_tools']
+        ],
+        command="""\
+R --no-save '--args \\
+  -design {design_file} \\
+  -outdir {output_folder} \\
+  -build {genome} \\
+  -suff {input_suffix} \\
+  {other_options}' \\
+  < $R_TOOLS/methylKit.R""".format(
+            design_file=design_file,
+            genome=config.param('methylkit_differential_analysis', 'assembly'),
+            output_folder=output_dir,
+            input_suffix=suffix,
+            other_options=config.param('methylkit_differential_analysis', 'other_options')
         )
     )
 
@@ -747,6 +776,46 @@ def cpg_cov_stats(input, output):
 python $PYTHON_TOOLS/CpG_coverageStats.py \\
  -i {input} \\
  -o {output}""".format(
+            input=input,
+            output=output
+        )
+    )
+
+def filter_snp_cpg(input, output):
+    return Job(
+        [input],
+        [output],
+        [
+            ['filter_snp_cpg', 'module_bedops']
+        ],
+        command="""\
+awk '$11>=5' {input} | sort-bed - > {sorted_bed} && \\
+zcat {filter_file} | vcf2bed - > {filter_sorted_bed} && \\
+bedops --not-element-of \\
+  {sorted_bed} \\
+  {filter_sorted_bed} \\
+  > {output}""". format(
+            input=input,
+            sorted_bed=os.path.join(config.param('filter_snp_cpg', 'tmp_dir'), os.path.basename(input)+".tmp.sorted.bed"),
+            filter_file=config.param('filter_snp_cpg', 'known_variants'),
+            filter_sorted_bed=os.path.join(config.param('filter_snp_cpg', 'tmp_dir'), os.path.basename(config.param('filter_snp_cpg', 'known_variants'))+".tmp.sorted.bed"),
+            output=output
+        )
+    )
+
+def prepare_methylkit(input, output):
+    return Job(
+        [input],
+        [output],
+        [
+            ['prepare_methylkit', 'module_mugqic_tools']
+        ],
+        command="""\
+echo -e \"chrBase\tchr\tbase\tstrand\tcoverage\tfreqC\tfreqT\" \\
+  > {output} && \\
+cat {input} | \\
+awk -F"\t" '$11>=5 {{print $1"."$2"\t"$1"\t"$2"\tF\t"$11"\t"$12"\t"(100-$12)}}' \\
+  >> {output}""".format(
             input=input,
             output=output
         )

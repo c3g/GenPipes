@@ -5,7 +5,7 @@ set -eu -o pipefail
 #SOFTWARE=mugqic_pipelines
 #SOFTWARE=GenAP_Pipes
 SOFTWARE=genpipes
-VERSION=3.1.3
+VERSION=3.1.4
 ARCHIVE=$SOFTWARE-$VERSION.tar.gz
 ARCHIVE_URL=https://bitbucket.org/mugqic/genpipes/downloads/$ARCHIVE
 SOFTWARE_DIR=$SOFTWARE-$VERSION
