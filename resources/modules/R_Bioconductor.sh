@@ -128,7 +128,7 @@ then
   C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/yum/centos7/1.0
   LIB=lib64
   INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/ld-linux-x86-64.so.2
-  LIBDIR=$C3G_SYSTEM_LIBRARY/usr/local/lib64:$C3G_SYSTEM_LIBRARY/usr/lib64:$C3G_SYSTEM_LIBRARY/usr/lib64/mysql:$C3G_SYSTEM_LIBRARY/usr/lib:$INSTALL_DIR/$LIB/R/lib:$C3G_SYSTEM_LIBRARY/usr/local/c3g/rpm/usr/lib64:$C3G_SYSTEM_LIBRARY/usr/local/c3g/compile/lib:$C3G_SYSTEM_LIBRARY/$LIB/mysql
+  LIBDIR=$C3G_SYSTEM_LIBRARY/usr/local/c3g/rpm/usr/lib64:$C3G_SYSTEM_LIBRARY/usr/local/c3g/compile/lib:$C3G_SYSTEM_LIBRARY/usr/local/lib64:$C3G_SYSTEM_LIBRARY/usr/lib64:$C3G_SYSTEM_LIBRARY/usr/lib:$C3G_SYSTEM_LIBRARY/usr/lib64/mysql:$C3G_SYSTEM_LIBRARY/$LIB/mysql:$INSTALL_DIR/$LIB/R/lib
 else
   echo "*** ERROR ***"
   echo "'"`lsb_release -i | cut -f 2`"' OS detected... should be either 'Ubuntu' neither 'CentOS'..."

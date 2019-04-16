@@ -76,11 +76,10 @@ patch_c3g_binaries() {
 if [[ ${1:-} == MUGQIC_INSTALL_HOME ]]
 then
   INSTALL_HOME=MUGQIC_INSTALL_HOME
-elif [[ ${1:-} == MUGQIC_INSTALL_HOME_TMP ]]
-then
-  INSTALL_HOME=MUGQIC_INSTALL_HOME_TMP
 else
   INSTALL_HOME=MUGQIC_INSTALL_HOME_DEV
+  NOPATCH=1
+  NOWRAP=1
 fi
 
 # Indirection call to use $INSTALL_HOME value as variable name

@@ -2,24 +2,24 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=cellranger
-VERSION=3.0.2
-ARCHIVE=$SOFTWARE-$VERSION.tar.gz
-# cellranger archive has to be manually downloaded from https://support.10xgenomics.com/single-cell/software/downloads/latest
-# and then stored in $MUGQIC_INSTALL_HOME/archive/ or/and $MUGQIC_INSTALL_HOME_DEV/archive/
-ARCHIVE_URL=
-SOFTWARE_DIR=$SOFTWARE-$VERSION
-# Do not patch the executable binaries
-NOWRAP=1
-NOPATCH=1
+SOFTWARE=fastp
+VERSION=0.19.7
+ARCHIVE=${SOFTWARE}-${VERSION}.tar.gz
+ARCHIVE_URL=https://github.com/OpenGene/${SOFTWARE}/archive/v${VERSION}.tar.gz
+SOFTWARE_DIR=${SOFTWARE}-${VERSION}
 
 build() {
   cd $INSTALL_DOWNLOAD
-  tar zxvf $ARCHIVE
 
-  # Move software
+  # What follows is the installation from source (often problematic...)
+  git clone --recursive git://github.com/OpenGene/${SOFTWARE}.git -b v$VERSION
+  cd $SOFTWARE
+  make -j12 
+  make install
+
+  # Install software
   cd $INSTALL_DOWNLOAD
-  mv -i $SOFTWARE_DIR $INSTALL_DIR/
+  mv $SOFTWARE $INSTALL_DIR/$SOFTWARE_DIR
 }
 
 module_file() {
@@ -31,6 +31,7 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
+setenv          FASTP_HOME          \$root
 prepend-path    PATH                \$root
 "
 }

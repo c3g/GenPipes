@@ -1,13 +1,14 @@
-t immediately on error
+#!/bin/bash
+# Exit immediately on error
 set -eu -o pipefail
 
 SOFTWARE=bowtie
-VERSION=1.2.0
+VERSION=1.2.2
 #ARCHIVE=$SOFTWARE-$VERSION.tar.gz
 ARCHIVE=$SOFTWARE-$VERSION.zip
 #ARCHIVE_URL=https://github.com/BenLangmead/${SOFTWARE}/archive/v${VERSION}.tar.gz
 #ARCHIVE_URL=https://github.com/BenLangmead/${SOFTWARE}/releases/download/v${VERSION}.0/${SOFTWARE}-${VERSION}-src.zip
-ARCHIVE_URL=https://sourceforge.net/projects/${SOFTWARE}-bio/files/${SOFTWARE}/${VERSION}/${SOFTWARE}-${VERSION%??}-source.zip
+ARCHIVE_URL=https://sourceforge.net/projects/${SOFTWARE}-bio/files/${SOFTWARE}/${VERSION}/${SOFTWARE}-${VERSION}-src.zip
 SOFTWARE_DIR=$SOFTWARE-$VERSION
 
 # Specific commands to extract and build the software
@@ -18,9 +19,9 @@ build() {
 #  tar xzvf $ARCHIVE
   unzip $ARCHIVE
 
-  mv ${SOFTWARE}-${VERSION%??} $SOFTWARE_DIR
   cd $SOFTWARE_DIR
-  make -j12
+  sed -i "s|EXTRA_CXXFLAGS =|EXTRA_CXXFLAGS = -std=c++03|" Makefile
+  gmake -j12
 
   # Install software
   cd $INSTALL_DOWNLOAD

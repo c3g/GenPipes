@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=python
-VERSION=3.4.0
+VERSION=3.7.3
 SETUPTOOLS_VERSION=28.8.0
 # Remove the version last number
 LIBVERSION=${VERSION%.[0-9]*}
@@ -12,9 +12,6 @@ ARCHIVE=${SOFTWARE^}-$VERSION.tgz
 ARCHIVE_URL=http://www.python.org/ftp/$SOFTWARE/$VERSION/$ARCHIVE
 SOFTWARE_DIR=${SOFTWARE^}-$VERSION
 
-# Specific commands to extract and build the software
-# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
-# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
   tar zxvf $ARCHIVE
@@ -39,7 +36,7 @@ build() {
 
   cd $INSTALL_DIR/$SOFTWARE_DIR/bin
   ln -s python3 python
-
+  ln -s pip3 pip
 }
 
 module_file() {
