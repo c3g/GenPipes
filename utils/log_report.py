@@ -125,11 +125,14 @@ class JobStat(object):
         for k, v in bidon:
             all_value.setdefault(k, []).append(v)
 
-        try:
-            pro, epi = [i for i, x in enumerate(all_value[self.JOBID])
-                        if self.jobid == int(x)]
+        fake_pro_epi = [i for i, x in enumerate(all_value[self.JOBID])
+                    if self.jobid == int(x)]
+
+        if len(fake_pro_epi) == 2:
             self.output_log_id = list(set(all_value[self.JOBID]))
-        except ValueError:
+            pro, epi = fake_pro_epi
+        elif len(fake_pro_epi) >= 2:
+
             logger.error('{} log is not in {}, there is a mismatch '
                          'between the job number and the output'
                          .format(self.jobid, self._path))
@@ -140,6 +143,16 @@ class JobStat(object):
 
             pro, epi = [i for i, x in enumerate(all_value[self.JOBID])
                         if int(all_value[self.JOBID][diff.index(min(diff))]) == int(x)]
+
+        elif len(fake_pro_epi) == 1:
+            # no epilogue!
+            # Just put prologue in it
+            pro = fake_pro_epi[0]
+            epi = pro
+            logger.error('No epilogue in log file {}'.format(path))
+        else:
+            pro = None
+            epi = None
 
         for k, v in all_value.items():
             try:
@@ -306,7 +319,7 @@ def print_report(report, to_stdout=True, to_tsv=None):
     if to_tsv:
         if not isinstance(to_tsv, str):
             to_tsv = "./log_report.tsv"
-        with open(to_tsv, 'wb') as output_file:
+        with open(to_tsv, 'w') as output_file:
             writer = csv.writer(output_file, delimiter='\t')
             writer.writerow(header)
             for row in data_table:
@@ -360,7 +373,8 @@ if __name__ == '__main__':
     parser.add_argument('--remote', '-r', help="Remote HPC where the job was ran",
                         choices=['beluga', 'cedar', None],
                         default=None)
-    parser.add_argument('--loglevel', help="Standard Python log level", choices=['ERROR, WARNING, INFO', "CRITICAL"],
+    parser.add_argument('--loglevel', help="Standard Python log level",
+                        choices=['ERROR', 'WARNING', 'INFO', "CRITICAL"],
                         default='ERROR')
     parser.add_argument('--tsv', help="output to tsv file")
     parser.add_argument('--quiet', '-q', help="no report printed to terminal",
