@@ -66,7 +66,7 @@ class JobStat(object):
 
     @property
     def path(self):
-        return self._path
+        return os.path.realpath(self._path)
 
     def sacct(self, jobid):
 
