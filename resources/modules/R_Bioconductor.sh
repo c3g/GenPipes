@@ -265,7 +265,7 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
     "igraph", "IlluminaHumanMethylation450kmanifest", "IlluminaHumanMethylation450kanno.ilmn12.hg19", "impute", "InteractionSet", "IRanges", "iterators",
     "KernSmooth", "ks",
     "labeling", "lattice", "latticeExtra", "limma", "lme4", "locfit", "lumi", "LVSmiRNA",
-    "magrittr", "maps", "markdown", "MASS", "MAST", "Matrix", "matrixStats", "mclust", "memoise", "methyAnalysis", "methylumi", "mgcv", "minfi", "mirbase.db",
+    "magrittr", "maps", "markdown", "MASS", "MAST", "Matrix", "matrixStats", "mclust", "memoise", "methyAnalysis", "methylKit", "methylumi", "mgcv", "minfi", "mirbase.db",
     "misc3d", "monocle", "multtest", "munsell", "mvtnorm",
     "NBPSeq", "nleqslv", "nlme", "NMF", "nnet", "nondetects", "nor1mix", "Nozzle.R1",
     "oligo", "oligoClasses", "optparse", "outliers",
@@ -287,6 +287,9 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
     org.packages = rownames(availPkgs)[grepl("^org", rownames(availPkgs))]
     org.packages = org.packages[!grepl("^org.MeSH.", org.packages)]
     deps = c(deps, org.packages)
+
+    if (!requireNamespace("BiocManager", quietly = TRUE))
+        install.packages("BiocManager")
 
     ## Install pkgs not already installed, with ask=FALSE biocLite() takes care of updating if necessary
     biocLite(ask=FALSE)
@@ -314,6 +317,10 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
     ## ChIAnalysis (with its eric.utils dependency)
     devtools::install_bitbucket("ericfournier2/sb_lab/eric.utils")
     #devtools::install_github("ArnaudDroitLab/ChIAnalysis")
+
+    ## Print the list of the installed packages along with their version into a file
+    library(data.table)
+    write.table(data.table(installed.packages())[,c(1,3)], paste(c(Sys.getenv('R_HOME')),"/../../installed.packages.txt", sep=""), sep="\t", row.names=F, quote=F)
 EOF
 
 echo "Patching C3G executables..."
