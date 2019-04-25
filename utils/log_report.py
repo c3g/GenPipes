@@ -66,7 +66,7 @@ class JobStat(object):
 
     @property
     def path(self):
-        return self._path
+        return os.path.realpath(self._path)
 
     def sacct(self, jobid):
 
@@ -271,7 +271,7 @@ def print_report(report, to_stdout=True, to_tsv=None):
                 else:
                     pro = v
             data_table.append((j.jobid, j.name, pro, batch, epi, j.log_file_exit_status,
-                               j.output_log_id, j.path, j.log_missing))
+                               j.output_log_id, j.path, not j.log_missing))
 
         if to_stdout:
             if not j.completed:
