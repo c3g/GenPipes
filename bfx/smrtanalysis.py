@@ -147,7 +147,7 @@ def filtering(
             ['smrtanalysis_filtering', 'module_smrtanalysis']
         ],
         command="""\
-bash -c 'set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
+bash -ic 'set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
 fofnToSmrtpipeInput.py {fofn} > {input_xml} && \\
 cp {fofn} {input_fofn} && \\
 sed -e "s|MINSUBREADLENGTH|{min_subread_length}|g" -e "s|MINREADLENGTH|{min_read_length}|g" -e "s|MINQUAL|{min_qual}|g"{whitelist_param} \\
