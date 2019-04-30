@@ -275,7 +275,7 @@ def print_report(report, to_stdout=True, to_tsv=None):
             elif j.jobid != int(j.output_log_id[0]):
                 same = False
 
-            data_table.append((j.jobid, j.output_log_id, same,j.name, pro, batch, epi, j.log_file_exit_status,
+            data_table.append((j.jobid, j.output_log_id, same, j.name, pro, batch, epi, j.log_file_exit_status,
                                j.path, not j.log_missing))
 
         if to_stdout:
