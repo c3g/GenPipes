@@ -15,7 +15,6 @@ class JobStat(object):
     JOBID = 'JobId'
     SJOBID = 'JobID'
     JOBSTATE = 'JobState'
-    RUNTIME = 'RunTime'
     SUBMITTIME = 'SubmitTime'
     STARTTIME = 'StartTime'
     NUMCPUS = 'NumCPUs'
@@ -41,7 +40,7 @@ class JobStat(object):
         self._delta = None
         # Real slurm job number, if not none. There is a problem with
         # the pipeline output path
-        self.output_log_id = None
+        self.output_log_id = []
         self._start = None
         self._stop = None
         self._parsed_after_header = parsed_after_header
@@ -255,12 +254,12 @@ def print_report(report, to_stdout=True, to_tsv=None):
     bad_message = []
 
     if to_tsv:
-        header = ('id', 'name', 'slurm_prologue', 'slurm_main', 'slurm_epilogue', 'custom_exit',
-                  'log_from_job', 'output_file_path', 'outpout_file_exist')
+        header = ('id', 'log_from_job', 'same_id', 'name', 'slurm_prologue', 'slurm_main', 'slurm_epilogue',
+                  'custom_exit',
+                  'output_file_path', 'outpout_file_exist')
         data_table = []
 
     for j in report:
-
         if to_tsv:
             pro, batch, epi = None, None, None
             for k, v in j.slurm_state.items():
@@ -270,8 +269,14 @@ def print_report(report, to_stdout=True, to_tsv=None):
                     epi = v
                 else:
                     pro = v
-            data_table.append((j.jobid, j.name, pro, batch, epi, j.log_file_exit_status,
-                               j.output_log_id, j.path, not j.log_missing))
+            same = True
+            if len(j.output_log_id) != 1:
+                same = False
+            elif j.jobid != int(j.output_log_id[0]):
+                same = False
+
+            data_table.append((j.jobid, j.output_log_id, same, j.name, pro, batch, epi, j.log_file_exit_status,
+                               j.path, not j.log_missing))
 
         if to_stdout:
             if not j.completed:
