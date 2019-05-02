@@ -49,7 +49,8 @@ set              root               $INSTALL_DIR/$SOFTWARE_DIR
 prepend-path     PATH               \$root/bin
 setenv           LUMPY_HOME         \$root
 setenv           LUMPY_SCRIPTS      \$root/scripts
-prereq mugqic/python/2.7.14 mugqic/samblaster/0.1.24 mugqic/sambamba/0.6.6 mugqic/samtools/1.4.1
+puts stderr \"WARNING : the following modules have to be loaded in your environment for LUMPY to work properly :\"
+puts stderr \"mugqic/python/2.7.14 mugqic/samblaster/0.1.24 mugqic/sambamba/0.6.6 mugqic/samtools/1.4.1\"
 "
 }
 

@@ -3,15 +3,18 @@
 set -eu -o pipefail
 
 SOFTWARE=SMRTLink
-VERSION=6.0.0
-ARCHIVE=${SOFTWARE,,}-${VERSION}.47841.zip
+VERSION=7.0.0
+SUBVERSION=63985
+ARCHIVE=${SOFTWARE,,}-${VERSION}.${SUBVERSION}.zip
 ARCHIVE_URL=https://downloads.pacbcloud.com/public/software/installers/${ARCHIVE/-/_}
 SOFTWARE_DIR=$SOFTWARE-${VERSION}
+NOPATCH=1
+NOWRAP=1
 
 build() {
   cd $INSTALL_DOWNLOAD
   unzip $ARCHIVE
-  ./${SOFTWARE,,}_${VERSION}.47841.run --rootdir $INSTALL_DIR/$SOFTWARE_DIR --smrttools-only
+  ./${SOFTWARE,,}_${VERSION}.${SUBVERSION}.run --rootdir $INSTALL_DIR/$SOFTWARE_DIR --smrttools-only
 }
 
 module_file() {
