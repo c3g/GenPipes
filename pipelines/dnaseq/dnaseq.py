@@ -1547,7 +1547,9 @@ pandoc \\
             
         return jobs
 
-    def dbnsfp_annotation(self, input_vcf = "variants/allSamples.merged.flt.vt.mil.snpId.snpeff.vcf.gz", output_vcf = "variants/allSamples.merged.flt.vt.mil.snpId.snpeff.dbnsfp.vcf", job_name = "dbnsfp_annotation"):
+    def dbnsfp_annotation(self, input_vcf="variants/allSamples.merged.flt.vt.mil.snpId.snpeff.vcf.gz",
+                          output_vcf="variants/allSamples.merged.flt.vt.mil.snpId.snpeff.dbnsfp.vcf",
+                          job_name="dbnsfp_annotation"):
         """
         Additional SVN annotations. Provides extra information about SVN by using numerous published databases.
         Applicable to human samples. Databases available include Biomart (adds GO annotations based on gene information)
@@ -1562,8 +1564,7 @@ pandoc \\
             snpeff.snpsift_dbnsfp(input_vcf, output_vcf),
             htslib.bgzip_tabix(output_vcf, output_vcf + ".gz"),
         ], name=job_name))
-        #job.samples = self.samples
-        
+
         return jobs
 
     def haplotype_caller_dbnsfp_annotation(self):
@@ -1593,7 +1594,9 @@ pandoc \\
         and other function annotations).
         """
 
-        job = self.dbnsfp_annotation("variants/allSamples.merged.flt.vt.mil.snpId.snpeff.vcf.gz", "variants/allSamples.merged.flt.vt.mil.snpId.snpeff.dbnsfp.vcf.gz", "dbnsfp_annotation")
+        job = self.dbnsfp_annotation("variants/allSamples.merged.flt.vt.mil.snpId.snpeff.vcf.gz",
+                                     "variants/allSamples.merged.flt.vt.mil.snpId.snpeff.dbnsfp.vcf",
+                                     "dbnsfp_annotation")
         #job.samples = self.samples
 
         return job
