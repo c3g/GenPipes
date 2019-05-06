@@ -116,16 +116,11 @@ fastqToCA \\
   > {outfile}'""".format(
             libraryname=libraryname,
             reads=reads,
-            outfile=outfile
-    ))
+            outfile=outfile)
+    )
 
-def filtering(
-    fofn,
-    input_xml,
-    params_xml,
-    output_dir,
-    log
-    ):
+
+def filtering(fofn, input_xml, params_xml, output_dir, log):
 
     ref_params_xml = config.param('smrtanalysis_filtering', 'filtering_settings')
 
@@ -137,7 +132,9 @@ def filtering(
 
     temp_dir = config.param('smrtanalysis_filtering', 'tmp_dir')
     if (config.param('smrtanalysis_filtering', 'tmp_dir').startswith("$")):
-        temp_dir = re.sub("^\$", "$SMRT_ORIGUSERENV_", temp_dir)
+        temp_dir = temp_dir.replace('$', '$SMRT_ORIGUSERENV_')
+        temp_dir = temp_dir.replace('{', '')
+        temp_dir = temp_dir.replace('}', '')
 
     return Job(
         [fofn, ref_params_xml],

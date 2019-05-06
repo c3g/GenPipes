@@ -1597,11 +1597,13 @@ pandoc \\
         job = self.dbnsfp_annotation("variants/allSamples.merged.flt.vt.mil.snpId.snpeff.vcf.gz",
                                      "variants/allSamples.merged.flt.vt.mil.snpId.snpeff.dbnsfp.vcf",
                                      "dbnsfp_annotation")
-        #job.samples = self.samples
 
         return job
 
-    def gemini_annotations(self, input="variants/allSamples.merged.flt.vt.mil.snpId.snpeff.dbnsfp.vcf.gz", output="variants/allSamples.gemini.db", temp_dir="config.param('DEFAULT', 'tmp_dir')", job_name="gemini_annotations"):
+    def gemini_annotations(self, input="variants/allSamples.merged.flt.vt.mil.snpId.snpeff.dbnsfp.vcf.gz",
+                           output="variants/allSamples.gemini.db",
+                           temp_dir="config.param('DEFAULT', 'tmp_dir')",
+                           job_name="gemini_annotations"):
         """
         Load functionally annotated vcf file into a mysql lite annotation database : http://gemini.readthedocs.org/en/latest/index.html
         """
