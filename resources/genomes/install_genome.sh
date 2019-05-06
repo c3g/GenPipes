@@ -349,7 +349,7 @@ create_bismark_genome_reference() {
     echo
     BISMARK_CMD="\
 mkdir -p $BISMARK_INDEX_DIR && \
-cat $GENOME_DIR/$GENOME_FASTA.fa ${!INSTALL_HOME}/genomes/lamba_phage.fa ${!INSTALL_HOME}/pUC19.fa > $BISMARK_INDEX_DIR/$GENOME_FASTA.fa && \
+cat $GENOME_DIR/$GENOME_FASTA.fa ${!INSTALL_HOME}/genomes/lambda_phage.fa ${!INSTALL_HOME}/pUC19.fa > $BISMARK_INDEX_DIR/$GENOME_FASTA.fa && \
 module load $module_samtools && \
 SAM_LOG=$LOG_DIR/samtools_for_bismark_$TIMESTAMP.log && \
 samtools faidx $GENOME_DIR/bismark_index/$GENOME_FASTA > $SAM_LOG 2>&1 && \
