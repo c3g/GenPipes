@@ -105,7 +105,8 @@ class PacBioAssembly(common.MUGQICPipeline):
 
         for sample in self.samples:
             fofn = os.path.join("fofns", sample.name + ".fofn")
-            input_files = [config.param('smrtanalysis_filtering', 'celera_settings'), config.param('smrtanalysis_filtering', 'filtering_settings')]
+            input_files = [config.param('smrtanalysis_filtering', 'celera_settings'),
+                           config.param('smrtanalysis_filtering', 'filtering_settings')]
             for readset in sample.readsets:
                 if readset.bax_files:
                     # New PacBio format is BAX
