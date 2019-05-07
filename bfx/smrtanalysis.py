@@ -270,7 +270,9 @@ def pbalign(
 
     temp_dir = os.path.join(config.param('smrtanalysis_filtering', 'tmp_dir'), sample_cutoff_mer_size_polishing_round)
     if (config.param('smrtanalysis_pbutgcns', 'tmp_dir').startswith("$")):
-        temp_dir = re.sub("^\$", "$SMRT_ORIGUSERENV_", temp_dir)
+        temp_dir = temp_dir.replace('$', '$SMRT_ORIGUSERENV_')
+        temp_dir = temp_dir.replace('{', '')
+        temp_dir = temp_dir.replace('}', '')
 
     return Job(
         [input_fofn, ref_upload],
@@ -339,7 +341,9 @@ def pbutgcns(
 
     temp_dir = os.path.join(config.param('smrtanalysis_filtering', 'tmp_dir'), sample_cutoff_mer_size)
     if (config.param('smrtanalysis_pbutgcns', 'tmp_dir').startswith("$")):
-        temp_dir = re.sub("^\$", "$SMRT_ORIGUSERENV_", temp_dir)
+        temp_dir = temp_dir.replace('$', '$SMRT_ORIGUSERENV_')
+        temp_dir = temp_dir.replace('{', '')
+        temp_dir = temp_dir.replace('}', '')
 
     return Job(
         [gpk_store, tig_store],
