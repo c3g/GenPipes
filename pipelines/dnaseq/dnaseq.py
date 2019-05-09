@@ -3755,6 +3755,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.gatk_callable_loci,
                 self.extract_common_snp_freq,
                 self.baf_plot,
+                self.vcftools_missing_indiv,
+                self.vcftools_depth_indiv,
                 self.run_multiqc,
                 self.cram_output,
                 self.sym_link_fastq,
