@@ -1447,6 +1447,46 @@ END
 
         return jobs
 
+    def vcftools_missing_indiv(self):
+        """
+		vcftools: --missing_indv: Generates a file reporting the missingness on a per-individual basis. The file has the suffix ".imiss".
+		input: bgzipped vcf file
+		ouput: missingness flat file
+		"""
+    
+        jobs = []
+    
+        for sample in self.samples:
+            alignment_file_prefix = os.path.join("alignment", sample.name, sample.name)
+        
+            job = vcftools.missing_indv(alignment_file_prefix + ".hc.vcf.gz",
+                                    alignment_file_prefix)
+            job.name = "vcftools_missing_indv." + sample.name
+            job.samples = [sample]
+            jobs.append(job)
+    
+        return jobs
+
+    def vcftools_depth_indiv(self):
+        """
+    	vcftools: --depth: Generates a file containing the mean depth per individual. This file has the suffix ".idepth".
+    	input: bgzipped vcf file
+    	ouput: idepth flat file
+    	"""
+    
+        jobs = []
+    
+        for sample in self.samples:
+            alignment_file_prefix = os.path.join("alignment", sample.name, sample.name)
+        
+            job = vcftools.depth(alignment_file_prefix + ".hc.vcf.gz",
+                                        alignment_file_prefix)
+            job.name = "vcftools_depth." + sample.name
+            job.samples = [sample]
+            jobs.append(job)
+            
+        return jobs
+
     def gatk_haplotype_caller(self):
         """
         GATK haplotype caller for snps and small indels.
@@ -3196,7 +3236,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.haplotype_caller_dbnsfp_annotation,
                 self.haplotype_caller_gemini_annotations,
                 self.haplotype_caller_metrics_vcf_stats,
-                #self.haplotype_caller_metrics_snv_graph_metrics,
+                self.vcftools_missing_indiv,
+                self.vcftools_depth_indiv,
                 self.run_multiqc,
                 self.cram_output
             ],
