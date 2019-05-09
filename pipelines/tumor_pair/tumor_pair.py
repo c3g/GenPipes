@@ -2510,7 +2510,7 @@ END`""".format(
                 ], name="gatk_variant_annotator.somatic." + tumor_pair.name))
                 
             else:
-                unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary, nb_jobs - 1)
+                unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary_variant(), nb_jobs - 1, variant=True)
                 for idx, sequences in enumerate(unique_sequences_per_job):
                     output_somatic_variants = os.path.join(annot_directory, tumor_pair.name + ".ensemble.somatic.vt.annot." + str(idx) + ".vcf.gz")
 
@@ -2582,7 +2582,7 @@ END`""".format(
                 ], name="gatk_variant_annotator.germline." + tumor_pair.name))
     
             else:
-                unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary, nb_jobs - 1)
+                unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary_variant(), nb_jobs - 1, variant=True)
                 for idx, sequences in enumerate(unique_sequences_per_job):
                     output_germline_variants = os.path.join(annot_directory, tumor_pair.name + ".ensemble.germline.vt.annot." + str(idx) + ".vcf.gz")
             
@@ -2632,7 +2632,7 @@ END`""".format(
             annot_directory = os.path.join(ensemble_directory, tumor_pair.name, "rawAnnotation")
             output_somatic = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.vt.annot.vcf.gz")
             if nb_jobs > 1:
-                unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary, nb_jobs - 1)
+                unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary_variant(), nb_jobs - 1, variant=True)
                 vcfs_to_merge = [os.path.join(annot_directory, tumor_pair.name + ".ensemble.somatic.vt.annot." + str(idx) +".vcf.gz")
                                   for idx in xrange(len(unique_sequences_per_job))]
                 
@@ -2669,7 +2669,7 @@ END`""".format(
             output_germline = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.germline.vt.annot.vcf.gz")
             
             if nb_jobs > 1:
-                unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary, nb_jobs - 1)
+                unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary_variant(), nb_jobs - 1, variant=True)
                 vcfs_to_merge = [os.path.join(ensemble_directory, tumor_pair.name, "rawAnnotation", tumor_pair.name + ".ensemble.germline.vt.annot." + str(idx) + ".vcf.gz")
                                  for idx in xrange(len(unique_sequences_per_job))]
 
@@ -2872,9 +2872,9 @@ END`""".format(
     
         for tumor_pair in self.tumor_pairs.itervalues():
             paired_directory = os.path.join(ensemble_directory, tumor_pair.name)
-            input_vcf = os.path.join(paired_directory, tumor_pair.name + ".ensemble.somatic.vt.annot.snpeff.vcf.gz")
+            input_vcf = os.path.join(paired_directory, tumor_pair.name + ".ensemble.germline.vt.annot.snpeff.vcf.gz")
             output_vcf = os.path.join(paired_directory,
-                                      tumor_pair.name + ".ensemble.somatic.vt.annot.snpeff.dbnsfp.vcf")
+                                      tumor_pair.name + ".ensemble.germline.vt.annot.snpeff.dbnsfp.vcf")
         
             jobs.append(concat_jobs([
                 snpeff.snpsift_dbnsfp(
@@ -4222,6 +4222,7 @@ END`""".format(
                     remove=True
                 ),
                 pipe_jobs([
+<<<<<<< HEAD
                     samtools.view(
                         inputNormal,
                         None,
@@ -4246,6 +4247,14 @@ END`""".format(
                         lumpy_directory,
                         config.param('extract_discordant_reads', 'options')
                     ),
+=======
+                    samtools.view(inputNormal, None, "-b -F 1294"),
+                    sambamba.sort("/dev/stdin", discordants_normal, lumpy_directory, config.param('extract_discordant_reads', 'options')),
+                ]),
+                pipe_jobs([
+                    samtools.view(inputTumor, None, "-b -F 1294"),
+                    sambamba.sort("/dev/stdin", discordants_tumor, lumpy_directory, config.param('extract_discordant_reads', 'options')),
+>>>>>>> f90d9497 (GRCh38 fixes)
                 ]),
             ], name="extract_discordant_reads." + tumor_pair.name))
 
@@ -4255,6 +4264,7 @@ END`""".format(
                     remove=True
                 ),
                 pipe_jobs([
+<<<<<<< HEAD
                     samtools.view(
                         inputNormal,
                         None,
@@ -4301,6 +4311,18 @@ END`""".format(
                         lumpy_directory,
                         config.param('extract_split_reads', 'options')
                     ),
+=======
+                    samtools.view(inputNormal, None, "-h"),
+                    Job([None], [None], [['lumpy_sv', 'module_lumpy']], command="$LUMPY_SCRIPTS/extractSplitReads_BwaMem -i stdin"),
+                    samtools.view("-", None, " -Sb "),
+                    sambamba.sort("/dev/stdin", splitters_normal, lumpy_directory, config.param('extract_split_reads', 'options')),
+                ]),
+                pipe_jobs([
+                    samtools.view(inputTumor, None, "-h"),
+                    Job([None], [None], [['lumpy_sv', 'module_lumpy']], command="$LUMPY_SCRIPTS/extractSplitReads_BwaMem -i stdin"),
+                    samtools.view("-", None, " -Sb "),
+                    sambamba.sort("/dev/stdin", splitters_tumor, lumpy_directory, config.param('extract_split_reads', 'options')),
+>>>>>>> f90d9497 (GRCh38 fixes)
                 ]),
             ], name="extract_split_reads." + tumor_pair.name))
 
@@ -4597,6 +4619,7 @@ END`""".format(
             pair_directory = os.path.join("SVariants", tumor_pair.name, tumor_pair.name)
             prefix = os.path.join("SVariants", tumor_pair.name, tumor_pair.name)
             genotyped_vcf = os.path.join(pair_directory, tumor_pair.name + ".wham.merged.genotyped.vcf.gz")
+<<<<<<< HEAD
 
             jobs.append(concat_jobs([
                 pipe_jobs([
@@ -4626,10 +4649,25 @@ END`""".format(
                     "WHAM",
                     prefix + ".wham.somatic.prioritize.tsv"
                 ),
+=======
+            vcf_prefix = os.path.join(pair_directory, tumor_pair.name + ".wham")
+            
+            jobs.append(concat_jobs([
+                pipe_jobs([
+                    vawk.paired_somatic(genotyped_vcf, tumor_pair.normal.name, tumor_pair.tumor.name, None),
+                    htslib.bgzip_tabix(None, vcf_prefix + ".somatic.vcf.gz"),
+                ]),
+                snpeff.compute_effects(vcf_prefix + ".somatic.vcf.gz", vcf_prefix + ".somatic.snpeff.vcf"),
+                annotations.structural_variants(vcf_prefix + ".somatic.snpeff.vcf",
+                                                vcf_prefix + ".somatic.snpeff.annot.vcf"),
+                vawk.sv(vcf_prefix + ".somatic.snpeff.annot.vcf", tumor_pair.normal.name, tumor_pair.tumor.name, "WHAM",
+                        vcf_prefix + ".somatic.prioritize.tsv"),
+>>>>>>> f90d9497 (GRCh38 fixes)
             ], name="sv_annotation.wham.somatic." + tumor_pair.name))
 
             jobs.append(concat_jobs([
                 pipe_jobs([
+<<<<<<< HEAD
                     vawk.paired_germline(
                         genotyped_vcf,
                         tumor_pair.normal.name,
@@ -4655,6 +4693,16 @@ END`""".format(
                     tumor_pair.tumor.name,
                     "WHAM", prefix + ".wham.germline.prioritize.tsv"
                 ),
+=======
+                    vawk.paired_germline(genotyped_vcf, tumor_pair.normal.name, tumor_pair.tumor.name, None),
+                    htslib.bgzip_tabix(None,  vcf_prefix + ".germline.vcf.gz"),
+                ]),
+                snpeff.compute_effects(vcf_prefix + ".germline.vcf.gz", vcf_prefix + ".germline.snpeff.vcf"),
+                annotations.structural_variants(vcf_prefix + ".germline.snpeff.vcf",
+                                                vcf_prefix + ".germline.snpeff.annot.vcf"),
+                vawk.sv(vcf_prefix + ".germline.snpeff.annot.vcf", tumor_pair.normal.name, tumor_pair.tumor.name, "WHAM",
+                        vcf_prefix + ".germline.prioritize.tsv"),
+>>>>>>> f90d9497 (GRCh38 fixes)
             ], name="sv_annotation.wham.germline." + tumor_pair.name))
 
         return jobs
@@ -5225,7 +5273,15 @@ END`""".format(
             if coverage_bed:
                 bed = coverage_bed
 
+            coverage_bed = bvatools.resolve_readset_coverage_bed(tumor_pair.tumor.readsets[0])
+
+            bed = None
+
+            if coverage_bed:
+                bed = coverage_bed
+
             jobs.append(concat_jobs([
+<<<<<<< HEAD
                 bash.mkdir(
                     svaba_directory,
                     remove=True
@@ -5246,6 +5302,15 @@ END`""".format(
                                                                "sed -e 's#" + os.path.abspath(input_tumor) + "#" + tumor_pair.tumor.name + "#g' > " + somatic_output),
                 Job([germline_input], [germline_output], command="sed -e 's#" + os.path.abspath(input_normal) + "#" + tumor_pair.normal.name + "#g' " + germline_input + " | "
                                                                "sed -e 's#" + os.path.abspath(input_tumor) + "#" + tumor_pair.tumor.name + "#g' > " + germline_output)
+=======
+                mkdir_job,
+                cd_job,
+                svaba.run(input_tumor, tumor_pair.name, input_normal, bed),
+                Job([somatic_input], [somatic_output], command="sed -e 's#" + input_normal + "#" + tumor_pair.normal.name + "#g' " + somatic_input + " | "
+                                                               "sed -e 's#" + input_tumor + "#" + tumor_pair.tumor.name + "#g' > " + somatic_output),
+                Job([germline_input], [germline_output], command="sed -e 's#" + input_normal + "#" + tumor_pair.normal.name + "#g' " + germline_input + " | "
+                                                               "sed -e 's#" + input_tumor + "#" + tumor_pair.tumor.name + "#g' > " + germline_output)
+>>>>>>> f90d9497 (GRCh38 fixes)
             ], name="svaba_run." + tumor_pair.name))
 
         return jobs
@@ -5382,6 +5447,11 @@ END`""".format(
         return [
             [
                 self.picard_sam_to_fastq,
+<<<<<<< HEAD
+=======
+                # self.trimmomatic,
+                # self.merge_trimmomatic_stats,
+>>>>>>> f90d9497 (GRCh38 fixes)
                 self.skewer_trimming,
                 self.bwa_mem_sambamba_sort_sam,
                 self.sambamba_merge_sam_files,
@@ -5394,7 +5464,6 @@ END`""".format(
                 self.preprocess_vcf_panel,
                 self.snp_effect_panel,
                 self.gemini_annotations_panel,
-                #self.set_somatic_and_actionable_mutations_panel,
                 self.metrics_dna_picard_metrics,
                 self.metrics_dna_sample_qualimap,
                 self.metrics_dna_fastqc,
@@ -5405,6 +5474,11 @@ END`""".format(
             ],
             [
                 self.picard_sam_to_fastq,
+<<<<<<< HEAD
+=======
+                # self.trimmomatic,
+                # self.merge_trimmomatic_stats,
+>>>>>>> f90d9497 (GRCh38 fixes)
                 self.skewer_trimming,
                 self.bwa_mem_sambamba_sort_sam,
                 self.sambamba_merge_sam_files,
@@ -5421,8 +5495,8 @@ END`""".format(
                 self.merge_varscan2,
                 self.paired_mutect2,
                 self.merge_mutect2,
-                #self.samtools_paired,
-                #self.merge_filter_paired_samtools,
+                self.samtools_paired,
+                self.merge_filter_paired_samtools,
                 self.vardict_paired,
                 self.merge_filter_paired_vardict,
                 self.strelka2_paired_somatic,
@@ -5433,11 +5507,11 @@ END`""".format(
                 self.compute_cancer_effects_somatic,
                 self.ensemble_somatic_dbnsfp_annotation,
                 self.sample_gemini_annotations_somatic,
-                #self.set_somatic_and_actionable_mutations,
                 self.ensemble_germline_loh,
                 self.gatk_variant_annotator_germline,
                 self.merge_gatk_variant_annotator_germline,
                 self.compute_cancer_effects_germline,
+	            self.ensemble_germline_dbnsfp_annotation,
                 self.sample_gemini_annotations_germline,
                 #self.combine_tumor_pairs_somatic,
                 #self.decompose_and_normalize_mnps_somatic,
@@ -5478,8 +5552,12 @@ END`""".format(
                 self.scones,
                 self.svaba_assemble,
                 self.svaba_sv_annotation,
+<<<<<<< HEAD
                 self.ensemble_metasv_somatic,
                 self.ensemble_metasv_germline,
+=======
+                self.ensemble_metasv,
+>>>>>>> f90d9497 (GRCh38 fixes)
                 self.metasv_sv_annotation,
                 self.sym_link_sequenza,
                 self.sym_link_metasv,

@@ -29,9 +29,8 @@ def sort(input_bam, output_bam, tmp_dir, other_options=None):
 
     return Job(
         [input_bam],
-        [output_bam],
+        [output_bam, output_bai],
         [
-            #['sambamba_sort_sam', 'module_samtools'],
             ['sambamba_sort_sam', 'module_sambamba']
         ],
         command="""\
@@ -52,7 +51,6 @@ def index(input, output, other_options=config.param('sambamba_index', 'options',
         [input],
         [output],
         [
-            #['sambamba_index', 'module_samtools'],
             ['sambamba_index', 'module_sambamba']
         ],
         command="""\
@@ -92,7 +90,6 @@ def markdup(input_bam, output_bam, tmp_dir, other_options=None):
         input_bam,
         [output_bam],
         [
-            ['sambamba_mark_duplicates', 'module_samtools'],
             ['sambamba_mark_duplicates', 'module_sambamba']
         ],
         command="""\
