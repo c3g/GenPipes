@@ -517,7 +517,7 @@ def variant_annotator(input_normal, input_tumor, input_variants, output, interva
             ['gatk_variant_annotator', 'module_gatk']
         ],
         command="""\
-java {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --analysis_type VariantAnnotator {other_options} \\
   --disable_auto_index_creation_and_locking_when_reading_rods \\
   --reference_sequence {reference_sequence} \\
