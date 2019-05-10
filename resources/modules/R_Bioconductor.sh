@@ -203,20 +203,6 @@ EOF
 
 fi
 
-## Load the Boost libraries so they are available to any potential packages which needs those during its installation
-#module load mugqic/boost
-
-#if [ "`echo -e "${BIOCVERSION}\n3.7" | sort -V  | head -n1`" = "3.7" ]
-#then
-#  # Nothing to do if the version if 3.8 or above
-#  echo "version greater than 3.7" > /dev/null
-#  BIOC="BiocManager"
-#else
-#  # For early versions (earlier than 3.7)
-#  echo "version smaller than 3.7" > /dev/null
-#  BIOC="biocLite"
-#fi
-
 ## Finally, update/install library!
 $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
 
@@ -234,14 +220,24 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
     ## Install udunits2 as it is needed as a dependency for some of the below packages
     install.packages("udunits2", configure.args='--with-udunits2-include=/usr/include/udunits2/', repos='http://cran.rstudio.org', lib=.Library)
 
-    ## biocLite
-    source("https://bioconductor.org/biocLite.R")
+    if (!requireNamespace("BiocManager", quietly = TRUE))
+        install.packages("BiocManager", repos='http://cran.rstudio.org', lib=.Library)
+
+    ## Define which installer to iuse : biocLite (for 'old' versions) vs. BiocManager (for newer versions)
+    if (version$major < 3 && version$minor < 5.0) {
+        source("https://bioconductor.org/biocLite.R")
+        INSTALLER=biocLite
+        REPO=biocinstallRepos
+    } else {
+        INSTALLER=BiocManager::install
+        REPO=BiocManager::repositories
+    }
 
     ## RcppArmadillo temporary patch: CentOS 6 is old and using an old gcc (4.4.7) which is incompatible with the latest armadillo libs. The easiest workaround seems to force install
     # of an archived version of RcppArmadillo. Note that update attempts below will fail with ERROR.
     # https://github.com/RcppCore/RcppArmadillo/issues/30
     # http://stackoverflow.com/questions/27296522/rcpparmadillo-failing-to-install-on-centos
-    biocLite("RcppArmadillo", ask=FALSE) # despite failing, this will install Rcpparmadillo dependencies for us
+    INSTALLER("RcppArmadillo", ask=FALSE) # despite failing, this will install Rcpparmadillo dependencies for us
     rcpp.armadillo.archive="RcppArmadillo_0.4.500.0.tar.gz"
     download.file(sprintf("https://cran.r-project.org/src/contrib/Archive/RcppArmadillo/%s", rcpp.armadillo.archive), destfile=rcpp.armadillo.archive)
     install.packages(rcpp.armadillo.archive, repos=NULL, type="source", lib=.Library)
@@ -282,23 +278,20 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
     "zlibbioc")
 
     ## Programmatically add all the org packages (excluding MeSH mess which takes too long)
-    contribUrl = contrib.url(biocinstallRepos(), type = 'source')
+    contribUrl = contrib.url(REPO(), type = 'source')
     availPkgs  = available.packages(contribUrl, type = 'source')    
     org.packages = rownames(availPkgs)[grepl("^org", rownames(availPkgs))]
     org.packages = org.packages[!grepl("^org.MeSH.", org.packages)]
     deps = c(deps, org.packages)
 
-    if (!requireNamespace("BiocManager", quietly = TRUE))
-        install.packages("BiocManager")
-
-    ## Install pkgs not already installed, with ask=FALSE biocLite() takes care of updating if necessary
-    biocLite(ask=FALSE)
+    ## Install pkgs not already installed, with ask=FALSE INSTALLER() takes care of updating if necessary
+    INSTALLER(ask=FALSE)
     deps = setdiff(deps, rownames(installed.packages())) # Define packages that need actual install
-    biocLite(deps, lib=.Library, ask=FALSE)
+    INSTALLER(deps, lib=.Library, ask=FALSE)
     deps = setdiff(deps, rownames(installed.packages()))
-    biocLite(deps, lib=.Library, ask=FALSE) # twice, just to make sure
+    INSTALLER(deps, lib=.Library, ask=FALSE) # twice, just to make sure
     deps = setdiff(deps, rownames(installed.packages()))
-    biocLite(deps, lib=.Library, ask=FALSE) # and why not a third time !
+    INSTALLER(deps, lib=.Library, ask=FALSE) # and why not a third time !
 
     ## Install Vennerable, since not yet in CRAN
     install.packages("Vennerable", repos="http://R-Forge.R-project.org", lib=.Library)
@@ -307,7 +300,7 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
     install.packages('rmarkdown', repos='http://cran.rstudio.org', lib=.Library)
 
     ## Sleuth : needs devtools and remotes to be installed (both done above) 
-    biocLite("pachterlab/sleuth", lib=.Library, ask=FALSE)
+    INSTALLER("pachterlab/sleuth", lib=.Library, ask=FALSE)
 
     require(devtools)
     ## PopSV
@@ -315,8 +308,12 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
     ## ASCAT
     devtools::install_github("Crick-CancerGenomics/ascat/ASCAT")
     ## ChIAnalysis (with its eric.utils dependency)
-    devtools::install_bitbucket("ericfournier2/sb_lab/eric.utils")
+    #devtools::install_bitbucket("ericfournier2/sb_lab/eric.utils")
     #devtools::install_github("ArnaudDroitLab/ChIAnalysis")
+    ## DoubltFinder
+    devtools::install_github("chris-mcginnis-ucsf/DoubletFinder")
+    ## binless
+    devtools::install_github("3DGenomes/binless",subdir="binless")
 
     ## Print the list of the installed packages along with their version into a file
     library(data.table)
