@@ -26,6 +26,8 @@ class JobStat(object):
               'cedar': 'cedar.calculcanada.ca'}
     SSTATE = 'State'
 
+    SELAPSEDRAW = 'ElapsedRaw'
+
     COMPLETED = 'COMPLETED'
 
     def __init__(self, step_output_file, jobid=None, dependency=None, name=None,
@@ -38,17 +40,21 @@ class JobStat(object):
         self._prologue = {}
         self._epilogue = {}
         self._delta = None
+        self._delta_with_overhead = None
         # Real slurm job number, if not none. There is a problem with
         # the pipeline output path
         self.output_log_id = []
         self._start = None
         self._stop = None
+        self._sacct_start = None
+        self._sacct_stop = None
         self._parsed_after_header = parsed_after_header
         self._mugqic_exit_status = None
         self._remote = remote_hpc
         self._slurm_state = None
         self._sub_id = None
         self.log_missing = None
+        self._elapsed_sec = None
         if os.path.isfile(self._path):
             self.log_missing = False
             self.fill_from_file(self._path)
@@ -61,7 +67,7 @@ class JobStat(object):
     def __str__(self):
 
         return '{} {} {} {} {} {} {}'.format(self.jobid, self.output_log_id, self.name, self.n_cpu,
-                                             self.mem, self.runtime, self.log_file_exit_status)
+                                             self.mem, self.runtime_job, self.log_file_exit_status)
 
     @property
     def path(self):
@@ -89,6 +95,9 @@ class JobStat(object):
         else:
             self.completed = False
             logger.error('The job {} has a {} slurm state '.format(self.jobid, self._slurm_state))
+
+        self._elapsed_sec = [int(t) if t is not None else 0 for t in all_acct[self.SELAPSEDRAW]]
+
 
     @property
     def slurm_state(self):
@@ -174,30 +183,50 @@ class JobStat(object):
             return None
 
     @property
-    def runtime(self):
+    def runtime_job(self):
         try:
             if self._delta is None:
-                stop = [int(s) for s in self._epilogue[self.RUNTIME].split(':')]
-                start = [int(s) for s in self._prologue[self.RUNTIME].split(':')]
-                self._stop = datetime.timedelta(hours=stop[0], minutes=stop[1], seconds=stop[2])
-                self._start = datetime.timedelta(hours=start[0], minutes=start[1], seconds=start[2])
-                self._delta = self._stop - self._start
+                self._delta = self.stop - self.start
 
             return self._delta
         except KeyError:
             return datetime.timedelta(0)
 
     @property
+    def runtime_with_overhead(self):
+
+        try:
+            return datetime.timedelta(seconds=max(self._elapsed_sec))
+        except ValueError:
+            return datetime.timedelta(0)
+
+
+    @property
+    def start(self):
+        if self._start is None:
+            start = [int(s) for s in self._prologue[self.RUNTIME].split(':')]
+            self._start = datetime.timedelta(hours=start[0],
+                                             minutes=start[1], seconds=start[2])
+        return self._start
+
+    @property
+    def stop(self):
+        if self._stop is None:
+            stop = [int(s) for s in self._epilogue[self.RUNTIME].split(':')]
+            self._stop = datetime.timedelta(hours=stop[0], minutes=stop[1], seconds=stop[2])
+        return self._stop
+
+    @property
     def prologue_time(self):
         try:
-            return self.start_time + self._start
+            return self.start_time + self.start
         except TypeError:
             return None
     
     @property
     def epilogue_time(self):
         try:
-            return self.start_time + self._stop
+            return self.start_time + self.stop
         except TypeError:
             return None
 
@@ -256,7 +285,7 @@ def print_report(report, to_stdout=True, to_tsv=None):
     if to_tsv:
         header = ('id', 'log_from_job', 'same_id', 'name', 'slurm_prologue', 'slurm_main', 'slurm_epilogue',
                   'custom_exit',
-                  'output_file_path', 'outpout_file_exist')
+                  'output_file_path', 'outpout_file_exist', 'runtime', 'runtime_with_overhead')
         data_table = []
 
     for j in report:
@@ -276,7 +305,7 @@ def print_report(report, to_stdout=True, to_tsv=None):
                 same = False
 
             data_table.append((j.jobid, j.output_log_id, same, j.name, pro, batch, epi, j.log_file_exit_status,
-                               j.path, not j.log_missing))
+                               j.path, not j.log_missing, j.runtime_job, j.runtime_with_overhead ))
 
         if to_stdout:
             if not j.completed:
@@ -300,8 +329,8 @@ def print_report(report, to_stdout=True, to_tsv=None):
                 min_start.append(j.prologue_time)
             if j.epilogue_time is not None:
                 max_stop.append(j.epilogue_time)
-            total_machine += j.runtime
-            total_machine_core += j.runtime * j.n_cpu
+            total_machine += j.runtime_job
+            total_machine_core += j.runtime_job * j.n_cpu
 
     if to_stdout:
         try:
@@ -339,14 +368,14 @@ def fine_grain(stats):
     for job in stats:
         if "NA12878_PCRFRee_gatk4" in job.name:
             if 'realigner' in job.name:
-                mar_r = max(max_r, job.runtime)
+                mar_r = max(max_r, job.runtime_job)
             if 'haplotype_caller' in job.name:
-                mar_h = max(max_h, job.runtime)
+                mar_h = max(max_h, job.runtime_job)
             else:
-                total = total + job.runtime
+                total = total + job.runtime_job
 
         elif job.jobid in [336, 338]:
-            total = total + job.runtime
+            total = total + job.runtime_job
 
     total = total + max_h + max_r
 
@@ -358,13 +387,13 @@ def fine_grain(stats):
     for job in stats:
         if "NA12878_PCRFRee_20170509" in job.name:
             if 'realigner' in job.name:
-                mar_r = max(max_r, job.runtime)
+                mar_r = max(max_r, job.runtime_job)
             if 'haplotype_caller' in job.name:
-                mar_h = max(max_h, job.runtime)
+                mar_h = max(max_h, job.runtime_job)
             elif job.jobid in [336, 338]:
                 pass
             else:
-                total = total + job.runtime
+                total = total + job.runtime_job
 
     total = total + max_h + max_r
 
@@ -382,8 +411,9 @@ if __name__ == '__main__':
                         choices=['ERROR', 'WARNING', 'INFO', "CRITICAL"],
                         default='ERROR')
     parser.add_argument('--tsv', help="output to tsv file")
-    parser.add_argument('--quiet', '-q', help="no report printed to terminal",
+    parser.add_argument('--quiet', '-q', help="No report printed to terminal",
                         action='store_true', default=False)
+
 
     args = parser.parse_args()
 
