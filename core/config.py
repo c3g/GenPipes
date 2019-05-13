@@ -30,7 +30,15 @@ import sys
 
 log = logging.getLogger(__name__)
 
+
+
 class Config(ConfigParser.SafeConfigParser):
+
+    # True only for continuous integration testing
+    continuous_integration_testing = 'GENPIPES_CIT' in os.environ
+    # All the option that will be forces to default value if
+    # continuous_integration_testing = True
+    cit_options = ["cluster_walltime"]
 
     def __init__(self):
         ConfigParser.SafeConfigParser.__init__(self)
@@ -80,6 +88,10 @@ class Config(ConfigParser.SafeConfigParser):
     def param(self, section, option, required=True, type='string'):
         # Store original section for future error message, in case 'DEFAULT' section is used eventually
         original_section = section
+
+        # Keep that if block first
+        if self.continuous_integration_testing and option in self.cit_options:
+            return self.get('DEFAULT', option)
 
         if not self.has_section(section):
             section = 'DEFAULT'

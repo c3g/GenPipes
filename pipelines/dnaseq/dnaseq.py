@@ -1200,8 +1200,12 @@ class DnaSeqRaw(common.Illumina):
 
         jobs.append(concat_jobs([
             Job(command="mkdir -p " + output_directory, samples=self.samples),
-            gatk4.variant_recalibrator( [os.path.join(output_directory, "allSamples.hc.vcf.gz")], recal_snps_other_options, variant_recal_snps_prefix + ".recal", variant_recal_snps_prefix + ".tranches", variant_recal_snps_prefix + ".R"),
-            gatk4.variant_recalibrator( [os.path.join(output_directory, "allSamples.hc.vcf.gz")], recal_indels_other_options, variant_recal_indels_prefix + ".recal", variant_recal_indels_prefix + ".tranches", variant_recal_indels_prefix + ".R")
+            gatk4.variant_recalibrator([os.path.join(output_directory, "allSamples.hc.vcf.gz")],
+                                       recal_snps_other_options, variant_recal_snps_prefix + ".recal",
+                                       variant_recal_snps_prefix + ".tranches", variant_recal_snps_prefix + ".R"),
+            gatk4.variant_recalibrator([os.path.join(output_directory, "allSamples.hc.vcf.gz")],
+                                       recal_indels_other_options, variant_recal_indels_prefix + ".recal",
+                                       variant_recal_indels_prefix + ".tranches", variant_recal_indels_prefix + ".R")
         ], name="variant_recalibrator.tranch.allSamples"))
 
 
