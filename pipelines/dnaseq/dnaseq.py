@@ -1785,6 +1785,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.haplotype_caller_metrics_vcf_stats,
                 #self.haplotype_caller_metrics_snv_graph_metrics,
                 self.run_multiqc,
+                self.cram_output
             ],
             [
                 self.picard_sam_to_fastq,
@@ -1821,7 +1822,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.mpileup_gemini_annotations,
                 self.mpileup_metrics_vcf_stats,
                 #self.mpileup_metrics_snv_graph_metrics,
-                self.run_multiqc
+                self.run_multiqc,
+                self.cram_output
             ],
             [
                 self.picard_sam_to_fastq,
@@ -1851,6 +1853,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.haplotype_caller_dbnsfp_annotation,
                 self.haplotype_caller_gemini_annotations,
                 self.run_multiqc,
+                self.cram_output
             ]
         ]
 
@@ -1862,4 +1865,4 @@ class DnaSeq(DnaSeqRaw):
         super(DnaSeq, self).__init__(protocol)
 
 if __name__ == '__main__':
-    DnaSeq(protocol=['mugqic', 'mpileup'])
+    DnaSeq(protocol=['mugqic', 'mpileup', "light"])
