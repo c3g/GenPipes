@@ -28,7 +28,6 @@ import re
 import subprocess
 import sys
 
-from utils import utils
 
 log = logging.getLogger(__name__)
 
@@ -94,6 +93,8 @@ class Config(ConfigParser.SafeConfigParser):
 
         # Keep that if block first, it is only evaluated in testing mode
         if self.continuous_integration_testing and option in self.cit_options:
+            # hack because this class becomes a global
+            from utils import utils
             if option == self.cluster_walltime and self.has_section(section) \
                     and self.has_option(section, option):
                 from_section = self.get(section, option)
