@@ -98,6 +98,8 @@ def slurm_time_to_datetime(time):
     :param time: sting from slurm sbatch --time option
     :return: timedelta object
     """
+    time = time.lstrip()
+    time = time.lstrip('--time=')
 
     colon = time.count(':')
     dash = time.count('-')
