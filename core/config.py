@@ -28,6 +28,8 @@ import re
 import subprocess
 import sys
 
+from utils import utils
+
 log = logging.getLogger(__name__)
 
 
@@ -38,7 +40,8 @@ class Config(ConfigParser.SafeConfigParser):
     continuous_integration_testing = 'GENPIPES_CIT' in os.environ
     # All the option that will be forces to default value if
     # continuous_integration_testing = True
-    cit_options = ["cluster_walltime"]
+    cluster_walltime = "cluster_walltime"
+    cit_options = [cluster_walltime]
 
     def __init__(self):
         ConfigParser.SafeConfigParser.__init__(self)
@@ -89,9 +92,18 @@ class Config(ConfigParser.SafeConfigParser):
         # Store original section for future error message, in case 'DEFAULT' section is used eventually
         original_section = section
 
-        # Keep that if block first
+        # Keep that if block first, it is only evaluated in testing mode
         if self.continuous_integration_testing and option in self.cit_options:
-            return self.get('DEFAULT', option)
+            if option == self.cluster_walltime and self.has_section(section) \
+                    and self.has_option(section, option):
+                from_section = self.get(section, option)
+                from_default = self.get('DEFAULT', option)
+                if (utils.slurm_time_to_datetime(from_default)
+                        <= utils.slurm_time_to_datetime(from_section)):
+                    return from_default
+                else:
+                    return from_section
+
 
         if not self.has_section(section):
             section = 'DEFAULT'
