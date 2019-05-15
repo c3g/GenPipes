@@ -80,7 +80,7 @@ class Config(ConfigParser.SafeConfigParser):
             module_show_output = subprocess.check_output(["bash", "-c", cmd_query_module + module], stderr=subprocess.STDOUT)
             ## "Error" result for module show while "error" for module spider. seems to be handeled well by re.IGNORECASE
             if re.search("Error", module_show_output, re.IGNORECASE):
-                raise Exception("Error in config file(s) with " + module + ":\n" + module_show_output)
+                raise Error("Error in config file(s) with " + module + ":\n" + module_show_output)
             else:
                 log.info("Module " + module + " OK")
         log.info("Module check finished\n")
@@ -118,7 +118,7 @@ class Config(ConfigParser.SafeConfigParser):
                     if value > 0:
                         return value
                     else:
-                        raise Exception("Integer \"" + str(value) + "\" is not > 0!")
+                        raise Error("Integer \"" + str(value) + "\" is not > 0!")
                 elif type == 'float':
                     return self.getfloat(section, option)
                 elif type == 'boolean':
@@ -128,32 +128,38 @@ class Config(ConfigParser.SafeConfigParser):
                     if os.path.isfile(value):
                         return value
                     else:
-                        raise Exception("File path \"" + value + "\" does not exist or is not a valid regular file!")
+                        raise Error("File path \"" + value + "\" does not exist or is not a valid regular file!")
                 elif type == 'dirpath':
                     value = os.path.expandvars(self.get(section, option))
                     if os.path.isdir(value):
                         return value
                     else:
-                        raise Exception("Directory path \"" + value + "\" does not exist or is not a valid directory!")
+                        raise Error("Directory path \"" + value + "\" does not exist or is not a valid directory!")
                 elif type == 'prefixpath':
                     value = os.path.expandvars(self.get(section, option))
                     if glob.glob(value + "*"):
                         return value
                     else:
-                        raise Exception("Prefix path \"" + value + "\" does not match any file!")
+                        raise Error("Prefix path \"" + value + "\" does not match any file!")
                 elif type == 'list':
                     # Remove empty strings from list
                     return [x for x in self.get(section, option).split(",") if x]
                 elif type == 'string':
                     return self.get(section, option)
                 else:
-                    raise Exception("Unknown parameter type '" + type + "'")
+                    raise Error("Unknown parameter type '" + type + "'")
             except Exception as e:
-                raise Exception("Error: parameter \"[" + section + "] " + option + "\" value \"" + self.get(section, option) + "\" is invalid!\n" + e.message)
+                raise Error("Error: parameter \"[" + section + "] " + option + "\" value \"" + self.get(section,
+                                                                                                    option) + "\" is invalid!\n" + e.message)
         elif required:
-            raise Exception("Error: parameter \"[" + original_section + "] " + option + "\" is not defined in config file(s)!")
+            raise Error("Error: parameter \"[" + original_section + "] " + option + "\" is not defined in config file(s)!")
         else:
             return ""
+
+
+class Error(Exception):
+    pass
+
 
 # Global config object used throughout the whole pipeline
 config = Config()

@@ -22,9 +22,11 @@
 # Python Standard Modules
 
 # MUGQIC Modules
-from core.config import *
 from core.job import *
+import core.config
 import gatk4
+
+config = core.config.config
 
 def base_recalibrator(input, output, intervals):
     if config.param('gatk_base_recalibrator', 'module_gatk').split("/")[2] >= "4":
@@ -498,7 +500,10 @@ def variant_recalibrator(variants, other_options, recal_output,
     else:
 
         if small_sample_check:
-            small_sample_option = config.param('gatk_variant_recalibrator', 'small_sample_option')
+            try:
+                small_sample_option = config.param('gatk_variant_recalibrator', 'small_sample_option')
+            except core.config.Error:
+                small_sample_option = ''
         else:
             small_sample_option = ''
 
