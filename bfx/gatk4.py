@@ -447,13 +447,9 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
 
 def variant_recalibrator(variants, other_options, recal_output, tranches_output, R_output, small_sample_check=False):
 	if config.param('gatk_variant_recalibrator', 'module_gatk').split("/")[2] < "4":
-		return gatk.variant_recalibrator(variants, other_options, recal_output, tranches_output, R_output)
+		return gatk.variant_recalibrator(variants, other_options, recal_output, tranches_output,
+										 R_output, small_sample_check=small_sample_check)
 	else:
-
-		if small_sample_check:
-			small_sample_option = config.param('gatk_variant_recalibrator', 'small_sample_option')
-		else:
-			small_sample_option = ''
 
 		return Job(
 			variants,
@@ -469,7 +465,7 @@ VariantRecalibrator {options} \\
 --reference {reference_sequence}{variants} \\
 {other_options} \\
 --output {recal_output} \\
---tranches-file {tranches_output} {small_sample_option}""".format(
+--tranches-file {tranches_output}""".format(
 			tmp_dir=config.param('gatk_variant_recalibrator', 'tmp_dir'),
 			java_other_options=config.param('gatk_variant_recalibrator', 'java_other_options'),
 			ram=config.param('gatk_variant_recalibrator', 'ram'),
@@ -480,7 +476,6 @@ VariantRecalibrator {options} \\
 			recal_output=recal_output,
 			tranches_output=tranches_output,
 			R_output=R_output,
-			small_sample_option=small_sample_option,
 			),
 			removable_files=[recal_output, tranches_output, R_output]
 		)
