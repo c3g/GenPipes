@@ -463,7 +463,7 @@ VariantRecalibrator {options} \\
 --reference {reference_sequence}{variants} \\
 {other_options} \\
 --output {recal_output} \\
---tranches-file {tranches_output}""".format(
+--tranches-file {tranches_output} {small_sample_option}""".format(
 			tmp_dir=config.param('gatk_variant_recalibrator', 'tmp_dir'),
 			java_other_options=config.param('gatk_variant_recalibrator', 'java_other_options'),
 			ram=config.param('gatk_variant_recalibrator', 'ram'),
