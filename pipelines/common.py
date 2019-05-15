@@ -477,7 +477,8 @@ pandoc \\
             candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.mdup.bam")]) # RnaSeq
             candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")]) # TumorPair
             candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".merded.mdup.bam")]) # ChIPseq
-            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".realigned.sorted.bam")]) # TumorPair
+            candidate_input_files.append([os.path.join(alignment_directory, sample.name + "matefixed.sorted.bam")]) # DNAseq_high_coverage
+            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".realigned.sorted.bam")]) # TumorPair; DNAseq_high_coverage
             candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".merged.bam")]) # ChIPSeq; HiCseq
             candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")]) # ChIPseq
             candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted_noRG.bam")]) # MethylSeq
