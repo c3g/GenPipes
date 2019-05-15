@@ -491,10 +491,17 @@ java {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
     )
 
 
-def variant_recalibrator(variants, other_options, recal_output, tranches_output, R_output):
+def variant_recalibrator(variants, other_options, recal_output,
+                         tranches_output, R_output, small_sample_check=False):
     if config.param('gatk_print_reads', 'module_gatk').split("/")[2] >= "4":
         return gatk4.combine_gvcf(variants, other_options, recal_output, tranches_output, R_output)
     else:
+
+        if small_sample_check:
+            small_sample_option = config.param('gatk_variant_recalibrator', 'small_sample_option')
+        else:
+            small_sample_option = ''
+
         return Job(
             variants,
             [recal_output, tranches_output, R_output],
@@ -510,7 +517,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --reference_sequence {reference_sequence}{variants} \\
   {other_options} \\
   --recal_file {recal_output} \\
-  --tranches_file {tranches_output} \\
+  --tranches_file {tranches_output} {small_sample_option} \\
   --rscript_file {R_output}""".format(
         tmp_dir=config.param('gatk_variant_recalibrator', 'tmp_dir'),
         java_other_options=config.param('gatk_variant_recalibrator', 'java_other_options'),
@@ -522,6 +529,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         #tmp_dir="--TMP_DIR " + tmp_dir if tmp_dir else "",
         recal_output=recal_output,
         tranches_output=tranches_output,
+        small_sample_option=small_sample_option,
         R_output=R_output
         ),
         removable_files=[recal_output, tranches_output, R_output]
