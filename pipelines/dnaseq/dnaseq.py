@@ -1205,7 +1205,8 @@ class DnaSeqRaw(common.Illumina):
                                        variant_recal_snps_prefix + ".tranches", variant_recal_snps_prefix + ".R"),
             gatk4.variant_recalibrator([os.path.join(output_directory, "allSamples.hc.vcf.gz")],
                                        recal_indels_other_options, variant_recal_indels_prefix + ".recal",
-                                       variant_recal_indels_prefix + ".tranches", variant_recal_indels_prefix + ".R")
+                                       variant_recal_indels_prefix + ".tranches", variant_recal_indels_prefix + ".R",
+                                       small_sample_check=True)
         ], name="variant_recalibrator.tranch.allSamples"))
 
 
@@ -1217,8 +1218,13 @@ class DnaSeqRaw(common.Illumina):
 
         jobs.append(concat_jobs([
             Job(command="mkdir -p " + output_directory, samples=self.samples),
-            gatk4.apply_recalibration( os.path.join(output_directory, "allSamples.hc.vcf.gz"), variant_apply_snps_prefix + ".recal", variant_apply_snps_prefix + ".tranches", apply_snps_other_options, variant_apply_snps_prefix + "_raw_indels.vqsr.vcf.gz"),
-            gatk4.apply_recalibration( variant_apply_snps_prefix + "_raw_indels.vqsr.vcf.gz", variant_apply_indels_prefix + ".recal", variant_apply_indels_prefix + ".tranches", apply_indels_other_options, os.path.join(output_directory, "allSamples.hc.vqsr.vcf"))
+            gatk4.apply_recalibration(os.path.join(output_directory, "allSamples.hc.vcf.gz"),
+                                      variant_apply_snps_prefix + ".recal", variant_apply_snps_prefix + ".tranches",
+                                      apply_snps_other_options, variant_apply_snps_prefix + "_raw_indels.vqsr.vcf.gz"),
+            gatk4.apply_recalibration(variant_apply_snps_prefix +
+                                       "_raw_indels.vqsr.vcf.gz", variant_apply_indels_prefix + ".recal",
+                                      variant_apply_indels_prefix + ".tranches", apply_indels_other_options,
+                                      os.path.join(output_directory, "allSamples.hc.vqsr.vcf"))
         ], name="variant_recalibrator.apply.allSamples"))
 
         return jobs
