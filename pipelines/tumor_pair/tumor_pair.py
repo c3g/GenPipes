@@ -4222,7 +4222,6 @@ END`""".format(
                     remove=True
                 ),
                 pipe_jobs([
-<<<<<<< HEAD
                     samtools.view(
                         inputNormal,
                         None,
@@ -4247,14 +4246,6 @@ END`""".format(
                         lumpy_directory,
                         config.param('extract_discordant_reads', 'options')
                     ),
-=======
-                    samtools.view(inputNormal, None, "-b -F 1294"),
-                    sambamba.sort("/dev/stdin", discordants_normal, lumpy_directory, config.param('extract_discordant_reads', 'options')),
-                ]),
-                pipe_jobs([
-                    samtools.view(inputTumor, None, "-b -F 1294"),
-                    sambamba.sort("/dev/stdin", discordants_tumor, lumpy_directory, config.param('extract_discordant_reads', 'options')),
->>>>>>> f90d9497 (GRCh38 fixes)
                 ]),
             ], name="extract_discordant_reads." + tumor_pair.name))
 
@@ -4264,7 +4255,6 @@ END`""".format(
                     remove=True
                 ),
                 pipe_jobs([
-<<<<<<< HEAD
                     samtools.view(
                         inputNormal,
                         None,
@@ -4311,18 +4301,6 @@ END`""".format(
                         lumpy_directory,
                         config.param('extract_split_reads', 'options')
                     ),
-=======
-                    samtools.view(inputNormal, None, "-h"),
-                    Job([None], [None], [['lumpy_sv', 'module_lumpy']], command="$LUMPY_SCRIPTS/extractSplitReads_BwaMem -i stdin"),
-                    samtools.view("-", None, " -Sb "),
-                    sambamba.sort("/dev/stdin", splitters_normal, lumpy_directory, config.param('extract_split_reads', 'options')),
-                ]),
-                pipe_jobs([
-                    samtools.view(inputTumor, None, "-h"),
-                    Job([None], [None], [['lumpy_sv', 'module_lumpy']], command="$LUMPY_SCRIPTS/extractSplitReads_BwaMem -i stdin"),
-                    samtools.view("-", None, " -Sb "),
-                    sambamba.sort("/dev/stdin", splitters_tumor, lumpy_directory, config.param('extract_split_reads', 'options')),
->>>>>>> f90d9497 (GRCh38 fixes)
                 ]),
             ], name="extract_split_reads." + tumor_pair.name))
 
@@ -4619,7 +4597,6 @@ END`""".format(
             pair_directory = os.path.join("SVariants", tumor_pair.name, tumor_pair.name)
             prefix = os.path.join("SVariants", tumor_pair.name, tumor_pair.name)
             genotyped_vcf = os.path.join(pair_directory, tumor_pair.name + ".wham.merged.genotyped.vcf.gz")
-<<<<<<< HEAD
 
             jobs.append(concat_jobs([
                 pipe_jobs([
@@ -4649,25 +4626,10 @@ END`""".format(
                     "WHAM",
                     prefix + ".wham.somatic.prioritize.tsv"
                 ),
-=======
-            vcf_prefix = os.path.join(pair_directory, tumor_pair.name + ".wham")
-            
-            jobs.append(concat_jobs([
-                pipe_jobs([
-                    vawk.paired_somatic(genotyped_vcf, tumor_pair.normal.name, tumor_pair.tumor.name, None),
-                    htslib.bgzip_tabix(None, vcf_prefix + ".somatic.vcf.gz"),
-                ]),
-                snpeff.compute_effects(vcf_prefix + ".somatic.vcf.gz", vcf_prefix + ".somatic.snpeff.vcf"),
-                annotations.structural_variants(vcf_prefix + ".somatic.snpeff.vcf",
-                                                vcf_prefix + ".somatic.snpeff.annot.vcf"),
-                vawk.sv(vcf_prefix + ".somatic.snpeff.annot.vcf", tumor_pair.normal.name, tumor_pair.tumor.name, "WHAM",
-                        vcf_prefix + ".somatic.prioritize.tsv"),
->>>>>>> f90d9497 (GRCh38 fixes)
             ], name="sv_annotation.wham.somatic." + tumor_pair.name))
 
             jobs.append(concat_jobs([
                 pipe_jobs([
-<<<<<<< HEAD
                     vawk.paired_germline(
                         genotyped_vcf,
                         tumor_pair.normal.name,
@@ -4693,16 +4655,6 @@ END`""".format(
                     tumor_pair.tumor.name,
                     "WHAM", prefix + ".wham.germline.prioritize.tsv"
                 ),
-=======
-                    vawk.paired_germline(genotyped_vcf, tumor_pair.normal.name, tumor_pair.tumor.name, None),
-                    htslib.bgzip_tabix(None,  vcf_prefix + ".germline.vcf.gz"),
-                ]),
-                snpeff.compute_effects(vcf_prefix + ".germline.vcf.gz", vcf_prefix + ".germline.snpeff.vcf"),
-                annotations.structural_variants(vcf_prefix + ".germline.snpeff.vcf",
-                                                vcf_prefix + ".germline.snpeff.annot.vcf"),
-                vawk.sv(vcf_prefix + ".germline.snpeff.annot.vcf", tumor_pair.normal.name, tumor_pair.tumor.name, "WHAM",
-                        vcf_prefix + ".germline.prioritize.tsv"),
->>>>>>> f90d9497 (GRCh38 fixes)
             ], name="sv_annotation.wham.germline." + tumor_pair.name))
 
         return jobs
@@ -5281,7 +5233,6 @@ END`""".format(
                 bed = coverage_bed
 
             jobs.append(concat_jobs([
-<<<<<<< HEAD
                 bash.mkdir(
                     svaba_directory,
                     remove=True
@@ -5300,17 +5251,11 @@ END`""".format(
                     [somatic_output],
                     command="sed -e 's#" + os.path.abspath(input_normal) + "#" + tumor_pair.normal.name + "#g' " + somatic_input + " | "
                                                                "sed -e 's#" + os.path.abspath(input_tumor) + "#" + tumor_pair.tumor.name + "#g' > " + somatic_output),
-                Job([germline_input], [germline_output], command="sed -e 's#" + os.path.abspath(input_normal) + "#" + tumor_pair.normal.name + "#g' " + germline_input + " | "
+                Job(
+                    [germline_input],
+                    [germline_output],
+                    command="sed -e 's#" + os.path.abspath(input_normal) + "#" + tumor_pair.normal.name + "#g' " + germline_input + " | "
                                                                "sed -e 's#" + os.path.abspath(input_tumor) + "#" + tumor_pair.tumor.name + "#g' > " + germline_output)
-=======
-                mkdir_job,
-                cd_job,
-                svaba.run(input_tumor, tumor_pair.name, input_normal, bed),
-                Job([somatic_input], [somatic_output], command="sed -e 's#" + input_normal + "#" + tumor_pair.normal.name + "#g' " + somatic_input + " | "
-                                                               "sed -e 's#" + input_tumor + "#" + tumor_pair.tumor.name + "#g' > " + somatic_output),
-                Job([germline_input], [germline_output], command="sed -e 's#" + input_normal + "#" + tumor_pair.normal.name + "#g' " + germline_input + " | "
-                                                               "sed -e 's#" + input_tumor + "#" + tumor_pair.tumor.name + "#g' > " + germline_output)
->>>>>>> f90d9497 (GRCh38 fixes)
             ], name="svaba_run." + tumor_pair.name))
 
         return jobs
@@ -5447,11 +5392,6 @@ END`""".format(
         return [
             [
                 self.picard_sam_to_fastq,
-<<<<<<< HEAD
-=======
-                # self.trimmomatic,
-                # self.merge_trimmomatic_stats,
->>>>>>> f90d9497 (GRCh38 fixes)
                 self.skewer_trimming,
                 self.bwa_mem_sambamba_sort_sam,
                 self.sambamba_merge_sam_files,
@@ -5474,11 +5414,6 @@ END`""".format(
             ],
             [
                 self.picard_sam_to_fastq,
-<<<<<<< HEAD
-=======
-                # self.trimmomatic,
-                # self.merge_trimmomatic_stats,
->>>>>>> f90d9497 (GRCh38 fixes)
                 self.skewer_trimming,
                 self.bwa_mem_sambamba_sort_sam,
                 self.sambamba_merge_sam_files,
@@ -5552,12 +5487,8 @@ END`""".format(
                 self.scones,
                 self.svaba_assemble,
                 self.svaba_sv_annotation,
-<<<<<<< HEAD
                 self.ensemble_metasv_somatic,
                 self.ensemble_metasv_germline,
-=======
-                self.ensemble_metasv,
->>>>>>> f90d9497 (GRCh38 fixes)
                 self.metasv_sv_annotation,
                 self.sym_link_sequenza,
                 self.sym_link_metasv,
