@@ -482,14 +482,10 @@ END`""".format(
                     Job([None], [None], command="awk -F$'\\t' -v OFS='\\t' '$1!~/^#/ && $4 == $5 {next} {print}'"),
                     htslib.bgzip_tabix(None, all_output),
                 ]),
-                pipe_jobs([
-                    bcftools.view(all_output, None, config.param('merge_varscan2', 'somatic_filter_options')),
-                    htslib.bgzip_tabix(None, somatic_output),
-                ]),
-                pipe_jobs([
-                    bcftools.view(all_output, None, config.param('merge_varscan2', 'germline_filter_options')),
-                    htslib.bgzip_tabix(None, germline_output),
-                ]),
+                bcftools.view(all_output, somatic_output, config.param('merge_varscan2', 'somatic_filter_options')),
+                htslib.tabix(somatic_output, config.param('merge_varscan2', 'tabix_options', required=False)),
+                bcftools.view(all_output, germline_output, config.param('merge_varscan2', 'germline_filter_options')),
+                htslib.tabix(germline_output, config.param('merge_varscan2', 'tabix_options', required=False)),
             ], name="merge_varscan2." + tumor_pair.name))
 
         return jobs
@@ -1159,7 +1155,7 @@ END`""".format(
                 jobs.append(concat_jobs([
                     mkdir_job,
                     pipe_jobs([
-                        bcftools.mpileup([input_normal[0], input_tumor[0]], None, config.param('samtools_paired', 'mpileup_other_options')),
+                        bcftools.mpileup([input_normal[0], input_tumor[0]], None, config.param('samtools_paired', 'mpileup_other_options'), regionFile=bed_file),
                         bcftools.call("", os.path.join(samtools_directory, tumor_pair.name + ".bcf"),
                                       config.param('samtools_paired', 'bcftools_calls_options')),
                     ]),
@@ -1172,7 +1168,7 @@ END`""".format(
                         jobs.append(concat_jobs([
                             mkdir_job,
                             pipe_jobs([
-                                bcftools.mpileup([input_normal[0], input_tumor[0]], None, config.param('samtools_paired', 'mpileup_other_options'), regions=sequence['name']),
+                                bcftools.mpileup([input_normal[0], input_tumor[0]], None, options=config.param('samtools_paired', 'mpileup_other_options'), regions=sequence['name']),
                                 bcftools.call("", os.path.join(samtools_directory, tumor_pair.name + "." + sequence['name'] + ".bcf"), config.param('samtools_paired', 'bcftools_calls_options')),
                             ]),
                             bcftools.index(os.path.join(samtools_directory, tumor_pair.name + "." + sequence['name'] + ".bcf")),
@@ -3174,10 +3170,10 @@ END`""".format(
                 mkdir_job,
                 cd_job,
                 svaba.run(input_tumor, tumor_pair.name, input_normal),
-                Job([somatic_input], [somatic_output], command="sed -e 's#" + input_normal + "#" + tumor_pair.normal.name + "#g' " + somatic_input + " | "
-                                                               "sed -e 's#" + input_tumor + "#" + tumor_pair.tumor.name + "#g' > " + somatic_output),
-                Job([germline_input], [germline_output], command="sed -e 's#" + input_normal + "#" + tumor_pair.normal.name + "#g' " + germline_input + " | "
-                                                               "sed -e 's#" + input_tumor + "#" + tumor_pair.tumor.name + "#g' > " + germline_output)
+                Job([somatic_input], [somatic_output], command="sed -e 's#" + os.path.abspath(input_normal) + "#" + tumor_pair.normal.name + "#g' " + somatic_input + " | "
+                                                               "sed -e 's#" + os.path.abspath(input_tumor) + "#" + tumor_pair.tumor.name + "#g' > " + somatic_output),
+                Job([germline_input], [germline_output], command="sed -e 's#" + os.path.abspath(input_normal) + "#" + tumor_pair.normal.name + "#g' " + germline_input + " | "
+                                                               "sed -e 's#" + os.path.abspath(input_tumor) + "#" + tumor_pair.tumor.name + "#g' > " + germline_output)
             ], name="svaba_run." + tumor_pair.name))
 
         return jobs
@@ -3258,7 +3254,6 @@ END`""".format(
                 #self.set_somatic_and_actionable_mutations_panel,
                 self.metrics_dna_picard_metrics,
                 self.metrics_dna_sample_qualimap,
-                self.metrics_dna_sambamba_flagstat,
                 self.metrics_dna_fastqc,
                 self.run_pair_multiqc,
                 self.sym_link_report,
@@ -3277,17 +3272,13 @@ END`""".format(
                 self.sambamba_mark_duplicates,
                 self.recalibration,
                 self.conpair_concordance_contamination,
-                self.metrics_dna_picard_metrics,
-                self.metrics_dna_sample_qualimap,
-                self.metrics_dna_sambamba_flagstat,
-                self.metrics_dna_fastqc,
                 self.rawmpileup,
                 self.paired_varscan2,
                 self.merge_varscan2,
                 self.paired_mutect2,
                 self.merge_mutect2,
-                #self.samtools_paired,
-                #self.merge_filter_paired_samtools,
+                self.samtools_paired,
+                self.merge_filter_paired_samtools,
                 self.vardict_paired,
                 self.merge_filter_paired_vardict,
                 self.strelka2_paired_somatic,
@@ -3320,8 +3311,8 @@ END`""".format(
             ],
             [
                 self.picard_sam_to_fastq,
-                self.trimmomatic,
-                self.merge_trimmomatic_stats,
+                #self.trimmomatic,
+                #self.merge_trimmomatic_stats,
                 self.skewer_trimming,
                 self.bwa_mem_sambamba_sort_sam,
                 self.sambamba_merge_sam_files,

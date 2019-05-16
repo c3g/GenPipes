@@ -2778,6 +2778,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         bed_file = None
         for sample in self.samples:
             pair_directory = os.path.join("SVariants", sample.name)
+            tmp_directory = os.path.join(str(config.param("manta_sv", 'tmp_dir')), "SVariants", sample.name, "rawManta")
             manta_directory = os.path.abspath(os.path.join(pair_directory, "rawManta"))
             output_prefix = os.path.abspath(os.path.join(pair_directory, sample.name))
 
@@ -2802,8 +2803,9 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
             jobs.append(concat_jobs([
                 mkdir_job,
-                manta.manta_config(input, None, manta_directory, bed_file),
-                manta.manta_run(manta_directory, output_dep=output_dep),
+                manta.manta_config(input, None, tmp_directory, bed_file),
+                manta.manta_run(tmp_directory, output_dep=output_dep),
+                Job([tmp_directory], [manta_directory], command="cp -R " + tmp_directory + " " + manta_directory),
                 Job([manta_germline_output], [output_prefix + ".manta.germline.vcf.gz"],
                     command="ln -sf " + manta_germline_output + " " + output_prefix + ".manta.germline.vcf.gz"),
                 Job([manta_germline_output_tbi], [output_prefix + ".manta.germline.vcf.gz"],
@@ -3211,8 +3213,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.sambamba_merge_sam_files,
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
-                # self.fix_mate_by_coordinate,
-                self.fix_mate_by_coordinate_samtools,
+                #self.fix_mate_by_coordinate_samtools,
                 self.picard_mark_duplicates,
                 self.recalibration,
                 self.metrics_dna_picard_metrics,
@@ -3251,7 +3252,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
                 # self.fix_mate_by_coordinate,
-                self.fix_mate_by_coordinate_samtools,
+                #self.fix_mate_by_coordinate_samtools,
                 self.picard_mark_duplicates,
                 self.recalibration,
                 self.metrics_dna_picard_metrics,
