@@ -124,7 +124,10 @@ class Pipeline(object):
                 raise Exception("Error: step range \"" + self.args.steps +
                     "\" is invalid (should match \d+([,-]\d+)*)!")
         else:
-            self.argparser.error("argument -s/--steps is required!")
+#            self.argparser.error("argument -s/--steps is required!")
+            log.info(" WARNING - No step provided by the user => launching the entire pipeline\n")
+            self._step_range = self.step_list
+                
 
         self._sample_list = []
         self._sample_paths = []

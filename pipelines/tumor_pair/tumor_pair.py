@@ -1731,7 +1731,8 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
             self.combine_tumor_pairs_germline,
             #self.decompose_and_normalize_mnps_germline,
             self.all_pairs_compute_effects_germline,
-            self.gemini_annotations_germline
+            self.gemini_annotations_germline,
+            self.cram_output
         ]
 
 if __name__ == '__main__':
