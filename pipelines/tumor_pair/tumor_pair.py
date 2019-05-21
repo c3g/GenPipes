@@ -1937,8 +1937,8 @@ END`""".format(
                         #deliverables.sym_link_pair(sample + ".somatic.gemini.actionable.tsv", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
                         deliverables.sym_link_pair(sample + ".ensemble.germline.vt.vcf.gz", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
                         deliverables.sym_link_pair(sample + ".ensemble.germline.vt.vcf.gz.tbi", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
-                        deliverables.sym_link_pair(sample + ".ensemble.germline.vt.annot.snpeff.vcf.gz", tumor_pair, type="svn/ensemble", sample=key, profyle=self.args.profyle),
-                        deliverables.sym_link_pair(sample + ".ensemble.germline.vt.annot.snpeff.vcf.gz.tbi", tumor_pair, type="svn/ensemble", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample + ".ensemble.germline.vt.annot.snpeff.vcf.gz", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample + ".ensemble.germline.vt.annot.snpeff.vcf.gz.tbi", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
                     ], name="sym_link_ensemble." + tumor_pair.name + "." + key))
 
         return jobs

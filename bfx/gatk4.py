@@ -1510,12 +1510,12 @@ def crosscheck_fingerprint(inputs, output):
 			[output],
 			[
 				['gatk_crosscheck_fingerprint', 'module_java'],
-				['gatk_crosscheck_fingerprint', 'module_gatk4']
+				['gatk_crosscheck_fingerprint', 'module_gatk']
 			],
 			command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
   CrosscheckFingerprints {options} \\
-  VALIDATION_STRINGENCY=SILENT \\
+  --VALIDATION_STRINGENCY SILENT \\
   --TMP_DIR {tmp_dir} \\
   {inputs} \\
   --HAPLOTYPE_MAP {haplotype_database} \\
@@ -1524,10 +1524,11 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
 				tmp_dir=config.param('gatk_crosscheck_fingerprint', 'tmp_dir'),
 				options=config.param('gatk_crosscheck_fingerprint', 'options'),
 				java_other_options=config.param('gatk_crosscheck_fingerprint', 'java_other_options'),
+#				genotypes=config.param('gatk_crosscheck_fingerprint', 'genotypes'),
 				haplotype_database=config.param('gatk_crosscheck_fingerprint', 'haplotype_database'),
 				lod_threshold=config.param('gatk_crosscheck_fingerprint', 'lod_threshold'),
 				ram=config.param('gatk_crosscheck_fingerprint', 'ram'),
-				inputs=" \\\n  ".join(["INPUT=" + input for input in inputs]),
+				inputs=" \\\n  ".join(["--INPUT=" + str(input) for input in inputs]),
 				output=output,
 			)
 		)
@@ -1542,14 +1543,14 @@ def cluster_crosscheck_metrics(inputs, output):
 			[output],
 			[
 				['gatk_cluster_crosscheck_metrics', 'module_java'],
-				['gatk_cluster_crosscheck_metrics', 'module_gatk4']
+				['gatk_cluster_crosscheck_metrics', 'module_gatk']
 			],
 			command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
   ClusterCrosscheckMetrics {options} \\
-  VALIDATION_STRINGENCY=SILENT \\
+  --VALIDATION_STRINGENCY SILENT \\
   --TMP_DIR {tmp_dir} \\
-  {inputs} \\
+  --INPUT {input} \\
   --LOD_THRESHOLD {lod_threshold} \\
   --OUTPUT={output} """.format(
 				tmp_dir=config.param('gatk_cluster_crosscheck_metrics', 'tmp_dir'),
@@ -1557,7 +1558,7 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
 				java_other_options=config.param('gatk_cluster_crosscheck_metrics', 'java_other_options'),
 				lod_threshold=config.param('gatk_cluster_crosscheck_metrics', 'lod_threshold'),
 				ram=config.param('gatk_cluster_crosscheck_metrics', 'ram'),
-				inputs=" \\\n  ".join(["INPUT=" + input for input in inputs]),
+				input=input,
 				output=output,
 			)
 		)
