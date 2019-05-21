@@ -326,7 +326,8 @@ class DnaSeqHighCoverage(dnaseq.DnaSeq):
             self.call_variants,
             self.preprocess_vcf,
             self.snp_effect,
-            self.gemini_annotations
+            self.gemini_annotations,
+            self.cram_output
         ]
 
 if __name__ == '__main__': 

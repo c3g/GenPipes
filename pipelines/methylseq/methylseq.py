@@ -929,7 +929,8 @@ pandoc \\
             self.bis_snp,
             self.filter_snp_cpg,
             self.prepare_methylkit,         # step 15
-            self.methylkit_differential_analysis
+            self.methylkit_differential_analysis,
+            self.cram_output
         ]
 
 if __name__ == '__main__': 
