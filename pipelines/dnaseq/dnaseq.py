@@ -1864,6 +1864,137 @@ END
             
         return jobs
 
+    def gatk_readset_fingerprint(self):
+        """
+    	CheckFingerprint (Picard)
+        Checks the sample identity of the sequence/genotype data in the provided file (SAM/BAM or VCF) against a set of known genotypes in the supplied genotype file (in VCF format).
+        input: sample SAM/BAM or VCF
+        output: fingerprint file
+    	"""
+    
+        jobs = []
+        inputs = []
+
+        for readset in self.readsets:
+            alignment_directory = os.path.join("alignment", readset.sample.name, readset.name)
+            input = os.path.join(alignment_directory, readset.sample.name, readset.name + ".sorted.bam")
+            inputs.append(input)
+
+        output = os.path.join("metrics", "dna", "readset.fingerprint")
+
+        job = gatk4.crosscheck_fingerprint(inputs, output)
+        job.name = "gatk_crosscheck_fingerprint.readset"
+    
+        jobs.append(job)
+    
+        return jobs
+
+    def gatk_sample_fingerprint(self):
+        """
+		CheckFingerprint (Picard)
+        Checks the sample identity of the sequence/genotype data in the provided file (SAM/BAM or VCF) against a set of known genotypes in the supplied genotype file (in VCF format).
+        input: sample SAM/BAM or VCF
+        output: fingerprint file
+		"""
+    
+        jobs = []
+        inputs = []
+        
+        for sample in self.samples:
+            alignment_directory = os.path.join("alignment", sample.name)
+            input = self.select_input_files([[os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
+                                             [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
+                                             [os.path.join(alignment_directory, sample.name + ".sorted.bam")]])
+            inputs.append(input[0])
+            
+        output = os.path.join("metrics", "dna", "sample.fingerprint")
+            
+        job = gatk4.crosscheck_fingerprint(inputs, output)
+        job.name = "gatk_crosscheck_fingerprint.sample"
+
+        jobs.append(job)
+
+        return jobs
+
+    def gatk_vcf_fingerprint(self):
+        """
+        CheckFingerprint (Picard)
+        Checks the sample identity of the sequence/genotype data in the provided file (SAM/BAM or VCF) against a set of known genotypes in the supplied genotype file (in VCF format).
+        input: sample SAM/BAM or VCF
+        output: fingerprint file
+        """
+
+        jobs = []
+
+        for sample in self.samples:
+            alignment_directory = os.path.join("alignment", sample.name)
+            input = os.path.join(alignment_directory, sample.name + ".hc.vcf.gz")
+            
+            output = os.path.join(alignment_directory, sample.name + ".fingerprint")
+    
+            jobs.append(concat_jobs([
+                gatk4.crosscheck_fingerprint([input], output)
+            ], name="gatk_crosscheck_fingerprint." + sample.name))
+
+        return jobs
+
+    def gatk_cluster_fingerprint(self, input = os.path.join("metrics", "dna", "sample.fingerprint"), output = os.path.join("metrics", "dna", "sample.cluster.fingerprint"), job_name = "gatk_cluster_fingerprint" ):
+        """
+        CheckFingerprint (Picard)
+        Checks the sample identity of the sequence/genotype data in the provided file (SAM/BAM or VCF) against a set of known genotypes in the supplied genotype file (in VCF format).
+        input: sample SAM/BAM or VCF
+        output: fingerprint file
+        """
+        jobs = []
+
+        job = gatk4.cluster_crosscheck_metrics(input, output)
+        job.name = job_name
+        jobs.append(job)
+        
+        return jobs
+
+    def gatk_cluster_fingerprint_sample(self):
+        """
+        CheckFingerprint (Picard)
+        Checks the sample identity of the sequence/genotype data in the provided file (SAM/BAM or VCF) against a set of known genotypes in the supplied genotype file (in VCF format).
+        input: sample SAM/BAM or VCF
+        output: fingerprint file
+        """
+        job = self.gatk_cluster_fingerprint(os.path.join("metrics", "dna", "sample.fingerprint"),
+                                            os.path.join("metrics", "dna", "sample.cluster.fingerprint"),
+                                            "gatk_cluster_fingerprint.sample")
+        return job
+
+    def gatk_cluster_fingerprint_readset(self) :
+        """
+        CheckFingerprint (Picard)
+        Checks the sample identity of the sequence/genotype data in the provided file (SAM/BAM or VCF) against a set of known genotypes in the supplied genotype file (in VCF format).
+        input: sample SAM/BAM or VCF
+        output: fingerprint file
+        """
+
+        job = self.gatk_cluster_fingerprint(os.path.join("metrics", "dna", "readset.fingerprint"),
+                                            os.path.join("metrics", "dna", "readset.cluster.fingerprint"),
+                                            "gatk_cluster_fingerprint.readset" )
+        #job.samples = self.samples
+
+        return job
+
+    def gatk_cluster_fingerprint_variant(self) :
+        """
+        CheckFingerprint (Picard)
+        Checks the sample identity of the sequence/genotype data in the provided file (SAM/BAM or VCF) against a set of known genotypes in the supplied genotype file (in VCF format).
+        input: sample SAM/BAM or VCF
+        output: fingerprint file
+        """
+
+        job = self.gatk_cluster_fingerprint(os.path.join("metrics", "dna", "variant.fingerprint"),
+                                            os.path.join("metrics", "dna", "variant.cluster.fingerprint"),
+                                            "gatk_cluster_fingerprint.variant" )
+        #job.samples = self.samples
+
+        return job
+
     def gatk_haplotype_caller(self):
         """
         GATK haplotype caller for snps and small indels.
