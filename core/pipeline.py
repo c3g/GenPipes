@@ -36,7 +36,7 @@ import textwrap
 from uuid import uuid4
 
 # MUGQIC Modules
-from config import config
+from config import *
 from job import *
 from scheduler import *
 from step import *
@@ -49,6 +49,7 @@ class Pipeline(object):
     def __init__(self):
         self._timestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
         self._args = self.argparser.parse_args()
+            
         if self.protocol is None:
             step_list = self.steps
         elif self.args.help:
@@ -90,6 +91,7 @@ class Pipeline(object):
 
         # Normal pipeline execution
         if self.args.config:
+            print dir()
             config.parse_files(self.args.config)
         else:
             self.argparser.error("argument -c/--config is required!")
@@ -139,6 +141,13 @@ class Pipeline(object):
             self._force_jobs = True
             self.create_jobs()
             self.clean_jobs()
+        elif self.args.sanity_check:
+            try:
+                self._force_jobs = self.args.force
+                self.create_jobs()
+                self.submit_jobs()
+            except Error as e:
+                print e
         else:
             self._force_jobs = self.args.force
             self.create_jobs()
@@ -178,6 +187,7 @@ class Pipeline(object):
             self._argparser.add_argument("--report", help="create 'pandoc' command to merge all job markdown report files in the given step range into HTML, if they exist; if --report is set, --job-scheduler, --force, --clean options and job up-to-date status are ignored (default: false)", action="store_true")
             self._argparser.add_argument("--clean", help="create 'rm' commands for all job removable files in the given step range, if they exist; if --clean is set, --job-scheduler, --force options and job up-to-date status are ignored (default: false)", action="store_true")
             self._argparser.add_argument("-l", "--log", help="log level (default: info)", choices=["debug", "info", "warning", "error", "critical"], default="info")
+            self._argparser.add_argument("--sanity-check", help="run the pipeline in `sanity check mode` to verify that all the input files needed for the pipeline to run are available on the system (default: false)", action="store_true")
 
         return self._argparser
 
@@ -268,7 +278,7 @@ class Pipeline(object):
             log.debug("selected_input_files: " + ", ".join(input_files) + "\n")
             return selected_input_files
         else:
-            raise Exception("Error: missing candidate input files: " + str(candidate_input_files) +
+            raise Error("Error: missing candidate input files: " + str(candidate_input_files) +
                 " neither found in dependencies nor on file system!")
 
     def dependency_jobs(self, current_job):
@@ -291,7 +301,7 @@ class Pipeline(object):
             if not os.path.exists(current_job.abspath(remaining_input_file)):
                 missing_input_files.add(remaining_input_file)
         if missing_input_files:
-            raise Exception("Error: missing input files for job " + current_job.name + ": " +
+            raise Error("Error: missing input files for job " + current_job.name + ": " +
                 ", ".join(missing_input_files) + " neither found in dependencies nor on file system!")
 
         return dependency_jobs
@@ -303,7 +313,7 @@ class Pipeline(object):
             for job in jobs:
                 # Job name is mandatory to create job .done file name
                 if not job.name:
-                    raise Exception("Error: job \"" + job.command + "\" has no name!")
+                    raise Error("Error: job \"" + job.command + "\" has no name!")
 
                 log.debug("Job name: " + job.name)
                 log.debug("Job input files:\n  " + "\n  ".join(job.input_files))
@@ -340,7 +350,7 @@ class Pipeline(object):
         portal_output_dir = config.param('DEFAULT', 'portal_output_dir', required=False)
         if self.args.json and portal_output_dir != "":
             if not os.path.isdir(os.path.expandvars(portal_output_dir)):
-                raise Exception("Directory path \"" + portal_output_dir + "\" does not exist or is not a valid directory!")
+                raise Error("Directory path \"" + portal_output_dir + "\" does not exist or is not a valid directory!")
             copy_commands = []
             for i, sample in enumerate(self.sample_list):
                 input_file = self.sample_paths[i]
