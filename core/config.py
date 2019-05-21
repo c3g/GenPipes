@@ -32,6 +32,13 @@ log = logging.getLogger(__name__)
 
 class Config(ConfigParser.SafeConfigParser):
 
+    # True only for continuous integration testing
+    continuous_integration_testing = 'GENPIPES_CIT' in os.environ
+    # All the option that will be forces to default value if
+    # continuous_integration_testing = True
+    cluster_walltime = "cluster_walltime"
+    cit_options = [cluster_walltime]
+
     def __init__(self):
         ConfigParser.SafeConfigParser.__init__(self)
 
@@ -70,7 +77,7 @@ class Config(ConfigParser.SafeConfigParser):
             module_show_output = subprocess.check_output(["bash", "-c", cmd_query_module + module], stderr=subprocess.STDOUT)
             ## "Error" result for module show while "error" for module spider. seems to be handeled well by re.IGNORECASE
             if re.search("Error", module_show_output, re.IGNORECASE):
-                raise Exception("Error in config file(s) with " + module + ":\n" + module_show_output)
+                raise Error("Error in config file(s) with " + module + ":\n" + module_show_output)
             else:
                 log.info("Module " + module + " OK")
         log.info("Module check finished\n")
@@ -80,6 +87,20 @@ class Config(ConfigParser.SafeConfigParser):
     def param(self, section, option, required=True, type='string'):
         # Store original section for future error message, in case 'DEFAULT' section is used eventually
         original_section = section
+
+        # Keep that if block first, it is only evaluated in testing mode
+        if self.continuous_integration_testing and option in self.cit_options:
+            # hack because this class becomes a global
+            from utils import utils
+            if option == self.cluster_walltime and self.has_section(section) \
+                    and self.has_option(section, option):
+                from_section = self.get(section, option)
+                from_default = self.get('DEFAULT', option)
+                if (utils.slurm_time_to_datetime(from_default)
+                        <= utils.slurm_time_to_datetime(from_section)):
+                    return from_default
+                else:
+                    return from_section
 
         if not self.has_section(section):
             section = 'DEFAULT'
@@ -93,7 +114,7 @@ class Config(ConfigParser.SafeConfigParser):
                     if value > 0:
                         return value
                     else:
-                        raise Exception("Integer \"" + str(value) + "\" is not > 0!")
+                        raise Error("Integer \"" + str(value) + "\" is not > 0!")
                 elif type == 'float':
                     return self.getfloat(section, option)
                 elif type == 'boolean':
@@ -103,32 +124,35 @@ class Config(ConfigParser.SafeConfigParser):
                     if os.path.isfile(value):
                         return value
                     else:
-                        raise Exception("File path \"" + value + "\" does not exist or is not a valid regular file!")
+                        raise Error("File path \"" + value + "\" does not exist or is not a valid regular file!")
                 elif type == 'dirpath':
                     value = os.path.expandvars(self.get(section, option))
                     if os.path.isdir(value):
                         return value
                     else:
-                        raise Exception("Directory path \"" + value + "\" does not exist or is not a valid directory!")
+                        raise Error("Directory path \"" + value + "\" does not exist or is not a valid directory!")
                 elif type == 'prefixpath':
                     value = os.path.expandvars(self.get(section, option))
                     if glob.glob(value + "*"):
                         return value
                     else:
-                        raise Exception("Prefix path \"" + value + "\" does not match any file!")
+                        raise Error("Prefix path \"" + value + "\" does not match any file!")
                 elif type == 'list':
                     # Remove empty strings from list
                     return [x for x in self.get(section, option).split(",") if x]
                 elif type == 'string':
                     return self.get(section, option)
                 else:
-                    raise Exception("Unknown parameter type '" + type + "'")
+                    raise Error("Unknown parameter type '" + type + "'")
             except Exception as e:
-                raise Exception("Error: parameter \"[" + section + "] " + option + "\" value \"" + self.get(section, option) + "\" is invalid!\n" + e.message)
+                raise Error("Error: parameter \"[" + section + "] " + option + "\" value \"" + self.get(section, option) + "\" is invalid!\n" + e.message)
         elif required:
-            raise Exception("Error: parameter \"[" + original_section + "] " + option + "\" is not defined in config file(s)!")
+            raise Error("Error: parameter \"[" + original_section + "] " + option + "\" is not defined in config file(s)!")
         else:
             return ""
+
+class Error(Exception):
+    pass
 
 # Global config object used throughout the whole pipeline
 config = Config()
