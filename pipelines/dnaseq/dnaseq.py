@@ -1202,7 +1202,8 @@ class DnaSeqRaw(common.Illumina):
             Job(command="mkdir -p " + output_directory, samples=self.samples),
             gatk4.variant_recalibrator([os.path.join(output_directory, "allSamples.hc.vcf.gz")],
                                        recal_snps_other_options, variant_recal_snps_prefix + ".recal",
-                                       variant_recal_snps_prefix + ".tranches", variant_recal_snps_prefix + ".R"),
+                                       variant_recal_snps_prefix + ".tranches", variant_recal_snps_prefix + ".R",
+                                       small_sample_check=True),
             gatk4.variant_recalibrator([os.path.join(output_directory, "allSamples.hc.vcf.gz")],
                                        recal_indels_other_options, variant_recal_indels_prefix + ".recal",
                                        variant_recal_indels_prefix + ".tranches", variant_recal_indels_prefix + ".R",
@@ -1885,7 +1886,8 @@ class DnaSeq(DnaSeqRaw):
     def __init__(self, protocol=None):
         self._protocol = protocol
         # Add pipeline specific arguments
-        self.argparser.add_argument("-t", "--type", help="DNAseq analysis type", choices=["mugqic", "mpileup", "light"], default="mugqic")
+        self.argparser.add_argument("-t", "--type", help="DNAseq analysis type", choices=["mugqic", "mpileup", "light"],
+                                    default="mugqic")
         super(DnaSeq, self).__init__(protocol)
 
 if __name__ == '__main__':
