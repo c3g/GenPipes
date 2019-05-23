@@ -36,10 +36,10 @@ import textwrap
 from uuid import uuid4
 
 # MUGQIC Modules
-from config import *
-from job import *
-from scheduler import *
-from step import *
+from config import config, Error, _raise
+from job import Job
+from scheduler import create_scheduler
+from step import Step
 
 from bfx import jsonator
 
@@ -91,7 +91,7 @@ class Pipeline(object):
 
         # Normal pipeline execution
         if self.args.config:
-            print dir()
+            if self.args.sanity_check : config.sanity = True
             config.parse_files(self.args.config)
         else:
             self.argparser.error("argument -c/--config is required!")
@@ -145,10 +145,10 @@ class Pipeline(object):
             self.create_jobs()
             self.clean_jobs()
         elif self.args.sanity_check:
+            config.sanity = True
             try:
                 self._force_jobs = self.args.force
                 self.create_jobs()
-                self.submit_jobs()
             except Error as e:
                 print e
         else:
@@ -254,7 +254,7 @@ class Pipeline(object):
     # Given a list of lists of input files, return the first valid list of input files which can be found either in previous jobs output files or on file system.
     # Thus, a job with several candidate lists of input files can find out the first valid one.
     def select_input_files(self, candidate_input_files):
-        log.debug("candidate_input_files: \n" + str(candidate_input_files))
+        if not self.args.sanity_check : log.debug("candidate_input_files: \n" + str(candidate_input_files))
 
         selected_input_files = []
 
@@ -278,11 +278,11 @@ class Pipeline(object):
                     log.debug(e.message)
 
         if selected_input_files:
-            log.debug("selected_input_files: " + ", ".join(input_files) + "\n")
+            if not self.args.sanity_check : log.debug("selected_input_files: " + ", ".join(input_files) + "\n")
             return selected_input_files
         else:
-            raise Error("Error: missing candidate input files: " + str(candidate_input_files) +
-                " neither found in dependencies nor on file system!")
+            _raise(Error("Error: missing candidate input files: " + str(candidate_input_files) +
+                " neither found in dependencies nor on file system!"))
 
     def dependency_jobs(self, current_job):
         dependency_jobs = []
@@ -304,23 +304,23 @@ class Pipeline(object):
             if not os.path.exists(current_job.abspath(remaining_input_file)):
                 missing_input_files.add(remaining_input_file)
         if missing_input_files:
-            raise Error("Error: missing input files for job " + current_job.name + ": " +
-                ", ".join(missing_input_files) + " neither found in dependencies nor on file system!")
+            _raise(Error("Error: missing input files for job " + current_job.name + ": " +
+                ", ".join(missing_input_files) + " neither found in dependencies nor on file system!"))
 
         return dependency_jobs
 
     def create_jobs(self):
         for step in self.step_range:
-            log.info("Create jobs for step " + step.name + "...")
+            if not self.args.sanity_check : log.info("Create jobs for step " + step.name + "...")
             jobs = step.create_jobs()
             for job in jobs:
                 # Job name is mandatory to create job .done file name
                 if not job.name:
-                    raise Error("Error: job \"" + job.command + "\" has no name!")
+                    _raise(Error("Error: job \"" + job.command + "\" has no name!"))
 
-                log.debug("Job name: " + job.name)
-                log.debug("Job input files:\n  " + "\n  ".join(job.input_files))
-                log.debug("Job output files:\n  " + "\n  ".join(job.output_files) + "\n")
+                if not self.args.sanity_check : log.debug("Job name: " + job.name)
+                if not self.args.sanity_check : log.debug("Job input files:\n  " + "\n  ".join(job.input_files))
+                if not self.args.sanity_check : log.debug("Job output files:\n  " + "\n  ".join(job.output_files) + "\n")
 
                 # Job .done file name contains the command checksum.
                 # Thus, if the command is modified, the job is not up-to-date anymore.
@@ -329,7 +329,7 @@ class Pipeline(object):
                 job.dependency_jobs = self.dependency_jobs(job)
 
                 if not self.force_jobs and job.is_up2date():
-                    log.info("Job " + job.name + " up to date... skipping")
+                    if not self.args.sanity_check : log.info("Job " + job.name + " up to date... skipping")
                 else:
                     step.add_job(job)
                     if job.samples:
@@ -337,14 +337,14 @@ class Pipeline(object):
                             if sample not in self.sample_list:
                                 self.sample_list.append(sample)
 
-            log.info("Step " + step.name + ": " + str(len(step.jobs)) + " job" + ("s" if len(step.jobs) > 1 else "") + " created" + ("" if step.jobs else "... skipping") + "\n")
+            if not self.args.sanity_check : log.info("Step " + step.name + ": " + str(len(step.jobs)) + " job" + ("s" if len(step.jobs) > 1 else "") + " created" + ("" if step.jobs else "... skipping") + "\n")
 
         # Now create the json dumps for all the samples if not already done
         if self.args.json:
             for sample in self.sample_list:
                 self.sample_paths.append(jsonator.create(self, sample))
 
-        log.info("TOTAL: " + str(len(self.jobs)) + " job" + ("s" if len(self.jobs) > 1 else "") + " created" + ("" if self.jobs else "... skipping") + "\n")
+        if not self.args.sanity_check : log.info("TOTAL: " + str(len(self.jobs)) + " job" + ("s" if len(self.jobs) > 1 else "") + " created" + ("" if self.jobs else "... skipping") + "\n")
 
     def submit_jobs(self):
         self.scheduler.submit(self)
