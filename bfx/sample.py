@@ -19,7 +19,11 @@
 # along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
+# Python Standard Modules
 import re
+
+# MUGQIC Modules
+from core.config import _raise, Error
 
 class Sample(object):
 
@@ -27,8 +31,8 @@ class Sample(object):
         if re.search("^\w[\w.-]*$", name):
             self._name = name
         else:
-            raise Exception("Error: sample name \"" + name +
-                "\" is invalid (should match [a-zA-Z0-9_][a-zA-Z0-9_.-]*)!")
+            _raise(Error("Sample Error: sample name \"" + name +
+                "\" is invalid (should match [a-zA-Z0-9_][a-zA-Z0-9_.-]*)!"))
 
         self._readsets = []
 
@@ -55,8 +59,8 @@ class Sample(object):
 
     def add_readset(self, readset):
         if self.readsets_by_name(readset.name):
-            raise Exception("Error: readset name \"" + readset.name +
-                "\" already exists for sample \"" + self.name + "\"!")
+            _raise(Error("Sample Error: readset name \"" + readset.name +
+                "\" already exists for sample \"" + self.name + "\"!"))
         else:
             self.readsets.append(readset)
             readset._sample = self
