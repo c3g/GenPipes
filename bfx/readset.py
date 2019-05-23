@@ -28,8 +28,8 @@ import re
 import ConfigParser
 
 # MUGQIC Modules
-from run_processing_aligner import *
-from sample import *
+import run_processing_aligner
+from sample import Sample
 
 log = logging.getLogger(__name__)
 
@@ -327,9 +327,9 @@ def parse_illumina_raw_readset_files(output_dir, run_type, nanuq_readset_file, c
             current_genome_folder = genome_root + os.sep + folder_name
 
             if readset.is_rna:
-                readset._aligner = StarRunProcessingAligner(output_dir, current_genome_folder, nb_cycles)
+                readset._aligner = run_processing_aligner.StarRunProcessingAligner(output_dir, current_genome_folder, nb_cycles)
             else:
-                readset._aligner = BwaRunProcessingAligner(output_dir, current_genome_folder)
+                readset._aligner = run_processing_aligner.BwaRunProcessingAligner(output_dir, current_genome_folder)
 
             aligner_reference_index = readset.aligner.get_reference_index()
             annotation_files = readset.aligner.get_annotation_files()
