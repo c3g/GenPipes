@@ -2824,6 +2824,7 @@ END`""".format(
                 pipe_jobs([
                     svtyper.genotyper(inputTumor, inputNormal,
                                   os.path.join(pair_directory, tumor_pair.name + ".wham.sorted.vcf"), None),
+                    Job([None], [None], command=" sed -e 's#\"\"#\"#g' " ),
                     htslib.bgzip_tabix(None, genotyped_vcf),
                 ]),
                 #pipe_jobs([

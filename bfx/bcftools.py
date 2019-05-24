@@ -71,7 +71,7 @@ def mpileup(inputs, output, options=None, regions=None, regionFile=None):
         inputs,
         [output],
         [
-            ['DEFAULT', 'module_bcftools']
+            ['samtools_paired', 'module_bcftools']
         ],
         command="""\
 bcftools \\
@@ -98,7 +98,7 @@ def call(inputs, output, options=None):
         inputs,
         [output],
         [
-            ['DEFAULT', 'module_bcftools']
+            ['samtools_paired', 'module_bcftools']
         ],
         command="""\
 bcftools \\
@@ -121,7 +121,7 @@ def index(inputs, options=None):
         [inputs],
         [output],
         [
-            ['DEFAULT', 'module_bcftools']
+            ['samtools_paired', 'module_bcftools']
         ],
         command="""\
 bcftools \\
