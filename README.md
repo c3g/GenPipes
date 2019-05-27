@@ -51,10 +51,6 @@ if [[ $HOST == abacus* || $DNSDOMAIN == ferrier.genome.mcgill.ca ]]; then
 
   export MUGQIC_INSTALL_HOME_DEV=/lb/project/mugqic/analyste_dev
 
-elif [[ $HOST == lg-* || $DNSDOMAIN == guillimin.clumeq.ca ]]; then
-
-  export MUGQIC_INSTALL_HOME_DEV=/genfs/gs/project/mugqic/analyste_dev/phase2
-
 elif [[ $HOST == ip* || $DNSDOMAIN == m  ]]; then
 
   export MUGQIC_INSTALL_HOME_DEV=/project/6007512/C3G/analyste_dev
