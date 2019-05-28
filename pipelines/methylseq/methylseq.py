@@ -41,6 +41,8 @@ from bfx import bismark
 from bfx import picard2 as picard
 from bfx import bedtools
 from bfx import samtools
+from bfx import sambamba
+from bfx import gatk4
 from bfx import gatk
 from bfx import igvtools
 from bfx import bissnp
@@ -49,11 +51,10 @@ from bfx import ucsc
 from bfx import fgbio
 
 from pipelines import common
-from pipelines.dnaseq import dnaseq
 
 log = logging.getLogger(__name__)
 
-class MethylSeq(dnaseq.DnaSeq):
+class MethylSeq(common.Illumina):
     """
     Methyl-Seq Pipeline
     ================
@@ -118,6 +119,11 @@ class MethylSeq(dnaseq.DnaSeq):
                 if readset.bam:
                     candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
+                # Defining the bismark output files (bismark sets the names of its output files from the basename of fastq1)
+                # Note : these files will then be renamed (using a "mv" command) to fit with the mugqic pipelines nomenclature (cf. no_readgroup_bam)
+                bismark_out_bam = os.path.join(alignment_directory, readset.name, re.sub(r'(\.fastq\.gz|\.fq\.gz|\.fastq|\.fq)$', "_bismark_bt2_pe.bam", os.path.basename(fastq1)))
+                report_suffix = "_bismark_bt2_PE_report.txt"
+                bismark_out_report =  os.path.join(alignment_directory, readset.name, re.sub(r'(\.fastq\.gz|\.fq\.gz|\.fastq|\.fq)$', report_suffix, os.path.basename(fastq1)))
             elif readset.run_type == "SINGLE_END":
                 candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
                 if readset.fastq1:
@@ -126,14 +132,14 @@ class MethylSeq(dnaseq.DnaSeq):
                     candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
                 [fastq1] = self.select_input_files(candidate_input_files)
                 fastq2 = None
+                # Defining the bismark output files (bismark sets the names of its output files from the basename of fastq1)
+                # Note : these files will then be renamed (using a "mv" command) to fit with the mugqic pipelines nomenclature (cf. no_readgroup_bam)
+                bismark_out_bam = os.path.join(alignment_directory, readset.name, re.sub(r'(\.fastq\.gz|\.fq\.gz|\.fastq|\.fq)$', "_bismark_bt2.bam", os.path.basename(fastq1)))
+                report_suffix = "_bismark_bt2_SE_report.txt"
+                bismark_out_report =  os.path.join(alignment_directory, readset.name, re.sub(r'(\.fastq\.gz|\.fq\.gz|\.fastq|\.fq)$', "_bismark_bt2_SE_report.txt", os.path.basename(fastq1)))
             else:
                 raise Exception("Error: run type \"" + readset.run_type +
                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
-
-            # Defining the bismark output files (bismark sets the names of its output files from the basename of fastq1)
-            # Note : these files will then be renamed (using a "mv" command) to fit with the mugqic pipelines nomenclature (cf. no_readgroup_bam)
-            bismark_out_bam = os.path.join(alignment_directory, readset.name, re.sub(r'(\.fastq\.gz|\.fq\.gz|\.fastq|\.fq)$', "_bismark_bt2_pe.bam", os.path.basename(fastq1)))
-            bismark_out_report =  os.path.join(alignment_directory, readset.name, re.sub(r'(\.fastq\.gz|\.fq\.gz|\.fastq|\.fq)$', "_bismark_bt2_PE_report.txt", os.path.basename(fastq1)))
 
             jobs.append(
                 concat_jobs([
@@ -145,7 +151,7 @@ class MethylSeq(dnaseq.DnaSeq):
                         [no_readgroup_bam, re.sub(".bam", "_bismark_bt2_PE_report.txt", no_readgroup_bam)],
                     ),
                     Job(command="mv " + bismark_out_bam + " " + no_readgroup_bam),
-                    Job(command="mv " + bismark_out_report + " " + re.sub(".bam", "_bismark_bt2_PE_report.txt", no_readgroup_bam)),
+                    Job(command="mv " + bismark_out_report + " " + re.sub(".bam", report_suffix, no_readgroup_bam)),
                 ], name="bismark_align." + readset.name)
             )
             jobs.append(
@@ -929,8 +935,8 @@ pandoc \\
             self.bis_snp,
             self.filter_snp_cpg,
             self.prepare_methylkit,         # step 15
-            self.methylkit_differential_analysis,
             self.cram_output
+            self.methylkit_differential_analysis
         ]
 
 if __name__ == '__main__': 
