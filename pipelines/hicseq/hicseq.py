@@ -799,7 +799,9 @@ class HicSeq(common.Illumina):
             self.identify_TADs_RobusTAD,
             self.identify_peaks,
             self.create_hic_file,
-            self.multiqc_report],
+            self.multiqc_report,
+            self.cram_output
+            ],
             [self.samtools_bam_sort,
             self.picard_sam_to_fastq,
             self.trimmomatic,
@@ -816,7 +818,9 @@ class HicSeq(common.Illumina):
             self.bait_intersect,
             self.capture_intersect,
             self.create_hic_file,
-            self.multiqc_report]
+            self.multiqc_report,
+            self.cram_output
+            ]
         ]
 
 if __name__ == '__main__':

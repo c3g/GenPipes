@@ -26,6 +26,9 @@ build() {
   export PYTHONPATH=${PYTHONPATH}:$INSTALL_DIR/$SOFTWARE_DIR/lib/python2.7/site-packages
   cd $INSTALL_DIR/$SOFTWARE_DIR
   python setup.py install --prefix $INSTALL_DIR/$SOFTWARE_DIR
+
+  # restting shebang so that MultiQC can be used with any version of Python
+  sed -i 's/^\#!.*/#!\/usr\/bin\/env python/' $INSTALL_DIR/$SOFTWARE_DIR/bin/*
 }
 
 

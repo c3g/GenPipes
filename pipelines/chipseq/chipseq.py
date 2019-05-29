@@ -922,7 +922,8 @@ done""".format(
             self.ihec_preprocess_files,
             self.run_spp,
             self.ihec_metrics,
-            self.multiqc_report
+            self.multiqc_report,
+            self.cram_output
         ]
 
 if __name__ == '__main__': 

@@ -1177,7 +1177,9 @@ done""".format(
             self.differential_expression,
             self.differential_expression_goseq,
             self.ihec_metrics,
-            self.verify_bam_id],
+            self.verify_bam_id,
+            self.cram_output
+            ],
             [self.picard_sam_to_fastq,
             self.trimmomatic,
             self.merge_trimmomatic_stats,
@@ -1197,6 +1199,7 @@ done""".format(
             self.stringtie_abund,
             self.ballgown,
             self.differential_expression,
+            self.cram_output
             ]
         ]
 

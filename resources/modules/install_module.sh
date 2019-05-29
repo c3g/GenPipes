@@ -53,7 +53,8 @@ store_archive() {
 create_c3g_wrappers() {
   for i in `find $INSTALL_DIR/$SOFTWARE_DIR/ -type f -executable -exec file {} \; | grep -v "statically linked" | grep ELF | cut -d":" -f1 | grep -vP "\.so(\.\d+)*$"`; do
     mv $i $i.raw;
-    echo "$INTERPRETER --library-path $LIBDIR $i.raw \${@}" > $i;
+    echo '#!/bin/sh' > $i
+    echo "$INTERPRETER --library-path $LIBDIR $i.raw \${@}" >> $i;
     chmod a+x $i
   done
 }
