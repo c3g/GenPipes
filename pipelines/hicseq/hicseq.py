@@ -34,10 +34,8 @@ import pysam
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # MUGQIC Modules
-from core.config import *
-from core.job import *
-from core.pipeline import *
-from bfx.design import *
+from core.config import config, Error, _raise
+from core.job import Job, concat_jobs, pipe_jobs
 from pipelines import common
 
 from bfx import picard
@@ -121,7 +119,7 @@ class HicSeq(common.Illumina):
         elif self.enzyme == "NcoI":
             restriction_site = "CCATGG"
         else:
-            raise Exception("Error: Selected Enzyme is not yet available for Hi-C analysis!")
+            _raise(Error("Error: Selected Enzyme is not yet available for Hi-C analysis!"))
         return restriction_site
 
     @property
@@ -148,8 +146,8 @@ class HicSeq(common.Illumina):
             trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
 
             if readset.run_type != "PAIRED_END":
-                raise Exception("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END for Hi-C analysis)!")
+                _raise(Error("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END for Hi-C analysis)!"))
 
             candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
             if readset.fastq1 and readset.fastq2:
@@ -183,8 +181,8 @@ class HicSeq(common.Illumina):
             trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
 
             if readset.run_type != "PAIRED_END":
-                raise Exception("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END for Hi-C analysis)!")
+                _raise(Error("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END for Hi-C analysis)!"))
 
             candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
             if readset.fastq1 and readset.fastq2:

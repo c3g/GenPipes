@@ -25,15 +25,14 @@ import math
 import os
 import re
 import sys
+import csv
 
 # Append mugqic_pipelines directory to Python library path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # MUGQIC Modules
-from core.config import *
-from core.job import *
-from core.pipeline import *
-from bfx.design import *
+from core.config import config, Error, _raise
+from core.job import Job, concat_jobs
 
 from bfx import gq_seq_utils
 from bfx import picard
@@ -113,7 +112,7 @@ class ChipSeq(dnaseq.DnaSeq):
                 elif contrast.name.split(",")[1] == 'N':
                     contrast.type = 'narrow'
             else:
-                raise Exception("Error: contrast name \"" + contrast.name + "\" is invalid (should be <contrast>,B for broad or <contrast>,N for narrow)!")
+                _raise(Error("Error: contrast name \"" + contrast.name + "\" is invalid (should be <contrast>,B for broad or <contrast>,N for narrow)!"))
 
         return contrasts
 
@@ -484,7 +483,7 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
                 ], name="macs2_callpeak_bigBed."+ contrast.real_name)
                 jobs.append(job)
             else:
-                log.warning("No treatment found for contrast " + contrast.name + "... skipping")
+                if not self.args.sanity_check : log.warning("No treatment found for contrast " + contrast.name + "... skipping")
 
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.macs2_callpeak.md")
         jobs.append(
@@ -565,7 +564,7 @@ perl -MReadMetrics -e 'ReadMetrics::parseHomerAnnotations(
                 jobs.append(job)
 
             else:
-                log.warning("No treatment found for contrast " + contrast.name + "... skipping")
+                if not self.args.sanity_check : log.warning("No treatment found for contrast " + contrast.name + "... skipping")
 
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.homer_annotate_peaks.md")
         jobs.append(
@@ -620,7 +619,7 @@ done""".format(
                 counter = counter +1
             else:
                 #log.warning("No treatment found for contrast " + contrast.name + "... skipping")
-                log.warning("Contrast " + contrast.name + " is broad; homer_find_motifs_genome is run on narrow peaks ... skipping")
+                if not self.args.sanity_check : log.warning("Contrast " + contrast.name + " is broad; homer_find_motifs_genome is run on narrow peaks ... skipping")
 
         if counter > 0:
             report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.homer_find_motifs_genome.md")
@@ -838,7 +837,7 @@ done""".format(
         for contrast in self.contrasts:
           if contrast.treatments:
               if len(contrast.controls) > 1 :
-                  raise Exception("Error: contrast name \"" + contrast.name + "\" has several input files, please use one input for pairing!")
+                  _raise(Error("Error: contrast name \"" + contrast.name + "\" has several input files, please use one input for pairing!"))
               elif len(contrast.controls) == 1:
                   input_file=contrast.controls[0].name
               elif len(contrast.controls) == 0:
@@ -849,11 +848,11 @@ done""".format(
                       if couples[sample.name][0] == input_file:
                           pass
                       else :
-                          raise Exception("Error: contrast name \"" + contrast.name + "\" has several input files, please use one input for pairing!")
+                          _raise(Error("Error: contrast name \"" + contrast.name + "\" has several input files, please use one input for pairing!"))
                       if couples[sample.name][1] == contrast.real_name and couples[sample.name][2] == contrast.type:
                           pass
                       else :
-                          raise Exception("Error: sample \"" + sample.name + "\" is involved in several different contrasts, please use one contrast per sample !") 
+                          _raise(Error("Error: sample \"" + sample.name + "\" is involved in several different contrasts, please use one contrast per sample !")) 
                   else :
                       couples[sample.name]=[input_file, contrast.real_name, contrast.type]
        

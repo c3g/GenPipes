@@ -30,12 +30,10 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # MUGQIC Modules
-from core.config import *
-from core.job import *
+from core.config import config, Error, _raise
+from core.job import Job, concat_jobs, pipe_jobs
 from pipelines import common
-from core.pipeline import *
-from bfx.readset import *
-from bfx.sequence_dictionary import *
+from bfx.sequence_dictionary import parse_sequence_dictionary_file, split_by_size
 
 from bfx import adapters
 from bfx import bvatools
@@ -166,8 +164,8 @@ class DnaSeqRaw(common.Illumina):
                         ], name="sym_link_fastq.single_end." + readset.name)
 
             else:
-                raise Exception("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+                _raise(Error("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
             jobs.append(sym_link_job)
 
@@ -204,8 +202,8 @@ class DnaSeqRaw(common.Illumina):
                 fastq2 = None
             
             else:
-                raise Exception("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+                _raise(Error("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
             jobs.append(concat_jobs([
                 Job(command="mkdir -p " + output_dir, removable_files=[output_dir], samples=[readset.sample]),
@@ -255,8 +253,8 @@ class DnaSeqRaw(common.Illumina):
                 fastq2 = None
             
             else:
-                raise Exception("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+                _raise(Error("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
             job = concat_jobs([
                 Job(command="mkdir -p " + os.path.dirname(readset_bam), samples=[readset.sample]),

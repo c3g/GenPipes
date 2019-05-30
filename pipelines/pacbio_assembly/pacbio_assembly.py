@@ -157,19 +157,19 @@ END
         jobs = []
 
         for sample in self.samples:
-            log.info("Sample: " + sample.name)
+            if not self.args.sanity_check : log.info("Sample: " + sample.name)
             sample_nb_base_pairs = sum([readset.nb_base_pairs for readset in sample.readsets])
-            log.info("nb_base_pairs: " + str(sample_nb_base_pairs))
+            if not self.args.sanity_check : log.info("nb_base_pairs: " + str(sample_nb_base_pairs))
             estimated_genome_size = sample.readsets[0].estimated_genome_size
-            log.info("estimated_genome_size: " + str(estimated_genome_size))
+            if not self.args.sanity_check : log.info("estimated_genome_size: " + str(estimated_genome_size))
             estimated_coverage = sample_nb_base_pairs / estimated_genome_size
-            log.info("estimated_coverage: " + str(estimated_coverage))
+            if not self.args.sanity_check : log.info("estimated_coverage: " + str(estimated_coverage))
 
             for coverage_cutoff in config.param('DEFAULT', 'coverage_cutoff', type='list'):
                 cutoff_x = coverage_cutoff + "X"
                 coverage_directory = os.path.join(sample.name, cutoff_x)
 
-                log.info("COVERAGE_CUTOFF: " + coverage_cutoff + "_X_coverage")
+                if not self.args.sanity_check : log.info("COVERAGE_CUTOFF: " + coverage_cutoff + "_X_coverage")
 
                 jobs.append(concat_jobs([
                     Job(command="mkdir -p " + os.path.join(coverage_directory, "preassembly"), samples=[sample]),
