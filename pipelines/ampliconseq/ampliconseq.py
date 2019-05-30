@@ -2046,7 +2046,7 @@ cat {report_file_alpha} {report_file_beta} > {report_file}""".format(
         """
 
         try:
-            designFile=self.args.design.name
+            designFile = os.path.relpath(self.args.design.name, self.args.output_dir)
         except:
             self.argparser.error("argument -d/--design is required!")
 
@@ -2079,13 +2079,13 @@ cat {report_file_alpha} {report_file_beta} > {report_file}""".format(
                     Job(
                         [trimmedReadsR1],
                         [left_or_single_reads],
-                        command="ln -nsf " + os.path.abspath(trimmedReadsR1) + " " + left_or_single_reads,
+                        command="ln -nsf " + os.path.abspath(os.path.join(self.args.output_dir, trimmedReadsR1)) + " " + left_or_single_reads,
                         samples=[readset.sample]
                     ),
                     Job(
                         [trimmedReadsR2],
                         [right_reads],
-                        command="ln -nsf " + os.path.abspath(trimmedReadsR2) + " " + right_reads,
+                        command="ln -nsf " + os.path.abspath(os.path.join(self.args.output_dir, trimmedReadsR2)) + " " + right_reads,
                         samples=[readset.sample]
                     )
                 ]))
