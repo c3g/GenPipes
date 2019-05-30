@@ -26,6 +26,7 @@ import os
 import re
 
 # MUGQIC Modules
+from core.config import Error, _raise
 from sample import *
 
 log = logging.getLogger(__name__)
@@ -79,7 +80,7 @@ def parse_new_design_file(design_file, samples):
             # There should be only one matching sample
             sample = matching_samples[0]
         else:
-            raise Exception("Error: sample " + sample_name + " in design file " + design_file + " not found in pipeline samples!")
+            _raise(Error("Error: sample " + sample_name + " in design file " + design_file + " not found in pipeline samples!"))
 
         # Skip first column which is Sample
         for contrast in contrasts:
@@ -91,7 +92,7 @@ def parse_new_design_file(design_file, samples):
                 elif sample_contrast_type == "treatment":
                     contrast.treatments.append(sample)
                 else:
-                    raise Exception("Error: invalid value for sample " + sample_name + " and contrast " + contrast.name + " in design file " + design_file + " (should be 'control', 'treatment' or '')!")
+                    _raise(Error("Error: invalid value for sample " + sample_name + " and contrast " + contrast.name + " in design file " + design_file + " (should be 'control', 'treatment' or '')!"))
 
     for contrast in contrasts:
         log.info("Contrast " + contrast.name + " (controls: " + str(len(contrast.controls)) + ", treatments: " + str(len(contrast.treatments)) + ") created")
@@ -114,7 +115,7 @@ def parse_design_file(design_file, samples):
             # There should be only one matching sample
             sample = matching_samples[0]
         else:
-            raise Exception("Error: sample " + sample_name + " in design file " + design_file + " not found in pipeline samples!")
+            _raise(Error("Error: sample " + sample_name + " in design file " + design_file + " not found in pipeline samples!"))
 
         for contrast in contrasts:
             sample_contrast_type = line[contrast.name]
@@ -126,7 +127,7 @@ def parse_design_file(design_file, samples):
             elif sample_contrast_type == "2":
                 contrast.treatments.append(sample)
             else:
-                raise Exception("Error: invalid value for sample " + sample_name + " and contrast " + contrast.name + " in design file " + design_file + " (should be '1' for control, '2' for treatment, '0' or '' to be ignored)!")
+                _raise(Error("Error: invalid value for sample " + sample_name + " and contrast " + contrast.name + " in design file " + design_file + " (should be '1' for control, '2' for treatment, '0' or '' to be ignored)!"))
 
     for contrast in contrasts:
         log.info("Contrast " + contrast.name + " (controls: " + str(len(contrast.controls)) + ", treatments: " + str(len(contrast.treatments)) + ") created")
