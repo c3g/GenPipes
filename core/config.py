@@ -156,14 +156,13 @@ class Config(ConfigParser.SafeConfigParser):
 class Error(Exception):
     pass
 
-
-def _raise(value):
-    if Config.sanity:
-        log.error(value)
+def _raise(object):
+    if config.sanity:
+        if re.search("Error", str(type(object))):
+            object.message = "\t" + object.message
+        log.error(object.message)
     else:
-        raise value
-    
-
+        raise object
 
 # Global config object used throughout the whole pipeline
 config = Config()

@@ -64,7 +64,15 @@ class Pipeline(object):
                 if self.protocol[i] == self.args.type:
                     pos = i
             step_list = self.steps[pos]
-        logging.basicConfig(level=getattr(logging, self.args.log.upper()))
+
+        if self.args.sanity_check:
+            logging.basicConfig(stream=sys.stdout, level=logging.INFO, format=' %(levelname)s - %(message)s')
+#                level    = logging.INFO,
+#                format   = '[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s',
+#                handlers = [logging.FileHandler(sys.stdout)]
+#            )
+        else:
+            logging.basicConfig(level=getattr(logging, self.args.log.upper()))
 
         if self.args.help:
             print textwrap.dedent("""\
@@ -150,7 +158,13 @@ class Pipeline(object):
                 self._force_jobs = self.args.force
                 self.create_jobs()
             except Error as e:
-                print e
+                log.info(e)
+                print("""\
+SANITY CHECK report :
+{error}
+                """.format(
+                    error=e
+                    ))
         else:
             self._force_jobs = self.args.force
             self.create_jobs()
@@ -304,14 +318,17 @@ class Pipeline(object):
             if not os.path.exists(current_job.abspath(remaining_input_file)):
                 missing_input_files.add(remaining_input_file)
         if missing_input_files:
-            _raise(Error("Error: missing input files for job " + current_job.name + ": " +
-                ", ".join(missing_input_files) + " neither found in dependencies nor on file system!"))
+            raise Exception("Warning: missing input files for job " + current_job.name + ": " +
+                ", ".join(missing_input_files) + " neither found in dependencies nor on file system!")
 
         return dependency_jobs
 
     def create_jobs(self):
         for step in self.step_range:
-            if not self.args.sanity_check : log.info("Create jobs for step " + step.name + "...")
+            if self.args.sanity_check :
+                log.info("Checking jobs for step " + step.name + "...")
+            else :
+                log.info("Create jobs for step " + step.name + "...")
             jobs = step.create_jobs()
             for job in jobs:
                 # Job name is mandatory to create job .done file name
@@ -337,7 +354,8 @@ class Pipeline(object):
                             if sample not in self.sample_list:
                                 self.sample_list.append(sample)
 
-            if not self.args.sanity_check : log.info("Step " + step.name + ": " + str(len(step.jobs)) + " job" + ("s" if len(step.jobs) > 1 else "") + " created" + ("" if step.jobs else "... skipping") + "\n")
+            if not self.args.sanity_check :
+                log.info("Step " + step.name + ": " + str(len(step.jobs)) + " job" + ("s" if len(step.jobs) > 1 else "") + " created" + ("" if step.jobs else "... skipping") + "\n")
 
         # Now create the json dumps for all the samples if not already done
         if self.args.json:
