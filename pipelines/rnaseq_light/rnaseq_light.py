@@ -30,19 +30,16 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # MUGQIC Modules
-from core.config import *
-from core.job import *
-from core.pipeline import *
-from bfx.design import *
-from bfx.readset import *
+from core.config import config, Error, _raise
+from core.job import Job, concat_jobs
+
 from bfx import gq_seq_utils
 from bfx import picard
 from bfx import rmarkdown
 from bfx import differential_expression
 from bfx import tools
-from pipelines import common
-import utils
 
+from pipelines import common
 from pipelines.rnaseq import rnaseq
 
 log = logging.getLogger(__name__)
@@ -103,8 +100,8 @@ class RnaSeqLight(rnaseq.RnaSeq):
                 job.samples = [readset.sample]
                 jobs.append(job)
             else:
-                raise Exception("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+                _raise(Error("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
         return jobs
 

@@ -31,13 +31,11 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # MUGQIC Modules
-from core.config import *
-from core.job import *
-from core.pipeline import *
-from bfx.readset import *
+from core.config import config, Error, _raise
+from core.job import Job, concat_jobs
+
 from bfx import differential_expression
 from bfx import gq_seq_utils
-from pipelines import common
 from bfx import rmarkdown
 from bfx import samtools
 from bfx import tools
@@ -45,6 +43,8 @@ from bfx import trinity
 from bfx import trinotate
 from bfx import blast
 from bfx import exonerate
+
+from pipelines import common
 from pipelines.rnaseq import rnaseq
 
 
@@ -132,8 +132,8 @@ class RnaSeqDeNovoAssembly(rnaseq.RnaSeq):
                 left_or_single_reads = [trim_file_prefix + "single.fastq.gz"]
                 right_reads = []
             else:
-                raise Exception("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+                _raise(Error("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
             job = trinity.insilico_read_normalization(
                 left_or_single_reads,
@@ -168,8 +168,8 @@ class RnaSeqDeNovoAssembly(rnaseq.RnaSeq):
             elif readset.run_type == "SINGLE_END":
                 left_or_single_reads.append(os.path.join(normalization_directory, readset.name, "single.norm.fq"))
             else:
-                raise Exception("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+                _raise(Error("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
         job = trinity.insilico_read_normalization(
             left_or_single_reads,
@@ -316,7 +316,7 @@ pandoc --to=markdown \\
         # (Removed blast on uniref_db since it's too long)
         for db in [swissprot_db]:
             if not glob.glob(db + ".*phr"):
-                raise Exception("Error: " + db + " BLAST db files do not exist!")
+                _raise(Error("Error: " + db + " BLAST db files do not exist!"))
 
             for i in range(num_fasta_chunks):
                 trinity_chunk = os.path.join(trinity_chunks_directory, "Trinity.fa_chunk_{:07d}".format(i))
@@ -538,8 +538,8 @@ pandoc --to=markdown \\
                 elif readset.run_type == "SINGLE_END":
                     left_or_single_reads.append(os.path.join(trim_directory, readset.name + ".trim.single.fastq.gz"))
                 else:
-                    raise Exception("Error: run type \"" + readset.run_type +
-                    "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+                    _raise(Error("Error: run type \"" + readset.run_type +
+                    "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
             job = trinity.align_and_estimate_abundance(
                 trinity_fasta=trinity_fasta,
