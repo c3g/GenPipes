@@ -25,6 +25,7 @@
 from core.config import *
 from core.job import *
 import picard
+import gatk4
 
 def build_bam_index(input, output):
 
@@ -292,6 +293,8 @@ def mark_duplicates(inputs, output, metrics_file, remove_duplicates="false"):
         inputs=[inputs]
     if config.param('picard_mark_duplicates', 'module_picard').split("/")[2] < "2" and config.param('picard_mark_duplicates', 'module_gatk').split("/")[2] < "4":
         return picard.mark_duplicates(inputs, output, metrics_file, remove_duplicates)
+    elif config.param('picard_mark_duplicates', 'module_gatk').split("/")[2] > "4":
+        return gatk4.mark_duplicates(inputs, output, metrics_file, remove_duplicates)
     else:
         return Job(
             inputs,

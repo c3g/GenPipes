@@ -1100,7 +1100,7 @@ END`""".format(
                 Job(command="mkdir -p " + strelka2_directory, removable_files=[strelka2_directory], samples=[tumor_pair.normal, tumor_pair.tumor]),
                 strelka2.somatic_config(input_normal[0], input_tumor[0], strelka2_directory, bed_file, mantaIndels),
                 strelka2.run(strelka2_directory, output_dep=output_dep),
-            ], name="strelka2_paired_somatic." + tumor_pair.name))
+            ], name="strelka2_paired_somatic.call." + tumor_pair.name))
             
             jobs.append(concat_jobs([
                 pipe_jobs([
@@ -1929,14 +1929,14 @@ END`""".format(
             for key,input in inputs.iteritems():
                 for sample in input:
                     jobs.append(concat_jobs([
-                        deliverables.sym_link_pair(sample + ".ensemble.somatic.vt.vcf.gz", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
-                        deliverables.sym_link_pair(sample + ".ensemble.somatic.vt.vcf.gz.tbi", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample + ".ensemble.somatic.vt.annot.vcf.gz", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample + ".ensemble.somatic.vt.annot.vcf.gz.tbi", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
                         deliverables.sym_link_pair(sample + ".ensemble.somatic.vt.annot.snpeff.vcf.gz", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
                         deliverables.sym_link_pair(sample + ".ensemble.somatic.vt.annot.snpeff.vcf.gz.tbi", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
                         #deliverables.sym_link_pair(sample + ".somatic.gemini.set_somatic.tsv", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
                         #deliverables.sym_link_pair(sample + ".somatic.gemini.actionable.tsv", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
-                        deliverables.sym_link_pair(sample + ".ensemble.germline.vt.vcf.gz", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
-                        deliverables.sym_link_pair(sample + ".ensemble.germline.vt.vcf.gz.tbi", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample + ".ensemble.germline.vt.annot.vcf.gz", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample + ".ensemble.germline.vt.annot.vcf.gz.tbi", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
                         deliverables.sym_link_pair(sample + ".ensemble.germline.vt.annot.snpeff.vcf.gz", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
                         deliverables.sym_link_pair(sample + ".ensemble.germline.vt.annot.snpeff.vcf.gz.tbi", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
                     ], name="sym_link_ensemble." + tumor_pair.name + "." + key))

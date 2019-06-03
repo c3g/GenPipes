@@ -104,88 +104,64 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   --reference_sequence {reference_sequence} \\
   --input_file {input} \\
   --out {output}{intervals}{exclude_intervals}""".format(
-                tmp_dir=config.param('gatk_split_N_trim', 'tmp_dir'),
-                java_other_options=config.param('gatk_split_N_trim', 'java_other_options'),
-                ram=config.param('gatk_split_N_trim', 'ram'),
-                other_options=config.param('gatk_split_N_trim', 'other_options', required=False),
-                reference_sequence=config.param('gatk_split_N_trim', 'reference', type='filepath'),
-                input=input,
-                output=output,
-                intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
-                interval_list=" \\\n --interval-padding 100 --intervals " + interval_list if interval_list else "",
-                exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals)
-        ))
+			tmp_dir=config.param('gatk_split_N_trim', 'tmp_dir'),
+			java_other_options=config.param('gatk_split_N_trim', 'java_other_options'),
+			ram=config.param('gatk_split_N_trim', 'ram'),
+			other_options=config.param('gatk_split_N_trim', 'other_options', required=False),
+			reference_sequence=config.param('gatk_split_N_trim', 'reference', type='filepath'),
+			input=input,
+			output=output,
+			intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
+			interval_list=" \\\n --interval-padding 100 --intervals " + interval_list if interval_list else "",
+			exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals)
+		)
+	)
 
-def mark_duplicates(
-    inputs,
-    output,
-    metrics_file,
-    remove_duplicates="false"
-    ):
-
+def mark_duplicates(inputs, output, metrics_file, remove_duplicates="false"):
     if not isinstance(inputs, list):
-        inputs=[inputs]
- 
-    return Job(
-        inputs,
-        [
-            output,
-            re.sub("\.([sb])am$", ".\\1ai", output),
-            metrics_file
-        ],
-        [
-            ['gatk_mark_duplicates', 'module_java'],
-            ['gatk_mark_duplicates', 'module_gatk']
-        ],
-        command="""\
-gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
-  MarkDuplicatesGATK \\
-  --REMOVE_DUPLICATES={remove_duplicates} --VALIDATION_STRINGENCY SILENT --CREATE_INDEX true \\
-  --TMP_DIR {tmp_dir} \\
-  {inputs} \\
-  --metrics-file {metrics_file} \\
-  --output {output} \\
-  --MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
-            tmp_dir=config.param('gatk_mark_duplicates', 'tmp_dir'),
-            java_other_options=config.param('gatk_mark_duplicates', 'java_other_options'),
-            ram=config.param('gatk_mark_duplicates', 'ram'),
-            remove_duplicates=remove_duplicates,
-            inputs=" \\\n  ".join("--input " + input for input in inputs),
-            output=output,
-            metrics_file=metrics_file,
-            max_records_in_ram=config.param('gatk_mark_duplicates', 'max_records_in_ram', type='int')
-        ),
-        removable_files=[
-            output,
-            re.sub("\.([sb])am$", ".\\1ai", output),
-            output + ".md5"
-        ]
-    )
+        inputs = [inputs]
 
-def base_recalibrator(
-    input,
-    output,
-    intervals=None
-    ):
-    
-    if config.param('gatk_base_recalibrator', 'module_gatk').split("/")[2] < "4":
-        return gatk.base_recalibrator(
-            input,
-            output,
-            intervals
-        )
+    return Job(
+		inputs,
+		[output, re.sub("\.([sb])am$", ".\\1ai", output), metrics_file],
+		[
+			['gatk_mark_duplicates', 'module_java'],
+			['gatk_mark_duplicates', 'module_gatk']
+		],
+		command="""\
+gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
+ MarkDuplicatesSpark \\
+ --remove-all-duplicates={remove_duplicates} --read-validation-stringency SILENT --create-output-bam-index true \\
+ --tmp-dir {tmp_dir} \\
+ {inputs} \\
+ --metrics-file {metrics_file} \\
+ --spark-master local[{threads}] \\
+ --output {output}""".format(
+			tmp_dir=config.param('gatk_mark_duplicates', 'tmp_dir'),
+			java_other_options=config.param('gatk_mark_duplicates', 'java_other_options'),
+			ram=config.param('gatk_mark_duplicates', 'ram'),
+			remove_duplicates=remove_duplicates,
+			inputs=" \\\n  ".join("--input " + input for input in inputs),
+			threads=config.param('gatk_mark_duplicates', 'threads', type='int'),
+			output=output,
+			metrics_file=metrics_file,
+			max_records_in_ram=config.param('gatk_mark_duplicates', 'max_records_in_ram', type='int')
+		),
+		removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output), output + ".md5"]
+	)
+
+def base_recalibrator(input, output, intervals=None):
+    if config.param('base_recalibrator', 'module_gatk').split("/")[2] < "4":
+        return gatk.base_recalibrator(input, output, intervals)
     else:
         return Job(
-            [
-                input,
-                intervals
-            ],
-            [output],
-            [
-                ['gatk_base_recalibrator', 'module_java'],
-                ['gatk_base_recalibrator', 'module_gatk']
-            ],
-            command="""\
+		[input, intervals],
+		[output],
+		[
+			['gatk_base_recalibrator', 'module_java'],
+			['gatk_base_recalibrator', 'module_gatk']
+		],
+		command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
   BaseRecalibratorSpark {options} \\
   --input {input} \\
@@ -236,8 +212,7 @@ def apply_bqsr(
             ],
             command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
-  ApplyBQSRSpark {options} \\
-  --reference {reference_sequence} \\
+  ApplyBQSRSpark {options} --create-output-bam-index true \\
   --input {input} \\
   --bqsr-recal-file {bqsr_file} \\
   --spark-master local[{threads}] \\
@@ -401,49 +376,41 @@ def haplotype_caller(
             ],
             command="""\
 gatk --java-options "{java_other_options} -Xmx{ram}" \\
-  HaplotypeCaller {options} \\
+  HaplotypeCaller {options} --native-pair-hmm-threads {threads} \\
   --reference {reference_sequence} \\
   --input {input} \\
-  --output {output}{intervals}{exclude_intervals}""".format(
-                tmp_dir=config.param('gatk_haplotype_caller', 'tmp_dir'),
-                java_other_options=config.param('gatk_haplotype_caller', 'java_other_options'),
-                ram=config.param('gatk_haplotype_caller', 'ram'),
-                options=config.param('gatk_haplotype_caller', 'options'),
-                reference_sequence=config.param('gatk_haplotype_caller', 'genome_fasta', type='filepath'),
-                input=" \\\n  ".join(input for input in inputs),
-                output=output,
-                interval_list=" \\\n --interval-padding 100 --intervals " + interval_list if interval_list else "",
-                intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
-                exclude_intervals="".join(
-                    " \\\n  --exclude-intervals " + exclude_interval for exclude_interval in exclude_intervals)
-        ))
+  --output {output}{interval_list}{intervals}{exclude_intervals}""".format(
+				tmp_dir=config.param('gatk_haplotype_caller', 'tmp_dir'),
+				java_other_options=config.param('gatk_haplotype_caller', 'java_other_options'),
+				ram=config.param('gatk_haplotype_caller', 'ram'),
+				options=config.param('gatk_haplotype_caller', 'options'),
+				threads=config.param('gatk_haplotype_caller', 'threads'),
+				reference_sequence=config.param('gatk_haplotype_caller', 'genome_fasta', type='filepath'),
+				interval_list=" \\\n  --interval-padding 100 --intervals " + interval_list if interval_list else "",
+				input=" \\\n  ".join(input for input in inputs),
+				output=output,
+				intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
+				exclude_intervals="".join(
+					" \\\n  --exclude-intervals " + exclude_interval for exclude_interval in exclude_intervals)
+			)
+		)
 
-def combine_gvcf(
-    inputs,
-    output,
-    intervals=[],
-    exclude_intervals=[]
-    ):
-
+def combine_gvcf(inputs, output, intervals=[], exclude_intervals=[]):
     if not isinstance(inputs, list):
         inputs = [inputs]
-
-    if config.param('gatk_combine_gvcf', 'module_gatk').split("/")[2] < "4":
-        return gatk.combine_gvcf(
-            inputs,
-            output,
-            intervals,
-            exclude_intervals
-        )
+		
+    if config.param('gatk_haplotype_caller', 'module_gatk').split("/")[2] < "4":
+        return gatk.combine_gvcf(inputs, output, intervals, exclude_intervals)
     else:
+        
         return Job(
-            inputs,
-            [output],
-            [
-                ['gatk_combine_gvcf', 'module_java'],
-                ['gatk_combine_gvcf', 'module_gatk']
-            ],
-            command="""\
+			inputs,
+			[output],
+			[
+				['gatk_combine_gvcf', 'module_java'],
+				['gatk_combine_gvcf', 'module_gatk']
+			],
+		command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
   CombineGVCFs {other_options} \\
   --reference {reference_sequence} \\
@@ -772,7 +739,7 @@ def variant_filtration(
 #  Copy Number Variant Discovery
 
 def preprocessIntervals(input, output, intervals):
-	return Job(
+    return Job(
 		[input],
 		[output],
 		[

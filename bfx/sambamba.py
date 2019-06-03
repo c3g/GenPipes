@@ -25,21 +25,22 @@
 from core.config import *
 from core.job import *
 
-def sort(input_bam, output_bam, tmp_dir, options):
+def sort(input_bam, output_bam, tmp_dir, sort_by_name=False, other_options=config.param('sambamba_sort_sam', 'options', required=False)):
 
     return Job(
         [input_bam],
         [output_bam],
         [
-            #['sambamba_sort_sam', 'module_samtools'],
+            ['sambamba_sort_sam', 'module_samtools'],
             ['sambamba_sort_sam', 'module_sambamba']
         ],
         command="""\
-sambamba sort {options} \\
+sambamba sort {options} {sort_by_name} \\
   {input} \\
   --tmpdir {temp} \\
   {output}""".format(
-        options=options if options else "",
+        options=other_options,
+        sort_by_name="-n" if sort_by_name else "",
         input=input_bam,
         output="--out " + output_bam if output_bam else "",
         temp=tmp_dir
@@ -52,7 +53,7 @@ def index(input, output, other_options=config.param('sambamba_index', 'options',
         [input],
         [output],
         [
-            #['sambamba_index', 'module_samtools'],
+            ['sambamba_index', 'module_samtools'],
             ['sambamba_index', 'module_sambamba']
         ],
         command="""\

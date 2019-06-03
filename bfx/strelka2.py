@@ -24,9 +24,13 @@ from core.config import *
 from core.job import *
 
 def somatic_config(input_normal,input_tumor, output_dir, callRegions=None, mantaIndels=None):
+    output=[
+        os.path.join(output_dir, "results", "variants", "somatic.snvs.vcf.gz"),
+        os.path.join(output_dir, "results", "variants", "somatic.indels.vcf.gz")
+    ]
     return Job(
         [input_normal, input_tumor],
-        [output_dir],
+        output,
         [
             ['strelka2_paired_somatic', 'module_python'],
             ['strelka2_paired_somatic', 'module_strelka2']
