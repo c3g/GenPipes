@@ -51,10 +51,11 @@ from bfx import ucsc
 from bfx import fgbio
 
 from pipelines import common
+from pipelines.dnaseq import dnaseq
 
 log = logging.getLogger(__name__)
 
-class MethylSeq(common.Illumina):
+class MethylSeq(dnaseq.DnaSeq):
     """
     Methyl-Seq Pipeline
     ================
@@ -110,6 +111,7 @@ class MethylSeq(common.Illumina):
             alignment_directory = os.path.join("alignment", readset.sample.name)
             no_readgroup_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted_noRG.bam")
             output_bam = re.sub("_noRG.bam", ".bam", no_readgroup_bam)
+            report_suffix = "_bismark_bt2_report.txt"
 
             # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
             if readset.run_type == "PAIRED_END":
@@ -122,8 +124,7 @@ class MethylSeq(common.Illumina):
                 # Defining the bismark output files (bismark sets the names of its output files from the basename of fastq1)
                 # Note : these files will then be renamed (using a "mv" command) to fit with the mugqic pipelines nomenclature (cf. no_readgroup_bam)
                 bismark_out_bam = os.path.join(alignment_directory, readset.name, re.sub(r'(\.fastq\.gz|\.fq\.gz|\.fastq|\.fq)$', "_bismark_bt2_pe.bam", os.path.basename(fastq1)))
-                report_suffix = "_bismark_bt2_PE_report.txt"
-                bismark_out_report =  os.path.join(alignment_directory, readset.name, re.sub(r'(\.fastq\.gz|\.fq\.gz|\.fastq|\.fq)$', report_suffix, os.path.basename(fastq1)))
+                bismark_out_report = os.path.join(alignment_directory, readset.name, re.sub(r'(\.fastq\.gz|\.fq\.gz|\.fastq|\.fq)$', "_bismark_bt2_PE_report.txt", os.path.basename(fastq1)))
             elif readset.run_type == "SINGLE_END":
                 candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
                 if readset.fastq1:
@@ -135,8 +136,7 @@ class MethylSeq(common.Illumina):
                 # Defining the bismark output files (bismark sets the names of its output files from the basename of fastq1)
                 # Note : these files will then be renamed (using a "mv" command) to fit with the mugqic pipelines nomenclature (cf. no_readgroup_bam)
                 bismark_out_bam = os.path.join(alignment_directory, readset.name, re.sub(r'(\.fastq\.gz|\.fq\.gz|\.fastq|\.fq)$', "_bismark_bt2.bam", os.path.basename(fastq1)))
-                report_suffix = "_bismark_bt2_SE_report.txt"
-                bismark_out_report =  os.path.join(alignment_directory, readset.name, re.sub(r'(\.fastq\.gz|\.fq\.gz|\.fastq|\.fq)$', "_bismark_bt2_SE_report.txt", os.path.basename(fastq1)))
+                bismark_out_report = os.path.join(alignment_directory, readset.name, re.sub(r'(\.fastq\.gz|\.fq\.gz|\.fastq|\.fq)$', "_bismark_bt2_SE_report.txt", os.path.basename(fastq1)))
             else:
                 raise Exception("Error: run type \"" + readset.run_type +
                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
@@ -148,7 +148,7 @@ class MethylSeq(common.Illumina):
                         fastq1,
                         fastq2,
                         os.path.dirname(no_readgroup_bam),
-                        [no_readgroup_bam, re.sub(".bam", "_bismark_bt2_PE_report.txt", no_readgroup_bam)],
+                        [no_readgroup_bam, re.sub(".bam", report_suffix, no_readgroup_bam)],
                     ),
                     Job(command="mv " + bismark_out_bam + " " + no_readgroup_bam),
                     Job(command="mv " + bismark_out_report + " " + re.sub(".bam", report_suffix, no_readgroup_bam)),
@@ -738,7 +738,7 @@ cp \\
 
             # Bismark alignment files
             for readset in sample.readsets:
-                inputs.append(os.path.join("alignment", sample.name, readset.name, readset.name + ".sorted_noRG_bismark_bt2_PE_report.txt"))
+                inputs.append(os.path.join("alignment", sample.name, readset.name, readset.name + ".sorted_noRG_bismark_bt2_report.txt"))
 
             # CpG coverage files
             inputs.append(os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.median_CpG_coverage.txt"))
@@ -935,7 +935,7 @@ pandoc \\
             self.bis_snp,
             self.filter_snp_cpg,
             self.prepare_methylkit,         # step 15
-            self.cram_output
+            self.cram_output,
             self.methylkit_differential_analysis
         ]
 
