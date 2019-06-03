@@ -255,11 +255,14 @@ class DnaSeqHighCoverage(dnaseq.DnaSeq):
 
         jobs.append(concat_jobs([
             tools.preprocess_varscan( prefix + ".vcf.gz",  prefix + ".prep.vcf.gz" ), 
-            vt.decompose_and_normalize_mnps( prefix + ".prep.vcf.gz" , prefix + ".prep.vt.vcf.gz"),
+            pipe_jobs([
+                    vt.decompose_and_normalize_mnps(prefix + ".prep.vcf.gz", None),
+                    htslib.bgzip_tabix(None, prefix + ".prep.vt.vcf.gz"),
+            ]),
             Job(
                 [outputPreprocess],
                 [outputFix],
-                command="zcat " + outputPreprocess + " | grep -v 'ID=AD_O' | awk ' BEGIN {OFS=\"\\t\"; FS=\"\\t\"} {if (NF > 8) {for (i=9;i<=NF;i++) {x=split($i,na,\":\") ; if (x > 1) {tmp=na[1] ; for (j=2;j<x;j++){if (na[j] == \"AD_O\") {na[j]=\"AD\"} ; if (na[j] != \".\") {tmp=tmp\":\"na[j]}};$i=tmp}}};print $0} ' | bgzip -cf >  " + outputFix,
+                command="zless " + outputPreprocess + " | grep -v 'ID=AD_O' | awk ' BEGIN {OFS=\"\\t\"; FS=\"\\t\"} {if (NF > 8) {for (i=9;i<=NF;i++) {x=split($i,na,\":\") ; if (x > 1) {tmp=na[1] ; for (j=2;j<x;j++){if (na[j] == \"AD_O\") {na[j]=\"AD\"} ; if (na[j] != \".\") {tmp=tmp\":\"na[j]}};$i=tmp}}};print $0} ' | bgzip -cf >  " + outputFix,
                 samples=self.samples
             ),
             tools.preprocess_varscan( outputFix,  prefix + ".vt.vcf.gz" )
