@@ -67,10 +67,6 @@ class Pipeline(object):
 
         if self.args.sanity_check:
             logging.basicConfig(stream=sys.stdout, level=logging.INFO, format=' %(levelname)s - %(message)s')
-#                level    = logging.INFO,
-#                format   = '[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s',
-#                handlers = [logging.FileHandler(sys.stdout)]
-#            )
         else:
             logging.basicConfig(level=getattr(logging, self.args.log.upper()))
 
