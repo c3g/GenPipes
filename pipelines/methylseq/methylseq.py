@@ -31,7 +31,7 @@ import itertools
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # MUGQIC Modules
-from core.config import config, Error, _raise
+from core.config import config, _raise, SanitycheckError
 from core.job import Job, concat_jobs
 from bfx.readset import parse_illumina_readset_file
 
@@ -82,10 +82,10 @@ class MethylSeq(dnaseq.DnaSeq):
                 self._readsets = parse_illumina_readset_file(self.args.readsets.name)
                 for readset in self._readsets:
                     if readset._run == "":
-                        _raise(Error("Error: no run was provided for readset \"" + readset.name +
+                        _raise(SanitycheckError("Error: no run was provided for readset \"" + readset.name +
                             "\"... Run has to be provided for all the readsets in order to use this pipeline."))
                     if readset._lane == "":
-                        _raise(Error("Error: no lane provided for readset \"" + readset.name +
+                        _raise(SanitycheckError("Error: no lane provided for readset \"" + readset.name +
                             "\"... Lane has to be provided for all the readsets in order to use this pipeline."))
             else:
                 self.argparser.error("argument -r/--readsets is required!")
@@ -127,7 +127,7 @@ class MethylSeq(dnaseq.DnaSeq):
                 [fastq1] = self.select_input_files(candidate_input_files)
                 fastq2 = None
             else:
-                _raise(Error("Error: run type \"" + readset.run_type +
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
             # Defining the bismark output files (bismark sets the names of its output files from the basename of fastq1)

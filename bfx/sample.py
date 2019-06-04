@@ -23,7 +23,7 @@
 import re
 
 # MUGQIC Modules
-from core.config import _raise, Error
+from core.config import _raise, SanitycheckError
 
 class Sample(object):
 
@@ -31,7 +31,7 @@ class Sample(object):
         if re.search("^\w[\w.-]*$", name):
             self._name = name
         else:
-            _raise(Error("Sample Error: sample name \"" + name +
+            _raise(SanitycheckError("Sample Error: sample name \"" + name +
                 "\" is invalid (should match [a-zA-Z0-9_][a-zA-Z0-9_.-]*)!"))
 
         self._readsets = []
@@ -59,7 +59,7 @@ class Sample(object):
 
     def add_readset(self, readset):
         if self.readsets_by_name(readset.name):
-            _raise(Error("Sample Error: readset name \"" + readset.name +
+            _raise(SanitycheckError("Sample Error: readset name \"" + readset.name +
                 "\" already exists for sample \"" + self.name + "\"!"))
         else:
             self.readsets.append(readset)

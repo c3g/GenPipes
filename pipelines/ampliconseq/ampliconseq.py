@@ -31,7 +31,7 @@ from os.path import basename
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # MUGQIC Modules
-from core.config import config, Error, _raise
+from core.config import config, _raise, SanitycheckError
 from core.job import Job, concat_jobs
 
 from pipelines import common
@@ -132,7 +132,7 @@ class AmpliconSeq(common.Illumina):
                     headcropValue
                 )
             else:
-                _raise(Error("Error: run type \"" + readset.run_type +
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
             jobs.append(concat_jobs([
@@ -240,7 +240,7 @@ pandoc \\
                     candidate_input_files.append([readset.fastq1, readset.fastq2])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
             else:
-                _raise(Error("Error: run type \"" + readset.run_type + "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END)!"))
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type + "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END)!"))
 
             job = flash.flash(
                 fastq1,
@@ -397,7 +397,7 @@ pandoc --to=markdown \\
                     candidate_input_files.append([readset.fastq1, readset.fastq2])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
             else:
-                _raise(Error("Error: run type \"" + readset.run_type + "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END)!"))
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type + "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END)!"))
 
             flash_hist = os.path.join("merge", readset.sample.name, readset.name + ".flash.hist")
             job = concat_jobs([
@@ -2101,7 +2101,7 @@ cat {report_file_alpha} {report_file_beta} > {report_file}""".format(
                 dada2_inputs.append(left_or_single_reads)
 
             else:
-                _raise(Error("Error: run type \"" + readset.run_type +
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
         jobs.append(concat_jobs(

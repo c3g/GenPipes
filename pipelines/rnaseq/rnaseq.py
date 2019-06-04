@@ -31,7 +31,7 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # MUGQIC Modules
-from core.config import config, Error, _raise
+from core.config import config, _raise, SanitycheckError
 from core.job import Job, concat_jobs, pipe_jobs
 
 from bfx import bedtools
@@ -138,7 +138,7 @@ class RnaSeq(common.Illumina):
                 [fastq1] = self.select_input_files(candidate_input_files)
                 fastq2 = None
             else:
-                _raise(Error("Error: run type \"" + readset.run_type +
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
             rg_platform = config.param('star_align', 'platform', required=False)
@@ -196,7 +196,7 @@ class RnaSeq(common.Illumina):
                 [fastq1] = self.select_input_files(candidate_input_files)
                 fastq2 = None
             else:
-                _raise(Error("Error: run type \"" + readset.run_type +
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
             rg_platform = config.param('star_align', 'platform', required=False)

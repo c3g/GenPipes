@@ -36,7 +36,7 @@ import textwrap
 from uuid import uuid4
 
 # MUGQIC Modules
-from config import config, Error, _raise
+from config import config, _raise, SanitycheckError
 from job import Job
 from scheduler import create_scheduler
 from step import Step
@@ -157,7 +157,7 @@ class Pipeline(object):
             try:
                 self._force_jobs = self.args.force
                 self.create_jobs()
-            except Error as e:
+            except SanitycheckError as e:
                 log.info(e)
                 print("""\
 SANITY CHECK report :
@@ -295,7 +295,7 @@ SANITY CHECK report :
             if not self.args.sanity_check : log.debug("selected_input_files: " + ", ".join(input_files) + "\n")
             return selected_input_files
         else:
-            _raise(Error("Error: missing candidate input files: " + str(candidate_input_files) +
+            _raise(SanitycheckError("Error: missing candidate input files: " + str(candidate_input_files) +
                 " neither found in dependencies nor on file system!"))
 
     def dependency_jobs(self, current_job):
@@ -333,7 +333,7 @@ SANITY CHECK report :
             for job in jobs:
                 # Job name is mandatory to create job .done file name
                 if not job.name:
-                    _raise(Error("Error: job \"" + job.command + "\" has no name!"))
+                    _raise(SanitycheckError("Error: job \"" + job.command + "\" has no name!"))
 
                 if not self.args.sanity_check : log.debug("Job name: " + job.name)
                 if not self.args.sanity_check : log.debug("Job input files:\n  " + "\n  ".join(job.input_files))

@@ -30,7 +30,7 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # MUGQIC Modules
-from core.config import config, Error, _raise
+from core.config import config, _raise, SanitycheckError
 from core.job import Job, concat_jobs, pipe_jobs
 from pipelines import common
 from bfx.sequence_dictionary import parse_sequence_dictionary_file, split_by_size
@@ -164,7 +164,7 @@ class DnaSeqRaw(common.Illumina):
                         ], name="sym_link_fastq.single_end." + readset.name)
 
             else:
-                _raise(Error("Error: run type \"" + readset.run_type +
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
             jobs.append(sym_link_job)
@@ -202,7 +202,7 @@ class DnaSeqRaw(common.Illumina):
                 fastq2 = None
             
             else:
-                _raise(Error("Error: run type \"" + readset.run_type +
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
             jobs.append(concat_jobs([
@@ -253,7 +253,7 @@ class DnaSeqRaw(common.Illumina):
                 fastq2 = None
             
             else:
-                _raise(Error("Error: run type \"" + readset.run_type +
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
             job = concat_jobs([

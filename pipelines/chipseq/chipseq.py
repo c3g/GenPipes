@@ -31,7 +31,7 @@ import csv
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # MUGQIC Modules
-from core.config import config, Error, _raise
+from core.config import config, _raise, SanitycheckError
 from core.job import Job, concat_jobs
 
 from bfx import gq_seq_utils
@@ -112,7 +112,7 @@ class ChipSeq(dnaseq.DnaSeq):
                 elif contrast.name.split(",")[1] == 'N':
                     contrast.type = 'narrow'
             else:
-                _raise(Error("Error: contrast name \"" + contrast.name + "\" is invalid (should be <contrast>,B for broad or <contrast>,N for narrow)!"))
+                _raise(SanitycheckError("Error: contrast name \"" + contrast.name + "\" is invalid (should be <contrast>,B for broad or <contrast>,N for narrow)!"))
 
         return contrasts
 
@@ -837,7 +837,7 @@ done""".format(
         for contrast in self.contrasts:
           if contrast.treatments:
               if len(contrast.controls) > 1 :
-                  _raise(Error("Error: contrast name \"" + contrast.name + "\" has several input files, please use one input for pairing!"))
+                  _raise(SanitycheckError("Error: contrast name \"" + contrast.name + "\" has several input files, please use one input for pairing!"))
               elif len(contrast.controls) == 1:
                   input_file=contrast.controls[0].name
               elif len(contrast.controls) == 0:
@@ -848,11 +848,11 @@ done""".format(
                       if couples[sample.name][0] == input_file:
                           pass
                       else :
-                          _raise(Error("Error: contrast name \"" + contrast.name + "\" has several input files, please use one input for pairing!"))
+                          _raise(SanitycheckError("Error: contrast name \"" + contrast.name + "\" has several input files, please use one input for pairing!"))
                       if couples[sample.name][1] == contrast.real_name and couples[sample.name][2] == contrast.type:
                           pass
                       else :
-                          _raise(Error("Error: sample \"" + sample.name + "\" is involved in several different contrasts, please use one contrast per sample !")) 
+                          _raise(SanitycheckError("Error: sample \"" + sample.name + "\" is involved in several different contrasts, please use one contrast per sample !")) 
                   else :
                       couples[sample.name]=[input_file, contrast.real_name, contrast.type]
        

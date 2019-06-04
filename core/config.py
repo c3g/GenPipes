@@ -79,7 +79,7 @@ class Config(ConfigParser.SafeConfigParser):
             module_show_output = subprocess.check_output(["bash", "-c", cmd_query_module + module], stderr=subprocess.STDOUT)
             ## "Error" result for module show while "error" for module spider. seems to be handeled well by re.IGNORECASE
             if re.search("Error", module_show_output, re.IGNORECASE):
-                _raise(Error("Error in config file(s) with " + module + ":\n" + module_show_output))
+                _raise(SanitycheckError("Error in config file(s) with " + module + ":\n" + module_show_output))
             else:
                 if not self.sanity : log.info("Module " + module + " OK")
         if not self.sanity : log.info("Module check finished\n")
@@ -116,7 +116,7 @@ class Config(ConfigParser.SafeConfigParser):
                     if value > 0:
                         return value
                     else:
-                        _raise(Error("Integer \"" + str(value) + "\" is not > 0!"))
+                        _raise(SanitycheckError("Integer \"" + str(value) + "\" is not > 0!"))
                 elif type == 'float':
                     return self.getfloat(section, option)
                 elif type == 'boolean':
@@ -126,34 +126,37 @@ class Config(ConfigParser.SafeConfigParser):
                     if os.path.isfile(value):
                         return value
                     else:
-                        _raise(Error("File path \"" + value + "\" does not exist or is not a valid regular file!"))
+                        _raise(SanitycheckError("File path \"" + value + "\" does not exist or is not a valid regular file!"))
                 elif type == 'dirpath':
                     value = os.path.expandvars(self.get(section, option))
                     if os.path.isdir(value):
                         return value
                     else:
-                        _raise(Error("Directory path \"" + value + "\" does not exist or is not a valid directory!"))
+                        _raise(SanitycheckError("Directory path \"" + value + "\" does not exist or is not a valid directory!"))
                 elif type == 'prefixpath':
                     value = os.path.expandvars(self.get(section, option))
                     if glob.glob(value + "*"):
                         return value
                     else:
-                        _raise(Error("Prefix path \"" + value + "\" does not match any file!"))
+                        _raise(SanitycheckError("Prefix path \"" + value + "\" does not match any file!"))
                 elif type == 'list':
                     # Remove empty strings from list
                     return [x for x in self.get(section, option).split(",") if x]
                 elif type == 'string':
                     return self.get(section, option)
                 else:
-                    _raise(Error("Unknown parameter type '" + type + "'"))
+                    _raise(SanitycheckError("Unknown parameter type '" + type + "'"))
             except Exception as e:
-                _raise(Error("Error found :\n  " + e.message))
+                _raise(SanitycheckError("Error found :\n  " + e.message))
         elif required:
-            _raise(Error("Error: REQUIRED parameter \"[" + original_section + "] " + option + "\" is not defined in config file(s)!"))
+            _raise(SanitycheckError("Error: REQUIRED parameter \"[" + original_section + "] " + option + "\" is not defined in config file(s)!"))
         else:
             return ""
 
 class Error(Exception):
+    pass
+
+class SanitycheckError(Error):
     pass
 
 def _raise(object):

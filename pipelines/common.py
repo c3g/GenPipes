@@ -32,7 +32,7 @@ import collections
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0]))))
 
 # MUGQIC Modules
-from core.config import config, Error, _raise
+from core.config import config, _raise, SanitycheckError
 from core.job import Job, concat_jobs
 from core.pipeline import Pipeline
 from bfx.design import parse_design_file
@@ -144,7 +144,7 @@ class Illumina(MUGQICPipeline):
         if len(set(run_types)) == 1 and re.search("^(PAIRED|SINGLE)_END$", run_types[0]):
             return run_types[0]
         else:
-            _raise(Error("Error: readset run types " + ",".join(["\"" + run_type + "\"" for run_type in run_types]) +
+            _raise(SanitycheckError("Error: readset run types " + ",".join(["\"" + run_type + "\"" for run_type in run_types]) +
             " are invalid (should be all PAIRED_END or all SINGLE_END)!"))
 
     @property
@@ -175,7 +175,7 @@ class Illumina(MUGQICPipeline):
                     job.samples = [readset.sample]
                     jobs.append(job)
                 else:
-                    _raise(Error("Error: BAM file not available for readset \"" + readset.name + "\"!"))
+                    _raise(SanitycheckError("Error: BAM file not available for readset \"" + readset.name + "\"!"))
         return jobs
 
 
@@ -200,7 +200,7 @@ class Illumina(MUGQICPipeline):
                         fastq1 = re.sub("\.sorted.bam$|\.bam$", ".single.fastq.gz", bam.strip())
                         fastq2 = None
                     else:
-                        _raise(Error("Error: run type \"" + readset.run_type +
+                        _raise(SanitycheckError("Error: run type \"" + readset.run_type +
                         "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
                     job = picard.sam_to_fastq(bam, fastq1, fastq2)
@@ -209,7 +209,7 @@ class Illumina(MUGQICPipeline):
                     jobs.append(job)
 
                 else:
-                    _raise(Error("Error: BAM file not available for readset \"" + readset.name + "\"!"))
+                    _raise(SanitycheckError("Error: BAM file not available for readset \"" + readset.name + "\"!"))
         return jobs
 
     def trimmomatic(self):
@@ -249,7 +249,7 @@ class Illumina(MUGQICPipeline):
 END
 `""".format(adapter_fasta=adapter_fasta, sequence1=readset.adapter2.translate(string.maketrans("ACGTacgt","TGCAtgca"))[::-1], sequence2=readset.adapter1.translate(string.maketrans("ACGTacgt","TGCAtgca"))[::-1]))
                     else:
-                        _raise(Error("Error: missing adapter1 and/or adapter2 for PAIRED_END readset \"" + readset.name + "\", or missing adapter_fasta parameter in config file!"))
+                        _raise(SanitycheckError("Error: missing adapter1 and/or adapter2 for PAIRED_END readset \"" + readset.name + "\", or missing adapter_fasta parameter in config file!"))
                 elif readset.run_type == "SINGLE_END":
                     if readset.adapter1:
                         adapter_job = Job(command="""\
@@ -259,7 +259,7 @@ END
 END
 `""".format(adapter_fasta=adapter_fasta, sequence=readset.adapter1))
                     else:
-                        _raise(Error("Error: missing adapter1 for SINGLE_END readset \"" + readset.name + "\", or missing adapter_fasta parameter in config file!"))
+                        _raise(SanitycheckError("Error: missing adapter1 for SINGLE_END readset \"" + readset.name + "\", or missing adapter_fasta parameter in config file!"))
 
             trim_stats = trim_file_prefix + "stats.csv"
             if readset.run_type == "PAIRED_END":
@@ -297,7 +297,7 @@ END
                     trim_log
                 )
             else:
-                _raise(Error("Error: run type \"" + readset.run_type +
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
             if adapter_job:
