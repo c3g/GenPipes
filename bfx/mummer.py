@@ -41,6 +41,7 @@ def reference(
         [fasta_reference, fasta_consensus],
         [outfile, outfile + ".png", outfile2],
         [
+            ['mummer_reference', 'module_perl'],
             ['mummer_reference', 'module_mummer'],
             ['mummer_reference', 'module_gnuplot']
         ],
