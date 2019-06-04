@@ -66,7 +66,7 @@ class Pipeline(object):
             step_list = self.steps[pos]
 
         if self.args.sanity_check:
-            logging.basicConfig(stream=sys.stdout, level=logging.INFO, format=' %(levelname)s - %(message)s')
+            logging.basicConfig(stream=sys.stdout, level=logging.WARNING, format='%(message)s')
         else:
             logging.basicConfig(level=getattr(logging, self.args.log.upper()))
 
@@ -131,7 +131,7 @@ class Pipeline(object):
                     "\" is invalid (should match \d+([,-]\d+)*)!")
         else:
 #            self.argparser.error("argument -s/--steps is required!")
-            log.info(" WARNING - No step provided by the user => launching the entire pipeline\n")
+            log.warning("No step provided by the user => launching the entire pipeline\n")
             self._step_range = self.step_list
                 
 
@@ -154,13 +154,12 @@ class Pipeline(object):
                 self._force_jobs = self.args.force
                 self.create_jobs()
             except SanitycheckError as e:
-                log.info(e)
                 print("""\
 SANITY CHECK report :
 {error}
-                """.format(
-                    error=e
-                    ))
+               """.format(
+                   error=e
+                   ))
         else:
             self._force_jobs = self.args.force
             self.create_jobs()
@@ -322,7 +321,7 @@ SANITY CHECK report :
     def create_jobs(self):
         for step in self.step_range:
             if self.args.sanity_check :
-                log.info("Checking jobs for step " + step.name + "...")
+                log.warn("* Checking jobs for step " + step.name + "...")
             else :
                 log.info("Create jobs for step " + step.name + "...")
             jobs = step.create_jobs()

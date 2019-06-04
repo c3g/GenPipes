@@ -161,8 +161,8 @@ class SanitycheckError(Error):
 
 def _raise(object):
     if config.sanity:
-        if re.search("Error", str(type(object))):
-            object.message = "\t" + object.message
+        if isinstance(object, SanitycheckError):
+            object.message = '\t{}'.format(object.message)
         log.error(object.message)
     else:
         raise object

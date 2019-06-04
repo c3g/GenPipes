@@ -130,7 +130,7 @@ def parse_illumina_readset_file(illumina_readset_file):
     readsets = []
     samples = []
 
-    if not config.sanity : log.info("Parse Illumina readset file " + illumina_readset_file + " ...")
+    log.info("Parse Illumina readset file " + illumina_readset_file + " ...")
     readset_csv = csv.DictReader(open(illumina_readset_file, 'rb'), delimiter='\t')
     for line in readset_csv:
         sample_name = line['Sample']
@@ -179,8 +179,8 @@ def parse_illumina_readset_file(illumina_readset_file):
         readsets.append(readset)
         sample.add_readset(readset)
 
-    if not config.sanity : log.info(str(len(readsets)) + " readset" + ("s" if len(readsets) > 1 else "") + " parsed")
-    if not config.sanity : log.info(str(len(samples)) + " sample" + ("s" if len(samples) > 1 else "") + " parsed\n")
+    log.info(str(len(readsets)) + " readset" + ("s" if len(readsets) > 1 else "") + " parsed")
+    log.info(str(len(samples)) + " sample" + ("s" if len(samples) > 1 else "") + " parsed\n")
     return readsets
 
 class IlluminaRawReadset(IlluminaReadset):
@@ -262,7 +262,7 @@ def parse_illumina_raw_readset_files(output_dir, run_type, nanuq_readset_file, c
     GenomeBuild = namedtuple('GenomeBuild', 'species assembly')
 
     # Parsing Nanuq readset sheet
-    if not config.sanity : log.info("Parse Nanuq Illumina readset file " + nanuq_readset_file + " ...")
+    log.info("Parse Nanuq Illumina readset file " + nanuq_readset_file + " ...")
     readset_csv = csv.DictReader(open(nanuq_readset_file, 'rb'), delimiter=',', quotechar='"')
     genome_build = None
     for line in readset_csv:
@@ -301,7 +301,7 @@ def parse_illumina_raw_readset_files(output_dir, run_type, nanuq_readset_file, c
         sample.add_readset(readset)
 
     # Parsing Casava sheet
-    if not config.sanity : log.info("Parsing Casava sample sheet " + casava_sheet_file + " ...")
+    log.info("Parsing Casava sample sheet " + casava_sheet_file + " ...")
     casava_csv = csv.DictReader(open(casava_sheet_file, 'rb'), delimiter=',')
     for line in casava_csv:
         if int(line['Lane']) != lane:
@@ -357,8 +357,8 @@ def parse_illumina_raw_readset_files(output_dir, run_type, nanuq_readset_file, c
         if readset.bam is None and len(readset.genomic_database) > 0:
             log.info("Skipping alignment for the genomic database: '" + readset.genomic_database + "'")
 
-    if not config.sanity : log.info(str(len(readsets)) + " readset" + ("s" if len(readsets) > 1 else "") + " parsed")
-    if not config.sanity : log.info(str(len(samples)) + " sample" + ("s" if len(samples) > 1 else "") + " parsed\n")
+    log.info(str(len(readsets)) + " readset" + ("s" if len(readsets) > 1 else "") + " parsed")
+    log.info(str(len(samples)) + " sample" + ("s" if len(samples) > 1 else "") + " parsed\n")
     return readsets
 
 
@@ -399,7 +399,7 @@ def parse_pacbio_readset_file(pacbio_readset_file):
     readsets = []
     samples = []
 
-    if not config.sanity : log.info("Parse PacBio readset file " + pacbio_readset_file + " ...")
+    log.info("Parse PacBio readset file " + pacbio_readset_file + " ...")
     readset_csv = csv.DictReader(open(pacbio_readset_file, 'rb'), delimiter='\t')
     for line in readset_csv:
         sample_name = line['Sample']
@@ -438,6 +438,6 @@ def parse_pacbio_readset_file(pacbio_readset_file):
         readsets.append(readset)
         sample.add_readset(readset)
 
-    if not config.sanity : log.info(str(len(readsets)) + " readset" + ("s" if len(readsets) > 1 else "") + " parsed")
-    if not config.sanity : log.info(str(len(samples)) + " sample" + ("s" if len(samples) > 1 else "") + " parsed\n")
+    log.info(str(len(readsets)) + " readset" + ("s" if len(readsets) > 1 else "") + " parsed")
+    log.info(str(len(samples)) + " sample" + ("s" if len(samples) > 1 else "") + " parsed\n")
     return readsets
