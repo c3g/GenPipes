@@ -94,6 +94,7 @@ def self(
         [fasta_consensus],
         [outfile, outfile + ".png"],
         [
+            ['mummer_self', 'module_perl'],
             ['mummer_self', 'module_mummer'],
             ['mummer_self', 'module_gnuplot']
         ],
