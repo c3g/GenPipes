@@ -483,7 +483,7 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
                 ], name="macs2_callpeak_bigBed."+ contrast.real_name)
                 jobs.append(job)
             else:
-                if not self.args.sanity_check : log.warning("No treatment found for contrast " + contrast.name + "... skipping")
+                log.warning("No treatment found for contrast " + contrast.name + "... skipping")
 
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.macs2_callpeak.md")
         jobs.append(
@@ -564,7 +564,7 @@ perl -MReadMetrics -e 'ReadMetrics::parseHomerAnnotations(
                 jobs.append(job)
 
             else:
-                if not self.args.sanity_check : log.warning("No treatment found for contrast " + contrast.name + "... skipping")
+                log.warning("No treatment found for contrast " + contrast.name + "... skipping")
 
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.homer_annotate_peaks.md")
         jobs.append(
@@ -619,7 +619,7 @@ done""".format(
                 counter = counter +1
             else:
                 #log.warning("No treatment found for contrast " + contrast.name + "... skipping")
-                if not self.args.sanity_check : log.warning("Contrast " + contrast.name + " is broad; homer_find_motifs_genome is run on narrow peaks ... skipping")
+                log.warning("Contrast " + contrast.name + " is broad; homer_find_motifs_genome is run on narrow peaks ... skipping")
 
         if counter > 0:
             report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.homer_find_motifs_genome.md")

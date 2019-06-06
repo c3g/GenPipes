@@ -72,7 +72,10 @@ class Config(ConfigParser.SafeConfigParser):
                     modules.append(value)
                 if re.search("^query_module", name):
                     query_module = value
-        if not self.sanity : log.info("Check modules...")
+        if self.sanity:
+            log.warn("* Checking modules...")
+        else:
+            log.info("Check modules...")
         cmd_query_module = "module {query_module} ".format(query_module  = query_module)
         for module in modules:
             # Bash shell must be invoked in order to find "module" cmd
@@ -81,8 +84,8 @@ class Config(ConfigParser.SafeConfigParser):
             if re.search("Error", module_show_output, re.IGNORECASE):
                 _raise(SanitycheckError("Error in config file(s) with " + module + ":\n" + module_show_output))
             else:
-                if not self.sanity : log.info("Module " + module + " OK")
-        if not self.sanity : log.info("Module check finished\n")
+                log.info("Module " + module + " OK")
+        log.info("Module check finished\n")
 
     # Retrieve param in config files with optional definition check and type validation
     # By default, parameter is required to be defined in one of the config file

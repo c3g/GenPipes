@@ -263,7 +263,7 @@ SANITY CHECK report :
     # Given a list of lists of input files, return the first valid list of input files which can be found either in previous jobs output files or on file system.
     # Thus, a job with several candidate lists of input files can find out the first valid one.
     def select_input_files(self, candidate_input_files):
-        if not self.args.sanity_check : log.debug("candidate_input_files: \n" + str(candidate_input_files))
+        log.debug("candidate_input_files: \n" + str(candidate_input_files))
 
         selected_input_files = []
 
@@ -287,7 +287,7 @@ SANITY CHECK report :
                     log.debug(e.message)
 
         if selected_input_files:
-            if not self.args.sanity_check : log.debug("selected_input_files: " + ", ".join(input_files) + "\n")
+            log.debug("selected_input_files: " + ", ".join(input_files) + "\n")
             return selected_input_files
         else:
             _raise(SanitycheckError("Error: missing candidate input files: " + str(candidate_input_files) +
@@ -330,9 +330,9 @@ SANITY CHECK report :
                 if not job.name:
                     _raise(SanitycheckError("Error: job \"" + job.command + "\" has no name!"))
 
-                if not self.args.sanity_check : log.debug("Job name: " + job.name)
-                if not self.args.sanity_check : log.debug("Job input files:\n  " + "\n  ".join(job.input_files))
-                if not self.args.sanity_check : log.debug("Job output files:\n  " + "\n  ".join(job.output_files) + "\n")
+                log.debug("Job name: " + job.name)
+                log.debug("Job input files:\n  " + "\n  ".join(job.input_files))
+                log.debug("Job output files:\n  " + "\n  ".join(job.output_files) + "\n")
 
                 # Job .done file name contains the command checksum.
                 # Thus, if the command is modified, the job is not up-to-date anymore.
@@ -341,7 +341,7 @@ SANITY CHECK report :
                 job.dependency_jobs = self.dependency_jobs(job)
 
                 if not self.force_jobs and job.is_up2date():
-                    if not self.args.sanity_check : log.info("Job " + job.name + " up to date... skipping")
+                    log.info("Job " + job.name + " up to date... skipping")
                 else:
                     step.add_job(job)
                     if job.samples:
@@ -357,7 +357,7 @@ SANITY CHECK report :
             for sample in self.sample_list:
                 self.sample_paths.append(jsonator.create(self, sample))
 
-        if not self.args.sanity_check : log.info("TOTAL: " + str(len(self.jobs)) + " job" + ("s" if len(self.jobs) > 1 else "") + " created" + ("" if self.jobs else "... skipping") + "\n")
+        log.info("TOTAL: " + str(len(self.jobs)) + " job" + ("s" if len(self.jobs) > 1 else "") + " created" + ("" if self.jobs else "... skipping") + "\n")
 
     def submit_jobs(self):
         self.scheduler.submit(self)
