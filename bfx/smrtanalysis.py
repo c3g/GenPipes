@@ -359,12 +359,13 @@ tigStore \\
 awk 'BEGIN{{t=0}}$1=="numFrags"{{if ($2 > 1) {{print t, $2}} t++}}' | sort -nrk2,2 \\
   > {unitigs_list} && \\
 mkdir -p {outdir} && \\
+mkdir -p {tmp_dir} && \\
 bash -c 'set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
 tmp={tmp_dir} \\
-cap={prefix} \\
-utg={unitigs_list} \\
+cap=$PWD/{prefix} \\
+utg=$PWD/{unitigs_list} \\
 nprocs={threads} \\
-cns={outfile} \\
+cns=$PWD/{outfile} \\
 pbutgcns_wf.sh'""".format(
             gpk_store=gpk_store,
             tig_store=tig_store,
@@ -390,7 +391,7 @@ def reference_uploader(
         ],
         # Preload assembled contigs as reference
         command="""\
-bash -c 'set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
+$(set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
 referenceUploader \\
   --skipIndexUpdate \\
   --create \\
@@ -398,7 +399,7 @@ referenceUploader \\
   --name {sample_name} \\
   --fastaFile {fasta} \\
   --saw="sawriter -blt 8 -welter" --jobId="Anonymous" \\
-  --samIdx="samtools faidx" --jobId="Anonymous" --verbose'""".format(
+  --samIdx="samtools faidx" --jobId="Anonymous" --verbose)""".format(
             prefix=prefix,
             sample_name=sample_name,
             fasta=fasta
