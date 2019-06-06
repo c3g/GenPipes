@@ -31,10 +31,9 @@ import itertools
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # MUGQIC Modules
-from core.config import *
-from core.job import *
-from core.pipeline import *
-from bfx.readset import *
+from core.config import config, _raise, SanitycheckError
+from core.job import Job, concat_jobs
+from bfx.readset import parse_illumina_readset_file
 
 from bfx import bvatools
 from bfx import bismark
@@ -49,6 +48,7 @@ from bfx import bissnp
 from bfx import tools
 from bfx import ucsc
 from bfx import fgbio
+from bfx import metrics
 
 from pipelines import common
 from pipelines.dnaseq import dnaseq
@@ -84,11 +84,11 @@ class MethylSeq(dnaseq.DnaSeq):
                 self._readsets = parse_illumina_readset_file(self.args.readsets.name)
                 for readset in self._readsets:
                     if readset._run == "":
-                        raise Exception("Error: no run was provided for readset \"" + readset.name +
-                            "\"... Run has to be provided for all the readsets in order to use this pipeline.")
+                        _raise(SanitycheckError("Error: no run was provided for readset \"" + readset.name +
+                            "\"... Run has to be provided for all the readsets in order to use this pipeline."))
                     if readset._lane == "":
-                        raise Exception("Error: no lane provided for readset \"" + readset.name +
-                            "\"... Lane has to be provided for all the readsets in order to use this pipeline.")
+                        _raise(SanitycheckError("Error: no lane provided for readset \"" + readset.name +
+                            "\"... Lane has to be provided for all the readsets in order to use this pipeline."))
             else:
                 self.argparser.error("argument -r/--readsets is required!")
 
@@ -138,8 +138,8 @@ class MethylSeq(dnaseq.DnaSeq):
                 bismark_out_bam = os.path.join(alignment_directory, readset.name, re.sub(r'(\.fastq\.gz|\.fq\.gz|\.fastq|\.fq)$', "_bismark_bt2.bam", os.path.basename(fastq1)))
                 bismark_out_report = os.path.join(alignment_directory, readset.name, re.sub(r'(\.fastq\.gz|\.fq\.gz|\.fastq|\.fq)$', "_bismark_bt2_SE_report.txt", os.path.basename(fastq1)))
             else:
-                raise Exception("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
             jobs.append(
                 concat_jobs([

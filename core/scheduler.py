@@ -25,7 +25,7 @@ import os
 import random
 
 # MUGQIC Modules
-from config import *
+from config import config
 
 # Output comment separator line
 separator_line = "#" + "-" * 79

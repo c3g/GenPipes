@@ -31,14 +31,12 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # MUGQIC Modules
-from core.config import *
-from core.job import *
-from core.pipeline import *
-from bfx.design import *
-from bfx.readset import *
+from core.config import config, _raise, SanitycheckError
+from core.job import Job, concat_jobs, pipe_jobs
 
 from bfx import bedtools
-from bfx import cufflinks
+from bfx import bwa
+from bfx import cufflinks   
 from bfx import stringtie
 from bfx import ballgown
 from bfx import differential_expression
@@ -98,7 +96,7 @@ class RnaSeq(common.Illumina):
         self._protocol=protocol
         # Add pipeline specific arguments
         self.argparser.add_argument("-d", "--design", help="design file", type=file)
-        self.argparser.add_argument("-t", "--type", help="Type of RNA-seq assembly method (default cufflinks)", choices = ["cufflinks", "stringtie"], default="stringtie")
+        self.argparser.add_argument("-t", "--type", help="Type of RNA-seq assembly method (default stringtie)", choices = ["cufflinks", "stringtie"], default="stringtie")
         super(RnaSeq, self).__init__(protocol)
 
     def star(self):
@@ -140,8 +138,8 @@ class RnaSeq(common.Illumina):
                 [fastq1] = self.select_input_files(candidate_input_files)
                 fastq2 = None
             else:
-                raise Exception("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
             rg_platform = config.param('star_align', 'platform', required=False)
             rg_center = config.param('star_align', 'sequencing_center', required=False)
@@ -198,8 +196,8 @@ class RnaSeq(common.Illumina):
                 [fastq1] = self.select_input_files(candidate_input_files)
                 fastq2 = None
             else:
-                raise Exception("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
             rg_platform = config.param('star_align', 'platform', required=False)
             rg_center = config.param('star_align', 'sequencing_center', required=False)
