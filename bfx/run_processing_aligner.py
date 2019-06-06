@@ -19,8 +19,8 @@
 # along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-from core.job import *
-from core.config import *
+from core.job import concat_jobs, pipe_jobs
+from core.config import config
 from bfx import bvatools
 from bfx import snpeff
 from bfx import verify_bam_id

@@ -36,10 +36,10 @@ import textwrap
 from uuid import uuid4
 
 # MUGQIC Modules
-from config import config
-from job import *
-from scheduler import *
-from step import *
+from config import config, _raise, SanitycheckError
+from job import Job
+from scheduler import create_scheduler
+from step import Step
 
 from bfx import jsonator
 
@@ -49,6 +49,7 @@ class Pipeline(object):
     def __init__(self):
         self._timestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
         self._args = self.argparser.parse_args()
+            
         if self.protocol is None:
             step_list = self.steps
         elif self.args.help:
@@ -63,7 +64,12 @@ class Pipeline(object):
                 if self.protocol[i] == self.args.type:
                     pos = i
             step_list = self.steps[pos]
-        logging.basicConfig(level=getattr(logging, self.args.log.upper()))
+
+        if self.args.sanity_check:
+            logging.basicConfig(stream=sys.stdout, level=logging.WARNING, format='%(message)s')
+            log.warning("Sanity Check Report :")
+        else:
+            logging.basicConfig(level=getattr(logging, self.args.log.upper()))
 
         if self.args.help:
             print textwrap.dedent("""\
@@ -90,6 +96,7 @@ class Pipeline(object):
 
         # Normal pipeline execution
         if self.args.config:
+            if self.args.sanity_check : config.sanity = True
             config.parse_files(self.args.config)
         else:
             self.argparser.error("argument -c/--config is required!")
@@ -125,7 +132,7 @@ class Pipeline(object):
                     "\" is invalid (should match \d+([,-]\d+)*)!")
         else:
 #            self.argparser.error("argument -s/--steps is required!")
-            log.info(" WARNING - No step provided by the user => launching the entire pipeline\n")
+            log.warning("No step provided by the user => launching the entire pipeline\n")
             self._step_range = self.step_list
                 
 
@@ -142,10 +149,24 @@ class Pipeline(object):
             self._force_jobs = True
             self.create_jobs()
             self.clean_jobs()
-        else:
+        elif self.args.sanity_check:
+            config.sanity = True
             self._force_jobs = self.args.force
             self.create_jobs()
-            self.submit_jobs()
+        else:
+            try:
+                self._force_jobs = self.args.force
+                self.create_jobs()
+                self.submit_jobs()
+            except SanitycheckError as e:
+                log.error("""
+***The pipeline encounterered an error :
+    {error}
+***Please try running the pipeline in SANITY CHECK mode using the '--sanity-check' flag""".format(
+                   error=e
+                   ))
+                exit(1)
+            
 
     # Pipeline command line arguments parser
     @property
@@ -181,6 +202,7 @@ class Pipeline(object):
             self._argparser.add_argument("--report", help="create 'pandoc' command to merge all job markdown report files in the given step range into HTML, if they exist; if --report is set, --job-scheduler, --force, --clean options and job up-to-date status are ignored (default: false)", action="store_true")
             self._argparser.add_argument("--clean", help="create 'rm' commands for all job removable files in the given step range, if they exist; if --clean is set, --job-scheduler, --force options and job up-to-date status are ignored (default: false)", action="store_true")
             self._argparser.add_argument("-l", "--log", help="log level (default: info)", choices=["debug", "info", "warning", "error", "critical"], default="info")
+            self._argparser.add_argument("--sanity-check", help="run the pipeline in `sanity check mode` to verify that all the input files needed for the pipeline to run are available on the system (default: false)", action="store_true")
 
         return self._argparser
 
@@ -271,8 +293,8 @@ class Pipeline(object):
             log.debug("selected_input_files: " + ", ".join(input_files) + "\n")
             return selected_input_files
         else:
-            raise Exception("Error: missing candidate input files: " + str(candidate_input_files) +
-                " neither found in dependencies nor on file system!")
+            _raise(SanitycheckError("Error: missing candidate input files: " + str(candidate_input_files) +
+                " neither found in dependencies nor on file system!"))
 
     def dependency_jobs(self, current_job):
         dependency_jobs = []
@@ -294,19 +316,22 @@ class Pipeline(object):
             if not os.path.exists(current_job.abspath(remaining_input_file)):
                 missing_input_files.add(remaining_input_file)
         if missing_input_files:
-            raise Exception("Error: missing input files for job " + current_job.name + ": " +
+            raise Exception("Warning: missing input files for job " + current_job.name + ": " +
                 ", ".join(missing_input_files) + " neither found in dependencies nor on file system!")
 
         return dependency_jobs
 
     def create_jobs(self):
         for step in self.step_range:
-            log.info("Create jobs for step " + step.name + "...")
+            if self.args.sanity_check :
+                log.warn("* Checking jobs for step " + step.name + "...")
+            else :
+                log.info("Create jobs for step " + step.name + "...")
             jobs = step.create_jobs()
             for job in jobs:
                 # Job name is mandatory to create job .done file name
                 if not job.name:
-                    raise Exception("Error: job \"" + job.command + "\" has no name!")
+                    _raise(SanitycheckError("Error: job \"" + job.command + "\" has no name!"))
 
                 log.debug("Job name: " + job.name)
                 log.debug("Job input files:\n  " + "\n  ".join(job.input_files))
@@ -327,7 +352,8 @@ class Pipeline(object):
                             if sample not in self.sample_list:
                                 self.sample_list.append(sample)
 
-            log.info("Step " + step.name + ": " + str(len(step.jobs)) + " job" + ("s" if len(step.jobs) > 1 else "") + " created" + ("" if step.jobs else "... skipping") + "\n")
+            if not self.args.sanity_check :
+                log.info("Step " + step.name + ": " + str(len(step.jobs)) + " job" + ("s" if len(step.jobs) > 1 else "") + " created" + ("" if step.jobs else "... skipping") + "\n")
 
         # Now create the json dumps for all the samples if not already done
         if self.args.json:
@@ -343,7 +369,7 @@ class Pipeline(object):
         portal_output_dir = config.param('DEFAULT', 'portal_output_dir', required=False)
         if self.args.json and portal_output_dir != "":
             if not os.path.isdir(os.path.expandvars(portal_output_dir)):
-                raise Exception("Directory path \"" + portal_output_dir + "\" does not exist or is not a valid directory!")
+                raise Error("Directory path \"" + portal_output_dir + "\" does not exist or is not a valid directory!")
             copy_commands = []
             for i, sample in enumerate(self.sample_list):
                 input_file = self.sample_paths[i]
