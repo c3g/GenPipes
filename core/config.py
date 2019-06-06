@@ -41,6 +41,7 @@ class Config(ConfigParser.SafeConfigParser):
     # continuous_integration_testing = True
     cluster_walltime = "cluster_walltime"
     cit_options = [cluster_walltime]
+    cit_prefix = 'cit_'
 
     def __init__(self):
         ConfigParser.SafeConfigParser.__init__(self)
@@ -73,6 +74,7 @@ class Config(ConfigParser.SafeConfigParser):
                 if re.search("^query_module", name):
                     query_module = value
 
+
         log.info("Check modules...")
         cmd_query_module = "module {query_module} ".format(query_module  = query_module)
         for module in modules:
@@ -94,11 +96,20 @@ class Config(ConfigParser.SafeConfigParser):
         # Keep that if block first, it is only evaluated in testing mode
         if self.continuous_integration_testing and option in self.cit_options:
             # hack because this class becomes a global
+
+            try:
+                return self.get(section, '{}{}'.format(self.cit_prefix, option))
+            except ConfigParser.Error:
+                pass
+
             from utils import utils
             if option == self.cluster_walltime and self.has_section(section) \
                     and self.has_option(section, option):
+
                 from_section = self.get(section, option)
                 from_default = self.get('DEFAULT', option)
+
+
                 if (utils.slurm_time_to_datetime(from_default)
                         <= utils.slurm_time_to_datetime(from_section)):
                     return from_default
