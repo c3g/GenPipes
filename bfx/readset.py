@@ -84,6 +84,13 @@ class IlluminaReadset(Readset):
             return self._umi
 
     @property
+    def bigwig(self):
+        if not hasattr(self, "_bigwig"):
+            return None
+        else:
+            return self._bigwig
+
+    @property
     def library(self):
         return self._library
 
@@ -156,6 +163,7 @@ def parse_illumina_readset_file(illumina_readset_file):
 
         readset._bam = line.get('BAM', None)
         readset._umi = line.get('UMI', None)
+        readset._bigwig = line.get('BIGWIG', None)
         readset.fastq1 = line.get('FASTQ1', None)
         readset.fastq2 = line.get('FASTQ2', None)
         readset._library = line.get('Library', None)

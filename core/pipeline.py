@@ -124,10 +124,7 @@ class Pipeline(object):
                 raise Exception("Error: step range \"" + self.args.steps +
                     "\" is invalid (should match \d+([,-]\d+)*)!")
         else:
-#            self.argparser.error("argument -s/--steps is required!")
-            log.info(" WARNING - No step provided by the user => launching the entire pipeline\n")
-            self._step_range = self.step_list
-                
+            self.argparser.error("argument -s/--steps is required!")
 
         self._sample_list = []
         self._sample_paths = []
@@ -317,7 +314,7 @@ class Pipeline(object):
                 job.done = os.path.join("job_output", step.name, job.name + "." + hashlib.md5(job.command_with_modules).hexdigest() + ".mugqic.done")
                 job.output_dir = self.output_dir
                 job.dependency_jobs = self.dependency_jobs(job)
-
+                
                 if not self.force_jobs and job.is_up2date():
                     log.info("Job " + job.name + " up to date... skipping")
                 else:

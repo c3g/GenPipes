@@ -19,16 +19,17 @@
 # along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
+import os
+
 from core.job import *
 
 def wigToBigWig(wigFile, chromSizes):
-    output_bigWig = wigFile + ".bigWig"
+    output_bigWig = os.path.basename(wigFile) + ".bigWig"
     
     return Job(
         [wigFile],
         [output_bigWig],
         [['ucsc', 'module_ucsc']],
-        name="wigToBigWig",
         command = """\
 wigToBigWig \\
   {wigFile} \\
@@ -40,14 +41,14 @@ wigToBigWig \\
         )
     )
 
-def bigWigInfo(bigWigFile):
-    output = "bigwiginfo_"+ bigWigFile + ".txt"
+def bigWigInfo(bigWigFile, output_dir):
+    output = os.path.join(output_dir, "bigwiginfo_"+ os.path.basename(bigWigFile) + ".txt")
 
     return Job(
         [bigWigFile],
         [output],
         [['ucsc', 'module_ucsc']],
-        name="bigWigInfo",
+        name="bigwiginfo",
         command = """\
 bigWigInfo \\
   {bigWigFile} > {output}""".format(
