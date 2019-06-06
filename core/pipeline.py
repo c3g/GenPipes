@@ -67,6 +67,7 @@ class Pipeline(object):
 
         if self.args.sanity_check:
             logging.basicConfig(stream=sys.stdout, level=logging.WARNING, format='%(message)s')
+            log.warning("Sanity Check Report :")
         else:
             logging.basicConfig(level=getattr(logging, self.args.log.upper()))
 
@@ -150,20 +151,22 @@ class Pipeline(object):
             self.clean_jobs()
         elif self.args.sanity_check:
             config.sanity = True
+            self._force_jobs = self.args.force
+            self.create_jobs()
+        else:
             try:
                 self._force_jobs = self.args.force
                 self.create_jobs()
+                self.submit_jobs()
             except SanitycheckError as e:
-                print("""\
-SANITY CHECK report :
-{error}
-               """.format(
+                log.error("""
+***The pipeline encounterered an error :
+    {error}
+***Please try running the pipeline in SANITY CHECK mode using the '--sanity-check' flag""".format(
                    error=e
                    ))
-        else:
-            self._force_jobs = self.args.force
-            self.create_jobs()
-            self.submit_jobs()
+                exit(1)
+            
 
     # Pipeline command line arguments parser
     @property
