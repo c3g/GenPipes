@@ -1840,15 +1840,12 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.rawmpileup_cat,
                 self.snp_and_indel_bcf,
                 self.merge_filter_bcf,
-                #self.mpileup_filter_nstretches,
                 self.mpileup_decompose_and_normalize,
                 self.mpileup_flag_mappability,
                 self.mpileup_snp_id_annotation,
                 self.mpileup_snp_effect,
                 self.mpileup_dbnsfp_annotation,
                 self.mpileup_gemini_annotations,
-                self.mpileup_metrics_vcf_stats,
-                #self.mpileup_metrics_snv_graph_metrics,
                 self.run_multiqc
             ],
             [
