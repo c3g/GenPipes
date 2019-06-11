@@ -169,7 +169,8 @@ class JobStat(object):
             except IndexError:
                 logger.warning('{} = {} is not a slurm prologue/epilogue value or is ambiguous'.format(k, v))
 
-        tres = re.findall(r"TRES=cpu=(\d+),mem=(\d+\w)", to_parse)
+        tres = re.findall(r"TRES=cpu=(\d+),mem=(\d+\.?\d{1,2}?\w)", to_parse)
+        print(tres)
         self._prologue[self.NUMCPUS] = tres[pro][0]
         self._epilogue[self.NUMCPUS] = tres[epi][0]
         self._prologue[self.MEM] = tres[pro][1]
@@ -266,7 +267,7 @@ def get_report(job_list_tsv=None, remote_hpc=None):
         report = []
         i = 0
         for job in jobs:
-
+            logger.info('loading {}'.format(job))
             report.append(JobStat(step_output_file=os.path.join(job_output_path, job[3]),
                                  name=job[1], jobid=job[0], dependency=job[2],
                                  remote_hpc=remote_hpc))
