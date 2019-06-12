@@ -20,6 +20,9 @@ module_kallisto=mugqic/kallisto/0.44.0
 
 HOST=`hostname`
 
+# Ensure to use 'grep' from CVMFS to avoid errors caused by different grep versions
+alias grep=/cvmfs/soft.mugqic/yum/centos7/1.0/usr/bin/grep
+
 init_install() {
   # '$MUGQIC_INSTALL_HOME_DEV' for development, '$MUGQIC_INSTALL_HOME' for production
   if [[ ${1:-} == MUGQIC_INSTALL_HOME ]]
