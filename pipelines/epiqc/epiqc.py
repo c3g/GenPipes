@@ -23,6 +23,7 @@
 import logging
 import os
 import sys
+import csv
 
 # Append mugqic_pipelines directory to Python library path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
@@ -37,22 +38,31 @@ from bfx import signal_noise
 from bfx import epigeec
 from bfx.readset import *
 
-from pipelines import common
+from pipelines.chipseq import chipseq
 
 log = logging.getLogger(__name__)
 
-class EpiQC(common.Illumina):
+class EpiQC(chipseq.ChipSeq):
     """
     TODO: write description of pipeline
     """
     def __init__(self, protocol=None):
         self._protocol = protocol
+        # Add pipeline specific arguments
+        #self.argparser.add_argument("--sample", help="Sample to impute", type=str, required=True)
+        #self.argparser.add_argument("--mark", help="Mark to impute", type=str, required=True)
         super(EpiQC, self).__init__(protocol)
 
     @property
     def output_dirs(self):
         dirs = {'bigwiginfo_output_directory': 'bigwiginfo',
                 'chromimpute_output_directory': 'imputation',
+                'chromimpute_converteddir' : 'converteddir',
+                'chromimpute_distancedir' : 'distancedir',
+                'chromimpute_traindatadir' : 'traindatadir',
+                'chromimpute_predictordir' : 'predictordir',
+                'chromimpute_output' : 'output',
+                'chromimpute_eval' : 'eval',
                 'signal_to_noise_output_directory': 'signal_to_noise',
                 'epiGeEc_output_directory': 'epiGeEC'
                 }
@@ -62,7 +72,15 @@ class EpiQC(common.Illumina):
     def bigWigInfo(self):
         jobs = []
 
-        jobs.append(Job(command = "mkdir {output_dir}".format(output_dir=self.output_dirs['bigwiginfo_output_directory']), name="mkdir_bigwiginfo"))
+        jobs.append(Job(
+            [],
+            ['bigwiginfo'],
+            [],
+            command = 
+"mkdir \
+  {output_dir}".format(
+    output_dir=self.output_dirs['bigwiginfo_output_directory']),
+            name="mkdir_bigwiginfo"))
 
         for sample in self.samples:
             for readset in sample.readsets:
@@ -80,34 +98,85 @@ class EpiQC(common.Illumina):
 
         return jobs
 
+    def getUniqueMarks(self, inputinfofile):
+        marks = []
+
+        for line in inputinfofile:
+            mark = line[1]
+            if mark not in marks:
+                marks.append(mark)
+
+        return marks
+
     def chromimpute_convert(self):
-        # TODO: - Create inputinfofile.txt with createInputInfo.py
+
+        input_dir = self.output_dirs['chromimpute_output_directory']
+        output_dir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_converteddir'])
+
+        return chromimpute.convert(input_dir, output_dir)
+
+    def chromimpute_compute_global_dist(self):
+        input_dir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_converteddir'])
+        output_dir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_distancedir'])
+
+        return chromimpute.compute_global_dist(input_dir, output_dir)
+
+    def chromimpute_generate_train_data(self):
+        input_dir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_distancedir'])
+        converteddir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_converteddir'])
+        output_dir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_traindatadir'])
         
-        jobs = []
+        return chromimpute.generate_train_data(input_dir, converteddir, output_dir, "H3K27ac")
+
+    def chromimpute_train(self):
+        input_dir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_traindatadir'])
+        output_dir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_predictordir'])
         
-        jobs.append(Job(command = "mkdir {output_dir}".format(output_dir=self.output_dirs['chromimpute_output_directory']), name="mkdir_chromimpute"))
+        return chromimpute.train(input_dir, output_dir, 'CEMT0007', 'H3K27ac')
 
-        chromimpute.createInputInfo(self.samples, ".")
+    def chromimpute_apply(self):
+        input_dir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_predictordir'])
+        converteddir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_converteddir'])
+        distancedir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_distancedir'])
+        predictordir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_predictordir'])
+        output_dir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_output'])
+        
+        return chromimpute.apply(input_dir, converteddir, distancedir, predictordir, output_dir, 'CEMT0007', 'H3K27ac')
 
-    def chromimpute_compute_global_dist(self, converteddir, inputInfo):
-        jobs = []
-
-    def chromimpute_generate_train_data(self, converteddir, distancedir, inputInfo, mark):
-        jobs = []
-
-    def chromimpute_train(self, traindatadir, inputInfo, sample, mark):
-        jobs = []
-
-    def chromimpute_apply(self, converteddir, distancedir, predictordir, inputInfo, sample, mark):
-        jobs = []
-
-    def chromimpute_eval(self, converteddir, convertedFile, imputedir, imputeFile):
-        jobs = []
+    def chromimpute_eval(self):
+        input_dir = output_dir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_output'])
+        converteddir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_converteddir'])
+        output_path = os.path.join(self.output_dirs['chromimpute_output_directory'],self.output_dirs['chromimpute_eval'],"eval.txt")
+        
+        return chromimpute.eval(input_dir, 1, 5, converteddir, "66292.CEEHRC.CEMT0007.gDNA.H3K27ac.signal_unstranded.bedgraph.wig.gz", "impute_CEMT0007_H3K27ac.wig.gz", output_path)
 
     def chromimpute(self):
+        #Notes : path to inputinfofile, dataset and chromsizes, resolution sizes
         jobs= []
+        jobs.append(Job(
+            [],
+            [self.output_dirs['chromimpute_output_directory']],
+            [],
+            command = 
+"mkdir -p \
+  {output_dir}/{eval_dir}".format(
+    output_dir = self.output_dirs['chromimpute_output_directory'],
+    eval_dir = self.output_dirs['chromimpute_eval']),
+            name="mkdirs_chromimpute"))
 
-        self.chromimpute_convert()
+        read_inputinfofile = csv.reader(open(config.param('chromimpute', 'inputinfofile'), 'rb'), delimiter = '\t')
+        marks = self.getUniqueMarks(read_inputinfofile)
+
+        convert = self.chromimpute_convert()
+        compute_global_dist = self.chromimpute_compute_global_dist()
+        generate_train_data = self.chromimpute_generate_train_data()
+        train = self.chromimpute_train()
+        c_apply = self.chromimpute_apply()
+        c_eval = self.chromimpute_eval()
+
+        jobs.extend([convert,compute_global_dist, generate_train_data, train, c_apply, c_eval])
+
+        return jobs
 
     def signal_to_noise(self, signalFile):
         # TODO: - Convert bigWig to wig if not already done
