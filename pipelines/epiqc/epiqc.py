@@ -69,6 +69,24 @@ class EpiQC(chipseq.ChipSeq):
 
         return dirs
 
+    def parseInputInfoFile(self, inputinfofile):
+        samplesMarksFile = []
+        for line in inputinfofile:
+            sampleMarkFile = [line[0], line[1], line[2]]
+            samplesMarksFile.append(sampleMarkFile)
+
+        return samplesMarksFile
+
+    def getUniqueMarks(self, inputinfofile):
+        marks = []
+        print("in getUniqueMarks")
+        for line in inputinfofile:
+            mark = line[1]
+            if mark not in marks:
+                marks.append(mark)
+
+        return marks
+
     def bigWigInfo(self):
         jobs = []
 
@@ -98,83 +116,125 @@ class EpiQC(chipseq.ChipSeq):
 
         return jobs
 
-    def getUniqueMarks(self, inputinfofile):
-        marks = []
+    def chromimpute_convert(self, marks):
+        jobs = []
 
-        for line in inputinfofile:
-            mark = line[1]
-            if mark not in marks:
-                marks.append(mark)
-
-        return marks
-
-    def chromimpute_convert(self):
-
-        input_dir = self.output_dirs['chromimpute_output_directory']
+        input_dir = self.output_dirs["chromimpute_output_directory"]
         output_dir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_converteddir'])
 
-        return chromimpute.convert(input_dir, output_dir)
+        for mark in marks:
+            jobs.append(chromimpute.convert(input_dir, output_dir, mark))
+        
+        return jobs
 
-    def chromimpute_compute_global_dist(self):
+    def chromimpute_compute_global_dist(self, marks):
+        jobs = []
+
         input_dir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_converteddir'])
         output_dir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_distancedir'])
 
-        return chromimpute.compute_global_dist(input_dir, output_dir)
+        for mark in marks:
+            jobs.append(chromimpute.compute_global_dist(input_dir, output_dir, mark))
 
-    def chromimpute_generate_train_data(self):
+        return jobs
+
+    def chromimpute_generate_train_data(self, marks):
+        jobs = []
+
         input_dir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_distancedir'])
         converteddir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_converteddir'])
         output_dir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_traindatadir'])
         
-        return chromimpute.generate_train_data(input_dir, converteddir, output_dir, "H3K27ac")
+        for mark in marks:
+            jobs.append(chromimpute.generate_train_data(input_dir, output_dir, converteddir, mark))
 
-    def chromimpute_train(self):
+        return jobs
+
+    def chromimpute_train(self, samplesMarks):
+        jobs = []
+
         input_dir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_traindatadir'])
         output_dir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_predictordir'])
         
-        return chromimpute.train(input_dir, output_dir, 'CEMT0007', 'H3K27ac')
+        for samplemark in samplesMarks:
+            jobs.append(chromimpute.train(input_dir, output_dir, samplemark[0], samplemark[1]))
 
-    def chromimpute_apply(self):
+        return jobs
+
+    def chromimpute_apply(self, samplesMarks):
+        jobs = []
+
         input_dir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_predictordir'])
         converteddir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_converteddir'])
         distancedir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_distancedir'])
         predictordir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_predictordir'])
         output_dir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_output'])
         
-        return chromimpute.apply(input_dir, converteddir, distancedir, predictordir, output_dir, 'CEMT0007', 'H3K27ac')
+        for samplemark in samplesMarks:
+            jobs.append(chromimpute.apply(input_dir, output_dir, converteddir, distancedir ,predictordir, samplemark[0], samplemark[1]))
+        
+        return jobs
 
-    def chromimpute_eval(self):
+    def chromimpute_eval(self, samplesMarksFile):
+        jobs = []
+
         input_dir = output_dir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_output'])
         converteddir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_converteddir'])
-        output_path = os.path.join(self.output_dirs['chromimpute_output_directory'],self.output_dirs['chromimpute_eval'],"eval.txt")
-        
-        return chromimpute.eval(input_dir, 1, 5, converteddir, "66292.CEEHRC.CEMT0007.gDNA.H3K27ac.signal_unstranded.bedgraph.wig.gz", "impute_CEMT0007_H3K27ac.wig.gz", output_path)
+        percent1 = config.param('chromimpute', 'percent1')
+        percent2 = config.param('chromimpute', 'percent2')
+
+        for sampleMarkFile in samplesMarksFile:
+            output_path = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_eval'], "eval_"+sampleMarkFile[0]+"_"+sampleMarkFile[1])
+            jobs.append(chromimpute.eval(input_dir, percent1, percent2, converteddir, sampleMarkFile[2]+".wig.gz", "impute_"+sampleMarkFile[0]+"_"+sampleMarkFile[1]+".wig.gz", output_path))
+
+        return jobs
 
     def chromimpute(self):
-        #Notes : path to inputinfofile, dataset and chromsizes, resolution sizes
+        # Note : path to inputinfofile, dataset and chromsizes, resolution sizes and chrom number are in .ini file
         jobs= []
+
         jobs.append(Job(
             [],
-            [self.output_dirs['chromimpute_output_directory']],
+            [self.output_dirs["chromimpute_output_directory"]],
             [],
-            command = 
-"mkdir -p \
-  {output_dir}/{eval_dir}".format(
-    output_dir = self.output_dirs['chromimpute_output_directory'],
-    eval_dir = self.output_dirs['chromimpute_eval']),
-            name="mkdirs_chromimpute"))
+            command ="""\
+mkdir -p \
+  {output_dir}/{converteddir} \\
+  {output_dir}/{compute_global_dist} \\
+  {output_dir}/{generate_train_data} \\
+  {output_dir}/{train} \\
+  {output_dir}/{apply} \\
+  {output_dir}/{eval}""".format(
+    output_dir = self.output_dirs["chromimpute_output_directory"],
+    converteddir = self.output_dirs["chromimpute_converteddir"],
+    compute_global_dist = self.output_dirs["chromimpute_distancedir"],
+    generate_train_data = self.output_dirs["chromimpute_traindatadir"],
+    train = self.output_dirs["chromimpute_predictordir"],
+    apply = self.output_dirs["chromimpute_output"],
+    eval = self.output_dirs["chromimpute_eval"]),
+            name = "mkdirs_chromimpute"))
 
         read_inputinfofile = csv.reader(open(config.param('chromimpute', 'inputinfofile'), 'rb'), delimiter = '\t')
-        marks = self.getUniqueMarks(read_inputinfofile)
+        samplesMarksFile = self.parseInputInfoFile(read_inputinfofile)
+        
+        unique_marks = []
+        for samplemark in samplesMarksFile:
+            if samplemark[1] not in unique_marks:
+                unique_marks.append(samplemark[1])
 
-        convert = self.chromimpute_convert()
-        compute_global_dist = self.chromimpute_compute_global_dist()
-        generate_train_data = self.chromimpute_generate_train_data()
-        train = self.chromimpute_train()
-        c_apply = self.chromimpute_apply()
-        c_eval = self.chromimpute_eval()
+        convert = self.chromimpute_convert(unique_marks)
+        compute_global_dist = self.chromimpute_compute_global_dist(unique_marks)
+        generate_train_data = self.chromimpute_generate_train_data(unique_marks)
+        train = self.chromimpute_train(samplesMarksFile)
+        c_apply = self.chromimpute_apply(samplesMarksFile)
+        c_eval = self.chromimpute_eval(samplesMarksFile)
 
-        jobs.extend([convert,compute_global_dist, generate_train_data, train, c_apply, c_eval])
+        jobs.extend(convert)
+        jobs.extend(compute_global_dist)
+        jobs.extend(generate_train_data)
+        jobs.extend(train)
+        jobs.extend(c_apply)
+        jobs.extend(c_eval)
 
         return jobs
 

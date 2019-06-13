@@ -24,16 +24,17 @@ import os
 from core.job import *
 from core.config import *
 
-def convert(input_dir, output_dir):
+def convert(input_dir, output_dir, mark):
     return Job(
         [input_dir],
         [output_dir],
         [['java', 'module_java']],
-        name = "chromimpute_convert",
+        name = "chromimpute_convert_"+mark,
         command = """\
 java {java_options} -jar /lb/project/mugqic/projects/rami_test/Tools/chromimpute/ChromImpute.jar \\
   Convert \\
   -c {chrom} \\
+  -m {mark} \\
   -r {resolution} \\
   {path_to_dataset} \\
   {inputinfofile} \\
@@ -41,6 +42,7 @@ java {java_options} -jar /lb/project/mugqic/projects/rami_test/Tools/chromimpute
   {output_dir}""".format(
         java_options = config.param('DEFAULT', 'java_options'),
         chrom = config.param('chromimpute','chrom'),
+        mark = mark,
         resolution = config.param('chromimpute', 'resolution'),
         path_to_dataset = config.param('chromimpute', 'dataset'),
         inputinfofile = config.param('chromimpute', 'inputinfofile'),
@@ -49,21 +51,23 @@ java {java_options} -jar /lb/project/mugqic/projects/rami_test/Tools/chromimpute
         )
     )
 
-def compute_global_dist(input_dir, output_dir):
+def compute_global_dist(input_dir, output_dir, mark):
     return Job(
         [input_dir],
         [output_dir],
         [['java', 'module_java']],
-        name = "chromimpute_compute_global_dist",
+        name = "chromimpute_compute_global_dist_"+mark,
         command = """\
 java {java_options} -jar /lb/project/mugqic/projects/rami_test/Tools/chromimpute/ChromImpute.jar \\
   ComputeGlobalDist \\
+  -m {mark} \\
   -r {resolution} \\
   {converteddir} \\
   {inputinfofile} \\
   {chrom_sizes} \\
   {output_dir}""".format(
         java_options = config.param('DEFAULT', 'java_options'),
+        mark = mark,
         resolution = config.param('chromimpute', 'resolution'),
         converteddir = input_dir,
         inputinfofile = config.param('chromimpute', 'inputinfofile'),
@@ -72,13 +76,12 @@ java {java_options} -jar /lb/project/mugqic/projects/rami_test/Tools/chromimpute
         )
     )
 
-
-def generate_train_data(input_dir, converteddir, output_dir, mark):
+def generate_train_data(input_dir, output_dir, converteddir, mark):
     return Job(
         [input_dir],
         [output_dir],
         [['java', 'module_java']],
-        name = "chromimpute_generate_train_data",
+        name = "chromimpute_generate_train_data_"+mark,
         command = """\
 java {java_options} -jar /lb/project/mugqic/projects/rami_test/Tools/chromimpute/ChromImpute.jar \\
   GenerateTrainData \\
@@ -108,7 +111,7 @@ def train(input_dir, output_dir, sample, mark):
         [input_dir],
         [output_dir],
         [['java', 'module_java']],
-        name = "chromimpute_train",
+        name = "chromimpute_train_"+sample+"_"+mark,
         command = """\
 java {java_options} -jar /lb/project/mugqic/projects/rami_test/Tools/chromimpute/ChromImpute.jar \\
   Train \\
@@ -126,12 +129,12 @@ java {java_options} -jar /lb/project/mugqic/projects/rami_test/Tools/chromimpute
         )
     )
 
-def apply(input_dir, converteddir, distancedir, predictordir, output_dir, sample, mark):
+def apply(input_dir, output_dir, converteddir, distancedir, predictordir, sample, mark):
     return Job(
         [input_dir],
         [output_dir],
         [['java', 'module_java']],
-        name = "chromimpute_apply",
+        name = "chromimpute_apply_"+"sample"+"_"+mark,
         command = """\
 java {java_options} -jar /lb/project/mugqic/projects/rami_test/Tools/chromimpute/ChromImpute.jar \\
     Apply \\
@@ -159,28 +162,28 @@ java {java_options} -jar /lb/project/mugqic/projects/rami_test/Tools/chromimpute
         )
     )
 
-def eval(input_dir, percent1, percent2, converteddir, convertedFile, imputedFile, output_path):
+def eval(input_dir, percent1, percent2, converteddir, converted_file, imputed_file, output_path):
     return Job(
         [input_dir],
         [],
         [['java', 'module_java']],
-        name = "chromimpute_eval",
+        name = "chromimpute_eval_"+converted_file+"_vs_"+imputed_file,
         command = """\
 java {java_options} -jar /lb/project/mugqic/projects/rami_test/Tools/chromimpute/ChromImpute.jar \\
     Eval \\
     -p {percent1} {percent2} \\
     {converteddir} \\
-    {convertedfile} \\
+    {converted_file} \\
     {input_dir} \\
-    {imputedfile} \\
-    {chrom_sizes} > {output_path}""".format(
+    {imputed_file} \\
+    {chrom_sizes} > {output_path}.txt""".format(
         java_options = config.param('DEFAULT', 'java_options'),
         percent1 = percent1,
         percent2 = percent2,
         converteddir = converteddir,
-        convertedfile = convertedFile,
+        converted_file = converted_file,
         input_dir = input_dir,
-        imputedfile = imputedFile,
+        imputed_file = imputed_file,
         chrom_sizes = config.param('chromimpute', 'chromsizes'),
         output_path = output_path
         )
