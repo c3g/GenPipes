@@ -313,7 +313,7 @@ def print_report(report, to_stdout=True, to_tsv=None):
                 bad_message.append(
                     "Job Name {}, jobid {} has not completed with status {}, log file status {}"
                     .format(j.name, j.jobid, j.slurm_state.keys(), j.log_file_exit_status))
-            elif j.output_log_id and j.jobid != j.output_log_id:
+            elif (j.output_log_id and j.jobid != j.output_log_id[0]) or len(j.output_log_id) > 1:
                 bad_message.append(
                     "Job Name {}, jobid {} has log from job {} in its log file {}"
                     .format(j.name, j.jobid, j.output_log_id, j.path))
