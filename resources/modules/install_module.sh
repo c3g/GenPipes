@@ -66,9 +66,9 @@ patch_c3g_binaries() {
       echo "GO Done" > /dev/null
     elif [ ${i##*.} == "so" ] || [[ ${i##*/} =~ "so"*(\.[0-9]+)*$ ]]
     then
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-rpath $LIBDIR $i
+      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-rpath $($MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --print-rpath $i):$LIBDIR $i
     else
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-interpreter $INTERPRETER --set-rpath $LIBDIR $i
+      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-interpreter $INTERPRETER --set-rpath $($MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --print-rpath $i):$LIBDIR $i
     fi
   done
 }
@@ -104,19 +104,20 @@ then
   C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/apt/ubuntu1604/1.0
   LIB=lib
   INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu/ld-linux-x86-64.so.2
-  LIBDIR=$C3G_SYSTEM_LIBRARY/usr/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu:$LD_LIBRARY_PATH
+  LIBDIR=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/usr/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB
 elif [ `lsb_release -i | cut -f 2` == "CentOS" ]
 then
   echo "CentOS" > /dev/null
   C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/yum/centos7/1.0
   LIB=lib64
   INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/ld-linux-x86-64.so.2
-  LIBDIR=$C3G_SYSTEM_LIBRARY/usr/local/c3g/rpm/usr/$LIB:$C3G_SYSTEM_LIBRARY/usr/local/c3g/compile/lib:$C3G_SYSTEM_LIBRARY/usr/local/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB:$LD_LIBRARY_PATH
+  LIBDIR=$C3G_SYSTEM_LIBRARY/usr/local/c3g/rpm/usr/$LIB:$C3G_SYSTEM_LIBRARY/usr/local/c3g/compile/lib:$C3G_SYSTEM_LIBRARY/usr/local/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB
 else
   echo "*** ERROR ***"
   echo "'"`lsb_release -i | cut -f 2`"' OS detected... should be either 'Ubuntu' neither 'CentOS'..."
   exit 1
 fi
+
 
 echo "Installing $SOFTWARE version $VERSION in \$$INSTALL_HOME..."
 echo
