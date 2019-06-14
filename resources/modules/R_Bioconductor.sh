@@ -121,14 +121,14 @@ then
   C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/apt/ubuntu1604/1.0
   LIB=lib
   INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu/ld-linux-x86-64.so.2
-  LIBDIR=$INSTALL_DIR/$LIB/R/lib:$C3G_SYSTEM_LIBRARY/usr/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB/x86_64-linux-gnu
+  LIBDIR=$INSTALL_DIR/$LIB/R/lib:$INSTALL_DIR/$LIB/R/library:$C3G_SYSTEM_LIBRARY/$LIB:$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/usr/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB/x86_64-linux-gnu
 elif [ `lsb_release -i | cut -f 2` == "CentOS" ]
 then
   echo "CentOS" > /dev/null
   C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/yum/centos7/1.0
   LIB=lib64
   INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/ld-linux-x86-64.so.2
-  LIBDIR=$C3G_SYSTEM_LIBRARY/usr/local/c3g/rpm/usr/lib64:$C3G_SYSTEM_LIBRARY/usr/local/c3g/compile/lib:$C3G_SYSTEM_LIBRARY/usr/local/lib64:$C3G_SYSTEM_LIBRARY/usr/lib64:$C3G_SYSTEM_LIBRARY/usr/lib:$C3G_SYSTEM_LIBRARY/usr/lib64/mysql:$C3G_SYSTEM_LIBRARY/$LIB/mysql:$INSTALL_DIR/$LIB/R/lib
+  LIBDIR=$INSTALL_DIR/$LIB/R/lib:$INSTALL_DIR/$LIB/R/library:$C3G_SYSTEM_LIBRARY/usr/local/c3g/rpm/usr/lib64:$C3G_SYSTEM_LIBRARY/usr/local/c3g/compile/lib:$C3G_SYSTEM_LIBRARY/usr/local/lib64:$C3G_SYSTEM_LIBRARY/usr/lib64:$C3G_SYSTEM_LIBRARY/usr/lib:$C3G_SYSTEM_LIBRARY/usr/lib64/mysql:$C3G_SYSTEM_LIBRARY/$LIB/mysql
 else
   echo "*** ERROR ***"
   echo "'"`lsb_release -i | cut -f 2`"' OS detected... should be either 'Ubuntu' neither 'CentOS'..."
@@ -249,10 +249,10 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
     ## Define the list of packages to standard packages to install.
     deps = c("affxparser", "affy", "affyio", "affyPLM", "akima", "allgown", "annotate", "AnnotationDbi", "AnnotationForge", "ape", "ash", "ASCAT",
     "ballgown", "BatchExperiments", "BatchJobs", "batchtools", "beanplot", "Biobase", "BiocGenerics", "BiocInstaller", "bioDist", "biomaRt", "biomformat", "Biostrings", "biovizBase", "bit",
-    "bit64", "bitops", "boot", "brew", "BSgenome", "BSgenome.Hsapiens.UCSC.hg19", "bumphunter",
-    "caTools", "charm", "charmData", "ChIPseeker", "circlize", "class", "cluster", "clusterStab", "clusterProfiler", "codetools", "colorspace", "ConsensusClusterPlus",
+    "bit64", "bitops", "boot", "brew", "BSgenome", "BSgenome.Hsapiens.1000genomes.hs37d5", "BSgenome.Hsapiens.UCSC.hg19", "bumphunter",
+    "Cairo", "caTools", "charm", "charmData", "ChIPseeker", "circlize", "class", "cluster", "clusterStab", "clusterProfiler", "codetools", "colorspace", "ConsensusClusterPlus",
     "corpcor", "crlmm", "ctc", "cummeRbund",
-    "dada2", "datasets", "data.table", "DBI", "DESeq", "devtools", "dendextend", "dichromat", "diffHic", "digest", "dplyr", "DNAcopy",
+    "dada2", "datasets", "data.table", "DBI", "deconstructSigs", "DESeq", "devtools", "dendextend", "dichromat", "diffHic", "digest", "dplyr", "DNAcopy",
     "edgeR", "ellipse", "evaluate",
     "farver", "fastcluster", "fdrtool", "ff", "fields", "FDb.InfiniumMethylation.hg19", "foreach", "foreign",
     "gcrma", "gdata", "genefilter", "GenomicFeatures", "GenomicRanges", "GenomeInfoDb", "genoset", "GEOquery", "ggplot2", "ggvis", "googleVis", "goseq", "gplots", "graph",
@@ -269,7 +269,7 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
     "qqman", "quantreg",
     "R2HTML", "RBGL", "RColorBrewer", "Rcpp", "RcppEigen", "RCurl", "remotes", "rhdf5", "ReportingTools", "reshape", "reshape2", "rgl", "RJSONIO", "Rmisc", "R.methodsS3",
     "rmarkdown", "roxygen2", "rpart", "Rsamtools", "RSQLite", "rtracklayer", "Rtsne",
-    "scales", "sendmailR", "Seurat", "shiny", "ShortRead", "siggenes", "slam", "snow", "SNPchip", "SortableHTMLTables", "spam", "SparseM", "spatial", "spp", "SQN",
+    "scales", "sendmailR", "sequenza", "Seurat", "shiny", "ShortRead", "siggenes", "slam", "snow", "SNPchip", "SomaticCancerAlterations", "SomaticSignatures", "SortableHTMLTables", "spam", "SparseM", "spatial", "spp", "SQN",
     "statmod", "stringi", "stringr", "survival", "sva",
     "testthat", "tidyr", "tidyverse", "tweenr", "TxDb.Hsapiens.UCSC.hg19.knownGene",
     "vioplot", "vsn",
