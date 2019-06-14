@@ -324,11 +324,8 @@ awk '{{if ($0~/>/) {{sub(/>/,"@",$0);print;}} else {{l=length($0);q=""; while (l
             outfile_fastq=outfile_fastq
     ))
 
-def pbutgcns(
-    assembly_directory,
-    sample_cutoff_mer_size,
-    mer_size_directory
-    ):
+
+def pbutgcns(assembly_directory, sample_cutoff_mer_size, mer_size_directory):
 
     gpk_store = os.path.join(assembly_directory, sample_cutoff_mer_size + ".gkpStore")
     tig_store = os.path.join(assembly_directory, sample_cutoff_mer_size + ".tigStore")
@@ -359,8 +356,7 @@ tigStore \\
 awk 'BEGIN{{t=0}}$1=="numFrags"{{if ($2 > 1) {{print t, $2}} t++}}' | sort -nrk2,2 \\
   > {unitigs_list} && \\
 mkdir -p {outdir} && \\
-mkdir -p {tmp_dir} && \\
-bash -c 'set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
+bash -c 'set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && mkdir -p {tmp_dir} && \\
 tmp={tmp_dir} \\
 cap=$PWD/{prefix} \\
 utg=$PWD/{unitigs_list} \\
