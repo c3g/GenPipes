@@ -166,7 +166,7 @@ class Pipeline(object):
                 log.error("""
 ***The pipeline encounterered an error :
     {error}
-***Please try running the pipeline in SANITY CHECK mode using the '--sanity-check' flag""".format(
+***Please try running the pipeline in SANITY CHECK mode using the '--sanity-check' flag to check for more petential issues...""".format(
                    error=e
                    ))
                 exit(1)
@@ -368,23 +368,31 @@ class Pipeline(object):
             for sample in self.sample_list:
                 self.sample_paths.append(jsonator.create(self, sample))
 
+        # First check if portal_output_dir is set from a valid environment variable, if self.json is True
+        self.portal_output_dir = config.param('DEFAULT', 'portal_output_dir', required=False)
+        if self.json:
+            if self.portal_output_dir.startswith("$") and os.environ.get(re.search("^\$(.*)\/?", self.portal_output_dir).group(1)) is None:
+                if self.portal_output_dir == "$PORTAL_OUTPUT_DIR":
+                    self.portal_output_dir = ""
+                    log.debug(" --> PORTAL_OUTPUT_DIR environment variable is not set... sending JSON files to the GenPipes analysis portal will be ignored...\n")
+                else:
+                    _raise(SanitycheckError("Environment variable \"" + re.search("^\$(.*)\/?", self.portal_output_dir).group(1) + "\" does not exist or is not valid!"))
+            elif not os.path.isdir(os.path.expandvars(self.portal_output_dir)):
+                _raise(SanitycheckError("Directory path \"" + self.portal_output_dir + "\" does not exist or is not a valid directory!"))
+
         log.info("TOTAL: " + str(len(self.jobs)) + " job" + ("s" if len(self.jobs) > 1 else "") + " created" + ("" if self.jobs else "... skipping") + "\n")
 
     def submit_jobs(self):
         self.scheduler.submit(self)
 
-        # Print a copy of sample JSONs for the genpipes dashboard
-        portal_output_dir = config.param('DEFAULT', 'portal_output_dir', required=False)
-        if self.json and os.path.expandvars(portal_output_dir) != "":
-            if not os.path.isdir(os.path.expandvars(portal_output_dir)):
-                _raise(SanitycheckError("Directory path \"" + portal_output_dir + "\" does not exist or is not a valid directory!"))
+        ## Print a copy of sample JSONs for the genpipes dashboard
+        if self.json and self.portal_output_dir != "":
             copy_commands = []
             for i, sample in enumerate(self.sample_list):
                 input_file = self.sample_paths[i]
-                output_file = os.path.join(portal_output_dir, '$USER.' + sample.name + '.' + uuid4().get_hex() + '.json')
+                output_file = os.path.join(self.portal_output_dir, '$USER.' + sample.name + '.' + uuid4().get_hex() + '.json')
                 copy_commands.append("cp \"{input_file}\" \"{output_file}\"".format(
                     input_file=input_file, output_file=output_file))
-
             print(textwrap.dedent("""
                 #------------------------------------------------------------------------------
                 # Print a copy of sample JSONs for the genpipes dashboard
