@@ -1177,6 +1177,7 @@ done""".format(
             self.differential_expression,
             self.differential_expression_goseq,
             self.ihec_metrics,
+            self.cram_output
             ],
             [self.picard_sam_to_fastq,
             self.trimmomatic,
