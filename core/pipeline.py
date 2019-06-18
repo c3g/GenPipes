@@ -117,6 +117,10 @@ class Pipeline(object):
         self._output_dir = os.path.abspath(self.args.output_dir)
         self._scheduler = create_scheduler(self.args.job_scheduler, self.args.config)
 
+        self._json = True
+        if self.args.no_json:
+            self._json = False
+
         step_counter = collections.Counter(step_list)
         duplicated_steps = [step.__name__ for step in step_counter if step_counter[step] > 1]
         if duplicated_steps:
@@ -198,7 +202,7 @@ class Pipeline(object):
             self._argparser.add_argument("-o", "--output-dir", help="output directory (default: current)", default=os.getcwd())
             self._argparser.add_argument("-j", "--job-scheduler", help="job scheduler type (default: slurm)", choices=["pbs", "batch", "daemon", "slurm"], default="slurm")
             self._argparser.add_argument("-f", "--force", help="force creation of jobs even if up to date (default: false)", action="store_true")
-            self._argparser.add_argument("--json", help="create a JSON file per analysed sample to track the analysis status (default: false)", action="store_true")
+            self._argparser.add_argument("--no-json", help="do not create JSON file per analysed sample to track the analysis status (default: false i.e. JSON file will be created)", action="store_true")
             self._argparser.add_argument("--report", help="create 'pandoc' command to merge all job markdown report files in the given step range into HTML, if they exist; if --report is set, --job-scheduler, --force, --clean options and job up-to-date status are ignored (default: false)", action="store_true")
             self._argparser.add_argument("--clean", help="create 'rm' commands for all job removable files in the given step range, if they exist; if --clean is set, --job-scheduler, --force options and job up-to-date status are ignored (default: false)", action="store_true")
             self._argparser.add_argument("-l", "--log", help="log level (default: info)", choices=["debug", "info", "warning", "error", "critical"], default="info")
@@ -262,6 +266,10 @@ class Pipeline(object):
         for step in self.step_range:
             jobs.extend(step.jobs)
         return jobs
+
+    @property
+    def json(self):
+        return self._json
 
     # Given a list of lists of input files, return the first valid list of input files which can be found either in previous jobs output files or on file system.
     # Thus, a job with several candidate lists of input files can find out the first valid one.
@@ -356,7 +364,7 @@ class Pipeline(object):
                 log.info("Step " + step.name + ": " + str(len(step.jobs)) + " job" + ("s" if len(step.jobs) > 1 else "") + " created" + ("" if step.jobs else "... skipping") + "\n")
 
         # Now create the json dumps for all the samples if not already done
-        if self.args.json:
+        if self.json:
             for sample in self.sample_list:
                 self.sample_paths.append(jsonator.create(self, sample))
 
@@ -367,9 +375,9 @@ class Pipeline(object):
 
         # Print a copy of sample JSONs for the genpipes dashboard
         portal_output_dir = config.param('DEFAULT', 'portal_output_dir', required=False)
-        if self.args.json and portal_output_dir != "":
+        if self.json and os.path.expandvars(portal_output_dir) != "":
             if not os.path.isdir(os.path.expandvars(portal_output_dir)):
-                raise Error("Directory path \"" + portal_output_dir + "\" does not exist or is not a valid directory!")
+                _raise(SanitycheckError("Directory path \"" + portal_output_dir + "\" does not exist or is not a valid directory!"))
             copy_commands = []
             for i, sample in enumerate(self.sample_list):
                 input_file = self.sample_paths[i]
