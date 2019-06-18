@@ -129,6 +129,7 @@ def create(pipeline, sample):
             json_hash = {
                 'version': jsonator_version,
                 'project': project_name,
+                'submission_date': "",      # Create a submission time entry and let it empty : will be updated as the bash script is launched
                 'sample_name' : sample.name,
                 'readset' : [{
                     "name" : readset.name,
