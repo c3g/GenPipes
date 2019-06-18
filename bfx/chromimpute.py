@@ -28,19 +28,20 @@ def convert(input_dir, output_dir, mark):
     return Job(
         [input_dir],
         [output_dir],
-        [['java', 'module_java']],
+        [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
         name = "chromimpute_convert_"+mark,
         command = """\
-java {java_options} -jar /lb/project/mugqic/projects/rami_test/Tools/chromimpute/ChromImpute.jar \\
+java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_JAR \\
   Convert \\
-  -c {chrom} \\
+  {chrom} \\
   -m {mark} \\
-  -r {resolution} \\
+  {resolution} \\
   {path_to_dataset} \\
   {inputinfofile} \\
   {chrom_sizes} \\
   {output_dir}""".format(
-        java_options = config.param('DEFAULT', 'java_options'),
+        java_other_options = config.param('DEFAULT', 'java_other_options'),
+        ram = config.param('chromimpute', 'ram'),
         chrom = config.param('chromimpute','chrom'),
         mark = mark,
         resolution = config.param('chromimpute', 'resolution'),
@@ -55,18 +56,19 @@ def compute_global_dist(input_dir, output_dir, mark):
     return Job(
         [input_dir],
         [output_dir],
-        [['java', 'module_java']],
+        [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
         name = "chromimpute_compute_global_dist_"+mark,
         command = """\
-java {java_options} -jar /lb/project/mugqic/projects/rami_test/Tools/chromimpute/ChromImpute.jar \\
+java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_JAR \\
   ComputeGlobalDist \\
   -m {mark} \\
-  -r {resolution} \\
+  {resolution} \\
   {converteddir} \\
   {inputinfofile} \\
   {chrom_sizes} \\
   {output_dir}""".format(
-        java_options = config.param('DEFAULT', 'java_options'),
+        java_other_options = config.param('DEFAULT', 'java_other_options'),
+        ram = config.param('chromimpute', 'ram'),
         mark = mark,
         resolution = config.param('chromimpute', 'resolution'),
         converteddir = input_dir,
@@ -80,20 +82,21 @@ def generate_train_data(input_dir, output_dir, converteddir, mark):
     return Job(
         [input_dir],
         [output_dir],
-        [['java', 'module_java']],
+        [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
         name = "chromimpute_generate_train_data_"+mark,
         command = """\
-java {java_options} -jar /lb/project/mugqic/projects/rami_test/Tools/chromimpute/ChromImpute.jar \\
+java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_JAR \\
   GenerateTrainData \\
-  -c {chrom} \\
-  -r {resolution} \\
+  {chrom} \\
+  {resolution} \\
   {converteddir} \\
   {distancedir} \\
   {inputinfofile} \\
   {chrom_sizes} \\
   {output_dir} \\
   {mark}""".format(
-        java_options = config.param('DEFAULT', 'java_options'),
+        java_other_options = config.param('DEFAULT', 'java_other_options'),
+        ram = config.param('chromimpute', 'ram'),
         chrom = config.param('chromimpute','chrom'),
         resolution = config.param('chromimpute', 'resolution'),
         converteddir = converteddir,
@@ -110,17 +113,18 @@ def train(input_dir, output_dir, sample, mark):
     return Job(
         [input_dir],
         [output_dir],
-        [['java', 'module_java']],
+        [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
         name = "chromimpute_train_"+sample+"_"+mark,
         command = """\
-java {java_options} -jar /lb/project/mugqic/projects/rami_test/Tools/chromimpute/ChromImpute.jar \\
+java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_JAR \\
   Train \\
   {traindatadir} \\
   {inputinfofile} \\
   {predictordir} \\
   {sample} \\
   {mark}""".format(
-        java_options = config.param('DEFAULT', 'java_options'),
+        java_other_options = config.param('DEFAULT', 'java_other_options'),
+        ram = config.param('chromimpute', 'ram'),
         traindatadir = input_dir,
         inputinfofile = config.param('chromimpute', 'inputinfofile'),
         predictordir = output_dir,
@@ -133,13 +137,13 @@ def apply(input_dir, output_dir, converteddir, distancedir, predictordir, sample
     return Job(
         [input_dir],
         [output_dir],
-        [['java', 'module_java']],
-        name = "chromimpute_apply_"+"sample"+"_"+mark,
+        [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
+        name = "chromimpute_apply_"+sample+"_"+mark,
         command = """\
-java {java_options} -jar /lb/project/mugqic/projects/rami_test/Tools/chromimpute/ChromImpute.jar \\
+java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_JAR \\
     Apply \\
-    -c {chrom} \\
-    -r {resolution} \\
+    {chrom} \\
+    {resolution} \\
     {converteddir} \\
     {distancedir} \\
     {predictordir} \\
@@ -148,7 +152,8 @@ java {java_options} -jar /lb/project/mugqic/projects/rami_test/Tools/chromimpute
     {output_dir} \\
     {sample} \\
     {mark}""".format(
-        java_options = config.param('DEFAULT', 'java_options'),
+        java_other_options = config.param('DEFAULT', 'java_other_options'),
+        ram = config.param('chromimpute', 'ram'),
         chrom = config.param('chromimpute','chrom'),
         resolution = config.param('chromimpute', 'resolution'),
         converteddir = converteddir,
@@ -166,10 +171,10 @@ def eval(input_dir, percent1, percent2, converteddir, converted_file, imputed_fi
     return Job(
         [input_dir],
         [],
-        [['java', 'module_java']],
+        [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
         name = "chromimpute_eval_"+converted_file+"_vs_"+imputed_file,
         command = """\
-java {java_options} -jar /lb/project/mugqic/projects/rami_test/Tools/chromimpute/ChromImpute.jar \\
+java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_JAR \\
     Eval \\
     -p {percent1} {percent2} \\
     {converteddir} \\
@@ -177,7 +182,8 @@ java {java_options} -jar /lb/project/mugqic/projects/rami_test/Tools/chromimpute
     {input_dir} \\
     {imputed_file} \\
     {chrom_sizes} > {output_path}.txt""".format(
-        java_options = config.param('DEFAULT', 'java_options'),
+        java_other_options = config.param('DEFAULT', 'java_other_options'),
+        ram = config.param('chromimpute', 'ram'),
         percent1 = percent1,
         percent2 = percent2,
         converteddir = converteddir,
