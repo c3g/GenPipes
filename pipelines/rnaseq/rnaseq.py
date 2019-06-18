@@ -375,7 +375,7 @@ awk 'BEGIN {{OFS="\\t"}} {{if (substr($1,1,1)=="@") {{print;next}}; split($6,C,/
 echo "Sample\tBamFile\tNote
 {sample_rows}" \\
   > {sample_file}""".format(sample_rows="\n".join(["\t".join(sample_row) for sample_row in sample_rows]), sample_file=sample_file)),
-            metrics.rnaseqc(sample_file, output_directory, self.run_type == "SINGLE_END", gtf_file=gtf_transcript_id),
+            metrics.rnaseqc(sample_file, output_directory, self.run_type == "SINGLE_END", gtf_file=gtf_transcript_id, reference=config.param('rnaseqc', 'genome_fasta', type='filepath'), ribosomal_interval_file=config.param('rnaseqc', 'ribosomal_fasta', type='filepath')),
             Job([], [output_directory + ".zip"], command="zip -r {output_directory}.zip {output_directory}".format(output_directory=output_directory))
         ], name="rnaseqc"))
 
@@ -1176,8 +1176,7 @@ done""".format(
             self.gq_seq_utils_exploratory_analysis_rnaseq,
             self.differential_expression,
             self.differential_expression_goseq,
-            self.ihec_metrics,
-            self.verify_bam_id],
+            self.ihec_metrics],
             [self.picard_sam_to_fastq,
             self.trimmomatic,
             self.merge_trimmomatic_stats,
