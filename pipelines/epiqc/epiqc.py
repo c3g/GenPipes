@@ -48,9 +48,6 @@ class EpiQC(chipseq.ChipSeq):
     """
     def __init__(self, protocol=None):
         self._protocol = protocol
-        # Add pipeline specific arguments
-        #self.argparser.add_argument("--sample", help="Sample to impute", type=str, required=True)
-        #self.argparser.add_argument("--mark", help="Mark to impute", type=str, required=True)
         super(EpiQC, self).__init__(protocol)
 
     @property
@@ -64,7 +61,10 @@ class EpiQC(chipseq.ChipSeq):
                 'chromimpute_output' : 'output',
                 'chromimpute_eval' : 'eval',
                 'signal_to_noise_output_directory': 'signal_to_noise',
-                'epiGeEc_output_directory': 'epiGeEC'
+                'epigeec_output_directory': 'epigeec',
+                'epigeec_hdf5' : 'hdf5',
+                'epigeec_filtered' : 'filtered',
+                'epigeec_output' : 'output'
                 }
 
         return dirs
@@ -76,16 +76,6 @@ class EpiQC(chipseq.ChipSeq):
             samplesMarksFile.append(sampleMarkFile)
 
         return samplesMarksFile
-
-    def getUniqueMarks(self, inputinfofile):
-        marks = []
-        print("in getUniqueMarks")
-        for line in inputinfofile:
-            mark = line[1]
-            if mark not in marks:
-                marks.append(mark)
-
-        return marks
 
     def bigWigInfo(self):
         jobs = []
@@ -100,13 +90,14 @@ class EpiQC(chipseq.ChipSeq):
     output_dir=self.output_dirs['bigwiginfo_output_directory']),
             name="mkdir_bigwiginfo"))
 
+        log.debug("bigwiginfo_creating_jobs")
         for sample in self.samples:
             for readset in sample.readsets:
                 if readset.bigwig != None: # Check if the readset has a BIGWIG column 
                     bigwig_path = readset.bigwig
-                else:                       # If not, we search for the path from a chipseq pipeline
-                    prefix_path = "/".join(self.args.readsets.name.split("/")[:-1]) # Get path to chipseq folder
-                    bigwig_path = os.path.join(prefix_path, "tracks", readset.sample.name, "bigWig", readset.sample.name + ".bw") # Get path to bigwig file
+                else:                      # If not, we search for the path from a chipseq pipeline
+                    prefix_path = "/".join(self.args.readsets.name.split("/")[:-1]) # Find path to chipseq folder
+                    bigwig_path = os.path.join(prefix_path, "tracks", readset.sample.name, "bigWig", readset.sample.name + ".bw") # Create path to bigwig file
 
                 file_ext = bigwig_path.split(".")[-1]
                 if file_ext != "bigWig" and file_ext != "bw":
@@ -119,7 +110,7 @@ class EpiQC(chipseq.ChipSeq):
     def chromimpute_convert(self, marks):
         jobs = []
 
-        input_dir = self.output_dirs["chromimpute_output_directory"]
+        input_dir = self.output_dirs['chromimpute_output_directory']
         output_dir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_converteddir'])
 
         for mark in marks:
@@ -190,12 +181,13 @@ class EpiQC(chipseq.ChipSeq):
         return jobs
 
     def chromimpute(self):
+        # TODO idea: Automatically convert bigwig to bedgraph, create inputinfofile, delete predictordir to save space
         # Note : path to inputinfofile, dataset and chromsizes, resolution sizes and chrom number are in .ini file
         jobs= []
 
         jobs.append(Job(
             [],
-            [self.output_dirs["chromimpute_output_directory"]],
+            [self.output_dirs['chromimpute_output_directory']],
             [],
             command ="""\
 mkdir -p \
@@ -205,57 +197,171 @@ mkdir -p \
   {output_dir}/{train} \\
   {output_dir}/{apply} \\
   {output_dir}/{eval}""".format(
-    output_dir = self.output_dirs["chromimpute_output_directory"],
-    converteddir = self.output_dirs["chromimpute_converteddir"],
-    compute_global_dist = self.output_dirs["chromimpute_distancedir"],
-    generate_train_data = self.output_dirs["chromimpute_traindatadir"],
-    train = self.output_dirs["chromimpute_predictordir"],
-    apply = self.output_dirs["chromimpute_output"],
-    eval = self.output_dirs["chromimpute_eval"]),
-            name = "mkdirs_chromimpute"))
+    output_dir = self.output_dirs['chromimpute_output_directory'],
+    converteddir = self.output_dirs['chromimpute_converteddir'],
+    compute_global_dist = self.output_dirs['chromimpute_distancedir'],
+    generate_train_data = self.output_dirs['chromimpute_traindatadir'],
+    train = self.output_dirs['chromimpute_predictordir'],
+    apply = self.output_dirs['chromimpute_output'],
+    eval = self.output_dirs['chromimpute_eval']),
+            name = 'mkdirs_chromimpute'))
 
         read_inputinfofile = csv.reader(open(config.param('chromimpute', 'inputinfofile'), 'rb'), delimiter = '\t')
-        samplesMarksFile = self.parseInputInfoFile(read_inputinfofile)
+        samplesMarksFiles = self.parseInputInfoFile(read_inputinfofile)
         
         unique_marks = []
-        for samplemark in samplesMarksFile:
-            if samplemark[1] not in unique_marks:
-                unique_marks.append(samplemark[1])
+        for mark in samplesMarksFiles:
+            if mark[1] not in unique_marks:
+                unique_marks.append(mark[1])
+        log.debug("Unique marks : "+ str(unique_marks))
 
-        convert = self.chromimpute_convert(unique_marks)
-        compute_global_dist = self.chromimpute_compute_global_dist(unique_marks)
-        generate_train_data = self.chromimpute_generate_train_data(unique_marks)
-        train = self.chromimpute_train(samplesMarksFile)
-        c_apply = self.chromimpute_apply(samplesMarksFile)
-        c_eval = self.chromimpute_eval(samplesMarksFile)
-
-        jobs.extend(convert)
-        jobs.extend(compute_global_dist)
-        jobs.extend(generate_train_data)
-        jobs.extend(train)
-        jobs.extend(c_apply)
-        jobs.extend(c_eval)
+        log.debug("chromimpute_convert")
+        jobs.extend(self.chromimpute_convert(unique_marks))
+        log.debug("chromimpute_compute_global_dist")
+        jobs.extend(self.chromimpute_compute_global_dist(unique_marks))
+        log.debug("chromimpute_generate_train_data")
+        jobs.extend(self.chromimpute_generate_train_data(unique_marks))
+        log.debug("chromimpute_train")
+        jobs.extend(self.chromimpute_train(samplesMarksFiles))
+        log.debug("chromimpute_apply")
+        jobs.extend(self.chromimpute_apply(samplesMarksFiles))
+        log.debug("chromimpute_eval")
+        jobs.extend(self.chromimpute_eval(samplesMarksFiles))
 
         return jobs
 
-    def signal_to_noise(self, signalFile):
-        # TODO: - Convert bigWig to wig if not already done
-        #       - Create command to run signal_noise.py || Transform signal_noise.py to launch here
+    def signal_to_noise(self):
+        # TODO : Delete decompressed converted files in imputation/converteddir to save space
+        # Use converted files from chromimpute to calcule signal to noise ratio
         jobs = []
 
-    def epigeec_tohdf5(self, dataset, resolution):
-        # TODO: - Create command to convert bigWig to hdf5
-        #       - Create txt file containing path to each hdf5 files (one per line)
-        #       - Create command to correlate hdf5 files
+        jobs.append(Job(
+            [],
+            ['signal_noise'],
+            [],
+            command = 
+"mkdir \
+  {output_dir}".format(
+    output_dir = self.output_dirs['signal_to_noise_output_directory']),
+            name = "mkdir_signal_noise"))
+        
+        converteddir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_converteddir'])
+
+        log.debug("signal_to_noise")
+        for file in os.listdir(converteddir):
+            jobs.append(Job(
+                ['signal_noise',converteddir],
+                ['signal_noise'],
+                [],
+                name = 'signal_noise',
+                command = """\
+python ../genpipes/bfx/wigSignalNoise.py \\
+  -i {file} \\
+  -o {output_dir}""".format(
+                file = os.path.join(converteddir, file),
+                output_dir = os.path.join(self.output_dirs['signal_to_noise_output_directory'], file[:-3])
+                )))
+
+        return jobs
+
+
+    def epigeec_tohdf5(self):
         jobs = []
 
-    # def epigeec_filter():
+        input_dir = 'epigeec'
+        output_dir = os.path.join(self.output_dirs['epigeec_output_directory'], self.output_dirs['epigeec_hdf5'])
 
-    def epigeec_correlate(self, chromSizes):
+        for sample in self.samples:
+            for readset in sample.readsets:
+                if readset.bigwig != None: # Check if the readset has a BIGWIG column 
+                    bigwig_path = readset.bigwig
+                else:                      # If not, we search for the path from a chipseq pipeline
+                    prefix_path = "/".join(self.args.readsets.name.split("/")[:-1]) # Find path to chipseq folder
+                    bigwig_path = os.path.join(prefix_path, "tracks", readset.sample.name, "bigWig", readset.sample.name + ".bw") # Create path to bigwig file
+
+                file_ext = bigwig_path.split(".")[-1]
+                if file_ext != "bigWig" and file_ext != "bw":
+                    raise Exception("Error : " + os.path.basename(bigwig_path) + " not a bigWig file !")
+
+                jobs.append(epigeec.tohdf5(input_dir, output_dir, bigwig_path))
+
+        return jobs
+
+    def epigeec_filter(self, hdf5_files):
         jobs = []
 
-    def epigeec_average_score(self, dataset, chromSizes, resolution):
+        input_dir = os.path.join(self.output_dirs['epigeec_output_directory'], self.output_dirs['epigeec_hdf5'])
+        output_dir = os.path.join(self.output_dirs['epigeec_output_directory'], self.output_dirs['epigeec_filtered'])
+
+        for hdf5_file in hdf5_files:    
+            path_to_hdf5_file = os.path.join(self.output_dirs['epigeec_output_directory'], self.output_dirs['epigeec_hdf5'], hdf5_file)
+            jobs.append(epigeec.filter(input_dir, output_dir, path_to_hdf5_file))
+
+        return jobs
+
+    def epigeec_correlate(self, skip_filter_step, hdf5_files):
+        file_list = open("epigeec_list.txt", "w+")
+
+        for hdf5_file in hdf5_files:
+            if skip_filter_step:
+                path_to_hdf5_file = os.path.join(self.output_dirs['epigeec_output_directory'], self.output_dirs['epigeec_hdf5'], hdf5_file)
+            else:
+                path_to_hdf5_file = os.path.join(self.output_dirs['epigeec_output_directory'], self.output_dirs['epigeec_filtered'], hdf5_file)
+
+            file_list.write(path_to_hdf5_file + "\n")
+
+        if skip_filter_step:
+            input_dir = os.path.join(self.output_dirs['epigeec_output_directory'], self.output_dirs['epigeec_hdf5'])
+        else:
+            input_dir = os.path.join(self.output_dirs['epigeec_output_directory'], self.output_dirs['epigeec_filtered'])
+        output_dir = os.path.join(self.output_dirs['epigeec_output_directory'], self.output_dirs['epigeec_output'])
+
+        return epigeec.correlate(input_dir, output_dir, "epigeec_list.txt")
+
+    def epigeec(self):
         jobs = []
+
+        skip_filter_step = config.param('epigeec', 'select') == '' and config.param('epigeec', 'exclude') == ''
+        
+        filtered_dir = self.output_dirs['epigeec_filtered']
+        if skip_filter_step:
+            filtered_dir = ""
+
+        jobs.append(Job(
+            [],
+            ['epigeec'],
+            [],
+            command = 
+"mkdir -p \
+  {output_dir}/{hdf5_dir} \
+  {output_dir}/{filtered_dir} \
+  {output_dir}/{correlate}".format(
+    output_dir = self.output_dirs['epigeec_output_directory'],
+    hdf5_dir = self.output_dirs['epigeec_hdf5'],
+    filtered_dir = filtered_dir,
+    correlate = self.output_dirs['epigeec_output']),
+            name="mkdir_epigeec"))
+
+        hdf5_files = []
+
+        for sample in self.samples:
+            for readset in sample.readsets:
+                if readset.bigwig != None: # Check if the readset has a BIGWIG column 
+                    bigwig_path = readset.bigwig
+                else:                      # If not, we search for the path from a chipseq pipeline
+                    prefix_path = "/".join(self.args.readsets.name.split("/")[:-1]) # Find path to chipseq folder
+                    bigwig_path = os.path.join(prefix_path, "tracks", readset.sample.name, "bigWig", readset.sample.name + ".bw") # Create path to bigwig file            
+
+                hdf5_files.append(os.path.basename(bigwig_path) + ".hdf5")
+
+        jobs.extend(self.epigeec_tohdf5())
+
+        if not skip_filter_step: # We skip this step if there are no filter files
+            jobs.extend(self.epigeec_filter(hdf5_files))
+
+        jobs.append(self.epigeec_correlate(skip_filter_step, hdf5_files))
+
+        return jobs
 
     @property
     def steps(self):
@@ -264,7 +370,7 @@ mkdir -p \
             self.bigWigInfo,
             self.chromimpute,
             self.signal_to_noise,
-            self.epigeec_average_score]
+            self.epigeec]
 
 if __name__ == "__main__":
     EpiQC()
