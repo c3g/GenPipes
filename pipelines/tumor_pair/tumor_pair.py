@@ -30,11 +30,10 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # MUGQIC Modules
-from core.config import *
-from core.job import *
-from core.pipeline import *
-from bfx.sample_tumor_pairs import *
-from bfx.sequence_dictionary import *
+from core.config import config
+from core.job import Job, concat_jobs, pipe_jobs
+from bfx.sample_tumor_pairs import parse_tumor_pair_file
+from bfx.sequence_dictionary import split_by_size, parse_sequence_dictionary_file
 
 from bfx import picard
 from bfx import sambamba
@@ -1731,7 +1730,8 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
             self.combine_tumor_pairs_germline,
             #self.decompose_and_normalize_mnps_germline,
             self.all_pairs_compute_effects_germline,
-            self.gemini_annotations_germline
+            self.gemini_annotations_germline,
+            self.cram_output
         ]
 
 if __name__ == '__main__':

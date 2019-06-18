@@ -123,7 +123,7 @@ samtools sort {other_options}{sort_by_name} \\
         removable_files=[output_bam]
     )
 
-def view(input, output=None, options=""):
+def view(input, output=None, options="",removable=True):
     return Job(
         [input],
         [output],
@@ -137,7 +137,7 @@ samtools view {options} \\
         input=input,
         output=" \\\n  > " + output if output else ""
         ),
-        removable_files=[output]
+        removable_files=[output if removable else ""]
     )
 
 def bcftools_cat(inputs, output):

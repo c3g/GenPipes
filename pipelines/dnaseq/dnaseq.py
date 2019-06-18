@@ -30,12 +30,10 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # MUGQIC Modules
-from core.config import *
-from core.job import *
+from core.config import config, _raise, SanitycheckError
+from core.job import Job, concat_jobs, pipe_jobs
 from pipelines import common
-from core.pipeline import *
-from bfx.readset import *
-from bfx.sequence_dictionary import *
+from bfx.sequence_dictionary import parse_sequence_dictionary_file, split_by_size
 
 from bfx import adapters
 from bfx import bvatools
@@ -166,8 +164,8 @@ class DnaSeqRaw(common.Illumina):
                         ], name="sym_link_fastq.single_end." + readset.name)
 
             else:
-                raise Exception("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
             jobs.append(sym_link_job)
 
@@ -204,8 +202,8 @@ class DnaSeqRaw(common.Illumina):
                 fastq2 = None
             
             else:
-                raise Exception("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
             jobs.append(concat_jobs([
                 Job(command="mkdir -p " + output_dir, removable_files=[output_dir], samples=[readset.sample]),
@@ -255,8 +253,8 @@ class DnaSeqRaw(common.Illumina):
                 fastq2 = None
             
             else:
-                raise Exception("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
             job = concat_jobs([
                 Job(command="mkdir -p " + os.path.dirname(readset_bam), samples=[readset.sample]),
@@ -593,10 +591,10 @@ class DnaSeqRaw(common.Illumina):
         jobs = []
         for sample in self.samples:
             alignment_file_prefix = os.path.join("alignment", sample.name, sample.name + ".")
-            input = self.select_input_files([[alignment_file_prefix + "matefixed.sorted.bam"],[alignment_file_prefix + "realigned.sorted.bam"],[alignment_file_prefix + "sorted.bam"]])
+            input = self.select_input_files([[alignment_file_prefix + "matefixed.sorted.bam"],[alignment_file_prefix + "realigned.sorted.bam"],[alignment_file_prefix + "sorted.bam"]])[0]
             output = alignment_file_prefix + "sorted.dup.bam"
 
-            job = sambamba.markdup(input, output)
+            job = sambamba.markdup(input, output, config.param('sambamba_mark_duplicates', 'tmp_dir',required=True))
             job.name = "sambamba_mark_duplicates." + sample.name
             job.samples = [sample]
             jobs.append(job)
@@ -889,8 +887,12 @@ class DnaSeqRaw(common.Illumina):
 
         for sample in self.samples:
             alignment_file_prefix = os.path.join("alignment", sample.name, sample.name + ".")
+            alignment_directory = os.path.join("alignment", sample.name)
+            input = self.select_input_files([[os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
+                                             [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
+                                             [os.path.join(alignment_directory, sample.name + ".sorted.bam")]])[0]
 
-            job = gatk4.callable_loci(alignment_file_prefix + "sorted.dup.recal.bam", alignment_file_prefix + "callable.bed", alignment_file_prefix + "callable.summary.txt")
+            job = gatk4.callable_loci(input, alignment_file_prefix + "callable.bed", alignment_file_prefix + "callable.summary.txt")
             job.name = "gatk_callable_loci." + sample.name
             job.samples = [sample]
             jobs.append(job)
@@ -906,8 +908,12 @@ class DnaSeqRaw(common.Illumina):
 
         for sample in self.samples:
             alignment_file_prefix = os.path.join("alignment", sample.name, sample.name + ".")
+            alignment_directory = os.path.join("alignment", sample.name)
+            input = self.select_input_files([[os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
+                                             [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
+                                             [os.path.join(alignment_directory, sample.name + ".sorted.bam")]])[0]
 
-            job = bvatools.basefreq(alignment_file_prefix + "sorted.dup.recal.bam", alignment_file_prefix + "commonSNPs.alleleFreq.csv", config.param('extract_common_snp_freq', 'common_snp_positions', type='filepath'), 0)
+            job = bvatools.basefreq(input, alignment_file_prefix + "commonSNPs.alleleFreq.csv", config.param('extract_common_snp_freq', 'common_snp_positions', type='filepath'), 0)
             job.name = "extract_common_snp_freq." + sample.name
             job.samples = [sample]
             jobs.append(job)
@@ -1785,6 +1791,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.haplotype_caller_metrics_vcf_stats,
                 #self.haplotype_caller_metrics_snv_graph_metrics,
                 self.run_multiqc,
+                self.cram_output
             ],
             [
                 self.picard_sam_to_fastq,
@@ -1821,7 +1828,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.mpileup_gemini_annotations,
                 self.mpileup_metrics_vcf_stats,
                 #self.mpileup_metrics_snv_graph_metrics,
-                self.run_multiqc
+                self.run_multiqc,
+                self.cram_output
             ],
             [
                 self.picard_sam_to_fastq,
@@ -1851,6 +1859,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.haplotype_caller_dbnsfp_annotation,
                 self.haplotype_caller_gemini_annotations,
                 self.run_multiqc,
+                self.cram_output
             ]
         ]
 
@@ -1862,4 +1871,4 @@ class DnaSeq(DnaSeqRaw):
         super(DnaSeq, self).__init__(protocol)
 
 if __name__ == '__main__':
-    DnaSeq(protocol=['mugqic', 'mpileup'])
+    DnaSeq(protocol=['mugqic', 'mpileup', "light"])
