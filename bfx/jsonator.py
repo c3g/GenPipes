@@ -67,7 +67,7 @@ def create(pipeline, sample):
             'analysed_species' : config.param("DEFAULT", 'scientific_name'),
             'assembly_used' : config.param("DEFAULT", 'assembly')
         }
-        with open(os.path.expandvars(os.path.join(config.param("DEFAULT", 'assembly_dir'), config.param("DEFAULT", 'scientific_name') + "." + config.param("DEFAULT", 'assembly') + ".ini")), 'r') as ini_file:
+        with open(os.path.expandvars(os.path.join(config.param("DEFAULT", 'assembly_dir'), config.param("DEFAULT", 'scientific_name') + "." + config.param("DEFAULT", 'assembly') + "." + config.param("DEFAULT", 'source') + config.param("DEFAULT", 'version') + ".dbSNP" + config.param("DEFAULT", 'dbsnp_version') + ".ini")), 'r') as ini_file:
             pattern = re.compile("^source=(.*)\n?$")
             for line in ini_file.readlines():
                 for match in re.finditer(pattern, line):
