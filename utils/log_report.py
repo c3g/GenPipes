@@ -170,7 +170,6 @@ class JobStat(object):
                 logger.warning('{} = {} is not a slurm prologue/epilogue value or is ambiguous'.format(k, v))
 
         tres = re.findall(r"TRES=cpu=(\d+),mem=(\d+\.?\d*\w)", to_parse)
-        print(tres)
         self._prologue[self.NUMCPUS] = tres[pro][0]
         self._epilogue[self.NUMCPUS] = tres[epi][0]
         self._prologue[self.MEM] = tres[pro][1]
