@@ -65,13 +65,9 @@ def create(pipeline, sample):
     else :
         general_info = {
             'analysed_species' : config.param("DEFAULT", 'scientific_name'),
-            'assembly_used' : config.param("DEFAULT", 'assembly')
+            'assembly_used' : config.param("DEFAULT", 'assembly'),
+            'assembly_source' : config.param("DEFAULT", 'source')
         }
-        with open(os.path.expandvars(os.path.join(config.param("DEFAULT", 'assembly_dir'), config.param("DEFAULT", 'scientific_name') + "." + config.param("DEFAULT", 'assembly') + "." + config.param("DEFAULT", 'source') + config.param("DEFAULT", 'version') + ".dbSNP" + config.param("DEFAULT", 'dbsnp_version') + ".ini")), 'r') as ini_file:
-            pattern = re.compile("^source=(.*)\n?$")
-            for line in ini_file.readlines():
-                for match in re.finditer(pattern, line):
-                    general_info['assembly_source'] = match.groups()[0]
     if config.param("DEFAULT", 'dbsnp_version', required=False) : general_info['dbsnp_version'] = config.param("DEFAULT", 'dbsnp_version', required=False)
     general_info['server'] = config.param("DEFAULT", 'cluster_server', required=True)
     general_info['analysis_folder'] = pipeline.output_dir + "/"

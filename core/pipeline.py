@@ -368,9 +368,8 @@ class Pipeline(object):
             for sample in self.sample_list:
                 self.sample_paths.append(jsonator.create(self, sample))
 
-        # First check if portal_output_dir is set from a valid environment variable, if self.json is True
-        self.portal_output_dir = config.param('DEFAULT', 'portal_output_dir', required=False)
-        if self.json:
+            # Check if portal_output_dir is set from a valid environment variable
+            self.portal_output_dir = config.param('DEFAULT', 'portal_output_dir', required=False)
             if self.portal_output_dir.startswith("$") and os.environ.get(re.search("^\$(.*)\/?", self.portal_output_dir).group(1)) is None:
                 if self.portal_output_dir == "$PORTAL_OUTPUT_DIR":
                     self.portal_output_dir = ""
