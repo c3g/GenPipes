@@ -1,3 +1,24 @@
+#!/usr/bin/env python
+
+################################################################################
+# Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
+#
+# This file is part of MUGQIC Pipelines.
+#
+# MUGQIC Pipelines is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# MUGQIC Pipelines is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
+################################################################################
+
 import gzip
 import re
 import argparse
@@ -76,7 +97,7 @@ def outputFile(signalSum, sumTopBins_10, sumTopBins_05, output_path):
     else:
         values = "0\t0\t0\t0\t0"
 
-    complete_file_name = output_path + ".tsv"
+    complete_file_name = output_path
 
     #Writes metrics in a new file                                                                                                                                                         
     output = open(complete_file_name, "w+")

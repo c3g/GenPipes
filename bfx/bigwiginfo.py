@@ -23,36 +23,38 @@ import os
 
 from core.job import *
 
-def wigToBigWig(wigFile, chromSizes):
-    output_bigWig = os.path.basename(wigFile) + ".bigWig"
-    
+def bigWigToBedGraph(input_dir, bigWigFile, output_dir):
+    # Remove the chr_ prefix to convert on whole genome or change chrom number to convert only for specified chromosome
+    bigWigFile_name = os.path.basename(bigWigFile)
+    output_bedgraph = os.path.join(output_dir, "chr1_"+bigWigFile_name+".bedgraph")
+
     return Job(
-        [wigFile],
-        [output_bigWig],
+        [input_dir],
+        [output_dir],
         [['ucsc', 'module_ucsc']],
+        name = "bigwig_to_bedgraph",
         command = """\
-wigToBigWig \\
-  {wigFile} \\
-  {chromSizes} \\
-  {bigWigFile}""".format(
-        wigFile=wigFile,
-        chromSizes=config.param('DEFAULT','chromsizes'),
-        bigWigFile=output_bigWig
+bigWigToBedGraph \\
+  {bigwig} \\
+  {output_file} 2> {stderr}; [ -s {stderr} ] || rm -f {stderr}""".format( # If there are no errors, we delete the stderr file
+        bigwig = bigWigFile,
+        output_file = output_bedgraph,
+        stderr = os.path.join(output_dir, bigWigFile_name+".error")
         )
     )
 
-def bigWigInfo(bigWigFile, output_dir):
+def bigWigInfo(input_dir, bigWigFile, output_dir):
     output = os.path.join(output_dir, "bigwiginfo_"+ os.path.basename(bigWigFile) + ".txt")
 
     return Job(
-        ["bigwiginfo"],
+        [input_dir],
         [output],
         [['ucsc', 'module_ucsc']],
-        name="bigwiginfo",
+        name = "bigwiginfo",
         command = """\
 bigWigInfo \\
-  {bigWigFile} > {output}""".format(
-        bigWigFile=bigWigFile,
-        output=output
+  {bigWigFile} &> {output}""".format(
+        bigWigFile = bigWigFile,
+        output = output
         )
     )
