@@ -26,7 +26,7 @@ from core.config import *
 
 def convert(input_dir, output_dir, inputinfofile, mark):
     return Job(
-        [input_dir],
+        ['chromimpute_train_dir', input_dir],
         [output_dir],
         [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
         name = "chromimpute_convert_"+mark,
@@ -135,7 +135,7 @@ java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_J
 
 def apply(input_dir, output_dir, converteddir, distancedir, predictordir, inputinfofile, sample, mark):
     return Job(
-        [input_dir],
+        ['chromimpute_metrics_dir', converteddir, distancedir, predictordir],
         [output_dir],
         [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
         name = "chromimpute_apply_"+sample+"_"+mark,
