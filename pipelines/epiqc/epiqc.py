@@ -224,6 +224,21 @@ mkdir -p \\
         return jobs
 
     def chromimpute_train_step(self):
+        """
+            Runs the training steps (Convert, ComputeGlobalDist, GenerateTrainData, Train) of the ChromImpute tool on the bigwig files given to the pipeline.
+            This step can be skipped if the trained data from the IHEC database is used.
+            All the output are stored in the imputation directory.
+
+            Important note :
+            The name of the inputinfofile and the dataset, the path to the chromsizes, the resolution and chromosome number has to be specified and the base.ini file under the 
+            chromimpute section.
+
+            If the readset file has a BIGWIG column, we use these files for the pipeline
+            If epiqc is ran after a chipseq pipeline, the path to the bigwig files is reconstructed through the location of the chipseq readset file (HAS TO BE IN THE SAME FOLDER AS THE OUTPUT 
+            OF THE CHIPSEQ PIPELINE)
+        """
+        # TODO idea: Delete predictordir to save space after run
+
         jobs= []
 
         jobs.append(Job(
@@ -256,13 +271,14 @@ mkdir -p \\
             for readset in sample.readsets:
                 if readset.bigwig != None: # Check if the readset has a BIGWIG column 
                     bigwig_path = readset.bigwig
-                    mark = marks[cpt]
-                    cpt += 1
+                    # mark = marks[cpt]
+                    # cpt += 1
                 else:                      # If not, we search for the path from a chipseq pipeline
                     prefix_path = "/".join(self.args.readsets.name.split("/")[:-1]) # Find path to chipseq folder
                     bigwig_path = os.path.join(prefix_path, "tracks", sample.name, "bigWig", sample.name + ".bw") # Create path to bigwig file
                     mark = config.param('DEFAULT', 'chip_type')
 
+                mark = os.path.basename(bigwig_path+".bedgraph").split(".")[-4] # Use only for IHEC database
                 inputinfofile.write(sample.name+"\t"+mark+"\t"+os.path.basename(bigwig_path+".bedgraph")+"\n")
 
         inputinfofile.close()
@@ -290,9 +306,8 @@ mkdir -p \\
 
     def chromimpute_compute_metrics(self):
         """
-            Runs ChromImpute on the bigwig files given to the pipeline.
-            It first converts bigwig files to bedgraph, then executes all the steps of the chromimpute tool (convert to eval)
-
+            Imputes the tracks en runs the Eval step on the bigwig files given to the pipeline.
+=
             All the output are stored in the imputation directory.
             The imputed files can be found in : imputation/output
             The eval files can be found in : imputation/eval
@@ -305,7 +320,6 @@ mkdir -p \\
             If epiqc is ran after a chipseq pipeline, the path to the bigwig files is reconstructed through the location of the chipseq readset file (HAS TO BE IN THE SAME FOLDER AS THE OUTPUT 
             OF THE CHIPSEQ PIPELINE)
         """
-        # TODO idea: Delete predictordir to save space after run
         jobs= []
 
         jobs.append(Job(
@@ -340,7 +354,8 @@ mkdir -p \\
                     prefix_path = "/".join(self.args.readsets.name.split("/")[:-1]) # Find path to chipseq folder
                     bigwig_path = os.path.join(prefix_path, "tracks", sample.name, "bigWig", sample.name + ".bw") # Create path to bigwig file
                     mark = config.param('DEFAULT', 'chip_type')
-
+                
+                mark = os.path.basename(bigwig_path+".bedgraph").split(".")[-4] # Use only for IHEC database
                 inputinfofile.write(sample.name+"\t"+mark+"\t"+os.path.basename(bigwig_path+".bedgraph")+"\n")
 
         inputinfofile.close()
@@ -579,7 +594,7 @@ python ../genpipes/bfx/wigSignalNoise.py \\
                     bigwiginfo_file = bigwiginfo_file,
                     output_file = report_file)))
 
-                eval_file = "eval_" + sample.name+"_"+mark+".txt"
+                eval_file = "eval_"+sample.name+"_"+mark+".txt"
                 eval_file = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_eval'], eval_file)
 
                 jobs.append(Job(
@@ -610,7 +625,18 @@ python ../genpipes/bfx/wigSignalNoise.py \\
                     signal_noise_file = signal_noise_file,
                     output_file = report_file)))
 
-
+        input_dir = os.path.join(self.output_dirs['epigeec_output_directory'], self.output_dirs['epigeec_output'])
+        jobs.append(Job(
+                ['epiqc_report', input_dir],
+                [],
+                [],
+                name = "report_heatmap",
+                command = 
+"python ../genpipes/bfx/epiqc_report.py \
+  -e {correlation_matrix} \
+  -o {output_dir}".format(
+                correlation_matrix = input_dir+"/correlation_matrix.tsv",
+                output_dir = self.output_dirs['report_dir'])))
 
         return jobs
 
