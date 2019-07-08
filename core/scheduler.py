@@ -25,7 +25,7 @@ import os
 import random
 
 # MUGQIC Modules
-from config import *
+from config import config
 
 # Output comment separator line
 separator_line = "#" + "-" * 79
@@ -89,6 +89,20 @@ cd $OUTPUT_DIR
                 )
             )
 
+        json_files = []
+        for step in pipeline.step_range:
+            for job in step.jobs:
+                for sample in job.samples:
+                    json_files.append(os.path.join(pipeline.output_dir, "json", sample.json_file))
+        json_files = list(set(json_files))
+        for j_file in json_files:
+            print(
+"""sed -i "s/\\"submission_date\\": \\"\\",/\\"submission_date\\": \\"$TIMESTAMP\\",/" {file}"""
+                .format(
+                    file=j_file
+                )
+            )
+
     def print_step(self, step):
         print("""
 {separator_line}
@@ -100,7 +114,7 @@ mkdir -p $JOB_OUTPUT_DIR/$STEP
         )
 
     def job2json(self, pipeline, step, job, job_status):
-        if not pipeline.args.json:
+        if not pipeline.json:
             return ""
 
         json_file_list = ",".join([os.path.join(pipeline.output_dir, "json", sample.json_file) for sample in job.samples])

@@ -23,8 +23,8 @@
 import os
 
 # MUGQIC Modules
-from core.config import *
-from core.job import *
+from core.config import config
+from core.job import Job
 from utils import utils 
 
 def align(

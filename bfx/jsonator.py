@@ -20,14 +20,22 @@
 ################################################################################
 
 import os
+import re
 import json
 
 # MUGQIC Modules
-from core.config import *
-from core.job import *
+from core.config import config
 
 # Start creating the json dump for the passed sample
 def create(pipeline, sample):
+    jsonator_version = "1.0.1"
+
+    # Retrieve the project name fome the config file, if not specified then use the parent folder name of where the pipeline has been launched
+    if config.param("DEFAULT", 'project_name', required=False):
+        project_name = config.param("DEFAULT", 'project_name', required=False)
+    else:
+        project_name = os.path.basename(pipeline.output_dir)
+
     # Prepare the general information hash
     general_info = {}
     if pipeline.__class__.__name__ == "AmpliconSeq":
@@ -57,13 +65,9 @@ def create(pipeline, sample):
     else :
         general_info = {
             'analysed_species' : config.param("DEFAULT", 'scientific_name'),
-            'assembly_used' : config.param("DEFAULT", 'assembly')
+            'assembly_used' : config.param("DEFAULT", 'assembly'),
+            'assembly_source' : config.param("DEFAULT", 'source')
         }
-        with open(os.path.expandvars(os.path.join(config.param("DEFAULT", 'assembly_dir'), config.param("DEFAULT", 'scientific_name') + "." + config.param("DEFAULT", 'assembly') + ".ini")), 'r') as ini_file:
-            pattern = re.compile("^source=(.*)\n?$")
-            for line in ini_file.readlines():
-                for match in re.finditer(pattern, line):
-                    general_info['assembly_source'] = match.groups()[0]
     if config.param("DEFAULT", 'dbsnp_version', required=False) : general_info['dbsnp_version'] = config.param("DEFAULT", 'dbsnp_version', required=False)
     general_info['server'] = config.param("DEFAULT", 'cluster_server', required=True)
     general_info['analysis_folder'] = pipeline.output_dir + "/"
@@ -93,7 +97,9 @@ def create(pipeline, sample):
         # Then (re-)create it !!
         if pipeline.__class__.__name__ == "PacBioAssembly":
             json_hash = {
-                'version': '1.0.0',
+                'version': jsonator_version,
+                'project': project_name,
+                'submission_date': "",      # Create a submission time entry and let it empty : will be updated as the bash script is launched
                 'sample_name' : sample.name,
                 'readset' : [{
                     "name" : readset.name,
@@ -117,7 +123,9 @@ def create(pipeline, sample):
             }
         else :
             json_hash = {
-                'version': '1.0.0',
+                'version': jsonator_version,
+                'project': project_name,
+                'submission_date': "",      # Create a submission time entry and let it empty : will be updated as the bash script is launched
                 'sample_name' : sample.name,
                 'readset' : [{
                     "name" : readset.name,

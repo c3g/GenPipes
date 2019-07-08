@@ -248,9 +248,9 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
 
     ## Define the list of packages to standard packages to install.
     deps = c("affxparser", "affy", "affyio", "affyPLM", "akima", "allgown", "annotate", "AnnotationDbi", "AnnotationForge", "annotatr", "ape", "ash", "ASCAT",
-    "ballgown", "BatchExperiments", "BatchJobs", "batchtools", "beanplot", "Biobase", "BiocGenerics", "BiocInstaller", "bioDist", "biomaRt", "biomformat", "Biostrings",
+    "ballgown", "BatchExperiments", "BatchJobs", "batchtools", "beanplot", "Biobase", "BiocGenerics", "BiocInstaller", "bioDist", "biomaRt", "biomformat", "Biostrings" "biovizBase", "bit",
     "biovizBase", "bit", "bit64", "bitops", "boot", "brew", "BSgenome", "BSgenome.Hsapiens.1000genomes.hs37d5", "BSgenome.Hsapiens.UCSC.hg19", "bumphunter",
-    "Cairo", "caTools", "charm", "charmData", "ChIPseeker", "circlize", "class", "cluster", "clusterStab", "clusterProfiler", "cn.mops", "codetools", "colorspace",
+    "Cairo", "caTools", "charm", "charmData", "ChIPseeker", "circlize", "class", "cluster", "clusterStab", "clusterProfiler", "cn.mops", "codetools", "colorspace", "ConsensusClusterPlus",
     "ConsensusClusterPlus", "corpcor", "crlmm", "ctc", "cummeRbund",
     "dada2", "datasets", "data.table", "DBI", "deconstructSigs", "DESeq", "devtools", "dendextend", "dichromat", "diffHic", "digest", "dmrseq", "DNAcopy", "dplyr", "DSS",
     "edgeR", "ellipse", "evaluate",

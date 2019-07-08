@@ -31,11 +31,8 @@ from os.path import basename
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # MUGQIC Modules
-from core.config import *
-from core.job import *
-from core.pipeline import *
-from bfx.readset import *
-from bfx.sequence_dictionary import *
+from core.config import config, _raise, SanitycheckError
+from core.job import Job, concat_jobs
 
 from pipelines import common
 from bfx import tools
@@ -135,8 +132,8 @@ class AmpliconSeq(common.Illumina):
                     headcropValue
                 )
             else:
-                raise Exception("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
             jobs.append(concat_jobs([
                 # Trimmomatic does not create output directory by default
@@ -243,7 +240,7 @@ pandoc \\
                     candidate_input_files.append([readset.fastq1, readset.fastq2])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
             else:
-                raise Exception("Error: run type \"" + readset.run_type + "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END)!")
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type + "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END)!"))
 
             job = flash.flash(
                 fastq1,
@@ -400,7 +397,7 @@ pandoc --to=markdown \\
                     candidate_input_files.append([readset.fastq1, readset.fastq2])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
             else:
-                raise Exception("Error: run type \"" + readset.run_type + "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END)!")
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type + "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END)!"))
 
             flash_hist = os.path.join("merge", readset.sample.name, readset.name + ".flash.hist")
             job = concat_jobs([
@@ -2104,8 +2101,8 @@ cat {report_file_alpha} {report_file_beta} > {report_file}""".format(
                 dada2_inputs.append(left_or_single_reads)
 
             else:
-                raise Exception("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
         jobs.append(concat_jobs(
             [mkdir_job] +
