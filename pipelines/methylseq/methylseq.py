@@ -143,7 +143,7 @@ class MethylSeq(dnaseq.DnaSeq):
 
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + os.path.dirname(output_bam), samples=[readset.sample]),
+                    Job(command="mkdir -p " + os.path.dirname(output_bam)),
                     bismark.align(
                         fastq1,
                         fastq2,
@@ -152,11 +152,11 @@ class MethylSeq(dnaseq.DnaSeq):
                     ),
                     Job(command="mv " + bismark_out_bam + " " + no_readgroup_bam),
                     Job(command="mv " + bismark_out_report + " " + re.sub(".bam", report_suffix, no_readgroup_bam)),
-                ], name="bismark_align." + readset.name)
+                ], name="bismark_align." + readset.name, samples=[readset.sample])
             )
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + alignment_directory, samples=[readset.sample]),
+                    Job(command="mkdir -p " + alignment_directory),
                     picard.add_read_groups(
                         no_readgroup_bam,
                         output_bam,
@@ -165,16 +165,16 @@ class MethylSeq(dnaseq.DnaSeq):
                         readset.run + "_" + readset.lane,
                         readset.sample.name
                     )
-                ], name="picard_add_read_groups." + readset.name)
+                ], name="picard_add_read_groups." + readset.name, samples=[readset.sample])
             )
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + alignment_directory, samples=[readset.sample]),
+                    Job(command="mkdir -p " + alignment_directory),
                     samtools.flagstat(
                         output_bam,
                         re.sub(".bam", "_flagstat.txt", output_bam),
                     )
-                ], name="samtools_flagstat." + readset.name)
+                ], name="samtools_flagstat." + readset.name, samples=[readset.sample])
             )
 
         report_file = os.path.join("report", "MethylSeq.bismark_align.md")
@@ -223,24 +223,24 @@ pandoc --to=markdown \\
                 
                 jobs.append(
                     concat_jobs([
-                        Job(command="mkdir -p corrected_umi/" + readset.name , samples=[readset.sample]),
+                        Job(command="mkdir -p corrected_umi/" + readset.name),
                         fgbio.correct_readname(
                             input_umi,
                             input_umi_corrected
                         ),
-                    ], name="fgbio_correct_readname." + readset.name)
+                    ], name="fgbio_correct_readname." + readset.name, samples=[readset.sample])
                 )
 
                 jobs.append(
                     concat_jobs([
-                        Job(command="mkdir -p " + os.path.dirname(output_bam), samples=[readset.sample]),
+                        Job(command="mkdir -p " + os.path.dirname(output_bam)),
                         fgbio.addumi(
                             input_bam,
                             input_umi_corrected,
                             output_bam,
                             output_bai
                         ),
-                    ], name="fgbio_addumi." + readset.name)
+                    ], name="fgbio_addumi." + readset.name, samples=[readset.sample])
                 )
 
         #report_file = os.path.join("report", "MethylSeq.bismark_align.md")
@@ -291,6 +291,7 @@ pandoc --to=markdown \\
                 remove_duplicates="true"
             )
             job.name = "picard_mark_duplicates." + sample.name
+            job.samples = [sample]
             jobs.append(job)
 
             job = samtools.flagstat(
@@ -533,13 +534,13 @@ cp \\
 
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + methyl_directory, samples=[sample]),
+                    Job(command="mkdir -p " + methyl_directory),
                     picard.sort_sam(
                         input_file,
                         re.sub("sorted", "readset_sorted", input_file),
                         "queryname"
                         )
-                ], name="picard_sort_sam." + sample.name)
+                ], name="picard_sort_sam." + sample.name, samples=[sample])
             )
             outputs = [re.sub("sorted", "readset_sorted", output) for output in outputs]
             bismark_job = bismark.methyl_call(
@@ -574,23 +575,23 @@ cp \\
 
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " " + os.path.join("tracks", "bigWig"), removable_files=["tracks"], samples=[sample]),
+                    Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " " + os.path.join("tracks", "bigWig"), removable_files=["tracks"]),
                     bedtools.graph(
                         input_bam,
                         bed_graph_output,
                         ""
                     )
-                ], name="bed_graph." + re.sub(".bedGraph", "", os.path.basename(bed_graph_output)))
+                ], name="bed_graph." + re.sub(".bedGraph", "", os.path.basename(bed_graph_output)), samples=[sample])
             )
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + os.path.join("tracks", "bigWig"), samples=[sample]),
+                    Job(command="mkdir -p " + os.path.join("tracks", "bigWig")),
                     ucsc.bedGraphToBigWig(
                         bed_graph_output,
                         big_wig_output,
                         False
                     )
-                ], name="wiggle." + re.sub(".bw", "", os.path.basename(big_wig_output)))
+                ], name="wiggle." + re.sub(".bw", "", os.path.basename(big_wig_output)), samples=[sample])
             )
 
             # Generation of a bigWig from the methylation bedGraph
@@ -600,12 +601,12 @@ cp \\
 
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + methyl_directory, samples=[sample]),
+                    Job(command="mkdir -p " + methyl_directory),
                     ucsc.bedGraphToBigWig(
                         input_bed_graph,
                         output_wiggle
                     )
-                ], name = "bismark_bigWig." + sample.name)
+                ], name = "bismark_bigWig." + sample.name, samples=[sample])
             )
 
         return jobs
@@ -774,7 +775,7 @@ cp \\
                 concat_jobs([
                     Job(command="mkdir -p ihec_metrics metrics"),
                     tools.methylseq_ihec_metrics_report(sample.name, inputs, metrics_file, metrics_all_file, target_bed, counter),
-                ], name="ihec_sample_metrics." + sample.name)
+                ], name="ihec_sample_metrics." + sample.name, samples=[sample])
             )
             counter+=1
 
@@ -827,13 +828,13 @@ pandoc \\
 
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + variant_directory, samples=[sample]),
+                    Job(command="mkdir -p " + variant_directory),
                     bissnp.bisulfite_genotyper(
                         input_file,
                         cpg_output_file,
                         snp_output_file
                     )
-                ], name="bissnp." + sample.name)
+                ], name="bissnp." + sample.name, samples=[sample])
             )
 
         return jobs 
@@ -852,12 +853,12 @@ pandoc \\
 
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + methyl_directory, samples=[sample]),
+                    Job(command="mkdir -p " + methyl_directory),
                     tools.filter_snp_cpg(
                         input_file,
                         output_file
                     )
-                ], name="filter_snp_cpg." + sample.name)
+                ], name="filter_snp_cpg." + sample.name, samples=[sample])
             )
         return jobs
 
@@ -876,12 +877,12 @@ pandoc \\
 
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + output_directory, samples=[sample]),
+                    Job(command="mkdir -p " + output_directory),
                     tools.prepare_methylkit(
                         input_file,
                         output_file
                     )
-                ], name="prepare_methylkit." + sample.name)
+                ], name="prepare_methylkit." + sample.name, samples=[sample])
             )
         return jobs
 
