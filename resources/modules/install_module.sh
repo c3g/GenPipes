@@ -66,9 +66,9 @@ patch_c3g_binaries() {
       echo "GO Done" > /dev/null
     elif [ ${i##*.} == "so" ] || [[ ${i##*/} =~ "so"*(\.[0-9]+)*$ ]]
     then
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-rpath $LIBDIR $i
+      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-rpath $($MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --print-rpath $i):$LIBDIR $i
     else
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-interpreter $INTERPRETER --set-rpath $LIBDIR $i
+      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-interpreter $INTERPRETER --set-rpath $($MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --print-rpath $i):$LIBDIR $i
     fi
   done
 }
