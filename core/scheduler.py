@@ -162,7 +162,7 @@ module unload {module_python} {command_separator}""".format(
             module_python=config.param('DEFAULT', 'module_python'),
             step=step,
             jsonfiles=json_file_list,
-            config_files=",".join([ c.name for c in self._config_files ]),
+            config_files=",".join([ os.path.relpath(c.name, pipeline.output_dir) for c in self._config_files ]),
             status=job_status,
             command_separator="&&" if (job_status=='\\"running\\"') else ""
         ) if json_file_list else ""
