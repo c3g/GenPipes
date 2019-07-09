@@ -23,6 +23,8 @@
 import json
 import os
 import random
+import textwrap
+from uuid import uuid4
 
 # MUGQIC Modules
 from config import config
@@ -102,6 +104,32 @@ cd $OUTPUT_DIR
                     file=j_file
                 )
             )
+
+        ## Print a copy of sample JSONs for the genpipes dashboard
+        if pipeline.json and pipeline.portal_output_dir != "":
+            copy_commands = []
+            test_copy_commands = []
+            for i, sample in enumerate(pipeline.sample_list):
+                unique_uuid = uuid4().get_hex()
+                input_file = pipeline.sample_paths[i]
+                output_file = os.path.join(pipeline.portal_output_dir, '$USER.' + sample.name + '.' + unique_uuid + '.json')
+                #test_output_file = os.path.join("/lb/project/mugqic/analyste_dev/portal_test_dir/", '$USER.' + sample.name + '.' + unique_uuid + '.json')
+                copy_commands.append("cp \"{input_file}\" \"{output_file}\"".format(
+                    input_file=input_file, output_file=output_file))
+                #test_copy_commands.append("cp \"{input_file}\" \"{output_file}\"".format(
+                    #input_file=input_file, output_file=test_output_file))
+            print(textwrap.dedent("""
+                #------------------------------------------------------------------------------
+                # Print a copy of sample JSONs for the genpipes dashboard
+                #------------------------------------------------------------------------------
+                {copy_commands}
+            """).format(copy_commands='\n'.join(copy_commands)))
+            #print(textwrap.dedent("""
+                ##------------------------------------------------------------------------------
+                ## Print a copy of sample JSONs for testing of the dashboard
+                ##------------------------------------------------------------------------------
+                #{copy_commands}
+            #""").format(copy_commands='\n'.join(test_copy_commands)))
 
     def print_step(self, step):
         print("""

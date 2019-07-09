@@ -385,19 +385,19 @@ class Pipeline(object):
         self.scheduler.submit(self)
 
         ## Print a copy of sample JSONs for the genpipes dashboard
-        if self.json and self.portal_output_dir != "":
-            copy_commands = []
-            for i, sample in enumerate(self.sample_list):
-                input_file = self.sample_paths[i]
-                output_file = os.path.join(self.portal_output_dir, '$USER.' + sample.name + '.' + uuid4().get_hex() + '.json')
-                copy_commands.append("cp \"{input_file}\" \"{output_file}\"".format(
-                    input_file=input_file, output_file=output_file))
-            print(textwrap.dedent("""
-                #------------------------------------------------------------------------------
-                # Print a copy of sample JSONs for the genpipes dashboard
-                #------------------------------------------------------------------------------
-                {copy_commands}
-            """).format(copy_commands='\n'.join(copy_commands)))
+#        if self.json and self.portal_output_dir != "":
+#            copy_commands = []
+#            for i, sample in enumerate(self.sample_list):
+#                input_file = self.sample_paths[i]
+#                output_file = os.path.join(self.portal_output_dir, '$USER.' + sample.name + '.' + uuid4().get_hex() + '.json')
+#                copy_commands.append("cp \"{input_file}\" \"{output_file}\"".format(
+#                    input_file=input_file, output_file=output_file))
+#            print(textwrap.dedent("""
+#                #------------------------------------------------------------------------------
+#                # Print a copy of sample JSONs for the genpipes dashboard
+#                #------------------------------------------------------------------------------
+#                {copy_commands}
+#            """).format(copy_commands='\n'.join(copy_commands)))
 
 
     def report_jobs(self, output_dir=None):
