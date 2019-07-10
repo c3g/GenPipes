@@ -636,7 +636,7 @@ pandoc --to=markdown \\
                 report_files=[report_file]
             )], name="merge_uchime_stats", samples=self.samples)]
 
-    def Humaning(self):
+    def otu_picking(self):
         """
         The OTU picking step (de novo & close_ref) assigns similar sequences to operational taxonomic units (OTUs) by clustering sequences based on a user-defined similarity threshold. Method per default uses [VSEARCH] (https://github.com/torognes/vsearch) and [Qiime] (http://qiime.org).
 
