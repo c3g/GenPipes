@@ -244,7 +244,7 @@ pandoc --to=markdown \\
                 Job(
                     [trinity_fasta],
                     [trinity_fasta + ".zip"],
-                    command="zip -j " + trinity_fasta + ".zip " + trinity_fasta                
+                    command="zip -j " + trinity_fasta + ".zip " + trinity_fasta
                 ),
                 Job(
                     [trinity_fasta],
