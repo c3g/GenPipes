@@ -401,7 +401,7 @@ pandoc --to=markdown \\
         transdecoder_subdirectory = os.path.join(os.path.basename(trinity_fasta) + ".transdecoder_dir")
 
         jobs = trinotate.transdecoder(trinity_fasta, transdecoder_directory, transdecoder_subdirectory)
-        for job in jobs : job.samples = self.samples 
+        for job in jobs : job.samples = self.samples
 
         return jobs
 
@@ -415,7 +415,7 @@ pandoc --to=markdown \\
         transdecoder_pfam = os.path.join(transdecoder_directory, "Trinity.fasta.transdecoder.pfam")
 
         jobs = trinotate.hmmer(transdecoder_directory, transdecoder_fasta, transdecoder_pfam)
-        for job in jobs : job.samples = self.samples 
+        for job in jobs : job.samples = self.samples
 
         return jobs
 
@@ -428,7 +428,7 @@ pandoc --to=markdown \\
         rnammer_directory = os.path.join("trinotate", "rnammer")
 
         jobs = trinotate.rnammer_transcriptome(trinity_fasta, rnammer_directory)
-        for job in jobs : job.samples = self.samples 
+        for job in jobs : job.samples = self.samples
 
         return jobs
 
@@ -442,7 +442,7 @@ pandoc --to=markdown \\
         db = config.param("blastp_transdecoder_uniprot", "swissprot_db", type='prefixpath')
 
         jobs = trinotate.blastp_transdecoder_uniprot(blast_directory, transdecoder_fasta, db)
-        for job in jobs : job.samples = self.samples 
+        for job in jobs : job.samples = self.samples
 
         return jobs
 
@@ -455,7 +455,7 @@ pandoc --to=markdown \\
         signalp_gff = os.path.join("trinotate", "signalp", "signalp.gff")
 
         jobs = trinotate.signalp(transdecoder_fasta, signalp_gff)
-        for job in jobs : job.samples = self.samples 
+        for job in jobs : job.samples = self.samples
 
         return jobs
 
@@ -468,7 +468,7 @@ pandoc --to=markdown \\
         tmhmm_output = os.path.join("trinotate", "tmhmm", "tmhmm.out")
 
         jobs = trinotate.tmhmm(transdecoder_fasta, tmhmm_output)
-        for job in jobs : job.samples = self.samples 
+        for job in jobs : job.samples = self.samples
 
         return jobs
 
@@ -519,7 +519,7 @@ pandoc --to=markdown \\
 
         trinity_fasta = os.path.join("trinity_out_dir", "Trinity.fasta")
         job = trinity.align_and_estimate_abundance(trinity_fasta, output_directory="trinity_out_dir", prep_reference=True)
-        job.samples = self.samples 
+        job.samples = self.samples
 
         return [job]
 
@@ -859,7 +859,7 @@ pandoc --to=markdown \\
                     self.differential_expression_and_goseq_rsem(output_directory, item, trinotate_annotation_report)
                 ], name="differential_expression_" + item, samples=self.samples)
             )
-        
+
         output_files = []
         for job in jobs:
             output_files.extend([output_file for output_file in job.output_files if output_file not in output_files])
