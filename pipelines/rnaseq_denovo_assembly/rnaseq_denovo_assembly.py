@@ -251,8 +251,7 @@ pandoc --to=markdown \\
                     [trinity_stats_prefix + ".csv", trinity_stats_prefix + ".jpg", trinity_stats_prefix + ".pdf"],
                     [['trinity', 'module_R'], ['trinity', 'module_mugqic_R_packages']],
                     command="""\
-Rscript -e 'library(gqSeqUtils);
-dnaFastaStats(filename = \"" + trinity_fasta + "\", type = \"trinity\", output.prefix = \"" + trinity_stats_prefix + "\")'"""
+Rscript -e 'library(gqSeqUtils);dnaFastaStats(filename=\"" + trinity_fasta + "\",type=\"trinity\",output.prefix=\"" + trinity_stats_prefix + "\")'"""
                 )
             ], name="trinity", samples=self.samples)
         )
@@ -659,8 +658,7 @@ pandoc --to=markdown \\
                     [trinity_stats_prefix + ".csv", trinity_stats_prefix + ".jpg", trinity_stats_prefix + ".pdf"],
                     [['filter_annotated_components', 'module_R'], ['filter_annotated_components', 'module_mugqic_R_packages']],
                     command="""\
-Rscript -e 'library(gqSeqUtils);
-  dnaFastaStats(filename = \"{trinity_filtered}\", type = \"trinity\", output.prefix = \"{trinity_stats_prefix}\")'""".format(
+Rscript -e 'library(gqSeqUtils);dnaFastaStats(filename=\"{trinity_filtered}\",type=\"trinity\",output.prefix=\"{trinity_stats_prefix}\")'""".format(
                         trinity_filtered=trinity_filtered,
                         trinity_stats_prefix=trinity_stats_prefix
                     )
