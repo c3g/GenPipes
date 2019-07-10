@@ -106,7 +106,7 @@ Rscript $R_TOOLS/goseq.R {other_options} \\
         output_file=output_file
     ))
 
-def sleuth(
+def differential_expression_sleuth(
     design_file,
     count_matrix,
     tx2gene_file,
