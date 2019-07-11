@@ -560,10 +560,10 @@ ipdSummary.py {aligned_reads} \\
   --methylFraction \\
   --paramsPath /cvmfs/soft.mugqic/CentOS6/software/smrtanalysis/smrtanalysis_2.3.0.140936.p5/analysis/etc/algorithm_parameters/2015-11/kineticsTools/ \\
   --numWorkers 12 \\
-  --outfile {output_gff}""".format(
+  --outfile {output_gff}'""".format(
             fasta_consensus=os.path.join(mer_size_directory, "polishing" + str(polishing_rounds - 1), "data", "consensus.fasta"),
             aligned_reads=os.path.join(mer_size_directory, "polishing" + str(polishing_rounds), "data", "aligned_reads.sorted.cmp.h5"),
-            output_gff = basemodification_file_prefix
+            output_gff=basemodification_file_prefix
     ))
 
 def motifMaker(
@@ -586,8 +586,8 @@ bash -c 'set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
 motifMaker.sh find \\
   -f {fasta_consensus} \\
   -g {output_gff} \\
-  -o {output}""".format(
+  -o {output}'""".format(
             fasta_consensus=os.path.join(mer_size_directory, "polishing" + str(polishing_rounds - 1), "data", "consensus.fasta"),
-            output_gff = basemodification_file_prefix + ".gff" ,
+            output_gff=basemodification_file_prefix + ".gff",
             output=motifMaker_file
     ))
