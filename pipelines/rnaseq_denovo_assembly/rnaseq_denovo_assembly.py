@@ -792,6 +792,7 @@ pandoc --to=markdown \\
             [],
             command="mkdir -p " + os.path.join(output_directory, item)
         )
+
         # Run DGE and merge dge results with annotations
         matrix = os.path.join(output_directory, item + ".counts.matrix")
 
@@ -855,10 +856,13 @@ pandoc --to=markdown \\
         # Run DGE and merge dge results with annotations
         for item in "genes", "isoforms":
             jobs.append(
-                concat_jobs([
-                    self.differential_expression_and_goseq_rsem(output_directory, item, trinotate_annotation_report)
-                ], name="differential_expression_" + item, samples=self.samples)
-            )
+                concat_jobs(
+                    self.differential_expression_and_goseq_rsem(output_directory, item, trinotate_annotation_report),
+                    name= "differential_expression_" + item
+            ))
+            #jobs.append(
+            #    self.differential_expression_and_goseq_rsem(output_directory, item, trinotate_annotation_report)
+            #)
         
         output_files = []
         for job in jobs:
@@ -935,7 +939,7 @@ pandoc --to=markdown \\
                         [os.path.join(output_directory, item +".lengths.tsv.noheader.tsv")],
                         command="cp " + os.path.join(source_directory, item +".lengths.tsv.noheader.tsv") + " " + os.path.join(output_directory, item +".lengths.tsv.noheader.tsv")
                     ),
-                    self.differential_expression_and_goseq_rsem(output_directory, item, trinotate_annotation_report)
+                    concat_jobs(self.differential_expression_and_goseq_rsem(output_directory, item, trinotate_annotation_report))
                 ], name="differential_expression_filtered_" + item, samples=self.samples)
             )
 

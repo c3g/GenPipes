@@ -32,7 +32,7 @@ def mkdir(folder, remove=False):
         command="""\
 mkdir -p {directory}""".format(
             directory=folder
-        )
+        ),
         removable_files=[folder] if remove else []
     )
 
@@ -46,22 +46,22 @@ ln -s -f \\
   {target_file} \\
   {link} \\
   {sleep}""".format(
-            source=target_file
+            source=target_file,
             destination=link,
             sleep="&& sleep "+sleep if sleep else ""
         ),
         removable_files=[link]
     )
 
-def mv(from, to):
+def mv(source, target):
     return Job(
-        [from],
-        [to],
+        [source],
+        [target],
         [[]],
         command="""\
-mv {from} {to}""".format(
-            from=from,
-            to=to
+mv {source} {dest}""".format(
+            source=source,
+            dest=target
         )
     )
 
