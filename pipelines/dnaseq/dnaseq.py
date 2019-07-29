@@ -1740,7 +1740,6 @@ END
                 interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
 
             if nb_haplotype_jobs == 1 or interval_list is not None:
-
                 jobs.append(
                     concat_jobs([
                         bash.ln(
@@ -1761,7 +1760,6 @@ END
                         samples=[sample]
                         )
                     )
-
             else:
                 unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary_variant(), nb_haplotype_jobs - 1, variant=True)
                 gvcfs_to_merge = [haplotype_file_prefix + "." + str(idx) + ".hc.g.vcf.gz" for idx in xrange(len(unique_sequences_per_job))]
@@ -2826,7 +2824,9 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             pair_directory = os.path.join("SVariants", sample.name)
             delly_directory = os.path.join(pair_directory, "rawDelly")
 
-            input = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")
+            input = self.select_input_files([[os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")],
+                                             [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam")],
+                                             [os.path.join("alignment", sample.name, sample.name + ".sorted.bam")]])
 
             inputs = [input]
 
@@ -2915,7 +2915,10 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
             mkdir_job = Job(command="mkdir -p " + manta_directory, removable_files=[manta_directory], samples = [sample.name])
 
-            input = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")
+            input = self.select_input_files(
+	            [[os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")],
+	             [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam")],
+	             [os.path.join("alignment", sample.name, sample.name + ".sorted.bam")]])
         
             manta_germline_output = os.path.join(manta_directory, "results/variants/diploidSV.vcf.gz")
             manta_germline_output_tbi = os.path.join(manta_directory, "results/variants/diploidSV.vcf.gz.tbi")

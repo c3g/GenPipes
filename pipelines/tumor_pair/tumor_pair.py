@@ -671,18 +671,17 @@ END`""".format(
             input_normal_all_picard = os.path.join(metrics_directory, tumor_pair.normal.name, "picard_metrics.all.metrics.quality_distribution.pdf")
             input_normal_qualimap = os.path.join(metrics_directory, tumor_pair.normal.name, "qualimap", tumor_pair.normal.name, "genome_results.txt")
             input_normal_fastqc = os.path.join(metrics_directory, tumor_pair.normal.name, "fastqc", tumor_pair.normal.name + ".sorted.dup_fastqc.zip")
-            input_normal_flagstat = os.path.join(metrics_directory, tumor_pair.normal.name, "flagstat", tumor_pair.normal.name + ".flagstat")
+            #input_normal_flagstat = os.path.join(metrics_directory, tumor_pair.normal.name, "flagstat", tumor_pair.normal.name + ".flagstat")
 
             input_tumor_oxog = os.path.join(metrics_directory, tumor_pair.tumor.name, "picard_metrics.oxog_metrics.txt")
             input_tumor_qcbias = os.path.join(metrics_directory, tumor_pair.tumor.name, "picard_metrics.qcbias_metrics.txt")
             input_tumor_all_picard = os.path.join(metrics_directory, tumor_pair.tumor.name, "picard_metrics.all.metrics.quality_distribution.pdf")
             input_tumor_qualimap = os.path.join(metrics_directory, tumor_pair.tumor.name, "qualimap", tumor_pair.tumor.name, "genome_results.txt")
             input_tumor_fastqc = os.path.join(metrics_directory, tumor_pair.tumor.name, "fastqc", tumor_pair.tumor.name + ".sorted.dup_fastqc.zip")
-            input_tumor_flagstat = os.path.join(metrics_directory, tumor_pair.tumor.name, "flagstat", tumor_pair.tumor.name + ".flagstat")
+            #input_tumor_flagstat = os.path.join(metrics_directory, tumor_pair.tumor.name, "flagstat", tumor_pair.tumor.name + ".flagstat")
 
             input_dep = [input_normal_oxog, input_normal_qcbias, input_normal_all_picard, input_normal_qualimap, input_normal_fastqc, 
-                        input_normal_flagstat, input_tumor_oxog, input_tumor_qcbias, input_tumor_all_picard, input_tumor_qualimap, input_tumor_fastqc,
-                        input_tumor_flagstat]
+                        input_tumor_oxog, input_tumor_qcbias, input_tumor_all_picard, input_tumor_qualimap, input_tumor_fastqc]
 
             input = [os.path.join(metrics_directory, tumor_pair.normal.name), os.path.join(metrics_directory,tumor_pair.tumor.name)]
             output = os.path.join(metrics_directory, tumor_pair.name + ".multiqc")
@@ -2158,8 +2157,16 @@ END`""".format(
             pair_directory = os.path.join("pairedVariants", tumor_pair.name)
             sequenza_directory = os.path.join(pair_directory, "sequenza")
             rawSequenza_directory = os.path.join(sequenza_directory, "rawSequenza")
-            inputNormal = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.recal.bam")
-            inputTumor = os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
+            
+            inputNormal = self.select_input_files(
+                [[os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.recal.bam")],
+                 [os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.bam")],
+                 [os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.bam")]])
+
+            inputTumor = self.select_input_files(
+                [[os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.recal.bam")],
+                 [os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.bam")],
+                 [os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.bam")]])
 
             bed_file = None
             coverage_bed = bvatools.resolve_readset_coverage_bed(tumor_pair.normal.readsets[0])
@@ -2199,11 +2206,11 @@ END`""".format(
                         jobs.append(concat_jobs([
                             mkdir_job,
                             pipe_jobs([
-                                samtools.mpileup([inputNormal], None, config.param('sequenza', 'mpileup_options'), sequence['name'], bed_file),
+                                samtools.mpileup([inputNormal[0]], None, config.param('sequenza', 'mpileup_options'), sequence['name'], bed_file),
                                 Job([None], [normal_gz], command="gzip -cf > " + normal_gz),
                             ]),
                             pipe_jobs([
-                                samtools.mpileup([inputTumor], None, config.param('sequenza', 'mpileup_options'), sequence['name'], bed_file),
+                                samtools.mpileup([inputTumor[0]], None, config.param('sequenza', 'mpileup_options'), sequence['name'], bed_file),
                                 Job([None], [tumor_gz], command="gzip -cf > " + tumor_gz),
                             ]),
                         ], name="mpileup_sequenza." + sequence['name'] + "." + tumor_pair.name))

@@ -25,6 +25,7 @@ from core.job import *
 
 def somatic_config(input_normal,input_tumor, output_dir, callRegions=None, mantaIndels=None):
     output=[
+        os.path.join(output_dir, "runWorkflow.py"),
         os.path.join(output_dir, "results", "variants", "somatic.snvs.vcf.gz"),
         os.path.join(output_dir, "results", "variants", "somatic.indels.vcf.gz")
     ]
@@ -76,7 +77,7 @@ def germline_config(input_normal, output_dir, callRegions=None):
 
 def run(input_dir, output_dep=[]):
     return Job(
-        [input_dir],
+        [os.path.join(input_dir, "runWorkflow.py")],
         output_dep,
         [
             ['strelka2_paired_somatic', 'module_python'],
