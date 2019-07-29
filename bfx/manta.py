@@ -32,7 +32,7 @@ def manta_config(input_normal, input_tumor, output_dir, callRegion=None):
         
     return Job(
         inputs,
-        [output],
+        [output_dir],
         [
             ['manta_sv', 'module_python'],
             ['manta_sv', 'module_manta']

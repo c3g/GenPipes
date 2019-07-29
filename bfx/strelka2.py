@@ -24,6 +24,7 @@ from core.config import *
 from core.job import *
 
 def somatic_config(input_normal,input_tumor, output_dir, callRegions=None, mantaIndels=None):
+
     output=[
         os.path.join(output_dir, "runWorkflow.py"),
         os.path.join(output_dir, "results", "variants", "somatic.snvs.vcf.gz"),
