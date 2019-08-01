@@ -39,7 +39,7 @@ bigWigToBedGraph \\
   {output_file} 2> {stderr}; [ -s {stderr} ] || rm -f {stderr}""".format( # If there are no errors, we delete the stderr file
         bigwig = bigWigFile,
         output_file = output_bedgraph,
-        stderr = os.path.join(output_dir, bigWigFile_name+".error")
+        stderr = os.path.join(output_dir+"_error", bigWigFile_name+".error")
         )
     )
 

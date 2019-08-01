@@ -62,9 +62,9 @@ def report_chromimpute(chromimpute_eval_file, percent1, percent2, report_file_na
         both = line['BOTH_' + percent1]
 
         if float(observed_impute) < 30:
-            report_file.write("ChromImpute : MEDIUM Level Alert : OBSERVED_"+percent+"_IMPUTE_"+percent2 +"< 30% (" + observed_impute + ")\n")
+            report_file.write("ChromImpute : MEDIUM Level Alert : OBSERVED_"+percent+"_IMPUTE_"+percent2 +"< 30% (OBSERVED_"+percent+"_IMPUTE_"+percent2 + " = " + observed_impute + "%)\n")
         if float(both) < 20:
-            report_file.write("ChromImpute : Low Level Alert : BOTH_"+percent1 + "< 20% (" + both + ")\n")
+            report_file.write("ChromImpute : Low Level Alert : BOTH_"+percent1 + "< 20% (BOTH_"+percent1 + " = "+ both + "%)\n")
         else:
             report_file.write("ChromImpute : ChromImpute evaluation passed !\n")
 
@@ -123,6 +123,7 @@ def report_epigeec(correlation_matrix, output_dir):
         for j in range(len(samples)):
             text = ax.text(j, i, matrix[i, j],
                            ha="center", va="center", color="w")
+
     ax.set_title("Samples correlation matrix")
     fig.tight_layout()
     plt.savefig(output_dir+"/correlation_matrix.png")
