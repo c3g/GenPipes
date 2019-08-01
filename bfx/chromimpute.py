@@ -29,7 +29,7 @@ def convert(input_dir, output_dir, inputinfofile, mark):
         ['chromimpute_train_dir', input_dir],
         [output_dir],
         [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
-        name = "chromimpute_convert_"+mark,
+        name = "chromimpute_convert."+mark,
         command = """\
 java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_JAR \\
   Convert \\
@@ -57,7 +57,7 @@ def compute_global_dist(input_dir, output_dir, inputinfofile, mark):
         [input_dir],
         [output_dir],
         [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
-        name = "chromimpute_compute_global_dist_"+mark,
+        name = "chromimpute_compute_global_dist."+mark,
         command = """\
 java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_JAR \\
   ComputeGlobalDist \\
@@ -83,7 +83,7 @@ def generate_train_data(input_dir, output_dir, converteddir, inputinfofile, mark
         [input_dir],
         [output_dir],
         [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
-        name = "chromimpute_generate_train_data_"+mark,
+        name = "chromimpute_generate_train_data."+mark,
         command = """\
 java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_JAR \\
   GenerateTrainData \\
@@ -114,7 +114,7 @@ def train(input_dir, output_dir, inputinfofile, sample, mark):
         [input_dir],
         [output_dir],
         [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
-        name = "chromimpute_train_"+sample+"_"+mark,
+        name = "chromimpute_train."+sample+"_"+mark,
         command = """\
 java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_JAR \\
   Train \\
@@ -133,12 +133,12 @@ java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_J
         )
     )
 
-def apply(input_dir, output_dir, converteddir, distancedir, predictordir, inputinfofile, sample, mark):
+def apply(input_dir, output, converteddir, distancedir, predictordir, inputinfofile, output_dir, sample, mark):
     return Job(
         ['chromimpute_metrics_dir', converteddir, distancedir, predictordir],
-        [output_dir],
+        [output],
         [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
-        name = "chromimpute_apply_"+sample+"_"+mark,
+        name = "chromimpute_apply."+sample+"_"+mark,
         command = """\
 java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_JAR \\
     Apply \\
@@ -167,19 +167,19 @@ java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_J
         )
     )
 
-def eval(input_dir, percent1, percent2, converteddir, converted_file, imputed_file, output_path):
+def eval(input_dir, percent1, percent2, converteddir, converted_file, output_dir, imputed_file, output_path):
     return Job(
         [input_dir],
         [output_path],
         [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
-        name = "chromimpute_eval_"+converted_file+"_vs_"+imputed_file,
+        name = "chromimpute_eval."+converted_file+"."+imputed_file,
         command = """\
 java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_JAR \\
     Eval \\
     -p {percent1} {percent2} \\
     {converteddir} \\
     {converted_file} \\
-    {input_dir} \\
+    {output_dir} \\
     {imputed_file} \\
     {chrom_sizes} > {output_path}""".format(
         java_other_options = config.param('DEFAULT', 'java_other_options'),
@@ -188,7 +188,7 @@ java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_J
         percent2 = percent2,
         converteddir = converteddir,
         converted_file = converted_file,
-        input_dir = input_dir,
+        output_dir = output_dir,
         imputed_file = imputed_file,
         chrom_sizes = config.param('chromimpute', 'chromsizes'),
         output_path = output_path

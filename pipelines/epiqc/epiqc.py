@@ -72,6 +72,33 @@ class EpiQC(chipseq.ChipSeq):
 
         return dirs
 
+    def createInputInfoFile(self):
+        """
+            Creates the input info file for ChromImpute after converting the dataset in a bedgraph format
+        """
+        inputinfofile = open(config.param('chromimpute','inputinfofile'), "w+")
+        marks = config.param('chromimpute', 'marks')
+        marks = marks.split(",")
+        cpt = 0
+
+        # Convert bigwig files to bedgraph and create inputinfofile
+        for sample in self.samples:
+            for readset in sample.readsets:
+                if readset.bigwig != None: # Check if the readset has a BIGWIG column 
+                    bigwig_path = readset.bigwig
+                    if cpt < len(marks):
+                        mark = marks[cpt]
+                        cpt += 1
+                else:                      # If not, we search for the path from a chipseq pipeline
+                    prefix_path = "/".join(self.args.readsets.name.split("/")[:-1]) # Find path to chipseq folder
+                    bigwig_path = os.path.join(prefix_path, "tracks", sample.name, "bigWig", sample.name + ".bw") # Create path to bigwig file
+                    mark = config.param('DEFAULT', 'chip_type')
+
+                mark = os.path.basename(bigwig_path+".bedgraph").split(".")[-4] # Use only for IHEC database
+                inputinfofile.write(sample.name+"\t"+mark+"\t"+os.path.basename(bigwig_path+".bedgraph")+"\n")
+
+        inputinfofile.close()
+
     def parseInputInfoFile(self, inputinfofile):
         """
             Parses a chromimpute input info file
@@ -83,6 +110,8 @@ class EpiQC(chipseq.ChipSeq):
             samplesMarksFiles.append(sampleMarkFile)
 
         return samplesMarksFiles
+
+
 
     def bigwiginfo(self):
         """
@@ -134,8 +163,10 @@ class EpiQC(chipseq.ChipSeq):
             [],
             command ="""\
 mkdir -p \\
-  {dataset_dir}""".format(
-    dataset_dir = self.output_dirs['bedgraph_dataset']),
+  {dataset_dir} \\
+  {dataset_error}""".format(
+    dataset_dir = self.output_dirs['bedgraph_dataset'],
+    dataset_error = self.output_dirs['bedgraph_dataset']+"_error"),
             name = 'mkdirs_bedgraph_dataset'))
 
         for sample in self.samples:
@@ -151,6 +182,9 @@ mkdir -p \\
         return jobs
 
     def chromimpute_convert(self, inputinfofile, marks):
+        """
+            Creates a job for chromimpute Convert for each unique mark in the dataset
+        """
         jobs = []
 
         input_dir = self.output_dirs['bedgraph_dataset']
@@ -162,6 +196,9 @@ mkdir -p \\
         return jobs
 
     def chromimpute_compute_global_dist(self, inputinfofile, marks):
+        """
+            Creates a job for chromimpute ComputeGlobalDist for each unique mark in the dataset
+        """
         jobs = []
 
         input_dir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_converteddir'])
@@ -173,6 +210,9 @@ mkdir -p \\
         return jobs
 
     def chromimpute_generate_train_data(self, inputinfofile, marks):
+        """
+            Creates a job for chromimpute GenerateTrainData for each unique mark in the dataset
+        """
         jobs = []
 
         input_dir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_distancedir'])
@@ -185,6 +225,9 @@ mkdir -p \\
         return jobs
 
     def chromimpute_train(self, inputinfofile, samplesMarks):
+        """
+            Creates a job for chromimpute Train for every sample mark given in the dataset
+        """
         jobs = []
 
         input_dir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_traindatadir'])
@@ -196,6 +239,9 @@ mkdir -p \\
         return jobs
 
     def chromimpute_apply(self, inputinfofile, samplesMarks):
+        """
+            Creates a job for chromimpute Apply for every sample mark given in the dataset
+        """
         jobs = []
 
         input_dir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_predictordir'])
@@ -205,21 +251,27 @@ mkdir -p \\
         output_dir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_output'])
         
         for samplemark in samplesMarks:
-            jobs.append(chromimpute.apply(input_dir, output_dir, converteddir, distancedir ,predictordir, inputinfofile, samplemark[0], samplemark[1]))
+            output = output_dir+"_"+samplemark[0]+"_"+samplemark[1]
+            jobs.append(chromimpute.apply(input_dir, output, converteddir, distancedir ,predictordir, inputinfofile, output_dir, samplemark[0], samplemark[1]))
         
         return jobs
 
     def chromimpute_eval(self, samplesMarksFile):
+        """
+            Creates a job for chromimpute Eval for every sample mark given in the dataset
+        """
         jobs = []
 
-        input_dir = output_dir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_output'])
+        input_base = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_output']) # input_base is the name of the folder containing imputed files
         converteddir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_converteddir'])
         percent1 = config.param('chromimpute', 'percent1')
         percent2 = config.param('chromimpute', 'percent2')
 
         for sampleMarkFile in samplesMarksFile:
+            input_dir = input_base+"_"+sampleMarkFile[0]+"_"+sampleMarkFile[1]
             output_path = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_eval'], "eval_"+sampleMarkFile[0]+"_"+sampleMarkFile[1]+".txt")
-            jobs.append(chromimpute.eval(input_dir, percent1, percent2, converteddir, sampleMarkFile[2]+".wig.gz", "impute_"+sampleMarkFile[0]+"_"+sampleMarkFile[1]+".wig.gz", output_path))
+            jobs.append(chromimpute.eval(input_dir, percent1, percent2, converteddir,
+                                            sampleMarkFile[2]+".wig.gz", input_base, "impute_"+sampleMarkFile[0]+"_"+sampleMarkFile[1]+".wig.gz", output_path))
 
         return jobs
 
@@ -239,7 +291,7 @@ mkdir -p \\
         """
         # TODO idea: Delete predictordir to save space after run
 
-        jobs= []
+        jobs = []
 
         jobs.append(Job(
             [],
@@ -258,34 +310,16 @@ mkdir -p \\
     train = self.output_dirs['chromimpute_predictordir']),
             name = 'mkdirs_chromimpute_train'))
 
-        inputinfofile = open(config.param('chromimpute','inputinfofile'), "w+")
         path_inputinfofile = os.path.join(os.getcwd(), config.param('chromimpute','inputinfofile'))
         path_dataset = os.path.join(os.getcwd(), config.param('chromimpute', 'dataset'))
 
-        marks = config.param('chromimpute', 'marks')
-        marks = marks.split(",")
-        cpt = 0
-
-        # Convert bigwig files to bedgraph and create inputinfofile
-        for sample in self.samples:
-            for readset in sample.readsets:
-                if readset.bigwig != None: # Check if the readset has a BIGWIG column 
-                    bigwig_path = readset.bigwig
-                    # mark = marks[cpt]
-                    # cpt += 1
-                else:                      # If not, we search for the path from a chipseq pipeline
-                    prefix_path = "/".join(self.args.readsets.name.split("/")[:-1]) # Find path to chipseq folder
-                    bigwig_path = os.path.join(prefix_path, "tracks", sample.name, "bigWig", sample.name + ".bw") # Create path to bigwig file
-                    mark = config.param('DEFAULT', 'chip_type')
-
-                mark = os.path.basename(bigwig_path+".bedgraph").split(".")[-4] # Use only for IHEC database
-                inputinfofile.write(sample.name+"\t"+mark+"\t"+os.path.basename(bigwig_path+".bedgraph")+"\n")
-
-        inputinfofile.close()
-
+        self.createInputInfoFile()
         read_inputinfofile = csv.reader(open(config.param('chromimpute', 'inputinfofile'), 'rb'), delimiter = '\t')
         samplesMarksFiles = self.parseInputInfoFile(read_inputinfofile)
 
+
+        marks = config.param('chromimpute', 'marks')
+        marks = marks.split(",")
         unique_marks = []
         for mark in samplesMarksFiles:
             if mark[1] not in unique_marks:
@@ -300,7 +334,6 @@ mkdir -p \\
         jobs.extend(self.chromimpute_generate_train_data(path_inputinfofile, unique_marks))
         log.debug("chromimpute_train")
         jobs.extend(self.chromimpute_train(path_inputinfofile, samplesMarksFiles))
-        log.debug("chromimpute_apply")
 
         return jobs
 
@@ -320,7 +353,7 @@ mkdir -p \\
             If epiqc is ran after a chipseq pipeline, the path to the bigwig files is reconstructed through the location of the chipseq readset file (HAS TO BE IN THE SAME FOLDER AS THE OUTPUT 
             OF THE CHIPSEQ PIPELINE)
         """
-        jobs= []
+        jobs = []
 
         jobs.append(Job(
             [],
@@ -335,31 +368,13 @@ mkdir -p \\
     eval = self.output_dirs['chromimpute_eval']),
             name = 'mkdirs_chromimpute_metrics'))
 
-        inputinfofile = open(config.param('chromimpute','inputinfofile'), "w+")
         path_inputinfofile = os.path.join(os.getcwd(), config.param('chromimpute','inputinfofile'))
         path_dataset = os.path.join(os.getcwd(), config.param('chromimpute', 'dataset'))
 
         marks = config.param('chromimpute', 'marks')
         marks = marks.split(",")
-        cpt = 0
 
-        # Convert bigwig files to bedgraph and create inputinfofile
-        for sample in self.samples:
-            for readset in sample.readsets:
-                if readset.bigwig != None: # Check if the readset has a BIGWIG column 
-                    bigwig_path = readset.bigwig
-                    mark = marks[cpt]
-                    cpt += 1
-                else:                      # If not, we search for the path from a chipseq pipeline
-                    prefix_path = "/".join(self.args.readsets.name.split("/")[:-1]) # Find path to chipseq folder
-                    bigwig_path = os.path.join(prefix_path, "tracks", sample.name, "bigWig", sample.name + ".bw") # Create path to bigwig file
-                    mark = config.param('DEFAULT', 'chip_type')
-                
-                mark = os.path.basename(bigwig_path+".bedgraph").split(".")[-4] # Use only for IHEC database
-                inputinfofile.write(sample.name+"\t"+mark+"\t"+os.path.basename(bigwig_path+".bedgraph")+"\n")
-
-        inputinfofile.close()
-
+        self.createInputInfoFile()
         read_inputinfofile = csv.reader(open(config.param('chromimpute', 'inputinfofile'), 'rb'), delimiter = '\t')
         samplesMarksFiles = self.parseInputInfoFile(read_inputinfofile)
 
@@ -639,8 +654,6 @@ python ../genpipes/bfx/wigSignalNoise.py \\
                 output_dir = self.output_dirs['report_dir'])))
 
         return jobs
-
-
 
     @property
     def steps(self):
