@@ -815,15 +815,14 @@ class DnaSeqRaw(common.Illumina):
             input_fastqc = os.path.join(metrics_directory, sample.name, "fastqc", sample.name + ".sorted.dup_fastqc.zip")
             input_flagstat = os.path.join(metrics_directory, sample.name, "flagstat", sample.name + ".flagstat")
 
-            input_dep = [input_oxog, input_qcbias, input_all_picard, input_qualimap, input_fastqc, input_flagstat]
+            input_dep += [input_oxog, input_qcbias, input_all_picard, input_qualimap, input_fastqc, input_flagstat]
 
-            input = os.path.join(metrics_directory, sample.name)
+            inputs += [os.path.join(metrics_directory, sample.name)]
         
-            inputs.append(input)
-            
-            output = os.path.join(metrics_directory, "multiqc_report")
-            jobs.append(concat_jobs([multiqc.run(inputs, output, input_dep), ]
-                                    , name="multiqc." + sample.name))
+
+        output = os.path.join(metrics_directory, "multiqc_report")
+        jobs.append(concat_jobs([multiqc.run(inputs, output, input_dep), ]
+                                    , name="multiqc_all_samples"))
 
         return jobs
 

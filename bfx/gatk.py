@@ -219,7 +219,7 @@ def haplotype_caller(inputs, output, intervals=[], exclude_intervals=[], interva
     else:
         return Job(
             inputs,
-            [output],
+            [output,output+".tbi"],
             [
                 ['gatk_haplotype_caller', 'module_java'],
                 ['gatk_haplotype_caller', 'module_gatk']

@@ -3,11 +3,11 @@
 set -eu -o pipefail
 
 SOFTWARE=MultiQC
-VERSION=1.6
+VERSION=1.7
 ARCHIVE=${SOFTWARE}-${VERSION}.zip
 ARCHIVE_URL=https://github.com/ewels/$SOFTWARE/archive/v${VERSION}.zip
 SOFTWARE_DIR=${SOFTWARE}-$VERSION
-PYTHON_MODULE=mugqic/python/2.7.13
+PYTHON_MODULE=mugqic/python/2.7.14
 
 # Specific commands to extract and build the software
 # $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
@@ -26,6 +26,9 @@ build() {
   export PYTHONPATH=${PYTHONPATH}:$INSTALL_DIR/$SOFTWARE_DIR/lib/python2.7/site-packages
   cd $INSTALL_DIR/$SOFTWARE_DIR
   python setup.py install --prefix $INSTALL_DIR/$SOFTWARE_DIR
+
+  # restting shebang so that MultiQC can be used with any version of Python
+  sed -i 's/^\#!.*/#!\/usr\/bin\/env python/' $INSTALL_DIR/$SOFTWARE_DIR/bin/*
 }
 
 

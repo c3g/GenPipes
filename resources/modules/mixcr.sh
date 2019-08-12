@@ -2,19 +2,18 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=SMRTLink
-VERSION=7.0.0
-SUBVERSION=63985
-ARCHIVE=${SOFTWARE,,}-${VERSION}.${SUBVERSION}.zip
-ARCHIVE_URL=https://downloads.pacbcloud.com/public/software/installers/${ARCHIVE/-/_}
-SOFTWARE_DIR=$SOFTWARE-${VERSION}
-NOPATCH=1
-NOWRAP=1
+SOFTWARE=MiXCR
+VERSION=3.0.5
+ARCHIVE=${SOFTWARE,,}-${VERSION}.zip
+ARCHIVE_URL=https://github.com/milaboratory/${SOFTWARE,,}/releases/download/v${VERSION}/${ARCHIVE}
+SOFTWARE_DIR=${SOFTWARE,,}-$VERSION
 
 build() {
   cd $INSTALL_DOWNLOAD
   unzip $ARCHIVE
-  ./${SOFTWARE,,}_${VERSION}.${SUBVERSION}.run --rootdir $INSTALL_DIR/$SOFTWARE_DIR --smrttools-only
+
+  # Install software
+  mv -i $SOFTWARE_DIR $INSTALL_DIR/
 }
 
 module_file() {
@@ -23,10 +22,12 @@ echo "\
 proc ModulesHelp { } {
   puts stderr \"\tMUGQIC - $SOFTWARE \"
 }
-module-whatis \"$SOFTWARE\"
+module-whatis \"$SOFTWARE - require JDK1.8\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-prepend-path    PATH                \$root/smrtcmds/bin
+prepend-path    HOME                \$root
+setenv          MIXCR_HOME          \$root
+setenv          MIXCR_JAR           \$root/${SOFTWARE,,}.jar
 "
 }
 

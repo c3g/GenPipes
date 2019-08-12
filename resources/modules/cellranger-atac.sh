@@ -3,15 +3,15 @@
 set -eu -o pipefail
 
 SOFTWARE=cellranger-atac
-VERSION=1.0.1
+VERSION=1.1.0
 ARCHIVE=$SOFTWARE-$VERSION.tar.gz
-# cellranger archive has to be manually downloaded from https://support.10xgenomics.com/single-cell/software/downloads/latest
+# cellranger archive has to be manually downloaded from https://support.10xgenomics.com/single-cell-atac/software/downloads/latest
 # and then stored in $MUGQIC_INSTALL_HOME/archive/ or/and $MUGQIC_INSTALL_HOME_DEV/archive/
 ARCHIVE_URL=
 SOFTWARE_DIR=$SOFTWARE-$VERSION
 # Do not patch the executable binaries
 NOWRAP=1
-NOPTACH=1
+NOPATCH=1
 
 build() {
   cd $INSTALL_DOWNLOAD
