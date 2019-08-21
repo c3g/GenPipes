@@ -45,7 +45,17 @@ log = logging.getLogger(__name__)
 
 class EpiQC(chipseq.ChipSeq):
     """
-    TODO: write description of pipeline
+        EpiQC Pipeline
+        ==============
+
+        EpiQC is a quality control pipeline for signal files (bigwig) generated from ChIP-Seq. The pipeline does a series of calculations on 
+        these files to determine wether or not they can be considered good.Four metrics are computed from a single bigwig file.
+        With BigWigInfo it is determined if there are missing chromosomes, if the chromosome count is lower than 23 it raises a high level alert.
+        ChromImpute imputes signal tracks for the first chromosome and using these imputed files EpiQC computes 2 other metrics.
+        And finally the pipeline creates a heatmap from the correlation matrix obtained with EpiGeEC.
+
+        You can test this pipeline with ChIP-Seq samples from the IHEC portal :
+        https://epigenomesportal.ca/ihec/grid.html?assembly=4&build=2018-10
     """
     def __init__(self, protocol=None):
         self._protocol = protocol
@@ -74,10 +84,10 @@ class EpiQC(chipseq.ChipSeq):
 
     def createInputInfoFile(self):
         """
-            Creates the input info file for ChromImpute after converting the dataset in a bedgraph format
+            Creates the input info file for ChromImpute after converting the dataset in a bedgraph format.
         """
         inputinfofile = open(config.param('chromimpute','inputinfofile'), "w+")
-        marks = config.param('chromimpute', 'marks')
+        marks = config.param('chromimpute', 'marks') # Looks for the marks in the ini file (marks are seperated with commas)
         marks = marks.split(",")
         cpt = 0
 
@@ -94,15 +104,15 @@ class EpiQC(chipseq.ChipSeq):
                     bigwig_path = os.path.join(prefix_path, "tracks", sample.name, "bigWig", sample.name + ".bw") # Create path to bigwig file
                     mark = config.param('DEFAULT', 'chip_type')
 
-                mark = os.path.basename(bigwig_path+".bedgraph").split(".")[-4] # Use only for IHEC database
+                # mark = os.path.basename(bigwig_path+".bedgraph").split(".")[-4] # Use only for IHEC database samples
                 inputinfofile.write(sample.name+"\t"+mark+"\t"+os.path.basename(bigwig_path+".bedgraph")+"\n")
 
         inputinfofile.close()
 
     def parseInputInfoFile(self, inputinfofile):
         """
-            Parses a chromimpute input info file
-            Each element of the array samplesMarksFiles contains respectivly the name of the sample, its mark, and the name of the file
+            Parses a chromimpute input info file.
+            Each element of the array samplesMarksFiles contains the name of the sample, its mark, and the name of the file in that order.
         """
         samplesMarksFiles = []
         for line in inputinfofile:  
@@ -116,7 +126,6 @@ class EpiQC(chipseq.ChipSeq):
     def bigwiginfo(self):
         """
             Runs the tool bigWigInfo on bigwig files
-            Outputs will be stored in a new directory : bigwiginfo
 
             If an EpiQC readset is given to the pipeline, we search for the BIGWIG column to get the files
             If epiqc is ran after a chipseq pipeline, the path to the bigwig files is reconstructed through the location of the chipseq readset file (HAS TO BE IN THE SAME FOLDER AS THE OUTPUT 
@@ -320,7 +329,9 @@ mkdir -p \\
 
         marks = config.param('chromimpute', 'marks')
         marks = marks.split(",")
+        log.debug("marks : " + str(marks))        
         unique_marks = []
+
         for mark in samplesMarksFiles:
             if mark[1] not in unique_marks:
                 unique_marks.append(mark[1])
@@ -426,8 +437,12 @@ mkdir -p \\
                     command = """\
 python ../genpipes/bfx/wigSignalNoise.py \\
   -i {file} \\
+  -p1 {percent1} \\
+  -p2 {percent2} \\
   -o {output_dir}""".format(
                     file = os.path.join(converteddir, "chr1_" + converted_file),
+                    percent1 = config.param('signal_noise', 'percent1'),
+                    percent2 = config.param('signal_noise', 'percent2'),
                     output_dir = output_file
                     )))
 
@@ -588,7 +603,7 @@ python ../genpipes/bfx/wigSignalNoise.py \\
                 if readset.bigwig != None:
                     bigwiginfo_file = os.path.join(self.output_dirs['bigwiginfo_output_directory'], "bigwiginfo_"+os.path.basename(readset.bigwig)+".txt")
                     signal_noise_file = os.path.join(self.output_dirs['signal_to_noise_output_directory'], os.path.basename(readset.bigwig)+".bedgraph.wig.gz.tsv")
-                    mark = marks[cpt]
+                    mark = marks[cpt] # Corresponds to the marks specified in the epiqc.base.ini
                     cpt += 1
                 else:
                     bigwiginfo_file = os.path.join(self.output_dirs['bigwiginfo_output_directory'], "bigwiginfo_"+sample.name+".bw.txt")
@@ -605,8 +620,12 @@ python ../genpipes/bfx/wigSignalNoise.py \\
                     command = 
 "python ../genpipes/bfx/epiqc_report.py \
   -b {bigwiginfo_file} \
+  -bc1 {low_alert_bases_covered} \
+  -bc2 {medium_alert_bases_covered} \
   -o {output_file}".format(
                     bigwiginfo_file = bigwiginfo_file,
+                    low_alert_bases_covered = config.param('bigwiginfo', 'low_alert_bases_covered'),
+                    medium_alert_bases_covered = config.param('bigwiginfo', 'medium_alert_bases_covered'),
                     output_file = report_file)))
 
                 eval_file = "eval_"+sample.name+"_"+mark+".txt"
@@ -636,8 +655,12 @@ python ../genpipes/bfx/wigSignalNoise.py \\
                         command = 
 "python ../genpipes/bfx/epiqc_report.py \
   -s {signal_noise_file} \
+  -s1 {percent1} \
+  -s2 {percent2} \
   -o {output_file}".format(
                     signal_noise_file = signal_noise_file,
+                    percent1 = config.param('signal_noise', 'percent1'),
+                    percent2 = config.param('signal_noise', 'percent2'),
                     output_file = report_file)))
 
         input_dir = os.path.join(self.output_dirs['epigeec_output_directory'], self.output_dirs['epigeec_output'])
