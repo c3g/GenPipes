@@ -34,6 +34,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 from core.config import config, _raise, SanitycheckError
 from core.job import Job, concat_jobs
 
+from pipelines import common
+
 from bfx import gq_seq_utils
 from bfx import picard
 from bfx import samtools
@@ -42,11 +44,11 @@ from bfx import ucsc
 from bfx import homer
 from bfx import macs2
 from bfx import multiqc
-from pipelines.dnaseq import dnaseq
+# from pipelines.dnaseq import dnaseq
 
 log = logging.getLogger(__name__)
 
-class ChipSeq(dnaseq.DnaSeq):
+class ChipSeq(common.Illumina):
     """
     ChIP-Seq Pipeline
     =================
@@ -66,10 +68,11 @@ class ChipSeq(dnaseq.DnaSeq):
     is more information about ChIP-Seq pipeline that you may find interesting.
     """
 
-    def __init__(self, protocol=None):
+    def __init__(self, protocol="chipseq"):
         self._protocol=protocol
         # Add pipeline specific arguments
         self.argparser.add_argument("-d", "--design", help="design file", type=file)
+        self.argparser.add_argument("-t", "--type", help="Type of pipeline (default chipseq)", choices = ["chipseq", "atacseq"], default="chipseq")
         super(ChipSeq, self).__init__(protocol)
 
 
@@ -512,6 +515,87 @@ done""".format(
 
         return jobs
 
+    def macs2_atacseq_callpeak(self):
+        """
+        Peaks are called using the MACS2 software. Different calling strategies are used for narrow and broad peaks.
+        The mfold parameter used in the model building step is estimated from a peak enrichment diagnosis run.
+        The estimated mfold lower bound is 10 and the estimated upper bound can vary between 15 and 100.
+        The default mfold parameter of MACS2 is [10,30].
+        """
+
+        jobs = []
+
+        for contrast in self.contrasts:
+            if contrast.treatments:
+                treatment_files = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.dup.bam") for sample in contrast.treatments]
+                control_files = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.dup.bam") for sample in contrast.controls]
+                output_dir = os.path.join(self.output_dirs['macs_output_directory'], contrast.real_name)
+
+
+                ## set macs2 variables:
+
+                format = "--format " + ("BAMPE" if self.run_type == "PAIRED_END" else "BAM")
+                genome_size = self.mappable_genome_size()
+                output_prefix_name = os.path.join(output_dir, contrast.real_name)
+                output = os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak")
+
+                other_options = " --broad --nomodel --bdg --SPMR --keep-dup all"
+                # if contrast.type == 'broad':  # Broad region
+                #   other_options = " --broad --nomodel"
+                # else:  # Narrow region
+                #     if control_files:
+                #         other_options = " --nomodel"
+                #     else:
+                #         other_options = " --fix-bimodal"
+
+                mkdir_job = Job(command="mkdir -p " + output_dir)
+
+                macs_job = macs2.callpeak(format, genome_size, treatment_files, control_files, output_prefix_name, output, other_options)
+
+                job = concat_jobs([mkdir_job, macs_job])
+                job.name = "macs2_callpeak." + contrast.real_name
+                job.removable_files = [output_dir]
+
+                jobs.append(job)
+
+              ## For ihec: exchange peak score by log10 q-value and generate bigBed
+                job = concat_jobs([
+                    Job([os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak")],
+                        [os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak.bed")],
+                        command="awk ' {if ($9 > 1000) {$9 = 1000} ; printf( \"%s\\t%s\\t%s\\t%s\\t%0.f\\n\", $1,$2,$3,$4,$9)} ' " + os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak") + " > " + os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak.bed")),
+                    ucsc.bedToBigBed(os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak.bed"), os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak.bb"))
+                ], name="macs2_callpeak_bigBed."+ contrast.real_name)
+                jobs.append(job)
+            else:
+                log.warning("No treatment found for contrast " + contrast.name + "... skipping")
+
+        report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.macs2_callpeak.md")
+        jobs.append(
+            Job(
+                [os.path.join(self.output_dirs['macs_output_directory'], contrast.real_name, contrast.real_name + "_peaks." + contrast.type + "Peak") for contrast in self.contrasts],
+                [report_file],
+                command="""\
+mkdir -p {report_dir} && \\
+cp {report_template_dir}/{basename_report_file} {report_dir}/ && \\
+for contrast in {contrasts}
+do
+  cp -a --parents {macs_dir}/$contrast/ {report_dir}/ && \\
+  echo -e "* [Peak Calls File for Design $contrast]({macs_dir}/$contrast/${{contrast}}_peaks.xls)" \\
+  >> {report_file}
+done""".format(
+                    contrasts=" ".join([contrast.real_name for contrast in self.contrasts]),
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file, 
+                    macs_dir = self.output_dirs['macs_output_directory'], 
+                    report_dir = self.output_dirs['report_output_directory']
+                ),
+                report_files=[report_file],
+                name="macs2_callpeak_report")
+        )
+
+        return jobs
+
     def homer_annotate_peaks(self):
         """
         The peaks called previously are annotated with HOMER using RefSeq annotations for the reference genome.
@@ -900,30 +984,122 @@ done""".format(
         jobs.append(job)
         return jobs
 
+    def bwa_mem_picard_sort_sam(self):
+        """
+        The filtered reads are aligned to a reference genome. The alignment is done per sequencing readset.
+        The alignment software used is [BWA](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem.
+        BWA output BAM files are then sorted by coordinate using [Picard](http://broadinstitute.github.io/picard/).
+
+        This step takes as input files:
+
+        1. Trimmed FASTQ files if available
+        2. Else, FASTQ files from the readset file if available
+        3. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
+        """
+
+        jobs = []
+        for readset in self.readsets:
+            trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
+            alignment_directory = os.path.join("alignment", readset.sample.name)
+            readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
+
+            # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
+            if readset.run_type == "PAIRED_END":
+                candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
+                if readset.fastq1 and readset.fastq2:
+                    candidate_input_files.append([readset.fastq1, readset.fastq2])
+                if readset.bam:
+                    candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
+                [fastq1, fastq2] = self.select_input_files(candidate_input_files)
+            
+            elif readset.run_type == "SINGLE_END":
+                candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
+                if readset.fastq1:
+                    candidate_input_files.append([readset.fastq1])
+                if readset.bam:
+                    candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
+                [fastq1] = self.select_input_files(candidate_input_files)
+                fastq2 = None
+            
+            else:
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+
+            job = concat_jobs([
+                Job(command="mkdir -p " + os.path.dirname(readset_bam), samples=[readset.sample]),
+                pipe_jobs([
+                    bwa.mem(
+                        fastq1,
+                        fastq2,
+                        read_group="'@RG" + \
+                            "\tID:" + readset.name + \
+                            "\tSM:" + readset.sample.name + \
+                            "\tLB:" + (readset.library if readset.library else readset.sample.name) + \
+                            ("\tPU:run" + readset.run + "_" + readset.lane if readset.run and readset.lane else "") + \
+                            ("\tCN:" + config.param('bwa_mem', 'sequencing_center') if config.param('bwa_mem', 'sequencing_center', required=False) else "") + \
+                            "\tPL:Illumina" + \
+                            "'"
+                    ),
+                    picard.sort_sam(
+                        "/dev/stdin",
+                        readset_bam,
+                        "coordinate"
+                    )
+                ])
+            ])
+            job.name = "bwa_mem_picard_sort_sam." + readset.name
+            job.samples = [readset.sample]
+
+            jobs.append(job)
+
+        return jobs
+
     @property
     def steps(self):
         return [
-            self.picard_sam_to_fastq,
-            self.trimmomatic,
-            self.merge_trimmomatic_stats,
-            self.bwa_mem_picard_sort_sam,
-            self.samtools_view_filter,
-            self.picard_merge_sam_files,
-            self.picard_mark_duplicates,
-            self.metrics,
-            self.homer_make_tag_directory,
-            self.qc_metrics,
-            self.homer_make_ucsc_file,
-            self.macs2_callpeak,
-            self.homer_annotate_peaks,
-            self.homer_find_motifs_genome,
-            self.annotation_graphs,
-            self.ihec_preprocess_files,
-            self.run_spp,
-            self.ihec_metrics,
-            self.multiqc_report,
-            self.cram_output
+            [
+                self.picard_sam_to_fastq,
+                self.trimmomatic,
+                self.merge_trimmomatic_stats,
+                self.bwa_mem_picard_sort_sam,
+                self.samtools_view_filter,
+                self.picard_merge_sam_files,
+                self.picard_mark_duplicates,
+                self.metrics,
+                self.homer_make_tag_directory,
+                self.qc_metrics,
+                self.homer_make_ucsc_file,
+                self.macs2_callpeak,
+                self.homer_annotate_peaks,
+                self.homer_find_motifs_genome,
+                self.annotation_graphs,
+                self.ihec_preprocess_files,
+                self.run_spp,
+                self.ihec_metrics,
+                self.multiqc_report,
+                self.cram_output],
+            [
+                self.picard_sam_to_fastq,
+                self.trimmomatic,
+                self.merge_trimmomatic_stats,
+                self.bwa_mem_picard_sort_sam,
+                self.samtools_view_filter,
+                self.picard_merge_sam_files,
+                self.picard_mark_duplicates,
+                self.metrics,
+                self.homer_make_tag_directory,
+                self.qc_metrics,
+                self.homer_make_ucsc_file,
+                self.macs2_atacseq_callpeak,
+                self.homer_annotate_peaks,
+                self.homer_find_motifs_genome,
+                self.annotation_graphs,
+                self.ihec_preprocess_files,
+                self.run_spp,
+                self.ihec_metrics,
+                self.multiqc_report,
+                self.cram_output]
         ]
 
-if __name__ == '__main__': 
-    ChipSeq()
+if __name__ == '__main__':
+    ChipSeq(protocol=['chipseq', 'atacseq'])
