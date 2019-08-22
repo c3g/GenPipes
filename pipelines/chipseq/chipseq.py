@@ -32,7 +32,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 
 # MUGQIC Modules
 from core.config import config, _raise, SanitycheckError
-from core.job import Job, concat_jobs
+from core.job import Job, concat_jobs, pipe_jobs
 
 from pipelines import common
 
