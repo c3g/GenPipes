@@ -36,6 +36,7 @@ from core.job import Job, concat_jobs, pipe_jobs
 
 from pipelines import common
 
+from bfx import bwa
 from bfx import gq_seq_utils
 from bfx import picard
 from bfx import samtools
