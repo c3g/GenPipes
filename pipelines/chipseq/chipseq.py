@@ -73,7 +73,7 @@ class ChipSeq(common.Illumina):
         self._protocol=protocol
         # Add pipeline specific arguments
         self.argparser.add_argument("-d", "--design", help="design file", type=file)
-        self.argparser.add_argument("-t", "--type", help="Type of pipeline (default chipseq)", choices = ["chipseq", "atacseq"], default="chipseq")
+        self.argparser.add_argument("-t", "--type", help="Type of pipeline (default chipseq)", choices=["chipseq", "atacseq"], default="chipseq")
         super(ChipSeq, self).__init__(protocol)
 
 
@@ -258,7 +258,38 @@ cp \\
         The number of raw/filtered and aligned reads per sample are computed at this stage.
         """
 
+        # check the library status
+        library, bam = {}, {}
+        for readset in self.readsets:
+            if not library.has_key(readset.sample):
+                library[readset.sample] = "SINGLE_END"
+            if readset.run_type == "PAIRED_END":
+                library[readset.sample] = "PAIRED_END"
+            if not bam.has_key(readset.sample):
+                bam[readset.sample] = ""
+            if readset.bam:
+                bam[readset.sample] = readset.bam
+
         jobs = []
+
+        for sample in self.samples:
+            file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.")
+
+            candidate_input_files = [[file_prefix + "bam"]]
+            if bam[sample]:
+                candidate_input_files.append([bam[sample]])
+            [input] = self.select_input_files(candidate_input_files)
+
+            job = picard.collect_multiple_metrics(
+                input,
+                re.sub("bam", "all.metrics", input),
+                library_type=library[sample]
+            )
+            job.name = "picard_collect_multiple_metrics." + sample.name
+            job.samples = [sample]
+            jobs.append(job)
+
+
         jobs.append(concat_jobs([samtools.flagstat(os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.dup.bam"), os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.dup.bam.flagstat")) for sample in self.samples], name="metrics.flagstat"))
 
         trim_metrics_file = os.path.join(self.output_dirs['metrics_output_directory'], "trimSampleTable.tsv")
@@ -277,9 +308,13 @@ cp \\
 for sample in {samples}
 do
   flagstat_file={alignment_dir}/$sample/$sample.sorted.dup.bam.flagstat
-  echo -e "$sample\t`grep -P '^\d+ \+ \d+ mapped' $flagstat_file | grep -Po '^\d+'`\t`grep -P '^\d+ \+ \d+ duplicate' $flagstat_file | grep -Po '^\d+'`"
+  bam_file={alignment_dir}/$sample/$sample.sorted.dup.bam
+  align_metrics=${echo -e "$sample\t`grep -P '^\d+ \+ \d+ mapped' $flagstat_file | grep -Po '^\d+'`\t`grep -P '^\d+ \+ \d+ duplicate' $flagstat_file | grep -Po '^\d+'`"}
+  mito_reads=${sambamba view -c $bam_file chrM}
+  mito_ratio=${echo "100 * $mito_reads / $(sambamba view -F "not unmapped" -c $bam_file)" | bc -l}
+  align_metrics+=\t$mito_reads\t$mito_ratio
 done | \\
-awk -F"\t" '{{OFS="\t"; print $0, $3 / $2 * 100}}' | sed '1iSample\tAligned Filtered Reads\tDuplicate Reads\tDuplicate %' \\
+awk -F"\t" '{{OFS="\t"; print $0, $3 / $2 * 100}}' | sed '1iSample\tAligned Filtered Reads\tDuplicate Reads\tDuplicate %\tMitchondrial Reads\tMitochondrial %' \\
   > {metrics_file} && \\
 mkdir -p {report_dir} && \\
 if [[ -f {trim_metrics_file} ]]
