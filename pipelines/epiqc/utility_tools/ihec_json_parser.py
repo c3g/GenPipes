@@ -10,7 +10,15 @@ import time
 import argparse
 import logging
 
+"""
+    This tool takes as input a json file (For exemple from the IHEC data portal) and downloads the bigwig files of all the samples,
+    creates a readset file for the EpiQC pipeline and creates a list of marks to copy paste in the base.ini file.
+"""
+
 def parseJson(file):
+    """
+        Parses the json file and returns the name of each sample, its mark and the url of its bigwig file
+    """
     with open(file) as json_file:
         data = json.load(json_file)
 
@@ -30,7 +38,7 @@ def parseJson(file):
 
 def downloadFiles(url, output_path):
     """
-        donwload_path is the folder where files will be put
+        Downloads a file from a url and puts in the output_path directory
     """
     try:
         context = ssl._create_unverified_context()
@@ -50,7 +58,7 @@ def downloadFiles(url, output_path):
     complete_file_name = os.path.join(output_path, filename)
     
     writeFile = open(complete_file_name, "w+")
-    # log.info("READING " + filename)
+    log.info("READING " + filename)
     file = response.read()
     log.info("WRITING " + filename)
     writeFile.write(file)
@@ -58,6 +66,9 @@ def downloadFiles(url, output_path):
     log.info("DONE :" + filename)
 
 def createReadsetMarkList(marks, bigwig_files, sample_names, dataset_name):
+    """
+        This function creates a readset file for the EpiQC pipeline and a list of marks for each bigwig files.
+    """
     bigwig_filenames = []
     for bigwig in bigwig_files:
         bigwig = bigwig.split("/")[-1]

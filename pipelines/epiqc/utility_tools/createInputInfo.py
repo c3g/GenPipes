@@ -3,6 +3,10 @@ import logging
 import argparse
 
 
+"""
+Creates and input info file for chromimpute from a folder containing bigwig files.
+"""
+
 def createInputInfo(path_to_folder, output):
 	filename = os.path.join(output, "inputinfo.txt")
 	output = open(filename, "w+")
