@@ -309,12 +309,13 @@ for sample in {samples}
 do
   flagstat_file={alignment_dir}/$sample/$sample.sorted.dup.bam.flagstat
   bam_file={alignment_dir}/$sample/$sample.sorted.dup.bam
-  align_metrics=${echo -e "$sample\t`grep -P '^\d+ \+ \d+ mapped' $flagstat_file | grep -Po '^\d+'`\t`grep -P '^\d+ \+ \d+ duplicate' $flagstat_file | grep -Po '^\d+'`"}
-  mito_reads=${sambamba view -c $bam_file chrM}
-  mito_ratio=${echo "100 * $mito_reads / $(sambamba view -F "not unmapped" -c $bam_file)" | bc -l}
-  align_metrics+=\t$mito_reads\t$mito_ratio
+  align_metrics=$(echo -e "$sample\t`grep -P '^\d+ \+ \d+ mapped' $flagstat_file | grep -Po '^\d+'`\t`grep -P '^\d+ \+ \d+ duplicate' $flagstat_file | grep -Po '^\d+'`")
+  align_metrics=awk '{print $0, $3 / $2 * 100}' <<< "$align_metrics"
+  mito_reads=$(sambamba view -c $bam_file chrM)
+  mito_ratio=$(echo "100 * $mito_reads / $(sambamba view -F "not unmapped" -c $bam_file)" | bc -l)
+  align_metrics+=$(echo -e "\t$mito_reads\t$mito_ratio")
 done | \\
-awk -F"\t" '{{OFS="\t"; print $0, $3 / $2 * 100}}' | sed '1iSample\tAligned Filtered Reads\tDuplicate Reads\tDuplicate %\tMitchondrial Reads\tMitochondrial %' \\
+sed '1iSample\tAligned Filtered Reads\tDuplicate Reads\tDuplicate %\tMitchondrial Reads\tMitochondrial %' <<< "$align_metrics" \\
   > {metrics_file} && \\
 mkdir -p {report_dir} && \\
 if [[ -f {trim_metrics_file} ]]
@@ -338,8 +339,8 @@ pandoc --to=markdown \\
                     report_template_dir=self.report_template_dir,
                     basename_report_file=os.path.basename(report_file),
                     report_file=report_file, 
-                    alignment_dir = self.output_dirs['alignment_output_directory'], 
-                    report_dir = self.output_dirs['report_output_directory']
+                    alignment_dir=self.output_dirs['alignment_output_directory'], 
+                    report_dir=self.output_dirs['report_output_directory']
                 ),
                 name="metrics_report",
                 samples=self.samples,
