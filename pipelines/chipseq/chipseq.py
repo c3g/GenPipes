@@ -273,7 +273,7 @@ cp \\
         jobs = []
 
         for sample in self.samples:
-            file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.")
+            file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.")
 
             candidate_input_files = [[file_prefix + "bam"]]
             if bam[sample]:
