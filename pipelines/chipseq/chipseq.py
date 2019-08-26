@@ -306,6 +306,7 @@ cp \\
                 # Format merge stats into markdown table using ugly awk (knitr may do this better)
                 command="""\
 module load mugqic/sambamba/0.6.8 && \\
+echo > {metrics_file} && \\
 for sample in {samples}
 do
   flagstat_file={alignment_dir}/$sample/$sample.sorted.dup.bam.flagstat
@@ -314,9 +315,9 @@ do
   align_metrics=$(awk '{{OFS="\t"; print $0, $3 / $2 * 100}}' <<< "$align_metrics")
   mito_reads=$(sambamba view -c $bam_file chrM)
   mito_ratio=$(echo "100 * $mito_reads / $(sambamba view -F "not unmapped" -c $bam_file)" | bc -l)
-  align_metrics+=$(echo -e "\t$mito_reads\t$mito_ratio")
-done | \\
-sed '1iSample\tAligned Filtered Reads\tDuplicate Reads\tDuplicate %\tMitchondrial Reads\tMitochondrial %' <<< "$align_metrics" \\
+  echo -e "$align_metrics\t$mito_reads\t$mito_ratio" >> {metrics_file}
+done && \\
+sed '1iSample\tAligned Filtered Reads\tDuplicate Reads\tDuplicate %\tMitchondrial Reads\tMitochondrial %' {metrics_file} \\
   > {metrics_file} && \\
 mkdir -p {report_dir} && \\
 if [[ -f {trim_metrics_file} ]]
