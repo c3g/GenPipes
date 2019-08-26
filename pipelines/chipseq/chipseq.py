@@ -317,8 +317,7 @@ do
   mito_ratio=$(echo "100 * $mito_reads / $(sambamba view -F "not unmapped" -c $bam_file)" | bc -l)
   echo -e "$align_metrics\t$mito_reads\t$mito_ratio" >> {metrics_file}
 done && \\
-sed '1iSample\tAligned Filtered Reads\tDuplicate Reads\tDuplicate %\tMitchondrial Reads\tMitochondrial %' {metrics_file} \\
-  > {metrics_file} && \\
+sed -i -e "1 i\\Sample\tAligned Filtered Reads\tDuplicate Reads\tDuplicate %\tMitchondrial Reads\tMitochondrial %" {metrics_file} && \\
 mkdir -p {report_dir} && \\
 if [[ -f {trim_metrics_file} ]]
 then
