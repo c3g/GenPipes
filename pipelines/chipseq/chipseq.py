@@ -305,6 +305,7 @@ cp \\
                 # Merge trimming stats per sample with aligned and duplicate stats using ugly awk
                 # Format merge stats into markdown table using ugly awk (knitr may do this better)
                 command="""\
+module load mugqic/sambamba/0.6.8 && \\
 for sample in {samples}
 do
   flagstat_file={alignment_dir}/$sample/$sample.sorted.dup.bam.flagstat
