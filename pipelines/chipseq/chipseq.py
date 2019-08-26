@@ -310,7 +310,7 @@ do
   flagstat_file={alignment_dir}/$sample/$sample.sorted.dup.bam.flagstat
   bam_file={alignment_dir}/$sample/$sample.sorted.dup.bam
   align_metrics=$(echo -e "$sample\t`grep -P '^\d+ \+ \d+ mapped' $flagstat_file | grep -Po '^\d+'`\t`grep -P '^\d+ \+ \d+ duplicate' $flagstat_file | grep -Po '^\d+'`")
-  align_metrics=$(awk '\{OFS="\t"; print $0, $3 / $2 * 100\}' <<< "$align_metrics")
+  align_metrics=$(awk '{{OFS="\t"; print $0, $3 / $2 * 100}}' <<< "$align_metrics")
   mito_reads=$(sambamba view -c $bam_file chrM)
   mito_ratio=$(echo "100 * $mito_reads / $(sambamba view -F "not unmapped" -c $bam_file)" | bc -l)
   align_metrics+=$(echo -e "\t$mito_reads\t$mito_ratio")
