@@ -306,7 +306,7 @@ cp \\
                 # Format merge stats into markdown table using ugly awk (knitr may do this better)
                 command="""\
 module load mugqic/sambamba/0.6.8 && \\
-echo > {metrics_file} && \\
+> {metrics_file} && \\
 for sample in {samples}
 do
   flagstat_file={alignment_dir}/$sample/$sample.sorted.dup.bam.flagstat
