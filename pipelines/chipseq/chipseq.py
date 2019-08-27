@@ -1016,7 +1016,7 @@ done""".format(
         yamlFile = os.path.expandvars(config.param('multiqc_report', 'MULTIQC_CONFIG_PATH'))
         input_files = []
         for sample in self.samples:
-            input_files.extend([os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.dup.all.metrics." + metric) for metric in ["alignment_summary_metrics", "base_distribution_by_cycle_metrics", "insert_size_metrics", "quality_by_cycle_metrics", "quality_distribution_metrics"]])
+            input_files.append(os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.dup.all.metrics"))
             input_files.append(os.path.join(self.output_dirs['homer_output_directory'], sample.name, "tagInfo.txt"))
         # input_files = [os.path.join(self.output_dirs['homer_output_directory'], sample.name, "tagInfo.txt") for sample in self.samples]
 
