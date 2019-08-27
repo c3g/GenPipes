@@ -321,7 +321,7 @@ sed -i -e "1 i\\Sample\tAligned Filtered Reads\tDuplicate Reads\tDuplicate %\tMi
 mkdir -p {report_dir} && \\
 if [[ -f {trim_metrics_file} ]]
 then
-  awk -F "\t" 'FNR==NR{{trim_line[$1]=$0; surviving[$1]=$3; next}}{{OFS="\t"; if ($1=="Sample") {{print trim_line[$1], $2, "Aligned Filtered %", $3, $4}} else {{print trim_line[$1], $2, $2 / surviving[$1] * 100, $3, $4}}}}' {trim_metrics_file} {metrics_file} \\
+  awk -F "\t" 'FNR==NR{{trim_line[$1]=$0; surviving[$1]=$3; next}}{{OFS="\t"; if ($1=="Sample") {{print trim_line[$1], $2, "Aligned Filtered %", $3, $4, $5, $6}} else {{print trim_line[$1], $2, $2 / surviving[$1] * 100, $3, $4, $5, $6}}}}' {trim_metrics_file} {metrics_file} \\
   > {report_metrics_file}
 else
   cp {metrics_file} {report_metrics_file}
