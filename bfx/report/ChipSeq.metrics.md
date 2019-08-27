@@ -13,5 +13,5 @@ $trim_mem_sample_table$
 * Aligned Filtered %: Aligned Filtered Reads / Surviving Reads
 * Duplicate Reads: number of aligned reads having the same 5' alignment positions (for both mates in the case of paired-end reads) after filtering by mapping quality
 * Duplicate %: Duplicate / Aligned Filtered Reads
-* Mitchondrial Reads: 
+* Mitchondrial Reads: number of reads aligned to chrM
 * Mitochondrial %: Mitochondrial / Aligned Filtered Reads 
