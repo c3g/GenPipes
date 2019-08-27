@@ -314,8 +314,8 @@ do
   align_metrics=$(echo -e "$sample\t`grep -P '^\d+ \+ \d+ mapped' $flagstat_file | grep -Po '^\d+'`\t`grep -P '^\d+ \+ \d+ duplicate' $flagstat_file | grep -Po '^\d+'`")
   align_metrics=$(awk '{{OFS="\t"; print $0, $3 / $2 * 100}}' <<< "$align_metrics")
   mito_reads=$(sambamba view -c $bam_file chrM)
-  mito_ratio=$(echo "100 * $mito_reads / $(sambamba view -F "not unmapped" -c $bam_file)" | bc -l)
-  echo -e "$align_metrics\t$mito_reads\t$mito_ratio" >> {metrics_file}
+  align_metrics=$(echo -e "$align_metrics\t$mito_reads")
+  awk '{{OFS="\t"; print $0, $4 / $2 * 100}}' <<< "$align_metrics" >> {metrics_file}
 done && \\
 sed -i -e "1 i\\Sample\tAligned Filtered Reads\tDuplicate Reads\tDuplicate %\tMitchondrial Reads\tMitochondrial %" {metrics_file} && \\
 mkdir -p {report_dir} && \\
