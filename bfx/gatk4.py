@@ -461,11 +461,11 @@ def variant_recalibrator(variants, other_options, recal_output, tranches_output,
 			],
 		command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
-VariantRecalibrator {options} \\
---reference {reference_sequence}{variants} \\
-{other_options} \\
---output {recal_output} \\
---tranches-file {tranches_output}""".format(
+  VariantRecalibrator {options} \\
+  --reference {reference_sequence}{variants} \\
+  {other_options} \\
+  --output {recal_output} \\
+  --tranches-file {tranches_output}""".format(
 			tmp_dir=config.param('gatk_variant_recalibrator', 'tmp_dir'),
 			java_other_options=config.param('gatk_variant_recalibrator', 'java_other_options'),
 			ram=config.param('gatk_variant_recalibrator', 'ram'),
