@@ -41,6 +41,7 @@ def reference(
         [fasta_reference, fasta_consensus],
         [outfile, outfile + ".png", outfile2],
         [
+            ['mummer_reference', 'module_perl'],
             ['mummer_reference', 'module_mummer'],
             ['mummer_reference', 'module_gnuplot']
         ],
@@ -93,6 +94,7 @@ def self(
         [fasta_consensus],
         [outfile, outfile + ".png"],
         [
+            ['mummer_self', 'module_perl'],
             ['mummer_self', 'module_mummer'],
             ['mummer_self', 'module_gnuplot']
         ],

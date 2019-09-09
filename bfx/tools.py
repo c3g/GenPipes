@@ -650,7 +650,7 @@ def sh_create_baitmap(bait, sorted_bait, annotation, output):
         ],
         command="""
 bash createBaitMapFile.sh \\
-  {input_file}
+  {input_file} \\
   {bait_file} \\
   {sorted_bait_file} \\
   {annotation} \\
