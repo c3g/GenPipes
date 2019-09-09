@@ -554,8 +554,7 @@ printf "{sample}\t{readset}\t${{minLen}}\t${{maxLen}}\t${{minFlashOverlap}}\t${{
         for readset in self.readsets:
             flash_log = self.select_input_files(
                 [[os.path.join("merge", readset.sample.name, readset.name + ".flash_pass2.log")],
-                 [os.path.join(
-                    "merge", readset.sample.name, readset.name + ".flash.log")]])
+                 [os.path.join("merge", readset.sample.name, readset.name + ".flash.log")]])
 
             job = concat_jobs([
                 job,
