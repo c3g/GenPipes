@@ -32,7 +32,8 @@ log = logging.getLogger(__name__)
 
 class Job(object):
 
-    def __init__(self, input_files=[], output_files=[], module_entries = [], name="", command="", report_files=[], multiqc_files=[], removable_files=[], samples=[]):
+    def __init__(self, input_files=[], output_files=[], module_entries=[],
+                 name="", command="", report_files=[], multiqc_files=[], removable_files=[], samples=[]):
         # Remove undefined input/output/removable files if any
         self._input_files = filter(None, input_files)
         self._output_files = filter(None, output_files)
