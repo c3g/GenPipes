@@ -86,36 +86,6 @@ def create_readsets(nanuq_readset_file, seq_type, mugqic_pipelines_readset_file=
             if (not args_run) or (line['Run'] in args_run):
                 log.info("Parsing Nanuq run " + line['Run'] + " ...")
 
-                if seq_type == "Sequel":
-                    mugqic_pipelines_readset_csv_row['Sample'] = line['Sample Group'] if line.has_key('Sample Group') and line['Sample Group'] != "" else line['Name']
-                    mugqic_pipelines_readset_csv_row['Readset'] = ".".join([line['Name'], line['Library Barcode'], line['Run'], line['Well']])
-
-                    nanuq_vs_mugqic_pipelines_readset_keys = [
-                        ['Library Barcode', 'Library'],
-                        ['Run', 'Run'],
-                        ['Well', 'Smartcell'],
-                        ['Collection Protocol', 'Protocol'],
-                    ]
-                    formats = ['BAM']
-
-                    fieldnames = ['Sample', 'Readset'] + [key[1] for key in nanuq_vs_mugqic_pipelines_readset_keys] + ['NbBasePairs', 'GenomeLength'] + formats
-
-                    nb_basepairs = re.search("^\([^/]*/[^/]*/(.*)\)$", line['Longest Subreads (count mean bp)'])
-                    mugqic_pipelines_readset_csv_row['NbBasePairs'] = re.sub(",", "", nb_basepairs.group(1))
-                    mugqic_pipelines_readset_csv_row['GenomeLength'] = line['Genome size from Nanuq reception (Mb)']
-                    log.warning('GenomeLength: ' + line['Genome size from Nanuq reception (Mb)'])
-
-                    if mugqic_pipelines_readset_csv_row['GenomeLength'] != '':
-                        mugqic_pipelines_readset_csv_row['GenomeLength'] = int(float(mugqic_pipelines_readset_csv_row['GenomeLength'])*1000*1000)
-                    if line.get('Results Directory', None):
-                        nanuq_readset_prefix = os.path.normpath(os.path.join(nanuq_readset_root_directory, line['Results Directory'], line['Movie name']))
-                        for format in formats:
-                            nanuq_readset_paths = sorted(glob.glob(nanuq_readset_prefix + "*." + format.lower() + ".h5"))
-                            mugqic_pipelines_readset_paths = [os.path.join(raw_reads_directory, line['Name'], os.path.basename(nanuq_readset_path)) for nanuq_readset_path in nanuq_readset_paths]
-                            mugqic_pipelines_readset_csv_row[format] = ",".join(mugqic_pipelines_readset_paths)
-                            for nanuq_readset_path, mugqic_pipelines_readset_path in zip(nanuq_readset_paths, mugqic_pipelines_readset_paths):
-                                symlinks.append([nanuq_readset_path, mugqic_pipelines_readset_path])
-
                 elif seq_type == "Pacbio":
                     mugqic_pipelines_readset_csv_row['Sample'] = line['Sample Group'] if line.has_key('Sample Group') and line['Sample Group'] != "" else line['Name']
                     mugqic_pipelines_readset_csv_row['Readset'] = ".".join([line['Name'], line['Library Barcode'], line['Run'], line['Well']])

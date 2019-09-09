@@ -157,13 +157,9 @@ def main():
 
         # Print a copy of it for the monitoring interface
         portal_output_dir = config.param('DEFAULT', 'portal_output_dir', required=False, type='dirpath')
-        portal_test_dir = os.path.join(os.path.dirname(portal_output_dir), "portal_test_dir")
         if portal_output_dir != '':
-            unique_hex = uuid4().get_hex()
-            with open(os.path.join(portal_output_dir, user + '.' + current_json['sample_name'] + '.' + unique_hex + '.json'), 'w') as out_json:
+            with open(os.path.join(portal_output_dir, user + '.' + current_json['sample_name'] + '.' + uuid4().get_hex() + '.json'), 'w') as out_json:
                 json.dump(current_json, out_json, indent=4)
-            with open(os.path.join(portal_test_dir, user + '.' + current_json['sample_name'] + '.' + unique_hex + '.json'), 'w') as test_json:
-                json.dump(current_json, test_json, indent=4)
 
         # Finally unlock the file
         unlock(jfile)

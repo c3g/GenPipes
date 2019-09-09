@@ -53,8 +53,8 @@ get_dbNSFP() {
     DBSNSFP_VERSION=dbNSFP4.0b2a 
     DBNSFP_URL=ftp://dbnsfp:dbnsfp@dbnsfp.softgenetics.com/${DBSNSFP_VERSION}.zip
     DBSNSFP=$ANNOTATIONS_DIR/$DBSNSFP_VERSION/$DBSNSFP_VERSION
-#    if ! is_up2date $DBSNSFP.txt.gz
-#        then
+    if ! is_up2date $DBSNSFP.txt.gz
+        then
         mkdir -p $ANNOTATIONS_DIR/$DBSNSFP_VERSION/
         if ! is_up2date `download_path $DBNSFP_URL`; then
             download_url $DBNSFP_URL
@@ -67,7 +67,7 @@ get_dbNSFP() {
         bgzip $DBSNSFP.txt
         tabix -s 1 -b 2 -e 2 $DBSNSFP.txt.gz
         rm $ANNOTATIONS_DIR/$DBSNSFP_VERSION/*_variant.chr*
-#    fi
+    fi
     # Extract allelic frequencies for HAPMAP human populations and annotate dbsnp VCF
     DBSNP_ANNOTATED=$ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP${DBSNP_VERSION}_annotated.vcf
     if ! is_up2date $DBSNP_ANNOTATED; then
