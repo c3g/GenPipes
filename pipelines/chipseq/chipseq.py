@@ -155,12 +155,12 @@ pandoc --to=markdown \\
   --variable min_mapq="{min_mapq}" \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}""".format(
-                    min_mapq=config.param('samtools_view_filter', 'min_mapq', type='int'),
-                    report_template_dir=self.report_template_dir,
-                    basename_report_file=os.path.basename(report_file),
-                    report_file=report_file, 
-                    report_dir = self.output_dirs['report_output_directory']
-                ),
+    min_mapq=config.param('samtools_view_filter', 'min_mapq', type='int'),
+    report_template_dir=self.report_template_dir,
+    basename_report_file=os.path.basename(report_file),
+    report_file=report_file, 
+    report_dir=self.output_dirs['report_output_directory']
+    ),
                 report_files=[report_file],
                 name="samtools_view_filter_report")
         )
@@ -242,11 +242,11 @@ mkdir -p {report_dir} && \\
 cp \\
   {report_template_dir}/{basename_report_file} \\
   {report_file}""".format(
-                    report_template_dir=self.report_template_dir,
-                    basename_report_file=os.path.basename(report_file),
-                    report_file=report_file, 
-                    report_dir = self.output_dirs['report_output_directory']
-                ),
+    report_template_dir=self.report_template_dir,
+    basename_report_file=os.path.basename(report_file),
+    report_file=report_file, 
+    report_dir=self.output_dirs['report_output_directory']
+    ),
                 report_files=[report_file],
                 name="picard_mark_duplicates_report")
         )
@@ -288,7 +288,6 @@ cp \\
             job.name = "picard_collect_multiple_metrics." + sample.name
             job.samples = [sample]
             jobs.append(job)
-
 
         jobs.append(concat_jobs([samtools.flagstat(os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.dup.bam"), os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.dup.bam.flagstat")) for sample in self.samples], name="metrics.flagstat"))
 
@@ -339,8 +338,8 @@ pandoc --to=markdown \\
     report_metrics_file=report_metrics_file,
     report_template_dir=self.report_template_dir,
     basename_report_file=os.path.basename(report_file),
-    report_file=report_file, 
-    alignment_dir=self.output_dirs['alignment_output_directory'], 
+    report_file=report_file,
+    alignment_dir=self.output_dirs['alignment_output_directory'],
     report_dir=self.output_dirs['report_output_directory']
         ),
                 name="metrics_report",
@@ -409,7 +408,7 @@ done""".format(
     output_dir=self.output_dir,
     report_template_dir=self.report_template_dir,
     basename_report_file=os.path.basename(report_file),
-    report_file=report_file, 
+    report_file=report_file,
     report_dir=self.output_dirs['report_output_directory'],
     graphs_dir=self.output_dirs['graphs_output_directory']
         ),
@@ -543,13 +542,13 @@ done""".format(
     contrasts=" ".join([contrast.real_name for contrast in self.contrasts]),
     report_template_dir=self.report_template_dir,
     basename_report_file=os.path.basename(report_file),
-    report_file=report_file, 
-    macs_dir=self.output_dirs['macs_output_directory'], 
+    report_file=report_file,
+    macs_dir=self.output_dirs['macs_output_directory'],
     report_dir=self.output_dirs['report_output_directory']
-                ),
+    ),
                 report_files=[report_file],
                 name="macs2_callpeak_report")
-        )
+            )
 
         return jobs
 
@@ -621,16 +620,16 @@ do
   echo -e "* [Peak Calls File for Design $contrast]({macs_dir}/$contrast/${{contrast}}_peaks.xls)" \\
   >> {report_file}
 done""".format(
-                    contrasts=" ".join([contrast.real_name for contrast in self.contrasts]),
-                    report_template_dir=self.report_template_dir,
-                    basename_report_file=os.path.basename(report_file),
-                    report_file=report_file, 
-                    macs_dir = self.output_dirs['macs_output_directory'], 
-                    report_dir = self.output_dirs['report_output_directory']
-                ),
+    contrasts=" ".join([contrast.real_name for contrast in self.contrasts]),
+    report_template_dir=self.report_template_dir,
+    basename_report_file=os.path.basename(report_file),
+    report_file=report_file, 
+    macs_dir=self.output_dirs['macs_output_directory'], 
+    report_dir=self.output_dirs['report_output_directory']
+    ),
                 report_files=[report_file],
                 name="macs2_callpeak_report")
-        )
+            )
 
         return jobs
 
@@ -653,12 +652,12 @@ done""".format(
                 anno_job = homer.annotatePeaks(peak_file, self.ucsc_genome, output_prefix, annotation_file)
                 metrics_job = Job(
                     [annotation_file],
-                        [
-                            output_prefix + ".tss.stats.csv",
-                            output_prefix + ".exon.stats.csv",
-                            output_prefix + ".intron.stats.csv",
-                            output_prefix + ".tss.distance.csv"
-                        ],
+                    [
+                        output_prefix + ".tss.stats.csv",
+                        output_prefix + ".exon.stats.csv",
+                        output_prefix + ".intron.stats.csv",
+                        output_prefix + ".tss.distance.csv"
+                    ],
                     [['homer_annotate_peaks', 'module_perl'], ['homer_annotate_peaks', 'module_mugqic_tools']],
                     command="""\
 perl -MReadMetrics -e 'ReadMetrics::parseHomerAnnotations(
@@ -670,19 +669,20 @@ perl -MReadMetrics -e 'ReadMetrics::parseHomerAnnotations(
   {distance5d_upper},
   {gene_desert_size}
 )'""".format(
-                annotation_file=annotation_file,
-                output_prefix=output_prefix,
-                proximal_distance=config.param('homer_annotate_peaks', 'proximal_distance', type='int'),
-                distal_distance=config.param('homer_annotate_peaks', 'distal_distance', type='int'),
-                distance5d_lower=config.param('homer_annotate_peaks', 'distance5d_lower', type='int'),
-                distance5d_upper=config.param('homer_annotate_peaks', 'distance5d_upper', type='int'),
-                gene_desert_size=config.param('homer_annotate_peaks', 'gene_desert_size', type='int')
-            ),
-            removable_files=[os.path.join(self.output_dirs['anno_output_directory'], contrast.real_name)]
-        , name="homer_annotate_peaks." + contrast.real_name)
+    annotation_file=annotation_file,
+    output_prefix=output_prefix,
+    proximal_distance=config.param('homer_annotate_peaks', 'proximal_distance', type='int'),
+    distal_distance=config.param('homer_annotate_peaks', 'distal_distance', type='int'),
+    distance5d_lower=config.param('homer_annotate_peaks', 'distance5d_lower', type='int'),
+    distance5d_upper=config.param('homer_annotate_peaks', 'distance5d_upper', type='int'),
+    gene_desert_size=config.param('homer_annotate_peaks', 'gene_desert_size', type='int')
+    ),
+                removable_files=[os.path.join(self.output_dirs['anno_output_directory'], contrast.real_name)],
+                name="homer_annotate_peaks." + contrast.real_name
+            )
 
                 job = concat_jobs([mkdir_job, anno_job, metrics_job],
-                                    name="homer_annotate_peaks." + contrast.real_name)
+                    name="homer_annotate_peaks." + contrast.real_name)
                 jobs.append(job)
 
             else:
@@ -702,15 +702,15 @@ do
   echo -e "* [Gene Annotations for Design $contrast](annotation/$contrast/${{contrast}}.annotated.csv)\n* [HOMER Gene Ontology Annotations for Design $contrast](annotation/$contrast/$contrast/geneOntology.html)\n* [HOMER Genome Ontology Annotations for Design $contrast](annotation/$contrast/$contrast/GenomeOntology.html)" \\
   >> {report_file}
 done""".format(
-                    contrasts=" ".join([contrast.real_name for contrast in self.contrasts]),
-                    report_template_dir=self.report_template_dir,
-                    basename_report_file=os.path.basename(report_file),
-                    report_file=report_file, 
-                    report_dir=self.output_dirs['report_output_directory']
-                ),
+    contrasts=" ".join([contrast.real_name for contrast in self.contrasts]),
+    report_template_dir=self.report_template_dir,
+    basename_report_file=os.path.basename(report_file),
+    report_file=report_file, 
+    report_dir=self.output_dirs['report_output_directory']
+    ),
                 report_files=[report_file],
                 name="homer_annotate_peaks_report")
-        )
+            )
 
         return jobs
 
@@ -732,11 +732,11 @@ done""".format(
 
                 mkdir_job = Job(command="mkdir -p " + output_dir)
 
-                motifs_job  = homer.findMotifsGenome(peak_file, self.ucsc_genome, output_dir, threads)
+                motifs_job = homer.findMotifsGenome(peak_file, self.ucsc_genome, output_dir, threads)
 
                 job = concat_jobs([mkdir_job, motifs_job])
                 job.name = "homer_find_motifs_genome." + contrast.real_name
-                job.removable_files=[os.path.join(self.output_dirs['anno_output_directory'], contrast.real_name)]
+                job.removable_files = [os.path.join(self.output_dirs['anno_output_directory'], contrast.real_name)]
                 jobs.append(job)
                 counter = counter +1
             else:
@@ -759,15 +759,15 @@ done""".format(
       echo -e "* [HOMER _De Novo_ Motif Results for Design $contrast](annotation/$contrast/$contrast/homerResults.html)\n* [HOMER Known Motif Results for Design $contrast](annotation/$contrast/$contrast/knownResults.html)" \\
       >> {report_file}
     done""".format(
-                        contrasts=" ".join([contrast.real_name for contrast in self.contrasts if contrast.type == 'narrow' and contrast.treatments]),
-                        report_template_dir=self.report_template_dir,
-                        basename_report_file=os.path.basename(report_file),
-                        report_file=report_file, 
-                        report_dir=self.output_dirs['report_output_directory']
-                    ),
+        contrasts=" ".join([contrast.real_name for contrast in self.contrasts if contrast.type == 'narrow' and contrast.treatments]),
+        report_template_dir=self.report_template_dir,
+        basename_report_file=os.path.basename(report_file),
+        report_file=report_file,
+        report_dir=self.output_dirs['report_output_directory']
+        ),
                     report_files=[report_file],
                     name="homer_find_motifs_genome_report")
-            )
+                )
 
         return jobs
 
@@ -841,27 +841,26 @@ do
   echo -e "----\n\n![Annotation Statistics for Design $contrast ([download high-res image]({graphs_dir}/${{contrast}}_Misc_Graphs.ps))]({graphs_dir}/${{contrast}}_Misc_Graphs.png)\n" \\
   >> {report_file}
 done""".format(
-                design_file=design_file,
-                output_dir=self.output_dir,
-                peak_stats_file=peak_stats_file,
-                contrasts=" ".join([contrast.real_name for contrast in self.contrasts if contrast.type == 'narrow' and contrast.treatments]),
-                proximal_distance=config.param('homer_annotate_peaks', 'proximal_distance', type='int') / -1000,
-                distal_distance=config.param('homer_annotate_peaks', 'distal_distance', type='int') / -1000,
-                distance5d_lower=config.param('homer_annotate_peaks', 'distance5d_lower', type='int') / -1000,
-                distance5d_upper=config.param('homer_annotate_peaks', 'distance5d_upper', type='int') / -1000,
-                gene_desert_size=config.param('homer_annotate_peaks', 'gene_desert_size', type='int') / 1000,
-                report_template_dir=self.report_template_dir,
-                basename_report_file=os.path.basename(report_file),
-                report_file=report_file, 
-                report_dir = self.output_dirs['report_output_directory'], 
-                graphs_dir = self.output_dirs['graphs_output_directory']
-
-            ),
+    design_file=design_file,
+    output_dir=self.output_dir,
+    peak_stats_file=peak_stats_file,
+    contrasts=" ".join([contrast.real_name for contrast in self.contrasts if contrast.type == 'narrow' and contrast.treatments]),
+    proximal_distance=config.param('homer_annotate_peaks', 'proximal_distance', type='int') / -1000,
+    distal_distance=config.param('homer_annotate_peaks', 'distal_distance', type='int') / -1000,
+    distance5d_lower=config.param('homer_annotate_peaks', 'distance5d_lower', type='int') / -1000,
+    distance5d_upper=config.param('homer_annotate_peaks', 'distance5d_upper', type='int') / -1000,
+    gene_desert_size=config.param('homer_annotate_peaks', 'gene_desert_size', type='int') / 1000,
+    report_template_dir=self.report_template_dir,
+    basename_report_file=os.path.basename(report_file),
+    report_file=report_file,
+    report_dir=self.output_dirs['report_output_directory'],
+    graphs_dir=self.output_dirs['graphs_output_directory']
+    ),
             name="annotation_graphs",
             samples=contrast.treatments,
             report_files=[report_file],
             removable_files=output_files
-        )]
+            )]
 
 
 
@@ -870,7 +869,7 @@ done""".format(
         """
         Generate IHEC's files.
         """
-        output_dir=self.output_dirs['ihecA_output_directory']
+        output_dir = self.output_dirs['ihecA_output_directory']
         jobs = []
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name)
@@ -878,7 +877,7 @@ done""".format(
             readset_bams = [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam") for readset in sample.readsets]
             sample_merge_bam = os.path.join(output_dir, sample.name + ".merged.bam")
             sample_merge_mdup_bam = os.path.join(output_dir, sample.name + ".merged.mdup.bam")
-            sample_merge_mdup_metrics_file  = os.path.join(output_dir, sample.name + ".merged.mdup.metrics")
+            sample_merge_mdup_metrics_file = os.path.join(output_dir, sample.name + ".merged.mdup.metrics")
 
             mkdir_job = Job(command="mkdir -p " + output_dir)
 
@@ -893,20 +892,20 @@ done""".format(
                 job = concat_jobs([
                     mkdir_job,
                     Job([readset_bam], [sample_merge_bam], command="ln -s -f " + target_readset_bam + " " + sample_merge_bam, removable_files=[sample_merge_bam]),
-                ], name="ihecs_preprocess_symlink." + sample.name)
+                ], name="ihec_preprocess_symlink." + sample.name)
 
             elif len(sample.readsets) > 1:
                 job = concat_jobs([
                     mkdir_job,
                     picard.merge_sam_files(readset_bams, sample_merge_bam)
                 ])
-                job.name = "ihecs_preprocess_merge." + sample.name
+                job.name = "ihec_preprocess_merge." + sample.name
 
             jobs.append(job)
 
             tmp_dir = config.param('ihec_preprocess_files', 'tmp_dir')
-            job = concat_jobs([Job(command = "export TMPDIR={tmp_dir}".format(tmp_dir = tmp_dir)), picard.mark_duplicates([sample_merge_bam], sample_merge_mdup_bam, sample_merge_mdup_metrics_file)])
-            job.name = "ihecs_preprocess_mark_duplicates." + sample.name
+            job = concat_jobs([Job(command="export TMPDIR={tmp_dir}".format(tmp_dir=tmp_dir)), picard.mark_duplicates([sample_merge_bam], sample_merge_mdup_bam, sample_merge_mdup_metrics_file)])
+            job.name = "ihec_preprocess_mark_duplicates." + sample.name
             jobs.append(job)
 
         return jobs
@@ -926,18 +925,18 @@ done""".format(
             output = os.path.join(output_dir, sample.name + ".crosscor")
 
             spp_cmd = """Rscript $R_TOOLS/run_spp.R -c={sample_merge_mdup_bam} -savp -out={output} -rf -tmpdir={tmpDir}""".format(
-                sample_merge_mdup_bam=sample_merge_mdup_bam, 
-                output=output, 
+                sample_merge_mdup_bam=sample_merge_mdup_bam,
+                output=output,
                 tmpDir=tmpDir)
 
 
             job = concat_jobs([
                 Job(command="mkdir -p " + output_dir),
                 Job(input_files=[sample_merge_mdup_bam],
-                            output_files=[output],
-                            module_entries=[['run_spp', 'module_samtools'],['run_spp', 'module_mugqic_tools'], ['run_spp', 'module_R']],
-                            name="run_spp." + sample.name,
-                            command=spp_cmd)], name = "run_spp." + sample.name)
+                    output_files=[output],
+                    module_entries=[['run_spp', 'module_samtools'],['run_spp', 'module_mugqic_tools'], ['run_spp', 'module_R']],
+                    name="run_spp." + sample.name,
+                    command=spp_cmd)], name="run_spp." + sample.name)
 
             jobs.append(job)
 
@@ -947,38 +946,34 @@ done""".format(
     def ihec_metrics(self):
         """
         Generate IHEC's standard metrics.
-        
         """
         #sh_ihec_chip_metrics(chip_bam, input_bam, sample_name, chip_type, chip_bed, output_dir)
         jobs = []
-        output_dir=self.output_dirs['ihecM_output_directory']
-        
+        output_dir = self.output_dirs['ihecM_output_directory']
+
         ##generate couples chip/input/treatment_name/peak_type
         couples = {}
         for contrast in self.contrasts:
-          if contrast.treatments:
-              if len(contrast.controls) > 1 :
-                  _raise(SanitycheckError("Error: contrast name \"" + contrast.name + "\" has several input files, please use one input for pairing!"))
-              elif len(contrast.controls) == 1:
-                  input_file=contrast.controls[0].name
-              elif len(contrast.controls) == 0:
-                  input_file="no_input"
-              for sample in contrast.treatments:
-                  log.debug("adding sample" + sample.name)
-                  if couples.has_key(sample.name):
-                      if couples[sample.name][0] == input_file:
-                          pass
-                      else:
-                          _raise(SanitycheckError("Error: contrast name \"" + contrast.name + "\" has several input files, please use one input for pairing!"))
-                      if couples[sample.name][1] == contrast.real_name and couples[sample.name][2] == contrast.type:
-                          pass
-                      else:
-                          _raise(SanitycheckError("Error: sample \"" + sample.name + "\" is involved in several different contrasts, please use one contrast per sample !")) 
-                  else:
-                      couples[sample.name] = [input_file, contrast.real_name, contrast.type]
-       
-
-
+            if contrast.treatments:
+                if len(contrast.controls) > 1:
+                    _raise(SanitycheckError("Error: contrast name \"" + contrast.name + "\" has several input files, please use one input for pairing!"))
+                elif len(contrast.controls) == 1:
+                    input_file = contrast.controls[0].name
+                elif len(contrast.controls) == 0:
+                    input_file = "no_input"
+                for sample in contrast.treatments:
+                    log.debug("adding sample" + sample.name)
+                    if couples.has_key(sample.name):
+                        if couples[sample.name][0] == input_file:
+                            pass
+                        else:
+                            _raise(SanitycheckError("Error: contrast name \"" + contrast.name + "\" has several input files, please use one input for pairing!"))
+                        if couples[sample.name][1] == contrast.real_name and couples[sample.name][2] == contrast.type:
+                            pass
+                        else:
+                            _raise(SanitycheckError("Error: sample \"" + sample.name + "\" is involved in several different contrasts, please use one contrast per sample !"))
+                    else:
+                        couples[sample.name] = [input_file, contrast.real_name, contrast.type]
 
         for key, values in couples.iteritems():
             chip_bam = os.path.join(self.output_dirs['ihecA_output_directory'], key + ".merged.mdup.bam")
@@ -996,13 +991,36 @@ done""".format(
 
             job = concat_jobs([
                 Job(command="mkdir -p " + output_dir),
-                tools.sh_ihec_chip_metrics(chip_bam, input_bam, key, values[0],  chip_type, chip_bed, output_dir, genome)
+                tools.sh_ihec_chip_metrics(chip_bam, input_bam, key, values[0], chip_type, chip_bed, output_dir, genome)
                 ], name="ihec_metrics." + key)
             jobs.append(job)
 
         #chip_type = config.param('ihec_metrics', 'chip_type')
         #if (chip_type == "TF"):
         #    log.warning("chip_type is set to default value of 'TF'. If you are using a histone mark, please modify the chip_type in the ini file to the name of the mark. Otherwise, some metrics wont be accurate!")
+
+        metrics_to_merge = []
+        for sample in self.samples:
+            metrics_to_merge.append(os.path.join(self.output_dirs['ihecM_output_directory'], "IHEC_metrics_chipseq_" + sample.name + ".txt"))
+        metrics_merged = "IHEC_metrics_AllSamples.txt"
+
+        job = Job(
+            input_files=metrics_to_merge,
+            output_files=[metrics_merged],
+            name="merge_ihec_metrics",
+            command="""\
+metric="" && \\
+for sample in {samples}
+do
+    header=$(head -n 1 $sample)
+    $metric+=$metric"\n"$(tail -n 1 $sample)
+done
+echo $header"\n"$metric > {metrics_merged}""".format(
+    samples=" ".join(metrics_to_merge),
+    metrics_merged=metrics_merged
+    ),
+            )
+        jobs.append(job)
 
         return jobs
 
