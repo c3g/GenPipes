@@ -1013,9 +1013,9 @@ metric="" && \\
 for sample in {samples}
 do
     header=$(head -n 1 $sample)
-    $metric+=$metric"\n"$(tail -n 1 $sample)
+    $metric+=$metric"\\n"$(tail -n 1 $sample)
 done
-echo $header"\n"$metric > {metrics_merged}""".format(
+echo $header"\\n"$metric > {metrics_merged}""".format(
     samples=" ".join(metrics_to_merge),
     metrics_merged=metrics_merged
     ),
