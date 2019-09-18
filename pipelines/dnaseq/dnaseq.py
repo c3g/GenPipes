@@ -2167,9 +2167,9 @@ class DnaSeq(DnaSeqRaw):
     def __init__(self, protocol=None):
         self._protocol = protocol
         # Add pipeline specific arguments
-        self.argparser.add_argument("-t", "--type", help="DNAseq analysis type", choices=["mugqic", "mpileup", "light", "forge"], default="forge")
+        self.argparser.add_argument("-t", "--type", help="DNAseq analysis type", choices=["mugqic", "mpileup", "light", "c4r"], default="c4r")
         self.argparser.add_argument("--familyinfo", help="a file that includes family ids followed by a comma-separated list of member ids on each line", type=file)
         super(DnaSeq, self).__init__(protocol)
 
 if __name__ == '__main__':
-    DnaSeq(protocol=['mugqic', 'mpileup', 'light', 'forge'])
+    DnaSeq(protocol=['mugqic', 'mpileup', 'light', 'c4r'])
