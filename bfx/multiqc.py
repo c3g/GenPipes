@@ -57,4 +57,5 @@ def mutliqc_run(yamlFile, input_files):
             module_entries = [["multiqc_report", "module_multiqc"]],
             name = "multiqc_report",
             command = command
+
             )

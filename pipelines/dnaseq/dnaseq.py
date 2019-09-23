@@ -3239,12 +3239,12 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
             pair_directory = os.path.join("SVariants", sample.name)
             delly_directory = os.path.join(pair_directory, "rawDelly")
+            
+            input = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam")
 
-            input = self.select_input_files([[os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")],
-                                             [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam")],
-                                             [os.path.join("alignment", sample.name, sample.name + ".sorted.bam")]])
-
-            inputs = [input]
+            #input = self.select_input_files([[os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")],
+            #                                 [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam")],
+            #                                 [os.path.join("alignment", sample.name, sample.name + ".sorted.bam")]])
 
             SV_types = config.param('delly_call_filter', 'sv_types_options').split(",")
 
@@ -3427,7 +3427,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         for sample in self.samples:
             pair_directory = os.path.join("SVariants", sample.name)
             lumpy_directory = os.path.join(pair_directory, "rawLumpy")
-            inputNormal = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")
+            inputNormal = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam")
         
             discordants_normal = os.path.join(lumpy_directory, sample.name + ".discordants.sorted.bam")
         
@@ -3510,7 +3510,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         for sample in self.samples:
             pair_directory = os.path.join("SVariants", sample.name)
             wham_directory = os.path.join(pair_directory, "rawWham")
-            inputNormal = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")
+            inputNormal = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam")
         
             output_vcf = os.path.join(wham_directory, sample.name + ".wham.vcf")
             merge_vcf = os.path.join(wham_directory, sample.name + ".wham.merged.vcf")
@@ -3573,7 +3573,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         for sample in self.samples:
             pair_directory = os.path.join("SVariants", sample.name)
             cnvkit_dir = os.path.join(pair_directory, "rawCNVkit")
-            inputNormal = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")
+            inputNormal = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam")
             
             tarcov_cnn = os.path.join(cnvkit_dir, sample.name + ".sorted.dup.targetcoverage.cnn")
             antitarcov_cnn = os.path.join(cnvkit_dir, sample.name + ".sorted.dup.antitargetcoverage.cnn")
