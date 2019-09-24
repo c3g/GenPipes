@@ -1017,7 +1017,7 @@ do
     header=$(head -n 1 $sample)
     tail -n 1 $sample >> {metrics_merged}
 done && \\
-sed -i -e "1 i\\$header" {metrics_merged}""".format(
+sed -i -e "1 i\\\$header" {metrics_merged}""".format(
     samples=" ".join(metrics_to_merge),
     metrics_merged=metrics_merged_out
     ),
