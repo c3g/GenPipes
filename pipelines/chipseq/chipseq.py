@@ -70,7 +70,7 @@ class ChipSeq(common.Illumina):
     """
 
     def __init__(self, protocol="chipseq"):
-        self._protocol=protocol
+        self._protocol = protocol
         # Add pipeline specific arguments
         self.argparser.add_argument("-d", "--design", help="design file", type=file)
         self.argparser.add_argument("-t", "--type", help="Type of pipeline (default chipseq)", choices=["chipseq", "atacseq"], default="chipseq")
@@ -437,7 +437,7 @@ done""".format(
 
             job_ucsc = homer.makeUCSCfile(tag_dir, bedgraph_file)
             job = concat_jobs([mkdir_job, job_ucsc],
-                            name="homer_make_ucsc_file." + sample.name)
+                              name="homer_make_ucsc_file." + sample.name)
             job.removable_files = [bedgraph_dir]
 
             jobs.append(job)
@@ -447,9 +447,9 @@ done""".format(
             tmp_dir = config.param('ihec_preprocess_files', 'tmp_dir')
 
             job = concat_jobs([mkdir_job,
-                Job(command="export TMPDIR={tmp_dir}".format(tmp_dir=tmp_dir)),
-                ucsc.bedGraphToBigWig(bedgraph_file, big_wig_output, header=True)],
-                name="homer_make_ucsc_file_bigWig."+ sample.name)
+                               Job(command="export TMPDIR={tmp_dir}".format(tmp_dir=tmp_dir)),
+                               ucsc.bedGraphToBigWig(bedgraph_file, big_wig_output, header=True)],
+                               name="homer_make_ucsc_file_bigWig."+ sample.name)
             jobs.append(job)
 
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.homer_make_ucsc_file.md")
@@ -506,7 +506,7 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
 
                 mkdir_job = Job(command="mkdir -p " + output_dir)
 
-                macs_job = macs2.callpeak (format, genome_size, treatment_files, control_files, output_prefix_name, output, other_options)
+                macs_job = macs2.callpeak(format, genome_size, treatment_files, control_files, output_prefix_name, output, other_options)
 
                 job = concat_jobs([mkdir_job, macs_job])
                 job.name = "macs2_callpeak." + contrast.real_name
@@ -1007,10 +1007,10 @@ done""".format(
         report_file = os.path.join("report", "ChipSeq.ihec_metrics.md")
 
         job = Job(
-                input_files=metrics_to_merge,
-                output_files=[metrics_merged_out],
-                name="merge_ihec_metrics",
-                command="""\
+            input_files=metrics_to_merge,
+            output_files=[metrics_merged_out],
+            name="merge_ihec_metrics",
+            command="""\
 cp /dev/null {metrics_merged} && \\
 for sample in {samples}
 do
@@ -1025,11 +1025,11 @@ sed -i -e "1 i\\\$header" {metrics_merged}""".format(
         jobs.append(job)
 
         job = Job(
-                input_files=[metrics_merged_out],
-                output_files=[report_file],
-                name="merge_ihec_metrics_report",
-                module_entries=[['ihec_metrics', 'module_pandoc']],
-                command="""\
+            input_files=[metrics_merged_out],
+            output_files=[report_file],
+            name="merge_ihec_metrics_report",
+            module_entries=[['ihec_metrics', 'module_pandoc']],
+            command="""\
 mkdir -p {report_dir} && \\
 cp {metrics_merged_out} {report_dir}/{ihec_metrics_merged_table} && \\
 pandoc --to=markdown \\
@@ -1044,8 +1044,8 @@ pandoc --to=markdown \\
     report_file=report_file, 
     report_dir=self.output_dirs['report_output_directory']
     ),
-                report_files=[report_file]
-                )
+            report_files=[report_file]
+            )
         jobs.append(job)
 
         return jobs
