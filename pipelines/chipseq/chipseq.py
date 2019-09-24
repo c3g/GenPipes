@@ -1004,7 +1004,7 @@ done""".format(
             metrics_to_merge.append(os.path.join(self.output_dirs['ihecM_output_directory'], "IHEC_metrics_chipseq_" + sample.name + ".txt"))
         metrics_merged = "IHEC_metrics_AllSamples.tsv"
         metrics_merged_out = [os.path.join(self.output_dirs['ihecM_output_directory'], metrics_merged)]
-        report_file = [os.path.join("report", "ChipSeq.ihec_metrics.md")]
+        report_file = os.path.join("report", "ChipSeq.ihec_metrics.md")
 
         job = concat_jobs([
             Job(
@@ -1025,7 +1025,7 @@ sed -i -e "1 i\\$header" {metrics_merged}""".format(
             ),
             Job(
                 input_files=metrics_merged_out,
-                output_files=report_file,
+                output_files=[report_file],
                 module_entries=[['ihec_metrics', 'module_pandoc']],
                 command="""\
 mkdir -p {report_dir} && \\
