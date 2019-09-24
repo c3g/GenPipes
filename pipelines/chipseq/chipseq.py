@@ -222,10 +222,10 @@ pandoc --to=markdown \\
 
         jobs = []
         for sample in self.samples:
-            alignment_file_prefix = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".")
-            input = alignment_file_prefix + "merged.bam"
-            output = alignment_file_prefix + "sorted.dup.bam"
-            metrics_file = alignment_file_prefix + "sorted.dup.metrics"
+            alignment_file_prefix = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name)
+            input = alignment_file_prefix + ".merged.bam"
+            output = alignment_file_prefix + ".sorted.dup.bam"
+            metrics_file = alignment_file_prefix + ".sorted.dup.metrics"
 
             job = picard.mark_duplicates([input], output, metrics_file)
             job.name = "picard_mark_duplicates." + sample.name
@@ -1002,24 +1002,50 @@ done""".format(
         metrics_to_merge = []
         for sample in self.samples:
             metrics_to_merge.append(os.path.join(self.output_dirs['ihecM_output_directory'], "IHEC_metrics_chipseq_" + sample.name + ".txt"))
-        metrics_merged = "IHEC_metrics_AllSamples.txt"
+        metrics_merged = "IHEC_metrics_AllSamples.tsv"
+        metrics_merged_out = [os.path.join(self.output_dirs['ihecM_output_directory'], metrics_merged)]
+        report_file = [os.path.join("report", "ChipSeq.ihec_metrics.md")]
 
-        job = Job(
-            input_files=metrics_to_merge,
-            output_files=[metrics_merged],
-            name="merge_ihec_metrics",
-            command="""\
-metric="" && \\
+        job = concat_jobs([
+            Job(
+                input_files=metrics_to_merge,
+                output_files=metrics_merged_out,
+                name="merge_ihec_metrics",
+                command="""\
+cp /dev/null {metrics_merged} && \\
 for sample in {samples}
 do
     header=$(head -n 1 $sample)
-    $metric+=$metric"\\n"$(tail -n 1 $sample)
-done
-echo $header"\\n"$metric > {metrics_merged}""".format(
+    tail -n 1 $sample >> {metrics_merged}
+done && \\
+sed -i -e "1 i\\$header" {metrics_merged}""".format(
     samples=" ".join(metrics_to_merge),
-    metrics_merged=metrics_merged
+    metrics_merged=metrics_merged_out
     ),
-            )
+            ),
+            Job(
+                input_files=metrics_merged,
+                output_files=report_file,
+                module_entries=[['ihec_metrics', 'module_pandoc']],
+                command="""\
+mkdir -p {report_dir} && \\
+cp {metrics_merged_out} {report_dir}/ihec_metrics_merged_table && \\
+pandoc --to=markdown \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable ihec_metrics_merged_table="{ihec_metrics_merged_table}" \\
+  {report_template_dir}/{basename_report_file} \\
+  > {report_file}""".format(
+    metrics_merged_out=metrics_merged_out,
+    ihec_metrics_merged_table=metrics_merged,
+    report_template_dir=self.report_template_dir,
+    basename_report_file=os.path.basename(report_file),
+    report_file=report_file, 
+    report_dir=self.output_dirs['report_output_directory']
+    ),
+                report_files=[report_file]
+                )
+            ])
+
         jobs.append(job)
 
         return jobs
