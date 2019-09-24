@@ -1003,13 +1003,13 @@ done""".format(
         for sample in self.samples:
             metrics_to_merge.append(os.path.join(self.output_dirs['ihecM_output_directory'], "IHEC_metrics_chipseq_" + sample.name + ".txt"))
         metrics_merged = "IHEC_metrics_AllSamples.tsv"
-        metrics_merged_out = [os.path.join(self.output_dirs['ihecM_output_directory'], metrics_merged)]
+        metrics_merged_out = os.path.join(self.output_dirs['ihecM_output_directory'], metrics_merged)
         report_file = os.path.join("report", "ChipSeq.ihec_metrics.md")
 
         job = concat_jobs([
             Job(
                 input_files=metrics_to_merge,
-                output_files=metrics_merged_out,
+                output_files=[metrics_merged_out],
                 name="merge_ihec_metrics",
                 command="""\
 cp /dev/null {metrics_merged} && \\
@@ -1024,7 +1024,7 @@ sed -i -e "1 i\\$header" {metrics_merged}""".format(
     ),
             ),
             Job(
-                input_files=metrics_merged_out,
+                input_files=[metrics_merged_out],
                 output_files=[report_file],
                 module_entries=[['ihec_metrics', 'module_pandoc']],
                 command="""\
