@@ -5,7 +5,7 @@ General summary statistics are provided per sample. Sample readsets are merged f
 
 Table: IHEC metrics per Sample ([download table](IHEC_metrics_AllSamples.tsv))
 
-$trim_mem_sample_table$
+$ihec_metrics_merged_table$
 
 * Raw Reads #: total number of reads obtained from the sequencer
 * Surviving Reads #: number of remaining reads after the trimming step
