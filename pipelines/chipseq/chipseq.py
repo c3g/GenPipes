@@ -1024,7 +1024,7 @@ sed -i -e "1 i\\$header" {metrics_merged}""".format(
     ),
             ),
             Job(
-                input_files=metrics_merged,
+                input_files=metrics_merged_out,
                 output_files=report_file,
                 module_entries=[['ihec_metrics', 'module_pandoc']],
                 command="""\
