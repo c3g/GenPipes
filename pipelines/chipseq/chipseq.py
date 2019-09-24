@@ -1031,7 +1031,7 @@ sed -i -e "1 i\\\$header" {metrics_merged}""".format(
                 module_entries=[['ihec_metrics', 'module_pandoc']],
                 command="""\
 mkdir -p {report_dir} && \\
-cp {metrics_merged_out} {report_dir}/{metrics_merged_out} && \\
+cp {metrics_merged_out} {report_dir}/{ihec_metrics_merged_table} && \\
 pandoc --to=markdown \\
   --template {report_template_dir}/{basename_report_file} \\
   --variable ihec_metrics_merged_table="{ihec_metrics_merged_table}" \\
