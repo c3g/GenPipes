@@ -3,7 +3,7 @@
 Metrics calculated according to IHEC standards, following the [documentation](https://github.com/IHEC/ihec-assay-standards/tree/master/qc_metrics/chip-seq/script).
 General summary statistics are provided per sample. Sample readsets are merged for clarity.
 
-Table: IHEC metrics per Sample ([download table](IHEC_metrics_AllSamples.txt))
+Table: IHEC metrics per Sample ([download table](IHEC_metrics_AllSamples.tsv))
 
 $trim_mem_sample_table$
 
