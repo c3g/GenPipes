@@ -913,7 +913,6 @@ done""".format(
     def run_spp(self):
         """
         runs spp to estimate NSC and RSC ENCODE metrics. For more information: https://github.com/kundajelab/phantompeakqualtools
-
         """
         jobs = []
         alignment_dir = self.output_dirs['ihecA_output_directory']

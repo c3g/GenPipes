@@ -45,6 +45,7 @@ All analysis parameters are described in this [configuration file](config.ini).
 [GOLD]: http://microbiomeutil.sourceforge.net/
 [UNITE]: https://unite.ut.ee/repository.php
 [BISMARK]: https://www.bioinformatics.babraham.ac.uk/projects/bismark/
+[spp]: https://github.com/kundajelab/phantompeakqualtools
 
 ---
 references:
@@ -1024,6 +1025,106 @@ references:
   type: article-journal
   issued:
     year: 2011
-                                                 
+
+- id: spp
+  title: 'ChIP-seq guidelines and practices of the ENCODE and modENCODE consortia.'
+  author:
+    - family: Kheradpour
+      given: Pouya
+    - family: Pauli
+      given: Florencia
+    - family: Batzoglou
+      given: Serafim
+    - family: Bernstein
+      given: Bradley E
+    - family: Bickel
+      given: Peter
+    - family: Brown
+      given: James B
+    - family: Cayting
+      given: Philip
+    - family: Chen
+      given: Yiwen
+    - family: DeSalvo
+      given: Gilberto
+    - family: Epstein
+      given: Charles
+    - family: Fisher-Aylor
+      given: Katherine I
+    - family: Euskirchen
+      given: Ghia
+    - family: Gerstein
+      given: Mark
+    - family: Gertz
+      given: Jason
+    - family: Hartemink
+      given: Alexander J
+    - family: Hoffman
+      given: Michael M
+    - family: Iyer
+      given: Vishwanath R
+    - family: Jung
+      given: Youngsook L
+    - family: Karmakar
+      given: Subhradip
+    - family: Kellis
+      given: Manolis
+    - family: Kharchenko
+      given: Peter V
+    - family: Li
+      given: Qunhua
+    - family: Liu
+      given: Tao
+    - family: Liu
+      given: X Shirley
+    - family: Ma
+      given: Lijia
+    - family: Milosavljevic
+      given: Aleksandar
+    - family: Myers
+      given: Richard M
+    - family: Park
+      given: Peter J
+    - family: Pazin
+      given: Michael J
+    - family: Perry
+      given: Marc D
+    - family: Raha
+      given: Debasish
+    - family: Reddy
+      given: Timothy E
+    - family: Rozowsky
+      given: Joel
+    - family: Shoresh
+      given: Noam
+    - family: Sidow
+      given: Arend
+    - family: Slattery
+      given: Matthew
+    - family: Stamatoyannopoulos
+      given: John A
+    - family: Tolstorukov
+      given: Michael Y
+    - family: White
+      given: Kevin P
+    - family: Xi
+      given: Simon
+    - family: Farnham
+      given: Peggy J
+    - family: Lieb
+      given: Jason D
+    - family: Wold
+      given: Barbara J
+    - family: Snyder
+      given: Michael
+  container-title: Genome research
+  volume: 22
+  URL: 'https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3431496/'
+  DOI: 10.1101/gr.136184.111
+  page: 1813-31
+  type: article-journal
+  issued:
+    year: 2012
+                                   
 ...
 
