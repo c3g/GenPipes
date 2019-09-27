@@ -577,6 +577,7 @@ def sh_ihec_chip_metrics(chip_bam, input_bam, sample_name, input_name, chip_type
         [
             ['IHEC_chipseq_metrics', 'module_mugqic_tools'],
             ['IHEC_chipseq_metrics', 'module_samtools'],
+            ['IHEC_chipseq_metrics', 'module_sambamba'],
             ['IHEC_chipseq_metrics', 'module_deeptools']
         ],
         command="""\
