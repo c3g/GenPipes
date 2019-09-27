@@ -28,7 +28,10 @@ import re
 import subprocess
 import sys
 
+
 log = logging.getLogger(__name__)
+
+
 
 class Config(ConfigParser.SafeConfigParser):
 
@@ -38,6 +41,8 @@ class Config(ConfigParser.SafeConfigParser):
     # continuous_integration_testing = True
     cluster_walltime = "cluster_walltime"
     cit_options = [cluster_walltime]
+    cit_prefix = 'cit_'
+
     # Setting the sanity-check flag to 'False'
     # Will be set to 'True' by the pipeline if it runs with the '--sanity-check' parameter
     sanity = False
@@ -72,6 +77,7 @@ class Config(ConfigParser.SafeConfigParser):
                     modules.append(value)
                 if re.search("^query_module", name):
                     query_module = value
+
         if self.sanity:
             log.warn("* Checking modules...")
         else:
@@ -96,11 +102,18 @@ class Config(ConfigParser.SafeConfigParser):
         # Keep that if block first, it is only evaluated in testing mode
         if self.continuous_integration_testing and option in self.cit_options:
             # hack because this class becomes a global
+            try:
+                return self.get(section, '{}{}'.format(self.cit_prefix, option))
+            except ConfigParser.Error:
+                pass
+
             from utils import utils
             if option == self.cluster_walltime and self.has_section(section) \
                     and self.has_option(section, option):
+
                 from_section = self.get(section, option)
                 from_default = self.get('DEFAULT', option)
+
                 if (utils.slurm_time_to_datetime(from_default)
                         <= utils.slurm_time_to_datetime(from_section)):
                     return from_default

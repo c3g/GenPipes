@@ -444,10 +444,13 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
 			)
 		)
 
-def variant_recalibrator(variants, other_options, recal_output, tranches_output, R_output):
+
+def variant_recalibrator(variants, other_options, recal_output, tranches_output, R_output, small_sample_check=False):
 	if config.param('gatk_variant_recalibrator', 'module_gatk').split("/")[2] < "4":
-		return gatk.variant_recalibrator(variants, other_options, recal_output, tranches_output, R_output)
+		return gatk.variant_recalibrator(variants, other_options, recal_output, tranches_output,
+										 R_output, small_sample_check=small_sample_check)
 	else:
+
 		return Job(
 			variants,
 			[recal_output, tranches_output],
@@ -470,13 +473,12 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
 			reference_sequence=config.param('gatk_variant_recalibrator', 'genome_fasta', type='filepath'),
 			variants="".join(" \\\n  --variant " + variant for variant in variants),
 			other_options=other_options,
-			#tmp_dir="--TMP_DIR " + tmp_dir if tmp_dir else "",
 			recal_output=recal_output,
 			tranches_output=tranches_output,
-			R_output=R_output
-		),
-		removable_files=[recal_output, tranches_output, R_output]
-	)
+			R_output=R_output,
+			),
+			removable_files=[recal_output, tranches_output, R_output]
+		)
 
 
 def apply_recalibration(variants, recal_input, tranches_input, other_options, apply_recal_output):

@@ -638,8 +638,9 @@ class HicSeq(common.Illumina):
         jobs = []
         design_dir = self.output_dirs['chicago_input_files']
         output_dir = self.output_dirs['chicago_output_directory']
-        design_file_prefix = os.path.basename(re.sub("\.bed$", "", config.param('create_baitmap_file', "baitBed")) + "_" + self.enzyme)
-        other_options = config.param('runChicago', 'other_options', required = False)
+        design_file_prefix = os.path.basename(re.sub("\.bed$", "", config.param('create_baitmap_file', "baitBed"))
+                                              + "_" + self.enzyme)
+        other_options = config.param('runChicago', 'other_options', required=False)
 
         for sample in self.samples:
             job = chicago.runChicago(design_dir, sample.name, output_dir, design_file_prefix, other_options)

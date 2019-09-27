@@ -205,7 +205,7 @@ cp \\
                     design_file = os.path.relpath(self.args.design.name, self.output_dir)
             output_directory = "sleuth" 
             count_matrix = os.path.join(self.output_dir, "kallisto", "All_readsets","all_readsets.abundance_genes.csv")
-            tx2gene = config.param('sleuth', 'tx2gene')
+            tx2gene = config.param('sleuth_differential_expression', 'tx2gene')
             
             sleuth_job = differential_expression.sleuth(design_file, count_matrix, tx2gene, output_directory)
             sleuth_job.output_files = [os.path.join(output_directory, contrast.name, "results.wt.gene.csv") for contrast in self.contrasts]

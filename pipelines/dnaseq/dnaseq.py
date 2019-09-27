@@ -1206,8 +1206,14 @@ class DnaSeqRaw(common.Illumina):
 
         jobs.append(concat_jobs([
             Job(command="mkdir -p " + output_directory, samples=self.samples),
-            gatk4.variant_recalibrator( [os.path.join(output_directory, "allSamples.hc.vcf.gz")], recal_snps_other_options, variant_recal_snps_prefix + ".recal", variant_recal_snps_prefix + ".tranches", variant_recal_snps_prefix + ".R"),
-            gatk4.variant_recalibrator( [os.path.join(output_directory, "allSamples.hc.vcf.gz")], recal_indels_other_options, variant_recal_indels_prefix + ".recal", variant_recal_indels_prefix + ".tranches", variant_recal_indels_prefix + ".R")
+            gatk4.variant_recalibrator([os.path.join(output_directory, "allSamples.hc.vcf.gz")],
+                                       recal_snps_other_options, variant_recal_snps_prefix + ".recal",
+                                       variant_recal_snps_prefix + ".tranches", variant_recal_snps_prefix + ".R",
+                                       small_sample_check=True),
+            gatk4.variant_recalibrator([os.path.join(output_directory, "allSamples.hc.vcf.gz")],
+                                       recal_indels_other_options, variant_recal_indels_prefix + ".recal",
+                                       variant_recal_indels_prefix + ".tranches", variant_recal_indels_prefix + ".R",
+                                       small_sample_check=True)
         ], name="variant_recalibrator.tranch.allSamples"))
 
 
@@ -1219,8 +1225,13 @@ class DnaSeqRaw(common.Illumina):
 
         jobs.append(concat_jobs([
             Job(command="mkdir -p " + output_directory, samples=self.samples),
-            gatk4.apply_recalibration( os.path.join(output_directory, "allSamples.hc.vcf.gz"), variant_apply_snps_prefix + ".recal", variant_apply_snps_prefix + ".tranches", apply_snps_other_options, variant_apply_snps_prefix + "_raw_indels.vqsr.vcf.gz"),
-            gatk4.apply_recalibration( variant_apply_snps_prefix + "_raw_indels.vqsr.vcf.gz", variant_apply_indels_prefix + ".recal", variant_apply_indels_prefix + ".tranches", apply_indels_other_options, os.path.join(output_directory, "allSamples.hc.vqsr.vcf"))
+            gatk4.apply_recalibration(os.path.join(output_directory, "allSamples.hc.vcf.gz"),
+                                      variant_apply_snps_prefix + ".recal", variant_apply_snps_prefix + ".tranches",
+                                      apply_snps_other_options, variant_apply_snps_prefix + "_raw_indels.vqsr.vcf.gz"),
+            gatk4.apply_recalibration(variant_apply_snps_prefix +
+                                       "_raw_indels.vqsr.vcf.gz", variant_apply_indels_prefix + ".recal",
+                                      variant_apply_indels_prefix + ".tranches", apply_indels_other_options,
+                                      os.path.join(output_directory, "allSamples.hc.vqsr.vcf"))
         ], name="variant_recalibrator.apply.allSamples"))
 
         return jobs
@@ -1547,13 +1558,14 @@ pandoc \\
         The .vcf files are annotated for variant effects using the SnpEff software.
         SnpEff annotates and predicts the effects of variants on genes (such as amino acid changes).
         """
-#        jobs = self.snp_effect("variants/allSamples.merged.flt.mil.snpId.vcf", "variants/allSamples.merged.flt.mil.snpId.snpeff.vcf",  "mpileup_snp_effect", options=config.param('compute_cancer_effects', 'options'))
-        jobs = self.snp_effect("variants/allSamples.merged.flt.vt.mil.snpId.vcf.gz", "variants/allSamples.merged.flt.vt.mil.snpId.snpeff.vcf",  "mpileup_snp_effect")
-        #jobs.samples = self.samples
-            
+        jobs = self.snp_effect("variants/allSamples.merged.flt.vt.mil.snpId.vcf.gz",
+                               "variants/allSamples.merged.flt.vt.mil.snpId.snpeff.vcf",  "mpileup_snp_effect")
+
         return jobs
 
-    def dbnsfp_annotation(self, input_vcf = "variants/allSamples.merged.flt.vt.mil.snpId.snpeff.vcf.gz", output_vcf = "variants/allSamples.merged.flt.vt.mil.snpId.snpeff.dbnsfp.vcf", job_name = "dbnsfp_annotation"):
+    def dbnsfp_annotation(self, input_vcf="variants/allSamples.merged.flt.vt.mil.snpId.snpeff.vcf.gz",
+                          output_vcf="variants/allSamples.merged.flt.vt.mil.snpId.snpeff.dbnsfp.vcf",
+                          job_name="dbnsfp_annotation"):
         """
         Additional SVN annotations. Provides extra information about SVN by using numerous published databases.
         Applicable to human samples. Databases available include Biomart (adds GO annotations based on gene information)
@@ -1568,8 +1580,7 @@ pandoc \\
             snpeff.snpsift_dbnsfp(input_vcf, output_vcf),
             htslib.bgzip_tabix(output_vcf, output_vcf + ".gz"),
         ], name=job_name))
-        #job.samples = self.samples
-        
+
         return jobs
 
     def haplotype_caller_dbnsfp_annotation(self):
@@ -1583,8 +1594,8 @@ pandoc \\
         and other function annotations).
         """
 
-        job = self.dbnsfp_annotation("variants/allSamples.hc.vqsr.vt.mil.snpId.snpeff.vcf.gz", "variants/allSamples.hc.vqsr.vt.mil.snpId.snpeff.dbnsfp.vcf", "dbnsfp_annotation")
-        #job.samples = self.samples
+        job = self.dbnsfp_annotation("variants/allSamples.hc.vqsr.vt.mil.snpId.snpeff.vcf.gz",
+                                     "variants/allSamples.hc.vqsr.vt.mil.snpId.snpeff.dbnsfp.vcf", "dbnsfp_annotation")
 
         return job
 
@@ -1599,14 +1610,19 @@ pandoc \\
         and other function annotations).
         """
 
-        job = self.dbnsfp_annotation("variants/allSamples.merged.flt.vt.mil.snpId.snpeff.vcf.gz", "variants/allSamples.merged.flt.vt.mil.snpId.snpeff.dbnsfp.vcf.gz", "dbnsfp_annotation")
-        #job.samples = self.samples
+        job = self.dbnsfp_annotation("variants/allSamples.merged.flt.vt.mil.snpId.snpeff.vcf.gz",
+                                     "variants/allSamples.merged.flt.vt.mil.snpId.snpeff.dbnsfp.vcf",
+                                     "dbnsfp_annotation")
 
         return job
 
-    def gemini_annotations(self, input="variants/allSamples.merged.flt.vt.mil.snpId.snpeff.dbnsfp.vcf.gz", output="variants/allSamples.gemini.db", temp_dir="config.param('DEFAULT', 'tmp_dir')", job_name="gemini_annotations"):
+    def gemini_annotations(self, input="variants/allSamples.merged.flt.vt.mil.snpId.snpeff.dbnsfp.vcf.gz",
+                           output="variants/allSamples.gemini.db",
+                           temp_dir="config.param('DEFAULT', 'tmp_dir')",
+                           job_name="gemini_annotations"):
         """
-        Load functionally annotated vcf file into a mysql lite annotation database : http://gemini.readthedocs.org/en/latest/index.html
+        Load functionally annotated vcf file into a mysql lite annotation database :
+        http://gemini.readthedocs.org/en/latest/index.html
         """
 
         job = gemini.gemini_annotations(input, output, temp_dir)
@@ -1624,12 +1640,14 @@ pandoc \\
     def mpileup_gemini_annotations(self):
     
         tmp_dir = config.param('DEFAULT', 'tmp_dir')
-        job = self.gemini_annotations("variants/allSamples.merged.flt.vt.mil.snpId.snpeff.dbnsfp.vcf.gz", "variants/allSamples.gemini.db", temp_dir=tmp_dir, job_name="gemini_annotations"),
+        job = self.gemini_annotations("variants/allSamples.merged.flt.vt.mil.snpId.snpeff.dbnsfp.vcf.gz",
+                                      "variants/allSamples.gemini.db", temp_dir=tmp_dir, job_name="gemini_annotations"),
     
         return job
 
 
-    def metrics_vcf_stats(self, variants_file_prefix = "variants/allSamples.hc.vqsr.vt.mil.snpId.snpeff.dbnsfp" , job_name = "metrics_change_rate"):
+    def metrics_vcf_stats(self, variants_file_prefix="variants/allSamples.hc.vqsr.vt.mil.snpId.snpeff.dbnsfp" ,
+                          job_name="metrics_change_rate"):
         """
         Metrics SNV. Multiple metrics associated to annotations and effect prediction are generated at this step:
         change rate by chromosome, changes by type, effects by impact, effects by functional class, counts by effect,
@@ -1638,7 +1656,10 @@ pandoc \\
         """
 
 
-        job = metrics.vcf_stats(variants_file_prefix + ".vcf.gz", variants_file_prefix + ".snpeff.vcf.part_changeRate.tsv", variants_file_prefix + ".snpeff.vcf.statsFile.txt")
+        job = metrics.vcf_stats(variants_file_prefix +
+                                ".vcf.gz", variants_file_prefix +
+                                ".snpeff.vcf.part_changeRate.tsv",
+                                variants_file_prefix + ".snpeff.vcf.statsFile.txt")
         job.name = job_name
         #job.samples = self.samples
         return [job]
@@ -1653,7 +1674,8 @@ pandoc \\
         summary of allele frequencies, codon changes, amino acid changes, changes per chromosome, change rates.
         """
 
-        job = self.metrics_vcf_stats("variants/allSamples.hc.vqsr.vt.mil.snpId.snpeff.dbnsfp",  "haplotype_caller_metrics_change_rate")
+        job = self.metrics_vcf_stats("variants/allSamples.hc.vqsr.vt.mil.snpId.snpeff.dbnsfp",
+                                     "haplotype_caller_metrics_change_rate")
         #job.samples = self.samples
 
         return job
@@ -1668,19 +1690,23 @@ pandoc \\
         summary of allele frequencies, codon changes, amino acid changes, changes per chromosome, change rates.
         """
 
-        job = self.metrics_vcf_stats("variants/allSamples.merged.flt.vt.mil.snpId.snpeff.dbnsfp" , "mpileup_metrics_change_rate")
+        job = self.metrics_vcf_stats("variants/allSamples.merged.flt.vt.mil.snpId.snpeff.dbnsfp",
+                                     "mpileup_metrics_change_rate")
         #job.samples = self.samples
 
         return job
 
 
 
-    def metrics_snv_graph_metrics(self, variants_file_prefix = "variants/allSamples.merged.flt.mil.snpId", snv_metrics_prefix = "metrics/allSamples.SNV",  job_name = "metrics_snv_graph"):
+    def metrics_snv_graph_metrics(self, variants_file_prefix = "variants/allSamples.merged.flt.mil.snpId",
+                                  snv_metrics_prefix = "metrics/allSamples.SNV",  job_name = "metrics_snv_graph"):
         """
         """
 
         report_file = "report/DnaSeq.metrics_snv_graph_metrics.md"
-        snv_metrics_files = [snv_metrics_prefix + ".SummaryTable.tsv", snv_metrics_prefix + ".EffectsFunctionalClass.tsv", snv_metrics_prefix + ".EffectsImpact.tsv"]
+        snv_metrics_files = [snv_metrics_prefix + ".SummaryTable.tsv",
+                             snv_metrics_prefix + ".EffectsFunctionalClass.tsv",
+                             snv_metrics_prefix + ".EffectsImpact.tsv"]
 
         job = metrics.snv_graph_metrics(variants_file_prefix + ".snpeff.vcf.statsFile.txt", snv_metrics_prefix)
         job.output_files = snv_metrics_files
@@ -1734,7 +1760,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         See general metrics_vcf_stats !  Applied to haplotype caller vcf
         """
 
-        jobs = self.metrics_snv_graph_metrics("variants/allSamples.hc.vqsr.mil.snpId", "metrics/allSamples.hc.vqsr.SNV", "haplotype_caller_metrics_snv_graph")
+        jobs = self.metrics_snv_graph_metrics("variants/allSamples.hc.vqsr.mil.snpId",
+                                              "metrics/allSamples.hc.vqsr.SNV", "haplotype_caller_metrics_snv_graph")
         #jobs.samples = self.samples
 
         return jobs
@@ -1745,7 +1772,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         See general metrics_vcf_stats !  Applied to mpileup vcf
         """
 
-        jobs = self.metrics_snv_graph_metrics("variants/allSamples.merged.flt.mil.snpId", "metrics/allSamples.mpileup.SNV", "mpileup_metrics_snv_graph")
+        jobs = self.metrics_snv_graph_metrics("variants/allSamples.merged.flt.mil.snpId",
+                                              "metrics/allSamples.mpileup.SNV", "mpileup_metrics_snv_graph")
         #jobs.samples = self.samples
 
         return jobs
@@ -1819,7 +1847,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.rawmpileup_cat,
                 self.snp_and_indel_bcf,
                 self.merge_filter_bcf,
-                #self.mpileup_filter_nstretches,
                 self.mpileup_decompose_and_normalize,
                 self.mpileup_flag_mappability,
                 self.mpileup_snp_id_annotation,
@@ -1827,7 +1854,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.mpileup_dbnsfp_annotation,
                 self.mpileup_gemini_annotations,
                 self.mpileup_metrics_vcf_stats,
-                #self.mpileup_metrics_snv_graph_metrics,
                 self.run_multiqc,
                 self.cram_output
             ],
@@ -1867,7 +1893,8 @@ class DnaSeq(DnaSeqRaw):
     def __init__(self, protocol=None):
         self._protocol = protocol
         # Add pipeline specific arguments
-        self.argparser.add_argument("-t", "--type", help="DNAseq analysis type", choices=["mugqic", "mpileup", "light"], default="mugqic")
+        self.argparser.add_argument("-t", "--type", help="DNAseq analysis type", choices=["mugqic", "mpileup", "light"],
+                                    default="mugqic")
         super(DnaSeq, self).__init__(protocol)
 
 if __name__ == '__main__':
