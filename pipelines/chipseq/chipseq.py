@@ -981,7 +981,7 @@ done""".format(
             #chip_type = config.param('IHEC_chipseq_metrics', 'chip_type', required=True)
             chip_type = values[2]
             chip_bed = os.path.join(self.output_dirs['macs_output_directory'], values[1], values[1] + "_peaks." + values[2] + "Peak")
-            genome = config.param('ihec_metrics', 'assembly')
+            genome = config.param('IHEC_chipseq_metrics', 'assembly')
 
             # cmd=""
             # cmd = cmd + "key: " + str(key) + "     value is: " + str(values) + "\n"
@@ -991,7 +991,7 @@ done""".format(
             job = concat_jobs([
                 Job(command="mkdir -p " + output_dir),
                 tools.sh_ihec_chip_metrics(chip_bam, input_bam, key, values[0], chip_type, chip_bed, output_dir, genome)
-                ], name="ihec_metrics." + key)
+                ], name="IHEC_chipseq_metrics." + key)
             jobs.append(job)
 
         #chip_type = config.param('ihec_metrics', 'chip_type')
@@ -1027,7 +1027,7 @@ sed -i -e "1 i\\\$header" {metrics_merged}""".format(
             input_files=[metrics_merged_out],
             output_files=[report_file],
             name="merge_ihec_metrics_report",
-            module_entries=[['ihec_metrics', 'module_pandoc']],
+            module_entries=[['merge_ihec_metrics_report', 'module_pandoc']],
             command="""\
 mkdir -p {report_dir} && \\
 cp {metrics_merged_out} {report_dir}/{ihec_metrics_merged_table} && \\
