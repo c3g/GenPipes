@@ -78,14 +78,6 @@ class Config(ConfigParser.SafeConfigParser):
         log.info("Check modules...")
         cmd_query_module = "module {query_module} ".format(query_module  = query_module)
         for module in modules:
-            # Bash shell must be invoked in order to find "module" cmd
-            # try:
-            #     module_show_output = subprocess.check_output(["bash", "-c", cmd_query_module + module],
-            #                                                  stderr=subprocess.STDOUT)
-            # except subprocess.CalledProcessError:
-            #     module_show_output = subprocess.check_output(["singularity", "run", "/home/poq/c3g/genpipes.sif",
-            #                                                   cmd_query_module + module],
-            #                                                  stderr=subprocess.STDOUT)
             module_show_output = subprocess.check_output(["bash", "-c", cmd_query_module + module],
                                                          stderr=subprocess.STDOUT)
 
