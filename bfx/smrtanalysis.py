@@ -21,10 +21,11 @@
 
 # Python Standard Modules
 import os
+import re
 
 # MUGQIC Modules
-from core.config import *
-from core.job import *
+from core.config import config
+from core.job import Job
 
 def blasr(
     infile,
@@ -116,16 +117,11 @@ fastqToCA \\
   > {outfile}'""".format(
             libraryname=libraryname,
             reads=reads,
-            outfile=outfile
-    ))
+            outfile=outfile)
+    )
 
-def filtering(
-    fofn,
-    input_xml,
-    params_xml,
-    output_dir,
-    log
-    ):
+
+def filtering(fofn, input_xml, params_xml, output_dir, log):
 
     ref_params_xml = config.param('smrtanalysis_filtering', 'filtering_settings')
 
@@ -137,7 +133,9 @@ def filtering(
 
     temp_dir = config.param('smrtanalysis_filtering', 'tmp_dir')
     if (config.param('smrtanalysis_filtering', 'tmp_dir').startswith("$")):
-        temp_dir = re.sub("^\$", "$SMRT_ORIGUSERENV_", temp_dir)
+        temp_dir = temp_dir.replace('$', '$SMRT_ORIGUSERENV_')
+        temp_dir = temp_dir.replace('{', '')
+        temp_dir = temp_dir.replace('}', '')
 
     return Job(
         [fofn, ref_params_xml],
@@ -147,7 +145,7 @@ def filtering(
             ['smrtanalysis_filtering', 'module_smrtanalysis']
         ],
         command="""\
-bash -c 'set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
+bash -ic 'set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
 fofnToSmrtpipeInput.py {fofn} > {input_xml} && \\
 cp {fofn} {input_fofn} && \\
 sed -e "s|MINSUBREADLENGTH|{min_subread_length}|g" -e "s|MINREADLENGTH|{min_read_length}|g" -e "s|MINQUAL|{min_qual}|g"{whitelist_param} \\
@@ -273,7 +271,9 @@ def pbalign(
 
     temp_dir = os.path.join(config.param('smrtanalysis_filtering', 'tmp_dir'), sample_cutoff_mer_size_polishing_round)
     if (config.param('smrtanalysis_pbutgcns', 'tmp_dir').startswith("$")):
-        temp_dir = re.sub("^\$", "$SMRT_ORIGUSERENV_", temp_dir)
+        temp_dir = temp_dir.replace('$', '$SMRT_ORIGUSERENV_')
+        temp_dir = temp_dir.replace('{', '')
+        temp_dir = temp_dir.replace('}', '')
 
     return Job(
         [input_fofn, ref_upload],
@@ -325,11 +325,8 @@ awk '{{if ($0~/>/) {{sub(/>/,"@",$0);print;}} else {{l=length($0);q=""; while (l
             outfile_fastq=outfile_fastq
     ))
 
-def pbutgcns(
-    assembly_directory,
-    sample_cutoff_mer_size,
-    mer_size_directory
-    ):
+
+def pbutgcns(assembly_directory, sample_cutoff_mer_size, mer_size_directory):
 
     gpk_store = os.path.join(assembly_directory, sample_cutoff_mer_size + ".gkpStore")
     tig_store = os.path.join(assembly_directory, sample_cutoff_mer_size + ".tigStore")
@@ -342,7 +339,9 @@ def pbutgcns(
 
     temp_dir = os.path.join(config.param('smrtanalysis_filtering', 'tmp_dir'), sample_cutoff_mer_size)
     if (config.param('smrtanalysis_pbutgcns', 'tmp_dir').startswith("$")):
-        temp_dir = re.sub("^\$", "$SMRT_ORIGUSERENV_", temp_dir)
+        temp_dir = temp_dir.replace('$', '$SMRT_ORIGUSERENV_')
+        temp_dir = temp_dir.replace('{', '')
+        temp_dir = temp_dir.replace('}', '')
 
     return Job(
         [gpk_store, tig_store],
@@ -358,12 +357,12 @@ tigStore \\
 awk 'BEGIN{{t=0}}$1=="numFrags"{{if ($2 > 1) {{print t, $2}} t++}}' | sort -nrk2,2 \\
   > {unitigs_list} && \\
 mkdir -p {outdir} && \\
-bash -c 'set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
+bash -c 'set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && mkdir -p {tmp_dir} && \\
 tmp={tmp_dir} \\
-cap={prefix} \\
-utg={unitigs_list} \\
+cap=$PWD/{prefix} \\
+utg=$PWD/{unitigs_list} \\
 nprocs={threads} \\
-cns={outfile} \\
+cns=$PWD/{outfile} \\
 pbutgcns_wf.sh'""".format(
             gpk_store=gpk_store,
             tig_store=tig_store,
@@ -389,7 +388,7 @@ def reference_uploader(
         ],
         # Preload assembled contigs as reference
         command="""\
-bash -c 'set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
+$(set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
 referenceUploader \\
   --skipIndexUpdate \\
   --create \\
@@ -397,7 +396,7 @@ referenceUploader \\
   --name {sample_name} \\
   --fastaFile {fasta} \\
   --saw="sawriter -blt 8 -welter" --jobId="Anonymous" \\
-  --samIdx="samtools faidx" --jobId="Anonymous" --verbose'""".format(
+  --samIdx="samtools faidx" --jobId="Anonymous" --verbose)""".format(
             prefix=prefix,
             sample_name=sample_name,
             fasta=fasta
@@ -562,10 +561,10 @@ ipdSummary.py {aligned_reads} \\
   --methylFraction \\
   --paramsPath /cvmfs/soft.mugqic/CentOS6/software/smrtanalysis/smrtanalysis_2.3.0.140936.p5/analysis/etc/algorithm_parameters/2015-11/kineticsTools/ \\
   --numWorkers 12 \\
-  --outfile {output_gff}""".format(
+  --outfile {output_gff}'""".format(
             fasta_consensus=os.path.join(mer_size_directory, "polishing" + str(polishing_rounds - 1), "data", "consensus.fasta"),
             aligned_reads=os.path.join(mer_size_directory, "polishing" + str(polishing_rounds), "data", "aligned_reads.sorted.cmp.h5"),
-            output_gff = basemodification_file_prefix
+            output_gff=basemodification_file_prefix
     ))
 
 def motifMaker(
@@ -588,8 +587,8 @@ bash -c 'set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
 motifMaker.sh find \\
   -f {fasta_consensus} \\
   -g {output_gff} \\
-  -o {output}""".format(
+  -o {output}'""".format(
             fasta_consensus=os.path.join(mer_size_directory, "polishing" + str(polishing_rounds - 1), "data", "consensus.fasta"),
-            output_gff = basemodification_file_prefix + ".gff" ,
+            output_gff=basemodification_file_prefix + ".gff",
             output=motifMaker_file
     ))

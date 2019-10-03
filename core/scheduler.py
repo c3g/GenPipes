@@ -23,9 +23,11 @@
 import json
 import os
 import random
+import textwrap
+from uuid import uuid4
 
 # MUGQIC Modules
-from config import *
+from config import config
 
 # Output comment separator line
 separator_line = "#" + "-" * 79
@@ -89,6 +91,46 @@ cd $OUTPUT_DIR
                 )
             )
 
+        json_files = []
+        for step in pipeline.step_range:
+            for job in step.jobs:
+                for sample in job.samples:
+                    json_files.append(os.path.join(pipeline.output_dir, "json", sample.json_file))
+        json_files = list(set(json_files))
+        for j_file in json_files:
+            print(
+"""sed -i "s/\\"submission_date\\": \\"\\",/\\"submission_date\\": \\"$TIMESTAMP\\",/" {file}"""
+                .format(
+                    file=j_file
+                )
+            )
+
+        ## Print a copy of sample JSONs for the genpipes dashboard
+        if pipeline.json and pipeline.portal_output_dir != "":
+            copy_commands = []
+            test_copy_commands = []
+            for i, sample in enumerate(pipeline.sample_list):
+                unique_uuid = uuid4().get_hex()
+                input_file = pipeline.sample_paths[i]
+                output_file = os.path.join(pipeline.portal_output_dir, '$USER.' + sample.name + '.' + unique_uuid + '.json')
+                #test_output_file = os.path.join("/lb/project/mugqic/analyste_dev/portal_test_dir/", '$USER.' + sample.name + '.' + unique_uuid + '.json')
+                copy_commands.append("cp \"{input_file}\" \"{output_file}\"".format(
+                    input_file=input_file, output_file=output_file))
+                #test_copy_commands.append("cp \"{input_file}\" \"{output_file}\"".format(
+                    #input_file=input_file, output_file=test_output_file))
+            print(textwrap.dedent("""
+                #------------------------------------------------------------------------------
+                # Print a copy of sample JSONs for the genpipes dashboard
+                #------------------------------------------------------------------------------
+                {copy_commands}
+            """).format(copy_commands='\n'.join(copy_commands)))
+            #print(textwrap.dedent("""
+                ##------------------------------------------------------------------------------
+                ## Print a copy of sample JSONs for testing of the dashboard
+                ##------------------------------------------------------------------------------
+                #{copy_commands}
+            #""").format(copy_commands='\n'.join(test_copy_commands)))
+
     def print_step(self, step):
         print("""
 {separator_line}
@@ -100,7 +142,7 @@ mkdir -p $JOB_OUTPUT_DIR/$STEP
         )
 
     def job2json(self, pipeline, step, job, job_status):
-        if not pipeline.args.json:
+        if not pipeline.json:
             return ""
 
         json_file_list = ",".join([os.path.join(pipeline.output_dir, "json", sample.json_file) for sample in job.samples])
@@ -120,7 +162,7 @@ module unload {module_python} {command_separator}""".format(
             module_python=config.param('DEFAULT', 'module_python'),
             step=step,
             jsonfiles=json_file_list,
-            config_files=",".join([ c.name for c in self._config_files ]),
+            config_files=",".join([ os.path.relpath(c.name, pipeline.output_dir) for c in self._config_files ]),
             status=job_status,
             command_separator="&&" if (job_status=='\\"running\\"') else ""
         ) if json_file_list else ""

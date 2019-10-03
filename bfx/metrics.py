@@ -72,7 +72,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $RNASEQC_JAR
             gtf_file=gtf_file if gtf_file else config.param('rnaseqc', 'gtf', type='filepath'),
             other_options=" \\\n  " + config.param('rnaseqc', 'other_options', required=False) if config.param('rnaseqc', 'other_options', required=False) else "",
             single_end=" \\\n  -singleEnd" if is_single_end else "",
-            ribosomal_interval_file= " \\\n  -rRNA " + ribosomal_interval_file if ribosomal_interval_file else "\\\n  -BWArRNA dummy_rRNA.fa"
+            ribosomal_interval_file=" \\\n  -rRNA " + ribosomal_interval_file if ribosomal_interval_file else "\\\n  -BWArRNA dummy_rRNA.fa"
         ),
         removable_files=["dummy_rRNA.fa"]
     )
@@ -163,14 +163,16 @@ def ihec_metrics_rnaseq(genome):
 
   ## will parse metrics/rnaseqRep/metrics.tsv to output needed columns only
 
-  command = "python $PYTHON_TOOLS/ihec_metrics_rnaseq.py {genome}".format(genome = genome)
+  command = "python $PYTHON_TOOLS/ihec_metrics_rnaseq.py {genome}".format(genome=genome)
 
-  return Job(input_files = ["metrics/rnaseqRep/metrics.tsv"],
-            output_files = ["report/IHEC_metrics_rnaseq_All.txt"],
-            module_entries = [["ihec_metrics_rnaseq", "module_mugqic_tools"],["ihec_metrics_rnaseq", "module_samtools"]],
-            name = "ihec_metrics_rnaseq",
-            command = command
-            )
+  return Job(input_files=["metrics/rnaseqRep/metrics.tsv"],
+             output_files=["report/IHEC_metrics_rnaseq_All.txt"],
+             module_entries=[["ihec_metrics_rnaseq", "module_mugqic_tools"],
+                             ["ihec_metrics_rnaseq", "module_samtools"],
+                             ["ihec_metrics_rnaseq", "module_python"]],
+             name="ihec_metrics_rnaseq",
+             command=command
+             )
 
 
 

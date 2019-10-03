@@ -31,14 +31,12 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # MUGQIC Modules
-from core.config import *
-from core.job import *
-from core.pipeline import *
-from bfx.design import *
-from bfx.readset import *
+from core.config import config, _raise, SanitycheckError
+from core.job import Job, concat_jobs, pipe_jobs
 
 from bfx import bedtools
-from bfx import cufflinks
+from bfx import bwa
+from bfx import cufflinks   
 from bfx import stringtie
 from bfx import ballgown
 from bfx import differential_expression
@@ -140,8 +138,8 @@ class RnaSeq(common.Illumina):
                 [fastq1] = self.select_input_files(candidate_input_files)
                 fastq2 = None
             else:
-                raise Exception("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
             rg_platform = config.param('star_align', 'platform', required=False)
             rg_center = config.param('star_align', 'sequencing_center', required=False)
@@ -198,8 +196,8 @@ class RnaSeq(common.Illumina):
                 [fastq1] = self.select_input_files(candidate_input_files)
                 fastq2 = None
             else:
-                raise Exception("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
             rg_platform = config.param('star_align', 'platform', required=False)
             rg_center = config.param('star_align', 'sequencing_center', required=False)
@@ -375,7 +373,7 @@ awk 'BEGIN {{OFS="\\t"}} {{if (substr($1,1,1)=="@") {{print;next}}; split($6,C,/
 echo "Sample\tBamFile\tNote
 {sample_rows}" \\
   > {sample_file}""".format(sample_rows="\n".join(["\t".join(sample_row) for sample_row in sample_rows]), sample_file=sample_file)),
-            metrics.rnaseqc(sample_file, output_directory, self.run_type == "SINGLE_END", gtf_file=gtf_transcript_id),
+            metrics.rnaseqc(sample_file, output_directory, self.run_type == "SINGLE_END", gtf_file=gtf_transcript_id, reference=config.param('rnaseqc', 'genome_fasta', type='filepath'), ribosomal_interval_file=config.param('rnaseqc', 'ribosomal_fasta', type='filepath')),
             Job([], [output_directory + ".zip"], command="zip -r {output_directory}.zip {output_directory}".format(output_directory=output_directory))
         ], name="rnaseqc"))
 
@@ -1177,7 +1175,6 @@ done""".format(
             self.differential_expression,
             self.differential_expression_goseq,
             self.ihec_metrics,
-            self.verify_bam_id,
             self.cram_output
             ],
             [self.picard_sam_to_fastq,
