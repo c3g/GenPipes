@@ -2157,7 +2157,6 @@ def distance(
     """
     return sum(itertools.imap(unicode.__ne__, str1, str2))
 
-
 if __name__ == '__main__':
 
     argv = sys.argv
