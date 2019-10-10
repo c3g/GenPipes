@@ -24,9 +24,6 @@ import sys
 import os
 import re
 
-# Python Illumina InterOp Library
-from interop import py_interop_run_metrics, py_interop_run, py_interop_summary
-
 # MUGQIC Modules
 from core.config import config
 from core.job import Job
@@ -39,10 +36,6 @@ def index(
     lane,
     mask
     ):
-
-    barcode_file = config.param('index', 'barcode_file', type='filepath', required='false')
-    if not (barcode_file and os.path.isfile(barcode_file)):
-        barcode_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), 'resources', 'barcode.mergedup.txt')
 
     return Job(
         [input],
@@ -70,7 +63,7 @@ java -Djava.io.tmpdir={tmp_dir} \\
             jar=config.param('index', 'jar'),
             mismatches=mismatches,
             threads=config.param('index', 'threads'),
-            barcode_file=barcode_file,
+            barcode_file=config.param('index', 'barcode_file'),
             basecalls_dir=basecalls_dir,
             lane_number=lane,
             read_structure=mask,
@@ -78,48 +71,12 @@ java -Djava.io.tmpdir={tmp_dir} \\
         )
     )
 
-def get_non_index_reads(summary):
-    """
-    Pick-out the reads which are not index reads
-    :param summary: a Interop read summary object to parse the read numbers from
-    :returns: all reads which are not index reads
-    """
-    non_index_reads = []
-    for read_nbr in range(summary.size()):
-        if not summary.at(read_nbr).read().is_index():
-            non_index_reads.append(read_nbr)
-    return non_index_reads
-
-
-def get_index_reads(summary):
-    """
-    Pick-out the reads which are not index reads
-    :param summary: a Interop read summary object to parse the read numbers from
-    :returns: all reads which are not index reads
-    """
-    index_reads = []
-    for read_nbr in range(summary.size()):
-        if summary.at(read_nbr).read().is_index():
-            index_reads.append(read_nbr)
-    return index_reads
-
-
-def get_all_reads(summary):
-    """
-    Pick-out the reads which are not index reads
-    :param summary: a Interop read summary object to parse the read numbers from
-    :returns: all reads which are not index reads
-    """
-    reads = []
-    for read_nbr in range(summary.size()):
-            reads.append(read_nbr)
-    return reads
-
 def bcl2fastq(
     input,
     fastq_outputs,
     output_dir,
     sample_sheet,
+    demultiplexing,
     run,
     lane,
     extra_option,
@@ -128,15 +85,14 @@ def bcl2fastq(
     mask=None,
     ):
 
-    if demultiplex:
-        demultiplex_parameters = """\
+    command_suffix = ""
+    if demultiplexing:
+        command_suffix = """\
   --barcode-mismatches {number_of_mismatches} \\
   --use-bases-mask {mask}""".format(
             number_of_mismatches=mismatches,
             mask=mask
         )
-    else:
-        command_suffix = ""
 
     return Job(
         [input],
@@ -151,9 +107,8 @@ bcl2fastq \\
   --tiles {tiles} \\
   --sample-sheet {sample_sheet} \\
   --create-fastq-for-index-reads \\
-  {demultiplex_parameters} \\
-  {other_options} \\
-  {extra_option}""".format(
+  {additional_parameters} \\
+  {other_options}""".format(
             run_dir=run,
             output_dir=output_dir,
             tiles="s_" + str(lane),
