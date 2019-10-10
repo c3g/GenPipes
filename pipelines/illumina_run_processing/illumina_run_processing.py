@@ -102,6 +102,7 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         H84WNADXX,1,sample1_MPS0001,,TAAGGCGA-AGAGTAGA,,N,,,nanuq
         H84WNADXX,1,sample47_MPS0047,,GTAGAGGA-CTAAGCCT,,N,,,nanuq
 
+
     The second sample sheet is called the Nanuq run sheet. It's a csv file with the
     following minimal set of mandatory columns (the column order in the file doesn't
     matter)
@@ -144,8 +145,21 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
     @property
     def readsets(self):
         if not hasattr(self, "_readsets"):
-            self._readsets = self.load_readsets()
-            self.generate_illumina_lane_sample_sheet
+            if self.protocol == "clarity":
+                self._readsets = parse_illumina_raw_readset_files(
+                    self.output_dir,
+                    self.run_dir,
+                    "PAIRED_END" if self.is_paired_end else "SINGLE_END",
+                    self.clarity_event_file,
+                    None,
+                    self.args.lane_number,
+                    config.param('DEFAULT', 'genomes_home', type="dirpath"),
+                    self.get_sequencer_minimum_read_length(),
+                    self.protocol
+                )
+            elif self.protocol == "nanuq":
+                self._readsets = self.load_readsets()
+                self.generate_illumina_lane_sample_sheet()
         return self._readsets
 
     @property
@@ -220,35 +234,6 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         return self._mask
 
     @property
-    def index1cycles(self):
-        if not hasattr(self, "_index1cycles"):
-            [self._index1cycles, self._index2cycles] = self.get_indexcycles()
-        return self._index1cycles
-
-    @property
-    def index2cycles(self):
-        if not hasattr(self, "_index2cycles"):
-            [self._index1cycles, self._index2cycles] = self.get_indexcycles()
-        return self._index2cycles
-
-    @property
-    def indexes_from_lims(self):
-        # Define in generate_clarity_sample_sheet() 
-        return self._indexes_from_lims
-
-    @property
-    def seqtype(self):
-        if not hasattr(self, "_seqtype"):
-            self._seqtype = self.get_seqtype()
-        return self._seqtype
-
-    @property
-    def instrument(self):
-        if not hasattr(self, "_instrument"):
-            self._instrument = self.get_instrument()
-        return self._instrument
-
-    @property
     def read_infos(self):
         if not hasattr(self, "_read_infos"):
             self._read_infos = self.parse_run_info_file()
@@ -309,38 +294,11 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
                 samples=self.samples
             ))
 
-        # Prepare Index Validation jobs
-        indexes_from_lims = self.lims_index
-
         self.add_copy_job_inputs(jobs)
         return jobs
 
     def fastq(self):
         
-        """
-        Launch fastq generation from Illumina raw data using BCL2FASTQ conversion
-        software.
-
-        The index base mask is calculated according to the sample and run configuration;
-        and also according the mask parameters received (first/last index bases). The
-        Casava sample sheet is generated with this mask. The default number of
-        mismatches allowed in the index sequence is 1 and can be overrided with an
-        command line argument. Demultiplexing always occurs even when there is only one
-        sample in the lane, because then we merge undertermined reads.
-
-        An optional notification command can be launched to notify the start of the
-        fastq generation with the calculated mask.
-        """
-        jobs = []
-
-        if self.protocol == "nanuq":
-            jobs = self.nanuq_fastq()
-        else:
-            jobs = self.clarity_fastq()
-        
-        return jobs
-
-    def nanuq_fastq(self):
         """
         Launch fastq generation from Illumina raw data using BCL2FASTQ conversion
         software.
@@ -363,171 +321,28 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         if self.is_paired_end:
             fastq_outputs += [readset.fastq2 for readset in self.readsets]
 
-        output_dir = self.output_dir + os.sep + "Unaligned." + str(self.lane_number)
+        output_dir = os.path.join(self.output_dir, "Unaligned." + str(self.lane_number))
         casava_sheet_prefix = config.param('fastq', 'casava_sample_sheet_prefix')
-        other_options = config.param('fastq', 'other_options')
-        mask = self.mask
+        sample_sheet=os.path.join(self.output_dir, casava_sheet_prefix + str(self.lane_number) + ".csv"),
+
         demultiplexing = False
-
-        command = """\
-bcl2fastq\\
- --runfolder-dir {run_dir}\\
- --output-dir {output_dir}\\
- --tiles {tiles}\\
- --sample-sheet {sample_sheet}\\
- {other_options}\\
- """.format(
-            run_dir=self.run_dir,
-            output_dir=output_dir,
-            tiles="s_" + str(self.lane_number),
-            sample_sheet=self.output_dir + os.sep + casava_sheet_prefix + str(self.lane_number) + ".csv",
-            other_options=other_options
-        )
-
         if re.search("I", mask):
             self.validate_barcodes()
             demultiplexing = True
-            command += " --barcode-mismatches {number_of_mismatches} --use-bases-mask {mask}".format(
-                number_of_mismatches=self.number_of_mismatches,
-                mask=mask
-            )
 
-        job = Job([input],
-                  fastq_outputs,
-                  [('fastq', 'module_bcl_to_fastq'), ('fastq', 'module_gcc')],
-                  command=command,
-                  name="fastq." + self.run_id + "." + str(self.lane_number),
-                  samples=self.samples
-                  )
-
-        jobs.append(job)
-
-        # don't depend on notification commands
-        self.add_copy_job_inputs(jobs)
-
-        notification_command_start = config.param('fastq_notification_start', 'notification_command', required=False)
-        if notification_command_start:
-            notification_command_start = notification_command_start.format(
-                output_dir=self.output_dir,
-                number_of_mismatches=self.number_of_mismatches if demultiplexing else "-",
-                lane_number=self.lane_number,
-                mask=mask if demultiplexing else "-",
-                technology=config.param('fastq', 'technology'),
-                run_id=self.run_id
-            )
-            # Use the same inputs and output of fastq job to send a notification each time the fastq job run
-            job = Job([input], ["notificationFastqStart." + str(self.lane_number) + ".out"],
-                      name="fastq_notification_start." + self.run_id + "." + str(self.lane_number),
-                      command=notification_command_start,
-                      samples=self.samples)
-            jobs.append(job)
-
-        notification_command_end = config.param('fastq_notification_end', 'notification_command', required=False)
-        if notification_command_end:
-            notification_command_end = notification_command_end.format(
-                output_dir=self.output_dir,
-                lane_number=self.lane_number,
-                technology=config.param('fastq', 'technology'),
-                run_id=self.run_id
-            )
-            job = Job(fastq_outputs, ["notificationFastqEnd." + str(self.lane_number) + ".out"],
-                      name="fastq_notification_end." + self.run_id + "." + str(self.lane_number),
-                      command=notification_command_end,
-                      samples=self.samples)
-            jobs.append(job)
-
-        return jobs
-
-    def clarity_fastq(self):
-        """
-        Launch fastq generation from Illumina raw data using BCL2FASTQ conversion
-        software.
-
-        The index base mask is calculated according to the sample and run configuration;
-        and also according the mask parameters received (first/last index bases). The
-        Casava sample sheet is generated with this mask. The default number of
-        mismatches allowed in the index sequence is 1 and can be overrided with an
-        command line argument. Demultiplexing always occurs even when there is only one
-        sample in the lane, because then we merge undertermined reads.
-
-        An optional notification command can be launched to notify the start of the
-        fastq generation with the calculated mask.
-        """
-        jobs = []
-
-        input = self.clarity_event_file
-
-        fastq_outputs = self.generate_fastq_outputs(merge)
-
-        bcl2fastq_job = run_processing_tools.bcl2fastq(
-            input,
-            fastq_outputs,
-            output_dir,
-            casava_sample_sheet,
-            self.run_dir,
-            self.lane_number,
-            bcl2fastq_extra_option,
-            demultiplex=True,
-            mismatches=self.number_of_mismatches,
-            mask=mask,
-        )
-
-        aggregate_fastq_jobs = None
-        for readset in self.readsets:
-            if re.search("tenX", readset.library_type) or merge_undetermined:
-                aggregate_fastq_jobs = concat_jobs([
-                    aggregate_fastq_jobs,
-                    run_processing_tools.aggregate_fastqs(
-                        readset,
-                        merge_undetermined,
-                        mask
-                ])
-
-        if generate_umi:
-
-            output_dir_noindex = os.path.join(self.output_dir, "Unaligned." + str(self.lane_number) + ".noindex")
-            casava_sample_sheet_noindex = os.path.join(self.output_dir, "casavasheet." + str(self.lane_number) + ".noindex.csv")
-
-            jobs.append(
-                concat_jobs([
-                    bcl2fastq_job,
-                    run_processing_tools.aggregate_fastqs(
-                        merge_undetermined
-                )]
-            ))
-
-            run_processing_tools.bcl2fastq(
+        job = run_processing_tools.bcl2fastq(
                 input,
                 fastq_outputs,
-                output_dir_noindex,
-                casava_sample_sheet_noindex,
+                output_dir,
+                sample_sheet,
+                demultiplexing,
                 self.run_dir,
                 self.lane_number,
-                bcl2fastq_extra_option
-            ),
-            name="fastq." + self.run_id + "." + str(self.lane_number),
-            samples=self.samples
-
-        else:
-            output_dir = os.path.join(self.output_dir, "Unaligned." + str(self.lane_number))
-            casava_sheet_prefix = config.param('fastq', 'casava_sample_sheet_prefix')
-            casava_sample_sheet = os.path.join(self.output_dir, "casavasheet." + str(self.lane_number) + ".indexed.csv")
-
-            jobs.append(
-                run_processing_tools.bcl2fastq(
-                    input,
-                    fastq_outputs,
-                    output_dir,
-                    sample_sheet,
-                    self.run_dir,
-                    self.lane_number,
-                    bcl2fastq_extra_option,
-                    demultiplex=True,
-                    mismatches=self.number_of_mismatches,
-                    mask=mask,
-            ))
-            name="fastq." + self.run_id + "." + str(self.lane_number),
-            samples=self.samples
+                self.number_of_mismatches,
+                self.mask
+        )
+        job.name = "fastq." + self.run_id + "." + str(self.lane_number)
+        job.samples = self.samples
 
         # don't depend on notification commands
         self.add_copy_job_inputs(jobs)
@@ -1287,18 +1102,6 @@ wc -l >> {output}""".format(
         The sample indexes are trimmed according to the mask used.
         """
 
-        if self.protocol == "nanuq":
-            jobs = self.generate_nanuq_sample_sheet()
-        else:
-            jobs = self.generate_clarity_sample_sheet()
-        
-        return jobs
-
-    def generate_nanuq_sample_sheet(self):
-        """
-        Create a sample sheet for bcl2fastq from the Nanuq data
-        """
-
         read_masks = self.mask.split(",")
         has_single_index = self.has_single_index()
 
@@ -1842,63 +1645,48 @@ wc -l >> {output}""".format(
         readsets.
         """
 
-        if self.protocol == "nanuq":
-            # Casava sheet download
-            if not self.args.casava_sheet_file or self.args.force_download:
-                if not os.path.exists(self.casava_sheet_file) or self.args.force_download:
-                    command = config.param('DEFAULT', 'fetch_casava_sheet_command').format(
-                        output_directory=self.output_dir,
-                        run_id=self.run_id,
-                        filename=self.casava_sheet_file
-                    )
-                    log.info(command)
-                    return_code = subprocess.call(
-                        command,
-                        shell=True
-                    )
-                    if return_code != 0:
-                        _raise(SanitycheckError("Unable to download the Casava Sheet."))
+        # Casava sheet download
+        if not self.args.casava_sheet_file or self.args.force_download:
+            if not os.path.exists(self.casava_sheet_file) or self.args.force_download:
+                command = config.param('DEFAULT', 'fetch_casava_sheet_command').format(
+                    output_directory=self.output_dir,
+                    run_id=self.run_id,
+                    filename=self.casava_sheet_file
+                )
+                log.info(command)
+                return_code = subprocess.call(
+                    command,
+                    shell=True
+                )
+                if return_code != 0:
+                    _raise(SanitycheckError("Unable to download the Casava Sheet."))
 
-            # Nanuq readset file download
-            if not self.args.readsets or self.args.force_download:
-                if not os.path.exists(self.nanuq_readset_file) or self.args.force_download:
-                    command = config.param('DEFAULT', 'fetch_nanuq_sheet_command').format(
-                        output_directory=self.output_dir,
-                        run_id=self.run_id,
-                        filename=self.nanuq_readset_file
-                    )
-                    return_code = subprocess.call(
-                        command,
-                        shell=True
-                    )
-                    if return_code != 0:
-                        _raise(SanitycheckError("Unable to download the Nanuq readset file."))
+        # Nanuq readset file download
+        if not self.args.readsets or self.args.force_download:
+            if not os.path.exists(self.nanuq_readset_file) or self.args.force_download:
+                command = config.param('DEFAULT', 'fetch_nanuq_sheet_command').format(
+                    output_directory=self.output_dir,
+                    run_id=self.run_id,
+                    filename=self.nanuq_readset_file
+                )
+                return_code = subprocess.call(
+                    command,
+                    shell=True
+                )
+                if return_code != 0:
+                    _raise(SanitycheckError("Unable to download the Nanuq readset file."))
 
-            return parse_illumina_raw_readset_files(
-                self.output_dir,
-                self.run_dir,
-                "PAIRED_END" if self.is_paired_end else "SINGLE_END",
-                self.nanuq_readset_file,
-                self.casava_sheet_file,
-                self.args.lane_number,
-                config.param('DEFAULT', 'genomes_home', type="dirpath"),
-                self.get_sequencer_minimum_read_length(),
-                self.protocol
-            )
-        
-        else:
-            return parse_illumina_raw_readset_files(
-                self.output_dir,
-                self.run_dir,
-                "PAIRED_END" if self.is_paired_end else "SINGLE_END",
-                self.clarity_event_file,
-                None,
-                self.args.lane_number,
-                config.param('DEFAULT', 'genomes_home', type="dirpath"),
-                self.get_sequencer_minimum_read_length(),
-                self.protocol
-            )
-
+        return parse_illumina_raw_readset_files(
+            self.output_dir,
+            self.run_dir,
+            "PAIRED_END" if self.is_paired_end else "SINGLE_END",
+            self.nanuq_readset_file,
+            self.casava_sheet_file,
+            self.args.lane_number,
+            config.param('DEFAULT', 'genomes_home', type="dirpath"),
+            self.get_sequencer_minimum_read_length(),
+            self.protocol
+        )
 
     def submit_jobs(self):
         super(IlluminaRunProcessing, self).submit_jobs()
@@ -1969,6 +1757,9 @@ def distance(str1, str2):
     """
     return sum(itertools.imap(unicode.__ne__, str1, str2))
 
-
 if __name__ == '__main__':
-    pipeline = IlluminaRunProcessing(protocol=['clarity', 'nanuq'])
+    argv = sys.argv
+    if '--wrap' in argv:
+        utils.utils.container_wrapper_argparse(argv)
+    else:
+        pipeline = IlluminaRunProcessing(protocol=['clarity', 'nanuq'])
