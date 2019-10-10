@@ -393,10 +393,6 @@ def parse_illumina_raw_readset_files(
 
         sample_name = line['SampleName']
 
-        # Always create a new sample
-        sample = Sample(sample_name)
-        samples.append(sample)
-
         # Create readset and add it to sample
         readset = IlluminaRawReadset(line['SampleName']+"_"+line['LibraryLUID'], run_type)
         readset._quality_offset = 33
@@ -483,12 +479,6 @@ def parse_illumina_raw_readset_files(
         else:
             readset._is_scrna = False
 
-#        readsets.append(readset)
-#        sample.add_readset(readset)
-
-#    skipped_db = []
-#    # Searching for a matching reference for the specified species
-#    for readset in readsets:
 
         m = re.search("(?P<build>\w+):(?P<assembly>[\w\.]+)", readset.genomic_database)
         genome_build = None
@@ -505,8 +495,6 @@ def parse_illumina_raw_readset_files(
             folder_name = os.path.join(genome_build.species + "." + genome_build.assembly)
             current_genome_folder = os.path.join(genome_root, folder_name)
 
-#            if readset.is_scrna:
-#                readset._aligner = run_processing_aligner.CellrangerRunProcessingAligner(output_dir, current_genome_folder)
             if readset.is_rna:
                 bioinfo_csv = csv.reader(open(bioinfo_file, 'rb'))
                 for row in bioinfo_csv:
