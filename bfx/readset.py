@@ -26,6 +26,7 @@ import re
 import xml.etree.ElementTree as Xml
 import sys
 import subprocess
+from Bio.Seq import Seq
 
 # MUGQIC Modules
 from .run_processing_aligner import BwaRunProcessingAligner, StarRunProcessingAligner 
@@ -482,21 +483,46 @@ def parse_illumina_raw_readset_files(
         else:
             readset._is_scrna = False
 
+#        readsets.append(readset)
+#        sample.add_readset(readset)
+
+#    skipped_db = []
+#    # Searching for a matching reference for the specified species
+#    for readset in readsets:
+
         m = re.search("(?P<build>\w+):(?P<assembly>[\w\.]+)", readset.genomic_database)
         genome_build = None
         if m:
             genome_build = GenomeBuild(m.group('build'), m.group('assembly'))
+        # Setting default human ref if needed
+        elif "Homo sapiens" in readset.species:
+            genome_build = GenomeBuild("Homo_sapiens", "GRCh38")
+        # Setting default mouse ref if needed
+        elif "Mus musculus" in readset.species:
+            genome_build = GenomeBuild("Mus_musculus", "GRCm38")
 
         if genome_build is not None:
             folder_name = os.path.join(genome_build.species + "." + genome_build.assembly)
             current_genome_folder = os.path.join(genome_root, folder_name)
 
+#            if readset.is_scrna:
+#                readset._aligner = run_processing_aligner.CellrangerRunProcessingAligner(output_dir, current_genome_folder)
             if readset.is_rna:
-                readset._aligner = run_processing_aligner.StarRunProcessingAligner(output_dir, current_genome_folder, nb_cycles)
+                bioinfo_csv = csv.reader(open(bioinfo_file, 'rb'))
+                for row in bioinfo_csv:
+                    if row[0] == "Read1 Cycles" and not readset.is_scrna:
+                        nb_cycles = row[1]
+                        break
+                    elif row[0] == "Read2 Cycles" and readset.is_scrna:
+                        nb_cycles = row[1]
+                        break
+                else:
+                    _raise(SanitycheckError("Could not get proper Read Cycles from " + bioinfo_file))
+                readset._aligner = run_processing_aligner.StarRunProcessingAligner(output_dir, current_genome_folder, int(nb_cycles))
             else:
                 readset._aligner = run_processing_aligner.BwaRunProcessingAligner(output_dir, current_genome_folder)
 
-            aligner_reference_index = readset.aligner.get_reference_index()
+            aligner_reference_index = readset.aligner.get_reference_index(readset)
             annotation_files = readset.aligner.get_annotation_files()
             reference_file = os.path.join(
                 current_genome_folder,
@@ -770,12 +796,15 @@ class MGIRawReadset(MGIReadset):
 
 def parse_mgi_raw_readset_files(
     readset_file,
-    bioinfo_file,
     run_type,
     seqtype,
+    run,
     flowcell,
     lane,
-    nb_cycles,
+    read1cycles,
+    read2cycles,
+    index1cycles,
+    index2cycles,
     output_dir
     ):
 
@@ -784,8 +813,8 @@ def parse_mgi_raw_readset_files(
     GenomeBuild = namedtuple('GenomeBuild', 'species assembly')
 
     # Parsing MGI readset sheet
-    log.info("Parse MGI readset file " + readset_file + " ...")
-    readset_csv = csv.DictReader(open(readset_file, 'rb'), delimiter=',', quotechar='"')
+    log.info("Parsing Clarity event file " + readset_file + " ...")
+    readset_csv = csv.DictReader(open(readset_file, 'rb'), delimiter='\t', quotechar='"')
     for line in readset_csv:
 
         adapter_file = config.param('DEFAULT', 'adapter_type_file', type='filepath', required=False)
@@ -798,66 +827,65 @@ def parse_mgi_raw_readset_files(
             index_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'adapter_settings_format.txt')
         index_csv = csv.reader(open(index_file, 'rb'), delimiter=',', quotechar='"')
 
-        current_pool = line['Pool_ID']
-        current_lane = line['Lane']
-        current_flowcell = line['Flowcell_ID']
+        current_lane = line['Position'].split(":")[0]
+        current_flowcell = line['ContainerName']
 
-        if current_pool == "FAIL" or int(current_lane) != int(lane) or current_flowcell != flowcell:
+        if int(current_lane) != int(lane) or current_flowcell != flowcell:
             continue
 
-        sample_name = line['Sample_Name']
+        sample_name = line['SampleName']
 
         # Always create a new sample
         sample = Sample(sample_name)
         samples.append(sample)
 
         # Create readset and add it to sample
-        readset = MGIRawReadset(line['Sample_Name'] + "_" + line['Library'], run_type)
-        readset._library = line['Library']
+        readset = MGIRawReadset(line['SampleName'] + "_" + line['LibraryLUID'], run_type)
+        readset._library = line['LibraryLUID']
         readset._index_name = line['Index']
+        readset._sample_tag = line['Sample Tag']
+        readset._gender = line['Gender'] if line['Gender'] else 'N/A'
 
-        # Dual Index
-        if re.search("-", readset.index_name) and not re.search("SI-", readset.index_name):
-            key = readset.index_name.split('-')[0]
-            for idx, index in enumerate(readset.index_name.split("-")):
+        if readset.index_name:
+            # Dual Index
+            if re.search("-", readset.index_name) and not re.search("SI-", readset.index_name):
+                key = readset.index_name.split('-')[0]
+                for idx, index in enumerate(readset.index_name.split("-")):
+                    for index_line in index_csv:
+                        if index_line and index_line[0] == index:
+                            if idx > 0 and len(index_line[1]) > 0:
+                                index2 = index_line[1]
+                            else:
+                                index1 = index_line[1]
+                            break
+                    else:
+                         _raise(SanitycheckError("Could not find index " + index + " in index file " + index_file + " Aborting..."))
+                index_from_lims = [{'INDEX1':index1, 'INDEX2':index2}] 
+            # Single-index (pooled or not)
+            else:
+                key = readset.index_name
                 for index_line in index_csv:
-                    if index_line and index_line[0] == index:
-                        if idx > 0 and len(index_line[1]) > 0:
-                            index2 = index_line[1]
-                        else:
-                            index1 = index_line[1]
+                    if index_line and index_line[0] == key:
+                        index_from_lims = [{'INDEX1':index, 'INDEX2':""} for index in index_line[1:] if len(index) > 0]
                         break
                 else:
-                     _raise(SanitycheckError("Could not find index " + index + " in index file " + index_file + " Aborting..."))
-            index_from_lims = [{'INDEX1':index1, 'INDEX2':index2}] 
-        # Single-index (pooled or not)
-        else:
-            key = readset.index_name
-            for index_line in index_csv:
-                if index_line and index_line[0] == key:
-                    index_from_lims = [{'INDEX1':index, 'INDEX2':""} for index in index_line[1:] if len(index) > 0]
-                    break
+                    _raise(SanitycheckError("Could not find index " + key + " in index file file " + index_file + " Aborting..."))
+            readset._index = index_from_lims
+
+            for adapter_line in adapter_csv:
+                if adapter_line :
+                    if adapter_line[0] == key:
+                        readset._library_type = adapter_line[1]  # TruSeq, Nextera, TenX...
+                        readset._index_type = adapter_line[2]    # SINGLEINDEX or DUALINDEX
+                        break
             else:
-                _raise(SanitycheckError("Could not find index " + key + " in index file file " + index_file + " Aborting..."))
-        readset._index = index_from_lims
+                _raise(SanitycheckError("Could not find adapter " + key + " in adapter file " + adapter_file + " Aborting..."))
 
-        for adapter_line in adapter_csv:
-            if adapter_line :
-                if adapter_line[0] == key:
-                    readset._library_type = adapter_line[1]  # TruSeq, Nextera, TenX...
-                    readset._index_type = adapter_line[2]    # SINGLEINDEX or DUALINDEX
-                    break
-        else:
-            _raise(SanitycheckError("Could not find adapter " + key + " in adapter file " + adapter_file + " Aborting..."))
-
-        readset._project = line['Project']
-        readset._project_id = line['Project_ID']
-        readset._protocol = line['Protocol']
-        readset._library_source = line['Library_Source']
-        readset._pool_id = line['Pool_ID']
-        readset._run = line['RUN_ID']
-        readset._sequencer_name = line['Sequencer']
-        readset._sequencer_id = line['SequencerID']
+        readset._project = line['ProjectName']
+        readset._project_id = line['ProjectLUID']
+        readset._protocol = line['LibraryProcess']
+        readset._library_source = line['Library Kit Name']
+        readset._run = run
         readset._flow_cell = flowcell
         readset._lane = current_lane
         readset._sample_number = str(len(readsets) + 1)
@@ -868,33 +896,23 @@ def parse_mgi_raw_readset_files(
 
         readset._is_rna = re.search("RNA|cDNA", readset.library_source) or (readset.library_source == "Library" and re.search("RNA", readset.library_type))
 
-        if line.get('BED Files', None):
-            readset._beds = line['BED Files'].split(";")
-        else:
-            readset._beds = []
+        readset._beds = line['Capture REF_BED'].split(";")[1:] if line['Capture REF_BED'] and line['Capture REF_BED'] != "N/A" else []
 
         fastq_file_pattern = os.path.join(
             output_dir,
             "Unaligned." + readset.lane,
-            "Project_" + readset.project,
+            "Project_" + readset.project_id,
             "Sample_" + readset.name,
             readset.name + '_S' + readset.sample_number + "_L00" + readset.lane + "_R{read_number}_001.fastq.gz"
         )
         readset.fastq1 = fastq_file_pattern.format(read_number=1)
         readset.fastq2 = fastq_file_pattern.format(read_number=2) if run_type == "PAIRED_END" else None
-        readset.index_fastq1 = re.sub("_R1_", "_I1_", readset.fastq1)
-        readset.index_fastq2 = re.sub("_R2_", "_I2_", readset.fastq2)
+        readset.index_fastq1 = re.sub("_R1_", "_I1_", readset.fastq1) if index1cycles else None
+        readset.index_fastq2 = re.sub("_R2_", "_I2_", readset.fastq2) if index2cycles else None
 
-#        readsets.append(readset)
-#        sample.add_readset(readset)
+        readset._indexes = get_index(readset, index1cycles, index2cycles, seqtype) if index1cycles else None
 
-        # Searching for a matching reference for the specified species
-#    for readset in readsets:
-        readset._indexes = get_index(readset, bioinfo_file, seqtype)
-
-        genome_root = config.param('DEFAULT', 'genome_root', type="dirpath")
-
-        if readset.protocol == "10X_scRNA":
+        if any(s in readset.protocol for s in ["10X_scRNA", "Single Cell RNA"]):
             readset._is_scrna = True
         else:
             readset._is_scrna = False
@@ -920,16 +938,10 @@ def parse_mgi_raw_readset_files(
 #            if readset.is_scrna:
 #                readset._aligner = run_processing_aligner.CellrangerRunProcessingAligner(output_dir, current_genome_folder)
             if readset.is_rna:
-                bioinfo_csv = csv.reader(open(bioinfo_file, 'rb'))
-                for row in bioinfo_csv:
-                    if row[0] == "Read1 Cycles" and not readset.is_scrna:
-                        nb_cycles = row[1]
-                        break
-                    elif row[0] == "Read2 Cycles" and readset.is_scrna:
-                        nb_cycles = row[1]
-                        break
+                if readset.is_scrna:
+                    nb_cycles = read2cycles
                 else:
-                    _raise(SanitycheckError("Could not get proper Read Cycles from " + bioinfo_file))
+                    nb_cycles = read1cycles
                 readset._aligner = run_processing_aligner.StarRunProcessingAligner(output_dir, current_genome_folder, int(nb_cycles))
             else:
                 readset._aligner = run_processing_aligner.BwaRunProcessingAligner(output_dir, current_genome_folder)
@@ -956,13 +968,10 @@ def parse_mgi_raw_readset_files(
                     )
 
                 else:
-                    log.warning("Unable to access the aligner reference file: '" + aligner_reference_index +
-                                "' for aligner: '" + readset.aligner.__class__.__name__ + "'")
+                    log.warning("Unable to access the aligner reference file: '" + aligner_reference_index + "' for aligner: '" + readset.aligner.__class__.__name__ + "'")
             else:
                 log.warning("Unable to access the reference file: '" + reference_file + "'")
 
-        elif readset.is_scrna:
-            log.info("Skipping alignment for scRNA assay on " + readset.name)
         elif readset.bam is None and len(readset.genomic_database) > 0:
             log.info("Skipping alignment for the genomic database: '" + readset.genomic_database + "'")
 
@@ -1222,10 +1231,6 @@ def get_index(
             index_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'adapter_settings_format.txt')
 
         index_str_pattern = "grep '%s,' %s | head -n1"
-#        if len(readset.index.split('-')) > 2:    # pool of single-index barcodes
-#            indexes = readset.index.split('-')
-#        else:                                    # either regular single-index or dual-index
-#            indexes = [readset.index.replace('-', '')]
         if re.search("-", readset.index_name) and not re.search("SI-", readset.index_name):
             index1 = readset.index_name.split("-")[0]
             index2 = readset.index_name.split("-")[1]
