@@ -23,8 +23,8 @@ import os
 import re
 
 # MUGQIC Modules
-from core.config import *
-from core.job import * 
+from core.config import config
+from core.job import Job, concat_jobs
 
 def fastqc(
     input1,
@@ -46,9 +46,6 @@ def fastqc(
     output_directory = os.path.dirname(outputs[0])
     if use_tmp:
         tmp_directory = output_directory + ".tmp"
-
-    output_directory = os.path.dirname(output)
-    tmp_directory = output_directory + ".tmp"
 
     (input_basename, file_format) = os.path.splitext(input1)
     file_format = re.sub("^\.", "", file_format)
