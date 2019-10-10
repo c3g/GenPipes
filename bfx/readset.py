@@ -478,7 +478,6 @@ def parse_illumina_raw_readset_files(
             readset._control = line['Control']
             readset._recipe = line['Recipe']
             readset._operator = line['Operator']
-            readset._project = line['SampleProject']
 
     # Searching for a matching reference for the specified species
     for readset in readsets:
