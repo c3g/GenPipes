@@ -216,7 +216,6 @@ def parse_illumina_readset_file(illumina_readset_file):
 
         readset._bam = line.get('BAM', None)
         readset._umi = line.get('UMI', None)
-        readset._bigwig = line.get('BIGWIG', None)
         readset.fastq1 = line.get('FASTQ1', None)
         readset.fastq2 = line.get('FASTQ2', None)
         readset._library = line.get('Library', None)
@@ -368,23 +367,23 @@ def parse_illumina_raw_readset_files(
     # Parsing Clarity event file
     log.info("Parse Clarity Illumina event file " + readset_file + " ...")
 
-    readset_csv = csv.DictReader(open(readset_file, 'rb'), delimiter='\t', quotechar='"')
+    readset_csv = csv.DictReader(open(readset_file, 'r'), delimiter='\t', quotechar='"')
 
     for line in readset_csv:
         protocol_file = config.param('DEFAULT', 'library_protocol_file', type='filepath', required=False)
         if not (protocol_file and os.path.isfile(protocol_file)):
             protocol_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'library_protocol_list.csv')
-        protocol_csv = csv.DictReader(open(protocol_file, 'rb'), delimiter=',', quotechar='"')
+        protocol_csv = csv.DictReader(open(protocol_file, 'r'), delimiter=',', quotechar='"')
 
         adapter_file = config.param('DEFAULT', 'adapter_type_file', type='filepath', required=False)
         if not (adapter_file and os.path.isfile(adapter_file)):
             adapter_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'adapter_types.txt')
-        adapter_csv = csv.reader(open(adapter_file, 'rb'), delimiter=',', quotechar='"')
+        adapter_csv = csv.reader(open(adapter_file, 'r'), delimiter=',', quotechar='"')
 
         index_file = config.param('DEFAULT', 'index_settings_file', type='filepath', required=False)
         if not (index_file and os.path.isfile(index_file)):
             index_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'adapter_settings_format.txt')
-        index_csv = csv.reader(open(index_file, 'rb'), delimiter=',', quotechar='"')
+        index_csv = csv.reader(open(index_file, 'r'), delimiter=',', quotechar='"')
 
         current_lane = line['Position'].split(':')[0]
 
@@ -483,6 +482,12 @@ def parse_illumina_raw_readset_files(
         else:
             readset._is_scrna = False
 
+#        readsets.append(readset)
+#        sample.add_readset(readset)
+
+#    skipped_db = []
+#    # Searching for a matching reference for the specified species
+#    for readset in readsets:
 
         m = re.search("(?P<build>\w+):(?P<assembly>[\w\.]+)", readset.genomic_database)
         genome_build = None
@@ -499,8 +504,10 @@ def parse_illumina_raw_readset_files(
             folder_name = os.path.join(genome_build.species + "." + genome_build.assembly)
             current_genome_folder = os.path.join(genome_root, folder_name)
 
+#            if readset.is_scrna:
+#                readset._aligner = CellrangerRunProcessingAligner(output_dir, current_genome_folder)
             if readset.is_rna:
-                bioinfo_csv = csv.reader(open(bioinfo_file, 'rb'))
+                bioinfo_csv = csv.reader(open(bioinfo_file, 'r'))
                 for row in bioinfo_csv:
                     if row[0] == "Read1 Cycles" and not readset.is_scrna:
                         nb_cycles = row[1]
@@ -510,9 +517,9 @@ def parse_illumina_raw_readset_files(
                         break
                 else:
                     _raise(SanitycheckError("Could not get proper Read Cycles from " + bioinfo_file))
-                readset._aligner = run_processing_aligner.StarRunProcessingAligner(output_dir, current_genome_folder, int(nb_cycles))
+                readset._aligner = StarRunProcessingAligner(output_dir, current_genome_folder, int(nb_cycles))
             else:
-                readset._aligner = run_processing_aligner.BwaRunProcessingAligner(output_dir, current_genome_folder)
+                readset._aligner = BwaRunProcessingAligner(output_dir, current_genome_folder)
 
             aligner_reference_index = readset.aligner.get_reference_index(readset)
             annotation_files = readset.aligner.get_annotation_files()
@@ -646,7 +653,7 @@ def parse_mgi_readset_file(
     samples = []
 
     log.info("Parsing MGI readset file " + mgi_readset_file + " ...")
-    readset_csv = csv.DictReader(open(mgi_readset_file, 'rb'), delimiter='\t')
+    readset_csv = csv.DictReader(open(mgi_readset_file, 'r'), delimiter='\t')
     for line in readset_csv:
         sample_name = line['Sample']
         sample_names = [sample.name for sample in samples]
@@ -806,18 +813,18 @@ def parse_mgi_raw_readset_files(
 
     # Parsing MGI readset sheet
     log.info("Parsing Clarity event file " + readset_file + " ...")
-    readset_csv = csv.DictReader(open(readset_file, 'rb'), delimiter='\t', quotechar='"')
+    readset_csv = csv.DictReader(open(readset_file, 'r'), delimiter='\t', quotechar='"')
     for line in readset_csv:
 
         adapter_file = config.param('DEFAULT', 'adapter_type_file', type='filepath', required=False)
         if not (adapter_file and os.path.isfile(adapter_file)):
             adapter_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'adapter_types.txt')
-        adapter_csv = csv.reader(open(adapter_file, 'rb'), delimiter=',', quotechar='"')
+        adapter_csv = csv.reader(open(adapter_file, 'r'), delimiter=',', quotechar='"')
 
         index_file = config.param('DEFAULT', 'index_settings_file', type='filepath', required=False)
         if not (index_file and os.path.isfile(index_file)):
             index_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'adapter_settings_format.txt')
-        index_csv = csv.reader(open(index_file, 'rb'), delimiter=',', quotechar='"')
+        index_csv = csv.reader(open(index_file, 'r'), delimiter=',', quotechar='"')
 
         current_lane = line['Position'].split(":")[0]
         current_flowcell = line['ContainerName']
@@ -928,15 +935,15 @@ def parse_mgi_raw_readset_files(
             current_genome_folder = os.path.join(genome_root, folder_name)
 
 #            if readset.is_scrna:
-#                readset._aligner = run_processing_aligner.CellrangerRunProcessingAligner(output_dir, current_genome_folder)
+#                readset._aligner = CellrangerRunProcessingAligner(output_dir, current_genome_folder)
             if readset.is_rna:
                 if readset.is_scrna:
                     nb_cycles = read2cycles
                 else:
                     nb_cycles = read1cycles
-                readset._aligner = run_processing_aligner.StarRunProcessingAligner(output_dir, current_genome_folder, int(nb_cycles))
+                readset._aligner = StarRunProcessingAligner(output_dir, current_genome_folder, int(nb_cycles))
             else:
-                readset._aligner = run_processing_aligner.BwaRunProcessingAligner(output_dir, current_genome_folder)
+                readset._aligner = BwaRunProcessingAligner(output_dir, current_genome_folder)
 
             aligner_reference_index = readset.aligner.get_reference_index(readset)
             annotation_files = readset.aligner.get_annotation_files()
@@ -1012,7 +1019,7 @@ def parse_pacbio_readset_file(pacbio_readset_file):
     samples = []
 
     log.info("Parse PacBio readset file " + pacbio_readset_file + " ...")
-    readset_csv = csv.DictReader(open(pacbio_readset_file, 'rb'), delimiter='\t')
+    readset_csv = csv.DictReader(open(pacbio_readset_file, 'r'), delimiter='\t')
     for line in readset_csv:
         sample_name = line['Sample']
         sample_names = [sample.name for sample in samples]
@@ -1226,8 +1233,8 @@ def get_index(
         if re.search("-", readset.index_name) and not re.search("SI-", readset.index_name):
             index1 = readset.index_name.split("-")[0]
             index2 = readset.index_name.split("-")[1]
-            index1_str = subprocess.check_output(index_str_pattern % (index1, index_file), shell=True).strip()
-            index2_str = subprocess.check_output(index_str_pattern % (index2, index_file), shell=True).strip()
+            index1_str = subprocess.check_output(index_str_pattern % (index1, index_file), shell=True, text=True).strip()
+            index2_str = subprocess.check_output(index_str_pattern % (index2, index_file), shell=True, text=True).strip()
             index1_seq = index1_str.split(",")[1:]
             index2_seq = index2_str.split(",")[1:]
             if len(index1_seq) == len(index2_seq):
@@ -1251,7 +1258,7 @@ def get_index(
 
         else:
             index = readset.index_name
-            index_str = subprocess.check_output(index_str_pattern % (index, index_file), shell=True).strip()
+            index_str = subprocess.check_output(index_str_pattern % (index, index_file), shell=True, text=True).strip()
             index_seq = index_str.split(",")[1:]
             char = ord("A")
             for seq in index_seq:
@@ -1293,66 +1300,66 @@ def sub_get_index(
 
         primer_seq_pattern = "grep -A8 '%s' %s | grep '_IDX_' | awk -F':' '{print $2}' | tr -d \"35\'\- \" | awk -F',' '{print $%d}'"
 
-        index1_primer = subprocess.check_output(primer_seq_pattern.replace("_IDX_", "Index 1") % (seqtype, index_file, 1), shell=True).strip()
-        index1_primeroffset = int(subprocess.check_output(primer_seq_pattern.replace("_IDX_", "Index 1") % (seqtype, index_file, 2), shell=True).strip())
-        index2_primer = subprocess.check_output(primer_seq_pattern.replace("_IDX_", "Index 2") % (seqtype, index_file, 1), shell=True).strip()
-        index2_primeroffset = int(subprocess.check_output(primer_seq_pattern.replace("_IDX_", "Index 2") % (seqtype, index_file, 2), shell=True).strip())
+        index1_primer = subprocess.check_output(primer_seq_pattern.replace("_IDX_", "Index 1") % (seqtype, index_file, 1), shell=True, text=True).strip()
+        index1_primeroffset = int(subprocess.check_output(primer_seq_pattern.replace("_IDX_", "Index 1") % (seqtype, index_file, 2), shell=True, text=True).strip())
+        index2_primer = subprocess.check_output(primer_seq_pattern.replace("_IDX_", "Index 2") % (seqtype, index_file, 1), shell=True, text=True).strip()
+        index2_primeroffset = int(subprocess.check_output(primer_seq_pattern.replace("_IDX_", "Index 2") % (seqtype, index_file, 2), shell=True, text=True).strip())
 
         main_seq_pattern = "grep -A4 '^%s:' %s | grep -E \"^3'|^5'\" | head -n 1 | sed \"s/5'//g\"  | sed \"s/3'//g\" | tr -d \" '\-\" | grep %s"
         actual_seq_pattern = "echo %s | awk -F\"%s\" '{print $%d}' | sed \"%s\" | cut -c %s"
 
-        present = subprocess.check_output(main_seq_pattern % (readset.library_type, index_file, "-c " + index1_primer), shell=True).strip()
+        present = subprocess.check_output(main_seq_pattern % (readset.library_type, index_file, "-c " + index1_primer), shell=True, text=True).strip()
         if present == "1" :
 
-            main_seq = subprocess.check_output(main_seq_pattern % (readset.library_type, index_file, index1_primer), shell=True).strip()
+            main_seq = subprocess.check_output(main_seq_pattern % (readset.library_type, index_file, index1_primer), shell=True, text=True).strip()
 
             if seqtype in ["dnbseqg400", "dnbseqt7"]:
                 if len(index1seq) < int(index1cycles):
                     index1_primer_seq = index1_primer[:len(index1seq)-int(index1cycles)]
                 else:
                     index1_primer_seq = index1_primer
-                actual_index1seq = subprocess.check_output(actual_seq_pattern % (main_seq, index1_primer_seq, 2, "s/\[i7\]/"+index1seq+"/g", str(index1_primeroffset+1)+"-"+str(index1_primeroffset+int(index1cycles))+" | tr 'ATGC' 'TACG' | rev"), shell=True).strip()
+                actual_index1seq = subprocess.check_output(actual_seq_pattern % (main_seq, index1_primer_seq, 2, "s/\[i7\]/"+index1seq+"/g", str(index1_primeroffset+1)+"-"+str(index1_primeroffset+int(index1cycles))+" | tr 'ATGC' 'TACG' | rev"), shell=True, text=True).strip()
             else:
-                actual_index1seq = subprocess.check_output(actual_seq_pattern % (main_seq, index1_primer, 2, "s/\[i7\]/"+index1seq+"/g", str(index1_primeroffset+1)+"-"+str(index1_primeroffset+int(index1cycles))), shell=True).strip()
+                actual_index1seq = subprocess.check_output(actual_seq_pattern % (main_seq, index1_primer, 2, "s/\[i7\]/"+index1seq+"/g", str(index1_primeroffset+1)+"-"+str(index1_primeroffset+int(index1cycles))), shell=True, text=True).strip()
 
             if index2cycles:
-                main_seq = subprocess.check_output(main_seq_pattern.replace("| head -n 1 |", "|") % (readset.library_type, index_file, index2_primer), shell=True).strip()
+                main_seq = subprocess.check_output(main_seq_pattern.replace("| head -n 1 |", "|") % (readset.library_type, index_file, index2_primer), shell=True, text=True).strip()
 
                 if seqtype in ["hiseqx", "hiseq4000", "iSeq", "dnbseqg400", "dnbseqt7"]:
-                    actual_index2seq = subprocess.check_output(actual_seq_pattern.replace("| cut -c", "| rev | cut -c") % (main_seq, index2_primer, 1, "s/\[i5c\]/$(echo "+index2seq+" | tr 'ATGC' 'TACG' )/g", str(index2_primeroffset+1)+"-"+str(index2_primeroffset+int(index2cycles))), shell=True).strip()
+                    actual_index2seq = subprocess.check_output(actual_seq_pattern.replace("| cut -c", "| rev | cut -c") % (main_seq, index2_primer, 1, "s/\[i5c\]/$(echo "+index2seq+" | tr 'ATGC' 'TACG' )/g", str(index2_primeroffset+1)+"-"+str(index2_primeroffset+int(index2cycles))), shell=True, text=True).strip()
                 else :
-                    actual_index2seq = subprocess.check_output(actual_seq_pattern % (main_seq, index2_primer, 2, "s/\[i5\]/"+index2seq+"/g", str(index2_primeroffset+1)+"-"+str(index2_primeroffset+int(index2cycles))), shell=True).strip()
+                    actual_index2seq = subprocess.check_output(actual_seq_pattern % (main_seq, index2_primer, 2, "s/\[i5\]/"+index2seq+"/g", str(index2_primeroffset+1)+"-"+str(index2_primeroffset+int(index2cycles))), shell=True, text=True).strip()
 
         else :
-            indexn1_primer = subprocess.check_output(primer_seq_pattern.replace("_IDX_", "Index N1").replace("_DIGIT_", "1"), shell=True).strip()
-            indexn1_primeroffset = subprocess.check_output(primer_seq_pattern.replace("_IDX_", "Index N1").replace("_DIGIT_", "2"), shell=True).strip()
-            indexn2_primer = subprocess.check_output(primer_seq_pattern.replace("_IDX_", "Index N2").replace("_DIGIT_", "1"), shell=True).strip()
-            indexn2_primeroffset = subprocess.check_output(primer_seq_pattern.replace("_IDX_", "Index N2").replace("_DIGIT_", "2"), shell=True).strip()
+            indexn1_primer = subprocess.check_output(primer_seq_pattern.replace("_IDX_", "Index N1").replace("_DIGIT_", "1"), shell=True, text=True).strip()
+            indexn1_primeroffset = subprocess.check_output(primer_seq_pattern.replace("_IDX_", "Index N1").replace("_DIGIT_", "2"), shell=True, text=True).strip()
+            indexn2_primer = subprocess.check_output(primer_seq_pattern.replace("_IDX_", "Index N2").replace("_DIGIT_", "1"), shell=True, text=True).strip()
+            indexn2_primeroffset = subprocess.check_output(primer_seq_pattern.replace("_IDX_", "Index N2").replace("_DIGIT_", "2"), shell=True, text=True).strip()
 
-            main_seq = subprocess.check_output(main_seq_pattern % (readset.library_type, index_file, indexn1_primer), shell=True).strip()
+            main_seq = subprocess.check_output(main_seq_pattern % (readset.library_type, index_file, indexn1_primer), shell=True, text=True).strip()
 
             if seqtype in ["dnbseqg400", "dnbseqt7"]:
                 if len(index1seq) < int(index1cycles):
                     indexn1_primer_seq = indexn1_primer[:len(index1seq)-int(index1cycles)]
                 else:
                     indexn1_primer_seq = indexn1_primer
-                actual_index1seq = subprocess.check_output(actual_seq_pattern % (main_seq, indexn1_primer_seq, 2, "s/\[i7\]/"+index1seq+"/g", str(indexn1_primeroffset+1)+"-"+str(indexn1_primeroffset+int(index1cycles)))+" | tr 'ATGC' 'TACG' | rev", shell=True).strip()
+                actual_index1seq = subprocess.check_output(actual_seq_pattern % (main_seq, indexn1_primer_seq, 2, "s/\[i7\]/"+index1seq+"/g", str(indexn1_primeroffset+1)+"-"+str(indexn1_primeroffset+int(index1cycles)))+" | tr 'ATGC' 'TACG' | rev", shell=True, text=True).strip()
             else:
-                actual_index1seq = subprocess.check_output(actual_seq_pattern % (main_seq, indexn1_primer, 2, "s/\[i7\]/"+index1seq+"/g", str(indexn1_primeroffset+1)+"-"+str(indexn1_primeroffset+int(index1cycles))), shell=True).strip()
+                actual_index1seq = subprocess.check_output(actual_seq_pattern % (main_seq, indexn1_primer, 2, "s/\[i7\]/"+index1seq+"/g", str(indexn1_primeroffset+1)+"-"+str(indexn1_primeroffset+int(index1cycles))), shell=True, text=True).strip()
 
             if index2cycles:
-                main_seq = subprocess.check_output(main_seq_pattern.replace("| head -n 1 |", "|") % (readset.library_type, index_file, indexn2_primer), shell=True).strip()
+                main_seq = subprocess.check_output(main_seq_pattern.replace("| head -n 1 |", "|") % (readset.library_type, index_file, indexn2_primer), shell=True, text=True).strip()
 
                 if seqtype in ["hiseqx", "hiseq4000", "iSeq", "dnbseqg400", "dnbseqt7"]:
-                    actual_index2seq = subprocess.check_output(actual_seq_pattern.replace("| cut -c", "| rev | cut -c") % (main_seq, indexn2_primer, 1, "s/\[i5c\]/$(echo "+index2seq+" | tr 'ATGC' 'TACG' )/g", str(indexn2_primeroffset+1)+"-"+str(indexn2_primeroffset+index2cycles)), shell=True).strip()
+                    actual_index2seq = subprocess.check_output(actual_seq_pattern.replace("| cut -c", "| rev | cut -c") % (main_seq, indexn2_primer, 1, "s/\[i5c\]/$(echo "+index2seq+" | tr 'ATGC' 'TACG' )/g", str(indexn2_primeroffset+1)+"-"+str(indexn2_primeroffset+index2cycles)), shell=True, text=True).strip()
                 else :
-                    actual_index2seq = subprocess.check_output(actual_seq_pattern % (main_seq, indexn2_primer, 2, "s/\[i5\]/"+index2seq+"/g", str(indexn2_primeroffset+1)+"-"+str(indexn2_primeroffset+int(index2cycles))), shell=True).strip()
+                    actual_index2seq = subprocess.check_output(actual_seq_pattern % (main_seq, indexn2_primer, 2, "s/\[i5\]/"+index2seq+"/g", str(indexn2_primeroffset+1)+"-"+str(indexn2_primeroffset+int(index2cycles))), shell=True, text=True).strip()
 
-        main_seq = subprocess.check_output(main_seq_pattern % (readset.library_type, index_file, "\[i7\]"), shell=True).strip()
-        adapteri7 = subprocess.check_output("echo \"%s\" | awk -F\'\\\[i7\\\]\' '{print $1}' | awk -F\'\\\]\' '{print $NF}'" % (main_seq), shell=True).strip()
+        main_seq = subprocess.check_output(main_seq_pattern % (readset.library_type, index_file, "\[i7\]"), shell=True, text=True).strip()
+        adapteri7 = subprocess.check_output("echo \"%s\" | awk -F\'\\\[i7\\\]\' '{print $1}' | awk -F\'\\\]\' '{print $NF}'" % (main_seq), shell=True, text=True).strip()
 
-        main_seq = subprocess.check_output(main_seq_pattern.replace("| head -n 1 |", "|") % (readset.library_type, index_file, "\[i5c\]"), shell=True).strip()
-        adapteri5 = subprocess.check_output("echo \"%s\" | awk -F\'\\\[i5c\\\]\' '{print $2}' | awk -F\'\\\[\' '{print $1}' | rev" % (main_seq), shell=True).strip()
+        main_seq = subprocess.check_output(main_seq_pattern.replace("| head -n 1 |", "|") % (readset.library_type, index_file, "\[i5c\]"), shell=True, text=True).strip()
+        adapteri5 = subprocess.check_output("echo \"%s\" | awk -F\'\\\[i5c\\\]\' '{print $2}' | awk -F\'\\\[\' '{print $1}' | rev" % (main_seq), shell=True, text=True).strip()
 
         return [actual_index1seq, actual_index2seq, adapteri7, adapteri5]
 
