@@ -365,44 +365,28 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         if self.is_paired_end:
             fastq_outputs += [readset.fastq2 for readset in self.readsets]
 
-        output_dir = self.output_dir + os.sep + "Unaligned." + str(self.lane_number)
+        output_dir = os.path.join(self.output_dir, "Unaligned." + str(self.lane_number))
         casava_sheet_prefix = config.param('fastq', 'casava_sample_sheet_prefix')
-        other_options = config.param('fastq', 'other_options')
-        mask = self.mask
+        sample_sheet=os.path.join(self.output_dir, casava_sheet_prefix + str(self.lane_number) + ".csv"),
+
         demultiplexing = False
-
-        command = """\
-bcl2fastq\\
- --runfolder-dir {run_dir}\\
- --output-dir {output_dir}\\
- --tiles {tiles}\\
- --sample-sheet {sample_sheet}\\
- {other_options}\\
- """.format(
-            run_dir=self.run_dir,
-            output_dir=output_dir,
-            tiles="s_" + str(self.lane_number),
-            sample_sheet=self.output_dir + os.sep + casava_sheet_prefix + str(self.lane_number) + ".csv",
-            other_options=other_options
-        )
-
         if re.search("I", mask):
             self.validate_barcodes()
             demultiplexing = True
-            command += " --barcode-mismatches {number_of_mismatches} --use-bases-mask {mask}".format(
-                number_of_mismatches=self.number_of_mismatches,
-                mask=mask
-            )
 
-        job = Job([input],
-                  fastq_outputs,
-                  [('fastq', 'module_bcl_to_fastq'), ('fastq', 'module_gcc')],
-                  command=command,
-                  name="fastq." + self.run_id + "." + str(self.lane_number),
-                  samples=self.samples
-                  )
-
-        jobs.append(job)
+        job = run_processing_tools.bcl2fastq(
+                input,
+                fastq_outputs,
+                output_dir,
+                sample_sheet,
+                demultiplexing,
+                self.run_dir,
+                self.lane_number,
+                self.number_of_mismatches,
+                self.mask
+        )
+        job.name = "fastq." + self.run_id + "." + str(self.lane_number)
+        job.samples = self.samples
 
         # don't depend on notification commands
         self.add_copy_job_inputs(jobs)
@@ -418,10 +402,13 @@ bcl2fastq\\
                 run_id=self.run_id
             )
             # Use the same inputs and output of fastq job to send a notification each time the fastq job run
-            job = Job([input], ["notificationFastqStart." + str(self.lane_number) + ".out"],
-                      name="fastq_notification_start." + self.run_id + "." + str(self.lane_number),
-                      command=notification_command_start,
-                      samples=self.samples)
+            job = Job(
+                [input],
+                ["notificationFastqStart." + str(self.lane_number) + ".out"],
+                command=notification_command_start,
+                name="fastq_notification_start." + self.run_id + "." + str(self.lane_number),
+                samples=self.samples
+            )
             jobs.append(job)
 
         notification_command_end = config.param('fastq_notification_end', 'notification_command', required=False)
@@ -432,10 +419,13 @@ bcl2fastq\\
                 technology=config.param('fastq', 'technology'),
                 run_id=self.run_id
             )
-            job = Job(fastq_outputs, ["notificationFastqEnd." + str(self.lane_number) + ".out"],
-                      name="fastq_notification_end." + self.run_id + "." + str(self.lane_number),
-                      command=notification_command_end,
-                      samples=self.samples)
+            job = Job(
+                fastq_outputs,
+                ["notificationFastqEnd." + str(self.lane_number) + ".out"], 
+                command=notification_command_end,
+                name="fastq_notification_end." + self.run_id + "." + str(self.lane_number),
+                samples=self.samples
+            )
             jobs.append(job)
 
         return jobs
@@ -2016,7 +2006,6 @@ def distance(str1, str2):
     Returns the hamming distance. http://code.activestate.com/recipes/499304-hamming-distance/#c2
     """
     return sum(itertools.imap(unicode.__ne__, str1, str2))
-
 
 if __name__ == '__main__':
     argv = sys.argv
