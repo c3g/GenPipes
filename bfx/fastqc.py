@@ -59,6 +59,9 @@ def fastqc(
     output_directory = os.path.dirname(output)
     tmp_directory = output_directory + ".tmp"
 
+    output_directory = os.path.dirname(output)
+    tmp_directory = output_directory + ".tmp"
+
     (input_basename, file_format) = os.path.splitext(input1)
     file_format = re.sub("^\.", "", file_format)
     if file_format == 'gz':
