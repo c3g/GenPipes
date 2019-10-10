@@ -109,6 +109,7 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         H84WNADXX,1,sample1_MPS0001,,TAAGGCGA-AGAGTAGA,,N,,,nanuq
         H84WNADXX,1,sample47_MPS0047,,GTAGAGGA-CTAAGCCT,,N,,,nanuq
 
+
     The second sample sheet is called the Nanuq run sheet. It's a csv file with the
     following minimal set of mandatory columns (the column order in the file doesn't
     matter)
@@ -399,35 +400,6 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
             return ""
         # Define in generate_clarity_sample_sheet() 
         return self._index_per_readset
-
-    @property
-    def seqtype(self):
-        if not hasattr(self, "_seqtype"):
-            self._seqtype = self.get_seqtype()
-        return self._seqtype
-
-    @property
-    def instrument(self):
-        if not hasattr(self, "_instrument"):
-            self._instrument = self.get_instrument()
-        return self._instrument
-
-    @property
-    def index1cycles(self):
-        if not hasattr(self, "_index1cycles"):
-            [self._index1cycles, self._index2cycles] = self.get_indexcycles()
-        return self._index1cycles
-
-    @property
-    def index2cycles(self):
-        if not hasattr(self, "_index2cycles"):
-            [self._index1cycles, self._index2cycles] = self.get_indexcycles()
-        return self._index2cycles
-
-    @property
-    def indexes_from_lims(self):
-        # Define in generate_clarity_sample_sheet() 
-        return self._indexes_from_lims
 
     @property
     def seqtype(self):
@@ -2158,7 +2130,6 @@ def distance(
     Returns the hamming distance. http://code.activestate.com/recipes/499304-hamming-distance/#c2
     """
     return sum(itertools.imap(unicode.__ne__, str1, str2))
-
 
 if __name__ == '__main__':
 

@@ -40,10 +40,6 @@ def index(
     mask
     ):
 
-    barcode_file = config.param('index', 'barcode_file', type='filepath', required='false')
-    if not (barcode_file and os.path.isfile(barcode_file)):
-        barcode_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), 'resources', 'barcode.mergedup.txt')
-
     return Job(
         [input],
         [output],
@@ -70,7 +66,7 @@ java -Djava.io.tmpdir={tmp_dir} \\
             jar=config.param('index', 'jar'),
             mismatches=mismatches,
             threads=config.param('index', 'threads'),
-            barcode_file=barcode_file,
+            barcode_file=config.param('index', 'barcode_file'),
             basecalls_dir=basecalls_dir,
             lane_number=lane,
             read_structure=mask,
@@ -120,6 +116,7 @@ def bcl2fastq(
     fastq_outputs,
     output_dir,
     sample_sheet,
+    demultiplexing,
     run,
     lane,
     extra_option,
@@ -128,15 +125,14 @@ def bcl2fastq(
     mask=None,
     ):
 
-    if demultiplex:
-        demultiplex_parameters = """\
+    command_suffix = ""
+    if demultiplexing:
+        command_suffix = """\
   --barcode-mismatches {number_of_mismatches} \\
   --use-bases-mask {mask}""".format(
             number_of_mismatches=mismatches,
             mask=mask
         )
-    else:
-        command_suffix = ""
 
     return Job(
         [input],
@@ -151,9 +147,8 @@ bcl2fastq \\
   --tiles {tiles} \\
   --sample-sheet {sample_sheet} \\
   --create-fastq-for-index-reads \\
-  {demultiplex_parameters} \\
-  {other_options} \\
-  {extra_option}""".format(
+  {additional_parameters} \\
+  {other_options}""".format(
             run_dir=run,
             output_dir=output_dir,
             tiles="s_" + str(lane),
