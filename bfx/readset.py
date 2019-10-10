@@ -367,14 +367,14 @@ def parse_illumina_raw_readset_files(
 
         current_lane = line['Position'].split(':')[0]
 
-        if int(current_lane) != lane:
-            continue
+        readset_csv = csv.DictReader(open(readset_file, 'rb'), delimiter=',', quotechar='"')
 
         sample_name = line['SampleName']
 
-        # Always create a new sample
-        sample = Sample(sample_name)
-        samples.append(sample)
+        adapter_file = config.param('DEFAULT', 'adapter_type_file', type='filepath', required='false')
+        if not (adapter_file and os.path.isfile(adapter_file)):
+            adapter_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'adapter_types.csv')
+        adapter_csv = csv.reader(open(adapter_file, 'rb'), delimiter=',', quotechar='"')
 
         # Create readset and add it to sample
         readset = IlluminaRawReadset(line['SampleName']+"_"+line['LibraryLUID'], run_type)
@@ -634,8 +634,94 @@ def parse_mgi_readset_file(
         readset._quality_offset = int(line['QualityOffset']) if line.get('QualityOffset', None) else None
         readset._beds = line['BED'].split(";") if line.get('BED', None) else []
 
-        readsets.append(readset)
-        sample.add_readset(readset)
+            if int(current_lane) != lane:
+                continue
+
+            sample_name = line['SampleName']
+
+            # Always create a new sample
+            sample = Sample(sample_name)
+            samples.append(sample)
+
+            # Create readset and add it to sample
+            readset = IlluminaRawReadset(line['SampleName']+"_"+line['LibraryLUID'], run_type)
+            readset._quality_offset = 33
+            readset._index = line['Index'].split(' ')[0]
+            readset._library = line['LibraryLUID']
+
+            for protocol_line in protocol_csv:
+                if protocol_line['Clarity Step Name'] == line['LibraryProcess']:
+                    readset._library_source = protocol_line['Processing Protocol Name']
+                    readset._library_type = protocol_line['Library Structure']
+
+                    if not readset._library_type:
+                        if re.search("SI-*", readset._index):
+                            key = readset._index
+                        else:
+                            key = readset._index.split("-")[0]
+
+                        for adaper_line in adapter_csv:
+                            if adaper_line[0] == key:
+                                readset._library_type = adaper_line[1]
+                                break
+                        else:
+                            _raise(SanityCheckError("Could not find adapter "+key+" in adapter file " + adapter_file + " Aborting..."))
+                    break
+            else:
+                _raise(SanityCheckError("Could not find protocol "+line['LibraryProcess']+" (from event file "+readset_file+") in protocol library file " + protocol_file + " Aborting..."))
+
+            readset._genomic_database = line['Reference']
+
+            readset._run = Xml.parse(os.path.join(run_dir, "RunInfo.xml")).getroot().find('Run').get('Number')
+            readset._lane = current_lane
+            readset._sample_number = str(len(readsets) + 1)
+            
+            readset._flow_cell = Xml.parse(os.path.join(run_dir, "RunParameters.xml")).getroot().find('RfidsInfo').find('FlowCellSerialBarcode').text
+            readset._description = None
+            readset._control = "N"
+            readset._recipe = None
+            readset._operator = None
+            readset._project = line['ProjectName']
+
+            readset._is_rna = re.search("RNA|cDNA", readset.library_source) or (readset.library_source == "Library" and re.search("RNA", readset.library_type))
+
+            if line['Capture REF_BED']:
+                readset._beds = line['Capture REF_BED'].split(";")
+            else:
+                readset._beds = []
+
+            readsets.append(readset)
+            sample.add_readset(readset)
+
+    elif lims == 'nanuq':
+        # Parsing Nanuq readset sheet
+        log.info("Parse Nanuq Illumina readset file " + readset_file + " ...")
+
+        readset_csv = csv.DictReader(open(readset_file, 'rb'), delimiter=',', quotechar='"')
+
+        for line in readset_csv:
+            current_lane = line['Region']
+
+            if int(current_lane) != lane:
+                continue
+
+            sample_name = line['Name']
+
+            # Always create a new sample
+            sample = Sample(sample_name)
+            samples.append(sample)
+
+            # Create readset and add it to sample
+            readset = IlluminaRawReadset(line['ProcessingSheetId'], run_type)
+            readset._quality_offset = 33
+            readset._library = line['Library Barcode']
+            readset._library_source = line['Library Source']
+            readset._library_type = line['Library Type']
+            readset._genomic_database = line['Genomic Database']
+
+            readset._run = line['Run']
+            readset._lane = current_lane
+            readset._sample_number = str(len(readsets) + 1)
 
 class MGIRawReadset(MGIReadset):
 

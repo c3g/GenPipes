@@ -1311,32 +1311,30 @@ END
             adapter_job = None
 
             if not adapter_file:
-                adapter_file = os.path.join(output_dir, "adapter.tsv")
+                adapter_file = os.path.join(fastqc_directory, "adapter.tsv")
                 adapter_job = adapters.create(
                     sample.readsets[0],
                     adapter_file,
                     fastqc=True
                 )
-                
+
             jobs.append(
                 concat_jobs([
                     bash.mkdir(
-                        output_dir,
+                        fastqc_directory,
                         remove=True
-                        ),
+                    ),
                     adapter_job,
                     fastqc.fastqc(
                         input,
                         None,
-                        output_dir,
                         output,
-                        adapter_file
-                        )
-                    ],
-                    name="fastqc."+sample.name,
-                    samples=[sample]
-                    )
-                )
+                        adapter_file,
+                        use_tmp=False
+                )],
+                name="fastqc." + sample.name,
+                samples=[sample]
+            ))
 
         return jobs
 
