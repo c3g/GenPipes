@@ -24,9 +24,6 @@ import sys
 import os
 import re
 
-# Python Illumina InterOp Library
-from interop import py_interop_run_metrics, py_interop_run, py_interop_summary
-
 # MUGQIC Modules
 from core.config import config
 from core.job import Job
@@ -78,43 +75,6 @@ java -Djava.io.tmpdir={tmp_dir} \\
         )
     )
 
-def get_non_index_reads(summary):
-    """
-    Pick-out the reads which are not index reads
-    :param summary: a Interop read summary object to parse the read numbers from
-    :returns: all reads which are not index reads
-    """
-    non_index_reads = []
-    for read_nbr in range(summary.size()):
-        if not summary.at(read_nbr).read().is_index():
-            non_index_reads.append(read_nbr)
-    return non_index_reads
-
-
-def get_index_reads(summary):
-    """
-    Pick-out the reads which are not index reads
-    :param summary: a Interop read summary object to parse the read numbers from
-    :returns: all reads which are not index reads
-    """
-    index_reads = []
-    for read_nbr in range(summary.size()):
-        if summary.at(read_nbr).read().is_index():
-            index_reads.append(read_nbr)
-    return index_reads
-
-
-def get_all_reads(summary):
-    """
-    Pick-out the reads which are not index reads
-    :param summary: a Interop read summary object to parse the read numbers from
-    :returns: all reads which are not index reads
-    """
-    reads = []
-    for read_nbr in range(summary.size()):
-            reads.append(read_nbr)
-    return reads
-
 def bcl2fastq(
     input,
     fastq_outputs,
@@ -135,8 +95,6 @@ def bcl2fastq(
             number_of_mismatches=mismatches,
             mask=mask
         )
-    else:
-        command_suffix = ""
 
     return Job(
         [input],
@@ -206,8 +164,8 @@ fastq-multx \\
             input_I2=I2_fastq if I2_fastq else "",
             input_R1=R1_fastq,
             input_R2=R2_fastq,
-            output_I1_fake="-o " + os.path.join(output_dir, "%_I1.fastq"),
-            output_I2_fake="-o " + os.path.join(output_dir, "%_I2.fastq") if I2_fastq else "",
+            output_I1_fake="-o n/a",
+            output_I2_fake="-o n/a" if I2_fastq else "",
             output_R1="-o " + os.path.join(output_dir, "%_R1.fastq"),
             output_R2="-o " + os.path.join(output_dir, "%_R2.fastq"),
             stdout_metrics=metrics_file
@@ -480,4 +438,3 @@ client_linux \\
             json_flag=json_flag_file
         )
     )
-
