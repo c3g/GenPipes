@@ -1301,7 +1301,6 @@ END
                 [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
             ])
-            output_dir = os.path.join(self.output_dir, fastqc_directory)
             file = re.sub(".bam", "", os.path.basename(input))
             output = os.path.join(fastqc_directory, file + "_fastqc.zip")
 
