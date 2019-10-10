@@ -560,7 +560,6 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         return jobs
 
     def fastq(self):
-        
         """
         Launch fastq generation from Illumina raw data using BCL2FASTQ conversion
         software.
