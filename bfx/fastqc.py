@@ -22,10 +22,19 @@ import logging
 import os
 
 # MUGQIC Modules
-from core.config import *
-from core.job import * 
+from core.config import config
+from core.job import Job, concat_jobs
 
-def fastqc(input1, input2, output_directory, output, adapter_file):
+from bfx import bash_cmd as bash
+
+
+def fastqc(
+    input1,
+    input2,
+    output,
+    adapter_file=None,
+    use_tmp=False
+    ):
 
     if input2:  # Paired end reads
         inputs = [input1, input2]
