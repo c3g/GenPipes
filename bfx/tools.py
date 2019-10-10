@@ -752,21 +752,19 @@ def sh_sample_tag_summary(
     nreads_sample_tag = config.param('sample_tag', 'nreads_sample_tag', type='int', required=True)
     align_size = config.param('sample_tag', 'align_size', type='int', required=True)
     mismatches = config.param('sample_tag', 'mismatches', type='int', required=True)
-    identity = config.param('sample_tag', 'identity', type='float', required=True)
-    database_file = config.param('sample_tag', 'database', type='filepath', required=True)
+    identity = config.param('sample_tag', 'identity', type='int', required=True)
 
-    output_base_name = os.path.basename(fastq_in) + ".subSampled_" + str(nreads_sample_tag) + ".blast.tsv."+ str(align_size) + "bp_" + str(mismatches) + "MM_" + str(int(100*identity)) + "id.tsv.summary.tsv"
+    output_base_name = os.path.basebname(fastq_in)+".subSampled_"+nreads_sample_tag+".blast.tsv."+align_size+"bp_"+mismatches+"MM_"+identity+"id.tsv.summary.tsv"
     output_file = os.path.join(output_dir, output_base_name)
+
     return Job(
         [fastq_in],
         [output_file],
         [
-            ['sample_tag', 'module_mugqic_tools'],
-            ['sample_tag', 'module_blast'],
-            ['sample_tag', 'module_R']
+            ['sample_tag_summary', 'module_mugqic_tools']
         ],
         command="""\
-bash $TOOLS/estimateSpikeInCount.sh \\
+bash ${TOOLS}/estimateSpikeInCount.sh \\
   {nreads_sample_tag} \\
   {output_dir} \\
   {fastq} \\
@@ -785,35 +783,33 @@ bash $TOOLS/estimateSpikeInCount.sh \\
     )
 
 def sh_sample_tag_stats(
-    fastq_in,
+    input_prefix,
     output_dir,
     sample_tag,
     readset_name
     ):
 
-    input_prefix = os.path.join(output_dir, os.path.basename(fastq_in))
-
     nreads_sample_tag = config.param('sample_tag', 'nreads_sample_tag', type='int', required=True)
     align_size = config.param('sample_tag', 'align_size', type='int', required=True)
     mismatches = config.param('sample_tag', 'mismatches', type='int', required=True)
-    identity = int(100 * config.param('sample_tag', 'identity', type='float', required=True))
+    identity = config.param('sample_tag', 'identity', type='int', required=True)
 
-    input_file = input_prefix + ".subSampled_" + str(nreads_sample_tag) + ".blast.tsv." + str(align_size) + "bp_" + str(mismatches) + "MM_" + str(identity) + "id.tsv.summary.tsv"
+    input_file = input_prefix + ".subSampled_" + nreads_sample_tag + ".blast.tsv." + align_size + "bp_" + mismatches + "MM_" + identity + "id.tsv.summary.tsv"
     output_file = os.path.join(output_dir, readset_name + ".sample_tag_stats.csv")
 
     return Job(
-        [fastq_in],
+        [input_file],
         [output_file],
         [
             ['sample_tag', 'module_mugqic_tools']
-        ],
+        ],,
         command="""\
-bash $TOOLS/createSampleTagStats.sh \\
+bash ${TOOLS}/createSampleTagStats.sh \\
   {input} \\
   {output} \\
   {tag} \\
   {readset}""".format(
-            input=input_file,
+            input=input,
             output=output_file,
             tag=sample_tag,
             readset=readset_name
