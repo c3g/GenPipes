@@ -102,6 +102,10 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         H84WNADXX,1,sample1_MPS0001,,TAAGGCGA-AGAGTAGA,,N,,,nanuq
         H84WNADXX,1,sample47_MPS0047,,GTAGAGGA-CTAAGCCT,,N,,,nanuq
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> updated the run_processing pipeline to handle Clarity runs
     The second sample sheet is called the Nanuq run sheet. It's a csv file with the
     following minimal set of mandatory columns (the column order in the file doesn't
     matter)
@@ -158,7 +162,11 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
                 )
             elif self.protocol == "nanuq":
                 self._readsets = self.load_readsets()
+<<<<<<< HEAD
                 self.generate_illumina_lane_nanuq_sample_sheet()
+=======
+                self.generate_illumina_lane_sample_sheet()
+>>>>>>> updated the run_processing pipeline to handle Clarity runs
         return self._readsets
 
     @property
@@ -213,6 +221,7 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
             return self.args.readsets.name
         elif self.protocol == "clarity":
             _raise(SanitycheckError("Error: missing '-r/--readsets' argument !"))
+<<<<<<< HEAD
 
     @property
     def bcl2fastq_job_input(self):
@@ -220,6 +229,8 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
             return self.clarity_event_file
         else:
             return self.casava_sheet_file
+=======
+>>>>>>> updated the run_processing pipeline to handle Clarity runs
 
     @property
     def number_of_mismatches(self):
@@ -313,6 +324,7 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         and also according the mask parameters received (first/last index bases). The
         Casava sample sheet is generated with this mask. The default number of
         mismatches allowed in the index sequence is 1 and can be overrided with an
+<<<<<<< HEAD
         command line argument. Demultiplexing always occurs even when there is only one
         sample in the lane, because then we merge undertermined reads.
 
@@ -337,6 +349,8 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         and also according the mask parameters received (first/last index bases). The
         Casava sample sheet is generated with this mask. The default number of
         mismatches allowed in the index sequence is 1 and can be overrided with an
+=======
+>>>>>>> updated the run_processing pipeline to handle Clarity runs
         command line argument. No demultiplexing occurs when there is only one sample in
         the lane.
 
@@ -351,44 +365,28 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         if self.is_paired_end:
             fastq_outputs += [readset.fastq2 for readset in self.readsets]
 
-        output_dir = self.output_dir + os.sep + "Unaligned." + str(self.lane_number)
+        output_dir = os.path.join(self.output_dir, "Unaligned." + str(self.lane_number))
         casava_sheet_prefix = config.param('fastq', 'casava_sample_sheet_prefix')
-        other_options = config.param('fastq', 'other_options')
-        mask = self.mask
+        sample_sheet=os.path.join(self.output_dir, casava_sheet_prefix + str(self.lane_number) + ".csv"),
+
         demultiplexing = False
-
-        command = """\
-bcl2fastq\\
- --runfolder-dir {run_dir}\\
- --output-dir {output_dir}\\
- --tiles {tiles}\\
- --sample-sheet {sample_sheet}\\
- {other_options}\\
- """.format(
-            run_dir=self.run_dir,
-            output_dir=output_dir,
-            tiles="s_" + str(self.lane_number),
-            sample_sheet=self.output_dir + os.sep + casava_sheet_prefix + str(self.lane_number) + ".csv",
-            other_options=other_options
-        )
-
         if re.search("I", mask):
             self.validate_barcodes()
             demultiplexing = True
-            command += " --barcode-mismatches {number_of_mismatches} --use-bases-mask {mask}".format(
-                number_of_mismatches=self.number_of_mismatches,
-                mask=mask
-            )
 
-        job = Job([input],
-                  fastq_outputs,
-                  [('fastq', 'module_bcl_to_fastq'), ('fastq', 'module_gcc')],
-                  command=command,
-                  name="fastq." + self.run_id + "." + str(self.lane_number),
-                  samples=self.samples
-                  )
-
-        jobs.append(job)
+        job = run_processing_tools.bcl2fastq(
+                input,
+                fastq_outputs,
+                output_dir,
+                sample_sheet,
+                demultiplexing,
+                self.run_dir,
+                self.lane_number,
+                self.number_of_mismatches,
+                self.mask
+        )
+        job.name = "fastq." + self.run_id + "." + str(self.lane_number)
+        job.samples = self.samples
 
         # don't depend on notification commands
         self.add_copy_job_inputs(jobs)
@@ -404,10 +402,13 @@ bcl2fastq\\
                 run_id=self.run_id
             )
             # Use the same inputs and output of fastq job to send a notification each time the fastq job run
-            job = Job([input], ["notificationFastqStart." + str(self.lane_number) + ".out"],
-                      name="fastq_notification_start." + self.run_id + "." + str(self.lane_number),
-                      command=notification_command_start,
-                      samples=self.samples)
+            job = Job(
+                [input],
+                ["notificationFastqStart." + str(self.lane_number) + ".out"],
+                command=notification_command_start,
+                name="fastq_notification_start." + self.run_id + "." + str(self.lane_number),
+                samples=self.samples
+            )
             jobs.append(job)
 
         notification_command_end = config.param('fastq_notification_end', 'notification_command', required=False)
@@ -418,14 +419,18 @@ bcl2fastq\\
                 technology=config.param('fastq', 'technology'),
                 run_id=self.run_id
             )
-            job = Job(fastq_outputs, ["notificationFastqEnd." + str(self.lane_number) + ".out"],
-                      name="fastq_notification_end." + self.run_id + "." + str(self.lane_number),
-                      command=notification_command_end,
-                      samples=self.samples)
+            job = Job(
+                fastq_outputs,
+                ["notificationFastqEnd." + str(self.lane_number) + ".out"], 
+                command=notification_command_end,
+                name="fastq_notification_end." + self.run_id + "." + str(self.lane_number),
+                samples=self.samples
+            )
             jobs.append(job)
 
         return jobs
 
+<<<<<<< HEAD
     def clarity_fastq(self):
         """
         Launch fastq generation from Illumina raw data using BCL2FASTQ conversion
@@ -573,6 +578,8 @@ bcl2fastq\\
 
         return jobs
 
+=======
+>>>>>>> updated the run_processing pipeline to handle Clarity runs
     def sample_tag(self):
         """
         """
@@ -1254,6 +1261,7 @@ wc -l >> {output}""".format(
                 mask += 'Y' + str(read_info.nb_cycles)
         return mask
 
+<<<<<<< HEAD
     def prepare_bcl2fastq_inputs(self):
         """
         Prepare all the arguments and parameters to properly execute bcl2fastq
@@ -1406,6 +1414,9 @@ wc -l >> {output}""".format(
         ]
 
     def generate_illumina_lane_nanuq_sample_sheet(self):
+=======
+    def generate_illumina_lane_sample_sheet(self):
+>>>>>>> updated the run_processing pipeline to handle Clarity runs
         """
         Create a sample sheet to use with the BCL2FASTQ software.
 
