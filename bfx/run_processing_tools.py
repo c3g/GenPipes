@@ -82,7 +82,7 @@ def bcl2fastq(
     sample_sheet,
     run,
     lane,
-    extra_option
+    extra_option,
     demultiplex=False,
     mismatches=None,
     mask=None,
@@ -95,8 +95,6 @@ def bcl2fastq(
             number_of_mismatches=mismatches,
             mask=mask
         )
-    else:
-        command_suffix = ""
 
     return Job(
         [input],
