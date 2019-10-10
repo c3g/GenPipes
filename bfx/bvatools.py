@@ -177,7 +177,14 @@ java {java_other_options} -Xmx{ram} -jar $BVATOOLS_JAR \\
         )
     )
 
-def readsqc(read1, read2, type, region_name, output_directory):
+def readsqc(
+    read1,
+    read2,
+    type,
+    region_name,
+    output_directory
+    ):
+
     threads = config.param('bvatools_readsqc', 'threads', param_type='int', required=False)
 
     return Job(
@@ -193,16 +200,18 @@ java {java_other_options} -Xmx{ram} -jar $BVATOOLS_JAR \\
   --regionName {region_name} \\
   --type {type} \\
   --output {output_directory} \\
-  --read1 {read1}{read2}""".format(
-        java_other_options=config.param('bvatools_readsqc', 'java_other_options'),
-        ram=config.param('bvatools_readsqc', 'ram'),
-        other_options=config.param('bvatools_readsqc', 'other_options', required=False),
-        region_name=region_name,
-        type=type,
-        output_directory=output_directory,
-        read1=read1,
-        read2=" \\\n  --read2 " + read2 if read2 else "",
-        threads=" \\\n  --threads " + str(threads) if threads > 1 else ""
+  --read1 {read1} \\
+  {read2} \\
+  {threads}""".format(
+            java_other_options=config.param('bvatools_readsqc', 'java_other_options'),
+            ram=config.param('bvatools_readsqc', 'ram'),
+            other_options=config.param('bvatools_readsqc', 'other_options', required=False),
+            region_name=region_name,
+            type=type,
+            output_directory=output_directory,
+            read1=read1,
+            read2="--read2 " + read2 if read2 else "",
+            threads="--threads " + str(threads) if threads > 1 else ""
         )
     )
 

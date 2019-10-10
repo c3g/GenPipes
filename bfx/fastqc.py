@@ -22,10 +22,19 @@ import logging
 import os
 
 # MUGQIC Modules
-from core.config import *
-from core.job import * 
+from core.config import config
+from core.job import Job, concat_jobs
 
-def fastqc(input1, input2, output_directory, output, adapter_file):
+from bfx import bash_cmd as bash
+
+
+def fastqc(
+    input1,
+    input2,
+    output,
+    adapter_file=None,
+    use_tmp=False
+    ):
 
     if input2:  # Paired end reads
         inputs = [input1, input2]
@@ -33,6 +42,9 @@ def fastqc(input1, input2, output_directory, output, adapter_file):
         inputs = [input1]
 
     outputs = [output]
+
+    output_directory = os.path.dirname(output)
+    tmp_directory = output_directory + ".tmp"
 
     (input_basename, file_format) = os.path.splitext(input1)
     file_format = re.sub("^\.", "", file_format)
@@ -49,16 +61,19 @@ def fastqc(input1, input2, output_directory, output, adapter_file):
         ],
         command="""\
 fastqc \\
-  -o {output_directory} \\
-  -t {threads} \\
-  -a {adapter_file} \\
-  -f {file_format} \\
-  {inputs}""".format(
-        threads=config.param('fastqc', 'threads', param_type='posint'),
-        inputs=" \\\n  ".join(inputs),
-        output_directory=output_directory,
-        adapter_file=adapter_file,
-        file_format=file_format,
+  --outdir {output_directory} \\
+  --threads {threads} \\
+  {adapter} \\
+  --format {file_format} \\
+  {tmp} \\
+  {inputs} && \\
+rm -r {tmp}""".format(
+            output_directory=output_directory,
+            threads=config.param('fastqc', 'threads', param_type='posint'),
+            adapter="--adapters " + adapter_file if adapter_file else "",
+            file_format=file_format,
+            tmp="-d " + tmp_directory if tmp_directory else "",
+            inputs="\\\n  ".join(inputs)
         ),
         removable_files=[]
     )

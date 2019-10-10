@@ -303,65 +303,155 @@ class IlluminaRawReadset(IlluminaReadset):
         return self._flow_cell
 
 
-def parse_illumina_raw_readset_files(output_dir, run_type, nanuq_readset_file, casava_sheet_file, lane, genome_root, nb_cycles):
+def parse_illumina_raw_readset_files(
+    output_dir,
+    run_dir,
+    run_type,
+    readset_file,
+    casava_sheet_file,
+    lane,
+    genome_root,
+    nb_cycles,
+    lims
+    ):
+
     readsets = []
     samples = []
     GenomeBuild = namedtuple('GenomeBuild', 'species assembly')
 
-    # Parsing Nanuq readset sheet
-    log.info("Parse Nanuq Illumina readset file " + nanuq_readset_file + " ...")
-    readset_csv = csv.DictReader(open(nanuq_readset_file, 'rb'), delimiter=',', quotechar='"')
-    genome_build = None
-    for line in readset_csv:
-        current_lane = line['Region']
+    if lims == 'clarity':
+        # Parsing Clarity event file
+        log.info("Parse Clarity Illumina event file " + readset_file + " ...")
 
-        if int(current_lane) != lane:
-            continue
+        readset_csv = csv.DictReader(open(readset_file, 'rb'), delimiter=',', quotechar='"')
 
-        sample_name = line['Name']
+        protocol_file = config.param('DEFAULT', 'library_protocol_file', type='filepath', required='false')
+        if not (protocol_file and os.path.isfile(protocol_file)):
+            protocol_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'library_protocol_list.csv')
+        protocol_csv = csv.DictReader(open(protocol_file, 'rb'), delimiter=',', quotechar='"')
 
-        # Always create a new sample
-        sample = Sample(sample_name)
-        samples.append(sample)
+        adapter_file = config.param('DEFAULT', 'adapter_type_file', type='filepath', required='false')
+        if not (adapter_file and os.path.isfile(adapter_file)):
+            adapter_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'adapter_types.csv')
+        adapter_csv = csv.reader(open(adapter_file, 'rb'), delimiter=',', quotechar='"')
 
-        # Create readset and add it to sample
-        readset = IlluminaRawReadset(line['ProcessingSheetId'], run_type)
-        readset._quality_offset = 33
-        readset._library = line['Library Barcode']
-        readset._library_source = line['Library Source']
-        readset._library_type = line['Library Type']
-        readset._genomic_database = line['Genomic Database']
+        for line in readset_csv:
+            current_lane = line['Position'].split(':')[0]
 
-        readset._run = line['Run']
-        readset._lane = current_lane
-        readset._sample_number = str(len(readsets) + 1)
+            if int(current_lane) != lane:
+                continue
 
-        readset._is_rna = re.search("RNA|cDNA", readset.library_source) or (readset.library_source == "Library"
-                                                                            and re.search("RNA", readset.library_type))
+            sample_name = line['SampleName']
 
-        if line['BED Files']:
-            readset._beds = line['BED Files'].split(";")
-        else:
-            readset._beds = []
+            # Always create a new sample
+            sample = Sample(sample_name)
+            samples.append(sample)
 
-        readsets.append(readset)
-        sample.add_readset(readset)
+            # Create readset and add it to sample
+            readset = IlluminaRawReadset(line['SampleName']+"_"+line['LibraryLUID'], run_type)
+            readset._quality_offset = 33
+            readset._index = line['Index'].split(' ')[0]
+            readset._library = line['LibraryLUID']
 
-    # Parsing Casava sheet
-    log.info("Parsing Casava sample sheet " + casava_sheet_file + " ...")
-    casava_csv = csv.DictReader(open(casava_sheet_file, 'rb'), delimiter=',')
-    for line in casava_csv:
-        if int(line['Lane']) != lane:
-            continue
-        processing_sheet_id = line['SampleID']
-        readset = [x for x in readsets if x.name == processing_sheet_id][0]
-        readset._flow_cell = line['FCID']
-        readset._index = line['Index']
-        readset._description = line['Description']
-        readset._control = line['Control']
-        readset._recipe = line['Recipe']
-        readset._operator = line['Operator']
-        readset._project = line['SampleProject']
+            for protocol_line in protocol_csv:
+                if protocol_line['Clarity Step Name'] == line['LibraryProcess']:
+                    readset._library_source = protocol_line['Processing Protocol Name']
+                    readset._library_type = protocol_line['Library Structure']
+
+                    if not readset._library_type:
+                        if re.search("SI-*", readset._index):
+                            key = readset._index
+                        else:
+                            key = readset._index.split("-")[0]
+
+                        for adaper_line in adapter_csv:
+                            if adaper_line[0] == key:
+                                readset._library_type = adaper_line[1]
+                                break
+                        else:
+                            _raise(SanityCheckError("Could not find adapter "+key+" in adapter file " + adapter_file + " Aborting..."))
+                    break
+            else:
+                _raise(SanityCheckError("Could not find protocol "+line['LibraryProcess']+" (from event file "+readset_file+") in protocol library file " + protocol_file + " Aborting..."))
+
+            readset._genomic_database = line['Reference']
+
+            readset._run = Xml.parse(os.path.join(run_dir, "RunInfo.xml")).getroot().find('Run').get('Number')
+            readset._lane = current_lane
+            readset._sample_number = str(len(readsets) + 1)
+            
+            readset._flow_cell = Xml.parse(os.path.join(run_dir, "RunParameters.xml")).getroot().find('RfidsInfo').find('FlowCellSerialBarcode').text
+            readset._description = None
+            readset._control = "N"
+            readset._recipe = None
+            readset._operator = None
+            readset._project = line['ProjectName']
+
+            readset._is_rna = re.search("RNA|cDNA", readset.library_source) or (readset.library_source == "Library" and re.search("RNA", readset.library_type))
+
+            if line['Capture REF_BED']:
+                readset._beds = line['Capture REF_BED'].split(";")
+            else:
+                readset._beds = []
+
+            readsets.append(readset)
+            sample.add_readset(readset)
+
+    elif lims == 'nanuq':
+        # Parsing Nanuq readset sheet
+        log.info("Parse Nanuq Illumina readset file " + readset_file + " ...")
+
+        readset_csv = csv.DictReader(open(readset_file, 'rb'), delimiter=',', quotechar='"')
+
+        for line in readset_csv:
+            current_lane = line['Region']
+
+            if int(current_lane) != lane:
+                continue
+
+            sample_name = line['Name']
+
+            # Always create a new sample
+            sample = Sample(sample_name)
+            samples.append(sample)
+
+            # Create readset and add it to sample
+            readset = IlluminaRawReadset(line['ProcessingSheetId'], run_type)
+            readset._quality_offset = 33
+            readset._library = line['Library Barcode']
+            readset._library_source = line['Library Source']
+            readset._library_type = line['Library Type']
+            readset._genomic_database = line['Genomic Database']
+
+            readset._run = line['Run']
+            readset._lane = current_lane
+            readset._sample_number = str(len(readsets) + 1)
+
+            readset._is_rna = re.search("RNA|cDNA", readset.library_source) or (readset.library_source == "Library" and re.search("RNA", readset.library_type))
+
+            if line['BED Files']:
+                readset._beds = line['BED Files'].split(";")
+            else:
+                readset._beds = []
+
+            readsets.append(readset)
+            sample.add_readset(readset)
+
+        # Parsing Casava sheet
+        log.info("Parsing Casava sample sheet " + casava_sheet_file + " ...")
+        casava_csv = csv.DictReader(open(casava_sheet_file, 'rb'), delimiter=',')
+        for line in casava_csv:
+            if int(line['Lane']) != lane:
+                continue
+            processing_sheet_id = line['SampleID']
+            readset = [x for x in readsets if x.name == processing_sheet_id][0]
+            readset._flow_cell = line['FCID']
+            readset._index = line['Index']
+            readset._description = line['Description']
+            readset._control = line['Control']
+            readset._recipe = line['Recipe']
+            readset._operator = line['Operator']
+            readset._project = line['SampleProject']
 
     # Searching for a matching reference for the specified species
     for readset in readsets:
@@ -372,7 +462,7 @@ def parse_illumina_raw_readset_files(output_dir, run_type, nanuq_readset_file, c
 
         if genome_build is not None:
             folder_name = os.path.join(genome_build.species + "." + genome_build.assembly)
-            current_genome_folder = genome_root + os.sep + folder_name
+            current_genome_folder = os.path.join(genome_root, folder_name)
 
             if readset.is_rna:
                 readset._aligner = StarRunProcessingAligner(output_dir, current_genome_folder, nb_cycles)
@@ -381,20 +471,24 @@ def parse_illumina_raw_readset_files(output_dir, run_type, nanuq_readset_file, c
 
             aligner_reference_index = readset.aligner.get_reference_index()
             annotation_files = readset.aligner.get_annotation_files()
-            reference_file = os.path.join(current_genome_folder,
-                                          "genome",
-                                          folder_name + ".fa")
+            reference_file = os.path.join(
+                current_genome_folder,
+                "genome",
+                folder_name + ".fa"
+            )
             if reference_file and os.path.isfile(reference_file):
                 if aligner_reference_index and (os.path.isfile(aligner_reference_index) or os.path.isdir(aligner_reference_index)):
                     readset._aligner_reference_index = aligner_reference_index
                     readset._annotation_files = annotation_files
                     readset._reference_file = reference_file
-                    readset._bam = os.path.join(output_dir,
-                                                "Aligned." + readset.lane,
-                                                'alignment',
-                                                readset.sample.name,
-                                                'run' + readset.run + "_" + readset.lane,
-                                                readset.sample.name + "." + readset.library + ".sorted")
+                    readset._bam = os.path.join(
+                        output_dir,
+                        "Aligned." + readset.lane,
+                        'alignment',
+                        readset.sample.name,
+                        'run' + readset.run + "_" + readset.lane,
+                        readset.sample.name + "." + readset.library + ".sorted"
+                    )
                 else:
                     log.warning("Unable to access the aligner reference file: '" + aligner_reference_index +
                                 "' for aligner: '" + readset.aligner.__class__.__name__ + "'")
@@ -407,7 +501,6 @@ def parse_illumina_raw_readset_files(output_dir, run_type, nanuq_readset_file, c
     log.info(str(len(readsets)) + " readset" + ("s" if len(readsets) > 1 else "") + " parsed")
     log.info(str(len(samples)) + " sample" + ("s" if len(samples) > 1 else "") + " parsed\n")
     return readsets
-
 
 class PacBioReadset(Readset):
 

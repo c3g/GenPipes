@@ -60,6 +60,7 @@ from bfx import peddy
 from bfx import verify_bam_id
 from bfx import multiqc
 from bfx import deliverables
+from bfx import bash_cmd as bash
 
 from bfx import bash_cmd as bash
 

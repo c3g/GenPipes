@@ -571,6 +571,78 @@ R --no-save '--args \\
 
 ## functions for bash tools ##
 
+def sh_sample_tag_summary(
+    fastq_in,
+    output_dir
+    ):
+
+    nreads_sample_tag = config.param('sample_tag', 'nreads_sample_tag', type='int', required=True)
+    align_size = config.param('sample_tag', 'align_size', type='int', required=True)
+    mismatches = config.param('sample_tag', 'mismatches', type='int', required=True)
+    identity = config.param('sample_tag', 'identity', type='int', required=True)
+
+    output_base_name = os.path.basebname(fastq_in)+".subSampled_"+nreads_sample_tag+".blast.tsv."+align_size+"bp_"+mismatches+"MM_"+identity+"id.tsv.summary.tsv"
+    output_file = os.path.join(output_dir, output_base_name)
+
+    return Job(
+        [fastq_in],
+        [output_file],
+        [
+            ['sample_tag_summary', 'module_mugqic_tools']
+        ],
+        command="""\
+bash ${TOOLS}/estimateSpikeInCount.sh \\
+  {nreads_sample_tag} \\
+  {output_dir} \\
+  {fastq} \\
+  {db} \\
+  {align_size} \\
+  {mismatches} \\
+  {identity}""".format(
+            nreads_sample_tag=nreads_sample_tag,
+            output_dir=output_dir,
+            fastq=fastq_in,
+            db=config.param('sample_tag', 'database', type='filepath', required=True),
+            align_size=align_size,
+            mismatches=mismatches,
+            identity=identity
+        )
+    )
+
+def sh_sample_tag_stats(
+    input_prefix,
+    output_dir,
+    sample_tag,
+    readset_name
+    ):
+
+    nreads_sample_tag = config.param('sample_tag', 'nreads_sample_tag', type='int', required=True)
+    align_size = config.param('sample_tag', 'align_size', type='int', required=True)
+    mismatches = config.param('sample_tag', 'mismatches', type='int', required=True)
+    identity = config.param('sample_tag', 'identity', type='int', required=True)
+
+    input_file = input_prefix + ".subSampled_" + nreads_sample_tag + ".blast.tsv." + align_size + "bp_" + mismatches + "MM_" + identity + "id.tsv.summary.tsv"
+    output_file = os.path.join(output_dir, readset_name + ".sample_tag_stats.csv")
+
+    return Job(
+        [input_file],
+        [output_file],
+        [
+            ['sample_tag', 'module_mugqic_tools']
+        ],,
+        command="""\
+bash ${TOOLS}/createSampleTagStats.sh \\
+  {input} \\
+  {output} \\
+  {tag} \\
+  {readset}""".format(
+            input=input,
+            output=output_file,
+            tag=sample_tag,
+            readset=readset_name
+        )
+    )
+
 def sh_ihec_rna_metrics(input_bam, input_name, input_picard_dup, output_dir):
     output_metrics=os.path.join(output_dir, input_name+".read_stats.txt")
     output_duplicates=os.path.join(output_dir, input_name+".duplicated.txt")
