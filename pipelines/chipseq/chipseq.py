@@ -304,7 +304,7 @@ cp \\
                 # Merge trimming stats per sample with aligned and duplicate stats using ugly awk
                 # Format merge stats into markdown table using ugly awk (knitr may do this better)
                 command="""\
-module load mugqic/sambamba/0.6.8 && \\
+module load {sambamba} && \\
 cp /dev/null {metrics_file} && \\
 for sample in {samples}
 do
@@ -332,6 +332,7 @@ pandoc --to=markdown \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}
 """.format(
+    sambamba=config.param('DEFAULT', 'module_sambamba'),
     samples=" ".join([sample.name for sample in self.samples]),
     trim_metrics_file=trim_metrics_file,
     metrics_file=metrics_file,
