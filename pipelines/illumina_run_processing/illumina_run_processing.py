@@ -109,6 +109,7 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         H84WNADXX,1,sample1_MPS0001,,TAAGGCGA-AGAGTAGA,,N,,,nanuq
         H84WNADXX,1,sample47_MPS0047,,GTAGAGGA-CTAAGCCT,,N,,,nanuq
 
+
     The second sample sheet is called the Nanuq run sheet. It's a csv file with the
     following minimal set of mandatory columns (the column order in the file doesn't
     matter)
@@ -309,13 +310,6 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
             else:
                 _raise(SanitycheckError("Error: missing '-r/--readsets' argument !"))
         return self._readset_file
-
-    @property
-    def bcl2fastq_job_input(self):
-        if self.protocol == "clarity":
-            return self.clarity_event_file
-        else:
-            return self.casava_sheet_file
 
     @property
     def number_of_mismatches(self):
