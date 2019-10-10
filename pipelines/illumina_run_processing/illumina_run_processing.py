@@ -311,13 +311,6 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         return self._readset_file
 
     @property
-    def bcl2fastq_job_input(self):
-        if self.protocol == "clarity":
-            return self.clarity_event_file
-        else:
-            return self.casava_sheet_file
-
-    @property
     def number_of_mismatches(self):
         return self.args.number_of_mismatches if (self.args.number_of_mismatches is not None) else 1
 
