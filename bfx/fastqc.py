@@ -23,8 +23,8 @@ import os
 import re
 
 # MUGQIC Modules
-from core.config import *
-from core.job import * 
+from core.config import config
+from core.job import Job, concat_jobs
 
 def fastqc(
     input1,
