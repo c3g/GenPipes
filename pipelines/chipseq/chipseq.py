@@ -310,13 +310,15 @@ for sample in {samples}
 do
   flagstat_file={alignment_dir}/$sample/$sample.sorted.dup.bam.flagstat
   bam_file={alignment_dir}/$sample/$sample.sorted.dup.bam
-  align_metrics=$(echo -e "$sample\t`grep -P '^\d+ \+ \d+ mapped' $flagstat_file | grep -Po '^\d+'`\t`grep -P '^\d+ \+ \d+ duplicate' $flagstat_file | grep -Po '^\d+'`")
-  align_metrics=$(awk '{{OFS="\t"; print $0, $3 / $2 * 100}}' <<< "$align_metrics")
+  supplementarysecondary_alignment=`bc <<< $(grep "secondary" $flagstat_file | sed -e 's/ + [[:digit:]]* secondary.*//')+$(grep "supplementary" $flagstat_file | sed -e 's/ + [[:digit:]]* supplementary.*//')`
+  mapped_reads=`bc <<< $(grep "mapped (" $flagstat_file | sed -e 's/ + [[:digit:]]* mapped (.*)//')-$supplementarysecondary_alignment`
+  duplicated_reads=`grep "duplicates" $flagstat_file | sed -e 's/ + [[:digit:]]* duplicates$//'`
+  duplicated_rate=$(echo "100*${duplicated_reads}/${mapped_reads}" | bc -l)
   mito_reads=$(sambamba view -c $bam_file chrM)
-  align_metrics=$(echo -e "$align_metrics\t$mito_reads")
-  awk '{{OFS="\t"; print $0, $5 / $2 * 100}}' <<< "$align_metrics" >> {metrics_file}
+  mito_rate=$(echo "100*${mito_reads}/${mapped_reads}" | bc -l)
+  echo -e "$sample\t$mapped_reads\t$duplicated_reads\t$duplicated_rate\t$mito_reads\t$mito_rate" >> {metrics_file}
 done && \\
-sed -i -e "1 i\\Sample\tAligned Filtered Reads\tDuplicate Reads\tDuplicate %\tMitchondrial Reads\tMitochondrial %" {metrics_file} && \\
+sed -i -e "1 i\\Sample\tAligned Filtered Reads #\tDuplicate Reads #\tDuplicate %\tMitchondrial Reads #\tMitochondrial %" {metrics_file} && \\
 mkdir -p {report_dir} && \\
 if [[ -f {trim_metrics_file} ]]
 then
