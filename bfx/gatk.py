@@ -20,6 +20,7 @@
 ################################################################################
 
 # Python Standard Modules
+import re
 
 # MUGQIC Modules
 from core.job import *
