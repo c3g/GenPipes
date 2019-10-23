@@ -124,3 +124,14 @@ def slurm_time_to_datetime(time):
         return datetime.timedelta(hours=int(split_t[0]),
                                   minutes=int(split_t[1]), seconds=int(split_t[2]))
 
+
+def expandvars(path, skip_escaped=False):
+    """Expand environment variables of form $var and ${var}.
+       If parameter 'skip_escaped' is True, all escaped variable references
+       (i.e. preceded by backslashes) are skipped.
+       Unknown variables are set to '' like in a bash shell.
+    """
+    def replace_var(m):
+        return os.environ.get(m.group(2) or m.group(1), '')
+    reVar = (r'(?<!\\)' if skip_escaped else '') + r'\$(\w+|\{([^}]*)\})'
+    return re.sub(reVar, replace_var, path)
