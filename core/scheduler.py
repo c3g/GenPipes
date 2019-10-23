@@ -19,6 +19,8 @@
 # along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
+import logging
+import os
 import tempfile
 import textwrap
 from uuid import uuid4
@@ -29,6 +31,7 @@ from utils import utils
 # Output comment separator line
 separator_line = "#" + "-" * 79
 
+logger = logging.getLogger(__name__)
 
 def create_scheduler(s_type, config_files, container=None):
     if s_type == "pbs":
@@ -345,7 +348,8 @@ exit \$MUGQIC_STATE" | \\
         # Check cluster maximum job submission
         cluster_max_jobs = config.param('DEFAULT', 'cluster_max_jobs', type='posint', required=False)
         if cluster_max_jobs and len(pipeline.jobs) > cluster_max_jobs:
-            log.warning("Number of jobs: " + str(len(pipeline.jobs)) + " > Cluster maximum number of jobs: " + str(cluster_max_jobs) + "!")
+            logging.warning("Number of jobs: " + str(len(pipeline.jobs)) + " > Cluster maximum number of jobs: " + str(
+                cluster_max_jobs) + "!")
 
 
 class BatchScheduler(Scheduler):
