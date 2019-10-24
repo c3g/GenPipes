@@ -899,12 +899,14 @@ pandoc \\
         input_directory = os.path.join("methylkit", "inputs")
         input_files = []
         for contrast in self.contrasts:
-            input_files.extend([[os.path.join(input_directory, sample.name + ".readset_sorted.dedup.map.input")for sample in group] for group in contrast.controls, contrast.treatments])
+            input_files.extend([[os.path.join(input_directory, sample.name + ".readset_sorted.dedup.map.input")for
+                                 sample in group] for group in contrast.controls, contrast.treatments])
 
         input_files = list(itertools.chain.from_iterable(input_files))
 
         output_directory = os.path.join("methylkit", "results")
-        output_files = [os.path.join(output_directory, "Rdata_files", contrast.name, "perbase.testingresults.txt.gz") for contrast in self.contrasts]
+        output_files = [os.path.join(output_directory, "Rdata_files", contrast.name, "perbase.testingresults.txt.gz")
+                        for contrast in self.contrasts]
 
         methylkit_job = tools.methylkit_differential_analysis(
             design_file,
@@ -937,7 +939,6 @@ pandoc \\
             self.filter_snp_cpg,
             self.prepare_methylkit,         # step 15
             self.cram_output,
-            self.methylkit_differential_analysis
         ]
 
 if __name__ == '__main__': 
