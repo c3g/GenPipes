@@ -856,14 +856,11 @@ pandoc --to=markdown \\
         # Run DGE and merge dge results with annotations
         for item in "genes", "isoforms":
             jobs.append(
-                concat_jobs(
-                    self.differential_expression_and_goseq_rsem(output_directory, item, trinotate_annotation_report),
-                    name= "differential_expression_" + item
-            ))
-            #jobs.append(
-            #    self.differential_expression_and_goseq_rsem(output_directory, item, trinotate_annotation_report)
-            #)
-        
+                concat_jobs([
+                    self.differential_expression_and_goseq_rsem(output_directory, item, trinotate_annotation_report)
+                ], name="differential_expression_" + item, samples=self.samples)
+            )
+
         output_files = []
         for job in jobs:
             output_files.extend([output_file for output_file in job.output_files if output_file not in output_files])
