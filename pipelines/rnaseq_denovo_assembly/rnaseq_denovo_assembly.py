@@ -244,15 +244,14 @@ pandoc --to=markdown \\
                 Job(
                     [trinity_fasta],
                     [trinity_fasta + ".zip"],
-                    command="zip -j " + trinity_fasta + ".zip " + trinity_fasta                
+                    command="zip -j " + trinity_fasta + ".zip " + trinity_fasta
                 ),
                 Job(
                     [trinity_fasta],
                     [trinity_stats_prefix + ".csv", trinity_stats_prefix + ".jpg", trinity_stats_prefix + ".pdf"],
                     [['trinity', 'module_R'], ['trinity', 'module_mugqic_R_packages']],
                     command="""\
-Rscript -e 'library(gqSeqUtils);
-dnaFastaStats(filename = \"" + trinity_fasta + "\", type = \"trinity\", output.prefix = \"" + trinity_stats_prefix + "\")'"""
+Rscript -e 'library(gqSeqUtils);dnaFastaStats(filename=\"" + trinity_fasta + "\",type=\"trinity\",output.prefix=\"" + trinity_stats_prefix + "\")'"""
                 )
             ], name="trinity", samples=self.samples)
         )
@@ -401,7 +400,7 @@ pandoc --to=markdown \\
         transdecoder_subdirectory = os.path.join(os.path.basename(trinity_fasta) + ".transdecoder_dir")
 
         jobs = trinotate.transdecoder(trinity_fasta, transdecoder_directory, transdecoder_subdirectory)
-        for job in jobs : job.samples = self.samples 
+        for job in jobs : job.samples = self.samples
 
         return jobs
 
@@ -415,7 +414,7 @@ pandoc --to=markdown \\
         transdecoder_pfam = os.path.join(transdecoder_directory, "Trinity.fasta.transdecoder.pfam")
 
         jobs = trinotate.hmmer(transdecoder_directory, transdecoder_fasta, transdecoder_pfam)
-        for job in jobs : job.samples = self.samples 
+        for job in jobs : job.samples = self.samples
 
         return jobs
 
@@ -428,7 +427,7 @@ pandoc --to=markdown \\
         rnammer_directory = os.path.join("trinotate", "rnammer")
 
         jobs = trinotate.rnammer_transcriptome(trinity_fasta, rnammer_directory)
-        for job in jobs : job.samples = self.samples 
+        for job in jobs : job.samples = self.samples
 
         return jobs
 
@@ -442,7 +441,7 @@ pandoc --to=markdown \\
         db = config.param("blastp_transdecoder_uniprot", "swissprot_db", type='prefixpath')
 
         jobs = trinotate.blastp_transdecoder_uniprot(blast_directory, transdecoder_fasta, db)
-        for job in jobs : job.samples = self.samples 
+        for job in jobs : job.samples = self.samples
 
         return jobs
 
@@ -455,7 +454,7 @@ pandoc --to=markdown \\
         signalp_gff = os.path.join("trinotate", "signalp", "signalp.gff")
 
         jobs = trinotate.signalp(transdecoder_fasta, signalp_gff)
-        for job in jobs : job.samples = self.samples 
+        for job in jobs : job.samples = self.samples
 
         return jobs
 
@@ -468,7 +467,7 @@ pandoc --to=markdown \\
         tmhmm_output = os.path.join("trinotate", "tmhmm", "tmhmm.out")
 
         jobs = trinotate.tmhmm(transdecoder_fasta, tmhmm_output)
-        for job in jobs : job.samples = self.samples 
+        for job in jobs : job.samples = self.samples
 
         return jobs
 
@@ -519,7 +518,7 @@ pandoc --to=markdown \\
 
         trinity_fasta = os.path.join("trinity_out_dir", "Trinity.fasta")
         job = trinity.align_and_estimate_abundance(trinity_fasta, output_directory="trinity_out_dir", prep_reference=True)
-        job.samples = self.samples 
+        job.samples = self.samples
 
         return [job]
 
@@ -659,8 +658,7 @@ pandoc --to=markdown \\
                     [trinity_stats_prefix + ".csv", trinity_stats_prefix + ".jpg", trinity_stats_prefix + ".pdf"],
                     [['filter_annotated_components', 'module_R'], ['filter_annotated_components', 'module_mugqic_R_packages']],
                     command="""\
-Rscript -e 'library(gqSeqUtils);
-  dnaFastaStats(filename = \"{trinity_filtered}\", type = \"trinity\", output.prefix = \"{trinity_stats_prefix}\")'""".format(
+Rscript -e 'library(gqSeqUtils);dnaFastaStats(filename=\"{trinity_filtered}\",type=\"trinity\",output.prefix=\"{trinity_stats_prefix}\")'""".format(
                         trinity_filtered=trinity_filtered,
                         trinity_stats_prefix=trinity_stats_prefix
                     )
