@@ -387,14 +387,14 @@ def parse_illumina_raw_readset_files(
 
         current_lane = line['Position'].split(':')[0]
 
-        readset_csv = csv.DictReader(open(readset_file, 'rb'), delimiter=',', quotechar='"')
+        if int(current_lane) != int(lane):
+            continue
 
         sample_name = line['SampleName']
 
-        adapter_file = config.param('DEFAULT', 'adapter_type_file', type='filepath', required='false')
-        if not (adapter_file and os.path.isfile(adapter_file)):
-            adapter_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'adapter_types.csv')
-        adapter_csv = csv.reader(open(adapter_file, 'rb'), delimiter=',', quotechar='"')
+        # Always create a new sample
+        sample = Sample(sample_name)
+        samples.append(sample)
 
         # Create readset and add it to sample
         readset = IlluminaRawReadset(line['SampleName']+"_"+line['LibraryLUID'], run_type)
