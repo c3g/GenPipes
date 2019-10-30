@@ -95,6 +95,8 @@ def bcl2fastq(
             number_of_mismatches=mismatches,
             mask=mask
         )
+    else:
+        command_suffix = ""
 
     return Job(
         [input],
