@@ -614,7 +614,6 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
                     name="fastq." + self.run_id + "." + lane,
                     samples=self.samples[lane]
                 ))
-
             else:
                 bcl2fastq_job = run_processing_tools.bcl2fastq(
                     input,
