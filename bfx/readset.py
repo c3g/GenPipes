@@ -710,7 +710,7 @@ def parse_mgi_readset_file(
             # Create readset and add it to sample
             readset = IlluminaRawReadset(line['SampleName']+"_"+line['LibraryLUID'], run_type)
             readset._quality_offset = 33
-            readset._index = line['Index'].split(' ')[0]
+            readset._description = line['Index'].split(' ')[0]
             readset._library = line['LibraryLUID']
 
             for protocol_line in protocol_csv:
@@ -719,14 +719,15 @@ def parse_mgi_readset_file(
                     readset._library_type = protocol_line['Library Structure']
 
                     if not readset._library_type:
-                        if re.search("SI-*", readset._index):
-                            key = readset._index
+                        if re.search("SI-*", readset._description):
+                            key = readset._description
                         else:
-                            key = readset._index.split("-")[0]
+                            key = readset._description.split("-")[0]
 
-                        for adaper_line in adapter_csv:
-                            if adaper_line[0] == key:
-                                readset._library_type = adaper_line[1]
+                        for adapter_line in adapter_csv:
+                            if adapter_line[0] == key:
+                                readset._library_type = adapter_line[1]
+                                readset._index_type = adapter_line[2]    # SINGLEINDEX or DUALINDEX
                                 break
                         else:
                             _raise(SanityCheckError("Could not find adapter "+key+" in adapter file " + adapter_file + " Aborting..."))
@@ -734,6 +735,8 @@ def parse_mgi_readset_file(
             else:
                 _raise(SanityCheckError("Could not find protocol "+line['LibraryProcess']+" (from event file "+readset_file+") in protocol library file " + protocol_file + " Aborting..."))
 
+            readset._index = get_index()
+    
             readset._genomic_database = line['Reference']
 
             readset._run = Xml.parse(os.path.join(run_dir, "RunInfo.xml")).getroot().find('Run').get('Number')
@@ -741,7 +744,6 @@ def parse_mgi_readset_file(
             readset._sample_number = str(len(readsets) + 1)
             
             readset._flow_cell = Xml.parse(os.path.join(run_dir, "RunParameters.xml")).getroot().find('RfidsInfo').find('FlowCellSerialBarcode').text
-            readset._description = None
             readset._control = "N"
             readset._recipe = None
             readset._operator = None
