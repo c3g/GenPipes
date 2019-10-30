@@ -337,42 +337,101 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         and also according the mask parameters received (first/last index bases). The
         Casava sample sheet is generated with this mask. The default number of
         mismatches allowed in the index sequence is 1 and can be overrided with an
-        command line argument. No demultiplexing occurs when there is only one sample in
-        the lane.
+        command line argument. Demultiplexing always occurs even when there is only one
+        sample in the lane, because then we merge undertermined reads.
 
         An optional notification command can be launched to notify the start of the
         fastq generation with the calculated mask.
         """
         jobs = []
 
-        input = self.casava_sheet_file
+        input = self.bcl2fastq_job_input
 
-        fastq_outputs = [readset.fastq1 for readset in self.readsets]
-        if self.is_paired_end:
-            fastq_outputs += [readset.fastq2 for readset in self.readsets]
+        [
+            fastq_outputs,
+            output_dir,
+            bcl2fastq_extra_option
+            
+        ] = self.prepare_bcl2fastq_inputs()
 
-        output_dir = os.path.join(self.output_dir, "Unaligned." + str(self.lane_number))
-        casava_sheet_prefix = config.param('fastq', 'casava_sample_sheet_prefix')
-        sample_sheet=os.path.join(self.output_dir, casava_sheet_prefix + str(self.lane_number) + ".csv"),
-
-        demultiplexing = False
-        if re.search("I", mask):
-            self.validate_barcodes()
-            demultiplexing = True
-
-        job = run_processing_tools.bcl2fastq(
-                input,
-                fastq_outputs,
-                output_dir,
-                sample_sheet,
-                demultiplexing,
-                self.run_dir,
-                self.lane_number,
-                self.number_of_mismatches,
-                self.mask
+        bcl2fastq_job = run_processing_tools.bcl2fastq(
+            input,
+            fastq_outputs,
+            output_dir,
+            casava_sample_sheet,
+            self.run_dir,
+            self.lane_number,
+            bcl2fastq_extra_option,
+            demultiplex=True,
+            mismatches=self.number_of_mismatches,
+            mask=mask,
         )
-        job.name = "fastq." + self.run_id + "." + str(self.lane_number)
-        job.samples = self.samples
+
+        
+
+        aggregate_fastq_jobs = None
+        for readset in self.readsets:
+            if re.search("tenX", readset.library_type) or merge_undetermined:
+                aggregate_fastq_jobs = concat_jobs([
+                    aggregate_fastq_jobs,
+                    run_processing_tools.aggregate_fastqs(
+                        readset,
+                        merge_undetermined,
+                        mask
+                ])
+
+        if generate_umi:
+
+            
+
+            output_dir_noindex = os.path.join(self.output_dir, "Unaligned." + str(self.lane_number) + ".noindex")
+            casava_sample_sheet_noindex = os.path.join(self.output_dir, "casavasheet." + str(self.lane_number) + ".noindex.csv")
+
+            
+
+            jobs.append(
+                concat_jobs([
+                    bcl2fastq_job,
+                    run_processing_tools.aggregate_fastqs(
+                        merge_undetermined
+                )]
+            ))
+            
+                    run_processing_tools.bcl2fastq(
+                        input,
+                        fastq_outputs,
+                        output_dir_noindex,
+                        casava_sample_sheet_noindex,
+                        self.run_dir,
+                        self.lane_number,
+                        bcl2fastq_extra_option
+                    ),
+                name="fastq." + self.run_id + "." + str(self.lane_number),
+                samples=self.samples
+            ))
+        
+        else:
+            output_dir = os.path.join(self.output_dir, "Unaligned." + str(self.lane_number))
+            casava_sheet_prefix = config.param('fastq', 'casava_sample_sheet_prefix')
+            casava_sample_sheet = os.path.join(self.output_dir, "casavasheet." + str(self.lane_number) + ".indexed.csv")
+
+            jobs.append(
+                run_processing_tools.bcl2fastq(
+                    input,
+                    fastq_outputs,
+                    output_dir,
+                    sample_sheet,
+                    self.run_dir,
+                    self.lane_number,
+                    bcl2fastq_extra_option,
+                    demultiplex=True,
+                    mismatches=self.number_of_mismatches,
+                    mask=mask,
+            ))
+                name="fastq." + self.run_id + "." + str(self.lane_number),
+        samples=self.samples
+            
+
 
         # don't depend on notification commands
         self.add_copy_job_inputs(jobs)
@@ -1316,79 +1375,85 @@ wc -l >> {output}""".format(
         read_outputs = []
         index_outputs = []
 
-#        bcl2fastq_outputs = [readset.fastq1 for readset in self.readsets]
-#        if self.is_paired_end:
-#        bcl2fastq_outputs += [readset.fastq2 for readset in self.readsets]
-        bcl2fastq_outputs = []
-        for readset in self.readsets:
+        bcl2fastq_outputs = [readset.fastq1 for readset in self.readsets]
+        if self.is_paired_end:
+            bcl2fastq_outputs += [readset.fastq2 for readset in self.readsets]
 
-            # If 10X libraries : 4 indexes per sample
-            if re.search("tenX", readset.library_type):
-                count = 0
-                for fastq in bcl2fastq_outputs:
-                    fastq = os.path.basename(fastq)
-                    count += 1
-                    counta = count
-                    bcl2fastq_outputs.append(re.sub(readset.name, readset.name + "_A_" + counta + "_", fastq))
-                    countb = count + 1
-                    bcl2fastq_outputs.append(re.sub(readset.name, readset.name + "_B_" + countb + "_", fastq))
-                    countc = count + 2
-                    bcl2fastq_outputs.append(re.sub(readset.name, readset.name + "_C_" + countc + "_", fastq))
-                    countd = count + 3
-                    bcl2fastq_outputs.append(re.sub(readset.name, readset.name + "_D_" + countd + "_", fastq))
+        # If 10X libraries : 4 indexes per sample
+        if re.search("tenX", readset.library_type):
+            count = 0
+            new_fastq_outputs = []
+            for fastq in bcl2fastq_outputs:
+                count += 1
+        
+                fastq = os.path.basename(fastq)
+                counta = count
+                new_fastq_outputs.append(re.sub(readset.name, readset.name + "_A_" + counta + "_", fastq))
+                countb = count + 1
+                new_fastq_outputs.append(re.sub(readset.name, readset.name + "_B_" + countb +"_", fastq))
+                countc = count + 2
+                new_fastq_outputs.append(re.sub(readset.name, readset.name + "_C_" + countc + "_", fastq))
+                countd = count + 3
+                new_fastq_outputs.append(re.sub(readset.name, readset.name + "_D_" + countd + "_", fastq))
+
+                # If True, then the 'Undetermined' reads fastq have to be added to the outputs (will be merged with the other fastq of the sample)
+                if merge:
+                    new_fastq_outputs.append(re.sub(readset.name, "Undetermined_S0", fastq))
+
+                # For paired-end sequencing, fastq2 has already been appended to do bcl2fastq_outputs at this point
+                # So it will be treated as well in this loop
+
+                # Add the fastq of the first index
+                if re.search("R1", fastq):
+                    idx_fastq = re.sub("R1", "I1", fastq)
+                    new_fastq_outputs.append(re.sub(readset.name, readset.name + "_A_" + counta + "_", idx_fastq))
+                    new_fastq_outputs.append(re.sub(readset.name, readset.name + "_B_" + countb + "_", idx_fastq))
+                    new_fastq_outputs.append(re.sub(readset.name, readset.name + "_C_" + countc + "_", idx_fastq))
+                    new_fastq_outputs.append(re.sub(readset.name, readset.name + "_D_" + countd + "_", idx_fastq))
                     # If True, then merge the 'Undetermined' reads
                     if merge:
-                        bcl2fastq_outputs.append(re.sub(readset.name, "Undetermined_S0", fastq))
+                        new_fastq_outputs.append(re.sub(readset.name, "Undetermined_S0", idx_fastq))
 
-                    # For paired-end sequencing, fastq2 has already been appended to do bcl2fastq_outputs at this point
-                    # So it will be treated as well in this loop
+                # For dual index demultiplexing, do not forget the fastq of the second index
+                if dualindex_demultiplexing and re.search("R2", fastq):
+                    idx_fastq = re.sub("R2", "I2", fastq)
+                    new_fastq_outputs.append(re.sub(readset.name, readset.name + "_A_" + counta + "_", idx_fastq))
+                    new_fastq_outputs.append(re.sub(readset.name, readset.name + "_B_" + countb + "_", idx_fastq))
+                    new_fastq_outputs.append(re.sub(readset.name, readset.name + "_C_" + countc + "_", idx_fastq))
+                    new_fastq_outputs.append(re.sub(readset.name, readset.name + "_D_" + countd + "_", idx_fastq))
+                    # If True, then merge the 'Undetermined' reads
+                    if merge:
+                        new_fastq_outputs.append(re.sub(readset.name, "Undetermined_S0", idx_fastq))
 
-                    # Add the fastq of first index
-                    if re.search("R1", fastq):
-                        idx_fastq = re.sub("R1", "I1", fastq)
-                        bcl2fastq_outputs.append(re.sub(readset.name, readset.name + "_A_" + counta + "_", idx_fastq))
-                        bcl2fastq_outputs.append(re.sub(readset.name, readset.name + "_B_" + countb + "_", idx_fastq))
-                        bcl2fastq_outputs.append(re.sub(readset.name, readset.name + "_C_" + countc + "_", idx_fastq))
-                        bcl2fastq_outputs.append(re.sub(readset.name, readset.name + "_D_" + countd + "_", idx_fastq))
-                        # If True, then merge the 'Undetermined' reads
-                        if merge:
-                            bcl2fastq_outputs.append(re.sub(readset.name, "Undetermined_S0", idx_fastq))
+                count = countd
 
-                    # For dual index demultiplexing, do not forget the fastq of the second index
-                    if dualindex_demultiplexing and re.search("R2", fastq):
-                        idx_fastq = re.sub("R2", "I2", fastq)
-                        bcl2fastq_outputs.append(re.sub(readset.name, readset.name + "_A_" + counta + "_", idx_fastq))
-                        bcl2fastq_outputs.append(re.sub(readset.name, readset.name + "_B_" + countb + "_", idx_fastq))
-                        bcl2fastq_outputs.append(re.sub(readset.name, readset.name + "_C_" + countc + "_", idx_fastq))
-                        bcl2fastq_outputs.append(re.sub(readset.name, readset.name + "_D_" + countd + "_", idx_fastq))
-                        # If True, then merge the 'Undetermined' reads
-                        if merge:
-                            bcl2fastq_outputs.append(re.sub(readset.name, "Undetermined_S0", idx_fastq))
+            bcl2fastq_outputs = new_fastq_outputs
+        
+        # not a 10X library : 1 index per sample
+        else:
+            # Add the fastq of the first index
+            bcl2fastq_outputs.append(re.sub("R1", "I1", readset.fastq1))
+            # and the 'Undetermined' reads fastq if 'merge' is True
+            if merge:
+                bcl2fastq_outputs.append(re.sub(readset.name, "Undetermined_S0", fastq1))                               # undetermined sequence reads
+                bcl2fastq_outputs.append(re.sub(readset.name, "Undetermined_S0", re.sub("R1", "I1", readset.fastq1)))   # undetermined index reads
 
-                    count = countd
-            
-            # not a 10X library : 1 index per sample
-            else:
-                # If ask to merge the Undeternined reads
+            # For paired-end sequencing, fastq2 has already been appended to do bcl2fastq_outputs,
+            # so search for potential DUAL INDEX
+            if readset.run_type == "PAIRED_END" and dualindex_demultiplexing:
+                bcl2fastq_outputs.append(re.sub("R2", "I2", readset.fastq2))
+                # and treat the 'Undetermined' reads fastq if 'merge' is True
                 if merge:
-                
-                    cat 2 files > 1 file (R1)
-                    cat 2 files > 1 file (I1)
-                    # For paired-end sequencing, do not forget the fastq of the reverse reads
-                    if readset.run_type == "PAIRED_END" :
-                        cat 2 files > 1 file (R2)
-                    # For dual index multiplexing, do not forget the fastq of the second index
-                    if index2 != 0 :
-                        cat 2 files > 1 file (I2)
+                    bcl2fastq_outputs.append(re.sub(readset.name, "Undetermined_S0", fastq2))                               # undetermined sequence reads
+                    bcl2fastq_outputs.append(re.sub(readset.name, "Undetermined_S0", re.sub("R2", "I2", readset.fastq2)))   # undetermined index reads
 
         if generate_umi:
-
             output_dir_noindex = output_dir + ".noindex")
             casava_sample_sheet_noindex = re.sub(".indexed.", ".noindex.", casava_sample_sheet) 
 
         inputs = read_inputs + index_inputs
         fastq_outputs = read_outputs + index_outputs
-        
+
         return [
             fastq_outputs,
             output_dir,
