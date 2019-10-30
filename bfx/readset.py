@@ -393,6 +393,10 @@ def parse_illumina_raw_readset_files(
 
         sample_name = line['SampleName']
 
+        # Always create a new sample
+        sample = Sample(sample_name)
+        samples.append(sample)
+
         # Create readset and add it to sample
         readset = IlluminaRawReadset(line['SampleName']+"_"+line['LibraryLUID'], run_type)
         readset._quality_offset = 33
