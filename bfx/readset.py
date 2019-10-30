@@ -448,7 +448,7 @@ def parse_illumina_raw_readset_files(
 
         readset._genomic_database = line['Reference']
 
-        eadset._run = Xml.parse(os.path.join(run_dir, "RunInfo.xml")).getroot().find('Run').get('Number')
+        readset._run = Xml.parse(os.path.join(run_dir, "RunInfo.xml")).getroot().find('Run').get('Number')
         readset._lane = current_lane
         readset._sample_number = str(len(readsets) + 1)
 
