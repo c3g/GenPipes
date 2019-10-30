@@ -116,7 +116,6 @@ def bcl2fastq(
     fastq_outputs,
     output_dir,
     sample_sheet,
-    demultiplexing,
     run,
     lane,
     extra_option,
@@ -125,14 +124,15 @@ def bcl2fastq(
     mask=None,
     ):
 
-    command_suffix = ""
-    if demultiplexing:
-        command_suffix = """\
+    if demultiplex:
+        demultiplex_parameters = """\
   --barcode-mismatches {number_of_mismatches} \\
   --use-bases-mask {mask}""".format(
             number_of_mismatches=mismatches,
             mask=mask
         )
+    else:
+        command_suffix = ""
 
     return Job(
         [input],
@@ -147,8 +147,9 @@ bcl2fastq \\
   --tiles {tiles} \\
   --sample-sheet {sample_sheet} \\
   --create-fastq-for-index-reads \\
-  {additional_parameters} \\
-  {other_options}""".format(
+  {demultiplex_parameters} \\
+  {other_options} \\
+  {extra_option}""".format(
             run_dir=run,
             output_dir=output_dir,
             tiles="s_" + str(lane),
