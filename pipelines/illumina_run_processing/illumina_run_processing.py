@@ -325,6 +325,7 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         return jobs
 
     def fastq(self):
+        
         """
         Launch fastq generation from Illumina raw data using BCL2FASTQ conversion
         software.
@@ -365,93 +366,50 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         """
         jobs = []
 
-        input = self.nanuq_readset_file
+        input = self.casava_sheet_file
 
-        [
-            fastq_outputs,
-            output_dir,
-            bcl2fastq_extra_option
-            
-        ] = self.prepare_bcl2fastq_inputs()
+        fastq_outputs = [readset.fastq1 for readset in self.readsets]
+        if self.is_paired_end:
+            fastq_outputs += [readset.fastq2 for readset in self.readsets]
 
-        bcl2fastq_job = run_processing_tools.bcl2fastq(
-            input,
-            fastq_outputs,
-            output_dir,
-            casava_sample_sheet,
-            self.run_dir,
-            self.lane_number,
-            bcl2fastq_extra_option,
-            demultiplex=True,
-            mismatches=self.number_of_mismatches,
-            mask=mask,
+        output_dir = self.output_dir + os.sep + "Unaligned." + str(self.lane_number)
+        casava_sheet_prefix = config.param('fastq', 'casava_sample_sheet_prefix')
+        other_options = config.param('fastq', 'other_options')
+        mask = self.mask
+        demultiplexing = False
+
+        command = """\
+bcl2fastq\\
+ --runfolder-dir {run_dir}\\
+ --output-dir {output_dir}\\
+ --tiles {tiles}\\
+ --sample-sheet {sample_sheet}\\
+ {other_options}\\
+ """.format(
+            run_dir=self.run_dir,
+            output_dir=output_dir,
+            tiles="s_" + str(self.lane_number),
+            sample_sheet=self.output_dir + os.sep + casava_sheet_prefix + str(self.lane_number) + ".csv",
+            other_options=other_options
         )
 
-        
+        if re.search("I", mask):
+            self.validate_barcodes()
+            demultiplexing = True
+            command += " --barcode-mismatches {number_of_mismatches} --use-bases-mask {mask}".format(
+                number_of_mismatches=self.number_of_mismatches,
+                mask=mask
+            )
 
-        aggregate_fastq_jobs = None
-        for readset in self.readsets:
-            if re.search("tenX", readset.library_type) or merge_undetermined:
-                aggregate_fastq_jobs = concat_jobs([
-                    aggregate_fastq_jobs,
-                    run_processing_tools.aggregate_fastqs(
-                        readset,
-                        merge_undetermined,
-                        mask
-                ])
+        job = Job([input],
+                  fastq_outputs,
+                  [('fastq', 'module_bcl_to_fastq'), ('fastq', 'module_gcc')],
+                  command=command,
+                  name="fastq." + self.run_id + "." + str(self.lane_number),
+                  samples=self.samples
+                  )
 
-        if generate_umi:
-
-            
-
-            output_dir_noindex = os.path.join(self.output_dir, "Unaligned." + str(self.lane_number) + ".noindex")
-            casava_sample_sheet_noindex = os.path.join(self.output_dir, "casavasheet." + str(self.lane_number) + ".noindex.csv")
-
-            
-
-            jobs.append(
-                concat_jobs([
-                    bcl2fastq_job,
-                    run_processing_tools.aggregate_fastqs(
-                        merge_undetermined
-                )]
-            ))
-            
-                    run_processing_tools.bcl2fastq(
-                        input,
-                        fastq_outputs,
-                        output_dir_noindex,
-                        casava_sample_sheet_noindex,
-                        self.run_dir,
-                        self.lane_number,
-                        bcl2fastq_extra_option
-                    ),
-                name="fastq." + self.run_id + "." + str(self.lane_number),
-                samples=self.samples
-            ))
-        
-        else:
-            output_dir = os.path.join(self.output_dir, "Unaligned." + str(self.lane_number))
-            casava_sheet_prefix = config.param('fastq', 'casava_sample_sheet_prefix')
-            casava_sample_sheet = os.path.join(self.output_dir, "casavasheet." + str(self.lane_number) + ".indexed.csv")
-
-            jobs.append(
-                run_processing_tools.bcl2fastq(
-                    input,
-                    fastq_outputs,
-                    output_dir,
-                    sample_sheet,
-                    self.run_dir,
-                    self.lane_number,
-                    bcl2fastq_extra_option,
-                    demultiplex=True,
-                    mismatches=self.number_of_mismatches,
-                    mask=mask,
-            ))
-                name="fastq." + self.run_id + "." + str(self.lane_number),
-        samples=self.samples
-            
-
+        jobs.append(job)
 
         # don't depend on notification commands
         self.add_copy_job_inputs(jobs)
@@ -467,13 +425,10 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
                 run_id=self.run_id
             )
             # Use the same inputs and output of fastq job to send a notification each time the fastq job run
-            job = Job(
-                [input],
-                ["notificationFastqStart." + str(self.lane_number) + ".out"],
-                command=notification_command_start,
-                name="fastq_notification_start." + self.run_id + "." + str(self.lane_number),
-                samples=self.samples
-            )
+            job = Job([input], ["notificationFastqStart." + str(self.lane_number) + ".out"],
+                      name="fastq_notification_start." + self.run_id + "." + str(self.lane_number),
+                      command=notification_command_start,
+                      samples=self.samples)
             jobs.append(job)
 
         notification_command_end = config.param('fastq_notification_end', 'notification_command', required=False)
@@ -484,13 +439,10 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
                 technology=config.param('fastq', 'technology'),
                 run_id=self.run_id
             )
-            job = Job(
-                fastq_outputs,
-                ["notificationFastqEnd." + str(self.lane_number) + ".out"], 
-                command=notification_command_end,
-                name="fastq_notification_end." + self.run_id + "." + str(self.lane_number),
-                samples=self.samples
-            )
+            job = Job(fastq_outputs, ["notificationFastqEnd." + str(self.lane_number) + ".out"],
+                      name="fastq_notification_end." + self.run_id + "." + str(self.lane_number),
+                      command=notification_command_end,
+                      samples=self.samples)
             jobs.append(job)
 
         return jobs
@@ -1426,10 +1378,10 @@ wc -l >> {output}""".format(
                 indexes = readset.index.split("-")
                 nb_index = len(indexes)
 
-                if has_single_index:
-                    # we have a mixed of index in the sample, there are samples with 1 or 2 index,
-                    # ignore the second index in the samplesheet
-                    nb_index = 1
+                #if has_single_index:
+                    ## we have a mixed of index in the sample, there are samples with 1 or 2 index,
+                    ## ignore the second index in the samplesheet
+                    #nb_index = 1
 
                 for i in range(0, nb_index):
                     nb_ignored_leading_bases = 0
