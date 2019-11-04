@@ -364,6 +364,128 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         """
         jobs = []
 
+        if self.protocol == "nanuq":
+            jobs = self.nanuq_fastq()
+        else:
+            jobs = self.clarity_fastq()
+        
+        return jobs
+
+    def nanuq_fastq(self):
+        """
+        Launch fastq generation from Illumina raw data using BCL2FASTQ conversion
+        software.
+
+        The index base mask is calculated according to the sample and run configuration;
+        and also according the mask parameters received (first/last index bases). The
+        Casava sample sheet is generated with this mask. The default number of
+        mismatches allowed in the index sequence is 1 and can be overrided with an
+        command line argument. No demultiplexing occurs when there is only one sample in
+        the lane.
+
+        An optional notification command can be launched to notify the start of the
+        fastq generation with the calculated mask.
+        """
+        jobs = []
+
+        input = self.casava_sheet_file
+
+        fastq_outputs = [readset.fastq1 for readset in self.readsets]
+        if self.is_paired_end:
+            fastq_outputs += [readset.fastq2 for readset in self.readsets]
+
+        output_dir = self.output_dir + os.sep + "Unaligned." + str(self.lane_number)
+        casava_sheet_prefix = config.param('fastq', 'casava_sample_sheet_prefix')
+        other_options = config.param('fastq', 'other_options')
+        mask = self.mask
+        demultiplexing = False
+
+        command = """\
+bcl2fastq\\
+ --runfolder-dir {run_dir}\\
+ --output-dir {output_dir}\\
+ --tiles {tiles}\\
+ --sample-sheet {sample_sheet}\\
+ {other_options}\\
+ """.format(
+            run_dir=self.run_dir,
+            output_dir=output_dir,
+            tiles="s_" + str(self.lane_number),
+            sample_sheet=self.output_dir + os.sep + casava_sheet_prefix + str(self.lane_number) + ".csv",
+            other_options=other_options
+        )
+
+        if re.search("I", mask):
+            self.validate_barcodes()
+            demultiplexing = True
+            command += " --barcode-mismatches {number_of_mismatches} --use-bases-mask {mask}".format(
+                number_of_mismatches=self.number_of_mismatches,
+                mask=mask
+            )
+
+        job = Job([input],
+                  fastq_outputs,
+                  [('fastq', 'module_bcl_to_fastq'), ('fastq', 'module_gcc')],
+                  command=command,
+                  name="fastq." + self.run_id + "." + str(self.lane_number),
+                  samples=self.samples
+                  )
+
+        jobs.append(job)
+
+        # don't depend on notification commands
+        self.add_copy_job_inputs(jobs)
+
+        notification_command_start = config.param('fastq_notification_start', 'notification_command', required=False)
+        if notification_command_start:
+            notification_command_start = notification_command_start.format(
+                output_dir=self.output_dir,
+                number_of_mismatches=self.number_of_mismatches if demultiplexing else "-",
+                lane_number=self.lane_number,
+                mask=mask if demultiplexing else "-",
+                technology=config.param('fastq', 'technology'),
+                run_id=self.run_id
+            )
+            # Use the same inputs and output of fastq job to send a notification each time the fastq job run
+            job = Job([input], ["notificationFastqStart." + str(self.lane_number) + ".out"],
+                      name="fastq_notification_start." + self.run_id + "." + str(self.lane_number),
+                      command=notification_command_start,
+                      samples=self.samples)
+            jobs.append(job)
+
+        notification_command_end = config.param('fastq_notification_end', 'notification_command', required=False)
+        if notification_command_end:
+            notification_command_end = notification_command_end.format(
+                output_dir=self.output_dir,
+                lane_number=self.lane_number,
+                technology=config.param('fastq', 'technology'),
+                run_id=self.run_id
+            )
+            job = Job(fastq_outputs, ["notificationFastqEnd." + str(self.lane_number) + ".out"],
+                      name="fastq_notification_end." + self.run_id + "." + str(self.lane_number),
+                      command=notification_command_end,
+                      samples=self.samples)
+            jobs.append(job)
+
+        return jobs
+
+    def clarity_fastq(self):
+        """
+        Launch fastq generation from Illumina raw data using BCL2FASTQ conversion
+        software.
+
+        The index base mask is calculated according to the sample and run configuration;
+        and also according the mask parameters received (first/last index bases). The
+        Casava sample sheet is generated with this mask. The default number of
+        mismatches allowed in the index sequence is 1 and can be overrided with an
+        command line argument. Demultiplexing always occurs even when there is only one
+        sample in the lane, because then we merge undertermined reads.
+
+        An optional notification command can be launched to notify the start of the
+        fastq generation with the calculated mask.
+        """
+        
+
         input = self.bcl2fastq_job_input
 
         [
@@ -1335,7 +1457,7 @@ wc -l >> {output}""".format(
         """
         return Xml.parse(os.path.join(self.run_dir, "RunInfo.xml")).getroot().find('Run').find('Instrument').text
 
-    def generate_illumina_lane_sample_sheet(self):
+    def generate_illumina_lane_nanuq_sample_sheet(self):
         """
         Create a sample sheet to use with the BCL2FASTQ software.
 
@@ -1395,10 +1517,10 @@ wc -l >> {output}""".format(
                 indexes = readset.index.split("-")
                 nb_index = len(indexes)
 
-                if has_single_index:
-                    # we have a mixed of index in the sample, there are samples with 1 or 2 index,
-                    # ignore the second index in the samplesheet
-                    nb_index = 1
+                #if has_single_index:
+                    ## we have a mixed of index in the sample, there are samples with 1 or 2 index,
+                    ## ignore the second index in the samplesheet
+                    #nb_index = 1
 
                 for i in range(0, nb_index):
                     nb_ignored_leading_bases = 0
