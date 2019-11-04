@@ -1659,7 +1659,7 @@ pandoc \\
         job = metrics.vcf_stats(variants_file_prefix +
                                 ".vcf.gz", variants_file_prefix +
                                 ".snpeff.vcf.part_changeRate.tsv",
-                                variants_file_prefix + ".snpeff.vcf.statsFile.txt")
+                                variants_file_prefix + ".snpeff.vcf.statsFile.csv")
         job.name = job_name
         #job.samples = self.samples
         return [job]
