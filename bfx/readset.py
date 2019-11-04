@@ -657,12 +657,24 @@ def parse_mgi_readset_file(
                     if not readset._library_type:
                         if re.search("SI-*", readset._description):
                             key = readset._description
+                            for index_line in index_csv:
+                                if index_line[0] == key:
+                                    readset._index = "-".join(index_line[1:])
+                                    break
+                            else:
+                                _raise(SanityCheckError("Could not find index " + key + " in index file file " + index_file + " Aborting..."))
                         else:
                             key = readset._description.split("-")[0]
-
+                            for idx, index in enumerate(readset._description.split("-")):
+                                for index_line in index_csv:
+                                    if index_line[0] == index:
+                                        readset._index = index_line[1] if str(idx) == 0 else "-"+index_line[1]
+                                        break
+                                else:
+                                    _raise(SanityCheckError("Could not find index " + index + " in index file " + index_file + " Aborting..."))
                         for adapter_line in adapter_csv:
                             if adapter_line[0] == key:
-                                readset._library_type = adapter_line[1]
+                                readset._library_type = adapter_line[1]  # TruSeq, Nextera, TenX...
                                 readset._index_type = adapter_line[2]    # SINGLEINDEX or DUALINDEX
                                 break
                         else:
@@ -672,13 +684,13 @@ def parse_mgi_readset_file(
                 _raise(SanityCheckError("Could not find protocol "+line['LibraryProcess']+" (from event file "+readset_file+") in protocol library file " + protocol_file + " Aborting..."))
 
             readset._index = get_index()
-    
+
             readset._genomic_database = line['Reference']
 
             readset._run = Xml.parse(os.path.join(run_dir, "RunInfo.xml")).getroot().find('Run').get('Number')
             readset._lane = current_lane
             readset._sample_number = str(len(readsets) + 1)
-            
+
             readset._flow_cell = Xml.parse(os.path.join(run_dir, "RunParameters.xml")).getroot().find('RfidsInfo').find('FlowCellSerialBarcode').text
             readset._control = "N"
             readset._recipe = None
