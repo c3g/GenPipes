@@ -413,35 +413,6 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         return self._instrument
 
     @property
-    def index1cycles(self):
-        if not hasattr(self, "_index1cycles"):
-            [self._index1cycles, self._index2cycles] = self.get_indexcycles()
-        return self._index1cycles
-
-    @property
-    def index2cycles(self):
-        if not hasattr(self, "_index2cycles"):
-            [self._index1cycles, self._index2cycles] = self.get_indexcycles()
-        return self._index2cycles
-
-    @property
-    def indexes_from_lims(self):
-        # Define in generate_clarity_sample_sheet() 
-        return self._indexes_from_lims
-
-    @property
-    def seqtype(self):
-        if not hasattr(self, "_seqtype"):
-            self._seqtype = self.get_seqtype()
-        return self._seqtype
-
-    @property
-    def instrument(self):
-        if not hasattr(self, "_instrument"):
-            self._instrument = self.get_instrument()
-        return self._instrument
-
-    @property
     def read_infos(self):
         if not hasattr(self, "_read_infos"):
             self._read_infos = self.parse_run_info_file()
@@ -643,6 +614,7 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
                     name="fastq." + self.run_id + "." + lane,
                     samples=self.samples[lane]
                 ))
+
             else:
                 bcl2fastq_job = run_processing_tools.bcl2fastq(
                     input,
