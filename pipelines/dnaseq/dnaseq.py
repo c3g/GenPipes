@@ -1646,7 +1646,7 @@ pandoc \\
         return job
 
 
-    def metrics_vcf_stats(self, variants_file_prefix="variants/allSamples.hc.vqsr.vt.mil.snpId.snpeff.dbnsfp" ,
+    def metrics_vcf_stats(self, variants_file_prefix="variants/allSamples.hc.vqsr.vt.mil.snpId.snpeff" ,
                           job_name="metrics_change_rate"):
         """
         Metrics SNV. Multiple metrics associated to annotations and effect prediction are generated at this step:
@@ -1657,9 +1657,9 @@ pandoc \\
 
 
         job = metrics.vcf_stats(variants_file_prefix +
-                                ".vcf.gz", variants_file_prefix +
-                                ".snpeff.vcf.part_changeRate.tsv",
-                                variants_file_prefix + ".snpeff.vcf.statsFile.csv")
+                                ".dbnsfp.vcf.gz", variants_file_prefix +
+                                ".dbnsfp.vcf.part_changeRate.tsv",
+                                variants_file_prefix + ".vcf.stats.csv")
         job.name = job_name
         #job.samples = self.samples
         return [job]
@@ -1674,7 +1674,7 @@ pandoc \\
         summary of allele frequencies, codon changes, amino acid changes, changes per chromosome, change rates.
         """
 
-        job = self.metrics_vcf_stats("variants/allSamples.hc.vqsr.vt.mil.snpId.snpeff.dbnsfp",
+        job = self.metrics_vcf_stats("variants/allSamples.hc.vqsr.vt.mil.snpId.snpeff",
                                      "haplotype_caller_metrics_change_rate")
         #job.samples = self.samples
 
@@ -1690,7 +1690,7 @@ pandoc \\
         summary of allele frequencies, codon changes, amino acid changes, changes per chromosome, change rates.
         """
 
-        job = self.metrics_vcf_stats("variants/allSamples.merged.flt.vt.mil.snpId.snpeff.dbnsfp",
+        job = self.metrics_vcf_stats("variants/allSamples.merged.flt.vt.mil.snpId.snpeff",
                                      "mpileup_metrics_change_rate")
         #job.samples = self.samples
 
