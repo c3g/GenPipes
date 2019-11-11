@@ -384,7 +384,7 @@ echo "Sample\tBamFile\tNote
         jobs.append(
             Job(
                 [metrics_file],
-                [report_file],
+                [report_file, report_metrics_file],
                 [['rnaseqc', 'module_python'], ['rnaseqc', 'module_pandoc']],
                 # Ugly awk to merge sample metrics with trim metrics if they exist; knitr may do this better
                 command="""\
