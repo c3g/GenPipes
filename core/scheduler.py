@@ -131,7 +131,12 @@ class Scheduler(object):
 
                 return ("singularity run {b_opt} {name}   "
                         .format(b_opt=b_opt, name=self.container.name))
+
+            elif self.container.type == 'wrapper':
+
+                return ("{name} ".format(name=self.container.name))
         else:
+
             return ""
 
 

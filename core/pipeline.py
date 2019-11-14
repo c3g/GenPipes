@@ -501,7 +501,7 @@ def parse_range(astr):
 
 class ValidateContainer(argparse.Action):
 
-    VALID_TYPE = ('docker', 'singularity')
+    VALID_TYPE = ('docker', 'singularity', 'wrapper')
 
     def __call__(self, parser, args, values, option_string=None):
         c_type, container = values
