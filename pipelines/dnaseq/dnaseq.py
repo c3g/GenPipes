@@ -1626,6 +1626,7 @@ END
         input: sample SAM/BAM or VCF
         output: fingerprint file
         """
+        
         jobs = []
 
         metrics_directory = os.path.join("metrics", "dna")
@@ -1774,7 +1775,7 @@ END
                     os.path.join(output, sample.name)
                 )
             ], name="verify_bam_id." + sample.name))
-
+            
         return jobs
 
     def gatk_haplotype_caller(self):
