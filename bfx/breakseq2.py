@@ -19,29 +19,33 @@
 # along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-# Python Standard Modules
-import os
-
-# MUGQIC Modules
 from core.config import *
 from core.job import *
 
-def verify(input_bam, output_prefix):
-    return Job(
-        [input_bam],
-        [output_prefix + ".selfSM"],
+def run(input, sample_name, output_dir):
+	output = os.path.join(output_dir, "breakseq.vcf.gz")
+	return Job(
+        [input],
+        [output],
         [
-            ['verify_bam_id', 'module_verify_bam_id']
+            ['run_breakseq2', 'module_python'],
+	        ['run_breakseq2', 'module_samtools'],
+	        ['run_breakseq2', 'module_bwa']
         ],
         command="""\
-verifyBamID \\
-  --vcf {input_vcf} \\
-  --bam {input_bam} \\
-  --out {output_prefix} \\
-  {other_options}""".format(
-            input_vcf=config.param('verify_bam_id', 'vcf', type='filepath'),
-            input_bam=input_bam,
-            output_prefix=output_prefix,
-            other_options=config.param('verify_bam_id', 'options')
+run_breakseq2.py {options} --bwa bwa --samtools samtools \\
+    --nthreads {threads} \\
+    --reference {genome}  \\
+    --bplib_gff {gff} \\
+    --bams {input} \\
+    --sample {sample} \\
+    --work {output}""".format(
+            options=config.param('run_breakseq2','options'),
+            threads=config.param('run_breakseq2','threads'),
+            genome=config.param('run_breakseq2','genome_fasta',type='filepath'),
+	        gff=config.param('run_breakseq2','gff',type='filepath'),
+	        output=output_dir,
+	        input=input,
+	        sample=sample_name,
         )
     )

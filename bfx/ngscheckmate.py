@@ -26,22 +26,25 @@ import os
 from core.config import *
 from core.job import *
 
-def verify(input_bam, output_prefix):
-    return Job(
-        [input_bam],
-        [output_prefix + ".selfSM"],
+def run(input, output_dir):
+	output = os.path.join(output_dir, "output_corr_matrix.txt")
+	return Job(
+        [input],
+        [output],
         [
-            ['verify_bam_id', 'module_verify_bam_id']
+            ['run_checkmate', 'module_python'],
+	        ['run_checkmate', 'module_checkmate'],
+	        ['run_checkmate', 'module_samtools'],
+	        ['run_checkmate', 'module_bcftools']
         ],
         command="""\
-verifyBamID \\
-  --vcf {input_vcf} \\
-  --bam {input_bam} \\
-  --out {output_prefix} \\
-  {other_options}""".format(
-            input_vcf=config.param('verify_bam_id', 'vcf', type='filepath'),
-            input_bam=input_bam,
-            output_prefix=output_prefix,
-            other_options=config.param('verify_bam_id', 'options')
+python $CHECKMATE_PATH/ncm.py {options} \\
+    -bed {bed} \\
+    -l {input} \\
+    -O {output}""".format(
+            options=config.param('run_checkmate', 'options'),
+	        bed=config.param('run_checkmate','bed', type='filepath'),
+	        input=input,
+	        output=output_dir,
         )
     )

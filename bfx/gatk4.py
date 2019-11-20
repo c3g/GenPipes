@@ -1500,7 +1500,6 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
 			)
 		)
 
-
 def cluster_crosscheck_metrics(inputs, output):
     if not isinstance(inputs, list):
         inputs = [inputs]
@@ -1517,7 +1516,7 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   ClusterCrosscheckMetrics {options} \\
   --VALIDATION_STRINGENCY SILENT \\
   --TMP_DIR {tmp_dir} \\
-  --INPUT {input} \\
+  --INPUT {inputs} \\
   --LOD_THRESHOLD {lod_threshold} \\
   --OUTPUT={output} """.format(
 				tmp_dir=config.param('gatk_cluster_crosscheck_metrics', 'tmp_dir'),
@@ -1525,7 +1524,7 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
 				java_other_options=config.param('gatk_cluster_crosscheck_metrics', 'java_other_options'),
 				lod_threshold=config.param('gatk_cluster_crosscheck_metrics', 'lod_threshold'),
 				ram=config.param('gatk_cluster_crosscheck_metrics', 'ram'),
-				input=input,
+				inputs=input,
 				output=output,
 			)
 		)

@@ -26,22 +26,22 @@ import os
 from core.config import *
 from core.job import *
 
-def verify(input_bam, output_prefix):
-    return Job(
-        [input_bam],
-        [output_prefix + ".selfSM"],
+def run(input, ped, output_dir):
+	output = os.path.join(output_dir, ".ped_check.csv")
+	return Job(
+        [input, ped],
+        [output],
         [
-            ['verify_bam_id', 'module_verify_bam_id']
+            ['run_peddy', 'module_python'],
         ],
         command="""\
-verifyBamID \\
-  --vcf {input_vcf} \\
-  --bam {input_bam} \\
-  --out {output_prefix} \\
-  {other_options}""".format(
-            input_vcf=config.param('verify_bam_id', 'vcf', type='filepath'),
-            input_bam=input_bam,
-            output_prefix=output_prefix,
-            other_options=config.param('verify_bam_id', 'options')
+python -m peddy --plot {options} \\
+    --procs {threads} \\
+    --prefix {output} {input} {ped}""".format(
+            options=config.param('run_peddy', 'options'),
+	        threads=config.param('run_peddy','threads'),
+	        input=input,
+	        ped=ped,
+	        output=output_dir,
         )
     )

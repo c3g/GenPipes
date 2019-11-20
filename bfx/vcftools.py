@@ -47,10 +47,10 @@ vcf-annotate \\
     )
 
 def missing_indv(input, output):
-    out = output + "imiss"
+    out = output + ".imiss"
     return Job(
         [input],
-        [output],
+        [out],
         [
             ['vcftools_missing_indv', 'module_vcftools'],
             ['vcftools_missing_indv', 'module_htslib']
@@ -67,7 +67,7 @@ vcftools {options} --missing-indv \\
     )
 
 def depth(input, output):
-    out = output + "idepth"
+    out = output + ".idepth"
     return Job(
         [input],
         [out],
