@@ -1885,11 +1885,13 @@ END
         job = gatk4.crosscheck_fingerprint(inputs, output)
         job.name = "gatk_crosscheck_fingerprint.readset"
     
+        job = vcftools.depth(input_prefix + ".hc.vcf.gz", input_prefix)
+        job.name = "vcftools_depth." + "allSamples"
         jobs.append(job)
-    
+            
         return jobs
 
-    def gatk_sample_fingerprint(self):
+    def metrics_gatk_sample_fingerprint(self):
         """
 		CheckFingerprint (Picard)
         Checks the sample identity of the sequence/genotype data in the provided file (SAM/BAM or VCF) against a set of known genotypes in the supplied genotype file (in VCF format).
@@ -1901,14 +1903,17 @@ END
         inputs = []
         
         for sample in self.samples:
+        #for readset in self.readsets:
+            #bam = readset.bam
             alignment_directory = os.path.join("alignment", sample.name)
             input = self.select_input_files([[os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
                                              [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
                                              [os.path.join(alignment_directory, sample.name + ".sorted.bam")]])
             inputs.append(input[0])
+            #inputs.append(bam)
             
         output = os.path.join("metrics", "dna", "sample.fingerprint")
-            
+        #output = os.path.join("metrics", "dna", "readset.fingerprint")
         job = gatk4.crosscheck_fingerprint(inputs, output)
         job.name = "gatk_crosscheck_fingerprint.sample"
 
@@ -1916,84 +1921,149 @@ END
 
         return jobs
 
-    def gatk_vcf_fingerprint(self):
+    def metrics_gatk_vcf_fingerprint(self):
         """
         CheckFingerprint (Picard)
         Checks the sample identity of the sequence/genotype data in the provided file (SAM/BAM or VCF) against a set of known genotypes in the supplied genotype file (in VCF format).
         input: sample SAM/BAM or VCF
         output: fingerprint file
+        """
+        inputs = []
+
+        for sample in self.samples:
+            alignment_directory = os.path.join("alignment", sample.name)
+            input = os.path.join(alignment_directory, sample.name + ".hc.vcf.gz")
+
+            inputs.append(input)
+            
+        output = os.path.join("dna", "metrics", "variants.fingerprint")
+    
+        job= gatk4.crosscheck_fingerprint(inputs, output)
+        job.name="gatk_crosscheck_fingerprint.variant"
+
+        return job
+
+    def metrics_gatk_cluster_fingerprint(self, input=os.path.join("metrics", "dna", "sample.fingerprint"), output = os.path.join("metrics", "dna", "sample.cluster.fingerprint"), job_name = "gatk_cluster_fingerprint"):
+        """
+        CheckFingerprint (Picard)
+        Checks the sample identity of the sequence/genotype data in the provided file (SAM/BAM or VCF) against a set of known genotypes in the supplied genotype file (in VCF format).
+        input: sample SAM/BAM or VCF
+        output: fingerprint file
+        """
+        jobs = []
+        job = gatk4.cluster_crosscheck_metrics(input, output)
+        job.name = job_name
+        
+        jobs.append(job)
+        
+        return jobs
+
+    def metrics_gatk_cluster_fingerprint_sample(self):
+        """
+        CheckFingerprint (Picard)
+        Checks the sample identity of the sequence/genotype data in the provided file (SAM/BAM or VCF) against a set of known genotypes in the supplied genotype file (in VCF format).
+        input: sample SAM/BAM or VCF
+        output: fingerprint file
+        """
+        job = self.metrics_gatk_cluster_fingerprint(os.path.join("metrics", "dna", "sample.fingerprint"),
+                                                    os.path.join("metrics", "dna", "sample.cluster.fingerprint"),
+                                                    "gatk_cluster_fingerprint.sample")
+        return job
+
+    def metrics_gatk_cluster_fingerprint_variant(self) :
+        """
+        CheckFingerprint (Picard)
+        Checks the sample identity of the sequence/genotype data in the provided file (SAM/BAM or VCF) against a set of known genotypes in the supplied genotype file (in VCF format).
+        input: sample SAM/BAM or VCF
+        output: fingerprint file
+        """
+
+        job = self.metrics_gatk_cluster_fingerprint(os.path.join("metrics", "dna", "variant.fingerprint"),
+                                                    os.path.join("metrics", "dna", "variant.cluster.fingerprint"),
+                                                    "gatk_cluster_fingerprint.variant")
+        #job.samples = self.samples
+
+        return job
+
+    def metrics_ngscheckmate(self):
+        """
+        NGSCheckMate is a software package for identifying next generation sequencing (NGS) data files from the same individual.
+        It analyzes various types of NGS data files including (but not limited to) whole genome sequencing (WGS), whole exome
+        sequencing (WES), RNA-seq, ChIP-seq, and targeted sequencing of various depths. Data types can be mixed (e.g. WES and
+        RNA-seq, or RNA-seq and ChIP-seq). It takes BAM (reads aligned to the genome), VCF (variants) or FASTQ (unaligned reads)
+        files as input. NGSCheckMate uses depth-dependent correlation models of allele fractions of known single-nucleotide
+        polymorphisms (SNPs) to identify samples from the same individual.
+        input: file containing all vcfs in project
+        output:
+        """
+
+        jobs = []
+        
+        vcf_file = os.path.join("alignment", 'checkmate.tsv')
+        checkmate = open(vcf_file, 'w')
+        
+        for sample in self.samples:
+            alignment_directory = os.path.join("alignment", sample.name)
+            input = os.path.join(alignment_directory, sample.name + ".hc.vcf.gz")
+            checkmate.write(input + "\n")
+            
+        output = os.path.join("metrics", "dna", "checkmate")
+        mkdir_job = Job(command="mkdir -p " + output)
+
+        jobs.append(concat_jobs([
+            mkdir_job,
+            ngscheckmate.run(vcf_file, output),
+        ], name="run_checkmate.sample_level"))
+
+        return jobs
+
+    def metrics_peddy(self):
+        """
+        peddy compares familial-relationships and sexes as reported in a PED/FAM file with those inferred from a VCF.
+        input: one vcf with all project samples
+        output: qc files and corrected sex ped file
+		"""
+    
+        jobs = []
+    
+        peddy_file = os.path.join('peddy.ped')
+        input = os.path.join("variants", "AllSamples.hc.vcf.gz")
+    
+        output = os.path.join("metrics", "dna", "peddy")
+    
+        if(peddy_file):
+            job = peddy.run(input, peddy_file, output)
+            job.name = "run_peddy.sample_level"
+            jobs.append(job)
+    
+        else:
+            sys.stderr.write("Please create ped file using given sex designations")
+    
+        return jobs
+
+    def metrics_verify_bam_id(self):
+        """
+        
+        :param self:
+        :return:
         """
 
         jobs = []
 
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
-            input = os.path.join(alignment_directory, sample.name + ".hc.vcf.gz")
-            
-            output = os.path.join(alignment_directory, sample.name + ".fingerprint")
-    
+            output = os.path.join("metrics", "dna", sample.name, "verifyBamId")
+            input = self.select_input_files([[os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
+                                             [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
+                                             [os.path.join(alignment_directory, sample.name + ".sorted.bam")]])
+
             jobs.append(concat_jobs([
-                gatk4.crosscheck_fingerprint([input], output)
-            ], name="gatk_crosscheck_fingerprint." + sample.name))
+                # Create output directory since it is not done by default by GATK tools
+                Job(command="mkdir -p " + output, removable_files=[output], samples=[sample]),
+                verify_bam_id.verify(input[0], os.path.join(output, sample.name))
+            ], name="verify_bam_id." + sample.name))
 
         return jobs
-
-    def gatk_cluster_fingerprint(self, input = os.path.join("metrics", "dna", "sample.fingerprint"), output = os.path.join("metrics", "dna", "sample.cluster.fingerprint"), job_name = "gatk_cluster_fingerprint" ):
-        """
-        CheckFingerprint (Picard)
-        Checks the sample identity of the sequence/genotype data in the provided file (SAM/BAM or VCF) against a set of known genotypes in the supplied genotype file (in VCF format).
-        input: sample SAM/BAM or VCF
-        output: fingerprint file
-        """
-        jobs = []
-
-        job = gatk4.cluster_crosscheck_metrics(input, output)
-        job.name = job_name
-        jobs.append(job)
-        
-        return jobs
-
-    def gatk_cluster_fingerprint_sample(self):
-        """
-        CheckFingerprint (Picard)
-        Checks the sample identity of the sequence/genotype data in the provided file (SAM/BAM or VCF) against a set of known genotypes in the supplied genotype file (in VCF format).
-        input: sample SAM/BAM or VCF
-        output: fingerprint file
-        """
-        job = self.gatk_cluster_fingerprint(os.path.join("metrics", "dna", "sample.fingerprint"),
-                                            os.path.join("metrics", "dna", "sample.cluster.fingerprint"),
-                                            "gatk_cluster_fingerprint.sample")
-        return job
-
-    def gatk_cluster_fingerprint_readset(self) :
-        """
-        CheckFingerprint (Picard)
-        Checks the sample identity of the sequence/genotype data in the provided file (SAM/BAM or VCF) against a set of known genotypes in the supplied genotype file (in VCF format).
-        input: sample SAM/BAM or VCF
-        output: fingerprint file
-        """
-
-        job = self.gatk_cluster_fingerprint(os.path.join("metrics", "dna", "readset.fingerprint"),
-                                            os.path.join("metrics", "dna", "readset.cluster.fingerprint"),
-                                            "gatk_cluster_fingerprint.readset" )
-        #job.samples = self.samples
-
-        return job
-
-    def gatk_cluster_fingerprint_variant(self) :
-        """
-        CheckFingerprint (Picard)
-        Checks the sample identity of the sequence/genotype data in the provided file (SAM/BAM or VCF) against a set of known genotypes in the supplied genotype file (in VCF format).
-        input: sample SAM/BAM or VCF
-        output: fingerprint file
-        """
-
-        job = self.gatk_cluster_fingerprint(os.path.join("metrics", "dna", "variant.fingerprint"),
-                                            os.path.join("metrics", "dna", "variant.cluster.fingerprint"),
-                                            "gatk_cluster_fingerprint.variant" )
-        #job.samples = self.samples
-
-        return job
 
     def gatk_haplotype_caller(self):
         """
@@ -3240,7 +3310,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             pair_directory = os.path.join("SVariants", sample.name)
             delly_directory = os.path.join(pair_directory, "rawDelly")
             
-            input = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam")
+            input = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")
 
             #input = self.select_input_files([[os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")],
             #                                 [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam")],
@@ -3427,7 +3497,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         for sample in self.samples:
             pair_directory = os.path.join("SVariants", sample.name)
             lumpy_directory = os.path.join(pair_directory, "rawLumpy")
-            inputNormal = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam")
+            inputNormal = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")
         
             discordants_normal = os.path.join(lumpy_directory, sample.name + ".discordants.sorted.bam")
         
@@ -3510,7 +3580,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         for sample in self.samples:
             pair_directory = os.path.join("SVariants", sample.name)
             wham_directory = os.path.join(pair_directory, "rawWham")
-            inputNormal = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam")
+            inputNormal = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")
         
             output_vcf = os.path.join(wham_directory, sample.name + ".wham.vcf")
             merge_vcf = os.path.join(wham_directory, sample.name + ".wham.merged.vcf")
@@ -3573,7 +3643,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         for sample in self.samples:
             pair_directory = os.path.join("SVariants", sample.name)
             cnvkit_dir = os.path.join(pair_directory, "rawCNVkit")
-            inputNormal = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam")
+            inputNormal = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")
             
             tarcov_cnn = os.path.join(cnvkit_dir, sample.name + ".sorted.dup.targetcoverage.cnn")
             antitarcov_cnn = os.path.join(cnvkit_dir, sample.name + ".sorted.dup.antitargetcoverage.cnn")
@@ -3690,7 +3760,17 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             pair_directory = os.path.join("SVariants", sample.name)
             output_dir = os.path.join(pair_directory, "rawBreakseq2")
             output = os.path.join(pair_directory, "rawBreakseq2", "breakseq.vcf.gz")
+<<<<<<< HEAD
             final_vcf = os.path.join(pair_directory, sample.name + ".breakseq.germline.vcf.gz")
+=======
+            final_vcf = os.path.join(pair_directory, "rawBreakseq2", sample.name + ".breakseq.germline.vcf.gz")
+        
+            input = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")
+
+            # input = self.select_input_files([[os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")],
+            #                                 [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam")],
+            #                                 [os.path.join("alignment", sample.name, sample.name + ".sorted.bam")]])
+>>>>>>> de91f523 (dnaseq qc additions: NGScheckmate and peddy)
         
             input = self.select_input_files([[os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")],
                                              [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam")],
@@ -3886,8 +3966,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.gatk_callable_loci,
                 self.extract_common_snp_freq,
                 self.baf_plot,
-                self.vcftools_missing_indiv,
-                self.vcftools_depth_indiv,
                 self.run_multiqc,
                 self.cram_output,
                 self.sym_link_fastq,
