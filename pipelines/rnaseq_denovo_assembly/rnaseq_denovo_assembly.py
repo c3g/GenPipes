@@ -31,13 +31,11 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # MUGQIC Modules
-from core.config import *
-from core.job import *
-from core.pipeline import *
-from bfx.readset import *
+from core.config import config, _raise, SanitycheckError
+from core.job import Job, concat_jobs
+
 from bfx import differential_expression
 from bfx import gq_seq_utils
-from pipelines import common
 from bfx import rmarkdown
 from bfx import samtools
 from bfx import tools
@@ -45,6 +43,9 @@ from bfx import trinity
 from bfx import trinotate
 from bfx import blast
 from bfx import exonerate
+from bfx import bash_cmd as bash
+
+from pipelines import common
 from pipelines.rnaseq import rnaseq
 
 
@@ -132,8 +133,8 @@ class RnaSeqDeNovoAssembly(rnaseq.RnaSeq):
                 left_or_single_reads = [trim_file_prefix + "single.fastq.gz"]
                 right_reads = []
             else:
-                raise Exception("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
             job = trinity.insilico_read_normalization(
                 left_or_single_reads,
@@ -168,8 +169,8 @@ class RnaSeqDeNovoAssembly(rnaseq.RnaSeq):
             elif readset.run_type == "SINGLE_END":
                 left_or_single_reads.append(os.path.join(normalization_directory, readset.name, "single.norm.fq"))
             else:
-                raise Exception("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
         job = trinity.insilico_read_normalization(
             left_or_single_reads,
@@ -237,21 +238,22 @@ pandoc --to=markdown \\
             reads_option = "--single " + single_reads
 
         # Trinity job
-        jobs.append(concat_jobs([
-            trinity.trinity(input_files, trinity_fasta, output_directory, reads_option),
-            Job(
-                [trinity_fasta],
-                [trinity_fasta + ".zip"],
-                command="zip -j " + trinity_fasta + ".zip " + trinity_fasta,
-                samples=self.samples
-            ),
-            Job(
-                [trinity_fasta],
-                [trinity_stats_prefix + ".csv", trinity_stats_prefix + ".jpg", trinity_stats_prefix + ".pdf"],
-                [['trinity', 'module_R'], ['trinity', 'module_mugqic_R_packages']],
-                command="Rscript -e 'library(gqSeqUtils); dnaFastaStats(filename = \"" + trinity_fasta + "\", type = \"trinity\", output.prefix = \"" + trinity_stats_prefix + "\")'"
-            )
-        ], name="trinity"))
+        jobs.append(
+            concat_jobs([
+                trinity.trinity(input_files, trinity_fasta, output_directory, reads_option),
+                Job(
+                    [trinity_fasta],
+                    [trinity_fasta + ".zip"],
+                    command="zip -j " + trinity_fasta + ".zip " + trinity_fasta
+                ),
+                Job(
+                    [trinity_fasta],
+                    [trinity_stats_prefix + ".csv", trinity_stats_prefix + ".jpg", trinity_stats_prefix + ".pdf"],
+                    [['trinity', 'module_R'], ['trinity', 'module_mugqic_R_packages']],
+                    command="Rscript -e 'library(gqSeqUtils); dnaFastaStats(filename = \"" + trinity_fasta + "\", type = \"trinity\", output.prefix = \"" + trinity_stats_prefix + "\")'"
+                )
+            ], name="trinity", samples=self.samples)
+        )
 
         report_file = os.path.join("report", "RnaSeqDeNovoAssembly.trinity.md")
         jobs.append(
@@ -293,11 +295,11 @@ pandoc --to=markdown \\
         num_fasta_chunks = config.param('exonerate_fastasplit', 'num_fasta_chunks', type='posint')
 
         return [concat_jobs([
-            Job(command="rm -rf " + trinity_chunks_directory, samples=self.samples),
+            Job(command="rm -rf " + trinity_chunks_directory),
             Job(command="mkdir -p " + trinity_chunks_directory),
             trinity.prepare_for_blast(trinity_fasta, trinity_fasta_for_blast),
             exonerate.fastasplit(trinity_fasta_for_blast, trinity_chunks_directory, "Trinity.fa_chunk", num_fasta_chunks)
-        ], name="exonerate_fastasplit.Trinity.fasta")]
+        ], name="exonerate_fastasplit.Trinity.fasta", samples=self.samples)]
 
     def blastx_trinity_uniprot(self):
         """
@@ -316,17 +318,19 @@ pandoc --to=markdown \\
         # (Removed blast on uniref_db since it's too long)
         for db in [swissprot_db]:
             if not glob.glob(db + ".*phr"):
-                raise Exception("Error: " + db + " BLAST db files do not exist!")
+                _raise(SanitycheckError("Error: " + db + " BLAST db files do not exist!"))
 
             for i in range(num_fasta_chunks):
                 trinity_chunk = os.path.join(trinity_chunks_directory, "Trinity.fa_chunk_{:07d}".format(i))
                 query_chunk = os.path.join(blast_directory, "query_Trinity_" + os.path.basename(db) + "_chunk_{:07d}.tsv".format(i))
                 blast_chunk = os.path.join(blast_directory, program + "_Trinity_" + os.path.basename(db) + "_chunk_{:07d}.tsv".format(i))
-                jobs.append(concat_jobs([
-                    Job(command="mkdir -p " + blast_directory, removable_files=[blast_directory], samples=self.samples),
-                    Job(command="ln -s -f " + os.path.relpath(trinity_chunk, os.path.dirname(query_chunk)) + " " + query_chunk, removable_files=[blast_directory]),
-                    blast.parallel_blast(trinity_chunk, query_chunk, blast_chunk, program, db, cpu),
-                ], name="blastx_trinity_uniprot." + os.path.basename(db) + ".chunk_{:07d}".format(i)))
+                jobs.append(
+                    concat_jobs([
+                        Job(command="mkdir -p " + blast_directory, removable_files=[blast_directory]),
+                        Job(command="ln -s -f " + os.path.relpath(trinity_chunk, os.path.dirname(query_chunk)) + " " + query_chunk, removable_files=[blast_directory]),
+                        blast.parallel_blast(trinity_chunk, query_chunk, blast_chunk, program, db, cpu),
+                    ], name="blastx_trinity_uniprot." + os.path.basename(db) + ".chunk_{:07d}".format(i), samples=self.samples)
+                )
 
         return jobs
 
@@ -347,15 +351,16 @@ pandoc --to=markdown \\
         for db in [swissprot_db]:
             blast_chunks = [os.path.join(blast_prefix + os.path.basename(db) + "_chunk_{:07d}.tsv".format(i)) for i in range(num_fasta_chunks)]
             blast_result = os.path.join(blast_prefix + os.path.basename(db) + ".tsv")
-            jobs.append(concat_jobs([
-                Job(
-                    blast_chunks,
-                    [blast_result],
-                    command="cat \\\n  " + " \\\n  ".join(blast_chunks) + " \\\n  > " + blast_result,
-                    samples=self.samples
-                ),
-                Job([blast_result], [blast_result + ".zip"], command="zip -j {blast_result}.zip {blast_result}".format(blast_result=blast_result))
-            ], name="blastx_trinity_" + os.path.basename(db) + "_merge"))
+            jobs.append(
+                concat_jobs([
+                    Job(
+                        blast_chunks,
+                        [blast_result],
+                        command="cat \\\n  " + " \\\n  ".join(blast_chunks) + " \\\n  > " + blast_result
+                    ),
+                    Job([blast_result], [blast_result + ".zip"], command="zip -j {blast_result}.zip {blast_result}".format(blast_result=blast_result))
+                ], name="blastx_trinity_" + os.path.basename(db) + "_merge", samples=self.samples)
+            )
 
         report_file = os.path.join("report", "RnaSeqDeNovoAssembly.blastx_trinity_uniprot_merge.md")
         jobs.append(
@@ -394,7 +399,7 @@ pandoc --to=markdown \\
         transdecoder_subdirectory = os.path.join(os.path.basename(trinity_fasta) + ".transdecoder_dir")
 
         jobs = trinotate.transdecoder(trinity_fasta, transdecoder_directory, transdecoder_subdirectory)
-        for job in jobs : job.samples = self.samples 
+        for job in jobs : job.samples = self.samples
 
         return jobs
 
@@ -408,7 +413,7 @@ pandoc --to=markdown \\
         transdecoder_pfam = os.path.join(transdecoder_directory, "Trinity.fasta.transdecoder.pfam")
 
         jobs = trinotate.hmmer(transdecoder_directory, transdecoder_fasta, transdecoder_pfam)
-        for job in jobs : job.samples = self.samples 
+        for job in jobs : job.samples = self.samples
 
         return jobs
 
@@ -421,7 +426,7 @@ pandoc --to=markdown \\
         rnammer_directory = os.path.join("trinotate", "rnammer")
 
         jobs = trinotate.rnammer_transcriptome(trinity_fasta, rnammer_directory)
-        for job in jobs : job.samples = self.samples 
+        for job in jobs : job.samples = self.samples
 
         return jobs
 
@@ -435,7 +440,7 @@ pandoc --to=markdown \\
         db = config.param("blastp_transdecoder_uniprot", "swissprot_db", type='prefixpath')
 
         jobs = trinotate.blastp_transdecoder_uniprot(blast_directory, transdecoder_fasta, db)
-        for job in jobs : job.samples = self.samples 
+        for job in jobs : job.samples = self.samples
 
         return jobs
 
@@ -448,7 +453,7 @@ pandoc --to=markdown \\
         signalp_gff = os.path.join("trinotate", "signalp", "signalp.gff")
 
         jobs = trinotate.signalp(transdecoder_fasta, signalp_gff)
-        for job in jobs : job.samples = self.samples 
+        for job in jobs : job.samples = self.samples
 
         return jobs
 
@@ -461,7 +466,7 @@ pandoc --to=markdown \\
         tmhmm_output = os.path.join("trinotate", "tmhmm", "tmhmm.out")
 
         jobs = trinotate.tmhmm(transdecoder_fasta, tmhmm_output)
-        for job in jobs : job.samples = self.samples 
+        for job in jobs : job.samples = self.samples
 
         return jobs
 
@@ -512,7 +517,7 @@ pandoc --to=markdown \\
 
         trinity_fasta = os.path.join("trinity_out_dir", "Trinity.fasta")
         job = trinity.align_and_estimate_abundance(trinity_fasta, output_directory="trinity_out_dir", prep_reference=True)
-        job.samples = self.samples 
+        job.samples = self.samples
 
         return [job]
 
@@ -538,8 +543,8 @@ pandoc --to=markdown \\
                 elif readset.run_type == "SINGLE_END":
                     left_or_single_reads.append(os.path.join(trim_directory, readset.name + ".trim.single.fastq.gz"))
                 else:
-                    raise Exception("Error: run type \"" + readset.run_type +
-                    "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+                    _raise(SanitycheckError("Error: run type \"" + readset.run_type +
+                    "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
             job = trinity.align_and_estimate_abundance(
                 trinity_fasta=trinity_fasta,
@@ -643,24 +648,27 @@ pandoc --to=markdown \\
         trinotate_annotation_report_filtered = os.path.join("trinotate", "trinotate_annotation_report.tsv" + ".isoforms_filtered.tsv")
 
         # Use python  to extract selected headers
-        jobs.append(concat_jobs([
-            Job(command="mkdir -p " + output_directory, samples=self.samples),
-            tools.py_filterAssemblyToFastaToTsv(trinity_fasta , trinotate_annotation_report_filtered, 0, trinity_filtered_prefix),
-            Job(
-                [trinity_filtered],
-                [trinity_stats_prefix + ".csv", trinity_stats_prefix + ".jpg", trinity_stats_prefix + ".pdf"],
-                [['filter_annotated_components', 'module_R'], ['filter_annotated_components', 'module_mugqic_R_packages']],
-                command="""\
-Rscript -e 'library(gqSeqUtils); dnaFastaStats(filename = \"{trinity_filtered}\", type = \"trinity\", output.prefix = \"{trinity_stats_prefix}\")' """.format(
-                    trinity_filtered=trinity_filtered,
-                    trinity_stats_prefix=trinity_stats_prefix)
-            ),
-            Job(
-                [trinity_filtered],
-                [trinity_filtered + ".zip"],
-                command="zip -j " + trinity_filtered + ".zip " + trinity_filtered + " " + trinity_filtered_prefix + ".tsv"
-            )
-        ], name="filter_annotated_components"))
+        jobs.append(
+            concat_jobs([
+                Job(command="mkdir -p " + output_directory),
+                tools.py_filterAssemblyToFastaToTsv(trinity_fasta , trinotate_annotation_report_filtered, 0, trinity_filtered_prefix),
+                Job(
+                    [trinity_filtered],
+                    [trinity_stats_prefix + ".csv", trinity_stats_prefix + ".jpg", trinity_stats_prefix + ".pdf"],
+                    [['filter_annotated_components', 'module_R'], ['filter_annotated_components', 'module_mugqic_R_packages']],
+                    command="""\
+Rscript -e 'library(gqSeqUtils);dnaFastaStats(filename=\"{trinity_filtered}\",type=\"trinity\",output.prefix=\"{trinity_stats_prefix}\")'""".format(
+                        trinity_filtered=trinity_filtered,
+                        trinity_stats_prefix=trinity_stats_prefix
+                    )
+                ),
+                Job(
+                    [trinity_filtered],
+                    [trinity_filtered + ".zip"],
+                    command="zip -j " + trinity_filtered + ".zip " + trinity_filtered + " " + trinity_filtered_prefix + ".tsv"
+                )
+            ], name="filter_annotated_components", samples=self.samples)
+        )
         report_file = os.path.join("report", "RnaSeqDeNovoAssembly.filtered.trinity.md")
 
         jobs.append(
@@ -710,39 +718,42 @@ pandoc --to=markdown \\
         lengths_filtered_file = os.path.join("filtered_assembly", "isoforms.lengths.tsv")
 
         jobs.append(concat_jobs([
-            Job(command="mkdir -p " + exploratory_output_dir, samples=self.samples),
-            Job(
-                [trinotate_annotation_report_filtered],
-                [trinotate_annotation_report_filtered_header],
-                command="sed '1s/^/ \\n/' " + trinotate_annotation_report_filtered  + " > " + trinotate_annotation_report_filtered_header
-            ),
-            tools.py_parseMergeCsv(
-                [trinotate_annotation_report_filtered_header, os.path.join("differential_expression", "isoforms.counts.matrix")],
-                "\\\\t",
-                counts_file,
-                "\'\'",
-                left_join=True,
-                exclude="\'\'"
-            ),
-            tools.py_parseMergeCsv(
-                [trinotate_annotation_report_filtered_header, lengths_file],
-                "\\\\t",
-                lengths_filtered_file,
-                "\'\' transcript_id",
-                left_join=True,
-                exclude="\' \'"
-            )
-        ], name="filter_annotated_components_exploratory"))
+                Job(command="mkdir -p " + exploratory_output_dir),
+                Job(
+                    [trinotate_annotation_report_filtered],
+                    [trinotate_annotation_report_filtered_header],
+                    command="sed '1s/^/ \\n/' " + trinotate_annotation_report_filtered  + " > " + trinotate_annotation_report_filtered_header
+                ),
+                tools.py_parseMergeCsv(
+                    [trinotate_annotation_report_filtered_header, os.path.join("differential_expression", "isoforms.counts.matrix")],
+                    "\\\\t",
+                    counts_file,
+                    "\'\'",
+                    left_join=True,
+                    exclude="\'\'"
+                ),
+                tools.py_parseMergeCsv(
+                    [trinotate_annotation_report_filtered_header, lengths_file],
+                    "\\\\t",
+                    lengths_filtered_file,
+                    "\'\' transcript_id",
+                    left_join=True,
+                    exclude="\' \'"
+                )
+            ], name="filter_annotated_components_exploratory", samples=self.samples)
+        )
 
         # gqSeqUtils function call
-        jobs.append(concat_jobs([
-            Job(command="mkdir -p " + exploratory_output_dir, samples=self.samples),
-            gq_seq_utils.exploratory_analysis_rnaseq_denovo(
-                counts_file,
-                lengths_filtered_file,
-                exploratory_output_dir
-            )
-        ], name="gq_seq_utils_exploratory_analysis_rnaseq_denovo"))
+        jobs.append(
+            concat_jobs([
+                Job(command="mkdir -p " + exploratory_output_dir),
+                gq_seq_utils.exploratory_analysis_rnaseq_denovo(
+                    counts_file,
+                    lengths_filtered_file,
+                    exploratory_output_dir
+                )
+            ], name="gq_seq_utils_exploratory_analysis_rnaseq_denovo", samples=self.samples)
+        )
 
         # Render Rmarkdown Report
         jobs.append(
@@ -771,29 +782,32 @@ pandoc --to=markdown \\
         transcript_id_column = "transcript_id" if not config.param('trinotate', 'transcript_column', required=False) else config.param('trinotate', 'gene_column', required=False)
         trinotate_filters = None if not config.param('filter_annotated_components', 'filters_trinotate', required=False) else config.param('filter_annotated_components', 'filters_trinotate', required=False).split("\n")
         trinotate_columns_to_exclude = None if not config.param('differential_expression', 'trinotate_columns_to_exclude', required=False) else config.param('differential_expression', 'trinotate_columns_to_exclude', required=False)
+
         # mkdir
-        jobs.append(
-            Job(
-                [trinotate_annotation_report],
-                [],
-                command="mkdir -p " + os.path.join(output_directory, item),
-                samples=self.samples
-        ))
+        mkdir_job = Job(
+            [trinotate_annotation_report],
+            [],
+            command="mkdir -p " + os.path.join(output_directory, item)
+        )
 
         # Run DGE and merge dge results with annotations
         matrix = os.path.join(output_directory, item + ".counts.matrix")
+
         # Perform edgeR
         edger_job = differential_expression.edger(os.path.relpath(self.args.design.name, self.output_dir), matrix + ".symbol", os.path.join(output_directory, item))
         edger_job.output_files = [os.path.join(output_directory, item ,contrast.name, "edger_results.csv") for contrast in self.contrasts]
-        edger_job.samples = self.samples
+
         # Perform DESeq
         deseq_job = differential_expression.deseq(os.path.relpath(self.args.design.name, self.output_dir), matrix + ".symbol", os.path.join(output_directory, item))
         deseq_job.output_files = [os.path.join(output_directory, item ,contrast.name, "dge_results.csv") for contrast in self.contrasts]
-        deseq_job.samples = self.samples
-        jobs.append(concat_jobs([
-            edger_job,
-            deseq_job,
-        ], name="differential_expression.run." + item))
+
+        jobs.append(
+            concat_jobs([
+                mkdir_job,
+                edger_job,
+                deseq_job,
+            ], name="differential_expression.run." + item, samples=self.samples)
+        )
         for contrast in self.contrasts:
             # Prepare GOseq job
             goseq_job = differential_expression.goseq(
@@ -803,23 +817,24 @@ pandoc --to=markdown \\
                 os.path.join(output_directory, item +".lengths.tsv.noheader.tsv"),
                 trinotate_annotation_report + "." + item + "_go.tsv"
             )
-            goseq_job.samples = self.samples
             # Merge with annotations
-            jobs.append(concat_jobs([
-                tools.py_parseMergeCsv(
-                    [os.path.join(output_directory, item, contrast.name, "dge_results.csv"), trinotate_annotation_report + "." + item + "_blast.tsv"],
-                    "\\\\t",
-                    os.path.join(output_directory, item, contrast.name, "dge_trinotate_results.csv"),
-                    "id " + "\"" + gene_id_column + "\"" if item == "genes" else "id " + transcript_id_column,
-                    None,
-                    trinotate_columns_to_exclude,
-                    True,
-                    "edger.p.value",
-                    True
-                ),
-                # Run GOseq
-                goseq_job
-            ], name="differential_expression.merge.annotations.goseq." + item + "." + contrast.name ))
+            jobs.append(
+                concat_jobs([
+                    tools.py_parseMergeCsv(
+                        [os.path.join(output_directory, item, contrast.name, "dge_results.csv"), trinotate_annotation_report + "." + item + "_blast.tsv"],
+                        "\\\\t",
+                        os.path.join(output_directory, item, contrast.name, "dge_trinotate_results.csv"),
+                        "id " + "\"" + gene_id_column + "\"" if item == "genes" else "id " + transcript_id_column,
+                        None,
+                        trinotate_columns_to_exclude,
+                        True,
+                        "edger.p.value",
+                        True
+                    ),
+                    # Run GOseq
+                    goseq_job
+                ], name="differential_expression.merge.annotations.goseq." + item + "." + contrast.name, samples=self.samples)
+            )
 
         return jobs
 
@@ -836,17 +851,19 @@ pandoc --to=markdown \\
         input_rmarkdown_file=os.path.join(self.report_template_dir, "RnaSeqDeNovoAssembly.differential_expression_goseq.Rmd")
 
         # Run DGE and merge dge results with annotations
-        for item in "genes","isoforms":
-            jobs.append(concat_jobs(
-                self.differential_expression_and_goseq_rsem(output_directory, item, trinotate_annotation_report
-            ), name= "differential_expression_" + item))
-        # DGE Report
-        # Render Rmarkdown Report
+        for item in "genes", "isoforms":
+            jobs.append(
+                concat_jobs(
+                    self.differential_expression_and_goseq_rsem(output_directory, item, trinotate_annotation_report)
+                , name="differential_expression_" + item, samples=self.samples)
+            )
+
         output_files = []
         for job in jobs:
-            job.samples = self.samples
             output_files.extend([output_file for output_file in job.output_files if output_file not in output_files])
 
+        # DGE Report
+        # Render Rmarkdown Report
         jobs.append(
             rmarkdown.render(
                 job_input            = output_files,
@@ -881,19 +898,20 @@ pandoc --to=markdown \\
         source_directory = "differential_expression"
 
         # Create the files containing filtered isoforms and genes with headers
-        jobs.append(concat_jobs([
-            Job(command="mkdir -p " + output_directory ),
-            Job(
-                [trinotate_annotation_report_filtered],
-                [trinotate_annotation_report_filtered_header["genes"]],
-                command="cat " + trinotate_annotation_report_filtered + " | awk 'BEGIN{OFS=\"_\";FS=\"_\"}{print $1,$2}' | uniq | sed '1s/^/ \\n/' " + "  > " + trinotate_annotation_report_filtered_header["genes"],
-                samples=self.samples
-            ),
-            Job(
-                [trinotate_annotation_report_filtered],
-                [trinotate_annotation_report_filtered_header["isoforms"]],
-                command="sed '1s/^/ \\n/' " + trinotate_annotation_report_filtered  + " > " + trinotate_annotation_report_filtered_header["isoforms"]
-            )], name="differential_expression_filtered_get_trinotate")
+        jobs.append(
+            concat_jobs([
+                Job(command="mkdir -p " + output_directory ),
+                Job(
+                    [trinotate_annotation_report_filtered],
+                    [trinotate_annotation_report_filtered_header["genes"]],
+                    command="cat " + trinotate_annotation_report_filtered + " | awk 'BEGIN{OFS=\"_\";FS=\"_\"}{print $1,$2}' | uniq | sed '1s/^/ \\n/' " + "  > " + trinotate_annotation_report_filtered_header["genes"],
+                ),
+                Job(
+                    [trinotate_annotation_report_filtered],
+                    [trinotate_annotation_report_filtered_header["isoforms"]],
+                    command="sed '1s/^/ \\n/' " + trinotate_annotation_report_filtered  + " > " + trinotate_annotation_report_filtered_header["isoforms"]
+                )
+            ], name="differential_expression_filtered_get_trinotate", samples=self.samples)
         )
 
         # Run DGE and merge dge results with annotations
@@ -907,21 +925,21 @@ pandoc --to=markdown \\
                 left_join=True,
                 exclude="\' \'"
             )
-            job.samples = self.samples
-            jobs.append(concat_jobs([
-                job,
-                Job(
-                    [os.path.join(source_directory, item +".lengths.tsv.noheader.tsv")],
-                    [os.path.join(output_directory, item +".lengths.tsv.noheader.tsv")],
-                    command="cp " + os.path.join(source_directory, item +".lengths.tsv.noheader.tsv") + " " + os.path.join(output_directory, item +".lengths.tsv.noheader.tsv")
-                ),
-                concat_jobs(self.differential_expression_and_goseq_rsem(output_directory, item, trinotate_annotation_report), name="differential_expression_filtered_" + item)
-            ], name="differential_expression_filtered_" + item))
+            jobs.append(
+                concat_jobs([
+                    job,
+                    Job(
+                        [os.path.join(source_directory, item +".lengths.tsv.noheader.tsv")],
+                        [os.path.join(output_directory, item +".lengths.tsv.noheader.tsv")],
+                        command="cp " + os.path.join(source_directory, item +".lengths.tsv.noheader.tsv") + " " + os.path.join(output_directory, item +".lengths.tsv.noheader.tsv")
+                    ),
+                    concat_jobs(self.differential_expression_and_goseq_rsem(output_directory, item, trinotate_annotation_report))
+                ], name="differential_expression_filtered_" + item, samples=self.samples)
+            )
 
         # Dependencies for report
         output_files = []
         for job in jobs:
-            job.samples = self.samples
             output_files.extend([output_file for output_file in job.output_files if output_file not in output_files])
 
         # DGE Report

@@ -51,13 +51,9 @@ if [[ $HOST == abacus* || $DNSDOMAIN == ferrier.genome.mcgill.ca ]]; then
 
   export MUGQIC_INSTALL_HOME_DEV=/lb/project/mugqic/analyste_dev
 
-elif [[ $HOST == lg-* || $DNSDOMAIN == guillimin.clumeq.ca ]]; then
+elif [[ $HOST == ip* || $DNSDOMAIN == m  ]]; then
 
-  export MUGQIC_INSTALL_HOME_DEV=/genfs/gs/project/mugqic/analyste_dev/phase2
-
-elif [[ $BQMAMMOUTH == "mp2" || $DNSDOMAIN == m  ]]; then
-
-  export MUGQIC_INSTALL_HOME_DEV=/nfs3_ib/bourque-mp2.nfs/tank/nfs/bourque/nobackup/share/mugqic_dev
+  export MUGQIC_INSTALL_HOME_DEV=/project/6007512/C3G/analyste_dev
 
 elif [[ $HOST == cedar* || $DNSDOMAIN == cedar.computecanada.ca ]]; then
 

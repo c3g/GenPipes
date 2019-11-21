@@ -34,10 +34,8 @@ import pysam
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # MUGQIC Modules
-from core.config import *
-from core.job import *
-from core.pipeline import *
-from bfx.design import *
+from core.config import config, SanitycheckError, _raise
+from core.job import Job, concat_jobs, pipe_jobs
 from pipelines import common
 
 from bfx import picard
@@ -121,7 +119,7 @@ class HicSeq(common.Illumina):
         elif self.enzyme == "NcoI":
             restriction_site = "CCATGG"
         else:
-            raise Exception("Error: Selected Enzyme is not yet available for Hi-C analysis!")
+            _raise(SanitycheckError("Error: Selected Enzyme is not yet available for Hi-C analysis!"))
         return restriction_site
 
     @property
@@ -148,8 +146,8 @@ class HicSeq(common.Illumina):
             trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
 
             if readset.run_type != "PAIRED_END":
-                raise Exception("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END for Hi-C analysis)!")
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END for Hi-C analysis)!"))
 
             candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
             if readset.fastq1 and readset.fastq2:
@@ -183,8 +181,8 @@ class HicSeq(common.Illumina):
             trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
 
             if readset.run_type != "PAIRED_END":
-                raise Exception("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END for Hi-C analysis)!")
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END for Hi-C analysis)!"))
 
             candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
             if readset.fastq1 and readset.fastq2:
@@ -640,8 +638,9 @@ class HicSeq(common.Illumina):
         jobs = []
         design_dir = self.output_dirs['chicago_input_files']
         output_dir = self.output_dirs['chicago_output_directory']
-        design_file_prefix = os.path.basename(re.sub("\.bed$", "", config.param('create_baitmap_file', "baitBed")) + "_" + self.enzyme)
-        other_options = config.param('runChicago', 'other_options', required = False)
+        design_file_prefix = os.path.basename(re.sub("\.bed$", "", config.param('create_baitmap_file', "baitBed"))
+                                              + "_" + self.enzyme)
+        other_options = config.param('runChicago', 'other_options', required=False)
 
         for sample in self.samples:
             job = chicago.runChicago(design_dir, sample.name, output_dir, design_file_prefix, other_options)
@@ -799,7 +798,9 @@ class HicSeq(common.Illumina):
             self.identify_TADs_RobusTAD,
             self.identify_peaks,
             self.create_hic_file,
-            self.multiqc_report],
+            self.multiqc_report,
+            self.cram_output
+            ],
             [self.samtools_bam_sort,
             self.picard_sam_to_fastq,
             self.trimmomatic,
@@ -816,7 +817,9 @@ class HicSeq(common.Illumina):
             self.bait_intersect,
             self.capture_intersect,
             self.create_hic_file,
-            self.multiqc_report]
+            self.multiqc_report,
+            self.cram_output
+            ]
         ]
 
 if __name__ == '__main__':

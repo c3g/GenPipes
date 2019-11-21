@@ -30,19 +30,16 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # MUGQIC Modules
-from core.config import *
-from core.job import *
-from core.pipeline import *
-from bfx.design import *
-from bfx.readset import *
+from core.config import config, _raise, SanitycheckError
+from core.job import Job, concat_jobs
+
 from bfx import gq_seq_utils
 from bfx import picard
 from bfx import rmarkdown
 from bfx import differential_expression
 from bfx import tools
-from pipelines import common
-import utils
 
+from pipelines import common
 from pipelines.rnaseq import rnaseq
 
 log = logging.getLogger(__name__)
@@ -103,8 +100,8 @@ class RnaSeqLight(rnaseq.RnaSeq):
                 job.samples = [readset.sample]
                 jobs.append(job)
             else:
-                raise Exception("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
         return jobs
 
@@ -208,7 +205,7 @@ cp \\
                     design_file = os.path.relpath(self.args.design.name, self.output_dir)
             output_directory = "sleuth" 
             count_matrix = os.path.join(self.output_dir, "kallisto", "All_readsets","all_readsets.abundance_genes.csv")
-            tx2gene = config.param('sleuth', 'tx2gene')
+            tx2gene = config.param('sleuth_differential_expression', 'tx2gene')
             
             sleuth_job = differential_expression.sleuth(design_file, count_matrix, tx2gene, output_directory)
             sleuth_job.output_files = [os.path.join(output_directory, contrast.name, "results.wt.gene.csv") for contrast in self.contrasts]

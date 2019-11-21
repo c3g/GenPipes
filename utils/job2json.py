@@ -94,7 +94,7 @@ def usage():
     print "       -j    --job_name      : name of the current job"
     print "       -l    --job_log       : name of the log file for the current job"
     print "       -d    --job_done      : name of the done file for the current job"
-    print "       -o    --json_outfiles : comma-separated list of names of json files which need to be appended affected by the current job"
+    print "       -o    --json_outfiles : comma-separated list of names of json files which need to be appended by the current job"
     print "       -f    --status        : boolean value to indicate if the job has failed (False/0) or succeeded (True/1) - Default : True"
     print "       -h    --help          : this help \n"
 
@@ -108,7 +108,7 @@ def main():
 
     for jfile in json_files.split(","):
 
-        # First lock the file to avoid multiple and synchronous writing atemps
+        # First lock the file to avoid multiple and synchronous writing attemps
         lock(jfile)
 
         with open(jfile, 'r') as json_file:
@@ -143,11 +143,11 @@ def main():
                                 jjob['status'] = "error"
                             jjob['job_end_date'] = re.sub("\.\d+$", "", str(datetime.datetime.now()))
 
-                # If job does not exists already, raise an exception
+                # If job does not exist already, raise an exception
                 if not job_found :
                     sys.exit("Error : job " + job_name + ", within step " + step_name + ", was not found in " + " json_file...")
 
-        # If step does not exists already, raise an exception
+        # If step does not exist already, raise an exception
         if not step_found :
             sys.exit("Error : step " + step_name + " was not found in " + " json_file...")
 

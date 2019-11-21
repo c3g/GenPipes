@@ -30,10 +30,8 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # MUGQIC Modules
-from core.config import *
-from core.job import *
-from core.pipeline import *
-from bfx.sequence_dictionary import *
+from core.config import config
+from core.job import Job, concat_jobs, pipe_jobs
 
 from bfx import bvatools
 from bfx import gq_seq_utils
@@ -72,6 +70,9 @@ class DnaSeqHighCoverage(dnaseq.DnaSeq):
 
     def picard_fixmate(self):
         """
+        Verify mate-pair information between mates and fix if needed.
+        This ensures that all mate-pair information is in sync between each read and its mate pair.
+        Fix is done using [Picard](http://broadinstitute.github.io/picard/).
         """
         jobs = []
         for sample in self.samples:
@@ -255,11 +256,14 @@ class DnaSeqHighCoverage(dnaseq.DnaSeq):
 
         jobs.append(concat_jobs([
             tools.preprocess_varscan( prefix + ".vcf.gz",  prefix + ".prep.vcf.gz" ), 
-            vt.decompose_and_normalize_mnps( prefix + ".prep.vcf.gz" , prefix + ".prep.vt.vcf.gz"),
+            pipe_jobs([
+                    vt.decompose_and_normalize_mnps(prefix + ".prep.vcf.gz", None),
+                    htslib.bgzip_tabix(None, prefix + ".prep.vt.vcf.gz"),
+            ]),
             Job(
                 [outputPreprocess],
                 [outputFix],
-                command="zcat " + outputPreprocess + " | grep -v 'ID=AD_O' | awk ' BEGIN {OFS=\"\\t\"; FS=\"\\t\"} {if (NF > 8) {for (i=9;i<=NF;i++) {x=split($i,na,\":\") ; if (x > 1) {tmp=na[1] ; for (j=2;j<x;j++){if (na[j] == \"AD_O\") {na[j]=\"AD\"} ; if (na[j] != \".\") {tmp=tmp\":\"na[j]}};$i=tmp}}};print $0} ' | bgzip -cf >  " + outputFix,
+                command="zless " + outputPreprocess + " | grep -v 'ID=AD_O' | awk ' BEGIN {OFS=\"\\t\"; FS=\"\\t\"} {if (NF > 8) {for (i=9;i<=NF;i++) {x=split($i,na,\":\") ; if (x > 1) {tmp=na[1] ; for (j=2;j<x;j++){if (na[j] == \"AD_O\") {na[j]=\"AD\"} ; if (na[j] != \".\") {tmp=tmp\":\"na[j]}};$i=tmp}}};print $0} ' | bgzip -cf >  " + outputFix,
                 samples=self.samples
             ),
             tools.preprocess_varscan( outputFix,  prefix + ".vt.vcf.gz" )
@@ -323,7 +327,8 @@ class DnaSeqHighCoverage(dnaseq.DnaSeq):
             self.call_variants,
             self.preprocess_vcf,
             self.snp_effect,
-            self.gemini_annotations
+            self.gemini_annotations,
+            self.cram_output
         ]
 
 if __name__ == '__main__': 
