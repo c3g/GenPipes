@@ -28,9 +28,9 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # MUGQIC Modules
-from core.config import *
-from core.job import *
-from bfx.readset import *
+from core.config import config, _raise, SanitycheckError
+from core.job import Job, concat_jobs, pipe_jobs
+from bfx.readset import parse_pacbio_readset_file
 
 from bfx import blast
 from bfx import circlator
@@ -337,7 +337,7 @@ END
 
                     polishing_rounds = config.param('DEFAULT', 'polishing_rounds', type='posint')
                     if polishing_rounds > 4:
-                        raise Exception("Error: polishing_rounds \"" + str(polishing_rounds) + "\" is invalid (should be between 1 and 4)!")
+                        _raise(SanitycheckError("Error: polishing_rounds \"" + str(polishing_rounds) + "\" is invalid (should be between 1 and 4)!"))
 
                     for polishing_round in range(1, polishing_rounds + 1):
                         polishing_round_directory = os.path.join(mer_size_directory, "polishing" + str(polishing_round))
@@ -522,7 +522,7 @@ pandoc --to=markdown \\
 
                     polishing_rounds = config.param('DEFAULT', 'polishing_rounds', type='posint')
                     if polishing_rounds > 4:
-                        raise Exception("Error: polishing_rounds \"" + str(polishing_rounds) + "\" is invalid (should be between 1 and 4)!")
+                        _raise(SanitycheckError("Error: polishing_rounds \"" + str(polishing_rounds) + "\" is invalid (should be between 1 and 4)!"))
 
                     polishing_round_directory = os.path.join(mer_size_directory, "polishing" + str(polishing_rounds))
                     sample_cutoff_mer_size = "_".join([sample.name, cutoff_x, mer_size_text])
@@ -599,7 +599,7 @@ pandoc --to=markdown \\
 
                     polishing_rounds = config.param('DEFAULT', 'polishing_rounds', type='posint')
                     if polishing_rounds > 4:
-                        raise Exception("Error: polishing_rounds \"" + str(polishing_rounds) + "\" is invalid (should be between 1 and 4)!")
+                        _raise(SanitycheckError("Error: polishing_rounds \"" + str(polishing_rounds) + "\" is invalid (should be between 1 and 4)!"))
 
                     fasta_consensus = os.path.join(mer_size_directory, "polishing" + str(polishing_rounds), "data", "consensus.fasta")
                     sample_cutoff_mer_size = "_".join([sample.name, cutoff_x, mer_size_text])
@@ -715,7 +715,7 @@ pandoc --to=markdown \\
 
                     polishing_rounds = config.param('DEFAULT', 'polishing_rounds', type='posint')
                     if polishing_rounds > 4:
-                        raise Exception("Error: polishing_rounds \"" + str(polishing_rounds) + "\" is invalid (should be between 1 and 4)!")
+                        _raise(SanitycheckError("Error: polishing_rounds \"" + str(polishing_rounds) + "\" is invalid (should be between 1 and 4)!"))
 
                     fasta_consensus = os.path.join(mer_size_directory, "polishing" + str(polishing_rounds), "data", "consensus.fasta")
 
@@ -747,7 +747,7 @@ pandoc --to=markdown \\
 
                     polishing_rounds = config.param('DEFAULT', 'polishing_rounds', type='posint')
                     if polishing_rounds > 4:
-                        raise Exception("Error: polishing_rounds \"" + str(polishing_rounds) + "\" is invalid (should be between 1 and 4)!")
+                        _raise(SanitycheckError("Error: polishing_rounds \"" + str(polishing_rounds) + "\" is invalid (should be between 1 and 4)!"))
                         
                     fasta_consensus = os.path.join(mer_size_directory, "polishing" + str(polishing_rounds - 1), "data", "consensus.fasta")
                     aligned_reads = os.path.join(mer_size_directory, "polishing" + str(polishing_rounds), "data", "aligned_reads.sorted.cmp.h5")
@@ -785,7 +785,7 @@ pandoc --to=markdown \\
 
                     polishing_rounds = config.param('DEFAULT', 'polishing_rounds', type='posint')
                     if polishing_rounds > 4:
-                        raise Exception("Error: polishing_rounds \"" + str(polishing_rounds) + "\" is invalid (should be between 1 and 4)!")
+                        _raise(SanitycheckError("Error: polishing_rounds \"" + str(polishing_rounds) + "\" is invalid (should be between 1 and 4)!"))
                         
                     fasta_consensus = os.path.join(mer_size_directory, "polishing" + str(polishing_rounds - 1), "data", "consensus.fasta")
                     output_gff = basemodification_file_prefix + ".gff"

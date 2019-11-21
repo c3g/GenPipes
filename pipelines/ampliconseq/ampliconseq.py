@@ -31,11 +31,8 @@ from os.path import basename
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # MUGQIC Modules
-from core.config import *
-from core.job import *
-from core.pipeline import *
-from bfx.readset import *
-from bfx.sequence_dictionary import *
+from core.config import config, _raise, SanitycheckError
+from core.job import Job, concat_jobs
 
 from pipelines import common
 from bfx import tools
@@ -54,7 +51,7 @@ class AmpliconSeq(common.Illumina):
     ================
 
     """
-  
+
     def __init__(self, protocol=None):
         self._protocol=protocol
         # Add pipeline specific arguments
@@ -67,7 +64,7 @@ class AmpliconSeq(common.Illumina):
         MiSeq raw reads adapter & primers trimming and basic QC is performed using [Trimmomatic](http://www.usadellab.org/cms/index.php?page=trimmomatic).
         If an adapter FASTA file is specified in the config file (section 'trimmomatic', param 'adapter_fasta'),
         it is used first. Else, Adapter1, Adapter2, Primer1 and Primer2 columns from the readset file are used to create
-        an adapter FASTA file, given then to Trimmomatic. Sequences are reversed-complemented and swapped. 
+        an adapter FASTA file, given then to Trimmomatic. Sequences are reversed-complemented and swapped.
 
         This step takes as input files:
         1. MiSeq paired-End FASTQ files from the readset file
@@ -135,8 +132,8 @@ class AmpliconSeq(common.Illumina):
                     headcropValue
                 )
             else:
-                raise Exception("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
             jobs.append(concat_jobs([
                 # Trimmomatic does not create output directory by default
@@ -243,7 +240,7 @@ pandoc \\
                     candidate_input_files.append([readset.fastq1, readset.fastq2])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
             else:
-                raise Exception("Error: run type \"" + readset.run_type + "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END)!")
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type + "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END)!"))
 
             job = flash.flash(
                 fastq1,
@@ -262,7 +259,7 @@ pandoc \\
                 job
             ], name=job_name_prefix + readset.sample.name))
 
-        return jobs    
+        return jobs
 
     def flash_pass1(self):
         jobs = self.flash()
@@ -400,7 +397,7 @@ pandoc --to=markdown \\
                     candidate_input_files.append([readset.fastq1, readset.fastq2])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
             else:
-                raise Exception("Error: run type \"" + readset.run_type + "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END)!")
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type + "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END)!"))
 
             flash_hist = os.path.join("merge", readset.sample.name, readset.name + ".flash.hist")
             job = concat_jobs([
@@ -430,7 +427,7 @@ printf "{sample}\t{readset}\t${{minLen}}\t${{maxLen}}\t${{minFlashOverlap}}\t${{
         jobs.append(concat_jobs([
             job,
         ], name="ampliconLengthParser.run"))
-       
+
         return jobs
 
     def catenate(self):
@@ -727,7 +724,7 @@ pandoc --to=markdown \\
         otu_directory = os.path.dirname(os.path.dirname(otu_rep_picking_fasta))
         output_directory = os.path.join(otu_directory, "taxonomy_assignment")
         tax_assign_file = os.path.join(output_directory, "rep_set_tax_assignments.txt")
- 
+
         job = qiime.otu_assigning(
             otu_rep_picking_fasta,
             output_directory,
@@ -2048,7 +2045,7 @@ cat {report_file_alpha} {report_file_beta} > {report_file}""".format(
         """
 
         try:
-            designFile=self.args.design.name
+            designFile = os.path.relpath(self.args.design.name, self.args.output_dir)
         except:
             self.argparser.error("argument -d/--design is required!")
 
@@ -2060,12 +2057,13 @@ cat {report_file_alpha} {report_file_beta} > {report_file}""".format(
         ampliconLengthFile = os.path.join("metrics/FlashLengths.tsv")
 
         mkdir_job = Job(command="mkdir -p " + lnkRawReadsFolder)
- 
+
         #We'll link the readset fastq files into the raw_reads folder just created
         raw_reads_jobs = []
         dada2_inputs = []
         for readset in self.readsets:
             readSetPrefix = os.path.join(lnkRawReadsFolder, readset.name)
+
             trimmedReadsR1 = os.path.join("trim", readset.sample.name, readset.name + ".trim.pair1.fastq.gz")
             trimmedReadsR2 = os.path.join("trim", readset.sample.name, readset.name + ".trim.pair2.fastq.gz")
 
@@ -2080,13 +2078,13 @@ cat {report_file_alpha} {report_file_beta} > {report_file}""".format(
                     Job(
                         [trimmedReadsR1],
                         [left_or_single_reads],
-                        command="ln -nsf " + os.path.abspath(trimmedReadsR1) + " " + left_or_single_reads,
+                        command="ln -nsf " + os.path.abspath(os.path.join(self.args.output_dir, trimmedReadsR1)) + " " + left_or_single_reads,
                         samples=[readset.sample]
                     ),
                     Job(
                         [trimmedReadsR2],
                         [right_reads],
-                        command="ln -nsf " + os.path.abspath(trimmedReadsR2) + " " + right_reads,
+                        command="ln -nsf " + os.path.abspath(os.path.join(self.args.output_dir, trimmedReadsR2)) + " " + right_reads,
                         samples=[readset.sample]
                     )
                 ]))
@@ -2105,14 +2103,14 @@ cat {report_file_alpha} {report_file_beta} > {report_file}""".format(
                 dada2_inputs.append(left_or_single_reads)
 
             else:
-                raise Exception("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
         jobs.append(concat_jobs(
             [mkdir_job] +
             raw_reads_jobs +
             [dada2.dada2(dada2_inputs, ampliconLengthFile, lnkRawReadsFolder, designFile, dada2_directory)], name="dada2.run"))
-       
+
         return jobs
 
 
