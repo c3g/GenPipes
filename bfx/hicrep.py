@@ -26,86 +26,51 @@ import os
 from core.config import *
 from core.job import *
 
-#beluga path = /home/pubudu/projects/rrg-bourqueg-ad/pubudu/job_outputs/hicrep.R
-def calculate_reproducible_score( output_dir, sample1, sample2, file1_path, file2_path,
-                                  chromosome , resolution, bound_width, weights, corr, down_sampling, smooth):
-    output_file= "".join((output_dir, "_".join(("/hicrep", sample1,  "vs", sample2 , chromosome, resolution, "res",smooth,
-                                                bound_width, down_sampling)), ".tmp"))
-    return Job(
-        [file1_path,file2_path],
-        [output_file],
+def hicrep(
+    base_dir,
+    sample1,
+    sample2,
+    chr
+    ):
+
+    return  Job(
+        [count_matrix],
+        [os.path.join(output_dir, "deseq_results.csv"), os.path.join(output_dir, "dge_results.csv")],
         [
-            ['reproducibility_scores', 'module_mugqic_tools'],
-            ['reproducibility_scores', 'module_R']
+            ['differential_expression_deseq', 'module_mugqic_tools'],
+            ['differential_expression_deseq', 'module_R']
         ],
         command="""\
-        mkdir -p {output_dir} &&
-Rscript $R_TOOLS/hicrep.R \\
-  -s1 {sample1} \\
-  -s2 {sample2} \\
-  -f1 {file1_path} \\
-  -f2 {file2_path} \\
-  -c {chromosome} \\
-  -o {output_file} \\
-  -r {resolution} \\
-  -sm {smooth} \\
-  -b {bound_width} \\
-  -w {weights} \\
-  -cor {corr} \\
-  -d {down_sampling}""".format(
-        sample1=sample1,
-        sample2=sample2,
-        file1_path=file1_path,
-        file2_path=file2_path,
-        output_file=output_file,
-        chromosome=chromosome,
-        resolution=resolution,
-        smooth=smooth,
-        bound_width=bound_width,
-        weights=weights,
-        corr=corr,
-        down_sampling=down_sampling,
-        output_dir=output_dir
+Rscript $R_TOOLS/deseq.R \\
+  -d {design_file} \\
+  -c {count_matrix} \\
+  -o {output_dir} \\
+  {localfit}""".format(
+        design_file=design_file,
+        count_matrix=count_matrix,
+        output_dir=output_dir,
+        localfit=localfit
     ))
 
+def edger(
+    design_file,
+    count_matrix,
+    output_dir
+    ):
 
-def merge_tmp_files( input_files, output_files, temp_out_dir, resolution, smooth, bound_width, down_sampling):
-    return Job(
-        input_files,
-        output_files,
+    return  Job(
+        [count_matrix],
+        [os.path.join(output_dir, "edger_results.csv")],
         [
-            ['reproducibility_scores', 'module_mugqic_tools']
+            ['differential_expression_edger', 'module_mugqic_tools'],
+            ['differential_expression_edger', 'module_R']
         ],
         command="""\
-        cd {temp_out_dir} &&
-        for d in */ ; do 
-        awk -v OFS="_" 'NR==0 {{print; next}} FNR==0 {{next}} {{print FILENAME, $0}}' "$d"hicrep*_{resolution}_res_{smooth}_{bound_width}_{down_sampling}*.tmp |  \\
-        awk -F "_" 'BEGIN{{printf "chr\\tSCC\\tSD\\tSmoothing\\n"}}{{printf $(NF-6)"\\t"$NF"\\n"}}' > \\
-        "${{d%/*}}"_res_{resolution}_{smooth}_{bound_width}_{down_sampling}.tsv 
-        done
-        """.format(
-        temp_out_dir=temp_out_dir,
-        resolution=resolution,
-        smooth=smooth,
-        bound_width=bound_width,
-        down_sampling=down_sampling
-        ))
-
-def merge_tsv(input_files, out_dir):
-
-    #merge all the tsvs and create final .csv file
-    output_file="hcrep_combined_reproducibility_scores.csv"
-    return Job(
-        input_files,
-        [os.path.join(out_dir,output_file)],
-        [
-            ['reproducibility_scores', 'module_mugqic_tools']
-        ],
-        command="""\
-            cd {out_dir} &&
-            #cp *.tsv ../{out_dir} && 
-            awk -v OFS="_" 'NR==1 {{print; next}} FNR==1 {{next}} {{print substr( FILENAME, 1, length(FILENAME)-4 ),$0}}' *.tsv | tr "\\t" "," > ../{out_dir}/{output_file}
-            #rm "$d"*.tmp""".format(
-            out_dir=out_dir,
-            output_file=output_file
-        ))
+Rscript $R_TOOLS/edger.R \\
+  -d {design_file} \\
+  -c {count_matrix} \\
+  -o {output_dir}""".format(
+        design_file=design_file,
+        count_matrix=count_matrix,
+        output_dir=output_dir
+    ))
