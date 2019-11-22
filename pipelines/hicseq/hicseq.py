@@ -332,6 +332,16 @@ class HicSeq(common.Illumina):
 
         return jobs
 
+    def reproducibility_scores(self):
+
+        jobs = []
+
+        """
+        hic-rep is a R package for calculate the interchromosmal reproducibility score
+        """
+        pass
+
+
     def interaction_matrices_genome(self):
         """
         Genomewide interaction matrices are produced by Homer at resolutions defined in the ini config file
