@@ -25,6 +25,7 @@ import math
 import os
 import re
 import sys
+import itertools
 import commands
 import gzip
 import subprocess
@@ -336,10 +337,82 @@ class HicSeq(common.Illumina):
 
         jobs = []
 
+        ##Getting all the sample names
+        #read_count_files = [os.path.join("homer_tag_directory", sample.name , "chromosomeMatrices_" +sample.name,  ".readcounts.csv") for sample in self.samples]
+
+        #input_matrix = os.path.join(self.output_dirs['matrices_output_directory'], sample.name, "chromosomeMatrices",
+         #                           "_".join(("HTD", sample.name, self.enzyme, chr, res, "rawRN.txt")))
+
+
+        chrs = config.param('interaction_matrices_Chr', 'chromosomes')
+        res_chr = config.param('interaction_matrices_Chr', 'resolution_chr').split(",")
+        #Get the list of samples
+        sample_name_list = [sample.name for sample in self.samples]
+
+        #Get the pairwise combinations of each sample
+
+        pairwise_sample_combination = list(itertools.combinations(sample_name_list, 2))
+
+        #print(pairwise_sample_combination)
+        #print(sample_name_list)
+        if chrs == "All":
+            genome_dict = os.path.expandvars(config.param('DEFAULT', 'genome_dictionary', type='filepath'))
+            chrs = genome.chr_names_conv(genome_dict)
+        else:
+            chrs = chrs.split(",")
+        #print(chrs)
+        for samples in pairwise_sample_combination:
+            for res in res_chr:
+                for chr in chrs:
+                    input_sample1 = os.path.join(self.output_dirs['matrices_output_directory'], samples[0],
+                                            "chromosomeMatrices",
+                                            "_".join(("HTD", samples[0], self.enzyme, chr, res, "rawRN.txt")))
+                    input_sample2 = os.path.join(self.output_dirs['matrices_output_directory'], samples[1],
+                                            "chromosomeMatrices",
+                                            "_".join(("HTD", samples[1], self.enzyme, chr, res, "rawRN.txt")))
+                    print(input_sample1)
+                    print(input_sample2)
+                    print(" ")
+        #print(input_matrix)
+            #print(samples[0] + "and "+ samples[1])
+        for sample in self.samples:
+            sample_output_dir = os.path.join(self.output_dirs['reproducibility_scores_temp'], sample.name)
+            #print(sample_output_dir)
+            for res in res_chr:
+                for chr in chrs:
+                    input_matrix = os.path.join(self.output_dirs['matrices_output_directory'], sample.name,
+                                                "chromosomeMatrices",
+                                                "_".join(("HTD", sample.name, self.enzyme, chr, res, "rawRN.txt")))
+
+                 #   print(input_matrix)
+                   # tmp_matrix = input_matrix + ".MatA"
+                   # output_matrix = os.path.join(sample_output_dir, "_".join(
+                     #   ("HTD", sample.name, self.enzyme, chr, res, "rawRN.MatA.TopDom")))
+                   # output_script = "identify_TADs_TopDom." + sample.name + "_" + chr + "_res" + res + ".R"
+
+                    #job_inputFile = concat_jobs(
+                     #   [
+                      #      Job(command="mkdir -p " + sample_output_dir),
+                        #    topdom.create_input(input_matrix, tmp_matrix, output_matrix, output_script, res)
+                       # ],
+                        #name="identify_TADs.TopDom_create_input." + sample.name + "_" + chr + "_res" + res,
+                        #samples=[sample]
+                    #)
+
+                   # job_TADs = topdom.call_TADs(tmp_matrix, output_matrix, output_script)
+                   # job_TADs.name = "identify_TADs.TopDom_call_TADs." + sample.name + "_" + chr + "_res" + res
+                  #  job_TADs.samples = [sample]
+
+                 #   jobs.extend([
+                  #      job_inputFile,
+                   #     job_TADs
+                    #])
+
+        #return jobs
         """
         hic-rep is a R package for calculate the interchromosmal reproducibility score
         """
-        pass
+
 
 
     def interaction_matrices_genome(self):
@@ -802,6 +875,7 @@ class HicSeq(common.Illumina):
             self.samtools_merge_bams,
             self.homer_tag_directory,
             self.interaction_matrices_Chr,
+            self.reproducibility_scores,
             self.interaction_matrices_genome,
             self.identify_compartments,
             self.identify_TADs_TopDom,
