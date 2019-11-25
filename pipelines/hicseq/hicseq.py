@@ -1010,7 +1010,6 @@ class HicSeq(common.Illumina):
             self.samtools_merge_bams,
             self.homer_tag_directory,
             self.interaction_matrices_Chr,
-            self.reproducibility_scores,
             self.interaction_matrices_genome,
             self.identify_compartments,
             self.identify_TADs_TopDom,
