@@ -26,51 +26,28 @@ import os
 from core.config import *
 from core.job import *
 
-def hicrep(
-    base_dir,
+def calculate_reproducible_score(
+    output_dir,
     sample1,
     sample2,
     chr
     ):
 
-    return  Job(
-        [count_matrix],
-        [os.path.join(output_dir, "deseq_results.csv"), os.path.join(output_dir, "dge_results.csv")],
+    return Job(
+        [sample1,sample2],
+        [os.path.join("deseq_results.csv")],
         [
             ['differential_expression_deseq', 'module_mugqic_tools'],
             ['differential_expression_deseq', 'module_R']
         ],
         command="""\
-Rscript $R_TOOLS/deseq.R \\
-  -d {design_file} \\
-  -c {count_matrix} \\
-  -o {output_dir} \\
-  {localfit}""".format(
-        design_file=design_file,
-        count_matrix=count_matrix,
-        output_dir=output_dir,
-        localfit=localfit
-    ))
-
-def edger(
-    design_file,
-    count_matrix,
-    output_dir
-    ):
-
-    return  Job(
-        [count_matrix],
-        [os.path.join(output_dir, "edger_results.csv")],
-        [
-            ['differential_expression_edger', 'module_mugqic_tools'],
-            ['differential_expression_edger', 'module_R']
-        ],
-        command="""\
-Rscript $R_TOOLS/edger.R \\
-  -d {design_file} \\
-  -c {count_matrix} \\
+Rscript /home/pubudu/projects/def-bourqueg/pubudu/job_outputs/hicrep.R \\
+  -1 {sample1} \\
+  -2 {sample2} \\
+  -c {chr} \\
   -o {output_dir}""".format(
-        design_file=design_file,
-        count_matrix=count_matrix,
-        output_dir=output_dir
+        sample1=sample1,
+        sample2=sample2,
+        output_dir=output_dir,
+        chr=chr
     ))
