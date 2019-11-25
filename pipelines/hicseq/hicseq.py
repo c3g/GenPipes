@@ -53,6 +53,7 @@ from bfx import tools
 from bfx import topdom
 from bfx import robustad
 from bfx import hic
+from bfx import hicrep
 
 log = logging.getLogger(__name__)
 
@@ -328,7 +329,6 @@ class HicSeq(common.Illumina):
                         newFileNamePlot
                     )
                     jobPlot.samples = [sample]
-
                     jobs.extend([jobMatrix, jobPlot])
 
         return jobs
@@ -347,11 +347,11 @@ class HicSeq(common.Illumina):
         chrs = config.param('interaction_matrices_Chr', 'chromosomes')
         res_chr = config.param('interaction_matrices_Chr', 'resolution_chr').split(",")
         #Get the list of samples
-        sample_name_list = [sample.name for sample in self.samples]
+        #sample_name_list = [sample.name for sample in self.samples]
 
         #Get the pairwise combinations of each sample
 
-        pairwise_sample_combination = list(itertools.combinations(sample_name_list, 2))
+        pairwise_sample_combination = list(itertools.combinations(self.samples, 2))
 
         #print(pairwise_sample_combination)
         #print(sample_name_list)
@@ -361,54 +361,42 @@ class HicSeq(common.Illumina):
         else:
             chrs = chrs.split(",")
         #print(chrs)
-        for samples in pairwise_sample_combination:
-            for res in res_chr:
-                for chr in chrs:
-                    input_sample1 = os.path.join(self.output_dirs['matrices_output_directory'], samples[0],
-                                            "chromosomeMatrices",
-                                            "_".join(("HTD", samples[0], self.enzyme, chr, res, "rawRN.txt")))
-                    input_sample2 = os.path.join(self.output_dirs['matrices_output_directory'], samples[1],
-                                            "chromosomeMatrices",
-                                            "_".join(("HTD", samples[1], self.enzyme, chr, res, "rawRN.txt")))
-                    print(input_sample1)
-                    print(input_sample2)
-                    print(" ")
-        #print(input_matrix)
-            #print(samples[0] + "and "+ samples[1])
-        for sample in self.samples:
-            sample_output_dir = os.path.join(self.output_dirs['reproducibility_scores_temp'], sample.name)
-            #print(sample_output_dir)
-            for res in res_chr:
-                for chr in chrs:
-                    input_matrix = os.path.join(self.output_dirs['matrices_output_directory'], sample.name,
+        if len(self.samples) > 1:
+            #for samples in pairwise_sample_combination:
+
+           # for sample in pairwise_sample_combination:
+            #    print(sample[0].name)
+            #for sample in self.samples:
+            for sample in pairwise_sample_combination:
+                for res in res_chr:
+                    for chr in chrs:
+                        input_sample1 = os.path.join(self.output_dirs['matrices_output_directory'], sample[0].name,
                                                 "chromosomeMatrices",
-                                                "_".join(("HTD", sample.name, self.enzyme, chr, res, "rawRN.txt")))
+                                                "_".join(("HTD", sample[0].name, self.enzyme, chr, res, "raw.txt")))
 
-                 #   print(input_matrix)
-                   # tmp_matrix = input_matrix + ".MatA"
-                   # output_matrix = os.path.join(sample_output_dir, "_".join(
-                     #   ("HTD", sample.name, self.enzyme, chr, res, "rawRN.MatA.TopDom")))
-                   # output_script = "identify_TADs_TopDom." + sample.name + "_" + chr + "_res" + res + ".R"
+                      #  input_sample1 = os.path.join(self.output_dirs['matrices_output_directory'], samples[0],
+                       #                         "chromosomeMatrices",
+                        #                        "_".join(("HTD", samples[0], self.enzyme, chr, res, "raw.txt")))
+                        input_sample2 = os.path.join(self.output_dirs['matrices_output_directory'], sample[1].name,
+                                                "chromosomeMatrices",
+                                                "_".join(("HTD", sample[1].name, self.enzyme, chr, res, "raw.txt")))
+                        #print(input_sample1)
+                        #print(input_sample2)
+                        #print(" ")
+                        job = hicrep.calculate_reproducible_score(self.output_dirs['matrices_output_directory'],
+                                                                  input_sample1, input_sample2, chr)
+                        #job.samples = [samples[0],samples[1]]
+                        job.samples = [sample[0], sample[1]]
+                        #print(job.samples)
+                        job.name = "hicrep."
+                        jobs.append(job)
 
-                    #job_inputFile = concat_jobs(
-                     #   [
-                      #      Job(command="mkdir -p " + sample_output_dir),
-                        #    topdom.create_input(input_matrix, tmp_matrix, output_matrix, output_script, res)
-                       # ],
-                        #name="identify_TADs.TopDom_create_input." + sample.name + "_" + chr + "_res" + res,
-                        #samples=[sample]
-                    #)
+        else:
+            pass
+            #Raise an exception
 
-                   # job_TADs = topdom.call_TADs(tmp_matrix, output_matrix, output_script)
-                   # job_TADs.name = "identify_TADs.TopDom_call_TADs." + sample.name + "_" + chr + "_res" + res
-                  #  job_TADs.samples = [sample]
+        return jobs
 
-                 #   jobs.extend([
-                  #      job_inputFile,
-                   #     job_TADs
-                    #])
-
-        #return jobs
         """
         hic-rep is a R package for calculate the interchromosmal reproducibility score
         """
