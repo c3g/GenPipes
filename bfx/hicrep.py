@@ -36,7 +36,7 @@ def calculate_reproducible_score( output_dir, sample1, sample2,chromosome ):
             ['reproducibility_scores', 'module_R']
         ],
         command="""\
-Rscript /home/pubudu/projects/def-bourqueg/pubudu/job_outputs/hicrep.R \\
+Rscript /home/pubudu/projects/rrg-bourqueg-ad/pubudu/job_outputs/hicrep.R \\
   -1 {sample1} \\
   -2 {sample2} \\
   -c {chromosome} \\
