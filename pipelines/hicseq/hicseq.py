@@ -335,60 +335,47 @@ class HicSeq(common.Illumina):
 
     def reproducibility_scores(self):
 
+        """
+        hic-rep is a R package for calculate the interchromosmal reproducibility score
+        """
+
         jobs = []
 
-        ##Getting all the sample names
-        #read_count_files = [os.path.join("homer_tag_directory", sample.name , "chromosomeMatrices_" +sample.name,  ".readcounts.csv") for sample in self.samples]
-
-        #input_matrix = os.path.join(self.output_dirs['matrices_output_directory'], sample.name, "chromosomeMatrices",
-         #                           "_".join(("HTD", sample.name, self.enzyme, chr, res, "rawRN.txt")))
-
-
+        #Get defined chromosomes and resolution from the config (.ini) file
         chrs = config.param('interaction_matrices_Chr', 'chromosomes')
         res_chr = config.param('interaction_matrices_Chr', 'resolution_chr').split(",")
-        #Get the list of samples
-        #sample_name_list = [sample.name for sample in self.samples]
 
-        #Get the pairwise combinations of each sample
-
+        #Get the pairwise combinations of each sample (return an object list)
         pairwise_sample_combination = list(itertools.combinations(self.samples, 2))
 
-        #print(pairwise_sample_combination)
-        #print(sample_name_list)
+        #run a loop for each resolution type and for each sample pair
+        #compare each chromosome in the selected sample pair
         if chrs == "All":
             genome_dict = os.path.expandvars(config.param('DEFAULT', 'genome_dictionary', type='filepath'))
             chrs = genome.chr_names_conv(genome_dict)
         else:
             chrs = chrs.split(",")
-        #print(chrs)
+        chrs = ['chr1']
+        #If there is only one sample, an exception should throw
         if len(self.samples) > 1:
-            #for samples in pairwise_sample_combination:
-
-           # for sample in pairwise_sample_combination:
-            #    print(sample[0].name)
-            #for sample in self.samples:
             for sample in pairwise_sample_combination:
                 for res in res_chr:
-                    for chr in chrs:
+                    for chromosome in chrs:
+
+                        #get sample names with relative file path
                         input_sample1 = os.path.join(self.output_dirs['matrices_output_directory'], sample[0].name,
                                                 "chromosomeMatrices",
-                                                "_".join(("HTD", sample[0].name, self.enzyme, chr, res, "raw.txt")))
+                                                "_".join(("HTD", sample[0].name, self.enzyme, chromosome, res, "raw.txt")))
 
-                      #  input_sample1 = os.path.join(self.output_dirs['matrices_output_directory'], samples[0],
-                       #                         "chromosomeMatrices",
-                        #                        "_".join(("HTD", samples[0], self.enzyme, chr, res, "raw.txt")))
                         input_sample2 = os.path.join(self.output_dirs['matrices_output_directory'], sample[1].name,
                                                 "chromosomeMatrices",
-                                                "_".join(("HTD", sample[1].name, self.enzyme, chr, res, "raw.txt")))
-                        #print(input_sample1)
-                        #print(input_sample2)
-                        #print(" ")
+                                                "_".join(("HTD", sample[1].name, self.enzyme, chromosome, res, "raw.txt")))
                         job = hicrep.calculate_reproducible_score(self.output_dirs['matrices_output_directory'],
-                                                                  input_sample1, input_sample2, chr)
-                        #job.samples = [samples[0],samples[1]]
-                        job.samples = [sample[0], sample[1]]
-                        #print(job.samples)
-                        job.name = "hicrep."
+                                                                  input_sample1, input_sample2, chromosome)
+
+                        job.samples = sample
+
+                        job.name = "hicrep_"+sample[0].name+"_vs_" + sample[1].name+"_" + chromosome
                         jobs.append(job)
 
         else:
@@ -396,10 +383,6 @@ class HicSeq(common.Illumina):
             #Raise an exception
 
         return jobs
-
-        """
-        hic-rep is a R package for calculate the interchromosmal reproducibility score
-        """
 
 
 

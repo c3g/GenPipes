@@ -26,28 +26,23 @@ import os
 from core.config import *
 from core.job import *
 
-def calculate_reproducible_score(
-    output_dir,
-    sample1,
-    sample2,
-    chr
-    ):
+def calculate_reproducible_score( output_dir, sample1, sample2,chromosome ):
 
     return Job(
         [sample1,sample2],
-        [os.path.join("deseq_results.csv")],
+        [os.path.join("hicrep_score.tmp")],
         [
-            ['differential_expression_deseq', 'module_mugqic_tools'],
-            ['differential_expression_deseq', 'module_R']
+            ['reproducibility_scores', 'module_mugqic_tools'],
+            ['reproducibility_scores', 'module_R']
         ],
         command="""\
 Rscript /home/pubudu/projects/def-bourqueg/pubudu/job_outputs/hicrep.R \\
   -1 {sample1} \\
   -2 {sample2} \\
-  -c {chr} \\
+  -c {chromosome} \\
   -o {output_dir}""".format(
         sample1=sample1,
         sample2=sample2,
         output_dir=output_dir,
-        chr=chr
+        chromosome=chromosome
     ))
