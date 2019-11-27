@@ -284,22 +284,22 @@ detects sample swaps.
 stringtie
 ---------
 Assemble transcriptome using [stringtie](https://ccb.jhu.edu/software/stringtie/index.shtml).
-Warning: Still in testing.
+
 
 stringtie_merge
 ---------------
 Merge assemblies into a master teranscriptome reference using [stringtie](https://ccb.jhu.edu/software/stringtie/index.shtml).
-Warning: still in testing
+
 
 stringtie_abund
 ---------------
 Assemble transcriptome and compute RNA-seq expression using [stringtie](https://ccb.jhu.edu/software/stringtie/index.shtml).
-Warning: Still in testing.
+
 
 ballgown
 --------
 [Ballgown](https://bioconductor.org/packages/release/bioc/html/ballgown.html) is used to calculate differential transcript and gene expression levels and test them for significant differences.
 
-Warning: still in testing
+
 
 

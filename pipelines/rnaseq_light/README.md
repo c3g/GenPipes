@@ -96,6 +96,8 @@ Run Kallisto on fastq files for a fast esimate of abundance.
 
 kallisto_count_matrix
 ---------------------
+Produce a count matrix using the kallisto pseudo-alignment and the corresponding annotation file.
+
 gq_seq_utils_exploratory_analysis_rnaseq_light
 ----------------------------------------------
 Exploratory analysis using the gqSeqUtils R package adapted for RnaSeqLight
@@ -105,6 +107,5 @@ sleuth_differential_expression
 Performs differential gene expression analysis using [Sleuth](http://pachterlab.github.io/sleuth/). 
 Analysis are performed both at a transcript and gene level, using two different tests: LRT and WT. 
 
-Still in development, use with caution. 
 
 

@@ -12,9 +12,9 @@ module_mugqic_R_packages=mugqic/mugqic_R_packages/1.0.5
 module_perl=mugqic/perl/5.22.1
 module_picard=mugqic/picard/2.0.1
 module_python=mugqic/python/2.7.14
-module_R=mugqic/R_Bioconductor/3.5.1_3.7
+module_R=mugqic/R_Bioconductor/3.6.0_3.9
 module_samtools=mugqic/samtools/1.3.1
-module_star=mugqic/star/2.5.4b
+module_star=mugqic/star/2.7.2b
 module_tabix=mugqic/tabix/0.2.6
 module_tophat=mugqic/tophat/2.0.14
 module_ucsc=mugqic/ucsc/v359
@@ -22,6 +22,9 @@ module_hicup=mugqic/HiCUP/v0.7.2
 module_kallisto=mugqic/kallisto/0.44.0
 
 HOST=`hostname`
+
+# Ensure to use 'grep' from CVMFS to avoid errors caused by different grep versions
+grep_cvmfs=/cvmfs/soft.mugqic/yum/centos7/1.0/usr/bin/grep
 
 init_install() {
   # '$MUGQIC_INSTALL_HOME_DEV' for development, '$MUGQIC_INSTALL_HOME' for production
@@ -772,7 +775,7 @@ copy_files() {
     then
       if ! is_up2date $ANNOTATIONS_DIR/$RRNA
       then
-        grep -Poi "^>.*rRNA[^>]*" $ANNOTATIONS_DIR/$NCRNA | grep -v "^$" > $ANNOTATIONS_DIR/$RRNA
+        $grep_cvmfs -Pzoi "^>.*rRNA[^>]*" $ANNOTATIONS_DIR/$NCRNA | grep -v "^$" > $ANNOTATIONS_DIR/$RRNA
       fi
     fi
 
@@ -810,7 +813,7 @@ copy_files() {
       then
         if ! is_up2date $ANNOTATIONS_DIR/$RRNA
         then
-          grep -Poi "^>.*rRNA[^>]*" $ANNOTATIONS_DIR/$NCRNA | grep -v "^$" > $ANNOTATIONS_DIR/$RRNA
+          $grep_cvmfs -Pzoi "^>.*rRNA[^>]*" $ANNOTATIONS_DIR/$NCRNA | grep -v "^$" > $ANNOTATIONS_DIR/$RRNA
         fi
       fi
     fi

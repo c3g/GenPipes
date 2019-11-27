@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=bcftools
-VERSION=1.9
+VERSION=1.6
 ARCHIVE=$SOFTWARE-$VERSION.tar.bz2
 ARCHIVE_URL=https://github.com/samtools/bcftools/releases/download/${VERSION}/${ARCHIVE}
 SOFTWARE_DIR=$SOFTWARE-$VERSION

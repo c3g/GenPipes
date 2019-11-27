@@ -30,10 +30,8 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # MUGQIC Modules
-from core.config import *
-from core.job import *
-from core.pipeline import *
-from bfx.sequence_dictionary import *
+from core.config import config
+from core.job import Job, concat_jobs, pipe_jobs
 
 from bfx import bvatools
 from bfx import gq_seq_utils
@@ -72,6 +70,9 @@ class DnaSeqHighCoverage(dnaseq.DnaSeq):
 
     def picard_fixmate(self):
         """
+        Verify mate-pair information between mates and fix if needed.
+        This ensures that all mate-pair information is in sync between each read and its mate pair.
+        Fix is done using [Picard](http://broadinstitute.github.io/picard/).
         """
         jobs = []
         for sample in self.samples:

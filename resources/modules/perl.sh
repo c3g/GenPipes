@@ -3,14 +3,12 @@
 set -eu -o pipefail
 
 SOFTWARE=perl
-VERSION=5.26.2
+VERSION=5.28.2
 ARCHIVE=$SOFTWARE-$VERSION.tar.gz
 ARCHIVE_URL=http://www.cpan.org/src/5.0/$ARCHIVE
 SOFTWARE_DIR=$SOFTWARE-$VERSION
+NOWRAP=1
 
-# Specific commands to extract and build the software
-# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
-# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
   tar zxvf $ARCHIVE

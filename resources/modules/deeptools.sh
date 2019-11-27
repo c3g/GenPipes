@@ -8,9 +8,9 @@ set -eu -o pipefail
 SOFTWARE=deepTools
 VERSION=2.5.3
 ARCHIVE=$SOFTWARE-$VERSION.tar.gz
-ARCHIVE_URL=https://github.com/fidelram/${SOFTWARE}/archive/${VERSION}.tar.gz
+ARCHIVE_URL=https://github.com/${SOFTWARE,,}/${SOFTWARE}/archive/${VERSION}.tar.gz
 SOFTWARE_DIR=$SOFTWARE-$VERSION
-PYTHON_VERSION=2.7.13
+PYTHON_VERSION=2.7.14
 
 build() {
   cd $INSTALL_DOWNLOAD
