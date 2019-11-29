@@ -355,36 +355,47 @@ class HicSeq(common.Illumina):
             chrs = genome.chr_names_conv(genome_dict)
         else:
             chrs = chrs.split(",")
-        chrs = ['chr1']
-        #If there is only one sample, an exception should throw
+        #chrs = ['chr1']
+        input_files_for_merging=[]
+        #If there is only one sample, an step should exit giving a warning
         if len(self.samples) > 1:
+
+            hicrep_temp_directory ="__temp.hicrep_reproducibility_scores"
             for sample in pairwise_sample_combination:
                 for res in res_chr:
                     for chromosome in chrs:
 
                         #get sample names with relative file path
-                        input_sample1 = os.path.join(self.output_dirs['matrices_output_directory'], sample[0].name,
+                        input_sample1_file_path = os.path.join(self.output_dirs['matrices_output_directory'], sample[0].name,
                                                 "chromosomeMatrices",
                                                 "_".join(("HTD", sample[0].name, self.enzyme, chromosome, res, "raw.txt")))
 
-                        input_sample2 = os.path.join(self.output_dirs['matrices_output_directory'], sample[1].name,
+                        input_sample2_file_path = os.path.join(self.output_dirs['matrices_output_directory'], sample[1].name,
                                                 "chromosomeMatrices",
                                                 "_".join(("HTD", sample[1].name, self.enzyme, chromosome, res, "raw.txt")))
-                        job = hicrep.calculate_reproducible_score(self.output_dirs['matrices_output_directory'],
-                                                                  input_sample1, input_sample2, chromosome)
-
+                        out_dir = os.path.join(hicrep_temp_directory,
+                                               "_".join(( sample[0].name, "vs",  sample[1].name)))
+                        job = hicrep.calculate_reproducible_score( out_dir, sample[0].name, sample[1].name,
+                                                                  input_sample1_file_path, input_sample2_file_path, chromosome)
+                        output_file = "".join(
+                            (out_dir, "_".join(("/hicrep", sample[0].name, "vs", sample[1].name, chromosome)), ".tmp"))
                         job.samples = sample
 
-                        job.name = "hicrep_"+sample[0].name+"_vs_" + sample[1].name+"_" + chromosome
-                        jobs.append(job)
+                        job.name = "_".join(("reproducibility_scores.hicrep", sample[0].name, "vs",  sample[1].name,  chromosome))
 
+                        input_files_for_merging.append(output_file)
+
+                        jobs.append(job)
+            #
+            job_merge = hicrep.merge_files( input_files_for_merging, hicrep_temp_directory)
+            job_merge.samples = self.samples
+            job_merge.name = "merge_hicrep_scores"
+            jobs.append(job_merge)
         else:
             pass
             #Raise an exception
 
         return jobs
-
-
 
     def interaction_matrices_genome(self):
         """
