@@ -32,6 +32,7 @@ def calculate_reproducible_score( output_dir, sample1, sample2, file1_path, file
     output_file= "".join((output_dir, "_".join(("/hicrep", sample1,  "vs", sample2 , chromosome, resolution, "res",smooth,
                                                 bound_width, down_sampling)), ".tmp"))
 
+    output_file= "".join((output_dir, "_".join(("/hicrep", sample1,  "vs", sample2 , chromosome)), ".tmp"))
     return Job(
         [file1_path,file2_path],
         [output_file],
