@@ -89,10 +89,13 @@ sequenza-utils  \\
     )
 
 def sequenza_main(seqz, output_folder, sample_name):
-    output = sample_name + "_ploidy_celularity.tsv"
+    output_dep = [os.path.join(output_folder, sample_name + "_chromosome_view.pdf"),
+                  os.path.join(output_folder, sample_name + "_genome_view.pdf"),
+                  os.path.join(output_folder, sample_name + "_CN_bars.pdf"),
+                  os.path.join(output_folder, sample_name + "_CP_contours.pdf")]
     return Job(
         [seqz],
-        [output],
+        output_dep,
         [
             ['sequenza', 'module_mugqic_tools'],
             ['sequenza', 'module_R'],

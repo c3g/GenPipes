@@ -38,8 +38,8 @@ def bamqc(input_bam, output_directory, output, options):
         inputs,
         outputs,
         [
-            ['DEFAULT', 'module_java'],
-            ['DEFAULT', 'module_qualimap'],
+            ['qualimap', 'module_java'],
+            ['qualimap', 'module_qualimap'],
         ],
         command="""\
 qualimap bamqc {other_options} \\

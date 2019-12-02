@@ -3066,7 +3066,7 @@ END`""".format(
                                 tumor_pair.tumor.name,
                                 os.path.join(ensemble_directory, "rawMetaSV"), ensemble_directory,
                                 isize_mean=str(isize_mean), isize_sd=str(isize_sd),
-                                output_vcf=[]),
+                                output_vcf=os.path.join(ensemble_directory, "variants.vcf.gz")),
                 # input_wham=input_wham, input_gatk=gatk_pass, output_vcf=[]),
             ], name="metasv_ensemble." + tumor_pair.name))
 
