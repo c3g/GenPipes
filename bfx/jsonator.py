@@ -121,6 +121,30 @@ def create(pipeline, sample):
                     'step': []
                 }
             }
+        elif pipeline.__class__.__name__ == "Nanopore":
+            json_hash = {
+                'version': jsonator_version,
+                'project': project_name,
+                'submission_date': "",
+                # Create a submission time entry and let it empty : will be updated as the bash script is launched
+                'sample_name': sample.name,
+                'readset': [{
+                    "name": readset.name,
+                    "run": readset.run,
+                    "flowcell": readset.flowcell,
+                    "library": readset.library,
+                    "summary": readset.summary_file,
+                } for readset in sample.readsets],
+                'pipeline': {
+                    'name': pipeline.__class__.__name__,
+                    'general_information': general_info,
+                    'software': [{
+                        'name': software['name'],
+                        'version': software['version']
+                    } for software in softwares],
+                    'step': []
+                }
+            }
         else :
             json_hash = {
                 'version': jsonator_version,
