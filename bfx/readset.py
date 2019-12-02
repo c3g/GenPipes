@@ -441,3 +441,77 @@ def parse_pacbio_readset_file(pacbio_readset_file):
     log.info(str(len(readsets)) + " readset" + ("s" if len(readsets) > 1 else "") + " parsed")
     log.info(str(len(samples)) + " sample" + ("s" if len(samples) > 1 else "") + " parsed\n")
     return readsets
+
+
+class NanoporeReadset(Readset):
+
+    @property
+    def run(self):
+        return self._run
+
+    @property
+    def flowcell(self):
+        return self._flowcell
+
+    @property
+    def library(self):
+        return self._library
+
+    @property
+    def summary_file(self):
+        return self._summary_file
+
+    @property
+    def fastq_files(self):
+        return self._fastq_files
+
+    @property
+    def fast5_files(self):
+        return self._fast5_files
+
+
+def parse_nanopore_readset_file(nanopore_readset_file):
+    readsets = []
+    samples = []
+
+    log.info("Parse Nanopore readset file " + nanopore_readset_file + " ...")
+    readset_csv = csv.DictReader(open(nanopore_readset_file, 'rb'), delimiter='\t')
+    for line in readset_csv:
+        sample_name = line['Sample']
+        sample_names = [sample.name for sample in samples]
+        if sample_name in sample_names:
+            # Sample already exists
+            sample = samples[sample_names.index(sample_name)]
+        else:
+            # Create new sample
+            sample = Sample(sample_name)
+            samples.append(sample)
+
+        # Create readset and add it to sample
+        readset = NanoporeReadset(line['Readset'])
+
+        # Readset file paths are either absolute or relative to the readset file
+        # Convert them to absolute paths
+        for format in ("FASTQ", "FAST5"):
+            if line.get(format, None):
+                abs_files = []
+                for file in line[format].split(","):
+                    file = os.path.expandvars(file)
+                    if not os.path.isabs(file):
+                        file = os.path.dirname(os.path.abspath(os.path.expandvars(nanopore_readset_file))) + os.sep + file
+                    abs_files.append(os.path.normpath(file))
+                line[format] = ",".join(abs_files)
+
+        readset._run = line.get('Run', None)
+        readset._flowcell = line.get('Flowcell', None)
+        readset._library = line.get('Library', None)
+        readset._summary_file = line['Summary'] if line.get('Summary', None) else []
+        readset._fastq_files = line['FASTQ'] if line.get('FASTQ', None) else []
+        readset._fast5_files = line['FAST5'] if line.get('FAST5', None) else []
+
+        readsets.append(readset)
+        sample.add_readset(readset)
+
+    log.info(str(len(readsets)) + " readset" + ("s" if len(readsets) > 1 else "") + " parsed")
+    log.info(str(len(samples)) + " sample" + ("s" if len(samples) > 1 else "") + " parsed\n")
+    return readsets
