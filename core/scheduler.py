@@ -40,13 +40,8 @@ def create_scheduler(s_type, config_files, container=None):
         return BatchScheduler(config_files, container=container)
     elif s_type == "daemon":
         return DaemonScheduler(config_files)
-<<<<<<< HEAD
     elif s_type == "slurm":
         return SlurmScheduler(config_files, container=container)
-=======
-    elif type == "slurm":
-        return SlurmScheduler(config_files)
->>>>>>> 713a5ba4 (json and folder updates)
     else:
         raise Exception("Error: scheduler type \"" + s_type + "\" is invalid!")
 
@@ -528,11 +523,6 @@ exit \$MUGQIC_STATE" | \\
 
                     # Write job parameters in job list file
                     cmd += "\necho \"$" + job.id + "\t$JOB_NAME\t$JOB_DEPENDENCIES\t$JOB_OUTPUT_RELATIVE_PATH\" >> $JOB_LIST\n"
-<<<<<<< HEAD
-=======
-                    #add 0.5s sleep to let slurm submiting the job correctly
-                    cmd += "\nsleep 0.5\n"
->>>>>>> 713a5ba4 (json and folder updates)
 
                     cmd += "\necho \"$" + job.id + "\t$JOB_NAME submitted\""
                     #add 0.2s sleep to let slurm submiting the job correctly
