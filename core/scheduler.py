@@ -306,6 +306,7 @@ if [ \$MUGQIC_STATE -eq 0 ] ; then
 fi
 exit \$MUGQIC_STATE" | \\
 """.format(
+                        container_line=self.container_line,
                         job2json_start=self.job2json(pipeline, step, job, '\\"running\\"'),
                         job2json_end=self.job2json(pipeline, step, job, '\\$MUGQIC_STATE')
                     )
