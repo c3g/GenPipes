@@ -26,9 +26,10 @@ import os
 from core.config import *
 from core.job import *
 
-def calculate_reproducible_score( output_dir, sample1, sample2, file1_path, file2_path,  chromosome ):
-
-    output_file= "".join((output_dir, "_".join(("/hicrep", sample1,  "vs", sample2 , chromosome)), ".tmp"))
+def calculate_reproducible_score( output_dir, sample1, sample2, file1_path, file2_path,
+                                  chromosome , resolution, bound_width, weights, corr, down_sampling, smooth):
+    output_file= "".join((output_dir, "_".join(("/hicrep", sample1,  "vs", sample2 , chromosome, resolution, smooth,
+                                                bound_width)), ".tmp"))
     return Job(
         [file1_path,file2_path],
         [output_file],
@@ -44,13 +45,26 @@ Rscript /home/pubudu/projects/rrg-bourqueg-ad/pubudu/job_outputs/hicrep.R \\
   -f1 {file1_path} \\
   -f2 {file2_path} \\
   -c {chromosome} \\
-  -o {output_dir}""".format(
+  -o {output_file} \\
+  -r {resolution} \\
+  -sm {smooth} \\
+  -b {bound_width} \\
+  -w {weights} \\
+  -cor {corr} \\
+  -d {down_sampling}""".format(
         sample1=sample1,
         sample2=sample2,
         file1_path=file1_path,
         file2_path=file2_path,
-        output_dir=output_dir,
-        chromosome=chromosome
+        output_file=output_file,
+        chromosome=chromosome,
+        resolution=resolution,
+        smooth=smooth,
+        bound_width=bound_width,
+        weights=weights,
+        corr=corr,
+        down_sampling=down_sampling,
+        output_dir=output_dir
     ))
 
 
@@ -64,8 +78,8 @@ def merge_files( input_files, temp_out_dir):
         ],
         command="""\
         cd {temp_out_dir} &&
-        for d in */ ; do \\
-        cat "$d"hicrep*.tmp | awk -v FS='\\t' -v OFS='\\t' -v dir="${{d%/*}}" '{{sum+=$1}} END {{print dir,sum/NR}}' > "${{d%/*}}".tmp \\
+        for d in */ ; do 
+        cat "$d"hicrep*.tmp | awk -v FS='\\t' -v OFS='\\t' -v dir="${{d%/*}}" '{{sum+=$1}} END {{print dir,sum/NR}}' > "${{d%/*}}".tmp 
         done &&
         cat *.tmp > hicrep_reproducibilityscore_matrix.tsv &&
         rm *.tmp""".format(
