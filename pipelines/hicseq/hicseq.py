@@ -344,6 +344,11 @@ class HicSeq(common.Illumina):
         #Get defined chromosomes and resolution from the config (.ini) file
         chrs = config.param('interaction_matrices_Chr', 'chromosomes')
         res_chr = config.param('interaction_matrices_Chr', 'resolution_chr').split(",")
+        bound_width = config.param('reproducibility_scores', 'boundary_width')
+        weights = config.param('reproducibility_scores', 'weights')
+        down_sampling = config.param('reproducibility_scores', 'down_sampling')
+        smooth = config.param('reproducibility_scores', 'h')
+        corr = config.param('reproducibility_scores', 'corr')
 
         #Get the pairwise combinations of each sample (return an object list)
         pairwise_sample_combination = list(itertools.combinations(self.samples, 2))
@@ -367,26 +372,32 @@ class HicSeq(common.Illumina):
 
                         #get sample names with relative file path
                         input_sample1_file_path = os.path.join(self.output_dirs['matrices_output_directory'], sample[0].name,
-                                                "chromosomeMatrices",
-                                                "_".join(("HTD", sample[0].name, self.enzyme, chromosome, res, "raw.txt")))
+                                                    "chromosomeMatrices",
+                                                    "_".join(("HTD", sample[0].name, self.enzyme, chromosome, res, "raw.txt")))
 
                         input_sample2_file_path = os.path.join(self.output_dirs['matrices_output_directory'], sample[1].name,
-                                                "chromosomeMatrices",
-                                                "_".join(("HTD", sample[1].name, self.enzyme, chromosome, res, "raw.txt")))
+                                                    "chromosomeMatrices",
+                                                    "_".join(("HTD", sample[1].name, self.enzyme, chromosome, res, "raw.txt")))
                         out_dir = os.path.join(hicrep_temp_directory,
-                                               "_".join(( sample[0].name, "vs",  sample[1].name)))
+                                                   "_".join(( sample[0].name, "vs",  sample[1].name)))
+
                         job = hicrep.calculate_reproducible_score( out_dir, sample[0].name, sample[1].name,
-                                                                  input_sample1_file_path, input_sample2_file_path, chromosome)
+                                                                      input_sample1_file_path, input_sample2_file_path,
+                                                                       chromosome, res, bound_width, weights, corr,
+                                                                       down_sampling,smooth)
                         output_file = "".join(
-                            (out_dir, "_".join(("/hicrep", sample[0].name, "vs", sample[1].name, chromosome)), ".tmp"))
+                                (out_dir, "_".join(("/hicrep", sample[0].name, "vs", sample[1].name, chromosome, res,
+                                                    smooth, bound_width)), ".tmp"))
                         job.samples = sample
 
-                        job.name = "_".join(("reproducibility_scores.hicrep", sample[0].name, "vs",  sample[1].name,  chromosome))
+                        job.name = "_".join(("reproducibility_scores.hicrep", sample[0].name, "vs",
+                                                 sample[1].name,  chromosome, res, bound_width, weights,
+                                                 corr, down_sampling, smooth))
 
                         input_files_for_merging.append(output_file)
 
                         jobs.append(job)
-            #
+
             job_merge = hicrep.merge_files( input_files_for_merging, hicrep_temp_directory)
             job_merge.samples = self.samples
             job_merge.name = "merge_hicrep_scores"
