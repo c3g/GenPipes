@@ -23,6 +23,7 @@
 import os
 import sys
 import logging
+import collections
 
 # Append mugqic_pipelines directory to Python library path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
