@@ -1885,40 +1885,8 @@ END
         job = gatk4.crosscheck_fingerprint(inputs, output)
         job.name = "gatk_crosscheck_fingerprint.readset"
     
-        job = vcftools.depth(input_prefix + ".hc.vcf.gz", input_prefix)
-        job.name = "vcftools_depth." + "allSamples"
         jobs.append(job)
             
-        return jobs
-
-    def metrics_gatk_sample_fingerprint(self):
-        """
-		CheckFingerprint (Picard)
-        Checks the sample identity of the sequence/genotype data in the provided file (SAM/BAM or VCF) against a set of known genotypes in the supplied genotype file (in VCF format).
-        input: sample SAM/BAM or VCF
-        output: fingerprint file
-		"""
-    
-        jobs = []
-        inputs = []
-        
-        for sample in self.samples:
-        #for readset in self.readsets:
-            #bam = readset.bam
-            alignment_directory = os.path.join("alignment", sample.name)
-            input = self.select_input_files([[os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
-                                             [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
-                                             [os.path.join(alignment_directory, sample.name + ".sorted.bam")]])
-            inputs.append(input[0])
-            #inputs.append(bam)
-            
-        output = os.path.join("metrics", "dna", "sample.fingerprint")
-        #output = os.path.join("metrics", "dna", "readset.fingerprint")
-        job = gatk4.crosscheck_fingerprint(inputs, output)
-        job.name = "gatk_crosscheck_fingerprint.sample"
-
-        jobs.append(job)
-
         return jobs
 
     def metrics_gatk_vcf_fingerprint(self):
@@ -3760,17 +3728,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             pair_directory = os.path.join("SVariants", sample.name)
             output_dir = os.path.join(pair_directory, "rawBreakseq2")
             output = os.path.join(pair_directory, "rawBreakseq2", "breakseq.vcf.gz")
-<<<<<<< HEAD
             final_vcf = os.path.join(pair_directory, sample.name + ".breakseq.germline.vcf.gz")
-=======
-            final_vcf = os.path.join(pair_directory, "rawBreakseq2", sample.name + ".breakseq.germline.vcf.gz")
-        
-            input = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")
-
-            # input = self.select_input_files([[os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")],
-            #                                 [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam")],
-            #                                 [os.path.join("alignment", sample.name, sample.name + ".sorted.bam")]])
->>>>>>> de91f523 (dnaseq qc additions: NGScheckmate and peddy)
         
             input = self.select_input_files([[os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")],
                                              [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam")],
@@ -4047,7 +4005,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             [
                 self.picard_sam_to_fastq,
                 self.skewer_trimming,
-                self.bwa_mem_sambamba_sort_sam,
+                self.bwa_mem_picard_sort_sam,
                 self.sambamba_merge_sam_files,
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
