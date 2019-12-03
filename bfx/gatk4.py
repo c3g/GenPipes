@@ -107,7 +107,7 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
 
 def base_recalibrator(input, output, intervals=None):
 	
-	if config.param('base_recalibrator', 'module_gatk').split("/")[2] < "4":
+	if config.param('gatk_base_recalibrator', 'module_gatk').split("/")[2] < "4":
 		return gatk.base_recalibrator(input, output, intervals)
 	else:
 		return Job(
@@ -184,7 +184,7 @@ def print_reads(input, output, base_quality_score_recalibration):
 # GATK4 - Variant Manipulation
 
 def cat_variants(variants, output=None):
-	if config.param('gatk_cat_variants', 'module_gatk').split("/")[2] < "4":
+	if config.param('gatk_merge_vcfs', 'module_gatk').split("/")[2] < "4":
 		return gatk.cat_variants(variants, output)
 	else:
 		return Job(
@@ -269,7 +269,7 @@ gatk --java-options "{java_other_options} -Xmx{ram}" \\
 def combine_gvcf(inputs, output, intervals=[], exclude_intervals=[]):
 	if not isinstance(inputs, list):
 		inputs = [inputs]
-	if config.param('gatk_haplotype_caller', 'module_gatk').split("/")[2] < "4":
+	if config.param('gatk_combine_gvcf', 'module_gatk').split("/")[2] < "4":
 		return gatk.combine_gvcf(inputs, output, intervals, exclude_intervals)
 	else:
 		return Job(
@@ -299,7 +299,7 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
 	)
 
 def genotype_gvcf(variants, output, options):
-	if config.param('genotype_gvcf', 'module_gatk').split("/")[2] < "4":
+	if config.param('gatk_genotype_gvcf', 'module_gatk').split("/")[2] < "4":
 		return gatk.genotype_gvcf(variants, output, options)
 	else:
 		return Job(
@@ -482,7 +482,7 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
 
 
 def apply_recalibration(variants, recal_input, tranches_input, other_options, apply_recal_output):
-	if config.param('gatk_variant_recalibrator', 'module_gatk').split("/")[2] < "4":
+	if config.param('gatk_apply_recalibration', 'module_gatk').split("/")[2] < "4":
 		return gatk.apply_recalibration(variants, recal_input, tranches_input, other_options, apply_recal_output)
 	else:
 		return Job(
@@ -729,9 +729,9 @@ def collect_oxog_metrics(input, output, annotation_flat=None, reference_sequence
 			[input],
 			[output],
 			[
-				['picard_collect_sequencing_artifacts_metrics', 'module_java'],
-				['picard_collect_sequencing_artifacts_metrics', 'module_gatk'],
-				['picard_collect_sequencing_artifacts_metrics', 'module_R']
+				['picard_collect_oxog_metrics', 'module_java'],
+				['picard_collect_oxog_metrics', 'module_gatk'],
+				['picard_collect_oxog_metrics', 'module_R']
 			],
 		command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
@@ -798,7 +798,7 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
 
 def fix_mate_information(input, output):
 	
-	if config.param('fix_mate_information', 'module_gatk').split("/")[2] < "4":
+	if config.param('picard_fix_mate_information', 'module_gatk').split("/")[2] < "4":
 		return picard2.fix_mate_information(input, output)
 	else:
 	
@@ -806,8 +806,8 @@ def fix_mate_information(input, output):
 			[input],
 			[output],
 			[
-				['fixmate', 'module_java'],
-				['fixmate', 'module_gatk']
+				['picard_fix_mate_information', 'module_java'],
+				['picard_fix_mate_information', 'module_gatk']
 			],
 			command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
@@ -872,7 +872,7 @@ def merge_sam_files(inputs, output):
 	if not isinstance(inputs, list):
 		inputs = [inputs]
 
-	if config.param('fix_mate_information', 'module_gatk').split("/")[2] < "4":
+	if config.param('picard_merge_sam_files', 'module_gatk').split("/")[2] < "4":
 		return picard2.merge_sam_files(inputs, output)
 	else:
 		
@@ -910,8 +910,8 @@ def reorder_sam(input, output):
 		[input],
 		[output],
 		[
-			['reorder_sam', 'module_java'],
-			['reorder_sam', 'module_gatk']
+			['picard_reorder_sam', 'module_java'],
+			['picard_reorder_sam', 'module_gatk']
 		],
 			command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
