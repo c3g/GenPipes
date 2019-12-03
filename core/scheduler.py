@@ -175,19 +175,20 @@ cd $OUTPUT_DIR
                 )
             )
 
-        json_files = []
-        for step in pipeline.step_range:
-            for job in step.jobs:
-                for sample in job.samples:
-                    json_files.append(os.path.join(pipeline.output_dir, "json", sample.json_file))
-        json_files = list(set(json_files))
-        for j_file in json_files:
-            print(
+        if pipeline.json:
+            json_files = []
+            for step in pipeline.step_range:
+                for job in step.jobs:
+                    for sample in job.samples:
+                        json_files.append(os.path.join(pipeline.output_dir, "json", sample.json_file))
+            json_files = list(set(json_files))
+            for j_file in json_files:
+                print(
 """sed -i "s/\\"submission_date\\": \\"\\",/\\"submission_date\\": \\"$TIMESTAMP\\",/" {file}"""
-                .format(
-                    file=j_file
+                    .format(
+                        file=j_file
+                    )
                 )
-            )
 
         ## Print a copy of sample JSONs for the genpipes dashboard
         if pipeline.json and pipeline.portal_output_dir != "":
