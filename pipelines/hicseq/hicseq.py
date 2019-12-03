@@ -366,8 +366,8 @@ class HicSeq(common.Illumina):
         if len(self.samples) > 1:
 
             hicrep_temp_directory ="__temp.hicrep_reproducibility_scores"
-            for sample in pairwise_sample_combination:
-                for res in res_chr:
+            for res in res_chr:
+                for sample in pairwise_sample_combination:
                     for chromosome in chrs:
 
                         #get sample names with relative file path
@@ -387,7 +387,7 @@ class HicSeq(common.Illumina):
                                                                        down_sampling,smooth)
                         output_file = "".join(
                                 (out_dir, "_".join(("/hicrep", sample[0].name, "vs", sample[1].name, chromosome, res,
-                                                    smooth, bound_width)), ".tmp"))
+                                                    "res",  smooth, bound_width,down_sampling)), ".tmp"))
                         job.samples = sample
 
                         job.name = "_".join(("reproducibility_scores.hicrep", sample[0].name, "vs",
@@ -398,10 +398,10 @@ class HicSeq(common.Illumina):
 
                         jobs.append(job)
 
-            job_merge = hicrep.merge_files( input_files_for_merging, hicrep_temp_directory)
-            job_merge.samples = self.samples
-            job_merge.name = "merge_hicrep_scores"
-            jobs.append(job_merge)
+                job_merge = hicrep.merge_tmp_files( input_files_for_merging, hicrep_temp_directory, res, smooth, bound_width, down_sampling)
+                job_merge.samples = self.samples
+                job_merge.name = "".join(("merge_hicrep_scores." + res))
+                jobs.append(job_merge)
         else:
             pass
             #Raise an exception
@@ -868,7 +868,6 @@ class HicSeq(common.Illumina):
             self.samtools_merge_bams,
             self.homer_tag_directory,
             self.interaction_matrices_Chr,
-            self.reproducibility_scores,
             self.interaction_matrices_genome,
             self.identify_compartments,
             self.identify_TADs_TopDom,
@@ -876,7 +875,8 @@ class HicSeq(common.Illumina):
             self.identify_peaks,
             self.create_hic_file,
             self.multiqc_report,
-            self.cram_output
+            self.cram_output,
+            self.reproducibility_scores,
             ],
             [self.samtools_bam_sort,
             self.picard_sam_to_fastq,
