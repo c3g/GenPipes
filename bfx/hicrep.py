@@ -28,8 +28,8 @@ from core.job import *
 
 def calculate_reproducible_score( output_dir, sample1, sample2, file1_path, file2_path,
                                   chromosome , resolution, bound_width, weights, corr, down_sampling, smooth):
-    output_file= "".join((output_dir, "_".join(("/hicrep", sample1,  "vs", sample2 , chromosome, resolution, smooth,
-                                                bound_width)), ".tmp"))
+    output_file= "".join((output_dir, "_".join(("/hicrep", sample1,  "vs", sample2 , chromosome, resolution, "res",smooth,
+                                                bound_width, down_sampling)), ".tmp"))
     return Job(
         [file1_path,file2_path],
         [output_file],
@@ -67,21 +67,28 @@ Rscript /home/pubudu/projects/rrg-bourqueg-ad/pubudu/job_outputs/hicrep.R \\
         output_dir=output_dir
     ))
 
+#old argument
+#cat "$d"hicrep*{resolution}_rep*.tmp | awk -v FS='\\t' -v OFS='\\t' -v dir="${{d%/*}}" '{{sum+=$1}} END {{print dir,sum/NR}}' > "${{d%/*}}"{resolution}_res.tmp
 
-def merge_files( input_files, temp_out_dir):
+#awk -v OFS="\t" 'NR==0 {print; next} FNR==0 {next} {print FILENAME, $0}' *.tmp | awk -v OFS="_" '{print $1,$2,$3}' | awk -F "_" 'BEGIN{printf "chr\tSCC\tSD\n"}{printf $5"\t"$11"\t"$12"\n"}'
+##Working shorter code
+#awk -v OFS="_" 'NR==0 {print; next} FNR==0 {next} {print FILENAME, $0}' *.tmp |  awk -F "_" 'BEGIN{printf "chr\tSCC\tSD\n"}{printf $5"\t"$11"\t"$12"\n"}'
+def merge_tmp_files( input_files, temp_out_dir, resolution, smooth, bound_width, down_sampling):
     return Job(
         input_files,
         ["output_file"],
         [
-            ['reproducibility_scores', 'module_mugqic_tools'],
-            ['reproducibility_scores', 'module_R']
+            ['reproducibility_scores', 'module_mugqic_tools']
         ],
         command="""\
         cd {temp_out_dir} &&
         for d in */ ; do 
-        cat "$d"hicrep*.tmp | awk -v FS='\\t' -v OFS='\\t' -v dir="${{d%/*}}" '{{sum+=$1}} END {{print dir,sum/NR}}' > "${{d%/*}}".tmp 
+        awk -v OFS="_" 'NR==0 {{print; next}} FNR==0 {{next}} {{print FILENAME, $0}}' "$d"hicrep*_{resolution}_res_{smooth}_{bound_width}_{down_sampling}*.tmp |  awk -F "_" 'BEGIN{{printf "chr\\tSCC\\tSD\\n"}}{{printf $7"\\t"$13"\\t"$14"\\n"}}' > "$d""${{d%/*}}"_res_{resolution}_{smooth}_{bound_width}_{down_sampling}.tsv 
         done &&
-        cat *.tmp > hicrep_reproducibilityscore_matrix.tsv &&
-        rm *.tmp""".format(
-        temp_out_dir=temp_out_dir
+        rm "$d"*.tmp""".format(
+        temp_out_dir=temp_out_dir,
+        resolution=resolution,
+        smooth=smooth,
+        bound_width=bound_width,
+        down_sampling=down_sampling
         ))
