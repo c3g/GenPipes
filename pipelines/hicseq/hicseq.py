@@ -360,7 +360,8 @@ class HicSeq(common.Illumina):
             chrs = genome.chr_names_conv(genome_dict)
         else:
             chrs = chrs.split(",")
-        #chrs = ['chr1']
+     #   chrs = ['chr20',"chr18","chr19"]
+
         input_files_for_merging=[]
         #If there is only one sample, an step should exit giving a warning
         if len(self.samples) > 1:
@@ -368,6 +369,7 @@ class HicSeq(common.Illumina):
             hicrep_temp_directory ="__temp.hicrep_reproducibility_scores"
             for res in res_chr:
                 for sample in pairwise_sample_combination:
+                    job_all_chr = []
                     for chromosome in chrs:
 
                         #get sample names with relative file path
@@ -381,22 +383,23 @@ class HicSeq(common.Illumina):
                         out_dir = os.path.join(hicrep_temp_directory,
                                                    "_".join(( sample[0].name, "vs",  sample[1].name)))
 
-                        job = hicrep.calculate_reproducible_score( out_dir, sample[0].name, sample[1].name,
+                        job_chr = hicrep.calculate_reproducible_score( out_dir, sample[0].name, sample[1].name,
                                                                       input_sample1_file_path, input_sample2_file_path,
                                                                        chromosome, res, bound_width, weights, corr,
                                                                        down_sampling,smooth)
                         output_file = "".join(
                                 (out_dir, "_".join(("/hicrep", sample[0].name, "vs", sample[1].name, chromosome, res,
                                                     "res",  smooth, bound_width,down_sampling)), ".tmp"))
-                        job.samples = sample
-
-                        job.name = "_".join(("reproducibility_scores.hicrep", sample[0].name, "vs",
-                                                 sample[1].name,  chromosome, res, bound_width, weights,
-                                                 corr, down_sampling, smooth))
+                        job_chr.samples = sample
 
                         input_files_for_merging.append(output_file)
+                        job_all_chr.append(job_chr)
+                        job = concat_jobs(job_all_chr)
+                        job.name = "_".join(("reproducibility_scores.hicrep", sample[0].name, "vs",
+                                                 sample[1].name, res, bound_width, weights,
+                                                 corr, down_sampling, smooth))
 
-                        jobs.append(job)
+                    jobs.append(job)
 
                 job_merge = hicrep.merge_tmp_files( input_files_for_merging, hicrep_temp_directory, res, smooth, bound_width, down_sampling)
                 job_merge.samples = self.samples
