@@ -85,7 +85,7 @@ def merge_tmp_files( input_files, temp_out_dir, resolution, smooth, bound_width,
         for d in */ ; do 
         awk -v OFS="_" 'NR==0 {{print; next}} FNR==0 {{next}} {{print FILENAME, $0}}' "$d"hicrep*_{resolution}_res_{smooth}_{bound_width}_{down_sampling}*.tmp |  awk -F "_" 'BEGIN{{printf "chr\\tSCC\\tSD\\n"}}{{printf $7"\\t"$13"\\t"$14"\\n"}}' > "$d""${{d%/*}}"_res_{resolution}_{smooth}_{bound_width}_{down_sampling}.tsv 
         done &&
-        rm "$d"*.tmp""".format(
+        #rm "$d"*.tmp""".format(
         temp_out_dir=temp_out_dir,
         resolution=resolution,
         smooth=smooth,
