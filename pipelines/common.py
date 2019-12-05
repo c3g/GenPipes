@@ -175,7 +175,7 @@ class Illumina(MUGQICPipeline):
                     )
                     sortedBamPrefix = os.path.join(
                         sortedBamDirectory,
-                        re.sub("\.bam$", ".sorted", os.path.basename(readset.bam.strip()))
+                        readset.name + ".sorted"
                     )
 
                     mkdir_job = bash.mkdir(sortedBamDirectory, remove=True)
@@ -213,7 +213,7 @@ class Illumina(MUGQICPipeline):
                         self.output_dir,
                         "temporary_bams",
                         readset.sample.name,
-                        re.sub("\.bam", ".sorted.bam", os.path.basename(readset.bam.strip()))
+                        readset.name + ".sorted.bam"
                     )
                     candidate_input_files = [
                         [sortedBam],
@@ -227,10 +227,10 @@ class Illumina(MUGQICPipeline):
                         readset.sample.name,
                     )
                     if readset.run_type == "PAIRED_END":
-                        fastq1 = os.path.join(rawReadsDirectory, re.sub("\.sorted.bam$|\.bam$", ".pair1.fastq.gz", os.path.basename(bam.strip())))
-                        fastq2 = os.path.join(rawReadsDirectory, re.sub("\.sorted.bam$|\.bam$", ".pair2.fastq.gz", os.path.basename(bam.strip())))
+                        fastq1 = os.path.join(rawReadsDirectory, readset.name + ".pair1.fastq.gz")
+                        fastq2 = os.path.join(rawReadsDirectory, readset.name + ".pair2.fastq.gz")
                     elif readset.run_type == "SINGLE_END":
-                        fastq1 = os.path.join(rawReadsDirectory, re.sub("\.sorted.bam$|\.bam$", ".single.fastq.gz", os.path.basename(bam.strip())))
+                        fastq1 = os.path.join(rawReadsDirectory, readset.name + ".single.fastq.gz")
                         fastq2 = None
                     else:
                         _raise(SanitycheckError("Error: run type \"" + readset.run_type +
@@ -305,8 +305,8 @@ END
             if readset.run_type == "PAIRED_END":
                 candidate_input_files = [[readset.fastq1, readset.fastq2]]
                 if readset.bam:
-                    candidate_fastq1 = os.path.join(self.output_dir, "raw_reads", readset.sample.name, re.sub("\.bam$", ".pair1.fastq.gz", os.path.basename(readset.bam)))
-                    candidate_fastq2 = os.path.join(self.output_dir, "raw_reads", readset.sample.name, re.sub("\.bam$", ".pair2.fastq.gz", os.path.basename(readset.bam)))
+                    candidate_fastq1 = os.path.join(self.output_dir, "raw_reads", readset.sample.name, readset.name + ".pair1.fastq.gz")
+                    candidate_fastq2 = os.path.join(self.output_dir, "raw_reads", readset.sample.name, readset.name + ".pair2.fastq.gz")
                     candidate_input_files.append([candidate_fastq1, candidate_fastq2])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
                 job = trimmomatic.trimmomatic(
@@ -324,7 +324,7 @@ END
             elif readset.run_type == "SINGLE_END":
                 candidate_input_files = [[readset.fastq1]]
                 if readset.bam:
-                    candidate_input_files.append([os.path.join(self.output_dir, "raw_reads", readset.sample.name, re.sub("\.sorted.bam$|\.bam$", ".single.fastq.gz", os.path.basename(readset.bam)))])
+                    candidate_input_files.append([os.path.join(self.output_dir, "raw_reads", readset.sample.name, readset.name + ".single.fastq.gz")])
                 [fastq1] = self.select_input_files(candidate_input_files)
                 job = trimmomatic.trimmomatic(
                     fastq1,
