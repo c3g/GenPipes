@@ -941,5 +941,18 @@ pandoc \\
             self.cram_output,
         ]
 
-if __name__ == '__main__': 
-    MethylSeq()
+if __name__ == '__main__':
+    argv = sys.argv
+    if '--wrap' in argv:
+        import argparse
+        import subprocess
+
+        parser = argparse.ArgumentParser(conflict_handler='resolve')
+        parser.add_argument('--wrap', type=str, help="path to the genpipe cvmfs wrapper script")
+        args, argv = parser.parse_known_args(argv)
+        wrap_option = ['--container', 'wrapper', args.wrap]
+        sys.stderr.write('wrapping\n')
+        # call in the wrapper
+        subprocess.call([args.wrap] + argv + wrap_option)
+    else:
+        MethylSeq()
