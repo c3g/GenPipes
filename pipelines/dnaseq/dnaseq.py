@@ -57,6 +57,7 @@ from bfx import qualimap
 from bfx import fastqc
 from bfx import multiqc
 from bfx import deliverables
+from bfx import bash_cmd
 
 log = logging.getLogger(__name__)
 
@@ -132,14 +133,19 @@ class DnaSeqRaw(common.Illumina):
 
         for readset in self.readsets:
             if readset.bam:
-                prefix = re.sub("\.bam$", ".", readset.bam)
+                prefix = os.path.join(
+                    self.output_dir,
+                    "raw_reads",
+                    readset.sample.name,
+                    re.sub("\.bam$", ".", os.path.basename(readset.bam))
+                )
 
             if readset.run_type == "PAIRED_END":
                 if readset.fastq1 and readset.fastq2:
                     sym_link_job= concat_jobs([
                         deliverables.sym_link(readset.fastq1, readset, type="raw_reads"),
                         deliverables.sym_link(readset.fastq2, readset, type="raw_reads"),
-                    ], name="sym_link_fastq.pair_end." + readset.name)
+                    ], name="sym_link_fastq.pair_end." + readset.name, samples=[readset.sample])
 
                 elif not readset.fastq1:
                     if readset.bam:
@@ -148,20 +154,20 @@ class DnaSeqRaw(common.Illumina):
                         sym_link_job = concat_jobs([
                             deliverables.sym_link(fastq1, readset, type="raw_reads"),
                             deliverables.sym_link(fastq2, readset, type="raw_reads"),
-                        ], name="sym_link_fastq.pair_end." + readset.name)
+                        ], name="sym_link_fastq.pair_end." + readset.name, samples=[readset.sample])
 
             elif readset.run_type == "SINGLE_END":
                 if readset.fastq1:
                     sym_link_job = concat_jobs([
                         deliverables.sym_link(readset.fastq1, readset, type="raw_reads"),
-                    ], name="sym_link_fastq.single_end." + readset.name)
+                    ], name="sym_link_fastq.single_end." + readset.name, samples=[readset.sample])
 
                 elif not readset.fastq1:
                     if readset.bam:
                         fastq1 = prefix + "pair1.fastq.gz"
                         sym_link_job = concat_jobs([
                             deliverables.sym_link(fastq1, readset, type="raw_reads"),
-                        ], name="sym_link_fastq.single_end." + readset.name)
+                        ], name="sym_link_fastq.single_end." + readset.name, samples=[readset.sample])
 
             else:
                 _raise(SanitycheckError("Error: run type \"" + readset.run_type +
@@ -191,13 +197,25 @@ class DnaSeqRaw(common.Illumina):
             if readset.run_type == "PAIRED_END":
                 candidate_input_files = [[readset.fastq1, readset.fastq2]]
                 if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
+                    prefix = os.path.join(
+                        self.output_dir,
+                        "raw_reads",
+                        readset.sample.name,
+                        re.sub("\.bam$", ".", os.path.basename(readset.bam))
+                    )
+                    candidate_input_files.append([prefix + "pair1.fastq.gz", prefix + "pair2.fastq.gz"])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
             
             elif readset.run_type == "SINGLE_END":
                 candidate_input_files = [[readset.fastq1]]
                 if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
+                    prefix = os.path.join(
+                        self.output_dir,
+                        "raw_reads",
+                        readset.sample.name,
+                        re.sub("\.bam$", ".", os.path.basename(readset.bam))
+                    )
+                    candidate_input_files.append([prefix + ".single.fastq.gz"])
                 [fastq1] = self.select_input_files(candidate_input_files)
                 fastq2 = None
             
@@ -205,13 +223,15 @@ class DnaSeqRaw(common.Illumina):
                 _raise(SanitycheckError("Error: run type \"" + readset.run_type +
                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
-            jobs.append(concat_jobs([
-                Job(command="mkdir -p " + output_dir, removable_files=[output_dir], samples=[readset.sample]),
-                adapter_job,
-                skewer.trim(fastq1, fastq2, trim_file_prefix, adapter_file),
-                Job([trim_file_prefix + "-trimmed-pair1.fastq.gz"], [trim_file_prefix + ".trim.pair1.fastq.gz"], command="ln -s -f " + os.path.abspath(trim_file_prefix + "-trimmed-pair1.fastq.gz ") + trim_file_prefix + ".trim.pair1.fastq.gz"),
-                Job([trim_file_prefix + "-trimmed-pair2.fastq.gz"], [trim_file_prefix + ".trim.pair2.fastq.gz"], command="ln -s -f " + os.path.abspath(trim_file_prefix + "-trimmed-pair2.fastq.gz ") + trim_file_prefix + ".trim.pair2.fastq.gz"),
-            ],name="skewer_trimming." + readset.name))
+            jobs.append(
+                concat_jobs([
+                    bash.mkdir(output_dir, remove=True, ,
+                    adapter_job,
+                    skewer.trim(fastq1, fastq2, trim_file_prefix, adapter_file),
+                    bash.ln(os.path.abspath(trim_file_prefix + "-trimmed-pair1.fastq.gz "), trim_file_prefix + ".trim.pair1.fastq.gz", sleep=5),
+                    bash.ln(os.path.abspath(trim_file_prefix + "-trimmed-pair2.fastq.gz "), trim_file_prefix + ".trim.pair2.fastq.gz", sleep=5)
+                ], name="skewer_trimming." + readset.name, samples=[readset.sample])
+            )
 
         return jobs
 
@@ -240,7 +260,13 @@ class DnaSeqRaw(common.Illumina):
                 if readset.fastq1 and readset.fastq2:
                     candidate_input_files.append([readset.fastq1, readset.fastq2])
                 if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
+                    prefix = os.path.join(
+                        self.output_dir,
+                        "raw_reads",
+                        readset.sample.name,
+                        re.sub("\.bam$", ".", os.path.basename(readset.bam))
+                    )
+                    candidate_input_files.append([prefix + "pair1.fastq.gz", prefix + "pair2.fastq.gz"])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
             
             elif readset.run_type == "SINGLE_END":
@@ -248,7 +274,13 @@ class DnaSeqRaw(common.Illumina):
                 if readset.fastq1:
                     candidate_input_files.append([readset.fastq1])
                 if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
+                    prefix = os.path.join(
+                        self.output_dir,
+                        "raw_reads",
+                        readset.sample.name,
+                        re.sub("\.bam$", ".", os.path.basename(readset.bam))
+                    )
+                    candidate_input_files.append([prefix + ".single.fastq.gz"])
                 [fastq1] = self.select_input_files(candidate_input_files)
                 fastq2 = None
             
