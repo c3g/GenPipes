@@ -26,9 +26,9 @@ from core.job import Job
 
 def mkdir(folder, remove=False):
     return Job(
+        [],
         [folder],
         [],
-        [[]],
         command="""\
 mkdir -p {directory}""".format(
             directory=folder
@@ -40,7 +40,7 @@ def ln(target_file, link, sleep=None):
     return Job(
         [target_file],
         [link],
-        [[]],
+        [],
         command="""\
 ln -s -f \\
   {target_file} \\
@@ -57,7 +57,7 @@ def mv(source, target):
     return Job(
         [source],
         [target],
-        [[]],
+        [],
         command="""\
 mv {source} {dest}""".format(
             source=source,

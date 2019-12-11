@@ -57,7 +57,7 @@ from bfx import qualimap
 from bfx import fastqc
 from bfx import multiqc
 from bfx import deliverables
-from bfx import bash_cmd
+from bfx import bash_cmd as bash
 
 log = logging.getLogger(__name__)
 
@@ -137,7 +137,7 @@ class DnaSeqRaw(common.Illumina):
                     self.output_dir,
                     "raw_reads",
                     readset.sample.name,
-                    re.sub("\.bam$", ".", os.path.basename(readset.bam))
+                    readset.name
                 )
 
             if readset.run_type == "PAIRED_END":
@@ -149,8 +149,8 @@ class DnaSeqRaw(common.Illumina):
 
                 elif not readset.fastq1:
                     if readset.bam:
-                        fastq1 = prefix + "pair1.fastq.gz"
-                        fastq2 = prefix + "pair2.fastq.gz"
+                        fastq1 = prefix + ".pair1.fastq.gz"
+                        fastq2 = prefix + ".pair2.fastq.gz"
                         sym_link_job = concat_jobs([
                             deliverables.sym_link(fastq1, readset, type="raw_reads"),
                             deliverables.sym_link(fastq2, readset, type="raw_reads"),
@@ -164,7 +164,7 @@ class DnaSeqRaw(common.Illumina):
 
                 elif not readset.fastq1:
                     if readset.bam:
-                        fastq1 = prefix + "pair1.fastq.gz"
+                        fastq1 = prefix + ".pair1.fastq.gz"
                         sym_link_job = concat_jobs([
                             deliverables.sym_link(fastq1, readset, type="raw_reads"),
                         ], name="sym_link_fastq.single_end." + readset.name, samples=[readset.sample])
