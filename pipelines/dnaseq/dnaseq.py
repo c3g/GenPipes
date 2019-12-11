@@ -57,7 +57,7 @@ from bfx import qualimap
 from bfx import fastqc
 from bfx import multiqc
 from bfx import deliverables
-from bfx import bash_cmd
+from bfx import bash_cmd as bash
 
 log = logging.getLogger(__name__)
 
@@ -137,7 +137,7 @@ class DnaSeqRaw(common.Illumina):
                     self.output_dir,
                     "raw_reads",
                     readset.sample.name,
-                    re.sub("\.bam$", ".", os.path.basename(readset.bam))
+                    readset.name
                 )
 
             if readset.run_type == "PAIRED_END":
