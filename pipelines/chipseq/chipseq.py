@@ -313,9 +313,9 @@ do
   supplementarysecondary_alignment=`bc <<< $(grep "secondary" $flagstat_file | sed -e 's/ + [[:digit:]]* secondary.*//')+$(grep "supplementary" $flagstat_file | sed -e 's/ + [[:digit:]]* supplementary.*//')`
   mapped_reads=`bc <<< $(grep "mapped (" $flagstat_file | sed -e 's/ + [[:digit:]]* mapped (.*)//')-$supplementarysecondary_alignment`
   duplicated_reads=`grep "duplicates" $flagstat_file | sed -e 's/ + [[:digit:]]* duplicates$//'`
-  duplicated_rate=$(echo "100*${duplicated_reads}/${mapped_reads}" | bc -l)
+  duplicated_rate=$(echo "100*${{duplicated_reads}}/${{mapped_reads}}" | bc -l)
   mito_reads=$(sambamba view -c $bam_file chrM)
-  mito_rate=$(echo "100*${mito_reads}/${mapped_reads}" | bc -l)
+  mito_rate=$(echo "100*${{mito_reads}}/${{mapped_reads}}" | bc -l)
   echo -e "$sample\t$mapped_reads\t$duplicated_reads\t$duplicated_rate\t$mito_reads\t$mito_rate" >> {metrics_file}
 done && \\
 sed -i -e "1 i\\Sample\tAligned Filtered Reads #\tDuplicate Reads #\tDuplicate %\tMitchondrial Reads #\tMitochondrial %" {metrics_file} && \\
@@ -955,6 +955,7 @@ done""".format(
 
         ##generate couples chip/input/treatment_name/peak_type
         couples = {}
+        metrics_to_merge = []
         for contrast in self.contrasts:
             if contrast.treatments:
                 if len(contrast.controls) > 1:
@@ -997,13 +998,14 @@ done""".format(
                 ], name="IHEC_chipseq_metrics." + key)
             jobs.append(job)
 
+            metrics_to_merge.append(os.path.join(self.output_dirs['ihecM_output_directory'], "IHEC_metrics_chipseq_" + sample.name + ".txt"))
         #chip_type = config.param('ihec_metrics', 'chip_type')
         #if (chip_type == "TF"):
         #    log.warning("chip_type is set to default value of 'TF'. If you are using a histone mark, please modify the chip_type in the ini file to the name of the mark. Otherwise, some metrics wont be accurate!")
 
-        metrics_to_merge = []
-        for sample in self.samples:
-            metrics_to_merge.append(os.path.join(self.output_dirs['ihecM_output_directory'], "IHEC_metrics_chipseq_" + sample.name + ".txt"))
+#        metrics_to_merge = []
+#        for sample in self.samples:
+#            metrics_to_merge.append(os.path.join(self.output_dirs['ihecM_output_directory'], "IHEC_metrics_chipseq_" + sample.name + ".txt"))
         metrics_merged = "IHEC_metrics_AllSamples.tsv"
         metrics_merged_out = os.path.join(self.output_dirs['ihecM_output_directory'], metrics_merged)
         report_file = os.path.join("report", "ChipSeq.ihec_metrics.md")
