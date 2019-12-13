@@ -44,7 +44,6 @@ def svim_ont(input_bam, output_directory):
         [["svim", "module_python3"]],
         command="""\
 mkdir -p {output_directory} && \\
-cd {output_directory} && \\
 svim alignment --min_mapq {min_mapq} {other_options} {output_directory} {input_bam} {genome_fasta}
         """.format(
             output_directory=output_directory,

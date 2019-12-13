@@ -41,12 +41,8 @@ def minimap2_ont(readset_name,
     minimap_preset = config.param('minimap2_align', 'preset')
 
     out_sam = os.path.join(output_directory, "Aligned.out.sam")
-
-    bam_name = readset_name + ".sorted.bam"
-    out_bam = os.path.join(output_directory, bam_name)
-
-    bai_name = readset_name + ".sorted.bai"
-    out_bai = os.path.join(output_directory, bai_name)
+    out_bam = os.path.join(output_directory, readset_name + ".sorted.bam")
+    out_bai = os.path.join(output_directory, readset_name + ".sorted.bai")
 
     return Job(
         [read_fastq_dir],
@@ -55,18 +51,18 @@ def minimap2_ont(readset_name,
          ["minimap2", "module_samtools"]],
         command="""\
 mkdir -p {output_directory} && \\
-cd {output_directory} && \\
-minimap2 -ax {minimap_preset} {other_options} {genome_fasta} {read_fastq_dir}/*.fastq > Aligned.out.sam && \\
-samtools view -b Aligned.out.sam -@ 8 | samtools sort -@ 6 --reference {genome_fasta} > {bam_name} && \\ 
-samtools index {bam_name} {bai_name}
+minimap2 -ax {minimap_preset} {other_options} {genome_fasta} {read_fastq_dir}/*.fastq > {out_sam} && \\
+samtools view -b {out_sam} -@ 8 | samtools sort -@ 6 --reference {genome_fasta} -T {output_directory} > {out_bam} && \\ 
+samtools index {out_bam} {out_bai}
         """.format(
             output_directory=output_directory,
             minimap_preset=minimap_preset,
             other_options=config.param('minimap2_align', 'other_options', required=False),
             genome_fasta=genome_fasta,
             read_fastq_dir=read_fastq_dir,
-            bam_name=bam_name,
-            bai_name=bai_name
+            out_sam=out_sam,
+            out_bam=out_bam,
+            out_bai=out_bai
         ),
         removable_files=[out_sam]
     )
