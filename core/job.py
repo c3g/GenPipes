@@ -156,7 +156,7 @@ class Job(object):
     def command_with_modules(self):
         command = self.command
         if self.modules:
-            command = "module load " + " ".join(self.modules) + " && \\\n" + command
+            command = "module purge && \\\n" + "module load " + " ".join(self.modules) + " && \\\n" + command
         return command
 
     def abspath(self, file):
