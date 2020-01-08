@@ -336,7 +336,15 @@ class HicSeq(common.Illumina):
     def reproducibility_scores(self):
 
         """
-        hic-rep is a R package for calculate the interchromosmal reproducibility score
+        hic-rep is a R package for calculate the inter-chromosmal reproducibility score.
+        Pairwise reproducibility scores for each chromosome pair in each sample pair are calculated using
+        hic-rep at resolutions (bin size) defined in interaction_matrices_Chr step
+        and other parameters defined in reproducibility_scores step of ini config file. All the scores are finally merged
+        together and output a csv file with parameters used in analysis with chromosome, reproducibility scores,
+        standard deviation and smoothing value used for the analysis (in order to compare samples smoothing value
+        and the sequencing depth should be similar across samples.
+        Down-sampling of samples can be performed using the down_sampling parameter in the ini config file.
+        for more information visit: [https://bioconductor.org/packages/release/bioc/html/hicrep.html]
         """
 
         jobs = []
@@ -418,6 +426,48 @@ class HicSeq(common.Illumina):
             #Raise an exception
 
         return jobs
+
+    def quality_scores(self):
+        """
+            Quality score per chromosome for each sample is calculated using QUSAR-QC at resolutions
+            defined in interaction_matrices_Chr step and sequencing
+            depths (coverages) defined in quality_scores step of ini config file
+            QUSAR-QC is a part of the hifive hic-seq analysis suit
+            for more information visit: [http://hifive.docs.taylorlab.org/en/latest/quasar_scoring.html]
+        """
+        jobs = []
+
+        # Get defined chromosomes and resolution from the config (.ini) file
+        chrs = config.param('interaction_matrices_Chr', 'chromosomes')
+        res_chr = config.param('interaction_matrices_Chr', 'resolution_chr').split(",")
+        assembly_dir = config.param('DEFAULT', 'assembly_dir')
+        scientific_name = config.param('DEFAULT', 'scientific_name')
+        assembly = config.param('DEFAULT', 'assembly')
+        chrom_lengths = os.path.join(assembly_dir, "genome", ".".join((scientific_name, assembly,"fa", "fai")))
+
+        if chrs == "All":
+            genome_dict = os.path.expandvars(config.param('DEFAULT', 'genome_dictionary', type='filepath'))
+            chrs = genome.chr_names_conv(genome_dict)
+        else:
+            chrs = chrs.split(",")
+
+        output_dir = "hicrep_reproducibility_scores"
+        for res in res_chr:
+            for sample in self.samples:
+                job_all_chr = []
+                for chromosome in chrs:
+
+                    input_sample_file_path = os.path.join(self.output_dirs['matrices_output_directory'],
+                                                           sample.name,
+                                                           "chromosomeMatrices",
+                                                           "_".join((
+                                                                    "HTD", sample.name, self.enzyme, chromosome, res,
+                                                                    "rawRN.txt.MatA")))
+
+                    print(input_sample_file_path)
+
+
+
 
     def interaction_matrices_genome(self):
         """
@@ -888,6 +938,7 @@ class HicSeq(common.Illumina):
             self.multiqc_report,
             self.cram_output,
             self.reproducibility_scores,
+            self.quality_scores,
             ],
             [self.samtools_bam_sort,
             self.picard_sam_to_fastq,
