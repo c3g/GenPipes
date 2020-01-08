@@ -26,6 +26,7 @@ import os
 from core.config import *
 from core.job import *
 
+#beluga path = /home/pubudu/projects/rrg-bourqueg-ad/pubudu/job_outputs/hicrep.R
 def calculate_reproducible_score( output_dir, sample1, sample2, file1_path, file2_path,
                                   chromosome , resolution, bound_width, weights, corr, down_sampling, smooth):
     output_file= "".join((output_dir, "_".join(("/hicrep", sample1,  "vs", sample2 , chromosome, resolution, "res",smooth,
@@ -39,7 +40,7 @@ def calculate_reproducible_score( output_dir, sample1, sample2, file1_path, file
         ],
         command="""\
         mkdir -p {output_dir} &&
-Rscript /home/pubudu/projects/rrg-bourqueg-ad/pubudu/job_outputs/hicrep.R \\
+Rscript /lb/project/C3G/projects/pubudu/hicrep.R \\
   -s1 {sample1} \\
   -s2 {sample2} \\
   -f1 {file1_path} \\
@@ -73,22 +74,39 @@ Rscript /home/pubudu/projects/rrg-bourqueg-ad/pubudu/job_outputs/hicrep.R \\
 #awk -v OFS="\t" 'NR==0 {print; next} FNR==0 {next} {print FILENAME, $0}' *.tmp | awk -v OFS="_" '{print $1,$2,$3}' | awk -F "_" 'BEGIN{printf "chr\tSCC\tSD\n"}{printf $5"\t"$11"\t"$12"\n"}'
 ##Working shorter code
 #awk -v OFS="_" 'NR==0 {print; next} FNR==0 {next} {print FILENAME, $0}' *.tmp |  awk -F "_" 'BEGIN{printf "chr\tSCC\tSD\n"}{printf $5"\t"$11"\t"$12"\n"}'
-def merge_tmp_files( input_files, temp_out_dir, resolution, smooth, bound_width, down_sampling):
+def merge_tmp_files( input_files, output_files, temp_out_dir, resolution, smooth, bound_width, down_sampling):
     return Job(
         input_files,
-        ["output_file"],
+        output_files,
         [
             ['reproducibility_scores', 'module_mugqic_tools']
         ],
         command="""\
         cd {temp_out_dir} &&
         for d in */ ; do 
-        awk -v OFS="_" 'NR==0 {{print; next}} FNR==0 {{next}} {{print FILENAME, $0}}' "$d"hicrep*_{resolution}_res_{smooth}_{bound_width}_{down_sampling}*.tmp |  awk -F "_" 'BEGIN{{printf "chr\\tSCC\\tSD\\n"}}{{printf $7"\\t"$13"\\t"$14"\\n"}}' > "$d""${{d%/*}}"_res_{resolution}_{smooth}_{bound_width}_{down_sampling}.tsv 
-        done &&
-        #rm "$d"*.tmp""".format(
+        awk -v OFS="_" 'NR==0 {{print; next}} FNR==0 {{next}} {{print FILENAME, $0}}' "$d"hicrep*_{resolution}_res_{smooth}_{bound_width}_{down_sampling}*.tmp |  awk -F "_" 'BEGIN{{printf "chr\\tSCC\\tSD\\tSmoothing\\n"}}{{printf $(NF-6)"\\t"$NF"\\n"}}' > "${{d%/*}}"_res_{resolution}_{smooth}_{bound_width}_{down_sampling}.tsv 
+        done
+        """.format(
         temp_out_dir=temp_out_dir,
         resolution=resolution,
         smooth=smooth,
         bound_width=bound_width,
         down_sampling=down_sampling
+        ))
+
+def merge_tsv(input_files, out_dir):
+    output_file="hcrep_combined_reproducibility_scores.csv"
+    return Job(
+        input_files,
+        [os.path.join(out_dir,output_file)],
+        [
+            ['reproducibility_scores', 'module_mugqic_tools']
+        ],
+        command="""\
+            cd {out_dir} &&
+            #cp *.tsv ../{out_dir} && 
+            awk -v OFS="_" 'NR==1 {{print; next}} FNR==1 {{next}} {{print substr( FILENAME, 1, length(FILENAME)-4 ),$0}}' *.tsv | tr "\\t" "," > ../{out_dir}/{output_file}
+            #rm "$d"*.tmp""".format(
+            out_dir=out_dir,
+            output_file=output_file
         ))
