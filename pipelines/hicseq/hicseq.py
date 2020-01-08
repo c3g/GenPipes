@@ -360,13 +360,14 @@ class HicSeq(common.Illumina):
             chrs = genome.chr_names_conv(genome_dict)
         else:
             chrs = chrs.split(",")
-     #   chrs = ['chr20',"chr18","chr19"]
+        #chrs = ["chr5"]
 
         input_files_for_merging=[]
+        tsv_files_for_merging=[]
         #If there is only one sample, an step should exit giving a warning
         if len(self.samples) > 1:
 
-            hicrep_temp_directory ="__temp.hicrep_reproducibility_scores"
+            output_dir = "hicrep_reproducibility_scores"
             for res in res_chr:
                 for sample in pairwise_sample_combination:
                     job_all_chr = []
@@ -375,12 +376,12 @@ class HicSeq(common.Illumina):
                         #get sample names with relative file path
                         input_sample1_file_path = os.path.join(self.output_dirs['matrices_output_directory'], sample[0].name,
                                                     "chromosomeMatrices",
-                                                    "_".join(("HTD", sample[0].name, self.enzyme, chromosome, res, "raw.txt")))
+                                                    "_".join(("HTD", sample[0].name, self.enzyme, chromosome, res, "rawRN.txt.MatA")))
 
                         input_sample2_file_path = os.path.join(self.output_dirs['matrices_output_directory'], sample[1].name,
                                                     "chromosomeMatrices",
-                                                    "_".join(("HTD", sample[1].name, self.enzyme, chromosome, res, "raw.txt")))
-                        out_dir = os.path.join(hicrep_temp_directory,
+                                                    "_".join(("HTD", sample[1].name, self.enzyme, chromosome, res, "rawRN.txt.MatA")))
+                        out_dir = os.path.join(output_dir,
                                                    "_".join(( sample[0].name, "vs",  sample[1].name)))
 
                         job_chr = hicrep.calculate_reproducible_score( out_dir, sample[0].name, sample[1].name,
@@ -400,11 +401,18 @@ class HicSeq(common.Illumina):
                                                  corr, down_sampling, smooth))
 
                     jobs.append(job)
-
-                job_merge = hicrep.merge_tmp_files( input_files_for_merging, hicrep_temp_directory, res, smooth, bound_width, down_sampling)
+                    tsv_output = os.path.join( output_dir, ".".join(("_".join((sample[0].name,"vs",sample[1].name, "res", res, smooth, bound_width,
+                                                     down_sampling)), "tsv")))
+                    tsv_files_for_merging.append(tsv_output)
+                job_merge = hicrep.merge_tmp_files( input_files_for_merging, tsv_files_for_merging, output_dir, res, smooth, bound_width, down_sampling)
                 job_merge.samples = self.samples
                 job_merge.name = "".join(("merge_hicrep_scores." + res))
                 jobs.append(job_merge)
+
+            job_tsv_merge = hicrep.merge_tsv(tsv_files_for_merging, output_dir)
+            job_tsv_merge.name = "merge_hicrep_scores"
+            job_tsv_merge.samples = self.samples
+            jobs.append(job_tsv_merge)
         else:
             pass
             #Raise an exception
