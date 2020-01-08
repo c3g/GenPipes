@@ -1,9 +1,30 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
+
+################################################################################
+# Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
+#
+# This file is part of MUGQIC Pipelines.
+#
+# MUGQIC Pipelines is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# MUGQIC Pipelines is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
+################################################################################
+
 import argparse
 import csv
 import datetime
 import logging
 import os
+import sys
 import re
 import subprocess
 
@@ -11,9 +32,7 @@ logger = logging.getLogger(__name__)
 
 
 class JobStat(object):
-
     JOBID = 'JobId'
-    SJOBID = 'JobID'
     JOBSTATE = 'JobState'
     SUBMITTIME = 'SubmitTime'
     STARTTIME = 'StartTime'
@@ -24,8 +43,10 @@ class JobStat(object):
     RUNTIME = 'RunTime'
     REMOTE = {'beluga': 'beluga.calculcanada.ca',
               'cedar': 'cedar.calculcanada.ca'}
-    SSTATE = 'State'
 
+    # Fields extracted from sacct
+    SJOBID = 'JobID'
+    SSTATE = 'State'
     SELAPSEDRAW = 'ElapsedRaw'
 
     COMPLETED = 'COMPLETED'
@@ -74,14 +95,13 @@ class JobStat(object):
         return os.path.realpath(self._path)
 
     def sacct(self, jobid):
-
-        cmd = ["sacct", "--format=ALL", "-P", "-j", str(jobid)]
+        cmd = ["sacct", "--format=ALL", "-P", "--delimiter", "^", "-j", str(jobid)]
         if self._remote:
             cmd = ['ssh', '-o', "StrictHostKeyChecking no", self.REMOTE[self._remote]] + cmd
         raw_output = subprocess.check_output(cmd).decode("utf-8")
         lines = raw_output.rstrip().splitlines()
-        keys = lines[0].strip().split("|")
-        steps = [line.strip().split("|") for line in lines[1:]]
+        keys = lines[0].strip().split("^")
+        steps = [line.strip().split("^") for line in lines[1:]]
         acct = dict(zip(keys, zip(*steps)))
         return acct
 
@@ -98,82 +118,81 @@ class JobStat(object):
 
         self._elapsed_sec = [int(t) if t is not None else 0 for t in all_acct[self.SELAPSEDRAW]]
 
-
     @property
     def slurm_state(self):
         return dict(zip(self._sub_id, self._slurm_state))
 
     def fill_from_file(self, path):
         # parse stdout and get all the prologue and epilogues values
-
         to_parse = False
         n = 0
         lines_to_parse = []
-        for line in open(path):
+        if os.path.isfile(path):  # Make sure the file exists
+            for line in open(path):
 
-            if "SLURM FAKE PROLOGUE" in line:
-                n = 0
-                to_parse = True
-            elif "SLURM FAKE EPILOGUE" in line:
-                n = 0
-                to_parse = True
-            elif "MUGQICexitStatus" in line:
-                self._mugqic_exit_status = line.strip('\n')
+                if "SLURM FAKE PROLOGUE" in line:
+                    n = 0
+                    to_parse = True
+                elif "SLURM FAKE EPILOGUE" in line:
+                    n = 0
+                    to_parse = True
+                elif "MUGQICexitStatus" in line:
+                    self._mugqic_exit_status = line.strip('\n')
 
-            if n >= self._parsed_after_header:
-                to_parse = False
+                if n >= self._parsed_after_header:
+                    to_parse = False
 
-            if to_parse:
-                lines_to_parse.append(line)
-                n += 1
+                if to_parse:
+                    lines_to_parse.append(line)
+                    n += 1
 
-        to_parse = ' '.join(lines_to_parse)
-        bidon = re.findall(r"(\w+)=(\S+)\s", to_parse)
-        all_value = {}
-        for k, v in bidon:
-            all_value.setdefault(k, []).append(v)
+            to_parse = ' '.join(lines_to_parse)
+            bidon = re.findall(r"(\w+)=(\S+)\s", to_parse)
+            all_value = {}
+            for k, v in bidon:
+                all_value.setdefault(k, []).append(v)
 
-        fake_pro_epi = [i for i, x in enumerate(all_value[self.JOBID])
-                    if self.jobid == int(x)]
+            fake_pro_epi = [i for i, x in enumerate(all_value[self.JOBID])
+                            if self.jobid == int(x)]
 
-        if len(fake_pro_epi) == 2:
-            self.output_log_id = list(set(all_value[self.JOBID]))
-            pro, epi = fake_pro_epi
-        elif len(fake_pro_epi) >= 2:
+            if len(fake_pro_epi) == 2:
+                self.output_log_id = list(set(all_value[self.JOBID]))
+                pro, epi = fake_pro_epi
+            elif len(fake_pro_epi) >= 2:
 
-            logger.error('{} log is not in {}, there is a mismatch '
-                         'between the job number and the output'
-                         .format(self.jobid, self._path))
+                logger.error('{} log is not in {}, there is a mismatch '
+                             'between the job number and the output'
+                             .format(self.jobid, self._path))
 
-            # Get the closest number
-            diff = [abs(int(v) - self.jobid) for v in all_value[self.JOBID]]
-            self.output_log_id = list(set(all_value[self.JOBID]))
+                # Get the closest number
+                diff = [abs(int(v) - self.jobid) for v in all_value[self.JOBID]]
+                self.output_log_id = list(set(all_value[self.JOBID]))
 
-            pro, epi = [i for i, x in enumerate(all_value[self.JOBID])
-                        if int(all_value[self.JOBID][diff.index(min(diff))]) == int(x)]
+                pro, epi = [i for i, x in enumerate(all_value[self.JOBID])
+                            if int(all_value[self.JOBID][diff.index(min(diff))]) == int(x)]
 
-        elif len(fake_pro_epi) == 1:
-            # no epilogue!
-            # Just put prologue in it
-            pro = fake_pro_epi[0]
-            epi = pro
-            logger.error('No epilogue in log file {}'.format(path))
-        else:
-            pro = None
-            epi = None
+            elif len(fake_pro_epi) == 1:
+                # no epilogue!
+                # Just put prologue in it
+                pro = fake_pro_epi[0]
+                epi = pro
+                logger.error('No epilogue in log file {}'.format(path))
+            else:
+                pro = None
+                epi = None
 
-        for k, v in all_value.items():
-            try:
-                self._prologue[k] = v[pro]
-                self._epilogue[k] = v[epi]
-            except IndexError:
-                logger.warning('{} = {} is not a slurm prologue/epilogue value or is ambiguous'.format(k, v))
+            for k, v in all_value.items():
+                try:
+                    self._prologue[k] = v[pro]
+                    self._epilogue[k] = v[epi]
+                except IndexError:
+                    logger.warning('{} = {} is not a slurm prologue/epilogue value or is ambiguous'.format(k, v))
 
-        tres = re.findall(r"TRES=cpu=(\d+),mem=(\d+\.?\d*\w)", to_parse)
-        self._prologue[self.NUMCPUS] = tres[pro][0]
-        self._epilogue[self.NUMCPUS] = tres[epi][0]
-        self._prologue[self.MEM] = tres[pro][1]
-        self._epilogue[self.MEM] = tres[epi][1]
+            tres = re.findall(r"TRES=cpu=(\d+),mem=(\d+\.?\d*\w)", to_parse)
+            self._prologue[self.NUMCPUS] = tres[pro][0]
+            self._epilogue[self.NUMCPUS] = tres[epi][0]
+            self._prologue[self.MEM] = tres[pro][1]
+            self._epilogue[self.MEM] = tres[epi][1]
 
     @property
     def log_file_exit_status(self):
@@ -200,7 +219,6 @@ class JobStat(object):
         except ValueError:
             return datetime.timedelta(0)
 
-
     @property
     def start(self):
         if self._start is None:
@@ -222,7 +240,7 @@ class JobStat(object):
             return self.start_time + self.start
         except TypeError:
             return None
-    
+
     @property
     def epilogue_time(self):
         try:
@@ -257,7 +275,6 @@ class JobStat(object):
 
 
 def get_report(job_list_tsv=None, remote_hpc=None):
-
     job_output_path = os.path.dirname(job_list_tsv)
 
     with open(job_list_tsv) as tsvin:
@@ -268,8 +285,8 @@ def get_report(job_list_tsv=None, remote_hpc=None):
         for job in jobs:
             logger.info('loading {}'.format(job))
             report.append(JobStat(step_output_file=os.path.join(job_output_path, job[3]),
-                                 name=job[1], jobid=job[0], dependency=job[2],
-                                 remote_hpc=remote_hpc))
+                                  name=job[1], jobid=job[0], dependency=job[2],
+                                  remote_hpc=remote_hpc))
 
     return report
 
@@ -282,55 +299,50 @@ def print_report(report, to_stdout=True, to_tsv=None):
     ok_message = []
     bad_message = []
 
-    if to_tsv:
-        header = ('id', 'log_from_job', 'same_id', 'name', 'slurm_prologue', 'slurm_main', 'slurm_epilogue',
-                  'custom_exit',
-                  'output_file_path', 'outpout_file_exist', 'runtime', 'runtime_with_overhead')
-        data_table = []
+    header = ('id', 'log_from_job', 'same_id', 'name', 'slurm_prologue', 'slurm_main', 'slurm_epilogue',
+              'custom_exit',
+              'output_file_path', 'outpout_file_exist', 'runtime', 'runtime_with_overhead')
+    data_table = []
 
     for j in report:
-        if to_tsv:
-            pro, batch, epi = None, None, None
-            for k, v in j.slurm_state.items():
-                if 'batch' in k:
-                    batch = v
-                elif 'extern' in k:
-                    epi = v
-                else:
-                    pro = v
-            same = True
-            if len(j.output_log_id) != 1:
-                same = False
-            elif j.jobid != int(j.output_log_id[0]):
-                same = False
+        pro, batch, epi = None, None, None
+        for k, v in j.slurm_state.items():
+            if 'batch' in k:
+                batch = v
+            elif 'extern' in k:
+                epi = v
+            else:
+                pro = v
+        same = True
+        if len(j.output_log_id) != 1:
+            same = False
+        elif j.jobid != int(j.output_log_id[0]):
+            same = False
 
-            data_table.append((j.jobid, j.output_log_id, same, j.name, pro, batch, epi, j.log_file_exit_status,
-                               j.path, not j.log_missing, j.runtime_job, j.runtime_with_overhead ))
+        data_table.append((j.jobid, j.output_log_id, same, j.name, pro, batch, epi, j.log_file_exit_status,
+                           j.path, not j.log_missing, j.runtime_job, j.runtime_with_overhead))
 
         if to_stdout:
             if not j.completed:
-                bad_message.append(
-                    "Job Name {}, jobid {} has not completed with status {}, log file status {}"
-                    .format(j.name, j.jobid, j.slurm_state.keys(), j.log_file_exit_status))
+                if j.log_missing:
+                    bad_message.append("Job Name {}, jobid {} has no log file {}. May not be started.".format(j.name, j.jobid, j.path))
+                else:
+                    bad_message.append("Job Name {}, jobid {} has not completed with status {}, log file status {}".format(j.name, j.jobid, j.slurm_state.keys(), j.log_file_exit_status))
             elif (j.output_log_id and j.jobid != int(j.output_log_id[0])) or len(j.output_log_id) > 1:
-                bad_message.append(
-                    "Job Name {}, jobid {} has log from job {} in its log file {}"
-                    .format(j.name, j.jobid, j.output_log_id, j.path))
-            elif j.log_missing:
-                bad_message.append(
-                    "Job Name {}, jobid {} has no log file {}"
-                    .format(j.name, j.jobid, j.path))
+                bad_message.append("Job Name {}, jobid {} has log from job {} in its log file {}".format(j.name, j.jobid, j.output_log_id, j.path))
             else:
-                ok_message.append(
-                    "Job Name {}, jobid {} is all good!"
-                    .format(j.name, j.jobid))
+                ok_message.append("Job Name {}, jobid {} is all good!".format(j.name, j.jobid))
 
-            if j.prologue_time is not None:
-                min_start.append(j.prologue_time)
-            if j.epilogue_time is not None:
-                max_stop.append(j.epilogue_time)
-            total_machine += j.runtime_job
-            total_machine_core += j.runtime_job * j.n_cpu
+            if j.log_missing:
+                total_machine = datetime.timedelta(0)
+                total_machine_core = datetime.timedelta(0)
+            else:
+                if j.prologue_time is not None:
+                    min_start.append(j.prologue_time)
+                if j.epilogue_time is not None:
+                    max_stop.append(j.epilogue_time)
+                total_machine += j.runtime_job
+                total_machine_core += j.runtime_job * j.n_cpu
 
     if to_stdout:
         try:
@@ -339,16 +351,22 @@ def print_report(report, to_stdout=True, to_tsv=None):
             # total on node
             total_human = max_stop - min_start
         except ValueError:
-            logger.error('No time recoded on that job')
+            logger.error('No time recorded on that job')
             total_human = None
 
-        print ("Human time: {}\n Cumulative machine time: {}\n"
-               " cumulative core time: {}".format(total_human, total_machine,
-                                                  total_machine_core))
+        print("Human time: {}\n Cumulative machine time: {}\n"
+              " cumulative core time: {}".format(total_human, total_machine,
+                                                 total_machine_core))
         print("******* No Problem ********")
         print('\n'.join(ok_message))
         print("******* Some Problem ********")
         print('\n'.join(bad_message))
+
+        print("******* Details ********")
+        stdout_writer = csv.writer(sys.stdout, lineterminator=os.linesep, delimiter='\t')
+        stdout_writer.writerow(header)
+        for row in data_table:
+            stdout_writer.writerow(row)
 
     if to_tsv:
         if not isinstance(to_tsv, str):
@@ -361,7 +379,6 @@ def print_report(report, to_stdout=True, to_tsv=None):
 
 
 def fine_grain(stats):
-
     total = datetime.timedelta(0)
     max_r = datetime.timedelta(0)
     max_h = datetime.timedelta(0)
@@ -379,7 +396,7 @@ def fine_grain(stats):
 
     total = total + max_h + max_r
 
-    print(total.total_seconds()/3600.)
+    print(total.total_seconds() / 3600.)
 
     total = datetime.timedelta(0)
     max_r = datetime.timedelta(0)
@@ -397,11 +414,10 @@ def fine_grain(stats):
 
     total = total + max_h + max_r
 
-    print(total.total_seconds()/3600.)
+    print(total.total_seconds() / 3600.)
 
 
 if __name__ == '__main__':
-
     parser = argparse.ArgumentParser()
     parser.add_argument('job_list_path', help="Path to a GenPipes job list")
     parser.add_argument('--remote', '-r', help="Remote HPC where the job was ran",
@@ -413,7 +429,6 @@ if __name__ == '__main__':
     parser.add_argument('--tsv', help="output to tsv file")
     parser.add_argument('--quiet', '-q', help="No report printed to terminal",
                         action='store_true', default=False)
-
 
     args = parser.parse_args()
 
