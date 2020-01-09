@@ -27,7 +27,11 @@ import os
 from core.config import *
 from core.job import *
 
+<<<<<<< HEAD
 def create_fend_object(chromosome_lengths_file, output_file,output_dir, res_chr, temp_dir):
+=======
+def create_fend_object(chromosome_lengths, output_file,output_dir, res_chr):
+>>>>>>> 334abafc ([hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project)
 
     return Job(
         [chromosome_lengths_file],
@@ -36,7 +40,11 @@ def create_fend_object(chromosome_lengths_file, output_file,output_dir, res_chr,
             ['quality_scores', 'module_python']
         ],
         command="""\
+<<<<<<< HEAD
             mkdir -p {output_dir}/{temp_dir} &&
+=======
+            mkdir -p {output_dir} &&
+>>>>>>> 334abafc ([hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project)
             hifive fends \\
             -L {chromosome_lengths} \\
             --binned={res_chr} \\
@@ -44,6 +52,7 @@ def create_fend_object(chromosome_lengths_file, output_file,output_dir, res_chr,
             chromosome_lengths=chromosome_lengths_file,
             output_file=output_file,
             res_chr=res_chr,
+<<<<<<< HEAD
             output_dir=output_dir,
             temp_dir=temp_dir
         ))
@@ -136,3 +145,7 @@ def merge_all_reports(out_dir, input_files, output_file, res, enzyme, quasr_pref
 
         ))
 
+=======
+            output_dir=output_dir
+        ))
+>>>>>>> 334abafc ([hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project)
