@@ -446,11 +446,13 @@ class HicSeq(common.Illumina):
         scientific_name = config.param('DEFAULT', 'scientific_name')
         assembly = config.param('DEFAULT', 'assembly')
         chrom_lengths = os.path.join(assembly_dir, "genome", ".".join((scientific_name, assembly,"fa", "fai")))
-        output_file = "hello.txt"
+        output_dir = "quality_scores"
+
 
         for res in res_chr:
             #Create fend object using chromosome lengths. only input file is chromosome lenghts for for respective genome
-            job_fend = quasar_qc.create_fend_object(chrom_lengths, output_file, res)
+            output_fend_file = os.path.join(output_dir, ".".join(("binned_by_chr_length", res, "fends")))
+            job_fend = quasar_qc.create_fend_object(chrom_lengths, output_fend_file, output_dir, res)
             job_fend.samples = self.samples
             job_fend.name = "quality_scores_quasar_fend"
             jobs.append(job_fend)
