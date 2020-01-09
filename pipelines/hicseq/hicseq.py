@@ -54,6 +54,7 @@ from bfx import topdom
 from bfx import robustad
 from bfx import hic
 from bfx import hicrep
+from bfx import quasar_qc
 
 log = logging.getLogger(__name__)
 
@@ -428,13 +429,14 @@ class HicSeq(common.Illumina):
         return jobs
 
     def quality_scores(self):
+
         """
-            Quality score per chromosome for each sample is calculated using QUSAR-QC at resolutions
-            defined in interaction_matrices_Chr step and sequencing
-            depths (coverages) defined in quality_scores step of ini config file
-            QUSAR-QC is a part of the hifive hic-seq analysis suit
-            for more information visit: [http://hifive.docs.taylorlab.org/en/latest/quasar_scoring.html]
-        """
+        #     Quality score per chromosome for each sample is calculated using QUSAR-QC at resolutions
+        #     defined in interaction_matrices_Chr step and sequencing
+        #     depths (coverages) defined in quality_scores step of ini config file
+        #     QUSAR-QC is a part of the hifive hic-seq analysis suit
+        #     for more information visit: [http://hifive.docs.taylorlab.org/en/latest/quasar_scoring.html]
+        # """
         jobs = []
 
         # Get defined chromosomes and resolution from the config (.ini) file
@@ -444,27 +446,37 @@ class HicSeq(common.Illumina):
         scientific_name = config.param('DEFAULT', 'scientific_name')
         assembly = config.param('DEFAULT', 'assembly')
         chrom_lengths = os.path.join(assembly_dir, "genome", ".".join((scientific_name, assembly,"fa", "fai")))
+        output_file = "hello.txt"
 
-        if chrs == "All":
-            genome_dict = os.path.expandvars(config.param('DEFAULT', 'genome_dictionary', type='filepath'))
-            chrs = genome.chr_names_conv(genome_dict)
-        else:
-            chrs = chrs.split(",")
-
-        output_dir = "hicrep_reproducibility_scores"
         for res in res_chr:
-            for sample in self.samples:
-                job_all_chr = []
-                for chromosome in chrs:
+            #Create fend object using chromosome lengths. only input file is chromosome lenghts for for respective genome
+            job_fend = quasar_qc.create_fend_object(chrom_lengths, output_file, res)
+            job_fend.samples = self.samples
+            job_fend.name = "quality_scores_quasar_fend"
+            jobs.append(job_fend)
 
-                    input_sample_file_path = os.path.join(self.output_dirs['matrices_output_directory'],
-                                                           sample.name,
-                                                           "chromosomeMatrices",
-                                                           "_".join((
-                                                                    "HTD", sample.name, self.enzyme, chromosome, res,
-                                                                    "rawRN.txt.MatA")))
+        # if chrs == "All":
+        #     genome_dict = os.path.expandvars(config.param('DEFAULT', 'genome_dictionary', type='filepath'))
+        #     chrs = genome.chr_names_conv(genome_dict)
+        # else:
+        #     chrs = chrs.split(",")
+        #
+        # output_dir = "hicrep_reproducibility_scores"
+        # for res in res_chr:
+        #     for sample in self.samples:
+        #         job_all_chr = []
+        #         for chromosome in chrs:
+        #
+        #             input_sample_file_path = os.path.join(self.output_dirs['matrices_output_directory'],
+        #                                                    sample.name,
+        #                                                    "chromosomeMatrices",
+        #                                                    "_".join((
+        #                                                             "HTD", sample.name, self.enzyme, chromosome, res,
+        #                                                             "rawRN.txt.MatA")))
+        #
+        #             print(input_sample_file_path)
 
-                    print(input_sample_file_path)
+        return jobs
 
 
 
@@ -938,7 +950,7 @@ class HicSeq(common.Illumina):
             self.multiqc_report,
             self.cram_output,
             self.reproducibility_scores,
-            self.quality_scores,
+            self.quality_scores
             ],
             [self.samtools_bam_sort,
             self.picard_sam_to_fastq,
