@@ -27,7 +27,7 @@ import os
 from core.config import *
 from core.job import *
 
-def create_fend_object(chromosome_lengths, output_file, res_chr):
+def create_fend_object(chromosome_lengths, output_file,output_dir, res_chr):
 
     return Job(
         [chromosome_lengths],
@@ -36,11 +36,13 @@ def create_fend_object(chromosome_lengths, output_file, res_chr):
             ['quality_scores', 'module_python']
         ],
         command="""\
+            mkdir -p {output_dir} &&
             hifive fends \\
             -L {chromosome_lengths} \\
             --binned={res_chr} \\
             {output_file}""".format(
             chromosome_lengths=chromosome_lengths,
             output_file=output_file,
-            res_chr=res_chr
+            res_chr=res_chr,
+            output_dir=output_dir
         ))
