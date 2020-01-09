@@ -48,7 +48,7 @@ ln -s -f \\
   {sleep}""".format(
             source=target_file,
             destination=link,
-            sleep="&& sleep "+sleep if sleep else ""
+            sleep="&& sleep "+str(sleep) if sleep else ""
         ),
         removable_files=[link]
     )
