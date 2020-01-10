@@ -43,6 +43,10 @@ class Config(ConfigParser.SafeConfigParser):
     cit_options = [cluster_walltime]
     cit_prefix = 'cit_'
 
+    # Setting the sanity-check flag to 'False'
+    # Will be set to 'True' by the pipeline if it runs with the '--sanity-check' parameter
+    sanity = False
+
     def __init__(self):
         ConfigParser.SafeConfigParser.__init__(self)
 
@@ -74,15 +78,18 @@ class Config(ConfigParser.SafeConfigParser):
                 if re.search("^query_module", name):
                     query_module = value
 
-
-        log.info("Check modules...")
+        if self.sanity:
+            log.warn("* Checking modules...")
+        else:
+            log.info("Check modules...")
         cmd_query_module = "module {query_module} ".format(query_module  = query_module)
         for module in modules:
-            # Bash shell must be invoked in order to find "module" cmd
-            module_show_output = subprocess.check_output(["bash", "-c", cmd_query_module + module], stderr=subprocess.STDOUT)
+            module_show_output = subprocess.check_output(["bash", "-c", cmd_query_module + module],
+                                                         stderr=subprocess.STDOUT)
+
             ## "Error" result for module show while "error" for module spider. seems to be handeled well by re.IGNORECASE
             if re.search("Error", module_show_output, re.IGNORECASE):
-                raise Error("Error in config file(s) with " + module + ":\n" + module_show_output)
+                _raise(SanitycheckError("Error in config file(s) with " + module + ":\n" + module_show_output))
             else:
                 log.info("Module " + module + " OK")
         log.info("Module check finished\n")
@@ -96,7 +103,6 @@ class Config(ConfigParser.SafeConfigParser):
         # Keep that if block first, it is only evaluated in testing mode
         if self.continuous_integration_testing and option in self.cit_options:
             # hack because this class becomes a global
-
             try:
                 return self.get(section, '{}{}'.format(self.cit_prefix, option))
             except ConfigParser.Error:
@@ -109,13 +115,11 @@ class Config(ConfigParser.SafeConfigParser):
                 from_section = self.get(section, option)
                 from_default = self.get('DEFAULT', option)
 
-
                 if (utils.slurm_time_to_datetime(from_default)
                         <= utils.slurm_time_to_datetime(from_section)):
                     return from_default
                 else:
                     return from_section
-
 
         if not self.has_section(section):
             section = 'DEFAULT'
@@ -129,7 +133,7 @@ class Config(ConfigParser.SafeConfigParser):
                     if value > 0:
                         return value
                     else:
-                        raise Error("Integer \"" + str(value) + "\" is not > 0!")
+                        _raise(SanitycheckError("Integer \"" + str(value) + "\" is not > 0!"))
                 elif type == 'float':
                     return self.getfloat(section, option)
                 elif type == 'boolean':
@@ -139,38 +143,46 @@ class Config(ConfigParser.SafeConfigParser):
                     if os.path.isfile(value):
                         return value
                     else:
-                        raise Error("File path \"" + value + "\" does not exist or is not a valid regular file!")
+                        _raise(SanitycheckError("File path \"" + value + "\" does not exist or is not a valid regular file!"))
                 elif type == 'dirpath':
                     value = os.path.expandvars(self.get(section, option))
                     if os.path.isdir(value):
                         return value
                     else:
-                        raise Error("Directory path \"" + value + "\" does not exist or is not a valid directory!")
+                        _raise(SanitycheckError("Directory path \"" + value + "\" does not exist or is not a valid directory!"))
                 elif type == 'prefixpath':
                     value = os.path.expandvars(self.get(section, option))
                     if glob.glob(value + "*"):
                         return value
                     else:
-                        raise Error("Prefix path \"" + value + "\" does not match any file!")
+                        _raise(SanitycheckError("Prefix path \"" + value + "\" does not match any file!"))
                 elif type == 'list':
                     # Remove empty strings from list
                     return [x for x in self.get(section, option).split(",") if x]
                 elif type == 'string':
                     return self.get(section, option)
                 else:
-                    raise Error("Unknown parameter type '" + type + "'")
+                    _raise(SanitycheckError("Unknown parameter type '" + type + "'"))
             except Exception as e:
-                raise Error("Error: parameter \"[" + section + "] " + option + "\" value \"" + self.get(section,
-                                                                                                    option) + "\" is invalid!\n" + e.message)
+                _raise(SanitycheckError("Error found :\n  " + e.message))
         elif required:
-            raise Error("Error: parameter \"[" + original_section + "] " + option + "\" is not defined in config file(s)!")
+            _raise(SanitycheckError("Error: REQUIRED parameter \"[" + original_section + "] " + option + "\" is not defined in config file(s)!"))
         else:
             return ""
-
 
 class Error(Exception):
     pass
 
+class SanitycheckError(Error):
+    pass
+
+def _raise(object):
+    if config.sanity:
+        if isinstance(object, SanitycheckError):
+            object.message = ' --- TO FIX --- {}'.format(object.message)
+        log.error(object.message)
+    else:
+        raise object
 
 # Global config object used throughout the whole pipeline
 config = Config()

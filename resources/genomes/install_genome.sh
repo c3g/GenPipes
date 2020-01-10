@@ -9,16 +9,19 @@ module_java=mugqic/java/openjdk-jdk1.8.0_72
 module_mugqic_tools=mugqic/mugqic_tools/2.2.2
 module_mugqic_R_packages=mugqic/mugqic_R_packages/1.0.5
 module_picard=mugqic/picard/2.0.1
-module_R=mugqic/R_Bioconductor/3.5.1_3.7
+module_R=mugqic/R_Bioconductor/3.6.0_3.9
 module_samtools=mugqic/samtools/1.3.1
-module_star=mugqic/star/2.5.4b
+module_star=mugqic/star/2.7.2b
 module_tabix=mugqic/tabix/0.2.6
 module_tophat=mugqic/tophat/2.0.14
 module_ucsc=mugqic/ucsc/v359
-module_hicup=mugqic/hicup/v0.5.9
+module_hicup=mugqic/hicup/v0.7.2
 module_kallisto=mugqic/kallisto/0.44.0
 
 HOST=`hostname`
+
+# Ensure to use 'grep' from CVMFS to avoid errors caused by different grep versions
+alias grep=/cvmfs/soft.mugqic/yum/centos7/1.0/usr/bin/grep
 
 init_install() {
   # '$MUGQIC_INSTALL_HOME_DEV' for development, '$MUGQIC_INSTALL_HOME' for production
@@ -349,7 +352,7 @@ create_bismark_genome_reference() {
     echo
     BISMARK_CMD="\
 mkdir -p $BISMARK_INDEX_DIR && \
-cat $GENOME_DIR/$GENOME_FASTA.fa ${!INSTALL_HOME}/genomes/lamba_phage.fa ${!INSTALL_HOME}/pUC19.fa > $BISMARK_INDEX_DIR/$GENOME_FASTA.fa && \
+cat $GENOME_DIR/$GENOME_FASTA.fa ${!INSTALL_HOME}/genomes/lambda_phage.fa ${!INSTALL_HOME}/pUC19.fa > $BISMARK_INDEX_DIR/$GENOME_FASTA.fa && \
 module load $module_samtools && \
 SAM_LOG=$LOG_DIR/samtools_for_bismark_$TIMESTAMP.log && \
 samtools faidx $GENOME_DIR/bismark_index/$GENOME_FASTA > $SAM_LOG 2>&1 && \
@@ -788,15 +791,14 @@ create_genome_digest() {
     then
       echo
       echo "Creating ${enzyme} genome digest..."
-      echo "mv Digest_${ASSEMBLY//-/_}_${enzyme}_None_*.txt $GENOME_DIGEST_FILE"
       echo
       Digest_CMD="mkdir -p $GENOME_DIGEST && \
       cd $GENOME_DIGEST  && \
       ln -s -f -t $GENOME_DIGEST ../$GENOME_FASTA && \
       module load $module_hicup && \
       LOG=$LOG_DIR/${enzyme}_digest_$TIMESTAMP.log && \
-      hicup_digester --genome ${ASSEMBLY//-/_} --re1 ${enzymes[$enzyme]},${enzyme} $GENOME_DIGEST/$GENOME_FASTA > \$LOG 2>&1 && \
-      mv Digest_${ASSEMBLY//-/_}_${enzyme}_None_*.txt $GENOME_DIGEST_FILE && \
+      hicup_digester --genome ${ASSEMBLY//[-.]/_} --re1 ${enzymes[$enzyme]},${enzyme} $GENOME_DIGEST/$GENOME_FASTA > \$LOG 2>&1 && \
+      mv Digest_${ASSEMBLY//[-.]/_}_${enzyme}_None_*.txt $GENOME_DIGEST_FILE && \
       chmod -R ug+rwX,o+rX $GENOME_DIGEST \$LOG"
       cmd_or_job Digest_CMD 2
     else

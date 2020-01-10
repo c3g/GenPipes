@@ -30,12 +30,10 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # MUGQIC Modules
-from core.config import *
-from core.job import *
+from core.config import config, _raise, SanitycheckError
+from core.job import Job, concat_jobs, pipe_jobs
 from pipelines import common
-from core.pipeline import *
-from bfx.readset import *
-from bfx.sequence_dictionary import *
+from bfx.sequence_dictionary import parse_sequence_dictionary_file, split_by_size
 
 from bfx import adapters
 from bfx import bvatools
@@ -69,6 +67,7 @@ from bfx import qualimap
 from bfx import fastqc
 from bfx import multiqc
 from bfx import deliverables
+from bfx import bash_cmd as bash
 
 log = logging.getLogger(__name__)
 
@@ -144,40 +143,45 @@ class DnaSeqRaw(common.Illumina):
 
         for readset in self.readsets:
             if readset.bam:
-                prefix = re.sub("\.bam$", ".", readset.bam)
+                prefix = os.path.join(
+                    self.output_dir,
+                    "raw_reads",
+                    readset.sample.name,
+                    readset.name
+                )
 
             if readset.run_type == "PAIRED_END":
                 if readset.fastq1 and readset.fastq2:
                     sym_link_job= concat_jobs([
                         deliverables.sym_link(readset.fastq1, readset, type="raw_reads"),
                         deliverables.sym_link(readset.fastq2, readset, type="raw_reads"),
-                    ], name="sym_link_fastq.pair_end." + readset.name)
+                    ], name="sym_link_fastq.pair_end." + readset.name, samples=[readset.sample])
 
                 elif not readset.fastq1:
                     if readset.bam:
-                        fastq1 = prefix + "pair1.fastq.gz"
-                        fastq2 = prefix + "pair2.fastq.gz"
+                        fastq1 = prefix + ".pair1.fastq.gz"
+                        fastq2 = prefix + ".pair2.fastq.gz"
                         sym_link_job = concat_jobs([
                             deliverables.sym_link(fastq1, readset, type="raw_reads"),
                             deliverables.sym_link(fastq2, readset, type="raw_reads"),
-                        ], name="sym_link_fastq.pair_end." + readset.name)
+                        ], name="sym_link_fastq.pair_end." + readset.name, samples=[readset.sample])
 
             elif readset.run_type == "SINGLE_END":
                 if readset.fastq1:
                     sym_link_job = concat_jobs([
                         deliverables.sym_link(readset.fastq1, readset, type="raw_reads"),
-                    ], name="sym_link_fastq.single_end." + readset.name)
+                    ], name="sym_link_fastq.single_end." + readset.name, samples=[readset.sample])
 
                 elif not readset.fastq1:
                     if readset.bam:
-                        fastq1 = prefix + "pair1.fastq.gz"
+                        fastq1 = prefix + ".pair1.fastq.gz"
                         sym_link_job = concat_jobs([
                             deliverables.sym_link(fastq1, readset, type="raw_reads"),
-                        ], name="sym_link_fastq.single_end." + readset.name)
+                        ], name="sym_link_fastq.single_end." + readset.name, samples=[readset.sample])
 
             else:
-                raise Exception("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
             jobs.append(sym_link_job)
 
@@ -203,27 +207,41 @@ class DnaSeqRaw(common.Illumina):
             if readset.run_type == "PAIRED_END":
                 candidate_input_files = [[readset.fastq1, readset.fastq2]]
                 if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
+                    prefix = os.path.join(
+                        self.output_dir,
+                        "raw_reads",
+                        readset.sample.name,
+                        re.sub("\.bam$", ".", os.path.basename(readset.bam))
+                    )
+                    candidate_input_files.append([prefix + "pair1.fastq.gz", prefix + "pair2.fastq.gz"])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
             
             elif readset.run_type == "SINGLE_END":
                 candidate_input_files = [[readset.fastq1]]
                 if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
+                    prefix = os.path.join(
+                        self.output_dir,
+                        "raw_reads",
+                        readset.sample.name,
+                        re.sub("\.bam$", ".", os.path.basename(readset.bam))
+                    )
+                    candidate_input_files.append([prefix + ".single.fastq.gz"])
                 [fastq1] = self.select_input_files(candidate_input_files)
                 fastq2 = None
             
             else:
-                raise Exception("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
-            jobs.append(concat_jobs([
-                Job(command="mkdir -p " + output_dir, removable_files=[output_dir], samples=[readset.sample]),
-                adapter_job,
-                skewer.trim(fastq1, fastq2, trim_file_prefix, adapter_file),
-                Job([trim_file_prefix + "-trimmed-pair1.fastq.gz"], [trim_file_prefix + ".trim.pair1.fastq.gz"], command="ln -s -f " + os.path.abspath(trim_file_prefix + "-trimmed-pair1.fastq.gz ") + trim_file_prefix + ".trim.pair1.fastq.gz"),
-                Job([trim_file_prefix + "-trimmed-pair2.fastq.gz"], [trim_file_prefix + ".trim.pair2.fastq.gz"], command="ln -s -f " + os.path.abspath(trim_file_prefix + "-trimmed-pair2.fastq.gz ") + trim_file_prefix + ".trim.pair2.fastq.gz"),
-            ],name="skewer_trimming." + readset.name))
+            jobs.append(
+                concat_jobs([
+                    bash.mkdir(output_dir, remove=True),
+                    adapter_job,
+                    skewer.trim(fastq1, fastq2, trim_file_prefix, adapter_file),
+                    bash.ln(os.path.abspath(trim_file_prefix + "-trimmed-pair1.fastq.gz "), trim_file_prefix + ".trim.pair1.fastq.gz", sleep=5),
+                    bash.ln(os.path.abspath(trim_file_prefix + "-trimmed-pair2.fastq.gz "), trim_file_prefix + ".trim.pair2.fastq.gz", sleep=5)
+                ], name="skewer_trimming." + readset.name, samples=[readset.sample])
+            )
 
         return jobs
 
@@ -269,7 +287,13 @@ class DnaSeqRaw(common.Illumina):
                 if readset.fastq1 and readset.fastq2:
                     candidate_input_files.append([readset.fastq1, readset.fastq2])
                 if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
+                    prefix = os.path.join(
+                        self.output_dir,
+                        "raw_reads",
+                        readset.sample.name,
+                        re.sub("\.bam$", ".", os.path.basename(readset.bam))
+                    )
+                    candidate_input_files.append([prefix + "pair1.fastq.gz", prefix + "pair2.fastq.gz"])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
             
             elif readset.run_type == "SINGLE_END":
@@ -277,13 +301,19 @@ class DnaSeqRaw(common.Illumina):
                 if readset.fastq1:
                     candidate_input_files.append([readset.fastq1])
                 if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
+                    prefix = os.path.join(
+                        self.output_dir,
+                        "raw_reads",
+                        readset.sample.name,
+                        re.sub("\.bam$", ".", os.path.basename(readset.bam))
+                    )
+                    candidate_input_files.append([prefix + ".single.fastq.gz"])
                 [fastq1] = self.select_input_files(candidate_input_files)
                 fastq2 = None
             
             else:
-                raise Exception("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
             job = concat_jobs([
                 Job(command="mkdir -p " + os.path.dirname(readset_bam), samples=[readset.sample]),
@@ -620,10 +650,10 @@ class DnaSeqRaw(common.Illumina):
         jobs = []
         for sample in self.samples:
             alignment_file_prefix = os.path.join("alignment", sample.name, sample.name + ".")
-            input = self.select_input_files([[alignment_file_prefix + "matefixed.sorted.bam"],[alignment_file_prefix + "realigned.sorted.bam"],[alignment_file_prefix + "sorted.bam"]])
+            input = self.select_input_files([[alignment_file_prefix + "matefixed.sorted.bam"],[alignment_file_prefix + "realigned.sorted.bam"],[alignment_file_prefix + "sorted.bam"]])[0]
             output = alignment_file_prefix + "sorted.dup.bam"
 
-            job = sambamba.markdup(input, output)
+            job = sambamba.markdup(input, output, config.param('sambamba_mark_duplicates', 'tmp_dir',required=True))
             job.name = "sambamba_mark_duplicates." + sample.name
             job.samples = [sample]
             jobs.append(job)
@@ -916,8 +946,12 @@ class DnaSeqRaw(common.Illumina):
 
         for sample in self.samples:
             alignment_file_prefix = os.path.join("alignment", sample.name, sample.name + ".")
+            alignment_directory = os.path.join("alignment", sample.name)
+            input = self.select_input_files([[os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
+                                             [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
+                                             [os.path.join(alignment_directory, sample.name + ".sorted.bam")]])[0]
 
-            job = gatk4.callable_loci(alignment_file_prefix + "sorted.dup.recal.bam", alignment_file_prefix + "callable.bed", alignment_file_prefix + "callable.summary.txt")
+            job = gatk4.callable_loci(input, alignment_file_prefix + "callable.bed", alignment_file_prefix + "callable.summary.txt")
             job.name = "gatk_callable_loci." + sample.name
             job.samples = [sample]
             jobs.append(job)
@@ -933,8 +967,12 @@ class DnaSeqRaw(common.Illumina):
 
         for sample in self.samples:
             alignment_file_prefix = os.path.join("alignment", sample.name, sample.name + ".")
+            alignment_directory = os.path.join("alignment", sample.name)
+            input = self.select_input_files([[os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
+                                             [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
+                                             [os.path.join(alignment_directory, sample.name + ".sorted.bam")]])[0]
 
-            job = bvatools.basefreq(alignment_file_prefix + "sorted.dup.recal.bam", alignment_file_prefix + "commonSNPs.alleleFreq.csv", config.param('extract_common_snp_freq', 'common_snp_positions', type='filepath'), 0)
+            job = bvatools.basefreq(input, alignment_file_prefix + "commonSNPs.alleleFreq.csv", config.param('extract_common_snp_freq', 'common_snp_positions', type='filepath'), 0)
             job.name = "extract_common_snp_freq." + sample.name
             job.samples = [sample]
             jobs.append(job)
@@ -1683,7 +1721,7 @@ pandoc \\
         return job
 
 
-    def metrics_vcf_stats(self, variants_file_prefix="variants/allSamples.hc.vqsr.vt.mil.snpId.snpeff.dbnsfp" ,
+    def metrics_vcf_stats(self, variants_file_prefix="variants/allSamples.hc.vqsr.vt.mil.snpId.snpeff" ,
                           job_name="metrics_change_rate"):
         """
         Metrics SNV. Multiple metrics associated to annotations and effect prediction are generated at this step:
@@ -1694,9 +1732,9 @@ pandoc \\
 
 
         job = metrics.vcf_stats(variants_file_prefix +
-                                ".vcf.gz", variants_file_prefix +
-                                ".snpeff.vcf.part_changeRate.tsv",
-                                variants_file_prefix + ".snpeff.vcf.statsFile.txt")
+                                ".dbnsfp.vcf.gz", variants_file_prefix +
+                                ".dbnsfp.vcf.part_changeRate.tsv",
+                                variants_file_prefix + ".vcf.stats.csv")
         job.name = job_name
         #job.samples = self.samples
         return [job]
@@ -1711,7 +1749,7 @@ pandoc \\
         summary of allele frequencies, codon changes, amino acid changes, changes per chromosome, change rates.
         """
 
-        job = self.metrics_vcf_stats("variants/allSamples.hc.vqsr.vt.mil.snpId.snpeff.dbnsfp",
+        job = self.metrics_vcf_stats("variants/allSamples.hc.vqsr.vt.mil.snpId.snpeff",
                                      "haplotype_caller_metrics_change_rate")
         #job.samples = self.samples
 
@@ -1727,7 +1765,7 @@ pandoc \\
         summary of allele frequencies, codon changes, amino acid changes, changes per chromosome, change rates.
         """
 
-        job = self.metrics_vcf_stats("variants/allSamples.merged.flt.vt.mil.snpId.snpeff.dbnsfp",
+        job = self.metrics_vcf_stats("variants/allSamples.merged.flt.vt.mil.snpId.snpeff",
                                      "mpileup_metrics_change_rate")
         #job.samples = self.samples
 
@@ -2088,6 +2126,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.haplotype_caller_metrics_vcf_stats,
                 #self.haplotype_caller_metrics_snv_graph_metrics,
                 self.run_multiqc,
+                self.cram_output
             ],
             [
                 self.picard_sam_to_fastq,
@@ -2121,7 +2160,9 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.mpileup_snp_effect,
                 self.mpileup_dbnsfp_annotation,
                 self.mpileup_gemini_annotations,
-                self.run_multiqc
+                self.mpileup_metrics_vcf_stats,
+                self.run_multiqc,
+                self.cram_output
             ],
             [
                 self.picard_sam_to_fastq,

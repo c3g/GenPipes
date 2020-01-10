@@ -31,22 +31,24 @@ import itertools
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # MUGQIC Modules
-from core.config import *
-from core.job import *
-from core.pipeline import *
-from bfx.readset import *
+from core.config import config, _raise, SanitycheckError
+from core.job import Job, concat_jobs
+from bfx.readset import parse_illumina_readset_file
 
 from bfx import bvatools
 from bfx import bismark
 from bfx import picard2 as picard
 from bfx import bedtools
 from bfx import samtools
+from bfx import sambamba
+from bfx import gatk4
 from bfx import gatk
 from bfx import igvtools
 from bfx import bissnp
 from bfx import tools
 from bfx import ucsc
 from bfx import fgbio
+from bfx import metrics
 
 from pipelines import common
 from pipelines.dnaseq import dnaseq
@@ -82,11 +84,11 @@ class MethylSeq(dnaseq.DnaSeq):
                 self._readsets = parse_illumina_readset_file(self.args.readsets.name)
                 for readset in self._readsets:
                     if readset._run == "":
-                        raise Exception("Error: no run was provided for readset \"" + readset.name +
-                            "\"... Run has to be provided for all the readsets in order to use this pipeline.")
+                        _raise(SanitycheckError("Error: no run was provided for readset \"" + readset.name +
+                            "\"... Run has to be provided for all the readsets in order to use this pipeline."))
                     if readset._lane == "":
-                        raise Exception("Error: no lane provided for readset \"" + readset.name +
-                            "\"... Lane has to be provided for all the readsets in order to use this pipeline.")
+                        _raise(SanitycheckError("Error: no lane provided for readset \"" + readset.name +
+                            "\"... Lane has to be provided for all the readsets in order to use this pipeline."))
             else:
                 self.argparser.error("argument -r/--readsets is required!")
 
@@ -109,6 +111,7 @@ class MethylSeq(dnaseq.DnaSeq):
             alignment_directory = os.path.join("alignment", readset.sample.name)
             no_readgroup_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted_noRG.bam")
             output_bam = re.sub("_noRG.bam", ".bam", no_readgroup_bam)
+            report_suffix = "_bismark_bt2_report.txt"
 
             # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
             if readset.run_type == "PAIRED_END":
@@ -118,6 +121,10 @@ class MethylSeq(dnaseq.DnaSeq):
                 if readset.bam:
                     candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
+                # Defining the bismark output files (bismark sets the names of its output files from the basename of fastq1)
+                # Note : these files will then be renamed (using a "mv" command) to fit with the mugqic pipelines nomenclature (cf. no_readgroup_bam)
+                bismark_out_bam = os.path.join(alignment_directory, readset.name, re.sub(r'(\.fastq\.gz|\.fq\.gz|\.fastq|\.fq)$', "_bismark_bt2_pe.bam", os.path.basename(fastq1)))
+                bismark_out_report = os.path.join(alignment_directory, readset.name, re.sub(r'(\.fastq\.gz|\.fq\.gz|\.fastq|\.fq)$', "_bismark_bt2_PE_report.txt", os.path.basename(fastq1)))
             elif readset.run_type == "SINGLE_END":
                 candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
                 if readset.fastq1:
@@ -126,31 +133,30 @@ class MethylSeq(dnaseq.DnaSeq):
                     candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
                 [fastq1] = self.select_input_files(candidate_input_files)
                 fastq2 = None
+                # Defining the bismark output files (bismark sets the names of its output files from the basename of fastq1)
+                # Note : these files will then be renamed (using a "mv" command) to fit with the mugqic pipelines nomenclature (cf. no_readgroup_bam)
+                bismark_out_bam = os.path.join(alignment_directory, readset.name, re.sub(r'(\.fastq\.gz|\.fq\.gz|\.fastq|\.fq)$', "_bismark_bt2.bam", os.path.basename(fastq1)))
+                bismark_out_report = os.path.join(alignment_directory, readset.name, re.sub(r'(\.fastq\.gz|\.fq\.gz|\.fastq|\.fq)$', "_bismark_bt2_SE_report.txt", os.path.basename(fastq1)))
             else:
-                raise Exception("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
-
-            # Defining the bismark output files (bismark sets the names of its output files from the basename of fastq1)
-            # Note : these files will then be renamed (using a "mv" command) to fit with the mugqic pipelines nomenclature (cf. no_readgroup_bam)
-            bismark_out_bam = os.path.join(alignment_directory, readset.name, re.sub(r'(\.fastq\.gz|\.fq\.gz|\.fastq|\.fq)$', "_bismark_bt2_pe.bam", os.path.basename(fastq1)))
-            bismark_out_report =  os.path.join(alignment_directory, readset.name, re.sub(r'(\.fastq\.gz|\.fq\.gz|\.fastq|\.fq)$', "_bismark_bt2_PE_report.txt", os.path.basename(fastq1)))
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + os.path.dirname(output_bam), samples=[readset.sample]),
+                    Job(command="mkdir -p " + os.path.dirname(output_bam)),
                     bismark.align(
                         fastq1,
                         fastq2,
                         os.path.dirname(no_readgroup_bam),
-                        [no_readgroup_bam, re.sub(".bam", "_bismark_bt2_PE_report.txt", no_readgroup_bam)],
+                        [no_readgroup_bam, re.sub(".bam", report_suffix, no_readgroup_bam)],
                     ),
                     Job(command="mv " + bismark_out_bam + " " + no_readgroup_bam),
-                    Job(command="mv " + bismark_out_report + " " + re.sub(".bam", "_bismark_bt2_PE_report.txt", no_readgroup_bam)),
-                ], name="bismark_align." + readset.name)
+                    Job(command="mv " + bismark_out_report + " " + re.sub(".bam", report_suffix, no_readgroup_bam)),
+                ], name="bismark_align." + readset.name, samples=[readset.sample])
             )
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + alignment_directory, samples=[readset.sample]),
+                    Job(command="mkdir -p " + alignment_directory),
                     picard.add_read_groups(
                         no_readgroup_bam,
                         output_bam,
@@ -159,16 +165,16 @@ class MethylSeq(dnaseq.DnaSeq):
                         readset.run + "_" + readset.lane,
                         readset.sample.name
                     )
-                ], name="picard_add_read_groups." + readset.name)
+                ], name="picard_add_read_groups." + readset.name, samples=[readset.sample])
             )
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + alignment_directory, samples=[readset.sample]),
+                    Job(command="mkdir -p " + alignment_directory),
                     samtools.flagstat(
                         output_bam,
                         re.sub(".bam", "_flagstat.txt", output_bam),
                     )
-                ], name="samtools_flagstat." + readset.name)
+                ], name="samtools_flagstat." + readset.name, samples=[readset.sample])
             )
 
         report_file = os.path.join("report", "MethylSeq.bismark_align.md")
@@ -217,24 +223,24 @@ pandoc --to=markdown \\
                 
                 jobs.append(
                     concat_jobs([
-                        Job(command="mkdir -p corrected_umi/" + readset.name , samples=[readset.sample]),
+                        Job(command="mkdir -p corrected_umi/" + readset.name),
                         fgbio.correct_readname(
                             input_umi,
                             input_umi_corrected
                         ),
-                    ], name="fgbio_correct_readname." + readset.name)
+                    ], name="fgbio_correct_readname." + readset.name, samples=[readset.sample])
                 )
 
                 jobs.append(
                     concat_jobs([
-                        Job(command="mkdir -p " + os.path.dirname(output_bam), samples=[readset.sample]),
+                        Job(command="mkdir -p " + os.path.dirname(output_bam)),
                         fgbio.addumi(
                             input_bam,
                             input_umi_corrected,
                             output_bam,
                             output_bai
                         ),
-                    ], name="fgbio_addumi." + readset.name)
+                    ], name="fgbio_addumi." + readset.name, samples=[readset.sample])
                 )
 
         #report_file = os.path.join("report", "MethylSeq.bismark_align.md")
@@ -285,6 +291,7 @@ pandoc --to=markdown \\
                 remove_duplicates="true"
             )
             job.name = "picard_mark_duplicates." + sample.name
+            job.samples = [sample]
             jobs.append(job)
 
             job = samtools.flagstat(
@@ -527,13 +534,13 @@ cp \\
 
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + methyl_directory, samples=[sample]),
+                    Job(command="mkdir -p " + methyl_directory),
                     picard.sort_sam(
                         input_file,
                         re.sub("sorted", "readset_sorted", input_file),
                         "queryname"
                         )
-                ], name="picard_sort_sam." + sample.name)
+                ], name="picard_sort_sam." + sample.name, samples=[sample])
             )
             outputs = [re.sub("sorted", "readset_sorted", output) for output in outputs]
             bismark_job = bismark.methyl_call(
@@ -568,23 +575,23 @@ cp \\
 
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " " + os.path.join("tracks", "bigWig"), removable_files=["tracks"], samples=[sample]),
+                    Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " " + os.path.join("tracks", "bigWig"), removable_files=["tracks"]),
                     bedtools.graph(
                         input_bam,
                         bed_graph_output,
                         ""
                     )
-                ], name="bed_graph." + re.sub(".bedGraph", "", os.path.basename(bed_graph_output)))
+                ], name="bed_graph." + re.sub(".bedGraph", "", os.path.basename(bed_graph_output)), samples=[sample])
             )
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + os.path.join("tracks", "bigWig"), samples=[sample]),
+                    Job(command="mkdir -p " + os.path.join("tracks", "bigWig")),
                     ucsc.bedGraphToBigWig(
                         bed_graph_output,
                         big_wig_output,
                         False
                     )
-                ], name="wiggle." + re.sub(".bw", "", os.path.basename(big_wig_output)))
+                ], name="wiggle." + re.sub(".bw", "", os.path.basename(big_wig_output)), samples=[sample])
             )
 
             # Generation of a bigWig from the methylation bedGraph
@@ -594,12 +601,12 @@ cp \\
 
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + methyl_directory, samples=[sample]),
+                    Job(command="mkdir -p " + methyl_directory),
                     ucsc.bedGraphToBigWig(
                         input_bed_graph,
                         output_wiggle
                     )
-                ], name = "bismark_bigWig." + sample.name)
+                ], name = "bismark_bigWig." + sample.name, samples=[sample])
             )
 
         return jobs
@@ -732,7 +739,7 @@ cp \\
 
             # Bismark alignment files
             for readset in sample.readsets:
-                inputs.append(os.path.join("alignment", sample.name, readset.name, readset.name + ".sorted_noRG_bismark_bt2_PE_report.txt"))
+                inputs.append(os.path.join("alignment", sample.name, readset.name, readset.name + ".sorted_noRG_bismark_bt2_report.txt"))
 
             # CpG coverage files
             inputs.append(os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.median_CpG_coverage.txt"))
@@ -768,7 +775,7 @@ cp \\
                 concat_jobs([
                     Job(command="mkdir -p ihec_metrics metrics"),
                     tools.methylseq_ihec_metrics_report(sample.name, inputs, metrics_file, metrics_all_file, target_bed, counter),
-                ], name="ihec_sample_metrics." + sample.name)
+                ], name="ihec_sample_metrics." + sample.name, samples=[sample])
             )
             counter+=1
 
@@ -821,13 +828,13 @@ pandoc \\
 
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + variant_directory, samples=[sample]),
+                    Job(command="mkdir -p " + variant_directory),
                     bissnp.bisulfite_genotyper(
                         input_file,
                         cpg_output_file,
                         snp_output_file
                     )
-                ], name="bissnp." + sample.name)
+                ], name="bissnp." + sample.name, samples=[sample])
             )
 
         return jobs 
@@ -846,12 +853,12 @@ pandoc \\
 
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + methyl_directory, samples=[sample]),
+                    Job(command="mkdir -p " + methyl_directory),
                     tools.filter_snp_cpg(
                         input_file,
                         output_file
                     )
-                ], name="filter_snp_cpg." + sample.name)
+                ], name="filter_snp_cpg." + sample.name, samples=[sample])
             )
         return jobs
 
@@ -870,12 +877,12 @@ pandoc \\
 
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + output_directory, samples=[sample]),
+                    Job(command="mkdir -p " + output_directory),
                     tools.prepare_methylkit(
                         input_file,
                         output_file
                     )
-                ], name="prepare_methylkit." + sample.name)
+                ], name="prepare_methylkit." + sample.name, samples=[sample])
             )
         return jobs
 
@@ -892,12 +899,14 @@ pandoc \\
         input_directory = os.path.join("methylkit", "inputs")
         input_files = []
         for contrast in self.contrasts:
-            input_files.extend([[os.path.join(input_directory, sample.name + ".readset_sorted.dedup.map.input")for sample in group] for group in contrast.controls, contrast.treatments])
+            input_files.extend([[os.path.join(input_directory, sample.name + ".readset_sorted.dedup.map.input")for
+                                 sample in group] for group in contrast.controls, contrast.treatments])
 
         input_files = list(itertools.chain.from_iterable(input_files))
 
         output_directory = os.path.join("methylkit", "results")
-        output_files = [os.path.join(output_directory, "Rdata_files", contrast.name, "perbase.testingresults.txt.gz") for contrast in self.contrasts]
+        output_files = [os.path.join(output_directory, "Rdata_files", contrast.name, "perbase.testingresults.txt.gz")
+                        for contrast in self.contrasts]
 
         methylkit_job = tools.methylkit_differential_analysis(
             design_file,
@@ -929,7 +938,7 @@ pandoc \\
             self.bis_snp,
             self.filter_snp_cpg,
             self.prepare_methylkit,         # step 15
-            self.methylkit_differential_analysis
+            self.cram_output,
         ]
 
 if __name__ == '__main__': 

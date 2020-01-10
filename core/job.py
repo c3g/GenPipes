@@ -26,7 +26,7 @@ import logging
 import os
 
 # MUGQIC Modules
-from config import *
+from config import config
 
 log = logging.getLogger(__name__)
 
