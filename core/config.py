@@ -91,8 +91,6 @@ class Config(ConfigParser.SafeConfigParser):
         if p.returncode != 0:
             _raise(SanitycheckError("Error in config file(s) with:\n" + derr))
 
-        log.info("Modules  OK")
-
         log.info("Module check finished\n")
 
     # Retrieve param in config files with optional definition check and type validation
