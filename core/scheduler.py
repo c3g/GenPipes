@@ -191,7 +191,6 @@ cd $OUTPUT_DIR
                     config_files=",".join([c.name for c in self._config_files ])
                 )
             )
-
         if pipeline.json:
             json_files = []
             for step in pipeline.step_range:
