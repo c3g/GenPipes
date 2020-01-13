@@ -82,30 +82,16 @@ class Config(ConfigParser.SafeConfigParser):
             log.warn("* Checking modules...")
         else:
             log.info("Check modules...")
-        cmd_query_module = ["module", "{} ".format(query_module)]
+        cmd_query_module = ["module", query_module]
         # for module in modules:
 
         cmd = ' '.join(cmd_query_module + modules)
-        p = subprocess.Popen(cmd, shell=True,stderr=subprocess.PIPE)
+        p = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE)
         dout, derr = p.communicate()
         if p.returncode != 0:
             _raise(SanitycheckError("Error in config file(s) with:\n" + derr))
 
         log.info("Modules  OK")
-
-        log.info("Module check finished\n")
-
-
-
-
-        # for module in modules:
-        try:
-            module_show_output = subprocess.check_output(["bash", "-c", cmd_query_module] + modules,
-                                                         stderr=subprocess.STDOUT)
-        except subprocess.CalledProcessError:
-            _raise(SanitycheckError("Error in config file(s) with:\n" + module_show_output))
-
-        log.info("Modules are all available")
 
         log.info("Module check finished\n")
 
