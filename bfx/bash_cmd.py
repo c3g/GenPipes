@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 ################################################################################
 # Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
 #
@@ -17,9 +19,8 @@
 # along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-#!/usr/bin/env python
-
 # Python Standard Modules
+import os
 
 # MUGQIC Modules
 from core.job import Job
