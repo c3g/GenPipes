@@ -61,6 +61,7 @@ from bfx import htslib
 from bfx import samtools
 from bfx import varscan
 from bfx import gatk
+from bfx import gatk4
 from bfx import vardict
 from bfx import strelka2
 from bfx import bcbio_variation_recall
@@ -1002,6 +1003,7 @@ END`""".format(
             mutect_directory = os.path.join(pair_directory, "rawMuTect2")
             # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
             output_gz = os.path.join(pair_directory, tumor_pair.name + ".mutect2.vcf.gz")
+            output_flt = os.path.join(pair_directory, tumor_pair.name + ".mutect2.flt.vcf.gz")
             output_vt_gz = os.path.join(pair_directory, tumor_pair.name + ".mutect2.vt.vcf.gz")
             output_somatic_vt = os.path.join(pair_directory, tumor_pair.name + ".mutect2.somatic.vt.vcf.gz")
 
@@ -1033,23 +1035,50 @@ END`""".format(
                     if not self.is_gz_file(input_vcf):
                         stderr.write("Incomplete mutect2 vcf: %s\n" % input_vcf)
 
-                jobs.append(concat_jobs([
-                    Job(samples=[tumor_pair.normal, tumor_pair.tumor]),
-                    pipe_jobs([
-                        bcftools.concat(inputs, None, config.param('merge_filter_mutect2', 'bcftools_options')),
-                        Job([None], [None], command="sed 's/TUMOR/" + tumor_pair.tumor.name + "/g' | sed 's/NORMAL/" + tumor_pair.normal.name +
-                                                    "/g' | sed 's/Number=R/Number=./g' | grep -v 'GL00' | grep -Ev 'chrUn|random' | grep -v 'EBV'"),
-                        htslib.bgzip_tabix(None, output_gz),
-                    ]),
-                    pipe_jobs([
-                        vt.decompose_and_normalize_mnps(output_gz, None),
-                        htslib.bgzip_tabix(None, output_vt_gz),
-                    ]),
-                    pipe_jobs([
-                        bcftools.view(output_vt_gz, None, config.param('merge_filter_mutect2', 'filter_options')),
-                        htslib.bgzip_tabix(None, output_somatic_vt),
-                    ]),
-                ], name="merge_filter_mutect2." + tumor_pair.name))
+                if config.param('gatk_apply_bqsr', 'module_gatk').split("/")[2] > "4":
+                    output_stats = os.path.join(pair_directory, tumor_pair.name + ".mutect2.vcf.gz.stats")
+                    stats = []
+                    for idx, sequences in enumerate(unique_sequences_per_job):
+                        stats.append(
+                            os.path.join(mutect_directory, tumor_pair.name + "." + str(idx) + ".mutect2.vcf.gz.stats"))
+                    stats.append(os.path.join(mutect_directory, tumor_pair.name + ".others.mutect2.vcf.gz.stats"))
+
+                    jobs.append(concat_jobs([
+                        Job(samples=[tumor_pair.normal, tumor_pair.tumor]),
+                        gatk4.cat_variants(inputs, output_gz),
+                        gatk4.merge_stats(stats, output_stats),
+                        gatk4.filter_mutect_calls(output_gz, output_flt),
+                        pipe_jobs([
+                            vt.decompose_and_normalize_mnps(output_flt, None),
+                            Job([None], [None], command=" grep -v 'GL00' | grep -Ev 'chrUn|random' | grep -v 'EBV'"),
+                            htslib.bgzip_tabix(None, output_vt_gz),
+                        ]),
+                        pipe_jobs([
+                            bcftools.view(output_vt_gz, None, config.param('merge_filter_mutect2', 'filter_options')),
+                            htslib.bgzip_tabix(None, output_somatic_vt),
+                        ]),
+                    ], name="merge_filter_mutect2." + tumor_pair.name))
+                    
+                else:
+                    jobs.append(concat_jobs([
+                        Job(samples=[tumor_pair.normal, tumor_pair.tumor]),
+                        pipe_jobs([
+                            bcftools.concat(inputs, None, config.param('merge_filter_mutect2', 'bcftools_options')),
+                            Job([None], [None], command="sed 's/TUMOR/" + tumor_pair.tumor.name + "/g' | sed 's/NORMAL/" + tumor_pair.normal.name +
+                                                        "/g' | sed 's/Number=R/Number=./g' | grep -v 'GL00' | grep -Ev 'chrUn|random' | grep -v 'EBV'"),
+    
+                            htslib.bgzip_tabix(None, output_gz),
+                        ]),
+                        #gatk4.filter_mutect_calls(output_gz, output_flt),
+                        pipe_jobs([
+                            vt.decompose_and_normalize_mnps(output_gz, None),
+                            htslib.bgzip_tabix(None, output_vt_gz),
+                        ]),
+                        pipe_jobs([
+                            bcftools.view(output_vt_gz, None, config.param('merge_filter_mutect2', 'filter_options')),
+                            htslib.bgzip_tabix(None, output_somatic_vt),
+                        ]),
+                    ], name="merge_filter_mutect2." + tumor_pair.name))
 
         return jobs
 
@@ -3346,11 +3375,12 @@ END`""".format(
                 self.ensemble_metasv,
                 self.metasv_sv_annotation,
                 self.sym_link_sequenza,
-                #self.sym_link_delly,
-                #self.sym_link_manta,
-                #self.sym_link_lumpy,
-                #self.sym_link_wham,
-                #self.sym_link_svaba
+                self.sym_link_delly,
+                self.sym_link_manta,
+                self.sym_link_lumpy,
+                self.sym_link_wham,
+                self.sym_link_cnvkit,
+                self.sym_link_svaba
             ]
         ]
 

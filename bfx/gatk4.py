@@ -22,6 +22,7 @@
 # Python Standard Modules
 
 # MUGQIC Modules
+import core
 from core.config import *
 from core.job import *
 import gatk
@@ -286,6 +287,28 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
                 output=output
         ))
 
+
+def merge_stats(stats, output=None):
+		return Job(
+			stats,
+			[output],
+			[
+				['gatk_merge_stats', 'module_java'],
+				['gatk_merge_stats', 'module_gatk']
+			],
+			command="""\
+gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
+  MergeMutectStats {options} \\
+  {stats}\\
+  --output {output}""".format(
+				tmp_dir=config.param('gatk_merge_stats', 'tmp_dir'),
+				java_other_options=config.param('gatk_merge_stats', 'java_other_options'),
+				ram=config.param('gatk_merge_stats', 'ram'),
+				options=config.param('gatk_merge_stats', 'options'),
+				stats="".join(" \\\n  --stats " + stat for stat in stats),
+				output=output
+			)
+		)
 # only in GATK3
 def combine_variants(
     variants,
@@ -508,23 +531,24 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   --input {inputNormal} \\
   --normal-sample {normal_name} \\
   --germline-resource {known_sites} \\
-  --output {outputVCF}{interval_list}{intervals}{exclude_intervals}""".format(
-                tmp_dir=config.param('gatk_mutect', 'tmp_dir'),
-                java_other_options=config.param('gatk_mutect2', 'java_other_options'),
-                ram=config.param('gatk_mutect2', 'ram'),
-                options=config.param('gatk_mutect2', 'options'),
-                reference_sequence=config.param('gatk_mutect2', 'genome_fasta', type='filepath'),
-                known_sites=config.param('gatk_mutect2', 'known_sites', type='filepath'),
-                inputNormal=inputNormal,
-                normal_name=normal_name,
-                inputTumor=inputTumor,
-                tumor_name=tumor_name,
-                outputVCF=outputVCF,
-                interval_list=" \\\n  --interval-padding 100 --intervals " + interval_list if interval_list else "",
-                intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
-                exclude_intervals="".join(
-                    " \\\n  --exclude-intervals " + exclude_interval for exclude_interval in exclude_intervals)
-        ))
+  --output {outputVCF}{interval_list}{intervals}{exclude_intervals}{pon}""".format(
+			tmp_dir=config.param('gatk_mutect', 'tmp_dir'),
+			java_other_options=config.param('gatk_mutect2', 'java_other_options'),
+			ram=config.param('gatk_mutect2', 'ram'),
+			options=config.param('gatk_mutect2', 'options'),
+			reference_sequence=config.param('gatk_mutect2', 'genome_fasta', type='filepath'),
+			known_sites=config.param('gatk_mutect2', 'known_sites', type='filepath'),
+			inputNormal=inputNormal,
+			normal_name=normal_name,
+			inputTumor=inputTumor,
+			tumor_name=tumor_name,
+			outputVCF=outputVCF,
+			interval_list=" \\\n  --interval-padding 100 --intervals " + interval_list if interval_list else "",
+			intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
+			pon=" --panel-of-normals " + config.param('gatk_mutect2', 'pon', type='filepath') if config.param('gatk_mutect2', 'pon', type='filepath') else "",
+			exclude_intervals="".join(" \\\n  --exclude-intervals " + exclude_interval for exclude_interval in exclude_intervals)
+		)
+	)
 
 #####################
 # GATK4 - Variant Filtering
@@ -603,53 +627,45 @@ def filter_mutect_calls(
         command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
   FilterMutectCalls {options} \\
-  --tmp_dir {tmp_dir} \\
+  --reference {reference} \\
   --variant {variants} \\
   {contamination_table} \\
   --output {output}""".format(
-            tmp_dir=config.param('gatk_filter_mutect_call', 'tmp_dir'),
-            java_other_options=config.param('gatk_filter_mutect_call', 'java_other_options'),
-            ram=config.param('gatk_filter_mutect_call', 'ram'),
-            options=config.param('gatk_filter_mutect_call', 'options'),
-            variants=variants,
-            contamination_table=" \\\n --contamination-table " + contamination if contamination else "",
-            output=output
-    ))
+				tmp_dir=config.param('gatk_filter_mutect_call', 'tmp_dir'),
+				java_other_options=config.param('gatk_filter_mutect_call', 'java_other_options'),
+				ram=config.param('gatk_filter_mutect_call', 'ram'),
+				options=config.param('gatk_filter_mutect_call', 'options'),
+				reference=config.param('gatk_variant_recalibrator', 'genome_fasta', type='filepath'),
+				variants=variants,
+				contamination_table=" \\\n --contamination-table " + contamination if contamination else "",
+				output=output
+			)
+		)
 
-def variant_recalibrator(
-    variants,
-    other_options,
-    recal_output,
-    tranches_output,
-    R_output,
-    small_sample_check=False
-    ):
 
-    if not isinstance(variants, list):
-        variants = [variants]
-
+def variant_recalibrator(variants, other_options, recal_output, tranches_output, R_output, small_sample_check=False):
     if config.param('gatk_variant_recalibrator', 'module_gatk').split("/")[2] < "4":
-        return gatk.variant_recalibrator(
-            variants,
-            other_options,
-            recal_output,
-            tranches_output,
-            R_output,
-            small_sample_check=small_sample_check
-        )
+        return gatk.variant_recalibrator(variants, other_options, recal_output, tranches_output,
+										 R_output, small_sample_check=small_sample_check)
     else:
+		
+        if small_sample_check:
+            try:
+                small_sample_option = config.param('gatk_variant_recalibrator', 'small_sample_option')
+            except core.config.Error:
+                small_sample_option = ''
+            else:
+                small_sample_option = ''
+			
         return Job(
-            variants,
-            [
-                recal_output,
-                tranches_output
-            ],
-            [
-                ['gatk_variant_recalibrator', 'module_java'],
-                ['gatk_variant_recalibrator', 'module_gatk'],
-                ['gatk_variant_recalibrator', 'module_R']
-            ],
-        command="""\
+			variants,
+			[recal_output, tranches_output],
+			[
+				['gatk_variant_recalibrator', 'module_java'],
+				['gatk_variant_recalibrator', 'module_gatk'],
+				['gatk_variant_recalibrator', 'module_R']
+			],
+		command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
   VariantRecalibrator {options} \\
   --reference {reference_sequence}{variants} \\
@@ -1166,6 +1182,7 @@ def picard_mark_duplicates(
             ],
             command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
+<<<<<<< HEAD
   MarkDuplicates \\
   --REMOVE_DUPLICATES={remove_duplicates} \\
   --VALIDATION_STRINGENCY=SILENT \\

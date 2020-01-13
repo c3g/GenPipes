@@ -2866,7 +2866,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
             inputs = [input]
 
-            mkdir_job = Job(command="mkdir -p " + delly_directory, removable_files=[delly_directory], samples = [sample.name])
+            mkdir_job = Job(command="mkdir -p " + delly_directory, removable_files=[delly_directory], samples=self.samples)
 
             SV_types = config.param('delly_call_filter', 'sv_types_options').split(",")
 
@@ -2949,7 +2949,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             manta_directory = os.path.abspath(os.path.join(pair_directory, "rawManta"))
             output_prefix = os.path.abspath(os.path.join(pair_directory, sample.name))
 
-            mkdir_job = Job(command="mkdir -p " + manta_directory, removable_files=[manta_directory], samples = [sample.name])
+            mkdir_job = Job(command="mkdir -p " + manta_directory, removable_files=[manta_directory], samples=self.samples)
 
             input = self.select_input_files(
 	            [[os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")],
@@ -2975,7 +2975,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 mkdir_job,
                 manta.manta_config(input, None, tmp_directory, bed_file),
                 manta.manta_run(tmp_directory, output_dep=output_dep),
-                Job([tmp_directory], [manta_directory], command="cp -R " + tmp_directory + " " + manta_directory),
+                Job([tmp_directory], [manta_directory], command="mv " + tmp_directory + " " + manta_directory),
                 Job([manta_germline_output], [output_prefix + ".manta.germline.vcf.gz"],
                     command="ln -sf " + manta_germline_output + " " + output_prefix + ".manta.germline.vcf.gz"),
                 Job([manta_germline_output_tbi], [output_prefix + ".manta.germline.vcf.gz"],
@@ -3021,8 +3021,9 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             gzip_vcf = os.path.join(pair_directory, sample.name + ".lumpy.vcf.gz")
         
             genotype_vcf = os.path.join(pair_directory, sample.name + ".lumpy.genotyped.vcf")
+            genotype_gzip = os.path.join(pair_directory, sample.name + ".lumpy.genotyped.vcf.gz")
         
-            mkdir_job = Job(command="mkdir -p " + lumpy_directory, removable_files=[lumpy_directory], samples=[sample.name])
+            mkdir_job = Job(command="mkdir -p " + lumpy_directory, removable_files=[lumpy_directory], samples=self.samples)
         
             jobs.append(concat_jobs([
                 mkdir_job,
@@ -3031,7 +3032,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                     sambamba.sort("/dev/stdin", discordants_normal, lumpy_directory, config.param('extract_discordant_reads', 'discordants_sort_option')),
                 ]),
             ], name="extract_discordant_reads." + sample.name))
-        
+
             jobs.append(concat_jobs([
                 mkdir_job,
                 pipe_jobs([
@@ -3041,7 +3042,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                     sambamba.sort("/dev/stdin", splitters_normal, lumpy_directory, config.param('extract_split_reads', 'split_sort_option')),
                 ]),
             ], name="extract_split_reads." + sample.name))
-            
+
             jobs.append(concat_jobs([
                 mkdir_job,
                 lumpy.lumpyexpress_pair(inputNormal, None, output_vcf, spl_normal=splitters_normal, dis_normal=discordants_normal),
@@ -3055,6 +3056,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                     vt.sort("-", os.path.join(pair_directory, sample.name + ".lumpy.sorted.vcf"), "-m full"),
                 ]),
                 svtyper.genotyper(None, inputNormal, os.path.join(pair_directory, sample.name + ".lumpy.sorted.vcf"), genotype_vcf),
+                htslib.bgzip(genotype_vcf, genotype_gzip),
             ], name="lumpy_paired_sv_calls.genotype." + sample.name))
     
         return jobs
@@ -3099,7 +3101,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             merge_vcf = os.path.join(wham_directory, sample.name + ".wham.merged.vcf")
             genotyped_vcf = os.path.join(pair_directory, sample.name + ".wham.merged.genotyped.vcf.gz")
         
-            mkdir_job = Job(command="mkdir -p " + wham_directory, removable_files=[wham_directory], samples=[sample.name])
+            mkdir_job = Job(command="mkdir -p " + wham_directory, removable_files=[wham_directory], samples=self.samples)
         
             jobs.append(concat_jobs([
                 mkdir_job,
@@ -3189,7 +3191,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 input_vcf = None
                 normal = None
 
-            mkdir_job = Job(command="mkdir -p " + cnvkit_dir, removable_files=[cnvkit_dir], samples = [sample.name])
+            mkdir_job = Job(command="mkdir -p " + cnvkit_dir, removable_files=[cnvkit_dir], samples=self.samples)
             
             if len(self.samples) > config.param('cnvkit_batch', 'min_background_samples'):
                 jobs.append(concat_jobs([
@@ -3283,8 +3285,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             #                                 [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam")],
             #                                 [os.path.join("alignment", sample.name, sample.name + ".sorted.bam")]])
         
-            mkdir_job = Job(command="mkdir -p " + output_dir, removable_files=[output_dir],
-                            samples=[sample.name])
+            mkdir_job = Job(command="mkdir -p " + output_dir, removable_files=[output_dir], samples=self.samples)
             
             jobs.append(concat_jobs([
                 mkdir_job,
@@ -3317,14 +3318,16 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             wham_vcf = os.path.join(pair_directory, sample.name + ".wham.germline.vcf.gz")
             delly_vcf = os.path.join(pair_directory, sample.name + ".delly.germline.vcf.gz")
             cnvkit_vcf = os.path.join(pair_directory, sample.name + ".cnvkit.germline.vcf.gz")
+            breakseq_vcf = os.path.join(pair_directory, sample.name + ".breakseq.germline.vcf.gz")
 
-            mkdir_job = Job(command="mkdir -p " + ensemble_directory, samples=[sample.name])
-		
             if os.path.isfile(isize_file):
                 isize_mean, isize_sd = metric_tools.extract_isize(isize_file)
-		
+
             else:
-                raise Exception("Error " + isize_file + " does not exist. Please run metrics step\n")
+                isize_mean = 325
+                isize_sd = 50
+
+            mkdir_job = Job(command="mkdir -p " + ensemble_directory, samples=self.samples)
 			
             input_wham = None
             if os.path.isfile(wham_vcf):
@@ -3347,7 +3350,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 
             jobs.append(concat_jobs([
                 mkdir_job,
-	            metasv.ensemble(lumpy_vcf, abs_manta, input_cnvkit, input_wham, input_delly, gatk_pass, inputTumor,
+	            metasv.ensemble(lumpy_vcf, abs_manta, input_cnvkit, input_wham, input_delly, breakseq_vcf, gatk_pass, inputTumor,
 	                    sample.name, os.path.join(ensemble_directory, "rawMetaSV"), ensemble_directory,
 	                    isize_mean=str(isize_mean), isize_sd=str(isize_sd), output_vcf=os.path.join(ensemble_directory, "variants.vcf.gz")),
             ], name="metasv_ensemble." + sample.name))
@@ -3365,7 +3368,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             germline_input = os.path.join(svaba_directory, sample.name + ".svaba.sv.vcf")
             germline_output = os.path.join(os.path.abspath(pair_directory), sample.name + ".svaba.germline.vcf.gz")
 
-            mkdir_job = Job(command="mkdir -p " + svaba_directory, removable_files=[svaba_directory], samples = [sample.name])
+            mkdir_job = Job(command="mkdir -p " + svaba_directory, removable_files=[svaba_directory], samples=self.samples)
             #cd_job = Job(command="cd " + svaba_directory)
 
             coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
@@ -3558,6 +3561,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.sambamba_merge_realigned,
                 self.sambamba_mark_duplicates,
                 self.recalibration,
+                self.metrics_dna_picard_metrics,
                 self.delly_call_filter,
                 self.delly_sv_annotation,
                 self.manta_sv_calls,

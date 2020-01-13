@@ -26,9 +26,9 @@ import os
 from core.config import *
 from core.job import *
 
-def ensemble(input_lumpy, input_manta, input_cnvkit, input_wham, input_delly, input_gatk, input_bam, sample_name, workdir, outdir, isize_mean, isize_sd, output_vcf):
+def ensemble(input_lumpy, input_manta, input_cnvkit, input_wham, input_delly, input_breakseq, input_gatk, input_bam, sample_name, workdir, outdir, isize_mean, isize_sd, output_vcf):
     return Job(
-        [input_lumpy, input_manta, input_cnvkit, input_wham, input_delly, input_gatk, input_bam],
+        [input_lumpy, input_manta, input_cnvkit, input_wham, input_delly, input_breakseq, input_gatk, input_bam],
         [output_vcf],
         [
             #['metasv_ensemble', 'module_spades'],
@@ -63,6 +63,7 @@ run_metasv.py {options} \\
         input_delly="--delly_vcf " + input_delly if input_delly else "",
         input_gatk="--gatk_vcf " + input_gatk if input_gatk else "",
         input_cnvkit="--cnvkit_vcf " + input_cnvkit if input_cnvkit else "",
+        input_breakseq="--breakseq_vcf " + input_breakseq if input_breakseq else "",
         input_bam=input_bam,
         sample_name=sample_name,
         workdir=workdir,
