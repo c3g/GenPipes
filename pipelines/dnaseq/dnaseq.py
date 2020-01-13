@@ -228,8 +228,8 @@ class DnaSeqRaw(common.Illumina):
                     bash.mkdir(output_dir, remove=True),
                     adapter_job,
                     skewer.trim(fastq1, fastq2, trim_file_prefix, adapter_file),
-                    bash.ln(os.path.abspath(trim_file_prefix + "-trimmed-pair1.fastq.gz"), trim_file_prefix + ".trim.pair1.fastq.gz"),
-                    bash.ln(os.path.abspath(trim_file_prefix + "-trimmed-pair2.fastq.gz"), trim_file_prefix + ".trim.pair2.fastq.gz")
+                    bash.ln(trim_file_prefix + "-trimmed-pair1.fastq.gz", trim_file_prefix + ".trim.pair1.fastq.gz"),
+                    bash.ln(trim_file_prefix + "-trimmed-pair2.fastq.gz", trim_file_prefix + ".trim.pair2.fastq.gz")
                 ], name="skewer_trimming." + readset.name, samples=[readset.sample])
             )
 
