@@ -3387,7 +3387,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                     bcftools.view(gatk_vcf, input_vcf, filter_options="-i '%QUAL>=50'")
                 ], name="cnvkit_batch.vcf_flt." + sample.name))
                 normal = sample.name
-         
+                
             if len(self.samples) > config.param('cnvkit_batch', 'min_background_samples'):
                 jobs.append(concat_jobs([
                     bash.mkdir(cnvkit_dir, remove=True),
