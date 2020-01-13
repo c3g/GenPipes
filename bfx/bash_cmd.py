@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 ################################################################################
 # Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
 #
@@ -17,9 +19,8 @@
 # along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-#!/usr/bin/env python
-
 # Python Standard Modules
+import os
 
 # MUGQIC Modules
 from core.job import Job
@@ -36,7 +37,8 @@ mkdir -p {directory}""".format(
         removable_files=[folder] if remove else []
     )
 
-def ln(target_file, link, sleep=None):
+def ln(target_file, link):
+    folder = os.path.dirname(link)
     return Job(
         [target_file],
         [link],
@@ -44,11 +46,11 @@ def ln(target_file, link, sleep=None):
         command="""\
 ln -s -f \\
   {target_file} \\
-  {link} \\
-  {sleep}""".format(
+  {link} && \\
+ls {folder}""".format(
             target_file=target_file,
             link=link,
-            sleep="&& sleep "+str(sleep) if sleep else ""
+            folder=folder
         ),
         removable_files=[link]
     )
