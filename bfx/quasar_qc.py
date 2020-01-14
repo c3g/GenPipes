@@ -27,10 +27,10 @@ import os
 from core.config import *
 from core.job import *
 
-def create_fend_object(chromosome_lengths, output_file,output_dir, res_chr):
+def create_fend_object(chromosome_lengths_file, output_file,output_dir, res_chr):
 
     return Job(
-        [chromosome_lengths],
+        [chromosome_lengths_file],
         [output_file],
         [
             ['quality_scores', 'module_python']
@@ -41,8 +41,64 @@ def create_fend_object(chromosome_lengths, output_file,output_dir, res_chr):
             -L {chromosome_lengths} \\
             --binned={res_chr} \\
             {output_file}""".format(
-            chromosome_lengths=chromosome_lengths,
+            chromosome_lengths=chromosome_lengths_file,
             output_file=output_file,
             res_chr=res_chr,
             output_dir=output_dir
         ))
+
+
+def restructure_matrix(input_file_path, output_file_path,  output_dir):
+
+    return Job(
+
+        [input_file_path],
+        [output_file_path],
+        [
+            ['quality_scores', 'module_python']
+        ],
+        command="""\
+            mkdir -p {output_dir}/temp &&
+            awk -v OFS="\\t" '{{print $1":"$2"-"$3,$0}}' {input_file} | \\
+            cut -f2,3,4 --complement | \\
+            awk '{{ printf $1"\\t"; for( i = 2; i <= NF; i++) {{ if(( $i ~ /[0-9]+/ )) {{ printf "%.0f\\t", $i*10; }} else {{ printf 0"\\t";}} }} printf "\\n"}}'  > \\
+            {output_file}""".format(
+            input_file=input_file_path,
+            output_file=output_file_path,
+            output_dir=output_dir
+        ))
+
+
+def quality_analysis(quasr_temp_files, input_files, output_file_path, output_dir, fend_file, quasar_res, quasar_coverage):
+    output_data_file = "_".join((
+                    output_file_path, "hic.data"))
+
+    output_project_file = "_".join((
+                    output_file_path, "hic.project"))
+
+    report_file="_".join((
+                    output_file_path, "report.txt"))
+    quasar_file="_".join((
+                    output_file_path, "hic.quasar"))
+    return Job(
+        quasr_temp_files,
+        [report_file],
+        [
+            ['quality_scores', 'module_python']
+        ],
+        command="""\
+            hifive hic-data -X "{input_files}" {fend_file} {output_data_file} &&
+            hifive hic-project {output_data_file} {output_project_file} &&
+            hifive quasar -p {output_project_file} -r {res} -d {coverage} -o {report_file} {quasar_file} --seed 12345
+            """.format(
+            input_files=input_files,
+            output_data_file=output_data_file,
+            output_project_file=output_project_file,
+            output_dir=output_dir,
+            fend_file=fend_file,
+            report_file=report_file,
+            quasar_file=quasar_file,
+            res=quasar_res,
+            coverage=quasar_coverage
+        ))
+
