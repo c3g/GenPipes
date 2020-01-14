@@ -341,16 +341,17 @@ class HicSeq(common.Illumina):
         Pairwise reproducibility scores for each chromosome pair in each sample pair are calculated using
         hic-rep at resolutions (bin size) defined in interaction_matrices_Chr step
         and other parameters defined in reproducibility_scores step of ini config file. All the scores are finally merged
-        together and output a csv file with parameters used in analysis with chromosome, reproducibility scores,
+        together and output a csv file with parameters used in analysis with chromosome number, reproducibility scores,
         standard deviation and smoothing value used for the analysis (in order to compare samples smoothing value
         and the sequencing depth should be similar across samples.
         Down-sampling of samples can be performed using the down_sampling parameter in the ini config file.
+        Correlation matrices and weight matrices can be saved using  corr=TRUE and weights=TRUE in ini config file
         for more information visit: [https://bioconductor.org/packages/release/bioc/html/hicrep.html]
         """
 
         jobs = []
 
-        #Get defined chromosomes and resolution from the config (.ini) file
+        #Get defined chromosomes, resolution and other paramters from the config (.ini) file
         chrs = config.param('interaction_matrices_Chr', 'chromosomes')
         res_chr = config.param('interaction_matrices_Chr', 'resolution_chr').split(",")
         bound_width = config.param('reproducibility_scores', 'boundary_width')
@@ -373,16 +374,20 @@ class HicSeq(common.Illumina):
 
         input_files_for_merging=[]
         tsv_files_for_merging=[]
-        #If there is only one sample, an step should exit giving a warning
+        #If there is only one sample, an step will skip by giving a warning
         if len(self.samples) > 1:
 
             output_dir = "hicrep_reproducibility_scores"
             for res in res_chr:
                 for sample in pairwise_sample_combination:
+                    #create a job list inorder to create a concat jobs (create one job for all chrms for one sample pair
+                    #comparison
                     job_all_chr = []
                     for chromosome in chrs:
 
                         #get sample names with relative file path
+                        #since pairwise_sample_combination is a list with two elements, in each index, 0 and 1 have been
+                        #used to call the each sample
                         input_sample1_file_path = os.path.join(self.output_dirs['matrices_output_directory'], sample[0].name,
                                                     "chromosomeMatrices",
                                                     "_".join(("HTD", sample[0].name, self.enzyme, chromosome, res, "rawRN.txt.MatA")))
@@ -412,19 +417,21 @@ class HicSeq(common.Illumina):
                     jobs.append(job)
                     tsv_output = os.path.join( output_dir, ".".join(("_".join((sample[0].name,"vs",sample[1].name, "res", res, smooth, bound_width,
                                                      down_sampling)), "tsv")))
+                    #Storing output files for next step in a list
                     tsv_files_for_merging.append(tsv_output)
+                #create a job for merginh .tsv file with individual reproducibnility score for each pairwise comparison
                 job_merge = hicrep.merge_tmp_files( input_files_for_merging, tsv_files_for_merging, output_dir, res, smooth, bound_width, down_sampling)
                 job_merge.samples = self.samples
                 job_merge.name = "".join(("merge_hicrep_scores." + res))
                 jobs.append(job_merge)
 
+            #finally all the .tsv files are merged and create a one file (.csv) with all the values
             job_tsv_merge = hicrep.merge_tsv(tsv_files_for_merging, output_dir)
             job_tsv_merge.name = "merge_hicrep_scores"
             job_tsv_merge.samples = self.samples
             jobs.append(job_tsv_merge)
         else:
-            pass
-            #Raise an exception
+            log.info("You need to provide at least two samples to generate a reproducible score... skipping")
 
         return jobs
 
@@ -432,8 +439,7 @@ class HicSeq(common.Illumina):
 
         """
         #     Quality score per chromosome for each sample is calculated using QUSAR-QC at resolutions
-        #     defined in interaction_matrices_Chr step and sequencing
-        #     depths (coverages) defined in quality_scores step of ini config file
+        #     and sequencing depths (coverages) and down_sampling value (coverage) defined in quality_scores step of ini config file
         #     QUSAR-QC is a part of the hifive hic-seq analysis suit
         #     for more information visit: [http://hifive.docs.taylorlab.org/en/latest/quasar_scoring.html]
         # """
@@ -447,40 +453,75 @@ class HicSeq(common.Illumina):
         assembly = config.param('DEFAULT', 'assembly')
         chrom_lengths = os.path.join(assembly_dir, "genome", ".".join((scientific_name, assembly,"fa", "fai")))
         output_dir = "quality_scores"
-
-
+        output_fend_file=""
         for res in res_chr:
-            #Create fend object using chromosome lengths. only input file is chromosome lenghts for for respective genome
+            #First of all, a fend object should be created and this can be used with all the other samples.
+            # Create fend object using chromosome lengths. only input file is chromosome lenghts for respective genome
             output_fend_file = os.path.join(output_dir, ".".join(("binned_by_chr_length", res, "fends")))
             job_fend = quasar_qc.create_fend_object(chrom_lengths, output_fend_file, output_dir, res)
             job_fend.samples = self.samples
             job_fend.name = "quality_scores_quasar_fend"
             jobs.append(job_fend)
 
-        # if chrs == "All":
-        #     genome_dict = os.path.expandvars(config.param('DEFAULT', 'genome_dictionary', type='filepath'))
-        #     chrs = genome.chr_names_conv(genome_dict)
-        # else:
-        #     chrs = chrs.split(",")
-        #
-        # output_dir = "hicrep_reproducibility_scores"
-        # for res in res_chr:
-        #     for sample in self.samples:
-        #         job_all_chr = []
-        #         for chromosome in chrs:
-        #
-        #             input_sample_file_path = os.path.join(self.output_dirs['matrices_output_directory'],
-        #                                                    sample.name,
-        #                                                    "chromosomeMatrices",
-        #                                                    "_".join((
-        #                                                             "HTD", sample.name, self.enzyme, chromosome, res,
-        #                                                             "rawRN.txt.MatA")))
-        #
-        #             print(input_sample_file_path)
+        if chrs == "All":
+            genome_dict = os.path.expandvars(config.param('DEFAULT', 'genome_dictionary', type='filepath'))
+            chrs = genome.chr_names_conv(genome_dict)
+        else:
+            chrs = chrs.split(",")
+
+        #Restrutcturing interaction matrices suitable for QUASAR-QC input
+        #First need to add a lable as (chr_number:bin_start - bin_end) and set it as the row name (first column)
+        #Remove the exisiting column headers and first 3 columns
+        #loop through all the samples and chromsomes
+        #these files will be used in next steps
+        quasr_temp_files = []
+        quasr_temp_files.append(output_fend_file)
+        for sample in self.samples:
+            job_restructure = []
+            for chromosome in chrs:
+
+                input_file_path = os.path.join(self.output_dirs['matrices_output_directory'],
+                                                      sample.name,
+                                                      "chromosomeMatrices",
+                                                      "_".join((
+                                                          "HTD", sample.name, self.enzyme, chromosome, res,
+                                                          "rawRN.txt.MatA")))
+                output_file_path = os.path.join(output_dir, "temp", "_".join((
+                                                          "HTD", sample.name, self.enzyme, chromosome, res,
+                                                          "rawRN.txt.MatA.temp")))
+                quasr_temp_files.append(output_file_path)
+                job_matrix_restucture = quasar_qc.restructure_matrix( input_file_path, output_file_path,  output_dir)
+
+                job_matrix_restucture.samples = [sample]
+                job_restructure.append(job_matrix_restucture)
+                job = concat_jobs(job_restructure)
+                job.name = "_".join(("quality_scores.quasar", "restructuring",sample.name, res, self.enzyme))
+
+            jobs.append(job)
+
+
+        #Perform the QUSAR-QC analysis using the generated temp files
+        #loop through each sample with same enzyme and one or many resolutions user has specified.
+        #user can specify the downsampling value too. If needed the full coverage (all reads), use 0 as the downsampling value
+
+        quasr_res = config.param('quality_scores', 'resolution_chr')
+        quasr_coverage = config.param('quality_scores', 'down_sampling')
+
+        for sample in self.samples:
+            for res in res_chr:
+                input_files = os.path.join(output_dir, "temp", "_".join((
+                                                          "HTD", sample.name, self.enzyme, "*", res,
+                                                          "rawRN.txt.MatA.temp")))
+
+                output_file_path = os.path.join(output_dir, "_".join((
+                    sample.name, res, self.enzyme)))
+                job_qusarqc = quasar_qc.quality_analysis(quasr_temp_files, input_files, output_file_path, output_dir, output_fend_file, quasr_res, quasr_coverage)
+
+                job_qusarqc.samples = [sample]
+                job_qusarqc.name = "_".join(("quality_scores.quasarqc",sample.name, res, self.enzyme))
+                jobs.append(job_qusarqc)
 
         return jobs
-
-
 
 
     def interaction_matrices_genome(self):
