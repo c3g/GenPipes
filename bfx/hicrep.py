@@ -68,12 +68,7 @@ Rscript /lb/project/C3G/projects/pubudu/hicrep.R \\
         output_dir=output_dir
     ))
 
-#old argument
-#cat "$d"hicrep*{resolution}_rep*.tmp | awk -v FS='\\t' -v OFS='\\t' -v dir="${{d%/*}}" '{{sum+=$1}} END {{print dir,sum/NR}}' > "${{d%/*}}"{resolution}_res.tmp
 
-#awk -v OFS="\t" 'NR==0 {print; next} FNR==0 {next} {print FILENAME, $0}' *.tmp | awk -v OFS="_" '{print $1,$2,$3}' | awk -F "_" 'BEGIN{printf "chr\tSCC\tSD\n"}{printf $5"\t"$11"\t"$12"\n"}'
-##Working shorter code
-#awk -v OFS="_" 'NR==0 {print; next} FNR==0 {next} {print FILENAME, $0}' *.tmp |  awk -F "_" 'BEGIN{printf "chr\tSCC\tSD\n"}{printf $5"\t"$11"\t"$12"\n"}'
 def merge_tmp_files( input_files, output_files, temp_out_dir, resolution, smooth, bound_width, down_sampling):
     return Job(
         input_files,
@@ -95,6 +90,8 @@ def merge_tmp_files( input_files, output_files, temp_out_dir, resolution, smooth
         ))
 
 def merge_tsv(input_files, out_dir):
+
+    #merge all the tsvs and create final .csv file
     output_file="hcrep_combined_reproducibility_scores.csv"
     return Job(
         input_files,
